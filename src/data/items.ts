@@ -63,7 +63,7 @@ export const ITEMS: readonly ItemDef[] = [
   item({ id: 'silkscarf', name: 'Silk Scarf', kind: 'held', typeBoost: { type: 'Normal', multiplier: 1.2 }, shortDesc: 'Powers up Normal-type moves.' }),
   item({ id: 'charcoal', name: 'Charcoal', kind: 'held', typeBoost: { type: 'Fire', multiplier: 1.2 }, shortDesc: 'Powers up Fire-type moves.' }),
   item({ id: 'mysticwater', name: 'Mystic Water', kind: 'held', typeBoost: { type: 'Water', multiplier: 1.2 }, shortDesc: 'Powers up Water-type moves.' }),
-  item({ id: 'miracelseed', name: 'Miracle Seed', kind: 'held', typeBoost: { type: 'Grass', multiplier: 1.2 }, shortDesc: 'Powers up Grass-type moves.' }),
+  item({ id: 'miracleseed', name: 'Miracle Seed', kind: 'held', typeBoost: { type: 'Grass', multiplier: 1.2 }, shortDesc: 'Powers up Grass-type moves.' }),
   item({ id: 'magnet', name: 'Magnet', kind: 'held', typeBoost: { type: 'Electric', multiplier: 1.2 }, shortDesc: 'Powers up Electric-type moves.' }),
   item({ id: 'nevermeltice', name: 'Never-Melt Ice', kind: 'held', typeBoost: { type: 'Ice', multiplier: 1.2 }, shortDesc: 'Powers up Ice-type moves.' }),
   item({ id: 'blackbelt', name: 'Black Belt', kind: 'held', typeBoost: { type: 'Fighting', multiplier: 1.2 }, shortDesc: 'Powers up Fighting-type moves.' }),

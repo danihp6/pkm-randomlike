@@ -64,10 +64,10 @@ effect registry with the same hooks as Showdown's handlers:
    each handler a direct port of Showdown's, adapted to our state object. Batches
    are ordered by how often a route actually meets the effect: status items and
    berries first, then the common competitive abilities, then the long tail.
-4. **Coverage table**: `docs/balance/effect-coverage.md` (created with the first
-   port batch) lists every ability/item as `port | no-op | excluded`, so nothing
-   is silently missing. In dev builds, a battle against an unported effect logs a
-   warning.
+4. **Coverage table**: `docs/balance/effect-coverage.md` lists every ability and
+   item as `port | no-op | excluded`, so nothing is silently missing; regenerate
+   it with `npm run docs:coverage`. In dev builds, a battle against an unported
+   effect is meant to log a warning.
 5. **Descriptions come free**: because `abilities.json`/`items.json` carry
    `shortDesc`, the UI can always explain an effect even on the day it is a
    no-op.

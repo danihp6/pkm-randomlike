@@ -62,8 +62,6 @@ Ports of Showdown handlers, in batches, on the hook names in
       from moves and abilities, with the residual order.
 - [ ] `src/engine/battle/effects/moves.ts`: moves whose handlers are not plain
       damage/status (Protect, Substitute, Recycle, multi-turn, self-destruct...).
-- [ ] `docs/balance/effect-coverage.md`: every ability and item marked
-      `port | no-op | excluded` (D16).
 - [ ] Dev warning (behind the `src/dev` gate) when a battle meets an unported
       effect, so no coverage gap hides during playtests.
 

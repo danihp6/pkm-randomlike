@@ -174,3 +174,10 @@ file is the human-readable summary.
       Shed Skin. `effects/apply.ts` now owns the shared boost/status application
       so moves and abilities go through the same hooks, and `onBoost` learns
       whether a drop is self-inflicted. 199 tests pass; `npm run build` clean.
+- [x] `docs/balance/effect-coverage.md` (D16): all 310 abilities and 262 items
+      (the dex battle items plus the catalogue-only consumables) marked
+      `port | no-op | excluded` — 63 ports, 227 abilities still `no-op`, and the
+      exclusions spelled out (unreachable species, doubles-only, cut mechanics,
+      items outside the run catalogue). `scripts/effect-coverage.mjs`
+      (`npm run docs:coverage`) derives the `port` set from the registry and the
+      catalogue so only the exclusions are hand-curated.
