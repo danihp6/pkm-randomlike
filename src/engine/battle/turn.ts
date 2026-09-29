@@ -1,27 +1,21 @@
 import { type Move, type MoveEffect } from '../../data/dex';
 import { rollHit } from './accuracy';
 import {
-  BOOST_IDS,
-  applyBoosts,
   applyDamage,
   applyHeal,
   resetBattleState,
   type BattleFighter,
-  type BoostChange,
-  type BoostId,
-  type StatusId,
 } from './fighter';
 import {
   makeContext,
   runAfterMove,
-  runBoost,
   runModifyDamage,
   runResidual,
   runStart,
-  runStatus,
   runSwitchIn,
   runTryHit,
 } from './effects/registry';
+import { applyBoostEffect, applyStatusEffect } from './effects/apply';
 import { computeDamage, type DamageResult } from './damage';
 import { orderActions } from './order';
 import {
@@ -43,7 +37,7 @@ import {
   type BattleState,
   type SideId,
 } from './state';
-import { applyStatus, beforeMoveStatus, canApplyStatus, residualDamage, statusName } from './status';
+import { beforeMoveStatus, residualDamage, statusName } from './status';
 import {
   absorbWithSubstitute,
   applyConfusion,
@@ -62,17 +56,6 @@ import {
   tickPerish,
 } from './volatile';
 import { rollRun } from './runAway';
-
-function isStatusId(value: string | undefined): value is StatusId {
-  return (
-    value === 'brn' ||
-    value === 'psn' ||
-    value === 'tox' ||
-    value === 'par' ||
-    value === 'slp' ||
-    value === 'frz'
-  );
-}
 
 export function performSwitch(state: BattleState, side: SideId, partyIndex: number): void {
   const battleSide = state.sides[side];
@@ -151,61 +134,6 @@ function multihitHits(move: Move, rng: BattleState['rng']): number {
   return rng.int(move.multihit[0], move.multihit[1]);
 }
 
-function applyBoostEffect(
-  state: BattleState,
-  side: SideId,
-  target: BattleFighter,
-  boosts: NonNullable<Move['boosts']>,
-): void {
-  const allowed: Partial<Record<BoostId, number>> = {};
-  for (const stat of BOOST_IDS) {
-    const stages = boosts[stat];
-    if (!stages) continue;
-    const ctx = makeContext(state, side, { source: target, target: opponent(state, side) });
-    if (!runBoost(ctx, stat, stages)) continue;
-    allowed[stat] = stages;
-  }
-
-  const changes: readonly BoostChange[] = applyBoosts(target, allowed);
-  for (const change of changes) {
-    pushEvent(state, { kind: 'boost', side, stat: change.stat, stages: change.stages });
-  }
-  if (changes.length > 0) {
-    const direction = changes.every((change) => change.stages > 0) ? 'rose' : 'fell';
-    pushText(state, `${target.name}'s ${statLabel(changes[0].stat)} ${direction}!`);
-  }
-}
-
-function statLabel(stat: BoostId): string {
-  const labels: Readonly<Record<BoostId, string>> = {
-    atk: 'Attack',
-    def: 'Defense',
-    spa: 'Sp. Atk',
-    spd: 'Sp. Def',
-    spe: 'Speed',
-    accuracy: 'accuracy',
-    evasion: 'evasiveness',
-  };
-  return labels[stat];
-}
-
-function applyStatusEffect(
-  state: BattleState,
-  side: SideId,
-  target: BattleFighter,
-  status: string | undefined,
-): void {
-  if (!isStatusId(status)) return;
-  if (hasSubstitute(target)) return;
-  const ctx = makeContext(state, side, { source: target, target: opponent(state, side) });
-  if (!runStatus(ctx, status)) return;
-  if (!canApplyStatus(target, status)) return;
-  if (applyStatus(target, status, state.rng)) {
-    pushEvent(state, { kind: 'status', side, status });
-    pushText(state, `${target.name} was afflicted by ${statusName(status)}!`);
-  }
-}
-
 function applyVolatileEffect(
   state: BattleState,
   target: BattleFighter,
@@ -254,7 +182,7 @@ function applySecondary(
 ): void {
   if (effect.chance !== undefined && state.rng.int(1, 100) > effect.chance) return;
   if (effect.self) {
-    if (effect.self.boosts) applyBoostEffect(state, side, attacker, effect.self.boosts);
+    if (effect.self.boosts) applyBoostEffect(state, side, attacker, effect.self.boosts, { self: true });
     if (effect.self.status) applyStatusEffect(state, side, attacker, effect.self.status);
   }
   if (effect.status) applyStatusEffect(state, opponentOf(side), defender, effect.status);
@@ -282,7 +210,9 @@ function applyMoveEffects(
   }
 
   if (move.boosts) {
-    applyBoostEffect(state, selfTarget ? side : opponentOf(side), selfTarget ? attacker : defender, move.boosts);
+    applyBoostEffect(state, selfTarget ? side : opponentOf(side), selfTarget ? attacker : defender, move.boosts, {
+      self: selfTarget,
+    });
   }
 
   if (move.heal && move.heal.length === 2) {
@@ -293,7 +223,7 @@ function applyMoveEffects(
     }
   }
 
-  if (move.self?.boosts) applyBoostEffect(state, side, attacker, move.self.boosts);
+  if (move.self?.boosts) applyBoostEffect(state, side, attacker, move.self.boosts, { self: true });
 
   const secondaries: MoveEffect[] = [];
   if (move.secondary) secondaries.push(move.secondary);

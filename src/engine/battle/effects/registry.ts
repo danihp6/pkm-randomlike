@@ -19,7 +19,7 @@ export type EffectContext = Readonly<{
 export type MovePayload = Readonly<{ move: Move }>;
 export type DamagePayload = Readonly<{ move: Move; damage: number }>;
 export type StatusPayload = Readonly<{ status: string }>;
-export type BoostPayload = Readonly<{ stat: BoostId; stages: number }>;
+export type BoostPayload = Readonly<{ stat: BoostId; stages: number; self: boolean }>;
 
 /**
  * Handler bodies are direct ports of Showdown's, on the same hook names, but
@@ -147,7 +147,7 @@ export function runResidual(ctx: EffectContext): void {
 
 export function runAfterMove(ctx: EffectContext, move: Move): void {
   const payload: MovePayload = { move };
-  for (const ref of contextEffects(ctx, false, move)) {
+  for (const ref of contextEffects(ctx, true, move)) {
     ref.effect.handlers.onAfterMove?.(contextFor(ctx, ref), payload);
   }
 }
@@ -168,8 +168,13 @@ export function runStatus(ctx: EffectContext, status: string): boolean {
   return true;
 }
 
-export function runBoost(ctx: EffectContext, stat: BoostId, stages: number): boolean {
-  const payload: BoostPayload = { stat, stages };
+export function runBoost(
+  ctx: EffectContext,
+  stat: BoostId,
+  stages: number,
+  self = false,
+): boolean {
+  const payload: BoostPayload = { stat, stages, self };
   for (const ref of contextEffects(ctx, true, null)) {
     if (ref.effect.handlers.onBoost?.(contextFor(ctx, ref), payload) === false) return false;
   }

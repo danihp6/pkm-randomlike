@@ -110,8 +110,8 @@ export function createBattle(setup: BattleSetup): BattleState {
   };
 
   for (const side of SIDE_IDS) {
-    const fighter = state.sides[side].party[state.sides[side].activeIndex];
-    const ctx = makeContext(state, side, { source: fighter });
+    const fighter = activeFighter(state, side);
+    const ctx = makeContext(state, side, { source: fighter, target: opponent(state, side) });
     runStart(ctx);
     runSwitchIn(ctx);
   }
