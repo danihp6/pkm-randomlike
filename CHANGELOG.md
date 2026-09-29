@@ -70,3 +70,35 @@ file is the human-readable summary.
 - [x] Fixed the generator: `build-dex.mjs` now intersects learnsets with the
       retained move set, so a Gen 8 source naming a Gen 9-removed move no longer
       leaves a dangling id (regenerated `learnsets.json`, counts unchanged).
+
+## Phase 2 — Route generation & exploration
+
+- [x] `src/data/run.ts`: six `LEVEL_BANDS` with level ranges and trainer sizes,
+      `ROUTES_PER_BAND`, `bandForRoute(routeIndex)`, `levelCapForRoute` and the
+      `RUN_CHAIN` cadence (finite length, mini-boss every 4, boss block 8).
+- [x] `src/data/encounters.ts`: per-biome, per-band weighted species pools for
+      `wood` and `placeholder`; `src/data/biomes.ts` wires the biome → registered
+      tileset + terrain counts + encounter tables and cycles them per route.
+- [x] `src/data/trainers.ts`: ten archetypes (Youngster, Lass, Bug Catcher,
+      Hiker, Camper, Picnicker, Fisher, Psychic, Black Belt, Ace Trainer) with a
+      themed species pool and a placeholder marker colour (`spriteKey: null`, O1).
+- [x] `src/engine/routes/routeMap.ts`: the `RouteMap` (seed, route index, biome,
+      tiles, start, exit, trainers, items) plus `Facing`/`FACING_VECTORS`.
+- [x] `src/engine/routes/validate.ts`: cardinal flood-fill and `validateRoute`,
+      which requires the start to reach the exit and every trainer.
+- [x] `src/engine/routes/trainers.ts`: `sightLine`/`seesPlayer` - a facing, a
+      sight range, blocked by walls and by other trainers; re-evaluated per step.
+- [x] `src/engine/routes/encounters.ts`: weighted roll + the `RouteEncounters`
+      step counter, so the same grass walked in the same order rolls the same.
+- [x] `src/engine/routes/sketch.ts`: the full pipeline (frame, rooms + terraces,
+      grass/water/ledge terrain, trainer/item population) off one `Rng`, rerolled
+      on validation failure; a frozen route signature guards the regression seed.
+- [x] Ledges: `resolveMove` jumps south over a `LEDGE` to the tile beyond (and
+      only south); other directions stay blocked.
+- [x] `RouteScene` now consumes a generated `RouteMap`: procedural tall-grass,
+      item and trainer-figure overlays that respect fog, item pickup, grass
+      encounter messages, trainer line-of-sight messages and the exit beat. `R`
+      still swaps tilesets.
+- [x] Tests: band/trainer/dex existence checks for every authored species, route
+      validity across seeds and indices, sight-line and ledge-movement rules, and
+      a frozen generator signature. 99 tests pass; `npm run build` clean.

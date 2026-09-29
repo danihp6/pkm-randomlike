@@ -47,6 +47,25 @@ export function moveToward(player: Tile, dir: Tile, map: TileMap): boolean {
   return true;
 }
 
+export type MoveResult = Readonly<{ to: Tile; jumped: boolean }>;
+
+/**
+ * Resolves one cardinal step. A `LEDGE` blocks entry from every side, but
+ * stepping south onto a ledge jumps over it to the tile beyond, one way - the
+ * classic down-only ledge.
+ */
+export function resolveMove(map: TileMap, from: Tile, dir: Tile): MoveResult | undefined {
+  const direct: Tile = { x: from.x + dir.x, y: from.y + dir.y };
+  if (tileAt(map, direct) === LEDGE) {
+    if (dir.x !== 0 || dir.y !== 1) return undefined;
+    const landing: Tile = { x: from.x, y: from.y + 2 };
+    if (!isWalkable(map, landing)) return undefined;
+    return { to: landing, jumped: true };
+  }
+  if (!isWalkable(map, direct)) return undefined;
+  return { to: direct, jumped: false };
+}
+
 export function tileAt(map: TileMap, tile: Tile): number | undefined {
   if (tile.y < 0 || tile.y >= map.length) return undefined;
   return map[tile.y][tile.x];

@@ -43,6 +43,9 @@ map.
 - The table is per **biome**, weighted, and drawn from the route's level band.
 - The roll uses the route RNG, so walking the same grass in the same order
   produces the same encounters.
+- Only the species and level are rolled. Stats, types and evolutions come from
+  the species; the moveset and ability are rolled separately when the Pokémon is
+  built (`D17`).
 
 ## 5. Run structure
 

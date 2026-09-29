@@ -42,24 +42,6 @@ accessors so the engine never touches raw JSON.
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] `src/engine/routes/sketch.ts`: the generation pipeline from
-      `docs/routes-spec.md` §2 — frame, terrain, population, validation, all off
-      one `Rng`. Deterministic per `(seed, routeIndex)`; regression test.
-- [ ] `src/engine/routes/routeMap.ts`: store the route as `RouteMap` (tiles +
-      start + exit + trainers + items) so the scene never re-derives it.
-- [ ] `src/engine/routes/trainers.ts`: trainer sight lines (facing + range,
-      blocked by solids), "sees player" recomputed per step.
-- [ ] `src/engine/routes/encounters.ts`: per-biome weighted encounter tables by
-      level band, rolled from the route RNG with a deterministic step counter.
-- [ ] `src/data/biomes.ts` + `src/data/encounters.ts` + `src/data/trainers.ts`:
-      the authored side, wired to the imported biome tilesets.
-- [ ] `src/engine/routes/validate.ts`: flood-fill guarantees start → exit and
-      every trainer is reachable; reroll from the same stream otherwise.
-- [ ] Ledges (`LEDGE`) and one-way jumps as a movement rule.
-- [ ] Route scene reads a real `RouteMap` instead of `ROUTE_SKETCH`, with
-      trainers, items and the exit; `R` stays as the tileset-swap debug key.
-- [ ] Tall-grass overlay art and the encounter trigger on step.
-
 ## Phase 3 — Battle engine core (pure, headless, tested)
 
 > Completed work for this phase is archived in `CHANGELOG.md`.

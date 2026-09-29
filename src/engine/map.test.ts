@@ -12,6 +12,7 @@ import {
   mapFromSketch,
   mapSize,
   moveToward,
+  resolveMove,
   tileAt,
   triggersWildEncounter,
   type TileMap,
@@ -64,6 +65,45 @@ describe('moveToward', () => {
     const player = { x: 1, y: 1 };
     expect(moveToward(player, { x: -1, y: 0 }, map)).toBe(false);
     expect(player).toEqual({ x: 1, y: 1 });
+  });
+});
+
+describe('resolveMove', () => {
+  const ledgeMap: TileMap = [
+    [WALL, WALL, WALL, WALL],
+    [WALL, FLOOR, FLOOR, WALL],
+    [WALL, LEDGE, FLOOR, WALL],
+    [WALL, FLOOR, FLOOR, WALL],
+    [WALL, WALL, WALL, WALL],
+  ];
+
+  it('takes a normal step onto a walkable tile', () => {
+    expect(resolveMove(map, { x: 1, y: 1 }, { x: 1, y: 0 })).toEqual({
+      to: { x: 2, y: 1 },
+      jumped: false,
+    });
+  });
+
+  it('jumps south over a ledge to the tile beyond', () => {
+    expect(resolveMove(ledgeMap, { x: 1, y: 1 }, { x: 0, y: 1 })).toEqual({
+      to: { x: 1, y: 3 },
+      jumped: true,
+    });
+  });
+
+  it('blocks entering a ledge from any other side', () => {
+    expect(resolveMove(ledgeMap, { x: 1, y: 3 }, { x: 0, y: -1 })).toBeUndefined();
+    expect(resolveMove(ledgeMap, { x: 1, y: 1 }, { x: 0, y: -1 })).toBeUndefined();
+  });
+
+  it('refuses the jump when the landing tile is not walkable', () => {
+    const trapped: TileMap = [
+      [WALL, WALL, WALL],
+      [WALL, FLOOR, WALL],
+      [WALL, LEDGE, WALL],
+      [WALL, WALL, WALL],
+    ];
+    expect(resolveMove(trapped, { x: 1, y: 1 }, { x: 0, y: 1 })).toBeUndefined();
   });
 });
 

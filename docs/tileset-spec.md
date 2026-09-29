@@ -86,7 +86,8 @@ Swapping is `config = TILESETS[nextId].config` plus loading
 ## 6. Pending art slots
 
 - **Tall grass** and **ledge** have no dedicated frame: both draw plain ground
-  today and will get an overlay sprite (grass tufts, ledge lip) rather than a
-  third atlas row.
+  today. Tall grass gets a procedural overlay sprite (`BootScene` builds it) so
+  it reads while the real art is pending; the ledge lip is still an open slot.
+  Neither spends a third atlas row.
 - **Trainer sprites** do not exist yet in any imported set; they need their own
   sheet (walk cycles + overworld facing).
