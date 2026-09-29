@@ -154,3 +154,12 @@ file is the human-readable summary.
       `performSwitch`, damage/status/boost/residual/after-move around the move
       resolution. No effects are registered yet, so the golden battle is byte for
       byte unchanged. 173 tests pass; `npm run build` clean.
+- [x] `src/engine/battle/effects/items.ts`: the held items, registered from the
+      catalogue (`kind: 'held'`) — Leftovers (residual 1/16), Sitrus/Oran berries
+      (heal below half, single use), Lum Berry (cures a status, single use) and the
+      18 type-boost items (1.2x, only when the holder is the move's user). The
+      registry now tells each handler which fighter owns the effect (`ctx.owner`),
+      so a defender's item never boosts the attacker's move. Fighters gained a
+      `heldItem` field. Potions, status cures and X-items already shipped as Bag
+      items in Phase 3, so the Bag rejects `held` items. 183 tests pass;
+      `npm run build` clean.

@@ -72,6 +72,7 @@ function validateBag(state: BattleState, side: SideId, command: BagCommand): str
   const slot = state.bag.find((entry) => entry.item.id === command.itemId);
   if (!slot || slot.count <= 0) return 'That item is not in the Bag.';
   if (slot.item.kind === 'ball' && !state.isWild) return 'Ball: cannot be used in a trainer battle.';
+  if (slot.item.kind === 'held') return 'Held items can only be used while held.';
   return null;
 }
 
@@ -160,6 +161,8 @@ export function useBagItem(state: BattleState, side: SideId, itemId: string): bo
       if (changes.length > 0) pushText(state, `${target.name}'s stats rose!`);
       break;
     }
+    case 'held':
+      break;
   }
   return true;
 }

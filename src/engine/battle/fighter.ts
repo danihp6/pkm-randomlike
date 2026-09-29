@@ -50,6 +50,8 @@ export type BattleFighter = {
   level: number;
   nature: string;
   ability: string;
+  /** Item id held in battle, or null; consumed berries clear it. */
+  heldItem: string | null;
   types: readonly string[];
   stats: Stats;
   ivs: Stats;
@@ -71,6 +73,7 @@ export type FighterInput = Readonly<{
   level: number;
   nature?: string;
   ability?: string;
+  heldItem?: string;
   ivs?: Partial<Stats>;
   evs?: Partial<Stats>;
   moves?: readonly string[];
@@ -157,6 +160,7 @@ export function createFighter(input: FighterInput): BattleFighter {
     level,
     nature,
     ability,
+    heldItem: input.heldItem ?? null,
     types: species.types,
     stats,
     ivs,

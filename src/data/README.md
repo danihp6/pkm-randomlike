@@ -15,8 +15,8 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `trainers.ts` — trainer archetypes and their themed species pools.
 - `run.ts` — level bands, the per-route cap and the run chain cadence.
 - `items.ts` — the battle item catalogue: balls with catch multipliers, potions,
-  status cures and X-items (held items and berries arrive with the effect
-  registry).
+  status cures, X-items and held items (Leftovers, berries, the 1.2x type
+  items). Held items are registered by `engine/battle/effects/items.ts`.
 
 ## Rules
 

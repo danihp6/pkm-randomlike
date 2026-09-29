@@ -20,7 +20,7 @@ rate, the generator merges one in from the committed PokeAPI table
 | `src/data/biomes.ts` | biome → tileset, encounter table, level band flavour | 2 |
 | `src/data/encounters.ts` | per-biome species pools and weights by band | 2 |
 | `src/data/trainers.ts` | trainer archetypes: name, class, sprite, species pool | 2 |
-| `src/data/items.ts` | the run's item catalogue: balls, potions, revives-off, held items | 3 |
+| `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive) | 3 |
 | `src/data/run.ts` | chain length, mini-boss cadence, boss cadence, level caps | 2 |
 
 ## 3. Typed accessors
