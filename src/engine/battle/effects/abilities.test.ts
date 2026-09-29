@@ -1814,3 +1814,35 @@ describe('trapping, dance and entry abilities (batch 12)', () => {
     expect(holder.boosts.accuracy).toBe(0);
   });
 });
+
+describe('transform and illusion abilities (batch 13)', () => {
+  it('Imposter transforms into the foe on switch-in', () => {
+    const state = makeBattle(fighter('player', 'ditto', 'Imposter'), fighter('enemy', 'charizard', 'Blaze'));
+    const ditto = activeFighter(state, 'player');
+    const foe = activeFighter(state, 'enemy');
+    expect(ditto.speciesId).toBe('charizard');
+    expect(ditto.volatiles.transformed).toBe(true);
+    expect(ditto.moves.map((slot) => slot.moveId)).toEqual(foe.moves.map((slot) => slot.moveId));
+    expect(ditto.hp).toBe(ditto.maxHp);
+  });
+
+  it('Illusion disguises the holder as the last healthy party member until hit', () => {
+    const state = createBattle({
+      player: [fighter('zoroark', 'zoroark', 'Illusion'), fighter('buddy', 'charmander', 'Blaze')],
+      enemy: [fighter('enemy', 'bulbasaur', 'Overgrow')],
+      rng: new Rng(1),
+      isWild: true,
+    });
+    const zoroark = activeFighter(state, 'player');
+    expect(zoroark.volatiles.illusion).toBe('charmander');
+
+    const tackle = getMove('tackle')!;
+    const ctx = makeContext(state, 'enemy', {
+      source: activeFighter(state, 'enemy'),
+      target: zoroark,
+      move: tackle,
+    });
+    runAfterMove(ctx, tackle);
+    expect(zoroark.volatiles.illusion).toBeNull();
+  });
+});

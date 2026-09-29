@@ -22,7 +22,7 @@ The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — 310 total (234 port, 2 no-op, 74 excluded)
+## Abilities — 310 total (236 port, 0 no-op, 74 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -136,9 +136,9 @@ catalogue row, not engine code.
 | Ice Face | `port` | ported in `effects/abilities.ts` |
 | Ice Scales | `port` | ported in `effects/abilities.ts` |
 | Illuminate | `port` | ported in `effects/abilities.ts` |
-| Illusion | `no-op` | reachable, not ported yet |
+| Illusion | `port` | ported in `effects/abilities.ts` |
 | Immunity | `port` | ported in `effects/abilities.ts` |
-| Imposter | `no-op` | reachable, not ported yet |
+| Imposter | `port` | ported in `effects/abilities.ts` |
 | Infiltrator | `port` | ported in `effects/abilities.ts` |
 | Innards Out | `excluded` | no playable species has it |
 | Inner Focus | `port` | ported in `effects/abilities.ts` |

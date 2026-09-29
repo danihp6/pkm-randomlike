@@ -3,7 +3,7 @@ import { getMove } from '../../../data/dex';
 import { Rng } from '../../rng';
 import { createFighter, type BattleFighter } from '../fighter';
 import { activeFighter, createBattle, type BattleState } from '../state';
-import { autoReplace, needsReplacement, takeTurn } from '../turn';
+import { autoReplace, needsReplacement, performSwitch, takeTurn, useMove } from '../turn';
 import { getEffect } from './registry';
 import { isProtectMove, moveEffects, protectBlocks } from './moves';
 
@@ -26,6 +26,7 @@ describe('move effect registration', () => {
     expect(ids).toContain('protect');
     expect(ids).toContain('spikyshield');
     expect(ids).toContain('recycle');
+    expect(ids).toContain('transform');
     for (const id of ids) expect(getEffect(id)?.kind).toBe('move');
     expect(isProtectMove('protect')).toBe(true);
     expect(isProtectMove('tackle')).toBe(false);
@@ -251,5 +252,46 @@ describe('switch moves', () => {
     autoReplace(state);
     expect(activeFighter(state, 'player').id).toBe('p2');
     expect(activeFighter(state, 'player').boosts.atk).toBe(2);
+  });
+});
+
+describe('transform', () => {
+  it('copies the target shape but not HP', () => {
+    const state = createBattle({
+      player: [fighter('player', 'ditto', ['transform'])],
+      enemy: [fighter('enemy', 'charizard', ['ember'])],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    const ditto = activeFighter(state, 'player');
+    const charizard = activeFighter(state, 'enemy');
+    charizard.hp = charizard.maxHp - 7;
+
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+
+    expect(ditto.speciesId).toBe('charizard');
+    expect(ditto.types).toEqual(charizard.types);
+    expect(ditto.ability).toBe(charizard.ability);
+    expect(ditto.stats.atk).toBe(charizard.stats.atk);
+    expect(ditto.hp).toBe(ditto.maxHp);
+    expect(ditto.moves.map((slot) => slot.moveId)).toEqual(['ember']);
+    expect(ditto.volatiles.transformed).toBe(true);
+  });
+
+  it('reverts to the original shape on switch out', () => {
+    const state = createBattle({
+      player: [fighter('p1', 'ditto', ['transform']), fighter('p2', 'charmander', ['tackle'])],
+      enemy: [fighter('enemy', 'charizard', ['splash'])],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    const ditto = state.sides.player.party[0];
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(ditto.speciesId).toBe('charizard');
+
+    performSwitch(state, 'player', 1);
+    expect(ditto.speciesId).toBe('ditto');
+    expect(ditto.transformBackup).toBeNull();
+    expect(ditto.volatiles.transformed).toBe(false);
   });
 });

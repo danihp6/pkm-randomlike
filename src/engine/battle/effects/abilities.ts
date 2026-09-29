@@ -1,6 +1,6 @@
 import { effectiveness, getMove } from '../../../data/dex';
 import { getItem } from '../../../data/items';
-import { applyDamage, applyHeal, isGrounded, stagedStat, type BattleFighter, type BoostId, type StatusId } from '../fighter';
+import { applyDamage, applyHeal, isGrounded, stagedStat, transformInto, type BattleFighter, type BoostId, type StatusId } from '../fighter';
 import { cureStatus, statusName } from '../status';
 import { opponentOf, pushEvent, pushText, effectiveWeather, type WeatherId } from '../state';
 import { applyFlinch, applyConfusion, applyAttract } from '../volatile';
@@ -1850,6 +1850,42 @@ function rivalry(): EffectHandlers {
   };
 }
 
+/** Imposter transforms into the foe as soon as the holder switches in. */
+function imposter(): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      const foe = ctx.target;
+      if (!foe || foe.hp <= 0 || ctx.owner.hp <= 0) return;
+      if (ctx.owner.volatiles.transformed) return;
+      const userName = ctx.owner.name;
+      const foeName = foe.name;
+      if (transformInto(ctx.owner, foe)) {
+        pushText(ctx.state, `${userName} transformed into ${foeName}!`);
+      }
+    },
+  };
+}
+
+/** Illusion wears the last healthy party member as a disguise until it is hit. */
+function illusion(): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      const side = ctx.state.sides[ctx.side];
+      const candidates = side.party.filter(
+        (fighter, index) => index !== side.activeIndex && fighter.hp > 0,
+      );
+      const last = candidates[candidates.length - 1];
+      if (last) ctx.owner.volatiles.illusion = last.speciesId;
+    },
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || !payload.hit || payload.move.basePower <= 0) return;
+      if (ctx.owner.volatiles.illusion === null) return;
+      ctx.owner.volatiles.illusion = null;
+      pushText(ctx.state, `${ctx.owner.name}'s illusion was broken!`);
+    },
+  };
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -2105,6 +2141,9 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['dancer', {}],
   ['gluttony', {}],
   ['magicbounce', {}],
+
+  ['imposter', imposter()],
+  ['illusion', illusion()],
 
   // Air Lock / Cloud Nine and Unseen Fist act at the call site (effectiveWeather,
   // protectBlocks).
