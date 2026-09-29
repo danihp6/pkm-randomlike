@@ -38,24 +38,6 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 The generated dex is in `src/data/dex/`; this phase wraps it in typed, tested
 accessors so the engine never touches raw JSON.
 
-- [ ] `src/data/dex/species.ts`: `Species` type, `getSpecies(id)`,
-      `speciesByNum(n)`, `playableSpecies()`. Test the shape against
-      `dex/meta.json` counts so a bad regeneration fails loudly.
-- [ ] `src/data/dex/moves.ts`: `Move` type, `getMove(id)`, `moveByType(type)`,
-      `isDamaging(move)`.
-- [ ] `src/data/dex/learnsets.ts`: `learnsetOf(id)`, `levelUpMoves(id, level)`,
-      `learnableBy(method)`; parse the source codes (`9L24`, `9M`, `9T`, `9E`).
-- [ ] `src/data/dex/types.ts`: `effectiveness(attackType, defenderTypes)` from
-      `types.json`, returning the product of the 18x18 chart.
-- [ ] `src/data/dex/natures.ts`: `natureMultiplier(nature, stat)` and
-      `statAtLevel(species, level, nature, ivs, evs)` (used by both battle and any
-      party screen).
-- [ ] `src/data/dex/evolutions.ts`: `evolutionFor(speciesId, level)` and
-      `isLevelEvolution(target)`.
-- [ ] A data-integrity test: every learnset move id exists in `moves.json`,
-      every `evolutions[].into` exists in `species.json`, every species type is
-      one of the 18.
-
 ## Phase 2 — Route generation & exploration
 
 > Completed work for this phase is archived in `CHANGELOG.md`.

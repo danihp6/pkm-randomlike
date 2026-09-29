@@ -13,7 +13,7 @@ See `docs/showdown-reuse.md` for the contents and filters, and
 
 | File | What it holds | Phase |
 | --- | --- | --- |
-| `src/data/natures.ts` | typed view over `dex/natures.json` | 1 |
+| `src/data/dex/natures.ts` | typed view over `dex/natures.json` | 1 |
 | `src/data/tilesets/*.ts` | one biome tileset config + palette per biome | 0 |
 | `src/data/biomes.ts` | biome → tileset, encounter table, level band flavour | 2 |
 | `src/data/encounters.ts` | per-biome species pools and weights by band | 2 |
@@ -26,11 +26,17 @@ See `docs/showdown-reuse.md` for the contents and filters, and
 JSON is imported and immediately wrapped by a typed accessor module, so engine
 code never sees a `any`:
 
-- `src/data/dex/species.ts` → `Species`, `getSpecies(id)`, `speciesByNum(n)`
-- `src/data/dex/moves.ts` → `Move`, `getMove(id)`
-- `src/data/dex/learnsets.ts` → `learnsetOf(speciesId)`, `levelUpMoves(...)`
-- `src/data/dex/types.ts` → `effectiveness(attackType, defenderTypes)`
-- `src/data/dex/natures.ts` → `natureMultiplier(nature, stat)`
+- `src/data/dex/species.ts` → `Species`, `getSpecies(id)`, `speciesByNum(n)`,
+  `playableSpecies()`
+- `src/data/dex/moves.ts` → `Move`, `getMove(id)`, `moveByType(type)`,
+  `isDamaging(move)`
+- `src/data/dex/learnsets.ts` → `learnsetOf(speciesId)`, `levelUpMoves(id, level)`,
+  `learnableBy(id, method)`, `parseLearnSource(code)`
+- `src/data/dex/types.ts` → `effectiveness(attackType, defenderTypes)`, `TYPE_NAMES`
+- `src/data/dex/natures.ts` → `natureMultiplier(nature, stat)`,
+  `statAtLevel(species, level, nature, ivs, evs)`
+- `src/data/dex/evolutions.ts` → `evolutionFor(speciesId, level)`,
+  `isLevelEvolution(evolution)`
 
 Accessors are pure and unit-tested; the JSON shape is checked by a test that
 asserts counts against `meta.json` so a bad regeneration fails loudly.

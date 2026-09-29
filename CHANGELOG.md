@@ -43,3 +43,30 @@ file is the human-readable summary.
       `src/assets/README.md`, and `README.md`.
 - [x] Verified the slice: `npm test` (39 passing), `npm run build` clean, and the
       dev server renders the route with fog and the tileset swap.
+
+## Phase 1 — Dex accessors & data contracts
+
+- [x] `src/data/dex/species.ts`: `Species`/`Stats`/`Evolution` types plus
+      `getSpecies(id)`, `speciesByNum(n)` (prefers the base forme) and
+      `playableSpecies()` (the 911-row generated set).
+- [x] `src/data/dex/moves.ts`: `Move` type and `getMove(id)`, `moveByType(type)`,
+      `isDamaging(move)` (any non-`Status` move, so variable-power moves count).
+- [x] `src/data/dex/learnsets.ts`: `learnsetOf`, `parseLearnSource`
+      (`9L24`/`9M`/`9T`/`9E`, unknown codes → `other`), `levelUpMoves(id, level)`
+      and `learnableBy(id, method)`.
+- [x] `src/data/dex/types.ts`: `effectiveness(attackType, defenderTypes)` from the
+      defensive chart (0/1/2/3 → 1x/2x/0.5x/0x, multiplied across dual types) plus
+      `TYPE_NAMES`, the 18 battle types.
+- [x] `src/data/dex/natures.ts`: `natureMultiplier(nature, stat)` and
+      `statAtLevel(species, level, nature, ivs, evs)` (Gen 3+ stat formula, IVs
+      default to 31, EVs to 0).
+- [x] `src/data/dex/evolutions.ts`: `evolutionFor(speciesId, level)` and
+      `isLevelEvolution(evolution)`.
+- [x] `src/data/dex/index.ts` re-exports the six accessor modules.
+- [x] Data-integrity tests (`src/data/dex/dex.test.ts`): row counts match
+      `meta.json`, every learnset move exists in `moves.json`, every
+      `evolutions[].into` exists in `species.json`, every species type is one of
+      the 18, every move type is a known type. 65 tests pass.
+- [x] Fixed the generator: `build-dex.mjs` now intersects learnsets with the
+      retained move set, so a Gen 8 source naming a Gen 9-removed move no longer
+      leaves a dangling id (regenerated `learnsets.json`, counts unchanged).

@@ -38,9 +38,12 @@ const evolutionOf = (species) => {
   return evolutions;
 };
 
-const learnsetOf = (learnset) => {
+const learnsetOf = (learnset, moveIds) => {
   const moves = {};
   for (const [moveId, sources] of Object.entries(learnset.learnset ?? {})) {
+    // A gen-8 source can name a move that no longer exists in gen 9, so the
+    // learnset only keeps moves present in the generated moves.json.
+    if (!moveIds.has(moveId)) continue;
     const kept = sources.filter((source) => source[1] !== 'S' && Number(source[0]) >= MIN_LEARNSET_GEN);
     if (kept.length > 0) moves[moveId] = kept;
   }
@@ -56,6 +59,7 @@ const main = async () => {
   }));
 
   const moves = Dex.moves.all().filter((entry) => !entry.isNonstandard);
+  const moveIds = new Set(moves.map((entry) => entry.id));
   const abilities = Dex.abilities.all().filter((entry) => !entry.isNonstandard);
   const items = Dex.items.all().filter((entry) => !entry.isNonstandard);
   const natures = Dex.natures.all();
@@ -64,7 +68,7 @@ const main = async () => {
   const learnsets = {};
   for (const entry of species) {
     const learnset = await Dex.learnsets.get(entry.id);
-    const moves_ = learnsetOf(learnset);
+    const moves_ = learnsetOf(learnset, moveIds);
     if (Object.keys(moves_).length > 0) learnsets[entry.id] = moves_;
   }
 

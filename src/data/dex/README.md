@@ -24,6 +24,11 @@ asserts the counts still match, so a bad regeneration fails loudly.
 - Handler functions are intentionally absent: JSON.stringify dropped them. Effect
   behaviour lives in `src/engine/battle/effects/` (`docs/showdown-reuse.md`).
 - Learnset sources are filtered to `gen >= 8`, excluding pure-event (`S`)
-  sources, to keep the file close to Gen 9.
+  sources, to keep the file close to Gen 9. A kept source can still name a move
+  that no longer exists in Gen 9, so learnset entries are also intersected with
+  `moves.json`: a learnset never references a move id that isn't in the move set.
+- Typed accessors live next to the JSON (`species.ts`, `moves.ts`, `learnsets.ts`,
+  `types.ts`, `natures.ts`, `evolutions.ts`, re-exported from `index.ts`). Only
+  they read the JSON.
 - `isNonstandard` entries (CAP, Gigantamax, old-gen exclusives) were filtered at
   generation time.
