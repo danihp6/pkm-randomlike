@@ -77,6 +77,11 @@ export function createRunPokemon(input: FighterInput): RunPokemon {
   return { fighter: snapshotFighter(fighter), xp: xpForLevel(fighter.level) };
 }
 
+/** A run member adopted from a battle snapshot (a caught Pokémon), XP set to its level. */
+export function runPokemonFromSnapshot(fighter: FighterSnapshot): RunPokemon {
+  return { fighter, xp: xpForLevel(fighter.level) };
+}
+
 function moveSlot(moveId: string): MoveSlot | undefined {
   const move = getMove(moveId);
   if (!move) return undefined;
@@ -113,29 +118,27 @@ export function evolveIfReady(pokemon: RunPokemon, routeIndex: number): Progress
 }
 
 /**
- * Awards XP for a defeated opponent: clamps at the route cap, levels up on the
- * threshold, learns the level-up moves it crossed (forgetting the oldest when
- * the fourth slot is full) and evolves if the cap allows it. Pure and
- * deterministic: no RNG.
+ * Adds a raw XP amount: clamps at the route cap, levels up on the threshold,
+ * learns the level-up moves it crossed (forgetting the oldest when the fourth
+ * slot is full) and evolves if the cap allows it. Pure and deterministic: no RNG.
  */
-export function awardExperience(
+export function addExperience(
   pokemon: RunPokemon,
-  defeatedLevel: number,
+  amount: number,
   routeIndex: number,
-  options: Readonly<{ participants?: number; isTrainer?: boolean }> = {},
 ): ProgressionResult {
   const events: ProgressionEvent[] = [];
-  const amount = experienceAward(defeatedLevel, options.participants ?? 1, options.isTrainer ?? false);
-  const rawXp = pokemon.xp + amount;
+  const gain = Math.max(0, Math.floor(amount));
+  const rawXp = pokemon.xp + gain;
   const rawLevel = levelForXp(rawXp);
   let xp = rawXp;
-  let level = clampToCap(rawLevel, routeIndex);
+  const level = clampToCap(rawLevel, routeIndex);
   if (rawLevel > level) {
     // The cap clamps gain: park at the ceiling instead of banking overflow.
     xp = xpForLevel(level);
     events.push({ kind: 'capped', level });
   }
-  events.push({ kind: 'xp', amount, xp });
+  events.push({ kind: 'xp', amount: gain, xp });
 
   let fighter = pokemon.fighter;
   if (level > fighter.level) {
@@ -157,4 +160,21 @@ export function awardExperience(
 
   const evolved = evolveIfReady({ fighter, xp }, routeIndex);
   return { pokemon: evolved.pokemon, events: [...events, ...evolved.events] };
+}
+
+/**
+ * Awards XP for defeating an opponent: the award is split across participants
+ * and boosted for trainers, then applied through `addExperience`.
+ */
+export function awardExperience(
+  pokemon: RunPokemon,
+  defeatedLevel: number,
+  routeIndex: number,
+  options: Readonly<{ participants?: number; isTrainer?: boolean }> = {},
+): ProgressionResult {
+  return addExperience(
+    pokemon,
+    experienceAward(defeatedLevel, options.participants ?? 1, options.isTrainer ?? false),
+    routeIndex,
+  );
 }

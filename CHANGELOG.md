@@ -414,6 +414,11 @@ file is the human-readable summary.
       The dev `B` key is now gated by `IS_DEVELOP`. 405 tests pass; `npm run build`
       clean.
 
+- [x] `BattleScene` XP bar: `BattleLaunch` now carries each party member's XP,
+      and the player's HP panel grew a blue XP gauge plus an `XP n` label driven
+      by `experienceFraction`. It reads the run's XP, so it fills as battles are
+      won.
+
 ## Phase 6 — Run structure, party & economy
 
 - [x] `src/engine/run/state.ts`: the `RunState` — seed, mode, route index, cached
@@ -431,3 +436,15 @@ file is the human-readable summary.
       oldest past four) and evolves once the cap allows it (`evolveIfReady`, which
       the heal stop will re-run). No RNG anywhere, so a replay awards the same XP.
       425 tests pass; `npm run build` clean.
+- [x] `src/engine/run/perms.ts`: the permadeath enforcement point — `releaseFainted`
+      drops a 0-HP member from the party and the box and reports who fell (D5,
+      battle-spec §5).
+- [x] `src/engine/run/resolve.ts`: `resolveBattle` folds a `BattleReturn` into the
+      run — adopts the bag, enforces permadeath, places a catch (party or box) and
+      spends the route's capture, marks a beaten trainer and awards XP to the
+      survivors (split across the whole party until the battle reports who took
+      part). `RouteScene` now owns a real `RunState` seeded with the demo starter
+      and bag, drives party/bag/capture/beaten-trainers from it, and shows the
+      "was released" / "Level up!" / "It evolved!" beats from the resolution
+      events. Verified end to end in the browser: a wild win raised the XP bar from
+      125 to 137. 435 tests pass; `npm run build` clean.

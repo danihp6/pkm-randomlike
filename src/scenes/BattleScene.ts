@@ -17,7 +17,7 @@ import {
   type SideId,
 } from '../engine/battle';
 import { Rng } from '../engine/rng';
-import type { BattleLaunch, BattleOutcome, BattleReturn } from '../engine/run';
+import { experienceFraction, type BattleLaunch, type BattleOutcome, type BattleReturn } from '../engine/run';
 import { battleFrames, type FeedFrame } from '../ui/feed';
 import { hpColorInt, hpFraction, statusAbbreviation } from '../ui/metrics';
 import { drawGauge, drawPanel } from '../ui/panel';
@@ -54,12 +54,14 @@ export class BattleScene extends Phaser.Scene {
   private displayActive!: Record<SideId, BattleFighter>;
   private displayHp!: Record<SideId, number>;
   private displayStatus!: Record<SideId, StatusId | null>;
+  private experience = new Map<string, number>();
 
   private hud!: Phaser.GameObjects.Graphics;
   private messageText!: Phaser.GameObjects.Text;
   private nameText!: Record<SideId, Phaser.GameObjects.Text>;
   private statText!: Record<SideId, Phaser.GameObjects.Text>;
   private statusText!: Record<SideId, Phaser.GameObjects.Text>;
+  private xpText!: Phaser.GameObjects.Text;
   private playerSprite!: Phaser.GameObjects.Sprite;
   private foeSprite!: Phaser.GameObjects.Sprite;
   private playerPlatform!: Phaser.GameObjects.Image;
@@ -110,6 +112,7 @@ export class BattleScene extends Phaser.Scene {
       player: this.displayActive.player.status,
       enemy: this.displayActive.enemy.status,
     };
+    for (const entry of launch.experience) this.experience.set(entry.id, entry.xp);
 
     this.buildScene();
     this.bindInput();
@@ -148,6 +151,7 @@ export class BattleScene extends Phaser.Scene {
       enemy: this.add.text(0, 0, '', { ...small, color: '#0b1220' }).setOrigin(0.5),
       player: this.add.text(0, 0, '', { ...small, color: '#0b1220' }).setOrigin(0.5),
     };
+    this.xpText = this.add.text(0, 0, '', { ...small, fontSize: '12px', color: '#93c5fd' });
 
     this.messageText = this.add.text(0, 0, '', {
       fontFamily: 'monospace',
@@ -489,7 +493,7 @@ export class BattleScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const box: Rect = { x: 36, y: height - 156, w: width - 72, h: 130 };
     const foeInfo: Rect = { x: 36, y: 32, w: 380, h: 96 };
-    const playerInfo: Rect = { x: width - 452, y: height - 286, w: 416, h: 118 };
+    const playerInfo: Rect = { x: width - 452, y: height - 320, w: 416, h: 150 };
 
     this.foeSprite.setPosition(width * 0.72, height * 0.28);
     this.foePlatform.setPosition(width * 0.72, height * 0.28 + 58);
@@ -531,7 +535,9 @@ export class BattleScene extends Phaser.Scene {
       .setPosition(rect.x + rect.w - 16, rect.y + 16);
 
     const barX = rect.x + 18;
-    const barY = rect.y + rect.h - 30;
+    // The player panel carries an extra XP gauge below the HP bar, so its bars
+    // sit higher inside a taller panel.
+    const barY = side === 'player' ? rect.y + rect.h - 52 : rect.y + rect.h - 30;
     const barW = rect.w - 36;
     drawGauge(this.hud, barX, barY, barW, 12, fraction, hpColorInt(fraction));
 
@@ -541,6 +547,14 @@ export class BattleScene extends Phaser.Scene {
       this.hud.fillStyle(0x8b5cf6, 1);
       this.hud.fillRoundedRect(barX, barY - 24, 54, 20, 6);
       this.statusText[side].setPosition(barX + 27, barY - 23);
+    }
+
+    if (side === 'player') {
+      const xp = this.experience.get(fighter.id) ?? 0;
+      drawGauge(this.hud, barX, barY + 20, barW, 8, experienceFraction(xp, fighter.level), 0x60a5fa);
+      this.xpText.setText(`XP ${xp}`).setPosition(barX, barY + 30).setVisible(true);
+    } else {
+      this.xpText.setVisible(false);
     }
   }
 

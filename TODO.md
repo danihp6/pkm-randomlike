@@ -61,8 +61,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] `src/scenes/BattleScene.ts`: the XP bar (progression lands in Phase 6); the
-      HP bars, status icons and message box shipped.
 - [ ] Faint, switch, capture and level-up animations; move FX from `moves.png`.
 - [ ] Permadeath feedback: the "was released" beat for a fallen Pokémon, and the
       run-over screen when the last one falls.
@@ -74,8 +72,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 - [ ] `src/engine/run/chain.ts`: route cadence from `src/data/run.ts` —
       mini-boss every N routes, a boss closing each block, the final boss, and
       the infinite mode branch.
-- [ ] `src/engine/run/perms.ts`: what leaves the run state when a Pokémon faints
-      (party, box, caches) — the permadeath enforcement point, with tests.
 - [ ] `src/engine/run/heal.ts`: the heal stop between routes (HP/PP, PC access,
       no resurrection).
 - [ ] Starter pick scene, party/PC screens, and the route HUD (route number, bag,
