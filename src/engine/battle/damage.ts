@@ -20,6 +20,13 @@ export type DamageContext = Readonly<{
   critical?: boolean;
   /** Overrides the type chart, for abilities that pierce an immunity (Scrappy). */
   effectiveness?: number;
+  /** Unaware: ignore the attacker's offensive stages. */
+  ignoreAttackBoosts?: boolean;
+  /** Unaware: ignore the defender's defensive stages. */
+  ignoreDefenseBoosts?: boolean;
+  /** Stat auras (the Ruin quartet) as a multiplier on the final stat. */
+  attackMultiplier?: number;
+  defenseMultiplier?: number;
 }>;
 
 export type DamageResult = Readonly<{
@@ -86,13 +93,24 @@ export function computeDamage(
   const attackStat = physical ? 'atk' : 'spa';
   const defenseStat = physical ? 'def' : 'spd';
 
-  const attack = stagedStat(
-    attacker.stats[attackStat],
-    context.critical ? Math.max(0, attacker.boosts[attackStat]) : attacker.boosts[attackStat],
+  const attackStage = context.ignoreAttackBoosts
+    ? 0
+    : context.critical
+      ? Math.max(0, attacker.boosts[attackStat])
+      : attacker.boosts[attackStat];
+  const defenseStage = context.ignoreDefenseBoosts
+    ? 0
+    : context.critical
+      ? Math.min(0, defender.boosts[defenseStat])
+      : defender.boosts[defenseStat];
+
+  const attack = Math.max(
+    1,
+    Math.floor(stagedStat(attacker.stats[attackStat], attackStage) * (context.attackMultiplier ?? 1)),
   );
-  const defense = stagedStat(
-    defender.stats[defenseStat],
-    context.critical ? Math.min(0, defender.boosts[defenseStat]) : defender.boosts[defenseStat],
+  const defense = Math.max(
+    1,
+    Math.floor(stagedStat(defender.stats[defenseStat], defenseStage) * (context.defenseMultiplier ?? 1)),
   );
 
   const crit = context.critical ?? rollCrit(rng, move.critRatio);

@@ -20,7 +20,7 @@ The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — 310 total (202 port, 48 no-op, 60 excluded)
+## Abilities — 310 total (212 port, 38 no-op, 60 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -43,7 +43,7 @@ catalogue row, not engine code.
 | Battery | `excluded` | doubles/ally only |
 | Battle Armor | `port` | ported in `effects/abilities.ts` |
 | Battle Bond | `no-op` | reachable, not ported yet |
-| Beads of Ruin | `no-op` | reachable, not ported yet |
+| Beads of Ruin | `port` | ported in `effects/abilities.ts` |
 | Beast Boost | `excluded` | no playable species has it |
 | Berserk | `port` | ported in `effects/abilities.ts` |
 | Big Pecks | `port` | ported in `effects/abilities.ts` |
@@ -171,17 +171,17 @@ catalogue row, not engine code.
 | Minus | `excluded` | doubles/ally only |
 | Mirror Armor | `port` | ported in `effects/abilities.ts` |
 | Misty Surge | `port` | ported in `effects/abilities.ts` |
-| Mold Breaker | `no-op` | reachable, not ported yet |
+| Mold Breaker | `port` | ported in `effects/abilities.ts` |
 | Moody | `port` | ported in `effects/abilities.ts` |
 | Motor Drive | `port` | ported in `effects/abilities.ts` |
 | Moxie | `port` | ported in `effects/abilities.ts` |
 | Multiscale | `port` | ported in `effects/abilities.ts` |
 | Multitype | `no-op` | reachable, not ported yet |
 | Mummy | `excluded` | no playable species has it |
-| Mycelium Might | `no-op` | reachable, not ported yet |
+| Mycelium Might | `port` | ported in `effects/abilities.ts` |
 | Natural Cure | `port` | ported in `effects/abilities.ts` |
 | Neuroforce | `excluded` | no playable species has it |
-| Neutralizing Gas | `no-op` | reachable, not ported yet |
+| Neutralizing Gas | `port` | ported in `effects/abilities.ts` |
 | No Guard | `port` | ported in `effects/abilities.ts` |
 | Normalize | `excluded` | no playable species has it |
 | Oblivious | `port` | ported in `effects/abilities.ts` |
@@ -286,10 +286,10 @@ catalogue row, not engine code.
 | Swarm | `port` | ported in `effects/abilities.ts` |
 | Sweet Veil | `port` | ported in `effects/abilities.ts` |
 | Swift Swim | `port` | ported in `effects/abilities.ts` |
-| Sword of Ruin | `no-op` | reachable, not ported yet |
+| Sword of Ruin | `port` | ported in `effects/abilities.ts` |
 | Symbiosis | `excluded` | doubles/ally only |
 | Synchronize | `port` | ported in `effects/abilities.ts` |
-| Tablets of Ruin | `no-op` | reachable, not ported yet |
+| Tablets of Ruin | `port` | ported in `effects/abilities.ts` |
 | Tangled Feet | `port` | ported in `effects/abilities.ts` |
 | Tangling Hair | `port` | ported in `effects/abilities.ts` |
 | Technician | `port` | ported in `effects/abilities.ts` |
@@ -297,7 +297,7 @@ catalogue row, not engine code.
 | Tera Shell | `excluded` | Terastal mechanic (cut) |
 | Tera Shift | `excluded` | Terastal mechanic (cut) |
 | Teraform Zero | `excluded` | Terastal mechanic (cut) |
-| Teravolt | `no-op` | reachable, not ported yet |
+| Teravolt | `port` | ported in `effects/abilities.ts` |
 | Thermal Exchange | `port` | ported in `effects/abilities.ts` |
 | Thick Fat | `port` | ported in `effects/abilities.ts` |
 | Tinted Lens | `port` | ported in `effects/abilities.ts` |
@@ -310,12 +310,12 @@ catalogue row, not engine code.
 | Transistor | `port` | ported in `effects/abilities.ts` |
 | Triage | `port` | ported in `effects/abilities.ts` |
 | Truant | `port` | ported in `effects/abilities.ts` |
-| Turboblaze | `no-op` | reachable, not ported yet |
-| Unaware | `no-op` | reachable, not ported yet |
+| Turboblaze | `port` | ported in `effects/abilities.ts` |
+| Unaware | `port` | ported in `effects/abilities.ts` |
 | Unburden | `port` | ported in `effects/abilities.ts` |
 | Unnerve | `port` | ported in `effects/abilities.ts` |
 | Unseen Fist | `no-op` | reachable, not ported yet |
-| Vessel of Ruin | `no-op` | reachable, not ported yet |
+| Vessel of Ruin | `port` | ported in `effects/abilities.ts` |
 | Victory Star | `excluded` | no playable species has it |
 | Vital Spirit | `port` | ported in `effects/abilities.ts` |
 | Volt Absorb | `port` | ported in `effects/abilities.ts` |

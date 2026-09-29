@@ -7,6 +7,7 @@ import {
   BOOST_IDS,
   type BattleFighter,
   type BoostId,
+  type MoveSlot,
 } from './fighter';
 import {
   makeContext,
@@ -35,7 +36,7 @@ import { applyBoostEffect, applyStatusEffect } from './effects/apply';
 import { isProtectMove, protectBlocks } from './effects/moves';
 import { setTerrain, terrainFromMove, terrainHeal, tickTerrain } from './effects/terrain';
 import { setWeather, tickWeather, weatherChip, weatherFromMove, weatherLabel } from './effects/weather';
-import { computeDamage, rollCrit, type DamageResult } from './damage';
+import { computeDamage, rollCrit, type DamageContext, type DamageResult } from './damage';
 import { orderActions } from './order';
 import {
   selectedMove,
@@ -484,7 +485,73 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
   const selected = chosenMove(attacker, command);
   if (!selected) return;
   const { move, slot } = selected;
+  state.abilityPierce = piercesTargetAbility(state, side, attacker, move) ? attacker : null;
+  try {
+    resolveMove(state, side, attacker, move, slot);
+  } finally {
+    state.abilityPierce = null;
+  }
+}
 
+/** Mold Breaker, Teravolt and Turboblaze pierce the foe's ability; Mycelium Might only for status moves. */
+function piercesTargetAbility(
+  state: BattleState,
+  side: SideId,
+  attacker: BattleFighter,
+  move: Move,
+): boolean {
+  if (opponent(state, side).ability === 'Neutralizing Gas') return false;
+  if (['Mold Breaker', 'Teravolt', 'Turboblaze'].includes(attacker.ability)) return true;
+  return attacker.ability === 'Mycelium Might' && move.category === 'Status';
+}
+
+function gasSuppresses(state: BattleState, side: SideId): boolean {
+  return opponent(state, side).ability === 'Neutralizing Gas';
+}
+
+/** Unaware and the Ruin auras, after ability suppression, as damage-context flags. */
+function damageStatContext(
+  state: BattleState,
+  side: SideId,
+  attacker: BattleFighter,
+  defender: BattleFighter,
+): Pick<
+  DamageContext,
+  'ignoreAttackBoosts' | 'ignoreDefenseBoosts' | 'attackMultiplier' | 'defenseMultiplier'
+> {
+  const foeSide = opponentOf(side);
+  const alive = (fighter: BattleFighter, fighterSide: SideId): boolean =>
+    state.abilityPierce !== fighter && !gasSuppresses(state, fighterSide);
+  const attackerUnaware = attacker.ability === 'Unaware' && !gasSuppresses(state, side);
+  const defenderUnaware = defender.ability === 'Unaware' && alive(defender, foeSide);
+
+  let attackMultiplier = 1;
+  let defenseMultiplier = 1;
+  if (alive(defender, foeSide)) {
+    if (defender.ability === 'Tablets of Ruin' || defender.ability === 'Vessel of Ruin') {
+      attackMultiplier *= 0.75;
+    }
+  }
+  if (alive(attacker, side)) {
+    if (attacker.ability === 'Sword of Ruin' || attacker.ability === 'Beads of Ruin') {
+      defenseMultiplier *= 0.75;
+    }
+  }
+  return {
+    ignoreAttackBoosts: defenderUnaware,
+    ignoreDefenseBoosts: attackerUnaware,
+    attackMultiplier,
+    defenseMultiplier,
+  };
+}
+
+function resolveMove(
+  state: BattleState,
+  side: SideId,
+  attacker: BattleFighter,
+  move: Move,
+  slot: MoveSlot | null,
+): void {
   // Truant alternates: after a turn in which it acts, the next one is lost.
   if (attacker.ability === 'Truant') {
     if (attacker.volatiles.truant) {
@@ -572,6 +639,7 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
   if (move.category !== 'Status' && move.basePower > 0) {
     const rolled = multihitHits(move, state.rng);
     const hits = runModifyMultihit(makeContext(state, side, { source: attacker, target: defender, move }), move, rolled);
+    const statContext = damageStatContext(state, side, attacker, defender);
     for (let hit = 0; hit < hits; hit++) {
       const target = opponent(state, side);
       if (target.hp <= 0) break;
@@ -591,6 +659,7 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
         weather: state.weather,
         terrain: state.terrain,
         critical: crit,
+        ...statContext,
         effectiveness: runModifyEffectiveness(
           makeContext(state, side, { source: attacker, target, move }),
           move,
@@ -632,6 +701,8 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
   }
 
   applyMoveEffects(state, side, move, totalDamage, totalDamage > 0);
+  // Contact reactions are not "the move's effect", so Mold Breaker stops piercing here.
+  state.abilityPierce = null;
   runAfterMove(hitContext, move, totalDamage > 0);
   maybeSelfSwitch(state, side, attacker, move);
 }
