@@ -90,6 +90,10 @@ One capture attempt per route (a run-level counter, not a per-battle one).
   `routeLevelCap(route)`. The cap rises with the route chain so the next route
   is always a step up. Evolution blocked by the cap waits until the cap allows
   the level.
+- The curve is medium-fast (`level^3`): the generated dex carries no
+  base-experience yield, so `experienceAward` scales with the defeated Pokémon's
+  level instead. XP lives on the run member (`RunPokemon`), not the battle
+  snapshot, so it survives a battle; the whole progression is RNG-free (D11).
 - Trainer rosters are generated at the route's level band, never above the cap.
 
 ## 8. Ordering and determinism
