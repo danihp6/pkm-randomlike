@@ -20,14 +20,14 @@ The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — 310 total (212 port, 38 no-op, 60 excluded)
+## Abilities — 310 total (220 port, 30 no-op, 60 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
 | Adaptability | `port` | ported in `effects/abilities.ts` |
 | Aerilate | `excluded` | no playable species has it |
 | Aftermath | `port` | ported in `effects/abilities.ts` |
-| Air Lock | `no-op` | reachable, not ported yet |
+| Air Lock | `port` | ported in `effects/abilities.ts` |
 | Analytic | `port` | ported in `effects/abilities.ts` |
 | Anger Point | `port` | ported in `effects/abilities.ts` |
 | Anger Shell | `port` | ported in `effects/abilities.ts` |
@@ -53,7 +53,7 @@ catalogue row, not engine code.
 | Chilling Neigh | `port` | ported in `effects/abilities.ts` |
 | Chlorophyll | `port` | ported in `effects/abilities.ts` |
 | Clear Body | `port` | ported in `effects/abilities.ts` |
-| Cloud Nine | `no-op` | reachable, not ported yet |
+| Cloud Nine | `port` | ported in `effects/abilities.ts` |
 | Color Change | `excluded` | no playable species has it |
 | Comatose | `port` | ported in `effects/abilities.ts` |
 | Commander | `excluded` | doubles/ally only |
@@ -65,8 +65,8 @@ catalogue row, not engine code.
 | Cotton Down | `excluded` | no playable species has it |
 | Cud Chew | `no-op` | reachable, not ported yet |
 | Curious Medicine | `no-op` | reachable, not ported yet |
-| Cursed Body | `no-op` | reachable, not ported yet |
-| Cute Charm | `no-op` | reachable, not ported yet |
+| Cursed Body | `port` | ported in `effects/abilities.ts` |
+| Cute Charm | `port` | ported in `effects/abilities.ts` |
 | Damp | `port` | ported in `effects/abilities.ts` |
 | Dancer | `no-op` | reachable, not ported yet |
 | Dark Aura | `excluded` | no playable species has it |
@@ -107,7 +107,7 @@ catalogue row, not engine code.
 | Full Metal Body | `port` | ported in `effects/abilities.ts` |
 | Fur Coat | `port` | ported in `effects/abilities.ts` |
 | Gale Wings | `port` | ported in `effects/abilities.ts` |
-| Galvanize | `no-op` | reachable, not ported yet |
+| Galvanize | `port` | ported in `effects/abilities.ts` |
 | Gluttony | `no-op` | reachable, not ported yet |
 | Good as Gold | `port` | ported in `effects/abilities.ts` |
 | Gooey | `port` | ported in `effects/abilities.ts` |
@@ -156,7 +156,7 @@ catalogue row, not engine code.
 | Limber | `port` | ported in `effects/abilities.ts` |
 | Lingering Aroma | `port` | ported in `effects/abilities.ts` |
 | Liquid Ooze | `port` | ported in `effects/abilities.ts` |
-| Liquid Voice | `no-op` | reachable, not ported yet |
+| Liquid Voice | `port` | ported in `effects/abilities.ts` |
 | Long Reach | `port` | ported in `effects/abilities.ts` |
 | Magic Bounce | `no-op` | reachable, not ported yet |
 | Magic Guard | `port` | ported in `effects/abilities.ts` |
@@ -195,7 +195,7 @@ catalogue row, not engine code.
 | Perish Body | `excluded` | no playable species has it |
 | Pickpocket | `port` | ported in `effects/abilities.ts` |
 | Pickup | `no-op` | reachable, not ported yet |
-| Pixilate | `no-op` | reachable, not ported yet |
+| Pixilate | `port` | ported in `effects/abilities.ts` |
 | Plus | `excluded` | doubles/ally only |
 | Poison Heal | `port` | ported in `effects/abilities.ts` |
 | Poison Point | `port` | ported in `effects/abilities.ts` |
@@ -314,7 +314,7 @@ catalogue row, not engine code.
 | Unaware | `port` | ported in `effects/abilities.ts` |
 | Unburden | `port` | ported in `effects/abilities.ts` |
 | Unnerve | `port` | ported in `effects/abilities.ts` |
-| Unseen Fist | `no-op` | reachable, not ported yet |
+| Unseen Fist | `port` | ported in `effects/abilities.ts` |
 | Vessel of Ruin | `port` | ported in `effects/abilities.ts` |
 | Victory Star | `excluded` | no playable species has it |
 | Vital Spirit | `port` | ported in `effects/abilities.ts` |

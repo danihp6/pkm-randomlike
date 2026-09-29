@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getMove } from '../../../data/dex';
 import { Rng } from '../../rng';
 import { createFighter, type BattleFighter } from '../fighter';
-import { activeFighter, createBattle, opponentOf, type BattleState, type SideId } from '../state';
+import { activeFighter, createBattle, effectiveWeather, opponentOf, type BattleState, type SideId } from '../state';
 import {
   getEffect,
   makeContext,
@@ -14,6 +14,7 @@ import {
   runModifyDamage,
   runModifyEffectiveness,
   runFractionalPriority,
+  runModifyMoveType,
   runModifyMultihit,
   runModifyPriority,
   runModifyRecoil,
@@ -31,6 +32,9 @@ import { abilityEffects } from './abilities';
 import { performSwitch, takeTurn } from '../turn';
 import { rollRun } from '../runAway';
 import { hitChance } from '../modifiers';
+import { protectBlocks } from './moves';
+import { legalMoveIndices } from '../commands';
+import { beforeMoveVolatile } from '../volatile';
 
 function fighter(id: string, speciesId: string, ability: string, moves?: readonly string[]): BattleFighter {
   return createFighter({
@@ -1553,5 +1557,108 @@ describe('ability suppression and auras (batch 10)', () => {
     const vesselOff = makeBattle(fighter('player', 'charmander', 'Blaze', ['ember']), fighter('enemy', 'tinglu', 'Vessel of Ruin', ['growl']), 42);
     activeFighter(vesselOff, 'enemy').ability = 'Blaze';
     expect(hpLost(vessel)).toBeLessThan(hpLost(vesselOff));
+  });
+});
+
+describe('weather and type abilities (batch 11)', () => {
+  it('Air Lock and Cloud Nine nullify weather effects', () => {
+    const airLock = makeBattle(fighter('player', 'rayquaza', 'Air Lock', ['growl']), fighter('enemy', 'blissey', 'Natural Cure', ['growl']));
+    airLock.weather = 'sand';
+    airLock.weatherTurns = 5;
+    const before = activeFighter(airLock, 'player').hp;
+    takeTurn(airLock, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(airLock, 'player').hp).toBe(before);
+    expect(effectiveWeather(airLock)).toBeNull();
+
+    const cloud = makeBattle(fighter('player', 'psyduck', 'Cloud Nine', ['growl']), fighter('enemy', 'blissey', 'Natural Cure', ['growl']));
+    cloud.weather = 'sand';
+    cloud.weatherTurns = 5;
+    expect(effectiveWeather(cloud)).toBeNull();
+    expect(cloud.weather).toBe('sand');
+  });
+
+  it('Air Lock removes the weather damage modifier', () => {
+    const on = makeBattle(fighter('player', 'rayquaza', 'Air Lock', ['ember']), fighter('enemy', 'blissey', 'Natural Cure', ['growl']), 42);
+    const off = makeBattle(fighter('player', 'rayquaza', 'Air Lock', ['ember']), fighter('enemy', 'blissey', 'Natural Cure', ['growl']), 42);
+    activeFighter(off, 'player').ability = 'Blaze';
+    for (const state of [on, off]) {
+      state.weather = 'sun';
+      state.weatherTurns = 5;
+    }
+    const foeOn = activeFighter(on, 'enemy');
+    const foeOff = activeFighter(off, 'enemy');
+    const beforeOn = foeOn.hp;
+    const beforeOff = foeOff.hp;
+    takeTurn(on, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    takeTurn(off, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(beforeOn - foeOn.hp).toBeLessThan(beforeOff - foeOff.hp);
+  });
+});
+
+describe('type-changing and contact volatiles (batch 11)', () => {
+  it('Galvanize, Pixilate and Liquid Voice retype the move', () => {
+    const galvanize = makeBattle(fighter('player', 'geodudealola', 'Galvanize'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyMoveType(moveCtxOf(galvanize, 'player', 'tackle'), getMove('tackle')!)).toBe('Electric');
+
+    const pixilate = makeBattle(fighter('player', 'sylveon', 'Pixilate'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyMoveType(moveCtxOf(pixilate, 'player', 'tackle'), getMove('tackle')!)).toBe('Fairy');
+
+    const voice = makeBattle(fighter('player', 'primarina', 'Liquid Voice'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyMoveType(moveCtxOf(voice, 'player', 'hypervoice'), getMove('hypervoice')!)).toBe('Water');
+    expect(runModifyMoveType(moveCtxOf(voice, 'player', 'tackle'), getMove('tackle')!)).toBe('Normal');
+  });
+
+  it('Galvanize makes a Normal move Electric, so Ground is immune', () => {
+    const galvanize = makeBattle(fighter('player', 'geodudealola', 'Galvanize', ['tackle']), fighter('enemy', 'sandshrew', 'Sand Veil', ['growl']));
+    const neutral = makeBattle(fighter('player', 'geodudealola', 'Galvanize', ['tackle']), fighter('enemy', 'sandshrew', 'Sand Veil', ['growl']));
+    activeFighter(neutral, 'player').ability = 'Sturdy';
+    const foeG = activeFighter(galvanize, 'enemy');
+    const foeN = activeFighter(neutral, 'enemy');
+    const beforeG = foeG.hp;
+    const beforeN = foeN.hp;
+    takeTurn(galvanize, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    takeTurn(neutral, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(beforeG - foeG.hp).toBe(0);
+    expect(beforeN - foeN.hp).toBeGreaterThan(0);
+  });
+
+  it('Unseen Fist breaks through contact protection', () => {
+    const state = makeBattle(fighter('player', 'urshifu', 'Unseen Fist', ['tackle', 'watergun']), fighter('enemy', 'blissey', 'Natural Cure'));
+    activeFighter(state, 'enemy').volatiles.protect = 'protect';
+    expect(protectBlocks(state, 'player', getMove('tackle')!)).toBe(false);
+    expect(protectBlocks(state, 'player', getMove('watergun')!)).toBe(true);
+
+    const control = makeBattle(fighter('player', 'charmander', 'Blaze', ['tackle']), fighter('enemy', 'blissey', 'Natural Cure'));
+    activeFighter(control, 'enemy').volatiles.protect = 'protect';
+    expect(protectBlocks(control, 'player', getMove('tackle')!)).toBe(true);
+  });
+
+  it('Cursed Body disables the contact attacker last move', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze', ['tackle', 'ember']), fighter('enemy', 'gengar', 'Cursed Body'), 13);
+    const attacker = activeFighter(state, 'player');
+    attacker.lastMoveId = 'tackle';
+    for (let i = 0; i < 50 && !attacker.volatiles.disabledMove; i++) {
+      runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    }
+    expect(attacker.volatiles.disabledMove).toBe('tackle');
+    expect(legalMoveIndices(attacker)).toEqual([1]);
+  });
+
+  it('Cute Charm infatuates the contact attacker', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze', ['tackle']), fighter('enemy', 'clefairy', 'Cute Charm'), 14);
+    const attacker = activeFighter(state, 'player');
+    for (let i = 0; i < 50 && !attacker.volatiles.attract; i++) {
+      runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    }
+    expect(attacker.volatiles.attract).toBe(true);
+
+    let sawAttracted = false;
+    for (let seed = 0; seed < 20 && !sawAttracted; seed++) {
+      const victim = fighter('probe', 'charmander', 'Blaze');
+      victim.volatiles.attract = true;
+      const check = beforeMoveVolatile(victim, new Rng(seed));
+      if (check && 'attracted' in check) sawAttracted = true;
+    }
+    expect(sawAttracted).toBe(true);
   });
 });

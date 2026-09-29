@@ -2,8 +2,8 @@ import { effectiveness, getMove } from '../../../data/dex';
 import { getItem } from '../../../data/items';
 import { applyDamage, applyHeal, isGrounded, stagedStat, type BattleFighter, type BoostId, type StatusId } from '../fighter';
 import { cureStatus, statusName } from '../status';
-import { opponentOf, pushEvent, pushText, type WeatherId } from '../state';
-import { applyFlinch, applyConfusion } from '../volatile';
+import { opponentOf, pushEvent, pushText, effectiveWeather, type WeatherId } from '../state';
+import { applyFlinch, applyConfusion, applyAttract } from '../volatile';
 import { applyBoostEffect, applyStatusEffect, statLabel } from './apply';
 import { setTerrain } from './terrain';
 import { setWeather } from './weather';
@@ -239,10 +239,10 @@ function drySkin(): EffectHandlers {
     },
     onResidual: (ctx) => {
       if (ctx.owner.hp <= 0) return;
-      if (ctx.state.weather === 'rain') {
+      if (effectiveWeather(ctx.state) === 'rain') {
         healHolder(ctx, 8);
         pushText(ctx.state, `${ctx.owner.name} absorbed water with Dry Skin!`);
-      } else if (ctx.state.weather === 'sun') {
+      } else if (effectiveWeather(ctx.state) === 'sun') {
         damageHolder(ctx, 8);
         pushText(ctx.state, `${ctx.owner.name} was hurt by the harsh sunlight!`);
       }
@@ -300,7 +300,7 @@ function weatherSpeed(weather: WeatherId, multiplier: number): EffectHandlers {
   return {
     onModifySpe: (ctx, speed) => {
       if (ctx.owner !== ctx.source) return;
-      if (ctx.state.weather !== weather) return;
+      if (effectiveWeather(ctx.state) !== weather) return;
       return Math.max(1, Math.floor(speed * multiplier));
     },
   };
@@ -442,7 +442,7 @@ function hydration(): EffectHandlers {
   return {
     onResidual: (ctx) => {
       const holder = ctx.owner;
-      if (holder.hp <= 0 || holder.status === null || ctx.state.weather !== 'rain') return;
+      if (holder.hp <= 0 || holder.status === null || effectiveWeather(ctx.state) !== 'rain') return;
       const cured = cureStatus(holder);
       if (!cured) return;
       pushEvent(ctx.state, { kind: 'cure', side: ctx.side, status: cured });
@@ -454,7 +454,7 @@ function hydration(): EffectHandlers {
 function leafGuard(): EffectHandlers {
   return {
     onStatus: (ctx, payload) => {
-      if (ctx.owner !== ctx.source || ctx.state.weather !== 'sun') return;
+      if (ctx.owner !== ctx.source || effectiveWeather(ctx.state) !== 'sun') return;
       pushText(
         ctx.state,
         `${ctx.owner.name}'s Leaf Guard prevents ${statusName(payload.status as StatusId)}!`,
@@ -813,7 +813,7 @@ function marvelScale(): EffectHandlers {
 function sandForce(): EffectHandlers {
   return {
     onModifyDamage: (ctx, payload) => {
-      if (ctx.owner !== ctx.source || ctx.state.weather !== 'sand') return;
+      if (ctx.owner !== ctx.source || effectiveWeather(ctx.state) !== 'sand') return;
       if (!['Rock', 'Ground', 'Steel'].includes(payload.move.type)) return;
       return scaledDamage(payload.damage, 1.3);
     },
@@ -1064,11 +1064,11 @@ function solarPower(): EffectHandlers {
   return {
     onModifyDamage: (ctx, payload) => {
       if (ctx.owner !== ctx.source || payload.move.category !== 'Special') return;
-      if (ctx.state.weather !== 'sun') return;
+      if (effectiveWeather(ctx.state) !== 'sun') return;
       return scaledDamage(payload.damage, 1.5);
     },
     onResidual: (ctx) => {
-      if (ctx.owner.hp <= 0 || ctx.state.weather !== 'sun') return;
+      if (ctx.owner.hp <= 0 || effectiveWeather(ctx.state) !== 'sun') return;
       damageHolder(ctx, 8);
       pushText(ctx.state, `${ctx.owner.name} is hurt by the harsh sunlight!`);
     },
@@ -1688,6 +1688,49 @@ function myceliumMight(): EffectHandlers {
   };
 }
 
+/** Galvanize and Pixilate turn Normal moves into another type. */
+function ateMove(fromType: string, toType: string): EffectHandlers {
+  return {
+    onModifyMoveType: (ctx, move) => {
+      if (ctx.owner !== ctx.source || move.type !== fromType) return;
+      return toType;
+    },
+  };
+}
+
+/** Liquid Voice turns sound moves into Water. */
+function liquidVoice(): EffectHandlers {
+  return {
+    onModifyMoveType: (ctx, move) => {
+      if (ctx.owner !== ctx.source || !move.flags.sound) return;
+      return 'Water';
+    },
+  };
+}
+
+/** Cursed Body disables the contact attacker's last move 30% of the time. */
+function cursedBody(): EffectHandlers {
+  return contactReaction((ctx, attacker) => {
+    if (ctx.rng.int(1, 100) > 30) return;
+    const moveId = attacker.lastMoveId;
+    if (!moveId || attacker.volatiles.disabledMove === moveId) return;
+    attacker.volatiles.disabledMove = moveId;
+    attacker.volatiles.disableTurns = 4;
+    const name = getMove(moveId)?.name ?? moveId;
+    pushText(ctx.state, `${attacker.name}'s ${name} was disabled by Cursed Body!`);
+  });
+}
+
+/** Cute Charm infatuates the contact attacker 30% of the time. */
+function cuteCharm(): EffectHandlers {
+  return contactReaction((ctx, attacker) => {
+    if (ctx.rng.int(1, 100) > 30) return;
+    if (applyAttract(attacker)) {
+      pushText(ctx.state, `${attacker.name} fell in love with ${ctx.owner.name}'s Cute Charm!`);
+    }
+  });
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -1755,8 +1798,8 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
 
   ['compoundeyes', accuracyModifier(1.3, (ctx) => ctx.owner === ctx.source)],
   ['hustle', hustle()],
-  ['sandveil', accuracyModifier(0.8, (ctx) => ctx.owner === ctx.target && ctx.state.weather === 'sand')],
-  ['snowcloak', accuracyModifier(0.8, (ctx) => ctx.owner === ctx.target && ctx.state.weather === 'snow')],
+  ['sandveil', accuracyModifier(0.8, (ctx) => ctx.owner === ctx.target && effectiveWeather(ctx.state) === 'sand')],
+  ['snowcloak', accuracyModifier(0.8, (ctx) => ctx.owner === ctx.target && effectiveWeather(ctx.state) === 'snow')],
 
   ['adaptability', adaptability()],
   ['tintedlens', outgoingMultiplier(2, (payload) => payload.effectiveness < 1)],
@@ -1917,6 +1960,18 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['beadsofruin', {}],
   ['vesselofruin', {}],
   ['myceliummight', myceliumMight()],
+
+  ['galvanize', ateMove('Normal', 'Electric')],
+  ['pixilate', ateMove('Normal', 'Fairy')],
+  ['liquidvoice', liquidVoice()],
+  ['cursedbody', cursedBody()],
+  ['cutecharm', cuteCharm()],
+
+  // Air Lock / Cloud Nine and Unseen Fist act at the call site (effectiveWeather,
+  // protectBlocks).
+  ['airlock', {}],
+  ['cloudnine', {}],
+  ['unseenfist', {}],
 
   // Passive effects whose behaviour lives at the call site: Guard Dog in
   // Intimidate, Early Bird and Corrosion in status.ts, Liquid Ooze in the turn

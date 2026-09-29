@@ -12,6 +12,12 @@ export function applyFlinch(fighter: BattleFighter): void {
   fighter.volatiles.flinched = true;
 }
 
+export function applyAttract(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.attract) return false;
+  fighter.volatiles.attract = true;
+  return true;
+}
+
 export function applyLeechSeed(fighter: BattleFighter): boolean {
   if (fighter.volatiles.leechSeed) return false;
   fighter.volatiles.leechSeed = true;
@@ -44,6 +50,7 @@ export function isTaunted(fighter: BattleFighter): boolean {
 
 export type VolatileMoveCheck =
   | Readonly<{ flinched: true }>
+  | Readonly<{ attracted: true }>
   | Readonly<{ confusionDamage: number }>
   | Readonly<{ confusionEnded: true }>
   | null;
@@ -52,6 +59,9 @@ export function beforeMoveVolatile(fighter: BattleFighter, rng: Rng): VolatileMo
   if (fighter.volatiles.flinched) {
     fighter.volatiles.flinched = false;
     return { flinched: true };
+  }
+  if (fighter.volatiles.attract && rng.next() < 0.5) {
+    return { attracted: true };
   }
   if (fighter.volatiles.confusion > 0) {
     fighter.volatiles.confusion -= 1;
@@ -70,11 +80,15 @@ export function leechSeedDamage(fighter: BattleFighter): number {
   return Math.max(1, Math.floor(fighter.maxHp / 8));
 }
 
-/** Decrements Taunt/Encore, clears the spent flinch flag and drops protection. */
+/** Decrements Taunt/Encore and the disable timer, clears the spent flinch flag and drops protection. */
 export function endOfTurnVolatile(fighter: BattleFighter): void {
   fighter.volatiles.flinched = false;
   fighter.volatiles.protect = null;
   if (fighter.volatiles.taunt > 0) fighter.volatiles.taunt -= 1;
+  if (fighter.volatiles.disableTurns > 0) {
+    fighter.volatiles.disableTurns -= 1;
+    if (fighter.volatiles.disableTurns === 0) fighter.volatiles.disabledMove = null;
+  }
   if (fighter.volatiles.encore > 0) {
     fighter.volatiles.encore -= 1;
     if (fighter.volatiles.encore === 0) fighter.volatiles.encoreMove = null;

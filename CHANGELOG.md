@@ -336,3 +336,16 @@ file is the human-readable summary.
       `ignoreAttackBoosts`, `ignoreDefenseBoosts`, `attackMultiplier` and
       `defenseMultiplier`. Coverage at 251 ports (212 abilities); 370 tests pass;
       `npm run build` clean.
+- [x] `src/engine/battle/effects/abilities.ts`: batch 11, 8 more abilities —
+      **Air Lock** and **Cloud Nine** (`effectiveWeather` in `state.ts` nulls the
+      weather for every effect while their holder is active, from damage and
+      residual chip to Chlorophyll/Swift Swim/Weather Heal/Sand Veil, without
+      stopping the weather timer), the **-ate** trio **Galvanize**, **Pixilate**
+      and **Liquid Voice** (a new `onModifyMoveType` hook resolved before any
+      immunity check, so the move is treated as its new type for the whole turn),
+      **Unseen Fist** (contact moves break through Protect in `protectBlocks`),
+      and the contact punishers **Cursed Body** (a `disabledMove` volatile that
+      `legalMoveIndices`/`selectedMove`/`validateCommand` now honour, ticking down
+      in `endOfTurnVolatile`) and **Cute Charm** (an `attract` volatile that adds a
+      50% lost turn to `beforeMoveVolatile`). Coverage at 259 ports (220
+      abilities); 377 tests pass; `npm run build` clean.

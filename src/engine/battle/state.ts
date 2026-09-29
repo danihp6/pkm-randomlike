@@ -152,6 +152,21 @@ export function isOver(state: BattleState): boolean {
   return state.winner !== null;
 }
 
+/** Air Lock and Cloud Nine nullify weather effects while their holder is active. */
+export function weatherSuppressed(state: BattleState): boolean {
+  return SIDE_IDS.some((side) => {
+    const fighter = activeFighter(state, side);
+    if (fighter.ability !== 'Air Lock' && fighter.ability !== 'Cloud Nine') return false;
+    const foe = activeFighter(state, opponentOf(side));
+    return foe.ability !== 'Neutralizing Gas';
+  });
+}
+
+/** The weather as far as its effects are concerned (null under Air Lock / Cloud Nine). */
+export function effectiveWeather(state: BattleState): WeatherId | null {
+  return weatherSuppressed(state) ? null : state.weather;
+}
+
 export function hasHealthy(state: BattleState, side: SideId): boolean {
   return state.sides[side].party.some((fighter) => fighter.hp > 0);
 }

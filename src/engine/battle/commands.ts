@@ -26,11 +26,11 @@ export function findMoveIndex(fighter: BattleFighter, moveId: string): number {
   return fighter.moves.findIndex((slot) => slot.moveId === moveId);
 }
 
-/** Indices the active Pokémon may actually pick, honouring PP and Encore. */
+/** Indices the active Pokémon may actually pick, honouring PP, Encore and disable. */
 export function legalMoveIndices(fighter: BattleFighter): readonly number[] {
   const usable = fighter.moves
     .map((slot, index) => ({ slot, index }))
-    .filter((entry) => entry.slot.pp > 0);
+    .filter((entry) => entry.slot.pp > 0 && entry.slot.moveId !== fighter.volatiles.disabledMove);
 
   if (fighter.volatiles.encoreMove !== null) {
     const locked = usable.filter((entry) => entry.slot.moveId === fighter.volatiles.encoreMove);
@@ -41,14 +41,17 @@ export function legalMoveIndices(fighter: BattleFighter): readonly number[] {
 
 export type SelectedMove = Readonly<{ move: Move; slot: MoveSlot | null }>;
 
-/** The chosen move, or Struggle when no move has PP left. */
+/** The chosen move, or Struggle when no move is usable. */
 export function selectedMove(fighter: BattleFighter, command: FightCommand): SelectedMove | null {
   const slot = fighter.moves[command.moveIndex];
-  if (slot && slot.pp > 0) {
+  if (slot && slot.pp > 0 && slot.moveId !== fighter.volatiles.disabledMove) {
     const move = getMove(slot.moveId);
     if (move) return { move, slot };
   }
-  if (!fighter.moves.some((entry) => entry.pp > 0)) {
+  const anyUsable = fighter.moves.some(
+    (entry) => entry.pp > 0 && entry.moveId !== fighter.volatiles.disabledMove,
+  );
+  if (!anyUsable) {
     const struggle = getMove('struggle');
     if (struggle) return { move: struggle, slot: null };
   }
@@ -94,6 +97,9 @@ export function validateCommand(
         return 'There is no such move.';
       }
       const legal = legalMoveIndices(fighter);
+      if (fighter.moves[command.moveIndex]?.moveId === fighter.volatiles.disabledMove) {
+        return 'That move is disabled!';
+      }
       if (legal.length > 0 && !legal.includes(command.moveIndex)) {
         if (isTaunted(fighter) && getMove(fighter.moves[command.moveIndex]?.moveId ?? '')?.category === 'Status') {
           return 'The Pokémon is taunted and cannot use status moves.';

@@ -30,6 +30,7 @@ import {
   runTrySubstitute,
   runTryVolatile,
   runModifySecondaryChance,
+  runModifyMoveType,
 } from './effects/registry';
 import { rollHitWith } from './modifiers';
 import { applyBoostEffect, applyStatusEffect } from './effects/apply';
@@ -49,6 +50,7 @@ import {
 import {
   SIDE_IDS,
   activeFighter,
+  effectiveWeather,
   finishBattle,
   hasHealthy,
   opponent,
@@ -378,7 +380,7 @@ function chargeVerb(moveId: string): string {
 /** Solar Beam and Solar Blade skip the charge in harsh sunlight. */
 function chargesInstantly(state: BattleState, move: Move): boolean {
   if (move.id !== 'solarbeam' && move.id !== 'solarblade') return false;
-  return state.weather === 'sun';
+  return effectiveWeather(state) === 'sun';
 }
 
 /** The move a charging fighter is locked into, ignoring the chosen command. */
@@ -588,6 +590,10 @@ function resolveMove(
     pushText(state, `${attacker.name} flinched and couldn't move!`);
     return;
   }
+  if (volatileCheck && 'attracted' in volatileCheck) {
+    pushText(state, `${attacker.name} is infatuated and can't bring itself to attack!`);
+    return;
+  }
   if (volatileCheck && 'confusionDamage' in volatileCheck) {
     if (slot) slot.pp = Math.max(0, slot.pp - ppCost(state, side, move));
     attacker.lastMoveId = move.id;
@@ -620,50 +626,58 @@ function resolveMove(
     return;
   }
 
-  const hitContext = makeContext(state, side, { source: attacker, target: defender, move });
-  if (!runTryHit(hitContext, move)) return;
+  // Type-changing abilities (Galvanize, Pixilate, Liquid Voice) apply before
+  // any immunity check, so the move is treated as its new type throughout.
+  const moveType = runModifyMoveType(
+    makeContext(state, side, { source: attacker, target: defender, move }),
+    move,
+  );
+  const activeMove: Move = moveType === move.type ? move : { ...move, type: moveType };
+
+  const hitContext = makeContext(state, side, { source: attacker, target: defender, move: activeMove });
+  if (!runTryHit(hitContext, activeMove)) return;
 
   // Protean and Libero change the user's type, once per switch-in in Gen 9.
   if ((attacker.ability === 'Protean' || attacker.ability === 'Libero') && !attacker.volatiles.proteanUsed) {
     attacker.volatiles.proteanUsed = true;
-    attacker.types = [move.type];
-    pushText(state, `${attacker.name} transformed into the ${move.type} type!`);
+    attacker.types = [activeMove.type];
+    pushText(state, `${attacker.name} transformed into the ${activeMove.type} type!`);
   }
 
   if (COUNTER_MOVES.has(move.id)) {
-    useCounterMove(state, side, attacker, defender, move);
+    useCounterMove(state, side, attacker, defender, activeMove);
     return;
   }
 
   let totalDamage = 0;
-  if (move.category !== 'Status' && move.basePower > 0) {
-    const rolled = multihitHits(move, state.rng);
-    const hits = runModifyMultihit(makeContext(state, side, { source: attacker, target: defender, move }), move, rolled);
+  if (activeMove.category !== 'Status' && activeMove.basePower > 0) {
+    const rolled = multihitHits(activeMove, state.rng);
+    const hits = runModifyMultihit(makeContext(state, side, { source: attacker, target: defender, move: activeMove }), activeMove, rolled);
     const statContext = damageStatContext(state, side, attacker, defender);
     for (let hit = 0; hit < hits; hit++) {
       const target = opponent(state, side);
       if (target.hp <= 0) break;
       const crit = runModifyCrit(
-        makeContext(state, side, { source: attacker, target, move }),
-        move,
+        makeContext(state, side, { source: attacker, target, move: activeMove }),
+        activeMove,
         rollCrit(
           state.rng,
           runModifyCritRatio(
-            makeContext(state, side, { source: attacker, target, move }),
-            move,
-            move.critRatio,
+            makeContext(state, side, { source: attacker, target, move: activeMove }),
+            activeMove,
+            activeMove.critRatio,
           ),
         ),
       );
-      const result = computeDamage(attacker, target, move, state.rng, {
-        weather: state.weather,
+      const result = computeDamage(attacker, target, activeMove, state.rng, {
+        weather: effectiveWeather(state),
         terrain: state.terrain,
         critical: crit,
         ...statContext,
         effectiveness: runModifyEffectiveness(
-          makeContext(state, side, { source: attacker, target, move }),
-          move,
-          effectiveness(move.type, target.types),
+          makeContext(state, side, { source: attacker, target, move: activeMove }),
+          activeMove,
+          effectiveness(activeMove.type, target.types),
         ),
       });
       if (result.effectiveness === 0) {
@@ -671,15 +685,15 @@ function resolveMove(
         break;
       }
       const damage = runModifyDamage(
-        makeContext(state, side, { source: attacker, target, move }),
-        move,
+        makeContext(state, side, { source: attacker, target, move: activeMove }),
+        activeMove,
         result.damage,
         result.effectiveness,
         result.crit,
       );
       const bypassSubstitute = runTrySubstitute(
-        makeContext(state, side, { source: attacker, target, move }),
-        move,
+        makeContext(state, side, { source: attacker, target, move: activeMove }),
+        activeMove,
       );
       if (!bypassSubstitute && hasSubstitute(target)) {
         absorbWithSubstitute(target, damage);
@@ -689,10 +703,10 @@ function resolveMove(
       }
       const dealt = applyDamage(target, damage);
       totalDamage += dealt;
-      if (move.category === 'Physical') target.volatiles.physicalDamageTaken += dealt;
-      else if (move.category === 'Special') target.volatiles.specialDamageTaken += dealt;
+      if (activeMove.category === 'Physical') target.volatiles.physicalDamageTaken += dealt;
+      else if (activeMove.category === 'Special') target.volatiles.specialDamageTaken += dealt;
       pushEvent(state, { kind: 'damage', side: opponentOf(side), amount: dealt, hp: target.hp, maxHp: target.maxHp, effectiveness: result.effectiveness, crit: result.crit });
-      pushText(state, damageMessage(move.name, result, target));
+      pushText(state, damageMessage(activeMove.name, result, target));
       if (target.hp <= 0) {
         faint(state, opponentOf(side));
         break;
@@ -700,11 +714,11 @@ function resolveMove(
     }
   }
 
-  applyMoveEffects(state, side, move, totalDamage, totalDamage > 0);
+  applyMoveEffects(state, side, activeMove, totalDamage, totalDamage > 0);
   // Contact reactions are not "the move's effect", so Mold Breaker stops piercing here.
   state.abilityPierce = null;
-  runAfterMove(hitContext, move, totalDamage > 0);
-  maybeSelfSwitch(state, side, attacker, move);
+  runAfterMove(hitContext, activeMove, totalDamage > 0);
+  maybeSelfSwitch(state, side, attacker, activeMove);
 }
 
 function faint(state: BattleState, side: SideId): void {
@@ -717,15 +731,16 @@ function faint(state: BattleState, side: SideId): void {
 }
 
 function applyWeatherResidual(state: BattleState): void {
-  if (!state.weather) return;
+  const weather = effectiveWeather(state);
+  if (!weather) return;
   for (const side of SIDE_IDS) {
     const fighter = activeFighter(state, side);
     if (!takesIndirectDamage(fighter)) continue;
-    const chip = weatherChip(fighter, state.weather);
+    const chip = weatherChip(fighter, weather);
     if (chip <= 0) continue;
     const dealt = applyDamage(fighter, chip);
     pushEvent(state, { kind: 'damage', side, amount: dealt, hp: fighter.hp, maxHp: fighter.maxHp, effectiveness: 1, crit: false });
-    pushText(state, `${fighter.name} is buffeted by the ${weatherLabel(state.weather)}!`);
+    pushText(state, `${fighter.name} is buffeted by the ${weatherLabel(weather)}!`);
     if (fighter.hp <= 0) faint(state, side);
   }
 }
