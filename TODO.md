@@ -62,11 +62,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 - [ ] `src/engine/battle/effects/moves.ts`: the remaining odd moves — multi-turn
       charge moves (Solar Beam, Fly, Dig...), damage counters (Counter, Mirror
       Coat), delayed effects (Yawn, Wish) and switch moves (U-turn, Baton Pass).
-- [ ] Fix the duplicated secondary effects: `build-dex.mjs` writes both
-      `secondary` and `secondaries` for 166 moves that only have one (Bulldoze's
-      Speed drop lands twice), and `applyMoveEffects` applies both. Deduplicate in
-      the generated data (or the engine), rerun `npm run data:dex` and re-test the
-      secondary-effect coverage.
 
 ## Phase 5 — Battle UI & presentation
 
