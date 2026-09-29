@@ -370,3 +370,13 @@ file is the human-readable summary.
       and **Imposter** stay `no-op`, both blocked on Transform. Coverage at 273
       ports (234 abilities, 2 no-op, 74 excluded); 388 tests pass; `npm run build`
       clean.
+- [x] `src/engine/battle/effects/moves.ts` + `abilities.ts`: Transform, which
+      closes the last two abilities. `transformInto` in `fighter.ts` copies the
+      target's types, stats (never HP), ability, gender, moves (5 PP each) and
+      stat stages, keeping a `transformBackup` so `restoreOriginalForm` (run from
+      `resetBattleState`) reverts on switch-out; the copied ability is not
+      re-triggered, which keeps recursion-prone abilities inert. The `transform`
+      move and the **Imposter** switch-in both call it. **Illusion** stores the
+      last healthy party member as an `illusion` volatile and drops it on the
+      first damaging hit. Coverage at 275 ports (236 abilities, 0 no-op, 74
+      excluded); 392 tests pass; `npm run build` clean.

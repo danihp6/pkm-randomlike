@@ -1,5 +1,5 @@
 import type { Move } from '../../../data/dex';
-import { applyDamage, moveContacts, type BoostId, type StatusId } from '../fighter';
+import { applyDamage, moveContacts, transformInto, type BoostId, type StatusId } from '../fighter';
 import { activeFighter, opponent, pushEvent, pushText, type BattleState, type SideId } from '../state';
 import { applyBoostEffect, applyStatusEffect } from './apply';
 import {
@@ -104,6 +104,22 @@ function recycleEffect(): EffectHandlers {
   };
 }
 
+/** Transform copies the target's battle shape; Imposter runs the same routine. */
+function transformEffect(): EffectHandlers {
+  return {
+    onAfterMove: (ctx) => {
+      if (ctx.owner !== ctx.source || !ctx.target) return;
+      const userName = ctx.owner.name;
+      const targetName = ctx.target.name;
+      if (transformInto(ctx.owner, ctx.target)) {
+        pushText(ctx.state, `${userName} transformed into ${targetName}!`);
+      } else {
+        pushText(ctx.state, 'But it failed!');
+      }
+    },
+  };
+}
+
 export function moveEffects(): readonly EffectDefinition[] {
   const defs: EffectDefinition[] = Object.keys(PROTECT_MOVES).map((moveId) => ({
     id: moveId,
@@ -111,6 +127,7 @@ export function moveEffects(): readonly EffectDefinition[] {
     handlers: protectEffect(moveId),
   }));
   defs.push({ id: 'recycle', kind: 'move', handlers: recycleEffect() });
+  defs.push({ id: 'transform', kind: 'move', handlers: transformEffect() });
   return defs;
 }
 

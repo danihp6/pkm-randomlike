@@ -56,10 +56,6 @@ The whole menu battle minus per-effect behaviour. Contract in
 Ports of Showdown handlers, in batches, on the hook names in
 `docs/showdown-reuse.md` §3.
 
-- [ ] `src/engine/battle/effects/abilities.ts`: the last two abilities, Illusion
-      and Imposter, which both need the Transform mechanic (`docs/balance/
-      effect-coverage.md` tracks them as `no-op`; everything else is ported or
-      excluded).
 
 ## Phase 5 — Battle UI & presentation
 

@@ -83,7 +83,22 @@ export type Volatiles = {
   battleBond: boolean;
   /** Item id a Cud Chew holder still owes itself at the end of the turn. */
   cudChew: string | null;
+  /** The holder has used Transform or been transformed by Imposter. */
+  transformed: boolean;
+  /** Illusion's disguise: the species id the foe sees, or null. */
+  illusion: string | null;
 };
+
+/** The pre-Transform shape, restored when the holder leaves the field. */
+export type TransformBackup = Readonly<{
+  speciesId: string;
+  name: string;
+  types: readonly string[];
+  stats: Stats;
+  ability: string;
+  moves: readonly MoveSlot[];
+  gender: Gender;
+}>;
 
 export type BattleFighter = {
   id: string;
@@ -98,6 +113,8 @@ export type BattleFighter = {
   heldItem: string | null;
   /** Last item this fighter consumed, restorable by Recycle. */
   lastItemId: string | null;
+  /** The shape Transform replaced, or null while untransformed. */
+  transformBackup: TransformBackup | null;
   types: readonly string[];
   stats: Stats;
   ivs: Stats;
@@ -162,6 +179,8 @@ export function emptyVolatiles(): Volatiles {
     attract: false,
     battleBond: false,
     cudChew: null,
+    transformed: false,
+    illusion: null,
   };
 }
 
@@ -237,6 +256,7 @@ export function createFighter(input: FighterInput): BattleFighter {
     gender: input.gender ?? defaultGender(species.genderRatio),
     heldItem: input.heldItem ?? null,
     lastItemId: null,
+    transformBackup: null,
     types: species.types,
     stats,
     ivs,
@@ -333,12 +353,61 @@ export function applyBoosts(
   return changes;
 }
 
+/**
+ * Transform (the move and Imposter) copies the target's battle shape: types,
+ * stats (never HP), ability, gender, moves (5 PP each) and stat stages. The
+ * original shape is kept so a switch-out restores it. The copied ability is not
+ * re-triggered, which also keeps recursion-prone abilities like Imposter inert.
+ */
+export function transformInto(user: BattleFighter, target: BattleFighter): boolean {
+  if (user === target || target.hp <= 0 || user.hp <= 0) return false;
+  if (!user.transformBackup) {
+    user.transformBackup = {
+      speciesId: user.speciesId,
+      name: user.name,
+      types: user.types,
+      stats: user.stats,
+      ability: user.ability,
+      moves: user.moves.map((slot) => ({ ...slot })),
+      gender: user.gender,
+    };
+  }
+  user.speciesId = target.speciesId;
+  user.name = target.name;
+  user.types = target.types;
+  user.stats = { ...target.stats, hp: user.stats.hp };
+  user.ability = target.ability;
+  user.gender = target.gender;
+  user.moves = target.moves.map((slot) => {
+    const maxPp = getMove(slot.moveId)?.pp ?? slot.maxPp;
+    return { moveId: slot.moveId, pp: Math.min(5, maxPp), maxPp };
+  });
+  user.boosts = { ...target.boosts };
+  user.volatiles.transformed = true;
+  return true;
+}
+
+/** Puts a transformed fighter back into its original shape (switch-out). */
+export function restoreOriginalForm(fighter: BattleFighter): void {
+  const backup = fighter.transformBackup;
+  if (!backup) return;
+  fighter.speciesId = backup.speciesId;
+  fighter.name = backup.name;
+  fighter.types = backup.types;
+  fighter.stats = backup.stats;
+  fighter.ability = backup.ability;
+  fighter.moves = [...backup.moves];
+  fighter.gender = backup.gender;
+  fighter.transformBackup = null;
+}
+
 export function clearVolatiles(fighter: BattleFighter): void {
   fighter.volatiles = emptyVolatiles();
 }
 
 /** Clears battle-only state between battles while keeping HP, PP and status. */
 export function resetBattleState(fighter: BattleFighter): void {
+  restoreOriginalForm(fighter);
   fighter.boosts = emptyBoosts();
   fighter.lastMoveId = null;
   fighter.lastItemId = null;
