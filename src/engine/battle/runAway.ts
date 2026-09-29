@@ -1,6 +1,7 @@
 import type { Rng } from '../rng';
-import { activeFighter, opponentOf, type BattleState, type SideId } from './state';
+import { activeFighter, opponent, opponentOf, type BattleState, type SideId } from './state';
 import { modifiedSpeed } from './modifiers';
+import { makeContext, runTryEscape } from './effects/registry';
 
 export function canRun(state: BattleState, side: SideId): boolean {
   return state.isWild && !activeFighter(state, side).volatiles.trapped;
@@ -14,6 +15,8 @@ export function escapeOdds(playerSpeed: number, wildSpeed: number, attempts: num
 
 export function rollRun(state: BattleState, side: SideId, rng: Rng = state.rng): boolean {
   if (!canRun(state, side)) return false;
+  const ctx = makeContext(state, side, { source: activeFighter(state, side), target: opponent(state, side) });
+  if (runTryEscape(ctx)) return true;
   const odds = escapeOdds(
     modifiedSpeed(state, side),
     modifiedSpeed(state, opponentOf(side)),

@@ -8,7 +8,7 @@ import {
 import { applyStatus, canApplyStatus, isStatusId, statusName } from '../status';
 import { opponent, pushEvent, pushText, type BattleState, type SideId } from '../state';
 import { hasSubstitute } from '../volatile';
-import { makeContext, runBoost, runStatus } from './registry';
+import { makeContext, runAfterStatus, runBoost, runModifyBoost, runStatus } from './registry';
 import { terrainBlocksStatus } from './terrain';
 
 export function statLabel(stat: BoostId): string {
@@ -40,9 +40,11 @@ export function applyBoostEffect(
   const self = options.self ?? false;
   const allowed: Partial<Record<BoostId, number>> = {};
   for (const stat of BOOST_IDS) {
-    const stages = boosts[stat];
-    if (!stages) continue;
+    const raw = boosts[stat];
+    if (!raw) continue;
     const ctx = makeContext(state, side, { source: target, target: opponent(state, side) });
+    const stages = runModifyBoost(ctx, stat, raw, self);
+    if (!stages) continue;
     if (!runBoost(ctx, stat, stages, self)) continue;
     allowed[stat] = stages;
   }
@@ -82,5 +84,6 @@ export function applyStatusEffect(
   if (applyStatus(target, status, state.rng)) {
     pushEvent(state, { kind: 'status', side, status });
     pushText(state, message ?? `${target.name} was afflicted by ${statusName(status)}!`);
+    runAfterStatus(makeContext(state, side, { source: target, target: opponent(state, side) }), status);
   }
 }

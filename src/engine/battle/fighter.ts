@@ -47,6 +47,8 @@ export type Volatiles = {
   protectStreak: number;
   /** Flash Fire absorbed a Fire move; its next Fire move is boosted. */
   flashFire: boolean;
+  /** Disguise is intact and can absorb one damaging hit. */
+  disguise: boolean;
 };
 
 export type BattleFighter = {
@@ -106,6 +108,7 @@ export function emptyVolatiles(): Volatiles {
     protect: null,
     protectStreak: 0,
     flashFire: false,
+    disguise: false,
   };
 }
 

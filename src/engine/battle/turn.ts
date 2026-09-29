@@ -12,6 +12,7 @@ import {
   runModifyDamage,
   runModifyMultihit,
   runModifyPriority,
+  runModifyRecoil,
   runResidual,
   runStart,
   runSwitchIn,
@@ -76,6 +77,7 @@ export function performSwitch(state: BattleState, side: SideId, partyIndex: numb
   resetBattleState(outgoing);
 
   const incoming = activeFighter(state, side);
+  if (!state.switchedSides.includes(side)) state.switchedSides.push(side);
   pushEvent(state, { kind: 'switch', side, fighterId: incoming.id });
   pushText(state, `${state.sides[side].name} sent out ${incoming.name}!`);
 
@@ -258,10 +260,17 @@ function applyMoveEffects(
   }
 
   if (move.recoil && move.recoil.length === 2 && totalDamage > 0) {
-    const recoil = Math.max(1, Math.floor((totalDamage * move.recoil[0]) / move.recoil[1]));
-    const dealt = applyDamage(attacker, recoil);
-    pushEvent(state, { kind: 'damage', side, amount: dealt, hp: attacker.hp, maxHp: attacker.maxHp, effectiveness: 1, crit: false });
-    pushText(state, `${attacker.name} is damaged by recoil!`);
+    const raw = Math.max(1, Math.floor((totalDamage * move.recoil[0]) / move.recoil[1]));
+    const recoil = runModifyRecoil(
+      makeContext(state, side, { source: attacker, target: opponent(state, side), move }),
+      move,
+      raw,
+    );
+    if (recoil > 0) {
+      const dealt = applyDamage(attacker, recoil);
+      pushEvent(state, { kind: 'damage', side, amount: dealt, hp: attacker.hp, maxHp: attacker.maxHp, effectiveness: 1, crit: false });
+      pushText(state, `${attacker.name} is damaged by recoil!`);
+    }
   }
 
   if (move.struggleRecoil && attacker.hp > 0) {
@@ -520,6 +529,8 @@ export function takeTurn(state: BattleState, playerCommand: Command, enemyComman
 
   state.turn += 1;
   pushEvent(state, { kind: 'turn', turn: state.turn });
+  state.movedSides = [];
+  state.switchedSides = [];
 
   const commands: Record<SideId, Command> = { player: playerCommand, enemy: enemyCommand };
   resolvePreMoveActions(state, commands);
@@ -538,6 +549,7 @@ export function takeTurn(state: BattleState, playerCommand: Command, enemyComman
     if (activeFighter(state, entry.side).hp <= 0) continue;
     if (opponent(state, entry.side).hp <= 0) continue;
     useMove(state, entry.side, commands[entry.side] as FightCommand);
+    if (!state.movedSides.includes(entry.side)) state.movedSides.push(entry.side);
   }
 
   if (state.winner !== null) return;

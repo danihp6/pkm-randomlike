@@ -40,13 +40,18 @@ export type EffectHandlers = Readonly<{
   onModifyPriority?: (ctx: EffectContext, priority: number) => number | void;
   onModifyCrit?: (ctx: EffectContext, willCrit: boolean) => boolean | void;
   onModifyMultihit?: (ctx: EffectContext, hits: number) => number | void;
+  onModifyBoost?: (ctx: EffectContext, payload: BoostPayload) => number | void;
+  onModifyRecoil?: (ctx: EffectContext, recoil: number) => number | void;
   onTryHit?: (ctx: EffectContext, payload: MovePayload) => boolean | void;
   /** True bypasses the target's substitute (Infiltrator). */
   onTrySubstitute?: (ctx: EffectContext) => boolean | void;
   onTryVolatile?: (ctx: EffectContext, payload: VolatilePayload) => boolean | void;
   onTrySecondary?: (ctx: EffectContext, payload: SecondaryPayload) => boolean | void;
+  /** True guarantees a wild escape (Run Away). */
+  onTryEscape?: (ctx: EffectContext) => boolean | void;
   onAfterMove?: (ctx: EffectContext, payload: MovePayload) => void;
   onStatus?: (ctx: EffectContext, payload: StatusPayload) => boolean | void;
+  onAfterStatus?: (ctx: EffectContext, status: string) => void;
   onBoost?: (ctx: EffectContext, payload: BoostPayload) => boolean | void;
 }>;
 
@@ -213,6 +218,19 @@ export function runTrySecondary(ctx: EffectContext, effect: MoveEffect): boolean
   return true;
 }
 
+export function runAfterStatus(ctx: EffectContext, status: string): void {
+  for (const ref of contextEffects(ctx, true, null)) {
+    ref.effect.handlers.onAfterStatus?.(contextFor(ctx, ref), status);
+  }
+}
+
+export function runTryEscape(ctx: EffectContext): boolean {
+  for (const ref of contextEffects(ctx, false, null)) {
+    if (ref.effect.handlers.onTryEscape?.(contextFor(ctx, ref)) === true) return true;
+  }
+  return false;
+}
+
 export function runBoost(
   ctx: EffectContext,
   stat: BoostId,
@@ -289,6 +307,31 @@ export function runModifyMultihit(ctx: EffectContext, move: Move, hits: number):
   let value = hits;
   for (const ref of contextEffects(ctx, false, move)) {
     const next = ref.effect.handlers.onModifyMultihit?.(contextFor(ctx, ref), value);
+    if (typeof next === 'number') value = next;
+  }
+  return value;
+}
+
+/** Boost modifiers read the target's ability (Simple, Contrary). */
+export function runModifyBoost(
+  ctx: EffectContext,
+  stat: BoostId,
+  stages: number,
+  self: boolean,
+): number {
+  let value = stages;
+  for (const ref of contextEffects(ctx, true, null)) {
+    const next = ref.effect.handlers.onModifyBoost?.(contextFor(ctx, ref), { stat, stages: value, self });
+    if (typeof next === 'number') value = next;
+  }
+  return value;
+}
+
+/** Recoil modifiers read the attacker's ability (Rock Head). */
+export function runModifyRecoil(ctx: EffectContext, move: Move, recoil: number): number {
+  let value = recoil;
+  for (const ref of contextEffects(ctx, false, move)) {
+    const next = ref.effect.handlers.onModifyRecoil?.(contextFor(ctx, ref), value);
     if (typeof next === 'number') value = next;
   }
   return value;
