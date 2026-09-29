@@ -24,6 +24,7 @@ import {
   runTrySecondary,
   runTrySubstitute,
   runTryVolatile,
+  runModifySecondaryChance,
 } from './effects/registry';
 import { rollHitWith } from './modifiers';
 import { applyBoostEffect, applyStatusEffect } from './effects/apply';
@@ -219,7 +220,13 @@ function applySecondary(
   attacker: BattleFighter,
   defender: BattleFighter,
 ): void {
-  if (effect.chance !== undefined && state.rng.int(1, 100) > effect.chance) return;
+  if (effect.chance !== undefined) {
+    const chance = runModifySecondaryChance(
+      makeContext(state, side, { source: attacker, target: defender }),
+      effect.chance,
+    );
+    if (state.rng.int(1, 100) > chance) return;
+  }
   if (effect.self) {
     if (effect.self.boosts) applyBoostEffect(state, side, attacker, effect.self.boosts, { self: true });
     if (effect.self.status) applyStatusEffect(state, side, attacker, effect.self.status);
@@ -525,7 +532,7 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
   if (protectBlocks(state, side, move)) return;
 
   const defender = opponent(state, side);
-  if (move.category !== 'Status' && !rollHitWith(state, side, move.accuracy)) {
+  if (move.category !== 'Status' && !rollHitWith(state, side, move)) {
     pushText(state, `${attacker.name}'s attack missed!`);
     return;
   }

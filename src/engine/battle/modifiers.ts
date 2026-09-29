@@ -1,3 +1,4 @@
+import type { Move } from '../../data/dex';
 import { accuracyChance } from './accuracy';
 import { effectiveSpeed } from './fighter';
 import { activeFighter, opponent, type BattleState, type SideId } from './state';
@@ -10,15 +11,15 @@ export function modifiedSpeed(state: BattleState, side: SideId): number {
   return runModifySpe(ctx, effectiveSpeed(fighter));
 }
 
-/** Final hit chance with ability modifiers (Compound Eyes, Sand Veil, Hustle). */
-export function hitChance(state: BattleState, side: SideId, moveAccuracy: number | true): number {
+/** Final hit chance with ability modifiers (Compound Eyes, Sand Veil, Wonder Skin). */
+export function hitChance(state: BattleState, side: SideId, move: Move): number {
   const attacker = activeFighter(state, side);
   const defender = opponent(state, side);
-  const ctx = makeContext(state, side, { source: attacker, target: defender });
-  return Math.min(1, runModifyAccuracy(ctx, accuracyChance(moveAccuracy, attacker, defender)));
+  const ctx = makeContext(state, side, { source: attacker, target: defender, move });
+  return Math.min(1, runModifyAccuracy(ctx, accuracyChance(move.accuracy, attacker, defender)));
 }
 
-export function rollHitWith(state: BattleState, side: SideId, moveAccuracy: number | true): boolean {
-  const chance = hitChance(state, side, moveAccuracy);
+export function rollHitWith(state: BattleState, side: SideId, move: Move): boolean {
+  const chance = hitChance(state, side, move);
   return chance >= 1 || state.rng.next() < chance;
 }

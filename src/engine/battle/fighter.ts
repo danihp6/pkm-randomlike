@@ -63,6 +63,8 @@ export type Volatiles = {
   iceFace: boolean;
   /** Supersweet Syrup only lowers the foe's evasiveness once per battle. */
   supersweetSyrup: boolean;
+  /** Berserk / Anger Shell already fired since HP last sat above half. */
+  pinchTriggered: boolean;
 };
 
 export type BattleFighter = {
@@ -130,6 +132,7 @@ export function emptyVolatiles(): Volatiles {
     slowStart: 0,
     iceFace: false,
     supersweetSyrup: false,
+    pinchTriggered: false,
   };
 }
 

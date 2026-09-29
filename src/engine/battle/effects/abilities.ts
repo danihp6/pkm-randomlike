@@ -3,13 +3,14 @@ import { getItem } from '../../../data/items';
 import { applyDamage, applyHeal, isGrounded, stagedStat, type BattleFighter, type BoostId, type StatusId } from '../fighter';
 import { cureStatus, statusName } from '../status';
 import { opponentOf, pushEvent, pushText, type WeatherId } from '../state';
-import { applyFlinch } from '../volatile';
+import { applyFlinch, applyConfusion } from '../volatile';
 import { applyBoostEffect, applyStatusEffect, statLabel } from './apply';
 import { setTerrain } from './terrain';
 import { setWeather } from './weather';
 import {
   registerEffects,
   runTryVolatile,
+  runModifyPriority,
   makeContext,
   type DamagePayload,
   type EffectContext,
@@ -1359,6 +1360,210 @@ function pressure(): EffectHandlers {
   };
 }
 
+/** The move targets Pressure cares about, reused by the anti-priority abilities. */
+const FOE_TARGETS = new Set([
+  'normal',
+  'any',
+  'allAdjacent',
+  'allAdjacentFoes',
+  'adjacentFoe',
+  'randomNormal',
+]);
+
+/** Armor Tail, Dazzling and Queenly Majesty stop priority moves aimed at the holder. */
+function priorityBlocker(ability: string): EffectHandlers {
+  return {
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target) return;
+      if (!FOE_TARGETS.has(payload.move.target)) return;
+      const priority = runModifyPriority(
+        makeContext(ctx.state, ctx.side, {
+          source: ctx.source,
+          target: ctx.owner,
+          move: payload.move,
+        }),
+        payload.move,
+        payload.move.priority,
+      );
+      if (priority <= 0) return;
+      pushText(ctx.state, `${ctx.owner.name}'s ${ability} stopped the priority move!`);
+      return false;
+    },
+  };
+}
+
+/** Triage gives healing moves +3 priority. */
+function triage(): EffectHandlers {
+  return {
+    onModifyPriority: (ctx, priority) => {
+      if (ctx.owner !== ctx.source) return;
+      if (!ctx.move?.flags.heal) return;
+      return priority + 3;
+    },
+  };
+}
+
+/** Serene Grace doubles the chance of a move's secondary effect. */
+function sereneGrace(): EffectHandlers {
+  return {
+    onModifySecondaryChance: (ctx, chance) => {
+      if (ctx.owner !== ctx.source) return;
+      return chance * 2;
+    },
+  };
+}
+
+/** Wonder Skin halves the accuracy of status moves aimed at the holder. */
+function wonderSkin(): EffectHandlers {
+  return {
+    onModifyAccuracy: (ctx, chance) => {
+      if (ctx.owner !== ctx.target) return;
+      if (ctx.move?.category !== 'Status') return;
+      return chance * 0.5;
+    },
+  };
+}
+
+/** Mirror Armor sends a foe-caused stat drop back at the foe instead. */
+let reflectingDrop = false;
+function mirrorArmor(): EffectHandlers {
+  return {
+    onBoost: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || payload.self || payload.stages >= 0) return;
+      if (reflectingDrop || !ctx.target || ctx.target.hp <= 0) return;
+      pushText(
+        ctx.state,
+        `${ctx.owner.name}'s Mirror Armor reflected the ${statLabel(payload.stat)} drop!`,
+      );
+      reflectingDrop = true;
+      try {
+        applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.target, { [payload.stat]: payload.stages });
+      } finally {
+        reflectingDrop = false;
+      }
+      return false;
+    },
+  };
+}
+
+/** Opportunist copies whatever stat boost the foe just gained. */
+function opportunist(): EffectHandlers {
+  return {
+    onBoost: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || payload.stages <= 0) return;
+      if (ctx.owner.hp <= 0) return;
+      applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, { [payload.stat]: payload.stages }, {
+        self: true,
+        message: `${ctx.owner.name}'s Opportunist copied the stat boost!`,
+      });
+    },
+  };
+}
+
+/** Tangling Hair lowers the Speed of a contact attacker, like Gooey. */
+function tanglingHair(): EffectHandlers {
+  return contactReaction((ctx, attacker) => {
+    applyBoostEffect(ctx.state, opponentOf(ctx.side), attacker, { spe: -1 }, {
+      message: `${attacker.name}'s Speed was lowered by Tangling Hair!`,
+    });
+  });
+}
+
+/** Aftermath deals a quarter of the contact attacker's max HP when the holder faints. */
+function aftermath(): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.target) return;
+      if (!payload.move.flags.contact || !payload.hit) return;
+      if (ctx.owner.hp > 0) return;
+      const attacker = ctx.source;
+      if (attacker.hp <= 0) return;
+      const dealt = applyDamage(attacker, Math.max(1, Math.floor(attacker.maxHp / 4)));
+      pushEvent(ctx.state, {
+        kind: 'damage',
+        side: opponentOf(ctx.side),
+        amount: dealt,
+        hp: attacker.hp,
+        maxHp: attacker.maxHp,
+        effectiveness: 1,
+        crit: false,
+      });
+      pushText(ctx.state, `${attacker.name} was hurt by ${ctx.owner.name}'s Aftermath!`);
+    },
+  };
+}
+
+/** Bad Dreams chips a sleeping foe every turn. */
+function badDreams(): EffectHandlers {
+  return {
+    onResidual: (ctx) => {
+      const foe = ctx.target;
+      if (ctx.owner.hp <= 0 || !foe || foe.hp <= 0) return;
+      if (foe.status !== 'slp') return;
+      const dealt = applyDamage(foe, Math.max(1, Math.floor(foe.maxHp / 8)));
+      pushEvent(ctx.state, {
+        kind: 'damage',
+        side: opponentOf(ctx.side),
+        amount: dealt,
+        hp: foe.hp,
+        maxHp: foe.maxHp,
+        effectiveness: 1,
+        crit: false,
+      });
+      pushText(ctx.state, `${foe.name} is tormented by ${ctx.owner.name}'s Bad Dreams!`);
+    },
+  };
+}
+
+/** Poison Puppeteer confuses whatever it poisons. */
+function poisonPuppeteer(): EffectHandlers {
+  return {
+    onAfterStatus: (ctx, status) => {
+      if (ctx.owner !== ctx.target) return;
+      if (status !== 'psn' && status !== 'tox') return;
+      const victim = ctx.source;
+      if (victim.hp <= 0) return;
+      const volCtx = makeContext(ctx.state, ctx.side, { source: victim, target: ctx.owner });
+      if (!runTryVolatile(volCtx, 'confusion')) return;
+      if (applyConfusion(victim, ctx.rng)) {
+        pushText(ctx.state, `${victim.name} was confused by Poison Puppeteer!`);
+      }
+    },
+  };
+}
+
+/** Berserk / Anger Shell fire once when an attack drops the holder below half. */
+function pinchDrop(ability: string, boosts: Partial<Record<BoostId, number>>): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      const holder = ctx.owner;
+      if (holder !== ctx.target || holder.hp <= 0) return;
+      if (!payload.hit || payload.move.category === 'Status' || payload.move.basePower <= 0) return;
+      if (holder.hp * 2 > holder.maxHp || holder.volatiles.pinchTriggered) return;
+      holder.volatiles.pinchTriggered = true;
+      applyBoostEffect(ctx.state, opponentOf(ctx.side), holder, boosts, {
+        self: true,
+        message: `${holder.name}'s ${ability} kicked in!`,
+      });
+    },
+    onResidual: (ctx) => {
+      if (ctx.owner.hp * 2 > ctx.owner.maxHp) ctx.owner.volatiles.pinchTriggered = false;
+    },
+  };
+}
+
+/** Supreme Overlord grows stronger for every fainted party member. */
+function supremeOverlord(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      const fallen = ctx.state.sides[ctx.side].party.filter((fighter) => fighter.hp <= 0).length;
+      if (fallen <= 0) return;
+      return scaledDamage(payload.damage, 1 + 0.1 * fallen);
+    },
+  };
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -1537,6 +1742,27 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['lingeringaroma', lingeringAroma()],
   ['harvest', harvest()],
   ['pressure', pressure()],
+
+  ['armortail', priorityBlocker('Armor Tail')],
+  ['dazzling', priorityBlocker('Dazzling')],
+  ['queenlymajesty', priorityBlocker('Queenly Majesty')],
+  ['triage', triage()],
+  ['serenegrace', sereneGrace()],
+  ['wonderskin', wonderSkin()],
+  ['mirrorarmor', mirrorArmor()],
+  ['opportunist', opportunist()],
+  ['tanglinghair', tanglingHair()],
+  ['aftermath', aftermath()],
+  ['baddreams', badDreams()],
+  ['poisonpuppeteer', poisonPuppeteer()],
+  ['berserk', pinchDrop('Berserk', { spa: 1 })],
+  ['angershell', pinchDrop('Anger Shell', { atk: 1, spa: 1, spe: 1, def: -1, spd: -1 })],
+  ['chillingneigh', koBoost({ atk: 1 })],
+  ['grimneigh', koBoost({ spa: 1 })],
+  ['steelyspirit', outgoingMultiplier(1.5, (payload) => payload.move.type === 'Steel')],
+  ['supremeoverlord', supremeOverlord()],
+  ['fullmetalbody', statGuard('all')],
+  ['klutz', {}],
 
   // Passive effects whose behaviour lives at the call site: Guard Dog in
   // Intimidate, Early Bird and Corrosion in status.ts, Liquid Ooze in the turn

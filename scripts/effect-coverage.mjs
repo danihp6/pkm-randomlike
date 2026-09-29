@@ -43,6 +43,7 @@ for (const id of UNREACHABLE) EXCLUDED_ABILITIES.set(id, 'no playable species ha
 for (const id of [
   'battery', 'costar', 'friendguard', 'healer', 'hospitality', 'minus', 'plus',
   'powerofalchemy', 'powerspot', 'receiver', 'symbiosis', 'telepathy', 'commander',
+  'flowerveil',
 ]) {
   EXCLUDED_ABILITIES.set(id, 'doubles/ally only');
 }
