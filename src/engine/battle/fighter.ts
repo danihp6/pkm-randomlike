@@ -11,6 +11,8 @@ import { MAX_IV } from '../../data/dex/natures';
 
 export type StatusId = 'brn' | 'psn' | 'tox' | 'par' | 'slp' | 'frz';
 
+export type Gender = 'male' | 'female' | 'genderless';
+
 export type BoostId = 'atk' | 'def' | 'spa' | 'spd' | 'spe' | 'accuracy' | 'evasion';
 
 export const BOOST_IDS: readonly BoostId[] = [
@@ -77,6 +79,10 @@ export type Volatiles = {
   disableTurns: number;
   /** Attracted by Cute Charm; a coin flip can cost the turn. */
   attract: boolean;
+  /** Battle Bond already boosted the holder (Greninja). */
+  battleBond: boolean;
+  /** Item id a Cud Chew holder still owes itself at the end of the turn. */
+  cudChew: string | null;
 };
 
 export type BattleFighter = {
@@ -86,6 +92,8 @@ export type BattleFighter = {
   level: number;
   nature: string;
   ability: string;
+  /** Gender, for Rivalry and flavour; the run assigns it in Phase 6. */
+  gender: Gender;
   /** Item id held in battle, or null; consumed berries clear it. */
   heldItem: string | null;
   /** Last item this fighter consumed, restorable by Recycle. */
@@ -112,6 +120,7 @@ export type FighterInput = Readonly<{
   nature?: string;
   ability?: string;
   heldItem?: string;
+  gender?: Gender;
   ivs?: Partial<Stats>;
   evs?: Partial<Stats>;
   moves?: readonly string[];
@@ -151,6 +160,8 @@ export function emptyVolatiles(): Volatiles {
     disabledMove: null,
     disableTurns: 0,
     attract: false,
+    battleBond: false,
+    cudChew: null,
   };
 }
 
@@ -186,6 +197,13 @@ function makeMoveSlot(moveId: string): MoveSlot | undefined {
   return { moveId: move.id, pp: move.pp, maxPp: move.pp };
 }
 
+/** A male- or female-only species is unambiguous; a mixed ratio waits for the run. */
+function defaultGender(ratio: Readonly<{ M: number; F: number }>): Gender {
+  if (ratio.M > 0 && ratio.F === 0) return 'male';
+  if (ratio.F > 0 && ratio.M === 0) return 'female';
+  return 'genderless';
+}
+
 export function createFighter(input: FighterInput): BattleFighter {
   const species = getSpecies(input.speciesId);
   if (!species) throw new Error(`Unknown species "${input.speciesId}"`);
@@ -216,6 +234,7 @@ export function createFighter(input: FighterInput): BattleFighter {
     level,
     nature,
     ability,
+    gender: input.gender ?? defaultGender(species.genderRatio),
     heldItem: input.heldItem ?? null,
     lastItemId: null,
     types: species.types,
@@ -268,6 +287,19 @@ export function moveContacts(
 /** Magic Guard only takes damage from attacks; status, weather, recoil and the rest are ignored. */
 export function takesIndirectDamage(fighter: BattleFighter): boolean {
   return fighter.ability !== 'Magic Guard';
+}
+
+/**
+ * Arena Trap, Shadow Tag and Magnet Pull keep the foe from switching out or
+ * fleeing. Each has its own immunity (Ghost types, ungrounded Pokémon, non-Steel
+ * types); Neutralizing Gas on the victim switches the trap off.
+ */
+export function trappedBy(foe: BattleFighter, holder: BattleFighter): boolean {
+  if (holder.ability === 'Neutralizing Gas') return false;
+  if (foe.ability === 'Shadow Tag') return !holder.types.includes('Ghost');
+  if (foe.ability === 'Arena Trap') return isGrounded(holder) && !holder.types.includes('Ghost');
+  if (foe.ability === 'Magnet Pull') return holder.types.includes('Steel');
+  return false;
 }
 
 export function applyDamage(fighter: BattleFighter, amount: number): number {

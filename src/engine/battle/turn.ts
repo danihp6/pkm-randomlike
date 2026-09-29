@@ -258,14 +258,26 @@ function applyMoveEffects(
   const defender = opponent(state, side);
   const selfTarget = move.target === 'self';
 
-  if (move.status) applyStatusEffect(state, opponentOf(side), defender, move.status);
+  // Magic Bounce sends a reflectable status move straight back at its user.
+  const bounced =
+    !selfTarget &&
+    move.category === 'Status' &&
+    Boolean(move.flags.reflectable) &&
+    defender.ability === 'Magic Bounce' &&
+    attacker.ability !== 'Neutralizing Gas' &&
+    state.abilityPierce !== defender;
+  if (bounced) pushText(state, `${defender.name}'s Magic Bounce reflected the move!`);
+  const targetSide = bounced ? side : opponentOf(side);
+  const target = bounced ? attacker : defender;
+
+  if (move.status) applyStatusEffect(state, targetSide, target, move.status);
 
   if (move.volatileStatus) {
-    applyVolatileEffect(state, selfTarget ? side : opponentOf(side), selfTarget ? attacker : defender, move.volatileStatus);
+    applyVolatileEffect(state, selfTarget ? side : targetSide, selfTarget ? attacker : target, move.volatileStatus);
   }
 
   if (move.boosts) {
-    applyBoostEffect(state, selfTarget ? side : opponentOf(side), selfTarget ? attacker : defender, move.boosts, {
+    applyBoostEffect(state, selfTarget ? side : targetSide, selfTarget ? attacker : target, move.boosts, {
       self: selfTarget,
     });
   }
@@ -492,6 +504,26 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
     resolveMove(state, side, attacker, move, slot);
   } finally {
     state.abilityPierce = null;
+  }
+  dancerFollowUp(state, side, move);
+}
+
+let dancerCopyActive = false;
+
+/** Dancer copies a dance move the foe just used; the guard stops a mirror loop. */
+function dancerFollowUp(state: BattleState, side: SideId, move: Move): void {
+  if (dancerCopyActive || !move.flags.dance || state.winner !== null) return;
+  const foeSide = opponentOf(side);
+  const dancer = activeFighter(state, foeSide);
+  if (dancer.hp <= 0 || dancer.ability !== 'Dancer') return;
+  const copy = getMove(move.id);
+  if (!copy) return;
+  dancerCopyActive = true;
+  try {
+    pushText(state, `${dancer.name} joined in the dance with Dancer!`);
+    resolveMove(state, foeSide, dancer, copy, null);
+  } finally {
+    dancerCopyActive = false;
   }
 }
 

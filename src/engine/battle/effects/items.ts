@@ -24,7 +24,13 @@ function hasCurableStatus(item: ItemDef, fighter: BattleFighter): boolean {
 /** `below` is an HP at-or-below fraction, as `[numerator, denominator]`. */
 function belowThreshold(item: ItemDef, fighter: BattleFighter): boolean {
   if (!item.below) return true;
-  return fighter.hp * item.below[1] <= fighter.maxHp * item.below[0];
+  let [numerator, denominator] = item.below;
+  // Gluttony eats a berry at half HP even when it would normally wait longer.
+  if (fighter.ability === 'Gluttony' && numerator / denominator < 1 / 2) {
+    numerator = 1;
+    denominator = 2;
+  }
+  return fighter.hp * denominator <= fighter.maxHp * numerator;
 }
 
 /** Unnerve stops the foe from eating its own berry. */
@@ -36,6 +42,10 @@ function consume(ctx: EffectContext, item: ItemDef): void {
   ctx.owner.heldItem = null;
   ctx.owner.lastItemId = item.id;
   pushText(ctx.state, `${ctx.owner.name} used up its ${item.name}!`);
+  // Cud Chew owes the holder one more bite at the end of the turn.
+  if (ctx.owner.ability === 'Cud Chew' && ctx.owner.volatiles.cudChew === null) {
+    ctx.owner.volatiles.cudChew = item.id;
+  }
   if (item.consumed && ctx.owner.ability === 'Cheek Pouch' && ctx.owner.hp > 0) {
     const healed = applyHeal(ctx.owner, Math.max(1, Math.floor(ctx.owner.maxHp / 3)));
     if (healed > 0) {
@@ -51,7 +61,39 @@ function consume(ctx: EffectContext, item: ItemDef): void {
   }
 }
 
-/** Leftovers and the healing berries: a residual heal, optionally consumed. */
+/**
+ * Applies a held item's effect once. `forced` skips the HP threshold, for Cud
+ * Chew's second bite. Returns whether anything happened.
+ */
+export function applyHeldItemEffect(ctx: EffectContext, item: ItemDef, forced = false): boolean {
+  const holder = ctx.owner;
+  if (item.cures) {
+    if (!hasCurableStatus(item, holder)) return false;
+    const cured = cureStatus(holder);
+    if (!cured) return false;
+    pushEvent(ctx.state, { kind: 'cure', side: ctx.side, status: cured });
+    pushText(ctx.state, `${holder.name}'s ${item.name} cured its status!`);
+    return true;
+  }
+
+  const baseAmount = healAmountOf(item, holder.maxHp);
+  const amount = holder.ability === 'Ripen' ? baseAmount * 2 : baseAmount;
+  if (amount <= 0 || (!forced && !belowThreshold(item, holder))) return false;
+  const healed = applyHeal(holder, amount);
+  if (healed <= 0) return false;
+
+  pushEvent(ctx.state, {
+    kind: 'heal',
+    side: ctx.side,
+    amount: healed,
+    hp: holder.hp,
+    maxHp: holder.maxHp,
+  });
+  pushText(ctx.state, `${holder.name} restored HP with its ${item.name}!`);
+  return true;
+}
+
+/** Leftovers and the healing berries: a residual effect, optionally consumed. */
 function residualHandler(item: ItemDef): NonNullable<EffectHandlers['onResidual']> {
   return (ctx) => {
     const holder = ctx.owner;
@@ -60,31 +102,7 @@ function residualHandler(item: ItemDef): NonNullable<EffectHandlers['onResidual'
       pushText(ctx.state, `${holder.name} can't eat its ${item.name} because of Unnerve!`);
       return;
     }
-
-    if (item.cures) {
-      if (!hasCurableStatus(item, holder)) return;
-      const cured = cureStatus(holder);
-      if (!cured) return;
-      pushEvent(ctx.state, { kind: 'cure', side: ctx.side, status: cured });
-      pushText(ctx.state, `${holder.name}'s ${item.name} cured its status!`);
-      if (item.consumed) consume(ctx, item);
-      return;
-    }
-
-    const baseAmount = healAmountOf(item, holder.maxHp);
-    const amount = holder.ability === 'Ripen' ? baseAmount * 2 : baseAmount;
-    if (amount <= 0 || !belowThreshold(item, holder)) return;
-    const healed = applyHeal(holder, amount);
-    if (healed <= 0) return;
-
-    pushEvent(ctx.state, {
-      kind: 'heal',
-      side: ctx.side,
-      amount: healed,
-      hp: holder.hp,
-      maxHp: holder.maxHp,
-    });
-    pushText(ctx.state, `${holder.name} restored HP with its ${item.name}!`);
+    if (!applyHeldItemEffect(ctx, item)) return;
     if (item.consumed) consume(ctx, item);
   };
 }

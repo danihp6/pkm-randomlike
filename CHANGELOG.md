@@ -349,3 +349,24 @@ file is the human-readable summary.
       in `endOfTurnVolatile`) and **Cute Charm** (an `attract` volatile that adds a
       50% lost turn to `beforeMoveVolatile`). Coverage at 259 ports (220
       abilities); 377 tests pass; `npm run build` clean.
+- [x] `src/engine/battle/effects/abilities.ts`: batch 12 closes the ability
+      coverage. Ported with real behaviour: **Arena Trap**, **Shadow Tag** and
+      **Magnet Pull** (`trappedBy` in `fighter.ts`, `isTrapped` in `state.ts`, so
+      `validateSwitch` and `canRun` share one rule, with the Ghost/grounded/Steel
+      immunity and Neutralizing Gas off-switch); **Battle Bond** (one-time
+      Attack/Sp. Atk/Speed boost after a KO); **Cud Chew** (a consumed berry gets
+      one more bite from a factored-out `applyHeldItemEffect`, with the `cudChew`
+      volatile); **Dancer** (a dance move the foe uses is replayed by a
+      `dancerFollowUp` guard that stops a mirror loop); **Gluttony** (lifts the
+      berry threshold to half); **Hadron Engine** (Electric Terrain plus 4/3 Special)
+      and **Orichalcum Pulse** (sun plus 4/3 physical); **Protosynthesis** and
+      **Quark Drive** (the highest stat boosted 1.3x, Speed 1.5x, in sun or
+      Electric Terrain); **Magic Bounce** (a reflectable status move is bounced
+      back in `applyMoveEffects`); **Rivalry** (1.25x/0.75x by gender, on a new
+      `gender` fighter field the run assigns in Phase 6); and **Illuminate**'s
+      v1.3.2 accuracy-drop immunity. The unreachable-in-singles leftovers moved to
+      `excluded` in the coverage script with explicit reasons (forme change,
+      doubles/ally, weight, hazards, forced switch, out-of-battle). Only **Illusion**
+      and **Imposter** stay `no-op`, both blocked on Transform. Coverage at 273
+      ports (234 abilities, 2 no-op, 74 excluded); 388 tests pass; `npm run build`
+      clean.

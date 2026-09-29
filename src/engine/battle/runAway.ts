@@ -1,10 +1,10 @@
 import type { Rng } from '../rng';
-import { activeFighter, opponent, opponentOf, type BattleState, type SideId } from './state';
+import { activeFighter, isTrapped, opponent, opponentOf, type BattleState, type SideId } from './state';
 import { modifiedSpeed } from './modifiers';
 import { makeContext, runTryEscape } from './effects/registry';
 
 export function canRun(state: BattleState, side: SideId): boolean {
-  return state.isWild && !activeFighter(state, side).volatiles.trapped;
+  return state.isWild && !isTrapped(state, side);
 }
 
 /** Classic Gen V+ escape odds: speed ratio plus 30 per failed attempt. */

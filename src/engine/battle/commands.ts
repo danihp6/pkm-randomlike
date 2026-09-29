@@ -5,6 +5,7 @@ import { applyBoosts, applyHeal, type BattleFighter, type MoveSlot } from './fig
 import {
   activeFighter,
   finishBattle,
+  isTrapped,
   opponent,
   opponentOf,
   pushEvent,
@@ -64,7 +65,7 @@ function validateSwitch(state: BattleState, side: SideId, command: SwitchCommand
   if (!target) return 'That Pokémon is not in the party.';
   if (command.partyIndex === battleSide.activeIndex) return 'That Pokémon is already out.';
   if (target.hp <= 0) return 'That Pokémon has no energy left.';
-  if (!battleSide.awaitingReplacement && activeFighter(state, side).volatiles.trapped) {
+  if (!battleSide.awaitingReplacement && isTrapped(state, side)) {
     return 'The Pokémon cannot be switched out.';
   }
   return null;

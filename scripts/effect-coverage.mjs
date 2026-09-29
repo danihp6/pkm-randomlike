@@ -43,7 +43,7 @@ for (const id of UNREACHABLE) EXCLUDED_ABILITIES.set(id, 'no playable species ha
 for (const id of [
   'battery', 'costar', 'friendguard', 'healer', 'hospitality', 'minus', 'plus',
   'powerofalchemy', 'powerspot', 'receiver', 'symbiosis', 'telepathy', 'commander',
-  'flowerveil',
+  'flowerveil', 'curiousmedicine', 'propellertail', 'stalwart',
 ]) {
   EXCLUDED_ABILITIES.set(id, 'doubles/ally only');
 }
@@ -56,6 +56,17 @@ for (const id of [
 for (const id of ['asoneglastrier', 'asonespectrier']) {
   EXCLUDED_ABILITIES.set(id, 'fused forme (cut)');
 }
+for (const id of ['gulpmissile', 'hungerswitch', 'multitype', 'shieldsdown', 'zerotohero']) {
+  EXCLUDED_ABILITIES.set(id, 'forme change (cut)');
+}
+for (const id of ['honeygather', 'pickup']) {
+  EXCLUDED_ABILITIES.set(id, 'out of battle only');
+}
+for (const id of ['heavymetal', 'lightmetal']) {
+  EXCLUDED_ABILITIES.set(id, 'weight is not modelled');
+}
+EXCLUDED_ABILITIES.set('suctioncups', 'no forced-switch mechanic');
+EXCLUDED_ABILITIES.set('toxicdebris', 'entry hazards are not modelled');
 
 const abilityRows = [...abilities]
   .sort((a, b) => a.name.localeCompare(b.name))
@@ -96,8 +107,10 @@ by the game. Regenerate with \`npm run docs:coverage\`.
   A develop build (the \`src/dev\` gate) warns once per effect when a battle
   meets one, so a gap cannot hide during playtests.
 - \`excluded\` — deliberately out of scope: no playable species has it, it only
-  works with allies, or it needs a cut mechanic (Mega/Z/Dynamax/Terastal/forme
-  change). Excluded effects are never a coverage gap.
+  works with allies, it needs a cut mechanic (Mega/Z/Dynamax/Terastal/forme
+  change), or it needs a mechanic the engine does not model (weight, entry
+  hazards, forced switching, out-of-battle effects). Excluded effects are never
+  a coverage gap.
 
 The run only ever hands out the items in \`src/data/items.ts\`, so a dex item that
 is not in that catalogue is \`excluded\` by definition: adding it later is a

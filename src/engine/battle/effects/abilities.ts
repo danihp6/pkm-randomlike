@@ -5,6 +5,7 @@ import { cureStatus, statusName } from '../status';
 import { opponentOf, pushEvent, pushText, effectiveWeather, type WeatherId } from '../state';
 import { applyFlinch, applyConfusion, applyAttract } from '../volatile';
 import { applyBoostEffect, applyStatusEffect, statLabel } from './apply';
+import { applyHeldItemEffect } from './items';
 import { setTerrain } from './terrain';
 import { setWeather } from './weather';
 import {
@@ -1731,6 +1732,124 @@ function cuteCharm(): EffectHandlers {
   });
 }
 
+/** Battle Bond raises Attack, Sp. Atk and Speed once, after the holder knocks something out. */
+function battleBond(): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || !ctx.target) return;
+      if (ctx.target.hp > 0 || payload.move.basePower <= 0) return;
+      if (ctx.owner.volatiles.battleBond) return;
+      ctx.owner.volatiles.battleBond = true;
+      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { atk: 1, spa: 1, spe: 1 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Battle Bond raised its stats!`,
+      });
+    },
+  };
+}
+
+/** Cud Chew gives a consumed berry one more bite at the end of the next turn. */
+function cudChew(): EffectHandlers {
+  return {
+    onResidual: (ctx) => {
+      const itemId = ctx.owner.volatiles.cudChew;
+      if (!itemId) return;
+      ctx.owner.volatiles.cudChew = null;
+      if (ctx.owner.hp <= 0) return;
+      const item = getItem(itemId);
+      if (!item) return;
+      pushText(ctx.state, `${ctx.owner.name} chewed its cud!`);
+      applyHeldItemEffect(ctx, item, true);
+    },
+  };
+}
+
+/** Hadron Engine sets Electric Terrain and powers up its Special moves there. */
+function hadronEngine(): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      if (ctx.owner.hp > 0) setTerrain(ctx.state, 'electric');
+    },
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || payload.move.category !== 'Special') return;
+      if (ctx.state.terrain !== 'electric') return;
+      return scaledDamage(payload.damage, 4 / 3);
+    },
+  };
+}
+
+/** Orichalcum Pulse sets harsh sunlight and powers up its physical moves there. */
+function orichalcumPulse(): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      if (ctx.owner.hp > 0) setWeather(ctx.state, 'sun');
+    },
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || payload.move.category !== 'Physical') return;
+      if (effectiveWeather(ctx.state) !== 'sun') return;
+      return scaledDamage(payload.damage, 4 / 3);
+    },
+  };
+}
+
+type ParadoxStat = 'atk' | 'def' | 'spa' | 'spd' | 'spe';
+
+const PARADOX_ORDER: readonly ParadoxStat[] = ['atk', 'def', 'spa', 'spd', 'spe'];
+
+/** Protosynthesis and Quark Drive boost the holder's highest stat. */
+function highestStat(fighter: BattleFighter): ParadoxStat {
+  let best = PARADOX_ORDER[0];
+  for (const stat of PARADOX_ORDER) {
+    if (fighter.stats[stat] > fighter.stats[best]) best = stat;
+  }
+  return best;
+}
+
+function paradox(active: (ctx: EffectContext) => boolean): EffectHandlers {
+  return {
+    onModifySpe: (ctx, speed) => {
+      if (ctx.owner !== ctx.source || !active(ctx)) return;
+      if (highestStat(ctx.owner) !== 'spe') return;
+      return Math.max(1, Math.floor(speed * 1.5));
+    },
+    onModifyDamage: (ctx, payload) => {
+      if (!active(ctx)) return;
+      const stat = highestStat(ctx.owner);
+      const physical = payload.move.category === 'Physical';
+      if (ctx.owner === ctx.source) {
+        if ((stat === 'atk' && physical) || (stat === 'spa' && !physical)) {
+          return scaledDamage(payload.damage, 1.3);
+        }
+      } else if (ctx.owner === ctx.target) {
+        if ((stat === 'def' && physical) || (stat === 'spd' && !physical)) {
+          return Math.max(1, Math.floor(payload.damage / 1.3));
+        }
+      }
+    },
+  };
+}
+
+function protosynthesis(): EffectHandlers {
+  return paradox((ctx) => effectiveWeather(ctx.state) === 'sun');
+}
+
+function quarkDrive(): EffectHandlers {
+  return paradox((ctx) => ctx.state.terrain === 'electric');
+}
+
+/** Rivalry is stronger against the same gender and weaker against the opposite. */
+function rivalry(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || !ctx.target) return;
+      const gender = ctx.owner.gender;
+      const foe = ctx.target.gender;
+      if (gender === 'genderless' || foe === 'genderless') return;
+      return scaledDamage(payload.damage, gender === foe ? 1.25 : 0.75);
+    },
+  };
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -1966,6 +2085,26 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['liquidvoice', liquidVoice()],
   ['cursedbody', cursedBody()],
   ['cutecharm', cuteCharm()],
+
+  ['battlebond', battleBond()],
+  ['cudchew', cudChew()],
+  ['hadronengine', hadronEngine()],
+  ['orichalcumpulse', orichalcumPulse()],
+  ['protosynthesis', protosynthesis()],
+  ['quarkdrive', quarkDrive()],
+  ['rivalry', rivalry()],
+  // Illuminate's Gen 9 effect is an immunity to accuracy drops (v1.3.2+).
+  ['illuminate', statGuard(['accuracy'])],
+
+  // Trapping, Dancer, Gluttony and Magic Bounce act at their call sites:
+  // `trappedBy`/`isTrapped` in fighter.ts and state.ts, Dancer and Magic Bounce
+  // in the turn loop, Gluttony in effects/items.ts.
+  ['arenatrap', {}],
+  ['shadowtag', {}],
+  ['magnetpull', {}],
+  ['dancer', {}],
+  ['gluttony', {}],
+  ['magicbounce', {}],
 
   // Air Lock / Cloud Nine and Unseen Fist act at the call site (effectiveWeather,
   // protectBlocks).
