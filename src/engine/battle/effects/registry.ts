@@ -31,12 +31,18 @@ export type SecondaryPayload = Readonly<{ effect: MoveEffect }>;
  */
 export type EffectHandlers = Readonly<{
   onSwitchIn?: (ctx: EffectContext) => void;
+  onSwitchOut?: (ctx: EffectContext) => void;
   onStart?: (ctx: EffectContext) => void;
   onResidual?: (ctx: EffectContext) => void;
   onModifyDamage?: (ctx: EffectContext, payload: DamagePayload) => number | void;
   onModifySpe?: (ctx: EffectContext, speed: number) => number | void;
   onModifyAccuracy?: (ctx: EffectContext, chance: number) => number | void;
+  onModifyPriority?: (ctx: EffectContext, priority: number) => number | void;
+  onModifyCrit?: (ctx: EffectContext, willCrit: boolean) => boolean | void;
+  onModifyMultihit?: (ctx: EffectContext, hits: number) => number | void;
   onTryHit?: (ctx: EffectContext, payload: MovePayload) => boolean | void;
+  /** True bypasses the target's substitute (Infiltrator). */
+  onTrySubstitute?: (ctx: EffectContext) => boolean | void;
   onTryVolatile?: (ctx: EffectContext, payload: VolatilePayload) => boolean | void;
   onTrySecondary?: (ctx: EffectContext, payload: SecondaryPayload) => boolean | void;
   onAfterMove?: (ctx: EffectContext, payload: MovePayload) => void;
@@ -142,6 +148,20 @@ export function runSwitchIn(ctx: EffectContext): void {
   }
 }
 
+export function runSwitchOut(ctx: EffectContext): void {
+  for (const ref of contextEffects(ctx, false, null)) {
+    ref.effect.handlers.onSwitchOut?.(contextFor(ctx, ref));
+  }
+}
+
+/** A true result means the attacker's move ignores the target's substitute. */
+export function runTrySubstitute(ctx: EffectContext, move: Move): boolean {
+  for (const ref of contextEffects(ctx, false, move)) {
+    if (ref.effect.handlers.onTrySubstitute?.(contextFor(ctx, ref)) === true) return true;
+  }
+  return false;
+}
+
 export function runStart(ctx: EffectContext): void {
   for (const ref of contextEffects(ctx, false, null)) {
     ref.effect.handlers.onStart?.(contextFor(ctx, ref));
@@ -239,6 +259,36 @@ export function runModifyAccuracy(ctx: EffectContext, chance: number): number {
   let value = chance;
   for (const ref of contextEffects(ctx, true, null)) {
     const next = ref.effect.handlers.onModifyAccuracy?.(contextFor(ctx, ref), value);
+    if (typeof next === 'number') value = next;
+  }
+  return value;
+}
+
+/** Priority modifiers read the fighter's own ability (Prankster, Gale Wings). */
+export function runModifyPriority(ctx: EffectContext, move: Move, priority: number): number {
+  let value = priority;
+  for (const ref of contextEffects(ctx, false, move)) {
+    const next = ref.effect.handlers.onModifyPriority?.(contextFor(ctx, ref), value);
+    if (typeof next === 'number') value = next;
+  }
+  return value;
+}
+
+/** Crit blockers read the defender's ability (Battle Armor, Shell Armor). */
+export function runModifyCrit(ctx: EffectContext, move: Move, willCrit: boolean): boolean {
+  let value = willCrit;
+  for (const ref of contextEffects(ctx, true, move)) {
+    const next = ref.effect.handlers.onModifyCrit?.(contextFor(ctx, ref), value);
+    if (typeof next === 'boolean') value = next;
+  }
+  return value;
+}
+
+/** Multihit modifiers read the attacker's ability (Skill Link). */
+export function runModifyMultihit(ctx: EffectContext, move: Move, hits: number): number {
+  let value = hits;
+  for (const ref of contextEffects(ctx, false, move)) {
+    const next = ref.effect.handlers.onModifyMultihit?.(contextFor(ctx, ref), value);
     if (typeof next === 'number') value = next;
   }
   return value;

@@ -224,3 +224,15 @@ file is the human-readable summary.
       application; Sheer Force suppresses its secondaries, Shield Dust blocks
       them). Fighters gained `volatiles.flashFire`. The coverage table is at 120
       ports. 247 tests pass; `npm run build` clean.
+- [x] `src/engine/battle/effects/abilities.ts`: batch 4, 24 more abilities — the
+      switch group (Regenerator, Natural Cure, Frisk, Anticipation, Download), the
+      priority group (Prankster, Gale Wings), the contact reactions (Rattled,
+      Pickpocket, Effect Spore, Rough Skin), the crit/multihit/substitute group
+      (Battle Armor, Shell Armor, Anger Point, Skill Link, Infiltrator), the
+      stat-react group (Defiant, Competitive, Grass Pelt) and the move/status
+      blocks (Damp, Bulletproof, Soundproof, Sweet Veil, Poison Heal). New hooks
+      `onSwitchOut`, `onModifyPriority`, `onModifyCrit`, `onTrySubstitute` and
+      `onModifyMultihit`; the crit roll moved out of `computeDamage` into the turn
+      loop so crit blockers and Anger Point can hook it, and Poison Heal is
+      skipped in the residual poison step. 266 tests pass; coverage at 144 ports;
+      `npm run build` clean.

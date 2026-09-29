@@ -56,7 +56,7 @@ The whole menu battle minus per-effect behaviour. Contract in
 Ports of Showdown handlers, in batches, on the hook names in
 `docs/showdown-reuse.md` §3.
 
-- [ ] `src/engine/battle/effects/abilities.ts`: the remaining abilities (batch 4+),
+- [ ] `src/engine/battle/effects/abilities.ts`: the remaining abilities (batch 5+),
       ported from Showdown's handler bodies and tracked as `no-op` in
       `docs/balance/effect-coverage.md`.
 - [ ] `src/engine/battle/effects/moves.ts`: the remaining odd moves — multi-turn
