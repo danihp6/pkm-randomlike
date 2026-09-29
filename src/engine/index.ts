@@ -6,3 +6,4 @@ export * from './vision';
 export * from './pathfinding';
 export * from './tileset';
 export * from './tileFrames';
+export * from './routes';

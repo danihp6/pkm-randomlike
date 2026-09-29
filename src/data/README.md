@@ -5,11 +5,16 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 ## Layout
 
 - `dex/` — **generated**, committed, do not edit by hand. Produced by
-  `npm run data:dex` from `@pkmn/dex`. See `docs/showdown-reuse.md`.
+  `npm run data:dex` from `@pkmn/dex`. See `docs/showdown-reuse.md`. Typed
+  accessors live beside it (`species.ts`, `moves.ts`, `learnsets.ts`, `types.ts`,
+  `natures.ts`, `evolutions.ts`).
 - `tilesets/` — one file per biome tileset plus the shared `palettes.ts` and the
   `index.ts` registry. Contract in `docs/tileset-spec.md`.
-- (later phases) `biomes.ts`, `encounters.ts`, `trainers.ts`, `items.ts`,
-  `run.ts` — see `docs/data-spec.md`.
+- `biomes.ts` — biome → tileset, terrain flavour and encounter tables.
+- `encounters.ts` — per-biome species pools and weights by level band.
+- `trainers.ts` — trainer archetypes and their themed species pools.
+- `run.ts` — level bands, the per-route cap and the run chain cadence.
+- (later phases) `items.ts` — the run's item catalogue.
 
 ## Rules
 

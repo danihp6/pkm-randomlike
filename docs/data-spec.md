@@ -17,7 +17,7 @@ See `docs/showdown-reuse.md` for the contents and filters, and
 | `src/data/tilesets/*.ts` | one biome tileset config + palette per biome | 0 |
 | `src/data/biomes.ts` | biome → tileset, encounter table, level band flavour | 2 |
 | `src/data/encounters.ts` | per-biome species pools and weights by band | 2 |
-| `src/data/trainers.ts` | trainer archetypes: name, class, sprite, roster shape | 2 |
+| `src/data/trainers.ts` | trainer archetypes: name, class, sprite, species pool | 2 |
 | `src/data/items.ts` | the run's item catalogue: balls, potions, revives-off, held items | 3 |
 | `src/data/run.ts` | chain length, mini-boss cadence, boss cadence, level caps | 2 |
 

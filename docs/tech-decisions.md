@@ -112,6 +112,13 @@ effect is `port`, `no-op` or `excluded` in `docs/balance/effect-coverage.md`, an
 a dev build warns when a battle meets an unported effect. "Complete" means the
 table says so, not that the list was copied.
 
+## D17 — What randomness may touch *(decided)*
+
+Stats, types and evolutions are fixed per species (dex data) and are never
+rolled. Randomness is limited to what a run varies: a wild encounter's species
+and level, a Pokémon's learnset/moveset and ability, a trainer's team, and which
+floor items spawn. One run seed drives all of it through `Rng` streams.
+
 ## Open questions
 
 - **O1 — Trainer sprites.** No imported set has them. Options: a CC0 avatar pack,
