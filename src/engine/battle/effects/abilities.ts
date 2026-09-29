@@ -345,7 +345,7 @@ function sheerForce(): EffectHandlers {
     onModifyDamage: (ctx, payload) => {
       if (ctx.owner !== ctx.source) return;
       if (payload.move.basePower <= 0) return;
-      if (!payload.move.secondary && !payload.move.secondaries) return;
+      if (!payload.move.secondaries || payload.move.secondaries.length === 0) return;
       return scaledDamage(payload.damage, 1.3);
     },
   };

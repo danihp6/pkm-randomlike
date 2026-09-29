@@ -245,7 +245,6 @@ function applyMoveEffects(
   if (move.self?.boosts) applyBoostEffect(state, side, attacker, move.self.boosts, { self: true });
 
   const secondaries: MoveEffect[] = [];
-  if (move.secondary) secondaries.push(move.secondary);
   if (move.secondaries) secondaries.push(...move.secondaries);
   const sheerForce = attacker.ability === 'Sheer Force' && move.basePower > 0;
   if (defenderDamaged && !sheerForce) {

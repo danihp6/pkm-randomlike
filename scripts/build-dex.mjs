@@ -67,7 +67,17 @@ const main = async () => {
     evolutions: evolutionOf(entry),
   }));
 
-  const moves = Dex.moves.all().filter((entry) => !entry.isNonstandard);
+  // `secondaries` is the resolved array (@pkmn/dex derives it from `secondary`),
+  // so the raw `secondary` field is dropped: keeping both made the engine apply
+  // single secondaries twice.
+  const moves = Dex.moves
+    .all()
+    .filter((entry) => !entry.isNonstandard)
+    .map((entry) => {
+      const out = { ...entry };
+      delete out.secondary;
+      return out;
+    });
   const moveIds = new Set(moves.map((entry) => entry.id));
   const abilities = Dex.abilities.all().filter((entry) => !entry.isNonstandard);
   const items = Dex.items.all().filter((entry) => !entry.isNonstandard);

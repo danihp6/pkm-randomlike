@@ -434,7 +434,7 @@ describe('damage abilities (batch 3)', () => {
     );
     takeTurn(control, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
     takeTurn(sheer, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
-    expect(activeFighter(control, 'enemy').boosts.spe).toBeLessThan(0);
+    expect(activeFighter(control, 'enemy').boosts.spe).toBe(-1);
     expect(activeFighter(sheer, 'enemy').boosts.spe).toBe(0);
   });
 
@@ -450,7 +450,7 @@ describe('damage abilities (batch 3)', () => {
     takeTurn(dust, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
     takeTurn(control, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
     expect(activeFighter(dust, 'enemy').boosts.spe).toBe(0);
-    expect(activeFighter(control, 'enemy').boosts.spe).toBeLessThan(0);
+    expect(activeFighter(control, 'enemy').boosts.spe).toBe(-1);
   });
 
   it('Reckless boosts recoil moves', () => {

@@ -34,7 +34,6 @@ export type Move = Readonly<{
   recoil?: readonly number[];
   struggleRecoil?: boolean;
   multihit?: number | readonly number[];
-  secondary?: MoveEffect;
   secondaries?: readonly MoveEffect[];
   self?: MoveEffect;
   boosts?: MoveBoosts;

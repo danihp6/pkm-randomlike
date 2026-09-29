@@ -105,3 +105,42 @@ describe('escape', () => {
     expect(state.log.some((event) => event.kind === 'run' && event.success)).toBe(true);
   });
 });
+
+describe('secondary effects', () => {
+  it('applies a single secondary exactly once', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'croconaw', level: 20, moves: ['bulldoze'] }],
+      [{ id: 'e', speciesId: 'bulbasaur', level: 40, moves: ['growl'] }],
+    );
+    state.sides.enemy.party[0].maxHp = 100000;
+    state.sides.enemy.party[0].hp = 100000;
+    takeTurn(state, fight(), fight());
+    expect(activeFighter(state, 'enemy').boosts.spe).toBe(-1);
+  });
+
+  it('applies a self-targeting secondary once', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'croconaw', level: 20, moves: ['flamecharge'] }],
+      [{ id: 'e', speciesId: 'bulbasaur', level: 40, moves: ['growl'] }],
+    );
+    state.sides.enemy.party[0].maxHp = 100000;
+    state.sides.enemy.party[0].hp = 100000;
+    takeTurn(state, fight(), fight());
+    expect(activeFighter(state, 'player').boosts.spe).toBe(1);
+  });
+
+  it('applies each entry of a multi-secondary move once', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'croconaw', level: 20, moves: ['firefang'] }],
+      [{ id: 'e', speciesId: 'blissey', level: 40, moves: ['growl'] }],
+      7,
+    );
+    state.sides.enemy.party[0].maxHp = 100000;
+    state.sides.enemy.party[0].hp = 100000;
+    for (let i = 0; i < 200 && activeFighter(state, 'enemy').status === null; i++) {
+      state.sides.player.party[0].moves[0].pp = 40;
+      takeTurn(state, fight(), { type: 'fight', moveIndex: 0 });
+    }
+    expect(activeFighter(state, 'enemy').status).toBe('brn');
+  });
+});

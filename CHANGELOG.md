@@ -258,3 +258,10 @@ file is the human-readable summary.
       and the after-move payload carries `hit` so an immune or status move cannot
       trigger contact/on-hit abilities. Coverage at 189 ports (150 abilities);
       302 tests pass; `npm run build` clean.
+- [x] Fixed the duplicated secondary effects: `build-dex.mjs` now drops the raw
+      `secondary` field and keeps only the resolved `secondaries` array, and the
+      engine applies that array once. A single-secondary move like Bulldoze no
+      longer lowers Speed twice, and the self-boosting secondaries (Flame Charge,
+      Ancient Power) land once. Regenerated the dex (moves.json only; content
+      counts unchanged) and tightened the Sheer Force / Shield Dust tests to
+      assert the exact stage. 305 tests pass; `npm run build` clean.
