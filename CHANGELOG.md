@@ -280,3 +280,16 @@ file is the human-readable summary.
       `volatiles.charging` and physical/special damage banks; sides gained
       `wishTurns` and `batonPassBoosts`. `autoReplace` no longer re-picks a
       healthy self-switched active. 314 tests pass; `npm run build` clean.
+- [x] `src/engine/battle/effects/abilities.ts`: batch 7, 19 more abilities — the
+      defensive/entry group (Fur Coat, Ice Face, Slow Start, Unburden, Forewarn,
+      Supersweet Syrup, Pressure), the stat reactions (Speed Boost, Guard Dog
+      intercepting Intimidate) and the item/contact group (Magician, Lingering
+      Aroma, Harvest, Sticky Hold, Ripen, Cheek Pouch, Unnerve). Passive
+      abilities whose behaviour sits at the call site are registered so the
+      coverage table and the dev warning both see them: Early Bird and Corrosion
+      in `status.ts`, Liquid Ooze in the drain path, Pressure in the PP cost and
+      the berry abilities in `effects/items.ts`. Fighters gained
+      `volatiles.slowStart`, `iceFace` and `supersweetSyrup`. Gluttony stays
+      `no-op`: the run catalogue's berries all trigger at half HP, so it is not
+      observable yet. Coverage at 208 ports (169 abilities); 333 tests pass;
+      `npm run build` clean.

@@ -144,3 +144,26 @@ describe('secondary effects', () => {
     expect(activeFighter(state, 'enemy').status).toBe('brn');
   });
 });
+
+describe('ability interactions in the turn loop', () => {
+  it('Pressure doubles the PP a foe move costs', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'charmander', level: 20, moves: ['ember'] }],
+      [{ id: 'e', speciesId: 'dusclops', level: 20, ability: 'Pressure', moves: ['tackle'] }],
+    );
+    const before = state.sides.player.party[0].moves[0].pp;
+    takeTurn(state, fight(), fight());
+    expect(state.sides.player.party[0].moves[0].pp).toBe(before - 2);
+  });
+
+  it('Liquid Ooze makes a drain move hurt its user', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'bulbasaur', level: 20, moves: ['absorb'] }],
+      [{ id: 'e', speciesId: 'tentacool', level: 20, ability: 'Liquid Ooze', moves: ['growl'] }],
+    );
+    const player = state.sides.player.party[0];
+    const before = player.hp;
+    takeTurn(state, fight(), fight());
+    expect(player.hp).toBeLessThan(before);
+  });
+});

@@ -164,3 +164,61 @@ describe('held items in the turn loop', () => {
     ).toThrow(/Held items/);
   });
 });
+
+function itemBattle(
+  holderSpecies: string,
+  ability: string,
+  itemId: string,
+  enemySpecies = 'bulbasaur',
+  enemyAbility = 'Overgrow',
+): BattleState {
+  return createBattle({
+    player: [
+      createFighter({ id: 'player', speciesId: holderSpecies, level: 20, ability, heldItem: itemId, moves: ['ember'] }),
+    ],
+    enemy: [
+      createFighter({ id: 'enemy', speciesId: enemySpecies, level: 20, ability: enemyAbility, moves: ['tackle'] }),
+    ],
+    rng: new Rng(99),
+    isWild: true,
+  });
+}
+
+describe('berry abilities (batch 7)', () => {
+  it('Ripen doubles the berry heal', () => {
+    const state = itemBattle('applin', 'Ripen', 'sitrusberry');
+    const player = activeFighter(state, 'player');
+    player.hp = Math.floor(player.maxHp / 4);
+    const before = player.hp;
+
+    runResidual(playerContext(state));
+
+    expect(player.hp).toBe(before + 2 * Math.floor(player.maxHp / 4));
+    expect(player.heldItem).toBeNull();
+  });
+
+  it('Cheek Pouch heals a third of max HP when a berry is eaten', () => {
+    const state = itemBattle('greedent', 'Cheek Pouch', 'sitrusberry');
+    const player = activeFighter(state, 'player');
+    player.hp = Math.floor(player.maxHp / 4);
+    const before = player.hp;
+
+    runResidual(playerContext(state));
+
+    expect(player.hp).toBe(before + Math.floor(player.maxHp / 4) + Math.floor(player.maxHp / 3));
+    expect(player.heldItem).toBeNull();
+  });
+
+  it('Unnerve stops the foe from eating its berry', () => {
+    const state = itemBattle('charmander', 'Blaze', 'sitrusberry', 'ekans', 'Unnerve');
+    const player = activeFighter(state, 'player');
+    player.hp = Math.floor(player.maxHp / 4);
+    const before = player.hp;
+
+    runResidual(playerContext(state));
+
+    expect(player.hp).toBe(before);
+    expect(player.heldItem).toBe('sitrusberry');
+    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Unnerve'))).toBe(true);
+  });
+});

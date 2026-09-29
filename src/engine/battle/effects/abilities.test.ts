@@ -1079,3 +1079,93 @@ describe('speed and on-hit abilities (batch 6)', () => {
     expect(activeFighter(state, 'enemy').volatiles.flinched).toBe(true);
   });
 });
+
+describe('defensive and entry abilities (batch 7)', () => {
+  it('Fur Coat halves physical damage only', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'persianalola', 'Fur Coat'));
+    const ctx = ctxOf(state, 'player');
+    expect(runModifyDamage(ctx, getMove('tackle')!, 100)).toBe(50);
+    expect(runModifyDamage(ctx, getMove('ember')!, 100)).toBe(100);
+  });
+
+  it('Ice Face absorbs one physical hit, not special', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'eiscue', 'Ice Face'));
+    const ctx = ctxOf(state, 'player');
+    expect(runTryHit(ctx, getMove('ember')!)).toBe(true);
+    expect(runTryHit(ctx, getMove('tackle')!)).toBe(false);
+    expect(runTryHit(ctx, getMove('tackle')!)).toBe(true);
+  });
+
+  it('Speed Boost raises Speed each residual', () => {
+    const state = makeBattle(fighter('player', 'yanma', 'Speed Boost'), fighter('enemy', 'charmander', 'Blaze'));
+    runResidual(ctxOf(state, 'player'));
+    expect(activeFighter(state, 'player').boosts.spe).toBe(1);
+  });
+
+  it('Slow Start halves Attack and Speed until it wears off', () => {
+    const state = makeBattle(fighter('player', 'regigigas', 'Slow Start'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifySpe(ctxOf(state, 'player'), 100)).toBe(50);
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('tackle')!, 100)).toBe(50);
+    for (let i = 0; i < 5; i++) runResidual(ctxOf(state, 'player'));
+    expect(runModifySpe(ctxOf(state, 'player'), 100)).toBe(100);
+  });
+
+  it('Unburden doubles Speed once the held item is gone', () => {
+    const state = makeBattle(fighter('player', 'hitmonlee', 'Unburden'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifySpe(ctxOf(state, 'player'), 100)).toBe(100);
+    activeFighter(state, 'player').lastItemId = 'sitrusberry';
+    expect(runModifySpe(ctxOf(state, 'player'), 100)).toBe(200);
+  });
+
+  it('Forewarn names the foe strongest move on entry', () => {
+    const state = makeBattle(
+      fighter('player', 'drowzee', 'Forewarn'),
+      fighter('enemy', 'charmander', 'Blaze', ['ember']),
+    );
+    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Forewarn'))).toBe(true);
+  });
+
+  it('Supersweet Syrup lowers the foe evasiveness on entry', () => {
+    const state = makeBattle(fighter('player', 'dipplin', 'Supersweet Syrup'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(activeFighter(state, 'enemy').boosts.evasion).toBe(-1);
+  });
+
+  it('Guard Dog raises Attack when Intimidated', () => {
+    const state = makeBattle(fighter('player', 'mabosstiff', 'Guard Dog'), fighter('enemy', 'growlithe', 'Intimidate'));
+    expect(activeFighter(state, 'player').boosts.atk).toBe(1);
+  });
+
+  it('Magician steals the foe item on a hit, blocked by Sticky Hold', () => {
+    const state = makeBattle(fighter('player', 'fennekin', 'Magician'), fighter('enemy', 'bulbasaur', 'Overgrow'));
+    activeFighter(state, 'enemy').heldItem = 'sitrusberry';
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').heldItem).toBe('sitrusberry');
+    expect(activeFighter(state, 'enemy').heldItem).toBeNull();
+
+    const sticky = makeBattle(fighter('player', 'fennekin', 'Magician'), fighter('enemy', 'grimer', 'Sticky Hold'));
+    activeFighter(sticky, 'enemy').heldItem = 'sitrusberry';
+    runAfterMove(ctxOf(sticky, 'player'), getMove('tackle')!);
+    expect(activeFighter(sticky, 'player').heldItem).toBeNull();
+    expect(activeFighter(sticky, 'enemy').heldItem).toBe('sitrusberry');
+  });
+
+  it('Lingering Aroma changes a contact attacker ability', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'oinkologne', 'Lingering Aroma'));
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').ability).toBe('Lingering Aroma');
+  });
+
+  it('Harvest eventually restores the last berry', () => {
+    const state = makeBattle(fighter('player', 'exeggutor', 'Harvest'), fighter('enemy', 'charmander', 'Blaze'), 29);
+    const player = activeFighter(state, 'player');
+    player.heldItem = null;
+    player.lastItemId = 'sitrusberry';
+    for (let i = 0; i < 100 && player.heldItem === null; i++) runResidual(ctxOf(state, 'player'));
+    expect(player.heldItem).toBe('sitrusberry');
+  });
+
+  it('Pressure announces itself on entry', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'dusclops', 'Pressure'));
+    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Pressure'))).toBe(true);
+  });
+});

@@ -57,6 +57,12 @@ export type Volatiles = {
   specialDamageTaken: number;
   /** Turns left before Yawn puts this fighter to sleep (0 = none). */
   yawn: number;
+  /** Slow Start halves Attack and Speed while above zero. */
+  slowStart: number;
+  /** Ice Face is intact and absorbs one physical hit. */
+  iceFace: boolean;
+  /** Supersweet Syrup only lowers the foe's evasiveness once per battle. */
+  supersweetSyrup: boolean;
 };
 
 export type BattleFighter = {
@@ -121,6 +127,9 @@ export function emptyVolatiles(): Volatiles {
     physicalDamageTaken: 0,
     specialDamageTaken: 0,
     yawn: 0,
+    slowStart: 0,
+    iceFace: false,
+    supersweetSyrup: false,
   };
 }
 

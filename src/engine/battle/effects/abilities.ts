@@ -27,6 +27,13 @@ function intimidate(): EffectHandlers {
         pushText(ctx.state, `${foe.name}'s Inner Focus prevents it from being intimidated!`);
         return;
       }
+      if (foe.ability === 'Guard Dog') {
+        applyBoostEffect(ctx.state, opponentOf(ctx.side), foe, { atk: 1 }, {
+          self: true,
+          message: `${foe.name}'s Guard Dog raised its Attack!`,
+        });
+        return;
+      }
       applyBoostEffect(ctx.state, opponentOf(ctx.side), foe, { atk: -1 }, {
         message: `${ctx.owner.name}'s Intimidate cut ${foe.name}'s Attack!`,
       });
@@ -514,6 +521,10 @@ function roughSkin(): EffectHandlers {
 function pickpocket(): EffectHandlers {
   return contactReaction((ctx, attacker) => {
     if (ctx.owner.heldItem || !attacker.heldItem) return;
+    if (attacker.ability === 'Sticky Hold') {
+      pushText(ctx.state, `${attacker.name} is holding on to its item with Sticky Hold!`);
+      return;
+    }
     const itemId = attacker.heldItem;
     const itemName = getItem(itemId)?.name ?? itemId;
     ctx.owner.heldItem = itemId;
@@ -1200,6 +1211,154 @@ function seedSower(): EffectHandlers {
   });
 }
 
+function furCoat(): EffectHandlers {
+  return incomingMultiplier(0.5, (_ctx, payload) => payload.move.category === 'Physical');
+}
+
+function iceFace(): EffectHandlers {
+  return {
+    onStart: (ctx) => {
+      if (ctx.owner === ctx.source) ctx.owner.volatiles.iceFace = true;
+    },
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || !ctx.owner.volatiles.iceFace) return;
+      if (payload.move.category !== 'Physical' || payload.move.basePower <= 0) return;
+      ctx.owner.volatiles.iceFace = false;
+      pushText(ctx.state, `${ctx.owner.name}'s Ice Face was broken!`);
+      return false;
+    },
+  };
+}
+
+function speedBoost(): EffectHandlers {
+  return {
+    onResidual: (ctx) => {
+      if (ctx.owner !== ctx.source || ctx.owner.hp <= 0) return;
+      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { spe: 1 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Speed Boost raised its Speed!`,
+      });
+    },
+  };
+}
+
+function slowStart(): EffectHandlers {
+  return {
+    onStart: (ctx) => {
+      if (ctx.owner.hp <= 0) return;
+      ctx.owner.volatiles.slowStart = 5;
+      pushText(ctx.state, `${ctx.owner.name} can't get it going!`);
+    },
+    onModifySpe: (ctx, speed) => {
+      if (ctx.owner !== ctx.source || ctx.owner.volatiles.slowStart <= 0) return;
+      return Math.max(1, Math.floor(speed / 2));
+    },
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || ctx.owner.volatiles.slowStart <= 0) return;
+      if (payload.move.category !== 'Physical') return;
+      return Math.max(1, Math.floor(payload.damage / 2));
+    },
+    onResidual: (ctx) => {
+      if (ctx.owner !== ctx.source || ctx.owner.volatiles.slowStart <= 0) return;
+      ctx.owner.volatiles.slowStart -= 1;
+      if (ctx.owner.volatiles.slowStart === 0) {
+        pushText(ctx.state, `${ctx.owner.name} finally got its act together!`);
+      }
+    },
+  };
+}
+
+function unburden(): EffectHandlers {
+  return {
+    onModifySpe: (ctx, speed) => {
+      if (ctx.owner !== ctx.source || ctx.owner.lastItemId === null) return;
+      return Math.max(1, Math.floor(speed * 2));
+    },
+  };
+}
+
+function forewarn(): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      const foe = ctx.target;
+      if (!foe) return;
+      let best: { name: string; power: number } | null = null;
+      for (const slot of foe.moves) {
+        const move = getMove(slot.moveId);
+        if (!move) continue;
+        if (!best || move.basePower > best.power) best = { name: move.name, power: move.basePower };
+      }
+      if (best) pushText(ctx.state, `${ctx.owner.name}'s Forewarn alerted it to ${best.name}!`);
+    },
+  };
+}
+
+function supersweetSyrup(): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      if (ctx.owner.volatiles.supersweetSyrup) return;
+      const foe = ctx.target;
+      if (!foe || foe.hp <= 0) return;
+      ctx.owner.volatiles.supersweetSyrup = true;
+      applyBoostEffect(ctx.state, opponentOf(ctx.side), foe, { evasion: -1 }, {
+        message: `${ctx.owner.name}'s Supersweet Syrup lowered ${foe.name}'s evasiveness!`,
+      });
+    },
+  };
+}
+
+function magician(): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || !ctx.target) return;
+      if (!payload.hit || !damagingMove(payload)) return;
+      if (ctx.owner.hp <= 0 || ctx.target.hp <= 0) return;
+      if (ctx.owner.heldItem || !ctx.target.heldItem) return;
+      if (ctx.target.ability === 'Sticky Hold') {
+        pushText(ctx.state, `${ctx.target.name} is holding on to its item with Sticky Hold!`);
+        return;
+      }
+      const itemId = ctx.target.heldItem;
+      const itemName = getItem(itemId)?.name ?? itemId;
+      ctx.owner.heldItem = itemId;
+      ctx.target.heldItem = null;
+      pushText(ctx.state, `${ctx.owner.name} stole ${ctx.target.name}'s ${itemName}!`);
+    },
+  };
+}
+
+function lingeringAroma(): EffectHandlers {
+  return contactReaction((ctx, attacker) => {
+    if (attacker.ability === 'Lingering Aroma') return;
+    attacker.ability = 'Lingering Aroma';
+    pushText(ctx.state, `${attacker.name}'s Ability became Lingering Aroma!`);
+  });
+}
+
+function harvest(): EffectHandlers {
+  return {
+    onResidual: (ctx) => {
+      const holder = ctx.owner;
+      if (holder !== ctx.source || holder.hp <= 0) return;
+      if (holder.heldItem || !holder.lastItemId) return;
+      if (ctx.rng.next() >= 0.5) return;
+      const itemId = holder.lastItemId;
+      holder.heldItem = itemId;
+      holder.lastItemId = null;
+      pushText(ctx.state, `${holder.name} harvested its ${getItem(itemId)?.name ?? itemId}!`);
+    },
+  };
+}
+
+function pressure(): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      if (ctx.owner.hp <= 0) return;
+      pushText(ctx.state, `${ctx.owner.name} is exerting its Pressure!`);
+    },
+  };
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -1366,6 +1525,30 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['stench', stench()],
   ['sandspit', sandSpit()],
   ['seedsower', seedSower()],
+
+  ['furcoat', furCoat()],
+  ['iceface', iceFace()],
+  ['speedboost', speedBoost()],
+  ['slowstart', slowStart()],
+  ['unburden', unburden()],
+  ['forewarn', forewarn()],
+  ['supersweetsyrup', supersweetSyrup()],
+  ['magician', magician()],
+  ['lingeringaroma', lingeringAroma()],
+  ['harvest', harvest()],
+  ['pressure', pressure()],
+
+  // Passive effects whose behaviour lives at the call site: Guard Dog in
+  // Intimidate, Early Bird and Corrosion in status.ts, Liquid Ooze in the turn
+  // loop, Sticky Hold in the theft handlers and the berry abilities in items.ts.
+  ['guarddog', {}],
+  ['earlybird', {}],
+  ['corrosion', {}],
+  ['liquidooze', {}],
+  ['stickyhold', {}],
+  ['ripen', {}],
+  ['cheekpouch', {}],
+  ['unnerve', {}],
 ];
 
 export function abilityEffects(): readonly EffectDefinition[] {
