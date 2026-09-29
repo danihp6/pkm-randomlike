@@ -56,9 +56,6 @@ The whole menu battle minus per-effect behaviour. Contract in
 Ports of Showdown handlers, in batches, on the hook names in
 `docs/showdown-reuse.md` §3.
 
-- [ ] `src/engine/battle/effects/registry.ts`: hook registration
-      (`onSwitchIn`, `onStart`, `onResidual`, `onModifyDamage`, `onTryHit`,
-      `onAfterMove`, `onStatus`, `onBoost`, ...) + dispatch from the turn loop.
 - [ ] `src/engine/battle/effects/items.ts`: the battle items actually obtainable
       in a run (potions, status cures, X-items, berries, Leftovers, type boosts).
 - [ ] `src/engine/battle/effects/abilities.ts`: batch 1 — the abilities that show

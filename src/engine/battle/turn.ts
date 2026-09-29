@@ -1,6 +1,7 @@
 import { type Move, type MoveEffect } from '../../data/dex';
 import { rollHit } from './accuracy';
 import {
+  BOOST_IDS,
   applyBoosts,
   applyDamage,
   applyHeal,
@@ -10,6 +11,17 @@ import {
   type BoostId,
   type StatusId,
 } from './fighter';
+import {
+  makeContext,
+  runAfterMove,
+  runBoost,
+  runModifyDamage,
+  runResidual,
+  runStart,
+  runStatus,
+  runSwitchIn,
+  runTryHit,
+} from './effects/registry';
 import { computeDamage, type DamageResult } from './damage';
 import { orderActions } from './order';
 import {
@@ -72,6 +84,10 @@ export function performSwitch(state: BattleState, side: SideId, partyIndex: numb
   const incoming = activeFighter(state, side);
   pushEvent(state, { kind: 'switch', side, fighterId: incoming.id });
   pushText(state, `${state.sides[side].name} sent out ${incoming.name}!`);
+
+  const ctx = makeContext(state, side, { source: incoming, target: opponent(state, side) });
+  runStart(ctx);
+  runSwitchIn(ctx);
 }
 
 function resolvePreMoveActions(
@@ -141,7 +157,16 @@ function applyBoostEffect(
   target: BattleFighter,
   boosts: NonNullable<Move['boosts']>,
 ): void {
-  const changes: readonly BoostChange[] = applyBoosts(target, boosts);
+  const allowed: Partial<Record<BoostId, number>> = {};
+  for (const stat of BOOST_IDS) {
+    const stages = boosts[stat];
+    if (!stages) continue;
+    const ctx = makeContext(state, side, { source: target, target: opponent(state, side) });
+    if (!runBoost(ctx, stat, stages)) continue;
+    allowed[stat] = stages;
+  }
+
+  const changes: readonly BoostChange[] = applyBoosts(target, allowed);
   for (const change of changes) {
     pushEvent(state, { kind: 'boost', side, stat: change.stat, stages: change.stages });
   }
@@ -172,6 +197,8 @@ function applyStatusEffect(
 ): void {
   if (!isStatusId(status)) return;
   if (hasSubstitute(target)) return;
+  const ctx = makeContext(state, side, { source: target, target: opponent(state, side) });
+  if (!runStatus(ctx, status)) return;
   if (!canApplyStatus(target, status)) return;
   if (applyStatus(target, status, state.rng)) {
     pushEvent(state, { kind: 'status', side, status });
@@ -356,6 +383,9 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
     return;
   }
 
+  const hitContext = makeContext(state, side, { source: attacker, target: defender, move });
+  if (!runTryHit(hitContext, move)) return;
+
   let totalDamage = 0;
   if (move.category !== 'Status' && move.basePower > 0) {
     const hits = multihitHits(move, state.rng);
@@ -367,13 +397,18 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
         if (hit === 0) pushText(state, `It doesn't affect ${target.name}...`);
         break;
       }
+      const damage = runModifyDamage(
+        makeContext(state, side, { source: attacker, target, move }),
+        move,
+        result.damage,
+      );
       if (hasSubstitute(target)) {
-        absorbWithSubstitute(target, result.damage);
+        absorbWithSubstitute(target, damage);
         pushText(state, `It hit ${target.name}'s substitute!`);
         if (target.volatiles.substitute === 0) pushText(state, `${target.name}'s substitute faded!`);
         continue;
       }
-      const dealt = applyDamage(target, result.damage);
+      const dealt = applyDamage(target, damage);
       totalDamage += dealt;
       pushEvent(state, { kind: 'damage', side: opponentOf(side), amount: dealt, hp: target.hp, maxHp: target.maxHp, effectiveness: result.effectiveness, crit: result.crit });
       pushText(state, damageMessage(move.name, result, target));
@@ -385,6 +420,7 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
   }
 
   applyMoveEffects(state, side, move, totalDamage, totalDamage > 0);
+  runAfterMove(hitContext, move);
 }
 
 function faint(state: BattleState, side: SideId): void {
@@ -428,6 +464,12 @@ function resolveResiduals(state: BattleState): void {
     if (tickPerish(fighter)) {
       applyDamage(fighter, fighter.hp);
       pushText(state, `${fighter.name} fainted from the perish count!`);
+      faint(state, side);
+      continue;
+    }
+
+    runResidual(makeContext(state, side, { source: fighter, target: opponent(state, side) }));
+    if (fighter.hp <= 0) {
       faint(state, side);
       continue;
     }

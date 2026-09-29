@@ -141,3 +141,16 @@ file is the human-readable summary.
       `catchRateOf` exposes it and a dex test guards every species.
 - [x] Golden test: a scripted fixed-seed battle frozen as an inline formatted log
       (the seed of the balance harness). 165 tests pass; `npm run build` clean.
+
+## Phase 4 — Battle effects: abilities, items, weather, terrain
+
+- [x] `src/engine/battle/effects/registry.ts`: declarative effect registry with
+      Showdown's hook names (`onSwitchIn`, `onStart`, `onResidual`,
+      `onModifyDamage`, `onTryHit`, `onAfterMove`, `onStatus`, `onBoost`),
+      `registerEffect`/`getEffect`/`clearEffects` keyed by normalized id, and a
+      dispatch that chains the source ability, the defender's ability and the
+      move's own handlers (damage is threaded, boolean hooks stop on the first
+      block). Wired into the turn loop: switch-in/start in `createBattle` and
+      `performSwitch`, damage/status/boost/residual/after-move around the move
+      resolution. No effects are registered yet, so the golden battle is byte for
+      byte unchanged. 173 tests pass; `npm run build` clean.
