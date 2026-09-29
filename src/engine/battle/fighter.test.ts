@@ -8,6 +8,8 @@ import {
   defaultMoveset,
   effectiveSpeed,
   effectiveStat,
+  restoreFighter,
+  snapshotFighter,
   stageMultiplier,
 } from './fighter';
 
@@ -88,5 +90,41 @@ describe('stat stages', () => {
     const base = effectiveSpeed(fighter);
     fighter.status = 'par';
     expect(effectiveSpeed(fighter)).toBe(Math.max(1, Math.floor(base / 2)));
+  });
+});
+
+describe('fighter snapshots', () => {
+  it('round-trips HP, PP, status and identity', () => {
+    const fighter = createFighter({
+      id: 'buddy',
+      speciesId: 'charmander',
+      level,
+      moves: ['ember', 'scratch', 'growl'],
+      heldItem: 'charcoal',
+    });
+    fighter.hp = 7;
+    fighter.moves[0].pp -= 3;
+    fighter.status = 'brn';
+    fighter.statusCounter = 4;
+    applyBoosts(fighter, { atk: 2 });
+
+    const restored = restoreFighter(snapshotFighter(fighter));
+
+    expect(restored.id).toBe('buddy');
+    expect(restored.speciesId).toBe('charmander');
+    expect(restored.hp).toBe(7);
+    expect(restored.maxHp).toBe(fighter.maxHp);
+    expect(restored.heldItem).toBe('charcoal');
+    expect(restored.status).toBe('brn');
+    expect(restored.statusCounter).toBe(4);
+    expect(restored.moves).toEqual(fighter.moves);
+    // Battle-only state never survives a snapshot.
+    expect(restored.boosts.atk).toBe(0);
+  });
+
+  it('keeps a fainted fighter at 0 HP', () => {
+    const fighter = createFighter({ id: 'fallen', speciesId: 'charmander', level });
+    fighter.hp = 0;
+    expect(restoreFighter(snapshotFighter(fighter)).hp).toBe(0);
   });
 });

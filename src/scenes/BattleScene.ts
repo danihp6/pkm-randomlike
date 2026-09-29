@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import { getMove } from '../data/dex';
-import { getItem, type ItemDef } from '../data/items';
+import { getItem } from '../data/items';
 import { legalMoveIndices, type Command } from '../engine/battle/commands';
-import { createFighter, type BattleFighter, type StatusId } from '../engine/battle/fighter';
+import { createFighter, restoreFighter, snapshotFighter, type BattleFighter, type StatusId } from '../engine/battle/fighter';
 import { chooseAiCommand } from '../engine/battle/ai';
 import { canRun } from '../engine/battle/runAway';
 import type { BattleEvent } from '../engine/battle/state';
@@ -17,15 +17,16 @@ import {
   type SideId,
 } from '../engine/battle';
 import { Rng } from '../engine/rng';
+import type { BattleLaunch, BattleOutcome, BattleReturn } from '../engine/run';
 import { battleFrames, type FeedFrame } from '../ui/feed';
 import { hpColorInt, hpFraction, statusAbbreviation } from '../ui/metrics';
 import { drawGauge, drawPanel } from '../ui/panel';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
+import type { RouteScene } from './RouteScene';
 
 const MESSAGE_HOLD_MS = 850;
 const FAST_HOLD_MS = 45;
 const MENU_ROWS = 4;
-const DEMO_SEED = 20240929;
 
 type Mode = 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'run' | 'over';
 
@@ -33,19 +34,14 @@ type MenuItem = Readonly<{ label: string; enabled: boolean; onSelect: () => void
 
 type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
 
-function itemDef(id: string): ItemDef {
-  const item = getItem(id);
-  if (!item) throw new Error(`Unknown item ${id}`);
-  return item;
-}
-
 /**
  * The menu battle (Phase 5). It renders the engine's state — platforms, sprites,
  * HP readouts, status badges and the message box — and plays the event log back
- * one frame at a time. A fixed demo party stands in until the run (Phase 6)
- * hands the scene a real one; the four commands are wired straight to the engine.
+ * one frame at a time. The route (Phase 5 transition) launches it paused-on-top
+ * with a `BattleLaunch` and gets a `BattleReturn` back from `returnToRoute`.
  */
 export class BattleScene extends Phaser.Scene {
+  private launch: BattleLaunch | null = null;
   private state!: BattleState;
   private frames: readonly FeedFrame[] = [];
   private frameIndex = 0;
@@ -79,36 +75,30 @@ export class BattleScene extends Phaser.Scene {
     super('Battle');
   }
 
+  init(data?: BattleLaunch): void {
+    this.launch = data ?? null;
+  }
+
   create(): void {
-    const wild = createFighter({
-      id: 'wild',
-      speciesId: 'bulbasaur',
-      level: 10,
-      moves: ['vinewhip', 'tackle', 'growl'],
-    });
+    const launch = this.launch;
+    if (!launch) throw new Error('BattleScene requires a BattleLaunch from the route');
+
+    const trigger = launch.trigger;
+    const enemy =
+      trigger.kind === 'wild'
+        ? [createFighter({ id: 'wild', speciesId: trigger.speciesId, level: trigger.level })]
+        : trigger.roster.map((input) => createFighter(input));
+
     this.state = createBattle({
-      player: [
-        createFighter({
-          id: 'starter',
-          speciesId: 'charmander',
-          level: 12,
-          moves: ['ember', 'scratch', 'growl'],
-        }),
-        createFighter({
-          id: 'reserve',
-          speciesId: 'squirtle',
-          level: 10,
-          moves: ['watergun', 'tackle', 'tailwhip'],
-        }),
-      ],
-      enemy: [wild],
-      rng: new Rng(DEMO_SEED),
-      isWild: true,
-      bag: [
-        { item: itemDef('potion'), count: 2 },
-        { item: itemDef('pokeball'), count: 3 },
-        { item: itemDef('paralyzeheal'), count: 1 },
-      ],
+      player: launch.player.map(restoreFighter),
+      enemy,
+      rng: new Rng(launch.seed),
+      isWild: trigger.kind === 'wild',
+      enemyName: trigger.kind === 'trainer' ? trigger.trainerName : 'Foe',
+      bag: launch.bag.flatMap((slot) => {
+        const item = getItem(slot.itemId);
+        return item && slot.count > 0 ? [{ item, count: slot.count }] : [];
+      }),
     });
 
     this.displayActive = {
@@ -116,7 +106,10 @@ export class BattleScene extends Phaser.Scene {
       enemy: activeFighter(this.state, 'enemy'),
     };
     this.displayHp = { player: this.displayActive.player.hp, enemy: this.displayActive.enemy.hp };
-    this.displayStatus = { player: null, enemy: null };
+    this.displayStatus = {
+      player: this.displayActive.player.status,
+      enemy: this.displayActive.enemy.status,
+    };
 
     this.buildScene();
     this.bindInput();
@@ -168,7 +161,7 @@ export class BattleScene extends Phaser.Scene {
     );
 
     this.add
-      .text(width - 16, 12, 'Z confirm (hold = skip)  ·  X cancel  ·  Esc route', {
+      .text(width - 16, 12, 'Z confirm (hold = skip)  ·  X cancel', {
         fontFamily: 'monospace',
         fontSize: '12px',
         color: '#94a3b8',
@@ -198,7 +191,9 @@ export class BattleScene extends Phaser.Scene {
     keyboard.on('keydown-LEFT', back);
     keyboard.on('keydown-DOWN', forward);
     keyboard.on('keydown-RIGHT', forward);
-    keyboard.on('keydown-ESC', () => this.scene.start('Route'));
+    keyboard.on('keydown-ESC', () => {
+      if (this.mode === 'over') this.returnToRoute();
+    });
   }
 
   private onConfirm(): void {
@@ -206,7 +201,10 @@ export class BattleScene extends Phaser.Scene {
       this.advanceFeed();
       return;
     }
-    if (this.mode === 'over') return;
+    if (this.mode === 'over') {
+      this.returnToRoute();
+      return;
+    }
     this.confirmMenu();
   }
 
@@ -310,14 +308,48 @@ export class BattleScene extends Phaser.Scene {
   private showOver(): void {
     this.mode = 'over';
     this.menuItems = [];
-    const message =
-      this.state.winner === 'player'
-        ? 'You won the battle!'
-        : this.state.winner === 'draw'
-          ? 'Got away safely!'
-          : 'You have no more Pokémon...';
-    this.setMessage(`${message}  ·  Esc to leave`);
+    const message = this.outcomeMessage(this.outcome());
+    this.setMessage(`${message}  ·  Z / Esc to leave`);
     this.refreshHud();
+  }
+
+  /** Reads the finished battle's log to tell a catch, a win, a loss and a flee apart. */
+  private outcome(): BattleOutcome {
+    if (this.state.winner === 'player') {
+      return this.state.log.some((event) => event.kind === 'capture' && event.success)
+        ? 'capture'
+        : 'win';
+    }
+    if (this.state.winner === 'enemy') return 'lose';
+    return this.state.sides.player.party.some((fighter) => fighter.hp > 0) ? 'run' : 'lose';
+  }
+
+  private outcomeMessage(outcome: BattleOutcome): string {
+    const wild = this.state.sides.enemy.party[0];
+    if (outcome === 'capture') return `Gotcha! ${wild.name} was caught!`;
+    if (outcome === 'win') {
+      const trigger = this.launch?.trigger;
+      return trigger?.kind === 'trainer' ? `${trigger.trainerName} was defeated!` : `The wild ${wild.name} fainted!`;
+    }
+    if (outcome === 'run') return 'Got away safely!';
+    return 'Your last Pokémon fainted...';
+  }
+
+  /** Hands the route the party and bag as they stand, then closes the battle. */
+  private returnToRoute(): void {
+    const outcome = this.outcome();
+    const captured = outcome === 'capture' ? snapshotFighter(this.state.sides.enemy.party[0]) : null;
+    const result: BattleReturn = {
+      outcome,
+      message: this.outcomeMessage(outcome),
+      player: this.state.sides.player.party.map(snapshotFighter),
+      bag: this.state.bag.map((slot) => ({ itemId: slot.item.id, count: slot.count })),
+      captured,
+    };
+    const route = this.scene.get('Route') as RouteScene;
+    route.applyBattleResult(result);
+    this.scene.resume('Route');
+    this.scene.stop();
   }
 
   // --- menus --------------------------------------------------------------
@@ -422,7 +454,7 @@ export class BattleScene extends Phaser.Scene {
       (slot) =>
         slot.count > 0 &&
         slot.item.kind !== 'held' &&
-        (slot.item.kind !== 'ball' || this.state.isWild),
+        (slot.item.kind !== 'ball' || (this.state.isWild && this.launch?.canCapture === true)),
     );
   }
 
