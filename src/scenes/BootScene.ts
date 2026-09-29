@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import playerSpriteUrl from '../assets/pokemon/25.png';
+import { PORTRAIT_ATLAS_URL, PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY } from '../data/portraits';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import {
   COMMON_ATLAS_URL,
@@ -39,11 +40,15 @@ export class BootScene extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 32,
     });
+    this.load.spritesheet(PORTRAIT_TEXTURE_KEY, PORTRAIT_ATLAS_URL, {
+      frameWidth: PORTRAIT_SIZE,
+      frameHeight: PORTRAIT_SIZE,
+    });
   }
 
   create(): void {
     this.buildRouteTextures();
-    this.scene.start('Route');
+    this.scene.start('Starter');
   }
 
   /**

@@ -1,11 +1,14 @@
 import Phaser from 'phaser';
 import { biomeForRoute } from '../data/biomes';
 import { getSpecies } from '../data/dex';
+import { getItem } from '../data/items';
+import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
 import { RUN_CHAIN, bandForRoute } from '../data/run';
 import { TRAINER_ARCHETYPE_IDS, getTrainerArchetype } from '../data/trainers';
 import { IS_DEVELOP } from '../dev/env';
-import type { FighterInput } from '../engine/battle';
+import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
+  MAX_PARTY_SIZE,
   addPokemon,
   battleSeed,
   canCapture,
@@ -46,6 +49,7 @@ import {
 import { TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame } from '../engine/tileFrames';
 import { Vision } from '../engine/vision';
+import { drawPanel } from '../ui/panel';
 import {
   ARROW_TEXTURE_KEY,
   GRASS_TEXTURE_KEY,
@@ -92,9 +96,17 @@ export class RouteScene extends Phaser.Scene {
   private pendingBattle: BattleLaunch | null = null;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private hint!: Phaser.GameObjects.Text;
+  private hudRoot!: Phaser.GameObjects.Container;
+  private hudTitle!: Phaser.GameObjects.Text;
+  private hudBag!: Phaser.GameObjects.Text;
+  private hudRows: { portrait: Phaser.GameObjects.Image; text: Phaser.GameObjects.Text }[] = [];
 
   constructor() {
     super('Route');
+  }
+
+  init(data?: { run?: RunState }): void {
+    if (data?.run) this.run = data.run;
   }
 
   create(): void {
@@ -104,6 +116,7 @@ export class RouteScene extends Phaser.Scene {
     }
     this.tileSprites = [];
     this.foggables = [];
+    this.hudRows = [];
     this.pickedItems = new Set<string>();
     this.gameOver = false;
     this.pendingBattle = null;
@@ -165,18 +178,83 @@ export class RouteScene extends Phaser.Scene {
         if (this.scene.isActive()) this.startBattle({ kind: 'wild', speciesId: 'scatterbug', level: 5, key: 'dev' });
       });
     }
+    this.buildHud();
     this.setupHudCamera();
-    this.setHint(
-      `${biome.name} · route ${routeIndex} · band ${band.name} (Lv ${band.minLevel}-${band.maxLevel})`,
-    );
+    this.hint.setDepth(200);
+    this.setHint('Walk the route. Arrow keys to move.');
+    this.refreshHud();
   }
 
-  /** Two cameras: one follows the world, one pins the HUD to the screen. */
+  /** The persistent overlay: route header, party (with portraits) and the bag. */
+  private buildHud(): void {
+    const x = this.scale.width - 266;
+    const y = 8;
+    const panelW = 258;
+    const rowH = 34;
+    const panelH = 44 + MAX_PARTY_SIZE * rowH + 30;
+
+    const panel = this.add.graphics();
+    drawPanel(panel, x, y, panelW, panelH, { fill: 0x141d31 });
+    this.hudTitle = this.add.text(x + 14, y + 12, '', {
+      fontFamily: 'monospace',
+      fontSize: '16px',
+      color: '#f8fafc',
+    });
+    this.hudBag = this.add.text(x + 14, y + panelH - 24, '', {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: '#cbd5f5',
+    });
+
+    const children: Phaser.GameObjects.GameObject[] = [panel, this.hudTitle, this.hudBag];
+    this.hudRows = [];
+    for (let i = 0; i < MAX_PARTY_SIZE; i++) {
+      const rowY = y + 40 + i * rowH;
+      const portrait = this.add
+        .image(x + 22, rowY + 15, PORTRAIT_TEXTURE_KEY, 0)
+        .setScale(0.6)
+        .setVisible(false);
+      const text = this.add.text(x + 46, rowY + 5, '', {
+        fontFamily: 'monospace',
+        fontSize: '14px',
+        color: '#e2e8f0',
+      });
+      this.hudRows.push({ portrait, text });
+      children.push(portrait, text);
+    }
+
+    this.hudRoot = this.add.container(0, 0, children).setDepth(150);
+  }
+
+  private refreshHud(): void {
+    if (!this.hudRoot) return;
+    this.hudTitle.setText(`Route ${this.run.routeIndex} · ${biomeForRoute(this.run.routeIndex).name}`);
+    this.hudBag.setText(
+      this.run.bag.map((slot) => `${getItem(slot.itemId)?.name ?? slot.itemId} x${slot.count}`).join('   '),
+    );
+    this.hudRows.forEach((row, i) => {
+      const member = this.run.party[i];
+      if (!member) {
+        row.portrait.setVisible(false);
+        row.text.setText('');
+        return;
+      }
+      const frame = portraitFrameFor(member.fighter.speciesId);
+      row.portrait.setVisible(frame !== null);
+      if (frame !== null) row.portrait.setFrame(frame);
+      const maxHp = restoreFighter(member.fighter).maxHp;
+      const name = getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId;
+      row.text.setText(`${name} Lv${member.fighter.level}  ${member.fighter.hp}/${maxHp}`);
+    });
+  }
+
+  /** Two cameras: one follows the world, one pins the HUD (hint + overlay) to the screen. */
   private setupHudCamera(): void {
     const hud = this.cameras.add(0, 0, this.scale.width, this.scale.height);
     hud.setScroll(0, 0);
-    hud.ignore(this.children.list.filter((child) => child !== this.hint));
-    this.cameras.main.ignore(this.hint);
+    const keep = new Set<Phaser.GameObjects.GameObject>([this.hint, this.hudRoot]);
+    hud.ignore(this.children.list.filter((child) => !keep.has(child)));
+    this.cameras.main.ignore([this.hint, this.hudRoot]);
   }
 
   private drawTiles(): void {
@@ -361,6 +439,7 @@ export class RouteScene extends Phaser.Scene {
     const reward = this.rewardFor(pending.trigger);
     const { run, released, events } = resolveBattle(this.run, result, reward);
     this.run = run;
+    this.refreshHud();
 
     if (!hasLivingParty(this.run)) {
       this.gameOver = true;

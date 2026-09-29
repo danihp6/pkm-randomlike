@@ -37,3 +37,14 @@ export const RUN_CHAIN = {
   minibossEvery: 4,
   bossBlock: 8,
 } as const;
+
+/** The starters a run can open with. The unlock pool is a later slice. */
+export const STARTER_POOL: readonly string[] = ['bulbasaur', 'charmander', 'squirtle'];
+
+export type StartingItem = Readonly<{ itemId: string; count: number }>;
+
+/** What a fresh run's bag holds before the first route. */
+export const STARTING_BAG: readonly StartingItem[] = [
+  { itemId: 'pokeball', count: 5 },
+  { itemId: 'potion', count: 3 },
+];

@@ -58,6 +58,12 @@ These tiles are 16x16, so any atlas built from them declares `tileSize: 16`
   ranges. Only the first 25 species have real art; the rest are procedural
   placeholders from `generate-pokemon.mjs`.
 - Sheets are loaded lazily per species so a route only pays for what it shows.
+- Portraits: `src/assets/portraits.png` is a 40-column grid of 40x40 PMDCollab
+  faces, one per National Dex number in dex order, so the frame is `num − 1`
+  (`src/data/portraits.ts`). Species whose pack had no portrait keep a procedural
+  placeholder face. The source column (649x40, 25960px tall) is re-laid into the
+  grid by `scripts/legacy-art/relayout-portraits.mjs`, because a single WebGL
+  texture that tall exceeds the GPU's `MAX_TEXTURE_SIZE` and renders black.
 - A 32px character on a 24px tile is drawn at 0.75 scale with its feet on the
   tile centre (see `RouteScene`).
 
