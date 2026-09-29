@@ -45,6 +45,8 @@ export type Volatiles = {
   protect: string | null;
   /** Consecutive successful protections, for the diminishing success odds. */
   protectStreak: number;
+  /** Flash Fire absorbed a Fire move; its next Fire move is boosted. */
+  flashFire: boolean;
 };
 
 export type BattleFighter = {
@@ -103,6 +105,7 @@ export function emptyVolatiles(): Volatiles {
     perish: 0,
     protect: null,
     protectStreak: 0,
+    flashFire: false,
   };
 }
 

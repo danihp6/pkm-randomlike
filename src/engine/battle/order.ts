@@ -1,6 +1,6 @@
 import type { Rng } from '../rng';
-import { effectiveSpeed } from './fighter';
-import { activeFighter, type BattleState, type SideId } from './state';
+import type { BattleState, SideId } from './state';
+import { modifiedSpeed } from './modifiers';
 
 export type ActionEntry = Readonly<{ side: SideId; priority: number }>;
 
@@ -15,8 +15,8 @@ export function orderActions(
 ): ActionEntry[] {
   return [...entries].sort((a, b) => {
     if (a.priority !== b.priority) return b.priority - a.priority;
-    const speedA = effectiveSpeed(activeFighter(state, a.side));
-    const speedB = effectiveSpeed(activeFighter(state, b.side));
+    const speedA = modifiedSpeed(state, a.side);
+    const speedB = modifiedSpeed(state, b.side);
     if (speedA !== speedB) return speedB - speedA;
     return rng.next() < 0.5 ? -1 : 1;
   });

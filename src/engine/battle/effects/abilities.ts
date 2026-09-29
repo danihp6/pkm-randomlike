@@ -1,6 +1,6 @@
-import { applyDamage, applyHeal, type BoostId, type StatusId } from '../fighter';
+import { applyDamage, applyHeal, stagedStat, type BoostId, type StatusId } from '../fighter';
 import { cureStatus, statusName } from '../status';
-import { opponentOf, pushEvent, pushText } from '../state';
+import { opponentOf, pushEvent, pushText, type WeatherId } from '../state';
 import { applyBoostEffect, applyStatusEffect, statLabel } from './apply';
 import {
   registerEffects,
@@ -15,6 +15,10 @@ function intimidate(): EffectHandlers {
     onSwitchIn: (ctx) => {
       const foe = ctx.target;
       if (!foe || foe.hp <= 0) return;
+      if (foe.ability === 'Inner Focus') {
+        pushText(ctx.state, `${foe.name}'s Inner Focus prevents it from being intimidated!`);
+        return;
+      }
       applyBoostEffect(ctx.state, opponentOf(ctx.side), foe, { atk: -1 }, {
         message: `${ctx.owner.name}'s Intimidate cut ${foe.name}'s Attack!`,
       });
@@ -145,7 +149,7 @@ function healHolder(ctx: EffectContext, denominator: number): void {
   if (healed > 0) {
     pushEvent(ctx.state, {
       kind: 'heal',
-      side: opponentOf(ctx.side),
+      side: ctx.side,
       amount: healed,
       hp: ctx.owner.hp,
       maxHp: ctx.owner.maxHp,
@@ -157,7 +161,7 @@ function damageHolder(ctx: EffectContext, denominator: number): void {
   const dealt = applyDamage(ctx.owner, Math.max(1, Math.floor(ctx.owner.maxHp / denominator)));
   pushEvent(ctx.state, {
     kind: 'damage',
-    side: opponentOf(ctx.side),
+    side: ctx.side,
     amount: dealt,
     hp: ctx.owner.hp,
     maxHp: ctx.owner.maxHp,
@@ -264,6 +268,196 @@ function koBoost(boosts: Partial<Record<BoostId, number>>): EffectHandlers {
   };
 }
 
+function weatherSpeed(weather: WeatherId, multiplier: number): EffectHandlers {
+  return {
+    onModifySpe: (ctx, speed) => {
+      if (ctx.owner !== ctx.source) return;
+      if (ctx.state.weather !== weather) return;
+      return Math.max(1, Math.floor(speed * multiplier));
+    },
+  };
+}
+
+/** Quick Feet ignores the paralysis Speed drop and is 1.5x while statused. */
+function quickFeet(): EffectHandlers {
+  return {
+    onModifySpe: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      if (!ctx.owner.status) return;
+      return Math.max(1, Math.floor(stagedStat(ctx.owner.stats.spe, ctx.owner.boosts.spe) * 1.5));
+    },
+  };
+}
+
+function scaledDamage(damage: number, ...multipliers: number[]): number {
+  return Math.max(1, Math.floor(multipliers.reduce((value, factor) => value * factor, damage)));
+}
+
+function accuracyModifier(
+  multiplier: number,
+  applies: (ctx: EffectContext) => boolean,
+): EffectHandlers {
+  return {
+    onModifyAccuracy: (ctx, chance) => {
+      if (!applies(ctx)) return;
+      return Math.min(1, chance * multiplier);
+    },
+  };
+}
+
+function hustle(): EffectHandlers {
+  return {
+    ...accuracyModifier(0.8, (ctx) => ctx.owner === ctx.source),
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (payload.move.category !== 'Physical' || payload.move.basePower <= 0) return;
+      return scaledDamage(payload.damage, 1.5);
+    },
+  };
+}
+
+function adaptability(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (!ctx.owner.types.includes(payload.move.type)) return;
+      return Math.max(1, Math.floor((payload.damage * 2) / 1.5));
+    },
+  };
+}
+
+function sheerForce(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (payload.move.basePower <= 0) return;
+      if (!payload.move.secondary && !payload.move.secondaries) return;
+      return scaledDamage(payload.damage, 1.3);
+    },
+  };
+}
+
+function punkRock(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (!payload.move.flags.sound) return;
+      if (ctx.owner === ctx.source) return scaledDamage(payload.damage, 1.3);
+      if (ctx.owner === ctx.target) return scaledDamage(payload.damage, 0.5);
+    },
+  };
+}
+
+function waterBubble(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner === ctx.source && payload.move.type === 'Water') return scaledDamage(payload.damage, 2);
+      if (ctx.owner === ctx.target && payload.move.type === 'Fire') return scaledDamage(payload.damage, 0.5);
+    },
+  };
+}
+
+function fluffy(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.target) return;
+      let changed = false;
+      let damage = payload.damage;
+      if (payload.move.flags.contact) {
+        damage = scaledDamage(damage, 0.5);
+        changed = true;
+      }
+      if (payload.move.type === 'Fire') {
+        damage = scaledDamage(damage, 2);
+        changed = true;
+      }
+      return changed ? damage : undefined;
+    },
+  };
+}
+
+function flashFire(): EffectHandlers {
+  return {
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target) return;
+      if (payload.move.type !== 'Fire') return;
+      ctx.owner.volatiles.flashFire = true;
+      pushText(ctx.state, `${ctx.owner.name}'s Flash Fire absorbed the attack!`);
+      return false;
+    },
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (payload.move.type !== 'Fire' || !ctx.owner.volatiles.flashFire) return;
+      return scaledDamage(payload.damage, 1.5);
+    },
+  };
+}
+
+function weatherHeal(weather: WeatherId, ability: string): EffectHandlers {
+  return {
+    onResidual: (ctx) => {
+      if (ctx.owner.hp <= 0 || ctx.state.weather !== weather) return;
+      const healed = applyHeal(ctx.owner, Math.max(1, Math.floor(ctx.owner.maxHp / 16)));
+      if (healed <= 0) return;
+      pushEvent(ctx.state, {
+        kind: 'heal',
+        side: ctx.side,
+        amount: healed,
+        hp: ctx.owner.hp,
+        maxHp: ctx.owner.maxHp,
+      });
+      pushText(ctx.state, `${ctx.owner.name} restored a little HP with ${ability}!`);
+    },
+  };
+}
+
+function hydration(): EffectHandlers {
+  return {
+    onResidual: (ctx) => {
+      const holder = ctx.owner;
+      if (holder.hp <= 0 || holder.status === null || ctx.state.weather !== 'rain') return;
+      const cured = cureStatus(holder);
+      if (!cured) return;
+      pushEvent(ctx.state, { kind: 'cure', side: ctx.side, status: cured });
+      pushText(ctx.state, `${holder.name} cured its status with Hydration!`);
+    },
+  };
+}
+
+function leafGuard(): EffectHandlers {
+  return {
+    onStatus: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || ctx.state.weather !== 'sun') return;
+      pushText(
+        ctx.state,
+        `${ctx.owner.name}'s Leaf Guard prevents ${statusName(payload.status as StatusId)}!`,
+      );
+      return false;
+    },
+  };
+}
+
+function shieldDust(): EffectHandlers {
+  return {
+    onTrySecondary: (ctx, payload) => {
+      if (ctx.owner !== ctx.target) return;
+      const effect = payload.effect;
+      if (!effect.status && !effect.volatileStatus && !effect.boosts) return;
+      pushText(ctx.state, `${ctx.owner.name}'s Shield Dust blocked the secondary effect!`);
+      return false;
+    },
+  };
+}
+
+function volatileImmunity(ability: string, blocked: readonly string[]): EffectHandlers {
+  return {
+    onTryVolatile: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || !blocked.includes(payload.volatile)) return;
+      pushText(ctx.state, `${ctx.owner.name}'s ${ability} prevents it!`);
+      return false;
+    },
+  };
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -323,6 +517,36 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intrepidsword', switchInBoost({ atk: 1 })],
   ['dauntlessshield', switchInBoost({ def: 1 })],
   ['moxie', koBoost({ atk: 1 })],
+
+  ['chlorophyll', weatherSpeed('sun', 2)],
+  ['swiftswim', weatherSpeed('rain', 2)],
+  ['sandrush', weatherSpeed('sand', 2)],
+  ['quickfeet', quickFeet()],
+
+  ['compoundeyes', accuracyModifier(1.3, (ctx) => ctx.owner === ctx.source)],
+  ['hustle', hustle()],
+  ['sandveil', accuracyModifier(0.8, (ctx) => ctx.owner === ctx.target && ctx.state.weather === 'sand')],
+  ['snowcloak', accuracyModifier(0.8, (ctx) => ctx.owner === ctx.target && ctx.state.weather === 'snow')],
+
+  ['adaptability', adaptability()],
+  ['tintedlens', outgoingMultiplier(2, (payload) => payload.effectiveness < 1)],
+  ['sheerforce', sheerForce()],
+  ['reckless', outgoingMultiplier(1.2, (payload) => Boolean(payload.move.recoil))],
+  ['punkrock', punkRock()],
+  ['waterbubble', waterBubble()],
+  ['fluffy', fluffy()],
+  ['flashfire', flashFire()],
+
+  ['icebody', weatherHeal('snow', 'Ice Body')],
+  ['raindish', weatherHeal('rain', 'Rain Dish')],
+  ['hydration', hydration()],
+
+  ['leafguard', leafGuard()],
+  ['shielddust', shieldDust()],
+  ['owntempo', volatileImmunity('Own Tempo', ['confusion'])],
+  ['innerfocus', volatileImmunity('Inner Focus', ['flinch'])],
+  ['oblivious', volatileImmunity('Oblivious', ['taunt'])],
+  ['aromaveil', volatileImmunity('Aroma Veil', ['taunt', 'encore'])],
 ];
 
 export function abilityEffects(): readonly EffectDefinition[] {
