@@ -265,3 +265,18 @@ file is the human-readable summary.
       Ancient Power) land once. Regenerated the dex (moves.json only; content
       counts unchanged) and tightened the Sheer Force / Shield Dust tests to
       assert the exact stage. 305 tests pass; `npm run build` clean.
+- [x] `src/engine/battle/effects/moves.ts` + the turn loop: the odd move shapes.
+      **Two-turn charge moves** (Solar Beam, Fly, Dig, Dive, Bounce, Phantom
+      Force, Shadow Force, Meteor Beam, Electro Shot, Sky Attack, Freeze Shock,
+      Ice Burn) lock the user and fire next turn regardless of the chosen
+      command; Solar Beam/Blade skip the charge in sun. **Damage counters**
+      (Counter, Mirror Coat 2x; Metal Burst, Comeuppance 1.5x) pay back the
+      damage banked earlier in the turn and fail with nothing banked.
+      **Yawn** puts the target to sleep after a turn; **Wish** heals half HP two
+      turns later. **Self-switch moves** (U-turn, Volt Switch, Flip Turn, Parting
+      Shot, Teleport, Baton Pass) deal their effect then ask for a replacement,
+      and Baton Pass hands the user's stat stages to the incoming Pokémon (now
+      carried on the side, applied in `performSwitch`). Fighters gained
+      `volatiles.charging` and physical/special damage banks; sides gained
+      `wishTurns` and `batonPassBoosts`. `autoReplace` no longer re-picks a
+      healthy self-switched active. 314 tests pass; `npm run build` clean.
