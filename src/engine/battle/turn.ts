@@ -16,6 +16,7 @@ import {
   runTryHit,
 } from './effects/registry';
 import { applyBoostEffect, applyStatusEffect } from './effects/apply';
+import { isProtectMove, protectBlocks } from './effects/moves';
 import { setTerrain, terrainFromMove, terrainHeal, tickTerrain } from './effects/terrain';
 import { setWeather, tickWeather, weatherChip, weatherFromMove, weatherLabel } from './effects/weather';
 import { computeDamage, type DamageResult } from './damage';
@@ -283,6 +284,7 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
 
   pushEvent(state, { kind: 'move', side, moveId: move.id });
   pushText(state, `${attacker.name} used ${move.name}!`);
+  if (!isProtectMove(move.id)) attacker.volatiles.protectStreak = 0;
 
   if (move.category === 'Status' && isTaunted(attacker)) {
     pushText(state, `${attacker.name} can't use status moves while taunted!`);
@@ -320,6 +322,8 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
 
   if (slot) slot.pp = Math.max(0, slot.pp - 1);
   attacker.lastMoveId = move.id;
+
+  if (protectBlocks(state, side, move)) return;
 
   const defender = opponent(state, side);
   if (move.category !== 'Status' && !rollHit(state.rng, move.accuracy, attacker, defender)) {

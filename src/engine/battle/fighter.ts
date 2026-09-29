@@ -41,6 +41,10 @@ export type Volatiles = {
   encoreMove: string | null;
   trapped: boolean;
   perish: number;
+  /** Move id of the active protection (Protect and friends), or null. */
+  protect: string | null;
+  /** Consecutive successful protections, for the diminishing success odds. */
+  protectStreak: number;
 };
 
 export type BattleFighter = {
@@ -52,6 +56,8 @@ export type BattleFighter = {
   ability: string;
   /** Item id held in battle, or null; consumed berries clear it. */
   heldItem: string | null;
+  /** Last item this fighter consumed, restorable by Recycle. */
+  lastItemId: string | null;
   types: readonly string[];
   stats: Stats;
   ivs: Stats;
@@ -95,6 +101,8 @@ export function emptyVolatiles(): Volatiles {
     encoreMove: null,
     trapped: false,
     perish: 0,
+    protect: null,
+    protectStreak: 0,
   };
 }
 
@@ -161,6 +169,7 @@ export function createFighter(input: FighterInput): BattleFighter {
     nature,
     ability,
     heldItem: input.heldItem ?? null,
+    lastItemId: null,
     types: species.types,
     stats,
     ivs,
@@ -238,5 +247,6 @@ export function clearVolatiles(fighter: BattleFighter): void {
 export function resetBattleState(fighter: BattleFighter): void {
   fighter.boosts = emptyBoosts();
   fighter.lastMoveId = null;
+  fighter.lastItemId = null;
   clearVolatiles(fighter);
 }

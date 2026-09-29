@@ -69,9 +69,10 @@ export function leechSeedDamage(fighter: BattleFighter): number {
   return Math.max(1, Math.floor(fighter.maxHp / 8));
 }
 
-/** Decrements Taunt/Encore and clears the spent flinch flag. */
+/** Decrements Taunt/Encore, clears the spent flinch flag and drops protection. */
 export function endOfTurnVolatile(fighter: BattleFighter): void {
   fighter.volatiles.flinched = false;
+  fighter.volatiles.protect = null;
   if (fighter.volatiles.taunt > 0) fighter.volatiles.taunt -= 1;
   if (fighter.volatiles.encore > 0) {
     fighter.volatiles.encore -= 1;
