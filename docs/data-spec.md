@@ -1,0 +1,45 @@
+# PokeRandomLike — Data Spec
+
+Content lives in `src/data/` and is either generated (dex) or authored (tables,
+rosters, route configs). Balancing must not require touching engine code.
+
+## 1. Generated: `src/data/dex/`
+
+Produced by `npm run data:dex` from `@pkmn/dex`, committed, never edited by hand.
+See `docs/showdown-reuse.md` for the contents and filters, and
+`src/data/dex/README.md` for the field list.
+
+## 2. Authored
+
+| File | What it holds | Phase |
+| --- | --- | --- |
+| `src/data/natures.ts` | typed view over `dex/natures.json` | 1 |
+| `src/data/tilesets/*.ts` | one biome tileset config + palette per biome | 0 |
+| `src/data/biomes.ts` | biome → tileset, encounter table, level band flavour | 2 |
+| `src/data/encounters.ts` | per-biome species pools and weights by band | 2 |
+| `src/data/trainers.ts` | trainer archetypes: name, class, sprite, roster shape | 2 |
+| `src/data/items.ts` | the run's item catalogue: balls, potions, revives-off, held items | 3 |
+| `src/data/run.ts` | chain length, mini-boss cadence, boss cadence, level caps | 2 |
+
+## 3. Typed accessors
+
+JSON is imported and immediately wrapped by a typed accessor module, so engine
+code never sees a `any`:
+
+- `src/data/dex/species.ts` → `Species`, `getSpecies(id)`, `speciesByNum(n)`
+- `src/data/dex/moves.ts` → `Move`, `getMove(id)`
+- `src/data/dex/learnsets.ts` → `learnsetOf(speciesId)`, `levelUpMoves(...)`
+- `src/data/dex/types.ts` → `effectiveness(attackType, defenderTypes)`
+- `src/data/dex/natures.ts` → `natureMultiplier(nature, stat)`
+
+Accessors are pure and unit-tested; the JSON shape is checked by a test that
+asserts counts against `meta.json` so a bad regeneration fails loudly.
+
+## 4. Rules
+
+- One source of truth per fact. `species.json` knows Pikachu's base stats; no
+  other file repeats them.
+- Adding content = adding a file or a row, plus (for a chalk-equivalent, i.e. a
+  new mechanic) a section in the matching spec under `docs/`.
+- Regenerating the dex is a deliberate act: `npm run data:dex`, then `npm test`,
+  then update `meta.json` counts if they changed.

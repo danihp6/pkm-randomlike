@@ -1,0 +1,1 @@
+{"cols":30,"anims":{"idle":{"start":0,"count":2,"durationsMs":[1200,533]},"walk":{"start":2,"count":4,"durationsMs":[267,267,267,267]},"attack":{"start":6,"count":10,"hitFrame":3,"durationsMs":[67,133,33,33,33,67,67,67,67,67]},"special":{"start":16,"count":12,"hitFrame":1,"durationsMs":[67,200,33,67,67,67,67,67,67,67,67,67]},"hurt":{"start":28,"count":2,"durationsMs":[67,267]}}}
