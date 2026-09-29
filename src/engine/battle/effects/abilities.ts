@@ -1,9 +1,11 @@
-import type { BoostId, StatusId } from '../fighter';
+import { applyDamage, applyHeal, type BoostId, type StatusId } from '../fighter';
 import { cureStatus, statusName } from '../status';
 import { opponentOf, pushEvent, pushText } from '../state';
 import { applyBoostEffect, applyStatusEffect, statLabel } from './apply';
 import {
   registerEffects,
+  type DamagePayload,
+  type EffectContext,
   type EffectDefinition,
   type EffectHandlers,
 } from './registry';
@@ -138,6 +140,130 @@ function shedSkin(): EffectHandlers {
   };
 }
 
+function healHolder(ctx: EffectContext, denominator: number): void {
+  const healed = applyHeal(ctx.owner, Math.max(1, Math.floor(ctx.owner.maxHp / denominator)));
+  if (healed > 0) {
+    pushEvent(ctx.state, {
+      kind: 'heal',
+      side: opponentOf(ctx.side),
+      amount: healed,
+      hp: ctx.owner.hp,
+      maxHp: ctx.owner.maxHp,
+    });
+  }
+}
+
+function damageHolder(ctx: EffectContext, denominator: number): void {
+  const dealt = applyDamage(ctx.owner, Math.max(1, Math.floor(ctx.owner.maxHp / denominator)));
+  pushEvent(ctx.state, {
+    kind: 'damage',
+    side: opponentOf(ctx.side),
+    amount: dealt,
+    hp: ctx.owner.hp,
+    maxHp: ctx.owner.maxHp,
+    effectiveness: 1,
+    crit: false,
+  });
+}
+
+/** The absorb abilities: immune to a type, optionally healing or boosting. */
+function typeImmunity(
+  ability: string,
+  type: string,
+  effect: { healQuarter?: boolean; boost?: Partial<Record<BoostId, number>> } = {},
+): EffectHandlers {
+  return {
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target) return;
+      if (payload.move.type !== type) return;
+      pushText(ctx.state, `${ctx.owner.name}'s ${ability} absorbed the attack!`);
+      if (effect.healQuarter) {
+        const healed = applyHeal(ctx.owner, Math.max(1, Math.floor(ctx.owner.maxHp / 4)));
+        if (healed > 0) {
+          pushEvent(ctx.state, {
+            kind: 'heal',
+            side: opponentOf(ctx.side),
+            amount: healed,
+            hp: ctx.owner.hp,
+            maxHp: ctx.owner.maxHp,
+          });
+        }
+      }
+      if (effect.boost) {
+        applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, effect.boost, { self: true });
+      }
+      return false;
+    },
+  };
+}
+
+function drySkin(): EffectHandlers {
+  return {
+    ...typeImmunity('Dry Skin', 'Water', { healQuarter: true }),
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.target) return;
+      if (payload.move.type !== 'Fire') return;
+      return Math.max(1, Math.floor(payload.damage * 1.25));
+    },
+    onResidual: (ctx) => {
+      if (ctx.owner.hp <= 0) return;
+      if (ctx.state.weather === 'rain') {
+        healHolder(ctx, 8);
+        pushText(ctx.state, `${ctx.owner.name} absorbed water with Dry Skin!`);
+      } else if (ctx.state.weather === 'sun') {
+        damageHolder(ctx, 8);
+        pushText(ctx.state, `${ctx.owner.name} was hurt by the harsh sunlight!`);
+      }
+    },
+  };
+}
+
+function incomingMultiplier(
+  multiplier: number,
+  predicate: (ctx: EffectContext, payload: DamagePayload) => boolean,
+): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.target) return;
+      if (!predicate(ctx, payload)) return;
+      return Math.max(1, Math.floor(payload.damage * multiplier));
+    },
+  };
+}
+
+function outgoingMultiplier(
+  multiplier: number,
+  predicate: (payload: DamagePayload) => boolean,
+): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (!predicate(payload)) return;
+      return Math.max(1, Math.floor(payload.damage * multiplier));
+    },
+  };
+}
+
+function switchInBoost(boosts: Partial<Record<BoostId, number>>): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      if (ctx.owner.hp <= 0) return;
+      applyBoostEffect(ctx.state, ctx.side, ctx.owner, boosts, { self: true });
+    },
+  };
+}
+
+function koBoost(boosts: Partial<Record<BoostId, number>>): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (!ctx.target || ctx.target.hp > 0) return;
+      if (payload.move.basePower <= 0) return;
+      applyBoostEffect(ctx.state, ctx.side, ctx.owner, boosts, { self: true });
+    },
+  };
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -169,6 +295,34 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['keeneye', statGuard(['accuracy'])],
 
   ['shedskin', shedSkin()],
+
+  ['waterabsorb', typeImmunity('Water Absorb', 'Water', { healQuarter: true })],
+  ['voltabsorb', typeImmunity('Volt Absorb', 'Electric', { healQuarter: true })],
+  ['sapsipper', typeImmunity('Sap Sipper', 'Grass', { boost: { atk: 1 } })],
+  ['lightningrod', typeImmunity('Lightning Rod', 'Electric', { boost: { spa: 1 } })],
+  ['stormdrain', typeImmunity('Storm Drain', 'Water', { boost: { spa: 1 } })],
+  ['motordrive', typeImmunity('Motor Drive', 'Electric', { boost: { spe: 1 } })],
+  ['dryskin', drySkin()],
+
+  ['thickfat', incomingMultiplier(0.5, (_ctx, payload) => payload.move.type === 'Fire' || payload.move.type === 'Ice')],
+  ['heatproof', incomingMultiplier(0.5, (_ctx, payload) => payload.move.type === 'Fire')],
+  ['icescales', incomingMultiplier(0.5, (_ctx, payload) => payload.move.category === 'Special')],
+  ['multiscale', incomingMultiplier(0.5, (ctx) => ctx.owner.hp === ctx.owner.maxHp)],
+  ['shadowshield', incomingMultiplier(0.5, (ctx) => ctx.owner.hp === ctx.owner.maxHp)],
+  ['filter', incomingMultiplier(0.75, (_ctx, payload) => payload.effectiveness > 1)],
+  ['solidrock', incomingMultiplier(0.75, (_ctx, payload) => payload.effectiveness > 1)],
+  ['prismarmor', incomingMultiplier(0.75, (_ctx, payload) => payload.effectiveness > 1)],
+
+  ['toughclaws', outgoingMultiplier(1.3, (payload) => Boolean(payload.move.flags.contact) && payload.move.basePower > 0)],
+  ['strongjaw', outgoingMultiplier(1.5, (payload) => Boolean(payload.move.flags.bite))],
+  ['ironfist', outgoingMultiplier(1.2, (payload) => Boolean(payload.move.flags.punch))],
+  ['sharpness', outgoingMultiplier(1.5, (payload) => Boolean(payload.move.flags.slicing))],
+  ['hugepower', outgoingMultiplier(2, (payload) => payload.move.category === 'Physical' && payload.move.basePower > 0)],
+  ['purepower', outgoingMultiplier(2, (payload) => payload.move.category === 'Physical' && payload.move.basePower > 0)],
+
+  ['intrepidsword', switchInBoost({ atk: 1 })],
+  ['dauntlessshield', switchInBoost({ def: 1 })],
+  ['moxie', koBoost({ atk: 1 })],
 ];
 
 export function abilityEffects(): readonly EffectDefinition[] {
