@@ -13,11 +13,17 @@ const norm = (id) => id.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 const abilities = read('src/data/dex/abilities.json');
 const items = read('src/data/dex/items.json');
-const abilitiesSrc = text('src/engine/battle/effects/abilities.ts');
+const abilitySources = [
+  'src/engine/battle/effects/abilities.ts',
+  'src/engine/battle/effects/weather.ts',
+  'src/engine/battle/effects/terrain.ts',
+];
 const itemsSrc = text('src/data/items.ts');
 
 const portedAbilities = new Set(
-  [...abilitiesSrc.matchAll(/^  \['([a-z0-9]+)',/gm)].map((match) => match[1]),
+  abilitySources.flatMap((path) =>
+    [...text(path).matchAll(/^  \['([a-z0-9]+)',/gm)].map((match) => match[1]),
+  ),
 );
 
 const catalogue = new Map();

@@ -1,22 +1,16 @@
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
+import { Rng } from '../../rng';
+import { createFighter } from '../fighter';
+import { createBattle } from '../state';
 
-beforeEach(() => {
-  vi.resetModules();
-  vi.restoreAllMocks();
-  vi.spyOn(console, 'warn').mockImplementation(() => {});
-});
+vi.mock('../../../dev/env', () => ({ ENVIRONMENT: 'develop', IS_DEVELOP: true }));
 
 afterEach(() => {
   vi.restoreAllMocks();
-  vi.doUnmock('../../../dev/env');
 });
 
-it('warns when a battle meets an unported ability in a develop build', async () => {
-  vi.doMock('../../../dev/env', () => ({ ENVIRONMENT: 'develop', IS_DEVELOP: true }));
-
-  const { Rng } = await import('../../rng');
-  const { createFighter } = await import('../fighter');
-  const { createBattle } = await import('../state');
+it('warns when a battle meets an unported ability in a develop build', () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
   createBattle({
     player: [createFighter({ id: 'p', speciesId: 'charmander', level: 5, ability: 'Solar Power' })],
@@ -25,6 +19,5 @@ it('warns when a battle meets an unported ability in a develop build', async () 
     isWild: true,
   });
 
-  expect(console.warn).toHaveBeenCalled();
-  expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Solar Power'));
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('Solar Power'));
 });

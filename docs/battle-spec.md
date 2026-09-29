@@ -11,8 +11,10 @@ Phaser scene only renders state and forwards choices.
 3. Moves resolve in order of: priority (descending), then effective Speed
    (stages, item and ability modifiers applied), ties broken by the seeded battle
    RNG.
-4. End-of-turn effects tick: burn/poison damage, weather, terrain, leftovers,
-   Leech Seed, badly-poisoned counter, perish count.
+4. End-of-turn effects tick in this order: burn/poison/badly-poisoned damage,
+   weather chip (sandstorm), terrain healing (Grassy), ability/item residuals
+   (Leftovers, berries), Leech Seed, perish count, then Taunt/Encore decay and
+   the weather/terrain turn counters.
 5. A fainted Pokémon is replaced by its owner's next choice before the next
    turn; if a side has no Pokémon left, the battle is over.
 

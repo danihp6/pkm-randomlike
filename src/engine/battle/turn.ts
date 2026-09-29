@@ -16,6 +16,8 @@ import {
   runTryHit,
 } from './effects/registry';
 import { applyBoostEffect, applyStatusEffect } from './effects/apply';
+import { setTerrain, terrainFromMove, terrainHeal, tickTerrain } from './effects/terrain';
+import { setWeather, tickWeather, weatherChip, weatherFromMove, weatherLabel } from './effects/weather';
 import { computeDamage, type DamageResult } from './damage';
 import { orderActions } from './order';
 import {
@@ -259,6 +261,18 @@ function applyMoveEffects(
     pushText(state, `${attacker.name} fainted!`);
     pushEvent(state, { kind: 'faint', side, fighterId: attacker.id });
   }
+
+  const newWeather = weatherFromMove(move);
+  if (newWeather) {
+    if (state.weather === newWeather) pushText(state, 'But it failed!');
+    else setWeather(state, newWeather);
+  }
+
+  const newTerrain = terrainFromMove(move);
+  if (newTerrain) {
+    if (state.terrain === newTerrain) pushText(state, 'But it failed!');
+    else setTerrain(state, newTerrain);
+  }
 }
 
 export function useMove(state: BattleState, side: SideId, command: FightCommand): void {
@@ -322,7 +336,10 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
     for (let hit = 0; hit < hits; hit++) {
       const target = opponent(state, side);
       if (target.hp <= 0) break;
-      const result = computeDamage(attacker, target, move, state.rng, { weather: state.weather });
+      const result = computeDamage(attacker, target, move, state.rng, {
+        weather: state.weather,
+        terrain: state.terrain,
+      });
       if (result.effectiveness === 0) {
         if (hit === 0) pushText(state, `It doesn't affect ${target.name}...`);
         break;
@@ -359,53 +376,90 @@ function faint(state: BattleState, side: SideId): void {
   pushText(state, `${fighter.name} fainted!`);
 }
 
+function applyWeatherResidual(state: BattleState): void {
+  if (!state.weather) return;
+  for (const side of SIDE_IDS) {
+    const fighter = activeFighter(state, side);
+    const chip = weatherChip(fighter, state.weather);
+    if (chip <= 0) continue;
+    const dealt = applyDamage(fighter, chip);
+    pushEvent(state, { kind: 'damage', side, amount: dealt, hp: fighter.hp, maxHp: fighter.maxHp, effectiveness: 1, crit: false });
+    pushText(state, `${fighter.name} is buffeted by the ${weatherLabel(state.weather)}!`);
+    if (fighter.hp <= 0) faint(state, side);
+  }
+}
+
+function applyTerrainResidual(state: BattleState): void {
+  if (!state.terrain) return;
+  for (const side of SIDE_IDS) {
+    const fighter = activeFighter(state, side);
+    const amount = terrainHeal(fighter, state.terrain);
+    if (amount <= 0) continue;
+    const healed = applyHeal(fighter, amount);
+    if (healed > 0) {
+      pushEvent(state, { kind: 'heal', side, amount: healed, hp: fighter.hp, maxHp: fighter.maxHp });
+      pushText(state, `${fighter.name} is restored by the grassy terrain!`);
+    }
+  }
+}
+
+/**
+ * End-of-turn order: primary status, weather, terrain, ability/item residuals,
+ * Leech Seed, perish count, then volatile decay and field counters.
+ */
 function resolveResiduals(state: BattleState): void {
   for (const side of SIDE_IDS) {
-    if (state.winner !== null) return;
     const fighter = activeFighter(state, side);
     if (fighter.hp <= 0) continue;
-
     const residual = residualDamage(fighter);
-    if (residual) {
-      const dealt = applyDamage(fighter, residual.damage);
-      pushEvent(state, { kind: 'damage', side, amount: dealt, hp: fighter.hp, maxHp: fighter.maxHp, effectiveness: 1, crit: false });
-      pushText(state, `${fighter.name} is hurt by its ${statusName(residual.status)}!`);
-      if (fighter.hp <= 0) {
-        faint(state, side);
-        continue;
-      }
-    }
+    if (!residual) continue;
+    const dealt = applyDamage(fighter, residual.damage);
+    pushEvent(state, { kind: 'damage', side, amount: dealt, hp: fighter.hp, maxHp: fighter.maxHp, effectiveness: 1, crit: false });
+    pushText(state, `${fighter.name} is hurt by its ${statusName(residual.status)}!`);
+    if (fighter.hp <= 0) faint(state, side);
+  }
 
+  applyWeatherResidual(state);
+  applyTerrainResidual(state);
+
+  for (const side of SIDE_IDS) {
+    const fighter = activeFighter(state, side);
+    if (fighter.hp <= 0) continue;
+    runResidual(makeContext(state, side, { source: fighter, target: opponent(state, side) }));
+    if (fighter.hp <= 0) faint(state, side);
+  }
+
+  for (const side of SIDE_IDS) {
+    const fighter = activeFighter(state, side);
+    if (fighter.hp <= 0) continue;
     const drain = leechSeedDamage(fighter);
-    if (drain > 0 && fighter.hp > 0) {
-      applyDamage(fighter, drain);
-      pushText(state, `${fighter.name}'s health is sapped by Leech Seed!`);
-      const other = opponent(state, side);
-      const healed = applyHeal(other, drain);
-      if (healed > 0) {
-        pushEvent(state, { kind: 'heal', side: opponentOf(side), amount: healed, hp: other.hp, maxHp: other.maxHp });
-      }
-      if (fighter.hp <= 0) {
-        faint(state, side);
-        continue;
-      }
+    if (drain <= 0) continue;
+    applyDamage(fighter, drain);
+    pushText(state, `${fighter.name}'s health is sapped by Leech Seed!`);
+    const other = opponent(state, side);
+    const healed = applyHeal(other, drain);
+    if (healed > 0) {
+      pushEvent(state, { kind: 'heal', side: opponentOf(side), amount: healed, hp: other.hp, maxHp: other.maxHp });
     }
+    if (fighter.hp <= 0) faint(state, side);
+  }
 
+  for (const side of SIDE_IDS) {
+    const fighter = activeFighter(state, side);
+    if (fighter.hp <= 0) continue;
     if (tickPerish(fighter)) {
       applyDamage(fighter, fighter.hp);
       pushText(state, `${fighter.name} fainted from the perish count!`);
       faint(state, side);
-      continue;
     }
-
-    runResidual(makeContext(state, side, { source: fighter, target: opponent(state, side) }));
-    if (fighter.hp <= 0) {
-      faint(state, side);
-      continue;
-    }
-
-    endOfTurnVolatile(fighter);
   }
+
+  for (const side of SIDE_IDS) {
+    const fighter = activeFighter(state, side);
+    if (fighter.hp > 0) endOfTurnVolatile(fighter);
+  }
+  tickWeather(state);
+  tickTerrain(state);
 }
 
 function resolveFaints(state: BattleState): void {

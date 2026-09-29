@@ -20,7 +20,7 @@ The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — 310 total (24 port, 227 no-op, 59 excluded)
+## Abilities — 310 total (32 port, 219 no-op, 59 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -79,13 +79,13 @@ catalogue row, not engine code.
 | Disguise | `no-op` | reachable, not ported yet |
 | Download | `no-op` | reachable, not ported yet |
 | Dragon's Maw | `no-op` | reachable, not ported yet |
-| Drizzle | `no-op` | reachable, not ported yet |
-| Drought | `no-op` | reachable, not ported yet |
+| Drizzle | `port` | ported in `effects/abilities.ts` |
+| Drought | `port` | ported in `effects/abilities.ts` |
 | Dry Skin | `no-op` | reachable, not ported yet |
 | Early Bird | `no-op` | reachable, not ported yet |
 | Earth Eater | `no-op` | reachable, not ported yet |
 | Effect Spore | `no-op` | reachable, not ported yet |
-| Electric Surge | `no-op` | reachable, not ported yet |
+| Electric Surge | `port` | ported in `effects/abilities.ts` |
 | Electromorphosis | `no-op` | reachable, not ported yet |
 | Embody Aspect (Cornerstone) | `excluded` | Terastal mechanic (cut) |
 | Embody Aspect (Hearthflame) | `excluded` | Terastal mechanic (cut) |
@@ -113,7 +113,7 @@ catalogue row, not engine code.
 | Gooey | `no-op` | reachable, not ported yet |
 | Gorilla Tactics | `excluded` | no playable species has it |
 | Grass Pelt | `no-op` | reachable, not ported yet |
-| Grassy Surge | `no-op` | reachable, not ported yet |
+| Grassy Surge | `port` | ported in `effects/abilities.ts` |
 | Grim Neigh | `no-op` | reachable, not ported yet |
 | Guard Dog | `no-op` | reachable, not ported yet |
 | Gulp Missile | `no-op` | reachable, not ported yet |
@@ -170,7 +170,7 @@ catalogue row, not engine code.
 | Mind's Eye | `no-op` | reachable, not ported yet |
 | Minus | `excluded` | doubles/ally only |
 | Mirror Armor | `no-op` | reachable, not ported yet |
-| Misty Surge | `no-op` | reachable, not ported yet |
+| Misty Surge | `port` | ported in `effects/abilities.ts` |
 | Mold Breaker | `no-op` | reachable, not ported yet |
 | Moody | `no-op` | reachable, not ported yet |
 | Motor Drive | `no-op` | reachable, not ported yet |
@@ -211,7 +211,7 @@ catalogue row, not engine code.
 | Propeller Tail | `no-op` | reachable, not ported yet |
 | Protean | `no-op` | reachable, not ported yet |
 | Protosynthesis | `no-op` | reachable, not ported yet |
-| Psychic Surge | `no-op` | reachable, not ported yet |
+| Psychic Surge | `port` | ported in `effects/abilities.ts` |
 | Punk Rock | `no-op` | reachable, not ported yet |
 | Pure Power | `no-op` | reachable, not ported yet |
 | Purifying Salt | `no-op` | reachable, not ported yet |
@@ -235,7 +235,7 @@ catalogue row, not engine code.
 | Sand Force | `no-op` | reachable, not ported yet |
 | Sand Rush | `no-op` | reachable, not ported yet |
 | Sand Spit | `no-op` | reachable, not ported yet |
-| Sand Stream | `no-op` | reachable, not ported yet |
+| Sand Stream | `port` | ported in `effects/abilities.ts` |
 | Sand Veil | `no-op` | reachable, not ported yet |
 | Sap Sipper | `no-op` | reachable, not ported yet |
 | Schooling | `excluded` | no playable species has it |
@@ -257,7 +257,7 @@ catalogue row, not engine code.
 | Slush Rush | `no-op` | reachable, not ported yet |
 | Sniper | `no-op` | reachable, not ported yet |
 | Snow Cloak | `no-op` | reachable, not ported yet |
-| Snow Warning | `no-op` | reachable, not ported yet |
+| Snow Warning | `port` | ported in `effects/abilities.ts` |
 | Solar Power | `no-op` | reachable, not ported yet |
 | Solid Rock | `no-op` | reachable, not ported yet |
 | Soul-Heart | `no-op` | reachable, not ported yet |
