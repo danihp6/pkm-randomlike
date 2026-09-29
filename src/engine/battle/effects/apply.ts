@@ -9,6 +9,7 @@ import { applyStatus, canApplyStatus, isStatusId, statusName } from '../status';
 import { opponent, pushEvent, pushText, type BattleState, type SideId } from '../state';
 import { hasSubstitute } from '../volatile';
 import { makeContext, runBoost, runStatus } from './registry';
+import { terrainBlocksStatus } from './terrain';
 
 export function statLabel(stat: BoostId): string {
   const labels: Readonly<Record<BoostId, string>> = {
@@ -70,6 +71,11 @@ export function applyStatusEffect(
 ): void {
   if (!isStatusId(status)) return;
   if (hasSubstitute(target)) return;
+  const terrainBlock = terrainBlocksStatus(state.terrain, target, status);
+  if (terrainBlock) {
+    pushText(state, terrainBlock);
+    return;
+  }
   const ctx = makeContext(state, side, { source: target, target: opponent(state, side) });
   if (!runStatus(ctx, status)) return;
   if (!canApplyStatus(target, status)) return;

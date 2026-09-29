@@ -1,7 +1,7 @@
 import { effectiveness, type Move } from '../../data/dex';
 import type { Rng } from '../rng';
-import { effectiveStat, stagedStat, type BattleFighter } from './fighter';
-import type { WeatherId } from './state';
+import { effectiveStat, isGrounded, stagedStat, type BattleFighter } from './fighter';
+import type { TerrainId, WeatherId } from './state';
 
 const CRIT_CHANCES: readonly number[] = [0, 1 / 24, 1 / 8, 1 / 2, 1];
 
@@ -16,6 +16,7 @@ export function rollCrit(rng: Rng, critRatio: number): boolean {
 
 export type DamageContext = Readonly<{
   weather?: WeatherId | null;
+  terrain?: TerrainId | null;
   critical?: boolean;
 }>;
 
@@ -48,6 +49,26 @@ function isPhysical(move: Move): boolean {
   return move.category === 'Physical';
 }
 
+const GRASSY_HALVED_MOVES = new Set(['earthquake', 'bulldoze']);
+
+function terrainModifier(
+  attacker: BattleFighter,
+  defender: BattleFighter,
+  move: Move,
+  terrain: TerrainId | null | undefined,
+): number {
+  if (!terrain || move.category === 'Status' || move.basePower <= 0) return 1;
+  let multiplier = 1;
+  if (isGrounded(attacker)) {
+    if (terrain === 'electric' && move.type === 'Electric') multiplier *= 1.3;
+    if (terrain === 'grassy' && move.type === 'Grass') multiplier *= 1.3;
+    if (terrain === 'psychic' && move.type === 'Psychic') multiplier *= 1.3;
+  }
+  if (terrain === 'grassy' && GRASSY_HALVED_MOVES.has(move.id)) multiplier *= 0.5;
+  if (terrain === 'misty' && isGrounded(defender) && move.type === 'Dragon') multiplier *= 0.5;
+  return multiplier;
+}
+
 /**
  * Gen 9 damage formula. The random 85-100% roll is the only RNG use, so a fixed
  * seed reproduces a whole battle (D11).
@@ -76,6 +97,7 @@ export function computeDamage(
   let damage = baseDamage(attacker.level, move.basePower, attack, defense);
 
   damage = Math.floor(damage * weatherModifier(context.weather, move.type));
+  damage = Math.floor(damage * terrainModifier(attacker, defender, move, context.terrain));
   if (crit) damage = Math.floor(damage * 1.5);
   damage = Math.floor((damage * rng.int(85, 100)) / 100);
 

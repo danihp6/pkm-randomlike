@@ -14,3 +14,5 @@ export * from './effects/registry';
 export * from './effects/apply';
 export * from './effects/items';
 export * from './effects/abilities';
+export * from './effects/weather';
+export * from './effects/terrain';

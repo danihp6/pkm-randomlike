@@ -67,5 +67,8 @@ These tiles are 16x16, so any atlas built from them declares `tileSize: 16`
   a new dependency or a new source pack.
 - Any new sheet keeps the atlas contract (`docs/tileset-spec.md`) so it can be
   swapped without code.
+- Routes and dungeons match the original FireRed/LeafGreen look for their biome
+  (Viridian Forest, Mt. Moon, Seafoam...): the generator follows the tileset's
+  style, not a generic room layout (`docs/routes-spec.md` §2).
 - Chalk-drawn UI is not a thing here; this project's UI is a classic Pokémon
   frame with a monospace placeholder font until a real one lands.

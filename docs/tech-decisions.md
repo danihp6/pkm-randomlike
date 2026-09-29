@@ -49,7 +49,9 @@ Classic overworld, not a Mystery Dungeon BSP cave. `TALL_GRASS` is the only
 encounter tile; trainers have a facing and a sight line and trigger on sight.
 The donor's `fov.ts`, `vision.ts`, `pathfinding.ts` and the tileset autotiling
 carry over unchanged; its BSP `dungeon.ts` stays as a candidate for cave-flavoured
-routes.
+routes. Addendum: cave/dungeon layouts must read like the originals (Mt. Moon,
+Seafoam), so the BSP cave is a base to reshape into that style, not the target
+look (see `docs/routes-spec.md` §2).
 
 ## D7 — Party of 6 plus a PC box *(decided)*
 

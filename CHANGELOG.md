@@ -187,3 +187,12 @@ file is the human-readable summary.
 - [x] Dev coverage warning (`src/dev/warnings.ts`): behind the `IS_DEVELOP` gate,
       the registry warns once per effect when a battle meets an ability or held
       item with no ported handler, so a gap cannot hide during playtests (D16).
+- [x] `src/engine/battle/effects/weather.ts` + `terrain.ts`: weather and terrain
+      from moves (Sunny Day/Rain Dance/Sandstorm/Snowscape and the four terrain
+      moves) and abilities (Drizzle/Drought/Sand Stream/Snow Warning and the four
+      Surges), 5-turn counters with start/clear messages, the residual order
+      (status → sandstorm chip → Grassy heal → ability/item residuals → Leech
+      Seed → perish → decay/counters), sandstorm type/ability immunity, terrain
+      status blocks (Electric sleep, Misty all) with `isGrounded`, and the
+      terrain damage modifiers (Electric/Grassy/Psychic ×1.3, Misty Dragon and
+      Grassy Earthquake/Bulldoze halved). 215 tests pass; `npm run build` clean.

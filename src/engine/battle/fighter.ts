@@ -193,6 +193,12 @@ export function isFainted(fighter: BattleFighter): boolean {
   return fighter.hp <= 0;
 }
 
+/** A Pokémon on the ground is affected by terrain; Flying types and Levitate are not. */
+export function isGrounded(fighter: BattleFighter): boolean {
+  if (fighter.types.includes('Flying')) return false;
+  return fighter.ability !== 'Levitate';
+}
+
 export function applyDamage(fighter: BattleFighter, amount: number): number {
   const dealt = Math.min(fighter.hp, Math.max(0, Math.floor(amount)));
   fighter.hp -= dealt;
