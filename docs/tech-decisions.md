@@ -119,11 +119,20 @@ rolled. Randomness is limited to what a run varies: a wild encounter's species
 and level, a Pokémon's learnset/moveset and ability, a trainer's team, and which
 floor items spawn. One run seed drives all of it through `Rng` streams.
 
+## D18 — Tile size is a property of the tileset *(decided)*
+
+`TilesetConfig` declares its own `tileSize` instead of relying on a global
+constant: the PMD-derived atlases stay at 24px, while FireRed/LeafGreen atlases
+use their native 16px rather than an uneven 1.5x upscale. The scene positions
+and follows the player from the active tileset's tile size; the route/map logic
+is already tile-based and does not care. `TILE_SIZE = 24` survives only as the
+default for the configs written before this change.
+
 ## Open questions
 
-- **O1 — Trainer sprites.** No imported set has them. Options: a CC0 avatar pack,
-  procedural stick figures in the placeholder style, or portraits from
-  `portraits.png` scaled down. Blocks Phase 2 cosmetics, not Phase 2 logic.
+- **O1 — Trainer sprites.** Source resolved: the FRLG `npc-overworld.png` and
+  `trainers.png` rips in `sprite-sources/frlg/` cover the archetypes; slicing
+  them per `D18` is the remaining work. Blocks Phase 8 cosmetics, not logic.
 - **O2 — Battle arena framing.** Single-screen per battle (GB style) vs a
   floating HUD over the route. Cosmetic, blocks Phase 5.
 - **O3 — EVs/IVs.** The data has IVs and EVs exist in Gen 9; do we let a caught
