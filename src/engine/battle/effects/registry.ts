@@ -17,8 +17,13 @@ export type EffectContext = Readonly<{
   owner: BattleFighter;
 }>;
 
-export type MovePayload = Readonly<{ move: Move }>;
-export type DamagePayload = Readonly<{ move: Move; damage: number; effectiveness: number }>;
+export type MovePayload = Readonly<{ move: Move; hit: boolean }>;
+export type DamagePayload = Readonly<{
+  move: Move;
+  damage: number;
+  effectiveness: number;
+  crit: boolean;
+}>;
 export type StatusPayload = Readonly<{ status: string }>;
 export type BoostPayload = Readonly<{ stat: BoostId; stages: number; self: boolean }>;
 export type VolatilePayload = Readonly<{ volatile: string }>;
@@ -39,6 +44,7 @@ export type EffectHandlers = Readonly<{
   onModifyAccuracy?: (ctx: EffectContext, chance: number) => number | void;
   onModifyPriority?: (ctx: EffectContext, priority: number) => number | void;
   onModifyCrit?: (ctx: EffectContext, willCrit: boolean) => boolean | void;
+  onModifyCritRatio?: (ctx: EffectContext, ratio: number) => number | void;
   onModifyMultihit?: (ctx: EffectContext, hits: number) => number | void;
   onModifyBoost?: (ctx: EffectContext, payload: BoostPayload) => number | void;
   onModifyRecoil?: (ctx: EffectContext, recoil: number) => number | void;
@@ -179,15 +185,15 @@ export function runResidual(ctx: EffectContext): void {
   }
 }
 
-export function runAfterMove(ctx: EffectContext, move: Move): void {
-  const payload: MovePayload = { move };
+export function runAfterMove(ctx: EffectContext, move: Move, hit = true): void {
+  const payload: MovePayload = { move, hit };
   for (const ref of contextEffects(ctx, true, move)) {
     ref.effect.handlers.onAfterMove?.(contextFor(ctx, ref), payload);
   }
 }
 
 export function runTryHit(ctx: EffectContext, move: Move): boolean {
-  const payload: MovePayload = { move };
+  const payload: MovePayload = { move, hit: true };
   for (const ref of contextEffects(ctx, true, move)) {
     if (ref.effect.handlers.onTryHit?.(contextFor(ctx, ref), payload) === false) return false;
   }
@@ -249,6 +255,7 @@ export function runModifyDamage(
   move: Move,
   damage: number,
   effectiveness = 1,
+  crit = false,
 ): number {
   let value = damage;
   for (const ref of contextEffects(ctx, true, move)) {
@@ -256,6 +263,7 @@ export function runModifyDamage(
       move,
       damage: value,
       effectiveness,
+      crit,
     });
     if (typeof next === 'number') value = next;
   }
@@ -287,6 +295,16 @@ export function runModifyPriority(ctx: EffectContext, move: Move, priority: numb
   let value = priority;
   for (const ref of contextEffects(ctx, false, move)) {
     const next = ref.effect.handlers.onModifyPriority?.(contextFor(ctx, ref), value);
+    if (typeof next === 'number') value = next;
+  }
+  return value;
+}
+
+/** Crit-ratio modifiers read the attacker's ability (Super Luck). */
+export function runModifyCritRatio(ctx: EffectContext, move: Move, ratio: number): number {
+  let value = ratio;
+  for (const ref of contextEffects(ctx, true, move)) {
+    const next = ref.effect.handlers.onModifyCritRatio?.(contextFor(ctx, ref), value);
     if (typeof next === 'number') value = next;
   }
   return value;

@@ -10,6 +10,7 @@ import {
   runBoost,
   runModifyAccuracy,
   runModifyCrit,
+  runModifyCritRatio,
   runModifyDamage,
   runModifyMultihit,
   runModifyPriority,
@@ -895,5 +896,186 @@ describe('stat and reaction abilities (batch 5)', () => {
     state.movedSides = [];
     state.switchedSides = ['player'];
     expect(runModifyDamage(stake, getMove('tackle')!, 100)).toBe(200);
+  });
+});
+
+describe('type and hit-reaction abilities (batch 6)', () => {
+  it('Well-Baked Body absorbs Fire and raises Defense', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'dachsbun', 'Well-Baked Body'));
+    const dachsbun = activeFighter(state, 'enemy');
+    expect(runTryHit(ctxOf(state, 'player'), getMove('ember')!)).toBe(false);
+    expect(dachsbun.boosts.def).toBe(2);
+    expect(runTryHit(ctxOf(state, 'player'), getMove('tackle')!)).toBe(true);
+  });
+
+  it('Wind Rider absorbs wind moves and raises Attack', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'shiftry', 'Wind Rider'));
+    const shiftry = activeFighter(state, 'enemy');
+    expect(runTryHit(ctxOf(state, 'player'), getMove('gust')!)).toBe(false);
+    expect(shiftry.boosts.atk).toBe(1);
+    expect(runTryHit(ctxOf(state, 'player'), getMove('tackle')!)).toBe(true);
+  });
+
+  it('Stamina raises Defense after a hit, but not on a whiffed hit flag', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'mudbray', 'Stamina'));
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!, false);
+    expect(activeFighter(state, 'enemy').boosts.def).toBe(0);
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(activeFighter(state, 'enemy').boosts.def).toBe(1);
+  });
+
+  it('Weak Armor trades Defense for Speed on a physical hit', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'magcargo', 'Weak Armor'));
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(activeFighter(state, 'enemy').boosts.def).toBe(-1);
+    expect(activeFighter(state, 'enemy').boosts.spe).toBe(2);
+  });
+
+  it('Steam Engine maxes Speed on Fire or Water', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'rolycoly', 'Steam Engine'));
+    runAfterMove(ctxOf(state, 'player'), getMove('ember')!);
+    expect(activeFighter(state, 'enemy').boosts.spe).toBe(6);
+  });
+
+  it('Water Compaction raises Defense on Water', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'sandygast', 'Water Compaction'));
+    runAfterMove(ctxOf(state, 'player'), getMove('watergun')!);
+    expect(activeFighter(state, 'enemy').boosts.def).toBe(2);
+  });
+
+  it('Sand Spit and Seed Sower set the weather and terrain when hit', () => {
+    const sand = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'silicobra', 'Sand Spit'));
+    runAfterMove(ctxOf(sand, 'player'), getMove('tackle')!);
+    expect(sand.weather).toBe('sand');
+
+    const seed = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'arboliva', 'Seed Sower'));
+    runAfterMove(ctxOf(seed, 'player'), getMove('tackle')!);
+    expect(seed.terrain).toBe('grassy');
+  });
+});
+
+describe('damage and crit abilities (batch 6)', () => {
+  it('Dragon\'s Maw, Transistor and Rocky Payload boost their type', () => {
+    const maw = makeBattle(fighter('player', 'regidrago', 'Dragon\'s Maw'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyDamage(ctxOf(maw, 'player'), getMove('dragonbreath')!, 100)).toBe(150);
+    expect(runModifyDamage(ctxOf(maw, 'player'), getMove('tackle')!, 100)).toBe(100);
+
+    const transistor = makeBattle(fighter('player', 'regieleki', 'Transistor'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyDamage(ctxOf(transistor, 'player'), getMove('thunderbolt')!, 100)).toBe(130);
+
+    const payload = makeBattle(fighter('player', 'bombirdier', 'Rocky Payload'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyDamage(ctxOf(payload, 'player'), getMove('rockthrow')!, 100)).toBe(150);
+  });
+
+  it('Mega Launcher boosts pulse moves', () => {
+    const state = makeBattle(fighter('player', 'clawitzer', 'Mega Launcher'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('waterpulse')!, 100)).toBe(150);
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('tackle')!, 100)).toBe(100);
+  });
+
+  it('Sniper raises critical-hit damage', () => {
+    const state = makeBattle(fighter('player', 'horsea', 'Sniper'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('tackle')!, 100, 1, false)).toBe(100);
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('tackle')!, 100, 1, true)).toBe(150);
+  });
+
+  it('Super Luck raises the crit ratio and Merciless forces crits on poison', () => {
+    const luck = makeBattle(fighter('player', 'murkrow', 'Super Luck'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyCritRatio(ctxOf(luck, 'player'), getMove('tackle')!, 0)).toBe(1);
+
+    const merciless = makeBattle(fighter('player', 'mareanie', 'Merciless'), fighter('enemy', 'bulbasaur', 'Overgrow'));
+    expect(runModifyCrit(ctxOf(merciless, 'player'), getMove('tackle')!, false)).toBe(false);
+    activeFighter(merciless, 'enemy').status = 'psn';
+    expect(runModifyCrit(ctxOf(merciless, 'player'), getMove('tackle')!, false)).toBe(true);
+  });
+
+  it('Solar Power, Flare Boost and Toxic Boost reward sun, burn and poison', () => {
+    const solar = makeBattle(fighter('player', 'charmander', 'Solar Power'), fighter('enemy', 'bulbasaur', 'Overgrow'));
+    expect(runModifyDamage(ctxOf(solar, 'player'), getMove('ember')!, 100)).toBe(100);
+    solar.weather = 'sun';
+    expect(runModifyDamage(ctxOf(solar, 'player'), getMove('ember')!, 100)).toBe(150);
+    const before = activeFighter(solar, 'player').hp;
+    runResidual(ctxOf(solar, 'player'));
+    expect(activeFighter(solar, 'player').hp).toBe(before - Math.max(1, Math.floor(activeFighter(solar, 'player').maxHp / 8)));
+
+    const flare = makeBattle(fighter('player', 'drifloon', 'Flare Boost'), fighter('enemy', 'bulbasaur', 'Overgrow'));
+    activeFighter(flare, 'player').status = 'brn';
+    expect(runModifyDamage(ctxOf(flare, 'player'), getMove('shadowball')!, 100)).toBe(150);
+    expect(runModifyDamage(ctxOf(flare, 'player'), getMove('tackle')!, 100)).toBe(100);
+
+    const toxic = makeBattle(fighter('player', 'zangoose', 'Toxic Boost'), fighter('enemy', 'bulbasaur', 'Overgrow'));
+    activeFighter(toxic, 'player').status = 'psn';
+    expect(runModifyDamage(ctxOf(toxic, 'player'), getMove('tackle')!, 100)).toBe(150);
+    expect(runModifyDamage(ctxOf(toxic, 'player'), getMove('ember')!, 100)).toBe(100);
+  });
+});
+
+describe('status and accuracy abilities (batch 6)', () => {
+  it('Good as Gold blocks foe-targeting status moves but not self moves', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'gholdengo', 'Good as Gold'));
+    const ctx = ctxOf(state, 'player');
+    expect(runTryHit(ctx, getMove('toxic')!)).toBe(false);
+    expect(runTryHit(ctx, getMove('swordsdance')!)).toBe(true);
+    expect(runTryHit(ctx, getMove('tackle')!)).toBe(true);
+  });
+
+  it('Purifying Salt blocks status and halves Ghost damage', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'garganacl', 'Purifying Salt'));
+    const garganacl = activeFighter(state, 'enemy');
+    applyStatusEffect(state, 'enemy', garganacl, 'brn');
+    expect(garganacl.status).toBeNull();
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('shadowball')!, 100)).toBe(50);
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('tackle')!, 100)).toBe(100);
+  });
+
+  it('Comatose cannot be statused', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'komala', 'Comatose'));
+    const komala = activeFighter(state, 'enemy');
+    applyStatusEffect(state, 'enemy', komala, 'par');
+    expect(komala.status).toBeNull();
+  });
+
+  it('No Guard makes both sides always hit', () => {
+    const attacking = makeBattle(fighter('player', 'golett', 'No Guard'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyAccuracy(ctxOf(attacking, 'player'), 0.5)).toBe(1);
+    const defending = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'golett', 'No Guard'));
+    expect(runModifyAccuracy(ctxOf(defending, 'player'), 0.5)).toBe(1);
+  });
+
+  it('Tangled Feet halves accuracy while confused', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'doduo', 'Tangled Feet'));
+    expect(runModifyAccuracy(ctxOf(state, 'player'), 1)).toBe(1);
+    activeFighter(state, 'enemy').volatiles.confusion = 2;
+    expect(runModifyAccuracy(ctxOf(state, 'player'), 1)).toBe(0.5);
+  });
+});
+
+describe('speed and on-hit abilities (batch 6)', () => {
+  it('Slush Rush and Surge Surfer double Speed in snow and Electric Terrain', () => {
+    const slush = makeBattle(fighter('player', 'sandshrewalola', 'Slush Rush'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifySpe(ctxOf(slush, 'player'), 100)).toBe(100);
+    slush.weather = 'snow';
+    expect(runModifySpe(ctxOf(slush, 'player'), 100)).toBe(200);
+
+    const surge = makeBattle(fighter('player', 'raichualola', 'Surge Surfer'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifySpe(ctxOf(surge, 'player'), 100)).toBe(100);
+    surge.terrain = 'electric';
+    expect(runModifySpe(ctxOf(surge, 'player'), 100)).toBe(200);
+  });
+
+  it('Toxic Chain eventually poisons on a damaging hit', () => {
+    const state = makeBattle(fighter('player', 'okidogi', 'Toxic Chain'), fighter('enemy', 'charmander', 'Blaze'), 17);
+    for (let i = 0; i < 200 && activeFighter(state, 'enemy').status === null; i++) {
+      runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    }
+    expect(activeFighter(state, 'enemy').status).toBe('psn');
+  });
+
+  it('Stench eventually flinches on a damaging hit', () => {
+    const state = makeBattle(fighter('player', 'grimer', 'Stench'), fighter('enemy', 'charmander', 'Blaze'), 23);
+    for (let i = 0; i < 200 && !activeFighter(state, 'enemy').volatiles.flinched; i++) {
+      runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    }
+    expect(activeFighter(state, 'enemy').volatiles.flinched).toBe(true);
   });
 });
