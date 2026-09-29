@@ -65,6 +65,12 @@ export type Volatiles = {
   supersweetSyrup: boolean;
   /** Berserk / Anger Shell already fired since HP last sat above half. */
   pinchTriggered: boolean;
+  /** Electromorphosis / Wind Power stored a Charge for the next Electric move. */
+  charge: boolean;
+  /** Protean / Libero already changed type since switching in (Gen 9 rule). */
+  proteanUsed: boolean;
+  /** Truant flips this each turn it takes one, so it loafs on the next. */
+  truant: boolean;
 };
 
 export type BattleFighter = {
@@ -133,6 +139,9 @@ export function emptyVolatiles(): Volatiles {
     iceFace: false,
     supersweetSyrup: false,
     pinchTriggered: false,
+    charge: false,
+    proteanUsed: false,
+    truant: false,
   };
 }
 
@@ -236,6 +245,20 @@ export function isFainted(fighter: BattleFighter): boolean {
 export function isGrounded(fighter: BattleFighter): boolean {
   if (fighter.types.includes('Flying')) return false;
   return fighter.ability !== 'Levitate';
+}
+
+/** Long Reach strips the contact flag from its holder's moves. */
+export function moveContacts(
+  attacker: BattleFighter,
+  move: Readonly<{ flags: Readonly<Record<string, number>> }>,
+): boolean {
+  if (attacker.ability === 'Long Reach') return false;
+  return Boolean(move.flags.contact);
+}
+
+/** Magic Guard only takes damage from attacks; status, weather, recoil and the rest are ignored. */
+export function takesIndirectDamage(fighter: BattleFighter): boolean {
+  return fighter.ability !== 'Magic Guard';
 }
 
 export function applyDamage(fighter: BattleFighter, amount: number): number {

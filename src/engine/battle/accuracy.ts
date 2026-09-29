@@ -8,7 +8,8 @@ export function accuracyChance(
   defender: BattleFighter,
 ): number {
   if (moveAccuracy === true) return 1;
-  const stage = clampBoost(attacker.boosts.accuracy - defender.boosts.evasion);
+  const evasion = attacker.ability === "Mind's Eye" ? 0 : defender.boosts.evasion;
+  const stage = clampBoost(attacker.boosts.accuracy - evasion);
   return Math.min(1, (moveAccuracy / 100) * accuracyStageMultiplier(stage));
 }
 

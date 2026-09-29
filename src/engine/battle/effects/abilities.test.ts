@@ -12,6 +12,8 @@ import {
   runModifyCrit,
   runModifyCritRatio,
   runModifyDamage,
+  runModifyEffectiveness,
+  runFractionalPriority,
   runModifyMultihit,
   runModifyPriority,
   runModifyRecoil,
@@ -28,6 +30,7 @@ import { applyBoostEffect, applyStatusEffect } from './apply';
 import { abilityEffects } from './abilities';
 import { performSwitch, takeTurn } from '../turn';
 import { rollRun } from '../runAway';
+import { hitChance } from '../modifiers';
 
 function fighter(id: string, speciesId: string, ability: string, moves?: readonly string[]): BattleFighter {
   return createFighter({
@@ -1321,5 +1324,130 @@ describe('item suppression (batch 8)', () => {
     holder.hp = holder.maxHp - 50;
     runResidual(ctxOf(state, 'player'));
     expect(holder.hp).toBe(holder.maxHp - 50);
+  });
+});
+
+describe('piercing and indirect-damage abilities (batch 9)', () => {
+  it('Scrappy lets Normal and Fighting moves hit Ghosts, and blocks Intimidate', () => {
+    const state = makeBattle(fighter('player', 'decidueyehisui', 'Scrappy'), fighter('enemy', 'gastly', 'Levitate'));
+    expect(runModifyEffectiveness(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!, 0)).toBe(1);
+    expect(runModifyEffectiveness(moveCtxOf(state, 'player', 'ember'), getMove('ember')!, 0)).toBe(0);
+
+    const intimidated = makeBattle(fighter('player', 'decidueyehisui', 'Scrappy'), fighter('enemy', 'growlithe', 'Intimidate'));
+    expect(activeFighter(intimidated, 'player').boosts.atk).toBe(0);
+  });
+
+  it("Mind's Eye pierces Ghost immunity and ignores the foe evasiveness", () => {
+    const state = makeBattle(fighter('player', 'ursalunabloodmoon', "Mind's Eye"), fighter('enemy', 'gastly', 'Levitate'));
+    expect(runModifyEffectiveness(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!, 0)).toBe(1);
+
+    activeFighter(state, 'enemy').boosts.evasion = 6;
+    const control = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'gastly', 'Levitate'));
+    activeFighter(control, 'enemy').boosts.evasion = 6;
+    expect(hitChance(state, 'player', getMove('tackle')!)).toBeGreaterThan(
+      hitChance(control, 'player', getMove('tackle')!),
+    );
+  });
+
+  it('Magic Guard ignores indirect damage but not attacks', () => {
+    const state = makeBattle(
+      fighter('player', 'clefairy', 'Magic Guard', ['growl']),
+      fighter('enemy', 'blissey', 'Natural Cure', ['growl']),
+    );
+    const holder = activeFighter(state, 'player');
+    holder.status = 'psn';
+    holder.statusCounter = 1;
+    const before = holder.hp;
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(holder.status).toBe('psn');
+    expect(holder.hp).toBe(before);
+  });
+});
+
+describe('type-change and turn-shape abilities (batch 9)', () => {
+  it('Protean changes type once per switch-in', () => {
+    const state = makeBattle(
+      fighter('player', 'greninja', 'Protean', ['ember', 'watergun']),
+      fighter('enemy', 'blissey', 'Natural Cure', ['growl']),
+    );
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').types).toEqual(['Fire']);
+    takeTurn(state, { type: 'fight', moveIndex: 1 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').types).toEqual(['Fire']);
+  });
+
+  it('Libero changes type to the used move', () => {
+    const state = makeBattle(
+      fighter('player', 'cinderace', 'Libero', ['ember']),
+      fighter('enemy', 'blissey', 'Natural Cure', ['growl']),
+    );
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').types).toEqual(['Fire']);
+  });
+
+  it('Truant loafs on every other turn', () => {
+    const state = makeBattle(
+      fighter('player', 'slaking', 'Truant', ['tackle']),
+      fighter('enemy', 'blissey', 'Natural Cure', ['growl']),
+    );
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('loafing around'))).toBe(true);
+  });
+
+  it('Trace copies the foe ability and runs its entry effects', () => {
+    const state = makeBattle(fighter('player', 'porygon', 'Trace'), fighter('enemy', 'growlithe', 'Intimidate'));
+    expect(activeFighter(state, 'player').ability).toBe('Intimidate');
+    expect(activeFighter(state, 'enemy').boosts.atk).toBe(-1);
+  });
+
+  it('Long Reach stops the holder moves from making contact', () => {
+    const state = makeBattle(
+      fighter('player', 'rowlet', 'Long Reach', ['tackle']),
+      fighter('enemy', 'pikachu', 'Static'),
+    );
+    for (let i = 0; i < 100; i++) runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').status).toBeNull();
+  });
+});
+
+describe('charge, faint and order abilities (batch 9)', () => {
+  it('Electromorphosis stores a Charge for the next Electric move', () => {
+    const state = makeBattle(fighter('player', 'bellibolt', 'Electromorphosis'), fighter('enemy', 'charmander', 'Blaze', ['tackle']));
+    runAfterMove(ctxOf(state, 'enemy'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').volatiles.charge).toBe(true);
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('thunderbolt')!, 100)).toBe(200);
+    expect(activeFighter(state, 'player').volatiles.charge).toBe(false);
+  });
+
+  it('Wind Power only charges from a wind move', () => {
+    const state = makeBattle(fighter('player', 'wattrel', 'Wind Power'), fighter('enemy', 'charmander', 'Blaze', ['tackle']));
+    runAfterMove(ctxOf(state, 'enemy'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').volatiles.charge).toBe(false);
+    runAfterMove(ctxOf(state, 'enemy'), getMove('gust')!);
+    expect(activeFighter(state, 'player').volatiles.charge).toBe(true);
+  });
+
+  it('Soul-Heart raises Sp. Atk when any Pokémon faints', () => {
+    const state = makeBattle(
+      fighter('player', 'magearna', 'Soul-Heart', ['tackle']),
+      fighter('enemy', 'charmander', 'Blaze', ['growl']),
+    );
+    activeFighter(state, 'enemy').hp = 1;
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').boosts.spa).toBe(1);
+  });
+
+  it('Quick Draw sometimes wins the fractional tie-break', () => {
+    const state = makeBattle(fighter('player', 'slowbrogalar', 'Quick Draw'), fighter('enemy', 'charmander', 'Blaze'), 7);
+    const values = new Set<number>();
+    for (let i = 0; i < 50; i++) values.add(runFractionalPriority(ctxOf(state, 'player')));
+    expect(values.has(1)).toBe(true);
+    expect(values.has(0)).toBe(true);
+  });
+
+  it('Stall always loses the fractional tie-break', () => {
+    const state = makeBattle(fighter('player', 'sableye', 'Stall'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runFractionalPriority(ctxOf(state, 'player'))).toBe(-1);
   });
 });

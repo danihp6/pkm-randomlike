@@ -18,6 +18,8 @@ export type DamageContext = Readonly<{
   weather?: WeatherId | null;
   terrain?: TerrainId | null;
   critical?: boolean;
+  /** Overrides the type chart, for abilities that pierce an immunity (Scrappy). */
+  effectiveness?: number;
 }>;
 
 export type DamageResult = Readonly<{
@@ -104,7 +106,7 @@ export function computeDamage(
   const stab = attacker.types.includes(move.type);
   if (stab) damage = Math.floor(damage * 1.5);
 
-  const typeEffectiveness = effectiveness(move.type, defender.types);
+  const typeEffectiveness = context.effectiveness ?? effectiveness(move.type, defender.types);
   damage = Math.floor(damage * typeEffectiveness);
 
   if (physical && attacker.status === 'brn') damage = Math.floor(damage * 0.5);

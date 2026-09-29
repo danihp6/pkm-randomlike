@@ -308,3 +308,18 @@ file is the human-readable summary.
       to `excluded`: it only protects Grass-type *allies*, so it is dead in
       singles. Coverage at 228 ports (189 abilities); 351 tests pass;
       `npm run build` clean.
+- [x] `src/engine/battle/effects/abilities.ts`: batch 9, 13 more abilities —
+      Scrappy and Mind's Eye (a new `onModifyEffectiveness` hook pierces the
+      Ghost immunity, and Mind's Eye also ignores the foe's evasion in
+      `accuracy.ts`; Scrappy additionally blocks Intimidate), Magic Guard (a
+      `takesIndirectDamage` guard in the turn loop and `volatile.ts` covers
+      status, weather, Leech Seed, recoil, Liquid Ooze and confusion), Protean and
+      Libero (type change once per switch-in), Truant (loaf turns), Trace (copies
+      the foe's ability and replays its entry effects, with a ban list), 
+      Electromorphosis and Wind Power (a shared Charge volatile that doubles the
+      next Electric move), Soul-Heart (a new `onFaint` hook), Long Reach (the
+      payloads now carry a resolved `contact` flag, so contact punishes and
+      Tough Claws/Fluffy consult `moveContacts` instead of the raw move flag),
+      Quick Draw and Stall (a new `onFractionalPriority` tie-break inside the
+      priority bracket, honoured by `orderActions`). Coverage at 241 ports (202
+      abilities); 364 tests pass; `npm run build` clean.

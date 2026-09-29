@@ -3,6 +3,7 @@ import {
   applyDamage,
   applyHeal,
   resetBattleState,
+  takesIndirectDamage,
   BOOST_IDS,
   type BattleFighter,
   type BoostId,
@@ -10,9 +11,12 @@ import {
 import {
   makeContext,
   runAfterMove,
+  runFaint,
+  runFractionalPriority,
   runModifyCrit,
   runModifyCritRatio,
   runModifyDamage,
+  runModifyEffectiveness,
   runModifyMultihit,
   runModifyPriority,
   runModifyRecoil,
@@ -288,17 +292,19 @@ function applyMoveEffects(
   if (move.drain && move.drain.length === 2 && totalDamage > 0) {
     const drained = Math.max(1, Math.floor((totalDamage * move.drain[0]) / move.drain[1]));
     if (defender.ability === 'Liquid Ooze') {
-      const dealt = applyDamage(attacker, drained);
-      pushEvent(state, {
-        kind: 'damage',
-        side,
-        amount: dealt,
-        hp: attacker.hp,
-        maxHp: attacker.maxHp,
-        effectiveness: 1,
-        crit: false,
-      });
-      pushText(state, `${attacker.name} sucked up the liquid ooze!`);
+      if (takesIndirectDamage(attacker)) {
+        const dealt = applyDamage(attacker, drained);
+        pushEvent(state, {
+          kind: 'damage',
+          side,
+          amount: dealt,
+          hp: attacker.hp,
+          maxHp: attacker.maxHp,
+          effectiveness: 1,
+          crit: false,
+        });
+        pushText(state, `${attacker.name} sucked up the liquid ooze!`);
+      }
     } else {
       const healed = applyHeal(attacker, drained);
       if (healed > 0) {
@@ -308,7 +314,7 @@ function applyMoveEffects(
     }
   }
 
-  if (move.recoil && move.recoil.length === 2 && totalDamage > 0) {
+  if (move.recoil && move.recoil.length === 2 && totalDamage > 0 && takesIndirectDamage(attacker)) {
     const raw = Math.max(1, Math.floor((totalDamage * move.recoil[0]) / move.recoil[1]));
     const recoil = runModifyRecoil(
       makeContext(state, side, { source: attacker, target: opponent(state, side), move }),
@@ -322,7 +328,7 @@ function applyMoveEffects(
     }
   }
 
-  if (move.struggleRecoil && attacker.hp > 0) {
+  if (move.struggleRecoil && attacker.hp > 0 && takesIndirectDamage(attacker)) {
     const recoil = Math.max(1, Math.floor(attacker.maxHp / 4));
     const dealt = applyDamage(attacker, recoil);
     pushEvent(state, { kind: 'damage', side, amount: dealt, hp: attacker.hp, maxHp: attacker.maxHp, effectiveness: 1, crit: false });
@@ -479,6 +485,16 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
   if (!selected) return;
   const { move, slot } = selected;
 
+  // Truant alternates: after a turn in which it acts, the next one is lost.
+  if (attacker.ability === 'Truant') {
+    if (attacker.volatiles.truant) {
+      attacker.volatiles.truant = false;
+      pushText(state, `${attacker.name} is loafing around!`);
+      return;
+    }
+    attacker.volatiles.truant = true;
+  }
+
   pushEvent(state, { kind: 'move', side, moveId: move.id });
   pushText(state, `${attacker.name} used ${move.name}!`);
   if (!isProtectMove(move.id)) attacker.volatiles.protectStreak = 0;
@@ -540,6 +556,13 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
   const hitContext = makeContext(state, side, { source: attacker, target: defender, move });
   if (!runTryHit(hitContext, move)) return;
 
+  // Protean and Libero change the user's type, once per switch-in in Gen 9.
+  if ((attacker.ability === 'Protean' || attacker.ability === 'Libero') && !attacker.volatiles.proteanUsed) {
+    attacker.volatiles.proteanUsed = true;
+    attacker.types = [move.type];
+    pushText(state, `${attacker.name} transformed into the ${move.type} type!`);
+  }
+
   if (COUNTER_MOVES.has(move.id)) {
     useCounterMove(state, side, attacker, defender, move);
     return;
@@ -568,6 +591,11 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
         weather: state.weather,
         terrain: state.terrain,
         critical: crit,
+        effectiveness: runModifyEffectiveness(
+          makeContext(state, side, { source: attacker, target, move }),
+          move,
+          effectiveness(move.type, target.types),
+        ),
       });
       if (result.effectiveness === 0) {
         if (hit === 0) pushText(state, `It doesn't affect ${target.name}...`);
@@ -612,12 +640,16 @@ function faint(state: BattleState, side: SideId): void {
   const fighter = activeFighter(state, side);
   pushEvent(state, { kind: 'faint', side, fighterId: fighter.id });
   pushText(state, `${fighter.name} fainted!`);
+  // Survivors react to the faint (Soul-Heart); the fainted side cannot.
+  const other = opponentOf(side);
+  runFaint(makeContext(state, other, { source: activeFighter(state, other), target: fighter }));
 }
 
 function applyWeatherResidual(state: BattleState): void {
   if (!state.weather) return;
   for (const side of SIDE_IDS) {
     const fighter = activeFighter(state, side);
+    if (!takesIndirectDamage(fighter)) continue;
     const chip = weatherChip(fighter, state.weather);
     if (chip <= 0) continue;
     const dealt = applyDamage(fighter, chip);
@@ -649,7 +681,8 @@ function resolveResiduals(state: BattleState): void {
   for (const side of SIDE_IDS) {
     const fighter = activeFighter(state, side);
     if (fighter.hp <= 0) continue;
-    const residual = fighter.ability === 'Poison Heal' ? null : residualDamage(fighter);
+    const residual =
+      fighter.ability === 'Poison Heal' || !takesIndirectDamage(fighter) ? null : residualDamage(fighter);
     if (!residual) continue;
     const dealt = applyDamage(fighter, residual.damage);
     pushEvent(state, { kind: 'damage', side, amount: dealt, hp: fighter.hp, maxHp: fighter.maxHp, effectiveness: 1, crit: false });
@@ -692,7 +725,7 @@ function resolveResiduals(state: BattleState): void {
 
   for (const side of SIDE_IDS) {
     const fighter = activeFighter(state, side);
-    if (fighter.hp <= 0) continue;
+    if (fighter.hp <= 0 || !takesIndirectDamage(fighter)) continue;
     const drain = leechSeedDamage(fighter);
     if (drain <= 0) continue;
     applyDamage(fighter, drain);
@@ -766,9 +799,13 @@ export function takeTurn(state: BattleState, playerCommand: Command, enemyComman
   const moveEntries = SIDE_IDS.filter((side) => commands[side].type === 'fight').map((side) => {
     const fighter = activeFighter(state, side);
     const selected = chosenMove(fighter, commands[side] as FightCommand);
-    if (!selected) return { side, priority: 0 };
+    if (!selected) return { side, priority: 0, fractional: 0 };
     const ctx = makeContext(state, side, { source: fighter, target: opponent(state, side), move: selected.move });
-    return { side, priority: runModifyPriority(ctx, selected.move, selected.move.priority) };
+    return {
+      side,
+      priority: runModifyPriority(ctx, selected.move, selected.move.priority),
+      fractional: runFractionalPriority(ctx),
+    };
   });
 
   for (const entry of orderActions(state, moveEntries, state.rng)) {
