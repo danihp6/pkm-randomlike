@@ -380,3 +380,22 @@ file is the human-readable summary.
       last healthy party member as an `illusion` volatile and drops it on the
       first damaging hit. Coverage at 275 ports (236 abilities, 0 no-op, 74
       excluded); 392 tests pass; `npm run build` clean.
+
+## Phase 5 — Battle UI & presentation
+
+- [x] `src/ui/`: the first presentational helpers — `metrics.ts` (HP fraction and
+      the green/yellow/red thresholds, status abbreviations), `panel.ts` (rounded
+      panels and HP/XP gauges) and `feed.ts` (`battleFrames`, which splits the
+      engine's event log into message beats so a line lands with the HP drop it
+      describes). `metrics` and `feed` are Phaser-free and unit-tested.
+- [x] `src/scenes/BattleScene.ts`: the real menu battle. A backdrop with two
+      platforms and tintable placeholder sprites, both HP readouts with colour
+      thresholds and status badges, and a message box. The four commands open the
+      move list (PP), the bag (filtered to usable items) and the party list
+      (HP/level/status), and RUN flees a wild battle; a turn goes through
+      `takeTurn` with the trainer AI and the log plays back one frame at a time
+      (auto-advance, press to step, hold Z to fast-forward). A fainted active is
+      replaced through a forced switch menu. A fixed demo party stands in until
+      the run (Phase 6) supplies a real one. `BootScene` gained the placeholder
+      battle textures; `RouteScene` a `B` dev key to preview the scene. 398 tests
+      pass; `npm run build` clean.

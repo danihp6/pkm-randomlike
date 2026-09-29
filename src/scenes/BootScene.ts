@@ -16,6 +16,8 @@ export const GRASS_TEXTURE_KEY = 'route:grass';
 export const TRAINER_TEXTURE_KEY = 'route:trainer';
 export const ITEM_TEXTURE_KEY = 'route:item';
 export const ARROW_TEXTURE_KEY = 'route:arrow';
+export const BATTLE_MON_TEXTURE_KEY = 'battle:mon';
+export const BATTLE_PLATFORM_TEXTURE_KEY = 'battle:platform';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -78,5 +80,23 @@ export class BootScene extends Phaser.Scene {
     arrow.fillTriangle(5, 0, 10, 9, 0, 9);
     arrow.generateTexture(ARROW_TEXTURE_KEY, 10, 9);
     arrow.destroy();
+
+    // Placeholder battle stand-ins (O1): a tintable body and a shadow platform.
+    const mon = this.make.graphics({ x: 0, y: 0 });
+    mon.fillStyle(0xffffff, 1);
+    mon.fillEllipse(20, 20, 34, 30);
+    mon.fillEllipse(11, 36, 12, 10);
+    mon.fillEllipse(29, 36, 12, 10);
+    mon.fillStyle(0x10161f, 1);
+    mon.fillCircle(14, 16, 3);
+    mon.fillCircle(26, 16, 3);
+    mon.generateTexture(BATTLE_MON_TEXTURE_KEY, 40, 44);
+    mon.destroy();
+
+    const platform = this.make.graphics({ x: 0, y: 0 });
+    platform.fillStyle(0xffffff, 1);
+    platform.fillEllipse(90, 16, 180, 32);
+    platform.generateTexture(BATTLE_PLATFORM_TEXTURE_KEY, 180, 32);
+    platform.destroy();
   }
 }

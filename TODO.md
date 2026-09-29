@@ -61,18 +61,14 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] `src/scenes/BattleScene.ts`: the real scene — two platforms, HP/XP bars,
-      status icons, the message box.
-- [ ] Menu: the four commands plus the move list (PP, type), the bag (filtered to
-      usable items), the party list (HP, level, status), and the run confirm.
-- [ ] Message queue that consumes the engine's event log at a readable pace, with
-      a skip (hold a key to fast-forward).
+- [ ] `src/scenes/BattleScene.ts`: the XP bar (progression lands in Phase 6); the
+      HP bars, status icons and message box shipped.
+- [ ] Menu: the move list's type label and the run confirm.
 - [ ] Faint, switch, capture and level-up animations; move FX from `moves.png`.
 - [ ] Entry transitions: route → battle on trainer sight or a grass encounter,
       battle → route on win/run.
 - [ ] Permadeath feedback: the "was released" beat for a fallen Pokémon, and the
       run-over screen when the last one falls.
-- [ ] `src/ui/` helpers (bars, panels, text speed) shared with the route HUD.
 
 ## Phase 6 — Run structure, party & economy
 
