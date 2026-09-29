@@ -163,3 +163,14 @@ file is the human-readable summary.
       `heldItem` field. Potions, status cures and X-items already shipped as Bag
       items in Phase 3, so the Bag rejects `held` items. 183 tests pass;
       `npm run build` clean.
+- [x] `src/engine/battle/effects/abilities.ts`: batch 1, the 24 abilities that
+      show up before the mid routes — Intimidate (switch-in Attack drop, now run
+      through the `onBoost` guards), Levitate (Ground immunity), Sturdy (survives
+      a full-HP KO at 1 HP), the 30% contact punishes Static / Flame Body / Poison
+      Point, the status immunities Immunity / Limber / Water Veil / Insomnia /
+      Vital Spirit / Magma Armor, the starter pinch boosts Overgrow / Blaze /
+      Torrent / Swarm, Guts (ignoring the burn Attack drop), Technician, the stat
+      guards Clear Body / White Smoke / Hyper Cutter / Big Pecks / Keen Eye and
+      Shed Skin. `effects/apply.ts` now owns the shared boost/status application
+      so moves and abilities go through the same hooks, and `onBoost` learns
+      whether a drop is self-inflicted. 199 tests pass; `npm run build` clean.

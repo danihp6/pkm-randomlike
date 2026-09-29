@@ -16,6 +16,10 @@ export function statusName(status: StatusId): string {
   return STATUS_NAMES[status];
 }
 
+export function isStatusId(value: string | undefined): value is StatusId {
+  return value !== undefined && STATUS_IDS.includes(value as StatusId);
+}
+
 const TYPE_IMMUNITIES: Readonly<Record<StatusId, readonly string[]>> = {
   brn: ['Fire'],
   psn: ['Poison', 'Steel'],

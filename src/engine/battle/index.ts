@@ -11,4 +11,6 @@ export * from './runAway';
 export * from './capture';
 export * from './ai';
 export * from './effects/registry';
+export * from './effects/apply';
 export * from './effects/items';
+export * from './effects/abilities';
