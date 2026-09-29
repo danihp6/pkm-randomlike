@@ -13,8 +13,10 @@ import {
   runModifyDamage,
   runModifyMultihit,
   runModifyPriority,
+  runModifyRecoil,
   runModifySpe,
   runResidual,
+  runTryEscape,
   runTryHit,
   runTrySubstitute,
   runTryVolatile,
@@ -23,6 +25,7 @@ import {
 import { applyBoostEffect, applyStatusEffect } from './apply';
 import { abilityEffects } from './abilities';
 import { performSwitch, takeTurn } from '../turn';
+import { rollRun } from '../runAway';
 
 function fighter(id: string, speciesId: string, ability: string, moves?: readonly string[]): BattleFighter {
   return createFighter({
@@ -756,5 +759,141 @@ describe('move-blocking and stat abilities (batch 4)', () => {
     takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
     expect(shroomish.hp).toBeGreaterThan(before);
     expect(state.log.some((event) => event.kind === 'heal' && event.side === 'player')).toBe(true);
+  });
+});
+
+describe('contact and damage abilities (batch 5)', () => {
+  it('Poison Touch eventually poisons the contact target', () => {
+    const state = makeBattle(fighter('player', 'grimer', 'Poison Touch'), fighter('enemy', 'charmander', 'Blaze'), 31);
+    for (let i = 0; i < 100 && activeFighter(state, 'enemy').status === null; i++) {
+      runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    }
+    expect(activeFighter(state, 'enemy').status).toBe('psn');
+  });
+
+  it('Gooey lowers the contact attacker Speed', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'goomy', 'Gooey'));
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').boosts.spe).toBe(-1);
+  });
+
+  it('Justified raises Attack when hit by a Dark move', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'growlithe', 'Justified'));
+    runAfterMove(ctxOf(state, 'player'), getMove('bite')!);
+    expect(activeFighter(state, 'enemy').boosts.atk).toBe(1);
+  });
+
+  it('Marvel Scale softens physical hits while statused', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'dratini', 'Marvel Scale'));
+    const ctx = ctxOf(state, 'player');
+    expect(runModifyDamage(ctx, getMove('tackle')!, 90)).toBe(90);
+    activeFighter(state, 'enemy').status = 'brn';
+    expect(runModifyDamage(ctx, getMove('tackle')!, 90)).toBe(60);
+    expect(runModifyDamage(ctx, getMove('ember')!, 90)).toBe(90);
+  });
+
+  it('Sand Force boosts Rock, Ground and Steel moves in a sandstorm', () => {
+    const state = makeBattle(fighter('player', 'diglett', 'Sand Force'), fighter('enemy', 'charmander', 'Blaze'));
+    const ctx = ctxOf(state, 'player');
+    expect(runModifyDamage(ctx, getMove('bulldoze')!, 100)).toBe(100);
+    state.weather = 'sand';
+    expect(runModifyDamage(ctx, getMove('bulldoze')!, 100)).toBe(130);
+    expect(runModifyDamage(ctx, getMove('ember')!, 100)).toBe(100);
+  });
+
+  it('Earth Eater absorbs Ground and heals', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'orthworm', 'Earth Eater'));
+    const orthworm = activeFighter(state, 'enemy');
+    orthworm.hp = Math.floor(orthworm.maxHp / 2);
+    const ctx = ctxOf(state, 'player');
+    expect(runTryHit(ctx, getMove('bulldoze')!)).toBe(false);
+    expect(orthworm.hp).toBe(Math.floor(orthworm.maxHp / 2) + Math.floor(orthworm.maxHp / 4));
+    expect(runTryHit(ctx, getMove('ember')!)).toBe(true);
+  });
+
+  it('Thermal Exchange absorbs Fire, raises Attack and blocks burns', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'frigibax', 'Thermal Exchange'));
+    const frigibax = activeFighter(state, 'enemy');
+    expect(runTryHit(ctxOf(state, 'player'), getMove('ember')!)).toBe(false);
+    expect(frigibax.boosts.atk).toBe(1);
+    applyStatusEffect(state, 'enemy', frigibax, 'brn');
+    expect(frigibax.status).toBeNull();
+  });
+});
+
+describe('stat and reaction abilities (batch 5)', () => {
+  it('Simple doubles and Contrary inverts stat changes', () => {
+    const simple = makeBattle(fighter('player', 'numel', 'Simple'), fighter('enemy', 'charmander', 'Blaze'));
+    const numel = activeFighter(simple, 'player');
+    applyBoostEffect(simple, 'player', numel, { atk: 1 });
+    expect(numel.boosts.atk).toBe(2);
+
+    const contrary = makeBattle(fighter('player', 'snivy', 'Contrary'), fighter('enemy', 'charmander', 'Blaze'));
+    const snivy = activeFighter(contrary, 'player');
+    applyBoostEffect(contrary, 'player', snivy, { atk: -1 });
+    expect(snivy.boosts.atk).toBe(1);
+    applyBoostEffect(contrary, 'player', snivy, { spa: 1 }, { self: true });
+    expect(snivy.boosts.spa).toBe(-1);
+  });
+
+  it('Synchronize passes burn, paralysis and poison back', () => {
+    const state = makeBattle(fighter('player', 'espeon', 'Synchronize'), fighter('enemy', 'bulbasaur', 'Overgrow'));
+    applyStatusEffect(state, 'player', activeFighter(state, 'player'), 'brn');
+    expect(activeFighter(state, 'player').status).toBe('brn');
+    expect(activeFighter(state, 'enemy').status).toBe('brn');
+  });
+
+  it('Steadfast raises Speed when it flinches', () => {
+    const state = makeBattle(fighter('player', 'scyther', 'Steadfast'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runTryVolatile(ctxOf(state, 'player'), 'flinch')).toBe(true);
+    expect(activeFighter(state, 'player').boosts.spe).toBe(1);
+  });
+
+  it('Rock Head removes recoil damage', () => {
+    const state = makeBattle(fighter('player', 'geodude', 'Rock Head'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyRecoil(ctxOf(state, 'player'), getMove('doubleedge')!, 30)).toBe(0);
+  });
+
+  it('Moody raises one stat and lowers another each turn', () => {
+    const state = makeBattle(fighter('player', 'smeargle', 'Moody'), fighter('enemy', 'charmander', 'Blaze'), 41);
+    runResidual(ctxOf(state, 'player'));
+    const boosts = activeFighter(state, 'player').boosts;
+    const raised = (['atk', 'def', 'spa', 'spd', 'spe'] as const).filter((stat) => boosts[stat] === 2);
+    const lowered = (['atk', 'def', 'spa', 'spd', 'spe'] as const).filter((stat) => boosts[stat] === -1);
+    expect(raised).toHaveLength(1);
+    expect(lowered).toHaveLength(1);
+  });
+
+  it('Disguise absorbs the first damaging hit only', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'mimikyu', 'Disguise'));
+    const ctx = ctxOf(state, 'player');
+    expect(runTryHit(ctx, getMove('tackle')!)).toBe(false);
+    expect(runTryHit(ctx, getMove('tackle')!)).toBe(true);
+  });
+
+  it('Overcoat blocks powder moves', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'pineco', 'Overcoat'));
+    const ctx = ctxOf(state, 'player');
+    expect(runTryHit(ctx, getMove('spore')!)).toBe(false);
+    expect(runTryHit(ctx, getMove('tackle')!)).toBe(true);
+  });
+
+  it('Run Away guarantees a wild escape', () => {
+    const state = makeBattle(fighter('player', 'oddish', 'Run Away'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runTryEscape(ctxOf(state, 'player'))).toBe(true);
+    expect(rollRun(state, 'player')).toBe(true);
+  });
+
+  it('Analytic and Stakeout boost against a foe that moved or switched', () => {
+    const state = makeBattle(fighter('player', 'magnemite', 'Analytic'), fighter('enemy', 'tarountula', 'Stakeout'));
+    const ctx = ctxOf(state, 'player');
+    expect(runModifyDamage(ctx, getMove('tackle')!, 100)).toBe(100);
+    state.movedSides = ['enemy'];
+    expect(runModifyDamage(ctx, getMove('tackle')!, 100)).toBe(130);
+
+    const stake = ctxOf(state, 'enemy');
+    state.movedSides = [];
+    state.switchedSides = ['player'];
+    expect(runModifyDamage(stake, getMove('tackle')!, 100)).toBe(200);
   });
 });

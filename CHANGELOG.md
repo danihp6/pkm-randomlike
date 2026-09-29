@@ -236,3 +236,13 @@ file is the human-readable summary.
       loop so crit blockers and Anger Point can hook it, and Poison Heal is
       skipped in the residual poison step. 266 tests pass; coverage at 144 ports;
       `npm run build` clean.
+- [x] `src/engine/battle/effects/abilities.ts`: batch 5, 18 more abilities — the
+      contact group (Poison Touch, Gooey, Justified), the defensive multipliers
+      (Marvel Scale, Sand Force), the absorbers (Earth Eater, Thermal Exchange),
+      the stat shapers (Simple, Contrary, Moody), the reactions (Synchronize,
+      Steadfast), Rock Head, Disguise, Overcoat, Run Away and the timing boosts
+      (Analytic, Stakeout). New hooks `onModifyBoost`, `onModifyRecoil`,
+      `onTryEscape` and `onAfterStatus`; the battle state tracks which sides have
+      moved or switched this turn for Analytic/Stakeout, and fighters gained
+      `volatiles.disguise`. 282 tests pass; coverage at 162 ports; `npm run build`
+      clean.

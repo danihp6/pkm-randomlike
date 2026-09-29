@@ -20,7 +20,7 @@ The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — 310 total (105 port, 146 no-op, 59 excluded)
+## Abilities — 310 total (123 port, 128 no-op, 59 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -28,7 +28,7 @@ catalogue row, not engine code.
 | Aerilate | `excluded` | no playable species has it |
 | Aftermath | `no-op` | reachable, not ported yet |
 | Air Lock | `no-op` | reachable, not ported yet |
-| Analytic | `no-op` | reachable, not ported yet |
+| Analytic | `port` | ported in `effects/abilities.ts` |
 | Anger Point | `port` | ported in `effects/abilities.ts` |
 | Anger Shell | `no-op` | reachable, not ported yet |
 | Anticipation | `port` | ported in `effects/abilities.ts` |
@@ -59,7 +59,7 @@ catalogue row, not engine code.
 | Commander | `excluded` | doubles/ally only |
 | Competitive | `port` | ported in `effects/abilities.ts` |
 | Compound Eyes | `port` | ported in `effects/abilities.ts` |
-| Contrary | `no-op` | reachable, not ported yet |
+| Contrary | `port` | ported in `effects/abilities.ts` |
 | Corrosion | `no-op` | reachable, not ported yet |
 | Costar | `excluded` | doubles/ally only |
 | Cotton Down | `excluded` | no playable species has it |
@@ -76,14 +76,14 @@ catalogue row, not engine code.
 | Defiant | `port` | ported in `effects/abilities.ts` |
 | Delta Stream | `excluded` | no playable species has it |
 | Desolate Land | `excluded` | no playable species has it |
-| Disguise | `no-op` | reachable, not ported yet |
+| Disguise | `port` | ported in `effects/abilities.ts` |
 | Download | `port` | ported in `effects/abilities.ts` |
 | Dragon's Maw | `no-op` | reachable, not ported yet |
 | Drizzle | `port` | ported in `effects/abilities.ts` |
 | Drought | `port` | ported in `effects/abilities.ts` |
 | Dry Skin | `port` | ported in `effects/abilities.ts` |
 | Early Bird | `no-op` | reachable, not ported yet |
-| Earth Eater | `no-op` | reachable, not ported yet |
+| Earth Eater | `port` | ported in `effects/abilities.ts` |
 | Effect Spore | `port` | ported in `effects/abilities.ts` |
 | Electric Surge | `port` | ported in `effects/abilities.ts` |
 | Electromorphosis | `no-op` | reachable, not ported yet |
@@ -110,7 +110,7 @@ catalogue row, not engine code.
 | Galvanize | `no-op` | reachable, not ported yet |
 | Gluttony | `no-op` | reachable, not ported yet |
 | Good as Gold | `no-op` | reachable, not ported yet |
-| Gooey | `no-op` | reachable, not ported yet |
+| Gooey | `port` | ported in `effects/abilities.ts` |
 | Gorilla Tactics | `excluded` | no playable species has it |
 | Grass Pelt | `port` | ported in `effects/abilities.ts` |
 | Grassy Surge | `port` | ported in `effects/abilities.ts` |
@@ -145,7 +145,7 @@ catalogue row, not engine code.
 | Intrepid Sword | `port` | ported in `effects/abilities.ts` |
 | Iron Barbs | `excluded` | no playable species has it |
 | Iron Fist | `port` | ported in `effects/abilities.ts` |
-| Justified | `no-op` | reachable, not ported yet |
+| Justified | `port` | ported in `effects/abilities.ts` |
 | Keen Eye | `port` | ported in `effects/abilities.ts` |
 | Klutz | `no-op` | reachable, not ported yet |
 | Leaf Guard | `port` | ported in `effects/abilities.ts` |
@@ -163,7 +163,7 @@ catalogue row, not engine code.
 | Magician | `no-op` | reachable, not ported yet |
 | Magma Armor | `port` | ported in `effects/abilities.ts` |
 | Magnet Pull | `no-op` | reachable, not ported yet |
-| Marvel Scale | `no-op` | reachable, not ported yet |
+| Marvel Scale | `port` | ported in `effects/abilities.ts` |
 | Mega Launcher | `no-op` | reachable, not ported yet |
 | Merciless | `no-op` | reachable, not ported yet |
 | Mimicry | `excluded` | no playable species has it |
@@ -172,7 +172,7 @@ catalogue row, not engine code.
 | Mirror Armor | `no-op` | reachable, not ported yet |
 | Misty Surge | `port` | ported in `effects/abilities.ts` |
 | Mold Breaker | `no-op` | reachable, not ported yet |
-| Moody | `no-op` | reachable, not ported yet |
+| Moody | `port` | ported in `effects/abilities.ts` |
 | Motor Drive | `port` | ported in `effects/abilities.ts` |
 | Moxie | `port` | ported in `effects/abilities.ts` |
 | Multiscale | `port` | ported in `effects/abilities.ts` |
@@ -187,7 +187,7 @@ catalogue row, not engine code.
 | Oblivious | `port` | ported in `effects/abilities.ts` |
 | Opportunist | `no-op` | reachable, not ported yet |
 | Orichalcum Pulse | `no-op` | reachable, not ported yet |
-| Overcoat | `no-op` | reachable, not ported yet |
+| Overcoat | `port` | ported in `effects/abilities.ts` |
 | Overgrow | `port` | ported in `effects/abilities.ts` |
 | Own Tempo | `port` | ported in `effects/abilities.ts` |
 | Parental Bond | `excluded` | no playable species has it |
@@ -200,7 +200,7 @@ catalogue row, not engine code.
 | Poison Heal | `port` | ported in `effects/abilities.ts` |
 | Poison Point | `port` | ported in `effects/abilities.ts` |
 | Poison Puppeteer | `no-op` | reachable, not ported yet |
-| Poison Touch | `no-op` | reachable, not ported yet |
+| Poison Touch | `port` | ported in `effects/abilities.ts` |
 | Power Construct | `excluded` | no playable species has it |
 | Power of Alchemy | `excluded` | doubles/ally only |
 | Power Spot | `excluded` | doubles/ally only |
@@ -228,11 +228,11 @@ catalogue row, not engine code.
 | Ripen | `no-op` | reachable, not ported yet |
 | Rivalry | `no-op` | reachable, not ported yet |
 | RKS System | `excluded` | no playable species has it |
-| Rock Head | `no-op` | reachable, not ported yet |
+| Rock Head | `port` | ported in `effects/abilities.ts` |
 | Rocky Payload | `no-op` | reachable, not ported yet |
 | Rough Skin | `port` | ported in `effects/abilities.ts` |
-| Run Away | `no-op` | reachable, not ported yet |
-| Sand Force | `no-op` | reachable, not ported yet |
+| Run Away | `port` | ported in `effects/abilities.ts` |
+| Sand Force | `port` | ported in `effects/abilities.ts` |
 | Sand Rush | `port` | ported in `effects/abilities.ts` |
 | Sand Spit | `no-op` | reachable, not ported yet |
 | Sand Stream | `port` | ported in `effects/abilities.ts` |
@@ -251,7 +251,7 @@ catalogue row, not engine code.
 | Shell Armor | `port` | ported in `effects/abilities.ts` |
 | Shield Dust | `port` | ported in `effects/abilities.ts` |
 | Shields Down | `no-op` | reachable, not ported yet |
-| Simple | `no-op` | reachable, not ported yet |
+| Simple | `port` | ported in `effects/abilities.ts` |
 | Skill Link | `port` | ported in `effects/abilities.ts` |
 | Slow Start | `no-op` | reachable, not ported yet |
 | Slush Rush | `no-op` | reachable, not ported yet |
@@ -263,13 +263,13 @@ catalogue row, not engine code.
 | Soul-Heart | `no-op` | reachable, not ported yet |
 | Soundproof | `port` | ported in `effects/abilities.ts` |
 | Speed Boost | `no-op` | reachable, not ported yet |
-| Stakeout | `no-op` | reachable, not ported yet |
+| Stakeout | `port` | ported in `effects/abilities.ts` |
 | Stall | `no-op` | reachable, not ported yet |
 | Stalwart | `no-op` | reachable, not ported yet |
 | Stamina | `no-op` | reachable, not ported yet |
 | Stance Change | `excluded` | no playable species has it |
 | Static | `port` | ported in `effects/abilities.ts` |
-| Steadfast | `no-op` | reachable, not ported yet |
+| Steadfast | `port` | ported in `effects/abilities.ts` |
 | Steam Engine | `no-op` | reachable, not ported yet |
 | Steelworker | `excluded` | no playable species has it |
 | Steely Spirit | `no-op` | reachable, not ported yet |
@@ -288,7 +288,7 @@ catalogue row, not engine code.
 | Swift Swim | `port` | ported in `effects/abilities.ts` |
 | Sword of Ruin | `no-op` | reachable, not ported yet |
 | Symbiosis | `excluded` | doubles/ally only |
-| Synchronize | `no-op` | reachable, not ported yet |
+| Synchronize | `port` | ported in `effects/abilities.ts` |
 | Tablets of Ruin | `no-op` | reachable, not ported yet |
 | Tangled Feet | `no-op` | reachable, not ported yet |
 | Tangling Hair | `no-op` | reachable, not ported yet |
@@ -298,7 +298,7 @@ catalogue row, not engine code.
 | Tera Shift | `excluded` | Terastal mechanic (cut) |
 | Teraform Zero | `excluded` | Terastal mechanic (cut) |
 | Teravolt | `no-op` | reachable, not ported yet |
-| Thermal Exchange | `no-op` | reachable, not ported yet |
+| Thermal Exchange | `port` | ported in `effects/abilities.ts` |
 | Thick Fat | `port` | ported in `effects/abilities.ts` |
 | Tinted Lens | `port` | ported in `effects/abilities.ts` |
 | Torrent | `port` | ported in `effects/abilities.ts` |

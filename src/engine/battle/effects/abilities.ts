@@ -743,6 +743,199 @@ function soundproof(): EffectHandlers {
   };
 }
 
+function poisonTouch(): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || !ctx.target) return;
+      if (!payload.move.flags.contact) return;
+      if (ctx.owner.hp <= 0 || ctx.target.hp <= 0) return;
+      if (ctx.rng.int(1, 100) > 30) return;
+      applyStatusEffect(ctx.state, opponentOf(ctx.side), ctx.target, 'psn', `${ctx.target.name} was poisoned by Poison Touch!`);
+    },
+  };
+}
+
+function gooey(): EffectHandlers {
+  return contactReaction((ctx, attacker) => {
+    applyBoostEffect(ctx.state, opponentOf(ctx.side), attacker, { spe: -1 }, {
+      message: `${attacker.name}'s Speed was lowered by Gooey!`,
+    });
+  });
+}
+
+function justified(): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || ctx.owner.hp <= 0) return;
+      if (payload.move.type !== 'Dark') return;
+      applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, { atk: 1 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Justified raised its Attack!`,
+      });
+    },
+  };
+}
+
+function marvelScale(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || !ctx.owner.status) return;
+      if (payload.move.category !== 'Physical') return;
+      return Math.max(1, Math.floor(payload.damage / 1.5));
+    },
+  };
+}
+
+function sandForce(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || ctx.state.weather !== 'sand') return;
+      if (!['Rock', 'Ground', 'Steel'].includes(payload.move.type)) return;
+      return scaledDamage(payload.damage, 1.3);
+    },
+  };
+}
+
+function thermalExchange(): EffectHandlers {
+  return {
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || payload.move.type !== 'Fire') return;
+      applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, { atk: 1 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Thermal Exchange raised its Attack!`,
+      });
+      pushText(ctx.state, `${ctx.owner.name}'s Thermal Exchange absorbed the heat!`);
+      return false;
+    },
+    onStatus: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || payload.status !== 'brn') return;
+      pushText(ctx.state, `${ctx.owner.name}'s Thermal Exchange prevents burns!`);
+      return false;
+    },
+  };
+}
+
+function simple(): EffectHandlers {
+  return {
+    onModifyBoost: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      return payload.stages * 2;
+    },
+  };
+}
+
+function contrary(): EffectHandlers {
+  return {
+    onModifyBoost: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      return -payload.stages;
+    },
+  };
+}
+
+function synchronize(): EffectHandlers {
+  return {
+    onAfterStatus: (ctx, status) => {
+      if (ctx.owner !== ctx.source || !ctx.target) return;
+      if (!['brn', 'par', 'psn'].includes(status)) return;
+      if (ctx.target.ability === 'Synchronize') return;
+      applyStatusEffect(ctx.state, opponentOf(ctx.side), ctx.target, status, `${ctx.target.name} was afflicted by ${statusName(status as StatusId)} too!`);
+    },
+  };
+}
+
+function steadfast(): EffectHandlers {
+  return {
+    onTryVolatile: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || payload.volatile !== 'flinch') return;
+      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { spe: 1 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Steadfast raised its Speed!`,
+      });
+    },
+  };
+}
+
+function rockHead(): EffectHandlers {
+  return {
+    onModifyRecoil: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      pushText(ctx.state, `${ctx.owner.name} took no recoil thanks to Rock Head!`);
+      return 0;
+    },
+  };
+}
+
+function moody(): EffectHandlers {
+  const stats: readonly BoostId[] = ['atk', 'def', 'spa', 'spd', 'spe'];
+  return {
+    onResidual: (ctx) => {
+      if (ctx.owner.hp <= 0) return;
+      const raise = stats[ctx.rng.int(0, stats.length - 1)];
+      let lower = stats[ctx.rng.int(0, stats.length - 1)];
+      if (lower === raise) lower = stats[(stats.indexOf(lower) + 1) % stats.length];
+      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { [raise]: 2, [lower]: -1 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Moody heightened one stat and lowered another!`,
+      });
+    },
+  };
+}
+
+function disguise(): EffectHandlers {
+  return {
+    onStart: (ctx) => {
+      if (ctx.owner === ctx.source) ctx.owner.volatiles.disguise = true;
+    },
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || !ctx.owner.volatiles.disguise) return;
+      if (payload.move.category === 'Status' || payload.move.basePower <= 0) return;
+      ctx.owner.volatiles.disguise = false;
+      pushText(ctx.state, `${ctx.owner.name}'s Disguise was busted!`);
+      return false;
+    },
+  };
+}
+
+function overcoat(): EffectHandlers {
+  return {
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || !payload.move.flags.powder) return;
+      pushText(ctx.state, `${ctx.owner.name}'s Overcoat blocked the powder!`);
+      return false;
+    },
+  };
+}
+
+function runAway(): EffectHandlers {
+  return {
+    onTryEscape: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      return true;
+    },
+  };
+}
+
+function analytic(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (!ctx.state.movedSides.includes(opponentOf(ctx.side))) return;
+      return scaledDamage(payload.damage, 1.3);
+    },
+  };
+}
+
+function stakeout(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (!ctx.state.switchedSides.includes(opponentOf(ctx.side))) return;
+      return scaledDamage(payload.damage, 2);
+    },
+  };
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -857,6 +1050,25 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['grasspelt', grassPelt()],
   ['bulletproof', bulletproof()],
   ['soundproof', soundproof()],
+
+  ['poisontouch', poisonTouch()],
+  ['gooey', gooey()],
+  ['justified', justified()],
+  ['marvelscale', marvelScale()],
+  ['sandforce', sandForce()],
+  ['eartheater', typeImmunity('Earth Eater', 'Ground', { healQuarter: true })],
+  ['thermalexchange', thermalExchange()],
+  ['simple', simple()],
+  ['contrary', contrary()],
+  ['synchronize', synchronize()],
+  ['steadfast', steadfast()],
+  ['rockhead', rockHead()],
+  ['moody', moody()],
+  ['disguise', disguise()],
+  ['overcoat', overcoat()],
+  ['runaway', runAway()],
+  ['analytic', analytic()],
+  ['stakeout', stakeout()],
 ];
 
 export function abilityEffects(): readonly EffectDefinition[] {

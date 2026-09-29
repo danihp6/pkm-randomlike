@@ -62,6 +62,10 @@ export type BattleState = {
   winner: SideId | 'draw' | null;
   /** Failed run attempts this battle, feeding the classic escape odds. */
   escapeAttempts: number;
+  /** Sides that have already used a move this turn (Analytic). */
+  movedSides: SideId[];
+  /** Sides that switched a Pokémon in this turn (Stakeout). */
+  switchedSides: SideId[];
 };
 
 export type BattleSetup = Readonly<{
@@ -107,6 +111,8 @@ export function createBattle(setup: BattleSetup): BattleState {
     isWild: setup.isWild,
     winner: null,
     escapeAttempts: 0,
+    movedSides: [],
+    switchedSides: [],
   };
 
   for (const side of SIDE_IDS) {
