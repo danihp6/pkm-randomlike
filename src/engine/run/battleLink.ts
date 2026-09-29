@@ -30,6 +30,8 @@ export type BattleLaunch = Readonly<{
   trigger: BattleTrigger;
   player: readonly FighterSnapshot[];
   bag: readonly BagCounts[];
+  /** XP per party member, so the battle can draw the XP bar before any award. */
+  experience: readonly Readonly<{ id: string; xp: number }>[];
   seed: number;
   /** False once the route's single capture has been spent. */
   canCapture: boolean;

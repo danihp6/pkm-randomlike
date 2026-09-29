@@ -1,16 +1,26 @@
 import Phaser from 'phaser';
 import { biomeForRoute } from '../data/biomes';
+import { getSpecies } from '../data/dex';
 import { bandForRoute } from '../data/run';
 import { TRAINER_ARCHETYPE_IDS, getTrainerArchetype } from '../data/trainers';
 import { IS_DEVELOP } from '../dev/env';
-import { createFighter, snapshotFighter, type FighterInput, type FighterSnapshot } from '../engine/battle';
+import type { FighterInput } from '../engine/battle';
 import {
+  addPokemon,
   battleSeed,
+  canCapture,
+  createRun,
+  createRunPokemon,
+  hasLivingParty,
+  isTrainerDefeated,
+  resolveBattle,
   trainerRoster,
   type BagCounts,
   type BattleLaunch,
   type BattleReturn,
+  type BattleReward,
   type BattleTrigger,
+  type RunState,
 } from '../engine/run';
 import {
   COMMON_TEXTURE_KEY,
@@ -47,15 +57,13 @@ const VISION_RADIUS = 6;
 const HIDDEN_ALPHA = 0.3;
 const EXPLORED_ALPHA = 0.7;
 
-// Until a run exists (Phase 6) the scene generates route 1 of a fixed dev seed
-// and carries a fixed demo party and bag. The run will replace both.
+// Until the starter pick lands, the scene generates route 1 of a fixed dev seed
+// off a real run seeded with a fixed demo starter and bag.
 const DEV_SEED = 'dev-seed';
 const DEV_ROUTE_INDEX = 1;
 
-const DEMO_PARTY: readonly FighterInput[] = [
-  { id: 'starter', speciesId: 'charmander', level: 12, moves: ['ember', 'scratch', 'growl'] },
-  { id: 'reserve', speciesId: 'squirtle', level: 10, moves: ['watergun', 'tackle', 'tailwhip'] },
-];
+const DEMO_STARTER: FighterInput = { id: 'starter', speciesId: 'charmander', level: 5, moves: ['ember', 'scratch', 'growl'] };
+const DEMO_RESERVE: FighterInput = { id: 'reserve', speciesId: 'squirtle', level: 4, moves: ['watergun', 'tackle', 'tailwhip'] };
 
 const DEMO_BAG: readonly BagCounts[] = [
   { itemId: 'potion', count: 2 },
@@ -77,11 +85,8 @@ export class RouteScene extends Phaser.Scene {
   private playerSprite!: Phaser.GameObjects.Sprite;
   private tileSprites: Phaser.GameObjects.Image[][] = [];
   private foggables: Foggable[] = [];
-  private defeated = new Set<string>();
+  private run!: RunState;
   private pickedItems = new Set<string>();
-  private party: readonly FighterSnapshot[] = [];
-  private bag: readonly BagCounts[] = [];
-  private captureUsed = false;
   private gameOver = false;
   private battleCounter = 0;
   private pendingBattle: BattleLaunch | null = null;
@@ -115,8 +120,8 @@ export class RouteScene extends Phaser.Scene {
       band.maxLevel,
       new Rng(hashSeed(`${DEV_SEED}:encounters:${DEV_ROUTE_INDEX}`)),
     );
-    this.party = DEMO_PARTY.map((input) => snapshotFighter(createFighter(input)));
-    this.bag = DEMO_BAG;
+    this.run = createRun({ seed: DEV_SEED, starter: createRunPokemon(DEMO_STARTER), bag: DEMO_BAG });
+    this.run = addPokemon(this.run, createRunPokemon(DEMO_RESERVE));
 
     this.drawTiles();
     this.drawEntities();
@@ -282,7 +287,7 @@ export class RouteScene extends Phaser.Scene {
     if (this.collectItemAt(this.player)) return;
 
     const spotter = this.route.trainers.find(
-      (trainer) => !this.defeated.has(trainer.id) && seesPlayer(this.route, trainer, this.player),
+      (trainer) => !isTrainerDefeated(this.run, trainer.id) && seesPlayer(this.route, trainer, this.player),
     );
     if (spotter) {
       this.startBattle(this.trainerTrigger(spotter));
@@ -293,8 +298,8 @@ export class RouteScene extends Phaser.Scene {
 
   private trainerTrigger(trainer: RouteTrainer): BattleTrigger {
     const archetype = getTrainerArchetype(trainer.archetypeId);
-    const band = bandForRoute(DEV_ROUTE_INDEX);
-    const seed = battleSeed(DEV_SEED, DEV_ROUTE_INDEX, `trainer:${trainer.id}:roster`);
+    const band = bandForRoute(this.run.routeIndex);
+    const seed = battleSeed(this.run.seed, this.run.routeIndex, `trainer:${trainer.id}:roster`);
     const roster =
       archetype !== undefined
         ? trainerRoster(archetype, band, new Rng(seed), trainer.id)
@@ -314,35 +319,49 @@ export class RouteScene extends Phaser.Scene {
     const key = trigger.kind === 'wild' ? `${trigger.key}:${this.battleCounter}` : `trainer:${trigger.trainerId}`;
     const launch: BattleLaunch = {
       trigger,
-      player: this.party,
-      bag: this.bag,
-      seed: battleSeed(DEV_SEED, DEV_ROUTE_INDEX, key),
-      canCapture: !this.captureUsed,
+      player: this.run.party.map((member) => member.fighter),
+      experience: this.run.party.map((member) => ({ id: member.fighter.id, xp: member.xp })),
+      bag: this.run.bag,
+      seed: battleSeed(this.run.seed, this.run.routeIndex, key),
+      canCapture: canCapture(this.run),
     };
     this.pendingBattle = launch;
     this.scene.pause();
     this.scene.launch('Battle', launch);
   }
 
-  /** Called by `BattleScene` before it stops: adopts the party/bag and marks the win. */
+  /** Called by `BattleScene` before it stops: folds the result back into the run. */
   applyBattleResult(result: BattleReturn): void {
-    const trigger = this.pendingBattle?.trigger;
+    const pending = this.pendingBattle;
     this.pendingBattle = null;
-    this.bag = result.bag;
+    if (!pending) return;
 
-    // Permadeath: a Pokémon at 0 HP leaves the party for good (battle-spec §5).
-    const survivors = result.player.filter((fighter) => fighter.hp > 0);
-    const captured = result.captured ? [result.captured] : [];
-    this.party = [...survivors, ...captured];
-    if (result.outcome === 'capture') this.captureUsed = true;
-    if (trigger?.kind === 'trainer' && result.outcome === 'win') this.defeated.add(trigger.trainerId);
+    const reward = this.rewardFor(pending.trigger);
+    const { run, released, events } = resolveBattle(this.run, result, reward);
+    this.run = run;
 
-    if (this.party.length === 0) {
+    if (!hasLivingParty(this.run)) {
       this.gameOver = true;
       this.setHint('Your last Pokémon fainted. The run is over. Reload to start again.');
       return;
     }
-    this.setHint(result.message);
+
+    const notes: string[] = [result.message];
+    for (const fallen of released) {
+      notes.push(`${getSpecies(fallen.fighter.speciesId)?.name ?? fallen.fighter.speciesId} was released.`);
+    }
+    if (events.some((event) => event.kind === 'level')) notes.push('Level up!');
+    if (events.some((event) => event.kind === 'evolve')) notes.push('It evolved!');
+    this.setHint(notes.join('  '));
+  }
+
+  private rewardFor(trigger: BattleTrigger): BattleReward {
+    if (trigger.kind === 'wild') return { enemyLevels: [trigger.level], isTrainer: false };
+    return {
+      enemyLevels: trigger.roster.map((entry) => entry.level),
+      isTrainer: true,
+      trainerId: trigger.trainerId,
+    };
   }
 
   private collectItemAt(tile: Tile): boolean {
@@ -372,7 +391,7 @@ export class RouteScene extends Phaser.Scene {
     const result = resolveMove(this.map, this.player, step);
     if (!result) return;
     const blocker = trainerAt(this.route, result.to);
-    if (blocker && !this.defeated.has(blocker.id)) return;
+    if (blocker && !isTrainerDefeated(this.run, blocker.id)) return;
     this.playerSprite.setFlipX(step.x < 0);
     this.movePlayerTo(result.to.x, result.to.y, false);
   }
