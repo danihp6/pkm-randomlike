@@ -27,7 +27,7 @@ const FAST_HOLD_MS = 45;
 const MENU_ROWS = 4;
 const DEMO_SEED = 20240929;
 
-type Mode = 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'over';
+type Mode = 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'run' | 'over';
 
 type MenuItem = Readonly<{ label: string; enabled: boolean; onSelect: () => void }>;
 
@@ -211,7 +211,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private onCancel(): void {
-    if (this.mode === 'moves' || this.mode === 'bag' || this.mode === 'party') this.openMenu();
+    if (this.mode === 'moves' || this.mode === 'bag' || this.mode === 'party' || this.mode === 'run') {
+      this.openMenu();
+    }
   }
 
   // --- feed playback ------------------------------------------------------
@@ -326,7 +328,7 @@ export class BattleScene extends Phaser.Scene {
       { label: 'FIGHT', enabled: true, onSelect: () => this.openMoves() },
       { label: 'BAG', enabled: this.usableBag().length > 0, onSelect: () => this.openBag() },
       { label: 'SWITCH', enabled: this.hasBench(), onSelect: () => this.openParty() },
-      { label: 'RUN', enabled: canRun(this.state, 'player'), onSelect: () => this.submit({ type: 'run' }) },
+      { label: 'RUN', enabled: canRun(this.state, 'player'), onSelect: () => this.openRunConfirm() },
     ];
     this.menuIndex = 0;
     this.mode = 'menu';
@@ -339,10 +341,11 @@ export class BattleScene extends Phaser.Scene {
     const legal = legalMoveIndices(player);
     this.menuItems = player.moves.map((slot, index) => {
       const move = getMove(slot.moveId);
-      const name = (move?.name ?? slot.moveId).padEnd(13, ' ');
+      const name = (move?.name ?? slot.moveId).padEnd(12, ' ');
+      const type = (move?.type ?? '').toUpperCase().padEnd(8, ' ');
       const enabled = legal.length === 0 ? index === 0 : legal.includes(index);
       return {
-        label: `${name}PP ${slot.pp}/${slot.maxPp}`,
+        label: `${name}${type}PP ${slot.pp}/${slot.maxPp}`,
         enabled,
         onSelect: () => this.submit({ type: 'fight', moveIndex: index }),
       };
@@ -380,6 +383,17 @@ export class BattleScene extends Phaser.Scene {
     });
     this.menuIndex = 0;
     this.mode = 'party';
+    this.refreshHud();
+  }
+
+  private openRunConfirm(): void {
+    this.menuItems = [
+      { label: 'YES', enabled: true, onSelect: () => this.submit({ type: 'run' }) },
+      { label: 'NO', enabled: true, onSelect: () => this.openMenu() },
+    ];
+    this.menuIndex = 0;
+    this.mode = 'run';
+    this.setMessage('Run away from the battle?');
     this.refreshHud();
   }
 
@@ -460,7 +474,13 @@ export class BattleScene extends Phaser.Scene {
     this.messageText.setPosition(box.x + 24, box.y + 18);
     this.messageText.setWordWrapWidth(box.w * 0.54);
 
-    if (this.mode === 'menu' || this.mode === 'moves' || this.mode === 'bag' || this.mode === 'party') {
+    if (
+      this.mode === 'menu' ||
+      this.mode === 'moves' ||
+      this.mode === 'bag' ||
+      this.mode === 'party' ||
+      this.mode === 'run'
+    ) {
       this.renderMenu(box);
     } else {
       for (const row of this.menuRows) row.setVisible(false);
