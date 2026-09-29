@@ -18,7 +18,7 @@ export type EffectContext = Readonly<{
 }>;
 
 export type MovePayload = Readonly<{ move: Move }>;
-export type DamagePayload = Readonly<{ move: Move; damage: number }>;
+export type DamagePayload = Readonly<{ move: Move; damage: number; effectiveness: number }>;
 export type StatusPayload = Readonly<{ status: string }>;
 export type BoostPayload = Readonly<{ stat: BoostId; stages: number; self: boolean }>;
 
@@ -184,10 +184,19 @@ export function runBoost(
   return true;
 }
 
-export function runModifyDamage(ctx: EffectContext, move: Move, damage: number): number {
+export function runModifyDamage(
+  ctx: EffectContext,
+  move: Move,
+  damage: number,
+  effectiveness = 1,
+): number {
   let value = damage;
   for (const ref of contextEffects(ctx, true, move)) {
-    const next = ref.effect.handlers.onModifyDamage?.(contextFor(ctx, ref), { move, damage: value });
+    const next = ref.effect.handlers.onModifyDamage?.(contextFor(ctx, ref), {
+      move,
+      damage: value,
+      effectiveness,
+    });
     if (typeof next === 'number') value = next;
   }
   return value;

@@ -20,7 +20,7 @@ The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — 310 total (32 port, 219 no-op, 59 excluded)
+## Abilities — 310 total (56 port, 195 no-op, 59 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -70,7 +70,7 @@ catalogue row, not engine code.
 | Damp | `no-op` | reachable, not ported yet |
 | Dancer | `no-op` | reachable, not ported yet |
 | Dark Aura | `excluded` | no playable species has it |
-| Dauntless Shield | `no-op` | reachable, not ported yet |
+| Dauntless Shield | `port` | ported in `effects/abilities.ts` |
 | Dazzling | `no-op` | reachable, not ported yet |
 | Defeatist | `excluded` | no playable species has it |
 | Defiant | `no-op` | reachable, not ported yet |
@@ -81,7 +81,7 @@ catalogue row, not engine code.
 | Dragon's Maw | `no-op` | reachable, not ported yet |
 | Drizzle | `port` | ported in `effects/abilities.ts` |
 | Drought | `port` | ported in `effects/abilities.ts` |
-| Dry Skin | `no-op` | reachable, not ported yet |
+| Dry Skin | `port` | ported in `effects/abilities.ts` |
 | Early Bird | `no-op` | reachable, not ported yet |
 | Earth Eater | `no-op` | reachable, not ported yet |
 | Effect Spore | `no-op` | reachable, not ported yet |
@@ -93,7 +93,7 @@ catalogue row, not engine code.
 | Embody Aspect (Wellspring) | `excluded` | Terastal mechanic (cut) |
 | Emergency Exit | `excluded` | no playable species has it |
 | Fairy Aura | `excluded` | no playable species has it |
-| Filter | `no-op` | reachable, not ported yet |
+| Filter | `port` | ported in `effects/abilities.ts` |
 | Flame Body | `port` | ported in `effects/abilities.ts` |
 | Flare Boost | `no-op` | reachable, not ported yet |
 | Flash Fire | `no-op` | reachable, not ported yet |
@@ -121,18 +121,18 @@ catalogue row, not engine code.
 | Hadron Engine | `no-op` | reachable, not ported yet |
 | Harvest | `no-op` | reachable, not ported yet |
 | Healer | `excluded` | doubles/ally only |
-| Heatproof | `no-op` | reachable, not ported yet |
+| Heatproof | `port` | ported in `effects/abilities.ts` |
 | Heavy Metal | `no-op` | reachable, not ported yet |
 | Honey Gather | `no-op` | reachable, not ported yet |
 | Hospitality | `excluded` | doubles/ally only |
-| Huge Power | `no-op` | reachable, not ported yet |
+| Huge Power | `port` | ported in `effects/abilities.ts` |
 | Hunger Switch | `no-op` | reachable, not ported yet |
 | Hustle | `no-op` | reachable, not ported yet |
 | Hydration | `no-op` | reachable, not ported yet |
 | Hyper Cutter | `port` | ported in `effects/abilities.ts` |
 | Ice Body | `no-op` | reachable, not ported yet |
 | Ice Face | `no-op` | reachable, not ported yet |
-| Ice Scales | `no-op` | reachable, not ported yet |
+| Ice Scales | `port` | ported in `effects/abilities.ts` |
 | Illuminate | `no-op` | reachable, not ported yet |
 | Illusion | `no-op` | reachable, not ported yet |
 | Immunity | `port` | ported in `effects/abilities.ts` |
@@ -142,9 +142,9 @@ catalogue row, not engine code.
 | Inner Focus | `no-op` | reachable, not ported yet |
 | Insomnia | `port` | ported in `effects/abilities.ts` |
 | Intimidate | `port` | ported in `effects/abilities.ts` |
-| Intrepid Sword | `no-op` | reachable, not ported yet |
+| Intrepid Sword | `port` | ported in `effects/abilities.ts` |
 | Iron Barbs | `excluded` | no playable species has it |
-| Iron Fist | `no-op` | reachable, not ported yet |
+| Iron Fist | `port` | ported in `effects/abilities.ts` |
 | Justified | `no-op` | reachable, not ported yet |
 | Keen Eye | `port` | ported in `effects/abilities.ts` |
 | Klutz | `no-op` | reachable, not ported yet |
@@ -152,7 +152,7 @@ catalogue row, not engine code.
 | Levitate | `port` | ported in `effects/abilities.ts` |
 | Libero | `no-op` | reachable, not ported yet |
 | Light Metal | `no-op` | reachable, not ported yet |
-| Lightning Rod | `no-op` | reachable, not ported yet |
+| Lightning Rod | `port` | ported in `effects/abilities.ts` |
 | Limber | `port` | ported in `effects/abilities.ts` |
 | Lingering Aroma | `no-op` | reachable, not ported yet |
 | Liquid Ooze | `no-op` | reachable, not ported yet |
@@ -173,9 +173,9 @@ catalogue row, not engine code.
 | Misty Surge | `port` | ported in `effects/abilities.ts` |
 | Mold Breaker | `no-op` | reachable, not ported yet |
 | Moody | `no-op` | reachable, not ported yet |
-| Motor Drive | `no-op` | reachable, not ported yet |
-| Moxie | `no-op` | reachable, not ported yet |
-| Multiscale | `no-op` | reachable, not ported yet |
+| Motor Drive | `port` | ported in `effects/abilities.ts` |
+| Moxie | `port` | ported in `effects/abilities.ts` |
+| Multiscale | `port` | ported in `effects/abilities.ts` |
 | Multitype | `no-op` | reachable, not ported yet |
 | Mummy | `excluded` | no playable species has it |
 | Mycelium Might | `no-op` | reachable, not ported yet |
@@ -207,13 +207,13 @@ catalogue row, not engine code.
 | Prankster | `no-op` | reachable, not ported yet |
 | Pressure | `no-op` | reachable, not ported yet |
 | Primordial Sea | `excluded` | no playable species has it |
-| Prism Armor | `no-op` | reachable, not ported yet |
+| Prism Armor | `port` | ported in `effects/abilities.ts` |
 | Propeller Tail | `no-op` | reachable, not ported yet |
 | Protean | `no-op` | reachable, not ported yet |
 | Protosynthesis | `no-op` | reachable, not ported yet |
 | Psychic Surge | `port` | ported in `effects/abilities.ts` |
 | Punk Rock | `no-op` | reachable, not ported yet |
-| Pure Power | `no-op` | reachable, not ported yet |
+| Pure Power | `port` | ported in `effects/abilities.ts` |
 | Purifying Salt | `no-op` | reachable, not ported yet |
 | Quark Drive | `no-op` | reachable, not ported yet |
 | Queenly Majesty | `no-op` | reachable, not ported yet |
@@ -237,15 +237,15 @@ catalogue row, not engine code.
 | Sand Spit | `no-op` | reachable, not ported yet |
 | Sand Stream | `port` | ported in `effects/abilities.ts` |
 | Sand Veil | `no-op` | reachable, not ported yet |
-| Sap Sipper | `no-op` | reachable, not ported yet |
+| Sap Sipper | `port` | ported in `effects/abilities.ts` |
 | Schooling | `excluded` | no playable species has it |
 | Scrappy | `no-op` | reachable, not ported yet |
 | Screen Cleaner | `excluded` | no playable species has it |
 | Seed Sower | `no-op` | reachable, not ported yet |
 | Serene Grace | `no-op` | reachable, not ported yet |
-| Shadow Shield | `no-op` | reachable, not ported yet |
+| Shadow Shield | `port` | ported in `effects/abilities.ts` |
 | Shadow Tag | `no-op` | reachable, not ported yet |
-| Sharpness | `no-op` | reachable, not ported yet |
+| Sharpness | `port` | ported in `effects/abilities.ts` |
 | Shed Skin | `port` | ported in `effects/abilities.ts` |
 | Sheer Force | `no-op` | reachable, not ported yet |
 | Shell Armor | `no-op` | reachable, not ported yet |
@@ -259,7 +259,7 @@ catalogue row, not engine code.
 | Snow Cloak | `no-op` | reachable, not ported yet |
 | Snow Warning | `port` | ported in `effects/abilities.ts` |
 | Solar Power | `no-op` | reachable, not ported yet |
-| Solid Rock | `no-op` | reachable, not ported yet |
+| Solid Rock | `port` | ported in `effects/abilities.ts` |
 | Soul-Heart | `no-op` | reachable, not ported yet |
 | Soundproof | `no-op` | reachable, not ported yet |
 | Speed Boost | `no-op` | reachable, not ported yet |
@@ -275,8 +275,8 @@ catalogue row, not engine code.
 | Steely Spirit | `no-op` | reachable, not ported yet |
 | Stench | `no-op` | reachable, not ported yet |
 | Sticky Hold | `no-op` | reachable, not ported yet |
-| Storm Drain | `no-op` | reachable, not ported yet |
-| Strong Jaw | `no-op` | reachable, not ported yet |
+| Storm Drain | `port` | ported in `effects/abilities.ts` |
+| Strong Jaw | `port` | ported in `effects/abilities.ts` |
 | Sturdy | `port` | ported in `effects/abilities.ts` |
 | Suction Cups | `no-op` | reachable, not ported yet |
 | Super Luck | `no-op` | reachable, not ported yet |
@@ -299,10 +299,10 @@ catalogue row, not engine code.
 | Teraform Zero | `excluded` | Terastal mechanic (cut) |
 | Teravolt | `no-op` | reachable, not ported yet |
 | Thermal Exchange | `no-op` | reachable, not ported yet |
-| Thick Fat | `no-op` | reachable, not ported yet |
+| Thick Fat | `port` | ported in `effects/abilities.ts` |
 | Tinted Lens | `no-op` | reachable, not ported yet |
 | Torrent | `port` | ported in `effects/abilities.ts` |
-| Tough Claws | `no-op` | reachable, not ported yet |
+| Tough Claws | `port` | ported in `effects/abilities.ts` |
 | Toxic Boost | `no-op` | reachable, not ported yet |
 | Toxic Chain | `no-op` | reachable, not ported yet |
 | Toxic Debris | `no-op` | reachable, not ported yet |
@@ -318,9 +318,9 @@ catalogue row, not engine code.
 | Vessel of Ruin | `no-op` | reachable, not ported yet |
 | Victory Star | `excluded` | no playable species has it |
 | Vital Spirit | `port` | ported in `effects/abilities.ts` |
-| Volt Absorb | `no-op` | reachable, not ported yet |
+| Volt Absorb | `port` | ported in `effects/abilities.ts` |
 | Wandering Spirit | `excluded` | no playable species has it |
-| Water Absorb | `no-op` | reachable, not ported yet |
+| Water Absorb | `port` | ported in `effects/abilities.ts` |
 | Water Bubble | `no-op` | reachable, not ported yet |
 | Water Compaction | `no-op` | reachable, not ported yet |
 | Water Veil | `port` | ported in `effects/abilities.ts` |

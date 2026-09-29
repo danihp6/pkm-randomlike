@@ -348,6 +348,7 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
         makeContext(state, side, { source: attacker, target, move }),
         move,
         result.damage,
+        result.effectiveness,
       );
       if (hasSubstitute(target)) {
         absorbWithSubstitute(target, damage);

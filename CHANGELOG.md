@@ -196,3 +196,12 @@ file is the human-readable summary.
       status blocks (Electric sleep, Misty all) with `isGrounded`, and the
       terrain damage modifiers (Electric/Grassy/Psychic ×1.3, Misty Dragon and
       Grassy Earthquake/Bulldoze halved). 215 tests pass; `npm run build` clean.
+- [x] `src/engine/battle/effects/abilities.ts`: batch 2, 24 more abilities — the
+      absorb/redirect group (Water Absorb, Volt Absorb, Sap Sipper, Lightning Rod,
+      Storm Drain, Motor Drive, Dry Skin), the defensive multipliers (Thick Fat,
+      Heatproof, Ice Scales, Multiscale, Shadow Shield, Filter, Solid Rock, Prism
+      Armor), the offensive ones (Tough Claws, Strong Jaw, Iron Fist, Sharpness,
+      Huge Power, Pure Power), the switch-in boosts (Intrepid Sword, Dauntless
+      Shield) and Moxie. `onModifyDamage` now carries effectiveness so Filter-style
+      abilities can read a super-effective hit; the coverage table is at 95 ports
+      (56 abilities). 222 tests pass; `npm run build` clean.

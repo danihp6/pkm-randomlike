@@ -56,8 +56,9 @@ The whole menu battle minus per-effect behaviour. Contract in
 Ports of Showdown handlers, in batches, on the hook names in
 `docs/showdown-reuse.md` §3.
 
-- [ ] `src/engine/battle/effects/abilities.ts`: batch 2 — the competitive long
-      tail, ported straight from Showdown's handler bodies.
+- [ ] `src/engine/battle/effects/abilities.ts`: the remaining abilities (batch 3+),
+      ported from Showdown's handler bodies and tracked as `no-op` in
+      `docs/balance/effect-coverage.md`.
 - [ ] `src/engine/battle/effects/moves.ts`: moves whose handlers are not plain
       damage/status (Protect, Substitute, Recycle, multi-turn, self-destruct...).
 

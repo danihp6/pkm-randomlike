@@ -213,6 +213,104 @@ describe('stat guard abilities', () => {
   });
 });
 
+describe('damage and immunity abilities (batch 2)', () => {
+  it('Water Absorb blocks a Water move and heals a quarter', () => {
+    const state = makeBattle(
+      fighter('player', 'charmander', 'Blaze', ['watergun', 'ember']),
+      fighter('enemy', 'poliwag', 'Water Absorb'),
+    );
+    const poliwag = activeFighter(state, 'enemy');
+    poliwag.hp = Math.floor(poliwag.maxHp / 2);
+    const ctx = ctxOf(state, 'player');
+
+    expect(runTryHit(ctx, getMove('watergun')!)).toBe(false);
+    expect(poliwag.hp).toBe(Math.floor(poliwag.maxHp / 2) + Math.floor(poliwag.maxHp / 4));
+    expect(runTryHit(ctx, getMove('ember')!)).toBe(true);
+  });
+
+  it('Sap Sipper blocks Grass and raises Attack; Motor Drive blocks Electric and raises Speed', () => {
+    const state = makeBattle(
+      fighter('player', 'charmander', 'Blaze'),
+      fighter('enemy', 'marill', 'Sap Sipper'),
+    );
+    const marill = activeFighter(state, 'enemy');
+    const ctx = ctxOf(state, 'player');
+
+    expect(runTryHit(ctx, getMove('vinewhip')!)).toBe(false);
+    expect(marill.boosts.atk).toBe(1);
+
+    const drive = makeBattle(
+      fighter('player', 'charmander', 'Blaze'),
+      fighter('enemy', 'electivire', 'Motor Drive'),
+    );
+    const electivire = activeFighter(drive, 'enemy');
+    expect(runTryHit(ctxOf(drive, 'player'), getMove('thunderbolt')!)).toBe(false);
+    expect(electivire.boosts.spe).toBe(1);
+  });
+
+  it('Thick Fat and Ice Scales reduce the right incoming moves', () => {
+    const thick = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'seel', 'Thick Fat'));
+    expect(runModifyDamage(ctxOf(thick, 'player'), getMove('ember')!, 100)).toBe(50);
+    expect(runModifyDamage(ctxOf(thick, 'player'), getMove('tackle')!, 100)).toBe(100);
+
+    const scales = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'snom', 'Ice Scales'));
+    expect(runModifyDamage(ctxOf(scales, 'player'), getMove('ember')!, 100)).toBe(50);
+    expect(runModifyDamage(ctxOf(scales, 'player'), getMove('tackle')!, 100)).toBe(100);
+  });
+
+  it('Multiscale halves only at full HP and Filter only super-effective hits', () => {
+    const multi = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'dragonite', 'Multiscale'));
+    const dragonite = activeFighter(multi, 'enemy');
+    expect(runModifyDamage(ctxOf(multi, 'player'), getMove('tackle')!, 100)).toBe(50);
+    dragonite.hp -= 1;
+    expect(runModifyDamage(ctxOf(multi, 'player'), getMove('tackle')!, 100)).toBe(100);
+
+    const filter = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'necrozma', 'Prism Armor'));
+    expect(runModifyDamage(ctxOf(filter, 'player'), getMove('tackle')!, 100, 2)).toBe(75);
+    expect(runModifyDamage(ctxOf(filter, 'player'), getMove('tackle')!, 100, 1)).toBe(100);
+  });
+
+  it('Tough Claws, Strong Jaw and Huge Power boost the right moves', () => {
+    const claws = makeBattle(fighter('player', 'meowthgalar', 'Tough Claws'), fighter('enemy', 'bulbasaur', 'Overgrow'));
+    const ctx = ctxOf(claws, 'player');
+    expect(runModifyDamage(ctx, getMove('tackle')!, 100)).toBe(130);
+    expect(runModifyDamage(ctx, getMove('ember')!, 100)).toBe(100);
+
+    const jaw = makeBattle(fighter('player', 'avalugghisui', 'Strong Jaw'), fighter('enemy', 'bulbasaur', 'Overgrow'));
+    expect(runModifyDamage(ctxOf(jaw, 'player'), getMove('bite')!, 100)).toBe(150);
+
+    const power = makeBattle(fighter('player', 'marill', 'Huge Power'), fighter('enemy', 'bulbasaur', 'Overgrow'));
+    expect(runModifyDamage(ctxOf(power, 'player'), getMove('tackle')!, 100)).toBe(200);
+    expect(runModifyDamage(ctxOf(power, 'player'), getMove('ember')!, 100)).toBe(100);
+  });
+
+  it('Intrepid Sword raises Attack on switch-in and Moxie on a KO', () => {
+    const sword = makeBattle(fighter('player', 'zacian', 'Intrepid Sword'), fighter('enemy', 'bulbasaur', 'Overgrow'));
+    expect(activeFighter(sword, 'player').boosts.atk).toBe(1);
+
+    const moxie = makeBattle(fighter('player', 'gyarados', 'Moxie'), fighter('enemy', 'charmander', 'Blaze'));
+    activeFighter(moxie, 'enemy').hp = 0;
+    runAfterMove(ctxOf(moxie, 'player'), getMove('tackle')!);
+    expect(activeFighter(moxie, 'player').boosts.atk).toBe(1);
+  });
+
+  it('Dry Skin absorbs Water, fears Fire and follows the weather', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'croagunk', 'Dry Skin'));
+    const croagunk = activeFighter(state, 'enemy');
+    croagunk.hp = Math.floor(croagunk.maxHp / 2);
+    const ctx = ctxOf(state, 'player');
+
+    expect(runTryHit(ctx, getMove('watergun')!)).toBe(false);
+    expect(croagunk.hp).toBe(Math.floor(croagunk.maxHp / 2) + Math.floor(croagunk.maxHp / 4));
+    expect(runModifyDamage(ctx, getMove('ember')!, 100)).toBe(125);
+
+    state.weather = 'rain';
+    croagunk.hp = Math.floor(croagunk.maxHp / 2);
+    runResidual(ctxOf(state, 'enemy'));
+    expect(croagunk.hp).toBe(Math.floor(croagunk.maxHp / 2) + Math.floor(croagunk.maxHp / 8));
+  });
+});
+
 describe('residual abilities', () => {
   it('Shed Skin eventually cures a status', () => {
     const state = makeBattle(
