@@ -7,3 +7,4 @@ export * from './pathfinding';
 export * from './tileset';
 export * from './tileFrames';
 export * from './routes';
+export * from './battle';

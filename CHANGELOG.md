@@ -102,3 +102,42 @@ file is the human-readable summary.
 - [x] Tests: band/trainer/dex existence checks for every authored species, route
       validity across seeds and indices, sight-line and ledge-movement rules, and
       a frozen generator signature. 99 tests pass; `npm run build` clean.
+
+## Phase 3 — Battle engine core (pure, headless, tested)
+
+- [x] `src/engine/battle/fighter.ts`: a battle fighter built from species + level
+      + nature + IVs/EVs + moveset, with stat computation, stat stages (−6..+6),
+      effective stats and Speed (paralysis halved), and HP/boost helpers.
+- [x] `src/engine/battle/state.ts`: the battle state (two sides, parties, turn,
+      weather/terrain fields, bag, seeded `Rng`) plus the structured event log
+      the UI renders, and `finishBattle`.
+- [x] `src/engine/battle/order.ts`: priority then effective Speed, ties on the
+      battle RNG.
+- [x] `src/engine/battle/damage.ts`: Gen 9 formula (STAB, effectiveness, crit,
+      85-100% roll, sun/rain and burn modifiers), a deterministic `estimateDamage`
+      for the AI and confusion self-hit damage.
+- [x] `src/engine/battle/accuracy.ts`: accuracy/evasion stages and the hit roll.
+- [x] `src/engine/battle/status.ts`: burn, poison, badly poisoned, paralysis,
+      sleep, freeze with type immunities, wake/thaw counters and residuals.
+- [x] `src/engine/battle/volatile.ts`: confusion, flinch, Leech Seed, Substitute,
+      Taunt, Encore, trapped and perish count.
+- [x] `src/engine/battle/turn.ts`: the turn loop (choices → bag/switch/run →
+      moves → residuals → faint/replace) driven only by choices; a faint leaves
+      `awaitingReplacement` for the owner's next choice.
+- [x] `src/engine/battle/commands.ts`: `fight`, `bag`, `switch`, `run` with their
+      validation, PP/Encore/Struggle handling and the battle items.
+- [x] `src/engine/battle/runAway.ts`: the run odds (classic speed ratio + 30 per
+      failed attempt); trainer battles and traps refuse.
+- [x] `src/engine/battle/capture.ts`: Gen 9 catch value and four shake checks,
+      ball and status bonuses, wild-only; one capture per route stays a run rule.
+- [x] `src/engine/battle/ai.ts`: an expected-value trainer AI (damage,
+      effectiveness, accuracy, status/boosts) that switches when the active
+      Pokémon cannot hurt the foe and reads only legal state.
+- [x] `src/data/items.ts`: the battle item catalogue (balls with catch
+      multipliers, potions, status cures, X-items).
+- [x] Catch rates: `@pkmn/dex` carries none, so `build-dex.mjs` now merges one
+      into `species.json` from the committed PokeAPI table
+      (`scripts/data/catch-rates.json`, fetched by `fetch-catch-rates.mjs`);
+      `catchRateOf` exposes it and a dex test guards every species.
+- [x] Golden test: a scripted fixed-seed battle frozen as an inline formatted log
+      (the seed of the balance harness). 165 tests pass; `npm run build` clean.

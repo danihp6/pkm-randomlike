@@ -32,6 +32,7 @@ export type Species = Readonly<{
   nfe: boolean;
   forme: string;
   isCosmeticForme: boolean;
+  catchRate: number;
 }>;
 
 // The generated JSON is the playable set (isNonstandard and num<=0 filtered at
@@ -60,4 +61,9 @@ export function speciesByNum(num: number): Species | undefined {
 
 export function playableSpecies(): readonly Species[] {
   return ALL_SPECIES;
+}
+
+/** Canonical catch rate; 255 (as easy as it gets) if the table ever misses an id. */
+export function catchRateOf(speciesId: string): number {
+  return getSpecies(speciesId)?.catchRate ?? 255;
 }

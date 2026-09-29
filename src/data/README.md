@@ -14,7 +14,9 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `encounters.ts` — per-biome species pools and weights by level band.
 - `trainers.ts` — trainer archetypes and their themed species pools.
 - `run.ts` — level bands, the per-route cap and the run chain cadence.
-- (later phases) `items.ts` — the run's item catalogue.
+- `items.ts` — the battle item catalogue: balls with catch multipliers, potions,
+  status cures and X-items (held items and berries arrive with the effect
+  registry).
 
 ## Rules
 

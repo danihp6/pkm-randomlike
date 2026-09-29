@@ -58,7 +58,9 @@ One capture attempt per route (a run-level counter, not a per-battle one).
 1. Only wild battles can be captured, and only while the wild Pokémon is
    weakened.
 2. The catch chance is the classic Gen 9 formula (ball bonus, catch rate, HP
-   ratio, status bonus, level).
+   ratio, status bonus, level). The catch rate comes from the dex
+   (`catchRateOf`, sourced from PokeAPI) and the ball bonus from
+   `src/data/items.ts`.
 3. A failed throw consumes the ball and the wild Pokémon keeps fighting; there is
    no re-throw penalty beyond the ball cost.
 4. A successful catch adds the Pokémon to the party, or to the PC box if the

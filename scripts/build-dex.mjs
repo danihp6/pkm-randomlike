@@ -4,12 +4,14 @@
 // runtime. Functions are dropped by JSON.stringify, which is intentional: the
 // data is metadata (stats, types, learnsets, descriptions) while behaviour
 // (ability/item/move handlers) lives in src/engine/battle/effects.
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Dex } from '@pkmn/dex';
 
-const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data', 'dex');
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const OUT_DIR = join(SCRIPT_DIR, '..', 'src', 'data', 'dex');
+const CATCH_RATES_PATH = join(SCRIPT_DIR, 'data', 'catch-rates.json');
 const MIN_LEARNSET_GEN = 8;
 
 const isPlayable = (entry) => !entry.isNonstandard && entry.num > 0;
@@ -53,8 +55,15 @@ const learnsetOf = (learnset, moveIds) => {
 const main = async () => {
   await mkdir(OUT_DIR, { recursive: true });
 
+  // @pkmn/dex has no catch rate; the committed table comes from PokeAPI's
+  // `pokemon_species.csv` (see scripts/fetch-catch-rates.mjs), keyed by the
+  // national dex number, defaulting to 255 for any id the table misses.
+  const catchRates = JSON.parse(await readFile(CATCH_RATES_PATH, 'utf8'));
+  const catchRateOf = (num) => catchRates[String(num)] ?? 255;
+
   const species = Dex.species.all().filter(isPlayable).map((entry) => ({
     ...entry,
+    catchRate: catchRateOf(entry.num),
     evolutions: evolutionOf(entry),
   }));
 
@@ -83,6 +92,7 @@ const main = async () => {
     source: '@pkmn/dex',
     generation: 9,
     minLearnsetGen: MIN_LEARNSET_GEN,
+    catchRateSource: 'PokeAPI pokemon_species.csv',
     counts: {
       species: species.length,
       moves: moves.length,
