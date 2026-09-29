@@ -155,6 +155,10 @@ Ports of Showdown handlers, in batches, on the hook names in
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
 - [ ] Trainer overworld sheets and battle sprites (see O1 in tech-decisions).
+- [ ] `D18`: make `tileSize` a property of `TilesetConfig` and read it in the
+      scene, so 16px FRLG atlases and the 24px PMD atlases coexist.
+- [ ] Compose FRLG tilesets (outdoor first, then forest/cave/beach) from the
+      sources in `sprite-sources/frlg/` and register the new biomes.
 - [ ] Adapt the remaining biome tileset configs (desert, apple-woods,
       lush-prairie, beach-cave) and palettes into `src/data/tilesets/`.
 - [ ] Tall-grass, ledge and route-prop art.

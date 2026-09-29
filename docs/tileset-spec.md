@@ -27,10 +27,11 @@ value, never by art:
 
 Every biome ships two images:
 
-- **biome sheet**: 4 columns x 13 rows of 24x24 cells (96x312 px), frame index
-  row-major. Frames 0–50 are the shared vocabulary (floor variants, wall
-  autotile shapes, water autotile shapes) declared as constants in
-  `src/engine/tileset.ts`.
+- **biome sheet**: 4 columns x 13 rows of square cells, frame index row-major.
+  The cell size is the tileset's own `tileSize` (`D18`): 24px for the PMD-derived
+  sheets (96x312), 16px for the FireRed/LeafGreen atlases (64x208). Frames 0-50
+  are the shared vocabulary (floor variants, wall autotile shapes, water autotile
+  shapes) declared as constants in `src/engine/tileset.ts`.
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
   biome, for the tiles that mean the same thing everywhere: exit, trap, chest,
   item, carpet.

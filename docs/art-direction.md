@@ -31,6 +31,25 @@ Three tiers, in order of preference:
 3. **Third-party CC0** — if a pack is added, record its licence and author in
    this file and keep the source pack in `sprite-sources/` (gitignored).
 
+## FireRed/LeafGreen sources (downloaded, local only)
+
+For a GBA-native route look, a set of FRLG sheets lives in
+`sprite-sources/frlg/` (gitignored, never redistributed). Downloaded from
+spriters-resource:
+
+| File | Size | Contents | Credit |
+| --- | --- | --- | --- |
+| `tileset-2.png` | 477x800 | outdoor terrain, native 16x16 tiles | ripped by fabnt |
+| `tileset.png` | 300x450 | mixed terrain/building compilation, magenta-keyed | ripped by Hoeloo |
+| `tileset-1.png` | 1096x1090 | buildings compendium (not autotile-ready) | ripped by fabnt |
+| `npc-overworld.png` | 238x2967 | overworld characters: 4-facing walk frames | spriters-resource |
+| `trainers.png` | 536x1400 | battle trainer sprites | spriters-resource |
+| `player-sprites.png` | 673x638 | player overworld frames | spriters-resource |
+
+These tiles are 16x16, so any atlas built from them declares `tileSize: 16`
+(`D18`) instead of the 24px of the PMD atlases. Composition is still to do
+(`TODO.md` Phase 8); this section only records the sources.
+
 ## Sprite contract
 
 - Overworld Pokémon sheets: 32x32 frames, 5 rows in the order Down, DownRight,
