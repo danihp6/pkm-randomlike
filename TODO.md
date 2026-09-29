@@ -71,13 +71,9 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] `src/engine/run/state.ts`: the run — seed, route index, party, PC box,
-      inventory, beaten trainers, capture counter, level cap.
 - [ ] `src/engine/run/chain.ts`: route cadence from `src/data/run.ts` —
       mini-boss every N routes, a boss closing each block, the final boss, and
       the infinite mode branch.
-- [ ] `src/engine/run/levelCap.ts`: the per-route cap that clamps XP and gates
-      evolution (D9), with tests.
 - [ ] `src/engine/run/perms.ts`: what leaves the run state when a Pokémon faints
       (party, box, caches) — the permadeath enforcement point, with tests.
 - [ ] `src/engine/run/heal.ts`: the heal stop between routes (HP/PP, PC access,

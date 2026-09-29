@@ -413,3 +413,21 @@ file is the human-readable summary.
       capture, a beaten trainer stays beaten, and an empty party ends the run.
       The dev `B` key is now gated by `IS_DEVELOP`. 405 tests pass; `npm run build`
       clean.
+
+## Phase 6 — Run structure, party & economy
+
+- [x] `src/engine/run/state.ts`: the `RunState` — seed, mode, route index, cached
+      level cap, party, PC box, bag, beaten trainers and the per-route capture
+      flag — with pure transitions: `createRun`, `advanceRoute` (raises the cap,
+      clears the capture and the trainer marks), `addPokemon` (party to six, then
+      box), `updatePokemon`, `addItem`/`consumeItem`, `useCapture`/`canCapture`,
+      `markTrainerDefeated` and `hasLivingParty`. `src/engine/run/levelCap.ts`
+      wraps the band cap (`capForRoute`, `clampToCap`, `reachedCap`).
+- [x] `src/engine/run/progression.ts`: `RunPokemon` (a battle snapshot plus its
+      XP), the medium-fast `level^3` curve (`xpForLevel`, `levelForXp`,
+      `experienceFraction` for the XP bar), `experienceAward` (band-scaled, split
+      across participants, trainer bonus) and `awardExperience` — clamps gain at
+      the route cap, levels up, learns the crossed level-up moves (forgetting the
+      oldest past four) and evolves once the cap allows it (`evolveIfReady`, which
+      the heal stop will re-run). No RNG anywhere, so a replay awards the same XP.
+      425 tests pass; `npm run build` clean.
