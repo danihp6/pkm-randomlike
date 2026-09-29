@@ -293,3 +293,18 @@ file is the human-readable summary.
       `no-op`: the run catalogue's berries all trigger at half HP, so it is not
       observable yet. Coverage at 208 ports (169 abilities); 333 tests pass;
       `npm run build` clean.
+- [x] `src/engine/battle/effects/abilities.ts`: batch 8, 20 more abilities — the
+      anti-priority trio (Armor Tail, Dazzling, Queenly Majesty, reading the
+      *effective* priority so a Prankster status move is stopped too), Triage
+      (+3 to healing moves), Serene Grace (a new `onModifySecondaryChance` hook
+      doubles proc chances), Wonder Skin (status moves aimed at the holder,
+      which needed the move passed into the accuracy check), Full Metal Body,
+      Mirror Armor (a reflected drop carries its own reentrancy guard),
+      Opportunist, Tangling Hair, Aftermath (a contact attacker is punished when
+      the holder faints), Bad Dreams, Poison Puppeteer, Berserk and Anger Shell
+      (one pinch trigger per drop below half, on the new `volatiles.pinchTriggered`),
+      Chilling Neigh, Grim Neigh, Steely Spirit, Supreme Overlord and Klutz (the
+      registry now skips a Klutz holder's held item entirely). Flower Veil moved
+      to `excluded`: it only protects Grass-type *allies*, so it is dead in
+      singles. Coverage at 228 ports (189 abilities); 351 tests pass;
+      `npm run build` clean.

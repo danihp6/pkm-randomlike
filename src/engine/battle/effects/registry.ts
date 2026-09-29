@@ -48,6 +48,8 @@ export type EffectHandlers = Readonly<{
   onModifyMultihit?: (ctx: EffectContext, hits: number) => number | void;
   onModifyBoost?: (ctx: EffectContext, payload: BoostPayload) => number | void;
   onModifyRecoil?: (ctx: EffectContext, recoil: number) => number | void;
+  /** Secondary-effect proc chance in percent (Serene Grace doubles it). */
+  onModifySecondaryChance?: (ctx: EffectContext, chance: number) => number | void;
   onTryHit?: (ctx: EffectContext, payload: MovePayload) => boolean | void;
   /** True bypasses the target's substitute (Infiltrator). */
   onTrySubstitute?: (ctx: EffectContext) => boolean | void;
@@ -122,7 +124,8 @@ function ownedEffects(fighter: BattleFighter | null): readonly EffectRef[] {
   const ability = getEffect(fighter.ability);
   if (ability) refs.push({ effect: ability, owner: fighter });
   else if (fighter.ability) warnUnportedEffect('ability', fighter.ability);
-  if (fighter.heldItem) {
+  // Klutz suppresses the holder's held item entirely.
+  if (fighter.heldItem && fighter.ability !== 'Klutz') {
     const item = getEffect(fighter.heldItem);
     if (item) refs.push({ effect: item, owner: fighter });
     else warnUnportedEffect('item', fighter.heldItem);
@@ -222,6 +225,16 @@ export function runTrySecondary(ctx: EffectContext, effect: MoveEffect): boolean
     if (ref.effect.handlers.onTrySecondary?.(contextFor(ctx, ref), payload) === false) return false;
   }
   return true;
+}
+
+/** Secondary proc chance in percent, read from the attacker's ability (Serene Grace). */
+export function runModifySecondaryChance(ctx: EffectContext, chance: number): number {
+  let value = chance;
+  for (const ref of contextEffects(ctx, false, null)) {
+    const next = ref.effect.handlers.onModifySecondaryChance?.(contextFor(ctx, ref), value);
+    if (typeof next === 'number') value = next;
+  }
+  return value;
 }
 
 export function runAfterStatus(ctx: EffectContext, status: string): void {

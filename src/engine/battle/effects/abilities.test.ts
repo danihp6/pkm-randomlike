@@ -15,6 +15,7 @@ import {
   runModifyMultihit,
   runModifyPriority,
   runModifyRecoil,
+  runModifySecondaryChance,
   runModifySpe,
   runResidual,
   runTryEscape,
@@ -1167,5 +1168,158 @@ describe('defensive and entry abilities (batch 7)', () => {
   it('Pressure announces itself on entry', () => {
     const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'dusclops', 'Pressure'));
     expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Pressure'))).toBe(true);
+  });
+});
+
+describe('priority, accuracy and secondary abilities (batch 8)', () => {
+  it('Armor Tail, Dazzling and Queenly Majesty block priority moves', () => {
+    for (const [species, ability] of [
+      ['farigiraf', 'Armor Tail'],
+      ['bruxish', 'Dazzling'],
+      ['tsareena', 'Queenly Majesty'],
+    ] as const) {
+      const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', species, ability));
+      expect(runTryHit(ctxOf(state, 'player'), getMove('quickattack')!)).toBe(false);
+      expect(runTryHit(ctxOf(state, 'player'), getMove('tackle')!)).toBe(true);
+    }
+  });
+
+  it('Queenly Majesty also stops a Prankster-boosted status move', () => {
+    const state = makeBattle(fighter('player', 'sableye', 'Prankster'), fighter('enemy', 'tsareena', 'Queenly Majesty'));
+    expect(runTryHit(ctxOf(state, 'player'), getMove('thunderwave')!)).toBe(false);
+  });
+
+  it('Triage gives healing moves +3 priority', () => {
+    const state = makeBattle(fighter('player', 'comfey', 'Triage'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyPriority(moveCtxOf(state, 'player', 'recover'), getMove('recover')!, 0)).toBe(3);
+    expect(runModifyPriority(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!, 0)).toBe(0);
+  });
+
+  it('Wonder Skin halves the accuracy of status moves only', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'venomoth', 'Wonder Skin'));
+    expect(runModifyAccuracy(moveCtxOf(state, 'player', 'thunderwave'), 100)).toBe(50);
+    expect(runModifyAccuracy(moveCtxOf(state, 'player', 'tackle'), 100)).toBe(100);
+  });
+
+  it('Serene Grace doubles a secondary effect chance', () => {
+    const state = makeBattle(fighter('player', 'chansey', 'Serene Grace'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifySecondaryChance(moveCtxOf(state, 'player', 'flamethrower'), 10)).toBe(20);
+  });
+
+  it('Full Metal Body blocks stat drops', () => {
+    const state = makeBattle(fighter('player', 'solgaleo', 'Full Metal Body'), fighter('enemy', 'charmander', 'Blaze'));
+    applyBoostEffect(state, 'player', activeFighter(state, 'player'), { atk: -1 });
+    expect(activeFighter(state, 'player').boosts.atk).toBe(0);
+  });
+
+  it('Mirror Armor sends a stat drop back at the foe', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'corviknight', 'Mirror Armor'));
+    applyBoostEffect(state, 'enemy', activeFighter(state, 'enemy'), { atk: -1 });
+    expect(activeFighter(state, 'enemy').boosts.atk).toBe(0);
+    expect(activeFighter(state, 'player').boosts.atk).toBe(-1);
+  });
+
+  it('Opportunist copies the foe stat boost', () => {
+    const state = makeBattle(fighter('player', 'espathra', 'Opportunist'), fighter('enemy', 'charmander', 'Blaze'));
+    applyBoostEffect(state, 'enemy', activeFighter(state, 'enemy'), { spa: 1 }, { self: true });
+    expect(activeFighter(state, 'player').boosts.spa).toBe(1);
+  });
+});
+
+describe('contact and residual abilities (batch 8)', () => {
+  it('Tangling Hair lowers the contact attacker Speed', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze', ['tackle']), fighter('enemy', 'dugtrioalola', 'Tangling Hair'));
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').boosts.spe).toBe(-1);
+  });
+
+  it('Aftermath hurts the contact attacker when the holder faints', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze', ['tackle']), fighter('enemy', 'voltorb', 'Aftermath'));
+    const attacker = activeFighter(state, 'player');
+    activeFighter(state, 'enemy').hp = 0;
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(attacker.hp).toBe(attacker.maxHp - Math.max(1, Math.floor(attacker.maxHp / 4)));
+  });
+
+  it('Bad Dreams chips a sleeping foe each residual', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'darkrai', 'Bad Dreams'));
+    const foe = activeFighter(state, 'player');
+    foe.status = 'slp';
+    runResidual(ctxOf(state, 'enemy'));
+    expect(foe.hp).toBe(foe.maxHp - Math.max(1, Math.floor(foe.maxHp / 8)));
+  });
+
+  it('Poison Puppeteer confuses whatever it poisons', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'pecharunt', 'Poison Puppeteer'));
+    const victim = activeFighter(state, 'player');
+    applyStatusEffect(state, 'player', victim, 'psn');
+    expect(victim.status).toBe('psn');
+    expect(victim.volatiles.confusion).toBeGreaterThan(0);
+  });
+});
+
+describe('pinch and KO abilities (batch 8)', () => {
+  it('Berserk raises Sp. Atk once below half', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze', ['tackle']), fighter('enemy', 'moltresgalar', 'Berserk'));
+    const holder = activeFighter(state, 'enemy');
+    holder.hp = Math.floor(holder.maxHp / 2);
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(holder.boosts.spa).toBe(1);
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(holder.boosts.spa).toBe(1);
+  });
+
+  it('Anger Shell boosts offenses and drops defenses below half', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze', ['tackle']), fighter('enemy', 'klawf', 'Anger Shell'));
+    const holder = activeFighter(state, 'enemy');
+    holder.hp = Math.floor(holder.maxHp / 2);
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(holder.boosts.atk).toBe(1);
+    expect(holder.boosts.spa).toBe(1);
+    expect(holder.boosts.spe).toBe(1);
+    expect(holder.boosts.def).toBe(-1);
+    expect(holder.boosts.spd).toBe(-1);
+  });
+
+  it('Chilling Neigh and Grim Neigh raise a stat on a knock out', () => {
+    const physical = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'glastrier', 'Chilling Neigh'));
+    activeFighter(physical, 'player').hp = 0;
+    runAfterMove(ctxOf(physical, 'enemy'), getMove('tackle')!);
+    expect(activeFighter(physical, 'enemy').boosts.atk).toBe(1);
+
+    const special = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'spectrier', 'Grim Neigh'));
+    activeFighter(special, 'player').hp = 0;
+    runAfterMove(ctxOf(special, 'enemy'), getMove('tackle')!);
+    expect(activeFighter(special, 'enemy').boosts.spa).toBe(1);
+  });
+
+  it('Steely Spirit powers up Steel moves', () => {
+    const state = makeBattle(fighter('player', 'perrserker', 'Steely Spirit'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('ironhead')!, 100)).toBe(150);
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('tackle')!, 100)).toBe(100);
+  });
+
+  it('Supreme Overlord grows with every fallen party member', () => {
+    const king = fighter('king', 'kingambit', 'Supreme Overlord');
+    const fallen = fighter('fallen', 'charmander', 'Blaze');
+    fallen.hp = 0;
+    const state = createBattle({
+      player: [king, fallen],
+      enemy: [fighter('enemy', 'charmander', 'Blaze')],
+      rng: new Rng(1),
+      isWild: true,
+    });
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('tackle')!, 100)).toBe(110);
+  });
+});
+
+describe('item suppression (batch 8)', () => {
+  it('Klutz suppresses the holder held item', () => {
+    const state = makeBattle(fighter('player', 'golett', 'Klutz'), fighter('enemy', 'charmander', 'Blaze'));
+    const holder = activeFighter(state, 'player');
+    holder.heldItem = 'leftovers';
+    holder.hp = holder.maxHp - 50;
+    runResidual(ctxOf(state, 'player'));
+    expect(holder.hp).toBe(holder.maxHp - 50);
   });
 });
