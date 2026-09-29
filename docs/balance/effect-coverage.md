@@ -20,7 +20,7 @@ The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — 310 total (189 port, 61 no-op, 60 excluded)
+## Abilities — 310 total (202 port, 48 no-op, 60 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -86,7 +86,7 @@ catalogue row, not engine code.
 | Earth Eater | `port` | ported in `effects/abilities.ts` |
 | Effect Spore | `port` | ported in `effects/abilities.ts` |
 | Electric Surge | `port` | ported in `effects/abilities.ts` |
-| Electromorphosis | `no-op` | reachable, not ported yet |
+| Electromorphosis | `port` | ported in `effects/abilities.ts` |
 | Embody Aspect (Cornerstone) | `excluded` | Terastal mechanic (cut) |
 | Embody Aspect (Hearthflame) | `excluded` | Terastal mechanic (cut) |
 | Embody Aspect (Teal) | `excluded` | Terastal mechanic (cut) |
@@ -150,16 +150,16 @@ catalogue row, not engine code.
 | Klutz | `port` | ported in `effects/abilities.ts` |
 | Leaf Guard | `port` | ported in `effects/abilities.ts` |
 | Levitate | `port` | ported in `effects/abilities.ts` |
-| Libero | `no-op` | reachable, not ported yet |
+| Libero | `port` | ported in `effects/abilities.ts` |
 | Light Metal | `no-op` | reachable, not ported yet |
 | Lightning Rod | `port` | ported in `effects/abilities.ts` |
 | Limber | `port` | ported in `effects/abilities.ts` |
 | Lingering Aroma | `port` | ported in `effects/abilities.ts` |
 | Liquid Ooze | `port` | ported in `effects/abilities.ts` |
 | Liquid Voice | `no-op` | reachable, not ported yet |
-| Long Reach | `no-op` | reachable, not ported yet |
+| Long Reach | `port` | ported in `effects/abilities.ts` |
 | Magic Bounce | `no-op` | reachable, not ported yet |
-| Magic Guard | `no-op` | reachable, not ported yet |
+| Magic Guard | `port` | ported in `effects/abilities.ts` |
 | Magician | `port` | ported in `effects/abilities.ts` |
 | Magma Armor | `port` | ported in `effects/abilities.ts` |
 | Magnet Pull | `no-op` | reachable, not ported yet |
@@ -167,7 +167,7 @@ catalogue row, not engine code.
 | Mega Launcher | `port` | ported in `effects/abilities.ts` |
 | Merciless | `port` | ported in `effects/abilities.ts` |
 | Mimicry | `excluded` | no playable species has it |
-| Mind's Eye | `no-op` | reachable, not ported yet |
+| Mind's Eye | `port` | ported in `effects/abilities.ts` |
 | Minus | `excluded` | doubles/ally only |
 | Mirror Armor | `port` | ported in `effects/abilities.ts` |
 | Misty Surge | `port` | ported in `effects/abilities.ts` |
@@ -209,7 +209,7 @@ catalogue row, not engine code.
 | Primordial Sea | `excluded` | no playable species has it |
 | Prism Armor | `port` | ported in `effects/abilities.ts` |
 | Propeller Tail | `no-op` | reachable, not ported yet |
-| Protean | `no-op` | reachable, not ported yet |
+| Protean | `port` | ported in `effects/abilities.ts` |
 | Protosynthesis | `no-op` | reachable, not ported yet |
 | Psychic Surge | `port` | ported in `effects/abilities.ts` |
 | Punk Rock | `port` | ported in `effects/abilities.ts` |
@@ -217,7 +217,7 @@ catalogue row, not engine code.
 | Purifying Salt | `port` | ported in `effects/abilities.ts` |
 | Quark Drive | `no-op` | reachable, not ported yet |
 | Queenly Majesty | `port` | ported in `effects/abilities.ts` |
-| Quick Draw | `no-op` | reachable, not ported yet |
+| Quick Draw | `port` | ported in `effects/abilities.ts` |
 | Quick Feet | `port` | ported in `effects/abilities.ts` |
 | Rain Dish | `port` | ported in `effects/abilities.ts` |
 | Rattled | `port` | ported in `effects/abilities.ts` |
@@ -239,7 +239,7 @@ catalogue row, not engine code.
 | Sand Veil | `port` | ported in `effects/abilities.ts` |
 | Sap Sipper | `port` | ported in `effects/abilities.ts` |
 | Schooling | `excluded` | no playable species has it |
-| Scrappy | `no-op` | reachable, not ported yet |
+| Scrappy | `port` | ported in `effects/abilities.ts` |
 | Screen Cleaner | `excluded` | no playable species has it |
 | Seed Sower | `port` | ported in `effects/abilities.ts` |
 | Serene Grace | `port` | ported in `effects/abilities.ts` |
@@ -260,11 +260,11 @@ catalogue row, not engine code.
 | Snow Warning | `port` | ported in `effects/abilities.ts` |
 | Solar Power | `port` | ported in `effects/abilities.ts` |
 | Solid Rock | `port` | ported in `effects/abilities.ts` |
-| Soul-Heart | `no-op` | reachable, not ported yet |
+| Soul-Heart | `port` | ported in `effects/abilities.ts` |
 | Soundproof | `port` | ported in `effects/abilities.ts` |
 | Speed Boost | `port` | ported in `effects/abilities.ts` |
 | Stakeout | `port` | ported in `effects/abilities.ts` |
-| Stall | `no-op` | reachable, not ported yet |
+| Stall | `port` | ported in `effects/abilities.ts` |
 | Stalwart | `no-op` | reachable, not ported yet |
 | Stamina | `port` | ported in `effects/abilities.ts` |
 | Stance Change | `excluded` | no playable species has it |
@@ -306,10 +306,10 @@ catalogue row, not engine code.
 | Toxic Boost | `port` | ported in `effects/abilities.ts` |
 | Toxic Chain | `port` | ported in `effects/abilities.ts` |
 | Toxic Debris | `no-op` | reachable, not ported yet |
-| Trace | `no-op` | reachable, not ported yet |
+| Trace | `port` | ported in `effects/abilities.ts` |
 | Transistor | `port` | ported in `effects/abilities.ts` |
 | Triage | `port` | ported in `effects/abilities.ts` |
-| Truant | `no-op` | reachable, not ported yet |
+| Truant | `port` | ported in `effects/abilities.ts` |
 | Turboblaze | `no-op` | reachable, not ported yet |
 | Unaware | `no-op` | reachable, not ported yet |
 | Unburden | `port` | ported in `effects/abilities.ts` |
@@ -328,7 +328,7 @@ catalogue row, not engine code.
 | Well-Baked Body | `port` | ported in `effects/abilities.ts` |
 | White Smoke | `port` | ported in `effects/abilities.ts` |
 | Wimp Out | `excluded` | no playable species has it |
-| Wind Power | `no-op` | reachable, not ported yet |
+| Wind Power | `port` | ported in `effects/abilities.ts` |
 | Wind Rider | `port` | ported in `effects/abilities.ts` |
 | Wonder Guard | `excluded` | no playable species has it |
 | Wonder Skin | `port` | ported in `effects/abilities.ts` |

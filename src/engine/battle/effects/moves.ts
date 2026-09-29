@@ -1,5 +1,5 @@
 import type { Move } from '../../../data/dex';
-import { applyDamage, type BoostId, type StatusId } from '../fighter';
+import { applyDamage, moveContacts, type BoostId, type StatusId } from '../fighter';
 import { activeFighter, opponent, pushEvent, pushText, type BattleState, type SideId } from '../state';
 import { applyBoostEffect, applyStatusEffect } from './apply';
 import {
@@ -43,7 +43,7 @@ export function protectBlocks(state: BattleState, side: SideId, move: Move): boo
 
   pushText(state, `${defender.name} protected itself!`);
   const punish = PROTECT_MOVES[protectMove];
-  if (!punish || !move.flags.contact || state.winner !== null) return true;
+  if (!punish || !moveContacts(attacker, move) || state.winner !== null) return true;
 
   if (punish.contactBoosts) {
     applyBoostEffect(state, side, attacker, punish.contactBoosts);

@@ -1,7 +1,7 @@
 import type { Move, MoveEffect } from '../../../data/dex';
 import { warnUnportedEffect } from '../../../dev/warnings';
 import type { Rng } from '../../rng';
-import type { BattleFighter, BoostId } from '../fighter';
+import { moveContacts, type BattleFighter, type BoostId } from '../fighter';
 import type { BattleState, SideId } from '../state';
 
 export type EffectKind = 'ability' | 'item' | 'move' | 'weather' | 'terrain' | 'status' | 'volatile';
@@ -17,12 +17,13 @@ export type EffectContext = Readonly<{
   owner: BattleFighter;
 }>;
 
-export type MovePayload = Readonly<{ move: Move; hit: boolean }>;
+export type MovePayload = Readonly<{ move: Move; hit: boolean; contact: boolean }>;
 export type DamagePayload = Readonly<{
   move: Move;
   damage: number;
   effectiveness: number;
   crit: boolean;
+  contact: boolean;
 }>;
 export type StatusPayload = Readonly<{ status: string }>;
 export type BoostPayload = Readonly<{ stat: BoostId; stages: number; self: boolean }>;
@@ -43,6 +44,12 @@ export type EffectHandlers = Readonly<{
   onModifySpe?: (ctx: EffectContext, speed: number) => number | void;
   onModifyAccuracy?: (ctx: EffectContext, chance: number) => number | void;
   onModifyPriority?: (ctx: EffectContext, priority: number) => number | void;
+  /**
+   * A tie-break inside the holder's priority bracket: positive acts before the
+   * same-bracket moves regardless of Speed, negative acts last (Quick Draw,
+   * Stall). Not the priority itself.
+   */
+  onFractionalPriority?: (ctx: EffectContext) => number | void;
   onModifyCrit?: (ctx: EffectContext, willCrit: boolean) => boolean | void;
   onModifyCritRatio?: (ctx: EffectContext, ratio: number) => number | void;
   onModifyMultihit?: (ctx: EffectContext, hits: number) => number | void;
@@ -50,6 +57,10 @@ export type EffectHandlers = Readonly<{
   onModifyRecoil?: (ctx: EffectContext, recoil: number) => number | void;
   /** Secondary-effect proc chance in percent (Serene Grace doubles it). */
   onModifySecondaryChance?: (ctx: EffectContext, chance: number) => number | void;
+  /** The move's type effectiveness (Scrappy and Mind's Eye pierce Ghost immunity). */
+  onModifyEffectiveness?: (ctx: EffectContext, move: Move, effectiveness: number) => number | void;
+  /** Runs on the survivors when any active Pokémon faints (Soul-Heart). */
+  onFaint?: (ctx: EffectContext) => void;
   onTryHit?: (ctx: EffectContext, payload: MovePayload) => boolean | void;
   /** True bypasses the target's substitute (Infiltrator). */
   onTrySubstitute?: (ctx: EffectContext) => boolean | void;
@@ -189,14 +200,20 @@ export function runResidual(ctx: EffectContext): void {
 }
 
 export function runAfterMove(ctx: EffectContext, move: Move, hit = true): void {
-  const payload: MovePayload = { move, hit };
+  const payload: MovePayload = { move, hit, contact: moveContacts(ctx.source, move) };
   for (const ref of contextEffects(ctx, true, move)) {
     ref.effect.handlers.onAfterMove?.(contextFor(ctx, ref), payload);
   }
 }
 
+export function runFaint(ctx: EffectContext): void {
+  for (const ref of contextEffects(ctx, false, null)) {
+    ref.effect.handlers.onFaint?.(contextFor(ctx, ref));
+  }
+}
+
 export function runTryHit(ctx: EffectContext, move: Move): boolean {
-  const payload: MovePayload = { move, hit: true };
+  const payload: MovePayload = { move, hit: true, contact: moveContacts(ctx.source, move) };
   for (const ref of contextEffects(ctx, true, move)) {
     if (ref.effect.handlers.onTryHit?.(contextFor(ctx, ref), payload) === false) return false;
   }
@@ -271,12 +288,14 @@ export function runModifyDamage(
   crit = false,
 ): number {
   let value = damage;
+  const contact = moveContacts(ctx.source, move);
   for (const ref of contextEffects(ctx, true, move)) {
     const next = ref.effect.handlers.onModifyDamage?.(contextFor(ctx, ref), {
       move,
       damage: value,
       effectiveness,
       crit,
+      contact,
     });
     if (typeof next === 'number') value = next;
   }
@@ -308,6 +327,26 @@ export function runModifyPriority(ctx: EffectContext, move: Move, priority: numb
   let value = priority;
   for (const ref of contextEffects(ctx, false, move)) {
     const next = ref.effect.handlers.onModifyPriority?.(contextFor(ctx, ref), value);
+    if (typeof next === 'number') value = next;
+  }
+  return value;
+}
+
+/** The holder's tie-break inside its priority bracket (Quick Draw, Stall). */
+export function runFractionalPriority(ctx: EffectContext): number {
+  let value = 0;
+  for (const ref of contextEffects(ctx, false, null)) {
+    const next = ref.effect.handlers.onFractionalPriority?.(contextFor(ctx, ref));
+    if (typeof next === 'number') value = next;
+  }
+  return value;
+}
+
+/** Effectiveness modifiers read the attacker's ability (Scrappy, Mind's Eye). */
+export function runModifyEffectiveness(ctx: EffectContext, move: Move, effectiveness: number): number {
+  let value = effectiveness;
+  for (const ref of contextEffects(ctx, false, move)) {
+    const next = ref.effect.handlers.onModifyEffectiveness?.(contextFor(ctx, ref), move, value);
     if (typeof next === 'number') value = next;
   }
   return value;

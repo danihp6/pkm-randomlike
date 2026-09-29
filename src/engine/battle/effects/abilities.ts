@@ -11,6 +11,8 @@ import {
   registerEffects,
   runTryVolatile,
   runModifyPriority,
+  runStart,
+  runSwitchIn,
   makeContext,
   type DamagePayload,
   type EffectContext,
@@ -26,6 +28,10 @@ function intimidate(): EffectHandlers {
       if (!foe || foe.hp <= 0) return;
       if (foe.ability === 'Inner Focus') {
         pushText(ctx.state, `${foe.name}'s Inner Focus prevents it from being intimidated!`);
+        return;
+      }
+      if (foe.ability === 'Scrappy') {
+        pushText(ctx.state, `${foe.name}'s Scrappy prevents it from being intimidated!`);
         return;
       }
       if (foe.ability === 'Guard Dog') {
@@ -94,7 +100,7 @@ function contactStatus(ability: string, status: StatusId): EffectHandlers {
     onAfterMove: (ctx, payload) => {
       if (ctx.owner !== ctx.target) return;
       const attacker = ctx.source;
-      if (!payload.move.flags.contact || !payload.hit) return;
+      if (!payload.contact || !payload.hit) return;
       if (ctx.owner.hp <= 0 || attacker.hp <= 0) return;
       if (ctx.owner.volatiles.substitute > 0) return;
       if (ctx.rng.int(1, 100) > 30) return;
@@ -384,7 +390,7 @@ function fluffy(): EffectHandlers {
       if (ctx.owner !== ctx.target) return;
       let changed = false;
       let damage = payload.damage;
-      if (payload.move.flags.contact) {
+      if (payload.contact) {
         damage = scaledDamage(damage, 0.5);
         changed = true;
       }
@@ -486,7 +492,7 @@ function contactReaction(apply: (ctx: EffectContext, attacker: BattleFighter) =>
     onAfterMove: (ctx, payload) => {
       if (ctx.owner !== ctx.target) return;
       const attacker = ctx.source;
-      if (!payload.move.flags.contact || !payload.hit) return;
+      if (!payload.contact || !payload.hit) return;
       if (ctx.owner.hp <= 0 || attacker.hp <= 0) return;
       if (ctx.owner.volatiles.substitute > 0) return;
       apply(ctx, attacker);
@@ -765,7 +771,7 @@ function poisonTouch(): EffectHandlers {
   return {
     onAfterMove: (ctx, payload) => {
       if (ctx.owner !== ctx.source || !ctx.target) return;
-      if (!payload.move.flags.contact) return;
+      if (!payload.contact) return;
       if (ctx.owner.hp <= 0 || ctx.target.hp <= 0) return;
       if (ctx.rng.int(1, 100) > 30) return;
       applyStatusEffect(ctx.state, opponentOf(ctx.side), ctx.target, 'psn', `${ctx.target.name} was poisoned by Poison Touch!`);
@@ -1474,7 +1480,7 @@ function aftermath(): EffectHandlers {
   return {
     onAfterMove: (ctx, payload) => {
       if (ctx.owner !== ctx.target) return;
-      if (!payload.move.flags.contact || !payload.hit) return;
+      if (!payload.contact || !payload.hit) return;
       if (ctx.owner.hp > 0) return;
       const attacker = ctx.source;
       if (attacker.hp <= 0) return;
@@ -1564,6 +1570,114 @@ function supremeOverlord(): EffectHandlers {
   };
 }
 
+/** Scrappy and Mind's Eye let Normal and Fighting moves hit Ghosts. */
+function pierceGhostImmunity(): EffectHandlers {
+  return {
+    onModifyEffectiveness: (ctx, move, effectiveness) => {
+      if (ctx.owner !== ctx.source || effectiveness !== 0) return;
+      if (move.type !== 'Normal' && move.type !== 'Fighting') return;
+      if (!ctx.target?.types.includes('Ghost')) return;
+      return 1;
+    },
+  };
+}
+
+/** Abilities Trace may never copy (unknown, toggle or recursion-prone). */
+const TRACE_BANNED = new Set([
+  'Trace',
+  'Illusion',
+  'Imposter',
+  'Neutralizing Gas',
+  'Disguise',
+  'Ice Face',
+  'Zen Mode',
+  'Shields Down',
+  'Schooling',
+  'Stance Change',
+  'RKS System',
+  'Comatose',
+  'Multitype',
+  'Battle Bond',
+  'Power Construct',
+  'Gulp Missile',
+  'Mimicry',
+  'Forecast',
+  'Flower Gift',
+  'Wonder Guard',
+  'Hunger Switch',
+  'Zero to Hero',
+  'As One (Glastrier)',
+  'As One (Spectrier)',
+]);
+
+/** Trace copies the foe's ability on entry and runs its entry effects. */
+function trace(): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      const foe = ctx.target;
+      if (!foe || !foe.ability || foe.ability === ctx.owner.ability) return;
+      if (TRACE_BANNED.has(foe.ability)) return;
+      ctx.owner.ability = foe.ability;
+      pushText(ctx.state, `${ctx.owner.name} traced ${foe.name}'s ${foe.ability}!`);
+      const inner = makeContext(ctx.state, ctx.side, { source: ctx.owner, target: foe });
+      runStart(inner);
+      runSwitchIn(inner);
+    },
+  };
+}
+
+/** Electromorphosis and Wind Power store a Charge for the next Electric move. */
+function chargeOnHit(ability: string, applies: (payload: MovePayload) => boolean): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || ctx.owner.hp <= 0) return;
+      if (!payload.hit || !applies(payload)) return;
+      if (ctx.owner.volatiles.charge) return;
+      ctx.owner.volatiles.charge = true;
+      pushText(ctx.state, `${ctx.owner.name}'s ${ability} stored power!`);
+    },
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (payload.move.type !== 'Electric' || !ctx.owner.volatiles.charge) return;
+      ctx.owner.volatiles.charge = false;
+      return Math.max(1, Math.floor(payload.damage * 2));
+    },
+  };
+}
+
+/** Soul-Heart raises Sp. Atk whenever any Pokémon faints. */
+function soulHeart(): EffectHandlers {
+  return {
+    onFaint: (ctx) => {
+      if (ctx.owner !== ctx.source || ctx.owner.hp <= 0) return;
+      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { spa: 1 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Soul-Heart raised its Sp. Atk!`,
+      });
+    },
+  };
+}
+
+/** Quick Draw has a 30% chance to move first inside its priority bracket. */
+function quickDraw(): EffectHandlers {
+  return {
+    onFractionalPriority: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      return ctx.rng.next() < 0.3 ? 1 : 0;
+    },
+  };
+}
+
+/** Stall always moves last inside its priority bracket. */
+function stall(): EffectHandlers {
+  return {
+    onFractionalPriority: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      return -1;
+    },
+  };
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -1613,7 +1727,7 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['solidrock', incomingMultiplier(0.75, (_ctx, payload) => payload.effectiveness > 1)],
   ['prismarmor', incomingMultiplier(0.75, (_ctx, payload) => payload.effectiveness > 1)],
 
-  ['toughclaws', outgoingMultiplier(1.3, (payload) => Boolean(payload.move.flags.contact) && payload.move.basePower > 0)],
+  ['toughclaws', outgoingMultiplier(1.3, (payload) => payload.contact && payload.move.basePower > 0)],
   ['strongjaw', outgoingMultiplier(1.5, (payload) => Boolean(payload.move.flags.bite))],
   ['ironfist', outgoingMultiplier(1.2, (payload) => Boolean(payload.move.flags.punch))],
   ['sharpness', outgoingMultiplier(1.5, (payload) => Boolean(payload.move.flags.slicing))],
@@ -1763,6 +1877,23 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['supremeoverlord', supremeOverlord()],
   ['fullmetalbody', statGuard('all')],
   ['klutz', {}],
+
+  ['scrappy', pierceGhostImmunity()],
+  ['mindseye', pierceGhostImmunity()],
+  ['trace', trace()],
+  ['electromorphosis', chargeOnHit('Electromorphosis', (payload) => payload.move.basePower > 0)],
+  ['windpower', chargeOnHit('Wind Power', (payload) => Boolean(payload.move.flags.wind))],
+  ['soulheart', soulHeart()],
+  ['quickdraw', quickDraw()],
+  ['stall', stall()],
+
+  // Behaviour that lives at the call site: Magic Guard and Long Reach in the
+  // turn loop and `fighter.ts`, Truant, Protean and Libero in `useMove`.
+  ['magicguard', {}],
+  ['longreach', {}],
+  ['truant', {}],
+  ['protean', {}],
+  ['libero', {}],
 
   // Passive effects whose behaviour lives at the call site: Guard Dog in
   // Intimidate, Early Bird and Corrosion in status.ts, Liquid Ooze in the turn

@@ -1,6 +1,6 @@
 import type { Rng } from '../rng';
 import { confusionDamage } from './damage';
-import { applyDamage, type BattleFighter } from './fighter';
+import { applyDamage, takesIndirectDamage, type BattleFighter } from './fighter';
 
 export function applyConfusion(fighter: BattleFighter, rng: Rng): boolean {
   if (fighter.volatiles.confusion > 0) return false;
@@ -57,6 +57,7 @@ export function beforeMoveVolatile(fighter: BattleFighter, rng: Rng): VolatileMo
     fighter.volatiles.confusion -= 1;
     if (fighter.volatiles.confusion <= 0) return { confusionEnded: true };
     if (rng.next() < 1 / 3) {
+      if (!takesIndirectDamage(fighter)) return null;
       const damage = applyDamage(fighter, confusionDamage(fighter, rng));
       return { confusionDamage: damage };
     }

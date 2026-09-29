@@ -2,11 +2,12 @@ import type { Rng } from '../rng';
 import type { BattleState, SideId } from './state';
 import { modifiedSpeed } from './modifiers';
 
-export type ActionEntry = Readonly<{ side: SideId; priority: number }>;
+export type ActionEntry = Readonly<{ side: SideId; priority: number; fractional?: number }>;
 
 /**
- * Priority first, then effective Speed; a tie is broken by the seeded battle
- * RNG so the same inputs always resolve in the same order (D11).
+ * Priority first, then the per-bracket fractional tie-break (Quick Draw, Stall),
+ * then effective Speed; a tie is broken by the seeded battle RNG so the same
+ * inputs always resolve in the same order (D11).
  */
 export function orderActions(
   state: BattleState,
@@ -15,6 +16,9 @@ export function orderActions(
 ): ActionEntry[] {
   return [...entries].sort((a, b) => {
     if (a.priority !== b.priority) return b.priority - a.priority;
+    const fracA = a.fractional ?? 0;
+    const fracB = b.fractional ?? 0;
+    if (fracA !== fracB) return fracB - fracA;
     const speedA = modifiedSpeed(state, a.side);
     const speedB = modifiedSpeed(state, b.side);
     if (speedA !== speedB) return speedB - speedA;
