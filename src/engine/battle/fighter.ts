@@ -71,6 +71,12 @@ export type Volatiles = {
   proteanUsed: boolean;
   /** Truant flips this each turn it takes one, so it loafs on the next. */
   truant: boolean;
+  /** Move id disabled by Cursed Body, or null. */
+  disabledMove: string | null;
+  /** Turns left before a disabled move is usable again. */
+  disableTurns: number;
+  /** Attracted by Cute Charm; a coin flip can cost the turn. */
+  attract: boolean;
 };
 
 export type BattleFighter = {
@@ -142,6 +148,9 @@ export function emptyVolatiles(): Volatiles {
     charge: false,
     proteanUsed: false,
     truant: false,
+    disabledMove: null,
+    disableTurns: 0,
+    attract: false,
   };
 }
 

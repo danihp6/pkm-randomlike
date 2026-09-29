@@ -59,6 +59,8 @@ export type EffectHandlers = Readonly<{
   onModifySecondaryChance?: (ctx: EffectContext, chance: number) => number | void;
   /** The move's type effectiveness (Scrappy and Mind's Eye pierce Ghost immunity). */
   onModifyEffectiveness?: (ctx: EffectContext, move: Move, effectiveness: number) => number | void;
+  /** The move's type as used (Galvanize, Pixilate, Liquid Voice). */
+  onModifyMoveType?: (ctx: EffectContext, move: Move) => string | void;
   /** Runs on the survivors when any active Pokémon faints (Soul-Heart). */
   onFaint?: (ctx: EffectContext) => void;
   onTryHit?: (ctx: EffectContext, payload: MovePayload) => boolean | void;
@@ -373,6 +375,16 @@ export function runModifyEffectiveness(ctx: EffectContext, move: Move, effective
   for (const ref of contextEffects(ctx, false, move)) {
     const next = ref.effect.handlers.onModifyEffectiveness?.(contextFor(ctx, ref), move, value);
     if (typeof next === 'number') value = next;
+  }
+  return value;
+}
+
+/** Type-changing abilities read the attacker's ability (Galvanize, Pixilate). */
+export function runModifyMoveType(ctx: EffectContext, move: Move): string {
+  let value = move.type;
+  for (const ref of contextEffects(ctx, false, move)) {
+    const next = ref.effect.handlers.onModifyMoveType?.(contextFor(ctx, ref), move);
+    if (typeof next === 'string') value = next;
   }
   return value;
 }

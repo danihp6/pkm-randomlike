@@ -41,6 +41,16 @@ export function protectBlocks(state: BattleState, side: SideId, move: Move): boo
   if (!move.flags.protect) return false;
   if (!FOE_TARGETS.has(move.target)) return false;
 
+  // Unseen Fist lets contact moves break through protection (unless suppressed).
+  if (
+    attacker.ability === 'Unseen Fist' &&
+    defender.ability !== 'Neutralizing Gas' &&
+    moveContacts(attacker, move)
+  ) {
+    pushText(state, `${attacker.name} broke through the protection!`);
+    return false;
+  }
+
   pushText(state, `${defender.name} protected itself!`);
   const punish = PROTECT_MOVES[protectMove];
   if (!punish || !moveContacts(attacker, move) || state.winner !== null) return true;
