@@ -1,5 +1,6 @@
 import type { ItemDef } from '../../data/items';
 import type { Rng } from '../rng';
+import { makeContext, runStart, runSwitchIn } from './effects/registry';
 import type { BattleFighter, BoostId, StatusId } from './fighter';
 
 export type SideId = 'player' | 'enemy';
@@ -78,7 +79,7 @@ export function createBattle(setup: BattleSetup): BattleState {
     throw new Error('A battle needs at least one Pokémon per side');
   }
 
-  return {
+  const state: BattleState = {
     sides: {
       player: {
         id: 'player',
@@ -107,6 +108,15 @@ export function createBattle(setup: BattleSetup): BattleState {
     winner: null,
     escapeAttempts: 0,
   };
+
+  for (const side of SIDE_IDS) {
+    const fighter = state.sides[side].party[state.sides[side].activeIndex];
+    const ctx = makeContext(state, side, { source: fighter });
+    runStart(ctx);
+    runSwitchIn(ctx);
+  }
+
+  return state;
 }
 
 export function opponentOf(side: SideId): SideId {
