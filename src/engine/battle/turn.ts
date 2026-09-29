@@ -1,5 +1,4 @@
 import { type Move, type MoveEffect } from '../../data/dex';
-import { rollHit } from './accuracy';
 import {
   applyDamage,
   applyHeal,
@@ -14,7 +13,10 @@ import {
   runStart,
   runSwitchIn,
   runTryHit,
+  runTrySecondary,
+  runTryVolatile,
 } from './effects/registry';
+import { rollHitWith } from './modifiers';
 import { applyBoostEffect, applyStatusEffect } from './effects/apply';
 import { isProtectMove, protectBlocks } from './effects/moves';
 import { setTerrain, terrainFromMove, terrainHeal, tickTerrain } from './effects/terrain';
@@ -139,10 +141,13 @@ function multihitHits(move: Move, rng: BattleState['rng']): number {
 
 function applyVolatileEffect(
   state: BattleState,
+  targetSide: SideId,
   target: BattleFighter,
   volatileStatus: string | undefined,
 ): void {
   if (!volatileStatus) return;
+  const ctx = makeContext(state, targetSide, { source: target, target: opponent(state, targetSide) });
+  if (!runTryVolatile(ctx, volatileStatus)) return;
   const applied = ((): boolean => {
     switch (volatileStatus) {
       case 'confusion':
@@ -188,9 +193,11 @@ function applySecondary(
     if (effect.self.boosts) applyBoostEffect(state, side, attacker, effect.self.boosts, { self: true });
     if (effect.self.status) applyStatusEffect(state, side, attacker, effect.self.status);
   }
+  const secondaryCtx = makeContext(state, side, { source: attacker, target: defender });
+  if (!runTrySecondary(secondaryCtx, effect)) return;
   if (effect.status) applyStatusEffect(state, opponentOf(side), defender, effect.status);
   if (effect.volatileStatus) {
-    applyVolatileEffect(state, defender, effect.volatileStatus);
+    applyVolatileEffect(state, opponentOf(side), defender, effect.volatileStatus);
   }
   if (effect.boosts) applyBoostEffect(state, opponentOf(side), defender, effect.boosts);
 }
@@ -209,7 +216,7 @@ function applyMoveEffects(
   if (move.status) applyStatusEffect(state, opponentOf(side), defender, move.status);
 
   if (move.volatileStatus) {
-    applyVolatileEffect(state, selfTarget ? attacker : defender, move.volatileStatus);
+    applyVolatileEffect(state, selfTarget ? side : opponentOf(side), selfTarget ? attacker : defender, move.volatileStatus);
   }
 
   if (move.boosts) {
@@ -231,7 +238,8 @@ function applyMoveEffects(
   const secondaries: MoveEffect[] = [];
   if (move.secondary) secondaries.push(move.secondary);
   if (move.secondaries) secondaries.push(...move.secondaries);
-  if (defenderDamaged) {
+  const sheerForce = attacker.ability === 'Sheer Force' && move.basePower > 0;
+  if (defenderDamaged && !sheerForce) {
     for (const secondary of secondaries) applySecondary(state, side, secondary, attacker, defender);
   }
 
@@ -326,7 +334,7 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
   if (protectBlocks(state, side, move)) return;
 
   const defender = opponent(state, side);
-  if (move.category !== 'Status' && !rollHit(state.rng, move.accuracy, attacker, defender)) {
+  if (move.category !== 'Status' && !rollHitWith(state, side, move.accuracy)) {
     pushText(state, `${attacker.name}'s attack missed!`);
     return;
   }

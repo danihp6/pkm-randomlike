@@ -8,13 +8,17 @@ import {
   makeContext,
   runAfterMove,
   runBoost,
+  runModifyAccuracy,
   runModifyDamage,
+  runModifySpe,
   runResidual,
   runTryHit,
+  runTryVolatile,
   type EffectContext,
 } from './registry';
 import { applyStatusEffect } from './apply';
 import { abilityEffects } from './abilities';
+import { takeTurn } from '../turn';
 
 function fighter(id: string, speciesId: string, ability: string, moves?: readonly string[]): BattleFighter {
   return createFighter({
@@ -324,5 +328,214 @@ describe('residual abilities', () => {
       runResidual(ctxOf(state, 'player'));
     }
     expect(ekans.status).toBeNull();
+  });
+});
+
+describe('speed abilities (batch 3)', () => {
+  it('Chlorophyll, Swift Swim and Sand Rush double Speed only in their weather', () => {
+    const state = makeBattle(fighter('player', 'bulbasaur', 'Chlorophyll'), fighter('enemy', 'charmander', 'Blaze'));
+    const ctx = ctxOf(state, 'player');
+    expect(runModifySpe(ctx, 100)).toBe(100);
+    state.weather = 'sun';
+    expect(runModifySpe(ctx, 100)).toBe(200);
+    state.weather = 'rain';
+    expect(runModifySpe(ctx, 100)).toBe(100);
+
+    state.weather = 'rain';
+    const swim = makeBattle(fighter('player', 'poliwag', 'Swift Swim'), fighter('enemy', 'charmander', 'Blaze'));
+    swim.weather = 'rain';
+    expect(runModifySpe(ctxOf(swim, 'player'), 100)).toBe(200);
+
+    const rush = makeBattle(fighter('player', 'drilbur', 'Sand Rush'), fighter('enemy', 'charmander', 'Blaze'));
+    rush.weather = 'sand';
+    expect(runModifySpe(ctxOf(rush, 'player'), 100)).toBe(200);
+  });
+
+  it('Quick Feet ignores the paralysis drop and is 1.5x while statused', () => {
+    const state = makeBattle(fighter('player', 'jolteon', 'Quick Feet'), fighter('enemy', 'charmander', 'Blaze'));
+    const jolteon = activeFighter(state, 'player');
+    const ctx = ctxOf(state, 'player');
+    expect(runModifySpe(ctx, 60)).toBe(60);
+    jolteon.status = 'par';
+    expect(runModifySpe(ctx, Math.floor(jolteon.stats.spe / 2))).toBe(Math.floor(jolteon.stats.spe * 1.5));
+  });
+});
+
+describe('accuracy abilities (batch 3)', () => {
+  it('Compound Eyes and Hustle move the hit chance', () => {
+    const eyes = makeBattle(fighter('player', 'venonat', 'Compound Eyes'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyAccuracy(ctxOf(eyes, 'player'), 0.6)).toBeCloseTo(0.78);
+
+    const hustle = makeBattle(fighter('player', 'combee', 'Hustle'), fighter('enemy', 'charmander', 'Blaze'));
+    const ctx = ctxOf(hustle, 'player');
+    expect(runModifyAccuracy(ctx, 0.8)).toBeCloseTo(0.64);
+    expect(runModifyDamage(ctx, getMove('tackle')!, 100)).toBe(150);
+    expect(runModifyDamage(ctx, getMove('ember')!, 100)).toBe(100);
+  });
+
+  it('Sand Veil and Snow Cloak lower the foe accuracy in their weather', () => {
+    const veil = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'sandshrew', 'Sand Veil'));
+    veil.weather = 'sand';
+    expect(runModifyAccuracy(ctxOf(veil, 'player'), 0.8)).toBeCloseTo(0.64);
+
+    const cloak = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'sandshrewalola', 'Snow Cloak'));
+    cloak.weather = 'snow';
+    expect(runModifyAccuracy(ctxOf(cloak, 'player'), 0.8)).toBeCloseTo(0.64);
+
+    const clear = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'sandshrew', 'Sand Veil'));
+    expect(runModifyAccuracy(ctxOf(clear, 'player'), 0.8)).toBeCloseTo(0.8);
+  });
+});
+
+describe('damage abilities (batch 3)', () => {
+  it('Adaptability makes a same-type move 2x instead of 1.5x', () => {
+    const state = makeBattle(fighter('player', 'eevee', 'Adaptability'), fighter('enemy', 'charmander', 'Blaze'));
+    const ctx = ctxOf(state, 'player');
+    expect(runModifyDamage(ctx, getMove('tackle')!, 150)).toBe(200);
+    expect(runModifyDamage(ctx, getMove('ember')!, 100)).toBe(100);
+  });
+
+  it('Tinted Lens doubles a not-very-effective hit', () => {
+    const state = makeBattle(fighter('player', 'venonat', 'Tinted Lens'), fighter('enemy', 'charmander', 'Blaze'));
+    const ctx = ctxOf(state, 'player');
+    expect(runModifyDamage(ctx, getMove('tackle')!, 100, 0.5)).toBe(200);
+    expect(runModifyDamage(ctx, getMove('tackle')!, 100, 1)).toBe(100);
+  });
+
+  it('Sheer Force boosts a move with a secondary and suppresses it', () => {
+    const state = makeBattle(fighter('player', 'croconaw', 'Sheer Force'), fighter('enemy', 'charmander', 'Blaze'));
+    const ctx = ctxOf(state, 'player');
+    expect(runModifyDamage(ctx, getMove('bulldoze')!, 100)).toBe(130);
+    expect(runModifyDamage(ctx, getMove('tackle')!, 100)).toBe(100);
+
+    const sheer = makeBattle(
+      fighter('player', 'croconaw', 'Sheer Force', ['bulldoze']),
+      fighter('enemy', 'charmander', 'Blaze'),
+    );
+    const control = makeBattle(
+      fighter('player', 'croconaw', 'Torrent', ['bulldoze']),
+      fighter('enemy', 'charmander', 'Blaze'),
+    );
+    takeTurn(control, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    takeTurn(sheer, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(control, 'enemy').boosts.spe).toBeLessThan(0);
+    expect(activeFighter(sheer, 'enemy').boosts.spe).toBe(0);
+  });
+
+  it('Shield Dust blocks the secondary effect of a move', () => {
+    const dust = makeBattle(
+      fighter('player', 'croconaw', 'Torrent', ['bulldoze']),
+      fighter('enemy', 'scatterbug', 'Shield Dust'),
+    );
+    const control = makeBattle(
+      fighter('player', 'croconaw', 'Torrent', ['bulldoze']),
+      fighter('enemy', 'charmander', 'Blaze'),
+    );
+    takeTurn(dust, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    takeTurn(control, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(dust, 'enemy').boosts.spe).toBe(0);
+    expect(activeFighter(control, 'enemy').boosts.spe).toBeLessThan(0);
+  });
+
+  it('Reckless boosts recoil moves', () => {
+    const state = makeBattle(fighter('player', 'hitmonlee', 'Reckless'), fighter('enemy', 'charmander', 'Blaze'));
+    const ctx = ctxOf(state, 'player');
+    expect(runModifyDamage(ctx, getMove('doubleedge')!, 100)).toBe(120);
+    expect(runModifyDamage(ctx, getMove('tackle')!, 100)).toBe(100);
+  });
+
+  it('Punk Rock boosts sound moves out and dampens them in', () => {
+    const state = makeBattle(fighter('player', 'toxtricity', 'Punk Rock'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('boomburst')!, 100)).toBe(130);
+    expect(runModifyDamage(ctxOf(state, 'enemy'), getMove('boomburst')!, 100)).toBe(50);
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('tackle')!, 100)).toBe(100);
+  });
+
+  it('Water Bubble doubles Water out and halves Fire in', () => {
+    const state = makeBattle(fighter('player', 'dewpider', 'Water Bubble'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('watergun')!, 100)).toBe(200);
+    expect(runModifyDamage(ctxOf(state, 'enemy'), getMove('ember')!, 100)).toBe(50);
+    expect(runModifyDamage(ctxOf(state, 'player'), getMove('tackle')!, 100)).toBe(100);
+  });
+
+  it('Fluffy halves contact and doubles Fire damage taken', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'greavard', 'Fluffy'));
+    const ctx = ctxOf(state, 'player');
+    expect(runModifyDamage(ctx, getMove('tackle')!, 100)).toBe(50);
+    expect(runModifyDamage(ctx, getMove('ember')!, 100)).toBe(200);
+  });
+
+  it('Flash Fire absorbs Fire and boosts the next Fire move', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'vulpix', 'Flash Fire'));
+    const vulpix = activeFighter(state, 'enemy');
+    const incoming = ctxOf(state, 'player');
+    expect(runTryHit(incoming, getMove('ember')!)).toBe(false);
+    expect(vulpix.volatiles.flashFire).toBe(true);
+    expect(runTryHit(incoming, getMove('tackle')!)).toBe(true);
+    expect(runModifyDamage(ctxOf(state, 'enemy'), getMove('ember')!, 100)).toBe(150);
+  });
+});
+
+describe('weather and immunity abilities (batch 3)', () => {
+  it('Ice Body and Rain Dish heal in their weather', () => {
+    const ice = makeBattle(fighter('player', 'seel', 'Ice Body'), fighter('enemy', 'charmander', 'Blaze'));
+    const seel = activeFighter(ice, 'player');
+    ice.weather = 'snow';
+    seel.hp = Math.floor(seel.maxHp / 2);
+    runResidual(ctxOf(ice, 'player'));
+    expect(seel.hp).toBe(Math.floor(seel.maxHp / 2) + Math.floor(seel.maxHp / 16));
+    expect(ice.log.some((event) => event.kind === 'heal' && event.side === 'player')).toBe(true);
+
+    const rain = makeBattle(fighter('player', 'squirtle', 'Rain Dish'), fighter('enemy', 'charmander', 'Blaze'));
+    const squirtle = activeFighter(rain, 'player');
+    rain.weather = 'rain';
+    squirtle.hp = Math.floor(squirtle.maxHp / 2);
+    runResidual(ctxOf(rain, 'player'));
+    expect(squirtle.hp).toBe(Math.floor(squirtle.maxHp / 2) + Math.floor(squirtle.maxHp / 16));
+  });
+
+  it('Hydration cures a status in the rain', () => {
+    const state = makeBattle(fighter('player', 'seel', 'Hydration'), fighter('enemy', 'charmander', 'Blaze'));
+    const seel = activeFighter(state, 'player');
+    seel.status = 'brn';
+    runResidual(ctxOf(state, 'player'));
+    expect(seel.status).toBe('brn');
+    state.weather = 'rain';
+    runResidual(ctxOf(state, 'player'));
+    expect(seel.status).toBeNull();
+  });
+
+  it('Leaf Guard blocks status only in the sun', () => {
+    const state = makeBattle(fighter('player', 'chikorita', 'Leaf Guard'), fighter('enemy', 'charmander', 'Blaze'));
+    const chikorita = activeFighter(state, 'player');
+    applyStatusEffect(state, 'player', chikorita, 'brn');
+    expect(chikorita.status).toBe('brn');
+
+    const sun = makeBattle(fighter('player', 'chikorita', 'Leaf Guard'), fighter('enemy', 'charmander', 'Blaze'));
+    sun.weather = 'sun';
+    applyStatusEffect(sun, 'player', activeFighter(sun, 'player'), 'brn');
+    expect(activeFighter(sun, 'player').status).toBeNull();
+  });
+
+  it('Own Tempo, Inner Focus, Oblivious and Aroma Veil block their volatiles', () => {
+    const tempo = makeBattle(fighter('player', 'slowpoke', 'Own Tempo'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runTryVolatile(ctxOf(tempo, 'player'), 'confusion')).toBe(false);
+    expect(runTryVolatile(ctxOf(tempo, 'player'), 'taunt')).toBe(true);
+
+    const focus = makeBattle(fighter('player', 'drowzee', 'Inner Focus'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runTryVolatile(ctxOf(focus, 'player'), 'flinch')).toBe(false);
+
+    const oblivious = makeBattle(fighter('player', 'slowpoke', 'Oblivious'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runTryVolatile(ctxOf(oblivious, 'player'), 'taunt')).toBe(false);
+
+    const veil = makeBattle(fighter('player', 'milcery', 'Aroma Veil'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runTryVolatile(ctxOf(veil, 'player'), 'taunt')).toBe(false);
+    expect(runTryVolatile(ctxOf(veil, 'player'), 'encore')).toBe(false);
+    expect(runTryVolatile(ctxOf(veil, 'player'), 'confusion')).toBe(true);
+  });
+
+  it('Inner Focus is immune to Intimidate', () => {
+    const state = makeBattle(fighter('player', 'growlithe', 'Intimidate'), fighter('enemy', 'drowzee', 'Inner Focus'));
+    expect(activeFighter(state, 'enemy').boosts.atk).toBe(0);
   });
 });

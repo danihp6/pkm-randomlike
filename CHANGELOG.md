@@ -211,3 +211,16 @@ file is the human-readable summary.
       (damage/status/stat drop), plus Recycle (restores the last held item, which
       `effects/items.ts` now records). Fighters gained `volatiles.protect` /
       `protectStreak` and a `lastItemId`. 229 tests pass; `npm run build` clean.
+- [x] `src/engine/battle/effects/abilities.ts`: batch 3, 25 more abilities — the
+      weather/status Speed group (Chlorophyll, Swift Swim, Sand Rush, Quick Feet),
+      the accuracy group (Compound Eyes, Hustle, Sand Veil, Snow Cloak), the
+      damage group (Adaptability, Tinted Lens, Sheer Force, Reckless, Punk Rock,
+      Water Bubble, Fluffy, Flash Fire), the weather healers (Ice Body, Rain Dish,
+      Hydration) and the volatile/status blocks (Leaf Guard, Shield Dust, Own
+      Tempo, Inner Focus, Oblivious, Aroma Veil). New hooks `onModifySpe`,
+      `onModifyAccuracy`, `onTryVolatile` and `onTrySecondary`, wired in through
+      `src/engine/battle/modifiers.ts` (Speed ordering and escape odds now read
+      ability modifiers) and the turn loop (hit chance, volatile and secondary
+      application; Sheer Force suppresses its secondaries, Shield Dust blocks
+      them). Fighters gained `volatiles.flashFire`. The coverage table is at 120
+      ports. 247 tests pass; `npm run build` clean.

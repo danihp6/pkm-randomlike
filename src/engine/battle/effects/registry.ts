@@ -1,4 +1,4 @@
-import type { Move } from '../../../data/dex';
+import type { Move, MoveEffect } from '../../../data/dex';
 import { warnUnportedEffect } from '../../../dev/warnings';
 import type { Rng } from '../../rng';
 import type { BattleFighter, BoostId } from '../fighter';
@@ -21,6 +21,8 @@ export type MovePayload = Readonly<{ move: Move }>;
 export type DamagePayload = Readonly<{ move: Move; damage: number; effectiveness: number }>;
 export type StatusPayload = Readonly<{ status: string }>;
 export type BoostPayload = Readonly<{ stat: BoostId; stages: number; self: boolean }>;
+export type VolatilePayload = Readonly<{ volatile: string }>;
+export type SecondaryPayload = Readonly<{ effect: MoveEffect }>;
 
 /**
  * Handler bodies are direct ports of Showdown's, on the same hook names, but
@@ -32,7 +34,11 @@ export type EffectHandlers = Readonly<{
   onStart?: (ctx: EffectContext) => void;
   onResidual?: (ctx: EffectContext) => void;
   onModifyDamage?: (ctx: EffectContext, payload: DamagePayload) => number | void;
+  onModifySpe?: (ctx: EffectContext, speed: number) => number | void;
+  onModifyAccuracy?: (ctx: EffectContext, chance: number) => number | void;
   onTryHit?: (ctx: EffectContext, payload: MovePayload) => boolean | void;
+  onTryVolatile?: (ctx: EffectContext, payload: VolatilePayload) => boolean | void;
+  onTrySecondary?: (ctx: EffectContext, payload: SecondaryPayload) => boolean | void;
   onAfterMove?: (ctx: EffectContext, payload: MovePayload) => void;
   onStatus?: (ctx: EffectContext, payload: StatusPayload) => boolean | void;
   onBoost?: (ctx: EffectContext, payload: BoostPayload) => boolean | void;
@@ -171,6 +177,22 @@ export function runStatus(ctx: EffectContext, status: string): boolean {
   return true;
 }
 
+export function runTryVolatile(ctx: EffectContext, volatile: string): boolean {
+  const payload: VolatilePayload = { volatile };
+  for (const ref of contextEffects(ctx, true, null)) {
+    if (ref.effect.handlers.onTryVolatile?.(contextFor(ctx, ref), payload) === false) return false;
+  }
+  return true;
+}
+
+export function runTrySecondary(ctx: EffectContext, effect: MoveEffect): boolean {
+  const payload: SecondaryPayload = { effect };
+  for (const ref of contextEffects(ctx, true, null)) {
+    if (ref.effect.handlers.onTrySecondary?.(contextFor(ctx, ref), payload) === false) return false;
+  }
+  return true;
+}
+
 export function runBoost(
   ctx: EffectContext,
   stat: BoostId,
@@ -197,6 +219,26 @@ export function runModifyDamage(
       damage: value,
       effectiveness,
     });
+    if (typeof next === 'number') value = next;
+  }
+  return value;
+}
+
+/** Speed modifiers read the fighter's own ability only (Chlorophyll, Quick Feet). */
+export function runModifySpe(ctx: EffectContext, speed: number): number {
+  let value = speed;
+  for (const ref of contextEffects(ctx, false, null)) {
+    const next = ref.effect.handlers.onModifySpe?.(contextFor(ctx, ref), value);
+    if (typeof next === 'number') value = next;
+  }
+  return value;
+}
+
+/** Accuracy modifiers read the attacker's and the defender's abilities (Compound Eyes, Sand Veil). */
+export function runModifyAccuracy(ctx: EffectContext, chance: number): number {
+  let value = chance;
+  for (const ref of contextEffects(ctx, true, null)) {
+    const next = ref.effect.handlers.onModifyAccuracy?.(contextFor(ctx, ref), value);
     if (typeof next === 'number') value = next;
   }
   return value;
