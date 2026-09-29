@@ -7,7 +7,9 @@ rosters, route configs). Balancing must not require touching engine code.
 
 Produced by `npm run data:dex` from `@pkmn/dex`, committed, never edited by hand.
 See `docs/showdown-reuse.md` for the contents and filters, and
-`src/data/dex/README.md` for the field list.
+`src/data/dex/README.md` for the field list. Because `@pkmn/dex` has no catch
+rate, the generator merges one in from the committed PokeAPI table
+(`scripts/data/catch-rates.json`); capture balances against `catchRate`.
 
 ## 2. Authored
 

@@ -24,7 +24,7 @@ an adaptor over its event loop.
 
 | File | Contents | Count |
 | --- | --- | --- |
-| `species.json` | stats, types, abilities, forms, evolutions, gender ratio, weight | 911 playable |
+| `species.json` | stats, types, abilities, forms, evolutions, gender ratio, weight, catch rate | 911 playable |
 | `moves.json` | type, category, power, accuracy, PP, priority, target, flags, secondaries | 685 |
 | `abilities.json` | name, description, flags | 310 |
 | `items.json` | name, description, battle flags | 249 |
@@ -36,6 +36,10 @@ Notes:
 
 - Only `!isNonstandard && num > 0` entries survive, so CAP/Gigantamax/old-gen
   exclusives are already filtered out.
+- `@pkmn/dex` carries no catch rate, so `build-dex.mjs` merges one in from
+  `scripts/data/catch-rates.json` (PokeAPI `pokemon_species.csv`, keyed by
+  national dex number, fetched once by `scripts/fetch-catch-rates.mjs`). Capture
+  balances against this; regeneration never touches the network.
 - Learnset sources are filtered to `gen >= 8` and exclude pure-event sources
   (`S`), so the tables stay close to Gen 9.
 - `JSON.stringify` drops handler functions on purpose: the JSON is metadata.

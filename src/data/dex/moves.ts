@@ -1,13 +1,17 @@
 import movesData from './moves.json';
-import type { Stats } from './species';
 
 export type MoveCategory = 'Physical' | 'Special' | 'Status';
+
+/** Battle stats a move can raise or lower, with the accuracy/evasion pair. */
+export type MoveBoosts = Readonly<
+  Partial<Record<'atk' | 'def' | 'spa' | 'spd' | 'spe' | 'accuracy' | 'evasion', number>>
+>;
 
 export type MoveEffect = Readonly<{
   chance?: number;
   status?: string;
   volatileStatus?: string;
-  boosts?: Partial<Stats>;
+  boosts?: MoveBoosts;
   self?: MoveEffect;
 }>;
 
@@ -28,11 +32,12 @@ export type Move = Readonly<{
   shortDesc: string;
   drain?: readonly number[];
   recoil?: readonly number[];
+  struggleRecoil?: boolean;
   multihit?: number | readonly number[];
   secondary?: MoveEffect;
   secondaries?: readonly MoveEffect[];
   self?: MoveEffect;
-  boosts?: Partial<Stats>;
+  boosts?: MoveBoosts;
   status?: string;
   volatileStatus?: string;
   weather?: string;

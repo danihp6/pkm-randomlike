@@ -64,4 +64,13 @@ describe('generated dex integrity', () => {
       expect(known.has(move.type), `${move.id} has unknown type ${move.type}`).toBe(true);
     }
   });
+
+  it('gives every playable species a positive catch rate', () => {
+    for (const species of playableSpecies()) {
+      expect(
+        Number.isInteger(species.catchRate) && species.catchRate > 0,
+        `${species.id} has catchRate ${species.catchRate}`,
+      ).toBe(true);
+    }
+  });
 });

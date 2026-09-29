@@ -49,31 +49,6 @@ accessors so the engine never touches raw JSON.
 The whole menu battle minus per-effect behaviour. Contract in
 `docs/battle-spec.md`.
 
-- [ ] `src/engine/battle/fighter.ts`: a battle fighter built from species + level
-      + nature + IVs + moveset, with stat computation and stat stages (−6..+6).
-- [ ] `src/engine/battle/state.ts`: battle state (two sides, field, turn, weather,
-      seeded `Rng`), plus the event log that the UI renders.
-- [ ] `src/engine/battle/order.ts`: priority then effective speed, ties on the
-      battle RNG.
-- [ ] `src/engine/battle/damage.ts`: Gen 9 formula (STAB, effectiveness, crit,
-      85-100% roll, weather/burn modifiers) using the Phase 1 accessors.
-- [ ] `src/engine/battle/accuracy.ts`: accuracy/evasion stages and the hit roll.
-- [ ] `src/engine/battle/status.ts`: burn, poison, badly poisoned, paralysis,
-      sleep, freeze + residual ticking.
-- [ ] `src/engine/battle/volatile.ts`: confusion, flinch, Leech Seed, Substitute,
-      Taunt, Encore, trapped, perish count.
-- [ ] `src/engine/battle/turn.ts`: the turn loop (choices → pre-move actions →
-      moves → residuals → faint/replace) driven only by choices, no UI.
-- [ ] `src/engine/battle/commands.ts`: `fight`, `bag`, `switch`, `run` as the four
-      legal choices, each with its validation.
-- [ ] `src/engine/battle/runAway.ts`: the run odds; trainer battles refuse.
-- [ ] `src/engine/battle/capture.ts`: Gen 9 catch formula, ball bonuses, HP/status
-      modifiers, one capture per route enforced by the run, not the battle.
-- [ ] `src/engine/battle/ai.ts`: a trainer AI that picks moves by expected value
-      and switches when badly matched (no cheating: it only reads legal state).
-- [ ] Golden test: a scripted battle with a fixed seed, frozen as a formatted log
-      (the seed of the balance harness).
-
 ## Phase 4 — Battle effects: abilities, items, weather, terrain
 
 > Completed work for this phase is archived in `CHANGELOG.md`.

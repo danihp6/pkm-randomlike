@@ -42,10 +42,12 @@ already shipped (read only when asked).
 - `src/engine/` – pure logic: `rng.ts`, `grid.ts`, `map.ts`, `fov.ts`,
   `vision.ts`, `pathfinding.ts`, `tileset.ts`, `tileFrames.ts`, `routes/`
   (`routeMap.ts`, `sketch.ts`, `validate.ts`, `trainers.ts`, `encounters.ts`),
-  and later `battle/`.
+  and `battle/` (`fighter.ts`, `state.ts`, `order.ts`, `damage.ts`,
+  `accuracy.ts`, `status.ts`, `volatile.ts`, `turn.ts`, `commands.ts`,
+  `runAway.ts`, `capture.ts`, `ai.ts`).
 - `src/data/` – `dex/` (generated + typed accessors), `tilesets/` (registry +
-  palettes), `biomes.ts`, `encounters.ts`, `trainers.ts`, `run.ts`, and later
-  `items.ts`. Contract in `src/data/README.md`.
+  palettes), `biomes.ts`, `encounters.ts`, `trainers.ts`, `run.ts`, `items.ts`.
+  Contract in `src/data/README.md`.
 - `src/scenes/` – `BootScene.ts`, `RouteScene.ts`, `BattleScene.ts` (later:
   `PartyScene`, `BoxScene`, `MenuScene`).
 - `src/render/`, `src/input/`, `src/audio/` – Phaser-side helpers, created as
