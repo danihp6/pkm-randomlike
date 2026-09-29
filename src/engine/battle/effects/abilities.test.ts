@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getMove } from '../../../data/dex';
 import { Rng } from '../../rng';
 import { createFighter, type BattleFighter } from '../fighter';
-import { activeFighter, createBattle, effectiveWeather, opponentOf, type BattleState, type SideId } from '../state';
+import { activeFighter, createBattle, effectiveWeather, isTrapped, opponentOf, type BattleState, type SideId } from '../state';
 import {
   getEffect,
   makeContext,
@@ -29,11 +29,11 @@ import {
 } from './registry';
 import { applyBoostEffect, applyStatusEffect } from './apply';
 import { abilityEffects } from './abilities';
-import { performSwitch, takeTurn } from '../turn';
-import { rollRun } from '../runAway';
+import { performSwitch, takeTurn, useMove } from '../turn';
+import { canRun, rollRun } from '../runAway';
 import { hitChance } from '../modifiers';
 import { protectBlocks } from './moves';
-import { legalMoveIndices } from '../commands';
+import { legalMoveIndices, validateCommand } from '../commands';
 import { beforeMoveVolatile } from '../volatile';
 
 function fighter(id: string, speciesId: string, ability: string, moves?: readonly string[]): BattleFighter {
@@ -1660,5 +1660,157 @@ describe('type-changing and contact volatiles (batch 11)', () => {
       if (check && 'attracted' in check) sawAttracted = true;
     }
     expect(sawAttracted).toBe(true);
+  });
+});
+
+describe('trapping, dance and entry abilities (batch 12)', () => {
+  it('registers the batch 12 abilities', () => {
+    const ids = abilityEffects().map((def) => def.id);
+    for (const id of [
+      'arenatrap',
+      'shadowtag',
+      'magnetpull',
+      'battlebond',
+      'cudchew',
+      'dancer',
+      'gluttony',
+      'hadronengine',
+      'orichalcumpulse',
+      'protosynthesis',
+      'quarkdrive',
+      'magicbounce',
+      'rivalry',
+      'illuminate',
+    ]) {
+      expect(ids).toContain(id);
+    }
+  });
+
+  it('Arena Trap, Shadow Tag and Magnet Pull trap the right foes', () => {
+    const arena = makeBattle(fighter('player', 'sandshrew', 'Sand Veil'), fighter('enemy', 'diglett', 'Arena Trap'));
+    expect(isTrapped(arena, 'player')).toBe(true);
+
+    const arenaFlyer = makeBattle(fighter('player', 'starly', 'Keen Eye'), fighter('enemy', 'diglett', 'Arena Trap'));
+    expect(isTrapped(arenaFlyer, 'player')).toBe(false);
+
+    const tag = makeBattle(fighter('player', 'sandshrew', 'Sand Veil'), fighter('enemy', 'gothita', 'Shadow Tag'));
+    expect(isTrapped(tag, 'player')).toBe(true);
+
+    const tagGhost = makeBattle(fighter('player', 'gastly', 'Levitate'), fighter('enemy', 'gothita', 'Shadow Tag'));
+    expect(isTrapped(tagGhost, 'player')).toBe(false);
+
+    const magnet = makeBattle(fighter('player', 'magnemite', 'Magnet Pull'), fighter('enemy', 'magnemite', 'Magnet Pull'));
+    expect(isTrapped(magnet, 'player')).toBe(true);
+
+    const noSteel = makeBattle(fighter('player', 'sandshrew', 'Sand Veil'), fighter('enemy', 'magnemite', 'Magnet Pull'));
+    expect(isTrapped(noSteel, 'player')).toBe(false);
+  });
+
+  it('trapping blocks switching and fleeing', () => {
+    const state = createBattle({
+      player: [fighter('player', 'sandshrew', 'Sand Veil'), fighter('bench', 'charmander', 'Blaze')],
+      enemy: [fighter('enemy', 'diglett', 'Arena Trap')],
+      rng: new Rng(1),
+      isWild: true,
+    });
+    expect(validateCommand(state, 'player', { type: 'switch', partyIndex: 1 })).toContain(
+      'cannot be switched',
+    );
+    expect(canRun(state, 'player')).toBe(false);
+  });
+
+  it('Battle Bond boosts the holder once after a knock out', () => {
+    const state = makeBattle(
+      fighter('player', 'greninja', 'Battle Bond', ['watergun']),
+      fighter('enemy', 'blissey', 'Natural Cure'),
+    );
+    activeFighter(state, 'enemy').hp = 0;
+    const ctx = ctxOf(state, 'player');
+    runAfterMove(ctx, getMove('watergun')!);
+    const user = activeFighter(state, 'player');
+    expect([user.boosts.atk, user.boosts.spa, user.boosts.spe]).toEqual([1, 1, 1]);
+
+    runAfterMove(ctx, getMove('watergun')!);
+    expect([user.boosts.atk, user.boosts.spa, user.boosts.spe]).toEqual([1, 1, 1]);
+  });
+
+  it('Cud Chew eats a consumed berry a second time', () => {
+    const state = makeBattle(
+      fighter('player', 'farigiraf', 'Cud Chew'),
+      fighter('enemy', 'blissey', 'Natural Cure'),
+    );
+    const holder = activeFighter(state, 'player');
+    holder.heldItem = 'sitrusberry';
+    holder.hp = Math.floor(holder.maxHp / 2);
+    runResidual(ctxOf(state, 'player'));
+    expect(holder.heldItem).toBeNull();
+    expect(holder.volatiles.cudChew).toBe('sitrusberry');
+
+    holder.hp = 1;
+    runResidual(ctxOf(state, 'player'));
+    expect(holder.hp).toBeGreaterThan(1);
+    expect(holder.volatiles.cudChew).toBeNull();
+  });
+
+  it('Dancer copies a dance move the foe uses', () => {
+    const state = makeBattle(
+      fighter('player', 'charmander', 'Blaze', ['swordsdance']),
+      fighter('enemy', 'oricorio', 'Dancer'),
+    );
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').boosts.atk).toBe(2);
+    expect(activeFighter(state, 'enemy').boosts.atk).toBe(2);
+  });
+
+  it('Hadron Engine and Orichalcum Pulse set their field and boost', () => {
+    const hadron = makeBattle(fighter('player', 'miraidon', 'Hadron Engine'), fighter('enemy', 'blissey', 'Natural Cure'));
+    expect(hadron.terrain).toBe('electric');
+    expect(runModifyDamage(ctxOf(hadron, 'player'), getMove('thunderbolt')!, 100)).toBe(133);
+
+    const pulse = makeBattle(fighter('player', 'koraidon', 'Orichalcum Pulse'), fighter('enemy', 'blissey', 'Natural Cure'));
+    expect(pulse.weather).toBe('sun');
+    expect(runModifyDamage(ctxOf(pulse, 'player'), getMove('tackle')!, 100)).toBe(133);
+  });
+
+  it('Protosynthesis and Quark Drive boost the highest stat in their field', () => {
+    const sun = makeBattle(fighter('player', 'greattusk', 'Protosynthesis'), fighter('enemy', 'blissey', 'Natural Cure'));
+    const noSun = makeBattle(fighter('player', 'greattusk', 'Protosynthesis'), fighter('enemy', 'blissey', 'Natural Cure'));
+    sun.weather = 'sun';
+    sun.weatherTurns = 5;
+    noSun.weather = 'rain';
+    expect(runModifyDamage(ctxOf(sun, 'player'), getMove('tackle')!, 100)).toBe(130);
+    expect(runModifyDamage(ctxOf(noSun, 'player'), getMove('tackle')!, 100)).toBe(100);
+
+    const terrain = makeBattle(fighter('player', 'ironhands', 'Quark Drive'), fighter('enemy', 'blissey', 'Natural Cure'));
+    terrain.terrain = 'electric';
+    expect(runModifyDamage(ctxOf(terrain, 'player'), getMove('tackle')!, 100)).toBe(130);
+  });
+
+  it('Magic Bounce reflects a status move back at its user', () => {
+    const state = makeBattle(
+      fighter('player', 'charmander', 'Blaze', ['toxic']),
+      fighter('enemy', 'espeon', 'Magic Bounce'),
+    );
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').status).toBe('tox');
+    expect(activeFighter(state, 'enemy').status).toBeNull();
+  });
+
+  it('Rivalry is stronger against the same gender', () => {
+    const same = makeBattle(fighter('player', 'luxray', 'Rivalry'), fighter('enemy', 'blissey', 'Natural Cure'));
+    const opposite = makeBattle(fighter('player', 'luxray', 'Rivalry'), fighter('enemy', 'blissey', 'Natural Cure'));
+    activeFighter(same, 'player').gender = 'male';
+    activeFighter(same, 'enemy').gender = 'male';
+    activeFighter(opposite, 'player').gender = 'male';
+    activeFighter(opposite, 'enemy').gender = 'female';
+    expect(runModifyDamage(ctxOf(same, 'player'), getMove('tackle')!, 100)).toBe(125);
+    expect(runModifyDamage(ctxOf(opposite, 'player'), getMove('tackle')!, 100)).toBe(75);
+  });
+
+  it('Illuminate blocks accuracy drops', () => {
+    const state = makeBattle(fighter('player', 'chinchou', 'Illuminate'), fighter('enemy', 'charmander', 'Blaze'));
+    const holder = activeFighter(state, 'player');
+    applyBoostEffect(state, 'player', holder, { accuracy: -1 });
+    expect(holder.boosts.accuracy).toBe(0);
   });
 });

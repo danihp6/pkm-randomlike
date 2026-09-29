@@ -1,7 +1,7 @@
 import type { ItemDef } from '../../data/items';
 import type { Rng } from '../rng';
 import { makeContext, runStart, runSwitchIn } from './effects/registry';
-import type { BattleFighter, BoostId, StatusId } from './fighter';
+import { trappedBy, type BattleFighter, type BoostId, type StatusId } from './fighter';
 
 export type SideId = 'player' | 'enemy';
 
@@ -169,6 +169,13 @@ export function effectiveWeather(state: BattleState): WeatherId | null {
 
 export function hasHealthy(state: BattleState, side: SideId): boolean {
   return state.sides[side].party.some((fighter) => fighter.hp > 0);
+}
+
+/** True while `side`'s active Pokémon cannot switch out or flee (trap volatile or ability). */
+export function isTrapped(state: BattleState, side: SideId): boolean {
+  const holder = activeFighter(state, side);
+  if (holder.volatiles.trapped) return true;
+  return trappedBy(opponent(state, side), holder);
 }
 
 export function pushEvent(state: BattleState, event: BattleEvent): void {
