@@ -1,8 +1,17 @@
 import Phaser from 'phaser';
-import { getSpecies } from '../data/dex/species';
 import { biomeForRoute } from '../data/biomes';
 import { bandForRoute } from '../data/run';
 import { TRAINER_ARCHETYPE_IDS, getTrainerArchetype } from '../data/trainers';
+import { IS_DEVELOP } from '../dev/env';
+import { createFighter, snapshotFighter, type FighterInput, type FighterSnapshot } from '../engine/battle';
+import {
+  battleSeed,
+  trainerRoster,
+  type BagCounts,
+  type BattleLaunch,
+  type BattleReturn,
+  type BattleTrigger,
+} from '../engine/run';
 import {
   COMMON_TEXTURE_KEY,
   TILESET_IDS,
@@ -21,6 +30,7 @@ import {
   trainerAt,
   type Facing,
   type RouteMap,
+  type RouteTrainer,
 } from '../engine/routes';
 import { TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame } from '../engine/tileFrames';
@@ -37,9 +47,21 @@ const VISION_RADIUS = 6;
 const HIDDEN_ALPHA = 0.3;
 const EXPLORED_ALPHA = 0.7;
 
-// Until a run exists (Phase 6) the scene generates route 1 of a fixed dev seed.
+// Until a run exists (Phase 6) the scene generates route 1 of a fixed dev seed
+// and carries a fixed demo party and bag. The run will replace both.
 const DEV_SEED = 'dev-seed';
 const DEV_ROUTE_INDEX = 1;
+
+const DEMO_PARTY: readonly FighterInput[] = [
+  { id: 'starter', speciesId: 'charmander', level: 12, moves: ['ember', 'scratch', 'growl'] },
+  { id: 'reserve', speciesId: 'squirtle', level: 10, moves: ['watergun', 'tackle', 'tailwhip'] },
+];
+
+const DEMO_BAG: readonly BagCounts[] = [
+  { itemId: 'potion', count: 2 },
+  { itemId: 'pokeball', count: 5 },
+  { itemId: 'paralyzeheal', count: 1 },
+];
 
 const FACING_ANGLE: Readonly<Record<Facing, number>> = { N: 0, E: 90, S: 180, W: 270 };
 
@@ -57,6 +79,12 @@ export class RouteScene extends Phaser.Scene {
   private foggables: Foggable[] = [];
   private defeated = new Set<string>();
   private pickedItems = new Set<string>();
+  private party: readonly FighterSnapshot[] = [];
+  private bag: readonly BagCounts[] = [];
+  private captureUsed = false;
+  private gameOver = false;
+  private battleCounter = 0;
+  private pendingBattle: BattleLaunch | null = null;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private hint!: Phaser.GameObjects.Text;
 
@@ -87,6 +115,8 @@ export class RouteScene extends Phaser.Scene {
       band.maxLevel,
       new Rng(hashSeed(`${DEV_SEED}:encounters:${DEV_ROUTE_INDEX}`)),
     );
+    this.party = DEMO_PARTY.map((input) => snapshotFighter(createFighter(input)));
+    this.bag = DEMO_BAG;
 
     this.drawTiles();
     this.drawEntities();
@@ -112,8 +142,14 @@ export class RouteScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(100);
 
-    this.input.keyboard!.on('keydown-R', () => this.cycleTileset());
-    this.input.keyboard!.on('keydown-B', () => this.scene.start('Battle'));
+    this.input.keyboard!.on('keydown-R', () => {
+      if (this.scene.isActive()) this.cycleTileset();
+    });
+    if (IS_DEVELOP) {
+      this.input.keyboard!.on('keydown-B', () => {
+        if (this.scene.isActive()) this.startBattle({ kind: 'wild', speciesId: 'scatterbug', level: 5, key: 'dev' });
+      });
+    }
     this.setupHudCamera();
     this.setHint(
       `${biome.name} · route ${DEV_ROUTE_INDEX} · band ${band.name} (Lv ${band.minLevel}-${band.maxLevel})`,
@@ -234,8 +270,12 @@ export class RouteScene extends Phaser.Scene {
     if (value === TALL_GRASS) {
       const encounter = this.encounters.step();
       if (encounter) {
-        const name = getSpecies(encounter.speciesId)?.name ?? encounter.speciesId;
-        this.setHint(`A wild ${name} (Lv ${encounter.level}) appeared!`);
+        this.startBattle({
+          kind: 'wild',
+          speciesId: encounter.speciesId,
+          level: encounter.level,
+          key: `grass:${this.player.x},${this.player.y}`,
+        });
         return;
       }
     }
@@ -245,11 +285,64 @@ export class RouteScene extends Phaser.Scene {
       (trainer) => !this.defeated.has(trainer.id) && seesPlayer(this.route, trainer, this.player),
     );
     if (spotter) {
-      const name = getTrainerArchetype(spotter.archetypeId)?.name ?? 'A trainer';
-      this.setHint(`${name} spotted you!`);
+      this.startBattle(this.trainerTrigger(spotter));
       return;
     }
     this.setHint('Walk the route. Arrow keys to move.');
+  }
+
+  private trainerTrigger(trainer: RouteTrainer): BattleTrigger {
+    const archetype = getTrainerArchetype(trainer.archetypeId);
+    const band = bandForRoute(DEV_ROUTE_INDEX);
+    const seed = battleSeed(DEV_SEED, DEV_ROUTE_INDEX, `trainer:${trainer.id}:roster`);
+    const roster =
+      archetype !== undefined
+        ? trainerRoster(archetype, band, new Rng(seed), trainer.id)
+        : [{ id: `${trainer.id}:0`, speciesId: 'sentret', level: band.minLevel }];
+    return {
+      kind: 'trainer',
+      trainerId: trainer.id,
+      trainerName: archetype?.name ?? 'Trainer',
+      roster,
+    };
+  }
+
+  /** Pauses the route and rolls the battle on top of it (Phase 5 transition). */
+  private startBattle(trigger: BattleTrigger): void {
+    if (this.gameOver || this.pendingBattle) return;
+    this.battleCounter += 1;
+    const key = trigger.kind === 'wild' ? `${trigger.key}:${this.battleCounter}` : `trainer:${trigger.trainerId}`;
+    const launch: BattleLaunch = {
+      trigger,
+      player: this.party,
+      bag: this.bag,
+      seed: battleSeed(DEV_SEED, DEV_ROUTE_INDEX, key),
+      canCapture: !this.captureUsed,
+    };
+    this.pendingBattle = launch;
+    this.scene.pause();
+    this.scene.launch('Battle', launch);
+  }
+
+  /** Called by `BattleScene` before it stops: adopts the party/bag and marks the win. */
+  applyBattleResult(result: BattleReturn): void {
+    const trigger = this.pendingBattle?.trigger;
+    this.pendingBattle = null;
+    this.bag = result.bag;
+
+    // Permadeath: a Pokémon at 0 HP leaves the party for good (battle-spec §5).
+    const survivors = result.player.filter((fighter) => fighter.hp > 0);
+    const captured = result.captured ? [result.captured] : [];
+    this.party = [...survivors, ...captured];
+    if (result.outcome === 'capture') this.captureUsed = true;
+    if (trigger?.kind === 'trainer' && result.outcome === 'win') this.defeated.add(trigger.trainerId);
+
+    if (this.party.length === 0) {
+      this.gameOver = true;
+      this.setHint('Your last Pokémon fainted. The run is over. Reload to start again.');
+      return;
+    }
+    this.setHint(result.message);
   }
 
   private collectItemAt(tile: Tile): boolean {
@@ -261,12 +354,14 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private setHint(text: string): void {
+    const dev = IS_DEVELOP ? '  |  B: battle (dev)' : '';
     this.hint.setText(
-      `${text}\nArrows: move  |  R: swap tileset  |  B: battle (dev)  |  trainers: ${this.route.trainers.length}`,
+      `${text}\nArrows: move  |  R: swap tileset${dev}  |  trainers: ${this.route.trainers.length}`,
     );
   }
 
   override update(): void {
+    if (this.gameOver || this.pendingBattle) return;
     const step: Tile = { x: 0, y: 0 };
     if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) step.x = -1;
     else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) step.x = 1;

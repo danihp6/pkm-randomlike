@@ -64,8 +64,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 - [ ] `src/scenes/BattleScene.ts`: the XP bar (progression lands in Phase 6); the
       HP bars, status icons and message box shipped.
 - [ ] Faint, switch, capture and level-up animations; move FX from `moves.png`.
-- [ ] Entry transitions: route → battle on trainer sight or a grass encounter,
-      battle → route on win/run.
 - [ ] Permadeath feedback: the "was released" beat for a fallen Pokémon, and the
       run-over screen when the last one falls.
 

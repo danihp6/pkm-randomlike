@@ -401,3 +401,15 @@ file is the human-readable summary.
       pass; `npm run build` clean.
 - [x] `BattleScene`: the move list now shows each move's type, and RUN asks for a
       YES/NO confirmation before fleeing. 398 tests pass; `npm run build` clean.
+- [x] Entry transitions: route → battle on trainer sight or a grass encounter and
+      battle → route on win, loss, flee or catch. `battle.snapshotFighter` /
+      `restoreFighter` carry the party's HP, PP and status across the scene
+      (`src/engine/battle/fighter.ts`); `src/engine/run/` adds the `BattleLaunch` /
+      `BattleReturn` contract plus `battleSeed` and a baseline `trainerRoster`
+      (band party size, themed pool, seeded levels; Phase 6 still layers held
+      items on top). `RouteScene` owns the demo party and bag, pauses itself and
+      launches `BattleScene` on top, and adopts the result: fainted Pokémon are
+      dropped (permadeath), a catch joins the party and spends the route's single
+      capture, a beaten trainer stays beaten, and an empty party ends the run.
+      The dev `B` key is now gated by `IS_DEVELOP`. 405 tests pass; `npm run build`
+      clean.

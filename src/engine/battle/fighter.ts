@@ -413,3 +413,69 @@ export function resetBattleState(fighter: BattleFighter): void {
   fighter.lastItemId = null;
   clearVolatiles(fighter);
 }
+
+/**
+ * The run-persistent shape of a fighter: everything that survives a battle.
+ * Volatiles, boosts and stat stages are battle-only and deliberately dropped,
+ * so this is also the shape a save (Phase 7) and the run party (Phase 6) store.
+ */
+export type FighterSnapshot = Readonly<{
+  id: string;
+  speciesId: string;
+  level: number;
+  nature: string;
+  ability: string;
+  gender: Gender;
+  heldItem: string | null;
+  ivs: Stats;
+  evs: Stats;
+  moves: readonly MoveSlot[];
+  hp: number;
+  status: StatusId | null;
+  statusCounter: number;
+}>;
+
+export function snapshotFighter(fighter: BattleFighter): FighterSnapshot {
+  return {
+    id: fighter.id,
+    speciesId: fighter.speciesId,
+    level: fighter.level,
+    nature: fighter.nature,
+    ability: fighter.ability,
+    gender: fighter.gender,
+    heldItem: fighter.heldItem,
+    ivs: { ...fighter.ivs },
+    evs: { ...fighter.evs },
+    moves: fighter.moves.map((slot) => ({ ...slot })),
+    hp: fighter.hp,
+    status: fighter.status,
+    statusCounter: fighter.statusCounter,
+  };
+}
+
+/**
+ * Rebuilds a fighter from its snapshot: stats come back from species + level +
+ * nature + IVs/EVs, then HP, PP and status are reapplied, so a Pokémon enters
+ * the next battle exactly as it left the last one.
+ */
+export function restoreFighter(snapshot: FighterSnapshot): BattleFighter {
+  const base: FighterInput = {
+    id: snapshot.id,
+    speciesId: snapshot.speciesId,
+    level: snapshot.level,
+    nature: snapshot.nature,
+    ability: snapshot.ability,
+    gender: snapshot.gender,
+    ivs: snapshot.ivs,
+    evs: snapshot.evs,
+    moves: snapshot.moves.map((slot) => slot.moveId),
+  };
+  const fighter = createFighter(snapshot.heldItem ? { ...base, heldItem: snapshot.heldItem } : base);
+
+  const known = new Set(fighter.moves.map((slot) => slot.moveId));
+  fighter.moves = snapshot.moves.filter((slot) => known.has(slot.moveId)).map((slot) => ({ ...slot }));
+  fighter.hp = Math.max(0, Math.min(fighter.maxHp, snapshot.hp));
+  fighter.status = snapshot.status;
+  fighter.statusCounter = snapshot.statusCounter;
+  return fighter;
+}
