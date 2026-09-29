@@ -205,3 +205,9 @@ file is the human-readable summary.
       Shield) and Moxie. `onModifyDamage` now carries effectiveness so Filter-style
       abilities can read a super-effective hit; the coverage table is at 95 ports
       (56 abilities). 222 tests pass; `npm run build` clean.
+- [x] `src/engine/battle/effects/moves.ts`: the Protect family (Protect, Detect,
+      Spiky Shield, Baneful Bunker, Burning Bulwark, Silk Trap) with a protection
+      volatile, diminishing consecutive-use odds and the contact punishments
+      (damage/status/stat drop), plus Recycle (restores the last held item, which
+      `effects/items.ts` now records). Fighters gained `volatiles.protect` /
+      `protectStreak` and a `lastItemId`. 229 tests pass; `npm run build` clean.

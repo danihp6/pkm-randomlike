@@ -40,7 +40,7 @@ Phaser scene only renders state and forwards choices.
 
 Primary status: burn, poison, badly poisoned, paralysis, sleep, freeze.
 Volatiles: confusion, flinch, Leech Seed, Substitute, trapped, Taunt, Encore,
-perish count, stat stages (−6..+6). Effects live in `src/engine/battle/effects/`
+perish count, protection (Protect and friends), stat stages (−6..+6). Effects live in `src/engine/battle/effects/`
 and follow Showdown's semantics, ported category by category (see
 `docs/showdown-reuse.md` for the coverage table).
 

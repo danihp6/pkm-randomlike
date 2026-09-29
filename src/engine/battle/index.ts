@@ -16,3 +16,4 @@ export * from './effects/items';
 export * from './effects/abilities';
 export * from './effects/weather';
 export * from './effects/terrain';
+export * from './effects/moves';

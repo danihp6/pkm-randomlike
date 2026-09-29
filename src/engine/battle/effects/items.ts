@@ -29,6 +29,7 @@ function belowThreshold(item: ItemDef, fighter: BattleFighter): boolean {
 
 function consume(ctx: EffectContext, item: ItemDef): void {
   ctx.owner.heldItem = null;
+  ctx.owner.lastItemId = item.id;
   pushText(ctx.state, `${ctx.owner.name} used up its ${item.name}!`);
 }
 
