@@ -12,6 +12,8 @@ export type EffectContext = Readonly<{
   target: BattleFighter | null;
   move: Move | null;
   rng: Rng;
+  /** The fighter the running effect is attached to (ability or held item). */
+  owner: BattleFighter;
 }>;
 
 export type MovePayload = Readonly<{ move: Move }>;
@@ -84,19 +86,28 @@ export function makeContext(state: BattleState, side: SideId, options: ContextOp
     target: options.target ?? null,
     move: options.move ?? null,
     rng: state.rng,
+    owner: options.source,
   };
 }
 
-function ownedEffects(fighter: BattleFighter | null): readonly EffectDefinition[] {
+type EffectRef = Readonly<{ effect: EffectDefinition; owner: BattleFighter }>;
+
+function ownedEffects(fighter: BattleFighter | null): readonly EffectRef[] {
   if (!fighter) return [];
+  const refs: EffectRef[] = [];
   const ability = getEffect(fighter.ability);
-  return ability ? [ability] : [];
+  if (ability) refs.push({ effect: ability, owner: fighter });
+  if (fighter.heldItem) {
+    const item = getEffect(fighter.heldItem);
+    if (item) refs.push({ effect: item, owner: fighter });
+  }
+  return refs;
 }
 
-function moveEffect(move: Move | null): readonly EffectDefinition[] {
+function moveEffect(move: Move | null, owner: BattleFighter): readonly EffectRef[] {
   if (!move) return [];
   const effect = getEffect(move.id);
-  return effect ? [effect] : [];
+  return effect ? [{ effect, owner }] : [];
 }
 
 /** Source first, then the defender's ability, then the move's own handlers. */
@@ -104,61 +115,71 @@ function contextEffects(
   ctx: EffectContext,
   includeTarget: boolean,
   move: Move | null,
-): readonly EffectDefinition[] {
+): readonly EffectRef[] {
   return [
     ...ownedEffects(ctx.source),
     ...(includeTarget ? ownedEffects(ctx.target) : []),
-    ...moveEffect(move),
+    ...moveEffect(move, ctx.source),
   ];
 }
 
+function contextFor(ctx: EffectContext, ref: EffectRef): EffectContext {
+  return ref.owner === ctx.owner ? ctx : { ...ctx, owner: ref.owner };
+}
+
 export function runSwitchIn(ctx: EffectContext): void {
-  for (const effect of contextEffects(ctx, false, null)) effect.handlers.onSwitchIn?.(ctx);
+  for (const ref of contextEffects(ctx, false, null)) {
+    ref.effect.handlers.onSwitchIn?.(contextFor(ctx, ref));
+  }
 }
 
 export function runStart(ctx: EffectContext): void {
-  for (const effect of contextEffects(ctx, false, null)) effect.handlers.onStart?.(ctx);
+  for (const ref of contextEffects(ctx, false, null)) {
+    ref.effect.handlers.onStart?.(contextFor(ctx, ref));
+  }
 }
 
 export function runResidual(ctx: EffectContext): void {
-  for (const effect of contextEffects(ctx, false, null)) effect.handlers.onResidual?.(ctx);
+  for (const ref of contextEffects(ctx, false, null)) {
+    ref.effect.handlers.onResidual?.(contextFor(ctx, ref));
+  }
 }
 
 export function runAfterMove(ctx: EffectContext, move: Move): void {
   const payload: MovePayload = { move };
-  for (const effect of contextEffects(ctx, false, move)) {
-    effect.handlers.onAfterMove?.(ctx, payload);
+  for (const ref of contextEffects(ctx, false, move)) {
+    ref.effect.handlers.onAfterMove?.(contextFor(ctx, ref), payload);
   }
 }
 
 export function runTryHit(ctx: EffectContext, move: Move): boolean {
   const payload: MovePayload = { move };
-  for (const effect of contextEffects(ctx, true, move)) {
-    if (effect.handlers.onTryHit?.(ctx, payload) === false) return false;
+  for (const ref of contextEffects(ctx, true, move)) {
+    if (ref.effect.handlers.onTryHit?.(contextFor(ctx, ref), payload) === false) return false;
   }
   return true;
 }
 
 export function runStatus(ctx: EffectContext, status: string): boolean {
   const payload: StatusPayload = { status };
-  for (const effect of contextEffects(ctx, true, null)) {
-    if (effect.handlers.onStatus?.(ctx, payload) === false) return false;
+  for (const ref of contextEffects(ctx, true, null)) {
+    if (ref.effect.handlers.onStatus?.(contextFor(ctx, ref), payload) === false) return false;
   }
   return true;
 }
 
 export function runBoost(ctx: EffectContext, stat: BoostId, stages: number): boolean {
   const payload: BoostPayload = { stat, stages };
-  for (const effect of contextEffects(ctx, true, null)) {
-    if (effect.handlers.onBoost?.(ctx, payload) === false) return false;
+  for (const ref of contextEffects(ctx, true, null)) {
+    if (ref.effect.handlers.onBoost?.(contextFor(ctx, ref), payload) === false) return false;
   }
   return true;
 }
 
 export function runModifyDamage(ctx: EffectContext, move: Move, damage: number): number {
   let value = damage;
-  for (const effect of contextEffects(ctx, true, move)) {
-    const next = effect.handlers.onModifyDamage?.(ctx, { move, damage: value });
+  for (const ref of contextEffects(ctx, true, move)) {
+    const next = ref.effect.handlers.onModifyDamage?.(contextFor(ctx, ref), { move, damage: value });
     if (typeof next === 'number') value = next;
   }
   return value;
