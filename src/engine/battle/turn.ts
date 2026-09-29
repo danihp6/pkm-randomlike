@@ -9,6 +9,7 @@ import {
   makeContext,
   runAfterMove,
   runModifyCrit,
+  runModifyCritRatio,
   runModifyDamage,
   runModifyMultihit,
   runModifyPriority,
@@ -367,7 +368,14 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
       const crit = runModifyCrit(
         makeContext(state, side, { source: attacker, target, move }),
         move,
-        rollCrit(state.rng, move.critRatio),
+        rollCrit(
+          state.rng,
+          runModifyCritRatio(
+            makeContext(state, side, { source: attacker, target, move }),
+            move,
+            move.critRatio,
+          ),
+        ),
       );
       const result = computeDamage(attacker, target, move, state.rng, {
         weather: state.weather,
@@ -383,6 +391,7 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
         move,
         result.damage,
         result.effectiveness,
+        result.crit,
       );
       const bypassSubstitute = runTrySubstitute(
         makeContext(state, side, { source: attacker, target, move }),
@@ -406,7 +415,7 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
   }
 
   applyMoveEffects(state, side, move, totalDamage, totalDamage > 0);
-  runAfterMove(hitContext, move);
+  runAfterMove(hitContext, move, totalDamage > 0);
 }
 
 function faint(state: BattleState, side: SideId): void {

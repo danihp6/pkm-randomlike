@@ -3,13 +3,19 @@ import { getItem } from '../../../data/items';
 import { applyDamage, applyHeal, isGrounded, stagedStat, type BattleFighter, type BoostId, type StatusId } from '../fighter';
 import { cureStatus, statusName } from '../status';
 import { opponentOf, pushEvent, pushText, type WeatherId } from '../state';
+import { applyFlinch } from '../volatile';
 import { applyBoostEffect, applyStatusEffect, statLabel } from './apply';
+import { setTerrain } from './terrain';
+import { setWeather } from './weather';
 import {
   registerEffects,
+  runTryVolatile,
+  makeContext,
   type DamagePayload,
   type EffectContext,
   type EffectDefinition,
   type EffectHandlers,
+  type MovePayload,
 } from './registry';
 
 function intimidate(): EffectHandlers {
@@ -80,7 +86,7 @@ function contactStatus(ability: string, status: StatusId): EffectHandlers {
     onAfterMove: (ctx, payload) => {
       if (ctx.owner !== ctx.target) return;
       const attacker = ctx.source;
-      if (!payload.move.flags.contact) return;
+      if (!payload.move.flags.contact || !payload.hit) return;
       if (ctx.owner.hp <= 0 || attacker.hp <= 0) return;
       if (ctx.owner.volatiles.substitute > 0) return;
       if (ctx.rng.int(1, 100) > 30) return;
@@ -472,7 +478,7 @@ function contactReaction(apply: (ctx: EffectContext, attacker: BattleFighter) =>
     onAfterMove: (ctx, payload) => {
       if (ctx.owner !== ctx.target) return;
       const attacker = ctx.source;
-      if (!payload.move.flags.contact) return;
+      if (!payload.move.flags.contact || !payload.hit) return;
       if (ctx.owner.hp <= 0 || attacker.hp <= 0) return;
       if (ctx.owner.volatiles.substitute > 0) return;
       apply(ctx, attacker);
@@ -936,6 +942,264 @@ function stakeout(): EffectHandlers {
   };
 }
 
+function damagingMove(payload: MovePayload): boolean {
+  return payload.move.category !== 'Status' && payload.move.basePower > 0;
+}
+
+/** Fires when this fighter is the target of a move that actually connected. */
+function hitReaction(
+  applies: (ctx: EffectContext, payload: MovePayload) => boolean,
+  apply: (ctx: EffectContext) => void,
+): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || ctx.owner.hp <= 0) return;
+      if (!payload.hit) return;
+      if (!applies(ctx, payload)) return;
+      apply(ctx);
+    },
+  };
+}
+
+function selfBoost(
+  ctx: EffectContext,
+  boosts: Partial<Record<BoostId, number>>,
+  message: string,
+): void {
+  applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, boosts, { self: true, message });
+}
+
+function windRider(): EffectHandlers {
+  return {
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || !payload.move.flags.wind) return;
+      pushText(ctx.state, `${ctx.owner.name}'s Wind Rider absorbed the attack!`);
+      selfBoost(ctx, { atk: 1 }, `${ctx.owner.name}'s Wind Rider raised its Attack!`);
+      return false;
+    },
+  };
+}
+
+function stamina(): EffectHandlers {
+  return hitReaction((_ctx, payload) => damagingMove(payload), (ctx) => {
+    selfBoost(ctx, { def: 1 }, `${ctx.owner.name}'s Stamina raised its Defense!`);
+  });
+}
+
+function weakArmor(): EffectHandlers {
+  return hitReaction(
+    (_ctx, payload) => payload.move.category === 'Physical' && payload.move.basePower > 0,
+    (ctx) => {
+      selfBoost(
+        ctx,
+        { def: -1, spe: 2 },
+        `${ctx.owner.name}'s Weak Armor lowered its Defense and raised its Speed!`,
+      );
+    },
+  );
+}
+
+function steamEngine(): EffectHandlers {
+  return hitReaction(
+    (_ctx, payload) =>
+      damagingMove(payload) && (payload.move.type === 'Fire' || payload.move.type === 'Water'),
+    (ctx) => selfBoost(ctx, { spe: 6 }, `${ctx.owner.name}'s Steam Engine raised its Speed!`),
+  );
+}
+
+function waterCompaction(): EffectHandlers {
+  return hitReaction(
+    (_ctx, payload) => damagingMove(payload) && payload.move.type === 'Water',
+    (ctx) => selfBoost(ctx, { def: 2 }, `${ctx.owner.name}'s Water Compaction raised its Defense!`),
+  );
+}
+
+function sniper(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || !payload.crit) return;
+      return scaledDamage(payload.damage, 1.5);
+    },
+  };
+}
+
+function superLuck(): EffectHandlers {
+  return {
+    onModifyCritRatio: (ctx, ratio) => {
+      if (ctx.owner !== ctx.source) return;
+      return ratio + 1;
+    },
+  };
+}
+
+function merciless(): EffectHandlers {
+  return {
+    onModifyCrit: (ctx) => {
+      if (ctx.owner !== ctx.source || !ctx.target) return;
+      if (ctx.target.status !== 'psn' && ctx.target.status !== 'tox') return;
+      return true;
+    },
+  };
+}
+
+function solarPower(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || payload.move.category !== 'Special') return;
+      if (ctx.state.weather !== 'sun') return;
+      return scaledDamage(payload.damage, 1.5);
+    },
+    onResidual: (ctx) => {
+      if (ctx.owner.hp <= 0 || ctx.state.weather !== 'sun') return;
+      damageHolder(ctx, 8);
+      pushText(ctx.state, `${ctx.owner.name} is hurt by the harsh sunlight!`);
+    },
+  };
+}
+
+function flareBoost(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (ctx.owner.status !== 'brn' || payload.move.category !== 'Special') return;
+      return scaledDamage(payload.damage, 1.5);
+    },
+  };
+}
+
+function toxicBoost(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (ctx.owner.status !== 'psn' && ctx.owner.status !== 'tox') return;
+      if (payload.move.category !== 'Physical') return;
+      return scaledDamage(payload.damage, 1.5);
+    },
+  };
+}
+
+const GOOD_AS_GOLD_TARGETS: readonly string[] = [
+  'normal',
+  'any',
+  'allAdjacent',
+  'allAdjacentFoes',
+  'adjacentFoe',
+  'randomNormal',
+];
+
+function goodAsGold(): EffectHandlers {
+  return {
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || payload.move.category !== 'Status') return;
+      if (!GOOD_AS_GOLD_TARGETS.includes(payload.move.target)) return;
+      pushText(ctx.state, `${ctx.owner.name}'s Good as Gold blocked the move!`);
+      return false;
+    },
+  };
+}
+
+function purifyingSalt(): EffectHandlers {
+  return {
+    onStatus: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      pushText(ctx.state, `${ctx.owner.name}'s Purifying Salt prevents status conditions!`);
+      return false;
+    },
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || payload.move.type !== 'Ghost') return;
+      return scaledDamage(payload.damage, 0.5);
+    },
+  };
+}
+
+function comatose(): EffectHandlers {
+  return {
+    onStatus: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      pushText(
+        ctx.state,
+        `${ctx.owner.name}'s Comatose prevents it from being afflicted with a status condition!`,
+      );
+      return false;
+    },
+  };
+}
+
+function noGuard(): EffectHandlers {
+  return {
+    onModifyAccuracy: (ctx, chance) => {
+      if (ctx.owner !== ctx.source && ctx.owner !== ctx.target) return chance;
+      return 1;
+    },
+  };
+}
+
+function surgeSurfer(): EffectHandlers {
+  return {
+    onModifySpe: (ctx, speed) => {
+      if (ctx.owner !== ctx.source || ctx.state.terrain !== 'electric') return;
+      return Math.max(1, Math.floor(speed * 2));
+    },
+  };
+}
+
+function tangledFeet(): EffectHandlers {
+  return accuracyModifier(
+    0.5,
+    (ctx) => ctx.owner === ctx.target && ctx.owner.volatiles.confusion > 0,
+  );
+}
+
+function toxicChain(): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || !ctx.target) return;
+      if (!payload.hit || !damagingMove(payload)) return;
+      if (ctx.owner.hp <= 0 || ctx.target.hp <= 0) return;
+      if (ctx.rng.int(1, 100) > 30) return;
+      applyStatusEffect(
+        ctx.state,
+        opponentOf(ctx.side),
+        ctx.target,
+        'psn',
+        `${ctx.target.name} was poisoned by Toxic Chain!`,
+      );
+    },
+  };
+}
+
+function stench(): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || !ctx.target) return;
+      if (!payload.hit || !damagingMove(payload)) return;
+      if (ctx.owner.hp <= 0 || ctx.target.hp <= 0) return;
+      if (ctx.rng.int(1, 100) > 10) return;
+      const target = ctx.target;
+      const targetCtx = makeContext(ctx.state, opponentOf(ctx.side), {
+        source: target,
+        target: ctx.owner,
+      });
+      if (!runTryVolatile(targetCtx, 'flinch')) return;
+      applyFlinch(target);
+    },
+  };
+}
+
+function sandSpit(): EffectHandlers {
+  return hitReaction((_ctx, payload) => damagingMove(payload), (ctx) => {
+    if (ctx.state.weather === 'sand') return;
+    setWeather(ctx.state, 'sand');
+  });
+}
+
+function seedSower(): EffectHandlers {
+  return hitReaction((_ctx, payload) => damagingMove(payload), (ctx) => {
+    if (ctx.state.terrain === 'grassy') return;
+    setTerrain(ctx.state, 'grassy');
+  });
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -1069,6 +1333,39 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['runaway', runAway()],
   ['analytic', analytic()],
   ['stakeout', stakeout()],
+
+  ['wellbakedbody', typeImmunity('Well-Baked Body', 'Fire', { boost: { def: 2 } })],
+  ['windrider', windRider()],
+  ['watercompaction', waterCompaction()],
+  ['stamina', stamina()],
+  ['weakarmor', weakArmor()],
+  ['steamengine', steamEngine()],
+
+  ['dragonsmaw', outgoingMultiplier(1.5, (payload) => payload.move.type === 'Dragon')],
+  ['transistor', outgoingMultiplier(1.3, (payload) => payload.move.type === 'Electric')],
+  ['rockypayload', outgoingMultiplier(1.5, (payload) => payload.move.type === 'Rock')],
+  ['megalauncher', outgoingMultiplier(1.5, (payload) => Boolean(payload.move.flags.pulse))],
+  ['sniper', sniper()],
+
+  ['superluck', superLuck()],
+  ['merciless', merciless()],
+  ['solarpower', solarPower()],
+  ['flareboost', flareBoost()],
+  ['toxicboost', toxicBoost()],
+
+  ['goodasgold', goodAsGold()],
+  ['purifyingsalt', purifyingSalt()],
+  ['comatose', comatose()],
+
+  ['noguard', noGuard()],
+  ['slushrush', weatherSpeed('snow', 2)],
+  ['surgesurfer', surgeSurfer()],
+  ['tangledfeet', tangledFeet()],
+
+  ['toxicchain', toxicChain()],
+  ['stench', stench()],
+  ['sandspit', sandSpit()],
+  ['seedsower', seedSower()],
 ];
 
 export function abilityEffects(): readonly EffectDefinition[] {

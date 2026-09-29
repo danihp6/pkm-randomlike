@@ -20,7 +20,7 @@ The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — 310 total (123 port, 128 no-op, 59 excluded)
+## Abilities — 310 total (150 port, 101 no-op, 59 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -55,7 +55,7 @@ catalogue row, not engine code.
 | Clear Body | `port` | ported in `effects/abilities.ts` |
 | Cloud Nine | `no-op` | reachable, not ported yet |
 | Color Change | `excluded` | no playable species has it |
-| Comatose | `no-op` | reachable, not ported yet |
+| Comatose | `port` | ported in `effects/abilities.ts` |
 | Commander | `excluded` | doubles/ally only |
 | Competitive | `port` | ported in `effects/abilities.ts` |
 | Compound Eyes | `port` | ported in `effects/abilities.ts` |
@@ -78,7 +78,7 @@ catalogue row, not engine code.
 | Desolate Land | `excluded` | no playable species has it |
 | Disguise | `port` | ported in `effects/abilities.ts` |
 | Download | `port` | ported in `effects/abilities.ts` |
-| Dragon's Maw | `no-op` | reachable, not ported yet |
+| Dragon's Maw | `port` | ported in `effects/abilities.ts` |
 | Drizzle | `port` | ported in `effects/abilities.ts` |
 | Drought | `port` | ported in `effects/abilities.ts` |
 | Dry Skin | `port` | ported in `effects/abilities.ts` |
@@ -95,7 +95,7 @@ catalogue row, not engine code.
 | Fairy Aura | `excluded` | no playable species has it |
 | Filter | `port` | ported in `effects/abilities.ts` |
 | Flame Body | `port` | ported in `effects/abilities.ts` |
-| Flare Boost | `no-op` | reachable, not ported yet |
+| Flare Boost | `port` | ported in `effects/abilities.ts` |
 | Flash Fire | `port` | ported in `effects/abilities.ts` |
 | Flower Gift | `excluded` | no playable species has it |
 | Flower Veil | `no-op` | reachable, not ported yet |
@@ -109,7 +109,7 @@ catalogue row, not engine code.
 | Gale Wings | `port` | ported in `effects/abilities.ts` |
 | Galvanize | `no-op` | reachable, not ported yet |
 | Gluttony | `no-op` | reachable, not ported yet |
-| Good as Gold | `no-op` | reachable, not ported yet |
+| Good as Gold | `port` | ported in `effects/abilities.ts` |
 | Gooey | `port` | ported in `effects/abilities.ts` |
 | Gorilla Tactics | `excluded` | no playable species has it |
 | Grass Pelt | `port` | ported in `effects/abilities.ts` |
@@ -164,8 +164,8 @@ catalogue row, not engine code.
 | Magma Armor | `port` | ported in `effects/abilities.ts` |
 | Magnet Pull | `no-op` | reachable, not ported yet |
 | Marvel Scale | `port` | ported in `effects/abilities.ts` |
-| Mega Launcher | `no-op` | reachable, not ported yet |
-| Merciless | `no-op` | reachable, not ported yet |
+| Mega Launcher | `port` | ported in `effects/abilities.ts` |
+| Merciless | `port` | ported in `effects/abilities.ts` |
 | Mimicry | `excluded` | no playable species has it |
 | Mind's Eye | `no-op` | reachable, not ported yet |
 | Minus | `excluded` | doubles/ally only |
@@ -182,7 +182,7 @@ catalogue row, not engine code.
 | Natural Cure | `port` | ported in `effects/abilities.ts` |
 | Neuroforce | `excluded` | no playable species has it |
 | Neutralizing Gas | `no-op` | reachable, not ported yet |
-| No Guard | `no-op` | reachable, not ported yet |
+| No Guard | `port` | ported in `effects/abilities.ts` |
 | Normalize | `excluded` | no playable species has it |
 | Oblivious | `port` | ported in `effects/abilities.ts` |
 | Opportunist | `no-op` | reachable, not ported yet |
@@ -214,7 +214,7 @@ catalogue row, not engine code.
 | Psychic Surge | `port` | ported in `effects/abilities.ts` |
 | Punk Rock | `port` | ported in `effects/abilities.ts` |
 | Pure Power | `port` | ported in `effects/abilities.ts` |
-| Purifying Salt | `no-op` | reachable, not ported yet |
+| Purifying Salt | `port` | ported in `effects/abilities.ts` |
 | Quark Drive | `no-op` | reachable, not ported yet |
 | Queenly Majesty | `no-op` | reachable, not ported yet |
 | Quick Draw | `no-op` | reachable, not ported yet |
@@ -229,19 +229,19 @@ catalogue row, not engine code.
 | Rivalry | `no-op` | reachable, not ported yet |
 | RKS System | `excluded` | no playable species has it |
 | Rock Head | `port` | ported in `effects/abilities.ts` |
-| Rocky Payload | `no-op` | reachable, not ported yet |
+| Rocky Payload | `port` | ported in `effects/abilities.ts` |
 | Rough Skin | `port` | ported in `effects/abilities.ts` |
 | Run Away | `port` | ported in `effects/abilities.ts` |
 | Sand Force | `port` | ported in `effects/abilities.ts` |
 | Sand Rush | `port` | ported in `effects/abilities.ts` |
-| Sand Spit | `no-op` | reachable, not ported yet |
+| Sand Spit | `port` | ported in `effects/abilities.ts` |
 | Sand Stream | `port` | ported in `effects/abilities.ts` |
 | Sand Veil | `port` | ported in `effects/abilities.ts` |
 | Sap Sipper | `port` | ported in `effects/abilities.ts` |
 | Schooling | `excluded` | no playable species has it |
 | Scrappy | `no-op` | reachable, not ported yet |
 | Screen Cleaner | `excluded` | no playable species has it |
-| Seed Sower | `no-op` | reachable, not ported yet |
+| Seed Sower | `port` | ported in `effects/abilities.ts` |
 | Serene Grace | `no-op` | reachable, not ported yet |
 | Shadow Shield | `port` | ported in `effects/abilities.ts` |
 | Shadow Tag | `no-op` | reachable, not ported yet |
@@ -254,11 +254,11 @@ catalogue row, not engine code.
 | Simple | `port` | ported in `effects/abilities.ts` |
 | Skill Link | `port` | ported in `effects/abilities.ts` |
 | Slow Start | `no-op` | reachable, not ported yet |
-| Slush Rush | `no-op` | reachable, not ported yet |
-| Sniper | `no-op` | reachable, not ported yet |
+| Slush Rush | `port` | ported in `effects/abilities.ts` |
+| Sniper | `port` | ported in `effects/abilities.ts` |
 | Snow Cloak | `port` | ported in `effects/abilities.ts` |
 | Snow Warning | `port` | ported in `effects/abilities.ts` |
-| Solar Power | `no-op` | reachable, not ported yet |
+| Solar Power | `port` | ported in `effects/abilities.ts` |
 | Solid Rock | `port` | ported in `effects/abilities.ts` |
 | Soul-Heart | `no-op` | reachable, not ported yet |
 | Soundproof | `port` | ported in `effects/abilities.ts` |
@@ -266,23 +266,23 @@ catalogue row, not engine code.
 | Stakeout | `port` | ported in `effects/abilities.ts` |
 | Stall | `no-op` | reachable, not ported yet |
 | Stalwart | `no-op` | reachable, not ported yet |
-| Stamina | `no-op` | reachable, not ported yet |
+| Stamina | `port` | ported in `effects/abilities.ts` |
 | Stance Change | `excluded` | no playable species has it |
 | Static | `port` | ported in `effects/abilities.ts` |
 | Steadfast | `port` | ported in `effects/abilities.ts` |
-| Steam Engine | `no-op` | reachable, not ported yet |
+| Steam Engine | `port` | ported in `effects/abilities.ts` |
 | Steelworker | `excluded` | no playable species has it |
 | Steely Spirit | `no-op` | reachable, not ported yet |
-| Stench | `no-op` | reachable, not ported yet |
+| Stench | `port` | ported in `effects/abilities.ts` |
 | Sticky Hold | `no-op` | reachable, not ported yet |
 | Storm Drain | `port` | ported in `effects/abilities.ts` |
 | Strong Jaw | `port` | ported in `effects/abilities.ts` |
 | Sturdy | `port` | ported in `effects/abilities.ts` |
 | Suction Cups | `no-op` | reachable, not ported yet |
-| Super Luck | `no-op` | reachable, not ported yet |
+| Super Luck | `port` | ported in `effects/abilities.ts` |
 | Supersweet Syrup | `no-op` | reachable, not ported yet |
 | Supreme Overlord | `no-op` | reachable, not ported yet |
-| Surge Surfer | `no-op` | reachable, not ported yet |
+| Surge Surfer | `port` | ported in `effects/abilities.ts` |
 | Swarm | `port` | ported in `effects/abilities.ts` |
 | Sweet Veil | `port` | ported in `effects/abilities.ts` |
 | Swift Swim | `port` | ported in `effects/abilities.ts` |
@@ -290,7 +290,7 @@ catalogue row, not engine code.
 | Symbiosis | `excluded` | doubles/ally only |
 | Synchronize | `port` | ported in `effects/abilities.ts` |
 | Tablets of Ruin | `no-op` | reachable, not ported yet |
-| Tangled Feet | `no-op` | reachable, not ported yet |
+| Tangled Feet | `port` | ported in `effects/abilities.ts` |
 | Tangling Hair | `no-op` | reachable, not ported yet |
 | Technician | `port` | ported in `effects/abilities.ts` |
 | Telepathy | `excluded` | doubles/ally only |
@@ -303,11 +303,11 @@ catalogue row, not engine code.
 | Tinted Lens | `port` | ported in `effects/abilities.ts` |
 | Torrent | `port` | ported in `effects/abilities.ts` |
 | Tough Claws | `port` | ported in `effects/abilities.ts` |
-| Toxic Boost | `no-op` | reachable, not ported yet |
-| Toxic Chain | `no-op` | reachable, not ported yet |
+| Toxic Boost | `port` | ported in `effects/abilities.ts` |
+| Toxic Chain | `port` | ported in `effects/abilities.ts` |
 | Toxic Debris | `no-op` | reachable, not ported yet |
 | Trace | `no-op` | reachable, not ported yet |
-| Transistor | `no-op` | reachable, not ported yet |
+| Transistor | `port` | ported in `effects/abilities.ts` |
 | Triage | `no-op` | reachable, not ported yet |
 | Truant | `no-op` | reachable, not ported yet |
 | Turboblaze | `no-op` | reachable, not ported yet |
@@ -322,14 +322,14 @@ catalogue row, not engine code.
 | Wandering Spirit | `excluded` | no playable species has it |
 | Water Absorb | `port` | ported in `effects/abilities.ts` |
 | Water Bubble | `port` | ported in `effects/abilities.ts` |
-| Water Compaction | `no-op` | reachable, not ported yet |
+| Water Compaction | `port` | ported in `effects/abilities.ts` |
 | Water Veil | `port` | ported in `effects/abilities.ts` |
-| Weak Armor | `no-op` | reachable, not ported yet |
-| Well-Baked Body | `no-op` | reachable, not ported yet |
+| Weak Armor | `port` | ported in `effects/abilities.ts` |
+| Well-Baked Body | `port` | ported in `effects/abilities.ts` |
 | White Smoke | `port` | ported in `effects/abilities.ts` |
 | Wimp Out | `excluded` | no playable species has it |
 | Wind Power | `no-op` | reachable, not ported yet |
-| Wind Rider | `no-op` | reachable, not ported yet |
+| Wind Rider | `port` | ported in `effects/abilities.ts` |
 | Wonder Guard | `excluded` | no playable species has it |
 | Wonder Skin | `no-op` | reachable, not ported yet |
 | Zen Mode | `excluded` | no playable species has it |

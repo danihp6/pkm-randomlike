@@ -246,3 +246,15 @@ file is the human-readable summary.
       moved or switched this turn for Analytic/Stakeout, and fighters gained
       `volatiles.disguise`. 282 tests pass; coverage at 162 ports; `npm run build`
       clean.
+- [x] `src/engine/battle/effects/abilities.ts`: batch 6, 27 more abilities — the
+      type absorbers (Well-Baked Body, Wind Rider), the on-hit reactions (Stamina,
+      Weak Armor, Steam Engine, Water Compaction), the offensive boosts (Dragon's
+      Maw, Transistor, Rocky Payload, Mega Launcher), the crit group (Sniper,
+      Super Luck, Merciless), the status-powered boosts (Solar Power, Flare Boost,
+      Toxic Boost), the status/move blocks (Good as Gold, Purifying Salt,
+      Comatose), No Guard, the Speed group (Slush Rush, Surge Surfer, Tangled
+      Feet) and the on-hit punishers (Toxic Chain, Stench, Sand Spit, Seed Sower).
+      New hook `onModifyCritRatio`; the damage payload carries `crit` for Sniper
+      and the after-move payload carries `hit` so an immune or status move cannot
+      trigger contact/on-hit abilities. Coverage at 189 ports (150 abilities);
+      302 tests pass; `npm run build` clean.
