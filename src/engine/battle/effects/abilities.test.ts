@@ -1451,3 +1451,107 @@ describe('charge, faint and order abilities (batch 9)', () => {
     expect(runFractionalPriority(ctxOf(state, 'player'))).toBe(-1);
   });
 });
+
+describe('ability suppression and auras (batch 10)', () => {
+  function hpLost(state: BattleState): number {
+    const foe = activeFighter(state, 'enemy');
+    const before = foe.hp;
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    return before - foe.hp;
+  }
+
+  it('Mold Breaker, Teravolt and Turboblaze pierce the foe ability', () => {
+    for (const [species, ability] of [
+      ['cranidos', 'Mold Breaker'],
+      ['zekrom', 'Teravolt'],
+      ['reshiram', 'Turboblaze'],
+    ] as const) {
+      const state = makeBattle(fighter('player', species, ability), fighter('enemy', 'gastly', 'Levitate'));
+      state.abilityPierce = activeFighter(state, 'player');
+      expect(runTryHit(ctxOf(state, 'player'), getMove('earthquake')!)).toBe(true);
+      state.abilityPierce = null;
+      expect(runTryHit(ctxOf(state, 'player'), getMove('earthquake')!)).toBe(false);
+    }
+  });
+
+  it('Mold Breaker lets a Ground move hurt a Levitate foe, then stops piercing', () => {
+    const state = makeBattle(
+      fighter('player', 'cranidos', 'Mold Breaker', ['earthquake']),
+      fighter('enemy', 'gastly', 'Levitate', ['growl']),
+    );
+    expect(hpLost(state)).toBeGreaterThan(0);
+    expect(state.abilityPierce).toBeNull();
+
+    const control = makeBattle(
+      fighter('player', 'charmander', 'Blaze', ['earthquake']),
+      fighter('enemy', 'gastly', 'Levitate', ['growl']),
+    );
+    expect(hpLost(control)).toBe(0);
+  });
+
+  it('Neutralizing Gas suppresses the opposing ability', () => {
+    const state = makeBattle(fighter('player', 'gastly', 'Levitate'), fighter('enemy', 'koffing', 'Neutralizing Gas'));
+    expect(runTryHit(ctxOf(state, 'enemy'), getMove('earthquake')!)).toBe(true);
+
+    const control = makeBattle(fighter('player', 'gastly', 'Levitate'), fighter('enemy', 'koffing', 'Stench'));
+    expect(runTryHit(ctxOf(control, 'enemy'), getMove('earthquake')!)).toBe(false);
+  });
+
+  it('Mycelium Might sends status moves last and pierces the foe ability', () => {
+    const state = makeBattle(fighter('player', 'toedscruel', 'Mycelium Might'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runFractionalPriority(moveCtxOf(state, 'player', 'spore'))).toBe(-1);
+    expect(runFractionalPriority(moveCtxOf(state, 'player', 'tackle'))).toBe(0);
+
+    const sleep = makeBattle(
+      fighter('player', 'toedscruel', 'Mycelium Might', ['spore']),
+      fighter('enemy', 'bounsweet', 'Sweet Veil', ['growl']),
+    );
+    takeTurn(sleep, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(sleep, 'enemy').status).toBe('slp');
+
+    const blocked = makeBattle(
+      fighter('player', 'charmander', 'Blaze', ['spore']),
+      fighter('enemy', 'bounsweet', 'Sweet Veil', ['growl']),
+    );
+    takeTurn(blocked, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(blocked, 'enemy').status).toBeNull();
+  });
+
+  it('Unaware ignores the foe stat stages on offense and defense', () => {
+    const defended = makeBattle(fighter('player', 'charmander', 'Blaze', ['tackle']), fighter('enemy', 'clefable', 'Unaware', ['growl']), 42);
+    const defendedOff = makeBattle(fighter('player', 'charmander', 'Blaze', ['tackle']), fighter('enemy', 'clefable', 'Unaware', ['growl']), 42);
+    activeFighter(defended, 'player').boosts.atk = 6;
+    activeFighter(defendedOff, 'player').boosts.atk = 6;
+    activeFighter(defendedOff, 'enemy').ability = 'Blaze';
+    expect(hpLost(defended)).toBeLessThan(hpLost(defendedOff));
+
+    const attacked = makeBattle(fighter('player', 'clefable', 'Unaware', ['tackle']), fighter('enemy', 'blissey', 'Natural Cure', ['growl']), 42);
+    const attackedOff = makeBattle(fighter('player', 'clefable', 'Unaware', ['tackle']), fighter('enemy', 'blissey', 'Natural Cure', ['growl']), 42);
+    activeFighter(attacked, 'enemy').boosts.def = 6;
+    activeFighter(attackedOff, 'enemy').boosts.def = 6;
+    activeFighter(attackedOff, 'player').ability = 'Blaze';
+    expect(hpLost(attacked)).toBeGreaterThan(hpLost(attackedOff));
+  });
+
+  it('the Ruin auras shift damage through the holder stats', () => {
+    const sword = makeBattle(fighter('player', 'chienpao', 'Sword of Ruin', ['tackle']), fighter('enemy', 'blissey', 'Natural Cure', ['growl']), 42);
+    const swordOff = makeBattle(fighter('player', 'chienpao', 'Sword of Ruin', ['tackle']), fighter('enemy', 'blissey', 'Natural Cure', ['growl']), 42);
+    activeFighter(swordOff, 'player').ability = 'Blaze';
+    expect(hpLost(sword)).toBeGreaterThan(hpLost(swordOff));
+
+    const tablets = makeBattle(fighter('player', 'charmander', 'Blaze', ['tackle']), fighter('enemy', 'wochien', 'Tablets of Ruin', ['growl']), 42);
+    const tabletsOff = makeBattle(fighter('player', 'charmander', 'Blaze', ['tackle']), fighter('enemy', 'wochien', 'Tablets of Ruin', ['growl']), 42);
+    activeFighter(tabletsOff, 'enemy').ability = 'Blaze';
+    expect(hpLost(tablets)).toBeLessThan(hpLost(tabletsOff));
+
+    const beads = makeBattle(fighter('player', 'chiyu', 'Beads of Ruin', ['ember']), fighter('enemy', 'blissey', 'Natural Cure', ['growl']), 42);
+    const beadsOff = makeBattle(fighter('player', 'chiyu', 'Beads of Ruin', ['ember']), fighter('enemy', 'blissey', 'Natural Cure', ['growl']), 42);
+    activeFighter(beadsOff, 'player').ability = 'Blaze';
+    expect(hpLost(beads)).toBeGreaterThan(hpLost(beadsOff));
+
+    const vessel = makeBattle(fighter('player', 'charmander', 'Blaze', ['ember']), fighter('enemy', 'tinglu', 'Vessel of Ruin', ['growl']), 42);
+    const vesselOff = makeBattle(fighter('player', 'charmander', 'Blaze', ['ember']), fighter('enemy', 'tinglu', 'Vessel of Ruin', ['growl']), 42);
+    activeFighter(vesselOff, 'enemy').ability = 'Blaze';
+    expect(hpLost(vessel)).toBeLessThan(hpLost(vesselOff));
+  });
+});

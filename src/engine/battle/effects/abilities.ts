@@ -1678,6 +1678,16 @@ function stall(): EffectHandlers {
   };
 }
 
+/** Mycelium Might forces the holder's status moves last inside their bracket. */
+function myceliumMight(): EffectHandlers {
+  return {
+    onFractionalPriority: (ctx) => {
+      if (ctx.owner !== ctx.source || ctx.move?.category !== 'Status') return;
+      return -1;
+    },
+  };
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -1894,6 +1904,19 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['truant', {}],
   ['protean', {}],
   ['libero', {}],
+
+  // Ability suppression lives in `registry.ts` (abilityActive) and the damage
+  // context: Mold Breaker and friends pierce, Neutralizing Gas switches off.
+  ['moldbreaker', {}],
+  ['teravolt', {}],
+  ['turboblaze', {}],
+  ['neutralizinggas', {}],
+  ['unaware', {}],
+  ['swordofruin', {}],
+  ['tabletsofruin', {}],
+  ['beadsofruin', {}],
+  ['vesselofruin', {}],
+  ['myceliummight', myceliumMight()],
 
   // Passive effects whose behaviour lives at the call site: Guard Dog in
   // Intimidate, Early Bird and Corrosion in status.ts, Liquid Ooze in the turn

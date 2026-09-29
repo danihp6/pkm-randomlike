@@ -70,6 +70,8 @@ export type BattleState = {
   movedSides: SideId[];
   /** Sides that switched a Pokémon in this turn (Stakeout). */
   switchedSides: SideId[];
+  /** The attacker whose move ignores the target's ability (Mold Breaker and friends). */
+  abilityPierce: BattleFighter | null;
 };
 
 export type BattleSetup = Readonly<{
@@ -121,6 +123,7 @@ export function createBattle(setup: BattleSetup): BattleState {
     escapeAttempts: 0,
     movedSides: [],
     switchedSides: [],
+    abilityPierce: null,
   };
 
   for (const side of SIDE_IDS) {

@@ -129,12 +129,36 @@ export function makeContext(state: BattleState, side: SideId, options: ContextOp
 
 type EffectRef = Readonly<{ effect: EffectDefinition; owner: BattleFighter }>;
 
-function ownedEffects(fighter: BattleFighter | null): readonly EffectRef[] {
+function activeAbility(state: BattleState, side: SideId): string {
+  return state.sides[side].party[state.sides[side].activeIndex].ability;
+}
+
+/** Neutralizing Gas suppresses the opposing active Pokémon's ability. */
+function gasSuppresses(state: BattleState, side: SideId): boolean {
+  const foeSide: SideId = side === 'player' ? 'enemy' : 'player';
+  return activeAbility(state, foeSide) === 'Neutralizing Gas';
+}
+
+function abilityActive(state: BattleState, fighter: BattleFighter, side: SideId): boolean {
+  if (fighter.ability === 'Neutralizing Gas') return true;
+  return !gasSuppresses(state, side);
+}
+
+function ownedEffects(
+  fighter: BattleFighter | null,
+  state: BattleState,
+  side: SideId,
+): readonly EffectRef[] {
   if (!fighter) return [];
   const refs: EffectRef[] = [];
+  const active = abilityActive(state, fighter, side);
+  // Mold Breaker ignores every ability except the piercer's own.
+  const pierced = state.abilityPierce !== null && state.abilityPierce !== fighter;
   const ability = getEffect(fighter.ability);
-  if (ability) refs.push({ effect: ability, owner: fighter });
-  else if (fighter.ability) warnUnportedEffect('ability', fighter.ability);
+  if (active && !pierced) {
+    if (ability) refs.push({ effect: ability, owner: fighter });
+    else if (fighter.ability) warnUnportedEffect('ability', fighter.ability);
+  }
   // Klutz suppresses the holder's held item entirely.
   if (fighter.heldItem && fighter.ability !== 'Klutz') {
     const item = getEffect(fighter.heldItem);
@@ -156,9 +180,10 @@ function contextEffects(
   includeTarget: boolean,
   move: Move | null,
 ): readonly EffectRef[] {
+  const foeSide: SideId = ctx.side === 'player' ? 'enemy' : 'player';
   return [
-    ...ownedEffects(ctx.source),
-    ...(includeTarget ? ownedEffects(ctx.target) : []),
+    ...ownedEffects(ctx.source, ctx.state, ctx.side),
+    ...(includeTarget ? ownedEffects(ctx.target, ctx.state, foeSide) : []),
     ...moveEffect(move, ctx.source),
   ];
 }

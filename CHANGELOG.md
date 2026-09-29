@@ -323,3 +323,16 @@ file is the human-readable summary.
       Quick Draw and Stall (a new `onFractionalPriority` tie-break inside the
       priority bracket, honoured by `orderActions`). Coverage at 241 ports (202
       abilities); 364 tests pass; `npm run build` clean.
+- [x] `src/engine/battle/effects/registry.ts` + the turn loop: batch 10, the
+      ability-suppression layer and stat auras — **Mold Breaker**, **Teravolt**
+      and **Turboblaze** pierce the foe's ability for the duration of the move
+      (a `state.abilityPierce` flag set in `useMove` and cleared before the
+      contact reactions, so Static and friends still fire), **Mycelium Might**
+      does the same for status moves and sends them last in the bracket,
+      **Neutralizing Gas** switches off the opposing active's ability everywhere
+      (`abilityActive` in `ownedEffects`), **Unaware** zeroes the attacker's or
+      defender's relevant stages, and the **Ruin quartet** (Sword/Tablets/Beads/
+      Vessel) applies its 0.75x aura to the right stat. The damage context gained
+      `ignoreAttackBoosts`, `ignoreDefenseBoosts`, `attackMultiplier` and
+      `defenseMultiplier`. Coverage at 251 ports (212 abilities); 370 tests pass;
+      `npm run build` clean.
