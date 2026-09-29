@@ -86,7 +86,8 @@ by the game. Regenerate with \`npm run docs:coverage\`.
   \`src/engine/battle/effects/abilities.ts\`; battle items in the Bag
   (\`commands.ts\`) and held items in \`effects/items.ts\`.
 - \`no-op\` — an effect a run can actually meet but that is not implemented yet.
-  A dev build is meant to warn when a battle meets one (tracked in \`TODO.md\`).
+  A develop build (the \`src/dev\` gate) warns once per effect when a battle
+  meets one, so a gap cannot hide during playtests.
 - \`excluded\` — deliberately out of scope: no playable species has it, it only
   works with allies, or it needs a cut mechanic (Mega/Z/Dynamax/Terastal/forme
   change). Excluded effects are never a coverage gap.

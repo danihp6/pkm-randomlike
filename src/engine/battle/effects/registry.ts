@@ -1,4 +1,5 @@
 import type { Move } from '../../../data/dex';
+import { warnUnportedEffect } from '../../../dev/warnings';
 import type { Rng } from '../../rng';
 import type { BattleFighter, BoostId } from '../fighter';
 import type { BattleState, SideId } from '../state';
@@ -97,9 +98,11 @@ function ownedEffects(fighter: BattleFighter | null): readonly EffectRef[] {
   const refs: EffectRef[] = [];
   const ability = getEffect(fighter.ability);
   if (ability) refs.push({ effect: ability, owner: fighter });
+  else if (fighter.ability) warnUnportedEffect('ability', fighter.ability);
   if (fighter.heldItem) {
     const item = getEffect(fighter.heldItem);
     if (item) refs.push({ effect: item, owner: fighter });
+    else warnUnportedEffect('item', fighter.heldItem);
   }
   return refs;
 }
