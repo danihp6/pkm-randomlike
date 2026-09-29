@@ -457,3 +457,14 @@ file is the human-readable summary.
       route 1 (Woods) lands on route 2 (Test Grounds) with the party at full HP/PP,
       the cap and the per-route capture reset. 439 tests pass; `npm run build`
       clean.
+- [x] Starter pick + route HUD: `StarterScene` opens the run (arrow keys choose,
+      Z/Enter confirms) and hands a seeded `RunState` to `RouteScene` via `init`,
+      which now falls back to the dev run only when started directly. New data:
+      `STARTER_POOL`/`STARTING_BAG` (`src/data/run.ts`) and `src/data/portraits.ts`
+      (PMDCollab portrait atlas + `num-1` frame mapping). `BootScene` loads
+      `portraits.png`; the route HUD shows the route/biome header, the party with
+      each member's portrait, level and HP, and the bag. The atlas was re-laid from
+      a 25960px column into a 40-column grid (`scripts/legacy-art/relayout-
+      portraits.mjs`) because it exceeded the WebGL texture limit and rendered
+      black. Verified in the browser: pick Charmander → route 1 with HUD. 445 tests
+      pass; `npm run build` clean.

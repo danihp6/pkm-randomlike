@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { getSpecies } from './dex';
+import { getItem } from './items';
 import {
   LEVEL_BANDS,
   ROUTES_PER_BAND,
   RUN_CHAIN,
+  STARTER_POOL,
+  STARTING_BAG,
   bandForRoute,
   levelCapForRoute,
 } from './run';
@@ -33,5 +37,19 @@ describe('run chain', () => {
   it('has a finite length divisible into cadences', () => {
     expect(RUN_CHAIN.finiteLength).toBeGreaterThan(RUN_CHAIN.bossBlock);
     expect(RUN_CHAIN.bossBlock % RUN_CHAIN.minibossEvery).toBe(0);
+  });
+});
+
+describe('starter pool', () => {
+  it('names species that exist in the dex', () => {
+    expect(STARTER_POOL.length).toBeGreaterThanOrEqual(3);
+    for (const id of STARTER_POOL) expect(getSpecies(id), id).toBeDefined();
+  });
+
+  it('opens the bag with real items', () => {
+    for (const slot of STARTING_BAG) {
+      expect(getItem(slot.itemId), slot.itemId).toBeDefined();
+      expect(slot.count).toBeGreaterThan(0);
+    }
   });
 });
