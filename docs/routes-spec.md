@@ -29,6 +29,15 @@ camera follow), containing:
 Every pass consumes the same `Rng`, so `(seed, routeIndex)` fully determines the
 map.
 
+**Layout style.** The shape a route takes must follow the original
+FireRed/LeafGreen games for its biome and tileset, not a generic roguelike blob:
+a forest reads like Viridian Forest, a cave like Mt. Moon, a beach cave like the
+Seafoam passages. The route's biome/tileset picks the carving style, the props
+and the obstacles, while the map semantics (`WALL`, `TALL_GRASS`...) stay the
+same so any tileset still renders (`docs/tileset-spec.md`). This is the target
+for the cave/dungeon biomes in particular, and it supersedes the donor BSP cave
+as the default look (`D6`).
+
 ## 3. Trainers and line of sight
 
 - A trainer stores a `facing` (N/E/S/W) and a `sight` range.

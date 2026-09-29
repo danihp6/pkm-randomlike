@@ -58,8 +58,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 - [ ] `src/engine/battle/effects/abilities.ts`: batch 2 — the competitive long
       tail, ported straight from Showdown's handler bodies.
-- [ ] `src/engine/battle/effects/weather.ts` + `terrain.ts`: weather and terrain
-      from moves and abilities, with the residual order.
 - [ ] `src/engine/battle/effects/moves.ts`: moves whose handlers are not plain
       damage/status (Protect, Substitute, Recycle, multi-turn, self-destruct...).
 
@@ -125,6 +123,10 @@ Ports of Showdown handlers, in batches, on the hook names in
       sources in `sprite-sources/frlg/` and register the new biomes.
 - [ ] Adapt the remaining biome tileset configs (desert, apple-woods,
       lush-prairie, beach-cave) and palettes into `src/data/tilesets/`.
+- [ ] Route/dungeon generation in the FireRed/LeafGreen style per biome: a
+      forest reads like Viridian Forest, a cave like Mt. Moon. The layout style
+      follows the route's tileset, not a generic roguelike shape
+      (`docs/routes-spec.md` §2, `docs/art-direction.md`).
 - [ ] Tall-grass, ledge and route-prop art.
 - [ ] Battle background per biome.
 - [ ] Audio: route ambience, encounter, hit, faint, level-up, victory.
