@@ -11,7 +11,7 @@ battle, and every Pokémon you lose is lost **forever**.
 - `docs/showdown-reuse.md` — what we take from Showdown and what we extend.
 - `docs/data-spec.md` — content layout and the dex pipeline.
 - `docs/art-direction.md` — art tiers and the licence line.
-- `docs/tech-decisions.md` — `D1`..`D16` and the open questions.
+- `docs/tech-decisions.md` — `D1`..`D18` and the open questions.
 - `TODO.md` — what is open, by phase. `CHANGELOG.md` — what shipped.
 
 ## Run it
@@ -24,15 +24,15 @@ npm run build      # tsc --noEmit && vite build
 npm run data:dex   # regenerate src/data/dex from @pkmn/dex (rarely needed)
 ```
 
-The current build boots a scaffold route: arrow keys step the grid, the camera
-follows, fog of war updates, and `R` swaps the tileset (woods ↔ placeholder) to
-prove the map/art split. `Esc` is not wired yet; the battle scene is a Phase 2
-placeholder.
+The current build generates a route procedurally from a dev seed: arrow keys step
+the grid (ledges jump down one-way), the camera follows, fog of war updates, tall
+grass rolls wild-encounter messages, trainers trigger on their sight line, and
+`R` swaps the tileset. The battle scene is still a placeholder (Phase 3).
 
 ## Status
 
-Phase 0 (scaffold, pure engine foundations, dex pipeline, imported art) is done
-and archived in `CHANGELOG.md`. Next: Phase 1 (`TODO.md`).
+Phases 0-2 (scaffold, dex accessors, route generation & exploration) are done
+and archived in `CHANGELOG.md`. Next: Phase 3, the battle engine core (`TODO.md`).
 
 ## Licence note
 

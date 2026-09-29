@@ -40,11 +40,12 @@ already shipped (read only when asked).
 
 ## Directory layout
 - `src/engine/` – pure logic: `rng.ts`, `grid.ts`, `map.ts`, `fov.ts`,
-  `vision.ts`, `pathfinding.ts`, `tileset.ts`, `tileFrames.ts`, and later
-  `routes/`, `battle/`, `dex/`.
-- `src/data/` – `dex/` (generated), `tilesets/` (registry + palettes), later
-  `biomes.ts`, `encounters.ts`, `trainers.ts`, `items.ts`, `run.ts`. Contract in
-  `src/data/README.md`.
+  `vision.ts`, `pathfinding.ts`, `tileset.ts`, `tileFrames.ts`, `routes/`
+  (`routeMap.ts`, `sketch.ts`, `validate.ts`, `trainers.ts`, `encounters.ts`),
+  and later `battle/`.
+- `src/data/` – `dex/` (generated + typed accessors), `tilesets/` (registry +
+  palettes), `biomes.ts`, `encounters.ts`, `trainers.ts`, `run.ts`, and later
+  `items.ts`. Contract in `src/data/README.md`.
 - `src/scenes/` – `BootScene.ts`, `RouteScene.ts`, `BattleScene.ts` (later:
   `PartyScene`, `BoxScene`, `MenuScene`).
 - `src/render/`, `src/input/`, `src/audio/` – Phaser-side helpers, created as
