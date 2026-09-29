@@ -1,4 +1,6 @@
-import { applyDamage, applyHeal, stagedStat, type BoostId, type StatusId } from '../fighter';
+import { effectiveness, getMove } from '../../../data/dex';
+import { getItem } from '../../../data/items';
+import { applyDamage, applyHeal, isGrounded, stagedStat, type BattleFighter, type BoostId, type StatusId } from '../fighter';
 import { cureStatus, statusName } from '../status';
 import { opponentOf, pushEvent, pushText, type WeatherId } from '../state';
 import { applyBoostEffect, applyStatusEffect, statLabel } from './apply';
@@ -22,6 +24,12 @@ function intimidate(): EffectHandlers {
       applyBoostEffect(ctx.state, opponentOf(ctx.side), foe, { atk: -1 }, {
         message: `${ctx.owner.name}'s Intimidate cut ${foe.name}'s Attack!`,
       });
+      if (foe.ability === 'Rattled') {
+        applyBoostEffect(ctx.state, opponentOf(ctx.side), foe, { spe: 1 }, {
+          self: true,
+          message: `${foe.name}'s Rattled raised its Speed!`,
+        });
+      }
     },
   };
 }
@@ -458,6 +466,283 @@ function volatileImmunity(ability: string, blocked: readonly string[]): EffectHa
   };
 }
 
+/** Contact punish abilities that may deal damage or steal an item. */
+function contactReaction(apply: (ctx: EffectContext, attacker: BattleFighter) => void): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.target) return;
+      const attacker = ctx.source;
+      if (!payload.move.flags.contact) return;
+      if (ctx.owner.hp <= 0 || attacker.hp <= 0) return;
+      if (ctx.owner.volatiles.substitute > 0) return;
+      apply(ctx, attacker);
+    },
+  };
+}
+
+function effectSpore(): EffectHandlers {
+  return contactReaction((ctx, attacker) => {
+    const roll = ctx.rng.int(1, 100);
+    if (roll > 30) return;
+    const status: StatusId = roll <= 11 ? 'slp' : roll <= 21 ? 'par' : 'psn';
+    applyStatusEffect(ctx.state, opponentOf(ctx.side), attacker, status, `${attacker.name} was afflicted by Effect Spore!`);
+  });
+}
+
+function roughSkin(): EffectHandlers {
+  return contactReaction((ctx, attacker) => {
+    const dealt = applyDamage(attacker, Math.max(1, Math.floor(attacker.maxHp / 8)));
+    pushEvent(ctx.state, {
+      kind: 'damage',
+      side: opponentOf(ctx.side),
+      amount: dealt,
+      hp: attacker.hp,
+      maxHp: attacker.maxHp,
+      effectiveness: 1,
+      crit: false,
+    });
+    pushText(ctx.state, `${attacker.name} was hurt by ${ctx.owner.name}'s Rough Skin!`);
+  });
+}
+
+function pickpocket(): EffectHandlers {
+  return contactReaction((ctx, attacker) => {
+    if (ctx.owner.heldItem || !attacker.heldItem) return;
+    const itemId = attacker.heldItem;
+    const itemName = getItem(itemId)?.name ?? itemId;
+    ctx.owner.heldItem = itemId;
+    attacker.heldItem = null;
+    pushText(ctx.state, `${ctx.owner.name} picked up ${attacker.name}'s ${itemName}!`);
+  });
+}
+
+function rattled(): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.target) return;
+      if (ctx.owner.hp <= 0) return;
+      if (!['Bug', 'Dark', 'Ghost'].includes(payload.move.type)) return;
+      applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, { spe: 1 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Rattled raised its Speed!`,
+      });
+    },
+  };
+}
+
+function regenerator(): EffectHandlers {
+  return {
+    onSwitchOut: (ctx) => {
+      if (ctx.owner.hp <= 0) return;
+      const healed = applyHeal(ctx.owner, Math.max(1, Math.floor(ctx.owner.maxHp / 3)));
+      if (healed <= 0) return;
+      pushEvent(ctx.state, { kind: 'heal', side: ctx.side, amount: healed, hp: ctx.owner.hp, maxHp: ctx.owner.maxHp });
+      pushText(ctx.state, `${ctx.owner.name} restored HP with Regenerator!`);
+    },
+  };
+}
+
+function naturalCure(): EffectHandlers {
+  return {
+    onSwitchOut: (ctx) => {
+      if (ctx.owner.hp <= 0) return;
+      const cured = cureStatus(ctx.owner);
+      if (!cured) return;
+      pushEvent(ctx.state, { kind: 'cure', side: ctx.side, status: cured });
+      pushText(ctx.state, `${ctx.owner.name} shed its status with Natural Cure!`);
+    },
+  };
+}
+
+function prankster(): EffectHandlers {
+  return {
+    onModifyPriority: (ctx, priority) => {
+      if (ctx.owner !== ctx.source) return;
+      if (ctx.move?.category !== 'Status') return;
+      return priority + 1;
+    },
+  };
+}
+
+function galeWings(): EffectHandlers {
+  return {
+    onModifyPriority: (ctx, priority) => {
+      if (ctx.owner !== ctx.source) return;
+      if (ctx.move?.type !== 'Flying' || ctx.owner.hp !== ctx.owner.maxHp) return;
+      return priority + 1;
+    },
+  };
+}
+
+function frisk(): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      const foe = ctx.target;
+      if (!foe || !foe.heldItem) return;
+      pushText(ctx.state, `${ctx.owner.name} frisked ${foe.name} and found its ${getItem(foe.heldItem)?.name ?? foe.heldItem}!`);
+    },
+  };
+}
+
+function anticipation(): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      const foe = ctx.target;
+      if (!foe) return;
+      const dangerous = foe.moves.some((slot) => {
+        const move = getMove(slot.moveId);
+        if (!move || move.category === 'Status' || move.basePower <= 0) return false;
+        return effectiveness(move.type, ctx.owner.types) > 1;
+      });
+      if (dangerous) pushText(ctx.state, `${ctx.owner.name} shuddered with Anticipation!`);
+    },
+  };
+}
+
+function download(): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      const foe = ctx.target;
+      if (!foe) return;
+      const raisesAttack = foe.stats.def >= foe.stats.spd;
+      applyBoostEffect(ctx.state, ctx.side, ctx.owner, raisesAttack ? { atk: 1 } : { spa: 1 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Download raised its ${raisesAttack ? 'Attack' : 'Sp. Atk'}!`,
+      });
+    },
+  };
+}
+
+function defiant(): EffectHandlers {
+  return {
+    onBoost: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || payload.self || payload.stages >= 0) return;
+      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { atk: 2 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Defiant raised its Attack!`,
+      });
+    },
+  };
+}
+
+function competitive(): EffectHandlers {
+  return {
+    onBoost: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || payload.self || payload.stages >= 0) return;
+      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { spa: 2 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Competitive raised its Sp. Atk!`,
+      });
+    },
+  };
+}
+
+function grassPelt(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.target) return;
+      if (payload.move.category !== 'Physical') return;
+      if (ctx.state.terrain !== 'grassy' || !isGrounded(ctx.owner)) return;
+      return Math.max(1, Math.floor(payload.damage / 1.5));
+    },
+  };
+}
+
+function poisonHeal(): EffectHandlers {
+  return {
+    onResidual: (ctx) => {
+      const holder = ctx.owner;
+      if (holder.hp <= 0 || holder.hp >= holder.maxHp) return;
+      if (holder.status !== 'psn' && holder.status !== 'tox') return;
+      const healed = applyHeal(holder, Math.max(1, Math.floor(holder.maxHp / 8)));
+      if (healed <= 0) return;
+      pushEvent(ctx.state, { kind: 'heal', side: ctx.side, amount: healed, hp: holder.hp, maxHp: holder.maxHp });
+      pushText(ctx.state, `${holder.name} restored HP with Poison Heal!`);
+    },
+  };
+}
+
+function sweetVeil(): EffectHandlers {
+  return {
+    onStatus: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || payload.status !== 'slp') return;
+      pushText(ctx.state, `${ctx.owner.name}'s Sweet Veil prevents sleep!`);
+      return false;
+    },
+  };
+}
+
+function battleArmor(): EffectHandlers {
+  return {
+    onModifyCrit: (ctx, willCrit) => {
+      if (ctx.owner !== ctx.target || !willCrit) return;
+      return false;
+    },
+  };
+}
+
+function angerPoint(): EffectHandlers {
+  return {
+    onModifyCrit: (ctx, willCrit) => {
+      if (ctx.owner !== ctx.target || !willCrit || ctx.owner.hp <= 0) return;
+      applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, { atk: 12 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Anger Point maxed its Attack!`,
+      });
+    },
+  };
+}
+
+function infiltrator(): EffectHandlers {
+  return {
+    onTrySubstitute: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      return true;
+    },
+  };
+}
+
+function skillLink(): EffectHandlers {
+  return {
+    onModifyMultihit: (ctx, hits) => {
+      if (ctx.owner !== ctx.source) return;
+      const range = ctx.move?.multihit;
+      if (!range || typeof range === 'number') return hits;
+      return range[range.length - 1];
+    },
+  };
+}
+
+function damp(): EffectHandlers {
+  return {
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || !payload.move.selfdestruct) return;
+      pushText(ctx.state, `${ctx.owner.name}'s Damp prevented the explosion!`);
+      return false;
+    },
+  };
+}
+
+function bulletproof(): EffectHandlers {
+  return {
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || !payload.move.flags.bullet) return;
+      pushText(ctx.state, `${ctx.owner.name}'s Bulletproof blocked the move!`);
+      return false;
+    },
+  };
+}
+
+function soundproof(): EffectHandlers {
+  return {
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || !payload.move.flags.sound) return;
+      pushText(ctx.state, `${ctx.owner.name}'s Soundproof blocked the move!`);
+      return false;
+    },
+  };
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -547,6 +832,31 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['innerfocus', volatileImmunity('Inner Focus', ['flinch'])],
   ['oblivious', volatileImmunity('Oblivious', ['taunt'])],
   ['aromaveil', volatileImmunity('Aroma Veil', ['taunt', 'encore'])],
+
+  ['regenerator', regenerator()],
+  ['naturalcure', naturalCure()],
+  ['prankster', prankster()],
+  ['galewings', galeWings()],
+  ['frisk', frisk()],
+  ['anticipation', anticipation()],
+  ['download', download()],
+  ['rattled', rattled()],
+  ['pickpocket', pickpocket()],
+  ['effectspore', effectSpore()],
+  ['roughskin', roughSkin()],
+  ['poisonheal', poisonHeal()],
+  ['sweetveil', sweetVeil()],
+  ['battlearmor', battleArmor()],
+  ['shellarmor', battleArmor()],
+  ['angerpoint', angerPoint()],
+  ['infiltrator', infiltrator()],
+  ['skilllink', skillLink()],
+  ['damp', damp()],
+  ['defiant', defiant()],
+  ['competitive', competitive()],
+  ['grasspelt', grassPelt()],
+  ['bulletproof', bulletproof()],
+  ['soundproof', soundproof()],
 ];
 
 export function abilityEffects(): readonly EffectDefinition[] {

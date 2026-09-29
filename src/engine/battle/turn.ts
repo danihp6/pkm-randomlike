@@ -8,12 +8,17 @@ import {
 import {
   makeContext,
   runAfterMove,
+  runModifyCrit,
   runModifyDamage,
+  runModifyMultihit,
+  runModifyPriority,
   runResidual,
   runStart,
   runSwitchIn,
+  runSwitchOut,
   runTryHit,
   runTrySecondary,
+  runTrySubstitute,
   runTryVolatile,
 } from './effects/registry';
 import { rollHitWith } from './modifiers';
@@ -21,7 +26,7 @@ import { applyBoostEffect, applyStatusEffect } from './effects/apply';
 import { isProtectMove, protectBlocks } from './effects/moves';
 import { setTerrain, terrainFromMove, terrainHeal, tickTerrain } from './effects/terrain';
 import { setWeather, tickWeather, weatherChip, weatherFromMove, weatherLabel } from './effects/weather';
-import { computeDamage, type DamageResult } from './damage';
+import { computeDamage, rollCrit, type DamageResult } from './damage';
 import { orderActions } from './order';
 import {
   selectedMove,
@@ -65,6 +70,7 @@ import { rollRun } from './runAway';
 export function performSwitch(state: BattleState, side: SideId, partyIndex: number): void {
   const battleSide = state.sides[side];
   const outgoing = activeFighter(state, side);
+  runSwitchOut(makeContext(state, side, { source: outgoing, target: opponent(state, side) }));
   battleSide.activeIndex = partyIndex;
   battleSide.awaitingReplacement = false;
   resetBattleState(outgoing);
@@ -344,13 +350,20 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
 
   let totalDamage = 0;
   if (move.category !== 'Status' && move.basePower > 0) {
-    const hits = multihitHits(move, state.rng);
+    const rolled = multihitHits(move, state.rng);
+    const hits = runModifyMultihit(makeContext(state, side, { source: attacker, target: defender, move }), move, rolled);
     for (let hit = 0; hit < hits; hit++) {
       const target = opponent(state, side);
       if (target.hp <= 0) break;
+      const crit = runModifyCrit(
+        makeContext(state, side, { source: attacker, target, move }),
+        move,
+        rollCrit(state.rng, move.critRatio),
+      );
       const result = computeDamage(attacker, target, move, state.rng, {
         weather: state.weather,
         terrain: state.terrain,
+        critical: crit,
       });
       if (result.effectiveness === 0) {
         if (hit === 0) pushText(state, `It doesn't affect ${target.name}...`);
@@ -362,7 +375,11 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
         result.damage,
         result.effectiveness,
       );
-      if (hasSubstitute(target)) {
+      const bypassSubstitute = runTrySubstitute(
+        makeContext(state, side, { source: attacker, target, move }),
+        move,
+      );
+      if (!bypassSubstitute && hasSubstitute(target)) {
         absorbWithSubstitute(target, damage);
         pushText(state, `It hit ${target.name}'s substitute!`);
         if (target.volatiles.substitute === 0) pushText(state, `${target.name}'s substitute faded!`);
@@ -424,7 +441,7 @@ function resolveResiduals(state: BattleState): void {
   for (const side of SIDE_IDS) {
     const fighter = activeFighter(state, side);
     if (fighter.hp <= 0) continue;
-    const residual = residualDamage(fighter);
+    const residual = fighter.ability === 'Poison Heal' ? null : residualDamage(fighter);
     if (!residual) continue;
     const dealt = applyDamage(fighter, residual.damage);
     pushEvent(state, { kind: 'damage', side, amount: dealt, hp: fighter.hp, maxHp: fighter.maxHp, effectiveness: 1, crit: false });
@@ -509,8 +526,11 @@ export function takeTurn(state: BattleState, playerCommand: Command, enemyComman
   if (state.winner !== null) return;
 
   const moveEntries = SIDE_IDS.filter((side) => commands[side].type === 'fight').map((side) => {
-    const selected = selectedMove(activeFighter(state, side), commands[side] as FightCommand);
-    return { side, priority: selected?.move.priority ?? 0 };
+    const fighter = activeFighter(state, side);
+    const selected = selectedMove(fighter, commands[side] as FightCommand);
+    if (!selected) return { side, priority: 0 };
+    const ctx = makeContext(state, side, { source: fighter, target: opponent(state, side), move: selected.move });
+    return { side, priority: runModifyPriority(ctx, selected.move, selected.move.priority) };
   });
 
   for (const entry of orderActions(state, moveEntries, state.rng)) {

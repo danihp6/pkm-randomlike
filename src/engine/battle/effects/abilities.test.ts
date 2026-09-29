@@ -9,16 +9,20 @@ import {
   runAfterMove,
   runBoost,
   runModifyAccuracy,
+  runModifyCrit,
   runModifyDamage,
+  runModifyMultihit,
+  runModifyPriority,
   runModifySpe,
   runResidual,
   runTryHit,
+  runTrySubstitute,
   runTryVolatile,
   type EffectContext,
 } from './registry';
-import { applyStatusEffect } from './apply';
+import { applyBoostEffect, applyStatusEffect } from './apply';
 import { abilityEffects } from './abilities';
-import { takeTurn } from '../turn';
+import { performSwitch, takeTurn } from '../turn';
 
 function fighter(id: string, speciesId: string, ability: string, moves?: readonly string[]): BattleFighter {
   return createFighter({
@@ -38,6 +42,14 @@ function ctxOf(state: BattleState, side: SideId): EffectContext {
   return makeContext(state, side, {
     source: activeFighter(state, side),
     target: activeFighter(state, opponentOf(side)),
+  });
+}
+
+function moveCtxOf(state: BattleState, side: SideId, moveId: string): EffectContext {
+  return makeContext(state, side, {
+    source: activeFighter(state, side),
+    target: activeFighter(state, opponentOf(side)),
+    move: getMove(moveId)!,
   });
 }
 
@@ -537,5 +549,212 @@ describe('weather and immunity abilities (batch 3)', () => {
   it('Inner Focus is immune to Intimidate', () => {
     const state = makeBattle(fighter('player', 'growlithe', 'Intimidate'), fighter('enemy', 'drowzee', 'Inner Focus'));
     expect(activeFighter(state, 'enemy').boosts.atk).toBe(0);
+  });
+});
+
+describe('switch abilities (batch 4)', () => {
+  it('Regenerator heals a third on switch out and Natural Cure clears status', () => {
+    const regen = makeBattle(
+      fighter('player', 'slowpoke', 'Regenerator'),
+      fighter('enemy', 'charmander', 'Blaze'),
+    );
+    const slowpoke = activeFighter(regen, 'player');
+    slowpoke.hp = Math.floor(slowpoke.maxHp / 2);
+    regen.sides.player.party.push(fighter('player2', 'charmander', 'Blaze'));
+    performSwitch(regen, 'player', 1);
+    expect(slowpoke.hp).toBe(Math.floor(slowpoke.maxHp / 2) + Math.floor(slowpoke.maxHp / 3));
+
+    const cure = makeBattle(fighter('player', 'chansey', 'Natural Cure'), fighter('enemy', 'charmander', 'Blaze'));
+    const chansey = activeFighter(cure, 'player');
+    chansey.status = 'brn';
+    cure.sides.player.party.push(fighter('player2', 'charmander', 'Blaze'));
+    performSwitch(cure, 'player', 1);
+    expect(chansey.status).toBeNull();
+  });
+
+  it('Frisk reveals the foe held item on switch-in', () => {
+    const state = createBattle({
+      player: [createFighter({ id: 'p', speciesId: 'wigglytuff', level: 20, ability: 'Frisk' })],
+      enemy: [createFighter({ id: 'e', speciesId: 'charmander', level: 20, heldItem: 'leftovers' })],
+      rng: new Rng(1),
+      isWild: true,
+    });
+    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Leftovers'))).toBe(true);
+  });
+
+  it('Anticipation warns about a super-effective foe move', () => {
+    const state = createBattle({
+      player: [createFighter({ id: 'p', speciesId: 'eevee', level: 20, ability: 'Anticipation' })],
+      enemy: [createFighter({ id: 'e', speciesId: 'riolu', level: 20, moves: ['forcepalm'] })],
+      rng: new Rng(1),
+      isWild: true,
+    });
+    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Anticipation'))).toBe(true);
+  });
+
+  it('Download raises the higher-fitting offensive stat', () => {
+    const physical = makeBattle(fighter('player', 'porygon', 'Download'), fighter('enemy', 'geodude', 'Sturdy'));
+    expect(activeFighter(physical, 'player').boosts.atk).toBe(1);
+
+    const special = makeBattle(fighter('player', 'porygon', 'Download'), fighter('enemy', 'gastly', 'Levitate'));
+    expect(activeFighter(special, 'player').boosts.spa).toBe(1);
+  });
+});
+
+describe('priority abilities (batch 4)', () => {
+  it('Prankster adds priority to status moves only', () => {
+    const state = makeBattle(fighter('player', 'murkrow', 'Prankster'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyPriority(moveCtxOf(state, 'player', 'taunt'), getMove('taunt')!, 0)).toBe(1);
+    expect(runModifyPriority(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!, 0)).toBe(0);
+  });
+
+  it('Gale Wings adds priority to Flying moves at full HP', () => {
+    const state = makeBattle(fighter('player', 'fletchling', 'Gale Wings'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyPriority(moveCtxOf(state, 'player', 'gust'), getMove('gust')!, 0)).toBe(1);
+    expect(runModifyPriority(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!, 0)).toBe(0);
+
+    activeFighter(state, 'player').hp -= 1;
+    expect(runModifyPriority(moveCtxOf(state, 'player', 'gust'), getMove('gust')!, 0)).toBe(0);
+  });
+});
+
+describe('reaction abilities (batch 4)', () => {
+  it('Rattled raises Speed when hit by Bug, Dark or Ghost, and on Intimidate', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'magikarp', 'Rattled'));
+    runAfterMove(ctxOf(state, 'player'), getMove('bite')!);
+    expect(activeFighter(state, 'enemy').boosts.spe).toBe(1);
+
+    const intimidate = makeBattle(
+      fighter('player', 'growlithe', 'Intimidate'),
+      fighter('enemy', 'magikarp', 'Rattled'),
+    );
+    expect(activeFighter(intimidate, 'enemy').boosts.atk).toBe(-1);
+    expect(activeFighter(intimidate, 'enemy').boosts.spe).toBe(1);
+  });
+
+  it('Pickpocket steals the contact attacker item', () => {
+    const state = createBattle({
+      player: [createFighter({ id: 'p', speciesId: 'charmander', level: 20, ability: 'Blaze', heldItem: 'charcoal' })],
+      enemy: [createFighter({ id: 'e', speciesId: 'sneasel', level: 20, ability: 'Pickpocket' })],
+      rng: new Rng(1),
+      isWild: true,
+    });
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(activeFighter(state, 'enemy').heldItem).toBe('charcoal');
+    expect(activeFighter(state, 'player').heldItem).toBeNull();
+  });
+
+  it('Effect Spore eventually afflicts a contact attacker', () => {
+    const state = makeBattle(
+      fighter('player', 'charmander', 'Blaze'),
+      fighter('enemy', 'shroomish', 'Effect Spore'),
+      21,
+    );
+    for (let i = 0; i < 100 && activeFighter(state, 'player').status === null; i++) {
+      runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    }
+    expect(['slp', 'par', 'psn']).toContain(activeFighter(state, 'player').status);
+  });
+
+  it('Rough Skin chips the contact attacker', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'gible', 'Rough Skin'));
+    const attacker = activeFighter(state, 'player');
+    const before = attacker.hp;
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(attacker.hp).toBe(before - Math.max(1, Math.floor(attacker.maxHp / 8)));
+  });
+});
+
+describe('crit, multihit and substitute abilities (batch 4)', () => {
+  it('Battle Armor and Shell Armor block critical hits', () => {
+    for (const [species, ability] of [
+      ['perrserker', 'Battle Armor'],
+      ['shellder', 'Shell Armor'],
+    ] as const) {
+      const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', species, ability));
+      expect(runModifyCrit(ctxOf(state, 'player'), getMove('tackle')!, true)).toBe(false);
+      expect(runModifyCrit(ctxOf(state, 'player'), getMove('tackle')!, false)).toBe(false);
+    }
+  });
+
+  it('Anger Point maxes Attack when hit by a critical hit', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'mankey', 'Anger Point'));
+    const mankey = activeFighter(state, 'enemy');
+    runModifyCrit(ctxOf(state, 'player'), getMove('tackle')!, true);
+    expect(mankey.boosts.atk).toBe(6);
+  });
+
+  it('Skill Link forces the maximum number of hits', () => {
+    const state = makeBattle(fighter('player', 'shellder', 'Skill Link'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runModifyMultihit(moveCtxOf(state, 'player', 'bulletseed'), getMove('bulletseed')!, 2)).toBe(5);
+    expect(runModifyMultihit(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!, 1)).toBe(1);
+  });
+
+  it('Infiltrator bypasses the foe substitute', () => {
+    const state = makeBattle(fighter('player', 'hoppip', 'Infiltrator'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runTrySubstitute(ctxOf(state, 'player'), getMove('tackle')!)).toBe(true);
+
+    const normal = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'charmander', 'Blaze'));
+    expect(runTrySubstitute(ctxOf(normal, 'player'), getMove('tackle')!)).toBe(false);
+  });
+});
+
+describe('move-blocking and stat abilities (batch 4)', () => {
+  it('Damp, Bulletproof and Soundproof block their moves', () => {
+    const damp = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'psyduck', 'Damp'));
+    expect(runTryHit(ctxOf(damp, 'player'), getMove('selfdestruct')!)).toBe(false);
+    expect(runTryHit(ctxOf(damp, 'player'), getMove('tackle')!)).toBe(true);
+
+    const bullet = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'chespin', 'Bulletproof'));
+    expect(runTryHit(ctxOf(bullet, 'player'), getMove('shadowball')!)).toBe(false);
+    expect(runTryHit(ctxOf(bullet, 'player'), getMove('ember')!)).toBe(true);
+
+    const sound = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'voltorb', 'Soundproof'));
+    expect(runTryHit(ctxOf(sound, 'player'), getMove('boomburst')!)).toBe(false);
+    expect(runTryHit(ctxOf(sound, 'player'), getMove('ember')!)).toBe(true);
+  });
+
+  it('Defiant and Competitive boost after a foe-inflicted drop', () => {
+    const defiant = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'mankey', 'Defiant'));
+    const mankey = activeFighter(defiant, 'enemy');
+    applyBoostEffect(defiant, 'enemy', mankey, { atk: -1 });
+    expect(mankey.boosts.atk).toBe(1);
+
+    const competitive = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'jigglypuff', 'Competitive'));
+    const jigglypuff = activeFighter(competitive, 'enemy');
+    applyBoostEffect(competitive, 'enemy', jigglypuff, { spa: -1 });
+    expect(jigglypuff.boosts.spa).toBe(1);
+  });
+
+  it('Grass Pelt halves the physical damage taken on grassy terrain', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'skiddo', 'Grass Pelt'));
+    const ctx = ctxOf(state, 'player');
+    expect(runModifyDamage(ctx, getMove('tackle')!, 90)).toBe(90);
+    state.terrain = 'grassy';
+    expect(runModifyDamage(ctx, getMove('tackle')!, 90)).toBe(60);
+    expect(runModifyDamage(ctx, getMove('ember')!, 90)).toBe(90);
+  });
+
+  it('Sweet Veil blocks sleep', () => {
+    const state = makeBattle(fighter('player', 'bounsweet', 'Sweet Veil'), fighter('enemy', 'charmander', 'Blaze'));
+    const bounsweet = activeFighter(state, 'player');
+    applyStatusEffect(state, 'player', bounsweet, 'slp');
+    expect(bounsweet.status).toBeNull();
+    applyStatusEffect(state, 'player', bounsweet, 'brn');
+    expect(bounsweet.status).toBe('brn');
+  });
+
+  it('Poison Heal heals instead of taking poison damage', () => {
+    const state = makeBattle(
+      fighter('player', 'shroomish', 'Poison Heal', ['tackle']),
+      fighter('enemy', 'charmander', 'Blaze', ['growl']),
+    );
+    const shroomish = activeFighter(state, 'player');
+    shroomish.hp = Math.floor(shroomish.maxHp / 2);
+    shroomish.status = 'psn';
+    const before = shroomish.hp;
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(shroomish.hp).toBeGreaterThan(before);
+    expect(state.log.some((event) => event.kind === 'heal' && event.side === 'player')).toBe(true);
   });
 });
