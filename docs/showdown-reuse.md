@@ -66,8 +66,8 @@ effect registry with the same hooks as Showdown's handlers:
    berries first, then the common competitive abilities, then the long tail.
 4. **Coverage table**: `docs/balance/effect-coverage.md` lists every ability and
    item as `port | no-op | excluded`, so nothing is silently missing; regenerate
-   it with `npm run docs:coverage`. In dev builds, a battle against an unported
-   effect is meant to log a warning.
+   it with `npm run docs:coverage`. In a develop build, a battle against an
+   unported effect logs a warning through the `src/dev` gate.
 5. **Descriptions come free**: because `abilities.json`/`items.json` carry
    `shortDesc`, the UI can always explain an effect even on the day it is a
    no-op.

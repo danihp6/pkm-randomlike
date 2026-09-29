@@ -26,8 +26,8 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 - [ ] Add ESLint + Prettier with a `npm run lint` script once the engine has more
       real code (deferred: TypeScript strict mode covers most of it for now).
-- [ ] Add the developer gate (`src/dev/env.ts` reading `ENVIRONMENT`) and a debug
-      menu skeleton; `.env.development` is already in place.
+- [ ] Add a debug menu skeleton (the `src/dev` gate reads `ENVIRONMENT` and
+      `.env.development` is in place).
 - [ ] Add a README per code folder as the folders appear (`src/scenes/README.md`,
       `src/render/README.md`, `src/input/README.md`).
 
@@ -62,8 +62,6 @@ Ports of Showdown handlers, in batches, on the hook names in
       from moves and abilities, with the residual order.
 - [ ] `src/engine/battle/effects/moves.ts`: moves whose handlers are not plain
       damage/status (Protect, Substitute, Recycle, multi-turn, self-destruct...).
-- [ ] Dev warning (behind the `src/dev` gate) when a battle meets an unported
-      effect, so no coverage gap hides during playtests.
 
 ## Phase 5 — Battle UI & presentation
 

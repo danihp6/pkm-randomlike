@@ -43,6 +43,9 @@ file is the human-readable summary.
       `src/assets/README.md`, and `README.md`.
 - [x] Verified the slice: `npm test` (39 passing), `npm run build` clean, and the
       dev server renders the route with fog and the tileset swap.
+- [x] Developer gate (`src/dev/env.ts`): reads `ENVIRONMENT` (set to `develop` by
+      `.env.development`, undefined in a production build) and exposes
+      `IS_DEVELOP`. The debug menu skeleton it gates is still open.
 
 ## Phase 1 — Dex accessors & data contracts
 
@@ -181,3 +184,6 @@ file is the human-readable summary.
       items outside the run catalogue). `scripts/effect-coverage.mjs`
       (`npm run docs:coverage`) derives the `port` set from the registry and the
       catalogue so only the exclusions are hand-curated.
+- [x] Dev coverage warning (`src/dev/warnings.ts`): behind the `IS_DEVELOP` gate,
+      the registry warns once per effect when a battle meets an ability or held
+      item with no ported handler, so a gap cannot hide during playtests (D16).
