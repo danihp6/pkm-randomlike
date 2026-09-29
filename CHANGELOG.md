@@ -399,3 +399,5 @@ file is the human-readable summary.
       the run (Phase 6) supplies a real one. `BootScene` gained the placeholder
       battle textures; `RouteScene` a `B` dev key to preview the scene. 398 tests
       pass; `npm run build` clean.
+- [x] `BattleScene`: the move list now shows each move's type, and RUN asks for a
+      YES/NO confirmation before fleeing. 398 tests pass; `npm run build` clean.
