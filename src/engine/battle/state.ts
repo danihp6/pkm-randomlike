@@ -22,6 +22,10 @@ export type BattleSide = {
   activeIndex: number;
   /** The active Pokémon fainted; a replacement is required before the next turn. */
   awaitingReplacement: boolean;
+  /** Turns left before Wish heals the active Pokémon (0 = none). */
+  wishTurns: number;
+  /** Boosts Baton Pass hands to the incoming Pokémon, consumed on switch-in. */
+  batonPassBoosts: Partial<Record<BoostId, number>> | null;
 };
 
 export type BattleEvent =
@@ -91,6 +95,8 @@ export function createBattle(setup: BattleSetup): BattleState {
         party: [...setup.player],
         activeIndex: 0,
         awaitingReplacement: false,
+        wishTurns: 0,
+        batonPassBoosts: null,
       },
       enemy: {
         id: 'enemy',
@@ -98,6 +104,8 @@ export function createBattle(setup: BattleSetup): BattleState {
         party: [...setup.enemy],
         activeIndex: 0,
         awaitingReplacement: false,
+        wishTurns: 0,
+        batonPassBoosts: null,
       },
     },
     turn: 0,

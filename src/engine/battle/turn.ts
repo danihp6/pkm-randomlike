@@ -1,9 +1,11 @@
-import { type Move, type MoveEffect } from '../../data/dex';
+import { effectiveness, getMove, type Move, type MoveEffect } from '../../data/dex';
 import {
   applyDamage,
   applyHeal,
   resetBattleState,
+  BOOST_IDS,
   type BattleFighter,
+  type BoostId,
 } from './fighter';
 import {
   makeContext,
@@ -36,6 +38,7 @@ import {
   validateCommand,
   type Command,
   type FightCommand,
+  type SelectedMove,
 } from './commands';
 import {
   SIDE_IDS,
@@ -85,6 +88,15 @@ export function performSwitch(state: BattleState, side: SideId, partyIndex: numb
   const ctx = makeContext(state, side, { source: incoming, target: opponent(state, side) });
   runStart(ctx);
   runSwitchIn(ctx);
+
+  const passed = battleSide.batonPassBoosts;
+  if (passed) {
+    battleSide.batonPassBoosts = null;
+    applyBoostEffect(state, side, incoming, passed, {
+      self: true,
+      message: `${incoming.name} inherited the raised stats!`,
+    });
+  }
 }
 
 function resolvePreMoveActions(
@@ -178,6 +190,9 @@ function applyVolatileEffect(
       case 'flinch':
         applyFlinch(target);
         return true;
+      case 'yawn':
+        target.volatiles.yawn = 2;
+        return true;
       case 'substitute': {
         const cost = makeSubstitute(target);
         if (cost > 0) pushText(state, `${target.name} put in a substitute!`);
@@ -187,7 +202,14 @@ function applyVolatileEffect(
         return false;
     }
   })();
-  if (applied) pushText(state, `${target.name} was affected by ${volatileStatus}!`);
+  if (applied) {
+    pushText(
+      state,
+      volatileStatus === 'yawn'
+        ? `${target.name} grew drowsy!`
+        : `${target.name} was affected by ${volatileStatus}!`,
+    );
+  }
 }
 
 function applySecondary(
@@ -240,6 +262,11 @@ function applyMoveEffects(
       pushEvent(state, { kind: 'heal', side, amount: healed, hp: attacker.hp, maxHp: attacker.maxHp });
       pushText(state, `${attacker.name} regained health!`);
     }
+  }
+
+  if (move.id === 'wish') {
+    state.sides[side].wishTurns = 2;
+    pushText(state, `${attacker.name} made a wish!`);
   }
 
   if (move.self?.boosts) applyBoostEffect(state, side, attacker, move.self.boosts, { self: true });
@@ -299,9 +326,118 @@ function applyMoveEffects(
   }
 }
 
+const CHARGE_VERBS: Readonly<Record<string, string>> = {
+  solarbeam: 'absorbed light!',
+  solarblade: 'absorbed light!',
+  fly: 'flew up high!',
+  dig: 'burrowed its way under the ground!',
+  dive: 'hid underwater!',
+  bounce: 'sprang up!',
+  phantomforce: 'vanished instantly!',
+  shadowforce: 'vanished instantly!',
+  meteorbeam: 'is overflowing with space power!',
+  electroshot: 'absorbed electricity!',
+  skyattack: 'became cloaked in a harsh light!',
+  freezeshock: 'became cloaked in a freezing light!',
+  iceburn: 'became cloaked in a freezing light!',
+};
+
+function chargeVerb(moveId: string): string {
+  return CHARGE_VERBS[moveId] ?? 'is charging up!';
+}
+
+/** Solar Beam and Solar Blade skip the charge in harsh sunlight. */
+function chargesInstantly(state: BattleState, move: Move): boolean {
+  if (move.id !== 'solarbeam' && move.id !== 'solarblade') return false;
+  return state.weather === 'sun';
+}
+
+/** The move a charging fighter is locked into, ignoring the chosen command. */
+function lockedMove(attacker: BattleFighter, moveId: string): SelectedMove | null {
+  const move = getMove(moveId);
+  if (!move) return null;
+  const slot = attacker.moves.find((entry) => entry.moveId === moveId) ?? null;
+  return { move, slot };
+}
+
+/** The selected move, honouring a charge-move lock before the command. */
+function chosenMove(fighter: BattleFighter, command: FightCommand): SelectedMove | null {
+  const charging = fighter.volatiles.charging;
+  return charging ? lockedMove(fighter, charging) : selectedMove(fighter, command);
+}
+
+const COUNTER_MOVES = new Set(['counter', 'mirrorcoat', 'metalburst', 'comeuppance']);
+
+/**
+ * Counter and Mirror Coat pay back double the physical/special damage taken this
+ * turn; Metal Burst and Comeuppance pay back 1.5x the total.
+ */
+function useCounterMove(
+  state: BattleState,
+  side: SideId,
+  attacker: BattleFighter,
+  defender: BattleFighter,
+  move: Move,
+): void {
+  const physical = attacker.volatiles.physicalDamageTaken;
+  const special = attacker.volatiles.specialDamageTaken;
+  let reflected = 0;
+  let multiplier = 2;
+  if (move.id === 'counter') reflected = physical;
+  else if (move.id === 'mirrorcoat') reflected = special;
+  else {
+    reflected = physical + special;
+    multiplier = 1.5;
+  }
+  if (reflected <= 0) {
+    pushText(state, 'But it failed!');
+    return;
+  }
+  const eff = effectiveness(move.type, defender.types);
+  if (eff === 0) {
+    pushText(state, `It doesn't affect ${defender.name}...`);
+    return;
+  }
+  const dealt = applyDamage(defender, Math.max(1, Math.floor(reflected * multiplier)));
+  pushEvent(state, {
+    kind: 'damage',
+    side: opponentOf(side),
+    amount: dealt,
+    hp: defender.hp,
+    maxHp: defender.maxHp,
+    effectiveness: eff,
+    crit: false,
+  });
+  pushText(state, `${defender.name} was hit by the countered attack!`);
+  if (defender.hp <= 0) faint(state, opponentOf(side));
+}
+
+/** U-turn and friends hand the turn over to the bench; Baton Pass carries boosts. */
+function maybeSelfSwitch(
+  state: BattleState,
+  side: SideId,
+  attacker: BattleFighter,
+  move: Move,
+): void {
+  if (!move.selfSwitch || state.winner !== null || attacker.hp <= 0) return;
+  const battleSide = state.sides[side];
+  const hasBench = battleSide.party.some(
+    (fighter, index) => index !== battleSide.activeIndex && fighter.hp > 0,
+  );
+  if (!hasBench) return;
+  if (move.selfSwitch === 'copyvolatile') {
+    const passed: Partial<Record<BoostId, number>> = {};
+    for (const stat of BOOST_IDS) {
+      if (attacker.boosts[stat] !== 0) passed[stat] = attacker.boosts[stat];
+    }
+    battleSide.batonPassBoosts = passed;
+  }
+  battleSide.awaitingReplacement = true;
+}
+
 export function useMove(state: BattleState, side: SideId, command: FightCommand): void {
   const attacker = activeFighter(state, side);
-  const selected = selectedMove(attacker, command);
+  const selected = chosenMove(attacker, command);
   if (!selected) return;
   const { move, slot } = selected;
 
@@ -343,6 +479,15 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
     pushText(state, `${attacker.name} snapped out of its confusion!`);
   }
 
+  if (move.flags.charge) {
+    if (attacker.volatiles.charging !== move.id && !chargesInstantly(state, move)) {
+      attacker.volatiles.charging = move.id;
+      pushText(state, `${attacker.name} ${chargeVerb(move.id)}`);
+      return;
+    }
+    attacker.volatiles.charging = null;
+  }
+
   if (slot) slot.pp = Math.max(0, slot.pp - 1);
   attacker.lastMoveId = move.id;
 
@@ -356,6 +501,11 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
 
   const hitContext = makeContext(state, side, { source: attacker, target: defender, move });
   if (!runTryHit(hitContext, move)) return;
+
+  if (COUNTER_MOVES.has(move.id)) {
+    useCounterMove(state, side, attacker, defender, move);
+    return;
+  }
 
   let totalDamage = 0;
   if (move.category !== 'Status' && move.basePower > 0) {
@@ -404,6 +554,8 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
       }
       const dealt = applyDamage(target, damage);
       totalDamage += dealt;
+      if (move.category === 'Physical') target.volatiles.physicalDamageTaken += dealt;
+      else if (move.category === 'Special') target.volatiles.specialDamageTaken += dealt;
       pushEvent(state, { kind: 'damage', side: opponentOf(side), amount: dealt, hp: target.hp, maxHp: target.maxHp, effectiveness: result.effectiveness, crit: result.crit });
       pushText(state, damageMessage(move.name, result, target));
       if (target.hp <= 0) {
@@ -415,6 +567,7 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
 
   applyMoveEffects(state, side, move, totalDamage, totalDamage > 0);
   runAfterMove(hitContext, move, totalDamage > 0);
+  maybeSelfSwitch(state, side, attacker, move);
 }
 
 function faint(state: BattleState, side: SideId): void {
@@ -474,6 +627,29 @@ function resolveResiduals(state: BattleState): void {
     if (fighter.hp <= 0) continue;
     runResidual(makeContext(state, side, { source: fighter, target: opponent(state, side) }));
     if (fighter.hp <= 0) faint(state, side);
+  }
+
+  for (const side of SIDE_IDS) {
+    const fighter = activeFighter(state, side);
+    if (fighter.hp <= 0 || fighter.volatiles.yawn <= 0) continue;
+    fighter.volatiles.yawn -= 1;
+    if (fighter.volatiles.yawn === 0) {
+      applyStatusEffect(state, side, fighter, 'slp', `${fighter.name} fell asleep!`);
+    }
+  }
+
+  for (const side of SIDE_IDS) {
+    const battleSide = state.sides[side];
+    if (battleSide.wishTurns <= 0) continue;
+    battleSide.wishTurns -= 1;
+    if (battleSide.wishTurns > 0) continue;
+    const fighter = activeFighter(state, side);
+    if (fighter.hp <= 0) continue;
+    const healed = applyHeal(fighter, Math.max(1, Math.floor(fighter.maxHp / 2)));
+    if (healed > 0) {
+      pushEvent(state, { kind: 'heal', side, amount: healed, hp: fighter.hp, maxHp: fighter.maxHp });
+      pushText(state, `${fighter.name}'s wish came true!`);
+    }
   }
 
   for (const side of SIDE_IDS) {
@@ -539,6 +715,11 @@ export function takeTurn(state: BattleState, playerCommand: Command, enemyComman
   pushEvent(state, { kind: 'turn', turn: state.turn });
   state.movedSides = [];
   state.switchedSides = [];
+  for (const side of SIDE_IDS) {
+    const fighter = activeFighter(state, side);
+    fighter.volatiles.physicalDamageTaken = 0;
+    fighter.volatiles.specialDamageTaken = 0;
+  }
 
   const commands: Record<SideId, Command> = { player: playerCommand, enemy: enemyCommand };
   resolvePreMoveActions(state, commands);
@@ -546,7 +727,7 @@ export function takeTurn(state: BattleState, playerCommand: Command, enemyComman
 
   const moveEntries = SIDE_IDS.filter((side) => commands[side].type === 'fight').map((side) => {
     const fighter = activeFighter(state, side);
-    const selected = selectedMove(fighter, commands[side] as FightCommand);
+    const selected = chosenMove(fighter, commands[side] as FightCommand);
     if (!selected) return { side, priority: 0 };
     const ctx = makeContext(state, side, { source: fighter, target: opponent(state, side), move: selected.move });
     return { side, priority: runModifyPriority(ctx, selected.move, selected.move.priority) };
@@ -574,7 +755,11 @@ export function needsReplacement(state: BattleState): readonly SideId[] {
 export function autoReplace(state: BattleState): void {
   for (const side of needsReplacement(state)) {
     const battleSide = state.sides[side];
-    const index = battleSide.party.findIndex((fighter) => fighter.hp > 0);
+    // A self-switch (U-turn, Baton Pass) leaves the active healthy: never pick it
+    // again, or the incoming never changes.
+    const index = battleSide.party.findIndex(
+      (fighter, i) => i !== battleSide.activeIndex && fighter.hp > 0,
+    );
     if (index >= 0) performSwitch(state, side, index);
   }
 }

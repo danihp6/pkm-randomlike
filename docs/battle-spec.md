@@ -13,8 +13,8 @@ Phaser scene only renders state and forwards choices.
    RNG.
 4. End-of-turn effects tick in this order: burn/poison/badly-poisoned damage,
    weather chip (sandstorm), terrain healing (Grassy), ability/item residuals
-   (Leftovers, berries), Leech Seed, perish count, then Taunt/Encore decay and
-   the weather/terrain turn counters.
+   (Leftovers, berries), Yawn (sleep) and Wish (heal), Leech Seed, perish count,
+   then Taunt/Encore decay and the weather/terrain turn counters.
 5. A fainted Pokémon is replaced by its owner's next choice before the next
    turn; if a side has no Pokémon left, the battle is over.
 
@@ -40,9 +40,22 @@ Phaser scene only renders state and forwards choices.
 
 Primary status: burn, poison, badly poisoned, paralysis, sleep, freeze.
 Volatiles: confusion, flinch, Leech Seed, Substitute, trapped, Taunt, Encore,
-perish count, protection (Protect and friends), stat stages (−6..+6). Effects live in `src/engine/battle/effects/`
-and follow Showdown's semantics, ported category by category (see
-`docs/showdown-reuse.md` for the coverage table).
+perish count, protection (Protect and friends), charge state (a two-turn move
+waiting to fire), Yawn countdown, stat stages (−6..+6). Effects live in
+`src/engine/battle/effects/` and follow Showdown's semantics, ported category by
+category (see `docs/showdown-reuse.md` for the coverage table).
+
+Special move shapes:
+
+- **Two-turn charge moves** (Solar Beam, Fly, Dig...) lock the user for one
+  turn; the next turn the move fires regardless of the chosen command. Solar
+  Beam and Solar Blade skip the charge in harsh sunlight.
+- **Damage counters** (Counter, Mirror Coat, Metal Burst, Comeuppance) pay back
+  the damage taken earlier in the turn: 2x the physical/special damage for the
+  first pair, 1.5x the total for the second. They fail with no damage banked.
+- **Self-switch moves** (U-turn, Volt Switch, Flip Turn, Parting Shot, Teleport,
+  Baton Pass) deal their effect and then require a replacement; Baton Pass copies
+  the user's stat stages to the incoming Pokémon.
 
 ## 5. Permadeath
 

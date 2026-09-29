@@ -49,6 +49,14 @@ export type Volatiles = {
   flashFire: boolean;
   /** Disguise is intact and can absorb one damaging hit. */
   disguise: boolean;
+  /** A charge move (Solar Beam, Fly...) is charging and will fire next turn. */
+  charging: string | null;
+  /** Physical damage taken since the turn started (Counter). */
+  physicalDamageTaken: number;
+  /** Special damage taken since the turn started (Mirror Coat). */
+  specialDamageTaken: number;
+  /** Turns left before Yawn puts this fighter to sleep (0 = none). */
+  yawn: number;
 };
 
 export type BattleFighter = {
@@ -109,6 +117,10 @@ export function emptyVolatiles(): Volatiles {
     protectStreak: 0,
     flashFire: false,
     disguise: false,
+    charging: null,
+    physicalDamageTaken: 0,
+    specialDamageTaken: 0,
+    yawn: 0,
   };
 }
 

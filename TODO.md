@@ -59,9 +59,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 - [ ] `src/engine/battle/effects/abilities.ts`: the remaining abilities (batch 7+),
       ported from Showdown's handler bodies and tracked as `no-op` in
       `docs/balance/effect-coverage.md`.
-- [ ] `src/engine/battle/effects/moves.ts`: the remaining odd moves — multi-turn
-      charge moves (Solar Beam, Fly, Dig...), damage counters (Counter, Mirror
-      Coat), delayed effects (Yawn, Wish) and switch moves (U-turn, Baton Pass).
 
 ## Phase 5 — Battle UI & presentation
 
