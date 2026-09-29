@@ -113,6 +113,7 @@ export class RouteScene extends Phaser.Scene {
       .setDepth(100);
 
     this.input.keyboard!.on('keydown-R', () => this.cycleTileset());
+    this.input.keyboard!.on('keydown-B', () => this.scene.start('Battle'));
     this.setupHudCamera();
     this.setHint(
       `${biome.name} · route ${DEV_ROUTE_INDEX} · band ${band.name} (Lv ${band.minLevel}-${band.maxLevel})`,
@@ -260,7 +261,9 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private setHint(text: string): void {
-    this.hint.setText(`${text}\nArrows: move  |  R: swap tileset  |  trainers: ${this.route.trainers.length}`);
+    this.hint.setText(
+      `${text}\nArrows: move  |  R: swap tileset  |  B: battle (dev)  |  trainers: ${this.route.trainers.length}`,
+    );
   }
 
   override update(): void {
