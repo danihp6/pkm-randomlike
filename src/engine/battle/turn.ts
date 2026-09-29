@@ -279,10 +279,25 @@ function applyMoveEffects(
   }
 
   if (move.drain && move.drain.length === 2 && totalDamage > 0) {
-    const healed = applyHeal(attacker, Math.max(1, Math.floor((totalDamage * move.drain[0]) / move.drain[1])));
-    if (healed > 0) {
-      pushEvent(state, { kind: 'heal', side, amount: healed, hp: attacker.hp, maxHp: attacker.maxHp });
-      pushText(state, `${attacker.name} had its energy drained!`);
+    const drained = Math.max(1, Math.floor((totalDamage * move.drain[0]) / move.drain[1]));
+    if (defender.ability === 'Liquid Ooze') {
+      const dealt = applyDamage(attacker, drained);
+      pushEvent(state, {
+        kind: 'damage',
+        side,
+        amount: dealt,
+        hp: attacker.hp,
+        maxHp: attacker.maxHp,
+        effectiveness: 1,
+        crit: false,
+      });
+      pushText(state, `${attacker.name} sucked up the liquid ooze!`);
+    } else {
+      const healed = applyHeal(attacker, drained);
+      if (healed > 0) {
+        pushEvent(state, { kind: 'heal', side, amount: healed, hp: attacker.hp, maxHp: attacker.maxHp });
+        pushText(state, `${attacker.name} had its energy drained!`);
+      }
     }
   }
 
@@ -364,6 +379,22 @@ function lockedMove(attacker: BattleFighter, moveId: string): SelectedMove | nul
 function chosenMove(fighter: BattleFighter, command: FightCommand): SelectedMove | null {
   const charging = fighter.volatiles.charging;
   return charging ? lockedMove(fighter, charging) : selectedMove(fighter, command);
+}
+
+const PRESSURED_TARGETS = new Set([
+  'normal',
+  'any',
+  'allAdjacent',
+  'allAdjacentFoes',
+  'adjacentFoe',
+  'randomNormal',
+]);
+
+/** Pressure makes foe-targeting moves cost an extra PP. */
+function ppCost(state: BattleState, side: SideId, move: Move): number {
+  const foe = opponent(state, side);
+  if (foe.ability === 'Pressure' && PRESSURED_TARGETS.has(move.target)) return 2;
+  return 1;
 }
 
 const COUNTER_MOVES = new Set(['counter', 'mirrorcoat', 'metalburst', 'comeuppance']);
@@ -468,7 +499,7 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
     return;
   }
   if (volatileCheck && 'confusionDamage' in volatileCheck) {
-    if (slot) slot.pp = Math.max(0, slot.pp - 1);
+    if (slot) slot.pp = Math.max(0, slot.pp - ppCost(state, side, move));
     attacker.lastMoveId = move.id;
     pushEvent(state, { kind: 'damage', side, amount: volatileCheck.confusionDamage, hp: attacker.hp, maxHp: attacker.maxHp, effectiveness: 1, crit: false });
     pushText(state, `${attacker.name} is confused. It hurt itself in its confusion!`);
@@ -488,7 +519,7 @@ export function useMove(state: BattleState, side: SideId, command: FightCommand)
     attacker.volatiles.charging = null;
   }
 
-  if (slot) slot.pp = Math.max(0, slot.pp - 1);
+  if (slot) slot.pp = Math.max(0, slot.pp - ppCost(state, side, move));
   attacker.lastMoveId = move.id;
 
   if (protectBlocks(state, side, move)) return;

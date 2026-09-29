@@ -1,6 +1,6 @@
 import { ITEMS, type ItemDef } from '../../../data/items';
 import { applyHeal, type BattleFighter } from '../fighter';
-import { pushEvent, pushText } from '../state';
+import { opponent, pushEvent, pushText } from '../state';
 import { cureStatus } from '../status';
 import {
   registerEffects,
@@ -27,10 +27,28 @@ function belowThreshold(item: ItemDef, fighter: BattleFighter): boolean {
   return fighter.hp * item.below[1] <= fighter.maxHp * item.below[0];
 }
 
+/** Unnerve stops the foe from eating its own berry. */
+function unnerved(ctx: EffectContext): boolean {
+  return opponent(ctx.state, ctx.side).ability === 'Unnerve';
+}
+
 function consume(ctx: EffectContext, item: ItemDef): void {
   ctx.owner.heldItem = null;
   ctx.owner.lastItemId = item.id;
   pushText(ctx.state, `${ctx.owner.name} used up its ${item.name}!`);
+  if (item.consumed && ctx.owner.ability === 'Cheek Pouch' && ctx.owner.hp > 0) {
+    const healed = applyHeal(ctx.owner, Math.max(1, Math.floor(ctx.owner.maxHp / 3)));
+    if (healed > 0) {
+      pushEvent(ctx.state, {
+        kind: 'heal',
+        side: ctx.side,
+        amount: healed,
+        hp: ctx.owner.hp,
+        maxHp: ctx.owner.maxHp,
+      });
+      pushText(ctx.state, `${ctx.owner.name} restored HP with Cheek Pouch!`);
+    }
+  }
 }
 
 /** Leftovers and the healing berries: a residual heal, optionally consumed. */
@@ -38,6 +56,10 @@ function residualHandler(item: ItemDef): NonNullable<EffectHandlers['onResidual'
   return (ctx) => {
     const holder = ctx.owner;
     if (holder.hp <= 0) return;
+    if (item.consumed && unnerved(ctx)) {
+      pushText(ctx.state, `${holder.name} can't eat its ${item.name} because of Unnerve!`);
+      return;
+    }
 
     if (item.cures) {
       if (!hasCurableStatus(item, holder)) return;
@@ -49,7 +71,8 @@ function residualHandler(item: ItemDef): NonNullable<EffectHandlers['onResidual'
       return;
     }
 
-    const amount = healAmountOf(item, holder.maxHp);
+    const baseAmount = healAmountOf(item, holder.maxHp);
+    const amount = holder.ability === 'Ripen' ? baseAmount * 2 : baseAmount;
     if (amount <= 0 || !belowThreshold(item, holder)) return;
     const healed = applyHeal(holder, amount);
     if (healed <= 0) return;

@@ -53,6 +53,22 @@ describe('sleep', () => {
     expect(statusName('tox')).toBe('bad poison');
     expect(cureStatus(make('charmander'))).toBeNull();
   });
+
+  it('Early Bird halves the sleep counter', () => {
+    const fighter = createFighter({ id: 'doduo', speciesId: 'doduo', level: 20, ability: 'Early Bird' });
+    applyStatus(fighter, 'slp', new Rng(1));
+    fighter.statusCounter = 2;
+    expect(beforeMoveStatus(fighter, new Rng(1))).toEqual({ cured: 'slp' });
+    expect(fighter.status).toBeNull();
+  });
+});
+
+describe('Corrosion', () => {
+  it('lets a Poison-type be poisoned', () => {
+    const salandit = createFighter({ id: 'salandit', speciesId: 'salandit', level: 20, ability: 'Corrosion' });
+    expect(canApplyStatus(salandit, 'psn')).toBe(true);
+    expect(canApplyStatus(salandit, 'tox')).toBe(true);
+  });
 });
 
 describe('residualDamage', () => {
