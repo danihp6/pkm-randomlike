@@ -448,3 +448,12 @@ file is the human-readable summary.
       "was released" / "Level up!" / "It evolved!" beats from the resolution
       events. Verified end to end in the browser: a wild win raised the XP bar from
       125 to 137. 435 tests pass; `npm run build` clean.
+- [x] `src/engine/run/heal.ts`: the between-route heal stop — `healParty` restores
+      HP and PP across the party and the box but never resurrects a 0-HP member
+      (D5), and `restAndAdvance` composes it with `advanceRoute`. `RouteScene`
+      now generates the current route from the run (seed + route index) instead of
+      a hardcoded route 1, and the EXIT tile runs the beat: heal, advance, rebuild
+      the scene on the next route. Verified in the browser: stepping the exit on
+      route 1 (Woods) lands on route 2 (Test Grounds) with the party at full HP/PP,
+      the cap and the per-route capture reset. 439 tests pass; `npm run build`
+      clean.

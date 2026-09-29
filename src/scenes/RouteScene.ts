@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { biomeForRoute } from '../data/biomes';
 import { getSpecies } from '../data/dex';
-import { bandForRoute } from '../data/run';
+import { RUN_CHAIN, bandForRoute } from '../data/run';
 import { TRAINER_ARCHETYPE_IDS, getTrainerArchetype } from '../data/trainers';
 import { IS_DEVELOP } from '../dev/env';
 import type { FighterInput } from '../engine/battle';
@@ -14,6 +14,7 @@ import {
   hasLivingParty,
   isTrainerDefeated,
   resolveBattle,
+  restAndAdvance,
   trainerRoster,
   type BagCounts,
   type BattleLaunch,
@@ -57,10 +58,9 @@ const VISION_RADIUS = 6;
 const HIDDEN_ALPHA = 0.3;
 const EXPLORED_ALPHA = 0.7;
 
-// Until the starter pick lands, the scene generates route 1 of a fixed dev seed
-// off a real run seeded with a fixed demo starter and bag.
+// Until the starter pick lands, the scene seeds a run with a fixed demo starter
+// and bag and walks its routes off one dev seed.
 const DEV_SEED = 'dev-seed';
-const DEV_ROUTE_INDEX = 1;
 
 const DEMO_STARTER: FighterInput = { id: 'starter', speciesId: 'charmander', level: 5, moves: ['ember', 'scratch', 'growl'] };
 const DEMO_RESERVE: FighterInput = { id: 'reserve', speciesId: 'squirtle', level: 4, moves: ['watergun', 'tackle', 'tailwhip'] };
@@ -98,11 +98,23 @@ export class RouteScene extends Phaser.Scene {
   }
 
   create(): void {
-    const biome = biomeForRoute(DEV_ROUTE_INDEX);
-    const band = bandForRoute(DEV_ROUTE_INDEX);
+    if (!this.run) {
+      this.run = createRun({ seed: DEV_SEED, starter: createRunPokemon(DEMO_STARTER), bag: DEMO_BAG });
+      this.run = addPokemon(this.run, createRunPokemon(DEMO_RESERVE));
+    }
+    this.tileSprites = [];
+    this.foggables = [];
+    this.pickedItems = new Set<string>();
+    this.gameOver = false;
+    this.pendingBattle = null;
+    this.tilesetId = 'wood';
+
+    const routeIndex = this.run.routeIndex;
+    const biome = biomeForRoute(routeIndex);
+    const band = bandForRoute(routeIndex);
     this.route = sketchRoute({
-      seed: DEV_SEED,
-      routeIndex: DEV_ROUTE_INDEX,
+      seed: this.run.seed,
+      routeIndex,
       biomeId: biome.id,
       trainerArchetypeIds: TRAINER_ARCHETYPE_IDS,
       trainerCount: band.trainerSize,
@@ -118,10 +130,8 @@ export class RouteScene extends Phaser.Scene {
       biome.encounters[band.id],
       band.minLevel,
       band.maxLevel,
-      new Rng(hashSeed(`${DEV_SEED}:encounters:${DEV_ROUTE_INDEX}`)),
+      new Rng(hashSeed(`${this.run.seed}:encounters:${routeIndex}`)),
     );
-    this.run = createRun({ seed: DEV_SEED, starter: createRunPokemon(DEMO_STARTER), bag: DEMO_BAG });
-    this.run = addPokemon(this.run, createRunPokemon(DEMO_RESERVE));
 
     this.drawTiles();
     this.drawEntities();
@@ -157,7 +167,7 @@ export class RouteScene extends Phaser.Scene {
     }
     this.setupHudCamera();
     this.setHint(
-      `${biome.name} · route ${DEV_ROUTE_INDEX} · band ${band.name} (Lv ${band.minLevel}-${band.maxLevel})`,
+      `${biome.name} · route ${routeIndex} · band ${band.name} (Lv ${band.minLevel}-${band.maxLevel})`,
     );
   }
 
@@ -269,7 +279,7 @@ export class RouteScene extends Phaser.Scene {
   private onTileEntered(): void {
     const value = tileAt(this.map, this.player);
     if (value === EXIT) {
-      this.setHint('Route cleared. The next route is Phase 6.');
+      this.leaveRoute();
       return;
     }
     if (value === TALL_GRASS) {
@@ -294,6 +304,18 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     this.setHint('Walk the route. Arrow keys to move.');
+  }
+
+  /** The exit beat: rest the party, then rebuild the scene on the next route. */
+  private leaveRoute(): void {
+    if (this.gameOver || this.pendingBattle) return;
+    if (this.run.mode === 'finite' && this.run.routeIndex >= RUN_CHAIN.finiteLength) {
+      this.gameOver = true;
+      this.setHint('Final route cleared. The run is won!');
+      return;
+    }
+    this.run = restAndAdvance(this.run);
+    this.scene.restart();
   }
 
   private trainerTrigger(trainer: RouteTrainer): BattleTrigger {
