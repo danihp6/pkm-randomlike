@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
 import { MAX_PARTY_SIZE, type RunState } from '../engine/run';
+import { subscribeKeybinds } from '../input/input';
 import { addFrlgWindow } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { hpColorInt, hpFraction } from '../ui/metrics';
@@ -115,29 +116,20 @@ export class PartyScene extends Phaser.Scene {
   }
 
   private bindInput(): void {
-    const keyboard = this.input.keyboard!;
-    const on = (event: string, input: PartyInput) => {
-      keyboard.on(event, (keyEvent: KeyboardEvent) => {
-        if (keyEvent.repeat) return;
-        if (input === 'cancel' && this.ui.grabbed === null) {
-          this.close();
-          return;
-        }
-        const next = partyInput(this.run, this.ui, input);
-        this.run = next.run;
-        this.ui = next.ui;
-        this.render();
-      });
-    };
-    on('keydown-UP', 'up');
-    on('keydown-DOWN', 'down');
-    on('keydown-LEFT', 'left');
-    on('keydown-RIGHT', 'right');
-    on('keydown-Z', 'confirm');
-    on('keydown-ENTER', 'confirm');
-    on('keydown-SPACE', 'confirm');
-    on('keydown-X', 'cancel');
-    on('keydown-ESC', 'cancel');
+    subscribeKeybinds(this, ({ action }) => {
+      // The party screen uses the six menu actions and ignores the two that only
+      // mean something on the route.
+      if (action === 'party' || action === 'settings') return;
+      const input: PartyInput = action;
+      if (input === 'cancel' && this.ui.grabbed === null) {
+        this.close();
+        return;
+      }
+      const next = partyInput(this.run, this.ui, input);
+      this.run = next.run;
+      this.ui = next.ui;
+      this.render();
+    });
   }
 
   /** Hands the route the run as it stands, then closes the screen. */

@@ -3,6 +3,7 @@ import { biomeForRoute } from '../data/biomes';
 import { getSpecies } from '../data/dex';
 import { getItem } from '../data/items';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
+import { keyLabel } from '../data/keybinds';
 import { ROUTE_LOOT } from '../data/loot';
 import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
 import { bandForRoute } from '../data/run';
@@ -60,6 +61,7 @@ import { addFrlgWindow } from '../ui/frlg';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
+import { actionKeys, subscribeKeybinds } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import {
@@ -74,8 +76,9 @@ const HIDDEN_ALPHA = 0.3;
 const EXPLORED_ALPHA = 0.7;
 /** Item stacks the route HUD's bag row shows before it drops the rest. */
 const BAG_ICON_SLOTS = 6;
-/** The resting line the hint bar shows whenever nothing else is being said. */
-const DEFAULT_HINT = 'Walk the route. Arrow keys to move.   ·   P party   ·   O settings';
+
+/** The four directions, in the order the update loop tests them. */
+type MoveKey = 'up' | 'down' | 'left' | 'right';
 
 // Until the starter pick lands, the scene seeds a run with a fixed demo starter
 // and bag and walks its routes off one dev seed.
@@ -114,7 +117,8 @@ export class RouteScene extends Phaser.Scene {
   private pendingParty: 'field' | 'rest' | null = null;
   /** Set when the rest stop closes: advance the route on the next update. */
   private advanceAfterParty = false;
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  /** The four movement keys behind the current bindings, watched every frame. */
+  private moveKeys!: Record<MoveKey, Phaser.Input.Keyboard.Key | null>;
   private hint!: Phaser.GameObjects.BitmapText;
   private hintBackdrop!: Phaser.GameObjects.Rectangle;
   private hudRoot!: Phaser.GameObjects.Container;
@@ -201,7 +205,7 @@ export class RouteScene extends Phaser.Scene {
     this.cameras.main.setZoom(2);
     this.cameras.main.startFollow(this.playerSprite, true, 0.2, 0.2);
 
-    this.cursors = this.input.keyboard!.createCursorKeys();
+    this.refreshMoveKeys();
     this.hintBackdrop = this.add
       .rectangle(8, 8, 780, 56, 0x000000, 0.6)
       .setOrigin(0, 0)
@@ -215,22 +219,30 @@ export class RouteScene extends Phaser.Scene {
       .setDepth(100);
     this.hint.setMaxWidth(760);
 
+    // The debug tileset swap stays a fixed key: it is not a player action.
     this.input.keyboard!.on('keydown-R', () => {
       if (this.scene.isActive()) this.cycleTileset();
     });
-    this.input.keyboard!.on('keydown-P', () => {
-      if (this.scene.isActive()) this.openParty('field');
-    });
-    this.input.keyboard!.on('keydown-O', () => {
-      if (this.scene.isActive()) this.openSettings();
-    });
-    const confirmRelease = (event: KeyboardEvent) => {
-      if (event.repeat) return;
-      if (this.releaseRoot && this.releaseArmed) this.advanceRelease();
-    };
-    this.input.keyboard!.on('keydown-Z', confirmRelease);
-    this.input.keyboard!.on('keydown-SPACE', confirmRelease);
-    this.input.keyboard!.on('keydown-ENTER', confirmRelease);
+    subscribeKeybinds(
+      this,
+      ({ action }) => {
+        if (!this.scene.isActive()) return;
+        switch (action) {
+          case 'confirm':
+            if (this.releaseRoot && this.releaseArmed) this.advanceRelease();
+            return;
+          case 'party':
+            this.openParty('field');
+            return;
+          case 'settings':
+            this.openSettings();
+            return;
+        }
+      },
+      // The route holds the run, so it keeps its own settings snapshot rather
+      // than re-reading the whole save on every key; `applySettings` refreshes it.
+      () => this.settings.keybinds,
+    );
     if (IS_DEVELOP) {
       this.input.keyboard!.on('keydown-B', () => {
         if (this.scene.isActive()) this.startBattle({ kind: 'wild', speciesId: 'scatterbug', level: 5, key: 'dev' });
@@ -239,8 +251,21 @@ export class RouteScene extends Phaser.Scene {
     this.buildHud();
     this.setupHudCamera();
     this.hint.setDepth(200);
-    this.setHint(DEFAULT_HINT);
+    this.setHint(this.defaultHint());
     this.refreshHud();
+  }
+
+  /** Resolves the movement keys from the shared map; re-run when it changes. */
+  private refreshMoveKeys(): void {
+    const bind = (action: MoveKey): Phaser.Input.Keyboard.Key | null =>
+      actionKeys(this, action, this.settings.keybinds)[0] ?? null;
+    this.moveKeys = { up: bind('up'), down: bind('down'), left: bind('left'), right: bind('right') };
+  }
+
+  /** The resting line, spelled with whatever keys the player has bound. */
+  private defaultHint(): string {
+    const { up, down, left, right, party, settings } = this.settings.keybinds;
+    return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   ${keyLabel(party)} party   ·   ${keyLabel(settings)} settings`;
   }
 
   /** The persistent overlay: route header, party (with portraits) and the bag. */
@@ -450,7 +475,7 @@ export class RouteScene extends Phaser.Scene {
       this.startBattle(this.trainerTrigger(spotter));
       return;
     }
-    this.setHint(DEFAULT_HINT);
+    this.setHint(this.defaultHint());
   }
 
   /** The exit beat: rest the party, then let the player manage it before moving on. */
@@ -490,6 +515,10 @@ export class RouteScene extends Phaser.Scene {
     this.settings = loadSettings();
     const wanted = resolveTileset(this.settings.tileset, biomeForRoute(this.run.routeIndex).tilesetId);
     if (wanted !== this.tilesetId) this.applyTileset(wanted);
+    // A rebind happened behind this screen; re-resolve the movement keys and the
+    // resting line so the new keys are live the moment the route resumes.
+    this.refreshMoveKeys();
+    this.setHint(this.defaultHint());
   }
 
   /** Called by `PartyScene` before it stops: adopts the managed run. */
@@ -729,10 +758,11 @@ export class RouteScene extends Phaser.Scene {
     }
     if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) return;
     const step: Tile = { x: 0, y: 0 };
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) step.x = -1;
-    else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) step.x = 1;
-    else if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) step.y = -1;
-    else if (Phaser.Input.Keyboard.JustDown(this.cursors.down)) step.y = 1;
+    const { up, down, left, right } = this.moveKeys;
+    if (left && Phaser.Input.Keyboard.JustDown(left)) step.x = -1;
+    else if (right && Phaser.Input.Keyboard.JustDown(right)) step.x = 1;
+    else if (up && Phaser.Input.Keyboard.JustDown(up)) step.y = -1;
+    else if (down && Phaser.Input.Keyboard.JustDown(down)) step.y = 1;
     if (step.x === 0 && step.y === 0) return;
 
     const result = resolveMove(this.map, this.player, step);

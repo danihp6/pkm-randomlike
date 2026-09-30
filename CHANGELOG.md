@@ -698,6 +698,26 @@ file is the human-readable summary.
       (the only audio knob until Phase 8 ships sounds) and the route re-renders
       with the forced tileset when it resumes. Keybinds stayed a separate backlog
       item. 612 tests pass; `npm run build` clean.
+- [x] Shared keybinds and the rebinding UI (`D23`): every scene now reads its
+      confirm / cancel / move / party / settings key from one map instead of
+      hardcoding it. `src/data/keybinds.ts` is the pure vocabulary — one key per
+      action, the defaults, display labels, `actionForKey` (explicit binding,
+      then the always-on `Enter`/`Space` confirm and `Esc` cancel aliases, so a
+      rebind cannot lock a player out), `withBinding` (a rebind swaps with
+      whichever action held the key, so no key is ambiguous) and
+      `sanitizeKeybinds`. `src/input/` is the Phaser half: `subscribeKeybinds`
+      listens to the plugin's generic `keydown`, reading the map per press so a
+      rebind applies immediately and skipping auto-repeat, with `actionKeys` for
+      the two spots that poll held state (the route's walk, the battle's
+      hold-to-skip) and `keyNameOf` for the native-event lookup. `Settings`
+      gained `keybinds`, so `SAVE_VERSION` is 4 and `SAVE_MIGRATIONS[3]` fills
+      the defaults into a v3 document. `SettingsScene` shows them as `keybind`
+      rows beside the `step` rows: confirm on one captures the next raw key
+      (bound or not), cancel keeps the old one, and the on-screen hints are
+      written from the live bindings. The route, battle, party, starter and
+      run-over screens all moved onto the layer; the fixed debug/utility keys
+      (`R` tileset, dev `B`, `S` seed prompt) stay on Phaser directly. 634 tests
+      pass; `npm run build` clean.
 
 ## Phase 8 — Art, audio & release
 

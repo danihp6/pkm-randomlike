@@ -27,7 +27,8 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 - [ ] Add ESLint + Prettier with a `npm run lint` script once the engine has more
       real code (deferred: TypeScript strict mode covers most of it for now).
 - [ ] Add a README per code folder as the folders appear (`src/scenes/README.md`,
-      `src/render/README.md`, `src/input/README.md`).
+      `src/render/README.md`; `src/input/README.md` shipped with the keybind
+      layer).
 
 ## Phase 1 — Dex accessors & data contracts
 
@@ -67,9 +68,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] Keybinds: a shared input layer (`src/input/`) so every scene reads its
-      confirm / cancel / move / party / settings keys from one map, plus the
-      rebinding UI in the settings screen.
 - [ ] Accessibility pass: colour-only information audited, HP bars readable
       without colour, full keyboard play, reduced-flash option.
 - [ ] Balance pass using `docs/balance/` sheets and the scripted-battle harness.

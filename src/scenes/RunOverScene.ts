@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
+import { keyLabel } from '../data/keybinds';
 import type { RunState } from '../engine/run';
 import { clearRun } from '../engine/save';
+import { subscribeKeybinds } from '../input/input';
+import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { addFrlgWindow } from '../ui/frlg';
 import { addFrlgText } from '../ui/frlgFont';
@@ -47,20 +50,21 @@ export class RunOverScene extends Phaser.Scene {
     lines.slice(2).forEach((line, i) => {
       addFrlgText(this, x + 64, y + 140 + i * 44, line, { size: 16 });
     });
-    addFrlgText(this, width / 2, y + panelH + 28, 'Z / Enter — start a new run', {
-      size: 16,
-      tint: 0x94a3b8,
-      origin: 0.5,
-    });
+    addFrlgText(
+      this,
+      width / 2,
+      y + panelH + 28,
+      `${keyLabel(loadSettings().keybinds.confirm)} — start a new run`,
+      {
+        size: 16,
+        tint: 0x94a3b8,
+        origin: 0.5,
+      },
+    );
 
-    const keyboard = this.input.keyboard!;
-    const confirm = (event: KeyboardEvent) => {
-      if (event.repeat || !this.armed) return;
-      this.startNewRun();
-    };
-    keyboard.on('keydown-Z', confirm);
-    keyboard.on('keydown-ENTER', confirm);
-    keyboard.on('keydown-SPACE', confirm);
+    subscribeKeybinds(this, ({ action }) => {
+      if (action === 'confirm' && this.armed) this.startNewRun();
+    });
     this.time.delayedCall(RUN_OVER_INPUT_DELAY_MS, () => {
       this.armed = true;
     });
