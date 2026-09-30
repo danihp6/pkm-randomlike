@@ -73,10 +73,32 @@ describe('resolveBattle', () => {
     expect(result.events).toEqual([]);
   });
 
+  it('adopts the party the battle returned, releasing what it fainted', () => {
+    const run = createRun({ seed: 's', starter: createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5 }) });
+    const reserve = createRunPokemon({ id: 'reserve', speciesId: 'squirtle', level: 4 });
+    const two = { ...run, party: [run.party[0], reserve] };
+    const result = resolveBattle(
+      two,
+      returned(two, 'win', {
+        player: [hurt(two.party[0], 0).fighter, hurt(reserve, 3).fighter],
+      }),
+      wild,
+    );
+    expect(result.released.map((member) => member.fighter.id)).toEqual(['starter']);
+    expect(result.run.party.map((member) => member.fighter.id)).toEqual(['reserve']);
+    expect(result.run.party[0].fighter.hp).toBe(3);
+  });
+
+  it("keeps each member's XP across the snapshot swap", () => {
+    const run = createRun({ seed: 's', starter });
+    const result = resolveBattle(run, returned(run, 'run'), wild);
+    expect(result.run.party[0].xp).toBe(starter.xp);
+  });
+
   it('awards nothing when the player flees', () => {
     const run = createRun({ seed: 's', starter });
     const result = resolveBattle(run, returned(run, 'run'), wild);
-    expect(result.run.party[0]).toBe(starter);
+    expect(result.run.party[0]).toEqual(starter);
     expect(result.events).toEqual([]);
   });
 });
