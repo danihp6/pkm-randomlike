@@ -13,15 +13,16 @@ import {
   MAX_PARTY_SIZE,
   addItem,
   addPokemon,
+  advanceRoute,
   battleSeed,
   canCapture,
   createRun,
   createRunPokemon,
   hasLivingParty,
+  healParty,
   isFinalStage,
   isTrainerDefeated,
   resolveBattle,
-  restAndAdvance,
   trainerRoster,
   type BagCounts,
   type BattleLaunch,
@@ -102,6 +103,10 @@ export class RouteScene extends Phaser.Scene {
   private gameOver = false;
   private battleCounter = 0;
   private pendingBattle: BattleLaunch | null = null;
+  /** What the party/PC screen was opened for, while it is open. */
+  private pendingParty: 'field' | 'rest' | null = null;
+  /** Set when the rest stop closes: advance the route on the next update. */
+  private advanceAfterParty = false;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private hint!: Phaser.GameObjects.BitmapText;
   private hintBackdrop!: Phaser.GameObjects.Rectangle;
@@ -137,6 +142,8 @@ export class RouteScene extends Phaser.Scene {
     this.pickedItems = new Set<string>();
     this.gameOver = false;
     this.pendingBattle = null;
+    this.pendingParty = null;
+    this.advanceAfterParty = false;
     this.releaseRoot = null;
     this.releaseQueue = [];
     this.releaseOnDone = null;
@@ -197,6 +204,9 @@ export class RouteScene extends Phaser.Scene {
 
     this.input.keyboard!.on('keydown-R', () => {
       if (this.scene.isActive()) this.cycleTileset();
+    });
+    this.input.keyboard!.on('keydown-P', () => {
+      if (this.scene.isActive()) this.openParty('field');
     });
     const confirmRelease = (event: KeyboardEvent) => {
       if (event.repeat) return;
@@ -427,16 +437,38 @@ export class RouteScene extends Phaser.Scene {
     this.setHint('Walk the route. Arrow keys to move.');
   }
 
-  /** The exit beat: rest the party, then rebuild the scene on the next route. */
+  /** The exit beat: rest the party, then let the player manage it before moving on. */
   private leaveRoute(): void {
-    if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
+    if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) return;
     if (isFinalStage(this.run.routeIndex, this.run.mode)) {
       this.gameOver = true;
       this.scene.start('RunOver', { run: this.run, won: true });
       return;
     }
-    this.run = restAndAdvance(this.run);
-    this.scene.restart();
+    this.run = healParty(this.run);
+    this.openParty('rest');
+  }
+
+  /** Opens the party/PC screen paused-on-top, like a battle (`P`, or the rest stop). */
+  private openParty(mode: 'field' | 'rest'): void {
+    if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) return;
+    this.pendingParty = mode;
+    this.scene.pause();
+    this.scene.launch('Party', { run: this.run, mode });
+  }
+
+  /** Called by `PartyScene` before it stops: adopts the managed run. */
+  applyPartyResult(run: RunState): void {
+    if (!this.pendingParty) return;
+    const mode = this.pendingParty;
+    this.pendingParty = null;
+    this.run = run;
+    if (mode === 'rest') {
+      // The route advances on the next update, once the screen has closed.
+      this.advanceAfterParty = true;
+      return;
+    }
+    this.refreshHud();
   }
 
   private trainerTrigger(trainer: RouteTrainer): BattleTrigger {
@@ -643,12 +675,20 @@ export class RouteScene extends Phaser.Scene {
   private setHint(text: string): void {
     const dev = IS_DEVELOP ? `  ·  B: random battle  ·  ${DEBUG_MENU_TOGGLE_KEY}: debug menu` : '';
     this.hint.setText(
-      `${text}\nArrows: move  ·  R: swap tileset${dev}  ·  trainers: ${this.route.trainers.length}`,
+      `${text}\nArrows: move  ·  P: party/PC  ·  R: swap tileset${dev}  ·  trainers: ${this.route.trainers.length}`,
     );
   }
 
   override update(): void {
-    if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
+    if (this.advanceAfterParty) {
+      this.advanceAfterParty = false;
+      this.run = advanceRoute(this.run);
+      // Restart with the advanced run: Phaser reuses a scene's previous start
+      // data on `restart()`, so without this the route would boot the old run.
+      this.scene.restart({ run: this.run });
+      return;
+    }
+    if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) return;
     const step: Tile = { x: 0, y: 0 };
     if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) step.x = -1;
     else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) step.x = 1;

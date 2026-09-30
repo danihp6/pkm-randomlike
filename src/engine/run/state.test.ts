@@ -9,13 +9,17 @@ import {
   canCapture,
   consumeItem,
   createRun,
+  depositToBox,
   hasLivingParty,
   isTrainerDefeated,
   itemCount,
   markTrainerDefeated,
+  moveInBox,
+  moveInParty,
   setParty,
   updatePokemon,
   useCapture,
+  withdrawToParty,
 } from './state';
 
 const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch'] });
@@ -72,6 +76,54 @@ describe('pokemon moves', () => {
     expect(hasLivingParty(run)).toBe(true);
     const fainted = { ...starter, fighter: { ...starter.fighter, hp: 0 } };
     expect(hasLivingParty(setParty(run, [fainted]))).toBe(false);
+  });
+});
+
+describe('party/PC moves', () => {
+  function withParty(ids: readonly string[]): ReturnType<typeof createRun> {
+    const members = ids.map((id, index) =>
+      index === 0 ? { ...starter, fighter: { ...starter.fighter, id } } : createRunPokemon({ id, speciesId: 'sentret', level: 3 }),
+    );
+    return { ...createRun({ seed: 'run-a', starter }), party: members };
+  }
+
+  it('reorders the party and the box', () => {
+    const run = withParty(['a', 'b', 'c']);
+    expect(moveInParty(run, 0, 2).party.map((m) => m.fighter.id)).toEqual(['b', 'c', 'a']);
+    expect(moveInParty(run, 2, 0).party.map((m) => m.fighter.id)).toEqual(['c', 'a', 'b']);
+    expect(moveInParty(run, 1, 1)).toBe(run);
+    expect(moveInParty(run, 0, 5)).toBe(run);
+    const boxed = {
+      ...run,
+      box: [createRunPokemon({ id: 'x', speciesId: 'sentret', level: 3 }), createRunPokemon({ id: 'y', speciesId: 'sentret', level: 3 })],
+    };
+    expect(moveInBox(boxed, 0, 1).box.map((m) => m.fighter.id)).toEqual(['y', 'x']);
+  });
+
+  it('deposits a party member in the box', () => {
+    const run = withParty(['a', 'b']);
+    const next = depositToBox(run, 0);
+    expect(next.party.map((m) => m.fighter.id)).toEqual(['b']);
+    expect(next.box.map((m) => m.fighter.id)).toEqual(['a']);
+  });
+
+  it('refuses to deposit the last party member', () => {
+    const run = withParty(['a']);
+    expect(depositToBox(run, 0)).toBe(run);
+  });
+
+  it('withdraws a boxed member while the party has room', () => {
+    const run = { ...withParty(['a']), box: [createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 3 })] };
+    const next = withdrawToParty(run, 0);
+    expect(next.party.map((m) => m.fighter.id)).toEqual(['a', 'boxed']);
+    expect(next.box).toEqual([]);
+  });
+
+  it('refuses to withdraw into a full party', () => {
+    const full = withParty(['a', 'b', 'c', 'd', 'e', 'f']);
+    const run = { ...full, box: [createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 3 })] };
+    expect(withdrawToParty(run, 0)).toBe(run);
+    expect(withdrawToParty(run, 7)).toBe(run);
   });
 });
 

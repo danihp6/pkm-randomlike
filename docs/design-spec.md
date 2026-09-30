@@ -26,6 +26,10 @@ carries over.
 ## 3. The party
 
 - Up to **6** Pokémon in the active party; extras go to the **PC box**.
+- The party and the PC box are managed outside battle, from the route HUD or at
+  the healing stop: reorder the party (the lead is who opens the next battle) and
+  move members either way between party and box. The party is never left empty
+  and the box is never required to be full.
 - You start a run by picking one of three starters drawn from the base forms of
   every evolution line with at least three members (itself plus two others), so
   every starter has room to grow.

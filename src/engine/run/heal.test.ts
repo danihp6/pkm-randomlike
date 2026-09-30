@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { levelCapForRoute } from '../../data/run';
 import { restoreFighter } from '../battle/fighter';
-import { createRunPokemon, xpForLevel, type RunPokemon } from './progression';
-import { healParty, restAndAdvance } from './heal';
-import { addPokemon, addItem, createRun, useCapture, type RunState } from './state';
+import { createRunPokemon, type RunPokemon } from './progression';
+import { healParty } from './heal';
+import { addPokemon, createRun, type RunState } from './state';
 
 const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch', 'ember'] });
 const starterMaxHp = restoreFighter(starter.fighter).maxHp;
@@ -40,17 +39,5 @@ describe('healParty', () => {
     const healed = healParty(addPokemon(full, boxed));
     expect(healed.box[0].fighter.hp).toBeGreaterThan(2);
     expect(healed.box[0].fighter.moves.every((slot) => slot.pp === slot.maxPp)).toBe(true);
-  });
-});
-
-describe('restAndAdvance', () => {
-  it('heals, moves to the next route and clears the per-route marks', () => {
-    const run = addItem(useCapture(createRun({ seed: 's', starter: damaged(starter, 1, 0) })), 'potion', 2);
-    const next = restAndAdvance(run);
-    expect(next.routeIndex).toBe(2);
-    expect(next.levelCap).toBe(levelCapForRoute(2));
-    expect(next.captureUsed).toBe(false);
-    expect(next.party[0].fighter.hp).toBeGreaterThan(1);
-    expect(next.party[0].xp).toBe(xpForLevel(5));
   });
 });
