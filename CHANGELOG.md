@@ -476,3 +476,10 @@ file is the human-readable summary.
       infinite mode branch (no final boss). `RouteScene` now
       asks `isFinalStage` instead of comparing against `RUN_CHAIN.finiteLength`
       directly. 453 tests pass; `npm run build` clean.
+- [x] `src/data/items.ts` prices: every `ItemDef` carries a Poké Dollar `price`
+      (`0` = never sold, the Master Ball), with `isForSale`, `buyPrice` and
+      `sellPrice` (half, rounded down) helpers, plus `src/data/items.test.ts`
+      (unique ids, known kinds, integer prices, ball prices in step with their
+      catch bonus, no Revive). `docs/balance/economy.md` records the sheet and
+      `docs/data-spec.md` moves the file to phase 3/6. 461 tests pass;
+      `npm run build` clean.
