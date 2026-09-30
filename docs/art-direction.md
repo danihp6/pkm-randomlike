@@ -23,7 +23,8 @@ Three tiers, in order of preference:
 2. **Imported game rips (local only)** — `wood.png`, `desert.png`,
    `apple-woods.png`, `lush-prairie.png`, `beach-cave.png`, `items.png`,
    `moves.png`, `hud.png`, `portraits.png`, `pokemon/*.png`, and the FRLG UI art
-   (`frlg/item-icons.png`, `frlg/window.png`, `frlg/textbox.png`). The PMD ones
+   (`frlg/item-icons.png`, `frlg/window.png`, `frlg/textbox.png`,
+   `frlg/hpbar.png`, `frlg/cursor.png`, `frlg/font.png`). The PMD ones
    come from Pokémon Mystery Dungeon rips (PMDCollab and spriters-resource) via the
    sibling project `pkm-mystery-dungeon-like`; the FRLG ones come from
    spriters-resource and the pret/pokefirered decomp (see the FRLG sections below).
@@ -76,12 +77,23 @@ plus `src/data/frlg/item-icons.json`, read through `src/data/itemIcons.ts`.
 
 The window chrome comes from the same sheet's HP-bar/menu panel:
 `scripts/frlg/build-battle-ui.mjs` crops and 4x-upscales the light menu window
-(`src/assets/frlg/window.png`) and the navy battle message box
-(`src/assets/frlg/textbox.png`) for the 1280x800 canvas, drawn as nine-slices by
-`src/ui/frlg.ts`. The battle scene's HP panels and message/command box and the
-route HUD panel all use them. Still to come from the sheet: the FRLG bitmap font
-(`graphics/fonts/latin_normal.png` + `charmap.txt`) and the baked HP-bar/command
-art.
+(`src/assets/frlg/window.png`), the navy battle message box
+(`src/assets/frlg/textbox.png`), the HP readout — the "HP" chip plus an empty
+track, `src/assets/frlg/hpbar.png` — and the ▶ command cursor
+(`src/assets/frlg/cursor.png`) for the 1280x800 canvas, drawn by `src/ui/frlg.ts`.
+The measured geometry (the 4x scale and the HP track's fill rectangle) is
+generated alongside them in `src/data/frlg/battle-ui.json`, so the scene never
+hardcodes pixel maths. The scene paints the current HP colour behind the bar's
+overlay.
+
+The bitmap font is packed the same way: `scripts/frlg/build-font.mjs` reads
+`latin_normal.png` + `charmap.txt`, keys the sheet's flat blue background and
+white padding to transparent, keeps the letter white with a mid-grey shadow (so
+a tint recolours it for light or dark windows) and 2x-upscales it into
+`src/assets/frlg/font.png` plus the per-glyph metrics in
+`src/data/frlg/font.json`, read at runtime by `src/ui/frlgFont.ts`
+(`addFrlgText`). Only the Latin glyphs up to the Japanese sections are packed,
+plus the four named arrows.
 
 ## Sprite contract
 
@@ -109,6 +121,7 @@ art.
 - Routes and dungeons match the original FireRed/LeafGreen look for their biome
   (Viridian Forest, Mt. Moon, Seafoam...): the generator follows the tileset's
   style, not a generic room layout (`docs/routes-spec.md` §2).
-- Chalk-drawn UI is not a thing here; this project's UI is a classic Pokémon
-  frame with a monospace placeholder font until the FRLG glyph set (`fonts.png`)
-  is packed.
+- Chalk-drawn UI is not a thing here; this project's UI is the classic Pokémon
+  frame with the packed FRLG glyph set (`frlg/font.png` through `addFrlgText`),
+  so menus, HUD labels and battle messages are all FRLG bitmap text instead of a
+  system font.

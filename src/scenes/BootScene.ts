@@ -3,11 +3,20 @@ import playerSpriteUrl from '../assets/pokemon/25.png';
 import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY } from '../data/itemIcons';
 import { PORTRAIT_ATLAS_URL, PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY } from '../data/portraits';
 import {
+  FRLG_CURSOR_KEY,
+  FRLG_CURSOR_URL,
+  FRLG_HPBAR_KEY,
+  FRLG_HPBAR_URL,
   FRLG_TEXTBOX_KEY,
   FRLG_TEXTBOX_URL,
   FRLG_WINDOW_KEY,
   FRLG_WINDOW_URL,
 } from '../ui/frlg';
+import {
+  FRLG_FONT_ATLAS_URL,
+  FRLG_FONT_TEXTURE_KEY,
+  registerFrlgFont,
+} from '../ui/frlgFont';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import {
   COMMON_ATLAS_URL,
@@ -56,9 +65,13 @@ export class BootScene extends Phaser.Scene {
     });
     this.load.image(FRLG_WINDOW_KEY, FRLG_WINDOW_URL);
     this.load.image(FRLG_TEXTBOX_KEY, FRLG_TEXTBOX_URL);
+    this.load.image(FRLG_HPBAR_KEY, FRLG_HPBAR_URL);
+    this.load.image(FRLG_CURSOR_KEY, FRLG_CURSOR_URL);
+    this.load.image(FRLG_FONT_TEXTURE_KEY, FRLG_FONT_ATLAS_URL);
   }
 
   create(): void {
+    registerFrlgFont(this.cache.bitmapFont);
     this.buildRouteTextures();
     this.scene.start('Starter');
   }

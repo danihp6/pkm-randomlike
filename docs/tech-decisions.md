@@ -138,14 +138,16 @@ HP-bar/in-battle-menu sheet, the bag/party/summary screens, type/status icons,
 fonts and the battle FX sheets, plus the decomp-named 24x24 item icons
 (`graphics/items/icons` in pret/pokefirered, the same art, so the id → icon map
 is authoritative). Window chrome is packed as nine-slices
-(`scripts/frlg/build-battle-ui.mjs`, `src/ui/frlg.ts`); item icons and their frame
-map likewise (`scripts/frlg/build-item-icons.mjs`,
-`src/data/frlg/item-icons.json` via `src/data/itemIcons.ts`). Provenance and the
-per-sheet credits live in `docs/art-direction.md`. Consequence: the UI converges
-on the FRLG look — the battle scene's HP panels, message box and command menu and
-the route HUD already use the FRLG windows, and the remaining work (FRLG bitmap
-font, baked HP-bar/command art, `StarterScene`) is tracked in `TODO.md` Phase 5.
-Being a game rip, this keeps O4 open for any public build.
+(`scripts/frlg/build-battle-ui.mjs`, `src/ui/frlg.ts`), and the same script bakes
+the HP bar and the ▶ command cursor; the FRLG bitmap font is packed from
+`latin_normal.png` + `charmap.txt` by `scripts/frlg/build-font.mjs` and rendered
+through `src/ui/frlgFont.ts`. Item icons and their frame map likewise
+(`scripts/frlg/build-item-icons.mjs`, `src/data/frlg/item-icons.json` via
+`src/data/itemIcons.ts`). Provenance and the per-sheet credits live in
+`docs/art-direction.md`. Consequence: the UI converges on the FRLG look — the
+battle scene's HP panels, message box and command menu and the route HUD and
+starter pick all use the FRLG windows and glyph set. Being a game rip, this keeps
+O4 open for any public build.
 
 ## Open questions
 

@@ -1,26 +1,30 @@
 import Phaser from 'phaser';
 import { getSpecies } from '../data/dex';
 import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
-import { STARTER_POOL, STARTING_BAG } from '../data/run';
-import { createRun, createRunPokemon } from '../engine/run';
-import { randomSeed } from '../engine/rng';
-import { PANEL_FILL, PANEL_STROKE, drawPanel } from '../ui/panel';
+import { STARTER_POOL_SIZE, STARTING_BAG } from '../data/run';
+import { createRun, createRunPokemon, rollStarterPool } from '../engine/run';
+import { randomSeed, rngFromSeed } from '../engine/rng';
+import { addFrlgWindow } from '../ui/frlg';
+import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 
-const CARD_WIDTH = 240;
+const CARD_WIDTH = 260;
 const CARD_HEIGHT = 320;
 const CARD_GAP = 32;
-const CARD_TOP = 170;
+const CARD_TOP = 176;
+const CURSOR_OFFSET = 44;
 const START_LEVEL = 5;
-const SELECTED_STROKE = 0xfbbf24;
 
 /**
- * The run opener: pick a starter from the pool, then hand the seeded run to the
- * route. Portraits are the PMDCollab faces loaded by `BootScene`
- * (`docs/art-direction.md`); selection is keyboard-only, like the rest.
+ * The run opener: rolls three starter candidates (base forms of evolution lines
+ * of at least three, `docs/design-spec.md` §3) from the run seed, then hands the
+ * seeded run to the route once one is picked. Cards are FRLG windows with
+ * PMDCollab faces (`docs/art-direction.md`); selection is keyboard-only.
  */
 export class StarterScene extends Phaser.Scene {
   private index = 0;
-  private panel!: Phaser.GameObjects.Graphics;
+  private seed = '';
+  private pool: readonly string[] = [];
+  private cursor!: Phaser.GameObjects.BitmapText;
 
   constructor() {
     super('Starter');
@@ -29,37 +33,29 @@ export class StarterScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
     this.index = 0;
+    this.seed = randomSeed();
+    this.pool = rollStarterPool(rngFromSeed(`${this.seed}:starters`), STARTER_POOL_SIZE);
     this.add.rectangle(0, 0, width, height, 0x10161f).setOrigin(0, 0);
 
-    this.add
-      .text(width / 2, 56, 'Choose your starter', {
-        fontFamily: 'monospace',
-        fontSize: '32px',
-        color: '#f8fafc',
-      })
-      .setOrigin(0.5);
-    this.add
-      .text(width / 2, 104, 'Your first Pokémon. Lose it and it is gone for good.', {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#94a3b8',
-      })
-      .setOrigin(0.5);
+    addFrlgText(this, width / 2, 44, 'Choose your starter', { origin: 0.5 });
+    addFrlgText(this, width / 2, 88, 'Your first Pokémon. Lose it and it is gone for good.', {
+      size: 16,
+      tint: 0x94a3b8,
+      origin: 0.5,
+    });
 
-    this.panel = this.add.graphics();
-    STARTER_POOL.forEach((speciesId, i) => this.buildCard(speciesId, i));
+    this.pool.forEach((speciesId, i) => this.buildCard(speciesId, i));
+    this.cursor = addFrlgText(this, 0, CARD_TOP + CARD_HEIGHT / 2, '▶', { origin: [0, 0.5] });
 
-    this.add
-      .text(width / 2, height - 64, '←  →  choose      Z / Enter  confirm', {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        color: '#cbd5f5',
-      })
-      .setOrigin(0.5);
+    addFrlgText(this, width / 2, height - 56, '←  →  choose      Z / Enter  confirm', {
+      size: 16,
+      tint: 0xcbd5f5,
+      origin: 0.5,
+    });
 
     const keyboard = this.input.keyboard!;
     const move = (delta: number) => {
-      this.index = (this.index + delta + STARTER_POOL.length) % STARTER_POOL.length;
+      this.index = (this.index + delta + this.pool.length) % this.pool.length;
       this.render();
     };
     keyboard.on('keydown-LEFT', () => move(-1));
@@ -74,7 +70,7 @@ export class StarterScene extends Phaser.Scene {
   }
 
   private cardX(index: number): number {
-    const total = STARTER_POOL.length * CARD_WIDTH + (STARTER_POOL.length - 1) * CARD_GAP;
+    const total = this.pool.length * CARD_WIDTH + (this.pool.length - 1) * CARD_GAP;
     return (this.scale.width - total) / 2 + index * (CARD_WIDTH + CARD_GAP);
   }
 
@@ -83,54 +79,40 @@ export class StarterScene extends Phaser.Scene {
     const species = getSpecies(speciesId);
     const centerX = x + CARD_WIDTH / 2;
 
+    addFrlgWindow(this, x, CARD_TOP, CARD_WIDTH, CARD_HEIGHT);
+
     const frame = portraitFrameFor(speciesId);
     this.add
       .image(centerX, CARD_TOP + 110, PORTRAIT_TEXTURE_KEY, frame ?? 0)
       .setScale(3)
       .setVisible(frame !== null);
 
-    this.add
-      .text(centerX, CARD_TOP + 214, species?.name ?? speciesId, {
-        fontFamily: 'monospace',
-        fontSize: '22px',
-        color: '#f8fafc',
-      })
-      .setOrigin(0.5);
-    this.add
-      .text(centerX, CARD_TOP + 248, (species?.types ?? []).join(' / '), {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#93c5fd',
-      })
-      .setOrigin(0.5);
-    this.add
-      .text(centerX, CARD_TOP + 284, `Lv ${START_LEVEL}`, {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#94a3b8',
-      })
-      .setOrigin(0.5);
+    addFrlgText(this, centerX, CARD_TOP + 210, species?.name ?? speciesId, {
+      tint: FRLG_INK,
+      origin: 0.5,
+    });
+    addFrlgText(this, centerX, CARD_TOP + 252, (species?.types ?? []).join(' / '), {
+      size: 16,
+      tint: 0x3a3956,
+      origin: 0.5,
+    });
+    addFrlgText(this, centerX, CARD_TOP + 284, `Lv ${START_LEVEL}`, {
+      size: 16,
+      tint: 0x3a3956,
+      origin: 0.5,
+    });
   }
 
-  /** Redraws the selection frame; cards are static otherwise. */
+  /** Moves the ▶ cursor to the highlighted card. */
   private render(): void {
-    this.panel.clear();
-    for (let i = 0; i < STARTER_POOL.length; i++) {
-      const x = this.cardX(i);
-      const selected = i === this.index;
-      drawPanel(this.panel, x, CARD_TOP, CARD_WIDTH, CARD_HEIGHT, {
-        fill: selected ? 0x243252 : PANEL_FILL,
-        stroke: selected ? SELECTED_STROKE : PANEL_STROKE,
-        radius: 16,
-      });
-    }
+    this.cursor.setPosition(this.cardX(this.index) - CURSOR_OFFSET, CARD_TOP + CARD_HEIGHT / 2);
   }
 
   private confirm(): void {
-    const speciesId = STARTER_POOL[this.index];
+    const speciesId = this.pool[this.index];
     if (!speciesId) return;
     const starter = createRunPokemon({ id: 'starter', speciesId, level: START_LEVEL });
-    const run = createRun({ seed: randomSeed(), starter, bag: STARTING_BAG });
+    const run = createRun({ seed: this.seed, starter, bag: STARTING_BAG });
     this.scene.start('Route', { run });
   }
 }
