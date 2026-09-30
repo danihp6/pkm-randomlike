@@ -64,6 +64,10 @@ Special move shapes:
 - There is no Revive item and no way to restore a fainted Pokémon.
 - A battle you lose wipes the whole party, so the run ends. There is no "black
   out and wake up in the last Center".
+- The loss is shown, not just applied: each fallen Pokémon gets a "was released"
+  beat on the route (portrait, name and level), and when the last one falls the
+  run ends on a dedicated screen that reports the routes cleared and the run
+  seed before offering a new run. The final route's exit ends on the same screen.
 - Capture is allowed in wild battles only.
 
 ## 6. Capture

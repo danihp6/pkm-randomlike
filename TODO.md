@@ -59,9 +59,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] Permadeath feedback: the "was released" beat for a fallen Pokémon, and the
-      run-over screen when the last one falls.
-
 ## Phase 6 — Run structure, party & economy
 
 > Completed work for this phase is archived in `CHANGELOG.md`.

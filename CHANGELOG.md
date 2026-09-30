@@ -451,6 +451,22 @@ file is the human-readable summary.
       `RouteScene` counts each levelled HUD row up to its new level with a gold
       flash, then resyncs. `beats.test.ts` covers the diff. 503 tests pass;
       `npm run build` clean.
+- [x] Permadeath feedback (Phase 5): `src/ui/permadeath.ts` (Phaser-free, tested)
+      turns the resolution's fallen list into release beats and the run into the
+      end-screen lines (`runOverSummary` / `runOverLines`: routes cleared, seed,
+      loss or win). `RouteScene` plays a "was released" beat per fallen Pokémon —
+      scrim, portrait, name and level, advance on Z or after 1.6 s, with a short
+      guard so the press that closed the battle cannot skip the first beat — and
+      then either resumes the route or hands over to the new `RunOverScene`. The
+      route's final exit now ends on that same screen in win mode; `Z / Enter`
+      starts a fresh run from `StarterScene`. Fixing this exposed that
+      `resolveBattle` never adopted the party the battle returned, so HP, PP and
+      status were discarded and **permadeath never fired from a real battle**:
+      `adoptBattleParty` now swaps each member's snapshot by id (XP lives on the
+      run member, so it survives) before `releaseFainted` runs, with tests for
+      the adoption and for the real full-HP-to-`released` flow. Verified in the
+      browser: a wild loss releases the party and lands on the run-over screen.
+      521 tests pass; `npm run build` clean.
 
 ## Phase 6 — Run structure, party & economy
 

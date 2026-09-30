@@ -55,6 +55,7 @@ import { resolveTileFrame } from '../engine/tileFrames';
 import { Vision } from '../engine/vision';
 import { addFrlgWindow } from '../ui/frlg';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
+import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import {
   ARROW_TEXTURE_KEY,
@@ -108,6 +109,14 @@ export class RouteScene extends Phaser.Scene {
   private hudTitle!: Phaser.GameObjects.BitmapText;
   private hudBagIcons: { icon: Phaser.GameObjects.Image; count: Phaser.GameObjects.BitmapText }[] = [];
   private hudRows: { portrait: Phaser.GameObjects.Image; text: Phaser.GameObjects.BitmapText }[] = [];
+  /** The "was released" overlay while a beat sequence is playing. */
+  private releaseRoot: Phaser.GameObjects.Container | null = null;
+  private releaseQueue: ReleaseBeat[] = [];
+  private releaseOnDone: (() => void) | null = null;
+  private releaseWait: Phaser.Time.TimerEvent | null = null;
+  private releaseArmed = false;
+  private releasePortrait!: Phaser.GameObjects.Image;
+  private releaseText!: Phaser.GameObjects.BitmapText;
 
   constructor() {
     super('Route');
@@ -128,6 +137,11 @@ export class RouteScene extends Phaser.Scene {
     this.pickedItems = new Set<string>();
     this.gameOver = false;
     this.pendingBattle = null;
+    this.releaseRoot = null;
+    this.releaseQueue = [];
+    this.releaseOnDone = null;
+    this.releaseWait = null;
+    this.releaseArmed = false;
     this.tilesetId = 'wood';
 
     const routeIndex = this.run.routeIndex;
@@ -184,6 +198,13 @@ export class RouteScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-R', () => {
       if (this.scene.isActive()) this.cycleTileset();
     });
+    const confirmRelease = (event: KeyboardEvent) => {
+      if (event.repeat) return;
+      if (this.releaseRoot && this.releaseArmed) this.advanceRelease();
+    };
+    this.input.keyboard!.on('keydown-Z', confirmRelease);
+    this.input.keyboard!.on('keydown-SPACE', confirmRelease);
+    this.input.keyboard!.on('keydown-ENTER', confirmRelease);
     if (IS_DEVELOP) {
       this.input.keyboard!.on('keydown-B', () => {
         if (this.scene.isActive()) this.startBattle({ kind: 'wild', speciesId: 'scatterbug', level: 5, key: 'dev' });
@@ -408,10 +429,10 @@ export class RouteScene extends Phaser.Scene {
 
   /** The exit beat: rest the party, then rebuild the scene on the next route. */
   private leaveRoute(): void {
-    if (this.gameOver || this.pendingBattle) return;
+    if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     if (isFinalStage(this.run.routeIndex, this.run.mode)) {
       this.gameOver = true;
-      this.setHint('Final route cleared. The run is won!');
+      this.scene.start('RunOver', { run: this.run, won: true });
       return;
     }
     this.run = restAndAdvance(this.run);
@@ -437,7 +458,7 @@ export class RouteScene extends Phaser.Scene {
 
   /** Pauses the route and rolls the battle on top of it (Phase 5 transition). */
   private startBattle(trigger: BattleTrigger): void {
-    if (this.gameOver || this.pendingBattle) return;
+    if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     this.battleCounter += 1;
     const key = trigger.kind === 'wild' ? `${trigger.key}:${this.battleCounter}` : `trainer:${trigger.trainerId}`;
     const launch: BattleLaunch = {
@@ -460,7 +481,7 @@ export class RouteScene extends Phaser.Scene {
    * Ignored while the route is paused behind another battle or the run is over.
    */
   startDebugWildBattle(speciesId: string, level: number): void {
-    if (!IS_DEVELOP || this.gameOver || this.pendingBattle || !this.scene.isActive()) return;
+    if (!IS_DEVELOP || this.gameOver || this.pendingBattle || this.releaseRoot || !this.scene.isActive()) return;
     this.startBattle({ kind: 'wild', speciesId, level, key: `debug:${speciesId}` });
   }
 
@@ -476,20 +497,96 @@ export class RouteScene extends Phaser.Scene {
     this.run = run;
     this.refreshHud();
 
-    if (!hasLivingParty(this.run)) {
-      this.gameOver = true;
-      this.setHint('Your last Pokémon fainted. The run is over. Reload to start again.');
+    const over = !hasLivingParty(this.run);
+    this.gameOver = over;
+    this.playReleaseBeats(releaseBeats(released), () => {
+      if (over) {
+        this.scene.start('RunOver', { run: this.run, won: false });
+        return;
+      }
+      const notes: string[] = [result.message];
+      if (events.some((event) => event.kind === 'level')) notes.push('Level up!');
+      if (events.some((event) => event.kind === 'evolve')) notes.push('It evolved!');
+      this.setHint(notes.join('  '));
+      this.playLevelUp(levelUpBeats(before, this.run.party));
+    });
+  }
+
+  /**
+   * Permadeath feedback (Phase 5): one beat per fallen Pokémon — a scrim, its
+   * portrait and "<name> was released." — then `onDone`. With nothing to show it
+   * calls back straight away, so the caller keeps one code path.
+   */
+  private playReleaseBeats(beats: readonly ReleaseBeat[], onDone: () => void): void {
+    if (beats.length === 0) {
+      onDone();
       return;
     }
+    this.releaseQueue = [...beats];
+    this.releaseOnDone = onDone;
+    this.releaseArmed = false;
+    this.buildReleaseOverlay();
+    this.time.delayedCall(RELEASE_INPUT_DELAY_MS, () => {
+      this.releaseArmed = true;
+    });
+    this.showReleaseBeat();
+  }
 
-    const notes: string[] = [result.message];
-    for (const fallen of released) {
-      notes.push(`${getSpecies(fallen.fighter.speciesId)?.name ?? fallen.fighter.speciesId} was released.`);
+  private buildReleaseOverlay(): void {
+    const { width, height } = this.scale;
+    const panelW = 460;
+    const panelH = 264;
+    const x = (width - panelW) / 2;
+    const y = (height - panelH) / 2 - 24;
+    const scrim = this.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0);
+    const panel = addFrlgWindow(this, x, y, panelW, panelH, 'textbox');
+    this.releasePortrait = this.add.image(width / 2, y + 96, PORTRAIT_TEXTURE_KEY, 0).setScale(3);
+    this.releaseText = addFrlgText(this, width / 2, y + 168, '', { align: 'center', origin: 0.5 });
+    this.releaseText.setMaxWidth(panelW - 48);
+    const hint = addFrlgText(this, width / 2, y + panelH + 28, 'Z — continue', {
+      size: 16,
+      tint: 0x94a3b8,
+      origin: 0.5,
+    });
+    // The HUD camera was told to ignore everything that existed at setup, not
+    // this, so the overlay lives there; the world camera must drop it.
+    this.releaseRoot = this.add
+      .container(0, 0, [scrim, panel, this.releasePortrait, this.releaseText, hint])
+      .setDepth(300);
+    this.cameras.main.ignore(this.releaseRoot);
+  }
+
+  private showReleaseBeat(): void {
+    const beat = this.releaseQueue[0];
+    if (!beat || !this.releaseRoot) {
+      this.finishReleaseBeats();
+      return;
     }
-    if (events.some((event) => event.kind === 'level')) notes.push('Level up!');
-    if (events.some((event) => event.kind === 'evolve')) notes.push('It evolved!');
-    this.setHint(notes.join('  '));
-    this.playLevelUp(levelUpBeats(before, this.run.party));
+    const frame = portraitFrameFor(beat.speciesId);
+    this.releasePortrait.setVisible(frame !== null);
+    if (frame !== null) this.releasePortrait.setFrame(frame);
+    this.releaseText.setText(`Lv${beat.level} ${beat.name}\nwas released.`);
+    this.releaseWait?.remove(false);
+    this.releaseWait = this.time.delayedCall(RELEASE_HOLD_MS, () => this.advanceRelease());
+  }
+
+  private advanceRelease(): void {
+    if (this.releaseQueue.length === 0) return;
+    this.releaseWait?.remove(false);
+    this.releaseWait = null;
+    this.releaseQueue.shift();
+    this.showReleaseBeat();
+  }
+
+  private finishReleaseBeats(): void {
+    this.releaseWait?.remove(false);
+    this.releaseWait = null;
+    this.releaseQueue = [];
+    this.releaseRoot?.destroy();
+    this.releaseRoot = null;
+    const done = this.releaseOnDone;
+    this.releaseOnDone = null;
+    done?.();
   }
 
   /**
@@ -551,7 +648,7 @@ export class RouteScene extends Phaser.Scene {
   }
 
   override update(): void {
-    if (this.gameOver || this.pendingBattle) return;
+    if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     const step: Tile = { x: 0, y: 0 };
     if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) step.x = -1;
     else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) step.x = 1;
