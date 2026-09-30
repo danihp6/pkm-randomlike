@@ -73,10 +73,11 @@ final boss      the last route of a finite run
 
 - Each route has a level band derived from its index (band start/end) and a
   per-route level cap that clamps XP gain (`docs/battle-spec.md` §7).
-- The species pool narrows and the trainer rosters get deeper (more Pokémon, more
-  items) as the band rises.
-- A trainer roster is generated deterministically from the route seed and never
-  exceeds the route's level cap.
+- Each trainer archetype carries one species pool per band (`src/data/trainers.ts`),
+  so a band's rosters field its own mix and the party size grows with the band
+  (`band`'s `trainerSize`); items arrive with the band's loot, not the roster.
+- A trainer roster is generated deterministically from the route seed and band,
+  and never exceeds the route's level cap.
 
 ## 7. Healing stops
 

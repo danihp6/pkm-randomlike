@@ -28,9 +28,18 @@ describe('trainerRoster', () => {
     }
   });
 
-  it('draws from the archetype pool', () => {
+  it('draws from the archetype pool for the route band', () => {
     const band = bandForRoute(1);
     const roster = trainerRoster(youngster, band, new Rng(3), 't1');
-    expect(youngster.pool).toContain(roster[0].speciesId);
+    expect(youngster.pools[band.id]).toContain(roster[0].speciesId);
+    expect(youngster.pools.early).toContain(roster[0].speciesId);
+  });
+
+  it('uses a later pool at a later band', () => {
+    const end = bandForRoute(40);
+    const roster = trainerRoster(youngster, end, new Rng(3), 't1');
+    for (const entry of roster) {
+      expect(youngster.pools.end).toContain(entry.speciesId);
+    }
   });
 });

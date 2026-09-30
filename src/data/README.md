@@ -12,7 +12,7 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   `index.ts` registry. Contract in `docs/tileset-spec.md`.
 - `biomes.ts` — biome → tileset, terrain flavour and encounter tables.
 - `encounters.ts` — per-biome species pools and weights by level band.
-- `trainers.ts` — trainer archetypes and their themed species pools.
+- `trainers.ts` — trainer archetypes and their themed species pool per level band.
 - `run.ts` — level bands, the per-route cap and the run chain cadence.
 - `items.ts` — the battle item catalogue: balls with catch multipliers, potions,
   status cures, X-items and held items (Leftovers, berries, the 1.2x type
