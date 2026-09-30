@@ -631,6 +631,28 @@ file is the human-readable summary.
        seeds and battle snapshots are untouched, so a replay is unchanged.
        541 tests pass; `npm run build` clean.
 
+## Phase 7 — Persistence, meta & polish
+
+- [x] Saved runs and settings (`src/engine/save.ts` + `localStorage`): one
+      versioned document (`SAVE_VERSION`, `SAVE_KEY = 'pokerandomlike.save'`) holds
+      the `Settings` (text speed, master volume) and the `RunState` in progress,
+      so the version lives inside the JSON and the key never has to move. The
+      pure module does the whole job — `encodeSave`/`decodeSave` (migrate →
+      validate → default, never throwing), a `migrations` table keyed by the
+      version it reads with `migrateDocument` walking a document up one version at
+      a time, per-field validation that repairs bad settings, drops malformed
+      party/box members and recomputes the level cap from the route, and thin
+      `loadSave`/`storeRun`/`clearRun`/`storeSettings` wrappers over a
+      `StorageLike`, so the tests never touch a browser. `src/storage.ts` is the
+      only browser-facing piece (`browserStorage()` returns null when the store is
+      blocked). `BootScene` resumes a saved run with a living party and otherwise
+      starts a fresh one (a run saved after its last Pokémon fell is cleared),
+      `RouteScene.persistRun()` writes on every run change (route create, battle
+      result, party close, item pickup, heal, route advance) and `RunOverScene`
+      clears the run on both outcomes (D5). 25 save tests cover the round trip,
+      the migration path, corrupt/newer documents and the storage wrappers.
+      566 tests pass; `npm run build` clean.
+
 ## Phase 8 — Art, audio & release
 
 - [x] FRLG battle trainer sprites (O1): `scripts/frlg/build-trainer-sprites.mjs`
