@@ -90,6 +90,52 @@ export function hasLivingParty(run: RunState): boolean {
   return run.party.some((member) => member.fighter.hp > 0);
 }
 
+/** Removes `from` and inserts it at `to`; an out-of-range move is a no-op. */
+function moveWithin<T>(list: readonly T[], from: number, to: number): readonly T[] {
+  if (from === to || from < 0 || from >= list.length || to < 0 || to >= list.length) return list;
+  const next = [...list];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
+}
+
+/** Reorders the party in place (the lead matters: index 0 opens the next battle). */
+export function moveInParty(run: RunState, from: number, to: number): RunState {
+  const party = moveWithin(run.party, from, to);
+  return party === run.party ? run : { ...run, party };
+}
+
+/** Reorders the box. */
+export function moveInBox(run: RunState, from: number, to: number): RunState {
+  const box = moveWithin(run.box, from, to);
+  return box === run.box ? run : { ...run, box };
+}
+
+/**
+ * Sends a party member to the box. The party is never left empty (D7): with a
+ * single member the deposit is refused and the run comes back untouched.
+ */
+export function depositToBox(run: RunState, partyIndex: number): RunState {
+  const member = run.party[partyIndex];
+  if (!member || run.party.length <= 1) return run;
+  return {
+    ...run,
+    party: run.party.filter((_, index) => index !== partyIndex),
+    box: [...run.box, member],
+  };
+}
+
+/** Brings a boxed member into the party; a full party refuses (D7). */
+export function withdrawToParty(run: RunState, boxIndex: number): RunState {
+  const member = run.box[boxIndex];
+  if (!member || run.party.length >= MAX_PARTY_SIZE) return run;
+  return {
+    ...run,
+    box: run.box.filter((_, index) => index !== boxIndex),
+    party: [...run.party, member],
+  };
+}
+
 export function canCapture(run: RunState): boolean {
   return !run.captureUsed;
 }

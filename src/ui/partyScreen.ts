@@ -1,0 +1,151 @@
+import { getSpecies } from '../data/dex';
+import { getItem } from '../data/items';
+import { restoreFighter, type StatusId } from '../engine/battle/fighter';
+import {
+  depositToBox,
+  moveInBox,
+  moveInParty,
+  withdrawToParty,
+  type RunPokemon,
+  type RunState,
+} from '../engine/run';
+import { statusAbbreviation } from './metrics';
+
+/**
+ * The party/PC screen's model and input reducer (Phase 6). The scene only draws
+ * what this returns, so reordering and moving members between party and box stay
+ * pure and testable; the run mutations themselves live in `engine/run/state.ts`.
+ */
+
+export type PaneId = 'party' | 'box';
+
+/** One row: everything the party/PC list shows for a member. */
+export type PartyRow = Readonly<{
+  id: string;
+  speciesId: string;
+  name: string;
+  level: number;
+  hp: number;
+  maxHp: number;
+  status: StatusId | null;
+  statusLabel: string | null;
+  xp: number;
+  heldItem: string | null;
+  heldItemName: string | null;
+}>;
+
+export function partyRow(member: RunPokemon): PartyRow {
+  const { fighter } = member;
+  const held = fighter.heldItem ? getItem(fighter.heldItem) : undefined;
+  return {
+    id: fighter.id,
+    speciesId: fighter.speciesId,
+    name: getSpecies(fighter.speciesId)?.name ?? fighter.speciesId,
+    level: fighter.level,
+    hp: fighter.hp,
+    maxHp: restoreFighter(fighter).maxHp,
+    status: fighter.status,
+    statusLabel: statusAbbreviation(fighter.status),
+    xp: member.xp,
+    heldItem: fighter.heldItem,
+    heldItemName: held?.name ?? fighter.heldItem,
+  };
+}
+
+export function partyRows(run: RunState): PartyRow[] {
+  return run.party.map(partyRow);
+}
+
+export function boxRows(run: RunState): PartyRow[] {
+  return run.box.map(partyRow);
+}
+
+/**
+ * Where the cursor is: a pane, a slot in it and — while a member is picked up —
+ * the slot it started in, so `cancel` can put it back exactly where it was.
+ */
+export type PartyUiState = Readonly<{
+  pane: PaneId;
+  index: number;
+  grabbed: Readonly<{ pane: PaneId; origin: number }> | null;
+}>;
+
+export type PartyInput = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'cancel';
+
+export function initialPartyUi(): PartyUiState {
+  return { pane: 'party', index: 0, grabbed: null };
+}
+
+export type PartyInputResult = Readonly<{ run: RunState; ui: PartyUiState }>;
+
+function listOf(run: RunState, pane: PaneId): readonly RunPokemon[] {
+  return pane === 'party' ? run.party : run.box;
+}
+
+function reorder(run: RunState, pane: PaneId, from: number, to: number): RunState {
+  return pane === 'party' ? moveInParty(run, from, to) : moveInBox(run, from, to);
+}
+
+/** The first row a window of `rows` shows, kept around the cursor. */
+export function windowStart(length: number, index: number, rows: number): number {
+  if (rows <= 0 || length <= rows) return 0;
+  const start = index - Math.floor(rows / 2);
+  return Math.max(0, Math.min(length - rows, start));
+}
+
+/**
+ * The whole screen as a reducer: a key in, the run and the cursor out. Picking a
+ * member up (`confirm`) and moving it reorders its pane live; `left`/`right`
+ * moves it to the other pane when the rules allow it (`deposit`/`withdraw`), and
+ * `cancel` restores it to where the grab started. With nothing grabbed the
+ * cursor wraps, `left`/`right` switch panes and `confirm` starts a grab.
+ */
+export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): PartyInputResult {
+  const list = listOf(run, ui.pane);
+
+  if (ui.grabbed) {
+    const { pane, origin } = ui.grabbed;
+    if (input === 'up' || input === 'down') {
+      const to = ui.index + (input === 'up' ? -1 : 1);
+      const next = reorder(run, pane, ui.index, to);
+      return next === run ? { run, ui } : { run: next, ui: { ...ui, index: to } };
+    }
+    if (input === 'left' || input === 'right') {
+      const toOther = pane === 'party' ? input === 'right' : input === 'left';
+      if (!toOther) return { run, ui };
+      if (pane === 'party') {
+        const next = depositToBox(run, ui.index);
+        return next === run
+          ? { run, ui }
+          : { run: next, ui: { pane: 'box', index: run.box.length, grabbed: null } };
+      }
+      const next = withdrawToParty(run, ui.index);
+      return next === run
+        ? { run, ui }
+        : { run: next, ui: { pane: 'party', index: run.party.length, grabbed: null } };
+    }
+    if (input === 'confirm') return { run, ui: { ...ui, grabbed: null } };
+    return {
+      run: reorder(run, pane, ui.index, origin),
+      ui: { ...ui, pane, index: origin, grabbed: null },
+    };
+  }
+
+  if (input === 'up' || input === 'down') {
+    if (list.length === 0) return { run, ui };
+    const delta = input === 'up' ? -1 : 1;
+    const index = (ui.index + delta + list.length) % list.length;
+    return { run, ui: { ...ui, index } };
+  }
+
+  if (input === 'left' || input === 'right') {
+    const pane: PaneId = input === 'left' ? 'party' : 'box';
+    return { run, ui: { pane, index: Math.min(ui.index, Math.max(0, listOf(run, pane).length - 1)), grabbed: null } };
+  }
+
+  if (input === 'confirm' && list.length > 0) {
+    return { run, ui: { ...ui, grabbed: { pane: ui.pane, origin: ui.index } } };
+  }
+
+  return { run, ui };
+}

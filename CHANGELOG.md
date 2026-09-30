@@ -598,6 +598,27 @@ file is the human-readable summary.
       ascending price order) and `build-item-icons.mjs` maps it to the Poke Ball
       icon, since Gen 3 ships no distinct one. Tests guard its price/rate and keep
       it out of the ground-loot pool. 497 tests pass; `npm run build` clean.
+- [x] Party/PC screens (Phase 6): `state.ts` gained the party/box moves
+      (`moveInParty`, `moveInBox`, `depositToBox` — the party is never emptied —
+      and `withdrawToParty`, which refuses a full party) and `src/ui/partyScreen.ts`
+      holds the Phaser-free model and input reducer: per-member rows (name, level,
+      HP, status, held item), the row window, and a `partyInput` state machine
+      where `Z` picks a member up, `up`/`down` reorders it live, `left`/`right`
+      sends it to the other pane and `X` restores it to where the grab started.
+      `src/scenes/PartyScene.ts` draws the two panes (portraits, FRLG windows and
+      text, a ▶ cursor and a grab highlight). It opens from the route HUD with `P`
+      and as the between-route healing stop: the EXIT tile now heals the party and
+      hands over to the same screen (titled "REST STOP"), and continuing advances
+      the route. `heal.ts` drops `restAndAdvance`: the stop is a screen now, so the
+      route composes `healParty` + the screen + `advanceRoute`. Fixed two bugs the
+      playtest found: `scene.restart()` reuses a scene's previous start data, so
+      the route was re-initialised with the *old* run and every exit tile bounced
+      back to route 1 (the restart now passes the advanced run explicitly), and
+      `PartyScene` kept a reference to the footer text of a previous session, so
+      reopening the screen crashed on the destroyed object. 539 tests pass;
+      `npm run build` clean. Verified in the browser: `P` opens the screen, grab +
+      reorder, deposit, withdraw, `X` closes with the run adopted, and the rest
+      stop heals on open and lands on route 2 on continue.
 
 ## Phase 8 — Art, audio & release
 

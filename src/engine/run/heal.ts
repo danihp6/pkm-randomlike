@@ -1,6 +1,6 @@
 import { restoreFighter, snapshotFighter } from '../battle/fighter';
 import type { RunPokemon } from './progression';
-import { advanceRoute, type RunState } from './state';
+import { type RunState } from './state';
 
 /**
  * A rested member: HP and PP back to full, status untouched (routes-spec §7).
@@ -21,9 +21,4 @@ export function healParty(run: RunState): RunState {
     party: run.party.map(healMember),
     box: run.box.map(healMember),
   };
-}
-
-/** The between-route beat: rest, then advance to the next route. */
-export function restAndAdvance(run: RunState): RunState {
-  return advanceRoute(healParty(run));
 }
