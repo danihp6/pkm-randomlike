@@ -421,6 +421,18 @@ file is the human-readable summary.
 
 ## Phase 6 — Run structure, party & economy
 
+- [x] Random starter pool: `src/data/dex/evolutions.ts` gained
+      `evolutionFamily(speciesId)` — it walks `prevo` up to the base form and then
+      `evos` back down, so a branching line (Eevee) counts every child and formes
+      are included, with a cycle guard. `src/data/run.ts` replaces the hardcoded
+      three with `starterCandidates()` (the 109 base forms whose line has at least
+      three members, so a starter always has room to grow, `design-spec` §3) and
+      `STARTER_POOL_SIZE`; `src/engine/run/starters.ts` adds `rollStarterPool(rng,
+      count)`, a draw without replacement mirroring `trainerRoster`. `StarterScene`
+      draws a fresh run seed, rolls three candidates from it and hands that same
+      seed to the run, so a seed always shows the same starters. 483 tests pass;
+      `npm run build` clean.
+
 - [x] `src/engine/run/state.ts`: the `RunState` — seed, mode, route index, cached
       level cap, party, PC box, bag, beaten trainers and the per-route capture
       flag — with pure transitions: `createRun`, `advanceRoute` (raises the cap,
@@ -507,3 +519,28 @@ file is the human-readable summary.
       `RouteScene`'s HUD panel now use them (dark text on the light window, the
       message box grew to fit the four command rows). Verified in the browser.
       470 tests pass; `npm run build` clean.
+- [x] FRLG bitmap font: `scripts/frlg/build-font.mjs` reads the sheet's
+      `latin_normal.png` + `charmap.txt`, keys the flat blue background and the
+      white padding to transparent, keeps the letter white with a mid-grey shadow
+      (one texture serves both tint directions) and packs `src/assets/frlg/font.png`
+      (2x) plus per-glyph metrics in `src/data/frlg/font.json` — 146 glyphs, the
+      Latin set up to the Japanese sections plus the four named arrows. The
+      runtime registers it as a Phaser bitmap font without an XML file
+      (`src/ui/frlgFont.ts`, `frlgFontData()` builds Phaser's `BitmapFontData` and
+      `registerFrlgFont` caches it), and `addFrlgText` is the single entry point:
+      `BattleScene`, `RouteScene`'s hint/HUD and `StarterScene` now draw FRLG
+      glyphs instead of `Phaser.GameObjects.Text`, so the monospace placeholder is
+      gone. Verified in the browser.
+- [x] Baked HP-bar/command-menu art from the same sheet: `build-battle-ui.mjs`
+      now also crops the HP readout (`src/assets/frlg/hpbar.png` — the "HP" chip
+      plus a track whose green fill it clears) and the ▶ command cursor
+      (`src/assets/frlg/cursor.png`), and writes the measured geometry to
+      `src/data/frlg/battle-ui.json`. `src/ui/frlg.ts` exposes `FRLG_HPBAR` and
+      `addFrlgHpBar`, so the battle scene paints the HP colour (green/yellow/red)
+      behind the baked overlay instead of a drawn rounded gauge, and the four
+      commands moved into their own light FRLG window with the cursor marking the
+      selection (the message box shrank to the classic two-line band). The debug
+      hint in `RouteScene` gained a backing bar since bitmap text has no
+      background. `StarterScene` was restyled to the same windows (FRLG card
+      frames, the ▶ glyph as the selector, FRLG text throughout). 483 tests pass;
+      `npm run build` clean.

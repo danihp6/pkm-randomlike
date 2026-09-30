@@ -1,9 +1,14 @@
-// Slices the FireRed/LeafGreen window frames used by the menus and HUD out of
-// sprite-sources/frlg-ui/hpbars-menu.png and upscales them 4x (nearest) so the
-// 240x160-era chrome fits the 1280x800 canvas. Outputs the committed
-// src/assets/frlg/window.png (the light menu window) and textbox.png (the navy
-// battle message box), drawn as Phaser nine-slices by src/ui/frlg.ts.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+// Slices the FireRed/LeafGreen window frames and battle widgets used by the
+// menus and HUD out of sprite-sources/frlg-ui/hpbars-menu.png and upscales them
+// 4x (nearest) so the 240x160-era chrome fits the 1280x800 canvas.
+//
+// Outputs the committed src/assets/frlg/ files — window.png (the light menu
+// window), textbox.png (the navy battle message box), hpbar.png (the HP bar:
+// the "HP" chip plus an empty track, the coloured fill is drawn behind it) and
+// cursor.png (the ▶ command-menu cursor) — drawn by src/ui/frlg.ts.
+// src/data/frlg/battle-ui.json records the measured geometry (the atlas scale
+// and the HP track's fill rectangle) so the scene never hardcodes pixel maths.
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
 const SCALE = 4
@@ -12,10 +17,15 @@ const SCALE = 4
 const REGIONS = {
   window: [298, 6, 158, 42],
   textbox: [296, 56, 242, 48],
+  hpbar: [27, 18, 67, 7],
+  cursor: [269, 4, 8, 11],
 }
 
-const sheet = decodePng(readFileSync(new URL('../../sprite-sources/frlg-ui/hpbars-menu.png', import.meta.url)))
-mkdirSync(new URL('../../src/assets/frlg/', import.meta.url), { recursive: true })
+const SOURCE = new URL('../../sprite-sources/frlg-ui/hpbars-menu.png', import.meta.url)
+const ASSETS = new URL('../../src/assets/frlg/', import.meta.url)
+const MANIFEST = new URL('../../src/data/frlg/battle-ui.json', import.meta.url)
+
+const sheet = decodePng(readFileSync(SOURCE))
 
 function crop(img, x, y, w, h) {
   const data = Buffer.alloc(w * h * 4)
@@ -43,8 +53,53 @@ function scale(img, factor) {
   return { width, height, data }
 }
 
+// The HP bar in the sheet is drawn full; clear the green fill so the scene can
+// paint the current HP colour behind the chip-and-track overlay. Returns the
+// track rectangle (source pixels) that was cleared.
+function clearHpFill(img) {
+  let minX = img.width
+  let maxX = -1
+  let minY = img.height
+  let maxY = -1
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      const o = (y * img.width + x) * 4
+      const r = img.data[o]
+      const g = img.data[o + 1]
+      const b = img.data[o + 2]
+      if (img.data[o + 3] === 0 || !(g > r + 30 && g > b + 30)) continue
+      img.data[o + 3] = 0
+      minX = Math.min(minX, x)
+      maxX = Math.max(maxX, x)
+      minY = Math.min(minY, y)
+      maxY = Math.max(maxY, y)
+    }
+  }
+  if (maxX < 0) throw new Error('hp bar: no green fill found to clear')
+  return { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 }
+}
+
+mkdirSync(ASSETS, { recursive: true })
+mkdirSync(new URL('../../src/data/frlg/', import.meta.url), { recursive: true })
+
+const report = {}
 for (const [name, [x, y, w, h]] of Object.entries(REGIONS)) {
-  const out = scale(crop(sheet, x, y, w, h), SCALE)
-  writeFileSync(new URL(`../../src/assets/frlg/${name}.png`, import.meta.url), encodePng(out.width, out.height, out.data))
+  const region = crop(sheet, x, y, w, h)
+  let fill = null
+  if (name === 'hpbar') fill = clearHpFill(region)
+  const out = scale(region, SCALE)
+  writeFileSync(new URL(`${name}.png`, ASSETS), encodePng(out.width, out.height, out.data))
+  report[name] = { width: out.width, height: out.height }
+  if (fill) {
+    report[name].fill = {
+      x: fill.x * SCALE,
+      y: fill.y * SCALE,
+      width: fill.width * SCALE,
+      height: fill.height * SCALE,
+    }
+  }
   console.log(`wrote src/assets/frlg/${name}.png ${out.width}x${out.height}`)
 }
+
+writeFileSync(MANIFEST, `${JSON.stringify({ scale: SCALE, ...report }, null, 2)}\n`)
+console.log('wrote src/data/frlg/battle-ui.json')

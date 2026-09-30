@@ -26,7 +26,9 @@ carries over.
 ## 3. The party
 
 - Up to **6** Pokémon in the active party; extras go to the **PC box**.
-- You start a run by picking one starter from the pool the run unlocks.
+- You start a run by picking one of three starters drawn from the base forms of
+  every evolution line with at least three members (itself plus two others), so
+  every starter has room to grow.
 - One capture per route, the classic way: weaken a wild Pokémon, throw a ball,
   it either clicks or breaks out.
 - **Permadeath:** 0 HP is permanent. `0 HP = lost forever`, no Revive, no

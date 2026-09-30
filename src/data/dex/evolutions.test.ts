@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evolutionFor, isLevelEvolution } from './evolutions';
+import { evolutionFamily, evolutionFor, isLevelEvolution } from './evolutions';
 import { getSpecies } from './species';
 
 describe('evolution accessors', () => {
@@ -15,5 +15,31 @@ describe('evolution accessors', () => {
     expect(evolutionFor('bulbasaur', 16)?.into).toBe('ivysaur');
     expect(evolutionFor('pikachu', 100)).toBeUndefined();
     expect(evolutionFor('not-a-species', 100)).toBeUndefined();
+  });
+});
+
+describe('evolution family', () => {
+  it('collects a whole three-stage line from any of its members', () => {
+    const expected = ['bulbasaur', 'ivysaur', 'venusaur'];
+    for (const id of expected) {
+      expect([...evolutionFamily(id)].sort(), id).toEqual(expected);
+    }
+  });
+
+  it('walks up to the base form before branching back down', () => {
+    const family = evolutionFamily('pikachu');
+    expect(family).toContain('pichu');
+    expect(family).toContain('pikachu');
+    expect(family).toContain('raichu');
+  });
+
+  it('counts every branch of a split line', () => {
+    expect(evolutionFamily('eevee').length).toBeGreaterThanOrEqual(9);
+    expect(evolutionFamily('vaporeon')).toContain('eevee');
+  });
+
+  it('is a single member for a species that cannot evolve', () => {
+    expect(evolutionFamily('tauros')).toEqual(['tauros']);
+    expect(evolutionFamily('not-a-species')).toEqual([]);
   });
 });

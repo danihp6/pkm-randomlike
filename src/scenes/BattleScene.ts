@@ -21,13 +21,21 @@ import { experienceFraction, type BattleLaunch, type BattleOutcome, type BattleR
 import { battleFrames, type FeedFrame } from '../ui/feed';
 import { hpColorInt, hpFraction, statusAbbreviation } from '../ui/metrics';
 import { drawGauge } from '../ui/panel';
-import { addFrlgWindow } from '../ui/frlg';
+import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR } from '../ui/frlg';
+import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import type { RouteScene } from './RouteScene';
 
 const MESSAGE_HOLD_MS = 850;
 const FAST_HOLD_MS = 45;
 const MENU_ROWS = 4;
+const MENU_W = 540;
+const MESSAGE_H = 124;
+const PANEL_W = 320;
+const PLAYER_PANEL_W = 320;
+const PLAYER_PANEL_H = 140;
+const FOE_PANEL = { w: PANEL_W, h: 104 } as const;
+const ROW_H = 34;
 
 type Mode = 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'run' | 'over';
 
@@ -60,17 +68,20 @@ export class BattleScene extends Phaser.Scene {
   private hud!: Phaser.GameObjects.Graphics;
   private foePanel!: Phaser.GameObjects.NineSlice;
   private playerPanel!: Phaser.GameObjects.NineSlice;
-  private boxPanel!: Phaser.GameObjects.NineSlice;
-  private messageText!: Phaser.GameObjects.Text;
-  private nameText!: Record<SideId, Phaser.GameObjects.Text>;
-  private statText!: Record<SideId, Phaser.GameObjects.Text>;
-  private statusText!: Record<SideId, Phaser.GameObjects.Text>;
-  private xpText!: Phaser.GameObjects.Text;
+  private messagePanel!: Phaser.GameObjects.NineSlice;
+  private menuPanel!: Phaser.GameObjects.NineSlice;
+  private menuCursor!: Phaser.GameObjects.Image;
+  private hpBars!: Record<SideId, { fill: Phaser.GameObjects.Rectangle; bar: Phaser.GameObjects.Image }>;
+  private messageText!: Phaser.GameObjects.BitmapText;
+  private nameText!: Record<SideId, Phaser.GameObjects.BitmapText>;
+  private statText!: Record<SideId, Phaser.GameObjects.BitmapText>;
+  private statusText!: Record<SideId, Phaser.GameObjects.BitmapText>;
+  private xpText!: Phaser.GameObjects.BitmapText;
   private playerSprite!: Phaser.GameObjects.Sprite;
   private foeSprite!: Phaser.GameObjects.Sprite;
   private playerPlatform!: Phaser.GameObjects.Image;
   private foePlatform!: Phaser.GameObjects.Image;
-  private menuRows: Phaser.GameObjects.Text[] = [];
+  private menuRows: Phaser.GameObjects.BitmapText[] = [];
 
   private menuItems: readonly MenuItem[] = [];
   private menuIndex = 0;
@@ -140,45 +151,44 @@ export class BattleScene extends Phaser.Scene {
       .setFlipX(true);
 
     // FRLG window chrome, behind the gauges and text the shared Graphics draws.
-    this.foePanel = addFrlgWindow(this, 0, 0, 380, 96);
-    this.playerPanel = addFrlgWindow(this, 0, 0, 416, 150);
-    this.boxPanel = addFrlgWindow(this, 0, 0, 100, 100, 'textbox');
-    this.hud = this.add.graphics();
+    this.foePanel = addFrlgWindow(this, 0, 0, FOE_PANEL.w, FOE_PANEL.h);
+    this.playerPanel = addFrlgWindow(this, 0, 0, PLAYER_PANEL_W, PLAYER_PANEL_H);
+    this.messagePanel = addFrlgWindow(this, 0, 0, 100, 100, 'textbox');
+    this.menuPanel = addFrlgWindow(this, 0, 0, MENU_W, 100);
 
-    const label = { fontFamily: 'monospace', fontSize: '20px', color: '#25243b' } as const;
-    const small = { ...label, fontSize: '16px', color: '#3a3956' } as const;
+    this.hpBars = {
+      enemy: addFrlgHpBar(this, 0, 0),
+      player: addFrlgHpBar(this, 0, 0),
+    };
+
+    this.hud = this.add.graphics();
+    this.menuCursor = this.add.image(0, 0, FRLG_CURSOR_KEY).setOrigin(0, 0.5).setVisible(false);
+
     this.nameText = {
-      enemy: this.add.text(0, 0, '', label),
-      player: this.add.text(0, 0, '', label),
+      enemy: addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
+      player: addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
     };
     this.statText = {
-      enemy: this.add.text(0, 0, '', small).setOrigin(1, 0),
-      player: this.add.text(0, 0, '', small).setOrigin(1, 0),
+      enemy: addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [1, 0] }),
+      player: addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [1, 0] }),
     };
     this.statusText = {
-      enemy: this.add.text(0, 0, '', { ...small, color: '#0b1220' }).setOrigin(0.5),
-      player: this.add.text(0, 0, '', { ...small, color: '#0b1220' }).setOrigin(0.5),
+      enemy: addFrlgText(this, 0, 0, '', { size: 16, tint: 0xf8fafc, origin: 0.5 }),
+      player: addFrlgText(this, 0, 0, '', { size: 16, tint: 0xf8fafc, origin: 0.5 }),
     };
-    this.xpText = this.add.text(0, 0, '', { ...small, fontSize: '12px', color: '#3b82f6' });
+    this.xpText = addFrlgText(this, 0, 0, '', { size: 16, tint: 0x3b82f6 });
 
-    this.messageText = this.add.text(0, 0, '', {
-      fontFamily: 'monospace',
-      fontSize: '20px',
-      color: '#f8fafc',
-      lineSpacing: 6,
-    });
+    this.messageText = addFrlgText(this, 0, 0, '', { lineSpacing: 4 });
 
     this.menuRows = Array.from({ length: MENU_ROWS }, () =>
-      this.add.text(0, 0, '', { fontFamily: 'monospace', fontSize: '20px', color: '#f8fafc' }),
+      addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
     );
 
-    this.add
-      .text(width - 16, 12, 'Z confirm (hold = skip)  ·  X cancel', {
-        fontFamily: 'monospace',
-        fontSize: '12px',
-        color: '#94a3b8',
-      })
-      .setOrigin(1, 0);
+    addFrlgText(this, width - 16, 12, 'Z confirm (hold = skip)  ·  X cancel', {
+      size: 16,
+      tint: 0x94a3b8,
+      origin: [1, 0],
+    });
   }
 
   private bindInput(): void {
@@ -385,11 +395,11 @@ export class BattleScene extends Phaser.Scene {
     const legal = legalMoveIndices(player);
     this.menuItems = player.moves.map((slot, index) => {
       const move = getMove(slot.moveId);
-      const name = (move?.name ?? slot.moveId).padEnd(12, ' ');
-      const type = (move?.type ?? '').toUpperCase().padEnd(8, ' ');
+      const name = move?.name ?? slot.moveId;
+      const type = (move?.type ?? '').toUpperCase();
       const enabled = legal.length === 0 ? index === 0 : legal.includes(index);
       return {
-        label: `${name}${type}PP ${slot.pp}/${slot.maxPp}`,
+        label: `${name}  ${type}   PP ${slot.pp}/${slot.maxPp}`,
         enabled,
         onSelect: () => this.submit({ type: 'fight', moveIndex: index }),
       };
@@ -499,9 +509,21 @@ export class BattleScene extends Phaser.Scene {
 
   private refreshHud(): void {
     const { width, height } = this.scale;
-    const box: Rect = { x: 36, y: height - 206, w: width - 72, h: 180 };
-    const foeInfo: Rect = { x: 36, y: 32, w: 380, h: 96 };
-    const playerInfo: Rect = { x: width - 452, y: height - 360, w: 416, h: 150 };
+    const box: Rect = { x: 36, y: height - 186, w: width - 72, h: 160 };
+    const foeInfo: Rect = { x: 36, y: 28, w: FOE_PANEL.w, h: FOE_PANEL.h };
+    const playerInfo: Rect = {
+      x: width - 36 - PLAYER_PANEL_W,
+      y: height - 186 - 24 - PLAYER_PANEL_H,
+      w: PLAYER_PANEL_W,
+      h: PLAYER_PANEL_H,
+    };
+    const menu: Rect = { x: box.x + box.w - MENU_W, y: box.y, w: MENU_W, h: box.h };
+    const message: Rect = {
+      x: box.x,
+      y: box.y + box.h - MESSAGE_H,
+      w: box.w - MENU_W - 12,
+      h: MESSAGE_H,
+    };
 
     this.foeSprite.setPosition(width * 0.72, height * 0.28);
     this.foePlatform.setPosition(width * 0.72, height * 0.28 + 58);
@@ -513,20 +535,17 @@ export class BattleScene extends Phaser.Scene {
     this.hud.clear();
     this.drawSidePanel(foeInfo, 'enemy');
     this.drawSidePanel(playerInfo, 'player');
-    this.boxPanel.setSlices(box.w, box.h).setPosition(box.x, box.y);
+    this.messagePanel.setSlices(message.w, message.h).setPosition(message.x, message.y);
+    this.menuPanel.setSlices(menu.w, menu.h).setPosition(menu.x, menu.y);
 
-    this.messageText.setPosition(box.x + 24, box.y + 18);
-    this.messageText.setWordWrapWidth(box.w * 0.54);
+    this.messageText.setPosition(message.x + 22, message.y + 22);
+    this.messageText.setMaxWidth(message.w - 44);
 
-    if (
-      this.mode === 'menu' ||
-      this.mode === 'moves' ||
-      this.mode === 'bag' ||
-      this.mode === 'party' ||
-      this.mode === 'run'
-    ) {
-      this.renderMenu(box);
+    if (this.menuItems.length > 0) {
+      this.renderMenu(menu);
     } else {
+      this.menuPanel.setVisible(false);
+      this.menuCursor.setVisible(false);
       for (const row of this.menuRows) row.setVisible(false);
     }
   }
@@ -538,38 +557,49 @@ export class BattleScene extends Phaser.Scene {
     const hp = this.displayHp[side];
     const fraction = hpFraction(hp, fighter.maxHp);
 
-    this.nameText[side].setText(`${fighter.name}  Lv${fighter.level}`).setPosition(rect.x + 18, rect.y + 12);
+    this.nameText[side].setText(`${fighter.name}  Lv${fighter.level}`).setPosition(rect.x + 18, rect.y + 6);
     this.statText[side]
       .setText(side === 'player' ? `${hp}/${fighter.maxHp}` : '')
-      .setPosition(rect.x + rect.w - 16, rect.y + 16);
+      .setPosition(rect.x + rect.w - 18, rect.y + 40);
 
     const barX = rect.x + 18;
-    // The player panel carries an extra XP gauge below the HP bar, so its bars
-    // sit higher inside a taller panel.
-    const barY = side === 'player' ? rect.y + rect.h - 52 : rect.y + rect.h - 30;
-    const barW = rect.w - 36;
-    drawGauge(this.hud, barX, barY, barW, 12, fraction, hpColorInt(fraction));
+    const barY = rect.y + 64;
 
     const status = statusAbbreviation(this.displayStatus[side]);
-    this.statusText[side].setText(status ?? '');
+    this.statusText[side].setText(status ?? '').setPosition(rect.x + 45, rect.y + 41);
     if (status) {
       this.hud.fillStyle(0x8b5cf6, 1);
-      this.hud.fillRoundedRect(barX, barY - 24, 54, 20, 6);
-      this.statusText[side].setPosition(barX + 27, barY - 23);
+      this.hud.fillRoundedRect(rect.x + 18, rect.y + 40, 54, 20, 6);
     }
+
+    const bar = this.hpBars[side];
+    bar.fill
+      .setPosition(barX + FRLG_HPBAR.fill.x, barY + FRLG_HPBAR.fill.y)
+      .setSize(Math.max(0, FRLG_HPBAR.fill.width * fraction), FRLG_HPBAR.fill.height)
+      .setFillStyle(hpColorInt(fraction));
+    bar.bar.setPosition(barX, barY);
 
     if (side === 'player') {
       const xp = this.experience.get(fighter.id) ?? 0;
-      drawGauge(this.hud, barX, barY + 20, barW, 8, experienceFraction(xp, fighter.level), 0x60a5fa);
-      this.xpText.setText(`XP ${xp}`).setPosition(barX, barY + 30).setVisible(true);
+      drawGauge(
+        this.hud,
+        barX,
+        barY + 36,
+        FRLG_HPBAR.width,
+        8,
+        experienceFraction(xp, fighter.level),
+        0x60a5fa,
+      );
+      this.xpText.setText(`XP ${xp}`).setPosition(barX, barY + 46).setVisible(true);
     } else {
       this.xpText.setVisible(false);
     }
   }
 
-  private renderMenu(box: Rect): void {
-    const startX = box.x + box.w * 0.58;
-    const startY = box.y + 22;
+  private renderMenu(menu: Rect): void {
+    this.menuPanel.setVisible(true);
+    const startX = menu.x + 58;
+    const startY = menu.y + 14;
     const count = this.menuItems.length;
     const windowStart = Math.max(0, Math.min(this.menuIndex - 1, count - MENU_ROWS));
     this.menuRows.forEach((row, i) => {
@@ -579,11 +609,14 @@ export class BattleScene extends Phaser.Scene {
         return;
       }
       row
-        .setText(`${windowStart + i === this.menuIndex ? '>' : ' '} ${item.label}`)
+        .setText(item.label)
         .setAlpha(item.enabled ? 1 : 0.4)
-        .setPosition(startX, startY + i * 28)
+        .setPosition(startX, startY + i * ROW_H)
         .setVisible(true);
     });
+    this.menuCursor
+      .setPosition(menu.x + 20, startY + (this.menuIndex - windowStart) * ROW_H + 16)
+      .setVisible(true);
   }
 
   override update(_time: number, delta: number): void {

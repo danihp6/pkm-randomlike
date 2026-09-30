@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { getSpecies } from './dex';
+import { evolutionFamily } from './dex/evolutions';
 import { getItem } from './items';
 import {
   LEVEL_BANDS,
   ROUTES_PER_BAND,
   RUN_CHAIN,
-  STARTER_POOL,
+  STARTER_POOL_SIZE,
   STARTING_BAG,
   bandForRoute,
   levelCapForRoute,
+  starterCandidates,
 } from './run';
 
 describe('level bands', () => {
@@ -41,9 +43,26 @@ describe('run chain', () => {
 });
 
 describe('starter pool', () => {
-  it('names species that exist in the dex', () => {
-    expect(STARTER_POOL.length).toBeGreaterThanOrEqual(3);
-    for (const id of STARTER_POOL) expect(getSpecies(id), id).toBeDefined();
+  it('names base forms whose line has at least three members', () => {
+    const candidates = starterCandidates();
+    expect(candidates.length).toBeGreaterThanOrEqual(STARTER_POOL_SIZE);
+    for (const id of candidates) {
+      const species = getSpecies(id);
+      expect(species, id).toBeDefined();
+      expect(species!.prevo, id).toBe('');
+      expect(evolutionFamily(id).length, id).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('includes the classic starters and leaves out two-stage lines', () => {
+    const candidates = starterCandidates();
+    for (const id of ['bulbasaur', 'charmander', 'squirtle', 'chikorita', 'eevee', 'dratini']) {
+      expect(candidates, id).toContain(id);
+    }
+    // Two-stage lines and fully evolved Pokémon are never offered.
+    expect(candidates).not.toContain('ivysaur');
+    expect(candidates).not.toContain('venusaur');
+    expect(candidates).not.toContain('rattata');
   });
 
   it('opens the bag with real items', () => {

@@ -54,6 +54,7 @@ import { TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame } from '../engine/tileFrames';
 import { Vision } from '../engine/vision';
 import { addFrlgWindow } from '../ui/frlg';
+import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import {
   ARROW_TEXTURE_KEY,
   GRASS_TEXTURE_KEY,
@@ -100,11 +101,12 @@ export class RouteScene extends Phaser.Scene {
   private battleCounter = 0;
   private pendingBattle: BattleLaunch | null = null;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private hint!: Phaser.GameObjects.Text;
+  private hint!: Phaser.GameObjects.BitmapText;
+  private hintBackdrop!: Phaser.GameObjects.Rectangle;
   private hudRoot!: Phaser.GameObjects.Container;
-  private hudTitle!: Phaser.GameObjects.Text;
-  private hudBagIcons: { icon: Phaser.GameObjects.Image; count: Phaser.GameObjects.Text }[] = [];
-  private hudRows: { portrait: Phaser.GameObjects.Image; text: Phaser.GameObjects.Text }[] = [];
+  private hudTitle!: Phaser.GameObjects.BitmapText;
+  private hudBagIcons: { icon: Phaser.GameObjects.Image; count: Phaser.GameObjects.BitmapText }[] = [];
+  private hudRows: { portrait: Phaser.GameObjects.Image; text: Phaser.GameObjects.BitmapText }[] = [];
 
   constructor() {
     super('Route');
@@ -165,16 +167,18 @@ export class RouteScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.playerSprite, true, 0.2, 0.2);
 
     this.cursors = this.input.keyboard!.createCursorKeys();
-    this.hint = this.add
-      .text(8, 8, '', {
-        fontFamily: 'monospace',
-        fontSize: '12px',
-        color: '#f8fafc',
-        backgroundColor: '#000000aa',
-        padding: { x: 6, y: 4 },
-      })
+    this.hintBackdrop = this.add
+      .rectangle(8, 8, 780, 56, 0x000000, 0.6)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(99);
+    this.hint = addFrlgText(this, 16, 14, '', {
+      size: 16,
+      align: 'left',
+    })
       .setScrollFactor(0)
       .setDepth(100);
+    this.hint.setMaxWidth(760);
 
     this.input.keyboard!.on('keydown-R', () => {
       if (this.scene.isActive()) this.cycleTileset();
@@ -200,11 +204,7 @@ export class RouteScene extends Phaser.Scene {
     const panelH = 44 + MAX_PARTY_SIZE * rowH + 30;
 
     const panel = addFrlgWindow(this, x, y, panelW, panelH);
-    this.hudTitle = this.add.text(x + 14, y + 12, '', {
-      fontFamily: 'monospace',
-      fontSize: '16px',
-      color: '#25243b',
-    });
+    this.hudTitle = addFrlgText(this, x + 14, y + 12, '', { size: 16, tint: FRLG_INK });
 
     const children: Phaser.GameObjects.GameObject[] = [panel, this.hudTitle];
     this.hudRows = [];
@@ -214,11 +214,7 @@ export class RouteScene extends Phaser.Scene {
         .image(x + 22, rowY + 15, PORTRAIT_TEXTURE_KEY, 0)
         .setScale(0.6)
         .setVisible(false);
-      const text = this.add.text(x + 46, rowY + 5, '', {
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        color: '#2a2a44',
-      });
+      const text = addFrlgText(this, x + 46, rowY + 6, '', { size: 16, tint: 0x2a2a44 });
       this.hudRows.push({ portrait, text });
       children.push(portrait, text);
     }
@@ -229,10 +225,9 @@ export class RouteScene extends Phaser.Scene {
         .image(x + 24 + i * 38, y + panelH - 17, ITEM_ICON_TEXTURE_KEY, 0)
         .setScale(0.55)
         .setVisible(false);
-      const count = this.add.text(x + 33 + i * 38, y + panelH - 22, '', {
-        fontFamily: 'monospace',
-        fontSize: '11px',
-        color: '#25243b',
+      const count = addFrlgText(this, x + 33 + i * 38, y + panelH - 24, '', {
+        size: 16,
+        tint: FRLG_INK,
       });
       this.hudBagIcons.push({ icon, count });
       children.push(icon, count);
@@ -273,9 +268,9 @@ export class RouteScene extends Phaser.Scene {
   private setupHudCamera(): void {
     const hud = this.cameras.add(0, 0, this.scale.width, this.scale.height);
     hud.setScroll(0, 0);
-    const keep = new Set<Phaser.GameObjects.GameObject>([this.hint, this.hudRoot]);
+    const keep = new Set<Phaser.GameObjects.GameObject>([this.hint, this.hintBackdrop, this.hudRoot]);
     hud.ignore(this.children.list.filter((child) => !keep.has(child)));
-    this.cameras.main.ignore([this.hint, this.hudRoot]);
+    this.cameras.main.ignore([this.hint, this.hintBackdrop, this.hudRoot]);
   }
 
   private drawTiles(): void {
@@ -501,9 +496,9 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private setHint(text: string): void {
-    const dev = IS_DEVELOP ? '  |  B: battle (dev)' : '';
+    const dev = IS_DEVELOP ? '  ·  B: battle (dev)' : '';
     this.hint.setText(
-      `${text}\nArrows: move  |  R: swap tileset${dev}  |  trainers: ${this.route.trainers.length}`,
+      `${text}\nArrows: move  ·  R: swap tileset${dev}  ·  trainers: ${this.route.trainers.length}`,
     );
   }
 

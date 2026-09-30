@@ -1,0 +1,25 @@
+{
+  "scale": 4,
+  "window": {
+    "width": 632,
+    "height": 168
+  },
+  "textbox": {
+    "width": 968,
+    "height": 192
+  },
+  "hpbar": {
+    "width": 268,
+    "height": 28,
+    "fill": {
+      "x": 60,
+      "y": 8,
+      "width": 192,
+      "height": 12
+    }
+  },
+  "cursor": {
+    "width": 32,
+    "height": 44
+  }
+}
