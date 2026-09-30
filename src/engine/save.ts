@@ -3,7 +3,7 @@ import { levelCapForRoute } from '../data/run';
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
 import { MAX_LEVEL, type RunPokemon } from './run/progression';
-import type { RunState } from './run/state';
+import { emptyRunStats, type RunState, type RunStats } from './run/state';
 
 /** How fast the message box types text (consumed by the settings screen). */
 export type TextSpeed = 'slow' | 'normal' | 'fast';
@@ -34,7 +34,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -62,11 +62,19 @@ export type Migration = (document: Record<string, unknown>) => Record<string, un
 export type Migrations = Readonly<Record<number, Migration | undefined>>;
 
 /**
- * The migration path. v1 is the first on-disk schema, so there is nothing to
- * upgrade yet; when the schema changes, bump `SAVE_VERSION` and add the step
- * that reads the old version, e.g. `{ 1: (doc) => ({ ...doc, version: 2, changed }) }`.
+ * The migration path, keyed by the version each step reads. `1` moves a v1 run
+ * onto the v2 schema, which added the run summary counters; later changes add
+ * the next step, e.g. `2: (doc) => ({ ...doc, version: 3, changed })`.
  */
-export const SAVE_MIGRATIONS: Migrations = {};
+export const SAVE_MIGRATIONS: Migrations = {
+  1: (document) => ({
+    ...document,
+    version: 2,
+    run: isRecord(document.run)
+      ? { ...document.run, stats: { catches: 0, casualties: 0 } }
+      : document.run,
+  }),
+};
 
 /** Runs a document through the upgrade steps between two versions. */
 export function migrateDocument(
@@ -309,8 +317,7 @@ function parseMembers(value: unknown): RunPokemon[] {
   return members;
 }
 
-function parseBag(value: unknown): BagCounts[] | null {
-  if (!Array.isArray(value)) return null;
+function parseBag(value: unknown): BagCounts[] | null {  if (!Array.isArray(value)) return null;
   const bag: BagCounts[] = [];
   for (const entry of value) {
     if (!isRecord(entry) || !isString(entry.itemId) || entry.itemId === '') return null;
@@ -318,6 +325,13 @@ function parseBag(value: unknown): BagCounts[] | null {
     bag.push({ itemId: entry.itemId, count: entry.count });
   }
   return bag;
+}
+
+function parseRunStats(value: unknown): RunStats {
+  if (!isRecord(value)) return emptyRunStats();
+  const catches = isInteger(value.catches) && value.catches >= 0 ? value.catches : 0;
+  const casualties = isInteger(value.casualties) && value.casualties >= 0 ? value.casualties : 0;
+  return { catches, casualties };
 }
 
 function parseRun(value: unknown): RunState | null {
@@ -345,5 +359,6 @@ function parseRun(value: unknown): RunState | null {
     bag,
     defeatedTrainers,
     captureUsed: value.captureUsed === true,
+    stats: parseRunStats(value.stats),
   };
 }

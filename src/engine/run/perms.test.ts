@@ -18,6 +18,14 @@ describe('releaseFainted', () => {
     expect(result.run.party.map((member) => member.fighter.id)).toEqual(['starter']);
   });
 
+  it('counts the lost members for the run summary', () => {
+    const run = createRun({ seed: 's', starter });
+    const fallen = hurt(starter, 0);
+    const result = releaseFainted({ ...run, party: [fallen] });
+    expect(result.run.stats.casualties).toBe(1);
+    expect(releaseFainted(result.run).run.stats.casualties).toBe(1);
+  });
+
   it('removes a fainted member from the box too (D5)', () => {
     const run = createRun({ seed: 's', starter });
     const boxed = createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 3 });

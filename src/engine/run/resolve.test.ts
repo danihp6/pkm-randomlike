@@ -54,6 +54,20 @@ describe('resolveBattle', () => {
     expect(result.run.captureUsed).toBe(true);
     expect(result.run.party.map((member) => member.fighter.id)).toEqual(['starter', 'wild']);
     expect(result.run.party[0].xp).toBeGreaterThan(starter.xp);
+    expect(result.run.stats.catches).toBe(1);
+  });
+
+  it('does not count a battle that was not a capture', () => {
+    const run = createRun({ seed: 's', starter });
+    expect(resolveBattle(run, returned(run, 'win'), wild).run.stats.catches).toBe(0);
+  });
+
+  it('counts every fainted member as a casualty', () => {
+    const run = createRun({ seed: 's', starter });
+    const reserve = createRunPokemon({ id: 'reserve', speciesId: 'squirtle', level: 4 });
+    const two = { ...run, party: [run.party[0], reserve] };
+    const result = resolveBattle(two, returned(two, 'lose', { player: [hurt(two.party[0], 0).fighter, hurt(reserve, 0).fighter] }), wild);
+    expect(result.run.stats.casualties).toBe(2);
   });
 
   it('sends a catch to the box when the party is full', () => {

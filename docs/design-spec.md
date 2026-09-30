@@ -69,6 +69,10 @@ starter pick -> route 1 -> heal stop -> route 2 -> route 3 -> mini-boss
 Rewards between routes are the run's only economy: catch, items, and the PC box
 are where the player's power comes from.
 
+A run ends on a score screen, win or loss: routes cleared, Pokémon caught,
+Pokémon lost and the seed that reproduces the run (`src/ui/runSummary.ts`). A
+win clears its route; a loss does not, and nothing carries over (D5).
+
 ## 7. Out of scope (for now)
 
 - Multiple save slots and cloud saves.
