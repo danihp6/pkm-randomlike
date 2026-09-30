@@ -69,9 +69,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] `src/engine/run/chain.ts`: route cadence from `src/data/run.ts` —
-      mini-boss every N routes, a boss closing each block, the final boss, and
-      the infinite mode branch.
 - [ ] Party/PC screens: managing the party and reading the box (party/PC access
       from the heal stop and the route HUD).
 - [ ] `src/data/items.ts`: the run's item catalogue and prices.

@@ -1,4 +1,5 @@
 export * from './battleLink';
+export * from './chain';
 export * from './roster';
 export * from './levelCap';
 export * from './progression';
