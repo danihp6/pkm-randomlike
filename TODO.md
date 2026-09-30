@@ -67,7 +67,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] Seed input and a share string for a run.
 - [ ] Settings: text speed, volume, keybinds, tileset preference.
 - [ ] Accessibility pass: colour-only information audited, HP bars readable
       without colour, full keyboard play, reduced-flash option.
