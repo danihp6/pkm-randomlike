@@ -8,3 +8,4 @@ export * from './resolve';
 export * from './heal';
 export * from './starters';
 export * from './state';
+export * from './share';

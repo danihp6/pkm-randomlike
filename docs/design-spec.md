@@ -19,6 +19,11 @@ carries over.
   **mini-boss** every few routes, a **boss** to close each block, a **final
   boss** at the end. An **infinite mode** reuses the same generator without the
   finish line.
+- A run is defined by one **seed**: the starter screen shows it as a share
+  string and `S` opens a prompt to type a seed or paste a friend's share string,
+  so the same seed always plays the same run (`D11`, `D21`). The share string
+  carries the seed and the mode, not the progress, so a shared run starts on
+  route 1.
 - Beating a route's exit moves you to the next route, with a healing stop in
   between (heals HP and PP, never resurrects).
 - Losing every Pokémon in the party ends the run.
@@ -70,7 +75,8 @@ Rewards between routes are the run's only economy: catch, items, and the PC box
 are where the player's power comes from.
 
 A run ends on a score screen, win or loss: routes cleared, Pokémon caught,
-Pokémon lost and the seed that reproduces the run (`src/ui/runSummary.ts`). A
+Pokémon lost and the seed that reproduces the run, as the raw seed and as the
+share string someone else could play (`src/ui/runSummary.ts`, `D21`). A
 win clears its route; a loss does not, and nothing carries over (D5).
 
 ## 7. Out of scope (for now)

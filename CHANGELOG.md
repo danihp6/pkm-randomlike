@@ -664,6 +664,22 @@ file is the human-readable summary.
       disk, which is the first real use of the migration path: `SAVE_VERSION` is
       now 2 and `SAVE_MIGRATIONS[1]` adds `stats` to a v1 run. 572 tests pass;
       `npm run build` clean.
+- [x] Seed input and a run share string (`D21`): `src/engine/run/share.ts` turns a
+      run into the token that starts it again — `PKRL-1-<f|i>-<seed>` — without
+      carrying any progress, so a shared run starts on route 1.
+      `encodeRunShare` stamps the prefix, the version and the mode letter and
+      percent-encodes the seed (escaping `-` so the fields stay separable);
+      `decodeRunShare` reads a share string back into `{ seed, mode }`, treats a
+      string with no prefix as the seed itself (falling back to the player's mode
+      choice) and rejects a prefixed string that is malformed — an unknown
+      version, an unknown mode, a missing or broken seed — instead of quietly
+      starting a different run. Round-tripping is tested across spaces,
+      non-ASCII, `%` and hyphens. The starter screen shows the run's share string
+      and `S` opens `src/ui/seedPrompt.ts`, a DOM prompt (like the dev debug
+      menu, and it swallows its own keys) that accepts a pasted share string —
+      taking its mode with it — or a typed seed and rerolls the three starters;
+      the end-of-run screen reports the share string beside the raw seed.
+      584 tests pass; `npm run build` clean.
 
 ## Phase 8 — Art, audio & release
 

@@ -27,6 +27,10 @@ describe('runSummary', () => {
     expect(summary.catches).toBe(3);
     expect(summary.casualties).toBe(2);
   });
+
+  it('also carries the share string that starts the run again', () => {
+    expect(runSummary(run(1, { catches: 0, casualties: 0 }, 'abc'), false).share).toBe('PKRL-1-f-abc');
+  });
 });
 
 describe('runSummaryLines', () => {
@@ -37,6 +41,7 @@ describe('runSummaryLines', () => {
     expect(lines).toContain('Pokémon caught: 1');
     expect(lines).toContain('Pokémon lost: 1');
     expect(lines).toContain('Seed: abc');
+    expect(lines).toContain('Share: PKRL-1-f-abc');
   });
 
   it('turns the same screen into the win message', () => {

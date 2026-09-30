@@ -165,6 +165,21 @@ this art from the same inputs the route used, `BattleLaunch` carries the run see
 and route index and the triggers carry the encounter `tile` and the trainer
 `archetypeId`, so the battle still draws run-derived art without taking run state.
 
+## D21 — A run is shared as a seed string *(decided)*
+
+A run is reproduced by its seed and its mode and by nothing else, so those two
+travel together as one token: `PKRL-1-<f|i>-<seed>`, e.g.
+`PKRL-1-f-daily-2026-09-30` (`f` finite, `i` infinite). `src/engine/run/share.ts`
+encodes and decodes it (`encodeRunShare` / `decodeRunShare`): the seed is
+percent-encoded with `-` escaped so the fields stay separable, a string with no
+`PKRL` prefix is taken as the seed itself with the mode the player picked, and a
+prefixed string that is malformed (unknown version, unknown mode, missing or
+broken seed) is rejected instead of silently starting a different run. The
+starter screen shows the run's share string and `S` opens a prompt (a DOM overlay
+in `src/ui/seedPrompt.ts`, like the dev debug menu) to type a seed or paste one;
+the end-of-run screen reports the string beside the seed. The token carries no
+progress, so a shared run starts from route 1.
+
 ## Open questions
 
 - **O1 — Trainer sprites.** Battle sprites shipped (`D20`): the archetypes draw

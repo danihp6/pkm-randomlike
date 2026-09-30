@@ -1,10 +1,11 @@
-import type { RunState } from '../engine/run';
+import { encodeRunShare, type RunState } from '../engine/run';
 
 /**
  * The end-of-run score screen's model (Phase 7). It reports what the run did —
  * routes cleared, Pokémon caught, Pokémon lost — and the seed that reproduces
- * it. Pure, so the numbers are testable without a scene; `RunOverScene` draws
- * the lines.
+ * it, both as the raw seed and as the share string someone could hand over
+ * (D21). Pure, so the numbers are testable without a scene; `RunOverScene`
+ * draws the lines.
  */
 
 /** The window after the last release beat during which a stray confirm is ignored. */
@@ -17,6 +18,8 @@ export type RunSummary = Readonly<{
   catches: number;
   casualties: number;
   seed: string;
+  /** The seed and mode as a token that starts the same run again (`D21`). */
+  share: string;
 }>;
 
 /** What the score screen reports: a win clears its route, a loss does not. */
@@ -27,6 +30,7 @@ export function runSummary(run: RunState, won: boolean): RunSummary {
     catches: run.stats.catches,
     casualties: run.stats.casualties,
     seed: run.seed,
+    share: encodeRunShare(run),
   };
 }
 
@@ -43,5 +47,6 @@ export function runSummaryLines(summary: RunSummary): string[] {
     `Pokémon caught: ${summary.catches}`,
     `Pokémon lost: ${summary.casualties}`,
     `Seed: ${summary.seed}`,
+    `Share: ${summary.share}`,
   ];
 }
