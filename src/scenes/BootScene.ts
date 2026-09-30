@@ -1,7 +1,21 @@
 import Phaser from 'phaser';
 import playerSpriteUrl from '../assets/pokemon/25.png';
+import moveFxUrl from '../assets/moves.png';
 import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY } from '../data/itemIcons';
 import { PORTRAIT_ATLAS_URL, PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY } from '../data/portraits';
+import {
+  TRAINER_SPRITE_ATLAS_URL,
+  TRAINER_SPRITE_SIZE,
+  TRAINER_SPRITE_TEXTURE_KEY,
+} from '../data/trainerSprites';
+import {
+  MOVE_FX_FRAME_RATE,
+  MOVE_FX_FRAME_SIZE,
+  MOVE_FX_IDS,
+  MOVE_FX_TEXTURE_KEY,
+  moveFxAnimKey,
+  moveFxFrames,
+} from '../render/moveFx';
 import {
   FRLG_CURSOR_KEY,
   FRLG_CURSOR_URL,
@@ -63,6 +77,14 @@ export class BootScene extends Phaser.Scene {
       frameWidth: ITEM_ICON_SIZE,
       frameHeight: ITEM_ICON_SIZE,
     });
+    this.load.spritesheet(TRAINER_SPRITE_TEXTURE_KEY, TRAINER_SPRITE_ATLAS_URL, {
+      frameWidth: TRAINER_SPRITE_SIZE,
+      frameHeight: TRAINER_SPRITE_SIZE,
+    });
+    this.load.spritesheet(MOVE_FX_TEXTURE_KEY, moveFxUrl, {
+      frameWidth: MOVE_FX_FRAME_SIZE,
+      frameHeight: MOVE_FX_FRAME_SIZE,
+    });
     this.load.image(FRLG_WINDOW_KEY, FRLG_WINDOW_URL);
     this.load.image(FRLG_TEXTBOX_KEY, FRLG_TEXTBOX_URL);
     this.load.image(FRLG_HPBAR_KEY, FRLG_HPBAR_URL);
@@ -73,7 +95,25 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     registerFrlgFont(this.cache.bitmapFont);
     this.buildRouteTextures();
+    this.buildMoveFxAnimations();
     this.scene.start('Starter');
+  }
+
+  /**
+   * One animation per move-FX strip, off the atlas registry, so the battle scene
+   * plays `moveFxAnimKey(fx)` without knowing the sheet's frame layout.
+   */
+  private buildMoveFxAnimations(): void {
+    for (const fx of MOVE_FX_IDS) {
+      const key = moveFxAnimKey(fx);
+      if (this.anims.exists(key)) continue;
+      this.anims.create({
+        key,
+        frames: moveFxFrames(fx).map((frame) => ({ key: MOVE_FX_TEXTURE_KEY, frame })),
+        frameRate: MOVE_FX_FRAME_RATE,
+        repeat: 0,
+      });
+    }
   }
 
   /**

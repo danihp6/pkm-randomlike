@@ -149,11 +149,29 @@ battle scene's HP panels, message box and command menu and the route HUD and
 starter pick all use the FRLG windows and glyph set. Being a game rip, this keeps
 O4 open for any public build.
 
+## D20 — Battle presentation is archetype art, not per-move art *(decided)*
+
+The battle scene's extra art is resolved by family, so content can grow without
+new assets. The enemy platform of a trainer battle shows that archetype's 64x64
+sprite from the packed FRLG sheet `src/assets/frlg/trainers.png` (frame from the
+archetype's `battleSprite` through `src/data/trainerSprites.ts`), resolved from
+`BattleLaunch.trigger.archetypeId`; a wild battle keeps the placeholder mon. Move
+FX play by animation archetype (`src/render/moveFx.ts`: `moveFxFor` maps a move
+to one of the six `moves.png` strips by its own id, type and flags), never one
+strip per move; `BootScene` builds one Phaser animation per strip and the battle
+plays it over the side that was hit. The capture beat is the classic throw/wobble
+derived from the engine's `shakes`/`success` by `src/ui/capture.ts`. To resolve
+this art from the same inputs the route used, `BattleLaunch` carries the run seed
+and route index and the triggers carry the encounter `tile` and the trainer
+`archetypeId`, so the battle still draws run-derived art without taking run state.
+
 ## Open questions
 
-- **O1 — Trainer sprites.** Source resolved: the FRLG `npc-overworld.png` and
-  `trainers.png` rips in `sprite-sources/frlg/` cover the archetypes; slicing
-  them per `D18` is the remaining work. Blocks Phase 8 cosmetics, not logic.
+- **O1 — Trainer sprites.** Battle sprites shipped (`D20`): the archetypes draw
+  their FRLG front pic on the enemy platform. Still open: the overworld sheets
+  (`npc-overworld.png`, `player-sprites.png`), so a trainer on the route is still
+  a single tinted placeholder figure, sliced per `D18`. Blocks Phase 8 cosmetics,
+  not logic.
 - **O2 — Battle arena framing.** Single-screen per battle (GB style) vs a
   floating HUD over the route. Cosmetic, blocks Phase 5.
 - **O3 — EVs/IVs.** The data has IVs and EVs exist in Gen 9; do we let a caught

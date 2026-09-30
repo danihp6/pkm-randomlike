@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ROUTE_LOOT } from './loot';
 import { ITEMS, buyPrice, getItem, isForSale, sellPrice, type ItemKind } from './items';
 
 const KINDS: readonly ItemKind[] = ['ball', 'heal', 'status', 'boost', 'held'];
@@ -27,6 +28,12 @@ describe('item catalogue', () => {
     }
   });
 
+  it('keeps the Premier Ball out of the ground-loot pool', () => {
+    for (const band of Object.values(ROUTE_LOOT)) {
+      expect(band.pool.some((entry) => entry.itemId === 'premierball')).toBe(false);
+    }
+  });
+
   it('prices balls by their catch bonus', () => {
     const ballPrices = ITEMS.filter((entry) => entry.kind === 'ball' && entry.id !== 'masterball')
       .map((entry) => entry.price);
@@ -35,6 +42,9 @@ describe('item catalogue', () => {
     for (const entry of ITEMS) {
       if (entry.kind === 'ball') expect(entry.catchBonus, entry.id).toBeGreaterThan(0);
     }
+    // The Premier Ball shares the Poke Ball's 1x rate and price.
+    expect(getItem('premierball')!.catchBonus).toBe(getItem('pokeball')!.catchBonus);
+    expect(getItem('premierball')!.price).toBe(getItem('pokeball')!.price);
   });
 
   it('never registers a Revive (D5)', () => {

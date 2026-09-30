@@ -61,7 +61,8 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] Faint, switch, capture and level-up animations; move FX from `moves.png`.
+- [ ] Faint, switch and level-up animations (capture and move FX from
+      `moves.png` shipped; D20).
 - [ ] Permadeath feedback: the "was released" beat for a fallen Pokémon, and the
       run-over screen when the last one falls.
 
@@ -90,7 +91,8 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] Trainer overworld sheets and battle sprites (see O1 in tech-decisions).
+- [ ] Trainer overworld sheets (battle sprites shipped; see O1 in
+      tech-decisions).
 - [ ] `D18`: make `tileSize` a property of `TilesetConfig` and read it in the
       scene, so 16px FRLG atlases and the 24px PMD atlases coexist.
 - [ ] Compose FRLG tilesets (outdoor first, then forest/cave/beach) from the

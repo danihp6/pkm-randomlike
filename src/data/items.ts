@@ -40,6 +40,7 @@ const item = (def: ItemDef): ItemDef => def;
  */
 export const ITEMS: readonly ItemDef[] = [
   item({ id: 'pokeball', name: 'Poke Ball', kind: 'ball', price: 200, catchBonus: 1, shortDesc: 'A device for catching wild Pokémon.' }),
+  item({ id: 'premierball', name: 'Premier Ball', kind: 'ball', price: 200, catchBonus: 1, shortDesc: 'A commemorative Ball. The same catch rate as a Poke Ball.' }),
   item({ id: 'greatball', name: 'Great Ball', kind: 'ball', price: 600, catchBonus: 1.5, shortDesc: 'A good Ball with a higher catch rate than a Poke Ball.' }),
   item({ id: 'ultraball', name: 'Ultra Ball', kind: 'ball', price: 1200, catchBonus: 2, shortDesc: 'An ultra-performance Ball with a high catch rate.' }),
   item({ id: 'masterball', name: 'Master Ball', kind: 'ball', price: 0, catchBonus: 255, shortDesc: 'The best Ball. It never fails to catch.' }),

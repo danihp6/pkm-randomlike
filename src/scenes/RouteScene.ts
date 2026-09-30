@@ -388,6 +388,7 @@ export class RouteScene extends Phaser.Scene {
           speciesId: encounter.speciesId,
           level: encounter.level,
           key: `grass:${this.player.x},${this.player.y}`,
+          tile: { x: this.player.x, y: this.player.y },
         });
         return;
       }
@@ -428,6 +429,7 @@ export class RouteScene extends Phaser.Scene {
       kind: 'trainer',
       trainerId: trainer.id,
       trainerName: archetype?.name ?? 'Trainer',
+      archetypeId: trainer.archetypeId,
       roster,
     };
   }
@@ -443,6 +445,8 @@ export class RouteScene extends Phaser.Scene {
       experience: this.run.party.map((member) => ({ id: member.fighter.id, xp: member.xp })),
       bag: this.run.bag,
       seed: battleSeed(this.run.seed, this.run.routeIndex, key),
+      runSeed: this.run.seed,
+      routeIndex: this.run.routeIndex,
       canCapture: canCapture(this.run),
     };
     this.pendingBattle = launch;

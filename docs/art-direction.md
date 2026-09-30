@@ -24,7 +24,7 @@ Three tiers, in order of preference:
    `apple-woods.png`, `lush-prairie.png`, `beach-cave.png`, `items.png`,
    `moves.png`, `hud.png`, `portraits.png`, `pokemon/*.png`, and the FRLG UI art
    (`frlg/item-icons.png`, `frlg/window.png`, `frlg/textbox.png`,
-   `frlg/hpbar.png`, `frlg/cursor.png`, `frlg/font.png`). The PMD ones
+   `frlg/hpbar.png`, `frlg/cursor.png`, `frlg/font.png`, `frlg/trainers.png`). The PMD ones
    come from Pokémon Mystery Dungeon rips (PMDCollab and spriters-resource) via the
    sibling project `pkm-mystery-dungeon-like`; the FRLG ones come from
    spriters-resource and the pret/pokefirered decomp (see the FRLG sections below).
@@ -52,6 +52,14 @@ spriters-resource:
 These tiles are 16x16, so any atlas built from them declares `tileSize: 16`
 (`D18`) instead of the 24px of the PMD atlases. Composition is still to do
 (`TODO.md` Phase 8); this section only records the sources.
+
+Battle trainer sprites are packed on their own: `trainers.png` carries a
+"Regular Trainers" grid of 64x64 sprites on flat orange 64px cells at a 65px
+pitch, and `scripts/frlg/build-trainer-sprites.mjs` crops the ten the archetypes
+use (keying the orange to transparent) into `src/assets/frlg/trainers.png` plus
+`src/data/frlg/trainers.json`, read through `src/data/trainerSprites.ts` (D20).
+The overworld character sheets (`npc-overworld.png`, `player-sprites.png`) are
+still unpacked.
 
 ## FireRed/LeafGreen UI sources (downloaded, local only)
 
