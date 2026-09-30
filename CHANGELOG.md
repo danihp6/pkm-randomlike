@@ -499,3 +499,11 @@ file is the human-readable summary.
       its icon and the HUD bag row shows the stacks as icons + counts. The raw
       FRLG UI sheets (menus, HUD, effects) are staged in `sprite-sources/frlg-ui/`
       for the coming UI pass. 470 tests pass; `npm run build` clean.
+- [x] FRLG window chrome (interface art): `scripts/frlg/build-battle-ui.mjs`
+      crops and 4x-upscales the light menu window and the navy battle message box
+      from the FRLG `hpbars-menu` sheet into `src/assets/frlg/window.png` /
+      `textbox.png`, drawn as Phaser nine-slices by `src/ui/frlg.ts`. `BootScene`
+      loads both; `BattleScene`'s two HP panels and its message/command box and
+      `RouteScene`'s HUD panel now use them (dark text on the light window, the
+      message box grew to fit the four command rows). Verified in the browser.
+      470 tests pass; `npm run build` clean.
