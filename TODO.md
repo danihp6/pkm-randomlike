@@ -13,7 +13,7 @@ trainer battle through the full menu (fight / bag / switch / run) with capture a
 permadeath, take the exit and arrive at a second route. Everything after that is
 run structure, presentation and polish.
 
-**Framework established (D1-D18):** Phaser 3 + Vite + TS, pure logic in
+**Framework established (D1-D19):** Phaser 3 + Vite + TS, pure logic in
 `src/engine/`, dex generated from `@pkmn/dex`, own battle engine extending
 Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 `pkm-mystery-dungeon-like` is scoped in `docs/tech-decisions.md` (D14).

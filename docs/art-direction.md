@@ -22,12 +22,14 @@ Three tiers, in order of preference:
    anything public.
 2. **Imported game rips (local only)** — `wood.png`, `desert.png`,
    `apple-woods.png`, `lush-prairie.png`, `beach-cave.png`, `items.png`,
-   `moves.png`, `hud.png`, `portraits.png` and `pokemon/*.png`. These come from
-   Pokémon Mystery Dungeon rips (PMDCollab and spriters-resource) via the sibling
-   project `pkm-mystery-dungeon-like`, i.e. Nintendo/GameFreak/Chunsoft art, as
-   the user asked. **Never redistribute**: `sprite-sources/` is gitignored and
-   these crops must not ship. Tileset rips are credited upstream to
-   SilverDeoxys563 (spriters-resource).
+   `moves.png`, `hud.png`, `portraits.png`, `pokemon/*.png`, and the FRLG UI art
+   (`frlg/item-icons.png`, `frlg/window.png`, `frlg/textbox.png`). The PMD ones
+   come from Pokémon Mystery Dungeon rips (PMDCollab and spriters-resource) via the
+   sibling project `pkm-mystery-dungeon-like`; the FRLG ones come from
+   spriters-resource and the pret/pokefirered decomp (see the FRLG sections below).
+   All are Nintendo/GameFreak/Chunsoft art, as the user asked. **Never
+   redistribute**: `sprite-sources/` is gitignored and these crops must not ship.
+   Tileset rips are credited upstream to SilverDeoxys563 (spriters-resource).
 3. **Third-party CC0** — if a pack is added, record its licence and author in
    this file and keep the source pack in `sprite-sources/` (gitignored).
 
