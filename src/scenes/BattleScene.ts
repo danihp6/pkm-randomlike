@@ -22,6 +22,13 @@ import {
 import { Rng } from '../engine/rng';
 import { experienceFraction, type BattleLaunch, type BattleOutcome, type BattleReturn } from '../engine/run';
 import { MOVE_FX_TEXTURE_KEY, moveFxAnimKey, moveFxFor, moveFxTrack } from '../render/moveFx';
+import {
+  FAINT_DROP,
+  FAINT_MS,
+  SWITCH_RECALL_MS,
+  SWITCH_SENDOUT_MS,
+  SWITCH_SHRINK,
+} from '../ui/beats';
 import { CAPTURE_SHAKE_SPEED, captureBeat } from '../ui/capture';
 import { battleFrames, type FeedFrame } from '../ui/feed';
 import { hpColorInt, hpFraction, statusAbbreviation } from '../ui/metrics';
@@ -41,8 +48,13 @@ const PLAYER_PANEL_W = 320;
 const PLAYER_PANEL_H = 140;
 const FOE_PANEL = { w: PANEL_W, h: 104 } as const;
 const ROW_H = 34;
+/** Placeholder mon sprite scale; the switch beat returns the sprite to it. */
+const MON_SCALE = 2.4;
 
 type Mode = 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'run' | 'over';
+
+/** A sprite beat that owns the mon's position/scale until it completes. */
+type BeatKind = 'faint' | 'switch';
 
 type MenuItem = Readonly<{ label: string; enabled: boolean; onSelect: () => void }>;
 
@@ -75,6 +87,8 @@ export class BattleScene extends Phaser.Scene {
   private lastBallId: string | null = null;
   /** The foe is inside a ball, so it stays hidden even at full HP. */
   private captured = false;
+  /** A running faint/switch beat owns the mon's sprite until it completes. */
+  private beat: Partial<Record<SideId, BeatKind | null>> = {};
   private foeMonPos = { x: 0, y: 0 };
   private playerMonPos = { x: 0, y: 0 };
 
@@ -113,6 +127,7 @@ export class BattleScene extends Phaser.Scene {
     this.trainerFrame = null;
     this.lastBallId = null;
     this.captured = false;
+    this.beat = {};
   }
 
   create(): void {
@@ -167,11 +182,11 @@ export class BattleScene extends Phaser.Scene {
 
     this.foePlatform = this.add.image(0, 0, BATTLE_PLATFORM_TEXTURE_KEY).setTint(0x6f8f5f);
     this.playerPlatform = this.add.image(0, 0, BATTLE_PLATFORM_TEXTURE_KEY).setTint(0x6f8f5f);
-    this.foeSprite = this.add.sprite(0, 0, BATTLE_MON_TEXTURE_KEY).setTint(0x9ad2a0).setScale(2.4);
+    this.foeSprite = this.add.sprite(0, 0, BATTLE_MON_TEXTURE_KEY).setTint(0x9ad2a0).setScale(MON_SCALE);
     this.playerSprite = this.add
       .sprite(0, 0, BATTLE_MON_TEXTURE_KEY)
       .setTint(0xf3b17a)
-      .setScale(2.4)
+      .setScale(MON_SCALE)
       .setFlipX(true);
 
     this.foeTrainer = this.add
@@ -349,16 +364,19 @@ export class BattleScene extends Phaser.Scene {
           this.displayStatus[event.side] = null;
           break;
         case 'switch': {
+          const down = this.displayHp[event.side] <= 0;
           const fighter = this.state.sides[event.side].party.find((p) => p.id === event.fighterId);
           if (fighter) {
             this.displayActive[event.side] = fighter;
             this.displayHp[event.side] = fighter.hp;
             this.displayStatus[event.side] = fighter.status;
           }
+          this.playSwitch(event.side, down);
           break;
         }
         case 'faint':
           this.displayHp[event.side] = 0;
+          this.playFaint(event.side);
           break;
         case 'move':
           this.playMoveFx(event.side, event.moveId);
@@ -424,6 +442,76 @@ export class BattleScene extends Phaser.Scene {
       onComplete: () => {
         this.captured = beat.held;
         if (!beat.held) this.captureBall.setVisible(false);
+        this.refreshHud();
+      },
+    });
+  }
+
+  /** The sprite a side is drawn with; both share the placeholder mon until O1. */
+  private monSprite(side: SideId): Phaser.GameObjects.Sprite {
+    return side === 'player' ? this.playerSprite : this.foeSprite;
+  }
+
+  private monPos(side: SideId): { x: number; y: number } {
+    return side === 'player' ? this.playerMonPos : this.foeMonPos;
+  }
+
+  /** The defeated sprite sinks under its platform and fades, then the HUD hides it. */
+  private playFaint(side: SideId): void {
+    const sprite = this.monSprite(side);
+    if (!sprite.visible) return;
+    const base = this.monPos(side);
+    this.beat[side] = 'faint';
+    this.tweens.killTweensOf(sprite);
+    this.tweens.add({
+      targets: sprite,
+      y: base.y + FAINT_DROP,
+      alpha: 0,
+      duration: FAINT_MS,
+      ease: 'Quad.easeIn',
+      onComplete: () => {
+        this.beat[side] = null;
+        sprite.setAlpha(1).setPosition(base.x, base.y);
+        this.refreshHud();
+      },
+    });
+  }
+
+  /**
+   * The withdraw/send-out beat. A replacement for a fainted partner has nothing
+   * to withdraw, so it only pops the incoming sprite in.
+   */
+  private playSwitch(side: SideId, down: boolean): void {
+    const sprite = this.monSprite(side);
+    const base = this.monPos(side);
+    const scale = MON_SCALE;
+    this.beat[side] = 'switch';
+    const sendOut: Phaser.Types.Tweens.TweenBuilderConfig = {
+      targets: sprite,
+      scaleX: scale,
+      scaleY: scale,
+      alpha: 1,
+      duration: SWITCH_SENDOUT_MS,
+      ease: 'Back.easeOut',
+    };
+    const recall: Phaser.Types.Tweens.TweenBuilderConfig = {
+      targets: sprite,
+      scaleX: scale * SWITCH_SHRINK,
+      scaleY: scale * SWITCH_SHRINK,
+      alpha: 0.2,
+      duration: SWITCH_RECALL_MS,
+      ease: 'Quad.easeIn',
+    };
+    sprite.setPosition(base.x, base.y);
+    this.tweens.killTweensOf(sprite);
+    if (down) sprite.setScale(scale * SWITCH_SHRINK).setAlpha(0);
+    else sprite.setScale(scale).setAlpha(1);
+    this.tweens.chain({
+      targets: sprite,
+      tweens: down ? [sendOut] : [recall, sendOut],
+      onComplete: () => {
+        this.beat[side] = null;
+        sprite.setScale(scale).setAlpha(1);
         this.refreshHud();
       },
     });
@@ -636,13 +724,13 @@ export class BattleScene extends Phaser.Scene {
     const foeY = trainer ? height * 0.3 : height * 0.28;
     this.foeMonPos = { x: foeX, y: foeY };
     this.playerMonPos = { x: width * 0.27, y: height * 0.6 };
-    this.foeSprite.setPosition(foeX, foeY);
+    if (this.beat.enemy !== 'faint') this.foeSprite.setPosition(foeX, foeY);
     this.foePlatform.setPosition(width * 0.72, height * 0.28 + 58);
     if (trainer) this.foeTrainer.setPosition(width * 0.72 - 70, height * 0.28 + 62);
-    this.playerSprite.setPosition(this.playerMonPos.x, this.playerMonPos.y);
+    if (this.beat.player !== 'faint') this.playerSprite.setPosition(this.playerMonPos.x, this.playerMonPos.y);
     this.playerPlatform.setPosition(width * 0.27, height * 0.6 + 62);
-    this.foeSprite.setVisible(this.displayHp.enemy > 0 && !this.captured);
-    this.playerSprite.setVisible(this.displayHp.player > 0);
+    this.foeSprite.setVisible((this.displayHp.enemy > 0 && !this.captured) || this.beat.enemy === 'faint');
+    this.playerSprite.setVisible(this.displayHp.player > 0 || this.beat.player === 'faint');
 
     this.hud.clear();
     this.drawSidePanel(foeInfo, 'enemy');
