@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_KEYBINDS } from '../data/keybinds';
 import { defaultSettings } from '../engine/save';
 import {
   changeSetting,
+  isStepRow,
   moveSettingIndex,
+  rebindSetting,
   settingValue,
   settingsRow,
   SETTINGS_ROWS,
@@ -11,25 +14,47 @@ import {
 } from './settingsScreen';
 
 describe('rows', () => {
-  it('lists text speed, volume and tileset', () => {
-    expect(SETTINGS_ROWS.map((row) => row.id)).toEqual(['textSpeed', 'volume', 'tileset']);
+  it('lists the three step settings then one row per keybind action', () => {
+    expect(SETTINGS_ROWS.map((row) => row.id)).toEqual([
+      'textSpeed',
+      'volume',
+      'tileset',
+      'confirm',
+      'cancel',
+      'up',
+      'down',
+      'left',
+      'right',
+      'party',
+      'settings',
+    ]);
+    expect(SETTINGS_ROWS.slice(0, 3).every(isStepRow)).toBe(true);
+    expect(SETTINGS_ROWS.slice(3).every((row) => !isStepRow(row))).toBe(true);
   });
 
   it('clamps a selection to the list', () => {
+    const last = SETTINGS_ROWS.length - 1;
     expect(moveSettingIndex(0, 1)).toBe(1);
-    expect(moveSettingIndex(2, 1)).toBe(2);
+    expect(moveSettingIndex(last, 1)).toBe(last);
     expect(moveSettingIndex(0, -1)).toBe(0);
-    expect(settingsRow(9).id).toBe('tileset');
+    expect(settingsRow(99).id).toBe('settings');
     expect(settingsRow(-4).id).toBe('textSpeed');
   });
 });
 
 describe('settingValue', () => {
-  it('prints each row', () => {
+  it('prints each setting', () => {
     expect(settingValue(defaultSettings(), 'textSpeed')).toBe('Normal');
     expect(settingValue(defaultSettings(), 'volume')).toBe('80%');
     expect(settingValue(defaultSettings(), 'tileset')).toBe('Auto (biome)');
     expect(settingValue({ ...defaultSettings(), tileset: 'wood' }, 'tileset')).toBe('Woods');
+  });
+
+  it('prints a keybind as its key, arrows and all', () => {
+    expect(settingValue(defaultSettings(), 'confirm')).toBe('Z');
+    expect(settingValue(defaultSettings(), 'cancel')).toBe('X');
+    expect(settingValue(defaultSettings(), 'up')).toBe('\u2191');
+    expect(settingValue({ ...defaultSettings(), keybinds: { ...DEFAULT_KEYBINDS, party: 'Q' } }, 'party')).toBe('Q');
   });
 });
 
@@ -87,8 +112,33 @@ describe('changeSetting', () => {
     expect(changeSetting(settings, 'tileset', 0)).toBe(settings);
   });
 
+  it('does nothing to a keybind row', () => {
+    const settings = defaultSettings();
+    expect(changeSetting(settings, 'confirm', 1)).toBe(settings);
+    expect(changeSetting(settings, 'confirm', -1)).toBe(settings);
+  });
+
   it('keeps VOLUME_STEPS in step with the percentage the screen prints', () => {
     expect(VOLUME_STEPS).toBe(10);
     expect(settingValue({ ...defaultSettings(), volume: 1 / VOLUME_STEPS }, 'volume')).toBe('10%');
+  });
+});
+
+describe('rebindSetting', () => {
+  it('rebinds one action and leaves the rest', () => {
+    const settings = rebindSetting(defaultSettings(), 'confirm', 'Q');
+    expect(settings.keybinds.confirm).toBe('Q');
+    expect(settings.keybinds.cancel).toBe('X');
+  });
+
+  it('swaps when the key already belongs to another action', () => {
+    const settings = rebindSetting(defaultSettings(), 'up', 'X');
+    expect(settings.keybinds.up).toBe('X');
+    expect(settings.keybinds.cancel).toBe('UP');
+  });
+
+  it('returns the same settings when the key does not change', () => {
+    const settings = defaultSettings();
+    expect(rebindSetting(settings, 'confirm', 'Z')).toBe(settings);
   });
 });

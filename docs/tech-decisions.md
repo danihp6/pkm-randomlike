@@ -197,9 +197,30 @@ change — the only audio knob until the sounds themselves ship in Phase 8 — a
 the tileset preference is resolved per route by `resolveTileset` and re-rendered
 when the route resumes. To let the engine validate the preference, the tileset
 ids and their display names moved to the asset-free `src/data/tilesets/ids.ts`,
-which the registry in `index.ts` builds on. Keybinds are deliberately not here:
-they need a shared input layer and a rebinding UI, and stay their own backlog
-item.
+which the registry in `index.ts` builds on. Keybinds live beside them in the same
+document and screen, but needed their own layer — see `D23`.
+
+## D23 — One shared keybind map, captured in the settings screen *(decided)*
+
+Every scene reads its confirm / cancel / move / party / settings key from one
+map instead of hardcoding a key. The vocabulary is in `src/data/keybinds.ts`
+(pure, no Phaser import, so the save can validate it): one key per action, the
+defaults (`Z`/`X`/arrows/`P`/`O`), display labels, and the pure rules
+`actionForKey` (explicit binding, then the always-on `Enter`/`Space` confirm and
+`Esc` cancel aliases, so a rebind can never lock a player out of confirm),
+`withBinding` (rebinding swaps with whichever action held the key, so no key is
+ever ambiguous) and `sanitizeKeybinds` (repairs a hand-edited save). The Phaser
+half is `src/input/` (`subscribeKeybinds`, `actionKeys`, `keyNameOf`): it listens
+to the plugin's generic `keydown`, so the map is re-read per press and a rebind
+applies at once, and auto-repeat is skipped (the two places that want held state
+— the route's walk, the battle's hold-to-skip — poll `actionKeys`). The bindings
+are part of `Settings`, so `SAVE_VERSION` is 4 and `SAVE_MIGRATIONS[3]` adds the
+defaults to a v3 document. `SettingsScene` lists them as `keybind` rows beside
+the `step` rows; selecting one and pressing confirm captures the next key (the
+raw press, bound or not, so any key can be chosen), and cancel keeps the old one.
+Keys that are not player actions stay on Phaser directly: the route's debug
+tileset swap (`R`) and wild battle (`B`), and the starter screen's seed prompt
+(`S`).
 
 ## Open questions
 

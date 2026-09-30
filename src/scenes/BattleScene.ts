@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { getMove } from '../data/dex';
 import { getItem } from '../data/items';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
+import { keyLabel, type Keybinds } from '../data/keybinds';
 import { getTrainerArchetype } from '../data/trainers';
 import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
 import { legalMoveIndices, type Command } from '../engine/battle/commands';
@@ -43,6 +44,7 @@ import {
   type Typewriter,
 } from '../ui/typewriter';
 import { loadSettings } from '../settings';
+import { actionKeys, subscribeKeybinds } from '../input/input';
 import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
@@ -129,7 +131,9 @@ export class BattleScene extends Phaser.Scene {
   private menuItems: readonly MenuItem[] = [];
   private menuIndex = 0;
 
-  private keyZ!: Phaser.Input.Keyboard.Key;
+  /** The keys behind the confirm action, polled so holding one rushes the feed. */
+  private confirmKeys: Phaser.Input.Keyboard.Key[] = [];
+  private keybinds!: Keybinds;
 
   constructor() {
     super('Battle');
@@ -176,7 +180,9 @@ export class BattleScene extends Phaser.Scene {
     };
     for (const entry of launch.experience) this.experience.set(entry.id, entry.xp);
     this.typing = beginTypewriter('');
-    this.charMs = TEXT_SPEED_MS[loadSettings().textSpeed];
+    const settings = loadSettings();
+    this.charMs = TEXT_SPEED_MS[settings.textSpeed];
+    this.keybinds = settings.keybinds;
 
     if (trigger.kind === 'trainer' && trigger.archetypeId) {
       const sprite = getTrainerArchetype(trigger.archetypeId)?.battleSprite ?? null;
@@ -253,38 +259,43 @@ export class BattleScene extends Phaser.Scene {
       addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
     );
 
-    addFrlgText(this, width - 16, 12, 'Z confirm (hold = skip)  ·  X cancel', {
-      size: 16,
-      tint: 0x94a3b8,
-      origin: [1, 0],
-    });
+    addFrlgText(
+      this,
+      width - 16,
+      12,
+      `${keyLabel(this.keybinds.confirm)} confirm (hold = skip)  ·  ${keyLabel(this.keybinds.cancel)} cancel`,
+      {
+        size: 16,
+        tint: 0x94a3b8,
+        origin: [1, 0],
+      },
+    );
   }
 
   private bindInput(): void {
-    const keyboard = this.input.keyboard!;
-    this.keyZ = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
-    const repeat = (handler: (event: KeyboardEvent) => void) => (event: KeyboardEvent) => {
-      if (!event.repeat) handler(event);
-    };
-    const confirm = repeat(() => this.onConfirm());
-    const cancel = repeat(() => this.onCancel());
-    keyboard.on('keydown-Z', confirm);
-    keyboard.on('keydown-SPACE', confirm);
-    keyboard.on('keydown-ENTER', confirm);
-    keyboard.on('keydown-X', cancel);
-    const back = (event: KeyboardEvent) => {
-      if (!event.repeat) this.moveMenu(-1);
-    };
-    const forward = (event: KeyboardEvent) => {
-      if (!event.repeat) this.moveMenu(1);
-    };
-    keyboard.on('keydown-UP', back);
-    keyboard.on('keydown-LEFT', back);
-    keyboard.on('keydown-DOWN', forward);
-    keyboard.on('keydown-RIGHT', forward);
-    keyboard.on('keydown-ESC', () => {
-      if (this.mode === 'over') this.returnToRoute();
-    });
+    this.confirmKeys = actionKeys(this, 'confirm', this.keybinds);
+    subscribeKeybinds(
+      this,
+      ({ action }) => {
+        switch (action) {
+          case 'confirm':
+            this.onConfirm();
+            return;
+          case 'cancel':
+            this.onCancel();
+            return;
+          case 'up':
+          case 'left':
+            this.moveMenu(-1);
+            return;
+          case 'down':
+          case 'right':
+            this.moveMenu(1);
+            return;
+        }
+      },
+      () => this.keybinds,
+    );
   }
 
   private onConfirm(): void {
@@ -305,6 +316,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private onCancel(): void {
+    if (this.mode === 'over') {
+      this.returnToRoute();
+      return;
+    }
     if (this.mode === 'moves' || this.mode === 'bag' || this.mode === 'party' || this.mode === 'run') {
       this.openMenu();
     }
@@ -864,7 +879,7 @@ export class BattleScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     if (this.mode !== 'feed') return;
-    const rush = this.keyZ.isDown;
+    const rush = this.confirmKeys.some((key) => key.isDown);
     if (rush) this.completeTyping();
     else this.tickTyping(delta);
     // The read hold only starts once the line is fully revealed.

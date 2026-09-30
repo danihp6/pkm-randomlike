@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_KEYBINDS } from '../data/keybinds';
 import { levelCapForRoute } from '../data/run';
 import {
   addItem,
@@ -71,11 +72,12 @@ function document(raw: string): ReturnType<typeof decodeSave> {
 }
 
 describe('defaults', () => {
-  it('starts at normal speed, mostly loud and the biome tileset', () => {
+  it('starts at normal speed, mostly loud, the biome tileset and the standard keys', () => {
     expect(defaultSettings()).toEqual({
       textSpeed: DEFAULT_TEXT_SPEED,
       volume: DEFAULT_VOLUME,
       tileset: DEFAULT_TILESET,
+      keybinds: DEFAULT_KEYBINDS,
     });
   });
 
@@ -89,13 +91,18 @@ describe('encodeSave', () => {
     const run = sampleRun();
     const encoded = encodeSave({
       version: 99,
-      settings: { textSpeed: 'fast', volume: 0.4, tileset: 'wood' },
+      settings: { textSpeed: 'fast', volume: 0.4, tileset: 'wood', keybinds: DEFAULT_KEYBINDS },
       run,
     });
     expect(JSON.parse(encoded).version).toBe(SAVE_VERSION);
 
     const decoded = decodeSave(encoded);
-    expect(decoded.settings).toEqual({ textSpeed: 'fast', volume: 0.4, tileset: 'wood' });
+    expect(decoded.settings).toEqual({
+      textSpeed: 'fast',
+      volume: 0.4,
+      tileset: 'wood',
+      keybinds: DEFAULT_KEYBINDS,
+    });
     expect(decoded.run).toEqual(run);
   });
 });
@@ -118,7 +125,12 @@ describe('decodeSave', () => {
     });
     const decoded = document(raw);
     expect(decoded.run).toBeNull();
-    expect(decoded.settings).toEqual({ textSpeed: 'slow', volume: 0.1, tileset: 'placeholder' });
+    expect(decoded.settings).toEqual({
+      textSpeed: 'slow',
+      volume: 0.1,
+      tileset: 'placeholder',
+      keybinds: DEFAULT_KEYBINDS,
+    });
   });
 
   it('drops an unmigratable older document', () => {
@@ -132,7 +144,12 @@ describe('decodeSave', () => {
     const raw = JSON.stringify({ version: 1, settings: { textSpeed: 'fast', volume: 0.25 }, run: v1run });
     const decoded = decodeSave(raw);
     expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.settings).toEqual({ textSpeed: 'fast', volume: 0.25, tileset: DEFAULT_TILESET });
+    expect(decoded.settings).toEqual({
+      textSpeed: 'fast',
+      volume: 0.25,
+      tileset: DEFAULT_TILESET,
+      keybinds: DEFAULT_KEYBINDS,
+    });
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0 });
   });
@@ -141,7 +158,29 @@ describe('decodeSave', () => {
     const raw = JSON.stringify({ version: 2, settings: { textSpeed: 'slow', volume: 0.5 }, run: sampleRun() });
     const decoded = decodeSave(raw);
     expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.settings).toEqual({ textSpeed: 'slow', volume: 0.5, tileset: DEFAULT_TILESET });
+    expect(decoded.settings).toEqual({
+      textSpeed: 'slow',
+      volume: 0.5,
+      tileset: DEFAULT_TILESET,
+      keybinds: DEFAULT_KEYBINDS,
+    });
+    expect(decoded.run?.party).toHaveLength(6);
+  });
+
+  it('migrates a v3 settings onto the current schema, adding the keybinds', () => {
+    const raw = JSON.stringify({
+      version: 3,
+      settings: { textSpeed: 'fast', volume: 0.5, tileset: 'wood' },
+      run: sampleRun(),
+    });
+    const decoded = decodeSave(raw);
+    expect(decoded.version).toBe(SAVE_VERSION);
+    expect(decoded.settings).toEqual({
+      textSpeed: 'fast',
+      volume: 0.5,
+      tileset: 'wood',
+      keybinds: DEFAULT_KEYBINDS,
+    });
     expect(decoded.run?.party).toHaveLength(6);
   });
 });
@@ -149,7 +188,12 @@ describe('decodeSave', () => {
 describe('settings validation', () => {
   it('repairs an unknown speed and clamps the volume', () => {
     const decoded = document(JSON.stringify({ version: SAVE_VERSION, settings: { textSpeed: 'hyper', volume: 5 } }));
-    expect(decoded.settings).toEqual({ textSpeed: DEFAULT_TEXT_SPEED, volume: 1, tileset: DEFAULT_TILESET });
+    expect(decoded.settings).toEqual({
+      textSpeed: DEFAULT_TEXT_SPEED,
+      volume: 1,
+      tileset: DEFAULT_TILESET,
+      keybinds: DEFAULT_KEYBINDS,
+    });
   });
 
   it('floors a negative volume and fills a missing one', () => {
@@ -157,6 +201,7 @@ describe('settings validation', () => {
       textSpeed: DEFAULT_TEXT_SPEED,
       volume: 0,
       tileset: DEFAULT_TILESET,
+      keybinds: DEFAULT_KEYBINDS,
     });
     expect(document(JSON.stringify({ version: SAVE_VERSION, settings: {} })).settings).toEqual(defaultSettings());
   });
@@ -166,6 +211,14 @@ describe('settings validation', () => {
     expect(kept.settings.tileset).toBe('wood');
     const repaired = document(JSON.stringify({ version: SAVE_VERSION, settings: { tileset: 'neon' } }));
     expect(repaired.settings.tileset).toBe(DEFAULT_TILESET);
+  });
+
+  it('keeps the keybinds it can read and fills the rest', () => {
+    const decoded = document(
+      JSON.stringify({ version: SAVE_VERSION, settings: { keybinds: { confirm: 'Q' } } }),
+    );
+    expect(decoded.settings.keybinds.confirm).toBe('Q');
+    expect(decoded.settings.keybinds.cancel).toBe(DEFAULT_KEYBINDS.cancel);
   });
 });
 
@@ -258,14 +311,20 @@ describe('migrateDocument', () => {
   it('upgrades a pre-envelope document end to end, once a step exists', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
-    // Three steps, because the test starts at v0 and the current schema is v3.
+    // Four steps, because the test starts at v0 and the current schema is v4.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
-      2: (doc) => ({ ...doc, version: SAVE_VERSION, settings: { ...(doc.settings as object), tileset: 'wood' } }),
+      2: (doc) => ({ ...doc, version: 3, settings: { ...(doc.settings as object), tileset: 'wood' } }),
+      3: (doc) => ({ ...doc, version: SAVE_VERSION, settings: { ...(doc.settings as object), keybinds: DEFAULT_KEYBINDS } }),
     };
     const decoded = decodeSave(legacy, migrations);
-    expect(decoded.settings).toEqual({ textSpeed: 'fast', volume: 0.25, tileset: 'wood' });
+    expect(decoded.settings).toEqual({
+      textSpeed: 'fast',
+      volume: 0.25,
+      tileset: 'wood',
+      keybinds: DEFAULT_KEYBINDS,
+    });
     expect(decoded.run).toEqual(run);
   });
 });
@@ -286,14 +345,15 @@ describe('storage', () => {
 
   it('keeps the settings when the run is stored or cleared', () => {
     const storage = new MemoryStorage();
-    storeSettings(storage, { textSpeed: 'fast', volume: 0.3, tileset: 'auto' });
+    const settings = { ...defaultSettings(), textSpeed: 'fast' as const, volume: 0.3 };
+    storeSettings(storage, settings);
     storeRun(storage, sampleRun());
-    expect(loadSave(storage).settings).toEqual({ textSpeed: 'fast', volume: 0.3, tileset: 'auto' });
+    expect(loadSave(storage).settings).toEqual(settings);
 
     clearRun(storage);
     expect(loadSave(storage)).toEqual({
       version: SAVE_VERSION,
-      settings: { textSpeed: 'fast', volume: 0.3, tileset: 'auto' },
+      settings,
       run: null,
     });
   });
@@ -302,7 +362,7 @@ describe('storage', () => {
     const storage = new MemoryStorage();
     const run = sampleRun();
     storeRun(storage, run);
-    storeSettings(storage, { textSpeed: 'slow', volume: 0.2, tileset: 'placeholder' });
+    storeSettings(storage, { ...defaultSettings(), textSpeed: 'slow', volume: 0.2, tileset: 'placeholder' });
     const decoded = loadSave(storage);
     expect(decoded.run).toEqual(run);
     expect(decoded.settings.textSpeed).toBe('slow');

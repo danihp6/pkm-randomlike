@@ -26,8 +26,9 @@ describe('loadSettings', () => {
 
   it('reads back what was saved', () => {
     const storage = new MemoryStorage();
-    saveSettings({ textSpeed: 'fast', volume: 0.3, tileset: 'wood' }, storage);
-    expect(loadSettings(storage)).toEqual({ textSpeed: 'fast', volume: 0.3, tileset: 'wood' });
+    const settings = { ...defaultSettings(), textSpeed: 'fast' as const, volume: 0.3, tileset: 'wood' as const };
+    saveSettings(settings, storage);
+    expect(loadSettings(storage)).toEqual(settings);
   });
 
   it('writes the save slot the rest of the game reads', () => {

@@ -11,9 +11,12 @@ import {
   type RunShare,
 } from '../engine/run';
 import { randomSeed, rngFromSeed } from '../engine/rng';
+import { keyLabel } from '../data/keybinds';
+import { subscribeKeybinds } from '../input/input';
 import { addFrlgWindow } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { closeSeedPrompt, openSeedPrompt } from '../ui/seedPrompt';
+import { loadSettings } from '../settings';
 
 const CARD_WIDTH = 260;
 const CARD_HEIGHT = 320;
@@ -71,11 +74,12 @@ export class StarterScene extends Phaser.Scene {
       tint: 0x64748b,
       origin: 0.5,
     });
+    const keys = loadSettings().keybinds;
     addFrlgText(
       this,
       width / 2,
       height - 56,
-      '←  →  choose      Z / Enter  confirm      S  seed      O  settings',
+      `${keyLabel(keys.left)}  ${keyLabel(keys.right)}  choose      ${keyLabel(keys.confirm)}  confirm      S  seed      ${keyLabel(keys.settings)}  settings`,
       {
         size: 16,
         tint: 0xcbd5f5,
@@ -83,24 +87,32 @@ export class StarterScene extends Phaser.Scene {
       },
     );
 
-    const keyboard = this.input.keyboard!;
     const move = (delta: number) => {
       this.index = (this.index + delta + this.pool.length) % this.pool.length;
       this.render();
     };
-    keyboard.on('keydown-LEFT', () => move(-1));
-    keyboard.on('keydown-A', () => move(-1));
-    keyboard.on('keydown-RIGHT', () => move(1));
-    keyboard.on('keydown-D', () => move(1));
-    keyboard.on('keydown-Z', () => this.confirm());
-    keyboard.on('keydown-ENTER', () => this.confirm());
-    keyboard.on('keydown-SPACE', () => this.confirm());
-    keyboard.on('keydown-S', (event: KeyboardEvent) => {
+    subscribeKeybinds(this, ({ action }) => {
+      switch (action) {
+        case 'left':
+          move(-1);
+          return;
+        case 'right':
+          move(1);
+          return;
+        case 'confirm':
+          this.confirm();
+          return;
+        case 'settings':
+          this.openSettings();
+          return;
+      }
+    });
+    // The seed prompt stays a fixed key: it opens a DOM field, not a game action.
+    this.input.keyboard!.on('keydown-S', (event: KeyboardEvent) => {
       // The key that opens the prompt must not also type itself into the field.
       event.preventDefault();
       this.promptForSeed();
     });
-    keyboard.on('keydown-O', () => this.openSettings());
     this.events.once('shutdown', () => closeSeedPrompt());
 
     this.renderSeed();
