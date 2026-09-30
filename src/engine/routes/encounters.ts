@@ -1,4 +1,4 @@
-import type { EncounterEntry, EncounterTable } from '../../data/encounters';
+import type { EncounterTable } from '../../data/encounters';
 import type { Rng } from '../rng';
 
 export type Encounter = Readonly<{
@@ -13,8 +13,8 @@ export function totalWeight(table: EncounterTable): number {
 }
 
 /** Picks one entry by weight. Assumes a non-empty table with positive weights. */
-export function pickWeighted(table: EncounterTable, rng: Rng): EncounterEntry {
-  const total = totalWeight(table);
+export function pickWeighted<T extends { weight: number }>(table: readonly T[], rng: Rng): T {
+  const total = table.reduce((sum, item) => sum + item.weight, 0);
   let roll = rng.next() * total;
   for (const item of table) {
     roll -= item.weight;

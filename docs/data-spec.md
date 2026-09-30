@@ -23,6 +23,9 @@ rate, the generator merges one in from the committed PokeAPI table
 | `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), each with a Poké Dollar price | 3/6 |
 | `src/data/run.ts` | chain length, mini-boss cadence, boss cadence, level caps, starter pool, starting bag | 2 |
 | `src/data/portraits.ts` | portrait atlas URL and frame mapping (dex number − 1) | 6 |
+| `src/data/loot.ts` | per-band ground-item reward tables (the between-route economy) | 6 |
+| `src/data/itemIcons.ts` | typed view over the generated `frlg/item-icons.json` (FRLG icon frames) | 6 |
+| `src/data/frlg/item-icons.json` | generated frame map for the FRLG item icon atlas | 6 |
 
 ## 3. Typed accessors
 

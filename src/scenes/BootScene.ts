@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import playerSpriteUrl from '../assets/pokemon/25.png';
+import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY } from '../data/itemIcons';
 import { PORTRAIT_ATLAS_URL, PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY } from '../data/portraits';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import {
@@ -15,7 +16,6 @@ export const PLAYER_TEXTURE_KEY = 'player';
 export const PLAYER_SPRITE_URL = playerSpriteUrl;
 export const GRASS_TEXTURE_KEY = 'route:grass';
 export const TRAINER_TEXTURE_KEY = 'route:trainer';
-export const ITEM_TEXTURE_KEY = 'route:item';
 export const ARROW_TEXTURE_KEY = 'route:arrow';
 export const BATTLE_MON_TEXTURE_KEY = 'battle:mon';
 export const BATTLE_PLATFORM_TEXTURE_KEY = 'battle:platform';
@@ -44,6 +44,10 @@ export class BootScene extends Phaser.Scene {
       frameWidth: PORTRAIT_SIZE,
       frameHeight: PORTRAIT_SIZE,
     });
+    this.load.spritesheet(ITEM_ICON_TEXTURE_KEY, ITEM_ICON_ATLAS_URL, {
+      frameWidth: ITEM_ICON_SIZE,
+      frameHeight: ITEM_ICON_SIZE,
+    });
   }
 
   create(): void {
@@ -53,8 +57,8 @@ export class BootScene extends Phaser.Scene {
 
   /**
    * Procedural stand-ins for the two art slots the tilesets still lack (tall
-   * grass, trainer sprites) plus the floor-item marker. White shapes so the
-   * scene can tint them; `docs/tileset-spec.md` §6.
+   * grass, trainer sprites). White shapes so the scene can tint them;
+   * `docs/tileset-spec.md` §6.
    */
   private buildRouteTextures(): void {
     const grass = this.make.graphics({ x: 0, y: 0 });
@@ -71,14 +75,6 @@ export class BootScene extends Phaser.Scene {
     trainer.fillRect(4, 10, 10, 8);
     trainer.generateTexture(TRAINER_TEXTURE_KEY, 18, 18);
     trainer.destroy();
-
-    const item = this.make.graphics({ x: 0, y: 0 });
-    item.fillStyle(0xfbbf24, 1);
-    item.fillCircle(5, 5, 5);
-    item.fillStyle(0x78350f, 1);
-    item.fillCircle(5, 5, 2);
-    item.generateTexture(ITEM_TEXTURE_KEY, 10, 10);
-    item.destroy();
 
     const arrow = this.make.graphics({ x: 0, y: 0 });
     arrow.fillStyle(0xffffff, 1);

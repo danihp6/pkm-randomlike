@@ -83,3 +83,8 @@ final boss      the last route of a finite run
 Between two routes the player gets a healing stop (a resting point): HP and PP
 restored, PC box accessible, no resurrection. Items bought or found between
 routes are the only economy.
+
+Loot is **on the ground**: each route places `ROUTE_LOOT[band].count` items from
+a weighted, band-scaled pool (`src/data/loot.ts`), drawn from the route `Rng`
+alongside the positions, and stepping on one adds it to the bag. The route HUD
+shows the bag as FRLG item icons.

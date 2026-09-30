@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { biomeForRoute } from '../data/biomes';
 import { getSpecies } from '../data/dex';
 import { getItem } from '../data/items';
+import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
+import { ROUTE_LOOT } from '../data/loot';
 import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
 import { bandForRoute } from '../data/run';
 import { TRAINER_ARCHETYPE_IDS, getTrainerArchetype } from '../data/trainers';
@@ -9,6 +11,7 @@ import { IS_DEVELOP } from '../dev/env';
 import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
   MAX_PARTY_SIZE,
+  addItem,
   addPokemon,
   battleSeed,
   canCapture,
@@ -54,7 +57,6 @@ import { drawPanel } from '../ui/panel';
 import {
   ARROW_TEXTURE_KEY,
   GRASS_TEXTURE_KEY,
-  ITEM_TEXTURE_KEY,
   PLAYER_TEXTURE_KEY,
   TRAINER_TEXTURE_KEY,
 } from './BootScene';
@@ -62,6 +64,8 @@ import {
 const VISION_RADIUS = 6;
 const HIDDEN_ALPHA = 0.3;
 const EXPLORED_ALPHA = 0.7;
+/** Item stacks the route HUD's bag row shows before it drops the rest. */
+const BAG_ICON_SLOTS = 6;
 
 // Until the starter pick lands, the scene seeds a run with a fixed demo starter
 // and bag and walks its routes off one dev seed.
@@ -99,7 +103,7 @@ export class RouteScene extends Phaser.Scene {
   private hint!: Phaser.GameObjects.Text;
   private hudRoot!: Phaser.GameObjects.Container;
   private hudTitle!: Phaser.GameObjects.Text;
-  private hudBag!: Phaser.GameObjects.Text;
+  private hudBagIcons: { icon: Phaser.GameObjects.Image; count: Phaser.GameObjects.Text }[] = [];
   private hudRows: { portrait: Phaser.GameObjects.Image; text: Phaser.GameObjects.Text }[] = [];
 
   constructor() {
@@ -132,7 +136,8 @@ export class RouteScene extends Phaser.Scene {
       biomeId: biome.id,
       trainerArchetypeIds: TRAINER_ARCHETYPE_IDS,
       trainerCount: band.trainerSize,
-      itemCount: 2,
+      itemCount: ROUTE_LOOT[band.id].count,
+      loot: ROUTE_LOOT[band.id].pool,
       grassPatches: biome.terrain.grassPatches,
       waterBodies: biome.terrain.waterBodies,
       ledges: biome.terrain.ledges,
@@ -201,13 +206,8 @@ export class RouteScene extends Phaser.Scene {
       fontSize: '16px',
       color: '#f8fafc',
     });
-    this.hudBag = this.add.text(x + 14, y + panelH - 24, '', {
-      fontFamily: 'monospace',
-      fontSize: '14px',
-      color: '#cbd5f5',
-    });
 
-    const children: Phaser.GameObjects.GameObject[] = [panel, this.hudTitle, this.hudBag];
+    const children: Phaser.GameObjects.GameObject[] = [panel, this.hudTitle];
     this.hudRows = [];
     for (let i = 0; i < MAX_PARTY_SIZE; i++) {
       const rowY = y + 40 + i * rowH;
@@ -224,15 +224,36 @@ export class RouteScene extends Phaser.Scene {
       children.push(portrait, text);
     }
 
+    this.hudBagIcons = [];
+    for (let i = 0; i < BAG_ICON_SLOTS; i++) {
+      const icon = this.add
+        .image(x + 24 + i * 38, y + panelH - 17, ITEM_ICON_TEXTURE_KEY, 0)
+        .setScale(0.55)
+        .setVisible(false);
+      const count = this.add.text(x + 33 + i * 38, y + panelH - 22, '', {
+        fontFamily: 'monospace',
+        fontSize: '11px',
+        color: '#f8fafc',
+      });
+      this.hudBagIcons.push({ icon, count });
+      children.push(icon, count);
+    }
+
     this.hudRoot = this.add.container(0, 0, children).setDepth(150);
   }
 
   private refreshHud(): void {
     if (!this.hudRoot) return;
     this.hudTitle.setText(`Route ${this.run.routeIndex} · ${biomeForRoute(this.run.routeIndex).name}`);
-    this.hudBag.setText(
-      this.run.bag.map((slot) => `${getItem(slot.itemId)?.name ?? slot.itemId} x${slot.count}`).join('   '),
-    );
+    const bag = this.run.bag.slice(0, BAG_ICON_SLOTS);
+    this.hudBagIcons.forEach((slot, i) => {
+      const stack = bag[i];
+      const frame = stack ? itemIconFrame(stack.itemId) : null;
+      const visible = stack !== undefined && frame !== null;
+      slot.icon.setVisible(visible);
+      if (frame !== null) slot.icon.setFrame(frame);
+      slot.count.setText(visible ? `x${stack!.count}` : '');
+    });
     this.hudRows.forEach((row, i) => {
       const member = this.run.party[i];
       if (!member) {
@@ -281,7 +302,11 @@ export class RouteScene extends Phaser.Scene {
       }
     }
     for (const item of this.route.items) {
-      const object = this.add.image(this.centerX(item.position.x), this.centerY(item.position.y), ITEM_TEXTURE_KEY).setDepth(5);
+      const frame = itemIconFrame(item.itemId) ?? 0;
+      const object = this.add
+        .image(this.centerX(item.position.x), this.centerY(item.position.y), ITEM_ICON_TEXTURE_KEY, frame)
+        .setScale(0.7)
+        .setDepth(5);
       this.foggables.push({ tile: item.position, objects: [object] });
     }
     for (const trainer of this.route.trainers) {
@@ -470,7 +495,9 @@ export class RouteScene extends Phaser.Scene {
     const item = this.route.items.find((candidate) => !this.pickedItems.has(candidate.id) && candidate.position.x === tile.x && candidate.position.y === tile.y);
     if (!item) return false;
     this.pickedItems.add(item.id);
-    this.setHint(`Found ${item.itemId}.`);
+    this.run = addItem(this.run, item.itemId);
+    const name = getItem(item.itemId)?.name ?? item.itemId;
+    this.setHint(`You found ${name}!`);
     return true;
   }
 

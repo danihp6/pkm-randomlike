@@ -10,6 +10,7 @@
 | `pokemon/<id>.png` + `<id>.json` | overworld sheets (32x32 frames, 5 direction rows) + animation manifest | **game rip, local only** |
 | `items.png`, `moves.png`, `hud.png` | battle/UI art for later phases | **game rip, local only** |
 | `portraits.png` | PMDCollab faces, 40x40, 40-column grid, dex order (frame = `num-1`) | **game rip, local only** |
+| `frlg/item-icons.png` | FRLG item icons, 24x24, packed by `scripts/frlg/build-item-icons.mjs` (frame map in `src/data/frlg/item-icons.json`) | **game rip, local only** |
 
 Everything under "local only" is Nintendo/GameFreak/Chunsoft art imported from
 the sibling project `pkm-mystery-dungeon-like` for development, per the project

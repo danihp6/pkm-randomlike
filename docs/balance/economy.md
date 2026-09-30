@@ -40,5 +40,10 @@ always afford.
 
 ## Between-route rewards
 
-Open: the reward is a pick or a shop, deterministic per seed (see `TODO.md`). It
-consumes these prices; the exact payout curve lands with that task.
+The reward is **ground items, like the classic games**: each route scatters a
+band-scaled set of items on the floor and walking over one adds it to the bag.
+`src/data/loot.ts` holds the per-band `count` and weighted pool; the route
+generator draws positions *and* contents from the route `Rng`, so `(seed,
+routeIndex)` fixes the loot (D11). There is no shop and no currency sink yet;
+the early bands lean on Potions and Poke Balls, the late bands on Hyper Potions,
+Ultra Balls and held items. No Revive anywhere (D5).

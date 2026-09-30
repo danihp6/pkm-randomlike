@@ -67,4 +67,19 @@ describe('sketchRoute', () => {
       }
     }
   });
+
+  it('draws ground items from a weighted pool, deterministically', () => {
+    const loot = [
+      { itemId: 'potion', weight: 1 },
+      { itemId: 'pokeball', weight: 1 },
+    ];
+    const withLoot: RouteRequest = { ...request('loot', 2), itemCount: 4, loot };
+    const first = sketchRoute(withLoot);
+    const second = sketchRoute(withLoot);
+    expect(first.items).toEqual(second.items);
+    expect(first.items.length).toBe(4);
+    for (const item of first.items) {
+      expect(['potion', 'pokeball'], item.itemId).toContain(item.itemId);
+    }
+  });
 });

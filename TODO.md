@@ -71,7 +71,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 - [ ] Party/PC screens: managing the party and reading the box (party/PC access
       from the heal stop and the route HUD).
-- [ ] Between-route reward: a pick or a shop, deterministic per seed.
 - [ ] Trainer rosters per band (archetypes in `src/data/trainers.ts`).
 
 ## Phase 7 — Persistence, meta & polish
