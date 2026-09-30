@@ -468,3 +468,11 @@ file is the human-readable summary.
       portraits.mjs`) because it exceeded the WebGL texture limit and rendered
       black. Verified in the browser: pick Charmander → route 1 with HUD. 445 tests
       pass; `npm run build` clean.
+- [x] `src/engine/run/chain.ts`: the route cadence from `src/data/run.ts` —
+      `routeStage(index, mode)` classifies each route as `route`, `miniboss`
+      (every `minibossEvery`), `boss` (closing each `bossBlock`) or `final` (the
+      last route of a finite run), with its `block`/`slot` and `isBoss`/`isFinal`
+      flags; `chainLength` and `isFinalStage` cover the finite finish line and the
+      infinite mode branch (no final boss). `RouteScene` now
+      asks `isFinalStage` instead of comparing against `RUN_CHAIN.finiteLength`
+      directly. 453 tests pass; `npm run build` clean.

@@ -3,7 +3,7 @@ import { biomeForRoute } from '../data/biomes';
 import { getSpecies } from '../data/dex';
 import { getItem } from '../data/items';
 import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
-import { RUN_CHAIN, bandForRoute } from '../data/run';
+import { bandForRoute } from '../data/run';
 import { TRAINER_ARCHETYPE_IDS, getTrainerArchetype } from '../data/trainers';
 import { IS_DEVELOP } from '../dev/env';
 import { restoreFighter, type FighterInput } from '../engine/battle';
@@ -15,6 +15,7 @@ import {
   createRun,
   createRunPokemon,
   hasLivingParty,
+  isFinalStage,
   isTrainerDefeated,
   resolveBattle,
   restAndAdvance,
@@ -387,7 +388,7 @@ export class RouteScene extends Phaser.Scene {
   /** The exit beat: rest the party, then rebuild the scene on the next route. */
   private leaveRoute(): void {
     if (this.gameOver || this.pendingBattle) return;
-    if (this.run.mode === 'finite' && this.run.routeIndex >= RUN_CHAIN.finiteLength) {
+    if (isFinalStage(this.run.routeIndex, this.run.mode)) {
       this.gameOver = true;
       this.setHint('Final route cleared. The run is won!');
       return;
