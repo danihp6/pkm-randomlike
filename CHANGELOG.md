@@ -483,3 +483,19 @@ file is the human-readable summary.
       catch bonus, no Revive). `docs/balance/economy.md` records the sheet and
       `docs/data-spec.md` moves the file to phase 3/6. 461 tests pass;
       `npm run build` clean.
+- [x] Between-route reward as **ground items**: `src/data/loot.ts` holds the
+      per-band `count` + weighted pool (`ROUTE_LOOT`), `sketchRoute` accepts a
+      weighted `loot` pool (falling back to the old uniform `itemIds`) and draws
+      positions *and* contents from the same route `Rng`, and `RouteScene` now
+      actually adds a picked item to the bag and says "You found X!". Tests cover
+      the tables and the deterministic weighted draw. 467 tests pass.
+- [x] FRLG item icons (interface art per the user's FireRed/LeafGreen reminder):
+      `scripts/frlg/build-item-icons.mjs` packs the 24x24 FRLG item icons (named
+      per the pret/pokefirered decomp, so the id → icon map is authoritative)
+      into the committed `src/assets/frlg/item-icons.png` plus
+      `src/data/frlg/item-icons.json`, read through `src/data/itemIcons.ts`.
+      `png-codec.mjs` gained sub-byte palette support (the decomp icons are 4-bit
+      indexed). `BootScene` loads the atlas; the route draws each floor item with
+      its icon and the HUD bag row shows the stacks as icons + counts. The raw
+      FRLG UI sheets (menus, HUD, effects) are staged in `sprite-sources/frlg-ui/`
+      for the coming UI pass. 470 tests pass; `npm run build` clean.

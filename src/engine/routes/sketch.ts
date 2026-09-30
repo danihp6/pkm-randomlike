@@ -1,3 +1,4 @@
+import type { LootEntry } from '../../data/loot';
 import type { Tile } from '../grid';
 import { EXIT, FLOOR, LEDGE, TALL_GRASS, WALL, WATER, tileAt, type TileMap } from '../map';
 import { Rng, hashSeed } from '../rng';
@@ -9,6 +10,7 @@ import {
   type RouteMap,
   type RouteTrainer,
 } from './routeMap';
+import { pickWeighted } from './encounters';
 import { reachableTiles, validateRoute } from './validate';
 
 export const ROUTE_WIDTH = 24;
@@ -32,6 +34,11 @@ export type RouteRequest = Readonly<{
   ledges?: number;
   sightRange?: number;
   itemIds?: readonly string[];
+  /**
+   * Weighted ground-item pool. When set it replaces `itemIds`, so the band's
+   * loot table (with better items in later bands) drives what a route holds.
+   */
+  loot?: readonly LootEntry[];
 }>;
 
 type MutableMap = number[][];
@@ -307,10 +314,14 @@ function attemptRoute(
   for (let i = 0; i < request.itemCount && slotTiles.length > 0; i++) {
     const index = rng.int(0, slotTiles.length - 1);
     const [position] = slotTiles.splice(index, 1);
+    const itemId =
+      request.loot && request.loot.length > 0
+        ? pickWeighted(request.loot, rng).itemId
+        : itemIds[rng.int(0, itemIds.length - 1)];
     items.push({
       id: `item-${request.routeIndex}-${i}`,
       position,
-      itemId: itemIds[rng.int(0, itemIds.length - 1)],
+      itemId,
     });
   }
 

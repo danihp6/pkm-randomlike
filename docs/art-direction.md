@@ -50,6 +50,28 @@ These tiles are 16x16, so any atlas built from them declares `tileSize: 16`
 (`D18`) instead of the 24px of the PMD atlases. Composition is still to do
 (`TODO.md` Phase 8); this section only records the sources.
 
+## FireRed/LeafGreen UI sources (downloaded, local only)
+
+The interface is moving to FRLG art (menus, effects, HUD). The sheets live in
+`sprite-sources/frlg-ui/` (gitignored, never redistributed), downloaded from
+spriters-resource [`game_boy_advance/pokemonfireredleafgreen`](https://www.spriters-resource.com/game_boy_advance/pokemonfireredleafgreen/):
+
+| File | Contents |
+| --- | --- |
+| `menu-frames.png` | text/menu window frames |
+| `hpbars-menu.png` | HP bars and the in-battle command menu |
+| `interface-bag.png`, `pokemon-menu.png`, `summary-menu.png` | bag, party and summary screens |
+| `type-status-icons.png` | type/status badges |
+| `fonts.png` | the FRLG glyph set |
+| `attack-effects.png`, `move-effects.png`, `stat-effects.png`, `battle-backgrounds.png` | battle FX and backdrops |
+
+Item icons are packed separately: `sprite-sources/frlg-ui/item-icons/` holds the
+24x24 FRLG item icons named per the [pret/pokefirered](https://github.com/pret/pokefirered)
+decomp (`graphics/items/icons`, the same art as the sheet's Items section), so
+the id → icon mapping is authoritative. `scripts/frlg/build-item-icons.mjs`
+packs the icons the run uses into the committed `src/assets/frlg/item-icons.png`
+plus `src/data/frlg/item-icons.json`, read through `src/data/itemIcons.ts`.
+
 ## Sprite contract
 
 - Overworld Pokémon sheets: 32x32 frames, 5 rows in the order Down, DownRight,
@@ -77,4 +99,5 @@ These tiles are 16x16, so any atlas built from them declares `tileSize: 16`
   (Viridian Forest, Mt. Moon, Seafoam...): the generator follows the tileset's
   style, not a generic room layout (`docs/routes-spec.md` §2).
 - Chalk-drawn UI is not a thing here; this project's UI is a classic Pokémon
-  frame with a monospace placeholder font until a real one lands.
+  frame with a monospace placeholder font until the FRLG glyph set (`fonts.png`)
+  is packed.

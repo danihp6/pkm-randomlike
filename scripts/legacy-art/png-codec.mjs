@@ -29,11 +29,17 @@ export function decodePng(buf) {
     off += 12 + len
     if (type === 'IEND') break
   }
-  if (bitDepth !== 8) throw new Error('only 8-bit PNGs supported, got bitDepth=' + bitDepth)
+  if (bitDepth !== 8 && !(bitDepth === 4 || bitDepth === 2 || bitDepth === 1)) {
+    throw new Error('unsupported bit depth ' + bitDepth)
+  }
+  if (bitDepth !== 8 && colorType !== 3 && colorType !== 0) {
+    throw new Error('sub-byte bit depth only supported for palette/grayscale PNGs')
+  }
   const raw = inflateSync(Buffer.concat(idat))
 
   const channels = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[colorType]
-  const stride = width * channels
+  const bpp = Math.max(1, Math.ceil((channels * bitDepth) / 8))
+  const stride = Math.ceil((width * channels * bitDepth) / 8)
   const out = Buffer.alloc(height * stride)
   let inOff = 0
   let prevRow = Buffer.alloc(stride)
@@ -43,9 +49,9 @@ export function decodePng(buf) {
     inOff += stride
     const outRow = out.subarray(y * stride, y * stride + stride)
     for (let x = 0; x < stride; x++) {
-      const a = x >= channels ? outRow[x - channels] : 0
+      const a = x >= bpp ? outRow[x - bpp] : 0
       const b = prevRow[x]
-      const c = x >= channels ? prevRow[x - channels] : 0
+      const c = x >= bpp ? prevRow[x - bpp] : 0
       let val = rowData[x]
       if (filter === 1) val += a
       else if (filter === 2) val += b
@@ -60,26 +66,38 @@ export function decodePng(buf) {
     prevRow = outRow
   }
 
+  const maxValue = (1 << bitDepth) - 1
+  const sampleAt = (row, x) => {
+    if (bitDepth === 8) return row[x * channels]
+    const bitPos = x * bitDepth
+    const shift = 8 - bitDepth - (bitPos & 7)
+    return (row[bitPos >> 3] >> shift) & maxValue
+  }
+
   const rgba = Buffer.alloc(width * height * 4)
   for (let y = 0; y < height; y++) {
+    const row = out.subarray(y * stride, y * stride + stride)
     for (let x = 0; x < width; x++) {
-      const s = y * stride + x * channels
       const d = (y * width + x) * 4
       if (colorType === 6) {
+        const s = y * stride + x * channels
         rgba.set(out.subarray(s, s + 4), d)
       } else if (colorType === 2) {
+        const s = y * stride + x * channels
         rgba.set(out.subarray(s, s + 3), d)
         rgba[d + 3] = 255
       } else if (colorType === 3) {
-        const idx = out[s]
+        const idx = sampleAt(row, x)
         rgba[d] = palette[idx * 3]
         rgba[d + 1] = palette[idx * 3 + 1]
         rgba[d + 2] = palette[idx * 3 + 2]
         rgba[d + 3] = trns && idx < trns.length ? trns[idx] : 255
       } else if (colorType === 0) {
-        rgba[d] = rgba[d + 1] = rgba[d + 2] = out[s]
+        const grey = bitDepth === 8 ? row[x] : Math.round((sampleAt(row, x) * 255) / maxValue)
+        rgba[d] = rgba[d + 1] = rgba[d + 2] = grey
         rgba[d + 3] = 255
       } else if (colorType === 4) {
+        const s = y * stride + x * channels
         rgba[d] = rgba[d + 1] = rgba[d + 2] = out[s]
         rgba[d + 3] = out[s + 1]
       }
