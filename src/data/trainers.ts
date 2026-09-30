@@ -1,3 +1,7 @@
+import type { BandId } from './run';
+
+export type TrainerPools = Readonly<Record<BandId, readonly string[]>>;
+
 export type TrainerArchetype = Readonly<{
   id: string;
   name: string;
@@ -12,8 +16,12 @@ export type TrainerArchetype = Readonly<{
    * frame map lives in `src/data/frlg/trainers.json`.
    */
   battleSprite: string | null;
-  /** Themed species pool the roster generator draws from (Phase 6). */
-  pool: readonly string[];
+  /**
+   * Themed species pool per level band; the roster generator draws from the
+   * route's band, so a youngster leads with sentrets on route 1 and fields
+   * furrets, greedents and cinccinos late (`docs/routes-spec.md` §6).
+   */
+  pools: TrainerPools;
 }>;
 
 export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
@@ -24,7 +32,14 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: null,
     colour: 0x60a5fa,
     battleSprite: 'youngster',
-    pool: ['sentret', 'skwovet', 'yungoos', 'lechonk', 'meowth', 'minccino'],
+    pools: {
+      early: ['sentret', 'skwovet', 'yungoos', 'lechonk', 'meowth', 'minccino'],
+      low: ['sentret', 'skwovet', 'yungoos', 'lechonk', 'meowth', 'minccino', 'furret', 'gumshoos'],
+      mid: ['furret', 'gumshoos', 'oinkologne', 'persian', 'lechonk', 'minccino', 'meowth'],
+      high: ['furret', 'gumshoos', 'oinkologne', 'persian', 'greedent', 'cinccino'],
+      late: ['greedent', 'cinccino', 'persian', 'oinkologne', 'furret', 'gumshoos'],
+      end: ['greedent', 'cinccino', 'persian', 'oinkologne', 'furret', 'gumshoos', 'meowth'],
+    },
   },
   {
     id: 'lass',
@@ -33,7 +48,14 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: null,
     colour: 0xf472b6,
     battleSprite: 'lass',
-    pool: ['milcery', 'flabebe', 'igglybuff', 'snubbull', 'fidough', 'tinkatink', 'eevee', 'bounsweet'],
+    pools: {
+      early: ['milcery', 'flabebe', 'igglybuff', 'snubbull', 'fidough', 'eevee', 'bounsweet'],
+      low: ['milcery', 'flabebe', 'igglybuff', 'snubbull', 'fidough', 'eevee', 'bounsweet', 'jigglypuff', 'floette'],
+      mid: ['jigglypuff', 'floette', 'dachsbun', 'steenee', 'granbull', 'eevee', 'snubbull'],
+      high: ['wigglytuff', 'florges', 'tinkatuff', 'tsareena', 'dachsbun', 'granbull', 'jigglypuff'],
+      late: ['florges', 'tsareena', 'tinkaton', 'alcremie', 'wigglytuff', 'dachsbun', 'sylveon'],
+      end: ['tinkaton', 'alcremie', 'florges', 'tsareena', 'sylveon', 'wigglytuff', 'dachsbun'],
+    },
   },
   {
     id: 'bugcatcher',
@@ -42,7 +64,14 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: null,
     colour: 0x84cc16,
     battleSprite: 'bugcatcher',
-    pool: ['scatterbug', 'tarountula', 'nymble', 'grubbin', 'combee', 'joltik', 'snom', 'dewpider', 'surskit'],
+    pools: {
+      early: ['scatterbug', 'tarountula', 'nymble', 'grubbin', 'combee', 'joltik', 'snom', 'dewpider', 'surskit'],
+      low: ['scatterbug', 'tarountula', 'nymble', 'grubbin', 'joltik', 'snom', 'dewpider', 'surskit', 'spewpa', 'charjabug'],
+      mid: ['spewpa', 'charjabug', 'spidops', 'lokix', 'masquerain', 'joltik', 'tarountula', 'nymble'],
+      high: ['spidops', 'lokix', 'masquerain', 'galvantula', 'araquanid', 'charjabug', 'spewpa'],
+      late: ['vikavolt', 'galvantula', 'araquanid', 'frosmoth', 'vespiquen', 'vivillon', 'spidops'],
+      end: ['vikavolt', 'galvantula', 'araquanid', 'frosmoth', 'vespiquen', 'vivillon', 'spidops', 'lokix'],
+    },
   },
   {
     id: 'hiker',
@@ -51,7 +80,14 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: null,
     colour: 0xf59e0b,
     battleSprite: 'hiker',
-    pool: ['nacli', 'rockruff', 'rhyhorn', 'phanpy', 'drilbur', 'mudbray', 'silicobra', 'sandshrew', 'larvitar', 'carbink'],
+    pools: {
+      early: ['nacli', 'rockruff', 'rhyhorn', 'phanpy', 'drilbur', 'mudbray', 'silicobra', 'sandshrew', 'larvitar', 'carbink'],
+      low: ['nacli', 'rockruff', 'rhyhorn', 'phanpy', 'drilbur', 'mudbray', 'silicobra', 'sandshrew', 'larvitar', 'naclstack', 'donphan'],
+      mid: ['naclstack', 'donphan', 'excadrill', 'mudsdale', 'sandaconda', 'sandslash', 'rhydon', 'nacli'],
+      high: ['excadrill', 'mudsdale', 'sandaconda', 'sandslash', 'rhydon', 'lycanroc', 'naclstack', 'pupitar'],
+      late: ['garganacl', 'rhyperior', 'tyranitar', 'lycanroc', 'excadrill', 'sandslash', 'pupitar'],
+      end: ['garganacl', 'rhyperior', 'tyranitar', 'lycanroc', 'excadrill', 'sandaconda', 'mudsdale', 'donphan'],
+    },
   },
   {
     id: 'camper',
@@ -60,7 +96,14 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: null,
     colour: 0x22c55e,
     battleSprite: 'camper',
-    pool: ['seedot', 'shroomish', 'cottonee', 'petilil', 'foongus', 'fomantis', 'smoliv', 'capsakid', 'cacnea', 'snover'],
+    pools: {
+      early: ['seedot', 'shroomish', 'cottonee', 'petilil', 'foongus', 'fomantis', 'smoliv', 'capsakid', 'cacnea', 'snover'],
+      low: ['seedot', 'shroomish', 'cottonee', 'petilil', 'foongus', 'fomantis', 'smoliv', 'capsakid', 'cacnea', 'snover', 'nuzleaf', 'dolliv'],
+      mid: ['nuzleaf', 'dolliv', 'breloom', 'amoonguss', 'lurantis', 'cacturne', 'whimsicott', 'smoliv'],
+      high: ['nuzleaf', 'dolliv', 'breloom', 'amoonguss', 'lurantis', 'cacturne', 'lilligant', 'abomasnow'],
+      late: ['shiftry', 'arboliva', 'breloom', 'amoonguss', 'lurantis', 'cacturne', 'abomasnow', 'whimsicott'],
+      end: ['shiftry', 'arboliva', 'breloom', 'amoonguss', 'lurantis', 'cacturne', 'abomasnow', 'scovillain'],
+    },
   },
   {
     id: 'picnicker',
@@ -69,7 +112,14 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: null,
     colour: 0xfacc15,
     battleSprite: 'picnicker',
-    pool: ['hoppip', 'oddish', 'bellsprout', 'lotad', 'eevee', 'skiddo', 'bounsweet', 'flabebe'],
+    pools: {
+      early: ['hoppip', 'oddish', 'bellsprout', 'lotad', 'eevee', 'skiddo', 'bounsweet', 'flabebe'],
+      low: ['hoppip', 'oddish', 'bellsprout', 'lotad', 'eevee', 'skiddo', 'bounsweet', 'flabebe', 'skiploom', 'gloom', 'floette'],
+      mid: ['skiploom', 'gloom', 'weepinbell', 'lombre', 'gogoat', 'steenee', 'eevee', 'oddish'],
+      high: ['skiploom', 'gloom', 'weepinbell', 'lombre', 'gogoat', 'steenee', 'floette'],
+      late: ['jumpluff', 'bellossom', 'victreebel', 'ludicolo', 'gogoat', 'tsareena', 'florges'],
+      end: ['jumpluff', 'bellossom', 'victreebel', 'ludicolo', 'gogoat', 'tsareena', 'florges'],
+    },
   },
   {
     id: 'fisher',
@@ -78,7 +128,14 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: null,
     colour: 0x38bdf8,
     battleSprite: 'fisher',
-    pool: ['magikarp', 'wooper', 'psyduck', 'poliwag', 'slowpoke', 'shellder', 'horsea', 'seel', 'barboach', 'corphish', 'shellos', 'ducklett', 'arrokuda', 'wiglett', 'finizen', 'veluza', 'clauncher', 'skrelp', 'tentacool', 'lapras'],
+    pools: {
+      early: ['magikarp', 'wooper', 'psyduck', 'poliwag', 'slowpoke', 'shellder', 'horsea', 'seel', 'barboach', 'corphish', 'shellos', 'ducklett', 'arrokuda', 'wiglett', 'finizen', 'veluza', 'clauncher', 'skrelp', 'tentacool', 'lapras'],
+      low: ['magikarp', 'wooper', 'psyduck', 'poliwag', 'slowpoke', 'shellder', 'horsea', 'seel', 'barboach', 'corphish', 'shellos', 'ducklett', 'arrokuda', 'wiglett', 'finizen', 'veluza', 'clauncher', 'skrelp', 'tentacool', 'lapras', 'quagsire', 'golduck', 'poliwhirl', 'seadra', 'whiscash', 'gastrodon'],
+      mid: ['quagsire', 'golduck', 'poliwhirl', 'seadra', 'whiscash', 'gastrodon', 'crawdaunt', 'wugtrio', 'magikarp', 'corphish'],
+      high: ['quagsire', 'golduck', 'poliwhirl', 'seadra', 'whiscash', 'gastrodon', 'crawdaunt', 'wugtrio', 'barraskewda', 'swanna'],
+      late: ['gyarados', 'golduck', 'quagsire', 'crawdaunt', 'gastrodon', 'kingdra', 'wugtrio', 'barraskewda', 'cloyster', 'seadra'],
+      end: ['gyarados', 'golduck', 'crawdaunt', 'kingdra', 'barraskewda', 'wugtrio', 'cloyster', 'lapras', 'palafin', 'veluza', 'quagsire'],
+    },
   },
   {
     id: 'psychic',
@@ -87,7 +144,14 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: null,
     colour: 0xa78bfa,
     battleSprite: 'psychic',
-    pool: ['drowzee', 'ralts', 'spoink', 'bronzor', 'gothita', 'solosis', 'espurr', 'indeedee'],
+    pools: {
+      early: ['drowzee', 'ralts', 'spoink', 'bronzor', 'gothita', 'solosis', 'espurr', 'indeedee'],
+      low: ['drowzee', 'ralts', 'spoink', 'bronzor', 'gothita', 'solosis', 'espurr', 'indeedee', 'kirlia', 'grumpig', 'gothorita', 'duosion'],
+      mid: ['kirlia', 'grumpig', 'gothorita', 'duosion', 'bronzong', 'meowstic', 'drowzee', 'ralts'],
+      high: ['kirlia', 'grumpig', 'gothorita', 'duosion', 'bronzong', 'meowstic', 'indeedee'],
+      late: ['gardevoir', 'gallade', 'grumpig', 'gothitelle', 'reuniclus', 'bronzong', 'meowstic'],
+      end: ['gardevoir', 'gallade', 'gothitelle', 'reuniclus', 'bronzong', 'meowstic', 'indeedee'],
+    },
   },
   {
     id: 'blackbelt',
@@ -96,7 +160,14 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: null,
     colour: 0xef4444,
     battleSprite: 'blackbelt',
-    pool: ['makuhita', 'riolu', 'timburr', 'mienfoo', 'crabrawler', 'passimian', 'falinks', 'croagunk'],
+    pools: {
+      early: ['makuhita', 'riolu', 'timburr', 'mienfoo', 'crabrawler', 'croagunk'],
+      low: ['makuhita', 'riolu', 'timburr', 'mienfoo', 'crabrawler', 'croagunk', 'gurdurr'],
+      mid: ['gurdurr', 'mienfoo', 'crabrawler', 'croagunk', 'makuhita', 'hariyama', 'timburr'],
+      high: ['gurdurr', 'mienshao', 'crabominable', 'toxicroak', 'hariyama', 'passimian', 'crabrawler'],
+      late: ['hariyama', 'mienshao', 'conkeldurr', 'toxicroak', 'crabominable', 'passimian', 'falinks'],
+      end: ['conkeldurr', 'mienshao', 'lucario', 'toxicroak', 'crabominable', 'passimian', 'falinks', 'hariyama'],
+    },
   },
   {
     id: 'ace',
@@ -105,7 +176,14 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: null,
     colour: 0x94a3b8,
     battleSprite: 'ace',
-    pool: ['deino', 'axew', 'gible', 'noibat', 'dratini', 'goomy', 'mimikyu', 'tinkatink', 'pawniard', 'scraggy'],
+    pools: {
+      early: ['deino', 'axew', 'gible', 'noibat', 'dratini', 'goomy', 'tinkatink', 'pawniard', 'scraggy', 'mimikyu'],
+      low: ['deino', 'axew', 'gible', 'noibat', 'dratini', 'goomy', 'tinkatink', 'pawniard', 'mimikyu'],
+      mid: ['deino', 'axew', 'gible', 'noibat', 'dratini', 'goomy', 'tinkatink', 'pawniard', 'scraggy'],
+      high: ['gabite', 'fraxure', 'tinkatuff', 'scraggy', 'bisharp', 'zweilous', 'axew', 'gible'],
+      late: ['gabite', 'fraxure', 'dragonair', 'sliggoo', 'tinkatuff', 'scrafty', 'bisharp', 'zweilous'],
+      end: ['garchomp', 'dragonite', 'haxorus', 'goodra', 'hydreigon', 'kingambit', 'tinkaton', 'mimikyu', 'scrafty'],
+    },
   },
 ];
 

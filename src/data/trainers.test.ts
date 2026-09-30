@@ -1,21 +1,32 @@
 import { describe, expect, it } from 'vitest';
 import { TRAINER_ARCHETYPES, TRAINER_ARCHETYPE_IDS, getTrainerArchetype } from './trainers';
+import { LEVEL_BANDS } from './run';
 import { getSpecies } from './dex/species';
 import trainerSpriteManifest from './frlg/trainers.json';
 
 describe('trainer archetypes', () => {
-  it('has unique ids and no empty pools', () => {
+  it('has unique ids and a non-empty pool for every band', () => {
     expect(new Set(TRAINER_ARCHETYPE_IDS).size).toBe(TRAINER_ARCHETYPES.length);
     for (const archetype of TRAINER_ARCHETYPES) {
-      expect(archetype.pool.length, archetype.id).toBeGreaterThan(0);
+      for (const band of LEVEL_BANDS) {
+        expect(archetype.pools[band.id].length, `${archetype.id}/${band.id}`).toBeGreaterThan(0);
+      }
     }
   });
 
   it('only lists species that exist in the generated dex', () => {
     for (const archetype of TRAINER_ARCHETYPES) {
-      for (const speciesId of archetype.pool) {
-        expect(getSpecies(speciesId), `${archetype.id}/${speciesId}`).toBeDefined();
+      for (const band of LEVEL_BANDS) {
+        for (const speciesId of archetype.pools[band.id]) {
+          expect(getSpecies(speciesId), `${archetype.id}/${band.id}/${speciesId}`).toBeDefined();
+        }
       }
+    }
+  });
+
+  it('grows the pool across the bands of a run', () => {
+    for (const archetype of TRAINER_ARCHETYPES) {
+      expect(archetype.pools.end, archetype.id).not.toEqual(archetype.pools.early);
     }
   });
 

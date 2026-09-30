@@ -619,6 +619,17 @@ file is the human-readable summary.
       `npm run build` clean. Verified in the browser: `P` opens the screen, grab +
       reorder, deposit, withdraw, `X` closes with the run adopted, and the rest
       stop heals on open and lands on route 2 on continue.
+- [x] Trainer rosters per band: `src/data/trainers.ts` now gives every archetype a
+       `pools` record keyed by `BandId` instead of one flat `pool`, and
+       `trainerRoster` draws from `archetype.pools[band.id]`, so a route's rosters
+       field that band's species — base forms in `early`/`low`, evolved forms
+       (`furret`, `greedent`, `vikavolt`, `garchomp`...) in `late`/`end` — while
+       the party size still follows `band.trainerSize` (`docs/routes-spec.md` §6).
+       Each band pool holds at least as many species as its party size, and the
+       tests assert every band is non-empty, every listed species exists in the
+       generated dex and the `end` pool differs from `early`. The roster RNG,
+       seeds and battle snapshots are untouched, so a replay is unchanged.
+       541 tests pass; `npm run build` clean.
 
 ## Phase 8 — Art, audio & release
 

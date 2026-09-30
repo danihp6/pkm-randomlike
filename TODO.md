@@ -63,8 +63,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] Trainer rosters per band (archetypes in `src/data/trainers.ts`).
-
 ## Phase 7 — Persistence, meta & polish
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
