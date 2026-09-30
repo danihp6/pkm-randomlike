@@ -34,6 +34,7 @@ import {
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { clearRun, loadSave } from '../engine/save';
 import { hasLivingParty } from '../engine/run';
+import { applyVolume } from '../settings';
 import {
   COMMON_ATLAS_URL,
   COMMON_TEXTURE_KEY,
@@ -104,6 +105,9 @@ export class BootScene extends Phaser.Scene {
     // so it is cleared rather than resumed (D5: nothing carries over).
     const storage = browserStorage();
     const save = loadSave(storage);
+    // The master volume is a preference that outlives the run, so it is applied
+    // to the sound manager as soon as the boot scene can (D5 keeps settings).
+    applyVolume(this.sound, save.settings);
     if (save.run && hasLivingParty(save.run)) {
       this.scene.start('Route', { run: save.run });
       return;

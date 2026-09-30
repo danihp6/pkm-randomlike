@@ -1,5 +1,6 @@
 import { STAT_IDS, getSpecies, type StatId, type Stats } from '../data/dex';
 import { levelCapForRoute } from '../data/run';
+import { isTilesetPreference, type TilesetPreference } from '../data/tilesets/ids';
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
 import { MAX_LEVEL, type RunPokemon } from './run/progression';
@@ -13,6 +14,8 @@ export type Settings = Readonly<{
   textSpeed: TextSpeed;
   /** Master volume, 0..1. */
   volume: number;
+  /** Which tileset every route renders with: `auto` is the biome's own (D10). */
+  tileset: TilesetPreference;
 }>;
 
 /**
@@ -34,16 +37,17 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
 
 export const DEFAULT_TEXT_SPEED: TextSpeed = 'normal';
 export const DEFAULT_VOLUME = 0.8;
+export const DEFAULT_TILESET: TilesetPreference = 'auto';
 
 export function defaultSettings(): Settings {
-  return { textSpeed: DEFAULT_TEXT_SPEED, volume: DEFAULT_VOLUME };
+  return { textSpeed: DEFAULT_TEXT_SPEED, volume: DEFAULT_VOLUME, tileset: DEFAULT_TILESET };
 }
 
 /** A save with nothing in it: default settings and no run. */
@@ -63,8 +67,10 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
 
 /**
  * The migration path, keyed by the version each step reads. `1` moves a v1 run
- * onto the v2 schema, which added the run summary counters; later changes add
- * the next step, e.g. `2: (doc) => ({ ...doc, version: 3, changed })`.
+ * onto the v2 schema, which added the run summary counters; `2` moves a v2
+ * document onto the v3 schema, which added the tileset preference (a field that
+ * can also be defaulted, so it is added rather than required). Later changes add
+ * the next step, e.g. `3: (doc) => ({ ...doc, version: 4, changed })`.
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -73,6 +79,13 @@ export const SAVE_MIGRATIONS: Migrations = {
     run: isRecord(document.run)
       ? { ...document.run, stats: { catches: 0, casualties: 0 } }
       : document.run,
+  }),
+  2: (document) => ({
+    ...document,
+    version: 3,
+    settings: isRecord(document.settings)
+      ? { ...document.settings, tileset: DEFAULT_TILESET }
+      : document.settings,
   }),
 };
 
@@ -220,7 +233,8 @@ function parseSettings(value: unknown): Settings {
     ? (value.textSpeed as TextSpeed)
     : base.textSpeed;
   const volume = isNumber(value.volume) ? clampVolume(value.volume) : base.volume;
-  return { textSpeed, volume };
+  const tileset = isTilesetPreference(value.tileset) ? value.tileset : base.tileset;
+  return { textSpeed, volume, tileset };
 }
 
 function parseStats(value: unknown): Stats | null {

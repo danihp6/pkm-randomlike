@@ -79,7 +79,15 @@ Pokémon lost and the seed that reproduces the run, as the raw seed and as the
 share string someone else could play (`src/ui/runSummary.ts`, `D21`). A
 win clears its route; a loss does not, and nothing carries over (D5).
 
-## 7. Out of scope (for now)
+## 7. Settings
+
+The player's preferences outlive a run: text speed (how fast the battle message
+box types itself out), master volume and the tileset preference (`auto` follows
+each biome, or one tileset is forced on every route). They live in the same save
+document as the run (D22), are stored the moment they change and are edited from
+one screen (`O`, from the starter pick or the route HUD).
+
+## 8. Out of scope (for now)
 
 - Multiple save slots and cloud saves.
 - Online play, trading, breeding, EVs/IV optimisation as a *goal* (stats and

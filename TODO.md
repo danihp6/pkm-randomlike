@@ -67,7 +67,9 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] Settings: text speed, volume, keybinds, tileset preference.
+- [ ] Keybinds: a shared input layer (`src/input/`) so every scene reads its
+      confirm / cancel / move / party / settings keys from one map, plus the
+      rebinding UI in the settings screen.
 - [ ] Accessibility pass: colour-only information audited, HP bars readable
       without colour, full keyboard play, reduced-flash option.
 - [ ] Balance pass using `docs/balance/` sheets and the scripted-battle harness.
