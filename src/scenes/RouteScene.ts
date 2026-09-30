@@ -41,6 +41,7 @@ import {
 import type { Tile } from '../engine/grid';
 import { EXIT, TALL_GRASS, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, Rng } from '../engine/rng';
+import { storeRun } from '../engine/save';
 import {
   RouteEncounters,
   seesPlayer,
@@ -58,6 +59,7 @@ import { addFrlgWindow } from '../ui/frlg';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
+import { browserStorage } from '../storage';
 import {
   ARROW_TEXTURE_KEY,
   GRASS_TEXTURE_KEY,
@@ -131,11 +133,17 @@ export class RouteScene extends Phaser.Scene {
     if (data?.run) this.run = data.run;
   }
 
+  /** Writes the run to the save slot (Phase 7), so a reload resumes it. */
+  private persistRun(): void {
+    storeRun(browserStorage(), this.run);
+  }
+
   create(): void {
     if (!this.run) {
       this.run = createRun({ seed: DEV_SEED, starter: createRunPokemon(DEMO_STARTER), bag: DEMO_BAG });
       this.run = addPokemon(this.run, createRunPokemon(DEMO_RESERVE));
     }
+    this.persistRun();
     this.tileSprites = [];
     this.foggables = [];
     this.hudRows = [];
@@ -446,6 +454,7 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     this.run = healParty(this.run);
+    this.persistRun();
     this.openParty('rest');
   }
 
@@ -463,6 +472,7 @@ export class RouteScene extends Phaser.Scene {
     const mode = this.pendingParty;
     this.pendingParty = null;
     this.run = run;
+    this.persistRun();
     if (mode === 'rest') {
       // The route advances on the next update, once the screen has closed.
       this.advanceAfterParty = true;
@@ -527,6 +537,7 @@ export class RouteScene extends Phaser.Scene {
     const before = this.run.party;
     const { run, released, events } = resolveBattle(this.run, result, reward);
     this.run = run;
+    this.persistRun();
     this.refreshHud();
 
     const over = !hasLivingParty(this.run);
@@ -667,6 +678,7 @@ export class RouteScene extends Phaser.Scene {
     if (!item) return false;
     this.pickedItems.add(item.id);
     this.run = addItem(this.run, item.itemId);
+    this.persistRun();
     const name = getItem(item.itemId)?.name ?? item.itemId;
     this.setHint(`You found ${name}!`);
     return true;
@@ -683,6 +695,7 @@ export class RouteScene extends Phaser.Scene {
     if (this.advanceAfterParty) {
       this.advanceAfterParty = false;
       this.run = advanceRoute(this.run);
+      this.persistRun();
       // Restart with the advanced run: Phaser reuses a scene's previous start
       // data on `restart()`, so without this the route would boot the old run.
       this.scene.restart({ run: this.run });

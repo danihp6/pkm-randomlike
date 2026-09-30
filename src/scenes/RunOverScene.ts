@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import type { RunState } from '../engine/run';
+import { clearRun } from '../engine/save';
+import { browserStorage } from '../storage';
 import { addFrlgWindow } from '../ui/frlg';
 import { addFrlgText } from '../ui/frlgFont';
 import { RUN_OVER_INPUT_DELAY_MS, runOverLines, runOverSummary } from '../ui/permadeath';
@@ -28,6 +30,8 @@ export class RunOverScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Permadeath (D5): the run is over for good, so the save slot forgets it.
+    clearRun(browserStorage());
     const { width, height } = this.scale;
     this.add.rectangle(0, 0, width, height, 0x05070c).setOrigin(0, 0);
 

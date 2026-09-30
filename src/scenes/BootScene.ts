@@ -32,6 +32,8 @@ import {
   registerFrlgFont,
 } from '../ui/frlgFont';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
+import { clearRun, loadSave } from '../engine/save';
+import { hasLivingParty } from '../engine/run';
 import {
   COMMON_ATLAS_URL,
   COMMON_TEXTURE_KEY,
@@ -39,6 +41,7 @@ import {
   TILESETS,
   tilesetTextureKey,
 } from '../data/tilesets';
+import { browserStorage } from '../storage';
 
 export const PLAYER_TEXTURE_KEY = 'player';
 // Pikachu's overworld sheet: 32x32 frames, first row is the facing-down idle.
@@ -96,6 +99,16 @@ export class BootScene extends Phaser.Scene {
     registerFrlgFont(this.cache.bitmapFont);
     this.buildRouteTextures();
     this.buildMoveFxAnimations();
+    // Phase 7: pick up the run left in progress, or start a fresh one. A saved
+    // run whose last Pokémon already fell was over the moment it was written,
+    // so it is cleared rather than resumed (D5: nothing carries over).
+    const storage = browserStorage();
+    const save = loadSave(storage);
+    if (save.run && hasLivingParty(save.run)) {
+      this.scene.start('Route', { run: save.run });
+      return;
+    }
+    if (save.run) clearRun(storage);
     this.scene.start('Starter');
   }
 

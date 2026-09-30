@@ -67,8 +67,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] `src/engine/save.ts` + `localStorage`: settings and run-in-progress, with a
-      versioned schema and a migration path.
 - [ ] Run summary / score screen: routes cleared, catches, casualties, seed.
 - [ ] Seed input and a share string for a run.
 - [ ] Settings: text speed, volume, keybinds, tileset preference.
