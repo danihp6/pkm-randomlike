@@ -26,8 +26,6 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 - [ ] Add ESLint + Prettier with a `npm run lint` script once the engine has more
       real code (deferred: TypeScript strict mode covers most of it for now).
-- [ ] Add a debug menu skeleton (the `src/dev` gate reads `ENVIRONMENT` and
-      `.env.development` is in place).
 - [ ] Add a README per code folder as the folders appear (`src/scenes/README.md`,
       `src/render/README.md`, `src/input/README.md`).
 

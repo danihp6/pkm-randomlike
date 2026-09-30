@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { IS_DEVELOP } from './dev/env';
 import { BattleScene } from './scenes/BattleScene';
 import { BootScene } from './scenes/BootScene';
 import { RouteScene } from './scenes/RouteScene';
@@ -21,3 +22,16 @@ export const config: Phaser.Types.Core.GameConfig = {
 };
 
 export const game = new Phaser.Game(config);
+
+// The debug menu is a dev-only DOM overlay; the dynamic import keeps its code
+// out of the production entry chunk (see `src/dev/debugMenu.ts`).
+if (IS_DEVELOP) {
+  void import('./dev/debugMenu').then(({ installDebugMenu }) => {
+    installDebugMenu({
+      onWildBattle: (speciesId, level) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        route?.startDebugWildBattle(speciesId, level);
+      },
+    });
+  });
+}

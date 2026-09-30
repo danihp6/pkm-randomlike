@@ -45,7 +45,18 @@ file is the human-readable summary.
       dev server renders the route with fog and the tileset swap.
 - [x] Developer gate (`src/dev/env.ts`): reads `ENVIRONMENT` (set to `develop` by
       `.env.development`, undefined in a production build) and exposes
-      `IS_DEVELOP`. The debug menu skeleton it gates is still open.
+      `IS_DEVELOP` plus the `F2` debug-menu toggle key.
+- [x] Debug menu (`src/dev/debugMenu.ts`): a dev-only DOM overlay (real text
+      input + the browser's own `datalist` autocomplete, which the canvas cannot
+      offer cheaply) that launches a wild battle from any of the 911 playable
+      species at any level. `main.ts` imports it behind `IS_DEVELOP` with a
+      dynamic import, so a production build never mounts it; the pure
+      `matchSpecies` (exact id, exact name, then prefix/substring) and
+      `clampLevel` are unit-tested. RouteScene's `B` key still rolls a random
+      wild, and `F2` shows or hides the panel. `installDebugMenu` swallows keys
+      only while the panel is open and blurs on close, so typing never drives the
+      game and the game never goes deaf afterwards. 504 tests pass;
+      `npm run build` clean.
 
 ## Phase 1 — Dex accessors & data contracts
 

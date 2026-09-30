@@ -7,7 +7,7 @@ import { ROUTE_LOOT } from '../data/loot';
 import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
 import { bandForRoute } from '../data/run';
 import { TRAINER_ARCHETYPE_IDS, getTrainerArchetype } from '../data/trainers';
-import { IS_DEVELOP } from '../dev/env';
+import { DEBUG_MENU_TOGGLE_KEY, IS_DEVELOP } from '../dev/env';
 import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
   MAX_PARTY_SIZE,
@@ -454,6 +454,15 @@ export class RouteScene extends Phaser.Scene {
     this.scene.launch('Battle', launch);
   }
 
+  /**
+   * Dev only: opens a battle against a chosen wild Pokémon from the debug menu.
+   * Ignored while the route is paused behind another battle or the run is over.
+   */
+  startDebugWildBattle(speciesId: string, level: number): void {
+    if (!IS_DEVELOP || this.gameOver || this.pendingBattle || !this.scene.isActive()) return;
+    this.startBattle({ kind: 'wild', speciesId, level, key: `debug:${speciesId}` });
+  }
+
   /** Called by `BattleScene` before it stops: folds the result back into the run. */
   applyBattleResult(result: BattleReturn): void {
     const pending = this.pendingBattle;
@@ -500,7 +509,7 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private setHint(text: string): void {
-    const dev = IS_DEVELOP ? '  ·  B: battle (dev)' : '';
+    const dev = IS_DEVELOP ? `  ·  B: random battle  ·  ${DEBUG_MENU_TOGGLE_KEY}: debug menu` : '';
     this.hint.setText(
       `${text}\nArrows: move  ·  R: swap tileset${dev}  ·  trainers: ${this.route.trainers.length}`,
     );
