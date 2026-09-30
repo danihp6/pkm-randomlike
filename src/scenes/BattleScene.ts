@@ -33,12 +33,22 @@ import { CAPTURE_SHAKE_SPEED, captureBeat } from '../ui/capture';
 import { battleFrames, type FeedFrame } from '../ui/feed';
 import { hpColorInt, hpFraction, statusAbbreviation } from '../ui/metrics';
 import { drawGauge } from '../ui/panel';
+import {
+  advanceTypewriter,
+  beginTypewriter,
+  revealAll,
+  TEXT_SPEED_MS,
+  typewriterDone,
+  visibleText,
+  type Typewriter,
+} from '../ui/typewriter';
+import { loadSettings } from '../settings';
 import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import type { RouteScene } from './RouteScene';
 
-const MESSAGE_HOLD_MS = 850;
+const MESSAGE_HOLD_MS = 450;
 const FAST_HOLD_MS = 45;
 const MENU_ROWS = 4;
 const MENU_W = 540;
@@ -72,6 +82,9 @@ export class BattleScene extends Phaser.Scene {
   private frames: readonly FeedFrame[] = [];
   private frameIndex = 0;
   private feedElapsed = 0;
+  /** The message box's typewriter, at the player's text speed (Phase 7). */
+  private typing: Typewriter = beginTypewriter('');
+  private charMs = TEXT_SPEED_MS.normal;
   private logLength = 0;
   private afterFeed: (() => void) | null = null;
   private mode: Mode = 'feed';
@@ -162,6 +175,8 @@ export class BattleScene extends Phaser.Scene {
       enemy: this.displayActive.enemy.status,
     };
     for (const entry of launch.experience) this.experience.set(entry.id, entry.xp);
+    this.typing = beginTypewriter('');
+    this.charMs = TEXT_SPEED_MS[loadSettings().textSpeed];
 
     if (trigger.kind === 'trainer' && trigger.archetypeId) {
       const sprite = getTrainerArchetype(trigger.archetypeId)?.battleSprite ?? null;
@@ -274,6 +289,11 @@ export class BattleScene extends Phaser.Scene {
 
   private onConfirm(): void {
     if (this.mode === 'feed') {
+      // A tap reveals the rest of the line before it moves the feed on.
+      if (!typewriterDone(this.typing)) {
+        this.completeTyping();
+        return;
+      }
       this.advanceFeed();
       return;
     }
@@ -311,7 +331,7 @@ export class BattleScene extends Phaser.Scene {
   private showFrame(): void {
     const frame = this.frames[this.frameIndex];
     this.applyEvents(frame.events);
-    if (frame.message !== null) this.setMessage(frame.message);
+    if (frame.message !== null) this.typeMessage(frame.message);
     this.refreshHud();
   }
 
@@ -697,8 +717,31 @@ export class BattleScene extends Phaser.Scene {
 
   // --- rendering ----------------------------------------------------------
 
+  /** Shows a message whole: menus and prompts are not typed out. */
   private setMessage(text: string): void {
+    this.typing = revealAll(beginTypewriter(text));
     this.messageText.setText(text);
+  }
+
+  /** Starts revealing a message at the player's text speed. */
+  private typeMessage(text: string): void {
+    this.typing = beginTypewriter(text);
+    this.messageText.setText('');
+  }
+
+  /** Reveals the characters the frame's elapsed time buys. */
+  private tickTyping(delta: number): void {
+    const { typewriter } = advanceTypewriter(this.typing, delta, this.charMs);
+    if (typewriter === this.typing) return;
+    this.typing = typewriter;
+    this.messageText.setText(visibleText(typewriter));
+  }
+
+  /** Skips to the end of the line (a confirm tap, or Z held). */
+  private completeTyping(): void {
+    if (typewriterDone(this.typing)) return;
+    this.typing = revealAll(this.typing);
+    this.messageText.setText(this.typing.text);
   }
 
   private refreshHud(): void {
@@ -821,8 +864,15 @@ export class BattleScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     if (this.mode !== 'feed') return;
+    const rush = this.keyZ.isDown;
+    if (rush) this.completeTyping();
+    else this.tickTyping(delta);
+    // The read hold only starts once the line is fully revealed.
+    if (!typewriterDone(this.typing)) {
+      this.feedElapsed = 0;
+      return;
+    }
     this.feedElapsed += delta;
-    const hold = this.keyZ.isDown ? FAST_HOLD_MS : MESSAGE_HOLD_MS;
-    if (this.feedElapsed >= hold) this.advanceFeed();
+    if (this.feedElapsed >= (rush ? FAST_HOLD_MS : MESSAGE_HOLD_MS)) this.advanceFeed();
   }
 }

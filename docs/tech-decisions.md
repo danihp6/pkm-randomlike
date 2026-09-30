@@ -180,6 +180,27 @@ in `src/ui/seedPrompt.ts`, like the dev debug menu) to type a seed or paste one;
 the end-of-run screen reports the string beside the seed. The token carries no
 progress, so a shared run starts from route 1.
 
+## D22 — Player settings live in the save and change at once *(decided)*
+
+`Settings` (`src/engine/save.ts`) is the part of the save that outlives a run —
+text speed, master volume and the tileset preference — and it shares the versioned
+document with the run, so `SAVE_VERSION` is 3 and `SAVE_MIGRATIONS[2]` adds the
+tileset preference to a v2 document. `src/settings.ts` is the browser-facing
+shim the scenes read and write through (the engine never touches storage).
+`src/scenes/SettingsScene.ts` is the one editor: the starter screen and the route
+HUD open it paused-on-top with `O`, up/down picks a row and left/right steps its
+value, and every change is stored and applied immediately, so there is nothing to
+confirm. Each setting is honoured for real: text speed drives the battle message
+box's typewriter (`src/ui/typewriter.ts`, `TEXT_SPEED_MS`; a confirm tap or `Z`
+held skips a line), volume is pushed into Phaser's sound manager at boot and on
+change — the only audio knob until the sounds themselves ship in Phase 8 — and
+the tileset preference is resolved per route by `resolveTileset` and re-rendered
+when the route resumes. To let the engine validate the preference, the tileset
+ids and their display names moved to the asset-free `src/data/tilesets/ids.ts`,
+which the registry in `index.ts` builds on. Keybinds are deliberately not here:
+they need a shared input layer and a rebinding UI, and stay their own backlog
+item.
+
 ## Open questions
 
 - **O1 — Trainer sprites.** Battle sprites shipped (`D20`): the archetypes draw

@@ -71,11 +71,17 @@ export class StarterScene extends Phaser.Scene {
       tint: 0x64748b,
       origin: 0.5,
     });
-    addFrlgText(this, width / 2, height - 56, '←  →  choose      Z / Enter  confirm      S  seed / share string', {
-      size: 16,
-      tint: 0xcbd5f5,
-      origin: 0.5,
-    });
+    addFrlgText(
+      this,
+      width / 2,
+      height - 56,
+      '←  →  choose      Z / Enter  confirm      S  seed      O  settings',
+      {
+        size: 16,
+        tint: 0xcbd5f5,
+        origin: 0.5,
+      },
+    );
 
     const keyboard = this.input.keyboard!;
     const move = (delta: number) => {
@@ -94,6 +100,7 @@ export class StarterScene extends Phaser.Scene {
       event.preventDefault();
       this.promptForSeed();
     });
+    keyboard.on('keydown-O', () => this.openSettings());
     this.events.once('shutdown', () => closeSeedPrompt());
 
     this.renderSeed();
@@ -148,6 +155,12 @@ export class StarterScene extends Phaser.Scene {
       initial: { seed: this.seed, mode: this.mode },
       onConfirm: (share) => this.applyShare(share),
     });
+  }
+
+  /** Opens the settings screen paused-on-top; it resumes this scene on close. */
+  private openSettings(): void {
+    this.scene.pause();
+    this.scene.launch('Settings', { from: 'Starter' });
   }
 
   /** Adopts a typed seed or a pasted share string and rerolls the offer. */

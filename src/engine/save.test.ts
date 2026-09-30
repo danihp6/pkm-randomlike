@@ -12,6 +12,7 @@ import {
 } from './run';
 import {
   DEFAULT_TEXT_SPEED,
+  DEFAULT_TILESET,
   DEFAULT_VOLUME,
   SAVE_KEY,
   SAVE_VERSION,
@@ -70,8 +71,12 @@ function document(raw: string): ReturnType<typeof decodeSave> {
 }
 
 describe('defaults', () => {
-  it('starts at normal speed and mostly loud', () => {
-    expect(defaultSettings()).toEqual({ textSpeed: DEFAULT_TEXT_SPEED, volume: DEFAULT_VOLUME });
+  it('starts at normal speed, mostly loud and the biome tileset', () => {
+    expect(defaultSettings()).toEqual({
+      textSpeed: DEFAULT_TEXT_SPEED,
+      volume: DEFAULT_VOLUME,
+      tileset: DEFAULT_TILESET,
+    });
   });
 
   it('an empty save holds the defaults and no run', () => {
@@ -84,13 +89,13 @@ describe('encodeSave', () => {
     const run = sampleRun();
     const encoded = encodeSave({
       version: 99,
-      settings: { textSpeed: 'fast', volume: 0.4 },
+      settings: { textSpeed: 'fast', volume: 0.4, tileset: 'wood' },
       run,
     });
     expect(JSON.parse(encoded).version).toBe(SAVE_VERSION);
 
     const decoded = decodeSave(encoded);
-    expect(decoded.settings).toEqual({ textSpeed: 'fast', volume: 0.4 });
+    expect(decoded.settings).toEqual({ textSpeed: 'fast', volume: 0.4, tileset: 'wood' });
     expect(decoded.run).toEqual(run);
   });
 });
@@ -108,12 +113,12 @@ describe('decodeSave', () => {
   it('keeps the settings but drops a run from a newer build', () => {
     const raw = JSON.stringify({
       version: SAVE_VERSION + 1,
-      settings: { textSpeed: 'slow', volume: 0.1 },
+      settings: { textSpeed: 'slow', volume: 0.1, tileset: 'placeholder' },
       run: sampleRun(),
     });
     const decoded = document(raw);
     expect(decoded.run).toBeNull();
-    expect(decoded.settings).toEqual({ textSpeed: 'slow', volume: 0.1 });
+    expect(decoded.settings).toEqual({ textSpeed: 'slow', volume: 0.1, tileset: 'placeholder' });
   });
 
   it('drops an unmigratable older document', () => {
@@ -127,24 +132,40 @@ describe('decodeSave', () => {
     const raw = JSON.stringify({ version: 1, settings: { textSpeed: 'fast', volume: 0.25 }, run: v1run });
     const decoded = decodeSave(raw);
     expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.settings).toEqual({ textSpeed: 'fast', volume: 0.25 });
+    expect(decoded.settings).toEqual({ textSpeed: 'fast', volume: 0.25, tileset: DEFAULT_TILESET });
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0 });
+  });
+
+  it('migrates a v2 settings onto the current schema, adding the tileset preference', () => {
+    const raw = JSON.stringify({ version: 2, settings: { textSpeed: 'slow', volume: 0.5 }, run: sampleRun() });
+    const decoded = decodeSave(raw);
+    expect(decoded.version).toBe(SAVE_VERSION);
+    expect(decoded.settings).toEqual({ textSpeed: 'slow', volume: 0.5, tileset: DEFAULT_TILESET });
+    expect(decoded.run?.party).toHaveLength(6);
   });
 });
 
 describe('settings validation', () => {
   it('repairs an unknown speed and clamps the volume', () => {
     const decoded = document(JSON.stringify({ version: SAVE_VERSION, settings: { textSpeed: 'hyper', volume: 5 } }));
-    expect(decoded.settings).toEqual({ textSpeed: DEFAULT_TEXT_SPEED, volume: 1 });
+    expect(decoded.settings).toEqual({ textSpeed: DEFAULT_TEXT_SPEED, volume: 1, tileset: DEFAULT_TILESET });
   });
 
   it('floors a negative volume and fills a missing one', () => {
     expect(document(JSON.stringify({ version: SAVE_VERSION, settings: { volume: -3 } })).settings).toEqual({
       textSpeed: DEFAULT_TEXT_SPEED,
       volume: 0,
+      tileset: DEFAULT_TILESET,
     });
     expect(document(JSON.stringify({ version: SAVE_VERSION, settings: {} })).settings).toEqual(defaultSettings());
+  });
+
+  it('keeps a known tileset preference and repairs an unknown one', () => {
+    const kept = document(JSON.stringify({ version: SAVE_VERSION, settings: { tileset: 'wood' } }));
+    expect(kept.settings.tileset).toBe('wood');
+    const repaired = document(JSON.stringify({ version: SAVE_VERSION, settings: { tileset: 'neon' } }));
+    expect(repaired.settings.tileset).toBe(DEFAULT_TILESET);
   });
 });
 
@@ -237,13 +258,14 @@ describe('migrateDocument', () => {
   it('upgrades a pre-envelope document end to end, once a step exists', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
-    // Two steps, because the test starts at v0 and the current schema is v2.
+    // Three steps, because the test starts at v0 and the current schema is v3.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
-      1: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      1: (doc) => ({ ...doc, version: 2 }),
+      2: (doc) => ({ ...doc, version: SAVE_VERSION, settings: { ...(doc.settings as object), tileset: 'wood' } }),
     };
     const decoded = decodeSave(legacy, migrations);
-    expect(decoded.settings).toEqual({ textSpeed: 'fast', volume: 0.25 });
+    expect(decoded.settings).toEqual({ textSpeed: 'fast', volume: 0.25, tileset: 'wood' });
     expect(decoded.run).toEqual(run);
   });
 });
@@ -264,22 +286,27 @@ describe('storage', () => {
 
   it('keeps the settings when the run is stored or cleared', () => {
     const storage = new MemoryStorage();
-    storeSettings(storage, { textSpeed: 'fast', volume: 0.3 });
+    storeSettings(storage, { textSpeed: 'fast', volume: 0.3, tileset: 'auto' });
     storeRun(storage, sampleRun());
-    expect(loadSave(storage).settings).toEqual({ textSpeed: 'fast', volume: 0.3 });
+    expect(loadSave(storage).settings).toEqual({ textSpeed: 'fast', volume: 0.3, tileset: 'auto' });
 
     clearRun(storage);
-    expect(loadSave(storage)).toEqual({ version: SAVE_VERSION, settings: { textSpeed: 'fast', volume: 0.3 }, run: null });
+    expect(loadSave(storage)).toEqual({
+      version: SAVE_VERSION,
+      settings: { textSpeed: 'fast', volume: 0.3, tileset: 'auto' },
+      run: null,
+    });
   });
 
   it('keeps the run when the settings are stored', () => {
     const storage = new MemoryStorage();
     const run = sampleRun();
     storeRun(storage, run);
-    storeSettings(storage, { textSpeed: 'slow', volume: 0.2 });
+    storeSettings(storage, { textSpeed: 'slow', volume: 0.2, tileset: 'placeholder' });
     const decoded = loadSave(storage);
     expect(decoded.run).toEqual(run);
     expect(decoded.settings.textSpeed).toBe('slow');
+    expect(decoded.settings.tileset).toBe('placeholder');
   });
 
   it('never throws when the slot is blocked', () => {

@@ -5,6 +5,7 @@ import { BootScene } from './scenes/BootScene';
 import { PartyScene } from './scenes/PartyScene';
 import { RouteScene } from './scenes/RouteScene';
 import { RunOverScene } from './scenes/RunOverScene';
+import { SettingsScene } from './scenes/SettingsScene';
 import { StarterScene } from './scenes/StarterScene';
 
 export const GAME_WIDTH = 1280;
@@ -20,7 +21,7 @@ export const config: Phaser.Types.Core.GameConfig = {
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
   },
-  scene: [BootScene, StarterScene, RouteScene, BattleScene, PartyScene, RunOverScene],
+  scene: [BootScene, StarterScene, RouteScene, BattleScene, PartyScene, RunOverScene, SettingsScene],
 };
 
 export const game = new Phaser.Game(config);

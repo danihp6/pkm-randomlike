@@ -680,6 +680,24 @@ file is the human-readable summary.
       taking its mode with it — or a typed seed and rerolls the three starters;
       the end-of-run screen reports the share string beside the raw seed.
       584 tests pass; `npm run build` clean.
+- [x] Settings screen (`D22`): `Settings` gained the tileset preference (`auto`
+      follows the biome, D10; anything else forces one everywhere), which made
+      `SAVE_VERSION` 3 with `SAVE_MIGRATIONS[2]` filling it into a v2 document.
+      The tileset ids and their display names moved to the asset-free
+      `src/data/tilesets/ids.ts` (`TILESET_IDS`, `TILESET_NAMES`,
+      `isTilesetPreference`, `resolveTileset`, `tilesetLabel`) so the engine can
+      validate a preference without importing a `.png`, and `index.ts` builds the
+      registry on that list. `src/scenes/SettingsScene.ts` (a pure model in
+      `src/ui/settingsScreen.ts`) opens paused-on-top from the starter screen or
+      the route HUD with `O`: up/down picks a row, left/right steps its value and
+      each change is stored at once through `src/settings.ts`, so there is nothing
+      to confirm. Every setting is honoured: text speed drives the new battle
+      message typewriter (`src/ui/typewriter.ts` + `TEXT_SPEED_MS`; a confirm tap
+      or `Z` held skips the line, and the read hold shortened to 450 ms to pay for
+      the typing), volume goes into Phaser's sound manager at boot and on change
+      (the only audio knob until Phase 8 ships sounds) and the route re-renders
+      with the forced tileset when it resumes. Keybinds stayed a separate backlog
+      item. 612 tests pass; `npm run build` clean.
 
 ## Phase 8 — Art, audio & release
 

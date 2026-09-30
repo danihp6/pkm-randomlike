@@ -35,13 +35,14 @@ import {
   COMMON_TEXTURE_KEY,
   TILESET_IDS,
   TILESETS,
+  resolveTileset,
   type TilesetId,
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
 import { EXIT, TALL_GRASS, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, Rng } from '../engine/rng';
-import { storeRun } from '../engine/save';
+import { storeRun, type Settings } from '../engine/save';
 import {
   RouteEncounters,
   seesPlayer,
@@ -59,6 +60,7 @@ import { addFrlgWindow } from '../ui/frlg';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
+import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import {
   ARROW_TEXTURE_KEY,
@@ -72,6 +74,8 @@ const HIDDEN_ALPHA = 0.3;
 const EXPLORED_ALPHA = 0.7;
 /** Item stacks the route HUD's bag row shows before it drops the rest. */
 const BAG_ICON_SLOTS = 6;
+/** The resting line the hint bar shows whenever nothing else is being said. */
+const DEFAULT_HINT = 'Walk the route. Arrow keys to move.   ·   P party   ·   O settings';
 
 // Until the starter pick lands, the scene seeds a run with a fixed demo starter
 // and bag and walks its routes off one dev seed.
@@ -101,6 +105,7 @@ export class RouteScene extends Phaser.Scene {
   private tileSprites: Phaser.GameObjects.Image[][] = [];
   private foggables: Foggable[] = [];
   private run!: RunState;
+  private settings!: Settings;
   private pickedItems = new Set<string>();
   private gameOver = false;
   private battleCounter = 0;
@@ -157,7 +162,7 @@ export class RouteScene extends Phaser.Scene {
     this.releaseOnDone = null;
     this.releaseWait = null;
     this.releaseArmed = false;
-    this.tilesetId = 'wood';
+    this.settings = loadSettings();
 
     const routeIndex = this.run.routeIndex;
     const biome = biomeForRoute(routeIndex);
@@ -175,7 +180,7 @@ export class RouteScene extends Phaser.Scene {
       ledges: biome.terrain.ledges,
     });
     this.map = this.route.tiles;
-    this.tilesetId = biome.tilesetId;
+    this.tilesetId = resolveTileset(this.settings.tileset, biome.tilesetId);
     this.vision = new Vision(VISION_RADIUS);
     this.encounters = new RouteEncounters(
       biome.encounters[band.id],
@@ -216,6 +221,9 @@ export class RouteScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-P', () => {
       if (this.scene.isActive()) this.openParty('field');
     });
+    this.input.keyboard!.on('keydown-O', () => {
+      if (this.scene.isActive()) this.openSettings();
+    });
     const confirmRelease = (event: KeyboardEvent) => {
       if (event.repeat) return;
       if (this.releaseRoot && this.releaseArmed) this.advanceRelease();
@@ -231,7 +239,7 @@ export class RouteScene extends Phaser.Scene {
     this.buildHud();
     this.setupHudCamera();
     this.hint.setDepth(200);
-    this.setHint('Walk the route. Arrow keys to move.');
+    this.setHint(DEFAULT_HINT);
     this.refreshHud();
   }
 
@@ -442,7 +450,7 @@ export class RouteScene extends Phaser.Scene {
       this.startBattle(this.trainerTrigger(spotter));
       return;
     }
-    this.setHint('Walk the route. Arrow keys to move.');
+    this.setHint(DEFAULT_HINT);
   }
 
   /** The exit beat: rest the party, then let the player manage it before moving on. */
@@ -464,6 +472,24 @@ export class RouteScene extends Phaser.Scene {
     this.pendingParty = mode;
     this.scene.pause();
     this.scene.launch('Party', { run: this.run, mode });
+  }
+
+  /** Opens the settings screen paused-on-top, like the party screen (`O`). */
+  private openSettings(): void {
+    if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) return;
+    this.scene.pause();
+    this.scene.launch('Settings', { from: 'Route' });
+  }
+
+  /**
+   * Called by `SettingsScene` before it closes: re-reads the preferences and
+   * re-renders the route with the tileset they now ask for (D10 keeps the
+   * biome's own tileset until the player forces another one).
+   */
+  applySettings(): void {
+    this.settings = loadSettings();
+    const wanted = resolveTileset(this.settings.tileset, biomeForRoute(this.run.routeIndex).tilesetId);
+    if (wanted !== this.tilesetId) this.applyTileset(wanted);
   }
 
   /** Called by `PartyScene` before it stops: adopts the managed run. */
