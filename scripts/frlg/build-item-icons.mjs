@@ -21,6 +21,8 @@ const ITEM_ICONS = {
   greatball: 'great_ball',
   ultraball: 'ultra_ball',
   masterball: 'master_ball',
+  // Gen 3 has the Premier Ball but ships no distinct icon; the Poke Ball stands in.
+  premierball: 'poke_ball',
   potion: 'potion',
   superpotion: 'potion',
   hyperpotion: 'potion',

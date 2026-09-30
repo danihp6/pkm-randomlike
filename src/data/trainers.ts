@@ -6,6 +6,12 @@ export type TrainerArchetype = Readonly<{
   spriteKey: string | null;
   /** Placeholder marker colour used until `spriteKey` exists. */
   colour: number;
+  /**
+   * Frame in the battle trainer sheet (`src/assets/frlg/trainers.png`, Phase 8
+   * O1) shown on the enemy platform, or null for a placeholder sprite. The
+   * frame map lives in `src/data/frlg/trainers.json`.
+   */
+  battleSprite: string | null;
   /** Themed species pool the roster generator draws from (Phase 6). */
   pool: readonly string[];
 }>;
@@ -17,6 +23,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     className: 'Youngster',
     spriteKey: null,
     colour: 0x60a5fa,
+    battleSprite: 'youngster',
     pool: ['sentret', 'skwovet', 'yungoos', 'lechonk', 'meowth', 'minccino'],
   },
   {
@@ -25,6 +32,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     className: 'Lass',
     spriteKey: null,
     colour: 0xf472b6,
+    battleSprite: 'lass',
     pool: ['milcery', 'flabebe', 'igglybuff', 'snubbull', 'fidough', 'tinkatink', 'eevee', 'bounsweet'],
   },
   {
@@ -33,6 +41,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     className: 'Bug Catcher',
     spriteKey: null,
     colour: 0x84cc16,
+    battleSprite: 'bugcatcher',
     pool: ['scatterbug', 'tarountula', 'nymble', 'grubbin', 'combee', 'joltik', 'snom', 'dewpider', 'surskit'],
   },
   {
@@ -41,6 +50,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     className: 'Hiker',
     spriteKey: null,
     colour: 0xf59e0b,
+    battleSprite: 'hiker',
     pool: ['nacli', 'rockruff', 'rhyhorn', 'phanpy', 'drilbur', 'mudbray', 'silicobra', 'sandshrew', 'larvitar', 'carbink'],
   },
   {
@@ -49,6 +59,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     className: 'Camper',
     spriteKey: null,
     colour: 0x22c55e,
+    battleSprite: 'camper',
     pool: ['seedot', 'shroomish', 'cottonee', 'petilil', 'foongus', 'fomantis', 'smoliv', 'capsakid', 'cacnea', 'snover'],
   },
   {
@@ -57,6 +68,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     className: 'Picnicker',
     spriteKey: null,
     colour: 0xfacc15,
+    battleSprite: 'picnicker',
     pool: ['hoppip', 'oddish', 'bellsprout', 'lotad', 'eevee', 'skiddo', 'bounsweet', 'flabebe'],
   },
   {
@@ -65,6 +77,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     className: 'Fisher',
     spriteKey: null,
     colour: 0x38bdf8,
+    battleSprite: 'fisher',
     pool: ['magikarp', 'wooper', 'psyduck', 'poliwag', 'slowpoke', 'shellder', 'horsea', 'seel', 'barboach', 'corphish', 'shellos', 'ducklett', 'arrokuda', 'wiglett', 'finizen', 'veluza', 'clauncher', 'skrelp', 'tentacool', 'lapras'],
   },
   {
@@ -73,6 +86,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     className: 'Psychic',
     spriteKey: null,
     colour: 0xa78bfa,
+    battleSprite: 'psychic',
     pool: ['drowzee', 'ralts', 'spoink', 'bronzor', 'gothita', 'solosis', 'espurr', 'indeedee'],
   },
   {
@@ -81,6 +95,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     className: 'Black Belt',
     spriteKey: null,
     colour: 0xef4444,
+    battleSprite: 'blackbelt',
     pool: ['makuhita', 'riolu', 'timburr', 'mienfoo', 'crabrawler', 'passimian', 'falinks', 'croagunk'],
   },
   {
@@ -89,6 +104,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     className: 'Ace Trainer',
     spriteKey: null,
     colour: 0x94a3b8,
+    battleSprite: 'ace',
     pool: ['deino', 'axew', 'gible', 'noibat', 'dratini', 'goomy', 'mimikyu', 'tinkatink', 'pawniard', 'scraggy'],
   },
 ];

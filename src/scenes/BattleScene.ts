@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { getMove } from '../data/dex';
 import { getItem } from '../data/items';
+import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
+import { getTrainerArchetype } from '../data/trainers';
+import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
 import { legalMoveIndices, type Command } from '../engine/battle/commands';
 import { createFighter, restoreFighter, snapshotFighter, type BattleFighter, type StatusId } from '../engine/battle/fighter';
 import { chooseAiCommand } from '../engine/battle/ai';
@@ -18,6 +21,8 @@ import {
 } from '../engine/battle';
 import { Rng } from '../engine/rng';
 import { experienceFraction, type BattleLaunch, type BattleOutcome, type BattleReturn } from '../engine/run';
+import { MOVE_FX_TEXTURE_KEY, moveFxAnimKey, moveFxFor, moveFxTrack } from '../render/moveFx';
+import { CAPTURE_SHAKE_SPEED, captureBeat } from '../ui/capture';
 import { battleFrames, type FeedFrame } from '../ui/feed';
 import { hpColorInt, hpFraction, statusAbbreviation } from '../ui/metrics';
 import { drawGauge } from '../ui/panel';
@@ -64,6 +69,14 @@ export class BattleScene extends Phaser.Scene {
   private displayHp!: Record<SideId, number>;
   private displayStatus!: Record<SideId, StatusId | null>;
   private experience = new Map<string, number>();
+  /** Battle-sheet frame for the enemy trainer, or null for a wild battle. */
+  private trainerFrame: number | null = null;
+  /** The last ball thrown, so the capture beat can reuse its icon. */
+  private lastBallId: string | null = null;
+  /** The foe is inside a ball, so it stays hidden even at full HP. */
+  private captured = false;
+  private foeMonPos = { x: 0, y: 0 };
+  private playerMonPos = { x: 0, y: 0 };
 
   private hud!: Phaser.GameObjects.Graphics;
   private foePanel!: Phaser.GameObjects.NineSlice;
@@ -79,6 +92,9 @@ export class BattleScene extends Phaser.Scene {
   private xpText!: Phaser.GameObjects.BitmapText;
   private playerSprite!: Phaser.GameObjects.Sprite;
   private foeSprite!: Phaser.GameObjects.Sprite;
+  private foeTrainer!: Phaser.GameObjects.Image;
+  private moveFxSprite!: Phaser.GameObjects.Sprite;
+  private captureBall!: Phaser.GameObjects.Image;
   private playerPlatform!: Phaser.GameObjects.Image;
   private foePlatform!: Phaser.GameObjects.Image;
   private menuRows: Phaser.GameObjects.BitmapText[] = [];
@@ -94,6 +110,9 @@ export class BattleScene extends Phaser.Scene {
 
   init(data?: BattleLaunch): void {
     this.launch = data ?? null;
+    this.trainerFrame = null;
+    this.lastBallId = null;
+    this.captured = false;
   }
 
   create(): void {
@@ -129,6 +148,11 @@ export class BattleScene extends Phaser.Scene {
     };
     for (const entry of launch.experience) this.experience.set(entry.id, entry.xp);
 
+    if (trigger.kind === 'trainer' && trigger.archetypeId) {
+      const sprite = getTrainerArchetype(trigger.archetypeId)?.battleSprite ?? null;
+      this.trainerFrame = sprite ? trainerSpriteFrame(sprite) : null;
+    }
+
     this.buildScene();
     this.bindInput();
     this.startFeed();
@@ -149,6 +173,21 @@ export class BattleScene extends Phaser.Scene {
       .setTint(0xf3b17a)
       .setScale(2.4)
       .setFlipX(true);
+
+    this.foeTrainer = this.add
+      .image(0, 0, TRAINER_SPRITE_TEXTURE_KEY, this.trainerFrame ?? 0)
+      .setOrigin(0.5, 1)
+      .setScale(1.7)
+      .setDepth(1)
+      .setVisible(this.trainerFrame !== null);
+
+    this.moveFxSprite = this.add.sprite(0, 0, MOVE_FX_TEXTURE_KEY).setDepth(6).setVisible(false);
+    this.moveFxSprite.on('animationcomplete', () => this.moveFxSprite.setVisible(false));
+    this.captureBall = this.add
+      .image(0, 0, ITEM_ICON_TEXTURE_KEY, itemIconFrame('pokeball') ?? 0)
+      .setScale(2)
+      .setDepth(7)
+      .setVisible(false);
 
     // FRLG window chrome, behind the gauges and text the shared Graphics draws.
     this.foePanel = addFrlgWindow(this, 0, 0, FOE_PANEL.w, FOE_PANEL.h);
@@ -321,10 +360,73 @@ export class BattleScene extends Phaser.Scene {
         case 'faint':
           this.displayHp[event.side] = 0;
           break;
+        case 'move':
+          this.playMoveFx(event.side, event.moveId);
+          break;
+        case 'capture':
+          this.playCapture(event.shakes, event.success);
+          break;
         default:
           break;
       }
     }
+  }
+
+  // --- battle presentation --------------------------------------------------
+
+  /** Plays the move's archetype FX over the side it hit. */
+  private playMoveFx(side: SideId, moveId: string): void {
+    const move = getMove(moveId);
+    if (!move) return;
+    const fx = moveFxFor(moveId, move.type, move.flags);
+    const kind = move.category === 'Status' ? 'status' : 'damage';
+    const track = moveFxTrack(kind, fx, {
+      status: Boolean(move.status ?? move.volatileStatus),
+    });
+    if (!track) return;
+    const target: SideId = side === 'player' ? 'enemy' : 'player';
+    const pos = target === 'player' ? this.playerMonPos : this.foeMonPos;
+    this.moveFxSprite
+      .setPosition(pos.x, pos.y)
+      .setFlipX(target === 'player')
+      .setVisible(true)
+      .play(moveFxAnimKey(track.fx), true);
+  }
+
+  /** The classic throw, wobble and result beat when a ball is used. */
+  private playCapture(shakes: number, success: boolean): void {
+    const beat = captureBeat(shakes, success);
+    const frame = itemIconFrame(this.lastBallId ?? 'pokeball') ?? itemIconFrame('pokeball') ?? 0;
+    const from = this.playerMonPos;
+    const to = this.foeMonPos;
+    this.captureBall
+      .setTexture(ITEM_ICON_TEXTURE_KEY, frame)
+      .setPosition(from.x, from.y)
+      .setAlpha(1)
+      .setAngle(0)
+      .setVisible(true);
+
+    const wobble: Phaser.Types.Tweens.TweenBuilderConfig[] = [];
+    const step = Math.round(1000 / CAPTURE_SHAKE_SPEED / 3);
+    for (let shake = 0; shake < beat.shakes; shake++) {
+      wobble.push({ targets: this.captureBall, angle: 22, duration: step });
+      wobble.push({ targets: this.captureBall, angle: -22, duration: step });
+      wobble.push({ targets: this.captureBall, angle: 0, duration: step });
+    }
+
+    this.tweens.chain({
+      targets: this.captureBall,
+      tweens: [
+        { targets: this.captureBall, x: to.x, y: to.y - 28, duration: 260, ease: 'Quad.easeOut' },
+        { targets: this.captureBall, y: to.y, duration: 150, ease: 'Quad.easeIn' },
+        ...wobble,
+      ],
+      onComplete: () => {
+        this.captured = beat.held;
+        if (!beat.held) this.captureBall.setVisible(false);
+        this.refreshHud();
+      },
+    });
   }
 
   private showOver(): void {
@@ -463,6 +565,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private submit(command: Command): void {
+    if (command.type === 'bag') {
+      const item = getItem(command.itemId);
+      if (item?.kind === 'ball') this.lastBallId = item.id;
+    }
     this.displayHp = {
       player: activeFighter(this.state, 'player').hp,
       enemy: activeFighter(this.state, 'enemy').hp,
@@ -525,11 +631,17 @@ export class BattleScene extends Phaser.Scene {
       h: MESSAGE_H,
     };
 
-    this.foeSprite.setPosition(width * 0.72, height * 0.28);
+    const trainer = this.foeTrainer.visible;
+    const foeX = trainer ? width * 0.78 : width * 0.72;
+    const foeY = trainer ? height * 0.3 : height * 0.28;
+    this.foeMonPos = { x: foeX, y: foeY };
+    this.playerMonPos = { x: width * 0.27, y: height * 0.6 };
+    this.foeSprite.setPosition(foeX, foeY);
     this.foePlatform.setPosition(width * 0.72, height * 0.28 + 58);
-    this.playerSprite.setPosition(width * 0.27, height * 0.6);
+    if (trainer) this.foeTrainer.setPosition(width * 0.72 - 70, height * 0.28 + 62);
+    this.playerSprite.setPosition(this.playerMonPos.x, this.playerMonPos.y);
     this.playerPlatform.setPosition(width * 0.27, height * 0.6 + 62);
-    this.foeSprite.setVisible(this.displayHp.enemy > 0);
+    this.foeSprite.setVisible(this.displayHp.enemy > 0 && !this.captured);
     this.playerSprite.setVisible(this.displayHp.player > 0);
 
     this.hud.clear();

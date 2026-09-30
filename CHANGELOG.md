@@ -418,6 +418,17 @@ file is the human-readable summary.
       and the player's HP panel grew a blue XP gauge plus an `XP n` label driven
       by `experienceFraction`. It reads the run's XP, so it fills as battles are
       won.
+- [x] Move FX and the capture beat (D20): `src/render/moveFx.ts` registers the six
+      animation strips packed from `moves.png` (`ember`, `cross_poison`,
+      `poison_gas`, `fire_punch`, `rock_slide`, `ancient_power`) with a move →
+      archetype map (`moveFxFor`, by the move's own id/type/flags, never per move)
+      and the atlas frame maths; `moveFx.test.ts` measures the committed atlas so
+      a re-extract that shifts a strip fails the build. `BootScene` creates one
+      animation per strip and `BattleScene` plays it over the side a move hit.
+      `src/ui/capture.ts` turns the engine's `shakes`/`success` into the classic
+      beat (`captureBeat`: a failed ball breaks on the interrupted shake, a catch
+      holds through four) that `BattleScene` plays as a thrown ball, wobble and
+      result, reusing the ball's item icon. 497 tests pass; `npm run build` clean.
 
 ## Phase 6 — Run structure, party & economy
 
@@ -543,4 +554,23 @@ file is the human-readable summary.
       hint in `RouteScene` gained a backing bar since bitmap text has no
       background. `StarterScene` was restyled to the same windows (FRLG card
       frames, the ▶ glyph as the selector, FRLG text throughout). 483 tests pass;
+      `npm run build` clean.
+- [x] Premier Ball: `src/data/items.ts` adds the commemorative Ball (the same
+      200/1x rate as the Poke Ball, listed next to it so the catalogue stays in
+      ascending price order) and `build-item-icons.mjs` maps it to the Poke Ball
+      icon, since Gen 3 ships no distinct one. Tests guard its price/rate and keep
+      it out of the ground-loot pool. 497 tests pass; `npm run build` clean.
+
+## Phase 8 — Art, audio & release
+
+- [x] FRLG battle trainer sprites (O1): `scripts/frlg/build-trainer-sprites.mjs`
+      crops the ten trainers the archetypes use from the "Regular Trainers" grid
+      of `sprite-sources/frlg/trainers.png` (64px cells on a 65px pitch, the flat
+      orange cell keyed transparent) into `src/assets/frlg/trainers.png` plus
+      `src/data/frlg/trainers.json`, read through `src/data/trainerSprites.ts`.
+      Every archetype in `src/data/trainers.ts` names its `battleSprite` and
+      `BattleScene` draws it on the enemy platform for a trainer battle (the
+      trigger carries `archetypeId`); a wild battle keeps the placeholder mon.
+      `trainerSprites.test.ts` measures the atlas shape and that every frame
+      carries art. Overworld trainer sheets are still open (O1). 497 tests pass;
       `npm run build` clean.
