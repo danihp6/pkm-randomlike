@@ -72,6 +72,15 @@ the id → icon mapping is authoritative. `scripts/frlg/build-item-icons.mjs`
 packs the icons the run uses into the committed `src/assets/frlg/item-icons.png`
 plus `src/data/frlg/item-icons.json`, read through `src/data/itemIcons.ts`.
 
+The window chrome comes from the same sheet's HP-bar/menu panel:
+`scripts/frlg/build-battle-ui.mjs` crops and 4x-upscales the light menu window
+(`src/assets/frlg/window.png`) and the navy battle message box
+(`src/assets/frlg/textbox.png`) for the 1280x800 canvas, drawn as nine-slices by
+`src/ui/frlg.ts`. The battle scene's HP panels and message/command box and the
+route HUD panel all use them. Still to come from the sheet: the FRLG bitmap font
+(`graphics/fonts/latin_normal.png` + `charmap.txt`) and the baked HP-bar/command
+art.
+
 ## Sprite contract
 
 - Overworld Pokémon sheets: 32x32 frames, 5 rows in the order Down, DownRight,

@@ -20,7 +20,8 @@ import { Rng } from '../engine/rng';
 import { experienceFraction, type BattleLaunch, type BattleOutcome, type BattleReturn } from '../engine/run';
 import { battleFrames, type FeedFrame } from '../ui/feed';
 import { hpColorInt, hpFraction, statusAbbreviation } from '../ui/metrics';
-import { drawGauge, drawPanel } from '../ui/panel';
+import { drawGauge } from '../ui/panel';
+import { addFrlgWindow } from '../ui/frlg';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import type { RouteScene } from './RouteScene';
 
@@ -57,6 +58,9 @@ export class BattleScene extends Phaser.Scene {
   private experience = new Map<string, number>();
 
   private hud!: Phaser.GameObjects.Graphics;
+  private foePanel!: Phaser.GameObjects.NineSlice;
+  private playerPanel!: Phaser.GameObjects.NineSlice;
+  private boxPanel!: Phaser.GameObjects.NineSlice;
   private messageText!: Phaser.GameObjects.Text;
   private nameText!: Record<SideId, Phaser.GameObjects.Text>;
   private statText!: Record<SideId, Phaser.GameObjects.Text>;
@@ -135,10 +139,14 @@ export class BattleScene extends Phaser.Scene {
       .setScale(2.4)
       .setFlipX(true);
 
+    // FRLG window chrome, behind the gauges and text the shared Graphics draws.
+    this.foePanel = addFrlgWindow(this, 0, 0, 380, 96);
+    this.playerPanel = addFrlgWindow(this, 0, 0, 416, 150);
+    this.boxPanel = addFrlgWindow(this, 0, 0, 100, 100, 'textbox');
     this.hud = this.add.graphics();
 
-    const label = { fontFamily: 'monospace', fontSize: '20px', color: '#f8fafc' } as const;
-    const small = { ...label, fontSize: '16px', color: '#cbd5f5' } as const;
+    const label = { fontFamily: 'monospace', fontSize: '20px', color: '#25243b' } as const;
+    const small = { ...label, fontSize: '16px', color: '#3a3956' } as const;
     this.nameText = {
       enemy: this.add.text(0, 0, '', label),
       player: this.add.text(0, 0, '', label),
@@ -151,7 +159,7 @@ export class BattleScene extends Phaser.Scene {
       enemy: this.add.text(0, 0, '', { ...small, color: '#0b1220' }).setOrigin(0.5),
       player: this.add.text(0, 0, '', { ...small, color: '#0b1220' }).setOrigin(0.5),
     };
-    this.xpText = this.add.text(0, 0, '', { ...small, fontSize: '12px', color: '#93c5fd' });
+    this.xpText = this.add.text(0, 0, '', { ...small, fontSize: '12px', color: '#3b82f6' });
 
     this.messageText = this.add.text(0, 0, '', {
       fontFamily: 'monospace',
@@ -491,9 +499,9 @@ export class BattleScene extends Phaser.Scene {
 
   private refreshHud(): void {
     const { width, height } = this.scale;
-    const box: Rect = { x: 36, y: height - 156, w: width - 72, h: 130 };
+    const box: Rect = { x: 36, y: height - 206, w: width - 72, h: 180 };
     const foeInfo: Rect = { x: 36, y: 32, w: 380, h: 96 };
-    const playerInfo: Rect = { x: width - 452, y: height - 320, w: 416, h: 150 };
+    const playerInfo: Rect = { x: width - 452, y: height - 360, w: 416, h: 150 };
 
     this.foeSprite.setPosition(width * 0.72, height * 0.28);
     this.foePlatform.setPosition(width * 0.72, height * 0.28 + 58);
@@ -505,7 +513,7 @@ export class BattleScene extends Phaser.Scene {
     this.hud.clear();
     this.drawSidePanel(foeInfo, 'enemy');
     this.drawSidePanel(playerInfo, 'player');
-    drawPanel(this.hud, box.x, box.y, box.w, box.h, { fill: 0x141d31 });
+    this.boxPanel.setSlices(box.w, box.h).setPosition(box.x, box.y);
 
     this.messageText.setPosition(box.x + 24, box.y + 18);
     this.messageText.setWordWrapWidth(box.w * 0.54);
@@ -524,7 +532,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private drawSidePanel(rect: Rect, side: SideId): void {
-    drawPanel(this.hud, rect.x, rect.y, rect.w, rect.h);
+    const panel = side === 'player' ? this.playerPanel : this.foePanel;
+    panel.setSlices(rect.w, rect.h).setPosition(rect.x, rect.y);
     const fighter = this.displayActive[side];
     const hp = this.displayHp[side];
     const fraction = hpFraction(hp, fighter.maxHp);
@@ -560,7 +569,7 @@ export class BattleScene extends Phaser.Scene {
 
   private renderMenu(box: Rect): void {
     const startX = box.x + box.w * 0.58;
-    const startY = box.y + 14;
+    const startY = box.y + 22;
     const count = this.menuItems.length;
     const windowStart = Math.max(0, Math.min(this.menuIndex - 1, count - MENU_ROWS));
     this.menuRows.forEach((row, i) => {
@@ -572,7 +581,7 @@ export class BattleScene extends Phaser.Scene {
       row
         .setText(`${windowStart + i === this.menuIndex ? '>' : ' '} ${item.label}`)
         .setAlpha(item.enabled ? 1 : 0.4)
-        .setPosition(startX, startY + i * 30)
+        .setPosition(startX, startY + i * 28)
         .setVisible(true);
     });
   }

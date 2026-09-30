@@ -53,7 +53,7 @@ import {
 import { TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame } from '../engine/tileFrames';
 import { Vision } from '../engine/vision';
-import { drawPanel } from '../ui/panel';
+import { addFrlgWindow } from '../ui/frlg';
 import {
   ARROW_TEXTURE_KEY,
   GRASS_TEXTURE_KEY,
@@ -199,12 +199,11 @@ export class RouteScene extends Phaser.Scene {
     const rowH = 34;
     const panelH = 44 + MAX_PARTY_SIZE * rowH + 30;
 
-    const panel = this.add.graphics();
-    drawPanel(panel, x, y, panelW, panelH, { fill: 0x141d31 });
+    const panel = addFrlgWindow(this, x, y, panelW, panelH);
     this.hudTitle = this.add.text(x + 14, y + 12, '', {
       fontFamily: 'monospace',
       fontSize: '16px',
-      color: '#f8fafc',
+      color: '#25243b',
     });
 
     const children: Phaser.GameObjects.GameObject[] = [panel, this.hudTitle];
@@ -218,7 +217,7 @@ export class RouteScene extends Phaser.Scene {
       const text = this.add.text(x + 46, rowY + 5, '', {
         fontFamily: 'monospace',
         fontSize: '14px',
-        color: '#e2e8f0',
+        color: '#2a2a44',
       });
       this.hudRows.push({ portrait, text });
       children.push(portrait, text);
@@ -233,7 +232,7 @@ export class RouteScene extends Phaser.Scene {
       const count = this.add.text(x + 33 + i * 38, y + panelH - 22, '', {
         fontFamily: 'monospace',
         fontSize: '11px',
-        color: '#f8fafc',
+        color: '#25243b',
       });
       this.hudBagIcons.push({ icon, count });
       children.push(icon, count);

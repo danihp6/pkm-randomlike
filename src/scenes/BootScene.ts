@@ -2,6 +2,12 @@ import Phaser from 'phaser';
 import playerSpriteUrl from '../assets/pokemon/25.png';
 import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY } from '../data/itemIcons';
 import { PORTRAIT_ATLAS_URL, PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY } from '../data/portraits';
+import {
+  FRLG_TEXTBOX_KEY,
+  FRLG_TEXTBOX_URL,
+  FRLG_WINDOW_KEY,
+  FRLG_WINDOW_URL,
+} from '../ui/frlg';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import {
   COMMON_ATLAS_URL,
@@ -48,6 +54,8 @@ export class BootScene extends Phaser.Scene {
       frameWidth: ITEM_ICON_SIZE,
       frameHeight: ITEM_ICON_SIZE,
     });
+    this.load.image(FRLG_WINDOW_KEY, FRLG_WINDOW_URL);
+    this.load.image(FRLG_TEXTBOX_KEY, FRLG_TEXTBOX_URL);
   }
 
   create(): void {
