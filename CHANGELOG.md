@@ -440,6 +440,17 @@ file is the human-readable summary.
       beat (`captureBeat`: a failed ball breaks on the interrupted shake, a catch
       holds through four) that `BattleScene` plays as a thrown ball, wobble and
       result, reusing the ball's item icon. 497 tests pass; `npm run build` clean.
+- [x] Faint, switch and level-up beats (Phase 5): `src/ui/beats.ts` holds the
+      timings plus the pure `levelUpBeats(before, after)`, which diffs the run
+      party against the party after `resolveBattle` and reports only the members
+      that gained a level (with the species it evolved into and the moves learned
+      and forgotten). `BattleScene` plays the faint drop when a `faint` event
+      lands and the withdraw/send-out when a `switch` event does (a forced
+      replacement has nothing to withdraw, so it only sends the incoming in); a
+      running beat owns its sprite so the HUD cannot snap it back mid-tween.
+      `RouteScene` counts each levelled HUD row up to its new level with a gold
+      flash, then resyncs. `beats.test.ts` covers the diff. 503 tests pass;
+      `npm run build` clean.
 
 ## Phase 6 — Run structure, party & economy
 

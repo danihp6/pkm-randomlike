@@ -54,6 +54,7 @@ import { TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame } from '../engine/tileFrames';
 import { Vision } from '../engine/vision';
 import { addFrlgWindow } from '../ui/frlg';
+import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import {
   ARROW_TEXTURE_KEY,
@@ -470,6 +471,7 @@ export class RouteScene extends Phaser.Scene {
     if (!pending) return;
 
     const reward = this.rewardFor(pending.trigger);
+    const before = this.run.party;
     const { run, released, events } = resolveBattle(this.run, result, reward);
     this.run = run;
     this.refreshHud();
@@ -487,6 +489,39 @@ export class RouteScene extends Phaser.Scene {
     if (events.some((event) => event.kind === 'level')) notes.push('Level up!');
     if (events.some((event) => event.kind === 'evolve')) notes.push('It evolved!');
     this.setHint(notes.join('  '));
+    this.playLevelUp(levelUpBeats(before, this.run.party));
+  }
+
+  /**
+   * The level-up beat: each row that levelled counts its level up from the old
+   * value with a gold flash on the portrait, then the HUD resyncs (Phase 5).
+   */
+  private playLevelUp(beats: readonly LevelUpBeat[]): void {
+    for (const beat of beats) {
+      const index = this.run.party.findIndex((member) => member.fighter.id === beat.id);
+      const row = this.hudRows[index];
+      if (index < 0 || !row) continue;
+      const member = this.run.party[index];
+      const name = getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId;
+      const maxHp = restoreFighter(member.fighter).maxHp;
+      const counter = { level: beat.fromLevel };
+      const paint = () => {
+        row.text.setText(`${name} Lv${Math.round(counter.level)}  ${member.fighter.hp}/${maxHp}`);
+      };
+      paint();
+      row.portrait.setTint(0xf2c14e);
+      this.tweens.add({
+        targets: counter,
+        level: beat.toLevel,
+        duration: 520,
+        ease: 'Quad.easeOut',
+        onUpdate: paint,
+        onComplete: () => {
+          row.portrait.clearTint();
+          this.refreshHud();
+        },
+      });
+    }
   }
 
   private rewardFor(trigger: BattleTrigger): BattleReward {
