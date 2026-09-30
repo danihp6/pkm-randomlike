@@ -16,6 +16,7 @@ import {
   markTrainerDefeated,
   moveInBox,
   moveInParty,
+  recordCatch,
   setParty,
   updatePokemon,
   useCapture,
@@ -33,6 +34,7 @@ describe('createRun', () => {
     expect(run.box).toEqual([]);
     expect(run.captureUsed).toBe(false);
     expect(run.mode).toBe('finite');
+    expect(run.stats).toEqual({ catches: 0, casualties: 0 });
   });
 });
 
@@ -141,6 +143,11 @@ describe('capture and trainers', () => {
     run = markTrainerDefeated(run, 'trainer-1-0');
     expect(isTrainerDefeated(run, 'trainer-1-0')).toBe(true);
     expect(markTrainerDefeated(run, 'trainer-1-0')).toBe(run);
+  });
+
+  it('counts a catch for the run summary', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    expect(recordCatch(run).stats).toEqual({ catches: 1, casualties: 0 });
   });
 });
 

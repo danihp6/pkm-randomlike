@@ -9,11 +9,22 @@ export const MAX_PARTY_SIZE = 6;
 /** The starter route index; a run begins on route 1 (docs/routes-spec.md §5). */
 export const FIRST_ROUTE = 1;
 
+/** What the run summary counts: caught along the way, and lost for good (D5). */
+export type RunStats = Readonly<{
+  catches: number;
+  casualties: number;
+}>;
+
+export function emptyRunStats(): RunStats {
+  return { catches: 0, casualties: 0 };
+}
+
 /**
  * The run: everything that survives a route. The party/box hold run members
  * (battle snapshot + XP), the bag is the item stacks the scene passes to battle,
- * and `defeatedTrainers` / `captureUsed` are the per-route bookkeeping. Every
- * helper here is pure and returns a new state (D11: no hidden randomness).
+ * `defeatedTrainers` / `captureUsed` are the per-route bookkeeping and `stats`
+ * is the running score the end-of-run screen reports. Every helper here is pure
+ * and returns a new state (D11: no hidden randomness).
  */
 export type RunState = Readonly<{
   seed: string;
@@ -27,6 +38,7 @@ export type RunState = Readonly<{
   defeatedTrainers: readonly string[];
   /** True once this route's single capture has been spent. Resets on advance. */
   captureUsed: boolean;
+  stats: RunStats;
 }>;
 
 export type RunInit = Readonly<{
@@ -47,6 +59,7 @@ export function createRun(init: RunInit): RunState {
     bag: [...(init.bag ?? [])],
     defeatedTrainers: [],
     captureUsed: false,
+    stats: emptyRunStats(),
   };
 }
 
@@ -143,6 +156,11 @@ export function canCapture(run: RunState): boolean {
 /** Spends the route's single capture; a second call is a no-op. */
 export function useCapture(run: RunState): RunState {
   return run.captureUsed ? run : { ...run, captureUsed: true };
+}
+
+/** Counts a caught Pokémon for the run summary, beside the capture it spends. */
+export function recordCatch(run: RunState): RunState {
+  return { ...run, stats: { ...run.stats, catches: run.stats.catches + 1 } };
 }
 
 export function isTrainerDefeated(run: RunState, trainerId: string): boolean {

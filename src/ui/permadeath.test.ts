@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { RunPokemon, RunState } from '../engine/run';
-import { releaseBeats, runOverLines, runOverSummary } from './permadeath';
+import type { RunPokemon } from '../engine/run';
+import { releaseBeats } from './permadeath';
 
 function member(id: string, level: number, speciesId = 'charmander'): RunPokemon {
   return {
@@ -23,20 +23,6 @@ function member(id: string, level: number, speciesId = 'charmander'): RunPokemon
   };
 }
 
-function run(routeIndex: number, seed = 'seed-1'): RunState {
-  return {
-    seed,
-    mode: 'finite',
-    routeIndex,
-    levelCap: 20,
-    party: [],
-    box: [],
-    bag: [],
-    defeatedTrainers: [],
-    captureUsed: false,
-  };
-}
-
 describe('releaseBeats', () => {
   it('resolves the display name and keeps the reported order', () => {
     const beats = releaseBeats([
@@ -55,38 +41,5 @@ describe('releaseBeats', () => {
 
   it('produces nothing for an empty list', () => {
     expect(releaseBeats([])).toEqual([]);
-  });
-});
-
-describe('runOverSummary', () => {
-  it('counts the routes cleared before a lost route', () => {
-    expect(runOverSummary(run(3), false).routesCleared).toBe(2);
-  });
-
-  it('counts the final route as cleared on a win', () => {
-    expect(runOverSummary(run(9), true).routesCleared).toBe(9);
-  });
-
-  it('never reports a negative count when the first route is lost', () => {
-    expect(runOverSummary(run(1), false).routesCleared).toBe(0);
-  });
-
-  it('carries the run seed', () => {
-    expect(runOverSummary(run(2, 'abc-def'), false).seed).toBe('abc-def');
-  });
-});
-
-describe('runOverLines', () => {
-  it('names the loss and shows what the run got through', () => {
-    const lines = runOverLines(runOverSummary(run(2, 'abc'), false));
-    expect(lines[0]).toBe('You have no more Pokémon!');
-    expect(lines).toContain('Routes cleared: 1');
-    expect(lines).toContain('Seed: abc');
-  });
-
-  it('turns the same screen into the win message', () => {
-    const lines = runOverLines(runOverSummary(run(8, 'abc'), true));
-    expect(lines[0]).toBe('The final route falls. You win!');
-    expect(lines).toContain('Routes cleared: 8');
   });
 });

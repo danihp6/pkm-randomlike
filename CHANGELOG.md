@@ -652,6 +652,18 @@ file is the human-readable summary.
       clears the run on both outcomes (D5). 25 save tests cover the round trip,
       the migration path, corrupt/newer documents and the storage wrappers.
       566 tests pass; `npm run build` clean.
+- [x] Run summary / score screen: the run now keeps its own score in
+      `RunState.stats` (`RunStats` = catches + casualties, in `src/engine/run/state.ts`).
+      `recordCatch` bumps the catch beside the capture it spends (called from
+      `resolveBattle`) and `releaseFainted` bumps the casualties where a Pokémon
+      is actually lost, so a catch that later falls counts as both. The end-of-run
+      screen was rewritten around `src/ui/runSummary.ts` (`runSummary` /
+      `runSummaryLines`): a win clears its route, a loss does not, and the panel
+      shows routes cleared, Pokémon caught, Pokémon lost and the seed, with the
+      release beats still owned by `src/ui/permadeath.ts`. The counters are on
+      disk, which is the first real use of the migration path: `SAVE_VERSION` is
+      now 2 and `SAVE_MIGRATIONS[1]` adds `stats` to a v1 run. 572 tests pass;
+      `npm run build` clean.
 
 ## Phase 8 — Art, audio & release
 

@@ -8,7 +8,7 @@ import {
   type ProgressionEvent,
   type RunPokemon,
 } from './progression';
-import { addPokemon, markTrainerDefeated, useCapture, type RunState } from './state';
+import { addPokemon, markTrainerDefeated, recordCatch, useCapture, type RunState } from './state';
 
 export type BattleReward = Readonly<{
   /** Levels of the defeated side, for the XP award. */
@@ -43,7 +43,9 @@ export function resolveBattle(
   next = death.run;
 
   if (result.captured) {
-    next = useCapture(addPokemon(next, runPokemonFromSnapshot(result.captured)));
+    next = addPokemon(next, runPokemonFromSnapshot(result.captured));
+    next = useCapture(next);
+    next = recordCatch(next);
   }
 
   if (reward.isTrainer && reward.trainerId !== undefined && result.outcome === 'win') {
