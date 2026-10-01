@@ -828,3 +828,9 @@ file is the human-readable summary.
       the tops stack without holes), the canopy body and the trunk. `frlg.test.ts`
       measures every pattern frame and `tileFrames.test.ts` covers the anchoring,
       the interior cycle and the centring. 657 tests pass; `npm run build` clean.
+- [x] FRLG ground matched to the real field (`D26` follow-up): the outdoor field
+      stamped its base floor from the sheet's lighter `2,3` tile, which does not
+      match the game. Measured against a real FireRed/LeafGreen Route 1 capture,
+      the plain ground is `rgb(112,200,160)` (sheet tile `6,1`), so the base floor
+      now uses that and the lighter tiles stay as floor variants. 657 tests pass;
+      `npm run build` clean.

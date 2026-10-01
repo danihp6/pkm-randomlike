@@ -76,6 +76,32 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
+### Route generation & FRLG fields (`D26`) — in progress
+
+Shipped: the three biome layouts (`route`, `forest`, `cavern`, `src/engine/routes/layout.ts`),
+the whole-object wall motif (`wallPattern`, `src/engine/tileFrames.ts`), the FRLG
+floor/pond/ledge atlas and the biome wiring. Open, most useful first:
+
+- [ ] **FRLG ground vs path.** The base floor now matches the game's ground colour
+      (`rgb(112,200,160)`, sheet tile `6,1`), but the lighter tiles (`2,3`, `1,3`,
+      `1,4`, `2,4`) are a separate grass and the tan `2,0` is the route path.
+      Decide which is ground, which is the path and which is decoration, and give
+      the generator a real path to draw through a route (the current routes are
+      all-ground with no path tile).
+- [ ] **Tree wall holes.** `wallPattern` draws a three-wide tree that stacks
+      vertically, but the tree bank's canopy-top row still leaks a little ground
+      between stacked tops. Bake a solid canopy (or overlap the tops) so a wall
+      reads without holes; verify against `map-route01.png` / `map-viridian.png`.
+- [ ] **Tall grass.** No source sheet has a tall-grass tile, so `TALL_GRASS`
+      still draws plain ground under the procedural overlay
+      (`docs/tileset-spec.md` §6). Draw a real tile (the game's is `rgb(64,176,136)`).
+- [ ] **Ledge and route props.** The ledge lip shipped (`FRAME_LEDGE`); signs,
+      boulders, flowers and the rest of the FRLG props are still missing.
+- [ ] **Beach field.** Compose the FRLG beach (open-water and sand tiles) and add
+      it to the biome cycle.
+
+### Remaining Phase 8
+
 - [ ] FRLG portraits for the party/HUD/starter/release screens, drawn from the
       packed battle fronts/icons instead of the PMDCollab `portraits.png`.
 - [ ] FRLG move and attack FX (`sprite-sources/frlg-ui/move-effects.png`,
@@ -83,11 +109,8 @@ Ports of Showdown handlers, in batches, on the hook names in
 - [ ] Remove the PMD art once the FRLG replacements land: the `wood.png` tileset
       and its biome, `portraits.png`, `moves.png`, the `pokemon/*.png` sheets and
       the PMD `scripts/legacy-art/` extractors.
-- [ ] Compose an FRLG beach field (the sheet's open-water and sand tiles) and add
-      it to the biome cycle.
 - [ ] Adapt the remaining biome tileset configs (desert, apple-woods,
       lush-prairie, beach-cave) and palettes into `src/data/tilesets/`.
-- [ ] Tall-grass and route-prop art (the ledge lip shipped with `D26`).
 - [ ] Battle background per biome (FRLG `battle-backgrounds.png`).
 - [ ] Audio: route ambience, encounter, hit, faint, level-up, victory.
 - [ ] Free-art fallback set so a public build can drop the game rips (O4).

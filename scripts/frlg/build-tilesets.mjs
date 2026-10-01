@@ -228,13 +228,13 @@ const TREE = [
 /** Grass route: mint grass, a tree border and a rocky-banked pond. */
 function outdoorFrames(atlas) {
   fieldFrames(atlas, {
-    floor: [2, 3],
+    floor: [6, 1],
     floorAlts: [
+      [6, 0],
       [1, 3],
+      [2, 3],
       [1, 4],
       [2, 4],
-      [6, 0],
-      [6, 1],
     ],
     wall: TREE,
     ledge: [7, 4],
