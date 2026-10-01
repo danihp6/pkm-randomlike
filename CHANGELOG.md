@@ -732,3 +732,20 @@ file is the human-readable summary.
       `trainerSprites.test.ts` measures the atlas shape and that every frame
       carries art. Overworld trainer sheets are still open (O1). 497 tests pass;
       `npm run build` clean.
+- [x] FRLG route fields (`D18`): `D18` landed — `TilesetConfig.atlas` carries
+      `tileSize`, `BootScene` loads each sheet at its own cell size and
+      `RouteScene` scales every cell back to the 24px world tile, so the 16px
+      FRLG atlases and the 24px PMD sheets coexist. `scripts/frlg/build-tilesets.mjs`
+      composes three 64x208 atlases (outdoor, forest, cave) from the gitignored
+      `sprite-sources/frlg/tileset-2.png`: the floor and its five variants
+      (frames `1`,`2`,`41`-`43`, beside the common stair/trap slots), the wall
+      autotile shapes stamped as the field's single repeated border (composited
+      over the floor so transparent pixels read as ground) and the sheet's shared
+      rocky-banked pond with every concave/diagonal corner filled. The three are
+      registered as tilesets (`frlg.ts` with one shared config, `index.ts`,
+      `palettes.ts`) and as biomes with encounter tables (`biomes.ts`,
+      `encounters.ts`), and the route chain now cycles only FRLG fields —
+      outdoor → forest → cave — so the imported PMD `wood` sheet no longer shows
+      up in a run (`wood`/`placeholder` stay as manual settings overrides).
+      `frlg.test.ts` measures each committed atlas and asserts every wall/water
+      shape and floor variant is stamped. 638 tests pass; `npm run build` clean.

@@ -60,9 +60,13 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     for (const id of TILESET_IDS) {
+      // The cell size is the tileset's own (`D18`): the PMD-derived sheets are
+      // 24px, the FireRed/LeafGreen atlases 16px. The route scene scales each
+      // cell back up to `TILE_SIZE` so the world stays one tile size.
+      const { tileSize } = TILESETS[id].config.atlas;
       this.load.spritesheet(tilesetTextureKey(id), TILESETS[id].atlasUrl, {
-        frameWidth: TILE_SIZE,
-        frameHeight: TILE_SIZE,
+        frameWidth: tileSize,
+        frameHeight: tileSize,
       });
     }
     this.load.spritesheet(COMMON_TEXTURE_KEY, COMMON_ATLAS_URL, {
