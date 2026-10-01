@@ -117,9 +117,9 @@ export class PartyScene extends Phaser.Scene {
 
   private bindInput(): void {
     subscribeKeybinds(this, ({ action }) => {
-      // The party screen uses the six menu actions and ignores the two that only
-      // mean something on the route.
-      if (action === 'party' || action === 'settings') return;
+      // The party screen uses the six menu actions and ignores the three that
+      // only mean something on the route.
+      if (action === 'party' || action === 'settings' || action === 'run') return;
       const input: PartyInput = action;
       if (input === 'cancel' && this.ui.grabbed === null) {
         this.close();

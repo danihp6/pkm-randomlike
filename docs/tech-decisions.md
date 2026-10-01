@@ -237,16 +237,38 @@ battle `trainers.png` whose compilation grid is ordered arbitrarily; `psychic`
 has no decomp class of its own and borrows the Channeler, and `ace` the male
 Cooltrainer. The route draws the 16px frame at `TILE_SIZE / 16` with its feet on
 the tile bottom, matching the FRLG fields (`D18`), and keeps the tinted facing
-arrow. The player's own overworld sprite (`player-sprites.png`) is still the PMD
-placeholder — see O1.
+arrow. The player's own overworld sprite (`red_normal.png`) ships from the same
+decomp via `scripts/frlg/build-player-sprite.mjs` — see `D25`.
+
+## D25 — Player movement is hold-to-walk, with a run key *(decided)*
+
+The route's player is the FireRed/LeafGreen protagonist, packed from the
+pret/pokefirered decomp's `graphics/object_events/pics/people/red_normal.png`
+(a 144x32 strip of nine 16x32 walk frames: the resting pose and the two-frame
+cycle of each of down, up and the left-facing side) by
+`scripts/frlg/build-player-sprite.mjs` into `src/assets/frlg/player.png` plus
+`src/data/frlg/player.json`, read through `src/data/playerSprite.ts`. This
+replaces the PMD `pokemon/25.png` overworld sprite. The right-facing side is the
+left-facing frame flipped (`O1`).
+
+Movement is grid-based but no longer one tile per key press: holding a direction
+walks, one tile at a time, and the player slides between tiles over a fixed
+duration (`WALK_STEP_MS`) while the direction's walk animation plays; releasing
+shows the resting frame, and pushing into a wall turns the player in place. The
+run action (a new keybind, `SHIFT` by default, rebindable in the settings
+screen) shortens the step to `RUN_STEP_MS` and scales the walk animation's
+`timeScale` to match, so running reuses the walking frames at a faster rate
+exactly as the originals do, with no second sheet to ship. Encounters, fog and
+trainer sight are unaffected: a step still lands on one tile and runs the same
+`onTileEntered` beat it always did.
 
 ## Open questions
 
-- **O1 — Trainer sprites.** Battle sprites shipped (`D20`) and the archetypes'
-  overworld sprites shipped (`D24`), so a trainer on the route is no longer a
-  placeholder figure. Still open: the player's FRLG overworld sprite
-  (`player-sprites.png`) replacing the PMD `pokemon/25.png`, and the unused
-  `npc-overworld.png` compilation. Blocks Phase 8 cosmetics, not logic.
+- **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld
+  sprites (`D24`) and the player overworld sprite with its walk/run cycle
+  (`D25`) all shipped from the decomp. Still open: the unused
+  `npc-overworld.png` and `player-sprites.png` compilations, and the remaining
+  PMD art listed in `TODO.md`. Blocks Phase 8 cosmetics, not logic.
 - **O2 — Battle arena framing.** Single-screen per battle (GB style) vs a
   floating HUD over the route. Cosmetic, blocks Phase 5.
 - **O3 — EVs/IVs.** The data has IVs and EVs exist in Gen 9; do we let a caught

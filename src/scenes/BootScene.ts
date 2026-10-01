@@ -28,6 +28,7 @@ import {
   moveFxAnimKey,
   moveFxFrames,
 } from '../render/moveFx';
+import { PLAYER_WALK_ANIMS, PLAYER_WALK_FRAME_RATE } from '../render/playerAnim';
 import {
   FRLG_CURSOR_KEY,
   FRLG_CURSOR_URL,
@@ -123,6 +124,7 @@ export class BootScene extends Phaser.Scene {
     registerFrlgFont(this.cache.bitmapFont);
     this.buildRouteTextures();
     this.buildMoveFxAnimations();
+    this.buildPlayerAnimations();
     // Phase 7: pick up the run left in progress, or start a fresh one. A saved
     // run whose last Pokémon already fell was over the moment it was written,
     // so it is cleared rather than resumed (D5: nothing carries over).
@@ -152,6 +154,23 @@ export class BootScene extends Phaser.Scene {
         frames: moveFxFrames(fx).map((frame) => ({ key: MOVE_FX_TEXTURE_KEY, frame })),
         frameRate: MOVE_FX_FRAME_RATE,
         repeat: 0,
+      });
+    }
+  }
+
+  /**
+   * The player's three walk cycles, one per facing, off the atlas in
+   * `src/data/playerSprite.ts`; the route plays them by key and scales the rate
+   * to run.
+   */
+  private buildPlayerAnimations(): void {
+    for (const anim of PLAYER_WALK_ANIMS) {
+      if (this.anims.exists(anim.key)) continue;
+      this.anims.create({
+        key: anim.key,
+        frames: anim.frames.map((frame) => ({ key: PLAYER_SPRITE_TEXTURE_KEY, frame })),
+        frameRate: PLAYER_WALK_FRAME_RATE,
+        repeat: -1,
       });
     }
   }

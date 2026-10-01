@@ -3,7 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { decodePng } from '../../scripts/legacy-art/png-codec.mjs';
 import manifest from './frlg/player.json';
-import { playerSpriteFrame, type PlayerFacing } from './playerSprite';
+import {
+  PLAYER_FACINGS,
+  playerSpriteFrame,
+  playerWalkFrames,
+  type PlayerFacing,
+} from './playerSprite';
 
 // The atlas is a committed crop of the FRLG decomp player sheet
 // (`scripts/frlg/build-player-sprite.mjs`), so its shape and the fact every
@@ -11,8 +16,8 @@ import { playerSpriteFrame, type PlayerFacing } from './playerSprite';
 // leaves a blank frame fails this test instead of drawing an invisible player.
 const WIDTH = manifest.size;
 const HEIGHT = manifest.height;
-
-const FACINGS: readonly PlayerFacing[] = ['down', 'up', 'side'];
+const FRAME_NAMES: readonly string[] = manifest.frames;
+const FACINGS: readonly PlayerFacing[] = PLAYER_FACINGS;
 
 function atlas() {
   const url = new URL('../assets/frlg/player.png', import.meta.url);
@@ -32,19 +37,25 @@ function frameHasArt(png: { width: number; height: number; data: Uint8Array }, f
 describe('player overworld sprite atlas', () => {
   const png = atlas();
 
-  it('is a one-row strip of 16x32 frames, one per facing', () => {
+  it('is a one-row strip of 16x32 frames, one per named frame', () => {
     expect(png.height).toBe(HEIGHT);
-    expect(png.width).toBe(WIDTH * FACINGS.length);
+    expect(png.width).toBe(WIDTH * FRAME_NAMES.length);
   });
 
-  it('maps every facing onto a non-empty frame', () => {
+  it('maps every resting and walk frame onto a non-empty frame', () => {
     for (const facing of FACINGS) {
-      expect(frameHasArt(png, playerSpriteFrame(facing)), facing).toBe(true);
+      for (const frame of [playerSpriteFrame(facing), ...playerWalkFrames(facing)]) {
+        expect(frameHasArt(png, frame), `${facing} #${frame}`).toBe(true);
+      }
     }
   });
 
-  it('gives every facing its own frame', () => {
-    const frames = FACINGS.map((facing) => playerSpriteFrame(facing));
-    expect(new Set(frames).size).toBe(FACINGS.length);
+  it('gives every facing its own resting frame and a two-frame walk cycle', () => {
+    const idle = FACINGS.map((facing) => playerSpriteFrame(facing));
+    expect(new Set(idle).size).toBe(FACINGS.length);
+    const walk = FACINGS.flatMap((facing) => [...playerWalkFrames(facing)]);
+    expect(walk).toHaveLength(FACINGS.length * 2);
+    // No frame is reused between the idles and the walk cycle.
+    expect(new Set([...idle, ...walk]).size).toBe(FACINGS.length * 3);
   });
 });

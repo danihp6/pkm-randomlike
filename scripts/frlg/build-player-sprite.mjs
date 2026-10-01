@@ -10,9 +10,9 @@
 //   3 down walk   4 down walk 5 up walk   6 up walk
 //   7 side walk   8 side walk
 //
-// Only the three idles are packed, as `down`/`up`/`side`, because the route
-// moves a tile per key press and draws a resting pose; right is the left-facing
-// side frame flipped by `RouteScene`. Copy the sheet into
+// All nine are packed and named, so the route can draw the resting pose and the
+// two-frame walk cycle of each direction; the right-facing side is the
+// left-facing frame flipped by `RouteScene`. Copy the sheet into
 // `sprite-sources/frlg/overworld/` and run:
 //
 //   node scripts/frlg/build-player-sprite.mjs [source-file]
@@ -31,6 +31,12 @@ const FRAMES = {
   down: 0,
   up: 1,
   side: 2,
+  'walk-down-a': 3,
+  'walk-down-b': 4,
+  'walk-up-a': 5,
+  'walk-up-b': 6,
+  'walk-side-a': 7,
+  'walk-side-b': 8,
 }
 
 const DEFAULT_SOURCE = fileURLToPath(new URL('../../sprite-sources/frlg/overworld/red_normal.png', import.meta.url))

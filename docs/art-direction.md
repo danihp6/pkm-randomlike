@@ -142,10 +142,12 @@ plus the four named arrows.
 - Trainer overworld sprites: one 16x32 frame per archetype, the down-facing idle
   from the FRLG decomp sheet, drawn at `TILE_SIZE / 16` with its feet on the tile
   bottom; the tinted arrow still shows facing (`D24`).
-- Player overworld sprite: three 16x32 frames (down, up, left-facing side) from
-  the FRLG decomp `red_normal.png`, drawn at `TILE_SIZE / 16` with its feet on
-  the tile bottom. The route draws the frame for the direction walked and flips
-  the side frame to face right.
+- Player overworld sprite: the resting pose plus a two-frame walk cycle for each
+  of down, up and the left-facing side (right is the side frame flipped), from
+  the FRLG decomp `red_normal.png` via `scripts/frlg/build-player-sprite.mjs`.
+  The route draws the 16x32 frame at `TILE_SIZE / 16` with its feet on the tile
+  bottom, plays the direction's walk cycle while a step slides and stands on the
+  resting frame when it stops; the run key scales the cycle's rate up (`D25`).
 - Sheets are loaded lazily per species so a route only pays for what it shows.
 - Portraits: `src/assets/portraits.png` is a 40-column grid of 40x40 PMDCollab
   faces, one per National Dex number in dex order, so the frame is `num − 1`
