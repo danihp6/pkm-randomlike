@@ -19,6 +19,7 @@ import {
   FRAME_FLOOR_ALT_3,
   FRAME_FLOOR_ALT_4,
   FRAME_FLOOR_ALT_5,
+  FRAME_LEDGE,
   TILESET_COLS,
   TILESET_ROWS,
   WALL_SHAPES,
@@ -70,10 +71,11 @@ export const FRLG_TILESET: TilesetConfig = {
     [ITEM]: FRAME_FLOOR,
     [CARPET]: FRAME_FLOOR,
     [WATER]: WATER_SHAPES.interior,
-    // Tall grass and ledges have no dedicated FRLG frame yet (the route draws
-    // the tall-grass tuft as an overlay, `docs/tileset-spec.md` §6).
+    // Tall grass has no dedicated FRLG frame yet (the route draws the tall-grass
+    // tuft as an overlay, `docs/tileset-spec.md` §6); the ledge draws its own
+    // rocky lip so a one-way drop reads as one.
     [TALL_GRASS]: FRAME_FLOOR,
-    [LEDGE]: FRAME_FLOOR,
+    [LEDGE]: FRAME_LEDGE,
   },
   autotile: [
     { value: WALL, openValue: FLOOR, variants: WALL_SHAPES },

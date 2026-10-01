@@ -89,6 +89,13 @@ export const FRAME_WALL_TEE_S = 48;
 export const FRAME_WALL_TEE_W = 49;
 export const FRAME_WALL_CROSS = 50;
 
+/**
+ * The last cell of the 4x13 sheet, same slot for every biome: the rocky lip that
+ * a route's one-way ledges draw. The PMD sheets leave it unused; the FRLG fields
+ * stamp their own cliff tile there (`docs/tileset-spec.md` §6).
+ */
+export const FRAME_LEDGE = 51;
+
 export const COMMON_TILE_SIZE = 24;
 export const COMMON_ATLAS_COLS = 5;
 export const COMMON_ATLAS_ROWS = 1;

@@ -53,9 +53,14 @@ spriters-resource:
 These tiles are 16x16, so any atlas built from them declares `tileSize: 16`
 (`D18`) instead of the 24px of the PMD atlases. `scripts/frlg/build-tilesets.mjs`
 composes three field atlases — outdoor, forest and cave — into the 64x208
-contract: the floor and its variants, the wall autotile shapes stamped as the
-field's one repeated border (composited over the floor), and the sheet's shared
-rocky-banked pond. They are registered as tilesets and biomes
+contract: the floor and its variants, the wall autotile drawn in three layers (a
+tree canopy on the frames that open north, a trunk on the ones that open south
+and the leaf body elsewhere, composited over the floor), the sheet's shared
+rocky-banked pond, and the cliff lip on the sheet's last cell for the route's
+one-way ledges (`FRAME_LEDGE`, `D26`). The wall layers are what make a tree
+border read as trees instead of one repeated stamp; the route's shape follows the
+same biome (`docs/routes-spec.md` §2), so a forest reads like Viridian Forest and
+a cave like Mt. Moon. They are registered as tilesets and biomes
 (`src/data/tilesets/frlg.ts`, `src/data/biomes.ts`) and are the only fields the
 route chain cycles, so a run never falls back to the imported PMD sheets; a beach
 field is the remaining open one.

@@ -31,10 +31,12 @@ Every biome ships two images:
   The cell size is the tileset's own `tileSize` (`D18`): 24px for the PMD-derived
   sheets (96x312), 16px for the FireRed/LeafGreen atlases (64x208). Frames 0-50
   are the shared vocabulary (floor variants, wall autotile shapes, water autotile
-  shapes) declared as constants in `src/engine/tileset.ts`. The FRLG fields stamp
-  every wall shape with their one repeated border tile and every floor variant
-  (`1`,`2`,`41`-`43`, beside the common stair/trap slot `3`-`6`) so the whole
-  vocabulary resolves on the sheet.
+  shapes) declared as constants in `src/engine/tileset.ts`, and frame 51 is the
+  rocky ledge lip (`FRAME_LEDGE`, `D26`). The FRLG fields stamp every floor
+  variant (`1`,`2`,`41`-`43`, beside the common stair/trap slot `3`-`6`) and draw
+  the wall autotile in three layers so a tree (or rock) mass reads as one: a
+  canopy top on the frames that open north (`edgeN`, `straightNS`), a trunk where
+  they open south (`edgeS`) and the leaf body everywhere else.
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
   biome, for the tiles that mean the same thing everywhere: exit, trap, chest,
   item, carpet.
@@ -92,9 +94,11 @@ Swapping is `config = TILESETS[nextId].config` plus loading
 
 ## 6. Pending art slots
 
-- **Tall grass** and **ledge** have no dedicated frame: both draw plain ground
-  today. Tall grass gets a procedural overlay sprite (`BootScene` builds it) so
-  it reads while the real art is pending; the ledge lip is still an open slot.
-  Neither spends a third atlas row.
+- **Tall grass** has no dedicated frame: it draws plain ground today, with a
+  procedural overlay sprite (`BootScene` builds it) so it reads while the real
+  art is pending. It does not spend a third atlas row.
+- **Ledge** now draws frame 51 (the sheet's last cell): the FRLG fields stamp
+  their cliff lip there (`D26`), and the PMD sheets leave it transparent so a
+  ledge falls back to plain ground. A dedicated PMD ledge tile is still open.
 - **Trainer sprites** do not exist yet in any imported set; they need their own
   sheet (walk cycles + overworld facing).

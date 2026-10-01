@@ -9,6 +9,7 @@ import {
   FRAME_FLOOR_ALT_3,
   FRAME_FLOOR_ALT_4,
   FRAME_FLOOR_ALT_5,
+  FRAME_LEDGE,
   TILE_SIZE,
   WALL_SHAPES,
   WATER_SHAPES,
@@ -81,6 +82,12 @@ describe('frlg tileset atlases', () => {
       for (const frame of FLOOR_FRAMES) {
         expect(tileIsBlank(png, frame), `${name} floor frame ${frame}`).toBe(false);
       }
+    }
+  });
+
+  it('stamps the ledge lip the route walks off', () => {
+    for (const name of ATLASES) {
+      expect(tileIsBlank(atlas(name), FRAME_LEDGE), `${name} ledge frame ${FRAME_LEDGE}`).toBe(false);
     }
   });
 });

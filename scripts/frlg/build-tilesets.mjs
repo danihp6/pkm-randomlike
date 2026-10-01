@@ -8,9 +8,9 @@
 // starts at (1 + col*17, 1 + row*17). Every tile the atlas uses is picked by hand
 // from a named bank of the compilation; the comments below record which is which.
 //
-// Only FLOOR/WALL/WATER are real art: stairs/trap/chest/item/carpet come from the
-// shared common atlas at render time (commonFrames) or fall back to the floor, the
-// same split the PMD biome atlases use.
+// Only FLOOR/WALL/WATER/LEDGE are real art: stairs/trap/chest/item/carpet come
+// from the shared common atlas at render time (commonFrames) or fall back to the
+// floor, the same split the PMD biome atlases use.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
@@ -75,6 +75,9 @@ const FRAME_WALL_TEE_E = 47
 const FRAME_WALL_TEE_S = 48
 const FRAME_WALL_TEE_W = 49
 const FRAME_WALL_CROSS = 50
+// The last cell of the 4x13 sheet, kept for the rocky ledge lip the route walks
+// off (docs/tileset-spec.md §6).
+const FRAME_LEDGE = 51
 
 /** Every shape the wall autotiler can ask for, in one list. */
 const WALL_FRAMES = [
@@ -103,6 +106,15 @@ const WALL_FRAMES = [
   FRAME_WALL_TEE_W,
   FRAME_WALL_CROSS,
 ]
+
+/**
+ * The wall is drawn in three layers so a tree mass (or a rock mass) reads as
+ * one: a canopy `top` where the wall opens north, a `base` where it opens south,
+ * and `body` everywhere else. A one-tile-tall hedge only ever sees its top, so
+ * `straightNS` is a top too.
+ */
+const WALL_TOP_FRAMES = new Set([FRAME_WALL_EDGE_N, FRAME_WALL_STRAIGHT_NS])
+const WALL_BASE_FRAMES = new Set([FRAME_WALL_EDGE_S])
 
 const source = decodePng(readFileSync(SRC))
 
@@ -136,9 +148,7 @@ function stamp(atlas, frame, col, row) {
  * One whole 3x3 autotile block (the keypad layout NW N NE / W interior E /
  * SW S SE) stamped onto a shape family's frames. `frames` is the family's
  * interior/edges/corners tuple; the concave and diagonal corners have no art of
- * their own and reuse the nearest convex corner. The target frame numbers are
- * derived from the family's own interior frame, so the wall and water families
- * can never stamp over each other.
+ * their own and reuse the nearest convex corner.
  */
 function stampBlock(atlas, frames, blockCol, blockRow) {
   const [interior, edgeN, edgeE, edgeS, edgeW, cornerNE, cornerNW, cornerSE, cornerSW] = frames
@@ -201,35 +211,61 @@ const FLOOR_ALT_FRAMES = [
 ]
 
 /**
- * A route's field: a walkable ground, its floor variants, one repeated obstacle
- * tile as the border and a pond. FRLG draws a route border as a single repeated
- * tile (a tree, a rock), so every wall shape gets the same art; the border is
- * composited over the floor so its transparent pixels read as ground, not as a
- * hole in the map. All four fields share the sheet's one pond block.
+ * Paints a tile over a floor cell: the atlas is RGBA, so transparent pixels must
+ * fall back to the floor art underneath instead of reading as a hole in the map.
  */
-function fieldFrames(atlas, { floor, floorAlts, border, water = [10, 0] }) {
+function compositeOver(over, floor) {
+  for (let y = 0; y < TILE_SIZE; y++) {
+    for (let x = 0; x < TILE_SIZE; x++) {
+      const o = (y * TILE_SIZE + x) * 4
+      if (over[o + 3] < 8) floor.copy(over, o, o, o + 4)
+    }
+  }
+  return over
+}
+
+/**
+ * A route's field: a walkable ground, its floor variants, a wall drawn in three
+ * layers (canopy/top, body, base) and the sheet's shared rocky-banked pond, plus
+ * the ledge lip. The wall art is composited over the floor so its transparent
+ * pixels read as ground, not as a hole in the map.
+ */
+function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) {
   stamp(atlas, FRAME_FLOOR, floor[0], floor[1])
   FLOOR_ALT_FRAMES.forEach((frame, index) => {
     const [col, row] = floorAlts[index]
     stamp(atlas, frame, col, row)
   })
-  const borderTile = compositeOver(sourceTile(border[0], border[1]), sourceTile(floor[0], floor[1]))
-  for (const frame of WALL_FRAMES) stampTile(atlas, frame, borderTile)
+
+  const floorCell = (c, r) => compositeOver(sourceTile(c, r), sourceTile(floor[0], floor[1]))
+  const layers = wall.repeated
+    ? (() => {
+        const tile = floorCell(wall.repeated[0], wall.repeated[1])
+        return { top: tile, body: tile, base: tile }
+      })()
+    : {
+        top: floorCell(wall.top[0], wall.top[1]),
+        body: floorCell(wall.body[0], wall.body[1]),
+        base: floorCell(wall.base[0], wall.base[1]),
+      }
+  for (const frame of WALL_FRAMES) {
+    const tile = WALL_TOP_FRAMES.has(frame)
+      ? layers.top
+      : WALL_BASE_FRAMES.has(frame)
+        ? layers.base
+        : layers.body
+    stampTile(atlas, frame, tile)
+  }
+
   stampBlock(atlas, WATER_TUPLE, water[0], water[1])
+  stampTile(atlas, FRAME_LEDGE, floorCell(ledge[0], ledge[1]))
 }
 
-/**
- * Paints the border cell over a floor cell: the atlas is RGBA, so the border's
- * transparent pixels must fall back to the floor art underneath.
- */
-function compositeOver(border, floor) {
-  for (let y = 0; y < TILE_SIZE; y++) {
-    for (let x = 0; x < TILE_SIZE; x++) {
-      const o = (y * TILE_SIZE + x) * 4
-      if (border[o + 3] < 8) floor.copy(border, o, o, o + 4)
-    }
-  }
-  return border
+/** The shared tree bank: a canopy top, a leaf body and the trunk below. */
+const TREE = {
+  top: [15, 1],
+  body: [15, 2],
+  base: [15, 3],
 }
 
 /** Grass route: mint grass, a tree-canopy border and a rocky-banked pond. */
@@ -237,32 +273,34 @@ function outdoorFrames(atlas) {
   fieldFrames(atlas, {
     floor: [2, 3],
     floorAlts: [
+      [1, 3],
       [1, 4],
-      [3, 5],
-      [1, 9],
-      [3, 9],
-      [4, 10],
+      [2, 4],
+      [6, 0],
+      [6, 1],
     ],
-    border: [14, 1],
+    wall: TREE,
+    ledge: [7, 4],
   })
 }
 
-/** Forest: light grass under a dense dark-canopy border. */
+/** Forest: Viridian Forest light grass under the same dense tree border. */
 function forestFrames(atlas) {
   fieldFrames(atlas, {
-    floor: [2, 1],
+    floor: [6, 1],
     floorAlts: [
-      [1, 1],
-      [3, 1],
-      [4, 1],
-      [2, 0],
-      [3, 0],
+      [6, 0],
+      [1, 3],
+      [2, 3],
+      [1, 5],
+      [2, 5],
     ],
-    border: [14, 4],
+    wall: TREE,
+    ledge: [7, 4],
   })
 }
 
-/** Cave: grey rock under a dark boulder border. */
+/** Cave: Mt. Moon grey rock under a dark boulder border. */
 function caveFrames(atlas) {
   fieldFrames(atlas, {
     floor: [2, 24],
@@ -273,7 +311,12 @@ function caveFrames(atlas) {
       [2, 25],
       [3, 25],
     ],
-    border: [1, 44],
+    wall: {
+      top: [3, 42],
+      body: [1, 44],
+      base: [2, 44],
+    },
+    ledge: [7, 4],
   })
 }
 

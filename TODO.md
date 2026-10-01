@@ -87,11 +87,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       it to the biome cycle.
 - [ ] Adapt the remaining biome tileset configs (desert, apple-woods,
       lush-prairie, beach-cave) and palettes into `src/data/tilesets/`.
-- [ ] Route/dungeon generation in the FireRed/LeafGreen style per biome: a
-      forest reads like Viridian Forest, a cave like Mt. Moon. The layout style
-      follows the route's tileset, not a generic roguelike shape
-      (`docs/routes-spec.md` §2, `docs/art-direction.md`).
-- [ ] Tall-grass, ledge and route-prop art.
+- [ ] Tall-grass and route-prop art (the ledge lip shipped with `D26`).
 - [ ] Battle background per biome (FRLG `battle-backgrounds.png`).
 - [ ] Audio: route ambience, encounter, hit, faint, level-up, victory.
 - [ ] Free-art fallback set so a public build can drop the game rips (O4).

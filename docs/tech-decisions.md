@@ -262,6 +262,21 @@ exactly as the originals do, with no second sheet to ship. Encounters, fog and
 trainer sight are unaffected: a step still lands on one tile and runs the same
 `onTileEntered` beat it always did.
 
+## D26 — A route's layout follows its biome, measured off the real games *(decided)*
+
+Route generation is no longer one generic blob for every biome. The shape comes
+from a per-biome style in `src/engine/routes/layout.ts` (`route`, `forest`,
+`cavern`), and the numbers behind each style come from the actual layouts in the
+pret/pokefirered decomp (`data/layouts/*/map.bin`, the 10-bit metatile id + 2-bit
+collision blocks): Route 1 is an open field (~38% blocked) cut by one-tile tree
+hedges attached to the borders, Viridian Forest is a one-tile-corridor labyrinth
+(~57% blocked) and Mt. Moon is two-tile rock corridors with wide chambers
+(~40% blocked). `sketch.ts` has one carver per kind — `carveHedges` opens the
+field and drops the hedges, `carveMaze` grows a depth-first grid maze with an
+optional braid — joined by a shortest-path guard that keeps solid terrain
+(water, ledges) off the one route through. `docs/routes-spec.md` §2 holds the
+pipeline; adding a biome is a `layout` field plus its tileset.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

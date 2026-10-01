@@ -18,9 +18,10 @@ camera follow), containing:
 
 ## 2. Generation pipeline
 
-1. **Frame**: fill with `WALL`, carve a guaranteed-connected walkable area from
-   start to exit (random-walk or BSP-carved rooms, whichever the biome wants).
-2. **Terrain pass**: place tall grass patches, water bodies, ledges.
+1. **Layout**: pick the biome's style (`route`, `forest` or `cavern`) and carve
+   its shape — see below. The carver leaves the start connected to the exit.
+2. **Terrain pass**: place tall grass patches, water bodies, ledges — solid
+   hazards only off the guaranteed path, so they can never seal the route.
 3. **Population pass**: trainers (each with a facing), items, and the exit.
 4. **Validation pass**: flood-fill from the start must reach the exit and every
    trainer. If it does not, reroll from the same seed with the next stream
@@ -29,14 +30,22 @@ camera follow), containing:
 Every pass consumes the same `Rng`, so `(seed, routeIndex)` fully determines the
 map.
 
-**Layout style.** The shape a route takes must follow the original
-FireRed/LeafGreen games for its biome and tileset, not a generic roguelike blob:
-a forest reads like Viridian Forest, a cave like Mt. Moon, a beach cave like the
-Seafoam passages. The route's biome/tileset picks the carving style, the props
-and the obstacles, while the map semantics (`WALL`, `TALL_GRASS`...) stay the
-same so any tileset still renders (`docs/tileset-spec.md`). This is the target
-for the cave/dungeon biomes in particular, and it supersedes the donor BSP cave
-as the default look (`D6`).
+**Layout style.** The shape a route takes follows the original FireRed/LeafGreen
+map for its biome and tileset, not a generic roguelike blob: a forest reads like
+Viridian Forest, a cave like Mt. Moon, an outdoor route like Route 1. The route's
+biome picks one of the styles in `src/engine/routes/layout.ts`, while the map
+semantics (`WALL`, `TALL_GRASS`...) stay the same so any tileset still renders
+(`docs/tileset-spec.md`). The three styles, calibrated against the layouts in the
+`pret/pokefirered` decomp (`D26`):
+
+| Style | Reads as | Shape |
+| --- | --- | --- |
+| `route` | Route 1 | An open grass field (~38% blocked) cut by one-tile tree hedges attached to the borders; a two-tile path is kept clear. |
+| `forest` | Viridian Forest | A one-tile-corridor labyrinth (~57% blocked) through dense trees, with a few loops. |
+| `cavern` | Mt. Moon | Two-tile rock corridors and wide chambers (~40% blocked). |
+
+This supersedes the donor BSP cave as the default look (`D6`). Adding a biome is
+a `layout` field in `src/data/biomes.ts` plus its tileset.
 
 ## 3. Trainers and line of sight
 

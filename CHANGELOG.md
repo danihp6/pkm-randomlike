@@ -795,3 +795,24 @@ file is the human-readable summary.
       step still lands on one tile and runs the same `onTileEntered` beat.
       `playerSprite.test.ts` and `playerAnim.test.ts` measure the atlas and the
       cycles. 646 tests pass; `npm run build` clean.
+- [x] FireRed/LeafGreen-style route layouts and field tiles (`D26`): a route's
+      shape now follows its biome instead of one generic blob. Calibrated against
+      the real layouts in the pret/pokefirered decomp (`data/layouts/*/map.bin`),
+      `src/engine/routes/layout.ts` carries three styles — `route` (Route 1: an
+      open grass field, ~38% blocked, cut by one-tile tree hedges attached to the
+      borders), `forest` (Viridian Forest: a one-tile-corridor labyrinth, ~57%
+      blocked) and `cavern` (Mt. Moon: two-tile rock corridors and wide chambers,
+      ~40% blocked). `sketch.ts` gained the two carvers (`carveHedges`,
+      `carveMaze` with an optional braid) and a shortest-path guard that keeps
+      solid terrain (water, ledges) off the way through, and `src/data/biomes.ts`
+      names each biome's style. The FRLG atlases were recomposed
+      (`scripts/frlg/build-tilesets.mjs`): the wall autotile now draws a tree in
+      three layers — a canopy where the mass opens north, a trunk where it opens
+      south and the leaf body elsewhere — so a tree border reads as trees instead
+      of a flat repeated stamp; the forest field got real green grass (the old
+      pick was a sand tile) and the sheet's last free cell became a rocky ledge
+      lip (`FRAME_LEDGE`), which FRLG routes now draw on their one-way ledges
+      instead of plain ground. `frlg.test.ts` measures the ledge frame, the new
+      `layout.test.ts` covers the registry and the expanded `sketch.test.ts`
+      asserts the per-style edge entries and density bands. 653 tests pass;
+      `npm run build` clean.

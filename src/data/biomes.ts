@@ -1,3 +1,4 @@
+import type { LayoutStyle } from '../engine/routes/layout';
 import type { TilesetId } from './tilesets';
 import { ENCOUNTER_TABLES, type BiomeEncounterTables } from './encounters';
 
@@ -8,6 +9,8 @@ export type Biome = Readonly<{
   name: string;
   tilesetId: TilesetId;
   encounters: BiomeEncounterTables;
+  /** Route shape (`src/engine/routes/layout.ts`): FRLG-style per biome. */
+  layout: LayoutStyle;
   /** Passes the generator uses to flavour the terrain of this biome. */
   terrain: Readonly<{
     grassPatches: number;
@@ -22,6 +25,7 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     name: 'Woods',
     tilesetId: 'wood',
     encounters: ENCOUNTER_TABLES.wood,
+    layout: 'route',
     terrain: { grassPatches: 3, waterBodies: 1, ledges: 2 },
   },
   placeholder: {
@@ -29,6 +33,7 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     name: 'Test Grounds',
     tilesetId: 'placeholder',
     encounters: ENCOUNTER_TABLES.placeholder,
+    layout: 'route',
     terrain: { grassPatches: 2, waterBodies: 0, ledges: 1 },
   },
   outdoor: {
@@ -36,6 +41,7 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     name: 'Sunlit Route',
     tilesetId: 'outdoor',
     encounters: ENCOUNTER_TABLES.outdoor,
+    layout: 'route',
     terrain: { grassPatches: 3, waterBodies: 1, ledges: 2 },
   },
   forest: {
@@ -43,14 +49,16 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     name: 'Deep Forest',
     tilesetId: 'forest',
     encounters: ENCOUNTER_TABLES.forest,
-    terrain: { grassPatches: 4, waterBodies: 1, ledges: 1 },
+    layout: 'forest',
+    terrain: { grassPatches: 4, waterBodies: 0, ledges: 0 },
   },
   cave: {
     id: 'cave',
     name: 'Rocky Cave',
     tilesetId: 'cave',
     encounters: ENCOUNTER_TABLES.cave,
-    terrain: { grassPatches: 0, waterBodies: 1, ledges: 2 },
+    layout: 'cavern',
+    terrain: { grassPatches: 0, waterBodies: 1, ledges: 0 },
   },
 };
 

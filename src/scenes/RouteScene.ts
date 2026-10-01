@@ -205,6 +205,7 @@ export class RouteScene extends Phaser.Scene {
       trainerCount: band.trainerSize,
       itemCount: ROUTE_LOOT[band.id].count,
       loot: ROUTE_LOOT[band.id].pool,
+      layout: biome.layout,
       grassPatches: biome.terrain.grassPatches,
       waterBodies: biome.terrain.waterBodies,
       ledges: biome.terrain.ledges,
