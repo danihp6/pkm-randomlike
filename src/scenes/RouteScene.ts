@@ -11,6 +11,12 @@ import {
   overworldSpriteFrame,
 } from '../data/overworldSprites';
 import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
+import {
+  PLAYER_SPRITE_TEXTURE_KEY,
+  PLAYER_SPRITE_WIDTH,
+  playerSpriteFrame,
+  type PlayerFacing,
+} from '../data/playerSprite';
 import { bandForRoute } from '../data/run';
 import { TRAINER_ARCHETYPE_IDS, getTrainerArchetype } from '../data/trainers';
 import { DEBUG_MENU_TOGGLE_KEY, IS_DEVELOP } from '../dev/env';
@@ -69,12 +75,7 @@ import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
-import {
-  ARROW_TEXTURE_KEY,
-  GRASS_TEXTURE_KEY,
-  PLAYER_TEXTURE_KEY,
-  TRAINER_TEXTURE_KEY,
-} from './BootScene';
+import { ARROW_TEXTURE_KEY, GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 
 const VISION_RADIUS = 6;
 const HIDDEN_ALPHA = 0.3;
@@ -201,7 +202,11 @@ export class RouteScene extends Phaser.Scene {
     this.drawTiles();
     this.drawEntities();
     this.player = { ...this.route.start };
-    this.playerSprite = this.add.sprite(0, 0, PLAYER_TEXTURE_KEY, 0).setScale(0.75).setDepth(10);
+    this.playerSprite = this.add
+      .sprite(0, 0, PLAYER_SPRITE_TEXTURE_KEY, playerSpriteFrame('down'))
+      .setOrigin(0.5, 1)
+      .setScale(TILE_SIZE / PLAYER_SPRITE_WIDTH)
+      .setDepth(10);
     this.movePlayerTo(this.player.x, this.player.y, true);
 
     const width = this.map[0].length * TILE_SIZE;
@@ -448,10 +453,20 @@ export class RouteScene extends Phaser.Scene {
 
   private movePlayerTo(x: number, y: number, first: boolean): void {
     this.player = { x, y };
-    this.playerSprite.setPosition(this.centerX(x), this.centerY(y));
+    // The 16x32 FRLG frame stands with its feet on the tile's bottom edge, the
+    // same placement the route's trainers use.
+    this.playerSprite.setPosition(this.centerX(x), this.centerY(y) + TILE_SIZE / 2);
     this.vision.recompute(this.map, this.player);
     this.refreshFog();
     if (!first) this.onTileEntered();
+  }
+
+  /** Turns the player to face the tile it just stepped onto. */
+  private facePlayer(step: Tile): void {
+    const facing: PlayerFacing = step.y > 0 ? 'down' : step.y < 0 ? 'up' : 'side';
+    this.playerSprite.setFrame(playerSpriteFrame(facing));
+    // The strip's side frame faces left, so a step right flips it.
+    this.playerSprite.setFlipX(step.x > 0);
   }
 
   private refreshFog(): void {
@@ -798,7 +813,7 @@ export class RouteScene extends Phaser.Scene {
     if (!result) return;
     const blocker = trainerAt(this.route, result.to);
     if (blocker && !isTrainerDefeated(this.run, blocker.id)) return;
-    this.playerSprite.setFlipX(step.x < 0);
+    this.facePlayer(step);
     this.movePlayerTo(result.to.x, result.to.y, false);
   }
 }

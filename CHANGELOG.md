@@ -775,3 +775,16 @@ file is the human-readable summary.
       sprite the sheet lacks. `overworldSprites.test.ts` measures the atlas and
       that every archetype maps onto a non-empty frame. 641 tests pass;
       `npm run build` clean.
+- [x] FRLG player overworld sprite (Phase 8): the route's player is the FRLG
+      protagonist instead of the PMD placeholder. `red_normal.png` from the
+      pret/pokefirered decomp (`graphics/object_events/pics/people/`, a 144x32
+      strip of nine 16x32 walk frames) is packed by
+      `scripts/frlg/build-player-sprite.mjs` into `src/assets/frlg/player.png` +
+      `src/data/frlg/player.json` and read through `src/data/playerSprite.ts` —
+      the three resting frames `down`/`up`/`side` (the decomp side faces left,
+      its right is the flipped frame). `RouteScene` draws the 16px frame at
+      `TILE_SIZE / 16` with its feet on the tile bottom (the same placement the
+      trainers use, replacing the old 32px PMD sprite at 0.75 scale) and turns to
+      face the direction walked, so stepping up, down, left or right shows the
+      matching pose. `playerSprite.test.ts` measures the atlas and that every
+      facing maps onto a non-empty frame. 644 tests pass; `npm run build` clean.

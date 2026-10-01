@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import playerSpriteUrl from '../assets/pokemon/25.png';
 import moveFxUrl from '../assets/moves.png';
 import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY } from '../data/itemIcons';
 import {
@@ -9,6 +8,12 @@ import {
   OVERWORLD_SPRITE_WIDTH,
 } from '../data/overworldSprites';
 import { POKEMON_SPRITE_SHEETS } from '../data/pokemonSprites';
+import {
+  PLAYER_SPRITE_ATLAS_URL,
+  PLAYER_SPRITE_HEIGHT,
+  PLAYER_SPRITE_TEXTURE_KEY,
+  PLAYER_SPRITE_WIDTH,
+} from '../data/playerSprite';
 import { PORTRAIT_ATLAS_URL, PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY } from '../data/portraits';
 import {
   TRAINER_SPRITE_ATLAS_URL,
@@ -51,9 +56,6 @@ import {
 } from '../data/tilesets';
 import { browserStorage } from '../storage';
 
-export const PLAYER_TEXTURE_KEY = 'player';
-// Pikachu's overworld sheet: 32x32 frames, first row is the facing-down idle.
-export const PLAYER_SPRITE_URL = playerSpriteUrl;
 export const GRASS_TEXTURE_KEY = 'route:grass';
 export const TRAINER_TEXTURE_KEY = 'route:trainer';
 export const ARROW_TEXTURE_KEY = 'route:arrow';
@@ -80,9 +82,9 @@ export class BootScene extends Phaser.Scene {
       frameWidth: COMMON_TILE_SIZE,
       frameHeight: COMMON_TILE_SIZE,
     });
-    this.load.spritesheet(PLAYER_TEXTURE_KEY, PLAYER_SPRITE_URL, {
-      frameWidth: 32,
-      frameHeight: 32,
+    this.load.spritesheet(PLAYER_SPRITE_TEXTURE_KEY, PLAYER_SPRITE_ATLAS_URL, {
+      frameWidth: PLAYER_SPRITE_WIDTH,
+      frameHeight: PLAYER_SPRITE_HEIGHT,
     });
     this.load.spritesheet(PORTRAIT_TEXTURE_KEY, PORTRAIT_ATLAS_URL, {
       frameWidth: PORTRAIT_SIZE,

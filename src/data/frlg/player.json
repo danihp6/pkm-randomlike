@@ -1,0 +1,14 @@
+{
+  "size": 16,
+  "height": 32,
+  "frames": [
+    "down",
+    "up",
+    "side"
+  ],
+  "sprites": {
+    "down": 0,
+    "up": 1,
+    "side": 2
+  }
+}
