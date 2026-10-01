@@ -1,0 +1,26 @@
+{
+  "size": 16,
+  "height": 32,
+  "frames": [
+    "down",
+    "up",
+    "side",
+    "walk-down-a",
+    "walk-down-b",
+    "walk-up-a",
+    "walk-up-b",
+    "walk-side-a",
+    "walk-side-b"
+  ],
+  "sprites": {
+    "down": 0,
+    "up": 1,
+    "side": 2,
+    "walk-down-a": 3,
+    "walk-down-b": 4,
+    "walk-up-a": 5,
+    "walk-up-b": 6,
+    "walk-side-a": 7,
+    "walk-side-b": 8
+  }
+}

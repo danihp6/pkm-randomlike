@@ -76,8 +76,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] FRLG player overworld sprite (Red/Leaf, `sprite-sources/frlg/player-sprites.png`)
-      replacing the PMD overworld sprite the route draws today.
 - [ ] FRLG portraits for the party/HUD/starter/release screens, drawn from the
       packed battle fronts/icons instead of the PMDCollab `portraits.png`.
 - [ ] FRLG move and attack FX (`sprite-sources/frlg-ui/move-effects.png`,

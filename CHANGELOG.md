@@ -775,3 +775,23 @@ file is the human-readable summary.
       sprite the sheet lacks. `overworldSprites.test.ts` measures the atlas and
       that every archetype maps onto a non-empty frame. 641 tests pass;
       `npm run build` clean.
+- [x] FRLG player overworld sprite with walk and run cycles (Phase 8, `D25`):
+      the route's player is the FRLG protagonist instead of the PMD placeholder,
+      and holding a direction now walks him. `red_normal.png` from the
+      pret/pokefirered decomp (`graphics/object_events/pics/people/`, a 144x32
+      strip of nine 16x32 frames: the resting pose plus a two-frame cycle of each
+      direction) is packed by `scripts/frlg/build-player-sprite.mjs` into
+      `src/assets/frlg/player.png` + `src/data/frlg/player.json`, read through
+      `src/data/playerSprite.ts` (idle and walk frames per facing; the decomp
+      side faces left, its right is the flipped frame). `src/render/playerAnim.ts`
+      keys the three cycles and `BootScene` registers them.
+      `RouteScene` moved from one tile per key press to hold-to-walk: a step
+      slides between tiles over `WALK_STEP_MS` with the direction's animation
+      playing, releasing shows the resting frame, and pushing into a wall turns
+      in place. A new `run` keybind (`SHIFT` by default, rebindable, listed on the
+      settings screen via `KEYBIND_ACTIONS`) cuts the step to `RUN_STEP_MS` and
+      scales the cycle's `timeScale`, so running reuses the walking frames faster
+      as the originals do. Encounters, fog and trainer sight are untouched — a
+      step still lands on one tile and runs the same `onTileEntered` beat.
+      `playerSprite.test.ts` and `playerAnim.test.ts` measure the atlas and the
+      cycles. 646 tests pass; `npm run build` clean.

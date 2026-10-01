@@ -11,6 +11,13 @@ import {
   overworldSpriteFrame,
 } from '../data/overworldSprites';
 import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
+import {
+  PLAYER_SPRITE_TEXTURE_KEY,
+  PLAYER_SPRITE_WIDTH,
+  playerSpriteFrame,
+  type PlayerFacing,
+} from '../data/playerSprite';
+import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
 import { bandForRoute } from '../data/run';
 import { TRAINER_ARCHETYPE_IDS, getTrainerArchetype } from '../data/trainers';
 import { DEBUG_MENU_TOGGLE_KEY, IS_DEVELOP } from '../dev/env';
@@ -69,12 +76,7 @@ import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
-import {
-  ARROW_TEXTURE_KEY,
-  GRASS_TEXTURE_KEY,
-  PLAYER_TEXTURE_KEY,
-  TRAINER_TEXTURE_KEY,
-} from './BootScene';
+import { ARROW_TEXTURE_KEY, GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 
 const VISION_RADIUS = 6;
 const HIDDEN_ALPHA = 0.3;
@@ -84,6 +86,17 @@ const BAG_ICON_SLOTS = 6;
 
 /** The four directions, in the order the update loop tests them. */
 type MoveKey = 'up' | 'down' | 'left' | 'right';
+
+/** How long one tile takes to cross on foot, and with the run key held. */
+const WALK_STEP_MS = 200;
+const RUN_STEP_MS = 110;
+
+const MOVE_STEP: Readonly<Record<MoveKey, Tile>> = {
+  up: { x: 0, y: -1 },
+  down: { x: 0, y: 1 },
+  left: { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+};
 
 // Until the starter pick lands, the scene seeds a run with a fixed demo starter
 // and bag and walks its routes off one dev seed.
@@ -124,6 +137,12 @@ export class RouteScene extends Phaser.Scene {
   private advanceAfterParty = false;
   /** The four movement keys behind the current bindings, watched every frame. */
   private moveKeys!: Record<MoveKey, Phaser.Input.Keyboard.Key | null>;
+  /** The run key; held while walking, it speeds the step and the walk cycle. */
+  private runKey: Phaser.Input.Keyboard.Key | null = null;
+  /** The direction the player faces, for the idle frame and the walk cycle. */
+  private facing: PlayerFacing = 'down';
+  /** The in-flight step, while the sprite slides from one tile to the next. */
+  private walkTween: Phaser.Tweens.Tween | null = null;
   private hint!: Phaser.GameObjects.BitmapText;
   private hintBackdrop!: Phaser.GameObjects.Rectangle;
   private hudRoot!: Phaser.GameObjects.Container;
@@ -171,6 +190,8 @@ export class RouteScene extends Phaser.Scene {
     this.releaseOnDone = null;
     this.releaseWait = null;
     this.releaseArmed = false;
+    this.facing = 'down';
+    this.walkTween = null;
     this.settings = loadSettings();
 
     const routeIndex = this.run.routeIndex;
@@ -201,8 +222,12 @@ export class RouteScene extends Phaser.Scene {
     this.drawTiles();
     this.drawEntities();
     this.player = { ...this.route.start };
-    this.playerSprite = this.add.sprite(0, 0, PLAYER_TEXTURE_KEY, 0).setScale(0.75).setDepth(10);
-    this.movePlayerTo(this.player.x, this.player.y, true);
+    this.playerSprite = this.add
+      .sprite(0, 0, PLAYER_SPRITE_TEXTURE_KEY, playerSpriteFrame('down'))
+      .setOrigin(0.5, 1)
+      .setScale(TILE_SIZE / PLAYER_SPRITE_WIDTH)
+      .setDepth(10);
+    this.movePlayerTo(this.player.x, this.player.y);
 
     const width = this.map[0].length * TILE_SIZE;
     const height = this.map.length * TILE_SIZE;
@@ -265,12 +290,13 @@ export class RouteScene extends Phaser.Scene {
     const bind = (action: MoveKey): Phaser.Input.Keyboard.Key | null =>
       actionKeys(this, action, this.settings.keybinds)[0] ?? null;
     this.moveKeys = { up: bind('up'), down: bind('down'), left: bind('left'), right: bind('right') };
+    this.runKey = actionKeys(this, 'run', this.settings.keybinds)[0] ?? null;
   }
 
   /** The resting line, spelled with whatever keys the player has bound. */
   private defaultHint(): string {
-    const { up, down, left, right, party, settings } = this.settings.keybinds;
-    return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   ${keyLabel(party)} party   ·   ${keyLabel(settings)} settings`;
+    const { up, down, left, right, run, party, settings } = this.settings.keybinds;
+    return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   hold ${keyLabel(run)} run   ·   ${keyLabel(party)} party   ·   ${keyLabel(settings)} settings`;
   }
 
   /** The persistent overlay: route header, party (with portraits) and the bag. */
@@ -446,12 +472,55 @@ export class RouteScene extends Phaser.Scene {
     this.setHint(`tileset: ${textures.name}`);
   }
 
-  private movePlayerTo(x: number, y: number, first: boolean): void {
+  /** Snaps the sprite to a tile and recomputes the fog, without a step. */
+  private movePlayerTo(x: number, y: number): void {
     this.player = { x, y };
-    this.playerSprite.setPosition(this.centerX(x), this.centerY(y));
+    // The 16x32 FRLG frame stands with its feet on the tile's bottom edge, the
+    // same placement the route's trainers use.
+    this.playerSprite.setPosition(this.centerX(x), this.centerY(y) + TILE_SIZE / 2);
     this.vision.recompute(this.map, this.player);
     this.refreshFog();
-    if (!first) this.onTileEntered();
+  }
+
+  /** Turns the sprite to face a direction, flipping the left-facing side frame. */
+  private face(direction: MoveKey): void {
+    this.facing = direction === 'up' ? 'up' : direction === 'down' ? 'down' : 'side';
+    this.playerSprite.setFlipX(direction === 'right');
+  }
+
+  /** Pushes into a blocked tile: turn to face it and stand. */
+  private faceIdle(direction: MoveKey): void {
+    this.face(direction);
+    this.settleMovement();
+  }
+
+  /** Plays the direction's walk cycle while a step is in flight. */
+  private walkStep(direction: MoveKey, to: Tile): void {
+    this.face(direction);
+    const running = this.runKey?.isDown ?? false;
+    this.playerSprite.anims.timeScale = playerWalkTimeScale(running, WALK_STEP_MS, RUN_STEP_MS);
+    this.playerSprite.play(playerWalkAnimKey(this.facing), true);
+    this.walkTween = this.tweens.add({
+      targets: this.playerSprite,
+      x: this.centerX(to.x),
+      y: this.centerY(to.y) + TILE_SIZE / 2,
+      duration: running ? RUN_STEP_MS : WALK_STEP_MS,
+      ease: 'Linear',
+      onComplete: () => {
+        this.walkTween = null;
+        this.player = { x: to.x, y: to.y };
+        this.vision.recompute(this.map, this.player);
+        this.refreshFog();
+        this.onTileEntered();
+      },
+    });
+  }
+
+  /** Stands still and shows the resting frame, once no step is in flight. */
+  private settleMovement(): void {
+    if (this.walkTween || !this.playerSprite.anims.isPlaying) return;
+    this.playerSprite.anims.stop();
+    this.playerSprite.setFrame(playerSpriteFrame(this.facing));
   }
 
   private refreshFog(): void {
@@ -785,20 +854,39 @@ export class RouteScene extends Phaser.Scene {
       this.scene.restart({ run: this.run });
       return;
     }
-    if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) return;
-    const step: Tile = { x: 0, y: 0 };
-    const { up, down, left, right } = this.moveKeys;
-    if (left && Phaser.Input.Keyboard.JustDown(left)) step.x = -1;
-    else if (right && Phaser.Input.Keyboard.JustDown(right)) step.x = 1;
-    else if (up && Phaser.Input.Keyboard.JustDown(up)) step.y = -1;
-    else if (down && Phaser.Input.Keyboard.JustDown(down)) step.y = 1;
-    if (step.x === 0 && step.y === 0) return;
+    if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) {
+      this.settleMovement();
+      return;
+    }
+    const direction = this.heldDirection();
+    if (!direction) {
+      this.settleMovement();
+      return;
+    }
+    // A step is still sliding; the next one starts when it lands.
+    if (this.walkTween) return;
+    const result = resolveMove(this.map, this.player, MOVE_STEP[direction]);
+    const blocker = result ? trainerAt(this.route, result.to) : null;
+    if (!result || (blocker && !isTrainerDefeated(this.run, blocker.id))) {
+      this.faceIdle(direction);
+      return;
+    }
+    this.walkStep(direction, result.to);
+  }
 
-    const result = resolveMove(this.map, this.player, step);
-    if (!result) return;
-    const blocker = trainerAt(this.route, result.to);
-    if (blocker && !isTrainerDefeated(this.run, blocker.id)) return;
-    this.playerSprite.setFlipX(step.x < 0);
-    this.movePlayerTo(result.to.x, result.to.y, false);
+  /**
+   * The direction the player is pushing. A held key keeps walking; a fresh tap
+   * counts even if it is released before the next frame, so a quick press still
+   * moves a tile.
+   */
+  private heldDirection(): MoveKey | null {
+    const { up, down, left, right } = this.moveKeys;
+    const pressed = (key: Phaser.Input.Keyboard.Key | null): boolean =>
+      key !== null && (key.isDown || Phaser.Input.Keyboard.JustDown(key));
+    if (pressed(left)) return 'left';
+    if (pressed(right)) return 'right';
+    if (pressed(up)) return 'up';
+    if (pressed(down)) return 'down';
+    return null;
   }
 }

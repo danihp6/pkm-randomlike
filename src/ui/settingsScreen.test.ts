@@ -26,6 +26,7 @@ describe('rows', () => {
       'down',
       'left',
       'right',
+      'run',
       'party',
       'settings',
     ]);
