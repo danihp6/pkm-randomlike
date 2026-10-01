@@ -816,3 +816,15 @@ file is the human-readable summary.
       `layout.test.ts` covers the registry and the expanded `sketch.test.ts`
       asserts the per-style edge entries and density bands. 653 tests pass;
       `npm run build` clean.
+- [x] FRLG walls are whole trees, not a per-shape stamp (`D26` follow-up): the
+      tree bank draws a tree three tiles wide that stacks vertically, so one frame
+      per autotile shape read as a flat hedge. `TilesetConfig` gained a
+      `wallPattern` (a `cols` x `rows` motif) and `tileFrames.patternFrame`
+      resolves it anchored to the wall mass's top-left: the first row is the
+      mass's top, the last its base, the middle rows cycle as the wall rises and
+      the columns repeat across x, centring the motif on a one-tile wall.
+      `build-tilesets.mjs` stamps the FRLG fields' wall on frames `7`-`18` — a
+      canopy against ground, a solid canopy (the tree bank's ground filled in so
+      the tops stack without holes), the canopy body and the trunk. `frlg.test.ts`
+      measures every pattern frame and `tileFrames.test.ts` covers the anchoring,
+      the interior cycle and the centring. 657 tests pass; `npm run build` clean.

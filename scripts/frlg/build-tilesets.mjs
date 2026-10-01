@@ -1,6 +1,6 @@
 // Composes FireRed/LeafGreen 16x16 terrain into the biome atlas contract
 // (docs/tileset-spec.md): a 4-column x 13-row sheet whose frame indices match the
-// FRAME_* constants in src/engine/tileset.ts, declared with `tileSize: 16` (D18).
+// constants in src/engine/tileset.ts, declared with `tileSize: 16` (D18).
 //
 // Source: sprite-sources/frlg/tileset-2.png (gitignored, ripped by fabnt from
 // PokemonFireRed/LeafGreen, spriters-resource; never redistributed). The sheet is
@@ -27,27 +27,15 @@ const ROWS = 13
 const ATLAS_WIDTH = TILE_SIZE * COLS
 const ATLAS_HEIGHT = TILE_SIZE * ROWS
 
-// Frame indices — must match FRAME_* in src/engine/tileset.ts.
+// Frame indices — must match the constants in src/engine/tileset.ts and the
+// pattern frames exported by src/data/tilesets/frlg.ts.
 const FRAME_FLOOR = 0
 const FRAME_FLOOR_ALT_1 = 1
 const FRAME_FLOOR_ALT_2 = 2
-const FRAME_WALL_INTERIOR = 7
-const FRAME_WALL_EDGE_N = 8
-const FRAME_WALL_EDGE_E = 9
-const FRAME_WALL_EDGE_S = 10
-const FRAME_WALL_EDGE_W = 11
-const FRAME_WALL_CORNER_NE = 12
-const FRAME_WALL_CORNER_NW = 13
-const FRAME_WALL_CORNER_SE = 14
-const FRAME_WALL_CORNER_SW = 15
-const FRAME_WALL_INNER_CORNER_NE = 16
-const FRAME_WALL_INNER_CORNER_NW = 17
-const FRAME_WALL_INNER_CORNER_SE = 18
-const FRAME_WALL_INNER_CORNER_SW = 19
-const FRAME_WALL_DIAGONAL_CORNER_NE = 20
-const FRAME_WALL_DIAGONAL_CORNER_NW = 21
-const FRAME_WALL_DIAGONAL_CORNER_SE = 22
-const FRAME_WALL_DIAGONAL_CORNER_SW = 23
+const FRAME_WALL_TOP = [7, 8, 9]
+const FRAME_WALL_CANOPY = [10, 11, 12]
+const FRAME_WALL_BODY = [13, 14, 15]
+const FRAME_WALL_BASE = [16, 17, 18]
 const FRAME_WATER_INTERIOR = 24
 const FRAME_WATER_EDGE_N = 25
 const FRAME_WATER_EDGE_E = 26
@@ -57,64 +45,32 @@ const FRAME_WATER_CORNER_NE = 29
 const FRAME_WATER_CORNER_NW = 30
 const FRAME_WATER_CORNER_SE = 31
 const FRAME_WATER_CORNER_SW = 32
-const FRAME_WATER_INNER_CORNER_NE = 33
-const FRAME_WATER_INNER_CORNER_NW = 34
-const FRAME_WATER_INNER_CORNER_SE = 35
-const FRAME_WATER_INNER_CORNER_SW = 36
-const FRAME_WATER_DIAGONAL_CORNER_NE = 37
-const FRAME_WATER_DIAGONAL_CORNER_NW = 38
-const FRAME_WATER_DIAGONAL_CORNER_SE = 39
-const FRAME_WATER_DIAGONAL_CORNER_SW = 40
 const FRAME_FLOOR_ALT_3 = 41
 const FRAME_FLOOR_ALT_4 = 42
 const FRAME_FLOOR_ALT_5 = 43
-const FRAME_WALL_STRAIGHT_NS = 44
-const FRAME_WALL_STRAIGHT_EW = 45
-const FRAME_WALL_TEE_N = 46
-const FRAME_WALL_TEE_E = 47
-const FRAME_WALL_TEE_S = 48
-const FRAME_WALL_TEE_W = 49
-const FRAME_WALL_CROSS = 50
-// The last cell of the 4x13 sheet, kept for the rocky ledge lip the route walks
-// off (docs/tileset-spec.md §6).
+// The last cell of the 4x13 sheet, the rocky ledge lip the route walks off.
 const FRAME_LEDGE = 51
 
-/** Every shape the wall autotiler can ask for, in one list. */
-const WALL_FRAMES = [
-  FRAME_WALL_INTERIOR,
-  FRAME_WALL_EDGE_N,
-  FRAME_WALL_EDGE_E,
-  FRAME_WALL_EDGE_S,
-  FRAME_WALL_EDGE_W,
-  FRAME_WALL_CORNER_NE,
-  FRAME_WALL_CORNER_NW,
-  FRAME_WALL_CORNER_SE,
-  FRAME_WALL_CORNER_SW,
-  FRAME_WALL_INNER_CORNER_NE,
-  FRAME_WALL_INNER_CORNER_NW,
-  FRAME_WALL_INNER_CORNER_SE,
-  FRAME_WALL_INNER_CORNER_SW,
-  FRAME_WALL_DIAGONAL_CORNER_NE,
-  FRAME_WALL_DIAGONAL_CORNER_NW,
-  FRAME_WALL_DIAGONAL_CORNER_SE,
-  FRAME_WALL_DIAGONAL_CORNER_SW,
-  FRAME_WALL_STRAIGHT_NS,
-  FRAME_WALL_STRAIGHT_EW,
-  FRAME_WALL_TEE_N,
-  FRAME_WALL_TEE_E,
-  FRAME_WALL_TEE_S,
-  FRAME_WALL_TEE_W,
-  FRAME_WALL_CROSS,
+const WATER_TUPLE = [
+  FRAME_WATER_INTERIOR,
+  FRAME_WATER_EDGE_N,
+  FRAME_WATER_EDGE_E,
+  FRAME_WATER_EDGE_S,
+  FRAME_WATER_EDGE_W,
+  FRAME_WATER_CORNER_NE,
+  FRAME_WATER_CORNER_NW,
+  FRAME_WATER_CORNER_SE,
+  FRAME_WATER_CORNER_SW,
 ]
 
-/**
- * The wall is drawn in three layers so a tree mass (or a rock mass) reads as
- * one: a canopy `top` where the wall opens north, a `base` where it opens south,
- * and `body` everywhere else. A one-tile-tall hedge only ever sees its top, so
- * `straightNS` is a top too.
- */
-const WALL_TOP_FRAMES = new Set([FRAME_WALL_EDGE_N, FRAME_WALL_STRAIGHT_NS])
-const WALL_BASE_FRAMES = new Set([FRAME_WALL_EDGE_S])
+/** The frame each floor variant stamps to. `3`-`6` are the shared common slots. */
+const FLOOR_ALT_FRAMES = [
+  FRAME_FLOOR_ALT_1,
+  FRAME_FLOOR_ALT_2,
+  FRAME_FLOOR_ALT_3,
+  FRAME_FLOOR_ALT_4,
+  FRAME_FLOOR_ALT_5,
+]
 
 const source = decodePng(readFileSync(SRC))
 
@@ -146,9 +102,9 @@ function stamp(atlas, frame, col, row) {
 
 /**
  * One whole 3x3 autotile block (the keypad layout NW N NE / W interior E /
- * SW S SE) stamped onto a shape family's frames. `frames` is the family's
- * interior/edges/corners tuple; the concave and diagonal corners have no art of
- * their own and reuse the nearest convex corner.
+ * SW S SE) stamped onto a shape family's frames; used for the pond, whose art is
+ * a bordered block. The concave and diagonal corners have no art of their own and
+ * reuse the nearest convex corner.
  */
 function stampBlock(atlas, frames, blockCol, blockRow) {
   const [interior, edgeN, edgeE, edgeS, edgeW, cornerNE, cornerNW, cornerSE, cornerSW] = frames
@@ -173,7 +129,6 @@ function stampBlock(atlas, frames, blockCol, blockRow) {
     [cornerNW]: cornerNW,
     [cornerSE]: cornerSE,
     [cornerSW]: cornerSW,
-    // Concave then diagonal corners, in the layout `engine/tileset.ts` declares.
     [interior + 9]: cornerNE,
     [interior + 10]: cornerNW,
     [interior + 11]: cornerSE,
@@ -188,27 +143,6 @@ function stampBlock(atlas, frames, blockCol, blockRow) {
     if (at) stamp(atlas, Number(frame), at[0], at[1])
   }
 }
-
-const WATER_TUPLE = [
-  FRAME_WATER_INTERIOR,
-  FRAME_WATER_EDGE_N,
-  FRAME_WATER_EDGE_E,
-  FRAME_WATER_EDGE_S,
-  FRAME_WATER_EDGE_W,
-  FRAME_WATER_CORNER_NE,
-  FRAME_WATER_CORNER_NW,
-  FRAME_WATER_CORNER_SE,
-  FRAME_WATER_CORNER_SW,
-]
-
-/** The frame each floor variant stamps to. `3`-`6` are the shared common slots. */
-const FLOOR_ALT_FRAMES = [
-  FRAME_FLOOR_ALT_1,
-  FRAME_FLOOR_ALT_2,
-  FRAME_FLOOR_ALT_3,
-  FRAME_FLOOR_ALT_4,
-  FRAME_FLOOR_ALT_5,
-]
 
 /**
  * Paints a tile over a floor cell: the atlas is RGBA, so transparent pixels must
@@ -225,10 +159,29 @@ function compositeOver(over, floor) {
 }
 
 /**
- * A route's field: a walkable ground, its floor variants, a wall drawn in three
- * layers (canopy/top, body, base) and the sheet's shared rocky-banked pond, plus
- * the ledge lip. The wall art is composited over the floor so its transparent
- * pixels read as ground, not as a hole in the map.
+ * Replaces a tile's flat background (sampled from its top-left pixel) with another
+ * tile's pixels, so a canopy drawn on the forest ground becomes a solid canopy
+ * that can stack on itself without showing ground between the tree tops.
+ */
+function solidOver(over, fill) {
+  const bg = [over[0], over[1], over[2]]
+  const out = Buffer.from(over)
+  for (let i = 0; i < out.length; i += 4) {
+    const close =
+      Math.abs(out[i] - bg[0]) < 24 &&
+      Math.abs(out[i + 1] - bg[1]) < 24 &&
+      Math.abs(out[i + 2] - bg[2]) < 24
+    if (close) fill.copy(out, i, i, i + 4)
+  }
+  return out
+}
+
+/**
+ * A route's field: the walkable ground, its floor variants, the three-wide wall
+ * motif (top/body/base rows, each three columns, composited over the floor so its
+ * transparent pixels read as ground), the sheet's shared rocky-banked pond and
+ * the ledge lip. `wall` is `[top, body, base]`, each a three-entry list of source
+ * `[col, row]` cells.
  */
 function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) {
   stamp(atlas, FRAME_FLOOR, floor[0], floor[1])
@@ -238,37 +191,41 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) 
   })
 
   const floorCell = (c, r) => compositeOver(sourceTile(c, r), sourceTile(floor[0], floor[1]))
-  const layers = wall.repeated
-    ? (() => {
-        const tile = floorCell(wall.repeated[0], wall.repeated[1])
-        return { top: tile, body: tile, base: tile }
-      })()
-    : {
-        top: floorCell(wall.top[0], wall.top[1]),
-        body: floorCell(wall.body[0], wall.body[1]),
-        base: floorCell(wall.base[0], wall.base[1]),
-      }
-  for (const frame of WALL_FRAMES) {
-    const tile = WALL_TOP_FRAMES.has(frame)
-      ? layers.top
-      : WALL_BASE_FRAMES.has(frame)
-        ? layers.base
-        : layers.body
-    stampTile(atlas, frame, tile)
-  }
+  const [top, body, base] = wall
+  FRAME_WALL_TOP.forEach((frame, i) => stampTile(atlas, frame, floorCell(top[i][0], top[i][1])))
+  FRAME_WALL_CANOPY.forEach((frame, i) =>
+    stampTile(atlas, frame, compositeOver(solidOver(sourceTile(top[i][0], top[i][1]), sourceTile(body[i][0], body[i][1])), sourceTile(floor[0], floor[1]))),
+  )
+  FRAME_WALL_BODY.forEach((frame, i) => stampTile(atlas, frame, floorCell(body[i][0], body[i][1])))
+  FRAME_WALL_BASE.forEach((frame, i) => stampTile(atlas, frame, floorCell(base[i][0], base[i][1])))
 
   stampBlock(atlas, WATER_TUPLE, water[0], water[1])
   stampTile(atlas, FRAME_LEDGE, floorCell(ledge[0], ledge[1]))
 }
 
-/** The shared tree bank: a canopy top, a leaf body and the trunk below. */
-const TREE = {
-  top: [15, 1],
-  body: [15, 2],
-  base: [15, 3],
-}
+/**
+ * The shared tree bank: a three-wide canopy top, its leafy body and the trunk
+ * below, in the left/centre/right columns the pattern samples across x.
+ */
+const TREE = [
+  [
+    [14, 1],
+    [15, 1],
+    [16, 1],
+  ],
+  [
+    [14, 2],
+    [15, 2],
+    [16, 2],
+  ],
+  [
+    [14, 3],
+    [15, 3],
+    [16, 3],
+  ],
+]
 
-/** Grass route: mint grass, a tree-canopy border and a rocky-banked pond. */
+/** Grass route: mint grass, a tree border and a rocky-banked pond. */
 function outdoorFrames(atlas) {
   fieldFrames(atlas, {
     floor: [2, 3],
@@ -300,8 +257,11 @@ function forestFrames(atlas) {
   })
 }
 
-/** Cave: Mt. Moon grey rock under a dark boulder border. */
+/** Cave: Mt. Moon grey rock under a boulder border. */
 function caveFrames(atlas) {
+  const rockTop = [3, 42]
+  const rockBody = [1, 44]
+  const rockBase = [2, 44]
   fieldFrames(atlas, {
     floor: [2, 24],
     floorAlts: [
@@ -311,11 +271,11 @@ function caveFrames(atlas) {
       [2, 25],
       [3, 25],
     ],
-    wall: {
-      top: [3, 42],
-      body: [1, 44],
-      base: [2, 44],
-    },
+    wall: [
+      [rockTop, rockTop, rockTop],
+      [rockBody, rockBody, rockBody],
+      [rockBase, rockBase, rockBase],
+    ],
     ledge: [7, 4],
   })
 }

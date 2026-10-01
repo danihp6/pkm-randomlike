@@ -143,6 +143,19 @@ export type AutotileRule = Readonly<{
   variants: AutotileShapeSet;
 }>;
 
+/**
+ * A whole multi-tile wall motif anchored to the top-left of a wall mass, so the
+ * mass reads as a run of complete objects (fireRed trees, Mt. Moon boulders)
+ * instead of one repeated stamp. `rows[0]` is the mass's top layer and
+ * `rows[rows.length - 1]` its base layer; the rows between them cycle vertically,
+ * and `cols` frames repeat across x. See `tileFrames.ts`'s `patternFrame`.
+ */
+export type WallPattern = Readonly<{
+  value: number;
+  cols: number;
+  rows: readonly (readonly number[])[];
+}>;
+
 export type TilesetConfig = Readonly<{
   atlas: Readonly<{
     tileSize: number;
@@ -154,6 +167,12 @@ export type TilesetConfig = Readonly<{
   /** Default frame per map value, used when no autotile rule matches. */
   frames: Readonly<Record<number, number>>;
   autotile?: readonly AutotileRule[];
+  /**
+   * A repeating multi-tile motif for one map value (walls), taking priority over
+   * `autotile`: the frame is anchored to the mass's top-left so a wall reads as
+   * whole trees/boulders. See `WallPattern`.
+   */
+  wallPattern?: WallPattern;
   /** Map values that pick one of several frames for visual variety, deterministically per tile. */
   variants?: Readonly<Record<number, readonly number[]>>;
   /**

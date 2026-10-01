@@ -34,9 +34,8 @@ Every biome ships two images:
   shapes) declared as constants in `src/engine/tileset.ts`, and frame 51 is the
   rocky ledge lip (`FRAME_LEDGE`, `D26`). The FRLG fields stamp every floor
   variant (`1`,`2`,`41`-`43`, beside the common stair/trap slot `3`-`6`) and draw
-  the wall autotile in three layers so a tree (or rock) mass reads as one: a
-  canopy top on the frames that open north (`edgeN`, `straightNS`), a trunk where
-  they open south (`edgeS`) and the leaf body everywhere else.
+  the wall as a repeating whole-object motif on frames `7`-`18` (`wallPattern`,
+  §3) instead of one frame per shape.
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
   biome, for the tiles that mean the same thing everywhere: exit, trap, chest,
   item, carpet.
@@ -63,6 +62,20 @@ value counts as open, so a wall next to a chest still gets an edge.
 
 `variantFrame` picks floor decoration from a stable positional hash, so the same
 map always looks the same.
+
+## 3b. Wall patterns
+
+A tileset can declare a `wallPattern` instead of shaping a wall with the autotile:
+a whole `cols` x `rows` motif (`WallPattern` in `src/engine/tileset.ts`).
+`patternFrame` anchors it to the mass's top-left, so `rows[0]` is the mass's top
+layer, the last row its base and the middle rows cycle as the wall rises; the
+`cols` frames repeat across x. A wall narrower than the motif is centred on it, so
+a one-tile hedge shows the middle column of a tree and never a cut-off edge.
+
+The FRLG fields use it to draw a FireRed tree: three columns wide, stacked
+vertically inside a wall, with a canopy at the top of the mass and a trunk at its
+foot (`D26`). The PMD sheets keep the per-shape `autotileFrame` and never declare
+a pattern.
 
 ## 4. Swapping
 

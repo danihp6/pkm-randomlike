@@ -274,8 +274,11 @@ hedges attached to the borders, Viridian Forest is a one-tile-corridor labyrinth
 (~40% blocked). `sketch.ts` has one carver per kind — `carveHedges` opens the
 field and drops the hedges, `carveMaze` grows a depth-first grid maze with an
 optional braid — joined by a shortest-path guard that keeps solid terrain
-(water, ledges) off the one route through. `docs/routes-spec.md` §2 holds the
-pipeline; adding a biome is a `layout` field plus its tileset.
+(water, ledges) off the one route through. The FRLG walls are drawn as a whole
+repeating tree (`TilesetConfig.wallPattern`, `docs/tileset-spec.md` §3b) rather
+than one frame per autotile shape, so a border reads as complete trees instead of
+a flat stamp. `docs/routes-spec.md` §2 holds the pipeline; adding a biome is a
+`layout` field plus its tileset.
 
 ## Open questions
 

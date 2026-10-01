@@ -1,5 +1,6 @@
+import type { Tile } from './grid';
 import { WALL, type TileMap } from './map';
-import type { AutotileRule, TilesetConfig } from './tileset';
+import type { AutotileRule, TilesetConfig, WallPattern } from './tileset';
 
 export type TileFrameSource = 'atlas' | 'common';
 export type TileFrame = Readonly<{ source: TileFrameSource; frame: number }>;
@@ -80,6 +81,44 @@ export function variantFrame(x: number, y: number, options: readonly number[]): 
   return options[index];
 }
 
+/** How many neighbours in `dir` share the tile's own value before the mass ends. */
+function runLength(map: TileMap, x: number, y: number, dir: Tile, value: number): number {
+  const { width, height } = dimensions(map);
+  let run = 0;
+  let cx = x + dir.x;
+  let cy = y + dir.y;
+  while (cx >= 0 && cx < width && cy >= 0 && cy < height && map[cy][cx] === value) {
+    run += 1;
+    cx += dir.x;
+    cy += dir.y;
+  }
+  return run;
+}
+
+/**
+ * Resolves a whole wall motif: the mass's top row is `rows[0]`, its bottom row
+ * is the last one, and the rows in between cycle by depth so a tall wall reads
+ * as stacked objects. The column repeats across x from the mass's left edge.
+ */
+export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPattern): number {
+  const { height } = dimensions(map);
+  const northOpen = y <= 0 || map[y - 1][x] !== pattern.value;
+  const southOpen = y >= height - 1 || map[y + 1][x] !== pattern.value;
+  const depth = runLength(map, x, y, { x: 0, y: -1 }, pattern.value);
+  const left = runLength(map, x, y, { x: -1, y: 0 }, pattern.value);
+  const right = runLength(map, x, y, { x: 1, y: 0 }, pattern.value);
+  const last = pattern.rows.length - 1;
+  // The mass's top row is the pattern's first row and its bottom row the last;
+  // the interior should never borrow either, so it cycles only the middle rows.
+  const rowIndex = northOpen ? 0 : southOpen ? last : 1 + ((depth - 1) % Math.max(1, last - 1));
+  const row = pattern.rows[rowIndex];
+  // Centre the motif on a wall narrower than the pattern, so a lone one-tile
+  // hedge shows the whole tree's middle column instead of its left edge.
+  const span = left + 1 + right;
+  const offset = span >= pattern.cols ? 0 : Math.floor((pattern.cols - span) / 2);
+  return row[(left + offset) % pattern.cols];
+}
+
 export function isNearWall(map: TileMap, x: number, y: number): boolean {
   const { width, height } = dimensions(map);
   const isWall = (nx: number, ny: number): boolean =>
@@ -98,6 +137,10 @@ export function resolveTileFrame(map: TileMap, x: number, y: number, tileset: Ti
   const value = map[y][x];
   const commonFrame = tileset.commonFrames?.[value];
   if (commonFrame !== undefined) return { source: 'common', frame: commonFrame };
+
+  if (tileset.wallPattern && tileset.wallPattern.value === value) {
+    return { source: 'atlas', frame: patternFrame(map, x, y, tileset.wallPattern) };
+  }
 
   const rule = tileset.autotile?.find((candidate) => candidate.value === value);
   if (rule) return { source: 'atlas', frame: autotileFrame(map, x, y, rule) };

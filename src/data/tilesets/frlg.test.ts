@@ -11,10 +11,18 @@ import {
   FRAME_FLOOR_ALT_5,
   FRAME_LEDGE,
   TILE_SIZE,
-  WALL_SHAPES,
   WATER_SHAPES,
 } from '../../engine/tileset';
-import { FRLG_ATLAS_HEIGHT, FRLG_ATLAS_WIDTH, FRLG_TILE_SIZE, FRLG_TILESET } from './frlg';
+import {
+  FRLG_ATLAS_HEIGHT,
+  FRLG_ATLAS_WIDTH,
+  FRLG_TILE_SIZE,
+  FRLG_TILESET,
+  FRLG_WALL_BASE_FRAMES,
+  FRLG_WALL_BODY_FRAMES,
+  FRLG_WALL_CANOPY_FRAMES,
+  FRLG_WALL_TOP_FRAMES,
+} from './frlg';
 
 /**
  * The FRLG atlases are committed artifacts (`scripts/frlg/build-tilesets.mjs`),
@@ -67,7 +75,12 @@ describe('frlg tileset atlases', () => {
   it('stamps every wall and water shape the autotiler can return', () => {
     for (const name of ATLASES) {
       const png = atlas(name);
-      for (const frame of Object.values(WALL_SHAPES)) {
+      for (const frame of [
+        ...FRLG_WALL_TOP_FRAMES,
+        ...FRLG_WALL_CANOPY_FRAMES,
+        ...FRLG_WALL_BODY_FRAMES,
+        ...FRLG_WALL_BASE_FRAMES,
+      ]) {
         expect(tileIsBlank(png, frame), `${name} wall frame ${frame}`).toBe(false);
       }
       for (const frame of Object.values(WATER_SHAPES)) {

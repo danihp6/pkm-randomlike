@@ -22,9 +22,9 @@ import {
   FRAME_LEDGE,
   TILESET_COLS,
   TILESET_ROWS,
-  WALL_SHAPES,
   WATER_SHAPES,
   type TilesetConfig,
+  type WallPattern,
 } from '../../engine/tileset';
 
 /**
@@ -37,6 +37,31 @@ export const FRLG_TILE_SIZE = 16;
 export const FRLG_ATLAS_WIDTH = FRLG_TILE_SIZE * TILESET_COLS;
 export const FRLG_ATLAS_HEIGHT = FRLG_TILE_SIZE * TILESET_ROWS;
 
+/**
+ * FRLG walls are whole objects, not a per-shape stamp: the tree is three tiles
+ * wide and stacks vertically. These frames hold the twelve cells (four rows of
+ * three columns) and must stay in step with `build-tilesets.mjs`:
+ *
+ * - `TOP` is the canopy against open ground (the mass's top row),
+ * - `CANOPY` and `BODY` are solid canopies that stack as the wall rises,
+ * - `BASE` is the trunk at the foot of a mass.
+ */
+export const FRLG_WALL_TOP_FRAMES = [7, 8, 9] as const;
+export const FRLG_WALL_CANOPY_FRAMES = [10, 11, 12] as const;
+export const FRLG_WALL_BODY_FRAMES = [13, 14, 15] as const;
+export const FRLG_WALL_BASE_FRAMES = [16, 17, 18] as const;
+
+const WALL_PATTERN: WallPattern = {
+  value: WALL,
+  cols: 3,
+  rows: [
+    FRLG_WALL_TOP_FRAMES,
+    FRLG_WALL_CANOPY_FRAMES,
+    FRLG_WALL_BODY_FRAMES,
+    FRLG_WALL_BASE_FRAMES,
+  ],
+};
+
 /** The plain field is the clean frame; the speckled cells dress a wall edge. */
 const FLOOR_CLEAN = [FRAME_FLOOR];
 const FLOOR_WALL_ADJACENT = [
@@ -48,11 +73,10 @@ const FLOOR_WALL_ADJACENT = [
 ];
 
 /**
- * The FRLG route fields (grass, forest, cave) share one atlas layout:
- * floor variants, the wall autotile shapes drawn as a repeated border and the
- * rocky-banked pond. FRLG draws a route border as a single repeated obstacle
- * tile, so every wall shape resolves to that tile; only the art per biome
- * differs, which is why one config serves all four sheets.
+ * The FRLG route fields (grass, forest, cave) share one atlas layout: floor
+ * variants, the wall motif (a three-wide tree/rock run, `wallPattern`) and the
+ * rocky-banked pond. Only the art per biome differs, which is why one config
+ * serves all three sheets.
  */
 export const FRLG_TILESET: TilesetConfig = {
   atlas: {
@@ -64,7 +88,7 @@ export const FRLG_TILESET: TilesetConfig = {
   },
   frames: {
     [FLOOR]: FRAME_FLOOR,
-    [WALL]: WALL_SHAPES.interior,
+    [WALL]: FRLG_WALL_BODY_FRAMES[1],
     [EXIT]: FRAME_FLOOR,
     [TRAP]: FRAME_FLOOR,
     [CHEST]: FRAME_FLOOR,
@@ -77,10 +101,8 @@ export const FRLG_TILESET: TilesetConfig = {
     [TALL_GRASS]: FRAME_FLOOR,
     [LEDGE]: FRAME_LEDGE,
   },
-  autotile: [
-    { value: WALL, openValue: FLOOR, variants: WALL_SHAPES },
-    { value: WATER, openValue: FLOOR, variants: WATER_SHAPES },
-  ],
+  autotile: [{ value: WATER, openValue: FLOOR, variants: WATER_SHAPES }],
+  wallPattern: WALL_PATTERN,
   variants: {
     [FLOOR]: FLOOR_CLEAN,
     [TRAP]: FLOOR_CLEAN,
