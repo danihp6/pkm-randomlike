@@ -761,3 +761,17 @@ file is the human-readable summary.
       frame, replacing the placeholder battle mon. The overworld player sprite,
       portraits, move FX and battle backgrounds are the remaining PMD pieces
       (`TODO.md`). 638 tests pass; `npm run build` clean.
+- [x] FRLG trainer overworld sprites (`D24`): a trainer on the route draws its
+      class's FRLG overworld sprite instead of the tinted placeholder. The ten
+      archetypes' down-facing idle frames come from the pret/pokefirered decomp
+      (`graphics/object_events/pics/people/*.png`, 160x32 sheets of ten 16x32
+      walk frames) via `scripts/frlg/build-overworld-sprites.mjs`, packed into
+      `src/assets/frlg/overworld.png` + `src/data/frlg/overworld.json` and read
+      through `src/data/overworldSprites.ts`; `psychic` borrows the Channeler and
+      `ace` the male Cooltrainer, and `trainers.ts` sets each archetype's
+      `spriteKey` to its manifest name. `RouteScene` draws the 16px frame at
+      `TILE_SIZE / 16` with its feet on the tile bottom, beside the tinted facing
+      arrow, and falls back to the placeholder only if a future archetype names a
+      sprite the sheet lacks. `overworldSprites.test.ts` measures the atlas and
+      that every archetype maps onto a non-empty frame. 641 tests pass;
+      `npm run build` clean.
