@@ -5,7 +5,7 @@
  * BiomeTileset>` off this list, which is what keeps the two in step.
  */
 
-export const TILESET_IDS = ['placeholder', 'wood'] as const;
+export const TILESET_IDS = ['placeholder', 'wood', 'outdoor', 'forest', 'cave'] as const;
 
 export type TilesetId = (typeof TILESET_IDS)[number];
 
@@ -22,6 +22,9 @@ export const TILESET_PREFERENCES: readonly TilesetPreference[] = ['auto', ...TIL
 export const TILESET_NAMES: Readonly<Record<TilesetId, string>> = {
   placeholder: 'Procedural placeholder',
   wood: 'Woods',
+  outdoor: 'FRLG Route',
+  forest: 'FRLG Forest',
+  cave: 'FRLG Cave',
 };
 
 /** The name the settings screen shows for a preference. */

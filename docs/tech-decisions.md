@@ -125,10 +125,12 @@ floor items spawn. One run seed drives all of it through `Rng` streams.
 
 `TilesetConfig` declares its own `tileSize` instead of relying on a global
 constant: the PMD-derived atlases stay at 24px, while FireRed/LeafGreen atlases
-use their native 16px rather than an uneven 1.5x upscale. The scene positions
-and follows the player from the active tileset's tile size; the route/map logic
-is already tile-based and does not care. `TILE_SIZE = 24` survives only as the
-default for the configs written before this change.
+use their native 16px. `BootScene` loads each biome sheet at its declared cell
+size and `RouteScene` scales every cell by `TILE_SIZE / tileSize`, so the world
+stays a single 24px grid: movement, fog, overlays and the camera never learn the
+sheet's size, and the shared 24px `common.png` sheet draws at 1:1 beside the
+1.5x-upscaled FRLG fields. `TILE_SIZE = 24` remains the default for the configs
+written before this change.
 
 ## D19 — Interface art is FireRed/LeafGreen *(decided)*
 

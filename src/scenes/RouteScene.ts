@@ -54,7 +54,7 @@ import {
   type RouteMap,
   type RouteTrainer,
 } from '../engine/routes';
-import { TILE_SIZE } from '../engine/tileset';
+import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame } from '../engine/tileFrames';
 import { Vision } from '../engine/vision';
 import { addFrlgWindow } from '../ui/frlg';
@@ -346,14 +346,29 @@ export class RouteScene extends Phaser.Scene {
     this.cameras.main.ignore([this.hint, this.hintBackdrop, this.hudRoot]);
   }
 
+  /**
+   * A tile's display scale so every atlas lands on the same `TILE_SIZE` world
+   * cell: the biome sheet's own cell (`D18`) or the 24px common sheet.
+   */
+  private tileScale(source: 'atlas' | 'common'): number {
+    if (source === 'common') return TILE_SIZE / COMMON_TILE_SIZE;
+    return TILE_SIZE / TILESETS[this.tilesetId].config.atlas.tileSize;
+  }
+
   private drawTiles(): void {
     const textures = TILESETS[this.tilesetId];
     for (let y = 0; y < this.map.length; y++) {
       const row: Phaser.GameObjects.Image[] = [];
       for (let x = 0; x < this.map[y].length; x++) {
         const frame = resolveTileFrame(this.map, x, y, textures.config);
-        const key = frame?.source === 'common' ? COMMON_TEXTURE_KEY : tilesetTextureKey(this.tilesetId);
-        row.push(this.add.image(x * TILE_SIZE, y * TILE_SIZE, key, frame?.frame ?? 0).setOrigin(0, 0));
+        const source = frame?.source ?? 'atlas';
+        const key = source === 'common' ? COMMON_TEXTURE_KEY : tilesetTextureKey(this.tilesetId);
+        row.push(
+          this.add
+            .image(x * TILE_SIZE, y * TILE_SIZE, key, frame?.frame ?? 0)
+            .setOrigin(0, 0)
+            .setScale(this.tileScale(source)),
+        );
       }
       this.tileSprites.push(row);
     }
@@ -410,8 +425,9 @@ export class RouteScene extends Phaser.Scene {
     for (let y = 0; y < this.map.length; y++) {
       for (let x = 0; x < this.map[y].length; x++) {
         const frame = resolveTileFrame(this.map, x, y, textures.config);
-        const key = frame?.source === 'common' ? COMMON_TEXTURE_KEY : tilesetTextureKey(id);
-        this.tileSprites[y][x].setTexture(key, frame?.frame ?? 0);
+        const source = frame?.source ?? 'atlas';
+        const key = source === 'common' ? COMMON_TEXTURE_KEY : tilesetTextureKey(id);
+        this.tileSprites[y][x].setTexture(key, frame?.frame ?? 0).setScale(this.tileScale(source));
       }
     }
     this.setHint(`tileset: ${textures.name}`);

@@ -31,7 +31,10 @@ Every biome ships two images:
   The cell size is the tileset's own `tileSize` (`D18`): 24px for the PMD-derived
   sheets (96x312), 16px for the FireRed/LeafGreen atlases (64x208). Frames 0-50
   are the shared vocabulary (floor variants, wall autotile shapes, water autotile
-  shapes) declared as constants in `src/engine/tileset.ts`.
+  shapes) declared as constants in `src/engine/tileset.ts`. The FRLG fields stamp
+  every wall shape with their one repeated border tile and every floor variant
+  (`1`,`2`,`41`-`43`, beside the common stair/trap slot `3`-`6`) so the whole
+  vocabulary resolves on the sheet.
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
   biome, for the tiles that mean the same thing everywhere: exit, trap, chest,
   item, carpet.
@@ -81,6 +84,9 @@ Swapping is `config = TILESETS[nextId].config` plus loading
   Nintendo/GameFreak/Chunsoft art and are **not** redistributable: `sprite-sources/`
   is gitignored and the processed crops must not be published. See
   `docs/art-direction.md`.
+- `frlg/*.png` are the **FireRed/LeafGreen** field atlases
+  (`scripts/frlg/build-tilesets.mjs`), composed from `sprite-sources/frlg/`; the
+  UI sheets live beside them. Same licence line: local only, never redistributed.
 - The `scripts/legacy-art/` pipeline (imported from the sibling project)
   regenerates the sheets and sprites from local source packs.
 

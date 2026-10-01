@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_KEYBINDS } from '../data/keybinds';
+import { TILESET_PREFERENCES } from '../data/tilesets/ids';
 import { defaultSettings } from '../engine/save';
 import {
   changeSetting,
@@ -89,11 +90,13 @@ describe('changeSetting', () => {
 
   it('cycles the tileset from auto through every id and back-clamps', () => {
     let settings = changeSetting(defaultSettings(), 'tileset', 1);
-    expect(settings.tileset).toBe('placeholder');
-    settings = changeSetting(settings, 'tileset', 1);
-    expect(settings.tileset).toBe('wood');
-    expect(changeSetting(settings, 'tileset', 1).tileset).toBe('wood');
-    settings = changeSetting(settings, 'tileset', -2);
+    expect(settings.tileset).toBe(TILESET_PREFERENCES[1]);
+    for (let i = 1; i < TILESET_PREFERENCES.length - 1; i++) {
+      settings = changeSetting(settings, 'tileset', 1);
+      expect(settings.tileset).toBe(TILESET_PREFERENCES[i + 1]);
+    }
+    expect(changeSetting(settings, 'tileset', 1).tileset).toBe(TILESET_PREFERENCES.at(-1));
+    settings = changeSetting(settings, 'tileset', -TILESET_PREFERENCES.length);
     expect(settings.tileset).toBe('auto');
     expect(changeSetting(settings, 'tileset', -1).tileset).toBe('auto');
   });

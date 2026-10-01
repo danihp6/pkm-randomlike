@@ -50,8 +50,14 @@ spriters-resource:
 | `player-sprites.png` | 673x638 | player overworld frames | spriters-resource |
 
 These tiles are 16x16, so any atlas built from them declares `tileSize: 16`
-(`D18`) instead of the 24px of the PMD atlases. Composition is still to do
-(`TODO.md` Phase 8); this section only records the sources.
+(`D18`) instead of the 24px of the PMD atlases. `scripts/frlg/build-tilesets.mjs`
+composes three field atlases — outdoor, forest and cave — into the 64x208
+contract: the floor and its variants, the wall autotile shapes stamped as the
+field's one repeated border (composited over the floor), and the sheet's shared
+rocky-banked pond. They are registered as tilesets and biomes
+(`src/data/tilesets/frlg.ts`, `src/data/biomes.ts`) and are the only fields the
+route chain cycles, so a run never falls back to the imported PMD sheets; a beach
+field is the remaining open one.
 
 Battle trainer sprites are packed on their own: `trainers.png` carries a
 "Regular Trainers" grid of 64x64 sprites on flat orange 64px cells at a 65px
