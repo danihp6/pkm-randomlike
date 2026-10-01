@@ -3,6 +3,7 @@ import { getMove } from '../data/dex';
 import { getItem } from '../data/items';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { keyLabel, type Keybinds } from '../data/keybinds';
+import { POKEMON_SPRITE_SHEETS, pokemonSpriteFrame } from '../data/pokemonSprites';
 import { getTrainerArchetype } from '../data/trainers';
 import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
 import { legalMoveIndices, type Command } from '../engine/battle/commands';
@@ -203,12 +204,10 @@ export class BattleScene extends Phaser.Scene {
 
     this.foePlatform = this.add.image(0, 0, BATTLE_PLATFORM_TEXTURE_KEY).setTint(0x6f8f5f);
     this.playerPlatform = this.add.image(0, 0, BATTLE_PLATFORM_TEXTURE_KEY).setTint(0x6f8f5f);
-    this.foeSprite = this.add.sprite(0, 0, BATTLE_MON_TEXTURE_KEY).setTint(0x9ad2a0).setScale(MON_SCALE);
+    this.foeSprite = this.add.sprite(0, 0, BATTLE_MON_TEXTURE_KEY).setScale(MON_SCALE);
     this.playerSprite = this.add
       .sprite(0, 0, BATTLE_MON_TEXTURE_KEY)
-      .setTint(0xf3b17a)
-      .setScale(MON_SCALE)
-      .setFlipX(true);
+      .setScale(MON_SCALE);
 
     this.foeTrainer = this.add
       .image(0, 0, TRAINER_SPRITE_TEXTURE_KEY, this.trainerFrame ?? 0)
@@ -487,6 +486,18 @@ export class BattleScene extends Phaser.Scene {
     return side === 'player' ? this.playerSprite : this.foeSprite;
   }
 
+  /** Swaps in the FRLG front/back sprite for each side's active fighter. */
+  private syncMonSprites(): void {
+    const foeFrame = pokemonSpriteFrame(this.displayActive.enemy.speciesId);
+    if (foeFrame !== null) {
+      this.foeSprite.setTexture(POKEMON_SPRITE_SHEETS.front.key, foeFrame).setTint(0xffffff);
+    }
+    const playerFrame = pokemonSpriteFrame(this.displayActive.player.speciesId);
+    if (playerFrame !== null) {
+      this.playerSprite.setTexture(POKEMON_SPRITE_SHEETS.back.key, playerFrame).setTint(0xffffff);
+    }
+  }
+
   private monPos(side: SideId): { x: number; y: number } {
     return side === 'player' ? this.playerMonPos : this.foeMonPos;
   }
@@ -760,6 +771,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private refreshHud(): void {
+    this.syncMonSprites();
     const { width, height } = this.scale;
     const box: Rect = { x: 36, y: height - 186, w: width - 72, h: 160 };
     const foeInfo: Rect = { x: 36, y: 28, w: FOE_PANEL.w, h: FOE_PANEL.h };

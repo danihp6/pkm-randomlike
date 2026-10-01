@@ -67,6 +67,18 @@ use (keying the orange to transparent) into `src/assets/frlg/trainers.png` plus
 The overworld character sheets (`npc-overworld.png`, `player-sprites.png`) are
 still unpacked.
 
+## Pokémon battle sprites (pokeemerald-expansion, local only)
+
+Every generation's battle art comes from the pokeemerald-expansion checkout
+(`github.com/rh-hideout/pokeemerald-expansion`, `graphics/pokemon/<species>/`:
+`front.png`/`anim_front.png`, `back.png`, `icon.png` and their `.pal`), which is
+GBA-sized. `scripts/frlg/build-pokemon-sprites.mjs` is run against that checkout
+and packs `src/assets/frlg/pokemon-{front,back,icon}.png` plus the frame manifest
+`src/data/frlg/pokemon-sprites.json`, read through `src/data/pokemonSprites.ts`.
+A Gen 9 forme without its own folder falls back to its base species at pack time.
+Never redistributed: keep the checkout out of the repo (`sprite-sources/` is
+gitignored).
+
 ## FireRed/LeafGreen UI sources (downloaded, local only)
 
 The interface is moving to FRLG art (menus, effects, HUD). The sheets live in

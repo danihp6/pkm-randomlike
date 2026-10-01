@@ -78,6 +78,15 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 - [ ] Trainer overworld sheets (battle sprites shipped; see O1 in
       tech-decisions).
+- [ ] FRLG player overworld sprite (Red/Leaf, `sprite-sources/frlg/player-sprites.png`)
+      replacing the PMD overworld sprite the route draws today.
+- [ ] FRLG portraits for the party/HUD/starter/release screens, drawn from the
+      packed battle fronts/icons instead of the PMDCollab `portraits.png`.
+- [ ] FRLG move and attack FX (`sprite-sources/frlg-ui/move-effects.png`,
+      `attack-effects.png`) replacing the PMD `moves.png`.
+- [ ] Remove the PMD art once the FRLG replacements land: the `wood.png` tileset
+      and its biome, `portraits.png`, `moves.png`, the `pokemon/*.png` sheets and
+      the PMD `scripts/legacy-art/` extractors.
 - [ ] Compose an FRLG beach field (the sheet's open-water and sand tiles) and add
       it to the biome cycle.
 - [ ] Adapt the remaining biome tileset configs (desert, apple-woods,
@@ -87,7 +96,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       follows the route's tileset, not a generic roguelike shape
       (`docs/routes-spec.md` §2, `docs/art-direction.md`).
 - [ ] Tall-grass, ledge and route-prop art.
-- [ ] Battle background per biome.
+- [ ] Battle background per biome (FRLG `battle-backgrounds.png`).
 - [ ] Audio: route ambience, encounter, hit, faint, level-up, victory.
 - [ ] Free-art fallback set so a public build can drop the game rips (O4).
 - [ ] Build/publish pass for itch.io.

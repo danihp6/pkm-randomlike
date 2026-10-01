@@ -749,3 +749,15 @@ file is the human-readable summary.
       up in a run (`wood`/`placeholder` stay as manual settings overrides).
       `frlg.test.ts` measures each committed atlas and asserts every wall/water
       shape and floor variant is stamped. 638 tests pass; `npm run build` clean.
+- [x] FRLG-style Pokémon battle sprites for every generation (O1): the dex is
+      Gen 9 but the battle art now comes from the pokeemerald-expansion checkout
+      (`graphics/pokemon/<species>/`, gitignored, never redistributed).
+      `scripts/frlg/build-pokemon-sprites.mjs` maps each playable species to its
+      expansion folder (a forme without its own art falls back to its base
+      species), keys out the palette's flat background and packs three atlases —
+      `src/assets/frlg/pokemon-{front,back,icon}.png` — plus the frame manifest
+      `src/data/frlg/pokemon-sprites.json`, read through `src/data/pokemonSprites.ts`.
+      `BattleScene` draws the foe's front frame and the player's active mon's back
+      frame, replacing the placeholder battle mon. The overworld player sprite,
+      portraits, move FX and battle backgrounds are the remaining PMD pieces
+      (`TODO.md`). 638 tests pass; `npm run build` clean.
