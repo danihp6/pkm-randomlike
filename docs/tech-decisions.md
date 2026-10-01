@@ -224,13 +224,29 @@ Keys that are not player actions stay on Phaser directly: the route's debug
 tileset swap (`R`) and wild battle (`B`), and the starter screen's seed prompt
 (`S`).
 
+## D24 — Overworld trainer art is the FRLG class sprite *(decided)*
+
+A trainer on the route draws its FireRed/LeafGreen overworld sprite instead of a
+tinted placeholder. The ten archetypes' down-facing idle frames are packed from
+the pret/pokefirered decomp's `graphics/object_events/pics/people/*.png` (each a
+160x32 sheet of ten 16x32 walk frames) by
+`scripts/frlg/build-overworld-sprites.mjs` into `src/assets/frlg/overworld.png`
+plus `src/data/frlg/overworld.json`, resolved from the archetype's `spriteKey`
+through `src/data/overworldSprites.ts`. The mapping is by class name, unlike the
+battle `trainers.png` whose compilation grid is ordered arbitrarily; `psychic`
+has no decomp class of its own and borrows the Channeler, and `ace` the male
+Cooltrainer. The route draws the 16px frame at `TILE_SIZE / 16` with its feet on
+the tile bottom, matching the FRLG fields (`D18`), and keeps the tinted facing
+arrow. The player's own overworld sprite (`player-sprites.png`) is still the PMD
+placeholder — see O1.
+
 ## Open questions
 
-- **O1 — Trainer sprites.** Battle sprites shipped (`D20`): the archetypes draw
-  their FRLG front pic on the enemy platform. Still open: the overworld sheets
-  (`npc-overworld.png`, `player-sprites.png`), so a trainer on the route is still
-  a single tinted placeholder figure, sliced per `D18`. Blocks Phase 8 cosmetics,
-  not logic.
+- **O1 — Trainer sprites.** Battle sprites shipped (`D20`) and the archetypes'
+  overworld sprites shipped (`D24`), so a trainer on the route is no longer a
+  placeholder figure. Still open: the player's FRLG overworld sprite
+  (`player-sprites.png`) replacing the PMD `pokemon/25.png`, and the unused
+  `npc-overworld.png` compilation. Blocks Phase 8 cosmetics, not logic.
 - **O2 — Battle arena framing.** Single-screen per battle (GB style) vs a
   floating HUD over the route. Cosmetic, blocks Phase 5.
 - **O3 — EVs/IVs.** The data has IVs and EVs exist in Gen 9; do we let a caught

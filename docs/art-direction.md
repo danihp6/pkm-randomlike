@@ -24,7 +24,8 @@ Three tiers, in order of preference:
    `apple-woods.png`, `lush-prairie.png`, `beach-cave.png`, `items.png`,
    `moves.png`, `hud.png`, `portraits.png`, `pokemon/*.png`, and the FRLG UI art
    (`frlg/item-icons.png`, `frlg/window.png`, `frlg/textbox.png`,
-   `frlg/hpbar.png`, `frlg/cursor.png`, `frlg/font.png`, `frlg/trainers.png`). The PMD ones
+   `frlg/hpbar.png`, `frlg/cursor.png`, `frlg/font.png`, `frlg/trainers.png`,
+   `frlg/overworld.png`). The PMD ones
    come from Pokémon Mystery Dungeon rips (PMDCollab and spriters-resource) via the
    sibling project `pkm-mystery-dungeon-like`; the FRLG ones come from
    spriters-resource and the pret/pokefirered decomp (see the FRLG sections below).
@@ -64,8 +65,15 @@ Battle trainer sprites are packed on their own: `trainers.png` carries a
 pitch, and `scripts/frlg/build-trainer-sprites.mjs` crops the ten the archetypes
 use (keying the orange to transparent) into `src/assets/frlg/trainers.png` plus
 `src/data/frlg/trainers.json`, read through `src/data/trainerSprites.ts` (D20).
-The overworld character sheets (`npc-overworld.png`, `player-sprites.png`) are
-still unpacked.
+
+The overworld trainer sprites come from the pret/pokefirered decomp rather than
+the compilation sheet, because each class is its own named file there. The ten
+classes' `graphics/object_events/pics/people/*.png` (160x32, ten 16x32 walk
+frames) are packed by `scripts/frlg/build-overworld-sprites.mjs` into
+`src/assets/frlg/overworld.png` plus `src/data/frlg/overworld.json`, read through
+`src/data/overworldSprites.ts` (D24). The `npc-overworld.png` compilation is
+left unused for now, and the player's `player-sprites.png` sheet is still
+unpacked.
 
 ## Pokémon battle sprites (pokeemerald-expansion, local only)
 
@@ -128,6 +136,9 @@ plus the four named arrows.
   JSON manifest (from the donor project) describes `cols` and the animation
   ranges. Only the first 25 species have real art; the rest are procedural
   placeholders from `generate-pokemon.mjs`.
+- Trainer overworld sprites: one 16x32 frame per archetype, the down-facing idle
+  from the FRLG decomp sheet, drawn at `TILE_SIZE / 16` with its feet on the tile
+  bottom; the tinted arrow still shows facing (`D24`).
 - Sheets are loaded lazily per species so a route only pays for what it shows.
 - Portraits: `src/assets/portraits.png` is a 40-column grid of 40x40 PMDCollab
   faces, one per National Dex number in dex order, so the frame is `num − 1`

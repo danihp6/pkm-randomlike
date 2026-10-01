@@ -6,9 +6,13 @@ export type TrainerArchetype = Readonly<{
   id: string;
   name: string;
   className: string;
-  /** Overworld sprite key, or null while no trainer art exists (O1). */
+  /**
+   * Frame in the overworld trainer atlas (`src/assets/frlg/overworld.png`,
+   * Phase 8) drawn on the route tile, or null for a placeholder sprite. The
+   * frame map lives in `src/data/frlg/overworld.json`.
+   */
   spriteKey: string | null;
-  /** Placeholder marker colour used until `spriteKey` exists. */
+  /** Marker colour for the facing arrow. */
   colour: number;
   /**
    * Frame in the battle trainer sheet (`src/assets/frlg/trainers.png`, Phase 8
@@ -29,7 +33,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     id: 'youngster',
     name: 'Youngster',
     className: 'Youngster',
-    spriteKey: null,
+    spriteKey: 'youngster',
     colour: 0x60a5fa,
     battleSprite: 'youngster',
     pools: {
@@ -45,7 +49,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     id: 'lass',
     name: 'Lass',
     className: 'Lass',
-    spriteKey: null,
+    spriteKey: 'lass',
     colour: 0xf472b6,
     battleSprite: 'lass',
     pools: {
@@ -61,7 +65,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     id: 'bugcatcher',
     name: 'Bug Catcher',
     className: 'Bug Catcher',
-    spriteKey: null,
+    spriteKey: 'bugcatcher',
     colour: 0x84cc16,
     battleSprite: 'bugcatcher',
     pools: {
@@ -77,7 +81,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     id: 'hiker',
     name: 'Hiker',
     className: 'Hiker',
-    spriteKey: null,
+    spriteKey: 'hiker',
     colour: 0xf59e0b,
     battleSprite: 'hiker',
     pools: {
@@ -93,7 +97,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     id: 'camper',
     name: 'Camper',
     className: 'Camper',
-    spriteKey: null,
+    spriteKey: 'camper',
     colour: 0x22c55e,
     battleSprite: 'camper',
     pools: {
@@ -109,7 +113,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     id: 'picnicker',
     name: 'Picnicker',
     className: 'Picnicker',
-    spriteKey: null,
+    spriteKey: 'picnicker',
     colour: 0xfacc15,
     battleSprite: 'picnicker',
     pools: {
@@ -125,7 +129,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     id: 'fisher',
     name: 'Fisher',
     className: 'Fisher',
-    spriteKey: null,
+    spriteKey: 'fisher',
     colour: 0x38bdf8,
     battleSprite: 'fisher',
     pools: {
@@ -141,7 +145,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     id: 'psychic',
     name: 'Psychic',
     className: 'Psychic',
-    spriteKey: null,
+    spriteKey: 'psychic',
     colour: 0xa78bfa,
     battleSprite: 'psychic',
     pools: {
@@ -157,7 +161,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     id: 'blackbelt',
     name: 'Black Belt',
     className: 'Black Belt',
-    spriteKey: null,
+    spriteKey: 'blackbelt',
     colour: 0xef4444,
     battleSprite: 'blackbelt',
     pools: {
@@ -173,7 +177,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     id: 'ace',
     name: 'Ace Trainer',
     className: 'Ace Trainer',
-    spriteKey: null,
+    spriteKey: 'ace',
     colour: 0x94a3b8,
     battleSprite: 'ace',
     pools: {

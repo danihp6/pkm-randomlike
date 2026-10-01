@@ -1,0 +1,28 @@
+{
+  "size": 16,
+  "height": 32,
+  "frames": [
+    "youngster",
+    "lass",
+    "bugcatcher",
+    "hiker",
+    "camper",
+    "picnicker",
+    "fisher",
+    "psychic",
+    "blackbelt",
+    "ace"
+  ],
+  "sprites": {
+    "youngster": 0,
+    "lass": 1,
+    "bugcatcher": 2,
+    "hiker": 3,
+    "camper": 4,
+    "picnicker": 5,
+    "fisher": 6,
+    "psychic": 7,
+    "blackbelt": 8,
+    "ace": 9
+  }
+}

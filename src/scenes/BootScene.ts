@@ -2,6 +2,12 @@ import Phaser from 'phaser';
 import playerSpriteUrl from '../assets/pokemon/25.png';
 import moveFxUrl from '../assets/moves.png';
 import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY } from '../data/itemIcons';
+import {
+  OVERWORLD_SPRITE_ATLAS_URL,
+  OVERWORLD_SPRITE_HEIGHT,
+  OVERWORLD_SPRITE_TEXTURE_KEY,
+  OVERWORLD_SPRITE_WIDTH,
+} from '../data/overworldSprites';
 import { POKEMON_SPRITE_SHEETS } from '../data/pokemonSprites';
 import { PORTRAIT_ATLAS_URL, PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY } from '../data/portraits';
 import {
@@ -89,6 +95,10 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet(TRAINER_SPRITE_TEXTURE_KEY, TRAINER_SPRITE_ATLAS_URL, {
       frameWidth: TRAINER_SPRITE_SIZE,
       frameHeight: TRAINER_SPRITE_SIZE,
+    });
+    this.load.spritesheet(OVERWORLD_SPRITE_TEXTURE_KEY, OVERWORLD_SPRITE_ATLAS_URL, {
+      frameWidth: OVERWORLD_SPRITE_WIDTH,
+      frameHeight: OVERWORLD_SPRITE_HEIGHT,
     });
     for (const sheet of Object.values(POKEMON_SPRITE_SHEETS)) {
       this.load.spritesheet(sheet.key, sheet.url, {

@@ -5,6 +5,11 @@ import { getItem } from '../data/items';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { keyLabel } from '../data/keybinds';
 import { ROUTE_LOOT } from '../data/loot';
+import {
+  OVERWORLD_SPRITE_TEXTURE_KEY,
+  OVERWORLD_SPRITE_WIDTH,
+  overworldSpriteFrame,
+} from '../data/overworldSprites';
 import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
 import { bandForRoute } from '../data/run';
 import { TRAINER_ARCHETYPE_IDS, getTrainerArchetype } from '../data/trainers';
@@ -392,13 +397,21 @@ export class RouteScene extends Phaser.Scene {
       this.foggables.push({ tile: item.position, objects: [object] });
     }
     for (const trainer of this.route.trainers) {
-      const colour = getTrainerArchetype(trainer.archetypeId)?.colour ?? 0xffffff;
-      const body = this.add
-        .image(this.centerX(trainer.position.x), this.centerY(trainer.position.y), TRAINER_TEXTURE_KEY)
-        .setTint(colour)
-        .setDepth(8);
+      const archetype = getTrainerArchetype(trainer.archetypeId);
+      const colour = archetype?.colour ?? 0xffffff;
+      const frame = archetype?.spriteKey ? overworldSpriteFrame(archetype.spriteKey) : null;
+      const centerX = this.centerX(trainer.position.x);
+      const centerY = this.centerY(trainer.position.y);
+      const body =
+        frame === null
+          ? this.add.image(centerX, centerY, TRAINER_TEXTURE_KEY).setTint(colour)
+          : this.add
+              .image(centerX, centerY + TILE_SIZE / 2, OVERWORLD_SPRITE_TEXTURE_KEY, frame)
+              .setOrigin(0.5, 1)
+              .setScale(TILE_SIZE / OVERWORLD_SPRITE_WIDTH);
+      body.setDepth(8);
       const arrow = this.add
-        .image(this.centerX(trainer.position.x), this.centerY(trainer.position.y), ARROW_TEXTURE_KEY)
+        .image(centerX, centerY, ARROW_TEXTURE_KEY)
         .setTint(colour)
         .setAngle(FACING_ANGLE[trainer.facing])
         .setDepth(9);
