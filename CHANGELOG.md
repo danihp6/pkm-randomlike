@@ -795,3 +795,97 @@ file is the human-readable summary.
       step still lands on one tile and runs the same `onTileEntered` beat.
       `playerSprite.test.ts` and `playerAnim.test.ts` measure the atlas and the
       cycles. 646 tests pass; `npm run build` clean.
+- [x] FireRed/LeafGreen-style route layouts and field tiles (`D26`): a route's
+      shape now follows its biome instead of one generic blob. Calibrated against
+      the real layouts in the pret/pokefirered decomp (`data/layouts/*/map.bin`),
+      `src/engine/routes/layout.ts` carries three styles — `route` (Route 1: an
+      open grass field, ~38% blocked, cut by one-tile tree hedges attached to the
+      borders), `forest` (Viridian Forest: a one-tile-corridor labyrinth, ~57%
+      blocked) and `cavern` (Mt. Moon: two-tile rock corridors and wide chambers,
+      ~40% blocked). `sketch.ts` gained the two carvers (`carveHedges`,
+      `carveMaze` with an optional braid) and a shortest-path guard that keeps
+      solid terrain (water, ledges) off the way through, and `src/data/biomes.ts`
+      names each biome's style. The FRLG atlases were recomposed
+      (`scripts/frlg/build-tilesets.mjs`): the wall autotile now draws a tree in
+      three layers — a canopy where the mass opens north, a trunk where it opens
+      south and the leaf body elsewhere — so a tree border reads as trees instead
+      of a flat repeated stamp; the forest field got real green grass (the old
+      pick was a sand tile) and the sheet's last free cell became a rocky ledge
+      lip (`FRAME_LEDGE`), which FRLG routes now draw on their one-way ledges
+      instead of plain ground. `frlg.test.ts` measures the ledge frame, the new
+      `layout.test.ts` covers the registry and the expanded `sketch.test.ts`
+      asserts the per-style edge entries and density bands. 653 tests pass;
+      `npm run build` clean.
+- [x] FRLG walls are whole trees, not a per-shape stamp (`D26` follow-up): the
+      tree bank draws a tree three tiles wide that stacks vertically, so one frame
+      per autotile shape read as a flat hedge. `TilesetConfig` gained a
+      `wallPattern` (a `cols` x `rows` motif) and `tileFrames.patternFrame`
+      resolves it anchored to the wall mass's top-left: the first row is the
+      mass's top, the last its base, the middle rows cycle as the wall rises and
+      the columns repeat across x, centring the motif on a one-tile wall.
+      `build-tilesets.mjs` stamps the FRLG fields' wall on frames `7`-`18` — a
+      canopy against ground, a solid canopy (the tree bank's ground filled in so
+      the tops stack without holes), the canopy body and the trunk. `frlg.test.ts`
+      measures every pattern frame and `tileFrames.test.ts` covers the anchoring,
+      the interior cycle and the centring. 657 tests pass; `npm run build` clean.
+- [x] FRLG ground matched to the real field (`D26` follow-up): the outdoor field
+      stamped its base floor from the sheet's lighter `2,3` tile, which does not
+      match the game. Measured against a real FireRed/LeafGreen Route 1 capture,
+      the plain ground is `rgb(112,200,160)` (sheet tile `6,1`), so the base floor
+      now uses that and the lighter tiles stay as floor variants. 657 tests pass;
+      `npm run build` clean.
+- [x] FRLG walls use the real FireRed tree (`D26` follow-up): the wall motif
+      stamped a canopy picked from higher up the sheet, so a border read as a
+      generic hedge instead of the game's tree. It now takes the real 3x4 tree
+      block in the bottom-left of `tileset-2.png`, above the pond (crown, two
+      canopy rows and the trunk platform), three columns wide, and bakes the
+      interior rows solid (`solidOver`) so a tall wall stacks without ground
+      gaps. The four pattern frames still hold its twelve cells, so
+      `frlg.test.ts` and `tileFrames.test.ts` are unchanged.
+- [x] Routes larger than the camera, framed by trees (`D26` follow-up): a route is
+      now 56x32 tiles instead of 24x16, so the camera follows the player and
+      scrolls. The scene renders a four-tile tree/rock margin past the playable
+      edge (`padMap`, `src/engine/map.ts`, `RouteScene.renderMap`) and bounds the
+      camera to it, so the border reads as more forest and the empty background is
+      never seen. The regression seed moved to the new size and the `route`
+      layout's hedge count was retuned (15 -> 90) to keep Route 1's density band
+      on the bigger field; `map.test.ts` covers `padMap`.
+- [x] No fog of war on a route (`D6` follow-up): the route draws the whole map at
+      full opacity, like the originals, so trainers and items are read off the map
+      instead of a vision radius. `RouteScene` dropped its `Vision` recompute and
+      the per-tile/entity alpha pass, and the now-unused `vision.ts` and `fov.ts`
+      modules (and their barrel exports) were removed. 659 tests pass;
+      `npm run build` clean.
+- [x] Pixel-art filtering fixed dark seams between route tiles: the FRLG cells are
+      16px art scaled to the 24px world tile, and the default linear filtering
+      blended each cell with the neighbouring atlas frame at fractional camera
+      scroll, leaving a dark line. `main.ts` now boots with `pixelArt: true` and
+      `roundPixels: true`, so the 3x total scale (sheet cell x tileset scale x
+      camera zoom) is nearest-neighbour and integer. 659 tests pass;
+      `npm run build` clean.
+- [x] FRLG tree crowns superimpose the trunk row above (`D26` follow-up): a tall
+      tree wall showed one crown on a flat canopy run and a trunk only at the very
+      foot. `patternFrame` now repeats the tree every three rows, so a wall shows a
+      crown every three tiles and each trunk shows through underneath.
+- [x] FRLG wall motif split into five frames so the bodies are right (`D26`
+      follow-up): the wall had a single body frame, so the second visible row drew
+      the lower body (row 36) instead of the wide one (row 35), and the baking
+      sampled each tile's top-left pixel as "background", which is a leaf on the
+      body rows and corrupted the right-hand tile. `fieldFrames` now keys the whole
+      teal ground family (the grass and its darker shadow, detected by hue) so the
+      body corners match the floor, and the motif holds five
+      frames — crown over ground, crown over trunk, the two body rows and the
+      trunk — so `patternFrame` runs body, lower, then the crown that overlaps the
+      trunk. `frlg.ts` grows `FRLG_WALL_LOWER_FRAMES` and moves the base to
+      19-21; `frlg.test.ts` checks every frame is stamped and `tileFrames.test.ts`
+      pins the new interior cycle (`14, 17, 11`). 659 tests pass;
+      `npm run build` clean.
+- [x] FRLG walls draw the floor under them (`D26` follow-up): the tree carried a
+      baked flat floor colour, but the floor tile next to a wall uses a lighter
+      wall-edge variant, so the tree corners showed a darker green than the route.
+      The crown and trunk frames now keep a transparent ground and `RouteScene`
+      draws a floor frame under every cell (`resolveGroundFrame`,
+      `src/engine/tileFrames.ts`), so a wall picks up the same floor variant as its
+      neighbours and blends in. `frlg.test.ts` allows the transparent edge rows and
+      `tileFrames.test.ts` covers `resolveGroundFrame`. 660 tests pass;
+      `npm run build` clean.

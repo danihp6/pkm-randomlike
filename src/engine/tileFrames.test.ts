@@ -10,8 +10,9 @@ import {
   FRAME_WALL_INTERIOR,
   WALL_SHAPES,
   type TilesetConfig,
+  type WallPattern,
 } from './tileset';
-import { autotileFrame, isNearWall, resolveTileFrame, variantFrame } from './tileFrames';
+import { autotileFrame, isNearWall, patternFrame, resolveGroundFrame, resolveTileFrame, variantFrame } from './tileFrames';
 
 const tileset: TilesetConfig = {
   atlas: { tileSize: 24, cols: 4, rows: 13, width: 96, height: 312 },
@@ -89,6 +90,44 @@ describe('autotileFrame', () => {
   });
 });
 
+describe('patternFrame', () => {
+  const pattern: WallPattern = {
+    value: WALL,
+    cols: 3,
+    rows: [
+      [7, 8, 9],
+      [10, 11, 12],
+      [13, 14, 15],
+      [16, 17, 18],
+      [19, 20, 21],
+    ],
+  };
+  const column: TileMap = [[WALL], [WALL], [WALL], [WALL], [WALL]];
+
+  it('anchors the top row to the mass top and the last row to its base', () => {
+    expect(patternFrame(column, 0, 0, pattern)).toBe(8);
+    expect(patternFrame(column, 0, 4, pattern)).toBe(20);
+  });
+
+  it('runs the two body rows, then a crown over the trunk every three tiles', () => {
+    const interior = [
+      patternFrame(column, 0, 1, pattern),
+      patternFrame(column, 0, 2, pattern),
+      patternFrame(column, 0, 3, pattern),
+    ];
+    expect(interior).toEqual([14, 17, 11]);
+  });
+
+  it('centres a one-tile wall on the pattern middle column', () => {
+    expect(patternFrame([[FLOOR, WALL, FLOOR]], 1, 0, pattern)).toBe(8);
+  });
+
+  it('steps across columns on a wall wider than the pattern', () => {
+    const wide: TileMap = [[WALL, WALL, WALL, WALL, WALL]];
+    expect([0, 1, 2, 3, 4].map((x) => patternFrame(wide, x, 0, pattern))).toEqual([7, 8, 9, 7, 8]);
+  });
+});
+
 describe('variantFrame', () => {
   it('is deterministic for a position and stays inside the option list', () => {
     const options = [1, 2, 3];
@@ -131,6 +170,17 @@ describe('resolveTileFrame', () => {
 
   it('falls back to the flat frame for a value with no rule', () => {
     expect(resolveTileFrame([[WALL]], 0, 0, tileset)?.frame).toBe(FRAME_WALL_INTERIOR);
+  });
+
+  it('resolves the ground a cell would draw, matching the frame resolveTileFrame gives floor', () => {
+    const open: TileMap = [
+      [FLOOR, FLOOR, FLOOR],
+      [FLOOR, FLOOR, FLOOR],
+      [FLOOR, FLOOR, FLOOR],
+    ];
+    expect(resolveGroundFrame(open, 1, 1, tileset).frame).toBe(resolveTileFrame(open, 1, 1, tileset)?.frame);
+    expect(tileset.variants![FLOOR]).toContain(resolveGroundFrame(open, 1, 1, tileset).frame);
+    expect(tileset.wallAdjacentVariants![FLOOR]).toContain(resolveGroundFrame(corridor, 1, 1, tileset).frame);
   });
 
   it('exposes FRAME_WALL_CORNER_NE through the shape set it belongs to', () => {

@@ -25,7 +25,7 @@ npm run data:dex   # regenerate src/data/dex from @pkmn/dex (rarely needed)
 ```
 
 The current build generates a route procedurally from a dev seed: arrow keys step
-the grid (ledges jump down one-way), the camera follows, fog of war updates, tall
+the grid (ledges jump down one-way), the camera follows, tall
 grass rolls wild-encounter messages, trainers trigger on their sight line, and
 `R` swaps the tileset. The battle scene is still a placeholder (Phase 3).
 

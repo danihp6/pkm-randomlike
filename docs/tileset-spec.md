@@ -18,7 +18,7 @@ value, never by art:
 | 3 | `TRAP` | yes | hazard, cave-flavoured |
 | 4 | `CHEST` | yes | loot |
 | 5 | `ITEM` | yes | floor item |
-| 6 | `WATER` | no | blocks movement, not vision |
+| 6 | `WATER` | no | blocks movement only |
 | 7 | `CARPET` | yes | interior floor |
 | 8 | `TALL_GRASS` | yes | rolls a wild encounter |
 | 9 | `LEDGE` | no | jump down only (movement rule, later) |
@@ -31,10 +31,11 @@ Every biome ships two images:
   The cell size is the tileset's own `tileSize` (`D18`): 24px for the PMD-derived
   sheets (96x312), 16px for the FireRed/LeafGreen atlases (64x208). Frames 0-50
   are the shared vocabulary (floor variants, wall autotile shapes, water autotile
-  shapes) declared as constants in `src/engine/tileset.ts`. The FRLG fields stamp
-  every wall shape with their one repeated border tile and every floor variant
-  (`1`,`2`,`41`-`43`, beside the common stair/trap slot `3`-`6`) so the whole
-  vocabulary resolves on the sheet.
+  shapes) declared as constants in `src/engine/tileset.ts`, and frame 51 is the
+  rocky ledge lip (`FRAME_LEDGE`, `D26`). The FRLG fields stamp every floor
+  variant (`1`,`2`,`41`-`43`, beside the common stair/trap slot `3`-`6`) and draw
+  the wall as a repeating whole-object motif on frames `7`-`18` (`wallPattern`,
+  §3) instead of one frame per shape.
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
   biome, for the tiles that mean the same thing everywhere: exit, trap, chest,
   item, carpet.
@@ -61,6 +62,34 @@ value counts as open, so a wall next to a chest still gets an edge.
 
 `variantFrame` picks floor decoration from a stable positional hash, so the same
 map always looks the same.
+
+## 3b. Wall patterns
+
+A tileset can declare a `wallPattern` instead of shaping a wall with the autotile:
+a whole `cols` x `rows` motif (`WallPattern` in `src/engine/tileset.ts`).
+`patternFrame` anchors it to the mass's top-left, so `rows[0]` is the mass's top
+layer and the last row its base. In between, the object repeats every `rows - 1`
+rows: `rows[1]` (the crown baked over the trunk) lands on the trunk row of the
+object above and `rows[2..rows-2]` are its body rows, so a tall wall reads as
+stacked objects. The `cols` frames repeat across x. A wall narrower than the motif
+is centred on it, so a one-tile hedge shows the middle column of a tree and never a
+cut-off edge.
+
+The FRLG fields use it to draw the real FireRed tree, three columns wide and four
+object rows tall (crown, two body rows and the trunk platform), expanded to five
+frames so the overlap and the two bodies stay distinct: `rows[0]` the crown over
+open ground, `rows[1]` the crown over the trunk, `rows[2]` and `rows[3]` the two
+body rows and `rows[4]` the trunk. The crown repeats every three tiles,
+superimposed on the complete trunk row of the tree above — its grass background is
+keyed out at bake time, so the trunk stays visible under the crown (`D26`).
+
+A wall's own ground is left **transparent** on the frames that sit against the
+floor (the crown and the trunk platform), and `RouteScene` draws a floor frame
+under every cell (`resolveGroundFrame`, `src/engine/tileFrames.ts`). The floor
+under a wall resolves with the same wall-edge variant as the tiles beside it, so
+the tree blends into the route instead of carrying a baked flat colour whose
+corners disagree with the floor. The PMD sheets keep the
+per-shape `autotileFrame` and never declare a pattern.
 
 ## 4. Swapping
 
@@ -92,9 +121,11 @@ Swapping is `config = TILESETS[nextId].config` plus loading
 
 ## 6. Pending art slots
 
-- **Tall grass** and **ledge** have no dedicated frame: both draw plain ground
-  today. Tall grass gets a procedural overlay sprite (`BootScene` builds it) so
-  it reads while the real art is pending; the ledge lip is still an open slot.
-  Neither spends a third atlas row.
+- **Tall grass** has no dedicated frame: it draws plain ground today, with a
+  procedural overlay sprite (`BootScene` builds it) so it reads while the real
+  art is pending. It does not spend a third atlas row.
+- **Ledge** now draws frame 51 (the sheet's last cell): the FRLG fields stamp
+  their cliff lip there (`D26`), and the PMD sheets leave it transparent so a
+  ledge falls back to plain ground. A dedicated PMD ledge tile is still open.
 - **Trainer sprites** do not exist yet in any imported set; they need their own
   sheet (walk cycles + overworld facing).

@@ -1,5 +1,6 @@
-import { WALL, type TileMap } from './map';
-import type { AutotileRule, TilesetConfig } from './tileset';
+import type { Tile } from './grid';
+import { FLOOR, WALL, type TileMap } from './map';
+import type { AutotileRule, TilesetConfig, WallPattern } from './tileset';
 
 export type TileFrameSource = 'atlas' | 'common';
 export type TileFrame = Readonly<{ source: TileFrameSource; frame: number }>;
@@ -80,6 +81,49 @@ export function variantFrame(x: number, y: number, options: readonly number[]): 
   return options[index];
 }
 
+/** How many neighbours in `dir` share the tile's own value before the mass ends. */
+function runLength(map: TileMap, x: number, y: number, dir: Tile, value: number): number {
+  const { width, height } = dimensions(map);
+  let run = 0;
+  let cx = x + dir.x;
+  let cy = y + dir.y;
+  while (cx >= 0 && cx < width && cy >= 0 && cy < height && map[cy][cx] === value) {
+    run += 1;
+    cx += dir.x;
+    cy += dir.y;
+  }
+  return run;
+}
+
+/**
+ * Resolves a whole wall motif: the mass's top row is `rows[0]`, its bottom row
+ * is the last one, and the rows in between cycle by depth so a tall wall reads
+ * as stacked objects. The column repeats across x from the mass's left edge.
+ */
+export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPattern): number {
+  const { height } = dimensions(map);
+  const northOpen = y <= 0 || map[y - 1][x] !== pattern.value;
+  const southOpen = y >= height - 1 || map[y + 1][x] !== pattern.value;
+  const depth = runLength(map, x, y, { x: 0, y: -1 }, pattern.value);
+  const left = runLength(map, x, y, { x: -1, y: 0 }, pattern.value);
+  const right = runLength(map, x, y, { x: 1, y: 0 }, pattern.value);
+  const last = pattern.rows.length - 1;
+  // `rows[0]` is the mass's open top, `rows[1]` that same top baked over
+  // `rows[last]` (the trunk) and `rows[2..last-1]` the body, repeated. The object
+  // repeats every `last - 1` rows, so each crown lands on the trunk row of the
+  // object above: a wall shows a crown every `last - 1` tiles and a trunk only at
+  // its foot.
+  const period = last - 1;
+  const step = depth % period;
+  const rowIndex = northOpen ? 0 : southOpen ? last : step === 0 ? 1 : step + 1;
+  const row = pattern.rows[rowIndex];
+  // Centre the motif on a wall narrower than the pattern, so a lone one-tile
+  // hedge shows the whole tree's middle column instead of its left edge.
+  const span = left + 1 + right;
+  const offset = span >= pattern.cols ? 0 : Math.floor((pattern.cols - span) / 2);
+  return row[(left + offset) % pattern.cols];
+}
+
 export function isNearWall(map: TileMap, x: number, y: number): boolean {
   const { width, height } = dimensions(map);
   const isWall = (nx: number, ny: number): boolean =>
@@ -99,6 +143,10 @@ export function resolveTileFrame(map: TileMap, x: number, y: number, tileset: Ti
   const commonFrame = tileset.commonFrames?.[value];
   if (commonFrame !== undefined) return { source: 'common', frame: commonFrame };
 
+  if (tileset.wallPattern && tileset.wallPattern.value === value) {
+    return { source: 'atlas', frame: patternFrame(map, x, y, tileset.wallPattern) };
+  }
+
   const rule = tileset.autotile?.find((candidate) => candidate.value === value);
   if (rule) return { source: 'atlas', frame: autotileFrame(map, x, y, rule) };
 
@@ -110,4 +158,17 @@ export function resolveTileFrame(map: TileMap, x: number, y: number, tileset: Ti
 
   const frame = tileset.frames[value];
   return frame === undefined ? null : { source: 'atlas', frame };
+}
+
+/**
+ * The floor frame a cell would draw if it were ground, used to lay a floor under
+ * every tile so a wall frame with a transparent ground (the FRLG tree) shows the
+ * same floor — including its wall-edge variant — as the tiles beside it.
+ */
+export function resolveGroundFrame(map: TileMap, x: number, y: number, tileset: TilesetConfig): TileFrame {
+  const wallAdjacent = tileset.wallAdjacentVariants?.[FLOOR];
+  if (wallAdjacent && isNearWall(map, x, y)) return { source: 'atlas', frame: variantFrame(x, y, wallAdjacent) };
+  const variants = tileset.variants?.[FLOOR];
+  if (variants) return { source: 'atlas', frame: variantFrame(x, y, variants) };
+  return { source: 'atlas', frame: tileset.frames[FLOOR] ?? 0 };
 }

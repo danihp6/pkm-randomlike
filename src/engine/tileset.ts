@@ -50,9 +50,8 @@ export const FRAME_WALL_DIAGONAL_CORNER_SW = 23;
 
 /**
  * Water autotile shapes - same shape vocabulary as FRAME_WALL_*, one slot per
- * shape a biome tileset needs. Water blocks movement but not vision (see
- * `map.ts`'s SOLID and `fov.ts`'s isOpaque), so it's an obstacle to carve
- * around, not a hazard.
+ * shape a biome tileset needs. Water is solid (`map.ts`'s SOLID), so it's an
+ * obstacle to carve around, not a hazard.
  */
 export const FRAME_WATER_INTERIOR = 24;
 export const FRAME_WATER_EDGE_N = 25;
@@ -88,6 +87,13 @@ export const FRAME_WALL_TEE_E = 47;
 export const FRAME_WALL_TEE_S = 48;
 export const FRAME_WALL_TEE_W = 49;
 export const FRAME_WALL_CROSS = 50;
+
+/**
+ * The last cell of the 4x13 sheet, same slot for every biome: the rocky lip that
+ * a route's one-way ledges draw. The PMD sheets leave it unused; the FRLG fields
+ * stamp their own cliff tile there (`docs/tileset-spec.md` §6).
+ */
+export const FRAME_LEDGE = 51;
 
 export const COMMON_TILE_SIZE = 24;
 export const COMMON_ATLAS_COLS = 5;
@@ -136,6 +142,19 @@ export type AutotileRule = Readonly<{
   variants: AutotileShapeSet;
 }>;
 
+/**
+ * A whole multi-tile wall motif anchored to the top-left of a wall mass, so the
+ * mass reads as a run of complete objects (fireRed trees, Mt. Moon boulders)
+ * instead of one repeated stamp. `rows[0]` is the mass's top layer and
+ * `rows[rows.length - 1]` its base layer; the rows between them cycle vertically,
+ * and `cols` frames repeat across x. See `tileFrames.ts`'s `patternFrame`.
+ */
+export type WallPattern = Readonly<{
+  value: number;
+  cols: number;
+  rows: readonly (readonly number[])[];
+}>;
+
 export type TilesetConfig = Readonly<{
   atlas: Readonly<{
     tileSize: number;
@@ -147,6 +166,12 @@ export type TilesetConfig = Readonly<{
   /** Default frame per map value, used when no autotile rule matches. */
   frames: Readonly<Record<number, number>>;
   autotile?: readonly AutotileRule[];
+  /**
+   * A repeating multi-tile motif for one map value (walls), taking priority over
+   * `autotile`: the frame is anchored to the mass's top-left so a wall reads as
+   * whole trees/boulders. See `WallPattern`.
+   */
+  wallPattern?: WallPattern;
   /** Map values that pick one of several frames for visual variety, deterministically per tile. */
   variants?: Readonly<Record<number, readonly number[]>>;
   /**

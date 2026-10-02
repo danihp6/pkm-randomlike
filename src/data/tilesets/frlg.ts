@@ -19,11 +19,12 @@ import {
   FRAME_FLOOR_ALT_3,
   FRAME_FLOOR_ALT_4,
   FRAME_FLOOR_ALT_5,
+  FRAME_LEDGE,
   TILESET_COLS,
   TILESET_ROWS,
-  WALL_SHAPES,
   WATER_SHAPES,
   type TilesetConfig,
+  type WallPattern,
 } from '../../engine/tileset';
 
 /**
@@ -36,6 +37,37 @@ export const FRLG_TILE_SIZE = 16;
 export const FRLG_ATLAS_WIDTH = FRLG_TILE_SIZE * TILESET_COLS;
 export const FRLG_ATLAS_HEIGHT = FRLG_TILE_SIZE * TILESET_ROWS;
 
+/**
+ * FRLG walls are whole objects, not a per-shape stamp: the tree is the real
+ * FireRed 3x4 block from the bottom-left of the sheet, three tiles wide and four
+ * rows tall (crown, two canopy rows and the trunk platform). These frames hold its
+ * fifteen cells and must stay in step with `build-tilesets.mjs`:
+ *
+ * - `TOP` is the crown against open ground (the mass's top row),
+ * - `CANOPY` is the crown laid over the trunk row (where the next tree overlaps
+ *   the one above),
+ * - `BODY` is the crown's upper leaves and `LOWER` its lower leaves (the two body
+ *   rows the wall repeats),
+ * - `BASE` is the trunk platform at the foot of a mass.
+ */
+export const FRLG_WALL_TOP_FRAMES = [7, 8, 9] as const;
+export const FRLG_WALL_CANOPY_FRAMES = [10, 11, 12] as const;
+export const FRLG_WALL_BODY_FRAMES = [13, 14, 15] as const;
+export const FRLG_WALL_LOWER_FRAMES = [16, 17, 18] as const;
+export const FRLG_WALL_BASE_FRAMES = [19, 20, 21] as const;
+
+const WALL_PATTERN: WallPattern = {
+  value: WALL,
+  cols: 3,
+  rows: [
+    FRLG_WALL_TOP_FRAMES,
+    FRLG_WALL_CANOPY_FRAMES,
+    FRLG_WALL_BODY_FRAMES,
+    FRLG_WALL_LOWER_FRAMES,
+    FRLG_WALL_BASE_FRAMES,
+  ],
+};
+
 /** The plain field is the clean frame; the speckled cells dress a wall edge. */
 const FLOOR_CLEAN = [FRAME_FLOOR];
 const FLOOR_WALL_ADJACENT = [
@@ -47,11 +79,10 @@ const FLOOR_WALL_ADJACENT = [
 ];
 
 /**
- * The FRLG route fields (grass, forest, cave) share one atlas layout:
- * floor variants, the wall autotile shapes drawn as a repeated border and the
- * rocky-banked pond. FRLG draws a route border as a single repeated obstacle
- * tile, so every wall shape resolves to that tile; only the art per biome
- * differs, which is why one config serves all four sheets.
+ * The FRLG route fields (grass, forest, cave) share one atlas layout: floor
+ * variants, the wall motif (a three-wide tree/rock run, `wallPattern`) and the
+ * rocky-banked pond. Only the art per biome differs, which is why one config
+ * serves all three sheets.
  */
 export const FRLG_TILESET: TilesetConfig = {
   atlas: {
@@ -63,22 +94,21 @@ export const FRLG_TILESET: TilesetConfig = {
   },
   frames: {
     [FLOOR]: FRAME_FLOOR,
-    [WALL]: WALL_SHAPES.interior,
+    [WALL]: FRLG_WALL_BODY_FRAMES[1],
     [EXIT]: FRAME_FLOOR,
     [TRAP]: FRAME_FLOOR,
     [CHEST]: FRAME_FLOOR,
     [ITEM]: FRAME_FLOOR,
     [CARPET]: FRAME_FLOOR,
     [WATER]: WATER_SHAPES.interior,
-    // Tall grass and ledges have no dedicated FRLG frame yet (the route draws
-    // the tall-grass tuft as an overlay, `docs/tileset-spec.md` §6).
+    // Tall grass has no dedicated FRLG frame yet (the route draws the tall-grass
+    // tuft as an overlay, `docs/tileset-spec.md` §6); the ledge draws its own
+    // rocky lip so a one-way drop reads as one.
     [TALL_GRASS]: FRAME_FLOOR,
-    [LEDGE]: FRAME_FLOOR,
+    [LEDGE]: FRAME_LEDGE,
   },
-  autotile: [
-    { value: WALL, openValue: FLOOR, variants: WALL_SHAPES },
-    { value: WATER, openValue: FLOOR, variants: WATER_SHAPES },
-  ],
+  autotile: [{ value: WATER, openValue: FLOOR, variants: WATER_SHAPES }],
+  wallPattern: WALL_PATTERN,
   variants: {
     [FLOOR]: FLOOR_CLEAN,
     [TRAP]: FLOOR_CLEAN,

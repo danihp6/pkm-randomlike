@@ -12,6 +12,7 @@ import {
   mapFromSketch,
   mapSize,
   moveToward,
+  padMap,
   resolveMove,
   tileAt,
   triggersWildEncounter,
@@ -118,6 +119,20 @@ describe('tile helpers', () => {
     expect(triggersWildEncounter(map, { x: 2, y: 1 })).toBe(true);
     expect(triggersWildEncounter(map, { x: 1, y: 1 })).toBe(false);
     expect(isExit(map, { x: 3, y: 1 })).toBe(true);
+  });
+});
+
+describe('padMap', () => {
+  it('frames the map with the requested rings of fill', () => {
+    const padded = padMap(map, 2, WALL);
+    expect(mapSize(padded)).toEqual({ width: 8, height: 8 });
+    expect(tileAt(padded, { x: 0, y: 0 })).toBe(WALL);
+    expect(tileAt(padded, { x: 7, y: 7 })).toBe(WALL);
+    expect(tileAt(padded, { x: 2 + 1, y: 2 + 1 })).toBe(FLOOR);
+  });
+
+  it('returns the map untouched without a margin', () => {
+    expect(padMap(map, 0, WALL)).toBe(map);
   });
 });
 

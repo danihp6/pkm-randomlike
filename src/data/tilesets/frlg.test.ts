@@ -9,11 +9,21 @@ import {
   FRAME_FLOOR_ALT_3,
   FRAME_FLOOR_ALT_4,
   FRAME_FLOOR_ALT_5,
+  FRAME_LEDGE,
   TILE_SIZE,
-  WALL_SHAPES,
   WATER_SHAPES,
 } from '../../engine/tileset';
-import { FRLG_ATLAS_HEIGHT, FRLG_ATLAS_WIDTH, FRLG_TILE_SIZE, FRLG_TILESET } from './frlg';
+import {
+  FRLG_ATLAS_HEIGHT,
+  FRLG_ATLAS_WIDTH,
+  FRLG_TILE_SIZE,
+  FRLG_TILESET,
+  FRLG_WALL_BASE_FRAMES,
+  FRLG_WALL_BODY_FRAMES,
+  FRLG_WALL_CANOPY_FRAMES,
+  FRLG_WALL_LOWER_FRAMES,
+  FRLG_WALL_TOP_FRAMES,
+} from './frlg';
 
 /**
  * The FRLG atlases are committed artifacts (`scripts/frlg/build-tilesets.mjs`),
@@ -63,11 +73,22 @@ describe('frlg tileset atlases', () => {
     }
   });
 
-  it('stamps every wall and water shape the autotiler can return', () => {
+  it('stamps the solid wall frames and the water shapes the autotiler can return', () => {
     for (const name of ATLASES) {
       const png = atlas(name);
-      for (const frame of Object.values(WALL_SHAPES)) {
+      // The canopy and body frames are the tree itself: always stamped. The top
+      // and base frames keep a transparent ground so the floor shows through, and
+      // their edge columns can be fully transparent (the crown/trunk is narrower
+      // than the motif), so only the whole row has to carry art.
+      for (const frame of [
+        ...FRLG_WALL_CANOPY_FRAMES,
+        ...FRLG_WALL_BODY_FRAMES,
+        ...FRLG_WALL_LOWER_FRAMES,
+      ]) {
         expect(tileIsBlank(png, frame), `${name} wall frame ${frame}`).toBe(false);
+      }
+      for (const frames of [FRLG_WALL_TOP_FRAMES, FRLG_WALL_BASE_FRAMES]) {
+        expect(frames.some((frame) => !tileIsBlank(png, frame)), `${name} wall row`).toBe(true);
       }
       for (const frame of Object.values(WATER_SHAPES)) {
         expect(tileIsBlank(png, frame), `${name} water frame ${frame}`).toBe(false);
@@ -81,6 +102,12 @@ describe('frlg tileset atlases', () => {
       for (const frame of FLOOR_FRAMES) {
         expect(tileIsBlank(png, frame), `${name} floor frame ${frame}`).toBe(false);
       }
+    }
+  });
+
+  it('stamps the ledge lip the route walks off', () => {
+    for (const name of ATLASES) {
+      expect(tileIsBlank(atlas(name), FRAME_LEDGE), `${name} ledge frame ${FRAME_LEDGE}`).toBe(false);
     }
   });
 });
