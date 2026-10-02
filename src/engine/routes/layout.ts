@@ -22,8 +22,11 @@
 export type LayoutStyle = 'route' | 'forest' | 'cavern';
 
 export type LayoutSpec = Readonly<{
-  /** `hedges` leaves the field open and drops tree bars; `maze` carves a grid. */
-  kind: 'hedges' | 'maze';
+  /**
+   * `open` clears the interior to plain ground (only the border trees remain);
+   * `hedges` leaves the field open and drops tree bars; `maze` carves a grid.
+   */
+  kind: 'open' | 'hedges' | 'maze';
   /** Edge the player enters from. */
   startEdge: 'W' | 'S';
   /** Edge the exit sits on, opposite the start. */
@@ -44,11 +47,11 @@ export type LayoutSpec = Readonly<{
 
 export const LAYOUTS: Readonly<Record<LayoutStyle, LayoutSpec>> = {
   route: {
-    kind: 'hedges',
+    kind: 'open',
     startEdge: 'W',
     exitEdge: 'E',
     pathWidth: 2,
-    bars: 90,
+    bars: 0,
     barMin: 3,
     barMax: 9,
     corridorWidth: 2,
@@ -56,7 +59,7 @@ export const LAYOUTS: Readonly<Record<LayoutStyle, LayoutSpec>> = {
     jitter: 3,
   },
   forest: {
-    kind: 'maze',
+    kind: 'open',
     startEdge: 'S',
     exitEdge: 'N',
     pathWidth: 1,
@@ -68,7 +71,7 @@ export const LAYOUTS: Readonly<Record<LayoutStyle, LayoutSpec>> = {
     jitter: 0,
   },
   cavern: {
-    kind: 'maze',
+    kind: 'open',
     startEdge: 'S',
     exitEdge: 'N',
     pathWidth: 2,

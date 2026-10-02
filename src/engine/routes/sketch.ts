@@ -185,6 +185,18 @@ function carveSpine(
 }
 
 /**
+ * The open field: the interior is plain ground with the one-tile border left as
+ * the only wall, so a route is a clear room to cross.
+ */
+function carveOpen(tiles: MutableMap): void {
+  const width = tiles[0].length;
+  const height = tiles.length;
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) tiles[y][x] = FLOOR;
+  }
+}
+
+/**
  * The open-field route (Route 1): the interior starts as floor, a winding path
  * is kept clear and tree bars are dropped from the borders inwards, so the map
  * stays mostly walkable and the hedges partition it without sealing it.
@@ -432,11 +444,12 @@ function attemptRoute(request: RouteRequest, rng: Rng, width: number, height: nu
     ? { x: width - 2, y: rng.int(3, height - 4) }
     : { x: rng.int(3, width - 4), y: 1 };
 
-  const carved =
-    spec.kind === 'hedges'
-      ? carveHedges(tiles, rng, spec, start, exit)
-      : new Set<string>();
-  if (spec.kind === 'maze') {
+  let carved = new Set<string>();
+  if (spec.kind === 'open') {
+    carveOpen(tiles);
+  } else if (spec.kind === 'hedges') {
+    carved = carveHedges(tiles, rng, spec, start, exit);
+  } else {
     const ends = carveMaze(tiles, rng, spec);
     start = ends.start;
     exit = ends.exit;
@@ -449,8 +462,8 @@ function attemptRoute(request: RouteRequest, rng: Rng, width: number, height: nu
   // the carved spine on an open route, the shortest path on a maze.
   const spine = spec.kind === 'hedges' ? carved : shortestPath(tiles, start, exit);
   const pocketTiles = collectFloorTiles(tiles).filter((tile) => !spine.has(tileKey(tile)));
-  carveGrass(tiles, rng, request.grassPatches ?? 3, [start, exit]);
-  carveWater(tiles, rng, pocketTiles, request.waterBodies ?? 1, [start, exit]);
+  carveGrass(tiles, rng, request.grassPatches ?? 0, [start, exit]);
+  carveWater(tiles, rng, pocketTiles, request.waterBodies ?? 0, [start, exit]);
   carveLedges(tiles, rng, pocketTiles, request.ledges ?? 0);
 
   tiles[start.y][start.x] = FLOOR;

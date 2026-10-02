@@ -77,11 +77,12 @@ import { browserStorage } from '../storage';
 import { ARROW_TEXTURE_KEY, GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 
 /**
- * Rings of tree/rock terrain rendered beyond the playable map (`padMap`), so the
- * camera can follow the player out to the route border without ever showing the
- * empty background. Purely cosmetic: movement and validation use the map.
+ * One ring of tree/rock terrain rendered beyond the playable map (`padMap`), so a
+ * route reads as a single tree frame and the camera can follow the player out to
+ * the border without ever showing the empty background. Purely cosmetic: movement
+ * and validation use the map.
  */
-const MAP_MARGIN = 4;
+const MAP_MARGIN = 1;
 /** Item stacks the route HUD's bag row shows before it drops the rest. */
 const BAG_ICON_SLOTS = 6;
 

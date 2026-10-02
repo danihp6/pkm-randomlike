@@ -899,3 +899,11 @@ file is the human-readable summary.
       (`src/engine/tileFrames.ts`) and `frlg.ts` renames `CANOPY` to `CROWN` and adds
       `MID`. `frlg.test.ts` and `tileFrames.test.ts` updated; 661 tests pass;
       `npm run build` clean.
+- [x] Routes are an open field with a one-tile tree frame: every route now carves
+      `kind: 'open'` (interior plain ground, only the border wall), the scene pads
+      the map with a single tree/rock ring (`MAP_MARGIN` 4 -> 1) and the biome
+      terrain is zeroed (`grassPatches`/`waterBodies`/`ledges`), so routes are
+      plain ground for now. The `hedges`/`maze` carvers stay in
+      `src/engine/routes/sketch.ts` for when interiors return. `layout.ts`,
+      `biomes.ts`, `sketch.test.ts` and `docs/routes-spec.md` updated. 661 tests
+      pass; `npm run build` clean.
