@@ -132,6 +132,16 @@ describe('patternFrame', () => {
     const wide: TileMap = [[WALL, WALL, WALL, WALL, WALL]];
     expect([0, 1, 2, 3, 4].map((x) => patternFrame(wide, x, 0, pattern))).toEqual([7, 8, 9, 7, 8]);
   });
+
+  it('shows the whole three-wide tree on a three-tile border', () => {
+    const border: TileMap = [[WALL, WALL, WALL]];
+    expect([0, 1, 2].map((x) => patternFrame(border, x, 0, pattern))).toEqual([7, 8, 9]);
+  });
+
+  it('carries a body between the crown and the trunk on a three-tile border', () => {
+    const border: TileMap = [[WALL], [WALL], [WALL]];
+    expect([0, 1, 2].map((y) => patternFrame(border, 0, y, pattern))).toEqual([8, 11, 23]);
+  });
 });
 
 describe('variantFrame', () => {

@@ -14,11 +14,6 @@ import {
   COMMON_FRAME_CARPET,
   COMMON_FRAME_STAIRS,
   FRAME_FLOOR,
-  FRAME_FLOOR_ALT_1,
-  FRAME_FLOOR_ALT_2,
-  FRAME_FLOOR_ALT_3,
-  FRAME_FLOOR_ALT_4,
-  FRAME_FLOOR_ALT_5,
   FRAME_LEDGE,
   TILESET_COLS,
   TILESET_ROWS,
@@ -73,15 +68,13 @@ const WALL_PATTERN: WallPattern = {
   ],
 };
 
-/** The plain field is the clean frame; the speckled cells dress a wall edge. */
+/**
+ * The field's ground is uniform: the lighter floor frames (`FLOOR_ALT_*`) are a
+ * second, paler grass on the source sheet, and laid beside a wall they read as a
+ * route path rather than a shadow. FRLG keeps only the clean frame and drops the
+ * PMD-style wall-edge decal (`wallAdjacentVariants`) until a real path is drawn.
+ */
 const FLOOR_CLEAN = [FRAME_FLOOR];
-const FLOOR_WALL_ADJACENT = [
-  FRAME_FLOOR_ALT_1,
-  FRAME_FLOOR_ALT_2,
-  FRAME_FLOOR_ALT_3,
-  FRAME_FLOOR_ALT_4,
-  FRAME_FLOOR_ALT_5,
-];
 
 /**
  * The FRLG route fields (grass, forest, cave) share one atlas layout: floor
@@ -120,13 +113,6 @@ export const FRLG_TILESET: TilesetConfig = {
     [CHEST]: FLOOR_CLEAN,
     [ITEM]: FLOOR_CLEAN,
     [TALL_GRASS]: FLOOR_CLEAN,
-  },
-  wallAdjacentVariants: {
-    [FLOOR]: FLOOR_WALL_ADJACENT,
-    [TRAP]: FLOOR_WALL_ADJACENT,
-    [CHEST]: FLOOR_WALL_ADJACENT,
-    [ITEM]: FLOOR_WALL_ADJACENT,
-    [TALL_GRASS]: FLOOR_WALL_ADJACENT,
   },
   commonFrames: { [EXIT]: COMMON_FRAME_STAIRS, [CARPET]: COMMON_FRAME_CARPET },
 };

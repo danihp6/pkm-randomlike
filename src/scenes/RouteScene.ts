@@ -77,12 +77,15 @@ import { browserStorage } from '../storage';
 import { ARROW_TEXTURE_KEY, GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 
 /**
- * One ring of tree/rock terrain rendered beyond the playable map (`padMap`), so a
- * route reads as a single tree frame and the camera can follow the player out to
- * the border without ever showing the empty background. Purely cosmetic: movement
- * and validation use the map.
+ * Tree/rock terrain rendered beyond the playable map (`padMap`), so the camera can
+ * follow the player out to the border without ever showing the empty background.
+ * The FRLG tree motif is three tiles wide and three deep (crown, body, trunk), so
+ * with the route's own one-tile wall border the margin must be 2: a side then
+ * shows the whole tree (`0,1,2` columns) and the top/bottom line carries a body
+ * between its crown and its trunk. Purely cosmetic: movement and validation use
+ * the map.
  */
-const MAP_MARGIN = 1;
+const MAP_MARGIN = 2;
 /** Item stacks the route HUD's bag row shows before it drops the rest. */
 const BAG_ICON_SLOTS = 6;
 
@@ -454,12 +457,18 @@ export class RouteScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * A route tile's centre in world pixels. The entity sprites and the player are
+   * positioned by route coordinates while the terrain comes from `renderMap`
+   * (`MAP_MARGIN` cells larger on every side), so both must shift by the same
+   * margin or every sprite drifts up-left of the ground under it.
+   */
   private centerX(tileX: number): number {
-    return tileX * TILE_SIZE + TILE_SIZE / 2;
+    return (tileX + MAP_MARGIN) * TILE_SIZE + TILE_SIZE / 2;
   }
 
   private centerY(tileY: number): number {
-    return tileY * TILE_SIZE + TILE_SIZE / 2;
+    return (tileY + MAP_MARGIN) * TILE_SIZE + TILE_SIZE / 2;
   }
 
   private cycleTileset(): void {

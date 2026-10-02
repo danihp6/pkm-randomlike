@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { decodePng } from '../../../scripts/legacy-art/png-codec.mjs';
+import { FLOOR, WALL, type TileMap } from '../../engine/map';
+import { resolveGroundFrame } from '../../engine/tileFrames';
 import {
   FRAME_FLOOR,
   FRAME_FLOOR_ALT_1,
@@ -118,5 +120,14 @@ describe('frlg tileset geometry', () => {
   it('scales its 16px cells back up to the 24px world tile by exactly 1.5 (D18)', () => {
     expect(TILE_SIZE).not.toBe(FRLG_TILE_SIZE);
     expect(TILE_SIZE / FRLG_TILE_SIZE).toBe(1.5);
+  });
+
+  it('keeps the field ground uniform next to a wall (no lighter path decal)', () => {
+    const besideWall: TileMap = [
+      [WALL, WALL, WALL],
+      [FLOOR, FLOOR, FLOOR],
+    ];
+    expect(resolveGroundFrame(besideWall, 1, 1, FRLG_TILESET).frame).toBe(FRAME_FLOOR);
+    expect(resolveGroundFrame(besideWall, 1, 0, FRLG_TILESET).frame).toBe(FRAME_FLOOR);
   });
 });

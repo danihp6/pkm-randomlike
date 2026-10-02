@@ -86,11 +86,12 @@ bake time (`D26`).
 
 A wall's own ground is left **transparent** on the frames that sit against the
 floor (the crown and the trunk platform), and `RouteScene` draws a floor frame
-under every cell (`resolveGroundFrame`, `src/engine/tileFrames.ts`). The floor
-under a wall resolves with the same wall-edge variant as the tiles beside it, so
-the tree blends into the route instead of carrying a baked flat colour whose
-corners disagree with the floor. The PMD sheets keep the
-per-shape `autotileFrame` and never declare a pattern.
+under every cell (`resolveGroundFrame`, `src/engine/tileFrames.ts`). The FRLG
+fields resolve that ground to the plain floor frame, so the tree blends into a
+uniform field; the lighter `FLOOR_ALT_*` frames are kept for the future route path
+but are **not** used as a wall-edge decal (they read as a path). The PMD sheets
+keep the per-shape `autotileFrame`, their wall-edge floor decals
+(`wallAdjacentVariants`) and never declare a pattern.
 
 ## 4. Swapping
 

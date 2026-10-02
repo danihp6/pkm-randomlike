@@ -907,3 +907,16 @@ file is the human-readable summary.
       `src/engine/routes/sketch.ts` for when interiors return. `layout.ts`,
       `biomes.ts`, `sketch.test.ts` and `docs/routes-spec.md` updated. 661 tests
       pass; `npm run build` clean.
+- [x] Open-field tree frame reads whole again (`D26` follow-up): the one-tile
+      margin left a two-tile tree line, so a side showed only two of the motif's
+      three columns (the right one cut off) and the top/bottom line had a crown and
+      a trunk but no body. `MAP_MARGIN` is 2 (three tiles with the route's own
+      border), which restores the full three-wide/three-deep tree. Every sprite
+      (`centerX`/`centerY`) now shifts by the same margin, so the player, trainers
+      and items line up with the ground `padMap` draws instead of drifting one tile
+      up-left onto the tree ring. The FRLG field also drops the PMD-style
+      wall-edge floor decal: the lighter `FLOOR_ALT_*` frames read as a path, so
+      `FRLG_TILESET` now resolves the ground under and beside a wall to the plain
+      floor frame and the field is uniform. `tileFrames.test.ts` and
+      `frlg.test.ts` pin the border shape and the uniform ground; 664 tests pass;
+      `npm run build` clean.
