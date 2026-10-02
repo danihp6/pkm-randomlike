@@ -181,8 +181,9 @@ function solidOver(over, fill) {
  * motif (four rows, each three columns, composited over the floor so its
  * transparent pixels read as ground), the sheet's shared rocky-banked pond and
  * the ledge lip. `wall` is `[top, body, lower, base]`, each a three-entry list of
- * source `[col, row]` cells: `top` is the crown, `body` the widest leaves that
- * also fill the solid interior rows, `lower` the leaves above the trunk and
+ * source `[col, row]` cells: `top` is the crown (drawn over open ground at the
+ * mass's top and over `base` where the next tree overlaps a trunk), `body` the
+ * widest leaves that fill the canopy body, `lower` the leaves above the trunk and
  * `base` the trunk platform.
  */
 function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) {
@@ -197,7 +198,9 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) 
     compositeOver(solidOver(sourceTile(over[0], over[1]), sourceTile(fill[0], fill[1])), sourceTile(floor[0], floor[1]))
   const [top, body, lower, base] = wall
   FRAME_WALL_TOP.forEach((frame, i) => stampTile(atlas, frame, floorCell(top[i][0], top[i][1])))
-  FRAME_WALL_CANOPY.forEach((frame, i) => stampTile(atlas, frame, solidCell(top[i], body[i])))
+  // The canopy frame is the crown laid over the trunk row of the tree above, so
+  // a stacked tree overlaps a complete trunk instead of erasing it.
+  FRAME_WALL_CANOPY.forEach((frame, i) => stampTile(atlas, frame, solidCell(top[i], base[i])))
   FRAME_WALL_BODY.forEach((frame, i) => stampTile(atlas, frame, solidCell(lower[i], body[i])))
   FRAME_WALL_BASE.forEach((frame, i) => stampTile(atlas, frame, floorCell(base[i][0], base[i][1])))
 

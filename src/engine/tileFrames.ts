@@ -108,9 +108,12 @@ export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPa
   const left = runLength(map, x, y, { x: -1, y: 0 }, pattern.value);
   const right = runLength(map, x, y, { x: 1, y: 0 }, pattern.value);
   const last = pattern.rows.length - 1;
-  // The mass's top row is the pattern's first row and its bottom row the last;
-  // the interior should never borrow either, so it cycles only the middle rows.
-  const rowIndex = northOpen ? 0 : southOpen ? last : 1 + ((depth - 1) % Math.max(1, last - 1));
+  // The mass's top row is the pattern's first row (the open crown) and its
+  // bottom row the last (the trunk). In between the object repeats every `last`
+  // rows, with `rows[1]` (the crown baked over the trunk) landing on the trunk
+  // row of the tree above, so a tall wall reads as stacked trees: a crown every
+  // `last` tiles and a single trunk at the foot.
+  const rowIndex = northOpen ? 0 : southOpen ? last : depth % last === 0 ? 1 : last - 1;
   const row = pattern.rows[rowIndex];
   // Centre the motif on a wall narrower than the pattern, so a lone one-tile
   // hedge shows the whole tree's middle column instead of its left edge.

@@ -863,3 +863,12 @@ file is the human-readable summary.
       `roundPixels: true`, so the 3x total scale (sheet cell x tileset scale x
       camera zoom) is nearest-neighbour and integer. 659 tests pass;
       `npm run build` clean.
+- [x] FRLG tree crowns superimpose the trunk row above (`D26` follow-up): a tall
+      tree wall showed one crown on a flat canopy run and a trunk only at the very
+      foot. `patternFrame` now repeats the 3x4 block every three rows, and the
+      baked `CANOPY` frame is the crown laid over the trunk platform (its grass
+      background keyed out) so the crown covers the complete trunk row of the tree
+      above instead of erasing it. A wall now shows a crown every three tiles and
+      the trunks show through underneath. `tileFrames.test.ts` pins the interior
+      cycle (`14, 14, 11` for the four-row motif). 659 tests pass;
+      `npm run build` clean.

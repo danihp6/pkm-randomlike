@@ -108,13 +108,13 @@ describe('patternFrame', () => {
     expect(patternFrame(column, 0, 4, pattern)).toBe(17);
   });
 
-  it('cycles only the interior rows as the mass rises', () => {
+  it('repeats the crown over the trunk every pattern height as the mass rises', () => {
     const interior = [
       patternFrame(column, 0, 1, pattern),
       patternFrame(column, 0, 2, pattern),
       patternFrame(column, 0, 3, pattern),
     ];
-    expect(interior).toEqual([11, 14, 11]);
+    expect(interior).toEqual([14, 14, 11]);
   });
 
   it('centres a one-tile wall on the pattern middle column', () => {

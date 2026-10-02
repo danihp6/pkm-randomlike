@@ -45,7 +45,8 @@ export const FRLG_ATLAS_HEIGHT = FRLG_TILE_SIZE * TILESET_ROWS;
  * `build-tilesets.mjs`:
  *
  * - `TOP` is the crown against open ground (the mass's top row),
- * - `CANOPY` and `BODY` are solid canopies that stack as the wall rises,
+ * - `CANOPY` is the crown laid over the trunk row (where the next tree overlaps
+ *   the one above), `BODY` the canopy body, both solid so they stack,
  * - `BASE` is the trunk platform at the foot of a mass.
  */
 export const FRLG_WALL_TOP_FRAMES = [7, 8, 9] as const;

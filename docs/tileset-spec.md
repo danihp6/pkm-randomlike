@@ -68,14 +68,18 @@ map always looks the same.
 A tileset can declare a `wallPattern` instead of shaping a wall with the autotile:
 a whole `cols` x `rows` motif (`WallPattern` in `src/engine/tileset.ts`).
 `patternFrame` anchors it to the mass's top-left, so `rows[0]` is the mass's top
-layer, the last row its base and the middle rows cycle as the wall rises; the
-`cols` frames repeat across x. A wall narrower than the motif is centred on it, so
-a one-tile hedge shows the middle column of a tree and never a cut-off edge.
+layer and the last row its base. In between, the object repeats every `rows - 1`
+rows: `rows[1]` (the crown baked over the trunk) lands on the trunk row of the
+object above, so a tall wall reads as stacked objects. The `cols` frames repeat
+across x. A wall narrower than the motif is centred on it, so a one-tile hedge
+shows the middle column of a tree and never a cut-off edge.
 
 The FRLG fields use it to draw the real FireRed tree: a 3x4 block (crown, two
 canopy rows and the trunk platform) three columns wide, stacked vertically inside
-a wall, with a canopy at the top of the mass and a trunk at its foot (`D26`). The
-PMD sheets keep the per-shape `autotileFrame` and never declare a pattern.
+a wall. The crown repeats every three rows, superimposed on the complete trunk row
+of the tree above (its grass background keyed out so the trunk shows through),
+leaving a single trunk at the foot of the mass (`D26`). The PMD sheets keep the
+per-shape `autotileFrame` and never declare a pattern.
 
 ## 4. Swapping
 
