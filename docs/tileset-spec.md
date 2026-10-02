@@ -70,15 +70,18 @@ a whole `cols` x `rows` motif (`WallPattern` in `src/engine/tileset.ts`).
 `patternFrame` anchors it to the mass's top-left, so `rows[0]` is the mass's top
 layer and the last row its base. In between, the object repeats every `rows - 1`
 rows: `rows[1]` (the crown baked over the trunk) lands on the trunk row of the
-object above, so a tall wall reads as stacked objects. The `cols` frames repeat
-across x. A wall narrower than the motif is centred on it, so a one-tile hedge
-shows the middle column of a tree and never a cut-off edge.
+object above and `rows[2..rows-2]` are its body rows, so a tall wall reads as
+stacked objects. The `cols` frames repeat across x. A wall narrower than the motif
+is centred on it, so a one-tile hedge shows the middle column of a tree and never a
+cut-off edge.
 
-The FRLG fields use it to draw the real FireRed tree: a 3x4 block (crown, two
-canopy rows and the trunk platform) three columns wide, stacked vertically inside
-a wall. The crown repeats every three rows, superimposed on the complete trunk row
-of the tree above (its grass background keyed out so the trunk shows through),
-leaving a single trunk at the foot of the mass (`D26`). The PMD sheets keep the
+The FRLG fields use it to draw the real FireRed tree, three columns wide and four
+object rows tall (crown, two body rows and the trunk platform), expanded to five
+frames so the overlap and the two bodies stay distinct: `rows[0]` the crown over
+open ground, `rows[1]` the crown over the trunk, `rows[2]` and `rows[3]` the two
+body rows and `rows[4]` the trunk. The crown repeats every three tiles,
+superimposed on the complete trunk row of the tree above — its grass background is
+keyed out at bake time, so the trunk stays visible under the crown (`D26`). The PMD sheets keep the
 per-shape `autotileFrame` and never declare a pattern.
 
 ## 4. Swapping

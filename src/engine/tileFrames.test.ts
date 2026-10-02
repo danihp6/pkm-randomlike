@@ -99,22 +99,23 @@ describe('patternFrame', () => {
       [10, 11, 12],
       [13, 14, 15],
       [16, 17, 18],
+      [19, 20, 21],
     ],
   };
   const column: TileMap = [[WALL], [WALL], [WALL], [WALL], [WALL]];
 
   it('anchors the top row to the mass top and the last row to its base', () => {
     expect(patternFrame(column, 0, 0, pattern)).toBe(8);
-    expect(patternFrame(column, 0, 4, pattern)).toBe(17);
+    expect(patternFrame(column, 0, 4, pattern)).toBe(20);
   });
 
-  it('repeats the crown over the trunk every pattern height as the mass rises', () => {
+  it('runs the two body rows, then a crown over the trunk every three tiles', () => {
     const interior = [
       patternFrame(column, 0, 1, pattern),
       patternFrame(column, 0, 2, pattern),
       patternFrame(column, 0, 3, pattern),
     ];
-    expect(interior).toEqual([14, 14, 11]);
+    expect(interior).toEqual([14, 17, 11]);
   });
 
   it('centres a one-tile wall on the pattern middle column', () => {

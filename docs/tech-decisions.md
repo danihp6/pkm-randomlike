@@ -278,11 +278,12 @@ field and drops the hedges, `carveMaze` grows a depth-first grid maze with an
 optional braid — joined by a shortest-path guard that keeps solid terrain
 (water, ledges) off the one route through. The FRLG walls are drawn as the real
 FireRed tree, a 3x4 block (`TilesetConfig.wallPattern`, `docs/tileset-spec.md`
-§3b), rather than one frame per autotile shape. The block repeats every three rows
-so the crown of each tree is superimposed on the complete trunk row of the tree
-above — the crown's grass background is keyed out at bake time so the trunk still
-shows — which is why a wall reads as stacked complete trees instead of a flat
-stamp or a column of trunks. A route is now larger than the camera view (56x32
+§3b), rather than one frame per autotile shape. Its five-frame motif keeps the two
+body rows distinct and repeats every three tiles, so the crown of each tree is
+superimposed on the complete trunk row of the tree above — the crown's grass
+background is keyed out at bake time so the trunk still shows — which is why a
+wall reads as stacked complete trees instead of a flat stamp or a column of
+trunks. A route is now larger than the camera view (56x32
 tiles), so the camera follows the player and scrolls; the scene renders a
 four-tile tree/rock margin past the playable edge (`padMap`) and bounds the camera
 to it, so the route border never shows the empty background. The map is drawn in

@@ -21,6 +21,7 @@ import {
   FRLG_WALL_BASE_FRAMES,
   FRLG_WALL_BODY_FRAMES,
   FRLG_WALL_CANOPY_FRAMES,
+  FRLG_WALL_LOWER_FRAMES,
   FRLG_WALL_TOP_FRAMES,
 } from './frlg';
 
@@ -79,6 +80,7 @@ describe('frlg tileset atlases', () => {
         ...FRLG_WALL_TOP_FRAMES,
         ...FRLG_WALL_CANOPY_FRAMES,
         ...FRLG_WALL_BODY_FRAMES,
+        ...FRLG_WALL_LOWER_FRAMES,
         ...FRLG_WALL_BASE_FRAMES,
       ]) {
         expect(tileIsBlank(png, frame), `${name} wall frame ${frame}`).toBe(false);

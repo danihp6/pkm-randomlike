@@ -865,10 +865,17 @@ file is the human-readable summary.
       `npm run build` clean.
 - [x] FRLG tree crowns superimpose the trunk row above (`D26` follow-up): a tall
       tree wall showed one crown on a flat canopy run and a trunk only at the very
-      foot. `patternFrame` now repeats the 3x4 block every three rows, and the
-      baked `CANOPY` frame is the crown laid over the trunk platform (its grass
-      background keyed out) so the crown covers the complete trunk row of the tree
-      above instead of erasing it. A wall now shows a crown every three tiles and
-      the trunks show through underneath. `tileFrames.test.ts` pins the interior
-      cycle (`14, 14, 11` for the four-row motif). 659 tests pass;
+      foot. `patternFrame` now repeats the tree every three rows, so a wall shows a
+      crown every three tiles and each trunk shows through underneath.
+- [x] FRLG wall motif split into five frames so the bodies are right (`D26`
+      follow-up): the wall had a single body frame, so the second visible row drew
+      the lower body (row 36) instead of the wide one (row 35), and the baking
+      sampled each tile's top-left pixel as "background", which is a leaf on the
+      body rows and corrupted the right-hand tile. `fieldFrames` now keys the real
+      grass colour (`88,160,128`) sampled from the crown, and the motif holds five
+      frames — crown over ground, crown over trunk, the two body rows and the
+      trunk — so `patternFrame` runs body, lower, then the crown that overlaps the
+      trunk. `frlg.ts` grows `FRLG_WALL_LOWER_FRAMES` and moves the base to
+      19-21; `frlg.test.ts` checks every frame is stamped and `tileFrames.test.ts`
+      pins the new interior cycle (`14, 17, 11`). 659 tests pass;
       `npm run build` clean.
