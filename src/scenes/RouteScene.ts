@@ -66,7 +66,7 @@ import {
   type RouteTrainer,
 } from '../engine/routes';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
-import { resolveTileFrame } from '../engine/tileFrames';
+import { resolveTileFrame, resolveGroundFrame, type TileFrame } from '../engine/tileFrames';
 import { addFrlgWindow } from '../ui/frlg';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
@@ -123,7 +123,7 @@ export class RouteScene extends Phaser.Scene {
   private tilesetId: TilesetId = 'wood';
   private player: Tile = { x: 1, y: 1 };
   private playerSprite!: Phaser.GameObjects.Sprite;
-  private tileSprites: Phaser.GameObjects.Image[][] = [];
+  private tileSprites: Phaser.GameObjects.Image[][][] = [];
   private run!: RunState;
   private settings!: Settings;
   private pickedItems = new Set<string>();
@@ -385,20 +385,32 @@ export class RouteScene extends Phaser.Scene {
     return TILE_SIZE / TILESETS[this.tilesetId].config.atlas.tileSize;
   }
 
+  private tileImage(x: number, y: number, frame: TileFrame): Phaser.GameObjects.Image {
+    const key = frame.source === 'common' ? COMMON_TEXTURE_KEY : tilesetTextureKey(this.tilesetId);
+    return this.add
+      .image(x * TILE_SIZE, y * TILE_SIZE, key, frame.frame)
+      .setOrigin(0, 0)
+      .setScale(this.tileScale(frame.source));
+  }
+
+  /**
+   * The frames a cell draws: the floor under everything, then the tile itself
+   * when it differs. The FRLG tree keeps a transparent ground, so the floor
+   * (with its wall-edge variant) shows through instead of a baked flat colour.
+   */
+  private tileFrames(x: number, y: number): TileFrame[] {
+    const config = TILESETS[this.tilesetId].config;
+    const ground = resolveGroundFrame(this.renderMap, x, y, config);
+    const frame = resolveTileFrame(this.renderMap, x, y, config);
+    if (frame && (frame.source !== ground.source || frame.frame !== ground.frame)) return [ground, frame];
+    return [ground];
+  }
+
   private drawTiles(): void {
-    const textures = TILESETS[this.tilesetId];
     for (let y = 0; y < this.renderMap.length; y++) {
-      const row: Phaser.GameObjects.Image[] = [];
+      const row: Phaser.GameObjects.Image[][] = [];
       for (let x = 0; x < this.renderMap[y].length; x++) {
-        const frame = resolveTileFrame(this.renderMap, x, y, textures.config);
-        const source = frame?.source ?? 'atlas';
-        const key = source === 'common' ? COMMON_TEXTURE_KEY : tilesetTextureKey(this.tilesetId);
-        row.push(
-          this.add
-            .image(x * TILE_SIZE, y * TILE_SIZE, key, frame?.frame ?? 0)
-            .setOrigin(0, 0)
-            .setScale(this.tileScale(source)),
-        );
+        row.push(this.tileFrames(x, y).map((frame) => this.tileImage(x, y, frame)));
       }
       this.tileSprites.push(row);
     }
@@ -456,16 +468,18 @@ export class RouteScene extends Phaser.Scene {
 
   private applyTileset(id: TilesetId): void {
     this.tilesetId = id;
-    const textures = TILESETS[id];
     for (let y = 0; y < this.renderMap.length; y++) {
       for (let x = 0; x < this.renderMap[y].length; x++) {
-        const frame = resolveTileFrame(this.renderMap, x, y, textures.config);
-        const source = frame?.source ?? 'atlas';
-        const key = source === 'common' ? COMMON_TEXTURE_KEY : tilesetTextureKey(id);
-        this.tileSprites[y][x].setTexture(key, frame?.frame ?? 0).setScale(this.tileScale(source));
+        const frames = this.tileFrames(x, y);
+        this.tileSprites[y][x].forEach((image, index) => {
+          const frame = frames[index];
+          if (!frame) return;
+          const key = frame.source === 'common' ? COMMON_TEXTURE_KEY : tilesetTextureKey(id);
+          image.setTexture(key, frame.frame).setScale(this.tileScale(frame.source));
+        });
       }
     }
-    this.setHint(`tileset: ${textures.name}`);
+    this.setHint(`tileset: ${TILESETS[id].name}`);
   }
 
   /** Snaps the sprite to a tile, without a step. */

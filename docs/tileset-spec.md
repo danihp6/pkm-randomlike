@@ -81,7 +81,14 @@ frames so the overlap and the two bodies stay distinct: `rows[0]` the crown over
 open ground, `rows[1]` the crown over the trunk, `rows[2]` and `rows[3]` the two
 body rows and `rows[4]` the trunk. The crown repeats every three tiles,
 superimposed on the complete trunk row of the tree above — its grass background is
-keyed out at bake time, so the trunk stays visible under the crown (`D26`). The PMD sheets keep the
+keyed out at bake time, so the trunk stays visible under the crown (`D26`).
+
+A wall's own ground is left **transparent** on the frames that sit against the
+floor (the crown and the trunk platform), and `RouteScene` draws a floor frame
+under every cell (`resolveGroundFrame`, `src/engine/tileFrames.ts`). The floor
+under a wall resolves with the same wall-edge variant as the tiles beside it, so
+the tree blends into the route instead of carrying a baked flat colour whose
+corners disagree with the floor. The PMD sheets keep the
 per-shape `autotileFrame` and never declare a pattern.
 
 ## 4. Swapping

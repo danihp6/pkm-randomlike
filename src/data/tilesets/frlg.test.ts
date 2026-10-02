@@ -73,17 +73,22 @@ describe('frlg tileset atlases', () => {
     }
   });
 
-  it('stamps every wall and water shape the autotiler can return', () => {
+  it('stamps the solid wall frames and the water shapes the autotiler can return', () => {
     for (const name of ATLASES) {
       const png = atlas(name);
+      // The canopy and body frames are the tree itself: always stamped. The top
+      // and base frames keep a transparent ground so the floor shows through, and
+      // their edge columns can be fully transparent (the crown/trunk is narrower
+      // than the motif), so only the whole row has to carry art.
       for (const frame of [
-        ...FRLG_WALL_TOP_FRAMES,
         ...FRLG_WALL_CANOPY_FRAMES,
         ...FRLG_WALL_BODY_FRAMES,
         ...FRLG_WALL_LOWER_FRAMES,
-        ...FRLG_WALL_BASE_FRAMES,
       ]) {
         expect(tileIsBlank(png, frame), `${name} wall frame ${frame}`).toBe(false);
+      }
+      for (const frames of [FRLG_WALL_TOP_FRAMES, FRLG_WALL_BASE_FRAMES]) {
+        expect(frames.some((frame) => !tileIsBlank(png, frame)), `${name} wall row`).toBe(true);
       }
       for (const frame of Object.values(WATER_SHAPES)) {
         expect(tileIsBlank(png, frame), `${name} water frame ${frame}`).toBe(false);

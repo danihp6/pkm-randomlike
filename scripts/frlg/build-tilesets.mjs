@@ -216,18 +216,22 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) 
   // crown, not per tile (a body row's corner pixel is a leaf, not the ground).
   const crown = sourceTile(top[0][0], top[0][1])
   const bg = [crown[0], crown[1], crown[2]]
-  const overFloor = (source) =>
-    compositeOver(keyBackground(sourceTile(source[0], source[1]), floorTile, bg), floorTile)
+  const blank = Buffer.alloc(TILE_SIZE * TILE_SIZE * 4)
+  // The top and base of a mass sit against the floor, which the scene picks per
+  // tile (its wall-edge variant); their ground stays transparent so it shows
+  // through instead of a baked flat colour. The interior frames stay opaque so
+  // the canopy reads dense.
+  const overNone = (source) => keyBackground(sourceTile(source[0], source[1]), blank, bg)
   const overFill = (source, fill) =>
     compositeOver(keyBackground(sourceTile(source[0], source[1]), sourceTile(fill[0], fill[1]), bg), floorTile)
 
-  FRAME_WALL_TOP.forEach((frame, i) => stampTile(atlas, frame, overFloor(top[i])))
+  FRAME_WALL_TOP.forEach((frame, i) => stampTile(atlas, frame, overNone(top[i])))
   // The overlap frame is the crown laid over the trunk row of the tree above, so
   // a stacked tree superimposes a complete trunk instead of erasing it.
   FRAME_WALL_CANOPY.forEach((frame, i) => stampTile(atlas, frame, overFill(top[i], base[i])))
-  FRAME_WALL_BODY.forEach((frame, i) => stampTile(atlas, frame, overFloor(body[i])))
-  FRAME_WALL_LOWER.forEach((frame, i) => stampTile(atlas, frame, overFloor(lower[i])))
-  FRAME_WALL_BASE.forEach((frame, i) => stampTile(atlas, frame, overFloor(base[i])))
+  FRAME_WALL_BODY.forEach((frame, i) => stampTile(atlas, frame, overFill(body[i], lower[i])))
+  FRAME_WALL_LOWER.forEach((frame, i) => stampTile(atlas, frame, overFill(lower[i], body[i])))
+  FRAME_WALL_BASE.forEach((frame, i) => stampTile(atlas, frame, overNone(base[i])))
 
   stampBlock(atlas, WATER_TUPLE, water[0], water[1])
   stampTile(atlas, FRAME_LEDGE, floorCell(ledge[0], ledge[1]))

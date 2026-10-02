@@ -1,5 +1,5 @@
 import type { Tile } from './grid';
-import { WALL, type TileMap } from './map';
+import { FLOOR, WALL, type TileMap } from './map';
 import type { AutotileRule, TilesetConfig, WallPattern } from './tileset';
 
 export type TileFrameSource = 'atlas' | 'common';
@@ -158,4 +158,17 @@ export function resolveTileFrame(map: TileMap, x: number, y: number, tileset: Ti
 
   const frame = tileset.frames[value];
   return frame === undefined ? null : { source: 'atlas', frame };
+}
+
+/**
+ * The floor frame a cell would draw if it were ground, used to lay a floor under
+ * every tile so a wall frame with a transparent ground (the FRLG tree) shows the
+ * same floor — including its wall-edge variant — as the tiles beside it.
+ */
+export function resolveGroundFrame(map: TileMap, x: number, y: number, tileset: TilesetConfig): TileFrame {
+  const wallAdjacent = tileset.wallAdjacentVariants?.[FLOOR];
+  if (wallAdjacent && isNearWall(map, x, y)) return { source: 'atlas', frame: variantFrame(x, y, wallAdjacent) };
+  const variants = tileset.variants?.[FLOOR];
+  if (variants) return { source: 'atlas', frame: variantFrame(x, y, variants) };
+  return { source: 'atlas', frame: tileset.frames[FLOOR] ?? 0 };
 }

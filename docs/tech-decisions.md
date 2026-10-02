@@ -283,7 +283,10 @@ body rows distinct and repeats every three tiles, so the crown of each tree is
 superimposed on the complete trunk row of the tree above — the crown's grass
 background is keyed out at bake time so the trunk still shows — which is why a
 wall reads as stacked complete trees instead of a flat stamp or a column of
-trunks. A route is now larger than the camera view (56x32
+trunks. The wall's ground is transparent where the tree meets the floor, and the
+scene lays a floor frame under every cell (`resolveGroundFrame`), so the tree
+picks up the same wall-edge floor variant as the tiles beside it instead of a
+baked flat colour. A route is now larger than the camera view (56x32
 tiles), so the camera follows the player and scrolls; the scene renders a
 four-tile tree/rock margin past the playable edge (`padMap`) and bounds the camera
 to it, so the route border never shows the empty background. The map is drawn in

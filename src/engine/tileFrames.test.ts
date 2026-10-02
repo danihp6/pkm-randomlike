@@ -12,7 +12,7 @@ import {
   type TilesetConfig,
   type WallPattern,
 } from './tileset';
-import { autotileFrame, isNearWall, patternFrame, resolveTileFrame, variantFrame } from './tileFrames';
+import { autotileFrame, isNearWall, patternFrame, resolveGroundFrame, resolveTileFrame, variantFrame } from './tileFrames';
 
 const tileset: TilesetConfig = {
   atlas: { tileSize: 24, cols: 4, rows: 13, width: 96, height: 312 },
@@ -170,6 +170,17 @@ describe('resolveTileFrame', () => {
 
   it('falls back to the flat frame for a value with no rule', () => {
     expect(resolveTileFrame([[WALL]], 0, 0, tileset)?.frame).toBe(FRAME_WALL_INTERIOR);
+  });
+
+  it('resolves the ground a cell would draw, matching the frame resolveTileFrame gives floor', () => {
+    const open: TileMap = [
+      [FLOOR, FLOOR, FLOOR],
+      [FLOOR, FLOOR, FLOOR],
+      [FLOOR, FLOOR, FLOOR],
+    ];
+    expect(resolveGroundFrame(open, 1, 1, tileset).frame).toBe(resolveTileFrame(open, 1, 1, tileset)?.frame);
+    expect(tileset.variants![FLOOR]).toContain(resolveGroundFrame(open, 1, 1, tileset).frame);
+    expect(tileset.wallAdjacentVariants![FLOOR]).toContain(resolveGroundFrame(corridor, 1, 1, tileset).frame);
   });
 
   it('exposes FRAME_WALL_CORNER_NE through the shape set it belongs to', () => {

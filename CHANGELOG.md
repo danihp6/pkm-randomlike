@@ -880,3 +880,12 @@ file is the human-readable summary.
       19-21; `frlg.test.ts` checks every frame is stamped and `tileFrames.test.ts`
       pins the new interior cycle (`14, 17, 11`). 659 tests pass;
       `npm run build` clean.
+- [x] FRLG walls draw the floor under them (`D26` follow-up): the tree carried a
+      baked flat floor colour, but the floor tile next to a wall uses a lighter
+      wall-edge variant, so the tree corners showed a darker green than the route.
+      The crown and trunk frames now keep a transparent ground and `RouteScene`
+      draws a floor frame under every cell (`resolveGroundFrame`,
+      `src/engine/tileFrames.ts`), so a wall picks up the same floor variant as its
+      neighbours and blends in. `frlg.test.ts` allows the transparent edge rows and
+      `tileFrames.test.ts` covers `resolveGroundFrame`. 660 tests pass;
+      `npm run build` clean.
