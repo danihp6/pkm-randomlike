@@ -100,22 +100,28 @@ describe('patternFrame', () => {
       [13, 14, 15],
       [16, 17, 18],
       [19, 20, 21],
+      [22, 23, 24],
     ],
   };
   const column: TileMap = [[WALL], [WALL], [WALL], [WALL], [WALL]];
 
   it('anchors the top row to the mass top and the last row to its base', () => {
     expect(patternFrame(column, 0, 0, pattern)).toBe(8);
-    expect(patternFrame(column, 0, 4, pattern)).toBe(20);
+    expect(patternFrame(column, 0, 4, pattern)).toBe(23);
   });
 
-  it('runs the two body rows, then a crown over the trunk every three tiles', () => {
+  it('mounts each tree crown on the lower leaves of the tree above', () => {
     const interior = [
       patternFrame(column, 0, 1, pattern),
       patternFrame(column, 0, 2, pattern),
       patternFrame(column, 0, 3, pattern),
     ];
-    expect(interior).toEqual([14, 17, 11]);
+    expect(interior).toEqual([11, 14, 20]);
+  });
+
+  it('alternates crown and body above the foot, capped by lower leaves and a trunk', () => {
+    const tall: TileMap = Array.from({ length: 7 }, () => [WALL]);
+    expect([0, 1, 2, 3, 4, 5, 6].map((y) => patternFrame(tall, 0, y, pattern))).toEqual([8, 11, 14, 17, 14, 20, 23]);
   });
 
   it('centres a one-tile wall on the pattern middle column', () => {

@@ -78,12 +78,20 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 ### Route generation & FRLG fields (`D26`) — in progress
 
-Shipped: the three biome layouts (`route`, `forest`, `cavern`, `src/engine/routes/layout.ts`),
-the whole-object wall motif (`wallPattern`, `src/engine/tileFrames.ts`) now drawn
-with the real 3x4 FireRed tree (solid canopies, no ground leaks), the FRLG
-floor/pond/ledge atlas, the biome wiring, maps larger than the camera (56x32) with
-a follow camera and a four-tile tree/rock margin past the playable edge
-(`padMap`), and the map drawn in full with no fog of war. Open, most useful first:
+Shipped: the whole-object wall motif (`wallPattern`, `src/engine/tileFrames.ts`)
+drawn with the real 3x4 FireRed tree (each crown stacks on the lower leaves of the
+tree above, the body hides the trunk and only the foot shows the platform), the
+FRLG floor/pond/ledge atlas, the biome wiring, maps larger than the camera (56x32)
+with a follow camera, a **one-tile** tree/rock frame past the playable edge
+(`padMap`, `MAP_MARGIN`), and every route carved as an **open field**
+(`kind: 'open'`: the interior is plain ground and only the border is a wall) with
+no fog of war. The `hedges`/`maze` carvers and the terrain passes (tall grass,
+water, ledges) are kept but off. Open, most useful first:
+
+- [ ] **Route interiors.** Bring shape back per biome: re-enable the `hedges`
+      (Route 1) and `maze` (Viridian Forest, Mt. Moon) carvers and the biome
+      terrain passes (`terrain` in `src/data/biomes.ts`), once the open field has
+      served its purpose.
 
 - [ ] **FRLG ground vs path.** The base floor now matches the game's ground colour
       (`rgb(112,200,160)`, sheet tile `6,1`), but the lighter tiles (`2,3`, `1,3`,

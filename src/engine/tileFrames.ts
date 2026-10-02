@@ -108,14 +108,14 @@ export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPa
   const left = runLength(map, x, y, { x: -1, y: 0 }, pattern.value);
   const right = runLength(map, x, y, { x: 1, y: 0 }, pattern.value);
   const last = pattern.rows.length - 1;
-  // `rows[0]` is the mass's open top, `rows[1]` that same top baked over
-  // `rows[last]` (the trunk) and `rows[2..last-1]` the body, repeated. The object
-  // repeats every `last - 1` rows, so each crown lands on the trunk row of the
-  // object above: a wall shows a crown every `last - 1` tiles and a trunk only at
-  // its foot.
-  const period = last - 1;
-  const step = depth % period;
-  const rowIndex = northOpen ? 0 : southOpen ? last : step === 0 ? 1 : step + 1;
+  // `rows[0]` is the mass's open top and `rows[last]` its trunk foot. The row just
+  // above the foot is the mass's own lower leaves (`last - 1`) and its second row
+  // is its upper leaves (`1`). In between, the interior alternates the crown of the
+  // tree below laid on the lower leaves of the tree above (`2`) with the body row
+  // laid on that tree's trunk (`3`), so the trunk stays hidden and only shows at
+  // the mass's foot.
+  const aboveFoot = depth >= 2 && !southOpen && (y + 2 >= height || map[y + 2][x] !== pattern.value);
+  const rowIndex = northOpen ? 0 : southOpen ? last : aboveFoot ? last - 1 : depth === 1 ? 1 : depth % 2 === 0 ? 2 : 3;
   const row = pattern.rows[rowIndex];
   // Centre the motif on a wall narrower than the pattern, so a lone one-tile
   // hedge shows the whole tree's middle column instead of its left edge.

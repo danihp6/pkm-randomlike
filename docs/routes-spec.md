@@ -10,18 +10,19 @@ camera follow), containing:
 
 - a **start** tile, where the player arrives from the previous route;
 - an **exit** tile, which ends the route;
-- at least one **tall grass** patch big enough to be worth crossing;
 - a number of **trainers** with a facing direction;
 - zero or more **items**;
-- walls/trees along the border and as internal obstacles;
-- water, ledges and caves as biome-flavoured obstacles.
+- a one-tile ring of trees/rock along the border, the only wall; the interior is
+  open ground.
 
 ## 2. Generation pipeline
 
 1. **Layout**: pick the biome's style (`route`, `forest` or `cavern`) and carve
-   its shape — see below. The carver leaves the start connected to the exit.
-2. **Terrain pass**: place tall grass patches, water bodies, ledges — solid
-   hazards only off the guaranteed path, so they can never seal the route.
+   its shape — see below. Every style is currently `open`: the interior is left
+   as plain ground and only the one-tile tree/rock border is a wall.
+2. **Terrain pass**: optional tall grass patches, water bodies and ledges, all
+   **off** by default (`terrain` in `src/data/biomes.ts`), so a route is plain
+   ground for now. The passes stay in the generator, ready to be re-enabled.
 3. **Population pass**: trainers (each with a facing), items, and the exit.
 4. **Validation pass**: flood-fill from the start must reach the exit and every
    trainer. If it does not, reroll from the same seed with the next stream
@@ -31,27 +32,27 @@ Every pass consumes the same `Rng`, so `(seed, routeIndex)` fully determines the
 map.
 
 A route is larger than a screen (the default is 56x32 tiles at 24px), so the
-camera follows the player. The scene draws a tree/rock margin outside the
-playable edge (`padMap`, `src/scenes/RouteScene.ts`) and bounds the camera to it,
-so the border reads as more forest instead of the empty background. The whole map
-is visible at once: there is no fog of war, like the originals (`D6`).
+camera follows the player. The scene draws a **one-tile** tree/rock margin outside
+the playable edge (`padMap`, `MAP_MARGIN` in `src/scenes/RouteScene.ts`) and
+bounds the camera to it, so the border reads as a single tree frame instead of the
+empty background. The whole map is visible at once: there is no fog of war, like
+the originals (`D6`).
 
-**Layout style.** The shape a route takes follows the original FireRed/LeafGreen
-map for its biome and tileset, not a generic roguelike blob: a forest reads like
-Viridian Forest, a cave like Mt. Moon, an outdoor route like Route 1. The route's
-biome picks one of the styles in `src/engine/routes/layout.ts`, while the map
-semantics (`WALL`, `TALL_GRASS`...) stay the same so any tileset still renders
-(`docs/tileset-spec.md`). The three styles, calibrated against the layouts in the
-`pret/pokefirered` decomp (`D26`):
+**Layout style.** A route's shape is data (`src/engine/routes/layout.ts`): a style
+picks the entry and exit edges and the carving kind. The three styles still exist
+so a biome can be given its own shape again, but all of them currently carve an
+**open field** — the interior is floor and the border is the only wall:
 
-| Style | Reads as | Shape |
+| Style | Entry / exit | Shape |
 | --- | --- | --- |
-| `route` | Route 1 | An open grass field (~38% blocked) cut by one-tile tree hedges attached to the borders; a two-tile path is kept clear. |
-| `forest` | Viridian Forest | A one-tile-corridor labyrinth (~57% blocked) through dense trees, with a few loops. |
-| `cavern` | Mt. Moon | Two-tile rock corridors and wide chambers (~40% blocked). |
+| `route` | W / E | Open field, one-tile tree border. |
+| `forest` | S / N | Open field, one-tile tree border. |
+| `cavern` | S / N | Open field, one-tile rock border. |
 
-This supersedes the donor BSP cave as the default look (`D6`). Adding a biome is
-a `layout` field in `src/data/biomes.ts` plus its tileset.
+The `hedges` (Route 1) and `maze` (Viridian Forest, Mt. Moon) carvers are kept in
+`src/engine/routes/sketch.ts` for when the interiors come back. This supersedes
+the donor BSP cave as the default look (`D6`). Adding a biome is a `layout` field
+in `src/data/biomes.ts` plus its tileset.
 
 ## 3. Trainers and line of sight
 
@@ -64,6 +65,8 @@ a `layout` field in `src/data/biomes.ts` plus its tileset.
 ## 4. Wild encounters
 
 - Walking onto a `TALL_GRASS` tile rolls an encounter with the route's table.
+- No route has tall grass right now (`terrain.grassPatches` is 0 everywhere), so
+  wild encounters are dormant until a terrain pass turns them back on.
 - The table is per **biome**, weighted, and drawn from the route's level band.
 - The roll uses the route RNG, so walking the same grass in the same order
   produces the same encounters.

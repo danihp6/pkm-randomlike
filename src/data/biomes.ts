@@ -26,7 +26,7 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     tilesetId: 'wood',
     encounters: ENCOUNTER_TABLES.wood,
     layout: 'route',
-    terrain: { grassPatches: 3, waterBodies: 1, ledges: 2 },
+    terrain: { grassPatches: 0, waterBodies: 0, ledges: 0 },
   },
   placeholder: {
     id: 'placeholder',
@@ -34,7 +34,7 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     tilesetId: 'placeholder',
     encounters: ENCOUNTER_TABLES.placeholder,
     layout: 'route',
-    terrain: { grassPatches: 2, waterBodies: 0, ledges: 1 },
+    terrain: { grassPatches: 0, waterBodies: 0, ledges: 0 },
   },
   outdoor: {
     id: 'outdoor',
@@ -42,7 +42,7 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     tilesetId: 'outdoor',
     encounters: ENCOUNTER_TABLES.outdoor,
     layout: 'route',
-    terrain: { grassPatches: 3, waterBodies: 1, ledges: 2 },
+    terrain: { grassPatches: 0, waterBodies: 0, ledges: 0 },
   },
   forest: {
     id: 'forest',
@@ -50,7 +50,7 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     tilesetId: 'forest',
     encounters: ENCOUNTER_TABLES.forest,
     layout: 'forest',
-    terrain: { grassPatches: 4, waterBodies: 0, ledges: 0 },
+    terrain: { grassPatches: 0, waterBodies: 0, ledges: 0 },
   },
   cave: {
     id: 'cave',
@@ -58,7 +58,7 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     tilesetId: 'cave',
     encounters: ENCOUNTER_TABLES.cave,
     layout: 'cavern',
-    terrain: { grassPatches: 0, waterBodies: 1, ledges: 0 },
+    terrain: { grassPatches: 0, waterBodies: 0, ledges: 0 },
   },
 };
 

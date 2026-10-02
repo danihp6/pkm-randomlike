@@ -33,10 +33,11 @@ const FRAME_FLOOR = 0
 const FRAME_FLOOR_ALT_1 = 1
 const FRAME_FLOOR_ALT_2 = 2
 const FRAME_WALL_TOP = [7, 8, 9]
-const FRAME_WALL_CANOPY = [10, 11, 12]
-const FRAME_WALL_BODY = [13, 14, 15]
-const FRAME_WALL_LOWER = [16, 17, 18]
-const FRAME_WALL_BASE = [19, 20, 21]
+const FRAME_WALL_BODY = [10, 11, 12]
+const FRAME_WALL_CROWN = [13, 14, 15]
+const FRAME_WALL_MID = [16, 17, 18]
+const FRAME_WALL_LOWER = [19, 20, 21]
+const FRAME_WALL_BASE = [22, 23, 44]
 const FRAME_WATER_INTERIOR = 24
 const FRAME_WATER_EDGE_N = 25
 const FRAME_WATER_EDGE_E = 26
@@ -196,11 +197,13 @@ function keyBackground(over, fill, bg) {
 
 /**
  * A route's field: the walkable ground, its floor variants, the three-wide wall
- * motif (five rows, each three columns, drawn over the floor), the sheet's shared
+ * motif (six rows, each three columns, drawn over the floor), the sheet's shared
  * rocky-banked pond and the ledge lip. `wall` is `[top, body, lower, base]`, each a
- * three-entry list of source `[col, row]` cells: `top` is the crown (over open
- * ground at the mass's top, over `base` where the next tree overlaps a trunk),
- * `body` its upper leaves, `lower` its lower leaves and `base` the trunk platform.
+ * three-entry list of source `[col, row]` cells: `top` is the crown, `body` its
+ * upper leaves, `lower` its lower leaves and `base` the trunk platform. Two stacked
+ * trees read `top, body, crown+lower, body+base, ...`, so the crown of the tree
+ * below lands on the lower leaves of the tree above and its body hides that tree's
+ * trunk; only the mass's foot shows the trunk platform.
  */
 function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) {
   stamp(atlas, FRAME_FLOOR, floor[0], floor[1])
@@ -226,11 +229,14 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) 
     compositeOver(keyBackground(sourceTile(source[0], source[1]), sourceTile(fill[0], fill[1]), bg), floorTile)
 
   FRAME_WALL_TOP.forEach((frame, i) => stampTile(atlas, frame, overNone(top[i])))
-  // The overlap frame is the crown laid over the trunk row of the tree above, so
-  // a stacked tree superimposes a complete trunk instead of erasing it.
-  FRAME_WALL_CANOPY.forEach((frame, i) => stampTile(atlas, frame, overFill(top[i], base[i])))
   FRAME_WALL_BODY.forEach((frame, i) => stampTile(atlas, frame, overFill(body[i], lower[i])))
-  FRAME_WALL_LOWER.forEach((frame, i) => stampTile(atlas, frame, overFill(lower[i], body[i])))
+  // The crown of the tree below is laid over the lower leaves of the tree above
+  // (`CROWN`); the row under it is the tree's upper leaves laid over the trunk of
+  // the tree above (`MID`), so the trunk stays hidden instead of the lower leaves
+  // showing through the body.
+  FRAME_WALL_CROWN.forEach((frame, i) => stampTile(atlas, frame, overFill(top[i], lower[i])))
+  FRAME_WALL_MID.forEach((frame, i) => stampTile(atlas, frame, overFill(body[i], base[i])))
+  FRAME_WALL_LOWER.forEach((frame, i) => stampTile(atlas, frame, overFill(lower[i], base[i])))
   FRAME_WALL_BASE.forEach((frame, i) => stampTile(atlas, frame, overNone(base[i])))
 
   stampBlock(atlas, WATER_TUPLE, water[0], water[1])
