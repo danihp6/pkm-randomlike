@@ -36,10 +36,10 @@ camera follows the player. The scene draws a tree/rock margin outside the
 playable edge (`padMap`, `MAP_MARGIN` in `src/scenes/RouteScene.ts`) and bounds
 the camera to it, so the border reads as a whole tree frame instead of the empty
 background. The margin is sized to the FRLG tree motif: with the route's own
-one-tile border it makes the wall three tiles wide and three deep, so a side shows
-the whole three-column tree and the top/bottom line carries a body between its
-crown and its trunk. The whole map is visible at once: there is no fog of war,
-like the originals (`D6`).
+one-tile border the frame is three tiles wide on the sides and four tiles deep
+top/bottom, so a side shows the whole three-column tree and the top/bottom line
+carries both body rows between its crown and its trunk. The whole map is visible
+at once: there is no fog of war, like the originals (`D6`).
 
 **Layout style.** A route's shape is data (`src/engine/routes/layout.ts`): a style
 picks the entry and exit edges and the carving kind. The three styles still exist
@@ -48,9 +48,9 @@ so a biome can be given its own shape again, but all of them currently carve an
 
 | Style | Entry / exit | Shape |
 | --- | --- | --- |
-| `route` | W / E | Open field, three-wide tree border. |
-| `forest` | S / N | Open field, three-wide tree border. |
-| `cavern` | S / N | Open field, three-wide rock border. |
+| `route` | W / E | Open field, tree border. |
+| `forest` | S / N | Open field, tree border. |
+| `cavern` | S / N | Open field, rock border. |
 
 The `hedges` (Route 1) and `maze` (Viridian Forest, Mt. Moon) carvers are kept in
 `src/engine/routes/sketch.ts` for when the interiors come back. This supersedes

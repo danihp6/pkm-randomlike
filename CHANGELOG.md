@@ -910,13 +910,16 @@ file is the human-readable summary.
 - [x] Open-field tree frame reads whole again (`D26` follow-up): the one-tile
       margin left a two-tile tree line, so a side showed only two of the motif's
       three columns (the right one cut off) and the top/bottom line had a crown and
-      a trunk but no body. `MAP_MARGIN` is 2 (three tiles with the route's own
-      border), which restores the full three-wide/three-deep tree. Every sprite
-      (`centerX`/`centerY`) now shifts by the same margin, so the player, trainers
-      and items line up with the ground `padMap` draws instead of drifting one tile
-      up-left onto the tree ring. The FRLG field also drops the PMD-style
-      wall-edge floor decal: the lighter `FLOOR_ALT_*` frames read as a path, so
-      `FRLG_TILESET` now resolves the ground under and beside a wall to the plain
-      floor frame and the field is uniform. `tileFrames.test.ts` and
-      `frlg.test.ts` pin the border shape and the uniform ground; 664 tests pass;
-      `npm run build` clean.
+      a trunk but no body. The frame is now three tiles wide on the sides
+      (`MAP_MARGIN_X` 2) and four tiles deep top/bottom (`MAP_MARGIN_Y` 3, plus the
+      route's own one-tile border), so a side shows the whole three-column tree and
+      the top/bottom line carries both body rows between the crown and the trunk:
+      the full 3x4 tree. `padMap` now takes an `{ x, y }` margin for it. Every
+      sprite (`centerX`/`centerY`) shifts by the same per-axis margin, so the
+      player, trainers and items line up with the ground `padMap` draws instead of
+      drifting one tile up-left onto the tree ring. The FRLG field also drops the
+      PMD-style wall-edge floor decal: the lighter `FLOOR_ALT_*` frames read as a
+      path, so `FRLG_TILESET` now resolves the ground under and beside a wall to
+      the plain floor frame and the field is uniform. `map.test.ts`,
+      `tileFrames.test.ts` and `frlg.test.ts` pin the asymmetric margin, the border
+      shape and the uniform ground; 665 tests pass; `npm run build` clean.

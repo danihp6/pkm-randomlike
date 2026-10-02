@@ -142,6 +142,11 @@ describe('patternFrame', () => {
     const border: TileMap = [[WALL], [WALL], [WALL]];
     expect([0, 1, 2].map((y) => patternFrame(border, 0, y, pattern))).toEqual([8, 11, 23]);
   });
+
+  it('shows the full crown, both body rows and the trunk on a four-tile border', () => {
+    const border: TileMap = [[WALL], [WALL], [WALL], [WALL]];
+    expect([0, 1, 2, 3].map((y) => patternFrame(border, 0, y, pattern))).toEqual([8, 11, 20, 23]);
+  });
 });
 
 describe('variantFrame', () => {

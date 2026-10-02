@@ -134,6 +134,15 @@ describe('padMap', () => {
   it('returns the map untouched without a margin', () => {
     expect(padMap(map, 0, WALL)).toBe(map);
   });
+
+  it('frames each axis on its own when given an { x, y } margin', () => {
+    const padded = padMap(map, { x: 1, y: 2 }, WALL);
+    expect(mapSize(padded)).toEqual({ width: 6, height: 8 });
+    expect(tileAt(padded, { x: 0, y: 0 })).toBe(WALL);
+    expect(tileAt(padded, { x: 5, y: 7 })).toBe(WALL);
+    expect(tileAt(padded, { x: 1, y: 2 })).toBe(WALL);
+    expect(tileAt(padded, { x: 2, y: 3 })).toBe(FLOOR);
+  });
 });
 
 describe('mapFromSketch', () => {

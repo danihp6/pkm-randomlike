@@ -287,9 +287,9 @@ trunks. The wall's ground is transparent where the tree meets the floor, and the
 scene lays a floor frame under every cell (`resolveGroundFrame`), so the tree sits
 on the field's plain floor frame instead of a baked flat colour. A route is now
 larger than the camera view (56x32 tiles), so the camera follows the player and
-scrolls; the scene renders a three-tile tree/rock margin past the playable edge
-(`padMap`) and bounds the camera to it, so the route border never shows the empty
-background. The map is drawn in
+scrolls; the scene renders a tree/rock margin past the playable edge (`padMap`,
+three tiles on the sides and four top/bottom with the route's own border) and
+bounds the camera to it, so the route border never shows the empty background. The map is drawn in
 full — no fog of war or vision radius, like the originals (`D6`).
 `docs/routes-spec.md` §2 holds the pipeline; adding a biome is a `layout` field
 plus its tileset.
