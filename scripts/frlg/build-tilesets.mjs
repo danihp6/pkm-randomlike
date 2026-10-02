@@ -178,10 +178,12 @@ function solidOver(over, fill) {
 
 /**
  * A route's field: the walkable ground, its floor variants, the three-wide wall
- * motif (top/body/base rows, each three columns, composited over the floor so its
+ * motif (four rows, each three columns, composited over the floor so its
  * transparent pixels read as ground), the sheet's shared rocky-banked pond and
- * the ledge lip. `wall` is `[top, body, base]`, each a three-entry list of source
- * `[col, row]` cells.
+ * the ledge lip. `wall` is `[top, body, lower, base]`, each a three-entry list of
+ * source `[col, row]` cells: `top` is the crown, `body` the widest leaves that
+ * also fill the solid interior rows, `lower` the leaves above the trunk and
+ * `base` the trunk platform.
  */
 function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) {
   stamp(atlas, FRAME_FLOOR, floor[0], floor[1])
@@ -191,12 +193,12 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) 
   })
 
   const floorCell = (c, r) => compositeOver(sourceTile(c, r), sourceTile(floor[0], floor[1]))
-  const [top, body, base] = wall
+  const solidCell = (over, fill) =>
+    compositeOver(solidOver(sourceTile(over[0], over[1]), sourceTile(fill[0], fill[1])), sourceTile(floor[0], floor[1]))
+  const [top, body, lower, base] = wall
   FRAME_WALL_TOP.forEach((frame, i) => stampTile(atlas, frame, floorCell(top[i][0], top[i][1])))
-  FRAME_WALL_CANOPY.forEach((frame, i) =>
-    stampTile(atlas, frame, compositeOver(solidOver(sourceTile(top[i][0], top[i][1]), sourceTile(body[i][0], body[i][1])), sourceTile(floor[0], floor[1]))),
-  )
-  FRAME_WALL_BODY.forEach((frame, i) => stampTile(atlas, frame, floorCell(body[i][0], body[i][1])))
+  FRAME_WALL_CANOPY.forEach((frame, i) => stampTile(atlas, frame, solidCell(top[i], body[i])))
+  FRAME_WALL_BODY.forEach((frame, i) => stampTile(atlas, frame, solidCell(lower[i], body[i])))
   FRAME_WALL_BASE.forEach((frame, i) => stampTile(atlas, frame, floorCell(base[i][0], base[i][1])))
 
   stampBlock(atlas, WATER_TUPLE, water[0], water[1])
@@ -204,24 +206,30 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) 
 }
 
 /**
- * The shared tree bank: a three-wide canopy top, its leafy body and the trunk
- * below, in the left/centre/right columns the pattern samples across x.
+ * The shared tree bank: the real FireRed tree, a 3x4 block drawn in the bottom
+ * left of the sheet above the pond. Four rows (crown, body, lower leaves, trunk
+ * platform) of three columns (left, centre, right), repeated by the wall pattern.
  */
 const TREE = [
   [
-    [14, 1],
-    [15, 1],
-    [16, 1],
+    [3, 34],
+    [4, 34],
+    [5, 34],
   ],
   [
-    [14, 2],
-    [15, 2],
-    [16, 2],
+    [3, 35],
+    [4, 35],
+    [5, 35],
   ],
   [
-    [14, 3],
-    [15, 3],
-    [16, 3],
+    [3, 36],
+    [4, 36],
+    [5, 36],
+  ],
+  [
+    [3, 37],
+    [4, 37],
+    [5, 37],
   ],
 ]
 
@@ -273,6 +281,7 @@ function caveFrames(atlas) {
     ],
     wall: [
       [rockTop, rockTop, rockTop],
+      [rockBody, rockBody, rockBody],
       [rockBody, rockBody, rockBody],
       [rockBase, rockBase, rockBase],
     ],

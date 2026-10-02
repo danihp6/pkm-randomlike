@@ -38,13 +38,15 @@ export const FRLG_ATLAS_WIDTH = FRLG_TILE_SIZE * TILESET_COLS;
 export const FRLG_ATLAS_HEIGHT = FRLG_TILE_SIZE * TILESET_ROWS;
 
 /**
- * FRLG walls are whole objects, not a per-shape stamp: the tree is three tiles
- * wide and stacks vertically. These frames hold the twelve cells (four rows of
- * three columns) and must stay in step with `build-tilesets.mjs`:
+ * FRLG walls are whole objects, not a per-shape stamp: the tree is the real
+ * FireRed 3x4 block from the bottom-left of the sheet, three tiles wide and four
+ * rows tall (crown, two canopy rows and the trunk platform). These frames hold
+ * its twelve cells (four rows of three columns) and must stay in step with
+ * `build-tilesets.mjs`:
  *
- * - `TOP` is the canopy against open ground (the mass's top row),
+ * - `TOP` is the crown against open ground (the mass's top row),
  * - `CANOPY` and `BODY` are solid canopies that stack as the wall rises,
- * - `BASE` is the trunk at the foot of a mass.
+ * - `BASE` is the trunk platform at the foot of a mass.
  */
 export const FRLG_WALL_TOP_FRAMES = [7, 8, 9] as const;
 export const FRLG_WALL_CANOPY_FRAMES = [10, 11, 12] as const;

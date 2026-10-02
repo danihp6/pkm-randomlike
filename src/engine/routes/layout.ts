@@ -48,7 +48,7 @@ export const LAYOUTS: Readonly<Record<LayoutStyle, LayoutSpec>> = {
     startEdge: 'W',
     exitEdge: 'E',
     pathWidth: 2,
-    bars: 15,
+    bars: 90,
     barMin: 3,
     barMax: 9,
     corridorWidth: 2,

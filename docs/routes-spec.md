@@ -30,6 +30,12 @@ camera follow), containing:
 Every pass consumes the same `Rng`, so `(seed, routeIndex)` fully determines the
 map.
 
+A route is larger than a screen (the default is 56x32 tiles at 24px), so the
+camera follows the player. The scene draws a tree/rock margin outside the
+playable edge (`padMap`, `src/scenes/RouteScene.ts`) and bounds the camera to it,
+so the border reads as more forest instead of the empty background. The whole map
+is visible at once: there is no fog of war, like the originals (`D6`).
+
 **Layout style.** The shape a route takes follows the original FireRed/LeafGreen
 map for its biome and tileset, not a generic roguelike blob: a forest reads like
 Viridian Forest, a cave like Mt. Moon, an outdoor route like Route 1. The route's

@@ -47,11 +47,13 @@ one capture per route is guaranteed.
 
 Classic overworld, not a Mystery Dungeon BSP cave. `TALL_GRASS` is the only
 encounter tile; trainers have a facing and a sight line and trigger on sight.
-The donor's `fov.ts`, `vision.ts`, `pathfinding.ts` and the tileset autotiling
-carry over unchanged; its BSP `dungeon.ts` stays as a candidate for cave-flavoured
-routes. Addendum: cave/dungeon layouts must read like the originals (Mt. Moon,
-Seafoam), so the BSP cave is a base to reshape into that style, not the target
-look (see `docs/routes-spec.md` §2).
+The donor's `pathfinding.ts` and the tileset autotiling carry over unchanged; its
+BSP `dungeon.ts` stays as a candidate for cave-flavoured routes. Addendum:
+cave/dungeon layouts must read like the originals (Mt. Moon, Seafoam), so the BSP
+cave is a base to reshape into that style, not the target look (see
+`docs/routes-spec.md` §2). Addendum: the route draws the whole map at once, with
+no fog of war or vision radius — like the originals, everything in the area is
+visible from the start, so trainers and items are read off the map itself.
 
 ## D7 — Party of 6 plus a PC box *(decided)*
 
@@ -127,7 +129,7 @@ floor items spawn. One run seed drives all of it through `Rng` streams.
 constant: the PMD-derived atlases stay at 24px, while FireRed/LeafGreen atlases
 use their native 16px. `BootScene` loads each biome sheet at its declared cell
 size and `RouteScene` scales every cell by `TILE_SIZE / tileSize`, so the world
-stays a single 24px grid: movement, fog, overlays and the camera never learn the
+stays a single 24px grid: movement, overlays and the camera never learn the
 sheet's size, and the shared 24px `common.png` sheet draws at 1:1 beside the
 1.5x-upscaled FRLG fields. `TILE_SIZE = 24` remains the default for the configs
 written before this change.
@@ -258,7 +260,7 @@ shows the resting frame, and pushing into a wall turns the player in place. The
 run action (a new keybind, `SHIFT` by default, rebindable in the settings
 screen) shortens the step to `RUN_STEP_MS` and scales the walk animation's
 `timeScale` to match, so running reuses the walking frames at a faster rate
-exactly as the originals do, with no second sheet to ship. Encounters, fog and
+exactly as the originals do, with no second sheet to ship. Encounters and
 trainer sight are unaffected: a step still lands on one tile and runs the same
 `onTileEntered` beat it always did.
 
@@ -274,11 +276,16 @@ hedges attached to the borders, Viridian Forest is a one-tile-corridor labyrinth
 (~40% blocked). `sketch.ts` has one carver per kind — `carveHedges` opens the
 field and drops the hedges, `carveMaze` grows a depth-first grid maze with an
 optional braid — joined by a shortest-path guard that keeps solid terrain
-(water, ledges) off the one route through. The FRLG walls are drawn as a whole
-repeating tree (`TilesetConfig.wallPattern`, `docs/tileset-spec.md` §3b) rather
-than one frame per autotile shape, so a border reads as complete trees instead of
-a flat stamp. `docs/routes-spec.md` §2 holds the pipeline; adding a biome is a
-`layout` field plus its tileset.
+(water, ledges) off the one route through. The FRLG walls are drawn as the real
+FireRed tree, a 3x4 block (`TilesetConfig.wallPattern`, `docs/tileset-spec.md`
+§3b), rather than one frame per autotile shape, so a border reads as complete
+trees instead of a flat stamp. A route is now larger than the camera view (56x32
+tiles), so the camera follows the player and scrolls; the scene renders a
+four-tile tree/rock margin past the playable edge (`padMap`) and bounds the camera
+to it, so the route border never shows the empty background. The map is drawn in
+full — no fog of war or vision radius, like the originals (`D6`).
+`docs/routes-spec.md` §2 holds the pipeline; adding a biome is a `layout` field
+plus its tileset.
 
 ## Open questions
 

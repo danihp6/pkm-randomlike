@@ -39,8 +39,8 @@ already shipped (read only when asked).
 - **Target**: browser first (itch.io friendly), desktop-wrapped later.
 
 ## Directory layout
-- `src/engine/` – pure logic: `rng.ts`, `grid.ts`, `map.ts`, `fov.ts`,
-  `vision.ts`, `pathfinding.ts`, `tileset.ts`, `tileFrames.ts`, `routes/`
+- `src/engine/` – pure logic: `rng.ts`, `grid.ts`, `map.ts`,
+  `pathfinding.ts`, `tileset.ts`, `tileFrames.ts`, `routes/`
   (`routeMap.ts`, `sketch.ts`, `validate.ts`, `trainers.ts`, `encounters.ts`),
   and `battle/` (`fighter.ts`, `state.ts`, `order.ts`, `damage.ts`,
   `accuracy.ts`, `status.ts`, `volatile.ts`, `turn.ts`, `commands.ts`,

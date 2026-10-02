@@ -18,7 +18,7 @@ value, never by art:
 | 3 | `TRAP` | yes | hazard, cave-flavoured |
 | 4 | `CHEST` | yes | loot |
 | 5 | `ITEM` | yes | floor item |
-| 6 | `WATER` | no | blocks movement, not vision |
+| 6 | `WATER` | no | blocks movement only |
 | 7 | `CARPET` | yes | interior floor |
 | 8 | `TALL_GRASS` | yes | rolls a wild encounter |
 | 9 | `LEDGE` | no | jump down only (movement rule, later) |
@@ -72,10 +72,10 @@ layer, the last row its base and the middle rows cycle as the wall rises; the
 `cols` frames repeat across x. A wall narrower than the motif is centred on it, so
 a one-tile hedge shows the middle column of a tree and never a cut-off edge.
 
-The FRLG fields use it to draw a FireRed tree: three columns wide, stacked
-vertically inside a wall, with a canopy at the top of the mass and a trunk at its
-foot (`D26`). The PMD sheets keep the per-shape `autotileFrame` and never declare
-a pattern.
+The FRLG fields use it to draw the real FireRed tree: a 3x4 block (crown, two
+canopy rows and the trunk platform) three columns wide, stacked vertically inside
+a wall, with a canopy at the top of the mass and a trunk at its foot (`D26`). The
+PMD sheets keep the per-shape `autotileFrame` and never declare a pattern.
 
 ## 4. Swapping
 

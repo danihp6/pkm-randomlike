@@ -15,6 +15,11 @@ export const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
   backgroundColor: '#10161f',
+  // Pixel art throughout: nearest-neighbour sampling and integer camera scroll.
+  // Without it the FRLG 16px cells scaled to the 24px world tile blend with the
+  // neighbouring atlas frame at fractional scroll, leaving dark seams between tiles.
+  pixelArt: true,
+  roundPixels: true,
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.NO_CENTER,

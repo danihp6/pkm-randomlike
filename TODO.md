@@ -79,8 +79,11 @@ Ports of Showdown handlers, in batches, on the hook names in
 ### Route generation & FRLG fields (`D26`) — in progress
 
 Shipped: the three biome layouts (`route`, `forest`, `cavern`, `src/engine/routes/layout.ts`),
-the whole-object wall motif (`wallPattern`, `src/engine/tileFrames.ts`), the FRLG
-floor/pond/ledge atlas and the biome wiring. Open, most useful first:
+the whole-object wall motif (`wallPattern`, `src/engine/tileFrames.ts`) now drawn
+with the real 3x4 FireRed tree (solid canopies, no ground leaks), the FRLG
+floor/pond/ledge atlas, the biome wiring, maps larger than the camera (56x32) with
+a follow camera and a four-tile tree/rock margin past the playable edge
+(`padMap`), and the map drawn in full with no fog of war. Open, most useful first:
 
 - [ ] **FRLG ground vs path.** The base floor now matches the game's ground colour
       (`rgb(112,200,160)`, sheet tile `6,1`), but the lighter tiles (`2,3`, `1,3`,
@@ -88,10 +91,6 @@ floor/pond/ledge atlas and the biome wiring. Open, most useful first:
       Decide which is ground, which is the path and which is decoration, and give
       the generator a real path to draw through a route (the current routes are
       all-ground with no path tile).
-- [ ] **Tree wall holes.** `wallPattern` draws a three-wide tree that stacks
-      vertically, but the tree bank's canopy-top row still leaks a little ground
-      between stacked tops. Bake a solid canopy (or overlap the tops) so a wall
-      reads without holes; verify against `map-route01.png` / `map-viridian.png`.
 - [ ] **Tall grass.** No source sheet has a tall-grass tile, so `TALL_GRASS`
       still draws plain ground under the procedural overlay
       (`docs/tileset-spec.md` §6). Draw a real tile (the game's is `rgb(64,176,136)`).

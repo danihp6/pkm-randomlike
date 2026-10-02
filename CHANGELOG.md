@@ -834,3 +834,32 @@ file is the human-readable summary.
       the plain ground is `rgb(112,200,160)` (sheet tile `6,1`), so the base floor
       now uses that and the lighter tiles stay as floor variants. 657 tests pass;
       `npm run build` clean.
+- [x] FRLG walls use the real FireRed tree (`D26` follow-up): the wall motif
+      stamped a canopy picked from higher up the sheet, so a border read as a
+      generic hedge instead of the game's tree. It now takes the real 3x4 tree
+      block in the bottom-left of `tileset-2.png`, above the pond (crown, two
+      canopy rows and the trunk platform), three columns wide, and bakes the
+      interior rows solid (`solidOver`) so a tall wall stacks without ground
+      gaps. The four pattern frames still hold its twelve cells, so
+      `frlg.test.ts` and `tileFrames.test.ts` are unchanged.
+- [x] Routes larger than the camera, framed by trees (`D26` follow-up): a route is
+      now 56x32 tiles instead of 24x16, so the camera follows the player and
+      scrolls. The scene renders a four-tile tree/rock margin past the playable
+      edge (`padMap`, `src/engine/map.ts`, `RouteScene.renderMap`) and bounds the
+      camera to it, so the border reads as more forest and the empty background is
+      never seen. The regression seed moved to the new size and the `route`
+      layout's hedge count was retuned (15 -> 90) to keep Route 1's density band
+      on the bigger field; `map.test.ts` covers `padMap`.
+- [x] No fog of war on a route (`D6` follow-up): the route draws the whole map at
+      full opacity, like the originals, so trainers and items are read off the map
+      instead of a vision radius. `RouteScene` dropped its `Vision` recompute and
+      the per-tile/entity alpha pass, and the now-unused `vision.ts` and `fov.ts`
+      modules (and their barrel exports) were removed. 659 tests pass;
+      `npm run build` clean.
+- [x] Pixel-art filtering fixed dark seams between route tiles: the FRLG cells are
+      16px art scaled to the 24px world tile, and the default linear filtering
+      blended each cell with the neighbouring atlas frame at fractional camera
+      scroll, leaving a dark line. `main.ts` now boots with `pixelArt: true` and
+      `roundPixels: true`, so the 3x total scale (sheet cell x tileset scale x
+      camera zoom) is nearest-neighbour and integer. 659 tests pass;
+      `npm run build` clean.

@@ -53,14 +53,13 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { EXIT, TALL_GRASS, resolveMove, tileAt, type TileMap } from '../engine/map';
+import { EXIT, TALL_GRASS, WALL, padMap, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, Rng } from '../engine/rng';
 import { storeRun, type Settings } from '../engine/save';
 import {
   RouteEncounters,
   seesPlayer,
   sketchRoute,
-  tileKey,
   trainerAt,
   type Facing,
   type RouteMap,
@@ -68,7 +67,6 @@ import {
 } from '../engine/routes';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame } from '../engine/tileFrames';
-import { Vision } from '../engine/vision';
 import { addFrlgWindow } from '../ui/frlg';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
@@ -78,9 +76,12 @@ import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { ARROW_TEXTURE_KEY, GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 
-const VISION_RADIUS = 6;
-const HIDDEN_ALPHA = 0.3;
-const EXPLORED_ALPHA = 0.7;
+/**
+ * Rings of tree/rock terrain rendered beyond the playable map (`padMap`), so the
+ * camera can follow the player out to the route border without ever showing the
+ * empty background. Purely cosmetic: movement and validation use the map.
+ */
+const MAP_MARGIN = 4;
 /** Item stacks the route HUD's bag row shows before it drops the rest. */
 const BAG_ICON_SLOTS = 6;
 
@@ -113,18 +114,16 @@ const DEMO_BAG: readonly BagCounts[] = [
 
 const FACING_ANGLE: Readonly<Record<Facing, number>> = { N: 0, E: 90, S: 180, W: 270 };
 
-type Foggable = Readonly<{ tile: Tile; objects: readonly Phaser.GameObjects.Image[] }>;
-
 export class RouteScene extends Phaser.Scene {
   private route!: RouteMap;
   private map!: TileMap;
-  private vision!: Vision;
+  /** `map` framed by tree/rock rings, drawn so the camera never shows a void. */
+  private renderMap!: TileMap;
   private encounters!: RouteEncounters;
   private tilesetId: TilesetId = 'wood';
   private player: Tile = { x: 1, y: 1 };
   private playerSprite!: Phaser.GameObjects.Sprite;
   private tileSprites: Phaser.GameObjects.Image[][] = [];
-  private foggables: Foggable[] = [];
   private run!: RunState;
   private settings!: Settings;
   private pickedItems = new Set<string>();
@@ -178,7 +177,6 @@ export class RouteScene extends Phaser.Scene {
     }
     this.persistRun();
     this.tileSprites = [];
-    this.foggables = [];
     this.hudRows = [];
     this.pickedItems = new Set<string>();
     this.gameOver = false;
@@ -211,8 +209,8 @@ export class RouteScene extends Phaser.Scene {
       ledges: biome.terrain.ledges,
     });
     this.map = this.route.tiles;
+    this.renderMap = padMap(this.map, MAP_MARGIN, WALL);
     this.tilesetId = resolveTileset(this.settings.tileset, biome.tilesetId);
-    this.vision = new Vision(VISION_RADIUS);
     this.encounters = new RouteEncounters(
       biome.encounters[band.id],
       band.minLevel,
@@ -230,8 +228,8 @@ export class RouteScene extends Phaser.Scene {
       .setDepth(10);
     this.movePlayerTo(this.player.x, this.player.y);
 
-    const width = this.map[0].length * TILE_SIZE;
-    const height = this.map.length * TILE_SIZE;
+    const width = this.renderMap[0].length * TILE_SIZE;
+    const height = this.renderMap.length * TILE_SIZE;
     this.cameras.main.setBounds(0, 0, width, height);
     this.cameras.main.setZoom(2);
     this.cameras.main.startFollow(this.playerSprite, true, 0.2, 0.2);
@@ -389,10 +387,10 @@ export class RouteScene extends Phaser.Scene {
 
   private drawTiles(): void {
     const textures = TILESETS[this.tilesetId];
-    for (let y = 0; y < this.map.length; y++) {
+    for (let y = 0; y < this.renderMap.length; y++) {
       const row: Phaser.GameObjects.Image[] = [];
-      for (let x = 0; x < this.map[y].length; x++) {
-        const frame = resolveTileFrame(this.map, x, y, textures.config);
+      for (let x = 0; x < this.renderMap[y].length; x++) {
+        const frame = resolveTileFrame(this.renderMap, x, y, textures.config);
         const source = frame?.source ?? 'atlas';
         const key = source === 'common' ? COMMON_TEXTURE_KEY : tilesetTextureKey(this.tilesetId);
         row.push(
@@ -410,18 +408,16 @@ export class RouteScene extends Phaser.Scene {
     for (let y = 0; y < this.map.length; y++) {
       for (let x = 0; x < this.map[y].length; x++) {
         if (this.map[y][x] === TALL_GRASS) {
-          const object = this.add.image(this.centerX(x), this.centerY(y), GRASS_TEXTURE_KEY).setDepth(1);
-          this.foggables.push({ tile: { x, y }, objects: [object] });
+          this.add.image(this.centerX(x), this.centerY(y), GRASS_TEXTURE_KEY).setDepth(1);
         }
       }
     }
     for (const item of this.route.items) {
       const frame = itemIconFrame(item.itemId) ?? 0;
-      const object = this.add
+      this.add
         .image(this.centerX(item.position.x), this.centerY(item.position.y), ITEM_ICON_TEXTURE_KEY, frame)
         .setScale(0.7)
         .setDepth(5);
-      this.foggables.push({ tile: item.position, objects: [object] });
     }
     for (const trainer of this.route.trainers) {
       const archetype = getTrainerArchetype(trainer.archetypeId);
@@ -437,12 +433,11 @@ export class RouteScene extends Phaser.Scene {
               .setOrigin(0.5, 1)
               .setScale(TILE_SIZE / OVERWORLD_SPRITE_WIDTH);
       body.setDepth(8);
-      const arrow = this.add
+      this.add
         .image(centerX, centerY, ARROW_TEXTURE_KEY)
         .setTint(colour)
         .setAngle(FACING_ANGLE[trainer.facing])
         .setDepth(9);
-      this.foggables.push({ tile: trainer.position, objects: [body, arrow] });
     }
   }
 
@@ -462,9 +457,9 @@ export class RouteScene extends Phaser.Scene {
   private applyTileset(id: TilesetId): void {
     this.tilesetId = id;
     const textures = TILESETS[id];
-    for (let y = 0; y < this.map.length; y++) {
-      for (let x = 0; x < this.map[y].length; x++) {
-        const frame = resolveTileFrame(this.map, x, y, textures.config);
+    for (let y = 0; y < this.renderMap.length; y++) {
+      for (let x = 0; x < this.renderMap[y].length; x++) {
+        const frame = resolveTileFrame(this.renderMap, x, y, textures.config);
         const source = frame?.source ?? 'atlas';
         const key = source === 'common' ? COMMON_TEXTURE_KEY : tilesetTextureKey(id);
         this.tileSprites[y][x].setTexture(key, frame?.frame ?? 0).setScale(this.tileScale(source));
@@ -473,14 +468,12 @@ export class RouteScene extends Phaser.Scene {
     this.setHint(`tileset: ${textures.name}`);
   }
 
-  /** Snaps the sprite to a tile and recomputes the fog, without a step. */
+  /** Snaps the sprite to a tile, without a step. */
   private movePlayerTo(x: number, y: number): void {
     this.player = { x, y };
     // The 16x32 FRLG frame stands with its feet on the tile's bottom edge, the
     // same placement the route's trainers use.
     this.playerSprite.setPosition(this.centerX(x), this.centerY(y) + TILE_SIZE / 2);
-    this.vision.recompute(this.map, this.player);
-    this.refreshFog();
   }
 
   /** Turns the sprite to face a direction, flipping the left-facing side frame. */
@@ -510,8 +503,6 @@ export class RouteScene extends Phaser.Scene {
       onComplete: () => {
         this.walkTween = null;
         this.player = { x: to.x, y: to.y };
-        this.vision.recompute(this.map, this.player);
-        this.refreshFog();
         this.onTileEntered();
       },
     });
@@ -522,28 +513,6 @@ export class RouteScene extends Phaser.Scene {
     if (this.walkTween || !this.playerSprite.anims.isPlaying) return;
     this.playerSprite.anims.stop();
     this.playerSprite.setFrame(playerSpriteFrame(this.facing));
-  }
-
-  private refreshFog(): void {
-    const alphaFor = (tile: Tile): number => {
-      const key = tileKey(tile);
-      if (this.vision.visible.has(key)) return 1;
-      return this.vision.explored.has(key) ? EXPLORED_ALPHA : HIDDEN_ALPHA;
-    };
-    const entityAlphaFor = (tile: Tile): number => {
-      const key = tileKey(tile);
-      if (this.vision.visible.has(key)) return 1;
-      return this.vision.explored.has(key) ? EXPLORED_ALPHA : 0;
-    };
-    for (let y = 0; y < this.map.length; y++) {
-      for (let x = 0; x < this.map[y].length; x++) {
-        this.tileSprites[y][x].setAlpha(alphaFor({ x, y }));
-      }
-    }
-    for (const foggable of this.foggables) {
-      const alpha = entityAlphaFor(foggable.tile);
-      for (const object of foggable.objects) object.setAlpha(alpha);
-    }
   }
 
   private onTileEntered(): void {

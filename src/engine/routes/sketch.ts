@@ -24,8 +24,8 @@ import { pickWeighted } from './encounters';
 import { DEFAULT_LAYOUT, LAYOUTS, type LayoutSpec, type LayoutStyle } from './layout';
 import { reachableTiles, validateRoute } from './validate';
 
-export const ROUTE_WIDTH = 24;
-export const ROUTE_HEIGHT = 16;
+export const ROUTE_WIDTH = 56;
+export const ROUTE_HEIGHT = 32;
 export const ROUTE_SIGHT_RANGE = 3;
 
 const MAX_ATTEMPTS = 8;

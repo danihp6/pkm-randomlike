@@ -50,9 +50,8 @@ export const FRAME_WALL_DIAGONAL_CORNER_SW = 23;
 
 /**
  * Water autotile shapes - same shape vocabulary as FRAME_WALL_*, one slot per
- * shape a biome tileset needs. Water blocks movement but not vision (see
- * `map.ts`'s SOLID and `fov.ts`'s isOpaque), so it's an obstacle to carve
- * around, not a hazard.
+ * shape a biome tileset needs. Water is solid (`map.ts`'s SOLID), so it's an
+ * obstacle to carve around, not a hazard.
  */
 export const FRAME_WATER_INTERIOR = 24;
 export const FRAME_WATER_EDGE_N = 25;
