@@ -871,8 +871,9 @@ file is the human-readable summary.
       follow-up): the wall had a single body frame, so the second visible row drew
       the lower body (row 36) instead of the wide one (row 35), and the baking
       sampled each tile's top-left pixel as "background", which is a leaf on the
-      body rows and corrupted the right-hand tile. `fieldFrames` now keys the real
-      grass colour (`88,160,128`) sampled from the crown, and the motif holds five
+      body rows and corrupted the right-hand tile. `fieldFrames` now keys the whole
+      teal ground family (the grass and its darker shadow, detected by hue) so the
+      body corners match the floor, and the motif holds five
       frames — crown over ground, crown over trunk, the two body rows and the
       trunk — so `patternFrame` runs body, lower, then the crown that overlaps the
       trunk. `frlg.ts` grows `FRLG_WALL_LOWER_FRAMES` and moves the base to

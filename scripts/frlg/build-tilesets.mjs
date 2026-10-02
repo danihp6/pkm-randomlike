@@ -160,19 +160,36 @@ function compositeOver(over, floor) {
 }
 
 /**
- * Replaces a tile's flat ground colour `bg` with another tile's pixels, so a tree
- * drawn on grass can sit on the floor, stack without showing ground between the
- * tops, or (over the trunk) let the trunk show through. `bg` is passed in: sampling
- * a tile's own top-left pixel fails on the body rows, whose corner is a leaf.
+ * Whether a pixel is part of the flat ground the wall bank is drawn on. The tree
+ * bank shades its grass (`88,160,128` and the `48,136,104` shadow) with the same
+ * teal hue, while the leaves stay yellow-green (`hue ~100`) and the trunk brown
+ * (`hue ~30`), so a hue window separates ground from tree without a long list of
+ * exact colours. `bg` is the crown's own ground colour, for the tiles (cave rock)
+ * whose ground is not that teal.
+ */
+function isGround(r, g, b, bg) {
+  if (Math.abs(r - bg[0]) < 24 && Math.abs(g - bg[1]) < 24 && Math.abs(b - bg[2]) < 24) return true
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const d = max - min
+  if (d === 0 || max <= 60) return false
+  let hue
+  if (max === g) hue = 60 * ((b - r) / d + 2)
+  else if (max === b) hue = 60 * ((r - g) / d + 4)
+  else hue = 60 * (((g - b) / d) % 6)
+  if (hue < 0) hue += 360
+  return hue >= 130 && hue <= 195
+}
+
+/**
+ * Replaces a tile's flat ground colour with another tile's pixels, so a tree drawn
+ * on grass can sit on the floor, stack without showing ground between the tops, or
+ * (over the trunk) let the trunk show through.
  */
 function keyBackground(over, fill, bg) {
   const out = Buffer.from(over)
   for (let i = 0; i < out.length; i += 4) {
-    const close =
-      Math.abs(out[i] - bg[0]) < 24 &&
-      Math.abs(out[i + 1] - bg[1]) < 24 &&
-      Math.abs(out[i + 2] - bg[2]) < 24
-    if (close) fill.copy(out, i, i, i + 4)
+    if (isGround(out[i], out[i + 1], out[i + 2], bg)) fill.copy(out, i, i, i + 4)
   }
   return out
 }
