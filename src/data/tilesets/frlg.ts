@@ -39,30 +39,35 @@ export const FRLG_ATLAS_HEIGHT = FRLG_TILE_SIZE * TILESET_ROWS;
 
 /**
  * FRLG walls are whole objects, not a per-shape stamp: the tree is the real
- * FireRed 3x4 block from the bottom-left of the sheet, three tiles wide and four
- * rows tall (crown, two canopy rows and the trunk platform). These frames hold its
- * fifteen cells and must stay in step with `build-tilesets.mjs`:
+ * FireRed 3x4 block from the bottom-left of the sheet, three tiles wide. These
+ * frames hold its cells and must stay in step with `build-tilesets.mjs`:
  *
  * - `TOP` is the crown against open ground (the mass's top row),
- * - `CANOPY` is the crown laid over the trunk row (where the next tree overlaps
- *   the one above),
- * - `BODY` is the crown's upper leaves and `LOWER` its lower leaves (the two body
- *   rows the wall repeats),
- * - `BASE` is the trunk platform at the foot of a mass.
+ * - `BODY` is the tree's own upper leaves,
+ * - `CROWN` is the next tree's crown laid over the lower leaves of the tree above,
+ * - `MID` is a tree's upper leaves laid over the trunk of the tree above (so the
+ *   trunk is hidden and its lower leaves never show through the body),
+ * - `LOWER` is the mass's lower leaves (the row above the foot),
+ * - `BASE` is the trunk platform at the foot of a mass,
+ * so two stacked trees read `TOP, BODY, CROWN, MID, CROWN, ...`: each crown lands
+ * on the lower-body row of the tree above and the body row covers its trunk, so a
+ * trunk only shows at the foot.
  */
 export const FRLG_WALL_TOP_FRAMES = [7, 8, 9] as const;
-export const FRLG_WALL_CANOPY_FRAMES = [10, 11, 12] as const;
-export const FRLG_WALL_BODY_FRAMES = [13, 14, 15] as const;
-export const FRLG_WALL_LOWER_FRAMES = [16, 17, 18] as const;
-export const FRLG_WALL_BASE_FRAMES = [19, 20, 21] as const;
+export const FRLG_WALL_BODY_FRAMES = [10, 11, 12] as const;
+export const FRLG_WALL_CROWN_FRAMES = [13, 14, 15] as const;
+export const FRLG_WALL_MID_FRAMES = [16, 17, 18] as const;
+export const FRLG_WALL_LOWER_FRAMES = [19, 20, 21] as const;
+export const FRLG_WALL_BASE_FRAMES = [22, 23, 44] as const;
 
 const WALL_PATTERN: WallPattern = {
   value: WALL,
   cols: 3,
   rows: [
     FRLG_WALL_TOP_FRAMES,
-    FRLG_WALL_CANOPY_FRAMES,
     FRLG_WALL_BODY_FRAMES,
+    FRLG_WALL_CROWN_FRAMES,
+    FRLG_WALL_MID_FRAMES,
     FRLG_WALL_LOWER_FRAMES,
     FRLG_WALL_BASE_FRAMES,
   ],

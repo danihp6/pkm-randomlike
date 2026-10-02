@@ -68,20 +68,21 @@ map always looks the same.
 A tileset can declare a `wallPattern` instead of shaping a wall with the autotile:
 a whole `cols` x `rows` motif (`WallPattern` in `src/engine/tileset.ts`).
 `patternFrame` anchors it to the mass's top-left, so `rows[0]` is the mass's top
-layer and the last row its base. In between, the object repeats every `rows - 1`
-rows: `rows[1]` (the crown baked over the trunk) lands on the trunk row of the
-object above and `rows[2..rows-2]` are its body rows, so a tall wall reads as
-stacked objects. The `cols` frames repeat across x. A wall narrower than the motif
-is centred on it, so a one-tile hedge shows the middle column of a tree and never a
-cut-off edge.
+layer and the last row its foot. The row just above the foot is the mass's own
+lower leaves, and the interior alternates the motif's crown row and body row, so a
+tall wall reads as stacked objects. The `cols` frames repeat across x. A wall
+narrower than the motif is centred on it, so a one-tile hedge shows the middle
+column of a tree and never a cut-off edge.
 
-The FRLG fields use it to draw the real FireRed tree, three columns wide and four
-object rows tall (crown, two body rows and the trunk platform), expanded to five
-frames so the overlap and the two bodies stay distinct: `rows[0]` the crown over
-open ground, `rows[1]` the crown over the trunk, `rows[2]` and `rows[3]` the two
-body rows and `rows[4]` the trunk. The crown repeats every three tiles,
-superimposed on the complete trunk row of the tree above — its grass background is
-keyed out at bake time, so the trunk stays visible under the crown (`D26`).
+The FRLG fields use it to draw the real FireRed tree, three columns wide, with six
+frames: `rows[0]` the crown over open ground (the mass's top), `rows[1]` the tree's
+own upper leaves, `rows[2]` the next tree's crown laid over the **lower leaves** of
+the tree above, `rows[3]` a tree's upper leaves laid over the **trunk** of the tree
+above, `rows[4]` the mass's lower leaves above the foot and `rows[5]` the trunk
+platform. Because the crown lands on the lower-body row of the tree above and the
+body row covers its trunk (instead of its lower leaves), the trunk stays hidden
+inside the mass and only shows at the foot; the grass background is keyed out at
+bake time (`D26`).
 
 A wall's own ground is left **transparent** on the frames that sit against the
 floor (the crown and the trunk platform), and `RouteScene` draws a floor frame

@@ -20,8 +20,9 @@ import {
   FRLG_TILESET,
   FRLG_WALL_BASE_FRAMES,
   FRLG_WALL_BODY_FRAMES,
-  FRLG_WALL_CANOPY_FRAMES,
+  FRLG_WALL_CROWN_FRAMES,
   FRLG_WALL_LOWER_FRAMES,
+  FRLG_WALL_MID_FRAMES,
   FRLG_WALL_TOP_FRAMES,
 } from './frlg';
 
@@ -76,13 +77,14 @@ describe('frlg tileset atlases', () => {
   it('stamps the solid wall frames and the water shapes the autotiler can return', () => {
     for (const name of ATLASES) {
       const png = atlas(name);
-      // The canopy and body frames are the tree itself: always stamped. The top
-      // and base frames keep a transparent ground so the floor shows through, and
-      // their edge columns can be fully transparent (the crown/trunk is narrower
-      // than the motif), so only the whole row has to carry art.
+      // The body, crown and lower frames are the tree itself: always stamped. The
+      // top and base frames keep a transparent ground so the floor shows through,
+      // and their edge columns can be fully transparent (the crown/trunk is
+      // narrower than the motif), so only the whole row has to carry art.
       for (const frame of [
-        ...FRLG_WALL_CANOPY_FRAMES,
         ...FRLG_WALL_BODY_FRAMES,
+        ...FRLG_WALL_CROWN_FRAMES,
+        ...FRLG_WALL_MID_FRAMES,
         ...FRLG_WALL_LOWER_FRAMES,
       ]) {
         expect(tileIsBlank(png, frame), `${name} wall frame ${frame}`).toBe(false);

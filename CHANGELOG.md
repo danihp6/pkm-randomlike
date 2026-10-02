@@ -889,3 +889,13 @@ file is the human-readable summary.
       neighbours and blends in. `frlg.test.ts` allows the transparent edge rows and
       `tileFrames.test.ts` covers `resolveGroundFrame`. 660 tests pass;
       `npm run build` clean.
+- [x] FRLG tree crowns stack on the lower leaves (`D26` follow-up): the crown of
+      the tree below lands on the lower-body row of the tree above and the body row
+      covers that tree's trunk, so the interior hides the trunk and only the mass's
+      foot shows the platform. The motif keeps six frames (top, body, crown, mid,
+      lower, foot); `build-tilesets.mjs` composites `top` over `lower`, `body` over
+      `lower` (mass top) and `body` over `base` (the row that hides the trunk),
+      `patternFrame` alternates crown/body above the foot
+      (`src/engine/tileFrames.ts`) and `frlg.ts` renames `CANOPY` to `CROWN` and adds
+      `MID`. `frlg.test.ts` and `tileFrames.test.ts` updated; 661 tests pass;
+      `npm run build` clean.
