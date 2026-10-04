@@ -40,6 +40,18 @@ if (IS_DEVELOP) {
         const route = game.scene.getScene('Route') as RouteScene | null;
         route?.startDebugWildBattle(speciesId, level);
       },
+      readRouteContext: () => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        return route?.debugRouteContext() ?? null;
+      },
+      onRegenerateRoute: (input) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        route?.regenerateRoute(input);
+      },
+      onTogglePassThrough: (enabled) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        route?.setPassThrough(enabled);
+      },
     });
   });
 }

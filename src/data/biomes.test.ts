@@ -4,11 +4,11 @@ import { TILESET_IDS } from './tilesets';
 import { LEVEL_BANDS } from './run';
 
 describe('biomes', () => {
-  it('cycles through the biome order that `biomeForRoute` defines', () => {
-    expect(biomeForRoute(1).id).toBe(BIOME_ORDER[0]);
-    expect(biomeForRoute(BIOME_ORDER.length + 1).id).toBe(BIOME_ORDER[0]);
-    expect(biomeForRoute(2).id).toBe(BIOME_ORDER[1]);
-    expect(biomeForRoute(0).id).toBe(BIOME_ORDER[0]);
+  it('maps every route to the biome order that `biomeForRoute` defines', () => {
+    expect(BIOME_ORDER).toEqual(['forest']);
+    for (const index of [0, 1, 2, 3, 8, 40]) {
+      expect(biomeForRoute(index).id).toBe(BIOME_ORDER[0]);
+    }
   });
 
   it('points every biome at a registered tileset and a full encounter table', () => {

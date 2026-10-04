@@ -1,6 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import type { Species } from '../data/dex';
-import { clampLevel, DEBUG_DEFAULT_LEVEL, DEBUG_MAX_LEVEL, DEBUG_MIN_LEVEL, matchSpecies } from './debugMenu';
+import { RUN_CHAIN } from '../data/run';
+import {
+  clampLevel,
+  DEBUG_DEFAULT_LEVEL,
+  DEBUG_MAX_LEVEL,
+  DEBUG_MIN_LEVEL,
+  DEBUG_ROUTE_HEIGHT_MAX,
+  DEBUG_ROUTE_HEIGHT_MIN,
+  DEBUG_ROUTE_WIDTH_MAX,
+  DEBUG_ROUTE_WIDTH_MIN,
+  matchSpecies,
+  parseOptionalInt,
+  parseOptionalText,
+  randomRouteInput,
+} from './debugMenu';
 
 function species(id: string, name: string, num: number): Species {
   return {
@@ -63,5 +77,40 @@ describe('clampLevel', () => {
 
   it('falls back to the default on a broken field', () => {
     expect(clampLevel(Number.NaN)).toBe(DEBUG_DEFAULT_LEVEL);
+  });
+});
+
+describe('parseOptionalInt / parseOptionalText', () => {
+  it('treats a blank field as auto', () => {
+    expect(parseOptionalInt('')).toBeUndefined();
+    expect(parseOptionalInt('   ')).toBeUndefined();
+    expect(parseOptionalText('   ')).toBeUndefined();
+  });
+
+  it('reads a number, truncates fractions and trims text', () => {
+    expect(parseOptionalInt(' 12 ')).toBe(12);
+    expect(parseOptionalInt('12.9')).toBe(12);
+    expect(parseOptionalText(' seed ')).toBe('seed');
+  });
+
+  it('treats a non-numeric field as auto', () => {
+    expect(parseOptionalInt('abc')).toBeUndefined();
+  });
+});
+
+describe('randomRouteInput', () => {
+  it('draws the low end of every range', () => {
+    const input = randomRouteInput(() => 0);
+    expect(input.routeIndex).toBe(1);
+    expect(input.width).toBe(DEBUG_ROUTE_WIDTH_MIN);
+    expect(input.height).toBe(DEBUG_ROUTE_HEIGHT_MIN);
+  });
+
+  it('draws the high end of every range', () => {
+    const input = randomRouteInput(() => 0.999999);
+    expect(input.routeIndex).toBe(RUN_CHAIN.finiteLength);
+    expect(input.width).toBe(DEBUG_ROUTE_WIDTH_MAX);
+    expect(input.height).toBe(DEBUG_ROUTE_HEIGHT_MAX);
+    expect(['forest']).toContain(input.layout);
   });
 });

@@ -23,7 +23,7 @@ export type TrainerArchetype = Readonly<{
   /**
    * Themed species pool per level band; the roster generator draws from the
    * route's band, so a youngster leads with sentrets on route 1 and fields
-   * furrets, greedents and cinccinos late (`docs/routes-spec.md` §6).
+   * furrets, greedents and cinccinos late (`docs/routes-spec.md` §5).
    */
   pools: TrainerPools;
 }>;

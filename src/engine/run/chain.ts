@@ -4,7 +4,7 @@ import type { RunMode } from './state';
 export type RouteKind = 'route' | 'miniboss' | 'boss' | 'final';
 
 /**
- * What a route index plays as, from the cadence in `docs/routes-spec.md` §5.
+ * What a route index plays as, from the cadence in `docs/routes-spec.md` §4.
  * `kind` is what the route *is*: a regular route, the mini-boss that lands every
  * `minibossEvery` routes, the boss closing each `bossBlock`, or the finite run's
  * final boss. `block`/`slot` locate the route inside that cadence.

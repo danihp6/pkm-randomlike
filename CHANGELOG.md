@@ -6,6 +6,47 @@ rationale behind each rule (`D##` decisions) lives in
 `docs/tech-decisions.md`. The commits carry the moment-by-moment history; this
 file is the human-readable summary.
 
+## Unreleased
+
+- [x] Biome is **forest only**: `BIOME_ORDER = ['forest']`, so a route always uses
+      the forest tileset and encounters whatever its index (the outdoor/cave
+      entries stay defined but dormant). The route **shape** is now a first-class
+      algorithm concept: `docs/route-generator.md` defines `straight` (2 opposite
+      openings), `bend` (L, 2 adjacent) and `cross` (4, opposite pairs), each with
+      `openings` (edge + entry/exit) and the `links` the spine joins, and `RouteMap`
+      is specced as `entry` + `exits`. Implementation is Phase 2 steps 1-3.
+- [x] Layout trimmed to a single style: `LayoutStyle` is now only `forest`
+      (FireRed/LeafGreen, entered S / left N) and every biome uses it; `route`
+      (Route 1) and `cavern` (Mt. Moon) are removed until their interiors return.
+      It still carves an open field (`kind: 'open'`), so maps stay plain. The
+      debug panel's "Randomize" and its Layout select follow (`forest` only), and
+      the `grass`/`water`/`ledges` fields were **removed** from the panel — the
+      terrain passes stay dormant and are no longer exposed, which stops the
+      panel from silently re-adding them to a route.
+- [x] Debug **route regenerate**: the dev panel (`src/dev/debugMenu.ts`) has a
+      "Route" section that exposes the generator inputs (`seed`, `routeIndex`,
+      `attempt`, `layout`, `width`, `height`) and shows the
+      derived biome and band read-only. A blank field is `auto` (live value), a
+      "Randomize" button fills every override and `attempt` increments per press,
+      so one seed can be re-rolled reproducibly. Wired through `main.ts` to
+      `RouteScene.regenerateRoute`, which rebuilds map, tiles, entities and the
+      encounter stream and re-places the player with no run state change. Behind
+      `IS_DEVELOP`.
+- [x] Debug **noclip toggle** and panel polish: the debug menu now has "Battle"
+      and "Route" tabs, starts **closed**, and `E` shows or hides it (was `F2`,
+      now `DEBUG_MENU_TOGGLE_KEY`). A "Pass through obstacles" checkbox lets the
+      route move onto `WALL`/`WATER`/`LEDGE` in bounds so a map can be inspected
+      without walking it. Behind `IS_DEVELOP`; reset on scene create and never
+      persisted into the run.
+- [x] Removed route **trainers** and **ground items** for now: `RouteMap` only
+      carries tiles, start and exit, `sketchRoute` no longer takes
+      `trainerCount`/`itemCount`/`loot`, and `RouteScene` drops the trainer
+      sprites, line-of-sight triggers, item pickup and the hint's trainer count.
+      `src/engine/routes/trainers.ts` and `src/data/loot.ts` (`ROUTE_LOOT`) are
+      deleted. The archetype tables (`src/data/trainers.ts`) and the roster
+      builder (`src/engine/run/roster.ts`) stay, dormant, for when population
+      returns.
+
 ## Phase 0 — Repo & scaffolding
 
 - [x] `git init`; add `.gitignore` (`node_modules/`, `dist/`, `.vite/`, `*.local`,

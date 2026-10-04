@@ -6,7 +6,7 @@ export type RunMode = 'finite' | 'infinite';
 
 export const MAX_PARTY_SIZE = 6;
 
-/** The starter route index; a run begins on route 1 (docs/routes-spec.md §5). */
+/** The starter route index; a run begins on route 1 (docs/routes-spec.md §4). */
 export const FIRST_ROUTE = 1;
 
 /** What the run summary counts: caught along the way, and lost for good (D5). */

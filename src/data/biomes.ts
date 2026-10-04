@@ -25,7 +25,7 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     name: 'Woods',
     tilesetId: 'wood',
     encounters: ENCOUNTER_TABLES.wood,
-    layout: 'route',
+    layout: 'forest',
     terrain: { grassPatches: 0, waterBodies: 0, ledges: 0 },
   },
   placeholder: {
@@ -33,7 +33,7 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     name: 'Test Grounds',
     tilesetId: 'placeholder',
     encounters: ENCOUNTER_TABLES.placeholder,
-    layout: 'route',
+    layout: 'forest',
     terrain: { grassPatches: 0, waterBodies: 0, ledges: 0 },
   },
   outdoor: {
@@ -41,7 +41,7 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     name: 'Sunlit Route',
     tilesetId: 'outdoor',
     encounters: ENCOUNTER_TABLES.outdoor,
-    layout: 'route',
+    layout: 'forest',
     terrain: { grassPatches: 0, waterBodies: 0, ledges: 0 },
   },
   forest: {
@@ -57,12 +57,13 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     name: 'Rocky Cave',
     tilesetId: 'cave',
     encounters: ENCOUNTER_TABLES.cave,
-    layout: 'cavern',
+    layout: 'forest',
     terrain: { grassPatches: 0, waterBodies: 0, ledges: 0 },
   },
 };
 
-export const BIOME_ORDER: readonly BiomeId[] = ['outdoor', 'forest', 'cave'];
+/** The biomes a route cycles through. Only the forest for now. */
+export const BIOME_ORDER: readonly BiomeId[] = ['forest'];
 
 export function biomeForRoute(routeIndex: number): Biome {
   const index = Math.max(1, Math.floor(routeIndex)) - 1;

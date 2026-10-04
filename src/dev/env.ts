@@ -4,4 +4,4 @@ export const ENVIRONMENT: string = import.meta.env.ENVIRONMENT ?? '';
 export const IS_DEVELOP: boolean = ENVIRONMENT === 'develop';
 
 /** The key that shows or hides the dev debug menu (see `src/dev/debugMenu.ts`). */
-export const DEBUG_MENU_TOGGLE_KEY = 'F2';
+export const DEBUG_MENU_TOGGLE_KEY = 'E';

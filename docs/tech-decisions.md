@@ -120,8 +120,8 @@ table says so, not that the list was copied.
 
 Stats, types and evolutions are fixed per species (dex data) and are never
 rolled. Randomness is limited to what a run varies: a wild encounter's species
-and level, a Pokémon's learnset/moveset and ability, a trainer's team, and which
-floor items spawn. One run seed drives all of it through `Rng` streams.
+and level, a Pokémon's learnset/moveset and ability, and a trainer's team. One
+run seed drives all of it through `Rng` streams.
 
 ## D18 — Tile size is a property of the tileset *(decided)*
 
@@ -292,7 +292,9 @@ three tiles on the sides and four top/bottom with the route's own border) and
 bounds the camera to it, so the route border never shows the empty background. The map is drawn in
 full — no fog of war or vision radius, like the originals (`D6`).
 `docs/routes-spec.md` §2 holds the pipeline; adding a biome is a `layout` field
-plus its tileset.
+plus its tileset. **Addendum (current):** only the `forest` style is active —
+`route` and `cavern` were removed for now — and it still carves the open field;
+the `hedges` and `maze` carvers wait until the interiors come back.
 
 ## Open questions
 

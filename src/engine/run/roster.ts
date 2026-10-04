@@ -9,7 +9,7 @@ export type RosterEntry = Readonly<{ id: string; speciesId: string; level: numbe
  * replacement from the archetype's pool for the route's band (repeats only if
  * the pool is smaller than the party), each level inside the band. The band's
  * pool is the archetype's progression: weak base forms early, evolved forms
- * late (`docs/routes-spec.md` §6). The run's battle seed feeds the `rng`, so a
+ * late (`docs/routes-spec.md` §5). The run's battle seed feeds the `rng`, so a
  * replay rebuilds the same team. Phase 6 can layer held items and movesets on
  * top.
  */

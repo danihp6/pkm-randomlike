@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { ROUTE_LOOT } from './loot';
 import { ITEMS, buyPrice, getItem, isForSale, sellPrice, type ItemKind } from './items';
 
 const KINDS: readonly ItemKind[] = ['ball', 'heal', 'status', 'boost', 'held'];
@@ -25,12 +24,6 @@ describe('item catalogue', () => {
   it('sells everything except the Master Ball', () => {
     for (const entry of ITEMS) {
       expect(isForSale(entry), entry.id).toBe(entry.id !== 'masterball');
-    }
-  });
-
-  it('keeps the Premier Ball out of the ground-loot pool', () => {
-    for (const band of Object.values(ROUTE_LOOT)) {
-      expect(band.pool.some((entry) => entry.itemId === 'premierball')).toBe(false);
     }
   });
 

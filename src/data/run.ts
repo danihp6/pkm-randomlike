@@ -34,7 +34,7 @@ export function levelCapForRoute(routeIndex: number): number {
   return bandForRoute(routeIndex).maxLevel;
 }
 
-/** Route cadence from `docs/routes-spec.md` §5. Consumed by the run chain (Phase 6). */
+/** Route cadence from `docs/routes-spec.md` §4. Consumed by the run chain (Phase 6). */
 export const RUN_CHAIN = {
   finiteLength: 40,
   minibossEvery: 4,

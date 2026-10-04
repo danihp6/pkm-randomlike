@@ -3,7 +3,7 @@ import type { RunPokemon } from './progression';
 import { type RunState } from './state';
 
 /**
- * A rested member: HP and PP back to full, status untouched (routes-spec §7).
+ * A rested member: HP and PP back to full, status untouched (routes-spec §6).
  * A member already at 0 HP is left as it is — the healing stop never resurrects
  * (D5), so a fallen Pokémon cannot be pulled back by resting.
  */

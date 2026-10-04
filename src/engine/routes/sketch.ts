@@ -1,4 +1,3 @@
-import type { LootEntry } from '../../data/loot';
 import type { Tile } from '../grid';
 import {
   EXIT,
@@ -8,28 +7,17 @@ import {
   WALL,
   WATER,
   isWalkable,
-  tileAt,
   type TileMap,
 } from '../map';
 import { Rng, hashSeed } from '../rng';
-import {
-  FACINGS,
-  tileKey,
-  type Facing,
-  type RouteItem,
-  type RouteMap,
-  type RouteTrainer,
-} from './routeMap';
-import { pickWeighted } from './encounters';
+import { tileKey, type RouteMap } from './routeMap';
 import { DEFAULT_LAYOUT, LAYOUTS, type LayoutSpec, type LayoutStyle } from './layout';
-import { reachableTiles, validateRoute } from './validate';
+import { validateRoute } from './validate';
 
 export const ROUTE_WIDTH = 56;
 export const ROUTE_HEIGHT = 32;
-export const ROUTE_SIGHT_RANGE = 3;
 
 const MAX_ATTEMPTS = 8;
-const DEFAULT_FLOOR_ITEMS: readonly string[] = ['potion', 'pokeball'];
 
 const CARDINALS: readonly Tile[] = [
   { x: 1, y: 0 },
@@ -42,9 +30,6 @@ export type RouteRequest = Readonly<{
   seed: string;
   routeIndex: number;
   biomeId: string;
-  trainerArchetypeIds: readonly string[];
-  trainerCount: number;
-  itemCount: number;
   /** Route shape, picked by the biome; defaults to the open `route` layout. */
   layout?: LayoutStyle;
   width?: number;
@@ -52,13 +37,6 @@ export type RouteRequest = Readonly<{
   grassPatches?: number;
   waterBodies?: number;
   ledges?: number;
-  sightRange?: number;
-  itemIds?: readonly string[];
-  /**
-   * Weighted ground-item pool. When set it replaces `itemIds`, so the band's
-   * loot table (with better items in later bands) drives what a route holds.
-   */
-  loot?: readonly LootEntry[];
 }>;
 
 type MutableMap = number[][];
@@ -75,15 +53,6 @@ function collectFloorTiles(tiles: TileMap): Tile[] {
     }
   }
   return floors;
-}
-
-function parseKey(key: string): Tile {
-  const [x, y] = key.split(',').map(Number);
-  return { x, y };
-}
-
-function distance(a: Tile, b: Tile): number {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -411,28 +380,6 @@ function carveLedges(tiles: MutableMap, rng: Rng, pool: readonly Tile[], count: 
   }
 }
 
-function pickFacing(tiles: TileMap, position: Tile, rng: Rng): Facing | undefined {
-  const order = [...FACINGS];
-  for (let i = order.length - 1; i > 0; i--) {
-    const j = rng.int(0, i);
-    const swap = order[i];
-    order[i] = order[j];
-    order[j] = swap;
-  }
-  const vectors: Record<Facing, Tile> = {
-    N: { x: 0, y: -1 },
-    E: { x: 1, y: 0 },
-    S: { x: 0, y: 1 },
-    W: { x: -1, y: 0 },
-  };
-  for (const facing of order) {
-    const ahead = { x: position.x + vectors[facing].x, y: position.y + vectors[facing].y };
-    const value = tileAt(tiles, ahead);
-    if (value === FLOOR || value === TALL_GRASS) return facing;
-  }
-  return undefined;
-}
-
 function attemptRoute(request: RouteRequest, rng: Rng, width: number, height: number): RouteMap {
   const spec = LAYOUTS[request.layout ?? DEFAULT_LAYOUT];
   const tiles: MutableMap = Array.from({ length: height }, () => new Array<number>(width).fill(WALL));
@@ -469,50 +416,6 @@ function attemptRoute(request: RouteRequest, rng: Rng, width: number, height: nu
   tiles[start.y][start.x] = FLOOR;
   tiles[exit.y][exit.x] = EXIT;
 
-  const reached = reachableTiles(tiles, start);
-  const occupied = new Set<string>([tileKey(start), tileKey(exit)]);
-  const slotTiles = [...reached]
-    .map(parseKey)
-    .filter(
-      (tile) =>
-        (tileAt(tiles, tile) === FLOOR || tileAt(tiles, tile) === TALL_GRASS) &&
-        distance(tile, start) >= 3 &&
-        !occupied.has(tileKey(tile)),
-    );
-
-  const sightRange = request.sightRange ?? ROUTE_SIGHT_RANGE;
-  const archetypes = request.trainerArchetypeIds;
-  const trainers: RouteTrainer[] = [];
-  for (let i = 0; i < request.trainerCount && slotTiles.length > 0; i++) {
-    const index = rng.int(0, slotTiles.length - 1);
-    const [position] = slotTiles.splice(index, 1);
-    const facing = pickFacing(tiles, position, rng);
-    if (!facing) continue;
-    trainers.push({
-      id: `trainer-${request.routeIndex}-${i}`,
-      position,
-      facing,
-      sight: sightRange,
-      archetypeId: archetypes[rng.int(0, archetypes.length - 1)],
-    });
-  }
-
-  const itemIds = request.itemIds ?? DEFAULT_FLOOR_ITEMS;
-  const items: RouteItem[] = [];
-  for (let i = 0; i < request.itemCount && slotTiles.length > 0; i++) {
-    const index = rng.int(0, slotTiles.length - 1);
-    const [position] = slotTiles.splice(index, 1);
-    const itemId =
-      request.loot && request.loot.length > 0
-        ? pickWeighted(request.loot, rng).itemId
-        : itemIds[rng.int(0, itemIds.length - 1)];
-    items.push({
-      id: `item-${request.routeIndex}-${i}`,
-      position,
-      itemId,
-    });
-  }
-
   return {
     seed: request.seed,
     routeIndex: request.routeIndex,
@@ -522,15 +425,13 @@ function attemptRoute(request: RouteRequest, rng: Rng, width: number, height: nu
     tiles,
     start,
     exit,
-    trainers,
-    items,
   };
 }
 
 /**
  * Generates one route from `(seed, routeIndex)`. The whole pipeline - frame,
- * layout, terrain, population, validation - runs off a single `Rng`; a map that
- * fails validation is rerolled on the same stream, so the result is still a pure
+ * layout, terrain, validation - runs off a single `Rng`; a map that fails
+ * validation is rerolled on the same stream, so the result is still a pure
  * function of the seed and index (D11).
  */
 export function sketchRoute(request: RouteRequest): RouteMap {

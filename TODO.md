@@ -41,6 +41,54 @@ accessors so the engine never touches raw JSON.
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
+The generator is currently an open field with no population (`docs/routes-spec.md`
+§2). The target algorithm, its guarantees and its open questions are in
+`docs/route-generator.md`; these are the steps to get there, one branch each,
+most useful first. The art counterparts (a real tall-grass tile, the floor/path
+split, props) stay in Phase 8 "Route generation & FRLG fields".
+
+- [ ] **Step 1 — Shapes (recta / L / +).** Make the shape a first-class generator
+      input in `src/engine/routes/layout.ts`: `RouteShape = 'straight' | 'bend' |
+      'cross'`, each with its `openings` (edge + entry/exit) and the `links` the
+      spine joins. Generalise `RouteMap` from `start`/`exit` to `entry` + `exits`
+      so a `cross` can have several, and swap the debug panel's `layout` field for
+      a `shape` one (`src/dev/debugMenu.ts`). Data + pure tests, no new geometry.
+- [ ] **Step 2 — Per-pass RNG streams.** Replace the single sequential `Rng` in
+      `sketch.ts` with `Streams(seed, routeIndex, attempt)` (`layout`/`terrain`/
+      `populate`) and thread the attempt through the reroll loop. Add a fixed-seed
+      regression test proving a change in one pass does not shift the others.
+- [ ] **Step 3 — Shape carve (organic path).** Place each opening from the shape
+      and carve the spine through its `links` (straight joins its pair, bend the
+      L, cross both axes): jittered waypoints joined by cardinal corridors that
+      follow a deterministic cost field (extend `src/engine/pathfinding.ts` with a
+      per-cell cost if needed), at the shape's path width. Any exit ends the route
+      (validate + scene). Tests: every exit reachable, border untouched.
+- [ ] **Step 4 — Branches and pockets.** Carve `shape.branchCount` secondary paths
+      off the spine, detect dead ends and expose `spine`/`pockets` on `RouteMap`.
+      Tests: the spine still solves the route and every pocket is a real dead end.
+- [ ] **Step 5 — Terrain passes on.** Re-enable grass, water and ledges from
+      `biome.terrain`, keeping hazards and grass off the spine and off the
+      openings. Tests: the spine stays clean, every exit stays reachable, counts
+      are honoured.
+- [ ] **Step 6 — Trainers (optional).** Restore the `RouteTrainer` type and the
+      line-of-sight module (`src/engine/routes/trainers.ts`), place trainers off
+      the spine with a facing, sight and archetype, and keep a trainer-free
+      entry→every-exit path. Tests: every trainer is avoidable, `seesPlayer` works.
+- [ ] **Step 7 — Ground items and loot.** Restore `src/data/loot.ts` (per-band
+      `count` + weighted pool); place items at pockets first, then free slots,
+      with stable ids and never on entry/exit. Tests: determinism, reachability.
+- [ ] **Step 8 — Validation hardening.** Grow `validateRoute` to the full
+      checklist (every exit, trainer-free path, items, clean spine, pockets,
+      border) and reroll within `BUILD_ATTEMPTS` before throwing. Fixed-seed tests
+      per shape.
+- [ ] **Step 9 — Scene wiring.** Draw trainers and items again in
+      `src/scenes/RouteScene.ts`, restore the line-of-sight trigger, item pickup
+      and the HUD hint, make **any exit** end the route, and keep the tall-grass
+      encounter roll. Smoke test.
+- [ ] **Step 10 — Docs pass.** Update `docs/routes-spec.md` and `AGENTS.md` to the
+      shipped algorithm, mark `docs/route-generator.md` implemented and archive
+      these steps in `CHANGELOG.md`.
+
 ## Phase 3 — Battle engine core (pure, headless, tested)
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
@@ -91,7 +139,7 @@ water, ledges) are kept but off. Open, most useful first:
 - [ ] **Route interiors.** Bring shape back per biome: re-enable the `hedges`
       (Route 1) and `maze` (Viridian Forest, Mt. Moon) carvers and the biome
       terrain passes (`terrain` in `src/data/biomes.ts`), once the open field has
-      served its purpose.
+      served its purpose. Generator logic tracked in Phase 2 steps 3-5.
 
 - [ ] **FRLG ground vs path.** The base floor now matches the game's ground colour
       (`rgb(112,200,160)`, sheet tile `6,1`), but the lighter tiles (`2,3`, `1,3`,

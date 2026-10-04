@@ -40,10 +40,9 @@ always afford.
 
 ## Between-route rewards
 
-The reward is **ground items, like the classic games**: each route scatters a
-band-scaled set of items on the floor and walking over one adds it to the bag.
-`src/data/loot.ts` holds the per-band `count` and weighted pool; the route
-generator draws positions *and* contents from the route `Rng`, so `(seed,
-routeIndex)` fixes the loot (D11). There is no shop and no currency sink yet;
-the early bands lean on Potions and Poke Balls, the late bands on Hyper Potions,
-Ultra Balls and held items. No Revive anywhere (D5).
+Between-route rewards are **on hold**: routes no longer scatter ground items and
+`src/data/loot.ts` was removed with the route population pass. The reward will
+come back as band-scaled floor loot (Potions and Poke Balls early, Hyper Potions
+and held items late) once the population pass returns; the catalogue and prices
+above still apply to whatever the bag holds. There is no shop and no currency
+sink yet. No Revive anywhere (D5).

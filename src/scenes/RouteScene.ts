@@ -1,15 +1,8 @@
 import Phaser from 'phaser';
 import { biomeForRoute } from '../data/biomes';
 import { getSpecies } from '../data/dex';
-import { getItem } from '../data/items';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { keyLabel } from '../data/keybinds';
-import { ROUTE_LOOT } from '../data/loot';
-import {
-  OVERWORLD_SPRITE_TEXTURE_KEY,
-  OVERWORLD_SPRITE_WIDTH,
-  overworldSpriteFrame,
-} from '../data/overworldSprites';
 import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
 import {
   PLAYER_SPRITE_TEXTURE_KEY,
@@ -19,12 +12,11 @@ import {
 } from '../data/playerSprite';
 import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
 import { bandForRoute } from '../data/run';
-import { TRAINER_ARCHETYPE_IDS, getTrainerArchetype } from '../data/trainers';
 import { DEBUG_MENU_TOGGLE_KEY, IS_DEVELOP } from '../dev/env';
+import type { DebugRouteContext, DebugRouteInput } from '../dev/debugMenu';
 import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
   MAX_PARTY_SIZE,
-  addItem,
   addPokemon,
   advanceRoute,
   battleSeed,
@@ -34,9 +26,7 @@ import {
   hasLivingParty,
   healParty,
   isFinalStage,
-  isTrainerDefeated,
   resolveBattle,
-  trainerRoster,
   type BagCounts,
   type BattleLaunch,
   type BattleReturn,
@@ -57,13 +47,12 @@ import { EXIT, TALL_GRASS, WALL, padMap, resolveMove, tileAt, type TileMap } fro
 import { hashSeed, Rng } from '../engine/rng';
 import { storeRun, type Settings } from '../engine/save';
 import {
+  ROUTE_HEIGHT,
+  ROUTE_WIDTH,
   RouteEncounters,
-  seesPlayer,
   sketchRoute,
-  trainerAt,
-  type Facing,
+  type LayoutStyle,
   type RouteMap,
-  type RouteTrainer,
 } from '../engine/routes';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame, resolveGroundFrame, type TileFrame } from '../engine/tileFrames';
@@ -74,7 +63,7 @@ import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
-import { ARROW_TEXTURE_KEY, GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
+import { GRASS_TEXTURE_KEY } from './BootScene';
 
 /**
  * Tree/rock terrain rendered beyond the playable map (`padMap`), so the camera can
@@ -104,6 +93,28 @@ const MOVE_STEP: Readonly<Record<MoveKey, Tile>> = {
   right: { x: 1, y: 0 },
 };
 
+/** The base inputs of the route on screen, before the debug reroll nonce. */
+type RouteParams = Readonly<{
+  seed: string;
+  routeIndex: number;
+  layout: LayoutStyle;
+  width: number;
+  height: number;
+  grassPatches: number;
+  waterBodies: number;
+  ledges: number;
+}>;
+
+function clampInt(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, Math.floor(value)));
+}
+
+/** True when `tile` is inside the playable map (the border included). */
+function inBounds(map: TileMap, tile: Tile): boolean {
+  return tile.y >= 0 && tile.y < map.length && tile.x >= 0 && tile.x < map[0].length;
+}
+
 // Until the starter pick lands, the scene seeds a run with a fixed demo starter
 // and bag and walks its routes off one dev seed.
 const DEV_SEED = 'dev-seed';
@@ -117,8 +128,6 @@ const DEMO_BAG: readonly BagCounts[] = [
   { itemId: 'paralyzeheal', count: 1 },
 ];
 
-const FACING_ANGLE: Readonly<Record<Facing, number>> = { N: 0, E: 90, S: 180, W: 270 };
-
 export class RouteScene extends Phaser.Scene {
   private route!: RouteMap;
   private map!: TileMap;
@@ -129,9 +138,14 @@ export class RouteScene extends Phaser.Scene {
   private player: Tile = { x: 1, y: 1 };
   private playerSprite!: Phaser.GameObjects.Sprite;
   private tileSprites: Phaser.GameObjects.Image[][][] = [];
+  /** Tall-grass overlays and any future entities, so a rebuild can clear them. */
+  private entitySprites: Phaser.GameObjects.GameObject[] = [];
+  /** The inputs behind the route on screen; the debug reroll rebuilds from it. */
+  private routeParams!: RouteParams;
   private run!: RunState;
   private settings!: Settings;
-  private pickedItems = new Set<string>();
+  /** Dev only: walk through solid tiles so a route can be inspected quickly. */
+  private passThrough = false;
   private gameOver = false;
   private battleCounter = 0;
   private pendingBattle: BattleLaunch | null = null;
@@ -151,6 +165,8 @@ export class RouteScene extends Phaser.Scene {
   private hintBackdrop!: Phaser.GameObjects.Rectangle;
   private hudRoot!: Phaser.GameObjects.Container;
   private hudTitle!: Phaser.GameObjects.BitmapText;
+  /** The pinned HUD camera; a rebuild must teach it to ignore the new sprites. */
+  private hudCamera: Phaser.Cameras.Scene2D.Camera | null = null;
   private hudBagIcons: { icon: Phaser.GameObjects.Image; count: Phaser.GameObjects.BitmapText }[] = [];
   private hudRows: { portrait: Phaser.GameObjects.Image; text: Phaser.GameObjects.BitmapText }[] = [];
   /** The "was released" overlay while a beat sequence is playing. */
@@ -175,6 +191,38 @@ export class RouteScene extends Phaser.Scene {
     storeRun(browserStorage(), this.run);
   }
 
+  /**
+   * Builds the route for `params` (plus the debug reroll `attempt`) and points
+   * the scene at it: map, framed render map, tileset and the encounter stream.
+   * `create` and the debug "regenerate" both go through here so they cannot drift.
+   */
+  private buildRoute(params: RouteParams, attempt = 0): void {
+    const biome = biomeForRoute(params.routeIndex);
+    const band = bandForRoute(params.routeIndex);
+    const seed = attempt > 0 ? `${params.seed}#r${attempt}` : params.seed;
+    this.routeParams = params;
+    this.route = sketchRoute({
+      seed,
+      routeIndex: params.routeIndex,
+      biomeId: biome.id,
+      layout: params.layout,
+      width: params.width,
+      height: params.height,
+      grassPatches: params.grassPatches,
+      waterBodies: params.waterBodies,
+      ledges: params.ledges,
+    });
+    this.map = this.route.tiles;
+    this.renderMap = padMap(this.map, { x: MAP_MARGIN_X, y: MAP_MARGIN_Y }, WALL);
+    this.tilesetId = resolveTileset(this.settings.tileset, biome.tilesetId);
+    this.encounters = new RouteEncounters(
+      biome.encounters[band.id],
+      band.minLevel,
+      band.maxLevel,
+      new Rng(hashSeed(`${this.route.seed}:encounters:${this.route.routeIndex}`)),
+    );
+  }
+
   create(): void {
     if (!this.run) {
       this.run = createRun({ seed: DEV_SEED, starter: createRunPokemon(DEMO_STARTER), bag: DEMO_BAG });
@@ -183,7 +231,7 @@ export class RouteScene extends Phaser.Scene {
     this.persistRun();
     this.tileSprites = [];
     this.hudRows = [];
-    this.pickedItems = new Set<string>();
+    this.passThrough = false;
     this.gameOver = false;
     this.pendingBattle = null;
     this.pendingParty = null;
@@ -199,29 +247,16 @@ export class RouteScene extends Phaser.Scene {
 
     const routeIndex = this.run.routeIndex;
     const biome = biomeForRoute(routeIndex);
-    const band = bandForRoute(routeIndex);
-    this.route = sketchRoute({
+    this.buildRoute({
       seed: this.run.seed,
       routeIndex,
-      biomeId: biome.id,
-      trainerArchetypeIds: TRAINER_ARCHETYPE_IDS,
-      trainerCount: band.trainerSize,
-      itemCount: ROUTE_LOOT[band.id].count,
-      loot: ROUTE_LOOT[band.id].pool,
       layout: biome.layout,
+      width: ROUTE_WIDTH,
+      height: ROUTE_HEIGHT,
       grassPatches: biome.terrain.grassPatches,
       waterBodies: biome.terrain.waterBodies,
       ledges: biome.terrain.ledges,
     });
-    this.map = this.route.tiles;
-    this.renderMap = padMap(this.map, { x: MAP_MARGIN_X, y: MAP_MARGIN_Y }, WALL);
-    this.tilesetId = resolveTileset(this.settings.tileset, biome.tilesetId);
-    this.encounters = new RouteEncounters(
-      biome.encounters[band.id],
-      band.minLevel,
-      band.maxLevel,
-      new Rng(hashSeed(`${this.run.seed}:encounters:${routeIndex}`)),
-    );
 
     this.drawTiles();
     this.drawEntities();
@@ -379,6 +414,7 @@ export class RouteScene extends Phaser.Scene {
     const keep = new Set<Phaser.GameObjects.GameObject>([this.hint, this.hintBackdrop, this.hudRoot]);
     hud.ignore(this.children.list.filter((child) => !keep.has(child)));
     this.cameras.main.ignore([this.hint, this.hintBackdrop, this.hudRoot]);
+    this.hudCamera = hud;
   }
 
   /**
@@ -412,50 +448,37 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private drawTiles(): void {
+    const created: Phaser.GameObjects.GameObject[] = [];
     for (let y = 0; y < this.renderMap.length; y++) {
       const row: Phaser.GameObjects.Image[][] = [];
       for (let x = 0; x < this.renderMap[y].length; x++) {
-        row.push(this.tileFrames(x, y).map((frame) => this.tileImage(x, y, frame)));
+        row.push(
+          this.tileFrames(x, y).map((frame) => {
+            const image = this.tileImage(x, y, frame);
+            created.push(image);
+            return image;
+          }),
+        );
       }
       this.tileSprites.push(row);
     }
+    // At create time the HUD camera does not exist yet and ignores everything
+    // afterwards; on a rebuild it must ignore only the freshly drawn cells.
+    this.hudCamera?.ignore(created);
   }
 
   private drawEntities(): void {
+    const created: Phaser.GameObjects.GameObject[] = [];
     for (let y = 0; y < this.map.length; y++) {
       for (let x = 0; x < this.map[y].length; x++) {
         if (this.map[y][x] === TALL_GRASS) {
-          this.add.image(this.centerX(x), this.centerY(y), GRASS_TEXTURE_KEY).setDepth(1);
+          const image = this.add.image(this.centerX(x), this.centerY(y), GRASS_TEXTURE_KEY).setDepth(1);
+          this.entitySprites.push(image);
+          created.push(image);
         }
       }
     }
-    for (const item of this.route.items) {
-      const frame = itemIconFrame(item.itemId) ?? 0;
-      this.add
-        .image(this.centerX(item.position.x), this.centerY(item.position.y), ITEM_ICON_TEXTURE_KEY, frame)
-        .setScale(0.7)
-        .setDepth(5);
-    }
-    for (const trainer of this.route.trainers) {
-      const archetype = getTrainerArchetype(trainer.archetypeId);
-      const colour = archetype?.colour ?? 0xffffff;
-      const frame = archetype?.spriteKey ? overworldSpriteFrame(archetype.spriteKey) : null;
-      const centerX = this.centerX(trainer.position.x);
-      const centerY = this.centerY(trainer.position.y);
-      const body =
-        frame === null
-          ? this.add.image(centerX, centerY, TRAINER_TEXTURE_KEY).setTint(colour)
-          : this.add
-              .image(centerX, centerY + TILE_SIZE / 2, OVERWORLD_SPRITE_TEXTURE_KEY, frame)
-              .setOrigin(0.5, 1)
-              .setScale(TILE_SIZE / OVERWORLD_SPRITE_WIDTH);
-      body.setDepth(8);
-      this.add
-        .image(centerX, centerY, ARROW_TEXTURE_KEY)
-        .setTint(colour)
-        .setAngle(FACING_ANGLE[trainer.facing])
-        .setDepth(9);
-    }
+    this.hudCamera?.ignore(created);
   }
 
   /**
@@ -560,15 +583,6 @@ export class RouteScene extends Phaser.Scene {
         return;
       }
     }
-    if (this.collectItemAt(this.player)) return;
-
-    const spotter = this.route.trainers.find(
-      (trainer) => !isTrainerDefeated(this.run, trainer.id) && seesPlayer(this.route, trainer, this.player),
-    );
-    if (spotter) {
-      this.startBattle(this.trainerTrigger(spotter));
-      return;
-    }
     this.setHint(this.defaultHint());
   }
 
@@ -628,23 +642,6 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     this.refreshHud();
-  }
-
-  private trainerTrigger(trainer: RouteTrainer): BattleTrigger {
-    const archetype = getTrainerArchetype(trainer.archetypeId);
-    const band = bandForRoute(this.run.routeIndex);
-    const seed = battleSeed(this.run.seed, this.run.routeIndex, `trainer:${trainer.id}:roster`);
-    const roster =
-      archetype !== undefined
-        ? trainerRoster(archetype, band, new Rng(seed), trainer.id)
-        : [{ id: `${trainer.id}:0`, speciesId: 'sentret', level: band.minLevel }];
-    return {
-      kind: 'trainer',
-      trainerId: trainer.id,
-      trainerName: archetype?.name ?? 'Trainer',
-      archetypeId: trainer.archetypeId,
-      roster,
-    };
   }
 
   /** Pauses the route and rolls the battle on top of it (Phase 5 transition). */
@@ -822,21 +819,92 @@ export class RouteScene extends Phaser.Scene {
     };
   }
 
-  private collectItemAt(tile: Tile): boolean {
-    const item = this.route.items.find((candidate) => !this.pickedItems.has(candidate.id) && candidate.position.x === tile.x && candidate.position.y === tile.y);
-    if (!item) return false;
-    this.pickedItems.add(item.id);
-    this.run = addItem(this.run, item.itemId);
-    this.persistRun();
-    const name = getItem(item.itemId)?.name ?? item.itemId;
-    this.setHint(`You found ${name}!`);
-    return true;
+  /** Cancels a step in flight, so a rebuild can move the player cleanly. */
+  private stopWalking(): void {
+    this.walkTween?.stop();
+    this.walkTween = null;
+    this.playerSprite?.anims.stop();
+  }
+
+  /** Destroys the route's tiles and entity overlays before a rebuild. */
+  private clearRouteSprites(): void {
+    for (const row of this.tileSprites) {
+      for (const cell of row) {
+        for (const image of cell) image.destroy();
+      }
+    }
+    this.tileSprites = [];
+    for (const sprite of this.entitySprites) sprite.destroy();
+    this.entitySprites = [];
+  }
+
+  /**
+   * Debug only: the inputs behind the route on screen and its derived biome and
+   * band, for the debug menu's "Route" panel. Null when no route is active.
+   */
+  debugRouteContext(): DebugRouteContext | null {
+    if (!IS_DEVELOP || !this.run || !this.routeParams || !this.scene.isActive()) return null;
+    return {
+      seed: this.routeParams.seed,
+      routeIndex: this.routeParams.routeIndex,
+      mode: this.run.mode,
+      biomeName: biomeForRoute(this.routeParams.routeIndex).name,
+      bandName: bandForRoute(this.routeParams.routeIndex).name,
+      layout: this.routeParams.layout,
+      width: this.routeParams.width,
+      height: this.routeParams.height,
+      passThrough: this.passThrough,
+    };
+  }
+
+  /** Debug only: toggles walking through solid tiles (walls, water, ledges). */
+  setPassThrough(enabled: boolean): void {
+    if (!IS_DEVELOP) return;
+    this.passThrough = enabled;
+  }
+
+  /**
+   * Debug only: rebuilds the route from the panel's inputs without touching the
+   * run. `attempt` rerolls the same base inputs reproducibly (D11).
+   */
+  regenerateRoute(input: DebugRouteInput): void {
+    if (!IS_DEVELOP || !this.run || !this.routeParams) return;
+    if (!this.scene.isActive() || this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) {
+      return;
+    }
+
+    const params: RouteParams = {
+      seed: input.seed.trim() ? input.seed.trim() : this.routeParams.seed,
+      routeIndex: Math.max(1, Math.floor(input.routeIndex)),
+      layout: input.layout,
+      width: clampInt(input.width, 16, 128),
+      height: clampInt(input.height, 16, 96),
+      grassPatches: this.routeParams.grassPatches,
+      waterBodies: this.routeParams.waterBodies,
+      ledges: this.routeParams.ledges,
+    };
+    const attempt = Math.max(0, Math.floor(input.attempt));
+
+    this.stopWalking();
+    this.clearRouteSprites();
+    this.buildRoute(params, attempt);
+    this.drawTiles();
+    this.drawEntities();
+    this.player = { ...this.route.start };
+    this.movePlayerTo(this.player.x, this.player.y);
+    this.cameras.main.setBounds(
+      0,
+      0,
+      this.renderMap[0].length * TILE_SIZE,
+      this.renderMap.length * TILE_SIZE,
+    );
+    this.setHint(`debug: re-generated route ${params.routeIndex} (attempt ${attempt})`);
   }
 
   private setHint(text: string): void {
     const dev = IS_DEVELOP ? `  ·  B: random battle  ·  ${DEBUG_MENU_TOGGLE_KEY}: debug menu` : '';
     this.hint.setText(
-      `${text}\nArrows: move  ·  P: party/PC  ·  R: swap tileset${dev}  ·  trainers: ${this.route.trainers.length}`,
+      `${text}\nArrows: move  ·  P: party/PC  ·  R: swap tileset${dev}`,
     );
   }
 
@@ -861,9 +929,15 @@ export class RouteScene extends Phaser.Scene {
     }
     // A step is still sliding; the next one starts when it lands.
     if (this.walkTween) return;
-    const result = resolveMove(this.map, this.player, MOVE_STEP[direction]);
-    const blocker = result ? trainerAt(this.route, result.to) : null;
-    if (!result || (blocker && !isTrainerDefeated(this.run, blocker.id))) {
+    const step = MOVE_STEP[direction];
+    // Dev noclip: step onto any in-bounds tile, solid or not.
+    const direct = { x: this.player.x + step.x, y: this.player.y + step.y };
+    if (this.passThrough && inBounds(this.map, direct)) {
+      this.walkStep(direction, direct);
+      return;
+    }
+    const result = resolveMove(this.map, this.player, step);
+    if (!result) {
       this.faceIdle(direction);
       return;
     }
