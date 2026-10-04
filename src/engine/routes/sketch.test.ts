@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { EXIT, WALL, tileAt, isWalkable } from '../map';
 import type { Tile } from '../grid';
-import { ROUTE_SHAPES, SHAPES, entryIndex, type AccessEdge, type RouteShape } from './layout';
+import { ROUTE_SHAPES, SHAPES, type AccessEdge, type RouteShape } from './layout';
 import { ROUTE_HEIGHT, ROUTE_WIDTH, sketchRoute, type RouteRequest } from './sketch';
 import { validateRoute } from './validate';
 
@@ -51,13 +51,39 @@ function onEdge(tile: Tile, edge: AccessEdge): boolean {
   }
 }
 
-/** The entry edge and the edge of the opening its primary link joins it to. */
-function primaryEdges(shape: RouteShape): Readonly<{ entry: AccessEdge; exit: AccessEdge }> {
+/** The edge of each opening a shape declares: one entry, then its exits in order. */
+function shapeEdges(shape: RouteShape): Readonly<{ entry: AccessEdge; exits: readonly AccessEdge[] }> {
   const spec = SHAPES[shape];
-  const entry = entryIndex(spec);
-  const link = spec.links.find((pair) => pair.includes(entry)) ?? spec.links[0];
-  const exit = link[0] === entry ? link[1] : link[0];
-  return { entry: spec.openings[entry].edge, exit: spec.openings[exit].edge };
+  return {
+    entry: spec.openings.find((opening) => opening.role === 'entry')!.edge,
+    exits: spec.openings
+      .filter((opening) => opening.role === 'exit')
+      .map((opening) => opening.edge),
+  };
+}
+
+/** True when the spine set is cardinally connected from the entry to every exit. */
+function spineReaches(spine: readonly Tile[], entry: Tile, exits: readonly Tile[]): boolean {
+  const set = new Set(spine.map((tile) => `${tile.x},${tile.y}`));
+  const dirs = [
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 },
+  ];
+  const seen = new Set([`${entry.x},${entry.y}`]);
+  const queue: Tile[] = [entry];
+  while (queue.length > 0) {
+    const current = queue.pop()!;
+    for (const dir of dirs) {
+      const next = { x: current.x + dir.x, y: current.y + dir.y };
+      const key = `${next.x},${next.y}`;
+      if (seen.has(key) || !set.has(key)) continue;
+      seen.add(key);
+      queue.push(next);
+    }
+  }
+  return exits.every((exit) => seen.has(`${exit.x},${exit.y}`));
 }
 
 describe('sketchRoute', () => {
@@ -91,14 +117,36 @@ describe('sketchRoute', () => {
     }
   });
 
-  it('places the entry and the primary exit on the edges the shape declares', () => {
+  it('places every opening on the edge its shape declares', () => {
     for (const shape of ROUTE_SHAPES) {
-      const edges = primaryEdges(shape);
+      const edges = shapeEdges(shape);
       for (const seed of ['edge-a', 'edge-b', 'edge-c']) {
         const route = sketchRoute(request(seed, 4, shape));
         expect(onEdge(route.entry, edges.entry), `${shape} ${seed} entry`).toBe(true);
-        expect(route.exits.length, `${shape} ${seed} exits`).toBe(1);
-        expect(onEdge(route.exits[0], edges.exit), `${shape} ${seed} exit`).toBe(true);
+        expect(route.exits.length, `${shape} ${seed} exits`).toBe(edges.exits.length);
+        route.exits.forEach((exit, index) => {
+          expect(onEdge(exit, edges.exits[index]), `${shape} ${seed} exit ${index}`).toBe(true);
+        });
+      }
+    }
+  });
+
+  it('carves a spine from the entry to every exit, never on the border', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['spine-a', 'spine-b']) {
+        const route = sketchRoute(request(seed, 5, shape));
+        const spine = new Set(route.spine.map((tile) => `${tile.x},${tile.y}`));
+        expect(spine.has(`${route.entry.x},${route.entry.y}`), `${shape} ${seed} entry`).toBe(true);
+        for (const exit of route.exits) {
+          expect(spine.has(`${exit.x},${exit.y}`), `${shape} ${seed} ${exit.x},${exit.y}`).toBe(true);
+        }
+        for (const tile of route.spine) {
+          expect(tile.x, `${shape} ${seed} ${tile.x},${tile.y} x`).toBeGreaterThan(0);
+          expect(tile.x, `${shape} ${seed} ${tile.x},${tile.y} x`).toBeLessThan(route.width - 1);
+          expect(tile.y, `${shape} ${seed} ${tile.x},${tile.y} y`).toBeGreaterThan(0);
+          expect(tile.y, `${shape} ${seed} ${tile.x},${tile.y} y`).toBeLessThan(route.height - 1);
+        }
+        expect(spineReaches(route.spine, route.entry, route.exits), `${shape} ${seed} connected`).toBe(true);
       }
     }
   });

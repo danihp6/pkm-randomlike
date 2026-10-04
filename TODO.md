@@ -47,12 +47,6 @@ The generator is currently an open field with no population (`docs/routes-spec.m
 most useful first. The art counterparts (a real tall-grass tile, the floor/path
 split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **Step 3 — Shape carve (organic path).** Place each opening from the shape
-      and carve the spine through its `links` (straight joins its pair, bend the
-      L, cross both axes): jittered waypoints joined by cardinal corridors that
-      follow a deterministic cost field (extend `src/engine/pathfinding.ts` with a
-      per-cell cost if needed), at the shape's path width. Any exit ends the route
-      (validate + scene). Tests: every exit reachable, border untouched.
 - [ ] **Step 4 — Branches and pockets.** Carve `shape.branchCount` secondary paths
       off the spine, detect dead ends and expose `spine`/`pockets` on `RouteMap`.
       Tests: the spine still solves the route and every pocket is a real dead end.

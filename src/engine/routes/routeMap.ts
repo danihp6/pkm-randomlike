@@ -17,8 +17,10 @@ export type RouteMap = Readonly<{
   tiles: TileMap;
   /** Where the player arrives from the previous route. */
   entry: Tile;
-  /** Any one of these ends the route (one for now, more with a `cross`). */
+  /** Any one of these ends the route (one per shape opening of that role). */
   exits: readonly Tile[];
+  /** The guaranteed lane the terrain never blocks (entry → every exit). */
+  spine: readonly Tile[];
 }>;
 
 export function tileKey(tile: Tile): string {

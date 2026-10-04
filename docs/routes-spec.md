@@ -55,10 +55,12 @@ how the paths connect those openings — is a first-class generator input: the
 registry in `src/engine/routes/layout.ts` defines `straight` (2 opposite),
 `bend` (2 adjacent) and `cross` (4, opposite pairs), each with its `openings`
 (edge + entry/exit) and the `links` the spine joins, and `RouteMap` carries an
-`entry` plus a list of `exits`. Live it still carves **one** entry/exit — the
-shape's primary link — on an **open field** (the interior is floor and only the
-tree border is a wall); placing every opening and carving the full spine lands
-in Phase 2 step 3. The `hedges` and `maze` carvers stay parked in
+`entry`, a list of `exits` and the `spine`. Every opening is placed on its edge
+and the guaranteed **spine** joins each `links` pair with cardinal, cost-guided
+corridors, so a `cross` leaves three exits and a `bend` runs an L. The field is
+still **open** (the interior is floor and only the tree border is a wall), so the
+spine is invisible today; it is the lane the terrain and hazard passes must keep
+clear (steps 5-7). The `hedges` and `maze` carvers stay parked in
 `src/engine/routes/sketch.ts` until the shape carve lands (`D6`).
 
 ## 3. Wild encounters

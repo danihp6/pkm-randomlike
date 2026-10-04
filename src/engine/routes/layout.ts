@@ -43,7 +43,7 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     ],
     links: [[0, 1]],
     pathWidth: 1,
-    jitter: 0,
+    jitter: 2,
   },
   bend: {
     openings: [
@@ -52,7 +52,7 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     ],
     links: [[0, 1]],
     pathWidth: 1,
-    jitter: 0,
+    jitter: 2,
   },
   cross: {
     openings: [
@@ -66,7 +66,7 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
       [2, 3],
     ],
     pathWidth: 1,
-    jitter: 0,
+    jitter: 2,
   },
 };
 

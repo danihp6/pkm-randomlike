@@ -24,6 +24,14 @@ file is the human-readable summary.
       path another already placed. `streams.test.ts` pins determinism, the attempt
       key and pass independence; the frozen route signature is re-frozen. The
       organic shape carve (step 3) remains.
+- [x] Phase 2 step 3: shape carve. `sketchRoute` now places **every** opening of
+      the shape on its edge and carves the guaranteed **spine** through each
+      `links` pair: jittered waypoints joined by cardinal A* corridors that follow
+      a deterministic per-cell cost field (`findPath` gained `PathOptions`:
+      `cost` + cardinal-only), at the shape's path width. `RouteMap` exposes the
+      `spine`; a `cross` yields three exits and a `bend` an L. Hazards stay off
+      the spine (steps 5-7). Tests cover every opening's edge, spine connectivity
+      (entry → every exit), border safety, and the new `findPath` modes.
 - [x] Layout trimmed to a single style: `LayoutStyle` is now only `forest`
       (FireRed/LeafGreen, entered S / left N) and every biome uses it; `route`
       (Route 1) and `cavern` (Mt. Moon) are removed until their interiors return.
