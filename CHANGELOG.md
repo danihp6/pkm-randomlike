@@ -923,3 +923,12 @@ file is the human-readable summary.
       the plain floor frame and the field is uniform. `map.test.ts`,
       `tileFrames.test.ts` and `frlg.test.ts` pin the asymmetric margin, the border
       shape and the uniform ground; 665 tests pass; `npm run build` clean.
+- [x] FRLG tree body row keeps its transparent ground (`D26` follow-up): the
+      `BODY` frames (`10`-`12`) no longer bake the tree's lower leaves behind them
+      (`overFill(body, lower)`) and key the ground out instead (`overNone(body)`),
+      so the field's floor shows through the body row the same way it already comes
+      through the mass's top and trunk foot, which reads lighter against the route.
+      `scripts/frlg/build-tilesets.mjs` (comment) and `docs/tileset-spec.md` §3b
+      updated; the three field atlases regenerated with `node
+      scripts/frlg/build-tilesets.mjs` (reproducible: same hashes); 666 tests pass;
+      `npm run build` clean.
