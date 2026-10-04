@@ -15,6 +15,8 @@ function route(tiles: TileMap, entry: Tile, exits: readonly Tile[]) {
     entry,
     exits,
     spine: [],
+    branches: [],
+    pockets: [],
   };
 }
 

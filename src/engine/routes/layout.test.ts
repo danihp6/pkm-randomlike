@@ -61,6 +61,8 @@ describe('shape registry', () => {
       ).toBe(true);
       expect(spec.pathWidth, name).toBeGreaterThanOrEqual(1);
       expect(spec.jitter, name).toBeGreaterThanOrEqual(0);
+      expect(spec.branchCount, name).toBeGreaterThanOrEqual(0);
+      expect(spec.branchMin, name).toBeLessThanOrEqual(spec.branchMax);
     }
   });
 

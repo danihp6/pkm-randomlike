@@ -55,13 +55,16 @@ how the paths connect those openings — is a first-class generator input: the
 registry in `src/engine/routes/layout.ts` defines `straight` (2 opposite),
 `bend` (2 adjacent) and `cross` (4, opposite pairs), each with its `openings`
 (edge + entry/exit) and the `links` the spine joins, and `RouteMap` carries an
-`entry`, a list of `exits` and the `spine`. Every opening is placed on its edge
-and the guaranteed **spine** joins each `links` pair with cardinal, cost-guided
-corridors, so a `cross` leaves three exits and a `bend` runs an L. The field is
-still **open** (the interior is floor and only the tree border is a wall), so the
-spine is invisible today; it is the lane the terrain and hazard passes must keep
-clear (steps 5-7). The `hedges` and `maze` carvers stay parked in
-`src/engine/routes/sketch.ts` until the shape carve lands (`D6`).
+`entry`, a list of `exits`, the `spine` and the optional `branches`/`pockets`.
+Every opening is placed on its edge and the guaranteed **spine** joins each
+`links` pair with cardinal, cost-guided corridors, so a `cross` leaves three exits
+and a `bend` runs an L. `branchCount` secondary paths are then carved off the
+spine, and a branch's dead end (exactly one carved neighbour) is exposed as a
+**pocket** — the future loot spot. The field is still **open** (the interior is
+floor and only the tree border is a wall), so the spine, branches and pockets are
+invisible today; they are the lanes the terrain pass and the population pass must
+keep clear and populate (steps 5-7). The `hedges` and `maze` carvers stay parked
+in `src/engine/routes/sketch.ts` until the shape carve lands (`D6`).
 
 ## 3. Wild encounters
 

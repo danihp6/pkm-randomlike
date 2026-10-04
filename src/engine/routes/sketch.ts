@@ -191,6 +191,108 @@ function carveGuaranteedPath(
   return spine;
 }
 
+/** Manhattan/BFS distance from the spine over walkable floor, for branch placement. */
+function distanceToSpine(tiles: TileMap, spine: ReadonlySet<string>): Map<string, number> {
+  const distance = new Map<string, number>();
+  const queue: Tile[] = [];
+  for (const key of spine) {
+    const [x, y] = key.split(',').map(Number);
+    distance.set(key, 0);
+    queue.push({ x, y });
+  }
+  for (let head = 0; head < queue.length; head++) {
+    const current = queue[head];
+    const step = distance.get(tileKey(current))!;
+    for (const dir of CARDINALS) {
+      const next = { x: current.x + dir.x, y: current.y + dir.y };
+      const key = tileKey(next);
+      if (distance.has(key) || !inBounds(tiles, next) || tiles[next.y][next.x] !== FLOOR) continue;
+      distance.set(key, step + 1);
+      queue.push(next);
+    }
+  }
+  return distance;
+}
+
+/** The spine tile closest to `target` (L1), or the first one as a fallback. */
+function nearestSpine(spine: ReadonlySet<string>, target: Tile): Tile | undefined {
+  let best: Tile | undefined;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const key of spine) {
+    const [x, y] = key.split(',').map(Number);
+    const manhattan = Math.abs(x - target.x) + Math.abs(y - target.y);
+    if (manhattan < bestDistance) {
+      bestDistance = manhattan;
+      best = { x, y };
+    }
+  }
+  return best;
+}
+
+/** How many cardinal neighbours of `tile` belong to the carved lane. */
+function carvedNeighbours(tile: Tile, carved: ReadonlySet<string>): number {
+  let count = 0;
+  for (const dir of CARDINALS) {
+    if (carved.has(tileKey({ x: tile.x + dir.x, y: tile.y + dir.y }))) count += 1;
+  }
+  return count;
+}
+
+/**
+ * Secondary paths: for each `branchCount`, pick a floor tile far enough from the
+ * spine, join it to the nearest spine tile with a cardinal corridor (never
+ * running along the spine), and - when the far end is a dead end of the carved
+ * lane - record it as a **pocket**. Branches are optional; the spine alone always
+ * solves the route.
+ */
+function carveBranches(
+  tiles: MutableMap,
+  rng: Rng,
+  shape: ShapeSpec,
+  spine: ReadonlySet<string>,
+  ends: readonly Tile[],
+  width: number,
+  height: number,
+): Readonly<{ branches: Set<string>; pockets: Tile[] }> {
+  const branches = new Set<string>();
+  const pockets: Tile[] = [];
+  if (shape.branchCount <= 0) return { branches, pockets };
+
+  const distance = distanceToSpine(tiles, spine);
+  const endKeys = new Set(ends.map(tileKey));
+
+  for (let branch = 0; branch < shape.branchCount; branch++) {
+    const candidates: Tile[] = [];
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const key = tileKey({ x, y });
+        if (tiles[y][x] !== FLOOR) continue;
+        if (spine.has(key) || branches.has(key) || endKeys.has(key)) continue;
+        const away = distance.get(key);
+        if (away === undefined || away < shape.branchMin || away > shape.branchMax) continue;
+        candidates.push({ x, y });
+      }
+    }
+    if (candidates.length === 0) break;
+
+    const target = candidates[rng.int(0, candidates.length - 1)];
+    const origin = nearestSpine(spine, target);
+    if (!origin) break;
+
+    const path = findPath(tiles, origin, target, (tile) => spine.has(tileKey(tile)), {
+      diagonal: false,
+    });
+    if (path.length === 0) continue;
+    for (const cell of path) {
+      for (const opened of carveSquare(tiles, cell.x, cell.y, 1)) branches.add(tileKey(opened));
+    }
+
+    const carved = new Set([...spine, ...branches]);
+    if (carvedNeighbours(target, carved) === 1) pockets.push(target);
+  }
+  return { branches, pockets };
+}
+
 function setFloor(tiles: MutableMap, x: number, y: number): void {
   const width = tiles[0].length;
   const height = tiles.length;
@@ -527,6 +629,8 @@ function attemptRoute(
   let entry: Tile;
   let exits: Tile[];
   let spine: Set<string>;
+  let branches = new Set<string>();
+  let pockets: Tile[] = [];
 
   if (spec.kind === 'hedges') {
     const edges = primaryEdges(shape);
@@ -545,6 +649,9 @@ function attemptRoute(
     entry = openings[entryIndex(shape)];
     exits = exitTiles(shape, openings);
     spine = carveGuaranteedPath(tiles, streams.layout, shape, openings, width, height);
+    const branched = carveBranches(tiles, streams.layout, shape, spine, [entry, ...exits], width, height);
+    branches = branched.branches;
+    pockets = branched.pockets;
   }
 
   tiles[entry.y][entry.x] = FLOOR;
@@ -572,6 +679,8 @@ function attemptRoute(
     entry,
     exits,
     spine: [...spine].map(keyToTile),
+    branches: [...branches].map(keyToTile),
+    pockets,
   };
 }
 

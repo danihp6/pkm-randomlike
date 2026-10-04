@@ -47,9 +47,6 @@ The generator is currently an open field with no population (`docs/routes-spec.m
 most useful first. The art counterparts (a real tall-grass tile, the floor/path
 split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **Step 4 — Branches and pockets.** Carve `shape.branchCount` secondary paths
-      off the spine, detect dead ends and expose `spine`/`pockets` on `RouteMap`.
-      Tests: the spine still solves the route and every pocket is a real dead end.
 - [ ] **Step 5 — Terrain passes on.** Re-enable grass, water and ledges from
       `biome.terrain`, keeping hazards and grass off the spine and off the
       openings. Tests: the spine stays clean, every exit stays reachable, counts

@@ -33,6 +33,10 @@ export type ShapeSpec = Readonly<{
   pathWidth: number;
   /** How far a spine waypoint may stray from the straight link line. */
   jitter: number;
+  /** Secondary paths carved off the spine, and the distance band they start in. */
+  branchCount: number;
+  branchMin: number;
+  branchMax: number;
 }>;
 
 export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
@@ -44,6 +48,9 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     links: [[0, 1]],
     pathWidth: 1,
     jitter: 2,
+    branchCount: 2,
+    branchMin: 4,
+    branchMax: 14,
   },
   bend: {
     openings: [
@@ -53,6 +60,9 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     links: [[0, 1]],
     pathWidth: 1,
     jitter: 2,
+    branchCount: 2,
+    branchMin: 4,
+    branchMax: 14,
   },
   cross: {
     openings: [
@@ -67,6 +77,9 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     ],
     pathWidth: 1,
     jitter: 2,
+    branchCount: 3,
+    branchMin: 4,
+    branchMax: 12,
   },
 };
 

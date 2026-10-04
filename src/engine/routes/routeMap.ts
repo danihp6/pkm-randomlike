@@ -21,6 +21,10 @@ export type RouteMap = Readonly<{
   exits: readonly Tile[];
   /** The guaranteed lane the terrain never blocks (entry → every exit). */
   spine: readonly Tile[];
+  /** Secondary lanes carved off the spine (optional exploration paths). */
+  branches: readonly Tile[];
+  /** Terminal tiles of the branch lanes - the loot spots. */
+  pockets: readonly Tile[];
 }>;
 
 export function tileKey(tile: Tile): string {

@@ -32,6 +32,13 @@ file is the human-readable summary.
       `spine`; a `cross` yields three exits and a `bend` an L. Hazards stay off
       the spine (steps 5-7). Tests cover every opening's edge, spine connectivity
       (entry → every exit), border safety, and the new `findPath` modes.
+- [x] Phase 2 step 4: branches and pockets. Shapes carry `branchCount` /
+      `branchMin` / `branchMax`; `carveBranches` draws each secondary lane off the
+      spine (a cardinal corridor that never runs along it) from a tile far enough
+      away, and `RouteMap` exposes `branches` plus `pockets` — the branch dead
+      ends (exactly one carved neighbour). Branches are optional: the spine alone
+      still solves the route. Tests: branches are carved, every pocket is a
+      structural dead end and reachable, and each pocket is a terminal.
 - [x] Layout trimmed to a single style: `LayoutStyle` is now only `forest`
       (FireRed/LeafGreen, entered S / left N) and every biome uses it; `route`
       (Route 1) and `cavern` (Mt. Moon) are removed until their interiors return.

@@ -3,7 +3,14 @@ import { EXIT, WALL, tileAt, isWalkable } from '../map';
 import type { Tile } from '../grid';
 import { ROUTE_SHAPES, SHAPES, type AccessEdge, type RouteShape } from './layout';
 import { ROUTE_HEIGHT, ROUTE_WIDTH, sketchRoute, type RouteRequest } from './sketch';
-import { validateRoute } from './validate';
+import { reachableTiles, validateRoute } from './validate';
+
+const CARDINAL_DIRS: readonly Tile[] = [
+  { x: 1, y: 0 },
+  { x: -1, y: 0 },
+  { x: 0, y: 1 },
+  { x: 0, y: -1 },
+];
 
 const request = (seed: string, routeIndex: number, shape?: RouteShape): RouteRequest => ({
   seed,
@@ -65,17 +72,11 @@ function shapeEdges(shape: RouteShape): Readonly<{ entry: AccessEdge; exits: rea
 /** True when the spine set is cardinally connected from the entry to every exit. */
 function spineReaches(spine: readonly Tile[], entry: Tile, exits: readonly Tile[]): boolean {
   const set = new Set(spine.map((tile) => `${tile.x},${tile.y}`));
-  const dirs = [
-    { x: 1, y: 0 },
-    { x: -1, y: 0 },
-    { x: 0, y: 1 },
-    { x: 0, y: -1 },
-  ];
   const seen = new Set([`${entry.x},${entry.y}`]);
   const queue: Tile[] = [entry];
   while (queue.length > 0) {
     const current = queue.pop()!;
-    for (const dir of dirs) {
+    for (const dir of CARDINAL_DIRS) {
       const next = { x: current.x + dir.x, y: current.y + dir.y };
       const key = `${next.x},${next.y}`;
       if (seen.has(key) || !set.has(key)) continue;
@@ -149,6 +150,29 @@ describe('sketchRoute', () => {
         expect(spineReaches(route.spine, route.entry, route.exits), `${shape} ${seed} connected`).toBe(true);
       }
     }
+  });
+
+  it('carves optional branches and marks each dead end as a pocket', () => {
+    let totalPockets = 0;
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['branch-a', 'branch-b', 'branch-c']) {
+        const route = sketchRoute(request(seed, 6, shape));
+        const carved = new Set([...route.spine, ...route.branches].map((tile) => `${tile.x},${tile.y}`));
+        expect(route.branches.length, `${shape} ${seed} branches`).toBeGreaterThan(0);
+        const reached = reachableTiles(route.tiles, route.entry);
+        for (const pocket of route.pockets) {
+          totalPockets += 1;
+          const key = `${pocket.x},${pocket.y}`;
+          expect(carved.has(key), `${shape} ${seed} ${key} carved`).toBe(true);
+          expect(reached.has(key), `${shape} ${seed} ${key} reachable`).toBe(true);
+          const neighbours = CARDINAL_DIRS.filter((dir) =>
+            carved.has(`${pocket.x + dir.x},${pocket.y + dir.y}`),
+          );
+          expect(neighbours.length, `${shape} ${seed} ${key} dead end`).toBe(1);
+        }
+      }
+    }
+    expect(totalPockets).toBeGreaterThan(0);
   });
 
   it('leaves the interior open: the border is the only wall', () => {
