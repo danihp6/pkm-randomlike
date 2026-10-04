@@ -9,7 +9,7 @@ import {
   isWalkable,
   type TileMap,
 } from '../map';
-import { Rng, hashSeed } from '../rng';
+import { Rng } from '../rng';
 import { tileKey, type RouteMap } from './routeMap';
 import {
   DEFAULT_LAYOUT,
@@ -23,6 +23,7 @@ import {
   type RouteShape,
   type ShapeSpec,
 } from './layout';
+import { routeStreams, type RouteStreams } from './streams';
 import { validateRoute } from './validate';
 
 export const ROUTE_WIDTH = 56;
@@ -420,22 +421,27 @@ function carveLedges(tiles: MutableMap, rng: Rng, pool: readonly Tile[], count: 
   }
 }
 
-function attemptRoute(request: RouteRequest, rng: Rng, width: number, height: number): RouteMap {
+function attemptRoute(
+  request: RouteRequest,
+  streams: RouteStreams,
+  width: number,
+  height: number,
+): RouteMap {
   const spec = LAYOUTS[request.layout ?? DEFAULT_LAYOUT];
   const shapeKey = request.shape ?? DEFAULT_SHAPE;
   const shape = SHAPES[shapeKey];
   const tiles: MutableMap = Array.from({ length: height }, () => new Array<number>(width).fill(WALL));
   const edges = primaryEdges(shape);
-  let entry: Tile = edgeTile(edges.entry, rng, width, height);
-  let exit: Tile = edgeTile(edges.exit, rng, width, height);
+  let entry: Tile = edgeTile(edges.entry, streams.layout, width, height);
+  let exit: Tile = edgeTile(edges.exit, streams.layout, width, height);
 
   let carved = new Set<string>();
   if (spec.kind === 'open') {
     carveOpen(tiles);
   } else if (spec.kind === 'hedges') {
-    carved = carveHedges(tiles, rng, spec, shape, entry, exit);
+    carved = carveHedges(tiles, streams.layout, spec, shape, entry, exit);
   } else {
-    const ends = carveMaze(tiles, rng, spec);
+    const ends = carveMaze(tiles, streams.layout, spec);
     entry = ends.start;
     exit = ends.exit;
   }
@@ -447,9 +453,9 @@ function attemptRoute(request: RouteRequest, rng: Rng, width: number, height: nu
   // the carved spine on a hedged route, the shortest path on an open one.
   const spine = spec.kind === 'hedges' ? carved : shortestPath(tiles, entry, exit);
   const pocketTiles = collectFloorTiles(tiles).filter((tile) => !spine.has(tileKey(tile)));
-  carveGrass(tiles, rng, request.grassPatches ?? 0, [entry, exit]);
-  carveWater(tiles, rng, pocketTiles, request.waterBodies ?? 0, [entry, exit]);
-  carveLedges(tiles, rng, pocketTiles, request.ledges ?? 0);
+  carveGrass(tiles, streams.terrain, request.grassPatches ?? 0, [entry, exit]);
+  carveWater(tiles, streams.terrain, pocketTiles, request.waterBodies ?? 0, [entry, exit]);
+  carveLedges(tiles, streams.terrain, pocketTiles, request.ledges ?? 0);
 
   tiles[entry.y][entry.x] = FLOOR;
   tiles[exit.y][exit.x] = EXIT;
@@ -468,18 +474,18 @@ function attemptRoute(request: RouteRequest, rng: Rng, width: number, height: nu
 }
 
 /**
- * Generates one route from `(seed, routeIndex)`. The whole pipeline - frame,
- * layout, terrain, validation - runs off a single `Rng`; a map that fails
- * validation is rerolled on the same stream, so the result is still a pure
- * function of the seed and index (D11).
+ * Generates one route from `(seed, routeIndex)`. Each build pass draws from its
+ * own RNG stream, derived from `(seed, routeIndex, attempt)`; a map that fails
+ * validation is rerolled on fresh streams, so the result is still a pure function
+ * of the seed and index and a reroll never shifts an earlier attempt (D11).
  */
 export function sketchRoute(request: RouteRequest): RouteMap {
   const width = request.width ?? ROUTE_WIDTH;
   const height = request.height ?? ROUTE_HEIGHT;
-  const rng = new Rng(hashSeed(`${request.seed}:route:${request.routeIndex}`));
   let last: RouteMap | undefined;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    last = attemptRoute(request, rng, width, height);
+    const streams = routeStreams(request.seed, request.routeIndex, attempt);
+    last = attemptRoute(request, streams, width, height);
     if (validateRoute(last).ok) return last;
   }
   throw new Error(`Could not generate a valid route for "${request.seed}" #${request.routeIndex}`);

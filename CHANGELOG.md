@@ -16,8 +16,14 @@ file is the human-readable summary.
       `openings` (edge + entry/exit) and the `links` the spine joins, and `RouteMap`
       is specced as `entry` + `exits`. Phase 2 step 1 has landed: `layout.ts`
       exports `SHAPES`, `RouteMap` carries `entry`/`exits` (the validator requires
-      every exit), and the debug panel's Route tab selects a **Shape**. Steps 2-3
-      (per-pass streams, the organic shape carve) remain.
+      every exit), and the debug panel's Route tab selects a **Shape**.
+- [x] Phase 2 step 2: per-pass RNG streams. `src/engine/routes/streams.ts` derives
+      one independent `Rng` per build pass (`layout`/`terrain`/`populate`) from
+      `(seed, routeIndex, attempt)`; `sketchRoute` builds fresh streams per reroll
+      instead of continuing one `Rng`, so a change in one pass cannot shift the
+      path another already placed. `streams.test.ts` pins determinism, the attempt
+      key and pass independence; the frozen route signature is re-frozen. The
+      organic shape carve (step 3) remains.
 - [x] Layout trimmed to a single style: `LayoutStyle` is now only `forest`
       (FireRed/LeafGreen, entered S / left N) and every biome uses it; `route`
       (Route 1) and `cavern` (Mt. Moon) are removed until their interiors return.

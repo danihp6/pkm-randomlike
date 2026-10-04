@@ -47,10 +47,6 @@ The generator is currently an open field with no population (`docs/routes-spec.m
 most useful first. The art counterparts (a real tall-grass tile, the floor/path
 split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **Step 2 — Per-pass RNG streams.** Replace the single sequential `Rng` in
-      `sketch.ts` with `Streams(seed, routeIndex, attempt)` (`layout`/`terrain`/
-      `populate`) and thread the attempt through the reroll loop. Add a fixed-seed
-      regression test proving a change in one pass does not shift the others.
 - [ ] **Step 3 — Shape carve (organic path).** Place each opening from the shape
       and carve the spine through its `links` (straight joins its pair, bend the
       L, cross both axes): jittered waypoints joined by cardinal corridors that

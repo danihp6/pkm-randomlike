@@ -26,8 +26,11 @@ camera follow), containing:
    not, reroll from the same seed with the next stream value. This validation is
    what makes the generator safe to call blind.
 
-Every pass consumes the same `Rng`, so `(seed, routeIndex)` fully determines the
-map.
+Every build pass draws from its own `Rng` stream, all derived from
+`(seed, routeIndex, attempt)` (`src/engine/routes/streams.ts`), so `(seed,
+routeIndex)` fully determines the map and a reroll can never shift an earlier
+attempt. Adding a roll to the terrain pass cannot move the path the layout pass
+already placed.
 
 Routes no longer scatter **trainers** or **ground items**: the population pass
 was removed and the generated map holds only tiles, the entry and its exits. The trainer
