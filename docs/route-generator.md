@@ -107,7 +107,7 @@ reachable: Set<Point>               # FloodFill(tiles, entry), computed after te
 | Knob | Lives in | Drives |
 | --- | --- | --- |
 | shape `openings`, `pathWidth`, `jitter`, `corridorWidth`, `braid`, `branchCount`, `branchMin/Max`, `pocketChance` | `src/engine/routes/layout.ts` | shape and geometry |
-| `grassPatches`, `waterBodies`, `ledges` | `src/data/biomes.ts` | terrain flavour |
+| `grassPatches`, `ledges` | `src/data/biomes.ts` | terrain flavour |
 | `trainerSize`, `minLevel`, `maxLevel` | `src/data/run.ts` | population and levels |
 | loot `count` / `pool` | `src/data/loot.ts` | item contents |
 | encounter table | `src/data/encounters.ts` | wild species |
@@ -123,7 +123,7 @@ BuildRoute(routeIndex, rngs):
     shape = Shapes[Pick(rngs.layout)]                 # straight | bend | cross
 
     # 1. Frame and shape
-    tiles = Grid(W, H, WALL)                          # one-tile border stays solid
+    tiles = Grid(W, H, WALL)                          # one-tile border, solid but for the openings
     (entry, exits) = PlaceAccess(tiles, shape, rngs.layout)
 
     # 2. Guaranteed path (solvability first, never overwritten below)
@@ -135,8 +135,8 @@ BuildRoute(routeIndex, rngs):
     # 4. Terrain flavour - hazards and grass stay off the spine
     CarveGrass(tiles, biome.terrain.grassPatches, rngs.terrain,
                forbid = spine, never = {entry} + exits)
-    CarveWater(tiles, biome.terrain.waterBodies, rngs.terrain, forbid = spine)
     CarveLedges(tiles, biome.terrain.ledges, rngs.terrain, forbid = spine)
+    # Water is decoration (D18), not a generator terrain pass.
 
     # 5. Population (counts from the band; off the spine and the ends)
     reachable = FloodFill(tiles, entry)
@@ -152,14 +152,17 @@ BuildRoute(routeIndex, rngs):
 ### 3.1 PlaceAccess
 
 Each opening names an edge; the shape fixes the pairing. One opening is the
-`entry` (where the player arrives), the rest are `exit`s (any one ends the route).
+`entry` (where the player arrives), the rest are `exit`s (their far ends). Openings
+sit **on the map border** and punch a gap in the tree ring; they are plain floor
+(the route has no special `EXIT` tile) and stepping on an exit does **not** end the
+route for now.
 
 ```
 PlaceAccess(tiles, shape, rng):
     entry = null; exits = []
     for opening in shape.openings:
-        point = pointOnEdge(opening.edge, rng)     # jitter along the edge, clamped in
-        tiles[point] = EXIT
+        point = pointOnEdge(opening.edge, rng)     # jitter along the border
+        tiles[point] = FLOOR
         if opening.role == "entry": entry = point else exits.push(point)
     return (entry, exits)
 ```
@@ -167,18 +170,25 @@ PlaceAccess(tiles, shape, rng):
 ### 3.2 CarveGuaranteedPath
 
 The shape's `links` are joined by jittered cardinal corridors that follow a cost
-map, so the result meanders instead of running straight.
+map, so the result meanders instead of running straight. When a shape has more
+than one link (the `cross`), every link routes through a shared **central hub**, so
+the lanes are guaranteed to meet: the entry reaches every exit by construction,
+never by the jittered corridors happening to cross.
 
 ```
 CarveGuaranteedPath(tiles, entry, exits, shape, rng):
     spine = Set()
+    hub = Center(tiles) if shape.links.length > 1 else null
     for (a, b) in shape.links:
         from = openingPoint(a, entry, exits)          # that opening's border tile
         to   = openingPoint(b, entry, exits)
         waypoints = [from]
         for i in 1 .. SEGMENTS-1:
-            base = Lerp(from, to, i / SEGMENTS)
-            waypoints.push(base + Jitter(shape.jitter, rng))
+            if hub and i == SEGMENTS / 2:
+                waypoints.push(hub)                   # every link meets here
+            else:
+                base = Lerp(from, to, i / SEGMENTS)
+                waypoints.push(base + Jitter(shape.jitter, rng))
         waypoints.push(to)
         for (p, q) in consecutive(waypoints):
             cost(cell) = BASE + Noise(cell, rng)      # deterministic per-cell cost
@@ -197,20 +207,28 @@ solid tile, no tall grass and no trainer may ever be written on it.
 ```
 CarveBranches(tiles, spine, shape, rng):
     branches = Set(); pockets = []
+    reach = MaxDistanceFromSpine(tiles)          # how far the interior reaches
+    min = Max(shape.branchMin, 0.25 * reach)     # roomier maps get longer lanes
+    max = Max(shape.branchMax, 0.70 * reach)
+    laneW = Clamp(2 .. 4, 1 + reach / 12)        # at least two tiles wide
+    room = laneW >= 3 ? laneW + 1 : 0            # a chamber on roomy maps
     for i in 0 .. shape.branchCount:
-        target = PickFloor(farFrom(spine, min = shape.branchMin),
+        target = PickSolid(farFrom(spine, min .. max),
                            notIn = spine, notNear = {entry} + exits)
         if target is null: continue
         origin = Nearest(spine, target)
-        branch = CarveCorridor(tiles, origin, target, width = 1, rng)
-        branches += branch
-        if IsDeadEnd(tiles, target):       # exactly one walkable neighbour
-            pockets.push(target)
+        branch = CarveCorridor(tiles, origin, target, width = laneW, rng)
+        if room > 0: CarveSquare(tiles, target, room)   # opens the far end
+        branches += branch + room
+        pockets.push(target)                    # the far end is the loot spot
     return (branches, pockets)
 ```
 
-Branches are optional; the spine alone always solves the route. A dead end is a
-**pocket** - the classic place for loot or a single special encounter.
+Branches are optional; the spine alone always solves the route. Lanes stay strictly
+inside the one-tile border (never carved), are **at least two tiles wide**, and
+scale with the free space: a roomy map gets longer, wider lanes that open into a
+small **chamber** at the far end instead of a bare one-tile cul-de-sac. That far
+end is the **pocket** - the classic place for loot or a single special encounter.
 
 ### 3.4 PlaceTrainers — always optional
 
@@ -275,7 +293,7 @@ Validate(route):
     assert every item in reachable
     assert no trainer stands on a spine cell
     assert no spine cell is WALL / WATER / LEDGE / TALL_GRASS
-    assert the one-tile border is solid and the openings sit inside it
+    assert the one-tile border is solid but for the openings
     assert every pocket has exactly one walkable neighbour (a real dead end)
 ```
 
@@ -290,7 +308,7 @@ route behind an unwinnable fight.
 - **No stranding:** every spawned item is reachable.
 - **Clean lane:** the spine holds no hazard, grass or trainer.
 - **Stable ids:** `trainer-<route>-<i>`, `item-<route>-<i>`.
-- **Bounds:** openings sit inside the solid one-tile border; the map stays 56x32
+- **Bounds:** openings sit on the map border (gaps in the tree ring); the map size is an input (20x20 default for now)
   (single screen, camera follow, `padMap` margin - D26; no fog - D6).
 
 ## 6. Decisions taken (from the first draft's review)

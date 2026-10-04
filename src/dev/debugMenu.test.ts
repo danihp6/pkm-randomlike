@@ -7,10 +7,8 @@ import {
   DEBUG_DEFAULT_LEVEL,
   DEBUG_MAX_LEVEL,
   DEBUG_MIN_LEVEL,
-  DEBUG_ROUTE_HEIGHT_MAX,
-  DEBUG_ROUTE_HEIGHT_MIN,
-  DEBUG_ROUTE_WIDTH_MAX,
-  DEBUG_ROUTE_WIDTH_MIN,
+  DEBUG_ROUTE_HEIGHT,
+  DEBUG_ROUTE_WIDTH,
   matchSpecies,
   parseOptionalInt,
   parseOptionalText,
@@ -103,15 +101,15 @@ describe('randomRouteInput', () => {
   it('draws the low end of every range', () => {
     const input = randomRouteInput(() => 0);
     expect(input.routeIndex).toBe(1);
-    expect(input.width).toBe(DEBUG_ROUTE_WIDTH_MIN);
-    expect(input.height).toBe(DEBUG_ROUTE_HEIGHT_MIN);
+    expect(input.width).toBe(DEBUG_ROUTE_WIDTH);
+    expect(input.height).toBe(DEBUG_ROUTE_HEIGHT);
   });
 
   it('draws the high end of every range', () => {
     const input = randomRouteInput(() => 0.999999);
     expect(input.routeIndex).toBe(RUN_CHAIN.finiteLength);
-    expect(input.width).toBe(DEBUG_ROUTE_WIDTH_MAX);
-    expect(input.height).toBe(DEBUG_ROUTE_HEIGHT_MAX);
+    expect(input.width).toBe(DEBUG_ROUTE_WIDTH);
+    expect(input.height).toBe(DEBUG_ROUTE_HEIGHT);
     expect(ROUTE_SHAPES).toContain(input.shape);
   });
 });

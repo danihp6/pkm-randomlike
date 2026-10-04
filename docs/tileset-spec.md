@@ -14,7 +14,7 @@ value, never by art:
 | --- | --- | --- | --- |
 | 0 | `FLOOR` | yes | plain ground |
 | 1 | `WALL` | no | rock/tree/building wall; also the route border |
-| 2 | `EXIT` | yes | ends the route; no art yet (draws ground, §6) |
+| 2 | `EXIT` | yes | route exits are floor positions for now (unused tile); no art yet (draws ground, §6) |
 | 3 | `TRAP` | yes | hazard, cave-flavoured |
 | 4 | `CHEST` | yes | loot |
 | 5 | `ITEM` | yes | floor item |

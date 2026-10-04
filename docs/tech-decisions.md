@@ -293,8 +293,12 @@ bounds the camera to it, so the route border never shows the empty background. T
 full — no fog of war or vision radius, like the originals (`D6`).
 `docs/routes-spec.md` §2 holds the pipeline; adding a biome is a `layout` field
 plus its tileset. **Addendum (current):** only the `forest` style is active —
-`route` and `cavern` were removed for now — and it still carves the open field;
-the `hedges` and `maze` carvers wait until the interiors come back.
+`route` and `cavern` were removed for now. The open field was replaced by
+**carving the shape's lanes out of a solid interior** (openings punched in the
+one-tile border), with wide, chamber-ended branches; water is decoration now, not
+a terrain pass, the default map is 20x20, and the beyond-the-edge tree frame
+(`padMap`) is parked while the generator is the focus. The `hedges` and `maze`
+carvers wait until the interiors come back.
 
 ## Open questions
 

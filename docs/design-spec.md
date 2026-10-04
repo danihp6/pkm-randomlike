@@ -59,7 +59,8 @@ Full rules in `docs/battle-spec.md`. In short:
 - Classic overworld movement on a tile grid, 24x24 tiles, camera follows.
 - **Tall grass** is the only tile that rolls a wild encounter.
 - **Trainers** have a line of sight: step in their cone and the battle starts.
-- The exit tile ends the route.
+- The exit opening ends the route (a floor position, no special tile; disabled for
+  now while the generator is in focus).
 - Tilesets are **swappable per route** so the same map code renders a wood, a
   cave, a desert or a beach without touching the generator
   (`docs/tileset-spec.md`).

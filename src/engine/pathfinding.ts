@@ -80,6 +80,12 @@ export type PathOptions = Readonly<{
    * carves clean corridors in the route generator.
    */
   diagonal?: boolean;
+  /**
+   * Replaces the map's own walkability: a tile is enterable when this returns
+   * true. The route generator uses it to carve a corridor straight through the
+   * solid interior, which `isWalkable` would otherwise refuse.
+   */
+  passable?: (tile: Tile) => boolean;
 }>;
 
 export function findPath(
@@ -118,7 +124,7 @@ export function findPath(
       const next = { x: cx + offset.x, y: cy + offset.y };
       const nextKey = `${next.x},${next.y}`;
       if (nextKey === startKey) continue;
-      if (!isWalkable(map, next)) continue;
+      if (!(options?.passable?.(next) ?? isWalkable(map, next))) continue;
       if (diagonal && cutsCorner(map, { x: cx, y: cy }, offset)) continue;
       if (nextKey !== goalKey && isBlocked?.(next)) continue;
       const tentative = g + stepCost(next);

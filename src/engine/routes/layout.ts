@@ -6,9 +6,10 @@
  * Shapes are pure data, seeded per route; the biome only supplies art and
  * encounters (`docs/route-generator.md` §0).
  *
- * A **layout** is a carver style: `open` clears the interior to plain ground,
- * `hedges` drops tree bars and `maze` carves a grid. Only `open` (the forest) is
- * live; the `hedges`/`maze` carvers stay parked in `sketch.ts` for later biomes.
+ * A **layout** is a carver style: `open` fills the interior with trees and carves
+ * the shape's lanes through them, `hedges` drops tree bars and `maze` carves a
+ * grid. Only `open` (the forest) is live; the `hedges`/`maze` carvers stay parked
+ * in `sketch.ts` for later biomes.
  */
 
 export type AccessEdge = 'N' | 'E' | 'S' | 'W';
