@@ -47,12 +47,6 @@ The generator is currently an open field with no population (`docs/routes-spec.m
 most useful first. The art counterparts (a real tall-grass tile, the floor/path
 split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **Step 1 — Shapes (recta / L / +).** Make the shape a first-class generator
-      input in `src/engine/routes/layout.ts`: `RouteShape = 'straight' | 'bend' |
-      'cross'`, each with its `openings` (edge + entry/exit) and the `links` the
-      spine joins. Generalise `RouteMap` from `start`/`exit` to `entry` + `exits`
-      so a `cross` can have several, and swap the debug panel's `layout` field for
-      a `shape` one (`src/dev/debugMenu.ts`). Data + pure tests, no new geometry.
 - [ ] **Step 2 — Per-pass RNG streams.** Replace the single sequential `Rng` in
       `sketch.ts` with `Streams(seed, routeIndex, attempt)` (`layout`/`terrain`/
       `populate`) and thread the attempt through the reroll loop. Add a fixed-seed

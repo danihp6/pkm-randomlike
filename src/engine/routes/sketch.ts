@@ -11,7 +11,18 @@ import {
 } from '../map';
 import { Rng, hashSeed } from '../rng';
 import { tileKey, type RouteMap } from './routeMap';
-import { DEFAULT_LAYOUT, LAYOUTS, type LayoutSpec, type LayoutStyle } from './layout';
+import {
+  DEFAULT_LAYOUT,
+  DEFAULT_SHAPE,
+  LAYOUTS,
+  SHAPES,
+  entryIndex,
+  type AccessEdge,
+  type LayoutSpec,
+  type LayoutStyle,
+  type RouteShape,
+  type ShapeSpec,
+} from './layout';
 import { validateRoute } from './validate';
 
 export const ROUTE_WIDTH = 56;
@@ -30,8 +41,10 @@ export type RouteRequest = Readonly<{
   seed: string;
   routeIndex: number;
   biomeId: string;
-  /** Route shape, picked by the biome; defaults to the open `route` layout. */
+  /** Carver style (open | hedges | maze); defaults to the open forest. */
   layout?: LayoutStyle;
+  /** Route geometry; defaults to a `straight` route until the shape carve lands. */
+  shape?: RouteShape;
   width?: number;
   height?: number;
   grassPatches?: number;
@@ -57,6 +70,32 @@ function collectFloorTiles(tiles: TileMap): Tile[] {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+/** A jittered opening tile inside the one-tile border, on `edge`. */
+function edgeTile(edge: AccessEdge, rng: Rng, width: number, height: number): Tile {
+  switch (edge) {
+    case 'W':
+      return { x: 1, y: rng.int(3, height - 4) };
+    case 'E':
+      return { x: width - 2, y: rng.int(3, height - 4) };
+    case 'N':
+      return { x: rng.int(3, width - 4), y: 1 };
+    case 'S':
+      return { x: rng.int(3, width - 4), y: height - 2 };
+  }
+}
+
+/**
+ * The edges of the shape's **primary** link: the entry opening and the opening
+ * the guaranteed path joins it to first. A `cross` declares more openings, but
+ * only this pair is placed until the shape carve lands (Phase 2 step 3).
+ */
+function primaryEdges(shape: ShapeSpec): Readonly<{ entry: AccessEdge; exit: AccessEdge }> {
+  const entry = entryIndex(shape);
+  const link = shape.links.find((pair) => pair.includes(entry)) ?? shape.links[0];
+  const exit = link[0] === entry ? link[1] : link[0];
+  return { entry: shape.openings[entry].edge, exit: shape.openings[exit].edge };
 }
 
 function setFloor(tiles: MutableMap, x: number, y: number): void {
@@ -128,19 +167,19 @@ function carveSpine(
   tiles: MutableMap,
   spine: Set<string>,
   rng: Rng,
-  spec: LayoutSpec,
+  shape: ShapeSpec,
   start: Tile,
   exit: Tile,
 ): void {
   const height = tiles.length;
-  const horizontal = spec.startEdge === 'W';
+  const horizontal = Math.abs(exit.x - start.x) >= Math.abs(exit.y - start.y);
   const segments = 4;
   const waypoints: Tile[] = [start];
   for (let i = 1; i < segments; i++) {
     const t = i / segments;
     const baseX = Math.round(start.x + (exit.x - start.x) * t);
     const baseY = Math.round(start.y + (exit.y - start.y) * t);
-    const jitter = rng.int(-spec.jitter, spec.jitter);
+    const jitter = rng.int(-shape.jitter, shape.jitter);
     waypoints.push(
       horizontal
         ? { x: baseX, y: clamp(baseY + jitter, 2, height - 3) }
@@ -149,7 +188,7 @@ function carveSpine(
   }
   waypoints.push(exit);
   for (let i = 0; i + 1 < waypoints.length; i++) {
-    carveLine(tiles, spine, waypoints[i], waypoints[i + 1], spec.pathWidth, rng.next() < 0.5);
+    carveLine(tiles, spine, waypoints[i], waypoints[i + 1], shape.pathWidth, rng.next() < 0.5);
   }
 }
 
@@ -174,6 +213,7 @@ function carveHedges(
   tiles: MutableMap,
   rng: Rng,
   spec: LayoutSpec,
+  shape: ShapeSpec,
   start: Tile,
   exit: Tile,
 ): Set<string> {
@@ -184,7 +224,7 @@ function carveHedges(
   }
 
   const path = new Set<string>();
-  carveSpine(tiles, path, rng, spec, start, exit);
+  carveSpine(tiles, path, rng, shape, start, exit);
   const protect = new Set(path);
   protect.add(tileKey(start));
   protect.add(tileKey(exit));
@@ -382,49 +422,48 @@ function carveLedges(tiles: MutableMap, rng: Rng, pool: readonly Tile[], count: 
 
 function attemptRoute(request: RouteRequest, rng: Rng, width: number, height: number): RouteMap {
   const spec = LAYOUTS[request.layout ?? DEFAULT_LAYOUT];
+  const shapeKey = request.shape ?? DEFAULT_SHAPE;
+  const shape = SHAPES[shapeKey];
   const tiles: MutableMap = Array.from({ length: height }, () => new Array<number>(width).fill(WALL));
-  const horizontal = spec.startEdge === 'W';
-  let start: Tile = horizontal
-    ? { x: 1, y: rng.int(3, height - 4) }
-    : { x: rng.int(3, width - 4), y: height - 2 };
-  let exit: Tile = horizontal
-    ? { x: width - 2, y: rng.int(3, height - 4) }
-    : { x: rng.int(3, width - 4), y: 1 };
+  const edges = primaryEdges(shape);
+  let entry: Tile = edgeTile(edges.entry, rng, width, height);
+  let exit: Tile = edgeTile(edges.exit, rng, width, height);
 
   let carved = new Set<string>();
   if (spec.kind === 'open') {
     carveOpen(tiles);
   } else if (spec.kind === 'hedges') {
-    carved = carveHedges(tiles, rng, spec, start, exit);
+    carved = carveHedges(tiles, rng, spec, shape, entry, exit);
   } else {
     const ends = carveMaze(tiles, rng, spec);
-    start = ends.start;
+    entry = ends.start;
     exit = ends.exit;
   }
 
-  tiles[start.y][start.x] = FLOOR;
+  tiles[entry.y][entry.x] = FLOOR;
   tiles[exit.y][exit.x] = EXIT;
 
   // Hazards (water, ledges) are solid, so they stay off the guaranteed path -
-  // the carved spine on an open route, the shortest path on a maze.
-  const spine = spec.kind === 'hedges' ? carved : shortestPath(tiles, start, exit);
+  // the carved spine on a hedged route, the shortest path on an open one.
+  const spine = spec.kind === 'hedges' ? carved : shortestPath(tiles, entry, exit);
   const pocketTiles = collectFloorTiles(tiles).filter((tile) => !spine.has(tileKey(tile)));
-  carveGrass(tiles, rng, request.grassPatches ?? 0, [start, exit]);
-  carveWater(tiles, rng, pocketTiles, request.waterBodies ?? 0, [start, exit]);
+  carveGrass(tiles, rng, request.grassPatches ?? 0, [entry, exit]);
+  carveWater(tiles, rng, pocketTiles, request.waterBodies ?? 0, [entry, exit]);
   carveLedges(tiles, rng, pocketTiles, request.ledges ?? 0);
 
-  tiles[start.y][start.x] = FLOOR;
+  tiles[entry.y][entry.x] = FLOOR;
   tiles[exit.y][exit.x] = EXIT;
 
   return {
     seed: request.seed,
     routeIndex: request.routeIndex,
     biomeId: request.biomeId,
+    shape: shapeKey,
     width,
     height,
     tiles,
-    start,
-    exit,
+    entry,
+    exits: [exit],
   };
 }
 

@@ -14,7 +14,10 @@ file is the human-readable summary.
       algorithm concept: `docs/route-generator.md` defines `straight` (2 opposite
       openings), `bend` (L, 2 adjacent) and `cross` (4, opposite pairs), each with
       `openings` (edge + entry/exit) and the `links` the spine joins, and `RouteMap`
-      is specced as `entry` + `exits`. Implementation is Phase 2 steps 1-3.
+      is specced as `entry` + `exits`. Phase 2 step 1 has landed: `layout.ts`
+      exports `SHAPES`, `RouteMap` carries `entry`/`exits` (the validator requires
+      every exit), and the debug panel's Route tab selects a **Shape**. Steps 2-3
+      (per-pass streams, the organic shape carve) remain.
 - [x] Layout trimmed to a single style: `LayoutStyle` is now only `forest`
       (FireRed/LeafGreen, entered S / left N) and every biome uses it; `route`
       (Route 1) and `cavern` (Mt. Moon) are removed until their interiors return.

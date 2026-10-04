@@ -1,6 +1,6 @@
 import { playableSpecies, type Species } from '../data/dex';
 import { RUN_CHAIN } from '../data/run';
-import { LAYOUTS, isLayoutStyle, type LayoutStyle } from '../engine/routes/layout';
+import { SHAPES, isRouteShape, type RouteShape } from '../engine/routes/layout';
 import { DEBUG_MENU_TOGGLE_KEY, IS_DEVELOP } from './env';
 
 /**
@@ -32,7 +32,7 @@ export type DebugRouteContext = Readonly<{
   mode: string;
   biomeName: string;
   bandName: string;
-  layout: LayoutStyle;
+  shape: RouteShape;
   width: number;
   height: number;
   /** Dev noclip: walk through walls, water and ledges. */
@@ -44,7 +44,7 @@ export type DebugRouteInput = Readonly<{
   seed: string;
   routeIndex: number;
   attempt: number;
-  layout: LayoutStyle;
+  shape: RouteShape;
   width: number;
   height: number;
 }>;
@@ -106,12 +106,12 @@ export function parseOptionalText(value: string): string | undefined {
 export function randomRouteInput(random: () => number = Math.random): DebugRouteInput {
   const unit = (): number => Math.max(0, Math.min(0.999999, random()));
   const roll = (min: number, max: number): number => min + Math.floor(unit() * (max - min + 1));
-  const layouts = Object.keys(LAYOUTS) as LayoutStyle[];
+  const shapes = Object.keys(SHAPES) as RouteShape[];
   return {
     seed: `debug-${Math.floor(unit() * 0xffffffff).toString(36)}`,
     routeIndex: roll(1, RUN_CHAIN.finiteLength),
     attempt: 0,
-    layout: layouts[Math.floor(unit() * layouts.length)] ?? 'forest',
+    shape: shapes[Math.floor(unit() * shapes.length)] ?? 'straight',
     width: roll(DEBUG_ROUTE_WIDTH_MIN, DEBUG_ROUTE_WIDTH_MAX),
     height: roll(DEBUG_ROUTE_HEIGHT_MIN, DEBUG_ROUTE_HEIGHT_MAX),
   };
@@ -244,17 +244,17 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   attemptInput.min = '0';
   attemptInput.value = '0';
 
-  const layoutSelect = document.createElement('select');
-  layoutSelect.style.cssText = compact;
-  const autoLayout = document.createElement('option');
-  autoLayout.value = '';
-  autoLayout.textContent = 'auto';
-  layoutSelect.append(autoLayout);
-  for (const style of Object.keys(LAYOUTS)) {
+  const shapeSelect = document.createElement('select');
+  shapeSelect.style.cssText = compact;
+  const autoShape = document.createElement('option');
+  autoShape.value = '';
+  autoShape.textContent = 'auto';
+  shapeSelect.append(autoShape);
+  for (const shape of Object.keys(SHAPES)) {
     const option = document.createElement('option');
-    option.value = style;
-    option.textContent = style;
-    layoutSelect.append(option);
+    option.value = shape;
+    option.textContent = shape;
+    shapeSelect.append(option);
   }
 
   const widthInput = numberField('width', 'auto');
@@ -263,7 +263,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   field('Seed', seedInput);
   field('Index', routeIndexInput);
   field('Attempt', attemptInput);
-  field('Layout', layoutSelect);
+  field('Shape', shapeSelect);
   field('W', widthInput);
   field('H', heightInput);
 
@@ -281,7 +281,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     seedInput.value = input.seed;
     routeIndexInput.value = String(input.routeIndex);
     attemptInput.value = '0';
-    layoutSelect.value = input.layout;
+    shapeSelect.value = input.shape;
     widthInput.value = String(input.width);
     heightInput.value = String(input.height);
     routeStatus.textContent = 'randomized';
@@ -301,7 +301,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
       seed: parseOptionalText(seedInput.value) ?? ctx.seed,
       routeIndex: parseOptionalInt(routeIndexInput.value) ?? ctx.routeIndex,
       attempt,
-      layout: isLayoutStyle(layoutSelect.value) ? layoutSelect.value : ctx.layout,
+      shape: isRouteShape(shapeSelect.value) ? shapeSelect.value : ctx.shape,
       width: parseOptionalInt(widthInput.value) ?? ctx.width,
       height: parseOptionalInt(heightInput.value) ?? ctx.height,
     });
@@ -338,7 +338,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     seedInput.value = ctx.seed;
     routeIndexInput.value = String(ctx.routeIndex);
     // `attempt` is the panel's own reroll counter: never reset by the refresh.
-    layoutSelect.value = ctx.layout;
+    shapeSelect.value = ctx.shape;
     widthInput.value = String(ctx.width);
     heightInput.value = String(ctx.height);
     passThroughInput.checked = ctx.passThrough;
@@ -346,7 +346,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     routeStatus.textContent = '';
   };
 
-  for (const control of [seedInput, routeIndexInput, attemptInput, layoutSelect, widthInput, heightInput]) {
+  for (const control of [seedInput, routeIndexInput, attemptInput, shapeSelect, widthInput, heightInput]) {
     control.addEventListener('input', () => {
       dirty = true;
     });

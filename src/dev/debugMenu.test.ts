@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Species } from '../data/dex';
 import { RUN_CHAIN } from '../data/run';
+import { ROUTE_SHAPES } from '../engine/routes/layout';
 import {
   clampLevel,
   DEBUG_DEFAULT_LEVEL,
@@ -111,6 +112,6 @@ describe('randomRouteInput', () => {
     expect(input.routeIndex).toBe(RUN_CHAIN.finiteLength);
     expect(input.width).toBe(DEBUG_ROUTE_WIDTH_MAX);
     expect(input.height).toBe(DEBUG_ROUTE_HEIGHT_MAX);
-    expect(['forest']).toContain(input.layout);
+    expect(ROUTE_SHAPES).toContain(input.shape);
   });
 });

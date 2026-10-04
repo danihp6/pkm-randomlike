@@ -1,28 +1,101 @@
 /**
- * Layout styles: the shape a route takes. For now there is exactly one, the
- * FireRed/LeafGreen **forest** (`docs/routes-spec.md` §2): it carves an open
- * field and the player enters from the south and leaves north. `route` (Route 1)
- * and `cavern` (Mt. Moon) are removed until their interiors come back; the
- * `hedges` and `maze` carvers stay parked in `sketch.ts`.
+ * Route geometry and carver styles.
  *
- * A style is only shape data; the map semantics, the terrain passes and the
- * validation stay the same, so any biome tileset still renders the result.
+ * A **shape** is the geometry of a route: where the player enters and leaves
+ * (its `openings`) and which openings the guaranteed path joins (its `links`).
+ * Shapes are pure data, seeded per route; the biome only supplies art and
+ * encounters (`docs/route-generator.md` §0).
+ *
+ * A **layout** is a carver style: `open` clears the interior to plain ground,
+ * `hedges` drops tree bars and `maze` carves a grid. Only `open` (the forest) is
+ * live; the `hedges`/`maze` carvers stay parked in `sketch.ts` for later biomes.
  */
+
+export type AccessEdge = 'N' | 'E' | 'S' | 'W';
+export type AccessRole = 'entry' | 'exit';
+
+/** One opening on a route border: the edge it sits on and what it is for. */
+export type Access = Readonly<{
+  edge: AccessEdge;
+  role: AccessRole;
+}>;
+
+/** A pair of opening indices (`openings` positions) the guaranteed path joins. */
+export type Link = readonly [number, number];
+
+export type RouteShape = 'straight' | 'bend' | 'cross';
+
+export type ShapeSpec = Readonly<{
+  openings: readonly Access[];
+  /** Pairs of `openings` the spine joins (a `+` joins both of its axes). */
+  links: readonly Link[];
+  /** Width of the guaranteed path, kept clear of bars and hazards. */
+  pathWidth: number;
+  /** How far a spine waypoint may stray from the straight link line. */
+  jitter: number;
+}>;
+
+export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
+  straight: {
+    openings: [
+      { edge: 'W', role: 'entry' },
+      { edge: 'E', role: 'exit' },
+    ],
+    links: [[0, 1]],
+    pathWidth: 1,
+    jitter: 0,
+  },
+  bend: {
+    openings: [
+      { edge: 'W', role: 'entry' },
+      { edge: 'N', role: 'exit' },
+    ],
+    links: [[0, 1]],
+    pathWidth: 1,
+    jitter: 0,
+  },
+  cross: {
+    openings: [
+      { edge: 'W', role: 'entry' },
+      { edge: 'E', role: 'exit' },
+      { edge: 'N', role: 'exit' },
+      { edge: 'S', role: 'exit' },
+    ],
+    links: [
+      [0, 1],
+      [2, 3],
+    ],
+    pathWidth: 1,
+    jitter: 0,
+  },
+};
+
+export const DEFAULT_SHAPE: RouteShape = 'straight';
+
+export const ROUTE_SHAPES: readonly RouteShape[] = ['straight', 'bend', 'cross'];
+
+export function isRouteShape(value: unknown): value is RouteShape {
+  return value === 'straight' || value === 'bend' || value === 'cross';
+}
+
+/** The single opening a shape marks as the player's arrival point. */
+export function entryAccess(spec: ShapeSpec): Access {
+  const entry = spec.openings.find((opening) => opening.role === 'entry');
+  if (!entry) throw new Error('shape declares no entry opening');
+  return entry;
+}
+
+/** Index of the entry opening, which the guaranteed path must always join. */
+export function entryIndex(spec: ShapeSpec): number {
+  const index = spec.openings.findIndex((opening) => opening.role === 'entry');
+  if (index < 0) throw new Error('shape declares no entry opening');
+  return index;
+}
 
 export type LayoutStyle = 'forest';
 
 export type LayoutSpec = Readonly<{
-  /**
-   * `open` clears the interior to plain ground (only the border trees remain);
-   * `hedges` leaves the field open and drops tree bars; `maze` carves a grid.
-   */
   kind: 'open' | 'hedges' | 'maze';
-  /** Edge the player enters from. */
-  startEdge: 'W' | 'S';
-  /** Edge the exit sits on, opposite the start. */
-  exitEdge: 'E' | 'N';
-  /** Width of the guaranteed start-to-exit path, kept clear of bars and hazards. */
-  pathWidth: number;
   /** hedges: how many tree bars to drop, and their length range. */
   bars: number;
   barMin: number;
@@ -31,22 +104,16 @@ export type LayoutSpec = Readonly<{
   corridorWidth: number;
   /** maze: fraction of walls opened back up into loops (0 = perfect maze). */
   braid: number;
-  /** hedges: how far a spine waypoint may stray from the straight start-exit line. */
-  jitter: number;
 }>;
 
 export const LAYOUTS: Readonly<Record<LayoutStyle, LayoutSpec>> = {
   forest: {
     kind: 'open',
-    startEdge: 'S',
-    exitEdge: 'N',
-    pathWidth: 1,
     bars: 0,
     barMin: 3,
     barMax: 6,
     corridorWidth: 1,
     braid: 0.2,
-    jitter: 0,
   },
 };
 
