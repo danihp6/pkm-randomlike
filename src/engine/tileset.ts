@@ -243,7 +243,6 @@ export const WATER_SHAPES: AutotileShapeSet = {
 
 /** Map values that render as a plain ground tile under their own sprite. */
 export const COMMON_FRAMES: Readonly<Record<number, number>> = {
-  [EXIT]: COMMON_FRAME_STAIRS,
   [CARPET]: COMMON_FRAME_CARPET,
 };
 

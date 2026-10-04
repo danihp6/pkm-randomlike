@@ -14,7 +14,7 @@ value, never by art:
 | --- | --- | --- | --- |
 | 0 | `FLOOR` | yes | plain ground |
 | 1 | `WALL` | no | rock/tree/building wall; also the route border |
-| 2 | `EXIT` | yes | ends the route |
+| 2 | `EXIT` | yes | ends the route; no art yet (draws ground, §6) |
 | 3 | `TRAP` | yes | hazard, cave-flavoured |
 | 4 | `CHEST` | yes | loot |
 | 5 | `ITEM` | yes | floor item |
@@ -33,12 +33,13 @@ Every biome ships two images:
   are the shared vocabulary (floor variants, wall autotile shapes, water autotile
   shapes) declared as constants in `src/engine/tileset.ts`, and frame 51 is the
   rocky ledge lip (`FRAME_LEDGE`, `D26`). The FRLG fields stamp every floor
-  variant (`1`,`2`,`41`-`43`, beside the common stair/trap slot `3`-`6`) and draw
+  variant (`1`,`2`,`41`-`43`, beside the shared common-sheet slots) and draw
   the wall as a repeating whole-object motif on frames `7`-`18` (`wallPattern`,
   §3) instead of one frame per shape.
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
-  biome, for the tiles that mean the same thing everywhere: exit, trap, chest,
-  item, carpet.
+  biome, for the tiles that mean the same thing everywhere: trap, chest, item,
+  carpet (and a stair slot that no map value maps to while the route `EXIT` art
+  is deferred — the `EXIT` tile currently draws plain ground).
 
 A tileset declares:
 

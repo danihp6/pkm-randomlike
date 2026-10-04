@@ -14,7 +14,36 @@ file is the human-readable summary.
       algorithm concept: `docs/route-generator.md` defines `straight` (2 opposite
       openings), `bend` (L, 2 adjacent) and `cross` (4, opposite pairs), each with
       `openings` (edge + entry/exit) and the `links` the spine joins, and `RouteMap`
-      is specced as `entry` + `exits`. Implementation is Phase 2 steps 1-3.
+      is specced as `entry` + `exits`. Phase 2 step 1 has landed: `layout.ts`
+      exports `SHAPES`, `RouteMap` carries `entry`/`exits` (the validator requires
+      every exit), and the debug panel's Route tab selects a **Shape**.
+- [x] Phase 2 step 2: per-pass RNG streams. `src/engine/routes/streams.ts` derives
+      one independent `Rng` per build pass (`layout`/`terrain`/`populate`) from
+      `(seed, routeIndex, attempt)`; `sketchRoute` builds fresh streams per reroll
+      instead of continuing one `Rng`, so a change in one pass cannot shift the
+      path another already placed. `streams.test.ts` pins determinism, the attempt
+      key and pass independence; the frozen route signature is re-frozen. The
+      organic shape carve (step 3) remains.
+- [x] Phase 2 step 3: shape carve. `sketchRoute` now places **every** opening of
+      the shape on its edge and carves the guaranteed **spine** through each
+      `links` pair: jittered waypoints joined by cardinal A* corridors that follow
+      a deterministic per-cell cost field (`findPath` gained `PathOptions`:
+      `cost` + cardinal-only), at the shape's path width. `RouteMap` exposes the
+      `spine`; a `cross` yields three exits and a `bend` an L. Hazards stay off
+      the spine (steps 5-7). Tests cover every opening's edge, spine connectivity
+      (entry → every exit), border safety, and the new `findPath` modes.
+- [x] Phase 2 step 4: branches and pockets. Shapes carry `branchCount` /
+      `branchMin` / `branchMax`; `carveBranches` draws each secondary lane off the
+      spine (a cardinal corridor that never runs along it) from a tile far enough
+      away, and `RouteMap` exposes `branches` plus `pockets` — the branch dead
+      ends (exactly one carved neighbour). Branches are optional: the spine alone
+      still solves the route. Tests: branches are carved, every pocket is a
+      structural dead end and reachable, and each pocket is a terminal.
+- [x] Route `EXIT` no longer draws the common-sheet **staircase** (a dungeon
+      leftover that read oddly on an outdoor field): no tileset maps `EXIT` in
+      `frames`/`commonFrames` any more, so the tile renders as plain ground. The
+      `EXIT` value and the end-of-route logic are unchanged; a real exit
+      marker/opening is deferred to Phase 8 (`TODO.md`, "Route exit art").
 - [x] Layout trimmed to a single style: `LayoutStyle` is now only `forest`
       (FireRed/LeafGreen, entered S / left N) and every biome uses it; `route`
       (Route 1) and `cavern` (Mt. Moon) are removed until their interiors return.

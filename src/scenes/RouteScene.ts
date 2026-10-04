@@ -47,12 +47,13 @@ import { EXIT, TALL_GRASS, WALL, padMap, resolveMove, tileAt, type TileMap } fro
 import { hashSeed, Rng } from '../engine/rng';
 import { storeRun, type Settings } from '../engine/save';
 import {
+  DEFAULT_SHAPE,
   ROUTE_HEIGHT,
   ROUTE_WIDTH,
   RouteEncounters,
   sketchRoute,
-  type LayoutStyle,
   type RouteMap,
+  type RouteShape,
 } from '../engine/routes';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame, resolveGroundFrame, type TileFrame } from '../engine/tileFrames';
@@ -97,7 +98,7 @@ const MOVE_STEP: Readonly<Record<MoveKey, Tile>> = {
 type RouteParams = Readonly<{
   seed: string;
   routeIndex: number;
-  layout: LayoutStyle;
+  shape: RouteShape;
   width: number;
   height: number;
   grassPatches: number;
@@ -205,7 +206,8 @@ export class RouteScene extends Phaser.Scene {
       seed,
       routeIndex: params.routeIndex,
       biomeId: biome.id,
-      layout: params.layout,
+      layout: biome.layout,
+      shape: params.shape,
       width: params.width,
       height: params.height,
       grassPatches: params.grassPatches,
@@ -250,7 +252,7 @@ export class RouteScene extends Phaser.Scene {
     this.buildRoute({
       seed: this.run.seed,
       routeIndex,
-      layout: biome.layout,
+      shape: DEFAULT_SHAPE,
       width: ROUTE_WIDTH,
       height: ROUTE_HEIGHT,
       grassPatches: biome.terrain.grassPatches,
@@ -260,7 +262,7 @@ export class RouteScene extends Phaser.Scene {
 
     this.drawTiles();
     this.drawEntities();
-    this.player = { ...this.route.start };
+    this.player = { ...this.route.entry };
     this.playerSprite = this.add
       .sprite(0, 0, PLAYER_SPRITE_TEXTURE_KEY, playerSpriteFrame('down'))
       .setOrigin(0.5, 1)
@@ -850,7 +852,7 @@ export class RouteScene extends Phaser.Scene {
       mode: this.run.mode,
       biomeName: biomeForRoute(this.routeParams.routeIndex).name,
       bandName: bandForRoute(this.routeParams.routeIndex).name,
-      layout: this.routeParams.layout,
+      shape: this.routeParams.shape,
       width: this.routeParams.width,
       height: this.routeParams.height,
       passThrough: this.passThrough,
@@ -876,7 +878,7 @@ export class RouteScene extends Phaser.Scene {
     const params: RouteParams = {
       seed: input.seed.trim() ? input.seed.trim() : this.routeParams.seed,
       routeIndex: Math.max(1, Math.floor(input.routeIndex)),
-      layout: input.layout,
+      shape: input.shape,
       width: clampInt(input.width, 16, 128),
       height: clampInt(input.height, 16, 96),
       grassPatches: this.routeParams.grassPatches,
@@ -890,7 +892,7 @@ export class RouteScene extends Phaser.Scene {
     this.buildRoute(params, attempt);
     this.drawTiles();
     this.drawEntities();
-    this.player = { ...this.route.start };
+    this.player = { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     this.cameras.main.setBounds(
       0,

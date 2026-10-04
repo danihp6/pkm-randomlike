@@ -30,14 +30,15 @@ export function reachableTiles(map: TileMap, from: Tile): Set<string> {
 
 export type RouteValidation = Readonly<{
   ok: boolean;
-  /** Tile keys the player cannot reach from the start (the exit only). */
+  /** Tile keys the player cannot reach from the entry (the exits only). */
   unreachable: readonly string[];
 }>;
 
-/** Start must reach the exit, or the map is rerolled. */
+/** The entry must reach every exit, or the map is rerolled. */
 export function validateRoute(route: RouteMap): RouteValidation {
-  const reached = reachableTiles(route.tiles, route.start);
-  const unreachable: string[] = [];
-  if (!reached.has(tileKey(route.exit))) unreachable.push(tileKey(route.exit));
+  const reached = reachableTiles(route.tiles, route.entry);
+  const unreachable = route.exits
+    .map((exit) => tileKey(exit))
+    .filter((key) => !reached.has(key));
   return { ok: unreachable.length === 0, unreachable };
 }

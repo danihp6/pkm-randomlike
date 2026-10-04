@@ -8,28 +8,32 @@ How a route is generated, walked and exited. The generator is pure logic in
 A rectangular tile map, sized for a single screen (no scrolling beyond the
 camera follow), containing:
 
-- a **start** tile, where the player arrives from the previous route;
-- an **exit** tile, which ends the route;
+- a **entry** tile, where the player arrives from the previous route;
+- one or more **exit** tiles (any one ends the route);
 - a one-tile ring of trees/rock along the border, the only wall; the interior is
   open ground.
 
 ## 2. Generation pipeline
 
-1. **Layout**: pick the layout (`forest`, the only style for now) and carve its
-   shape — see below. It is currently `open`: the interior is left as plain
-   ground and only the one-tile tree/rock border is a wall.
+1. **Layout**: pick the carver style (`forest`, the only style for now) and its
+   **shape** (`src/engine/routes/layout.ts`): where the route enters and leaves
+   and how the paths connect those openings. It is currently `open`: the interior
+   is left as plain ground and only the one-tile tree/rock border is a wall.
 2. **Terrain pass**: optional tall grass patches, water bodies and ledges, all
    **off** by default (`terrain` in `src/data/biomes.ts`), so a route is plain
    ground for now. The passes stay in the generator, ready to be re-enabled.
-3. **Validation pass**: flood-fill from the start must reach the exit. If it does
+3. **Validation pass**: flood-fill from the entry must reach every exit. If it does
    not, reroll from the same seed with the next stream value. This validation is
    what makes the generator safe to call blind.
 
-Every pass consumes the same `Rng`, so `(seed, routeIndex)` fully determines the
-map.
+Every build pass draws from its own `Rng` stream, all derived from
+`(seed, routeIndex, attempt)` (`src/engine/routes/streams.ts`), so `(seed,
+routeIndex)` fully determines the map and a reroll can never shift an earlier
+attempt. Adding a roll to the terrain pass cannot move the path the layout pass
+already placed.
 
 Routes no longer scatter **trainers** or **ground items**: the population pass
-was removed and the generated map holds only tiles, start and exit. The trainer
+was removed and the generated map holds only tiles, the entry and its exits. The trainer
 archetypes (`src/data/trainers.ts`) and the roster builder (`src/engine/run/roster.ts`)
 stay in place, ready for when encounters come back. The target generator, with
 pseudocode and a review of the draft, is in `docs/route-generator.md`.
@@ -47,12 +51,20 @@ at once: there is no fog of war, like the originals (`D6`).
 **Biome and shape.** Only the FireRed/LeafGreen **forest** biome is active
 (`BIOME_ORDER = ['forest']` in `src/data/biomes.ts`), so every route uses its
 tileset and encounter table. A route's **shape** — where it enters and leaves and
-how the paths connect those openings — is the generator's next concept: the target
-is `straight` (2 opposite), `bend` (2 adjacent) and `cross` (4, opposite pairs),
-specced in `docs/route-generator.md`. Live it is still a single entry/exit on an
-**open field** (the interior is floor and only the tree border is a wall); the
-`hedges` and `maze` carvers stay parked in `src/engine/routes/sketch.ts` until the
-shape carve lands (`D6`).
+how the paths connect those openings — is a first-class generator input: the
+registry in `src/engine/routes/layout.ts` defines `straight` (2 opposite),
+`bend` (2 adjacent) and `cross` (4, opposite pairs), each with its `openings`
+(edge + entry/exit) and the `links` the spine joins, and `RouteMap` carries an
+`entry`, a list of `exits`, the `spine` and the optional `branches`/`pockets`.
+Every opening is placed on its edge and the guaranteed **spine** joins each
+`links` pair with cardinal, cost-guided corridors, so a `cross` leaves three exits
+and a `bend` runs an L. `branchCount` secondary paths are then carved off the
+spine, and a branch's dead end (exactly one carved neighbour) is exposed as a
+**pocket** — the future loot spot. The field is still **open** (the interior is
+floor and only the tree border is a wall), so the spine, branches and pockets are
+invisible today; they are the lanes the terrain pass and the population pass must
+keep clear and populate (steps 5-7). The `hedges` and `maze` carvers stay parked
+in `src/engine/routes/sketch.ts` until the shape carve lands (`D6`).
 
 ## 3. Wild encounters
 

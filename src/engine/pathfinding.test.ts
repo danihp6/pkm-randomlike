@@ -34,4 +34,31 @@ describe('findPath', () => {
     const blocked = findPath(map, { x: 1, y: 1 }, { x: 3, y: 3 }, (tile) => tile.x === 2);
     expect(blocked).toEqual([]);
   });
+
+  it('routes cardinal-only when diagonal steps are off', () => {
+    const path = findPath(map, { x: 1, y: 1 }, { x: 3, y: 3 }, undefined, { diagonal: false });
+    let previous = { x: 1, y: 1 };
+    for (const step of path) {
+      expect(Math.abs(step.x - previous.x) + Math.abs(step.y - previous.y)).toBe(1);
+      previous = step;
+    }
+    expect(previous).toEqual({ x: 3, y: 3 });
+  });
+
+  it('prefers cheaper cells when a per-cell cost is given', () => {
+    const open: TileMap = [
+      [WALL, WALL, WALL, WALL, WALL],
+      [WALL, FLOOR, FLOOR, FLOOR, WALL],
+      [WALL, FLOOR, FLOOR, FLOOR, WALL],
+      [WALL, FLOOR, FLOOR, FLOOR, WALL],
+      [WALL, WALL, WALL, WALL, WALL],
+    ];
+    const expensive = (tile: { x: number; y: number }): boolean => tile.x === 1 && tile.y === 2;
+    const path = findPath(open, { x: 1, y: 1 }, { x: 1, y: 3 }, undefined, {
+      diagonal: false,
+      cost: (tile) => (expensive(tile) ? 100 : 1),
+    });
+    expect(path).not.toContainEqual({ x: 1, y: 2 });
+    expect(path.at(-1)).toEqual({ x: 1, y: 3 });
+  });
 });

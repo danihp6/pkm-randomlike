@@ -1,7 +1,6 @@
 import {
   CARPET,
   CHEST,
-  EXIT,
   FLOOR,
   ITEM,
   LEDGE,
@@ -12,7 +11,6 @@ import {
 } from '../../engine/map';
 import {
   COMMON_FRAME_CARPET,
-  COMMON_FRAME_STAIRS,
   FRAME_FLOOR,
   FRAME_LEDGE,
   TILESET_COLS,
@@ -93,7 +91,6 @@ export const FRLG_TILESET: TilesetConfig = {
   frames: {
     [FLOOR]: FRAME_FLOOR,
     [WALL]: FRLG_WALL_BODY_FRAMES[1],
-    [EXIT]: FRAME_FLOOR,
     [TRAP]: FRAME_FLOOR,
     [CHEST]: FRAME_FLOOR,
     [ITEM]: FRAME_FLOOR,
@@ -114,5 +111,5 @@ export const FRLG_TILESET: TilesetConfig = {
     [ITEM]: FLOOR_CLEAN,
     [TALL_GRASS]: FLOOR_CLEAN,
   },
-  commonFrames: { [EXIT]: COMMON_FRAME_STAIRS, [CARPET]: COMMON_FRAME_CARPET },
+  commonFrames: { [CARPET]: COMMON_FRAME_CARPET },
 };

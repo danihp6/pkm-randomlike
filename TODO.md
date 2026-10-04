@@ -47,25 +47,6 @@ The generator is currently an open field with no population (`docs/routes-spec.m
 most useful first. The art counterparts (a real tall-grass tile, the floor/path
 split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **Step 1 — Shapes (recta / L / +).** Make the shape a first-class generator
-      input in `src/engine/routes/layout.ts`: `RouteShape = 'straight' | 'bend' |
-      'cross'`, each with its `openings` (edge + entry/exit) and the `links` the
-      spine joins. Generalise `RouteMap` from `start`/`exit` to `entry` + `exits`
-      so a `cross` can have several, and swap the debug panel's `layout` field for
-      a `shape` one (`src/dev/debugMenu.ts`). Data + pure tests, no new geometry.
-- [ ] **Step 2 — Per-pass RNG streams.** Replace the single sequential `Rng` in
-      `sketch.ts` with `Streams(seed, routeIndex, attempt)` (`layout`/`terrain`/
-      `populate`) and thread the attempt through the reroll loop. Add a fixed-seed
-      regression test proving a change in one pass does not shift the others.
-- [ ] **Step 3 — Shape carve (organic path).** Place each opening from the shape
-      and carve the spine through its `links` (straight joins its pair, bend the
-      L, cross both axes): jittered waypoints joined by cardinal corridors that
-      follow a deterministic cost field (extend `src/engine/pathfinding.ts` with a
-      per-cell cost if needed), at the shape's path width. Any exit ends the route
-      (validate + scene). Tests: every exit reachable, border untouched.
-- [ ] **Step 4 — Branches and pockets.** Carve `shape.branchCount` secondary paths
-      off the spine, detect dead ends and expose `spine`/`pockets` on `RouteMap`.
-      Tests: the spine still solves the route and every pocket is a real dead end.
 - [ ] **Step 5 — Terrain passes on.** Re-enable grass, water and ledges from
       `biome.terrain`, keeping hazards and grass off the spine and off the
       openings. Tests: the spine stays clean, every exit stays reachable, counts
@@ -147,6 +128,10 @@ water, ledges) are kept but off. Open, most useful first:
       Decide which is ground, which is the path and which is decoration, and give
       the generator a real path to draw through a route (the current routes are
       all-ground with no path tile).
+- [ ] **Route exit art.** The `EXIT` tile draws plain ground right now (the old
+      common-sheet staircase was removed as a dungeon leftover). Give an outdoor
+      route a real exit marker or opening (a gap in the tree border, or a FRLG
+      path tile) and retire the shared stair slot from routes.
 - [ ] **Tall grass.** No source sheet has a tall-grass tile, so `TALL_GRASS`
       still draws plain ground under the procedural overlay
       (`docs/tileset-spec.md` §6). Draw a real tile (the game's is `rgb(64,176,136)`).

@@ -9,15 +9,33 @@ import {
   isWalkable,
   type TileMap,
 } from '../map';
-import { Rng, hashSeed } from '../rng';
+import { findPath } from '../pathfinding';
+import { Rng } from '../rng';
 import { tileKey, type RouteMap } from './routeMap';
-import { DEFAULT_LAYOUT, LAYOUTS, type LayoutSpec, type LayoutStyle } from './layout';
+import {
+  DEFAULT_LAYOUT,
+  DEFAULT_SHAPE,
+  LAYOUTS,
+  SHAPES,
+  entryIndex,
+  type AccessEdge,
+  type LayoutSpec,
+  type LayoutStyle,
+  type RouteShape,
+  type ShapeSpec,
+} from './layout';
+import { routeStreams, type RouteStreams } from './streams';
 import { validateRoute } from './validate';
 
 export const ROUTE_WIDTH = 56;
 export const ROUTE_HEIGHT = 32;
 
 const MAX_ATTEMPTS = 8;
+
+/** Waypoints carved per shape link: the interior points the corridor bends through. */
+const SPINE_SEGMENTS = 4;
+/** Ceiling of the deterministic per-cell cost that makes the guaranteed path meander. */
+const COST_NOISE = 4;
 
 const CARDINALS: readonly Tile[] = [
   { x: 1, y: 0 },
@@ -30,8 +48,10 @@ export type RouteRequest = Readonly<{
   seed: string;
   routeIndex: number;
   biomeId: string;
-  /** Route shape, picked by the biome; defaults to the open `route` layout. */
+  /** Carver style (open | hedges | maze); defaults to the open forest. */
   layout?: LayoutStyle;
+  /** Route geometry; defaults to a `straight` route until the shape carve lands. */
+  shape?: RouteShape;
   width?: number;
   height?: number;
   grassPatches?: number;
@@ -57,6 +77,220 @@ function collectFloorTiles(tiles: TileMap): Tile[] {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+/** A jittered opening tile inside the one-tile border, on `edge`. */
+function edgeTile(edge: AccessEdge, rng: Rng, width: number, height: number): Tile {
+  switch (edge) {
+    case 'W':
+      return { x: 1, y: rng.int(3, height - 4) };
+    case 'E':
+      return { x: width - 2, y: rng.int(3, height - 4) };
+    case 'N':
+      return { x: rng.int(3, width - 4), y: 1 };
+    case 'S':
+      return { x: rng.int(3, width - 4), y: height - 2 };
+  }
+}
+
+/**
+ * The edges of the shape's **primary** link, used by the parked `hedges` carver
+ * (a live shapeless carve). The open flow places every opening instead
+ * (`placeAccess` + `carveGuaranteedPath`).
+ */
+function primaryEdges(shape: ShapeSpec): Readonly<{ entry: AccessEdge; exit: AccessEdge }> {
+  const entry = entryIndex(shape);
+  const link = shape.links.find((pair) => pair.includes(entry)) ?? shape.links[0];
+  const exit = link[0] === entry ? link[1] : link[0];
+  return { entry: shape.openings[entry].edge, exit: shape.openings[exit].edge };
+}
+
+function keyToTile(key: string): Tile {
+  const [x, y] = key.split(',').map(Number);
+  return { x, y };
+}
+
+/** Places every opening of `shape` on its edge; returns the tiles by opening index. */
+function placeAccess(
+  tiles: MutableMap,
+  shape: ShapeSpec,
+  rng: Rng,
+  width: number,
+  height: number,
+): Tile[] {
+  return shape.openings.map((opening) => {
+    const tile = edgeTile(opening.edge, rng, width, height);
+    tiles[tile.y][tile.x] = opening.role === 'entry' ? FLOOR : EXIT;
+    return tile;
+  });
+}
+
+/** The opening tiles whose role is `exit`, in opening order. */
+function exitTiles(shape: ShapeSpec, openings: readonly Tile[]): Tile[] {
+  return shape.openings
+    .map((opening, index) => ({ opening, index }))
+    .filter(({ opening }) => opening.role === 'exit')
+    .map(({ index }) => openings[index]);
+}
+
+/** A deterministic per-cell cost in `[1, COST_NOISE]`, drawn once per route. */
+function noiseCostField(rng: Rng, width: number, height: number): readonly number[] {
+  const field = new Array<number>(width * height);
+  for (let i = 0; i < field.length; i++) field[i] = rng.int(1, COST_NOISE);
+  return field;
+}
+
+/**
+ * The guaranteed lane: each `link` is joined by jittered waypoints, and each pair
+ * is connected by a cardinal A* corridor that follows a per-cell cost field so it
+ * meanders. Every carved tile lands in the returned spine, which the hazard
+ * passes must never block; `carveSquare` keeps the lane off the border.
+ */
+function carveGuaranteedPath(
+  tiles: MutableMap,
+  rng: Rng,
+  shape: ShapeSpec,
+  openings: readonly Tile[],
+  width: number,
+  height: number,
+): Set<string> {
+  const spine = new Set<string>();
+  const costs = noiseCostField(rng, width, height);
+  const carveAt = (tile: Tile): void => {
+    for (const opened of carveSquare(tiles, tile.x, tile.y, shape.pathWidth)) {
+      spine.add(tileKey(opened));
+    }
+  };
+
+  for (const [a, b] of shape.links) {
+    const from = openings[a];
+    const to = openings[b];
+    const waypoints: Tile[] = [from];
+    for (let i = 1; i < SPINE_SEGMENTS; i++) {
+      const t = i / SPINE_SEGMENTS;
+      const jitterX = rng.int(-shape.jitter, shape.jitter);
+      const jitterY = rng.int(-shape.jitter, shape.jitter);
+      waypoints.push({
+        x: clamp(Math.round(from.x + (to.x - from.x) * t) + jitterX, 2, width - 3),
+        y: clamp(Math.round(from.y + (to.y - from.y) * t) + jitterY, 2, height - 3),
+      });
+    }
+    waypoints.push(to);
+    for (let i = 0; i + 1 < waypoints.length; i++) {
+      const step = waypoints[i];
+      const next = waypoints[i + 1];
+      carveAt(step);
+      if (tileKey(step) === tileKey(next)) continue;
+      const path = findPath(tiles, step, next, undefined, {
+        diagonal: false,
+        cost: (tile) => costs[tile.y * width + tile.x] ?? 1,
+      });
+      for (const cell of path) carveAt(cell);
+    }
+  }
+  return spine;
+}
+
+/** Manhattan/BFS distance from the spine over walkable floor, for branch placement. */
+function distanceToSpine(tiles: TileMap, spine: ReadonlySet<string>): Map<string, number> {
+  const distance = new Map<string, number>();
+  const queue: Tile[] = [];
+  for (const key of spine) {
+    const [x, y] = key.split(',').map(Number);
+    distance.set(key, 0);
+    queue.push({ x, y });
+  }
+  for (let head = 0; head < queue.length; head++) {
+    const current = queue[head];
+    const step = distance.get(tileKey(current))!;
+    for (const dir of CARDINALS) {
+      const next = { x: current.x + dir.x, y: current.y + dir.y };
+      const key = tileKey(next);
+      if (distance.has(key) || !inBounds(tiles, next) || tiles[next.y][next.x] !== FLOOR) continue;
+      distance.set(key, step + 1);
+      queue.push(next);
+    }
+  }
+  return distance;
+}
+
+/** The spine tile closest to `target` (L1), or the first one as a fallback. */
+function nearestSpine(spine: ReadonlySet<string>, target: Tile): Tile | undefined {
+  let best: Tile | undefined;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const key of spine) {
+    const [x, y] = key.split(',').map(Number);
+    const manhattan = Math.abs(x - target.x) + Math.abs(y - target.y);
+    if (manhattan < bestDistance) {
+      bestDistance = manhattan;
+      best = { x, y };
+    }
+  }
+  return best;
+}
+
+/** How many cardinal neighbours of `tile` belong to the carved lane. */
+function carvedNeighbours(tile: Tile, carved: ReadonlySet<string>): number {
+  let count = 0;
+  for (const dir of CARDINALS) {
+    if (carved.has(tileKey({ x: tile.x + dir.x, y: tile.y + dir.y }))) count += 1;
+  }
+  return count;
+}
+
+/**
+ * Secondary paths: for each `branchCount`, pick a floor tile far enough from the
+ * spine, join it to the nearest spine tile with a cardinal corridor (never
+ * running along the spine), and - when the far end is a dead end of the carved
+ * lane - record it as a **pocket**. Branches are optional; the spine alone always
+ * solves the route.
+ */
+function carveBranches(
+  tiles: MutableMap,
+  rng: Rng,
+  shape: ShapeSpec,
+  spine: ReadonlySet<string>,
+  ends: readonly Tile[],
+  width: number,
+  height: number,
+): Readonly<{ branches: Set<string>; pockets: Tile[] }> {
+  const branches = new Set<string>();
+  const pockets: Tile[] = [];
+  if (shape.branchCount <= 0) return { branches, pockets };
+
+  const distance = distanceToSpine(tiles, spine);
+  const endKeys = new Set(ends.map(tileKey));
+
+  for (let branch = 0; branch < shape.branchCount; branch++) {
+    const candidates: Tile[] = [];
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const key = tileKey({ x, y });
+        if (tiles[y][x] !== FLOOR) continue;
+        if (spine.has(key) || branches.has(key) || endKeys.has(key)) continue;
+        const away = distance.get(key);
+        if (away === undefined || away < shape.branchMin || away > shape.branchMax) continue;
+        candidates.push({ x, y });
+      }
+    }
+    if (candidates.length === 0) break;
+
+    const target = candidates[rng.int(0, candidates.length - 1)];
+    const origin = nearestSpine(spine, target);
+    if (!origin) break;
+
+    const path = findPath(tiles, origin, target, (tile) => spine.has(tileKey(tile)), {
+      diagonal: false,
+    });
+    if (path.length === 0) continue;
+    for (const cell of path) {
+      for (const opened of carveSquare(tiles, cell.x, cell.y, 1)) branches.add(tileKey(opened));
+    }
+
+    const carved = new Set([...spine, ...branches]);
+    if (carvedNeighbours(target, carved) === 1) pockets.push(target);
+  }
+  return { branches, pockets };
 }
 
 function setFloor(tiles: MutableMap, x: number, y: number): void {
@@ -128,19 +362,19 @@ function carveSpine(
   tiles: MutableMap,
   spine: Set<string>,
   rng: Rng,
-  spec: LayoutSpec,
+  shape: ShapeSpec,
   start: Tile,
   exit: Tile,
 ): void {
   const height = tiles.length;
-  const horizontal = spec.startEdge === 'W';
+  const horizontal = Math.abs(exit.x - start.x) >= Math.abs(exit.y - start.y);
   const segments = 4;
   const waypoints: Tile[] = [start];
   for (let i = 1; i < segments; i++) {
     const t = i / segments;
     const baseX = Math.round(start.x + (exit.x - start.x) * t);
     const baseY = Math.round(start.y + (exit.y - start.y) * t);
-    const jitter = rng.int(-spec.jitter, spec.jitter);
+    const jitter = rng.int(-shape.jitter, shape.jitter);
     waypoints.push(
       horizontal
         ? { x: baseX, y: clamp(baseY + jitter, 2, height - 3) }
@@ -149,7 +383,7 @@ function carveSpine(
   }
   waypoints.push(exit);
   for (let i = 0; i + 1 < waypoints.length; i++) {
-    carveLine(tiles, spine, waypoints[i], waypoints[i + 1], spec.pathWidth, rng.next() < 0.5);
+    carveLine(tiles, spine, waypoints[i], waypoints[i + 1], shape.pathWidth, rng.next() < 0.5);
   }
 }
 
@@ -174,6 +408,7 @@ function carveHedges(
   tiles: MutableMap,
   rng: Rng,
   spec: LayoutSpec,
+  shape: ShapeSpec,
   start: Tile,
   exit: Tile,
 ): Set<string> {
@@ -184,7 +419,7 @@ function carveHedges(
   }
 
   const path = new Set<string>();
-  carveSpine(tiles, path, rng, spec, start, exit);
+  carveSpine(tiles, path, rng, shape, start, exit);
   const protect = new Set(path);
   protect.add(tileKey(start));
   protect.add(tileKey(exit));
@@ -380,67 +615,88 @@ function carveLedges(tiles: MutableMap, rng: Rng, pool: readonly Tile[], count: 
   }
 }
 
-function attemptRoute(request: RouteRequest, rng: Rng, width: number, height: number): RouteMap {
+function attemptRoute(
+  request: RouteRequest,
+  streams: RouteStreams,
+  width: number,
+  height: number,
+): RouteMap {
   const spec = LAYOUTS[request.layout ?? DEFAULT_LAYOUT];
+  const shapeKey = request.shape ?? DEFAULT_SHAPE;
+  const shape = SHAPES[shapeKey];
   const tiles: MutableMap = Array.from({ length: height }, () => new Array<number>(width).fill(WALL));
-  const horizontal = spec.startEdge === 'W';
-  let start: Tile = horizontal
-    ? { x: 1, y: rng.int(3, height - 4) }
-    : { x: rng.int(3, width - 4), y: height - 2 };
-  let exit: Tile = horizontal
-    ? { x: width - 2, y: rng.int(3, height - 4) }
-    : { x: rng.int(3, width - 4), y: 1 };
 
-  let carved = new Set<string>();
-  if (spec.kind === 'open') {
-    carveOpen(tiles);
-  } else if (spec.kind === 'hedges') {
-    carved = carveHedges(tiles, rng, spec, start, exit);
+  let entry: Tile;
+  let exits: Tile[];
+  let spine: Set<string>;
+  let branches = new Set<string>();
+  let pockets: Tile[] = [];
+
+  if (spec.kind === 'hedges') {
+    const edges = primaryEdges(shape);
+    entry = edgeTile(edges.entry, streams.layout, width, height);
+    const exit = edgeTile(edges.exit, streams.layout, width, height);
+    exits = [exit];
+    spine = carveHedges(tiles, streams.layout, spec, shape, entry, exit);
+  } else if (spec.kind === 'maze') {
+    const ends = carveMaze(tiles, streams.layout, spec);
+    entry = ends.start;
+    exits = [ends.exit];
+    spine = shortestPath(tiles, entry, ends.exit);
   } else {
-    const ends = carveMaze(tiles, rng, spec);
-    start = ends.start;
-    exit = ends.exit;
+    carveOpen(tiles);
+    const openings = placeAccess(tiles, shape, streams.layout, width, height);
+    entry = openings[entryIndex(shape)];
+    exits = exitTiles(shape, openings);
+    spine = carveGuaranteedPath(tiles, streams.layout, shape, openings, width, height);
+    const branched = carveBranches(tiles, streams.layout, shape, spine, [entry, ...exits], width, height);
+    branches = branched.branches;
+    pockets = branched.pockets;
   }
 
-  tiles[start.y][start.x] = FLOOR;
-  tiles[exit.y][exit.x] = EXIT;
+  tiles[entry.y][entry.x] = FLOOR;
+  for (const exit of exits) tiles[exit.y][exit.x] = EXIT;
 
-  // Hazards (water, ledges) are solid, so they stay off the guaranteed path -
-  // the carved spine on an open route, the shortest path on a maze.
-  const spine = spec.kind === 'hedges' ? carved : shortestPath(tiles, start, exit);
+  // Hazards (water, ledges) are solid, so they stay off the guaranteed spine -
+  // the carved lane on open/hedged routes, the shortest path on a maze.
+  const ends = [entry, ...exits];
   const pocketTiles = collectFloorTiles(tiles).filter((tile) => !spine.has(tileKey(tile)));
-  carveGrass(tiles, rng, request.grassPatches ?? 0, [start, exit]);
-  carveWater(tiles, rng, pocketTiles, request.waterBodies ?? 0, [start, exit]);
-  carveLedges(tiles, rng, pocketTiles, request.ledges ?? 0);
+  carveGrass(tiles, streams.terrain, request.grassPatches ?? 0, ends);
+  carveWater(tiles, streams.terrain, pocketTiles, request.waterBodies ?? 0, ends);
+  carveLedges(tiles, streams.terrain, pocketTiles, request.ledges ?? 0);
 
-  tiles[start.y][start.x] = FLOOR;
-  tiles[exit.y][exit.x] = EXIT;
+  tiles[entry.y][entry.x] = FLOOR;
+  for (const exit of exits) tiles[exit.y][exit.x] = EXIT;
 
   return {
     seed: request.seed,
     routeIndex: request.routeIndex,
     biomeId: request.biomeId,
+    shape: shapeKey,
     width,
     height,
     tiles,
-    start,
-    exit,
+    entry,
+    exits,
+    spine: [...spine].map(keyToTile),
+    branches: [...branches].map(keyToTile),
+    pockets,
   };
 }
 
 /**
- * Generates one route from `(seed, routeIndex)`. The whole pipeline - frame,
- * layout, terrain, validation - runs off a single `Rng`; a map that fails
- * validation is rerolled on the same stream, so the result is still a pure
- * function of the seed and index (D11).
+ * Generates one route from `(seed, routeIndex)`. Each build pass draws from its
+ * own RNG stream, derived from `(seed, routeIndex, attempt)`; a map that fails
+ * validation is rerolled on fresh streams, so the result is still a pure function
+ * of the seed and index and a reroll never shifts an earlier attempt (D11).
  */
 export function sketchRoute(request: RouteRequest): RouteMap {
   const width = request.width ?? ROUTE_WIDTH;
   const height = request.height ?? ROUTE_HEIGHT;
-  const rng = new Rng(hashSeed(`${request.seed}:route:${request.routeIndex}`));
   let last: RouteMap | undefined;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    last = attemptRoute(request, rng, width, height);
+    const streams = routeStreams(request.seed, request.routeIndex, attempt);
+    last = attemptRoute(request, streams, width, height);
     if (validateRoute(last).ok) return last;
   }
   throw new Error(`Could not generate a valid route for "${request.seed}" #${request.routeIndex}`);

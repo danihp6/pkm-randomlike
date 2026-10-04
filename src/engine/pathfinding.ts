@@ -12,6 +12,8 @@ const NEIGHBORS: readonly Tile[] = [
   { x: -1, y: -1 },
 ];
 
+const CARDINALS: readonly Tile[] = NEIGHBORS.slice(0, 4);
+
 type Node = { key: string; f: number };
 
 class MinHeap {
@@ -62,21 +64,44 @@ function heuristic(a: Tile, b: Tile): number {
   return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 }
 
+/** Manhattan distance - admissible for cardinal-only moves. */
+function manhattan(a: Tile, b: Tile): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+export type PathOptions = Readonly<{
+  /**
+   * Extra cost of entering a tile; clamped to `>= 1` so it never invalidates the
+   * heuristic. A varied cost field makes the cheapest path meander.
+   */
+  cost?: (tile: Tile) => number;
+  /**
+   * Allow diagonal steps (default). Disable it to search cardinal-only, which
+   * carves clean corridors in the route generator.
+   */
+  diagonal?: boolean;
+}>;
+
 export function findPath(
   map: TileMap,
   start: Tile,
   goal: Tile,
   isBlocked?: (tile: Tile) => boolean,
+  options?: PathOptions,
 ): Tile[] {
   const startKey = `${start.x},${start.y}`;
   const goalKey = `${goal.x},${goal.y}`;
   if (startKey === goalKey) return [];
 
+  const diagonal = options?.diagonal ?? true;
+  const distance = diagonal ? heuristic : manhattan;
+  const stepCost = (tile: Tile): number => Math.max(1, options?.cost?.(tile) ?? 1);
+
   const cameFrom = new Map<string, string>();
   const gScore = new Map<string, number>([[startKey, 0]]);
   const open = new MinHeap();
   const closed = new Set<string>();
-  open.push({ key: startKey, f: heuristic(start, goal) });
+  open.push({ key: startKey, f: distance(start, goal) });
 
   let found = false;
   while (open.size > 0) {
@@ -89,18 +114,18 @@ export function findPath(
     closed.add(current.key);
     const [cx, cy] = current.key.split(',').map(Number);
     const g = gScore.get(current.key)!;
-    for (const offset of NEIGHBORS) {
+    for (const offset of diagonal ? NEIGHBORS : CARDINALS) {
       const next = { x: cx + offset.x, y: cy + offset.y };
       const nextKey = `${next.x},${next.y}`;
       if (nextKey === startKey) continue;
       if (!isWalkable(map, next)) continue;
-      if (cutsCorner(map, { x: cx, y: cy }, offset)) continue;
+      if (diagonal && cutsCorner(map, { x: cx, y: cy }, offset)) continue;
       if (nextKey !== goalKey && isBlocked?.(next)) continue;
-      const tentative = g + 1;
+      const tentative = g + stepCost(next);
       if (tentative >= (gScore.get(nextKey) ?? Infinity)) continue;
       cameFrom.set(nextKey, current.key);
       gScore.set(nextKey, tentative);
-      open.push({ key: nextKey, f: tentative + heuristic(next, goal) });
+      open.push({ key: nextKey, f: tentative + distance(next, goal) });
     }
   }
 
