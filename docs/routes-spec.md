@@ -8,20 +8,24 @@ How a route is generated, walked and exited. The generator is pure logic in
 A rectangular tile map, sized for a single screen (no scrolling beyond the
 camera follow), containing:
 
-- a **entry** tile, where the player arrives from the previous route;
-- one or more **exit** tiles (any one ends the route);
-- a one-tile ring of trees/rock along the border, the only wall; the interior is
-  open ground.
+- a **entry** opening, where the player arrives from the previous route;
+- one or more **exit** openings (the shape's far ends). Openings sit on the map
+  border and punch a gap in the tree ring; they are plain floor and stepping on
+  one does **not** end the route yet, so the map can be inspected without leaving
+  it;
+- a one-tile ring of trees/rock along the border and a solid tree interior, with
+  the shape's lanes carved through it.
 
 ## 2. Generation pipeline
 
 1. **Layout**: pick the carver style (`forest`, the only style for now) and its
    **shape** (`src/engine/routes/layout.ts`): where the route enters and leaves
    and how the paths connect those openings. It is currently `open`: the interior
-   is left as plain ground and only the one-tile tree/rock border is a wall.
-2. **Terrain pass**: optional tall grass patches, water bodies and ledges, all
-   **off** by default (`terrain` in `src/data/biomes.ts`), so a route is plain
-   ground for now. The passes stay in the generator, ready to be re-enabled.
+   is filled with trees and the shape's lanes (spine and branches) are carved
+   through them, leaving the one-tile tree/rock border solid.
+2. **Terrain pass**: optional tall grass patches and ledges, both **off** by
+   default (`terrain` in `src/data/biomes.ts`), so a route is a carved
+   tree lane for now. The passes stay in the generator, ready to be re-enabled.
 3. **Validation pass**: flood-fill from the entry must reach every exit. If it does
    not, reroll from the same seed with the next stream value. This validation is
    what makes the generator safe to call blind.
@@ -38,14 +42,8 @@ archetypes (`src/data/trainers.ts`) and the roster builder (`src/engine/run/rost
 stay in place, ready for when encounters come back. The target generator, with
 pseudocode and a review of the draft, is in `docs/route-generator.md`.
 
-A route is larger than a screen (the default is 56x32 tiles at 24px), so the
-camera follows the player. The scene draws a tree/rock margin outside the
-playable edge (`padMap`, `MAP_MARGIN` in `src/scenes/RouteScene.ts`) and bounds
-the camera to it, so the border reads as a whole tree frame instead of the empty
-background. The margin is sized to the FRLG tree motif: with the route's own
-one-tile border the frame is three tiles wide on the sides and four tiles deep
-top/bottom, so a side shows the whole three-column tree and the top/bottom line
-carries both body rows between its crown and its trunk. The whole map is visible
+The map size is an input: the default is **20x20** tiles at 24px for now, and the
+camera follows the player, bounded to the generated map. The whole map is visible
 at once: there is no fog of war, like the originals (`D6`).
 
 **Biome and shape.** Only the FireRed/LeafGreen **forest** biome is active
@@ -58,13 +56,15 @@ registry in `src/engine/routes/layout.ts` defines `straight` (2 opposite),
 `entry`, a list of `exits`, the `spine` and the optional `branches`/`pockets`.
 Every opening is placed on its edge and the guaranteed **spine** joins each
 `links` pair with cardinal, cost-guided corridors, so a `cross` leaves three exits
-and a `bend` runs an L. `branchCount` secondary paths are then carved off the
-spine, and a branch's dead end (exactly one carved neighbour) is exposed as a
-**pocket** — the future loot spot. The field is still **open** (the interior is
-floor and only the tree border is a wall), so the spine, branches and pockets are
-invisible today; they are the lanes the terrain pass and the population pass must
-keep clear and populate (steps 5-7). The `hedges` and `maze` carvers stay parked
-in `src/engine/routes/sketch.ts` until the shape carve lands (`D6`).
+and a `bend` runs an L. A multi-link shape routes every link through a shared
+**central hub**, so all the openings are connected by construction. `branchCount`
+secondary paths are then carved off the spine: lanes are **at least two tiles wide**
+and scale with the free space, opening into a small **chamber** on a roomy map. The
+far end is the **pocket** — the future loot spot. Branches stay inside the one-tile
+border. The interior is solid tree, so the carved spine, branches and pockets are
+the visible lanes; the terrain pass and the population pass keep them clear and
+populate them (steps 5-7). The `hedges` and `maze` carvers stay parked in
+`src/engine/routes/sketch.ts` for later biomes (`D6`).
 
 ## 3. Wild encounters
 

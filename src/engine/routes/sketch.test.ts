@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { EXIT, WALL, tileAt, isWalkable } from '../map';
+import { TALL_GRASS, WALL, isWalkable } from '../map';
 import type { Tile } from '../grid';
 import { ROUTE_SHAPES, SHAPES, type AccessEdge, type RouteShape } from './layout';
-import { ROUTE_HEIGHT, ROUTE_WIDTH, sketchRoute, type RouteRequest } from './sketch';
+import {
+  ROUTE_HEIGHT,
+  ROUTE_WIDTH,
+  sketchRoute,
+  sketchRouteSteps,
+  type RouteRequest,
+} from './sketch';
+import type { RouteMap } from './routeMap';
 import { reachableTiles, validateRoute } from './validate';
 
 const CARDINAL_DIRS: readonly Tile[] = [
@@ -19,8 +26,16 @@ const request = (seed: string, routeIndex: number, shape?: RouteShape): RouteReq
   ...(shape ? { shape } : {}),
 });
 
+/** Fixed size of the frozen regression route, kept independent of the live default. */
+const FROZEN_WIDTH = 56;
+const FROZEN_HEIGHT = 32;
+
 function signature(seed: string, routeIndex: number): string {
-  const route = sketchRoute(request(seed, routeIndex));
+  const route = sketchRoute({
+    ...request(seed, routeIndex),
+    width: FROZEN_WIDTH,
+    height: FROZEN_HEIGHT,
+  });
   const rows = route.tiles.map((row) => row.join('')).join('/');
   const exits = route.exits.map((exit) => `${exit.x},${exit.y}`).join('+');
   return [
@@ -31,31 +46,47 @@ function signature(seed: string, routeIndex: number): string {
   ].join('|');
 }
 
-/** Share of the map that is a solid obstacle (walls), for the density bands. */
+/** Share of the interior (border excluded) that is a solid obstacle (walls). */
 function blockedShare(tiles: readonly (readonly number[])[]): number {
   let blocked = 0;
   let total = 0;
-  for (const row of tiles) {
-    for (const value of row) {
+  for (let y = 1; y < tiles.length - 1; y++) {
+    for (let x = 1; x < tiles[y].length - 1; x++) {
       total += 1;
-      if (value === WALL) blocked += 1;
+      if (tiles[y][x] === WALL) blocked += 1;
     }
   }
-  return blocked / total;
+  return total === 0 ? 0 : blocked / total;
 }
 
-/** True when `tile` sits on the map's `edge` (inside the one-tile border). */
+/** True when `tile` sits on the map's `edge` (the solid one-tile border). */
 function onEdge(tile: Tile, edge: AccessEdge): boolean {
   switch (edge) {
     case 'W':
-      return tile.x === 1;
+      return tile.x === 0;
     case 'E':
-      return tile.x === ROUTE_WIDTH - 2;
+      return tile.x === ROUTE_WIDTH - 1;
     case 'N':
-      return tile.y === 1;
+      return tile.y === 0;
     case 'S':
-      return tile.y === ROUTE_HEIGHT - 2;
+      return tile.y === ROUTE_HEIGHT - 1;
   }
+}
+
+/** The border ring is solid tree except where the entry/exits punch through. */
+function borderIsSolidButForOpenings(route: RouteMap): boolean {
+  const openings = new Set([route.entry, ...route.exits].map((tile) => `${tile.x},${tile.y}`));
+  const solidUnlessOpening = (x: number, y: number): boolean => {
+    if (route.tiles[y][x] === WALL) return true;
+    return openings.has(`${x},${y}`);
+  };
+  for (let x = 0; x < route.width; x++) {
+    if (!solidUnlessOpening(x, 0) || !solidUnlessOpening(x, route.height - 1)) return false;
+  }
+  for (let y = 0; y < route.height; y++) {
+    if (!solidUnlessOpening(0, y) || !solidUnlessOpening(route.width - 1, y)) return false;
+  }
+  return true;
 }
 
 /** The edge of each opening a shape declares: one entry, then its exits in order. */
@@ -96,7 +127,7 @@ describe('sketchRoute', () => {
 
   it('freezes a known route as a regression seed', () => {
     expect(signature('regression-seed', 0)).toBe(
-      '56x32|straight|1,14->54,10|11111111111111111111111111111111111111111111111111111111/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000021/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/10000000000000000000000000000000000000000000000000000001/11111111111111111111111111111111111111111111111111111111',
+      '56x32|straight|0,14->55,10|11111111111111111111111111111111111111111111111111111111/11111111111111111111111111111111111111111111111111111111/11111111111111111111111111111111111111111111111111111111/11111111111111111111111111111111111111111111111111111111/11111111111111111111111111111111111111111111111111111111/11111111111111111111111111111111111111111111111111111111/11111111111111111111111111111111111111111111111111111111/11111111111111111111111111111111111111111111111111111111/11111111111111111111111111111111111111111111111111111111/11111111111111111111111111111111111111110000001111111111/11111111111111111111111111111111111000000111100000111100/11111111111111000000000000000000000011111111111110000001/11111111111111011100111111111111111111111111111111111111/11111111111111011100111111111111111111111111111111111111/00000000000000011100111111111111111111111111111111111111/11111111111100111100111111111111111111111111111111111111/11111111111100111100111111111111111111111111111111111111/11111111111100111100111111111111111111111111111111111111/11111111111100111100111111111111111111111111111111111111/11111111111100111100111111111111111111111111111111111111/11111111111100111100111111111111111111111111111111111111/11111111111100111100111111111111111111111111111111111111/11111111111100111100111111111111111111111111111111111111/11111111111100111100111111111111111111111111111111111111/11111111111111111100111111111111111111111111111111111111/11111111111111111100111111111111111111111111111111111111/11111111111111111100111111111111111111111111111111111111/11111111111111111100111111111111111111111111111111111111/11111111111111111111111111111111111111111111111111111111/11111111111111111111111111111111111111111111111111111111/11111111111111111111111111111111111111111111111111111111/11111111111111111111111111111111111111111111111111111111',
     );
   });
 
@@ -109,10 +140,10 @@ describe('sketchRoute', () => {
           expect(route.shape, `${shape} ${seed} #${routeIndex}`).toBe(shape);
           expect(isWalkable(route.tiles, route.entry)).toBe(true);
           expect(route.exits.length).toBeGreaterThanOrEqual(1);
-          for (const exit of route.exits) expect(tileAt(route.tiles, exit)).toBe(EXIT);
-          expect(route.tiles[0].every((value) => value === WALL)).toBe(true);
-          expect(route.tiles[route.height - 1].every((value) => value === WALL)).toBe(true);
-          expect(route.tiles.every((row) => row[0] === WALL && row[route.width - 1] === WALL)).toBe(true);
+          for (const exit of route.exits) {
+            expect(isWalkable(route.tiles, exit), `${shape} ${seed} #${routeIndex} exit`).toBe(true);
+          }
+          expect(borderIsSolidButForOpenings(route), `${shape} ${seed} #${routeIndex} border`).toBe(true);
         }
       }
     }
@@ -132,16 +163,18 @@ describe('sketchRoute', () => {
     }
   });
 
-  it('carves a spine from the entry to every exit, never on the border', () => {
+  it('carves a spine from the entry to every exit, interior but for the openings', () => {
     for (const shape of ROUTE_SHAPES) {
       for (const seed of ['spine-a', 'spine-b']) {
         const route = sketchRoute(request(seed, 5, shape));
         const spine = new Set(route.spine.map((tile) => `${tile.x},${tile.y}`));
+        const openings = new Set([route.entry, ...route.exits].map((tile) => `${tile.x},${tile.y}`));
         expect(spine.has(`${route.entry.x},${route.entry.y}`), `${shape} ${seed} entry`).toBe(true);
         for (const exit of route.exits) {
           expect(spine.has(`${exit.x},${exit.y}`), `${shape} ${seed} ${exit.x},${exit.y}`).toBe(true);
         }
         for (const tile of route.spine) {
+          if (openings.has(`${tile.x},${tile.y}`)) continue;
           expect(tile.x, `${shape} ${seed} ${tile.x},${tile.y} x`).toBeGreaterThan(0);
           expect(tile.x, `${shape} ${seed} ${tile.x},${tile.y} x`).toBeLessThan(route.width - 1);
           expect(tile.y, `${shape} ${seed} ${tile.x},${tile.y} y`).toBeGreaterThan(0);
@@ -152,40 +185,120 @@ describe('sketchRoute', () => {
     }
   });
 
-  it('carves optional branches and marks each dead end as a pocket', () => {
+  it('carves branches at least two tiles wide and marks each end as a pocket', () => {
     let totalPockets = 0;
     for (const shape of ROUTE_SHAPES) {
       for (const seed of ['branch-a', 'branch-b', 'branch-c']) {
         const route = sketchRoute(request(seed, 6, shape));
-        const carved = new Set([...route.spine, ...route.branches].map((tile) => `${tile.x},${tile.y}`));
+        const branchSet = new Set(route.branches.map((tile) => `${tile.x},${tile.y}`));
+        const spineSet = new Set(route.spine.map((tile) => `${tile.x},${tile.y}`));
         expect(route.branches.length, `${shape} ${seed} branches`).toBeGreaterThan(0);
+        const wide = route.branches.some((tile) =>
+          CARDINAL_DIRS.some((dir) => branchSet.has(`${tile.x + dir.x},${tile.y + dir.y}`)),
+        );
+        expect(wide, `${shape} ${seed} width`).toBe(true);
         const reached = reachableTiles(route.tiles, route.entry);
         for (const pocket of route.pockets) {
           totalPockets += 1;
           const key = `${pocket.x},${pocket.y}`;
-          expect(carved.has(key), `${shape} ${seed} ${key} carved`).toBe(true);
+          expect(branchSet.has(key), `${shape} ${seed} ${key} branch end`).toBe(true);
+          expect(spineSet.has(key), `${shape} ${seed} ${key} off spine`).toBe(false);
           expect(reached.has(key), `${shape} ${seed} ${key} reachable`).toBe(true);
-          const neighbours = CARDINAL_DIRS.filter((dir) =>
-            carved.has(`${pocket.x + dir.x},${pocket.y + dir.y}`),
-          );
-          expect(neighbours.length, `${shape} ${seed} ${key} dead end`).toBe(1);
         }
       }
     }
     expect(totalPockets).toBeGreaterThan(0);
   }, 15_000);
 
-  it('leaves the interior open: the border is the only wall', () => {
+  it('keeps every branch inside the border', () => {
     for (const shape of ROUTE_SHAPES) {
-      for (const seed of ['open-a', 'open-b', 'open-c']) {
-        const route = sketchRoute(request(seed, 2, shape));
-        expect(blockedShare(route.tiles), `${shape} ${seed}`).toBeLessThan(0.12);
-        for (let y = 1; y < route.height - 1; y++) {
-          for (let x = 1; x < route.width - 1; x++) {
-            expect(route.tiles[y][x], `${shape} ${seed} ${x},${y}`).not.toBe(WALL);
-          }
+      for (const seed of ['branch-edge-a', 'branch-edge-b']) {
+        const route = sketchRoute(request(seed, 6, shape));
+        for (const cell of route.branches) {
+          expect(cell.x, `${shape} ${seed} ${cell.x},${cell.y} x`).toBeGreaterThan(0);
+          expect(cell.x, `${shape} ${seed} ${cell.x},${cell.y} x`).toBeLessThan(route.width - 1);
+          expect(cell.y, `${shape} ${seed} ${cell.x},${cell.y} y`).toBeGreaterThan(0);
+          expect(cell.y, `${shape} ${seed} ${cell.x},${cell.y} y`).toBeLessThan(route.height - 1);
         }
       }
+    }
+  });
+
+  it('keeps tall grass off the guaranteed spine', () => {
+    for (const shape of ROUTE_SHAPES) {
+      const route = sketchRoute({ ...request('grass-a', 2, shape), grassPatches: 16 });
+      const spine = new Set(route.spine.map((tile) => `${tile.x},${tile.y}`));
+      let grass = 0;
+      for (let y = 0; y < route.height; y++) {
+        for (let x = 0; x < route.width; x++) {
+          if (route.tiles[y][x] !== TALL_GRASS) continue;
+          grass += 1;
+          expect(spine.has(`${x},${y}`), `${shape} ${x},${y} grass on spine`).toBe(false);
+        }
+      }
+      expect(grass, `${shape} grass placed`).toBeGreaterThan(0);
+    }
+  });
+
+  it('scales branch reach with the map size', () => {
+    const farthest = (route: RouteMap): number => {
+      const spine = route.spine.map((tile) => `${tile.x},${tile.y}`);
+      let max = 0;
+      for (const cell of route.branches) {
+        let nearest = Number.POSITIVE_INFINITY;
+        for (const key of spine) {
+          const [x, y] = key.split(',').map(Number);
+          nearest = Math.min(nearest, Math.abs(x - cell.x) + Math.abs(y - cell.y));
+        }
+        max = Math.max(max, nearest);
+      }
+      return max;
+    };
+    const small = sketchRoute({ ...request('scale-a', 3, 'cross'), width: 20, height: 20 });
+    const big = sketchRoute({ ...request('scale-a', 3, 'cross'), width: 64, height: 64 });
+    expect(farthest(big)).toBeGreaterThan(farthest(small));
+    expect(farthest(big)).toBeGreaterThan(SHAPES.cross.branchMax);
+  });
+
+  it('joins a multi-link shape through one central hub, so every exit connects', () => {
+    for (const seed of ['hub-a', 'hub-b', 'hub-c']) {
+      const route = sketchRoute(request(seed, 3, 'cross'));
+      const hub = `${Math.floor(route.width / 2)},${Math.floor(route.height / 2)}`;
+      const spine = new Set(route.spine.map((tile) => `${tile.x},${tile.y}`));
+      expect(spine.has(hub), `${seed} hub`).toBe(true);
+      expect(validateRoute(route).ok, `${seed} valid`).toBe(true);
+    }
+  });
+
+  it('carves the shape out of a solid forest: the interior is wall but for the lanes', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['carve-a', 'carve-b', 'carve-c']) {
+        const route = sketchRoute(request(seed, 2, shape));
+        // Most of the interior stays solid, so the carved lane reads as a path
+        // through the trees instead of a clear room.
+        expect(blockedShare(route.tiles), `${shape} ${seed}`).toBeGreaterThan(0.4);
+        for (const lane of [...route.spine, ...route.branches]) {
+          expect(route.tiles[lane.y][lane.x], `${shape} ${seed} lane ${lane.x},${lane.y}`).not.toBe(WALL);
+        }
+        expect(borderIsSolidButForOpenings(route), `${shape} ${seed} border`).toBe(true);
+      }
+    }
+  });
+
+  it('records every build phase, walls first and the live map last', () => {
+    for (const shape of ROUTE_SHAPES) {
+      const stepRequest = request('steps-a', 2, shape);
+      const steps = sketchRouteSteps(stepRequest);
+      expect(steps.map((step) => step.phase)).toEqual([
+        'walls',
+        'access',
+        'spine',
+        'branches',
+        'terrain',
+        'final',
+      ]);
+      expect(steps[0].tiles.every((row) => row.every((value) => value === WALL))).toBe(true);
+      expect(steps.at(-1)!.tiles).toEqual(sketchRoute(stepRequest).tiles);
     }
   });
 });

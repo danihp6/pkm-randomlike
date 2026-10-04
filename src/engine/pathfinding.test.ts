@@ -61,4 +61,18 @@ describe('findPath', () => {
     expect(path).not.toContainEqual({ x: 1, y: 2 });
     expect(path.at(-1)).toEqual({ x: 1, y: 3 });
   });
+
+  it('carves through solid terrain when a passable override is given', () => {
+    const solid: TileMap = [
+      [WALL, WALL, WALL],
+      [WALL, WALL, WALL],
+      [WALL, WALL, WALL],
+    ];
+    expect(findPath(solid, { x: 0, y: 0 }, { x: 2, y: 2 })).toEqual([]);
+    const path = findPath(solid, { x: 0, y: 0 }, { x: 2, y: 2 }, undefined, {
+      diagonal: false,
+      passable: () => true,
+    });
+    expect(path.at(-1)).toEqual({ x: 2, y: 2 });
+  });
 });

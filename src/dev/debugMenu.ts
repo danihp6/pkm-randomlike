@@ -1,6 +1,7 @@
 import { playableSpecies, type Species } from '../data/dex';
 import { RUN_CHAIN } from '../data/run';
 import { SHAPES, isRouteShape, type RouteShape } from '../engine/routes/layout';
+import { ROUTE_HEIGHT, ROUTE_WIDTH } from '../engine/routes/sketch';
 import { DEBUG_MENU_TOGGLE_KEY, IS_DEVELOP } from './env';
 
 /**
@@ -16,11 +17,9 @@ export const DEBUG_DEFAULT_LEVEL = 5;
 export const DEBUG_MIN_LEVEL = 1;
 export const DEBUG_MAX_LEVEL = 100;
 
-/** Ranges the route panel's "Randomize" draws from. */
-export const DEBUG_ROUTE_WIDTH_MIN = 32;
-export const DEBUG_ROUTE_WIDTH_MAX = 64;
-export const DEBUG_ROUTE_HEIGHT_MIN = 24;
-export const DEBUG_ROUTE_HEIGHT_MAX = 40;
+/** Route size the panel's "Randomize" draws; mirrors the generator's own default. */
+export const DEBUG_ROUTE_WIDTH = ROUTE_WIDTH;
+export const DEBUG_ROUTE_HEIGHT = ROUTE_HEIGHT;
 
 /**
  * The live values the route panel pre-fills: the current route's base inputs plus
@@ -49,11 +48,21 @@ export type DebugRouteInput = Readonly<{
   height: number;
 }>;
 
+/** The generator phase the scene is rendering, for the step controls. */
+export type DebugGeneratorStep = Readonly<{
+  index: number;
+  total: number;
+  label: string;
+}>;
+
 export type DebugMenuHandlers = Readonly<{
   onWildBattle: (speciesId: string, level: number) => void;
   readRouteContext: () => DebugRouteContext | null;
   onRegenerateRoute: (input: DebugRouteInput) => void;
   onTogglePassThrough: (enabled: boolean) => void;
+  generatorStepInfo: () => DebugGeneratorStep | null;
+  stepGenerator: (delta: number) => void;
+  resetGeneratorStep: () => void;
 }>;
 
 /**
@@ -112,8 +121,8 @@ export function randomRouteInput(random: () => number = Math.random): DebugRoute
     routeIndex: roll(1, RUN_CHAIN.finiteLength),
     attempt: 0,
     shape: shapes[Math.floor(unit() * shapes.length)] ?? 'straight',
-    width: roll(DEBUG_ROUTE_WIDTH_MIN, DEBUG_ROUTE_WIDTH_MAX),
-    height: roll(DEBUG_ROUTE_HEIGHT_MIN, DEBUG_ROUTE_HEIGHT_MAX),
+    width: DEBUG_ROUTE_WIDTH,
+    height: DEBUG_ROUTE_HEIGHT,
   };
 }
 
@@ -314,6 +323,33 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   routeButtons.style.cssText = 'display:flex;gap:6px;';
   routeButtons.append(randomizeButton, regenButton);
 
+  // Generator stepper: walk the build phases (walls → access → spine → branches →
+  // terrain → final) one at a time to debug the carver.
+  const stepStatus = document.createElement('span');
+  stepStatus.style.cssText = 'flex:1;min-width:0;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
+  const refreshGeneratorStep = (): void => {
+    const info = handlers.generatorStepInfo();
+    stepStatus.textContent = info ? `${info.label} ${info.index + 1}/${info.total}` : 'no route';
+  };
+
+  const advanceGeneratorStep = (delta: number): void => {
+    handlers.stepGenerator(delta);
+    refreshGeneratorStep();
+  };
+
+  const stepRow = document.createElement('div');
+  stepRow.style.cssText = 'display:flex;gap:6px;align-items:center;';
+  stepRow.append(
+    button('◂', () => advanceGeneratorStep(-1)),
+    button('Step ▸', () => advanceGeneratorStep(1)),
+    button('Live', () => {
+      handlers.resetGeneratorStep();
+      refreshGeneratorStep();
+    }),
+    stepStatus,
+  );
+
   const passThroughInput = document.createElement('input');
   passThroughInput.type = 'checkbox';
   passThroughInput.title = 'walk through walls, water and ledges';
@@ -333,6 +369,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     if (!ctx) {
       routeInfo.textContent = 'no active route';
       routeStatus.textContent = '';
+      refreshGeneratorStep();
       return;
     }
     seedInput.value = ctx.seed;
@@ -344,6 +381,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     passThroughInput.checked = ctx.passThrough;
     routeInfo.textContent = `${ctx.mode} · ${ctx.biomeName} · band ${ctx.bandName}`;
     routeStatus.textContent = '';
+    refreshGeneratorStep();
   };
 
   for (const control of [seedInput, routeIndexInput, attemptInput, shapeSelect, widthInput, heightInput]) {
@@ -356,7 +394,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     if (!dirty && root.style.display !== 'none') refreshRouteFields();
   }, 500);
 
-  routeSection.append(routeGrid, routeButtons, passThroughRow, routeStatus, routeInfo);
+  routeSection.append(routeGrid, stepRow, routeButtons, passThroughRow, routeStatus, routeInfo);
 
   const battlePanel = document.createElement('div');
   battlePanel.style.cssText = 'display:flex;flex-direction:column;gap:6px;';

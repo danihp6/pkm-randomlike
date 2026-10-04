@@ -52,6 +52,18 @@ if (IS_DEVELOP) {
         const route = game.scene.getScene('Route') as RouteScene | null;
         route?.setPassThrough(enabled);
       },
+      generatorStepInfo: () => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        return route?.generatorStepInfo() ?? null;
+      },
+      stepGenerator: (delta) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        route?.stepGenerator(delta);
+      },
+      resetGeneratorStep: () => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        route?.resetGeneratorStep();
+      },
     });
   });
 }

@@ -1,11 +1,9 @@
 import type { Tile } from '../grid';
 import {
-  EXIT,
   FLOOR,
   LEDGE,
   TALL_GRASS,
   WALL,
-  WATER,
   isWalkable,
   type TileMap,
 } from '../map';
@@ -27,8 +25,8 @@ import {
 import { routeStreams, type RouteStreams } from './streams';
 import { validateRoute } from './validate';
 
-export const ROUTE_WIDTH = 56;
-export const ROUTE_HEIGHT = 32;
+export const ROUTE_WIDTH = 20;
+export const ROUTE_HEIGHT = 20;
 
 const MAX_ATTEMPTS = 8;
 
@@ -55,11 +53,17 @@ export type RouteRequest = Readonly<{
   width?: number;
   height?: number;
   grassPatches?: number;
-  waterBodies?: number;
   ledges?: number;
 }>;
 
 type MutableMap = number[][];
+
+/** A labelled snapshot of the map after one build phase, for the debug stepper. */
+export type RouteStep = Readonly<{
+  phase: 'walls' | 'access' | 'spine' | 'branches' | 'layout' | 'terrain' | 'final';
+  label: string;
+  tiles: TileMap;
+}>;
 
 function inBounds(tiles: TileMap, tile: Tile): boolean {
   return tile.y >= 0 && tile.y < tiles.length && tile.x >= 0 && tile.x < tiles[0].length;
@@ -79,17 +83,17 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/** A jittered opening tile inside the one-tile border, on `edge`. */
+/** A jittered opening tile on the map border itself, punching a gap in the tree ring. */
 function edgeTile(edge: AccessEdge, rng: Rng, width: number, height: number): Tile {
   switch (edge) {
     case 'W':
-      return { x: 1, y: rng.int(3, height - 4) };
+      return { x: 0, y: rng.int(3, height - 4) };
     case 'E':
-      return { x: width - 2, y: rng.int(3, height - 4) };
+      return { x: width - 1, y: rng.int(3, height - 4) };
     case 'N':
-      return { x: rng.int(3, width - 4), y: 1 };
+      return { x: rng.int(3, width - 4), y: 0 };
     case 'S':
-      return { x: rng.int(3, width - 4), y: height - 2 };
+      return { x: rng.int(3, width - 4), y: height - 1 };
   }
 }
 
@@ -120,7 +124,7 @@ function placeAccess(
 ): Tile[] {
   return shape.openings.map((opening) => {
     const tile = edgeTile(opening.edge, rng, width, height);
-    tiles[tile.y][tile.x] = opening.role === 'entry' ? FLOOR : EXIT;
+    tiles[tile.y][tile.x] = FLOOR;
     return tile;
   });
 }
@@ -156,17 +160,37 @@ function carveGuaranteedPath(
 ): Set<string> {
   const spine = new Set<string>();
   const costs = noiseCostField(rng, width, height);
+  // Carve through the solid interior, but the openings on the border are enterable.
+  const openingKeys = new Set(openings.map(tileKey));
+  const passable = (tile: Tile): boolean =>
+    openingKeys.has(tileKey(tile)) ||
+    (tile.x >= 1 && tile.x < width - 1 && tile.y >= 1 && tile.y < height - 1);
   const carveAt = (tile: Tile): void => {
+    // The anchor itself counts as lane even on the border (the openings sit there).
+    spine.add(tileKey(tile));
     for (const opened of carveSquare(tiles, tile.x, tile.y, shape.pathWidth)) {
       spine.add(tileKey(opened));
     }
   };
+
+  // When a shape has more than one link (the `cross`), every link must pass
+  // through the same central hub, so the lanes are guaranteed to meet instead of
+  // relying on the jittered corridors happening to cross.
+  const hub =
+    shape.links.length > 1
+      ? { x: Math.max(2, Math.min(width - 3, Math.floor(width / 2))), y: Math.max(2, Math.min(height - 3, Math.floor(height / 2))) }
+      : null;
+  const hubIndex = Math.floor(SPINE_SEGMENTS / 2);
 
   for (const [a, b] of shape.links) {
     const from = openings[a];
     const to = openings[b];
     const waypoints: Tile[] = [from];
     for (let i = 1; i < SPINE_SEGMENTS; i++) {
+      if (hub && i === hubIndex) {
+        waypoints.push(hub);
+        continue;
+      }
       const t = i / SPINE_SEGMENTS;
       const jitterX = rng.int(-shape.jitter, shape.jitter);
       const jitterY = rng.int(-shape.jitter, shape.jitter);
@@ -184,6 +208,7 @@ function carveGuaranteedPath(
       const path = findPath(tiles, step, next, undefined, {
         diagonal: false,
         cost: (tile) => costs[tile.y * width + tile.x] ?? 1,
+        passable,
       });
       for (const cell of path) carveAt(cell);
     }
@@ -191,27 +216,14 @@ function carveGuaranteedPath(
   return spine;
 }
 
-/** Manhattan/BFS distance from the spine over walkable floor, for branch placement. */
-function distanceToSpine(tiles: TileMap, spine: ReadonlySet<string>): Map<string, number> {
-  const distance = new Map<string, number>();
-  const queue: Tile[] = [];
+/** Manhattan distance from `tile` to the nearest spine tile (0 on the spine). */
+function distanceToSpine(spine: ReadonlySet<string>, tile: Tile): number {
+  let best = Number.POSITIVE_INFINITY;
   for (const key of spine) {
     const [x, y] = key.split(',').map(Number);
-    distance.set(key, 0);
-    queue.push({ x, y });
+    best = Math.min(best, Math.abs(x - tile.x) + Math.abs(y - tile.y));
   }
-  for (let head = 0; head < queue.length; head++) {
-    const current = queue[head];
-    const step = distance.get(tileKey(current))!;
-    for (const dir of CARDINALS) {
-      const next = { x: current.x + dir.x, y: current.y + dir.y };
-      const key = tileKey(next);
-      if (distance.has(key) || !inBounds(tiles, next) || tiles[next.y][next.x] !== FLOOR) continue;
-      distance.set(key, step + 1);
-      queue.push(next);
-    }
-  }
-  return distance;
+  return best;
 }
 
 /** The spine tile closest to `target` (L1), or the first one as a fallback. */
@@ -229,21 +241,13 @@ function nearestSpine(spine: ReadonlySet<string>, target: Tile): Tile | undefine
   return best;
 }
 
-/** How many cardinal neighbours of `tile` belong to the carved lane. */
-function carvedNeighbours(tile: Tile, carved: ReadonlySet<string>): number {
-  let count = 0;
-  for (const dir of CARDINALS) {
-    if (carved.has(tileKey({ x: tile.x + dir.x, y: tile.y + dir.y }))) count += 1;
-  }
-  return count;
-}
-
 /**
- * Secondary paths: for each `branchCount`, pick a floor tile far enough from the
- * spine, join it to the nearest spine tile with a cardinal corridor (never
- * running along the spine), and - when the far end is a dead end of the carved
- * lane - record it as a **pocket**. Branches are optional; the spine alone always
- * solves the route.
+ * Secondary paths: for each `branchCount`, pick a solid tile far enough from the
+ * spine and carve a cardinal lane through the forest to the nearest spine tile
+ * (never running along the spine). The lane is at least two tiles wide and, on a
+ * roomy map, opens into a small chamber at its far end. The far end is recorded as
+ * a **pocket** (a loot spot). Branches are optional; the spine alone always solves
+ * the route.
  */
 function carveBranches(
   tiles: MutableMap,
@@ -258,18 +262,32 @@ function carveBranches(
   const pockets: Tile[] = [];
   if (shape.branchCount <= 0) return { branches, pockets };
 
-  const distance = distanceToSpine(tiles, spine);
   const endKeys = new Set(ends.map(tileKey));
+  // Branches stay strictly inside the one-tile border: the ring is never carved.
+  const passable = (tile: Tile): boolean =>
+    tile.x >= 1 && tile.x < width - 1 && tile.y >= 1 && tile.y < height - 1;
+
+  // Scale the lane to the free space: how far the interior reaches from the spine.
+  let maxAway = 0;
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const away = distanceToSpine(spine, { x, y });
+      if (away > maxAway) maxAway = away;
+    }
+  }
+  const branchMin = Math.max(shape.branchMin, Math.round(maxAway * 0.25));
+  const branchMax = Math.max(shape.branchMax, branchMin + 1, Math.round(maxAway * 0.7));
+  const branchWidth = Math.max(2, Math.min(4, Math.floor(maxAway / 12) + 1));
+  const chamber = branchWidth >= 3 ? branchWidth + 1 : 0;
 
   for (let branch = 0; branch < shape.branchCount; branch++) {
     const candidates: Tile[] = [];
     for (let y = 1; y < height - 1; y++) {
       for (let x = 1; x < width - 1; x++) {
         const key = tileKey({ x, y });
-        if (tiles[y][x] !== FLOOR) continue;
         if (spine.has(key) || branches.has(key) || endKeys.has(key)) continue;
-        const away = distance.get(key);
-        if (away === undefined || away < shape.branchMin || away > shape.branchMax) continue;
+        const away = distanceToSpine(spine, { x, y });
+        if (away < branchMin || away > branchMax) continue;
         candidates.push({ x, y });
       }
     }
@@ -281,14 +299,23 @@ function carveBranches(
 
     const path = findPath(tiles, origin, target, (tile) => spine.has(tileKey(tile)), {
       diagonal: false,
+      passable,
     });
     if (path.length === 0) continue;
     for (const cell of path) {
-      for (const opened of carveSquare(tiles, cell.x, cell.y, 1)) branches.add(tileKey(opened));
+      for (const opened of carveSquare(tiles, cell.x, cell.y, branchWidth)) {
+        branches.add(tileKey(opened));
+      }
     }
-
-    const carved = new Set([...spine, ...branches]);
-    if (carvedNeighbours(target, carved) === 1) pockets.push(target);
+    // A roomy map opens the far end into a chamber instead of a bare cul-de-sac.
+    if (chamber > 0) {
+      const roomX = clamp(target.x - (chamber >> 1), 1, width - 1 - chamber);
+      const roomY = clamp(target.y - (chamber >> 1), 1, height - 1 - chamber);
+      for (const opened of carveSquare(tiles, roomX, roomY, chamber)) {
+        branches.add(tileKey(opened));
+      }
+    }
+    pockets.push(target);
   }
   return { branches, pockets };
 }
@@ -384,18 +411,6 @@ function carveSpine(
   waypoints.push(exit);
   for (let i = 0; i + 1 < waypoints.length; i++) {
     carveLine(tiles, spine, waypoints[i], waypoints[i + 1], shape.pathWidth, rng.next() < 0.5);
-  }
-}
-
-/**
- * The open field: the interior is plain ground with the one-tile border left as
- * the only wall, so a route is a clear room to cross.
- */
-function carveOpen(tiles: MutableMap): void {
-  const width = tiles[0].length;
-  const height = tiles.length;
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) tiles[y][x] = FLOOR;
   }
 }
 
@@ -543,44 +558,31 @@ function shortestPath(tiles: TileMap, from: Tile, to: Tile): Set<string> {
   return path;
 }
 
-function carveGrass(tiles: MutableMap, rng: Rng, patches: number, avoid: readonly Tile[]): void {
-  const avoidKeys = new Set(avoid.map(tileKey));
+/**
+ * Tall grass patches, stamped over plain floor. `pool` is the off-spine floor
+ * (the spine stays a clean, encounter-free lane), and `forbid` also keeps a patch
+ * from spilling back onto the spine or an opening.
+ */
+function carveGrass(
+  tiles: MutableMap,
+  rng: Rng,
+  pool: readonly Tile[],
+  patches: number,
+  forbid: ReadonlySet<string>,
+): void {
   for (let patch = 0; patch < patches; patch++) {
-    const floors = collectFloorTiles(tiles).filter((tile) => !avoidKeys.has(tileKey(tile)));
+    const floors = pool.filter((tile) => tiles[tile.y][tile.x] === FLOOR && !forbid.has(tileKey(tile)));
     if (floors.length === 0) break;
     const seed = floors[rng.int(0, floors.length - 1)];
     const patchWidth = rng.int(2, 4);
     const patchHeight = rng.int(2, 3);
     for (let y = seed.y; y < seed.y + patchHeight; y++) {
       for (let x = seed.x; x < seed.x + patchWidth; x++) {
-        if (inBounds(tiles, { x, y }) && tiles[y][x] === FLOOR) tiles[y][x] = TALL_GRASS;
+        const tile = { x, y };
+        if (inBounds(tiles, tile) && tiles[y][x] === FLOOR && !forbid.has(tileKey(tile))) {
+          tiles[y][x] = TALL_GRASS;
+        }
       }
-    }
-  }
-}
-
-function carveWater(
-  tiles: MutableMap,
-  rng: Rng,
-  pool: readonly Tile[],
-  bodies: number,
-  avoid: readonly Tile[],
-): void {
-  const avoidKeys = new Set(avoid.map(tileKey));
-  for (let body = 0; body < bodies; body++) {
-    const candidates = pool.filter(
-      (tile) => tiles[tile.y][tile.x] === FLOOR && !avoidKeys.has(tileKey(tile)),
-    );
-    if (candidates.length < 4) break;
-    let current = candidates[rng.int(0, candidates.length - 1)];
-    const size = rng.int(3, 5);
-    for (let step = 0; step < size; step++) {
-      if (tiles[current.y][current.x] === FLOOR) tiles[current.y][current.x] = WATER;
-      const next: Tile[] = CARDINALS.map((dir) => ({ x: current.x + dir.x, y: current.y + dir.y })).filter(
-        (tile) => inBounds(tiles, tile) && tiles[tile.y][tile.x] === FLOOR,
-      );
-      if (next.length === 0) break;
-      current = next[rng.int(0, next.length - 1)];
     }
   }
 }
@@ -620,11 +622,16 @@ function attemptRoute(
   streams: RouteStreams,
   width: number,
   height: number,
+  record?: RouteStep[],
 ): RouteMap {
   const spec = LAYOUTS[request.layout ?? DEFAULT_LAYOUT];
   const shapeKey = request.shape ?? DEFAULT_SHAPE;
   const shape = SHAPES[shapeKey];
   const tiles: MutableMap = Array.from({ length: height }, () => new Array<number>(width).fill(WALL));
+  const snapshot = (phase: RouteStep['phase'], label: string): void => {
+    if (record) record.push({ phase, label, tiles: tiles.map((row) => row.slice()) });
+  };
+  snapshot('walls', 'fill walls');
 
   let entry: Tile;
   let exits: Tile[];
@@ -638,37 +645,40 @@ function attemptRoute(
     const exit = edgeTile(edges.exit, streams.layout, width, height);
     exits = [exit];
     spine = carveHedges(tiles, streams.layout, spec, shape, entry, exit);
+    snapshot('layout', 'hedged field');
   } else if (spec.kind === 'maze') {
     const ends = carveMaze(tiles, streams.layout, spec);
     entry = ends.start;
     exits = [ends.exit];
     spine = shortestPath(tiles, entry, ends.exit);
+    snapshot('layout', 'maze');
   } else {
-    carveOpen(tiles);
     const openings = placeAccess(tiles, shape, streams.layout, width, height);
+    snapshot('access', 'place openings');
     entry = openings[entryIndex(shape)];
     exits = exitTiles(shape, openings);
     spine = carveGuaranteedPath(tiles, streams.layout, shape, openings, width, height);
+    snapshot('spine', 'carve spine');
     const branched = carveBranches(tiles, streams.layout, shape, spine, [entry, ...exits], width, height);
     branches = branched.branches;
     pockets = branched.pockets;
+    snapshot('branches', 'carve branches');
   }
 
   tiles[entry.y][entry.x] = FLOOR;
-  for (const exit of exits) tiles[exit.y][exit.x] = EXIT;
 
-  // Hazards (water, ledges) are solid, so they stay off the guaranteed spine -
-  // the carved lane on open/hedged routes, the shortest path on a maze.
+  // Ledges are solid, so they stay off the guaranteed spine - the carved lane on
+  // open/hedged routes, the shortest path on a maze.
   const ends = [entry, ...exits];
   const pocketTiles = collectFloorTiles(tiles).filter((tile) => !spine.has(tileKey(tile)));
-  carveGrass(tiles, streams.terrain, request.grassPatches ?? 0, ends);
-  carveWater(tiles, streams.terrain, pocketTiles, request.waterBodies ?? 0, ends);
+  const forbidKeys = new Set([...spine, ...ends.map(tileKey)]);
+  carveGrass(tiles, streams.terrain, pocketTiles, request.grassPatches ?? 0, forbidKeys);
   carveLedges(tiles, streams.terrain, pocketTiles, request.ledges ?? 0);
 
   tiles[entry.y][entry.x] = FLOOR;
-  for (const exit of exits) tiles[exit.y][exit.x] = EXIT;
+  snapshot('terrain', 'terrain pass');
 
-  return {
+  const route: RouteMap = {
     seed: request.seed,
     routeIndex: request.routeIndex,
     biomeId: request.biomeId,
@@ -682,6 +692,8 @@ function attemptRoute(
     branches: [...branches].map(keyToTile),
     pockets,
   };
+  snapshot('final', 'final map');
+  return route;
 }
 
 /**
@@ -700,4 +712,22 @@ export function sketchRoute(request: RouteRequest): RouteMap {
     if (validateRoute(last).ok) return last;
   }
   throw new Error(`Could not generate a valid route for "${request.seed}" #${request.routeIndex}`);
+}
+
+/**
+ * Dev only: one snapshot per build phase (`walls` → `access` → `spine` →
+ * `branches` → `terrain` → `final`), so the debug panel can render the generator
+ * one step at a time. It replays attempt 0, which is the attempt `sketchRoute`
+ * returns whenever it validates, so the steps match the route on screen.
+ */
+export function sketchRouteSteps(request: RouteRequest): readonly RouteStep[] {
+  const steps: RouteStep[] = [];
+  attemptRoute(
+    request,
+    routeStreams(request.seed, request.routeIndex, 0),
+    request.width ?? ROUTE_WIDTH,
+    request.height ?? ROUTE_HEIGHT,
+    steps,
+  );
+  return steps;
 }

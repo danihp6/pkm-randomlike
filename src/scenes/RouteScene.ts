@@ -24,8 +24,6 @@ import {
   createRun,
   createRunPokemon,
   hasLivingParty,
-  healParty,
-  isFinalStage,
   resolveBattle,
   type BagCounts,
   type BattleLaunch,
@@ -36,14 +34,13 @@ import {
 } from '../engine/run';
 import {
   COMMON_TEXTURE_KEY,
-  TILESET_IDS,
   TILESETS,
   resolveTileset,
   type TilesetId,
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { EXIT, TALL_GRASS, WALL, padMap, resolveMove, tileAt, type TileMap } from '../engine/map';
+import { TALL_GRASS, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, Rng } from '../engine/rng';
 import { storeRun, type Settings } from '../engine/save';
 import {
@@ -52,8 +49,10 @@ import {
   ROUTE_WIDTH,
   RouteEncounters,
   sketchRoute,
+  sketchRouteSteps,
   type RouteMap,
   type RouteShape,
+  type RouteStep,
 } from '../engine/routes';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame, resolveGroundFrame, type TileFrame } from '../engine/tileFrames';
@@ -66,17 +65,6 @@ import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { GRASS_TEXTURE_KEY } from './BootScene';
 
-/**
- * Tree/rock terrain rendered beyond the playable map (`padMap`), so the camera can
- * follow the player out to the border without ever showing the empty background.
- * The FRLG tree is three columns wide and four rows tall (crown, upper leaves,
- * lower leaves, trunk). With the route's own one-tile wall border, the left/right
- * frame is 3 wide (`2 + 1`) so a side shows the whole tree, and the top/bottom
- * frame is 4 deep (`3 + 1`) so its line carries both body rows between the crown
- * and the trunk. Purely cosmetic: movement and validation use the map.
- */
-const MAP_MARGIN_X = 2;
-const MAP_MARGIN_Y = 3;
 /** Item stacks the route HUD's bag row shows before it drops the rest. */
 const BAG_ICON_SLOTS = 6;
 
@@ -102,7 +90,6 @@ type RouteParams = Readonly<{
   width: number;
   height: number;
   grassPatches: number;
-  waterBodies: number;
   ledges: number;
 }>;
 
@@ -132,8 +119,11 @@ const DEMO_BAG: readonly BagCounts[] = [
 export class RouteScene extends Phaser.Scene {
   private route!: RouteMap;
   private map!: TileMap;
-  /** `map` framed by tree/rock rings, drawn so the camera never shows a void. */
-  private renderMap!: TileMap;
+  /** The tiles `drawTiles` renders: the live map, or a dev generator step. */
+  private renderTiles!: TileMap;
+  /** Dev only: the build-phase snapshots of the route on screen. */
+  private generatorSteps: readonly RouteStep[] = [];
+  private generatorStepIndex: number | null = null;
   private encounters!: RouteEncounters;
   private tilesetId: TilesetId = 'wood';
   private player: Tile = { x: 1, y: 1 };
@@ -194,7 +184,7 @@ export class RouteScene extends Phaser.Scene {
 
   /**
    * Builds the route for `params` (plus the debug reroll `attempt`) and points
-   * the scene at it: map, framed render map, tileset and the encounter stream.
+   * the scene at it: map, render tiles, tileset and the encounter stream.
    * `create` and the debug "regenerate" both go through here so they cannot drift.
    */
   private buildRoute(params: RouteParams, attempt = 0): void {
@@ -202,7 +192,7 @@ export class RouteScene extends Phaser.Scene {
     const band = bandForRoute(params.routeIndex);
     const seed = attempt > 0 ? `${params.seed}#r${attempt}` : params.seed;
     this.routeParams = params;
-    this.route = sketchRoute({
+    const request = {
       seed,
       routeIndex: params.routeIndex,
       biomeId: biome.id,
@@ -211,11 +201,13 @@ export class RouteScene extends Phaser.Scene {
       width: params.width,
       height: params.height,
       grassPatches: params.grassPatches,
-      waterBodies: params.waterBodies,
       ledges: params.ledges,
-    });
+    };
+    this.route = sketchRoute(request);
     this.map = this.route.tiles;
-    this.renderMap = padMap(this.map, { x: MAP_MARGIN_X, y: MAP_MARGIN_Y }, WALL);
+    this.renderTiles = this.map;
+    this.generatorStepIndex = null;
+    this.generatorSteps = IS_DEVELOP ? sketchRouteSteps(request) : [];
     this.tilesetId = resolveTileset(this.settings.tileset, biome.tilesetId);
     this.encounters = new RouteEncounters(
       biome.encounters[band.id],
@@ -256,7 +248,6 @@ export class RouteScene extends Phaser.Scene {
       width: ROUTE_WIDTH,
       height: ROUTE_HEIGHT,
       grassPatches: biome.terrain.grassPatches,
-      waterBodies: biome.terrain.waterBodies,
       ledges: biome.terrain.ledges,
     });
 
@@ -270,9 +261,7 @@ export class RouteScene extends Phaser.Scene {
       .setDepth(10);
     this.movePlayerTo(this.player.x, this.player.y);
 
-    const width = this.renderMap[0].length * TILE_SIZE;
-    const height = this.renderMap.length * TILE_SIZE;
-    this.cameras.main.setBounds(0, 0, width, height);
+    this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
     this.cameras.main.setZoom(2);
     this.cameras.main.startFollow(this.playerSprite, true, 0.2, 0.2);
 
@@ -290,10 +279,6 @@ export class RouteScene extends Phaser.Scene {
       .setDepth(100);
     this.hint.setMaxWidth(760);
 
-    // The debug tileset swap stays a fixed key: it is not a player action.
-    this.input.keyboard!.on('keydown-R', () => {
-      if (this.scene.isActive()) this.cycleTileset();
-    });
     subscribeKeybinds(
       this,
       ({ action }) => {
@@ -443,17 +428,17 @@ export class RouteScene extends Phaser.Scene {
    */
   private tileFrames(x: number, y: number): TileFrame[] {
     const config = TILESETS[this.tilesetId].config;
-    const ground = resolveGroundFrame(this.renderMap, x, y, config);
-    const frame = resolveTileFrame(this.renderMap, x, y, config);
+    const ground = resolveGroundFrame(this.renderTiles, x, y, config);
+    const frame = resolveTileFrame(this.renderTiles, x, y, config);
     if (frame && (frame.source !== ground.source || frame.frame !== ground.frame)) return [ground, frame];
     return [ground];
   }
 
   private drawTiles(): void {
     const created: Phaser.GameObjects.GameObject[] = [];
-    for (let y = 0; y < this.renderMap.length; y++) {
+    for (let y = 0; y < this.renderTiles.length; y++) {
       const row: Phaser.GameObjects.Image[][] = [];
-      for (let x = 0; x < this.renderMap[y].length; x++) {
+      for (let x = 0; x < this.renderTiles[y].length; x++) {
         row.push(
           this.tileFrames(x, y).map((frame) => {
             const image = this.tileImage(x, y, frame);
@@ -483,30 +468,19 @@ export class RouteScene extends Phaser.Scene {
     this.hudCamera?.ignore(created);
   }
 
-  /**
-   * A route tile's centre in world pixels. The entity sprites and the player are
-   * positioned by route coordinates while the terrain comes from `renderMap`
-   * (`MAP_MARGIN_X`/`MAP_MARGIN_Y` cells larger on each side), so both must shift
-   * by the same margin or every sprite drifts toward the top-left of the ground
-   * under it.
-   */
+  /** A route tile's centre in world pixels. */
   private centerX(tileX: number): number {
-    return (tileX + MAP_MARGIN_X) * TILE_SIZE + TILE_SIZE / 2;
+    return tileX * TILE_SIZE + TILE_SIZE / 2;
   }
 
   private centerY(tileY: number): number {
-    return (tileY + MAP_MARGIN_Y) * TILE_SIZE + TILE_SIZE / 2;
-  }
-
-  private cycleTileset(): void {
-    const next = TILESET_IDS[(TILESET_IDS.indexOf(this.tilesetId) + 1) % TILESET_IDS.length];
-    this.applyTileset(next);
+    return tileY * TILE_SIZE + TILE_SIZE / 2;
   }
 
   private applyTileset(id: TilesetId): void {
     this.tilesetId = id;
-    for (let y = 0; y < this.renderMap.length; y++) {
-      for (let x = 0; x < this.renderMap[y].length; x++) {
+    for (let y = 0; y < this.renderTiles.length; y++) {
+      for (let x = 0; x < this.renderTiles[y].length; x++) {
         const frames = this.tileFrames(x, y);
         this.tileSprites[y][x].forEach((image, index) => {
           const frame = frames[index];
@@ -567,12 +541,7 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private onTileEntered(): void {
-    const value = tileAt(this.map, this.player);
-    if (value === EXIT) {
-      this.leaveRoute();
-      return;
-    }
-    if (value === TALL_GRASS) {
+    if (tileAt(this.map, this.player) === TALL_GRASS) {
       const encounter = this.encounters.step();
       if (encounter) {
         this.startBattle({
@@ -586,19 +555,6 @@ export class RouteScene extends Phaser.Scene {
       }
     }
     this.setHint(this.defaultHint());
-  }
-
-  /** The exit beat: rest the party, then let the player manage it before moving on. */
-  private leaveRoute(): void {
-    if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) return;
-    if (isFinalStage(this.run.routeIndex, this.run.mode)) {
-      this.gameOver = true;
-      this.scene.start('RunOver', { run: this.run, won: true });
-      return;
-    }
-    this.run = healParty(this.run);
-    this.persistRun();
-    this.openParty('rest');
   }
 
   /** Opens the party/PC screen paused-on-top, like a battle (`P`, or the rest stop). */
@@ -866,6 +822,45 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
+   * Debug only: the generator phase currently rendered. `index` is 0-based and
+   * `index === total - 1` is the live map. Null when no route is active.
+   */
+  generatorStepInfo(): { index: number; total: number; label: string } | null {
+    if (!IS_DEVELOP || this.generatorSteps.length === 0) return null;
+    const index = this.generatorStepIndex ?? this.generatorSteps.length - 1;
+    return { index, total: this.generatorSteps.length, label: this.generatorSteps[index].label };
+  }
+
+  /** Debug only: render the previous/next generator phase (wraps the live map). */
+  stepGenerator(delta: number): void {
+    if (!IS_DEVELOP || this.generatorSteps.length === 0) return;
+    const last = this.generatorSteps.length - 1;
+    const next =
+      this.generatorStepIndex === null
+        ? delta < 0
+          ? last
+          : 0
+        : Math.max(0, Math.min(last, this.generatorStepIndex + delta));
+    this.showGeneratorStep(next === last ? null : next);
+  }
+
+  /** Debug only: leave the stepper and render the live route again. */
+  resetGeneratorStep(): void {
+    if (!IS_DEVELOP) return;
+    this.showGeneratorStep(null);
+  }
+
+  private showGeneratorStep(step: number | null): void {
+    if (!this.scene.isActive()) return;
+    this.generatorStepIndex = step;
+    this.renderTiles = step === null ? this.map : this.generatorSteps[step].tiles;
+    this.stopWalking();
+    this.clearRouteSprites();
+    this.drawTiles();
+    this.drawEntities();
+  }
+
+  /**
    * Debug only: rebuilds the route from the panel's inputs without touching the
    * run. `attempt` rerolls the same base inputs reproducibly (D11).
    */
@@ -882,7 +877,6 @@ export class RouteScene extends Phaser.Scene {
       width: clampInt(input.width, 16, 128),
       height: clampInt(input.height, 16, 96),
       grassPatches: this.routeParams.grassPatches,
-      waterBodies: this.routeParams.waterBodies,
       ledges: this.routeParams.ledges,
     };
     const attempt = Math.max(0, Math.floor(input.attempt));
@@ -894,19 +888,14 @@ export class RouteScene extends Phaser.Scene {
     this.drawEntities();
     this.player = { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
-    this.cameras.main.setBounds(
-      0,
-      0,
-      this.renderMap[0].length * TILE_SIZE,
-      this.renderMap.length * TILE_SIZE,
-    );
+    this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
     this.setHint(`debug: re-generated route ${params.routeIndex} (attempt ${attempt})`);
   }
 
   private setHint(text: string): void {
     const dev = IS_DEVELOP ? `  ·  B: random battle  ·  ${DEBUG_MENU_TOGGLE_KEY}: debug menu` : '';
     this.hint.setText(
-      `${text}\nArrows: move  ·  P: party/PC  ·  R: swap tileset${dev}`,
+      `${text}\nArrows: move  ·  P: party/PC${dev}`,
     );
   }
 

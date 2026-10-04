@@ -41,16 +41,16 @@ accessors so the engine never touches raw JSON.
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-The generator is currently an open field with no population (`docs/routes-spec.md`
-§2). The target algorithm, its guarantees and its open questions are in
-`docs/route-generator.md`; these are the steps to get there, one branch each,
-most useful first. The art counterparts (a real tall-grass tile, the floor/path
-split, props) stay in Phase 8 "Route generation & FRLG fields".
+The generator carves the shape's lanes out of a solid forest and has no population
+(`docs/routes-spec.md` §2). The target algorithm, its guarantees and its open
+questions are in `docs/route-generator.md`; these are the steps to get there, one
+branch each, most useful first. The art counterparts (a real tall-grass tile, the
+floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **Step 5 — Terrain passes on.** Re-enable grass, water and ledges from
-      `biome.terrain`, keeping hazards and grass off the spine and off the
-      openings. Tests: the spine stays clean, every exit stays reachable, counts
-      are honoured.
+- [ ] **Step 5 — Terrain passes on.** Re-enable grass and ledges from
+      `biome.terrain`, keeping them off the spine and off the openings (water is
+      decoration now, not a terrain pass). Tests: the spine stays clean, every
+      exit stays reachable, counts are honoured.
 - [ ] **Step 6 — Trainers (optional).** Restore the `RouteTrainer` type and the
       line-of-sight module (`src/engine/routes/trainers.ts`), place trainers off
       the spine with a facing, sight and archetype, and keep a trainer-free
@@ -110,17 +110,18 @@ Ports of Showdown handlers, in batches, on the hook names in
 Shipped: the whole-object wall motif (`wallPattern`, `src/engine/tileFrames.ts`)
 drawn with the real 3x4 FireRed tree (each crown stacks on the lower leaves of the
 tree above, the body hides the trunk and only the foot shows the platform), the
-FRLG floor/pond/ledge atlas, the biome wiring, maps larger than the camera (56x32)
-with a follow camera, a **one-tile** tree/rock frame past the playable edge
-(`padMap`, `MAP_MARGIN`), and every route carved as an **open field**
-(`kind: 'open'`: the interior is plain ground and only the border is a wall) with
-no fog of war. The `hedges`/`maze` carvers and the terrain passes (tall grass,
-water, ledges) are kept but off. Open, most useful first:
+FRLG floor/pond/ledge atlas, the biome wiring, a follow camera, and every route
+built by **carving the shape's lanes out of a solid tree interior** — openings
+punched in the one-tile border, wide, chamber-ended branches — with no fog of war.
+The default map is 20x20 for now and the beyond-the-edge tree frame (`padMap`) is
+parked while the generator is the focus. The `hedges`/`maze` carvers and the
+terrain passes (tall grass, ledges) are kept but off; water is decoration. Open,
+most useful first:
 
 - [ ] **Route interiors.** Bring shape back per biome: re-enable the `hedges`
       (Route 1) and `maze` (Viridian Forest, Mt. Moon) carvers and the biome
-      terrain passes (`terrain` in `src/data/biomes.ts`), once the open field has
-      served its purpose. Generator logic tracked in Phase 2 steps 3-5.
+      terrain passes (`terrain` in `src/data/biomes.ts`), once the carved lanes
+      have served their purpose. Generator logic tracked in Phase 2 steps 3-5.
 
 - [ ] **FRLG ground vs path.** The base floor now matches the game's ground colour
       (`rgb(112,200,160)`, sheet tile `6,1`), but the lighter tiles (`2,3`, `1,3`,
@@ -128,10 +129,9 @@ water, ledges) are kept but off. Open, most useful first:
       Decide which is ground, which is the path and which is decoration, and give
       the generator a real path to draw through a route (the current routes are
       all-ground with no path tile).
-- [ ] **Route exit art.** The `EXIT` tile draws plain ground right now (the old
-      common-sheet staircase was removed as a dungeon leftover). Give an outdoor
-      route a real exit marker or opening (a gap in the tree border, or a FRLG
-      path tile) and retire the shared stair slot from routes.
+- [ ] **Route exit art.** The exit is a plain floor **opening** punched in the tree
+      border (no special tile, and it does not end the route yet). Give an outdoor
+      route a real exit marker/opening and restore the end-of-route beat.
 - [ ] **Tall grass.** No source sheet has a tall-grass tile, so `TALL_GRASS`
       still draws plain ground under the procedural overlay
       (`docs/tileset-spec.md` §6). Draw a real tile (the game's is `rgb(64,176,136)`).

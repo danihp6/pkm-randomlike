@@ -76,6 +76,54 @@ file is the human-readable summary.
       builder (`src/engine/run/roster.ts`) stay, dormant, for when population
       returns.
 
+- [x] Routes are **carved out of the solid forest** again, matching
+      `docs/route-generator.md`: the `open` layout no longer clears the interior,
+      so `sketchRoute` keeps the grid solid and `carveGuaranteedPath` /
+      `carveBranches` carve the shape's lanes through it (`findPath` gained a
+      `passable` override). The one-tile tree/rock border stays solid and the
+      carved spine, branches and pockets are the walkable lanes. Fixed-seed
+      snapshot re-frozen; `docs/routes-spec.md` updated.
+- [x] Removed the tree frame drawn **past the map** for now: `RouteScene` no
+      longer pads the map or grows a margin, and the camera is bounded to the
+      generated map while the generator is the focus. The debug panel's route size
+      follows the generator default (`DEBUG_ROUTE_WIDTH`/`DEBUG_ROUTE_HEIGHT`).
+- [x] Routes no longer write an `EXIT` tile **and no longer end on an exit**: the
+      openings are plain floor and `RouteScene` no longer advances or rests when
+      the player reaches one, so a route can be walked and inspected without
+      leaving it. The `EXIT` map value and its tileset contract stay for later art.
+      Fixed-seed snapshot re-frozen.
+- [x] Debug **generator stepper**: the Route tab has `◂` / `Step ▸` / `Live`
+      controls that walk the build phases one at a time (`sketchRouteSteps`
+      snapshots `walls → access → spine → branches → terrain → final`) and render
+      each on the map, so the carver can be inspected phase by phase. Behind
+      `IS_DEVELOP`. The temporary default map size is 20x20
+      (`ROUTE_WIDTH`/`ROUTE_HEIGHT`).
+- [x] Dropped the debug `R` tileset-swap shortcut in `RouteScene` (and its hint
+      line); tilesets still swap from the settings screen.
+- [x] Route openings moved onto the **map border**: `edgeTile` now returns the
+      outer border tile (a gap in the tree ring) instead of one tile inside, and
+      the spine treats the openings as its inner endpoints. Border checks and the
+      fixed-seed snapshot updated.
+- [x] Spine refinement: a multi-link shape (`cross`) now routes **every link
+      through a shared central hub**, so the entry reaches every exit by
+      construction instead of relying on the jittered lanes crossing. `carveBranches`
+      also re-checks its pockets after all branches are carved, so a later lane
+      running alongside an earlier dead end no longer leaves a false pocket.
+- [x] `carveBranches` refinement: branch lanes never carve the one-tile border,
+      and their distance band **scales with the map size** (`0.25`–`0.70` of how
+      far the interior reaches from the spine), so a roomy map uses the space for
+      longer branches instead of the fixed 4–14.
+- [x] Branch lanes are now **at least two tiles wide** (`2..4`, scaled by the free
+      space) and open into a small **chamber** at the far end on a roomy map,
+      instead of a one-tile cul-de-sac. A branch's far end is the **pocket** (was a
+      1-neighbour dead end). Fixed-seed snapshot re-frozen.
+- [x] Water is no longer a generator terrain pass: `carveWater` and the
+      `waterBodies` knob are gone (biome terrain is `grassPatches` + `ledges`).
+      `WATER` stays a map/tileset value for **decoration** later.
+- [x] Fixed `carveGrass`: it seeds from the **off-spine** floor and never stamps a
+      patch over the **spine** or an opening, so the guaranteed lane stays a clean,
+      encounter-free lane (before it only avoided the openings). Test added.
+
 ## Phase 0 — Repo & scaffolding
 
 - [x] `git init`; add `.gitignore` (`node_modules/`, `dist/`, `.vite/`, `*.local`,
