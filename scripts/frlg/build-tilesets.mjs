@@ -220,16 +220,17 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) 
   const crown = sourceTile(top[0][0], top[0][1])
   const bg = [crown[0], crown[1], crown[2]]
   const blank = Buffer.alloc(TILE_SIZE * TILE_SIZE * 4)
-  // The top and base of a mass sit against the floor, which the scene picks per
-  // tile (its wall-edge variant); their ground stays transparent so it shows
-  // through instead of a baked flat colour. The interior frames stay opaque so
-  // the canopy reads dense.
+  // The rows of a mass that sit against the floor — the top, its body row and its
+  // trunk foot — leave their ground transparent so the floor the scene picks per
+  // tile (its wall-edge variant) shows through instead of a baked flat colour. The
+  // stacked rows (crown, mid, lower) fill against the row above so the canopy
+  // stays dense where two trees overlap.
   const overNone = (source) => keyBackground(sourceTile(source[0], source[1]), blank, bg)
   const overFill = (source, fill) =>
     compositeOver(keyBackground(sourceTile(source[0], source[1]), sourceTile(fill[0], fill[1]), bg), floorTile)
 
   FRAME_WALL_TOP.forEach((frame, i) => stampTile(atlas, frame, overNone(top[i])))
-  FRAME_WALL_BODY.forEach((frame, i) => stampTile(atlas, frame, overFill(body[i], lower[i])))
+  FRAME_WALL_BODY.forEach((frame, i) => stampTile(atlas, frame, overNone(body[i])))
   // The crown of the tree below is laid over the lower leaves of the tree above
   // (`CROWN`); the row under it is the tree's upper leaves laid over the trunk of
   // the tree above (`MID`), so the trunk stays hidden instead of the lower leaves

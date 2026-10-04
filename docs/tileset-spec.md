@@ -84,8 +84,8 @@ body row covers its trunk (instead of its lower leaves), the trunk stays hidden
 inside the mass and only shows at the foot; the grass background is keyed out at
 bake time (`D26`).
 
-A wall's own ground is left **transparent** on the frames that sit against the
-floor (the crown and the trunk platform), and `RouteScene` draws a floor frame
+A wall's own ground is left **transparent** on the rows that sit against the
+floor (the mass's top, its body row and its trunk platform), and `RouteScene` draws a floor frame
 under every cell (`resolveGroundFrame`, `src/engine/tileFrames.ts`). The FRLG
 fields resolve that ground to the plain floor frame, so the tree blends into a
 uniform field; the lighter `FLOOR_ALT_*` frames are kept for the future route path
