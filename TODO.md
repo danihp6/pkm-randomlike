@@ -128,6 +128,10 @@ water, ledges) are kept but off. Open, most useful first:
       Decide which is ground, which is the path and which is decoration, and give
       the generator a real path to draw through a route (the current routes are
       all-ground with no path tile).
+- [ ] **Route exit art.** The `EXIT` tile draws plain ground right now (the old
+      common-sheet staircase was removed as a dungeon leftover). Give an outdoor
+      route a real exit marker or opening (a gap in the tree border, or a FRLG
+      path tile) and retire the shared stair slot from routes.
 - [ ] **Tall grass.** No source sheet has a tall-grass tile, so `TALL_GRASS`
       still draws plain ground under the procedural overlay
       (`docs/tileset-spec.md` §6). Draw a real tile (the game's is `rgb(64,176,136)`).

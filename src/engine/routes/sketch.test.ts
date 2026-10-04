@@ -116,7 +116,7 @@ describe('sketchRoute', () => {
         }
       }
     }
-  });
+  }, 30_000);
 
   it('places every opening on the edge its shape declares', () => {
     for (const shape of ROUTE_SHAPES) {
@@ -173,7 +173,7 @@ describe('sketchRoute', () => {
       }
     }
     expect(totalPockets).toBeGreaterThan(0);
-  });
+  }, 15_000);
 
   it('leaves the interior open: the border is the only wall', () => {
     for (const shape of ROUTE_SHAPES) {

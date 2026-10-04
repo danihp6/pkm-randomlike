@@ -39,6 +39,11 @@ file is the human-readable summary.
       ends (exactly one carved neighbour). Branches are optional: the spine alone
       still solves the route. Tests: branches are carved, every pocket is a
       structural dead end and reachable, and each pocket is a terminal.
+- [x] Route `EXIT` no longer draws the common-sheet **staircase** (a dungeon
+      leftover that read oddly on an outdoor field): no tileset maps `EXIT` in
+      `frames`/`commonFrames` any more, so the tile renders as plain ground. The
+      `EXIT` value and the end-of-route logic are unchanged; a real exit
+      marker/opening is deferred to Phase 8 (`TODO.md`, "Route exit art").
 - [x] Layout trimmed to a single style: `LayoutStyle` is now only `forest`
       (FireRed/LeafGreen, entered S / left N) and every biome uses it; `route`
       (Route 1) and `cavern` (Mt. Moon) are removed until their interiors return.
