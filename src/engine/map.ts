@@ -87,21 +87,27 @@ export function mapSize(map: TileMap): { width: number; height: number } {
 }
 
 /**
- * A copy of `map` framed by `margin` rings of `fill`. The scene renders a route
- * through this padded map so a camera that follows the player past the playable
- * edge shows more terrain (forest, rock) instead of the empty background, while
- * movement and validation keep using the original map.
+ * A copy of `map` framed by `margin` rings of `fill` (the same count on every side
+ * when it is a plain number, or `{ x, y }` when the frame is deeper top/bottom than
+ * left/right, as the FRLG tree border needs). The scene renders a route through
+ * this padded map so a camera that follows the player past the playable edge shows
+ * more terrain (forest, rock) instead of the empty background, while movement and
+ * validation keep using the original map.
  */
-export function padMap(map: TileMap, margin: number, fill: number): TileMap {
-  if (margin <= 0) return map;
+export type MapMargin = number | Readonly<{ x: number; y: number }>;
+
+export function padMap(map: TileMap, margin: MapMargin, fill: number): TileMap {
+  const mx = typeof margin === 'number' ? margin : margin.x;
+  const my = typeof margin === 'number' ? margin : margin.y;
+  if (mx <= 0 && my <= 0) return map;
   const height = map.length;
   const innerWidth = height > 0 ? map[0].length : 0;
-  const width = innerWidth + margin * 2;
-  const side = new Array<number>(margin).fill(fill);
+  const width = innerWidth + mx * 2;
+  const side = new Array<number>(mx).fill(fill);
   const out: number[][] = [];
-  for (let i = 0; i < margin; i++) out.push(new Array<number>(width).fill(fill));
+  for (let i = 0; i < my; i++) out.push(new Array<number>(width).fill(fill));
   for (const row of map) out.push([...side, ...row, ...side]);
-  for (let i = 0; i < margin; i++) out.push(new Array<number>(width).fill(fill));
+  for (let i = 0; i < my; i++) out.push(new Array<number>(width).fill(fill));
   return out;
 }
 

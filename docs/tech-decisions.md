@@ -284,12 +284,12 @@ superimposed on the complete trunk row of the tree above — the crown's grass
 background is keyed out at bake time so the trunk still shows — which is why a
 wall reads as stacked complete trees instead of a flat stamp or a column of
 trunks. The wall's ground is transparent where the tree meets the floor, and the
-scene lays a floor frame under every cell (`resolveGroundFrame`), so the tree
-picks up the same wall-edge floor variant as the tiles beside it instead of a
-baked flat colour. A route is now larger than the camera view (56x32
-tiles), so the camera follows the player and scrolls; the scene renders a
-four-tile tree/rock margin past the playable edge (`padMap`) and bounds the camera
-to it, so the route border never shows the empty background. The map is drawn in
+scene lays a floor frame under every cell (`resolveGroundFrame`), so the tree sits
+on the field's plain floor frame instead of a baked flat colour. A route is now
+larger than the camera view (56x32 tiles), so the camera follows the player and
+scrolls; the scene renders a tree/rock margin past the playable edge (`padMap`,
+three tiles on the sides and four top/bottom with the route's own border) and
+bounds the camera to it, so the route border never shows the empty background. The map is drawn in
 full — no fog of war or vision radius, like the originals (`D6`).
 `docs/routes-spec.md` §2 holds the pipeline; adding a biome is a `layout` field
 plus its tileset.
