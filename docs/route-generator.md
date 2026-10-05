@@ -108,6 +108,7 @@ reachable: Set<Point>               # FloodFill(tiles, entry), computed after te
 | --- | --- | --- |
 | shape `openings`, `pathWidth`, `jitter`, `corridorWidth`, `braid`, `branchCount`, `branchMin/Max`, `pocketChance` | `src/engine/routes/layout.ts` | shape and geometry |
 | `TREE_MARGIN` | `src/engine/routes/sketch.ts` | how many solid tree rings a branch keeps along the border |
+| `WallFootprint` (`cols`, `minHeight`) | tileset `wallPattern` | the wall tidy's whole-object size |
 | `grassPatches`, `ledges` | `src/data/biomes.ts` | terrain flavour |
 | `trainerSize`, `minLevel`, `maxLevel` | `src/data/run.ts` | population and levels |
 | loot `count` / `pool` | `src/data/loot.ts` | item contents |
@@ -136,7 +137,7 @@ BuildRoute(routeIndex, rngs):
     #    is never bitten; only the spine pierces it, at the openings.
 
     # 3b. Tidy the trees: every column must read as whole trees, never a stub.
-    CleanTrees(tiles)                     # only turns WALL back into FLOOR
+    CleanWalls(tiles, footprint)          # only turns WALL back into FLOOR
 
     # 4. Terrain flavour - hazards and grass stay off the spine
     CarveGrass(tiles, biome.terrain.grassPatches, rngs.terrain,
@@ -236,29 +237,31 @@ scale with the free space: a roomy map gets longer, wider lanes that open into a
 small **chamber** at the far end instead of a bare one-tile cul-de-sac. That far
 end is the **pocket** - the classic place for loot or a single special encounter.
 
-### 3.3b CleanTrees
+### 3.3b CleanWalls
 
-The wall motif draws a column of trees only when its run is **even and at least
-four tall** (`tileFrames.patternFrame`): the mass's row is top/body/.../base, so a
-run of 3 renders a bare trunk and a run of 1 a floating crown. A lane that bites a
-column leaves exactly such a stub.
+The wall motif draws a whole object only from a run that is at least `cols` wide and
+a whole number of objects tall (`wholeRunHeight`): the mass's row is top/body/.../
+base, so a one- or two-tile sliver shows a cut-off tree and a run of 3 a bare trunk.
+A lane that grazes the forest, or bites a column, leaves exactly such a remnant.
 
 ```python
-CleanTrees(tiles):
-    for x in every column:                # border columns are cleaned too
-        for (start, end) in WallRuns(tiles, x):
-            target = LargestWholeTreeHeight(end - start + 1)   # even, >= 4, else 0
-            if target == run height: continue
-            if target == 0: clear the run         # keep a border cell as the edge line
-            else: clear the extra row off the end that is not on the ring
+CleanWalls(tiles, footprint):            # footprint = the tileset's WallPattern size
+    repeat until nothing changes:
+        for x in every column:           # runs touching the border ring are skipped
+            for (start, end) in ColumnRuns(tiles, x):
+                target = LargestWholeHeight(end - start + 1)   # even, >= minHeight, else 0
+                if target != run height: clear the extra rows
+        for y in every row:
+            for (start, end) in RowRuns(tiles, y):
+                if width < footprint.cols: clear the run
 ```
 
 The tidy **only turns `WALL` back into `FLOOR`**, so it can widen a lane but never
 block one: the entry, the exits and the spine keep working and the openings stay
-reachable. Removing a row off the top or the bottom re-stacks what is left, which
-is why the stacks never need to be tracked as objects. A border column is cleaned
-toward its opening, so a side opening grows a tile instead of leaving a bitten
-tree; the four corners and every full ring column are left as they are.
+reachable. A run that touches the one-tile border ring is left alone, so the map
+stays fenced (the ring is one tile wide by design and is not a sliver). Because the
+size a run needs comes from the tileset's motif, a different biome or wall art just
+passes its own `WallFootprint`.
 
 ### 3.4 PlaceTrainers — always optional
 

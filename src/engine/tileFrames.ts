@@ -102,7 +102,7 @@ function runLength(map: TileMap, x: number, y: number, dir: Tile, value: number)
  *
  * The phase is anchored to the column's own **first and last wall cell**, so a
  * lane that crosses the column is a hole in the stack instead of two shorter
- * trees that re-anchor half-way down (normalising the extremes is `cleanTrees`).
+ * trees that re-anchor half-way down (normalising the extremes is `cleanWalls`).
  * The pattern column is anchored to those cells too, so a lane that bites the
  * side below the top cannot slide the trees there one pattern column aside.
  */

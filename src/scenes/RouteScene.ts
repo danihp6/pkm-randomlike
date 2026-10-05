@@ -202,6 +202,8 @@ export class RouteScene extends Phaser.Scene {
     const band = bandForRoute(params.routeIndex);
     const seed = attempt > 0 ? `${params.seed}#r${attempt}` : params.seed;
     this.routeParams = params;
+    const pattern = TILESETS[biome.tilesetId].config.wallPattern;
+    const wall = pattern ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) } : undefined;
     const request = {
       seed,
       routeIndex: params.routeIndex,
@@ -212,6 +214,7 @@ export class RouteScene extends Phaser.Scene {
       height: params.height,
       grassPatches: params.grassPatches,
       ledges: params.ledges,
+      ...(wall ? { wall } : {}),
     };
     this.route = sketchRoute(request);
     this.map = this.route.tiles;

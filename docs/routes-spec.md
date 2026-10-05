@@ -25,14 +25,16 @@ camera follow), containing:
    through them, leaving the one-tile tree/rock border solid. The optional branches
    keep a **two-tile margin** from the border, so the outer tree mass is never
    bitten; only the spine pierces it, at the openings.
-2. **Tree tidy**: `cleanTrees` (`src/engine/routes/trees.ts`) makes every column
-   read as a whole number of trees. A wall run only draws as trees when it is
-   **even and at least four tall** (`patternFrame`), so a lane that bites a column
-   would otherwise render a floating crown. The tidy only ever turns wall back into
-   floor, so it can widen a lane but never block it: the entry, every exit and the
-   spine keep working and the openings stay reachable. Border columns are cleaned
-   too, so a side opening simply grows a tile instead of leaving a bitten tree; the
-   four corners and every full ring column stay put, so the map stays fenced.
+2. **Wall tidy**: `cleanWalls` (`src/engine/routes/walls.ts`) removes any wall
+   remnant the tileset's wall motif would draw cut off. The motif's footprint
+   (`WallFootprint`, taken from the tileset's `wallPattern`) gives the width a run
+   needs to show a whole object and the shortest whole-object height; a lane that
+   grazes the forest leaves a one- or two-tile sliver, and a bitten column leaves
+   an odd or too-short run, so both are dropped (turning back into floor). The
+   tidy only ever turns wall back into floor, so it can widen a lane but never block
+   it: the entry, every exit and the spine keep working and the openings stay
+   reachable. A run that touches the one-tile border ring is left alone, so the map
+   stays fenced.
 3. **Terrain pass**: `terrain` in `src/data/biomes.ts` sets how many tall grass
    patches and ledge lines a biome stamps. Both land on the carved floor **off the
    spine and the openings** (ledges also avoid the pockets), and a ledge line stops

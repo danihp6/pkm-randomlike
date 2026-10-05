@@ -23,7 +23,7 @@ import {
   type ShapeSpec,
 } from './layout';
 import { routeStreams, type RouteStreams } from './streams';
-import { cleanTrees } from './trees';
+import { cleanWalls, type WallFootprint } from './walls';
 import { reachableTiles, validateRoute } from './validate';
 
 export const ROUTE_WIDTH = 20;
@@ -62,13 +62,15 @@ export type RouteRequest = Readonly<{
   height?: number;
   grassPatches?: number;
   ledges?: number;
+  /** The tileset's wall motif footprint, so `cleanWalls` knows a whole object. */
+  wall?: WallFootprint;
 }>;
 
 type MutableMap = number[][];
 
 /** A labelled snapshot of the map after one build phase, for the debug stepper. */
 export type RouteStep = Readonly<{
-  phase: 'walls' | 'access' | 'spine' | 'branches' | 'layout' | 'trees' | 'terrain' | 'final';
+  phase: 'walls' | 'access' | 'spine' | 'branches' | 'layout' | 'clean' | 'terrain' | 'final';
   label: string;
   tiles: TileMap;
 }>;
@@ -728,12 +730,11 @@ function attemptRoute(
 
   tiles[entry.y][entry.x] = FLOOR;
 
-  // Tidy the carved forest before the terrain and the population go down, so the
-  // grass and the ledges only see whole tree columns (and floor freed by the tidy).
-  // Only the open forest has the tree motif; the parked hedge/maze carvers keep
-  // their own walls.
-  if (spec.kind === 'open') cleanTrees(tiles);
-  snapshot('trees', 'clean tree runs');
+  // Tidy the carved interior before the terrain and the population go down, so
+  // the grass and the ledges only see whole walls. Only the open forest has the
+  // wall motif; the parked hedge/maze carvers keep their own walls.
+  if (spec.kind === 'open') cleanWalls(tiles, request.wall);
+  snapshot('clean', 'clean walls');
 
   // Ledges are solid, so they stay off the guaranteed spine - the carved lane on
   // open/hedged routes, the shortest path on a maze.

@@ -324,7 +324,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   routeButtons.append(randomizeButton, regenButton);
 
   // Generator stepper: walk the build phases (walls → access → spine → branches →
-  // terrain → final) one at a time to debug the carver.
+  // clean → terrain → final) one at a time to debug the carver.
   const stepStatus = document.createElement('span');
   stepStatus.style.cssText = 'flex:1;min-width:0;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
 

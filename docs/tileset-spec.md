@@ -75,7 +75,7 @@ tall wall reads as stacked objects. The `cols` frames repeat across x, and both 
 row and the pattern column are anchored to the column's **first and last wall
 cell**: a lane that crosses the column is a hole in the stack, and a lane that bites
 its side cannot slide the trees there a pattern column aside, so a tree's top, body
-and lower leaves always share one column (normalising the extremes is `cleanTrees`).
+and lower leaves always share one column (normalising the extremes is `cleanWalls`).
 A wall narrower than the motif is centred on it, so a one-tile hedge shows the
 middle column of a tree and never a cut-off edge.
 
