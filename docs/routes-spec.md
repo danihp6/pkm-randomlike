@@ -23,9 +23,12 @@ camera follow), containing:
    and how the paths connect those openings. It is currently `open`: the interior
    is filled with trees and the shape's lanes (spine and branches) are carved
    through them, leaving the one-tile tree/rock border solid.
-2. **Terrain pass**: optional tall grass patches and ledges, both **off** by
-   default (`terrain` in `src/data/biomes.ts`), so a route is a carved
-   tree lane for now. The passes stay in the generator, ready to be re-enabled.
+2. **Terrain pass**: `terrain` in `src/data/biomes.ts` sets how many tall grass
+   patches and ledge lines a biome stamps. Both land on the carved floor **off the
+   spine and the openings** (ledges also avoid the pockets), and a ledge line stops
+   growing rather than strand a branch behind its one-way drop. Grass is walkable;
+   a ledge only gives way downward. Water is decoration (`D18`), not a terrain
+   pass.
 3. **Validation pass**: flood-fill from the entry must reach every exit. If it does
    not, reroll from the same seed with the next stream value. This validation is
    what makes the generator safe to call blind.
@@ -37,7 +40,8 @@ attempt. Adding a roll to the terrain pass cannot move the path the layout pass
 already placed.
 
 Routes no longer scatter **trainers** or **ground items**: the population pass
-was removed and the generated map holds only tiles, the entry and its exits. The trainer
+was removed, so the generated map holds only the carved tiles (spine, branches,
+pockets and the terrain flavour) plus the entry and its exits. The trainer
 archetypes (`src/data/trainers.ts`) and the roster builder (`src/engine/run/roster.ts`)
 stay in place, ready for when encounters come back. The target generator, with
 pseudocode and a review of the draft, is in `docs/route-generator.md`.
@@ -69,8 +73,8 @@ populate them (steps 5-7). The `hedges` and `maze` carvers stay parked in
 ## 3. Wild encounters
 
 - Walking onto a `TALL_GRASS` tile rolls an encounter with the route's table.
-- No route has tall grass right now (`terrain.grassPatches` is 0 everywhere), so
-  wild encounters are dormant until a terrain pass turns them back on.
+- Tall grass is stamped from `terrain.grassPatches` on the off-spine floor, never
+  on the spine or an opening, so a clean encounter-free lane always exists.
 - The table is per **biome**, weighted, and drawn from the route's level band.
 - The roll uses the route RNG, so walking the same grass in the same order
   produces the same encounters.

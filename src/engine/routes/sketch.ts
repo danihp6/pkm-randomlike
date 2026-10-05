@@ -23,7 +23,7 @@ import {
   type ShapeSpec,
 } from './layout';
 import { routeStreams, type RouteStreams } from './streams';
-import { validateRoute } from './validate';
+import { reachableTiles, validateRoute } from './validate';
 
 export const ROUTE_WIDTH = 20;
 export const ROUTE_HEIGHT = 20;
@@ -589,31 +589,61 @@ function carveGrass(
 
 /**
  * A ledge is a horizontal run of rock you may only jump down; it is solid from
- * every other side, so it is kept off the guaranteed path and re-validated.
+ * every other side, so it is kept off the guaranteed path, the openings and the
+ * pockets (loot spots). A run grows one tile at a time and stops as soon as it
+ * would cut the walkable map in two, so a one-way drop never strands a branch -
+ * on a lane too narrow for a full run it still leaves a single jumpable tile.
  */
-function carveLedges(tiles: MutableMap, rng: Rng, pool: readonly Tile[], count: number): void {
+function carveLedges(
+  tiles: MutableMap,
+  rng: Rng,
+  pool: readonly Tile[],
+  forbid: ReadonlySet<string>,
+  entry: Tile,
+  count: number,
+): void {
   const isFloor = (tile: Tile): boolean =>
     inBounds(tiles, tile) && tiles[tile.y][tile.x] === FLOOR;
+  // Grass is walkable, so a ledge may still be jumped over with grass around it.
+  const isGround = (tile: Tile): boolean =>
+    inBounds(tiles, tile) && (tiles[tile.y][tile.x] === FLOOR || tiles[tile.y][tile.x] === TALL_GRASS);
+  const canStand = (tile: Tile): boolean =>
+    isFloor(tile) &&
+    isGround({ x: tile.x, y: tile.y - 1 }) &&
+    isGround({ x: tile.x, y: tile.y + 1 });
+
   for (let line = 0; line < count; line++) {
-    const candidates = pool.filter(
-      (tile) =>
-        isFloor(tile) &&
-        isFloor({ x: tile.x, y: tile.y - 1 }) &&
-        isFloor({ x: tile.x, y: tile.y + 1 }),
-    );
+    const candidates = pool.filter((tile) => canStand(tile) && !forbid.has(tileKey(tile)));
     if (candidates.length === 0) break;
-    const origin = candidates[rng.int(0, candidates.length - 1)];
-    const length = rng.int(2, 3);
-    for (let dx = 0; dx < length; dx++) {
-      const tile = { x: origin.x + dx, y: origin.y };
-      if (
-        isFloor(tile) &&
-        isFloor({ x: tile.x, y: tile.y - 1 }) &&
-        isFloor({ x: tile.x, y: tile.y + 1 })
-      ) {
+    // Deterministic shuffle: if an origin would strand a branch, the line tries
+    // the next one instead of giving up.
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = rng.int(0, i);
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+    const before = reachableTiles(tiles, entry);
+    let placed = false;
+    for (const origin of candidates) {
+      const length = rng.int(2, 3);
+      const runKeys = new Set<string>();
+      for (let dx = 0; dx < length; dx++) {
+        const tile = { x: origin.x + dx, y: origin.y };
+        if (!canStand(tile) || forbid.has(tileKey(tile))) break;
         tiles[tile.y][tile.x] = LEDGE;
+        runKeys.add(tileKey(tile));
+        const after = reachableTiles(tiles, entry);
+        if ([...before].some((key) => !runKeys.has(key) && !after.has(key))) {
+          tiles[tile.y][tile.x] = FLOOR;
+          runKeys.delete(tileKey(tile));
+          break;
+        }
+      }
+      if (runKeys.size > 0) {
+        placed = true;
+        break;
       }
     }
+    if (!placed) break;
   }
 }
 
@@ -671,9 +701,10 @@ function attemptRoute(
   // open/hedged routes, the shortest path on a maze.
   const ends = [entry, ...exits];
   const pocketTiles = collectFloorTiles(tiles).filter((tile) => !spine.has(tileKey(tile)));
-  const forbidKeys = new Set([...spine, ...ends.map(tileKey)]);
-  carveGrass(tiles, streams.terrain, pocketTiles, request.grassPatches ?? 0, forbidKeys);
-  carveLedges(tiles, streams.terrain, pocketTiles, request.ledges ?? 0);
+  const openKeys = new Set([...spine, ...ends.map(tileKey)]);
+  const ledgeForbid = new Set([...openKeys, ...pockets.map(tileKey)]);
+  carveGrass(tiles, streams.terrain, pocketTiles, request.grassPatches ?? 0, openKeys);
+  carveLedges(tiles, streams.terrain, pocketTiles, ledgeForbid, entry, request.ledges ?? 0);
 
   tiles[entry.y][entry.x] = FLOOR;
   snapshot('terrain', 'terrain pass');

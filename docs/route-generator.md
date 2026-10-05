@@ -3,9 +3,9 @@
 > Design blueprint, not code. Live behaviour is `docs/routes-spec.md` and the
 > pure implementation is `src/engine/routes/`. This file is the agreed **target**
 > algorithm so the next iteration has one place to build from.
-> Status: trainers, ground items and tall grass are turned off right now
-> (`docs/routes-spec.md` §2); the population passes below are the plan to bring
-> them back, not what runs today.
+> Status: the terrain pass (tall grass, ledges) is **on**; trainers and ground
+> items are still turned off (`docs/routes-spec.md` §2). The population passes
+> below are the plan to bring them back, not what runs today.
 
 ## 0. Inputs and determinism
 
