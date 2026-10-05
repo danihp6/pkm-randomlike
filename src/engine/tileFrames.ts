@@ -99,14 +99,20 @@ function runLength(map: TileMap, x: number, y: number, dir: Tile, value: number)
  * Resolves a whole wall motif: the mass's top row is `rows[0]`, its bottom row
  * is the last one, and the rows in between cycle by depth so a tall wall reads
  * as stacked objects. The column repeats across x from the mass's left edge.
+ *
+ * The horizontal column is anchored to the **top of the vertical run** (the same
+ * row the vertical motif is anchored to), not to the current row's own run: a
+ * lane that bites the side of a mass below its top must not slide the trees there
+ * one pattern column to the side.
  */
 export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPattern): number {
   const { height } = dimensions(map);
   const northOpen = y <= 0 || map[y - 1][x] !== pattern.value;
   const southOpen = y >= height - 1 || map[y + 1][x] !== pattern.value;
   const depth = runLength(map, x, y, { x: 0, y: -1 }, pattern.value);
-  const left = runLength(map, x, y, { x: -1, y: 0 }, pattern.value);
-  const right = runLength(map, x, y, { x: 1, y: 0 }, pattern.value);
+  const topY = y - depth;
+  const left = runLength(map, x, topY, { x: -1, y: 0 }, pattern.value);
+  const right = runLength(map, x, topY, { x: 1, y: 0 }, pattern.value);
   const last = pattern.rows.length - 1;
   // `rows[0]` is the mass's open top and `rows[last]` its trunk foot. The row just
   // above the foot is the mass's own lower leaves (`last - 1`) and its second row

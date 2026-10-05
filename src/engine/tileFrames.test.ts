@@ -128,6 +128,19 @@ describe('patternFrame', () => {
     expect(patternFrame([[FLOOR, WALL, FLOOR]], 1, 0, pattern)).toBe(8);
   });
 
+  it('keeps a tree on its pattern column when a side lane bites the mass below its top', () => {
+    // Three wide at the top; a lane carves the left column of the lower rows.
+    // The tree in column 1 must stay the centre, not slide to the left column.
+    const bitten: TileMap = [
+      [WALL, WALL, WALL],
+      [WALL, WALL, WALL],
+      [FLOOR, WALL, WALL],
+      [FLOOR, WALL, WALL],
+    ];
+    expect(patternFrame(bitten, 1, 0, pattern)).toBe(8);
+    expect(patternFrame(bitten, 1, 2, pattern)).toBe(20);
+  });
+
   it('steps across columns on a wall wider than the pattern', () => {
     const wide: TileMap = [[WALL, WALL, WALL, WALL, WALL]];
     expect([0, 1, 2, 3, 4].map((x) => patternFrame(wide, x, 0, pattern))).toEqual([7, 8, 9, 7, 8]);

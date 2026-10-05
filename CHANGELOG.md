@@ -153,6 +153,14 @@ file is the human-readable summary.
       tall-grass overlay from the live map, so tall grass showed in every phase even
       before the terrain pass. It now reads the phase's own map, matching the tiles
       the stepper renders.
+- [x] Fixed the wall motif sliding sideways where a lane bit the side of a mass:
+      `patternFrame` picked each row's pattern column from that row's own run, so a
+      lane that carved the left of a mass below its top made the lower rows show the
+      neighbour's tree column (the crown and the lower leaves landed on different
+      thirds). The column is now anchored to the **top of the column's vertical run**
+      - the same row the vertical motif uses - so a tree's top, body and lower
+      leaves always share one column. `docs/tileset-spec.md` updated and a test
+      added; the run-based centring of a lone narrow wall is unchanged.
 
 ## Phase 0 — Repo & scaffolding
 

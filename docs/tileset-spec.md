@@ -71,9 +71,12 @@ a whole `cols` x `rows` motif (`WallPattern` in `src/engine/tileset.ts`).
 `patternFrame` anchors it to the mass's top-left, so `rows[0]` is the mass's top
 layer and the last row its foot. The row just above the foot is the mass's own
 lower leaves, and the interior alternates the motif's crown row and body row, so a
-tall wall reads as stacked objects. The `cols` frames repeat across x. A wall
-narrower than the motif is centred on it, so a one-tile hedge shows the middle
-column of a tree and never a cut-off edge.
+tall wall reads as stacked objects. The `cols` frames repeat across x, anchored to
+the **top of each column's vertical run** (not the current row's own run), so a lane
+that bites the side of a mass below its top cannot slide the trees there a column
+aside; a column's top, body and lower leaves always share one pattern column. A
+wall narrower than the motif is centred on it, so a one-tile hedge shows the
+middle column of a tree and never a cut-off edge.
 
 The FRLG fields use it to draw the real FireRed tree, three columns wide, with six
 frames: `rows[0]` the crown over open ground (the mass's top), `rows[1]` the tree's
