@@ -211,6 +211,16 @@ file is the human-readable summary.
       the middle of a run never opens. `walls.test.ts` gains the nub and
       no-bitten-tree cases; the frozen route is re-frozen and `docs/routes-spec.md`,
       `docs/route-generator.md` updated.
+- [x] No **one-tile lane** is left: `cleanWalls` now anchors its `cols`-wide bands to
+      a fixed **global grid** (from the map's left edge) instead of per column, so a
+      one-tile lane that fell inside a band is widened to the whole band (before, the
+      wall beside it re-anchored to its own edge and the lane stayed one tile, the
+      uncleaned bite). The spine is also carved **two tiles wide** (`pathWidth: 2`), so
+      a lane is at least two tiles in both axes; the tidy trims a run that reaches a
+      border ring from its interior end, so a lane next to the fence is un-stacked
+      without opening the map. `walls.test.ts` gains a no-one-tile-lane sweep; the
+      `carve` blocked-share floor is 0.35 (lanes are wider); the frozen route is
+      re-frozen and docs updated.
 
 ## Phase 0 — Repo & scaffolding
 

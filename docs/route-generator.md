@@ -267,9 +267,9 @@ CleanWalls(tiles, footprint):            # footprint = the tileset's WallPattern
 
 A **bitten tree is removed whole**: a `cols`-wide band that holds both wall and
 floor cannot draw as a whole object, so the whole band row goes, and the column is
-then un-stacked. The band each cell belongs to is anchored to the raw carve and
-held **fixed** for the whole tidy: re-deriving it after a removal would re-base the
-trees beside a bitten one and eat into otherwise whole trees.
+then un-stacked. The bands are a **fixed global grid** of `cols` columns from the
+map's left edge: a lane that falls inside a band widens to the whole band, so no
+mass keeps a cut tree and no lane is left one tile wide.
 
 The tidy **only turns `WALL` back into `FLOOR`**, so it can widen a lane but never
 block one: the entry, the exits and the spine keep working and the openings stay
@@ -364,7 +364,8 @@ route behind an unwinnable fight.
 1. **Seed everything, per pass**, with the attempt in the key (D11).
 2. **Biome and band from `routeIndex`**, not `playerLevel` or a random pick.
 3. **Row-major grid** `tiles[y][x]`.
-4. **Path width from the shape** (1 for `straight`/`bend` - D26).
+4. **Path width from the shape**, at least two tiles so no lane is left one tile
+   wide (the motif's border band is widened to whole trees by `cleanWalls`).
 5. **Hazards stay off the spine**, not just off trainers.
 6. **The spine is grass-free**, so a clean, encounter-free lane always exists.
 7. **Trainers block but are never required**; the spine is trainer-free.

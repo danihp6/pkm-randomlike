@@ -102,29 +102,29 @@ describe('cleanWalls', () => {
 
   it('removes a tree a lane bit on the side, and keeps the whole tree beside it', () => {
     const tiles = blank(12, 8);
-    fillRect(tiles, 2, 2, 6, 4); // two whole trees side by side, cols 2-7
-    tiles[4][2] = FLOOR; // a lane bites the left column of the left tree
-    tiles[5][2] = FLOOR;
+    fillRect(tiles, 3, 2, 6, 4); // two whole trees side by side, cols 3-8
+    tiles[4][3] = FLOOR; // a lane bites the left column of the left tree
+    tiles[5][3] = FLOOR;
     cleanWalls(tiles, FOOT);
     expect(wallViolations(tiles, FOOT)).toEqual([]);
     for (let y = 2; y <= 5; y++) {
-      for (let x = 2; x <= 4; x++) expect(at(tiles, x, y), `bitten ${x},${y}`).toBe(FLOOR);
-      for (let x = 5; x <= 7; x++) expect(at(tiles, x, y), `whole ${x},${y}`).toBe(WALL);
+      for (let x = 3; x <= 5; x++) expect(at(tiles, x, y), `bitten ${x},${y}`).toBe(FLOOR);
+      for (let x = 6; x <= 8; x++) expect(at(tiles, x, y), `whole ${x},${y}`).toBe(WALL);
     }
   });
 
   it('drops the stubs left above a bitten tree instead of half-stacking them', () => {
     const tiles = blank(8, 12);
-    fillRect(tiles, 2, 2, 3, 8); // a three-tall stack of whole trees
-    tiles[4][2] = FLOOR; // the middle tree loses a column, so it is bitten
-    tiles[5][2] = FLOOR;
+    fillRect(tiles, 3, 2, 3, 8); // a three-tall stack of whole trees
+    tiles[4][3] = FLOOR; // the middle tree loses a column, so it is bitten
+    tiles[5][3] = FLOOR;
     cleanWalls(tiles, FOOT);
     expect(wallViolations(tiles, FOOT)).toEqual([]);
     for (let y = 2; y <= 5; y++) {
-      for (let x = 2; x <= 4; x++) expect(at(tiles, x, y), `bitten ${x},${y}`).toBe(FLOOR);
+      for (let x = 3; x <= 5; x++) expect(at(tiles, x, y), `bitten ${x},${y}`).toBe(FLOOR);
     }
     for (let y = 6; y <= 9; y++) {
-      for (let x = 2; x <= 4; x++) expect(at(tiles, x, y), `kept ${x},${y}`).toBe(WALL);
+      for (let x = 3; x <= 5; x++) expect(at(tiles, x, y), `kept ${x},${y}`).toBe(WALL);
     }
   });
 
@@ -179,6 +179,27 @@ describe('route wall cleanup (via sketchRoute)', () => {
           const frameMap = buildFrameMap(route.tiles, FRLG_TILESET, 1);
           for (const tree of frameMap.trees) {
             expect(tree.solid, `${shape} ${seed} #${index} tree ${tree.id}`).toBe(true);
+          }
+        }
+      }
+    }
+  }, 30_000);
+
+  it('leaves no one-tile-wide lane', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (let index = 1; index <= 12; index++) {
+        for (const seed of ['one', 'two']) {
+          const { tiles } = sketchRoute({ ...routeRequest(seed, index), shape });
+          const height = tiles.length;
+          const width = tiles[0].length;
+          const isFloor = (x: number, y: number): boolean => tiles[y][x] === FLOOR;
+          for (let y = 1; y < height - 1; y++) {
+            for (let x = 1; x < width - 1; x++) {
+              if (!isFloor(x, y)) continue;
+              const across = (isFloor(x - 1, y) ? 1 : 0) + (isFloor(x + 1, y) ? 1 : 0);
+              const down = (isFloor(x, y - 1) ? 1 : 0) + (isFloor(x, y + 1) ? 1 : 0);
+              expect(across > 0 && down > 0, `${shape} ${seed} #${index} thin lane at ${x},${y}`).toBe(true);
+            }
           }
         }
       }

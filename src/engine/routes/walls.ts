@@ -53,17 +53,6 @@ function rowRuns(tiles: readonly (readonly number[])[], y: number): [number, num
   return runs;
 }
 
-function clearColumn(tiles: MutableMap, x: number, from: number, to: number): boolean {
-  let changed = false;
-  for (let y = from; y <= to; y++) {
-    if (tiles[y][x] === WALL) {
-      tiles[y][x] = FLOOR;
-      changed = true;
-    }
-  }
-  return changed;
-}
-
 function clearRow(tiles: MutableMap, y: number, from: number, to: number): boolean {
   let changed = false;
   for (let x = from; x <= to; x++) {
@@ -76,41 +65,6 @@ function clearRow(tiles: MutableMap, y: number, from: number, to: number): boole
 }
 
 /**
- * How many WALL cells sit immediately left of `(x, y)` on the same row.
- */
-function runLeft(tiles: readonly (readonly number[])[], x: number, y: number): number {
-  let left = 0;
-  while (x - left - 1 >= 0 && isWall(tiles, x - left - 1, y)) left++;
-  return left;
-}
-
-/** How many WALL cells sit immediately right of `(x, y)` on the same row. */
-function runRight(tiles: readonly (readonly number[])[], x: number, y: number): number {
-  const width = tiles[0].length;
-  let right = 0;
-  while (x + right + 1 < width && isWall(tiles, x + right + 1, y)) right++;
-  return right;
-}
-
-/**
- * The motif column `x` draws on, matching `patternFrame` on the scene's
- * connected-padded map (`extendMap`): anchored to the column's own first wall
- * cell plus the centring offset for a run narrower than the motif. `cleanWalls`
- * uses it to know which `cols`-wide tree a wall cell belongs to, so a bitten tree
- * can be removed whole.
- */
-function patternColumn(tiles: readonly (readonly number[])[], x: number, cols: number): number {
-  const height = tiles.length;
-  let top = 0;
-  while (top < height && !isWall(tiles, x, top)) top++;
-  if (top >= height) return 0;
-  const left = runLeft(tiles, x, top);
-  const span = left + 1 + runRight(tiles, x, top);
-  const offset = span >= cols ? 0 : Math.floor((cols - span) / 2);
-  return (left + offset) % cols;
-}
-
-/**
  * Tidies the carved interior so no thin, bitten or half-stacked wall remnant is
  * left behind. The motif draws a whole object only from a run at least `cols` wide
  * and whole-tree tall (`wholeRunHeight`); a lane that grazed the forest leaves a
@@ -119,11 +73,11 @@ function patternColumn(tiles: readonly (readonly number[])[], x: number, cols: n
  * (its `cols`-wide row is cleared) and the rest of the column is then un-stacked,
  * so a tall wall still reads as whole stacked objects instead of a cut one.
  *
- * The tree a cell belongs to is fixed by the map as carved: the scene binds the
- * motif with `extendMap`, which only carries a tree that reaches the border past
- * the edge and otherwise anchors a mass to the first wall cell it meets, so
- * `cleanWalls` anchors the bands the same way and holds them fixed. Deleting a
- * bitten tree then never shifts where its neighbours tile.
+ * The tree a cell belongs to is a fixed **global grid** of `cols`-wide bands from
+ * the map's left edge. Anchoring per column would let a one-tile lane re-base the
+ * next mass onto its own edge, so the lane would never read as a bite and would
+ * stay one tile wide; the grid makes a lane that falls inside a band widen to the
+ * whole band, so no mass is left with a cut tree and no lane is left one tile wide.
  *
  * Only turns WALL back into FLOOR, so it can widen a lane but never block it: the
  * entry, the exits and the spine keep working and the openings stay reachable.
@@ -153,7 +107,7 @@ export function cleanWalls(tiles: MutableMap, footprint: WallFootprint = DEFAULT
   const { cols, minHeight } = footprint;
 
   const bandStart = new Array<number>(width);
-  for (let x = 0; x < width; x++) bandStart[x] = x - patternColumn(tiles, x, cols);
+  for (let x = 0; x < width; x++) bandStart[x] = x - (x % cols);
 
   for (let pass = 0; pass < width * height + 1; pass++) {
     let changed = false;
@@ -190,14 +144,26 @@ export function cleanWalls(tiles: MutableMap, footprint: WallFootprint = DEFAULT
       }
     }
 
-    // Un-stack: trim a column run down to whole objects and drop stubs.
+    // Un-stack: trim a column run down to whole objects and drop stubs. A run that
+    // reaches a border ring row is trimmed from its **interior** end, so a bite
+    // beside an opening is cleaned without opening the fence; a ring cell is only
+    // dropped when it merely widens an opening.
     for (let x = 0; x < width; x++) {
       for (const [start, end] of columnRuns(tiles, x)) {
-        if (onRing(x, start) || onRing(x, end)) continue;
         const runHeight = end - start + 1;
         const target = wholeRunHeight(runHeight, minHeight);
         if (target === runHeight) continue;
-        if (clearColumn(tiles, x, start + target, end)) changed = true;
+        const topRing = onRing(x, start);
+        const bottomRing = onRing(x, end);
+        if (topRing && bottomRing) continue;
+        const [from, to] =
+          bottomRing && !topRing ? [start, start + (runHeight - target) - 1] : [start + target, end];
+        for (let y = from; y <= to; y++) {
+          if (!isWall(tiles, x, y)) continue;
+          if (onRing(x, y) && !extendsOpening(x, y)) continue;
+          tiles[y][x] = FLOOR;
+          changed = true;
+        }
       }
     }
 

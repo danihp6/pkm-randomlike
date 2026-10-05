@@ -22,7 +22,8 @@ camera follow), containing:
    **shape** (`src/engine/routes/layout.ts`): where the route enters and leaves
    and how the paths connect those openings. It is currently `open`: the interior
    is filled with trees and the shape's lanes (spine and branches) are carved
-   through them, leaving the one-tile tree/rock border solid. Every lane keeps a
+   through them, leaving the one-tile tree/rock border solid. Lanes are carved at
+   least two tiles wide (no one-tile lane is left) and every lane keeps a
    margin of the motif's width (`cols`) from the border, so it never carves into
    the `cols`-wide band the border ring belongs to - a bitten fence could not be
    cleaned without opening the map - and only an opening pierces the ring, where
@@ -35,9 +36,10 @@ camera follow), containing:
    side of a tree leaves a `cols`-wide band that is no longer solid. Such a bitten
    tree is removed **whole** (its `cols`-wide row is cleared) and the rest of the
    column is then **un-stacked** (trimmed to whole objects, stubs dropped), so a
-   tall wall still reads as stacked whole trees. The tree each cell belongs to is
-   anchored to the raw carve and held fixed, so removing a bitten tree never shifts
-   where the trees beside it tile. The tidy only ever turns wall back into floor, so
+   tall wall still reads as stacked whole trees. The tree each cell belongs to is a
+   fixed **global grid** of `cols`-wide bands from the map's left edge: a lane that
+   falls inside a band widens to the whole band, so no mass keeps a cut tree and no
+   lane is left one tile wide. The tidy only ever turns wall back into floor, so
    it can widen a lane but never block it: the entry, every exit and the spine keep
    working and the openings stay reachable. A cell on the one-tile border ring is
    only dropped to widen an opening (a lane already reaches the ring beside it), so
