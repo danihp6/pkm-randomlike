@@ -40,7 +40,7 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { TALL_GRASS, resolveMove, tileAt, type TileMap } from '../engine/map';
+import { TALL_GRASS, WALL, padMap, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, Rng } from '../engine/rng';
 import { storeRun, type Settings } from '../engine/save';
 import {
@@ -67,6 +67,14 @@ import { GRASS_TEXTURE_KEY } from './BootScene';
 
 /** Item stacks the route HUD's bag row shows before it drops the rest. */
 const BAG_ICON_SLOTS = 6;
+
+/**
+ * Rings of wall the scene assumes sit outside the playable map, only while
+ * resolving tile frames. The wall motif frames a mass from its edges, so without
+ * this the border row reads as a cut-off tree; a ring of wall makes it read as a
+ * stack that continues past the limit. No extra tiles are drawn.
+ */
+const FRAME_PAD = 1;
 
 /** The four directions, in the order the update loop tests them. */
 type MoveKey = 'up' | 'down' | 'left' | 'right';
@@ -121,6 +129,8 @@ export class RouteScene extends Phaser.Scene {
   private map!: TileMap;
   /** The tiles `drawTiles` renders: the live map, or a dev generator step. */
   private renderTiles!: TileMap;
+  /** `renderTiles` framed by `FRAME_PAD` wall rings, so border trees read as continuing. */
+  private frameMap!: TileMap;
   /** Dev only: the build-phase snapshots of the route on screen. */
   private generatorSteps: readonly RouteStep[] = [];
   private generatorStepIndex: number | null = null;
@@ -428,13 +438,16 @@ export class RouteScene extends Phaser.Scene {
    */
   private tileFrames(x: number, y: number): TileFrame[] {
     const config = TILESETS[this.tilesetId].config;
-    const ground = resolveGroundFrame(this.renderTiles, x, y, config);
-    const frame = resolveTileFrame(this.renderTiles, x, y, config);
+    const fx = x + FRAME_PAD;
+    const fy = y + FRAME_PAD;
+    const ground = resolveGroundFrame(this.frameMap, fx, fy, config);
+    const frame = resolveTileFrame(this.frameMap, fx, fy, config);
     if (frame && (frame.source !== ground.source || frame.frame !== ground.frame)) return [ground, frame];
     return [ground];
   }
 
   private drawTiles(): void {
+    this.frameMap = padMap(this.renderTiles, FRAME_PAD, WALL);
     const created: Phaser.GameObjects.GameObject[] = [];
     for (let y = 0; y < this.renderTiles.length; y++) {
       const row: Phaser.GameObjects.Image[][] = [];

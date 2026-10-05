@@ -153,14 +153,20 @@ file is the human-readable summary.
       tall-grass overlay from the live map, so tall grass showed in every phase even
       before the terrain pass. It now reads the phase's own map, matching the tiles
       the stepper renders.
-- [x] Fixed the wall motif sliding sideways where a lane bit the side of a mass:
-      `patternFrame` picked each row's pattern column from that row's own run, so a
-      lane that carved the left of a mass below its top made the lower rows show the
-      neighbour's tree column (the crown and the lower leaves landed on different
-      thirds). The column is now anchored to the **top of the column's vertical run**
-      - the same row the vertical motif uses - so a tree's top, body and lower
-      leaves always share one column. `docs/tileset-spec.md` updated and a test
-      added; the run-based centring of a lone narrow wall is unchanged.
+- [x] Fixed the wall motif re-anchoring when a lane bit a column: `patternFrame`
+      picked the row phase and the pattern column from the **current row's own run**,
+      so a lane that crossed a column (a door at `place openings`, a spine or branch
+      lane) split it into two shorter trees that re-anchored, and a lane that carved
+      the side below the top slid the lower rows one pattern column aside (a tree's
+      crown and lower leaves landed on different thirds). The phase and the column are
+      now anchored to the column's **first and last wall cell**: a lane that crosses
+      the column is a hole in the stack, not a new tree, so the raw carve steps only
+      bite and everything settles at `cleanTrees`. `RouteScene` also resolves the
+      frames against the route map framed by one ring of wall (`padMap`,
+      `FRAME_PAD`), so the border trees read as a stack that continues past the limit
+      instead of a tree cut off at the edge; the ring is never drawn. `patternFrame`
+      tests added; `docs/tileset-spec.md` updated. The run-based centring of a lone
+      narrow wall is unchanged.
 
 ## Phase 0 — Repo & scaffolding
 

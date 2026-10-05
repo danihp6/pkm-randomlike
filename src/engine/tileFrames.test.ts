@@ -141,6 +141,14 @@ describe('patternFrame', () => {
     expect(patternFrame(bitten, 1, 2, pattern)).toBe(20);
   });
 
+  it('treats a lane across a column as a hole, not a new tree that re-anchors', () => {
+    const holed: number[][] = Array.from({ length: 8 }, () => [WALL]);
+    holed[3][0] = FLOOR;
+    // Below the hole the stack keeps its phase (a crown), not a fresh top.
+    expect(patternFrame(holed, 0, 4, pattern)).toBe(14);
+    expect(patternFrame(holed, 0, 2, pattern)).toBe(14);
+  });
+
   it('steps across columns on a wall wider than the pattern', () => {
     const wide: TileMap = [[WALL, WALL, WALL, WALL, WALL]];
     expect([0, 1, 2, 3, 4].map((x) => patternFrame(wide, x, 0, pattern))).toEqual([7, 8, 9, 7, 8]);
