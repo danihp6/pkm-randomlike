@@ -166,6 +166,8 @@ export class RouteScene extends Phaser.Scene {
   private hintBackdrop!: Phaser.GameObjects.Rectangle;
   private hudRoot!: Phaser.GameObjects.Container;
   private hudTitle!: Phaser.GameObjects.BitmapText;
+  /** Whether the route HUD panel (route/party/bag) is shown; hidden by default. */
+  private hudVisible = false;
   /** The pinned HUD camera; a rebuild must teach it to ignore the new sprites. */
   private hudCamera: Phaser.Cameras.Scene2D.Camera | null = null;
   private hudBagIcons: { icon: Phaser.GameObjects.Image; count: Phaser.GameObjects.BitmapText }[] = [];
@@ -238,6 +240,7 @@ export class RouteScene extends Phaser.Scene {
     this.persistRun();
     this.tileSprites = [];
     this.hudRows = [];
+    this.hudVisible = false;
     this.passThrough = false;
     this.gameOver = false;
     this.pendingBattle = null;
@@ -303,6 +306,9 @@ export class RouteScene extends Phaser.Scene {
           case 'party':
             this.openParty('field');
             return;
+          case 'hud':
+            this.toggleHud();
+            return;
           case 'settings':
             this.openSettings();
             return;
@@ -334,8 +340,8 @@ export class RouteScene extends Phaser.Scene {
 
   /** The resting line, spelled with whatever keys the player has bound. */
   private defaultHint(): string {
-    const { up, down, left, right, run, party, settings } = this.settings.keybinds;
-    return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   hold ${keyLabel(run)} run   ·   ${keyLabel(party)} party   ·   ${keyLabel(settings)} settings`;
+    const { up, down, left, right, run, party, hud, settings } = this.settings.keybinds;
+    return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   hold ${keyLabel(run)} run   ·   ${keyLabel(party)} party   ·   ${keyLabel(hud)} HUD   ·   ${keyLabel(settings)} settings`;
   }
 
   /** The persistent overlay: route header, party (with portraits) and the bag. */
@@ -376,7 +382,13 @@ export class RouteScene extends Phaser.Scene {
       children.push(icon, count);
     }
 
-    this.hudRoot = this.add.container(0, 0, children).setDepth(150);
+    this.hudRoot = this.add.container(0, 0, children).setDepth(150).setVisible(this.hudVisible);
+  }
+
+  /** Shows or hides the route HUD panel (route header, party, bag). Default hidden. */
+  private toggleHud(): void {
+    this.hudVisible = !this.hudVisible;
+    this.hudRoot.setVisible(this.hudVisible);
   }
 
   private refreshHud(): void {
@@ -573,7 +585,7 @@ export class RouteScene extends Phaser.Scene {
     this.setHint(this.defaultHint());
   }
 
-  /** Opens the party/PC screen paused-on-top, like a battle (`P`, or the rest stop). */
+  /** Opens the party/PC screen paused-on-top, like a battle (party key, or the rest stop). */
   private openParty(mode: 'field' | 'rest'): void {
     if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) return;
     this.pendingParty = mode;
@@ -910,9 +922,8 @@ export class RouteScene extends Phaser.Scene {
 
   private setHint(text: string): void {
     const dev = IS_DEVELOP ? `  ·  B: random battle  ·  ${DEBUG_MENU_TOGGLE_KEY}: debug menu` : '';
-    this.hint.setText(
-      `${text}\nArrows: move  ·  P: party/PC${dev}`,
-    );
+    const { party, hud } = this.settings.keybinds;
+    this.hint.setText(`${text}\nArrows: move  ·  ${keyLabel(party)}: party/PC  ·  ${keyLabel(hud)}: HUD${dev}`);
   }
 
   override update(): void {

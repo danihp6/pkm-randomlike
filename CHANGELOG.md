@@ -167,6 +167,9 @@ file is the human-readable summary.
       instead of a tree cut off at the edge; the ring is never drawn. `patternFrame`
       tests added; `docs/tileset-spec.md` updated. The run-based centring of a lone
       narrow wall is unchanged.
+- [x] The route **HUD panel** (route header, party and bag) now starts **hidden**
+      and is toggled with the new **`hud` action, default `I`** (rebindable next to
+      the others in Settings). The hint line spells the bound key.
 
 ## Phase 0 — Repo & scaffolding
 
