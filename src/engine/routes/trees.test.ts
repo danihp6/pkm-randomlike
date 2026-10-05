@@ -15,15 +15,14 @@ function fillColumn(tiles: number[][], x: number, from: number, to: number): voi
 }
 
 /**
- * Columns the renderer would draw as a broken tree: an interior run that is
- * neither a whole tree (even and >= `MIN_WHOLE_RUN`) nor a single edge cell on
- * the top/bottom border row.
+ * Columns the renderer would draw as a broken tree: a run that is neither a whole
+ * tree (even and >= `MIN_WHOLE_RUN`) nor a single edge cell on the border row.
  */
 function invalidRuns(tiles: readonly (readonly number[])[]): string[] {
   const height = tiles.length;
   const width = height > 0 ? tiles[0].length : 0;
   const bad: string[] = [];
-  for (let x = 1; x < width - 1; x++) {
+  for (let x = 0; x < width; x++) {
     let start = -1;
     for (let y = 0; y <= height; y++) {
       const wall = y < height && tiles[y][x] === WALL;
@@ -75,17 +74,18 @@ describe('cleanTrees', () => {
     }
   });
 
-  it('keeps the border ring and the border rows, trimming only the inner end', () => {
+  it('cleans a border column toward its opening and keeps a full ring column', () => {
     const tiles = blank(6, 12);
-    fillColumn(tiles, 0, 2, 8); // border column, untouched
-    fillColumn(tiles, 1, 0, 2); // top-touching, height 3 -> 1 at the border row
-    fillColumn(tiles, 4, 9, 11); // bottom-touching, height 3 -> 1 at the bottom row
+    fillColumn(tiles, 0, 0, 11); // full ring column, untouched
+    fillColumn(tiles, 1, 0, 8); // ring column: top run height 9 -> 8
+    tiles[9][1] = FLOOR; // the side opening
+    fillColumn(tiles, 1, 10, 11); // bottom run height 2 -> 1 at the bottom row
     cleanTrees(tiles);
-    for (let y = 2; y <= 8; y++) expect(at(tiles, 0, y), `ring ${y}`).toBe(WALL);
-    expect(at(tiles, 1, 0)).toBe(WALL);
-    expect(at(tiles, 1, 1)).toBe(FLOOR);
-    expect(at(tiles, 4, 11)).toBe(WALL);
-    expect(at(tiles, 4, 10)).toBe(FLOOR);
+    for (let y = 0; y <= 11; y++) expect(at(tiles, 0, y), `ring ${y}`).toBe(WALL);
+    expect(at(tiles, 1, 7)).toBe(WALL);
+    expect(at(tiles, 1, 8)).toBe(FLOOR); // trimmed toward the opening
+    expect(at(tiles, 1, 10)).toBe(FLOOR);
+    expect(at(tiles, 1, 11)).toBe(WALL); // corner kept
     expect(invalidRuns(tiles)).toEqual([]);
   });
 });

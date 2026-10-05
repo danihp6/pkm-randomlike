@@ -41,12 +41,15 @@ function clear(tiles: MutableMap, x: number, from: number, to: number): void {
  * which the renderer draws as a floating crown or a bare trunk. Cleaning only
  * ever turns WALL back into FLOOR, so it can widen a lane but never block it -
  * the entry, the exits and the spine keep working, and the openings stay
- * reachable. The one-tile border ring is never touched, so the map stays fenced.
+ * reachable. Border columns are cleaned too: the rows it drops there sit against
+ * an opening, so a side opening simply grows a tile instead of leaving a bitten
+ * tree; the four corners and every full ring column are never touched, so the
+ * map stays fenced.
  */
 export function cleanTrees(tiles: MutableMap): void {
   const height = tiles.length;
   const width = height > 0 ? tiles[0].length : 0;
-  for (let x = 1; x < width - 1; x++) {
+  for (let x = 0; x < width; x++) {
     for (const [start, end] of wallRuns(tiles, x)) {
       const runHeight = end - start + 1;
       const target = wholeRunHeight(runHeight);

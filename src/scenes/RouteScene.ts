@@ -456,9 +456,9 @@ export class RouteScene extends Phaser.Scene {
 
   private drawEntities(): void {
     const created: Phaser.GameObjects.GameObject[] = [];
-    for (let y = 0; y < this.map.length; y++) {
-      for (let x = 0; x < this.map[y].length; x++) {
-        if (this.map[y][x] === TALL_GRASS) {
+    for (let y = 0; y < this.renderTiles.length; y++) {
+      for (let x = 0; x < this.renderTiles[y].length; x++) {
+        if (this.renderTiles[y][x] === TALL_GRASS) {
           const image = this.add.image(this.centerX(x), this.centerY(y), GRASS_TEXTURE_KEY).setDepth(1);
           this.entitySprites.push(image);
           created.push(image);

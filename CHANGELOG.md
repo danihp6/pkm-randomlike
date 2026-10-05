@@ -139,14 +139,20 @@ file is the human-readable summary.
       after the carve and before the terrain pass: it trims each run to a whole
       number of trees and drops stubs, **only turning WALL into FLOOR**, so it can
       widen a lane but never block one - the entry, every exit and the spine keep
-      working and the openings stay reachable, and the one-tile border ring is
-      never touched. Optional branches now keep a **`TREE_MARGIN` of two tiles**
-      from the border (bounded `carveSquare`), so the outer tree mass is not bitten
-      at all; only the spine pierces it, at the openings. New `trees.test.ts`
-      (run heights, unit maps, no broken columns, branch margin, reachability);
-      the frozen route and the `sketchRouteSteps` phases (now `... branches →
-      trees → terrain ...`) re-frozen. `docs/routes-spec.md` and
-      `docs/route-generator.md` updated.
+      working and the openings stay reachable. Border columns are cleaned toward
+      their opening (a side opening grows a tile) while the four corners and every
+      full ring column stay put, so the map stays fenced and no column is left
+      bitten. Optional branches now keep a **`TREE_MARGIN` of two tiles** from the
+      border (bounded `carveSquare`), so the outer tree mass is not bitten at all;
+      only the spine pierces it, at the openings. New `trees.test.ts` (run heights,
+      unit maps, no broken columns anywhere, branch margin, reachability); the
+      frozen route and the `sketchRouteSteps` phases (now `... branches → trees →
+      terrain ...`) re-frozen. `docs/routes-spec.md` and `docs/route-generator.md`
+      updated.
+- [x] Fixed the debug **generator stepper**: `RouteScene.drawEntities` drew the
+      tall-grass overlay from the live map, so tall grass showed in every phase even
+      before the terrain pass. It now reads the phase's own map, matching the tiles
+      the stepper renders.
 
 ## Phase 0 — Repo & scaffolding
 

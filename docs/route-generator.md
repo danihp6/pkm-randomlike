@@ -245,7 +245,7 @@ column leaves exactly such a stub.
 
 ```python
 CleanTrees(tiles):
-    for x in interior columns:            # the border ring is never touched
+    for x in every column:                # border columns are cleaned too
         for (start, end) in WallRuns(tiles, x):
             target = LargestWholeTreeHeight(end - start + 1)   # even, >= 4, else 0
             if target == run height: continue
@@ -256,7 +256,9 @@ CleanTrees(tiles):
 The tidy **only turns `WALL` back into `FLOOR`**, so it can widen a lane but never
 block one: the entry, the exits and the spine keep working and the openings stay
 reachable. Removing a row off the top or the bottom re-stacks what is left, which
-is why the stacks never need to be tracked as objects.
+is why the stacks never need to be tracked as objects. A border column is cleaned
+toward its opening, so a side opening grows a tile instead of leaving a bitten
+tree; the four corners and every full ring column are left as they are.
 
 ### 3.4 PlaceTrainers — always optional
 
