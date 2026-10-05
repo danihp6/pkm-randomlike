@@ -40,7 +40,7 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { TALL_GRASS, resolveMove, tileAt, type TileMap } from '../engine/map';
+import { TALL_GRASS, WALL, padMap, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, Rng } from '../engine/rng';
 import { storeRun, type Settings } from '../engine/save';
 import {
@@ -67,6 +67,14 @@ import { GRASS_TEXTURE_KEY } from './BootScene';
 
 /** Item stacks the route HUD's bag row shows before it drops the rest. */
 const BAG_ICON_SLOTS = 6;
+
+/**
+ * Rings of wall the scene assumes sit outside the playable map, only while
+ * resolving tile frames. The wall motif frames a mass from its edges, so without
+ * this the border row reads as a cut-off tree; a ring of wall makes it read as a
+ * stack that continues past the limit. No extra tiles are drawn.
+ */
+const FRAME_PAD = 1;
 
 /** The four directions, in the order the update loop tests them. */
 type MoveKey = 'up' | 'down' | 'left' | 'right';
@@ -121,6 +129,8 @@ export class RouteScene extends Phaser.Scene {
   private map!: TileMap;
   /** The tiles `drawTiles` renders: the live map, or a dev generator step. */
   private renderTiles!: TileMap;
+  /** `renderTiles` framed by `FRAME_PAD` wall rings, so border trees read as continuing. */
+  private frameMap!: TileMap;
   /** Dev only: the build-phase snapshots of the route on screen. */
   private generatorSteps: readonly RouteStep[] = [];
   private generatorStepIndex: number | null = null;
@@ -156,6 +166,8 @@ export class RouteScene extends Phaser.Scene {
   private hintBackdrop!: Phaser.GameObjects.Rectangle;
   private hudRoot!: Phaser.GameObjects.Container;
   private hudTitle!: Phaser.GameObjects.BitmapText;
+  /** Whether the route HUD panel (route/party/bag) is shown; hidden by default. */
+  private hudVisible = false;
   /** The pinned HUD camera; a rebuild must teach it to ignore the new sprites. */
   private hudCamera: Phaser.Cameras.Scene2D.Camera | null = null;
   private hudBagIcons: { icon: Phaser.GameObjects.Image; count: Phaser.GameObjects.BitmapText }[] = [];
@@ -192,6 +204,8 @@ export class RouteScene extends Phaser.Scene {
     const band = bandForRoute(params.routeIndex);
     const seed = attempt > 0 ? `${params.seed}#r${attempt}` : params.seed;
     this.routeParams = params;
+    const pattern = TILESETS[biome.tilesetId].config.wallPattern;
+    const wall = pattern ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) } : undefined;
     const request = {
       seed,
       routeIndex: params.routeIndex,
@@ -202,6 +216,7 @@ export class RouteScene extends Phaser.Scene {
       height: params.height,
       grassPatches: params.grassPatches,
       ledges: params.ledges,
+      ...(wall ? { wall } : {}),
     };
     this.route = sketchRoute(request);
     this.map = this.route.tiles;
@@ -225,6 +240,7 @@ export class RouteScene extends Phaser.Scene {
     this.persistRun();
     this.tileSprites = [];
     this.hudRows = [];
+    this.hudVisible = false;
     this.passThrough = false;
     this.gameOver = false;
     this.pendingBattle = null;
@@ -290,6 +306,9 @@ export class RouteScene extends Phaser.Scene {
           case 'party':
             this.openParty('field');
             return;
+          case 'hud':
+            this.toggleHud();
+            return;
           case 'settings':
             this.openSettings();
             return;
@@ -321,8 +340,8 @@ export class RouteScene extends Phaser.Scene {
 
   /** The resting line, spelled with whatever keys the player has bound. */
   private defaultHint(): string {
-    const { up, down, left, right, run, party, settings } = this.settings.keybinds;
-    return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   hold ${keyLabel(run)} run   ·   ${keyLabel(party)} party   ·   ${keyLabel(settings)} settings`;
+    const { up, down, left, right, run, party, hud, settings } = this.settings.keybinds;
+    return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   hold ${keyLabel(run)} run   ·   ${keyLabel(party)} party   ·   ${keyLabel(hud)} HUD   ·   ${keyLabel(settings)} settings`;
   }
 
   /** The persistent overlay: route header, party (with portraits) and the bag. */
@@ -363,7 +382,13 @@ export class RouteScene extends Phaser.Scene {
       children.push(icon, count);
     }
 
-    this.hudRoot = this.add.container(0, 0, children).setDepth(150);
+    this.hudRoot = this.add.container(0, 0, children).setDepth(150).setVisible(this.hudVisible);
+  }
+
+  /** Shows or hides the route HUD panel (route header, party, bag). Default hidden. */
+  private toggleHud(): void {
+    this.hudVisible = !this.hudVisible;
+    this.hudRoot.setVisible(this.hudVisible);
   }
 
   private refreshHud(): void {
@@ -428,13 +453,16 @@ export class RouteScene extends Phaser.Scene {
    */
   private tileFrames(x: number, y: number): TileFrame[] {
     const config = TILESETS[this.tilesetId].config;
-    const ground = resolveGroundFrame(this.renderTiles, x, y, config);
-    const frame = resolveTileFrame(this.renderTiles, x, y, config);
+    const fx = x + FRAME_PAD;
+    const fy = y + FRAME_PAD;
+    const ground = resolveGroundFrame(this.frameMap, fx, fy, config);
+    const frame = resolveTileFrame(this.frameMap, fx, fy, config);
     if (frame && (frame.source !== ground.source || frame.frame !== ground.frame)) return [ground, frame];
     return [ground];
   }
 
   private drawTiles(): void {
+    this.frameMap = padMap(this.renderTiles, FRAME_PAD, WALL);
     const created: Phaser.GameObjects.GameObject[] = [];
     for (let y = 0; y < this.renderTiles.length; y++) {
       const row: Phaser.GameObjects.Image[][] = [];
@@ -456,9 +484,9 @@ export class RouteScene extends Phaser.Scene {
 
   private drawEntities(): void {
     const created: Phaser.GameObjects.GameObject[] = [];
-    for (let y = 0; y < this.map.length; y++) {
-      for (let x = 0; x < this.map[y].length; x++) {
-        if (this.map[y][x] === TALL_GRASS) {
+    for (let y = 0; y < this.renderTiles.length; y++) {
+      for (let x = 0; x < this.renderTiles[y].length; x++) {
+        if (this.renderTiles[y][x] === TALL_GRASS) {
           const image = this.add.image(this.centerX(x), this.centerY(y), GRASS_TEXTURE_KEY).setDepth(1);
           this.entitySprites.push(image);
           created.push(image);
@@ -557,7 +585,7 @@ export class RouteScene extends Phaser.Scene {
     this.setHint(this.defaultHint());
   }
 
-  /** Opens the party/PC screen paused-on-top, like a battle (`P`, or the rest stop). */
+  /** Opens the party/PC screen paused-on-top, like a battle (party key, or the rest stop). */
   private openParty(mode: 'field' | 'rest'): void {
     if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) return;
     this.pendingParty = mode;
@@ -894,9 +922,8 @@ export class RouteScene extends Phaser.Scene {
 
   private setHint(text: string): void {
     const dev = IS_DEVELOP ? `  ·  B: random battle  ·  ${DEBUG_MENU_TOGGLE_KEY}: debug menu` : '';
-    this.hint.setText(
-      `${text}\nArrows: move  ·  P: party/PC${dev}`,
-    );
+    const { party, hud } = this.settings.keybinds;
+    this.hint.setText(`${text}\nArrows: move  ·  ${keyLabel(party)}: party/PC  ·  ${keyLabel(hud)}: HUD${dev}`);
   }
 
   override update(): void {

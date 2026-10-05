@@ -99,24 +99,34 @@ function runLength(map: TileMap, x: number, y: number, dir: Tile, value: number)
  * Resolves a whole wall motif: the mass's top row is `rows[0]`, its bottom row
  * is the last one, and the rows in between cycle by depth so a tall wall reads
  * as stacked objects. The column repeats across x from the mass's left edge.
+ *
+ * The phase is anchored to the column's own **first and last wall cell**, so a
+ * lane that crosses the column is a hole in the stack instead of two shorter
+ * trees that re-anchor half-way down (normalising the extremes is `cleanWalls`).
+ * The pattern column is anchored to those cells too, so a lane that bites the
+ * side below the top cannot slide the trees there one pattern column aside.
  */
 export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPattern): number {
   const { height } = dimensions(map);
-  const northOpen = y <= 0 || map[y - 1][x] !== pattern.value;
-  const southOpen = y >= height - 1 || map[y + 1][x] !== pattern.value;
-  const depth = runLength(map, x, y, { x: 0, y: -1 }, pattern.value);
-  const left = runLength(map, x, y, { x: -1, y: 0 }, pattern.value);
-  const right = runLength(map, x, y, { x: 1, y: 0 }, pattern.value);
+  const value = pattern.value;
+  let top = 0;
+  while (top < height && map[top][x] !== value) top++;
+  let bottom = height - 1;
+  while (bottom >= 0 && map[bottom][x] !== value) bottom--;
+
+  const depth = y - top;
+  const foot = bottom - y;
   const last = pattern.rows.length - 1;
-  // `rows[0]` is the mass's open top and `rows[last]` its trunk foot. The row just
+  // `rows[0]` is the mass's top and `rows[last]` its trunk foot. The row just
   // above the foot is the mass's own lower leaves (`last - 1`) and its second row
-  // is its upper leaves (`1`). In between, the interior alternates the crown of the
-  // tree below laid on the lower leaves of the tree above (`2`) with the body row
-  // laid on that tree's trunk (`3`), so the trunk stays hidden and only shows at
-  // the mass's foot.
-  const aboveFoot = depth >= 2 && !southOpen && (y + 2 >= height || map[y + 2][x] !== pattern.value);
-  const rowIndex = northOpen ? 0 : southOpen ? last : aboveFoot ? last - 1 : depth === 1 ? 1 : depth % 2 === 0 ? 2 : 3;
+  // is its upper leaves (`1`). In between, the interior alternates the crown laid
+  // on the tree's own upper body (`2`) with the body row laid on the trunk of the
+  // tree above (`3`), so the trunk stays hidden and only shows at the mass's foot.
+  const aboveFoot = depth >= 2 && foot === 1;
+  const rowIndex = depth === 0 ? 0 : foot === 0 ? last : aboveFoot ? last - 1 : depth === 1 ? 1 : depth % 2 === 0 ? 2 : 3;
   const row = pattern.rows[rowIndex];
+  const left = runLength(map, x, top, { x: -1, y: 0 }, value);
+  const right = runLength(map, x, top, { x: 1, y: 0 }, value);
   // Centre the motif on a wall narrower than the pattern, so a lone one-tile
   // hedge shows the whole tree's middle column instead of its left edge.
   const span = left + 1 + right;

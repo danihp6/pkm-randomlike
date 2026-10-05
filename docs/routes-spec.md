@@ -22,14 +22,26 @@ camera follow), containing:
    **shape** (`src/engine/routes/layout.ts`): where the route enters and leaves
    and how the paths connect those openings. It is currently `open`: the interior
    is filled with trees and the shape's lanes (spine and branches) are carved
-   through them, leaving the one-tile tree/rock border solid.
-2. **Terrain pass**: `terrain` in `src/data/biomes.ts` sets how many tall grass
+   through them, leaving the one-tile tree/rock border solid. The optional branches
+   keep a **two-tile margin** from the border, so the outer tree mass is never
+   bitten; only the spine pierces it, at the openings.
+2. **Wall tidy**: `cleanWalls` (`src/engine/routes/walls.ts`) removes any wall
+   remnant the tileset's wall motif would draw cut off. The motif's footprint
+   (`WallFootprint`, taken from the tileset's `wallPattern`) gives the width a run
+   needs to show a whole object and the shortest whole-object height; a lane that
+   grazes the forest leaves a one- or two-tile sliver, and a bitten column leaves
+   an odd or too-short run, so both are dropped (turning back into floor). The
+   tidy only ever turns wall back into floor, so it can widen a lane but never block
+   it: the entry, every exit and the spine keep working and the openings stay
+   reachable. A run that touches the one-tile border ring is left alone, so the map
+   stays fenced.
+3. **Terrain pass**: `terrain` in `src/data/biomes.ts` sets how many tall grass
    patches and ledge lines a biome stamps. Both land on the carved floor **off the
    spine and the openings** (ledges also avoid the pockets), and a ledge line stops
    growing rather than strand a branch behind its one-way drop. Grass is walkable;
    a ledge only gives way downward. Water is decoration (`D18`), not a terrain
    pass.
-3. **Validation pass**: flood-fill from the entry must reach every exit. If it does
+4. **Validation pass**: flood-fill from the entry must reach every exit. If it does
    not, reroll from the same seed with the next stream value. This validation is
    what makes the generator safe to call blind.
 

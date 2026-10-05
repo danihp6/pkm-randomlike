@@ -133,6 +133,43 @@ file is the human-readable summary.
       replaced by `terrain.test.ts` (off spine/openings/pockets, every exit
       reachable, no stranding, counts honoured). `docs/routes-spec.md` and
       `docs/route-generator.md` updated.
+- [x] Wall tidy: the wall motif only draws a whole object from a run at least the
+      motif's width and a whole number of objects tall, so a lane that grazed the
+      forest left a one/two-tile sliver and a bitten column left a stub. `cleanWalls`
+      (`src/engine/routes/walls.ts`, renamed from `cleanTrees`) now runs after the
+      carve and before the terrain pass and drops both, **only turning WALL into
+      FLOOR**, so it can widen a lane but never block one - the entry, every exit and
+      the spine keep working and the openings stay reachable. A run that touches the
+      one-tile border ring is left alone, so the map stays fenced. Its whole-object
+      size is a **`WallFootprint`** (`cols`, `minHeight`) taken from the tileset's
+      `wallPattern`, so another biome or wall art passes its own. Optional branches
+      also keep a **`TREE_MARGIN` of two tiles** from the border (bounded
+      `carveSquare`), so the outer tree mass is not bitten at all; only the spine
+      pierces it, at the openings. New `walls.test.ts` (run heights, unit maps, no
+      cut-off walls, branch margin, reachability); the frozen route and the
+      `sketchRouteSteps` phases (now `... branches → clean → terrain ...`) re-frozen.
+      `docs/routes-spec.md` and `docs/route-generator.md` updated.
+- [x] Fixed the debug **generator stepper**: `RouteScene.drawEntities` drew the
+      tall-grass overlay from the live map, so tall grass showed in every phase even
+      before the terrain pass. It now reads the phase's own map, matching the tiles
+      the stepper renders.
+- [x] Fixed the wall motif re-anchoring when a lane bit a column: `patternFrame`
+      picked the row phase and the pattern column from the **current row's own run**,
+      so a lane that crossed a column (a door at `place openings`, a spine or branch
+      lane) split it into two shorter trees that re-anchored, and a lane that carved
+      the side below the top slid the lower rows one pattern column aside (a tree's
+      crown and lower leaves landed on different thirds). The phase and the column are
+      now anchored to the column's **first and last wall cell**: a lane that crosses
+      the column is a hole in the stack, not a new tree, so the raw carve steps only
+      bite and everything settles at `cleanWalls`. `RouteScene` also resolves the
+      frames against the route map framed by one ring of wall (`padMap`,
+      `FRAME_PAD`), so the border trees read as a stack that continues past the limit
+      instead of a tree cut off at the edge; the ring is never drawn. `patternFrame`
+      tests added; `docs/tileset-spec.md` updated. The run-based centring of a lone
+      narrow wall is unchanged.
+- [x] The route **HUD panel** (route header, party and bag) now starts **hidden**
+      and is toggled with the new **`hud` action, default `I`** (rebindable next to
+      the others in Settings). The hint line spells the bound key.
 
 ## Phase 0 — Repo & scaffolding
 
