@@ -47,10 +47,6 @@ questions are in `docs/route-generator.md`; these are the steps to get there, on
 branch each, most useful first. The art counterparts (a real tall-grass tile, the
 floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **Step 5 — Terrain passes on.** Re-enable grass and ledges from
-      `biome.terrain`, keeping them off the spine and off the openings (water is
-      decoration now, not a terrain pass). Tests: the spine stays clean, every
-      exit stays reachable, counts are honoured.
 - [ ] **Step 6 — Trainers (optional).** Restore the `RouteTrainer` type and the
       line-of-sight module (`src/engine/routes/trainers.ts`), place trainers off
       the spine with a facing, sight and archetype, and keep a trainer-free
@@ -119,9 +115,9 @@ terrain passes (tall grass, ledges) are kept but off; water is decoration. Open,
 most useful first:
 
 - [ ] **Route interiors.** Bring shape back per biome: re-enable the `hedges`
-      (Route 1) and `maze` (Viridian Forest, Mt. Moon) carvers and the biome
-      terrain passes (`terrain` in `src/data/biomes.ts`), once the carved lanes
-      have served their purpose. Generator logic tracked in Phase 2 steps 3-5.
+      (Route 1) and `maze` (Viridian Forest, Mt. Moon) carvers once the carved
+      lanes have served their purpose; the biome terrain passes are on again
+      (Phase 2 step 5). Generator logic tracked in Phase 2 steps 6-8.
 
 - [ ] **FRLG ground vs path.** The base floor now matches the game's ground colour
       (`rgb(112,200,160)`, sheet tile `6,1`), but the lighter tiles (`2,3`, `1,3`,

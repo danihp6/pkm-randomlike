@@ -123,6 +123,16 @@ file is the human-readable summary.
 - [x] Fixed `carveGrass`: it seeds from the **off-spine** floor and never stamps a
       patch over the **spine** or an opening, so the guaranteed lane stays a clean,
       encounter-free lane (before it only avoided the openings). Test added.
+- [x] Phase 2 step 5: terrain passes **on**. The `biome.terrain` counts are live
+      again (forest 4 grass patches / 1 ledge line; the other biomes restored
+      too), so routes stamp tall grass and ledges on the carved floor off the
+      spine and the openings - ledges also keep off the pockets. A ledge line grows
+      one tile at a time and **stops rather than strand a branch**: any run that
+      would cut the walkable map in two is reverted, and a lane too narrow for a
+      full run still keeps a single jumpable tile. `terrain-defaults.test.ts` is
+      replaced by `terrain.test.ts` (off spine/openings/pockets, every exit
+      reachable, no stranding, counts honoured). `docs/routes-spec.md` and
+      `docs/route-generator.md` updated.
 
 ## Phase 0 — Repo & scaffolding
 
