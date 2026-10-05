@@ -127,14 +127,29 @@ function patternColumn(tiles: readonly (readonly number[])[], x: number, cols: n
  *
  * Only turns WALL back into FLOOR, so it can widen a lane but never block it: the
  * entry, the exits and the spine keep working and the openings stay reachable.
- * A run that touches the one-tile border ring is always left alone, so the map
- * stays fenced (the ring is one tile wide by design and is not a sliver).
+ * A cell on the one-tile border ring is only dropped to widen an opening (a lane
+ * already reaches the ring beside it), so the map stays fenced; the generator also
+ * keeps lanes out of the border band, so the tidy rarely needs to touch the ring.
  */
 export function cleanWalls(tiles: MutableMap, footprint: WallFootprint = DEFAULT_WALL_FOOTPRINT): void {
   const height = tiles.length;
   const width = height > 0 ? tiles[0].length : 0;
   const onRing = (x: number, y: number): boolean =>
     x === 0 || x === width - 1 || y === 0 || y === height - 1;
+  /** True when a ring cell sits beside an open ring cell, so it just widens an opening. */
+  const extendsOpening = (x: number, y: number): boolean => {
+    const neighbours: readonly (readonly [number, number])[] = [
+      [x, y - 1],
+      [x, y + 1],
+      [x - 1, y],
+      [x + 1, y],
+    ];
+    for (const [nx, ny] of neighbours) {
+      if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+      if (onRing(nx, ny) && !isWall(tiles, nx, ny)) return true;
+    }
+    return false;
+  };
   const { cols, minHeight } = footprint;
 
   const bandStart = new Array<number>(width);
@@ -154,22 +169,23 @@ export function cleanWalls(tiles: MutableMap, footprint: WallFootprint = DEFAULT
         if (seenBands.has(start)) continue;
         seenBands.add(start);
 
+        const lo = Math.max(0, start);
+        const hi = Math.min(width - 1, start + cols - 1);
         let wall = 0;
         let open = 0;
-        for (let bx = start; bx < start + cols; bx++) {
-          // The scene extends the map only vertically for the motif, so a band that
-          // runs off the playable edge is cut off there, not continued sideways.
-          if (bx < 0 || bx >= width || !isWall(tiles, bx, y)) open++;
-          else wall++;
+        for (let bx = lo; bx <= hi; bx++) {
+          if (isWall(tiles, bx, y)) wall++;
+          else open++;
         }
         if (wall === 0 || open === 0) continue;
 
-        for (let bx = start; bx < start + cols; bx++) {
-          if (bx < 0 || bx >= width || onRing(bx, y)) continue;
-          if (isWall(tiles, bx, y)) {
-            tiles[y][bx] = FLOOR;
-            changed = true;
-          }
+        for (let bx = lo; bx <= hi; bx++) {
+          if (!isWall(tiles, bx, y)) continue;
+          // A border-ring cell is only dropped when it merely widens an opening
+          // (a lane already reaches the ring beside it), so the map stays fenced.
+          if (onRing(bx, y) && !extendsOpening(bx, y)) continue;
+          tiles[y][bx] = FLOOR;
+          changed = true;
         }
       }
     }

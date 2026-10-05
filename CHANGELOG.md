@@ -200,6 +200,17 @@ file is the human-readable summary.
       `parseFrameMapExport` (`src/engine/frameMap.ts`); `patternCell` is factored out
       of `patternFrame` (`src/engine/tileFrames.ts`) so the tool and the renderer
       share one anchor.
+- [x] No lane may **bite the border band**: the spine now carves a straight
+      `OpeningApproach` of `cols` tiles in from each opening before it may turn, its
+      A* cost penalises the outer `cols` band, its waypoints are clamped to it, and
+      branches use the same margin (was a fixed two tiles, which still let a lane
+      carve the third column). A route now has **zero bitten trees** (checked across
+      shapes/index/seeds, border included). `cleanWalls` also drops a border-ring cell
+      only when it merely **widens an opening** (a lane already reaches the ring next
+      to it), so a dangling fence nub under an entry/exit is removed while a fence in
+      the middle of a run never opens. `walls.test.ts` gains the nub and
+      no-bitten-tree cases; the frozen route is re-frozen and `docs/routes-spec.md`,
+      `docs/route-generator.md` updated.
 
 ## Phase 0 — Repo & scaffolding
 

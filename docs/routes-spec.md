@@ -22,9 +22,11 @@ camera follow), containing:
    **shape** (`src/engine/routes/layout.ts`): where the route enters and leaves
    and how the paths connect those openings. It is currently `open`: the interior
    is filled with trees and the shape's lanes (spine and branches) are carved
-   through them, leaving the one-tile tree/rock border solid. The optional branches
-   keep a **two-tile margin** from the border, so the outer tree mass is never
-   bitten; only the spine pierces it, at the openings.
+   through them, leaving the one-tile tree/rock border solid. Every lane keeps a
+   margin of the motif's width (`cols`) from the border, so it never carves into
+   the `cols`-wide band the border ring belongs to - a bitten fence could not be
+   cleaned without opening the map - and only an opening pierces the ring, where
+   the corridor runs straight in for `cols` tiles before it may turn.
 2. **Wall tidy**: `cleanWalls` (`src/engine/routes/walls.ts`) removes any wall
    remnant the tileset's wall motif would draw cut off. The motif's footprint
    (`WallFootprint`, taken from the tileset's `wallPattern`) gives the width a run
@@ -37,8 +39,9 @@ camera follow), containing:
    anchored to the raw carve and held fixed, so removing a bitten tree never shifts
    where the trees beside it tile. The tidy only ever turns wall back into floor, so
    it can widen a lane but never block it: the entry, every exit and the spine keep
-   working and the openings stay reachable. A run that touches the one-tile border
-   ring is left alone, so the map stays fenced.
+   working and the openings stay reachable. A cell on the one-tile border ring is
+   only dropped to widen an opening (a lane already reaches the ring beside it), so
+   the map stays fenced.
 3. **Terrain pass**: `terrain` in `src/data/biomes.ts` sets how many tall grass
    patches and ledge lines a biome stamps. Both land on the carved floor **off the
    spine and the openings** (ledges also avoid the pockets), and a ledge line stops

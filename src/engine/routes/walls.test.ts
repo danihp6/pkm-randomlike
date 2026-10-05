@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FLOOR, WALL, isWalkable } from '../map';
+import { buildFrameMap } from '../frameMap';
+import { FRLG_TILESET } from '../../data/tilesets/frlg';
 import { ROUTE_SHAPES } from './layout';
 import { tileKey } from './routeMap';
 import { sketchRoute, type RouteRequest } from './sketch';
@@ -125,6 +127,34 @@ describe('cleanWalls', () => {
       for (let x = 2; x <= 4; x++) expect(at(tiles, x, y), `kept ${x},${y}`).toBe(WALL);
     }
   });
+
+  it('extends an opening over a border nub but never opens a fence on its own', () => {
+    // A solid ring, a wall band (cols 1-2) above the opening, an opening at
+    // (0,2) with the lane beside it, and one bitten row (3) below.
+    const build = (opening: boolean): number[][] => {
+      const tiles = blank(8, 8);
+      fillRect(tiles, 0, 0, 8, 1); // top ring
+      fillRect(tiles, 0, 7, 8, 1); // bottom ring
+      fillRect(tiles, 0, 0, 1, 8); // left ring
+      fillRect(tiles, 7, 0, 1, 8); // right ring
+      fillRect(tiles, 1, 0, 2, 7); // the wall band, cols 1-2
+      tiles[2][1] = FLOOR; // the lane leaves the opening
+      tiles[2][2] = FLOOR;
+      tiles[3][1] = FLOOR; // the band is bitten at row 3
+      tiles[3][2] = FLOOR;
+      if (opening) tiles[2][0] = FLOOR; // the opening punches the ring at (0,2)
+      return tiles;
+    };
+
+    const withOpening = build(true);
+    cleanWalls(withOpening, FOOT);
+    expect(at(withOpening, 0, 3), 'nub under the opening').toBe(FLOOR);
+    expect(at(withOpening, 0, 4), 'fence below the nub').toBe(WALL);
+
+    const noOpening = build(false);
+    cleanWalls(noOpening, FOOT);
+    expect(at(noOpening, 0, 3), 'bitten band away from an opening').toBe(WALL);
+  });
 });
 
 function routeRequest(seed: string, routeIndex: number): RouteRequest {
@@ -140,6 +170,20 @@ describe('route wall cleanup (via sketchRoute)', () => {
       }
     }
   });
+
+  it('never leaves a bitten tree, the border ring included', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (let index = 1; index <= 12; index++) {
+        for (const seed of ['one', 'two']) {
+          const route = sketchRoute({ ...routeRequest(seed, index), shape });
+          const frameMap = buildFrameMap(route.tiles, FRLG_TILESET, 1);
+          for (const tree of frameMap.trees) {
+            expect(tree.solid, `${shape} ${seed} #${index} tree ${tree.id}`).toBe(true);
+          }
+        }
+      }
+    }
+  }, 30_000);
 
   it('keeps the entry and every exit reachable and walkable', () => {
     for (const shape of ROUTE_SHAPES) {
@@ -159,10 +203,10 @@ describe('route wall cleanup (via sketchRoute)', () => {
       for (const seed of ['wall-a', 'wall-b', 'wall-c', 'wall-d']) {
         const route = sketchRoute({ ...routeRequest(seed, 4), shape });
         for (const cell of route.branches) {
-          expect(cell.x, `${shape} ${seed} ${tileKey(cell)} x`).toBeGreaterThanOrEqual(2);
-          expect(cell.x, `${shape} ${seed} ${tileKey(cell)} x`).toBeLessThanOrEqual(route.width - 3);
-          expect(cell.y, `${shape} ${seed} ${tileKey(cell)} y`).toBeGreaterThanOrEqual(2);
-          expect(cell.y, `${shape} ${seed} ${tileKey(cell)} y`).toBeLessThanOrEqual(route.height - 3);
+          expect(cell.x, `${shape} ${seed} ${tileKey(cell)} x`).toBeGreaterThanOrEqual(3);
+          expect(cell.x, `${shape} ${seed} ${tileKey(cell)} x`).toBeLessThanOrEqual(route.width - 4);
+          expect(cell.y, `${shape} ${seed} ${tileKey(cell)} y`).toBeGreaterThanOrEqual(3);
+          expect(cell.y, `${shape} ${seed} ${tileKey(cell)} y`).toBeLessThanOrEqual(route.height - 4);
         }
       }
     }

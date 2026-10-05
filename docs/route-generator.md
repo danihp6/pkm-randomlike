@@ -107,7 +107,7 @@ reachable: Set<Point>               # FloodFill(tiles, entry), computed after te
 | Knob | Lives in | Drives |
 | --- | --- | --- |
 | shape `openings`, `pathWidth`, `jitter`, `corridorWidth`, `braid`, `branchCount`, `branchMin/Max`, `pocketChance` | `src/engine/routes/layout.ts` | shape and geometry |
-| `TREE_MARGIN` | `src/engine/routes/sketch.ts` | how many solid tree rings a branch keeps along the border |
+| `wallMargin` (motif `cols`) | `src/engine/routes/sketch.ts` | the border band every lane keeps clear |
 | `WallFootprint` (`cols`, `minHeight`) | tileset `wallPattern` | the wall tidy's whole-object size |
 | `grassPatches`, `ledges` | `src/data/biomes.ts` | terrain flavour |
 | `trainerSize`, `minLevel`, `maxLevel` | `src/data/run.ts` | population and levels |
@@ -133,8 +133,8 @@ BuildRoute(routeIndex, rngs):
 
     # 3. Secondary paths and dead ends (exploration)
     (branches, pockets) = CarveBranches(tiles, spine, shape, rngs.layout)
-    #    Branches keep TREE_MARGIN tiles off the border so the outer tree mass
-    #    is never bitten; only the spine pierces it, at the openings.
+    #    Every lane keeps `cols` tiles off the border so the outer tree mass
+    #    is never bitten; only an opening pierces it, running straight in first.
 
     # 3b. Tidy the trees: every column must read as whole trees, never a stub.
     CleanWalls(tiles, footprint)          # only turns WALL back into FLOOR
@@ -180,25 +180,29 @@ The shape's `links` are joined by jittered cardinal corridors that follow a cost
 map, so the result meanders instead of running straight. When a shape has more
 than one link (the `cross`), every link routes through a shared **central hub**, so
 the lanes are guaranteed to meet: the entry reaches every exit by construction,
-never by the jittered corridors happening to cross.
+never by the jittered corridors happening to cross. Each lane starts with a
+straight **`OpeningApproach`** of `margin` (`cols`) tiles inward before it may
+turn, and the A* cost penalises the outer `margin` band, so a corridor never bites
+the band the border ring belongs to (which `cleanWalls` could only fix by opening
+the fence).
 
 ```
-CarveGuaranteedPath(tiles, entry, exits, shape, rng):
+CarveGuaranteedPath(tiles, entry, exits, shape, rng, margin):
     spine = Set()
     hub = Center(tiles) if shape.links.length > 1 else null
     for (a, b) in shape.links:
         from = openingPoint(a, entry, exits)          # that opening's border tile
         to   = openingPoint(b, entry, exits)
-        waypoints = [from]
+        waypoints = [from] + OpeningApproach(a.edge, from, margin)
         for i in 1 .. SEGMENTS-1:
             if hub and i == SEGMENTS / 2:
                 waypoints.push(hub)                   # every link meets here
             else:
                 base = Lerp(from, to, i / SEGMENTS)
-                waypoints.push(base + Jitter(shape.jitter, rng))
-        waypoints.push(to)
+                waypoints.push(Clamp(base + Jitter(shape.jitter, rng), margin))
+        waypoints += reverse(OpeningApproach(b.edge, to, margin)) + [to]
         for (p, q) in consecutive(waypoints):
-            cost(cell) = BASE + Noise(cell, rng)      # deterministic per-cell cost
+            cost(cell) = BASE + Noise(cell, rng) + BorderPenalty(cell, margin)
             path = AStar(tiles, p, q, cost)           # cardinal, engine/pathfinding
             for cell in path:
                 CarveSquare(tiles, cell, shape.pathWidth)   # lane may be > 1 wide
@@ -232,10 +236,11 @@ CarveBranches(tiles, spine, shape, rng):
 ```
 
 Branches are optional; the spine alone always solves the route. Lanes keep a
-**`TREE_MARGIN`** (two tiles) from the border, are **at least two tiles wide**, and
-scale with the free space: a roomy map gets longer, wider lanes that open into a
-small **chamber** at the far end instead of a bare one-tile cul-de-sac. That far
-end is the **pocket** - the classic place for loot or a single special encounter.
+margin of the motif's width (**`cols`**) from the border, are **at least two tiles
+wide**, and scale with the free space: a roomy map gets longer, wider lanes that
+open into a small **chamber** at the far end instead of a bare one-tile
+cul-de-sac. That far end is the **pocket** - the classic place for loot or a single
+special encounter.
 
 ### 3.3b CleanWalls
 
@@ -268,8 +273,8 @@ trees beside a bitten one and eat into otherwise whole trees.
 
 The tidy **only turns `WALL` back into `FLOOR`**, so it can widen a lane but never
 block one: the entry, the exits and the spine keep working and the openings stay
-reachable. A run that touches the one-tile border ring is left alone, so the map
-stays fenced (the ring is one tile wide by design and is not a sliver). Because the
+reachable. A cell on the one-tile border ring is only dropped to widen an opening
+(a lane already reaches the ring beside it), so the map stays fenced. Because the
 size a run needs comes from the tileset's motif, a different biome or wall art just
 passes its own `WallFootprint`.
 
