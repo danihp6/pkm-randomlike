@@ -68,30 +68,34 @@ map always looks the same.
 
 A tileset can declare a `wallPattern` instead of shaping a wall with the autotile:
 a whole `cols` x `rows` motif (`WallPattern` in `src/engine/tileset.ts`).
-`patternFrame` anchors it to the mass's top-left, so `rows[0]` is the mass's top
-layer and the last row its foot. The row just above the foot is the mass's own
-lower leaves, and the interior alternates the motif's crown row and body row, so a
-tall wall reads as stacked objects. The `cols` frames repeat across x, and both the
-row and the pattern column are anchored to the column's **first and last wall
-cell**: a lane that crosses the column is a hole in the stack, and a lane that bites
-its side cannot slide the trees there a pattern column aside, so a tree's top, body
-and lower leaves always share one column (normalising the extremes and dropping a
-bitten `cols`-wide band whole is `cleanWalls`).
+`patternFrame` anchors the **row phase** to the cell's own contiguous wall run, so
+`rows[0]` is the run's top layer and the last row its foot. A run a lane detached
+from the stack above or below therefore draws as a whole object - its top adds the
+crown (`rows[0]`) when there is no tree above, and its bottom the base when there
+is no tree below - instead of a mid-stack slice. `cleanWalls` guarantees the runs
+are whole objects, so re-anchoring only ever adds the cap a run was missing. The
+`cols` frames repeat across x, and the pattern **column** stays anchored to the
+column's first wall cell, so a lane that bites the side below the top cannot slide
+the run's columns aside.
 A wall narrower than the motif is centred on it, so a one-tile hedge shows the
 middle column of a tree and never a cut-off edge.
 
-`RouteScene` resolves the frames against the route map extended by one ring
-(`extendMap`, `FRAME_PAD`): the vertical rings continue the edge row, so the
-border trees read as a stack that goes on past the map edge instead of as a tree
-cut off at the limit, and the side rings stay **open** so the motif is not shifted
-one pattern column aside. No extra tiles are drawn.
+`RouteScene` resolves the frames against the route map itself (there is no frame
+ring): the motif binds to the playable grid, so no pad can shift its columns. A
+mass that reaches the map's top or bottom edge is a **window** into the forest
+continuing past the limit: `patternCell` extends it two rows outward (one tree's
+overlap) before reading the phase, so the edge is a mid-stack crown/body and the
+motif is never cut into a crop there. A border piece too short for a whole object
+(an opening's approach can leave a one-row stump) extends both ways, so it reads as
+mid-stack instead of a lone trunk. An interior run is unchanged, so a detached tree
+still shows its own crown and trunk. `patternCell` takes a `border` flag for this;
+the scene and the dev frame map pass it, a bare motif call does not.
 
 A wall cell that draws as the motif's **pure top row** (`rows[0]`, the crown over
-open ground) is a **walkable tip**: `treeTipKeys` finds them, and `RouteScene` walks
-on them (its movement map turns them into floor) while drawing the crown over the
-player (`TREE_TIP_DEPTH`), so the player walks under the tree top. A mass that
-reaches the map edge is part of the border stack, so its top draws row 1 (`BODY`),
-not a pure row 0, and is not a tip.
+open ground) is a **walkable tip**: `treeTipKeys` finds them (never a cell on the
+one-tile border ring, which is the fence), and `RouteScene` walks on them (its
+movement map turns them into floor) while drawing the crown **over** the player
+(`TREE_TIP_DEPTH`), so the character passes behind the tree top.
 
 The FRLG fields use it to draw the real FireRed tree, three columns wide, with six
 frames: `rows[0]` the crown over open ground (the mass's top), `rows[1]` the tree's

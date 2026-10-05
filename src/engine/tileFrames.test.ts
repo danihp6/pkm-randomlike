@@ -141,12 +141,44 @@ describe('patternFrame', () => {
     expect(patternFrame(bitten, 1, 2, pattern)).toBe(20);
   });
 
-  it('treats a lane across a column as a hole, not a new tree that re-anchors', () => {
-    const holed: number[][] = Array.from({ length: 8 }, () => [WALL]);
-    holed[3][0] = FLOOR;
-    // Below the hole the stack keeps its phase (a crown), not a fresh top.
-    expect(patternFrame(holed, 0, 4, pattern)).toBe(14);
-    expect(patternFrame(holed, 0, 2, pattern)).toBe(14);
+  it('re-anchors a run a lane detached from the stack, giving it its own crown and base', () => {
+    // Two whole trees with a lane between them; the lower run clears the map edge.
+    const holed: number[][] = [];
+    for (let y = 0; y < 14; y++) holed.push([y === 5 || y === 13 ? FLOOR : WALL]);
+    // The run below the lane opens a fresh tree: its top is the crown (row 0) and
+    // its foot the base, instead of continuing the phase of the run above.
+    expect(patternFrame(holed, 0, 6, pattern)).toBe(pattern.rows[0][1]);
+    expect(patternFrame(holed, 0, 8, pattern)).toBe(pattern.rows[2][1]);
+    expect(patternFrame(holed, 0, 12, pattern)).toBe(pattern.rows[5][1]);
+  });
+
+  it('continues a mass that reaches the map edge past the limit instead of cutting it', () => {
+    // A column that fills the map touches both edges: a window into the forest.
+    const full: TileMap = Array.from({ length: 6 }, () => [WALL, WALL, WALL]);
+    expect(patternFrame(full, 1, 0, pattern, true)).toBe(pattern.rows[2][1]);
+    expect(patternFrame(full, 1, 1, pattern, true)).toBe(pattern.rows[3][1]);
+    expect(patternFrame(full, 1, 5, pattern, true)).toBe(pattern.rows[3][1]);
+
+    // A mass hanging off the top only: its interior foot stays a normal base.
+    const topOnly: TileMap = Array.from({ length: 8 }, (_, y) =>
+      y <= 3 ? [WALL, WALL, WALL] : [FLOOR, FLOOR, FLOOR],
+    );
+    expect(patternFrame(topOnly, 1, 0, pattern, true)).toBe(pattern.rows[2][1]);
+    expect(patternFrame(topOnly, 1, 3, pattern, true)).toBe(pattern.rows[5][1]);
+
+    // A bare call keeps the motif's own top/base rows.
+    expect(patternFrame(full, 1, 0, pattern)).toBe(pattern.rows[0][1]);
+    expect(patternFrame(full, 1, 5, pattern)).toBe(pattern.rows[5][1]);
+  });
+
+  it('reads a short border piece as mid-stack, not a lone trunk', () => {
+    const post: TileMap = Array.from({ length: 6 }, (_, y) =>
+      y === 0 ? [FLOOR, FLOOR, WALL, WALL, WALL, FLOOR] : new Array<number>(6).fill(FLOOR),
+    );
+    // One row of wall on the top edge would be the foot of the off-map tree; as a
+    // window it must read as a crown/body row instead of a trunk.
+    expect(patternFrame(post, 3, 0, pattern, true)).toBe(pattern.rows[2][1]);
+    expect(patternFrame(post, 3, 0, pattern)).toBe(pattern.rows[0][1]);
   });
 
   it('steps across columns on a wall wider than the pattern', () => {
@@ -203,7 +235,7 @@ describe('treeTipKeys', () => {
     expect(tips.has('1,3')).toBe(false);
   });
 
-  it('does not mark a mass that reaches the border, which is part of a stack', () => {
+  it('never marks a border cell, even when its run tops out on the edge', () => {
     const attached: TileMap = [
       [WALL, WALL, WALL, WALL, WALL],
       [FLOOR, WALL, WALL, WALL, FLOOR],
@@ -215,6 +247,27 @@ describe('treeTipKeys', () => {
     const tips = treeTipKeys(attached, withPattern);
     expect(tips.has('1,0')).toBe(false);
     expect(tips.has('1,1')).toBe(false);
+
+    const bottomFence: TileMap = [
+      [FLOOR, FLOOR, FLOOR, FLOOR, FLOOR],
+      [FLOOR, FLOOR, FLOOR, FLOOR, FLOOR],
+      [FLOOR, FLOOR, FLOOR, FLOOR, FLOOR],
+      [WALL, WALL, WALL, WALL, WALL],
+    ];
+    expect(treeTipKeys(bottomFence, withPattern).size).toBe(0);
+  });
+
+  it('marks the own crown of a run a lane detached from the stack above', () => {
+    const withLane: TileMap = [
+      [FLOOR, WALL, FLOOR],
+      [FLOOR, WALL, FLOOR],
+      [FLOOR, FLOOR, FLOOR],
+      [FLOOR, WALL, FLOOR],
+      [FLOOR, WALL, FLOOR],
+    ];
+    const tips = treeTipKeys(withLane, withPattern);
+    expect(tips.has('1,3')).toBe(true);
+    expect(tips.has('1,4')).toBe(false);
   });
 
   it('has no tips without a wall pattern', () => {

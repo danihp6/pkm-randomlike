@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { FLOOR, WALL, isWalkable } from '../map';
 import { buildFrameMap } from '../frameMap';
 import { FRLG_TILESET } from '../../data/tilesets/frlg';
+import { treeTipKeys } from '../tileFrames';
 import { ROUTE_SHAPES } from './layout';
 import { tileKey } from './routeMap';
 import { sketchRoute, type RouteRequest } from './sketch';
@@ -176,9 +177,26 @@ describe('route wall cleanup (via sketchRoute)', () => {
       for (let index = 1; index <= 12; index++) {
         for (const seed of ['one', 'two']) {
           const route = sketchRoute({ ...routeRequest(seed, index), shape });
-          const frameMap = buildFrameMap(route.tiles, FRLG_TILESET, 1);
+          const frameMap = buildFrameMap(route.tiles, FRLG_TILESET);
           for (const tree of frameMap.trees) {
             expect(tree.solid, `${shape} ${seed} #${index} tree ${tree.id}`).toBe(true);
+          }
+        }
+      }
+    }
+  }, 30_000);
+
+  it('gives every detached tree its own crown, a walkable tip', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['one', 'two']) {
+        const route = sketchRoute({ ...routeRequest(seed, 2), shape });
+        const frameMap = buildFrameMap(route.tiles, FRLG_TILESET);
+        const tips = treeTipKeys(route.tiles, FRLG_TILESET);
+        for (const tree of frameMap.trees) {
+          if (tree.top === 0 || tree.bottom === route.height - 1) continue;
+          for (const [x, y] of tree.cells) {
+            if (y !== tree.top || x === 0 || x === route.width - 1) continue;
+            expect(tips.has(`${x},${y}`), `${shape} ${seed} tree ${tree.id} ${x},${y}`).toBe(true);
           }
         }
       }

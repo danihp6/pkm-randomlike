@@ -229,6 +229,47 @@ file is the human-readable summary.
       steps under the crown) and draws the crown over the player
       (`TREE_TIP_DEPTH`). `tileFrames.test.ts` covers detached vs border masses;
       `docs/tileset-spec.md` updated.
+- [x] The wall motif redraws **per run**: `patternFrame` anchors the row phase to a
+      wall cell's own contiguous run, so a run a lane detached from the stack above
+      or below draws as a whole tree - its own crown (`rows[0]`, a walkable tip) on
+      top and its own base at the foot - instead of a mid-stack slice that showed a
+      crown over ground with no tree above and no trunk at its own foot. The pattern
+      **column** stays anchored to the column's first wall cell, so a side bite still
+      cannot slide a run's columns aside. A mass that reaches the map's top or bottom
+      edge is a **window** into the forest continuing past the limit: the motif
+      extends it two rows outward before reading the phase (via an explicit
+      `patternCell`/`resolveTileFrame` `border` flag the scene and the dev frame map
+      pass), so the edge is a mid-stack crown/body and the pattern is never cut into a
+      crop there. An interior run is unchanged, so a detached tree still shows its own
+      crown and trunk. The scene frames the motif against the map itself (the
+      `extendMap`/`padMap` frame ring is gone), so the motif binds to the playable
+      grid. `treeTipKeys` never marks a one-tile border-ring cell, and a tip is drawn
+      **above** the player (`TREE_TIP_DEPTH` 20 > the player's 10), so the character
+      passes behind the crown. `tileFrames.test.ts` covers run re-anchoring and the
+      edge window; `walls.test.ts` sweeps generated routes for a tip on every detached
+      tree; `map.test.ts` drops the `extendMap` case; `docs/tileset-spec.md` updated.
+- [x] An opening keeps a **corner clearance** of the wall motif's footprint
+      (`cornerClearance`, `2 * cols`) instead of the old hardcoded 3, so `place
+      openings` never bites the tree in a map corner into a partial or one-tile
+      piece (the seed `1yv0j1t#r1` bottom-right corner). The frozen regression route
+      is re-frozen and a sweep asserts every opening clears each corner;
+      `docs/routes-spec.md` and `docs/route-generator.md` updated.
+- [x] A **short border piece** of wall reads as mid-stack, not a lone trunk: an
+      opening's approach can leave a one-row stump at the map edge, and with the
+      border window it drew the motif's base (`rows[last]`) because its foot fell on
+      the visible cell. `patternCell` now extends such a piece (shorter than a whole
+      object) at **both** ends before reading the phase, so it draws the crown/body
+      a lane would see in the forest past the edge. `tileFrames.test.ts` covers it.
+- [x] The lane keeps a **whole-object margin** from the map border: `wallMargin`
+      is `max(cols, minHeight)` (not just `cols`), so the tree strip it leaves at
+      the border is never shorter than a whole object - it draws its lower body and
+      trunk instead of a stump (the seed `1yv0j1t#r1` top row no longer shows
+      one-row stumps). The opening is also **aligned to its motif band**, so a
+      `pathWidth`-wide approach never spills into the band beside it, and
+      `carveBranches` pulls its last lane cell in by `branchWidth - 1` so a branch
+      is never clamped into a one-tile stub at the bound. The frozen regression
+      route is re-frozen; `docs/routes-spec.md` and `docs/route-generator.md`
+      updated.
 
 ## Phase 0 — Repo & scaffolding
 

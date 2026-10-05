@@ -1,5 +1,5 @@
 import type { Tile } from './grid';
-import { FLOOR, WALL, extendMap, type TileMap } from './map';
+import { FLOOR, WALL, padMap, type TileMap } from './map';
 import type { AutotileRule, TilesetConfig, WallPattern } from './tileset';
 
 export type TileFrameSource = 'atlas' | 'common';
@@ -98,24 +98,48 @@ function runLength(map: TileMap, x: number, y: number, dir: Tile, value: number)
 /**
  * Which cell of the motif `(x, y)` draws as: the row index into
  * `pattern.rows` and the column index into that row. The phase is anchored to
- * the column's own **first and last wall cell**, so a lane that crosses the
- * column is a hole in the stack instead of two shorter trees that re-anchor
- * half-way down (normalising the extremes is `cleanWalls`). The pattern column
- * is anchored to those cells too, so a lane that bites the side below the top
- * cannot slide the trees there one pattern column aside.
+ * the cell's own **contiguous wall run**, so a run a lane detached from the stack
+ * above or below draws as a whole object: its top adds the crown (`rows[0]`, the
+ * walkable tip) when there is no tree above it, and its bottom the base when
+ * there is no tree below. Before, the whole column anchored the phase, so such a
+ * run drew as a mid-stack slice - a crown/body over ground with no tree above,
+ * and no trunk at its own foot. `cleanWalls` guarantees the runs are whole
+ * objects, so re-anchoring only ever adds the cap the run is missing.
+ *
+ * With `border`, a mass that reaches the map's top or bottom edge is a **window**
+ * into the forest continuing past the limit: it is extended two rows outward (one
+ * tree's overlap) before the phase is read, so its visible edge is a mid-stack
+ * crown/body and the motif is never cut into a crop at the border. Interior runs are
+ * unchanged, so a detached tree still shows its own crown and trunk.
  */
 export function patternCell(
   map: TileMap,
   x: number,
   y: number,
   pattern: WallPattern,
+  border = false,
 ): Readonly<{ row: number; col: number }> {
   const { height } = dimensions(map);
   const value = pattern.value;
-  let top = 0;
-  while (top < height && map[top][x] !== value) top++;
-  let bottom = height - 1;
-  while (bottom >= 0 && map[bottom][x] !== value) bottom--;
+
+  let top = y;
+  while (top > 0 && map[top - 1][x] === value) top--;
+  let bottom = y;
+  while (bottom < height - 1 && map[bottom + 1][x] === value) bottom++;
+  if (border) {
+    const touchesTop = top === 0;
+    const touchesBottom = bottom === height - 1;
+    const short = bottom - top + 1 < Math.max(2, pattern.rows.length - 2);
+    if (touchesTop) top -= 2;
+    if (touchesBottom) bottom += 2;
+    // A border piece too short to show a whole object reads as mid-stack, not a
+    // lone trunk/crown: extend its other end too, so the visible rows are the
+    // crown/body a lane would see in a forest that goes on past the edge.
+    if (short) {
+      if (touchesTop) bottom += 2;
+      if (touchesBottom) top -= 2;
+    }
+  }
 
   const depth = y - top;
   const foot = bottom - y;
@@ -127,8 +151,12 @@ export function patternCell(
   // tree above (`3`), so the trunk stays hidden and only shows at the mass's foot.
   const aboveFoot = depth >= 2 && foot === 1;
   const row = depth === 0 ? 0 : foot === 0 ? last : aboveFoot ? last - 1 : depth === 1 ? 1 : depth % 2 === 0 ? 2 : 3;
-  const left = runLength(map, x, top, { x: -1, y: 0 }, value);
-  const right = runLength(map, x, top, { x: 1, y: 0 }, value);
+  // The pattern column stays anchored to the column's own first wall cell, so a
+  // lane that bites the side below the top cannot slide the run's columns aside.
+  let colTop = 0;
+  while (colTop < height && map[colTop][x] !== value) colTop++;
+  const left = runLength(map, x, colTop, { x: -1, y: 0 }, value);
+  const right = runLength(map, x, colTop, { x: 1, y: 0 }, value);
   // Centre the motif on a wall narrower than the pattern, so a lone one-tile
   // hedge shows the whole tree's middle column instead of its left edge.
   const span = left + 1 + right;
@@ -141,28 +169,29 @@ export function patternCell(
  * is the last one, and the rows in between cycle by depth so a tall wall reads
  * as stacked objects. The column repeats across x from the mass's left edge.
  */
-export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPattern): number {
-  const { row, col } = patternCell(map, x, y, pattern);
+export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPattern, border = false): number {
+  const { row, col } = patternCell(map, x, y, pattern, border);
   return pattern.rows[row][col];
 }
 
 /**
  * The wall cells that draw as the motif's **pure top row** (`rows[0]`, the crown
  * over open ground), as `x,y` keys. These are the walkable tips: a tree's own
- * crown, never a middle `rows[2]` crown laid over the tree above (`patternCell` on
- * the scene's connected-padded map, `extendMap`, so a tree that reaches the border
- * is part of the stack above and its top is not a tip). The route scene walks on
- * them and draws them over the player.
+ * crown, never a middle `rows[2]` crown laid over the tree above. A cell on the
+ * one-tile border ring is never a tip: the border is the fence (and the outer
+ * masses are a window into the forest past the limit, `patternCell`). The route
+ * scene walks on the tips and draws them over the player.
  */
-export function treeTipKeys(map: TileMap, tileset: TilesetConfig, pad = 1): Set<string> {
+export function treeTipKeys(map: TileMap, tileset: TilesetConfig, pad = 0): Set<string> {
   const keys = new Set<string>();
   const pattern = tileset.wallPattern;
   if (!pattern) return keys;
   const height = map.length;
   const width = height > 0 ? map[0].length : 0;
-  const framed = pad > 0 ? extendMap(map, pad, WALL) : map;
+  const framed = pad > 0 ? padMap(map, pad, FLOOR) : map;
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
+      if (x === 0 || x === width - 1 || y === 0 || y === height - 1) continue;
       if (map[y][x] !== pattern.value) continue;
       if (patternCell(framed, x + pad, y + pad, pattern).row === 0) keys.add(`${x},${y}`);
     }
@@ -180,9 +209,16 @@ export function isNearWall(map: TileMap, x: number, y: number): boolean {
 /**
  * Resolves which atlas frame draws `(x, y)`, or null when the map value has no
  * frame (an empty cell, or a tileset that intentionally hides it). Pure: the
- * renderer only turns the result into a draw call.
+ * renderer only turns the result into a draw call. With `border`, the wall motif's
+ * outer rows draw the forest continuing past the limit (`patternCell`).
  */
-export function resolveTileFrame(map: TileMap, x: number, y: number, tileset: TilesetConfig): TileFrame | null {
+export function resolveTileFrame(
+  map: TileMap,
+  x: number,
+  y: number,
+  tileset: TilesetConfig,
+  border = false,
+): TileFrame | null {
   const { width, height } = dimensions(map);
   if (x < 0 || x >= width || y < 0 || y >= height) return null;
   const value = map[y][x];
@@ -190,7 +226,7 @@ export function resolveTileFrame(map: TileMap, x: number, y: number, tileset: Ti
   if (commonFrame !== undefined) return { source: 'common', frame: commonFrame };
 
   if (tileset.wallPattern && tileset.wallPattern.value === value) {
-    return { source: 'atlas', frame: patternFrame(map, x, y, tileset.wallPattern) };
+    return { source: 'atlas', frame: patternFrame(map, x, y, tileset.wallPattern, border) };
   }
 
   const rule = tileset.autotile?.find((candidate) => candidate.value === value);

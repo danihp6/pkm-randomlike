@@ -24,10 +24,16 @@ camera follow), containing:
    is filled with trees and the shape's lanes (spine and branches) are carved
    through them, leaving the one-tile tree/rock border solid. Lanes are carved at
    least two tiles wide (no one-tile lane is left) and every lane keeps a
-   margin of the motif's width (`cols`) from the border, so it never carves into
-   the `cols`-wide band the border ring belongs to - a bitten fence could not be
-   cleaned without opening the map - and only an opening pierces the ring, where
-   the corridor runs straight in for `cols` tiles before it may turn.
+   margin of the motif's footprint (`wallMargin`, `max(cols, minHeight)`) from the
+   border, so it never carves into the `cols`-wide band the border ring belongs to
+   and always leaves a strip at least a whole object tall (a bitten fence could not
+   be cleaned without opening the map, and a shorter strip would be a stump with no
+   trunk). Only an opening pierces the ring, where the corridor runs straight in
+   for `margin` tiles before it may turn; the opening is aligned to its motif band,
+   so the `pathWidth`-wide approach never spills into the tree in the band beside
+   it. An opening also keeps a clearance of the motif's footprint (`2 * cols`) from
+   every map corner, so a corner tree is never bitten into a partial or one-tile
+   piece.
 2. **Wall tidy**: `cleanWalls` (`src/engine/routes/walls.ts`) removes any wall
    remnant the tileset's wall motif would draw cut off. The motif's footprint
    (`WallFootprint`, taken from the tileset's `wallPattern`) gives the width a run

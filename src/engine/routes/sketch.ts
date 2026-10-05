@@ -96,17 +96,51 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /** A jittered opening tile on the map border itself, punching a gap in the tree ring. */
-function edgeTile(edge: AccessEdge, rng: Rng, width: number, height: number): Tile {
+function edgeTile(
+  edge: AccessEdge,
+  rng: Rng,
+  width: number,
+  height: number,
+  corner: number,
+  band: number,
+  lane: number,
+): Tile {
+  const jitter = (span: number): number => {
+    const c = Math.min(corner, Math.floor((span - 1) / 2));
+    const v = rng.int(c, span - 1 - c);
+    const rem = v % band;
+    // Keep the opening's `lane`-wide approach inside one band of the motif grid, so
+    // it never bites the whole tree in the band beside it into a stump.
+    return rem > band - lane ? v - (rem - (band - lane)) : v;
+  };
   switch (edge) {
     case 'W':
-      return { x: 0, y: rng.int(3, height - 4) };
+      return { x: 0, y: jitter(height) };
     case 'E':
-      return { x: width - 1, y: rng.int(3, height - 4) };
+      return { x: width - 1, y: jitter(height) };
     case 'N':
-      return { x: rng.int(3, width - 4), y: 0 };
+      return { x: jitter(width), y: 0 };
     case 'S':
-      return { x: rng.int(3, width - 4), y: height - 1 };
+      return { x: jitter(width), y: height - 1 };
   }
+}
+
+/**
+ * The clearance an opening keeps from each corner: the motif's full footprint (a
+ * border band plus a band of separation), so a corridor never bites the tree in a
+ * corner into a partial/1-tile piece.
+ */
+export function cornerClearance(wall: WallFootprint | undefined): number {
+  return (wall?.cols ?? TREE_MARGIN) * 2;
+}
+
+/**
+ * The band a lane keeps from the map border: the motif's width (so it never bites
+ * the `cols`-wide border band) and at least the **whole-object height**, so the
+ * strip it leaves at the border is a whole tree with its trunk, not a stump.
+ */
+export function wallMargin(wall: WallFootprint | undefined): number {
+  return wall ? Math.max(wall.cols, wall.minHeight) : TREE_MARGIN;
 }
 
 /**
@@ -133,9 +167,11 @@ function placeAccess(
   rng: Rng,
   width: number,
   height: number,
+  corner: number,
+  band: number,
 ): Tile[] {
   return shape.openings.map((opening) => {
-    const tile = edgeTile(opening.edge, rng, width, height);
+    const tile = edgeTile(opening.edge, rng, width, height, corner, band, shape.pathWidth);
     tiles[tile.y][tile.x] = FLOOR;
     return tile;
   });
@@ -317,19 +353,6 @@ function carveBranches(
   if (shape.branchCount <= 0) return { branches, pockets };
 
   const endKeys = new Set(ends.map(tileKey));
-  // Branches stay strictly inside the border margin, so the outer tree mass is
-  // never bitten into a partial tree (the spine may pierce it at an opening).
-  const branchBounds: SquareBounds = {
-    minX: margin,
-    minY: margin,
-    maxX: width - 1 - margin,
-    maxY: height - 1 - margin,
-  };
-  const passable = (tile: Tile): boolean =>
-    tile.x >= margin &&
-    tile.x < width - margin &&
-    tile.y >= margin &&
-    tile.y < height - margin;
 
   // Scale the lane to the free space: how far the interior reaches from the spine.
   let maxAway = 0;
@@ -339,9 +362,21 @@ function carveBranches(
       if (away > maxAway) maxAway = away;
     }
   }
+  const branchWidth = Math.max(2, Math.min(4, Math.floor(maxAway / 12) + 1));
+  // Branches stay strictly inside the border margin, and the last lane cell is
+  // pulled in by `branchWidth - 1` so `carveSquare` never clamps the lane into a
+  // one-tile stub at the bound.
+  const branchBounds: SquareBounds = {
+    minX: margin,
+    minY: margin,
+    maxX: width - margin - branchWidth,
+    maxY: height - margin - branchWidth,
+  };
+  const passable = (tile: Tile): boolean =>
+    tile.x >= margin && tile.x <= branchBounds.maxX && tile.y >= margin && tile.y <= branchBounds.maxY;
+
   const branchMin = Math.max(shape.branchMin, Math.round(maxAway * 0.25));
   const branchMax = Math.max(shape.branchMax, branchMin + 1, Math.round(maxAway * 0.7));
-  const branchWidth = Math.max(2, Math.min(4, Math.floor(maxAway / 12) + 1));
   const chamber = branchWidth >= 3 ? branchWidth + 1 : 0;
 
   for (let branch = 0; branch < shape.branchCount; branch++) {
@@ -745,11 +780,13 @@ function attemptRoute(
   let spine: Set<string>;
   let branches = new Set<string>();
   let pockets: Tile[] = [];
+  const corner = cornerClearance(request.wall);
+  const band = request.wall?.cols ?? TREE_MARGIN;
 
   if (spec.kind === 'hedges') {
     const edges = primaryEdges(shape);
-    entry = edgeTile(edges.entry, streams.layout, width, height);
-    const exit = edgeTile(edges.exit, streams.layout, width, height);
+    entry = edgeTile(edges.entry, streams.layout, width, height, corner, band, shape.pathWidth);
+    const exit = edgeTile(edges.exit, streams.layout, width, height, corner, band, shape.pathWidth);
     exits = [exit];
     spine = carveHedges(tiles, streams.layout, spec, shape, entry, exit);
     snapshot('layout', 'hedged field');
@@ -760,13 +797,14 @@ function attemptRoute(
     spine = shortestPath(tiles, entry, ends.exit);
     snapshot('layout', 'maze');
   } else {
-    const openings = placeAccess(tiles, shape, streams.layout, width, height);
+    const openings = placeAccess(tiles, shape, streams.layout, width, height, corner, band);
     snapshot('access', 'place openings');
     entry = openings[entryIndex(shape)];
     exits = exitTiles(shape, openings);
-    // A lane must not carve the `cols`-wide band the border ring belongs to, or
-    // `cleanWalls` would have to cut the fence to remove the bitten tree.
-    const margin = request.wall?.cols ?? TREE_MARGIN;
+    // A lane must not carve the `cols`-wide band the border ring belongs to, and
+    // must leave a strip at least a whole object tall, or `cleanWalls` would cut
+    // the fence to remove the bitten tree / leave a stump with no trunk.
+    const margin = wallMargin(request.wall);
     spine = carveGuaranteedPath(tiles, streams.layout, shape, openings, width, height, margin);
     snapshot('spine', 'carve spine');
     const branched = carveBranches(tiles, streams.layout, shape, spine, [entry, ...exits], width, height, margin);

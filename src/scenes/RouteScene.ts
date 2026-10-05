@@ -40,7 +40,7 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { FLOOR, TALL_GRASS, WALL, extendMap, resolveMove, tileAt, type TileMap } from '../engine/map';
+import { FLOOR, TALL_GRASS, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, Rng } from '../engine/rng';
 import { storeRun, type Settings } from '../engine/save';
 import {
@@ -74,16 +74,10 @@ import { GRASS_TEXTURE_KEY } from './BootScene';
 const BAG_ICON_SLOTS = 6;
 
 /**
- * Rings the scene assumes sit outside the playable map, only while resolving tile
- * frames. The wall motif frames a mass from its own edges, so without this a
- * border tree reads as cut off at the limit; the rings **continue** whatever sits
- * on the edge (`extendMap`), so a border tree reads as going on past the limit and
- * a lane that reaches the edge stays open. No extra tiles are drawn.
+ * Render depth of a wall cell's walkable tip: above the player (`10`) so the
+ * character passes **behind** the crown, below the grass overlay and the HUD.
  */
-const FRAME_PAD = 1;
-
-/** Render depth of a wall cell's walkable tip, drawn over the player and the grass. */
-const TREE_TIP_DEPTH = 2;
+const TREE_TIP_DEPTH = 20;
 
 /** The four directions, in the order the update loop tests them. */
 type MoveKey = 'up' | 'down' | 'left' | 'right';
@@ -140,8 +134,6 @@ export class RouteScene extends Phaser.Scene {
   private moveMap!: TileMap;
   /** The tiles `drawTiles` renders: the live map, or a dev generator step. */
   private renderTiles!: TileMap;
-  /** `renderTiles` framed by `FRAME_PAD` wall rings, so border trees read as continuing. */
-  private frameMap!: TileMap;
   /** Dev only: the build-phase snapshots of the route on screen. */
   private generatorSteps: readonly RouteStep[] = [];
   private generatorStepIndex: number | null = null;
@@ -477,10 +469,8 @@ export class RouteScene extends Phaser.Scene {
    */
   private tileFrames(x: number, y: number): TileFrame[] {
     const config = TILESETS[this.tilesetId].config;
-    const fx = x + FRAME_PAD;
-    const fy = y + FRAME_PAD;
-    const ground = resolveGroundFrame(this.frameMap, fx, fy, config);
-    const frame = resolveTileFrame(this.frameMap, fx, fy, config);
+    const ground = resolveGroundFrame(this.renderTiles, x, y, config);
+    const frame = resolveTileFrame(this.renderTiles, x, y, config, true);
     if (frame && (frame.source !== ground.source || frame.frame !== ground.frame)) return [ground, frame];
     return [ground];
   }
@@ -492,7 +482,7 @@ export class RouteScene extends Phaser.Scene {
    * player (`TREE_TIP_DEPTH`).
    */
   private movementMap(map: TileMap): TileMap {
-    const tips = treeTipKeys(map, TILESETS[this.tilesetId].config, FRAME_PAD);
+    const tips = treeTipKeys(map, TILESETS[this.tilesetId].config);
     if (tips.size === 0) return map;
     const copy = map.map((row) => row.slice());
     for (const key of tips) {
@@ -503,8 +493,7 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private drawTiles(): void {
-    this.frameMap = extendMap(this.renderTiles, FRAME_PAD, WALL);
-    const tips = treeTipKeys(this.renderTiles, TILESETS[this.tilesetId].config, FRAME_PAD);
+    const tips = treeTipKeys(this.renderTiles, TILESETS[this.tilesetId].config);
     const created: Phaser.GameObjects.GameObject[] = [];
     for (let y = 0; y < this.renderTiles.length; y++) {
       const row: Phaser.GameObjects.Image[][] = [];
@@ -975,7 +964,7 @@ export class RouteScene extends Phaser.Scene {
   exportFrameMap(): string | null {
     if (!IS_DEVELOP || !this.route || !this.scene.isActive()) return null;
     const config = TILESETS[this.tilesetId].config;
-    return JSON.stringify(serializeFrameMap(this.route, config, FRAME_PAD), null, 2);
+    return JSON.stringify(serializeFrameMap(this.route, config), null, 2);
   }
 
   /**

@@ -162,13 +162,17 @@ Each opening names an edge; the shape fixes the pairing. One opening is the
 `entry` (where the player arrives), the rest are `exit`s (their far ends). Openings
 sit **on the map border** and punch a gap in the tree ring; they are plain floor
 (the route has no special `EXIT` tile) and stepping on an exit does **not** end the
-route for now.
+route for now. Each opening keeps a clearance of the motif's footprint
+(`cornerClearance`, `2 * cols`) from every map corner, so a corridor never bites the
+tree in a corner into a partial or one-tile piece, and it is **aligned to its motif
+band** so the `pathWidth`-wide approach never spills into the tree in the band
+beside it.
 
 ```
-PlaceAccess(tiles, shape, rng):
+PlaceAccess(tiles, shape, rng, corner, band):
     entry = null; exits = []
     for opening in shape.openings:
-        point = pointOnEdge(opening.edge, rng)     # jitter along the border
+        point = pointOnEdge(opening.edge, rng, corner, band)   # clear of corners, band-aligned
         tiles[point] = FLOOR
         if opening.role == "entry": entry = point else exits.push(point)
     return (entry, exits)
@@ -181,10 +185,11 @@ map, so the result meanders instead of running straight. When a shape has more
 than one link (the `cross`), every link routes through a shared **central hub**, so
 the lanes are guaranteed to meet: the entry reaches every exit by construction,
 never by the jittered corridors happening to cross. Each lane starts with a
-straight **`OpeningApproach`** of `margin` (`cols`) tiles inward before it may
-turn, and the A* cost penalises the outer `margin` band, so a corridor never bites
-the band the border ring belongs to (which `cleanWalls` could only fix by opening
-the fence).
+straight **`OpeningApproach`** of `wallMargin` (`max(cols, minHeight)`) tiles inward
+before it may turn, and the A* cost penalises the outer `margin` band, so a corridor
+never bites the band the border ring belongs to and always leaves a strip at least a
+whole object tall (with its trunk) at the border (`cleanWalls` could otherwise only
+fix a bite by opening the fence).
 
 ```
 CarveGuaranteedPath(tiles, entry, exits, shape, rng, margin):

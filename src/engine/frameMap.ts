@@ -1,5 +1,5 @@
 import type { Tile } from './grid';
-import { WALL, extendMap, type TileMap } from './map';
+import { FLOOR, WALL, padMap, type TileMap } from './map';
 import type { RouteMap } from './routes/routeMap';
 import { isRouteShape } from './routes/layout';
 import { wholeRunHeight } from './routes/walls';
@@ -80,19 +80,18 @@ const CARDINALS: readonly (readonly [number, number])[] = [
 
 /**
  * Describes every cell of `map` against `tileset`. The frame and the motif
- * row/column are resolved on a `pad`-ringed copy of the map, exactly as
- * `RouteScene` frames it (`FRAME_PAD`), so what the tool shows is what the scene
- * draws. The mass and tree ids are computed on the raw map, so they name the
- * playable cells.
+ * row/column are resolved on the map itself, exactly as `RouteScene` frames it, so
+ * what the tool shows is what the scene draws. The mass and tree ids are computed
+ * on the same map, so they name the playable cells.
  */
-export function buildFrameMap(map: TileMap, tileset: TilesetConfig, pad = 1): FrameMap {
+export function buildFrameMap(map: TileMap, tileset: TilesetConfig, pad = 0): FrameMap {
   const height = map.length;
   const width = height > 0 ? map[0].length : 0;
   const pattern = tileset.wallPattern ?? null;
   const wallValue = pattern?.value ?? WALL;
   const cols = pattern?.cols ?? null;
   const rows = pattern?.rows.length ?? null;
-  const framed = pad > 0 ? extendMap(map, pad, WALL) : map;
+  const framed = pad > 0 ? padMap(map, pad, FLOOR) : map;
   const at = (x: number, y: number): number => y * width + x;
   const isWall = (x: number, y: number): boolean =>
     x >= 0 && x < width && y >= 0 && y < height && map[y][x] === wallValue;
@@ -123,7 +122,7 @@ export function buildFrameMap(map: TileMap, tileset: TilesetConfig, pad = 1): Fr
   const colOf = new Array<number>(width).fill(-1);
   if (pattern && cols) {
     for (let x = 0; x < width; x++) {
-      const col = patternCell(framed, x + pad, pad, pattern).col;
+      const col = patternCell(framed, x + pad, pad, pattern, true).col;
       colOf[x] = col;
       band[x] = x - col;
     }
@@ -173,7 +172,7 @@ export function buildFrameMap(map: TileMap, tileset: TilesetConfig, pad = 1): Fr
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const tile = map[y][x];
-      const resolved = resolveTileFrame(framed, x + pad, y + pad, tileset);
+      const resolved = resolveTileFrame(framed, x + pad, y + pad, tileset, true);
       const motif = pattern !== null && tile === wallValue;
       cells.push({
         x,
@@ -181,7 +180,7 @@ export function buildFrameMap(map: TileMap, tileset: TilesetConfig, pad = 1): Fr
         tile,
         frame: resolved?.frame ?? null,
         source: resolved?.source ?? null,
-        row: motif && pattern ? patternCell(framed, x + pad, y + pad, pattern).row : null,
+        row: motif && pattern ? patternCell(framed, x + pad, y + pad, pattern, true).row : null,
         col: motif ? colOf[x] : null,
         mass: motif ? mass[at(x, y)] : null,
         tree: motif ? treeId[at(x, y)] : null,
@@ -193,7 +192,7 @@ export function buildFrameMap(map: TileMap, tileset: TilesetConfig, pad = 1): Fr
 }
 
 /** Wraps a route and its frame map into the JSON the dev tool exports. */
-export function serializeFrameMap(route: RouteMap, tileset: TilesetConfig, pad = 1): FrameMapExport {
+export function serializeFrameMap(route: RouteMap, tileset: TilesetConfig, pad = 0): FrameMapExport {
   return {
     kind: 'pkmr-framemap',
     version: 1,
