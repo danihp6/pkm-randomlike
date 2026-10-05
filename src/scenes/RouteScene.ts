@@ -40,7 +40,7 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { TALL_GRASS, WALL, padMap, resolveMove, tileAt, type TileMap } from '../engine/map';
+import { FLOOR, TALL_GRASS, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, Rng } from '../engine/rng';
 import { storeRun, type Settings } from '../engine/save';
 import {
@@ -55,7 +55,12 @@ import {
   type RouteStep,
 } from '../engine/routes';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
-import { resolveTileFrame, resolveGroundFrame, type TileFrame } from '../engine/tileFrames';
+import { resolveTileFrame, resolveGroundFrame, treeTipKeys, type TileFrame } from '../engine/tileFrames';
+import {
+  parseFrameMapExport,
+  routeFromFrameMapExport,
+  serializeFrameMap,
+} from '../engine/frameMap';
 import { addFrlgWindow } from '../ui/frlg';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
@@ -69,12 +74,10 @@ import { GRASS_TEXTURE_KEY } from './BootScene';
 const BAG_ICON_SLOTS = 6;
 
 /**
- * Rings of wall the scene assumes sit outside the playable map, only while
- * resolving tile frames. The wall motif frames a mass from its edges, so without
- * this the border row reads as a cut-off tree; a ring of wall makes it read as a
- * stack that continues past the limit. No extra tiles are drawn.
+ * Render depth of a wall cell's walkable tip: above the player (`10`) so the
+ * character passes **behind** the crown, below the grass overlay and the HUD.
  */
-const FRAME_PAD = 1;
+const TREE_TIP_DEPTH = 20;
 
 /** The four directions, in the order the update loop tests them. */
 type MoveKey = 'up' | 'down' | 'left' | 'right';
@@ -127,10 +130,10 @@ const DEMO_BAG: readonly BagCounts[] = [
 export class RouteScene extends Phaser.Scene {
   private route!: RouteMap;
   private map!: TileMap;
+  /** `map` for movement: a tree's walkable tip is passable even though it draws as wall. */
+  private moveMap!: TileMap;
   /** The tiles `drawTiles` renders: the live map, or a dev generator step. */
   private renderTiles!: TileMap;
-  /** `renderTiles` framed by `FRAME_PAD` wall rings, so border trees read as continuing. */
-  private frameMap!: TileMap;
   /** Dev only: the build-phase snapshots of the route on screen. */
   private generatorSteps: readonly RouteStep[] = [];
   private generatorStepIndex: number | null = null;
@@ -201,7 +204,6 @@ export class RouteScene extends Phaser.Scene {
    */
   private buildRoute(params: RouteParams, attempt = 0): void {
     const biome = biomeForRoute(params.routeIndex);
-    const band = bandForRoute(params.routeIndex);
     const seed = attempt > 0 ? `${params.seed}#r${attempt}` : params.seed;
     this.routeParams = params;
     const pattern = TILESETS[biome.tilesetId].config.wallPattern;
@@ -218,17 +220,31 @@ export class RouteScene extends Phaser.Scene {
       ledges: params.ledges,
       ...(wall ? { wall } : {}),
     };
-    this.route = sketchRoute(request);
-    this.map = this.route.tiles;
+    const route = sketchRoute(request);
+    this.generatorSteps = IS_DEVELOP ? sketchRouteSteps(request) : [];
+    this.applyRoute(route);
+  }
+
+  /**
+   * Points the scene at an already-built route: its tiles become the live and
+   * render maps, and the tileset and encounter stream follow the route's biome.
+   * Both `buildRoute` and the debug frame-map import go through here so they
+   * cannot drift.
+   */
+  private applyRoute(route: RouteMap): void {
+    this.route = route;
+    this.map = route.tiles;
     this.renderTiles = this.map;
     this.generatorStepIndex = null;
-    this.generatorSteps = IS_DEVELOP ? sketchRouteSteps(request) : [];
+    const biome = biomeForRoute(route.routeIndex);
+    const band = bandForRoute(route.routeIndex);
     this.tilesetId = resolveTileset(this.settings.tileset, biome.tilesetId);
+    this.moveMap = this.movementMap(this.map);
     this.encounters = new RouteEncounters(
       biome.encounters[band.id],
       band.minLevel,
       band.maxLevel,
-      new Rng(hashSeed(`${this.route.seed}:encounters:${this.route.routeIndex}`)),
+      new Rng(hashSeed(`${route.seed}:encounters:${route.routeIndex}`)),
     );
   }
 
@@ -453,23 +469,42 @@ export class RouteScene extends Phaser.Scene {
    */
   private tileFrames(x: number, y: number): TileFrame[] {
     const config = TILESETS[this.tilesetId].config;
-    const fx = x + FRAME_PAD;
-    const fy = y + FRAME_PAD;
-    const ground = resolveGroundFrame(this.frameMap, fx, fy, config);
-    const frame = resolveTileFrame(this.frameMap, fx, fy, config);
+    const ground = resolveGroundFrame(this.renderTiles, x, y, config);
+    const frame = resolveTileFrame(this.renderTiles, x, y, config, true);
     if (frame && (frame.source !== ground.source || frame.frame !== ground.frame)) return [ground, frame];
     return [ground];
   }
 
+  /**
+   * The map movement runs on. A wall cell that draws as a tree's **pure top row**
+   * (its walkable tip, `treeTipKeys`) is turned into floor, so the player walks
+   * under the crown while the tile still renders as the wall motif, drawn over the
+   * player (`TREE_TIP_DEPTH`).
+   */
+  private movementMap(map: TileMap): TileMap {
+    const tips = treeTipKeys(map, TILESETS[this.tilesetId].config);
+    if (tips.size === 0) return map;
+    const copy = map.map((row) => row.slice());
+    for (const key of tips) {
+      const [x, y] = key.split(',').map(Number);
+      copy[y][x] = FLOOR;
+    }
+    return copy;
+  }
+
   private drawTiles(): void {
-    this.frameMap = padMap(this.renderTiles, FRAME_PAD, WALL);
+    const tips = treeTipKeys(this.renderTiles, TILESETS[this.tilesetId].config);
     const created: Phaser.GameObjects.GameObject[] = [];
     for (let y = 0; y < this.renderTiles.length; y++) {
       const row: Phaser.GameObjects.Image[][] = [];
       for (let x = 0; x < this.renderTiles[y].length; x++) {
+        const tip = tips.has(`${x},${y}`);
         row.push(
-          this.tileFrames(x, y).map((frame) => {
+          this.tileFrames(x, y).map((frame, index) => {
             const image = this.tileImage(x, y, frame);
+            // Only the wall motif of a walkable tip goes over the player; its
+            // ground stays under, so the player still shows standing on the tile.
+            if (tip && index > 0) image.setDepth(TREE_TIP_DEPTH);
             created.push(image);
             return image;
           }),
@@ -507,6 +542,7 @@ export class RouteScene extends Phaser.Scene {
 
   private applyTileset(id: TilesetId): void {
     this.tilesetId = id;
+    this.moveMap = this.movementMap(this.map);
     for (let y = 0; y < this.renderTiles.length; y++) {
       for (let x = 0; x < this.renderTiles[y].length; x++) {
         const frames = this.tileFrames(x, y);
@@ -920,6 +956,54 @@ export class RouteScene extends Phaser.Scene {
     this.setHint(`debug: re-generated route ${params.routeIndex} (attempt ${attempt})`);
   }
 
+  /**
+   * Debug only: the on-screen route described cell by cell (tile value, resolved
+   * atlas frame, wall-pattern row/column and the whole-object tree each cell
+   * belongs to), as JSON for the menu's "Map" tab. Null when no route is active.
+   */
+  exportFrameMap(): string | null {
+    if (!IS_DEVELOP || !this.route || !this.scene.isActive()) return null;
+    const config = TILESETS[this.tilesetId].config;
+    return JSON.stringify(serializeFrameMap(this.route, config), null, 2);
+  }
+
+  /**
+   * Debug only: rebuild the route from an exported frame map and show it. It does
+   * not touch the run, so an imported map is only for inspection; the route
+   * params follow it so the panel keeps describing what is on screen.
+   */
+  importFrameMap(text: string): { ok: boolean; error?: string } {
+    if (!IS_DEVELOP || !this.scene.isActive()) return { ok: false, error: 'no active route' };
+    let exported;
+    try {
+      exported = parseFrameMapExport(text);
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : 'invalid frame map' };
+    }
+    this.stopWalking();
+    this.clearRouteSprites();
+    const route = routeFromFrameMapExport(exported);
+    this.generatorSteps = [];
+    this.applyRoute(route);
+    const biome = biomeForRoute(route.routeIndex);
+    this.routeParams = {
+      seed: route.seed,
+      routeIndex: route.routeIndex,
+      shape: route.shape,
+      width: route.width,
+      height: route.height,
+      grassPatches: biome.terrain.grassPatches,
+      ledges: biome.terrain.ledges,
+    };
+    this.drawTiles();
+    this.drawEntities();
+    this.player = { ...route.entry };
+    this.movePlayerTo(this.player.x, this.player.y);
+    this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
+    this.setHint(`debug: imported map ${route.width}x${route.height}`);
+    return { ok: true };
+  }
+
   private setHint(text: string): void {
     const dev = IS_DEVELOP ? `  ·  B: random battle  ·  ${DEBUG_MENU_TOGGLE_KEY}: debug menu` : '';
     const { party, hud } = this.settings.keybinds;
@@ -954,7 +1038,7 @@ export class RouteScene extends Phaser.Scene {
       this.walkStep(direction, direct);
       return;
     }
-    const result = resolveMove(this.map, this.player, step);
+    const result = resolveMove(this.moveMap, this.player, step);
     if (!result) {
       this.faceIdle(direction);
       return;

@@ -32,11 +32,13 @@ export const ROUTE_HEIGHT = 20;
 const MAX_ATTEMPTS = 8;
 
 /**
- * How many tile rings of solid forest a secondary lane leaves along the border.
- * Optional lanes keep this far from the edge so the outer tree mass is never
- * bitten into a partial tree; only the spine pierces it, at the openings.
+ * Fallback ring of solid forest a lane leaves along the border when the tileset's
+ * motif width is unknown. The real margin is the motif's `cols`: a lane must not
+ * carve into the `cols`-wide band the border ring belongs to, or `cleanWalls`
+ * would have to cut the fence to remove the bitten tree. Passed in per request
+ * (`wallMargin`), so a wider motif widens the margin.
  */
-const TREE_MARGIN = 2;
+const TREE_MARGIN = 3;
 
 /** Waypoints carved per shape link: the interior points the corridor bends through. */
 const SPINE_SEGMENTS = 4;
@@ -94,17 +96,51 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /** A jittered opening tile on the map border itself, punching a gap in the tree ring. */
-function edgeTile(edge: AccessEdge, rng: Rng, width: number, height: number): Tile {
+function edgeTile(
+  edge: AccessEdge,
+  rng: Rng,
+  width: number,
+  height: number,
+  corner: number,
+  band: number,
+  lane: number,
+): Tile {
+  const jitter = (span: number): number => {
+    const c = Math.min(corner, Math.floor((span - 1) / 2));
+    const v = rng.int(c, span - 1 - c);
+    const rem = v % band;
+    // Keep the opening's `lane`-wide approach inside one band of the motif grid, so
+    // it never bites the whole tree in the band beside it into a stump.
+    return rem > band - lane ? v - (rem - (band - lane)) : v;
+  };
   switch (edge) {
     case 'W':
-      return { x: 0, y: rng.int(3, height - 4) };
+      return { x: 0, y: jitter(height) };
     case 'E':
-      return { x: width - 1, y: rng.int(3, height - 4) };
+      return { x: width - 1, y: jitter(height) };
     case 'N':
-      return { x: rng.int(3, width - 4), y: 0 };
+      return { x: jitter(width), y: 0 };
     case 'S':
-      return { x: rng.int(3, width - 4), y: height - 1 };
+      return { x: jitter(width), y: height - 1 };
   }
+}
+
+/**
+ * The clearance an opening keeps from each corner: the motif's full footprint (a
+ * border band plus a band of separation), so a corridor never bites the tree in a
+ * corner into a partial/1-tile piece.
+ */
+export function cornerClearance(wall: WallFootprint | undefined): number {
+  return (wall?.cols ?? TREE_MARGIN) * 2;
+}
+
+/**
+ * The band a lane keeps from the map border: the motif's width (so it never bites
+ * the `cols`-wide border band) and at least the **whole-object height**, so the
+ * strip it leaves at the border is a whole tree with its trunk, not a stump.
+ */
+export function wallMargin(wall: WallFootprint | undefined): number {
+  return wall ? Math.max(wall.cols, wall.minHeight) : TREE_MARGIN;
 }
 
 /**
@@ -131,9 +167,11 @@ function placeAccess(
   rng: Rng,
   width: number,
   height: number,
+  corner: number,
+  band: number,
 ): Tile[] {
   return shape.openings.map((opening) => {
-    const tile = edgeTile(opening.edge, rng, width, height);
+    const tile = edgeTile(opening.edge, rng, width, height, corner, band, shape.pathWidth);
     tiles[tile.y][tile.x] = FLOOR;
     return tile;
   });
@@ -155,10 +193,39 @@ function noiseCostField(rng: Rng, width: number, height: number): readonly numbe
 }
 
 /**
+ * The tiles a lane carves **straight in** from an opening before it may turn. The
+ * border ring belongs to the `cols`-wide band nearest the edge, so a corridor that
+ * turned any earlier would bite that band and force `cleanWalls` to cut the fence;
+ * the straight run clears the band first.
+ */
+function openingApproach(edge: AccessEdge, opening: Tile, margin: number): Tile[] {
+  const cells: Tile[] = [];
+  for (let step = 1; step <= margin; step++) {
+    switch (edge) {
+      case 'W':
+        cells.push({ x: opening.x + step, y: opening.y });
+        break;
+      case 'E':
+        cells.push({ x: opening.x - step, y: opening.y });
+        break;
+      case 'N':
+        cells.push({ x: opening.x, y: opening.y + step });
+        break;
+      case 'S':
+        cells.push({ x: opening.x, y: opening.y - step });
+        break;
+    }
+  }
+  return cells;
+}
+
+/**
  * The guaranteed lane: each `link` is joined by jittered waypoints, and each pair
  * is connected by a cardinal A* corridor that follows a per-cell cost field so it
  * meanders. Every carved tile lands in the returned spine, which the hazard
- * passes must never block; `carveSquare` keeps the lane off the border.
+ * passes must never block. A straight `openingApproach` clears the border band at
+ * each end, and the per-cell cost penalises the outer band, so the corridor never
+ * bites the fence except where it is open.
  */
 function carveGuaranteedPath(
   tiles: MutableMap,
@@ -167,9 +234,15 @@ function carveGuaranteedPath(
   openings: readonly Tile[],
   width: number,
   height: number,
+  margin: number,
 ): Set<string> {
   const spine = new Set<string>();
   const costs = noiseCostField(rng, width, height);
+  const costOf = (tile: Tile): number => {
+    const base = costs[tile.y * width + tile.x] ?? 1;
+    const off = Math.min(tile.x, tile.y, width - 1 - tile.x, height - 1 - tile.y);
+    return off < margin ? base + COST_NOISE * (margin - off) * 4 : base;
+  };
   // Carve through the solid interior, but the openings on the border are enterable.
   const openingKeys = new Set(openings.map(tileKey));
   const passable = (tile: Tile): boolean =>
@@ -183,19 +256,25 @@ function carveGuaranteedPath(
     }
   };
 
+  const low = margin;
+  const highX = width - 1 - margin;
+  const highY = height - 1 - margin;
+
   // When a shape has more than one link (the `cross`), every link must pass
   // through the same central hub, so the lanes are guaranteed to meet instead of
   // relying on the jittered corridors happening to cross.
   const hub =
     shape.links.length > 1
-      ? { x: Math.max(2, Math.min(width - 3, Math.floor(width / 2))), y: Math.max(2, Math.min(height - 3, Math.floor(height / 2))) }
+      ? { x: Math.max(low, Math.min(highX, Math.floor(width / 2))), y: Math.max(low, Math.min(highY, Math.floor(height / 2))) }
       : null;
   const hubIndex = Math.floor(SPINE_SEGMENTS / 2);
 
   for (const [a, b] of shape.links) {
     const from = openings[a];
     const to = openings[b];
-    const waypoints: Tile[] = [from];
+    const startApproach = openingApproach(shape.openings[a].edge, from, margin);
+    const endApproach = openingApproach(shape.openings[b].edge, to, margin);
+    const waypoints: Tile[] = [from, ...startApproach];
     for (let i = 1; i < SPINE_SEGMENTS; i++) {
       if (hub && i === hubIndex) {
         waypoints.push(hub);
@@ -205,11 +284,11 @@ function carveGuaranteedPath(
       const jitterX = rng.int(-shape.jitter, shape.jitter);
       const jitterY = rng.int(-shape.jitter, shape.jitter);
       waypoints.push({
-        x: clamp(Math.round(from.x + (to.x - from.x) * t) + jitterX, 2, width - 3),
-        y: clamp(Math.round(from.y + (to.y - from.y) * t) + jitterY, 2, height - 3),
+        x: clamp(Math.round(from.x + (to.x - from.x) * t) + jitterX, low, highX),
+        y: clamp(Math.round(from.y + (to.y - from.y) * t) + jitterY, low, highY),
       });
     }
-    waypoints.push(to);
+    waypoints.push(...[...endApproach].reverse(), to);
     for (let i = 0; i + 1 < waypoints.length; i++) {
       const step = waypoints[i];
       const next = waypoints[i + 1];
@@ -217,7 +296,7 @@ function carveGuaranteedPath(
       if (tileKey(step) === tileKey(next)) continue;
       const path = findPath(tiles, step, next, undefined, {
         diagonal: false,
-        cost: (tile) => costs[tile.y * width + tile.x] ?? 1,
+        cost: costOf,
         passable,
       });
       for (const cell of path) carveAt(cell);
@@ -267,43 +346,43 @@ function carveBranches(
   ends: readonly Tile[],
   width: number,
   height: number,
+  margin: number,
 ): Readonly<{ branches: Set<string>; pockets: Tile[] }> {
   const branches = new Set<string>();
   const pockets: Tile[] = [];
   if (shape.branchCount <= 0) return { branches, pockets };
 
   const endKeys = new Set(ends.map(tileKey));
-  // Branches stay strictly inside the border margin, so the outer tree mass is
-  // never bitten into a partial tree (the spine may pierce it at an opening).
-  const branchBounds: SquareBounds = {
-    minX: TREE_MARGIN,
-    minY: TREE_MARGIN,
-    maxX: width - 1 - TREE_MARGIN,
-    maxY: height - 1 - TREE_MARGIN,
-  };
-  const passable = (tile: Tile): boolean =>
-    tile.x >= TREE_MARGIN &&
-    tile.x < width - TREE_MARGIN &&
-    tile.y >= TREE_MARGIN &&
-    tile.y < height - TREE_MARGIN;
 
   // Scale the lane to the free space: how far the interior reaches from the spine.
   let maxAway = 0;
-  for (let y = TREE_MARGIN; y < height - TREE_MARGIN; y++) {
-    for (let x = TREE_MARGIN; x < width - TREE_MARGIN; x++) {
+  for (let y = margin; y < height - margin; y++) {
+    for (let x = margin; x < width - margin; x++) {
       const away = distanceToSpine(spine, { x, y });
       if (away > maxAway) maxAway = away;
     }
   }
+  const branchWidth = Math.max(2, Math.min(4, Math.floor(maxAway / 12) + 1));
+  // Branches stay strictly inside the border margin, and the last lane cell is
+  // pulled in by `branchWidth - 1` so `carveSquare` never clamps the lane into a
+  // one-tile stub at the bound.
+  const branchBounds: SquareBounds = {
+    minX: margin,
+    minY: margin,
+    maxX: width - margin - branchWidth,
+    maxY: height - margin - branchWidth,
+  };
+  const passable = (tile: Tile): boolean =>
+    tile.x >= margin && tile.x <= branchBounds.maxX && tile.y >= margin && tile.y <= branchBounds.maxY;
+
   const branchMin = Math.max(shape.branchMin, Math.round(maxAway * 0.25));
   const branchMax = Math.max(shape.branchMax, branchMin + 1, Math.round(maxAway * 0.7));
-  const branchWidth = Math.max(2, Math.min(4, Math.floor(maxAway / 12) + 1));
   const chamber = branchWidth >= 3 ? branchWidth + 1 : 0;
 
   for (let branch = 0; branch < shape.branchCount; branch++) {
     const candidates: Tile[] = [];
-    for (let y = TREE_MARGIN; y < height - TREE_MARGIN; y++) {
-      for (let x = TREE_MARGIN; x < width - TREE_MARGIN; x++) {
+    for (let y = margin; y < height - margin; y++) {
+      for (let x = margin; x < width - margin; x++) {
         const key = tileKey({ x, y });
         if (spine.has(key) || branches.has(key) || endKeys.has(key)) continue;
         const away = distanceToSpine(spine, { x, y });
@@ -329,8 +408,8 @@ function carveBranches(
     }
     // A roomy map opens the far end into a chamber instead of a bare cul-de-sac.
     if (chamber > 0) {
-      const roomX = clamp(target.x - (chamber >> 1), TREE_MARGIN, width - TREE_MARGIN - chamber);
-      const roomY = clamp(target.y - (chamber >> 1), TREE_MARGIN, height - TREE_MARGIN - chamber);
+      const roomX = clamp(target.x - (chamber >> 1), margin, width - margin - chamber);
+      const roomY = clamp(target.y - (chamber >> 1), margin, height - margin - chamber);
       for (const opened of carveSquare(tiles, roomX, roomY, chamber, branchBounds)) {
         branches.add(tileKey(opened));
       }
@@ -701,11 +780,13 @@ function attemptRoute(
   let spine: Set<string>;
   let branches = new Set<string>();
   let pockets: Tile[] = [];
+  const corner = cornerClearance(request.wall);
+  const band = request.wall?.cols ?? TREE_MARGIN;
 
   if (spec.kind === 'hedges') {
     const edges = primaryEdges(shape);
-    entry = edgeTile(edges.entry, streams.layout, width, height);
-    const exit = edgeTile(edges.exit, streams.layout, width, height);
+    entry = edgeTile(edges.entry, streams.layout, width, height, corner, band, shape.pathWidth);
+    const exit = edgeTile(edges.exit, streams.layout, width, height, corner, band, shape.pathWidth);
     exits = [exit];
     spine = carveHedges(tiles, streams.layout, spec, shape, entry, exit);
     snapshot('layout', 'hedged field');
@@ -716,13 +797,17 @@ function attemptRoute(
     spine = shortestPath(tiles, entry, ends.exit);
     snapshot('layout', 'maze');
   } else {
-    const openings = placeAccess(tiles, shape, streams.layout, width, height);
+    const openings = placeAccess(tiles, shape, streams.layout, width, height, corner, band);
     snapshot('access', 'place openings');
     entry = openings[entryIndex(shape)];
     exits = exitTiles(shape, openings);
-    spine = carveGuaranteedPath(tiles, streams.layout, shape, openings, width, height);
+    // A lane must not carve the `cols`-wide band the border ring belongs to, and
+    // must leave a strip at least a whole object tall, or `cleanWalls` would cut
+    // the fence to remove the bitten tree / leave a stump with no trunk.
+    const margin = wallMargin(request.wall);
+    spine = carveGuaranteedPath(tiles, streams.layout, shape, openings, width, height, margin);
     snapshot('spine', 'carve spine');
-    const branched = carveBranches(tiles, streams.layout, shape, spine, [entry, ...exits], width, height);
+    const branched = carveBranches(tiles, streams.layout, shape, spine, [entry, ...exits], width, height, margin);
     branches = branched.branches;
     pockets = branched.pockets;
     snapshot('branches', 'carve branches');

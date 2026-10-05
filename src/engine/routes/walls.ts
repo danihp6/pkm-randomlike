@@ -53,17 +53,6 @@ function rowRuns(tiles: readonly (readonly number[])[], y: number): [number, num
   return runs;
 }
 
-function clearColumn(tiles: MutableMap, x: number, from: number, to: number): boolean {
-  let changed = false;
-  for (let y = from; y <= to; y++) {
-    if (tiles[y][x] === WALL) {
-      tiles[y][x] = FLOOR;
-      changed = true;
-    }
-  }
-  return changed;
-}
-
 function clearRow(tiles: MutableMap, y: number, from: number, to: number): boolean {
   let changed = false;
   for (let x = from; x <= to; x++) {
@@ -76,39 +65,113 @@ function clearRow(tiles: MutableMap, y: number, from: number, to: number): boole
 }
 
 /**
- * Tidies the carved interior so no thin wall remnant is left behind. The motif
- * draws a whole object only from a run at least `cols` wide and whole-tree tall
- * (`wholeRunHeight`); a lane that grazed the side of the forest leaves a one- or
- * two-tile sliver that renders as a cut-off tree, so it is removed here.
+ * Tidies the carved interior so no thin, bitten or half-stacked wall remnant is
+ * left behind. The motif draws a whole object only from a run at least `cols` wide
+ * and whole-tree tall (`wholeRunHeight`); a lane that grazed the forest leaves a
+ * one- or two-tile sliver, and a lane that bit the side of a tree leaves a
+ * `cols`-wide band that is no longer solid. Such a bitten tree is removed whole
+ * (its `cols`-wide row is cleared) and the rest of the column is then un-stacked,
+ * so a tall wall still reads as whole stacked objects instead of a cut one.
+ *
+ * The tree a cell belongs to is a fixed **global grid** of `cols`-wide bands from
+ * the map's left edge. Anchoring per column would let a one-tile lane re-base the
+ * next mass onto its own edge, so the lane would never read as a bite and would
+ * stay one tile wide; the grid makes a lane that falls inside a band widen to the
+ * whole band, so no mass is left with a cut tree and no lane is left one tile wide.
  *
  * Only turns WALL back into FLOOR, so it can widen a lane but never block it: the
  * entry, the exits and the spine keep working and the openings stay reachable.
- * A run that touches the one-tile border ring is always left alone, so the map
- * stays fenced (the ring is one tile wide by design and is not a sliver).
+ * A cell on the one-tile border ring is only dropped to widen an opening (a lane
+ * already reaches the ring beside it), so the map stays fenced; the generator also
+ * keeps lanes out of the border band, so the tidy rarely needs to touch the ring.
  */
 export function cleanWalls(tiles: MutableMap, footprint: WallFootprint = DEFAULT_WALL_FOOTPRINT): void {
   const height = tiles.length;
   const width = height > 0 ? tiles[0].length : 0;
   const onRing = (x: number, y: number): boolean =>
     x === 0 || x === width - 1 || y === 0 || y === height - 1;
+  /** True when a ring cell sits beside an open ring cell, so it just widens an opening. */
+  const extendsOpening = (x: number, y: number): boolean => {
+    const neighbours: readonly (readonly [number, number])[] = [
+      [x, y - 1],
+      [x, y + 1],
+      [x - 1, y],
+      [x + 1, y],
+    ];
+    for (const [nx, ny] of neighbours) {
+      if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+      if (onRing(nx, ny) && !isWall(tiles, nx, ny)) return true;
+    }
+    return false;
+  };
+  const { cols, minHeight } = footprint;
 
-  for (let pass = 0; pass < 8; pass++) {
+  const bandStart = new Array<number>(width);
+  for (let x = 0; x < width; x++) bandStart[x] = x - (x % cols);
+
+  for (let pass = 0; pass < width * height + 1; pass++) {
     let changed = false;
 
-    for (let x = 0; x < width; x++) {
-      for (const [start, end] of columnRuns(tiles, x)) {
-        if (onRing(x, start) || onRing(x, end)) continue;
-        const runHeight = end - start + 1;
-        const target = wholeRunHeight(runHeight, footprint.minHeight);
-        if (target === runHeight) continue;
-        if (clearColumn(tiles, x, start + target, end)) changed = true;
+    // Remove the row of a bitten tree: a `cols`-wide band that holds both wall
+    // and floor cannot draw as a whole object, so the whole band row goes.
+    const seenBands = new Set<number>();
+    for (let y = 0; y < height; y++) {
+      seenBands.clear();
+      for (let x = 0; x < width; x++) {
+        if (!isWall(tiles, x, y)) continue;
+        const start = bandStart[x];
+        if (seenBands.has(start)) continue;
+        seenBands.add(start);
+
+        const lo = Math.max(0, start);
+        const hi = Math.min(width - 1, start + cols - 1);
+        let wall = 0;
+        let open = 0;
+        for (let bx = lo; bx <= hi; bx++) {
+          if (isWall(tiles, bx, y)) wall++;
+          else open++;
+        }
+        if (wall === 0 || open === 0) continue;
+
+        for (let bx = lo; bx <= hi; bx++) {
+          if (!isWall(tiles, bx, y)) continue;
+          // A border-ring cell is only dropped when it merely widens an opening
+          // (a lane already reaches the ring beside it), so the map stays fenced.
+          if (onRing(bx, y) && !extendsOpening(bx, y)) continue;
+          tiles[y][bx] = FLOOR;
+          changed = true;
+        }
       }
     }
 
+    // Un-stack: trim a column run down to whole objects and drop stubs. A run that
+    // reaches a border ring row is trimmed from its **interior** end, so a bite
+    // beside an opening is cleaned without opening the fence; a ring cell is only
+    // dropped when it merely widens an opening.
+    for (let x = 0; x < width; x++) {
+      for (const [start, end] of columnRuns(tiles, x)) {
+        const runHeight = end - start + 1;
+        const target = wholeRunHeight(runHeight, minHeight);
+        if (target === runHeight) continue;
+        const topRing = onRing(x, start);
+        const bottomRing = onRing(x, end);
+        if (topRing && bottomRing) continue;
+        const [from, to] =
+          bottomRing && !topRing ? [start, start + (runHeight - target) - 1] : [start + target, end];
+        for (let y = from; y <= to; y++) {
+          if (!isWall(tiles, x, y)) continue;
+          if (onRing(x, y) && !extendsOpening(x, y)) continue;
+          tiles[y][x] = FLOOR;
+          changed = true;
+        }
+      }
+    }
+
+    // A run narrower than the motif can never be a whole object on its own.
     for (let y = 0; y < height; y++) {
       for (const [start, end] of rowRuns(tiles, y)) {
         if (onRing(start, y) || onRing(end, y)) continue;
-        if (end - start + 1 >= footprint.cols) continue;
+        if (end - start + 1 >= cols) continue;
         if (clearRow(tiles, y, start, end)) changed = true;
       }
     }

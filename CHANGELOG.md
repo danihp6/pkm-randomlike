@@ -170,6 +170,106 @@ file is the human-readable summary.
 - [x] The route **HUD panel** (route header, party and bag) now starts **hidden**
       and is toggled with the new **`hud` action, default `I`** (rebindable next to
       the others in Settings). The hint line spells the bound key.
+- [x] `cleanWalls` is now **object-aware**: a lane that bites the side of a tree
+      leaves a `cols`-wide band that no longer draws as a whole object, so the tidy
+      removes that **whole tree row** and then **un-stacks** the rest of the column
+      (whole runs kept, stubs dropped) instead of leaving a cut tree or a bare
+      trunk. The tree each cell belongs to is anchored to the raw carve and held
+      **fixed** for the whole tidy, so deleting a bitten tree never re-bases - and
+      eats into - the whole trees beside it. Only `WALL` becomes `FLOOR` (safe to
+      widen a lane, never block one) and the border ring stays. `walls.test.ts`
+      gains a side-bite and an un-stack case; the frozen route is re-frozen and
+      `docs/routes-spec.md`, `docs/route-generator.md` and `docs/tileset-spec.md`
+      are updated.
+- [x] Fixed the wall motif **anchoring** that still left cut trees: the scene framed
+      the motif against the map padded with a **solid** wall ring (`padMap`), which
+      added a wall left of column 0 and pushed every motif band one column aside, so
+      an interior mass drew with its trees' columns rotated (a body tile only on one
+      side). It now uses **`extendMap`**: the **vertical** rings continue the edge row
+      (so a border tree still reads as going on past the limit) and the **side** rings
+      stay open, binding the motif to the playable grid. `cleanWalls` anchors its bands
+      the same way (and counts off-map as open), so what it cleans is what the scene
+      draws. `docs/tileset-spec.md` updated; `extendMap` unit-tested.
+- [x] Dev **"Map" tool**: the debug panel (`src/dev/debugMenu.ts`) gains a Map tab
+      that describes the route **cell by cell** — the raw tile value, the atlas frame
+      it resolves to, and, for the wall motif, the pattern row/column, the connected
+      wall **mass** and the whole-object **tree** (band + contiguous stack) each cell
+      belongs to — and can **export/import** it as JSON. The summary lists the trees
+      whose band is not solid ("bitten"), the exact artifacts a cut tree shows as.
+      Backed by the pure, tested `buildFrameMap`/`serializeFrameMap`/
+      `parseFrameMapExport` (`src/engine/frameMap.ts`); `patternCell` is factored out
+      of `patternFrame` (`src/engine/tileFrames.ts`) so the tool and the renderer
+      share one anchor.
+- [x] No lane may **bite the border band**: the spine now carves a straight
+      `OpeningApproach` of `cols` tiles in from each opening before it may turn, its
+      A* cost penalises the outer `cols` band, its waypoints are clamped to it, and
+      branches use the same margin (was a fixed two tiles, which still let a lane
+      carve the third column). A route now has **zero bitten trees** (checked across
+      shapes/index/seeds, border included). `cleanWalls` also drops a border-ring cell
+      only when it merely **widens an opening** (a lane already reaches the ring next
+      to it), so a dangling fence nub under an entry/exit is removed while a fence in
+      the middle of a run never opens. `walls.test.ts` gains the nub and
+      no-bitten-tree cases; the frozen route is re-frozen and `docs/routes-spec.md`,
+      `docs/route-generator.md` updated.
+- [x] No **one-tile lane** is left: `cleanWalls` now anchors its `cols`-wide bands to
+      a fixed **global grid** (from the map's left edge) instead of per column, so a
+      one-tile lane that fell inside a band is widened to the whole band (before, the
+      wall beside it re-anchored to its own edge and the lane stayed one tile, the
+      uncleaned bite). The spine is also carved **two tiles wide** (`pathWidth: 2`), so
+      a lane is at least two tiles in both axes; the tidy trims a run that reaches a
+      border ring from its interior end, so a lane next to the fence is un-stacked
+      without opening the map. `walls.test.ts` gains a no-one-tile-lane sweep; the
+      `carve` blocked-share floor is 0.35 (lanes are wider); the frozen route is
+      re-frozen and docs updated.
+- [x] **Walkable tree tips**: a wall cell that draws as the motif's pure top row
+      (`rows[0]`, a crown over open ground) is now a **tip**. `treeTipKeys`
+      (`src/engine/tileFrames.ts`) finds them on the scene's connected-padded map, so
+      a mass that reaches the border (part of the stack above) is not a tip; the route
+      scene walks on them (its movement map turns a tip into floor, so the player
+      steps under the crown) and draws the crown over the player
+      (`TREE_TIP_DEPTH`). `tileFrames.test.ts` covers detached vs border masses;
+      `docs/tileset-spec.md` updated.
+- [x] The wall motif redraws **per run**: `patternFrame` anchors the row phase to a
+      wall cell's own contiguous run, so a run a lane detached from the stack above
+      or below draws as a whole tree - its own crown (`rows[0]`, a walkable tip) on
+      top and its own base at the foot - instead of a mid-stack slice that showed a
+      crown over ground with no tree above and no trunk at its own foot. The pattern
+      **column** stays anchored to the column's first wall cell, so a side bite still
+      cannot slide a run's columns aside. A mass that reaches the map's top or bottom
+      edge is a **window** into the forest continuing past the limit: the motif
+      extends it two rows outward before reading the phase (via an explicit
+      `patternCell`/`resolveTileFrame` `border` flag the scene and the dev frame map
+      pass), so the edge is a mid-stack crown/body and the pattern is never cut into a
+      crop there. An interior run is unchanged, so a detached tree still shows its own
+      crown and trunk. The scene frames the motif against the map itself (the
+      `extendMap`/`padMap` frame ring is gone), so the motif binds to the playable
+      grid. `treeTipKeys` never marks a one-tile border-ring cell, and a tip is drawn
+      **above** the player (`TREE_TIP_DEPTH` 20 > the player's 10), so the character
+      passes behind the crown. `tileFrames.test.ts` covers run re-anchoring and the
+      edge window; `walls.test.ts` sweeps generated routes for a tip on every detached
+      tree; `map.test.ts` drops the `extendMap` case; `docs/tileset-spec.md` updated.
+- [x] An opening keeps a **corner clearance** of the wall motif's footprint
+      (`cornerClearance`, `2 * cols`) instead of the old hardcoded 3, so `place
+      openings` never bites the tree in a map corner into a partial or one-tile
+      piece (the seed `1yv0j1t#r1` bottom-right corner). The frozen regression route
+      is re-frozen and a sweep asserts every opening clears each corner;
+      `docs/routes-spec.md` and `docs/route-generator.md` updated.
+- [x] A **short border piece** of wall reads as mid-stack, not a lone trunk: an
+      opening's approach can leave a one-row stump at the map edge, and with the
+      border window it drew the motif's base (`rows[last]`) because its foot fell on
+      the visible cell. `patternCell` now extends such a piece (shorter than a whole
+      object) at **both** ends before reading the phase, so it draws the crown/body
+      a lane would see in the forest past the edge. `tileFrames.test.ts` covers it.
+- [x] The lane keeps a **whole-object margin** from the map border: `wallMargin`
+      is `max(cols, minHeight)` (not just `cols`), so the tree strip it leaves at
+      the border is never shorter than a whole object - it draws its lower body and
+      trunk instead of a stump (the seed `1yv0j1t#r1` top row no longer shows
+      one-row stumps). The opening is also **aligned to its motif band**, so a
+      `pathWidth`-wide approach never spills into the band beside it, and
+      `carveBranches` pulls its last lane cell in by `branchWidth - 1` so a branch
+      is never clamped into a one-tile stub at the bound. The frozen regression
+      route is re-frozen; `docs/routes-spec.md` and `docs/route-generator.md`
+      updated.
 
 ## Phase 0 — Repo & scaffolding
 

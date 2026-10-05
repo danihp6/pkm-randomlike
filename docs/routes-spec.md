@@ -22,19 +22,34 @@ camera follow), containing:
    **shape** (`src/engine/routes/layout.ts`): where the route enters and leaves
    and how the paths connect those openings. It is currently `open`: the interior
    is filled with trees and the shape's lanes (spine and branches) are carved
-   through them, leaving the one-tile tree/rock border solid. The optional branches
-   keep a **two-tile margin** from the border, so the outer tree mass is never
-   bitten; only the spine pierces it, at the openings.
+   through them, leaving the one-tile tree/rock border solid. Lanes are carved at
+   least two tiles wide (no one-tile lane is left) and every lane keeps a
+   margin of the motif's footprint (`wallMargin`, `max(cols, minHeight)`) from the
+   border, so it never carves into the `cols`-wide band the border ring belongs to
+   and always leaves a strip at least a whole object tall (a bitten fence could not
+   be cleaned without opening the map, and a shorter strip would be a stump with no
+   trunk). Only an opening pierces the ring, where the corridor runs straight in
+   for `margin` tiles before it may turn; the opening is aligned to its motif band,
+   so the `pathWidth`-wide approach never spills into the tree in the band beside
+   it. An opening also keeps a clearance of the motif's footprint (`2 * cols`) from
+   every map corner, so a corner tree is never bitten into a partial or one-tile
+   piece.
 2. **Wall tidy**: `cleanWalls` (`src/engine/routes/walls.ts`) removes any wall
    remnant the tileset's wall motif would draw cut off. The motif's footprint
    (`WallFootprint`, taken from the tileset's `wallPattern`) gives the width a run
    needs to show a whole object and the shortest whole-object height; a lane that
-   grazes the forest leaves a one- or two-tile sliver, and a bitten column leaves
-   an odd or too-short run, so both are dropped (turning back into floor). The
-   tidy only ever turns wall back into floor, so it can widen a lane but never block
-   it: the entry, every exit and the spine keep working and the openings stay
-   reachable. A run that touches the one-tile border ring is left alone, so the map
-   stays fenced.
+   grazes the forest leaves a one- or two-tile sliver, and a lane that bites the
+   side of a tree leaves a `cols`-wide band that is no longer solid. Such a bitten
+   tree is removed **whole** (its `cols`-wide row is cleared) and the rest of the
+   column is then **un-stacked** (trimmed to whole objects, stubs dropped), so a
+   tall wall still reads as stacked whole trees. The tree each cell belongs to is a
+   fixed **global grid** of `cols`-wide bands from the map's left edge: a lane that
+   falls inside a band widens to the whole band, so no mass keeps a cut tree and no
+   lane is left one tile wide. The tidy only ever turns wall back into floor, so
+   it can widen a lane but never block it: the entry, every exit and the spine keep
+   working and the openings stay reachable. A cell on the one-tile border ring is
+   only dropped to widen an opening (a lane already reaches the ring beside it), so
+   the map stays fenced.
 3. **Terrain pass**: `terrain` in `src/data/biomes.ts` sets how many tall grass
    patches and ledge lines a biome stamps. Both land on the carved floor **off the
    spine and the openings** (ledges also avoid the pockets), and a ledge line stops

@@ -107,7 +107,7 @@ reachable: Set<Point>               # FloodFill(tiles, entry), computed after te
 | Knob | Lives in | Drives |
 | --- | --- | --- |
 | shape `openings`, `pathWidth`, `jitter`, `corridorWidth`, `braid`, `branchCount`, `branchMin/Max`, `pocketChance` | `src/engine/routes/layout.ts` | shape and geometry |
-| `TREE_MARGIN` | `src/engine/routes/sketch.ts` | how many solid tree rings a branch keeps along the border |
+| `wallMargin` (motif `cols`) | `src/engine/routes/sketch.ts` | the border band every lane keeps clear |
 | `WallFootprint` (`cols`, `minHeight`) | tileset `wallPattern` | the wall tidy's whole-object size |
 | `grassPatches`, `ledges` | `src/data/biomes.ts` | terrain flavour |
 | `trainerSize`, `minLevel`, `maxLevel` | `src/data/run.ts` | population and levels |
@@ -133,8 +133,8 @@ BuildRoute(routeIndex, rngs):
 
     # 3. Secondary paths and dead ends (exploration)
     (branches, pockets) = CarveBranches(tiles, spine, shape, rngs.layout)
-    #    Branches keep TREE_MARGIN tiles off the border so the outer tree mass
-    #    is never bitten; only the spine pierces it, at the openings.
+    #    Every lane keeps `cols` tiles off the border so the outer tree mass
+    #    is never bitten; only an opening pierces it, running straight in first.
 
     # 3b. Tidy the trees: every column must read as whole trees, never a stub.
     CleanWalls(tiles, footprint)          # only turns WALL back into FLOOR
@@ -162,13 +162,17 @@ Each opening names an edge; the shape fixes the pairing. One opening is the
 `entry` (where the player arrives), the rest are `exit`s (their far ends). Openings
 sit **on the map border** and punch a gap in the tree ring; they are plain floor
 (the route has no special `EXIT` tile) and stepping on an exit does **not** end the
-route for now.
+route for now. Each opening keeps a clearance of the motif's footprint
+(`cornerClearance`, `2 * cols`) from every map corner, so a corridor never bites the
+tree in a corner into a partial or one-tile piece, and it is **aligned to its motif
+band** so the `pathWidth`-wide approach never spills into the tree in the band
+beside it.
 
 ```
-PlaceAccess(tiles, shape, rng):
+PlaceAccess(tiles, shape, rng, corner, band):
     entry = null; exits = []
     for opening in shape.openings:
-        point = pointOnEdge(opening.edge, rng)     # jitter along the border
+        point = pointOnEdge(opening.edge, rng, corner, band)   # clear of corners, band-aligned
         tiles[point] = FLOOR
         if opening.role == "entry": entry = point else exits.push(point)
     return (entry, exits)
@@ -180,25 +184,30 @@ The shape's `links` are joined by jittered cardinal corridors that follow a cost
 map, so the result meanders instead of running straight. When a shape has more
 than one link (the `cross`), every link routes through a shared **central hub**, so
 the lanes are guaranteed to meet: the entry reaches every exit by construction,
-never by the jittered corridors happening to cross.
+never by the jittered corridors happening to cross. Each lane starts with a
+straight **`OpeningApproach`** of `wallMargin` (`max(cols, minHeight)`) tiles inward
+before it may turn, and the A* cost penalises the outer `margin` band, so a corridor
+never bites the band the border ring belongs to and always leaves a strip at least a
+whole object tall (with its trunk) at the border (`cleanWalls` could otherwise only
+fix a bite by opening the fence).
 
 ```
-CarveGuaranteedPath(tiles, entry, exits, shape, rng):
+CarveGuaranteedPath(tiles, entry, exits, shape, rng, margin):
     spine = Set()
     hub = Center(tiles) if shape.links.length > 1 else null
     for (a, b) in shape.links:
         from = openingPoint(a, entry, exits)          # that opening's border tile
         to   = openingPoint(b, entry, exits)
-        waypoints = [from]
+        waypoints = [from] + OpeningApproach(a.edge, from, margin)
         for i in 1 .. SEGMENTS-1:
             if hub and i == SEGMENTS / 2:
                 waypoints.push(hub)                   # every link meets here
             else:
                 base = Lerp(from, to, i / SEGMENTS)
-                waypoints.push(base + Jitter(shape.jitter, rng))
-        waypoints.push(to)
+                waypoints.push(Clamp(base + Jitter(shape.jitter, rng), margin))
+        waypoints += reverse(OpeningApproach(b.edge, to, margin)) + [to]
         for (p, q) in consecutive(waypoints):
-            cost(cell) = BASE + Noise(cell, rng)      # deterministic per-cell cost
+            cost(cell) = BASE + Noise(cell, rng) + BorderPenalty(cell, margin)
             path = AStar(tiles, p, q, cost)           # cardinal, engine/pathfinding
             for cell in path:
                 CarveSquare(tiles, cell, shape.pathWidth)   # lane may be > 1 wide
@@ -232,34 +241,45 @@ CarveBranches(tiles, spine, shape, rng):
 ```
 
 Branches are optional; the spine alone always solves the route. Lanes keep a
-**`TREE_MARGIN`** (two tiles) from the border, are **at least two tiles wide**, and
-scale with the free space: a roomy map gets longer, wider lanes that open into a
-small **chamber** at the far end instead of a bare one-tile cul-de-sac. That far
-end is the **pocket** - the classic place for loot or a single special encounter.
+margin of the motif's width (**`cols`**) from the border, are **at least two tiles
+wide**, and scale with the free space: a roomy map gets longer, wider lanes that
+open into a small **chamber** at the far end instead of a bare one-tile
+cul-de-sac. That far end is the **pocket** - the classic place for loot or a single
+special encounter.
 
 ### 3.3b CleanWalls
 
 The wall motif draws a whole object only from a run that is at least `cols` wide and
 a whole number of objects tall (`wholeRunHeight`): the mass's row is top/body/.../
 base, so a one- or two-tile sliver shows a cut-off tree and a run of 3 a bare trunk.
-A lane that grazes the forest, or bites a column, leaves exactly such a remnant.
+A lane that grazes the forest leaves a one- or two-tile sliver, and a lane that
+bites the side of a tree leaves a `cols`-wide band that is no longer solid.
 
 ```python
 CleanWalls(tiles, footprint):            # footprint = the tileset's WallPattern size
+    bands = AnchorBands(tiles, footprint.cols)   # once, from the raw carve
     repeat until nothing changes:
-        for x in every column:           # runs touching the border ring are skipped
+        for each row and each band:      # a band holding both wall and floor is bitten
+            if the band is partial: clear the band's whole row of wall
+        for x in every column:           # un-stack: runs touching the ring are skipped
             for (start, end) in ColumnRuns(tiles, x):
                 target = LargestWholeHeight(end - start + 1)   # even, >= minHeight, else 0
                 if target != run height: clear the extra rows
-        for y in every row:
+        for y in every row:              # a run narrower than an object is no object
             for (start, end) in RowRuns(tiles, y):
                 if width < footprint.cols: clear the run
 ```
 
+A **bitten tree is removed whole**: a `cols`-wide band that holds both wall and
+floor cannot draw as a whole object, so the whole band row goes, and the column is
+then un-stacked. The bands are a **fixed global grid** of `cols` columns from the
+map's left edge: a lane that falls inside a band widens to the whole band, so no
+mass keeps a cut tree and no lane is left one tile wide.
+
 The tidy **only turns `WALL` back into `FLOOR`**, so it can widen a lane but never
 block one: the entry, the exits and the spine keep working and the openings stay
-reachable. A run that touches the one-tile border ring is left alone, so the map
-stays fenced (the ring is one tile wide by design and is not a sliver). Because the
+reachable. A cell on the one-tile border ring is only dropped to widen an opening
+(a lane already reaches the ring beside it), so the map stays fenced. Because the
 size a run needs comes from the tileset's motif, a different biome or wall art just
 passes its own `WallFootprint`.
 
@@ -349,7 +369,8 @@ route behind an unwinnable fight.
 1. **Seed everything, per pass**, with the attempt in the key (D11).
 2. **Biome and band from `routeIndex`**, not `playerLevel` or a random pick.
 3. **Row-major grid** `tiles[y][x]`.
-4. **Path width from the shape** (1 for `straight`/`bend` - D26).
+4. **Path width from the shape**, at least two tiles so no lane is left one tile
+   wide (the motif's border band is widened to whole trees by `cleanWalls`).
 5. **Hazards stay off the spine**, not just off trainers.
 6. **The spine is grass-free**, so a clean, encounter-free lane always exists.
 7. **Trainers block but are never required**; the spine is trainer-free.

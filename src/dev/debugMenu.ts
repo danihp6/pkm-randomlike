@@ -63,6 +63,10 @@ export type DebugMenuHandlers = Readonly<{
   generatorStepInfo: () => DebugGeneratorStep | null;
   stepGenerator: (delta: number) => void;
   resetGeneratorStep: () => void;
+  /** The current route described cell by cell, as JSON; null when no route. */
+  exportFrameMap: () => string | null;
+  /** Loads an exported frame map back into the scene; reports why it failed. */
+  importFrameMap: (text: string) => Readonly<{ ok: boolean; error?: string }>;
 }>;
 
 /**
@@ -400,21 +404,107 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   battlePanel.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
   battlePanel.append(speciesRow, levelRow, battleButton, status);
 
+  // Map section: describe the route cell by cell (tile, resolved frame, wall
+  // pattern membership) so a cut tree can be spotted, and round-trip it as JSON.
+  const mapSection = document.createElement('div');
+  mapSection.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+
+  const mapArea = document.createElement('textarea');
+  mapArea.spellcheck = false;
+  mapArea.placeholder = 'route + frame map JSON';
+  mapArea.style.cssText =
+    'width:296px;height:150px;resize:vertical;padding:6px;border:1px solid #334155;border-radius:5px;' +
+    'background:#0f172a;color:#e2e8f0;font:11px/1.35 monospace;';
+
+  const mapStatus = document.createElement('div');
+  mapStatus.style.cssText = 'min-height:16px;color:#94a3b8;';
+
+  const mapSummary = document.createElement('div');
+  mapSummary.style.cssText = 'color:#94a3b8;white-space:pre-wrap;max-height:120px;overflow:auto;';
+
+  const summarize = (text: string): void => {
+    const parsed = JSON.parse(text) as {
+      frameMap?: {
+        width: number;
+        height: number;
+        trees: { id: string; band: number; top: number; bottom: number; solid: boolean; whole: boolean; cells: unknown[] }[];
+      };
+    };
+    const frameMap = parsed.frameMap;
+    if (!frameMap) {
+      mapSummary.textContent = '';
+      return;
+    }
+    const bitten = frameMap.trees.filter((tree) => !tree.solid);
+    const lines = [
+      `${frameMap.width}x${frameMap.height} · ${frameMap.trees.length} trees · ${bitten.length} bitten`,
+    ];
+    for (const tree of bitten) {
+      lines.push(`tree ${tree.id} · band ${tree.band} · rows ${tree.top}-${tree.bottom} · ${tree.cells.length} cells`);
+    }
+    mapSummary.textContent = lines.join('\n');
+  };
+
+  const mapExportButton = button('Export', () => {
+    const text = handlers.exportFrameMap();
+    if (!text) {
+      mapStatus.textContent = 'no active route';
+      return;
+    }
+    mapArea.value = text;
+    mapStatus.textContent = `exported ${text.length} chars`;
+    summarize(text);
+  });
+  const mapCopyButton = button('Copy', () => {
+    if (!mapArea.value) {
+      mapStatus.textContent = 'nothing to copy';
+      return;
+    }
+    void navigator.clipboard?.writeText(mapArea.value).then(
+      () => {
+        mapStatus.textContent = 'copied';
+      },
+      () => {
+        mapStatus.textContent = 'copy failed';
+      },
+    );
+  });
+  const mapImportButton = button('Import', () => {
+    const result = handlers.importFrameMap(mapArea.value);
+    mapStatus.textContent = result.ok ? 'imported' : `import failed: ${result.error}`;
+    if (result.ok) {
+      try {
+        summarize(mapArea.value);
+      } catch {
+        mapSummary.textContent = '';
+      }
+    }
+  });
+  const mapButtons = document.createElement('div');
+  mapButtons.style.cssText = 'display:flex;gap:6px;';
+  mapButtons.append(mapExportButton, mapCopyButton, mapImportButton);
+  mapSection.append(mapButtons, mapArea, mapStatus, mapSummary);
+
   const tabs = document.createElement('div');
   tabs.style.cssText = 'display:flex;gap:6px;';
   const battleTab = button('Battle', () => selectTab('battle'));
   const routeTab = button('Route', () => selectTab('route'));
-  tabs.append(battleTab, routeTab);
+  const mapTab = button('Map', () => selectTab('map'));
+  tabs.append(battleTab, routeTab, mapTab);
 
-  const selectTab = (tab: 'battle' | 'route'): void => {
-    const isBattle = tab === 'battle';
-    battlePanel.style.display = isBattle ? 'flex' : 'none';
-    routeSection.style.display = isBattle ? 'none' : 'flex';
-    battleTab.style.background = isBattle ? '#0e7490' : '#1e293b';
-    routeTab.style.background = isBattle ? '#1e293b' : '#0e7490';
-    battleTab.style.color = isBattle ? '#f8fafc' : '#e2e8f0';
-    routeTab.style.color = isBattle ? '#e2e8f0' : '#f8fafc';
-    if (!isBattle) refreshRouteFields();
+  const setTabStyle = (element: HTMLButtonElement, active: boolean): void => {
+    element.style.background = active ? '#0e7490' : '#1e293b';
+    element.style.color = active ? '#f8fafc' : '#e2e8f0';
+  };
+
+  const selectTab = (tab: 'battle' | 'route' | 'map'): void => {
+    battlePanel.style.display = tab === 'battle' ? 'flex' : 'none';
+    routeSection.style.display = tab === 'route' ? 'flex' : 'none';
+    mapSection.style.display = tab === 'map' ? 'flex' : 'none';
+    setTabStyle(battleTab, tab === 'battle');
+    setTabStyle(routeTab, tab === 'route');
+    setTabStyle(mapTab, tab === 'map');
+    if (tab === 'route') refreshRouteFields();
   };
 
   const close = button('×', () => {
@@ -430,7 +520,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     });
   }
 
-  body.append(tabs, battlePanel, routeSection);
+  body.append(tabs, battlePanel, routeSection, mapSection);
   root.append(title, body, list);
   document.body.append(root);
   selectTab('battle');
