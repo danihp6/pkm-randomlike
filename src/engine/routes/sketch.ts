@@ -23,12 +23,20 @@ import {
   type ShapeSpec,
 } from './layout';
 import { routeStreams, type RouteStreams } from './streams';
+import { cleanTrees } from './trees';
 import { reachableTiles, validateRoute } from './validate';
 
 export const ROUTE_WIDTH = 20;
 export const ROUTE_HEIGHT = 20;
 
 const MAX_ATTEMPTS = 8;
+
+/**
+ * How many tile rings of solid forest a secondary lane leaves along the border.
+ * Optional lanes keep this far from the edge so the outer tree mass is never
+ * bitten into a partial tree; only the spine pierces it, at the openings.
+ */
+const TREE_MARGIN = 2;
 
 /** Waypoints carved per shape link: the interior points the corridor bends through. */
 const SPINE_SEGMENTS = 4;
@@ -60,7 +68,7 @@ type MutableMap = number[][];
 
 /** A labelled snapshot of the map after one build phase, for the debug stepper. */
 export type RouteStep = Readonly<{
-  phase: 'walls' | 'access' | 'spine' | 'branches' | 'layout' | 'terrain' | 'final';
+  phase: 'walls' | 'access' | 'spine' | 'branches' | 'layout' | 'trees' | 'terrain' | 'final';
   label: string;
   tiles: TileMap;
 }>;
@@ -263,14 +271,24 @@ function carveBranches(
   if (shape.branchCount <= 0) return { branches, pockets };
 
   const endKeys = new Set(ends.map(tileKey));
-  // Branches stay strictly inside the one-tile border: the ring is never carved.
+  // Branches stay strictly inside the border margin, so the outer tree mass is
+  // never bitten into a partial tree (the spine may pierce it at an opening).
+  const branchBounds: SquareBounds = {
+    minX: TREE_MARGIN,
+    minY: TREE_MARGIN,
+    maxX: width - 1 - TREE_MARGIN,
+    maxY: height - 1 - TREE_MARGIN,
+  };
   const passable = (tile: Tile): boolean =>
-    tile.x >= 1 && tile.x < width - 1 && tile.y >= 1 && tile.y < height - 1;
+    tile.x >= TREE_MARGIN &&
+    tile.x < width - TREE_MARGIN &&
+    tile.y >= TREE_MARGIN &&
+    tile.y < height - TREE_MARGIN;
 
   // Scale the lane to the free space: how far the interior reaches from the spine.
   let maxAway = 0;
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
+  for (let y = TREE_MARGIN; y < height - TREE_MARGIN; y++) {
+    for (let x = TREE_MARGIN; x < width - TREE_MARGIN; x++) {
       const away = distanceToSpine(spine, { x, y });
       if (away > maxAway) maxAway = away;
     }
@@ -282,8 +300,8 @@ function carveBranches(
 
   for (let branch = 0; branch < shape.branchCount; branch++) {
     const candidates: Tile[] = [];
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
+    for (let y = TREE_MARGIN; y < height - TREE_MARGIN; y++) {
+      for (let x = TREE_MARGIN; x < width - TREE_MARGIN; x++) {
         const key = tileKey({ x, y });
         if (spine.has(key) || branches.has(key) || endKeys.has(key)) continue;
         const away = distanceToSpine(spine, { x, y });
@@ -303,15 +321,15 @@ function carveBranches(
     });
     if (path.length === 0) continue;
     for (const cell of path) {
-      for (const opened of carveSquare(tiles, cell.x, cell.y, branchWidth)) {
+      for (const opened of carveSquare(tiles, cell.x, cell.y, branchWidth, branchBounds)) {
         branches.add(tileKey(opened));
       }
     }
     // A roomy map opens the far end into a chamber instead of a bare cul-de-sac.
     if (chamber > 0) {
-      const roomX = clamp(target.x - (chamber >> 1), 1, width - 1 - chamber);
-      const roomY = clamp(target.y - (chamber >> 1), 1, height - 1 - chamber);
-      for (const opened of carveSquare(tiles, roomX, roomY, chamber)) {
+      const roomX = clamp(target.x - (chamber >> 1), TREE_MARGIN, width - TREE_MARGIN - chamber);
+      const roomY = clamp(target.y - (chamber >> 1), TREE_MARGIN, height - TREE_MARGIN - chamber);
+      for (const opened of carveSquare(tiles, roomX, roomY, chamber, branchBounds)) {
         branches.add(tileKey(opened));
       }
     }
@@ -327,17 +345,30 @@ function setFloor(tiles: MutableMap, x: number, y: number): void {
   tiles[y][x] = FLOOR;
 }
 
+type SquareBounds = Readonly<{ minX: number; minY: number; maxX: number; maxY: number }>;
+
 /**
  * Carves a `size`-wide square of floor anchored at `(x, y)`, never touching the
- * one-tile border so the route stays fenced. Returns the tiles it opened.
+ * one-tile border so the route stays fenced. `bounds` tightens that further, which
+ * is how a branch keeps its distance from the border. Returns the tiles it opened.
  */
-function carveSquare(tiles: MutableMap, x: number, y: number, size: number): Tile[] {
+function carveSquare(
+  tiles: MutableMap,
+  x: number,
+  y: number,
+  size: number,
+  bounds?: SquareBounds,
+): Tile[] {
+  const minX = bounds?.minX ?? 1;
+  const minY = bounds?.minY ?? 1;
+  const maxX = bounds?.maxX ?? tiles[0].length - 2;
+  const maxY = bounds?.maxY ?? tiles.length - 2;
   const opened: Tile[] = [];
   for (let dy = 0; dy < size; dy++) {
     for (let dx = 0; dx < size; dx++) {
       const tx = x + dx;
       const ty = y + dy;
-      if (tx < 1 || tx >= tiles[0].length - 1 || ty < 1 || ty >= tiles.length - 1) continue;
+      if (tx < minX || tx > maxX || ty < minY || ty > maxY) continue;
       tiles[ty][tx] = FLOOR;
       opened.push({ x: tx, y: ty });
     }
@@ -696,6 +727,13 @@ function attemptRoute(
   }
 
   tiles[entry.y][entry.x] = FLOOR;
+
+  // Tidy the carved forest before the terrain and the population go down, so the
+  // grass and the ledges only see whole tree columns (and floor freed by the tidy).
+  // Only the open forest has the tree motif; the parked hedge/maze carvers keep
+  // their own walls.
+  if (spec.kind === 'open') cleanTrees(tiles);
+  snapshot('trees', 'clean tree runs');
 
   // Ledges are solid, so they stay off the guaranteed spine - the carved lane on
   // open/hedged routes, the shortest path on a maze.

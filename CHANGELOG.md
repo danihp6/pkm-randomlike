@@ -133,6 +133,20 @@ file is the human-readable summary.
       replaced by `terrain.test.ts` (off spine/openings/pockets, every exit
       reachable, no stranding, counts honoured). `docs/routes-spec.md` and
       `docs/route-generator.md` updated.
+- [x] Whole-tree cleanup: the wall motif only draws a column when its run is **even
+      and at least four tall**, so a lane that bit a column rendered a floating
+      crown or a bare trunk. `cleanTrees` (`src/engine/routes/trees.ts`) now runs
+      after the carve and before the terrain pass: it trims each run to a whole
+      number of trees and drops stubs, **only turning WALL into FLOOR**, so it can
+      widen a lane but never block one - the entry, every exit and the spine keep
+      working and the openings stay reachable, and the one-tile border ring is
+      never touched. Optional branches now keep a **`TREE_MARGIN` of two tiles**
+      from the border (bounded `carveSquare`), so the outer tree mass is not bitten
+      at all; only the spine pierces it, at the openings. New `trees.test.ts`
+      (run heights, unit maps, no broken columns, branch margin, reachability);
+      the frozen route and the `sketchRouteSteps` phases (now `... branches →
+      trees → terrain ...`) re-frozen. `docs/routes-spec.md` and
+      `docs/route-generator.md` updated.
 
 ## Phase 0 — Repo & scaffolding
 

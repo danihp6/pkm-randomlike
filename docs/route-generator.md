@@ -107,6 +107,7 @@ reachable: Set<Point>               # FloodFill(tiles, entry), computed after te
 | Knob | Lives in | Drives |
 | --- | --- | --- |
 | shape `openings`, `pathWidth`, `jitter`, `corridorWidth`, `braid`, `branchCount`, `branchMin/Max`, `pocketChance` | `src/engine/routes/layout.ts` | shape and geometry |
+| `TREE_MARGIN` | `src/engine/routes/sketch.ts` | how many solid tree rings a branch keeps along the border |
 | `grassPatches`, `ledges` | `src/data/biomes.ts` | terrain flavour |
 | `trainerSize`, `minLevel`, `maxLevel` | `src/data/run.ts` | population and levels |
 | loot `count` / `pool` | `src/data/loot.ts` | item contents |
@@ -131,6 +132,11 @@ BuildRoute(routeIndex, rngs):
 
     # 3. Secondary paths and dead ends (exploration)
     (branches, pockets) = CarveBranches(tiles, spine, shape, rngs.layout)
+    #    Branches keep TREE_MARGIN tiles off the border so the outer tree mass
+    #    is never bitten; only the spine pierces it, at the openings.
+
+    # 3b. Tidy the trees: every column must read as whole trees, never a stub.
+    CleanTrees(tiles)                     # only turns WALL back into FLOOR
 
     # 4. Terrain flavour - hazards and grass stay off the spine
     CarveGrass(tiles, biome.terrain.grassPatches, rngs.terrain,
@@ -224,11 +230,33 @@ CarveBranches(tiles, spine, shape, rng):
     return (branches, pockets)
 ```
 
-Branches are optional; the spine alone always solves the route. Lanes stay strictly
-inside the one-tile border (never carved), are **at least two tiles wide**, and
+Branches are optional; the spine alone always solves the route. Lanes keep a
+**`TREE_MARGIN`** (two tiles) from the border, are **at least two tiles wide**, and
 scale with the free space: a roomy map gets longer, wider lanes that open into a
 small **chamber** at the far end instead of a bare one-tile cul-de-sac. That far
 end is the **pocket** - the classic place for loot or a single special encounter.
+
+### 3.3b CleanTrees
+
+The wall motif draws a column of trees only when its run is **even and at least
+four tall** (`tileFrames.patternFrame`): the mass's row is top/body/.../base, so a
+run of 3 renders a bare trunk and a run of 1 a floating crown. A lane that bites a
+column leaves exactly such a stub.
+
+```python
+CleanTrees(tiles):
+    for x in interior columns:            # the border ring is never touched
+        for (start, end) in WallRuns(tiles, x):
+            target = LargestWholeTreeHeight(end - start + 1)   # even, >= 4, else 0
+            if target == run height: continue
+            if target == 0: clear the run         # keep a border cell as the edge line
+            else: clear the extra row off the end that is not on the ring
+```
+
+The tidy **only turns `WALL` back into `FLOOR`**, so it can widen a lane but never
+block one: the entry, the exits and the spine keep working and the openings stay
+reachable. Removing a row off the top or the bottom re-stacks what is left, which
+is why the stacks never need to be tracked as objects.
 
 ### 3.4 PlaceTrainers — always optional
 
