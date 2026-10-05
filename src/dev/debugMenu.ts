@@ -36,6 +36,8 @@ export type DebugRouteContext = Readonly<{
   height: number;
   /** Dev noclip: walk through walls, water and ledges. */
   passThrough: boolean;
+  /** Dev inspect: color the hovered cell and show its tile coordinates. */
+  hoverInspect: boolean;
 }>;
 
 /** The resolved inputs the panel sends back; a blank field already fell back. */
@@ -60,6 +62,7 @@ export type DebugMenuHandlers = Readonly<{
   readRouteContext: () => DebugRouteContext | null;
   onRegenerateRoute: (input: DebugRouteInput) => void;
   onTogglePassThrough: (enabled: boolean) => void;
+  onToggleHoverInspect: (enabled: boolean) => void;
   generatorStepInfo: () => DebugGeneratorStep | null;
   stepGenerator: (delta: number) => void;
   resetGeneratorStep: () => void;
@@ -354,16 +357,35 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     stepStatus,
   );
 
+  // General section: cross-cutting dev toggles that are not tied to a route
+  // rebuild (noclip, cell inspection).
+  const generalSection = document.createElement('div');
+  generalSection.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+
+  const toggleRow = (input: HTMLInputElement, labelText: string): HTMLLabelElement => {
+    const row = document.createElement('label');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;';
+    row.append(input, document.createTextNode(labelText));
+    return row;
+  };
+
   const passThroughInput = document.createElement('input');
   passThroughInput.type = 'checkbox';
   passThroughInput.title = 'walk through walls, water and ledges';
-
-  const passThroughRow = document.createElement('label');
-  passThroughRow.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;';
-  passThroughRow.append(passThroughInput, document.createTextNode('Pass through obstacles'));
   passThroughInput.addEventListener('change', () => {
     handlers.onTogglePassThrough(passThroughInput.checked);
   });
+  const passThroughRow = toggleRow(passThroughInput, 'Pass through obstacles');
+
+  const hoverInspectInput = document.createElement('input');
+  hoverInspectInput.type = 'checkbox';
+  hoverInspectInput.title = 'color the cell under the mouse and show its x,y';
+  hoverInspectInput.addEventListener('change', () => {
+    handlers.onToggleHoverInspect(hoverInspectInput.checked);
+  });
+  const hoverInspectRow = toggleRow(hoverInspectInput, 'Inspect hovered cell');
+
+  generalSection.append(passThroughRow, hoverInspectRow);
 
   // Live values refresh while the panel is idle; a field the user is editing
   // (or has randomized) is left alone until the next "Regenerate".
@@ -383,6 +405,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     widthInput.value = String(ctx.width);
     heightInput.value = String(ctx.height);
     passThroughInput.checked = ctx.passThrough;
+    hoverInspectInput.checked = ctx.hoverInspect;
     routeInfo.textContent = `${ctx.mode} · ${ctx.biomeName} · band ${ctx.bandName}`;
     routeStatus.textContent = '';
     refreshGeneratorStep();
@@ -398,7 +421,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     if (!dirty && root.style.display !== 'none') refreshRouteFields();
   }, 500);
 
-  routeSection.append(routeGrid, stepRow, routeButtons, passThroughRow, routeStatus, routeInfo);
+  routeSection.append(routeGrid, stepRow, routeButtons, routeStatus, routeInfo);
 
   const battlePanel = document.createElement('div');
   battlePanel.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
@@ -487,24 +510,27 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const tabs = document.createElement('div');
   tabs.style.cssText = 'display:flex;gap:6px;';
+  const generalTab = button('General', () => selectTab('general'));
   const battleTab = button('Battle', () => selectTab('battle'));
   const routeTab = button('Route', () => selectTab('route'));
   const mapTab = button('Map', () => selectTab('map'));
-  tabs.append(battleTab, routeTab, mapTab);
+  tabs.append(generalTab, battleTab, routeTab, mapTab);
 
   const setTabStyle = (element: HTMLButtonElement, active: boolean): void => {
     element.style.background = active ? '#0e7490' : '#1e293b';
     element.style.color = active ? '#f8fafc' : '#e2e8f0';
   };
 
-  const selectTab = (tab: 'battle' | 'route' | 'map'): void => {
+  const selectTab = (tab: 'general' | 'battle' | 'route' | 'map'): void => {
+    generalSection.style.display = tab === 'general' ? 'flex' : 'none';
     battlePanel.style.display = tab === 'battle' ? 'flex' : 'none';
     routeSection.style.display = tab === 'route' ? 'flex' : 'none';
     mapSection.style.display = tab === 'map' ? 'flex' : 'none';
+    setTabStyle(generalTab, tab === 'general');
     setTabStyle(battleTab, tab === 'battle');
     setTabStyle(routeTab, tab === 'route');
     setTabStyle(mapTab, tab === 'map');
-    if (tab === 'route') refreshRouteFields();
+    if (tab === 'route' || tab === 'general') refreshRouteFields();
   };
 
   const close = button('×', () => {
@@ -520,10 +546,10 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     });
   }
 
-  body.append(tabs, battlePanel, routeSection, mapSection);
+  body.append(tabs, generalSection, battlePanel, routeSection, mapSection);
   root.append(title, body, list);
   document.body.append(root);
-  selectTab('battle');
+  selectTab('general');
   refreshRouteFields();
 
   // Keep the panel's typing out of the game's window-level key handlers, but

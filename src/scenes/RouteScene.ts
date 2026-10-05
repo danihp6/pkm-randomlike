@@ -150,6 +150,11 @@ export class RouteScene extends Phaser.Scene {
   private settings!: Settings;
   /** Dev only: walk through solid tiles so a route can be inspected quickly. */
   private passThrough = false;
+  /** Dev only: color the cell under the mouse and show its tile coordinates. */
+  private hoverInspect = false;
+  private hoverCell: Tile | null = null;
+  private hoverMarker: Phaser.GameObjects.Rectangle | null = null;
+  private hoverLabel: Phaser.GameObjects.BitmapText | null = null;
   private gameOver = false;
   private battleCounter = 0;
   private pendingBattle: BattleLaunch | null = null;
@@ -258,6 +263,7 @@ export class RouteScene extends Phaser.Scene {
     this.hudRows = [];
     this.hudVisible = false;
     this.passThrough = false;
+    this.clearHoverInspect();
     this.gameOver = false;
     this.pendingBattle = null;
     this.pendingParty = null;
@@ -338,6 +344,10 @@ export class RouteScene extends Phaser.Scene {
       this.input.keyboard!.on('keydown-B', () => {
         if (this.scene.isActive()) this.startBattle({ kind: 'wild', speciesId: 'scatterbug', level: 5, key: 'dev' });
       });
+      this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+        this.updateHoverInspect(pointer);
+      });
+      this.input.on('gameout', () => this.clearHoverInspect());
     }
     this.buildHud();
     this.setupHudCamera();
@@ -858,6 +868,7 @@ export class RouteScene extends Phaser.Scene {
     this.tileSprites = [];
     for (const sprite of this.entitySprites) sprite.destroy();
     this.entitySprites = [];
+    this.clearHoverInspect();
   }
 
   /**
@@ -876,6 +887,7 @@ export class RouteScene extends Phaser.Scene {
       width: this.routeParams.width,
       height: this.routeParams.height,
       passThrough: this.passThrough,
+      hoverInspect: this.hoverInspect,
     };
   }
 
@@ -883,6 +895,66 @@ export class RouteScene extends Phaser.Scene {
   setPassThrough(enabled: boolean): void {
     if (!IS_DEVELOP) return;
     this.passThrough = enabled;
+  }
+
+  /** Debug only: toggles the hovered-cell highlight and its x,y label. */
+  setHoverInspect(enabled: boolean): void {
+    if (!IS_DEVELOP) return;
+    this.hoverInspect = enabled;
+    if (!enabled) {
+      this.clearHoverInspect();
+      return;
+    }
+    // The pointer is already over a cell: show it without waiting for a move.
+    this.updateHoverInspect(this.input.activePointer);
+  }
+
+  /**
+   * Debug only: colors the route cell under the pointer and labels its `x,y`.
+   * It is recomputed on every pointer move; the marker is reused until the
+   * pointer lands on another cell, and dropped entirely when the setting is off.
+   */
+  private updateHoverInspect(pointer: Phaser.Input.Pointer): void {
+    if (!this.hoverInspect || !this.scene.isActive() || !this.map) {
+      this.clearHoverInspect();
+      return;
+    }
+    const world = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+    const tile: Tile = { x: Math.floor(world.x / TILE_SIZE), y: Math.floor(world.y / TILE_SIZE) };
+    if (!inBounds(this.map, tile)) {
+      this.clearHoverInspect();
+      return;
+    }
+    if (this.hoverCell && this.hoverCell.x === tile.x && this.hoverCell.y === tile.y) return;
+    this.hoverCell = tile;
+    const label = `${tile.x},${tile.y}`;
+    if (!this.hoverMarker) {
+      this.hoverMarker = this.add
+        .rectangle(this.centerX(tile.x), this.centerY(tile.y), TILE_SIZE, TILE_SIZE, 0x7dd3fc, 0.3)
+        .setStrokeStyle(2, 0x7dd3fc, 0.9)
+        .setDepth(30);
+      this.hoverLabel = addFrlgText(this, this.centerX(tile.x), this.centerY(tile.y), label, {
+        size: 16,
+        origin: 0.5,
+      })
+        .setScale(0.5)
+        .setDepth(31);
+      // Both cameras render every object unless told otherwise; the pinned HUD
+      // camera would otherwise draw a second marker at the unscrolled position.
+      this.hudCamera?.ignore([this.hoverMarker, this.hoverLabel]);
+      return;
+    }
+    this.hoverMarker.setPosition(this.centerX(tile.x), this.centerY(tile.y));
+    this.hoverLabel?.setPosition(this.centerX(tile.x), this.centerY(tile.y)).setText(label);
+  }
+
+  /** Debug only: removes the hovered-cell highlight, if any. */
+  private clearHoverInspect(): void {
+    this.hoverCell = null;
+    this.hoverMarker?.destroy();
+    this.hoverMarker = null;
+    this.hoverLabel?.destroy();
+    this.hoverLabel = null;
   }
 
   /**
