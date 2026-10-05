@@ -170,6 +170,17 @@ file is the human-readable summary.
 - [x] The route **HUD panel** (route header, party and bag) now starts **hidden**
       and is toggled with the new **`hud` action, default `I`** (rebindable next to
       the others in Settings). The hint line spells the bound key.
+- [x] `cleanWalls` is now **object-aware**: a lane that bites the side of a tree
+      leaves a `cols`-wide band that no longer draws as a whole object, so the tidy
+      removes that **whole tree row** and then **un-stacks** the rest of the column
+      (whole runs kept, stubs dropped) instead of leaving a cut tree or a bare
+      trunk. The tree each cell belongs to is anchored to the raw carve and held
+      **fixed** for the whole tidy, so deleting a bitten tree never re-bases - and
+      eats into - the whole trees beside it. Only `WALL` becomes `FLOOR` (safe to
+      widen a lane, never block one) and the border ring stays. `walls.test.ts`
+      gains a side-bite and an un-stack case; the frozen route is re-frozen and
+      `docs/routes-spec.md`, `docs/route-generator.md` and `docs/tileset-spec.md`
+      are updated.
 
 ## Phase 0 — Repo & scaffolding
 

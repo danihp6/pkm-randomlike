@@ -242,19 +242,29 @@ end is the **pocket** - the classic place for loot or a single special encounter
 The wall motif draws a whole object only from a run that is at least `cols` wide and
 a whole number of objects tall (`wholeRunHeight`): the mass's row is top/body/.../
 base, so a one- or two-tile sliver shows a cut-off tree and a run of 3 a bare trunk.
-A lane that grazes the forest, or bites a column, leaves exactly such a remnant.
+A lane that grazes the forest leaves a one- or two-tile sliver, and a lane that
+bites the side of a tree leaves a `cols`-wide band that is no longer solid.
 
 ```python
 CleanWalls(tiles, footprint):            # footprint = the tileset's WallPattern size
+    bands = AnchorBands(tiles, footprint.cols)   # once, from the raw carve
     repeat until nothing changes:
-        for x in every column:           # runs touching the border ring are skipped
+        for each row and each band:      # a band holding both wall and floor is bitten
+            if the band is partial: clear the band's whole row of wall
+        for x in every column:           # un-stack: runs touching the ring are skipped
             for (start, end) in ColumnRuns(tiles, x):
                 target = LargestWholeHeight(end - start + 1)   # even, >= minHeight, else 0
                 if target != run height: clear the extra rows
-        for y in every row:
+        for y in every row:              # a run narrower than an object is no object
             for (start, end) in RowRuns(tiles, y):
                 if width < footprint.cols: clear the run
 ```
+
+A **bitten tree is removed whole**: a `cols`-wide band that holds both wall and
+floor cannot draw as a whole object, so the whole band row goes, and the column is
+then un-stacked. The band each cell belongs to is anchored to the raw carve and
+held **fixed** for the whole tidy: re-deriving it after a removal would re-base the
+trees beside a bitten one and eat into otherwise whole trees.
 
 The tidy **only turns `WALL` back into `FLOOR`**, so it can widen a lane but never
 block one: the entry, the exits and the spine keep working and the openings stay

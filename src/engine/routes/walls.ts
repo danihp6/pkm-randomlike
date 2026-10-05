@@ -75,11 +75,52 @@ function clearRow(tiles: MutableMap, y: number, from: number, to: number): boole
   return changed;
 }
 
+/** How many WALL cells sit immediately left of `(x, y)` on the same row. */
+function runLeft(tiles: readonly (readonly number[])[], x: number, y: number): number {
+  let left = 0;
+  while (x - left - 1 >= 0 && isWall(tiles, x - left - 1, y)) left++;
+  return left;
+}
+
+/** How many WALL cells sit immediately right of `(x, y)` on the same row. */
+function runRight(tiles: readonly (readonly number[])[], x: number, y: number): number {
+  const width = tiles[0].length;
+  let right = 0;
+  while (x + right + 1 < width && isWall(tiles, x + right + 1, y)) right++;
+  return right;
+}
+
 /**
- * Tidies the carved interior so no thin wall remnant is left behind. The motif
- * draws a whole object only from a run at least `cols` wide and whole-tree tall
- * (`wholeRunHeight`); a lane that grazed the side of the forest leaves a one- or
- * two-tile sliver that renders as a cut-off tree, so it is removed here.
+ * The motif column `x` draws on, matching `patternFrame`: it is anchored to the
+ * column's own first wall cell plus the centring offset for a run narrower than
+ * the motif. `cleanWalls` uses it to know which `cols`-wide tree a wall cell
+ * belongs to, so a bitten tree can be removed whole.
+ */
+function patternColumn(tiles: readonly (readonly number[])[], x: number, cols: number): number {
+  const height = tiles.length;
+  let top = 0;
+  while (top < height && !isWall(tiles, x, top)) top++;
+  if (top >= height) return 0;
+  const left = runLeft(tiles, x, top);
+  const span = left + 1 + runRight(tiles, x, top);
+  const offset = span >= cols ? 0 : Math.floor((cols - span) / 2);
+  return (left + offset) % cols;
+}
+
+/**
+ * Tidies the carved interior so no thin, bitten or half-stacked wall remnant is
+ * left behind. The motif draws a whole object only from a run at least `cols` wide
+ * and whole-tree tall (`wholeRunHeight`); a lane that grazed the forest leaves a
+ * one- or two-tile sliver, and a lane that bit the side of a tree leaves a
+ * `cols`-wide band that is no longer solid. Such a bitten tree is removed whole
+ * (its `cols`-wide row is cleared) and the rest of the column is then un-stacked,
+ * so a tall wall still reads as whole stacked objects instead of a cut one.
+ *
+ * The tree a cell belongs to is fixed by the map as carved: the motif anchors its
+ * `cols`-wide columns to the mass top, so the bands are computed **once** from the
+ * raw carve. Re-deriving them after a removal would re-base the trees beside a
+ * bitten one and eat into them; holding them fixed means deleting a bitten tree
+ * never shifts where its neighbours tile.
  *
  * Only turns WALL back into FLOOR, so it can widen a lane but never block it: the
  * entry, the exits and the spine keep working and the openings stay reachable.
@@ -91,24 +132,61 @@ export function cleanWalls(tiles: MutableMap, footprint: WallFootprint = DEFAULT
   const width = height > 0 ? tiles[0].length : 0;
   const onRing = (x: number, y: number): boolean =>
     x === 0 || x === width - 1 || y === 0 || y === height - 1;
+  const { cols, minHeight } = footprint;
 
-  for (let pass = 0; pass < 8; pass++) {
+  const bandStart = new Array<number>(width);
+  for (let x = 0; x < width; x++) bandStart[x] = x - patternColumn(tiles, x, cols);
+
+  for (let pass = 0; pass < width * height + 1; pass++) {
     let changed = false;
 
+    // Remove the row of a bitten tree: a `cols`-wide band that holds both wall
+    // and floor cannot draw as a whole object, so the whole band row goes.
+    const seenBands = new Set<number>();
+    for (let y = 0; y < height; y++) {
+      seenBands.clear();
+      for (let x = 0; x < width; x++) {
+        if (!isWall(tiles, x, y)) continue;
+        const start = bandStart[x];
+        if (seenBands.has(start)) continue;
+        seenBands.add(start);
+
+        let wall = 0;
+        let open = 0;
+        for (let bx = start; bx < start + cols; bx++) {
+          // The renderer frames against a map padded with one ring of wall, so a
+          // band that runs off the playable edge is still whole (the tree goes on).
+          if (bx < 0 || bx >= width || isWall(tiles, bx, y)) wall++;
+          else open++;
+        }
+        if (wall === 0 || open === 0) continue;
+
+        for (let bx = start; bx < start + cols; bx++) {
+          if (bx < 0 || bx >= width || onRing(bx, y)) continue;
+          if (isWall(tiles, bx, y)) {
+            tiles[y][bx] = FLOOR;
+            changed = true;
+          }
+        }
+      }
+    }
+
+    // Un-stack: trim a column run down to whole objects and drop stubs.
     for (let x = 0; x < width; x++) {
       for (const [start, end] of columnRuns(tiles, x)) {
         if (onRing(x, start) || onRing(x, end)) continue;
         const runHeight = end - start + 1;
-        const target = wholeRunHeight(runHeight, footprint.minHeight);
+        const target = wholeRunHeight(runHeight, minHeight);
         if (target === runHeight) continue;
         if (clearColumn(tiles, x, start + target, end)) changed = true;
       }
     }
 
+    // A run narrower than the motif can never be a whole object on its own.
     for (let y = 0; y < height; y++) {
       for (const [start, end] of rowRuns(tiles, y)) {
         if (onRing(start, y) || onRing(end, y)) continue;
-        if (end - start + 1 >= footprint.cols) continue;
+        if (end - start + 1 >= cols) continue;
         if (clearRow(tiles, y, start, end)) changed = true;
       }
     }

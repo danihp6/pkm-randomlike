@@ -97,6 +97,34 @@ describe('cleanWalls', () => {
     for (let x = 0; x < 8; x++) expect(at(tiles, x, 0), `ring ${x}`).toBe(WALL);
     for (let y = 1; y <= 5; y++) expect(at(tiles, 3, y), `notch ${y}`).toBe(FLOOR);
   });
+
+  it('removes a tree a lane bit on the side, and keeps the whole tree beside it', () => {
+    const tiles = blank(12, 8);
+    fillRect(tiles, 2, 2, 6, 4); // two whole trees side by side, cols 2-7
+    tiles[4][2] = FLOOR; // a lane bites the left column of the left tree
+    tiles[5][2] = FLOOR;
+    cleanWalls(tiles, FOOT);
+    expect(wallViolations(tiles, FOOT)).toEqual([]);
+    for (let y = 2; y <= 5; y++) {
+      for (let x = 2; x <= 4; x++) expect(at(tiles, x, y), `bitten ${x},${y}`).toBe(FLOOR);
+      for (let x = 5; x <= 7; x++) expect(at(tiles, x, y), `whole ${x},${y}`).toBe(WALL);
+    }
+  });
+
+  it('drops the stubs left above a bitten tree instead of half-stacking them', () => {
+    const tiles = blank(8, 12);
+    fillRect(tiles, 2, 2, 3, 8); // a three-tall stack of whole trees
+    tiles[4][2] = FLOOR; // the middle tree loses a column, so it is bitten
+    tiles[5][2] = FLOOR;
+    cleanWalls(tiles, FOOT);
+    expect(wallViolations(tiles, FOOT)).toEqual([]);
+    for (let y = 2; y <= 5; y++) {
+      for (let x = 2; x <= 4; x++) expect(at(tiles, x, y), `bitten ${x},${y}`).toBe(FLOOR);
+    }
+    for (let y = 6; y <= 9; y++) {
+      for (let x = 2; x <= 4; x++) expect(at(tiles, x, y), `kept ${x},${y}`).toBe(WALL);
+    }
+  });
 });
 
 function routeRequest(seed: string, routeIndex: number): RouteRequest {

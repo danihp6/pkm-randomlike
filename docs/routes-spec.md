@@ -29,12 +29,16 @@ camera follow), containing:
    remnant the tileset's wall motif would draw cut off. The motif's footprint
    (`WallFootprint`, taken from the tileset's `wallPattern`) gives the width a run
    needs to show a whole object and the shortest whole-object height; a lane that
-   grazes the forest leaves a one- or two-tile sliver, and a bitten column leaves
-   an odd or too-short run, so both are dropped (turning back into floor). The
-   tidy only ever turns wall back into floor, so it can widen a lane but never block
-   it: the entry, every exit and the spine keep working and the openings stay
-   reachable. A run that touches the one-tile border ring is left alone, so the map
-   stays fenced.
+   grazes the forest leaves a one- or two-tile sliver, and a lane that bites the
+   side of a tree leaves a `cols`-wide band that is no longer solid. Such a bitten
+   tree is removed **whole** (its `cols`-wide row is cleared) and the rest of the
+   column is then **un-stacked** (trimmed to whole objects, stubs dropped), so a
+   tall wall still reads as stacked whole trees. The tree each cell belongs to is
+   anchored to the raw carve and held fixed, so removing a bitten tree never shifts
+   where the trees beside it tile. The tidy only ever turns wall back into floor, so
+   it can widen a lane but never block it: the entry, every exit and the spine keep
+   working and the openings stay reachable. A run that touches the one-tile border
+   ring is left alone, so the map stays fenced.
 3. **Terrain pass**: `terrain` in `src/data/biomes.ts` sets how many tall grass
    patches and ledge lines a biome stamps. Both land on the carved floor **off the
    spine and the openings** (ledges also avoid the pockets), and a ledge line stops
