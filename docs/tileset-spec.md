@@ -86,6 +86,13 @@ border trees read as a stack that goes on past the map edge instead of as a tree
 cut off at the limit, and the side rings stay **open** so the motif is not shifted
 one pattern column aside. No extra tiles are drawn.
 
+A wall cell that draws as the motif's **pure top row** (`rows[0]`, the crown over
+open ground) is a **walkable tip**: `treeTipKeys` finds them, and `RouteScene` walks
+on them (its movement map turns them into floor) while drawing the crown over the
+player (`TREE_TIP_DEPTH`), so the player walks under the tree top. A mass that
+reaches the map edge is part of the border stack, so its top draws row 1 (`BODY`),
+not a pure row 0, and is not a tip.
+
 The FRLG fields use it to draw the real FireRed tree, three columns wide, with six
 frames: `rows[0]` the crown over open ground (the mass's top), `rows[1]` the tree's
 own upper leaves, `rows[2]` the next tree's crown laid over the **lower leaves** of

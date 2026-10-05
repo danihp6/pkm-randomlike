@@ -12,7 +12,7 @@ import {
   type TilesetConfig,
   type WallPattern,
 } from './tileset';
-import { autotileFrame, isNearWall, patternFrame, resolveGroundFrame, resolveTileFrame, variantFrame } from './tileFrames';
+import { autotileFrame, isNearWall, patternFrame, resolveGroundFrame, resolveTileFrame, treeTipKeys, variantFrame } from './tileFrames';
 
 const tileset: TilesetConfig = {
   atlas: { tileSize: 24, cols: 4, rows: 13, width: 96, height: 312 },
@@ -167,6 +167,58 @@ describe('patternFrame', () => {
   it('shows the full crown, both body rows and the trunk on a four-tile border', () => {
     const border: TileMap = [[WALL], [WALL], [WALL], [WALL]];
     expect([0, 1, 2, 3].map((y) => patternFrame(border, 0, y, pattern))).toEqual([8, 11, 20, 23]);
+  });
+});
+
+describe('treeTipKeys', () => {
+  const withPattern: TilesetConfig = {
+    atlas: { tileSize: 24, cols: 4, rows: 13, width: 96, height: 312 },
+    frames: { [FLOOR]: FRAME_FLOOR, [WALL]: FRAME_WALL_INTERIOR },
+    wallPattern: {
+      value: WALL,
+      cols: 3,
+      rows: [
+        [7, 8, 9],
+        [10, 11, 12],
+        [13, 14, 15],
+        [16, 17, 18],
+        [19, 20, 21],
+        [22, 23, 24],
+      ],
+    },
+  };
+
+  it('marks the pure top row of a mass that opens on ground', () => {
+    const detached: TileMap = [
+      [FLOOR, FLOOR, FLOOR, FLOOR, FLOOR],
+      [FLOOR, FLOOR, FLOOR, FLOOR, FLOOR],
+      [FLOOR, WALL, WALL, WALL, FLOOR],
+      [FLOOR, WALL, WALL, WALL, FLOOR],
+      [FLOOR, WALL, WALL, WALL, FLOOR],
+      [FLOOR, FLOOR, FLOOR, FLOOR, FLOOR],
+    ];
+    const tips = treeTipKeys(detached, withPattern);
+    expect(tips.has('1,2')).toBe(true);
+    expect(tips.has('2,2')).toBe(true);
+    expect(tips.has('1,3')).toBe(false);
+  });
+
+  it('does not mark a mass that reaches the border, which is part of a stack', () => {
+    const attached: TileMap = [
+      [WALL, WALL, WALL, WALL, WALL],
+      [FLOOR, WALL, WALL, WALL, FLOOR],
+      [FLOOR, WALL, WALL, WALL, FLOOR],
+      [FLOOR, WALL, WALL, WALL, FLOOR],
+      [FLOOR, FLOOR, FLOOR, FLOOR, FLOOR],
+      [FLOOR, FLOOR, FLOOR, FLOOR, FLOOR],
+    ];
+    const tips = treeTipKeys(attached, withPattern);
+    expect(tips.has('1,0')).toBe(false);
+    expect(tips.has('1,1')).toBe(false);
+  });
+
+  it('has no tips without a wall pattern', () => {
+    expect(treeTipKeys([[WALL, WALL]], tileset).size).toBe(0);
   });
 });
 

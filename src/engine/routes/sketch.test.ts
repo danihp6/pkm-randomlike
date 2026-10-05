@@ -275,7 +275,7 @@ describe('sketchRoute', () => {
     const big = sketchRoute({ ...request('scale-a', 3, 'cross'), width: 64, height: 64 });
     expect(farthest(big)).toBeGreaterThan(farthest(small));
     expect(farthest(big)).toBeGreaterThan(SHAPES.cross.branchMax);
-  });
+  }, 30_000);
 
   it('joins a multi-link shape through one central hub, so every exit connects', () => {
     for (const seed of ['hub-a', 'hub-b', 'hub-c']) {

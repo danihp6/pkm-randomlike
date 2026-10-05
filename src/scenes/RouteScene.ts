@@ -40,7 +40,7 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { TALL_GRASS, WALL, extendMap, resolveMove, tileAt, type TileMap } from '../engine/map';
+import { FLOOR, TALL_GRASS, WALL, extendMap, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, Rng } from '../engine/rng';
 import { storeRun, type Settings } from '../engine/save';
 import {
@@ -55,7 +55,7 @@ import {
   type RouteStep,
 } from '../engine/routes';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
-import { resolveTileFrame, resolveGroundFrame, type TileFrame } from '../engine/tileFrames';
+import { resolveTileFrame, resolveGroundFrame, treeTipKeys, type TileFrame } from '../engine/tileFrames';
 import {
   parseFrameMapExport,
   routeFromFrameMapExport,
@@ -81,6 +81,9 @@ const BAG_ICON_SLOTS = 6;
  * a lane that reaches the edge stays open. No extra tiles are drawn.
  */
 const FRAME_PAD = 1;
+
+/** Render depth of a wall cell's walkable tip, drawn over the player and the grass. */
+const TREE_TIP_DEPTH = 2;
 
 /** The four directions, in the order the update loop tests them. */
 type MoveKey = 'up' | 'down' | 'left' | 'right';
@@ -133,6 +136,8 @@ const DEMO_BAG: readonly BagCounts[] = [
 export class RouteScene extends Phaser.Scene {
   private route!: RouteMap;
   private map!: TileMap;
+  /** `map` for movement: a tree's walkable tip is passable even though it draws as wall. */
+  private moveMap!: TileMap;
   /** The tiles `drawTiles` renders: the live map, or a dev generator step. */
   private renderTiles!: TileMap;
   /** `renderTiles` framed by `FRAME_PAD` wall rings, so border trees read as continuing. */
@@ -242,6 +247,7 @@ export class RouteScene extends Phaser.Scene {
     const biome = biomeForRoute(route.routeIndex);
     const band = bandForRoute(route.routeIndex);
     this.tilesetId = resolveTileset(this.settings.tileset, biome.tilesetId);
+    this.moveMap = this.movementMap(this.map);
     this.encounters = new RouteEncounters(
       biome.encounters[band.id],
       band.minLevel,
@@ -479,15 +485,37 @@ export class RouteScene extends Phaser.Scene {
     return [ground];
   }
 
+  /**
+   * The map movement runs on. A wall cell that draws as a tree's **pure top row**
+   * (its walkable tip, `treeTipKeys`) is turned into floor, so the player walks
+   * under the crown while the tile still renders as the wall motif, drawn over the
+   * player (`TREE_TIP_DEPTH`).
+   */
+  private movementMap(map: TileMap): TileMap {
+    const tips = treeTipKeys(map, TILESETS[this.tilesetId].config, FRAME_PAD);
+    if (tips.size === 0) return map;
+    const copy = map.map((row) => row.slice());
+    for (const key of tips) {
+      const [x, y] = key.split(',').map(Number);
+      copy[y][x] = FLOOR;
+    }
+    return copy;
+  }
+
   private drawTiles(): void {
     this.frameMap = extendMap(this.renderTiles, FRAME_PAD, WALL);
+    const tips = treeTipKeys(this.renderTiles, TILESETS[this.tilesetId].config, FRAME_PAD);
     const created: Phaser.GameObjects.GameObject[] = [];
     for (let y = 0; y < this.renderTiles.length; y++) {
       const row: Phaser.GameObjects.Image[][] = [];
       for (let x = 0; x < this.renderTiles[y].length; x++) {
+        const tip = tips.has(`${x},${y}`);
         row.push(
-          this.tileFrames(x, y).map((frame) => {
+          this.tileFrames(x, y).map((frame, index) => {
             const image = this.tileImage(x, y, frame);
+            // Only the wall motif of a walkable tip goes over the player; its
+            // ground stays under, so the player still shows standing on the tile.
+            if (tip && index > 0) image.setDepth(TREE_TIP_DEPTH);
             created.push(image);
             return image;
           }),
@@ -525,6 +553,7 @@ export class RouteScene extends Phaser.Scene {
 
   private applyTileset(id: TilesetId): void {
     this.tilesetId = id;
+    this.moveMap = this.movementMap(this.map);
     for (let y = 0; y < this.renderTiles.length; y++) {
       for (let x = 0; x < this.renderTiles[y].length; x++) {
         const frames = this.tileFrames(x, y);
@@ -1020,7 +1049,7 @@ export class RouteScene extends Phaser.Scene {
       this.walkStep(direction, direct);
       return;
     }
-    const result = resolveMove(this.map, this.player, step);
+    const result = resolveMove(this.moveMap, this.player, step);
     if (!result) {
       this.faceIdle(direction);
       return;

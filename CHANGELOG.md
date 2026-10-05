@@ -221,6 +221,14 @@ file is the human-readable summary.
       without opening the map. `walls.test.ts` gains a no-one-tile-lane sweep; the
       `carve` blocked-share floor is 0.35 (lanes are wider); the frozen route is
       re-frozen and docs updated.
+- [x] **Walkable tree tips**: a wall cell that draws as the motif's pure top row
+      (`rows[0]`, a crown over open ground) is now a **tip**. `treeTipKeys`
+      (`src/engine/tileFrames.ts`) finds them on the scene's connected-padded map, so
+      a mass that reaches the border (part of the stack above) is not a tip; the route
+      scene walks on them (its movement map turns a tip into floor, so the player
+      steps under the crown) and draws the crown over the player
+      (`TREE_TIP_DEPTH`). `tileFrames.test.ts` covers detached vs border masses;
+      `docs/tileset-spec.md` updated.
 
 ## Phase 0 — Repo & scaffolding
 

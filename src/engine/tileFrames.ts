@@ -1,5 +1,5 @@
 import type { Tile } from './grid';
-import { FLOOR, WALL, type TileMap } from './map';
+import { FLOOR, WALL, extendMap, type TileMap } from './map';
 import type { AutotileRule, TilesetConfig, WallPattern } from './tileset';
 
 export type TileFrameSource = 'atlas' | 'common';
@@ -144,6 +144,30 @@ export function patternCell(
 export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPattern): number {
   const { row, col } = patternCell(map, x, y, pattern);
   return pattern.rows[row][col];
+}
+
+/**
+ * The wall cells that draw as the motif's **pure top row** (`rows[0]`, the crown
+ * over open ground), as `x,y` keys. These are the walkable tips: a tree's own
+ * crown, never a middle `rows[2]` crown laid over the tree above (`patternCell` on
+ * the scene's connected-padded map, `extendMap`, so a tree that reaches the border
+ * is part of the stack above and its top is not a tip). The route scene walks on
+ * them and draws them over the player.
+ */
+export function treeTipKeys(map: TileMap, tileset: TilesetConfig, pad = 1): Set<string> {
+  const keys = new Set<string>();
+  const pattern = tileset.wallPattern;
+  if (!pattern) return keys;
+  const height = map.length;
+  const width = height > 0 ? map[0].length : 0;
+  const framed = pad > 0 ? extendMap(map, pad, WALL) : map;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (map[y][x] !== pattern.value) continue;
+      if (patternCell(framed, x + pad, y + pad, pattern).row === 0) keys.add(`${x},${y}`);
+    }
+  }
+  return keys;
 }
 
 export function isNearWall(map: TileMap, x: number, y: number): boolean {
