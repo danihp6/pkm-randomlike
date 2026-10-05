@@ -80,9 +80,11 @@ bitten `cols`-wide band whole is `cleanWalls`).
 A wall narrower than the motif is centred on it, so a one-tile hedge shows the
 middle column of a tree and never a cut-off edge.
 
-`RouteScene` resolves the frames against the route map framed by one ring of wall
-(`padMap`, `FRAME_PAD`), so the border trees read as a stack that continues past
-the map edge instead of as a tree cut off at the limit; the ring is never drawn.
+`RouteScene` resolves the frames against the route map extended by one ring
+(`extendMap`, `FRAME_PAD`): the vertical rings continue the edge row, so the
+border trees read as a stack that goes on past the map edge instead of as a tree
+cut off at the limit, and the side rings stay **open** so the motif is not shifted
+one pattern column aside. No extra tiles are drawn.
 
 The FRLG fields use it to draw the real FireRed tree, three columns wide, with six
 frames: `rows[0]` the crown over open ground (the mass's top), `rows[1]` the tree's

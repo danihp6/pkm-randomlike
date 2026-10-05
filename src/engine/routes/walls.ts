@@ -75,7 +75,9 @@ function clearRow(tiles: MutableMap, y: number, from: number, to: number): boole
   return changed;
 }
 
-/** How many WALL cells sit immediately left of `(x, y)` on the same row. */
+/**
+ * How many WALL cells sit immediately left of `(x, y)` on the same row.
+ */
 function runLeft(tiles: readonly (readonly number[])[], x: number, y: number): number {
   let left = 0;
   while (x - left - 1 >= 0 && isWall(tiles, x - left - 1, y)) left++;
@@ -91,10 +93,11 @@ function runRight(tiles: readonly (readonly number[])[], x: number, y: number): 
 }
 
 /**
- * The motif column `x` draws on, matching `patternFrame`: it is anchored to the
- * column's own first wall cell plus the centring offset for a run narrower than
- * the motif. `cleanWalls` uses it to know which `cols`-wide tree a wall cell
- * belongs to, so a bitten tree can be removed whole.
+ * The motif column `x` draws on, matching `patternFrame` on the scene's
+ * connected-padded map (`extendMap`): anchored to the column's own first wall
+ * cell plus the centring offset for a run narrower than the motif. `cleanWalls`
+ * uses it to know which `cols`-wide tree a wall cell belongs to, so a bitten tree
+ * can be removed whole.
  */
 function patternColumn(tiles: readonly (readonly number[])[], x: number, cols: number): number {
   const height = tiles.length;
@@ -116,11 +119,11 @@ function patternColumn(tiles: readonly (readonly number[])[], x: number, cols: n
  * (its `cols`-wide row is cleared) and the rest of the column is then un-stacked,
  * so a tall wall still reads as whole stacked objects instead of a cut one.
  *
- * The tree a cell belongs to is fixed by the map as carved: the motif anchors its
- * `cols`-wide columns to the mass top, so the bands are computed **once** from the
- * raw carve. Re-deriving them after a removal would re-base the trees beside a
- * bitten one and eat into them; holding them fixed means deleting a bitten tree
- * never shifts where its neighbours tile.
+ * The tree a cell belongs to is fixed by the map as carved: the scene binds the
+ * motif with `extendMap`, which only carries a tree that reaches the border past
+ * the edge and otherwise anchors a mass to the first wall cell it meets, so
+ * `cleanWalls` anchors the bands the same way and holds them fixed. Deleting a
+ * bitten tree then never shifts where its neighbours tile.
  *
  * Only turns WALL back into FLOOR, so it can widen a lane but never block it: the
  * entry, the exits and the spine keep working and the openings stay reachable.
@@ -154,10 +157,10 @@ export function cleanWalls(tiles: MutableMap, footprint: WallFootprint = DEFAULT
         let wall = 0;
         let open = 0;
         for (let bx = start; bx < start + cols; bx++) {
-          // The renderer frames against a map padded with one ring of wall, so a
-          // band that runs off the playable edge is still whole (the tree goes on).
-          if (bx < 0 || bx >= width || isWall(tiles, bx, y)) wall++;
-          else open++;
+          // The scene extends the map only vertically for the motif, so a band that
+          // runs off the playable edge is cut off there, not continued sideways.
+          if (bx < 0 || bx >= width || !isWall(tiles, bx, y)) open++;
+          else wall++;
         }
         if (wall === 0 || open === 0) continue;
 

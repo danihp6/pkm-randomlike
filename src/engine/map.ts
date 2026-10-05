@@ -112,6 +112,37 @@ export function padMap(map: TileMap, margin: MapMargin, fill: number): TileMap {
 }
 
 /**
+ * A copy of `map` grown by `margin` rings for resolving tile frames. Vertical
+ * rings **continue the edge row** (the row above/below a border tree is that same
+ * row) so a border column's motif keeps going past the limit; horizontal rings are
+ * left open (`FLOOR`). Keeping them open is what binds the motif to the playable
+ * grid: a wall pad on the left would shift every column one motif step aside, and
+ * an interior mass would draw with its trees' columns rotated (`patternFrame`).
+ * `fill` is only used for an empty map.
+ */
+export function extendMap(map: TileMap, margin: MapMargin, fill: number): TileMap {
+  const mx = typeof margin === 'number' ? margin : margin.x;
+  const my = typeof margin === 'number' ? margin : margin.y;
+  if (mx <= 0 && my <= 0) return map;
+  const height = map.length;
+  const innerWidth = height > 0 ? map[0].length : 0;
+  const width = innerWidth + mx * 2;
+  if (height === 0 || innerWidth === 0) {
+    return Array.from({ length: height + my * 2 }, () => new Array<number>(width).fill(fill));
+  }
+  const rowAt = (sourceY: number): number[] => {
+    const row = new Array<number>(width).fill(FLOOR);
+    for (let x = 0; x < innerWidth; x++) row[mx + x] = map[sourceY][x];
+    return row;
+  };
+  const out: number[][] = [];
+  for (let y = 0; y < my; y++) out.push(rowAt(0));
+  for (let y = 0; y < height; y++) out.push(rowAt(y));
+  for (let y = 0; y < my; y++) out.push(rowAt(height - 1));
+  return out;
+}
+
+/**
  * One character per tile, for hand-authored maps in tests, fixtures and the
  * scaffold scene. Unknown characters throw: a typo in a sketch should fail
  * loudly at build/test time, not silently render as floor.

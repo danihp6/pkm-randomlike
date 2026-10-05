@@ -7,6 +7,7 @@ import {
   WALL,
   WATER,
   cutsCorner,
+  extendMap,
   isExit,
   isWalkable,
   mapFromSketch,
@@ -142,6 +143,25 @@ describe('padMap', () => {
     expect(tileAt(padded, { x: 5, y: 7 })).toBe(WALL);
     expect(tileAt(padded, { x: 1, y: 2 })).toBe(WALL);
     expect(tileAt(padded, { x: 2, y: 3 })).toBe(FLOOR);
+  });
+});
+
+describe('extendMap', () => {
+  it('continues the edge rows vertically and leaves the sides open', () => {
+    const extended = extendMap(map, 1, WALL);
+    expect(mapSize(extended)).toEqual({ width: 6, height: 6 });
+    // The top ring row is copied above, so a border wall keeps going past the edge.
+    expect(tileAt(extended, { x: 1, y: 0 })).toBe(WALL);
+    // The side rings stay open, so the motif is not shifted one step aside.
+    expect(tileAt(extended, { x: 0, y: 2 })).toBe(FLOOR);
+    expect(tileAt(extended, { x: 5, y: 4 })).toBe(FLOOR);
+    // The playable cells sit one ring in.
+    expect(tileAt(extended, { x: 2, y: 2 })).toBe(FLOOR);
+    expect(tileAt(extended, { x: 2, y: 1 })).toBe(WALL);
+  });
+
+  it('returns the map untouched without a margin', () => {
+    expect(extendMap(map, 0, WALL)).toBe(map);
   });
 });
 

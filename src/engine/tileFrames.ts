@@ -96,17 +96,20 @@ function runLength(map: TileMap, x: number, y: number, dir: Tile, value: number)
 }
 
 /**
- * Resolves a whole wall motif: the mass's top row is `rows[0]`, its bottom row
- * is the last one, and the rows in between cycle by depth so a tall wall reads
- * as stacked objects. The column repeats across x from the mass's left edge.
- *
- * The phase is anchored to the column's own **first and last wall cell**, so a
- * lane that crosses the column is a hole in the stack instead of two shorter
- * trees that re-anchor half-way down (normalising the extremes is `cleanWalls`).
- * The pattern column is anchored to those cells too, so a lane that bites the
- * side below the top cannot slide the trees there one pattern column aside.
+ * Which cell of the motif `(x, y)` draws as: the row index into
+ * `pattern.rows` and the column index into that row. The phase is anchored to
+ * the column's own **first and last wall cell**, so a lane that crosses the
+ * column is a hole in the stack instead of two shorter trees that re-anchor
+ * half-way down (normalising the extremes is `cleanWalls`). The pattern column
+ * is anchored to those cells too, so a lane that bites the side below the top
+ * cannot slide the trees there one pattern column aside.
  */
-export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPattern): number {
+export function patternCell(
+  map: TileMap,
+  x: number,
+  y: number,
+  pattern: WallPattern,
+): Readonly<{ row: number; col: number }> {
   const { height } = dimensions(map);
   const value = pattern.value;
   let top = 0;
@@ -123,15 +126,24 @@ export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPa
   // on the tree's own upper body (`2`) with the body row laid on the trunk of the
   // tree above (`3`), so the trunk stays hidden and only shows at the mass's foot.
   const aboveFoot = depth >= 2 && foot === 1;
-  const rowIndex = depth === 0 ? 0 : foot === 0 ? last : aboveFoot ? last - 1 : depth === 1 ? 1 : depth % 2 === 0 ? 2 : 3;
-  const row = pattern.rows[rowIndex];
+  const row = depth === 0 ? 0 : foot === 0 ? last : aboveFoot ? last - 1 : depth === 1 ? 1 : depth % 2 === 0 ? 2 : 3;
   const left = runLength(map, x, top, { x: -1, y: 0 }, value);
   const right = runLength(map, x, top, { x: 1, y: 0 }, value);
   // Centre the motif on a wall narrower than the pattern, so a lone one-tile
   // hedge shows the whole tree's middle column instead of its left edge.
   const span = left + 1 + right;
   const offset = span >= pattern.cols ? 0 : Math.floor((pattern.cols - span) / 2);
-  return row[(left + offset) % pattern.cols];
+  return { row, col: (left + offset) % pattern.cols };
+}
+
+/**
+ * Resolves a whole wall motif: the mass's top row is `rows[0]`, its bottom row
+ * is the last one, and the rows in between cycle by depth so a tall wall reads
+ * as stacked objects. The column repeats across x from the mass's left edge.
+ */
+export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPattern): number {
+  const { row, col } = patternCell(map, x, y, pattern);
+  return pattern.rows[row][col];
 }
 
 export function isNearWall(map: TileMap, x: number, y: number): boolean {

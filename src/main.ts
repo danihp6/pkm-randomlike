@@ -64,6 +64,14 @@ if (IS_DEVELOP) {
         const route = game.scene.getScene('Route') as RouteScene | null;
         route?.resetGeneratorStep();
       },
+      exportFrameMap: () => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        return route?.exportFrameMap() ?? null;
+      },
+      importFrameMap: (text) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        return route?.importFrameMap(text) ?? { ok: false, error: 'no active route' };
+      },
     });
   });
 }

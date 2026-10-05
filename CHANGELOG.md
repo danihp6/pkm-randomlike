@@ -181,6 +181,25 @@ file is the human-readable summary.
       gains a side-bite and an un-stack case; the frozen route is re-frozen and
       `docs/routes-spec.md`, `docs/route-generator.md` and `docs/tileset-spec.md`
       are updated.
+- [x] Fixed the wall motif **anchoring** that still left cut trees: the scene framed
+      the motif against the map padded with a **solid** wall ring (`padMap`), which
+      added a wall left of column 0 and pushed every motif band one column aside, so
+      an interior mass drew with its trees' columns rotated (a body tile only on one
+      side). It now uses **`extendMap`**: the **vertical** rings continue the edge row
+      (so a border tree still reads as going on past the limit) and the **side** rings
+      stay open, binding the motif to the playable grid. `cleanWalls` anchors its bands
+      the same way (and counts off-map as open), so what it cleans is what the scene
+      draws. `docs/tileset-spec.md` updated; `extendMap` unit-tested.
+- [x] Dev **"Map" tool**: the debug panel (`src/dev/debugMenu.ts`) gains a Map tab
+      that describes the route **cell by cell** — the raw tile value, the atlas frame
+      it resolves to, and, for the wall motif, the pattern row/column, the connected
+      wall **mass** and the whole-object **tree** (band + contiguous stack) each cell
+      belongs to — and can **export/import** it as JSON. The summary lists the trees
+      whose band is not solid ("bitten"), the exact artifacts a cut tree shows as.
+      Backed by the pure, tested `buildFrameMap`/`serializeFrameMap`/
+      `parseFrameMapExport` (`src/engine/frameMap.ts`); `patternCell` is factored out
+      of `patternFrame` (`src/engine/tileFrames.ts`) so the tool and the renderer
+      share one anchor.
 
 ## Phase 0 — Repo & scaffolding
 

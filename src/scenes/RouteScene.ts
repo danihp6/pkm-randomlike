@@ -40,7 +40,7 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { TALL_GRASS, WALL, padMap, resolveMove, tileAt, type TileMap } from '../engine/map';
+import { TALL_GRASS, WALL, extendMap, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, Rng } from '../engine/rng';
 import { storeRun, type Settings } from '../engine/save';
 import {
@@ -56,6 +56,11 @@ import {
 } from '../engine/routes';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame, resolveGroundFrame, type TileFrame } from '../engine/tileFrames';
+import {
+  parseFrameMapExport,
+  routeFromFrameMapExport,
+  serializeFrameMap,
+} from '../engine/frameMap';
 import { addFrlgWindow } from '../ui/frlg';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
@@ -69,10 +74,11 @@ import { GRASS_TEXTURE_KEY } from './BootScene';
 const BAG_ICON_SLOTS = 6;
 
 /**
- * Rings of wall the scene assumes sit outside the playable map, only while
- * resolving tile frames. The wall motif frames a mass from its edges, so without
- * this the border row reads as a cut-off tree; a ring of wall makes it read as a
- * stack that continues past the limit. No extra tiles are drawn.
+ * Rings the scene assumes sit outside the playable map, only while resolving tile
+ * frames. The wall motif frames a mass from its own edges, so without this a
+ * border tree reads as cut off at the limit; the rings **continue** whatever sits
+ * on the edge (`extendMap`), so a border tree reads as going on past the limit and
+ * a lane that reaches the edge stays open. No extra tiles are drawn.
  */
 const FRAME_PAD = 1;
 
@@ -201,7 +207,6 @@ export class RouteScene extends Phaser.Scene {
    */
   private buildRoute(params: RouteParams, attempt = 0): void {
     const biome = biomeForRoute(params.routeIndex);
-    const band = bandForRoute(params.routeIndex);
     const seed = attempt > 0 ? `${params.seed}#r${attempt}` : params.seed;
     this.routeParams = params;
     const pattern = TILESETS[biome.tilesetId].config.wallPattern;
@@ -218,17 +223,30 @@ export class RouteScene extends Phaser.Scene {
       ledges: params.ledges,
       ...(wall ? { wall } : {}),
     };
-    this.route = sketchRoute(request);
-    this.map = this.route.tiles;
+    const route = sketchRoute(request);
+    this.generatorSteps = IS_DEVELOP ? sketchRouteSteps(request) : [];
+    this.applyRoute(route);
+  }
+
+  /**
+   * Points the scene at an already-built route: its tiles become the live and
+   * render maps, and the tileset and encounter stream follow the route's biome.
+   * Both `buildRoute` and the debug frame-map import go through here so they
+   * cannot drift.
+   */
+  private applyRoute(route: RouteMap): void {
+    this.route = route;
+    this.map = route.tiles;
     this.renderTiles = this.map;
     this.generatorStepIndex = null;
-    this.generatorSteps = IS_DEVELOP ? sketchRouteSteps(request) : [];
+    const biome = biomeForRoute(route.routeIndex);
+    const band = bandForRoute(route.routeIndex);
     this.tilesetId = resolveTileset(this.settings.tileset, biome.tilesetId);
     this.encounters = new RouteEncounters(
       biome.encounters[band.id],
       band.minLevel,
       band.maxLevel,
-      new Rng(hashSeed(`${this.route.seed}:encounters:${this.route.routeIndex}`)),
+      new Rng(hashSeed(`${route.seed}:encounters:${route.routeIndex}`)),
     );
   }
 
@@ -462,7 +480,7 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private drawTiles(): void {
-    this.frameMap = padMap(this.renderTiles, FRAME_PAD, WALL);
+    this.frameMap = extendMap(this.renderTiles, FRAME_PAD, WALL);
     const created: Phaser.GameObjects.GameObject[] = [];
     for (let y = 0; y < this.renderTiles.length; y++) {
       const row: Phaser.GameObjects.Image[][] = [];
@@ -918,6 +936,54 @@ export class RouteScene extends Phaser.Scene {
     this.movePlayerTo(this.player.x, this.player.y);
     this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
     this.setHint(`debug: re-generated route ${params.routeIndex} (attempt ${attempt})`);
+  }
+
+  /**
+   * Debug only: the on-screen route described cell by cell (tile value, resolved
+   * atlas frame, wall-pattern row/column and the whole-object tree each cell
+   * belongs to), as JSON for the menu's "Map" tab. Null when no route is active.
+   */
+  exportFrameMap(): string | null {
+    if (!IS_DEVELOP || !this.route || !this.scene.isActive()) return null;
+    const config = TILESETS[this.tilesetId].config;
+    return JSON.stringify(serializeFrameMap(this.route, config, FRAME_PAD), null, 2);
+  }
+
+  /**
+   * Debug only: rebuild the route from an exported frame map and show it. It does
+   * not touch the run, so an imported map is only for inspection; the route
+   * params follow it so the panel keeps describing what is on screen.
+   */
+  importFrameMap(text: string): { ok: boolean; error?: string } {
+    if (!IS_DEVELOP || !this.scene.isActive()) return { ok: false, error: 'no active route' };
+    let exported;
+    try {
+      exported = parseFrameMapExport(text);
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : 'invalid frame map' };
+    }
+    this.stopWalking();
+    this.clearRouteSprites();
+    const route = routeFromFrameMapExport(exported);
+    this.generatorSteps = [];
+    this.applyRoute(route);
+    const biome = biomeForRoute(route.routeIndex);
+    this.routeParams = {
+      seed: route.seed,
+      routeIndex: route.routeIndex,
+      shape: route.shape,
+      width: route.width,
+      height: route.height,
+      grassPatches: biome.terrain.grassPatches,
+      ledges: biome.terrain.ledges,
+    };
+    this.drawTiles();
+    this.drawEntities();
+    this.player = { ...route.entry };
+    this.movePlayerTo(this.player.x, this.player.y);
+    this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
+    this.setHint(`debug: imported map ${route.width}x${route.height}`);
+    return { ok: true };
   }
 
   private setHint(text: string): void {
