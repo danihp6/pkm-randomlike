@@ -9,9 +9,11 @@ file is the human-readable summary.
 ## Unreleased
 
 - [x] The battle **moves menu is a 2x2 grid** now, so all four moves show at once
-      with no scrolling (each cell is the move name over its type and PP). The
-      arrow keys move around the grid; the mouse still hovers and clicks.
-      `docs/design-spec.md` §4 updated.
+      with no scrolling. Each cell is tinted by the move's **type** and lists the
+      move's **category** (physical / special / status) and PP, a **popup** above
+      the menu describes the move under the cursor, and the ◀ **back** control sits
+      at the start of the first row. The arrow keys move around the grid; the mouse
+      still hovers and clicks. `docs/design-spec.md` §4 updated.
 - [x] The route HUD's party/PC members open a **detail panel** on click instead
       of being grabbed: a new window beside the box with **STATS** (HP bar, the
       five battle stats, nature, ability and the held item) and **MOVES** tabs,
