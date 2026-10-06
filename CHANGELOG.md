@@ -8,6 +8,31 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] Tall grass can **share a tree tip**: a walkable tip cardinally adjacent to a
+      `TALL_GRASS` cell is a **grass tip** (`grassTipKeys` in
+      `src/engine/tileFrames.ts`), so a patch packed against a tree spills onto its
+      crown. `RouteScene` draws the grass frame **under** the crown (the crown
+      stays the frame over the player) and rolls a wild encounter on stepping
+      there; the procedural tuft tilesets get the overlay on the tip too.
+      `docs/tileset-spec.md` §3b and `docs/routes-spec.md` updated.
+- [x] Weighted **floor variants**: a `variants` entry may now be
+      `{ frame, weight }` instead of a bare frame, so a map value can mix several
+      tiles and make some rarer (`VariantFrames` in `src/engine/tileset.ts`,
+      `variantFrame` in `src/engine/tileFrames.ts`). The positional hash is mixed
+      hard so a rare tile scatters instead of lining up into a diagonal run.
+- [x] Forest uses its **own darker ground**: the FRLG forest floor is now the
+      dark `0,34` family (`rgb(88,160,128)`, the tone the tree bank is drawn on)
+      instead of the outdoor `6,1` (`rgb(112,200,160)`), so the tree border blends
+      into the field with no lighter halo. `FRLG_FOREST_TILESET` mixes the forest
+      ground tiles with weights (`0,34` base, `2,34`/`3,34`/`5,34` variety, the
+      flowered `0,38` rare) and the tall grass is the dark-palette tuft `2,33`,
+      stamped whole. The ledge lip has no dark variant, so it is re-grounded onto
+      the field's floor (`overFill` in `scripts/frlg/build-tilesets.mjs`).
+      `docs/tileset-spec.md` and the forest palette updated.
+- [x] Tall grass stamps the **real blade tuft**: the FRLG frames use source `7,0` of
+      `sprite-sources/frlg/tileset-2.png` whole, with its own ground (frame 5 was
+      previously the plain `6,0` floor variant). `docs/tileset-spec.md` §2/§6
+      updated.
 - [x] Biome is **forest only**: `BIOME_ORDER = ['forest']`, so a route always uses
       the forest tileset and encounters whatever its index (the outdoor/cave
       entries stay defined but dormant). The route **shape** is now a first-class

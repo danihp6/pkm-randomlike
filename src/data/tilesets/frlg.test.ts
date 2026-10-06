@@ -18,6 +18,7 @@ import {
 import {
   FRLG_ATLAS_HEIGHT,
   FRLG_ATLAS_WIDTH,
+  FRLG_FOREST_TILESET,
   FRLG_LEDGE_LEFT,
   FRLG_LEDGE_RIGHT,
   FRLG_TALL_GRASS,
@@ -141,5 +142,37 @@ describe('frlg tileset geometry', () => {
     ];
     expect(resolveGroundFrame(besideWall, 1, 1, FRLG_TILESET).frame).toBe(FRAME_FLOOR);
     expect(resolveGroundFrame(besideWall, 1, 0, FRLG_TILESET).frame).toBe(FRAME_FLOOR);
+  });
+});
+
+describe('frlg forest floor', () => {
+  const FOREST_FRAMES = [
+    FRAME_FLOOR,
+    FRAME_FLOOR_ALT_1,
+    FRAME_FLOOR_ALT_2,
+    FRAME_FLOOR_ALT_3,
+    FRAME_FLOOR_ALT_4,
+  ];
+
+  it('mixes the forest floor from weighted dark-ground frames', () => {
+    const variants = FRLG_FOREST_TILESET.variants![FLOOR];
+    const weighted = variants.map((entry) => (typeof entry === 'number' ? { frame: entry, weight: 1 } : entry));
+    expect(weighted.map((entry) => entry.frame)).toEqual(FOREST_FRAMES);
+    // Every tile carries its own positive weight, so the mix has a clear common
+    // ground (the heaviest frame first) and a rare flowered ground (the lightest last).
+    const weights = weighted.map((entry) => entry.weight);
+    expect(weights.every((weight) => Number.isInteger(weight) && weight > 0)).toBe(true);
+    expect(new Set(weights).size).toBe(weights.length);
+    expect(weights[0]).toBe(Math.max(...weights));
+    expect(weights[weights.length - 1]).toBe(Math.min(...weights));
+  });
+
+  it('resolves every forest ground cell to a frame in the weighted mix', () => {
+    const map: TileMap = Array.from({ length: 10 }, () => new Array<number>(10).fill(FLOOR));
+    for (let y = 0; y < 10; y++) {
+      for (let x = 0; x < 10; x++) {
+        expect(FOREST_FRAMES).toContain(resolveGroundFrame(map, x, y, FRLG_FOREST_TILESET).frame);
+      }
+    }
   });
 });

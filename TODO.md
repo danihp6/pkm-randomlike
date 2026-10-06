@@ -119,8 +119,10 @@ most useful first:
       lanes have served their purpose; the biome terrain passes are on again
       (Phase 2 step 5). Generator logic tracked in Phase 2 steps 6-8.
 
-- [ ] **FRLG ground vs path.** The base floor now matches the game's ground colour
-      (`rgb(112,200,160)`, sheet tile `6,1`), but the lighter tiles (`2,3`, `1,3`,
+- [ ] **FRLG ground vs path.** The outdoor base floor matches the game's ground
+      colour (`rgb(112,200,160)`, sheet tile `6,1`) and the forest mixes its darker
+      ground tiles with weights (`rgb(88,160,128)`: `0,34` base, `2,34`/`3,34`/`5,34`
+      variety, the flowered `0,38` rare). The lighter tiles (`2,3`, `1,3`,
       `1,4`, `2,4`) are a separate grass and the tan `2,0` is the route path.
       Decide which is ground, which is the path and which is decoration, and give
       the generator a real path to draw through a route (the current routes are
@@ -128,15 +130,6 @@ most useful first:
 - [ ] **Route exit art.** The exit is a plain floor **opening** punched in the tree
       border (no special tile, and it does not end the route yet). Give an outdoor
       route a real exit marker/opening and restore the end-of-route beat.
-- [ ] **Tall grass (follow-up).** The FRLG fields now stamp a real tufted grass
-      tile (`FRLG_TALL_GRASS`, frame 5, `docs/tileset-spec.md` §2/§6) and
-      `carveGrass` packs patches against the walls (`docs/routes-spec.md`). Open:
-      confirm the exact tall-grass tile in `sprite-sources/frlg/tileset-2.png` (no
-      dedicated blade tile was found there; the general FRLG tileset's
-      `Plain_Grass` zigzag is absent from the rip, so frame 5 uses the denser
-      tufted grass at source `6,0`), and let a patch **share the tree-tip cell**
-      (a `grassTips` set on `RouteMap`, grass drawn under the crown, walking it
-      rolls an encounter).
 - [ ] **Ledge and route props.** The ledge lip shipped (`FRAME_LEDGE`); signs,
       boulders, flowers and the rest of the FRLG props are still missing.
 - [ ] **Beach field.** Compose the FRLG beach (open-water and sand tiles) and add

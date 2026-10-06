@@ -51,8 +51,8 @@ const FRAME_FLOOR_ALT_3 = 41
 const FRAME_FLOOR_ALT_4 = 42
 const FRAME_FLOOR_ALT_5 = 43
 // The tall-grass ground tile, into an otherwise unused shared slot (the field
-// draws chest/item from the common atlas). Source is the denser tufted grass
-// (`tallGrass`), distinct from the plainer floor.
+// draws chest/item from the common atlas). Source is the tufted grass blades
+// (`tallGrass`) drawn whole, with their own ground baked in.
 const FRAME_TALL_GRASS = 5
 // The last cell of the 4x13 sheet, the rocky ledge lip the route walks off.
 const FRAME_LEDGE = 51
@@ -213,7 +213,9 @@ function keyBackground(over, fill, bg) {
  * below lands on the lower leaves of the tree above and its body hides that tree's
  * trunk; only the mass's foot shows the trunk platform. `ledge` is `{ left,
  * center, right }`, the three-source-cell run the ledge draws. `tallGrass` is the
- * ground tile the walkable grass patches stamp.
+ * tufted grass ground tile the walkable patches stamp, drawn whole (each field
+ * picks the tuft drawn on its own ground). The ledge lip is re-grounded onto the
+ * field's floor (`overFill`), so a dark-ground field draws it on that ground.
  */
 function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = [10, 0] }) {
   stamp(atlas, FRAME_FLOOR, floor[0], floor[1])
@@ -224,7 +226,6 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = 
 
   const [top, body, lower, base] = wall
   const floorTile = sourceTile(floor[0], floor[1])
-  const floorCell = (c, r) => compositeOver(sourceTile(c, r), floorTile)
   // The whole wall bank is drawn on one flat ground colour; sample it from the
   // crown, not per tile (a body row's corner pixel is a leaf, not the ground).
   const crown = sourceTile(top[0][0], top[0][1])
@@ -251,10 +252,15 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = 
   FRAME_WALL_BASE.forEach((frame, i) => stampTile(atlas, frame, overNone(base[i])))
 
   stampBlock(atlas, WATER_TUPLE, water[0], water[1])
+  // The grass tuft is stamped whole: the sheet has one tuft per ground palette
+  // (the forest's `2,33` is drawn on the forest ground), so each field picks the
+  // tuft that already sits on its own floor. The ledge lip has no dark-ground
+  // variant, so it keeps the field's own ground (its sheet background is keyed off
+  // and filled with the floor).
   if (tallGrass) stamp(atlas, FRAME_TALL_GRASS, tallGrass[0], tallGrass[1])
-  stampTile(atlas, FRAME_LEDGE_LEFT, floorCell(ledge.left[0], ledge.left[1]))
-  stampTile(atlas, FRAME_LEDGE, floorCell(ledge.center[0], ledge.center[1]))
-  stampTile(atlas, FRAME_LEDGE_RIGHT, floorCell(ledge.right[0], ledge.right[1]))
+  stampTile(atlas, FRAME_LEDGE_LEFT, overFill(ledge.left, floor))
+  stampTile(atlas, FRAME_LEDGE, overFill(ledge.center, floor))
+  stampTile(atlas, FRAME_LEDGE_RIGHT, overFill(ledge.right, floor))
 }
 
 /**
@@ -298,24 +304,30 @@ function outdoorFrames(atlas) {
     ],
     wall: TREE,
     ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
-    tallGrass: [6, 0],
+    tallGrass: [7, 0],
   })
 }
 
-/** Forest: Viridian Forest light grass under the same dense tree border. */
+/**
+ * Forest: Viridian Forest's darker ground under the same dense tree border. The
+ * floor is a weighted mix of the forest ground tiles (all `0,34`-family,
+ * `rgb(88,160,128)`) that `FRLG_FOREST_TILESET` renders: `0,34` base, `2,34`,
+ * `3,34`, `5,34` as variety and the flowered `0,38` rare. The tuft `2,33` is the
+ * dark-palette tall grass drawn on that ground.
+ */
 function forestFrames(atlas) {
   fieldFrames(atlas, {
-    floor: [6, 1],
+    floor: [0, 34],
     floorAlts: [
-      [6, 0],
-      [1, 3],
-      [2, 3],
-      [1, 5],
-      [2, 5],
+      [2, 34],
+      [3, 34],
+      [5, 34],
+      [0, 38],
+      [3, 34],
     ],
     wall: TREE,
     ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
-    tallGrass: [6, 0],
+    tallGrass: [2, 33],
   })
 }
 
@@ -340,7 +352,7 @@ function caveFrames(atlas) {
       [rockBase, rockBase, rockBase],
     ],
     ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
-    tallGrass: [6, 0],
+    tallGrass: [7, 0],
   })
 }
 

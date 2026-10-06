@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHEST, FLOOR, LEDGE, WALL, type TileMap } from './map';
+import { CHEST, FLOOR, LEDGE, TALL_GRASS, WALL, type TileMap } from './map';
 import {
   FRAME_FLOOR,
   FRAME_FLOOR_ALT_1,
@@ -12,7 +12,7 @@ import {
   type TilesetConfig,
   type WallPattern,
 } from './tileset';
-import { autotileFrame, isNearWall, ledgeFrame, patternFrame, resolveGroundFrame, resolveTileFrame, treeTipKeys, variantFrame } from './tileFrames';
+import { autotileFrame, grassTipKeys, isNearWall, ledgeFrame, patternFrame, resolveGroundFrame, resolveTileFrame, treeTipKeys, variantFrame } from './tileFrames';
 
 const tileset: TilesetConfig = {
   atlas: { tileSize: 24, cols: 4, rows: 13, width: 96, height: 312 },
@@ -288,12 +288,84 @@ describe('treeTipKeys', () => {
   });
 });
 
+describe('grassTipKeys', () => {
+  const withPattern: TilesetConfig = {
+    atlas: { tileSize: 24, cols: 4, rows: 13, width: 96, height: 312 },
+    frames: { [FLOOR]: FRAME_FLOOR, [WALL]: FRAME_WALL_INTERIOR },
+    wallPattern: {
+      value: WALL,
+      cols: 3,
+      rows: [
+        [7, 8, 9],
+        [10, 11, 12],
+        [13, 14, 15],
+        [16, 17, 18],
+        [19, 20, 21],
+        [22, 23, 24],
+      ],
+    },
+  };
+
+  it('shares only the tree tips that touch tall grass', () => {
+    const map: TileMap = [
+      [FLOOR, FLOOR, FLOOR, FLOOR, FLOOR],
+      [FLOOR, FLOOR, FLOOR, FLOOR, FLOOR],
+      [TALL_GRASS, WALL, WALL, WALL, FLOOR],
+      [TALL_GRASS, WALL, WALL, WALL, FLOOR],
+      [FLOOR, FLOOR, FLOOR, FLOOR, FLOOR],
+      [FLOOR, FLOOR, FLOOR, FLOOR, FLOOR],
+    ];
+    const tips = grassTipKeys(map, withPattern);
+    // (1,2) is the mass's top row beside the grass; (2,2) is also a tip but has
+    // no grass beside it, and (1,3) is not a tip at all.
+    expect(tips.has('1,2')).toBe(true);
+    expect(tips.has('2,2')).toBe(false);
+    expect(tips.has('1,3')).toBe(false);
+  });
+
+  it('has no grass tips without a wall pattern', () => {
+    expect(grassTipKeys([[TALL_GRASS, WALL]], tileset).size).toBe(0);
+  });
+});
+
 describe('variantFrame', () => {
   it('is deterministic for a position and stays inside the option list', () => {
     const options = [1, 2, 3];
     const first = variantFrame(4, 9, options);
     expect(variantFrame(4, 9, options)).toBe(first);
     expect(options).toContain(first);
+  });
+
+  it('draws a heavier frame more often and scatters it (no diagonal run)', () => {
+    const options = [
+      { frame: 10, weight: 8 },
+      { frame: 11, weight: 1 },
+    ];
+    const counts = new Map<number, number>([
+      [10, 0],
+      [11, 0],
+    ]);
+    for (let y = 0; y < 40; y++) {
+      for (let x = 0; x < 40; x++) {
+        const frame = variantFrame(x, y, options);
+        counts.set(frame, counts.get(frame)! + 1);
+      }
+    }
+    expect(counts.get(10)!).toBeGreaterThan(counts.get(11)! * 4);
+    // The rare frame must not line up on a single row, column or diagonal.
+    const rareRows = new Set<number>();
+    for (let y = 0; y < 40; y++) {
+      for (let x = 0; x < 40; x++) if (variantFrame(x, y, options) === 11) rareRows.add(y);
+    }
+    expect(rareRows.size).toBeGreaterThan(1);
+  });
+
+  it('never draws a zero-weight frame', () => {
+    const options = [
+      { frame: 7, weight: 1 },
+      { frame: 9, weight: 0 },
+    ];
+    for (let y = 0; y < 20; y++) for (let x = 0; x < 20; x++) expect(variantFrame(x, y, options)).toBe(7);
   });
 });
 

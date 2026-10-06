@@ -12,11 +12,16 @@ import {
 import {
   COMMON_FRAME_CARPET,
   FRAME_FLOOR,
+  FRAME_FLOOR_ALT_1,
+  FRAME_FLOOR_ALT_2,
+  FRAME_FLOOR_ALT_3,
+  FRAME_FLOOR_ALT_4,
   FRAME_LEDGE,
   TILESET_COLS,
   TILESET_ROWS,
   WATER_SHAPES,
   type TilesetConfig,
+  type VariantFrames,
   type WallPattern,
 } from '../../engine/tileset';
 
@@ -86,16 +91,33 @@ const WALL_PATTERN: WallPattern = {
 /**
  * The field's ground is uniform: the lighter floor frames (`FLOOR_ALT_*`) are a
  * second, paler grass on the source sheet, and laid beside a wall they read as a
- * route path rather than a shadow. FRLG keeps only the clean frame and drops the
- * PMD-style wall-edge decal (`wallAdjacentVariants`) until a real path is drawn.
+ * route path rather than a shadow. The outdoor and cave fields keep only the clean
+ * frame and drop the PMD-style wall-edge decal (`wallAdjacentVariants`) until a
+ * real path is drawn. The forest mixes its dark ground tiles instead (below).
  */
 const FLOOR_CLEAN = [FRAME_FLOOR];
 
 /**
+ * The forest floor is a weighted mix of its own dark ground tiles (all `rgb(88,160,128)`):
+ * the base ground dominates, three sibling grounds add variety and the flowered
+ * ground is rare. The weights are relative, so adding a rare tile does not
+ * meaningfully change how often the others show. The build script stamps each
+ * frame from the matching source cell (`build-tilesets.mjs`).
+ */
+const FOREST_FLOOR_VARIANTS: VariantFrames = [
+  { frame: FRAME_FLOOR, weight: 8 },
+  { frame: FRAME_FLOOR_ALT_1, weight: 5 },
+  { frame: FRAME_FLOOR_ALT_2, weight: 4 },
+  { frame: FRAME_FLOOR_ALT_3, weight: 3 },
+  { frame: FRAME_FLOOR_ALT_4, weight: 1 },
+];
+
+/**
  * The FRLG route fields (grass, forest, cave) share one atlas layout: floor
  * variants, the wall motif (a three-wide tree/rock run, `wallPattern`) and the
- * rocky-banked pond. Only the art per biome differs, which is why one config
- * serves all three sheets.
+ * rocky-banked pond. Only the art per biome differs, so `FRLG_TILESET` serves the
+ * outdoor and cave sheets; `FRLG_FOREST_TILESET` reuses it and only swaps the floor
+ * variant mix for the forest's weighted dark ground.
  */
 export const FRLG_TILESET: TilesetConfig = {
   atlas: {
@@ -128,4 +150,14 @@ export const FRLG_TILESET: TilesetConfig = {
     [ITEM]: FLOOR_CLEAN,
   },
   commonFrames: { [CARPET]: COMMON_FRAME_CARPET },
+};
+
+/**
+ * The forest field: the same layout as `FRLG_TILESET`, but the floor draws the
+ * forest's weighted dark-ground mix (`FOREST_FLOOR_VARIANTS`) instead of the single
+ * clean frame. The tall-grass tuft and the tree art already carry that dark ground.
+ */
+export const FRLG_FOREST_TILESET: TilesetConfig = {
+  ...FRLG_TILESET,
+  variants: { ...FRLG_TILESET.variants, [FLOOR]: FOREST_FLOOR_VARIANTS },
 };
