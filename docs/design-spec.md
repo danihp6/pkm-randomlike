@@ -38,7 +38,9 @@ carries over.
 - **Held items** are equipped from the same HUD: drag an equipment stack from the
   bag onto a party or box member to give it the item (any item it already held
   returns to the bag, so an equip is a swap, never a loss). The held item shows as
-  a small badge on the avatar's lower-right corner.
+  a badge on the avatar's lower-right corner; dragging **that badge** takes the
+  item off the member (onto another member to pass it along, or onto the bag to
+  unequip it).
 - You start a run by picking one of three starters drawn from the base forms of
   every evolution line with at least three members (itself plus two others), so
   every starter has room to grow.
