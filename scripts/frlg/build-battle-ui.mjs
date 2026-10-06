@@ -5,7 +5,8 @@
 // Outputs the committed src/assets/frlg/ files — window.png (the light menu
 // window), textbox.png (the navy battle message box), hpbar.png (the HP bar:
 // the "HP" chip plus an empty track, the coloured fill is drawn behind it) and
-// cursor.png (the ▶ command-menu cursor) — drawn by src/ui/frlg.ts.
+// cursor.png (the ▶ command-menu cursor, its white matte cleared to transparent)
+// — drawn by src/ui/frlg.ts.
 // src/data/frlg/battle-ui.json records the measured geometry (the atlas scale
 // and the HP track's fill rectangle) so the scene never hardcodes pixel maths.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -79,6 +80,16 @@ function clearHpFill(img) {
   return { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 }
 }
 
+// The cursor is cropped with the sheet's white matte behind it. Clear the pure
+// white so the ▶ blends over whatever window it sits on.
+function clearWhiteMatte(img) {
+  for (let i = 0; i < img.data.length; i += 4) {
+    if (img.data[i] === 255 && img.data[i + 1] === 255 && img.data[i + 2] === 255) {
+      img.data[i + 3] = 0
+    }
+  }
+}
+
 mkdirSync(ASSETS, { recursive: true })
 mkdirSync(new URL('../../src/data/frlg/', import.meta.url), { recursive: true })
 
@@ -87,6 +98,7 @@ for (const [name, [x, y, w, h]] of Object.entries(REGIONS)) {
   const region = crop(sheet, x, y, w, h)
   let fill = null
   if (name === 'hpbar') fill = clearHpFill(region)
+  if (name === 'cursor') clearWhiteMatte(region)
   const out = scale(region, SCALE)
   writeFileSync(new URL(`${name}.png`, ASSETS), encodePng(out.width, out.height, out.data))
   report[name] = { width: out.width, height: out.height }

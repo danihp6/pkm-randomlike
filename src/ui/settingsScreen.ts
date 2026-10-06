@@ -26,7 +26,7 @@ export const TEXT_SPEED_ORDER: readonly TextSpeed[] = ['slow', 'normal', 'fast']
 /** Volume moves in ten-point steps; the stored value is normalised to one. */
 export const VOLUME_STEPS = 10;
 
-export type SettingsRowId = 'textSpeed' | 'volume' | 'tileset' | KeybindAction;
+export type SettingsRowId = 'textSpeed' | 'volume' | 'tileset' | 'alwaysRun' | KeybindAction;
 
 export type SettingsRowKind = 'step' | 'keybind';
 
@@ -54,6 +54,12 @@ const STEP_ROWS: readonly SettingsRow[] = [
     id: 'tileset',
     label: 'Tileset',
     hint: 'Auto follows the biome; anything else is forced everywhere.',
+    kind: 'step',
+  },
+  {
+    id: 'alwaysRun',
+    label: 'Always run',
+    hint: 'Walk at running speed without holding the run key.',
     kind: 'step',
   },
 ];
@@ -89,6 +95,8 @@ export function settingValue(settings: Settings, row: SettingsRowId): string {
       return `${Math.round(settings.volume * 100)}%`;
     case 'tileset':
       return tilesetLabel(settings.tileset);
+    case 'alwaysRun':
+      return settings.alwaysRun ? 'On' : 'Off';
     default:
       return isKeybindAction(row) ? keyLabel(settings.keybinds[row]) : '';
   }
@@ -114,6 +122,8 @@ export function changeSetting(settings: Settings, row: SettingsRowId, delta: num
       );
       return { ...settings, tileset: TILESET_PREFERENCES[index] };
     }
+    case 'alwaysRun':
+      return { ...settings, alwaysRun: !settings.alwaysRun };
     default:
       return settings;
   }

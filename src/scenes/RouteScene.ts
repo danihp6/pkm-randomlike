@@ -458,7 +458,13 @@ export class RouteScene extends Phaser.Scene {
         if (!this.scene.isActive()) return;
         switch (action) {
           case 'confirm':
-            if (this.releaseRoot && this.releaseArmed) this.advanceRelease();
+            // `E` is the accept key: it moves a release beat on, and otherwise
+            // doubles as the overworld interact (the shared default for both).
+            if (this.releaseRoot) {
+              if (this.releaseArmed) this.advanceRelease();
+              return;
+            }
+            this.tryInteract();
             return;
           case 'interact':
             this.tryInteract();
@@ -522,7 +528,8 @@ export class RouteScene extends Phaser.Scene {
   /** The resting line, spelled with whatever keys the player has bound. */
   private defaultHint(): string {
     const { up, down, left, right, run, interact, hud, settings } = this.settings.keybinds;
-    return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   hold ${keyLabel(run)} run   ·   ${keyLabel(interact)} interact   ·   ${keyLabel(hud)} HUD   ·   ${keyLabel(settings)} settings`;
+    const runHint = this.settings.alwaysRun ? 'always running' : `hold ${keyLabel(run)} run`;
+    return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   ${runHint}   ·   ${keyLabel(interact)} interact   ·   ${keyLabel(hud)} HUD   ·   ${keyLabel(settings)} settings`;
   }
 
   /**
@@ -1440,7 +1447,7 @@ export class RouteScene extends Phaser.Scene {
   /** Plays the direction's walk cycle while a step is in flight. */
   private walkStep(direction: MoveKey, to: Tile): void {
     this.face(direction);
-    const running = this.runKey?.isDown ?? false;
+    const running = this.settings.alwaysRun || (this.runKey?.isDown ?? false);
     this.playerSprite.anims.timeScale = playerWalkTimeScale(running, WALK_STEP_MS, RUN_STEP_MS);
     this.playerSprite.play(playerWalkAnimKey(this.facing), true);
     this.walkTween = this.tweens.add({
@@ -1496,12 +1503,17 @@ export class RouteScene extends Phaser.Scene {
     if (!this.collectItemAt(ahead)) this.collectItemAt(this.player);
   }
 
-  /** True when an unpicked ground item occupies `tile`, so movement is blocked. */
+  /**
+   * True when a **visible** unpicked ground item occupies `tile`, so movement is
+   * blocked. Hidden items (the faint sparkle) never block: they are walked over
+   * and picked up underfoot with the interact key.
+   */
   private itemBlocks(tile: Tile): boolean {
     return this.route.items.some(
       (item) =>
         item.position.x === tile.x &&
         item.position.y === tile.y &&
+        !item.hidden &&
         !isItemPicked(this.run, item.id),
     );
   }
@@ -1665,11 +1677,17 @@ export class RouteScene extends Phaser.Scene {
     this.releasePortrait = this.add.image(width / 2, y + 96, PORTRAIT_TEXTURE_KEY, 0).setScale(3);
     this.releaseText = addFrlgText(this, width / 2, y + 168, '', { align: 'center', origin: 0.5 });
     this.releaseText.setMaxWidth(panelW - 48);
-    const hint = addFrlgText(this, width / 2, y + panelH + 28, 'Z — continue', {
-      size: 16,
-      tint: 0x94a3b8,
-      origin: 0.5,
-    });
+    const hint = addFrlgText(
+      this,
+      width / 2,
+      y + panelH + 28,
+      `${keyLabel(this.settings.keybinds.confirm)} — continue`,
+      {
+        size: 16,
+        tint: 0x94a3b8,
+        origin: 0.5,
+      },
+    );
     // The HUD camera was told to ignore everything that existed at setup, not
     // this, so the overlay lives there; the world camera must drop it.
     this.releaseRoot = this.add
@@ -2012,8 +2030,8 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     const result = resolveMove(this.moveMap, this.player, step);
-    // A ground item blocks its tile, like an object in the originals: it is taken
-    // with the interact key, never by walking over it.
+    // A visible ground item blocks its tile, like an object in the originals: it
+    // is taken with the interact key. A hidden item can be walked over.
     if (!result || this.itemBlocks(result.to)) {
       this.faceIdle(direction);
       return;

@@ -15,11 +15,12 @@ import {
 } from './settingsScreen';
 
 describe('rows', () => {
-  it('lists the three step settings then one row per keybind action', () => {
+  it('lists the four step settings then one row per keybind action', () => {
     expect(SETTINGS_ROWS.map((row) => row.id)).toEqual([
       'textSpeed',
       'volume',
       'tileset',
+      'alwaysRun',
       'confirm',
       'cancel',
       'up',
@@ -32,8 +33,8 @@ describe('rows', () => {
       'hud',
       'settings',
     ]);
-    expect(SETTINGS_ROWS.slice(0, 3).every(isStepRow)).toBe(true);
-    expect(SETTINGS_ROWS.slice(3).every((row) => !isStepRow(row))).toBe(true);
+    expect(SETTINGS_ROWS.slice(0, 4).every(isStepRow)).toBe(true);
+    expect(SETTINGS_ROWS.slice(4).every((row) => !isStepRow(row))).toBe(true);
   });
 
   it('clamps a selection to the list', () => {
@@ -52,13 +53,15 @@ describe('settingValue', () => {
     expect(settingValue(defaultSettings(), 'volume')).toBe('80%');
     expect(settingValue(defaultSettings(), 'tileset')).toBe('Auto (biome)');
     expect(settingValue({ ...defaultSettings(), tileset: 'wood' }, 'tileset')).toBe('Woods');
+    expect(settingValue(defaultSettings(), 'alwaysRun')).toBe('On');
+    expect(settingValue({ ...defaultSettings(), alwaysRun: false }, 'alwaysRun')).toBe('Off');
   });
 
   it('prints a keybind as its key, arrows and all', () => {
-    expect(settingValue(defaultSettings(), 'confirm')).toBe('Z');
-    expect(settingValue(defaultSettings(), 'cancel')).toBe('X');
+    expect(settingValue(defaultSettings(), 'confirm')).toBe('E');
+    expect(settingValue(defaultSettings(), 'cancel')).toBe('Q');
     expect(settingValue(defaultSettings(), 'up')).toBe('\u2191');
-    expect(settingValue({ ...defaultSettings(), keybinds: { ...DEFAULT_KEYBINDS, hud: 'Q' } }, 'hud')).toBe('Q');
+    expect(settingValue({ ...defaultSettings(), keybinds: { ...DEFAULT_KEYBINDS, hud: 'Y' } }, 'hud')).toBe('Y');
   });
 });
 
@@ -104,6 +107,15 @@ describe('changeSetting', () => {
     expect(changeSetting(settings, 'tileset', -1).tileset).toBe('auto');
   });
 
+  it('toggles always-run off and back on', () => {
+    let settings = defaultSettings();
+    expect(settings.alwaysRun).toBe(true);
+    settings = changeSetting(settings, 'alwaysRun', 1);
+    expect(settings.alwaysRun).toBe(false);
+    settings = changeSetting(settings, 'alwaysRun', -1);
+    expect(settings.alwaysRun).toBe(true);
+  });
+
   it('never mutates the settings it is given', () => {
     const settings = defaultSettings();
     changeSetting(settings, 'textSpeed', 1);
@@ -132,19 +144,19 @@ describe('changeSetting', () => {
 
 describe('rebindSetting', () => {
   it('rebinds one action and leaves the rest', () => {
-    const settings = rebindSetting(defaultSettings(), 'confirm', 'Q');
-    expect(settings.keybinds.confirm).toBe('Q');
-    expect(settings.keybinds.cancel).toBe('X');
+    const settings = rebindSetting(defaultSettings(), 'confirm', 'K');
+    expect(settings.keybinds.confirm).toBe('K');
+    expect(settings.keybinds.cancel).toBe('Q');
   });
 
   it('swaps when the key already belongs to another action', () => {
-    const settings = rebindSetting(defaultSettings(), 'up', 'X');
-    expect(settings.keybinds.up).toBe('X');
+    const settings = rebindSetting(defaultSettings(), 'up', 'Q');
+    expect(settings.keybinds.up).toBe('Q');
     expect(settings.keybinds.cancel).toBe('UP');
   });
 
   it('returns the same settings when the key does not change', () => {
     const settings = defaultSettings();
-    expect(rebindSetting(settings, 'confirm', 'Z')).toBe(settings);
+    expect(rebindSetting(settings, 'confirm', 'E')).toBe(settings);
   });
 });

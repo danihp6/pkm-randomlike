@@ -59,11 +59,24 @@ Full rules in `docs/battle-spec.md`. In short:
   data extracted from Showdown at build time.
 - XP, levels and evolution are classic, with a **level cap per route** so power
   always comes from play, not grinding.
-- Wild battles can be fled; trainer battles cannot.
+- Wild battles can be fled; trainer battles cannot. Fleeing is one press: RUN
+  attempts the escape at once, with no yes/no prompt.
+- The command menu takes the **mouse** as well as the keyboard: hovering a row
+  moves the ▶ cursor and a click picks it, and a click advances the battle text.
+- The bag opens as pockets like the route HUD — **CONSUM** everywhere and
+  **BALL** while a wild can still be caught; trainer battles offer only
+  consumables.
+- Every battle ends by itself: once the closing line has been read, a run, a
+  catch, a win or a loss all return to the route with no confirm to press.
+- On a wide screen the battle is a centred **square** (at most 900 px a side);
+  a tall phone screen keeps the stacked, full-height layout.
 
 ## 5. The route
 
 - Classic overworld movement on a tile grid, 24x24 tiles, camera follows.
+- **Ground items** sit on the pockets against a wall (a corner where they can);
+  a visible one is a Poke Ball that blocks its tile, a hidden one is a faint
+  sparkle you can walk over and pick up underfoot (`E`).
 - **Tall grass** is the only tile that rolls a wild encounter.
 - **Trainers** have a line of sight: step in their cone and the battle starts.
 - The exit opening ends the route (a floor position, no special tile; disabled for
@@ -90,10 +103,11 @@ win clears its route; a loss does not, and nothing carries over (D5).
 ## 7. Settings
 
 The player's preferences outlive a run: text speed (how fast the battle message
-box types itself out), master volume and the tileset preference (`auto` follows
-each biome, or one tileset is forced on every route). They live in the same save
-document as the run (D22), are stored the moment they change and are edited from
-one screen (`O`, from the starter pick or the route HUD).
+box types itself out), master volume, the tileset preference (`auto` follows
+each biome, or one tileset is forced on every route) and **always run** (walk at
+running speed without holding the run key; on by default). They live in the same
+save document as the run (D22), are stored the moment they change and are edited
+from one screen (`O`, from the starter pick or the route HUD).
 
 ## 8. Out of scope (for now)
 

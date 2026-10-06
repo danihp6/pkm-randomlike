@@ -12,6 +12,7 @@ import {
   type RunState,
 } from './run';
 import {
+  DEFAULT_ALWAYS_RUN,
   DEFAULT_TEXT_SPEED,
   DEFAULT_TILESET,
   DEFAULT_VOLUME,
@@ -77,6 +78,7 @@ describe('defaults', () => {
       textSpeed: DEFAULT_TEXT_SPEED,
       volume: DEFAULT_VOLUME,
       tileset: DEFAULT_TILESET,
+      alwaysRun: DEFAULT_ALWAYS_RUN,
       keybinds: DEFAULT_KEYBINDS,
     });
   });
@@ -91,7 +93,13 @@ describe('encodeSave', () => {
     const run = sampleRun();
     const encoded = encodeSave({
       version: 99,
-      settings: { textSpeed: 'fast', volume: 0.4, tileset: 'wood', keybinds: DEFAULT_KEYBINDS },
+      settings: {
+        textSpeed: 'fast',
+        volume: 0.4,
+        tileset: 'wood',
+        alwaysRun: DEFAULT_ALWAYS_RUN,
+        keybinds: DEFAULT_KEYBINDS,
+      },
       run,
     });
     expect(JSON.parse(encoded).version).toBe(SAVE_VERSION);
@@ -101,6 +109,7 @@ describe('encodeSave', () => {
       textSpeed: 'fast',
       volume: 0.4,
       tileset: 'wood',
+      alwaysRun: DEFAULT_ALWAYS_RUN,
       keybinds: DEFAULT_KEYBINDS,
     });
     expect(decoded.run).toEqual(run);
@@ -129,6 +138,7 @@ describe('decodeSave', () => {
       textSpeed: 'slow',
       volume: 0.1,
       tileset: 'placeholder',
+      alwaysRun: DEFAULT_ALWAYS_RUN,
       keybinds: DEFAULT_KEYBINDS,
     });
   });
@@ -148,6 +158,7 @@ describe('decodeSave', () => {
       textSpeed: 'fast',
       volume: 0.25,
       tileset: DEFAULT_TILESET,
+      alwaysRun: DEFAULT_ALWAYS_RUN,
       keybinds: DEFAULT_KEYBINDS,
     });
     expect(decoded.run?.party).toHaveLength(6);
@@ -162,6 +173,7 @@ describe('decodeSave', () => {
       textSpeed: 'slow',
       volume: 0.5,
       tileset: DEFAULT_TILESET,
+      alwaysRun: DEFAULT_ALWAYS_RUN,
       keybinds: DEFAULT_KEYBINDS,
     });
     expect(decoded.run?.party).toHaveLength(6);
@@ -179,8 +191,26 @@ describe('decodeSave', () => {
       textSpeed: 'fast',
       volume: 0.5,
       tileset: 'wood',
+      alwaysRun: DEFAULT_ALWAYS_RUN,
       keybinds: DEFAULT_KEYBINDS,
     });
+    expect(decoded.run?.party).toHaveLength(6);
+  });
+
+  it('migrates a v4 settings onto the current schema, resetting the accept/cancel keys', () => {
+    const raw = JSON.stringify({
+      version: 4,
+      settings: {
+        textSpeed: 'fast',
+        volume: 0.5,
+        tileset: 'wood',
+        keybinds: { ...DEFAULT_KEYBINDS, confirm: 'Z', cancel: 'X' },
+      },
+      run: sampleRun(),
+    });
+    const decoded = decodeSave(raw);
+    expect(decoded.version).toBe(SAVE_VERSION);
+    expect(decoded.settings.keybinds).toEqual(DEFAULT_KEYBINDS);
     expect(decoded.run?.party).toHaveLength(6);
   });
 });
@@ -192,6 +222,7 @@ describe('settings validation', () => {
       textSpeed: DEFAULT_TEXT_SPEED,
       volume: 1,
       tileset: DEFAULT_TILESET,
+      alwaysRun: DEFAULT_ALWAYS_RUN,
       keybinds: DEFAULT_KEYBINDS,
     });
   });
@@ -201,6 +232,7 @@ describe('settings validation', () => {
       textSpeed: DEFAULT_TEXT_SPEED,
       volume: 0,
       tileset: DEFAULT_TILESET,
+      alwaysRun: DEFAULT_ALWAYS_RUN,
       keybinds: DEFAULT_KEYBINDS,
     });
     expect(document(JSON.stringify({ version: SAVE_VERSION, settings: {} })).settings).toEqual(defaultSettings());
@@ -320,18 +352,20 @@ describe('migrateDocument', () => {
   it('upgrades a pre-envelope document end to end, once a step exists', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
-    // Four steps, because the test starts at v0 and the current schema is v4.
+    // Five steps, because the test starts at v0 and the current schema is v5.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
       2: (doc) => ({ ...doc, version: 3, settings: { ...(doc.settings as object), tileset: 'wood' } }),
-      3: (doc) => ({ ...doc, version: SAVE_VERSION, settings: { ...(doc.settings as object), keybinds: DEFAULT_KEYBINDS } }),
+      3: (doc) => ({ ...doc, version: 4, settings: { ...(doc.settings as object), keybinds: DEFAULT_KEYBINDS } }),
+      4: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
       textSpeed: 'fast',
       volume: 0.25,
       tileset: 'wood',
+      alwaysRun: DEFAULT_ALWAYS_RUN,
       keybinds: DEFAULT_KEYBINDS,
     });
     expect(decoded.run).toEqual(run);

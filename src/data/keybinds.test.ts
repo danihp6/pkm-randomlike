@@ -14,9 +14,12 @@ import {
 } from './keybinds';
 
 describe('defaults', () => {
-  it('binds every action, each to its own key', () => {
+  it('binds every action, each to its own key bar the shared accept key', () => {
     for (const action of KEYBIND_ACTIONS) expect(DEFAULT_KEYBINDS[action]).toBeTruthy();
-    const keys = KEYBIND_ACTIONS.map((action) => DEFAULT_KEYBINDS[action]);
+    expect(DEFAULT_KEYBINDS.interact).toBe(DEFAULT_KEYBINDS.confirm);
+    const keys = KEYBIND_ACTIONS.filter((action) => action !== 'interact').map(
+      (action) => DEFAULT_KEYBINDS[action],
+    );
     expect(new Set(keys).size).toBe(keys.length);
   });
 
@@ -28,20 +31,20 @@ describe('defaults', () => {
 
 describe('actionForKey', () => {
   it('resolves every binding', () => {
-    expect(actionForKey(DEFAULT_KEYBINDS, 'Z')).toBe('confirm');
-    expect(actionForKey(DEFAULT_KEYBINDS, 'X')).toBe('cancel');
+    expect(actionForKey(DEFAULT_KEYBINDS, 'E')).toBe('confirm');
+    expect(actionForKey(DEFAULT_KEYBINDS, 'Q')).toBe('cancel');
     expect(actionForKey(DEFAULT_KEYBINDS, 'UP')).toBe('up');
-    expect(actionForKey(DEFAULT_KEYBINDS, 'E')).toBe('interact');
     expect(actionForKey(DEFAULT_KEYBINDS, 'I')).toBe('hud');
     expect(actionForKey(DEFAULT_KEYBINDS, 'P')).toBeNull();
     expect(actionForKey(DEFAULT_KEYBINDS, 'O')).toBe('settings');
+    expect(actionForKey(DEFAULT_KEYBINDS, 'Z')).toBeNull();
   });
 
   it('answers the always-on confirm/cancel aliases', () => {
     for (const [key, action] of Object.entries(KEY_ALIASES)) {
       expect(actionForKey(DEFAULT_KEYBINDS, key)).toBe(action);
     }
-    expect(actionForKey(DEFAULT_KEYBINDS, 'Q')).toBeNull();
+    expect(actionForKey(DEFAULT_KEYBINDS, 'Y')).toBeNull();
   });
 
   it('lets an explicit binding win over an alias', () => {
@@ -52,22 +55,20 @@ describe('actionForKey', () => {
 
 describe('withBinding', () => {
   it('rebinds one action to a free key', () => {
-    const next = withBinding(DEFAULT_KEYBINDS, 'confirm', 'Q');
-    expect(next.confirm).toBe('Q');
-    expect(next.cancel).toBe('X');
-    expect(DEFAULT_KEYBINDS.confirm).toBe('Z');
+    const next = withBinding(DEFAULT_KEYBINDS, 'confirm', 'K');
+    expect(next.confirm).toBe('K');
+    expect(next.cancel).toBe('Q');
+    expect(DEFAULT_KEYBINDS.confirm).toBe('E');
   });
 
   it('swaps when the new key was taken, so no key is ambiguous', () => {
-    const next = withBinding(DEFAULT_KEYBINDS, 'up', 'X');
-    expect(next.up).toBe('X');
+    const next = withBinding(DEFAULT_KEYBINDS, 'up', 'Q');
+    expect(next.up).toBe('Q');
     expect(next.cancel).toBe('UP');
-    const keys = KEYBIND_ACTIONS.map((action) => next[action]);
-    expect(new Set(keys).size).toBe(keys.length);
   });
 
   it('keeps a rebind to its own current key a no-op', () => {
-    expect(withBinding(DEFAULT_KEYBINDS, 'confirm', 'Z')).toEqual(DEFAULT_KEYBINDS);
+    expect(withBinding(DEFAULT_KEYBINDS, 'confirm', 'E')).toEqual(DEFAULT_KEYBINDS);
   });
 });
 
