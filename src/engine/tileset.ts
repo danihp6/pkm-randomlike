@@ -162,6 +162,13 @@ export type WallPattern = Readonly<{
  */
 export type LedgeFrames = Readonly<{ left: number; center: number; right: number }>;
 
+/**
+ * One entry in a `variants` list. A bare frame draws as often as its siblings; a
+ * `{ frame, weight }` entry draws proportionally more or less often.
+ */
+export type VariantFrame = Readonly<{ frame: number; weight: number }>;
+export type VariantFrames = readonly (number | VariantFrame)[];
+
 export type TilesetConfig = Readonly<{
   atlas: Readonly<{
     tileSize: number;
@@ -185,14 +192,18 @@ export type TilesetConfig = Readonly<{
    * `LedgeFrames`.
    */
   ledgeFrames?: LedgeFrames;
-  /** Map values that pick one of several frames for visual variety, deterministically per tile. */
-  variants?: Readonly<Record<number, readonly number[]>>;
+  /**
+   * Map values that pick one of several frames for visual variety, deterministically
+   * per tile. A plain frame is equally likely; a weighted entry appears in
+   * proportion to its `weight`, so a ground can mix many tiles with a few rare ones.
+   */
+  variants?: Readonly<Record<number, VariantFrames>>;
   /**
    * Like `variants`, but only for a tile cardinally adjacent to a WALL - takes
    * priority there. Lets a tileset reserve its clean frame for open interiors
    * and save shadow/edge decoration for tiles that actually border a wall.
    */
-  wallAdjacentVariants?: Readonly<Record<number, readonly number[]>>;
+  wallAdjacentVariants?: Readonly<Record<number, VariantFrames>>;
   /** Map values drawn from the shared common atlas instead of the biome sheet. */
   commonFrames?: Readonly<Record<number, number>>;
 }>;

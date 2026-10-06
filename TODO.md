@@ -120,9 +120,9 @@ most useful first:
       (Phase 2 step 5). Generator logic tracked in Phase 2 steps 6-8.
 
 - [ ] **FRLG ground vs path.** The outdoor base floor matches the game's ground
-      colour (`rgb(112,200,160)`, sheet tile `6,1`) and the forest uses its darker
-      ground (`rgb(88,160,128)`, sheet tile `0,34`, the tone the tree bank is drawn
-      on). The lighter tiles (`2,3`, `1,3`,
+      colour (`rgb(112,200,160)`, sheet tile `6,1`) and the forest mixes its darker
+      ground tiles with weights (`rgb(88,160,128)`: `0,34` base, `2,34`/`3,34`/`5,34`
+      variety, the flowered `0,38` rare). The lighter tiles (`2,3`, `1,3`,
       `1,4`, `2,4`) are a separate grass and the tan `2,0` is the route path.
       Decide which is ground, which is the path and which is decoration, and give
       the generator a real path to draw through a route (the current routes are
@@ -131,9 +131,9 @@ most useful first:
       border (no special tile, and it does not end the route yet). Give an outdoor
       route a real exit marker/opening and restore the end-of-route beat.
 - [ ] **Tall grass tips.** The FRLG fields now stamp the real tufted grass
-      (`FRLG_TALL_GRASS`, frame 5, `docs/tileset-spec.md` §2/§6): the blade tuft at
-      source `7,0` of `sprite-sources/frlg/tileset-2.png`, used **whole** with its
-      own ground. `carveGrass` packs
+      (`FRLG_TALL_GRASS`, frame 5, `docs/tileset-spec.md` §2/§6): the sheet's tuft
+      for the field's ground palette (outdoor `7,0`, forest `2,33`), used **whole**
+      with its own ground. `carveGrass` packs
       patches against the walls (`docs/routes-spec.md`). Open: let a patch **share
       the tree-tip cell** (a `grassTips` set on `RouteMap`, grass drawn under the
       crown, walking it rolls an encounter).

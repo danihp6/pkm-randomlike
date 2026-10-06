@@ -1,6 +1,6 @@
 import type { Tile } from './grid';
 import { FLOOR, LEDGE, WALL, padMap, type TileMap } from './map';
-import type { AutotileRule, LedgeFrames, TilesetConfig, WallPattern } from './tileset';
+import type { AutotileRule, LedgeFrames, TilesetConfig, VariantFrames, WallPattern } from './tileset';
 
 export type TileFrameSource = 'atlas' | 'common';
 export type TileFrame = Readonly<{ source: TileFrameSource; frame: number }>;
@@ -75,10 +75,40 @@ export function autotileFrame(map: TileMap, x: number, y: number, rule: Autotile
   }
 }
 
-/** Stable positional hash, so a map's decoration is a pure function of the seed-independent tile. */
-export function variantFrame(x: number, y: number, options: readonly number[]): number {
-  const index = (((x * 374761393 + y * 668265263) % options.length) + options.length) % options.length;
-  return options[index];
+/**
+ * A stable positional hash in `[0, modulo)`, so a map's decoration is a pure
+ * function of its tiles. The value is mixed hard (`imul` avalanche) so adjacent
+ * cells scatter instead of lining up into diagonals the linear hash produced.
+ */
+function variantHash(x: number, y: number, modulo: number): number {
+  let h = Math.imul(x + 1, 0x9e3779b1) ^ Math.imul(y + 1, 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d);
+  h = Math.imul(h ^ (h >>> 13), 0x297a2d39);
+  h ^= h >>> 16;
+  return ((h % modulo) + modulo) % modulo;
+}
+
+/**
+ * Picks one of a tile's variant frames from a stable positional hash, so the same
+ * map always looks the same. A plain frame list draws each frame equally; an entry
+ * may instead carry a `weight`, and the hash then falls in a range proportional to
+ * the weights, so a ground can mix several tiles and make some rare. Weights take
+ * the whole list as the distribution, so adding a rare tile barely shifts the rest.
+ */
+export function variantFrame(x: number, y: number, options: VariantFrames): number {
+  if (options.every((option) => typeof option === 'number')) {
+    const frames = options as readonly number[];
+    return frames[variantHash(x, y, frames.length)];
+  }
+  const entries = options.map((option) => (typeof option === 'number' ? { frame: option, weight: 1 } : option));
+  const total = entries.reduce((sum, entry) => sum + Math.max(0, entry.weight), 0);
+  if (total <= 0) return entries[entries.length - 1].frame;
+  let roll = variantHash(x, y, total);
+  for (const entry of entries) {
+    roll -= Math.max(0, entry.weight);
+    if (roll < 0) return entry.frame;
+  }
+  return entries[entries.length - 1].frame;
 }
 
 /** How many neighbours in `dir` share the tile's own value before the mass ends. */

@@ -8,13 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
-- [x] Forest uses its **own darker ground**: the FRLG forest floor is now source
-      `0,34` (`rgb(88,160,128)`, the tone the tree bank is drawn on) instead of the
-      outdoor `6,1` (`rgb(112,200,160)`), so the tree border blends into the field
-      with no lighter halo. The tall-grass tuft and the ledge lip are re-grounded
-      onto each field's floor (`overFill` in `scripts/frlg/build-tilesets.mjs`), so
-      they sit on the forest ground too. `docs/tileset-spec.md` and the forest
-      palette updated.
+- [x] Weighted **floor variants**: a `variants` entry may now be
+      `{ frame, weight }` instead of a bare frame, so a map value can mix several
+      tiles and make some rarer (`VariantFrames` in `src/engine/tileset.ts`,
+      `variantFrame` in `src/engine/tileFrames.ts`). The positional hash is mixed
+      hard so a rare tile scatters instead of lining up into a diagonal run.
+- [x] Forest uses its **own darker ground**: the FRLG forest floor is now the
+      dark `0,34` family (`rgb(88,160,128)`, the tone the tree bank is drawn on)
+      instead of the outdoor `6,1` (`rgb(112,200,160)`), so the tree border blends
+      into the field with no lighter halo. `FRLG_FOREST_TILESET` mixes the forest
+      ground tiles with weights (`0,34` base, `2,34`/`3,34`/`5,34` variety, the
+      flowered `0,38` rare) and the tall grass is the dark-palette tuft `2,33`,
+      stamped whole. The ledge lip has no dark variant, so it is re-grounded onto
+      the field's floor (`overFill` in `scripts/frlg/build-tilesets.mjs`).
+      `docs/tileset-spec.md` and the forest palette updated.
 - [x] Tall grass stamps the **real blade tuft**: the FRLG frames use source `7,0` of
       `sprite-sources/frlg/tileset-2.png` whole, with its own ground (frame 5 was
       previously the plain `6,0` floor variant). `docs/tileset-spec.md` §2/§6

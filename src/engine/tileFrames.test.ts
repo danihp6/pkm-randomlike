@@ -295,6 +295,38 @@ describe('variantFrame', () => {
     expect(variantFrame(4, 9, options)).toBe(first);
     expect(options).toContain(first);
   });
+
+  it('draws a heavier frame more often and scatters it (no diagonal run)', () => {
+    const options = [
+      { frame: 10, weight: 8 },
+      { frame: 11, weight: 1 },
+    ];
+    const counts = new Map<number, number>([
+      [10, 0],
+      [11, 0],
+    ]);
+    for (let y = 0; y < 40; y++) {
+      for (let x = 0; x < 40; x++) {
+        const frame = variantFrame(x, y, options);
+        counts.set(frame, counts.get(frame)! + 1);
+      }
+    }
+    expect(counts.get(10)!).toBeGreaterThan(counts.get(11)! * 4);
+    // The rare frame must not line up on a single row, column or diagonal.
+    const rareRows = new Set<number>();
+    for (let y = 0; y < 40; y++) {
+      for (let x = 0; x < 40; x++) if (variantFrame(x, y, options) === 11) rareRows.add(y);
+    }
+    expect(rareRows.size).toBeGreaterThan(1);
+  });
+
+  it('never draws a zero-weight frame', () => {
+    const options = [
+      { frame: 7, weight: 1 },
+      { frame: 9, weight: 0 },
+    ];
+    for (let y = 0; y < 20; y++) for (let x = 0; x < 20; x++) expect(variantFrame(x, y, options)).toBe(7);
+  });
 });
 
 describe('ledgeFrame', () => {

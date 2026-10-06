@@ -39,12 +39,16 @@ Every biome ships two images:
   its centre and frames `3`/`4` its left/right caps (`FRLG_LEDGE_LEFT`/
   `FRLG_LEDGE_RIGHT`), which the field sheet leaves free (it draws the stair/trap
   slots from the common atlas). Frame `5` is the tall-grass ground
-  (`FRLG_TALL_GRASS`), stamped whole from the denser tufted grass (source `7,0`).
-  The grass tuft and the ledge lip are re-grounded onto the field's own floor
-  (`overFill` keys their light sheet background and fills it with the floor), and
-  each FRLG field picks that floor: outdoor `6,1` (`rgb(112,200,160)`), forest the
-  darker `0,34` (`rgb(88,160,128)`, the tone the tree bank is drawn on) and cave
-  the rock `2,24`.
+  (`FRLG_TALL_GRASS`), stamped whole from the sheet's tufted grass. The sheet has
+  one tuft per ground palette (the outdoor `7,0` on the light ground, the forest
+  `2,33` on the dark one), so each field picks the tuft drawn on its own floor; the
+  ledge lip has no dark-ground variant, so it is re-grounded onto the field's floor
+  (`overFill` keys its light sheet background and fills it with the floor). Each
+  FRLG field picks that floor: outdoor `6,1` (`rgb(112,200,160)`), forest the darker
+  `0,34` (`rgb(88,160,128)`, the tone the tree bank is drawn on) and cave the rock
+  `2,24`. The forest floor is a **weighted mix** of its dark-ground tiles (`0,34`
+  base, `2,34`, `3,34`, `5,34` and the rare flowered `0,38`; §3,
+  `FRLG_FOREST_TILESET`), so the ground reads varied instead of one repeated tile.
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
   biome, for the tiles that mean the same thing everywhere: trap, chest, item,
   carpet (and a stair slot that no map value maps to while the route `EXIT` art
@@ -53,12 +57,15 @@ Every biome ships two images:
 A tileset declares:
 
 ```ts
+type VariantFrame = { frame: number; weight: number }   // a weighted entry
+type VariantFrames = (number | VariantFrame)[]          // bare frame = weight 1
+
 type TilesetConfig = {
   atlas: { tileSize, cols, rows, width, height }
   frames: Record<number, number>          // default frame per map value
   autotile?: AutotileRule[]               // neighbour-aware framing (walls, water)
-  variants?: Record<number, number[]>      // deterministic per-tile variety
-  wallAdjacentVariants?: Record<number, number[]>
+  variants?: Record<number, VariantFrames>      // deterministic per-tile variety
+  wallAdjacentVariants?: Record<number, VariantFrames>
   commonFrames?: Record<number, number>    // map values drawn from the common sheet
 }
 ```
@@ -71,7 +78,11 @@ corners, 2 straights, 4 tees and the cross. Any tile that is *not* the rule's ow
 value counts as open, so a wall next to a chest still gets an edge.
 
 `variantFrame` picks floor decoration from a stable positional hash, so the same
-map always looks the same.
+map always looks the same. A plain frame list draws each frame equally; an entry
+may instead carry a `weight`, and the hash then falls in a range proportional to
+the weights, so a ground can mix several tiles and make some rare (the forest
+mixes its dark-ground tiles this way, `FRLG_FOREST_TILESET`). The hash is mixed
+hard, so a rare tile scatters instead of lining up into a diagonal run.
 
 ## 3b. Wall patterns
 
@@ -157,8 +168,9 @@ Swapping is `config = TILESETS[nextId].config` plus loading
 
 - **Tall grass** draws a real FRLG frame now (`FRLG_TALL_GRASS`, frame 5): the
   field sheet's tufted grass ground, stamped **whole** with its ground baked in.
-  The real blade tuft lives at source `7,0` of `sprite-sources/frlg/tileset-2.png`
-  (the earlier `6,0` was a plain floor variant). The PMD-derived sheets still have
+  The sheet carries one tuft per ground palette: source `7,0` on the light ground
+  (outdoor) and `2,33` on the dark forest ground; the earlier `6,0` was a plain
+  floor variant. The PMD-derived sheets still have
   no grass tile, so they keep the plain-ground fallback plus the procedural tuft
   overlay (`BootScene` builds it). `RouteScene` only draws that overlay when the
   tileset's `TALL_GRASS` frame is its floor frame.

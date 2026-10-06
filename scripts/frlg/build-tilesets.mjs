@@ -213,9 +213,9 @@ function keyBackground(over, fill, bg) {
  * below lands on the lower leaves of the tree above and its body hides that tree's
  * trunk; only the mass's foot shows the trunk platform. `ledge` is `{ left,
  * center, right }`, the three-source-cell run the ledge draws. `tallGrass` is the
- * tufted grass tile the walkable patches stamp. The grass blades and the ledge
- * lip are drawn on the field's own floor (`overFill`), so a dark-ground field
- * (the forest) gets them on that ground instead of the sheet's light one.
+ * tufted grass ground tile the walkable patches stamp, drawn whole (each field
+ * picks the tuft drawn on its own ground). The ledge lip is re-grounded onto the
+ * field's floor (`overFill`), so a dark-ground field draws it on that ground.
  */
 function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = [10, 0] }) {
   stamp(atlas, FRAME_FLOOR, floor[0], floor[1])
@@ -252,10 +252,12 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = 
   FRAME_WALL_BASE.forEach((frame, i) => stampTile(atlas, frame, overNone(base[i])))
 
   stampBlock(atlas, WATER_TUPLE, water[0], water[1])
-  // The grass tuft and the ledge lip keep the field's own ground: their sheet
-  // background is keyed off and filled with the floor, so a dark-ground field
-  // (the forest) shows them on that ground, not the sheet's light grass.
-  if (tallGrass) stampTile(atlas, FRAME_TALL_GRASS, overFill(tallGrass, floor))
+  // The grass tuft is stamped whole: the sheet has one tuft per ground palette
+  // (the forest's `2,33` is drawn on the forest ground), so each field picks the
+  // tuft that already sits on its own floor. The ledge lip has no dark-ground
+  // variant, so it keeps the field's own ground (its sheet background is keyed off
+  // and filled with the floor).
+  if (tallGrass) stamp(atlas, FRAME_TALL_GRASS, tallGrass[0], tallGrass[1])
   stampTile(atlas, FRAME_LEDGE_LEFT, overFill(ledge.left, floor))
   stampTile(atlas, FRAME_LEDGE, overFill(ledge.center, floor))
   stampTile(atlas, FRAME_LEDGE_RIGHT, overFill(ledge.right, floor))
@@ -307,23 +309,25 @@ function outdoorFrames(atlas) {
 }
 
 /**
- * Forest: Viridian Forest's darker ground (`0,34`, the tone the tree bank is
- * drawn on) under the same dense tree border. The floor variants keep the sheet's
- * lighter grass and are unused by `FRLG_TILESET` (`FLOOR_CLEAN`).
+ * Forest: Viridian Forest's darker ground under the same dense tree border. The
+ * floor is a weighted mix of the forest ground tiles (all `0,34`-family,
+ * `rgb(88,160,128)`) that `FRLG_FOREST_TILESET` renders: `0,34` base, `2,34`,
+ * `3,34`, `5,34` as variety and the flowered `0,38` rare. The tuft `2,33` is the
+ * dark-palette tall grass drawn on that ground.
  */
 function forestFrames(atlas) {
   fieldFrames(atlas, {
     floor: [0, 34],
     floorAlts: [
-      [6, 0],
-      [1, 3],
-      [2, 3],
-      [1, 5],
-      [2, 5],
+      [2, 34],
+      [3, 34],
+      [5, 34],
+      [0, 38],
+      [3, 34],
     ],
     wall: TREE,
     ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
-    tallGrass: [7, 0],
+    tallGrass: [2, 33],
   })
 }
 

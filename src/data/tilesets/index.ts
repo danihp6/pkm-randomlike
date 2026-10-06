@@ -5,7 +5,7 @@ import outdoorAtlasUrl from '../../assets/frlg/outdoor.png';
 import placeholderAtlasUrl from '../../assets/tileset.png';
 import woodAtlasUrl from '../../assets/wood.png';
 import type { TilesetConfig } from '../../engine/tileset';
-import { FRLG_TILESET } from './frlg';
+import { FRLG_FOREST_TILESET, FRLG_TILESET } from './frlg';
 import { TILESET_NAMES, type TilesetId } from './ids';
 import {
   DEFAULT_PALETTE,
@@ -66,7 +66,7 @@ export const TILESETS: Readonly<Record<TilesetId, BiomeTileset>> = {
     name: TILESET_NAMES.forest,
     atlasUrl: forestAtlasUrl,
     palette: FRLG_FOREST_PALETTE,
-    config: FRLG_TILESET,
+    config: FRLG_FOREST_TILESET,
   },
   cave: {
     id: 'cave',
