@@ -22,7 +22,7 @@ import {
   type SideId,
 } from '../engine/battle';
 import { Rng } from '../engine/rng';
-import { MAX_PARTY_SIZE, experienceFraction, type BattleLaunch, type BattleOutcome, type BattleReturn } from '../engine/run';
+import { MAX_MOVES, MAX_PARTY_SIZE, experienceFraction, type BattleLaunch, type BattleOutcome, type BattleReturn } from '../engine/run';
 import { PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
 import { MOVE_FX_TEXTURE_KEY, moveFxAnimKey, moveFxFor, moveFxTrack } from '../render/moveFx';
 import {
@@ -48,9 +48,10 @@ import {
 } from '../ui/typewriter';
 import { loadSettings } from '../settings';
 import { actionKeys, subscribeKeybinds } from '../input/input';
-import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR, FRLG_TEXTBOX_PADDING, FRLG_WINDOW_PADDING } from '../ui/frlg';
+import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_TEXTBOX_PADDING, FRLG_WINDOW_PADDING } from '../ui/frlg';
 import { FRLG_INK, FRLG_FONT_SIZE, addFrlgText } from '../ui/frlgFont';
 import { typeColor, typeTint } from '../ui/typeColors';
+import { DETAIL_STATS, STAT_LABELS, fighterDetail } from '../ui/partyDetail';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import {
   MOVE_CATEGORY_ICON_W,
@@ -102,8 +103,43 @@ const MOVE_CATEGORY_ICON_SCALE = 1.5;
 /** The party (switch) grid: 3 columns of avatar cells. */
 const PARTY_COLS = 3;
 const PARTY_AVATAR_SCALE = 1.15;
+/** The HP bar drawn inside every switch cell; the detail popup carries the numbers. */
+const PARTY_CELL_HPBAR_SCALE = 0.4;
 /** Placeholder mon sprite scale; the switch beat returns the sprite to it. */
 const MON_SCALE = 2.4;
+/**
+ * The party (switch) detail popup: a wide window above the avatar grid for the
+ * member under the cursor. No tabs: the five battle stats, nature, ability and
+ * held item stack in a left column while the four moves sit in a 2x2 grid on the
+ * right. HP is a plain line, since the bar lives in the switch cells.
+ */
+const PARTY_DETAIL_W = 600;
+const PARTY_DETAIL_COL_GAP = 16;
+const PARTY_DETAIL_CONTENT_TOP = 66;
+const PARTY_DETAIL_STAT_ROW = 24;
+const PARTY_DETAIL_INFO_ROW = 22;
+const PARTY_DETAIL_TYPE_W = 74;
+const PARTY_DETAIL_MOVE_COLS = 2;
+const PARTY_DETAIL_MOVE_ROWS = Math.ceil(MAX_MOVES / PARTY_DETAIL_MOVE_COLS);
+const PARTY_DETAIL_MOVE_ROW = 34;
+const PARTY_DETAIL_MOVE_GAP = 6;
+const PARTY_DETAIL_LEFT_H =
+  PARTY_DETAIL_CONTENT_TOP +
+  30 +
+  DETAIL_STATS.length * PARTY_DETAIL_STAT_ROW +
+  6 +
+  3 * PARTY_DETAIL_INFO_ROW;
+const PARTY_DETAIL_MOVES_H =
+  PARTY_DETAIL_MOVE_ROWS * PARTY_DETAIL_MOVE_ROW +
+  (PARTY_DETAIL_MOVE_ROWS - 1) * PARTY_DETAIL_MOVE_GAP;
+const PARTY_DETAIL_H =
+  Math.max(PARTY_DETAIL_LEFT_H, PARTY_DETAIL_CONTENT_TOP + PARTY_DETAIL_MOVES_H) +
+  FRLG_WINDOW_PADDING.bottom;
+
+/** "serious" -> "Serious", for the nature line. */
+function capitalize(text: string): string {
+  return text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
+}
 
 type Mode = 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'over';
 
@@ -192,16 +228,37 @@ export class BattleScene extends Phaser.Scene {
   /** The category badge and PP text of each moves-grid cell. */
   private moveCategoryIcons: Phaser.GameObjects.Image[] = [];
   private movePpText: Phaser.GameObjects.BitmapText[] = [];
-  /** The party (switch) grid: a cell, avatar, label and hit zone per member. */
+  /** The party (switch) grid: a cell, avatar, label, HP bar and hit zone per member. */
   private partyCells: Phaser.GameObjects.Rectangle[] = [];
   private partyAvatars: Phaser.GameObjects.Image[] = [];
   private partyLabels: Phaser.GameObjects.BitmapText[] = [];
+  private partyHpBars: Phaser.GameObjects.Image[] = [];
+  private partyHpFills: Phaser.GameObjects.Rectangle[] = [];
   private partyZones: Phaser.GameObjects.Zone[] = [];
   /** The description popup shown while the moves menu is open. */
   private movePopup!: Phaser.GameObjects.NineSlice;
   private movePopupType!: Phaser.GameObjects.Rectangle;
   private movePopupTypeText!: Phaser.GameObjects.BitmapText;
   private movePopupText!: Phaser.GameObjects.BitmapText;
+
+  /** The no-tab party detail popup shown above the party grid. */
+  private partyDetail!: Phaser.GameObjects.Container;
+  private partyDetailName!: Phaser.GameObjects.BitmapText;
+  private partyDetailLevel!: Phaser.GameObjects.BitmapText;
+  private partyDetailTypes: { bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.BitmapText }[] = [];
+  private partyDetailStats!: {
+    hpText: Phaser.GameObjects.BitmapText;
+    rows: { label: Phaser.GameObjects.BitmapText; value: Phaser.GameObjects.BitmapText }[];
+    nature: Phaser.GameObjects.BitmapText;
+    ability: Phaser.GameObjects.BitmapText;
+    held: Phaser.GameObjects.BitmapText;
+  };
+  private partyDetailMoves: {
+    cell: Phaser.GameObjects.Rectangle;
+    name: Phaser.GameObjects.BitmapText;
+    pp: Phaser.GameObjects.BitmapText;
+  }[] = [];
+  private partyDetailEmpty!: Phaser.GameObjects.BitmapText;
 
   private menuItems: readonly MenuItem[] = [];
   private menuIndex = 0;
@@ -389,6 +446,20 @@ export class BattleScene extends Phaser.Scene {
     this.partyLabels = Array.from({ length: MAX_PARTY_SIZE }, () =>
       addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK }).setVisible(false),
     );
+    // A small HP bar in every cell; the fill is drawn over the baked track.
+    this.partyHpBars = Array.from({ length: MAX_PARTY_SIZE }, () =>
+      this.add
+        .image(0, 0, FRLG_HPBAR_KEY)
+        .setOrigin(0, 0)
+        .setScale(PARTY_CELL_HPBAR_SCALE)
+        .setVisible(false),
+    );
+    this.partyHpFills = Array.from({ length: MAX_PARTY_SIZE }, () =>
+      this.add
+        .rectangle(0, 0, 0, FRLG_HPBAR.fill.height * PARTY_CELL_HPBAR_SCALE, 0x58d080)
+        .setOrigin(0, 0)
+        .setVisible(false),
+    );
     this.partyZones = Array.from({ length: MAX_PARTY_SIZE }, () => {
       const zone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0);
       zone.setData('item', -1);
@@ -436,6 +507,98 @@ export class BattleScene extends Phaser.Scene {
       tint: FRLG_INK,
       lineSpacing: 4,
     }).setVisible(false);
+
+    this.buildPartyDetail();
+  }
+
+  /**
+   * The party detail popup: the HUD's STATS / MOVES window, built once at a local
+   * origin and moved over the avatar grid when the party is open. `renderPartyDetail`
+   * fills it and `hidePartyGrid` hides it.
+   */
+  private buildPartyDetail(): void {
+    const padX = FRLG_WINDOW_PADDING.x;
+    const padTop = FRLG_WINDOW_PADDING.top;
+    const colW = (PARTY_DETAIL_W - padX * 2 - PARTY_DETAIL_COL_GAP) / 2;
+    const leftRight = padX + colW;
+    const movesX = padX + colW + PARTY_DETAIL_COL_GAP;
+    const children: Phaser.GameObjects.GameObject[] = [
+      addFrlgWindow(this, 0, 0, PARTY_DETAIL_W, PARTY_DETAIL_H),
+    ];
+
+    this.partyDetailName = addFrlgText(this, padX, padTop, '', { size: 16, tint: FRLG_INK });
+    this.partyDetailLevel = addFrlgText(this, PARTY_DETAIL_W - padX, padTop, '', {
+      size: 16,
+      tint: 0x3a3956,
+      origin: [1, 0],
+    });
+    children.push(this.partyDetailName, this.partyDetailLevel);
+
+    const chipY = padTop + 22;
+    this.partyDetailTypes = [];
+    for (let i = 0; i < 2; i++) {
+      const chipX = padX + i * (PARTY_DETAIL_TYPE_W + 6);
+      const bg = this.add
+        .rectangle(chipX, chipY, PARTY_DETAIL_TYPE_W, 20, 0x9aa0b4)
+        .setOrigin(0, 0)
+        .setVisible(false);
+      const label = addFrlgText(this, chipX + PARTY_DETAIL_TYPE_W / 2, chipY + 2, '', {
+        size: 16,
+        tint: 0xf8fafc,
+        origin: [0.5, 0],
+      }).setVisible(false);
+      this.partyDetailTypes.push({ bg, label });
+      children.push(bg, label);
+    }
+
+    const contentTop = PARTY_DETAIL_CONTENT_TOP;
+    const hpText = addFrlgText(this, padX, contentTop, '', { size: 16, tint: FRLG_INK });
+    children.push(hpText);
+
+    const statsTop = contentTop + 30;
+    const rows = DETAIL_STATS.map((stat, i) => {
+      const rowY = statsTop + i * PARTY_DETAIL_STAT_ROW;
+      const label = addFrlgText(this, padX, rowY, STAT_LABELS[stat], { size: 16, tint: 0x3a3956 });
+      const value = addFrlgText(this, leftRight, rowY, '', { size: 16, tint: FRLG_INK, origin: [1, 0] });
+      children.push(label, value);
+      return { label, value };
+    });
+    const infoTop = statsTop + DETAIL_STATS.length * PARTY_DETAIL_STAT_ROW + 6;
+    const nature = addFrlgText(this, padX, infoTop, '', { size: 16, tint: 0x3a3956 });
+    const ability = addFrlgText(this, padX, infoTop + PARTY_DETAIL_INFO_ROW, '', { size: 16, tint: 0x3a3956 });
+    const held = addFrlgText(this, padX, infoTop + PARTY_DETAIL_INFO_ROW * 2, '', { size: 16, tint: 0x3a3956 });
+    children.push(nature, ability, held);
+    this.partyDetailStats = { hpText, rows, nature, ability, held };
+
+    const cellW = (colW - PARTY_DETAIL_MOVE_GAP) / 2;
+    const moveCellX = (i: number): number => movesX + (i % PARTY_DETAIL_MOVE_COLS) * (cellW + PARTY_DETAIL_MOVE_GAP);
+    const moveCellY = (i: number): number =>
+      contentTop + Math.floor(i / PARTY_DETAIL_MOVE_COLS) * (PARTY_DETAIL_MOVE_ROW + PARTY_DETAIL_MOVE_GAP);
+    this.partyDetailMoves = [];
+    for (let i = 0; i < MAX_MOVES; i++) {
+      const cell = this.add
+        .rectangle(moveCellX(i), moveCellY(i), cellW, PARTY_DETAIL_MOVE_ROW, 0xe6e3f2)
+        .setOrigin(0, 0)
+        .setStrokeStyle(2, 0x9a94b8);
+      const name = addFrlgText(this, moveCellX(i) + 8, moveCellY(i) + 4, '', {
+        size: 16,
+        tint: FRLG_INK,
+      }).setMaxWidth(cellW - 16);
+      const pp = addFrlgText(this, moveCellX(i) + 8, moveCellY(i) + 18, '', {
+        size: 16,
+        tint: 0x3a3956,
+      });
+      this.partyDetailMoves.push({ cell, name, pp });
+      children.push(cell, name, pp);
+    }
+    this.partyDetailEmpty = addFrlgText(this, movesX + colW / 2, contentTop + 20, 'no moves', {
+      size: 16,
+      tint: 0x6b6887,
+      origin: [0.5, 0],
+    });
+    children.push(this.partyDetailEmpty);
+
+    this.partyDetail = this.add.container(0, 0, children).setVisible(false);
   }
 
   private bindInput(): void {
@@ -468,7 +631,7 @@ export class BattleScene extends Phaser.Scene {
       (_pointer: Phaser.Input.Pointer, objects: Phaser.GameObjects.GameObject[]) =>
         this.onPointerDown(objects),
     );
-    // `[` / `]` cycle the bag's pockets while it is open, as in the route HUD.
+    // `[` / `]` cycle the bag's pockets, as in the route HUD.
     this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
       if (this.mode !== 'bag') return;
       if (event.key === '[') this.cycleBagTab(-1);
@@ -895,9 +1058,9 @@ export class BattleScene extends Phaser.Scene {
     const side = this.state.sides.player;
     this.menuItems = side.party.map((fighter, index) => {
       const status = statusAbbreviation(fighter.status);
-      const statusText = status ? ` ${status}` : '';
+      const statusText = status ? `  ${status}` : '';
       return {
-        label: `${fighter.name}  Lv${fighter.level}\n${fighter.hp}/${fighter.maxHp}${statusText}`,
+        label: `${fighter.name}  Lv${fighter.level}${statusText}`,
         enabled: index !== side.activeIndex && fighter.hp > 0,
         onSelect: () => this.confirmParty(index),
       };
@@ -1291,10 +1454,13 @@ export class BattleScene extends Phaser.Scene {
     const avatarW = PORTRAIT_SIZE * PARTY_AVATAR_SCALE;
     this.partyCells.forEach((cell, i) => {
       const item = i < count ? this.menuItems[i] : undefined;
-      if (!item) {
+      const member = i < count ? party[i] : undefined;
+      if (!item || !member) {
         cell.setVisible(false);
         this.partyAvatars[i].setVisible(false);
         this.partyLabels[i].setVisible(false);
+        this.partyHpBars[i].setVisible(false);
+        this.partyHpFills[i].setVisible(false);
         return;
       }
       const selected = i === this.menuIndex;
@@ -1304,19 +1470,41 @@ export class BattleScene extends Phaser.Scene {
         .setFillStyle(selected ? 0xf7e0a6 : 0xe6e3f2)
         .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
         .setVisible(true);
-      const frame = party[i] ? portraitFrameFor(party[i].speciesId) : null;
+      const frame = portraitFrameFor(member.speciesId);
       this.partyAvatars[i]
         .setVisible(frame !== null)
         .setAlpha(item.enabled ? 1 : 0.45)
         .setPosition(cellX(i) + 8 + avatarW / 2, cellY(i) + cellH / 2);
       if (frame !== null) this.partyAvatars[i].setFrame(frame);
+      const labelX = cellX(i) + 8 + avatarW + 6;
       this.partyLabels[i]
         .setText(item.label)
         .setAlpha(item.enabled ? 1 : 0.45)
         .setMaxWidth(cellW - avatarW - 22)
         .setOrigin(0, 0)
-        .setPosition(cellX(i) + 8 + avatarW + 6, cellY(i) + 8)
+        .setPosition(labelX, cellY(i) + 6)
         .setVisible(true);
+
+      // The HP bar shrinks with the cell so it never runs into its neighbour.
+      const barScale = Math.min(
+        PARTY_CELL_HPBAR_SCALE,
+        Math.max(24, cellW - avatarW - 22) / FRLG_HPBAR.width,
+      );
+      const fraction = hpFraction(member.hp, member.maxHp);
+      const alive = member.hp > 0;
+      const barY = cellY(i) + 30;
+      this.partyHpBars[i]
+        .setVisible(alive)
+        .setScale(barScale)
+        .setPosition(labelX, barY);
+      this.partyHpFills[i]
+        .setVisible(alive)
+        .setPosition(labelX + FRLG_HPBAR.fill.x * barScale, barY + FRLG_HPBAR.fill.y * barScale)
+        .setSize(
+          Math.max(0, FRLG_HPBAR.fill.width * barScale * fraction),
+          FRLG_HPBAR.fill.height * barScale,
+        )
+        .setFillStyle(hpColorInt(fraction));
     });
     this.partyZones.forEach((zone, i) => {
       const item = i < count ? this.menuItems[i] : undefined;
@@ -1328,17 +1516,79 @@ export class BattleScene extends Phaser.Scene {
       .setFlipX(true)
       .setPosition(cellX(this.menuIndex) + cellW - 48, cellY(this.menuIndex) + cellH / 2)
       .setVisible(count > 0);
+    this.renderPartyDetail(menu);
   }
 
-  /** Hides the party grid's cells, avatars, labels and hit zones. */
+  /**
+   * The party detail window for the member under the cursor, floating above the
+   * avatar grid. No tabs: the five battle stats, nature, ability and held item in
+   * a left column, the four moves (tinted by type) in a 2x2 grid on the right. The
+   * window scales down to fit a narrow stage.
+   */
+  private renderPartyDetail(menu: Rect): void {
+    const fighter = this.state.sides.player.party[this.menuIndex];
+    const detail = fighter ? fighterDetail(fighter, this.experience.get(fighter.id) ?? 0) : null;
+    if (!detail) {
+      this.partyDetail.setVisible(false);
+      return;
+    }
+    const scale = Math.min(1, menu.w / PARTY_DETAIL_W);
+    const height = PARTY_DETAIL_H * scale;
+    const x = Math.max(0, Math.min(menu.x, menu.x * 2 + menu.w - PARTY_DETAIL_W * scale));
+    const y = Math.max(0, menu.y - height - MOVE_POPUP_GAP);
+    this.partyDetail.setScale(scale).setPosition(x, y).setVisible(true);
+
+    this.partyDetailName.setText(detail.name);
+    this.partyDetailLevel.setText(`Lv${detail.level}`);
+    this.partyDetailTypes.forEach((chip, i) => {
+      const type = detail.types[i];
+      chip.bg.setVisible(type !== undefined);
+      chip.label.setVisible(type !== undefined);
+      if (type === undefined) {
+        chip.label.setText('');
+        return;
+      }
+      chip.bg.setFillStyle(typeColor(type));
+      chip.label.setText(type.toUpperCase());
+    });
+
+    const { hpText, rows, nature, ability, held } = this.partyDetailStats;
+    hpText.setText(`HP  ${detail.hp}/${detail.maxHp}`);
+    rows.forEach((row, i) => row.value.setText(String(detail.stats[DETAIL_STATS[i]])));
+    nature.setText(`NATURE  ${capitalize(detail.nature)}`);
+    ability.setText(`ABILITY  ${detail.ability}`);
+    held.setText(`HELD  ${detail.heldItemName ?? 'none'}`);
+
+    this.partyDetailEmpty.setVisible(detail.moves.length === 0);
+    this.partyDetailMoves.forEach((row, i) => {
+      const move = detail.moves[i];
+      const visible = move !== undefined;
+      row.cell.setVisible(visible);
+      row.name.setVisible(visible);
+      row.pp.setVisible(visible);
+      if (!move) {
+        row.name.setText('');
+        row.pp.setText('');
+        return;
+      }
+      row.cell.setFillStyle(typeTint(move.type, 0.72));
+      row.name.setText(move.name);
+      row.pp.setText(`PP ${move.pp}/${move.maxPp}`);
+    });
+  }
+
+  /** Hides the party grid's cells, avatars, labels, HP bars and hit zones. */
   private hidePartyGrid(): void {
     for (const cell of this.partyCells) cell.setVisible(false);
     for (const avatar of this.partyAvatars) avatar.setVisible(false);
     for (const label of this.partyLabels) label.setVisible(false);
+    for (const bar of this.partyHpBars) bar.setVisible(false);
+    for (const fill of this.partyHpFills) fill.setVisible(false);
     for (const zone of this.partyZones) {
       zone.setData('item', -1);
       if (zone.input) zone.input.enabled = false;
     }
+    this.partyDetail.setVisible(false);
   }
 
   /**

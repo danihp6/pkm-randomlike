@@ -8,6 +8,14 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] The battle **SWITCH** menu now shows a wide **detail window** above the avatar
+      grid for the member under the cursor — no tabs: the five battle stats, HP,
+      nature, ability and held item in a left column, and the member's four moves
+      as a **2x2 grid** on the right, each tinted by its type with its PP. Every
+      switch cell gained a small **HP bar** (the numbers live in the detail
+      window), and the shared model that resolves a member's panel data
+      (`src/ui/partyDetail.ts`) now serves a live battle fighter as well as a run
+      member. `docs/design-spec.md` §4 updated.
 - [x] The battle menus are **grids** now. **FIGHT / BAG / SWITCH / RUN** is a 2x2
       grid like the **moves** menu, so all four moves show at once with no
       scrolling: each move cell is tinted by the move's **type** and shows its

@@ -1,5 +1,5 @@
 import { getMove, getSpecies, type MoveCategory, type StatId } from '../data/dex';
-import { restoreFighter, type MoveSlot } from '../engine/battle/fighter';
+import { restoreFighter, type BattleFighter, type MoveSlot } from '../engine/battle/fighter';
 import { getItem } from '../data/items';
 import { moveMoves, type RunPokemon, type RunState } from '../engine/run';
 import { statusAbbreviation } from './metrics';
@@ -77,24 +77,31 @@ function moveDetails(slots: readonly MoveSlot[]): MoveDetail[] {
 export function memberDetail(run: RunState, memberId: string): MemberDetail | null {
   const member = memberById(run, memberId);
   if (!member) return null;
-  const { fighter } = member;
+  return fighterDetail(restoreFighter(member.fighter), member.xp);
+}
+
+/**
+ * The panel data for a live fighter and the XP it carries. The HUD resolves it
+ * through `memberDetail`; the battle passes its own party fighters straight in,
+ * so both draw the same STATS / MOVES window.
+ */
+export function fighterDetail(fighter: BattleFighter, xp: number): MemberDetail {
   const species = getSpecies(fighter.speciesId);
-  const restored = restoreFighter(fighter);
   const held = fighter.heldItem ? getItem(fighter.heldItem) : undefined;
   return {
     id: fighter.id,
     speciesId: fighter.speciesId,
     name: species?.name ?? fighter.speciesId,
     level: fighter.level,
-    types: species?.types ?? [],
+    types: species?.types ?? fighter.types,
     nature: fighter.nature,
     ability: fighter.ability,
     hp: fighter.hp,
-    maxHp: restored.maxHp,
+    maxHp: fighter.maxHp,
     statusLabel: statusAbbreviation(fighter.status),
-    xp: member.xp,
+    xp,
     heldItemName: held?.name ?? fighter.heldItem,
-    stats: restored.stats,
+    stats: fighter.stats,
     moves: moveDetails(fighter.moves),
   };
 }
