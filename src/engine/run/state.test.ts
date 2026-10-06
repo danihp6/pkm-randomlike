@@ -10,6 +10,7 @@ import {
   consumeItem,
   createRun,
   depositToBox,
+  equipHeldItem,
   hasLivingParty,
   isTrainerDefeated,
   itemCount,
@@ -18,6 +19,7 @@ import {
   moveInParty,
   recordCatch,
   setParty,
+  unequipHeldItem,
   updatePokemon,
   useCapture,
   withdrawToParty,
@@ -164,5 +166,54 @@ describe('bag', () => {
     expect(run.bag.some((slot) => slot.itemId === 'potion')).toBe(false);
     expect(consumeItem(run, 'greatball')).toBe(run);
     expect(consumeItem(run, 'pokeball', 0)).toBe(run);
+  });
+});
+
+describe('held items', () => {
+  function runWithBag(): ReturnType<typeof createRun> {
+    return createRun({ seed: 'run-a', starter, bag: [{ itemId: 'charcoal', count: 2 }] });
+  }
+
+  it('takes a stack from the bag and puts it on the member', () => {
+    const run = runWithBag();
+    const next = equipHeldItem(run, 'starter', 'charcoal');
+    expect(next.party[0].fighter.heldItem).toBe('charcoal');
+    expect(itemCount(next, 'charcoal')).toBe(1);
+  });
+
+  it('returns whatever the member already held to the bag', () => {
+    const run = equipHeldItem(runWithBag(), 'starter', 'charcoal');
+    const swapped = equipHeldItem(addItem(run, 'leftovers'), 'starter', 'leftovers');
+    expect(swapped.party[0].fighter.heldItem).toBe('leftovers');
+    expect(itemCount(swapped, 'leftovers')).toBe(0);
+    expect(itemCount(swapped, 'charcoal')).toBe(2);
+  });
+
+  it('equips a boxed member too', () => {
+    const boxed = createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 3 });
+    const run = { ...runWithBag(), box: [boxed] };
+    const next = equipHeldItem(run, 'boxed', 'charcoal');
+    expect(next.box[0].fighter.heldItem).toBe('charcoal');
+  });
+
+  it('is a no-op for the same item, an empty stack or an unknown member', () => {
+    const run = equipHeldItem(runWithBag(), 'starter', 'charcoal');
+    expect(equipHeldItem(run, 'starter', 'charcoal')).toBe(run);
+    expect(equipHeldItem(run, 'starter', 'leftovers')).toBe(run);
+    expect(equipHeldItem(run, 'nobody', 'charcoal')).toBe(run);
+    const bare = createRun({ seed: 'run-a', starter });
+    expect(equipHeldItem(bare, 'starter', 'charcoal')).toBe(bare);
+  });
+
+  it('unequips a held item back to the bag', () => {
+    const run = equipHeldItem(runWithBag(), 'starter', 'charcoal');
+    const bare = unequipHeldItem(run, 'starter');
+    expect(bare.party[0].fighter.heldItem).toBeNull();
+    expect(itemCount(bare, 'charcoal')).toBe(2);
+  });
+
+  it('will not unequip a member holding nothing', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    expect(unequipHeldItem(run, 'starter')).toBe(run);
   });
 });

@@ -24,8 +24,10 @@ import {
   canCapture,
   createRun,
   createRunPokemon,
+  equipHeldItem,
   hasLivingParty,
   resolveBattle,
+  unequipHeldItem,
   type BagCounts,
   type BattleLaunch,
   type BattleReturn,
@@ -107,6 +109,11 @@ const HUD_PAD_BOTTOM = FRLG_WINDOW_PADDING.bottom + 4;
 const HUD_HEADER_H = HUD_PAD_TOP + 16 + HUD_PAD_BOTTOM;
 const HUD_PARTY_HEADER = HUD_PAD_TOP + 16 + 12;
 const HUD_PARTY_ROW = 52;
+/** The party avatar, enlarged to the row height so the held-item badge reads. */
+const HUD_PARTY_PORTRAIT_SCALE = 1;
+/** The held-item icon on an avatar's lower-right corner. */
+const HUD_HELD_ICON_SCALE = 0.85;
+const HUD_BOX_HELD_ICON_SCALE = 1;
 /** Pointer travel (px) that turns a click into a drag while grabbing a member. */
 const HUD_DRAG_SLOP = 4;
 /** The bag pocket tabs: four across the window's padded inner width. */
@@ -247,10 +254,16 @@ export class RouteScene extends Phaser.Scene {
   private hudGrabMoved = false;
   /** Where the grab started, so a small jitter still counts as a click, not a drag. */
   private hudGrabOrigin: Phaser.Math.Vector2 | null = null;
-  /** The HUD's left edge, and the PARTY and PC BOX windows' geometry. */
+  /** The equipment stack in hand while a bag item is dragged; null otherwise. */
+  private hudDragItem: string | null = null;
+  /** The member a badge grab came from, so a stray drop puts the item back. */
+  private hudDragItemFrom: string | null = null;
+  /** The HUD's left edge, and the PARTY, bag and PC BOX windows' geometry. */
   private hudX = 0;
   private hudPartyY = 0;
   private hudPartyH = 0;
+  private hudBagY = 0;
+  private hudBagH = 0;
   private hudBoxX = 0;
   private hudBoxY = 0;
   private hudBoxH = 0;
@@ -265,12 +278,14 @@ export class RouteScene extends Phaser.Scene {
     highlight: Phaser.GameObjects.Rectangle;
     bg: Phaser.GameObjects.Rectangle;
     portrait: Phaser.GameObjects.Image;
+    held: Phaser.GameObjects.Image;
   }[] = [];
   /** The avatar held "in hand" while a party/box member is being dragged. */
   private hudDragGhost!: Phaser.GameObjects.Image;
   private hudRows: {
     highlight: Phaser.GameObjects.Rectangle;
     portrait: Phaser.GameObjects.Image;
+    held: Phaser.GameObjects.Image;
     name: Phaser.GameObjects.BitmapText;
     level: Phaser.GameObjects.BitmapText;
     hpText: Phaser.GameObjects.BitmapText;
@@ -512,23 +527,29 @@ export class RouteScene extends Phaser.Scene {
         .rectangle(left, rowY, right - left, HUD_PARTY_ROW - 4, 0xf2c14e, 0.32)
         .setOrigin(0, 0)
         .setVisible(false);
+      const portraitX = left + 24;
       const portrait = this.add
-        .image(left + 14, rowY + 26, PORTRAIT_TEXTURE_KEY, 0)
-        .setScale(0.7)
+        .image(portraitX, rowY + 26, PORTRAIT_TEXTURE_KEY, 0)
+        .setScale(HUD_PARTY_PORTRAIT_SCALE)
         .setVisible(false);
-      const name = addFrlgText(this, left + 30, rowY + 6, '', { size: 16, tint: FRLG_INK });
+      const held = this.add
+        .image(portraitX + 15, rowY + 39, ITEM_ICON_TEXTURE_KEY, 0)
+        .setScale(HUD_HELD_ICON_SCALE)
+        .setVisible(false);
+      const column = left + 56;
+      const name = addFrlgText(this, column, rowY + 6, '', { size: 16, tint: FRLG_INK });
       const level = addFrlgText(this, right, rowY + 6, '', {
         size: 16,
         tint: 0x3a3956,
         origin: [1, 0],
       });
       const bar = this.add
-        .image(left + 30, rowY + 28, FRLG_HPBAR_KEY)
+        .image(column, rowY + 28, FRLG_HPBAR_KEY)
         .setOrigin(0, 0)
         .setScale(HUD_HPBAR_SCALE)
         .setVisible(false);
       const fill = this.add
-        .rectangle(left + 30, rowY + 28, 0, FRLG_HPBAR.fill.height * HUD_HPBAR_SCALE, 0x58d080)
+        .rectangle(column, rowY + 28, 0, FRLG_HPBAR.fill.height * HUD_HPBAR_SCALE, 0x58d080)
         .setOrigin(0, 0)
         .setVisible(false);
       const hpText = addFrlgText(this, right, rowY + 30, '', {
@@ -536,12 +557,14 @@ export class RouteScene extends Phaser.Scene {
         tint: FRLG_INK,
         origin: [1, 0],
       });
-      this.hudRows.push({ highlight, portrait, name, level, hpText, bar, fill });
-      children.push(highlight, portrait, name, level, bar, fill, hpText);
+      this.hudRows.push({ highlight, portrait, held, name, level, hpText, bar, fill });
+      children.push(highlight, portrait, held, name, level, bar, fill, hpText);
     }
 
     const bagY = partyY + partyH + HUD_GAP;
     const bagH = HUD_BAG_HEADER + HUD_BAG_ROWS * HUD_BAG_ROW + HUD_PAD_BOTTOM;
+    this.hudBagY = bagY;
+    this.hudBagH = bagH;
     children.push(addFrlgWindow(this, x, bagY, HUD_PANEL_W, bagH));
 
     // Pocket tabs across the window's head, FRLG style: the active one reads
@@ -626,8 +649,12 @@ export class RouteScene extends Phaser.Scene {
         .image(cellX + HUD_BOX_CELL / 2, cellY + HUD_BOX_CELL / 2, PORTRAIT_TEXTURE_KEY, 0)
         .setScale(1.4)
         .setVisible(false);
-      this.hudBoxCells.push({ highlight, bg, portrait });
-      children.push(bg, highlight, portrait);
+      const held = this.add
+        .image(cellX + 62, cellY + 62, ITEM_ICON_TEXTURE_KEY, 0)
+        .setScale(HUD_BOX_HELD_ICON_SCALE)
+        .setVisible(false);
+      this.hudBoxCells.push({ highlight, bg, portrait, held });
+      children.push(bg, highlight, portrait, held);
     }
 
     // The avatar held in hand while dragging, drawn last so it rides over the
@@ -648,6 +675,8 @@ export class RouteScene extends Phaser.Scene {
       this.hudUi = dropGrabbed(this.hudUi);
       this.hudGrabMoved = false;
       this.hudGrabOrigin = null;
+      this.hudDragItem = null;
+      this.hudDragItemFrom = null;
       this.hudDragGhost.setVisible(false);
       this.input.setDefaultCursor('default');
     }
@@ -670,6 +699,7 @@ export class RouteScene extends Phaser.Scene {
       row.fill.setVisible(alive);
       if (!member) {
         row.portrait.setVisible(false);
+        row.held.setVisible(false);
         row.name.setText('');
         row.level.setText('');
         row.hpText.setText('');
@@ -678,6 +708,10 @@ export class RouteScene extends Phaser.Scene {
       const frame = portraitFrameFor(member.fighter.speciesId);
       row.portrait.setVisible(frame !== null);
       if (frame !== null) row.portrait.setFrame(frame);
+      const heldFrame = member.fighter.heldItem ? itemIconFrame(member.fighter.heldItem) : null;
+      const inHand = this.hudDragItemFrom === member.fighter.id;
+      row.held.setVisible(heldFrame !== null && !inHand);
+      if (heldFrame !== null) row.held.setFrame(heldFrame);
       const maxHp = restoreFighter(member.fighter).maxHp;
       const hp = member.fighter.hp;
       row.name.setText(getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId);
@@ -697,7 +731,11 @@ export class RouteScene extends Phaser.Scene {
         .setFillStyle(hpColorInt(fraction));
     });
 
-    const bag = bagForCategory(this.run.bag, this.hudBagCategory).slice(0, HUD_BAG_ROWS);
+    // An item taken from the bag is not in the bag while it is being dragged.
+    const bagInHand = this.hudDragItemFrom === null ? this.hudDragItem : null;
+    const bag = bagForCategory(this.run.bag, this.hudBagCategory)
+      .filter((stack) => stack.itemId !== bagInHand)
+      .slice(0, HUD_BAG_ROWS);
     this.hudBagTabs.forEach((tab) => {
       const active = tab.category === this.hudBagCategory;
       tab.bg.setFillStyle(active ? 0x2f2c4d : 0xcfcce2);
@@ -738,6 +776,10 @@ export class RouteScene extends Phaser.Scene {
       const frame = member ? portraitFrameFor(member.speciesId) : null;
       cell.portrait.setVisible(frame !== null);
       if (frame !== null) cell.portrait.setFrame(frame);
+      const heldFrame = member?.heldItem ? itemIconFrame(member.heldItem) : null;
+      const inHand = member !== undefined && this.hudDragItemFrom === member.id;
+      cell.held.setVisible(heldFrame !== null && !inHand);
+      if (heldFrame !== null) cell.held.setFrame(heldFrame);
       cell.highlight.setVisible(this.hudUi.grabbed?.pane === 'box' && this.hudUi.index === index);
     });
   }
@@ -759,13 +801,29 @@ export class RouteScene extends Phaser.Scene {
    * HUD pointer input. A press on a bag or box tab selects it; a press on a
    * party row or a box cell picks that member up (gold highlight), a drag over
    * the same pane reorders it live, and a release over the other pane moves it
-   * between the party and the PC box. A plain click also works: pick a member,
-   * then click a slot. The cursor becomes a grab hand over a member.
+   * between the party and the PC box. A press on an equipment stack picks the
+   * item up (it leaves the bag while in hand) and a release over a member equips
+   * it; a press on a member's held badge takes that item in hand instead of the
+   * Pokémon, to pass it to another member or drop it on the bag to unequip it. A
+   * plain click also works: pick a member, then click a slot. The cursor becomes a
+   * grab hand over a member or an equippable stack.
    */
   private handleHudPointerDown(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive() || !this.hudVisible) return;
     if (this.selectBagTab(pointer)) return;
     if (this.selectBoxTab(pointer)) return;
+    if (!this.hudUi.grabbed) {
+      const badge = this.hudHeldBadgeAt(pointer);
+      if (badge) {
+        this.startHudItemDrag(badge.itemId, pointer, badge.memberId);
+        return;
+      }
+      const itemId = this.hudHeldStackAt(pointer);
+      if (itemId !== null) {
+        this.startHudItemDrag(itemId, pointer);
+        return;
+      }
+    }
     const target = this.hudTarget(pointer);
     const grabbed = this.hudUi.grabbed;
     if (!target) {
@@ -801,14 +859,45 @@ export class RouteScene extends Phaser.Scene {
       this.hudDragGhost.setVisible(false);
       return;
     }
-    this.hudDragGhost.setFrame(frame).setPosition(pointer.x, pointer.y).setVisible(true);
+    this.hudDragGhost
+      .setTexture(PORTRAIT_TEXTURE_KEY, frame)
+      .setPosition(pointer.x, pointer.y)
+      .setVisible(true);
+  }
+
+  /** Picks an equipment stack up so it can be dropped on a member to equip it. */
+  private startHudItemDrag(itemId: string, pointer: Phaser.Input.Pointer, from: string | null = null): void {
+    const frame = itemIconFrame(itemId);
+    if (frame === null) return;
+    this.hudDragItem = itemId;
+    this.hudDragItemFrom = from;
+    this.hudGrabMoved = false;
+    this.hudGrabOrigin = new Phaser.Math.Vector2(pointer.x, pointer.y);
+    this.hudDragGhost
+      .setTexture(ITEM_ICON_TEXTURE_KEY, frame)
+      .setPosition(pointer.x, pointer.y)
+      .setVisible(true);
+    this.input.setDefaultCursor('grabbing');
+    this.refreshHud();
   }
 
   private handleHudPointerMove(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive()) return;
-    const target = this.hudVisible ? this.hudTarget(pointer) : null;
-    this.input.setDefaultCursor(target ? (this.hudUi.grabbed ? 'grabbing' : 'grab') : 'default');
-    if (!this.hudVisible || !this.hudUi.grabbed) return;
+    if (!this.hudVisible) {
+      this.input.setDefaultCursor('default');
+      return;
+    }
+    if (this.hudDragItem !== null) {
+      this.hudDragGhost.setPosition(pointer.x, pointer.y);
+      this.input.setDefaultCursor('grabbing');
+      return;
+    }
+    const target = this.hudTarget(pointer);
+    const overItem = this.hudUi.grabbed === null && this.hudHeldStackAt(pointer) !== null;
+    this.input.setDefaultCursor(
+      this.hudUi.grabbed ? 'grabbing' : target || overItem ? 'grab' : 'default',
+    );
+    if (!this.hudUi.grabbed) return;
     this.hudDragGhost.setPosition(pointer.x, pointer.y);
     // Any real move turns the click into a drag, so releasing anywhere drops.
     if (
@@ -826,6 +915,30 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private handleHudPointerUp(pointer: Phaser.Input.Pointer): void {
+    if (this.hudDragItem !== null) {
+      const itemId = this.hudDragItem;
+      const from = this.hudDragItemFrom;
+      const target = this.hudTarget(pointer);
+      const intoBag = this.pointerInBagPanel(pointer);
+      const targetId = target ? this.memberIdAt(target) : null;
+      this.endHudItemDrag();
+      if (targetId) {
+        if (from === null) {
+          this.equipHudItem(itemId, target);
+        } else if (targetId !== from) {
+          this.run = equipHeldItem(unequipHeldItem(this.run, from), targetId, itemId);
+          this.persistRun();
+          this.refreshHud();
+        }
+      } else if (from !== null && intoBag) {
+        // A badge dropped on the bag takes the item off for good.
+        this.run = unequipHeldItem(this.run, from);
+        this.persistRun();
+        this.refreshHud();
+      }
+      // A badge dropped anywhere else just goes back on its member (nothing to do).
+      return;
+    }
     const grabbed = this.hudUi.grabbed;
     // A drag dropped over the other pane moves the member across; otherwise it
     // just drops where it last pointed. There is no cancel.
@@ -833,6 +946,35 @@ export class RouteScene extends Phaser.Scene {
     const across = grabbed.pane === 'party' ? this.pointerInBoxPanel(pointer) : this.pointerInPartyPanel(pointer);
     if (across) this.moveHudAcross(grabbed.pane);
     else this.dropHudGrab();
+  }
+
+  /** Equips the dragged stack to the member under the drop, saving the swap. */
+  private equipHudItem(itemId: string, target: { pane: PaneId; index: number } | null): void {
+    if (!target) return;
+    const member = target.pane === 'party' ? this.run.party[target.index] : this.run.box[target.index];
+    if (!member) return;
+    const next = equipHeldItem(this.run, member.fighter.id, itemId);
+    if (next === this.run) return;
+    this.run = next;
+    this.persistRun();
+    this.refreshHud();
+  }
+
+  /** The id of the member at `target`, or null if that slot is empty. */
+  private memberIdAt(target: { pane: PaneId; index: number }): string | null {
+    const member = target.pane === 'party' ? this.run.party[target.index] : this.run.box[target.index];
+    return member?.fighter.id ?? null;
+  }
+
+  /** Puts the dragged stack down and clears the in-hand state. */
+  private endHudItemDrag(): void {
+    this.hudDragItem = null;
+    this.hudDragItemFrom = null;
+    this.hudGrabMoved = false;
+    this.hudGrabOrigin = null;
+    this.hudDragGhost.setVisible(false);
+    this.input.setDefaultCursor('default');
+    this.refreshHud();
   }
 
   /** Moves the grabbed member to the other pane (deposit / withdraw). */
@@ -903,6 +1045,52 @@ export class RouteScene extends Phaser.Scene {
       pointer.x <= this.hudBoxX + HUD_PANEL_W &&
       pointer.y >= this.hudBoxY &&
       pointer.y <= this.hudBoxY + this.hudBoxH
+    );
+  }
+
+  /** The bag stack under the pointer in the active pocket, or null. */
+  private hudBagStackAt(pointer: Phaser.Input.Pointer): string | null {
+    if (!this.pointerInBagPanel(pointer)) return null;
+    const bag = bagForCategory(this.run.bag, this.hudBagCategory);
+    const rowTop = this.hudBagY + HUD_BAG_HEADER;
+    const slot = Math.floor((pointer.y - rowTop) / HUD_BAG_ROW);
+    if (pointer.y < rowTop || slot < 0 || slot >= HUD_BAG_ROWS) return null;
+    return bag[slot]?.itemId ?? null;
+  }
+
+  /** The equippable (held) bag stack under the pointer, or null. */
+  private hudHeldStackAt(pointer: Phaser.Input.Pointer): string | null {
+    const itemId = this.hudBagStackAt(pointer);
+    return itemId !== null && getItem(itemId)?.kind === 'held' ? itemId : null;
+  }
+
+  /**
+   * The held-item badge under the pointer, if any. Grabbing a badge picks the
+   * item up instead of the Pokémon, so it can be moved to another member or
+   * dropped on the bag to unequip it.
+   */
+  private hudHeldBadgeAt(pointer: Phaser.Input.Pointer): { itemId: string; memberId: string } | null {
+    const target = this.hudTarget(pointer);
+    if (!target) return null;
+    const member = target.pane === 'party' ? this.run.party[target.index] : this.run.box[target.index];
+    const itemId = member?.fighter.heldItem;
+    if (!member || !itemId) return null;
+    const badge =
+      target.pane === 'party'
+        ? this.hudRows[target.index]?.held
+        : this.hudBoxCells[target.index - this.hudBoxPage * BOX_PAGE_SIZE]?.held;
+    if (!badge || !badge.visible) return null;
+    const radius = Math.max(badge.displayWidth, badge.displayHeight) / 2;
+    if (Math.hypot(pointer.x - badge.x, pointer.y - badge.y) > radius) return null;
+    return { itemId, memberId: member.fighter.id };
+  }
+
+  private pointerInBagPanel(pointer: Phaser.Input.Pointer): boolean {
+    return (
+      pointer.x >= this.hudX &&
+      pointer.x <= this.hudX + HUD_PANEL_W &&
+      pointer.y >= this.hudBagY &&
+      pointer.y <= this.hudBagY + this.hudBagH
     );
   }
 

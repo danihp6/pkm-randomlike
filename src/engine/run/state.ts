@@ -197,3 +197,31 @@ export function consumeItem(run: RunState, itemId: string, count = 1): RunState 
       : run.bag.filter((slot) => slot.itemId !== itemId);
   return { ...run, bag };
 }
+
+/** The party or box member with `id`, or undefined. */
+function memberById(run: RunState, id: string): RunPokemon | undefined {
+  return run.party.find((member) => member.fighter.id === id) ?? run.box.find((member) => member.fighter.id === id);
+}
+
+/**
+ * Equips a bag stack to a party/box member: a unit leaves the bag, and whatever
+ * the member already held returns to it, so an equip is a swap, never a loss.
+ * A member already holding `itemId`, an unknown member or an empty stack is a
+ * no-op. Pure, like the rest of the run state (D11).
+ */
+export function equipHeldItem(run: RunState, memberId: string, itemId: string): RunState {
+  const member = memberById(run, memberId);
+  if (!member || member.fighter.heldItem === itemId || itemCount(run, itemId) <= 0) return run;
+  const previous = member.fighter.heldItem;
+  let next = consumeItem(run, itemId);
+  if (previous) next = addItem(next, previous);
+  return updatePokemon(next, { ...member, fighter: { ...member.fighter, heldItem: itemId } });
+}
+
+/** Takes a member's held item back to the bag; a member holding nothing is a no-op. */
+export function unequipHeldItem(run: RunState, memberId: string): RunState {
+  const member = memberById(run, memberId);
+  if (!member?.fighter.heldItem) return run;
+  const held = member.fighter.heldItem;
+  return updatePokemon(addItem(run, held), { ...member, fighter: { ...member.fighter, heldItem: null } });
+}
