@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BIOMES, biomeForRoute } from '../../data/biomes';
-import { LEDGE, TALL_GRASS } from '../map';
+import { LEDGE, TALL_GRASS, WALL } from '../map';
 import { ROUTE_SHAPES, type RouteShape } from './layout';
 import { tileKey, type RouteMap } from './routeMap';
 import { sketchRoute, type RouteRequest } from './sketch';
@@ -81,6 +81,29 @@ describe('route terrain passes', () => {
       }
     }
     expect(runs).toBeGreaterThan(0);
+  });
+
+  it('pegs every ledge run to a wall at one lateral end', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of SEEDS) {
+        const route = sketchRoute(terrainRequest(seed, shape));
+        for (let y = 0; y < route.height; y++) {
+          let start = -1;
+          for (let x = 0; x <= route.width; x++) {
+            const ledge = x < route.width && route.tiles[y][x] === LEDGE;
+            if (ledge) {
+              if (start < 0) start = x;
+            } else if (start >= 0) {
+              const end = x - 1;
+              const leftWall = start > 0 && route.tiles[y][start - 1] === WALL;
+              const rightWall = end < route.width - 1 && route.tiles[y][end + 1] === WALL;
+              expect(leftWall || rightWall, `${shape} ${seed} ledge ${start}-${end} at y${y}`).toBe(true);
+              start = -1;
+            }
+          }
+        }
+      }
+    }
   });
 
   it('keeps every exit reachable with terrain on', () => {

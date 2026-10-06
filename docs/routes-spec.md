@@ -56,8 +56,10 @@ camera follow), containing:
    whole object of at least **three tiles** — a left cap, repeated centre tiles and
    a right cap (`LedgeFrames`) — and is dropped whole rather than left as a stub
    when it cannot reach three tiles or would strand a branch behind its one-way
-   drop. Grass is walkable; a ledge only gives way downward. Water is decoration
-   (`D18`), not a terrain pass.
+   drop. A run is also **pegged to a wall at one lateral end** (the tile just
+   outside its left or right cap is wall), so it reads as a lip on the terrain
+   instead of a rock floating in open floor. Grass is walkable; a ledge only gives
+   way downward. Water is decoration (`D18`), not a terrain pass.
 4. **Validation pass**: flood-fill from the entry must reach every exit. If it does
    not, reroll from the same seed with the next stream value. This validation is
    what makes the generator safe to call blind.

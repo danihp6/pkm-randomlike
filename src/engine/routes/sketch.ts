@@ -705,7 +705,9 @@ function carveGrass(
  * pockets (loot spots). A run is a whole object now, so it draws a left cap, a
  * repeated centre and a right cap (`LedgeFrames`), which is why it needs at least
  * three tiles: a run that would fall short, or that would cut the walkable map in
- * two, is dropped whole rather than left as a two-tile stub.
+ * two, is dropped whole rather than left as a two-tile stub. A run also has to
+ * hang off a wall at one of its lateral ends, so it reads as a lip on the terrain
+ * instead of a rock floating in open floor.
  */
 function carveLedges(
   tiles: MutableMap,
@@ -724,6 +726,8 @@ function carveLedges(
     isFloor(tile) &&
     isGround({ x: tile.x, y: tile.y - 1 }) &&
     isGround({ x: tile.x, y: tile.y + 1 });
+  const isWall = (x: number, y: number): boolean =>
+    x >= 0 && x < tiles[0].length && y >= 0 && y < tiles.length && tiles[y][x] === WALL;
 
   for (let line = 0; line < count; line++) {
     const candidates = pool.filter((tile) => canStand(tile) && !forbid.has(tileKey(tile)));
@@ -746,6 +750,10 @@ function carveLedges(
       }
       // A run shorter than three has no room for both caps, so it is not placed.
       if (run.length < 3) continue;
+      // The tile just outside the left or the right cap must be wall, so the lip
+      // is attached to the terrain at a lateral end.
+      const last = run[run.length - 1];
+      if (!isWall(run[0].x - 1, run[0].y) && !isWall(last.x + 1, last.y)) continue;
       const runKeys = new Set(run.map(tileKey));
       for (const tile of run) tiles[tile.y][tile.x] = LEDGE;
       const after = reachableTiles(tiles, entry);

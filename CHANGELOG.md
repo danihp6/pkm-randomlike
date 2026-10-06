@@ -273,11 +273,13 @@ file is the human-readable summary.
 - [x] Ledges are **whole runs** now: a `LEDGE` line is at least three tiles and
       draws its own **ends** instead of repeating one centre tile. `carveLedges`
       lays the full run at once (three or four tiles) and drops it whole when it
-      cannot reach three or would strand a branch, so no two-tile stub is left.
-      The FRLG fields stamp a left cap, centre lip and right cap (`FRAME_LEDGE`
-      plus frames 3/4), resolved per cell by `ledgeFrame`/`LedgeFrames`
-      (`src/engine/tileFrames.ts`, `src/engine/tileset.ts`); the PMD sheets keep
-      their single ground fallback. `docs/tileset-spec.md` and
+      cannot reach three or would strand a branch, so no two-tile stub is left. A
+      run must also touch a wall at one lateral end (the tile outside its left or
+      right cap is wall), so a ledge hangs off the terrain instead of floating in
+      open floor. The FRLG fields stamp a left cap, centre lip and right cap
+      (`FRAME_LEDGE` plus frames 3/4), resolved per cell by `ledgeFrame`/
+      `LedgeFrames` (`src/engine/tileFrames.ts`, `src/engine/tileset.ts`); the PMD
+      sheets keep their single ground fallback. `docs/tileset-spec.md` and
       `docs/routes-spec.md` updated.
 
 ## Phase 0 — Repo & scaffolding
