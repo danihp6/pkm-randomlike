@@ -66,6 +66,8 @@ Full rules in `docs/battle-spec.md`. In short:
   attempts the escape at once, with no yes/no prompt.
 - The command menu takes the **mouse** as well as the keyboard: hovering a row
   moves the ▶ cursor and a click picks it, and a click advances the battle text.
+  The **moves** menu is a 2x2 **grid** so all four moves show at once, with no
+  scrolling (the arrows move around the grid).
 - The bag opens as pockets like the route HUD — **CONSUM** everywhere and
   **BALL** while a wild can still be caught; trainer battles offer only
   consumables.

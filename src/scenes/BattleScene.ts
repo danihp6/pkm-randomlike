@@ -48,7 +48,7 @@ import {
 import { loadSettings } from '../settings';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR, FRLG_TEXTBOX_PADDING, FRLG_WINDOW_PADDING } from '../ui/frlg';
-import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
+import { FRLG_INK, FRLG_FONT_SIZE, addFrlgText } from '../ui/frlgFont';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import type { RouteScene } from './RouteScene';
 
@@ -78,6 +78,9 @@ const MENU_TAB_H = 26;
 const MENU_TAB_GAP = 4;
 /** Bag rows that fit under the tab strip in the 160px menu window. */
 const MENU_BAG_ROWS = 3;
+/** The moves menu is a grid so all four moves show at once, with no scrolling. */
+const MENU_GRID_COLS = 2;
+const MENU_GRID_GAP = 8;
 /** Placeholder mon sprite scale; the switch beat returns the sprite to it. */
 const MON_SCALE = 2.4;
 
@@ -154,6 +157,8 @@ export class BattleScene extends Phaser.Scene {
   private menuRows: Phaser.GameObjects.BitmapText[] = [];
   /** One pointer zone per menu row, so a click picks it like a cursor press. */
   private menuZones: Phaser.GameObjects.Zone[] = [];
+  /** The cells of the moves grid, drawn behind its text so the 2x2 reads as a grid. */
+  private moveCells: Phaser.GameObjects.Rectangle[] = [];
 
   private menuItems: readonly MenuItem[] = [];
   private menuIndex = 0;
@@ -272,6 +277,13 @@ export class BattleScene extends Phaser.Scene {
     this.playerPanel = addFrlgWindow(this, 0, 0, PLAYER_PANEL_W, PLAYER_PANEL_H);
     this.messagePanel = addFrlgWindow(this, 0, 0, 100, 100, 'textbox');
     this.menuPanel = addFrlgWindow(this, 0, 0, MENU_W, 100);
+    this.moveCells = Array.from({ length: MENU_ROWS }, () =>
+      this.add
+        .rectangle(0, 0, 10, 10, 0xe6e3f2)
+        .setOrigin(0, 0)
+        .setStrokeStyle(2, 0xb9b4d0)
+        .setVisible(false),
+    );
 
     this.hpBars = {
       enemy: addFrlgHpBar(this, 0, 0),
@@ -348,12 +360,10 @@ export class BattleScene extends Phaser.Scene {
             this.onCancel();
             return;
           case 'up':
-          case 'left':
-            this.moveMenu(-1);
-            return;
           case 'down':
+          case 'left':
           case 'right':
-            this.moveMenu(1);
+            this.navigateMenu(action);
             return;
         }
       },
@@ -726,7 +736,7 @@ export class BattleScene extends Phaser.Scene {
       const type = (move?.type ?? '').toUpperCase();
       const enabled = legal.length === 0 ? index === 0 : legal.includes(index);
       return {
-        label: `${name}  ${type}   PP ${slot.pp}/${slot.maxPp}`,
+        label: `${name}\n${type}   PP ${slot.pp}/${slot.maxPp}`,
         enabled,
         onSelect: () => this.submit({ type: 'fight', moveIndex: index }),
       };
@@ -845,6 +855,38 @@ export class BattleScene extends Phaser.Scene {
       index = (index + delta + this.menuItems.length) % this.menuItems.length;
       if (this.menuItems[index].enabled) break;
     }
+    this.menuIndex = index;
+    this.refreshHud();
+  }
+
+  /** Steps the cursor: the moves grid moves in 2D, every other list stays linear. */
+  private navigateMenu(action: 'up' | 'down' | 'left' | 'right'): void {
+    if (this.mode === 'moves') this.moveMenuGrid(action);
+    else this.moveMenu(action === 'up' || action === 'left' ? -1 : 1);
+  }
+
+  /**
+   * Moves the cursor across the 2x2 moves grid, skipping disabled moves. A
+   * direction that would leave a partial last row clamps back into it, so with
+   * three moves `down` still lands on the third.
+   */
+  private moveMenuGrid(action: 'up' | 'down' | 'left' | 'right'): void {
+    const count = this.menuItems.length;
+    if (count === 0) return;
+    const cols = MENU_GRID_COLS;
+    const rows = Math.max(1, Math.ceil(count / cols));
+    let index = this.menuIndex;
+    for (let step = 0; step < count; step++) {
+      let row = Math.floor(index / cols);
+      let col = index % cols;
+      if (action === 'up') row = (row - 1 + rows) % rows;
+      else if (action === 'down') row = (row + 1) % rows;
+      else if (action === 'left') col = (col - 1 + cols) % cols;
+      else col = (col + 1) % cols;
+      index = Math.min(row * cols + col, count - 1);
+      if (this.menuItems[index].enabled) break;
+    }
+    if (index === this.menuIndex) return;
     this.menuIndex = index;
     this.refreshHud();
   }
@@ -980,6 +1022,7 @@ export class BattleScene extends Phaser.Scene {
 
     if (menuOpen) {
       if (this.mode === 'bag') this.renderBagMenu(menu);
+      else if (this.mode === 'moves') this.renderMoveMenu(menu);
       else this.renderMenu(menu);
     } else {
       this.hideMenu();
@@ -1036,16 +1079,80 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  /** The plain list menu (fight / bag / switch / run, moves and party). */
+  /** The plain list menu (fight / bag / switch / run and the party). */
   private renderMenu(menu: Rect): void {
     this.menuPanel.setVisible(true);
     this.hideBagTabs();
-    const submenu = this.mode === 'moves' || this.mode === 'party';
+    const submenu = this.mode === 'party';
+    this.hideMoveCells();
     this.layoutBackButton(menu, submenu);
     const top = submenu
       ? menu.y + FRLG_WINDOW_PADDING.top + MENU_TAB_H + 8
       : menu.y + FRLG_WINDOW_PADDING.top;
     this.layoutMenuRows(menu, this.menuItems, top, submenu ? MENU_BAG_ROWS : MENU_ROWS);
+  }
+
+  /**
+   * The moves menu as a 2-column grid, so all four moves show at once with no
+   * scrolling. Each cell is a move name over its type and PP.
+   */
+  private renderMoveMenu(menu: Rect): void {
+    this.menuPanel.setVisible(true);
+    this.hideBagTabs();
+    this.layoutBackButton(menu, true);
+    const pad = FRLG_WINDOW_PADDING;
+    const count = this.menuItems.length;
+    const cols = MENU_GRID_COLS;
+    const rows = Math.max(1, Math.ceil(count / cols));
+    const left = menu.x + pad.x;
+    const right = menu.x + menu.w - pad.x;
+    const top = menu.y + pad.top + MENU_TAB_H + 8;
+    const bottom = menu.y + menu.h - pad.bottom;
+    const cellW = (right - left - (cols - 1) * MENU_GRID_GAP) / cols;
+    const cellH = (bottom - top - (rows - 1) * MENU_GRID_GAP) / rows;
+    const cellX = (i: number): number => left + (i % cols) * (cellW + MENU_GRID_GAP);
+    const cellY = (i: number): number => top + Math.floor(i / cols) * (cellH + MENU_GRID_GAP);
+
+    this.menuRows.forEach((row, i) => {
+      const item = i < count ? this.menuItems[i] : undefined;
+      if (!item) {
+        row.setVisible(false);
+        return;
+      }
+      row
+        .setText(item.label)
+        .setAlpha(item.enabled ? 1 : 0.4)
+        .setFontSize(16)
+        .setMaxWidth(cellW - 58)
+        .setPosition(cellX(i) + 46, cellY(i) + 8)
+        .setVisible(true);
+    });
+    this.moveCells.forEach((cell, i) => {
+      const item = i < count ? this.menuItems[i] : undefined;
+      if (!item) {
+        cell.setVisible(false);
+        return;
+      }
+      cell
+        .setPosition(cellX(i), cellY(i))
+        .setSize(cellW, cellH)
+        .setFillStyle(i === this.menuIndex ? 0xf7e0a6 : 0xe6e3f2)
+        .setVisible(true);
+    });
+    this.menuZones.forEach((zone, i) => {
+      const item = i < count ? this.menuItems[i] : undefined;
+      zone.setData('item', item ? i : -1);
+      if (zone.input) zone.input.enabled = Boolean(item);
+      if (item) zone.setPosition(cellX(i), cellY(i)).setSize(cellW, cellH);
+    });
+    this.menuCursor
+      .setPosition(cellX(this.menuIndex) + 16, cellY(this.menuIndex) + cellH / 2)
+      .setVisible(count > 0);
+  }
+
+  /** Hides the moves-grid cells (every other menu draws its own chrome). */
+  private hideMoveCells(): void {
+    for (const cell of this.moveCells) cell.setVisible(false);
   }
 
   /** The bag: a pocket tab strip over the active pocket's stacks. */
@@ -1106,6 +1213,8 @@ export class BattleScene extends Phaser.Scene {
       row
         .setText(item.label)
         .setAlpha(item.enabled ? 1 : 0.4)
+        .setFontSize(FRLG_FONT_SIZE)
+        .setMaxWidth(menu.w - 80)
         .setPosition(menu.x + 58, top + i * ROW_H)
         .setVisible(true);
     });
@@ -1129,6 +1238,7 @@ export class BattleScene extends Phaser.Scene {
       zone.setData('item', -1);
       if (zone.input) zone.input.enabled = false;
     }
+    this.hideMoveCells();
     this.hideBagTabs();
     this.backArrow.setVisible(false);
     if (this.backZone.input) this.backZone.input.enabled = false;
