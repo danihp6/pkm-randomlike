@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createRun } from '../engine/run/state';
 import { createRunPokemon } from '../engine/run/progression';
+import { createFighter } from '../engine/battle/fighter';
 import {
   CLOSED_DETAIL,
   closeDetail,
   dropMove,
+  fighterDetail,
   grabMove,
   memberDetail,
   openDetail,
@@ -42,6 +44,22 @@ describe('memberDetail', () => {
   it('reads a box member and returns null for an unknown id', () => {
     expect(memberDetail(runWith(), 'boxed')?.name).toBe('Sentret');
     expect(memberDetail(runWith(), 'nobody')).toBeNull();
+  });
+});
+
+describe('fighterDetail', () => {
+  it('resolves a live battle fighter with its carried XP', () => {
+    const fighter = createFighter({
+      id: 'starter',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['ember', 'scratch', 'growl'],
+    });
+    const detail = fighterDetail(fighter, 120);
+    expect(detail).toMatchObject({ name: 'Charmander', level: 5, types: ['Fire'], xp: 120 });
+    expect(detail.moves.map((move) => move.name)).toEqual(['Ember', 'Scratch', 'Growl']);
+    expect(detail.maxHp).toBe(fighter.maxHp);
+    expect(detail.stats.atk).toBe(fighter.stats.atk);
   });
 });
 

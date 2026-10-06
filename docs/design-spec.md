@@ -72,7 +72,10 @@ Full rules in `docs/battle-spec.md`. In short:
   special / status) and its PP. A popup above the menu lists the move's type and
   **description** for the move under the cursor and lifts the Pokémon's data panel
   clear of it. **SWITCH** shows the party as a grid of **avatar** cells (face,
-  name, level, HP). Every submenu puts the ◀ back control centred on its left edge.
+  name, level and an **HP bar**); the cell under the cursor opens a wide **detail
+  window** above the grid with no tabs — the five battle stats, HP, nature,
+  ability and held item in a left column, and the member's four moves in a 2x2
+  grid on the right. Every submenu puts the ◀ back control centred on its left edge.
 - The bag opens as pockets like the route HUD — **CONSUM** everywhere and
   **BALL** while a wild can still be caught; trainer battles offer only
   consumables.
