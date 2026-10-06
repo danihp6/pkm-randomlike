@@ -1,0 +1,14 @@
+{
+  "width": 32,
+  "height": 14,
+  "frames": [
+    "Physical",
+    "Special",
+    "Status"
+  ],
+  "categories": {
+    "Physical": 0,
+    "Special": 1,
+    "Status": 2
+  }
+}

@@ -240,3 +240,16 @@ export function unequipHeldItem(run: RunState, memberId: string): RunState {
   const held = member.fighter.heldItem;
   return updatePokemon(addItem(run, held), { ...member, fighter: { ...member.fighter, heldItem: null } });
 }
+
+/**
+ * Reorders a member's moves in place; slot order is the order the battle menu
+ * lists them in. An unknown member or an out-of-range move is a no-op, so a
+ * drop on empty space changes nothing. Pure, like the rest of the run state
+ * (D11).
+ */
+export function moveMoves(run: RunState, memberId: string, from: number, to: number): RunState {
+  const member = memberById(run, memberId);
+  if (!member) return run;
+  const moves = moveWithin(member.fighter.moves, from, to);
+  return moves === member.fighter.moves ? run : updatePokemon(run, { ...member, fighter: { ...member.fighter, moves } });
+}

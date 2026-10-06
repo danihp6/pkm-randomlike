@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] The battle menus are **grids** now. **FIGHT / BAG / SWITCH / RUN** is a 2x2
+      grid like the **moves** menu, so all four moves show at once with no
+      scrolling: each move cell is tinted by the move's **type** and shows its
+      name, the **official category badge** (physical / special / status, packed
+      from `scripts/frlg/build-category-icons.mjs`) and its PP. A **popup** above
+      the menu lists the move's type and its **description** for the move under the
+      cursor and lifts the Pokémon's data panel clear of it. **SWITCH** shows the
+      party as a grid of **avatar** cells (face, name, level, HP), and every
+      submenu puts the ◀ **back** control centred on its left edge. The arrow keys
+      move around the grids; the mouse still hovers and clicks.
+      `docs/design-spec.md` §4 updated.
+- [x] The route HUD's party/PC members open a **detail panel** on click instead
+      of being grabbed: a new window beside the box with **STATS** (HP bar, the
+      five battle stats, nature, ability and the held item) and **MOVES** tabs,
+      where the moves can be **dragged to reorder** them (that order is the
+      battle menu's). Dragging a member still reorders it or moves it between the
+      party and the box; a drag is told from a click by the pointer travelling
+      past a small slop. `docs/design-spec.md` §3 updated.
 - [x] Battle polish: the command menu takes the **mouse** — hovering a row moves
       the ▶ cursor, a click picks it, and a click advances the text feed — the
       cursor sprite's white matte is now transparent, and the top-right key-hint

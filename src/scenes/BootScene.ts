@@ -48,6 +48,12 @@ import {
   FRLG_FONT_TEXTURE_KEY,
   registerFrlgFont,
 } from '../ui/frlgFont';
+import {
+  MOVE_CATEGORY_ATLAS_URL,
+  MOVE_CATEGORY_ICON_H,
+  MOVE_CATEGORY_ICON_W,
+  MOVE_CATEGORY_TEXTURE_KEY,
+} from '../data/moveCategoryIcons';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { clearRun, loadSave } from '../engine/save';
 import { hasLivingParty } from '../engine/run';
@@ -124,6 +130,10 @@ export class BootScene extends Phaser.Scene {
     this.load.image(FRLG_TEXTBOX_KEY, FRLG_TEXTBOX_URL);
     this.load.image(FRLG_HPBAR_KEY, FRLG_HPBAR_URL);
     this.load.image(FRLG_CURSOR_KEY, FRLG_CURSOR_URL);
+    this.load.spritesheet(MOVE_CATEGORY_TEXTURE_KEY, MOVE_CATEGORY_ATLAS_URL, {
+      frameWidth: MOVE_CATEGORY_ICON_W,
+      frameHeight: MOVE_CATEGORY_ICON_H,
+    });
     this.load.image(FRLG_FONT_TEXTURE_KEY, FRLG_FONT_ATLAS_URL);
   }
 

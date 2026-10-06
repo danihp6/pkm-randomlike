@@ -33,8 +33,11 @@ carries over.
 - Up to **6** Pokémon in the active party; extras go to the **PC box**.
 - The party and the PC box are managed outside battle from the route HUD
   (`I` / `P`): drag a member within the party or the box to reorder it, or
-  across the two panels to move it between them. The party is never left empty
-  and the box is never required to be full.
+  across the two panels to move it between them. A plain **click** on a member
+  opens a **detail panel** (its own window) with **STATS** — HP, the five battle
+  stats, nature, ability and held item — and **MOVES**, where the moves can be
+  dragged to reorder them (that order is what the battle menu lists). The party
+  is never left empty and the box is never required to be full.
 - **Held items** are equipped from the same HUD: drag an equipment stack from the
   bag onto a party or box member to give it the item (any item it already held
   returns to the bag, so an equip is a swap, never a loss). The held item shows as
@@ -63,6 +66,13 @@ Full rules in `docs/battle-spec.md`. In short:
   attempts the escape at once, with no yes/no prompt.
 - The command menu takes the **mouse** as well as the keyboard: hovering a row
   moves the ▶ cursor and a click picks it, and a click advances the battle text.
+  **FIGHT / BAG / SWITCH / RUN** is a 2x2 **grid**, and so is the **moves** menu
+  (all four moves show at once, with no scrolling): each move cell is tinted by
+  the move's type and shows its name, the official category **badge** (physical /
+  special / status) and its PP. A popup above the menu lists the move's type and
+  **description** for the move under the cursor and lifts the Pokémon's data panel
+  clear of it. **SWITCH** shows the party as a grid of **avatar** cells (face,
+  name, level, HP). Every submenu puts the ◀ back control centred on its left edge.
 - The bag opens as pockets like the route HUD — **CONSUM** everywhere and
   **BALL** while a wild can still be caught; trainer battles offer only
   consumables.
