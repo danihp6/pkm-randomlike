@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
 import { MAX_PARTY_SIZE, type RunState } from '../engine/run';
 import { subscribeKeybinds } from '../input/input';
-import { addFrlgWindow } from '../ui/frlg';
+import { FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import {
@@ -91,7 +91,7 @@ export class PartyScene extends Phaser.Scene {
     const x = PANEL_X[pane];
     const width = PANEL_W[pane];
     addFrlgWindow(this, x, PANEL_Y, width, PANEL_H);
-    addFrlgText(this, x + 18, PANEL_Y + 10, pane === 'party' ? 'PARTY' : 'PC BOX', {
+    addFrlgText(this, x + FRLG_WINDOW_PADDING.x, PANEL_Y + FRLG_WINDOW_PADDING.top, pane === 'party' ? 'PARTY' : 'PC BOX', {
       size: 16,
       tint: 0x3a3956,
     });
@@ -99,7 +99,7 @@ export class PartyScene extends Phaser.Scene {
     for (let slot = 0; slot < VISIBLE_ROWS; slot++) {
       const rowY = PANEL_Y + ROW_TOP + slot * ROW_H;
       const highlight = this.add
-        .rectangle(x + 14, rowY, width - 28, ROW_H - 6, 0xf2c14e, 0.28)
+        .rectangle(x + FRLG_WINDOW_PADDING.x, rowY, width - FRLG_WINDOW_PADDING.x * 2, ROW_H - 6, 0xf2c14e, 0.28)
         .setOrigin(0, 0)
         .setVisible(false);
       const portrait = this.add
@@ -108,10 +108,16 @@ export class PartyScene extends Phaser.Scene {
         .setVisible(false);
       const name = addFrlgText(this, x + 68, rowY + 4, '', { size: 16, tint: FRLG_INK });
       const stats = addFrlgText(this, x + 68, rowY + 26, '', { size: 16, tint: FRLG_INK });
-      const status = addFrlgText(this, x + width - 24, rowY + 16, '', { size: 16, origin: [1, 0] });
+      const status = addFrlgText(this, x + width - FRLG_WINDOW_PADDING.x, rowY + 16, '', {
+        size: 16,
+        origin: [1, 0],
+      });
       rows.push({ highlight, portrait, name, stats, status });
     }
-    const cursor = addFrlgText(this, x + 16, PANEL_Y + ROW_TOP + ROW_H / 2 - 8, '▶', { size: 16, origin: [0, 0] });
+    const cursor = addFrlgText(this, x + FRLG_WINDOW_PADDING.x, PANEL_Y + ROW_TOP + ROW_H / 2 - 8, '▶', {
+      size: 16,
+      origin: [0, 0],
+    });
     return { cursor, rows };
   }
 

@@ -126,7 +126,9 @@ track, `src/assets/frlg/hpbar.png` — and the ▶ command cursor
 The measured geometry (the 4x scale and the HP track's fill rectangle) is
 generated alongside them in `src/data/frlg/battle-ui.json`, so the scene never
 hardcodes pixel maths. The scene paints the current HP colour behind the bar's
-overlay.
+overlay. The baked border each window demands is exported as
+`FRLG_WINDOW_PADDING` / `FRLG_TEXTBOX_PADDING` (measured from the PNGs), so scene
+content is padded inside the frame instead of riding the bevel.
 
 The bitmap font is packed the same way: `scripts/frlg/build-font.mjs` reads
 `latin_normal.png` + `charmap.txt`, keys the sheet's flat blue background and

@@ -64,7 +64,7 @@ import {
   serializeFrameMap,
 } from '../engine/frameMap';
 import { BAG_CATEGORIES, BAG_CATEGORY_LABELS, bagForCategory, cycleBagCategory, type BagCategory } from '../ui/bag';
-import { FRLG_HPBAR, FRLG_HPBAR_KEY, addFrlgWindow } from '../ui/frlg';
+import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
@@ -80,20 +80,25 @@ const HUD_BAG_ROWS = 6;
 /**
  * The route HUD is one FRLG window per concern, stacked down the right edge: a
  * slim route header, then the party (portrait, name, level and HP bar) and the
- * bag (icon, name and count). The widths are shared so the three stack flush.
+ * bag (pocket tabs over the active pocket's icon, name and count). The widths
+ * are shared so the three stack flush.
  */
 const HUD_PANEL_W = 344;
 const HUD_TOP = 8;
 const HUD_GAP = 8;
-const HUD_HEADER_H = 34;
-const HUD_PARTY_HEADER = 30;
+/** Content stays inside the FRLG window's baked border (`FRLG_WINDOW_PADDING`). */
+const HUD_PAD_X = FRLG_WINDOW_PADDING.x;
+const HUD_PAD_TOP = FRLG_WINDOW_PADDING.top;
+const HUD_PAD_BOTTOM = FRLG_WINDOW_PADDING.bottom + 4;
+const HUD_HEADER_H = HUD_PAD_TOP + 16 + HUD_PAD_BOTTOM;
+const HUD_PARTY_HEADER = HUD_PAD_TOP + 16 + 12;
 const HUD_PARTY_ROW = 52;
-const HUD_BAG_HEADER = 38;
-const HUD_BAG_ROW = 40;
-/** The bag pocket tabs: four across the window's inner width (344 - 2 * 10). */
-const HUD_TAB_W = 78;
-const HUD_TAB_H = 22;
+/** The bag pocket tabs: four across the window's padded inner width. */
+const HUD_TAB_W = 73;
+const HUD_TAB_H = 26;
 const HUD_TAB_GAP = 4;
+const HUD_BAG_HEADER = HUD_PAD_TOP + HUD_TAB_H + 8;
+const HUD_BAG_ROW = 40;
 /** The 268px FRLG HP bar at 0.75 still reads cleanly and leaves room for the numbers. */
 const HUD_HPBAR_SCALE = 0.75;
 
@@ -430,39 +435,41 @@ export class RouteScene extends Phaser.Scene {
    */
   private buildHud(): void {
     const x = this.scale.width - HUD_PANEL_W - 8;
+    const left = x + HUD_PAD_X;
+    const right = x + HUD_PANEL_W - HUD_PAD_X;
     const children: Phaser.GameObjects.GameObject[] = [];
 
     const header = addFrlgWindow(this, x, HUD_TOP, HUD_PANEL_W, HUD_HEADER_H);
-    this.hudTitle = addFrlgText(this, x + 14, HUD_TOP + 8, '', { size: 16, tint: FRLG_INK });
+    this.hudTitle = addFrlgText(this, left, HUD_TOP + HUD_PAD_TOP, '', { size: 16, tint: FRLG_INK });
     children.push(header, this.hudTitle);
 
     const partyY = HUD_TOP + HUD_HEADER_H + HUD_GAP;
-    const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + 12;
+    const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + HUD_PAD_BOTTOM;
     children.push(addFrlgWindow(this, x, partyY, HUD_PANEL_W, partyH));
-    children.push(addFrlgText(this, x + 14, partyY + 8, 'PARTY', { size: 16, tint: 0x3a3956 }));
+    children.push(addFrlgText(this, left, partyY + HUD_PAD_TOP, 'PARTY', { size: 16, tint: 0x3a3956 }));
     this.hudRows = [];
     for (let i = 0; i < MAX_PARTY_SIZE; i++) {
       const rowY = partyY + HUD_PARTY_HEADER + i * HUD_PARTY_ROW;
       const portrait = this.add
-        .image(x + 24, rowY + 26, PORTRAIT_TEXTURE_KEY, 0)
+        .image(left + 14, rowY + 26, PORTRAIT_TEXTURE_KEY, 0)
         .setScale(0.7)
         .setVisible(false);
-      const name = addFrlgText(this, x + 50, rowY + 6, '', { size: 16, tint: FRLG_INK });
-      const level = addFrlgText(this, x + HUD_PANEL_W - 14, rowY + 6, '', {
+      const name = addFrlgText(this, left + 30, rowY + 6, '', { size: 16, tint: FRLG_INK });
+      const level = addFrlgText(this, right, rowY + 6, '', {
         size: 16,
         tint: 0x3a3956,
         origin: [1, 0],
       });
       const bar = this.add
-        .image(x + 50, rowY + 28, FRLG_HPBAR_KEY)
+        .image(left + 30, rowY + 28, FRLG_HPBAR_KEY)
         .setOrigin(0, 0)
         .setScale(HUD_HPBAR_SCALE)
         .setVisible(false);
       const fill = this.add
-        .rectangle(x + 50, rowY + 28, 0, FRLG_HPBAR.fill.height * HUD_HPBAR_SCALE, 0x58d080)
+        .rectangle(left + 30, rowY + 28, 0, FRLG_HPBAR.fill.height * HUD_HPBAR_SCALE, 0x58d080)
         .setOrigin(0, 0)
         .setVisible(false);
-      const hpText = addFrlgText(this, x + HUD_PANEL_W - 14, rowY + 30, '', {
+      const hpText = addFrlgText(this, right, rowY + 30, '', {
         size: 16,
         tint: FRLG_INK,
         origin: [1, 0],
@@ -472,16 +479,17 @@ export class RouteScene extends Phaser.Scene {
     }
 
     const bagY = partyY + partyH + HUD_GAP;
-    const bagH = HUD_BAG_HEADER + HUD_BAG_ROWS * HUD_BAG_ROW + 12;
+    const bagH = HUD_BAG_HEADER + HUD_BAG_ROWS * HUD_BAG_ROW + HUD_PAD_BOTTOM;
     children.push(addFrlgWindow(this, x, bagY, HUD_PANEL_W, bagH));
 
     // Pocket tabs across the window's head, FRLG style: the active one reads
     // dark-on-light, the rest stay a pale folder. Click or `[` / `]` to switch.
     this.hudBagTabs = [];
     BAG_CATEGORIES.forEach((category, i) => {
-      const tabX = x + 10 + i * (HUD_TAB_W + HUD_TAB_GAP);
-      const bg = this.add.rectangle(tabX, bagY + 8, HUD_TAB_W, HUD_TAB_H, 0xcfcce2).setOrigin(0, 0);
-      const label = addFrlgText(this, tabX + HUD_TAB_W / 2, bagY + 11, BAG_CATEGORY_LABELS[category], {
+      const tabX = left + i * (HUD_TAB_W + HUD_TAB_GAP);
+      const tabY = bagY + HUD_PAD_TOP;
+      const bg = this.add.rectangle(tabX, tabY, HUD_TAB_W, HUD_TAB_H, 0xcfcce2).setOrigin(0, 0);
+      const label = addFrlgText(this, tabX + HUD_TAB_W / 2, tabY + 5, BAG_CATEGORY_LABELS[category], {
         size: 16,
         tint: FRLG_INK,
         origin: [0.5, 0],
@@ -494,11 +502,11 @@ export class RouteScene extends Phaser.Scene {
     for (let i = 0; i < HUD_BAG_ROWS; i++) {
       const rowY = bagY + HUD_BAG_HEADER + i * HUD_BAG_ROW;
       const icon = this.add
-        .image(x + 26, rowY + 20, ITEM_ICON_TEXTURE_KEY, 0)
+        .image(left + 10, rowY + 20, ITEM_ICON_TEXTURE_KEY, 0)
         .setScale(0.75)
         .setVisible(false);
-      const name = addFrlgText(this, x + 50, rowY + 12, '', { size: 16, tint: FRLG_INK });
-      const count = addFrlgText(this, x + HUD_PANEL_W - 14, rowY + 12, '', {
+      const name = addFrlgText(this, left + 28, rowY + 12, '', { size: 16, tint: FRLG_INK });
+      const count = addFrlgText(this, right, rowY + 12, '', {
         size: 16,
         tint: 0x3a3956,
         origin: [1, 0],

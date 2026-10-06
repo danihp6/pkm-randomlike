@@ -26,6 +26,16 @@ export const FRLG_CURSOR_KEY = 'frlg:cursor';
 export const FRLG_WINDOW_CORNER = 20;
 export const FRLG_TEXTBOX_CORNER = 24;
 
+/**
+ * The light window's baked border, measured from `window.png`: content must sit
+ * inside it or it rides over the frame. The nine-slice corner is 20; the frame
+ * is 20px on the sides and 16/8 at the top and bottom.
+ */
+export const FRLG_WINDOW_PADDING = { x: 20, top: 16, bottom: 8 } as const;
+
+/** The navy textbox's baked border, measured from `textbox.png` (36 sides, 28 top/bottom). */
+export const FRLG_TEXTBOX_PADDING = { x: 36, top: 28, bottom: 28 } as const;
+
 export type FrlgWindowVariant = 'window' | 'textbox';
 
 /** Adds an FRLG nine-slice window at `(x, y)`, top-left origin. */
