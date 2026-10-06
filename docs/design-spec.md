@@ -67,9 +67,11 @@ Full rules in `docs/battle-spec.md`. In short:
 - The command menu takes the **mouse** as well as the keyboard: hovering a row
   moves the ▶ cursor and a click picks it, and a click advances the battle text.
   The **moves** menu is a 2x2 **grid** so all four moves show at once, with no
-  scrolling: each cell is tinted by the move's type and lists its type, category
-  (physical / special / status) and PP, a popup above the menu describes the move
-  under the cursor, and the ◀ back control sits at the start of the first row.
+  scrolling: each cell is tinted by the move's type and shows its name, a category
+  **badge** (physical / special / status) and its PP; a popup above the menu lists
+  the move's type and **description** for the move under the cursor and lifts the
+  Pokémon's data panel clear of it, and the ◀ back control sits centred on the
+  grid's left edge.
 - The bag opens as pockets like the route HUD — **CONSUM** everywhere and
   **BALL** while a wild can still be caught; trainer battles offer only
   consumables.

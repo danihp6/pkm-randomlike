@@ -48,6 +48,7 @@ import {
   FRLG_FONT_TEXTURE_KEY,
   registerFrlgFont,
 } from '../ui/frlgFont';
+import { MOVE_CATEGORY_ICONS, MOVE_CATEGORY_ICON_SIZE } from '../data/moveCategoryIcons';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { clearRun, loadSave } from '../engine/save';
 import { hasLivingParty } from '../engine/run';
@@ -132,6 +133,7 @@ export class BootScene extends Phaser.Scene {
     this.buildRouteTextures();
     this.buildMoveFxAnimations();
     this.buildPlayerAnimations();
+    this.buildCategoryIcons();
     // Phase 7: pick up the run left in progress, or start a fresh one. A saved
     // run whose last Pokémon already fell was over the moment it was written,
     // so it is cleared rather than resumed (D5: nothing carries over).
@@ -180,6 +182,39 @@ export class BootScene extends Phaser.Scene {
         repeat: -1,
       });
     }
+  }
+
+  /**
+   * The move-category badges: a coloured disc with a distinct glyph per category
+   * (physical = an impact arrow, special = rings, status = a hollow dot), so the
+   * move grid reads the category at a glance without a word.
+   */
+  private buildCategoryIcons(): void {
+    const size = MOVE_CATEGORY_ICON_SIZE;
+    const r = size / 2;
+    const { Physical, Special, Status } = MOVE_CATEGORY_ICONS;
+    if (this.textures.exists(Physical.key)) return;
+
+    const physical = this.make.graphics({ x: 0, y: 0 });
+    physical.fillStyle(Physical.color, 1).fillCircle(r, r, r - 1);
+    physical.fillStyle(0xffffff, 1);
+    physical.fillTriangle(r - 5, r - 6, r + 6, r, r - 5, r + 6);
+    physical.generateTexture(Physical.key, size, size);
+    physical.destroy();
+
+    const special = this.make.graphics({ x: 0, y: 0 });
+    special.fillStyle(Special.color, 1).fillCircle(r, r, r - 1);
+    special.lineStyle(2, 0xffffff, 1);
+    special.strokeCircle(r, r, 5.5);
+    special.strokeCircle(r, r, 2.5);
+    special.generateTexture(Special.key, size, size);
+    special.destroy();
+
+    const status = this.make.graphics({ x: 0, y: 0 });
+    status.fillStyle(Status.color, 1).fillCircle(r, r, r - 1);
+    status.fillStyle(0xffffff, 1).fillCircle(r, r, 3.5);
+    status.generateTexture(Status.key, size, size);
+    status.destroy();
   }
 
   /**

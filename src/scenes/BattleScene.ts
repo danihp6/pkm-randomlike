@@ -49,8 +49,13 @@ import { loadSettings } from '../settings';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR, FRLG_TEXTBOX_PADDING, FRLG_WINDOW_PADDING } from '../ui/frlg';
 import { FRLG_INK, FRLG_FONT_SIZE, addFrlgText } from '../ui/frlgFont';
-import { typeTint } from '../ui/typeColors';
+import { typeColor, typeTint } from '../ui/typeColors';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
+import {
+  MOVE_CATEGORY_ICONS,
+  MOVE_CATEGORY_ICON_SIZE,
+  categoryIconKey,
+} from '../data/moveCategoryIcons';
 import type { RouteScene } from './RouteScene';
 
 const MESSAGE_HOLD_MS = 900;
@@ -83,10 +88,14 @@ const MENU_BAG_ROWS = 3;
 const MENU_GRID_COLS = 2;
 const MENU_GRID_GAP = 8;
 /** Width reserved at the left of the moves grid for the ◀ back control. */
-const MOVE_BACK_COL = 40;
+const MOVE_BACK_COL = 46;
+/** Inner padding of a moves cell, and the inset of the whole grid in the window. */
+const MOVE_CELL_PAD = 14;
+const MOVE_GRID_INSET = 8;
 /** The move description popup that sits above the moves menu. */
-const MOVE_POPUP_H = 60;
-const MOVE_POPUP_GAP = 6;
+const MOVE_POPUP_MIN_H = 56;
+const MOVE_POPUP_GAP = 8;
+const MOVE_POPUP_TYPE_W = 88;
 /** Placeholder mon sprite scale; the switch beat returns the sprite to it. */
 const MON_SCALE = 2.4;
 
@@ -174,8 +183,13 @@ export class BattleScene extends Phaser.Scene {
   private menuZones: Phaser.GameObjects.Zone[] = [];
   /** The cells of the moves grid, drawn behind its text so the 2x2 reads as a grid. */
   private moveCells: Phaser.GameObjects.Rectangle[] = [];
+  /** The category badge and PP text of each moves-grid cell. */
+  private moveCategoryIcons: Phaser.GameObjects.Image[] = [];
+  private movePpText: Phaser.GameObjects.BitmapText[] = [];
   /** The description popup shown while the moves menu is open. */
   private movePopup!: Phaser.GameObjects.NineSlice;
+  private movePopupType!: Phaser.GameObjects.Rectangle;
+  private movePopupTypeText!: Phaser.GameObjects.BitmapText;
   private movePopupText!: Phaser.GameObjects.BitmapText;
 
   private menuItems: readonly MenuItem[] = [];
@@ -339,6 +353,13 @@ export class BattleScene extends Phaser.Scene {
     this.menuRows = Array.from({ length: MENU_ROWS }, () =>
       addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
     );
+    // The moves grid's per-cell category badge and PP line, hidden with the cells.
+    this.moveCategoryIcons = Array.from({ length: MENU_ROWS }, () =>
+      this.add.image(0, 0, MOVE_CATEGORY_ICONS.Physical.key).setOrigin(0, 0).setVisible(false),
+    );
+    this.movePpText = Array.from({ length: MENU_ROWS }, () =>
+      addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK }).setVisible(false),
+    );
 
     // One invisible zone per row: hovering moves the cursor, clicking picks the
     // row, so the menu answers the mouse exactly like the keyboard.
@@ -365,10 +386,16 @@ export class BattleScene extends Phaser.Scene {
     });
 
     // The move description popup, built last so it rides over the menu and the
-    // battle behind it. Hidden unless the moves menu is open.
-    this.movePopup = addFrlgWindow(this, 0, 0, 300, MOVE_POPUP_H).setVisible(false);
-    this.movePopupText = addFrlgText(this, 0, 0, '', {
+    // battle behind it. Hidden unless the moves menu is open. The type chip sits
+    // at its left, the description (larger) beside it.
+    this.movePopup = addFrlgWindow(this, 0, 0, 300, MOVE_POPUP_MIN_H).setVisible(false);
+    this.movePopupType = this.add.rectangle(0, 0, MOVE_POPUP_TYPE_W, 24, 0x9aa0b4).setOrigin(0, 0).setVisible(false);
+    this.movePopupTypeText = addFrlgText(this, 0, 0, '', {
       size: 16,
+      tint: 0xf8fafc,
+      origin: [0.5, 0],
+    }).setVisible(false);
+    this.movePopupText = addFrlgText(this, 0, 0, '', {
       tint: FRLG_INK,
       lineSpacing: 4,
     }).setVisible(false);
@@ -1025,6 +1052,14 @@ export class BattleScene extends Phaser.Scene {
       playerY = height * 0.6;
     }
 
+    // The move-detail popup sits above the menu; while it is up, lift the
+    // player's data panel so the popup never covers it.
+    const movePopupH = menuOpen && this.mode === 'moves' ? this.movePopupHeight(box.w) : 0;
+    if (movePopupH > 0) {
+      playerInfo = { ...playerInfo, y: playerInfo.y - movePopupH - MOVE_POPUP_GAP };
+      if (compact) playerY -= movePopupH + MOVE_POPUP_GAP;
+    }
+
     // Both boxes span the full bottom width and share it: the choice menu owns
     // the whole box while it is open and the message window steps aside, so a
     // list is never squeezed next to the text (the same shape on phone and
@@ -1127,9 +1162,10 @@ export class BattleScene extends Phaser.Scene {
 
   /**
    * The moves menu as a 2-column grid, so all four moves show at once with no
-   * scrolling. The ◀ back control sits at the start of the first row; each cell
-   * is tinted by the move's type and lists its type, category and PP, while the
-   * popup above the menu describes the move the cursor is on.
+   * scrolling. The ◀ back control sits centred on the grid's left edge; each cell
+   * is tinted by the move's type and shows its name, a category badge and its PP,
+   * while the popup above the menu lists the type and description of the move the
+   * cursor is on.
    */
   private renderMoveMenu(menu: Rect): void {
     this.menuPanel.setVisible(true);
@@ -1139,18 +1175,18 @@ export class BattleScene extends Phaser.Scene {
     const cols = MENU_GRID_COLS;
     const rows = Math.max(1, Math.ceil(count / cols));
     const left = menu.x + pad.x;
-    const right = menu.x + menu.w - pad.x;
-    const top = menu.y + pad.top;
-    const bottom = menu.y + menu.h - pad.bottom;
+    const right = menu.x + menu.w - pad.x - MOVE_GRID_INSET;
+    const top = menu.y + pad.top + MOVE_GRID_INSET;
+    const bottom = menu.y + menu.h - pad.bottom - MOVE_GRID_INSET;
     const gridLeft = left + MOVE_BACK_COL;
     const cellW = (right - gridLeft - (cols - 1) * MENU_GRID_GAP) / cols;
     const cellH = (bottom - top - (rows - 1) * MENU_GRID_GAP) / rows;
     const cellX = (i: number): number => gridLeft + (i % cols) * (cellW + MENU_GRID_GAP);
     const cellY = (i: number): number => top + Math.floor(i / cols) * (cellH + MENU_GRID_GAP);
 
-    // The ◀ back control, in line with the first row of moves.
-    const backX = left + 12;
-    const backY = top + cellH / 2;
+    // The ◀ back control, centred on the grid's left edge between the two rows.
+    const backX = left + 14;
+    const backY = (top + bottom) / 2;
     this.backArrow.setVisible(true).setPosition(backX, backY);
     this.backZone.setPosition(backX - 12, backY - 18).setSize(48, 36);
     if (this.backZone.input) this.backZone.input.enabled = true;
@@ -1161,16 +1197,37 @@ export class BattleScene extends Phaser.Scene {
         row.setVisible(false);
         return;
       }
-      const move = item.move;
-      const lines = move
-        ? `${item.label}\n${move.type.toUpperCase()}  ${move.category.toUpperCase()}\nPP ${move.pp}/${move.maxPp}`
-        : item.label;
       row
-        .setText(lines)
+        .setText(item.label)
         .setAlpha(item.enabled ? 1 : 0.4)
         .setFontSize(16)
-        .setMaxWidth(cellW - 50)
-        .setPosition(cellX(i) + 36, cellY(i) + 8)
+        .setMaxWidth(cellW - MOVE_CELL_PAD - 40)
+        .setPosition(cellX(i) + MOVE_CELL_PAD + 22, cellY(i) + MOVE_CELL_PAD)
+        .setVisible(true);
+    });
+    this.moveCategoryIcons.forEach((icon, i) => {
+      const item = i < count ? this.menuItems[i] : undefined;
+      const key = item?.move ? categoryIconKey(item.move.category) : null;
+      if (!item || !key) {
+        icon.setVisible(false);
+        return;
+      }
+      icon
+        .setTexture(key)
+        .setAlpha(item.enabled ? 1 : 0.4)
+        .setPosition(cellX(i) + MOVE_CELL_PAD, cellY(i) + MOVE_CELL_PAD + 22)
+        .setVisible(true);
+    });
+    this.movePpText.forEach((text, i) => {
+      const item = i < count ? this.menuItems[i] : undefined;
+      if (!item?.move) {
+        text.setVisible(false);
+        return;
+      }
+      text
+        .setText(`PP ${item.move.pp}/${item.move.maxPp}`)
+        .setAlpha(item.enabled ? 1 : 0.4)
+        .setPosition(cellX(i) + MOVE_CELL_PAD + MOVE_CATEGORY_ICON_SIZE + 6, cellY(i) + MOVE_CELL_PAD + 24)
         .setVisible(true);
     });
     this.moveCells.forEach((cell, i) => {
@@ -1195,35 +1252,73 @@ export class BattleScene extends Phaser.Scene {
       if (item) zone.setPosition(cellX(i), cellY(i)).setSize(cellW, cellH);
     });
     this.menuCursor
-      .setPosition(cellX(this.menuIndex) + 14, cellY(this.menuIndex) + cellH / 2)
+      .setPosition(cellX(this.menuIndex) + 12, cellY(this.menuIndex) + cellH / 2)
       .setVisible(count > 0);
     this.showMovePopup(menu);
   }
 
-  /** The description popup above the menu, for the move under the cursor. */
+  /** The popup's description font: large on a full-width menu, small on a phone. */
+  private movePopupFontSize(width: number): number {
+    return width >= 500 ? FRLG_FONT_SIZE : 16;
+  }
+
+  /** The popup height, measured from the current move's wrapped description. */
+  private movePopupHeight(width: number): number {
+    const move = this.menuItems[this.menuIndex]?.move;
+    if (!move || move.desc.length === 0) return 0;
+    const pad = FRLG_WINDOW_PADDING;
+    this.movePopupText
+      .setFontSize(this.movePopupFontSize(width))
+      .setText(move.desc)
+      .setMaxWidth(width - pad.x * 2 - MOVE_POPUP_TYPE_W - 12);
+    return Math.max(MOVE_POPUP_MIN_H, pad.top + Math.max(24, this.movePopupText.height) + pad.bottom);
+  }
+
+  /**
+   * The details popup above the menu: a type chip at its left and the move's
+   * description (larger than the grid text) beside it.
+   */
   private showMovePopup(menu: Rect): void {
     const move = this.menuItems[this.menuIndex]?.move;
     if (!move || move.desc.length === 0) {
       this.movePopup.setVisible(false);
       this.movePopupText.setVisible(false);
+      this.movePopupType.setVisible(false);
+      this.movePopupTypeText.setVisible(false);
       return;
     }
     const pad = FRLG_WINDOW_PADDING;
+    const size = this.movePopupFontSize(menu.w);
+    const height = this.movePopupHeight(menu.w);
     const x = menu.x;
-    const y = menu.y - MOVE_POPUP_H - MOVE_POPUP_GAP;
-    this.movePopup.setSlices(menu.w, MOVE_POPUP_H).setPosition(x, y).setVisible(true);
+    const y = menu.y - height - MOVE_POPUP_GAP;
+    const chipY = y + pad.top;
+    this.movePopup.setSlices(menu.w, height).setPosition(x, y).setVisible(true);
+    this.movePopupType
+      .setPosition(x + pad.x, chipY)
+      .setFillStyle(typeColor(move.type))
+      .setVisible(true);
+    this.movePopupTypeText
+      .setText(move.type.toUpperCase())
+      .setPosition(x + pad.x + MOVE_POPUP_TYPE_W / 2, chipY + 2)
+      .setVisible(true);
     this.movePopupText
       .setText(move.desc)
-      .setMaxWidth(menu.w - pad.x * 2)
-      .setPosition(x + pad.x, y + pad.top)
+      .setFontSize(size)
+      .setMaxWidth(menu.w - pad.x * 2 - MOVE_POPUP_TYPE_W - 12)
+      .setPosition(x + pad.x + MOVE_POPUP_TYPE_W + 12, chipY + Math.max(0, (24 - size) / 2))
       .setVisible(true);
   }
 
-  /** Hides the moves-grid chrome: its cells and the description popup. */
+  /** Hides the moves-grid chrome: its cells, badges, PP and the popup. */
   private hideMoveCells(): void {
     for (const cell of this.moveCells) cell.setVisible(false);
+    for (const icon of this.moveCategoryIcons) icon.setVisible(false);
+    for (const text of this.movePpText) text.setVisible(false);
     this.movePopup.setVisible(false);
     this.movePopupText.setVisible(false);
+    this.movePopupType.setVisible(false);
+    this.movePopupTypeText.setVisible(false);
   }
 
   /** The bag: a pocket tab strip over the active pocket's stacks. */
