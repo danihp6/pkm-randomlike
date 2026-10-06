@@ -46,7 +46,7 @@ import {
 } from '../ui/typewriter';
 import { loadSettings } from '../settings';
 import { actionKeys, subscribeKeybinds } from '../input/input';
-import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR } from '../ui/frlg';
+import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR, FRLG_TEXTBOX_PADDING, FRLG_WINDOW_PADDING } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import type { RouteScene } from './RouteScene';
@@ -58,8 +58,12 @@ const MENU_W = 540;
 const MESSAGE_H = 124;
 const PANEL_W = 320;
 const PLAYER_PANEL_W = 320;
-const PLAYER_PANEL_H = 140;
-const FOE_PANEL = { w: PANEL_W, h: 104 } as const;
+/** Tall enough for the padded name (16 + 32), the bar and the XP row. */
+const PLAYER_PANEL_H = 148;
+const FOE_PANEL = { w: PANEL_W, h: 114 } as const;
+/** Gap between the padded name and the HP bar inside an HP panel. */
+const PANEL_NAME_H = 32;
+const PANEL_NAME_GAP = 26;
 const ROW_H = 34;
 /** Placeholder mon sprite scale; the switch beat returns the sprite to it. */
 const MON_SCALE = 2.4;
@@ -808,8 +812,8 @@ export class BattleScene extends Phaser.Scene {
     this.messagePanel.setSlices(message.w, message.h).setPosition(message.x, message.y);
     this.menuPanel.setSlices(menu.w, menu.h).setPosition(menu.x, menu.y);
 
-    this.messageText.setPosition(message.x + 22, message.y + 22);
-    this.messageText.setMaxWidth(message.w - 44);
+    this.messageText.setPosition(message.x + FRLG_TEXTBOX_PADDING.x, message.y + FRLG_TEXTBOX_PADDING.top);
+    this.messageText.setMaxWidth(message.w - FRLG_TEXTBOX_PADDING.x * 2);
 
     if (this.menuItems.length > 0) {
       this.renderMenu(menu);
@@ -827,19 +831,23 @@ export class BattleScene extends Phaser.Scene {
     const hp = this.displayHp[side];
     const fraction = hpFraction(hp, fighter.maxHp);
 
-    this.nameText[side].setText(`${fighter.name}  Lv${fighter.level}`).setPosition(rect.x + 18, rect.y + 6);
+    // Content stays inside the FRLG window's baked border: the name drops below
+    // the top frame and the bar keeps its gap, so nothing rides the bevel.
+    const pad = FRLG_WINDOW_PADDING;
+    const nameY = rect.y + pad.top;
+    const barX = rect.x + pad.x;
+    const barY = nameY + PANEL_NAME_H + PANEL_NAME_GAP;
+
+    this.nameText[side].setText(`${fighter.name}  Lv${fighter.level}`).setPosition(barX, nameY);
     this.statText[side]
       .setText(side === 'player' ? `${hp}/${fighter.maxHp}` : '')
-      .setPosition(rect.x + rect.w - 18, rect.y + 40);
-
-    const barX = rect.x + 18;
-    const barY = rect.y + 64;
+      .setPosition(rect.x + rect.w - pad.x, barY - 23);
 
     const status = statusAbbreviation(this.displayStatus[side]);
-    this.statusText[side].setText(status ?? '').setPosition(rect.x + 45, rect.y + 41);
+    this.statusText[side].setText(status ?? '').setPosition(barX + 27, barY - 23);
     if (status) {
       this.hud.fillStyle(0x8b5cf6, 1);
-      this.hud.fillRoundedRect(rect.x + 18, rect.y + 40, 54, 20, 6);
+      this.hud.fillRoundedRect(barX, barY - 24, 54, 20, 6);
     }
 
     const bar = this.hpBars[side];
@@ -869,7 +877,7 @@ export class BattleScene extends Phaser.Scene {
   private renderMenu(menu: Rect): void {
     this.menuPanel.setVisible(true);
     const startX = menu.x + 58;
-    const startY = menu.y + 14;
+    const startY = menu.y + FRLG_WINDOW_PADDING.top;
     const count = this.menuItems.length;
     const windowStart = Math.max(0, Math.min(this.menuIndex - 1, count - MENU_ROWS));
     this.menuRows.forEach((row, i) => {

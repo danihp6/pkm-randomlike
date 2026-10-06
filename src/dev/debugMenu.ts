@@ -1,4 +1,5 @@
 import { playableSpecies, type Species } from '../data/dex';
+import { ITEMS, type ItemDef } from '../data/items';
 import { RUN_CHAIN } from '../data/run';
 import { SHAPES, isRouteShape, type RouteShape } from '../engine/routes/layout';
 import { ROUTE_HEIGHT, ROUTE_WIDTH } from '../engine/routes/sketch';
@@ -59,6 +60,10 @@ export type DebugGeneratorStep = Readonly<{
 
 export type DebugMenuHandlers = Readonly<{
   onWildBattle: (speciesId: string, level: number) => void;
+  /** Dev only: drops a species into the run; returns where it landed. */
+  onAddPokemon: (speciesId: string, level: number) => 'party' | 'box' | null;
+  /** Dev only: adds `count` of an item to the run's bag. */
+  onAddItem: (itemId: string, count: number) => void;
   readRouteContext: () => DebugRouteContext | null;
   onRegenerateRoute: (input: DebugRouteInput) => void;
   onTogglePassThrough: (enabled: boolean) => void;
@@ -73,30 +78,49 @@ export type DebugMenuHandlers = Readonly<{
 }>;
 
 /**
- * Resolves a typed species to one of the catalog: an exact id, then an exact
- * name, then a name prefix and finally a substring on either. Case and
- * punctuation are ignored, so `Mr. Mime`, `mrmime` and `mr` all land.
+ * Resolves a typed query to a catalog entry with an `id` and a `name`: an exact
+ * id, then an exact name, then a name prefix and finally a substring on either.
+ * Case and punctuation are ignored, so `Mr. Mime`, `mrmime` and `mr` all land.
  */
-export function matchSpecies(
+function matchCatalog<T extends { id: string; name: string }>(
   query: string,
-  species: readonly Species[],
-): Species | null {
+  entries: readonly T[],
+): T | null {
   const text = query.trim().toLowerCase();
   if (!text) return null;
   const id = text.replace(/[^a-z0-9]/g, '');
-  const exactId = species.find((entry) => entry.id === id);
+  const exactId = entries.find((entry) => entry.id === id);
   if (exactId) return exactId;
-  const exactName = species.find((entry) => entry.name.toLowerCase() === text);
+  const exactName = entries.find((entry) => entry.name.toLowerCase() === text);
   if (exactName) return exactName;
-  const prefix = species.find((entry) => entry.name.toLowerCase().startsWith(text));
+  const prefix = entries.find((entry) => entry.name.toLowerCase().startsWith(text));
   if (prefix) return prefix;
-  return species.find((entry) => entry.name.toLowerCase().includes(text) || entry.id.includes(id)) ?? null;
+  return entries.find((entry) => entry.name.toLowerCase().includes(text) || entry.id.includes(id)) ?? null;
+}
+
+/** Resolves a typed species to one of the catalog (see `matchCatalog`). */
+export function matchSpecies(query: string, species: readonly Species[]): Species | null {
+  return matchCatalog(query, species);
+}
+
+/** Resolves a typed item to one of the catalog (see `matchCatalog`). */
+export function matchItem(query: string, items: readonly ItemDef[]): ItemDef | null {
+  return matchCatalog(query, items);
 }
 
 /** A level the wild can legally hold; a blank or broken field falls back to 5. */
 export function clampLevel(value: number): number {
   if (!Number.isFinite(value)) return DEBUG_DEFAULT_LEVEL;
   return Math.max(DEBUG_MIN_LEVEL, Math.min(DEBUG_MAX_LEVEL, Math.floor(value)));
+}
+
+/** The most of one item the debug bag adder will grant in a single press. */
+export const DEBUG_MAX_ITEM_COUNT = 999;
+
+/** An item stack size: at least 1, at most `DEBUG_MAX_ITEM_COUNT`. */
+export function clampItemCount(value: number): number {
+  if (!Number.isFinite(value)) return 1;
+  return Math.max(1, Math.min(DEBUG_MAX_ITEM_COUNT, Math.floor(value)));
 }
 
 /** A blank or non-numeric field means `auto` (`undefined`), never zero. */
@@ -427,6 +451,126 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   battlePanel.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
   battlePanel.append(speciesRow, levelRow, battleButton, status);
 
+  // Party section: drop a species straight into the run. It joins the party
+  // while there is room and the PC box after that, the capture rule.
+  const partySection = document.createElement('div');
+  partySection.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+
+  const partySpeciesInput = document.createElement('input');
+  partySpeciesInput.type = 'text';
+  partySpeciesInput.placeholder = 'species';
+  partySpeciesInput.autocomplete = 'off';
+  partySpeciesInput.setAttribute('list', 'debug-species-list');
+  partySpeciesInput.style.cssText = compact;
+
+  const partyLevelInput = document.createElement('input');
+  partyLevelInput.type = 'number';
+  partyLevelInput.min = String(DEBUG_MIN_LEVEL);
+  partyLevelInput.max = String(DEBUG_MAX_LEVEL);
+  partyLevelInput.value = String(DEBUG_DEFAULT_LEVEL);
+  partyLevelInput.title = 'level';
+  partyLevelInput.style.cssText = compact;
+
+  const partySpeciesRow = document.createElement('label');
+  partySpeciesRow.textContent = 'Species';
+  partySpeciesRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+  partySpeciesRow.append(partySpeciesInput);
+
+  const partyLevelRow = document.createElement('label');
+  partyLevelRow.textContent = 'Level';
+  partyLevelRow.style.cssText = partySpeciesRow.style.cssText;
+  partyLevelRow.append(partyLevelInput);
+
+  const partyStatus = document.createElement('div');
+  partyStatus.style.cssText = 'min-height:16px;color:#94a3b8;';
+
+  const addPokemon = (): void => {
+    const species = matchSpecies(partySpeciesInput.value, SPECIES);
+    if (!species) {
+      partyStatus.textContent = partySpeciesInput.value.trim() ? 'unknown species' : 'type a species';
+      return;
+    }
+    const level = clampLevel(Number(partyLevelInput.value));
+    partyLevelInput.value = String(level);
+    const where = handlers.onAddPokemon(species.id, level);
+    partyStatus.textContent = where
+      ? `added ${species.name} Lv${level} to ${where === 'party' ? 'party' : 'PC box'}`
+      : 'no active run';
+  };
+
+  const addPokemonButton = button('Add', addPokemon);
+  addPokemonButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
+  partySection.append(partySpeciesRow, partyLevelRow, addPokemonButton, partyStatus);
+
+  // Bag section: add any run item to the bag in bulk, resolved by the same
+  // name/id autocomplete as species.
+  const bagSection = document.createElement('div');
+  bagSection.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+
+  const bagItemInput = document.createElement('input');
+  bagItemInput.type = 'text';
+  bagItemInput.placeholder = 'item';
+  bagItemInput.autocomplete = 'off';
+  bagItemInput.setAttribute('list', 'debug-item-list');
+  bagItemInput.style.cssText = compact;
+
+  const bagCountInput = document.createElement('input');
+  bagCountInput.type = 'number';
+  bagCountInput.min = '1';
+  bagCountInput.max = String(DEBUG_MAX_ITEM_COUNT);
+  bagCountInput.value = '1';
+  bagCountInput.title = 'count';
+  bagCountInput.style.cssText = compact;
+
+  const bagItemRow = document.createElement('label');
+  bagItemRow.textContent = 'Item';
+  bagItemRow.style.cssText = partySpeciesRow.style.cssText;
+  bagItemRow.append(bagItemInput);
+
+  const bagCountRow = document.createElement('label');
+  bagCountRow.textContent = 'Count';
+  bagCountRow.style.cssText = partySpeciesRow.style.cssText;
+  bagCountRow.append(bagCountInput);
+
+  const bagStatus = document.createElement('div');
+  bagStatus.style.cssText = 'min-height:16px;color:#94a3b8;';
+
+  const addBagItem = (): void => {
+    const item = matchItem(bagItemInput.value, ITEMS);
+    if (!item) {
+      bagStatus.textContent = bagItemInput.value.trim() ? 'unknown item' : 'type an item';
+      return;
+    }
+    const count = clampItemCount(Number(bagCountInput.value));
+    bagCountInput.value = String(count);
+    handlers.onAddItem(item.id, count);
+    bagStatus.textContent = `added ${item.name} x${count}`;
+  };
+
+  const addBagButton = button('Add', addBagItem);
+  addBagButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
+  bagSection.append(bagItemRow, bagCountRow, addBagButton, bagStatus);
+
+  const itemList = document.createElement('datalist');
+  itemList.id = 'debug-item-list';
+  for (const item of ITEMS) {
+    const option = document.createElement('option');
+    option.value = item.name;
+    option.label = `# ${item.id}`;
+    itemList.append(option);
+  }
+
+  for (const input of [partySpeciesInput, partyLevelInput]) {
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') addPokemon();
+    });
+  }
+  for (const input of [bagItemInput, bagCountInput]) {
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') addBagItem();
+    });
+  }
+
   // Map section: describe the route cell by cell (tile, resolved frame, wall
   // pattern membership) so a cut tree can be spotted, and round-trip it as JSON.
   const mapSection = document.createElement('div');
@@ -509,25 +653,31 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   mapSection.append(mapButtons, mapArea, mapStatus, mapSummary);
 
   const tabs = document.createElement('div');
-  tabs.style.cssText = 'display:flex;gap:6px;';
+  tabs.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
   const generalTab = button('General', () => selectTab('general'));
   const battleTab = button('Battle', () => selectTab('battle'));
+  const partyTab = button('Party', () => selectTab('party'));
+  const bagTab = button('Bag', () => selectTab('bag'));
   const routeTab = button('Route', () => selectTab('route'));
   const mapTab = button('Map', () => selectTab('map'));
-  tabs.append(generalTab, battleTab, routeTab, mapTab);
+  tabs.append(generalTab, battleTab, partyTab, bagTab, routeTab, mapTab);
 
   const setTabStyle = (element: HTMLButtonElement, active: boolean): void => {
     element.style.background = active ? '#0e7490' : '#1e293b';
     element.style.color = active ? '#f8fafc' : '#e2e8f0';
   };
 
-  const selectTab = (tab: 'general' | 'battle' | 'route' | 'map'): void => {
+  const selectTab = (tab: 'general' | 'battle' | 'party' | 'bag' | 'route' | 'map'): void => {
     generalSection.style.display = tab === 'general' ? 'flex' : 'none';
     battlePanel.style.display = tab === 'battle' ? 'flex' : 'none';
+    partySection.style.display = tab === 'party' ? 'flex' : 'none';
+    bagSection.style.display = tab === 'bag' ? 'flex' : 'none';
     routeSection.style.display = tab === 'route' ? 'flex' : 'none';
     mapSection.style.display = tab === 'map' ? 'flex' : 'none';
     setTabStyle(generalTab, tab === 'general');
     setTabStyle(battleTab, tab === 'battle');
+    setTabStyle(partyTab, tab === 'party');
+    setTabStyle(bagTab, tab === 'bag');
     setTabStyle(routeTab, tab === 'route');
     setTabStyle(mapTab, tab === 'map');
     if (tab === 'route' || tab === 'general') refreshRouteFields();
@@ -546,8 +696,8 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     });
   }
 
-  body.append(tabs, generalSection, battlePanel, routeSection, mapSection);
-  root.append(title, body, list);
+  body.append(tabs, generalSection, battlePanel, partySection, bagSection, routeSection, mapSection);
+  root.append(title, body, list, itemList);
   document.body.append(root);
   selectTab('general');
   refreshRouteFields();

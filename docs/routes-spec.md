@@ -159,9 +159,9 @@ final boss      the last route of a finite run
 ## 6. Healing stops
 
 Between two routes the player gets a healing stop (a resting point): HP and PP
-restored, PC box accessible, no resurrection. The stop is a screen: it shows the
-healed party and the box and lets the player reorder them before continuing to
-the next route.
+restored, no resurrection. The stop no longer opens a screen; the party and the
+PC box are managed from the route HUD (`I` / `P`) at any time, so the player can
+reorder them there and then continue to the next route.
 
 Ground items were removed with the population pass: routes no longer scatter
 loot and `src/data/loot.ts` is gone. The route HUD still shows the run's bag as
