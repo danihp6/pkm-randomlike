@@ -266,6 +266,8 @@ export class RouteScene extends Phaser.Scene {
     bg: Phaser.GameObjects.Rectangle;
     portrait: Phaser.GameObjects.Image;
   }[] = [];
+  /** The avatar held "in hand" while a party/box member is being dragged. */
+  private hudDragGhost!: Phaser.GameObjects.Image;
   private hudRows: {
     highlight: Phaser.GameObjects.Rectangle;
     portrait: Phaser.GameObjects.Image;
@@ -628,6 +630,14 @@ export class RouteScene extends Phaser.Scene {
       children.push(bg, highlight, portrait);
     }
 
+    // The avatar held in hand while dragging, drawn last so it rides over the
+    // panels and follows the pointer anywhere on screen.
+    this.hudDragGhost = this.add
+      .image(0, 0, PORTRAIT_TEXTURE_KEY, 0)
+      .setScale(1.2)
+      .setVisible(false);
+    children.push(this.hudDragGhost);
+
     this.hudRoot = this.add.container(0, 0, children).setDepth(150).setVisible(this.hudVisible);
   }
 
@@ -638,6 +648,7 @@ export class RouteScene extends Phaser.Scene {
       this.hudUi = dropGrabbed(this.hudUi);
       this.hudGrabMoved = false;
       this.hudGrabOrigin = null;
+      this.hudDragGhost.setVisible(false);
       this.input.setDefaultCursor('default');
     }
     this.hudRoot.setVisible(this.hudVisible);
@@ -778,7 +789,19 @@ export class RouteScene extends Phaser.Scene {
     this.hudUi = next.ui;
     this.hudGrabMoved = false;
     this.hudGrabOrigin = new Phaser.Math.Vector2(pointer.x, pointer.y);
+    this.showHudGhost(target.pane, target.index, pointer);
     this.refreshHud();
+  }
+
+  /** Shows the grabbed member's avatar in hand, following the pointer. */
+  private showHudGhost(pane: PaneId, index: number, pointer: Phaser.Input.Pointer): void {
+    const member = pane === 'party' ? this.run.party[index] : this.run.box[index];
+    const frame = member ? portraitFrameFor(member.fighter.speciesId) : null;
+    if (frame === null) {
+      this.hudDragGhost.setVisible(false);
+      return;
+    }
+    this.hudDragGhost.setFrame(frame).setPosition(pointer.x, pointer.y).setVisible(true);
   }
 
   private handleHudPointerMove(pointer: Phaser.Input.Pointer): void {
@@ -786,6 +809,7 @@ export class RouteScene extends Phaser.Scene {
     const target = this.hudVisible ? this.hudTarget(pointer) : null;
     this.input.setDefaultCursor(target ? (this.hudUi.grabbed ? 'grabbing' : 'grab') : 'default');
     if (!this.hudVisible || !this.hudUi.grabbed) return;
+    this.hudDragGhost.setPosition(pointer.x, pointer.y);
     // Any real move turns the click into a drag, so releasing anywhere drops.
     if (
       this.hudGrabOrigin &&
@@ -829,6 +853,7 @@ export class RouteScene extends Phaser.Scene {
   private finishHudGrab(): void {
     this.hudGrabMoved = false;
     this.hudGrabOrigin = null;
+    this.hudDragGhost.setVisible(false);
     this.persistRun();
     this.refreshHud();
   }
