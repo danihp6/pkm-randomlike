@@ -56,7 +56,10 @@ camera follow), containing:
    **against the walls**: it first stretches across a wall-to-wall corridor so it
    touches a wall at both ends, but only when that gap is no wider than
    `GRASS_SPAN_MAX` (5 tiles); otherwise it falls back to a small block anchored on
-   a wall, so grass never floats in open floor. A ledge line is a
+   a wall, so grass never floats in open floor. A patch may also **spill onto a
+   tree's walkable tip**: a tip cardinally adjacent to grass shares its cell with
+   the patch (`grassTipKeys`), drawn under the crown with an encounter on stepping
+   there. A ledge line is a
    whole object of at least **three tiles** — a left cap, repeated centre tiles and
    a right cap (`LedgeFrames`) — and is dropped whole rather than left as a stub
    when it cannot reach three tiles or would strand a branch behind its one-way
@@ -109,7 +112,8 @@ populate them (steps 5-7). The `hedges` and `maze` carvers stay parked in
 
 - Walking onto a `TALL_GRASS` tile rolls an encounter with the route's table.
 - Tall grass is stamped from `terrain.grassPatches` on the off-spine floor, never
-  on the spine or an opening, so a clean encounter-free lane always exists.
+  on the spine or an opening, so a clean encounter-free lane always exists. A tree
+  tip a patch shares (`grassTipKeys`) rolls the same encounter.
 - The table is per **biome**, weighted, and drawn from the route's level band.
 - The roll uses the route RNG, so walking the same grass in the same order
   produces the same encounters.

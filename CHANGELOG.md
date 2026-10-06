@@ -8,6 +8,13 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] Tall grass can **share a tree tip**: a walkable tip cardinally adjacent to a
+      `TALL_GRASS` cell is a **grass tip** (`grassTipKeys` in
+      `src/engine/tileFrames.ts`), so a patch packed against a tree spills onto its
+      crown. `RouteScene` draws the grass frame **under** the crown (the crown
+      stays the frame over the player) and rolls a wild encounter on stepping
+      there; the procedural tuft tilesets get the overlay on the tip too.
+      `docs/tileset-spec.md` §3b and `docs/routes-spec.md` updated.
 - [x] Weighted **floor variants**: a `variants` entry may now be
       `{ frame, weight }` instead of a bare frame, so a map value can mix several
       tiles and make some rarer (`VariantFrames` in `src/engine/tileset.ts`,

@@ -55,7 +55,7 @@ import {
   type RouteStep,
 } from '../engine/routes';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
-import { resolveTileFrame, resolveGroundFrame, treeTipKeys, type TileFrame } from '../engine/tileFrames';
+import { resolveTileFrame, resolveGroundFrame, grassTipKeys, treeTipKeys, type TileFrame } from '../engine/tileFrames';
 import {
   parseFrameMapExport,
   routeFromFrameMapExport,
@@ -134,6 +134,8 @@ export class RouteScene extends Phaser.Scene {
   private moveMap!: TileMap;
   /** The tiles `drawTiles` renders: the live map, or a dev generator step. */
   private renderTiles!: TileMap;
+  /** Tree tips a grass patch shares: grass drawn under the crown, encounter on step. */
+  private grassTipKeys: Set<string> = new Set();
   /** Dev only: the build-phase snapshots of the route on screen. */
   private generatorSteps: readonly RouteStep[] = [];
   private generatorStepIndex: number | null = null;
@@ -480,9 +482,16 @@ export class RouteScene extends Phaser.Scene {
   private tileFrames(x: number, y: number): TileFrame[] {
     const config = TILESETS[this.tilesetId].config;
     const ground = resolveGroundFrame(this.renderTiles, x, y, config);
+    const frames: TileFrame[] = [ground];
+    // A tree tip a grass patch shares draws the grass frame under its crown; the
+    // tilesets that fall back to the procedural tuft draw it in `drawEntities`.
+    const grassFrame = config.frames[TALL_GRASS];
+    if (grassFrame !== undefined && grassFrame !== config.frames[FLOOR] && this.grassTipKeys.has(`${x},${y}`)) {
+      frames.push({ source: 'atlas', frame: grassFrame });
+    }
     const frame = resolveTileFrame(this.renderTiles, x, y, config, true);
-    if (frame && (frame.source !== ground.source || frame.frame !== ground.frame)) return [ground, frame];
-    return [ground];
+    if (frame && (frame.source !== ground.source || frame.frame !== ground.frame)) frames.push(frame);
+    return frames;
   }
 
   /**
@@ -492,7 +501,9 @@ export class RouteScene extends Phaser.Scene {
    * player (`TREE_TIP_DEPTH`).
    */
   private movementMap(map: TileMap): TileMap {
-    const tips = treeTipKeys(map, TILESETS[this.tilesetId].config);
+    const config = TILESETS[this.tilesetId].config;
+    const tips = treeTipKeys(map, config);
+    this.grassTipKeys = grassTipKeys(map, config);
     if (tips.size === 0) return map;
     const copy = map.map((row) => row.slice());
     for (const key of tips) {
@@ -510,11 +521,12 @@ export class RouteScene extends Phaser.Scene {
       for (let x = 0; x < this.renderTiles[y].length; x++) {
         const tip = tips.has(`${x},${y}`);
         row.push(
-          this.tileFrames(x, y).map((frame, index) => {
+          this.tileFrames(x, y).map((frame, index, all) => {
             const image = this.tileImage(x, y, frame);
             // Only the wall motif of a walkable tip goes over the player; its
-            // ground stays under, so the player still shows standing on the tile.
-            if (tip && index > 0) image.setDepth(TREE_TIP_DEPTH);
+            // ground - and a shared grass frame - stay under, so the player still
+            // shows standing on the tile and walking through the grass.
+            if (tip && index === all.length - 1) image.setDepth(TREE_TIP_DEPTH);
             created.push(image);
             return image;
           }),
@@ -533,13 +545,14 @@ export class RouteScene extends Phaser.Scene {
     // tuft overlay is only for tilesets that still fall back to plain ground.
     const config = TILESETS[this.tilesetId].config;
     const overlayGrass = config.frames[TALL_GRASS] === config.frames[FLOOR];
+    if (!overlayGrass) return;
     for (let y = 0; y < this.renderTiles.length; y++) {
       for (let x = 0; x < this.renderTiles[y].length; x++) {
-        if (overlayGrass && this.renderTiles[y][x] === TALL_GRASS) {
-          const image = this.add.image(this.centerX(x), this.centerY(y), GRASS_TEXTURE_KEY).setDepth(1);
-          this.entitySprites.push(image);
-          created.push(image);
-        }
+        // A tree tip a grass patch shares gets the tuft too, under its crown.
+        if (this.renderTiles[y][x] !== TALL_GRASS && !this.grassTipKeys.has(`${x},${y}`)) continue;
+        const image = this.add.image(this.centerX(x), this.centerY(y), GRASS_TEXTURE_KEY).setDepth(1);
+        this.entitySprites.push(image);
+        created.push(image);
       }
     }
     this.hudCamera?.ignore(created);
@@ -556,18 +569,14 @@ export class RouteScene extends Phaser.Scene {
 
   private applyTileset(id: TilesetId): void {
     this.tilesetId = id;
+    // A tileset can add or drop the shared grass frame on a tree tip (its wall
+    // pattern decides the tips), so the cell frame count changes: rebuild the
+    // tiles and overlays instead of retexturing the old sprites in place.
+    this.stopWalking();
+    this.clearRouteSprites();
     this.moveMap = this.movementMap(this.map);
-    for (let y = 0; y < this.renderTiles.length; y++) {
-      for (let x = 0; x < this.renderTiles[y].length; x++) {
-        const frames = this.tileFrames(x, y);
-        this.tileSprites[y][x].forEach((image, index) => {
-          const frame = frames[index];
-          if (!frame) return;
-          const key = frame.source === 'common' ? COMMON_TEXTURE_KEY : tilesetTextureKey(id);
-          image.setTexture(key, frame.frame).setScale(this.tileScale(frame.source));
-        });
-      }
-    }
+    this.drawTiles();
+    this.drawEntities();
     this.setHint(`tileset: ${TILESETS[id].name}`);
   }
 
@@ -619,7 +628,10 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private onTileEntered(): void {
-    if (tileAt(this.map, this.player) === TALL_GRASS) {
+    const grassy =
+      tileAt(this.map, this.player) === TALL_GRASS ||
+      this.grassTipKeys.has(`${this.player.x},${this.player.y}`);
+    if (grassy) {
       const encounter = this.encounters.step();
       if (encounter) {
         this.startBattle({

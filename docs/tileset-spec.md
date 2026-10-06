@@ -117,6 +117,12 @@ one-tile border ring, which is the fence), and `RouteScene` walks on them (its
 movement map turns them into floor) while drawing the crown **over** the player
 (`TREE_TIP_DEPTH`), so the character passes behind the tree top.
 
+A tip that is cardinally adjacent to a `TALL_GRASS` cell is a **grass tip**
+(`grassTipKeys`): a patch packed against a tree can spill onto its crown. The
+scene draws the grass frame **under** the crown on those cells (the crown is still
+the frame over the player) and rolls a wild encounter when the player steps on
+one, so a patch reads as running through the tree's edge.
+
 The FRLG fields use it to draw the real FireRed tree, three columns wide, with six
 frames: `rows[0]` the crown over open ground (the mass's top), `rows[1]` the tree's
 own upper leaves, `rows[2]` the next tree's crown laid over the **lower leaves** of

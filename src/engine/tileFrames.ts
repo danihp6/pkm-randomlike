@@ -1,5 +1,5 @@
 import type { Tile } from './grid';
-import { FLOOR, LEDGE, WALL, padMap, type TileMap } from './map';
+import { FLOOR, LEDGE, TALL_GRASS, WALL, padMap, type TileMap } from './map';
 import type { AutotileRule, LedgeFrames, TilesetConfig, VariantFrames, WallPattern } from './tileset';
 
 export type TileFrameSource = 'atlas' | 'common';
@@ -227,6 +227,39 @@ export function treeTipKeys(map: TileMap, tileset: TilesetConfig, pad = 0): Set<
       if (y === 0 || y === height - 1) continue;
       if (map[y][x] !== pattern.value) continue;
       if (patternCell(framed, x + pad, y + pad, pattern).row === 0) keys.add(`${x},${y}`);
+    }
+  }
+  return keys;
+}
+
+/**
+ * The tree tips a tall-grass patch **shares**: a walkable tip (`treeTipKeys`) that
+ * is cardinally adjacent to a `TALL_GRASS` cell. A patch packed against a tree can
+ * spill onto the tree's own crown, so the grass reads as running under it; the
+ * scene draws the grass frame on those cells (under the crown) and rolls a wild
+ * encounter when the player steps on one. Pure: the renderer and the movement map
+ * both read the same set.
+ */
+export function grassTipKeys(map: TileMap, tileset: TilesetConfig): Set<string> {
+  const tips = treeTipKeys(map, tileset);
+  const keys = new Set<string>();
+  if (tips.size === 0) return keys;
+  const height = map.length;
+  const width = height > 0 ? map[0].length : 0;
+  for (const key of tips) {
+    const [x, y] = key.split(',').map(Number);
+    const neighbours: readonly (readonly [number, number])[] = [
+      [x + 1, y],
+      [x - 1, y],
+      [x, y + 1],
+      [x, y - 1],
+    ];
+    for (const [nx, ny] of neighbours) {
+      if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+      if (map[ny][nx] === TALL_GRASS) {
+        keys.add(key);
+        break;
+      }
     }
   }
   return keys;

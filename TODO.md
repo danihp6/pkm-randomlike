@@ -130,13 +130,6 @@ most useful first:
 - [ ] **Route exit art.** The exit is a plain floor **opening** punched in the tree
       border (no special tile, and it does not end the route yet). Give an outdoor
       route a real exit marker/opening and restore the end-of-route beat.
-- [ ] **Tall grass tips.** The FRLG fields now stamp the real tufted grass
-      (`FRLG_TALL_GRASS`, frame 5, `docs/tileset-spec.md` §2/§6): the sheet's tuft
-      for the field's ground palette (outdoor `7,0`, forest `2,33`), used **whole**
-      with its own ground. `carveGrass` packs
-      patches against the walls (`docs/routes-spec.md`). Open: let a patch **share
-      the tree-tip cell** (a `grassTips` set on `RouteMap`, grass drawn under the
-      crown, walking it rolls an encounter).
 - [ ] **Ledge and route props.** The ledge lip shipped (`FRAME_LEDGE`); signs,
       boulders, flowers and the rest of the FRLG props are still missing.
 - [ ] **Beach field.** Compose the FRLG beach (open-water and sand tiles) and add
