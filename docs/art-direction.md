@@ -25,7 +25,8 @@ Three tiers, in order of preference:
    `moves.png`, `hud.png`, `portraits.png`, `pokemon/*.png`, and the FRLG UI art
    (`frlg/item-icons.png`, `frlg/window.png`, `frlg/textbox.png`,
    `frlg/hpbar.png`, `frlg/cursor.png`, `frlg/font.png`, `frlg/trainers.png`,
-   `frlg/overworld.png`, `frlg/player.png`). The PMD ones
+   `frlg/overworld.png`, `frlg/player.png`, `frlg/party-panel.png`,
+   `frlg/party-slot.png`). The PMD ones
    come from Pokémon Mystery Dungeon rips (PMDCollab and spriters-resource) via the
    sibling project `pkm-mystery-dungeon-like`; the FRLG ones come from
    spriters-resource and the pret/pokefirered decomp (see the FRLG sections below).
@@ -129,6 +130,12 @@ hardcodes pixel maths. The scene paints the current HP colour behind the bar's
 overlay. The baked border each window demands is exported as
 `FRLG_WINDOW_PADDING` / `FRLG_TEXTBOX_PADDING` (measured from the PNGs), so scene
 content is padded inside the frame instead of riding the bevel.
+
+The route HUD's PARTY window reuses the party-menu sheet instead: `scripts/frlg/build-party-menu.mjs`
+slices the teal scanline tile (`frlg/party-panel.png`) and one empty party slot
+frame (`frlg/party-slot.png`, cyan top and navy sides, no baked text) out of
+`sprite-sources/frlg-ui/pokemon-menu.png`, read through `src/data/partyMenu.ts`
+so the overlay wears the FRLG party-menu chrome.
 
 The bitmap font is packed the same way: `scripts/frlg/build-font.mjs` reads
 `latin_normal.png` + `charmap.txt`, keys the sheet's flat blue background and

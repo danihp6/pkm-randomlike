@@ -1,0 +1,15 @@
+{
+  "scale": 4,
+  "panel": {
+    "tile": {
+      "width": 64,
+      "height": 64
+    },
+    "border": 2123872,
+    "radius": 10
+  },
+  "slot": {
+    "width": 139,
+    "height": 20
+  }
+}
