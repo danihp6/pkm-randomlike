@@ -64,7 +64,6 @@ import {
   serializeFrameMap,
 } from '../engine/frameMap';
 import { BAG_CATEGORIES, BAG_CATEGORY_LABELS, bagForCategory, cycleBagCategory, type BagCategory } from '../ui/bag';
-import { PARTY_SLOT_KEY } from '../data/partyMenu';
 import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
@@ -92,21 +91,16 @@ const HUD_PAD_X = FRLG_WINDOW_PADDING.x;
 const HUD_PAD_TOP = FRLG_WINDOW_PADDING.top;
 const HUD_PAD_BOTTOM = FRLG_WINDOW_PADDING.bottom + 4;
 const HUD_HEADER_H = HUD_PAD_TOP + 16 + HUD_PAD_BOTTOM;
-/**
- * The PARTY window keeps the shared light FRLG window chrome, but each member
- * is drawn on an empty party slot frame sliced from the party-menu sheet
- * (`pokemon-menu` via `src/data/partyMenu.ts`) so the rows read like FireRed.
- */
 const HUD_PARTY_HEADER = HUD_PAD_TOP + 16 + 12;
-const HUD_PARTY_SLOT_H = 40;
-const HUD_PARTY_ROW = HUD_PARTY_SLOT_H + 4;
-const HUD_PARTY_HPBAR_SCALE = 0.6;
+const HUD_PARTY_ROW = 52;
 /** The bag pocket tabs: four across the window's padded inner width. */
 const HUD_TAB_W = 73;
 const HUD_TAB_H = 26;
 const HUD_TAB_GAP = 4;
 const HUD_BAG_HEADER = HUD_PAD_TOP + HUD_TAB_H + 8;
 const HUD_BAG_ROW = 40;
+/** The 268px FRLG HP bar at 0.75 still reads cleanly and leaves room for the numbers. */
+const HUD_HPBAR_SCALE = 0.75;
 
 /**
  * Render depth of a wall cell's walkable tip: above the player (`10`) so the
@@ -453,42 +447,35 @@ export class RouteScene extends Phaser.Scene {
     const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + HUD_PAD_BOTTOM;
     children.push(addFrlgWindow(this, x, partyY, HUD_PANEL_W, partyH));
     children.push(addFrlgText(this, x + HUD_PAD_X, partyY + HUD_PAD_TOP, 'PARTY', { size: 16, tint: 0x3a3956 }));
-    const innerLeft = x + HUD_PAD_X;
-    const innerRight = x + HUD_PANEL_W - HUD_PAD_X;
-    const innerW = innerRight - innerLeft;
     this.hudRows = [];
     for (let i = 0; i < MAX_PARTY_SIZE; i++) {
       const rowY = partyY + HUD_PARTY_HEADER + i * HUD_PARTY_ROW;
-      const slot = this.add
-        .image(innerLeft, rowY, PARTY_SLOT_KEY)
-        .setOrigin(0, 0)
-        .setDisplaySize(innerW, HUD_PARTY_SLOT_H);
       const portrait = this.add
-        .image(innerLeft + 22, rowY + HUD_PARTY_SLOT_H / 2, PORTRAIT_TEXTURE_KEY, 0)
-        .setScale(0.62)
+        .image(left + 14, rowY + 26, PORTRAIT_TEXTURE_KEY, 0)
+        .setScale(0.7)
         .setVisible(false);
-      const name = addFrlgText(this, innerLeft + 44, rowY + 3, '', { size: 16, tint: 0xf8fafc });
-      const level = addFrlgText(this, innerRight, rowY + 3, '', {
+      const name = addFrlgText(this, left + 30, rowY + 6, '', { size: 16, tint: FRLG_INK });
+      const level = addFrlgText(this, right, rowY + 6, '', {
         size: 16,
-        tint: 0xf8fafc,
+        tint: 0x3a3956,
         origin: [1, 0],
       });
       const bar = this.add
-        .image(innerLeft + 44, rowY + 21, FRLG_HPBAR_KEY)
+        .image(left + 30, rowY + 28, FRLG_HPBAR_KEY)
         .setOrigin(0, 0)
-        .setScale(HUD_PARTY_HPBAR_SCALE)
+        .setScale(HUD_HPBAR_SCALE)
         .setVisible(false);
       const fill = this.add
-        .rectangle(innerLeft + 44, rowY + 21, 0, FRLG_HPBAR.fill.height * HUD_PARTY_HPBAR_SCALE, 0x58d080)
+        .rectangle(left + 30, rowY + 28, 0, FRLG_HPBAR.fill.height * HUD_HPBAR_SCALE, 0x58d080)
         .setOrigin(0, 0)
         .setVisible(false);
-      const hpText = addFrlgText(this, innerRight, rowY + 22, '', {
+      const hpText = addFrlgText(this, right, rowY + 30, '', {
         size: 16,
-        tint: 0xf8fafc,
+        tint: FRLG_INK,
         origin: [1, 0],
       });
       this.hudRows.push({ portrait, name, level, hpText, bar, fill });
-      children.push(slot, portrait, name, level, bar, fill, hpText);
+      children.push(portrait, name, level, bar, fill, hpText);
     }
 
     const bagY = partyY + partyH + HUD_GAP;

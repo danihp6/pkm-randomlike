@@ -40,12 +40,6 @@ import {
   FRLG_WINDOW_URL,
 } from '../ui/frlg';
 import {
-  PARTY_PANEL_KEY,
-  PARTY_PANEL_URL,
-  PARTY_SLOT_KEY,
-  PARTY_SLOT_URL,
-} from '../data/partyMenu';
-import {
   FRLG_FONT_ATLAS_URL,
   FRLG_FONT_TEXTURE_KEY,
   registerFrlgFont,
@@ -124,8 +118,6 @@ export class BootScene extends Phaser.Scene {
     this.load.image(FRLG_HPBAR_KEY, FRLG_HPBAR_URL);
     this.load.image(FRLG_CURSOR_KEY, FRLG_CURSOR_URL);
     this.load.image(FRLG_FONT_TEXTURE_KEY, FRLG_FONT_ATLAS_URL);
-    this.load.image(PARTY_PANEL_KEY, PARTY_PANEL_URL);
-    this.load.image(PARTY_SLOT_KEY, PARTY_SLOT_URL);
   }
 
   create(): void {
