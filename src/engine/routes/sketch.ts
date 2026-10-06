@@ -671,10 +671,17 @@ function shortestPath(tiles: TileMap, from: Tile, to: Tile): Set<string> {
 }
 
 /**
- * Tall grass patches, stamped over plain floor. `pool` is the off-spine floor
- * (the spine stays a clean, encounter-free lane), and `forbid` also keeps a patch
- * from spilling back onto the spine or an opening.
+ * A grass patch is a ground tile on plain floor. It is packed **against the
+ * walls**: a patch first tries to stretch across a wall-to-wall corridor, so it
+ * touches a wall at both ends (the vertical or horizontal gap it spans), but only
+ * when that gap is no wider than `GRASS_SPAN_MAX`; a tight fit reads as grass in a
+ * lane, a wide one would just paint the room. When no such corridor fits, the
+ * patch falls back to a small block anchored on a wall, so grass never floats in
+ * open floor. `pool` is the off-spine floor (the spine stays a clean,
+ * encounter-free lane) and `forbid` also keeps a patch off the spine or an opening.
  */
+const GRASS_SPAN_MAX = 5;
+
 function carveGrass(
   tiles: MutableMap,
   rng: Rng,
@@ -682,29 +689,109 @@ function carveGrass(
   patches: number,
   forbid: ReadonlySet<string>,
 ): void {
+  const grassable = (tile: Tile): boolean =>
+    inBounds(tiles, tile) && tiles[tile.y][tile.x] === FLOOR && !forbid.has(tileKey(tile));
+  const isWall = (x: number, y: number): boolean =>
+    x >= 0 && x < tiles[0].length && y >= 0 && y < tiles.length && tiles[y][x] === WALL;
+  // How many grassable tiles lie in `dir` before the run ends, and whether the
+  // tile that stops it is a wall (a patch may stretch to that wall).
+  const reach = (origin: Tile, dir: Tile): Readonly<{ count: number; wall: boolean }> => {
+    let count = 0;
+    let tile: Tile = { x: origin.x + dir.x, y: origin.y + dir.y };
+    while (grassable(tile)) {
+      count += 1;
+      tile = { x: tile.x + dir.x, y: tile.y + dir.y };
+    }
+    return { count, wall: inBounds(tiles, tile) && tiles[tile.y][tile.x] === WALL };
+  };
+  const paint = (tile: Tile): void => {
+    if (grassable(tile)) tiles[tile.y][tile.x] = TALL_GRASS;
+  };
+
   for (let patch = 0; patch < patches; patch++) {
-    const floors = pool.filter((tile) => tiles[tile.y][tile.x] === FLOOR && !forbid.has(tileKey(tile)));
+    const floors = pool.filter(grassable);
     if (floors.length === 0) break;
-    const seed = floors[rng.int(0, floors.length - 1)];
-    const patchWidth = rng.int(2, 4);
-    const patchHeight = rng.int(2, 3);
-    for (let y = seed.y; y < seed.y + patchHeight; y++) {
-      for (let x = seed.x; x < seed.x + patchWidth; x++) {
-        const tile = { x, y };
-        if (inBounds(tiles, tile) && tiles[y][x] === FLOOR && !forbid.has(tileKey(tile))) {
-          tiles[y][x] = TALL_GRASS;
+    // Deterministic shuffle: a seed whose corridor does not fit tries the next.
+    for (let i = floors.length - 1; i > 0; i--) {
+      const j = rng.int(0, i);
+      [floors[i], floors[j]] = [floors[j], floors[i]];
+    }
+
+    let placed = false;
+    for (const seed of floors) {
+      const west = reach(seed, { x: -1, y: 0 });
+      const east = reach(seed, { x: 1, y: 0 });
+      const north = reach(seed, { x: 0, y: -1 });
+      const south = reach(seed, { x: 0, y: 1 });
+      const spanX = west.count + east.count + 1;
+      const spanY = north.count + south.count + 1;
+      const wallX = west.wall && east.wall && spanX <= GRASS_SPAN_MAX;
+      const wallY = north.wall && south.wall && spanY <= GRASS_SPAN_MAX;
+      if (!wallX && !wallY) continue;
+      // The tighter wall-to-wall gap wins, so the patch fills a lane, not a room.
+      const thickness = rng.int(2, 3);
+      if (wallX && (!wallY || spanX <= spanY)) {
+        const fromX = seed.x - west.count;
+        const toX = seed.x + east.count;
+        const fromY = seed.y - Math.floor((thickness - 1) / 2);
+        for (let y = fromY; y < fromY + thickness; y++) {
+          for (let x = fromX; x <= toX; x++) paint({ x, y });
+        }
+      } else {
+        const fromY = seed.y - north.count;
+        const toY = seed.y + south.count;
+        const fromX = seed.x - Math.floor((thickness - 1) / 2);
+        for (let x = fromX; x < fromX + thickness; x++) {
+          for (let y = fromY; y <= toY; y++) paint({ x, y });
         }
       }
+      placed = true;
+      break;
     }
+
+    // No corridor fits: a small block anchored on a wall, never floating free.
+    // The block is grown from the seed through grassable cells only, so a
+    // forbidden cell (the spine) inside it never splits off a wall-free piece.
+    if (!placed) {
+      for (const seed of floors) {
+        if (!isWall(seed.x, seed.y - 1) && !isWall(seed.x + 1, seed.y) && !isWall(seed.x, seed.y + 1) && !isWall(seed.x - 1, seed.y)) {
+          continue;
+        }
+        const width = rng.int(2, 4);
+        const height = rng.int(2, 3);
+        const right = seed.x + width - 1;
+        const bottom = seed.y + height - 1;
+        const queue: Tile[] = [seed];
+        const visited = new Set<string>([tileKey(seed)]);
+        while (queue.length > 0) {
+          const tile = queue.shift()!;
+          paint(tile);
+          for (const dir of CARDINALS) {
+            const next: Tile = { x: tile.x + dir.x, y: tile.y + dir.y };
+            const key = tileKey(next);
+            if (next.x < seed.x || next.x > right || next.y < seed.y || next.y > bottom) continue;
+            if (visited.has(key) || !grassable(next)) continue;
+            visited.add(key);
+            queue.push(next);
+          }
+        }
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) break;
   }
 }
 
 /**
  * A ledge is a horizontal run of rock you may only jump down; it is solid from
  * every other side, so it is kept off the guaranteed path, the openings and the
- * pockets (loot spots). A run grows one tile at a time and stops as soon as it
- * would cut the walkable map in two, so a one-way drop never strands a branch -
- * on a lane too narrow for a full run it still leaves a single jumpable tile.
+ * pockets (loot spots). A run is a whole object now, so it draws a left cap, a
+ * repeated centre and a right cap (`LedgeFrames`), which is why it needs at least
+ * three tiles: a run that would fall short, or that would cut the walkable map in
+ * two, is dropped whole rather than left as a two-tile stub. A run also has to
+ * hang off a wall at one of its lateral ends, so it reads as a lip on the terrain
+ * instead of a rock floating in open floor.
  */
 function carveLedges(
   tiles: MutableMap,
@@ -723,6 +810,8 @@ function carveLedges(
     isFloor(tile) &&
     isGround({ x: tile.x, y: tile.y - 1 }) &&
     isGround({ x: tile.x, y: tile.y + 1 });
+  const isWall = (x: number, y: number): boolean =>
+    x >= 0 && x < tiles[0].length && y >= 0 && y < tiles.length && tiles[y][x] === WALL;
 
   for (let line = 0; line < count; line++) {
     const candidates = pool.filter((tile) => canStand(tile) && !forbid.has(tileKey(tile)));
@@ -736,24 +825,28 @@ function carveLedges(
     const before = reachableTiles(tiles, entry);
     let placed = false;
     for (const origin of candidates) {
-      const length = rng.int(2, 3);
-      const runKeys = new Set<string>();
-      for (let dx = 0; dx < length; dx++) {
+      const requested = rng.int(3, 4);
+      const run: Tile[] = [];
+      for (let dx = 0; dx < requested; dx++) {
         const tile = { x: origin.x + dx, y: origin.y };
         if (!canStand(tile) || forbid.has(tileKey(tile))) break;
-        tiles[tile.y][tile.x] = LEDGE;
-        runKeys.add(tileKey(tile));
-        const after = reachableTiles(tiles, entry);
-        if ([...before].some((key) => !runKeys.has(key) && !after.has(key))) {
-          tiles[tile.y][tile.x] = FLOOR;
-          runKeys.delete(tileKey(tile));
-          break;
-        }
+        run.push(tile);
       }
-      if (runKeys.size > 0) {
-        placed = true;
-        break;
+      // A run shorter than three has no room for both caps, so it is not placed.
+      if (run.length < 3) continue;
+      // The tile just outside the left or the right cap must be wall, so the lip
+      // is attached to the terrain at a lateral end.
+      const last = run[run.length - 1];
+      if (!isWall(run[0].x - 1, run[0].y) && !isWall(last.x + 1, last.y)) continue;
+      const runKeys = new Set(run.map(tileKey));
+      for (const tile of run) tiles[tile.y][tile.x] = LEDGE;
+      const after = reachableTiles(tiles, entry);
+      if ([...before].some((key) => !runKeys.has(key) && !after.has(key))) {
+        for (const tile of run) tiles[tile.y][tile.x] = FLOOR;
+        continue;
       }
+      placed = true;
+      break;
     }
     if (!placed) break;
   }

@@ -18,6 +18,9 @@ import {
 import {
   FRLG_ATLAS_HEIGHT,
   FRLG_ATLAS_WIDTH,
+  FRLG_LEDGE_LEFT,
+  FRLG_LEDGE_RIGHT,
+  FRLG_TALL_GRASS,
   FRLG_TILE_SIZE,
   FRLG_TILESET,
   FRLG_WALL_BASE_FRAMES,
@@ -109,9 +112,18 @@ describe('frlg tileset atlases', () => {
     }
   });
 
-  it('stamps the ledge lip the route walks off', () => {
+  it('stamps the ledge lip and its run end caps', () => {
     for (const name of ATLASES) {
-      expect(tileIsBlank(atlas(name), FRAME_LEDGE), `${name} ledge frame ${FRAME_LEDGE}`).toBe(false);
+      const png = atlas(name);
+      for (const frame of [FRAME_LEDGE, FRLG_LEDGE_LEFT, FRLG_LEDGE_RIGHT]) {
+        expect(tileIsBlank(png, frame), `${name} ledge frame ${frame}`).toBe(false);
+      }
+    }
+  });
+
+  it('stamps the tall-grass ground tile', () => {
+    for (const name of ATLASES) {
+      expect(tileIsBlank(atlas(name), FRLG_TALL_GRASS), `${name} tall grass frame ${FRLG_TALL_GRASS}`).toBe(false);
     }
   });
 });

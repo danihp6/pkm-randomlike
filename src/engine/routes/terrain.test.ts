@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BIOMES, biomeForRoute } from '../../data/biomes';
-import { LEDGE, TALL_GRASS } from '../map';
+import { LEDGE, TALL_GRASS, WALL } from '../map';
 import { ROUTE_SHAPES, type RouteShape } from './layout';
 import { tileKey, type RouteMap } from './routeMap';
 import { sketchRoute, type RouteRequest } from './sketch';
@@ -61,6 +61,95 @@ describe('route terrain passes', () => {
     }
   });
 
+  it('never leaves a ledge run shorter than the three-tile minimum', () => {
+    let runs = 0;
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of SEEDS) {
+        const route = sketchRoute(terrainRequest(seed, shape));
+        for (let y = 0; y < route.height; y++) {
+          let run = 0;
+          for (let x = 0; x <= route.width; x++) {
+            const ledge = x < route.width && route.tiles[y][x] === LEDGE;
+            if (ledge) run += 1;
+            else if (run > 0) {
+              expect(run, `${shape} ${seed} ledge run at y${y}`).toBeGreaterThanOrEqual(3);
+              runs += 1;
+              run = 0;
+            }
+          }
+        }
+      }
+    }
+    expect(runs).toBeGreaterThan(0);
+  });
+
+  it('pegs every ledge run to a wall at one lateral end', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of SEEDS) {
+        const route = sketchRoute(terrainRequest(seed, shape));
+        for (let y = 0; y < route.height; y++) {
+          let start = -1;
+          for (let x = 0; x <= route.width; x++) {
+            const ledge = x < route.width && route.tiles[y][x] === LEDGE;
+            if (ledge) {
+              if (start < 0) start = x;
+            } else if (start >= 0) {
+              const end = x - 1;
+              const leftWall = start > 0 && route.tiles[y][start - 1] === WALL;
+              const rightWall = end < route.width - 1 && route.tiles[y][end + 1] === WALL;
+              expect(leftWall || rightWall, `${shape} ${seed} ledge ${start}-${end} at y${y}`).toBe(true);
+              start = -1;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('anchors every grass patch against a wall', () => {
+    const dirs: readonly (readonly [number, number])[] = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ];
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of SEEDS) {
+        const route = sketchRoute(terrainRequest(seed, shape));
+        const grass = new Set(positionsOf(route, TALL_GRASS));
+        const seen = new Set<string>();
+        for (const key of grass) {
+          if (seen.has(key)) continue;
+          const stack = [key];
+          const component: string[] = [];
+          seen.add(key);
+          while (stack.length > 0) {
+            const current = stack.pop()!;
+            component.push(current);
+            const [x, y] = current.split(',').map(Number);
+            for (const [dx, dy] of dirs) {
+              const next = `${x + dx},${y + dy}`;
+              if (grass.has(next) && !seen.has(next)) {
+                seen.add(next);
+                stack.push(next);
+              }
+            }
+          }
+          const touchesWall = component.some((cell) => {
+            const [x, y] = cell.split(',').map(Number);
+            return (
+              route.tiles[y - 1]?.[x] === WALL ||
+              route.tiles[y + 1]?.[x] === WALL ||
+              route.tiles[y][x - 1] === WALL ||
+              route.tiles[y][x + 1] === WALL
+            );
+          });
+          expect(touchesWall, `${shape} ${seed} grass patch ${key}`).toBe(true);
+        }
+      }
+    }
+  });
+
   it('keeps every exit reachable with terrain on', () => {
     for (const shape of ROUTE_SHAPES) {
       for (const seed of SEEDS) {
@@ -106,9 +195,9 @@ describe('route terrain passes', () => {
         const ledges = positionsOf(route, LEDGE).length;
         grassTotal += grass;
         ledgeTotal += ledges;
-        // A patch covers at most 4x3 tiles; a ledge line spans at most three.
-        expect(grass, `${shape} ${seed} grass`).toBeLessThanOrEqual(biome.terrain.grassPatches * 12);
-        expect(ledges, `${shape} ${seed} ledges`).toBeLessThanOrEqual(biome.terrain.ledges * 3);
+        // A patch fills a wall-to-wall span (up to 5 x 3) or a 4x3 block.
+        expect(grass, `${shape} ${seed} grass`).toBeLessThanOrEqual(biome.terrain.grassPatches * 15);
+        expect(ledges, `${shape} ${seed} ledges`).toBeLessThanOrEqual(biome.terrain.ledges * 4);
       }
     }
     expect(grassTotal).toBeGreaterThan(0);

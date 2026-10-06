@@ -1,6 +1,6 @@
 import type { Tile } from './grid';
-import { FLOOR, WALL, padMap, type TileMap } from './map';
-import type { AutotileRule, TilesetConfig, WallPattern } from './tileset';
+import { FLOOR, LEDGE, WALL, padMap, type TileMap } from './map';
+import type { AutotileRule, LedgeFrames, TilesetConfig, WallPattern } from './tileset';
 
 export type TileFrameSource = 'atlas' | 'common';
 export type TileFrame = Readonly<{ source: TileFrameSource; frame: number }>;
@@ -202,6 +202,22 @@ export function treeTipKeys(map: TileMap, tileset: TilesetConfig, pad = 0): Set<
   return keys;
 }
 
+/**
+ * Which ledge frame `(x, y)` draws: a cell with no ledge to its west caps the
+ * run's left end, one with no ledge to its east its right end, and a cell between
+ * two ledges the repeated centre. A lone ledge reads as the centre; the route
+ * generator never leaves a run shorter than three.
+ */
+export function ledgeFrame(map: TileMap, x: number, y: number, frames: LedgeFrames): number {
+  const { width } = dimensions(map);
+  const isLedge = (nx: number): boolean => nx >= 0 && nx < width && map[y][nx] === LEDGE;
+  const left = isLedge(x - 1);
+  const right = isLedge(x + 1);
+  if (!left && right) return frames.left;
+  if (left && !right) return frames.right;
+  return frames.center;
+}
+
 export function isNearWall(map: TileMap, x: number, y: number): boolean {
   const { width, height } = dimensions(map);
   const isWall = (nx: number, ny: number): boolean =>
@@ -227,6 +243,10 @@ export function resolveTileFrame(
   const value = map[y][x];
   const commonFrame = tileset.commonFrames?.[value];
   if (commonFrame !== undefined) return { source: 'common', frame: commonFrame };
+
+  if (tileset.ledgeFrames && value === LEDGE) {
+    return { source: 'atlas', frame: ledgeFrame(map, x, y, tileset.ledgeFrames) };
+  }
 
   if (tileset.wallPattern && tileset.wallPattern.value === value) {
     return { source: 'atlas', frame: patternFrame(map, x, y, tileset.wallPattern, border) };

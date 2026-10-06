@@ -128,9 +128,15 @@ most useful first:
 - [ ] **Route exit art.** The exit is a plain floor **opening** punched in the tree
       border (no special tile, and it does not end the route yet). Give an outdoor
       route a real exit marker/opening and restore the end-of-route beat.
-- [ ] **Tall grass.** No source sheet has a tall-grass tile, so `TALL_GRASS`
-      still draws plain ground under the procedural overlay
-      (`docs/tileset-spec.md` §6). Draw a real tile (the game's is `rgb(64,176,136)`).
+- [ ] **Tall grass (follow-up).** The FRLG fields now stamp a real tufted grass
+      tile (`FRLG_TALL_GRASS`, frame 5, `docs/tileset-spec.md` §2/§6) and
+      `carveGrass` packs patches against the walls (`docs/routes-spec.md`). Open:
+      confirm the exact tall-grass tile in `sprite-sources/frlg/tileset-2.png` (no
+      dedicated blade tile was found there; the general FRLG tileset's
+      `Plain_Grass` zigzag is absent from the rip, so frame 5 uses the denser
+      tufted grass at source `6,0`), and let a patch **share the tree-tip cell**
+      (a `grassTips` set on `RouteMap`, grass drawn under the crown, walking it
+      rolls an encounter).
 - [ ] **Ledge and route props.** The ledge lip shipped (`FRAME_LEDGE`); signs,
       boulders, flowers and the rest of the FRLG props are still missing.
 - [ ] **Beach field.** Compose the FRLG beach (open-water and sand tiles) and add

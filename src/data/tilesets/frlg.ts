@@ -53,6 +53,23 @@ export const FRLG_WALL_MID_FRAMES = [16, 17, 18] as const;
 export const FRLG_WALL_LOWER_FRAMES = [19, 20, 21] as const;
 export const FRLG_WALL_BASE_FRAMES = [22, 23, 44] as const;
 
+/**
+ * The ledge run's end caps, stamped into the FRLG sheet's otherwise unused
+ * stair/trap slots (frames 3 and 4; the field draws those from the common atlas).
+ * The centre lip stays at `FRAME_LEDGE` (51), so a ledge run reads as a left cap,
+ * repeated centres and a right cap. Must stay in step with
+ * `scripts/frlg/build-tilesets.mjs`.
+ */
+export const FRLG_LEDGE_LEFT = 3;
+export const FRLG_LEDGE_RIGHT = 4;
+
+/**
+ * The tall-grass ground tile, stamped into the sheet's unused chest slot (frame
+ * 5; the field draws chest/item from the common atlas). Must stay in step with
+ * `scripts/frlg/build-tilesets.mjs`.
+ */
+export const FRLG_TALL_GRASS = 5;
+
 const WALL_PATTERN: WallPattern = {
   value: WALL,
   cols: 3,
@@ -96,20 +113,19 @@ export const FRLG_TILESET: TilesetConfig = {
     [ITEM]: FRAME_FLOOR,
     [CARPET]: FRAME_FLOOR,
     [WATER]: WATER_SHAPES.interior,
-    // Tall grass has no dedicated FRLG frame yet (the route draws the tall-grass
-    // tuft as an overlay, `docs/tileset-spec.md` §6); the ledge draws its own
-    // rocky lip so a one-way drop reads as one.
-    [TALL_GRASS]: FRAME_FLOOR,
+    // Tall grass and the ledge draw their own field tiles; the tall grass tuft is
+    // no longer a procedural overlay on the FRLG fields.
+    [TALL_GRASS]: FRLG_TALL_GRASS,
     [LEDGE]: FRAME_LEDGE,
   },
   autotile: [{ value: WATER, openValue: FLOOR, variants: WATER_SHAPES }],
   wallPattern: WALL_PATTERN,
+  ledgeFrames: { left: FRLG_LEDGE_LEFT, center: FRAME_LEDGE, right: FRLG_LEDGE_RIGHT },
   variants: {
     [FLOOR]: FLOOR_CLEAN,
     [TRAP]: FLOOR_CLEAN,
     [CHEST]: FLOOR_CLEAN,
     [ITEM]: FLOOR_CLEAN,
-    [TALL_GRASS]: FLOOR_CLEAN,
   },
   commonFrames: { [CARPET]: COMMON_FRAME_CARPET },
 };

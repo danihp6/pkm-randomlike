@@ -50,8 +50,16 @@ const FRAME_WATER_CORNER_SW = 32
 const FRAME_FLOOR_ALT_3 = 41
 const FRAME_FLOOR_ALT_4 = 42
 const FRAME_FLOOR_ALT_5 = 43
+// The tall-grass ground tile, into an otherwise unused shared slot (the field
+// draws chest/item from the common atlas). Source is the denser tufted grass
+// (`tallGrass`), distinct from the plainer floor.
+const FRAME_TALL_GRASS = 5
 // The last cell of the 4x13 sheet, the rocky ledge lip the route walks off.
 const FRAME_LEDGE = 51
+// The ledge run's end caps: the sheet leaves the stair/trap slots (3 and 4)
+// unused - the field draws those from the common atlas - so the caps live there.
+const FRAME_LEDGE_LEFT = 3
+const FRAME_LEDGE_RIGHT = 4
 
 const WATER_TUPLE = [
   FRAME_WATER_INTERIOR,
@@ -203,9 +211,11 @@ function keyBackground(over, fill, bg) {
  * upper leaves, `lower` its lower leaves and `base` the trunk platform. Two stacked
  * trees read `top, body, crown+lower, body+base, ...`, so the crown of the tree
  * below lands on the lower leaves of the tree above and its body hides that tree's
- * trunk; only the mass's foot shows the trunk platform.
+ * trunk; only the mass's foot shows the trunk platform. `ledge` is `{ left,
+ * center, right }`, the three-source-cell run the ledge draws. `tallGrass` is the
+ * ground tile the walkable grass patches stamp.
  */
-function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) {
+function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = [10, 0] }) {
   stamp(atlas, FRAME_FLOOR, floor[0], floor[1])
   FLOOR_ALT_FRAMES.forEach((frame, index) => {
     const [col, row] = floorAlts[index]
@@ -241,7 +251,10 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) 
   FRAME_WALL_BASE.forEach((frame, i) => stampTile(atlas, frame, overNone(base[i])))
 
   stampBlock(atlas, WATER_TUPLE, water[0], water[1])
-  stampTile(atlas, FRAME_LEDGE, floorCell(ledge[0], ledge[1]))
+  if (tallGrass) stamp(atlas, FRAME_TALL_GRASS, tallGrass[0], tallGrass[1])
+  stampTile(atlas, FRAME_LEDGE_LEFT, floorCell(ledge.left[0], ledge.left[1]))
+  stampTile(atlas, FRAME_LEDGE, floorCell(ledge.center[0], ledge.center[1]))
+  stampTile(atlas, FRAME_LEDGE_RIGHT, floorCell(ledge.right[0], ledge.right[1]))
 }
 
 /**
@@ -284,7 +297,8 @@ function outdoorFrames(atlas) {
       [2, 4],
     ],
     wall: TREE,
-    ledge: [7, 4],
+    ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
+    tallGrass: [6, 0],
   })
 }
 
@@ -300,7 +314,8 @@ function forestFrames(atlas) {
       [2, 5],
     ],
     wall: TREE,
-    ledge: [7, 4],
+    ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
+    tallGrass: [6, 0],
   })
 }
 
@@ -324,7 +339,8 @@ function caveFrames(atlas) {
       [rockBody, rockBody, rockBody],
       [rockBase, rockBase, rockBase],
     ],
-    ledge: [7, 4],
+    ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
+    tallGrass: [6, 0],
   })
 }
 
