@@ -257,8 +257,14 @@ function carveGuaranteedPath(
   };
 
   const low = margin;
-  const highX = width - 1 - margin;
-  const highY = height - 1 - margin;
+  // The lane is carved `pathWidth` wide from its anchor down/right, so its far
+  // edge - not its anchor - is what has to keep the border margin. Clamp the
+  // interior waypoints (and the hub) a lane width inside it, so the strip left at
+  // the border is a whole tree instead of a one-row stump `cleanWalls` would drop
+  // into a bitten fence.
+  const laneReach = shape.pathWidth - 1;
+  const highX = width - 1 - margin - laneReach;
+  const highY = height - 1 - margin - laneReach;
 
   // When a shape has more than one link (the `cross`), every link must pass
   // through the same central hub, so the lanes are guaranteed to meet instead of

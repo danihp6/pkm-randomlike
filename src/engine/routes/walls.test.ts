@@ -251,6 +251,31 @@ describe('route wall cleanup (via sketchRoute)', () => {
     }
   });
 
+  it('leaves a whole-tree strip along every border with no opening', () => {
+    // A lane keeps `wallMargin` (the whole-object height) off the border, so a
+    // border with no opening stays a whole tree thick - never a one-row stump that
+    // `cleanWalls` would drop into a bitten fence (the 1yv0j1t#r4 case).
+    const strip = DEFAULT_WALL_FOOTPRINT.minHeight;
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['wall-a', 'wall-b', 'wall-c', '1yv0j1t#r4']) {
+        const route = sketchRoute({ ...routeRequest(seed, 1), shape });
+        const edgeOf = (tile: { x: number; y: number }): string =>
+          tile.x === 0 ? 'W' : tile.x === route.width - 1 ? 'E' : tile.y === 0 ? 'N' : 'S';
+        const open = new Set([route.entry, ...route.exits].map(edgeOf));
+        for (let y = 0; y < route.height; y++) {
+          for (let x = 0; x < route.width; x++) {
+            const onSolidBorder =
+              (x < strip && !open.has('W')) ||
+              (x >= route.width - strip && !open.has('E')) ||
+              (y < strip && !open.has('N')) ||
+              (y >= route.height - strip && !open.has('S'));
+            if (onSolidBorder) expect(route.tiles[y][x], `${shape} ${seed} ${x},${y}`).toBe(WALL);
+          }
+        }
+      }
+    }
+  });
+
   it('is a pure function of the seed and the route index', () => {
     const request = { ...routeRequest('wall-pure', 2), shape: 'cross' as const };
     expect(sketchRoute(request)).toEqual(sketchRoute(request));

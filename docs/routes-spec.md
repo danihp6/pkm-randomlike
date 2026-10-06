@@ -28,7 +28,10 @@ camera follow), containing:
    border, so it never carves into the `cols`-wide band the border ring belongs to
    and always leaves a strip at least a whole object tall (a bitten fence could not
    be cleaned without opening the map, and a shorter strip would be a stump with no
-   trunk). Only an opening pierces the ring, where the corridor runs straight in
+   trunk). The lane's **far edge**, not its anchor, is what keeps the margin: the
+   spine's jittered waypoints and the hub are pulled in by `pathWidth - 1`, and
+   `carveBranches` pulls its last lane cell in by `branchWidth - 1`, so a lane
+   never lands a one-row stump at the border. Only an opening pierces the ring, where the corridor runs straight in
    for `margin` tiles before it may turn; the opening is aligned to its motif band,
    so the `pathWidth`-wide approach never spills into the tree in the band beside
    it. An opening also keeps a clearance of the motif's footprint (`2 * cols`) from
