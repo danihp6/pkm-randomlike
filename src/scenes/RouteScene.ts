@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { biomeForRoute } from '../data/biomes';
 import { getSpecies } from '../data/dex';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
+import { getItem } from '../data/items';
 import { keyLabel } from '../data/keybinds';
 import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
 import {
@@ -61,7 +62,8 @@ import {
   routeFromFrameMapExport,
   serializeFrameMap,
 } from '../engine/frameMap';
-import { addFrlgWindow } from '../ui/frlg';
+import { FRLG_HPBAR, FRLG_HPBAR_KEY, addFrlgWindow } from '../ui/frlg';
+import { hpColorInt, hpFraction } from '../ui/metrics';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
@@ -70,8 +72,24 @@ import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { GRASS_TEXTURE_KEY } from './BootScene';
 
-/** Item stacks the route HUD's bag row shows before it drops the rest. */
-const BAG_ICON_SLOTS = 6;
+/** Item stacks the route HUD's bag window shows before it drops the rest. */
+const HUD_BAG_ROWS = 6;
+
+/**
+ * The route HUD is one FRLG window per concern, stacked down the right edge: a
+ * slim route header, then the party (portrait, name, level and HP bar) and the
+ * bag (icon, name and count). The widths are shared so the three stack flush.
+ */
+const HUD_PANEL_W = 344;
+const HUD_TOP = 8;
+const HUD_GAP = 8;
+const HUD_HEADER_H = 34;
+const HUD_PARTY_HEADER = 30;
+const HUD_PARTY_ROW = 52;
+const HUD_BAG_HEADER = 30;
+const HUD_BAG_ROW = 40;
+/** The 268px FRLG HP bar at 0.75 still reads cleanly and leaves room for the numbers. */
+const HUD_HPBAR_SCALE = 0.75;
 
 /**
  * Render depth of a wall cell's walkable tip: above the player (`10`) so the
@@ -176,12 +194,23 @@ export class RouteScene extends Phaser.Scene {
   private hintBackdrop!: Phaser.GameObjects.Rectangle;
   private hudRoot!: Phaser.GameObjects.Container;
   private hudTitle!: Phaser.GameObjects.BitmapText;
-  /** Whether the route HUD panel (route/party/bag) is shown; hidden by default. */
+  /** Whether the route HUD overlay (route header, party and bag) is shown; hidden by default. */
   private hudVisible = false;
   /** The pinned HUD camera; a rebuild must teach it to ignore the new sprites. */
   private hudCamera: Phaser.Cameras.Scene2D.Camera | null = null;
-  private hudBagIcons: { icon: Phaser.GameObjects.Image; count: Phaser.GameObjects.BitmapText }[] = [];
-  private hudRows: { portrait: Phaser.GameObjects.Image; text: Phaser.GameObjects.BitmapText }[] = [];
+  private hudBagRows: {
+    icon: Phaser.GameObjects.Image;
+    name: Phaser.GameObjects.BitmapText;
+    count: Phaser.GameObjects.BitmapText;
+  }[] = [];
+  private hudRows: {
+    portrait: Phaser.GameObjects.Image;
+    name: Phaser.GameObjects.BitmapText;
+    level: Phaser.GameObjects.BitmapText;
+    hpText: Phaser.GameObjects.BitmapText;
+    bar: Phaser.GameObjects.Image;
+    fill: Phaser.GameObjects.Rectangle;
+  }[] = [];
   /** The "was released" overlay while a beat sequence is playing. */
   private releaseRoot: Phaser.GameObjects.Container | null = null;
   private releaseQueue: ReleaseBeat[] = [];
@@ -263,6 +292,7 @@ export class RouteScene extends Phaser.Scene {
     this.persistRun();
     this.tileSprites = [];
     this.hudRows = [];
+    this.hudBagRows = [];
     this.hudVisible = false;
     this.passThrough = false;
     this.clearHoverInspect();
@@ -372,48 +402,79 @@ export class RouteScene extends Phaser.Scene {
     return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   hold ${keyLabel(run)} run   ·   ${keyLabel(party)} party   ·   ${keyLabel(hud)} HUD   ·   ${keyLabel(settings)} settings`;
   }
 
-  /** The persistent overlay: route header, party (with portraits) and the bag. */
+  /**
+   * The persistent overlay: a slim route header plus a party window (portrait,
+   * name, level and HP bar) and a bag window (icon, name and count), each its
+   * own FRLG nine-slice so the two never share a panel.
+   */
   private buildHud(): void {
-    const x = this.scale.width - 266;
-    const y = 8;
-    const panelW = 258;
-    const rowH = 34;
-    const panelH = 44 + MAX_PARTY_SIZE * rowH + 30;
+    const x = this.scale.width - HUD_PANEL_W - 8;
+    const children: Phaser.GameObjects.GameObject[] = [];
 
-    const panel = addFrlgWindow(this, x, y, panelW, panelH);
-    this.hudTitle = addFrlgText(this, x + 14, y + 12, '', { size: 16, tint: FRLG_INK });
+    const header = addFrlgWindow(this, x, HUD_TOP, HUD_PANEL_W, HUD_HEADER_H);
+    this.hudTitle = addFrlgText(this, x + 14, HUD_TOP + 8, '', { size: 16, tint: FRLG_INK });
+    children.push(header, this.hudTitle);
 
-    const children: Phaser.GameObjects.GameObject[] = [panel, this.hudTitle];
+    const partyY = HUD_TOP + HUD_HEADER_H + HUD_GAP;
+    const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + 12;
+    children.push(addFrlgWindow(this, x, partyY, HUD_PANEL_W, partyH));
+    children.push(addFrlgText(this, x + 14, partyY + 8, 'PARTY', { size: 16, tint: 0x3a3956 }));
     this.hudRows = [];
     for (let i = 0; i < MAX_PARTY_SIZE; i++) {
-      const rowY = y + 40 + i * rowH;
+      const rowY = partyY + HUD_PARTY_HEADER + i * HUD_PARTY_ROW;
       const portrait = this.add
-        .image(x + 22, rowY + 15, PORTRAIT_TEXTURE_KEY, 0)
-        .setScale(0.6)
+        .image(x + 24, rowY + 26, PORTRAIT_TEXTURE_KEY, 0)
+        .setScale(0.7)
         .setVisible(false);
-      const text = addFrlgText(this, x + 46, rowY + 6, '', { size: 16, tint: 0x2a2a44 });
-      this.hudRows.push({ portrait, text });
-      children.push(portrait, text);
-    }
-
-    this.hudBagIcons = [];
-    for (let i = 0; i < BAG_ICON_SLOTS; i++) {
-      const icon = this.add
-        .image(x + 24 + i * 38, y + panelH - 17, ITEM_ICON_TEXTURE_KEY, 0)
-        .setScale(0.55)
+      const name = addFrlgText(this, x + 50, rowY + 6, '', { size: 16, tint: FRLG_INK });
+      const level = addFrlgText(this, x + HUD_PANEL_W - 14, rowY + 6, '', {
+        size: 16,
+        tint: 0x3a3956,
+        origin: [1, 0],
+      });
+      const bar = this.add
+        .image(x + 50, rowY + 28, FRLG_HPBAR_KEY)
+        .setOrigin(0, 0)
+        .setScale(HUD_HPBAR_SCALE)
         .setVisible(false);
-      const count = addFrlgText(this, x + 33 + i * 38, y + panelH - 24, '', {
+      const fill = this.add
+        .rectangle(x + 50, rowY + 28, 0, FRLG_HPBAR.fill.height * HUD_HPBAR_SCALE, 0x58d080)
+        .setOrigin(0, 0)
+        .setVisible(false);
+      const hpText = addFrlgText(this, x + HUD_PANEL_W - 14, rowY + 30, '', {
         size: 16,
         tint: FRLG_INK,
+        origin: [1, 0],
       });
-      this.hudBagIcons.push({ icon, count });
-      children.push(icon, count);
+      this.hudRows.push({ portrait, name, level, hpText, bar, fill });
+      children.push(portrait, name, level, bar, fill, hpText);
+    }
+
+    const bagY = partyY + partyH + HUD_GAP;
+    const bagH = HUD_BAG_HEADER + HUD_BAG_ROWS * HUD_BAG_ROW + 12;
+    children.push(addFrlgWindow(this, x, bagY, HUD_PANEL_W, bagH));
+    children.push(addFrlgText(this, x + 14, bagY + 8, 'BAG', { size: 16, tint: 0x3a3956 }));
+    this.hudBagRows = [];
+    for (let i = 0; i < HUD_BAG_ROWS; i++) {
+      const rowY = bagY + HUD_BAG_HEADER + i * HUD_BAG_ROW;
+      const icon = this.add
+        .image(x + 26, rowY + 20, ITEM_ICON_TEXTURE_KEY, 0)
+        .setScale(0.75)
+        .setVisible(false);
+      const name = addFrlgText(this, x + 50, rowY + 12, '', { size: 16, tint: FRLG_INK });
+      const count = addFrlgText(this, x + HUD_PANEL_W - 14, rowY + 12, '', {
+        size: 16,
+        tint: 0x3a3956,
+        origin: [1, 0],
+      });
+      this.hudBagRows.push({ icon, name, count });
+      children.push(icon, name, count);
     }
 
     this.hudRoot = this.add.container(0, 0, children).setDepth(150).setVisible(this.hudVisible);
   }
 
-  /** Shows or hides the route HUD panel (route header, party, bag). Default hidden. */
+  /** Shows or hides the route HUD overlay (route header, party and bag). Default hidden. */
   private toggleHud(): void {
     this.hudVisible = !this.hudVisible;
     this.hudRoot.setVisible(this.hudVisible);
@@ -422,28 +483,60 @@ export class RouteScene extends Phaser.Scene {
   private refreshHud(): void {
     if (!this.hudRoot) return;
     this.hudTitle.setText(`Route ${this.run.routeIndex} · ${biomeForRoute(this.run.routeIndex).name}`);
-    const bag = this.run.bag.slice(0, BAG_ICON_SLOTS);
-    this.hudBagIcons.forEach((slot, i) => {
-      const stack = bag[i];
-      const frame = stack ? itemIconFrame(stack.itemId) : null;
-      const visible = stack !== undefined && frame !== null;
-      slot.icon.setVisible(visible);
-      if (frame !== null) slot.icon.setFrame(frame);
-      slot.count.setText(visible ? `x${stack!.count}` : '');
-    });
+
     this.hudRows.forEach((row, i) => {
       const member = this.run.party[i];
+      const visible = member !== undefined;
+      const alive = member !== undefined && member.fighter.hp > 0;
+      row.name.setVisible(visible);
+      row.level.setVisible(visible);
+      row.hpText.setVisible(visible);
+      row.bar.setVisible(alive);
+      row.fill.setVisible(alive);
       if (!member) {
         row.portrait.setVisible(false);
-        row.text.setText('');
+        row.name.setText('');
+        row.level.setText('');
+        row.hpText.setText('');
         return;
       }
       const frame = portraitFrameFor(member.fighter.speciesId);
       row.portrait.setVisible(frame !== null);
       if (frame !== null) row.portrait.setFrame(frame);
       const maxHp = restoreFighter(member.fighter).maxHp;
-      const name = getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId;
-      row.text.setText(`${name} Lv${member.fighter.level}  ${member.fighter.hp}/${maxHp}`);
+      const hp = member.fighter.hp;
+      row.name.setText(getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId);
+      row.level.setText(`Lv${member.fighter.level}`);
+      row.hpText.setText(`${hp}/${maxHp}`);
+      const fraction = hpFraction(hp, maxHp);
+      row.fill
+        .setPosition(
+          row.bar.x + FRLG_HPBAR.fill.x * HUD_HPBAR_SCALE,
+          row.bar.y + FRLG_HPBAR.fill.y * HUD_HPBAR_SCALE,
+        )
+        .setSize(
+          Math.max(0, FRLG_HPBAR.fill.width * HUD_HPBAR_SCALE * fraction),
+          FRLG_HPBAR.fill.height * HUD_HPBAR_SCALE,
+        )
+        .setFillStyle(hpColorInt(fraction));
+    });
+
+    const bag = this.run.bag.slice(0, HUD_BAG_ROWS);
+    this.hudBagRows.forEach((row, i) => {
+      const stack = bag[i];
+      const frame = stack ? itemIconFrame(stack.itemId) : null;
+      const visible = stack !== undefined && frame !== null;
+      row.icon.setVisible(visible);
+      row.name.setVisible(visible);
+      row.count.setVisible(visible);
+      if (!stack || frame === null) {
+        row.name.setText('');
+        row.count.setText('');
+        return;
+      }
+      row.icon.setFrame(frame);
+      row.name.setText(getItem(stack.itemId)?.name ?? stack.itemId);
+      row.count.setText(`x${stack.count}`);
     });
   }
 
@@ -840,7 +933,9 @@ export class RouteScene extends Phaser.Scene {
       const maxHp = restoreFighter(member.fighter).maxHp;
       const counter = { level: beat.fromLevel };
       const paint = () => {
-        row.text.setText(`${name} Lv${Math.round(counter.level)}  ${member.fighter.hp}/${maxHp}`);
+        row.name.setText(name);
+        row.level.setText(`Lv${Math.round(counter.level)}`);
+        row.hpText.setText(`${member.fighter.hp}/${maxHp}`);
       };
       paint();
       row.portrait.setTint(0xf2c14e);
