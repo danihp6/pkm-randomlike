@@ -94,6 +94,8 @@ const HUD_PAD_BOTTOM = FRLG_WINDOW_PADDING.bottom + 4;
 const HUD_HEADER_H = HUD_PAD_TOP + 16 + HUD_PAD_BOTTOM;
 const HUD_PARTY_HEADER = HUD_PAD_TOP + 16 + 12;
 const HUD_PARTY_ROW = 52;
+/** Pointer travel (px) that turns a click into a drag while grabbing a member. */
+const HUD_DRAG_SLOP = 4;
 /** The bag pocket tabs: four across the window's padded inner width. */
 const HUD_TAB_W = 73;
 const HUD_TAB_H = 26;
@@ -224,6 +226,8 @@ export class RouteScene extends Phaser.Scene {
   /** The party member the pointer has grabbed in the HUD, and whether it moved. */
   private hudGrab: number | null = null;
   private hudGrabMoved = false;
+  /** Where the grab started, so a small jitter still counts as a click, not a drag. */
+  private hudGrabOrigin: Phaser.Math.Vector2 | null = null;
   /** The HUD's left edge and the PARTY window's top, for pointer hit-testing. */
   private hudX = 0;
   private hudPartyY = 0;
@@ -646,6 +650,7 @@ export class RouteScene extends Phaser.Scene {
     }
     this.hudGrab = row;
     this.hudGrabMoved = false;
+    this.hudGrabOrigin = new Phaser.Math.Vector2(pointer.x, pointer.y);
     this.refreshHud();
   }
 
@@ -653,14 +658,24 @@ export class RouteScene extends Phaser.Scene {
     if (!this.scene.isActive()) return;
     const row = this.hudVisible ? this.hudPartyRowAt(pointer) : null;
     this.input.setDefaultCursor(row !== null ? (this.hudGrab !== null ? 'grabbing' : 'grab') : 'default');
-    if (!this.hudVisible || this.hudGrab === null || row === null || row === this.hudGrab) return;
+    if (!this.hudVisible || this.hudGrab === null) return;
+    // Any real move turns the click into a drag, so releasing anywhere drops.
+    if (
+      this.hudGrabOrigin &&
+      Math.hypot(pointer.x - this.hudGrabOrigin.x, pointer.y - this.hudGrabOrigin.y) > HUD_DRAG_SLOP
+    ) {
+      this.hudGrabMoved = true;
+    }
+    if (row === null || row === this.hudGrab) return;
     this.run = moveInParty(this.run, this.hudGrab, row);
     this.hudGrab = row;
-    this.hudGrabMoved = true;
     this.refreshHud();
   }
 
   private handleHudPointerUp(): void {
+    // A drag drops where it last pointed; a plain click keeps the grab so the
+    // next click can place it. There is no cancel: leaving the panel and
+    // releasing simply drops the member at its last row.
     if (this.hudGrab !== null && this.hudGrabMoved) this.dropHudGrab();
   }
 
@@ -668,6 +683,7 @@ export class RouteScene extends Phaser.Scene {
   private dropHudGrab(): void {
     this.hudGrab = null;
     this.hudGrabMoved = false;
+    this.hudGrabOrigin = null;
     this.persistRun();
     this.refreshHud();
   }
