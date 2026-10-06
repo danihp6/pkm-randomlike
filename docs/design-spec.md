@@ -33,8 +33,11 @@ carries over.
 - Up to **6** Pokémon in the active party; extras go to the **PC box**.
 - The party and the PC box are managed outside battle from the route HUD
   (`I` / `P`): drag a member within the party or the box to reorder it, or
-  across the two panels to move it between them. The party is never left empty
-  and the box is never required to be full.
+  across the two panels to move it between them. A plain **click** on a member
+  opens a **detail panel** (its own window) with **STATS** — HP, the five battle
+  stats, nature, ability and held item — and **MOVES**, where the moves can be
+  dragged to reorder them (that order is what the battle menu lists). The party
+  is never left empty and the box is never required to be full.
 - **Held items** are equipped from the same HUD: drag an equipment stack from the
   bag onto a party or box member to give it the item (any item it already held
   returns to the bag, so an equip is a swap, never a loss). The held item shows as

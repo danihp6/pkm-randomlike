@@ -19,6 +19,7 @@ import {
   markTrainerDefeated,
   moveInBox,
   moveInParty,
+  moveMoves,
   recordCatch,
   setParty,
   unequipHeldItem,
@@ -133,6 +134,32 @@ describe('party/PC moves', () => {
     const run = { ...full, box: [createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 3 })] };
     expect(withdrawToParty(run, 0)).toBe(run);
     expect(withdrawToParty(run, 7)).toBe(run);
+  });
+});
+
+describe('move reorder', () => {
+  const moves = (member: ReturnType<typeof createRunPokemon>): readonly string[] =>
+    member.fighter.moves.map((slot) => slot.moveId);
+
+  it('reorders a member\'s moves in place', () => {
+    const mon = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['ember', 'scratch', 'growl'] });
+    const run = createRun({ seed: 'run-a', starter: mon });
+    const next = moveMoves(run, 'starter', 0, 2);
+    expect(moves(next.party[0])).toEqual(['scratch', 'growl', 'ember']);
+    expect(moveMoves(next, 'starter', 1, 0).party[0].fighter.moves.map((slot) => slot.moveId)).toEqual([
+      'growl',
+      'scratch',
+      'ember',
+    ]);
+  });
+
+  it('reorders a boxed member and ignores a bad move or member', () => {
+    const boxed = createRunPokemon({ id: 'boxed', speciesId: 'charmander', level: 5, moves: ['ember', 'scratch'] });
+    const run = { ...createRun({ seed: 'run-a', starter }), box: [boxed] };
+    expect(moveMoves(run, 'boxed', 0, 1).box[0].fighter.moves.map((slot) => slot.moveId)).toEqual(['scratch', 'ember']);
+    expect(moveMoves(run, 'boxed', 0, 0)).toBe(run);
+    expect(moveMoves(run, 'boxed', 0, 9)).toBe(run);
+    expect(moveMoves(run, 'nobody', 0, 1)).toBe(run);
   });
 });
 

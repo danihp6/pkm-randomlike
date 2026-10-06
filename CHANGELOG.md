@@ -8,6 +8,13 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] The route HUD's party/PC members open a **detail panel** on click instead
+      of being grabbed: a new window beside the box with **STATS** (HP bar, the
+      five battle stats, nature, ability and the held item) and **MOVES** tabs,
+      where the moves can be **dragged to reorder** them (that order is the
+      battle menu's). Dragging a member still reorders it or moves it between the
+      party and the box; a drag is told from a click by the pointer travelling
+      past a small slop. `docs/design-spec.md` §3 updated.
 - [x] Battle polish: the command menu takes the **mouse** — hovering a row moves
       the ▶ cursor, a click picks it, and a click advances the text feed — the
       cursor sprite's white matte is now transparent, and the top-right key-hint
