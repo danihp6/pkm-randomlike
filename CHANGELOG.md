@@ -8,6 +8,14 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Equip held items by dragging**: the route HUD's bag lets you pick up an
+      `equipment` stack and drop it on a party row or a PC box cell to give the
+      member that item; whatever it already held returns to the bag, so an equip
+      is a swap, never a loss (`equipHeldItem` / `unequipHeldItem` in
+      `src/engine/run/state.ts`, unit-tested). The party avatars are enlarged to
+      the row height and a held item shows as a small badge on an avatar's
+      lower-right corner, in both the party and the box. `docs/design-spec.md` §3
+      updated.
 - [x] Generation **scales by map-size ranges** via the new `src/data/mapSize.ts`
       (`MAP_SIZE_TIERS`: `small` / `medium` / `large`, keyed by the map area in
       tiles). `grassPatches` and `ledges` in `src/data/biomes.ts` are now **base**
