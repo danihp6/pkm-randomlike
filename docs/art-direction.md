@@ -131,11 +131,13 @@ overlay. The baked border each window demands is exported as
 `FRLG_WINDOW_PADDING` / `FRLG_TEXTBOX_PADDING` (measured from the PNGs), so scene
 content is padded inside the frame instead of riding the bevel.
 
-The route HUD's PARTY window reuses the party-menu sheet instead: `scripts/frlg/build-party-menu.mjs`
-slices the teal scanline tile (`frlg/party-panel.png`) and one empty party slot
-frame (`frlg/party-slot.png`, cyan top and navy sides, no baked text) out of
-`sprite-sources/frlg-ui/pokemon-menu.png`, read through `src/data/partyMenu.ts`
-so the overlay wears the FRLG party-menu chrome.
+The route HUD's PARTY rows reuse the party-menu sheet: `scripts/frlg/build-party-menu.mjs`
+slices an empty party slot frame (`frlg/party-slot.png`, cyan top and navy sides,
+no baked text) out of `sprite-sources/frlg-ui/pokemon-menu.png`, read through
+`src/data/partyMenu.ts`, so each member sits on the FireRed party slot while the
+window keeps the shared light chrome. The same script also slices the sheet's
+teal scanline tile (`frlg/party-panel.png`), kept for a future full party-menu
+background.
 
 The bitmap font is packed the same way: `scripts/frlg/build-font.mjs` reads
 `latin_normal.png` + `charmap.txt`, keys the sheet's flat blue background and

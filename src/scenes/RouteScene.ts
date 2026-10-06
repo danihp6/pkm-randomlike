@@ -64,12 +64,7 @@ import {
   serializeFrameMap,
 } from '../engine/frameMap';
 import { BAG_CATEGORIES, BAG_CATEGORY_LABELS, bagForCategory, cycleBagCategory, type BagCategory } from '../ui/bag';
-import {
-  PARTY_PANEL_BORDER,
-  PARTY_PANEL_KEY,
-  PARTY_PANEL_RADIUS,
-  PARTY_SLOT_KEY,
-} from '../data/partyMenu';
+import { PARTY_SLOT_KEY } from '../data/partyMenu';
 import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
@@ -98,13 +93,11 @@ const HUD_PAD_TOP = FRLG_WINDOW_PADDING.top;
 const HUD_PAD_BOTTOM = FRLG_WINDOW_PADDING.bottom + 4;
 const HUD_HEADER_H = HUD_PAD_TOP + 16 + HUD_PAD_BOTTOM;
 /**
- * The PARTY window wears the FireRed/LeafGreen party-menu chrome (`pokemon-menu`
- * via `src/data/partyMenu.ts`), so it carries its own insets instead of the
- * generic light-window padding: a teal scanline tile inside a navy border, and
- * one empty slot frame per member.
+ * The PARTY window keeps the shared light FRLG window chrome, but each member
+ * is drawn on an empty party slot frame sliced from the party-menu sheet
+ * (`pokemon-menu` via `src/data/partyMenu.ts`) so the rows read like FireRed.
  */
-const HUD_PARTY_PAD = 12;
-const HUD_PARTY_HEADER = 30;
+const HUD_PARTY_HEADER = HUD_PAD_TOP + 16 + 12;
 const HUD_PARTY_SLOT_H = 40;
 const HUD_PARTY_ROW = HUD_PARTY_SLOT_H + 4;
 const HUD_PARTY_HPBAR_SCALE = 0.6;
@@ -457,19 +450,11 @@ export class RouteScene extends Phaser.Scene {
     children.push(header, this.hudTitle);
 
     const partyY = HUD_TOP + HUD_HEADER_H + HUD_GAP;
-    const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + HUD_PARTY_PAD;
-    // The FRLG party-menu window: a navy rounded frame filled with the sheet's
-    // teal scanline tile, one empty slot frame per member on top.
-    const partyFrame = this.add.graphics();
-    partyFrame.fillStyle(PARTY_PANEL_BORDER, 1);
-    partyFrame.fillRoundedRect(x, partyY, HUD_PANEL_W, partyH, PARTY_PANEL_RADIUS);
-    const partyTile = this.add
-      .tileSprite(x + 3, partyY + 3, HUD_PANEL_W - 6, partyH - 6, PARTY_PANEL_KEY)
-      .setOrigin(0, 0);
-    children.push(partyFrame, partyTile);
-    children.push(addFrlgText(this, x + HUD_PARTY_PAD, partyY + 10, 'PARTY', { size: 16, tint: 0xd8f4f0 }));
-    const innerLeft = x + HUD_PARTY_PAD;
-    const innerRight = x + HUD_PANEL_W - HUD_PARTY_PAD;
+    const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + HUD_PAD_BOTTOM;
+    children.push(addFrlgWindow(this, x, partyY, HUD_PANEL_W, partyH));
+    children.push(addFrlgText(this, x + HUD_PAD_X, partyY + HUD_PAD_TOP, 'PARTY', { size: 16, tint: 0x3a3956 }));
+    const innerLeft = x + HUD_PAD_X;
+    const innerRight = x + HUD_PANEL_W - HUD_PAD_X;
     const innerW = innerRight - innerLeft;
     this.hudRows = [];
     for (let i = 0; i < MAX_PARTY_SIZE; i++) {
