@@ -20,13 +20,11 @@ import {
   MAX_PARTY_SIZE,
   addItem,
   addPokemon,
-  advanceRoute,
   battleSeed,
   canCapture,
   createRun,
   createRunPokemon,
   hasLivingParty,
-  moveInParty,
   resolveBattle,
   type BagCounts,
   type BattleLaunch,
@@ -65,6 +63,21 @@ import {
   serializeFrameMap,
 } from '../engine/frameMap';
 import { BAG_CATEGORIES, BAG_CATEGORY_LABELS, bagForCategory, cycleBagCategory, type BagCategory } from '../ui/bag';
+import {
+  BOX_COLS,
+  BOX_PAGE_SIZE,
+  BOX_ROWS,
+  boxCellIndex,
+  boxPageCount,
+  boxRows,
+  dragTo,
+  dropGrabbed,
+  grabAt,
+  initialPartyUi,
+  partyInput,
+  type PartyUiState,
+  type PaneId,
+} from '../ui/partyScreen';
 import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
@@ -104,6 +117,16 @@ const HUD_BAG_HEADER = HUD_PAD_TOP + HUD_TAB_H + 8;
 const HUD_BAG_ROW = 40;
 /** The 268px FRLG HP bar at 0.75 still reads cleanly and leaves room for the numbers. */
 const HUD_HPBAR_SCALE = 0.75;
+/** The PC BOX window: a page tab strip over a grid of avatar cells. */
+const HUD_BOX_PAD = 12;
+const HUD_BOX_TAB_W = 36;
+const HUD_BOX_TAB_GAP = 4;
+const HUD_BOX_TABS_H = HUD_PAD_TOP + HUD_TAB_H + 8;
+const HUD_BOX_CELL = 76;
+const HUD_BOX_CELL_GAP = 4;
+const HUD_BOX_GRID_H = BOX_ROWS * HUD_BOX_CELL + (BOX_ROWS - 1) * HUD_BOX_CELL_GAP;
+const HUD_BOX_H = HUD_BOX_TABS_H + HUD_BOX_GRID_H + HUD_BOX_PAD;
+const HUD_BOX_MAX_PAGES = 8;
 
 /**
  * Render depth of a wall cell's walkable tip: above the player (`10`) so the
@@ -190,10 +213,6 @@ export class RouteScene extends Phaser.Scene {
   /** Dev only: unique ids for Pokémon dropped in from the debug menu. */
   private debugMonCounter = 0;
   private pendingBattle: BattleLaunch | null = null;
-  /** What the party/PC screen was opened for, while it is open. */
-  private pendingParty: 'field' | 'rest' | null = null;
-  /** Set when the rest stop closes: advance the route on the next update. */
-  private advanceAfterParty = false;
   /** The four movement keys behind the current bindings, watched every frame. */
   private moveKeys!: Record<MoveKey, Phaser.Input.Keyboard.Key | null>;
   /** The run key; held while walking, it speeds the step and the walk cycle. */
@@ -223,14 +242,30 @@ export class RouteScene extends Phaser.Scene {
   }[] = [];
   private hudBagCategory: BagCategory = 'equipment';
   private hudBagEmpty!: Phaser.GameObjects.BitmapText;
-  /** The party member the pointer has grabbed in the HUD, and whether it moved. */
-  private hudGrab: number | null = null;
+  /** The HUD's party/box grab (the shared reducer's cursor), and whether it moved. */
+  private hudUi: PartyUiState = initialPartyUi();
   private hudGrabMoved = false;
   /** Where the grab started, so a small jitter still counts as a click, not a drag. */
   private hudGrabOrigin: Phaser.Math.Vector2 | null = null;
-  /** The HUD's left edge and the PARTY window's top, for pointer hit-testing. */
+  /** The HUD's left edge, and the PARTY and PC BOX windows' geometry. */
   private hudX = 0;
   private hudPartyY = 0;
+  private hudPartyH = 0;
+  private hudBoxX = 0;
+  private hudBoxY = 0;
+  private hudBoxH = 0;
+  /** The box's current page, its page tabs and its avatar cells. */
+  private hudBoxPage = 0;
+  private hudBoxTabs: {
+    page: number;
+    bg: Phaser.GameObjects.Rectangle;
+    label: Phaser.GameObjects.BitmapText;
+  }[] = [];
+  private hudBoxCells: {
+    highlight: Phaser.GameObjects.Rectangle;
+    bg: Phaser.GameObjects.Rectangle;
+    portrait: Phaser.GameObjects.Image;
+  }[] = [];
   private hudRows: {
     highlight: Phaser.GameObjects.Rectangle;
     portrait: Phaser.GameObjects.Image;
@@ -327,8 +362,6 @@ export class RouteScene extends Phaser.Scene {
     this.clearHoverInspect();
     this.gameOver = false;
     this.pendingBattle = null;
-    this.pendingParty = null;
-    this.advanceAfterParty = false;
     this.releaseRoot = null;
     this.releaseQueue = [];
     this.releaseOnDone = null;
@@ -387,8 +420,6 @@ export class RouteScene extends Phaser.Scene {
             if (this.releaseRoot && this.releaseArmed) this.advanceRelease();
             return;
           case 'party':
-            this.openParty('field');
-            return;
           case 'hud':
             this.toggleHud();
             return;
@@ -419,7 +450,15 @@ export class RouteScene extends Phaser.Scene {
     });
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.handleHudPointerDown(pointer));
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.handleHudPointerMove(pointer));
-    this.input.on('pointerup', () => this.handleHudPointerUp());
+    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => this.handleHudPointerUp(pointer));
+    // The mouse wheel flips the PC box pages while the HUD is open.
+    this.input.on(
+      'wheel',
+      (pointer: Phaser.Input.Pointer, _objects: unknown, _dx: number, dy: number) => {
+        if (!this.scene.isActive() || !this.hudVisible || !this.pointerInBoxPanel(pointer)) return;
+        this.stepBoxPage(dy > 0 ? 1 : -1);
+      },
+    );
     this.buildHud();
     this.setupHudCamera();
     this.hint.setDepth(200);
@@ -461,6 +500,7 @@ export class RouteScene extends Phaser.Scene {
     const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + HUD_PAD_BOTTOM;
     this.hudX = x;
     this.hudPartyY = partyY;
+    this.hudPartyH = partyH;
     children.push(addFrlgWindow(this, x, partyY, HUD_PANEL_W, partyH));
     children.push(addFrlgText(this, x + HUD_PAD_X, partyY + HUD_PAD_TOP, 'PARTY', { size: 16, tint: 0x3a3956 }));
     this.hudRows = [];
@@ -542,14 +582,62 @@ export class RouteScene extends Phaser.Scene {
     });
     children.push(this.hudBagEmpty);
 
+    // The PC BOX window: a page tab strip over a grid of avatar cells, in a
+    // second column to the left of the party/bag stack.
+    const boxX = x - HUD_PANEL_W - HUD_GAP;
+    const boxY = HUD_TOP + 64;
+    this.hudBoxX = boxX;
+    this.hudBoxY = boxY;
+    this.hudBoxH = HUD_BOX_H;
+    children.push(addFrlgWindow(this, boxX, boxY, HUD_PANEL_W, HUD_BOX_H));
+
+    this.hudBoxTabs = [];
+    for (let page = 0; page < HUD_BOX_MAX_PAGES; page++) {
+      const tabX = boxX + HUD_BOX_PAD + page * (HUD_BOX_TAB_W + HUD_BOX_TAB_GAP);
+      const bg = this.add
+        .rectangle(tabX, boxY + HUD_PAD_TOP, HUD_BOX_TAB_W, HUD_TAB_H, 0xcfcce2)
+        .setOrigin(0, 0)
+        .setVisible(false);
+      const label = addFrlgText(this, tabX + HUD_BOX_TAB_W / 2, boxY + HUD_PAD_TOP + 5, String(page + 1), {
+        size: 16,
+        tint: FRLG_INK,
+        origin: [0.5, 0],
+      }).setVisible(false);
+      this.hudBoxTabs.push({ page, bg, label });
+      children.push(bg, label);
+    }
+
+    const gridW = BOX_COLS * HUD_BOX_CELL + (BOX_COLS - 1) * HUD_BOX_CELL_GAP;
+    const gridLeft = boxX + HUD_BOX_PAD + (HUD_PANEL_W - HUD_BOX_PAD * 2 - gridW) / 2;
+    this.hudBoxCells = [];
+    for (let i = 0; i < BOX_PAGE_SIZE; i++) {
+      const col = i % BOX_COLS;
+      const row = Math.floor(i / BOX_COLS);
+      const cellX = gridLeft + col * (HUD_BOX_CELL + HUD_BOX_CELL_GAP);
+      const cellY = boxY + HUD_BOX_TABS_H + row * (HUD_BOX_CELL + HUD_BOX_CELL_GAP);
+      const bg = this.add.rectangle(cellX, cellY, HUD_BOX_CELL, HUD_BOX_CELL, 0xe6e3f2).setOrigin(0, 0);
+      const highlight = this.add
+        .rectangle(cellX, cellY, HUD_BOX_CELL, HUD_BOX_CELL, 0xf2c14e, 0.45)
+        .setOrigin(0, 0)
+        .setVisible(false);
+      const portrait = this.add
+        .image(cellX + HUD_BOX_CELL / 2, cellY + HUD_BOX_CELL / 2, PORTRAIT_TEXTURE_KEY, 0)
+        .setScale(1.4)
+        .setVisible(false);
+      this.hudBoxCells.push({ highlight, bg, portrait });
+      children.push(bg, highlight, portrait);
+    }
+
     this.hudRoot = this.add.container(0, 0, children).setDepth(150).setVisible(this.hudVisible);
   }
 
-  /** Shows or hides the route HUD overlay (route header, party and bag). Default hidden. */
+  /** Shows or hides the route HUD overlay (route header, party, PC box and bag). Default hidden. */
   private toggleHud(): void {
     this.hudVisible = !this.hudVisible;
     if (!this.hudVisible) {
-      this.hudGrab = null;
+      this.hudUi = dropGrabbed(this.hudUi);
+      this.hudGrabMoved = false;
+      this.hudGrabOrigin = null;
       this.input.setDefaultCursor('default');
     }
     this.hudRoot.setVisible(this.hudVisible);
@@ -563,7 +651,7 @@ export class RouteScene extends Phaser.Scene {
       const member = this.run.party[i];
       const visible = member !== undefined;
       const alive = member !== undefined && member.fighter.hp > 0;
-      row.highlight.setVisible(this.hudGrab === i);
+      row.highlight.setVisible(this.hudUi.grabbed?.pane === 'party' && this.hudUi.index === i);
       row.name.setVisible(visible);
       row.level.setVisible(visible);
       row.hpText.setVisible(visible);
@@ -621,6 +709,33 @@ export class RouteScene extends Phaser.Scene {
       row.name.setText(getItem(stack.itemId)?.name ?? stack.itemId);
       row.count.setText(`x${stack.count}`);
     });
+
+    const box = boxRows(this.run);
+    const pageCount = boxPageCount(box.length);
+    if (this.hudBoxPage >= pageCount) this.hudBoxPage = pageCount - 1;
+    this.hudBoxTabs.forEach((tab, i) => {
+      const visible = i < pageCount;
+      tab.bg.setVisible(visible);
+      tab.label.setVisible(visible);
+      const active = i === this.hudBoxPage;
+      tab.bg.setFillStyle(active ? 0x2f2c4d : 0xcfcce2);
+      tab.label.setTint(active ? 0xf8fafc : FRLG_INK);
+    });
+    this.hudBoxCells.forEach((cell, i) => {
+      const index = boxCellIndex(this.hudBoxPage, i % BOX_COLS, Math.floor(i / BOX_COLS));
+      const member = box[index];
+      const frame = member ? portraitFrameFor(member.speciesId) : null;
+      cell.portrait.setVisible(frame !== null);
+      if (frame !== null) cell.portrait.setFrame(frame);
+      cell.highlight.setVisible(this.hudUi.grabbed?.pane === 'box' && this.hudUi.index === index);
+    });
+  }
+
+  /** Steps the PC BOX to another page and redraws. */
+  private stepBoxPage(delta: number): void {
+    const pageCount = boxPageCount(this.run.box.length);
+    this.hudBoxPage = Math.max(0, Math.min(pageCount - 1, this.hudBoxPage + delta));
+    this.refreshHud();
   }
 
   /** Switches the bag's pocket by `offset` tabs and redraws the list. */
@@ -630,25 +745,37 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * HUD pointer input. A press on a bag tab picks the pocket; a press on a party
-   * row picks that member up (the gold highlight shows it), a drag over another
-   * row reorders it live and a release drops it. A plain click also works: pick a
-   * member, then click the slot to place it. The cursor becomes a grab hand.
+   * HUD pointer input. A press on a bag or box tab selects it; a press on a
+   * party row or a box cell picks that member up (gold highlight), a drag over
+   * the same pane reorders it live, and a release over the other pane moves it
+   * between the party and the PC box. A plain click also works: pick a member,
+   * then click a slot. The cursor becomes a grab hand over a member.
    */
   private handleHudPointerDown(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive() || !this.hudVisible) return;
     if (this.selectBagTab(pointer)) return;
-    const row = this.hudPartyRowAt(pointer);
-    if (row === null) {
-      if (this.hudGrab !== null) this.dropHudGrab();
+    if (this.selectBoxTab(pointer)) return;
+    const target = this.hudTarget(pointer);
+    const grabbed = this.hudUi.grabbed;
+    if (!target) {
+      if (grabbed) this.dropHudGrab();
       return;
     }
-    if (this.hudGrab !== null) {
-      this.run = moveInParty(this.run, this.hudGrab, row);
-      this.dropHudGrab();
+    if (grabbed) {
+      if (grabbed.pane === target.pane) {
+        const next = dragTo(this.run, this.hudUi, target.index);
+        this.run = next.run;
+        this.hudUi = dropGrabbed(next.ui);
+      } else {
+        this.moveHudAcross(grabbed.pane);
+        return;
+      }
+      this.finishHudGrab();
       return;
     }
-    this.hudGrab = row;
+    const next = grabAt(this.run, this.hudUi, target.pane, target.index);
+    this.run = next.run;
+    this.hudUi = next.ui;
     this.hudGrabMoved = false;
     this.hudGrabOrigin = new Phaser.Math.Vector2(pointer.x, pointer.y);
     this.refreshHud();
@@ -656,9 +783,9 @@ export class RouteScene extends Phaser.Scene {
 
   private handleHudPointerMove(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive()) return;
-    const row = this.hudVisible ? this.hudPartyRowAt(pointer) : null;
-    this.input.setDefaultCursor(row !== null ? (this.hudGrab !== null ? 'grabbing' : 'grab') : 'default');
-    if (!this.hudVisible || this.hudGrab === null) return;
+    const target = this.hudVisible ? this.hudTarget(pointer) : null;
+    this.input.setDefaultCursor(target ? (this.hudUi.grabbed ? 'grabbing' : 'grab') : 'default');
+    if (!this.hudVisible || !this.hudUi.grabbed) return;
     // Any real move turns the click into a drag, so releasing anywhere drops.
     if (
       this.hudGrabOrigin &&
@@ -666,35 +793,92 @@ export class RouteScene extends Phaser.Scene {
     ) {
       this.hudGrabMoved = true;
     }
-    if (row === null || row === this.hudGrab) return;
-    this.run = moveInParty(this.run, this.hudGrab, row);
-    this.hudGrab = row;
+    if (!target || target.pane !== this.hudUi.grabbed.pane) return;
+    const next = dragTo(this.run, this.hudUi, target.index);
+    if (next.run === this.run && next.ui === this.hudUi) return;
+    this.run = next.run;
+    this.hudUi = next.ui;
     this.refreshHud();
   }
 
-  private handleHudPointerUp(): void {
-    // A drag drops where it last pointed; a plain click keeps the grab so the
-    // next click can place it. There is no cancel: leaving the panel and
-    // releasing simply drops the member at its last row.
-    if (this.hudGrab !== null && this.hudGrabMoved) this.dropHudGrab();
+  private handleHudPointerUp(pointer: Phaser.Input.Pointer): void {
+    const grabbed = this.hudUi.grabbed;
+    // A drag dropped over the other pane moves the member across; otherwise it
+    // just drops where it last pointed. There is no cancel.
+    if (!grabbed || !this.hudGrabMoved) return;
+    const across = grabbed.pane === 'party' ? this.pointerInBoxPanel(pointer) : this.pointerInPartyPanel(pointer);
+    if (across) this.moveHudAcross(grabbed.pane);
+    else this.dropHudGrab();
+  }
+
+  /** Moves the grabbed member to the other pane (deposit / withdraw). */
+  private moveHudAcross(from: PaneId): void {
+    const input = from === 'party' ? 'right' : 'left';
+    const next = partyInput(this.run, this.hudUi, input);
+    this.run = next.run;
+    this.hudUi = next.ui;
+    this.finishHudGrab();
   }
 
   /** Drops the grabbed member where it stands, saves it and redraws the HUD. */
   private dropHudGrab(): void {
-    this.hudGrab = null;
+    this.hudUi = dropGrabbed(this.hudUi);
+    this.finishHudGrab();
+  }
+
+  private finishHudGrab(): void {
     this.hudGrabMoved = false;
     this.hudGrabOrigin = null;
     this.persistRun();
     this.refreshHud();
   }
 
+  /** The party row or box cell under the pointer, or null. */
+  private hudTarget(pointer: Phaser.Input.Pointer): { pane: PaneId; index: number } | null {
+    const row = this.hudPartyRowAt(pointer);
+    if (row !== null) return { pane: 'party', index: row };
+    const cell = this.hudBoxCellAt(pointer);
+    if (cell !== null) return { pane: 'box', index: cell };
+    return null;
+  }
+
   /** The party index under the pointer, or null outside a filled row. */
   private hudPartyRowAt(pointer: Phaser.Input.Pointer): number | null {
+    if (!this.pointerInPartyPanel(pointer)) return null;
     const rowTop = this.hudPartyY + HUD_PARTY_HEADER;
-    if (pointer.x < this.hudX || pointer.x > this.hudX + HUD_PANEL_W) return null;
     const slot = Math.floor((pointer.y - rowTop) / HUD_PARTY_ROW);
     if (pointer.y < rowTop || slot < 0 || slot >= MAX_PARTY_SIZE) return null;
     return slot < this.run.party.length ? slot : null;
+  }
+
+  /** The box index under the pointer, or null outside a filled cell. */
+  private hudBoxCellAt(pointer: Phaser.Input.Pointer): number | null {
+    const gridW = BOX_COLS * HUD_BOX_CELL + (BOX_COLS - 1) * HUD_BOX_CELL_GAP;
+    const gridLeft = this.hudBoxX + HUD_BOX_PAD + (HUD_PANEL_W - HUD_BOX_PAD * 2 - gridW) / 2;
+    const stride = HUD_BOX_CELL + HUD_BOX_CELL_GAP;
+    const col = Math.floor((pointer.x - gridLeft) / stride);
+    const row = Math.floor((pointer.y - (this.hudBoxY + HUD_BOX_TABS_H)) / stride);
+    if (col < 0 || col >= BOX_COLS || row < 0 || row >= BOX_ROWS) return null;
+    const index = boxCellIndex(this.hudBoxPage, col, row);
+    return index < this.run.box.length ? index : null;
+  }
+
+  private pointerInPartyPanel(pointer: Phaser.Input.Pointer): boolean {
+    return (
+      pointer.x >= this.hudX &&
+      pointer.x <= this.hudX + HUD_PANEL_W &&
+      pointer.y >= this.hudPartyY &&
+      pointer.y <= this.hudPartyY + this.hudPartyH
+    );
+  }
+
+  private pointerInBoxPanel(pointer: Phaser.Input.Pointer): boolean {
+    return (
+      pointer.x >= this.hudBoxX &&
+      pointer.x <= this.hudBoxX + HUD_PANEL_W &&
+      pointer.y >= this.hudBoxY &&
+      pointer.y <= this.hudBoxY + this.hudBoxH
+    );
   }
 
   /** A press on a bag pocket tab selects it; true when it handled the press. */
@@ -708,6 +892,22 @@ export class RouteScene extends Phaser.Scene {
     );
     if (!tab) return false;
     this.hudBagCategory = tab.category;
+    this.refreshHud();
+    return true;
+  }
+
+  /** A press on a PC box page tab selects it; true when it handled the press. */
+  private selectBoxTab(pointer: Phaser.Input.Pointer): boolean {
+    const tab = this.hudBoxTabs.find(
+      (entry) =>
+        entry.bg.visible &&
+        pointer.x >= entry.bg.x &&
+        pointer.x <= entry.bg.x + entry.bg.width &&
+        pointer.y >= entry.bg.y &&
+        pointer.y <= entry.bg.y + entry.bg.height,
+    );
+    if (!tab) return false;
+    this.hudBoxPage = tab.page;
     this.refreshHud();
     return true;
   }
@@ -912,17 +1112,9 @@ export class RouteScene extends Phaser.Scene {
     this.setHint(this.defaultHint());
   }
 
-  /** Opens the party/PC screen paused-on-top, like a battle (party key, or the rest stop). */
-  private openParty(mode: 'field' | 'rest'): void {
-    if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) return;
-    this.pendingParty = mode;
-    this.scene.pause();
-    this.scene.launch('Party', { run: this.run, mode });
-  }
-
-  /** Opens the settings screen paused-on-top, like the party screen (`O`). */
+  /** Opens the settings screen paused-on-top, like a battle (`O`). */
   private openSettings(): void {
-    if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) return;
+    if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     this.scene.pause();
     this.scene.launch('Settings', { from: 'Route' });
   }
@@ -940,21 +1132,6 @@ export class RouteScene extends Phaser.Scene {
     // resting line so the new keys are live the moment the route resumes.
     this.refreshMoveKeys();
     this.setHint(this.defaultHint());
-  }
-
-  /** Called by `PartyScene` before it stops: adopts the managed run. */
-  applyPartyResult(run: RunState): void {
-    if (!this.pendingParty) return;
-    const mode = this.pendingParty;
-    this.pendingParty = null;
-    this.run = run;
-    this.persistRun();
-    if (mode === 'rest') {
-      // The route advances on the next update, once the screen has closed.
-      this.advanceAfterParty = true;
-      return;
-    }
-    this.refreshHud();
   }
 
   /** Pauses the route and rolls the battle on top of it (Phase 5 transition). */
@@ -1312,7 +1489,7 @@ export class RouteScene extends Phaser.Scene {
    */
   regenerateRoute(input: DebugRouteInput): void {
     if (!IS_DEVELOP || !this.run || !this.routeParams) return;
-    if (!this.scene.isActive() || this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) {
+    if (!this.scene.isActive() || this.gameOver || this.pendingBattle || this.releaseRoot) {
       return;
     }
 
@@ -1389,20 +1566,11 @@ export class RouteScene extends Phaser.Scene {
   private setHint(text: string): void {
     const dev = IS_DEVELOP ? `  ·  B: random battle  ·  ${DEBUG_MENU_TOGGLE_KEY}: debug menu` : '';
     const { party, hud } = this.settings.keybinds;
-    this.hint.setText(`${text}\nArrows: move  ·  ${keyLabel(party)}: party/PC  ·  ${keyLabel(hud)}: HUD${dev}`);
+    this.hint.setText(`${text}\nArrows: move  ·  ${keyLabel(party)}/${keyLabel(hud)}: HUD (party/PC)${dev}`);
   }
 
   override update(): void {
-    if (this.advanceAfterParty) {
-      this.advanceAfterParty = false;
-      this.run = advanceRoute(this.run);
-      this.persistRun();
-      // Restart with the advanced run: Phaser reuses a scene's previous start
-      // data on `restart()`, so without this the route would boot the old run.
-      this.scene.restart({ run: this.run });
-      return;
-    }
-    if (this.gameOver || this.pendingBattle || this.pendingParty || this.releaseRoot) {
+    if (this.gameOver || this.pendingBattle || this.releaseRoot) {
       this.settleMovement();
       return;
     }

@@ -3,6 +3,9 @@ import { createRunPokemon } from '../engine/run';
 import { createRun, type RunState } from '../engine/run/state';
 import type { RunPokemon } from '../engine/run/progression';
 import {
+  boxCellIndex,
+  boxPageCount,
+  BOX_PAGE_SIZE,
   boxRows,
   dragTo,
   dropGrabbed,
@@ -178,5 +181,22 @@ describe('pointer drag', () => {
     const run = runWith(['a', 'b']);
     expect(dragTo(run, initialPartyUi(), 1)).toEqual({ run, ui: initialPartyUi() });
     expect(dropGrabbed(initialPartyUi())).toEqual(initialPartyUi());
+  });
+});
+
+describe('box grid', () => {
+  it('needs at least one page and grows by BOX_PAGE_SIZE', () => {
+    expect(boxPageCount(0)).toBe(1);
+    expect(boxPageCount(1)).toBe(1);
+    expect(boxPageCount(BOX_PAGE_SIZE)).toBe(1);
+    expect(boxPageCount(BOX_PAGE_SIZE + 1)).toBe(2);
+    expect(boxPageCount(BOX_PAGE_SIZE * 3)).toBe(3);
+  });
+
+  it('maps a page cell to a flat box index', () => {
+    expect(boxCellIndex(0, 0, 0)).toBe(0);
+    expect(boxCellIndex(0, 3, 0)).toBe(3);
+    expect(boxCellIndex(0, 0, 1)).toBe(4);
+    expect(boxCellIndex(1, 0, 0)).toBe(BOX_PAGE_SIZE);
   });
 });

@@ -12,9 +12,10 @@ import {
 import { statusAbbreviation } from './metrics';
 
 /**
- * The party/PC screen's model and input reducer (Phase 6). The scene only draws
- * what this returns, so reordering and moving members between party and box stay
- * pure and testable; the run mutations themselves live in `engine/run/state.ts`.
+ * The party/PC model and input reducer (Phase 6). The route HUD only draws what
+ * this returns and feeds it keys or the pointer, so reordering and moving members
+ * between party and box stay pure and testable; the run mutations themselves live
+ * in `engine/run/state.ts`.
  */
 
 export type PaneId = 'party' | 'box';
@@ -177,4 +178,23 @@ export function dragTo(run: RunState, ui: PartyUiState, to: number): PartyInputR
 /** Drops whatever is grabbed, leaving it where it stands. */
 export function dropGrabbed(ui: PartyUiState): PartyUiState {
   return ui.grabbed ? { ...ui, grabbed: null } : ui;
+}
+
+/**
+ * The PC box is shown as a grid of avatar cells, `BOX_PAGE_SIZE` per page. The
+ * run's box is a flat list, so a cell maps to `page * BOX_PAGE_SIZE + row * COLS
+ * + col`; an index past the end is an empty slot.
+ */
+export const BOX_COLS = 4;
+export const BOX_ROWS = 4;
+export const BOX_PAGE_SIZE = BOX_COLS * BOX_ROWS;
+
+/** How many pages a box of `length` members needs (at least one). */
+export function boxPageCount(length: number): number {
+  return Math.max(1, Math.ceil(Math.max(0, length) / BOX_PAGE_SIZE));
+}
+
+/** The flat box index of a page cell; may be past the end (an empty slot). */
+export function boxCellIndex(page: number, col: number, row: number): number {
+  return page * BOX_PAGE_SIZE + row * BOX_COLS + col;
 }
