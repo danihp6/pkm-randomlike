@@ -39,8 +39,8 @@ Every biome ships two images:
   its centre and frames `3`/`4` its left/right caps (`FRLG_LEDGE_LEFT`/
   `FRLG_LEDGE_RIGHT`), which the field sheet leaves free (it draws the stair/trap
   slots from the common atlas). Frame `5` is the tall-grass ground
-  (`FRLG_TALL_GRASS`), stamped from the denser tufted grass so a grass patch reads
-  apart from the plain floor.
+  (`FRLG_TALL_GRASS`), stamped whole from the denser tufted grass (source `7,0`),
+  so a grass patch reads apart from the plain floor.
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
   biome, for the tiles that mean the same thing everywhere: trap, chest, item,
   carpet (and a stair slot that no map value maps to while the route `EXIT` art
@@ -152,8 +152,10 @@ Swapping is `config = TILESETS[nextId].config` plus loading
 ## 6. Pending art slots
 
 - **Tall grass** draws a real FRLG frame now (`FRLG_TALL_GRASS`, frame 5): the
-  field sheet's denser tufted grass ground. The PMD-derived sheets still have no
-  grass tile, so they keep the plain-ground fallback plus the procedural tuft
+  field sheet's tufted grass ground, stamped **whole** with its ground baked in.
+  The real blade tuft lives at source `7,0` of `sprite-sources/frlg/tileset-2.png`
+  (the earlier `6,0` was a plain floor variant). The PMD-derived sheets still have
+  no grass tile, so they keep the plain-ground fallback plus the procedural tuft
   overlay (`BootScene` builds it). `RouteScene` only draws that overlay when the
   tileset's `TALL_GRASS` frame is its floor frame.
 - **Ledge** draws a three-tile run: frame 51 is the centre lip and frames `3`/`4`

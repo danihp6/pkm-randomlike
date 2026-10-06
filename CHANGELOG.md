@@ -8,6 +8,10 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] Tall grass stamps the **real blade tuft**: the FRLG frames use source `7,0` of
+      `sprite-sources/frlg/tileset-2.png` whole, with its own ground (frame 5 was
+      previously the plain `6,0` floor variant). `docs/tileset-spec.md` §2/§6
+      updated.
 - [x] Biome is **forest only**: `BIOME_ORDER = ['forest']`, so a route always uses
       the forest tileset and encounters whatever its index (the outdoor/cave
       entries stay defined but dormant). The route **shape** is now a first-class

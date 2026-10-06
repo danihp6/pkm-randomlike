@@ -51,8 +51,8 @@ const FRAME_FLOOR_ALT_3 = 41
 const FRAME_FLOOR_ALT_4 = 42
 const FRAME_FLOOR_ALT_5 = 43
 // The tall-grass ground tile, into an otherwise unused shared slot (the field
-// draws chest/item from the common atlas). Source is the denser tufted grass
-// (`tallGrass`), distinct from the plainer floor.
+// draws chest/item from the common atlas). Source is the tufted grass blades
+// (`tallGrass`) drawn whole, with their own ground baked in.
 const FRAME_TALL_GRASS = 5
 // The last cell of the 4x13 sheet, the rocky ledge lip the route walks off.
 const FRAME_LEDGE = 51
@@ -213,7 +213,8 @@ function keyBackground(over, fill, bg) {
  * below lands on the lower leaves of the tree above and its body hides that tree's
  * trunk; only the mass's foot shows the trunk platform. `ledge` is `{ left,
  * center, right }`, the three-source-cell run the ledge draws. `tallGrass` is the
- * ground tile the walkable grass patches stamp.
+ * tufted grass ground tile the walkable patches stamp, drawn whole with its own
+ * ground.
  */
 function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = [10, 0] }) {
   stamp(atlas, FRAME_FLOOR, floor[0], floor[1])
@@ -298,7 +299,7 @@ function outdoorFrames(atlas) {
     ],
     wall: TREE,
     ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
-    tallGrass: [6, 0],
+    tallGrass: [7, 0],
   })
 }
 
@@ -315,7 +316,7 @@ function forestFrames(atlas) {
     ],
     wall: TREE,
     ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
-    tallGrass: [6, 0],
+    tallGrass: [7, 0],
   })
 }
 
@@ -340,7 +341,7 @@ function caveFrames(atlas) {
       [rockBase, rockBase, rockBase],
     ],
     ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
-    tallGrass: [6, 0],
+    tallGrass: [7, 0],
   })
 }
 
