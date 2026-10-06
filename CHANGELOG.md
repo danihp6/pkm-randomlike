@@ -8,6 +8,13 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] The **spine** keeps the whole-object border margin too: its jittered
+      waypoints and the hub are pulled in by `pathWidth - 1`, the lane width
+      `carveSquare` grows down/right from the anchor, so a lane never reaches
+      within `wallMargin` of the border and leaves a one-row stump (the seed
+      `1yv0j1t#r4` bottom fence no longer shows a bitten tree). `carveBranches`
+      already pulled its last cell in by `branchWidth - 1`; this is the spine's
+      counterpart. `docs/routes-spec.md` and `docs/route-generator.md` updated.
 - [x] Tall grass can **share a tree tip**: a walkable tip cardinally adjacent to a
       `TALL_GRASS` cell is a **grass tip** (`grassTipKeys` in
       `src/engine/tileFrames.ts`), so a patch packed against a tree spills onto its

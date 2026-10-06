@@ -204,7 +204,10 @@ CarveGuaranteedPath(tiles, entry, exits, shape, rng, margin):
                 waypoints.push(hub)                   # every link meets here
             else:
                 base = Lerp(from, to, i / SEGMENTS)
-                waypoints.push(Clamp(base + Jitter(shape.jitter, rng), margin))
+                # CarveSquare grows down/right from the anchor, so clamp the waypoint
+                # a lane width inside the margin: the lane's far edge keeps the border
+                # strip a whole tree, not a one-row stump.
+                waypoints.push(Clamp(base + Jitter(shape.jitter, rng), margin, size - margin - shape.pathWidth))
         waypoints += reverse(OpeningApproach(b.edge, to, margin)) + [to]
         for (p, q) in consecutive(waypoints):
             cost(cell) = BASE + Noise(cell, rng) + BorderPenalty(cell, margin)
