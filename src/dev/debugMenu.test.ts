@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { Species } from '../data/dex';
+import { ITEMS } from '../data/items';
 import { RUN_CHAIN } from '../data/run';
 import { ROUTE_SHAPES } from '../engine/routes/layout';
 import {
+  clampItemCount,
   clampLevel,
   DEBUG_DEFAULT_LEVEL,
+  DEBUG_MAX_ITEM_COUNT,
   DEBUG_MAX_LEVEL,
   DEBUG_MIN_LEVEL,
   DEBUG_ROUTE_HEIGHT,
   DEBUG_ROUTE_WIDTH,
+  matchItem,
   matchSpecies,
   parseOptionalInt,
   parseOptionalText,
@@ -63,6 +67,22 @@ describe('matchSpecies', () => {
   });
 });
 
+describe('matchItem', () => {
+  it('matches the item catalog by name and by id', () => {
+    expect(matchItem('Poke Ball', ITEMS)?.id).toBe('pokeball');
+    expect(matchItem('greatball', ITEMS)?.id).toBe('greatball');
+  });
+
+  it('resolves an unambiguous prefix', () => {
+    expect(matchItem('super', ITEMS)?.id).toBe('superpotion');
+  });
+
+  it('returns null for a blank or unknown query', () => {
+    expect(matchItem('', ITEMS)).toBeNull();
+    expect(matchItem('potion of god', ITEMS)).toBeNull();
+  });
+});
+
 describe('clampLevel', () => {
   it('keeps a legal level', () => {
     expect(clampLevel(50)).toBe(50);
@@ -76,6 +96,23 @@ describe('clampLevel', () => {
 
   it('falls back to the default on a broken field', () => {
     expect(clampLevel(Number.NaN)).toBe(DEBUG_DEFAULT_LEVEL);
+  });
+});
+
+describe('clampItemCount', () => {
+  it('keeps a legal count and truncates fractions', () => {
+    expect(clampItemCount(5)).toBe(5);
+    expect(clampItemCount(3.9)).toBe(3);
+  });
+
+  it('floors at one and ceils at the debug maximum', () => {
+    expect(clampItemCount(0)).toBe(1);
+    expect(clampItemCount(-4)).toBe(1);
+    expect(clampItemCount(DEBUG_MAX_ITEM_COUNT + 1)).toBe(DEBUG_MAX_ITEM_COUNT);
+  });
+
+  it('falls back to one on a broken field', () => {
+    expect(clampItemCount(Number.NaN)).toBe(1);
   });
 });
 

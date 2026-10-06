@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getSpecies } from './dex';
 import { evolutionFamily } from './dex/evolutions';
-import { getItem } from './items';
 import {
   LEVEL_BANDS,
   ROUTES_PER_BAND,
@@ -65,10 +64,7 @@ describe('starter pool', () => {
     expect(candidates).not.toContain('rattata');
   });
 
-  it('opens the bag with real items', () => {
-    for (const slot of STARTING_BAG) {
-      expect(getItem(slot.itemId), slot.itemId).toBeDefined();
-      expect(slot.count).toBeGreaterThan(0);
-    }
+  it('opens the bag empty: items come from the route economy, not a starting kit', () => {
+    expect(STARTING_BAG).toEqual([]);
   });
 });

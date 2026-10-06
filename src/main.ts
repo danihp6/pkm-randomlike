@@ -40,6 +40,14 @@ if (IS_DEVELOP) {
         const route = game.scene.getScene('Route') as RouteScene | null;
         route?.startDebugWildBattle(speciesId, level);
       },
+      onAddPokemon: (speciesId, level) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        return route?.addDebugPokemon(speciesId, level) ?? null;
+      },
+      onAddItem: (itemId, count) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        route?.addDebugItem(itemId, count);
+      },
       readRouteContext: () => {
         const route = game.scene.getScene('Route') as RouteScene | null;
         return route?.debugRouteContext() ?? null;

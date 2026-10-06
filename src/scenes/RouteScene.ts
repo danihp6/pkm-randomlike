@@ -18,6 +18,7 @@ import type { DebugRouteContext, DebugRouteInput } from '../dev/debugMenu';
 import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
   MAX_PARTY_SIZE,
+  addItem,
   addPokemon,
   advanceRoute,
   battleSeed,
@@ -62,6 +63,7 @@ import {
   routeFromFrameMapExport,
   serializeFrameMap,
 } from '../engine/frameMap';
+import { BAG_CATEGORIES, BAG_CATEGORY_LABELS, bagForCategory, cycleBagCategory, type BagCategory } from '../ui/bag';
 import { FRLG_HPBAR, FRLG_HPBAR_KEY, addFrlgWindow } from '../ui/frlg';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
@@ -86,8 +88,12 @@ const HUD_GAP = 8;
 const HUD_HEADER_H = 34;
 const HUD_PARTY_HEADER = 30;
 const HUD_PARTY_ROW = 52;
-const HUD_BAG_HEADER = 30;
+const HUD_BAG_HEADER = 38;
 const HUD_BAG_ROW = 40;
+/** The bag pocket tabs: four across the window's inner width (344 - 2 * 10). */
+const HUD_TAB_W = 78;
+const HUD_TAB_H = 22;
+const HUD_TAB_GAP = 4;
 /** The 268px FRLG HP bar at 0.75 still reads cleanly and leaves room for the numbers. */
 const HUD_HPBAR_SCALE = 0.75;
 
@@ -139,11 +145,7 @@ const DEV_SEED = 'dev-seed';
 const DEMO_STARTER: FighterInput = { id: 'starter', speciesId: 'charmander', level: 5, moves: ['ember', 'scratch', 'growl'] };
 const DEMO_RESERVE: FighterInput = { id: 'reserve', speciesId: 'squirtle', level: 4, moves: ['watergun', 'tackle', 'tailwhip'] };
 
-const DEMO_BAG: readonly BagCounts[] = [
-  { itemId: 'potion', count: 2 },
-  { itemId: 'pokeball', count: 5 },
-  { itemId: 'paralyzeheal', count: 1 },
-];
+const DEMO_BAG: readonly BagCounts[] = [];
 
 export class RouteScene extends Phaser.Scene {
   private route!: RouteMap;
@@ -177,6 +179,8 @@ export class RouteScene extends Phaser.Scene {
   private hoverLabel: Phaser.GameObjects.BitmapText | null = null;
   private gameOver = false;
   private battleCounter = 0;
+  /** Dev only: unique ids for Pokémon dropped in from the debug menu. */
+  private debugMonCounter = 0;
   private pendingBattle: BattleLaunch | null = null;
   /** What the party/PC screen was opened for, while it is open. */
   private pendingParty: 'field' | 'rest' | null = null;
@@ -203,6 +207,14 @@ export class RouteScene extends Phaser.Scene {
     name: Phaser.GameObjects.BitmapText;
     count: Phaser.GameObjects.BitmapText;
   }[] = [];
+  /** The bag pocket tabs (FRLG strip) and which pocket is showing. */
+  private hudBagTabs: {
+    category: BagCategory;
+    bg: Phaser.GameObjects.Rectangle;
+    label: Phaser.GameObjects.BitmapText;
+  }[] = [];
+  private hudBagCategory: BagCategory = 'equipment';
+  private hudBagEmpty!: Phaser.GameObjects.BitmapText;
   private hudRows: {
     portrait: Phaser.GameObjects.Image;
     name: Phaser.GameObjects.BitmapText;
@@ -381,6 +393,14 @@ export class RouteScene extends Phaser.Scene {
       });
       this.input.on('gameout', () => this.clearHoverInspect());
     }
+    // Bag pocket tabs: `[` / `]` cycle them, a click picks one. Both are inert
+    // until the HUD is on screen, so they never fight the movement keys.
+    this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
+      if (!this.scene.isActive() || !this.hudVisible) return;
+      if (event.key === '[') this.stepBagCategory(-1);
+      else if (event.key === ']') this.stepBagCategory(1);
+    });
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.handleHudClick(pointer));
     this.buildHud();
     this.setupHudCamera();
     this.hint.setDepth(200);
@@ -404,8 +424,9 @@ export class RouteScene extends Phaser.Scene {
 
   /**
    * The persistent overlay: a slim route header plus a party window (portrait,
-   * name, level and HP bar) and a bag window (icon, name and count), each its
-   * own FRLG nine-slice so the two never share a panel.
+   * name, level and HP bar) and a bag window (pocket tabs over the active
+   * pocket's icon, name and count), each its own FRLG nine-slice so the two
+   * never share a panel.
    */
   private buildHud(): void {
     const x = this.scale.width - HUD_PANEL_W - 8;
@@ -453,7 +474,22 @@ export class RouteScene extends Phaser.Scene {
     const bagY = partyY + partyH + HUD_GAP;
     const bagH = HUD_BAG_HEADER + HUD_BAG_ROWS * HUD_BAG_ROW + 12;
     children.push(addFrlgWindow(this, x, bagY, HUD_PANEL_W, bagH));
-    children.push(addFrlgText(this, x + 14, bagY + 8, 'BAG', { size: 16, tint: 0x3a3956 }));
+
+    // Pocket tabs across the window's head, FRLG style: the active one reads
+    // dark-on-light, the rest stay a pale folder. Click or `[` / `]` to switch.
+    this.hudBagTabs = [];
+    BAG_CATEGORIES.forEach((category, i) => {
+      const tabX = x + 10 + i * (HUD_TAB_W + HUD_TAB_GAP);
+      const bg = this.add.rectangle(tabX, bagY + 8, HUD_TAB_W, HUD_TAB_H, 0xcfcce2).setOrigin(0, 0);
+      const label = addFrlgText(this, tabX + HUD_TAB_W / 2, bagY + 11, BAG_CATEGORY_LABELS[category], {
+        size: 16,
+        tint: FRLG_INK,
+        origin: [0.5, 0],
+      });
+      this.hudBagTabs.push({ category, bg, label });
+      children.push(bg, label);
+    });
+
     this.hudBagRows = [];
     for (let i = 0; i < HUD_BAG_ROWS; i++) {
       const rowY = bagY + HUD_BAG_HEADER + i * HUD_BAG_ROW;
@@ -470,6 +506,13 @@ export class RouteScene extends Phaser.Scene {
       this.hudBagRows.push({ icon, name, count });
       children.push(icon, name, count);
     }
+
+    this.hudBagEmpty = addFrlgText(this, x + HUD_PANEL_W / 2, bagY + HUD_BAG_HEADER + 36, 'no items', {
+      size: 16,
+      tint: 0x6b6887,
+      origin: [0.5, 0],
+    });
+    children.push(this.hudBagEmpty);
 
     this.hudRoot = this.add.container(0, 0, children).setDepth(150).setVisible(this.hudVisible);
   }
@@ -521,7 +564,13 @@ export class RouteScene extends Phaser.Scene {
         .setFillStyle(hpColorInt(fraction));
     });
 
-    const bag = this.run.bag.slice(0, HUD_BAG_ROWS);
+    const bag = bagForCategory(this.run.bag, this.hudBagCategory).slice(0, HUD_BAG_ROWS);
+    this.hudBagTabs.forEach((tab) => {
+      const active = tab.category === this.hudBagCategory;
+      tab.bg.setFillStyle(active ? 0x2f2c4d : 0xcfcce2);
+      tab.label.setTint(active ? 0xf8fafc : FRLG_INK);
+    });
+    this.hudBagEmpty.setVisible(bag.length === 0);
     this.hudBagRows.forEach((row, i) => {
       const stack = bag[i];
       const frame = stack ? itemIconFrame(stack.itemId) : null;
@@ -538,6 +587,27 @@ export class RouteScene extends Phaser.Scene {
       row.name.setText(getItem(stack.itemId)?.name ?? stack.itemId);
       row.count.setText(`x${stack.count}`);
     });
+  }
+
+  /** Switches the bag's pocket by `offset` tabs and redraws the list. */
+  private stepBagCategory(offset: number): void {
+    this.hudBagCategory = cycleBagCategory(this.hudBagCategory, offset);
+    this.refreshHud();
+  }
+
+  /** A click on a bag pocket tab selects it; only meaningful while the HUD shows. */
+  private handleHudClick(pointer: Phaser.Input.Pointer): void {
+    if (!this.scene.isActive() || !this.hudVisible) return;
+    const tab = this.hudBagTabs.find(
+      (entry) =>
+        pointer.x >= entry.bg.x &&
+        pointer.x <= entry.bg.x + entry.bg.width &&
+        pointer.y >= entry.bg.y &&
+        pointer.y <= entry.bg.y + entry.bg.height,
+    );
+    if (!tab) return;
+    this.hudBagCategory = tab.category;
+    this.refreshHud();
   }
 
   /** Two cameras: one follows the world, one pins the HUD (hint + overlay) to the screen. */
@@ -812,6 +882,33 @@ export class RouteScene extends Phaser.Scene {
   startDebugWildBattle(speciesId: string, level: number): void {
     if (!IS_DEVELOP || this.gameOver || this.pendingBattle || this.releaseRoot || !this.scene.isActive()) return;
     this.startBattle({ kind: 'wild', speciesId, level, key: `debug:${speciesId}` });
+  }
+
+  /**
+   * Dev only: drops a chosen Pokémon into the run. It joins the party while
+   * there is room and the PC box after that (the capture rule), then the save
+   * and the HUD follow. Returns where it landed, or null with no live run.
+   */
+  addDebugPokemon(speciesId: string, level: number): 'party' | 'box' | null {
+    if (!IS_DEVELOP || !this.run || this.gameOver) return null;
+    this.debugMonCounter += 1;
+    const pokemon = createRunPokemon({
+      id: `debug:${speciesId}:${this.debugMonCounter}`,
+      speciesId,
+      level,
+    });
+    this.run = addPokemon(this.run, pokemon);
+    this.persistRun();
+    this.refreshHud();
+    return this.run.party.some((member) => member.fighter.id === pokemon.fighter.id) ? 'party' : 'box';
+  }
+
+  /** Dev only: adds `count` of an item to the run's bag and resyncs the HUD. */
+  addDebugItem(itemId: string, count: number): void {
+    if (!IS_DEVELOP || !this.run || this.gameOver) return;
+    this.run = addItem(this.run, itemId, count);
+    this.persistRun();
+    this.refreshHud();
   }
 
   /** Called by `BattleScene` before it stops: folds the result back into the run. */
