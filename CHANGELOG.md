@@ -281,6 +281,16 @@ file is the human-readable summary.
       `LedgeFrames` (`src/engine/tileFrames.ts`, `src/engine/tileset.ts`); the PMD
       sheets keep their single ground fallback. `docs/tileset-spec.md` and
       `docs/routes-spec.md` updated.
+- [x] Tall grass is a **real field tile** now, not a procedural overlay: the FRLG
+      atlases stamp the sheet's denser tufted grass at frame `5` (`FRLG_TALL_GRASS`,
+      `docs/tileset-spec.md` §2/§6) and `RouteScene` only keeps the tuft overlay for
+      the PMD tilesets that still fall back to plain ground. `carveGrass` now packs a
+      patch **against the walls**: it stretches across a wall-to-wall corridor when
+      that gap is at most `GRASS_SPAN_MAX` (5), so the patch touches a wall at both
+      ends; when no corridor fits it falls back to a small block grown from a
+      wall-adjacent seed through grassable cells only (never split by the spine), so
+      a patch never floats free. `terrain.test.ts` covers the wall anchor and the
+      size cap.
 
 ## Phase 0 — Repo & scaffolding
 

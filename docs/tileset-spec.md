@@ -38,7 +38,9 @@ Every biome ships two images:
   §3) instead of one frame per shape. A ledge is a **horizontal run**: frame 51 is
   its centre and frames `3`/`4` its left/right caps (`FRLG_LEDGE_LEFT`/
   `FRLG_LEDGE_RIGHT`), which the field sheet leaves free (it draws the stair/trap
-  slots from the common atlas).
+  slots from the common atlas). Frame `5` is the tall-grass ground
+  (`FRLG_TALL_GRASS`), stamped from the denser tufted grass so a grass patch reads
+  apart from the plain floor.
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
   biome, for the tiles that mean the same thing everywhere: trap, chest, item,
   carpet (and a stair slot that no map value maps to while the route `EXIT` art
@@ -149,9 +151,11 @@ Swapping is `config = TILESETS[nextId].config` plus loading
 
 ## 6. Pending art slots
 
-- **Tall grass** has no dedicated frame: it draws plain ground today, with a
-  procedural overlay sprite (`BootScene` builds it) so it reads while the real
-  art is pending. It does not spend a third atlas row.
+- **Tall grass** draws a real FRLG frame now (`FRLG_TALL_GRASS`, frame 5): the
+  field sheet's denser tufted grass ground. The PMD-derived sheets still have no
+  grass tile, so they keep the plain-ground fallback plus the procedural tuft
+  overlay (`BootScene` builds it). `RouteScene` only draws that overlay when the
+  tileset's `TALL_GRASS` frame is its floor frame.
 - **Ledge** draws a three-tile run: frame 51 is the centre lip and frames `3`/`4`
   its end caps (`FRLG_LEDGE_LEFT`/`FRLG_LEDGE_RIGHT`, `LedgeFrames` in
   `src/engine/tileset.ts`); the FRLG fields stamp all three (`D26`), and the PMD

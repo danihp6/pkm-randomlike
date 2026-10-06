@@ -52,7 +52,11 @@ camera follow), containing:
    the map stays fenced.
 3. **Terrain pass**: `terrain` in `src/data/biomes.ts` sets how many tall grass
    patches and ledge lines a biome stamps. Both land on the carved floor **off the
-   spine and the openings** (ledges also avoid the pockets). A ledge line is a
+   spine and the openings** (ledges also avoid the pockets). A grass patch is packed
+   **against the walls**: it first stretches across a wall-to-wall corridor so it
+   touches a wall at both ends, but only when that gap is no wider than
+   `GRASS_SPAN_MAX` (5 tiles); otherwise it falls back to a small block anchored on
+   a wall, so grass never floats in open floor. A ledge line is a
    whole object of at least **three tiles** — a left cap, repeated centre tiles and
    a right cap (`LedgeFrames`) — and is dropped whole rather than left as a stub
    when it cannot reach three tiles or would strand a branch behind its one-way
