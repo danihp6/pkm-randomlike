@@ -11,6 +11,10 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `tilesets/` — one file per biome tileset plus the shared `palettes.ts` and the
   `index.ts` registry. Contract in `docs/tileset-spec.md`.
 - `biomes.ts` — biome → tileset, terrain flavour and encounter tables.
+- `mapSize.ts` — the map-size tiers (small / medium / large by area) that scale a
+  biome's base `grassPatches` / `ledges` counts and add optional paths to a
+  shape's `branchCount`, so density and exploration hold across route sizes
+  (`docs/routes-spec.md` §2).
 - `encounters.ts` — per-biome species pools and weights by level band.
 - `trainers.ts` — trainer archetypes and their themed species pool per level band.
 - `run.ts` — level bands, the per-route cap and the run chain cadence.

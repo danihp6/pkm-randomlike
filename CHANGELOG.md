@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] Generation **scales by map-size ranges** via the new `src/data/mapSize.ts`
+      (`MAP_SIZE_TIERS`: `small` / `medium` / `large`, keyed by the map area in
+      tiles). `grassPatches` and `ledges` in `src/data/biomes.ts` are now **base**
+      counts the terrain pass multiplies (terrain ×1 / ×2 / ×3), and a shape's
+      `branchCount` gains a bonus (`+0` / `+1` / `+2`) so a bigger route carves
+      more **optional paths**. The default 20x20 route stays `small`, so its output
+      is unchanged. `docs/routes-spec.md` §2, `docs/route-generator.md` and
+      `src/data/README.md` updated.
+- [x] Branches can grow **off branches, not only off the spine**: `carveBranches`
+      now roots each new lane on the **network** (the spine plus every lane already
+      carved) and measures free space to that growing network, so a later branch
+      can attach to an earlier one. The per-cell distance is a cardinal
+      `distanceField` (same values as the old Manhattan scan, computed once per
+      branch). `docs/routes-spec.md` and `docs/route-generator.md` updated.
 - [x] The **spine** keeps the whole-object border margin too: its jittered
       waypoints and the hub are pulled in by `pathWidth - 1`, the lane width
       `carveSquare` grows down/right from the anchor, so a lane never reaches
