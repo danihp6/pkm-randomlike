@@ -235,7 +235,7 @@ describe('treeTipKeys', () => {
     expect(tips.has('1,3')).toBe(false);
   });
 
-  it('never marks a border cell, even when its run tops out on the edge', () => {
+  it('keeps the top and bottom fence edges solid, even when a run tops out there', () => {
     const attached: TileMap = [
       [WALL, WALL, WALL, WALL, WALL],
       [FLOOR, WALL, WALL, WALL, FLOOR],
@@ -255,6 +255,19 @@ describe('treeTipKeys', () => {
       [WALL, WALL, WALL, WALL, WALL],
     ];
     expect(treeTipKeys(bottomFence, withPattern).size).toBe(0);
+  });
+
+  it('marks a left/right edge mass top, whose end columns are transparent grass', () => {
+    const side: TileMap = [
+      [FLOOR, FLOOR, FLOOR],
+      [WALL, WALL, FLOOR],
+      [WALL, WALL, FLOOR],
+      [WALL, WALL, FLOOR],
+    ];
+    const tips = treeTipKeys(side, withPattern);
+    expect(tips.has('0,1')).toBe(true);
+    expect(tips.has('0,2')).toBe(false);
+    expect(tips.has('1,1')).toBe(true);
   });
 
   it('marks the own crown of a run a lane detached from the stack above', () => {

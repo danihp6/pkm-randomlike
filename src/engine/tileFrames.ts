@@ -177,10 +177,13 @@ export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPa
 /**
  * The wall cells that draw as the motif's **pure top row** (`rows[0]`, the crown
  * over open ground), as `x,y` keys. These are the walkable tips: a tree's own
- * crown, never a middle `rows[2]` crown laid over the tree above. A cell on the
- * one-tile border ring is never a tip: the border is the fence (and the outer
- * masses are a window into the forest past the limit, `patternCell`). The route
- * scene walks on the tips and draws them over the player.
+ * crown, never a middle `rows[2]` crown laid over the tree above. The top and
+ * bottom edges are never tips - they are the fence, and `patternCell` draws them
+ * as a crop of the forest going on past the limit - but the **left/right edges**
+ * can show a mass's own top row. Its end columns are the transparent gaps of the
+ * top row (frames 7/9), so leaving them solid would be an invisible obstacle the
+ * player reads as grass. The route scene walks on the tips and draws them over
+ * the player.
  */
 export function treeTipKeys(map: TileMap, tileset: TilesetConfig, pad = 0): Set<string> {
   const keys = new Set<string>();
@@ -191,7 +194,7 @@ export function treeTipKeys(map: TileMap, tileset: TilesetConfig, pad = 0): Set<
   const framed = pad > 0 ? padMap(map, pad, FLOOR) : map;
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      if (x === 0 || x === width - 1 || y === 0 || y === height - 1) continue;
+      if (y === 0 || y === height - 1) continue;
       if (map[y][x] !== pattern.value) continue;
       if (patternCell(framed, x + pad, y + pad, pattern).row === 0) keys.add(`${x},${y}`);
     }

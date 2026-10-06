@@ -52,6 +52,10 @@ if (IS_DEVELOP) {
         const route = game.scene.getScene('Route') as RouteScene | null;
         route?.setPassThrough(enabled);
       },
+      onToggleHoverInspect: (enabled) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        route?.setHoverInspect(enabled);
+      },
       generatorStepInfo: () => {
         const route = game.scene.getScene('Route') as RouteScene | null;
         return route?.generatorStepInfo() ?? null;
