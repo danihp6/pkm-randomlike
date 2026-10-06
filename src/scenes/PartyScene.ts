@@ -7,6 +7,9 @@ import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import {
   boxRows,
+  dragTo,
+  dropGrabbed,
+  grabAt,
   initialPartyUi,
   partyInput,
   partyRows,
@@ -52,9 +55,11 @@ type PaneView = {
 /**
  * The party/PC screen (Phase 6). Opened from the route HUD (`P`) or as the
  * between-route healing stop; the pure `ui/partyScreen.ts` reducer owns the
- * cursor and the moves, this only draws it and feeds it keys. `Z` picks a member
- * up, `up`/`down` reorders it and `left`/`right` sends it to the other pane;
- * `X` puts it back or leaves the screen (which advances the route at a stop).
+ * cursor and the moves, this only draws it and feeds it keys or the mouse. `Z`
+ * picks a member up, `up`/`down` reorders it and `left`/`right` sends it to the
+ * other pane; `X` puts it back or leaves the screen (which advances the route at
+ * a stop). With the mouse, pressing a row picks it up, dragging it over another
+ * row reorders it and releasing drops it.
  */
 export class PartyScene extends Phaser.Scene {
   private run!: RunState;
@@ -64,6 +69,8 @@ export class PartyScene extends Phaser.Scene {
   private title!: Phaser.GameObjects.BitmapText;
   private note!: Phaser.GameObjects.BitmapText;
   private footer?: Phaser.GameObjects.BitmapText;
+  /** The first row each pane is showing, so a pointer can map to a member. */
+  private paneStart: Record<PaneId, number> = { party: 0, box: 0 };
 
   constructor() {
     super('Party');
@@ -84,6 +91,7 @@ export class PartyScene extends Phaser.Scene {
     this.views = { party: this.buildPane('party'), box: this.buildPane('box') };
     this.footer = addFrlgText(this, PANEL_X.party, PANEL_Y + PANEL_H + 32, '', { size: 16, tint: 0x94a3b8 });
     this.bindInput();
+    this.bindPointer();
     this.render();
   }
 
@@ -146,6 +154,62 @@ export class PartyScene extends Phaser.Scene {
     this.scene.stop();
   }
 
+  /**
+   * Mouse support: press a row to pick it up, drag over another row to reorder
+   * it live and release to drop it. A press in the grabbed member's own pane (or
+   * outside the rows) drops it where it stands.
+   */
+  private bindPointer(): void {
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      const hit = this.rowHit(pointer);
+      if (!hit) {
+        if (this.ui.grabbed) this.drop();
+        return;
+      }
+      if (this.ui.grabbed && this.ui.grabbed.pane === hit.pane) {
+        this.drop();
+        return;
+      }
+      const next = grabAt(this.run, this.ui, hit.pane, hit.index);
+      this.run = next.run;
+      this.ui = next.ui;
+      this.render();
+    });
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (!this.ui.grabbed) return;
+      const hit = this.rowHit(pointer);
+      if (!hit || hit.pane !== this.ui.grabbed.pane) return;
+      const next = dragTo(this.run, this.ui, hit.index);
+      if (next.run === this.run && next.ui === this.ui) return;
+      this.run = next.run;
+      this.ui = next.ui;
+      this.render();
+    });
+    this.input.on('pointerup', () => {
+      if (this.ui.grabbed) this.drop();
+    });
+  }
+
+  /** Drops the grabbed member where it stands and redraws. */
+  private drop(): void {
+    this.ui = dropGrabbed(this.ui);
+    this.render();
+  }
+
+  /** The pane row under the pointer, or null outside a pane's visible rows. */
+  private rowHit(pointer: Phaser.Input.Pointer): { pane: PaneId; index: number } | null {
+    const top = PANEL_Y + ROW_TOP;
+    if (pointer.y < top || pointer.y >= top + VISIBLE_ROWS * ROW_H) return null;
+    const slot = Math.floor((pointer.y - top) / ROW_H);
+    const pane: PaneId = pointer.x < PANEL_X.box ? 'party' : 'box';
+    const x = PANEL_X[pane];
+    if (pointer.x < x || pointer.x >= x + PANEL_W[pane]) return null;
+    const index = this.paneStart[pane] + slot;
+    const length = (pane === 'party' ? this.run.party : this.run.box).length;
+    if (index < 0 || index >= length) return null;
+    return { pane, index };
+  }
+
   private render(): void {
     const party = partyRows(this.run);
     const box = boxRows(this.run);
@@ -167,6 +231,7 @@ export class PartyScene extends Phaser.Scene {
     // An inactive pane shows from its top: the shared cursor index only means
     // something in the pane it is in.
     const start = active ? windowStart(members.length, this.ui.index, VISIBLE_ROWS) : 0;
+    this.paneStart[pane] = start;
     view.rows.forEach((row, slot) => {
       const member = members[start + slot];
       if (!member) {
@@ -195,7 +260,7 @@ export class PartyScene extends Phaser.Scene {
   }
 
   private renderFooter(partyCount: number, boxCount: number): void {
-    const grabbable = this.ui.grabbed === null ? 'Z pick up' : 'Z drop';
+    const grabbable = this.ui.grabbed === null ? 'Z or drag to pick up' : 'Z or release to drop';
     const footer = [
       '↑↓ select',
       grabbable,

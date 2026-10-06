@@ -4,6 +4,9 @@ import { createRun, type RunState } from '../engine/run/state';
 import type { RunPokemon } from '../engine/run/progression';
 import {
   boxRows,
+  dragTo,
+  dropGrabbed,
+  grabAt,
   initialPartyUi,
   partyInput,
   partyRows,
@@ -142,5 +145,38 @@ describe('partyInput managing', () => {
     const run = runWith(['a', 'b'], ['x']);
     const picked = feed(run, initialPartyUi(), ['confirm', 'left']);
     expect(picked.ui).toEqual({ pane: 'party', index: 0, grabbed: { pane: 'party', origin: 0 } });
+  });
+});
+
+describe('pointer drag', () => {
+  it('grabs the pressed row and reorders straight to the drop slot', () => {
+    const run = runWith(['a', 'b', 'c', 'd']);
+    const grabbed = grabAt(run, initialPartyUi(), 'party', 0);
+    expect(grabbed.ui).toEqual({ pane: 'party', index: 0, grabbed: { pane: 'party', origin: 0 } });
+    const moved = dragTo(grabbed.run, grabbed.ui, 2);
+    expect(moved.run.party.map((m) => m.fighter.id)).toEqual(['b', 'c', 'a', 'd']);
+    expect(moved.ui.index).toBe(2);
+    expect(dropGrabbed(moved.ui)).toEqual({ pane: 'party', index: 2, grabbed: null });
+  });
+
+  it('drags a box member within the box', () => {
+    const run = runWith(['a'], ['x', 'y', 'z']);
+    const grabbed = grabAt(run, { pane: 'box', index: 2, grabbed: null }, 'box', 2);
+    const moved = dragTo(grabbed.run, grabbed.ui, 0);
+    expect(moved.run.box.map((m) => m.fighter.id)).toEqual(['z', 'x', 'y']);
+  });
+
+  it('clamps an out-of-range drop and ignores an empty slot', () => {
+    const run = runWith(['a', 'b', 'c']);
+    const grabbed = grabAt(run, initialPartyUi(), 'party', 0);
+    expect(dragTo(grabbed.run, grabbed.ui, 99).ui.index).toBe(2);
+    expect(dragTo(grabbed.run, grabbed.ui, -5).ui.index).toBe(0);
+    expect(grabAt(run, initialPartyUi(), 'party', 9).run).toBe(run);
+  });
+
+  it('is a no-op when nothing is grabbed', () => {
+    const run = runWith(['a', 'b']);
+    expect(dragTo(run, initialPartyUi(), 1)).toEqual({ run, ui: initialPartyUi() });
+    expect(dropGrabbed(initialPartyUi())).toEqual(initialPartyUi());
   });
 });

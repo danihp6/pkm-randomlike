@@ -149,3 +149,32 @@ export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): 
 
   return { run, ui };
 }
+
+/**
+ * A pointer press on `pane` at `index`: moves the cursor there and picks the
+ * member up, so a drag can reorder it. An empty slot is a no-op.
+ */
+export function grabAt(run: RunState, ui: PartyUiState, pane: PaneId, index: number): PartyInputResult {
+  const list = listOf(run, pane);
+  if (index < 0 || index >= list.length) return { run, ui };
+  return { run, ui: { pane, index, grabbed: { pane, origin: index } } };
+}
+
+/**
+ * A pointer drag to `to`: while a member is grabbed, reorders it straight to
+ * that slot in its own pane (the same move `up`/`down` makes one step at a
+ * time). Out-of-range targets are clamped; a no-op with nothing grabbed.
+ */
+export function dragTo(run: RunState, ui: PartyUiState, to: number): PartyInputResult {
+  if (!ui.grabbed) return { run, ui };
+  const { pane } = ui.grabbed;
+  const list = listOf(run, pane);
+  const target = Math.max(0, Math.min(list.length - 1, to));
+  if (target === ui.index) return { run, ui };
+  return { run: reorder(run, pane, ui.index, target), ui: { ...ui, index: target } };
+}
+
+/** Drops whatever is grabbed, leaving it where it stands. */
+export function dropGrabbed(ui: PartyUiState): PartyUiState {
+  return ui.grabbed ? { ...ui, grabbed: null } : ui;
+}
