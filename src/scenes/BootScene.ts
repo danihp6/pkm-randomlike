@@ -1,5 +1,9 @@
 import Phaser from 'phaser';
 import moveFxUrl from '../assets/moves.png';
+import {
+  GROUND_ITEM_TEXTURE_KEY,
+  GROUND_ITEM_URL,
+} from '../data/groundItemSprite';
 import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY } from '../data/itemIcons';
 import {
   OVERWORLD_SPRITE_ATLAS_URL,
@@ -60,6 +64,8 @@ import { browserStorage } from '../storage';
 export const GRASS_TEXTURE_KEY = 'route:grass';
 export const TRAINER_TEXTURE_KEY = 'route:trainer';
 export const ARROW_TEXTURE_KEY = 'route:arrow';
+/** The faint star a hidden ground item shows instead of a Poke Ball. */
+export const SPARKLE_TEXTURE_KEY = 'route:sparkle';
 export const BATTLE_MON_TEXTURE_KEY = 'battle:mon';
 export const BATTLE_PLATFORM_TEXTURE_KEY = 'battle:platform';
 
@@ -95,6 +101,7 @@ export class BootScene extends Phaser.Scene {
       frameWidth: ITEM_ICON_SIZE,
       frameHeight: ITEM_ICON_SIZE,
     });
+    this.load.image(GROUND_ITEM_TEXTURE_KEY, GROUND_ITEM_URL);
     this.load.spritesheet(TRAINER_SPRITE_TEXTURE_KEY, TRAINER_SPRITE_ATLAS_URL, {
       frameWidth: TRAINER_SPRITE_SIZE,
       frameHeight: TRAINER_SPRITE_SIZE,
@@ -201,6 +208,18 @@ export class BootScene extends Phaser.Scene {
     arrow.fillTriangle(5, 0, 10, 9, 0, 9);
     arrow.generateTexture(ARROW_TEXTURE_KEY, 10, 9);
     arrow.destroy();
+
+    // The hidden-item sparkle: a small four-point star, white so the scene can
+    // tint and dim it (it must read as a faint glint, not a marker).
+    const sparkle = this.make.graphics({ x: 0, y: 0 });
+    sparkle.fillStyle(0xffffff, 1);
+    sparkle.fillTriangle(6, 0, 5, 6, 7, 6);
+    sparkle.fillTriangle(6, 12, 5, 6, 7, 6);
+    sparkle.fillTriangle(0, 6, 6, 5, 6, 7);
+    sparkle.fillTriangle(12, 6, 6, 5, 6, 7);
+    sparkle.fillCircle(6, 6, 1.6);
+    sparkle.generateTexture(SPARKLE_TEXTURE_KEY, 12, 12);
+    sparkle.destroy();
 
     // Placeholder battle stand-ins (O1): a tintable body and a shadow platform.
     const mon = this.make.graphics({ x: 0, y: 0 });

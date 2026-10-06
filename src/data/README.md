@@ -17,9 +17,12 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   (`docs/routes-spec.md` §2).
 - `encounters.ts` — per-biome species pools and weights by level band.
 - `trainers.ts` — trainer archetypes and their themed species pool per level band.
+- `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
+  each band's `hiddenChance` (`docs/routes-spec.md` §2 step 4).
 - `run.ts` — level bands, the per-route cap and the run chain cadence.
-- `keybinds.ts` — the confirm/cancel/move/party/settings actions, their default
-  keys, labels and the pure rebind rules (`D23`). The Phaser half is `src/input/`.
+- `keybinds.ts` — the confirm/cancel/move/run/interact/reset/hud/settings actions,
+  their default keys, labels and the pure rebind rules (`D23`). The Phaser half is
+  `src/input/`.
 - `items.ts` — the battle item catalogue: balls with catch multipliers, potions,
   status cures, X-items and held items (Leftovers, berries, the 1.2x type
   items). Held items are registered by `engine/battle/effects/items.ts`.

@@ -110,6 +110,7 @@ function routeWith(tiles: number[][]): RouteMap {
     spine: [],
     branches: [],
     pockets: [],
+    items: [],
   };
 }
 

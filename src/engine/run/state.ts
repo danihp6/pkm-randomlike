@@ -36,6 +36,8 @@ export type RunState = Readonly<{
   box: readonly RunPokemon[];
   bag: readonly BagCounts[];
   defeatedTrainers: readonly string[];
+  /** Ground-item ids already taken on this route. Resets on advance. */
+  pickedItems: readonly string[];
   /** True once this route's single capture has been spent. Resets on advance. */
   captureUsed: boolean;
   stats: RunStats;
@@ -58,6 +60,7 @@ export function createRun(init: RunInit): RunState {
     box: [],
     bag: [...(init.bag ?? [])],
     defeatedTrainers: [],
+    pickedItems: [],
     captureUsed: false,
     stats: emptyRunStats(),
   };
@@ -72,6 +75,7 @@ export function advanceRoute(run: RunState): RunState {
     levelCap: levelCapForRoute(routeIndex),
     captureUsed: false,
     defeatedTrainers: [],
+    pickedItems: [],
   };
 }
 
@@ -171,6 +175,17 @@ export function markTrainerDefeated(run: RunState, trainerId: string): RunState 
   return isTrainerDefeated(run, trainerId)
     ? run
     : { ...run, defeatedTrainers: [...run.defeatedTrainers, trainerId] };
+}
+
+export function isItemPicked(run: RunState, itemId: string): boolean {
+  return run.pickedItems.includes(itemId);
+}
+
+/** Marks a route ground item as taken, so it cannot be picked twice. */
+export function markItemPicked(run: RunState, itemId: string): RunState {
+  return isItemPicked(run, itemId)
+    ? run
+    : { ...run, pickedItems: [...run.pickedItems, itemId] };
 }
 
 export function itemCount(run: RunState, itemId: string): number {

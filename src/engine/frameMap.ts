@@ -280,5 +280,6 @@ export function routeFromFrameMapExport(exported: FrameMapExport): RouteMap {
     spine: [],
     branches: [],
     pockets: [],
+    items: [],
   };
 }

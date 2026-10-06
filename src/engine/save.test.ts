@@ -248,13 +248,22 @@ describe('run validation', () => {
     expect(decoded.run).toBeNull();
   });
 
-  it('defaults the flags and filters the trainer marks', () => {
+  it('defaults the flags and filters the trainer and item marks', () => {
     const run = sampleRun();
     const decoded = document(
-      JSON.stringify({ version: SAVE_VERSION, run: { ...run, captureUsed: 'yes', defeatedTrainers: ['a', 4, null] } }),
+      JSON.stringify({
+        version: SAVE_VERSION,
+        run: {
+          ...run,
+          captureUsed: 'yes',
+          defeatedTrainers: ['a', 4, null],
+          pickedItems: ['item-1-0', 7, null],
+        },
+      }),
     );
     expect(decoded.run?.captureUsed).toBe(false);
     expect(decoded.run?.defeatedTrainers).toEqual(['a']);
+    expect(decoded.run?.pickedItems).toEqual(['item-1-0']);
   });
 
   it('keeps a valid run whole, box and all', () => {

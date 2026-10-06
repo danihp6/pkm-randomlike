@@ -3,9 +3,10 @@
 > Design blueprint, not code. Live behaviour is `docs/routes-spec.md` and the
 > pure implementation is `src/engine/routes/`. This file is the agreed **target**
 > algorithm so the next iteration has one place to build from.
-> Status: the terrain pass (tall grass, ledges) is **on**; trainers and ground
-> items are still turned off (`docs/routes-spec.md` §2). The population passes
-> below are the plan to bring them back, not what runs today.
+> Status: the terrain pass (tall grass, ledges) and the **ground-item** population
+> are **on**; trainers are still turned off (`docs/routes-spec.md` §2). `PlaceItems`
+> below runs today (one item per pocket, no `count`); `PlaceTrainers` is still the
+> plan, not what runs.
 
 ## 0. Inputs and determinism
 
@@ -112,7 +113,7 @@ reachable: Set<Point>               # FloodFill(tiles, entry), computed after te
 | `grassPatches`, `ledges` | `src/data/biomes.ts` | terrain flavour (base counts) |
 | map-size tiers (`small`/`medium`/`large`: terrain scale, branch bonus) | `src/data/mapSize.ts` | terrain multiplier and extra optional paths as the map grows |
 | `trainerSize`, `minLevel`, `maxLevel` | `src/data/run.ts` | population and levels |
-| loot `count` / `pool` | `src/data/loot.ts` | item contents |
+| loot `pool` / `hiddenChance` | `src/data/loot.ts` | item contents and how often one hides |
 | encounter table | `src/data/encounters.ts` | wild species |
 
 Balancing must never require touching `sketch.ts`.
@@ -149,10 +150,10 @@ BuildRoute(routeIndex, rngs):
     CarveLedges(tiles, biome.terrain.ledges * terrainScale, rngs.terrain, forbid = spine)
     # Water is decoration (D18), not a generator terrain pass.
 
-    # 5. Population (counts from the band; off the spine and the ends)
+    # 5. Population (items off the spine; trainers still off)
     reachable = FloodFill(tiles, entry)
     trainers  = PlaceTrainers(tiles, reachable, spine, band, rngs.populate)
-    items     = PlaceItems(tiles, reachable, pockets, band, rngs.populate)
+    items     = PlaceItems(tiles, reachable, pockets, band, rngs.populate, hiddenChance)
 
     # 6. Decoration (cosmetic; variant indices only, no collision)
     #    The renderer resolves the look from (x, y, routeIndex) - D18.
@@ -317,21 +318,23 @@ battle, and every trainer is a choice (and, later, a reward).
 ### 3.5 PlaceItems
 
 ```
-PlaceItems(tiles, reachable, pockets, band, rng):
+PlaceItems(tiles, reachable, pockets, band, rng, hiddenChance):
     items = []
-    pocketSlots = (pockets ∩ reachable) - occupied
-    otherSlots  = reachable - spine - {entry} - exits - trainerTiles
-    for i in 0 .. band.loot.count:
-        pos = PopRandom(pocketSlots) or PopRandom(otherSlots)
-        if pos is null: break
-        itemId = PickWeighted(band.loot.pool, rng)
-        items += { id = "item-<routeIndex>-<i>", pos, itemId }
+    for pos in pockets:                     # one item per optional path
+        if pos not in reachable or not walkable: continue
+        itemId = PickWeighted(band.pool, rng)
+        hidden = rng.next() < hiddenChance
+        items += { id = "item-<routeIndex>-<n>", pos, itemId, hidden }
     return items
 ```
 
-Items are placed **after** terrain, on cells that flood-fill proved reachable, so
-a hazard that sealed a pocket simply makes it hold nothing instead of stranding
-loot.
+Items are placed **after** terrain, on the pockets that flood-fill proved
+reachable, so a hazard that sealed a pocket simply makes it hold nothing instead
+of stranding loot. Because a route carves more optional paths as the map grows
+(`BranchBonusForSize`), the number of items follows the route's **size** rather
+than its band; the band only decides the contents (`ROUTE_LOOT`). A pocket is kept
+clear of tall grass and ledges, so an item never lands on grass. The caller may
+pass no pool (tests, the debug stepper): then the route holds no items.
 
 ### 3.6 Decoration
 

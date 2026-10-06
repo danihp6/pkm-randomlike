@@ -31,7 +31,9 @@ describe('actionForKey', () => {
     expect(actionForKey(DEFAULT_KEYBINDS, 'Z')).toBe('confirm');
     expect(actionForKey(DEFAULT_KEYBINDS, 'X')).toBe('cancel');
     expect(actionForKey(DEFAULT_KEYBINDS, 'UP')).toBe('up');
-    expect(actionForKey(DEFAULT_KEYBINDS, 'P')).toBe('party');
+    expect(actionForKey(DEFAULT_KEYBINDS, 'E')).toBe('interact');
+    expect(actionForKey(DEFAULT_KEYBINDS, 'I')).toBe('hud');
+    expect(actionForKey(DEFAULT_KEYBINDS, 'P')).toBeNull();
     expect(actionForKey(DEFAULT_KEYBINDS, 'O')).toBe('settings');
   });
 

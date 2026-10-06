@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { biomeForRoute } from '../data/biomes';
 import { getSpecies } from '../data/dex';
+import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { getItem } from '../data/items';
 import { keyLabel } from '../data/keybinds';
@@ -12,6 +13,7 @@ import {
   type PlayerFacing,
 } from '../data/playerSprite';
 import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
+import { ROUTE_LOOT } from '../data/loot';
 import { bandForRoute } from '../data/run';
 import { DEBUG_MENU_TOGGLE_KEY, IS_DEVELOP } from '../dev/env';
 import type { DebugRouteContext, DebugRouteInput } from '../dev/debugMenu';
@@ -26,6 +28,8 @@ import {
   createRunPokemon,
   equipHeldItem,
   hasLivingParty,
+  isItemPicked,
+  markItemPicked,
   resolveBattle,
   unequipHeldItem,
   type BagCounts,
@@ -44,8 +48,8 @@ import {
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
 import { FLOOR, TALL_GRASS, resolveMove, tileAt, type TileMap } from '../engine/map';
-import { hashSeed, Rng } from '../engine/rng';
-import { storeRun, type Settings } from '../engine/save';
+import { hashSeed, randomSeed, Rng } from '../engine/rng';
+import { clearRun, storeRun, type Settings } from '../engine/save';
 import {
   DEFAULT_SHAPE,
   ROUTE_HEIGHT,
@@ -53,6 +57,7 @@ import {
   RouteEncounters,
   sketchRoute,
   sketchRouteSteps,
+  type RouteItem,
   type RouteMap,
   type RouteShape,
   type RouteStep,
@@ -88,7 +93,7 @@ import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
-import { GRASS_TEXTURE_KEY } from './BootScene';
+import { GRASS_TEXTURE_KEY, SPARKLE_TEXTURE_KEY } from './BootScene';
 
 /** Item stacks the route HUD's bag window shows before it drops the rest. */
 const HUD_BAG_ROWS = 6;
@@ -148,6 +153,11 @@ type MoveKey = 'up' | 'down' | 'left' | 'right';
 const WALK_STEP_MS = 200;
 const RUN_STEP_MS = 110;
 
+/** Hold the reset key this long to start a fresh run: a filling ring + a fade. */
+const RESET_HOLD_MS = 1600;
+const RESET_RADIUS = 22;
+const RESET_FADE_IN_MS = 260;
+
 const MOVE_STEP: Readonly<Record<MoveKey, Tile>> = {
   up: { x: 0, y: -1 },
   down: { x: 0, y: 1 },
@@ -204,6 +214,8 @@ export class RouteScene extends Phaser.Scene {
   private tileSprites: Phaser.GameObjects.Image[][][] = [];
   /** Tall-grass overlays and any future entities, so a rebuild can clear them. */
   private entitySprites: Phaser.GameObjects.GameObject[] = [];
+  /** The ground items on screen, so a pickup can hide one and a rebuild clear all. */
+  private itemSprites: { item: RouteItem; sprite: Phaser.GameObjects.Image }[] = [];
   /** The inputs behind the route on screen; the debug reroll rebuilds from it. */
   private routeParams!: RouteParams;
   private run!: RunState;
@@ -224,8 +236,15 @@ export class RouteScene extends Phaser.Scene {
   private moveKeys!: Record<MoveKey, Phaser.Input.Keyboard.Key | null>;
   /** The run key; held while walking, it speeds the step and the walk cycle. */
   private runKey: Phaser.Input.Keyboard.Key | null = null;
+  /** Hold-to-reset: the key, the progress toward restarting and the overlay. */
+  private resetKey: Phaser.Input.Keyboard.Key | null = null;
+  private resetHold = 0;
+  private resetScrim!: Phaser.GameObjects.Rectangle;
+  private resetRing!: Phaser.GameObjects.Graphics;
   /** The direction the player faces, for the idle frame and the walk cycle. */
   private facing: PlayerFacing = 'down';
+  /** The last cardinal the player faced, so the interact key can look ahead. */
+  private facingDir: MoveKey = 'down';
   /** The in-flight step, while the sprite slides from one tile to the next. */
   private walkTween: Phaser.Tweens.Tween | null = null;
   private hint!: Phaser.GameObjects.BitmapText;
@@ -325,6 +344,7 @@ export class RouteScene extends Phaser.Scene {
     this.routeParams = params;
     const pattern = TILESETS[biome.tilesetId].config.wallPattern;
     const wall = pattern ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) } : undefined;
+    const loot = ROUTE_LOOT[bandForRoute(params.routeIndex).id];
     const request = {
       seed,
       routeIndex: params.routeIndex,
@@ -335,6 +355,8 @@ export class RouteScene extends Phaser.Scene {
       height: params.height,
       grassPatches: params.grassPatches,
       ledges: params.ledges,
+      loot: loot.pool,
+      hiddenChance: loot.hiddenChance,
       ...(wall ? { wall } : {}),
     };
     const route = sketchRoute(request);
@@ -386,6 +408,7 @@ export class RouteScene extends Phaser.Scene {
     this.releaseArmed = false;
     this.facing = 'down';
     this.walkTween = null;
+    this.resetHold = 0;
     this.settings = loadSettings();
 
     const routeIndex = this.run.routeIndex;
@@ -402,6 +425,7 @@ export class RouteScene extends Phaser.Scene {
 
     this.drawTiles();
     this.drawEntities();
+    this.drawItems();
     this.player = { ...this.route.entry };
     this.playerSprite = this.add
       .sprite(0, 0, PLAYER_SPRITE_TEXTURE_KEY, playerSpriteFrame('down'))
@@ -436,7 +460,9 @@ export class RouteScene extends Phaser.Scene {
           case 'confirm':
             if (this.releaseRoot && this.releaseArmed) this.advanceRelease();
             return;
-          case 'party':
+          case 'interact':
+            this.tryInteract();
+            return;
           case 'hud':
             this.toggleHud();
             return;
@@ -478,6 +504,7 @@ export class RouteScene extends Phaser.Scene {
     );
     this.buildHud();
     this.setupHudCamera();
+    this.buildResetOverlay();
     this.hint.setDepth(200);
     this.setHint(this.defaultHint());
     this.refreshHud();
@@ -489,12 +516,13 @@ export class RouteScene extends Phaser.Scene {
       actionKeys(this, action, this.settings.keybinds)[0] ?? null;
     this.moveKeys = { up: bind('up'), down: bind('down'), left: bind('left'), right: bind('right') };
     this.runKey = actionKeys(this, 'run', this.settings.keybinds)[0] ?? null;
+    this.resetKey = actionKeys(this, 'reset', this.settings.keybinds)[0] ?? null;
   }
 
   /** The resting line, spelled with whatever keys the player has bound. */
   private defaultHint(): string {
-    const { up, down, left, right, run, party, hud, settings } = this.settings.keybinds;
-    return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   hold ${keyLabel(run)} run   ·   ${keyLabel(party)} party   ·   ${keyLabel(hud)} HUD   ·   ${keyLabel(settings)} settings`;
+    const { up, down, left, right, run, interact, hud, settings } = this.settings.keybinds;
+    return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   hold ${keyLabel(run)} run   ·   ${keyLabel(interact)} interact   ·   ${keyLabel(hud)} HUD   ·   ${keyLabel(settings)} settings`;
   }
 
   /**
@@ -1136,6 +1164,95 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
+   * The hold-to-reset overlay: a full-screen scrim that fades the whole screen
+   * out and a small ring that fills. Screen-space, built after the HUD camera
+   * exists, so the world camera ignores it and only the pinned camera draws it.
+   */
+  private buildResetOverlay(): void {
+    const { width, height } = this.scale;
+    this.resetScrim = this.add
+      .rectangle(0, 0, width, height, 0x05070c, 0)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(400);
+    this.resetRing = this.add.graphics().setScrollFactor(0).setDepth(401);
+    this.cameras.main.ignore([this.resetScrim, this.resetRing]);
+  }
+
+  /** Advances the hold-to-reset progress while the key is down, or fades back in. */
+  private updateReset(delta: number): void {
+    const allowed =
+      !this.gameOver &&
+      !this.pendingBattle &&
+      !this.releaseRoot &&
+      !this.hudVisible &&
+      this.resetKey?.isDown === true;
+    if (!allowed) {
+      if (this.resetHold !== 0) {
+        this.resetHold = 0;
+        this.fadeResetOverlayIn();
+      }
+      return;
+    }
+    this.resetHold = Math.min(RESET_HOLD_MS, this.resetHold + delta);
+    const progress = this.resetHold / RESET_HOLD_MS;
+    this.drawResetOverlay(progress);
+    if (progress >= 1) this.restartRun();
+  }
+
+  /** Paints the screen fade-out and the small pie that fills as the hold advances. */
+  private drawResetOverlay(progress: number): void {
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+    this.tweens.killTweensOf(this.resetScrim);
+    this.tweens.killTweensOf(this.resetRing);
+    this.resetScrim.setAlpha(progress).setVisible(true);
+    this.resetRing.clear();
+    this.resetRing.fillStyle(0x10161f, 0.5).fillCircle(cx, cy, RESET_RADIUS);
+    this.resetRing.fillStyle(0xf2c14e, 0.9);
+    this.resetRing.slice(
+      cx,
+      cy,
+      RESET_RADIUS,
+      Phaser.Math.DegToRad(-90),
+      Phaser.Math.DegToRad(-90 + progress * 360),
+      false,
+    );
+    this.resetRing.fillPath();
+    this.resetRing.lineStyle(2, 0xffffff, 0.5).strokeCircle(cx, cy, RESET_RADIUS);
+    this.resetRing.setAlpha(1);
+  }
+
+  /** Releasing the key fades the dark scrim and the ring back out. */
+  private fadeResetOverlayIn(): void {
+    this.tweens.killTweensOf([this.resetScrim, this.resetRing]);
+    this.tweens.add({
+      targets: [this.resetScrim, this.resetRing],
+      alpha: 0,
+      duration: RESET_FADE_IN_MS,
+      ease: 'Quad.easeOut',
+      onComplete: () => {
+        this.resetRing.clear();
+        this.resetScrim.setAlpha(0);
+      },
+    });
+  }
+
+  private hideResetOverlay(): void {
+    this.tweens.killTweensOf([this.resetScrim, this.resetRing]);
+    this.resetRing.clear();
+    this.resetScrim.setAlpha(0);
+  }
+
+  /** Starts a brand-new run with a fresh seed (nothing carries over). */
+  private restartRun(): void {
+    this.resetHold = 0;
+    this.hideResetOverlay();
+    clearRun(browserStorage());
+    this.scene.start('Starter', { seed: randomSeed() });
+  }
+
+  /**
    * A tile's display scale so every atlas lands on the same `TILE_SIZE` world
    * cell: the biome sheet's own cell (`D18`) or the 24px common sheet.
    */
@@ -1236,6 +1353,46 @@ export class RouteScene extends Phaser.Scene {
     this.hudCamera?.ignore(created);
   }
 
+  /**
+   * Draws the ground items on the route's pockets. A visible item is the FRLG
+   * Poke Ball, like the originals; a hidden one is a faint sparkle that only
+   * gives itself away up close. Items already taken stay hidden. Only the live
+   * route has items, so a dev generator phase draws none.
+   */
+  private drawItems(): void {
+    if (this.generatorStepIndex !== null) return;
+    const created: Phaser.GameObjects.GameObject[] = [];
+    for (const item of this.route.items) {
+      const taken = isItemPicked(this.run, item.id);
+      const sprite = item.hidden
+        ? this.add
+            .image(this.centerX(item.position.x), this.centerY(item.position.y), SPARKLE_TEXTURE_KEY)
+            .setScale(1.1)
+            .setAlpha(taken ? 0 : 0.55)
+            .setTint(0xfff3b0)
+            .setDepth(5)
+        : this.add
+            .image(this.centerX(item.position.x), this.centerY(item.position.y), GROUND_ITEM_TEXTURE_KEY)
+            .setScale(1.5)
+            .setVisible(!taken)
+            .setDepth(5);
+      if (item.hidden && !taken) {
+        // A slow, shallow shimmer so it reads as a glint, not a beacon.
+        this.tweens.add({
+          targets: sprite,
+          alpha: { from: 0.3, to: 0.7 },
+          duration: 900,
+          yoyo: true,
+          repeat: -1,
+        });
+      }
+      this.itemSprites.push({ item, sprite });
+      this.entitySprites.push(sprite);
+      created.push(sprite);
+    }
+    this.hudCamera?.ignore(created);
+  }
+
   /** A route tile's centre in world pixels. */
   private centerX(tileX: number): number {
     return tileX * TILE_SIZE + TILE_SIZE / 2;
@@ -1255,6 +1412,7 @@ export class RouteScene extends Phaser.Scene {
     this.moveMap = this.movementMap(this.map);
     this.drawTiles();
     this.drawEntities();
+    this.drawItems();
     this.setHint(`tileset: ${TILESETS[id].name}`);
   }
 
@@ -1268,6 +1426,7 @@ export class RouteScene extends Phaser.Scene {
 
   /** Turns the sprite to face a direction, flipping the left-facing side frame. */
   private face(direction: MoveKey): void {
+    this.facingDir = direction;
     this.facing = direction === 'up' ? 'up' : direction === 'down' ? 'down' : 'side';
     this.playerSprite.setFlipX(direction === 'right');
   }
@@ -1323,6 +1482,50 @@ export class RouteScene extends Phaser.Scene {
       }
     }
     this.setHint(this.defaultHint());
+  }
+
+  /**
+   * The interact key (`E` by default): take the ground item the player faces, or
+   * the one underfoot. Hidden items show only a faint sparkle, so this is how
+   * they are found. Ignored while the HUD, a battle or a beat owns the screen.
+   */
+  private tryInteract(): void {
+    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.hudVisible) return;
+    const step = MOVE_STEP[this.facingDir];
+    const ahead = { x: this.player.x + step.x, y: this.player.y + step.y };
+    if (!this.collectItemAt(ahead)) this.collectItemAt(this.player);
+  }
+
+  /** True when an unpicked ground item occupies `tile`, so movement is blocked. */
+  private itemBlocks(tile: Tile): boolean {
+    return this.route.items.some(
+      (item) =>
+        item.position.x === tile.x &&
+        item.position.y === tile.y &&
+        !isItemPicked(this.run, item.id),
+    );
+  }
+
+  /** Takes the unpicked ground item on `tile`, saving it to the run's bag. */
+  private collectItemAt(tile: Tile): boolean {
+    const item = this.route.items.find(
+      (candidate) =>
+        candidate.position.x === tile.x &&
+        candidate.position.y === tile.y &&
+        !isItemPicked(this.run, candidate.id),
+    );
+    if (!item) return false;
+    this.run = markItemPicked(addItem(this.run, item.itemId), item.id);
+    this.persistRun();
+    const sprite = this.itemSprites.find((entry) => entry.item.id === item.id);
+    if (sprite) {
+      this.tweens.killTweensOf(sprite.sprite);
+      sprite.sprite.setVisible(false).setAlpha(0);
+    }
+    this.refreshHud();
+    const name = getItem(item.itemId)?.name ?? item.itemId;
+    this.setHint(`You found ${name}!`);
+    return true;
   }
 
   /** Opens the settings screen paused-on-top, like a battle (`O`). */
@@ -1566,8 +1769,10 @@ export class RouteScene extends Phaser.Scene {
       }
     }
     this.tileSprites = [];
+    for (const entry of this.itemSprites) this.tweens.killTweensOf(entry.sprite);
     for (const sprite of this.entitySprites) sprite.destroy();
     this.entitySprites = [];
+    this.itemSprites = [];
     this.clearHoverInspect();
   }
 
@@ -1722,6 +1927,7 @@ export class RouteScene extends Phaser.Scene {
     this.buildRoute(params, attempt);
     this.drawTiles();
     this.drawEntities();
+    this.drawItems();
     this.player = { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
@@ -1769,6 +1975,7 @@ export class RouteScene extends Phaser.Scene {
     };
     this.drawTiles();
     this.drawEntities();
+    this.drawItems();
     this.player = { ...route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
@@ -1778,11 +1985,14 @@ export class RouteScene extends Phaser.Scene {
 
   private setHint(text: string): void {
     const dev = IS_DEVELOP ? `  ·  B: random battle  ·  ${DEBUG_MENU_TOGGLE_KEY}: debug menu` : '';
-    const { party, hud } = this.settings.keybinds;
-    this.hint.setText(`${text}\nArrows: move  ·  ${keyLabel(party)}/${keyLabel(hud)}: HUD (party/PC)${dev}`);
+    const { hud } = this.settings.keybinds;
+    this.hint.setText(`${text}\nArrows: move  ·  ${keyLabel(hud)}: HUD (party/PC)${dev}`);
   }
 
-  override update(): void {
+  override update(_time: number, delta: number): void {
+    // The hold-to-reset runs whatever the route is doing (a battle pauses the
+    // scene, so it never fires behind another screen).
+    this.updateReset(delta);
     if (this.gameOver || this.pendingBattle || this.releaseRoot) {
       this.settleMovement();
       return;
@@ -1802,7 +2012,9 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     const result = resolveMove(this.moveMap, this.player, step);
-    if (!result) {
+    // A ground item blocks its tile, like an object in the originals: it is taken
+    // with the interact key, never by walking over it.
+    if (!result || this.itemBlocks(result.to)) {
       this.faceIdle(direction);
       return;
     }

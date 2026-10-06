@@ -246,6 +246,64 @@ describe('sketchRoute', () => {
     expect(totalPockets).toBeGreaterThan(0);
   }, 15_000);
 
+  it('places one item at each reachable pocket, with stable ids and a hidden flag', () => {
+    const loot = [
+      { itemId: 'potion', weight: 1 },
+      { itemId: 'pokeball', weight: 1 },
+    ];
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['item-a', 'item-b', 'item-c']) {
+        const build = () =>
+          sketchRoute({ ...request(seed, 2, shape), width: 30, height: 30, loot, hiddenChance: 0.5 });
+        const route = build();
+        expect(route.items.length, `${shape} ${seed} items`).toBeGreaterThan(0);
+        const reached = reachableTiles(route.tiles, route.entry);
+        const pocketKeys = new Set(route.pockets.map((tile) => `${tile.x},${tile.y}`));
+        const seen = new Set<string>();
+        route.items.forEach((item, i) => {
+          const key = `${item.position.x},${item.position.y}`;
+          expect(item.id, `${shape} ${seed} id`).toBe(`item-2-${i}`);
+          expect(pocketKeys.has(key), `${shape} ${seed} item ${key} on a pocket`).toBe(true);
+          expect(reached.has(key), `${shape} ${seed} item ${key} reachable`).toBe(true);
+          expect(['potion', 'pokeball']).toContain(item.itemId);
+          expect(typeof item.hidden).toBe('boolean');
+          expect(seen.has(key), `${shape} ${seed} item ${key} unique`).toBe(false);
+          seen.add(key);
+        });
+        // Same seed and inputs: byte-identical items (D11).
+        expect(build().items).toEqual(route.items);
+      }
+    }
+  }, 20_000);
+
+  it('places no items without a loot pool', () => {
+    expect(sketchRoute(request('no-loot', 2, 'cross')).items).toEqual([]);
+  });
+
+  it('never places an item on tall grass: the pockets stay clear', () => {
+    const loot = [{ itemId: 'potion', weight: 1 }];
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['item-grass-a', 'item-grass-b']) {
+        const route = sketchRoute({
+          ...request(seed, 1, shape),
+          width: 30,
+          height: 30,
+          grassPatches: 12,
+          loot,
+        });
+        for (const pocket of route.pockets) {
+          expect(route.tiles[pocket.y][pocket.x], `${shape} ${seed} pocket grass`).not.toBe(TALL_GRASS);
+        }
+        for (const item of route.items) {
+          expect(
+            route.tiles[item.position.y][item.position.x],
+            `${shape} ${seed} item grass`,
+          ).not.toBe(TALL_GRASS);
+        }
+      }
+    }
+  }, 20_000);
+
   it('keeps every branch inside the border', () => {
     for (const shape of ROUTE_SHAPES) {
       for (const seed of ['branch-edge-a', 'branch-edge-b']) {
@@ -368,6 +426,7 @@ describe('sketchRoute', () => {
         'branches',
         'clean',
         'terrain',
+        'items',
         'final',
       ]);
       expect(steps[0].tiles.every((row) => row.every((value) => value === WALL))).toBe(true);

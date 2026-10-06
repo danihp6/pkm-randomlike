@@ -8,6 +8,33 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] Routes hold **ground items** again, one at the far end of each optional path
+      (a `pocket`). The number follows the route's **size** (a bigger map carves
+      more branches, `MAP_SIZE_TIERS`); the contents come from the level band's
+      weighted pool (`ROUTE_LOOT` in the restored `src/data/loot.ts`) drawn on the
+      `populate` stream, with a per-band `hiddenChance`. A hidden item shows a
+      faint, shimmering sparkle instead of a Poke Ball. `RouteMap.items` carries
+      stable ids (`item-<routeIndex>-<n>`); a pocket a hazard sealed is skipped and
+      no pocket may hold tall grass or a ledge, so an item never spawns on grass.
+      An item **blocks its tile** while it is there and is taken with the new
+      **interact** key (`E`) facing it, adding it to the bag and marking it in
+      `RunState.pickedItems` (reset on advance, so a reload does not respawn it).
+      The visible sprite is the FRLG field Poke Ball (`frlg/ground-item.png`,
+      cropped by `scripts/frlg/build-field-items.mjs` from the standalone ball on
+      the Hoeloo compilation). `docs/routes-spec.md`, `docs/route-generator.md`,
+      `docs/art-direction.md`, `src/assets/README.md` updated.
+- [x] Keybinds: **P is gone** (the HUD key `I` already opens the same party/PC
+      overlay) and two actions are new: **interact** (`E`, ground items) and
+      **reset** (`R`, below). The dev debug menu moved from `E` to `F` so it no
+      longer clashes with interact.
+- [x] **Hold-to-reset**: holding the reset key (`R`) fades the whole screen out
+      under a small ring that fills; releasing early fades it back in, and filling
+      it clears the save and starts a fresh run with a new seed
+      (`RouteScene.updateReset`).
+- [x] The starter screen picks with the **mouse**: a card is a click target, so
+      hovering highlights it and clicking chooses that starter (`StarterScene`),
+      beside the existing keyboard selection.
+
 - [x] **Equip held items by dragging**: the route HUD's bag lets you pick up an
       `equipment` stack and drop it on a party row or a PC box cell to give the
       member that item; whatever it already held returns to the bag, so an equip
