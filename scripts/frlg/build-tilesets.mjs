@@ -213,8 +213,9 @@ function keyBackground(over, fill, bg) {
  * below lands on the lower leaves of the tree above and its body hides that tree's
  * trunk; only the mass's foot shows the trunk platform. `ledge` is `{ left,
  * center, right }`, the three-source-cell run the ledge draws. `tallGrass` is the
- * tufted grass ground tile the walkable patches stamp, drawn whole with its own
- * ground.
+ * tufted grass tile the walkable patches stamp. The grass blades and the ledge
+ * lip are drawn on the field's own floor (`overFill`), so a dark-ground field
+ * (the forest) gets them on that ground instead of the sheet's light one.
  */
 function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = [10, 0] }) {
   stamp(atlas, FRAME_FLOOR, floor[0], floor[1])
@@ -225,7 +226,6 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = 
 
   const [top, body, lower, base] = wall
   const floorTile = sourceTile(floor[0], floor[1])
-  const floorCell = (c, r) => compositeOver(sourceTile(c, r), floorTile)
   // The whole wall bank is drawn on one flat ground colour; sample it from the
   // crown, not per tile (a body row's corner pixel is a leaf, not the ground).
   const crown = sourceTile(top[0][0], top[0][1])
@@ -252,10 +252,13 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = 
   FRAME_WALL_BASE.forEach((frame, i) => stampTile(atlas, frame, overNone(base[i])))
 
   stampBlock(atlas, WATER_TUPLE, water[0], water[1])
-  if (tallGrass) stamp(atlas, FRAME_TALL_GRASS, tallGrass[0], tallGrass[1])
-  stampTile(atlas, FRAME_LEDGE_LEFT, floorCell(ledge.left[0], ledge.left[1]))
-  stampTile(atlas, FRAME_LEDGE, floorCell(ledge.center[0], ledge.center[1]))
-  stampTile(atlas, FRAME_LEDGE_RIGHT, floorCell(ledge.right[0], ledge.right[1]))
+  // The grass tuft and the ledge lip keep the field's own ground: their sheet
+  // background is keyed off and filled with the floor, so a dark-ground field
+  // (the forest) shows them on that ground, not the sheet's light grass.
+  if (tallGrass) stampTile(atlas, FRAME_TALL_GRASS, overFill(tallGrass, floor))
+  stampTile(atlas, FRAME_LEDGE_LEFT, overFill(ledge.left, floor))
+  stampTile(atlas, FRAME_LEDGE, overFill(ledge.center, floor))
+  stampTile(atlas, FRAME_LEDGE_RIGHT, overFill(ledge.right, floor))
 }
 
 /**
@@ -303,10 +306,14 @@ function outdoorFrames(atlas) {
   })
 }
 
-/** Forest: Viridian Forest light grass under the same dense tree border. */
+/**
+ * Forest: Viridian Forest's darker ground (`0,34`, the tone the tree bank is
+ * drawn on) under the same dense tree border. The floor variants keep the sheet's
+ * lighter grass and are unused by `FRLG_TILESET` (`FLOOR_CLEAN`).
+ */
 function forestFrames(atlas) {
   fieldFrames(atlas, {
-    floor: [6, 1],
+    floor: [0, 34],
     floorAlts: [
       [6, 0],
       [1, 3],

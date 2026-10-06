@@ -32,9 +32,9 @@ export const FRLG_OUTDOOR_PALETTE: Palette = {
   6: '#5aa0d8',
 };
 
-/** FRLG forest: light grass under a dense dark-canopy border. */
+/** FRLG forest: the darker forest ground under a dense dark-canopy border. */
 export const FRLG_FOREST_PALETTE: Palette = {
-  0: '#bbd896',
+  0: '#58a080',
   1: '#3f7a45',
   2: '#94a3b8',
   3: '#f87171',

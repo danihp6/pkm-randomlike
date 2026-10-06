@@ -119,8 +119,10 @@ most useful first:
       lanes have served their purpose; the biome terrain passes are on again
       (Phase 2 step 5). Generator logic tracked in Phase 2 steps 6-8.
 
-- [ ] **FRLG ground vs path.** The base floor now matches the game's ground colour
-      (`rgb(112,200,160)`, sheet tile `6,1`), but the lighter tiles (`2,3`, `1,3`,
+- [ ] **FRLG ground vs path.** The outdoor base floor matches the game's ground
+      colour (`rgb(112,200,160)`, sheet tile `6,1`) and the forest uses its darker
+      ground (`rgb(88,160,128)`, sheet tile `0,34`, the tone the tree bank is drawn
+      on). The lighter tiles (`2,3`, `1,3`,
       `1,4`, `2,4`) are a separate grass and the tan `2,0` is the route path.
       Decide which is ground, which is the path and which is decoration, and give
       the generator a real path to draw through a route (the current routes are

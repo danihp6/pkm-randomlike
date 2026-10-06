@@ -39,8 +39,12 @@ Every biome ships two images:
   its centre and frames `3`/`4` its left/right caps (`FRLG_LEDGE_LEFT`/
   `FRLG_LEDGE_RIGHT`), which the field sheet leaves free (it draws the stair/trap
   slots from the common atlas). Frame `5` is the tall-grass ground
-  (`FRLG_TALL_GRASS`), stamped whole from the denser tufted grass (source `7,0`),
-  so a grass patch reads apart from the plain floor.
+  (`FRLG_TALL_GRASS`), stamped whole from the denser tufted grass (source `7,0`).
+  The grass tuft and the ledge lip are re-grounded onto the field's own floor
+  (`overFill` keys their light sheet background and fills it with the floor), and
+  each FRLG field picks that floor: outdoor `6,1` (`rgb(112,200,160)`), forest the
+  darker `0,34` (`rgb(88,160,128)`, the tone the tree bank is drawn on) and cave
+  the rock `2,24`.
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
   biome, for the tiles that mean the same thing everywhere: trap, chest, item,
   carpet (and a stair slot that no map value maps to while the route `EXIT` art
