@@ -51,17 +51,14 @@ floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
       line-of-sight module (`src/engine/routes/trainers.ts`), place trainers off
       the spine with a facing, sight and archetype, and keep a trainer-free
       entry→every-exit path. Tests: every trainer is avoidable, `seesPlayer` works.
-- [ ] **Step 7 — Ground items and loot.** Restore `src/data/loot.ts` (per-band
-      `count` + weighted pool); place items at pockets first, then free slots,
-      with stable ids and never on entry/exit. Tests: determinism, reachability.
 - [ ] **Step 8 — Validation hardening.** Grow `validateRoute` to the full
       checklist (every exit, trainer-free path, items, clean spine, pockets,
       border) and reroll within `BUILD_ATTEMPTS` before throwing. Fixed-seed tests
       per shape.
-- [ ] **Step 9 — Scene wiring.** Draw trainers and items again in
-      `src/scenes/RouteScene.ts`, restore the line-of-sight trigger, item pickup
-      and the HUD hint, make **any exit** end the route, and keep the tall-grass
-      encounter roll. Smoke test.
+- [ ] **Step 9 — Scene wiring (trainers).** Draw trainers and restore the
+      line-of-sight trigger in `src/scenes/RouteScene.ts`, make **any exit** end
+      the route, and keep the tall-grass encounter roll. Ground items (draw,
+      interact pickup, HUD hint) already ship.
 - [ ] **Step 10 — Docs pass.** Update `docs/routes-spec.md` and `AGENTS.md` to the
       shipped algorithm, mark `docs/route-generator.md` implemented and archive
       these steps in `CHANGELOG.md`.

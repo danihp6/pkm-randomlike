@@ -2,9 +2,19 @@ import type { Tile } from '../grid';
 import type { TileMap } from '../map';
 import type { RouteShape } from './layout';
 
+/** A ground item placed at the far end of an optional path (a `pocket`). */
+export type RouteItem = Readonly<{
+  /** Stable across a route rebuild: `item-<routeIndex>-<i>` (D11). */
+  id: string;
+  position: Tile;
+  itemId: string;
+  /** Hidden items draw as a faint sparkle instead of a Poke Ball. */
+  hidden: boolean;
+}>;
+
 /**
  * A generated route, complete enough that the scene never re-derives it: the
- * tiles, the entry and every exit.
+ * tiles, the entry, every exit and the ground items.
  */
 export type RouteMap = Readonly<{
   seed: string;
@@ -25,6 +35,8 @@ export type RouteMap = Readonly<{
   branches: readonly Tile[];
   /** Terminal tiles of the branch lanes - the loot spots. */
   pockets: readonly Tile[];
+  /** One ground item per optional path, at its pocket. */
+  items: readonly RouteItem[];
 }>;
 
 export function tileKey(tile: Tile): string {

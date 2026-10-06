@@ -75,7 +75,17 @@ camera follow), containing:
    outside its left or right cap is wall), so it reads as a lip on the terrain
    instead of a rock floating in open floor. Grass is walkable; a ledge only gives
    way downward. Water is decoration (`D18`), not a terrain pass.
-4. **Validation pass**: flood-fill from the entry must reach every exit. If it does
+4. **Population (ground items)**: a route places **one item at the far end of each
+   optional path** (a `pocket`), drawn from the level band's weighted loot pool
+   (`ROUTE_LOOT` in `src/data/loot.ts`) on the `populate` stream. A pocket a hazard
+   sealed, or that is no longer walkable, is skipped, so loot is never stranded. The
+   number of items therefore follows the route's **size** (a bigger map carves more
+   optional paths, `MAP_SIZE_TIERS`), not its band. A pocket is kept clear of tall
+   grass (an item never spawns on grass) and of ledges. Each item rolls a
+   **hidden** flag from the band's `hiddenChance`; a hidden item shows a faint
+   sparkle instead of a Poke Ball. Ids are stable (`item-<routeIndex>-<n>`) and the
+   draw order is the deterministic `pockets` order. Trainers are still off.
+5. **Validation pass**: flood-fill from the entry must reach every exit. If it does
    not, reroll from the same seed with the next stream value. This validation is
    what makes the generator safe to call blind.
 
@@ -85,11 +95,11 @@ routeIndex)` fully determines the map and a reroll can never shift an earlier
 attempt. Adding a roll to the terrain pass cannot move the path the layout pass
 already placed.
 
-Routes no longer scatter **trainers** or **ground items**: the population pass
-was removed, so the generated map holds only the carved tiles (spine, branches,
-pockets and the terrain flavour) plus the entry and its exits. The trainer
+Routes scatter **ground items** again, one per optional path (step 4 above), but
+still no **trainers**: the generated map holds the carved tiles (spine, branches,
+pockets and the terrain flavour), the entry, its exits and the items. The trainer
 archetypes (`src/data/trainers.ts`) and the roster builder (`src/engine/run/roster.ts`)
-stay in place, ready for when encounters come back. The target generator, with
+stay in place, ready for when trainers come back. The target generator, with
 pseudocode and a review of the draft, is in `docs/route-generator.md`.
 
 The map size is an input: the default is **20x20** tiles at 24px for now, and the
@@ -163,7 +173,15 @@ restored, no resurrection. The stop no longer opens a screen; the party and the
 PC box are managed from the route HUD (`I` / `P`) at any time, so the player can
 reorder them there and then continue to the next route.
 
-Ground items were removed with the population pass: routes no longer scatter
-loot and `src/data/loot.ts` is gone. The route HUD still shows the run's bag as
-FRLG item icons; how it refills between routes is on hold alongside route
-population.
+Ground items sit on the route's pockets (step 4). A visible item draws the FRLG
+field Poke Ball; a hidden one draws a faint sparkle. An item **blocks its tile**
+while it is there, so it is taken with the **interact key** (`E` by default)
+facing it, never by walking over it: the pickup adds it to the run's bag, marks
+it in `RunState.pickedItems` (so a reload does not respawn it) and shows a hint.
+Picked ids reset when the route advances. The route HUD still shows the run's bag
+as FRLG item icons.
+
+The **reset** key (`R` by default) is a run-level affordance: holding it fades
+the whole screen out under a small filling ring; releasing before it fills fades
+back in, and completing it clears the save and starts a fresh run with a new
+seed.

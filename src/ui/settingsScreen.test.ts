@@ -27,7 +27,8 @@ describe('rows', () => {
       'left',
       'right',
       'run',
-      'party',
+      'interact',
+      'reset',
       'hud',
       'settings',
     ]);
@@ -57,7 +58,7 @@ describe('settingValue', () => {
     expect(settingValue(defaultSettings(), 'confirm')).toBe('Z');
     expect(settingValue(defaultSettings(), 'cancel')).toBe('X');
     expect(settingValue(defaultSettings(), 'up')).toBe('\u2191');
-    expect(settingValue({ ...defaultSettings(), keybinds: { ...DEFAULT_KEYBINDS, party: 'Q' } }, 'party')).toBe('Q');
+    expect(settingValue({ ...defaultSettings(), keybinds: { ...DEFAULT_KEYBINDS, hud: 'Q' } }, 'hud')).toBe('Q');
   });
 });
 

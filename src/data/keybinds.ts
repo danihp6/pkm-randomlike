@@ -14,7 +14,8 @@ export const KEYBIND_ACTIONS = [
   'left',
   'right',
   'run',
-  'party',
+  'interact',
+  'reset',
   'hud',
   'settings',
 ] as const;
@@ -43,7 +44,8 @@ export const DEFAULT_KEYBINDS: Keybinds = {
   left: 'LEFT',
   right: 'RIGHT',
   run: 'SHIFT',
-  party: 'P',
+  interact: 'E',
+  reset: 'R',
   hud: 'I',
   settings: 'O',
 };
@@ -67,7 +69,8 @@ export const KEYBIND_LABELS: Readonly<Record<KeybindAction, string>> = {
   left: 'Left',
   right: 'Right',
   run: 'Run',
-  party: 'Party',
+  interact: 'Interact',
+  reset: 'Reset run',
   hud: 'HUD',
   settings: 'Settings',
 };

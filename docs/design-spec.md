@@ -43,7 +43,8 @@ carries over.
   unequip it). An item in hand is not listed in the bag until it is dropped.
 - You start a run by picking one of three starters drawn from the base forms of
   every evolution line with at least three members (itself plus two others), so
-  every starter has room to grow.
+  every starter has room to grow. The starter cards work with the **mouse**: hover
+  highlights a card and a click picks it, beside the keyboard cursor.
 - One capture per route, the classic way: weaken a wild Pokémon, throw a ball,
   it either clicks or breaks out.
 - **Permadeath:** 0 HP is permanent. `0 HP = lost forever`, no Revive, no

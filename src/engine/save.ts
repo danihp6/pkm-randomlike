@@ -380,6 +380,10 @@ function parseRun(value: unknown): RunState | null {
     ? value.defeatedTrainers.filter((id): id is string => isString(id))
     : [];
 
+  const pickedItems = Array.isArray(value.pickedItems)
+    ? value.pickedItems.filter((id): id is string => isString(id))
+    : [];
+
   return {
     seed: value.seed,
     mode: value.mode,
@@ -389,6 +393,7 @@ function parseRun(value: unknown): RunState | null {
     box: parseMembers(value.box),
     bag,
     defeatedTrainers,
+    pickedItems,
     captureUsed: value.captureUsed === true,
     stats: parseRunStats(value.stats),
   };

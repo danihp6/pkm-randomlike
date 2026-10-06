@@ -117,6 +117,13 @@ the id → icon mapping is authoritative. `scripts/frlg/build-item-icons.mjs`
 packs the icons the run uses into the committed `src/assets/frlg/item-icons.png`
 plus `src/data/frlg/item-icons.json`, read through `src/data/itemIcons.ts`.
 
+The route's **ground-item** sprite is the standalone Poke Ball that sits above the
+right corner of the Pokemon Center on the Hoeloo compilation
+(`sprite-sources/frlg/tileset.png`); `scripts/frlg/build-field-items.mjs` crops it
+to 16x16 and keys the flat background into the committed
+`src/assets/frlg/ground-item.png`, read through `src/data/groundItemSprite.ts`.
+Hidden items draw the procedural sparkle (`BootScene`) instead.
+
 The window chrome comes from the same sheet's HP-bar/menu panel:
 `scripts/frlg/build-battle-ui.mjs` crops and 4x-upscales the light menu window
 (`src/assets/frlg/window.png`), the navy battle message box

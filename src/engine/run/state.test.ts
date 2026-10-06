@@ -12,8 +12,10 @@ import {
   depositToBox,
   equipHeldItem,
   hasLivingParty,
+  isItemPicked,
   isTrainerDefeated,
   itemCount,
+  markItemPicked,
   markTrainerDefeated,
   moveInBox,
   moveInParty,
@@ -34,6 +36,7 @@ describe('createRun', () => {
     expect(run.levelCap).toBe(levelCapForRoute(1));
     expect(run.party).toEqual([starter]);
     expect(run.box).toEqual([]);
+    expect(run.pickedItems).toEqual([]);
     expect(run.captureUsed).toBe(false);
     expect(run.mode).toBe('finite');
     expect(run.stats).toEqual({ catches: 0, casualties: 0 });
@@ -45,11 +48,13 @@ describe('advanceRoute', () => {
     let run = createRun({ seed: 'run-a', starter });
     run = useCapture(run);
     run = markTrainerDefeated(run, 'trainer-1-0');
+    run = markItemPicked(run, 'item-1-0');
     const next = advanceRoute(run);
     expect(next.routeIndex).toBe(2);
     expect(next.levelCap).toBe(levelCapForRoute(2));
     expect(next.captureUsed).toBe(false);
     expect(next.defeatedTrainers).toEqual([]);
+    expect(next.pickedItems).toEqual([]);
     expect(next.party).toBe(run.party);
   });
 });
@@ -150,6 +155,17 @@ describe('capture and trainers', () => {
   it('counts a catch for the run summary', () => {
     const run = createRun({ seed: 'run-a', starter });
     expect(recordCatch(run).stats).toEqual({ catches: 1, casualties: 0 });
+  });
+});
+
+describe('ground items', () => {
+  it('marks a picked item once and reports it', () => {
+    let run = createRun({ seed: 'run-a', starter });
+    expect(isItemPicked(run, 'item-1-0')).toBe(false);
+    run = markItemPicked(run, 'item-1-0');
+    expect(isItemPicked(run, 'item-1-0')).toBe(true);
+    expect(markItemPicked(run, 'item-1-0')).toBe(run);
+    expect(run.pickedItems).toEqual(['item-1-0']);
   });
 });
 

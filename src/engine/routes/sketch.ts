@@ -1,3 +1,4 @@
+import type { LootEntry } from '../../data/loot';
 import { branchCountForSize, terrainScaleForSize } from '../../data/mapSize';
 import type { Tile } from '../grid';
 import {
@@ -10,7 +11,8 @@ import {
 } from '../map';
 import { findPath } from '../pathfinding';
 import { Rng } from '../rng';
-import { tileKey, type RouteMap } from './routeMap';
+import { pickWeighted } from './encounters';
+import { tileKey, type RouteItem, type RouteMap } from './routeMap';
 import {
   DEFAULT_LAYOUT,
   DEFAULT_SHAPE,
@@ -68,13 +70,21 @@ export type RouteRequest = Readonly<{
   ledges?: number;
   /** The tileset's wall motif footprint, so `cleanWalls` knows a whole object. */
   wall?: WallFootprint;
+  /**
+   * Weighted ground-item pool. A route places one item at each reachable
+   * optional-path end (pocket); with no pool it places none, so the generator
+   * stays free of the band's loot table (the caller passes it).
+   */
+  loot?: readonly LootEntry[];
+  /** Chance a placed item is hidden (the faint sparkle). Defaults to `0`. */
+  hiddenChance?: number;
 }>;
 
 type MutableMap = number[][];
 
 /** A labelled snapshot of the map after one build phase, for the debug stepper. */
 export type RouteStep = Readonly<{
-  phase: 'walls' | 'access' | 'spine' | 'branches' | 'layout' | 'clean' | 'terrain' | 'final';
+  phase: 'walls' | 'access' | 'spine' | 'branches' | 'layout' | 'clean' | 'terrain' | 'items' | 'final';
   label: string;
   tiles: TileMap;
 }>;
@@ -904,6 +914,33 @@ function carveLedges(
   }
 }
 
+/**
+ * Places one ground item at the far end of each optional path. A pocket that a
+ * hazard sealed (or that is no longer walkable) is skipped, so loot is never
+ * stranded, and the draw order is the deterministic `pockets` order: the item id
+ * is `item-<routeIndex>-<n>` and the contents plus the hidden flag come from the
+ * `populate` stream, so `(seed, routeIndex)` fixes what lies at each pocket (D11).
+ */
+function placeItems(
+  tiles: TileMap,
+  pockets: readonly Tile[],
+  reached: ReadonlySet<string>,
+  routeIndex: number,
+  loot: readonly LootEntry[] | undefined,
+  hiddenChance: number,
+  rng: Rng,
+): RouteItem[] {
+  if (!loot || loot.length === 0) return [];
+  const items: RouteItem[] = [];
+  for (const position of pockets) {
+    if (!reached.has(tileKey(position)) || !isWalkable(tiles, position)) continue;
+    const itemId = pickWeighted(loot, rng).itemId;
+    const hidden = rng.next() < hiddenChance;
+    items.push({ id: `item-${routeIndex}-${items.length}`, position: { ...position }, itemId, hidden });
+  }
+  return items;
+}
+
 function attemptRoute(
   request: RouteRequest,
   streams: RouteStreams,
@@ -970,16 +1007,35 @@ function attemptRoute(
   // open/hedged routes, the shortest path on a maze.
   const ends = [entry, ...exits];
   const pocketTiles = collectFloorTiles(tiles).filter((tile) => !spine.has(tileKey(tile)));
+  const pocketKeys = pockets.map(tileKey);
   const openKeys = new Set([...spine, ...ends.map(tileKey)]);
-  const ledgeForbid = new Set([...openKeys, ...pockets.map(tileKey)]);
+  // A pocket is a loot spot: tall grass may not cover it (an item never spawns on
+  // grass) and a ledge may not seal it. Grass is otherwise free to fill the lanes.
+  const grassForbid = new Set([...openKeys, ...pocketKeys]);
+  const ledgeForbid = new Set([...openKeys, ...pocketKeys]);
   // A bigger map stamps more terrain: the biome base scales by the map-size tier
   // (`src/data/mapSize.ts`), so the density holds across route sizes.
   const terrainScale = terrainScaleForSize(width, height);
-  carveGrass(tiles, streams.terrain, pocketTiles, (request.grassPatches ?? 0) * terrainScale, openKeys);
+  carveGrass(tiles, streams.terrain, pocketTiles, (request.grassPatches ?? 0) * terrainScale, grassForbid);
   carveLedges(tiles, streams.terrain, pocketTiles, ledgeForbid, entry, (request.ledges ?? 0) * terrainScale);
 
   tiles[entry.y][entry.x] = FLOOR;
   snapshot('terrain', 'terrain pass');
+
+  // The population pass: one ground item at each reachable optional-path end.
+  // It only reads the finished map (pockets and reachability), so it can never
+  // strand loot behind a hazard the terrain pass placed (docs/route-generator.md §3.5).
+  const reached = reachableTiles(tiles, entry);
+  const items = placeItems(
+    tiles,
+    pockets,
+    reached,
+    request.routeIndex,
+    request.loot,
+    request.hiddenChance ?? 0,
+    streams.populate,
+  );
+  snapshot('items', 'populate items');
 
   const route: RouteMap = {
     seed: request.seed,
@@ -994,6 +1050,7 @@ function attemptRoute(
     spine: [...spine].map(keyToTile),
     branches: [...branches].map(keyToTile),
     pockets,
+    items,
   };
   snapshot('final', 'final map');
   return route;

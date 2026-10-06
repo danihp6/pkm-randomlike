@@ -149,7 +149,19 @@ export class StarterScene extends Phaser.Scene {
       tint: 0x3a3956,
       origin: 0.5,
     });
-    return [window, portrait, name, types, level];
+    // The whole card is a click target: hovering highlights it, clicking picks it
+    // (the same as moving the cursor there and confirming).
+    const zone = this.add.zone(x, CARD_TOP, CARD_WIDTH, CARD_HEIGHT).setOrigin(0, 0);
+    zone.setInteractive({ useHandCursor: true });
+    zone.on('pointerover', () => {
+      this.index = index;
+      this.render();
+    });
+    zone.on('pointerdown', () => {
+      this.index = index;
+      this.confirm();
+    });
+    return [zone, window, portrait, name, types, level];
   }
 
   /** Moves the ▶ cursor to the highlighted card. */
