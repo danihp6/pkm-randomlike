@@ -16,6 +16,7 @@
 | `frlg/overworld.png` | FRLG trainer overworld sprites, 16x32 per archetype, from `scripts/frlg/build-overworld-sprites.mjs` (frame map in `src/data/frlg/overworld.json`) | **game rip, local only** |
 | `frlg/player.png` | FRLG player overworld sprite, three 16x32 frames (down/up/side), from `scripts/frlg/build-player-sprite.mjs` (frame map in `src/data/frlg/player.json`) | **game rip, local only** |
 | `frlg/item-icons.png` | FRLG item icons, 24x24, packed by `scripts/frlg/build-item-icons.mjs` (frame map in `src/data/frlg/item-icons.json`) | **game rip, local only** |
+| `frlg/move-categories.png` | official move-category badges (physical / special / status), 32x14, packed by `scripts/frlg/build-category-icons.mjs` (frame map in `src/data/frlg/move-categories.json`, read by `src/data/moveCategoryIcons.ts`) | **game rip, local only** |
 | `frlg/ground-item.png` | FRLG field Poke Ball (the ground-item sprite), 16x16, cropped from `sprite-sources/frlg/tileset.png` by `scripts/frlg/build-field-items.mjs` (read through `src/data/groundItemSprite.ts`) | **game rip, local only** |
 | `frlg/window.png`, `frlg/textbox.png` | FRLG menu window + battle message box nine-slices, 4x, from `scripts/frlg/build-battle-ui.mjs` | **game rip, local only** |
 | `frlg/hpbar.png`, `frlg/cursor.png` | FRLG HP bar (chip + empty track) and ▶ command cursor, 4x, from `scripts/frlg/build-battle-ui.mjs` (geometry in `src/data/frlg/battle-ui.json`) | **game rip, local only** |

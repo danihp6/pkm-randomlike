@@ -66,12 +66,13 @@ Full rules in `docs/battle-spec.md`. In short:
   attempts the escape at once, with no yes/no prompt.
 - The command menu takes the **mouse** as well as the keyboard: hovering a row
   moves the ▶ cursor and a click picks it, and a click advances the battle text.
-  The **moves** menu is a 2x2 **grid** so all four moves show at once, with no
-  scrolling: each cell is tinted by the move's type and shows its name, a category
-  **badge** (physical / special / status) and its PP; a popup above the menu lists
-  the move's type and **description** for the move under the cursor and lifts the
-  Pokémon's data panel clear of it, and the ◀ back control sits centred on the
-  grid's left edge.
+  **FIGHT / BAG / SWITCH / RUN** is a 2x2 **grid**, and so is the **moves** menu
+  (all four moves show at once, with no scrolling): each move cell is tinted by
+  the move's type and shows its name, the official category **badge** (physical /
+  special / status) and its PP. A popup above the menu lists the move's type and
+  **description** for the move under the cursor and lifts the Pokémon's data panel
+  clear of it. **SWITCH** shows the party as a grid of **avatar** cells (face,
+  name, level, HP). Every submenu puts the ◀ back control centred on its left edge.
 - The bag opens as pockets like the route HUD — **CONSUM** everywhere and
   **BALL** while a wild can still be caught; trainer battles offer only
   consumables.
