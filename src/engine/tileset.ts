@@ -155,6 +155,13 @@ export type WallPattern = Readonly<{
   rows: readonly (readonly number[])[];
 }>;
 
+/**
+ * The frames a horizontal ledge run draws: the left and right end caps flanking
+ * a centre frame repeated along the run. A tileset without them draws its single
+ * `frames[LEDGE]` tile for every cell - the classic look with no corner art.
+ */
+export type LedgeFrames = Readonly<{ left: number; center: number; right: number }>;
+
 export type TilesetConfig = Readonly<{
   atlas: Readonly<{
     tileSize: number;
@@ -172,6 +179,12 @@ export type TilesetConfig = Readonly<{
    * whole trees/boulders. See `WallPattern`.
    */
   wallPattern?: WallPattern;
+  /**
+   * A ledge's horizontal run frames, taking priority over `frames[LEDGE]`: the
+   * left/right ends cap the run and the centre repeats along it. See
+   * `LedgeFrames`.
+   */
+  ledgeFrames?: LedgeFrames;
   /** Map values that pick one of several frames for visual variety, deterministically per tile. */
   variants?: Readonly<Record<number, readonly number[]>>;
   /**

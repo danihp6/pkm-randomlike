@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHEST, FLOOR, WALL, type TileMap } from './map';
+import { CHEST, FLOOR, LEDGE, WALL, type TileMap } from './map';
 import {
   FRAME_FLOOR,
   FRAME_FLOOR_ALT_1,
@@ -12,7 +12,7 @@ import {
   type TilesetConfig,
   type WallPattern,
 } from './tileset';
-import { autotileFrame, isNearWall, patternFrame, resolveGroundFrame, resolveTileFrame, treeTipKeys, variantFrame } from './tileFrames';
+import { autotileFrame, isNearWall, ledgeFrame, patternFrame, resolveGroundFrame, resolveTileFrame, treeTipKeys, variantFrame } from './tileFrames';
 
 const tileset: TilesetConfig = {
   atlas: { tileSize: 24, cols: 4, rows: 13, width: 96, height: 312 },
@@ -294,6 +294,27 @@ describe('variantFrame', () => {
     const first = variantFrame(4, 9, options);
     expect(variantFrame(4, 9, options)).toBe(first);
     expect(options).toContain(first);
+  });
+});
+
+describe('ledgeFrame', () => {
+  const ledgeFrames = { left: 30, center: 31, right: 32 };
+
+  it('caps the run ends and repeats the centre', () => {
+    const run: TileMap = [[LEDGE, LEDGE, LEDGE, LEDGE]];
+    expect([0, 1, 2, 3].map((x) => ledgeFrame(run, x, 0, ledgeFrames))).toEqual([30, 31, 31, 32]);
+  });
+
+  it('reads a lone ledge as the centre', () => {
+    expect(ledgeFrame([[FLOOR, LEDGE, FLOOR]], 1, 0, ledgeFrames)).toBe(31);
+  });
+
+  it('resolves the run through resolveTileFrame when the tileset declares it', () => {
+    const withLedge: TilesetConfig = { ...tileset, ledgeFrames };
+    const run: TileMap = [[LEDGE, LEDGE, LEDGE]];
+    expect(resolveTileFrame(run, 0, 0, withLedge)?.frame).toBe(30);
+    expect(resolveTileFrame(run, 1, 0, withLedge)?.frame).toBe(31);
+    expect(resolveTileFrame(run, 2, 0, withLedge)?.frame).toBe(32);
   });
 });
 

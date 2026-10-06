@@ -270,6 +270,15 @@ file is the human-readable summary.
       is never clamped into a one-tile stub at the bound. The frozen regression
       route is re-frozen; `docs/routes-spec.md` and `docs/route-generator.md`
       updated.
+- [x] Ledges are **whole runs** now: a `LEDGE` line is at least three tiles and
+      draws its own **ends** instead of repeating one centre tile. `carveLedges`
+      lays the full run at once (three or four tiles) and drops it whole when it
+      cannot reach three or would strand a branch, so no two-tile stub is left.
+      The FRLG fields stamp a left cap, centre lip and right cap (`FRAME_LEDGE`
+      plus frames 3/4), resolved per cell by `ledgeFrame`/`LedgeFrames`
+      (`src/engine/tileFrames.ts`, `src/engine/tileset.ts`); the PMD sheets keep
+      their single ground fallback. `docs/tileset-spec.md` and
+      `docs/routes-spec.md` updated.
 
 ## Phase 0 — Repo & scaffolding
 

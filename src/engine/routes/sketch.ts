@@ -702,9 +702,10 @@ function carveGrass(
 /**
  * A ledge is a horizontal run of rock you may only jump down; it is solid from
  * every other side, so it is kept off the guaranteed path, the openings and the
- * pockets (loot spots). A run grows one tile at a time and stops as soon as it
- * would cut the walkable map in two, so a one-way drop never strands a branch -
- * on a lane too narrow for a full run it still leaves a single jumpable tile.
+ * pockets (loot spots). A run is a whole object now, so it draws a left cap, a
+ * repeated centre and a right cap (`LedgeFrames`), which is why it needs at least
+ * three tiles: a run that would fall short, or that would cut the walkable map in
+ * two, is dropped whole rather than left as a two-tile stub.
  */
 function carveLedges(
   tiles: MutableMap,
@@ -736,24 +737,24 @@ function carveLedges(
     const before = reachableTiles(tiles, entry);
     let placed = false;
     for (const origin of candidates) {
-      const length = rng.int(2, 3);
-      const runKeys = new Set<string>();
-      for (let dx = 0; dx < length; dx++) {
+      const requested = rng.int(3, 4);
+      const run: Tile[] = [];
+      for (let dx = 0; dx < requested; dx++) {
         const tile = { x: origin.x + dx, y: origin.y };
         if (!canStand(tile) || forbid.has(tileKey(tile))) break;
-        tiles[tile.y][tile.x] = LEDGE;
-        runKeys.add(tileKey(tile));
-        const after = reachableTiles(tiles, entry);
-        if ([...before].some((key) => !runKeys.has(key) && !after.has(key))) {
-          tiles[tile.y][tile.x] = FLOOR;
-          runKeys.delete(tileKey(tile));
-          break;
-        }
+        run.push(tile);
       }
-      if (runKeys.size > 0) {
-        placed = true;
-        break;
+      // A run shorter than three has no room for both caps, so it is not placed.
+      if (run.length < 3) continue;
+      const runKeys = new Set(run.map(tileKey));
+      for (const tile of run) tiles[tile.y][tile.x] = LEDGE;
+      const after = reachableTiles(tiles, entry);
+      if ([...before].some((key) => !runKeys.has(key) && !after.has(key))) {
+        for (const tile of run) tiles[tile.y][tile.x] = FLOOR;
+        continue;
       }
+      placed = true;
+      break;
     }
     if (!placed) break;
   }

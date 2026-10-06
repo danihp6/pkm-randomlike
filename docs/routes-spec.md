@@ -52,10 +52,12 @@ camera follow), containing:
    the map stays fenced.
 3. **Terrain pass**: `terrain` in `src/data/biomes.ts` sets how many tall grass
    patches and ledge lines a biome stamps. Both land on the carved floor **off the
-   spine and the openings** (ledges also avoid the pockets), and a ledge line stops
-   growing rather than strand a branch behind its one-way drop. Grass is walkable;
-   a ledge only gives way downward. Water is decoration (`D18`), not a terrain
-   pass.
+   spine and the openings** (ledges also avoid the pockets). A ledge line is a
+   whole object of at least **three tiles** — a left cap, repeated centre tiles and
+   a right cap (`LedgeFrames`) — and is dropped whole rather than left as a stub
+   when it cannot reach three tiles or would strand a branch behind its one-way
+   drop. Grass is walkable; a ledge only gives way downward. Water is decoration
+   (`D18`), not a terrain pass.
 4. **Validation pass**: flood-fill from the entry must reach every exit. If it does
    not, reroll from the same seed with the next stream value. This validation is
    what makes the generator safe to call blind.

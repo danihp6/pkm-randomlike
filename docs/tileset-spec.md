@@ -35,7 +35,10 @@ Every biome ships two images:
   rocky ledge lip (`FRAME_LEDGE`, `D26`). The FRLG fields stamp every floor
   variant (`1`,`2`,`41`-`43`, beside the shared common-sheet slots) and draw
   the wall as a repeating whole-object motif on frames `7`-`18` (`wallPattern`,
-  §3) instead of one frame per shape.
+  §3) instead of one frame per shape. A ledge is a **horizontal run**: frame 51 is
+  its centre and frames `3`/`4` its left/right caps (`FRLG_LEDGE_LEFT`/
+  `FRLG_LEDGE_RIGHT`), which the field sheet leaves free (it draws the stair/trap
+  slots from the common atlas).
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
   biome, for the tiles that mean the same thing everywhere: trap, chest, item,
   carpet (and a stair slot that no map value maps to while the route `EXIT` art
@@ -149,8 +152,10 @@ Swapping is `config = TILESETS[nextId].config` plus loading
 - **Tall grass** has no dedicated frame: it draws plain ground today, with a
   procedural overlay sprite (`BootScene` builds it) so it reads while the real
   art is pending. It does not spend a third atlas row.
-- **Ledge** now draws frame 51 (the sheet's last cell): the FRLG fields stamp
-  their cliff lip there (`D26`), and the PMD sheets leave it transparent so a
-  ledge falls back to plain ground. A dedicated PMD ledge tile is still open.
+- **Ledge** draws a three-tile run: frame 51 is the centre lip and frames `3`/`4`
+  its end caps (`FRLG_LEDGE_LEFT`/`FRLG_LEDGE_RIGHT`, `LedgeFrames` in
+  `src/engine/tileset.ts`); the FRLG fields stamp all three (`D26`), and the PMD
+  sheets leave them transparent so a ledge falls back to plain ground. A dedicated
+  PMD ledge tile is still open.
 - **Trainer sprites** do not exist yet in any imported set; they need their own
   sheet (walk cycles + overworld facing).

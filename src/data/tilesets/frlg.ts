@@ -53,6 +53,16 @@ export const FRLG_WALL_MID_FRAMES = [16, 17, 18] as const;
 export const FRLG_WALL_LOWER_FRAMES = [19, 20, 21] as const;
 export const FRLG_WALL_BASE_FRAMES = [22, 23, 44] as const;
 
+/**
+ * The ledge run's end caps, stamped into the FRLG sheet's otherwise unused
+ * stair/trap slots (frames 3 and 4; the field draws those from the common atlas).
+ * The centre lip stays at `FRAME_LEDGE` (51), so a ledge run reads as a left cap,
+ * repeated centres and a right cap. Must stay in step with
+ * `scripts/frlg/build-tilesets.mjs`.
+ */
+export const FRLG_LEDGE_LEFT = 3;
+export const FRLG_LEDGE_RIGHT = 4;
+
 const WALL_PATTERN: WallPattern = {
   value: WALL,
   cols: 3,
@@ -104,6 +114,7 @@ export const FRLG_TILESET: TilesetConfig = {
   },
   autotile: [{ value: WATER, openValue: FLOOR, variants: WATER_SHAPES }],
   wallPattern: WALL_PATTERN,
+  ledgeFrames: { left: FRLG_LEDGE_LEFT, center: FRAME_LEDGE, right: FRLG_LEDGE_RIGHT },
   variants: {
     [FLOOR]: FLOOR_CLEAN,
     [TRAP]: FLOOR_CLEAN,

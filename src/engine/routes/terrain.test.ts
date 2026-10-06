@@ -61,6 +61,28 @@ describe('route terrain passes', () => {
     }
   });
 
+  it('never leaves a ledge run shorter than the three-tile minimum', () => {
+    let runs = 0;
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of SEEDS) {
+        const route = sketchRoute(terrainRequest(seed, shape));
+        for (let y = 0; y < route.height; y++) {
+          let run = 0;
+          for (let x = 0; x <= route.width; x++) {
+            const ledge = x < route.width && route.tiles[y][x] === LEDGE;
+            if (ledge) run += 1;
+            else if (run > 0) {
+              expect(run, `${shape} ${seed} ledge run at y${y}`).toBeGreaterThanOrEqual(3);
+              runs += 1;
+              run = 0;
+            }
+          }
+        }
+      }
+    }
+    expect(runs).toBeGreaterThan(0);
+  });
+
   it('keeps every exit reachable with terrain on', () => {
     for (const shape of ROUTE_SHAPES) {
       for (const seed of SEEDS) {
@@ -106,9 +128,9 @@ describe('route terrain passes', () => {
         const ledges = positionsOf(route, LEDGE).length;
         grassTotal += grass;
         ledgeTotal += ledges;
-        // A patch covers at most 4x3 tiles; a ledge line spans at most three.
+        // A patch covers at most 4x3 tiles; a ledge line spans at most four.
         expect(grass, `${shape} ${seed} grass`).toBeLessThanOrEqual(biome.terrain.grassPatches * 12);
-        expect(ledges, `${shape} ${seed} ledges`).toBeLessThanOrEqual(biome.terrain.ledges * 3);
+        expect(ledges, `${shape} ${seed} ledges`).toBeLessThanOrEqual(biome.terrain.ledges * 4);
       }
     }
     expect(grassTotal).toBeGreaterThan(0);

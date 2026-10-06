@@ -52,6 +52,10 @@ const FRAME_FLOOR_ALT_4 = 42
 const FRAME_FLOOR_ALT_5 = 43
 // The last cell of the 4x13 sheet, the rocky ledge lip the route walks off.
 const FRAME_LEDGE = 51
+// The ledge run's end caps: the sheet leaves the stair/trap slots (3 and 4)
+// unused - the field draws those from the common atlas - so the caps live there.
+const FRAME_LEDGE_LEFT = 3
+const FRAME_LEDGE_RIGHT = 4
 
 const WATER_TUPLE = [
   FRAME_WATER_INTERIOR,
@@ -203,7 +207,8 @@ function keyBackground(over, fill, bg) {
  * upper leaves, `lower` its lower leaves and `base` the trunk platform. Two stacked
  * trees read `top, body, crown+lower, body+base, ...`, so the crown of the tree
  * below lands on the lower leaves of the tree above and its body hides that tree's
- * trunk; only the mass's foot shows the trunk platform.
+ * trunk; only the mass's foot shows the trunk platform. `ledge` is `{ left,
+ * center, right }`, the three-source-cell run the ledge draws.
  */
 function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) {
   stamp(atlas, FRAME_FLOOR, floor[0], floor[1])
@@ -241,7 +246,9 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, water = [10, 0] }) 
   FRAME_WALL_BASE.forEach((frame, i) => stampTile(atlas, frame, overNone(base[i])))
 
   stampBlock(atlas, WATER_TUPLE, water[0], water[1])
-  stampTile(atlas, FRAME_LEDGE, floorCell(ledge[0], ledge[1]))
+  stampTile(atlas, FRAME_LEDGE_LEFT, floorCell(ledge.left[0], ledge.left[1]))
+  stampTile(atlas, FRAME_LEDGE, floorCell(ledge.center[0], ledge.center[1]))
+  stampTile(atlas, FRAME_LEDGE_RIGHT, floorCell(ledge.right[0], ledge.right[1]))
 }
 
 /**
@@ -284,7 +291,7 @@ function outdoorFrames(atlas) {
       [2, 4],
     ],
     wall: TREE,
-    ledge: [7, 4],
+    ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
   })
 }
 
@@ -300,7 +307,7 @@ function forestFrames(atlas) {
       [2, 5],
     ],
     wall: TREE,
-    ledge: [7, 4],
+    ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
   })
 }
 
@@ -324,7 +331,7 @@ function caveFrames(atlas) {
       [rockBody, rockBody, rockBody],
       [rockBase, rockBase, rockBase],
     ],
-    ledge: [7, 4],
+    ledge: { left: [6, 4], center: [7, 4], right: [8, 4] },
   })
 }
 
