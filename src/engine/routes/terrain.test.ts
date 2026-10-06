@@ -203,4 +203,24 @@ describe('route terrain passes', () => {
     expect(grassTotal).toBeGreaterThan(0);
     expect(ledgeTotal).toBeGreaterThan(0);
   });
+
+  it('scales terrain with the map size in ranges, reproducibly (D11)', () => {
+    let small = 0;
+    let big = 0;
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of SEEDS) {
+        const base = terrainRequest(seed, shape);
+        const tiny = sketchRoute({ ...base, width: 20, height: 20 });
+        const huge = sketchRoute({ ...base, width: 48, height: 48 });
+        small += positionsOf(tiny, TALL_GRASS).length + positionsOf(tiny, LEDGE).length;
+        big += positionsOf(huge, TALL_GRASS).length + positionsOf(huge, LEDGE).length;
+
+        // Same size and seed repeats exactly: the tier is a pure function of size.
+        const again = sketchRoute({ ...base, width: 20, height: 20 });
+        expect(positionsOf(again, TALL_GRASS)).toEqual(positionsOf(tiny, TALL_GRASS));
+        expect(positionsOf(again, LEDGE)).toEqual(positionsOf(tiny, LEDGE));
+      }
+    }
+    expect(big).toBeGreaterThan(small);
+  }, 30_000);
 });

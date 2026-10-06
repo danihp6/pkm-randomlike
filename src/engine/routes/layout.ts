@@ -34,7 +34,7 @@ export type ShapeSpec = Readonly<{
   pathWidth: number;
   /** How far a spine waypoint may stray from the straight link line. */
   jitter: number;
-  /** Secondary paths carved off the spine, and the distance band they start in. */
+  /** Base secondary paths carved off the network; the map-size tier adds more. */
   branchCount: number;
   branchMin: number;
   branchMax: number;

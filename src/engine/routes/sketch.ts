@@ -1,3 +1,4 @@
+import { branchCountForSize, terrainScaleForSize } from '../../data/mapSize';
 import type { Tile } from '../grid';
 import {
   FLOOR,
@@ -62,6 +63,7 @@ export type RouteRequest = Readonly<{
   shape?: RouteShape;
   width?: number;
   height?: number;
+  /** Biome base counts; the generator multiplies them by the map-size tier. */
   grassPatches?: number;
   ledges?: number;
   /** The tileset's wall motif footprint, so `cleanWalls` knows a whole object. */
@@ -311,21 +313,53 @@ function carveGuaranteedPath(
   return spine;
 }
 
-/** Manhattan distance from `tile` to the nearest spine tile (0 on the spine). */
-function distanceToSpine(spine: ReadonlySet<string>, tile: Tile): number {
-  let best = Number.POSITIVE_INFINITY;
-  for (const key of spine) {
+/**
+ * Grid distance from every cell to the nearest `network` tile, via a cardinal
+ * flood. On an unobstructed grid this equals the Manhattan distance, but it is
+ * computed once per branch so the candidate scan never walks the set per cell.
+ * Cells are indexed `y * width + x`.
+ */
+function distanceField(width: number, height: number, network: ReadonlySet<string>): Int32Array {
+  const distance = new Int32Array(width * height).fill(-1);
+  const queue: number[] = [];
+  for (const key of network) {
     const [x, y] = key.split(',').map(Number);
-    best = Math.min(best, Math.abs(x - tile.x) + Math.abs(y - tile.y));
+    if (x < 0 || x >= width || y < 0 || y >= height) continue;
+    const index = y * width + x;
+    if (distance[index] === 0) continue;
+    distance[index] = 0;
+    queue.push(index);
   }
-  return best;
+  for (let head = 0; head < queue.length; head++) {
+    const index = queue[head];
+    const x = index % width;
+    const y = (index - x) / width;
+    const step = distance[index] + 1;
+    if (x > 0 && distance[index - 1] < 0) {
+      distance[index - 1] = step;
+      queue.push(index - 1);
+    }
+    if (x < width - 1 && distance[index + 1] < 0) {
+      distance[index + 1] = step;
+      queue.push(index + 1);
+    }
+    if (y > 0 && distance[index - width] < 0) {
+      distance[index - width] = step;
+      queue.push(index - width);
+    }
+    if (y < height - 1 && distance[index + width] < 0) {
+      distance[index + width] = step;
+      queue.push(index + width);
+    }
+  }
+  return distance;
 }
 
-/** The spine tile closest to `target` (L1), or the first one as a fallback. */
-function nearestSpine(spine: ReadonlySet<string>, target: Tile): Tile | undefined {
+/** The network tile closest to `target` (L1), which a new lane roots on. */
+function nearestNetwork(network: ReadonlySet<string>, target: Tile): Tile | undefined {
   let best: Tile | undefined;
   let bestDistance = Number.POSITIVE_INFINITY;
-  for (const key of spine) {
+  for (const key of network) {
     const [x, y] = key.split(',').map(Number);
     const manhattan = Math.abs(x - target.x) + Math.abs(y - target.y);
     if (manhattan < bestDistance) {
@@ -337,12 +371,14 @@ function nearestSpine(spine: ReadonlySet<string>, target: Tile): Tile | undefine
 }
 
 /**
- * Secondary paths: for each `branchCount`, pick a solid tile far enough from the
- * spine and carve a cardinal lane through the forest to the nearest spine tile
- * (never running along the spine). The lane is at least two tiles wide and, on a
- * roomy map, opens into a small chamber at its far end. The far end is recorded as
- * a **pocket** (a loot spot). Branches are optional; the spine alone always solves
- * the route.
+ * Secondary paths. A **network** is the spine plus every lane carved so far, and
+ * the count depends on the map size (`branchCountForSize`). For each path, pick a
+ * solid tile far enough from the network and carve a cardinal lane to the nearest
+ * network tile (never running along it). Because the network grows, a later path
+ * can root on **an earlier lane** as well as on the spine, so branches can grow
+ * off branches. The lane is at least two tiles wide and, on a roomy map, opens
+ * into a small chamber at its far end; that far end is a **pocket** (a loot spot).
+ * Branches are optional; the spine alone always solves the route.
  */
 function carveBranches(
   tiles: MutableMap,
@@ -356,42 +392,48 @@ function carveBranches(
 ): Readonly<{ branches: Set<string>; pockets: Tile[] }> {
   const branches = new Set<string>();
   const pockets: Tile[] = [];
-  if (shape.branchCount <= 0) return { branches, pockets };
+  const branchCount = branchCountForSize(shape.branchCount, width, height);
+  if (branchCount <= 0) return { branches, pockets };
 
   const endKeys = new Set(ends.map(tileKey));
+  const network = new Set<string>(spine);
 
-  // Scale the lane to the free space: how far the interior reaches from the spine.
-  let maxAway = 0;
-  for (let y = margin; y < height - margin; y++) {
-    for (let x = margin; x < width - margin; x++) {
-      const away = distanceToSpine(spine, { x, y });
-      if (away > maxAway) maxAway = away;
+  for (let branch = 0; branch < branchCount; branch++) {
+    // Scale the lane to the free space: how far the interior reaches from the
+    // network. Recomputed as the network grows.
+    const distance = distanceField(width, height, network);
+    let maxAway = 0;
+    for (let y = margin; y < height - margin; y++) {
+      for (let x = margin; x < width - margin; x++) {
+        const away = distance[y * width + x];
+        if (away > maxAway) maxAway = away;
+      }
     }
-  }
-  const branchWidth = Math.max(2, Math.min(4, Math.floor(maxAway / 12) + 1));
-  // Branches stay strictly inside the border margin, and the last lane cell is
-  // pulled in by `branchWidth - 1` so `carveSquare` never clamps the lane into a
-  // one-tile stub at the bound.
-  const branchBounds: SquareBounds = {
-    minX: margin,
-    minY: margin,
-    maxX: width - margin - branchWidth,
-    maxY: height - margin - branchWidth,
-  };
-  const passable = (tile: Tile): boolean =>
-    tile.x >= margin && tile.x <= branchBounds.maxX && tile.y >= margin && tile.y <= branchBounds.maxY;
+    if (maxAway <= 0) break;
 
-  const branchMin = Math.max(shape.branchMin, Math.round(maxAway * 0.25));
-  const branchMax = Math.max(shape.branchMax, branchMin + 1, Math.round(maxAway * 0.7));
-  const chamber = branchWidth >= 3 ? branchWidth + 1 : 0;
+    const branchWidth = Math.max(2, Math.min(4, Math.floor(maxAway / 12) + 1));
+    // Branches stay strictly inside the border margin, and the last lane cell is
+    // pulled in by `branchWidth - 1` so `carveSquare` never clamps the lane into a
+    // one-tile stub at the bound.
+    const branchBounds: SquareBounds = {
+      minX: margin,
+      minY: margin,
+      maxX: width - margin - branchWidth,
+      maxY: height - margin - branchWidth,
+    };
+    const passable = (tile: Tile): boolean =>
+      tile.x >= margin && tile.x <= branchBounds.maxX && tile.y >= margin && tile.y <= branchBounds.maxY;
 
-  for (let branch = 0; branch < shape.branchCount; branch++) {
+    const branchMin = Math.max(shape.branchMin, Math.round(maxAway * 0.25));
+    const branchMax = Math.max(shape.branchMax, branchMin + 1, Math.round(maxAway * 0.7));
+    const chamber = branchWidth >= 3 ? branchWidth + 1 : 0;
+
     const candidates: Tile[] = [];
     for (let y = margin; y < height - margin; y++) {
       for (let x = margin; x < width - margin; x++) {
         const key = tileKey({ x, y });
-        if (spine.has(key) || branches.has(key) || endKeys.has(key)) continue;
-        const away = distanceToSpine(spine, { x, y });
+        if (network.has(key) || endKeys.has(key)) continue;
+        const away = distance[y * width + x];
         if (away < branchMin || away > branchMax) continue;
         candidates.push({ x, y });
       }
@@ -399,17 +441,19 @@ function carveBranches(
     if (candidates.length === 0) break;
 
     const target = candidates[rng.int(0, candidates.length - 1)];
-    const origin = nearestSpine(spine, target);
+    const origin = nearestNetwork(network, target);
     if (!origin) break;
 
-    const path = findPath(tiles, origin, target, (tile) => spine.has(tileKey(tile)), {
+    const path = findPath(tiles, origin, target, (tile) => network.has(tileKey(tile)), {
       diagonal: false,
       passable,
     });
     if (path.length === 0) continue;
     for (const cell of path) {
       for (const opened of carveSquare(tiles, cell.x, cell.y, branchWidth, branchBounds)) {
-        branches.add(tileKey(opened));
+        const key = tileKey(opened);
+        branches.add(key);
+        network.add(key);
       }
     }
     // A roomy map opens the far end into a chamber instead of a bare cul-de-sac.
@@ -417,7 +461,9 @@ function carveBranches(
       const roomX = clamp(target.x - (chamber >> 1), margin, width - margin - chamber);
       const roomY = clamp(target.y - (chamber >> 1), margin, height - margin - chamber);
       for (const opened of carveSquare(tiles, roomX, roomY, chamber, branchBounds)) {
-        branches.add(tileKey(opened));
+        const key = tileKey(opened);
+        branches.add(key);
+        network.add(key);
       }
     }
     pockets.push(target);
@@ -926,8 +972,11 @@ function attemptRoute(
   const pocketTiles = collectFloorTiles(tiles).filter((tile) => !spine.has(tileKey(tile)));
   const openKeys = new Set([...spine, ...ends.map(tileKey)]);
   const ledgeForbid = new Set([...openKeys, ...pockets.map(tileKey)]);
-  carveGrass(tiles, streams.terrain, pocketTiles, request.grassPatches ?? 0, openKeys);
-  carveLedges(tiles, streams.terrain, pocketTiles, ledgeForbid, entry, request.ledges ?? 0);
+  // A bigger map stamps more terrain: the biome base scales by the map-size tier
+  // (`src/data/mapSize.ts`), so the density holds across route sizes.
+  const terrainScale = terrainScaleForSize(width, height);
+  carveGrass(tiles, streams.terrain, pocketTiles, (request.grassPatches ?? 0) * terrainScale, openKeys);
+  carveLedges(tiles, streams.terrain, pocketTiles, ledgeForbid, entry, (request.ledges ?? 0) * terrainScale);
 
   tiles[entry.y][entry.x] = FLOOR;
   snapshot('terrain', 'terrain pass');

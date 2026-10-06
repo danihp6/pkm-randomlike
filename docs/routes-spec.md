@@ -54,8 +54,13 @@ camera follow), containing:
    only dropped to widen an opening (a lane already reaches the ring beside it), so
    the map stays fenced.
 3. **Terrain pass**: `terrain` in `src/data/biomes.ts` sets how many tall grass
-   patches and ledge lines a biome stamps. Both land on the carved floor **off the
-   spine and the openings** (ledges also avoid the pockets). A grass patch is packed
+   patches and ledge lines a biome stamps, and those **base counts scale in tiers
+   with the map size** (`MAP_SIZE_TIERS` in `src/data/mapSize.ts`): the map's
+   area in tiles falls in `small` (terrain ×1), `medium` (×2) or `large` (×3), so a
+   bigger route carries proportionally more terrain without the count matching the
+   size pixel by pixel. The default 20x20 route is `small`, so it keeps its biome
+   counts untouched. Both land on the carved floor **off the spine and the
+   openings** (ledges also avoid the pockets). A grass patch is packed
    **against the walls**: it first stretches across a wall-to-wall corridor so it
    touches a wall at both ends, but only when that gap is no wider than
    `GRASS_SPAN_MAX` (5 tiles); otherwise it falls back to a small block anchored on
@@ -102,10 +107,13 @@ registry in `src/engine/routes/layout.ts` defines `straight` (2 opposite),
 Every opening is placed on its edge and the guaranteed **spine** joins each
 `links` pair with cardinal, cost-guided corridors, so a `cross` leaves three exits
 and a `bend` runs an L. A multi-link shape routes every link through a shared
-**central hub**, so all the openings are connected by construction. `branchCount`
-secondary paths are then carved off the spine: lanes are **at least two tiles wide**
-and scale with the free space, opening into a small **chamber** on a roomy map. The
-far end is the **pocket** — the future loot spot. Branches stay inside the one-tile
+**central hub**, so all the openings are connected by construction. Optional
+secondary paths are then carved off the **network** (the spine plus every lane
+already carved, so a branch can grow off another branch, not only off the spine):
+the count is the shape's base `branchCount` plus a map-size tier bonus, lanes are
+**at least two tiles wide** and scale with the free space, opening into a small
+**chamber** on a roomy map. The far end is the **pocket** — the future loot
+spot. Branches stay inside the one-tile
 border. The interior is solid tree, so the carved spine, branches and pockets are
 the visible lanes; the terrain pass and the population pass keep them clear and
 populate them (steps 5-7). The `hedges` and `maze` carvers stay parked in

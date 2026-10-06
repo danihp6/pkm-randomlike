@@ -109,7 +109,8 @@ reachable: Set<Point>               # FloodFill(tiles, entry), computed after te
 | shape `openings`, `pathWidth`, `jitter`, `corridorWidth`, `braid`, `branchCount`, `branchMin/Max`, `pocketChance` | `src/engine/routes/layout.ts` | shape and geometry |
 | `wallMargin` (motif `cols`) | `src/engine/routes/sketch.ts` | the border band every lane keeps clear |
 | `WallFootprint` (`cols`, `minHeight`) | tileset `wallPattern` | the wall tidy's whole-object size |
-| `grassPatches`, `ledges` | `src/data/biomes.ts` | terrain flavour |
+| `grassPatches`, `ledges` | `src/data/biomes.ts` | terrain flavour (base counts) |
+| map-size tiers (`small`/`medium`/`large`: terrain scale, branch bonus) | `src/data/mapSize.ts` | terrain multiplier and extra optional paths as the map grows |
 | `trainerSize`, `minLevel`, `maxLevel` | `src/data/run.ts` | population and levels |
 | loot `count` / `pool` | `src/data/loot.ts` | item contents |
 | encounter table | `src/data/encounters.ts` | wild species |
@@ -132,17 +133,20 @@ BuildRoute(routeIndex, rngs):
     spine = CarveGuaranteedPath(tiles, entry, exits, shape, rngs.layout)
 
     # 3. Secondary paths and dead ends (exploration)
-    (branches, pockets) = CarveBranches(tiles, spine, shape, rngs.layout)
-    #    Every lane keeps `cols` tiles off the border so the outer tree mass
-    #    is never bitten; only an opening pierces it, running straight in first.
+    count = shape.branchCount + BranchBonusForSize(W, H)   # +0 small | +1 medium | +2 large
+    (branches, pockets) = CarveBranches(tiles, spine, shape, count, rngs.layout)
+    #    A branch roots on the network (spine + earlier lanes), so branches can
+    #    grow off branches. Every lane keeps `cols` tiles off the border so the
+    #    outer tree mass is never bitten; only an opening pierces it.
 
     # 3b. Tidy the trees: every column must read as whole trees, never a stub.
     CleanWalls(tiles, footprint)          # only turns WALL back into FLOOR
 
     # 4. Terrain flavour - hazards and grass stay off the spine
-    CarveGrass(tiles, biome.terrain.grassPatches, rngs.terrain,
+    terrainScale = TerrainScaleForSize(W, H)          # small ×1 | medium ×2 | large ×3
+    CarveGrass(tiles, biome.terrain.grassPatches * terrainScale, rngs.terrain,
                forbid = spine, never = {entry} + exits)
-    CarveLedges(tiles, biome.terrain.ledges, rngs.terrain, forbid = spine)
+    CarveLedges(tiles, biome.terrain.ledges * terrainScale, rngs.terrain, forbid = spine)
     # Water is decoration (D18), not a generator terrain pass.
 
     # 5. Population (counts from the band; off the spine and the ends)
