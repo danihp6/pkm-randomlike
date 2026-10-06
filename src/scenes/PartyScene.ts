@@ -71,6 +71,8 @@ export class PartyScene extends Phaser.Scene {
   private footer?: Phaser.GameObjects.BitmapText;
   /** The first row each pane is showing, so a pointer can map to a member. */
   private paneStart: Record<PaneId, number> = { party: 0, box: 0 };
+  /** True once the pointer has moved while grabbed, so release drops it. */
+  private dragging = false;
 
   constructor() {
     super('Party');
@@ -155,9 +157,11 @@ export class PartyScene extends Phaser.Scene {
   }
 
   /**
-   * Mouse support: press a row to pick it up, drag over another row to reorder
-   * it live and release to drop it. A press in the grabbed member's own pane (or
-   * outside the rows) drops it where it stands.
+   * Mouse support. Pressing a row picks it up (the gold highlight shows it) and
+   * it stays grabbed, so a plain click works too: click a member, then click the
+   * slot to drop it in. Dragging with the button held reorders it live under the
+   * pointer, and pressing the other pane moves it across (deposit / withdraw).
+   * The cursor turns into a grab hand over a row.
    */
   private bindPointer(): void {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -166,19 +170,45 @@ export class PartyScene extends Phaser.Scene {
         if (this.ui.grabbed) this.drop();
         return;
       }
-      if (this.ui.grabbed && this.ui.grabbed.pane === hit.pane) {
-        this.drop();
+      const grabbed = this.ui.grabbed;
+      if (grabbed && grabbed.pane !== hit.pane) {
+        // Pressing the other pane drops the member across it (left/right).
+        const input: PartyInput = grabbed.pane === 'party' ? 'right' : 'left';
+        const next = partyInput(this.run, this.ui, input);
+        this.run = next.run;
+        this.ui = next.ui;
+        this.dragging = false;
+        this.render();
+        return;
+      }
+      if (grabbed) {
+        // Pressing inside its own pane drops it at that row.
+        const next = dragTo(this.run, this.ui, hit.index);
+        this.run = next.run;
+        this.ui = dropGrabbed(next.ui);
+        this.dragging = false;
+        this.render();
         return;
       }
       const next = grabAt(this.run, this.ui, hit.pane, hit.index);
       this.run = next.run;
       this.ui = next.ui;
+      this.dragging = false;
       this.render();
     });
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      if (!this.ui.grabbed) return;
       const hit = this.rowHit(pointer);
-      if (!hit || hit.pane !== this.ui.grabbed.pane) return;
+      if (!hit) {
+        this.input.setDefaultCursor('default');
+        return;
+      }
+      if (!this.ui.grabbed) {
+        this.input.setDefaultCursor('grab');
+        return;
+      }
+      this.input.setDefaultCursor('grabbing');
+      if (hit.pane !== this.ui.grabbed.pane) return;
+      this.dragging = true;
       const next = dragTo(this.run, this.ui, hit.index);
       if (next.run === this.run && next.ui === this.ui) return;
       this.run = next.run;
@@ -186,13 +216,17 @@ export class PartyScene extends Phaser.Scene {
       this.render();
     });
     this.input.on('pointerup', () => {
-      if (this.ui.grabbed) this.drop();
+      this.input.setDefaultCursor('default');
+      // A drag drops where it lands; a plain click keeps it grabbed to place.
+      if (this.ui.grabbed && this.dragging) this.drop();
+      this.dragging = false;
     });
   }
 
   /** Drops the grabbed member where it stands and redraws. */
   private drop(): void {
     this.ui = dropGrabbed(this.ui);
+    this.dragging = false;
     this.render();
   }
 
@@ -260,7 +294,7 @@ export class PartyScene extends Phaser.Scene {
   }
 
   private renderFooter(partyCount: number, boxCount: number): void {
-    const grabbable = this.ui.grabbed === null ? 'Z or drag to pick up' : 'Z or release to drop';
+    const grabbable = this.ui.grabbed === null ? 'Z, click or drag to pick up' : 'Z or click to drop';
     const footer = [
       '↑↓ select',
       grabbable,
