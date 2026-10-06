@@ -26,6 +26,7 @@ import {
   createRun,
   createRunPokemon,
   hasLivingParty,
+  moveInParty,
   resolveBattle,
   type BagCounts,
   type BattleLaunch,
@@ -220,7 +221,14 @@ export class RouteScene extends Phaser.Scene {
   }[] = [];
   private hudBagCategory: BagCategory = 'equipment';
   private hudBagEmpty!: Phaser.GameObjects.BitmapText;
+  /** The party member the pointer has grabbed in the HUD, and whether it moved. */
+  private hudGrab: number | null = null;
+  private hudGrabMoved = false;
+  /** The HUD's left edge and the PARTY window's top, for pointer hit-testing. */
+  private hudX = 0;
+  private hudPartyY = 0;
   private hudRows: {
+    highlight: Phaser.GameObjects.Rectangle;
     portrait: Phaser.GameObjects.Image;
     name: Phaser.GameObjects.BitmapText;
     level: Phaser.GameObjects.BitmapText;
@@ -405,7 +413,9 @@ export class RouteScene extends Phaser.Scene {
       if (event.key === '[') this.stepBagCategory(-1);
       else if (event.key === ']') this.stepBagCategory(1);
     });
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.handleHudClick(pointer));
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.handleHudPointerDown(pointer));
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.handleHudPointerMove(pointer));
+    this.input.on('pointerup', () => this.handleHudPointerUp());
     this.buildHud();
     this.setupHudCamera();
     this.hint.setDepth(200);
@@ -445,11 +455,17 @@ export class RouteScene extends Phaser.Scene {
 
     const partyY = HUD_TOP + HUD_HEADER_H + HUD_GAP;
     const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + HUD_PAD_BOTTOM;
+    this.hudX = x;
+    this.hudPartyY = partyY;
     children.push(addFrlgWindow(this, x, partyY, HUD_PANEL_W, partyH));
     children.push(addFrlgText(this, x + HUD_PAD_X, partyY + HUD_PAD_TOP, 'PARTY', { size: 16, tint: 0x3a3956 }));
     this.hudRows = [];
     for (let i = 0; i < MAX_PARTY_SIZE; i++) {
       const rowY = partyY + HUD_PARTY_HEADER + i * HUD_PARTY_ROW;
+      const highlight = this.add
+        .rectangle(left, rowY, right - left, HUD_PARTY_ROW - 4, 0xf2c14e, 0.32)
+        .setOrigin(0, 0)
+        .setVisible(false);
       const portrait = this.add
         .image(left + 14, rowY + 26, PORTRAIT_TEXTURE_KEY, 0)
         .setScale(0.7)
@@ -474,8 +490,8 @@ export class RouteScene extends Phaser.Scene {
         tint: FRLG_INK,
         origin: [1, 0],
       });
-      this.hudRows.push({ portrait, name, level, hpText, bar, fill });
-      children.push(portrait, name, level, bar, fill, hpText);
+      this.hudRows.push({ highlight, portrait, name, level, hpText, bar, fill });
+      children.push(highlight, portrait, name, level, bar, fill, hpText);
     }
 
     const bagY = partyY + partyH + HUD_GAP;
@@ -528,6 +544,10 @@ export class RouteScene extends Phaser.Scene {
   /** Shows or hides the route HUD overlay (route header, party and bag). Default hidden. */
   private toggleHud(): void {
     this.hudVisible = !this.hudVisible;
+    if (!this.hudVisible) {
+      this.hudGrab = null;
+      this.input.setDefaultCursor('default');
+    }
     this.hudRoot.setVisible(this.hudVisible);
   }
 
@@ -539,6 +559,7 @@ export class RouteScene extends Phaser.Scene {
       const member = this.run.party[i];
       const visible = member !== undefined;
       const alive = member !== undefined && member.fighter.hp > 0;
+      row.highlight.setVisible(this.hudGrab === i);
       row.name.setVisible(visible);
       row.level.setVisible(visible);
       row.hpText.setVisible(visible);
@@ -604,9 +625,64 @@ export class RouteScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  /** A click on a bag pocket tab selects it; only meaningful while the HUD shows. */
-  private handleHudClick(pointer: Phaser.Input.Pointer): void {
+  /**
+   * HUD pointer input. A press on a bag tab picks the pocket; a press on a party
+   * row picks that member up (the gold highlight shows it), a drag over another
+   * row reorders it live and a release drops it. A plain click also works: pick a
+   * member, then click the slot to place it. The cursor becomes a grab hand.
+   */
+  private handleHudPointerDown(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive() || !this.hudVisible) return;
+    if (this.selectBagTab(pointer)) return;
+    const row = this.hudPartyRowAt(pointer);
+    if (row === null) {
+      if (this.hudGrab !== null) this.dropHudGrab();
+      return;
+    }
+    if (this.hudGrab !== null) {
+      this.run = moveInParty(this.run, this.hudGrab, row);
+      this.dropHudGrab();
+      return;
+    }
+    this.hudGrab = row;
+    this.hudGrabMoved = false;
+    this.refreshHud();
+  }
+
+  private handleHudPointerMove(pointer: Phaser.Input.Pointer): void {
+    if (!this.scene.isActive()) return;
+    const row = this.hudVisible ? this.hudPartyRowAt(pointer) : null;
+    this.input.setDefaultCursor(row !== null ? (this.hudGrab !== null ? 'grabbing' : 'grab') : 'default');
+    if (!this.hudVisible || this.hudGrab === null || row === null || row === this.hudGrab) return;
+    this.run = moveInParty(this.run, this.hudGrab, row);
+    this.hudGrab = row;
+    this.hudGrabMoved = true;
+    this.refreshHud();
+  }
+
+  private handleHudPointerUp(): void {
+    if (this.hudGrab !== null && this.hudGrabMoved) this.dropHudGrab();
+  }
+
+  /** Drops the grabbed member where it stands, saves it and redraws the HUD. */
+  private dropHudGrab(): void {
+    this.hudGrab = null;
+    this.hudGrabMoved = false;
+    this.persistRun();
+    this.refreshHud();
+  }
+
+  /** The party index under the pointer, or null outside a filled row. */
+  private hudPartyRowAt(pointer: Phaser.Input.Pointer): number | null {
+    const rowTop = this.hudPartyY + HUD_PARTY_HEADER;
+    if (pointer.x < this.hudX || pointer.x > this.hudX + HUD_PANEL_W) return null;
+    const slot = Math.floor((pointer.y - rowTop) / HUD_PARTY_ROW);
+    if (pointer.y < rowTop || slot < 0 || slot >= MAX_PARTY_SIZE) return null;
+    return slot < this.run.party.length ? slot : null;
+  }
+
+  /** A press on a bag pocket tab selects it; true when it handled the press. */
+  private selectBagTab(pointer: Phaser.Input.Pointer): boolean {
     const tab = this.hudBagTabs.find(
       (entry) =>
         pointer.x >= entry.bg.x &&
@@ -614,9 +690,10 @@ export class RouteScene extends Phaser.Scene {
         pointer.y >= entry.bg.y &&
         pointer.y <= entry.bg.y + entry.bg.height,
     );
-    if (!tab) return;
+    if (!tab) return false;
     this.hudBagCategory = tab.category;
     this.refreshHud();
+    return true;
   }
 
   /** Two cameras: one follows the world, one pins the HUD (hint + overlay) to the screen. */
