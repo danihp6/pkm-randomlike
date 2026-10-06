@@ -111,11 +111,9 @@ const HUD_PARTY_HEADER = HUD_PAD_TOP + 16 + 12;
 const HUD_PARTY_ROW = 52;
 /** The party avatar, enlarged to the row height so the held-item badge reads. */
 const HUD_PARTY_PORTRAIT_SCALE = 1;
-/** The held-item badge on an avatar's lower-right corner, icon over a dark plate. */
+/** The held-item icon on an avatar's lower-right corner. */
 const HUD_HELD_ICON_SCALE = 0.85;
-const HUD_HELD_BACKING = 24;
 const HUD_BOX_HELD_ICON_SCALE = 1;
-const HUD_BOX_HELD_BACKING = 28;
 /** Pointer travel (px) that turns a click into a drag while grabbing a member. */
 const HUD_DRAG_SLOP = 4;
 /** The bag pocket tabs: four across the window's padded inner width. */
@@ -280,7 +278,6 @@ export class RouteScene extends Phaser.Scene {
     highlight: Phaser.GameObjects.Rectangle;
     bg: Phaser.GameObjects.Rectangle;
     portrait: Phaser.GameObjects.Image;
-    heldBg: Phaser.GameObjects.Rectangle;
     held: Phaser.GameObjects.Image;
   }[] = [];
   /** The avatar held "in hand" while a party/box member is being dragged. */
@@ -288,7 +285,6 @@ export class RouteScene extends Phaser.Scene {
   private hudRows: {
     highlight: Phaser.GameObjects.Rectangle;
     portrait: Phaser.GameObjects.Image;
-    heldBg: Phaser.GameObjects.Rectangle;
     held: Phaser.GameObjects.Image;
     name: Phaser.GameObjects.BitmapText;
     level: Phaser.GameObjects.BitmapText;
@@ -536,10 +532,6 @@ export class RouteScene extends Phaser.Scene {
         .image(portraitX, rowY + 26, PORTRAIT_TEXTURE_KEY, 0)
         .setScale(HUD_PARTY_PORTRAIT_SCALE)
         .setVisible(false);
-      const heldBg = this.add
-        .rectangle(portraitX + 15, rowY + 39, HUD_HELD_BACKING, HUD_HELD_BACKING, 0x1b1a2e, 0.9)
-        .setStrokeStyle(2, 0xf8fafc, 0.7)
-        .setVisible(false);
       const held = this.add
         .image(portraitX + 15, rowY + 39, ITEM_ICON_TEXTURE_KEY, 0)
         .setScale(HUD_HELD_ICON_SCALE)
@@ -565,8 +557,8 @@ export class RouteScene extends Phaser.Scene {
         tint: FRLG_INK,
         origin: [1, 0],
       });
-      this.hudRows.push({ highlight, portrait, heldBg, held, name, level, hpText, bar, fill });
-      children.push(highlight, portrait, heldBg, held, name, level, bar, fill, hpText);
+      this.hudRows.push({ highlight, portrait, held, name, level, hpText, bar, fill });
+      children.push(highlight, portrait, held, name, level, bar, fill, hpText);
     }
 
     const bagY = partyY + partyH + HUD_GAP;
@@ -657,16 +649,12 @@ export class RouteScene extends Phaser.Scene {
         .image(cellX + HUD_BOX_CELL / 2, cellY + HUD_BOX_CELL / 2, PORTRAIT_TEXTURE_KEY, 0)
         .setScale(1.4)
         .setVisible(false);
-      const heldBg = this.add
-        .rectangle(cellX + 62, cellY + 62, HUD_BOX_HELD_BACKING, HUD_BOX_HELD_BACKING, 0x1b1a2e, 0.9)
-        .setStrokeStyle(2, 0xf8fafc, 0.7)
-        .setVisible(false);
       const held = this.add
         .image(cellX + 62, cellY + 62, ITEM_ICON_TEXTURE_KEY, 0)
         .setScale(HUD_BOX_HELD_ICON_SCALE)
         .setVisible(false);
-      this.hudBoxCells.push({ highlight, bg, portrait, heldBg, held });
-      children.push(bg, highlight, portrait, heldBg, held);
+      this.hudBoxCells.push({ highlight, bg, portrait, held });
+      children.push(bg, highlight, portrait, held);
     }
 
     // The avatar held in hand while dragging, drawn last so it rides over the
@@ -711,7 +699,6 @@ export class RouteScene extends Phaser.Scene {
       row.fill.setVisible(alive);
       if (!member) {
         row.portrait.setVisible(false);
-        row.heldBg.setVisible(false);
         row.held.setVisible(false);
         row.name.setText('');
         row.level.setText('');
@@ -722,7 +709,6 @@ export class RouteScene extends Phaser.Scene {
       row.portrait.setVisible(frame !== null);
       if (frame !== null) row.portrait.setFrame(frame);
       const heldFrame = member.fighter.heldItem ? itemIconFrame(member.fighter.heldItem) : null;
-      row.heldBg.setVisible(heldFrame !== null);
       row.held.setVisible(heldFrame !== null);
       if (heldFrame !== null) row.held.setFrame(heldFrame);
       const maxHp = restoreFighter(member.fighter).maxHp;
@@ -786,7 +772,6 @@ export class RouteScene extends Phaser.Scene {
       cell.portrait.setVisible(frame !== null);
       if (frame !== null) cell.portrait.setFrame(frame);
       const heldFrame = member?.heldItem ? itemIconFrame(member.heldItem) : null;
-      cell.heldBg.setVisible(heldFrame !== null);
       cell.held.setVisible(heldFrame !== null);
       if (heldFrame !== null) cell.held.setFrame(heldFrame);
       cell.highlight.setVisible(this.hudUi.grabbed?.pane === 'box' && this.hudUi.index === index);
@@ -1077,8 +1062,8 @@ export class RouteScene extends Phaser.Scene {
     if (!member || !itemId) return null;
     const badge =
       target.pane === 'party'
-        ? this.hudRows[target.index]?.heldBg
-        : this.hudBoxCells[target.index - this.hudBoxPage * BOX_PAGE_SIZE]?.heldBg;
+        ? this.hudRows[target.index]?.held
+        : this.hudBoxCells[target.index - this.hudBoxPage * BOX_PAGE_SIZE]?.held;
     if (!badge || !badge.visible) return null;
     const radius = Math.max(badge.displayWidth, badge.displayHeight) / 2;
     if (Math.hypot(pointer.x - badge.x, pointer.y - badge.y) > radius) return null;
