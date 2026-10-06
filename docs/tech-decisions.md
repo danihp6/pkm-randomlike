@@ -195,7 +195,7 @@ shim the scenes read and write through (the engine never touches storage).
 HUD open it paused-on-top with `O`, up/down picks a row and left/right steps its
 value, and every change is stored and applied immediately, so there is nothing to
 confirm. Each setting is honoured for real: text speed drives the battle message
-box's typewriter (`src/ui/typewriter.ts`, `TEXT_SPEED_MS`; a confirm tap or `Z`
+box's typewriter (`src/ui/typewriter.ts`, `TEXT_SPEED_MS`; a confirm tap or `E`
 held skips a line), volume is pushed into Phaser's sound manager at boot and on
 change — the only audio knob until the sounds themselves ship in Phase 8 — and
 the tileset preference is resolved per route by `resolveTileset` and re-rendered
@@ -208,8 +208,10 @@ document and screen, but needed their own layer — see `D23`.
 
 Every scene reads its confirm / cancel / move / party / settings key from one
 map instead of hardcoding a key. The vocabulary is in `src/data/keybinds.ts`
-(pure, no Phaser import, so the save can validate it): one key per action, the
-defaults (`Z`/`X`/arrows/`P`/`O`), display labels, and the pure rules
+(pure, no Phaser import, so the save can validate it): one key per action except
+the accept key `E`, which `confirm` and `interact` deliberately share so the same
+press confirms a menu and picks up the item in front of the player; the defaults
+(`E`/`Q`/arrows/`I`/`O`), display labels, and the pure rules
 `actionForKey` (explicit binding, then the always-on `Enter`/`Space` confirm and
 `Esc` cancel aliases, so a rebind can never lock a player out of confirm),
 `withBinding` (rebinding swaps with whichever action held the key, so no key is
@@ -218,8 +220,9 @@ half is `src/input/` (`subscribeKeybinds`, `actionKeys`, `keyNameOf`): it listen
 to the plugin's generic `keydown`, so the map is re-read per press and a rebind
 applies at once, and auto-repeat is skipped (the two places that want held state
 — the route's walk, the battle's hold-to-skip — poll `actionKeys`). The bindings
-are part of `Settings`, so `SAVE_VERSION` is 4 and `SAVE_MIGRATIONS[3]` adds the
-defaults to a v3 document. `SettingsScene` lists them as `keybind` rows beside
+are part of `Settings`, so `SAVE_VERSION` is 5, `SAVE_MIGRATIONS[3]` adds the
+defaults to a v3 document and `SAVE_MIGRATIONS[4]` resets a v4 document's keys to
+the `E`/`Q` defaults. `SettingsScene` lists them as `keybind` rows beside
 the `step` rows; selecting one and pressing confirm captures the next key (the
 raw press, bound or not, so any key can be chosen), and cancel keeps the old one.
 Keys that are not player actions stay on Phaser directly: the route's debug

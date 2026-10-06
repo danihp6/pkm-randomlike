@@ -8,6 +8,52 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] Battle polish: the command menu takes the **mouse** — hovering a row moves
+      the ▶ cursor, a click picks it, and a click advances the text feed — the
+      cursor sprite's white matte is now transparent, and the top-right key-hint
+      line is gone. The bag opens as **pockets** like the route HUD: **CONSUM**
+      everywhere and, while a wild can still be caught, **BALL** (trainer battles
+      offer only consumables). **RUN** in a wild battle escapes at once, with no
+      yes/no prompt. The default keys are now **E** confirm / **Q** cancel
+      (`interact` shares `E`, so the same press both confirms a menu and picks up
+      the item in front of the player): `SAVE_VERSION` 5 with
+      `SAVE_MIGRATIONS[4]` resetting a v4 document's keys. `docs/design-spec.md`
+      §4 and `docs/tech-decisions.md` (`D23`) updated.
+- [x] Battle feed fix: the typewriter carried no time across frames, so at 60 Hz
+      (a frame shorter than one character) a message never revealed and the battle
+      sat on an empty box until the player pressed. The leftover milliseconds are
+      now kept frame to frame, so text types itself out and advances on its own at
+      a slower read pace (no confirm needed). A ◀ back control in the moves /
+      switch / bag menus backs out with a click, and a **run** puts you straight
+      back on the route instead of waiting for Z.
+- [x] The battle screen adapts to a **portrait phone**: on a narrow canvas the
+      panels span the width, the player's Pokémon sits above its own panel (no
+      longer behind it) and the menu takes the bottom box, hiding the message
+      window while it is open. `docs/design-spec.md` §4 updated.
+- [x] **Hidden ground items are walkable.** Only a visible Poke Ball blocks its
+      tile now; a hidden sparkle can be walked over and taken underfoot, so a
+      player never gets stuck on something they cannot see.
+- [x] Ground items spawn **against walls**: the loot spot is the tile of a
+      branch's lane with the most wall neighbours (a corner where there is one),
+      falling back to the wider branch network when the lane itself has none.
+      `docs/routes-spec.md` updated.
+- [x] A new **Always run** setting (on by default) walks the route at running
+      speed without holding the run key; it lives with the other preferences and
+      is added to a save without a version bump since a missing field defaults.
+      `docs/design-spec.md` §7 updated.
+- [x] The player's **battle backs are no longer shiny.** The expansion exports
+      its `back.png` sheets with the shiny palette baked in, so the packed atlas
+      was recoloured: `build-pokemon-sprites.mjs` now remaps each back sprite by
+      palette index through the folder's `normal.pal`, and the committed
+      `pokemon-back.png` was rebuilt from the source with normal colours.
+- [x] The battle closes itself after a win or a loss too (not just a run), and
+      the command menu and the message window now share the whole bottom box on
+      desktop as on phone — the message hides while a choice is open and both are
+      wider. `docs/design-spec.md` §4 updated.
+- [x] The battle stage is a **square** on a wide screen: centred and capped at
+      900 px a side, with the paused route hidden behind it so the letterbox stays
+      clean. A tall screen keeps the full stacked phone layout.
+
 - [x] Routes hold **ground items** again, one at the far end of each optional path
       (a `pocket`). The number follows the route's **size** (a bigger map carves
       more branches, `MAP_SIZE_TIERS`); the contents come from the level band's

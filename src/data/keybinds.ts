@@ -31,14 +31,16 @@ export type KeyName = string;
 
 /**
  * One key per action, so a rebind is always a single, unambiguous press and the
- * settings screen has one row to show. `MOVE_ACTIONS` lists the four the route
- * polls for walking; the rest are the menu keys.
+ * settings screen has one row to show. The one deliberate overlap is `confirm`
+ * and `interact`: `E` is the accept key everywhere, so in the overworld it both
+ * advances the release text and picks up the item the player faces. `MOVE_ACTIONS`
+ * lists the four the route polls for walking; the rest are the menu keys.
  */
 export type Keybinds = Readonly<Record<KeybindAction, KeyName>>;
 
 export const DEFAULT_KEYBINDS: Keybinds = {
-  confirm: 'Z',
-  cancel: 'X',
+  confirm: 'E',
+  cancel: 'Q',
   up: 'UP',
   down: 'DOWN',
   left: 'LEFT',

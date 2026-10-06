@@ -91,9 +91,10 @@ Every generation's battle art comes from the pokeemerald-expansion checkout
 GBA-sized. `scripts/frlg/build-pokemon-sprites.mjs` is run against that checkout
 and packs `src/assets/frlg/pokemon-{front,back,icon}.png` plus the frame manifest
 `src/data/frlg/pokemon-sprites.json`, read through `src/data/pokemonSprites.ts`.
-A Gen 9 forme without its own folder falls back to its base species at pack time.
-Never redistributed: keep the checkout out of the repo (`sprite-sources/` is
-gitignored).
+The back sheets are exported with the shiny palette baked in, so the packer
+recolours each back sprite by palette index with the folder's `normal.pal`. A Gen
+9 forme without its own folder falls back to its base species at pack time. Never
+redistributed: keep the checkout out of the repo (`sprite-sources/` is gitignored).
 
 ## FireRed/LeafGreen UI sources (downloaded, local only)
 

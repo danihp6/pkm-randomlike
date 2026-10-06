@@ -17,6 +17,8 @@ export type Settings = Readonly<{
   volume: number;
   /** Which tileset every route renders with: `auto` is the biome's own (D10). */
   tileset: TilesetPreference;
+  /** Walk at running speed without holding the run key. */
+  alwaysRun: boolean;
   /** Which key presses confirm, cancel, move, open the party and open settings. */
   keybinds: Keybinds;
 }>;
@@ -40,7 +42,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -48,12 +50,14 @@ export const SAVE_KEY = 'pokerandomlike.save';
 export const DEFAULT_TEXT_SPEED: TextSpeed = 'normal';
 export const DEFAULT_VOLUME = 0.8;
 export const DEFAULT_TILESET: TilesetPreference = 'auto';
+export const DEFAULT_ALWAYS_RUN = true;
 
 export function defaultSettings(): Settings {
   return {
     textSpeed: DEFAULT_TEXT_SPEED,
     volume: DEFAULT_VOLUME,
     tileset: DEFAULT_TILESET,
+    alwaysRun: DEFAULT_ALWAYS_RUN,
     keybinds: DEFAULT_KEYBINDS,
   };
 }
@@ -77,9 +81,11 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * The migration path, keyed by the version each step reads. `1` moves a v1 run
  * onto the v2 schema, which added the run summary counters; `2` moves a v2
  * document onto the v3 schema, which added the tileset preference; `3` moves a
- * v3 document onto the v4 schema, which added the keybinds (a field that can
- * also be defaulted, so it is added rather than required). Later changes add
- * the next step, e.g. `4: (doc) => ({ ...doc, version: 5, changed })`.
+ * v3 document onto the v4 schema, which added the keybinds; `4` moves a v4
+ * document onto the v5 schema, whose defaults switched confirm/cancel to
+ * `E`/`Q` (a field that can also be defaulted, so it is reset rather than
+ * required). Later changes add the next step, e.g.
+ * `5: (doc) => ({ ...doc, version: 6, changed })`.
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -99,6 +105,13 @@ export const SAVE_MIGRATIONS: Migrations = {
   3: (document) => ({
     ...document,
     version: 4,
+    settings: isRecord(document.settings)
+      ? { ...document.settings, keybinds: DEFAULT_KEYBINDS }
+      : document.settings,
+  }),
+  4: (document) => ({
+    ...document,
+    version: 5,
     settings: isRecord(document.settings)
       ? { ...document.settings, keybinds: DEFAULT_KEYBINDS }
       : document.settings,
@@ -250,8 +263,9 @@ function parseSettings(value: unknown): Settings {
     : base.textSpeed;
   const volume = isNumber(value.volume) ? clampVolume(value.volume) : base.volume;
   const tileset = isTilesetPreference(value.tileset) ? value.tileset : base.tileset;
+  const alwaysRun = typeof value.alwaysRun === 'boolean' ? value.alwaysRun : base.alwaysRun;
   const keybinds = sanitizeKeybinds(value.keybinds);
-  return { textSpeed, volume, tileset, keybinds };
+  return { textSpeed, volume, tileset, alwaysRun, keybinds };
 }
 
 function parseStats(value: unknown): Stats | null {

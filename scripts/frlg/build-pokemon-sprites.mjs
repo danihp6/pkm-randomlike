@@ -11,9 +11,11 @@
 //
 // Each species folder holds a paletted PNG (`front.png`/`anim_front.png` for the
 // front, `back.png`, `icon.png`); the first palette entry is the flat background
-// key, keyed out here. `anim_front` sheets are two 64x64 frames stacked, so the
-// first frame is taken. The dex is Gen 9, so a forme without its own folder falls
-// back to its base species' art.
+// key, keyed out here. The back sheets are exported in the source with the shiny
+// palette baked in, so they are recoloured by palette index with the folder's
+// `normal.pal`. `anim_front` sheets are two 64x64 frames stacked, so the first
+// frame is taken. The dex is Gen 9, so a forme without its own folder falls back
+// to its base species' art.
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
@@ -65,9 +67,38 @@ function backgroundKey(buf) {
 
 const tileCache = new Map()
 
-/** Decodes one source sprite with its background keyed out, or null if absent. */
-function loadTile(folder, names) {
-  const cacheKey = `${folder}/${names.join(',')}`
+/** JASC-PAL text ("JASC-PAL" / "0100" / count / "r g b" lines) as RGB triples. */
+function parsePalette(buf) {
+  const lines = buf
+    .toString('ascii')
+    .split(/\r?\n/)
+    .filter((line) => line.trim() !== '')
+  const count = Number.parseInt(lines[2], 10)
+  const colors = []
+  for (let i = 0; i < count; i++) {
+    colors.push(lines[3 + i].trim().split(/\s+/).map(Number))
+  }
+  return colors
+}
+
+/**
+ * A species folder's normal palette. Some back PNGs are exported with the shiny
+ * palette baked in, so the sheet has to be recoloured by palette index.
+ */
+function loadNormalPalette(folder) {
+  for (const name of ['normal.pal', 'normal_gba.pal']) {
+    try {
+      return parsePalette(readFileSync(`${sourceDir}/${folder}/${name}`))
+    } catch {
+      continue
+    }
+  }
+  return null
+}
+
+/** Decodes one source sprite, keyed out or recoloured with its normal palette. */
+function loadTile(folder, names, normalPalette = null) {
+  const cacheKey = `${folder}/${names.join(',')}/${normalPalette ? 'normal' : 'raw'}`
   if (tileCache.has(cacheKey)) return tileCache.get(cacheKey)
   let tile = null
   for (const name of names) {
@@ -80,15 +111,29 @@ function loadTile(folder, names) {
     }
     const key = backgroundKey(buf)
     const png = decodePng(buf)
-    if (key) {
-      for (let i = 0; i < png.width * png.height; i++) {
-        const o = i * 4
-        if (png.data[o] === key[0] && png.data[o + 1] === key[1] && png.data[o + 2] === key[2]) {
-          png.data[o + 3] = 0
+    if (normalPalette && png.indices) {
+      const out = Buffer.alloc(png.width * png.height * 4)
+      for (let p = 0; p < png.indices.length; p++) {
+        const idx = png.indices[p]
+        if (idx === 0) continue
+        const [r, g, b] = normalPalette[idx] ?? [png.data[p * 4], png.data[p * 4 + 1], png.data[p * 4 + 2]]
+        out[p * 4] = r
+        out[p * 4 + 1] = g
+        out[p * 4 + 2] = b
+        out[p * 4 + 3] = 255
+      }
+      tile = { width: png.width, height: png.height, data: out }
+    } else {
+      if (key) {
+        for (let i = 0; i < png.width * png.height; i++) {
+          const o = i * 4
+          if (png.data[o] === key[0] && png.data[o + 1] === key[1] && png.data[o + 2] === key[2]) {
+            png.data[o + 3] = 0
+          }
         }
       }
+      tile = png
     }
-    tile = png
     break
   }
   tileCache.set(cacheKey, tile)
@@ -124,7 +169,7 @@ SPECIES.forEach((species, index) => {
   const folder = folderFor(species)
   if (!folder) return
   blit(front, COLS, index, FRONT, loadTile(folder, ['front.png', 'anim_front.png', 'front_gba.png', 'anim_front_gba.png']))
-  blit(back, COLS, index, BACK, loadTile(folder, ['back.png', 'back_gba.png']))
+  blit(back, COLS, index, BACK, loadTile(folder, ['back.png', 'back_gba.png'], loadNormalPalette(folder)))
   blit(icon, COLS, index, ICON, loadTile(folder, ['icon.png', 'icon_gba.png']))
 })
 

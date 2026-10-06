@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { getMove } from '../data/dex';
 import { getItem } from '../data/items';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
-import { keyLabel, type Keybinds } from '../data/keybinds';
+import { type Keybinds } from '../data/keybinds';
 import { POKEMON_SPRITE_SHEETS, pokemonSpriteFrame } from '../data/pokemonSprites';
 import { getTrainerArchetype } from '../data/trainers';
 import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
@@ -32,6 +32,7 @@ import {
   SWITCH_SHRINK,
 } from '../ui/beats';
 import { CAPTURE_SHAKE_SPEED, captureBeat } from '../ui/capture';
+import { BAG_CATEGORY_LABELS, bagCategoryForKind, type BagCategory } from '../ui/bag';
 import { battleFrames, type FeedFrame } from '../ui/feed';
 import { hpColorInt, hpFraction, statusAbbreviation } from '../ui/metrics';
 import { drawGauge } from '../ui/panel';
@@ -51,8 +52,10 @@ import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import type { RouteScene } from './RouteScene';
 
-const MESSAGE_HOLD_MS = 450;
+const MESSAGE_HOLD_MS = 900;
 const FAST_HOLD_MS = 45;
+/** How long the win / loss / catch line stays up before the battle closes itself. */
+const OUTCOME_HOLD_MS = 1300;
 const MENU_ROWS = 4;
 const MENU_W = 540;
 const MESSAGE_H = 124;
@@ -65,10 +68,20 @@ const FOE_PANEL = { w: PANEL_W, h: 114 } as const;
 const PANEL_NAME_H = 32;
 const PANEL_NAME_GAP = 26;
 const ROW_H = 34;
+/** The battle plays inside a centred square, at most this many pixels a side. */
+const MAX_BATTLE_SIZE = 900;
+/** Below this square side the stacked, full-width phone layout is used. */
+const COMPACT_SIZE = 700;
+/** The bag pocket tabs drawn inside the menu window, as in the route HUD. */
+const MENU_TAB_W = 120;
+const MENU_TAB_H = 26;
+const MENU_TAB_GAP = 4;
+/** Bag rows that fit under the tab strip in the 160px menu window. */
+const MENU_BAG_ROWS = 3;
 /** Placeholder mon sprite scale; the switch beat returns the sprite to it. */
 const MON_SCALE = 2.4;
 
-type Mode = 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'run' | 'over';
+type Mode = 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'over';
 
 /** A sprite beat that owns the mon's position/scale until it completes. */
 type BeatKind = 'faint' | 'switch';
@@ -89,6 +102,8 @@ export class BattleScene extends Phaser.Scene {
   private frames: readonly FeedFrame[] = [];
   private frameIndex = 0;
   private feedElapsed = 0;
+  /** Time not yet spent on a character, carried across frames (see `tickTyping`). */
+  private typingRemainder = 0;
   /** The message box's typewriter, at the player's text speed (Phase 7). */
   private typing: Typewriter = beginTypewriter('');
   private charMs = TEXT_SPEED_MS.normal;
@@ -113,11 +128,16 @@ export class BattleScene extends Phaser.Scene {
   private playerMonPos = { x: 0, y: 0 };
 
   private hud!: Phaser.GameObjects.Graphics;
+  private bgTop!: Phaser.GameObjects.Rectangle;
+  private bgBottom!: Phaser.GameObjects.Rectangle;
   private foePanel!: Phaser.GameObjects.NineSlice;
   private playerPanel!: Phaser.GameObjects.NineSlice;
   private messagePanel!: Phaser.GameObjects.NineSlice;
   private menuPanel!: Phaser.GameObjects.NineSlice;
   private menuCursor!: Phaser.GameObjects.Image;
+  /** The clickable ◀ that backs out of the moves / switch / bag submenus. */
+  private backArrow!: Phaser.GameObjects.Image;
+  private backZone!: Phaser.GameObjects.Zone;
   private hpBars!: Record<SideId, { fill: Phaser.GameObjects.Rectangle; bar: Phaser.GameObjects.Image }>;
   private messageText!: Phaser.GameObjects.BitmapText;
   private nameText!: Record<SideId, Phaser.GameObjects.BitmapText>;
@@ -132,9 +152,16 @@ export class BattleScene extends Phaser.Scene {
   private playerPlatform!: Phaser.GameObjects.Image;
   private foePlatform!: Phaser.GameObjects.Image;
   private menuRows: Phaser.GameObjects.BitmapText[] = [];
+  /** One pointer zone per menu row, so a click picks it like a cursor press. */
+  private menuZones: Phaser.GameObjects.Zone[] = [];
 
   private menuItems: readonly MenuItem[] = [];
   private menuIndex = 0;
+
+  /** The bag's pockets (consumable, and balls while a wild can be caught). */
+  private bagCategories: readonly BagCategory[] = ['consumable'];
+  private bagCategory: BagCategory = 'consumable';
+  private bagTabs: { bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.BitmapText }[] = [];
 
   /** The keys behind the confirm action, polled so holding one rushes the feed. */
   private confirmKeys: Phaser.Input.Keyboard.Key[] = [];
@@ -196,15 +223,27 @@ export class BattleScene extends Phaser.Scene {
 
     this.buildScene();
     this.bindInput();
+    this.scale.on('resize', this.onResize, this);
+    this.events.once('shutdown', () => {
+      this.scale.off('resize', this.onResize, this);
+      this.scene.setVisible(true, 'Route');
+    });
+    // The battle owns a centred square; hide the paused route so the letterbox
+    // around it stays clean instead of showing the overworld through it.
+    this.scene.setVisible(false, 'Route');
     this.startFeed();
+  }
+
+  /** Re-centres the square stage (and everything in it) when the window changes. */
+  private onResize(): void {
+    this.refreshHud();
   }
 
   // --- scene construction -------------------------------------------------
 
   private buildScene(): void {
-    const { width, height } = this.scale;
-    this.add.rectangle(0, 0, width, height, 0x27324a).setOrigin(0, 0);
-    this.add.rectangle(0, height * 0.52, width, height * 0.48, 0x39424f).setOrigin(0, 0);
+    this.bgTop = this.add.rectangle(0, 0, 10, 10, 0x27324a).setOrigin(0, 0);
+    this.bgBottom = this.add.rectangle(0, 0, 10, 10, 0x39424f).setOrigin(0, 0);
 
     this.foePlatform = this.add.image(0, 0, BATTLE_PLATFORM_TEXTURE_KEY).setTint(0x6f8f5f);
     this.playerPlatform = this.add.image(0, 0, BATTLE_PLATFORM_TEXTURE_KEY).setTint(0x6f8f5f);
@@ -241,6 +280,15 @@ export class BattleScene extends Phaser.Scene {
 
     this.hud = this.add.graphics();
     this.menuCursor = this.add.image(0, 0, FRLG_CURSOR_KEY).setOrigin(0, 0.5).setVisible(false);
+    this.backArrow = this.add
+      .image(0, 0, FRLG_CURSOR_KEY)
+      .setOrigin(0, 0.5)
+      .setFlipX(true)
+      .setScale(0.7)
+      .setVisible(false);
+    this.backZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    this.backZone.setData('back', true);
+    this.backZone.on('pointerdown', () => this.onBack());
 
     this.nameText = {
       enemy: addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
@@ -262,17 +310,29 @@ export class BattleScene extends Phaser.Scene {
       addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
     );
 
-    addFrlgText(
-      this,
-      width - 16,
-      12,
-      `${keyLabel(this.keybinds.confirm)} confirm (hold = skip)  ·  ${keyLabel(this.keybinds.cancel)} cancel`,
-      {
-        size: 16,
-        tint: 0x94a3b8,
-        origin: [1, 0],
-      },
-    );
+    // One invisible zone per row: hovering moves the cursor, clicking picks the
+    // row, so the menu answers the mouse exactly like the keyboard.
+    this.menuZones = Array.from({ length: MENU_ROWS }, () => {
+      const zone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0);
+      zone.setData('item', -1);
+      zone.setInteractive({ useHandCursor: true });
+      zone.on('pointerover', () => this.onMenuHover(zone));
+      zone.on('pointerdown', () => this.onMenuClick(zone));
+      return zone;
+    });
+
+    // The bag's pocket tabs, drawn inside the menu window; at most two.
+    this.bagTabs = Array.from({ length: 2 }, (_, slot) => {
+      const bg = this.add
+        .rectangle(0, 0, 10, 10, 0xcfcce2)
+        .setOrigin(0, 0)
+        .setVisible(false);
+      const label = addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [0.5, 0] })
+        .setVisible(false);
+      bg.setInteractive({ useHandCursor: true });
+      bg.on('pointerdown', () => this.selectBagTab(slot));
+      return { bg, label };
+    });
   }
 
   private bindInput(): void {
@@ -299,6 +359,30 @@ export class BattleScene extends Phaser.Scene {
       },
       () => this.keybinds,
     );
+    // A click anywhere advances the feed (and leaves the result screen); the
+    // per-row zones below handle the menus. A press that landed on a menu row or
+    // a pocket tab is left to it, so picking an option never also taps the feed.
+    this.input.on(
+      'pointerdown',
+      (_pointer: Phaser.Input.Pointer, objects: Phaser.GameObjects.GameObject[]) =>
+        this.onPointerDown(objects),
+    );
+    // `[` / `]` cycle the bag's pockets while it is open, as in the route HUD.
+    this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
+      if (this.mode !== 'bag') return;
+      if (event.key === '[') this.cycleBagTab(-1);
+      else if (event.key === ']') this.cycleBagTab(1);
+    });
+  }
+
+  /** A click on the scene: feed taps and the result screen answer it. */
+  private onPointerDown(objects: readonly Phaser.GameObjects.GameObject[]): void {
+    if (objects.length > 0) return;
+    if (this.mode === 'feed') {
+      this.onConfirm();
+      return;
+    }
+    if (this.mode === 'over') this.returnToRoute();
   }
 
   private onConfirm(): void {
@@ -323,7 +407,7 @@ export class BattleScene extends Phaser.Scene {
       this.returnToRoute();
       return;
     }
-    if (this.mode === 'moves' || this.mode === 'bag' || this.mode === 'party' || this.mode === 'run') {
+    if (this.mode === 'moves' || this.mode === 'bag' || this.mode === 'party') {
       this.openMenu();
     }
   }
@@ -570,9 +654,11 @@ export class BattleScene extends Phaser.Scene {
   private showOver(): void {
     this.mode = 'over';
     this.menuItems = [];
-    const message = this.outcomeMessage(this.outcome());
-    this.setMessage(`${message}  ·  Z / Esc to leave`);
+    // Every end of battle leaves on its own after the line is read — a run, a
+    // catch, a win or a loss all need no confirm to get back to the route.
+    this.setMessage(this.outcomeMessage(this.outcome()));
     this.refreshHud();
+    this.time.delayedCall(OUTCOME_HOLD_MS, () => this.returnToRoute());
   }
 
   /** Reads the finished battle's log to tell a catch, a win, a loss and a flee apart. */
@@ -609,6 +695,7 @@ export class BattleScene extends Phaser.Scene {
       captured,
     };
     const route = this.scene.get('Route') as RouteScene;
+    this.scene.setVisible(true, 'Route');
     route.applyBattleResult(result);
     this.scene.resume('Route');
     this.scene.stop();
@@ -622,7 +709,7 @@ export class BattleScene extends Phaser.Scene {
       { label: 'FIGHT', enabled: true, onSelect: () => this.openMoves() },
       { label: 'BAG', enabled: this.usableBag().length > 0, onSelect: () => this.openBag() },
       { label: 'SWITCH', enabled: this.hasBench(), onSelect: () => this.openParty() },
-      { label: 'RUN', enabled: canRun(this.state, 'player'), onSelect: () => this.openRunConfirm() },
+      { label: 'RUN', enabled: canRun(this.state, 'player'), onSelect: () => this.submit({ type: 'run' }) },
     ];
     this.menuIndex = 0;
     this.mode = 'menu';
@@ -650,18 +737,51 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private openBag(): void {
+    // The pockets on offer: consumables everywhere, balls only while a wild is
+    // still catchable. A trainer battle is therefore a single-tab bag.
+    const canCatch = this.state.isWild && this.launch?.canCapture === true;
+    this.bagCategories = canCatch ? ['consumable', 'ball'] : ['consumable'];
     const usable = this.usableBag();
+    this.bagCategory =
+      this.bagCategories.find((category) =>
+        usable.some((slot) => bagCategoryForKind(slot.item.kind) === category),
+      ) ?? this.bagCategories[0];
+    this.mode = 'bag';
+    this.setBagItems(this.bagCategory);
+  }
+
+  /** Rebuilds the bag list for a pocket, as a menu the cursor and clicks drive. */
+  private setBagItems(category: BagCategory): void {
+    this.bagCategory = category;
+    const stacks = this.usableBag().filter(
+      (slot) => bagCategoryForKind(slot.item.kind) === category,
+    );
     this.menuItems =
-      usable.length === 0
+      stacks.length === 0
         ? [{ label: 'No items', enabled: false, onSelect: () => {} }]
-        : usable.map((slot) => ({
+        : stacks.map((slot) => ({
             label: `${slot.item.name} x${slot.count}`,
             enabled: true,
             onSelect: () => this.submit({ type: 'bag', itemId: slot.item.id }),
           }));
     this.menuIndex = 0;
-    this.mode = 'bag';
     this.refreshHud();
+  }
+
+  /** Steps the bag to the next pocket, as `[` / `]` or a tab click ask. */
+  private cycleBagTab(delta: number): void {
+    if (this.bagCategories.length < 2) return;
+    const index = this.bagCategories.indexOf(this.bagCategory);
+    const next = (index + delta + this.bagCategories.length) % this.bagCategories.length;
+    this.setBagItems(this.bagCategories[next]);
+  }
+
+  /** A click on a pocket tab: shows that pocket's stacks. */
+  private selectBagTab(slot: number): void {
+    if (this.mode !== 'bag') return;
+    const category = this.bagCategories[slot];
+    if (!category || category === this.bagCategory) return;
+    this.setBagItems(category);
   }
 
   private openParty(): void {
@@ -677,17 +797,6 @@ export class BattleScene extends Phaser.Scene {
     });
     this.menuIndex = 0;
     this.mode = 'party';
-    this.refreshHud();
-  }
-
-  private openRunConfirm(): void {
-    this.menuItems = [
-      { label: 'YES', enabled: true, onSelect: () => this.submit({ type: 'run' }) },
-      { label: 'NO', enabled: true, onSelect: () => this.openMenu() },
-    ];
-    this.menuIndex = 0;
-    this.mode = 'run';
-    this.setMessage('Run away from the battle?');
     this.refreshHud();
   }
 
@@ -756,18 +865,25 @@ export class BattleScene extends Phaser.Scene {
   /** Starts revealing a message at the player's text speed. */
   private typeMessage(text: string): void {
     this.typing = beginTypewriter(text);
+    this.typingRemainder = 0;
     this.messageText.setText('');
   }
 
-  /** Reveals the characters the frame's elapsed time buys. */
+  /**
+   * Reveals the characters the frame's elapsed time buys. The leftover time is
+   * carried into the next frame, so a frame shorter than one character (a 60 Hz
+   * or 120 Hz tick is) still reveals the line instead of stalling on the first.
+   */
   private tickTyping(delta: number): void {
-    const { typewriter } = advanceTypewriter(this.typing, delta, this.charMs);
+    this.typingRemainder += delta;
+    const { typewriter, elapsed } = advanceTypewriter(this.typing, this.typingRemainder, this.charMs);
+    this.typingRemainder = elapsed;
     if (typewriter === this.typing) return;
     this.typing = typewriter;
     this.messageText.setText(visibleText(typewriter));
   }
 
-  /** Skips to the end of the line (a confirm tap, or Z held). */
+  /** Skips to the end of the line (a confirm tap, or confirm held). */
   private completeTyping(): void {
     if (typewriterDone(this.typing)) return;
     this.typing = revealAll(this.typing);
@@ -776,33 +892,78 @@ export class BattleScene extends Phaser.Scene {
 
   private refreshHud(): void {
     this.syncMonSprites();
-    const { width, height } = this.scale;
-    const box: Rect = { x: 36, y: height - 186, w: width - 72, h: 160 };
-    const foeInfo: Rect = { x: 36, y: 28, w: FOE_PANEL.w, h: FOE_PANEL.h };
-    const playerInfo: Rect = {
-      x: width - 36 - PLAYER_PANEL_W,
-      y: height - 186 - 24 - PLAYER_PANEL_H,
-      w: PLAYER_PANEL_W,
-      h: PLAYER_PANEL_H,
-    };
-    const menu: Rect = { x: box.x + box.w - MENU_W, y: box.y, w: MENU_W, h: box.h };
-    const message: Rect = {
-      x: box.x,
-      y: box.y + box.h - MESSAGE_H,
-      w: box.w - MENU_W - 12,
-      h: MESSAGE_H,
-    };
-
+    // The battle lives in a centred square (at most `MAX_BATTLE_SIZE`), so it
+    // reads the same on a wide desktop and a phone. Everything below is laid out
+    // in that square's own coordinates; the camera viewport places and clips it.
+    const { width: canvasW, height: canvasH } = this.scale;
+    // A wide screen gets a centred **square** stage capped at `MAX_BATTLE_SIZE`,
+    // so the battle never stretches across a widescreen. A tall screen keeps its
+    // full portrait stage: the stacked phone layout needs the height.
+    const wide = canvasW > canvasH;
+    const width = wide ? Math.min(canvasH, MAX_BATTLE_SIZE) : canvasW;
+    const height = wide ? width : canvasH;
+    this.cameras.main.setViewport(
+      Math.round((canvasW - width) / 2),
+      Math.round((canvasH - height) / 2),
+      width,
+      height,
+    );
+    this.bgTop.setPosition(0, 0).setSize(width, height * 0.52);
+    this.bgBottom.setPosition(0, height * 0.52).setSize(width, height * 0.48);
     const trainer = this.foeTrainer.visible;
-    const foeX = trainer ? width * 0.78 : width * 0.72;
-    const foeY = trainer ? height * 0.3 : height * 0.28;
+    const compact = width < COMPACT_SIZE;
+    const menuOpen = this.menuItems.length > 0;
+
+    let box: Rect;
+    let foeInfo: Rect;
+    let playerInfo: Rect;
+    let menu: Rect;
+    let message: Rect;
+    let foeX: number;
+    let foeY: number;
+    let playerX: number;
+    let playerY: number;
+
+    if (compact) {
+      const pad = 16;
+      const panelW = width - pad * 2;
+      const boxH = 204;
+      box = { x: pad, y: height - boxH - pad, w: panelW, h: boxH };
+      foeInfo = { x: pad, y: pad, w: panelW, h: FOE_PANEL.h };
+      playerInfo = { x: pad, y: Math.round(height * 0.46), w: panelW, h: PLAYER_PANEL_H };
+      foeX = width * 0.72;
+      foeY = height * 0.18;
+      playerX = width * 0.32;
+      playerY = playerInfo.y - 90;
+    } else {
+      box = { x: 36, y: height - 186, w: width - 72, h: 160 };
+      foeInfo = { x: 36, y: 28, w: FOE_PANEL.w, h: FOE_PANEL.h };
+      playerInfo = {
+        x: width - 36 - PLAYER_PANEL_W,
+        y: height - 186 - 24 - PLAYER_PANEL_H,
+        w: PLAYER_PANEL_W,
+        h: PLAYER_PANEL_H,
+      };
+      foeX = trainer ? width * 0.78 : width * 0.72;
+      foeY = trainer ? height * 0.3 : height * 0.28;
+      playerX = width * 0.27;
+      playerY = height * 0.6;
+    }
+
+    // Both boxes span the full bottom width and share it: the choice menu owns
+    // the whole box while it is open and the message window steps aside, so a
+    // list is never squeezed next to the text (the same shape on phone and
+    // desktop now).
+    menu = { x: box.x, y: box.y, w: box.w, h: box.h };
+    message = { x: box.x, y: box.y + box.h - MESSAGE_H, w: box.w, h: MESSAGE_H };
+
     this.foeMonPos = { x: foeX, y: foeY };
-    this.playerMonPos = { x: width * 0.27, y: height * 0.6 };
+    this.playerMonPos = { x: playerX, y: playerY };
     if (this.beat.enemy !== 'faint') this.foeSprite.setPosition(foeX, foeY);
-    this.foePlatform.setPosition(width * 0.72, height * 0.28 + 58);
-    if (trainer) this.foeTrainer.setPosition(width * 0.72 - 70, height * 0.28 + 62);
-    if (this.beat.player !== 'faint') this.playerSprite.setPosition(this.playerMonPos.x, this.playerMonPos.y);
-    this.playerPlatform.setPosition(width * 0.27, height * 0.6 + 62);
+    this.foePlatform.setPosition(compact ? foeX : width * 0.72, foeY + 58);
+    if (trainer) this.foeTrainer.setPosition((compact ? foeX : width * 0.72) - 70, foeY + 62);
+    if (this.beat.player !== 'faint') this.playerSprite.setPosition(playerX, playerY);
+    this.playerPlatform.setPosition(playerX, playerY + 62);
     this.foeSprite.setVisible((this.displayHp.enemy > 0 && !this.captured) || this.beat.enemy === 'faint');
     this.playerSprite.setVisible(this.displayHp.player > 0 || this.beat.player === 'faint');
 
@@ -811,16 +972,17 @@ export class BattleScene extends Phaser.Scene {
     this.drawSidePanel(playerInfo, 'player');
     this.messagePanel.setSlices(message.w, message.h).setPosition(message.x, message.y);
     this.menuPanel.setSlices(menu.w, menu.h).setPosition(menu.x, menu.y);
+    this.messagePanel.setVisible(!menuOpen);
+    this.messageText.setVisible(!menuOpen);
 
     this.messageText.setPosition(message.x + FRLG_TEXTBOX_PADDING.x, message.y + FRLG_TEXTBOX_PADDING.top);
     this.messageText.setMaxWidth(message.w - FRLG_TEXTBOX_PADDING.x * 2);
 
-    if (this.menuItems.length > 0) {
-      this.renderMenu(menu);
+    if (menuOpen) {
+      if (this.mode === 'bag') this.renderBagMenu(menu);
+      else this.renderMenu(menu);
     } else {
-      this.menuPanel.setVisible(false);
-      this.menuCursor.setVisible(false);
-      for (const row of this.menuRows) row.setVisible(false);
+      this.hideMenu();
     }
   }
 
@@ -874,14 +1036,69 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  /** The plain list menu (fight / bag / switch / run, moves and party). */
   private renderMenu(menu: Rect): void {
     this.menuPanel.setVisible(true);
-    const startX = menu.x + 58;
-    const startY = menu.y + FRLG_WINDOW_PADDING.top;
-    const count = this.menuItems.length;
-    const windowStart = Math.max(0, Math.min(this.menuIndex - 1, count - MENU_ROWS));
+    this.hideBagTabs();
+    const submenu = this.mode === 'moves' || this.mode === 'party';
+    this.layoutBackButton(menu, submenu);
+    const top = submenu
+      ? menu.y + FRLG_WINDOW_PADDING.top + MENU_TAB_H + 8
+      : menu.y + FRLG_WINDOW_PADDING.top;
+    this.layoutMenuRows(menu, this.menuItems, top, submenu ? MENU_BAG_ROWS : MENU_ROWS);
+  }
+
+  /** The bag: a pocket tab strip over the active pocket's stacks. */
+  private renderBagMenu(menu: Rect): void {
+    this.menuPanel.setVisible(true);
+    const pad = FRLG_WINDOW_PADDING;
+    const tabY = menu.y + pad.top;
+    this.bagTabs.forEach((tab, slot) => {
+      const category = this.bagCategories[slot];
+      if (!category) {
+        tab.bg.setVisible(false);
+        tab.label.setVisible(false);
+        return;
+      }
+      const x = menu.x + pad.x + slot * (MENU_TAB_W + MENU_TAB_GAP);
+      const active = category === this.bagCategory;
+      tab.bg
+        .setPosition(x, tabY)
+        .setSize(MENU_TAB_W, MENU_TAB_H)
+        .setFillStyle(active ? 0x2f2c4d : 0xcfcce2)
+        .setVisible(true);
+      tab.label
+        .setText(BAG_CATEGORY_LABELS[category])
+        .setTint(active ? 0xf8fafc : FRLG_INK)
+        .setPosition(x + MENU_TAB_W / 2, tabY + 5)
+        .setVisible(true);
+    });
+    this.layoutBackButton(menu, true);
+    this.layoutMenuRows(menu, this.menuItems, tabY + MENU_TAB_H + 8, MENU_BAG_ROWS);
+  }
+
+  /** Places the ◀ back control in the submenu header, or hides it. */
+  private layoutBackButton(menu: Rect, visible: boolean): void {
+    this.backArrow.setVisible(visible);
+    if (this.backZone.input) this.backZone.input.enabled = visible;
+    if (!visible) return;
+    const x = menu.x + menu.w - FRLG_WINDOW_PADDING.x - 26;
+    const y = menu.y + FRLG_WINDOW_PADDING.top + MENU_TAB_H / 2;
+    this.backArrow.setPosition(x, y);
+    this.backZone.setPosition(x - 12, y - 18).setSize(50, 36);
+  }
+
+  /** Draws a windowed list of rows and lines the click zones up with them. */
+  private layoutMenuRows(
+    menu: Rect,
+    items: readonly MenuItem[],
+    top: number,
+    visibleRows: number,
+  ): void {
+    const count = items.length;
+    const windowStart = Math.max(0, Math.min(this.menuIndex - 1, count - visibleRows));
     this.menuRows.forEach((row, i) => {
-      const item = this.menuItems[windowStart + i];
+      const item = i < visibleRows ? items[windowStart + i] : undefined;
       if (!item) {
         row.setVisible(false);
         return;
@@ -889,12 +1106,62 @@ export class BattleScene extends Phaser.Scene {
       row
         .setText(item.label)
         .setAlpha(item.enabled ? 1 : 0.4)
-        .setPosition(startX, startY + i * ROW_H)
+        .setPosition(menu.x + 58, top + i * ROW_H)
         .setVisible(true);
     });
+    this.menuZones.forEach((zone, i) => {
+      const item = i < visibleRows ? items[windowStart + i] : undefined;
+      zone.setData('item', item ? windowStart + i : -1);
+      if (zone.input) zone.input.enabled = Boolean(item);
+      if (item) zone.setPosition(menu.x + 10, top + i * ROW_H - 4).setSize(menu.w - 20, ROW_H);
+    });
     this.menuCursor
-      .setPosition(menu.x + 20, startY + (this.menuIndex - windowStart) * ROW_H + 16)
-      .setVisible(true);
+      .setPosition(menu.x + 20, top + (this.menuIndex - windowStart) * ROW_H + 16)
+      .setVisible(count > 0);
+  }
+
+  /** Hides every piece of the menu chrome when nothing is open. */
+  private hideMenu(): void {
+    this.menuPanel.setVisible(false);
+    this.menuCursor.setVisible(false);
+    for (const row of this.menuRows) row.setVisible(false);
+    for (const zone of this.menuZones) {
+      zone.setData('item', -1);
+      if (zone.input) zone.input.enabled = false;
+    }
+    this.hideBagTabs();
+    this.backArrow.setVisible(false);
+    if (this.backZone.input) this.backZone.input.enabled = false;
+  }
+
+  private hideBagTabs(): void {
+    for (const tab of this.bagTabs) {
+      tab.bg.setVisible(false);
+      tab.label.setVisible(false);
+    }
+  }
+
+  /** Hovering a row moves the cursor onto it, like the arrow keys. */
+  private onMenuHover(zone: Phaser.GameObjects.Zone): void {
+    const index = zone.getData('item');
+    if (typeof index !== 'number' || index < 0 || index === this.menuIndex) return;
+    this.menuIndex = index;
+    this.refreshHud();
+  }
+
+  /** Clicking a row selects it: the same as moving the cursor there and confirming. */
+  private onMenuClick(zone: Phaser.GameObjects.Zone): void {
+    const index = zone.getData('item');
+    if (typeof index !== 'number' || index < 0) return;
+    const item = this.menuItems[index];
+    if (!item?.enabled) return;
+    this.menuIndex = index;
+    this.confirmMenu();
+  }
+
+  /** The ◀ control: leaves a submenu the same way cancel does. */
+  private onBack(): void {
+    if (this.mode === 'moves' || this.mode === 'party' || this.mode === 'bag') this.openMenu();
   }
 
   override update(_time: number, delta: number): void {

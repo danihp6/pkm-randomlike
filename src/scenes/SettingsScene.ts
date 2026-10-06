@@ -20,7 +20,7 @@ import type { RouteScene } from './RouteScene';
 type Opener = 'Route' | 'Starter';
 
 const PANEL_W = 760;
-const ROW_H = 42;
+const ROW_H = 40;
 const ROW_TOP = 92;
 const PANEL_H = ROW_TOP + SETTINGS_ROWS.length * ROW_H + 84;
 
@@ -35,7 +35,7 @@ type RowView = {
  * (`O`), which pause themselves and resume behind it. Up/down picks a row and
  * left/right steps a step row's value; every change is stored and applied at
  * once, so there is nothing to confirm. A keybind row instead captures whatever
- * key is pressed next (`Z` on it starts the capture, `X` leaves it alone). All
+ * key is pressed next (`E` on it starts the capture, `Q` leaves it alone). All
  * input goes through the shared map in `src/input/`, so a rebind reaches every
  * scene on the very next press.
  */

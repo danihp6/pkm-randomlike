@@ -75,6 +75,7 @@ export function decodePng(buf) {
   }
 
   const rgba = Buffer.alloc(width * height * 4)
+  const indices = colorType === 3 ? Buffer.alloc(width * height) : null
   for (let y = 0; y < height; y++) {
     const row = out.subarray(y * stride, y * stride + stride)
     for (let x = 0; x < width; x++) {
@@ -88,6 +89,7 @@ export function decodePng(buf) {
         rgba[d + 3] = 255
       } else if (colorType === 3) {
         const idx = sampleAt(row, x)
+        indices[y * width + x] = idx
         rgba[d] = palette[idx * 3]
         rgba[d + 1] = palette[idx * 3 + 1]
         rgba[d + 2] = palette[idx * 3 + 2]
@@ -103,7 +105,7 @@ export function decodePng(buf) {
       }
     }
   }
-  return { width, height, data: rgba }
+  return { width, height, data: rgba, palette, indices }
 }
 
 const crcTable = (() => {

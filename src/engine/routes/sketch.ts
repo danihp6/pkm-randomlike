@@ -380,6 +380,9 @@ function nearestNetwork(network: ReadonlySet<string>, target: Tile): Tile | unde
   return best;
 }
 
+/** One carved branch: its intended far end and every tile the lane opened. */
+type BranchCarve = Readonly<{ target: Tile; tiles: readonly string[] }>;
+
 /**
  * Secondary paths. A **network** is the spine plus every lane carved so far, and
  * the count depends on the map size (`branchCountForSize`). For each path, pick a
@@ -399,11 +402,11 @@ function carveBranches(
   width: number,
   height: number,
   margin: number,
-): Readonly<{ branches: Set<string>; pockets: Tile[] }> {
+): Readonly<{ branches: Set<string>; carves: ReadonlyArray<BranchCarve> }> {
   const branches = new Set<string>();
-  const pockets: Tile[] = [];
+  const carves: BranchCarve[] = [];
   const branchCount = branchCountForSize(shape.branchCount, width, height);
-  if (branchCount <= 0) return { branches, pockets };
+  if (branchCount <= 0) return { branches, carves };
 
   const endKeys = new Set(ends.map(tileKey));
   const network = new Set<string>(spine);
@@ -459,11 +462,13 @@ function carveBranches(
       passable,
     });
     if (path.length === 0) continue;
+    const carved: string[] = [];
     for (const cell of path) {
       for (const opened of carveSquare(tiles, cell.x, cell.y, branchWidth, branchBounds)) {
         const key = tileKey(opened);
         branches.add(key);
         network.add(key);
+        carved.push(key);
       }
     }
     // A roomy map opens the far end into a chamber instead of a bare cul-de-sac.
@@ -474,11 +479,12 @@ function carveBranches(
         const key = tileKey(opened);
         branches.add(key);
         network.add(key);
+        carved.push(key);
       }
     }
-    pockets.push(target);
+    carves.push({ target, tiles: carved });
   }
-  return { branches, pockets };
+  return { branches, carves };
 }
 
 function setFloor(tiles: MutableMap, x: number, y: number): void {
@@ -914,6 +920,68 @@ function carveLedges(
   }
 }
 
+/** How many of the four cardinal neighbours of `(x, y)` are solid walls. */
+function wallNeighbours(tiles: TileMap, x: number, y: number): number {
+  let walls = 0;
+  if (tiles[y - 1]?.[x] === WALL) walls += 1;
+  if (tiles[y + 1]?.[x] === WALL) walls += 1;
+  if (tiles[y]?.[x - 1] === WALL) walls += 1;
+  if (tiles[y]?.[x + 1] === WALL) walls += 1;
+  return walls;
+}
+
+/**
+ * The loot spot for each branch: the tile with the most adjacent walls,
+ * preferring one nearer the branch's intended far end and never sharing a tile
+ * with an earlier pocket. Usually a corner (two walls), at worst a lane edge
+ * (one). When a branch's own lane is walled off from every wall (it runs beside
+ * another lane), the search falls back to the wider branch network so an item
+ * still hugs at least one wall.
+ */
+function choosePockets(
+  tiles: TileMap,
+  carves: ReadonlyArray<BranchCarve>,
+  branches: ReadonlySet<string>,
+): Tile[] {
+  const pockets: Tile[] = [];
+  const used = new Set<string>();
+  const branchKeys = [...branches];
+  for (const carve of carves) {
+    const local = bestSpot(tiles, carve.tiles, carve.target, used);
+    const chosen = local && local.walls > 0 ? local : bestSpot(tiles, branchKeys, carve.target, used) ?? local;
+    if (!chosen) continue;
+    used.add(tileKey(chosen.tile));
+    pockets.push(chosen.tile);
+  }
+  return pockets;
+}
+
+/** The most wall-hugging unused, walkable tile of `keys`, nearest to `target`. */
+function bestSpot(
+  tiles: TileMap,
+  keys: Iterable<string>,
+  target: Tile,
+  used: ReadonlySet<string>,
+): Readonly<{ tile: Tile; walls: number }> | null {
+  let best: Tile | null = null;
+  let bestWalls = -1;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const key of keys) {
+    if (used.has(key)) continue;
+    const [x, y] = key.split(',').map(Number);
+    const tile = { x, y };
+    if (!isWalkable(tiles, tile)) continue;
+    const walls = wallNeighbours(tiles, x, y);
+    const distance = Math.abs(x - target.x) + Math.abs(y - target.y);
+    if (walls > bestWalls || (walls === bestWalls && distance < bestDistance)) {
+      best = tile;
+      bestWalls = walls;
+      bestDistance = distance;
+    }
+  }
+  return best ? { tile: best, walls: bestWalls } : null;
+}
+
 /**
  * Places one ground item at the far end of each optional path. A pocket that a
  * hazard sealed (or that is no longer walkable) is skipped, so loot is never
@@ -961,7 +1029,7 @@ function attemptRoute(
   let exits: Tile[];
   let spine: Set<string>;
   let branches = new Set<string>();
-  let pockets: Tile[] = [];
+  let carves: ReadonlyArray<BranchCarve> = [];
   const corner = cornerClearance(request.wall);
   const band = request.wall?.cols ?? TREE_MARGIN;
 
@@ -991,7 +1059,7 @@ function attemptRoute(
     snapshot('spine', 'carve spine');
     const branched = carveBranches(tiles, streams.layout, shape, spine, [entry, ...exits], width, height, margin);
     branches = branched.branches;
-    pockets = branched.pockets;
+    carves = branched.carves;
     snapshot('branches', 'carve branches');
   }
 
@@ -1002,6 +1070,12 @@ function attemptRoute(
   // wall motif; the parked hedge/maze carvers keep their own walls.
   if (spec.kind === 'open') cleanWalls(tiles, request.wall);
   snapshot('clean', 'clean walls');
+
+  // A pocket is the loot spot at a branch's far end, but nudged onto the most
+  // wall-hugging tile its lane opened (a corner if there is one), so an item sits
+  // against two walls where possible and at least one otherwise (after the clean
+  // pass, which may have widened the room).
+  const pockets = choosePockets(tiles, carves, branches);
 
   // Ledges are solid, so they stay off the guaranteed spine - the carved lane on
   // open/hedged routes, the shortest path on a maze.

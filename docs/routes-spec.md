@@ -173,13 +173,15 @@ restored, no resurrection. The stop no longer opens a screen; the party and the
 PC box are managed from the route HUD (`I` / `P`) at any time, so the player can
 reorder them there and then continue to the next route.
 
-Ground items sit on the route's pockets (step 4). A visible item draws the FRLG
-field Poke Ball; a hidden one draws a faint sparkle. An item **blocks its tile**
-while it is there, so it is taken with the **interact key** (`E` by default)
-facing it, never by walking over it: the pickup adds it to the run's bag, marks
-it in `RunState.pickedItems` (so a reload does not respawn it) and shows a hint.
-Picked ids reset when the route advances. The route HUD still shows the run's bag
-as FRLG item icons.
+Ground items sit on the route's pockets (step 4), nudged onto the most
+wall-hugging tile their lane opened so an item rests against walls (a corner
+where the branch allows it). A visible item draws the FRLG field Poke Ball and
+**blocks its tile** while it is there; a hidden one draws a faint sparkle and
+does **not** block, so the player can walk over it and take it underfoot. Either
+way the **interact key** (`E` by default) takes it, adding it to the run's bag,
+marking it in `RunState.pickedItems` (so a reload does not respawn it) and showing
+a hint. Picked ids reset when the route advances. The route HUD still shows the
+run's bag as FRLG item icons.
 
 The **reset** key (`R` by default) is a run-level affordance: holding it fades
 the whole screen out under a small filling ring; releasing before it fills fades
