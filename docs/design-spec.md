@@ -40,7 +40,7 @@ carries over.
   returns to the bag, so an equip is a swap, never a loss). The held item shows as
   a badge on the avatar's lower-right corner; dragging **that badge** takes the
   item off the member (onto another member to pass it along, or onto the bag to
-  unequip it).
+  unequip it). An item in hand is not listed in the bag until it is dropped.
 - You start a run by picking one of three starters drawn from the base forms of
   every evolution line with at least three members (itself plus two others), so
   every starter has room to grow.

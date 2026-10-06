@@ -709,7 +709,8 @@ export class RouteScene extends Phaser.Scene {
       row.portrait.setVisible(frame !== null);
       if (frame !== null) row.portrait.setFrame(frame);
       const heldFrame = member.fighter.heldItem ? itemIconFrame(member.fighter.heldItem) : null;
-      row.held.setVisible(heldFrame !== null);
+      const inHand = this.hudDragItemFrom === member.fighter.id;
+      row.held.setVisible(heldFrame !== null && !inHand);
       if (heldFrame !== null) row.held.setFrame(heldFrame);
       const maxHp = restoreFighter(member.fighter).maxHp;
       const hp = member.fighter.hp;
@@ -730,7 +731,11 @@ export class RouteScene extends Phaser.Scene {
         .setFillStyle(hpColorInt(fraction));
     });
 
-    const bag = bagForCategory(this.run.bag, this.hudBagCategory).slice(0, HUD_BAG_ROWS);
+    // An item taken from the bag is not in the bag while it is being dragged.
+    const bagInHand = this.hudDragItemFrom === null ? this.hudDragItem : null;
+    const bag = bagForCategory(this.run.bag, this.hudBagCategory)
+      .filter((stack) => stack.itemId !== bagInHand)
+      .slice(0, HUD_BAG_ROWS);
     this.hudBagTabs.forEach((tab) => {
       const active = tab.category === this.hudBagCategory;
       tab.bg.setFillStyle(active ? 0x2f2c4d : 0xcfcce2);
@@ -772,7 +777,8 @@ export class RouteScene extends Phaser.Scene {
       cell.portrait.setVisible(frame !== null);
       if (frame !== null) cell.portrait.setFrame(frame);
       const heldFrame = member?.heldItem ? itemIconFrame(member.heldItem) : null;
-      cell.held.setVisible(heldFrame !== null);
+      const inHand = member !== undefined && this.hudDragItemFrom === member.id;
+      cell.held.setVisible(heldFrame !== null && !inHand);
       if (heldFrame !== null) cell.held.setFrame(heldFrame);
       cell.highlight.setVisible(this.hudUi.grabbed?.pane === 'box' && this.hudUi.index === index);
     });
@@ -796,10 +802,11 @@ export class RouteScene extends Phaser.Scene {
    * party row or a box cell picks that member up (gold highlight), a drag over
    * the same pane reorders it live, and a release over the other pane moves it
    * between the party and the PC box. A press on an equipment stack picks the
-   * item up and a release over a member equips it; a press on a member's held
-   * badge takes the item off instead of grabbing the Pokémon. A plain click also
-   * works: pick a member, then click a slot. The cursor becomes a grab hand over
-   * a member or an equippable stack.
+   * item up (it leaves the bag while in hand) and a release over a member equips
+   * it; a press on a member's held badge takes that item in hand instead of the
+   * Pokémon, to pass it to another member or drop it on the bag to unequip it. A
+   * plain click also works: pick a member, then click a slot. The cursor becomes a
+   * grab hand over a member or an equippable stack.
    */
   private handleHudPointerDown(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive() || !this.hudVisible) return;
@@ -808,10 +815,7 @@ export class RouteScene extends Phaser.Scene {
     if (!this.hudUi.grabbed) {
       const badge = this.hudHeldBadgeAt(pointer);
       if (badge) {
-        this.run = unequipHeldItem(this.run, badge.memberId);
-        this.persistRun();
         this.startHudItemDrag(badge.itemId, pointer, badge.memberId);
-        this.refreshHud();
         return;
       }
       const itemId = this.hudHeldStackAt(pointer);
@@ -874,6 +878,7 @@ export class RouteScene extends Phaser.Scene {
       .setPosition(pointer.x, pointer.y)
       .setVisible(true);
     this.input.setDefaultCursor('grabbing');
+    this.refreshHud();
   }
 
   private handleHudPointerMove(pointer: Phaser.Input.Pointer): void {
@@ -915,11 +920,23 @@ export class RouteScene extends Phaser.Scene {
       const from = this.hudDragItemFrom;
       const target = this.hudTarget(pointer);
       const intoBag = this.pointerInBagPanel(pointer);
+      const targetId = target ? this.memberIdAt(target) : null;
       this.endHudItemDrag();
-      if (target) this.equipHudItem(itemId, target);
-      // A badge grab was taken off its member on pickup: dropping it on the bag
-      // leaves it unequipped, and a drop anywhere else puts it back where it was.
-      else if (from !== null && !intoBag) this.equipHudItem(itemId, this.hudTargetOf(from));
+      if (targetId) {
+        if (from === null) {
+          this.equipHudItem(itemId, target);
+        } else if (targetId !== from) {
+          this.run = equipHeldItem(unequipHeldItem(this.run, from), targetId, itemId);
+          this.persistRun();
+          this.refreshHud();
+        }
+      } else if (from !== null && intoBag) {
+        // A badge dropped on the bag takes the item off for good.
+        this.run = unequipHeldItem(this.run, from);
+        this.persistRun();
+        this.refreshHud();
+      }
+      // A badge dropped anywhere else just goes back on its member (nothing to do).
       return;
     }
     const grabbed = this.hudUi.grabbed;
@@ -943,12 +960,10 @@ export class RouteScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  /** Where the member with `id` sits right now, for putting a cancelled grab back. */
-  private hudTargetOf(id: string): { pane: PaneId; index: number } | null {
-    const partyIndex = this.run.party.findIndex((member) => member.fighter.id === id);
-    if (partyIndex >= 0) return { pane: 'party', index: partyIndex };
-    const boxIndex = this.run.box.findIndex((member) => member.fighter.id === id);
-    return boxIndex >= 0 ? { pane: 'box', index: boxIndex } : null;
+  /** The id of the member at `target`, or null if that slot is empty. */
+  private memberIdAt(target: { pane: PaneId; index: number }): string | null {
+    const member = target.pane === 'party' ? this.run.party[target.index] : this.run.box[target.index];
+    return member?.fighter.id ?? null;
   }
 
   /** Puts the dragged stack down and clears the in-hand state. */

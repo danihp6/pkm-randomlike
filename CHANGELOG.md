@@ -17,7 +17,9 @@ file is the human-readable summary.
       party and the box. Grabbing **that badge** takes the item off the member
       instead of grabbing the Pokémon, so it can be dragged onto another member to
       pass it along or onto the bag to unequip it; a drop anywhere else puts it
-      back. `docs/design-spec.md` §3 updated.
+      back. A stack picked up from the bag leaves the list while it is in hand, and
+      a badge is taken off only on the drop, so a carried item never shows in the
+      bag mid-drag. `docs/design-spec.md` §3 updated.
 - [x] Generation **scales by map-size ranges** via the new `src/data/mapSize.ts`
       (`MAP_SIZE_TIERS`: `small` / `medium` / `large`, keyed by the map area in
       tiles). `grassPatches` and `ledges` in `src/data/biomes.ts` are now **base**
