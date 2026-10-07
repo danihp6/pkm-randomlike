@@ -1,0 +1,290 @@
+import { describe, expect, it } from 'vitest';
+import { TILESETS } from '../../data/tilesets';
+import { FLOOR, WALL, isWalkable, mapFromSketch } from '../map';
+import type { Tile } from '../grid';
+import type { RouteMap, RouteTrainer } from './routeMap';
+import { FACING_VECTORS } from './routeMap';
+import { treeTipKeys } from '../tileFrames';
+import { ROUTE_SHAPES } from './layout';
+import { sketchRoute, type RouteRequest } from './sketch';
+import { reachableAvoiding, reachableTiles, validateRoute } from './validate';
+import { sightLine, seesPlayer, trainerAt, trainerBlockers } from './trainers';
+
+const ARCHETYPES = ['youngster', 'lass', 'bugcatcher', 'hiker'];
+
+function request(seed: string, routeIndex: number, shape?: RouteRequest['shape']): RouteRequest {
+  return {
+    seed,
+    routeIndex,
+    biomeId: 'forest',
+    trainerArchetypes: ARCHETYPES,
+    ...(shape ? { shape } : {}),
+  };
+}
+
+/** A route fixture: a 7x7 room with a wall stub, an entry and a trainer. */
+function fixture(facing: RouteTrainer['facing'], trainer: Tile): RouteMap {
+  const tiles = mapFromSketch([
+    '#######',
+    '#.....#',
+    '#.....#',
+    '#..##.#',
+    '#.....#',
+    '#.....#',
+    '#######',
+  ]);
+  const t: RouteTrainer = {
+    id: 'trainer-1-0',
+    position: trainer,
+    facing,
+    sight: 3,
+    archetypeId: 'youngster',
+  };
+  return {
+    seed: 'fixture',
+    routeIndex: 1,
+    biomeId: 'forest',
+    shape: 'straight',
+    width: 7,
+    height: 7,
+    tiles,
+    entry: { x: 1, y: 1 },
+    exits: [{ x: 5, y: 5 }],
+    spine: [],
+    branches: [],
+    pockets: [],
+    items: [],
+    trainers: [t],
+  };
+}
+
+function noTrainers(route: RouteMap): RouteMap {
+  return { ...route, trainers: [] };
+}
+
+describe('trainer line of sight', () => {
+  it('watches a straight cardinal line up to its range', () => {
+    const route = fixture('S', { x: 3, y: 1 });
+    const line = sightLine(route, route.trainers[0]);
+    expect(line).toEqual([{ x: 3, y: 2 }]);
+  });
+
+  it('stops the line at a wall', () => {
+    const route = fixture('S', { x: 3, y: 1 });
+    const map = mapFromSketch([
+      '#######',
+      '#.....#',
+      '#.....#',
+      '#.....#',
+      '#.....#',
+      '#.....#',
+      '#######',
+    ]);
+    const open: RouteMap = { ...route, tiles: map };
+    expect(sightLine(open, open.trainers[0])).toEqual([
+      { x: 3, y: 2 },
+      { x: 3, y: 3 },
+      { x: 3, y: 4 },
+    ]);
+  });
+
+  it('stops the line at a ledge, water or any impassable tile', () => {
+    const route = fixture('S', { x: 3, y: 1 });
+    const ledged: RouteMap = {
+      ...route,
+      tiles: mapFromSketch([
+        '#######',
+        '#.....#',
+        '#.....#',
+        '#..^..#',
+        '#.....#',
+        '#.....#',
+        '#######',
+      ]),
+    };
+    expect(sightLine(ledged, ledged.trainers[0])).toEqual([{ x: 3, y: 2 }]);
+    expect(seesPlayer(ledged, ledged.trainers[0], { x: 3, y: 3 })).toBe(false);
+  });
+
+  it('sees the player in the cone but not behind, off-axis or out of range', () => {
+    const route = fixture('S', { x: 3, y: 1 });
+    const t = route.trainers[0];
+    expect(seesPlayer(route, t, { x: 3, y: 2 })).toBe(true);
+    expect(seesPlayer(route, t, { x: 3, y: 4 })).toBe(false);
+    expect(seesPlayer(route, t, { x: 3, y: 5 })).toBe(false);
+    expect(seesPlayer(route, t, { x: 2, y: 2 })).toBe(false);
+    expect(seesPlayer(noTrainers(route), t, { x: 3, y: 2 })).toBe(true);
+  });
+
+  it('does not see through a wall or around a corner', () => {
+    const route = fixture('S', { x: 3, y: 1 });
+    const map = mapFromSketch([
+      '#######',
+      '#.....#',
+      '#..##.#',
+      '#..##.#',
+      '#.....#',
+      '#.....#',
+      '#######',
+    ]);
+    const walled: RouteMap = { ...route, tiles: map };
+    expect(seesPlayer(walled, walled.trainers[0], { x: 3, y: 3 })).toBe(false);
+    expect(seesPlayer(route, route.trainers[0], { x: 2, y: 2 })).toBe(false);
+  });
+
+  it('finds a trainer by tile and keys its blockers', () => {
+    const route = fixture('S', { x: 3, y: 1 });
+    expect(trainerAt(route, { x: 3, y: 1 })?.id).toBe('trainer-1-0');
+    expect(trainerAt(route, { x: 1, y: 1 })).toBeUndefined();
+    expect([...trainerBlockers(route)]).toEqual(['3,1']);
+    expect([...trainerBlockers(route, route.trainers[0])]).toEqual([]);
+  });
+});
+
+describe('route trainer placement', () => {
+  it('places no trainers without an archetype pool', () => {
+    expect(sketchRoute({ seed: 'none', routeIndex: 2, biomeId: 'forest' }).trainers).toEqual([]);
+  });
+
+  it('is a pure function of the seed and route index', () => {
+    const a = sketchRoute(request('tt-seed', 3, 'cross'));
+    const b = sketchRoute(request('tt-seed', 3, 'cross'));
+    expect(a.trainers).toEqual(b.trainers);
+    expect(a.trainers.length).toBeGreaterThan(0);
+  });
+
+  it('always places at least one trainer, wall-backed and on floor', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['tt-a', 'tt-b', 'tt-c']) {
+        const route = sketchRoute({ ...request(seed, 2, shape), width: 30, height: 30 });
+        expect(route.trainers.length, `${shape} ${seed} count`).toBeGreaterThanOrEqual(1);
+        for (const trainer of route.trainers) {
+          const { x, y } = trainer.position;
+          expect(route.tiles[y][x], `${shape} ${seed} ${x},${y} floor`).toBe(FLOOR);
+          const walls = [
+            route.tiles[y - 1]?.[x],
+            route.tiles[y + 1]?.[x],
+            route.tiles[y]?.[x - 1],
+            route.tiles[y]?.[x + 1],
+          ].filter((value) => value === WALL).length;
+          expect(walls, `${shape} ${seed} ${x},${y} wall-backed`).toBeGreaterThanOrEqual(1);
+          expect(ARCHETYPES).toContain(trainer.archetypeId);
+        }
+      }
+    }
+  }, 30_000);
+
+  it('never lets a trainer stand on the entry, an exit or a pocket', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['tt-end-a', 'tt-end-b']) {
+        const route = sketchRoute({ ...request(seed, 4, shape), width: 30, height: 30 });
+        const ends = new Set([route.entry, ...route.exits, ...route.pockets].map((t) => `${t.x},${t.y}`));
+        for (const trainer of route.trainers) {
+          expect(ends.has(`${trainer.position.x},${trainer.position.y}`), `${shape} ${seed}`).toBe(false);
+        }
+      }
+    }
+  }, 30_000);
+
+  it('keeps a trainer-free path from the entry to every exit', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['tt-free-a', 'tt-free-b']) {
+        const route = sketchRoute({ ...request(seed, 5, shape), width: 30, height: 30 });
+        const avoided = reachableAvoiding(route.tiles, route.entry, trainerBlockers(route));
+        for (const exit of route.exits) {
+          expect(avoided.has(`${exit.x},${exit.y}`), `${shape} ${seed} exit`).toBe(true);
+        }
+        expect(validateRoute(route).ok, `${shape} ${seed} valid`).toBe(true);
+      }
+    }
+  }, 30_000);
+
+  it('scales the count with the map size', () => {
+    const small = sketchRoute({ ...request('tt-size', 3, 'cross'), width: 20, height: 20 });
+    const big = sketchRoute({ ...request('tt-size', 3, 'cross'), width: 64, height: 64 });
+    expect(small.trainers.length).toBeGreaterThanOrEqual(1);
+    expect(big.trainers.length).toBeGreaterThan(small.trainers.length);
+  }, 30_000);
+
+  it('gives some trainers a facing cycle (spinners) and keeps fixed ones still', () => {
+    let spinners = 0;
+    for (const seed of ['tt-spin-a', 'tt-spin-b', 'tt-spin-c', 'tt-spin-d']) {
+      const route = sketchRoute({ ...request(seed, 6, 'cross'), width: 30, height: 30 });
+      for (const trainer of route.trainers) {
+        if (!trainer.turns) continue;
+        spinners += 1;
+        expect(trainer.turns.length).toBeGreaterThanOrEqual(2);
+        for (const facing of trainer.turns) expect(['N', 'E', 'S', 'W']).toContain(facing);
+      }
+    }
+    expect(spinners).toBeGreaterThan(0);
+  }, 30_000);
+
+  it('never faces a tile the player cannot cross', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['tt-face-a', 'tt-face-b', 'tt-face-c']) {
+        const route = sketchRoute({ ...request(seed, 3, shape), width: 30, height: 30 });
+        for (const trainer of route.trainers) {
+          const vector = FACING_VECTORS[trainer.facing];
+          const ahead = { x: trainer.position.x + vector.x, y: trainer.position.y + vector.y };
+          expect(isWalkable(route.tiles, ahead), `${shape} ${seed} ${trainer.id} faces ${trainer.facing}`).toBe(true);
+        }
+      }
+    }
+  }, 30_000);
+
+  it('leans on a solid wall, never a walkable tree tip', () => {
+    const pattern = TILESETS.forest.config.wallPattern!;
+    const wall = { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) };
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['tt-solid-a', 'tt-solid-b', 'tt-solid-c']) {
+        const route = sketchRoute({ ...request(seed, 2, shape), width: 30, height: 30, wall });
+        const tips = treeTipKeys(route.tiles, TILESETS.forest.config);
+        for (const trainer of route.trainers) {
+          const { x, y } = trainer.position;
+          const neighbours = [
+            { x, y: y - 1 },
+            { x, y: y + 1 },
+            { x: x - 1, y },
+            { x: x + 1, y },
+          ];
+          const solid = neighbours.some(
+            (n) => route.tiles[n.y]?.[n.x] === WALL && !tips.has(`${n.x},${n.y}`),
+          );
+          expect(solid, `${shape} ${seed} ${trainer.id} @${x},${y}`).toBe(true);
+        }
+      }
+    }
+  }, 30_000);
+
+  it('never spawns watching the entry, even as a spinner turns', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['tt-spawn-a', 'tt-spawn-b', 'tt-spawn-c']) {
+        const route = sketchRoute({ ...request(seed, 2, shape), width: 30, height: 30 });
+        for (const trainer of route.trainers) {
+          for (const facing of trainer.turns ?? [trainer.facing]) {
+            expect(
+              seesPlayer(route, { ...trainer, facing }, route.entry),
+              `${shape} ${seed} ${trainer.id} ${facing}`,
+            ).toBe(false);
+          }
+        }
+      }
+    }
+  }, 30_000);
+
+  it('hands every trainer a unique stable id', () => {
+    const route = sketchRoute({ ...request('tt-id', 7, 'cross'), width: 30, height: 30 });
+    const ids = route.trainers.map((trainer) => trainer.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    route.trainers.forEach((trainer, i) => expect(trainer.id).toBe(`trainer-7-${i}`));
+  });
+
+  it('marks a route with trainers still solvable and stranded-free', () => {
+    const route = sketchRoute({ ...request('tt-final', 2, 'bend'), width: 30, height: 30 });
+    const reached = reachableTiles(route.tiles, route.entry);
+    for (const item of route.items) {
+      expect(reached.has(`${item.position.x},${item.position.y}`)).toBe(true);
+    }
+  });
+});

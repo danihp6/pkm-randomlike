@@ -75,10 +75,12 @@ use (keying the orange to transparent) into `src/assets/frlg/trainers.png` plus
 
 The overworld trainer sprites come from the pret/pokefirered decomp rather than
 the compilation sheet, because each class is its own named file there. The ten
-classes' `graphics/object_events/pics/people/*.png` (160x32, ten 16x32 walk
-frames) are packed by `scripts/frlg/build-overworld-sprites.mjs` into
-`src/assets/frlg/overworld.png` plus `src/data/frlg/overworld.json`, read through
-`src/data/overworldSprites.ts` (D24). The player comes from the same decomp:
+classes' `graphics/object_events/pics/people/*.png` (160x32, ten 16x32 frames —
+nine walk frames plus a field-move pose the route ignores) are packed by
+`scripts/frlg/build-overworld-sprites.mjs` into `src/assets/frlg/overworld.png`
+(one row of nine poses per class) plus `src/data/frlg/overworld.json`, read
+through `src/data/overworldSprites.ts` (D24), so a trainer stands on the resting
+pose of its facing and walks toward a player it spots. The player comes from the same decomp:
 `red_normal.png` (144x32, nine 16x32 walk frames) is packed by
 `scripts/frlg/build-player-sprite.mjs` into `src/assets/frlg/player.png` plus
 `src/data/frlg/player.json`, read through `src/data/playerSprite.ts`, so the

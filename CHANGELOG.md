@@ -8,6 +8,32 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Route trainers are back**, the classic way. The generator's population
+      pass (`src/engine/routes/sketch.ts` `placeTrainers`) now places them: one
+      guards the main lane and one more stands by every filled pocket's item, plus
+      the map-size tier's `trainerBonus`, so the count follows the route's size.
+      Each trainer stands on floor **hugging a solid wall** (never a walkable
+      tree tip), looks down a passable lane with a `sight` of 5 (a straight
+      cardinal line that stops at a wall, a ledge, water or another trainer, so it
+      never stares across an obstacle it could not chase over), and some carry a
+      `turns` cycle so their facing (and line) rotates on a timer, like a
+      "spinning" trainer — including catching a player who stands still in the
+      beam. Placement is safe: a candidate is kept only while the entry still
+      reaches **every** tile it could before (ledges and water count as
+      impassable), so a trainer never plugs a lane, a branch or a pocket; no two
+      trainers stand in neighbouring tiles; and no trainer spawns already watching
+      — or able to spin and watch — the tile the player arrives on. New pure module
+      `src/engine/routes/trainers.ts` (`sightLine`, `seesPlayer`, `trainerAt`,
+      `trainerBlockers`) plus `Facing`/`RouteTrainer` on `RouteMap`;
+      `validateRoute` now also proves a **trainer-free** entry→exit path, so no
+      placement forces a battle. `RouteScene` draws them off the FRLG overworld
+      atlas (nine poses per class: the resting pose of its facing, the right side
+      flipped, and a two-frame walk cycle it plays while chasing), blocks their
+      tile, walks a spotter toward the player and opens the menu battle when they
+      see or are talked to, and hides a beaten one. The player and the trainers
+      sort by their foot row, so a character north of a trainer passes behind it.
+      `D11`, `docs/routes-spec.md` §2/§5, `docs/route-generator.md` §3.4,
+      `docs/design-spec.md` §5 updated.
 - [x] **Battle sprites are sized by the Pokémon's real height**, so a titan reads
       big and a Scatterbug tiny. The Añil art compresses the true 0.1m–20m range
       (Regigigas is drawn barely taller than Scatterbug), so scaling by the sheet

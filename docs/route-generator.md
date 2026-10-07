@@ -3,10 +3,11 @@
 > Design blueprint, not code. Live behaviour is `docs/routes-spec.md` and the
 > pure implementation is `src/engine/routes/`. This file is the agreed **target**
 > algorithm so the next iteration has one place to build from.
-> Status: the terrain pass (tall grass, ledges) and the **ground-item** population
-> are **on**; trainers are still turned off (`docs/routes-spec.md` §2). `PlaceItems`
-> below runs today (one item per pocket, no `count`); `PlaceTrainers` is still the
-> plan, not what runs.
+> Status: the terrain pass (tall grass, ledges), the **ground-item** population
+> and the **trainers** are all **on** (`docs/routes-spec.md` §2). `PlaceItems`
+> and `PlaceTrainers` below both run today; the pool is the only difference (the
+> caller passes the loot pool and the archetype ids, so an unconfigured build
+> places neither).
 
 ## 0. Inputs and determinism
 
@@ -291,29 +292,46 @@ reachable. A cell on the one-tile border ring is only dropped to widen an openin
 size a run needs comes from the tileset's motif, a different biome or wall art just
 passes its own `WallFootprint`.
 
-### 3.4 PlaceTrainers — always optional
+### 3.4 PlaceTrainers — optional, never required
 
-Trainers block movement like the originals, but the generator never lets one sit
-on the only way out: a candidate is kept only while every exit stays reachable
-without crossing any chosen trainer.
+Trainers block movement like the originals: they stand on floor hugging a **solid
+wall** (never the walkable tip of a tree) and look down a **passable** lane (never
+at a ledge or water it could not cross), and one of them always guards the main
+lane while the rest cluster on the optional paths by the pocket items. The count
+follows the route's **size**: one on the spine, one per optional path (a pocket)
+and the map-size tier's `trainerBonus`. Placement never plugs a passage: a
+candidate is kept only while the entry still reaches **every** tile it could
+before, with ledges and water counting as impassable, so no lane, branch or pocket
+is cut off. Two trainers never stand in neighbouring tiles, and no trainer spawns
+already watching — or able to spin and watch — the tile the player arrives on.
+Some trainers cycle their facing on a timer (a "spinning" trainer) so their line
+turns with them.
 
 ```
-PlaceTrainers(tiles, reachable, spine, band, rng):
+PlaceTrainers(tiles, entry, exits, spine, branches, pockets, band, rng):
     chosen = Set()
-    candidates = reachable - spine - {entry} - exits
-    for i in 0 .. band.trainerSize:
-        pos = PopRandom(candidates, minDistanceFrom(entry) = 3)
+    reach  = ReachableTiles(tiles, entry)      # ledges/water impassable
+    candidates = floor tiles hugging a solid wall, off the entry/exits/pockets,
+                 not next to a chosen trainer, at least 3 from the entry,
+                 with a passable facing
+    # 1 on the main lane, 1 per pocket on its branch, + tier.trainerBonus
+    for i in 0 .. 1 + len(pockets) + trainerBonusForSize(size):
+        pos   = PopRandom(candidates without a spot)
         if pos is null: break
-        if ExitsReachableAvoiding(tiles, entry, exits, chosen + {pos}):
-            facing = FaceOpenLane(tiles, pos, rng)   # a cardinal with floor/grass ahead
-            chosen += { pos, facing, sight = 3,
-                        archetype = RandomArchetype(rng),
-                        id = "trainer-<routeIndex>-<i>" }
+        if not KeepsEverythingReachable(tiles, entry, reach, chosen + {pos}): continue
+        dirs   = OpenFacings(tiles, pos)         # cardinals onto a passable tile
+        facing = ChooseFacing(tiles, pos, entry, dirs)   # back to a solid wall
+        turns  = rng.next() < SPIN_CHANCE && len(dirs) >= 2 ? dirs : null
+        if SeesEntry(pos, facing) or any(SeesEntry(pos, t) for t in turns): continue
+        chosen += { pos, facing, sight, turns,
+                    archetype = RandomArchetype(rng),
+                    id = "trainer-<routeIndex>-<i>" }
     return chosen
 ```
 
-Net effect: the player can always walk entry → every exit without a forced
-battle, and every trainer is a choice (and, later, a reward).
+Net effect: the player can always walk entry → every exit, and reach every pocket,
+without a forced battle, and every trainer is a choice (and, later, a reward). The
+test is a flood fill that treats the chosen trainers as walls.
 
 ### 3.5 PlaceItems
 
@@ -354,14 +372,17 @@ Validate(route):
     assert every exit in reachable
     assert FloodFillAvoiding(route.tiles - trainerTiles, route.entry) contains every exit
     assert every item in reachable
-    assert no trainer stands on a spine cell
+    assert every trainer stands on floor hugging a solid wall, off the entry/exits/pockets,
+           not next to another trainer, and never sees the entry (even when it turns)
     assert no spine cell is WALL / WATER / LEDGE / TALL_GRASS
     assert the one-tile border is solid but for the openings
     assert every pocket has exactly one walkable neighbour (a real dead end)
 ```
 
 The trainer-free flood fill is the guarantee that no placement can soft-lock the
-route behind an unwinnable fight.
+route behind an unwinnable fight. The generator is stricter than that: it keeps a
+candidate only while **every** tile stays reachable, so a trainer never plugs a
+lane, a branch or a pocket either, and ledges and water count as impassable.
 
 ## 5. Guarantees and tests
 
@@ -369,7 +390,12 @@ route behind an unwinnable fight.
   rerolls and reloads. Regression snapshots per shape with fixed seeds.
 - **Solvability:** every exit reachable, and reachable without meeting a trainer.
 - **No stranding:** every spawned item is reachable.
-- **Clean lane:** the spine holds no hazard, grass or trainer.
+- **Clean main lane:** the spine holds no hazard or grass.
+- **Posed trainers:** each stands on floor, backed by a **solid** wall, looking
+  down a passable lane, never next to another trainer and never watching the
+  entry; some cycle their facing.
+- **No plugging:** a trainer never cuts off a tile (lane, branch or pocket); the
+  trainer-free fill keeps every reachable tile reachable (ledges/water impassable).
 - **Stable ids:** `trainer-<route>-<i>`, `item-<route>-<i>`.
 - **Bounds:** openings sit on the map border (gaps in the tree ring); the map size is an input (20x20 default for now)
   (single screen, camera follow, `padMap` margin - D26; no fog - D6).

@@ -75,19 +75,32 @@ camera follow), containing:
    outside its left or right cap is wall), so it reads as a lip on the terrain
    instead of a rock floating in open floor. Grass is walkable; a ledge only gives
    way downward. Water is decoration (`D18`), not a terrain pass.
-4. **Population (ground items)**: a route places **one item at the far end of each
-   optional path** (a `pocket`), drawn from the level band's weighted loot pool
-   (`ROUTE_LOOT` in `src/data/loot.ts`) on the `populate` stream. A pocket a hazard
-   sealed, or that is no longer walkable, is skipped, so loot is never stranded. The
-   number of items therefore follows the route's **size** (a bigger map carves more
-   optional paths, `MAP_SIZE_TIERS`), not its band. A pocket is kept clear of tall
-   grass (an item never spawns on grass) and of ledges. Each item rolls a
-   **hidden** flag from the band's `hiddenChance`; a hidden item shows a faint
-   sparkle instead of a Poke Ball. Ids are stable (`item-<routeIndex>-<n>`) and the
-   draw order is the deterministic `pockets` order. Trainers are still off.
-5. **Validation pass**: flood-fill from the entry must reach every exit. If it does
-   not, reroll from the same seed with the next stream value. This validation is
-   what makes the generator safe to call blind.
+4. **Population (trainers + ground items)**: a route places **trainers** and
+   **one item at the far end of each optional path** (a `pocket`), drawn from the
+   level band's weighted loot pool (`ROUTE_LOOT` in `src/data/loot.ts`) on the
+   `populate` stream. The trainers always include **one on the main lane** and one
+   more by every filled pocket, plus the map-size tier's bonus, so their count
+   follows the route's size (`MAP_SIZE_TIERS`); a trainer stands on floor hugging
+   a **solid** wall (never a walkable tree tip) and looks down a **passable** lane
+   with a `sight` of 5 (a straight cardinal line that stops at a wall, a ledge,
+   water or another trainer), and some cycle their facing on a timer like a
+   "spinning" trainer. Placement never plugs a passage: a trainer is kept only
+   while every tile the entry could reach stays reachable with the trainers as
+   blockers (ledges and water count as impassable), no two trainers stand in
+   neighbouring tiles, and no trainer spawns watching — or able to spin and watch —
+   the player's entry tile. A pocket a hazard sealed, or that is no longer
+   walkable, is skipped, so loot is never stranded. The number of items also
+   follows the route's **size** (a bigger map carves more optional paths), not its
+   band. A pocket is kept clear of tall grass (an item never spawns on grass) and
+   of ledges. Each item rolls a **hidden** flag from the band's `hiddenChance`; a
+   hidden item shows a faint sparkle instead of a Poke Ball. Ids are stable
+   (`trainer-<routeIndex>-<n>`, `item-<routeIndex>-<n>`) and the draw order is the
+   deterministic `pockets` order.
+5. **Validation pass**: flood-fill from the entry must reach every exit, with the
+   trainers in the way **and** avoiding them (the trainer-free fill is what
+   guarantees no forced battle). If it does not, reroll from the same seed with the
+   next stream value. This validation is what makes the generator safe to call
+   blind.
 
 Every build pass draws from its own `Rng` stream, all derived from
 `(seed, routeIndex, attempt)` (`src/engine/routes/streams.ts`), so `(seed,
@@ -95,12 +108,14 @@ routeIndex)` fully determines the map and a reroll can never shift an earlier
 attempt. Adding a roll to the terrain pass cannot move the path the layout pass
 already placed.
 
-Routes scatter **ground items** again, one per optional path (step 4 above), but
-still no **trainers**: the generated map holds the carved tiles (spine, branches,
-pockets and the terrain flavour), the entry, its exits and the items. The trainer
-archetypes (`src/data/trainers.ts`) and the roster builder (`src/engine/run/roster.ts`)
-stay in place, ready for when trainers come back. The target generator, with
-pseudocode and a review of the draft, is in `docs/route-generator.md`.
+Routes scatter **ground items** again, one per optional path (step 4 above), and
+now also **trainers**: the generated map holds the carved tiles (spine, branches,
+pockets and the terrain flavour), the entry, its exits, the items and the
+trainers. The trainer archetypes (`src/data/trainers.ts`) and the roster builder
+(`src/engine/run/roster.ts`) field a team per trainer, and the route scene draws
+them, blocks their tile, freezes the player while a spotter walks over and opens
+the menu battle, and hides a beaten one. The target generator, with pseudocode
+and a review of the draft, is in `docs/route-generator.md`.
 
 The map size is an input: the default is **20x20** tiles at 24px for now, and the
 camera follows the player, bounded to the generated map. The whole map is visible
@@ -163,8 +178,9 @@ final boss      the last route of a finite run
   so a band's rosters field their own mix and the party size grows with the band
   (`band`'s `trainerSize`).
 - A trainer roster is generated deterministically from the route seed and band,
-  and never exceeds the route's level cap. No route places a trainer for now, so
-  this stays dormant until the population pass returns.
+  and never exceeds the route's level cap. Trainers are placed by the population
+  pass (step 4): one guards the main lane, the rest hold the optional paths by
+  the pocket items, and their count scales with the map size.
 
 ## 6. Healing stops
 

@@ -232,17 +232,20 @@ tileset swap (`R`) and wild battle (`B`), and the starter screen's seed prompt
 ## D24 — Overworld trainer art is the FRLG class sprite *(decided)*
 
 A trainer on the route draws its FireRed/LeafGreen overworld sprite instead of a
-tinted placeholder. The ten archetypes' down-facing idle frames are packed from
-the pret/pokefirered decomp's `graphics/object_events/pics/people/*.png` (each a
-160x32 sheet of ten 16x32 walk frames) by
-`scripts/frlg/build-overworld-sprites.mjs` into `src/assets/frlg/overworld.png`
-plus `src/data/frlg/overworld.json`, resolved from the archetype's `spriteKey`
+tinted placeholder. The ten archetypes' walk frames are packed from the
+pret/pokefirered decomp's `graphics/object_events/pics/people/*.png` (each a
+160x32 sheet of ten 16x32 frames: down/up/side idle plus a two-frame walk each,
+then an ignored field-move pose) by `scripts/frlg/build-overworld-sprites.mjs`
+into `src/assets/frlg/overworld.png` (one row of nine poses per archetype) plus
+`src/data/frlg/overworld.json`, resolved from the archetype's `spriteKey`
 through `src/data/overworldSprites.ts`. The mapping is by class name, unlike the
 battle `trainers.png` whose compilation grid is ordered arbitrarily; `psychic`
 has no decomp class of its own and borrows the Channeler, and `ace` the male
 Cooltrainer. The route draws the 16px frame at `TILE_SIZE / 16` with its feet on
-the tile bottom, matching the FRLG fields (`D18`), and keeps the tinted facing
-arrow. The player's own overworld sprite (`red_normal.png`) ships from the same
+the tile bottom, matching the FRLG fields (`D18`): a standing trainer shows the
+resting pose of its facing (the right side is the left-facing frame flipped) and
+a spotted one plays its walk cycle as it steps toward the player. The player's
+own overworld sprite (`red_normal.png`) ships from the same
 decomp via `scripts/frlg/build-player-sprite.mjs` — see `D25`.
 
 ## D25 — Player movement is hold-to-walk, with a run key *(decided)*

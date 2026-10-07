@@ -2,6 +2,18 @@ import type { Tile } from '../grid';
 import type { TileMap } from '../map';
 import type { RouteShape } from './layout';
 
+/** The four cardinals a trainer can look along. */
+export type Facing = 'N' | 'E' | 'S' | 'W';
+
+export const FACING_VECTORS: Readonly<Record<Facing, Tile>> = {
+  N: { x: 0, y: -1 },
+  E: { x: 1, y: 0 },
+  S: { x: 0, y: 1 },
+  W: { x: -1, y: 0 },
+};
+
+export const FACINGS: readonly Facing[] = ['N', 'E', 'S', 'W'];
+
 /** A ground item placed at the far end of an optional path (a `pocket`). */
 export type RouteItem = Readonly<{
   /** Stable across a route rebuild: `item-<routeIndex>-<i>` (D11). */
@@ -10,6 +22,25 @@ export type RouteItem = Readonly<{
   itemId: string;
   /** Hidden items draw as a faint sparkle instead of a Poke Ball. */
   hidden: boolean;
+}>;
+
+/**
+ * A trainer standing on the route. Like the originals it blocks its tile, looks
+ * down a cardinal lane (`facing`) and sees up to `sight` tiles along it. Its
+ * `turns` cycle is what makes a "spinning" trainer: the scene walks the list on a
+ * timer, so some trainers keep looking in different directions.
+ */
+export type RouteTrainer = Readonly<{
+  /** Stable across a route rebuild: `trainer-<routeIndex>-<i>` (D11). */
+  id: string;
+  position: Tile;
+  facing: Facing;
+  /** How many tiles down its facing the trainer watches. */
+  sight: number;
+  /** Archetype id from `src/data/trainers.ts`, for the sprite and the roster. */
+  archetypeId: string;
+  /** Facings a spinner cycles through (2+); absent on a fixed trainer. */
+  turns?: readonly Facing[];
 }>;
 
 /**
@@ -37,6 +68,8 @@ export type RouteMap = Readonly<{
   pockets: readonly Tile[];
   /** One ground item per optional path, at its pocket. */
   items: readonly RouteItem[];
+  /** The trainers on the route, off the entry so they never ambush the spawn. */
+  trainers: readonly RouteTrainer[];
 }>;
 
 export function tileKey(tile: Tile): string {

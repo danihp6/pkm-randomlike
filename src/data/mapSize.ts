@@ -18,12 +18,14 @@ export type MapSizeTier = Readonly<{
   terrainScale: number;
   /** Optional paths added to each shape's base `branchCount`. */
   branchBonus: number;
+  /** Extra trainers a route of this size places beyond the guards it derives. */
+  trainerBonus: number;
 }>;
 
 export const MAP_SIZE_TIERS: readonly MapSizeTier[] = [
-  { id: 'small', minArea: 0, terrainScale: 1, branchBonus: 0 },
-  { id: 'medium', minArea: 24 * 24, terrainScale: 2, branchBonus: 1 },
-  { id: 'large', minArea: 40 * 40, terrainScale: 3, branchBonus: 2 },
+  { id: 'small', minArea: 0, terrainScale: 1, branchBonus: 0, trainerBonus: 0 },
+  { id: 'medium', minArea: 24 * 24, terrainScale: 2, branchBonus: 1, trainerBonus: 1 },
+  { id: 'large', minArea: 40 * 40, terrainScale: 3, branchBonus: 2, trainerBonus: 2 },
 ];
 
 /** The tier a `width` x `height` map falls in. Never below the first tier. */
@@ -48,4 +50,9 @@ export function terrainScaleForSize(width: number, height: number): number {
 export function branchCountForSize(base: number, width: number, height: number): number {
   if (base <= 0) return 0;
   return base + mapSizeTier(width, height).branchBonus;
+}
+
+/** Extra trainers a map of this size places beyond its spine and pocket guards. */
+export function trainerBonusForSize(width: number, height: number): number {
+  return mapSizeTier(width, height).trainerBonus;
 }

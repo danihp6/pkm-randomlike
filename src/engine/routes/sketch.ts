@@ -1,5 +1,9 @@
 import type { LootEntry } from '../../data/loot';
-import { branchCountForSize, terrainScaleForSize } from '../../data/mapSize';
+import {
+  branchCountForSize,
+  terrainScaleForSize,
+  trainerBonusForSize,
+} from '../../data/mapSize';
 import type { Tile } from '../grid';
 import {
   FLOOR,
@@ -12,7 +16,15 @@ import {
 import { findPath } from '../pathfinding';
 import { Rng } from '../rng';
 import { pickWeighted } from './encounters';
-import { tileKey, type RouteItem, type RouteMap } from './routeMap';
+import {
+  FACINGS,
+  FACING_VECTORS,
+  tileKey,
+  type Facing,
+  type RouteItem,
+  type RouteMap,
+  type RouteTrainer,
+} from './routeMap';
 import {
   DEFAULT_LAYOUT,
   DEFAULT_SHAPE,
@@ -26,8 +38,9 @@ import {
   type ShapeSpec,
 } from './layout';
 import { routeStreams, type RouteStreams } from './streams';
+import { blocksSight } from './trainers';
 import { cleanWalls, type WallFootprint } from './walls';
-import { reachableTiles, validateRoute } from './validate';
+import { reachableAvoiding, reachableTiles, validateRoute } from './validate';
 
 export const ROUTE_WIDTH = 20;
 export const ROUTE_HEIGHT = 20;
@@ -47,6 +60,15 @@ const TREE_MARGIN = 3;
 const SPINE_SEGMENTS = 4;
 /** Ceiling of the deterministic per-cell cost that makes the guaranteed path meander. */
 const COST_NOISE = 4;
+
+/** How far a trainer watches down its facing, unless the caller overrides it. */
+export const DEFAULT_TRAINER_SIGHT = 5;
+/** A trainer never stands closer than this (Manhattan) to the entry opening. */
+const TRAINER_ENTRY_GAP = 3;
+/** How near a guarded pocket a branch trainer looks for its spot. */
+const TRAINER_POCKET_RANGE = 3;
+/** Share of trainers that cycle their facing instead of holding one direction. */
+const SPIN_CHANCE = 0.35;
 
 const CARDINALS: readonly Tile[] = [
   { x: 1, y: 0 },
@@ -78,13 +100,31 @@ export type RouteRequest = Readonly<{
   loot?: readonly LootEntry[];
   /** Chance a placed item is hidden (the faint sparkle). Defaults to `0`. */
   hiddenChance?: number;
+  /**
+   * Archetype ids a route may draw its trainers from (`src/data/trainers.ts`).
+   * With none the route places no trainers, so the generator stays free of the
+   * roster data and a caller opts in (the scene passes the whole list).
+   */
+  trainerArchetypes?: readonly string[];
+  /** How far a trainer sees down its facing. Defaults to `DEFAULT_TRAINER_SIGHT`. */
+  trainerSight?: number;
 }>;
 
 type MutableMap = number[][];
 
 /** A labelled snapshot of the map after one build phase, for the debug stepper. */
 export type RouteStep = Readonly<{
-  phase: 'walls' | 'access' | 'spine' | 'branches' | 'layout' | 'clean' | 'terrain' | 'items' | 'final';
+  phase:
+    | 'walls'
+    | 'access'
+    | 'spine'
+    | 'branches'
+    | 'layout'
+    | 'clean'
+    | 'terrain'
+    | 'trainers'
+    | 'items'
+    | 'final';
   label: string;
   tiles: TileMap;
 }>;
@@ -931,6 +971,32 @@ function wallNeighbours(tiles: TileMap, x: number, y: number): number {
 }
 
 /**
+ * A wall cell that draws as a tree's **walkable tip**: the top of its contiguous
+ * run (no wall above it) and not on the map's top/bottom fence. `treeTipKeys`
+ * turns these into floor for movement, so a trainer leaning on one is not leaning
+ * on a solid wall - only a solid one reads as glued.
+ */
+function isTreeTip(tiles: TileMap, x: number, y: number): boolean {
+  if (y <= 0 || y >= tiles.length - 1) return false;
+  return tiles[y]?.[x] === WALL && tiles[y - 1]?.[x] !== WALL;
+}
+
+/** True when the wall at `(x, y)` is solid, i.e. not a walkable tree tip. */
+function solidWall(tiles: TileMap, x: number, y: number, walkableTips: boolean): boolean {
+  return tiles[y]?.[x] === WALL && !(walkableTips && isTreeTip(tiles, x, y));
+}
+
+/** How many of the four cardinal neighbours of `(x, y)` are solid (non-tip) walls. */
+function solidWallNeighbours(tiles: TileMap, x: number, y: number, walkableTips: boolean): number {
+  let walls = 0;
+  if (solidWall(tiles, x, y - 1, walkableTips)) walls += 1;
+  if (solidWall(tiles, x, y + 1, walkableTips)) walls += 1;
+  if (solidWall(tiles, x - 1, y, walkableTips)) walls += 1;
+  if (solidWall(tiles, x + 1, y, walkableTips)) walls += 1;
+  return walls;
+}
+
+/**
  * The loot spot for each branch: the tile with the most adjacent walls,
  * preferring one nearer the branch's intended far end and never sharing a tile
  * with an earlier pocket. Usually a corner (two walls), at worst a lane edge
@@ -1007,6 +1073,218 @@ function placeItems(
     items.push({ id: `item-${routeIndex}-${items.length}`, position: { ...position }, itemId, hidden });
   }
   return items;
+}
+
+/**
+ * The cardinals from `pos` that look onto a **passable** tile (at least one
+ * ahead). A ledge, water or the wall itself is not a lane a trainer can face
+ * down, so a trainer is never posed staring at a tile the player cannot cross.
+ */
+function openFacings(tiles: TileMap, pos: Tile): Facing[] {
+  return FACINGS.filter((facing) => {
+    const vector = FACING_VECTORS[facing];
+    const ahead = { x: pos.x + vector.x, y: pos.y + vector.y };
+    return isWalkable(tiles, ahead);
+  });
+}
+
+/** How many non-wall tiles a facing sees, capped at the trainer's `sight`. */
+function openRun(tiles: TileMap, pos: Tile, facing: Facing, sight: number): number {
+  const vector = FACING_VECTORS[facing];
+  let run = 0;
+  for (let step = 1; step <= sight; step++) {
+    const ahead = { x: pos.x + vector.x * step, y: pos.y + vector.y * step };
+    if (!inBounds(tiles, ahead) || tiles[ahead.y][ahead.x] === WALL) break;
+    run += 1;
+  }
+  return run;
+}
+
+/**
+ * The cardinal a trainer looks along, the way the originals pose them: back to a
+ * wall (so it reads as leaning on it) and down the most open lane, preferring the
+ * way the player arrives from the entry so its front greets the player. No RNG,
+ * so the pose is a pure function of the map.
+ */
+function chooseFacing(
+  tiles: TileMap,
+  pos: Tile,
+  entry: Tile,
+  dirs: readonly Facing[],
+  sight: number,
+  walkableTips: boolean,
+): Facing {
+  const backWall = (facing: Facing): number => {
+    const vector = FACING_VECTORS[facing];
+    const behind = { x: pos.x - vector.x, y: pos.y - vector.y };
+    return solidWall(tiles, behind.x, behind.y, walkableTips) ? 1 : 0;
+  };
+  const towardEntry = (facing: Facing): number => {
+    const vector = FACING_VECTORS[facing];
+    return Math.sign(entry.x - pos.x) * vector.x + Math.sign(entry.y - pos.y) * vector.y;
+  };
+  let best = dirs[0];
+  let bestScore = [-1, -1, -Infinity];
+  for (const facing of dirs) {
+    const score = [backWall(facing), openRun(tiles, pos, facing, sight), towardEntry(facing)];
+    if (score[0] > bestScore[0] || (score[0] === bestScore[0] && (score[1] > bestScore[1] || (score[1] === bestScore[1] && score[2] > bestScore[2])))) {
+      best = facing;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+/**
+ * Places the route's trainers. A route always guards its main lane with at least
+ * one trainer and puts one more by every optional pocket it fills, plus the
+ * map-size tier's bonus, so the count follows the route's size. A trainer stands
+ * on floor hugging a wall and looks down the open lane, and some cycle their
+ * facing on a timer (a "spinning" trainer). Placement never plugs a passage: a
+ * candidate is kept only while every tile the player could reach before is still
+ * reachable with the chosen trainers treated as blockers (ledges and water count
+ * as impassable), and no two trainers stand in neighbouring tiles, so a trainer
+ * is never forced on the player and never crowds another
+ * (`docs/route-generator.md` §3.4). The `populate` stream drives the picks, so
+ * `(seed, routeIndex)` fixes the trainers (D11).
+ */
+function placeTrainers(
+  tiles: TileMap,
+  entry: Tile,
+  exits: readonly Tile[],
+  spine: ReadonlySet<string>,
+  branches: ReadonlySet<string>,
+  pockets: readonly Tile[],
+  routeIndex: number,
+  archetypes: readonly string[],
+  sight: number,
+  walkableTips: boolean,
+  rng: Rng,
+): RouteTrainer[] {
+  if (archetypes.length === 0) return [];
+
+  const trainers: RouteTrainer[] = [];
+  const blocked = new Set<string>();
+  const endKeys = new Set([entry, ...exits, ...pockets].map(tileKey));
+  const entryDistance = (tile: Tile): number => Math.abs(tile.x - entry.x) + Math.abs(tile.y - entry.y);
+  const fullReach = reachableTiles(tiles, entry);
+
+  const isFloor = (tile: Tile): boolean =>
+    inBounds(tiles, tile) && tiles[tile.y][tile.x] === FLOOR;
+
+  /** No other trainer may stand in the eight tiles around `tile`. */
+  const crowded = (tile: Tile): boolean => {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        if (blocked.has(tileKey({ x: tile.x + dx, y: tile.y + dy }))) return true;
+      }
+    }
+    return false;
+  };
+
+  /**
+   * Adding `tile` as a blocker must not cut off any tile the entry could reach
+   * before, so a trainer never plugs a lane, a branch or a pocket.
+   */
+  const keepsRouteOpen = (tile: Tile): boolean => {
+    const test = new Set(blocked);
+    test.add(tileKey(tile));
+    const reached = reachableAvoiding(tiles, entry, test);
+    for (const key of fullReach) {
+      if (!test.has(key) && !reached.has(key)) return false;
+    }
+    return true;
+  };
+
+  /** True when `facing` would put the entry (the player's spawn) in sight. */
+  const seesEntry = (tile: Tile, facing: Facing): boolean => {
+    const vector = FACING_VECTORS[facing];
+    let current = tile;
+    for (let step = 0; step < sight; step++) {
+      current = { x: current.x + vector.x, y: current.y + vector.y };
+      if (blocksSight(tiles, current, blocked)) break;
+      if (current.x === entry.x && current.y === entry.y) return true;
+    }
+    return false;
+  };
+
+  const candidateOk = (tile: Tile): boolean => {
+    const key = tileKey(tile);
+    if (blocked.has(key) || endKeys.has(key) || crowded(tile)) return false;
+    if (!isFloor(tile) || solidWallNeighbours(tiles, tile.x, tile.y, walkableTips) === 0) return false;
+    if (entryDistance(tile) < TRAINER_ENTRY_GAP) return false;
+    if (openFacings(tiles, tile).length === 0) return false;
+    return keepsRouteOpen(tile);
+  };
+
+  const commit = (tile: Tile): boolean => {
+    const dirs = openFacings(tiles, tile);
+    if (dirs.length === 0) return false;
+    const facing = chooseFacing(tiles, tile, entry, dirs, sight, walkableTips);
+    const spins = dirs.length >= 2 && rng.next() < SPIN_CHANCE;
+    const turns = spins ? FACINGS.filter((candidate) => dirs.includes(candidate)) : null;
+    // A trainer never spawns already watching - or able to spin and watch - the
+    // tile the player arrives on.
+    if (seesEntry(tile, facing) || (turns?.some((turn) => seesEntry(tile, turn)) ?? false)) {
+      return false;
+    }
+    const archetypeId = archetypes[rng.int(0, archetypes.length - 1)];
+    trainers.push({
+      id: `trainer-${routeIndex}-${trainers.length}`,
+      position: { ...tile },
+      facing,
+      sight,
+      archetypeId,
+      ...(turns ? { turns } : {}),
+    });
+    blocked.add(tileKey(tile));
+    return true;
+  };
+
+  /** Deterministic shuffle, then the first candidate that still keeps the route open. */
+  const tryFrom = (pool: readonly Tile[]): boolean => {
+    const order = [...pool];
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = rng.int(0, i);
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    for (const tile of order) {
+      if (candidateOk(tile) && commit(tile)) return true;
+    }
+    return false;
+  };
+
+  const spineTiles = [...spine].map(keyToTile);
+  const branchTiles = [...branches].map(keyToTile);
+
+  // A minimum on the main lane: one trainer on the spine (the fallback pool lets
+  // it land on a branch when the spine has no room, so a route still gets one).
+  const openPools: Tile[][] = [];
+  if (!tryFrom(spineTiles)) tryFrom([...spineTiles, ...branchTiles]);
+
+  // One more guarding each optional path, standing as close to the loot pocket
+  // as its branch allows.
+  for (const pocket of pockets) {
+    const near = branchTiles
+      .filter((tile) => !(tile.x === pocket.x && tile.y === pocket.y))
+      .filter((tile) => Math.abs(tile.x - pocket.x) + Math.abs(tile.y - pocket.y) <= TRAINER_POCKET_RANGE)
+      .sort((a, b) => {
+        const da = Math.abs(a.x - pocket.x) + Math.abs(a.y - pocket.y);
+        const db = Math.abs(b.x - pocket.x) + Math.abs(b.y - pocket.y);
+        return da - db || a.y - b.y || a.x - b.x;
+      });
+    openPools.push(near);
+  }
+  for (const pool of openPools) tryFrom(pool);
+
+  // Then the map-size tier's bonus, anywhere the network still has room.
+  const bonus = trainerBonusForSize(tiles[0].length, tiles.length);
+  for (let i = 0; i < bonus; i++) {
+    if (!tryFrom([...spineTiles, ...branchTiles])) break;
+  }
+
+  return trainers;
 }
 
 function attemptRoute(
@@ -1096,10 +1374,25 @@ function attemptRoute(
   tiles[entry.y][entry.x] = FLOOR;
   snapshot('terrain', 'terrain pass');
 
-  // The population pass: one ground item at each reachable optional-path end.
-  // It only reads the finished map (pockets and reachability), so it can never
-  // strand loot behind a hazard the terrain pass placed (docs/route-generator.md §3.5).
+  // The population pass (docs/route-generator.md §3.4-3.5): first the trainers
+  // (one guarding the main lane, one per optional pocket and the map-size bonus),
+  // then one ground item at each reachable optional-path end. Both draw from the
+  // `populate` stream, so `(seed, routeIndex)` fixes the whole population (D11).
   const reached = reachableTiles(tiles, entry);
+  const trainers = placeTrainers(
+    tiles,
+    entry,
+    exits,
+    spine,
+    branches,
+    pockets,
+    request.routeIndex,
+    request.trainerArchetypes ?? [],
+    request.trainerSight ?? DEFAULT_TRAINER_SIGHT,
+    request.wall !== undefined,
+    streams.populate,
+  );
+  snapshot('trainers', 'place trainers');
   const items = placeItems(
     tiles,
     pockets,
@@ -1125,6 +1418,7 @@ function attemptRoute(
     branches: [...branches].map(keyToTile),
     pockets,
     items,
+    trainers,
   };
   snapshot('final', 'final map');
   return route;

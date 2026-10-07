@@ -426,6 +426,7 @@ describe('sketchRoute', () => {
         'branches',
         'clean',
         'terrain',
+        'trainers',
         'items',
         'final',
       ]);

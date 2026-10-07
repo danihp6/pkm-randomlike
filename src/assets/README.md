@@ -11,7 +11,7 @@
 | `items.png`, `moves.png`, `hud.png` | battle/UI art for later phases | **game rip, local only** |
 | `frlg/outdoor.png`, `frlg/forest.png`, `frlg/cave.png` | FRLG field atlases, 4x13 of 16px cells (64x208), from `scripts/frlg/build-tilesets.mjs` (config in `src/data/tilesets/frlg.ts`) | **game rip, local only** |
 | `frlg/trainers.png` | FRLG battle trainer sprites, 64x64 per archetype, from `scripts/frlg/build-trainer-sprites.mjs` (frame map in `src/data/frlg/trainers.json`) | **game rip, local only** |
-| `frlg/overworld.png` | FRLG trainer overworld sprites, 16x32 per archetype, from `scripts/frlg/build-overworld-sprites.mjs` (frame map in `src/data/frlg/overworld.json`) | **game rip, local only** |
+| `frlg/overworld.png` | FRLG trainer overworld sprites, 16x32, one row of nine poses (idle + walk per down/up/side) per archetype, from `scripts/frlg/build-overworld-sprites.mjs` (frame map in `src/data/frlg/overworld.json`) | **game rip, local only** |
 | `frlg/player.png` | FRLG player overworld sprite, three 16x32 frames (down/up/side), from `scripts/frlg/build-player-sprite.mjs` (frame map in `src/data/frlg/player.json`) | **game rip, local only** |
 | `frlg/item-icons.png` | FRLG item icons, 24x24, packed by `scripts/frlg/build-item-icons.mjs` (frame map in `src/data/frlg/item-icons.json`) | **game rip, local only** |
 | `frlg/move-categories.png` | official move-category badges (physical / special / status), 32x14, packed by `scripts/frlg/build-category-icons.mjs` (frame map in `src/data/frlg/move-categories.json`, read by `src/data/moveCategoryIcons.ts`) | **game rip, local only** |
