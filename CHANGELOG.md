@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] The **battle sprites are Pokémon Añil's** now (front, back and icon), with
+      **animation**, **shiny** and **female** variants. The art comes from the
+      RPG Maker XP / Pokémon Essentials fangame (EricLostie), copied verbatim by
+      `scripts/anil/build-pokemon-sprites.mjs` into `public/anil/` (9,581 sheets,
+      ~169 MB) with a frame manifest at `src/data/anil/pokemon-sprites.json`. The
+      sheets are horizontal filmstrips — frame = the sheet's own height, count =
+      `width / height`, exactly how Añil's own plugin reads them — so the battle
+      loads only the sheets it draws, plays one looping idle animation each and
+      drops them on shutdown. A **shiny** flag landed on the fighter (persisted
+      in the save) and rolls on its own encounter stream at 1 in 4096, so a
+      caught shiny stays shiny and no fixed seed shifted. The old FRLG battle
+      sheets (`src/assets/frlg/pokemon-*.png` and
+      `scripts/frlg/build-pokemon-sprites.mjs`) are gone. `D27`,
+      `docs/art-direction.md` updated.
 - [x] The battle **SWITCH** menu now shows a wide **detail window** above the avatar
       grid for the member under the cursor — no tabs: the five battle stats, HP,
       nature, ability and held item in a left column, and the member's four moves

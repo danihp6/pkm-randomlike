@@ -11,7 +11,6 @@ import {
   OVERWORLD_SPRITE_TEXTURE_KEY,
   OVERWORLD_SPRITE_WIDTH,
 } from '../data/overworldSprites';
-import { POKEMON_SPRITE_SHEETS } from '../data/pokemonSprites';
 import {
   PLAYER_SPRITE_ATLAS_URL,
   PLAYER_SPRITE_HEIGHT,
@@ -116,12 +115,6 @@ export class BootScene extends Phaser.Scene {
       frameWidth: OVERWORLD_SPRITE_WIDTH,
       frameHeight: OVERWORLD_SPRITE_HEIGHT,
     });
-    for (const sheet of Object.values(POKEMON_SPRITE_SHEETS)) {
-      this.load.spritesheet(sheet.key, sheet.url, {
-        frameWidth: sheet.size,
-        frameHeight: sheet.size,
-      });
-    }
     this.load.spritesheet(MOVE_FX_TEXTURE_KEY, moveFxUrl, {
       frameWidth: MOVE_FX_FRAME_SIZE,
       frameHeight: MOVE_FX_FRAME_SIZE,

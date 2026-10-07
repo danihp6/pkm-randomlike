@@ -109,6 +109,8 @@ export type BattleFighter = {
   ability: string;
   /** Gender, for Rivalry and flavour; the run assigns it in Phase 6. */
   gender: Gender;
+  /** A shiny rolled the alternate-palette art; purely cosmetic. */
+  shiny: boolean;
   /** Item id held in battle, or null; consumed berries clear it. */
   heldItem: string | null;
   /** Last item this fighter consumed, restorable by Recycle. */
@@ -138,6 +140,7 @@ export type FighterInput = Readonly<{
   ability?: string;
   heldItem?: string;
   gender?: Gender;
+  shiny?: boolean;
   ivs?: Partial<Stats>;
   evs?: Partial<Stats>;
   moves?: readonly string[];
@@ -254,6 +257,7 @@ export function createFighter(input: FighterInput): BattleFighter {
     nature,
     ability,
     gender: input.gender ?? defaultGender(species.genderRatio),
+    shiny: input.shiny ?? false,
     heldItem: input.heldItem ?? null,
     lastItemId: null,
     transformBackup: null,
@@ -426,6 +430,7 @@ export type FighterSnapshot = Readonly<{
   nature: string;
   ability: string;
   gender: Gender;
+  shiny: boolean;
   heldItem: string | null;
   ivs: Stats;
   evs: Stats;
@@ -443,6 +448,7 @@ export function snapshotFighter(fighter: BattleFighter): FighterSnapshot {
     nature: fighter.nature,
     ability: fighter.ability,
     gender: fighter.gender,
+    shiny: fighter.shiny,
     heldItem: fighter.heldItem,
     ivs: { ...fighter.ivs },
     evs: { ...fighter.evs },
@@ -466,6 +472,7 @@ export function restoreFighter(snapshot: FighterSnapshot): BattleFighter {
     nature: snapshot.nature,
     ability: snapshot.ability,
     gender: snapshot.gender,
+    shiny: snapshot.shiny,
     ivs: snapshot.ivs,
     evs: snapshot.evs,
     moves: snapshot.moves.map((slot) => slot.moveId),

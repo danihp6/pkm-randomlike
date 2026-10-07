@@ -22,14 +22,16 @@ Three tiers, in order of preference:
    anything public.
 2. **Imported game rips (local only)** — `wood.png`, `desert.png`,
    `apple-woods.png`, `lush-prairie.png`, `beach-cave.png`, `items.png`,
-   `moves.png`, `hud.png`, `portraits.png`, `pokemon/*.png`, and the FRLG UI art
+   `moves.png`, `hud.png`, `portraits.png`, `pokemon/*.png`, the FRLG UI art
    (`frlg/item-icons.png`, `frlg/window.png`, `frlg/textbox.png`,
    `frlg/hpbar.png`, `frlg/cursor.png`, `frlg/font.png`, `frlg/trainers.png`,
-   `frlg/overworld.png`, `frlg/player.png`). The PMD ones
+   `frlg/overworld.png`, `frlg/player.png`) and the battle sprites in
+   `public/anil/`. The PMD ones
    come from Pokémon Mystery Dungeon rips (PMDCollab and spriters-resource) via the
    sibling project `pkm-mystery-dungeon-like`; the FRLG ones come from
-   spriters-resource and the pret/pokefirered decomp (see the FRLG sections below).
-   All are Nintendo/GameFreak/Chunsoft art, as the user asked. **Never
+   spriters-resource and the pret/pokefirered decomp (see the FRLG sections below);
+   the battle sprites come from the fangame Pokémon Añil (see the Añil section
+   below). All are Nintendo/GameFreak/Chunsoft art, as the user asked. **Never
    redistribute**: `sprite-sources/` is gitignored and these crops must not ship.
    Tileset rips are credited upstream to SilverDeoxys563 (spriters-resource).
 3. **Third-party CC0** — if a pack is added, record its licence and author in
@@ -83,18 +85,41 @@ frames) are packed by `scripts/frlg/build-overworld-sprites.mjs` into
 route draws the FRLG protagonist instead of the PMD placeholder. The
 `npc-overworld.png` and `player-sprites.png` compilations stay unused.
 
-## Pokémon battle sprites (pokeemerald-expansion, local only)
+## Pokémon battle sprites (Pokémon Añil, local only)
 
-Every generation's battle art comes from the pokeemerald-expansion checkout
-(`github.com/rh-hideout/pokeemerald-expansion`, `graphics/pokemon/<species>/`:
-`front.png`/`anim_front.png`, `back.png`, `icon.png` and their `.pal`), which is
-GBA-sized. `scripts/frlg/build-pokemon-sprites.mjs` is run against that checkout
-and packs `src/assets/frlg/pokemon-{front,back,icon}.png` plus the frame manifest
-`src/data/frlg/pokemon-sprites.json`, read through `src/data/pokemonSprites.ts`.
-The back sheets are exported with the shiny palette baked in, so the packer
-recolours each back sprite by palette index with the folder's `normal.pal`. A Gen
-9 forme without its own folder falls back to its base species at pack time. Never
-redistributed: keep the checkout out of the repo (`sprite-sources/` is gitignored).
+The battle art is the one the Spanish fangame **Pokémon Añil** (EricLostie)
+uses. It is a RPG Maker XP / Pokémon Essentials game, so its sheets live in
+`Graphics/Pokemon/{Front,Back,Front shiny,Back shiny,Icons}` and each one is a
+**horizontal filmstrip**: every frame is a square of the sheet's own height and
+the frame count is `width / height`, the layout Añil's own *Pokémon Animados
+para DBK* plugin reads. The sheets are 16-colour palette PNGs (~365 bytes a
+frame), so they are copied verbatim into `public/anil/` — repacking them into
+RGBA atlases would inflate the same art to gigabytes.
+
+`scripts/anil/build-pokemon-sprites.mjs` is run against a checkout of the game
+(`node scripts/anil/build-pokemon-sprites.mjs <anil>/Graphics/Pokemon`, or
+`npm run data:anil` with `POKEANIL_POKEMON` set) and writes
+`src/data/anil/pokemon-sprites.json`, read through `src/data/pokemonSprites.ts`.
+A dex species resolves to `<SPECIES>.png` (with `_female`, and the shiny folders
+for the alternate palette) by normalised name. A **forme** whose file the Añil
+set names in Spanish (`CHARIZARD_1.png`, `RAICHU_1.png`) still resolves to its
+base species for now; the Spanish form table is the open follow-up in
+`TODO.md`.
+
+Never redistributed: keep the checkout out of the repo (`sprite-sources/` is
+gitignored). Credits, as the game itself prints them in
+`Settings.game_credits`:
+
+| What | Who |
+| --- | --- |
+| Battle sprites (Gen 4/5/DS style) | TheLuiz, leparagon, French-Cyndaquil, Z-nogyroP, Prodigal96, Vanilla Sunshine, fishbowlsoul90, zlolxd, elazulmax, mangamanga, MrDollSteak, Spherical-Ice, Dreadwing93, the **Smogon Gen 8 Sprite Project**, the **Smogon Sun/Moon Sprite Project** and the **Gen VI: Pokémon Sprite Resource** |
+| 9th-gen icons | CarmaNekko, Divaruta 666, Okyo, JLauz735, ShenseyGrenin, Carnek |
+| Sun/Moon graphics | Pingupollas |
+| Footprints | भाग्य ज्योति, WolfPP, Caruban, komeiji514 |
+| Engine | Pokémon Essentials v21.1 (Maruno) on mkxp-z |
+
+Shinies roll on the encounter stream (1 in 4096) and the party keeps the flag,
+so a caught shiny stays shiny (`src/engine/routes/encounters.ts`).
 
 ## FireRed/LeafGreen UI sources (downloaded, local only)
 

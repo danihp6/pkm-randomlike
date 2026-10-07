@@ -325,6 +325,7 @@ function parseFighter(value: unknown): FighterSnapshot | null {
   }
 
   const gender = GENDERS.includes(value.gender as Gender) ? (value.gender as Gender) : 'genderless';
+  const shiny = value.shiny === true;
 
   return {
     id: value.id,
@@ -333,6 +334,7 @@ function parseFighter(value: unknown): FighterSnapshot | null {
     nature: value.nature,
     ability: value.ability,
     gender,
+    shiny,
     heldItem,
     ivs,
     evs,

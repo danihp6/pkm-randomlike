@@ -463,6 +463,10 @@ export class RouteScene extends Phaser.Scene {
       band.minLevel,
       band.maxLevel,
       new Rng(hashSeed(`${route.seed}:encounters:${route.routeIndex}`)),
+      undefined,
+      // Shinies roll on their own stream, so they never shift the encounter
+      // sequence a fixed seed already produced.
+      new Rng(hashSeed(`${route.seed}:shiny:${route.routeIndex}`)),
     );
   }
 
@@ -1890,6 +1894,7 @@ export class RouteScene extends Phaser.Scene {
           kind: 'wild',
           speciesId: encounter.speciesId,
           level: encounter.level,
+          shiny: encounter.shiny,
           key: `grass:${this.player.x},${this.player.y}`,
           tile: { x: this.player.x, y: this.player.y },
         });

@@ -11,6 +11,7 @@ function member(id: string, level: number, speciesId = 'charmander'): RunPokemon
       nature: 'Hardy',
       ability: 'Blaze',
       gender: 'male',
+      shiny: false,
       heldItem: null,
       ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
       evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },

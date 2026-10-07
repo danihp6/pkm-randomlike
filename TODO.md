@@ -134,8 +134,19 @@ most useful first:
 
 ### Remaining Phase 8
 
-- [ ] FRLG portraits for the party/HUD/starter/release screens, drawn from the
-      packed battle fronts/icons instead of the PMDCollab `portraits.png`.
+- [ ] **Añil forme sprites.** The battle sheets name a forme `SPECIES_N.png` with
+      the form's Spanish name in `PBS/pokemon_forms.txt`, so a forme whose file
+      is not `<id>.png` currently draws its base species (`D27`). Build the
+      Spanish→dex forme table in `scripts/anil/build-pokemon-sprites.mjs` so
+      Alola/Galar/Hisui/Paldea forms, megas, Vivillon patterns, Oricorio, Minior,
+      Alcremie and the rest use their own art. No run spawns a forme today, so
+      this is art completeness, not a visible bug.
+- [ ] **Battle mon size and ground line.** Añil's sheets are native-sized (30-248
+      px) and the battle caps the scale, but the sprite is still centre-anchored
+      on its platform: use Añil's `PBS/pokemon_metrics.txt` (front/back offsets,
+      female/forms variants) so every mon's feet sit on the platform.
+- [ ] Party/HUD/starter/release portraits drawn from the Anil battle icons
+      (`public/anil/icons/`) instead of the PMDCollab `portraits.png`.
 - [ ] FRLG move and attack FX (`sprite-sources/frlg-ui/move-effects.png`,
       `attack-effects.png`) replacing the PMD `moves.png`.
 - [ ] Remove the PMD art once the FRLG replacements land: the `wood.png` tileset
