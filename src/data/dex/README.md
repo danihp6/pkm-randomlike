@@ -11,7 +11,7 @@ asserts the counts still match, so a bad regeneration fails loudly.
 
 | File | Fields that matter to us |
 | --- | --- |
-| `species.json` | `id`, `num`, `name`, `types`, `baseStats`, `abilities`, `prevo`, `evos`, `evolutions[]`, `weightkg`, `genderRatio`, `nfe`, `catchRate`, form fields |
+| `species.json` | `id`, `num`, `name`, `types`, `baseStats`, `abilities`, `prevo`, `evos`, `evolutions[]`, `weightkg`, `heightm`, `genderRatio`, `nfe`, `catchRate`, form fields |
 | `moves.json` | `id`, `name`, `type`, `category`, `basePower`, `accuracy`, `pp`, `priority`, `target`, `flags`, `secondaries`, `critRatio`, `drain`, `recoil`, `multihit`, `status`, `volatileStatus`, `boosts`, `self`, `weather`, `terrain`, `desc`, `shortDesc` |
 | `abilities.json` | `id`, `name`, `desc`, `shortDesc`, `flags` |
 | `items.json` | `id`, `name`, `desc`, `shortDesc`, `isBerry`, battle flags |

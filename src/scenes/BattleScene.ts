@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { getMove } from '../data/dex';
+import { getMove, heightOf } from '../data/dex';
 import { getItem } from '../data/items';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { type Keybinds } from '../data/keybinds';
@@ -25,6 +25,8 @@ import { Rng } from '../engine/rng';
 import { MAX_MOVES, MAX_PARTY_SIZE, experienceFraction, type BattleLaunch, type BattleOutcome, type BattleReturn } from '../engine/run';
 import { PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import { MOVE_FX_TEXTURE_KEY, moveFxAnimKey, moveFxFor, moveFxTrack } from '../render/moveFx';
+import { spriteContentBounds, type SpriteBounds } from '../render/spriteBounds';
+import { battleSpriteHeight, SPRITE_SIZE_MAX } from '../data/spriteSize';
 import {
   FAINT_DROP,
   FAINT_MS,
@@ -106,11 +108,24 @@ const PARTY_AVATAR_SCALE = 0.9;
 /** The HP bar drawn inside every switch cell; the detail popup carries the numbers. */
 const PARTY_CELL_HPBAR_SCALE = 0.4;
 /**
- * Placeholder mon sprite scale, and the cap that keeps an unusually tall Anil
- * sheet (they run from 30px to 248px) from swallowing the stage.
+ * Fallback zoom for the placeholder mon and any sheet whose pixels cannot be
+ * measured; a real sprite is sized from its species' canonical height instead
+ * (see `src/data/spriteSize.ts`). The platform offsets put every sprite's feet
+ * on the platform, whatever its size.
  */
-const MON_SCALE = 2.4;
-const MON_MAX_HEIGHT = 190;
+const MON_SCALE = 2.2;
+const FOE_PLATFORM_OFFSET = 76;
+const PLAYER_PLATFORM_OFFSET = 80;
+/** Space kept above a sprite's head so the largest mon never clips off-stage. */
+const MON_TOP_MARGIN = 16;
+
+/**
+ * The platform's width tracks its mon, so a titan gets a wide stand and a
+ * Scatterbug a small one (the texture is `SPRITE_SIZE_MAX` wide at scale 1).
+ */
+function platformScale(drawHeight: number): number {
+  return Math.min(1.1, Math.max(0.45, drawHeight / SPRITE_SIZE_MAX));
+}
 /** Frames per second for the idle loop; Anil animates at roughly 30ms a frame. */
 const MON_ANIM_FPS = 30;
 /**
@@ -206,6 +221,10 @@ export class BattleScene extends Phaser.Scene {
   private enemyFighters: BattleFighter[] = [];
   /** The sprite scale of each side's active sheet (the switch beat returns to it). */
   private monScale: Record<SideId, number> = { player: MON_SCALE, enemy: MON_SCALE };
+  /** The tallest a side's sprite may draw, set by the layout (see `refreshHud`). */
+  private monSizeCap: Record<SideId, number> = { player: SPRITE_SIZE_MAX, enemy: SPRITE_SIZE_MAX };
+  /** The drawn height each side's sprite ended up at, so its platform can match. */
+  private monDrawHeight: Record<SideId, number> = { player: SPRITE_SIZE_MAX, enemy: SPRITE_SIZE_MAX };
   /** The sheets this battle loaded, dropped on shutdown so the texture cache cannot grow forever. */
   private loadedSheets: PokemonSpriteSheet[] = [];
 
@@ -937,10 +956,26 @@ export class BattleScene extends Phaser.Scene {
     if (!sheet) return;
     const sprite = this.monSprite(side);
     const anim = pokemonIdleAnimKey(sheet);
-    this.monScale[side] = Math.min(MON_SCALE, MON_MAX_HEIGHT / sheet.size);
-    if (sprite.texture.key === sheet.textureKey && sprite.anims.currentAnim?.key === anim) return;
+    const content = this.sheetContent(sheet);
+    const target = Math.min(battleSpriteHeight(heightOf(fighter.speciesId)), this.monSizeCap[side]);
+    this.monScale[side] = target / (content?.height ?? sheet.size);
+    this.monDrawHeight[side] = target;
+    const sameSheet = sprite.texture.key === sheet.textureKey && sprite.anims.currentAnim?.key === anim;
+    if (sameSheet) {
+      // A live faint/switch beat owns the sprite; otherwise a resize just retargets it.
+      if (!this.beat[side]) sprite.setScale(this.monScale[side]);
+      return;
+    }
+    if (content) sprite.setOrigin(content.anchorX / sheet.size, content.anchorY / sheet.size);
+    else sprite.setOrigin(0.5, 0.5);
     sprite.setTexture(sheet.textureKey, 0).setScale(this.monScale[side]);
     sprite.play(anim);
+  }
+
+  /** The sheet's drawn box and feet, measured once per texture (`spriteBounds`). */
+  private sheetContent(sheet: PokemonSpriteSheet): SpriteBounds | null {
+    const source = this.textures.get(sheet.textureKey).getSourceImage();
+    return spriteContentBounds(sheet.textureKey, source as CanvasImageSource, sheet.size, sheet.frames);
   }
 
   private monPos(side: SideId): { x: number; y: number } {
@@ -1286,7 +1321,6 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private refreshHud(): void {
-    this.syncMonSprites();
     // The battle lives in a centred square (at most `MAX_BATTLE_SIZE`), so it
     // reads the same on a wide desktop and a phone. Everything below is laid out
     // in that square's own coordinates; the camera viewport places and clips it.
@@ -1327,7 +1361,9 @@ export class BattleScene extends Phaser.Scene {
       foeInfo = { x: pad, y: pad, w: panelW, h: FOE_PANEL.h };
       playerInfo = { x: pad, y: Math.round(height * 0.46), w: panelW, h: PLAYER_PANEL_H };
       foeX = width * 0.72;
-      foeY = height * 0.18;
+      // Leave the tallest possible sprite a full box between the foe panel and
+      // its platform, so a titan is never clipped behind the panel.
+      foeY = foeInfo.y + foeInfo.h + SPRITE_SIZE_MAX - FOE_PLATFORM_OFFSET;
       playerX = width * 0.32;
       playerY = playerInfo.y - 90;
     } else {
@@ -1360,13 +1396,30 @@ export class BattleScene extends Phaser.Scene {
     menu = { x: box.x, y: box.y, w: box.w, h: box.h };
     message = { x: box.x, y: box.y + box.h - MESSAGE_H, w: box.w, h: MESSAGE_H };
 
-    this.foeMonPos = { x: foeX, y: foeY };
-    this.playerMonPos = { x: playerX, y: playerY };
-    if (this.beat.enemy !== 'faint') this.foeSprite.setPosition(foeX, foeY);
-    this.foePlatform.setPosition(compact ? foeX : width * 0.72, foeY + 58);
+    const foePlatformY = foeY + FOE_PLATFORM_OFFSET;
+    const playerPlatformY = playerY + PLAYER_PLATFORM_OFFSET;
+    // Cap each sprite so its head clears the panel above it, and on a phone also
+    // stays narrow enough for the two battlers to sit side by side.
+    const panelBottom = foeInfo.y + foeInfo.h;
+    const widthCap = Math.round(width * 0.44);
+    this.monSizeCap.enemy = Math.min(
+      SPRITE_SIZE_MAX,
+      compact ? Math.min(foePlatformY - panelBottom, widthCap) : foePlatformY - MON_TOP_MARGIN,
+    );
+    this.monSizeCap.player = Math.min(
+      SPRITE_SIZE_MAX,
+      compact ? Math.min(playerPlatformY - panelBottom, widthCap) : playerPlatformY - MON_TOP_MARGIN,
+    );
+    this.syncMonSprites();
+    this.foeMonPos = { x: foeX, y: foePlatformY };
+    this.playerMonPos = { x: playerX, y: playerPlatformY };
+    if (this.beat.enemy !== 'faint') this.foeSprite.setPosition(foeX, foePlatformY);
+    this.foePlatform
+      .setScale(platformScale(this.monDrawHeight.enemy))
+      .setPosition(compact ? foeX : width * 0.72, foePlatformY);
     if (trainer) this.foeTrainer.setPosition((compact ? foeX : width * 0.72) - 70, foeY + 62);
-    if (this.beat.player !== 'faint') this.playerSprite.setPosition(playerX, playerY);
-    this.playerPlatform.setPosition(playerX, playerY + 62);
+    if (this.beat.player !== 'faint') this.playerSprite.setPosition(playerX, playerPlatformY);
+    this.playerPlatform.setScale(platformScale(this.monDrawHeight.player)).setPosition(playerX, playerPlatformY);
     this.foeSprite.setVisible((this.displayHp.enemy > 0 && !this.captured) || this.beat.enemy === 'faint');
     this.playerSprite.setVisible(this.displayHp.player > 0 || this.beat.player === 'faint');
 

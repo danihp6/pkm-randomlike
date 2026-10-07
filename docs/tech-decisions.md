@@ -317,6 +317,19 @@ resolves a species (+ shiny, + female) to a sheet and `BattleScene` loads just
 the sheets a battle draws, plays one looping idle animation per sheet and drops
 the textures again on shutdown.
 
+Relative size does **not** come from the art. Essentials renders every battler at
+one global zoom and lets the art carry the size, but the Anil set compresses the
+real 0.1m-20m range into a narrow band — Regigigas is drawn barely taller than
+Scatterbug — so scaling by the sheet (frame or drawn box) still left the titans
+looking small. Instead each species carries a canonical `heightm` (PokeAPI, via
+`scripts/fetch-heights.mjs` and `scripts/data/heights.json`, merged by
+`build-dex.mjs`) and `BattleScene` sizes the sprite from it through the power
+curve in `src/data/spriteSize.ts` (sqrt, so 200x of height becomes ~4x of pixels).
+`src/render/spriteBounds.ts` measures each sheet's drawn box once per texture: the
+box converts the target height into a zoom (an Anil frame is padded to the
+animation's movement envelope, not the creature) and its bottom-centre anchors the
+sprite's feet on the platform, so every size stands correctly.
+
 Why not repack into an RGBA atlas like the old `build-pokemon-sprites.mjs` did:
 the same art would inflate from ~169 MB to gigabytes (253k frames total), and a
 fixed cell cannot hold per-species frame sizes anyway. Why `public/` and not

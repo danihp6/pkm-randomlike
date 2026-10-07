@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Battle sprites are sized by the Pokémon's real height**, so a titan reads
+      big and a Scatterbug tiny. The Añil art compresses the true 0.1m–20m range
+      (Regigigas is drawn barely taller than Scatterbug), so scaling by the sheet
+      left legendaries small. `species.json` now carries a canonical `heightm`
+      (PokeAPI, `scripts/fetch-heights.mjs` → `scripts/data/heights.json`, merged
+      by `build-dex.mjs`) and `src/data/spriteSize.ts` turns it into a drawn height
+      through a sqrt curve. `src/render/spriteBounds.ts` measures each sheet's
+      drawn box to convert that height into a zoom and anchors the sprite's feet
+      on the platform. The base and max sizes grew, the platform grew and now
+      scales with its mon, and each layout caps the size so nothing clips or
+      overlaps. `D27`, `docs/data-spec.md` updated.
 - [x] The party/PC HUD can now **swap** a member across the two panels by
       **dragging one onto a member of the other**: the two trade places, so a
       **boxed Pokémon can replace a party member even when the party is full**
