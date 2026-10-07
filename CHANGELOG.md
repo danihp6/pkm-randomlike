@@ -8,6 +8,33 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] The **portraits** (party, route HUD, starter cards, release beat) are
+      Pokémon Añil's icons now, packed into `public/anil/portraits.png` and
+      `portraits-shiny.png` (one 64x64 cell per dex entry, 32 columns, under half
+      a megabyte each) and read through `src/data/portraits.ts`. A member's
+      **shiny** flag picks the shiny atlas, so a caught shiny keeps its alternate
+      palette everywhere. The PMDCollab `src/assets/portraits.png` is gone.
+- [x] **Añil formes** resolve to their own art: the packer maps a dex forme to
+      `<SPECIES>_<n>.png` when the Añil set lists `1..n`, with an explicit table
+      for the ones that do not line up (the Alcremie cream/sweet grid, Arceus by
+      type, the cap Pikachu, Minior's cores, Ogerpon's masks, Kyurem's swap,
+      Greninja, Basculin, Rockruff and Vivillon's official Spanish pattern
+      names). An unmapped forme falls back to its base species. `D27`,
+      `docs/art-direction.md` updated.
+- [x] The **battle sprites are Pokémon Añil's** now (front, back and icon), with
+      **animation**, **shiny** and **female** variants. The art comes from the
+      RPG Maker XP / Pokémon Essentials fangame (EricLostie), copied verbatim by
+      `scripts/anil/build-pokemon-sprites.mjs` into `public/anil/` (9,581 sheets,
+      ~169 MB) with a frame manifest at `src/data/anil/pokemon-sprites.json`. The
+      sheets are horizontal filmstrips — frame = the sheet's own height, count =
+      `width / height`, exactly how Añil's own plugin reads them — so the battle
+      loads only the sheets it draws, plays one looping idle animation each and
+      drops them on shutdown. A **shiny** flag landed on the fighter (persisted
+      in the save) and rolls on its own encounter stream at 1 in 4096, so a
+      caught shiny stays shiny and no fixed seed shifted. The old FRLG battle
+      sheets (`src/assets/frlg/pokemon-*.png` and
+      `scripts/frlg/build-pokemon-sprites.mjs`) are gone. `D27`,
+      `docs/art-direction.md` updated.
 - [x] The battle **SWITCH** menu now shows a wide **detail window** above the avatar
       grid for the member under the cursor — no tabs: the five battle stats, HP,
       nature, ability and held item in a left column, and the member's four moves

@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "data:dex": "node scripts/build-dex.mjs",
+    "data:anil": "node scripts/anil/build-pokemon-sprites.mjs",
     "docs:coverage": "node scripts/effect-coverage.mjs"
   },
   "dependencies": {

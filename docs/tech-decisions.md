@@ -303,6 +303,43 @@ a terrain pass, the default map is 20x20, and the beyond-the-edge tree frame
 (`padMap`) is parked while the generator is the focus. The `hedges` and `maze`
 carvers wait until the interiors come back.
 
+## D27 — Battle sprites are Pokemon Anil's animated sheets, served from `public/` *(decided)*
+
+The battle front/back/icon art is the one the fangame **Pokemon Anil** (EricLostie)
+uses: RPG Maker XP / Pokemon Essentials, Gen 5/DS style, animated. Its
+`Graphics/Pokemon/{Front,Back,Front shiny,Back shiny,Icons}` sheets are
+**horizontal filmstrips** — each frame is a square of the sheet's own height and
+the count is `width / height`, the layout Anil's own *Pokemon Animados para DBK*
+plugin reads — and they are 16-colour palette PNGs (~365 bytes a frame).
+`scripts/anil/build-pokemon-sprites.mjs` copies them verbatim into `public/anil/`
+and writes `src/data/anil/pokemon-sprites.json`; `src/data/pokemonSprites.ts`
+resolves a species (+ shiny, + female) to a sheet and `BattleScene` loads just
+the sheets a battle draws, plays one looping idle animation per sheet and drops
+the textures again on shutdown.
+
+Why not repack into an RGBA atlas like the old `build-pokemon-sprites.mjs` did:
+the same art would inflate from ~169 MB to gigabytes (253k frames total), and a
+fixed cell cannot hold per-species frame sizes anyway. Why `public/` and not
+`src/assets/`: one bundled asset module per sheet pushed the entry chunk to
+12 MB; 9,600 files are runtime-loaded, not imported. Why per-battle loading: the
+full set is 169 MB and a battle needs a handful of sheets, so a boot-time load
+is out. Shiny sheets are picked up when the fighter's `shiny` flag is set; the
+flag rolls on its own encounter stream (1 in 4096), so it never shifts the
+encounter sequence a fixed seed already produced (D11).
+
+Local-only art, never redistributed; credits are in `docs/art-direction.md`.
+Formes resolve to `<SPECIES>_<n>.png` when the Añil set lists `1..n` for that
+species, with an explicit `FORM_OVERRIDE` table for the ones that do not line up
+(the Alcremie grid, Arceus by type, the cap Pikachu, Minior, Ogerpon, Kyurem,
+Vivillon's official Spanish pattern names...); an unmapped forme falls back to
+its base species rather than drawing the wrong mon.
+
+The **portraits** (party, HUD, starter cards, release beat) are packed by the
+same script from the game's `Icons` folders into `public/anil/portraits.png` and
+`portraits-shiny.png`: one 64x64 cell per dex entry in dex order, under half a
+megabyte each, read through `src/data/portraits.ts`. A member's `shiny` flag
+picks the shiny atlas.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

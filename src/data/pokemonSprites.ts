@@ -1,30 +1,114 @@
-import backUrl from '../assets/frlg/pokemon-back.png';
-import frontUrl from '../assets/frlg/pokemon-front.png';
-import iconUrl from '../assets/frlg/pokemon-icon.png';
-import manifest from './frlg/pokemon-sprites.json';
+import manifest from './anil/pokemon-sprites.json';
 
 /**
- * The FireRed/LeafGreen-style Pokémon battle sprites
- * (`src/assets/frlg/pokemon-{front,back,icon}.png`), packed by
- * `scripts/frlg/build-pokemon-sprites.mjs` from the pokeemerald-expansion
- * check-out into one frame per playable species. The manifest maps a species id
- * to its frame, so a scene shows the right mon without knowing the sheet layout.
- * Covers every generation; a forme without its own art falls back to its base
- * species at pack time. Local-only art — see `docs/art-direction.md`.
+ * The battle sprites are Pokemon Anil's (`public/anil/`), copied verbatim
+ * from the RPG Maker XP / Pokemon Essentials fangame by
+ * `scripts/anil/build-pokemon-sprites.mjs`, which also writes the manifest read
+ * here. Every sheet is a horizontal filmstrip whose frames are squares of the
+ * sheet's own height (`frames = width / height`), the layout Anil's own
+ * "Pokemon Animados para DBK" plugin reads, so a species animates without a
+ * per-species atlas. Local-only art — see `docs/art-direction.md`.
  */
 export type PokemonSpriteKind = 'front' | 'back' | 'icon';
 
-export const POKEMON_SPRITE_SHEETS: Readonly<
-  Record<PokemonSpriteKind, Readonly<{ key: string; url: string; size: number; cols: number }>>
-> = {
-  front: { key: 'frlg:pokemon:front', url: frontUrl, size: manifest.front.size, cols: manifest.front.cols },
-  back: { key: 'frlg:pokemon:back', url: backUrl, size: manifest.back.size, cols: manifest.back.cols },
-  icon: { key: 'frlg:pokemon:icon', url: iconUrl, size: manifest.icon.size, cols: manifest.icon.cols },
+/** `[file, frameSize, frameCount]`, the tuple the packer writes. */
+type Sheet = readonly [file: string, size: number, frames: number];
+
+type Variant =
+  | 'front'
+  | 'back'
+  | 'icon'
+  | 'frontShiny'
+  | 'backShiny'
+  | 'iconShiny'
+  | 'frontFemale'
+  | 'backFemale'
+  | 'iconFemale'
+  | 'frontShinyFemale'
+  | 'backShinyFemale'
+  | 'iconShinyFemale';
+
+/** The asset folder each variant draws from, under `src/assets/anil/`. */
+const FOLDERS: Readonly<Record<Variant, string>> = {
+  front: 'front',
+  back: 'back',
+  icon: 'icons',
+  frontShiny: 'front-shiny',
+  backShiny: 'back-shiny',
+  iconShiny: 'icons-shiny',
+  frontFemale: 'front',
+  backFemale: 'back',
+  iconFemale: 'icons',
+  frontShinyFemale: 'front-shiny',
+  backShinyFemale: 'back-shiny',
+  iconShinyFemale: 'icons-shiny',
 };
 
-const FRAMES: Readonly<Record<string, number>> = manifest.frames;
+const FRAMES = manifest.frames as unknown as Readonly<Record<string, Partial<Record<Variant, Sheet>>>>;
 
-/** The atlas frame for a species id, or null when the sheet lacks it. */
-export function pokemonSpriteFrame(speciesId: string): number | null {
-  return FRAMES[speciesId] ?? null;
+/**
+ * The sheets are served straight out of `public/anil/` rather than bundled: at
+ * ~9600 files, one asset module per sheet bloats the entry chunk into megabytes,
+ * and the game only ever needs the handful a battle draws.
+ */
+function sheetUrl(folder: string, file: string): string {
+  return `${import.meta.env.BASE_URL}anil/${folder}/${file}`;
+}
+
+export type PokemonSpriteSheet = Readonly<{
+  /** Phaser texture key: unique per file, so a shared sheet loads once. */
+  textureKey: string;
+  url: string;
+  /** Frame side in pixels (the sheet's height). */
+  size: number;
+  /** Frames in the strip. */
+  frames: number;
+}>;
+
+/** How a fighter looks, for the sprite variants Anil ships. */
+export type PokemonLook = Readonly<{ shiny?: boolean; female?: boolean }>;
+
+const BASE: Readonly<Record<PokemonSpriteKind, Variant>> = {
+  front: 'front',
+  back: 'back',
+  icon: 'icon',
+};
+
+/** The variants to try, best match first; a missing one falls back a step. */
+function variantsFor(kind: PokemonSpriteKind, look: PokemonLook): readonly Variant[] {
+  const base = BASE[kind];
+  const shiny = `${base}Shiny` as Variant;
+  const female = `${base}Female` as Variant;
+  const shinyFemale = `${base}ShinyFemale` as Variant;
+  if (look.shiny && look.female) return [shinyFemale, shiny, female, base];
+  if (look.shiny) return [shiny, base];
+  if (look.female) return [female, base];
+  return [base];
+}
+
+/**
+ * The sheet a species draws with, or null when the manifest has no entry (an
+ * unknown id). A forme the Anil set does not name resolves to its base species
+ * at pack time, so the lookup is already fallback-complete.
+ */
+export function pokemonSprite(
+  speciesId: string,
+  kind: PokemonSpriteKind,
+  look: PokemonLook = {},
+): PokemonSpriteSheet | null {
+  const entry = FRAMES[speciesId];
+  if (!entry) return null;
+  for (const variant of variantsFor(kind, look)) {
+    const sheet = entry[variant];
+    if (!sheet) continue;
+    const folder = FOLDERS[variant];
+    const [file, size, frames] = sheet;
+    return { textureKey: `${folder}:${file}`, url: sheetUrl(folder, file), size, frames };
+  }
+  return null;
+}
+
+/** The looping idle animation key for a loaded sheet. */
+export function pokemonIdleAnimKey(sheet: PokemonSpriteSheet): string {
+  return `anil-idle:${sheet.textureKey}`;
 }

@@ -3,7 +3,7 @@ import { getMove } from '../data/dex';
 import { getItem } from '../data/items';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { type Keybinds } from '../data/keybinds';
-import { POKEMON_SPRITE_SHEETS, pokemonSpriteFrame } from '../data/pokemonSprites';
+import { pokemonIdleAnimKey, pokemonSprite, type PokemonSpriteKind, type PokemonSpriteSheet } from '../data/pokemonSprites';
 import { getTrainerArchetype } from '../data/trainers';
 import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
 import { legalMoveIndices, type Command } from '../engine/battle/commands';
@@ -23,7 +23,7 @@ import {
 } from '../engine/battle';
 import { Rng } from '../engine/rng';
 import { MAX_MOVES, MAX_PARTY_SIZE, experienceFraction, type BattleLaunch, type BattleOutcome, type BattleReturn } from '../engine/run';
-import { PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
+import { PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import { MOVE_FX_TEXTURE_KEY, moveFxAnimKey, moveFxFor, moveFxTrack } from '../render/moveFx';
 import {
   FAINT_DROP,
@@ -102,11 +102,17 @@ const MOVE_POPUP_TYPE_W = 88;
 const MOVE_CATEGORY_ICON_SCALE = 1.5;
 /** The party (switch) grid: 3 columns of avatar cells. */
 const PARTY_COLS = 3;
-const PARTY_AVATAR_SCALE = 1.15;
+const PARTY_AVATAR_SCALE = 0.9;
 /** The HP bar drawn inside every switch cell; the detail popup carries the numbers. */
 const PARTY_CELL_HPBAR_SCALE = 0.4;
-/** Placeholder mon sprite scale; the switch beat returns the sprite to it. */
+/**
+ * Placeholder mon sprite scale, and the cap that keeps an unusually tall Anil
+ * sheet (they run from 30px to 248px) from swallowing the stage.
+ */
 const MON_SCALE = 2.4;
+const MON_MAX_HEIGHT = 190;
+/** Frames per second for the idle loop; Anil animates at roughly 30ms a frame. */
+const MON_ANIM_FPS = 30;
 /**
  * The party (switch) detail popup: a wide window above the avatar grid for the
  * member under the cursor. No tabs: the five battle stats, nature, ability and
@@ -195,6 +201,13 @@ export class BattleScene extends Phaser.Scene {
   private beat: Partial<Record<SideId, BeatKind | null>> = {};
   private foeMonPos = { x: 0, y: 0 };
   private playerMonPos = { x: 0, y: 0 };
+  /** The fighters the battle launched with, so `preload` knows which sheets to load. */
+  private playerFighters: BattleFighter[] = [];
+  private enemyFighters: BattleFighter[] = [];
+  /** The sprite scale of each side's active sheet (the switch beat returns to it). */
+  private monScale: Record<SideId, number> = { player: MON_SCALE, enemy: MON_SCALE };
+  /** The sheets this battle loaded, dropped on shutdown so the texture cache cannot grow forever. */
+  private loadedSheets: PokemonSpriteSheet[] = [];
 
   private hud!: Phaser.GameObjects.Graphics;
   private bgTop!: Phaser.GameObjects.Rectangle;
@@ -282,6 +295,38 @@ export class BattleScene extends Phaser.Scene {
     this.lastBallId = null;
     this.captured = false;
     this.beat = {};
+    this.playerFighters = [];
+    this.enemyFighters = [];
+    this.loadedSheets = [];
+    const launch = this.launch;
+    if (!launch) return;
+    // The fighters are built here rather than in `create` so `preload` can load
+    // exactly the sheets the battle draws: the foe's front, the party's back.
+    this.playerFighters = launch.player.map(restoreFighter);
+    const trigger = launch.trigger;
+    this.enemyFighters =
+      trigger.kind === 'wild'
+        ? [
+            createFighter({
+              id: 'wild',
+              speciesId: trigger.speciesId,
+              level: trigger.level,
+              shiny: trigger.shiny === true,
+            }),
+          ]
+        : trigger.roster.map((input) => createFighter(input));
+  }
+
+  /** Loads the battle's mon sheets, skipping any already in the texture cache. */
+  preload(): void {
+    for (const sheet of this.battleSheets()) {
+      if (this.textures.exists(sheet.textureKey)) continue;
+      this.loadedSheets.push(sheet);
+      this.load.spritesheet(sheet.textureKey, sheet.url, {
+        frameWidth: sheet.size,
+        frameHeight: sheet.size,
+      });
+    }
   }
 
   create(): void {
@@ -289,14 +334,9 @@ export class BattleScene extends Phaser.Scene {
     if (!launch) throw new Error('BattleScene requires a BattleLaunch from the route');
 
     const trigger = launch.trigger;
-    const enemy =
-      trigger.kind === 'wild'
-        ? [createFighter({ id: 'wild', speciesId: trigger.speciesId, level: trigger.level })]
-        : trigger.roster.map((input) => createFighter(input));
-
     this.state = createBattle({
-      player: launch.player.map(restoreFighter),
-      enemy,
+      player: this.playerFighters,
+      enemy: this.enemyFighters,
       rng: new Rng(launch.seed),
       isWild: trigger.kind === 'wild',
       enemyName: trigger.kind === 'trainer' ? trigger.trainerName : 'Foe',
@@ -326,12 +366,14 @@ export class BattleScene extends Phaser.Scene {
       this.trainerFrame = sprite ? trainerSpriteFrame(sprite) : null;
     }
 
+    this.buildMonAnimations();
     this.buildScene();
     this.bindInput();
     this.scale.on('resize', this.onResize, this);
     this.events.once('shutdown', () => {
       this.scale.off('resize', this.onResize, this);
       this.scene.setVisible(true, 'Route');
+      this.releaseMonSprites();
     });
     // The battle owns a centred square; hide the paused route so the letterbox
     // around it stays clean instead of showing the overworld through it.
@@ -838,16 +880,67 @@ export class BattleScene extends Phaser.Scene {
     return side === 'player' ? this.playerSprite : this.foeSprite;
   }
 
-  /** Swaps in the FRLG front/back sprite for each side's active fighter. */
+  /** Every sheet this battle draws: the foe's front, the party's back. */
+  private battleSheets(): PokemonSpriteSheet[] {
+    const sheets = new Map<string, PokemonSpriteSheet>();
+    const add = (fighter: BattleFighter, kind: PokemonSpriteKind): void => {
+      const sheet = pokemonSprite(fighter.speciesId, kind, {
+        shiny: fighter.shiny,
+        female: fighter.gender === 'female',
+      });
+      if (sheet) sheets.set(sheet.textureKey, sheet);
+    };
+    for (const fighter of this.playerFighters) add(fighter, 'back');
+    for (const fighter of this.enemyFighters) add(fighter, 'front');
+    return [...sheets.values()];
+  }
+
+  /** One looping idle animation per loaded sheet, off the strip's own frame count. */
+  private buildMonAnimations(): void {
+    for (const sheet of this.battleSheets()) {
+      const key = pokemonIdleAnimKey(sheet);
+      if (this.anims.exists(key)) continue;
+      this.anims.create({
+        key,
+        frames: Array.from({ length: sheet.frames }, (_, frame) => ({ key: sheet.textureKey, frame })),
+        frameRate: MON_ANIM_FPS,
+        repeat: -1,
+      });
+    }
+  }
+
+  /** Drops the textures and animations this battle added, keeping the cache small. */
+  private releaseMonSprites(): void {
+    for (const sheet of this.loadedSheets) {
+      this.anims.remove(pokemonIdleAnimKey(sheet));
+      this.textures.remove(sheet.textureKey);
+    }
+    this.loadedSheets = [];
+  }
+
+  /** Swaps in the Anil front/back sheet for each side's active fighter. */
   private syncMonSprites(): void {
-    const foeFrame = pokemonSpriteFrame(this.displayActive.enemy.speciesId);
-    if (foeFrame !== null) {
-      this.foeSprite.setTexture(POKEMON_SPRITE_SHEETS.front.key, foeFrame).setTint(0xffffff);
-    }
-    const playerFrame = pokemonSpriteFrame(this.displayActive.player.speciesId);
-    if (playerFrame !== null) {
-      this.playerSprite.setTexture(POKEMON_SPRITE_SHEETS.back.key, playerFrame).setTint(0xffffff);
-    }
+    this.showMon('enemy', this.displayActive.enemy, 'front');
+    this.showMon('player', this.displayActive.player, 'back');
+  }
+
+  /**
+   * Points a side's sprite at its sheet and plays the idle loop. Only a real
+   * change touches the sprite, so a switch beat's tween is never fought over and
+   * a mid-loop refresh does not restart the animation.
+   */
+  private showMon(side: SideId, fighter: BattleFighter, kind: PokemonSpriteKind): void {
+    const sheet = pokemonSprite(fighter.speciesId, kind, {
+      shiny: fighter.shiny,
+      female: fighter.gender === 'female',
+    });
+    if (!sheet) return;
+    const sprite = this.monSprite(side);
+    const anim = pokemonIdleAnimKey(sheet);
+    this.monScale[side] = Math.min(MON_SCALE, MON_MAX_HEIGHT / sheet.size);
+    if (sprite.texture.key === sheet.textureKey && sprite.anims.currentAnim?.key === anim) return;
+    sprite.setTexture(sheet.textureKey, 0).setScale(this.monScale[side]);
+    sprite.play(anim);
   }
 
   private monPos(side: SideId): { x: number; y: number } {
@@ -882,7 +975,7 @@ export class BattleScene extends Phaser.Scene {
   private playSwitch(side: SideId, down: boolean): void {
     const sprite = this.monSprite(side);
     const base = this.monPos(side);
-    const scale = MON_SCALE;
+    const scale = this.monScale[side];
     this.beat[side] = 'switch';
     const sendOut: Phaser.Types.Tweens.TweenBuilderConfig = {
       targets: sprite,
@@ -1470,12 +1563,12 @@ export class BattleScene extends Phaser.Scene {
         .setFillStyle(selected ? 0xf7e0a6 : 0xe6e3f2)
         .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
         .setVisible(true);
-      const frame = portraitFrameFor(member.speciesId);
+      const portrait = portraitFor(member.speciesId, member.shiny);
       this.partyAvatars[i]
-        .setVisible(frame !== null)
+        .setVisible(portrait !== null)
         .setAlpha(item.enabled ? 1 : 0.45)
         .setPosition(cellX(i) + 8 + avatarW / 2, cellY(i) + cellH / 2);
-      if (frame !== null) this.partyAvatars[i].setFrame(frame);
+      if (portrait) this.partyAvatars[i].setTexture(portrait.key, portrait.frame);
       const labelX = cellX(i) + 8 + avatarW + 6;
       this.partyLabels[i]
         .setText(item.label)

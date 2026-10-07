@@ -134,13 +134,17 @@ most useful first:
 
 ### Remaining Phase 8
 
-- [ ] FRLG portraits for the party/HUD/starter/release screens, drawn from the
-      packed battle fronts/icons instead of the PMDCollab `portraits.png`.
+- [ ] **Battle mon size and ground line.** Añil's sheets are native-sized (30-248
+      px) and the battle caps the scale, but the sprite is still centre-anchored
+      on its platform: use Añil's `PBS/pokemon_metrics.txt` (front/back offsets,
+      female/forms variants) so every mon's feet sit on the platform.
+- [ ] **Animated portraits.** The party/HUD portraits are the icons' first frame;
+      the icons ship two, so the HUD could breathe like the battle sprites.
 - [ ] FRLG move and attack FX (`sprite-sources/frlg-ui/move-effects.png`,
       `attack-effects.png`) replacing the PMD `moves.png`.
 - [ ] Remove the PMD art once the FRLG replacements land: the `wood.png` tileset
-      and its biome, `portraits.png`, `moves.png`, the `pokemon/*.png` sheets and
-      the PMD `scripts/legacy-art/` extractors.
+      and its biome, `moves.png`, the `pokemon/*.png` sheets and the PMD
+      `scripts/legacy-art/` extractors.
 - [ ] Adapt the remaining biome tileset configs (desert, apple-woods,
       lush-prairie, beach-cave) and palettes into `src/data/tilesets/`.
 - [ ] Battle background per biome (FRLG `battle-backgrounds.png`).

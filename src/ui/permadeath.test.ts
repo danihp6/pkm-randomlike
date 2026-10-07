@@ -11,6 +11,7 @@ function member(id: string, level: number, speciesId = 'charmander'): RunPokemon
       nature: 'Hardy',
       ability: 'Blaze',
       gender: 'male',
+      shiny: false,
       heldItem: null,
       ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
       evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
@@ -30,8 +31,8 @@ describe('releaseBeats', () => {
       member('b', 5, 'squirtle'),
     ]);
     expect(beats).toEqual([
-      { id: 'a', speciesId: 'charmander', name: 'Charmander', level: 7 },
-      { id: 'b', speciesId: 'squirtle', name: 'Squirtle', level: 5 },
+      { id: 'a', speciesId: 'charmander', name: 'Charmander', level: 7, shiny: false },
+      { id: 'b', speciesId: 'squirtle', name: 'Squirtle', level: 5, shiny: false },
     ]);
   });
 

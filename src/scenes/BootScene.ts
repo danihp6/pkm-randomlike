@@ -11,14 +11,19 @@ import {
   OVERWORLD_SPRITE_TEXTURE_KEY,
   OVERWORLD_SPRITE_WIDTH,
 } from '../data/overworldSprites';
-import { POKEMON_SPRITE_SHEETS } from '../data/pokemonSprites';
 import {
   PLAYER_SPRITE_ATLAS_URL,
   PLAYER_SPRITE_HEIGHT,
   PLAYER_SPRITE_TEXTURE_KEY,
   PLAYER_SPRITE_WIDTH,
 } from '../data/playerSprite';
-import { PORTRAIT_ATLAS_URL, PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY } from '../data/portraits';
+import {
+  PORTRAIT_ATLAS_URL,
+  PORTRAIT_SHINY_ATLAS_URL,
+  PORTRAIT_SHINY_TEXTURE_KEY,
+  PORTRAIT_SIZE,
+  PORTRAIT_TEXTURE_KEY,
+} from '../data/portraits';
 import {
   TRAINER_SPRITE_ATLAS_URL,
   TRAINER_SPRITE_SIZE,
@@ -103,6 +108,10 @@ export class BootScene extends Phaser.Scene {
       frameWidth: PORTRAIT_SIZE,
       frameHeight: PORTRAIT_SIZE,
     });
+    this.load.spritesheet(PORTRAIT_SHINY_TEXTURE_KEY, PORTRAIT_SHINY_ATLAS_URL, {
+      frameWidth: PORTRAIT_SIZE,
+      frameHeight: PORTRAIT_SIZE,
+    });
     this.load.spritesheet(ITEM_ICON_TEXTURE_KEY, ITEM_ICON_ATLAS_URL, {
       frameWidth: ITEM_ICON_SIZE,
       frameHeight: ITEM_ICON_SIZE,
@@ -116,12 +125,6 @@ export class BootScene extends Phaser.Scene {
       frameWidth: OVERWORLD_SPRITE_WIDTH,
       frameHeight: OVERWORLD_SPRITE_HEIGHT,
     });
-    for (const sheet of Object.values(POKEMON_SPRITE_SHEETS)) {
-      this.load.spritesheet(sheet.key, sheet.url, {
-        frameWidth: sheet.size,
-        frameHeight: sheet.size,
-      });
-    }
     this.load.spritesheet(MOVE_FX_TEXTURE_KEY, moveFxUrl, {
       frameWidth: MOVE_FX_FRAME_SIZE,
       frameHeight: MOVE_FX_FRAME_SIZE,

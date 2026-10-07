@@ -9,9 +9,7 @@
 | `wood.png`, `desert.png`, `apple-woods.png`, `lush-prairie.png`, `beach-cave.png` | real biome sheets, same 96x312 layout | **game rip, local only** |
 | `pokemon/<id>.png` + `<id>.json` | overworld sheets (32x32 frames, 5 direction rows) + animation manifest | **game rip, local only** |
 | `items.png`, `moves.png`, `hud.png` | battle/UI art for later phases | **game rip, local only** |
-| `portraits.png` | PMDCollab faces, 40x40, 40-column grid, dex order (frame = `num-1`) | **game rip, local only** |
 | `frlg/outdoor.png`, `frlg/forest.png`, `frlg/cave.png` | FRLG field atlases, 4x13 of 16px cells (64x208), from `scripts/frlg/build-tilesets.mjs` (config in `src/data/tilesets/frlg.ts`) | **game rip, local only** |
-| `frlg/pokemon-front.png`, `frlg/pokemon-back.png`, `frlg/pokemon-icon.png` | FRLG-style Pokémon battle sprites for every generation, from `scripts/frlg/build-pokemon-sprites.mjs` (frame map in `src/data/frlg/pokemon-sprites.json`) | **game rip, local only** |
 | `frlg/trainers.png` | FRLG battle trainer sprites, 64x64 per archetype, from `scripts/frlg/build-trainer-sprites.mjs` (frame map in `src/data/frlg/trainers.json`) | **game rip, local only** |
 | `frlg/overworld.png` | FRLG trainer overworld sprites, 16x32 per archetype, from `scripts/frlg/build-overworld-sprites.mjs` (frame map in `src/data/frlg/overworld.json`) | **game rip, local only** |
 | `frlg/player.png` | FRLG player overworld sprite, three 16x32 frames (down/up/side), from `scripts/frlg/build-player-sprite.mjs` (frame map in `src/data/frlg/player.json`) | **game rip, local only** |
@@ -26,6 +24,12 @@ Everything under "local only" is Nintendo/GameFreak/Chunsoft art imported from
 the sibling project `pkm-mystery-dungeon-like` for development, per the project
 owner's request. It must not be redistributed; `sprite-sources/` (the raw packs)
 is gitignored. See `docs/art-direction.md`.
+
+The **battle** Pokémon sprites are not here: they come from the fangame
+Pokémon Añil, are served out of `public/anil/` (one animated filmstrip per
+species, front/back/icon plus shiny and female variants) and are read through
+`src/data/anil/pokemon-sprites.json`. `scripts/anil/build-pokemon-sprites.mjs`
+copies them in. Same rule: game rip, local only.
 
 ## Rules
 

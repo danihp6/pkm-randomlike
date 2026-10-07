@@ -4,9 +4,14 @@ import type { Rng } from '../rng';
 export type Encounter = Readonly<{
   speciesId: string;
   level: number;
+  /** A shiny rolled the alternate-palette art (cosmetic only). */
+  shiny: boolean;
 }>;
 
 export const DEFAULT_ENCOUNTER_CHANCE = 0.15;
+
+/** The classic 1-in-4096 shiny odds, rolled on its own stream. */
+export const SHINY_CHANCE = 1 / 4096;
 
 export function totalWeight(table: EncounterTable): number {
   return table.reduce((sum, item) => sum + item.weight, 0);
@@ -29,16 +34,23 @@ export function rollEncounter(
   maxLevel: number,
   rng: Rng,
   chance: number = DEFAULT_ENCOUNTER_CHANCE,
+  shinyRng?: Rng,
 ): Encounter | undefined {
   if (table.length === 0 || rng.next() >= chance) return undefined;
   const entry = pickWeighted(table, rng);
-  return { speciesId: entry.speciesId, level: rng.int(minLevel, maxLevel) };
+  return {
+    speciesId: entry.speciesId,
+    level: rng.int(minLevel, maxLevel),
+    shiny: shinyRng ? shinyRng.next() < SHINY_CHANCE : false,
+  };
 }
 
 /**
  * Rolls wild encounters for one route. Call `step()` once per tall-grass step:
  * the same table and Rng seeded the same way always yields the same sequence,
- * so walking the same grass in the same order is reproducible (D11).
+ * so walking the same grass in the same order is reproducible (D11). The shiny
+ * roll draws from its own stream, so it can never shift the encounter sequence
+ * a fixed seed already produced.
  */
 export class RouteEncounters {
   steps = 0;
@@ -49,10 +61,11 @@ export class RouteEncounters {
     private readonly maxLevel: number,
     private readonly rng: Rng,
     private readonly chance: number = DEFAULT_ENCOUNTER_CHANCE,
+    private readonly shinyRng?: Rng,
   ) {}
 
   step(): Encounter | undefined {
     this.steps++;
-    return rollEncounter(this.table, this.minLevel, this.maxLevel, this.rng, this.chance);
+    return rollEncounter(this.table, this.minLevel, this.maxLevel, this.rng, this.chance, this.shinyRng);
   }
 }

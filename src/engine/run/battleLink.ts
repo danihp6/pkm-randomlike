@@ -8,6 +8,8 @@ export type WildTrigger = Readonly<{
   kind: 'wild';
   speciesId: string;
   level: number;
+  /** The wild roll came up shiny, so the battle draws the alternate palette. */
+  shiny?: boolean;
   /** Where the encounter happened, for the message and the battle seed. */
   key: string;
   /** The grass patch tile, so the battle backdrop can pick a floor (Phase 8). */
