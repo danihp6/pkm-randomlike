@@ -8,6 +8,14 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] The party/PC HUD can now **swap** a member across the two panels by
+      **dragging one onto a member of the other**: the two trade places, so a
+      **boxed Pokémon can replace a party member even when the party is full**
+      (the member it replaces takes the box slot). `engine/run/state.ts` gained
+      `swapPartyBox` (both indices kept, refused only on an empty slot) and
+      `src/ui/partyScreen.ts` the pure `swapAcross` reducer the route's pointer
+      drop calls; a drop on empty space still just deposits/withdraws.
+      `docs/design-spec.md` §3 updated.
 - [x] The **portraits** (party, route HUD, starter cards, release beat) are
       Pokémon Añil's icons now, packed into `public/anil/portraits.png` and
       `portraits-shiny.png` (one 64x64 cell per dex entry, 32 columns, under half

@@ -13,6 +13,7 @@ import {
   initialPartyUi,
   partyInput,
   partyRows,
+  swapAcross,
   windowStart,
   type PartyInput,
   type PartyUiState,
@@ -181,6 +182,31 @@ describe('pointer drag', () => {
     const run = runWith(['a', 'b']);
     expect(dragTo(run, initialPartyUi(), 1)).toEqual({ run, ui: initialPartyUi() });
     expect(dropGrabbed(initialPartyUi())).toEqual(initialPartyUi());
+  });
+
+  it('swaps a grabbed box member into a full party, cursor crossing over', () => {
+    const run = runWith(['a', 'b', 'c', 'd', 'e', 'f'], ['x', 'y']);
+    const grabbed = grabAt(run, { pane: 'box', index: 1, grabbed: null }, 'box', 1);
+    const swapped = swapAcross(grabbed.run, grabbed.ui, 3);
+    expect(swapped.run.party.map((m) => m.fighter.id)).toEqual(['a', 'b', 'c', 'y', 'e', 'f']);
+    expect(swapped.run.box.map((m) => m.fighter.id)).toEqual(['x', 'd']);
+    expect(swapped.ui).toEqual({ pane: 'party', index: 3, grabbed: null });
+  });
+
+  it('swaps a grabbed party member into the box', () => {
+    const run = runWith(['a', 'b'], ['x', 'y']);
+    const grabbed = grabAt(run, initialPartyUi(), 'party', 1);
+    const swapped = swapAcross(grabbed.run, grabbed.ui, 1);
+    expect(swapped.run.party.map((m) => m.fighter.id)).toEqual(['a', 'y']);
+    expect(swapped.run.box.map((m) => m.fighter.id)).toEqual(['x', 'b']);
+    expect(swapped.ui).toEqual({ pane: 'box', index: 1, grabbed: null });
+  });
+
+  it('ignores a swap over an empty slot or with nothing grabbed', () => {
+    const run = runWith(['a'], ['x']);
+    const grabbed = grabAt(run, initialPartyUi(), 'party', 0);
+    expect(swapAcross(grabbed.run, grabbed.ui, 9)).toEqual({ run, ui: grabbed.ui });
+    expect(swapAcross(run, initialPartyUi(), 0)).toEqual({ run, ui: initialPartyUi() });
   });
 });
 

@@ -83,6 +83,7 @@ import {
   grabAt,
   initialPartyUi,
   partyInput,
+  swapAcross,
   type PartyUiState,
   type PaneId,
 } from '../ui/partyScreen';
@@ -1185,7 +1186,7 @@ export class RouteScene extends Phaser.Scene {
         this.run = next.run;
         this.hudUi = dropGrabbed(next.ui);
       } else {
-        this.moveHudAcross(grabbed.pane);
+        this.dropHudAcross(grabbed, target);
         return;
       }
       this.finishHudGrab();
@@ -1327,11 +1328,13 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     const grabbed = this.hudUi.grabbed;
-    // A drag dropped over the other pane moves the member across; otherwise it
-    // just drops where it last pointed. There is no cancel.
+    // A drag dropped over the other pane moves the member across; a drop on one
+    // of its members swaps the two instead (so a full party can still take a
+    // boxed member); otherwise it just drops where it last pointed. There is no
+    // cancel.
     if (!grabbed || !this.hudGrabMoved) return;
     const across = grabbed.pane === 'party' ? this.pointerInBoxPanel(pointer) : this.pointerInPartyPanel(pointer);
-    if (across) this.moveHudAcross(grabbed.pane);
+    if (across) this.dropHudAcross(grabbed, this.hudTarget(pointer));
     else this.dropHudGrab();
   }
 
@@ -1432,6 +1435,24 @@ export class RouteScene extends Phaser.Scene {
     this.run = next.run;
     this.hudUi = next.ui;
     this.finishHudGrab();
+  }
+
+  /**
+   * Drops the grabbed member over the other pane. A drop on one of its members
+   * swaps the two (so a boxed member can join a full party); a drop on empty
+   * space falls back to the plain deposit/withdraw.
+   */
+  private dropHudAcross(grabbed: { pane: PaneId }, target: { pane: PaneId; index: number } | null): void {
+    if (target && target.pane !== grabbed.pane) {
+      const next = swapAcross(this.run, this.hudUi, target.index);
+      if (next.run !== this.run) {
+        this.run = next.run;
+        this.hudUi = next.ui;
+        this.finishHudGrab();
+        return;
+      }
+    }
+    this.moveHudAcross(grabbed.pane);
   }
 
   /** Drops the grabbed member where it stands, saves it and redraws the HUD. */
