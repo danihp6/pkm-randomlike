@@ -25,6 +25,9 @@ export const config: Phaser.Types.Core.GameConfig = {
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
   },
+  // Two extra touch pointers: the on-screen pad can be held while A / B is
+  // pressed (Mouse + pointer1 + pointer2 + pointer3).
+  input: { activePointers: 3 },
   scene: [BootScene, StarterScene, RouteScene, BattleScene, RunOverScene, SettingsScene],
 };
 

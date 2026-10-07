@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { getMove, heightOf } from '../data/dex';
 import { getItem } from '../data/items';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
-import { type Keybinds } from '../data/keybinds';
+import { type KeybindAction, type Keybinds } from '../data/keybinds';
 import { pokemonIdleAnimKey, pokemonSprite, type PokemonSpriteKind, type PokemonSpriteSheet } from '../data/pokemonSprites';
 import { getTrainerArchetype } from '../data/trainers';
 import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
@@ -666,22 +666,7 @@ export class BattleScene extends Phaser.Scene {
     this.confirmKeys = actionKeys(this, 'confirm', this.keybinds);
     subscribeKeybinds(
       this,
-      ({ action }) => {
-        switch (action) {
-          case 'confirm':
-            this.onConfirm();
-            return;
-          case 'cancel':
-            this.onCancel();
-            return;
-          case 'up':
-          case 'down':
-          case 'left':
-          case 'right':
-            this.navigateMenu(action);
-            return;
-        }
-      },
+      ({ action }) => this.handleAction(action),
       () => this.keybinds,
     );
     // A click anywhere advances the feed (and leaves the result screen); the
@@ -698,6 +683,27 @@ export class BattleScene extends Phaser.Scene {
       if (event.key === '[') this.cycleBagTab(-1);
       else if (event.key === ']') this.cycleBagTab(1);
     });
+  }
+
+  /**
+   * The player's intent behind one shared action, from a key or from the touch
+   * A / B and pad. The battle routes it the same way either way.
+   */
+  private handleAction(action: KeybindAction): void {
+    switch (action) {
+      case 'confirm':
+        this.onConfirm();
+        return;
+      case 'cancel':
+        this.onCancel();
+        return;
+      case 'up':
+      case 'down':
+      case 'left':
+      case 'right':
+        this.navigateMenu(action);
+        return;
+    }
   }
 
   /** A click on the scene: feed taps and the result screen answer it. */

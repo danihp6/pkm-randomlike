@@ -13,5 +13,12 @@ which actions exist, their defaults, labels and the pure rebind rules — lives 
   two places that poll held state (the route's walk, the battle's hold-to-skip).
 - `keyNameOf(event)` maps a native event to the Phaser key name the map stores.
 
+On a touch-first screen the scenes build the on-screen pad + A / B from
+`src/ui/touchControls.ts`, which forwards its presses through the same
+`handleAction` a keybind uses; only the route's held walk reads the pad directly.
+Whether the screen wants them is the one browser probe in `src/input/device.ts`.
+`src/input/backButton.ts` turns the phone's own Back gesture (a history pop) into
+the route's pause menu.
+
 Scenes keep their own one-off keys (the dev `B` wild battle, the starter's `S` seed
 prompt) on Phaser directly; anything the player can rebind goes through here.

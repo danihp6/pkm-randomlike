@@ -24,10 +24,13 @@ npm run build      # tsc --noEmit && vite build
 npm run data:dex   # regenerate src/data/dex from @pkmn/dex (rarely needed)
 ```
 
-The current build generates a route procedurally from a dev seed: arrow keys step
-the grid (ledges jump down one-way), the camera follows, tall
-grass rolls wild-encounter messages, trainers trigger on their sight line, and
-`R` swaps the tileset. The battle scene is still a placeholder (Phase 3).
+The current build generates a route procedurally from a dev seed: the arrow keys
+(or WASD) step the grid (ledges jump down one-way), the camera follows, tall
+grass rolls wild-encounter messages, and trainers trigger on their sight line.
+`Esc` opens a pause menu with Settings and Reset; on a touch screen an on-screen
+direction pad and A / B buttons appear along the bottom (A = confirm, B = cancel)
+and the phone's own Back gesture opens that same menu. The battle scene is still
+a placeholder (Phase 3).
 
 ## Status
 
