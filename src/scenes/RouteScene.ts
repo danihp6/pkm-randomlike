@@ -512,6 +512,7 @@ export class RouteScene extends Phaser.Scene {
       ledges: params.ledges,
       loot: loot.pool,
       hiddenChance: loot.hiddenChance,
+      itemChance: loot.itemChance,
       trainerArchetypes: TRAINER_ARCHETYPE_IDS,
       ...(wall ? { wall } : {}),
     };
@@ -2088,7 +2089,7 @@ export class RouteScene extends Phaser.Scene {
   private trainerSpotted(): RouteTrainer | null {
     for (const trainer of this.route.trainers) {
       if (isTrainerDefeated(this.run, trainer.id)) continue;
-      if (seesPlayer(this.route, this.effectiveTrainer(trainer), this.player)) return trainer;
+      if (seesPlayer(this.route, this.effectiveTrainer(trainer), this.player, this.moveMap)) return trainer;
     }
     return null;
   }
@@ -2908,7 +2909,7 @@ export class RouteScene extends Phaser.Scene {
       this.faceTrainerSprite(entry, turns[index]);
       // A spinner that swings its cone onto a player standing still still spots
       // them, the same as stepping into a fixed trainer's line of sight.
-      if (seesPlayer(this.route, this.effectiveTrainer(entry.trainer), this.player)) {
+      if (seesPlayer(this.route, this.effectiveTrainer(entry.trainer), this.player, this.moveMap)) {
         this.beginChase(entry.trainer);
         return;
       }

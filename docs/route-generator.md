@@ -295,9 +295,12 @@ passes its own `WallFootprint`.
 ### 3.4 PlaceTrainers — optional, never required
 
 Trainers block movement like the originals: they stand on floor hugging a **solid
-wall** (never the walkable tip of a tree) and look down a **passable** lane (never
-at a ledge or water it could not cross), and one of them always guards the main
-lane while the rest cluster on the optional paths by the pocket items. The count
+wall** (never the walkable tip of a tree). A trainer on the **main lane** looks
+down the lane, back to a wall; a trainer on an **optional path** looks **across**
+it, wall to wall, so the sight closes the branch — a vertical path is watched
+horizontally and a horizontal one vertically — and it never stares down its own
+axis. One of them always guards the main lane while the rest cluster on the
+optional paths by the pocket items. The count
 follows the route's **size**: one on the spine, one per optional path (a pocket)
 and the map-size tier's `trainerBonus`. Placement never plugs a passage: a
 candidate is kept only while the entry still reaches **every** tile it could
@@ -320,7 +323,10 @@ PlaceTrainers(tiles, entry, exits, spine, branches, pockets, band, rng):
         if pos is null: break
         if not KeepsEverythingReachable(tiles, entry, reach, chosen + {pos}): continue
         dirs   = OpenFacings(tiles, pos)         # cardinals onto a passable tile
-        facing = ChooseFacing(tiles, pos, entry, dirs)   # back to a solid wall
+        if pos on a branch:                      # cross the path, wall to wall
+            facing = ChooseCrossFacing(tiles, pos, NearestPocket(pos), dirs)
+        else:                                    # main lane: down it, back to wall
+            facing = ChooseFacing(tiles, pos, entry, dirs)
         turns  = rng.next() < SPIN_CHANCE && len(dirs) >= 2 ? dirs : null
         if SeesEntry(pos, facing) or any(SeesEntry(pos, t) for t in turns): continue
         chosen += { pos, facing, sight, turns,
@@ -336,10 +342,11 @@ test is a flood fill that treats the chosen trainers as walls.
 ### 3.5 PlaceItems
 
 ```
-PlaceItems(tiles, reachable, pockets, band, rng, hiddenChance):
+PlaceItems(tiles, reachable, pockets, band, rng, hiddenChance, itemChance):
     items = []
-    for pos in pockets:                     # one item per optional path
+    for pos in pockets:                     # an optional path's far end
         if pos not in reachable or not walkable: continue
+        if rng.next() >= itemChance: continue       # a path may hold nothing
         itemId = PickWeighted(band.pool, rng)
         hidden = rng.next() < hiddenChance
         items += { id = "item-<routeIndex>-<n>", pos, itemId, hidden }
@@ -348,11 +355,15 @@ PlaceItems(tiles, reachable, pockets, band, rng, hiddenChance):
 
 Items are placed **after** terrain, on the pockets that flood-fill proved
 reachable, so a hazard that sealed a pocket simply makes it hold nothing instead
-of stranding loot. Because a route carves more optional paths as the map grows
+of stranding loot. An optional path holds an item only with `itemChance`
+probability (`ROUTE_LOOT`, 75% for now), and when it does the pocket is the
+**deepest** tile of the branch — the item sits as far down the path as it can.
+Because a route carves more optional paths as the map grows
 (`BranchBonusForSize`), the number of items follows the route's **size** rather
-than its band; the band only decides the contents (`ROUTE_LOOT`). A pocket is kept
-clear of tall grass and ledges, so an item never lands on grass. The caller may
-pass no pool (tests, the debug stepper): then the route holds no items.
+than its band; the band only decides the contents and the chances (`ROUTE_LOOT`).
+A pocket is kept clear of tall grass and ledges, so an item never lands on grass.
+The caller may pass no pool (tests, the debug stepper): then the route holds no
+items.
 
 ### 3.6 Decoration
 

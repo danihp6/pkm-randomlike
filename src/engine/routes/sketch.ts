@@ -38,7 +38,6 @@ import {
   type ShapeSpec,
 } from './layout';
 import { routeStreams, type RouteStreams } from './streams';
-import { blocksSight } from './trainers';
 import { cleanWalls, type WallFootprint } from './walls';
 import { reachableAvoiding, reachableTiles, validateRoute } from './validate';
 
@@ -100,6 +99,8 @@ export type RouteRequest = Readonly<{
   loot?: readonly LootEntry[];
   /** Chance a placed item is hidden (the faint sparkle). Defaults to `0`. */
   hiddenChance?: number;
+  /** Chance an optional-path end actually holds an item. Defaults to `1`. */
+  itemChance?: number;
   /**
    * Archetype ids a route may draw its trainers from (`src/data/trainers.ts`).
    * With none the route places no trainers, so the generator stays free of the
@@ -997,12 +998,11 @@ function solidWallNeighbours(tiles: TileMap, x: number, y: number, walkableTips:
 }
 
 /**
- * The loot spot for each branch: the tile with the most adjacent walls,
- * preferring one nearer the branch's intended far end and never sharing a tile
- * with an earlier pocket. Usually a corner (two walls), at worst a lane edge
- * (one). When a branch's own lane is walled off from every wall (it runs beside
- * another lane), the search falls back to the wider branch network so an item
- * still hugs at least one wall.
+ * The loot spot for each branch: the **deepest** walkable tile - the one nearest
+ * the branch's far end - preferring the most wall-hugging one on a tie, and never
+ * sharing a tile with an earlier pocket. So an item sits as far down the path as
+ * it can. When a branch's own lane holds no tile (it was walled off), the search
+ * falls back to the wider branch network.
  */
 function choosePockets(
   tiles: TileMap,
@@ -1014,7 +1014,7 @@ function choosePockets(
   const branchKeys = [...branches];
   for (const carve of carves) {
     const local = bestSpot(tiles, carve.tiles, carve.target, used);
-    const chosen = local && local.walls > 0 ? local : bestSpot(tiles, branchKeys, carve.target, used) ?? local;
+    const chosen = local ?? bestSpot(tiles, branchKeys, carve.target, used);
     if (!chosen) continue;
     used.add(tileKey(chosen.tile));
     pockets.push(chosen.tile);
@@ -1022,7 +1022,10 @@ function choosePockets(
   return pockets;
 }
 
-/** The most wall-hugging unused, walkable tile of `keys`, nearest to `target`. */
+/**
+ * The deepest unused, walkable tile of `keys`: nearest to the branch's far end
+ * `target`, with the most wall-hugging tile as the tie-break.
+ */
 function bestSpot(
   tiles: TileMap,
   keys: Iterable<string>,
@@ -1030,8 +1033,8 @@ function bestSpot(
   used: ReadonlySet<string>,
 ): Readonly<{ tile: Tile; walls: number }> | null {
   let best: Tile | null = null;
-  let bestWalls = -1;
   let bestDistance = Number.POSITIVE_INFINITY;
+  let bestWalls = -1;
   for (const key of keys) {
     if (used.has(key)) continue;
     const [x, y] = key.split(',').map(Number);
@@ -1039,21 +1042,22 @@ function bestSpot(
     if (!isWalkable(tiles, tile)) continue;
     const walls = wallNeighbours(tiles, x, y);
     const distance = Math.abs(x - target.x) + Math.abs(y - target.y);
-    if (walls > bestWalls || (walls === bestWalls && distance < bestDistance)) {
+    if (distance < bestDistance || (distance === bestDistance && walls > bestWalls)) {
       best = tile;
-      bestWalls = walls;
       bestDistance = distance;
+      bestWalls = walls;
     }
   }
   return best ? { tile: best, walls: bestWalls } : null;
 }
 
 /**
- * Places one ground item at the far end of each optional path. A pocket that a
- * hazard sealed (or that is no longer walkable) is skipped, so loot is never
- * stranded, and the draw order is the deterministic `pockets` order: the item id
- * is `item-<routeIndex>-<n>` and the contents plus the hidden flag come from the
- * `populate` stream, so `(seed, routeIndex)` fixes what lies at each pocket (D11).
+ * Places the ground items. An optional path (a `pocket`) holds an item only with
+ * `itemChance` probability, and a pocket a hazard sealed (or that is no longer
+ * walkable) is skipped, so loot is never stranded. The draw order is the
+ * deterministic `pockets` order: the item id is `item-<routeIndex>-<n>` and the
+ * contents plus the hidden flag come from the `populate` stream, so
+ * `(seed, routeIndex)` fixes what lies at each pocket (D11).
  */
 function placeItems(
   tiles: TileMap,
@@ -1062,12 +1066,14 @@ function placeItems(
   routeIndex: number,
   loot: readonly LootEntry[] | undefined,
   hiddenChance: number,
+  itemChance: number,
   rng: Rng,
 ): RouteItem[] {
   if (!loot || loot.length === 0) return [];
   const items: RouteItem[] = [];
   for (const position of pockets) {
     if (!reached.has(tileKey(position)) || !isWalkable(tiles, position)) continue;
+    if (rng.next() >= itemChance) continue;
     const itemId = pickWeighted(loot, rng).itemId;
     const hidden = rng.next() < hiddenChance;
     items.push({ id: `item-${routeIndex}-${items.length}`, position: { ...position }, itemId, hidden });
@@ -1136,6 +1142,32 @@ function chooseFacing(
 }
 
 /**
+ * The cardinal a **pocket guard** looks along: across its optional path, from wall
+ * to wall, so the sight closes the branch instead of running down it. A vertical
+ * path is watched horizontally and a horizontal one vertically. Null when neither
+ * crossing tile is passable, so the caller falls back to the along-lane pose.
+ */
+function chooseCrossFacing(
+  tiles: TileMap,
+  pos: Tile,
+  pocket: Tile,
+  dirs: readonly Facing[],
+  walkableTips: boolean,
+): Facing | null {
+  const dx = pocket.x - pos.x;
+  const dy = pocket.y - pos.y;
+  const vertical = Math.abs(dy) >= Math.abs(dx);
+  const cross: readonly Facing[] = vertical ? ['E', 'W'] : ['N', 'S'];
+  const open = cross.filter((facing) => dirs.includes(facing));
+  if (open.length === 0) return null;
+  const backed = open.find((facing) => {
+    const vector = FACING_VECTORS[facing];
+    return solidWall(tiles, pos.x - vector.x, pos.y - vector.y, walkableTips);
+  });
+  return backed ?? open[0];
+}
+
+/**
  * Places the route's trainers. A route always guards its main lane with at least
  * one trainer and puts one more by every optional pocket it fills, plus the
  * map-size tier's bonus, so the count follows the route's size. A trainer stands
@@ -1197,13 +1229,23 @@ function placeTrainers(
     return true;
   };
 
+  /**
+   * Whether `tile` cuts a sight line. Anything impassable does, except a walkable
+   * tree tip (which the movement map turns into floor).
+   */
+  const sightBlocked = (tile: Tile): boolean => {
+    if (blocked.has(tileKey(tile))) return true;
+    if (isWalkable(tiles, tile)) return false;
+    return !(walkableTips && isTreeTip(tiles, tile.x, tile.y));
+  };
+
   /** True when `facing` would put the entry (the player's spawn) in sight. */
   const seesEntry = (tile: Tile, facing: Facing): boolean => {
     const vector = FACING_VECTORS[facing];
     let current = tile;
     for (let step = 0; step < sight; step++) {
       current = { x: current.x + vector.x, y: current.y + vector.y };
-      if (blocksSight(tiles, current, blocked)) break;
+      if (sightBlocked(current)) break;
       if (current.x === entry.x && current.y === entry.y) return true;
     }
     return false;
@@ -1218,10 +1260,32 @@ function placeTrainers(
     return keepsRouteOpen(tile);
   };
 
+  /** The pocket a branch trainer stands by, for the cross-path facing. */
+  const nearestPocket = (tile: Tile): Tile | undefined => {
+    let best: Tile | undefined;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (const pocket of pockets) {
+      const distance = Math.abs(pocket.x - tile.x) + Math.abs(pocket.y - tile.y);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        best = pocket;
+      }
+    }
+    return best;
+  };
+
   const commit = (tile: Tile): boolean => {
     const dirs = openFacings(tiles, tile);
     if (dirs.length === 0) return false;
-    const facing = chooseFacing(tiles, tile, entry, dirs, sight, walkableTips);
+    // A trainer on an optional path looks **across** it (wall to wall), so the
+    // sight closes the branch instead of running down it; a trainer on the main
+    // lane looks down the lane, back to a wall. A branch candidate with no
+    // crossing is skipped, so a branch is never watched from down its own axis.
+    const key = tileKey(tile);
+    const branchPocket = !spine.has(key) && branches.has(key) ? nearestPocket(tile) : undefined;
+    const cross = branchPocket ? chooseCrossFacing(tiles, tile, branchPocket, dirs, walkableTips) : null;
+    if (branchPocket && cross === null) return false;
+    const facing = cross ?? chooseFacing(tiles, tile, entry, dirs, sight, walkableTips);
     const spins = dirs.length >= 2 && rng.next() < SPIN_CHANCE;
     const turns = spins ? FACINGS.filter((candidate) => dirs.includes(candidate)) : null;
     // A trainer never spawns already watching - or able to spin and watch - the
@@ -1260,11 +1324,10 @@ function placeTrainers(
 
   // A minimum on the main lane: one trainer on the spine (the fallback pool lets
   // it land on a branch when the spine has no room, so a route still gets one).
-  const openPools: Tile[][] = [];
   if (!tryFrom(spineTiles)) tryFrom([...spineTiles, ...branchTiles]);
 
-  // One more guarding each optional path, standing as close to the loot pocket
-  // as its branch allows.
+  // One more guarding each optional path, standing as close to the loot pocket as
+  // its branch allows and looking across the path (wall to wall).
   for (const pocket of pockets) {
     const near = branchTiles
       .filter((tile) => !(tile.x === pocket.x && tile.y === pocket.y))
@@ -1274,9 +1337,8 @@ function placeTrainers(
         const db = Math.abs(b.x - pocket.x) + Math.abs(b.y - pocket.y);
         return da - db || a.y - b.y || a.x - b.x;
       });
-    openPools.push(near);
+    tryFrom(near);
   }
-  for (const pool of openPools) tryFrom(pool);
 
   // Then the map-size tier's bonus, anywhere the network still has room.
   const bonus = trainerBonusForSize(tiles[0].length, tiles.length);
@@ -1349,10 +1411,9 @@ function attemptRoute(
   if (spec.kind === 'open') cleanWalls(tiles, request.wall);
   snapshot('clean', 'clean walls');
 
-  // A pocket is the loot spot at a branch's far end, but nudged onto the most
-  // wall-hugging tile its lane opened (a corner if there is one), so an item sits
-  // against two walls where possible and at least one otherwise (after the clean
-  // pass, which may have widened the room).
+  // A pocket is the loot spot at a branch's far end: the deepest walkable tile of
+  // the branch (nearest its carved target), most wall-hugging on a tie, so an item
+  // sits as far down the path as it can.
   const pockets = choosePockets(tiles, carves, branches);
 
   // Ledges are solid, so they stay off the guaranteed spine - the carved lane on
@@ -1400,6 +1461,7 @@ function attemptRoute(
     request.routeIndex,
     request.loot,
     request.hiddenChance ?? 0,
+    request.itemChance ?? 1,
     streams.populate,
   );
   snapshot('items', 'populate items');

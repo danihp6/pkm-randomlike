@@ -96,11 +96,11 @@ Full rules in `docs/battle-spec.md`. In short:
 - **Tall grass** is the only tile that rolls a wild encounter.
 - **Trainers** have a line of sight: step into their line (a straight cardinal
   beam of 5 tiles, stopped by anything impassable — a wall, a ledge or water — and
-  by other trainers) and they walk over, then the battle starts (talking to one
-  starts it too). A beaten trainer leaves the route. Some look around on a timer,
-  so their line turns with them and can catch you even while you stand still. A
-  trainer never spawns already watching the tile you arrive on, never stands next
-  to another, and never blocks a passage.
+  by other trainers; a walkable tree tip counts as open) and they walk over, then
+  the battle starts (talking to one starts it too). A beaten trainer leaves the
+  route. Some look around on a timer, so their line turns with them and can catch
+  you even while you stand still. A trainer never spawns already watching the tile
+  you arrive on, never stands next to another, and never blocks a passage.
 - The exit opening ends the route (a floor position, no special tile; disabled for
   now while the generator is in focus).
 - Tilesets are **swappable per route** so the same map code renders a wood, a

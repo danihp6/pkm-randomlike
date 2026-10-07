@@ -12,7 +12,8 @@ import {
 /**
  * Anything the player cannot cross - a wall, water or a ledge - blocks a sight
  * line, and so does another trainer. A trainer never sees across an obstacle it
- * could not chase over.
+ * could not chase over. Callers pass the **movement** map, where a walkable tree
+ * tip is already floor, so a player walking along the tips stays visible.
  */
 export function blocksSight(map: TileMap, tile: Tile, blockers: ReadonlySet<string>): boolean {
   return !isWalkable(map, tile) || blockers.has(tileKey(tile));
@@ -20,12 +21,15 @@ export function blocksSight(map: TileMap, tile: Tile, blockers: ReadonlySet<stri
 
 /**
  * The tiles a trainer watches, nearest first, up to its `sight` range. The line
- * runs straight along `facing` and stops at the first wall (or another trainer).
+ * runs straight along `facing` and stops at the first impassable tile (or another
+ * trainer). `tiles` defaults to the route's raw map; pass the movement map so a
+ * walkable tree tip does not cut the line.
  */
 export function sightLine(
   route: RouteMap,
   trainer: RouteTrainer,
   blockers?: ReadonlySet<string>,
+  tiles: TileMap = route.tiles,
 ): readonly Tile[] {
   const blockSet = blockers ?? trainerBlockers(route, trainer);
   const vector = FACING_VECTORS[trainer.facing];
@@ -33,18 +37,24 @@ export function sightLine(
   let current: Tile = trainer.position;
   for (let step = 0; step < trainer.sight; step++) {
     current = { x: current.x + vector.x, y: current.y + vector.y };
-    if (blocksSight(route.tiles, current, blockSet)) break;
+    if (blocksSight(tiles, current, blockSet)) break;
     seen.push(current);
   }
   return seen;
 }
 
 /**
- * True when the player stands in the trainer's cone: straight ahead along its
- * facing, within `sight`, with no wall or other trainer between them. Walking
- * into that cone is what opens the battle.
+ * True when the player stands in the trainer's line: straight ahead along its
+ * facing, within `sight`, with nothing impassable or another trainer between
+ * them. Walking into that line is what opens the battle. `tiles` is the movement
+ * map (see `sightLine`).
  */
-export function seesPlayer(route: RouteMap, trainer: RouteTrainer, player: Tile): boolean {
+export function seesPlayer(
+  route: RouteMap,
+  trainer: RouteTrainer,
+  player: Tile,
+  tiles: TileMap = route.tiles,
+): boolean {
   const vector = FACING_VECTORS[trainer.facing];
   const delta = { x: player.x - trainer.position.x, y: player.y - trainer.position.y };
   const cross = delta.x * vector.y - delta.y * vector.x;
@@ -52,7 +62,7 @@ export function seesPlayer(route: RouteMap, trainer: RouteTrainer, player: Tile)
   if (cross !== 0 || dot <= 0) return false;
   const distance = Math.abs(delta.x) + Math.abs(delta.y);
   if (distance > trainer.sight) return false;
-  return sightLine(route, trainer).some((tile) => sameTile(tile, player));
+  return sightLine(route, trainer, undefined, tiles).some((tile) => sameTile(tile, player));
 }
 
 /** Trainer positions, keyed for blocking and sight checks. */

@@ -81,19 +81,26 @@ camera follow), containing:
    `populate` stream. The trainers always include **one on the main lane** and one
    more by every filled pocket, plus the map-size tier's bonus, so their count
    follows the route's size (`MAP_SIZE_TIERS`); a trainer stands on floor hugging
-   a **solid** wall (never a walkable tree tip) and looks down a **passable** lane
-   with a `sight` of 5 (a straight cardinal line that stops at a wall, a ledge,
-   water or another trainer), and some cycle their facing on a timer like a
+   a **solid** wall (never a walkable tree tip). On the **main lane** it looks
+   down the lane; on an **optional path** it looks **across** it, wall to wall (a
+   vertical path is watched horizontally and vice versa), so the sight closes the
+   branch. Either way it looks down a **passable** line with a `sight` of 5 (a
+   straight cardinal line that stops at a wall, a ledge,
+   water or another trainer, though a walkable tree tip is open), and some cycle
+   their facing on a timer like a
    "spinning" trainer. Placement never plugs a passage: a trainer is kept only
    while every tile the entry could reach stays reachable with the trainers as
    blockers (ledges and water count as impassable), no two trainers stand in
    neighbouring tiles, and no trainer spawns watching — or able to spin and watch —
    the player's entry tile. A pocket a hazard sealed, or that is no longer
-   walkable, is skipped, so loot is never stranded. The number of items also
-   follows the route's **size** (a bigger map carves more optional paths), not its
-   band. A pocket is kept clear of tall grass (an item never spawns on grass) and
-   of ledges. Each item rolls a **hidden** flag from the band's `hiddenChance`; a
-   hidden item shows a faint sparkle instead of a Poke Ball. Ids are stable
+   walkable, is skipped, so loot is never stranded. An optional path holds an item
+   only with the band's `itemChance` probability (75% for now); when it does, the
+   item sits on the **deepest** tile of the branch, as far down the path as it can.
+   The number of items also follows the route's **size** (a bigger map carves more
+   optional paths), not its band. A pocket is kept clear of tall grass (an item
+   never spawns on grass) and of ledges. Each item rolls a **hidden** flag from the
+   band's `hiddenChance`; a hidden item shows a faint sparkle instead of a Poke
+   Ball. Ids are stable
    (`trainer-<routeIndex>-<n>`, `item-<routeIndex>-<n>`) and the draw order is the
    deterministic `pockets` order.
 5. **Validation pass**: flood-fill from the entry must reach every exit, with the

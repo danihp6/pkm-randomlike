@@ -22,7 +22,10 @@ file is the human-readable summary.
       reaches **every** tile it could before (ledges and water count as
       impassable), so a trainer never plugs a lane, a branch or a pocket; no two
       trainers stand in neighbouring tiles; and no trainer spawns already watching
-      — or able to spin and watch — the tile the player arrives on. New pure module
+      — or able to spin and watch — the tile the player arrives on. A main-lane
+      trainer looks down the lane, but an optional-path guard looks **across** it,
+      wall to wall (a vertical path is watched horizontally and vice versa), so
+      the sight closes the branch. New pure module
       `src/engine/routes/trainers.ts` (`sightLine`, `seesPlayer`, `trainerAt`,
       `trainerBlockers`) plus `Facing`/`RouteTrainer` on `RouteMap`;
       `validateRoute` now also proves a **trainer-free** entry→exit path, so no
@@ -34,6 +37,12 @@ file is the human-readable summary.
       sort by their foot row, so a character north of a trainer passes behind it.
       `D11`, `docs/routes-spec.md` §2/§5, `docs/route-generator.md` §3.4,
       `docs/design-spec.md` §5 updated.
+- [x] **Ground items are a gamble and sit deep.** An optional path now holds an
+      item only with the band's `itemChance` probability (`ROUTE_LOOT`, 75% for
+      now) instead of always, and when it does the pocket is the **deepest** tile
+      of the branch — the item sits as far down the path as it can (the wall-hug
+      is only a tie-break). A walkable tree tip no longer cuts a trainer's line of
+      sight, so a player walking along a row of tips is still seen.
 - [x] **Battle sprites are sized by the Pokémon's real height**, so a titan reads
       big and a Scatterbug tiny. The Añil art compresses the true 0.1m–20m range
       (Regigigas is drawn barely taller than Scatterbug), so scaling by the sheet

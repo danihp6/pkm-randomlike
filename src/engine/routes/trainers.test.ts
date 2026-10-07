@@ -106,6 +106,31 @@ describe('trainer line of sight', () => {
     expect(seesPlayer(ledged, ledged.trainers[0], { x: 3, y: 3 })).toBe(false);
   });
 
+  it('sees a player walking along a row of walkable tree tips', () => {
+    const route = fixture('S', { x: 3, y: 1 });
+    const raw = mapFromSketch([
+      '#######',
+      '#.....#',
+      '#.....#',
+      '#..#..#',
+      '#.....#',
+      '#.....#',
+      '#######',
+    ]);
+    const move = mapFromSketch([
+      '#######',
+      '#.....#',
+      '#.....#',
+      '#.....#',
+      '#.....#',
+      '#.....#',
+      '#######',
+    ]);
+    const tipped: RouteMap = { ...route, tiles: raw };
+    expect(seesPlayer(tipped, tipped.trainers[0], { x: 3, y: 3 })).toBe(false);
+    expect(seesPlayer(tipped, tipped.trainers[0], { x: 3, y: 3 }, move)).toBe(true);
+  });
+
   it('sees the player in the cone but not behind, off-axis or out of range', () => {
     const route = fixture('S', { x: 3, y: 1 });
     const t = route.trainers[0];
@@ -252,6 +277,27 @@ describe('route trainer placement', () => {
             (n) => route.tiles[n.y]?.[n.x] === WALL && !tips.has(`${n.x},${n.y}`),
           );
           expect(solid, `${shape} ${seed} ${trainer.id} @${x},${y}`).toBe(true);
+        }
+      }
+    }
+  }, 30_000);
+
+  it('watches an optional path across it, wall to wall', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (const seed of ['tt-cross-a', 'tt-cross-b', 'tt-cross-c']) {
+        const route = sketchRoute({ ...request(seed, 3, shape), width: 30, height: 30 });
+        const spine = new Set(route.spine.map((tile) => `${tile.x},${tile.y}`));
+        const branch = new Set(route.branches.map((tile) => `${tile.x},${tile.y}`));
+        for (const trainer of route.trainers) {
+          const key = `${trainer.position.x},${trainer.position.y}`;
+          if (spine.has(key) || !branch.has(key)) continue;
+          const pocket = route.pockets
+            .map((p) => ({ p, d: Math.abs(p.x - trainer.position.x) + Math.abs(p.y - trainer.position.y) }))
+            .sort((a, b) => a.d - b.d)[0].p;
+          const vertical =
+            Math.abs(pocket.y - trainer.position.y) >= Math.abs(pocket.x - trainer.position.x);
+          const expected = vertical ? ['E', 'W'] : ['N', 'S'];
+          expect(expected, `${shape} ${seed} ${trainer.id} faces ${trainer.facing}`).toContain(trainer.facing);
         }
       }
     }
