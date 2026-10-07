@@ -22,3 +22,17 @@ export function healParty(run: RunState): RunState {
     box: run.box.map(healMember),
   };
 }
+
+/**
+ * Debug only: a member fully restored — HP and PP to full, status cleared and a
+ * 0-HP member revived. The route heal stop (`healParty`) deliberately does
+ * neither the status cure nor the revival (D5).
+ */
+export function fullHealMember(member: RunPokemon): RunPokemon {
+  const fighter = restoreFighter(member.fighter);
+  fighter.hp = fighter.maxHp;
+  fighter.status = null;
+  fighter.statusCounter = 0;
+  for (const slot of fighter.moves) slot.pp = slot.maxPp;
+  return { ...member, fighter: snapshotFighter(fighter) };
+}

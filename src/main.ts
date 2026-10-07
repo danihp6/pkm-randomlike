@@ -58,6 +58,10 @@ if (IS_DEVELOP) {
         const route = game.scene.getScene('Route') as RouteScene | null;
         return route?.editDebugPokemon(memberId, edit) ?? false;
       },
+      onHealPartyMember: (memberId) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        return route?.healDebugPokemon(memberId) ?? false;
+      },
       readRouteContext: () => {
         const route = game.scene.getScene('Route') as RouteScene | null;
         return route?.debugRouteContext() ?? null;

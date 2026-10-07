@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { restoreFighter } from '../battle/fighter';
 import { createRunPokemon, type RunPokemon } from './progression';
-import { healParty } from './heal';
+import { fullHealMember, healParty } from './heal';
 import { addPokemon, createRun, type RunState } from './state';
 
 const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch', 'ember'] });
@@ -39,5 +39,15 @@ describe('healParty', () => {
     const healed = healParty(addPokemon(full, boxed));
     expect(healed.box[0].fighter.hp).toBeGreaterThan(2);
     expect(healed.box[0].fighter.moves.every((slot) => slot.pp === slot.maxPp)).toBe(true);
+  });
+});
+
+describe('fullHealMember', () => {
+  it('restores HP, PP and status, and revives a fainted member', () => {
+    const hurt = damaged({ ...starter, fighter: { ...starter.fighter, status: 'psn' as const } }, 0, 0);
+    const healed = fullHealMember(hurt).fighter;
+    expect(healed.hp).toBe(starterMaxHp);
+    expect(healed.status).toBeNull();
+    expect(healed.moves.every((slot) => slot.pp === slot.maxPp)).toBe(true);
   });
 });

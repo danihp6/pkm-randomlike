@@ -98,6 +98,8 @@ export type DebugMenuHandlers = Readonly<{
   readParty: () => readonly DebugPartyMember[];
   /** Dev only: overrides a party member's level, moves, ability or nature. */
   onEditPartyMember: (memberId: string, edit: DebugPartyEdit) => boolean;
+  /** Dev only: fully restores a party member (HP, PP, status and revival). */
+  onHealPartyMember: (memberId: string) => boolean;
   readRouteContext: () => DebugRouteContext | null;
   onRegenerateRoute: (input: DebugRouteInput) => void;
   onTogglePassThrough: (enabled: boolean) => void;
@@ -542,23 +544,10 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   partySpeciesInput.setAttribute('list', 'debug-species-list');
   partySpeciesInput.style.cssText = compact;
 
-  const partyLevelInput = document.createElement('input');
-  partyLevelInput.type = 'number';
-  partyLevelInput.min = String(DEBUG_MIN_LEVEL);
-  partyLevelInput.max = String(DEBUG_MAX_LEVEL);
-  partyLevelInput.value = String(DEBUG_DEFAULT_LEVEL);
-  partyLevelInput.title = 'level';
-  partyLevelInput.style.cssText = compact;
-
   const partySpeciesRow = document.createElement('label');
   partySpeciesRow.textContent = 'Species';
   partySpeciesRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
   partySpeciesRow.append(partySpeciesInput);
-
-  const partyLevelRow = document.createElement('label');
-  partyLevelRow.textContent = 'Level';
-  partyLevelRow.style.cssText = partySpeciesRow.style.cssText;
-  partyLevelRow.append(partyLevelInput);
 
   const partyStatus = document.createElement('div');
   partyStatus.style.cssText = 'min-height:16px;color:#94a3b8;';
@@ -569,8 +558,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
       partyStatus.textContent = partySpeciesInput.value.trim() ? 'unknown species' : 'type a species';
       return;
     }
-    const level = clampLevel(Number(partyLevelInput.value));
-    partyLevelInput.value = String(level);
+    const level = DEBUG_DEFAULT_LEVEL;
     const where = handlers.onAddPokemon(species.id, level);
     partyStatus.textContent = where
       ? `added ${species.name} Lv${level} to ${where === 'party' ? 'party' : 'PC box'}`
@@ -580,7 +568,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const addPokemonButton = button('Add', addPokemon);
   addPokemonButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
-  partySection.append(partySpeciesRow, partyLevelRow, addPokemonButton, partyStatus);
+  partySection.append(partySpeciesRow, addPokemonButton, partyStatus);
 
   // Party editor: pick a party member and override its level, moves, ability
   // and nature. The member list is rebuilt from the live run on every open.
@@ -775,6 +763,21 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     editStatus.textContent = `${member.name} → Lv${level}`;
   };
 
+  const healSelected = (): void => {
+    const member = currentMember();
+    if (!member) {
+      editStatus.textContent = 'pick a member';
+      return;
+    }
+    if (!handlers.onHealPartyMember(member.id)) {
+      editStatus.textContent = 'no active run';
+      return;
+    }
+    selectedMemberId = member.id;
+    refreshPartyOptions();
+    editStatus.textContent = `healed ${member.name}`;
+  };
+
   const plusLevelButton = button('+1 lvl', plusOneLevel);
   plusLevelButton.style.cssText += 'white-space:nowrap;';
   editLevelRow.append(editLevelInput, plusLevelButton);
@@ -782,13 +785,20 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   const applyButton = button('Apply', applyEdit);
   applyButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
 
+  const healButton = button('Heal', healSelected);
+  healButton.style.cssText += 'background:#166534;color:#f8fafc;font-weight:700;';
+
+  const editButtons = document.createElement('div');
+  editButtons.style.cssText = 'display:flex;gap:6px;';
+  editButtons.append(applyButton, healButton);
+
   partyEditor.append(
     partyMemberRow,
     editLevelRow,
     ...moveRows,
     abilityRow,
     natureRow,
-    applyButton,
+    editButtons,
     editStatus,
   );
   partySection.append(partyEditor);
@@ -884,7 +894,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     });
   }
 
-  for (const input of [partySpeciesInput, partyLevelInput]) {
+  for (const input of [partySpeciesInput]) {
     input.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') addPokemon();
     });

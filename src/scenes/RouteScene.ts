@@ -36,6 +36,7 @@ import {
   createRunPokemon,
   editRunPokemon,
   equipHeldItem,
+  fullHealMember,
   hasLivingParty,
   isItemPicked,
   isTrainerDefeated,
@@ -2488,6 +2489,20 @@ export class RouteScene extends Phaser.Scene {
     const member = this.run.party.find((candidate) => candidate.fighter.id === memberId);
     if (!member) return false;
     this.run = updatePokemon(this.run, editRunPokemon(member, edit));
+    this.persistRun();
+    this.refreshHud();
+    return true;
+  }
+
+  /**
+   * Dev only: fully restores a party member — HP and PP to full, status cleared
+   * and a 0-HP member revived. Returns false with no live run or a bad id.
+   */
+  healDebugPokemon(memberId: string): boolean {
+    if (!IS_DEVELOP || !this.run || this.gameOver) return false;
+    const member = this.run.party.find((candidate) => candidate.fighter.id === memberId);
+    if (!member) return false;
+    this.run = updatePokemon(this.run, fullHealMember(member));
     this.persistRun();
     this.refreshHud();
     return true;
