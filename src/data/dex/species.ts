@@ -28,6 +28,8 @@ export type Species = Readonly<{
   evos: readonly string[];
   evolutions: readonly Evolution[];
   weightkg: number;
+  /** Canonical height in metres (PokeAPI); drives the battle sprite's size. */
+  heightm: number;
   genderRatio: GenderRatio;
   nfe: boolean;
   forme: string;
@@ -66,4 +68,9 @@ export function playableSpecies(): readonly Species[] {
 /** Canonical catch rate; 255 (as easy as it gets) if the table ever misses an id. */
 export function catchRateOf(speciesId: string): number {
   return getSpecies(speciesId)?.catchRate ?? 255;
+}
+
+/** Canonical height in metres; 1.0 (the size reference) if the id is unknown. */
+export function heightOf(speciesId: string): number {
+  return getSpecies(speciesId)?.heightm ?? 1;
 }

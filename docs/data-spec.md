@@ -9,7 +9,10 @@ Produced by `npm run data:dex` from `@pkmn/dex`, committed, never edited by hand
 See `docs/showdown-reuse.md` for the contents and filters, and
 `src/data/dex/README.md` for the field list. Because `@pkmn/dex` has no catch
 rate, the generator merges one in from the committed PokeAPI table
-(`scripts/data/catch-rates.json`); capture balances against `catchRate`.
+(`scripts/data/catch-rates.json`); capture balances against `catchRate`. It also
+merges a canonical `heightm` from `scripts/data/heights.json` (PokeAPI, via
+`scripts/fetch-heights.mjs`), which sizes the battle sprite
+(`src/data/spriteSize.ts`).
 
 ## 2. Authored
 
@@ -21,6 +24,7 @@ rate, the generator merges one in from the committed PokeAPI table
 | `src/data/encounters.ts` | per-biome species pools and weights by band | 2 |
 | `src/data/trainers.ts` | trainer archetypes: name, class, sprite, per-band species pools | 2 |
 | `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), each with a Poké Dollar price | 3/6 |
+| `src/data/spriteSize.ts` | the battle sprite size curve: canonical height (m) → drawn height (px), the power and clamps | 5 |
 | `src/data/run.ts` | chain length, mini-boss cadence, boss cadence, level caps, starter pool, starting bag | 2 |
 | `src/data/portraits.ts` | portrait atlas URL and frame mapping (dex number − 1) | 6 |
 | `src/data/itemIcons.ts` | typed view over the generated `frlg/item-icons.json` (FRLG icon frames) | 6 |
@@ -32,7 +36,7 @@ JSON is imported and immediately wrapped by a typed accessor module, so engine
 code never sees a `any`:
 
 - `src/data/dex/species.ts` → `Species`, `getSpecies(id)`, `speciesByNum(n)`,
-  `playableSpecies()`
+  `playableSpecies()`, `catchRateOf(id)`, `heightOf(id)`
 - `src/data/dex/moves.ts` → `Move`, `getMove(id)`, `moveByType(type)`,
   `isDamaging(move)`
 - `src/data/dex/learnsets.ts` → `learnsetOf(speciesId)`, `levelUpMoves(id, level)`,

@@ -248,8 +248,8 @@ export class BootScene extends Phaser.Scene {
 
     const platform = this.make.graphics({ x: 0, y: 0 });
     platform.fillStyle(0xffffff, 1);
-    platform.fillEllipse(90, 16, 180, 32);
-    platform.generateTexture(BATTLE_PLATFORM_TEXTURE_KEY, 180, 32);
+    platform.fillEllipse(130, 25, 260, 50);
+    platform.generateTexture(BATTLE_PLATFORM_TEXTURE_KEY, 260, 50);
     platform.destroy();
   }
 }

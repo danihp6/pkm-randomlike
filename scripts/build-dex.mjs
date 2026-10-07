@@ -12,6 +12,7 @@ import { Dex } from '@pkmn/dex';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(SCRIPT_DIR, '..', 'src', 'data', 'dex');
 const CATCH_RATES_PATH = join(SCRIPT_DIR, 'data', 'catch-rates.json');
+const HEIGHTS_PATH = join(SCRIPT_DIR, 'data', 'heights.json');
 const MIN_LEARNSET_GEN = 8;
 
 const isPlayable = (entry) => !entry.isNonstandard && entry.num > 0;
@@ -61,9 +62,14 @@ const main = async () => {
   const catchRates = JSON.parse(await readFile(CATCH_RATES_PATH, 'utf8'));
   const catchRateOf = (num) => catchRates[String(num)] ?? 255;
 
+  // Canonical heights (metres), from PokeAPI's `pokemon.csv`; the battle scene
+  // sizes a sprite from this so big Pokémon read big (see `src/data/spriteSize.ts`).
+  const heights = JSON.parse(await readFile(HEIGHTS_PATH, 'utf8'));
+
   const species = Dex.species.all().filter(isPlayable).map((entry) => ({
     ...entry,
     catchRate: catchRateOf(entry.num),
+    heightm: heights[entry.id] ?? 1,
     evolutions: evolutionOf(entry),
   }));
 

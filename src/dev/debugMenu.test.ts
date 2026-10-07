@@ -31,6 +31,7 @@ function species(id: string, name: string, num: number): Species {
     evos: [],
     evolutions: [],
     weightkg: 1,
+    heightm: 1,
     genderRatio: { M: 1, F: 1 },
     nfe: false,
     forme: '',
