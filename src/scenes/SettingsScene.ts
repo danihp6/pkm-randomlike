@@ -4,6 +4,7 @@ import type { Settings } from '../engine/save';
 import { applyVolume, loadSettings, saveSettings } from '../settings';
 import { addFrlgWindow } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
+import { createTouchControls } from '../ui/touchControls';
 import {
   changeSetting,
   isStepRow,
@@ -96,41 +97,14 @@ export class SettingsScene extends Phaser.Scene {
     });
 
     this.bindInput();
+    createTouchControls(this, { onAction: (action) => this.handleAction(action, null) });
     this.render();
   }
 
   private bindInput(): void {
     subscribeKeybinds(
       this,
-      ({ action, event }) => {
-        if (this.capturing) {
-          // The press that started the capture still reaches here; ignore it.
-          if (event === this.captureSkip) return;
-          if (action === 'cancel') {
-            this.stopCapture();
-            return;
-          }
-          return;
-        }
-        switch (action) {
-          case 'up':
-            this.move(-1);
-            return;
-          case 'down':
-            this.move(1);
-            return;
-          case 'left':
-          case 'right':
-            this.change(action === 'left' ? -1 : 1);
-            return;
-          case 'confirm':
-            this.confirm(event);
-            return;
-          case 'cancel':
-            this.close();
-            return;
-        }
-      },
+      ({ action, event }) => this.handleAction(action, event),
       () => this.settings.keybinds,
     );
 
@@ -148,6 +122,41 @@ export class SettingsScene extends Phaser.Scene {
       saveSettings(this.settings);
       this.stopCapture();
     });
+  }
+
+  /**
+   * The player's intent behind one shared action, from a key or the touch pad /
+   * A / B. `event` is the key press when there was one, so a touch press can ask
+   * for a rebind without a key to bind.
+   */
+  private handleAction(action: KeybindAction, event: KeyboardEvent | null): void {
+    if (this.capturing) {
+      // The press that started the capture still reaches here; ignore it.
+      if (event !== null && event === this.captureSkip) return;
+      if (action === 'cancel') {
+        this.stopCapture();
+        return;
+      }
+      return;
+    }
+    switch (action) {
+      case 'up':
+        this.move(-1);
+        return;
+      case 'down':
+        this.move(1);
+        return;
+      case 'left':
+      case 'right':
+        this.change(action === 'left' ? -1 : 1);
+        return;
+      case 'confirm':
+        this.confirm(event);
+        return;
+      case 'cancel':
+        this.close();
+        return;
+    }
   }
 
   private move(delta: number): void {
@@ -169,12 +178,14 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   /** On a keybind row this arms the capture; on a step row it just closes. */
-  private confirm(event: KeyboardEvent): void {
+  private confirm(event: KeyboardEvent | null): void {
     const row = settingsRow(this.index);
     if (isStepRow(row)) {
       this.close();
       return;
     }
+    // A touch press has no key to bind, so it leaves the row alone.
+    if (event === null) return;
     this.capturing = row.id as KeybindAction;
     // The press that opened the capture must not be the key it binds.
     this.captureSkip = event;

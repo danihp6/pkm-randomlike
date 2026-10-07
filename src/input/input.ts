@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import {
   actionForKey,
+  keysForAction,
   type KeybindAction,
   type Keybinds,
   type KeyName,
@@ -68,16 +69,19 @@ export function subscribeKeybinds(
 /**
  * The Phaser Key objects behind an action, for polling held state (the route's
  * per-tile walk, the battle's hold-to-skip). It reads the map at call time, so
- * call it when the scene starts or resumes, not every frame.
+ * call it when the scene starts or resumes, not every frame. A direction's
+ * movement aliases come first, so `actionKeys(scene, 'up')` also watches `W`.
  */
 export function actionKeys(
   scene: Phaser.Scene,
   action: KeybindAction,
   keybinds: Keybinds = currentKeybinds(),
 ): Phaser.Input.Keyboard.Key[] {
-  const code = (Phaser.Input.Keyboard.KeyCodes as unknown as Record<string, number | undefined>)[
-    keybinds[action]
-  ];
-  if (typeof code !== 'number') return [];
-  return [scene.input.keyboard!.addKey(code)];
+  const codes = Phaser.Input.Keyboard.KeyCodes as unknown as Record<string, number | undefined>;
+  const keys: Phaser.Input.Keyboard.Key[] = [];
+  for (const name of keysForAction(keybinds, action)) {
+    const code = codes[name];
+    if (typeof code === 'number') keys.push(scene.input.keyboard!.addKey(code));
+  }
+  return keys;
 }

@@ -11,10 +11,11 @@ import {
   type RunShare,
 } from '../engine/run';
 import { randomSeed, rngFromSeed } from '../engine/rng';
-import { keyLabel } from '../data/keybinds';
+import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { subscribeKeybinds } from '../input/input';
 import { addFrlgWindow } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
+import { createTouchControls } from '../ui/touchControls';
 import { closeSeedPrompt, openSeedPrompt } from '../ui/seedPrompt';
 import { loadSettings } from '../settings';
 
@@ -87,26 +88,8 @@ export class StarterScene extends Phaser.Scene {
       },
     );
 
-    const move = (delta: number) => {
-      this.index = (this.index + delta + this.pool.length) % this.pool.length;
-      this.render();
-    };
-    subscribeKeybinds(this, ({ action }) => {
-      switch (action) {
-        case 'left':
-          move(-1);
-          return;
-        case 'right':
-          move(1);
-          return;
-        case 'confirm':
-          this.confirm();
-          return;
-        case 'settings':
-          this.openSettings();
-          return;
-      }
-    });
+    subscribeKeybinds(this, ({ action }) => this.handleAction(action));
+    createTouchControls(this, { onAction: (action) => this.handleAction(action) });
     // The seed prompt stays a fixed key: it opens a DOM field, not a game action.
     this.input.keyboard!.on('keydown-S', (event: KeyboardEvent) => {
       // The key that opens the prompt must not also type itself into the field.
@@ -122,6 +105,34 @@ export class StarterScene extends Phaser.Scene {
   private cardX(index: number): number {
     const total = this.pool.length * CARD_WIDTH + (this.pool.length - 1) * CARD_GAP;
     return (this.scale.width - total) / 2 + index * (CARD_WIDTH + CARD_GAP);
+  }
+
+  /**
+   * The player's intent behind one shared action, from a key or the touch pad /
+   * A / B. Left and right move the pick, A (confirm) takes it, and the settings
+   * key opens the options.
+   */
+  private handleAction(action: KeybindAction): void {
+    switch (action) {
+      case 'left':
+        this.move(-1);
+        return;
+      case 'right':
+        this.move(1);
+        return;
+      case 'confirm':
+        this.confirm();
+        return;
+      case 'settings':
+        this.openSettings();
+        return;
+    }
+  }
+
+  /** Wraps the picked card by `delta`. */
+  private move(delta: number): void {
+    this.index = (this.index + delta + this.pool.length) % this.pool.length;
+    this.render();
   }
 
   private buildCard(speciesId: string, index: number): Phaser.GameObjects.GameObject[] {

@@ -4,7 +4,7 @@ import { getSpecies } from '../data/dex';
 import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { getItem } from '../data/items';
-import { keyLabel } from '../data/keybinds';
+import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import {
   PLAYER_SPRITE_TEXTURE_KEY,
@@ -15,7 +15,7 @@ import {
 import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
 import { ROUTE_LOOT } from '../data/loot';
 import { bandForRoute } from '../data/run';
-import { DEBUG_MENU_TOGGLE_KEY, IS_DEVELOP } from '../dev/env';
+import { IS_DEVELOP } from '../dev/env';
 import type { DebugRouteContext, DebugRouteInput } from '../dev/debugMenu';
 import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
@@ -108,7 +108,9 @@ import { hpColorInt, hpFraction } from '../ui/metrics';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
+import { createTouchControls, type TouchControls } from '../ui/touchControls';
 import { actionKeys, subscribeKeybinds } from '../input/input';
+import { listenForBack } from '../input/backButton';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { GRASS_TEXTURE_KEY, SPARKLE_TEXTURE_KEY } from './BootScene';
@@ -157,6 +159,12 @@ const HUD_BOX_CELL_GAP = 4;
 const HUD_BOX_GRID_H = BOX_ROWS * HUD_BOX_CELL + (BOX_ROWS - 1) * HUD_BOX_CELL_GAP;
 const HUD_BOX_H = HUD_BOX_TABS_H + HUD_BOX_GRID_H + HUD_BOX_PAD;
 const HUD_BOX_MAX_PAGES = 8;
+
+/** The pause menu (ESC / left-edge swipe): a centred window with two rows. */
+const PAUSE_MENU_W = 360;
+const PAUSE_MENU_ROW_H = 56;
+const PAUSE_MENU_ITEMS = ['settings', 'reset'] as const;
+const PAUSE_MENU_LABELS = ['Settings', 'Reset run'] as const;
 
 /**
  * The member detail panel: a click on a party or PC-box member opens it to the
@@ -269,12 +277,23 @@ export class RouteScene extends Phaser.Scene {
   /** Dev only: unique ids for Pokémon dropped in from the debug menu. */
   private debugMonCounter = 0;
   private pendingBattle: BattleLaunch | null = null;
-  /** The four movement keys behind the current bindings, watched every frame. */
-  private moveKeys!: Record<MoveKey, Phaser.Input.Keyboard.Key | null>;
+  /** The movement keys behind the current bindings (arrows plus WASD), watched every frame. */
+  private moveKeys!: Record<MoveKey, Phaser.Input.Keyboard.Key[]>;
   /** The run key; held while walking, it speeds the step and the walk cycle. */
   private runKey: Phaser.Input.Keyboard.Key | null = null;
   /** Hold-to-reset: the key, the progress toward restarting and the overlay. */
   private resetKey: Phaser.Input.Keyboard.Key | null = null;
+  /** The on-screen pad + A / B, on a touch screen only. */
+  private touch: TouchControls | null = null;
+  /** Detaches the phone's Back-gesture listener (the pause-menu opener). */
+  private detachBack: (() => void) | null = null;
+  /** The pause menu (ESC, or a left-edge swipe on mobile): Settings and Reset. */
+  private pauseMenu!: Phaser.GameObjects.Container;
+  private pauseMenuOpen = false;
+  private pauseMenuIndex = 0;
+  /** Reset is two-press: the first arms it, the second starts the new run. */
+  private pauseMenuArmed = false;
+  private pauseMenuRows: { highlight: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.BitmapText }[] = [];
   private resetHold = 0;
   private resetScrim!: Phaser.GameObjects.Rectangle;
   private resetRing!: Phaser.GameObjects.Graphics;
@@ -284,8 +303,6 @@ export class RouteScene extends Phaser.Scene {
   private facingDir: MoveKey = 'down';
   /** The in-flight step, while the sprite slides from one tile to the next. */
   private walkTween: Phaser.Tweens.Tween | null = null;
-  private hint!: Phaser.GameObjects.BitmapText;
-  private hintBackdrop!: Phaser.GameObjects.Rectangle;
   private hudRoot!: Phaser.GameObjects.Container;
   private hudTitle!: Phaser.GameObjects.BitmapText;
   /** Whether the route HUD overlay (route header, party and bag) is shown; hidden by default. */
@@ -526,44 +543,10 @@ export class RouteScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.playerSprite, true, 0.2, 0.2);
 
     this.refreshMoveKeys();
-    this.hintBackdrop = this.add
-      .rectangle(8, 8, 780, 56, 0x000000, 0.6)
-      .setOrigin(0, 0)
-      .setScrollFactor(0)
-      .setDepth(99);
-    this.hint = addFrlgText(this, 16, 14, '', {
-      size: 16,
-      align: 'left',
-    })
-      .setScrollFactor(0)
-      .setDepth(100);
-    this.hint.setMaxWidth(760);
 
     subscribeKeybinds(
       this,
-      ({ action }) => {
-        if (!this.scene.isActive()) return;
-        switch (action) {
-          case 'confirm':
-            // `E` is the accept key: it moves a release beat on, and otherwise
-            // doubles as the overworld interact (the shared default for both).
-            if (this.releaseRoot) {
-              if (this.releaseArmed) this.advanceRelease();
-              return;
-            }
-            this.tryInteract();
-            return;
-          case 'interact':
-            this.tryInteract();
-            return;
-          case 'hud':
-            this.toggleHud();
-            return;
-          case 'settings':
-            this.openSettings();
-            return;
-        }
-      },
+      ({ action }) => this.handleAction(action),
       // The route holds the run, so it keeps its own settings snapshot rather
       // than re-reading the whole save on every key; `applySettings` refreshes it.
       () => this.settings.keybinds,
@@ -597,27 +580,71 @@ export class RouteScene extends Phaser.Scene {
     );
     this.buildHud();
     this.setupHudCamera();
+    // The touch pad and the pause menu live on the pinned HUD camera (screen
+    // space) and are ignored by the zoomed world camera, like the HUD.
+    this.touch = createTouchControls(this, {
+      onAction: (action) => this.handleAction(action),
+    });
+    this.cameras.main.ignore(this.touch.root);
+    // On a touch screen the phone's own Back gesture opens the pause menu (the
+    // browser hands it to us as a history pop); a keyboard uses Esc instead.
+    if (this.touch.enabled) {
+      this.detachBack = listenForBack(() => this.onBackGesture());
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.detachBack?.());
+    }
+    // A battle pauses the route mid-walk; drop the pad's held direction so the
+    // player does not keep stepping the moment the route comes back.
+    this.events.on(Phaser.Scenes.Events.PAUSE, () => this.touch?.release());
+    this.events.on(Phaser.Scenes.Events.RESUME, () => this.touch?.release());
     this.buildResetOverlay();
-    this.hint.setDepth(200);
-    this.setHint(this.defaultHint());
+    this.buildPauseMenu();
     this.refreshHud();
     this.refreshDetail();
   }
 
+  /**
+   * The player's intent behind one shared action, whatever drove it: a key from
+   * the map or the on-screen A / B. While the pause menu is up it owns the input.
+   */
+  private handleAction(action: KeybindAction): void {
+    if (!this.scene.isActive()) return;
+    if (this.pauseMenuOpen) {
+      this.handlePauseMenuAction(action);
+      return;
+    }
+    switch (action) {
+      case 'confirm':
+        // `E` is the accept key: it moves a release beat on, and otherwise
+        // doubles as the overworld interact (the shared default for both).
+        if (this.releaseRoot) {
+          if (this.releaseArmed) this.advanceRelease();
+          return;
+        }
+        this.tryInteract();
+        return;
+      case 'interact':
+        this.tryInteract();
+        return;
+      case 'hud':
+        this.toggleHud();
+        return;
+      case 'cancel':
+        if (this.hudVisible) this.toggleHud();
+        else this.openPauseMenu();
+        return;
+      case 'settings':
+        this.openSettings();
+        return;
+    }
+  }
+
   /** Resolves the movement keys from the shared map; re-run when it changes. */
   private refreshMoveKeys(): void {
-    const bind = (action: MoveKey): Phaser.Input.Keyboard.Key | null =>
-      actionKeys(this, action, this.settings.keybinds)[0] ?? null;
+    const bind = (action: MoveKey): Phaser.Input.Keyboard.Key[] =>
+      actionKeys(this, action, this.settings.keybinds);
     this.moveKeys = { up: bind('up'), down: bind('down'), left: bind('left'), right: bind('right') };
     this.runKey = actionKeys(this, 'run', this.settings.keybinds)[0] ?? null;
     this.resetKey = actionKeys(this, 'reset', this.settings.keybinds)[0] ?? null;
-  }
-
-  /** The resting line, spelled with whatever keys the player has bound. */
-  private defaultHint(): string {
-    const { up, down, left, right, run, interact, hud, settings } = this.settings.keybinds;
-    const runHint = this.settings.alwaysRun ? 'always running' : `hold ${keyLabel(run)} run`;
-    return `Walk the route.  ${keyLabel(up)}${keyLabel(down)}${keyLabel(left)}${keyLabel(right)} move   ·   ${runHint}   ·   ${keyLabel(interact)} interact   ·   ${keyLabel(hud)} HUD   ·   ${keyLabel(settings)} settings`;
   }
 
   /**
@@ -1593,13 +1620,13 @@ export class RouteScene extends Phaser.Scene {
     return true;
   }
 
-  /** Two cameras: one follows the world, one pins the HUD (hint + overlay) to the screen. */
+  /** Two cameras: one follows the world, one pins the HUD overlay to the screen. */
   private setupHudCamera(): void {
     const hud = this.cameras.add(0, 0, this.scale.width, this.scale.height);
     hud.setScroll(0, 0);
-    const keep = new Set<Phaser.GameObjects.GameObject>([this.hint, this.hintBackdrop, this.hudRoot]);
+    const keep = new Set<Phaser.GameObjects.GameObject>([this.hudRoot]);
     hud.ignore(this.children.list.filter((child) => !keep.has(child)));
-    this.cameras.main.ignore([this.hint, this.hintBackdrop, this.hudRoot]);
+    this.cameras.main.ignore([this.hudRoot]);
     this.hudCamera = hud;
   }
 
@@ -1626,6 +1653,7 @@ export class RouteScene extends Phaser.Scene {
       !this.pendingBattle &&
       !this.releaseRoot &&
       !this.hudVisible &&
+      !this.pauseMenuOpen &&
       this.resetKey?.isDown === true;
     if (!allowed) {
       if (this.resetHold !== 0) {
@@ -1853,7 +1881,6 @@ export class RouteScene extends Phaser.Scene {
     this.drawTiles();
     this.drawEntities();
     this.drawItems();
-    this.setHint(`tileset: ${TILESETS[id].name}`);
   }
 
   /** Snaps the sprite to a tile, without a step. */
@@ -1922,7 +1949,6 @@ export class RouteScene extends Phaser.Scene {
         return;
       }
     }
-    this.setHint(this.defaultHint());
   }
 
   /**
@@ -1969,8 +1995,6 @@ export class RouteScene extends Phaser.Scene {
       sprite.sprite.setVisible(false).setAlpha(0);
     }
     this.refreshHud();
-    const name = getItem(item.itemId)?.name ?? item.itemId;
-    this.setHint(`You found ${name}!`);
     return true;
   }
 
@@ -1982,6 +2006,125 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
+   * The pause menu (ESC, or a left-edge swipe on a touch screen): a centred
+   * window dimming the route with a Settings row and a Reset row. It does not
+   * pause the scene — the route's update stops walking while it is up — so the
+   * pad and A / B still drive it: up/down to pick, A to choose, B to close.
+   */
+  private buildPauseMenu(): void {
+    const { width, height } = this.scale;
+    const panelH = 88 + PAUSE_MENU_ITEMS.length * PAUSE_MENU_ROW_H;
+    const x = (width - PAUSE_MENU_W) / 2;
+    const y = (height - panelH) / 2;
+    const rowX = x + 24;
+    const rowW = PAUSE_MENU_W - 48;
+
+    const scrim = this.add.rectangle(0, 0, width, height, 0x05070c, 0.55).setOrigin(0, 0);
+    const panel = addFrlgWindow(this, x, y, PAUSE_MENU_W, panelH);
+    const title = addFrlgText(this, x + 24, y + 20, 'MENU', { size: 32, tint: FRLG_INK });
+
+    const children: Phaser.GameObjects.GameObject[] = [scrim, panel, title];
+    this.pauseMenuRows = PAUSE_MENU_ITEMS.map((_item, i) => {
+      const rowY = y + 76 + i * PAUSE_MENU_ROW_H;
+      const highlight = this.add
+        .rectangle(rowX, rowY, rowW, PAUSE_MENU_ROW_H - 8, 0xf2c14e, 0.32)
+        .setOrigin(0, 0)
+        .setVisible(false);
+      const label = addFrlgText(this, rowX + 16, rowY + 12, PAUSE_MENU_LABELS[i], {
+        size: 16,
+        tint: FRLG_INK,
+      });
+      const zone = this.add.zone(rowX, rowY, rowW, PAUSE_MENU_ROW_H).setOrigin(0, 0);
+      zone.setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => {
+        this.pauseMenuIndex = i;
+        this.pauseMenuArmed = false;
+        this.activatePauseMenu();
+      });
+      children.push(highlight, label, zone);
+      return { highlight, label };
+    });
+
+    this.pauseMenu = this.add.container(0, 0, children).setDepth(450).setVisible(false);
+    this.cameras.main.ignore(this.pauseMenu);
+  }
+
+  private openPauseMenu(): void {
+    if (this.pauseMenuOpen || this.gameOver || this.pendingBattle || this.releaseRoot) return;
+    this.pauseMenuOpen = true;
+    this.pauseMenuIndex = 0;
+    this.pauseMenuArmed = false;
+    this.settleMovement();
+    this.touch?.release();
+    this.pauseMenu.setVisible(true);
+    this.refreshPauseMenu();
+  }
+
+  private closePauseMenu(): void {
+    this.pauseMenuOpen = false;
+    this.pauseMenuArmed = false;
+    this.pauseMenu.setVisible(false);
+  }
+
+  /** The phone's Back gesture: closes the pause menu, or opens it when closed. */
+  private onBackGesture(): void {
+    if (!this.scene.isActive()) return;
+    if (this.pauseMenuOpen) this.closePauseMenu();
+    else this.openPauseMenu();
+  }
+
+  private handlePauseMenuAction(action: KeybindAction): void {
+    switch (action) {
+      case 'up':
+        this.movePauseMenu(-1);
+        return;
+      case 'down':
+        this.movePauseMenu(1);
+        return;
+      case 'confirm':
+        this.activatePauseMenu();
+        return;
+      case 'cancel':
+        this.closePauseMenu();
+        return;
+    }
+  }
+
+  private movePauseMenu(delta: number): void {
+    const count = PAUSE_MENU_ITEMS.length;
+    this.pauseMenuIndex = (this.pauseMenuIndex + delta + count) % count;
+    this.pauseMenuArmed = false;
+    this.refreshPauseMenu();
+  }
+
+  /** Runs the chosen row: Settings pauses onto it; Reset arms, then starts over. */
+  private activatePauseMenu(): void {
+    const item = PAUSE_MENU_ITEMS[this.pauseMenuIndex];
+    if (item === 'settings') {
+      this.closePauseMenu();
+      this.openSettings();
+      return;
+    }
+    if (!this.pauseMenuArmed) {
+      this.pauseMenuArmed = true;
+      this.refreshPauseMenu();
+      return;
+    }
+    this.closePauseMenu();
+    this.restartRun();
+  }
+
+  private refreshPauseMenu(): void {
+    this.pauseMenuRows.forEach((row, i) => {
+      row.highlight.setVisible(i === this.pauseMenuIndex);
+      const reset = PAUSE_MENU_ITEMS[i] === 'reset';
+      row.label.setText(
+        reset && this.pauseMenuArmed ? 'Reset run - press again' : PAUSE_MENU_LABELS[i],
+      );
+    });
+  }
+
+  /**
    * Called by `SettingsScene` before it closes: re-reads the preferences and
    * re-renders the route with the tileset they now ask for (D10 keeps the
    * biome's own tileset until the player forces another one).
@@ -1990,10 +2133,9 @@ export class RouteScene extends Phaser.Scene {
     this.settings = loadSettings();
     const wanted = resolveTileset(this.settings.tileset, biomeForRoute(this.run.routeIndex).tilesetId);
     if (wanted !== this.tilesetId) this.applyTileset(wanted);
-    // A rebind happened behind this screen; re-resolve the movement keys and the
-    // resting line so the new keys are live the moment the route resumes.
+    // A rebind happened behind this screen; re-resolve the movement keys so the
+    // new keys are live the moment the route resumes.
     this.refreshMoveKeys();
-    this.setHint(this.defaultHint());
   }
 
   /** Pauses the route and rolls the battle on top of it (Phase 5 transition). */
@@ -2060,7 +2202,7 @@ export class RouteScene extends Phaser.Scene {
 
     const reward = this.rewardFor(pending.trigger);
     const before = this.run.party;
-    const { run, released, events } = resolveBattle(this.run, result, reward);
+    const { run, released } = resolveBattle(this.run, result, reward);
     this.run = run;
     this.persistRun();
     this.refreshHud();
@@ -2072,10 +2214,6 @@ export class RouteScene extends Phaser.Scene {
         this.scene.start('RunOver', { run: this.run, won: false });
         return;
       }
-      const notes: string[] = [result.message];
-      if (events.some((event) => event.kind === 'level')) notes.push('Level up!');
-      if (events.some((event) => event.kind === 'evolve')) notes.push('It evolved!');
-      this.setHint(notes.join('  '));
       this.playLevelUp(levelUpBeats(before, this.run.party));
     });
   }
@@ -2383,7 +2521,6 @@ export class RouteScene extends Phaser.Scene {
     this.player = { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
-    this.setHint(`debug: re-generated route ${params.routeIndex} (attempt ${attempt})`);
   }
 
   /**
@@ -2431,21 +2568,14 @@ export class RouteScene extends Phaser.Scene {
     this.player = { ...route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
-    this.setHint(`debug: imported map ${route.width}x${route.height}`);
     return { ok: true };
-  }
-
-  private setHint(text: string): void {
-    const dev = IS_DEVELOP ? `  ·  B: random battle  ·  ${DEBUG_MENU_TOGGLE_KEY}: debug menu` : '';
-    const { hud } = this.settings.keybinds;
-    this.hint.setText(`${text}\nArrows: move  ·  ${keyLabel(hud)}: HUD (party/PC)${dev}`);
   }
 
   override update(_time: number, delta: number): void {
     // The hold-to-reset runs whatever the route is doing (a battle pauses the
     // scene, so it never fires behind another screen).
     this.updateReset(delta);
-    if (this.gameOver || this.pendingBattle || this.releaseRoot) {
+    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.pauseMenuOpen) {
       this.settleMovement();
       return;
     }
@@ -2476,16 +2606,17 @@ export class RouteScene extends Phaser.Scene {
   /**
    * The direction the player is pushing. A held key keeps walking; a fresh tap
    * counts even if it is released before the next frame, so a quick press still
-   * moves a tile.
+   * moves a tile. The on-screen pad answers after the keyboard, so the two never
+   * fight over a direction.
    */
   private heldDirection(): MoveKey | null {
     const { up, down, left, right } = this.moveKeys;
-    const pressed = (key: Phaser.Input.Keyboard.Key | null): boolean =>
-      key !== null && (key.isDown || Phaser.Input.Keyboard.JustDown(key));
+    const pressed = (keys: Phaser.Input.Keyboard.Key[]): boolean =>
+      keys.some((key) => key.isDown || Phaser.Input.Keyboard.JustDown(key));
     if (pressed(left)) return 'left';
     if (pressed(right)) return 'right';
     if (pressed(up)) return 'up';
     if (pressed(down)) return 'down';
-    return null;
+    return this.touch?.heldDirection() ?? null;
   }
 }

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { keyLabel } from '../data/keybinds';
+import { keyLabel, type KeybindAction } from '../data/keybinds';
 import type { RunState } from '../engine/run';
 import { clearRun } from '../engine/save';
 import { subscribeKeybinds } from '../input/input';
@@ -7,6 +7,7 @@ import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { addFrlgWindow } from '../ui/frlg';
 import { addFrlgText } from '../ui/frlgFont';
+import { createTouchControls } from '../ui/touchControls';
 import { RUN_OVER_INPUT_DELAY_MS, runSummary, runSummaryLines } from '../ui/runSummary';
 
 /**
@@ -62,12 +63,16 @@ export class RunOverScene extends Phaser.Scene {
       },
     );
 
-    subscribeKeybinds(this, ({ action }) => {
-      if (action === 'confirm' && this.armed) this.startNewRun();
-    });
+    subscribeKeybinds(this, ({ action }) => this.handleAction(action));
+    createTouchControls(this, { onAction: (action) => this.handleAction(action) });
     this.time.delayedCall(RUN_OVER_INPUT_DELAY_MS, () => {
       this.armed = true;
     });
+  }
+
+  /** The one shared action this screen answers: A / confirm starts a new run. */
+  private handleAction(action: KeybindAction): void {
+    if (action === 'confirm' && this.armed) this.startNewRun();
   }
 
   private startNewRun(): void {

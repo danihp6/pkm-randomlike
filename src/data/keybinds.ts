@@ -80,6 +80,28 @@ export const KEYBIND_LABELS: Readonly<Record<KeybindAction, string>> = {
 /** The four directions, in the order the settings screen lists them. */
 export const MOVE_ACTIONS: readonly KeybindAction[] = ['up', 'down', 'left', 'right'];
 
+/**
+ * Extra keys that always drive an action, beside its single binding. Only the
+ * four directions have them: WASD walks as well as the arrows, so a player never
+ * has to rebind just to move. The bound key still counts; an alias is polled for
+ * its own direction only, so it cannot shadow a menu key.
+ */
+export const MOVE_ALIASES: Readonly<Partial<Record<KeybindAction, readonly KeyName[]>>> = {
+  up: ['W'],
+  down: ['S'],
+  left: ['A'],
+  right: ['D'],
+};
+
+/** Every key that drives an action: its binding, then any movement aliases. */
+export function keysForAction(bindings: Keybinds, action: KeybindAction): KeyName[] {
+  const keys = [bindings[action]];
+  for (const alias of MOVE_ALIASES[action] ?? []) {
+    if (!keys.includes(alias)) keys.push(alias);
+  }
+  return keys;
+}
+
 const KEY_DISPLAY: Readonly<Record<KeyName, string>> = {
   UP: '\u2191',
   DOWN: '\u2193',
