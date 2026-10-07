@@ -672,8 +672,13 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
       partyList.append(option);
     }
     const selected = members.find((member) => member.id === selectedMemberId);
-    if (selected) fillMemberFields(selected);
-    else selectedMemberId = null;
+    if (selected) {
+      fillMemberFields(selected);
+      setEditorEnabled(true);
+    } else {
+      selectedMemberId = null;
+      setEditorEnabled(false);
+    }
   };
 
   const currentMember = (): DebugPartyMember | null => {
@@ -692,6 +697,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     if (!member) return;
     selectedMemberId = member.id;
     fillMemberFields(member);
+    setEditorEnabled(true);
   });
 
   partyMemberInput.addEventListener('change', () => {
@@ -699,6 +705,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     if (!member) return;
     selectedMemberId = member.id;
     fillMemberFields(member);
+    setEditorEnabled(true);
   });
 
   const applyEdit = (): void => {
@@ -791,6 +798,18 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   const editButtons = document.createElement('div');
   editButtons.style.cssText = 'display:flex;gap:6px;';
   editButtons.append(applyButton, healButton);
+
+  /** The editor only works on a chosen member; with none, every field locks. */
+  const setEditorEnabled = (enabled: boolean): void => {
+    editLevelInput.disabled = !enabled;
+    abilityInput.disabled = !enabled;
+    natureInput.disabled = !enabled;
+    for (const input of moveInputs) input.disabled = !enabled;
+    plusLevelButton.disabled = !enabled;
+    applyButton.disabled = !enabled;
+    healButton.disabled = !enabled;
+  };
+  setEditorEnabled(false);
 
   partyEditor.append(
     partyMemberRow,
