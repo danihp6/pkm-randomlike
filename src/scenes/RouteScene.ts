@@ -5,7 +5,7 @@ import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { getItem } from '../data/items';
 import { keyLabel } from '../data/keybinds';
-import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
+import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import {
   PLAYER_SPRITE_TEXTURE_KEY,
   PLAYER_SPRITE_WIDTH,
@@ -132,7 +132,7 @@ const HUD_HEADER_H = HUD_PAD_TOP + 16 + HUD_PAD_BOTTOM;
 const HUD_PARTY_HEADER = HUD_PAD_TOP + 16 + 12;
 const HUD_PARTY_ROW = 52;
 /** The party avatar, enlarged to the row height so the held-item badge reads. */
-const HUD_PARTY_PORTRAIT_SCALE = 1;
+const HUD_PARTY_PORTRAIT_SCALE = 0.7;
 /** The held-item icon on an avatar's lower-right corner. */
 const HUD_HELD_ICON_SCALE = 0.85;
 const HUD_BOX_HELD_ICON_SCALE = 1;
@@ -769,7 +769,7 @@ export class RouteScene extends Phaser.Scene {
         .setVisible(false);
       const portrait = this.add
         .image(cellX + HUD_BOX_CELL / 2, cellY + HUD_BOX_CELL / 2, PORTRAIT_TEXTURE_KEY, 0)
-        .setScale(1.4)
+        .setScale(1)
         .setVisible(false);
       const held = this.add
         .image(cellX + 62, cellY + 62, ITEM_ICON_TEXTURE_KEY, 0)
@@ -788,7 +788,7 @@ export class RouteScene extends Phaser.Scene {
     // panels and follows the pointer anywhere on screen.
     this.hudDragGhost = this.add
       .image(0, 0, PORTRAIT_TEXTURE_KEY, 0)
-      .setScale(1.2)
+      .setScale(0.9)
       .setVisible(false);
     children.push(this.hudDragGhost);
 
@@ -964,9 +964,9 @@ export class RouteScene extends Phaser.Scene {
         row.hpText.setText('');
         return;
       }
-      const frame = portraitFrameFor(member.fighter.speciesId);
-      row.portrait.setVisible(frame !== null);
-      if (frame !== null) row.portrait.setFrame(frame);
+      const portrait = member ? portraitFor(member.fighter.speciesId, member.fighter.shiny) : null;
+      row.portrait.setVisible(portrait !== null);
+      if (portrait) row.portrait.setTexture(portrait.key, portrait.frame);
       const heldFrame = member.fighter.heldItem ? itemIconFrame(member.fighter.heldItem) : null;
       const inHand = this.hudDragItemFrom === member.fighter.id;
       row.held.setVisible(heldFrame !== null && !inHand);
@@ -1032,9 +1032,9 @@ export class RouteScene extends Phaser.Scene {
     this.hudBoxCells.forEach((cell, i) => {
       const index = boxCellIndex(this.hudBoxPage, i % BOX_COLS, Math.floor(i / BOX_COLS));
       const member = box[index];
-      const frame = member ? portraitFrameFor(member.speciesId) : null;
-      cell.portrait.setVisible(frame !== null);
-      if (frame !== null) cell.portrait.setFrame(frame);
+      const portrait = member ? portraitFor(member.speciesId, member.shiny) : null;
+      cell.portrait.setVisible(portrait !== null);
+      if (portrait) cell.portrait.setTexture(portrait.key, portrait.frame);
       const heldFrame = member?.heldItem ? itemIconFrame(member.heldItem) : null;
       const inHand = member !== undefined && this.hudDragItemFrom === member.id;
       cell.held.setVisible(heldFrame !== null && !inHand);
@@ -1202,13 +1202,13 @@ export class RouteScene extends Phaser.Scene {
   /** Shows the grabbed member's avatar in hand, following the pointer. */
   private showHudGhost(pane: PaneId, index: number, pointer: Phaser.Input.Pointer): void {
     const member = pane === 'party' ? this.run.party[index] : this.run.box[index];
-    const frame = member ? portraitFrameFor(member.fighter.speciesId) : null;
-    if (frame === null) {
+    const portrait = member ? portraitFor(member.fighter.speciesId, member.fighter.shiny) : null;
+    if (!portrait) {
       this.hudDragGhost.setVisible(false);
       return;
     }
     this.hudDragGhost
-      .setTexture(PORTRAIT_TEXTURE_KEY, frame)
+      .setTexture(portrait.key, portrait.frame)
       .setPosition(pointer.x, pointer.y)
       .setVisible(true);
   }
@@ -2087,7 +2087,7 @@ export class RouteScene extends Phaser.Scene {
     const y = (height - panelH) / 2 - 24;
     const scrim = this.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0);
     const panel = addFrlgWindow(this, x, y, panelW, panelH, 'textbox');
-    this.releasePortrait = this.add.image(width / 2, y + 96, PORTRAIT_TEXTURE_KEY, 0).setScale(3);
+    this.releasePortrait = this.add.image(width / 2, y + 96, PORTRAIT_TEXTURE_KEY, 0).setScale(2);
     this.releaseText = addFrlgText(this, width / 2, y + 168, '', { align: 'center', origin: 0.5 });
     this.releaseText.setMaxWidth(panelW - 48);
     const hint = addFrlgText(
@@ -2115,9 +2115,9 @@ export class RouteScene extends Phaser.Scene {
       this.finishReleaseBeats();
       return;
     }
-    const frame = portraitFrameFor(beat.speciesId);
-    this.releasePortrait.setVisible(frame !== null);
-    if (frame !== null) this.releasePortrait.setFrame(frame);
+    const portrait = portraitFor(beat.speciesId, beat.shiny);
+    this.releasePortrait.setVisible(portrait !== null);
+    if (portrait) this.releasePortrait.setTexture(portrait.key, portrait.frame);
     this.releaseText.setText(`Lv${beat.level} ${beat.name}\nwas released.`);
     this.releaseWait?.remove(false);
     this.releaseWait = this.time.delayedCall(RELEASE_HOLD_MS, () => this.advanceRelease());

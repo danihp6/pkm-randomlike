@@ -33,6 +33,7 @@ export type PartyRow = Readonly<{
   xp: number;
   heldItem: string | null;
   heldItemName: string | null;
+  shiny: boolean;
 }>;
 
 export function partyRow(member: RunPokemon): PartyRow {
@@ -50,6 +51,7 @@ export function partyRow(member: RunPokemon): PartyRow {
     xp: member.xp,
     heldItem: fighter.heldItem,
     heldItemName: held?.name ?? fighter.heldItem,
+    shiny: fighter.shiny,
   };
 }
 

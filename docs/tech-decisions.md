@@ -327,10 +327,18 @@ is out. Shiny sheets are picked up when the fighter's `shiny` flag is set; the
 flag rolls on its own encounter stream (1 in 4096), so it never shifts the
 encounter sequence a fixed seed already produced (D11).
 
-Local-only art, never redistributed; credits are in `docs/art-direction.md`. The
-Spanish form table (`CHARIZARD_1.png` etc.) is the open follow-up: a forme
-without a file resolves to its base species for now, and no run spawns a forme
-today.
+Local-only art, never redistributed; credits are in `docs/art-direction.md`.
+Formes resolve to `<SPECIES>_<n>.png` when the Añil set lists `1..n` for that
+species, with an explicit `FORM_OVERRIDE` table for the ones that do not line up
+(the Alcremie grid, Arceus by type, the cap Pikachu, Minior, Ogerpon, Kyurem,
+Vivillon's official Spanish pattern names...); an unmapped forme falls back to
+its base species rather than drawing the wrong mon.
+
+The **portraits** (party, HUD, starter cards, release beat) are packed by the
+same script from the game's `Icons` folders into `public/anil/portraits.png` and
+`portraits-shiny.png`: one 64x64 cell per dex entry in dex order, under half a
+megabyte each, read through `src/data/portraits.ts`. A member's `shiny` flag
+picks the shiny atlas.
 
 ## Open questions
 

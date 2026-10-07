@@ -32,9 +32,15 @@ describe('pokemonSprite', () => {
     expect(female.textureKey).toBe(pokemonSprite('bulbasaur', 'front')!.textureKey);
   });
 
-  it('resolves a forme the packer could not name to its base species', () => {
+  it('resolves a forme to its own sheet', () => {
     const alolan = pokemonSprite('raichualola', 'front')!;
-    expect(alolan.textureKey).toBe(pokemonSprite('raichu', 'front')!.textureKey);
+    expect(alolan.url).toContain('RAICHU_1');
+    expect(alolan.textureKey).not.toBe(pokemonSprite('raichu', 'front')!.textureKey);
+  });
+
+  it('falls back to the base species when the forme has no sheet of its own', () => {
+    const dusk = pokemonSprite('rockruffdusk', 'front')!;
+    expect(dusk.textureKey).toBe(pokemonSprite('rockruff', 'front')!.textureKey);
   });
 
   it('derives one idle animation key per sheet', () => {

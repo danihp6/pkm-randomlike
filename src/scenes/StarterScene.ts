@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { getSpecies } from '../data/dex';
-import { PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
+import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import { STARTER_POOL_SIZE, STARTING_BAG } from '../data/run';
 import {
   createRun,
@@ -130,11 +130,11 @@ export class StarterScene extends Phaser.Scene {
     const centerX = x + CARD_WIDTH / 2;
 
     const window = addFrlgWindow(this, x, CARD_TOP, CARD_WIDTH, CARD_HEIGHT);
-    const frame = portraitFrameFor(speciesId);
+    const look = portraitFor(speciesId);
     const portrait = this.add
-      .image(centerX, CARD_TOP + 110, PORTRAIT_TEXTURE_KEY, frame ?? 0)
-      .setScale(3)
-      .setVisible(frame !== null);
+      .image(centerX, CARD_TOP + 110, look?.key ?? PORTRAIT_TEXTURE_KEY, look?.frame ?? 0)
+      .setScale(2)
+      .setVisible(look !== null);
     const name = addFrlgText(this, centerX, CARD_TOP + 210, species?.name ?? speciesId, {
       tint: FRLG_INK,
       origin: 0.5,

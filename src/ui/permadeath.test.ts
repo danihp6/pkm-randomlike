@@ -31,8 +31,8 @@ describe('releaseBeats', () => {
       member('b', 5, 'squirtle'),
     ]);
     expect(beats).toEqual([
-      { id: 'a', speciesId: 'charmander', name: 'Charmander', level: 7 },
-      { id: 'b', speciesId: 'squirtle', name: 'Squirtle', level: 5 },
+      { id: 'a', speciesId: 'charmander', name: 'Charmander', level: 7, shiny: false },
+      { id: 'b', speciesId: 'squirtle', name: 'Squirtle', level: 5, shiny: false },
     ]);
   });
 

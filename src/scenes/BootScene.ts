@@ -17,7 +17,13 @@ import {
   PLAYER_SPRITE_TEXTURE_KEY,
   PLAYER_SPRITE_WIDTH,
 } from '../data/playerSprite';
-import { PORTRAIT_ATLAS_URL, PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY } from '../data/portraits';
+import {
+  PORTRAIT_ATLAS_URL,
+  PORTRAIT_SHINY_ATLAS_URL,
+  PORTRAIT_SHINY_TEXTURE_KEY,
+  PORTRAIT_SIZE,
+  PORTRAIT_TEXTURE_KEY,
+} from '../data/portraits';
 import {
   TRAINER_SPRITE_ATLAS_URL,
   TRAINER_SPRITE_SIZE,
@@ -99,6 +105,10 @@ export class BootScene extends Phaser.Scene {
       frameHeight: PLAYER_SPRITE_HEIGHT,
     });
     this.load.spritesheet(PORTRAIT_TEXTURE_KEY, PORTRAIT_ATLAS_URL, {
+      frameWidth: PORTRAIT_SIZE,
+      frameHeight: PORTRAIT_SIZE,
+    });
+    this.load.spritesheet(PORTRAIT_SHINY_TEXTURE_KEY, PORTRAIT_SHINY_ATLAS_URL, {
       frameWidth: PORTRAIT_SIZE,
       frameHeight: PORTRAIT_SIZE,
     });

@@ -22,7 +22,7 @@ Three tiers, in order of preference:
    anything public.
 2. **Imported game rips (local only)** — `wood.png`, `desert.png`,
    `apple-woods.png`, `lush-prairie.png`, `beach-cave.png`, `items.png`,
-   `moves.png`, `hud.png`, `portraits.png`, `pokemon/*.png`, the FRLG UI art
+   `moves.png`, `hud.png`, `pokemon/*.png`, the FRLG UI art
    (`frlg/item-icons.png`, `frlg/window.png`, `frlg/textbox.png`,
    `frlg/hpbar.png`, `frlg/cursor.png`, `frlg/font.png`, `frlg/trainers.png`,
    `frlg/overworld.png`, `frlg/player.png`) and the battle sprites in
@@ -99,12 +99,26 @@ RGBA atlases would inflate the same art to gigabytes.
 `scripts/anil/build-pokemon-sprites.mjs` is run against a checkout of the game
 (`node scripts/anil/build-pokemon-sprites.mjs <anil>/Graphics/Pokemon`, or
 `npm run data:anil` with `POKEANIL_POKEMON` set) and writes
-`src/data/anil/pokemon-sprites.json`, read through `src/data/pokemonSprites.ts`.
-A dex species resolves to `<SPECIES>.png` (with `_female`, and the shiny folders
-for the alternate palette) by normalised name. A **forme** whose file the Añil
-set names in Spanish (`CHARIZARD_1.png`, `RAICHU_1.png`) still resolves to its
-base species for now; the Spanish form table is the open follow-up in
-`TODO.md`.
+`src/data/anil/pokemon-sprites.json`, read through `src/data/pokemonSprites.ts`
+(battle) and `src/data/portraits.ts` (HUD/party). A dex species resolves to
+`<SPECIES>.png` (with `_female`, and the shiny folders for the alternate
+palette) by normalised name.
+
+A **forme** resolves to `<SPECIES>_<n>.png`, where `n` is its position in our
+dex, but only when the Añil set lists exactly `1..n` for that species. The ones
+that do not line up live in the script's `FORM_OVERRIDE` table, keyed by dex id:
+the Alcremie cream/sweet grid, Arceus by type, the cap Pikachu, Minior's cores,
+Ogerpon's masks, Kyurem's black/white swap, Greninja, Basculin, Rockruff, and
+the Vivillon patterns, which use the **official Spanish** pattern names (Icy
+Snow is "Polar", Polar is "Taiga", High Plains is "Estepa", River is "Oasis",
+Savanna is "Pantano"...). A forme with no confident match falls back to its base
+species rather than drawing the wrong mon.
+
+The same script packs the **portraits**: one 64x64 cell per dex entry, in dex
+order, from the `Icons` folders, into `public/anil/portraits.png` and
+`portraits-shiny.png` (the icons are 64px, so the atlas is under half a megabyte
+each). The battle's switch grid, the route HUD, the starter cards and the
+release beat draw from it.
 
 Never redistributed: keep the checkout out of the repo (`sprite-sources/` is
 gitignored). Credits, as the game itself prints them in
@@ -189,12 +203,12 @@ plus the four named arrows.
   bottom, plays the direction's walk cycle while a step slides and stands on the
   resting frame when it stops; the run key scales the cycle's rate up (`D25`).
 - Sheets are loaded lazily per species so a route only pays for what it shows.
-- Portraits: `src/assets/portraits.png` is a 40-column grid of 40x40 PMDCollab
-  faces, one per National Dex number in dex order, so the frame is `num − 1`
-  (`src/data/portraits.ts`). Species whose pack had no portrait keep a procedural
-  placeholder face. The source column (649x40, 25960px tall) is re-laid into the
-  grid by `scripts/legacy-art/relayout-portraits.mjs`, because a single WebGL
-  texture that tall exceeds the GPU's `MAX_TEXTURE_SIZE` and renders black.
+- Portraits: `public/anil/portraits.png` and `portraits-shiny.png` are 32-column
+  grids of 64x64 cells, one per dex entry in dex order, packed from Pokémon
+  Añil's `Icons` sheets by `scripts/anil/build-pokemon-sprites.mjs`
+  (`src/data/portraits.ts`). A member's shiny flag picks the shiny atlas, and the
+  HUD, the battle's switch grid, the starter cards and the release beat all draw
+  from it.
 
 ## Rules
 

@@ -8,18 +8,26 @@
 //
 //   node scripts/anil/build-pokemon-sprites.mjs <anil>/Graphics/Pokemon
 //
-// Every sheet is a horizontal filmstrip: each frame is a square of the sheet's
-// own height and the frame count is `width / height`, exactly how Anil's
+// Every battle sheet is a horizontal filmstrip: each frame is a square of the
+// sheet's own height and the frame count is `width / height`, exactly how Anil's
 // "Pokemon Animados para DBK" plugin reads them. The sheets are palette PNGs
 // (~365 bytes per frame), so they are copied verbatim rather than repacked into
 // RGBA atlases, which would inflate the same art to gigabytes.
 //
-// A dex species resolves to `<SPECIES>.png` (and its `_female` variant) by
-// normalised name; a forme without its own file falls back to its base species.
+// The party/HUD portraits are packed instead: one 64x64 cell per dex entry, in
+// dex order, from the game's `Icons` folders (the icons are 64px, so a fixed
+// atlas is small). A `_female` or shiny variant that is missing falls back a
+// step at read time (`src/data/pokemonSprites.ts`).
+//
+// A dex species resolves to `<SPECIES>.png` by normalised name. A forme resolves
+// to `<SPECIES>_<n>.png` when the Anil set lists exactly `1..n` for that species
+// (see `FORM_OVERRIDE` for the ones that do not line up, e.g. the Vivillon
+// patterns, or the Alcremie cream/sweet grid).
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
-/** Source folder -> output folder under `src/assets/anil/`. */
+/** Source folder -> output folder under `public/anil/`. */
 const FOLDERS = [
   ['Front', 'front'],
   ['Back', 'back'],
@@ -28,6 +36,105 @@ const FOLDERS = [
   ['Icons', 'icons'],
   ['Icons shiny', 'icons-shiny'],
 ]
+
+/** The portrait atlas: one cell per dex entry, in dex order. */
+const PORTRAIT_SIZE = 64
+const PORTRAIT_COLS = 32
+
+/**
+ * Dex formes whose Anil file is not simply `<base>_<position>`. A `null` means
+ * "draw the base species"; a string is the Anil sheet name without extension.
+ * Everything not listed here maps positionally, and only when the Anil set lists
+ * `1..n` for that species — otherwise the forme falls back to its base species.
+ */
+const FORM_OVERRIDE = {
+  // The Alcremie cream/sweet grid: our dex only keeps the plain "fresa" sweet.
+  alcremierubycream: 'ALCREMIE_7',
+  alcremiematchacream: 'ALCREMIE_14',
+  alcremiemintcream: 'ALCREMIE_21',
+  alcremielemoncream: 'ALCREMIE_28',
+  alcremierubyswirl: 'ALCREMIE_42',
+  alcremiecaramelswirl: 'ALCREMIE_49',
+  alcremierainbowswirl: 'ALCREMIE_56',
+  // Arceus is ordered by type in Anil, alphabetically in the dex.
+  arceusfighting: 'ARCEUS_1',
+  arceusflying: 'ARCEUS_2',
+  arceuspoison: 'ARCEUS_3',
+  arceusground: 'ARCEUS_4',
+  arceusrock: 'ARCEUS_5',
+  arceusbug: 'ARCEUS_6',
+  arceusghost: 'ARCEUS_7',
+  arceussteel: 'ARCEUS_8',
+  arceusfire: 'ARCEUS_10',
+  arceuswater: 'ARCEUS_11',
+  arceusgrass: 'ARCEUS_12',
+  arceuselectric: 'ARCEUS_13',
+  arceuspsychic: 'ARCEUS_14',
+  arceusice: 'ARCEUS_15',
+  arceusdragon: 'ARCEUS_16',
+  arceusdark: 'ARCEUS_17',
+  arceusfairy: 'ARCEUS_18',
+  // Anil's Basculin 1 is the Red-Striped base, 2 the Blue-Striped one; the dex
+  // has no Red-Striped entry and no White-Striped art.
+  basculinbluestriped: 'BASCULIN_2',
+  basculinwhitestriped: null,
+  greninjabond: 'GRENINJA_2',
+  kyuremblack: 'KYUREM_2',
+  kyuremwhite: 'KYUREM_1',
+  magearnaoriginal: 'MAGEARNA_1',
+  mausholdfour: null,
+  meowsticf: 'MEOWSTIC_1',
+  miniororange: 'MINIOR_8',
+  minioryellow: 'MINIOR_9',
+  miniorgreen: 'MINIOR_10',
+  miniorblue: 'MINIOR_11',
+  miniorindigo: 'MINIOR_12',
+  miniorviolet: 'MINIOR_13',
+  miniormeteor: null,
+  necrozmaduskmane: 'NECROZMA_1',
+  necrozmadawnwings: 'NECROZMA_2',
+  ogerponwellspring: 'OGERPON_1',
+  ogerponhearthflame: 'OGERPON_2',
+  ogerponcornerstone: 'OGERPON_3',
+  ogerponwellspringtera: 'OGERPON_1',
+  ogerponhearthflametera: 'OGERPON_2',
+  ogerponcornerstonetera: 'OGERPON_3',
+  ogerpontealtera: null,
+  // The cap Pikachu are Anil 8..15 (2..7 are the contest costumes).
+  pikachuoriginal: 'PIKACHU_8',
+  pikachuhoenn: 'PIKACHU_9',
+  pikachusinnoh: 'PIKACHU_10',
+  pikachuunova: 'PIKACHU_11',
+  pikachukalos: 'PIKACHU_12',
+  pikachualola: 'PIKACHU_13',
+  pikachupartner: 'PIKACHU_14',
+  pikachuworld: 'PIKACHU_15',
+  raichualola: 'RAICHU_1',
+  rockruffdusk: null,
+  slowbrogalar: 'SLOWBRO_1',
+  toxtricitylowkey: 'TOXTRICITY_1',
+  // The official Spanish pattern names (Icy Snow is "Polar", Polar is "Taiga",
+  // High Plains is "Estepa", River is "Oasis", Savanna is "Pantano"...).
+  vivillonicysnow: 'VIVILLON_6',
+  vivillonpolar: 'VIVILLON_12',
+  vivillontundra: 'VIVILLON_17',
+  vivilloncontinental: 'VIVILLON_2',
+  vivillongarden: 'VIVILLON_4',
+  vivillonelegant: 'VIVILLON_3',
+  vivillonmodern: 'VIVILLON_9',
+  vivillonmarine: 'VIVILLON_8',
+  vivillonarchipelago: 'VIVILLON_1',
+  vivillonhighplains: 'VIVILLON_5',
+  vivillonsandstorm: 'VIVILLON_14',
+  vivillonriver: 'VIVILLON_13',
+  vivillonmonsoon: 'VIVILLON_10',
+  vivillonsavanna: 'VIVILLON_15',
+  vivillonsun: 'VIVILLON_16',
+  vivillonocean: 'VIVILLON_11',
+  vivillonjungle: 'VIVILLON_7',
+  vivillonfancy: 'VIVILLON_18',
+  vivillonpokeball: 'VIVILLON_19',
+}
 
 /** A sheet's frame count and size, read straight off the PNG header. */
 function sheetInfo(path) {
@@ -75,14 +182,47 @@ function sheet(out, baseName) {
 
 const SPECIES = JSON.parse(readFileSync(fileURLToPath(new URL('../../src/data/dex/species.json', import.meta.url)), 'utf8'))
 
+// Our dex order per base species, so a forme can map to its Anil index.
+const formPosition = new Map()
+{
+  const seen = new Map()
+  for (const species of SPECIES) {
+    if (!species.forme) continue
+    const count = (seen.get(species.baseSpecies) ?? 0) + 1
+    seen.set(species.baseSpecies, count)
+    formPosition.set(species.id, count)
+  }
+}
+
+/** True when the Anil set lists `1..count` for a base species, in order. */
+function positionalForms(baseSpecies, count) {
+  for (let i = 1; i <= count; i++) {
+    if (!indexes.front.has(norm(`${baseSpecies}_${i}`))) return false
+  }
+  return !indexes.front.has(norm(`${baseSpecies}_${count + 1}`))
+}
+
+/** The Anil sheet name a dex species draws from (without extension). */
+function anilName(species) {
+  const override = FORM_OVERRIDE[species.id]
+  if (override === null) return species.baseSpecies
+  if (override !== undefined) return override
+  if (!species.forme) return species.id
+  const position = formPosition.get(species.id)
+  return positionalForms(species.baseSpecies, position) ? `${species.baseSpecies}_${position}` : species.id
+}
+
 const frames = {}
+const portraitNormal = {}
+const portraitShiny = {}
 let resolved = 0
-let forms = 0
+let formes = 0
 for (const species of SPECIES) {
+  const name = anilName(species)
+  if (!name) continue
   // A forme the Anil set does not name falls back to its base species' art.
-  const names = species.forme ? [species.id, species.baseSpecies] : [species.id]
-  const base = names.find((name) => indexes.front.has(norm(name)))
-  if (!base) continue
+  const base = indexes.front.has(norm(name)) ? name : species.baseSpecies
+  if (!indexes.front.has(norm(base))) continue
   const entry = {}
   for (const [kind, out] of [
     ['front', 'front'],
@@ -95,23 +235,73 @@ for (const species of SPECIES) {
     const value = sheet(out, base)
     if (value) entry[kind] = value
   }
-  const female = { frontFemale: 'front', backFemale: 'back', iconFemale: 'icons', frontShinyFemale: 'front-shiny', backShinyFemale: 'back-shiny', iconShinyFemale: 'icons-shiny' }
-  for (const [kind, out] of Object.entries(female)) {
+  for (const [kind, out] of Object.entries({
+    frontFemale: 'front',
+    backFemale: 'back',
+    iconFemale: 'icons',
+    frontShinyFemale: 'front-shiny',
+    backShinyFemale: 'back-shiny',
+    iconShinyFemale: 'icons-shiny',
+  })) {
     const value = sheet(out, `${base}_female`)
     if (value) entry[kind] = value
   }
   frames[species.id] = entry
   resolved++
-  if (species.forme) forms++
+  if (species.forme) formes++
 }
+
+/** Scales a sheet's first `src`x`src` frame into a `size`x`size` atlas cell. */
+function blitFrame(atlas, index, sheet, src, size) {
+  const col = index % PORTRAIT_COLS
+  const row = Math.floor(index / PORTRAIT_COLS)
+  for (let y = 0; y < size; y++) {
+    const sy = Math.min(sheet.height - 1, Math.floor((y * src) / size))
+    for (let x = 0; x < size; x++) {
+      const sx = Math.min(sheet.width - 1, Math.floor((x * src) / size))
+      const from = (sy * sheet.width + sx) * 4
+      if (sheet.data[from + 3] === 0) continue
+      const to = (((row * size + y) * PORTRAIT_COLS * size) + col * size + x) * 4
+      atlas[to] = sheet.data[from]
+      atlas[to + 1] = sheet.data[from + 1]
+      atlas[to + 2] = sheet.data[from + 2]
+      atlas[to + 3] = 255
+    }
+  }
+}
+
+/** Packs one portrait atlas off the icon folder; returns the id -> frame map. */
+function buildPortraits(out, file) {
+  const rows = Math.ceil(SPECIES.length / PORTRAIT_COLS)
+  const atlas = Buffer.alloc(PORTRAIT_COLS * PORTRAIT_SIZE * rows * PORTRAIT_SIZE * 4)
+  const map = {}
+  SPECIES.forEach((species, index) => {
+    const name = anilName(species)
+    if (!name) return
+    const base = indexes[out].has(norm(name)) ? name : species.baseSpecies
+    const source = indexes[out].get(norm(base))
+    if (!source) return
+    const sheet = decodePng(readFileSync(`${assetsDir}${out}/${source}`))
+    blitFrame(atlas, index, sheet, sheet.height, PORTRAIT_SIZE)
+    map[species.id] = index
+  })
+  writeFileSync(`${assetsDir}${file}`, encodePng(PORTRAIT_COLS * PORTRAIT_SIZE, rows * PORTRAIT_SIZE, atlas))
+  return map
+}
+
+const normal = buildPortraits('icons', 'portraits.png')
+const shiny = buildPortraits('icons-shiny', 'portraits-shiny.png')
 
 writeFileSync(
   `${dataDir}pokemon-sprites.json`,
-  `${JSON.stringify({ folder: 'anil', frames })}\n`,
+  `${JSON.stringify({
+    frames,
+    portraits: { size: PORTRAIT_SIZE, cols: PORTRAIT_COLS, normal, shiny },
+  })}\n`,
 )
 
 const files = FOLDERS.reduce((total, [, out]) => total + indexes[out].size, 0)
 console.log(
   `copied ${files} sheets into public/anil/ and wrote the manifest for ${resolved} species ` +
-    `(${forms} formes resolved to their base species)`,
+    `(${formes} formes) with ${Object.keys(normal).length} portraits and ${Object.keys(shiny).length} shiny portraits`,
 )

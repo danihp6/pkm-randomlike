@@ -23,7 +23,7 @@ import {
 } from '../engine/battle';
 import { Rng } from '../engine/rng';
 import { MAX_MOVES, MAX_PARTY_SIZE, experienceFraction, type BattleLaunch, type BattleOutcome, type BattleReturn } from '../engine/run';
-import { PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY, portraitFrameFor } from '../data/portraits';
+import { PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import { MOVE_FX_TEXTURE_KEY, moveFxAnimKey, moveFxFor, moveFxTrack } from '../render/moveFx';
 import {
   FAINT_DROP,
@@ -102,7 +102,7 @@ const MOVE_POPUP_TYPE_W = 88;
 const MOVE_CATEGORY_ICON_SCALE = 1.5;
 /** The party (switch) grid: 3 columns of avatar cells. */
 const PARTY_COLS = 3;
-const PARTY_AVATAR_SCALE = 1.15;
+const PARTY_AVATAR_SCALE = 0.9;
 /** The HP bar drawn inside every switch cell; the detail popup carries the numbers. */
 const PARTY_CELL_HPBAR_SCALE = 0.4;
 /**
@@ -1563,12 +1563,12 @@ export class BattleScene extends Phaser.Scene {
         .setFillStyle(selected ? 0xf7e0a6 : 0xe6e3f2)
         .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
         .setVisible(true);
-      const frame = portraitFrameFor(member.speciesId);
+      const portrait = portraitFor(member.speciesId, member.shiny);
       this.partyAvatars[i]
-        .setVisible(frame !== null)
+        .setVisible(portrait !== null)
         .setAlpha(item.enabled ? 1 : 0.45)
         .setPosition(cellX(i) + 8 + avatarW / 2, cellY(i) + cellH / 2);
-      if (frame !== null) this.partyAvatars[i].setFrame(frame);
+      if (portrait) this.partyAvatars[i].setTexture(portrait.key, portrait.frame);
       const labelX = cellX(i) + 8 + avatarW + 6;
       this.partyLabels[i]
         .setText(item.label)

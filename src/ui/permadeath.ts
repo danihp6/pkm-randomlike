@@ -21,6 +21,8 @@ export type ReleaseBeat = Readonly<{
   /** The display name the message uses. */
   name: string;
   level: number;
+  /** A shiny member keeps its alternate-palette portrait. */
+  shiny: boolean;
 }>;
 
 /**
@@ -34,5 +36,6 @@ export function releaseBeats(released: readonly RunPokemon[]): ReleaseBeat[] {
     speciesId: member.fighter.speciesId,
     name: getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId,
     level: member.fighter.level,
+    shiny: member.fighter.shiny,
   }));
 }
