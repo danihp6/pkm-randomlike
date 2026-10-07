@@ -153,6 +153,24 @@ export function withdrawToParty(run: RunState, boxIndex: number): RunState {
   };
 }
 
+/**
+ * Trades a party member for a boxed one, each keeping the other's slot, so a
+ * full party can still take a boxed member (the one it replaces goes to the
+ * box). Unlike `withdrawToParty` this never changes the party size; it is
+ * refused only when one of the two indices is empty. D7's "party is never
+ * emptied" still holds, since the party stays the same size.
+ */
+export function swapPartyBox(run: RunState, partyIndex: number, boxIndex: number): RunState {
+  const partyMember = run.party[partyIndex];
+  const boxMember = run.box[boxIndex];
+  if (!partyMember || !boxMember) return run;
+  const party = [...run.party];
+  const box = [...run.box];
+  party[partyIndex] = boxMember;
+  box[boxIndex] = partyMember;
+  return { ...run, party, box };
+}
+
 export function canCapture(run: RunState): boolean {
   return !run.captureUsed;
 }

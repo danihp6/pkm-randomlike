@@ -22,6 +22,7 @@ import {
   moveMoves,
   recordCatch,
   setParty,
+  swapPartyBox,
   unequipHeldItem,
   updatePokemon,
   useCapture,
@@ -134,6 +135,24 @@ describe('party/PC moves', () => {
     const run = { ...full, box: [createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 3 })] };
     expect(withdrawToParty(run, 0)).toBe(run);
     expect(withdrawToParty(run, 7)).toBe(run);
+  });
+
+  it('swaps a party member for a boxed one, keeping both slots', () => {
+    const full = withParty(['a', 'b', 'c', 'd', 'e', 'f']);
+    const run = {
+      ...full,
+      box: [createRunPokemon({ id: 'x', speciesId: 'sentret', level: 3 }), createRunPokemon({ id: 'y', speciesId: 'sentret', level: 3 })],
+    };
+    const next = swapPartyBox(run, 2, 0);
+    expect(next.party.map((m) => m.fighter.id)).toEqual(['a', 'b', 'x', 'd', 'e', 'f']);
+    expect(next.box.map((m) => m.fighter.id)).toEqual(['c', 'y']);
+  });
+
+  it('refuses a swap when one of the slots is empty', () => {
+    const run = withParty(['a', 'b']);
+    expect(swapPartyBox(run, 0, 0)).toBe(run);
+    expect(swapPartyBox(run, 9, 0)).toBe(run);
+    expect(swapPartyBox(run, 0, 9)).toBe(run);
   });
 });
 

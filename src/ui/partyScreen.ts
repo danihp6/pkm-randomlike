@@ -5,6 +5,7 @@ import {
   depositToBox,
   moveInBox,
   moveInParty,
+  swapPartyBox,
   withdrawToParty,
   type RunPokemon,
   type RunState,
@@ -180,6 +181,23 @@ export function dragTo(run: RunState, ui: PartyUiState, to: number): PartyInputR
 /** Drops whatever is grabbed, leaving it where it stands. */
 export function dropGrabbed(ui: PartyUiState): PartyUiState {
   return ui.grabbed ? { ...ui, grabbed: null } : ui;
+}
+
+/**
+ * A pointer drop of the grabbed member onto the member at `index` of the other
+ * pane: the two trade places, so a boxed member can replace a party member even
+ * when the party is full (the member it replaces takes the box slot). The cursor
+ * follows the moved member. A grab-less call, or a drop on a slot with no
+ * member, is a no-op.
+ */
+export function swapAcross(run: RunState, ui: PartyUiState, index: number): PartyInputResult {
+  const grabbed = ui.grabbed;
+  if (!grabbed) return { run, ui };
+  const toPane: PaneId = grabbed.pane === 'party' ? 'box' : 'party';
+  if (!listOf(run, toPane)[index]) return { run, ui };
+  const next =
+    grabbed.pane === 'party' ? swapPartyBox(run, ui.index, index) : swapPartyBox(run, index, ui.index);
+  return next === run ? { run, ui } : { run: next, ui: { pane: toPane, index, grabbed: null } };
 }
 
 /**

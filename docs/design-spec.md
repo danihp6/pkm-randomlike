@@ -33,7 +33,10 @@ carries over.
 - Up to **6** Pokémon in the active party; extras go to the **PC box**.
 - The party and the PC box are managed outside battle from the route HUD
   (`I` / `P`): drag a member within the party or the box to reorder it, or
-  across the two panels to move it between them. A plain **click** on a member
+  across the two panels to move it between them. Dropping a member **onto** a
+  member of the other panel **swaps** the two, so a boxed Pokémon can replace a
+  party member even when the party is full (the one it replaces takes the box
+  slot). A plain **click** on a member
   opens a **detail panel** (its own window) with **STATS** — HP, the five battle
   stats, nature, ability and held item — and **MOVES**, where the moves can be
   dragged to reorder them (that order is what the battle menu lists). The party
