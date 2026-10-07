@@ -15,22 +15,26 @@ const Natures = naturesData as unknown as readonly Readonly<{
   minus?: StatId;
 }>[];
 
-const BY_ID = new Map<string, Nature>(
-  Natures.map((nature) => [
-    nature.id,
-    {
-      id: nature.id,
-      name: nature.name,
-      plus: nature.plus ?? null,
-      minus: nature.minus ?? null,
-    },
-  ]),
-);
+const BY_ID = new Map<string, Nature>();
+const ALL_NATURES: readonly Nature[] = Natures.map((nature) => {
+  const entry: Nature = {
+    id: nature.id,
+    name: nature.name,
+    plus: nature.plus ?? null,
+    minus: nature.minus ?? null,
+  };
+  BY_ID.set(entry.id, entry);
+  return entry;
+});
 
 export const MAX_IV = 31;
 
 export function getNature(nature: string): Nature | undefined {
   return BY_ID.get(normalizeId(nature));
+}
+
+export function allNatures(): readonly Nature[] {
+  return ALL_NATURES;
 }
 
 export function natureMultiplier(nature: string, stat: StatId): number {

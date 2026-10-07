@@ -50,6 +50,14 @@ if (IS_DEVELOP) {
         const route = game.scene.getScene('Route') as RouteScene | null;
         route?.addDebugItem(itemId, count);
       },
+      readParty: () => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        return route?.debugParty() ?? [];
+      },
+      onEditPartyMember: (memberId, edit) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        return route?.editDebugPokemon(memberId, edit) ?? false;
+      },
       readRouteContext: () => {
         const route = game.scene.getScene('Route') as RouteScene | null;
         return route?.debugRouteContext() ?? null;

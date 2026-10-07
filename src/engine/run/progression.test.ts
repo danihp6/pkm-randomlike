@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { getSpecies, statAtLevel } from '../../data/dex';
 import {
   MAX_LEVEL,
   awardExperience,
   createRunPokemon,
+  editRunPokemon,
   evolveIfReady,
   experienceAward,
   experienceFraction,
@@ -95,5 +97,51 @@ describe('awardExperience', () => {
     expect(moves).not.toContain('scratch');
     expect(result.events).toContainEqual({ kind: 'learn', moveId: 'ember' });
     expect(result.events).toContainEqual({ kind: 'forget', moveId: 'scratch' });
+  });
+});
+
+describe('editRunPokemon', () => {
+  it('changes the level and re-derives its XP, keeping the moveset', () => {
+    const pokemon = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 5, moves: ['ember'] });
+    const edited = editRunPokemon(pokemon, { level: 20 });
+    expect(edited.fighter.level).toBe(20);
+    expect(edited.xp).toBe(xpForLevel(20));
+    expect(edited.fighter.moves.map((slot) => slot.moveId)).toEqual(['ember']);
+  });
+
+  it('clamps the level to 1..MAX and keeps it on a non-finite value', () => {
+    const pokemon = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 5 });
+    expect(editRunPokemon(pokemon, { level: 0 }).fighter.level).toBe(1);
+    expect(editRunPokemon(pokemon, { level: 999 }).fighter.level).toBe(MAX_LEVEL);
+    expect(editRunPokemon(pokemon, { level: Number.NaN }).fighter.level).toBe(5);
+  });
+
+  it('sets moves from the dex, dropping unknown ids and duplicates', () => {
+    const pokemon = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 5, moves: ['scratch'] });
+    const edited = editRunPokemon(pokemon, { moves: ['ember', 'not-a-move', 'ember', 'growl'] });
+    expect(edited.fighter.moves.map((slot) => slot.moveId)).toEqual(['ember', 'growl']);
+    for (const slot of edited.fighter.moves) expect(slot.pp).toBe(slot.maxPp);
+  });
+
+  it('keeps the moveset when every proposed move is unknown', () => {
+    const pokemon = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 5, moves: ['scratch'] });
+    const edited = editRunPokemon(pokemon, { moves: ['not-a-move'] });
+    expect(edited.fighter.moves.map((slot) => slot.moveId)).toEqual(['scratch']);
+  });
+
+  it('sets an off-species ability and a nature', () => {
+    const pokemon = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 10 });
+    const edited = editRunPokemon(pokemon, { ability: 'Levitate', nature: 'adamant' });
+    expect(edited.fighter.ability).toBe('Levitate');
+    expect(edited.fighter.nature).toBe('adamant');
+  });
+
+  it('heals to the new maximum on a level change and keeps HP else', () => {
+    const pokemon = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 5, moves: ['ember'] });
+    const hurt = { ...pokemon, fighter: { ...pokemon.fighter, hp: 1 } };
+    const bumped = editRunPokemon(hurt, { level: 20 });
+    const maxHp = statAtLevel(getSpecies('charmander')!, 20, hurt.fighter.nature, hurt.fighter.ivs, hurt.fighter.evs).hp;
+    expect(bumped.fighter.hp).toBe(maxHp);
+    expect(editRunPokemon(hurt, { moves: ['growl'] }).fighter.hp).toBe(1);
   });
 });
