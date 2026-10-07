@@ -236,11 +236,10 @@ export function createFighter(input: FighterInput): BattleFighter {
   const evs = fullStats(input.evs, 0);
   const stats = statAtLevel(species, level, nature, ivs, evs);
 
-  const abilityOptions = Object.values(species.abilities);
-  const ability =
-    input.ability && abilityOptions.includes(input.ability)
-      ? input.ability
-      : (abilityOptions[0] ?? '');
+  // A provided ability is trusted as-is: the dex debug editor can grant an
+  // off-species ability, and a snapshot round-trip must preserve it. Only a
+  // blank field falls back to the species' first ability.
+  const ability = input.ability?.trim() ? input.ability : (Object.values(species.abilities)[0] ?? '');
 
   const moveIds = input.moves ?? defaultMoveset(species.id, level);
   const moves: MoveSlot[] = [];

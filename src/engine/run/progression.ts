@@ -1,6 +1,8 @@
 import { evolutionFor } from '../../data/dex/evolutions';
 import { levelUpMoves } from '../../data/dex/learnsets';
 import { getMove } from '../../data/dex/moves';
+import { statAtLevel } from '../../data/dex/natures';
+import { getSpecies } from '../../data/dex/species';
 import {
   createFighter,
   snapshotFighter,
@@ -80,6 +82,53 @@ export function createRunPokemon(input: FighterInput): RunPokemon {
 /** A run member adopted from a battle snapshot (a caught Pokémon), XP set to its level. */
 export function runPokemonFromSnapshot(fighter: FighterSnapshot): RunPokemon {
   return { fighter, xp: xpForLevel(fighter.level) };
+}
+
+/** A partial override of a run member; a missing field is kept as-is. */
+export type RunPokemonEdit = Readonly<{
+  level?: number;
+  nature?: string;
+  ability?: string;
+  moves?: readonly string[];
+}>;
+
+/**
+ * Rebuilds a run member with the given fields overridden: level, nature and
+ * ability are re-resolved, the moveset is re-read from the dex (unknown ids and
+ * duplicates dropped) and XP follows the new level like `createRunPokemon`. A
+ * level change heals to the new maximum; any other edit keeps the current HP
+ * (clamped). Used by the dev menu only; the battle and run rules never call it.
+ */
+export function editRunPokemon(pokemon: RunPokemon, edit: RunPokemonEdit): RunPokemon {
+  const fighter = pokemon.fighter;
+  const requested = edit.level;
+  const rawLevel = requested !== undefined && Number.isFinite(requested) ? Math.floor(requested) : fighter.level;
+  const level = Math.max(1, Math.min(MAX_LEVEL, rawLevel));
+  const nature = edit.nature ?? fighter.nature;
+  const source = edit.moves ?? fighter.moves.map((slot) => slot.moveId);
+  const moves: MoveSlot[] = [];
+  for (const moveId of source) {
+    const move = getMove(moveId);
+    if (!move || moves.some((slot) => slot.moveId === move.id)) continue;
+    moves.push({ moveId: move.id, pp: move.pp, maxPp: move.pp });
+  }
+  if (moves.length === 0) moves.push(...fighter.moves.map((slot) => ({ ...slot })));
+  const species = getSpecies(fighter.speciesId);
+  const maxHp = species ? statAtLevel(species, level, nature, fighter.ivs, fighter.evs).hp : fighter.hp;
+  // A level change heals to the new maximum (a debug bump is meant to be
+  // usable); any other edit keeps the current HP, clamped to the new maximum.
+  const hp = level !== fighter.level ? maxHp : Math.max(0, Math.min(maxHp, fighter.hp));
+  return {
+    fighter: {
+      ...fighter,
+      level,
+      nature,
+      ability: edit.ability ?? fighter.ability,
+      moves,
+      hp,
+    },
+    xp: xpForLevel(level),
+  };
 }
 
 function moveSlot(moveId: string): MoveSlot | undefined {

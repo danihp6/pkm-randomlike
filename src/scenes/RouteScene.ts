@@ -23,7 +23,7 @@ import { trainerFacingPose, trainerWalkAnimKey } from '../render/trainerAnim';
 import { bandForRoute } from '../data/run';
 import { getTrainerArchetype, TRAINER_ARCHETYPE_IDS } from '../data/trainers';
 import { IS_DEVELOP } from '../dev/env';
-import type { DebugRouteContext, DebugRouteInput } from '../dev/debugMenu';
+import type { DebugPartyEdit, DebugPartyMember, DebugRouteContext, DebugRouteInput } from '../dev/debugMenu';
 import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
   MAX_PARTY_SIZE,
@@ -34,7 +34,9 @@ import {
   canCapture,
   createRun,
   createRunPokemon,
+  editRunPokemon,
   equipHeldItem,
+  fullHealMember,
   hasLivingParty,
   isItemPicked,
   isTrainerDefeated,
@@ -42,6 +44,7 @@ import {
   resolveBattle,
   trainerRoster,
   unequipHeldItem,
+  updatePokemon,
   type BagCounts,
   type BattleLaunch,
   type BattleReturn,
@@ -2461,6 +2464,48 @@ export class RouteScene extends Phaser.Scene {
     this.run = addItem(this.run, itemId, count);
     this.persistRun();
     this.refreshHud();
+  }
+
+  /** Dev only: the party members the editor can target, with their live shape. */
+  debugParty(): readonly DebugPartyMember[] {
+    if (!IS_DEVELOP || !this.run) return [];
+    return this.run.party.map((member) => ({
+      id: member.fighter.id,
+      speciesId: member.fighter.speciesId,
+      name: getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId,
+      level: member.fighter.level,
+      nature: member.fighter.nature,
+      ability: member.fighter.ability,
+      moves: member.fighter.moves.map((slot) => slot.moveId),
+    }));
+  }
+
+  /**
+   * Dev only: overrides a party member's level, moves, ability or nature, then
+   * resyncs the save and the HUD. Returns false with no live run or a bad id.
+   */
+  editDebugPokemon(memberId: string, edit: DebugPartyEdit): boolean {
+    if (!IS_DEVELOP || !this.run || this.gameOver) return false;
+    const member = this.run.party.find((candidate) => candidate.fighter.id === memberId);
+    if (!member) return false;
+    this.run = updatePokemon(this.run, editRunPokemon(member, edit));
+    this.persistRun();
+    this.refreshHud();
+    return true;
+  }
+
+  /**
+   * Dev only: fully restores a party member — HP and PP to full, status cleared
+   * and a 0-HP member revived. Returns false with no live run or a bad id.
+   */
+  healDebugPokemon(memberId: string): boolean {
+    if (!IS_DEVELOP || !this.run || this.gameOver) return false;
+    const member = this.run.party.find((candidate) => candidate.fighter.id === memberId);
+    if (!member) return false;
+    this.run = updatePokemon(this.run, fullHealMember(member));
+    this.persistRun();
+    this.refreshHud();
+    return true;
   }
 
   /** Called by `BattleScene` before it stops: folds the result back into the run. */

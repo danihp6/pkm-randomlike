@@ -1,4 +1,15 @@
-import { playableSpecies, type Species } from '../data/dex';
+import {
+  allAbilities,
+  allMoves,
+  allNatures,
+  getMove,
+  getNature,
+  playableSpecies,
+  type Ability,
+  type Move,
+  type Nature,
+  type Species,
+} from '../data/dex';
 import { ITEMS, type ItemDef } from '../data/items';
 import { RUN_CHAIN } from '../data/run';
 import { SHAPES, isRouteShape, type RouteShape } from '../engine/routes/layout';
@@ -58,12 +69,37 @@ export type DebugGeneratorStep = Readonly<{
   label: string;
 }>;
 
+/** A party member the dev editor can target, with its live run shape. */
+export type DebugPartyMember = Readonly<{
+  id: string;
+  speciesId: string;
+  name: string;
+  level: number;
+  nature: string;
+  ability: string;
+  moves: readonly string[];
+}>;
+
+/** A partial override the dev editor sends back; a missing field is kept. */
+export type DebugPartyEdit = Readonly<{
+  level?: number;
+  nature?: string;
+  ability?: string;
+  moves?: readonly string[];
+}>;
+
 export type DebugMenuHandlers = Readonly<{
   onWildBattle: (speciesId: string, level: number) => void;
   /** Dev only: drops a species into the run; returns where it landed. */
   onAddPokemon: (speciesId: string, level: number) => 'party' | 'box' | null;
   /** Dev only: adds `count` of an item to the run's bag. */
   onAddItem: (itemId: string, count: number) => void;
+  /** Dev only: the party members the editor can target, with their live shape. */
+  readParty: () => readonly DebugPartyMember[];
+  /** Dev only: overrides a party member's level, moves, ability or nature. */
+  onEditPartyMember: (memberId: string, edit: DebugPartyEdit) => boolean;
+  /** Dev only: fully restores a party member (HP, PP, status and revival). */
+  onHealPartyMember: (memberId: string) => boolean;
   readRouteContext: () => DebugRouteContext | null;
   onRegenerateRoute: (input: DebugRouteInput) => void;
   onTogglePassThrough: (enabled: boolean) => void;
@@ -106,6 +142,51 @@ export function matchSpecies(query: string, species: readonly Species[]): Specie
 /** Resolves a typed item to one of the catalog (see `matchCatalog`). */
 export function matchItem(query: string, items: readonly ItemDef[]): ItemDef | null {
   return matchCatalog(query, items);
+}
+
+/** Resolves a typed move to one of the dex (see `matchCatalog`). */
+export function matchMove(query: string, moves: readonly Move[] = allMoves()): Move | null {
+  return matchCatalog(query, moves);
+}
+
+/** Resolves a typed ability to one of the dex (see `matchCatalog`). */
+export function matchAbility(query: string, abilities: readonly Ability[] = allAbilities()): Ability | null {
+  return matchCatalog(query, abilities);
+}
+
+/** Resolves a typed nature to one of the dex (see `matchCatalog`). */
+export function matchNature(query: string, natures: readonly Nature[] = allNatures()): Nature | null {
+  return matchCatalog(query, natures);
+}
+
+/** The display string a party member's autocomplete option shows and stores. */
+export function partyMemberLabel(member: DebugPartyMember): string {
+  return `${member.name} Lv${member.level}`;
+}
+
+/**
+ * Resolves a typed party-member label to one of `members`: an exact label
+ * (`Pikachu Lv12`), then an exact name, then a name prefix and finally a
+ * substring on the name or species id.
+ */
+export function matchPartyMember(
+  query: string,
+  members: readonly DebugPartyMember[],
+): DebugPartyMember | null {
+  const text = query.trim().toLowerCase();
+  if (!text) return null;
+  const exactLabel = members.find((member) => partyMemberLabel(member).toLowerCase() === text);
+  if (exactLabel) return exactLabel;
+  const exactName = members.find((member) => member.name.toLowerCase() === text);
+  if (exactName) return exactName;
+  const prefix = members.find((member) => member.name.toLowerCase().startsWith(text));
+  if (prefix) return prefix;
+  const id = text.replace(/[^a-z0-9]/g, '');
+  return (
+    members.find(
+      (member) => member.name.toLowerCase().includes(text) || member.speciesId.includes(id),
+    ) ?? null
+  );
 }
 
 /** A level the wild can legally hold; a blank or broken field falls back to 5. */
@@ -463,23 +544,10 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   partySpeciesInput.setAttribute('list', 'debug-species-list');
   partySpeciesInput.style.cssText = compact;
 
-  const partyLevelInput = document.createElement('input');
-  partyLevelInput.type = 'number';
-  partyLevelInput.min = String(DEBUG_MIN_LEVEL);
-  partyLevelInput.max = String(DEBUG_MAX_LEVEL);
-  partyLevelInput.value = String(DEBUG_DEFAULT_LEVEL);
-  partyLevelInput.title = 'level';
-  partyLevelInput.style.cssText = compact;
-
   const partySpeciesRow = document.createElement('label');
   partySpeciesRow.textContent = 'Species';
   partySpeciesRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
   partySpeciesRow.append(partySpeciesInput);
-
-  const partyLevelRow = document.createElement('label');
-  partyLevelRow.textContent = 'Level';
-  partyLevelRow.style.cssText = partySpeciesRow.style.cssText;
-  partyLevelRow.append(partyLevelInput);
 
   const partyStatus = document.createElement('div');
   partyStatus.style.cssText = 'min-height:16px;color:#94a3b8;';
@@ -490,17 +558,269 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
       partyStatus.textContent = partySpeciesInput.value.trim() ? 'unknown species' : 'type a species';
       return;
     }
-    const level = clampLevel(Number(partyLevelInput.value));
-    partyLevelInput.value = String(level);
+    const level = DEBUG_DEFAULT_LEVEL;
     const where = handlers.onAddPokemon(species.id, level);
     partyStatus.textContent = where
       ? `added ${species.name} Lv${level} to ${where === 'party' ? 'party' : 'PC box'}`
       : 'no active run';
+    if (where) refreshPartyOptions();
   };
 
   const addPokemonButton = button('Add', addPokemon);
   addPokemonButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
-  partySection.append(partySpeciesRow, partyLevelRow, addPokemonButton, partyStatus);
+  partySection.append(partySpeciesRow, addPokemonButton, partyStatus);
+
+  // Party editor: pick a party member and override its level, moves, ability
+  // and nature. The member list is rebuilt from the live run on every open.
+  const partyEditor = document.createElement('div');
+  partyEditor.style.cssText =
+    'display:flex;flex-direction:column;gap:6px;border-top:1px solid #334155;padding-top:6px;';
+
+  const partyList = document.createElement('datalist');
+  partyList.id = 'debug-party-list';
+
+  const partyMemberInput = document.createElement('input');
+  partyMemberInput.type = 'text';
+  partyMemberInput.placeholder = 'party member';
+  partyMemberInput.autocomplete = 'off';
+  partyMemberInput.setAttribute('list', 'debug-party-list');
+  partyMemberInput.style.cssText = compact;
+
+  const partyMemberRow = document.createElement('label');
+  partyMemberRow.textContent = 'Member';
+  partyMemberRow.style.cssText = partySpeciesRow.style.cssText;
+  partyMemberRow.append(partyMemberInput);
+
+  const editLevelInput = document.createElement('input');
+  editLevelInput.type = 'number';
+  editLevelInput.min = String(DEBUG_MIN_LEVEL);
+  editLevelInput.max = String(DEBUG_MAX_LEVEL);
+  editLevelInput.title = 'level';
+  editLevelInput.placeholder = 'level';
+  editLevelInput.style.cssText = compact;
+
+  const editLevelRow = document.createElement('label');
+  editLevelRow.textContent = 'Level';
+  editLevelRow.style.cssText = partySpeciesRow.style.cssText;
+
+  const moveInputs = [0, 1, 2, 3].map((index) => {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = `move ${index + 1}`;
+    input.autocomplete = 'off';
+    input.setAttribute('list', 'debug-move-list');
+    input.style.cssText = compact;
+    return input;
+  });
+
+  const moveRows = moveInputs.map((input, index) => {
+    const row = document.createElement('label');
+    row.textContent = `Move ${index + 1}`;
+    row.style.cssText = partySpeciesRow.style.cssText;
+    row.append(input);
+    return row;
+  });
+
+  const abilityInput = document.createElement('input');
+  abilityInput.type = 'text';
+  abilityInput.placeholder = 'ability';
+  abilityInput.autocomplete = 'off';
+  abilityInput.setAttribute('list', 'debug-ability-list');
+  abilityInput.style.cssText = compact;
+
+  const abilityRow = document.createElement('label');
+  abilityRow.textContent = 'Ability';
+  abilityRow.style.cssText = partySpeciesRow.style.cssText;
+  abilityRow.append(abilityInput);
+
+  const natureInput = document.createElement('input');
+  natureInput.type = 'text';
+  natureInput.placeholder = 'nature';
+  natureInput.autocomplete = 'off';
+  natureInput.setAttribute('list', 'debug-nature-list');
+  natureInput.style.cssText = compact;
+
+  const natureRow = document.createElement('label');
+  natureRow.textContent = 'Nature';
+  natureRow.style.cssText = partySpeciesRow.style.cssText;
+  natureRow.append(natureInput);
+
+  const editStatus = document.createElement('div');
+  editStatus.style.cssText = 'min-height:16px;color:#94a3b8;';
+
+  /** The member the fields currently describe; kept by id across a refresh. */
+  let selectedMemberId: string | null = null;
+
+  const fillMemberFields = (member: DebugPartyMember): void => {
+    partyMemberInput.value = partyMemberLabel(member);
+    editLevelInput.value = String(member.level);
+    moveInputs.forEach((input, index) => {
+      const moveId = member.moves[index];
+      input.value = moveId ? (getMove(moveId)?.name ?? moveId) : '';
+    });
+    abilityInput.value = member.ability;
+    natureInput.value = getNature(member.nature)?.name ?? member.nature;
+  };
+
+  const refreshPartyOptions = (): void => {
+    const members = handlers.readParty();
+    partyList.replaceChildren();
+    for (const member of members) {
+      const option = document.createElement('option');
+      option.value = partyMemberLabel(member);
+      option.label = `#${member.speciesId}`;
+      partyList.append(option);
+    }
+    const selected = members.find((member) => member.id === selectedMemberId);
+    if (selected) {
+      fillMemberFields(selected);
+      setEditorEnabled(true);
+    } else {
+      selectedMemberId = null;
+      setEditorEnabled(false);
+    }
+  };
+
+  const currentMember = (): DebugPartyMember | null => {
+    const members = handlers.readParty();
+    return (
+      (selectedMemberId ? members.find((member) => member.id === selectedMemberId) : null) ??
+      matchPartyMember(partyMemberInput.value, members)
+    );
+  };
+
+  partyMemberInput.addEventListener('input', () => {
+    const text = partyMemberInput.value.trim().toLowerCase();
+    const member = handlers
+      .readParty()
+      .find((candidate) => partyMemberLabel(candidate).toLowerCase() === text);
+    if (!member) return;
+    selectedMemberId = member.id;
+    fillMemberFields(member);
+    setEditorEnabled(true);
+  });
+
+  partyMemberInput.addEventListener('change', () => {
+    const member = matchPartyMember(partyMemberInput.value, handlers.readParty());
+    if (!member) return;
+    selectedMemberId = member.id;
+    fillMemberFields(member);
+    setEditorEnabled(true);
+  });
+
+  const applyEdit = (): void => {
+    const member = currentMember();
+    if (!member) {
+      editStatus.textContent = partyMemberInput.value.trim() ? 'unknown member' : 'pick a member';
+      return;
+    }
+    const edit: { level?: number; nature?: string; ability?: string; moves?: readonly string[] } = {};
+    const level = parseOptionalInt(editLevelInput.value);
+    if (level !== undefined) edit.level = clampLevel(level);
+    if (abilityInput.value.trim()) {
+      const ability = matchAbility(abilityInput.value);
+      if (!ability) {
+        editStatus.textContent = `unknown ability "${abilityInput.value.trim()}"`;
+        return;
+      }
+      edit.ability = ability.name;
+    }
+    if (natureInput.value.trim()) {
+      const nature = matchNature(natureInput.value);
+      if (!nature) {
+        editStatus.textContent = `unknown nature "${natureInput.value.trim()}"`;
+        return;
+      }
+      edit.nature = nature.id;
+    }
+    const moveIds: string[] = [];
+    for (const input of moveInputs) {
+      const text = input.value.trim();
+      if (!text) continue;
+      const move = matchMove(text);
+      if (!move) {
+        editStatus.textContent = `unknown move "${text}"`;
+        return;
+      }
+      moveIds.push(move.id);
+    }
+    if (moveIds.length > 0) edit.moves = moveIds;
+    if (!handlers.onEditPartyMember(member.id, edit)) {
+      editStatus.textContent = 'no active run';
+      return;
+    }
+    selectedMemberId = member.id;
+    refreshPartyOptions();
+    editStatus.textContent = `edited ${member.name}`;
+  };
+
+  const plusOneLevel = (): void => {
+    const member = currentMember();
+    if (!member) {
+      editStatus.textContent = 'pick a member';
+      return;
+    }
+    const level = clampLevel(member.level + 1);
+    if (!handlers.onEditPartyMember(member.id, { level })) {
+      editStatus.textContent = 'no active run';
+      return;
+    }
+    selectedMemberId = member.id;
+    refreshPartyOptions();
+    editStatus.textContent = `${member.name} → Lv${level}`;
+  };
+
+  const healSelected = (): void => {
+    const member = currentMember();
+    if (!member) {
+      editStatus.textContent = 'pick a member';
+      return;
+    }
+    if (!handlers.onHealPartyMember(member.id)) {
+      editStatus.textContent = 'no active run';
+      return;
+    }
+    selectedMemberId = member.id;
+    refreshPartyOptions();
+    editStatus.textContent = `healed ${member.name}`;
+  };
+
+  const plusLevelButton = button('+1 lvl', plusOneLevel);
+  plusLevelButton.style.cssText += 'white-space:nowrap;';
+  editLevelRow.append(editLevelInput, plusLevelButton);
+
+  const applyButton = button('Apply', applyEdit);
+  applyButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
+
+  const healButton = button('Heal', healSelected);
+  healButton.style.cssText += 'background:#166534;color:#f8fafc;font-weight:700;';
+
+  const editButtons = document.createElement('div');
+  editButtons.style.cssText = 'display:flex;gap:6px;';
+  editButtons.append(applyButton, healButton);
+
+  /** The editor only works on a chosen member; with none, every field locks. */
+  const setEditorEnabled = (enabled: boolean): void => {
+    editLevelInput.disabled = !enabled;
+    abilityInput.disabled = !enabled;
+    natureInput.disabled = !enabled;
+    for (const input of moveInputs) input.disabled = !enabled;
+    plusLevelButton.disabled = !enabled;
+    applyButton.disabled = !enabled;
+    healButton.disabled = !enabled;
+  };
+  setEditorEnabled(false);
+
+  partyEditor.append(
+    partyMemberRow,
+    editLevelRow,
+    ...moveRows,
+    abilityRow,
+    natureRow,
+    editButtons,
+    editStatus,
+  );
+  partySection.append(partyEditor);
 
   // Bag section: add any run item to the bag in bulk, resolved by the same
   // name/id autocomplete as species.
@@ -560,7 +880,40 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     itemList.append(option);
   }
 
-  for (const input of [partySpeciesInput, partyLevelInput]) {
+  const moveList = document.createElement('datalist');
+  moveList.id = 'debug-move-list';
+  for (const move of allMoves()) {
+    const option = document.createElement('option');
+    option.value = move.name;
+    option.label = `#${move.id} · ${move.type} ${move.category}`;
+    moveList.append(option);
+  }
+
+  const abilityList = document.createElement('datalist');
+  abilityList.id = 'debug-ability-list';
+  for (const ability of allAbilities()) {
+    const option = document.createElement('option');
+    option.value = ability.name;
+    option.label = `#${ability.id}`;
+    abilityList.append(option);
+  }
+
+  const natureList = document.createElement('datalist');
+  natureList.id = 'debug-nature-list';
+  for (const nature of allNatures()) {
+    const option = document.createElement('option');
+    option.value = nature.name;
+    option.label = nature.plus && nature.minus ? `+${nature.plus} / -${nature.minus}` : 'neutral';
+    natureList.append(option);
+  }
+
+  for (const input of [partyMemberInput, editLevelInput]) {
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') applyEdit();
+    });
+  }
+
+  for (const input of [partySpeciesInput]) {
     input.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') addPokemon();
     });
@@ -681,6 +1034,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     setTabStyle(routeTab, tab === 'route');
     setTabStyle(mapTab, tab === 'map');
     if (tab === 'route' || tab === 'general') refreshRouteFields();
+    if (tab === 'party') refreshPartyOptions();
   };
 
   const close = button('×', () => {
@@ -697,10 +1051,11 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   }
 
   body.append(tabs, generalSection, battlePanel, partySection, bagSection, routeSection, mapSection);
-  root.append(title, body, list, itemList);
+  root.append(title, body, list, itemList, partyList, moveList, abilityList, natureList);
   document.body.append(root);
   selectTab('general');
   refreshRouteFields();
+  refreshPartyOptions();
 
   // Keep the panel's typing out of the game's window-level key handlers, but
   // only while it is open: a hidden panel can still hold focus, and then the
@@ -712,8 +1067,10 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const setOpen = (open: boolean): void => {
     root.style.display = open ? 'flex' : 'none';
-    if (open) refreshRouteFields();
-    else (document.activeElement as HTMLElement | null)?.blur();
+    if (open) {
+      refreshRouteFields();
+      if (partySection.style.display !== 'none') refreshPartyOptions();
+    } else (document.activeElement as HTMLElement | null)?.blur();
   };
 
   const onToggle = (event: KeyboardEvent): void => {

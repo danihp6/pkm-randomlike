@@ -6,8 +6,8 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 
 - `dex/` — **generated**, committed, do not edit by hand. Produced by
   `npm run data:dex` from `@pkmn/dex`. See `docs/showdown-reuse.md`. Typed
-  accessors live beside it (`species.ts`, `moves.ts`, `learnsets.ts`, `types.ts`,
-  `natures.ts`, `evolutions.ts`).
+  accessors live beside it (`species.ts`, `moves.ts`, `abilities.ts`,
+  `learnsets.ts`, `types.ts`, `natures.ts`, `evolutions.ts`).
 - `tilesets/` — one file per biome tileset plus the shared `palettes.ts` and the
   `index.ts` registry. Contract in `docs/tileset-spec.md`.
 - `biomes.ts` — biome → tileset, terrain flavour and encounter tables.

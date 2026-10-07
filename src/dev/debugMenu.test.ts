@@ -12,11 +12,17 @@ import {
   DEBUG_MIN_LEVEL,
   DEBUG_ROUTE_HEIGHT,
   DEBUG_ROUTE_WIDTH,
+  matchAbility,
   matchItem,
+  matchMove,
+  matchNature,
+  matchPartyMember,
   matchSpecies,
   parseOptionalInt,
   parseOptionalText,
+  partyMemberLabel,
   randomRouteInput,
+  type DebugPartyMember,
 } from './debugMenu';
 
 function species(id: string, name: string, num: number): Species {
@@ -81,6 +87,67 @@ describe('matchItem', () => {
   it('returns null for a blank or unknown query', () => {
     expect(matchItem('', ITEMS)).toBeNull();
     expect(matchItem('potion of god', ITEMS)).toBeNull();
+  });
+});
+
+describe('matchMove / matchAbility / matchNature', () => {
+  it('resolves a move by name, id and prefix', () => {
+    expect(matchMove('Thunderbolt')?.id).toBe('thunderbolt');
+    expect(matchMove('thunderbolt')?.id).toBe('thunderbolt');
+    expect(matchMove('thunderb')?.id).toBe('thunderbolt');
+    expect(matchMove('not-a-move')).toBeNull();
+  });
+
+  it('resolves an ability by name and id', () => {
+    expect(matchAbility('Levitate')?.id).toBe('levitate');
+    expect(matchAbility('levitate')?.name).toBe('Levitate');
+    expect(matchAbility('not-an-ability')).toBeNull();
+  });
+
+  it('resolves a nature by name and id', () => {
+    expect(matchNature('Adamant')?.id).toBe('adamant');
+    expect(matchNature('adamant')?.plus).toBe('atk');
+    expect(matchNature('not-a-nature')).toBeNull();
+  });
+});
+
+describe('matchPartyMember', () => {
+  const party: readonly DebugPartyMember[] = [
+    {
+      id: 'a',
+      speciesId: 'pikachu',
+      name: 'Pikachu',
+      level: 12,
+      nature: 'serious',
+      ability: 'Static',
+      moves: ['thunderbolt'],
+    },
+    {
+      id: 'b',
+      speciesId: 'pikachu',
+      name: 'Pikachu',
+      level: 20,
+      nature: 'timid',
+      ability: 'Static',
+      moves: ['quickattack'],
+    },
+  ];
+
+  it('resolves an exact label first, so duplicates pick the right level', () => {
+    expect(partyMemberLabel(party[0])).toBe('Pikachu Lv12');
+    expect(matchPartyMember(partyMemberLabel(party[1]), party)?.id).toBe('b');
+    expect(matchPartyMember(partyMemberLabel(party[1]).toLowerCase(), party)?.id).toBe('b');
+  });
+
+  it('falls back to a species name, prefix then substring', () => {
+    expect(matchPartyMember('Pikachu', party)?.id).toBe('a');
+    expect(matchPartyMember('pika', party)?.id).toBe('a');
+    expect(matchPartyMember('chu', party)?.id).toBe('a');
+  });
+
+  it('returns null for a blank or unknown query', () => {
+    expect(matchPartyMember('  ', party)).toBeNull();
+    expect(matchPartyMember('missingno', party)).toBeNull();
   });
 });
 

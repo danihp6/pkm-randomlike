@@ -35,6 +35,13 @@ describe('createFighter', () => {
     }
   });
 
+  it('trusts a provided ability outside the species options', () => {
+    const fighter = createFighter({ id: 'c', speciesId: 'charmander', level, ability: 'Levitate' });
+    expect(fighter.ability).toBe('Levitate');
+    expect(snapshotFighter(fighter).ability).toBe('Levitate');
+    expect(restoreFighter(snapshotFighter(fighter)).ability).toBe('Levitate');
+  });
+
   it('keeps only moves that exist in the dex', () => {
     const fighter = createFighter({
       id: 'c',

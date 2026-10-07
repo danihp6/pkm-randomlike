@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getSpecies } from './species';
-import { getNature, natureMultiplier, statAtLevel } from './natures';
+import { allNatures, getNature, natureMultiplier, statAtLevel } from './natures';
 
 describe('nature accessors', () => {
   it('finds a nature by name or id', () => {
@@ -8,6 +8,11 @@ describe('nature accessors', () => {
     expect(getNature('Adamant')?.minus).toBe('spa');
     expect(getNature('bashful')).toEqual({ id: 'bashful', name: 'Bashful', plus: null, minus: null });
     expect(getNature('not-a-nature')).toBeUndefined();
+  });
+
+  it('exposes every generated nature', () => {
+    expect(allNatures().length).toBe(25);
+    expect(allNatures().some((nature) => nature.id === 'adamant')).toBe(true);
   });
 
   it('multiplies the boosted and hindered stats only', () => {
