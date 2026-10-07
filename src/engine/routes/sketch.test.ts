@@ -280,6 +280,13 @@ describe('sketchRoute', () => {
     expect(sketchRoute(request('no-loot', 2, 'cross')).items).toEqual([]);
   });
 
+  it('holds an item only with the itemChance probability', () => {
+    const loot = [{ itemId: 'potion', weight: 1 }];
+    const base = { ...request('item-chance', 2, 'cross'), width: 30, height: 30, loot };
+    expect(sketchRoute({ ...base, itemChance: 0 }).items).toEqual([]);
+    expect(sketchRoute({ ...base, itemChance: 1 }).items.length).toBeGreaterThan(0);
+  });
+
   it('never places an item on tall grass: the pockets stay clear', () => {
     const loot = [{ itemId: 'potion', weight: 1 }];
     for (const shape of ROUTE_SHAPES) {
@@ -426,6 +433,7 @@ describe('sketchRoute', () => {
         'branches',
         'clean',
         'terrain',
+        'trainers',
         'items',
         'final',
       ]);

@@ -41,24 +41,17 @@ accessors so the engine never touches raw JSON.
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-The generator carves the shape's lanes out of a solid forest and has no population
-(`docs/routes-spec.md` §2). The target algorithm, its guarantees and its open
-questions are in `docs/route-generator.md`; these are the steps to get there, one
-branch each, most useful first. The art counterparts (a real tall-grass tile, the
+The generator carves the shape's lanes out of a solid forest; trainers and ground
+items are placed by the population pass (`docs/routes-spec.md` §2). The target
+algorithm, its guarantees and its open questions are in
+`docs/route-generator.md`; these are the steps to get there, one branch each,
+most useful first. The art counterparts (a real tall-grass tile, the
 floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **Step 6 — Trainers (optional).** Restore the `RouteTrainer` type and the
-      line-of-sight module (`src/engine/routes/trainers.ts`), place trainers off
-      the spine with a facing, sight and archetype, and keep a trainer-free
-      entry→every-exit path. Tests: every trainer is avoidable, `seesPlayer` works.
 - [ ] **Step 8 — Validation hardening.** Grow `validateRoute` to the full
       checklist (every exit, trainer-free path, items, clean spine, pockets,
       border) and reroll within `BUILD_ATTEMPTS` before throwing. Fixed-seed tests
       per shape.
-- [ ] **Step 9 — Scene wiring (trainers).** Draw trainers and restore the
-      line-of-sight trigger in `src/scenes/RouteScene.ts`, make **any exit** end
-      the route, and keep the tall-grass encounter roll. Ground items (draw,
-      interact pickup, HUD hint) already ship.
 - [ ] **Step 10 — Docs pass.** Update `docs/routes-spec.md` and `AGENTS.md` to the
       shipped algorithm, mark `docs/route-generator.md` implemented and archive
       these steps in `CHANGELOG.md`.

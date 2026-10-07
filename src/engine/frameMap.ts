@@ -281,5 +281,6 @@ export function routeFromFrameMapExport(exported: FrameMapExport): RouteMap {
     branches: [],
     pockets: [],
     items: [],
+    trainers: [],
   };
 }

@@ -14,7 +14,14 @@ import {
 } from '../data/playerSprite';
 import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
 import { ROUTE_LOOT } from '../data/loot';
+import {
+  OVERWORLD_SPRITE_TEXTURE_KEY,
+  OVERWORLD_SPRITE_WIDTH,
+  overworldSpriteFrame,
+} from '../data/overworldSprites';
+import { trainerFacingPose, trainerWalkAnimKey } from '../render/trainerAnim';
 import { bandForRoute } from '../data/run';
+import { getTrainerArchetype, TRAINER_ARCHETYPE_IDS } from '../data/trainers';
 import { IS_DEVELOP } from '../dev/env';
 import type { DebugRouteContext, DebugRouteInput } from '../dev/debugMenu';
 import { restoreFighter, type FighterInput } from '../engine/battle';
@@ -30,8 +37,10 @@ import {
   equipHeldItem,
   hasLivingParty,
   isItemPicked,
+  isTrainerDefeated,
   markItemPicked,
   resolveBattle,
+  trainerRoster,
   unequipHeldItem,
   type BagCounts,
   type BattleLaunch,
@@ -48,7 +57,7 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { FLOOR, TALL_GRASS, resolveMove, tileAt, type TileMap } from '../engine/map';
+import { FLOOR, TALL_GRASS, isWalkable, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, randomSeed, Rng } from '../engine/rng';
 import { clearRun, storeRun, type Settings } from '../engine/save';
 import {
@@ -56,12 +65,16 @@ import {
   ROUTE_HEIGHT,
   ROUTE_WIDTH,
   RouteEncounters,
+  seesPlayer,
   sketchRoute,
   sketchRouteSteps,
+  trainerAt,
+  type Facing,
   type RouteItem,
   type RouteMap,
   type RouteShape,
   type RouteStep,
+  type RouteTrainer,
 } from '../engine/routes';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame, resolveGroundFrame, grassTipKeys, treeTipKeys, type TileFrame } from '../engine/tileFrames';
@@ -113,7 +126,7 @@ import { actionKeys, subscribeKeybinds } from '../input/input';
 import { listenForBack } from '../input/backButton';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
-import { GRASS_TEXTURE_KEY, SPARKLE_TEXTURE_KEY } from './BootScene';
+import { GRASS_TEXTURE_KEY, SPARKLE_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 
 /** Item stacks the route HUD's bag window shows before it drops the rest. */
 const HUD_BAG_ROWS = 6;
@@ -181,10 +194,24 @@ const HUD_DETAIL_HPBAR_SCALE = 0.5;
 const HUD_DETAIL_TYPE_W = 74;
 
 /**
- * Render depth of a wall cell's walkable tip: above the player (`10`) so the
- * character passes **behind** the crown, below the grass overlay and the HUD.
+ * Render depth of a wall cell's walkable tip: above the actors so the character
+ * passes **behind** the crown, below the grass overlay and the HUD.
  */
 const TREE_TIP_DEPTH = 20;
+
+/**
+ * Ground actors (the player and the trainers) sort by their foot position, so a
+ * lower tile draws in front: a player standing north of a trainer passes behind
+ * it. The whole band stays between the ground items (`5`) and the tree tips
+ * (`20`), so layering above the map is untouched.
+ */
+const ACTOR_DEPTH = 8;
+const ACTOR_DEPTH_STEP = 0.0001;
+
+/** The render depth of a ground actor standing with its feet at `footY`. */
+function actorDepth(footY: number): number {
+  return ACTOR_DEPTH + footY * ACTOR_DEPTH_STEP;
+}
 
 /** The four directions, in the order the update loop tests them. */
 type MoveKey = 'up' | 'down' | 'left' | 'right';
@@ -198,11 +225,31 @@ const RESET_HOLD_MS = 1600;
 const RESET_RADIUS = 22;
 const RESET_FADE_IN_MS = 260;
 
+/** How long a "spinning" trainer holds a facing before it turns to the next. */
+const TRAINER_TURN_MS = 1400;
+/** How long one chase step takes while a trainer walks toward the player. */
+const TRAINER_CHASE_STEP_MS = 170;
+
 const MOVE_STEP: Readonly<Record<MoveKey, Tile>> = {
   up: { x: 0, y: -1 },
   down: { x: 0, y: 1 },
   left: { x: -1, y: 0 },
   right: { x: 1, y: 0 },
+};
+
+/** The cardinal a tile step moves toward, for a trainer's walk pose. */
+function stepFacing(from: Tile, to: Tile): Facing {
+  if (to.x > from.x) return 'E';
+  if (to.x < from.x) return 'W';
+  if (to.y < from.y) return 'N';
+  return 'S';
+}
+
+/** A trainer drawn on the route, with its atlas key when it has a decomp sprite. */
+type TrainerSpriteEntry = {
+  trainer: RouteTrainer;
+  sprite: Phaser.GameObjects.Sprite;
+  spriteKey: string | null;
 };
 
 /** The base inputs of the route on screen, before the debug reroll nonce. */
@@ -261,6 +308,17 @@ export class RouteScene extends Phaser.Scene {
   private entitySprites: Phaser.GameObjects.GameObject[] = [];
   /** The ground items on screen, so a pickup can hide one and a rebuild clear all. */
   private itemSprites: { item: RouteItem; sprite: Phaser.GameObjects.Image }[] = [];
+  /** The trainers on screen, so a win can hide one and a rebuild clear all. */
+  private trainerSprites: TrainerSpriteEntry[] = [];
+  /** Which facing a spinning trainer is showing, so a turn only redraws on change. */
+  private trainerSpinIndex = new Map<string, number>();
+  /** The facing each trainer is currently using, so a spinner's cone turns too. */
+  private trainerFacing = new Map<string, Facing>();
+  /** The trainer walking toward a player it spotted, until the battle opens. */
+  private chase: {
+    entry: TrainerSpriteEntry;
+    position: Tile;
+  } | null = null;
   /** The inputs behind the route on screen; the debug reroll rebuilds from it. */
   private routeParams!: RouteParams;
   private run!: RunState;
@@ -454,6 +512,8 @@ export class RouteScene extends Phaser.Scene {
       ledges: params.ledges,
       loot: loot.pool,
       hiddenChance: loot.hiddenChance,
+      itemChance: loot.itemChance,
+      trainerArchetypes: TRAINER_ARCHETYPE_IDS,
       ...(wall ? { wall } : {}),
     };
     const route = sketchRoute(request);
@@ -497,6 +557,10 @@ export class RouteScene extends Phaser.Scene {
     this.tileSprites = [];
     this.hudRows = [];
     this.hudBagRows = [];
+    this.trainerSprites = [];
+    this.trainerSpinIndex.clear();
+    this.trainerFacing.clear();
+    this.chase = null;
     this.hudVisible = false;
     this.hudDetailState = CLOSED_DETAIL;
     this.hudDetailView = null;
@@ -530,12 +594,13 @@ export class RouteScene extends Phaser.Scene {
     this.drawTiles();
     this.drawEntities();
     this.drawItems();
+    this.drawTrainers();
     this.player = { ...this.route.entry };
     this.playerSprite = this.add
       .sprite(0, 0, PLAYER_SPRITE_TEXTURE_KEY, playerSpriteFrame('down'))
       .setOrigin(0.5, 1)
       .setScale(TILE_SIZE / PLAYER_SPRITE_WIDTH)
-      .setDepth(10);
+      .setDepth(actorDepth(0));
     this.movePlayerTo(this.player.x, this.player.y);
 
     this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
@@ -1861,6 +1926,66 @@ export class RouteScene extends Phaser.Scene {
     this.hudCamera?.ignore(created);
   }
 
+  /**
+   * Draws the route's trainers on their tiles, off the FRLG overworld atlas when
+   * the archetype has a decomp sprite and the procedural stand-in otherwise. A
+   * defeated trainer is gone for the route, so it is not drawn. The facing picks
+   * the resting pose (down, up or the left-facing side, flipped for east), and a
+   * spinning trainer's pose is refreshed on its timer in `update`.
+   */
+  private drawTrainers(): void {
+    if (this.generatorStepIndex !== null) return;
+    const created: Phaser.GameObjects.GameObject[] = [];
+    for (const trainer of this.route.trainers) {
+      if (isTrainerDefeated(this.run, trainer.id)) continue;
+      const archetype = getTrainerArchetype(trainer.archetypeId);
+      const spriteKey = archetype?.spriteKey ?? null;
+      const frame = spriteKey ? overworldSpriteFrame(spriteKey) : null;
+      const footY = this.centerY(trainer.position.y) + TILE_SIZE / 2;
+      const sprite =
+        frame !== null
+          ? this.add
+              .sprite(this.centerX(trainer.position.x), footY, OVERWORLD_SPRITE_TEXTURE_KEY, frame)
+              .setOrigin(0.5, 1)
+              .setScale(TILE_SIZE / OVERWORLD_SPRITE_WIDTH)
+              .setDepth(actorDepth(footY))
+          : this.add
+              .sprite(this.centerX(trainer.position.x), this.centerY(trainer.position.y), TRAINER_TEXTURE_KEY)
+              .setTint(archetype?.colour ?? 0xffffff)
+              .setDepth(actorDepth(footY));
+      const entry: TrainerSpriteEntry = {
+        trainer,
+        sprite,
+        spriteKey: frame !== null ? spriteKey : null,
+      };
+      this.faceTrainerSprite(entry, trainer.facing);
+      this.trainerFacing.set(trainer.id, trainer.facing);
+      this.trainerSprites.push(entry);
+      this.entitySprites.push(sprite);
+      created.push(sprite);
+    }
+    this.hudCamera?.ignore(created);
+  }
+
+  /** Poses a resting trainer: the facing's idle frame, flipped for the right side. */
+  private faceTrainerSprite(entry: TrainerSpriteEntry, facing: Facing): void {
+    const pose = trainerFacingPose(facing);
+    entry.sprite.setFlipX(pose.flipX);
+    entry.sprite.anims.stop();
+    if (!entry.spriteKey) return;
+    const frame = overworldSpriteFrame(entry.spriteKey, pose.facing);
+    if (frame !== null) entry.sprite.setFrame(frame);
+  }
+
+  /** Plays a walking trainer's cycle for a step direction, keeping its flip. */
+  private playTrainerWalk(entry: TrainerSpriteEntry, facing: Facing): void {
+    const pose = trainerFacingPose(facing);
+    entry.sprite.setFlipX(pose.flipX);
+    if (!entry.spriteKey) return;
+    const key = trainerWalkAnimKey(entry.spriteKey, pose.facing);
+    if (this.anims.exists(key)) entry.sprite.play(key, true);
+  }
+
   /** A route tile's centre in world pixels. */
   private centerX(tileX: number): number {
     return tileX * TILE_SIZE + TILE_SIZE / 2;
@@ -1881,6 +2006,7 @@ export class RouteScene extends Phaser.Scene {
     this.drawTiles();
     this.drawEntities();
     this.drawItems();
+    this.drawTrainers();
   }
 
   /** Snaps the sprite to a tile, without a step. */
@@ -1889,6 +2015,7 @@ export class RouteScene extends Phaser.Scene {
     // The 16x32 FRLG frame stands with its feet on the tile's bottom edge, the
     // same placement the route's trainers use.
     this.playerSprite.setPosition(this.centerX(x), this.centerY(y) + TILE_SIZE / 2);
+    this.playerSprite.setDepth(actorDepth(this.playerSprite.y));
   }
 
   /** Turns the sprite to face a direction, flipping the left-facing side frame. */
@@ -1924,10 +2051,14 @@ export class RouteScene extends Phaser.Scene {
     });
   }
 
-  /** Stands still and shows the resting frame, once no step is in flight. */
+  /**
+   * Stands still and shows the resting frame of the current facing. Runs even
+   * while the walk cycle is idle, so pushing into a blocked tile still turns the
+   * sprite toward it instead of leaving the previous pose.
+   */
   private settleMovement(): void {
-    if (this.walkTween || !this.playerSprite.anims.isPlaying) return;
-    this.playerSprite.anims.stop();
+    if (this.walkTween) return;
+    if (this.playerSprite.anims.isPlaying) this.playerSprite.anims.stop();
     this.playerSprite.setFrame(playerSpriteFrame(this.facing));
   }
 
@@ -1949,6 +2080,138 @@ export class RouteScene extends Phaser.Scene {
         return;
       }
     }
+    // Stepping into a trainer's cone makes it walk over and start the battle.
+    const spotter = this.trainerSpotted();
+    if (spotter) this.beginChase(spotter);
+  }
+
+  /** The first undefeated trainer whose line of sight holds the player. */
+  private trainerSpotted(): RouteTrainer | null {
+    for (const trainer of this.route.trainers) {
+      if (isTrainerDefeated(this.run, trainer.id)) continue;
+      if (seesPlayer(this.route, this.effectiveTrainer(trainer), this.player, this.moveMap)) return trainer;
+    }
+    return null;
+  }
+
+  /** The trainer as the scene currently poses it (a spinner's live facing). */
+  private effectiveTrainer(trainer: RouteTrainer): RouteTrainer {
+    const facing = this.trainerFacing.get(trainer.id);
+    return facing && facing !== trainer.facing ? { ...trainer, facing } : trainer;
+  }
+
+  /** The trainer on `tile`, unless it has already been beaten on this route. */
+  private liveTrainerAt(tile: Tile): RouteTrainer | undefined {
+    const trainer = trainerAt(this.route, tile);
+    return trainer && !isTrainerDefeated(this.run, trainer.id) ? trainer : undefined;
+  }
+
+  /**
+   * Starts the classic "spotted you" beat: the trainer faces the player and
+   * walks toward them tile by tile, then the battle opens. The player's input is
+   * frozen while it happens, so the chase plays out like the originals.
+   */
+  private beginChase(trainer: RouteTrainer): void {
+    if (this.chase || this.pendingBattle || this.gameOver) return;
+    const entry = this.trainerSprites.find((candidate) => candidate.trainer.id === trainer.id);
+    if (!entry) {
+      this.startTrainerBattle(trainer);
+      return;
+    }
+    this.stopWalking();
+    this.touch?.release();
+    this.chase = { entry, position: { ...trainer.position } };
+    this.stepChase(0);
+  }
+
+  /** One chase step: walk closer, or open the battle once adjacent/stuck. */
+  private stepChase(steps: number): void {
+    const chase = this.chase;
+    if (!chase) return;
+    const here = chase.position;
+    const adjacent =
+      Math.abs(here.x - this.player.x) + Math.abs(here.y - this.player.y) <= 1;
+    if (adjacent || steps > chase.entry.trainer.sight + 2) {
+      this.finishChase();
+      return;
+    }
+    const next = this.chaseStep(here, this.player);
+    if (!next) {
+      this.finishChase();
+      return;
+    }
+    chase.position = next;
+    this.playTrainerWalk(chase.entry, stepFacing(here, next));
+    chase.entry.sprite.setDepth(actorDepth(this.centerY(next.y) + TILE_SIZE / 2));
+    this.tweens.add({
+      targets: chase.entry.sprite,
+      x: this.centerX(next.x),
+      y: this.centerY(next.y) + TILE_SIZE / 2,
+      duration: TRAINER_CHASE_STEP_MS,
+      ease: 'Linear',
+      onComplete: () => this.stepChase(steps + 1),
+    });
+  }
+
+  /** The next tile toward `target`, avoiding walls, items and other trainers. */
+  private chaseStep(from: Tile, target: Tile): Tile | null {
+    const dx = target.x - from.x;
+    const dy = target.y - from.y;
+    const order: Tile[] =
+      Math.abs(dx) >= Math.abs(dy)
+        ? [{ x: Math.sign(dx), y: 0 }, { x: 0, y: Math.sign(dy) }]
+        : [{ x: 0, y: Math.sign(dy) }, { x: Math.sign(dx), y: 0 }];
+    for (const step of order) {
+      if (step.x === 0 && step.y === 0) continue;
+      const next = { x: from.x + step.x, y: from.y + step.y };
+      if (Math.abs(next.x - target.x) + Math.abs(next.y - target.y) >= Math.abs(dx) + Math.abs(dy)) {
+        continue;
+      }
+      if (!inBounds(this.moveMap, next) || !isWalkable(this.moveMap, next)) continue;
+      if (this.itemBlocks(next)) continue;
+      if (this.liveTrainerAt(next) || (next.x === target.x && next.y === target.y)) continue;
+      return next;
+    }
+    return null;
+  }
+
+  /** Ends the chase: the trainer faces the player and the battle opens. */
+  private finishChase(): void {
+    const chase = this.chase;
+    if (!chase) return;
+    this.chase = null;
+    const facing: Facing =
+      this.player.x < chase.position.x
+        ? 'W'
+        : this.player.x > chase.position.x
+          ? 'E'
+          : this.player.y < chase.position.y
+            ? 'N'
+            : 'S';
+    this.trainerFacing.set(chase.entry.trainer.id, facing);
+    this.faceTrainerSprite(chase.entry, facing);
+    this.startTrainerBattle(chase.entry.trainer);
+  }
+
+  /** Opens the menu battle against a trainer, with a roster seeded for that id. */
+  private startTrainerBattle(trainer: RouteTrainer): void {
+    if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
+    const archetype = getTrainerArchetype(trainer.archetypeId);
+    if (!archetype) return;
+    const band = bandForRoute(this.route.routeIndex);
+    const roster = trainerRoster(
+      archetype,
+      band,
+      new Rng(hashSeed(`${this.run.seed}:trainer:${this.route.routeIndex}:${trainer.id}`)),
+      trainer.id,
+    );
+    this.startBattle({
+      kind: 'trainer',
+      trainerId: trainer.id,
+      trainerName: archetype.name,
+      roster,
+      archetypeId: archetype.id,
+    });
   }
 
   /**
@@ -1960,6 +2223,12 @@ export class RouteScene extends Phaser.Scene {
     if (this.gameOver || this.pendingBattle || this.releaseRoot || this.hudVisible) return;
     const step = MOVE_STEP[this.facingDir];
     const ahead = { x: this.player.x + step.x, y: this.player.y + step.y };
+    // Talking to a trainer it is facing also opens the battle, like the originals.
+    const trainer = this.liveTrainerAt(ahead);
+    if (trainer) {
+      this.startTrainerBattle(trainer);
+      return;
+    }
     if (!this.collectItemAt(ahead)) this.collectItemAt(this.player);
   }
 
@@ -2207,6 +2476,17 @@ export class RouteScene extends Phaser.Scene {
     this.persistRun();
     this.refreshHud();
 
+    // A beaten trainer leaves the route: hide its sprite so the tile is free.
+    if (pending.trigger.kind === 'trainer') {
+      const trainerId = pending.trigger.trainerId;
+      const entry = this.trainerSprites.find((candidate) => candidate.trainer.id === trainerId);
+      if (entry && isTrainerDefeated(this.run, trainerId)) {
+        entry.sprite.setVisible(false);
+        this.trainerSpinIndex.delete(trainerId);
+        this.trainerFacing.delete(trainerId);
+      }
+    }
+
     const over = !hasLivingParty(this.run);
     this.gameOver = over;
     this.playReleaseBeats(releaseBeats(released), () => {
@@ -2360,9 +2640,14 @@ export class RouteScene extends Phaser.Scene {
     }
     this.tileSprites = [];
     for (const entry of this.itemSprites) this.tweens.killTweensOf(entry.sprite);
+    for (const entry of this.trainerSprites) this.tweens.killTweensOf(entry.sprite);
     for (const sprite of this.entitySprites) sprite.destroy();
     this.entitySprites = [];
     this.itemSprites = [];
+    this.trainerSprites = [];
+    this.trainerSpinIndex.clear();
+    this.trainerFacing.clear();
+    this.chase = null;
     this.clearHoverInspect();
   }
 
@@ -2518,6 +2803,7 @@ export class RouteScene extends Phaser.Scene {
     this.drawTiles();
     this.drawEntities();
     this.drawItems();
+    this.drawTrainers();
     this.player = { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
@@ -2565,17 +2851,22 @@ export class RouteScene extends Phaser.Scene {
     this.drawTiles();
     this.drawEntities();
     this.drawItems();
+    this.drawTrainers();
     this.player = { ...route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
     return { ok: true };
   }
 
-  override update(_time: number, delta: number): void {
+  override update(time: number, delta: number): void {
     // The hold-to-reset runs whatever the route is doing (a battle pauses the
     // scene, so it never fires behind another screen).
     this.updateReset(delta);
-    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.pauseMenuOpen) {
+    this.updateTrainerSpins(time);
+    // The player sorts against the trainers by its foot row every frame, so the
+    // depth follows a step in flight instead of snapping when it lands.
+    this.playerSprite.setDepth(actorDepth(this.playerSprite.y));
+    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.pauseMenuOpen || this.chase) {
       this.settleMovement();
       return;
     }
@@ -2594,13 +2885,35 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     const result = resolveMove(this.moveMap, this.player, step);
-    // A visible ground item blocks its tile, like an object in the originals: it
-    // is taken with the interact key. A hidden item can be walked over.
-    if (!result || this.itemBlocks(result.to)) {
+    // A visible ground item or a live trainer blocks its tile, like an object in
+    // the originals: the item is taken with the interact key and the trainer is
+    // talked to. A hidden item can be walked over.
+    if (!result || this.itemBlocks(result.to) || this.liveTrainerAt(result.to)) {
       this.faceIdle(direction);
       return;
     }
     this.walkStep(direction, result.to);
+  }
+
+  /** Turns every "spinning" trainer to the next facing on the shared timer. */
+  private updateTrainerSpins(time: number): void {
+    if (this.generatorStepIndex !== null) return;
+    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.pauseMenuOpen || this.chase) return;
+    for (const entry of this.trainerSprites) {
+      const turns = entry.trainer.turns;
+      if (!turns || turns.length < 2) continue;
+      const index = Math.floor(time / TRAINER_TURN_MS) % turns.length;
+      if (this.trainerSpinIndex.get(entry.trainer.id) === index) continue;
+      this.trainerSpinIndex.set(entry.trainer.id, index);
+      this.trainerFacing.set(entry.trainer.id, turns[index]);
+      this.faceTrainerSprite(entry, turns[index]);
+      // A spinner that swings its cone onto a player standing still still spots
+      // them, the same as stepping into a fixed trainer's line of sight.
+      if (seesPlayer(this.route, this.effectiveTrainer(entry.trainer), this.player, this.moveMap)) {
+        this.beginChase(entry.trainer);
+        return;
+      }
+    }
   }
 
   /**

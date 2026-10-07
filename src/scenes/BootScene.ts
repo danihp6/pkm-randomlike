@@ -38,6 +38,7 @@ import {
   moveFxFrames,
 } from '../render/moveFx';
 import { PLAYER_WALK_ANIMS, PLAYER_WALK_FRAME_RATE } from '../render/playerAnim';
+import { TRAINER_WALK_ANIMS, TRAINER_WALK_FRAME_RATE } from '../render/trainerAnim';
 import {
   FRLG_CURSOR_KEY,
   FRLG_CURSOR_URL,
@@ -145,6 +146,7 @@ export class BootScene extends Phaser.Scene {
     this.buildRouteTextures();
     this.buildMoveFxAnimations();
     this.buildPlayerAnimations();
+    this.buildTrainerAnimations();
     // Phase 7: pick up the run left in progress, or start a fresh one. A saved
     // run whose last Pokémon already fell was over the moment it was written,
     // so it is cleared rather than resumed (D5: nothing carries over).
@@ -190,6 +192,23 @@ export class BootScene extends Phaser.Scene {
         key: anim.key,
         frames: anim.frames.map((frame) => ({ key: PLAYER_SPRITE_TEXTURE_KEY, frame })),
         frameRate: PLAYER_WALK_FRAME_RATE,
+        repeat: -1,
+      });
+    }
+  }
+
+  /**
+   * The trainers' walk cycles, one per archetype and facing, off the atlas in
+   * `src/data/overworldSprites.ts`; the route plays them while a spotted trainer
+   * walks toward the player.
+   */
+  private buildTrainerAnimations(): void {
+    for (const anim of TRAINER_WALK_ANIMS) {
+      if (this.anims.exists(anim.key)) continue;
+      this.anims.create({
+        key: anim.key,
+        frames: anim.frames.map((frame) => ({ key: OVERWORLD_SPRITE_TEXTURE_KEY, frame })),
+        frameRate: TRAINER_WALK_FRAME_RATE,
         repeat: -1,
       });
     }
