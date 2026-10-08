@@ -1,4 +1,5 @@
 import { STAT_IDS, getSpecies, type StatId, type Stats } from '../data/dex';
+import { defaultHudLayout, parseHudLayout, type HudLayout } from '../data/hudLayout';
 import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybinds';
 import { levelCapForRoute } from '../data/run';
 import { isTilesetPreference, type TilesetPreference } from '../data/tilesets/ids';
@@ -19,6 +20,8 @@ export type Settings = Readonly<{
   tileset: TilesetPreference;
   /** Walk at running speed without holding the run key. */
   alwaysRun: boolean;
+  /** Where the route HUD's panels sit and whether they are collapsed. */
+  hudLayout: HudLayout;
   /** Which key presses confirm, cancel, move, open the party and open settings. */
   keybinds: Keybinds;
 }>;
@@ -58,6 +61,7 @@ export function defaultSettings(): Settings {
     volume: DEFAULT_VOLUME,
     tileset: DEFAULT_TILESET,
     alwaysRun: DEFAULT_ALWAYS_RUN,
+    hudLayout: defaultHudLayout(),
     keybinds: DEFAULT_KEYBINDS,
   };
 }
@@ -264,8 +268,9 @@ function parseSettings(value: unknown): Settings {
   const volume = isNumber(value.volume) ? clampVolume(value.volume) : base.volume;
   const tileset = isTilesetPreference(value.tileset) ? value.tileset : base.tileset;
   const alwaysRun = typeof value.alwaysRun === 'boolean' ? value.alwaysRun : base.alwaysRun;
+  const hudLayout = parseHudLayout(value.hudLayout);
   const keybinds = sanitizeKeybinds(value.keybinds);
-  return { textSpeed, volume, tileset, alwaysRun, keybinds };
+  return { textSpeed, volume, tileset, alwaysRun, hudLayout, keybinds };
 }
 
 function parseStats(value: unknown): Stats | null {

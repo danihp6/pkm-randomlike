@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_KEYBINDS } from '../data/keybinds';
+import { defaultHudLayout } from '../data/hudLayout';
 import { levelCapForRoute } from '../data/run';
 import {
   addItem,
@@ -79,6 +80,7 @@ describe('defaults', () => {
       volume: DEFAULT_VOLUME,
       tileset: DEFAULT_TILESET,
       alwaysRun: DEFAULT_ALWAYS_RUN,
+      hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
     });
   });
@@ -98,6 +100,7 @@ describe('encodeSave', () => {
         volume: 0.4,
         tileset: 'wood',
         alwaysRun: DEFAULT_ALWAYS_RUN,
+        hudLayout: defaultHudLayout(),
         keybinds: DEFAULT_KEYBINDS,
       },
       run,
@@ -110,6 +113,7 @@ describe('encodeSave', () => {
       volume: 0.4,
       tileset: 'wood',
       alwaysRun: DEFAULT_ALWAYS_RUN,
+      hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
     });
     expect(decoded.run).toEqual(run);
@@ -139,6 +143,7 @@ describe('decodeSave', () => {
       volume: 0.1,
       tileset: 'placeholder',
       alwaysRun: DEFAULT_ALWAYS_RUN,
+      hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
     });
   });
@@ -159,6 +164,7 @@ describe('decodeSave', () => {
       volume: 0.25,
       tileset: DEFAULT_TILESET,
       alwaysRun: DEFAULT_ALWAYS_RUN,
+      hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
     });
     expect(decoded.run?.party).toHaveLength(6);
@@ -174,6 +180,7 @@ describe('decodeSave', () => {
       volume: 0.5,
       tileset: DEFAULT_TILESET,
       alwaysRun: DEFAULT_ALWAYS_RUN,
+      hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
     });
     expect(decoded.run?.party).toHaveLength(6);
@@ -192,6 +199,7 @@ describe('decodeSave', () => {
       volume: 0.5,
       tileset: 'wood',
       alwaysRun: DEFAULT_ALWAYS_RUN,
+      hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
     });
     expect(decoded.run?.party).toHaveLength(6);
@@ -223,6 +231,7 @@ describe('settings validation', () => {
       volume: 1,
       tileset: DEFAULT_TILESET,
       alwaysRun: DEFAULT_ALWAYS_RUN,
+      hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
     });
   });
@@ -233,6 +242,7 @@ describe('settings validation', () => {
       volume: 0,
       tileset: DEFAULT_TILESET,
       alwaysRun: DEFAULT_ALWAYS_RUN,
+      hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
     });
     expect(document(JSON.stringify({ version: SAVE_VERSION, settings: {} })).settings).toEqual(defaultSettings());
@@ -251,6 +261,23 @@ describe('settings validation', () => {
     );
     expect(decoded.settings.keybinds.confirm).toBe('Q');
     expect(decoded.settings.keybinds.cancel).toBe(DEFAULT_KEYBINDS.cancel);
+  });
+
+  it('keeps a saved HUD layout and repairs a junk offset', () => {
+    const decoded = document(
+      JSON.stringify({
+        version: SAVE_VERSION,
+        settings: {
+          hudLayout: {
+            party: { dx: 40, dy: -20, collapsed: true },
+            bag: { dx: 99999, dy: 0, collapsed: 'no' },
+          },
+        },
+      }),
+    );
+    expect(decoded.settings.hudLayout.party).toEqual({ dx: 40, dy: -20, collapsed: true });
+    expect(decoded.settings.hudLayout.bag).toEqual({ dx: 0, dy: 0, collapsed: false });
+    expect(decoded.settings.hudLayout.box).toEqual(defaultHudLayout().box);
   });
 });
 
@@ -366,6 +393,7 @@ describe('migrateDocument', () => {
       volume: 0.25,
       tileset: 'wood',
       alwaysRun: DEFAULT_ALWAYS_RUN,
+      hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
     });
     expect(decoded.run).toEqual(run);

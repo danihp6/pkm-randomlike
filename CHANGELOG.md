@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Each HUD panel collapses to its own icon**, and the whole layout is a
+      **global preference**. Every panel of the `I` overlay — the route header,
+      PARTY, the bag, the PC BOX and the member detail window — now shows a small
+      line-art glyph at its top-left (route flag, Poke Ball, bag, PC box,
+      magnifier; procedural textures from `BootScene`). Clicking the icon
+      **collapses** the panel to just that icon; clicking again **expands** it and
+      pushes the others (a collapsed icon included) clear, so a panel beside a
+      collapsed one always opens. Panel drags now also **let go when the pointer
+      leaves the canvas** (or its button is released off-screen), via the input's
+      `gameout`/`pointerupoutside` plus a "button no longer down" check, so a held
+      panel never keeps following a pointer that is gone. The offsets and
+      collapsed flags are saved with the settings as `hudLayout`
+      (`src/data/hudLayout.ts`, validated per field, no version bump since a
+      missing field defaults) and re-applied when the route rebuilds, so the
+      layout survives a reload and carries into the next run (D22).
+      `docs/design-spec.md` §3/§7 updated.
 - [x] **The route HUD panels can be moved** (`I`). Each panel — the route header,
       PARTY, the bag, the PC BOX and the member detail window — is its own
       container and is grabbed by its **frame** (the interior stays live, so rows,

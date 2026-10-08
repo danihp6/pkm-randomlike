@@ -81,6 +81,20 @@ export const SPARKLE_TEXTURE_KEY = 'route:sparkle';
 export const BATTLE_MON_TEXTURE_KEY = 'battle:mon';
 export const BATTLE_PLATFORM_TEXTURE_KEY = 'battle:platform';
 
+/** The square size of a HUD panel's collapse-icon button. */
+export const PANEL_ICON_SIZE = 24;
+/**
+ * The white line-art glyph each HUD panel shows at its top-left. Tinted by the
+ * route scene onto a small dark button; the panel collapses to it on click.
+ */
+export const PANEL_ICON_KEYS = {
+  header: 'hud:icon:route',
+  party: 'hud:icon:party',
+  bag: 'hud:icon:bag',
+  box: 'hud:icon:box',
+  detail: 'hud:icon:detail',
+} as const;
+
 export class BootScene extends Phaser.Scene {
   constructor() {
     super('Boot');
@@ -144,6 +158,7 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     registerFrlgFont(this.cache.bitmapFont);
     this.buildRouteTextures();
+    this.buildPanelIconTextures();
     this.buildMoveFxAnimations();
     this.buildPlayerAnimations();
     this.buildTrainerAnimations();
@@ -267,5 +282,73 @@ export class BootScene extends Phaser.Scene {
     platform.fillEllipse(130, 25, 260, 50);
     platform.generateTexture(BATTLE_PLATFORM_TEXTURE_KEY, 260, 50);
     platform.destroy();
+  }
+
+  /**
+   * The white line-art glyphs the HUD panel headers show at their top-left
+   * (route flag, Poke Ball, bag, PC box, magnifier). One shared graphics draws
+   * each into its own texture; the route scene tints them onto a dark button.
+   */
+  private buildPanelIconTextures(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const size = PANEL_ICON_SIZE;
+    const draw = (key: string, render: (graphics: Phaser.GameObjects.Graphics) => void): void => {
+      g.clear();
+      render(g);
+      g.generateTexture(key, size, size);
+    };
+
+    // Route: a flag on a pole.
+    draw(PANEL_ICON_KEYS.header, (graphics) => {
+      graphics.lineStyle(2, 0xffffff, 1);
+      graphics.beginPath();
+      graphics.moveTo(7, 4);
+      graphics.lineTo(7, 20);
+      graphics.strokePath();
+      graphics.fillStyle(0xffffff, 1);
+      graphics.fillTriangle(7, 4, 19, 7, 7, 10);
+    });
+
+    // Party: a Poke Ball.
+    draw(PANEL_ICON_KEYS.party, (graphics) => {
+      graphics.lineStyle(2, 0xffffff, 1);
+      graphics.strokeCircle(12, 12, 8);
+      graphics.beginPath();
+      graphics.moveTo(4, 12);
+      graphics.lineTo(20, 12);
+      graphics.strokePath();
+      graphics.fillStyle(0xffffff, 1);
+      graphics.fillCircle(12, 12, 3);
+    });
+
+    // Bag: a satchel with a handle.
+    draw(PANEL_ICON_KEYS.bag, (graphics) => {
+      graphics.lineStyle(2, 0xffffff, 1);
+      graphics.beginPath();
+      graphics.arc(12, 10, 4, Math.PI, 0, false);
+      graphics.strokePath();
+      graphics.strokeRect(5, 10, 14, 10);
+    });
+
+    // PC box: a 2x2 grid of cells.
+    draw(PANEL_ICON_KEYS.box, (graphics) => {
+      graphics.lineStyle(2, 0xffffff, 1);
+      graphics.strokeRect(5, 5, 6, 6);
+      graphics.strokeRect(13, 5, 6, 6);
+      graphics.strokeRect(5, 13, 6, 6);
+      graphics.strokeRect(13, 13, 6, 6);
+    });
+
+    // Detail: a magnifier.
+    draw(PANEL_ICON_KEYS.detail, (graphics) => {
+      graphics.lineStyle(2, 0xffffff, 1);
+      graphics.strokeCircle(10, 10, 6);
+      graphics.beginPath();
+      graphics.moveTo(14.5, 14.5);
+      graphics.lineTo(19, 19);
+      graphics.strokePath();
+    });
+
+    g.destroy();
   }
 }

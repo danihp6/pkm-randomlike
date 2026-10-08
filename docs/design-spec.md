@@ -56,8 +56,14 @@ carries over.
   detail window — can be **dragged by their frame** (the interior stays live for
   rows, tabs and cells, so a click there still acts). A dragged panel **pushes**
   the others clear, so two panels never overlap; when a push chain reaches the
-  screen edge the dragged panel stops rather than covering another. The detail
-  window opens beside the PC box the first time and can then be moved freely.
+  screen edge the dragged panel stops rather than covering another, and a drag
+  released off-screen lets go instead of following the pointer. Each panel shows
+  its own **icon** at the top-left: clicking it **collapses** the panel to just
+  the icon, and clicking again **expands** it and pushes the rest (a collapsed
+  icon included) clear. The detail window opens beside the PC box the first time
+  and can then be moved freely. The positions and collapsed states are a global
+  preference saved with the settings (D22), so they survive a reload and the next
+  run.
 - You start a run by picking one of three starters drawn from the base forms of
   every evolution line with at least three members (itself plus two others), so
   every starter has room to grow. The starter cards work with the **mouse**: hover
@@ -137,10 +143,12 @@ win clears its route; a loss does not, and nothing carries over (D5).
 
 The player's preferences outlive a run: text speed (how fast the battle message
 box types itself out), master volume, the tileset preference (`auto` follows
-each biome, or one tileset is forced on every route) and **always run** (walk at
-running speed without holding the run key; on by default). They live in the same
-save document as the run (D22), are stored the moment they change and are edited
-from one screen (`O`, from the main menu, the starter pick or the route HUD).
+each biome, or one tileset is forced on every route), **always run** (walk at
+running speed without holding the run key; on by default) and the **HUD layout**
+(where each panel of the `I` overlay sits and whether it is collapsed). They live
+in the same save document as the run (D22), are stored the moment they change and
+are edited from one screen (`O`, from the main menu, the starter pick or the
+route HUD).
 
 ## 8. Out of scope (for now)
 
