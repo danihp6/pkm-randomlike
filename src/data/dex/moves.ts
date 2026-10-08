@@ -30,6 +30,10 @@ export type Move = Readonly<{
   critRatio: number;
   desc: string;
   shortDesc: string;
+  /** OHKO moves (Fissure, Sheer Cold...); their power ignores the damage formula. */
+  ohko?: boolean;
+  /** Fixed-damage kind (`'level'`, ...), set on Seismic Toss and Night Shade. */
+  damage?: string;
   drain?: readonly number[];
   recoil?: readonly number[];
   struggleRecoil?: boolean;

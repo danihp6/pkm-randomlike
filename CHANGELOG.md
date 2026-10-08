@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Randomized learnsets and movesets** (`D17`). Every Pokémon now learns a
+      per-run random move set instead of the canon's: `src/engine/battle/
+      randomLearnset.ts` rolls a learnset from the run seed keyed by species id,
+      keeping the canon's shape (same level-up levels, same number of TM/tutor/egg
+      slots) but a random move per slot. Damage moves are ordered **least power to
+      most**; the **first level-up move is always damaging**; each learnset keeps
+      at least **60% damage / 20% status** so no mon ends up all-status; **OHKO
+      moves are never rolled** and **fixed-damage moves only appear from level
+      20**. The moveset wild, trainer and player Pokémon enter battle with is the
+      last four moves the randomized learnset knows (`defaultMoveset`), and
+      level-ups learn from it (`addExperience` now carries the run seed), so the
+      whole run uses one consistent reroll. Wild/trainer builds
+      (`BattleScene`), the starter (`StarterScene`), the debug drop (`RouteScene`)
+      and `resolveBattle` all thread the run seed through; the `Move` type gained
+      its generated `ohko`/`damage` markers. `docs/battle-spec.md` §7.1/§8 added;
+      fixed-seed regression tests in `randomLearnset.test.ts`.
 - [x] **Each HUD panel collapses to its own icon**, and the whole layout is a
       **global preference**. Every panel of the `I` overlay — the route header,
       PARTY, the bag, the PC BOX and the member detail window — now shows a small

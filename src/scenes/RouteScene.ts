@@ -3072,6 +3072,7 @@ export class RouteScene extends Phaser.Scene {
       id: `debug:${speciesId}:${this.debugMonCounter}`,
       speciesId,
       level,
+      learnsetSeed: this.run.seed,
     });
     this.run = addPokemon(this.run, pokemon);
     this.persistRun();

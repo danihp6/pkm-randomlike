@@ -100,9 +100,31 @@ One capture attempt per route (a run-level counter, not a per-battle one).
   snapshot, so it survives a battle; the whole progression is RNG-free (D11).
 - Trainer rosters are generated at the route's level band, never above the cap.
 
+### 7.1 Randomized learnsets and movesets (`D17`)
+
+Every Pokémon's learnset is a pure function of the run seed and its species id
+(`src/engine/battle/randomLearnset.ts`). It keeps the canon's shape — the same
+level-up levels and the same number of TM/tutor/egg slots — but rolls which move
+fills each slot, so a run plays a randomizer where each species learns different
+moves. The rules:
+
+- A damage move is ordered **least power to most**, so early levels give the weak
+  moves and a high level gives the strong ones.
+- The **first level-up move is always damaging**, and every learnset keeps at
+  least **60% damage** and **20% status** moves so a Pokémon never ends up
+  all-status.
+- **OHKO moves are never rolled**; **fixed-damage moves** (Seismic Toss, Night
+  Shade, Super Fang, Endeavor, Final Gambit...) only appear from **level 20**.
+- The moveset a wild, trainer or player Pokémon enters battle with is the last
+  four moves its randomized learnset knows at its level (`defaultMoveset`), so
+  the menu battle reflects the same roll. The learnset is keyed by the run seed,
+  so a Pokémon keeps the same learnset as it levels and a replay rebuilds it.
+
 ## 8. Ordering and determinism
 
 - The battle takes its randomness from one seeded `Rng` derived from the run
   seed, the route index and the encounter id, so a replay of the same inputs
   produces the same battle.
+- A Pokémon's randomized learnset and moveset are derived from the run seed and
+  its species id, so they are stable for the whole run and across a replay.
 - The adapter in the scene never rolls: it only presents choices.
