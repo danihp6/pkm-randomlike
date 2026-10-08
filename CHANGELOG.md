@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The route HUD panels can be moved** (`I`). Each panel — the route header,
+      PARTY, the bag, the PC BOX and the member detail window — is its own
+      container and is grabbed by its **frame** (the interior stays live, so rows,
+      tabs and cells still click). A dragged panel **pushes** the others out of
+      its way so two panels never overlap, and a drag that would need a panel to
+      leave the screen (the push chain hits the edge) stops instead of covering
+      one. The drag runs in small steps, each one rolled back if it cannot be
+      settled, and the hit tests read the pointer in the panel's own coordinates,
+      so a moved panel's content keeps working. The detail window docks beside the
+      PC box the first time it opens (`hudPanels`/`updatePanelDrag` in
+      `RouteScene`). `docs/design-spec.md` §3 updated.
 - [x] **The main menu** is the landing screen now (`src/scenes/MainMenuScene.ts`):
       **New run**, **Continue** and **Options**. The boot scene goes straight to
       it instead of resuming a run or jumping to the starter pick. **Continue**

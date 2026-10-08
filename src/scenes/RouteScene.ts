@@ -176,6 +176,19 @@ const HUD_BOX_GRID_H = BOX_ROWS * HUD_BOX_CELL + (BOX_ROWS - 1) * HUD_BOX_CELL_G
 const HUD_BOX_H = HUD_BOX_TABS_H + HUD_BOX_GRID_H + HUD_BOX_PAD;
 const HUD_BOX_MAX_PAGES = 8;
 
+/** The frame band (px) of a HUD panel that grabs it instead of its content. */
+const HUD_PANEL_BORDER = 12;
+/** How far (px) past a panel's frame the grab band reaches, to cover the seam. */
+const HUD_PANEL_GRAB_PAD = 4;
+/** Gap (px) a moved panel keeps from the screen edge. */
+const HUD_PANEL_MARGIN = 8;
+/** Solver passes when the panels are pushed apart. */
+const HUD_PANEL_PUSH_PASSES = 16;
+/** How far (px) the dragged panel advances per sub-step while pushing others. */
+const HUD_PANEL_STEP = 8;
+/** Cap on the sub-steps one pointer move may take, so a jump cannot loop. */
+const HUD_PANEL_MAX_SUBSTEPS = 80;
+
 /** The pause menu (ESC / left-edge swipe): a centred window with two rows. */
 const PAUSE_MENU_W = 360;
 const PAUSE_MENU_ROW_H = 56;
@@ -253,6 +266,26 @@ type TrainerSpriteEntry = {
   trainer: RouteTrainer;
   sprite: Phaser.GameObjects.Sprite;
   spriteKey: string | null;
+};
+
+/** The HUD panels the player can drag around (the `I` overlay). */
+type HudPanelId = 'header' | 'party' | 'bag' | 'box' | 'detail';
+
+/**
+ * One draggable HUD panel: its window chrome and content live in `container`,
+ * `x`/`y`/`w`/`h` are its layout rect and `dx`/`dy` the drag displacement. The
+ * current on-screen rect is the layout rect shifted by the offset, which is what
+ * the drag and the push solver read.
+ */
+type HudPanel = {
+  id: HudPanelId;
+  container: Phaser.GameObjects.Container;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  dx: number;
+  dy: number;
 };
 
 /** The base inputs of the route on screen, before the debug reroll nonce. */
@@ -365,6 +398,16 @@ export class RouteScene extends Phaser.Scene {
   /** The in-flight step, while the sprite slides from one tile to the next. */
   private walkTween: Phaser.Tweens.Tween | null = null;
   private hudRoot!: Phaser.GameObjects.Container;
+  /** The draggable panels of the HUD, in draw order. */
+  private hudPanels: HudPanel[] = [];
+  /** The panel being dragged (pointer start + its offset at grab time), or null. */
+  private hudPanelDrag: {
+    id: HudPanelId;
+    pointerStart: { x: number; y: number };
+    offsetStart: { x: number; y: number };
+  } | null = null;
+  /** Whether the detail panel has been placed once (it is not re-docked after). */
+  private hudDetailPlaced = false;
   private hudTitle!: Phaser.GameObjects.BitmapText;
   /** Whether the route HUD overlay (route header, party and bag) is shown; hidden by default. */
   private hudVisible = false;
@@ -560,6 +603,9 @@ export class RouteScene extends Phaser.Scene {
     this.tileSprites = [];
     this.hudRows = [];
     this.hudBagRows = [];
+    this.hudPanels = [];
+    this.hudPanelDrag = null;
+    this.hudDetailPlaced = false;
     this.trainerSprites = [];
     this.trainerSpinIndex.clear();
     this.trainerFacing.clear();
@@ -725,19 +771,22 @@ export class RouteScene extends Phaser.Scene {
     const x = this.scale.width - HUD_PANEL_W - 8;
     const left = x + HUD_PAD_X;
     const right = x + HUD_PANEL_W - HUD_PAD_X;
-    const children: Phaser.GameObjects.GameObject[] = [];
+    const headerChildren: Phaser.GameObjects.GameObject[] = [];
+    const partyChildren: Phaser.GameObjects.GameObject[] = [];
+    const bagChildren: Phaser.GameObjects.GameObject[] = [];
+    const boxChildren: Phaser.GameObjects.GameObject[] = [];
 
     const header = addFrlgWindow(this, x, HUD_TOP, HUD_PANEL_W, HUD_HEADER_H);
     this.hudTitle = addFrlgText(this, left, HUD_TOP + HUD_PAD_TOP, '', { size: 16, tint: FRLG_INK });
-    children.push(header, this.hudTitle);
+    headerChildren.push(header, this.hudTitle);
 
     const partyY = HUD_TOP + HUD_HEADER_H + HUD_GAP;
     const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + HUD_PAD_BOTTOM;
     this.hudX = x;
     this.hudPartyY = partyY;
     this.hudPartyH = partyH;
-    children.push(addFrlgWindow(this, x, partyY, HUD_PANEL_W, partyH));
-    children.push(addFrlgText(this, x + HUD_PAD_X, partyY + HUD_PAD_TOP, 'PARTY', { size: 16, tint: 0x3a3956 }));
+    partyChildren.push(addFrlgWindow(this, x, partyY, HUD_PANEL_W, partyH));
+    partyChildren.push(addFrlgText(this, x + HUD_PAD_X, partyY + HUD_PAD_TOP, 'PARTY', { size: 16, tint: 0x3a3956 }));
     this.hudRows = [];
     for (let i = 0; i < MAX_PARTY_SIZE; i++) {
       const rowY = partyY + HUD_PARTY_HEADER + i * HUD_PARTY_ROW;
@@ -776,14 +825,14 @@ export class RouteScene extends Phaser.Scene {
         origin: [1, 0],
       });
       this.hudRows.push({ highlight, portrait, held, name, level, hpText, bar, fill });
-      children.push(highlight, portrait, held, name, level, bar, fill, hpText);
+      partyChildren.push(highlight, portrait, held, name, level, bar, fill, hpText);
     }
 
     const bagY = partyY + partyH + HUD_GAP;
     const bagH = HUD_BAG_HEADER + HUD_BAG_ROWS * HUD_BAG_ROW + HUD_PAD_BOTTOM;
     this.hudBagY = bagY;
     this.hudBagH = bagH;
-    children.push(addFrlgWindow(this, x, bagY, HUD_PANEL_W, bagH));
+    bagChildren.push(addFrlgWindow(this, x, bagY, HUD_PANEL_W, bagH));
 
     // Pocket tabs across the window's head, FRLG style: the active one reads
     // dark-on-light, the rest stay a pale folder. Click or `[` / `]` to switch.
@@ -798,7 +847,7 @@ export class RouteScene extends Phaser.Scene {
         origin: [0.5, 0],
       });
       this.hudBagTabs.push({ category, bg, label });
-      children.push(bg, label);
+      bagChildren.push(bg, label);
     });
 
     this.hudBagRows = [];
@@ -815,7 +864,7 @@ export class RouteScene extends Phaser.Scene {
         origin: [1, 0],
       });
       this.hudBagRows.push({ icon, name, count });
-      children.push(icon, name, count);
+      bagChildren.push(icon, name, count);
     }
 
     this.hudBagEmpty = addFrlgText(this, x + HUD_PANEL_W / 2, bagY + HUD_BAG_HEADER + 36, 'no items', {
@@ -823,7 +872,7 @@ export class RouteScene extends Phaser.Scene {
       tint: 0x6b6887,
       origin: [0.5, 0],
     });
-    children.push(this.hudBagEmpty);
+    bagChildren.push(this.hudBagEmpty);
 
     // The PC BOX window: a page tab strip over a grid of avatar cells, in a
     // second column to the left of the party/bag stack.
@@ -832,7 +881,7 @@ export class RouteScene extends Phaser.Scene {
     this.hudBoxX = boxX;
     this.hudBoxY = boxY;
     this.hudBoxH = HUD_BOX_H;
-    children.push(addFrlgWindow(this, boxX, boxY, HUD_PANEL_W, HUD_BOX_H));
+    boxChildren.push(addFrlgWindow(this, boxX, boxY, HUD_PANEL_W, HUD_BOX_H));
 
     this.hudBoxTabs = [];
     for (let page = 0; page < HUD_BOX_MAX_PAGES; page++) {
@@ -847,7 +896,7 @@ export class RouteScene extends Phaser.Scene {
         origin: [0.5, 0],
       }).setVisible(false);
       this.hudBoxTabs.push({ page, bg, label });
-      children.push(bg, label);
+      boxChildren.push(bg, label);
     }
 
     const gridW = BOX_COLS * HUD_BOX_CELL + (BOX_COLS - 1) * HUD_BOX_CELL_GAP;
@@ -872,13 +921,67 @@ export class RouteScene extends Phaser.Scene {
         .setScale(HUD_BOX_HELD_ICON_SCALE)
         .setVisible(false);
       this.hudBoxCells.push({ highlight, bg, portrait, held });
-      children.push(bg, highlight, portrait, held);
+      boxChildren.push(bg, highlight, portrait, held);
     }
 
     // The member detail panel, drawn over the box's left; hidden until a member
     // is clicked. It goes before the drag ghost so the ghost still rides on top.
     this.hudDetail = this.buildDetailPanel();
-    children.push(this.hudDetail);
+
+    // Each panel is its own container, so a drag moves the whole panel and the
+    // push solver can shove the containers apart without touching their content.
+    this.hudPanels = [
+      {
+        id: 'header',
+        container: this.add.container(0, 0, headerChildren),
+        x,
+        y: HUD_TOP,
+        w: HUD_PANEL_W,
+        h: HUD_HEADER_H,
+        dx: 0,
+        dy: 0,
+      },
+      {
+        id: 'party',
+        container: this.add.container(0, 0, partyChildren),
+        x,
+        y: partyY,
+        w: HUD_PANEL_W,
+        h: partyH,
+        dx: 0,
+        dy: 0,
+      },
+      {
+        id: 'bag',
+        container: this.add.container(0, 0, bagChildren),
+        x,
+        y: bagY,
+        w: HUD_PANEL_W,
+        h: bagH,
+        dx: 0,
+        dy: 0,
+      },
+      {
+        id: 'box',
+        container: this.add.container(0, 0, boxChildren),
+        x: boxX,
+        y: boxY,
+        w: HUD_PANEL_W,
+        h: HUD_BOX_H,
+        dx: 0,
+        dy: 0,
+      },
+      {
+        id: 'detail',
+        container: this.hudDetail,
+        x: this.hudDetailX,
+        y: this.hudDetailY,
+        w: HUD_PANEL_W,
+        h: HUD_DETAIL_H,
+        dx: 0,
+        dy: 0,
+      },
+    ];
 
     // The avatar held in hand while dragging, drawn last so it rides over the
     // panels and follows the pointer anywhere on screen.
@@ -886,9 +989,11 @@ export class RouteScene extends Phaser.Scene {
       .image(0, 0, PORTRAIT_TEXTURE_KEY, 0)
       .setScale(0.9)
       .setVisible(false);
-    children.push(this.hudDragGhost);
 
-    this.hudRoot = this.add.container(0, 0, children).setDepth(150).setVisible(this.hudVisible);
+    this.hudRoot = this.add
+      .container(0, 0, [...this.hudPanels.map((panel) => panel.container), this.hudDragGhost])
+      .setDepth(150)
+      .setVisible(this.hudVisible);
   }
 
   /**
@@ -1031,6 +1136,7 @@ export class RouteScene extends Phaser.Scene {
       this.hudGrabMoved = false;
       this.hudDragItem = null;
       this.hudDragItemFrom = null;
+      this.hudPanelDrag = null;
       this.hudDragGhost.setVisible(false);
       this.input.setDefaultCursor('default');
     }
@@ -1249,6 +1355,13 @@ export class RouteScene extends Phaser.Scene {
    */
   private handleHudPointerDown(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive() || !this.hudVisible) return;
+    // Grabbing a panel's frame moves it (and shoves the others aside); its inner
+    // area stays live for rows, tabs and cells.
+    const panel = this.hudPanelAt(pointer);
+    if (panel) {
+      this.startPanelDrag(panel, pointer);
+      return;
+    }
     if (this.hudDetailState.memberId !== null && this.pointerInDetailPanel(pointer)) {
       this.handleDetailPointerDown(pointer);
       return;
@@ -1330,6 +1443,11 @@ export class RouteScene extends Phaser.Scene {
       this.input.setDefaultCursor('default');
       return;
     }
+    // A panel drag follows the pointer and pushes the others out of the way.
+    if (this.hudPanelDrag) {
+      this.updatePanelDrag(pointer);
+      return;
+    }
     if (this.hudDragItem !== null) {
       this.hudDragGhost.setPosition(pointer.x, pointer.y);
       this.input.setDefaultCursor('grabbing');
@@ -1380,10 +1498,17 @@ export class RouteScene extends Phaser.Scene {
     const overMember = this.hudTarget(pointer) !== null;
     const overMove = this.detailMoveRowAt(pointer) !== null;
     const overItem = this.hudHeldStackAt(pointer) !== null;
-    this.input.setDefaultCursor(overItem || overMove ? 'grab' : overMember ? 'pointer' : 'default');
+    const overPanel = overMember || overMove || overItem ? false : this.hudPanelAt(pointer) !== null;
+    this.input.setDefaultCursor(
+      overItem || overMove ? 'grab' : overMember ? 'pointer' : overPanel ? 'move' : 'default',
+    );
   }
 
   private handleHudPointerUp(pointer: Phaser.Input.Pointer): void {
+    if (this.hudPanelDrag) {
+      this.endPanelDrag();
+      return;
+    }
     if (this.hudDragItem !== null) {
       const itemId = this.hudDragItem;
       const from = this.hudDragItemFrom;
@@ -1437,6 +1562,12 @@ export class RouteScene extends Phaser.Scene {
   private openMemberDetail(memberId: string): void {
     this.hudDetailState = openDetail(memberId);
     this.refreshDetail();
+    // The first open docks the panel beside the PC box; after that it stays
+    // wherever the player dragged it.
+    if (!this.hudDetailPlaced) {
+      this.hudDetailPlaced = true;
+      this.dockDetailPanel();
+    }
   }
 
   /** Closes the detail panel. */
@@ -1465,23 +1596,25 @@ export class RouteScene extends Phaser.Scene {
   /** True when the pointer is over the open detail panel. */
   private pointerInDetailPanel(pointer: Phaser.Input.Pointer): boolean {
     if (this.hudDetailState.memberId === null) return false;
+    const point = this.panelPoint(pointer, 'detail');
     return (
-      pointer.x >= this.hudDetailX &&
-      pointer.x <= this.hudDetailX + HUD_PANEL_W &&
-      pointer.y >= this.hudDetailY &&
-      pointer.y <= this.hudDetailY + HUD_DETAIL_H
+      point.x >= this.hudDetailX &&
+      point.x <= this.hudDetailX + HUD_PANEL_W &&
+      point.y >= this.hudDetailY &&
+      point.y <= this.hudDetailY + HUD_DETAIL_H
     );
   }
 
   /** The detail tab under the pointer, or null. */
   private detailTabAt(pointer: Phaser.Input.Pointer): DetailTab | null {
     if (!this.pointerInDetailPanel(pointer)) return null;
+    const point = this.panelPoint(pointer, 'detail');
     const tab = this.hudDetailTabs.find(
       (entry) =>
-        pointer.x >= entry.bg.x &&
-        pointer.x <= entry.bg.x + entry.bg.width &&
-        pointer.y >= entry.bg.y &&
-        pointer.y <= entry.bg.y + entry.bg.height,
+        point.x >= entry.bg.x &&
+        point.x <= entry.bg.x + entry.bg.width &&
+        point.y >= entry.bg.y &&
+        point.y <= entry.bg.y + entry.bg.height,
     );
     return tab?.tab ?? null;
   }
@@ -1489,8 +1622,9 @@ export class RouteScene extends Phaser.Scene {
   /** The move row under the pointer in the MOVES tab, or null outside a move. */
   private detailMoveRowAt(pointer: Phaser.Input.Pointer): number | null {
     if (!this.pointerInDetailPanel(pointer) || this.hudDetailState.tab !== 'moves') return null;
+    const point = this.panelPoint(pointer, 'detail');
     const rowTop = this.hudDetailY + HUD_DETAIL_CONTENT_TOP;
-    const slot = Math.floor((pointer.y - rowTop) / HUD_DETAIL_ROW);
+    const slot = Math.floor((point.y - rowTop) / HUD_DETAIL_ROW);
     const count = this.hudDetailView?.moves.length ?? 0;
     return slot >= 0 && slot < count ? slot : null;
   }
@@ -1575,49 +1709,54 @@ export class RouteScene extends Phaser.Scene {
   /** The party index under the pointer, or null outside a filled row. */
   private hudPartyRowAt(pointer: Phaser.Input.Pointer): number | null {
     if (!this.pointerInPartyPanel(pointer)) return null;
+    const point = this.panelPoint(pointer, 'party');
     const rowTop = this.hudPartyY + HUD_PARTY_HEADER;
-    const slot = Math.floor((pointer.y - rowTop) / HUD_PARTY_ROW);
-    if (pointer.y < rowTop || slot < 0 || slot >= MAX_PARTY_SIZE) return null;
+    const slot = Math.floor((point.y - rowTop) / HUD_PARTY_ROW);
+    if (point.y < rowTop || slot < 0 || slot >= MAX_PARTY_SIZE) return null;
     return slot < this.run.party.length ? slot : null;
   }
 
   /** The box index under the pointer, or null outside a filled cell. */
   private hudBoxCellAt(pointer: Phaser.Input.Pointer): number | null {
+    const point = this.panelPoint(pointer, 'box');
     const gridW = BOX_COLS * HUD_BOX_CELL + (BOX_COLS - 1) * HUD_BOX_CELL_GAP;
     const gridLeft = this.hudBoxX + HUD_BOX_PAD + (HUD_PANEL_W - HUD_BOX_PAD * 2 - gridW) / 2;
     const stride = HUD_BOX_CELL + HUD_BOX_CELL_GAP;
-    const col = Math.floor((pointer.x - gridLeft) / stride);
-    const row = Math.floor((pointer.y - (this.hudBoxY + HUD_BOX_TABS_H)) / stride);
+    const col = Math.floor((point.x - gridLeft) / stride);
+    const row = Math.floor((point.y - (this.hudBoxY + HUD_BOX_TABS_H)) / stride);
     if (col < 0 || col >= BOX_COLS || row < 0 || row >= BOX_ROWS) return null;
     const index = boxCellIndex(this.hudBoxPage, col, row);
     return index < this.run.box.length ? index : null;
   }
 
   private pointerInPartyPanel(pointer: Phaser.Input.Pointer): boolean {
+    const point = this.panelPoint(pointer, 'party');
     return (
-      pointer.x >= this.hudX &&
-      pointer.x <= this.hudX + HUD_PANEL_W &&
-      pointer.y >= this.hudPartyY &&
-      pointer.y <= this.hudPartyY + this.hudPartyH
+      point.x >= this.hudX &&
+      point.x <= this.hudX + HUD_PANEL_W &&
+      point.y >= this.hudPartyY &&
+      point.y <= this.hudPartyY + this.hudPartyH
     );
   }
 
   private pointerInBoxPanel(pointer: Phaser.Input.Pointer): boolean {
+    const point = this.panelPoint(pointer, 'box');
     return (
-      pointer.x >= this.hudBoxX &&
-      pointer.x <= this.hudBoxX + HUD_PANEL_W &&
-      pointer.y >= this.hudBoxY &&
-      pointer.y <= this.hudBoxY + this.hudBoxH
+      point.x >= this.hudBoxX &&
+      point.x <= this.hudBoxX + HUD_PANEL_W &&
+      point.y >= this.hudBoxY &&
+      point.y <= this.hudBoxY + this.hudBoxH
     );
   }
 
   /** The bag stack under the pointer in the active pocket, or null. */
   private hudBagStackAt(pointer: Phaser.Input.Pointer): string | null {
     if (!this.pointerInBagPanel(pointer)) return null;
+    const point = this.panelPoint(pointer, 'bag');
     const bag = bagForCategory(this.run.bag, this.hudBagCategory);
     const rowTop = this.hudBagY + HUD_BAG_HEADER;
-    const slot = Math.floor((pointer.y - rowTop) / HUD_BAG_ROW);
-    if (pointer.y < rowTop || slot < 0 || slot >= HUD_BAG_ROWS) return null;
+    const slot = Math.floor((point.y - rowTop) / HUD_BAG_ROW);
+    if (point.y < rowTop || slot < 0 || slot >= HUD_BAG_ROWS) return null;
     return bag[slot]?.itemId ?? null;
   }
 
@@ -1643,28 +1782,31 @@ export class RouteScene extends Phaser.Scene {
         ? this.hudRows[target.index]?.held
         : this.hudBoxCells[target.index - this.hudBoxPage * BOX_PAGE_SIZE]?.held;
     if (!badge || !badge.visible) return null;
+    const point = this.panelPoint(pointer, target.pane);
     const radius = Math.max(badge.displayWidth, badge.displayHeight) / 2;
-    if (Math.hypot(pointer.x - badge.x, pointer.y - badge.y) > radius) return null;
+    if (Math.hypot(point.x - badge.x, point.y - badge.y) > radius) return null;
     return { itemId, memberId: member.fighter.id };
   }
 
   private pointerInBagPanel(pointer: Phaser.Input.Pointer): boolean {
+    const point = this.panelPoint(pointer, 'bag');
     return (
-      pointer.x >= this.hudX &&
-      pointer.x <= this.hudX + HUD_PANEL_W &&
-      pointer.y >= this.hudBagY &&
-      pointer.y <= this.hudBagY + this.hudBagH
+      point.x >= this.hudX &&
+      point.x <= this.hudX + HUD_PANEL_W &&
+      point.y >= this.hudBagY &&
+      point.y <= this.hudBagY + this.hudBagH
     );
   }
 
   /** A press on a bag pocket tab selects it; true when it handled the press. */
   private selectBagTab(pointer: Phaser.Input.Pointer): boolean {
+    const point = this.panelPoint(pointer, 'bag');
     const tab = this.hudBagTabs.find(
       (entry) =>
-        pointer.x >= entry.bg.x &&
-        pointer.x <= entry.bg.x + entry.bg.width &&
-        pointer.y >= entry.bg.y &&
-        pointer.y <= entry.bg.y + entry.bg.height,
+        point.x >= entry.bg.x &&
+        point.x <= entry.bg.x + entry.bg.width &&
+        point.y >= entry.bg.y &&
+        point.y <= entry.bg.y + entry.bg.height,
     );
     if (!tab) return false;
     this.hudBagCategory = tab.category;
@@ -1674,18 +1816,255 @@ export class RouteScene extends Phaser.Scene {
 
   /** A press on a PC box page tab selects it; true when it handled the press. */
   private selectBoxTab(pointer: Phaser.Input.Pointer): boolean {
+    const point = this.panelPoint(pointer, 'box');
     const tab = this.hudBoxTabs.find(
       (entry) =>
         entry.bg.visible &&
-        pointer.x >= entry.bg.x &&
-        pointer.x <= entry.bg.x + entry.bg.width &&
-        pointer.y >= entry.bg.y &&
-        pointer.y <= entry.bg.y + entry.bg.height,
+        point.x >= entry.bg.x &&
+        point.x <= entry.bg.x + entry.bg.width &&
+        point.y >= entry.bg.y &&
+        point.y <= entry.bg.y + entry.bg.height,
     );
     if (!tab) return false;
     this.hudBoxPage = tab.page;
     this.refreshHud();
     return true;
+  }
+
+  /** The panel whose frame band is under the pointer; the topmost one wins. */
+  private hudPanelAt(pointer: Phaser.Input.Pointer): HudPanel | null {
+    for (let i = this.hudPanels.length - 1; i >= 0; i--) {
+      const panel = this.hudPanels[i];
+      if (!panel.container.visible) continue;
+      if (this.onPanelBorder(panel, pointer)) return panel;
+    }
+    return null;
+  }
+
+  /**
+   * True when `pointer` is on a panel's frame: inside the window (plus a small
+   * pad, so the seam between two panels is grabbable) but outside its inner,
+   * interactive area. The header has nothing interactive, so all of it grabs.
+   */
+  private onPanelBorder(panel: HudPanel, pointer: Phaser.Input.Pointer): boolean {
+    const rect = this.panelRect(panel);
+    const pad = HUD_PANEL_GRAB_PAD;
+    const inside =
+      pointer.x >= rect.x - pad &&
+      pointer.x <= rect.x + rect.w + pad &&
+      pointer.y >= rect.y - pad &&
+      pointer.y <= rect.y + rect.h + pad;
+    if (!inside) return false;
+    if (panel.id === 'header') return true;
+    const inset = HUD_PANEL_BORDER;
+    const inner =
+      pointer.x >= rect.x + inset &&
+      pointer.x <= rect.x + rect.w - inset &&
+      pointer.y >= rect.y + inset &&
+      pointer.y <= rect.y + rect.h - inset;
+    return !inner;
+  }
+
+  /** A panel's current on-screen rect: its layout rect plus the drag offset. */
+  private panelRect(panel: HudPanel): { x: number; y: number; w: number; h: number } {
+    return { x: panel.x + panel.dx, y: panel.y + panel.dy, w: panel.w, h: panel.h };
+  }
+
+  /** The pointer in a panel's own (layout) coordinates, undoing its drag offset. */
+  private panelPoint(pointer: Phaser.Input.Pointer, id: HudPanelId): { x: number; y: number } {
+    const panel = this.hudPanels.find((entry) => entry.id === id);
+    if (!panel) return { x: pointer.x, y: pointer.y };
+    return { x: pointer.x - panel.dx, y: pointer.y - panel.dy };
+  }
+
+  /** Starts dragging `panel` from the pointer, keeping it on top of the rest. */
+  private startPanelDrag(panel: HudPanel, pointer: Phaser.Input.Pointer): void {
+    this.hudPanelDrag = {
+      id: panel.id,
+      pointerStart: { x: pointer.x, y: pointer.y },
+      offsetStart: { x: panel.dx, y: panel.dy },
+    };
+    this.hudRoot.bringToTop(panel.container);
+    // The member/item ghost must still ride above every panel.
+    this.hudRoot.bringToTop(this.hudDragGhost);
+    this.input.setDefaultCursor('grabbing');
+  }
+
+  /** Moves the dragged panel toward the pointer, in steps, and settles the rest. */
+  private updatePanelDrag(pointer: Phaser.Input.Pointer): void {
+    const drag = this.hudPanelDrag;
+    if (!drag) return;
+    const panel = this.hudPanels.find((entry) => entry.id === drag.id);
+    if (!panel) return;
+    const targetX = drag.offsetStart.x + (pointer.x - drag.pointerStart.x);
+    const targetY = drag.offsetStart.y + (pointer.y - drag.pointerStart.y);
+    this.movePanelTowards(panel, targetX, targetY);
+    this.applyPanelPositions();
+  }
+
+  /**
+   * Walks the dragged panel toward (`targetX`, `targetY`) in small steps, pushing
+   * the others aside at each one. A step that cannot settle (the chain of pushes
+   * hit the screen edge) is rolled back, so the panel simply stops rather than
+   * overlapping: the panels are never allowed to cover each other.
+   */
+  private movePanelTowards(panel: HudPanel, targetX: number, targetY: number): void {
+    const steps = HUD_PANEL_MAX_SUBSTEPS;
+    for (let i = 0; i < steps; i++) {
+      const dx = targetX - panel.dx;
+      const dy = targetY - panel.dy;
+      const distance = Math.hypot(dx, dy);
+      if (distance <= HUD_PANEL_STEP) {
+        if (this.tryPanelStep(panel, targetX, targetY)) return;
+        return;
+      }
+      const nextX = panel.dx + (dx / distance) * HUD_PANEL_STEP;
+      const nextY = panel.dy + (dy / distance) * HUD_PANEL_STEP;
+      if (!this.tryPanelStep(panel, nextX, nextY)) return;
+    }
+  }
+
+  /**
+   * Tries one drag step: moves `panel` to the position, pushes the others clear
+   * and, if any overlap could not be resolved, restores every offset and reports
+   * false so the caller stops the drag there.
+   */
+  private tryPanelStep(panel: HudPanel, x: number, y: number): boolean {
+    const snapshot = this.hudPanels.map((entry) => ({ id: entry.id, dx: entry.dx, dy: entry.dy }));
+    panel.dx = x;
+    panel.dy = y;
+    this.clampPanel(panel);
+    const blocked = this.resolvePanelCollisions(panel.id);
+    if (!blocked) return true;
+    for (const saved of snapshot) {
+      const entry = this.hudPanels.find((candidate) => candidate.id === saved.id);
+      if (entry) {
+        entry.dx = saved.dx;
+        entry.dy = saved.dy;
+      }
+    }
+    return false;
+  }
+
+  private endPanelDrag(): void {
+    this.hudPanelDrag = null;
+    this.input.setDefaultCursor('default');
+  }
+
+  /** Pushes every panel's drag offset onto its container. */
+  private applyPanelPositions(): void {
+    for (const panel of this.hudPanels) panel.container.setPosition(panel.dx, panel.dy);
+  }
+
+  /** Keeps a panel fully on screen. */
+  private clampPanel(panel: HudPanel): void {
+    const maxX = Math.max(HUD_PANEL_MARGIN, this.scale.width - panel.w - HUD_PANEL_MARGIN);
+    const maxY = Math.max(HUD_PANEL_MARGIN, this.scale.height - panel.h - HUD_PANEL_MARGIN);
+    panel.dx = Math.max(HUD_PANEL_MARGIN - panel.x, Math.min(maxX - panel.x, panel.dx));
+    panel.dy = Math.max(HUD_PANEL_MARGIN - panel.y, Math.min(maxY - panel.y, panel.dy));
+  }
+
+  /**
+   * Pushes the visible panels out of each other, so they never overlap. The
+   * dragged panel (`pinnedId`) holds its place and shoves the rest; a pushed
+   * panel can in turn shove the next one. Returns true when some overlap could
+   * not be resolved (a panel was pressed against the screen edge).
+   */
+  private resolvePanelCollisions(pinnedId: HudPanelId): boolean {
+    const panels = this.hudPanels;
+    for (let pass = 0; pass < HUD_PANEL_PUSH_PASSES; pass++) {
+      let changed = false;
+      for (let i = 0; i < panels.length; i++) {
+        if (!panels[i].container.visible) continue;
+        for (let j = i + 1; j < panels.length; j++) {
+          if (!panels[j].container.visible) continue;
+          if (!this.panelsOverlap(panels[i], panels[j])) continue;
+          if (this.separatePair(panels[i], panels[j], pinnedId)) changed = true;
+        }
+      }
+      if (!changed) break;
+    }
+    for (let i = 0; i < panels.length; i++) {
+      if (!panels[i].container.visible) continue;
+      for (let j = i + 1; j < panels.length; j++) {
+        if (!panels[j].container.visible) continue;
+        if (this.panelsOverlap(panels[i], panels[j])) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Separates one overlapping pair. The pinned panel never moves while it can
+   * push the other; when it cannot (the other is clamped) it is left to the
+   * caller to roll the step back. With neither pinned, the first that can move
+   * takes the push.
+   */
+  private separatePair(a: HudPanel, b: HudPanel, pinnedId: HudPanelId): boolean {
+    const push = this.pushVector(a, b);
+    if (push.x === 0 && push.y === 0) return false;
+    if (a.id === pinnedId) return this.applyPanelPush(b, push);
+    if (b.id === pinnedId) return this.applyPanelPush(a, { x: -push.x, y: -push.y });
+    if (this.applyPanelPush(b, push)) return true;
+    return this.applyPanelPush(a, { x: -push.x, y: -push.y });
+  }
+
+  /** Applies `push` to a panel and reports whether it fit without clamping. */
+  private applyPanelPush(panel: HudPanel, push: { x: number; y: number }): boolean {
+    const beforeX = panel.dx;
+    const beforeY = panel.dy;
+    panel.dx += push.x;
+    panel.dy += push.y;
+    this.clampPanel(panel);
+    return (
+      Math.abs(panel.dx - beforeX - push.x) < 0.01 &&
+      Math.abs(panel.dy - beforeY - push.y) < 0.01
+    );
+  }
+
+  /** The minimum translation that moves `to` clear of `from`, along one axis. */
+  private pushVector(from: HudPanel, to: HudPanel): { x: number; y: number } {
+    const a = this.panelRect(from);
+    const b = this.panelRect(to);
+    const overlapX = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+    const overlapY = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+    if (overlapX <= 0 || overlapY <= 0) return { x: 0, y: 0 };
+    if (overlapX < overlapY) {
+      const dir = b.x + b.w / 2 >= a.x + a.w / 2 ? 1 : -1;
+      return { x: dir * overlapX, y: 0 };
+    }
+    const dir = b.y + b.h / 2 >= a.y + a.h / 2 ? 1 : -1;
+    return { x: 0, y: dir * overlapY };
+  }
+
+  private panelsOverlap(a: HudPanel, b: HudPanel): boolean {
+    const ra = this.panelRect(a);
+    const rb = this.panelRect(b);
+    return ra.x < rb.x + rb.w && rb.x < ra.x + ra.w && ra.y < rb.y + rb.h && rb.y < ra.y + ra.h;
+  }
+
+  /** Places the detail panel just left of the PC box the first time it opens. */
+  private dockDetailPanel(): void {
+    const detail = this.hudPanels.find((panel) => panel.id === 'detail');
+    const box = this.hudPanels.find((panel) => panel.id === 'box');
+    if (!detail || !box) return;
+    const snapshot = this.hudPanels.map((entry) => ({ id: entry.id, dx: entry.dx, dy: entry.dy }));
+    const boxRect = this.panelRect(box);
+    detail.dx = boxRect.x - HUD_GAP - HUD_PANEL_W - detail.x;
+    detail.dy = boxRect.y - detail.y;
+    this.clampPanel(detail);
+    // If the box was moved into the way, nudge it (and the rest) clear of the
+    // detail; if there is no room at all, keep the detail at its layout spot.
+    if (this.resolvePanelCollisions('detail')) {
+      for (const saved of snapshot) {
+        const entry = this.hudPanels.find((candidate) => candidate.id === saved.id);
+        if (entry) {
+          entry.dx = saved.dx;
+          entry.dy = saved.dy;
+        }
+      }
+    }
+    this.applyPanelPositions();
   }
 
   /** Two cameras: one follows the world, one pins the HUD overlay to the screen. */
