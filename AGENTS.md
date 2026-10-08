@@ -48,8 +48,9 @@ already shipped (read only when asked).
 - `src/data/` – `dex/` (generated + typed accessors), `tilesets/` (registry +
   palettes), `biomes.ts`, `encounters.ts`, `trainers.ts`, `run.ts`, `items.ts`.
   Contract in `src/data/README.md`.
-- `src/scenes/` – `BootScene.ts`, `RouteScene.ts`, `BattleScene.ts` (later:
-  `PartyScene`, `BoxScene`, `MenuScene`).
+- `src/scenes/` – `BootScene.ts`, `MainMenuScene.ts`, `StarterScene.ts`,
+  `RouteScene.ts`, `BattleScene.ts`, `RunOverScene.ts`, `SettingsScene.ts` (later:
+  `BoxScene`).
 - `src/render/`, `src/input/`, `src/audio/` – Phaser-side helpers, created as
   each phase needs them.
 - `src/assets/` – atlas sheets, sprites and manifests. Contract in

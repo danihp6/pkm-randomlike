@@ -80,7 +80,7 @@ export class StarterScene extends Phaser.Scene {
       this,
       width / 2,
       height - 56,
-      `${keyLabel(keys.left)}  ${keyLabel(keys.right)}  choose      ${keyLabel(keys.confirm)}  confirm      S  seed      ${keyLabel(keys.settings)}  settings`,
+      `${keyLabel(keys.left)}  ${keyLabel(keys.right)}  choose      ${keyLabel(keys.confirm)}  confirm      S  seed      ${keyLabel(keys.settings)}  settings      ${keyLabel(keys.cancel)}  back`,
       {
         size: 16,
         tint: 0xcbd5f5,
@@ -122,6 +122,11 @@ export class StarterScene extends Phaser.Scene {
         return;
       case 'confirm':
         this.confirm();
+        return;
+      case 'cancel':
+        // Back to the hub: the run in progress is untouched, so it can still be
+        // continued from the main menu.
+        this.scene.start('MainMenu');
         return;
       case 'settings':
         this.openSettings();
