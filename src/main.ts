@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { IS_DEVELOP } from './dev/env';
 import { BattleScene } from './scenes/BattleScene';
 import { BootScene } from './scenes/BootScene';
+import { MainMenuScene } from './scenes/MainMenuScene';
 import { RouteScene } from './scenes/RouteScene';
 import { RunOverScene } from './scenes/RunOverScene';
 import { SettingsScene } from './scenes/SettingsScene';
@@ -28,7 +29,7 @@ export const config: Phaser.Types.Core.GameConfig = {
   // Two extra touch pointers: the on-screen pad can be held while A / B is
   // pressed (Mouse + pointer1 + pointer2 + pointer3).
   input: { activePointers: 3 },
-  scene: [BootScene, StarterScene, RouteScene, BattleScene, RunOverScene, SettingsScene],
+  scene: [BootScene, MainMenuScene, StarterScene, RouteScene, BattleScene, RunOverScene, SettingsScene],
 };
 
 export const game = new Phaser.Game(config);

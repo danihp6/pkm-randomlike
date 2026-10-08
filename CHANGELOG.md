@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The main menu** is the landing screen now (`src/scenes/MainMenuScene.ts`):
+      **New run**, **Continue** and **Options**. The boot scene goes straight to
+      it instead of resuming a run or jumping to the starter pick. **Continue**
+      appears only when the save holds a run with a living party and shows the
+      route it is on; it resumes the run where it left off. **New run** opens the
+      starter pick with a fresh seed, and the old run is replaced only once the
+      new one is written to the save, so picking it by mistake or cancelling at
+      the starter pick (new **cancel** action, bound to `Q`) returns to the menu
+      with the run in progress intact. **Options** opens the settings screen
+      paused-on-top, which now also lists the main menu as an opener and refreshes
+      the menu's key hints on close. The menu takes the mouse (hover highlights a
+      row, a click picks it) beside the keyboard and the touch pad.
+      `docs/design-spec.md` §2/§7 updated.
 - [x] **Route trainers are back**, the classic way. The generator's population
       pass (`src/engine/routes/sketch.ts` `placeTrainers`) now places them: one
       guards the main lane and one more stands by every filled pocket's item, plus

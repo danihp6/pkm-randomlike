@@ -147,20 +147,17 @@ export class BootScene extends Phaser.Scene {
     this.buildMoveFxAnimations();
     this.buildPlayerAnimations();
     this.buildTrainerAnimations();
-    // Phase 7: pick up the run left in progress, or start a fresh one. A saved
-    // run whose last Pokémon already fell was over the moment it was written,
-    // so it is cleared rather than resumed (D5: nothing carries over).
+    // Phase 7: the main menu is the landing screen. It offers a fresh run, the
+    // run left in progress and the options. A saved run whose last Pokémon
+    // already fell was over the moment it was written, so it is cleared rather
+    // than offered (D5: nothing carries over).
     const storage = browserStorage();
     const save = loadSave(storage);
     // The master volume is a preference that outlives the run, so it is applied
     // to the sound manager as soon as the boot scene can (D5 keeps settings).
     applyVolume(this.sound, save.settings);
-    if (save.run && hasLivingParty(save.run)) {
-      this.scene.start('Route', { run: save.run });
-      return;
-    }
-    if (save.run) clearRun(storage);
-    this.scene.start('Starter');
+    if (save.run && !hasLivingParty(save.run)) clearRun(storage);
+    this.scene.start('MainMenu');
   }
 
   /**

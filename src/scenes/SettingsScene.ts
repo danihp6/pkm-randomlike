@@ -18,7 +18,7 @@ import {
 import { keyNameOf, subscribeKeybinds } from '../input/input';
 import type { RouteScene } from './RouteScene';
 
-type Opener = 'Route' | 'Starter';
+type Opener = 'Route' | 'Starter' | 'MainMenu';
 
 const PANEL_W = 760;
 const ROW_H = 40;
@@ -32,8 +32,9 @@ type RowView = {
 };
 
 /**
- * The settings screen (Phase 7). Opened from the starter screen or the route HUD
- * (`O`), which pause themselves and resume behind it. Up/down picks a row and
+ * The settings screen (Phase 7). Opened from the main menu, the starter screen
+ * or the route HUD (`O`); the opener pauses itself and resumes behind it.
+ * Up/down picks a row and
  * left/right steps a step row's value; every change is stored and applied at
  * once, so there is nothing to confirm. A keybind row instead captures whatever
  * key is pressed next (`E` on it starts the capture, `Q` leaves it alone). All

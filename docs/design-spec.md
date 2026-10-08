@@ -13,6 +13,11 @@ carries over.
 
 ## 2. The run
 
+- The game opens on a **main menu**: **New run**, **Continue** (only when the save
+  holds a run with a living party, and it shows the route it is on) and
+  **Options** (the settings screen). Starting a new run only replaces the saved
+  one once its starter is picked, so cancelling at the starter pick returns to
+  the menu with the run in progress intact.
 - A run is a chain of **routes** (our word for the floors). Each route is a
   small top-down map: walls/trees, tall grass, trainers, items, an exit.
 - The chain is fixed-length by default (see `docs/routes-spec.md`): a
@@ -129,7 +134,7 @@ box types itself out), master volume, the tileset preference (`auto` follows
 each biome, or one tileset is forced on every route) and **always run** (walk at
 running speed without holding the run key; on by default). They live in the same
 save document as the run (D22), are stored the moment they change and are edited
-from one screen (`O`, from the starter pick or the route HUD).
+from one screen (`O`, from the main menu, the starter pick or the route HUD).
 
 ## 8. Out of scope (for now)
 
