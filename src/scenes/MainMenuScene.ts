@@ -174,6 +174,9 @@ export class MainMenuScene extends Phaser.Scene {
 
   /** Opens the settings screen paused-on-top; it resumes this scene on close. */
   private openOptions(): void {
+    // A repeated press (or the settings key landing twice) must not pause a
+    // scene that is already paused under the settings screen.
+    if (this.scene.isPaused()) return;
     this.scene.pause();
     this.scene.launch('Settings', { from: 'MainMenu' });
   }
