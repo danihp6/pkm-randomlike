@@ -52,6 +52,12 @@ carries over.
   a badge on the avatar's lower-right corner; dragging **that badge** takes the
   item off the member (onto another member to pass it along, or onto the bag to
   unequip it). An item in hand is not listed in the bag until it is dropped.
+- The HUD panels — the route header, PARTY, the bag, the PC BOX and the member
+  detail window — can be **dragged by their frame** (the interior stays live for
+  rows, tabs and cells, so a click there still acts). A dragged panel **pushes**
+  the others clear, so two panels never overlap; when a push chain reaches the
+  screen edge the dragged panel stops rather than covering another. The detail
+  window opens beside the PC box the first time and can then be moved freely.
 - You start a run by picking one of three starters drawn from the base forms of
   every evolution line with at least three members (itself plus two others), so
   every starter has room to grow. The starter cards work with the **mouse**: hover
