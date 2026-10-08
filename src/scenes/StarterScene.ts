@@ -219,7 +219,12 @@ export class StarterScene extends Phaser.Scene {
   private confirm(): void {
     const speciesId = this.pool[this.index];
     if (!speciesId) return;
-    const starter = createRunPokemon({ id: 'starter', speciesId, level: START_LEVEL });
+    const starter = createRunPokemon({
+      id: 'starter',
+      speciesId,
+      level: START_LEVEL,
+      learnsetSeed: this.seed,
+    });
     const run = createRun({ seed: this.seed, mode: this.mode, starter, bag: STARTING_BAG });
     this.scene.start('Route', { run });
   }

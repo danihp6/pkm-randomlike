@@ -331,9 +331,10 @@ export class BattleScene extends Phaser.Scene {
               speciesId: trigger.speciesId,
               level: trigger.level,
               shiny: trigger.shiny === true,
+              learnsetSeed: launch.runSeed,
             }),
           ]
-        : trigger.roster.map((input) => createFighter(input));
+        : trigger.roster.map((input) => createFighter({ ...input, learnsetSeed: launch.runSeed }));
   }
 
   /** Loads the battle's mon sheets, skipping any already in the texture cache. */

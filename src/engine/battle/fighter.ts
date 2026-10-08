@@ -8,6 +8,7 @@ import {
   type Stats,
 } from '../../data/dex';
 import { MAX_IV } from '../../data/dex/natures';
+import { randomLevelUpMoves } from './randomLearnset';
 
 export type StatusId = 'brn' | 'psn' | 'tox' | 'par' | 'slp' | 'frz';
 
@@ -145,6 +146,12 @@ export type FighterInput = Readonly<{
   evs?: Partial<Stats>;
   moves?: readonly string[];
   nickname?: string;
+  /**
+   * The run seed the randomized learnset draws from (`D17`). Set for anything
+   * built inside a run so wild/trainer/player movesets come from the same
+   * per-run learnsets; omitted, the canonical dex learnset is used.
+   */
+  learnsetSeed?: string;
 }>;
 
 export function emptyBoosts(): Boosts {
@@ -208,8 +215,15 @@ function fullStats(partial: Partial<Stats> | undefined, fallback: number): Stats
 }
 
 /** The last four level-up moves a species knows at `level`, newest first. */
-export function defaultMoveset(speciesId: string, level: number): readonly string[] {
-  const ids = levelUpMoves(speciesId, level).map((entry) => entry.moveId);
+export function defaultMoveset(
+  speciesId: string,
+  level: number,
+  learnsetSeed?: string,
+): readonly string[] {
+  const learned = learnsetSeed
+    ? randomLevelUpMoves(speciesId, level, learnsetSeed)
+    : levelUpMoves(speciesId, level);
+  const ids = learned.map((entry) => entry.moveId);
   return ids.slice(Math.max(0, ids.length - 4));
 }
 
@@ -241,7 +255,7 @@ export function createFighter(input: FighterInput): BattleFighter {
   // blank field falls back to the species' first ability.
   const ability = input.ability?.trim() ? input.ability : (Object.values(species.abilities)[0] ?? '');
 
-  const moveIds = input.moves ?? defaultMoveset(species.id, level);
+  const moveIds = input.moves ?? defaultMoveset(species.id, level, input.learnsetSeed);
   const moves: MoveSlot[] = [];
   for (const moveId of moveIds) {
     const slot = makeMoveSlot(moveId);

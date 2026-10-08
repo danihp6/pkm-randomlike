@@ -3,6 +3,7 @@ import { levelUpMoves } from '../../data/dex/learnsets';
 import { getMove } from '../../data/dex/moves';
 import { statAtLevel } from '../../data/dex/natures';
 import { getSpecies } from '../../data/dex/species';
+import { randomLevelUpMoves } from '../battle/randomLearnset';
 import {
   createFighter,
   snapshotFighter,
@@ -138,10 +139,18 @@ function moveSlot(moveId: string): MoveSlot | undefined {
 }
 
 /** The moves learned between two levels, oldest first and deduplicated. */
-function gainedMoves(speciesId: string, fromLevel: number, toLevel: number): readonly string[] {
+function gainedMoves(
+  speciesId: string,
+  fromLevel: number,
+  toLevel: number,
+  learnsetSeed?: string,
+): readonly string[] {
   const seen = new Set<string>();
   const moves: string[] = [];
-  for (const learn of levelUpMoves(speciesId, toLevel)) {
+  const learned = learnsetSeed
+    ? randomLevelUpMoves(speciesId, toLevel, learnsetSeed)
+    : levelUpMoves(speciesId, toLevel);
+  for (const learn of learned) {
     if (learn.level > fromLevel && !seen.has(learn.moveId)) {
       seen.add(learn.moveId);
       moves.push(learn.moveId);
@@ -175,6 +184,7 @@ export function addExperience(
   pokemon: RunPokemon,
   amount: number,
   routeIndex: number,
+  learnsetSeed?: string,
 ): ProgressionResult {
   const events: ProgressionEvent[] = [];
   const gain = Math.max(0, Math.floor(amount));
@@ -193,7 +203,7 @@ export function addExperience(
   if (level > fighter.level) {
     events.push({ kind: 'level', level });
     const moves = fighter.moves.map((slot) => ({ ...slot }));
-    for (const moveId of gainedMoves(fighter.speciesId, fighter.level, level)) {
+    for (const moveId of gainedMoves(fighter.speciesId, fighter.level, level, learnsetSeed)) {
       if (moves.some((slot) => slot.moveId === moveId)) continue;
       const slot = moveSlot(moveId);
       if (!slot) continue;
@@ -219,11 +229,12 @@ export function awardExperience(
   pokemon: RunPokemon,
   defeatedLevel: number,
   routeIndex: number,
-  options: Readonly<{ participants?: number; isTrainer?: boolean }> = {},
+  options: Readonly<{ participants?: number; isTrainer?: boolean; learnsetSeed?: string }> = {},
 ): ProgressionResult {
   return addExperience(
     pokemon,
     experienceAward(defeatedLevel, options.participants ?? 1, options.isTrainer ?? false),
     routeIndex,
+    options.learnsetSeed,
   );
 }
