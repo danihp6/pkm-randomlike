@@ -420,6 +420,11 @@ export class RouteScene extends Phaser.Scene {
     pointerStart: { x: number; y: number };
     offsetStart: { x: number; y: number };
   } | null = null;
+  /**
+   * A press on a collapse icon waiting to become a click (toggle) or a drag
+   * (once the pointer passes the slop), or null.
+   */
+  private hudIconPress: { id: HudPanelId; originX: number; originY: number } | null = null;
   /** Whether the detail panel has been placed once (it is not re-docked after). */
   private hudDetailPlaced = false;
   private hudTitle!: Phaser.GameObjects.BitmapText;
@@ -619,6 +624,7 @@ export class RouteScene extends Phaser.Scene {
     this.hudBagRows = [];
     this.hudPanels = [];
     this.hudPanelDrag = null;
+    this.hudIconPress = null;
     this.hudDetailPlaced = false;
     this.trainerSprites = [];
     this.trainerSpinIndex.clear();
@@ -1186,6 +1192,7 @@ export class RouteScene extends Phaser.Scene {
       this.hudDragItem = null;
       this.hudDragItemFrom = null;
       this.hudPanelDrag = null;
+      this.hudIconPress = null;
       this.hudDragGhost.setVisible(false);
       this.input.setDefaultCursor('default');
     }
@@ -1408,9 +1415,12 @@ export class RouteScene extends Phaser.Scene {
   private handleHudPointerDown(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive() || !this.hudVisible) return;
     // The collapse icon sits in the frame band, so it is tested before the drag.
+    // A press on it waits: a release without movement toggles the panel, a move
+    // past the slop drags the panel from the icon (see pointermove).
     const icon = this.hudPanelIconAt(pointer);
     if (icon) {
-      this.togglePanel(icon);
+      this.hudIconPress = { id: icon.id, originX: pointer.x, originY: pointer.y };
+      this.input.setDefaultCursor('pointer');
       return;
     }
     // Grabbing a panel's frame moves it (and shoves the others aside); its inner
@@ -1503,6 +1513,15 @@ export class RouteScene extends Phaser.Scene {
     }
     // A button released off-screen never fired `pointerup`; let go on the next move.
     if (!pointer.isDown) this.cancelHudDrags();
+    // A press on a collapse icon becomes a panel drag once it passes the slop.
+    if (this.hudIconPress && !this.hudPanelDrag) {
+      const press = this.hudIconPress;
+      if (Math.hypot(pointer.x - press.originX, pointer.y - press.originY) > HUD_DRAG_SLOP) {
+        const panel = this.panelById(press.id);
+        this.hudIconPress = null;
+        if (panel) this.startPanelDrag(panel, pointer);
+      }
+    }
     // A panel drag follows the pointer and pushes the others out of the way.
     if (this.hudPanelDrag) {
       this.updatePanelDrag(pointer);
@@ -1581,6 +1600,11 @@ export class RouteScene extends Phaser.Scene {
       this.endPanelDrag();
       return;
     }
+    if (this.hudIconPress) {
+      this.hudIconPress = null;
+      this.input.setDefaultCursor('default');
+      return;
+    }
     if (this.hudDragItem !== null) {
       this.endHudItemDrag();
       return;
@@ -1600,6 +1624,14 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private handleHudPointerUp(pointer: Phaser.Input.Pointer): void {
+    // A press on an icon released without moving is the collapse/expand click.
+    if (this.hudIconPress) {
+      const press = this.hudIconPress;
+      this.hudIconPress = null;
+      const panel = this.panelById(press.id);
+      if (panel) this.togglePanel(panel);
+      return;
+    }
     if (this.hudPanelDrag) {
       this.endPanelDrag();
       return;
