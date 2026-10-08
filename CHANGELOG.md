@@ -15,10 +15,12 @@ file is the human-readable summary.
       magnifier; procedural textures from `BootScene`). Clicking the icon
       **collapses** the panel to just that icon; clicking again **expands** it and
       pushes the others (a collapsed icon included) clear, so a panel beside a
-      collapsed one always opens. Panel drags now also **let go when the pointer
-      leaves the canvas** (or its button is released off-screen), via the input's
-      `gameout`/`pointerupoutside` plus a "button no longer down" check, so a held
-      panel never keeps following a pointer that is gone. The offsets and
+      collapsed one always opens. The icon doubles as a **drag handle**: a press
+      that moves past the slop repositions the panel, a press released without
+      moving is the collapse/expand click. Panel drags now also **let go when the
+      pointer leaves the canvas** (or its button is released off-screen), via the
+      input's `gameout`/`pointerupoutside` plus a "button no longer down" check, so
+      a held panel never keeps following a pointer that is gone. The offsets and
       collapsed flags are saved with the settings as `hudLayout`
       (`src/data/hudLayout.ts`, validated per field, no version bump since a
       missing field defaults) and re-applied when the route rebuilds, so the

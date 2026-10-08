@@ -60,7 +60,9 @@ carries over.
   released off-screen lets go instead of following the pointer. Each panel shows
   its own **icon** at the top-left: clicking it **collapses** the panel to just
   the icon, and clicking again **expands** it and pushes the rest (a collapsed
-  icon included) clear. The detail window opens beside the PC box the first time
+  icon included) clear. The icon is also a **drag handle** — press and move to
+  reposition the panel, and a press released without moving is the
+  collapse/expand click. The detail window opens beside the PC box the first time
   and can then be moved freely. The positions and collapsed states are a global
   preference saved with the settings (D22), so they survive a reload and the next
   run.
