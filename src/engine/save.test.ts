@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_KEYBINDS } from '../data/keybinds';
 import { defaultHudLayout } from '../data/hudLayout';
-import { capForRoute } from './run/levelCap';
+import { levelCapForMap } from '../data/maps';
+import { floorForRoute } from './run/floors';
 import {
   addItem,
   addPokemon,
@@ -282,10 +283,22 @@ describe('settings validation', () => {
 });
 
 describe('run validation', () => {
-  it('recomputes the level cap from the route map instead of trusting the save', () => {
-    const run = { ...sampleRun(), routeIndex: 5, levelCap: 999 };
+  it('recomputes the level cap from the map instead of trusting the save', () => {
+    const run = { ...sampleRun(), routeIndex: 12, mapIndex: 3, levelCap: 999 };
     const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
-    expect(decoded.run?.levelCap).toBe(capForRoute(run.seed, 5));
+    expect(decoded.run?.levelCap).toBe(levelCapForMap(3));
+  });
+
+  it('derives the map position and the discovery set when the save lacks them', () => {
+    const run: Record<string, unknown> = { ...sampleRun(), routeIndex: 9 };
+    delete run.mapIndex;
+    delete run.routeInMap;
+    delete run.discoveredRooms;
+    const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
+    const position = floorForRoute(run.seed as string, 9);
+    expect(decoded.run?.mapIndex).toBe(position.mapIndex);
+    expect(decoded.run?.routeInMap).toBe(position.roomInMap);
+    expect(decoded.run?.discoveredRooms).toContain(position.roomInMap);
   });
 
   it('keeps the members that parse and drops the ones that do not', () => {
@@ -379,13 +392,14 @@ describe('migrateDocument', () => {
   it('upgrades a pre-envelope document end to end, once a step exists', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
-    // Five steps, because the test starts at v0 and the current schema is v5.
+    // Six steps, because the test starts at v0 and the current schema is v6.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
       2: (doc) => ({ ...doc, version: 3, settings: { ...(doc.settings as object), tileset: 'wood' } }),
       3: (doc) => ({ ...doc, version: 4, settings: { ...(doc.settings as object), keybinds: DEFAULT_KEYBINDS } }),
-      4: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      4: (doc) => ({ ...doc, version: 5 }),
+      5: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -397,6 +411,24 @@ describe('migrateDocument', () => {
       keybinds: DEFAULT_KEYBINDS,
     });
     expect(decoded.run).toEqual(run);
+  });
+});
+
+describe('map-position migration', () => {
+  it('adds the floor, the room and the discovery set to a v5 run', () => {
+    const run: Record<string, unknown> = { ...sampleRun(), routeIndex: 9 };
+    delete run.mapIndex;
+    delete run.routeInMap;
+    delete run.discoveredRooms;
+    const raw = JSON.stringify({ version: 5, settings: { textSpeed: 'fast', volume: 0.5 }, run });
+    const decoded = decodeSave(raw);
+    expect(decoded.version).toBe(SAVE_VERSION);
+    const position = floorForRoute(run.seed as string, 9);
+    expect(decoded.run?.mapIndex).toBe(position.mapIndex);
+    expect(decoded.run?.routeInMap).toBe(position.roomInMap);
+    expect(decoded.run?.discoveredRooms).toEqual(
+      Array.from({ length: position.roomInMap + 1 }, (_, id) => id),
+    );
   });
 });
 

@@ -1,7 +1,8 @@
 import { STAT_IDS, getSpecies, type StatId, type Stats } from '../data/dex';
 import { defaultHudLayout, parseHudLayout, type HudLayout } from '../data/hudLayout';
 import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybinds';
-import { capForRoute } from './run/levelCap';
+import { levelCapForMap } from '../data/maps';
+import { floorForRoute } from './run/floors';
 import { isTilesetPreference, type TilesetPreference } from '../data/tilesets/ids';
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
@@ -45,7 +46,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -88,8 +89,10 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * v3 document onto the v4 schema, which added the keybinds; `4` moves a v4
  * document onto the v5 schema, whose defaults switched confirm/cancel to
  * `E`/`Q` (a field that can also be defaulted, so it is reset rather than
- * required). Later changes add the next step, e.g.
- * `5: (doc) => ({ ...doc, version: 6, changed })`.
+ * required); `5` moves a v5 run onto the v6 schema, which added the map position
+ * (`mapIndex`, `routeInMap`) and the discovery set, recovered from the global
+ * `routeIndex`. Later changes add the next step, e.g.
+ * `6: (doc) => ({ ...doc, version: 7, changed })`.
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -120,7 +123,28 @@ export const SAVE_MIGRATIONS: Migrations = {
       ? { ...document.settings, keybinds: DEFAULT_KEYBINDS }
       : document.settings,
   }),
+  5: (document) => ({
+    ...document,
+    version: 6,
+    run: isRecord(document.run) ? withFloorState(document.run) : document.run,
+  }),
 };
+
+/**
+ * Adds the map-position fields a v5 run lacks: the floor and room its global
+ * `routeIndex` resolves to through the plan chain, and every room up to it as
+ * discovered (the old run walked the chain linearly, so it had entered them all).
+ */
+function withFloorState(run: Record<string, unknown>): Record<string, unknown> {
+  if (!isString(run.seed) || !isInteger(run.routeIndex) || run.routeIndex < 1) return run;
+  const position = floorForRoute(run.seed, run.routeIndex);
+  return {
+    ...run,
+    mapIndex: position.mapIndex,
+    routeInMap: position.roomInMap,
+    discoveredRooms: Array.from({ length: position.roomInMap + 1 }, (_, id) => id),
+  };
+}
 
 /** Runs a document through the upgrade steps between two versions. */
 export function migrateDocument(
@@ -386,6 +410,18 @@ function parseRunStats(value: unknown): RunStats {
   return { catches, casualties };
 }
 
+/** Keeps the non-negative integer room ids, deduped, and always includes the current room. */
+function parseDiscoveredRooms(value: unknown, currentRoom: number): number[] {
+  const rooms: number[] = [];
+  if (Array.isArray(value)) {
+    for (const id of value) {
+      if (isInteger(id) && id >= 0 && !rooms.includes(id)) rooms.push(id);
+    }
+  }
+  if (!rooms.includes(currentRoom)) rooms.push(currentRoom);
+  return rooms;
+}
+
 function parseRun(value: unknown): RunState | null {
   if (!isRecord(value)) return null;
   if (!isString(value.seed) || value.seed === '') return null;
@@ -396,6 +432,15 @@ function parseRun(value: unknown): RunState | null {
   if (party.length === 0) return null;
   const bag = parseBag(value.bag);
   if (!bag) return null;
+
+  // The map position and the discovery set are recomputed from the global route
+  // index when the save lacks them, so a hand-edited document cannot strand the
+  // run between floors or hide the room it stands in.
+  const position = floorForRoute(value.seed, value.routeIndex);
+  const mapIndex = isInteger(value.mapIndex) && value.mapIndex >= 1 ? value.mapIndex : position.mapIndex;
+  const routeInMap =
+    isInteger(value.routeInMap) && value.routeInMap >= 0 ? value.routeInMap : position.roomInMap;
+  const discoveredRooms = parseDiscoveredRooms(value.discoveredRooms, routeInMap);
 
   const defeatedTrainers = Array.isArray(value.defeatedTrainers)
     ? value.defeatedTrainers.filter((id): id is string => isString(id))
@@ -409,7 +454,10 @@ function parseRun(value: unknown): RunState | null {
     seed: value.seed,
     mode: value.mode,
     routeIndex: value.routeIndex,
-    levelCap: capForRoute(value.seed, value.routeIndex),
+    mapIndex,
+    routeInMap,
+    discoveredRooms,
+    levelCap: levelCapForMap(mapIndex),
     party,
     box: parseMembers(value.box),
     bag,
