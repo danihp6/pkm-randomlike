@@ -423,16 +423,29 @@ trainer offers a **choice of items**, and a **mega-stone** room (low chance) tha
 hands out a random **Mega Stone**. They count outside K and are discovered on
 entry like any room (`docs/maps-spec.md` §7).
 
-Money is **Poké Dollars**, earned **only** by defeating trainers (a random amount
-inside the archetype/band's range) and spent in the shop; the run starts with
-none and the economy is tight, Binding of Isaac-style. The shop is a **HUD panel
-that only exists in the shop room** (Pokémon Mart style), opened at the counter
-with the interact key; it sells a fixed core plus one or two random items from the
-map's pool at the catalogue `price`, and buys any item at `sellPrice` — but only
-the new **valuables** (Nugget, Big Nugget, Pearl, …) are worth real money, so they
-are added to the ground-item loot pool. **Mega Stones** are new `held` items, one
-per Mega-capable species, for a future Mega Evolution. The run's money lives in
-`RunState` and shows in the route HUD.
+Money is **Poké Dollars**, earned **only** by defeating trainers — a **fixed base
+per trainer plus a random jitter** (data, per archetype/band) — and spent in the
+shop; the run starts with none and the economy is tight, Binding of Isaac-style.
+The shop is a **HUD panel that only exists in the shop room** (Pokémon Mart
+style), opened at the counter with the interact key; it sells a fixed core of
+Balls and Potions that improves with the map's band plus one or two random items
+from the map's pool at the catalogue `price`, and buys any item at `sellPrice` —
+but only the new **valuables** (Nugget, Big Nugget, Pearl, …) are worth real
+money, so they are added to the ground-item loot pool. **Mega Stones** are new
+`held` items, one per Mega-capable species, that allow a **Mega Evolution** in
+battle (see `D34`). The run's money lives in `RunState` and shows in the route
+HUD's bag panel.
+
+## D34 — Mega Evolution is a battle mechanic *(decided)*
+
+Mega Evolution is implemented in the battle engine before the mega-stone room
+ships, so the stones do something. A Pokémon holding its **Mega Stone** may
+**Mega Evolve once per battle** from a control in the command menu (both the
+player and the AI can), changing its stats, type and ability to the Mega forme for
+the rest of the battle. All Mega Evolutions present in the generated dex are in
+(the formes may be `isNonstandard: "Past"`); each gets its stone in
+`src/data/items.ts`. Only **bosses, mini-bosses and the `ace` archetype** carry
+stones, per their data.
 
 ## Open questions
 

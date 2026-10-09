@@ -166,7 +166,8 @@ into these floors and adds the Poké Dollar economy. Source of truth:
 - [ ] **Step 2 — `MapPlan` floor generator (`src/engine/maps/plan.ts` +
       `streams`).** `Plan(seed, mapIndex)` rolls the biome (never the previous
       map's), the room count and each room's width/height, grows the floor on a
-      grid from the entry, closes at least one cycle, derives each room's opening
+      grid from the entry, closes **one or more cycles** (random, at least one),
+      derives each room's opening
       set and shape, and marks the boss as the room farthest from the entry. New
       `map` stream keyed `(seed, "map", mapIndex)`; fixed-seed determinism,
       connectivity, cycle and no-dangling-opening tests.
@@ -189,33 +190,42 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `advanceRoute` vs `advanceMap` (heal stop per map) and a save migration
       (`SAVE_VERSION`). Pure tests, including the discovery rule.
 - [ ] **Step 7 — Boss & portal.** The room farthest from the entry fields the map
-      boss at `maxLevel`; its onward opening is sealed until the boss falls, then a
-      portal opens and stepping through it advances to the next map (final boss
-      ends a finite run). Pure guard/portal logic + `RouteScene` wiring.
+      boss at `maxLevel`; the boss room has no onward opening, and when the boss
+      falls a **new opening appears with the portal** that advances to the next
+      map (final boss ends a finite run). Pure guard/portal logic + `RouteScene`
+      wiring.
 - [ ] **Step 8 — Route HUD minimap.** A HUD panel drawing the floor as a BoI-style
       grid of rooms — a cell per discovered room from its size and shape, its
       openings on the matching walls, links between known neighbours, the current
-      room highlighted and the boss/portal marked. Pure layout in
-      `src/ui/mapView.ts` + tests; the scene only draws it
-      (`docs/maps-spec.md` §7).
-- [ ] **Step 9 — Money & valuables.** `RunState` gains `money`; each trainer drops
-      a random amount from its archetype/band range (`src/data/trainers.ts`) and
-      the HUD shows it. Add the **valuables** (Nugget, Pearl, …) to the item
-      catalogue and to the ground-item loot pool (`src/data/loot.ts`); the run
-      starts with no money. Pure tests for the reward roll and the bag.
-- [ ] **Step 10 — Special rooms in the plan.** Extend `MapPlan` to hang the
+      room highlighted and the boss/portal and each special room marked with its
+      **own icon**. Pure layout in `src/ui/mapView.ts` + tests; the scene only
+      draws it (`docs/maps-spec.md` §8).
+- [ ] **Step 9 — Mega Evolution in battle (`D34`).** The prerequisite for the
+      Mega Stones: a Pokémon holding its stone may Mega Evolve **once per battle**
+      from a command-menu control (player and AI), changing stats/type/ability to
+      the Mega forme for the battle. All dex Megas (formes may be nonstandard);
+      only bosses, mini-bosses and the `ace` archetype carry stones. Engine +
+      data + battle UI, fixed-seed tests.
+- [ ] **Step 10 — Money & valuables.** `RunState` gains `money`; each trainer
+      drops a **fixed base + jitter** from its archetype/band data
+      (`src/data/trainers.ts`) and the HUD shows it in the **bag panel**. Add the
+      **valuables** (Nugget, Pearl, …) to the item catalogue and to the
+      ground-item loot pool (`src/data/loot.ts`); the run starts with no money.
+      Pure tests for the reward roll and the bag.
+- [ ] **Step 11 — Special rooms in the plan.** Extend `MapPlan` to hang the
       special leaves off the floor: a guaranteed **shop** near the entry, a
-      **mini-boss** leaf (medium chance) and a **mega-stone** leaf (low chance),
-      each extra to K, on the same `map` stream. Tests for placement, count and
-      determinism.
-- [ ] **Step 11 — Shop room & HUD panel.** A shop room (counter + `E`) that opens
+      **mini-boss** leaf (50%) and a **mega-stone** leaf (15%, from map 3 on, may
+      coincide), each extra to K, on the same `map` stream. Tests for placement,
+      count and determinism.
+- [ ] **Step 12 — Shop room & HUD panel.** A shop room (counter + `E`) that opens
       a Pokémon Mart-style **HUD panel only present in that room**: buy from the
-      fixed core + one or two random map items at catalogue `price`, sell any item
-      at `sellPrice`. `RouteScene` wiring + a pure shop model (`src/ui/shop.ts`).
-- [ ] **Step 12 — Mini-boss & mega-stone rooms.** The mini-boss leaf fields one
+      per-band core of Balls and Potions plus one or two random map items at
+      catalogue `price`, sell any item at `sellPrice`. `RouteScene` wiring + a
+      pure shop model (`src/ui/shop.ts`).
+- [ ] **Step 13 — Mini-boss & mega-stone rooms.** The mini-boss leaf fields one
       strong trainer whose defeat offers a **choice of items**; the mega-stone
       leaf holds a random **Mega Stone** (new `held` items, one per Mega-capable
-      species). Data + scene wiring.
-- [ ] **Step 13 — Docs & migration pass.** Finish `docs/maps-spec.md`, update
-      `design-spec.md` / `routes-spec.md` / `AGENTS.md` and the tech decision
-      addenda, and archive the steps in `CHANGELOG.md`.
+      species, made functional by step 9). Data + scene wiring.
+- [ ] **Step 14 — Docs & migration pass.** Finish `docs/maps-spec.md`, update
+      `design-spec.md` / `routes-spec.md` / `battle-spec.md` / `AGENTS.md` and the
+      tech decision addenda, and archive the steps in `CHANGELOG.md`.

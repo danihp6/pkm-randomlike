@@ -166,17 +166,19 @@ leaves with only their own content (`docs/maps-spec.md` §7):
 - a **shop**, always one per floor, near the entry: a counter whose interact key
   (`E`) opens a **Pokémon Mart-style shop panel in the HUD that only exists in
   that room**;
-- a **mini-boss** room (medium chance): one strong trainer that, when beaten,
-  offers a **choice of items**;
-- a **mega-stone** room (low chance): a random **Mega Stone** item.
+- a **mini-boss** room (50% chance): one strong trainer that, when beaten, offers a
+  **choice of items**;
+- a **mega-stone** room (15% chance, only from map 3 on): a random **Mega Stone**
+  item, which lets its holder **Mega Evolve once per battle**.
 
-**Money** is Poké Dollars, earned **only** by defeating trainers — each drops a
-random amount in its archetype/band's range — and the run starts with none, so the
-economy stays tight (Binding of Isaac-style). The shop sells a fixed core (Balls
-and Potions) plus one or two random items from the map's pool at their catalogue
-price, and buys any item at `sellPrice`, but only the **valuables** (Nugget,
-Pearl, …) that turn up in the ground-item loot are worth real money. The run's
-money shows in the route HUD.
+**Money** is Poké Dollars, earned **only** by defeating trainers — a **fixed base
+plus a random jitter** each, from its archetype/band — and the run starts with
+none, so the economy stays tight (Binding of Isaac-style). The shop sells a core
+of Balls and Potions that improves with the map's band plus one or two random
+items from the map's pool at their catalogue price, and buys any item at
+`sellPrice`, but only the **valuables** (Nugget, Pearl, …) that turn up in the
+ground-item loot are worth real money. The run's money shows in the HUD's **bag
+panel**.
 
 ## 8. Settings
 
