@@ -43,12 +43,13 @@ export const MAP_MAX_ROOM_SIZE = 48;
 export const FINITE_MAPS = 6;
 
 export const MAP_TUNING: readonly MapTuning[] = [
-  // A floor needs at least four rooms: a four-neighbour grid can only close a loop
-  // around a 2x2 block, so a smaller map could never satisfy the "closed into at
-  // least one cycle" contract (`docs/maps-spec.md` §2-§3, D30).
-  { mapIndex: 1, levels: { minLevel: 2, maxLevel: 6 }, routes: { min: 4, max: 5 }, size: { min: 16, max: 20 } },
-  { mapIndex: 2, levels: { minLevel: 6, maxLevel: 11 }, routes: { min: 4, max: 6 }, size: { min: 18, max: 24 } },
-  { mapIndex: 3, levels: { minLevel: 11, maxLevel: 17 }, routes: { min: 4, max: 6 }, size: { min: 22, max: 28 } },
+  // A floor needs at least five rooms: four regular rooms are the smallest graph a
+  // four-neighbour grid can close into a cycle (a 2x2 block), and the boss is hung
+  // off it as an extra dead-end leaf with a single exit
+  // (`docs/maps-spec.md` §2-§3/§6, D30).
+  { mapIndex: 1, levels: { minLevel: 2, maxLevel: 6 }, routes: { min: 5, max: 5 }, size: { min: 16, max: 20 } },
+  { mapIndex: 2, levels: { minLevel: 6, maxLevel: 11 }, routes: { min: 5, max: 6 }, size: { min: 18, max: 24 } },
+  { mapIndex: 3, levels: { minLevel: 11, maxLevel: 17 }, routes: { min: 5, max: 6 }, size: { min: 22, max: 28 } },
   { mapIndex: 4, levels: { minLevel: 17, maxLevel: 24 }, routes: { min: 5, max: 7 }, size: { min: 26, max: 32 } },
   { mapIndex: 5, levels: { minLevel: 24, maxLevel: 32 }, routes: { min: 5, max: 7 }, size: { min: 30, max: 36 } },
   { mapIndex: 6, levels: { minLevel: 32, maxLevel: 40 }, routes: { min: 6, max: 8 }, size: { min: 34, max: 40 } },

@@ -1430,13 +1430,22 @@ function attemptRoute(
   } else {
     const openings = placeAccess(tiles, shape, streams.layout, width, height, corner, band);
     snapshot('access', 'place openings');
-    entry = openings[entryIndex(shape)];
+    // A plan room always names a door to spawn at; the map entry room has none and
+    // spawns at its centre (`docs/maps-spec.md` §2), a lane carved to the network.
+    const entryIdx = shape.openings.findIndex((opening) => opening.role === 'entry');
+    entry = entryIdx >= 0 ? openings[entryIdx] : { x: Math.floor(width / 2), y: Math.floor(height / 2) };
     exits = exitTiles(shape, openings);
     // A lane must not carve the `cols`-wide band the border ring belongs to, and
     // must leave a strip at least a whole object tall, or `cleanWalls` would cut
     // the fence to remove the bitten tree / leave a stump with no trunk.
     const margin = wallMargin(request.wall);
     spine = carveGuaranteedPath(tiles, streams.layout, shape, openings, width, height, margin);
+    if (entryIdx < 0) {
+      // The centre spawn is not an opening: join it to the carved network so it is
+      // floor, connected and off-limits to the hazard passes.
+      const nearest = nearestNetwork(spine, entry);
+      if (nearest) carveLine(tiles, spine, entry, nearest, shape.pathWidth, true);
+    }
     snapshot('spine', 'carve spine');
     const branched = carveBranches(tiles, streams.layout, shape, spine, [entry, ...exits], width, height, margin);
     branches = branched.branches;

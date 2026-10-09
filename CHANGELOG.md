@@ -8,6 +8,56 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The boss room is a quiet dead-end.** The boss is hung off the floor's
+      farthest regular room as an extra **dead-end leaf**, so it has a single door
+      while the floor keeps its cycles (maps now roll at least five rooms). It
+      carries no tall grass and no regular trainers — just the boss. Its **portal**
+      is carved from the start on a free wall and stays **sealed** until the boss
+      falls, so the room looks identical before and after it opens.
+      `docs/maps-spec.md` §2/§6.
+- [x] **Maps start in the centre.** The entry room has no outward door: the run
+      spawns the player at the **centre** of the map's first room (a fresh run or a
+      portal step), and its only openings are its links, so there is no door that
+      leads back off the map. The route builder carves a lane from the centre to the
+      carved network so the spawn is always floor and connected; a room is carved
+      the same whichever way it is approached. `docs/maps-spec.md` §2/§3.
+- [x] **Trainers stay beaten.** A room's carved geometry and its spawn no longer
+      depend on the door the player arrived through, so entering the entry room
+      from outside and from a neighbour builds the **same** room — same openings,
+      same trainers, same items — and its trainer/item ids stay stable (a beaten
+      trainer cannot reappear). Openings are also a couple of tiles wide now: any
+      cell of the gap leads out, but only when the step is taken **toward** the
+      border (walking along the gap never bounces the player back) —
+      `src/engine/routes/doors.ts`.
+- [x] **A floor's marks persist while you explore it.** Beaten trainers, taken
+      ground items and spent captures no longer reset on every room change;
+      `RunState` keeps them for the whole floor and only `advanceMap` clears them,
+      so walking back into a room cannot respawn its content. The capture stays
+      **one per room** (`capturedRooms`, save v9 with a v8→v9 migration), so a room
+      grants a single catch while a different room can still catch.
+      `docs/maps-spec.md` §2/§7.
+- [x] **Room transitions are coherent** (`D30`). Leaving a room by a door now
+      spawns the player at the **opposite** door of the neighbour — leave East,
+      arrive West — instead of the door the plan derived from the entry by BFS, so
+      a room reads the same from every approach and you can always walk straight
+      back. The door the run arrived through lives in `RunState.arrivalEdge` (with
+      a v7→v8 save migration that recovers the plan-derived edge), and the room's
+      geometry, trainers and loot seed off a **stable per-room index**
+      (`routeIndexForRoom`), not the run's moving counter, so walking back into a
+      room lays out the **same** room instead of rerolling it. `docs/maps-spec.md`
+      §2/§9 updated.
+- [x] **The floor minimap** (`D32`). The `I` overlay's route header becomes the
+      **floor minimap**: the map name sits over a Binding of Isaac-style grid of
+      the rooms **discovered** so far, each drawn from the room's own width/height
+      with its openings on the matching walls, the current room highlighted, the
+      boss marked and the open portal flagged. A link is drawn only once **both** its
+      ends are known, and a room stays hidden until it is entered, so the floor
+      reveals itself as the run advances. The layout is pure and Phaser-free in
+      `src/ui/mapView.ts` (`buildMapView`, `MAP_VIEW_GAP`) with its own tests;
+      `RouteScene` only scales and paints it on a `Graphics`, redrawn on every room
+      change. Special rooms already carry their own marker (shop, mini-boss,
+      mega-stone), ready for Phase 9 step 11. `docs/maps-spec.md` §8,
+      `docs/design-spec.md` §3 updated.
 - [x] **Randomized learnsets and movesets** (`D17`). Every Pokémon now learns a
       per-run random move set instead of the canon's: `src/engine/battle/
       randomLearnset.ts` rolls a learnset from the run seed keyed by species id,

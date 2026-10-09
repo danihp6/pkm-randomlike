@@ -47,6 +47,7 @@ import {
   markItemPicked,
   resolveBattle,
   roomLevelForMap,
+  routeIndexForRoom,
   runBand,
   runRoomLevel,
   trainerRoster,
@@ -67,13 +68,15 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { FLOOR, TALL_GRASS, isWalkable, mapPixelSize, resolveMove, tileAt, type TileMap } from '../engine/map';
+import { FLOOR, TALL_GRASS, WALL, isWalkable, mapPixelSize, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, randomSeed, Rng } from '../engine/rng';
 import { clearRun, storeRun, type Settings } from '../engine/save';
 import {
   DEFAULT_SHAPE,
   DEFAULT_TRAINER_SIGHT,
   RouteEncounters,
+  borderEdge,
+  exitEdgeAt,
   seesPlayer,
   sketchRoute,
   sketchRouteSteps,
@@ -87,6 +90,7 @@ import {
   type RouteTrainer,
 } from '../engine/routes';
 import {
+  OPPOSITE_EDGE,
   bossTrainerId,
   isFinalMap,
   planMap,
@@ -104,6 +108,7 @@ import {
   serializeFrameMap,
 } from '../engine/frameMap';
 import { BAG_CATEGORIES, BAG_CATEGORY_LABELS, bagForCategory, cycleBagCategory, type BagCategory } from '../ui/bag';
+import { buildMapView, type MapViewRoom } from '../ui/mapView';
 import {
   BOX_COLS,
   BOX_PAGE_SIZE,
@@ -170,7 +175,16 @@ const HUD_GAP = 8;
 const HUD_PAD_X = FRLG_WINDOW_PADDING.x;
 const HUD_PAD_TOP = FRLG_WINDOW_PADDING.top;
 const HUD_PAD_BOTTOM = FRLG_WINDOW_PADDING.bottom + 4;
-const HUD_HEADER_H = HUD_PAD_TOP + 16 + HUD_PAD_BOTTOM;
+/**
+ * The route header **is** the floor minimap now (`docs/maps-spec.md` §8): the map
+ * name over the discovered-rooms grid, one panel in the free top-left corner. Its
+ * title band leaves room for a wrapped name.
+ */
+const HUD_MAP_X = 8;
+const HUD_MAP_Y = HUD_TOP;
+const HUD_MAP_W = 216;
+const HUD_MAP_H = 250;
+const HUD_MAP_TITLE_H = HUD_PAD_TOP + 34;
 const HUD_PARTY_HEADER = HUD_PAD_TOP + 16 + 12;
 const HUD_PARTY_ROW = 52;
 /** The party avatar, enlarged to the row height so the held-item badge reads. */
@@ -449,6 +463,9 @@ export class RouteScene extends Phaser.Scene {
   /** Whether the detail panel has been placed once (it is not re-docked after). */
   private hudDetailPlaced = false;
   private hudTitle!: Phaser.GameObjects.BitmapText;
+  /** The floor minimap panel: its graphics and the "no map" label. */
+  private hudMapGraphics!: Phaser.GameObjects.Graphics;
+  private hudMapEmpty!: Phaser.GameObjects.BitmapText;
   /** Whether the route HUD overlay (route header, party and bag) is shown; hidden by default. */
   private hudVisible = false;
   /** The pinned HUD camera; a rebuild must teach it to ignore the new sprites. */
@@ -582,17 +599,20 @@ export class RouteScene extends Phaser.Scene {
    */
   private buildRoom(): void {
     const plan = planMap(this.run.seed, this.run.mapIndex);
-    const view = roomView(plan, this.run.routeInMap, this.portalOpen());
+    const view = roomView(plan, this.run.routeInMap, this.portalOpen(), this.run.arrivalEdge);
     this.plan = plan;
     this.room = view;
     const biome = getBiome(view.biomeId);
     this.buildRoute({
       seed: this.run.seed,
-      routeIndex: this.run.routeIndex,
+      // The room's geometry, trainers and loot seed off a **stable** per-room
+      // index, not the run's moving counter, so walking back into a room shows the
+      // same room (`docs/maps-spec.md` §9).
+      routeIndex: routeIndexForRoom(plan, view.roomId),
       shape: DEFAULT_SHAPE,
       width: view.width,
       height: view.height,
-      grassPatches: biome.terrain.grassPatches,
+      grassPatches: view.boss ? 0 : biome.terrain.grassPatches,
       ledges: biome.terrain.ledges,
       room: view,
     });
@@ -695,7 +715,7 @@ export class RouteScene extends Phaser.Scene {
       loot: loot.pool,
       hiddenChance: loot.hiddenChance,
       itemChance: loot.itemChance,
-      trainerArchetypes: TRAINER_ARCHETYPE_IDS,
+      trainerArchetypes: params.room?.boss ? [] : TRAINER_ARCHETYPE_IDS,
       ...(wall ? { wall } : {}),
     };
     const route = sketchRoute(request);
@@ -711,6 +731,11 @@ export class RouteScene extends Phaser.Scene {
    * the dev generator), which carries the map band and the room's ramp level.
    */
   private applyRoute(route: RouteMap, view: RoomView | null = null): void {
+    // The boss room's portal is carved from the start but sealed until the boss
+    // falls, so the room looks the same before and after it opens.
+    if (view?.boss && !view.portalOpen && view.portalEdge) {
+      route = this.sealEdge(route, view.portalEdge);
+    }
     this.route = route;
     this.map = route.tiles;
     this.renderTiles = this.map;
@@ -898,10 +923,10 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * The persistent overlay: a slim route header plus a party window (portrait,
-   * name, level and HP bar) and a bag window (pocket tabs over the active
-   * pocket's icon, name and count), each its own FRLG nine-slice so the two
-   * never share a panel.
+   * The persistent overlay: a route header (the map name over the floor minimap)
+   * plus a party window (portrait, name, level and HP bar) and a bag window
+   * (pocket tabs over the active pocket's icon, name and count), each its own
+   * FRLG nine-slice so the two never share a panel.
    */
   private buildHud(): void {
     const x = this.scale.width - HUD_PANEL_W - 8;
@@ -912,14 +937,26 @@ export class RouteScene extends Phaser.Scene {
     const bagChildren: Phaser.GameObjects.GameObject[] = [];
     const boxChildren: Phaser.GameObjects.GameObject[] = [];
 
-    const header = addFrlgWindow(this, x, HUD_TOP, HUD_PANEL_W, HUD_HEADER_H);
-    this.hudTitle = addFrlgText(this, x + HUD_CONTENT_LEFT, HUD_TOP + HUD_PAD_TOP, '', {
+    // The route header is the floor minimap: the map name over the grid of
+    // discovered rooms, drawn on a Graphics so a room change can clear and redraw
+    // it. The layout itself is the pure `buildMapView`; this panel only scales and
+    // paints it (`docs/maps-spec.md` §8).
+    headerChildren.push(addFrlgWindow(this, HUD_MAP_X, HUD_MAP_Y, HUD_MAP_W, HUD_MAP_H));
+    this.hudTitle = addFrlgText(this, HUD_MAP_X + HUD_CONTENT_LEFT, HUD_MAP_Y + HUD_PAD_TOP, '', {
       size: 16,
       tint: FRLG_INK,
-    });
-    headerChildren.push(header, this.hudTitle);
+    }).setMaxWidth(HUD_MAP_W - HUD_CONTENT_LEFT - HUD_PAD_X);
+    this.hudMapGraphics = this.add.graphics();
+    this.hudMapEmpty = addFrlgText(
+      this,
+      HUD_MAP_X + HUD_MAP_W / 2,
+      HUD_MAP_Y + HUD_MAP_TITLE_H + 56,
+      'no map',
+      { size: 16, tint: 0x6b6887, origin: [0.5, 0] },
+    );
+    headerChildren.push(this.hudTitle, this.hudMapGraphics, this.hudMapEmpty);
 
-    const partyY = HUD_TOP + HUD_HEADER_H + HUD_GAP;
+    const partyY = HUD_TOP;
     const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + HUD_PAD_BOTTOM;
     this.hudX = x;
     this.hudPartyY = partyY;
@@ -1075,10 +1112,10 @@ export class RouteScene extends Phaser.Scene {
     this.hudPanels = [
       this.makeHudPanel(
         'header',
-        x,
-        HUD_TOP,
-        HUD_PANEL_W,
-        HUD_HEADER_H,
+        HUD_MAP_X,
+        HUD_MAP_Y,
+        HUD_MAP_W,
+        HUD_MAP_H,
         this.add.container(0, 0, headerChildren),
         PANEL_ICON_KEYS.header,
       ),
@@ -1316,6 +1353,7 @@ export class RouteScene extends Phaser.Scene {
     if (!this.hudRoot) return;
     const biomeName = this.route ? getBiome(this.route.biomeId).name : '';
     this.hudTitle.setText(`Map ${this.run.mapIndex} · ${biomeName}`);
+    this.refreshMapView();
 
     this.hudRows.forEach((row, i) => {
       const member = this.run.party[i];
@@ -1414,6 +1452,110 @@ export class RouteScene extends Phaser.Scene {
     });
 
     this.refreshDetail();
+  }
+
+  /**
+   * Redraws the floor minimap from the plan and the run's discovery (`docs/maps-
+   * spec.md` §8, D32): the discovered rooms sized from their plan width/height,
+   * their openings on the matching walls, the links between two known neighbours
+   * and the boss/portal/special markers. Only the drawing happens here; every
+   * position and reveal rule comes from the pure `buildMapView`.
+   */
+  private refreshMapView(): void {
+    if (!this.hudMapGraphics) return;
+    const graphics = this.hudMapGraphics;
+    graphics.clear();
+    const plan = this.plan;
+    if (!plan) {
+      this.hudMapEmpty.setVisible(true);
+      return;
+    }
+    const view = buildMapView(plan, {
+      discovered: this.run.discoveredRooms,
+      currentRoom: this.run.routeInMap,
+      portalOpen: this.portalOpen(),
+    });
+    this.hudMapEmpty.setVisible(!view.visible);
+    if (!view.visible) return;
+
+    const areaX = HUD_MAP_X + HUD_PAD_X;
+    const areaY = HUD_MAP_Y + HUD_MAP_TITLE_H;
+    const areaW = HUD_MAP_W - HUD_PAD_X * 2;
+    const areaH = HUD_MAP_H - HUD_MAP_TITLE_H - HUD_PAD_BOTTOM;
+    const scale = Math.min(areaW / view.width, areaH / view.height);
+    const offsetX = areaX + (areaW - view.width * scale) / 2;
+    const offsetY = areaY + (areaH - view.height * scale) / 2;
+    const px = (value: number): number => offsetX + value * scale;
+    const py = (value: number): number => offsetY + value * scale;
+
+    // Links first, so the room cells paint over the corridor seams.
+    graphics.lineStyle(3, 0x8b88a6, 1);
+    for (const link of view.links) {
+      graphics.lineBetween(px(link.x1), py(link.y1), px(link.x2), py(link.y2));
+    }
+
+    for (const room of view.rooms) {
+      const rx = px(room.x);
+      const ry = py(room.y);
+      const rw = room.w * scale;
+      const rh = room.h * scale;
+      graphics.fillStyle(room.current ? 0xf6d98a : 0xe6e3f2, 1);
+      graphics.fillRect(rx, ry, rw, rh);
+      graphics.lineStyle(2, room.current ? 0x9a7a1f : 0x3a3956, 1);
+      graphics.strokeRect(rx, ry, rw, rh);
+
+      const gap = Math.max(2.5, Math.min(rw, rh) * 0.18);
+      for (const opening of room.openings) {
+        const ox = px(opening.x);
+        const oy = py(opening.y);
+        graphics.lineStyle(
+          4,
+          opening.kind === 'portal' ? 0x3fa9f5 : opening.kind === 'entry' ? 0x4ad15c : 0x2f2c4d,
+          1,
+        );
+        if (opening.edge === 'N' || opening.edge === 'S') {
+          graphics.lineBetween(ox - gap, oy, ox + gap, oy);
+        } else {
+          graphics.lineBetween(ox, oy - gap, ox, oy + gap);
+        }
+      }
+
+      this.drawMapMarker(graphics, room, rx + rw / 2, ry + rh / 2, Math.min(rw, rh));
+    }
+  }
+
+  /** One room's minimap icon: a special marker, the boss, and the open portal ring. */
+  private drawMapMarker(
+    graphics: Phaser.GameObjects.Graphics,
+    room: MapViewRoom,
+    cx: number,
+    cy: number,
+    size: number,
+  ): void {
+    const radius = Math.max(3, size * 0.18);
+    if (room.marker === 'shop') {
+      graphics.fillStyle(0xf2c14e, 1);
+      graphics.fillCircle(cx, cy, radius);
+      graphics.lineStyle(2, 0x8a6d1f, 1);
+      graphics.strokeCircle(cx, cy, radius);
+    } else if (room.marker === 'mini-boss') {
+      graphics.fillStyle(0xd9534f, 1);
+      graphics.fillTriangle(cx, cy - radius, cx + radius, cy + radius * 0.8, cx - radius, cy + radius * 0.8);
+    } else if (room.marker === 'mega-stone') {
+      graphics.fillStyle(0x9b6bff, 1);
+      graphics.fillTriangle(cx, cy - radius, cx + radius, cy, cx, cy + radius);
+      graphics.fillTriangle(cx, cy - radius, cx - radius, cy, cx, cy + radius);
+    } else if (room.boss) {
+      graphics.fillStyle(0xb0304a, 1);
+      graphics.fillCircle(cx, cy, radius);
+      graphics.fillStyle(0xf8fafc, 1);
+      graphics.fillCircle(cx - radius * 0.4, cy - radius * 0.15, radius * 0.22);
+      graphics.fillCircle(cx + radius * 0.4, cy - radius * 0.15, radius * 0.22);
+    }
+    if (room.portal) {
+      graphics.lineStyle(2, 0x3fa9f5, 1);
+      graphics.strokeCircle(cx, cy, radius * 1.4);
+    }
   }
 
   /**
@@ -2565,6 +2707,20 @@ export class RouteScene extends Phaser.Scene {
    * under the crown while the tile still renders as the wall motif, drawn over the
    * player (`TREE_TIP_DEPTH`).
    */
+  /**
+   * Returns `route` with its border opening on `edge` walled off, used to keep the
+   * boss room's portal **sealed** until the boss falls. The interior lane that led
+   * to it stays, ending at the solid border.
+   */
+  private sealEdge(route: RouteMap, edge: MapEdge): RouteMap {
+    const tiles = route.tiles.map((row, y) =>
+      row.map((value, x) =>
+        borderEdge({ x, y }, route.width, route.height) === edge && value === FLOOR ? WALL : value,
+      ),
+    );
+    return { ...route, tiles };
+  }
+
   private movementMap(map: TileMap): TileMap {
     const config = TILESETS[this.tilesetId].config;
     const tips = treeTipKeys(map, config);
@@ -2783,7 +2939,7 @@ export class RouteScene extends Phaser.Scene {
       onComplete: () => {
         this.walkTween = null;
         this.player = { x: to.x, y: to.y };
-        this.onTileEntered();
+        this.onTileEntered(direction);
       },
     });
   }
@@ -2799,9 +2955,9 @@ export class RouteScene extends Phaser.Scene {
     this.playerSprite.setFrame(playerSpriteFrame(this.facing));
   }
 
-  private onTileEntered(): void {
+  private onTileEntered(direction: MoveKey): void {
     // A door on the border changes room (or steps through the open portal).
-    if (this.tryLeaveRoom()) return;
+    if (this.tryLeaveRoom(direction)) return;
     const grassy =
       tileAt(this.map, this.player) === TALL_GRASS ||
       this.grassTipKeys.has(`${this.player.x},${this.player.y}`);
@@ -2827,41 +2983,51 @@ export class RouteScene extends Phaser.Scene {
   /**
    * Leaving the room through a door (`docs/maps-spec.md` §2): a link enters the
    * grid neighbour by its opposite edge (`advanceRoute`), and the boss room's
-   * open portal crosses to the next map (`advanceMap`, with its heal stop). The
-   * arrival door counts too, so a room can always be walked back. The dev
-   * generator/import tools have no plan, so they never transition.
+   * open portal crosses to the next map (`advanceMap`, with its heal stop). Only a
+   * step taken **toward** the border counts, so walking along the gap of a wide
+   * opening (or spawning on it) never bounces back. The arrival door counts too,
+   * so a room can always be walked back. The dev generator/import tools have no
+   * plan, so they never transition.
    */
-  private tryLeaveRoom(): boolean {
+  private tryLeaveRoom(direction: MoveKey): boolean {
     const room = this.room;
     const plan = this.plan;
     if (!room || !plan) return false;
-    const edge = this.doorEdgeAt(this.player);
+    const edge = this.doorEdgeAt(this.player, direction);
     if (!edge) return false;
-    if (room.portalEdge !== null && edge === room.portalEdge) {
+    if (room.portalEdge !== null && room.portalOpen && edge === room.portalEdge) {
       this.transitionTo(advanceMap(this.run));
       return true;
     }
     const next = roomAcross(plan, room.roomId, edge);
     if (next === undefined) return false;
-    this.transitionTo(advanceRoute(this.run, next));
+    // Leave by `edge`, arrive by its opposite (`docs/maps-spec.md` §2).
+    this.transitionTo(advanceRoute(this.run, next, OPPOSITE_EDGE[edge]));
     return true;
   }
 
   /**
-   * The map edge a **door** tile sits on: a route exit (a link or the open
-   * portal) or the room's arrival tile. A border tile that is not a door (a wall,
-   * reachable only with the dev noclip) returns null.
+   * The map edge a **door** cell exits through: a passable tile of the room's
+   * opening on that edge (an opening is a gap a couple of tiles wide, so the player
+   * can leave from any of its cells), when the step that landed on it was taken
+   * toward that border. A wall, a decorative tree tip on the border or a step
+   * along the gap is not a door. Null for a non-border cell.
    */
-  private doorEdgeAt(tile: Tile): MapEdge | null {
+  private doorEdgeAt(tile: Tile, direction: MoveKey): MapEdge | null {
+    const approach = MOVE_STEP[direction];
+    const approachEdge = approach.x > 0 ? 'E' : approach.x < 0 ? 'W' : approach.y > 0 ? 'S' : 'N';
+    const room = this.room;
+    if (room) {
+      const edges = room.openings.map((opening) => opening.edge);
+      return exitEdgeAt(this.map, this.route.width, this.route.height, edges, tile, approachEdge);
+    }
+    // No plan (the dev generator/import tools): the seeded tiles are the only guide.
+    const edge = borderEdge(tile, this.route.width, this.route.height);
+    if (!edge || edge !== approachEdge) return null;
     const isDoor =
-      this.route.exits.some((exit) => exit.x === tile.x && exit.y === tile.y) ||
-      (this.route.entry.x === tile.x && this.route.entry.y === tile.y);
-    if (!isDoor) return null;
-    if (tile.x === 0) return 'W';
-    if (tile.x === this.route.width - 1) return 'E';
-    if (tile.y === 0) return 'N';
-    if (tile.y === this.route.height - 1) return 'S';
-    return null;
+      (this.route.entry.x === tile.x && this.route.entry.y === tile.y) ||
+      this.route.exits.some((exit) => exit.x === tile.x && exit.y === tile.y);
+    return isDoor ? edge : null;
   }
 
   /**

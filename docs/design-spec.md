@@ -24,8 +24,10 @@ carries over.
   map shares one **biome**, one **level range** and its route **sizes**; it is
   connected and closed into at least one cycle.
 - Rooms join through openings: leaving by one edge enters the neighbour by the
-  **opposite** edge, and a door lines up with the neighbour's. The room farthest
-  from the entry holds the **boss**; beating it opens a **portal** to the next map
+  **opposite** edge, and a door lines up with the neighbour's. The **entry room**
+  has no outward door — the run starts you at its **centre** — and the floor's
+  farthest room is a **dead-end boss room** (one door, no tall grass, no regular
+  trainers); beating its boss opens the **portal** to the next map
   (`docs/maps-spec.md`).
 - A room with a single opening is a **dead-end** room; a straight two-opening
   passage is the **corridor** shape. Both carry the usual trainers, items and
@@ -76,12 +78,19 @@ carries over.
   and can then be moved freely. The positions and collapsed states are a global
   preference saved with the settings (D22), so they survive a reload and the next
   run.
+- The route **header is the floor minimap**: the map name over a Binding of Isaac-
+  style grid of the rooms **discovered** so far, each drawn from the room's own
+  width/height, its openings on the matching walls and a link drawn once **both**
+  its ends are known. The current room, the boss, the open portal and any special
+  room carry their own mark; a room stays hidden until it is entered
+  (`docs/maps-spec.md` §8).
 - You start a run by picking one of three starters drawn from the base forms of
   every evolution line with at least three members (itself plus two others), so
   every starter has room to grow. The starter cards work with the **mouse**: hover
   highlights a card and a click picks it, beside the keyboard cursor.
-- One capture per route, the classic way: weaken a wild Pokémon, throw a ball,
-  it either clicks or breaks out.
+- One capture per room of a floor, the classic way: weaken a wild Pokémon, throw a
+  ball, it either clicks or breaks out. A room that spent its capture stays spent
+  if you walk back into it; a different room of the floor can still catch.
 - **Permadeath:** 0 HP is permanent. `0 HP = lost forever`, no Revive, no
   Pokémon Center resurrection, no box recovery.
 

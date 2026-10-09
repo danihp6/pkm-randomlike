@@ -1,6 +1,6 @@
 import { levelRangeForMap } from '../../data/maps';
 import { bandForLevel, type LevelBand } from '../../data/run';
-import { planMap } from '../maps/plan';
+import { planMap, type MapPlan } from '../maps/plan';
 
 /**
  * Where a global route index falls in the run's **map chain** (`docs/maps-spec.md`
@@ -37,6 +37,19 @@ export function floorForRoute(seed: string, routeIndex: number): FloorPosition {
     }
     remaining -= plan.rooms.length;
   }
+}
+
+/**
+ * The stable global route index of a plan room: the room counts of the maps
+ * before it plus its own id, so it is the same on every visit (`docs/maps-spec.md`
+ * §9). Route geometry, trainers and loot seed off this, not the run's moving
+ * `routeIndex` counter, so a room looks identical when walked back into.
+ */
+export function routeIndexForRoom(plan: MapPlan, roomId: number): number {
+  const room = Math.max(0, Math.floor(roomId));
+  let prefix = 0;
+  for (let map = 1; map < plan.mapIndex; map++) prefix += planMap(plan.seed, map).rooms.length;
+  return prefix + room + 1;
 }
 
 /**

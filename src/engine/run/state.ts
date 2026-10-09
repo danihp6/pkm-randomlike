@@ -1,5 +1,5 @@
 import { levelCapForMap } from '../../data/maps';
-import { planMap } from '../maps/plan';
+import { arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge } from '../maps/plan';
 import type { BagCounts } from './battleLink';
 import { healParty } from './heal';
 import type { RunPokemon } from './progression';
@@ -27,9 +27,9 @@ export function emptyRunStats(): RunStats {
 /**
  * The run: everything that survives a route. The party/box hold run members
  * (battle snapshot + XP), the bag is the item stacks the scene passes to battle,
- * `defeatedTrainers` / `captureUsed` are the per-route bookkeeping and `stats`
- * is the running score the end-of-run screen reports. Every helper here is pure
- * and returns a new state (D11: no hidden randomness).
+ * `defeatedTrainers` / `pickedItems` / `capturedRooms` are the **per-floor**
+ * bookkeeping and `stats` is the running score the end-of-run screen reports.
+ * Every helper here is pure and returns a new state (D11: no hidden randomness).
  *
  * A route is a room of a **map** (a Binding of Isaac-style floor), so the global
  * `routeIndex` counter travels beside the run's actual position — `mapIndex` and
@@ -38,12 +38,17 @@ export function emptyRunStats(): RunStats {
 export type RunState = Readonly<{
   seed: string;
   mode: RunMode;
-  /** Global counter of rooms entered; the key for route-scoped RNG streams. */
+  /** Global counter of rooms entered (changes on every transition). */
   routeIndex: number;
   /** The floor the run is on, 1-based (`docs/maps-spec.md` §1). */
   mapIndex: number;
   /** The room of `mapIndex` the run occupies. */
   routeInMap: number;
+  /**
+   * The edge the current room was entered through (`docs/maps-spec.md` §2): the
+   * scene spawns the player at that door, so leaving East always arrives West.
+   */
+  arrivalEdge: MapEdge;
   /** Room ids of `mapIndex` entered so far (fog of discovery, D32). Resets per map. */
   discoveredRooms: readonly number[];
   /** True once `mapIndex`'s boss has fallen, so its portal stays open (D31). Resets per map. */
@@ -53,11 +58,12 @@ export type RunState = Readonly<{
   party: readonly RunPokemon[];
   box: readonly RunPokemon[];
   bag: readonly BagCounts[];
+  /** Trainer ids already beaten on `mapIndex`. Resets per map, so revisits stay clear. */
   defeatedTrainers: readonly string[];
-  /** Ground-item ids already taken on this route. Resets on advance. */
+  /** Ground-item ids already taken on `mapIndex`. Resets per map. */
   pickedItems: readonly string[];
-  /** True once this route's single capture has been spent. Resets on advance. */
-  captureUsed: boolean;
+  /** Room ids of `mapIndex` whose single capture has been spent. Resets per map. */
+  capturedRooms: readonly number[];
   stats: RunStats;
 }>;
 
@@ -69,13 +75,15 @@ export type RunInit = Readonly<{
 }>;
 
 export function createRun(init: RunInit): RunState {
-  const entryRoom = planMap(init.seed, FIRST_MAP).entryRoom;
+  const plan = planMap(init.seed, FIRST_MAP);
+  const entryRoom = plan.entryRoom;
   return {
     seed: init.seed,
     mode: init.mode ?? 'finite',
     routeIndex: FIRST_ROUTE,
     mapIndex: FIRST_MAP,
     routeInMap: entryRoom,
+    arrivalEdge: plan.entryEdge,
     discoveredRooms: [entryRoom],
     bossDefeated: false,
     levelCap: levelCapForMap(FIRST_MAP),
@@ -84,27 +92,32 @@ export function createRun(init: RunInit): RunState {
     bag: [...(init.bag ?? [])],
     defeatedTrainers: [],
     pickedItems: [],
-    captureUsed: false,
+    capturedRooms: [],
     stats: emptyRunStats(),
   };
 }
 
 /**
  * Enters another room of the **same map** (`docs/maps-spec.md` §2): the global
- * counter steps, the room is marked **discovered** (D32) and the per-room marks
- * (the capture, the beaten trainers, the picked items) reset. The map and its cap
- * stay put — the heal stop is a map event, not a room one.
+ * counter steps, the room is marked **discovered** (D32) and the door the player
+ * came through is stored. The floor's marks (beaten trainers, taken items, spent
+ * captures) **stay** — revisiting a room rebuilds it identically and its content
+ * does not respawn — and only the map advance clears them.
+ *
+ * `arrivalEdge` is the door the player arrives through (the opposite of the one
+ * they left by); it is kept when it is a real door of the room, else the
+ * plan-derived arrival is used so a bad value never opens a wall onto nothing.
  */
-export function advanceRoute(run: RunState, roomInMap: number): RunState {
+export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: MapEdge): RunState {
   const room = Math.max(0, Math.floor(roomInMap));
+  const plan = planMap(run.seed, run.mapIndex);
+  const arrival = isArrivalEdge(plan, room, arrivalEdge) ? (arrivalEdge as MapEdge) : arrivalEdgeFor(plan, room);
   return {
     ...run,
     routeIndex: run.routeIndex + 1,
     routeInMap: room,
+    arrivalEdge: arrival,
     discoveredRooms: discoverRoom(run.discoveredRooms, room),
-    captureUsed: false,
-    defeatedTrainers: [],
-    pickedItems: [],
   };
 }
 
@@ -112,22 +125,23 @@ export function advanceRoute(run: RunState, roomInMap: number): RunState {
  * Steps through the map's portal onto the next floor (`docs/maps-spec.md` §6,
  * D31): the next map's entry room, a fresh discovery set and its own cap. This is
  * also the **heal stop** — HP/PP restored across the party and the box, never a
- * resurrection (D5) — and the old floor's per-room marks go with it.
+ * resurrection (D5) — and the old floor's marks go with it.
  */
 export function advanceMap(run: RunState): RunState {
   const mapIndex = run.mapIndex + 1;
-  const entryRoom = planMap(run.seed, mapIndex).entryRoom;
+  const plan = planMap(run.seed, mapIndex);
   const advanced: RunState = {
     ...run,
     routeIndex: run.routeIndex + 1,
     mapIndex,
-    routeInMap: entryRoom,
-    discoveredRooms: [entryRoom],
+    routeInMap: plan.entryRoom,
+    arrivalEdge: plan.entryEdge,
+    discoveredRooms: [plan.entryRoom],
     bossDefeated: false,
     levelCap: levelCapForMap(mapIndex),
-    captureUsed: false,
     defeatedTrainers: [],
     pickedItems: [],
+    capturedRooms: [],
   };
   return healParty(advanced);
 }
@@ -238,13 +252,15 @@ export function swapPartyBox(run: RunState, partyIndex: number, boxIndex: number
   return { ...run, party, box };
 }
 
+/** True while the room the run stands in has not spent its single capture (D5). */
 export function canCapture(run: RunState): boolean {
-  return !run.captureUsed;
+  return !run.capturedRooms.includes(run.routeInMap);
 }
 
-/** Spends the route's single capture; a second call is a no-op. */
+/** Spends the room's single capture; the same room again is a no-op. */
 export function useCapture(run: RunState): RunState {
-  return run.captureUsed ? run : { ...run, captureUsed: true };
+  if (!canCapture(run)) return run;
+  return { ...run, capturedRooms: [...run.capturedRooms, run.routeInMap] };
 }
 
 /** Counts a caught Pokémon for the run summary, beside the capture it spends. */

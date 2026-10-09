@@ -7,10 +7,11 @@ is what a run actually walks. This file is the source of truth for that layer; t
 per-route geometry stays in `docs/routes-spec.md` and the `D##` decisions behind
 it in `docs/tech-decisions.md` (D28–D33).
 
-> Status: blueprint. `src/data/maps.ts` (the tuning tables) is in; the plan
-> generator, the route shapes, the boss/portal, the special rooms, the economy
-> and the HUD map are the open steps in `TODO.md` Phase 9. Until they land the
-> game still walks a flat route chain with a per-route biome.
+> Status: in progress. The tuning tables (`src/data/maps.ts`), the plan generator
+> (`Plan`), the plan-driven route shapes and size, the per-map levels, the run's
+> floor tracking, the boss/portal and the route HUD **minimap** (`src/ui/mapView.ts`)
+> have shipped; the special rooms and the Poké Dollar economy are the open steps in
+> `TODO.md` Phase 9.
 
 ## 1. What a map is
 
@@ -43,7 +44,9 @@ one room's wall lines up with the neighbour's opposite door:
 - a room occupies one grid cell, but is played on its **own screen** (camera
   follow); the grid is what lays out the graph and the minimap, not world space;
 - a **link** joins two rooms that share a cell edge, so leaving by East enters the
-  neighbour by West;
+  neighbour by West; the run keeps the door it arrived through
+  (`RunState.arrivalEdge`) so a room seeds the same whatever side it is entered
+  from and always lets the player walk straight back;
 - the plan must be **connected** and **closed into at least one cycle** (the rooms
   form a loop, not a bare tree), and no opening may dangle.
 
@@ -51,14 +54,23 @@ An opening is one of:
 
 | Opening | Where | Meaning |
 | --- | --- | --- |
-| **entry** | exactly one, on the entry room | the map entrance, entered from the previous map |
+| **entry** | exactly one, on the entry room | the map entrance; the room spawns the player at its **centre** (no carved outward door) |
 | **portal** | exactly one, on the boss room | sealed until the boss falls, then the way to the next map |
 | **link** | 0–4 per room | joins two rooms; its counterpart is the neighbour's opposite link |
+
+**No outward door on the entry room:** the entry is the map's origin, not a way
+back off it, so the route builder leaves that wall solid and the run starts the
+player in the middle of the room. Every other opening is a `link`.
 
 **No dangling openings:** every `link` is joined to another room. A room whose
 only opening is a single `link` is a **dead-end room** — a deliberate leaf, not an
 exit into nothing. Dead-end rooms hold the same content as any optional room:
 trainers, ground items and tall grass (`docs/routes-spec.md` §2).
+
+Content is seeded per room and it **persists while the run is on the floor**: a
+beaten trainer, a taken ground item and a spent capture stay spent when the room
+is walked back into, and only the map advance clears them. Each room grants **one
+capture**; the run tracks the rooms that spent theirs.
 
 The **shape** of a room follows from its opening set (its count and edges):
 
@@ -91,9 +103,10 @@ Plan(seed, mapIndex): MapPlan
     #    adjacent rooms that are not already joined, so the floor closes one or
     #    more loops.
     # 3. shapes: derive each room's shape from its opening set (table above).
-    # 4. boss: BFS from the entry room; the farthest room is the boss.
-    # 5. portal: the boss room's onward opening is the portal (absent on the final map).
-    #    The entry room's outward edge is the map entry, entered from the previous map.
+    # 4. boss: the farthest regular room; hang the boss room off it as an extra
+    #    dead-end leaf, so the boss has a single door and the floor keeps its cycle.
+    # 5. portal: the boss room's portal is carved on a free wall from the start and
+    #    sealed until the boss falls. The entry room spawns the player at its centre.
     # 6. specials: hang the special rooms off the tree (see §7).
 ```
 
@@ -129,11 +142,14 @@ a huge maze. Retuning is a data edit, never a generator edit
 
 ## 6. Boss & portal (D31)
 
-- The **farthest room from the entry** fields the **boss** — a fixed, themed
-  trainer at the map's `maxLevel`, distinct from the room's regular trainers.
-- The boss room has **no onward opening** while the boss stands. Once it falls a
-  **new opening appears with the portal**; stepping through it advances the run to
-  the next map (heal stop intact: HP/PP only, never a resurrection).
+- The **boss room** is a **dead-end leaf** hung off the farthest regular room, so
+  its only door is the way in (`docs/maps-spec.md` §2). It is deliberately quiet:
+  **no tall grass and no regular trainers**, just the boss.
+- The boss is a fixed, themed trainer at the map's `maxLevel`.
+- The portal is **carved from the start** on a free wall of the boss room and stays
+  **sealed** while the boss stands, so the room looks the same before and after.
+  Once the boss falls the portal opens; stepping through it advances the run to the
+  next map (heal stop intact: HP/PP only, never a resurrection).
 - The last map of a finite run holds the **final boss**: there is no portal, and
   beating it wins the run. Infinite mode reopens the portal forever.
 
@@ -207,9 +223,10 @@ The pure layout (cell positions, links, reveal filter) lives in
 
 - The plan is `Plan(seed, mapIndex)`; the rooms are `BuildRoute(seed, mapPlan,
   routeInMap)` with their own `layout` / `terrain` / `populate` streams.
-- Streams are keyed by the **map and the room inside it** (or by the global route
-  index), never by wall-clock or player input, so a seed reproduces the whole
-  chain (D11).
+- Streams are keyed by the **map and the room inside it**
+  (`routeIndexForRoom(plan, roomId)`), never by the run's moving counter, wall-clock
+  or player input, so revisiting a room rebuilds the same room and a seed
+  reproduces the whole chain (D11).
 - Adding a roll to a later step cannot shift earlier geometry because each pass
   owns its stream.
 

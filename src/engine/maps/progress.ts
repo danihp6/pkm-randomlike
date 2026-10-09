@@ -5,6 +5,7 @@ import {
   MAP_EDGES,
   arrivalEdgeFor,
   freeEdges,
+  isArrivalEdge,
   linkedNeighbour,
   type MapEdge,
   type MapPlan,
@@ -47,31 +48,64 @@ export type RoomView = Readonly<{
   biomeId: BiomeId;
   width: number;
   height: number;
-  /** Route openings: one entry (the arrival edge) plus every link, plus the portal when open. */
+  /**
+   * Route openings: every link, plus the boss room's portal. The portal is always
+   * part of the geometry (so the room never re-rolls when it opens); the scene seals
+   * it until `portalOpen`.
+   */
   openings: readonly Access[];
-  entryEdge: MapEdge;
+  /** The door the player arrives through, or null when the room spawns at its centre. */
+  entryEdge: MapEdge | null;
   /** True when this room fields the map's boss. */
   boss: boolean;
-  /** The portal's edge once the boss has fallen, else null. */
+  /** The boss room's portal edge (on a free wall), or null for any other room. */
   portalEdge: MapEdge | null;
+  /** True once the boss has fallen, so the portal is open and can be walked through. */
+  portalOpen: boolean;
 }>;
 
 /**
- * A room as the route builder and the scene need it: its plan size, its opening
- * set (arrival marked `entry`, links and the open portal as `exit`) and whether it
- * is the boss room. `portalOpen` is false while the boss stands, so the portal
- * wall stays sealed.
+ * A room as the route builder and the scene need it: its plan size, its carved
+ * opening set (every **link**, plus the boss room's portal) and whether it is the
+ * boss room. The portal is carved from the start but **sealed** while the boss
+ * stands, so the room looks identical before and after it opens.
+ *
+ * The **map entry room** has no outward door: it spawns the player at the room's
+ * **centre** (a fresh run or a portal step), so there is no opening that leads back
+ * off the map. Every other arrival is a link the player walked in through
+ * (`docs/maps-spec.md` §2: leave East, enter West), which `entryEdge` names; the
+ * scene passes `OPPOSITE_EDGE` of the door it used, or `arrivalEdgeFor` is used.
+ *
+ * The opening set never depends on the arrival, so a room is carved identically on
+ * every visit and its trainer/item ids stay stable (a beaten trainer stays beaten).
  */
-export function roomView(plan: MapPlan, roomId: number, portalOpen: boolean): RoomView {
+export function roomView(
+  plan: MapPlan,
+  roomId: number,
+  portalOpen: boolean,
+  arrivalEdge?: MapEdge,
+): RoomView {
   const room = plan.rooms[roomId];
   if (!room) throw new Error(`map ${plan.mapIndex} has no room ${roomId}`);
-  const entryEdge = arrivalEdgeFor(plan, roomId);
-  const portalEdge = portalOpen ? portalEdgeFor(plan, roomId) : null;
+  const arrival = isArrivalEdge(plan, roomId, arrivalEdge)
+    ? (arrivalEdge as MapEdge)
+    : arrivalEdgeFor(plan, roomId);
+  // The map entry room always spawns at its centre (no outward door); every other
+  // room spawns at the link the player walked in through.
+  const entryEdge =
+    roomId === plan.entryRoom
+      ? null
+      : linkedNeighbour(plan, roomId, arrival) !== undefined
+        ? arrival
+        : arrivalEdgeFor(plan, roomId);
+  // The portal is carved from the start and only opened when the boss falls.
+  const portalEdge = portalEdgeFor(plan, roomId);
 
-  const edges: MapEdge[] = [entryEdge];
-  for (const edge of MAP_EDGES) {
-    if (linkedNeighbour(plan, roomId, edge) !== undefined) edges.push(edge);
-  }
+  // The carved geometry is the plan's **link** openings (the entry room's outward
+  // door is dropped) plus the portal. It does not depend on the arrival.
+  const edges: MapEdge[] = room.openings
+    .filter((opening) => opening.kind === 'link')
+    .map((opening) => opening.edge);
   if (portalEdge) edges.push(portalEdge);
   const unique = [...new Set(edges)].sort((a, b) => MAP_EDGES.indexOf(a) - MAP_EDGES.indexOf(b));
   const openings: Access[] = unique.map((edge) => ({
@@ -90,6 +124,7 @@ export function roomView(plan: MapPlan, roomId: number, portalOpen: boolean): Ro
     entryEdge,
     boss: plan.bossRoom === roomId,
     portalEdge,
+    portalOpen: portalOpen && portalEdge !== null,
   };
 }
 
