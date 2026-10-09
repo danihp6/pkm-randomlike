@@ -7,7 +7,7 @@
  */
 
 /** The panels of the route HUD, in the order they are listed. */
-export const HUD_PANEL_IDS = ['header', 'party', 'bag', 'box', 'detail'] as const;
+export const HUD_PANEL_IDS = ['header', 'map', 'party', 'bag', 'box', 'detail'] as const;
 
 export type HudPanelId = (typeof HUD_PANEL_IDS)[number];
 
@@ -22,6 +22,7 @@ export const HUD_LAYOUT_LIMIT = 4000;
 export function defaultHudLayout(): HudLayout {
   return {
     header: { dx: 0, dy: 0, collapsed: false },
+    map: { dx: 0, dy: 0, collapsed: false },
     party: { dx: 0, dy: 0, collapsed: false },
     bag: { dx: 0, dy: 0, collapsed: false },
     box: { dx: 0, dy: 0, collapsed: false },

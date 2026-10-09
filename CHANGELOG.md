@@ -8,6 +8,27 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Room transitions are coherent** (`D30`). Leaving a room by a door now
+      spawns the player at the **opposite** door of the neighbour — leave East,
+      arrive West — instead of the door the plan derived from the entry by BFS, so
+      a room reads the same from every approach and you can always walk straight
+      back. The door the run arrived through lives in `RunState.arrivalEdge` (with
+      a v7→v8 save migration that recovers the plan-derived edge), and the room's
+      geometry, trainers and loot seed off a **stable per-room index**
+      (`routeIndexForRoom`), not the run's moving counter, so walking back into a
+      room lays out the **same** room instead of rerolling it. `docs/maps-spec.md`
+      §2/§9 updated.
+- [x] **The floor minimap** (`D32`). The `I` overlay gains a **map panel**: a
+      Binding of Isaac-style grid of the rooms **discovered** so far, each drawn
+      from the room's own width/height with its openings on the matching walls,
+      the current room highlighted, the boss marked and the open portal flagged. A
+      link is drawn only once **both** its ends are known, and a room stays hidden
+      until it is entered, so the floor reveals itself as the run advances. The
+      layout is pure and Phaser-free in `src/ui/mapView.ts` (`buildMapView`,
+      `MAP_VIEW_GAP`) with its own tests; `RouteScene` only scales and paints it on
+      a `Graphics`, redrawn on every room change. Special rooms already carry their
+      own marker (shop, mini-boss, mega-stone), ready for Phase 9 step 11.
+      `docs/maps-spec.md` §8, `docs/design-spec.md` §3 updated.
 - [x] **Randomized learnsets and movesets** (`D17`). Every Pokémon now learns a
       per-run random move set instead of the canon's: `src/engine/battle/
       randomLearnset.ts` rolls a learnset from the run seed keyed by species id,

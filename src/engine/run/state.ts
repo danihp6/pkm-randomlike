@@ -1,5 +1,5 @@
 import { levelCapForMap } from '../../data/maps';
-import { planMap } from '../maps/plan';
+import { arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge } from '../maps/plan';
 import type { BagCounts } from './battleLink';
 import { healParty } from './heal';
 import type { RunPokemon } from './progression';
@@ -44,6 +44,11 @@ export type RunState = Readonly<{
   mapIndex: number;
   /** The room of `mapIndex` the run occupies. */
   routeInMap: number;
+  /**
+   * The edge the current room was entered through (`docs/maps-spec.md` §2): the
+   * scene spawns the player at that door, so leaving East always arrives West.
+   */
+  arrivalEdge: MapEdge;
   /** Room ids of `mapIndex` entered so far (fog of discovery, D32). Resets per map. */
   discoveredRooms: readonly number[];
   /** True once `mapIndex`'s boss has fallen, so its portal stays open (D31). Resets per map. */
@@ -69,13 +74,15 @@ export type RunInit = Readonly<{
 }>;
 
 export function createRun(init: RunInit): RunState {
-  const entryRoom = planMap(init.seed, FIRST_MAP).entryRoom;
+  const plan = planMap(init.seed, FIRST_MAP);
+  const entryRoom = plan.entryRoom;
   return {
     seed: init.seed,
     mode: init.mode ?? 'finite',
     routeIndex: FIRST_ROUTE,
     mapIndex: FIRST_MAP,
     routeInMap: entryRoom,
+    arrivalEdge: plan.entryEdge,
     discoveredRooms: [entryRoom],
     bossDefeated: false,
     levelCap: levelCapForMap(FIRST_MAP),
@@ -94,13 +101,20 @@ export function createRun(init: RunInit): RunState {
  * counter steps, the room is marked **discovered** (D32) and the per-room marks
  * (the capture, the beaten trainers, the picked items) reset. The map and its cap
  * stay put — the heal stop is a map event, not a room one.
+ *
+ * `arrivalEdge` is the door the player arrives through (the opposite of the one
+ * they left by); it is kept when it is a real door of the room, else the
+ * plan-derived arrival is used so a bad value never opens a wall onto nothing.
  */
-export function advanceRoute(run: RunState, roomInMap: number): RunState {
+export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: MapEdge): RunState {
   const room = Math.max(0, Math.floor(roomInMap));
+  const plan = planMap(run.seed, run.mapIndex);
+  const arrival = isArrivalEdge(plan, room, arrivalEdge) ? (arrivalEdge as MapEdge) : arrivalEdgeFor(plan, room);
   return {
     ...run,
     routeIndex: run.routeIndex + 1,
     routeInMap: room,
+    arrivalEdge: arrival,
     discoveredRooms: discoverRoom(run.discoveredRooms, room),
     captureUsed: false,
     defeatedTrainers: [],
@@ -116,13 +130,14 @@ export function advanceRoute(run: RunState, roomInMap: number): RunState {
  */
 export function advanceMap(run: RunState): RunState {
   const mapIndex = run.mapIndex + 1;
-  const entryRoom = planMap(run.seed, mapIndex).entryRoom;
+  const plan = planMap(run.seed, mapIndex);
   const advanced: RunState = {
     ...run,
     routeIndex: run.routeIndex + 1,
     mapIndex,
-    routeInMap: entryRoom,
-    discoveredRooms: [entryRoom],
+    routeInMap: plan.entryRoom,
+    arrivalEdge: plan.entryEdge,
+    discoveredRooms: [plan.entryRoom],
     bossDefeated: false,
     levelCap: levelCapForMap(mapIndex),
     captureUsed: false,

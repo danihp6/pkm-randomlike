@@ -5,6 +5,7 @@ import {
   MAP_EDGES,
   arrivalEdgeFor,
   freeEdges,
+  isArrivalEdge,
   linkedNeighbour,
   type MapEdge,
   type MapPlan,
@@ -61,11 +62,24 @@ export type RoomView = Readonly<{
  * set (arrival marked `entry`, links and the open portal as `exit`) and whether it
  * is the boss room. `portalOpen` is false while the boss stands, so the portal
  * wall stays sealed.
+ *
+ * `arrivalEdge` is the edge the player actually walks in through (`docs/maps-spec.md`
+ * §2: leave East, enter West). The scene passes `OPPOSITE_EDGE` of the door it used
+ * so the spawn matches the traversal; when omitted — or when it is not a real door
+ * of this room — it falls back to the plan-derived `arrivalEdgeFor`, which is what
+ * a reload or a test uses.
  */
-export function roomView(plan: MapPlan, roomId: number, portalOpen: boolean): RoomView {
+export function roomView(
+  plan: MapPlan,
+  roomId: number,
+  portalOpen: boolean,
+  arrivalEdge?: MapEdge,
+): RoomView {
   const room = plan.rooms[roomId];
   if (!room) throw new Error(`map ${plan.mapIndex} has no room ${roomId}`);
-  const entryEdge = arrivalEdgeFor(plan, roomId);
+  const entryEdge = isArrivalEdge(plan, roomId, arrivalEdge)
+    ? (arrivalEdge as MapEdge)
+    : arrivalEdgeFor(plan, roomId);
   const portalEdge = portalOpen ? portalEdgeFor(plan, roomId) : null;
 
   const edges: MapEdge[] = [entryEdge];

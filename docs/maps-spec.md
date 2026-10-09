@@ -7,10 +7,11 @@ is what a run actually walks. This file is the source of truth for that layer; t
 per-route geometry stays in `docs/routes-spec.md` and the `D##` decisions behind
 it in `docs/tech-decisions.md` (D28–D33).
 
-> Status: blueprint. `src/data/maps.ts` (the tuning tables) is in; the plan
-> generator, the route shapes, the boss/portal, the special rooms, the economy
-> and the HUD map are the open steps in `TODO.md` Phase 9. Until they land the
-> game still walks a flat route chain with a per-route biome.
+> Status: in progress. The tuning tables (`src/data/maps.ts`), the plan generator
+> (`Plan`), the plan-driven route shapes and size, the per-map levels, the run's
+> floor tracking, the boss/portal and the route HUD **minimap** (`src/ui/mapView.ts`)
+> have shipped; the special rooms and the Poké Dollar economy are the open steps in
+> `TODO.md` Phase 9.
 
 ## 1. What a map is
 
@@ -43,7 +44,9 @@ one room's wall lines up with the neighbour's opposite door:
 - a room occupies one grid cell, but is played on its **own screen** (camera
   follow); the grid is what lays out the graph and the minimap, not world space;
 - a **link** joins two rooms that share a cell edge, so leaving by East enters the
-  neighbour by West;
+  neighbour by West; the run keeps the door it arrived through
+  (`RunState.arrivalEdge`) so a room seeds the same whatever side it is entered
+  from and always lets the player walk straight back;
 - the plan must be **connected** and **closed into at least one cycle** (the rooms
   form a loop, not a bare tree), and no opening may dangle.
 
@@ -207,9 +210,10 @@ The pure layout (cell positions, links, reveal filter) lives in
 
 - The plan is `Plan(seed, mapIndex)`; the rooms are `BuildRoute(seed, mapPlan,
   routeInMap)` with their own `layout` / `terrain` / `populate` streams.
-- Streams are keyed by the **map and the room inside it** (or by the global route
-  index), never by wall-clock or player input, so a seed reproduces the whole
-  chain (D11).
+- Streams are keyed by the **map and the room inside it**
+  (`routeIndexForRoom(plan, roomId)`), never by the run's moving counter, wall-clock
+  or player input, so revisiting a room rebuilds the same room and a seed
+  reproduces the whole chain (D11).
 - Adding a roll to a later step cannot shift earlier geometry because each pass
   owns its stream.
 

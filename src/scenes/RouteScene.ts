@@ -47,6 +47,7 @@ import {
   markItemPicked,
   resolveBattle,
   roomLevelForMap,
+  routeIndexForRoom,
   runBand,
   runRoomLevel,
   trainerRoster,
@@ -87,6 +88,7 @@ import {
   type RouteTrainer,
 } from '../engine/routes';
 import {
+  OPPOSITE_EDGE,
   bossTrainerId,
   isFinalMap,
   planMap,
@@ -104,6 +106,7 @@ import {
   serializeFrameMap,
 } from '../engine/frameMap';
 import { BAG_CATEGORIES, BAG_CATEGORY_LABELS, bagForCategory, cycleBagCategory, type BagCategory } from '../ui/bag';
+import { buildMapView, type MapViewRoom } from '../ui/mapView';
 import {
   BOX_COLS,
   BOX_PAGE_SIZE,
@@ -171,6 +174,12 @@ const HUD_PAD_X = FRLG_WINDOW_PADDING.x;
 const HUD_PAD_TOP = FRLG_WINDOW_PADDING.top;
 const HUD_PAD_BOTTOM = FRLG_WINDOW_PADDING.bottom + 4;
 const HUD_HEADER_H = HUD_PAD_TOP + 16 + HUD_PAD_BOTTOM;
+/** The minimap window: a compact square in the free top-left corner. */
+const HUD_MAP_X = 8;
+const HUD_MAP_Y = HUD_TOP;
+const HUD_MAP_W = 208;
+const HUD_MAP_H = 236;
+const HUD_MAP_HEADER = HUD_PAD_TOP + 16 + 8;
 const HUD_PARTY_HEADER = HUD_PAD_TOP + 16 + 12;
 const HUD_PARTY_ROW = 52;
 /** The party avatar, enlarged to the row height so the held-item badge reads. */
@@ -449,6 +458,9 @@ export class RouteScene extends Phaser.Scene {
   /** Whether the detail panel has been placed once (it is not re-docked after). */
   private hudDetailPlaced = false;
   private hudTitle!: Phaser.GameObjects.BitmapText;
+  /** The floor minimap panel: its graphics and the "no map" label. */
+  private hudMapGraphics!: Phaser.GameObjects.Graphics;
+  private hudMapEmpty!: Phaser.GameObjects.BitmapText;
   /** Whether the route HUD overlay (route header, party and bag) is shown; hidden by default. */
   private hudVisible = false;
   /** The pinned HUD camera; a rebuild must teach it to ignore the new sprites. */
@@ -582,13 +594,16 @@ export class RouteScene extends Phaser.Scene {
    */
   private buildRoom(): void {
     const plan = planMap(this.run.seed, this.run.mapIndex);
-    const view = roomView(plan, this.run.routeInMap, this.portalOpen());
+    const view = roomView(plan, this.run.routeInMap, this.portalOpen(), this.run.arrivalEdge);
     this.plan = plan;
     this.room = view;
     const biome = getBiome(view.biomeId);
     this.buildRoute({
       seed: this.run.seed,
-      routeIndex: this.run.routeIndex,
+      // The room's geometry, trainers and loot seed off a **stable** per-room
+      // index, not the run's moving counter, so walking back into a room shows the
+      // same room (`docs/maps-spec.md` §9).
+      routeIndex: routeIndexForRoom(plan, view.roomId),
       shape: DEFAULT_SHAPE,
       width: view.width,
       height: view.height,
@@ -908,6 +923,7 @@ export class RouteScene extends Phaser.Scene {
     const left = x + HUD_PAD_X;
     const right = x + HUD_PANEL_W - HUD_PAD_X;
     const headerChildren: Phaser.GameObjects.GameObject[] = [];
+    const mapChildren: Phaser.GameObjects.GameObject[] = [];
     const partyChildren: Phaser.GameObjects.GameObject[] = [];
     const bagChildren: Phaser.GameObjects.GameObject[] = [];
     const boxChildren: Phaser.GameObjects.GameObject[] = [];
@@ -918,6 +934,26 @@ export class RouteScene extends Phaser.Scene {
       tint: FRLG_INK,
     });
     headerChildren.push(header, this.hudTitle);
+
+    // The floor minimap: the grid of discovered rooms, drawn on a Graphics so a
+    // room change can clear and redraw it. The layout itself is the pure
+    // `buildMapView`; this panel only scales and paints it (`docs/maps-spec.md` §8).
+    mapChildren.push(addFrlgWindow(this, HUD_MAP_X, HUD_MAP_Y, HUD_MAP_W, HUD_MAP_H));
+    mapChildren.push(
+      addFrlgText(this, HUD_MAP_X + HUD_CONTENT_LEFT, HUD_MAP_Y + HUD_PAD_TOP, 'MAP', {
+        size: 16,
+        tint: FRLG_INK,
+      }),
+    );
+    this.hudMapGraphics = this.add.graphics();
+    this.hudMapEmpty = addFrlgText(
+      this,
+      HUD_MAP_X + HUD_MAP_W / 2,
+      HUD_MAP_Y + HUD_MAP_HEADER + 56,
+      'no map',
+      { size: 16, tint: 0x6b6887, origin: [0.5, 0] },
+    );
+    mapChildren.push(this.hudMapGraphics, this.hudMapEmpty);
 
     const partyY = HUD_TOP + HUD_HEADER_H + HUD_GAP;
     const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + HUD_PAD_BOTTOM;
@@ -1081,6 +1117,15 @@ export class RouteScene extends Phaser.Scene {
         HUD_HEADER_H,
         this.add.container(0, 0, headerChildren),
         PANEL_ICON_KEYS.header,
+      ),
+      this.makeHudPanel(
+        'map',
+        HUD_MAP_X,
+        HUD_MAP_Y,
+        HUD_MAP_W,
+        HUD_MAP_H,
+        this.add.container(0, 0, mapChildren),
+        PANEL_ICON_KEYS.map,
       ),
       this.makeHudPanel(
         'party',
@@ -1316,6 +1361,7 @@ export class RouteScene extends Phaser.Scene {
     if (!this.hudRoot) return;
     const biomeName = this.route ? getBiome(this.route.biomeId).name : '';
     this.hudTitle.setText(`Map ${this.run.mapIndex} · ${biomeName}`);
+    this.refreshMapView();
 
     this.hudRows.forEach((row, i) => {
       const member = this.run.party[i];
@@ -1414,6 +1460,110 @@ export class RouteScene extends Phaser.Scene {
     });
 
     this.refreshDetail();
+  }
+
+  /**
+   * Redraws the floor minimap from the plan and the run's discovery (`docs/maps-
+   * spec.md` §8, D32): the discovered rooms sized from their plan width/height,
+   * their openings on the matching walls, the links between two known neighbours
+   * and the boss/portal/special markers. Only the drawing happens here; every
+   * position and reveal rule comes from the pure `buildMapView`.
+   */
+  private refreshMapView(): void {
+    if (!this.hudMapGraphics) return;
+    const graphics = this.hudMapGraphics;
+    graphics.clear();
+    const plan = this.plan;
+    if (!plan) {
+      this.hudMapEmpty.setVisible(true);
+      return;
+    }
+    const view = buildMapView(plan, {
+      discovered: this.run.discoveredRooms,
+      currentRoom: this.run.routeInMap,
+      portalOpen: this.portalOpen(),
+    });
+    this.hudMapEmpty.setVisible(!view.visible);
+    if (!view.visible) return;
+
+    const areaX = HUD_MAP_X + HUD_PAD_X;
+    const areaY = HUD_MAP_Y + HUD_MAP_HEADER;
+    const areaW = HUD_MAP_W - HUD_PAD_X * 2;
+    const areaH = HUD_MAP_H - HUD_MAP_HEADER - HUD_PAD_BOTTOM;
+    const scale = Math.min(areaW / view.width, areaH / view.height);
+    const offsetX = areaX + (areaW - view.width * scale) / 2;
+    const offsetY = areaY + (areaH - view.height * scale) / 2;
+    const px = (value: number): number => offsetX + value * scale;
+    const py = (value: number): number => offsetY + value * scale;
+
+    // Links first, so the room cells paint over the corridor seams.
+    graphics.lineStyle(3, 0x8b88a6, 1);
+    for (const link of view.links) {
+      graphics.lineBetween(px(link.x1), py(link.y1), px(link.x2), py(link.y2));
+    }
+
+    for (const room of view.rooms) {
+      const rx = px(room.x);
+      const ry = py(room.y);
+      const rw = room.w * scale;
+      const rh = room.h * scale;
+      graphics.fillStyle(room.current ? 0xf6d98a : 0xe6e3f2, 1);
+      graphics.fillRect(rx, ry, rw, rh);
+      graphics.lineStyle(2, room.current ? 0x9a7a1f : 0x3a3956, 1);
+      graphics.strokeRect(rx, ry, rw, rh);
+
+      const gap = Math.max(2.5, Math.min(rw, rh) * 0.18);
+      for (const opening of room.openings) {
+        const ox = px(opening.x);
+        const oy = py(opening.y);
+        graphics.lineStyle(
+          4,
+          opening.kind === 'portal' ? 0x3fa9f5 : opening.kind === 'entry' ? 0x4ad15c : 0x2f2c4d,
+          1,
+        );
+        if (opening.edge === 'N' || opening.edge === 'S') {
+          graphics.lineBetween(ox - gap, oy, ox + gap, oy);
+        } else {
+          graphics.lineBetween(ox, oy - gap, ox, oy + gap);
+        }
+      }
+
+      this.drawMapMarker(graphics, room, rx + rw / 2, ry + rh / 2, Math.min(rw, rh));
+    }
+  }
+
+  /** One room's minimap icon: a special marker, the boss, and the open portal ring. */
+  private drawMapMarker(
+    graphics: Phaser.GameObjects.Graphics,
+    room: MapViewRoom,
+    cx: number,
+    cy: number,
+    size: number,
+  ): void {
+    const radius = Math.max(3, size * 0.18);
+    if (room.marker === 'shop') {
+      graphics.fillStyle(0xf2c14e, 1);
+      graphics.fillCircle(cx, cy, radius);
+      graphics.lineStyle(2, 0x8a6d1f, 1);
+      graphics.strokeCircle(cx, cy, radius);
+    } else if (room.marker === 'mini-boss') {
+      graphics.fillStyle(0xd9534f, 1);
+      graphics.fillTriangle(cx, cy - radius, cx + radius, cy + radius * 0.8, cx - radius, cy + radius * 0.8);
+    } else if (room.marker === 'mega-stone') {
+      graphics.fillStyle(0x9b6bff, 1);
+      graphics.fillTriangle(cx, cy - radius, cx + radius, cy, cx, cy + radius);
+      graphics.fillTriangle(cx, cy - radius, cx - radius, cy, cx, cy + radius);
+    } else if (room.boss) {
+      graphics.fillStyle(0xb0304a, 1);
+      graphics.fillCircle(cx, cy, radius);
+      graphics.fillStyle(0xf8fafc, 1);
+      graphics.fillCircle(cx - radius * 0.4, cy - radius * 0.15, radius * 0.22);
+      graphics.fillCircle(cx + radius * 0.4, cy - radius * 0.15, radius * 0.22);
+    }
+    if (room.portal) {
+      graphics.lineStyle(2, 0x3fa9f5, 1);
+      graphics.strokeCircle(cx, cy, radius * 1.4);
+    }
   }
 
   /**
@@ -2843,7 +2993,8 @@ export class RouteScene extends Phaser.Scene {
     }
     const next = roomAcross(plan, room.roomId, edge);
     if (next === undefined) return false;
-    this.transitionTo(advanceRoute(this.run, next));
+    // Leave by `edge`, arrive by its opposite (`docs/maps-spec.md` §2).
+    this.transitionTo(advanceRoute(this.run, next, OPPOSITE_EDGE[edge]));
     return true;
   }
 

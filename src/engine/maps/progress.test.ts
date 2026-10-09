@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { FINITE_MAPS } from '../../data/maps';
 import { sketchRoute } from '../routes/sketch';
 import { validateRoute } from '../routes/validate';
-import { MAP_EDGES, OPPOSITE_EDGE, linkedNeighbour, planMap, type MapEdge } from './plan';
+import { MAP_EDGES, OPPOSITE_EDGE, arrivalEdgeFor, linkedNeighbour, planMap, type MapEdge } from './plan';
 import {
   bossTrainerId,
   isFinalMap,
@@ -65,6 +65,44 @@ describe('arrivalEdgeFor / roomView', () => {
         expect(view.height).toBe(room.height);
         expect(view.roomCount).toBe(plan.rooms.length);
         expect(view.boss).toBe(room.id === plan.bossRoom);
+      }
+    }
+  });
+
+  it('spawns at the door it is told arrived through, and falls back on a wall', () => {
+    for (const seed of SEEDS) {
+      const plan = planMap(seed, 1);
+      const room = plan.rooms.find((candidate) => candidate.id !== plan.entryRoom)!;
+      const link = MAP_EDGES.find((edge) => linkedNeighbour(plan, room.id, edge) !== undefined)!;
+      const view = roomView(plan, room.id, false, link);
+      const entry = view.openings.find((opening) => opening.role === 'entry');
+      expect(view.entryEdge).toBe(link);
+      expect(entry?.edge).toBe(link);
+
+      const wall = MAP_EDGES.find((edge) => linkedNeighbour(plan, room.id, edge) === undefined);
+      if (wall) {
+        // A wall is not a door: the plan-derived arrival is used instead.
+        expect(roomView(plan, room.id, false, wall).entryEdge).toBe(arrivalEdgeFor(plan, room.id));
+      }
+    }
+  });
+
+  it('arrives through the opposite door and can walk straight back', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 4; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        for (const from of plan.rooms) {
+          for (const edge of MAP_EDGES) {
+            const to = linkedNeighbour(plan, from.id, edge);
+            if (to === undefined) continue;
+            // Leave by `edge`, so the next room is entered by its opposite.
+            const arrival = OPPOSITE_EDGE[edge];
+            const view = roomView(plan, to, false, arrival);
+            expect(view.entryEdge, `${seed} ${from.id}->${to} by ${edge}`).toBe(arrival);
+            // The door the player arrives through leads straight back.
+            expect(linkedNeighbour(plan, to, view.entryEdge)).toBe(from.id);
+          }
+        }
       }
     }
   });

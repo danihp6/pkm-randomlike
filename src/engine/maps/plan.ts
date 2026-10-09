@@ -370,6 +370,22 @@ export function arrivalEdgeFor(plan: MapPlan, roomId: number): MapEdge {
 }
 
 /**
+ * True when `edge` is a door a player can actually arrive through: the entry
+ * room's outward edge or any linked neighbour edge of any room. Guards the
+ * arrival edge a scene or a save hands to `roomView`, so a stale or hand-edited
+ * value falls back to `arrivalEdgeFor` instead of opening a wall onto nothing.
+ */
+export function isArrivalEdge(
+  plan: MapPlan,
+  roomId: number,
+  edge: MapEdge | undefined,
+): boolean {
+  if (edge === undefined) return false;
+  if (roomId === plan.entryRoom && edge === plan.entryEdge) return true;
+  return linkedNeighbour(plan, roomId, edge) !== undefined;
+}
+
+/**
  * The edges of a room with **no link** and that are not the arrival edge: the
  * walls a portal may open onto. A boss room always has at least one (the floor
  * graph leaves a leaf's walls free), so the map can always gate its exit.

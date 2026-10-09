@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { restoreFighter } from '../battle/fighter';
 import { levelCapForMap } from '../../data/maps';
+import { MAP_EDGES, arrivalEdgeFor, linkedNeighbour, planMap } from '../maps/plan';
 import { capForRoute } from './levelCap';
 import { createRunPokemon } from './progression';
 import {
@@ -86,6 +87,28 @@ describe('advanceRoute', () => {
     const run = advanceRoute(createRun({ seed: 'run-a', starter }), -3);
     expect(run.routeInMap).toBe(0);
   });
+
+  it('stores the arrival door it is given, and falls back when it is not a door', () => {
+    const plan = planMap('run-a', 1);
+    // The canonical arrival for room 1 is the plan-derived one.
+    const base = createRun({ seed: 'run-a', starter });
+    expect(base.arrivalEdge).toBe(plan.entryEdge);
+
+    // A real link edge of room 1 is accepted as the arrival.
+    const room = plan.rooms[1];
+    const linkEdge = MAP_EDGES.find((edge) => linkedNeighbour(plan, 1, edge) !== undefined)!;
+    const custom = advanceRoute(base, 1, linkEdge);
+    expect(custom.routeInMap).toBe(1);
+    expect(custom.arrivalEdge).toBe(linkEdge);
+    expect(room.openings.some((opening) => opening.edge === linkEdge)).toBe(true);
+
+    // A wall with no door falls back to the plan-derived arrival.
+    const wall = MAP_EDGES.find((edge) => linkedNeighbour(plan, 1, edge) === undefined);
+    if (wall) {
+      const fallback = advanceRoute(base, 1, wall);
+      expect(fallback.arrivalEdge).toBe(arrivalEdgeFor(plan, 1));
+    }
+  });
 });
 
 describe('advanceMap', () => {
@@ -96,6 +119,7 @@ describe('advanceMap', () => {
     expect(next.mapIndex).toBe(2);
     expect(next.routeIndex).toBe(run.routeIndex + 1);
     expect(next.routeInMap).toBe(0);
+    expect(next.arrivalEdge).toBe(planMap('run-a', 2).entryEdge);
     expect(next.discoveredRooms).toEqual([0]);
     expect(next.bossDefeated).toBe(false);
     expect(next.levelCap).toBe(levelCapForMap(2));

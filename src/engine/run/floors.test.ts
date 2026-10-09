@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { levelRangeForMap } from '../../data/maps';
 import { planMap } from '../maps/plan';
-import { floorForRoute, roomLevelForFloor, runBand, runRoomLevel } from './floors';
+import {
+  floorForRoute,
+  roomLevelForFloor,
+  routeIndexForRoom,
+  runBand,
+  runRoomLevel,
+} from './floors';
 import { capForRoute } from './levelCap';
 
 const SEEDS = ['floor-a', 'floor-b', 'floor-c'];
@@ -39,6 +45,24 @@ describe('floorForRoute', () => {
     const deep = floorForRoute('floor-a', 500);
     expect(deep.mapIndex).toBeGreaterThan(6);
     expect(deep.minLevel).toBeGreaterThanOrEqual(levelRangeForMap(6).maxLevel);
+  });
+});
+
+describe('routeIndexForRoom', () => {
+  it('is the stable global index floorForRoute resolves back to the room', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 4; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        for (const room of plan.rooms) {
+          const index = routeIndexForRoom(plan, room.id);
+          const position = floorForRoute(seed, index);
+          expect(position.mapIndex).toBe(mapIndex);
+          expect(position.roomInMap).toBe(room.id);
+          // Stable across calls, so a revisited room keeps its geometry.
+          expect(routeIndexForRoom(plan, room.id)).toBe(index);
+        }
+      }
+    }
   });
 });
 

@@ -194,7 +194,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       falls a **new opening appears with the portal** that advances to the next
       map (final boss ends a finite run). Pure guard/portal logic + `RouteScene`
       wiring.
-- [ ] **Step 8 — Route HUD minimap.** A HUD panel drawing the floor as a BoI-style
+- [x] **Step 8 — Route HUD minimap.** A HUD panel drawing the floor as a BoI-style
       grid of rooms — a cell per discovered room from its size and shape, its
       openings on the matching walls, links between known neighbours, the current
       room highlighted and the boss/portal and each special room marked with its
