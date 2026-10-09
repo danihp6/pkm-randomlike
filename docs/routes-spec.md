@@ -16,6 +16,13 @@ camera follow), containing:
 - a one-tile ring of trees/rock along the border and a solid tree interior, with
   the shape's lanes carved through it.
 
+A route is one member of a **map** (`docs/maps-spec.md`): all its routes share the
+map's biome, level range and size band, and its **entry lines up with the
+previous route's exit** (opposite edge, same border band) so the chain reads as
+one path. A straight passage between two routes is the **corridor** shape (one
+entry, one exit, no branches); the last route of a map holds the map **boss** and
+its exit opens the **portal** to the next map.
+
 ## 2. Generation pipeline
 
 1. **Layout**: pick the carver style (`forest`, the only style for now) and its
@@ -132,10 +139,14 @@ at once: there is no fog of war, like the originals (`D6`).
 (`BIOME_ORDER = ['forest']` in `src/data/biomes.ts`), so every route uses its
 tileset and encounter table. A route's **shape** — where it enters and leaves and
 how the paths connect those openings — is a first-class generator input: the
-registry in `src/engine/routes/layout.ts` defines `straight` (2 opposite),
-`bend` (2 adjacent) and `cross` (4, opposite pairs), each with its `openings`
+registry in `src/engine/routes/layout.ts` defines `corridor` (2 opposite, one
+entry/one exit, no branches), `straight` (2 opposite, branchy), `bend` (2
+adjacent) and `cross` (4, opposite pairs), each with its `openings`
 (edge + entry/exit) and the `links` the spine joins, and `RouteMap` carries an
 `entry`, a list of `exits`, the `spine` and the optional `branches`/`pockets`.
+The **biome, size and the entry/exit edges now come from the map plan**
+(`docs/maps-spec.md` §2), so a route no longer rolls its own shape: the plan fixes
+`entry[i] = Opposite(exit[i-1])` and the edge pair picks `corridor` or `bend`.
 Every opening is placed on its edge and the guaranteed **spine** joins each
 `links` pair with cardinal, cost-guided corridors, so a `cross` leaves three exits
 and a `bend` runs an L. A multi-link shape routes every link through a shared
@@ -166,28 +177,38 @@ populate them (steps 5-7). The `hedges` and `maze` carvers stay parked in
 
 ## 4. Run structure
 
+A run walks a chain of **maps** (`docs/maps-spec.md`); each map is a chain of
+routes sharing a biome and a level range, and its **last route** holds the boss
+that opens the portal to the next map:
+
 ```
-route 1..N-1    regular routes (wild encounters)
-mini-boss       every MINIBOSS_EVERY routes, one fixed trainer with a themed team
-boss            closes each block of BOSS_BLOCK routes
-final boss      the last route of a finite run
+map:  route 1..K-1    regular routes (wild encounters)
+      route K         the map boss (its max level) -> portal
+run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
 ```
 
 - Finite mode: the chain has a fixed length and the final boss ends it.
-- Infinite mode: same generator, no final boss; the difficulty bands keep
-  climbing and the run ends only when the party is wiped.
+- Infinite mode: same generator, no final boss; the maps keep climbing and the
+  run ends only when the party is wiped.
+- The older mini-boss/boss cadence (`RUN_CHAIN` in `src/data/run.ts`) is folded
+  into the map boss; the route kinds are re-derived from the map plan (Phase 9,
+  step 6).
 
 ## 5. Difficulty bands
 
-- Each route has a level band derived from its index (band start/end) and a
-  per-route level cap that clamps XP gain (`docs/battle-spec.md` §7).
+- Each **map** has a level range (`docs/maps-spec.md` §5, `levelRangeForMap`); the
+  routes inside ramp from its `minLevel` to its `maxLevel` and the map's
+  `maxLevel` is the **player's cap** that clamps XP gain (`docs/battle-spec.md`
+  §7). The old per-route band (`bandForRoute`) becomes the map's range.
 - Each trainer archetype carries one species pool per band (`src/data/trainers.ts`),
   so a band's rosters field their own mix and the party size grows with the band
   (`band`'s `trainerSize`).
-- A trainer roster is generated deterministically from the route seed and band,
-  and never exceeds the route's level cap. Trainers are placed by the population
-  pass (step 4): one guards the main lane, the rest hold the optional paths by
-  the pocket items, and their count scales with the map size.
+- A trainer roster is generated deterministically from the route seed and the
+  map's band, and never exceeds the map's level cap. Trainers are placed by the
+  population pass (step 4): one guards the main lane, the rest hold the optional
+  paths by the pocket items, and their count scales with the map size.
+- The map's **last route** fields the boss at the map's `maxLevel` (Phase 9,
+  step 7).
 
 ## 6. Healing stops
 

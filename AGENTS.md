@@ -6,17 +6,18 @@ and trainers. Trainers have a line of sight and open a **classic menu battle**
 (fight / bag / switch / run) when they see you; tall grass rolls wild encounters.
 You catch at most one Pokémon per route, the classic way. Every Pokémon you lose
 is lost **forever** — 0 HP means gone, no Revive, no resurrection — and when the
-last one falls the run ends and nothing carries over. A run is a chain of routes
-with a mini-boss cadence, bosses and a final boss, plus an infinite mode.
+last one falls the run ends and nothing carries over. A run is a chain of **maps**
+(groups of routes of one biome, each with a level range and a boss that opens the
+portal to the next map), plus an infinite mode.
 
 Winning is where the roguelike lives: the only way to grow the party is to catch,
 and the only way to keep it is not to lose it.
 
 `docs/design-spec.md` is the gameplay source of truth. `docs/battle-spec.md`,
-`docs/routes-spec.md`, `docs/tileset-spec.md`, `docs/showdown-reuse.md` and
-`docs/data-spec.md` narrow it down by area. `docs/tech-decisions.md` holds the
-`D##` decisions. `TODO.md` is the open backlog; `CHANGELOG.md` archives what
-already shipped (read only when asked).
+`docs/routes-spec.md`, `docs/maps-spec.md`, `docs/tileset-spec.md`,
+`docs/showdown-reuse.md` and `docs/data-spec.md` narrow it down by area.
+`docs/tech-decisions.md` holds the `D##` decisions. `TODO.md` is the open
+backlog; `CHANGELOG.md` archives what already shipped (read only when asked).
 
 ## Stack decisions
 - **Engine**: Phaser 3 on **Vite + TypeScript**. Same scaffolding and versions as
@@ -41,13 +42,13 @@ already shipped (read only when asked).
 ## Directory layout
 - `src/engine/` – pure logic: `rng.ts`, `grid.ts`, `map.ts`,
   `pathfinding.ts`, `tileset.ts`, `tileFrames.ts`, `routes/`
-  (`routeMap.ts`, `sketch.ts`, `validate.ts`, `encounters.ts`),
-  and `battle/` (`fighter.ts`, `state.ts`, `order.ts`, `damage.ts`,
+  (`routeMap.ts`, `sketch.ts`, `validate.ts`, `encounters.ts`), `maps/`
+  (`plan.ts`), and `battle/` (`fighter.ts`, `state.ts`, `order.ts`, `damage.ts`,
   `accuracy.ts`, `status.ts`, `volatile.ts`, `turn.ts`, `commands.ts`,
   `runAway.ts`, `capture.ts`, `ai.ts`).
 - `src/data/` – `dex/` (generated + typed accessors), `tilesets/` (registry +
-  palettes), `biomes.ts`, `encounters.ts`, `trainers.ts`, `run.ts`, `items.ts`.
-  Contract in `src/data/README.md`.
+  palettes), `biomes.ts`, `maps.ts`, `encounters.ts`, `trainers.ts`, `run.ts`,
+  `items.ts`. Contract in `src/data/README.md`.
 - `src/scenes/` – `BootScene.ts`, `MainMenuScene.ts`, `StarterScene.ts`,
   `RouteScene.ts`, `BattleScene.ts`, `RunOverScene.ts`, `SettingsScene.ts` (later:
   `BoxScene`).

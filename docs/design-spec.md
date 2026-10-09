@@ -18,8 +18,15 @@ carries over.
   **Options** (the settings screen). Starting a new run only replaces the saved
   one once its starter is picked, so cancelling at the starter pick returns to
   the menu with the run in progress intact.
-- A run is a chain of **routes** (our word for the floors). Each route is a
-  small top-down map: walls/trees, tall grass, trainers, items, an exit.
+- A run is a chain of **maps**, and a map is a short chain of **routes** (our
+  word for the floors). Each route is a small top-down map: walls/trees, tall
+  grass, trainers, items, an exit. A map shares one **biome**, one **level
+  range** and its route **sizes**, and its last route holds the **boss**; beating
+  the boss opens a **portal** to the next map (`docs/maps-spec.md`).
+- Routes match their neighbours: a route's exit edge is the next route's entry
+  edge, opposite it, so the chain reads as one continuous path. A straight
+  passage between two routes is the **corridor** shape — one entry, one exit, no
+  branches.
 - The chain is fixed-length by default (see `docs/routes-spec.md`): a
   **mini-boss** every few routes, a **boss** to close each block, a **final
   boss** at the end. An **infinite mode** reuses the same generator without the
@@ -82,8 +89,8 @@ Full rules in `docs/battle-spec.md`. In short:
 
 - Gen 9 mechanics (types, stats, abilities, items, weather, terrain) driven by
   data extracted from Showdown at build time.
-- XP, levels and evolution are classic, with a **level cap per route** so power
-  always comes from play, not grinding.
+- XP, levels and evolution are classic, with a **level cap per map** (the map's
+  `maxLevel`) so power always comes from play, not grinding.
 - Wild battles can be fled; trainer battles cannot. Fleeing is one press: RUN
   attempts the escape at once, with no yes/no prompt.
 - The command menu takes the **mouse** as well as the keyboard: hovering a row
@@ -120,8 +127,14 @@ Full rules in `docs/battle-spec.md`. In short:
   route. Some look around on a timer, so their line turns with them and can catch
   you even while you stand still. A trainer never spawns already watching the tile
   you arrive on, never stands next to another, and never blocks a passage.
-- The exit opening ends the route (a floor position, no special tile; disabled for
-  now while the generator is in focus).
+- The exit opening ends the route and leads into the next route of the map; the
+  next route's entry lines up opposite the exit, so the chain reads as one path.
+  A route's shape is fixed by its entry/exit pair: opposite edges carve the
+  **corridor** (one entry, one exit, no branches), adjacent edges a `bend`.
+- The **last route of a map holds the boss** at the map's `maxLevel`. Its exit is
+  sealed until the boss falls; then a **portal** opens and steps the run into the
+  next map. (The end-of-route beat is disabled for now while the generator is in
+  focus; the corridor shape and the matching openings are Phase 9.)
 - Tilesets are **swappable per route** so the same map code renders a wood, a
   cave, a desert or a beach without touching the generator
   (`docs/tileset-spec.md`).
@@ -129,8 +142,8 @@ Full rules in `docs/battle-spec.md`. In short:
 ## 6. What a run looks like
 
 ```
-starter pick -> route 1 -> heal stop -> route 2 -> route 3 -> mini-boss
-  -> ... -> boss -> route ... -> final boss -> run won
+starter pick -> map 1: route 1 -> route 2 -> ... -> boss -> portal
+  -> map 2: route 1 -> ... -> boss -> portal -> ... -> final boss -> run won
 ```
 
 Rewards between routes are the run's only economy: catch, items, and the PC box

@@ -15,6 +15,8 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   biome's base `grassPatches` / `ledges` counts and add optional paths to a
   shape's `branchCount`, so density and exploration hold across route sizes
   (`docs/routes-spec.md` §2).
+- `maps.ts` — the per-map tuning: level range, route-count range and route-size
+  range, plus the infinite-run step past the last map (`docs/maps-spec.md` §3).
 - `encounters.ts` — per-biome species pools and weights by level band.
 - `trainers.ts` — trainer archetypes and their themed species pool per level band.
 - `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
