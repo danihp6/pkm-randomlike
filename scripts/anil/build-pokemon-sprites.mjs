@@ -24,6 +24,7 @@
 // (see `FORM_OVERRIDE` for the ones that do not line up, e.g. the Vivillon
 // patterns, or the Alcremie cream/sweet grid).
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
@@ -212,17 +213,53 @@ function anilName(species) {
   return positionalForms(species.baseSpecies, position) ? `${species.baseSpecies}_${position}` : species.id
 }
 
-const frames = {}
-const portraitNormal = {}
-const portraitShiny = {}
-let resolved = 0
-let formes = 0
-for (const species of SPECIES) {
-  const name = anilName(species)
-  if (!name) continue
-  // A forme the Anil set does not name falls back to its base species' art.
-  const base = indexes.front.has(norm(name)) ? name : species.baseSpecies
-  if (!indexes.front.has(norm(base))) continue
+// Battle-only Mega formes (`src/data/dex/megas.json`, D34). They are not in the
+// dex, so they need their own sheet mapping. Anil names them `<BASE>_<n>`; the
+// index comes from its `PBS/pokemon_forms.txt`, where the `FormName` says which
+// is Mega X and which is Mega Y.
+const MEGAS = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../src/data/dex/megas.json', import.meta.url)), 'utf8'),
+)
+
+/** Anil's `pokemon_forms.txt`: base species name -> its form sections. */
+function parseAnilForms(path) {
+  const forms = new Map()
+  let current = null
+  for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
+    const header = line.match(/^\[([^,\]]+),(\d+)\]/)
+    if (header) {
+      current = { index: Number(header[2]), formName: '' }
+      const base = header[1].toUpperCase()
+      const list = forms.get(base) ?? []
+      list.push(current)
+      forms.set(base, list)
+      continue
+    }
+    if (!current) continue
+    const field = line.match(/^FormName\s*=\s*(.+)$/)
+    if (field) current.formName = field[1].trim()
+  }
+  return forms
+}
+
+const ANIL_FORMS = parseAnilForms(resolve(sourceDir, '..', '..', 'PBS', 'pokemon_forms.txt'))
+
+/** The Anil sheet name (no extension) a Mega draws from, or its base species. */
+function megaAnilName(mega) {
+  const base = mega.baseSpeciesId.toUpperCase()
+  const candidates = (ANIL_FORMS.get(base) ?? []).filter((form) => /^Mega\b/i.test(form.formName))
+  let pick
+  if (/megay$/.test(mega.id)) pick = candidates.find((form) => / Y$/i.test(form.formName))
+  else if (/megax$/.test(mega.id)) pick = candidates.find((form) => / X$/i.test(form.formName))
+  else pick = candidates.find((form) => !/ [XY]$/i.test(form.formName)) ?? candidates[0]
+  return pick ? `${base}_${pick.index}` : mega.baseSpeciesId
+}
+
+/** The manifest entry for one sheet name, falling back to a base species. */
+function sheetEntry(name, fallbackBase) {
+  if (!name) return null
+  const base = indexes.front.has(norm(name)) ? name : fallbackBase
+  if (!indexes.front.has(norm(base))) return null
   const entry = {}
   for (const [kind, out] of [
     ['front', 'front'],
@@ -246,9 +283,31 @@ for (const species of SPECIES) {
     const value = sheet(out, `${base}_female`)
     if (value) entry[kind] = value
   }
+  return entry
+}
+
+const frames = {}
+const portraitNormal = {}
+const portraitShiny = {}
+let resolved = 0
+let formes = 0
+for (const species of SPECIES) {
+  const entry = sheetEntry(anilName(species), species.baseSpecies)
+  if (!entry) continue
   frames[species.id] = entry
   resolved++
   if (species.forme) formes++
+}
+
+// The Mega formes ride along so the battle can swap the sprite when a stone is
+// spent. They get no portrait cell (the atlas is dex-only); `portraits.ts` falls
+// back to the base species.
+let megasResolved = 0
+for (const mega of MEGAS) {
+  const entry = sheetEntry(megaAnilName(mega), mega.baseSpeciesId)
+  if (!entry) continue
+  frames[mega.id] = entry
+  megasResolved++
 }
 
 /** Scales a sheet's first `src`x`src` frame into a `size`x`size` atlas cell. */
@@ -272,18 +331,23 @@ function blitFrame(atlas, index, sheet, src, size) {
 
 /** Packs one portrait atlas off the icon folder; returns the id -> frame map. */
 function buildPortraits(out, file) {
-  const rows = Math.ceil(SPECIES.length / PORTRAIT_COLS)
+  // Species first (their indices are stable), then the Mega formes so the switch
+  // grid can draw the Mega's own face (D34).
+  const entries = [
+    ...SPECIES.map((species) => ({ id: species.id, name: anilName(species), fallback: species.baseSpecies })),
+    ...MEGAS.map((mega) => ({ id: mega.id, name: megaAnilName(mega), fallback: mega.baseSpeciesId })),
+  ]
+  const rows = Math.ceil(entries.length / PORTRAIT_COLS)
   const atlas = Buffer.alloc(PORTRAIT_COLS * PORTRAIT_SIZE * rows * PORTRAIT_SIZE * 4)
   const map = {}
-  SPECIES.forEach((species, index) => {
-    const name = anilName(species)
-    if (!name) return
-    const base = indexes[out].has(norm(name)) ? name : species.baseSpecies
+  entries.forEach((entry, index) => {
+    if (!entry.name) return
+    const base = indexes[out].has(norm(entry.name)) ? entry.name : entry.fallback
     const source = indexes[out].get(norm(base))
     if (!source) return
     const sheet = decodePng(readFileSync(`${assetsDir}${out}/${source}`))
     blitFrame(atlas, index, sheet, sheet.height, PORTRAIT_SIZE)
-    map[species.id] = index
+    map[entry.id] = index
   })
   writeFileSync(`${assetsDir}${file}`, encodePng(PORTRAIT_COLS * PORTRAIT_SIZE, rows * PORTRAIT_SIZE, atlas))
   return map
@@ -303,5 +367,5 @@ writeFileSync(
 const files = FOLDERS.reduce((total, [, out]) => total + indexes[out].size, 0)
 console.log(
   `copied ${files} sheets into public/anil/ and wrote the manifest for ${resolved} species ` +
-    `(${formes} formes) with ${Object.keys(normal).length} portraits and ${Object.keys(shiny).length} shiny portraits`,
+    `(${formes} formes, ${megasResolved} megas) with ${Object.keys(normal).length} portraits and ${Object.keys(shiny).length} shiny portraits`,
 )

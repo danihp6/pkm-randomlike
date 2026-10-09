@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { getMove, heightOf } from '../data/dex';
+import { megaFormForItem } from '../data/dex/megas';
 import { getItem } from '../data/items';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { type KeybindAction, type Keybinds } from '../data/keybinds';
@@ -67,7 +68,7 @@ const MESSAGE_HOLD_MS = 900;
 const FAST_HOLD_MS = 45;
 /** How long the win / loss / catch line stays up before the battle closes itself. */
 const OUTCOME_HOLD_MS = 1300;
-const MENU_ROWS = 6;
+const MENU_ROWS = 4;
 const MENU_W = 540;
 const MESSAGE_H = 124;
 const PANEL_W = 320;
@@ -94,6 +95,8 @@ const MENU_GRID_COLS = 2;
 const MENU_GRID_GAP = 8;
 /** Width reserved at the left of the moves grid for the ◀ back control. */
 const MOVE_BACK_COL = 46;
+/** Width reserved at the right of the moves grid for the Mega control (D34). */
+const MOVE_MEGA_COL = 62;
 /** Inner padding of a moves cell, and the inset of the whole grid in the window. */
 const MOVE_CELL_PAD = 14;
 const MOVE_GRID_INSET = 8;
@@ -242,6 +245,12 @@ export class BattleScene extends Phaser.Scene {
   /** The clickable ◀ that backs out of the moves / switch / bag submenus. */
   private backArrow!: Phaser.GameObjects.Image;
   private backZone!: Phaser.GameObjects.Zone;
+  /** The MEGA control shown at the right of the moves menu when a stone can be spent. */
+  private megaCell!: Phaser.GameObjects.Rectangle;
+  private megaText!: Phaser.GameObjects.BitmapText;
+  private megaZone!: Phaser.GameObjects.Zone;
+  /** True while the keyboard cursor sits on the Mega control instead of a move. */
+  private megaSelected = false;
   private hpBars!: Record<SideId, { fill: Phaser.GameObjects.Rectangle; bar: Phaser.GameObjects.Image }>;
   private messageText!: Phaser.GameObjects.BitmapText;
   private nameText!: Record<SideId, Phaser.GameObjects.BitmapText>;
@@ -467,6 +476,20 @@ export class BattleScene extends Phaser.Scene {
     this.backZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     this.backZone.setData('back', true);
     this.backZone.on('pointerdown', () => this.onBack());
+
+    // The MEGA control in the moves menu: a cell, its label and a hit zone. It is
+    // only laid out and shown while the active Pokémon can Mega Evolve (D34).
+    this.megaCell = this.add
+      .rectangle(0, 0, 10, 10, 0xe6e3f2)
+      .setOrigin(0, 0)
+      .setStrokeStyle(2, 0x9a94b8)
+      .setVisible(false);
+    this.megaText = addFrlgText(this, 0, 0, 'MEGA', { size: 16, tint: FRLG_INK, origin: 0.5 }).setVisible(
+      false,
+    );
+    this.megaZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    this.megaZone.on('pointerover', () => this.onMegaHover());
+    this.megaZone.on('pointerdown', () => this.onMegaClick());
 
     this.nameText = {
       enemy: addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
@@ -926,15 +949,25 @@ export class BattleScene extends Phaser.Scene {
   /** Every sheet this battle draws: the foe's front, the party's back. */
   private battleSheets(): PokemonSpriteSheet[] {
     const sheets = new Map<string, PokemonSpriteSheet>();
-    const add = (fighter: BattleFighter, kind: PokemonSpriteKind): void => {
-      const sheet = pokemonSprite(fighter.speciesId, kind, {
-        shiny: fighter.shiny,
-        female: fighter.gender === 'female',
-      });
+    const add = (
+      speciesId: string,
+      shiny: boolean,
+      female: boolean,
+      kind: PokemonSpriteKind,
+    ): void => {
+      const sheet = pokemonSprite(speciesId, kind, { shiny, female });
       if (sheet) sheets.set(sheet.textureKey, sheet);
     };
-    for (const fighter of this.playerFighters) add(fighter, 'back');
-    for (const fighter of this.enemyFighters) add(fighter, 'front');
+    const addFighter = (fighter: BattleFighter, kind: PokemonSpriteKind): void => {
+      const female = fighter.gender === 'female';
+      add(fighter.speciesId, fighter.shiny, female, kind);
+      // A held Mega Stone needs its forme sheet loaded up front, or the swap
+      // mid-battle has no texture to draw (D34).
+      const mega = fighter.heldItem ? megaFormForItem(fighter.heldItem) : undefined;
+      if (mega) add(mega.id, fighter.shiny, female, kind);
+    };
+    for (const fighter of this.playerFighters) addFighter(fighter, 'back');
+    for (const fighter of this.enemyFighters) addFighter(fighter, 'front');
     return [...sheets.values()];
   }
 
@@ -1121,15 +1154,10 @@ export class BattleScene extends Phaser.Scene {
 
   private openMenu(): void {
     const player = activeFighter(this.state, 'player');
-    const canMega = canMegaEvolve(this.state, 'player');
-    if (!canMega) this.megaIntent = false;
+    if (!canMegaEvolve(this.state, 'player')) this.megaIntent = false;
+    this.megaSelected = false;
     this.menuItems = [
       { label: 'FIGHT', enabled: true, onSelect: () => this.openMoves() },
-      {
-        label: this.megaIntent ? 'MEGA +' : 'MEGA',
-        enabled: canMega,
-        onSelect: () => this.toggleMega(),
-      },
       { label: 'BAG', enabled: this.usableBag().length > 0, onSelect: () => this.openBag() },
       { label: 'SWITCH', enabled: this.hasBench(), onSelect: () => this.openParty() },
       { label: 'RUN', enabled: canRun(this.state, 'player'), onSelect: () => this.submit({ type: 'run' }) },
@@ -1140,11 +1168,16 @@ export class BattleScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  /** Arms or disarms the Mega control; the next FIGHT spends it (D34). */
+  /** True while the active Pokémon can still spend its Mega Stone this battle. */
+  private megaAvailable(): boolean {
+    return canMegaEvolve(this.state, 'player');
+  }
+
+  /** Arms or disarms the Mega control; the next move spends it (D34). */
   private toggleMega(): void {
-    if (!canMegaEvolve(this.state, 'player')) return;
+    if (!this.megaAvailable()) return;
     this.megaIntent = !this.megaIntent;
-    this.openMenu();
+    this.refreshHud();
   }
 
   private openMoves(): void {
@@ -1173,6 +1206,7 @@ export class BattleScene extends Phaser.Scene {
       };
     });
     this.menuIndex = 0;
+    this.megaSelected = false;
     this.mode = 'moves';
     this.refreshHud();
   }
@@ -1307,15 +1341,34 @@ export class BattleScene extends Phaser.Scene {
     if (count === 0) return;
     const cols = MENU_GRID_COLS;
     const rows = Math.max(1, Math.ceil(count / cols));
+    const mega = this.mode === 'moves' && this.megaAvailable();
+
+    // The Mega control sits to the right of the grid: `right` from the last
+    // column lands on it, and `left` returns to the moves (D34).
+    if (mega && this.megaSelected) {
+      if (action === 'left') {
+        this.megaSelected = false;
+        this.refreshHud();
+      }
+      return;
+    }
+
     let index = this.menuIndex;
     for (let step = 0; step < count; step++) {
-      let row = Math.floor(index / cols);
-      let col = index % cols;
-      if (action === 'up') row = (row - 1 + rows) % rows;
-      else if (action === 'down') row = (row + 1) % rows;
-      else if (action === 'left') col = (col - 1 + cols) % cols;
-      else col = (col + 1) % cols;
-      index = Math.min(row * cols + col, count - 1);
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      if (action === 'right' && mega && (col === cols - 1 || index === count - 1)) {
+        this.megaSelected = true;
+        this.refreshHud();
+        return;
+      }
+      let nextRow = row;
+      let nextCol = col;
+      if (action === 'up') nextRow = (row - 1 + rows) % rows;
+      else if (action === 'down') nextRow = (row + 1) % rows;
+      else if (action === 'left') nextCol = (col - 1 + cols) % cols;
+      else nextCol = (col + 1) % cols;
+      index = Math.min(nextRow * cols + nextCol, count - 1);
       if (this.menuItems[index].enabled) break;
     }
     if (index === this.menuIndex) return;
@@ -1324,6 +1377,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private confirmMenu(): void {
+    if (this.mode === 'moves' && this.megaSelected && this.megaAvailable()) {
+      this.toggleMega();
+      return;
+    }
     const item = this.menuItems[this.menuIndex];
     if (item?.enabled) item.onSelect();
   }
@@ -1800,8 +1857,12 @@ export class BattleScene extends Phaser.Scene {
     const right = menu.x + menu.w - pad.x - MOVE_GRID_INSET;
     const top = menu.y + pad.top + MOVE_GRID_INSET;
     const bottom = menu.y + menu.h - pad.bottom - MOVE_GRID_INSET;
+    // The Mega control takes a column on the right, but only while it is usable.
+    const mega = this.megaAvailable();
+    if (!mega) this.megaSelected = false;
     const gridLeft = left + MOVE_BACK_COL;
-    const cellW = (right - gridLeft - (cols - 1) * MENU_GRID_GAP) / cols;
+    const gridRight = mega ? right - MOVE_MEGA_COL : right;
+    const cellW = (gridRight - gridLeft - (cols - 1) * MENU_GRID_GAP) / cols;
     const cellH = (bottom - top - (rows - 1) * MENU_GRID_GAP) / rows;
     const cellX = (i: number): number => gridLeft + (i % cols) * (cellW + MENU_GRID_GAP);
     const cellY = (i: number): number => top + Math.floor(i / cols) * (cellH + MENU_GRID_GAP);
@@ -1812,6 +1873,8 @@ export class BattleScene extends Phaser.Scene {
     this.backArrow.setVisible(true).setPosition(backX, backY);
     this.backZone.setPosition(backX - 12, backY - 18).setSize(48, 36);
     if (this.backZone.input) this.backZone.input.enabled = true;
+
+    this.layoutMegaControl(right, top, bottom, mega);
 
     this.menuRows.forEach((row, i) => {
       const item = i < count ? this.menuItems[i] : undefined;
@@ -1877,12 +1940,49 @@ export class BattleScene extends Phaser.Scene {
       if (zone.input) zone.input.enabled = Boolean(item);
       if (item) zone.setPosition(cellX(i), cellY(i)).setSize(cellW, cellH);
     });
-    // The cursor sits at the end of the selected cell, pointing back at its text.
-    this.menuCursor
-      .setFlipX(true)
-      .setPosition(cellX(this.menuIndex) + cellW - 48, cellY(this.menuIndex) + cellH / 2)
-      .setVisible(count > 0);
+    // The cursor sits at the end of the selected cell, pointing back at its text;
+    // on the Mega control it points at the button.
+    if (this.megaSelected) {
+      this.menuCursor
+        .setFlipX(true)
+        .setPosition(this.megaCell.x + this.megaCell.width - 12, this.megaCell.y + this.megaCell.height / 2)
+        .setVisible(true);
+    } else {
+      this.menuCursor
+        .setFlipX(true)
+        .setPosition(cellX(this.menuIndex) + cellW - 48, cellY(this.menuIndex) + cellH / 2)
+        .setVisible(count > 0);
+    }
     this.showMovePopup(menu);
+  }
+
+  /**
+   * Lays out the MEGA control at the right edge of the moves menu, or hides it
+   * when the active Pokémon cannot Mega Evolve (D34). The label shows a `+` while
+   * the evolution is armed.
+   */
+  private layoutMegaControl(right: number, top: number, bottom: number, show: boolean): void {
+    if (!show) {
+      this.megaCell.setVisible(false);
+      this.megaText.setVisible(false);
+      if (this.megaZone.input) this.megaZone.input.enabled = false;
+      return;
+    }
+    const x = right - MOVE_MEGA_COL;
+    const h = bottom - top;
+    const selected = this.megaSelected;
+    this.megaCell
+      .setPosition(x, top)
+      .setSize(MOVE_MEGA_COL, h)
+      .setFillStyle(selected ? 0xf7e0a6 : this.megaIntent ? 0xc7d2fe : 0xe6e3f2)
+      .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
+      .setVisible(true);
+    this.megaText
+      .setText(this.megaIntent ? 'MEGA +' : 'MEGA')
+      .setPosition(x + MOVE_MEGA_COL / 2, top + h / 2)
+      .setVisible(true);
+    this.megaZone.setPosition(x, top).setSize(MOVE_MEGA_COL, h);
+    if (this.megaZone.input) this.megaZone.input.enabled = true;
   }
 
   /** The popup's description font: large on a full-width menu, small on a phone. */
@@ -1892,6 +1992,7 @@ export class BattleScene extends Phaser.Scene {
 
   /** The popup height, measured from the current move's wrapped description. */
   private movePopupHeight(width: number): number {
+    if (this.megaSelected) return 0;
     const move = this.menuItems[this.menuIndex]?.move;
     if (!move || move.desc.length === 0) return 0;
     const pad = FRLG_WINDOW_PADDING;
@@ -1908,7 +2009,7 @@ export class BattleScene extends Phaser.Scene {
    */
   private showMovePopup(menu: Rect): void {
     const move = this.menuItems[this.menuIndex]?.move;
-    if (!move || move.desc.length === 0) {
+    if (this.megaSelected || !move || move.desc.length === 0) {
       this.movePopup.setVisible(false);
       this.movePopupText.setVisible(false);
       this.movePopupType.setVisible(false);
@@ -1943,6 +2044,9 @@ export class BattleScene extends Phaser.Scene {
     for (const cell of this.moveCells) cell.setVisible(false);
     for (const icon of this.moveCategoryIcons) icon.setVisible(false);
     for (const text of this.movePpText) text.setVisible(false);
+    this.megaCell.setVisible(false);
+    this.megaText.setVisible(false);
+    if (this.megaZone.input) this.megaZone.input.enabled = false;
     this.movePopup.setVisible(false);
     this.movePopupText.setVisible(false);
     this.movePopupType.setVisible(false);
@@ -2062,7 +2166,10 @@ export class BattleScene extends Phaser.Scene {
   /** Hovering a row moves the cursor onto it, like the arrow keys. */
   private onMenuHover(zone: Phaser.GameObjects.Zone): void {
     const index = zone.getData('item');
-    if (typeof index !== 'number' || index < 0 || index === this.menuIndex) return;
+    if (typeof index !== 'number' || index < 0) return;
+    const changed = this.megaSelected || index !== this.menuIndex;
+    this.megaSelected = false;
+    if (!changed) return;
     this.menuIndex = index;
     this.refreshHud();
   }
@@ -2075,6 +2182,20 @@ export class BattleScene extends Phaser.Scene {
     if (!item?.enabled) return;
     this.menuIndex = index;
     this.confirmMenu();
+  }
+
+  /** Hovering the MEGA control moves the keyboard cursor onto it. */
+  private onMegaHover(): void {
+    if (this.mode !== 'moves' || this.megaSelected || !this.megaAvailable()) return;
+    this.megaSelected = true;
+    this.refreshHud();
+  }
+
+  /** Clicking the MEGA control arms or disarms it. */
+  private onMegaClick(): void {
+    if (this.mode !== 'moves' || !this.megaAvailable()) return;
+    this.megaSelected = true;
+    this.toggleMega();
   }
 
   /** The ◀ control: leaves a submenu the same way cancel does. */

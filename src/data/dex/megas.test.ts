@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getItem } from '../items';
+import { portraitFor } from '../portraits';
+import { pokemonSprite } from '../pokemonSprites';
 import meta from './meta.json';
 import {
   MEGA_FORMES,
@@ -62,5 +64,13 @@ describe('generated Mega formes', () => {
   it('does not let a stone match the wrong species', () => {
     expect(megaMatchesSpecies('venusaurite', 'charizard')).toBe(false);
     expect(megaMatchesSpecies('charcoal', 'venusaur')).toBe(false);
+  });
+
+  it('has the battle art and a portrait cell for every Mega', () => {
+    for (const mega of MEGA_FORMES) {
+      expect(pokemonSprite(mega.id, 'front'), `${mega.id} front`).not.toBeNull();
+      expect(pokemonSprite(mega.id, 'back'), `${mega.id} back`).not.toBeNull();
+      expect(portraitFor(mega.id), `${mega.id} portrait`).not.toBeNull();
+    }
   });
 });
