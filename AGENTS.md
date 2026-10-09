@@ -6,9 +6,10 @@ and trainers. Trainers have a line of sight and open a **classic menu battle**
 (fight / bag / switch / run) when they see you; tall grass rolls wild encounters.
 You catch at most one Pokémon per route, the classic way. Every Pokémon you lose
 is lost **forever** — 0 HP means gone, no Revive, no resurrection — and when the
-last one falls the run ends and nothing carries over. A run is a chain of **maps**
-(groups of routes of one biome, each with a level range and a boss that opens the
-portal to the next map), plus an infinite mode.
+last one falls the run ends and nothing carries over. A run is a chain of **maps**:
+Binding of Isaac-style floors — a grid of routes of one biome, closed into a loop,
+each with a level range and a boss on the farthest room that opens the portal to
+the next map — plus an infinite mode.
 
 Winning is where the roguelike lives: the only way to grow the party is to catch,
 and the only way to keep it is not to lose it.

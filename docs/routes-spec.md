@@ -16,12 +16,14 @@ camera follow), containing:
 - a one-tile ring of trees/rock along the border and a solid tree interior, with
   the shape's lanes carved through it.
 
-A route is one member of a **map** (`docs/maps-spec.md`): all its routes share the
-map's biome, level range and size band, and its **entry lines up with the
-previous route's exit** (opposite edge, same border band) so the chain reads as
-one path. A straight passage between two routes is the **corridor** shape (one
-entry, one exit, no branches); the last route of a map holds the map **boss** and
-its exit opens the **portal** to the next map.
+A route is one **room** of a **map** (a Binding of Isaac-style floor,
+`docs/maps-spec.md`): all its rooms share the map's biome, level range and size
+band, and a route's openings join it to its grid neighbours — leaving by one edge
+enters the neighbour by the **opposite** edge. A room's shape follows from its
+opening set: one opening is a **dead-end**, two opposite a **corridor** (no
+branches), two adjacent a `bend`, three a T and four a crossing. The room
+**farthest from the entry** holds the map **boss**, whose onward opening opens the
+**portal** to the next map.
 
 ## 2. Generation pipeline
 
@@ -137,17 +139,18 @@ at once: there is no fog of war, like the originals (`D6`).
 
 **Biome and shape.** Only the FireRed/LeafGreen **forest** biome is active
 (`BIOME_ORDER = ['forest']` in `src/data/biomes.ts`), so every route uses its
-tileset and encounter table. A route's **shape** — where it enters and leaves and
-how the paths connect those openings — is a first-class generator input: the
-registry in `src/engine/routes/layout.ts` defines `corridor` (2 opposite, one
-entry/one exit, no branches), `straight` (2 opposite, branchy), `bend` (2
-adjacent) and `cross` (4, opposite pairs), each with its `openings`
-(edge + entry/exit) and the `links` the spine joins, and `RouteMap` carries an
-`entry`, a list of `exits`, the `spine` and the optional `branches`/`pockets`.
-The **biome, size and the entry/exit edges now come from the map plan**
-(`docs/maps-spec.md` §2), so a route no longer rolls its own shape: the plan fixes
-`entry[i] = Opposite(exit[i-1])` and the edge pair picks `corridor` or `bend`.
-Every opening is placed on its edge and the guaranteed **spine** joins each
+tileset and encounter table. A route's **shape** — the set of openings that join
+it to its grid neighbours — is a first-class generator input: the registry in
+`src/engine/routes/layout.ts` defines `dead-end` (1 opening), `corridor` (2
+opposite, no branches), `straight` (2 opposite, branchy), `bend` (2 adjacent),
+`tee` (3) and `cross` (4), each with its `openings` (edge + entry/exit/link) and
+the `links` the spine joins, and `RouteMap` carries an `entry`, a list of
+`exits`, the `spine` and the optional `branches`/`pockets`.
+The **biome, size and the opening set now come from the map plan**
+(`docs/maps-spec.md` §2–§3), so a route no longer rolls its own shape: the plan
+lays the rooms on a grid, joins them so every opening is the neighbour's opposite,
+and the opening set picks the shape. Every opening is placed on its edge and the
+guaranteed **spine** joins each
 `links` pair with cardinal, cost-guided corridors, so a `cross` leaves three exits
 and a `bend` runs an L. A multi-link shape routes every link through a shared
 **central hub**, so all the openings are connected by construction. Optional
@@ -177,13 +180,14 @@ populate them (steps 5-7). The `hedges` and `maze` carvers stay parked in
 
 ## 4. Run structure
 
-A run walks a chain of **maps** (`docs/maps-spec.md`); each map is a chain of
-routes sharing a biome and a level range, and its **last route** holds the boss
-that opens the portal to the next map:
+A run walks a chain of **maps** (`docs/maps-spec.md`); each map is a Binding of
+Isaac-style floor — a grid of rooms sharing a biome and a level range, closed into
+at least one cycle — and the **room farthest from the entry** holds the boss that
+opens the portal to the next map:
 
 ```
-map:  route 1..K-1    regular routes (wild encounters)
-      route K         the map boss (its max level) -> portal
+map:  rooms 1..K-1    regular rooms (wild encounters, items, trainers)
+      farthest room   the map boss (its max level) -> portal
 run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
 ```
 
@@ -207,8 +211,8 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
   map's band, and never exceeds the map's level cap. Trainers are placed by the
   population pass (step 4): one guards the main lane, the rest hold the optional
   paths by the pocket items, and their count scales with the map size.
-- The map's **last route** fields the boss at the map's `maxLevel` (Phase 9,
-  step 7).
+- The map's **farthest room from the entry** fields the boss at the map's
+  `maxLevel` (Phase 9, step 7).
 
 ## 6. Healing stops
 

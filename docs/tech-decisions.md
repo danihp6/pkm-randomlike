@@ -358,52 +358,61 @@ picks the shiny atlas.
 
 ## D28 — A map groups routes of one biome *(decided)*
 
-The run's chain is now a chain of **maps**, and a map is a short chain of
-**routes**. A map owns the three things that used to be rolled per route: the
-**biome**, the **level range** and the route **sizes**. So `biomeForRoute` and a
-per-route band are replaced by one `MapPlan` per map index (`docs/maps-spec.md`).
-Consequence: the same biome repeats across a map's routes, which reads as one
-continuous area, and the run advances map to map. Refines D8 (the cadence now
-sits on top of the maps) and D26 (the layout style is per map, not per route).
+The run's chain is now a chain of **maps**, and a map is a **graph of routes**
+(rooms) laid out on a coarse grid — Binding of Isaac's floors with rooms. A map
+owns the three things that used to be rolled per route: the **biome**, the
+**level range** and the route **sizes**. So `biomeForRoute` and a per-route band
+are replaced by one `MapPlan` per map index (`docs/maps-spec.md`). Consequence:
+the same biome repeats across a map's rooms, which reads as one continuous floor,
+and the run advances map to map. Refines D8 (the cadence now sits on top of the
+maps) and D26 (the layout style is per map, not per route).
 
 ## D29 — Map composition is rolled from per-map ranges *(decided)*
 
 Everything a map is comes from one `map` stream keyed `(seed, "map", mapIndex)`,
 so a plan is a pure function of the seed and the map index (D11). The biome is
-picked from `BIOME_ORDER`; the route count and each route's size are rolled
-inside inclusive **ranges** in `src/data/maps.ts`; the range for sizes **grows
-with the map index**, so later maps are bigger, and `MAP_TUNING_STEP` keeps
-growing past the last tuned row for infinite mode. Retuning a run is a data edit,
-never a generator edit. The player's cap is the map's `maxLevel`
-(`levelCapForMap`), generalising the per-route cap of D9.
+picked from `BIOME_ORDER`, **never repeating the previous map's**; the room count
+and each room's **width and height** (rolled independently) come from inclusive
+**ranges** in `src/data/maps.ts`; the size range **grows with the map index**, so
+later floors are bigger, and `MAP_TUNING_STEP` keeps growing past the last tuned
+row for infinite mode. Retuning a run is a data edit, never a generator edit. The
+player's cap is the map's `maxLevel` (`levelCapForMap`), generalising the
+per-route cap of D9.
 
-## D30 — A route matches its neighbours; the corridor shape *(decided)*
+## D30 — The map is a closed room graph on a grid *(decided)*
 
-Two consecutive routes line up: route `i`'s exit edge is route `i+1`'s entry
-edge, **opposite** it (exit East → enter West), and both openings sit on the same
-border band, so the chain reads as one path. The edge pair picks the shape:
-**opposite** edges carve the new **`corridor`** shape — one entry, one exit, a
-narrow lane and no optional branches, the "pasillo" — and **adjacent** edges
-carve the existing `bend`. The plan fixes the edges; the route builder no longer
-rolls a shape on its own (`docs/maps-spec.md` §4).
+A map is a Binding of Isaac-style floor: rooms sit on a coarse **grid of cells**
+and a door on one room's wall lines up with the neighbour's **opposite** door
+(leave East → enter West). Each room is still played on its own screen (camera
+follow); the grid lays out the graph and the minimap, not world space. The floor
+is **connected** and **closed into at least one cycle**, and no opening dangles.
+A room with a single `link` is the new **`dead-end`** shape (a leaf that holds the
+usual trainers, items and grass). The shape follows from the room's opening set:
+`dead-end` (1), `corridor` (2 opposite, the "pasillo", no branches), `bend` (2
+adjacent), `tee` (3), `cross` (4) and the older branchy `straight`. The plan fixes
+the openings; the route builder no longer rolls a shape on its own
+(`docs/maps-spec.md` §2–§3).
 
 ## D31 — The map boss seals the exit and opens the portal *(decided)*
 
-The last route of a map fields the map's **boss**, a fixed themed trainer at the
-map's `maxLevel`. Its exit is **sealed** while the boss stands; once it falls a
-**portal** opens and stepping on it advances to the next map (heal stop intact:
-HP/PP only, never a resurrection). A finite run's last map holds the **final
-boss** and no portal, so clearing it wins the run; infinite mode reopens the
-portal forever. This is the map's gate, on top of the route cadence of D8.
+The **room farthest from the entry** (graph distance) fields the map's **boss**, a
+fixed themed trainer at the map's `maxLevel`. Its onward opening is **sealed**
+while the boss stands; once it falls a **portal** opens and stepping through it
+advances to the next map (heal stop intact: HP/PP only, never a resurrection). A
+finite run's last map holds the **final boss** and no portal, so clearing it wins
+the run; infinite mode reopens the portal forever. This is the map's gate, on top
+of the room cadence of D8.
 
 ## D32 — The route HUD shows the map with fog of discovery *(decided)*
 
-The `I` overlay's route header grows into a **map view** of the plan's route
-graph: a node per route (its `routeInMap` and size), a connector per matching
-edge, the current route highlighted and the boss marked. Routes that have not
-been **discovered** (entered) yet — and the connectors to them — stay hidden, so
-the map reveals itself as the run advances. The pure layout and the reveal filter
-live in `src/ui/mapView.ts`; `RouteScene` only draws it (`docs/maps-spec.md` §7).
+The `I` overlay's route header grows into a **minimap of the floor**, exactly the
+Binding of Isaac minimap: a **grid of room cells**, each room drawn at its grid
+position from its `size` and shape with its openings on the matching walls, the
+current room highlighted, the boss room marked and the portal flagged. Rooms that
+have not been **discovered** (entered) yet — and the links to them — stay hidden,
+so the floor reveals itself as the run advances. The pure layout and the reveal
+filter live in `src/ui/mapView.ts`; `RouteScene` only draws it
+(`docs/maps-spec.md` §7).
 
 ## Open questions
 

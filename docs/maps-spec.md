@@ -1,107 +1,121 @@
 # PokeRandomLike — Maps Spec
 
-A **map** is a group of several routes of one biome. It is the unit of biome,
-level range and size, and the chain of maps is what a run actually walks. This
-file is the source of truth for that layer; the per-route geometry stays in
-`docs/routes-spec.md` and the `D##` decisions behind it in
-`docs/tech-decisions.md` (D28–D32).
+A **map** is a floor of **routes** (rooms) of one biome, laid out on a coarse
+grid and joined by openings into a **closed graph** — Binding of Isaac's floors
+with rooms. It is the unit of biome, level range and size, and the chain of maps
+is what a run actually walks. This file is the source of truth for that layer; the
+per-route geometry stays in `docs/routes-spec.md` and the `D##` decisions behind
+it in `docs/tech-decisions.md` (D28–D32).
 
 > Status: blueprint. `src/data/maps.ts` (the tuning tables) is in; the plan
-> generator, the chained openings, the boss/portal and the HUD map are the open
-> steps in `TODO.md` Phase 9. Until they land the game still walks a flat route
-> chain with a per-route biome.
+> generator, the route shapes, the boss/portal and the HUD map are the open steps
+> in `TODO.md` Phase 9. Until they land the game still walks a flat route chain
+> with a per-route biome.
 
 ## 1. What a map is
 
-A run is a chain of **maps**. Each map is a short chain of **routes**:
+A run is a chain of **maps** (floors). Each map is a small **graph of routes**
+(rooms) placed on a coarse grid:
 
 ```
-run = map 1 -> map 2 -> ... -> map N        (N fixed in finite mode)
+run  = map 1 -> map 2 -> ... -> map N            (N fixed in finite mode)
 
-map = route 1 -> route 2 -> ... -> route K  (K random, from the map's range)
+map  = a grid of K rooms joined by openings      (K random, from the map's range)
+       connected, closed into at least one cycle, no dangling opening
 ```
 
-- One **biome** is rolled for the whole map, so every route in it shares the
-  tileset and the encounter table (D28). `BIOME_ORDER` is the pool it rolls from;
-  only `forest` exists for now.
+- One **biome** is rolled for the whole map (never the previous map's), so every
+  room in it shares the tileset and the encounter table (D28). `BIOME_ORDER` is
+  the pool; only `forest` exists for now, so the no-repeat rule is inert.
 - One **level range** (`minLevel..maxLevel`) belongs to the map. Within the map
   the routes ramp from `minLevel` to `maxLevel`.
-- The **last route holds the boss** at the map's `maxLevel`. Beating it seals
-  nothing and opens the way on: a **portal** appears and steps the run into the
-  next map (D31).
-- Route **sizes** grow as the run advances: the map index widens the range a
-  route rolls its side from, and each route picks a side inside its range.
+- The **room farthest from the entry** (graph distance) holds the **boss** at the
+  map's `maxLevel`. Its onward opening is the **portal** to the next map (D31).
+- Room **sizes** grow as the run advances: the map index widens the range a room
+  rolls its width and height from, and each room picks both inside it.
 
-A run therefore grows in three steps at once — stronger Pokémon (level range),
-bigger routes (size range) and more routes per map (route-count range) — all
-driven by the map index, never by the player's level.
+## 2. Topology: a closed room graph on a grid (D30)
 
-## 2. Composition (what is rolled, and from where)
+Like Binding of Isaac, rooms sit on an implicit **grid of cells** and a door on
+one room's wall lines up with the neighbour's opposite door:
 
-Everything a map is comes from one **map stream** keyed
-`(seed, "map", mapIndex)`, so a plan is a pure function of the seed and the map
-index (D11 / D29):
+- a room occupies one grid cell, but is played on its **own screen** (camera
+  follow); the grid is what lays out the graph and the minimap, not world space;
+- a **link** joins two rooms that share a cell edge, so leaving by East enters the
+  neighbour by West;
+- the plan must be **connected** and **closed into at least one cycle** (the rooms
+  form a loop, not a bare tree), and no opening may dangle.
+
+An opening is one of:
+
+| Opening | Where | Meaning |
+| --- | --- | --- |
+| **entry** | exactly one, on the entry room | the map entrance, entered from the previous map |
+| **portal** | exactly one, on the boss room | sealed until the boss falls, then the way to the next map |
+| **link** | 0–4 per room | joins two rooms; its counterpart is the neighbour's opposite link |
+
+**No dangling openings:** every `link` is joined to another room. A room whose
+only opening is a single `link` is a **dead-end room** — a deliberate leaf, not an
+exit into nothing. Dead-end rooms hold the same content as any optional room:
+trainers, ground items and tall grass (`docs/routes-spec.md` §2).
+
+The **shape** of a room follows from its opening set (its count and edges):
+
+| Openings | Shape | Reads as |
+| --- | --- | --- |
+| 1 (`link`) | `dead-end` | a room with one way in, the loot/exploration leaf |
+| 2, opposite | `corridor` | the "pasillo": a narrow passage, no branches |
+| 2, adjacent | `bend` | an L |
+| 3 | `tee` | a T junction |
+| 4 | `cross` | a crossing |
+| 2, opposite, branchy | `straight` | the older wide route with optional branches |
+
+## 3. Composition (target algorithm)
+
+Everything a map is comes from one **map stream** keyed `(seed, "map", mapIndex)`,
+so a plan is a pure function of the seed and the map index (D11 / D29):
 
 ```
-Plan(mapIndex, mapRng): MapPlan
-    tuning   = mapTuning(mapIndex)                 # src/data/maps.ts
-    biome    = Pick(BIOME_ORDER, mapRng)
-    routeCount = RollRange(tuning.routes, mapRng)
-    entryEdge[1] = West                            # the first map's first route
-    for i in 1..routeCount:
-        exitEdge[i]  = Pick(Edges \ { entryEdge[i] }, mapRng)   # never the way in
-        shape[i]     = shapeFor(entryEdge[i], exitEdge[i])      # corridor | bend
-        size[i]      = RollRange(tuning.size, mapRng)           # per route, in tiles
-        if i < routeCount:
-            entryEdge[i+1] = Opposite(exitEdge[i])              # the chain matches
-    bossRoute = routeCount                          # the boss closes the map
+Plan(seed, mapIndex): MapPlan
+    tuning  = mapTuning(mapIndex)                    # src/data/maps.ts
+    rng     = Rng(seed : "map" : mapIndex)
+    biome   = Pick(BIOME_ORDER \ { previousBiome }, rng)
+    K       = RollRange(tuning.routes, rng)
+    size[i] = { w: RollRange(tuning.size, rng), h: RollRange(tuning.size, rng) }  per room
+
+    # 1. grow the floor: place the entry at the grid origin, then expand to
+    #    adjacent free cells (one door per new room) until K rooms are placed.
+    #    This is a spanning tree over the grid.
+    # 2. close at least one cycle: add one more door between two adjacent rooms
+    #    that are not already joined.
+    # 3. shapes: derive each room's shape from its opening set (table above).
+    # 4. boss: BFS from the entry room; the farthest room is the boss.
+    # 5. portal: the boss room's onward opening is the portal (absent on the final map).
+    #    The entry room's outward edge is the map entry, entered from the previous map.
 ```
 
-`RollRange` is a single uniform draw rounded to an integer, so the plan consumes
-a fixed number of draws per route and a fixed-seed test is stable.
+A room never exceeds four openings (its four grid neighbours); `K` stays inside
+the map's range so expansion never runs out of free cells. Draws happen in a fixed
+order, so a fixed-seed test is stable; an unavailable cell retries
+deterministically.
 
-## 3. Tuning tables (`src/data/maps.ts`)
+## 4. Tuning tables (`src/data/maps.ts`)
 
 | Knob | Drives |
 | --- | --- |
 | `levels.minLevel` / `maxLevel` | the map's Pokémon band; the player cap is `maxLevel` |
-| `routes.min` / `max` | how many routes the map groups |
-| `size.min` / `max` | the tile side each route of the map rolls |
+| `routes.min` / `max` | how many rooms the map's graph holds |
+| `size.min` / `max` | the range each room rolls its **width and height** from, independently |
 
 `MAP_TUNING` is a table per map (1..6 today) and `MAP_TUNING_STEP` grows a map
 past the last row, so an infinite run keeps climbing. Retuning is a data edit,
 never a generator edit (`docs/route-generator.md` §2).
 
-## 4. A route matches its neighbours (D30)
-
-The openings of two consecutive routes line up, so the chain reads as one path:
-
-- Route `i`'s **exit edge** is route `i+1`'s **entry edge, opposite** it. If a
-  route exits **right (E)**, the next enters from the **left (W)** — the player
-  keeps moving the way they were going.
-- The two openings sit on the **same border band** (the same row for an E/W
-  step, the same column for N/S), so the corridor one route ends in continues
-  into the corridor the next one starts in.
-- The pair of edges picks the **shape**:
-
-  | entry → exit | shape | reads as |
-  | --- | --- | --- |
-  | opposite (W→E, N→S) | `corridor` | a straight passage, one entry/one exit, no branches |
-  | adjacent (W→N, …) | `bend` | an L |
-
-`corridor` is the "pasillo": the only openings are its entry and its exit, its
-lane is narrow and it carries **no optional branches** (`branchCount = 0`), so it
-is the clean connector between two branchier routes. It is added to the shape
-registry in `src/engine/routes/layout.ts` beside `straight` / `bend` / `cross`.
-
-The first route of a map enters from the map's edge (West today); the last exits
-into the portal.
-
 ## 5. Levels & the player's cap (D29)
 
 - `levelRangeForMap(mapIndex)` is the band. Wild encounters and trainer rosters
   draw species and levels from it, never from the player's level (D17).
-- Within the map, route `i` of `K` fields `minLevel + (i-1) / (K-1) *
+- Within the map, room `i` of `K` fields `minLevel + (i-1) / (K-1) *
   (maxLevel - minLevel)` as its working level, so the map ramps and the boss sits
   at the top.
 - The **player's own cap** for the map is `levelCapForMap(mapIndex)`
@@ -110,52 +124,50 @@ into the portal.
 
 ## 6. Boss & portal (D31)
 
-- The map's last route fields the **boss** — a fixed, themed trainer at the
-  map's `maxLevel`, distinct from the route's regular trainers. It is the map's
-  gate, not an optional fight.
-- The route's **exit is sealed** while the boss stands. Once it falls, a
-  **portal** opens on the exit tile; stepping on it advances the run to the next
-  map (heal stop intact: HP/PP only, never a resurrection).
+- The **farthest room from the entry** fields the **boss** — a fixed, themed
+  trainer at the map's `maxLevel`, distinct from the room's regular trainers.
+- Its onward opening (the **portal**) is **sealed** while the boss stands. Once it
+  falls the portal opens; stepping through advances the run to the next map (heal
+  stop intact: HP/PP only, never a resurrection).
 - The last map of a finite run holds the **final boss**: there is no portal, and
   beating it wins the run. Infinite mode reopens the portal forever.
 
 ## 7. The route HUD map (D32)
 
-The `I` overlay's route header grows into a **map view**: the plan's route graph
-is drawn as tiles
+The `I` overlay's route header grows into a **minimap of the floor**, exactly the
+Binding of Isaac minimap:
 
-- a node per route, labelled with its `routeInMap`, shaped by its `size`;
-- a connector between two routes drawn on the shared edge, so the entry/exit
-  matching is visible at a glance;
-- the **current** route highlighted, and the boss node marked.
+- a **grid of room cells**, each room drawn at its grid position and sized from
+  its `size` and shape, with its openings shown on the matching walls;
+- the **current** room highlighted, the boss room marked and the portal flagged;
+- a link drawn between two rooms only once both are known.
 
-**Fog of discovery:** a route is drawn only once it has been **discovered** (the
-route has been entered). Routes ahead — and the connectors to them — stay hidden
-until the player reaches them, so the map reveals itself as the run advances. The
-plan already holds the full graph; the run state holds which nodes are
-discovered.
+**Fog of discovery:** a room is drawn only once it has been **discovered** (the
+room has been entered), and a link only when both its ends are discovered. Rooms
+ahead stay hidden until the player reaches them, so the floor reveals itself as
+the run advances. The plan already holds the full grid; the run state holds which
+rooms are discovered.
 
-The pure layout (node positions, connectors, reveal filter) lives in
+The pure layout (cell positions, links, reveal filter) lives in
 `src/ui/mapView.ts` and is unit-tested; `RouteScene` only draws it.
 
 ## 8. Determinism
 
-- The plan is `Plan(seed, mapIndex)`; the routes are `BuildRoute(seed, mapPlan,
+- The plan is `Plan(seed, mapIndex)`; the rooms are `BuildRoute(seed, mapPlan,
   routeInMap)` with their own `layout` / `terrain` / `populate` streams.
-- Streams are keyed by the **map and the route inside it** (or by the global
-  route index), never by wall-clock or player input, so a seed reproduces the
-  whole chain (D11).
-- Adding a roll to a later step (say, the HUD never rolls) cannot shift earlier
-  geometry because each pass owns its stream.
+- Streams are keyed by the **map and the room inside it** (or by the global route
+  index), never by wall-clock or player input, so a seed reproduces the whole
+  chain (D11).
+- Adding a roll to a later step cannot shift earlier geometry because each pass
+  owns its stream.
 
 ## 9. Open questions
 
-- **O-M1 — Branching maps.** Is a map always a linear chain, or may a route
-  branch into two (the `cross` shape) and the graph become a real map? A linear
-  chain is assumed for now; branching would change the plan and the HUD.
-- **O-M2 — Discovery rule.** Does a route reveal when it is **entered**, or
-  earlier, when its opening is visible from the previous route?
-- **O-M3 — Portal placement.** On the exit tile, or a fixed spot in the boss
-  route? It must not block the return walk.
-- **O-M4 — Biome runs.** May the same biome repeat on consecutive maps, and is
-  the roll uniform or weighted toward variety?
+- **O-M1 — Floor shape.** How many cycles and how many dead-end leaves should a
+  floor aim for? A single cycle plus optional leaves is assumed for now.
+- **O-M2 — Discovery rule.** A room reveals when it is **entered** (decided); a
+  link reveals once both ends are known — confirm that is the intent.
+- **O-M3 — Portal opening.** The boss room's onward opening is the portal; on a
+  four-opening boss room, which one is "onward"?
+- **O-M4 — Special rooms.** BoI has treasure/shop/secret rooms. Do we want any
+  beyond the boss, or is every optional room the same (trainers, items, grass)?

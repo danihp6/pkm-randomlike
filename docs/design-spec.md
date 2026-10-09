@@ -18,15 +18,18 @@ carries over.
   **Options** (the settings screen). Starting a new run only replaces the saved
   one once its starter is picked, so cancelling at the starter pick returns to
   the menu with the run in progress intact.
-- A run is a chain of **maps**, and a map is a short chain of **routes** (our
-  word for the floors). Each route is a small top-down map: walls/trees, tall
-  grass, trainers, items, an exit. A map shares one **biome**, one **level
-  range** and its route **sizes**, and its last route holds the **boss**; beating
-  the boss opens a **portal** to the next map (`docs/maps-spec.md`).
-- Routes match their neighbours: a route's exit edge is the next route's entry
-  edge, opposite it, so the chain reads as one continuous path. A straight
-  passage between two routes is the **corridor** shape — one entry, one exit, no
-  branches.
+- A run is a chain of **maps** (floors), and a map is a **graph of routes**
+  (rooms) laid out on a grid — Binding of Isaac's floors with rooms. Each route
+  is a small top-down map: walls/trees, tall grass, trainers, items, openings. A
+  map shares one **biome**, one **level range** and its route **sizes**; it is
+  connected and closed into at least one cycle.
+- Rooms join through openings: leaving by one edge enters the neighbour by the
+  **opposite** edge, and a door lines up with the neighbour's. The room farthest
+  from the entry holds the **boss**; beating it opens a **portal** to the next map
+  (`docs/maps-spec.md`).
+- A room with a single opening is a **dead-end** room; a straight two-opening
+  passage is the **corridor** shape. Both carry the usual trainers, items and
+  tall grass.
 - The chain is fixed-length by default (see `docs/routes-spec.md`): a
   **mini-boss** every few routes, a **boss** to close each block, a **final
   boss** at the end. An **infinite mode** reuses the same generator without the
@@ -127,14 +130,16 @@ Full rules in `docs/battle-spec.md`. In short:
   route. Some look around on a timer, so their line turns with them and can catch
   you even while you stand still. A trainer never spawns already watching the tile
   you arrive on, never stands next to another, and never blocks a passage.
-- The exit opening ends the route and leads into the next route of the map; the
-  next route's entry lines up opposite the exit, so the chain reads as one path.
-  A route's shape is fixed by its entry/exit pair: opposite edges carve the
-  **corridor** (one entry, one exit, no branches), adjacent edges a `bend`.
-- The **last route of a map holds the boss** at the map's `maxLevel`. Its exit is
-  sealed until the boss falls; then a **portal** opens and steps the run into the
-  next map. (The end-of-route beat is disabled for now while the generator is in
-  focus; the corridor shape and the matching openings are Phase 9.)
+- An **opening** joins the room to its neighbour: leaving by one edge enters the
+  neighbour by the **opposite** edge, so the floor reads as one connected map. A
+  room's shape follows from its openings: one opening is a **dead-end**, two
+  opposite a **corridor** (a passage with no branches), two adjacent a `bend`,
+  three a T and four a crossing.
+- The **room farthest from the entry holds the boss** at the map's `maxLevel`.
+  Its onward opening is sealed until the boss falls; then a **portal** opens and
+  steps the run into the next map. (The end-of-route beat is disabled for now
+  while the generator is in focus; the room shapes and the grid graph are Phase
+  9.)
 - Tilesets are **swappable per route** so the same map code renders a wood, a
   cave, a desert or a beach without touching the generator
   (`docs/tileset-spec.md`).

@@ -4,23 +4,23 @@
  * is the unit of biome, level range and size (`docs/maps-spec.md`, D28/D29).
  *
  * The numbers live here so retuning a run never touches the generator: balancing
- * is data. Ranges are **inclusive** and every route rolls its own size inside its
- * map's range, so the chain stays inside the map's band while still varying route
- * to route. Past the last tuned map an **infinite** run keeps stepping upward by
- * `MAP_TUNING_STEP` so the difficulty never plateaus (D29).
+ * is data. Ranges are **inclusive** and every room rolls its own width and height
+ * inside its map's range, so the floor stays inside the map's band while still
+ * varying room to room. Past the last tuned map an **infinite** run keeps
+ * stepping upward by `MAP_TUNING_STEP` so the difficulty never plateaus (D29).
  */
 export type MapLevelRange = Readonly<{ minLevel: number; maxLevel: number }>;
 
-/** An inclusive `min..max` range, for a route count or a tile side. */
+/** An inclusive `min..max` range, for a room count or a tile width/height. */
 export type MapRange = Readonly<{ min: number; max: number }>;
 
 export type MapTuning = Readonly<{
   /** 1-based map this row applies from. */
   mapIndex: number;
   levels: MapLevelRange;
-  /** How many routes the map groups (a random count inside the range). */
+  /** How many rooms the map's graph holds (a random count inside the range). */
   routes: MapRange;
-  /** The side (tiles) each route rolls inside the range. */
+  /** The width and height (tiles) each room rolls inside the range, independently. */
   size: MapRange;
 }>;
 
@@ -82,7 +82,7 @@ export function routeCountRangeForMap(mapIndex: number): MapRange {
   return mapTuning(mapIndex).routes;
 }
 
-/** The inclusive tile-side range a map's routes roll their width/height from. */
+/** The inclusive range each room of the map rolls its width and height from. */
 export function routeSizeRangeForMap(mapIndex: number): MapRange {
   return mapTuning(mapIndex).size;
 }
