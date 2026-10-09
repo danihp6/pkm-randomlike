@@ -1,5 +1,7 @@
-import { capForRoute } from './levelCap';
+import { levelCapForMap } from '../../data/maps';
+import { planMap } from '../maps/plan';
 import type { BagCounts } from './battleLink';
+import { healParty } from './heal';
 import type { RunPokemon } from './progression';
 
 export type RunMode = 'finite' | 'infinite';
@@ -8,6 +10,9 @@ export const MAX_PARTY_SIZE = 6;
 
 /** The starter route index; a run begins on route 1 (docs/routes-spec.md §4). */
 export const FIRST_ROUTE = 1;
+
+/** The starter map; a run's first floor is map 1 (docs/maps-spec.md §1). */
+export const FIRST_MAP = 1;
 
 /** What the run summary counts: caught along the way, and lost for good (D5). */
 export type RunStats = Readonly<{
@@ -25,12 +30,23 @@ export function emptyRunStats(): RunStats {
  * `defeatedTrainers` / `captureUsed` are the per-route bookkeeping and `stats`
  * is the running score the end-of-run screen reports. Every helper here is pure
  * and returns a new state (D11: no hidden randomness).
+ *
+ * A route is a room of a **map** (a Binding of Isaac-style floor), so the global
+ * `routeIndex` counter travels beside the run's actual position — `mapIndex` and
+ * `routeInMap` — and `discoveredRooms` is the floor's fog of discovery (D32).
  */
 export type RunState = Readonly<{
   seed: string;
   mode: RunMode;
+  /** Global counter of rooms entered; the key for route-scoped RNG streams. */
   routeIndex: number;
-  /** Cached level cap for `routeIndex` (D9); kept in sync on route advance. */
+  /** The floor the run is on, 1-based (`docs/maps-spec.md` §1). */
+  mapIndex: number;
+  /** The room of `mapIndex` the run occupies. */
+  routeInMap: number;
+  /** Room ids of `mapIndex` entered so far (fog of discovery, D32). Resets per map. */
+  discoveredRooms: readonly number[];
+  /** Cached level cap for `mapIndex` (D9/D29); kept in sync on a map advance. */
   levelCap: number;
   party: readonly RunPokemon[];
   box: readonly RunPokemon[];
@@ -51,11 +67,15 @@ export type RunInit = Readonly<{
 }>;
 
 export function createRun(init: RunInit): RunState {
+  const entryRoom = planMap(init.seed, FIRST_MAP).entryRoom;
   return {
     seed: init.seed,
     mode: init.mode ?? 'finite',
     routeIndex: FIRST_ROUTE,
-    levelCap: capForRoute(init.seed, FIRST_ROUTE),
+    mapIndex: FIRST_MAP,
+    routeInMap: entryRoom,
+    discoveredRooms: [entryRoom],
+    levelCap: levelCapForMap(FIRST_MAP),
     party: [init.starter],
     box: [],
     bag: [...(init.bag ?? [])],
@@ -66,17 +86,55 @@ export function createRun(init: RunInit): RunState {
   };
 }
 
-/** Advances to the next route: raises the cap, clears the per-route capture and trainer marks. */
-export function advanceRoute(run: RunState): RunState {
-  const routeIndex = run.routeIndex + 1;
+/**
+ * Enters another room of the **same map** (`docs/maps-spec.md` §2): the global
+ * counter steps, the room is marked **discovered** (D32) and the per-room marks
+ * (the capture, the beaten trainers, the picked items) reset. The map and its cap
+ * stay put — the heal stop is a map event, not a room one.
+ */
+export function advanceRoute(run: RunState, roomInMap: number): RunState {
+  const room = Math.max(0, Math.floor(roomInMap));
   return {
     ...run,
-    routeIndex,
-    levelCap: capForRoute(run.seed, routeIndex),
+    routeIndex: run.routeIndex + 1,
+    routeInMap: room,
+    discoveredRooms: discoverRoom(run.discoveredRooms, room),
     captureUsed: false,
     defeatedTrainers: [],
     pickedItems: [],
   };
+}
+
+/**
+ * Steps through the map's portal onto the next floor (`docs/maps-spec.md` §6,
+ * D31): the next map's entry room, a fresh discovery set and its own cap. This is
+ * also the **heal stop** — HP/PP restored across the party and the box, never a
+ * resurrection (D5) — and the old floor's per-room marks go with it.
+ */
+export function advanceMap(run: RunState): RunState {
+  const mapIndex = run.mapIndex + 1;
+  const entryRoom = planMap(run.seed, mapIndex).entryRoom;
+  const advanced: RunState = {
+    ...run,
+    routeIndex: run.routeIndex + 1,
+    mapIndex,
+    routeInMap: entryRoom,
+    discoveredRooms: [entryRoom],
+    levelCap: levelCapForMap(mapIndex),
+    captureUsed: false,
+    defeatedTrainers: [],
+    pickedItems: [],
+  };
+  return healParty(advanced);
+}
+
+/** True once a room of the current map has been entered (fog of discovery, D32). */
+export function isRoomDiscovered(run: RunState, roomId: number): boolean {
+  return run.discoveredRooms.includes(roomId);
+}
+
+function discoverRoom(rooms: readonly number[], roomId: number): readonly number[] {
+  return rooms.includes(roomId) ? rooms : [...rooms, roomId];
 }
 
 /** Adds a Pokémon to the party, or to the box once the party is full (D7). */

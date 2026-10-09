@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { restoreFighter } from '../battle/fighter';
+import { levelCapForMap } from '../../data/maps';
 import { capForRoute } from './levelCap';
 import { createRunPokemon } from './progression';
 import {
   MAX_PARTY_SIZE,
   addItem,
   addPokemon,
+  advanceMap,
   advanceRoute,
   canCapture,
   consumeItem,
@@ -13,6 +16,7 @@ import {
   equipHeldItem,
   hasLivingParty,
   isItemPicked,
+  isRoomDiscovered,
   isTrainerDefeated,
   itemCount,
   markItemPicked,
@@ -30,11 +34,15 @@ import {
 } from './state';
 
 const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch'] });
+const starterMaxHp = restoreFighter(starter.fighter).maxHp;
 
 describe('createRun', () => {
-  it('starts on route 1 with the starter and an empty box', () => {
+  it('starts on route 1 of map 1 with the starter and an empty box', () => {
     const run = createRun({ seed: 'run-a', starter });
     expect(run.routeIndex).toBe(1);
+    expect(run.mapIndex).toBe(1);
+    expect(run.routeInMap).toBe(0);
+    expect(run.discoveredRooms).toEqual([0]);
     expect(run.levelCap).toBe(capForRoute('run-a', 1));
     expect(run.party).toEqual([starter]);
     expect(run.box).toEqual([]);
@@ -46,18 +54,69 @@ describe('createRun', () => {
 });
 
 describe('advanceRoute', () => {
-  it('raises the cap and clears the per-route marks', () => {
+  it('enters a room of the same map, discovering it and clearing the per-room marks', () => {
     let run = createRun({ seed: 'run-a', starter });
     run = useCapture(run);
     run = markTrainerDefeated(run, 'trainer-1-0');
     run = markItemPicked(run, 'item-1-0');
-    const next = advanceRoute(run);
+    const next = advanceRoute(run, 2);
     expect(next.routeIndex).toBe(2);
-    expect(next.levelCap).toBe(capForRoute('run-a', 2));
+    expect(next.mapIndex).toBe(1);
+    expect(next.routeInMap).toBe(2);
+    expect(next.levelCap).toBe(run.levelCap);
     expect(next.captureUsed).toBe(false);
     expect(next.defeatedTrainers).toEqual([]);
     expect(next.pickedItems).toEqual([]);
     expect(next.party).toBe(run.party);
+  });
+
+  it('discovers each room once, even when it is re-entered', () => {
+    let run = advanceRoute(createRun({ seed: 'run-a', starter }), 1);
+    run = advanceRoute(run, 2);
+    run = advanceRoute(run, 1);
+    expect(run.routeInMap).toBe(1);
+    expect(run.discoveredRooms).toEqual([0, 1, 2]);
+    expect(isRoomDiscovered(run, 1)).toBe(true);
+    expect(isRoomDiscovered(run, 5)).toBe(false);
+  });
+
+  it('clamps a negative room to the entry', () => {
+    const run = advanceRoute(createRun({ seed: 'run-a', starter }), -3);
+    expect(run.routeInMap).toBe(0);
+  });
+});
+
+describe('advanceMap', () => {
+  it('opens the next floor on its entry room with a fresh discovery set and cap', () => {
+    let run = createRun({ seed: 'run-a', starter });
+    run = advanceRoute(run, 3);
+    const next = advanceMap(run);
+    expect(next.mapIndex).toBe(2);
+    expect(next.routeIndex).toBe(run.routeIndex + 1);
+    expect(next.routeInMap).toBe(0);
+    expect(next.discoveredRooms).toEqual([0]);
+    expect(next.levelCap).toBe(levelCapForMap(2));
+    expect(next.captureUsed).toBe(false);
+    expect(next.defeatedTrainers).toEqual([]);
+    expect(next.pickedItems).toEqual([]);
+  });
+
+  it('heals HP and PP but never resurrects a fallen member', () => {
+    const hurt = {
+      ...starter,
+      fighter: {
+        ...starter.fighter,
+        hp: 1,
+        moves: starter.fighter.moves.map((slot) => ({ ...slot, pp: 0 })),
+      },
+    };
+    const faintedBase = createRunPokemon({ id: 'fainted', speciesId: 'sentret', level: 3 });
+    const dead = { ...faintedBase, fighter: { ...faintedBase.fighter, hp: 0 } };
+    const run = { ...createRun({ seed: 'run-a', starter: hurt }), box: [dead] };
+    const next = advanceMap(run);
+    expect(next.party[0].fighter.hp).toBe(starterMaxHp);
+    expect(next.party[0].fighter.moves.every((slot) => slot.pp === slot.maxPp)).toBe(true);
+    expect(next.box[0].fighter.hp).toBe(0);
   });
 });
 

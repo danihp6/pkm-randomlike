@@ -185,7 +185,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       the map band (rooms ramp `minLevel → maxLevel`); `levelCap` becomes the map
       cap (`levelCapForMap`) and the XP/evolution clamps follow it. Migrate the
       `bandForRoute` / `levelCapForRoute` callers; fixed-seed roster tests.
-- [ ] **Step 6 — Run state: floors & discovery.** `RunState` gains `mapIndex`,
+- [x] **Step 6 — Run state: floors & discovery.** `RunState` gains `mapIndex`,
       `routeInMap` and the discovered-room set beside the global `routeIndex`;
       `advanceRoute` vs `advanceMap` (heal stop per map) and a save migration
       (`SAVE_VERSION`). Pure tests, including the discovery rule.
