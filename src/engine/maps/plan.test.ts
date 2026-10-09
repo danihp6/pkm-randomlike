@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { BIOME_ORDER } from '../../data/biomes';
 import { MAP_TUNING, mapTuning } from '../../data/maps';
+import type { Access } from '../routes/layout';
+import { sketchRoute } from '../routes/sketch';
+import { validateRoute } from '../routes/validate';
 import { Rng } from '../rng';
 import {
   MAP_EDGES,
@@ -208,4 +211,46 @@ describe('biomeForMap', () => {
       }
     }
   });
+});
+
+/** The edge of `from` that faces the grid neighbour `to`. */
+function edgeToward(from: MapRoom, to: MapRoom): MapEdge {
+  if (to.col > from.col) return 'E';
+  if (to.col < from.col) return 'W';
+  return to.row > from.row ? 'S' : 'N';
+}
+
+describe('plan -> route connections', () => {
+  it('builds each room from its plan openings and joins neighbours by opposite edges', () => {
+    for (let mapIndex = 1; mapIndex <= 3; mapIndex++) {
+      const plan = planMap('conn-seed', mapIndex);
+      for (const [a, b] of plan.links) {
+        const roomA = plan.rooms[a];
+        const roomB = plan.rooms[b];
+        const edgeToB = edgeToward(roomA, roomB);
+        // The plan already stores the neighbour's opposite edge on the other room.
+        expect(roomB.openings.some((opening) => opening.edge === OPPOSITE_EDGE[edgeToB])).toBe(true);
+
+        const openings: Access[] = roomA.openings.map((opening) => ({
+          edge: opening.edge,
+          role: opening.edge === edgeToB ? 'entry' : 'exit',
+        }));
+        const route = sketchRoute({
+          seed: 'conn-seed',
+          routeIndex: a,
+          biomeId: plan.biomeId,
+          openings,
+          width: roomA.width,
+          height: roomA.height,
+        });
+        const onEntryEdge =
+          (edgeToB === 'W' && route.entry.x === 0) ||
+          (edgeToB === 'E' && route.entry.x === route.width - 1) ||
+          (edgeToB === 'N' && route.entry.y === 0) ||
+          (edgeToB === 'S' && route.entry.y === route.height - 1);
+        expect(onEntryEdge, `${roomA.shape} room ${a} entry`).toBe(true);
+        expect(validateRoute(route).ok, `${roomA.shape} room ${a}`).toBe(true);
+      }
+    }
+  }, 30_000);
 });

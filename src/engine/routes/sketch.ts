@@ -31,6 +31,9 @@ import {
   LAYOUTS,
   SHAPES,
   entryIndex,
+  shapeForEdges,
+  specForOpenings,
+  type Access,
   type AccessEdge,
   type LayoutSpec,
   type LayoutStyle,
@@ -84,6 +87,12 @@ export type RouteRequest = Readonly<{
   layout?: LayoutStyle;
   /** Route geometry; defaults to a `straight` route until the shape carve lands. */
   shape?: RouteShape;
+  /**
+   * The room's opening set from the map plan (`docs/maps-spec.md` §2). Every
+   * opening is placed on its edge and the spine joins them; the shape is derived
+   * from the edges, so this overrides `shape`.
+   */
+  openings?: readonly Access[];
   width?: number;
   height?: number;
   /** Biome base counts; the generator multiplies them by the map-size tier. */
@@ -328,6 +337,21 @@ function carveGuaranteedPath(
       : null;
   const hubIndex = Math.floor(SPINE_SEGMENTS / 2);
 
+  const carveChain = (waypoints: readonly Tile[]): void => {
+    for (let i = 0; i + 1 < waypoints.length; i++) {
+      const step = waypoints[i];
+      const next = waypoints[i + 1];
+      carveAt(step);
+      if (tileKey(step) === tileKey(next)) continue;
+      const path = findPath(tiles, step, next, undefined, {
+        diagonal: false,
+        cost: costOf,
+        passable,
+      });
+      for (const cell of path) carveAt(cell);
+    }
+  };
+
   for (const [a, b] of shape.links) {
     const from = openings[a];
     const to = openings[b];
@@ -348,18 +372,22 @@ function carveGuaranteedPath(
       });
     }
     waypoints.push(...[...endApproach].reverse(), to);
-    for (let i = 0; i + 1 < waypoints.length; i++) {
-      const step = waypoints[i];
-      const next = waypoints[i + 1];
-      carveAt(step);
-      if (tileKey(step) === tileKey(next)) continue;
-      const path = findPath(tiles, step, next, undefined, {
-        diagonal: false,
-        cost: costOf,
-        passable,
-      });
-      for (const cell of path) carveAt(cell);
-    }
+    carveChain(waypoints);
+  }
+
+  // A dead-end room has no second opening to link to: carve one lane in from its
+  // single opening toward the centre, so the leaf has a network for its branches.
+  if (shape.links.length === 0 && shape.openings.length === 1) {
+    const from = openings[0];
+    const approach = openingApproach(shape.openings[0].edge, from, margin);
+    carveChain([
+      from,
+      ...approach,
+      {
+        x: clamp(Math.floor(width / 2), low, highX),
+        y: clamp(Math.floor(height / 2), low, highY),
+      },
+    ]);
   }
   return spine;
 }
@@ -1349,6 +1377,20 @@ function placeTrainers(
   return trainers;
 }
 
+/**
+ * The shape a build uses: the plan's opening set when one is given (the edges
+ * pick the shape and the links join them), else the rolled `shape` (or the
+ * default). Keeps `sketchRoute` source-compatible while the plan takes over.
+ */
+function resolveShape(request: RouteRequest): Readonly<{ shapeKey: RouteShape; shape: ShapeSpec }> {
+  if (request.openings && request.openings.length > 0) {
+    const edges = request.openings.map((opening) => opening.edge);
+    return { shapeKey: shapeForEdges(edges), shape: specForOpenings(request.openings) };
+  }
+  const shapeKey = request.shape ?? DEFAULT_SHAPE;
+  return { shapeKey, shape: SHAPES[shapeKey] };
+}
+
 function attemptRoute(
   request: RouteRequest,
   streams: RouteStreams,
@@ -1357,8 +1399,7 @@ function attemptRoute(
   record?: RouteStep[],
 ): RouteMap {
   const spec = LAYOUTS[request.layout ?? DEFAULT_LAYOUT];
-  const shapeKey = request.shape ?? DEFAULT_SHAPE;
-  const shape = SHAPES[shapeKey];
+  const { shapeKey, shape } = resolveShape(request);
   const tiles: MutableMap = Array.from({ length: height }, () => new Array<number>(width).fill(WALL));
   const snapshot = (phase: RouteStep['phase'], label: string): void => {
     if (record) record.push({ phase, label, tiles: tiles.map((row) => row.slice()) });

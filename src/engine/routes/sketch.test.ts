@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TALL_GRASS, WALL, isWalkable } from '../map';
 import type { Tile } from '../grid';
-import { ROUTE_SHAPES, SHAPES, type AccessEdge, type RouteShape } from './layout';
+import { ROUTE_SHAPES, SHAPES, type Access, type AccessEdge, type RouteShape } from './layout';
 import {
   ROUTE_HEIGHT,
   ROUTE_WIDTH,
@@ -30,6 +30,9 @@ const request = (seed: string, routeIndex: number, shape?: RouteShape): RouteReq
 /** Fixed size of the frozen regression route, kept independent of the live default. */
 const FROZEN_WIDTH = 56;
 const FROZEN_HEIGHT = 32;
+
+/** Shapes whose template carves optional paths (the corridor is a bare passage). */
+const BRANCHY_SHAPES = ROUTE_SHAPES.filter((shape) => SHAPES[shape].branchCount > 0);
 
 function signature(seed: string, routeIndex: number): string {
   const route = sketchRoute({
@@ -175,7 +178,8 @@ describe('sketchRoute', () => {
           expect(validateRoute(route).ok, `${shape} ${seed} #${routeIndex}`).toBe(true);
           expect(route.shape, `${shape} ${seed} #${routeIndex}`).toBe(shape);
           expect(isWalkable(route.tiles, route.entry)).toBe(true);
-          expect(route.exits.length).toBeGreaterThanOrEqual(1);
+          const exitCount = SHAPES[shape].openings.filter((opening) => opening.role === 'exit').length;
+          expect(route.exits.length, `${shape} ${seed} #${routeIndex} exits`).toBe(exitCount);
           for (const exit of route.exits) {
             expect(isWalkable(route.tiles, exit), `${shape} ${seed} #${routeIndex} exit`).toBe(true);
           }
@@ -223,9 +227,9 @@ describe('sketchRoute', () => {
 
   it('carves branches at least two tiles wide and marks each end as a pocket', () => {
     let totalPockets = 0;
-    for (const shape of ROUTE_SHAPES) {
+    for (const shape of BRANCHY_SHAPES) {
       for (const seed of ['branch-a', 'branch-b', 'branch-c']) {
-        const route = sketchRoute(request(seed, 6, shape));
+        const route = sketchRoute({ ...request(seed, 6, shape), width: 30, height: 30 });
         const branchSet = new Set(route.branches.map((tile) => `${tile.x},${tile.y}`));
         const spineSet = new Set(route.spine.map((tile) => `${tile.x},${tile.y}`));
         expect(route.branches.length, `${shape} ${seed} branches`).toBeGreaterThan(0);
@@ -251,7 +255,7 @@ describe('sketchRoute', () => {
       { itemId: 'potion', weight: 1 },
       { itemId: 'pokeball', weight: 1 },
     ];
-    for (const shape of ROUTE_SHAPES) {
+    for (const shape of BRANCHY_SHAPES) {
       for (const seed of ['item-a', 'item-b', 'item-c']) {
         const build = () =>
           sketchRoute({ ...request(seed, 2, shape), width: 30, height: 30, loot, hiddenChance: 0.5 });
@@ -440,5 +444,59 @@ describe('sketchRoute', () => {
       expect(steps[0].tiles.every((row) => row.every((value) => value === WALL))).toBe(true);
       expect(steps.at(-1)!.tiles).toEqual(sketchRoute(stepRequest).tiles);
     }
+  });
+
+  it('takes its opening set from the plan and places each opening on its edge', () => {
+    const cases: ReadonlyArray<{ openings: readonly Access[]; shape: RouteShape }> = [
+      { openings: [{ edge: 'N', role: 'entry' }], shape: 'dead-end' },
+      {
+        openings: [
+          { edge: 'N', role: 'entry' },
+          { edge: 'S', role: 'exit' },
+        ],
+        shape: 'corridor',
+      },
+      {
+        openings: [
+          { edge: 'S', role: 'entry' },
+          { edge: 'E', role: 'exit' },
+          { edge: 'W', role: 'exit' },
+        ],
+        shape: 'tee',
+      },
+      {
+        openings: [
+          { edge: 'N', role: 'entry' },
+          { edge: 'S', role: 'exit' },
+          { edge: 'E', role: 'exit' },
+          { edge: 'W', role: 'exit' },
+        ],
+        shape: 'cross',
+      },
+    ];
+    for (const { openings, shape } of cases) {
+      const route = sketchRoute({ ...request('opening-a', 4), openings });
+      expect(route.shape).toBe(shape);
+      expect(onEdge(route.entry, openings[0].edge)).toBe(true);
+      const exits = openings.filter((opening) => opening.role === 'exit');
+      expect(route.exits).toHaveLength(exits.length);
+      route.exits.forEach((exit, index) => {
+        expect(onEdge(exit, exits[index].edge), `${shape} exit ${index}`).toBe(true);
+      });
+      // Every link joins an opening with its opposite edge.
+      for (const exit of exits) {
+        const opposite = { N: 'S', E: 'W', S: 'N', W: 'E' }[exit.edge];
+        expect(openings.some((opening) => opening.edge === opposite)).toBe(true);
+      }
+      expect(validateRoute(route).ok, `${shape} valid`).toBe(true);
+    }
+  }, 20_000);
+
+  it('carves a branchless corridor as a bare passage', () => {
+    const route = sketchRoute(request('corridor-a', 6, 'corridor'));
+    expect(route.branches).toEqual([]);
+    expect(route.pockets).toEqual([]);
+    expect(route.spine.length).toBeGreaterThan(0);
+    expect(validateRoute(route).ok).toBe(true);
   });
 });
