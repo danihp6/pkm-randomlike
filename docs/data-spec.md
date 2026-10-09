@@ -21,9 +21,10 @@ merges a canonical `heightm` from `scripts/data/heights.json` (PokeAPI, via
 | `src/data/dex/natures.ts` | typed view over `dex/natures.json` | 1 |
 | `src/data/tilesets/*.ts` | one biome tileset config + palette per biome | 0 |
 | `src/data/biomes.ts` | biome → tileset, encounter table, level band flavour | 2 |
+| `src/data/maps.ts` | per-map tuning: level range, room-count range and room width/height range, plus the infinite-run step | 9 |
 | `src/data/encounters.ts` | per-biome species pools and weights by band | 2 |
-| `src/data/trainers.ts` | trainer archetypes: name, class, sprite, per-band species pools | 2 |
-| `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), each with a Poké Dollar price | 3/6 |
+| `src/data/trainers.ts` | trainer archetypes: name, class, sprite, per-band species pools and money ranges | 2 |
+| `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), plus **valuables** (sellable) and **Mega Stones**, each with a Poké Dollar price | 3/6 |
 | `src/data/spriteSize.ts` | the battle sprite size curve: canonical height (m) → drawn height (px), the power and clamps | 5 |
 | `src/data/run.ts` | chain length, mini-boss cadence, boss cadence, level caps, starter pool, starting bag | 2 |
 | `src/data/portraits.ts` | portrait atlas URL and frame mapping (dex number − 1) | 6 |

@@ -151,15 +151,34 @@ starter pick -> map 1: route 1 -> route 2 -> ... -> boss -> portal
   -> map 2: route 1 -> ... -> boss -> portal -> ... -> final boss -> run won
 ```
 
-Rewards between routes are the run's only economy: catch, items, and the PC box
-are where the player's power comes from.
+Rewards between rooms are the run's only economy: catch, items, money and the PC
+box are where the player's power comes from. A run ends on a score screen, win or
+loss: routes cleared, Pokémon caught, Pokémon lost and the seed that reproduces
+the run, as the raw seed and as the share string someone else could play
+(`src/ui/runSummary.ts`, `D21`). A win clears its route; a loss does not, and
+nothing carries over (D5).
 
-A run ends on a score screen, win or loss: routes cleared, Pokémon caught,
-Pokémon lost and the seed that reproduces the run, as the raw seed and as the
-share string someone else could play (`src/ui/runSummary.ts`, `D21`). A
-win clears its route; a loss does not, and nothing carries over (D5).
+## 7. Special rooms & money
 
-## 7. Settings
+Besides its regular rooms, a floor can hold **special rooms** — extra dead-end
+leaves with only their own content (`docs/maps-spec.md` §7):
+
+- a **shop**, always one per floor, near the entry: a counter whose interact key
+  (`E`) opens a **Pokémon Mart-style shop panel in the HUD that only exists in
+  that room**;
+- a **mini-boss** room (medium chance): one strong trainer that, when beaten,
+  offers a **choice of items**;
+- a **mega-stone** room (low chance): a random **Mega Stone** item.
+
+**Money** is Poké Dollars, earned **only** by defeating trainers — each drops a
+random amount in its archetype/band's range — and the run starts with none, so the
+economy stays tight (Binding of Isaac-style). The shop sells a fixed core (Balls
+and Potions) plus one or two random items from the map's pool at their catalogue
+price, and buys any item at `sellPrice`, but only the **valuables** (Nugget,
+Pearl, …) that turn up in the ground-item loot are worth real money. The run's
+money shows in the route HUD.
+
+## 8. Settings
 
 The player's preferences outlive a run: text speed (how fast the battle message
 box types itself out), master volume, the tileset preference (`auto` follows
@@ -170,7 +189,7 @@ in the same save document as the run (D22), are stored the moment they change an
 are edited from one screen (`O`, from the main menu, the starter pick or the
 route HUD).
 
-## 8. Out of scope (for now)
+## 9. Out of scope (for now)
 
 - Multiple save slots and cloud saves.
 - Online play, trading, breeding, EVs/IV optimisation as a *goal* (stats and

@@ -5,12 +5,12 @@ grid and joined by openings into a **closed graph** — Binding of Isaac's floor
 with rooms. It is the unit of biome, level range and size, and the chain of maps
 is what a run actually walks. This file is the source of truth for that layer; the
 per-route geometry stays in `docs/routes-spec.md` and the `D##` decisions behind
-it in `docs/tech-decisions.md` (D28–D32).
+it in `docs/tech-decisions.md` (D28–D33).
 
 > Status: blueprint. `src/data/maps.ts` (the tuning tables) is in; the plan
-> generator, the route shapes, the boss/portal and the HUD map are the open steps
-> in `TODO.md` Phase 9. Until they land the game still walks a flat route chain
-> with a per-route biome.
+> generator, the route shapes, the boss/portal, the special rooms, the economy
+> and the HUD map are the open steps in `TODO.md` Phase 9. Until they land the
+> game still walks a flat route chain with a per-route biome.
 
 ## 1. What a map is
 
@@ -22,6 +22,7 @@ run  = map 1 -> map 2 -> ... -> map N            (N fixed in finite mode)
 
 map  = a grid of K rooms joined by openings      (K random, from the map's range)
        connected, closed into at least one cycle, no dangling opening
+       + a few special rooms (shop, mini-boss, mega-stone)
 ```
 
 - One **biome** is rolled for the whole map (never the previous map's), so every
@@ -92,6 +93,7 @@ Plan(seed, mapIndex): MapPlan
     # 4. boss: BFS from the entry room; the farthest room is the boss.
     # 5. portal: the boss room's onward opening is the portal (absent on the final map).
     #    The entry room's outward edge is the map entry, entered from the previous map.
+    # 6. specials: hang the special rooms off the tree (see §7).
 ```
 
 A room never exceeds four openings (its four grid neighbours); `K` stays inside
@@ -132,14 +134,56 @@ never a generator edit (`docs/route-generator.md` §2).
 - The last map of a finite run holds the **final boss**: there is no portal, and
   beating it wins the run. Infinite mode reopens the portal forever.
 
-## 7. The route HUD map (D32)
+## 7. Special rooms & the economy (D33)
+
+Beyond its K regular rooms, a floor can hold **special rooms**. They are extra
+**leaves** (one door, the `dead-end` shape) and carry **only their own content** —
+no tall grass, no regular trainers, no ground items:
+
+| Room | Per floor | Placement | Content |
+| --- | --- | --- | --- |
+| **shop** | exactly one | a leaf near the entry | a counter; the interact key (`E`) opens a Pokémon-style **shop panel in the HUD** that exists only in this room |
+| **mini-boss** | medium chance | a leaf anywhere | one strong trainer; beating it offers a **choice of items** |
+| **mega-stone** | low chance | a leaf anywhere | one random **Mega Stone** item |
+
+Specials count **outside** K (`K` regular rooms + the specials), are rolled on
+the same `map` stream, and are discovered like any room: they appear on the
+minimap only once **entered**, with their own icon.
+
+The **shop panel** is a HUD window like the party/bag panels: a Pokémon
+Mart-style list with prices that **only appears while the player is in the shop
+room** (it is opened at the counter with `E` and is unavailable anywhere else), so
+buying is tied to the room rather than to a menu key.
+
+### The economy (Poké Dollars)
+
+- **Money comes only from defeating trainers.** Each trainer drops a random
+  amount inside its archetype/band's range (data, `src/data/trainers.ts`), and the
+  run starts with **none**. The economy is tight and fair, Binding of Isaac-style:
+  every purchase is a real trade-off.
+- The **shop** sells a **fixed core** (Balls and Potions) plus **one or two
+  random items** from the map's pool, at the catalogue `price`
+  (`src/data/items.ts`), and **buys any item** at `sellPrice`. Only the new
+  **valuables** (Nugget, Big Nugget, Pearl, Big Pearl, Stardust, Star Piece, …)
+  are worth real money; anything else sells for a token, so the shop is a sink and
+  valuables are the way to cash out.
+- **Valuables** are ordinary items added to the **ground-item loot pool**
+  (`src/data/loot.ts`), so they turn up in a room's pockets and are carried to the
+  shop.
+- **Mega Stones** are new `held` items, one per Mega-capable species, added for a
+  future Mega Evolution; the mega-stone room hands out one at random. The
+  mini-boss's item choice draws from the map's reward pool.
+- The run's **money** lives in `RunState` and shows in the route HUD's bag panel.
+
+## 8. The route HUD map (D32)
 
 The `I` overlay's route header grows into a **minimap of the floor**, exactly the
 Binding of Isaac minimap:
 
 - a **grid of room cells**, each room drawn at its grid position and sized from
   its `size` and shape, with its openings shown on the matching walls;
-- the **current** room highlighted, the boss room marked and the portal flagged;
+- the **current** room highlighted, the boss room marked, the portal flagged and
+  each special room shown with its own icon;
 - a link drawn between two rooms only once both are known.
 
 **Fog of discovery:** a room is drawn only once it has been **discovered** (the
@@ -151,7 +195,7 @@ rooms are discovered.
 The pure layout (cell positions, links, reveal filter) lives in
 `src/ui/mapView.ts` and is unit-tested; `RouteScene` only draws it.
 
-## 8. Determinism
+## 9. Determinism
 
 - The plan is `Plan(seed, mapIndex)`; the rooms are `BuildRoute(seed, mapPlan,
   routeInMap)` with their own `layout` / `terrain` / `populate` streams.
@@ -161,7 +205,7 @@ The pure layout (cell positions, links, reveal filter) lives in
 - Adding a roll to a later step cannot shift earlier geometry because each pass
   owns its stream.
 
-## 9. Open questions
+## 10. Open questions
 
 - **O-M1 — Floor shape.** How many cycles and how many dead-end leaves should a
   floor aim for? A single cycle plus optional leaves is assumed for now.
@@ -169,5 +213,10 @@ The pure layout (cell positions, links, reveal filter) lives in
   link reveals once both ends are known — confirm that is the intent.
 - **O-M3 — Portal opening.** The boss room's onward opening is the portal; on a
   four-opening boss room, which one is "onward"?
-- **O-M4 — Special rooms.** BoI has treasure/shop/secret rooms. Do we want any
-  beyond the boss, or is every optional room the same (trainers, items, grass)?
+- **O-M4 — Special probabilities.** The exact chance of the mini-boss (medium)
+  and mega-stone (low) rooms, and whether they can both appear on one floor.
+- **O-M5 — Trainer money.** The per-archetype/band money ranges and the shop's
+  fixed core and prices.
+- **O-M6 — Mega Stones.** Do they do anything yet, or are they collection-only
+  until Mega Evolution exists?
+- **O-M7 — HUD money.** Where the run's money shows (bag panel vs route header).

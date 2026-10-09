@@ -414,6 +414,26 @@ so the floor reveals itself as the run advances. The pure layout and the reveal
 filter live in `src/ui/mapView.ts`; `RouteScene` only draws it
 (`docs/maps-spec.md` §7).
 
+## D33 — Special rooms and the Poké Dollar economy *(decided)*
+
+Beyond its K regular rooms, a Binding of Isaac floor can hold **special rooms**:
+extra `dead-end` leaves that carry **only their own content** — a guaranteed
+**shop** near the entry, a **mini-boss** room (medium chance) whose strong
+trainer offers a **choice of items**, and a **mega-stone** room (low chance) that
+hands out a random **Mega Stone**. They count outside K and are discovered on
+entry like any room (`docs/maps-spec.md` §7).
+
+Money is **Poké Dollars**, earned **only** by defeating trainers (a random amount
+inside the archetype/band's range) and spent in the shop; the run starts with
+none and the economy is tight, Binding of Isaac-style. The shop is a **HUD panel
+that only exists in the shop room** (Pokémon Mart style), opened at the counter
+with the interact key; it sells a fixed core plus one or two random items from the
+map's pool at the catalogue `price`, and buys any item at `sellPrice` — but only
+the new **valuables** (Nugget, Big Nugget, Pearl, …) are worth real money, so they
+are added to the ground-item loot pool. **Mega Stones** are new `held` items, one
+per Mega-capable species, for a future Mega Evolution. The run's money lives in
+`RunState` and shows in the route HUD.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

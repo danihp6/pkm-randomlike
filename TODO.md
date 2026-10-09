@@ -150,10 +150,11 @@ most useful first:
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
 A **map** is a Binding of Isaac-style floor: a grid of routes (rooms) of one
-random biome, closed into at least one cycle, with its own level range and a boss
-on the room farthest from the entry that opens the portal to the next map. This
-phase reworks the flat route chain into these floors. Source of truth:
-`docs/maps-spec.md`; decisions D28–D32. Steps are ordered — each is one branch off
+random biome, closed into at least one cycle, with its own level range, special
+rooms (shop, mini-boss, mega-stone) and a boss on the room farthest from the entry
+that opens the portal to the next map. This phase reworks the flat route chain
+into these floors and adds the Poké Dollar economy. Source of truth:
+`docs/maps-spec.md`; decisions D28–D33. Steps are ordered — each is one branch off
 `main`, most useful first.
 
 - [x] **Step 1 — Map tuning tables (`src/data/maps.ts`).** The per-map level
@@ -197,6 +198,24 @@ phase reworks the flat route chain into these floors. Source of truth:
       room highlighted and the boss/portal marked. Pure layout in
       `src/ui/mapView.ts` + tests; the scene only draws it
       (`docs/maps-spec.md` §7).
-- [ ] **Step 9 — Docs & migration pass.** Finish `docs/maps-spec.md`, update
+- [ ] **Step 9 — Money & valuables.** `RunState` gains `money`; each trainer drops
+      a random amount from its archetype/band range (`src/data/trainers.ts`) and
+      the HUD shows it. Add the **valuables** (Nugget, Pearl, …) to the item
+      catalogue and to the ground-item loot pool (`src/data/loot.ts`); the run
+      starts with no money. Pure tests for the reward roll and the bag.
+- [ ] **Step 10 — Special rooms in the plan.** Extend `MapPlan` to hang the
+      special leaves off the floor: a guaranteed **shop** near the entry, a
+      **mini-boss** leaf (medium chance) and a **mega-stone** leaf (low chance),
+      each extra to K, on the same `map` stream. Tests for placement, count and
+      determinism.
+- [ ] **Step 11 — Shop room & HUD panel.** A shop room (counter + `E`) that opens
+      a Pokémon Mart-style **HUD panel only present in that room**: buy from the
+      fixed core + one or two random map items at catalogue `price`, sell any item
+      at `sellPrice`. `RouteScene` wiring + a pure shop model (`src/ui/shop.ts`).
+- [ ] **Step 12 — Mini-boss & mega-stone rooms.** The mini-boss leaf fields one
+      strong trainer whose defeat offers a **choice of items**; the mega-stone
+      leaf holds a random **Mega Stone** (new `held` items, one per Mega-capable
+      species). Data + scene wiring.
+- [ ] **Step 13 — Docs & migration pass.** Finish `docs/maps-spec.md`, update
       `design-spec.md` / `routes-spec.md` / `AGENTS.md` and the tech decision
       addenda, and archive the steps in `CHANGELOG.md`.
