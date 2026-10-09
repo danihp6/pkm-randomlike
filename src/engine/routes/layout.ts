@@ -24,7 +24,7 @@ export type Access = Readonly<{
 /** A pair of opening indices (`openings` positions) the guaranteed path joins. */
 export type Link = readonly [number, number];
 
-export type RouteShape = 'straight' | 'bend' | 'cross';
+export type RouteShape = 'dead-end' | 'corridor' | 'bend' | 'tee' | 'cross' | 'straight';
 
 export type ShapeSpec = Readonly<{
   openings: readonly Access[];
@@ -40,18 +40,35 @@ export type ShapeSpec = Readonly<{
   branchMax: number;
 }>;
 
+/** Opposite edges: a link leaves one room by an edge and enters the next by this one. */
+const OPPOSITE: Readonly<Record<AccessEdge, AccessEdge>> = {
+  N: 'S',
+  E: 'W',
+  S: 'N',
+  W: 'E',
+};
+
 export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
-  straight: {
+  'dead-end': {
+    openings: [{ edge: 'W', role: 'entry' }],
+    links: [],
+    pathWidth: 2,
+    jitter: 2,
+    branchCount: 2,
+    branchMin: 4,
+    branchMax: 12,
+  },
+  corridor: {
     openings: [
       { edge: 'W', role: 'entry' },
       { edge: 'E', role: 'exit' },
     ],
     links: [[0, 1]],
     pathWidth: 2,
-    jitter: 2,
-    branchCount: 2,
+    jitter: 1,
+    branchCount: 0,
     branchMin: 4,
-    branchMax: 14,
+    branchMax: 12,
   },
   bend: {
     openings: [
@@ -64,6 +81,22 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     branchCount: 2,
     branchMin: 4,
     branchMax: 14,
+  },
+  tee: {
+    openings: [
+      { edge: 'W', role: 'entry' },
+      { edge: 'N', role: 'exit' },
+      { edge: 'S', role: 'exit' },
+    ],
+    links: [
+      [0, 1],
+      [0, 2],
+    ],
+    pathWidth: 2,
+    jitter: 2,
+    branchCount: 2,
+    branchMin: 4,
+    branchMax: 12,
   },
   cross: {
     openings: [
@@ -82,14 +115,75 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     branchMin: 4,
     branchMax: 12,
   },
+  straight: {
+    openings: [
+      { edge: 'W', role: 'entry' },
+      { edge: 'E', role: 'exit' },
+    ],
+    links: [[0, 1]],
+    pathWidth: 2,
+    jitter: 2,
+    branchCount: 2,
+    branchMin: 4,
+    branchMax: 14,
+  },
 };
 
 export const DEFAULT_SHAPE: RouteShape = 'straight';
 
-export const ROUTE_SHAPES: readonly RouteShape[] = ['straight', 'bend', 'cross'];
+export const ROUTE_SHAPES: readonly RouteShape[] = [
+  'straight',
+  'bend',
+  'cross',
+  'dead-end',
+  'corridor',
+  'tee',
+];
 
 export function isRouteShape(value: unknown): value is RouteShape {
-  return value === 'straight' || value === 'bend' || value === 'cross';
+  return typeof value === 'string' && (ROUTE_SHAPES as readonly string[]).includes(value);
+}
+
+/** The shape an opening set reads as (`docs/maps-spec.md` §2, D30). */
+export function shapeForEdges(edges: readonly AccessEdge[]): RouteShape {
+  if (edges.length === 1) return 'dead-end';
+  if (edges.length === 2) return OPPOSITE[edges[0]] === edges[1] ? 'corridor' : 'bend';
+  if (edges.length === 3) return 'tee';
+  if (edges.length === 4) return 'cross';
+  throw new Error(`cannot shape a route with ${edges.length} openings`);
+}
+
+/** The opening pairs the spine joins for a given opening set. */
+export function linksForEdges(edges: readonly AccessEdge[]): readonly Link[] {
+  if (edges.length < 2) return [];
+  if (edges.length === 2) return [[0, 1]];
+  if (edges.length === 3) {
+    return [
+      [0, 1],
+      [0, 2],
+    ];
+  }
+  const links: Link[] = [];
+  const used = new Set<number>();
+  for (let i = 0; i < edges.length; i++) {
+    if (used.has(i)) continue;
+    const j = edges.findIndex((edge, k) => k > i && !used.has(k) && OPPOSITE[edges[i]] === edge);
+    if (j < 0) continue;
+    used.add(i);
+    used.add(j);
+    links.push([i, j]);
+  }
+  return links;
+}
+
+/**
+ * The shape spec for a room's **actual** opening set from the map plan: the
+ * template's feel (path width, branch count) with the plan's edges and the links
+ * that join them (`docs/routes-spec.md` §2).
+ */
+export function specForOpenings(openings: readonly Access[]): ShapeSpec {
+  const edges = openings.map((opening) => opening.edge);
+  return { ...SHAPES[shapeForEdges(edges)], openings, links: linksForEdges(edges) };
 }
 
 /** The single opening a shape marks as the player's arrival point. */

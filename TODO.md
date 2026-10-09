@@ -171,13 +171,13 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       set and shape, and marks the boss as the room farthest from the entry. New
       `map` stream keyed `(seed, "map", mapIndex)`; fixed-seed determinism,
       connectivity, cycle and no-dangling-opening tests.
-- [ ] **Step 3 — Route shapes from the opening set.** Add the `dead-end`,
+- [x] **Step 3 — Route shapes from the opening set.** Add the `dead-end`,
       `corridor` and `tee` shapes to `layout.ts` beside `straight` / `bend` /
       `cross`, and let the route builder take the opening set from the plan
       instead of rolling a shape: every opening is the grid neighbour's
       **opposite** edge, aligned to the same border band. Per-shape and
       connection regression tests.
-- [ ] **Step 4 — Plan-driven route size.** `buildRoute` takes its width/height
+- [x] **Step 4 — Plan-driven route size.** `buildRoute` takes its width/height
       from the plan (the map's size range, rolled independently) instead of the
       fixed 20x20; confirm the terrain/branch tiers, the camera bounds and the
       beyond-edge margin (`padMap`) still hold. Fixed-seed regression per size.
