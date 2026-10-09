@@ -46,6 +46,8 @@ export type RunState = Readonly<{
   routeInMap: number;
   /** Room ids of `mapIndex` entered so far (fog of discovery, D32). Resets per map. */
   discoveredRooms: readonly number[];
+  /** True once `mapIndex`'s boss has fallen, so its portal stays open (D31). Resets per map. */
+  bossDefeated: boolean;
   /** Cached level cap for `mapIndex` (D9/D29); kept in sync on a map advance. */
   levelCap: number;
   party: readonly RunPokemon[];
@@ -75,6 +77,7 @@ export function createRun(init: RunInit): RunState {
     mapIndex: FIRST_MAP,
     routeInMap: entryRoom,
     discoveredRooms: [entryRoom],
+    bossDefeated: false,
     levelCap: levelCapForMap(FIRST_MAP),
     party: [init.starter],
     box: [],
@@ -120,6 +123,7 @@ export function advanceMap(run: RunState): RunState {
     mapIndex,
     routeInMap: entryRoom,
     discoveredRooms: [entryRoom],
+    bossDefeated: false,
     levelCap: levelCapForMap(mapIndex),
     captureUsed: false,
     defeatedTrainers: [],
@@ -131,6 +135,11 @@ export function advanceMap(run: RunState): RunState {
 /** True once a room of the current map has been entered (fog of discovery, D32). */
 export function isRoomDiscovered(run: RunState, roomId: number): boolean {
   return run.discoveredRooms.includes(roomId);
+}
+
+/** Marks the current map's boss beaten, so its portal opens (D31); idempotent. */
+export function markBossDefeated(run: RunState): RunState {
+  return run.bossDefeated ? run : { ...run, bossDefeated: true };
 }
 
 function discoverRoom(rooms: readonly number[], roomId: number): readonly number[] {

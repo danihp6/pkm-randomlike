@@ -19,6 +19,7 @@ import {
   isRoomDiscovered,
   isTrainerDefeated,
   itemCount,
+  markBossDefeated,
   markItemPicked,
   markTrainerDefeated,
   moveInBox,
@@ -43,6 +44,7 @@ describe('createRun', () => {
     expect(run.mapIndex).toBe(1);
     expect(run.routeInMap).toBe(0);
     expect(run.discoveredRooms).toEqual([0]);
+    expect(run.bossDefeated).toBe(false);
     expect(run.levelCap).toBe(capForRoute('run-a', 1));
     expect(run.party).toEqual([starter]);
     expect(run.box).toEqual([]);
@@ -95,6 +97,7 @@ describe('advanceMap', () => {
     expect(next.routeIndex).toBe(run.routeIndex + 1);
     expect(next.routeInMap).toBe(0);
     expect(next.discoveredRooms).toEqual([0]);
+    expect(next.bossDefeated).toBe(false);
     expect(next.levelCap).toBe(levelCapForMap(2));
     expect(next.captureUsed).toBe(false);
     expect(next.defeatedTrainers).toEqual([]);
@@ -117,6 +120,17 @@ describe('advanceMap', () => {
     expect(next.party[0].fighter.hp).toBe(starterMaxHp);
     expect(next.party[0].fighter.moves.every((slot) => slot.pp === slot.maxPp)).toBe(true);
     expect(next.box[0].fighter.hp).toBe(0);
+  });
+});
+
+describe('bossDefeated', () => {
+  it('marks the map boss once and survives a room change but not a new map', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    const marked = markBossDefeated(run);
+    expect(marked.bossDefeated).toBe(true);
+    expect(markBossDefeated(marked)).toBe(marked);
+    expect(advanceRoute(marked, 1).bossDefeated).toBe(true);
+    expect(advanceMap(marked).bossDefeated).toBe(false);
   });
 });
 

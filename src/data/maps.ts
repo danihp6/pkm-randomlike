@@ -35,6 +35,13 @@ export const MAP_MAX_ROUTES = 12;
 /** A room never grows past this many tiles a side (a whole screen, not a field). */
 export const MAP_MAX_ROOM_SIZE = 48;
 
+/**
+ * How many maps a finite run walks before its final boss. The last map holds
+ * only the final boss and no portal (D31); an infinite run ignores it. Balance
+ * data (O-M7), so a longer or shorter campaign never touches the generator.
+ */
+export const FINITE_MAPS = 6;
+
 export const MAP_TUNING: readonly MapTuning[] = [
   // A floor needs at least four rooms: a four-neighbour grid can only close a loop
   // around a 2x2 block, so a smaller map could never satisfy the "closed into at

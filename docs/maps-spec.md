@@ -228,3 +228,6 @@ The pure layout (cell positions, links, reveal filter) lives in
   are tuned in the Phase 7 balance pass.
 - **O-M6 — Mega Stones.** Resolved: functional — holding one allows a Mega
   Evolution once per battle (`D34`); all dex Megas are in.
+- **O-M7 — Finite campaign length.** How many maps a finite run walks
+  (`FINITE_MAPS` in `src/data/maps.ts`) starts at **6**, matching the tuned rows;
+  balance, not design, so the Phase 7 pass may retune it.

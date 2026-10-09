@@ -67,3 +67,22 @@ export function runBand(seed: string, routeIndex: number): LevelBand {
     maxLevel: position.maxLevel,
   };
 }
+
+/**
+ * The band of a map by its index, for callers that hold the run's explicit
+ * position (`RunState.mapIndex`) instead of a global route index.
+ */
+export function bandForMap(mapIndex: number): LevelBand {
+  const levels = levelRangeForMap(mapIndex);
+  return {
+    ...bandForLevel(levels.minLevel),
+    minLevel: levels.minLevel,
+    maxLevel: levels.maxLevel,
+  };
+}
+
+/** The working level of a room by its explicit map position, ramping to the boss. */
+export function roomLevelForMap(mapIndex: number, roomInMap: number, roomCount: number): number {
+  const levels = levelRangeForMap(mapIndex);
+  return roomLevelForFloor({ mapIndex, roomInMap, roomCount, minLevel: levels.minLevel, maxLevel: levels.maxLevel });
+}

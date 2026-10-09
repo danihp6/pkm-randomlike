@@ -189,7 +189,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `routeInMap` and the discovered-room set beside the global `routeIndex`;
       `advanceRoute` vs `advanceMap` (heal stop per map) and a save migration
       (`SAVE_VERSION`). Pure tests, including the discovery rule.
-- [ ] **Step 7 — Boss & portal.** The room farthest from the entry fields the map
+- [x] **Step 7 — Boss & portal.** The room farthest from the entry fields the map
       boss at `maxLevel`; the boss room has no onward opening, and when the boss
       falls a **new opening appears with the portal** that advances to the next
       map (final boss ends a finite run). Pure guard/portal logic + `RouteScene`

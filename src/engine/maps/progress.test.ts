@@ -1,0 +1,161 @@
+import { describe, expect, it } from 'vitest';
+import { FINITE_MAPS } from '../../data/maps';
+import { sketchRoute } from '../routes/sketch';
+import { validateRoute } from '../routes/validate';
+import { MAP_EDGES, OPPOSITE_EDGE, linkedNeighbour, planMap, type MapEdge } from './plan';
+import {
+  bossTrainerId,
+  isFinalMap,
+  portalEdgeFor,
+  roomAcross,
+  roomView,
+} from './progress';
+
+const SEEDS = ['progress-a', 'progress-b', 'progress-c', 'progress-d'];
+
+describe('isFinalMap', () => {
+  it('ends a finite run on its last map and never an infinite one', () => {
+    expect(isFinalMap('finite', 1)).toBe(false);
+    expect(isFinalMap('finite', FINITE_MAPS)).toBe(true);
+    expect(isFinalMap('finite', FINITE_MAPS + 3)).toBe(true);
+    expect(isFinalMap('infinite', FINITE_MAPS)).toBe(false);
+  });
+});
+
+describe('arrivalEdgeFor / roomView', () => {
+  it('opens the entry room on the plan entry edge', () => {
+    for (const seed of SEEDS) {
+      const plan = planMap(seed, 1);
+      const view = roomView(plan, plan.entryRoom, false);
+      expect(view.entryEdge).toBe(plan.entryEdge);
+      const entry = view.openings.filter((opening) => opening.role === 'entry');
+      expect(entry).toHaveLength(1);
+      expect(entry[0]).toEqual({ edge: plan.entryEdge, role: 'entry' });
+    }
+  });
+
+  it('enters every other room through the opposite of the door it was left by', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 6; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        for (const room of plan.rooms) {
+          const view = roomView(plan, room.id, false);
+          const entry = view.openings.find((opening) => opening.role === 'entry');
+          expect(entry, `${seed} map ${mapIndex} room ${room.id}`).toBeDefined();
+          // Every non-entry room is entered through one of its links.
+          if (room.id !== plan.entryRoom) {
+            expect(linkedNeighbour(plan, room.id, view.entryEdge)).toBeDefined();
+          }
+          // Every opening is a link (or the map entry on the entry room), never a wall.
+          for (const opening of view.openings) {
+            if (opening.edge === plan.entryEdge && room.id === plan.entryRoom) continue;
+            expect(linkedNeighbour(plan, room.id, opening.edge)).toBeDefined();
+          }
+        }
+      }
+    }
+  });
+
+  it('mirrors the room size and marks the boss room', () => {
+    for (const seed of SEEDS) {
+      const plan = planMap(seed, 2);
+      for (const room of plan.rooms) {
+        const view = roomView(plan, room.id, false);
+        expect(view.width).toBe(room.width);
+        expect(view.height).toBe(room.height);
+        expect(view.roomCount).toBe(plan.rooms.length);
+        expect(view.boss).toBe(room.id === plan.bossRoom);
+      }
+    }
+  });
+});
+
+describe('portal', () => {
+  it('only the boss room has a portal edge', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        for (const room of plan.rooms) {
+          if (room.id === plan.bossRoom) continue;
+          expect(portalEdgeFor(plan, room.id), `${seed} map ${mapIndex} room ${room.id}`).toBeNull();
+          expect(roomView(plan, room.id, false).portalEdge).toBeNull();
+        }
+      }
+    }
+  });
+
+  it('opens the portal on a free wall of the boss room', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const edge = portalEdgeFor(plan, plan.bossRoom);
+        expect(edge, `${seed} map ${mapIndex}`).not.toBeNull();
+        // A free wall: no link there, else the portal would not be an exit.
+        expect(linkedNeighbour(plan, plan.bossRoom, edge as MapEdge)).toBeUndefined();
+      }
+    }
+  });
+
+  it('adds the portal as an extra exit when open', () => {
+    const plan = planMap('progress-a', 3);
+    const sealed = roomView(plan, plan.bossRoom, false);
+    const open = roomView(plan, plan.bossRoom, true);
+    expect(open.portalEdge).toBe(portalEdgeFor(plan, plan.bossRoom));
+    expect(open.openings.some((opening) => opening.edge === open.portalEdge && opening.role === 'exit')).toBe(
+      true,
+    );
+    expect(sealed.openings).toHaveLength(open.openings.length - 1);
+  });
+
+  it('builds a valid route for the boss room with its portal open', () => {
+    for (const seed of SEEDS) {
+      for (const mapIndex of [1, 4, 6]) {
+        const plan = planMap(seed, mapIndex);
+        const view = roomView(plan, plan.bossRoom, true);
+        const route = sketchRoute({
+          seed,
+          routeIndex: 1,
+          biomeId: view.biomeId,
+          openings: view.openings,
+          width: view.width,
+          height: view.height,
+        });
+        expect(validateRoute(route).ok, `${seed} map ${mapIndex}`).toBe(true);
+      }
+    }
+  });
+});
+
+describe('roomAcross', () => {
+  it('follows every link to its neighbour and the entry edge to nothing', () => {
+    const plan = planMap('progress-a', 1);
+    for (const room of plan.rooms) {
+      for (const edge of MAP_EDGES) {
+        const neighbour = linkedNeighbour(plan, room.id, edge);
+        expect(roomAcross(plan, room.id, edge)).toBe(neighbour);
+        if (room.id === plan.entryRoom && edge === plan.entryEdge) {
+          expect(neighbour).toBeUndefined();
+        }
+      }
+    }
+  });
+
+  it('returns the predecessor across the arrival edge', () => {
+    const plan = planMap('progress-b', 2);
+    for (const room of plan.rooms) {
+      if (room.id === plan.entryRoom) continue;
+      const arrival = roomView(plan, room.id, false).entryEdge;
+      const from = roomAcross(plan, room.id, arrival);
+      expect(from).toBeDefined();
+      // Leaving the predecessor through the opposite door reaches this room again.
+      expect(roomAcross(plan, from as number, OPPOSITE_EDGE[arrival])).toBe(room.id);
+    }
+  });
+});
+
+describe('bossTrainerId', () => {
+  it('is stable per map', () => {
+    expect(bossTrainerId(3)).toBe('boss-3');
+    expect(bossTrainerId(3)).toBe(bossTrainerId(3));
+  });
+});

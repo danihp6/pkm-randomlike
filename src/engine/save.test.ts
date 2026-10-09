@@ -3,6 +3,7 @@ import { DEFAULT_KEYBINDS } from '../data/keybinds';
 import { defaultHudLayout } from '../data/hudLayout';
 import { levelCapForMap } from '../data/maps';
 import { floorForRoute } from './run/floors';
+import { planMap } from './maps/plan';
 import {
   addItem,
   addPokemon,
@@ -301,6 +302,13 @@ describe('run validation', () => {
     expect(decoded.run?.discoveredRooms).toContain(position.roomInMap);
   });
 
+  it('clamps a room outside the plan to the floor', () => {
+    const run = { ...sampleRun(), mapIndex: 1, routeInMap: 9999 };
+    const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
+    const plan = planMap(run.seed, 1);
+    expect(decoded.run?.routeInMap).toBe(plan.rooms.length - 1);
+  });
+
   it('keeps the members that parse and drops the ones that do not', () => {
     const run = sampleRun();
     const broken = { ...run, party: [run.party[0], { fighter: null }, 7] };
@@ -392,14 +400,15 @@ describe('migrateDocument', () => {
   it('upgrades a pre-envelope document end to end, once a step exists', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
-    // Six steps, because the test starts at v0 and the current schema is v6.
+    // Seven steps, because the test starts at v0 and the current schema is v7.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
       2: (doc) => ({ ...doc, version: 3, settings: { ...(doc.settings as object), tileset: 'wood' } }),
       3: (doc) => ({ ...doc, version: 4, settings: { ...(doc.settings as object), keybinds: DEFAULT_KEYBINDS } }),
       4: (doc) => ({ ...doc, version: 5 }),
-      5: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      5: (doc) => ({ ...doc, version: 6 }),
+      6: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -429,6 +438,15 @@ describe('map-position migration', () => {
     expect(decoded.run?.discoveredRooms).toEqual(
       Array.from({ length: position.roomInMap + 1 }, (_, id) => id),
     );
+  });
+
+  it('adds the bossDefeated flag to a v6 run', () => {
+    const run: Record<string, unknown> = { ...sampleRun(), bossDefeated: true };
+    delete run.bossDefeated;
+    const raw = JSON.stringify({ version: 6, run });
+    const decoded = decodeSave(raw);
+    expect(decoded.version).toBe(SAVE_VERSION);
+    expect(decoded.run?.bossDefeated).toBe(false);
   });
 });
 
