@@ -54,9 +54,13 @@ An opening is one of:
 
 | Opening | Where | Meaning |
 | --- | --- | --- |
-| **entry** | exactly one, on the entry room | the map entrance, entered from the previous map |
+| **entry** | exactly one, on the entry room | the map entrance; the room spawns the player at its **centre** (no carved outward door) |
 | **portal** | exactly one, on the boss room | sealed until the boss falls, then the way to the next map |
 | **link** | 0–4 per room | joins two rooms; its counterpart is the neighbour's opposite link |
+
+**No outward door on the entry room:** the entry is the map's origin, not a way
+back off it, so the route builder leaves that wall solid and the run starts the
+player in the middle of the room. Every other opening is a `link`.
 
 **No dangling openings:** every `link` is joined to another room. A room whose
 only opening is a single `link` is a **dead-end room** — a deliberate leaf, not an
@@ -101,7 +105,8 @@ Plan(seed, mapIndex): MapPlan
     # 3. shapes: derive each room's shape from its opening set (table above).
     # 4. boss: BFS from the entry room; the farthest room is the boss.
     # 5. portal: the boss room's onward opening is the portal (absent on the final map).
-    #    The entry room's outward edge is the map entry, entered from the previous map.
+    #    The entry room's outward edge is the map entry; the room spawns the player
+    #    at its centre, with no carved outward door.
     # 6. specials: hang the special rooms off the tree (see §7).
 ```
 

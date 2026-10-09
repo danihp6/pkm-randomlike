@@ -23,32 +23,37 @@ describe('isFinalMap', () => {
 });
 
 describe('arrivalEdgeFor / roomView', () => {
-  it('opens the entry room on the plan entry edge', () => {
+  it('gives the entry room no outward door (it spawns at its centre)', () => {
     for (const seed of SEEDS) {
       const plan = planMap(seed, 1);
       const view = roomView(plan, plan.entryRoom, false);
-      expect(view.entryEdge).toBe(plan.entryEdge);
-      const entry = view.openings.filter((opening) => opening.role === 'entry');
-      expect(entry).toHaveLength(1);
-      expect(entry[0]).toEqual({ edge: plan.entryEdge, role: 'entry' });
+      expect(view.entryEdge).toBeNull();
+      expect(view.openings.some((opening) => opening.role === 'entry')).toBe(false);
+      const links = plan.rooms[plan.entryRoom].openings
+        .filter((opening) => opening.kind === 'link')
+        .map((opening) => opening.edge)
+        .sort((a, b) => MAP_EDGES.indexOf(a) - MAP_EDGES.indexOf(b));
+      expect(view.openings.map((opening) => opening.edge)).toEqual(links);
     }
   });
 
-  it('enters every other room through the opposite of the door it was left by', () => {
+  it('enters every other room through one of its links', () => {
     for (const seed of SEEDS) {
       for (let mapIndex = 1; mapIndex <= 6; mapIndex++) {
         const plan = planMap(seed, mapIndex);
         for (const room of plan.rooms) {
           const view = roomView(plan, room.id, false);
           const entry = view.openings.find((opening) => opening.role === 'entry');
-          expect(entry, `${seed} map ${mapIndex} room ${room.id}`).toBeDefined();
-          // Every non-entry room is entered through one of its links.
-          if (room.id !== plan.entryRoom) {
-            expect(linkedNeighbour(plan, room.id, view.entryEdge)).toBeDefined();
+          if (room.id === plan.entryRoom) {
+            // The map entry spawns at its centre: no arrival door.
+            expect(view.entryEdge).toBeNull();
+            expect(entry).toBeUndefined();
+          } else {
+            expect(entry, `${seed} map ${mapIndex} room ${room.id}`).toBeDefined();
+            expect(linkedNeighbour(plan, room.id, view.entryEdge!)).toBeDefined();
           }
-          // Every opening is a link (or the map entry on the entry room), never a wall.
+          // Every opening is a real link, never a wall.
           for (const opening of view.openings) {
-            if (opening.edge === plan.entryEdge && room.id === plan.entryRoom) continue;
             expect(linkedNeighbour(plan, room.id, opening.edge)).toBeDefined();
           }
         }
@@ -87,20 +92,18 @@ describe('arrivalEdgeFor / roomView', () => {
     }
   });
 
-  it('keeps the same opening set for the entry room whatever door it is entered by', () => {
+  it('carves the entry room identically from every approach', () => {
     for (const seed of SEEDS) {
       const plan = planMap(seed, 2);
-      const room = plan.rooms[plan.entryRoom];
-      const viaEntry = roomView(plan, plan.entryRoom, false, plan.entryEdge);
-      const edges = viaEntry.openings.map((opening) => opening.edge);
-      // The plan's outward door is always part of the carved geometry.
-      expect(edges).toEqual(room.openings.map((opening) => opening.edge));
+      const fresh = roomView(plan, plan.entryRoom, false);
+      const edges = fresh.openings.map((opening) => opening.edge);
+      expect(fresh.entryEdge).toBeNull();
       for (const edge of MAP_EDGES) {
         if (linkedNeighbour(plan, plan.entryRoom, edge) === undefined) continue;
-        const viaLink = roomView(plan, plan.entryRoom, false, edge);
-        // Same set and order; only the `entry` role moves to the arrival door.
-        expect(viaLink.openings.map((opening) => opening.edge)).toEqual(edges);
-        expect(viaLink.entryEdge).toBe(edge);
+        const fromLink = roomView(plan, plan.entryRoom, false, edge);
+        // Same openings and the same centre spawn, so the room never rerolls.
+        expect(fromLink.openings.map((opening) => opening.edge)).toEqual(edges);
+        expect(fromLink.entryEdge).toBeNull();
       }
     }
   });
@@ -139,12 +142,17 @@ describe('arrivalEdgeFor / roomView', () => {
           for (const edge of MAP_EDGES) {
             const to = linkedNeighbour(plan, from.id, edge);
             if (to === undefined) continue;
-            // Leave by `edge`, so the next room is entered by its opposite.
+            // Leave by `edge`, so the next room is entered by its opposite —
+            // except the map entry, which always spawns at its centre.
             const arrival = OPPOSITE_EDGE[edge];
             const view = roomView(plan, to, false, arrival);
-            expect(view.entryEdge, `${seed} ${from.id}->${to} by ${edge}`).toBe(arrival);
-            // The door the player arrives through leads straight back.
-            expect(linkedNeighbour(plan, to, view.entryEdge)).toBe(from.id);
+            if (to === plan.entryRoom) {
+              expect(view.entryEdge, `${seed} ${from.id}->${to} by ${edge}`).toBeNull();
+            } else {
+              expect(view.entryEdge, `${seed} ${from.id}->${to} by ${edge}`).toBe(arrival);
+              // The door the player arrives through leads straight back.
+              expect(linkedNeighbour(plan, to, view.entryEdge!)).toBe(from.id);
+            }
           }
         }
       }
@@ -226,7 +234,7 @@ describe('roomAcross', () => {
     const plan = planMap('progress-b', 2);
     for (const room of plan.rooms) {
       if (room.id === plan.entryRoom) continue;
-      const arrival = roomView(plan, room.id, false).entryEdge;
+      const arrival = roomView(plan, room.id, false).entryEdge!;
       const from = roomAcross(plan, room.id, arrival);
       expect(from).toBeDefined();
       // Leaving the predecessor through the opposite door reaches this room again.

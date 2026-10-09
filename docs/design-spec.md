@@ -24,9 +24,10 @@ carries over.
   map shares one **biome**, one **level range** and its route **sizes**; it is
   connected and closed into at least one cycle.
 - Rooms join through openings: leaving by one edge enters the neighbour by the
-  **opposite** edge, and a door lines up with the neighbour's. The room farthest
-  from the entry holds the **boss**; beating it opens a **portal** to the next map
-  (`docs/maps-spec.md`).
+  **opposite** edge, and a door lines up with the neighbour's. The **entry room**
+  has no outward door — the run starts you at its **centre** — and the room
+  farthest from it holds the **boss**; beating the boss opens a **portal** to the
+  next map (`docs/maps-spec.md`).
 - A room with a single opening is a **dead-end** room; a straight two-opening
   passage is the **corridor** shape. Both carry the usual trainers, items and
   tall grass.

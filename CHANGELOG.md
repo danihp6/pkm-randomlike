@@ -8,14 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
-- [x] **Trainers stay beaten.** A room's carved geometry no longer depends on the
-      door the player arrived through: the entry room's outward door is always part
-      of its opening set, so entering it from outside and from a neighbour builds
-      the **same** room, and its trainer/item ids do not change. Before, the entry
-      room regenerated on re-entry and a beaten trainer could reappear. Openings are
-      also a couple of tiles wide now: any cell of the gap leads out, but only when
-      the step is taken **toward** the border (walking along the gap never bounces
-      the player back) — `src/engine/routes/doors.ts`.
+- [x] **Maps start in the centre.** The entry room has no outward door: the run
+      spawns the player at the **centre** of the map's first room (a fresh run or a
+      portal step), and its only openings are its links, so there is no door that
+      leads back off the map. The route builder carves a lane from the centre to the
+      carved network so the spawn is always floor and connected; a room is carved
+      the same whichever way it is approached. `docs/maps-spec.md` §2/§3.
+- [x] **Trainers stay beaten.** A room's carved geometry and its spawn no longer
+      depend on the door the player arrived through, so entering the entry room
+      from outside and from a neighbour builds the **same** room — same openings,
+      same trainers, same items — and its trainer/item ids stay stable (a beaten
+      trainer cannot reappear). Openings are also a couple of tiles wide now: any
+      cell of the gap leads out, but only when the step is taken **toward** the
+      border (walking along the gap never bounces the player back) —
+      `src/engine/routes/doors.ts`.
 - [x] **A floor's marks persist while you explore it.** Beaten trainers, taken
       ground items and spent captures no longer reset on every room change;
       `RunState` keeps them for the whole floor and only `advanceMap` clears them,

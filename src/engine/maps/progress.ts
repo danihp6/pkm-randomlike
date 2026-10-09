@@ -48,9 +48,10 @@ export type RoomView = Readonly<{
   biomeId: BiomeId;
   width: number;
   height: number;
-  /** Route openings: one entry (the arrival edge) plus every link, plus the portal when open. */
+  /** Route openings: every link, plus the portal when open (the map entry has none). */
   openings: readonly Access[];
-  entryEdge: MapEdge;
+  /** The door the player arrives through, or null when the room spawns at its centre. */
+  entryEdge: MapEdge | null;
   /** True when this room fields the map's boss. */
   boss: boolean;
   /** The portal's edge once the boss has fallen, else null. */
@@ -58,16 +59,19 @@ export type RoomView = Readonly<{
 }>;
 
 /**
- * A room as the route builder and the scene need it: its plan size, its opening
- * set (arrival marked `entry`, links and the open portal as `exit`) and whether it
- * is the boss room. `portalOpen` is false while the boss stands, so the portal
- * wall stays sealed.
+ * A room as the route builder and the scene need it: its plan size, its carved
+ * opening set (every **link**, plus the open portal) and whether it is the boss
+ * room. `portalOpen` is false while the boss stands, so the portal wall stays
+ * sealed.
  *
- * `arrivalEdge` is the edge the player actually walks in through (`docs/maps-spec.md`
- * §2: leave East, enter West). The scene passes `OPPOSITE_EDGE` of the door it used
- * so the spawn matches the traversal; when omitted — or when it is not a real door
- * of this room — it falls back to the plan-derived `arrivalEdgeFor`, which is what
- * a reload or a test uses.
+ * The **map entry room** has no outward door: it spawns the player at the room's
+ * **centre** (a fresh run or a portal step), so there is no opening that leads back
+ * off the map. Every other arrival is a link the player walked in through
+ * (`docs/maps-spec.md` §2: leave East, enter West), which `entryEdge` names; the
+ * scene passes `OPPOSITE_EDGE` of the door it used, or `arrivalEdgeFor` is used.
+ *
+ * The opening set never depends on the arrival, so a room is carved identically on
+ * every visit and its trainer/item ids stay stable (a beaten trainer stays beaten).
  */
 export function roomView(
   plan: MapPlan,
@@ -77,17 +81,24 @@ export function roomView(
 ): RoomView {
   const room = plan.rooms[roomId];
   if (!room) throw new Error(`map ${plan.mapIndex} has no room ${roomId}`);
-  const entryEdge = isArrivalEdge(plan, roomId, arrivalEdge)
+  const arrival = isArrivalEdge(plan, roomId, arrivalEdge)
     ? (arrivalEdge as MapEdge)
     : arrivalEdgeFor(plan, roomId);
+  // The map entry room always spawns at its centre (no outward door); every other
+  // room spawns at the link the player walked in through.
+  const entryEdge =
+    roomId === plan.entryRoom
+      ? null
+      : linkedNeighbour(plan, roomId, arrival) !== undefined
+        ? arrival
+        : arrivalEdgeFor(plan, roomId);
   const portalEdge = portalOpen ? portalEdgeFor(plan, roomId) : null;
 
-  // The carved geometry is the plan's opening set — the entry room's outward door
-  // plus every link — and, once open, the portal. It does **not** depend on which
-  // door the player arrived through: the arrival only picks which opening is the
-  // spawn (`entry`). That keeps a room identical on every visit, so its geometry,
-  // its trainers and its items keep the same ids (a beaten trainer stays beaten).
-  const edges: MapEdge[] = room.openings.map((opening) => opening.edge);
+  // The carved geometry is the plan's **link** openings (the entry room's outward
+  // door is dropped) plus the open portal. It does not depend on the arrival.
+  const edges: MapEdge[] = room.openings
+    .filter((opening) => opening.kind === 'link')
+    .map((opening) => opening.edge);
   if (portalEdge) edges.push(portalEdge);
   const unique = [...new Set(edges)].sort((a, b) => MAP_EDGES.indexOf(a) - MAP_EDGES.indexOf(b));
   const openings: Access[] = unique.map((edge) => ({
