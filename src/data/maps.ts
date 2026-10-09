@@ -7,7 +7,9 @@
  * is data. Ranges are **inclusive** and every room rolls its own width and height
  * inside its map's range, so the floor stays inside the map's band while still
  * varying room to room. Past the last tuned map an **infinite** run keeps
- * stepping upward by `MAP_TUNING_STEP` so the difficulty never plateaus (D29).
+ * stepping upward by `MAP_TUNING_STEP` so the difficulty never plateaus (D29),
+ * but the room count stops at `MAP_MAX_ROUTES` so a deep floor never becomes a
+ * huge maze.
  */
 export type MapLevelRange = Readonly<{ minLevel: number; maxLevel: number }>;
 
@@ -27,8 +29,14 @@ export type MapTuning = Readonly<{
 /** The mirror of the level ceiling in `src/engine/run/progression.ts` (data is engine-free). */
 export const MAP_MAX_LEVEL = 100;
 
+/** Rooms never grow past this, so a deep floor stays a floor, not a maze. */
+export const MAP_MAX_ROUTES = 12;
+
 export const MAP_TUNING: readonly MapTuning[] = [
-  { mapIndex: 1, levels: { minLevel: 2, maxLevel: 6 }, routes: { min: 3, max: 5 }, size: { min: 16, max: 20 } },
+  // A floor needs at least four rooms: a four-neighbour grid can only close a loop
+  // around a 2x2 block, so a smaller map could never satisfy the "closed into at
+  // least one cycle" contract (`docs/maps-spec.md` §2-§3, D30).
+  { mapIndex: 1, levels: { minLevel: 2, maxLevel: 6 }, routes: { min: 4, max: 5 }, size: { min: 16, max: 20 } },
   { mapIndex: 2, levels: { minLevel: 6, maxLevel: 11 }, routes: { min: 4, max: 6 }, size: { min: 18, max: 24 } },
   { mapIndex: 3, levels: { minLevel: 11, maxLevel: 17 }, routes: { min: 4, max: 6 }, size: { min: 22, max: 28 } },
   { mapIndex: 4, levels: { minLevel: 17, maxLevel: 24 }, routes: { min: 5, max: 7 }, size: { min: 26, max: 32 } },
@@ -40,6 +48,7 @@ export const MAP_TUNING: readonly MapTuning[] = [
 export const MAP_TUNING_STEP = {
   levelStep: 8,
   sizeStep: 4,
+  routeStep: 1,
 } as const;
 
 /** The row tuning a map index: the table row, or the last row grown for later maps. */
@@ -50,13 +59,15 @@ export function mapTuning(mapIndex: number): MapTuning {
   const last = MAP_TUNING[MAP_TUNING.length - 1];
   const extra = index - MAP_TUNING.length;
   const minLevel = Math.min(MAP_MAX_LEVEL, last.levels.maxLevel);
+  const routeMin = Math.min(MAP_MAX_ROUTES, last.routes.min + extra * MAP_TUNING_STEP.routeStep);
+  const routeMax = Math.min(MAP_MAX_ROUTES, last.routes.max + extra * MAP_TUNING_STEP.routeStep);
   return {
     mapIndex: index,
     levels: {
       minLevel,
       maxLevel: Math.min(MAP_MAX_LEVEL, minLevel + extra * MAP_TUNING_STEP.levelStep),
     },
-    routes: { ...last.routes },
+    routes: { min: Math.min(routeMin, routeMax), max: routeMax },
     size: {
       min: last.size.min + extra * MAP_TUNING_STEP.sizeStep,
       max: last.size.max + extra * MAP_TUNING_STEP.sizeStep,
