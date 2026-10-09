@@ -61,7 +61,7 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { FLOOR, TALL_GRASS, isWalkable, resolveMove, tileAt, type TileMap } from '../engine/map';
+import { FLOOR, TALL_GRASS, isWalkable, mapPixelSize, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, randomSeed, Rng } from '../engine/rng';
 import { clearRun, storeRun, type Settings } from '../engine/save';
 import {
@@ -672,7 +672,8 @@ export class RouteScene extends Phaser.Scene {
       .setDepth(actorDepth(0));
     this.movePlayerTo(this.player.x, this.player.y);
 
-    this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
+    const cameraBounds = mapPixelSize(this.map, TILE_SIZE);
+    this.cameras.main.setBounds(0, 0, cameraBounds.width, cameraBounds.height);
     this.cameras.main.setZoom(2);
     this.cameras.main.startFollow(this.playerSprite, true, 0.2, 0.2);
 
@@ -3473,7 +3474,8 @@ export class RouteScene extends Phaser.Scene {
     this.drawTrainers();
     this.player = { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
-    this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
+    const cameraBounds = mapPixelSize(this.map, TILE_SIZE);
+    this.cameras.main.setBounds(0, 0, cameraBounds.width, cameraBounds.height);
   }
 
   /**
@@ -3521,7 +3523,8 @@ export class RouteScene extends Phaser.Scene {
     this.drawTrainers();
     this.player = { ...route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
-    this.cameras.main.setBounds(0, 0, this.map[0].length * TILE_SIZE, this.map.length * TILE_SIZE);
+    const cameraBounds = mapPixelSize(this.map, TILE_SIZE);
+    this.cameras.main.setBounds(0, 0, cameraBounds.width, cameraBounds.height);
     return { ok: true };
   }
 

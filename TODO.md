@@ -177,7 +177,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       instead of rolling a shape: every opening is the grid neighbour's
       **opposite** edge, aligned to the same border band. Per-shape and
       connection regression tests.
-- [ ] **Step 4 — Plan-driven route size.** `buildRoute` takes its width/height
+- [x] **Step 4 — Plan-driven route size.** `buildRoute` takes its width/height
       from the plan (the map's size range, rolled independently) instead of the
       fixed 20x20; confirm the terrain/branch tiers, the camera bounds and the
       beyond-edge margin (`padMap`) still hold. Fixed-seed regression per size.

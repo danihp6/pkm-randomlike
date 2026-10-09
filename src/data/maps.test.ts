@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MAP_MAX_LEVEL,
+  MAP_MAX_ROOM_SIZE,
   MAP_MAX_ROUTES,
   MAP_TUNING,
   MAP_TUNING_STEP,
@@ -67,6 +68,12 @@ describe('map tuning tables', () => {
     const deep = mapTuning(10_000);
     expect(deep.levels.maxLevel).toBe(MAP_MAX_LEVEL);
     expect(deep.levels.minLevel).toBeLessThanOrEqual(MAP_MAX_LEVEL);
+  });
+
+  it('caps the room size for a very deep map', () => {
+    const deep = routeSizeRangeForMap(10_000);
+    expect(deep.max).toBe(MAP_MAX_ROOM_SIZE);
+    expect(deep.min).toBeLessThanOrEqual(deep.max);
   });
 
   it('grows the room count with the map and caps it', () => {

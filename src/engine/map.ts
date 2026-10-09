@@ -86,6 +86,12 @@ export function mapSize(map: TileMap): { width: number; height: number } {
   return { width, height };
 }
 
+/** The pixel size a rendered map needs at `tileSize` px, for the camera bounds. */
+export function mapPixelSize(map: TileMap, tileSize: number): { width: number; height: number } {
+  const size = mapSize(map);
+  return { width: size.width * tileSize, height: size.height * tileSize };
+}
+
 /**
  * A copy of `map` framed by `margin` rings of `fill` (the same count on every side
  * when it is a plain number, or `{ x, y }` when the frame is deeper top/bottom than

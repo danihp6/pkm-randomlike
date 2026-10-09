@@ -32,6 +32,9 @@ export const MAP_MAX_LEVEL = 100;
 /** Rooms never grow past this, so a deep floor stays a floor, not a maze. */
 export const MAP_MAX_ROUTES = 12;
 
+/** A room never grows past this many tiles a side (a whole screen, not a field). */
+export const MAP_MAX_ROOM_SIZE = 48;
+
 export const MAP_TUNING: readonly MapTuning[] = [
   // A floor needs at least four rooms: a four-neighbour grid can only close a loop
   // around a 2x2 block, so a smaller map could never satisfy the "closed into at
@@ -69,8 +72,8 @@ export function mapTuning(mapIndex: number): MapTuning {
     },
     routes: { min: Math.min(routeMin, routeMax), max: routeMax },
     size: {
-      min: last.size.min + extra * MAP_TUNING_STEP.sizeStep,
-      max: last.size.max + extra * MAP_TUNING_STEP.sizeStep,
+      min: Math.min(MAP_MAX_ROOM_SIZE, last.size.min + extra * MAP_TUNING_STEP.sizeStep),
+      max: Math.min(MAP_MAX_ROOM_SIZE, last.size.max + extra * MAP_TUNING_STEP.sizeStep),
     },
   };
 }
