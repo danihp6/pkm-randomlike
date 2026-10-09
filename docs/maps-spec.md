@@ -63,6 +63,11 @@ only opening is a single `link` is a **dead-end room** — a deliberate leaf, no
 exit into nothing. Dead-end rooms hold the same content as any optional room:
 trainers, ground items and tall grass (`docs/routes-spec.md` §2).
 
+Content is seeded per room and it **persists while the run is on the floor**: a
+beaten trainer, a taken ground item and a spent capture stay spent when the room
+is walked back into, and only the map advance clears them. Each room grants **one
+capture**; the run tracks the rooms that spent theirs.
+
 The **shape** of a room follows from its opening set (its count and edges):
 
 | Openings | Shape | Reads as |

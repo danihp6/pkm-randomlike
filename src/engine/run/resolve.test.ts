@@ -48,11 +48,11 @@ describe('resolveBattle', () => {
     expect(result.run.defeatedTrainers).toEqual(['trainer-1-0']);
   });
 
-  it('places a catch, spends the route capture and awards XP', () => {
+  it('places a catch, spends the room capture and awards XP', () => {
     const run = createRun({ seed: 's', starter });
     const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
     const result = resolveBattle(run, returned(run, 'capture', { captured: caught.fighter }), wild);
-    expect(result.run.captureUsed).toBe(true);
+    expect(result.run.capturedRooms).toContain(run.routeInMap);
     expect(result.run.party.map((member) => member.fighter.id)).toEqual(['starter', 'wild']);
     expect(result.run.party[0].xp).toBeGreaterThan(starter.xp);
     expect(result.run.stats.catches).toBe(1);

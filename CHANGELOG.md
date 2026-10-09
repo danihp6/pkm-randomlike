@@ -8,6 +8,13 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A floor's marks persist while you explore it.** Beaten trainers, taken
+      ground items and spent captures no longer reset on every room change;
+      `RunState` keeps them for the whole floor and only `advanceMap` clears them,
+      so walking back into a room cannot respawn its content. The capture stays
+      **one per room** (`capturedRooms`, save v9 with a v8→v9 migration), so a room
+      grants a single catch while a different room can still catch.
+      `docs/maps-spec.md` §2/§7.
 - [x] **Room transitions are coherent** (`D30`). Leaving a room by a door now
       spawns the player at the **opposite** door of the neighbour — leave East,
       arrive West — instead of the door the plan derived from the entry by BFS, so

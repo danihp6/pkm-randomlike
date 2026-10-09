@@ -86,8 +86,9 @@ carries over.
   every evolution line with at least three members (itself plus two others), so
   every starter has room to grow. The starter cards work with the **mouse**: hover
   highlights a card and a click picks it, beside the keyboard cursor.
-- One capture per route, the classic way: weaken a wild Pokémon, throw a ball,
-  it either clicks or breaks out.
+- One capture per room of a floor, the classic way: weaken a wild Pokémon, throw a
+  ball, it either clicks or breaks out. A room that spent its capture stays spent
+  if you walk back into it; a different room of the floor can still catch.
 - **Permadeath:** 0 HP is permanent. `0 HP = lost forever`, no Revive, no
   Pokémon Center resurrection, no box recovery.
 

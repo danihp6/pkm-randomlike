@@ -47,7 +47,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -95,8 +95,9 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * `routeIndex`; `6` moves a v6 run onto the v7 schema, which added the per-map
  * `bossDefeated` flag; `7` moves a v7 run onto the v8 schema, which added the
  * room's `arrivalEdge` (recovered from the plan, so an old run still spawns at a
- * real door). Later changes add the next step, e.g.
- * `8: (doc) => ({ ...doc, version: 9, changed })`.
+ * real door); `8` moves a v8 run onto the v9 schema, which turned the per-route
+ * `captureUsed` boolean into the per-floor `capturedRooms` list. Later changes add
+ * the next step, e.g. `9: (doc) => ({ ...doc, version: 10, changed })`.
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -142,6 +143,11 @@ export const SAVE_MIGRATIONS: Migrations = {
     version: 8,
     run: isRecord(document.run) ? withArrivalEdge(document.run) : document.run,
   }),
+  8: (document) => ({
+    ...document,
+    version: 9,
+    run: isRecord(document.run) ? withCapturedRooms(document.run) : document.run,
+  }),
 };
 
 /**
@@ -154,6 +160,15 @@ function withArrivalEdge(run: Record<string, unknown>): Record<string, unknown> 
   const plan = planMap(run.seed, run.mapIndex);
   if (run.routeInMap >= plan.rooms.length) return run;
   return { ...run, arrivalEdge: arrivalEdgeFor(plan, run.routeInMap) };
+}
+
+/**
+ * Turns a v8 run's per-route `captureUsed` boolean into the v9 `capturedRooms`
+ * list: the room it stood in if the capture was spent, no room otherwise.
+ */
+function withCapturedRooms(run: Record<string, unknown>): Record<string, unknown> {
+  if (!isInteger(run.routeInMap) || run.routeInMap < 0) return run;
+  return { ...run, capturedRooms: run.captureUsed === true ? [run.routeInMap] : [] };
 }
 
 /**
@@ -458,6 +473,25 @@ function readArrivalEdge(value: unknown, plan: MapPlan, roomId: number): MapEdge
   return edge && isArrivalEdge(plan, roomId, edge) ? edge : arrivalEdgeFor(plan, roomId);
 }
 
+/**
+ * Reads the floor's spent-capture rooms. A v8 document carried the single
+ * `captureUsed` boolean instead, so a truthy one maps onto the room it stood in.
+ */
+function parseCapturedRooms(
+  value: unknown,
+  legacyCaptureUsed: unknown,
+  currentRoom: number,
+): number[] {
+  const rooms: number[] = [];
+  if (Array.isArray(value)) {
+    for (const id of value) {
+      if (isInteger(id) && id >= 0 && !rooms.includes(id)) rooms.push(id);
+    }
+  }
+  if (rooms.length === 0 && legacyCaptureUsed === true) rooms.push(currentRoom);
+  return rooms;
+}
+
 function parseRun(value: unknown): RunState | null {
   if (!isRecord(value)) return null;
   if (!isString(value.seed) || value.seed === '') return null;
@@ -491,6 +525,8 @@ function parseRun(value: unknown): RunState | null {
     ? value.pickedItems.filter((id): id is string => isString(id))
     : [];
 
+  const capturedRooms = parseCapturedRooms(value.capturedRooms, value.captureUsed, routeInMap);
+
   return {
     seed: value.seed,
     mode: value.mode,
@@ -506,7 +542,7 @@ function parseRun(value: unknown): RunState | null {
     bag,
     defeatedTrainers,
     pickedItems,
-    captureUsed: value.captureUsed === true,
+    capturedRooms,
     stats: parseRunStats(value.stats),
   };
 }

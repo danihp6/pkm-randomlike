@@ -335,13 +335,13 @@ describe('run validation', () => {
         version: SAVE_VERSION,
         run: {
           ...run,
-          captureUsed: 'yes',
+          capturedRooms: [1, 'x', 1, -2],
           defeatedTrainers: ['a', 4, null],
           pickedItems: ['item-1-0', 7, null],
         },
       }),
     );
-    expect(decoded.run?.captureUsed).toBe(false);
+    expect(decoded.run?.capturedRooms).toEqual([1]);
     expect(decoded.run?.defeatedTrainers).toEqual(['a']);
     expect(decoded.run?.pickedItems).toEqual(['item-1-0']);
   });
@@ -400,7 +400,7 @@ describe('migrateDocument', () => {
   it('upgrades a pre-envelope document end to end, once a step exists', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
-    // Eight steps, because the test starts at v0 and the current schema is v8.
+    // Nine steps, because the test starts at v0 and the current schema is v9.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
@@ -409,7 +409,8 @@ describe('migrateDocument', () => {
       4: (doc) => ({ ...doc, version: 5 }),
       5: (doc) => ({ ...doc, version: 6 }),
       6: (doc) => ({ ...doc, version: 7 }),
-      7: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      7: (doc) => ({ ...doc, version: 8 }),
+      8: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -453,12 +454,30 @@ describe('map-position migration', () => {
   it('adds the arrival edge to a v7 run', () => {
     const run: Record<string, unknown> = { ...sampleRun() };
     delete run.arrivalEdge;
+    delete run.capturedRooms;
     const raw = JSON.stringify({ version: 7, run });
     const decoded = decodeSave(raw);
     expect(decoded.version).toBe(SAVE_VERSION);
     const decodedRun = decoded.run!;
     const plan = planMap(decodedRun.seed, decodedRun.mapIndex);
     expect(decodedRun.arrivalEdge).toBe(arrivalEdgeFor(plan, decodedRun.routeInMap));
+  });
+
+  it('turns a v8 captureUsed boolean into the v9 capturedRooms list', () => {
+    const run: Record<string, unknown> = { ...sampleRun(), routeInMap: 2, captureUsed: true };
+    delete run.capturedRooms;
+    const raw = JSON.stringify({ version: 8, run });
+    const decoded = decodeSave(raw);
+    expect(decoded.version).toBe(SAVE_VERSION);
+    expect(decoded.run?.capturedRooms).toEqual([2]);
+  });
+
+  it('maps a v8 run with no capture to an empty capturedRooms list', () => {
+    const run: Record<string, unknown> = { ...sampleRun(), captureUsed: false };
+    delete run.capturedRooms;
+    const raw = JSON.stringify({ version: 8, run });
+    const decoded = decodeSave(raw);
+    expect(decoded.run?.capturedRooms).toEqual([]);
   });
 });
 

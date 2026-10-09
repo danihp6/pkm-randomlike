@@ -50,14 +50,14 @@ describe('createRun', () => {
     expect(run.party).toEqual([starter]);
     expect(run.box).toEqual([]);
     expect(run.pickedItems).toEqual([]);
-    expect(run.captureUsed).toBe(false);
+    expect(run.capturedRooms).toEqual([]);
     expect(run.mode).toBe('finite');
     expect(run.stats).toEqual({ catches: 0, casualties: 0 });
   });
 });
 
 describe('advanceRoute', () => {
-  it('enters a room of the same map, discovering it and clearing the per-room marks', () => {
+  it('enters a room of the same map and keeps the floor marks and spent captures', () => {
     let run = createRun({ seed: 'run-a', starter });
     run = useCapture(run);
     run = markTrainerDefeated(run, 'trainer-1-0');
@@ -67,10 +67,13 @@ describe('advanceRoute', () => {
     expect(next.mapIndex).toBe(1);
     expect(next.routeInMap).toBe(2);
     expect(next.levelCap).toBe(run.levelCap);
-    expect(next.captureUsed).toBe(false);
-    expect(next.defeatedTrainers).toEqual([]);
-    expect(next.pickedItems).toEqual([]);
+    expect(next.defeatedTrainers).toEqual(['trainer-1-0']);
+    expect(next.pickedItems).toEqual(['item-1-0']);
+    expect(next.capturedRooms).toEqual(run.capturedRooms);
     expect(next.party).toBe(run.party);
+    // The capture is per room: a different room can still catch, the same one cannot.
+    expect(canCapture(next)).toBe(true);
+    expect(canCapture(advanceRoute(run, 0))).toBe(false);
   });
 
   it('discovers each room once, even when it is re-entered', () => {
@@ -123,7 +126,7 @@ describe('advanceMap', () => {
     expect(next.discoveredRooms).toEqual([0]);
     expect(next.bossDefeated).toBe(false);
     expect(next.levelCap).toBe(levelCapForMap(2));
-    expect(next.captureUsed).toBe(false);
+    expect(next.capturedRooms).toEqual([]);
     expect(next.defeatedTrainers).toEqual([]);
     expect(next.pickedItems).toEqual([]);
   });
@@ -280,12 +283,17 @@ describe('move reorder', () => {
 });
 
 describe('capture and trainers', () => {
-  it('allows one capture per route', () => {
+  it('allows one capture per room, and only the room that spent it', () => {
     let run = createRun({ seed: 'run-a', starter });
     expect(canCapture(run)).toBe(true);
     run = useCapture(run);
     expect(canCapture(run)).toBe(false);
     expect(useCapture(run)).toBe(run);
+    // Another room of the floor may still catch.
+    const next = advanceRoute(run, 1, undefined);
+    expect(canCapture(next)).toBe(true);
+    // Coming back to the room that spent its capture is refused.
+    expect(canCapture(advanceRoute(run, 0))).toBe(false);
   });
 
   it('records a beaten trainer once', () => {
