@@ -1,4 +1,4 @@
-import { levelCapForRoute } from '../../data/run';
+import { capForRoute } from './levelCap';
 import type { BagCounts } from './battleLink';
 import type { RunPokemon } from './progression';
 
@@ -55,7 +55,7 @@ export function createRun(init: RunInit): RunState {
     seed: init.seed,
     mode: init.mode ?? 'finite',
     routeIndex: FIRST_ROUTE,
-    levelCap: levelCapForRoute(FIRST_ROUTE),
+    levelCap: capForRoute(init.seed, FIRST_ROUTE),
     party: [init.starter],
     box: [],
     bag: [...(init.bag ?? [])],
@@ -72,7 +72,7 @@ export function advanceRoute(run: RunState): RunState {
   return {
     ...run,
     routeIndex,
-    levelCap: levelCapForRoute(routeIndex),
+    levelCap: capForRoute(run.seed, routeIndex),
     captureUsed: false,
     defeatedTrainers: [],
     pickedItems: [],

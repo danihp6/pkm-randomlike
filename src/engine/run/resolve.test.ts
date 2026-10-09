@@ -32,12 +32,13 @@ describe('resolveBattle', () => {
     expect(result.released).toEqual([]);
   });
 
-  it('clamps a win at the route cap', () => {
+  it('clamps a win at the map cap', () => {
     const run = createRun({ seed: 's', starter });
-    const result = resolveBattle(run, returned(run, 'win'), { enemyLevels: [40], isTrainer: false });
-    expect(result.run.party[0].fighter.level).toBe(5);
-    expect(result.run.party[0].xp).toBe(xpForLevel(5));
-    expect(result.events).toContainEqual({ kind: 'capped', level: 5 });
+    const cap = run.levelCap;
+    const result = resolveBattle(run, returned(run, 'win'), { enemyLevels: [999], isTrainer: false });
+    expect(result.run.party[0].fighter.level).toBe(cap);
+    expect(result.run.party[0].xp).toBe(xpForLevel(cap));
+    expect(result.events).toContainEqual({ kind: 'capped', level: cap });
   });
 
   it('marks the trainer beaten on a trainer win', () => {

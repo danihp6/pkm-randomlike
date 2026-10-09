@@ -181,7 +181,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       from the plan (the map's size range, rolled independently) instead of the
       fixed 20x20; confirm the terrain/branch tiers, the camera bounds and the
       beyond-edge margin (`padMap`) still hold. Fixed-seed regression per size.
-- [ ] **Step 5 — Per-map levels & cap.** Wild encounters and trainer rosters read
+- [x] **Step 5 — Per-map levels & cap.** Wild encounters and trainer rosters read
       the map band (rooms ramp `minLevel → maxLevel`); `levelCap` becomes the map
       cap (`levelCapForMap`) and the XP/evolution clamps follow it. Migrate the
       `bandForRoute` / `levelCapForRoute` callers; fixed-seed roster tests.

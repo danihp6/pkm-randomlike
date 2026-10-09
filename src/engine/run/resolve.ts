@@ -65,7 +65,7 @@ export function resolveBattle(
     next = {
       ...next,
       party: next.party.map((member) => {
-        const grown = addExperience(member, amount, next.routeIndex, next.seed);
+        const grown = addExperience(member, amount, next.levelCap, next.seed);
         events.push(...grown.events);
         return grown.pokemon;
       }),

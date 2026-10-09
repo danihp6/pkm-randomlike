@@ -21,17 +21,17 @@ export const LEVEL_BANDS: readonly LevelBand[] = [
   { id: 'end', name: 'End', minLevel: 28, maxLevel: 40, trainerSize: 4 },
 ];
 
-export const ROUTES_PER_BAND = 4;
-
-export function bandForRoute(routeIndex: number): LevelBand {
-  const index = Math.max(1, Math.floor(routeIndex));
-  const bandIndex = Math.min(LEVEL_BANDS.length - 1, Math.floor((index - 1) / ROUTES_PER_BAND));
-  return LEVEL_BANDS[bandIndex];
-}
-
-/** The XP/level ceiling for a route (D9). Clamping lives in the run logic (Phase 6). */
-export function levelCapForRoute(routeIndex: number): number {
-  return bandForRoute(routeIndex).maxLevel;
+/**
+ * The band a level range reads as, so a **map's** own `minLevel`/`maxLevel`
+ * (`levelsForMap`) still pick the archetype species pool and the roster size.
+ * The last band whose floor the level reaches, clamped at both ends.
+ */
+export function bandForLevel(minLevel: number): LevelBand {
+  let band = LEVEL_BANDS[0];
+  for (const candidate of LEVEL_BANDS) {
+    if (minLevel >= candidate.minLevel) band = candidate;
+  }
+  return band;
 }
 
 /** Route cadence from `docs/routes-spec.md` §4. Consumed by the run chain (Phase 6). */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_KEYBINDS } from '../data/keybinds';
 import { defaultHudLayout } from '../data/hudLayout';
-import { levelCapForRoute } from '../data/run';
+import { capForRoute } from './run/levelCap';
 import {
   addItem,
   addPokemon,
@@ -282,10 +282,10 @@ describe('settings validation', () => {
 });
 
 describe('run validation', () => {
-  it('recomputes the level cap from the route instead of trusting the save', () => {
+  it('recomputes the level cap from the route map instead of trusting the save', () => {
     const run = { ...sampleRun(), routeIndex: 5, levelCap: 999 };
     const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
-    expect(decoded.run?.levelCap).toBe(levelCapForRoute(5));
+    expect(decoded.run?.levelCap).toBe(capForRoute(run.seed, 5));
   });
 
   it('keeps the members that parse and drops the ones that do not', () => {
