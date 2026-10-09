@@ -345,3 +345,38 @@ export function linkedNeighbour(plan: MapPlan, roomId: number, edge: MapEdge): n
   );
   return joined ? other.id : undefined;
 }
+
+/**
+ * The edge a room's player arrives through (`docs/maps-spec.md` §2): the entry
+ * room opens on `entryEdge`, any other room is entered from the neighbour on the
+ * shortest path back to the entry, through that neighbour's **opposite** link
+ * (leave East → enter West). Pure and deterministic.
+ */
+export function arrivalEdgeFor(plan: MapPlan, roomId: number): MapEdge {
+  if (roomId === plan.entryRoom) return plan.entryEdge;
+  const seen = new Set<number>([plan.entryRoom]);
+  const queue: number[] = [plan.entryRoom];
+  for (let head = 0; head < queue.length; head++) {
+    const id = queue[head];
+    for (const edge of MAP_EDGES) {
+      const next = linkedNeighbour(plan, id, edge);
+      if (next === undefined || seen.has(next)) continue;
+      if (next === roomId) return OPPOSITE_EDGE[edge];
+      seen.add(next);
+      queue.push(next);
+    }
+  }
+  return plan.entryEdge;
+}
+
+/**
+ * The edges of a room with **no link** and that are not the arrival edge: the
+ * walls a portal may open onto. A boss room always has at least one (the floor
+ * graph leaves a leaf's walls free), so the map can always gate its exit.
+ */
+export function freeEdges(plan: MapPlan, roomId: number): MapEdge[] {
+  const arrival = arrivalEdgeFor(plan, roomId);
+  return MAP_EDGES.filter(
+    (edge) => edge !== arrival && linkedNeighbour(plan, roomId, edge) === undefined,
+  );
+}

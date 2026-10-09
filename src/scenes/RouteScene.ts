@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { biomeForRoute } from '../data/biomes';
+import { biomeForRoute, getBiome } from '../data/biomes';
 import { getSpecies } from '../data/dex';
 import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { type HudPanelId } from '../data/hudLayout';
@@ -30,6 +30,9 @@ import {
   MAX_MOVES,
   addItem,
   addPokemon,
+  advanceMap,
+  advanceRoute,
+  bandForMap,
   battleSeed,
   canCapture,
   createRun,
@@ -40,8 +43,10 @@ import {
   hasLivingParty,
   isItemPicked,
   isTrainerDefeated,
+  markBossDefeated,
   markItemPicked,
   resolveBattle,
+  roomLevelForMap,
   runBand,
   runRoomLevel,
   trainerRoster,
@@ -67,8 +72,7 @@ import { hashSeed, randomSeed, Rng } from '../engine/rng';
 import { clearRun, storeRun, type Settings } from '../engine/save';
 import {
   DEFAULT_SHAPE,
-  ROUTE_HEIGHT,
-  ROUTE_WIDTH,
+  DEFAULT_TRAINER_SIGHT,
   RouteEncounters,
   seesPlayer,
   sketchRoute,
@@ -77,10 +81,21 @@ import {
   type Facing,
   type RouteItem,
   type RouteMap,
+  type RouteRequest,
   type RouteShape,
   type RouteStep,
   type RouteTrainer,
 } from '../engine/routes';
+import {
+  bossTrainerId,
+  isFinalMap,
+  planMap,
+  roomAcross,
+  roomView,
+  type MapEdge,
+  type MapPlan,
+  type RoomView,
+} from '../engine/maps';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { resolveTileFrame, resolveGroundFrame, grassTipKeys, treeTipKeys, type TileFrame } from '../engine/tileFrames';
 import {
@@ -312,6 +327,8 @@ type RouteParams = Readonly<{
   height: number;
   grassPatches: number;
   ledges: number;
+  /** The plan-driven room (normal play); absent for the dev generator/import tools. */
+  room?: RoomView;
 }>;
 
 function clampInt(value: number, min: number, max: number): number {
@@ -373,6 +390,9 @@ export class RouteScene extends Phaser.Scene {
   /** The inputs behind the route on screen; the debug reroll rebuilds from it. */
   private routeParams!: RouteParams;
   private run!: RunState;
+  /** The floor plan and the room it is playing, for map navigation and the portal. */
+  private plan: MapPlan | null = null;
+  private room: RoomView | null = null;
   private settings!: Settings;
   /** Dev only: walk through solid tiles so a route can be inspected quickly. */
   private passThrough = false;
@@ -555,25 +575,121 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
+   * Builds the run's current room from the map plan and points the scene at it:
+   * its plan size and opening set, the biome's terrain and — in the boss room —
+   * the map boss. The dev generator and the frame-map importer build a route
+   * directly instead, without a room, so they keep the rolled shape.
+   */
+  private buildRoom(): void {
+    const plan = planMap(this.run.seed, this.run.mapIndex);
+    const view = roomView(plan, this.run.routeInMap, this.portalOpen());
+    this.plan = plan;
+    this.room = view;
+    const biome = getBiome(view.biomeId);
+    this.buildRoute({
+      seed: this.run.seed,
+      routeIndex: this.run.routeIndex,
+      shape: DEFAULT_SHAPE,
+      width: view.width,
+      height: view.height,
+      grassPatches: biome.terrain.grassPatches,
+      ledges: biome.terrain.ledges,
+      room: view,
+    });
+    if (view.boss && !this.run.bossDefeated) {
+      const boss = this.bossTrainer(view);
+      if (boss) this.route = { ...this.route, trainers: [...this.route.trainers, boss] };
+    }
+  }
+
+  /** The portal is open once the map's boss has fallen, except on the final map (D31). */
+  private portalOpen(): boolean {
+    return this.run.bossDefeated && !isFinalMap(this.run.mode, this.run.mapIndex);
+  }
+
+  /**
+   * The map boss: a themed `ace` trainer at the room's farthest walkable tile,
+   * fielding a max-level party. It stands only while the map's boss is alive, so
+   * the portal stays sealed until it falls.
+   */
+  private bossTrainer(view: RoomView): RouteTrainer | null {
+    const position = this.farthestRoomTile();
+    if (!position) return null;
+    return {
+      id: bossTrainerId(view.mapIndex),
+      position,
+      facing: this.facingFromTo(position, this.route.entry),
+      sight: DEFAULT_TRAINER_SIGHT,
+      archetypeId: 'ace',
+    };
+  }
+
+  /**
+   * The walkable tile farthest (BFS) from the room entry, skipping tiles a
+   * trainer or a visible item already owns; null when only the entry is free.
+   */
+  private farthestRoomTile(): Tile | null {
+    const from = this.route.entry;
+    const occupied = new Set<string>();
+    for (const trainer of this.route.trainers) occupied.add(`${trainer.position.x},${trainer.position.y}`);
+    for (const item of this.route.items) occupied.add(`${item.position.x},${item.position.y}`);
+    const startKey = `${from.x},${from.y}`;
+    const seen = new Set<string>([startKey]);
+    const queue: Tile[] = [{ ...from }];
+    let farthest: Tile | null = null;
+    const deltas: readonly Tile[] = [
+      { x: 1, y: 0 },
+      { x: -1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: -1 },
+    ];
+    for (let head = 0; head < queue.length; head++) {
+      const current = queue[head];
+      if (`${current.x},${current.y}` !== startKey && !occupied.has(`${current.x},${current.y}`)) {
+        farthest = current;
+      }
+      for (const delta of deltas) {
+        const next = { x: current.x + delta.x, y: current.y + delta.y };
+        const key = `${next.x},${next.y}`;
+        if (seen.has(key) || !isWalkable(this.moveMap, next)) continue;
+        seen.add(key);
+        queue.push(next);
+      }
+    }
+    return farthest;
+  }
+
+  /** The cardinal direction from `from` to `to` (the boss faces the door it guards). */
+  private facingFromTo(from: Tile, to: Tile): Facing {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    if (dx === 0 && dy === 0) return 'S';
+    if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'E' : 'W';
+    return dy > 0 ? 'S' : 'N';
+  }
+
+  /**
    * Builds the route for `params` (plus the debug reroll `attempt`) and points
    * the scene at it: map, render tiles, tileset and the encounter stream.
-   * `create` and the debug "regenerate" both go through here so they cannot drift.
+   * `create`, a room change and the debug "regenerate" all go through here so
+   * they cannot drift.
    */
   private buildRoute(params: RouteParams, attempt = 0): void {
-    const biome = biomeForRoute(params.routeIndex);
+    const biome = params.room ? getBiome(params.room.biomeId) : biomeForRoute(params.routeIndex);
     const seed = attempt > 0 ? `${params.seed}#r${attempt}` : params.seed;
     this.routeParams = params;
     const pattern = TILESETS[biome.tilesetId].config.wallPattern;
     const wall = pattern ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) } : undefined;
-    const loot = ROUTE_LOOT[runBand(this.run.seed, params.routeIndex).id];
-    const request = {
+    const band = params.room ? bandForMap(params.room.mapIndex) : runBand(this.run.seed, params.routeIndex);
+    const loot = ROUTE_LOOT[band.id];
+    const request: RouteRequest = {
       seed,
       routeIndex: params.routeIndex,
       biomeId: biome.id,
       layout: biome.layout,
-      shape: params.shape,
-      width: params.width,
-      height: params.height,
+      ...(params.room
+        ? { openings: params.room.openings, width: params.room.width, height: params.room.height }
+        : { shape: params.shape, width: params.width, height: params.height }),
       grassPatches: params.grassPatches,
       ledges: params.ledges,
       loot: loot.pool,
@@ -584,23 +700,26 @@ export class RouteScene extends Phaser.Scene {
     };
     const route = sketchRoute(request);
     this.generatorSteps = IS_DEVELOP ? sketchRouteSteps(request) : [];
-    this.applyRoute(route);
+    this.applyRoute(route, params.room ?? null);
   }
 
   /**
    * Points the scene at an already-built route: its tiles become the live and
    * render maps, and the tileset and encounter stream follow the route's biome.
    * Both `buildRoute` and the debug frame-map import go through here so they
-   * cannot drift.
+   * cannot drift. `view` is the plan room on screen (null for an imported map or
+   * the dev generator), which carries the map band and the room's ramp level.
    */
-  private applyRoute(route: RouteMap): void {
+  private applyRoute(route: RouteMap, view: RoomView | null = null): void {
     this.route = route;
     this.map = route.tiles;
     this.renderTiles = this.map;
     this.generatorStepIndex = null;
-    const biome = biomeForRoute(route.routeIndex);
-    const band = runBand(this.run.seed, route.routeIndex);
-    const roomLevel = runRoomLevel(this.run.seed, route.routeIndex);
+    const biome = getBiome(route.biomeId);
+    const band = view ? bandForMap(view.mapIndex) : runBand(this.run.seed, route.routeIndex);
+    const roomLevel = view
+      ? roomLevelForMap(view.mapIndex, view.roomId, view.roomCount)
+      : runRoomLevel(this.run.seed, route.routeIndex);
     this.tilesetId = resolveTileset(this.settings.tileset, biome.tilesetId);
     this.moveMap = this.movementMap(this.map);
     this.encounters = new RouteEncounters(
@@ -650,17 +769,7 @@ export class RouteScene extends Phaser.Scene {
     this.resetHold = 0;
     this.settings = loadSettings();
 
-    const routeIndex = this.run.routeIndex;
-    const biome = biomeForRoute(routeIndex);
-    this.buildRoute({
-      seed: this.run.seed,
-      routeIndex,
-      shape: DEFAULT_SHAPE,
-      width: ROUTE_WIDTH,
-      height: ROUTE_HEIGHT,
-      grassPatches: biome.terrain.grassPatches,
-      ledges: biome.terrain.ledges,
-    });
+    this.buildRoom();
 
     this.drawTiles();
     this.drawEntities();
@@ -1205,7 +1314,8 @@ export class RouteScene extends Phaser.Scene {
 
   private refreshHud(): void {
     if (!this.hudRoot) return;
-    this.hudTitle.setText(`Route ${this.run.routeIndex} · ${biomeForRoute(this.run.routeIndex).name}`);
+    const biomeName = this.route ? getBiome(this.route.biomeId).name : '';
+    this.hudTitle.setText(`Map ${this.run.mapIndex} · ${biomeName}`);
 
     this.hudRows.forEach((row, i) => {
       const member = this.run.party[i];
@@ -2690,6 +2800,8 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private onTileEntered(): void {
+    // A door on the border changes room (or steps through the open portal).
+    if (this.tryLeaveRoom()) return;
     const grassy =
       tileAt(this.map, this.player) === TALL_GRASS ||
       this.grassTipKeys.has(`${this.player.x},${this.player.y}`);
@@ -2710,6 +2822,68 @@ export class RouteScene extends Phaser.Scene {
     // Stepping into a trainer's cone makes it walk over and start the battle.
     const spotter = this.trainerSpotted();
     if (spotter) this.beginChase(spotter);
+  }
+
+  /**
+   * Leaving the room through a door (`docs/maps-spec.md` §2): a link enters the
+   * grid neighbour by its opposite edge (`advanceRoute`), and the boss room's
+   * open portal crosses to the next map (`advanceMap`, with its heal stop). The
+   * arrival door counts too, so a room can always be walked back. The dev
+   * generator/import tools have no plan, so they never transition.
+   */
+  private tryLeaveRoom(): boolean {
+    const room = this.room;
+    const plan = this.plan;
+    if (!room || !plan) return false;
+    const edge = this.doorEdgeAt(this.player);
+    if (!edge) return false;
+    if (room.portalEdge !== null && edge === room.portalEdge) {
+      this.transitionTo(advanceMap(this.run));
+      return true;
+    }
+    const next = roomAcross(plan, room.roomId, edge);
+    if (next === undefined) return false;
+    this.transitionTo(advanceRoute(this.run, next));
+    return true;
+  }
+
+  /**
+   * The map edge a **door** tile sits on: a route exit (a link or the open
+   * portal) or the room's arrival tile. A border tile that is not a door (a wall,
+   * reachable only with the dev noclip) returns null.
+   */
+  private doorEdgeAt(tile: Tile): MapEdge | null {
+    const isDoor =
+      this.route.exits.some((exit) => exit.x === tile.x && exit.y === tile.y) ||
+      (this.route.entry.x === tile.x && this.route.entry.y === tile.y);
+    if (!isDoor) return null;
+    if (tile.x === 0) return 'W';
+    if (tile.x === this.route.width - 1) return 'E';
+    if (tile.y === 0) return 'N';
+    if (tile.y === this.route.height - 1) return 'S';
+    return null;
+  }
+
+  /**
+   * Rebuilds the scene for the room the run just entered: build the plan room,
+   * redraw its tiles, items and trainers and spawn the player on its entry tile.
+   * The run's state already carries the new map position.
+   */
+  private transitionTo(run: RunState): void {
+    this.run = run;
+    this.persistRun();
+    this.stopWalking();
+    this.clearRouteSprites();
+    this.buildRoom();
+    this.drawTiles();
+    this.drawEntities();
+    this.drawItems();
+    this.drawTrainers();
+    this.player = { ...this.route.entry };
+    this.movePlayerTo(this.player.x, this.player.y);
+    const bounds = mapPixelSize(this.map, TILE_SIZE);
+    this.cameras.main.setBounds(0, 0, bounds.width, bounds.height);
+    this.refreshHud();
   }
 
   /** The first undefeated trainer whose line of sight holds the player. */
@@ -2825,13 +2999,17 @@ export class RouteScene extends Phaser.Scene {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     const archetype = getTrainerArchetype(trainer.archetypeId);
     if (!archetype) return;
-    const band = runBand(this.run.seed, this.route.routeIndex);
-    const roster = trainerRoster(
-      archetype,
-      band,
-      new Rng(hashSeed(`${this.run.seed}:trainer:${this.route.routeIndex}:${trainer.id}`)),
-      trainer.id,
-    );
+    const band = this.room ? bandForMap(this.room.mapIndex) : runBand(this.run.seed, this.route.routeIndex);
+    const isBoss = this.room !== null && trainer.id === bossTrainerId(this.room.mapIndex);
+    // The map boss fields a max-level party one size larger than its band.
+    const rosterBand = isBoss
+      ? { ...band, minLevel: band.maxLevel, trainerSize: band.trainerSize + 1 }
+      : band;
+    const key =
+      isBoss && this.room
+        ? `${this.run.seed}:boss:${this.room.mapIndex}`
+        : `${this.run.seed}:trainer:${this.route.routeIndex}:${trainer.id}`;
+    const roster = trainerRoster(archetype, rosterBand, new Rng(hashSeed(key)), trainer.id);
     this.startBattle({
       kind: 'trainer',
       trainerId: trainer.id,
@@ -3027,7 +3205,7 @@ export class RouteScene extends Phaser.Scene {
    */
   applySettings(): void {
     this.settings = loadSettings();
-    const wanted = resolveTileset(this.settings.tileset, biomeForRoute(this.run.routeIndex).tilesetId);
+    const wanted = resolveTileset(this.settings.tileset, getBiome(this.route.biomeId).tilesetId);
     if (wanted !== this.tilesetId) this.applyTileset(wanted);
     // A rebind happened behind this screen; re-resolve the movement keys so the
     // new keys are live the moment the route resumes.
@@ -3143,6 +3321,14 @@ export class RouteScene extends Phaser.Scene {
     const before = this.run.party;
     const { run, released } = resolveBattle(this.run, result, reward);
     this.run = run;
+
+    const bossId = this.room?.boss === true ? bossTrainerId(this.room.mapIndex) : null;
+    const wonBoss =
+      bossId !== null &&
+      pending.trigger.kind === 'trainer' &&
+      pending.trigger.trainerId === bossId &&
+      isTrainerDefeated(this.run, bossId);
+    if (wonBoss) this.run = markBossDefeated(this.run);
     this.persistRun();
     this.refreshHud();
 
@@ -3162,6 +3348,16 @@ export class RouteScene extends Phaser.Scene {
     this.playReleaseBeats(releaseBeats(released), () => {
       if (over) {
         this.scene.start('RunOver', { run: this.run, won: false });
+        return;
+      }
+      if (wonBoss) {
+        // The final boss ends a finite run; every other map opens its portal, so
+        // rebuild the room with the new door and let the player walk through.
+        if (isFinalMap(this.run.mode, this.run.mapIndex)) {
+          this.scene.start('RunOver', { run: this.run, won: true });
+          return;
+        }
+        this.transitionTo(this.run);
         return;
       }
       this.playLevelUp(levelUpBeats(before, this.run.party));
@@ -3331,8 +3527,12 @@ export class RouteScene extends Phaser.Scene {
       seed: this.routeParams.seed,
       routeIndex: this.routeParams.routeIndex,
       mode: this.run.mode,
-      biomeName: biomeForRoute(this.routeParams.routeIndex).name,
-      bandName: runBand(this.run.seed, this.routeParams.routeIndex).name,
+      biomeName: this.room
+        ? getBiome(this.room.biomeId).name
+        : biomeForRoute(this.routeParams.routeIndex).name,
+      bandName: this.room
+        ? bandForMap(this.room.mapIndex).name
+        : runBand(this.run.seed, this.routeParams.routeIndex).name,
       shape: this.routeParams.shape,
       width: this.routeParams.width,
       height: this.routeParams.height,
@@ -3467,6 +3667,9 @@ export class RouteScene extends Phaser.Scene {
     };
     const attempt = Math.max(0, Math.floor(input.attempt));
 
+    // The dev generator builds a rolled shape, not a plan room: no map doors.
+    this.room = null;
+    this.plan = null;
     this.stopWalking();
     this.clearRouteSprites();
     this.buildRoute(params, attempt);
@@ -3506,10 +3709,12 @@ export class RouteScene extends Phaser.Scene {
     }
     this.stopWalking();
     this.clearRouteSprites();
+    this.room = null;
+    this.plan = null;
     const route = routeFromFrameMapExport(exported);
     this.generatorSteps = [];
     this.applyRoute(route);
-    const biome = biomeForRoute(route.routeIndex);
+    const biome = getBiome(route.biomeId);
     this.routeParams = {
       seed: route.seed,
       routeIndex: route.routeIndex,

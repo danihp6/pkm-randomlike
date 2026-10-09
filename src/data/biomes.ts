@@ -64,6 +64,11 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
 /** The biomes a route cycles through. Only the forest for now. */
 export const BIOME_ORDER: readonly BiomeId[] = ['forest'];
 
+/** A biome by id, falling back to the first of the cycle for an unknown one. */
+export function getBiome(id: string): Biome {
+  return BIOMES[id as BiomeId] ?? BIOMES[BIOME_ORDER[0]];
+}
+
 export function biomeForRoute(routeIndex: number): Biome {
   const index = Math.max(1, Math.floor(routeIndex)) - 1;
   return BIOMES[BIOME_ORDER[index % BIOME_ORDER.length]];

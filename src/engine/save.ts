@@ -2,6 +2,7 @@ import { STAT_IDS, getSpecies, type StatId, type Stats } from '../data/dex';
 import { defaultHudLayout, parseHudLayout, type HudLayout } from '../data/hudLayout';
 import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybinds';
 import { levelCapForMap } from '../data/maps';
+import { planMap } from './maps/plan';
 import { floorForRoute } from './run/floors';
 import { isTilesetPreference, type TilesetPreference } from '../data/tilesets/ids';
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
@@ -46,7 +47,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -91,8 +92,9 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * `E`/`Q` (a field that can also be defaulted, so it is reset rather than
  * required); `5` moves a v5 run onto the v6 schema, which added the map position
  * (`mapIndex`, `routeInMap`) and the discovery set, recovered from the global
- * `routeIndex`. Later changes add the next step, e.g.
- * `6: (doc) => ({ ...doc, version: 7, changed })`.
+ * `routeIndex`; `6` moves a v6 run onto the v7 schema, which added the per-map
+ * `bossDefeated` flag. Later changes add the next step, e.g.
+ * `7: (doc) => ({ ...doc, version: 8, changed })`.
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -127,6 +129,11 @@ export const SAVE_MIGRATIONS: Migrations = {
     ...document,
     version: 6,
     run: isRecord(document.run) ? withFloorState(document.run) : document.run,
+  }),
+  6: (document) => ({
+    ...document,
+    version: 7,
+    run: isRecord(document.run) ? { bossDefeated: false, ...document.run } : document.run,
   }),
 };
 
@@ -438,8 +445,12 @@ function parseRun(value: unknown): RunState | null {
   // run between floors or hide the room it stands in.
   const position = floorForRoute(value.seed, value.routeIndex);
   const mapIndex = isInteger(value.mapIndex) && value.mapIndex >= 1 ? value.mapIndex : position.mapIndex;
-  const routeInMap =
+  const plan = planMap(value.seed, mapIndex);
+  const rawRoom =
     isInteger(value.routeInMap) && value.routeInMap >= 0 ? value.routeInMap : position.roomInMap;
+  // Clamp into the plan so a hand-edited save cannot point at a room that does
+  // not exist (`RoomView` would throw building it).
+  const routeInMap = Math.min(rawRoom, plan.rooms.length - 1);
   const discoveredRooms = parseDiscoveredRooms(value.discoveredRooms, routeInMap);
 
   const defeatedTrainers = Array.isArray(value.defeatedTrainers)
@@ -457,6 +468,7 @@ function parseRun(value: unknown): RunState | null {
     mapIndex,
     routeInMap,
     discoveredRooms,
+    bossDefeated: value.bossDefeated === true,
     levelCap: levelCapForMap(mapIndex),
     party,
     box: parseMembers(value.box),

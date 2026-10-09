@@ -1,6 +1,6 @@
 import type { Access } from '../routes/layout';
 import type { BiomeId } from '../../data/biomes';
-import type { MapPlan } from './plan';
+import { arrivalEdgeFor, type MapPlan } from './plan';
 
 /**
  * The inputs a **route** of a map room needs: the plan's size (each room rolls its
@@ -26,7 +26,7 @@ export type RoomRoute = Readonly<{
 export function routeForRoom(plan: MapPlan, roomId: number, routeIndex: number): RoomRoute {
   const room = plan.rooms[roomId];
   if (!room) throw new Error(`map ${plan.mapIndex} has no room ${roomId}`);
-  const entry = room.openings.find((opening) => opening.kind === 'entry') ?? room.openings[0];
+  const entry = arrivalEdgeFor(plan, roomId);
   return {
     routeIndex,
     roomId,
@@ -35,7 +35,7 @@ export function routeForRoom(plan: MapPlan, roomId: number, routeIndex: number):
     height: room.height,
     openings: room.openings.map((opening) => ({
       edge: opening.edge,
-      role: opening.edge === entry.edge ? 'entry' : 'exit',
+      role: opening.edge === entry ? 'entry' : 'exit',
     })),
   };
 }
