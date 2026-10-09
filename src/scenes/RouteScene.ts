@@ -68,7 +68,7 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { FLOOR, TALL_GRASS, isWalkable, mapPixelSize, resolveMove, tileAt, type TileMap } from '../engine/map';
+import { FLOOR, TALL_GRASS, WALL, isWalkable, mapPixelSize, resolveMove, tileAt, type TileMap } from '../engine/map';
 import { hashSeed, randomSeed, Rng } from '../engine/rng';
 import { clearRun, storeRun, type Settings } from '../engine/save';
 import {
@@ -612,7 +612,7 @@ export class RouteScene extends Phaser.Scene {
       shape: DEFAULT_SHAPE,
       width: view.width,
       height: view.height,
-      grassPatches: biome.terrain.grassPatches,
+      grassPatches: view.boss ? 0 : biome.terrain.grassPatches,
       ledges: biome.terrain.ledges,
       room: view,
     });
@@ -715,7 +715,7 @@ export class RouteScene extends Phaser.Scene {
       loot: loot.pool,
       hiddenChance: loot.hiddenChance,
       itemChance: loot.itemChance,
-      trainerArchetypes: TRAINER_ARCHETYPE_IDS,
+      trainerArchetypes: params.room?.boss ? [] : TRAINER_ARCHETYPE_IDS,
       ...(wall ? { wall } : {}),
     };
     const route = sketchRoute(request);
@@ -731,6 +731,11 @@ export class RouteScene extends Phaser.Scene {
    * the dev generator), which carries the map band and the room's ramp level.
    */
   private applyRoute(route: RouteMap, view: RoomView | null = null): void {
+    // The boss room's portal is carved from the start but sealed until the boss
+    // falls, so the room looks the same before and after it opens.
+    if (view?.boss && !view.portalOpen && view.portalEdge) {
+      route = this.sealEdge(route, view.portalEdge);
+    }
     this.route = route;
     this.map = route.tiles;
     this.renderTiles = this.map;
@@ -2702,6 +2707,20 @@ export class RouteScene extends Phaser.Scene {
    * under the crown while the tile still renders as the wall motif, drawn over the
    * player (`TREE_TIP_DEPTH`).
    */
+  /**
+   * Returns `route` with its border opening on `edge` walled off, used to keep the
+   * boss room's portal **sealed** until the boss falls. The interior lane that led
+   * to it stays, ending at the solid border.
+   */
+  private sealEdge(route: RouteMap, edge: MapEdge): RouteMap {
+    const tiles = route.tiles.map((row, y) =>
+      row.map((value, x) =>
+        borderEdge({ x, y }, route.width, route.height) === edge && value === FLOOR ? WALL : value,
+      ),
+    );
+    return { ...route, tiles };
+  }
+
   private movementMap(map: TileMap): TileMap {
     const config = TILESETS[this.tilesetId].config;
     const tips = treeTipKeys(map, config);
@@ -2976,7 +2995,7 @@ export class RouteScene extends Phaser.Scene {
     if (!room || !plan) return false;
     const edge = this.doorEdgeAt(this.player, direction);
     if (!edge) return false;
-    if (room.portalEdge !== null && edge === room.portalEdge) {
+    if (room.portalEdge !== null && room.portalOpen && edge === room.portalEdge) {
       this.transitionTo(advanceMap(this.run));
       return true;
     }

@@ -136,6 +136,12 @@ function assertPlan(plan: MapPlan): void {
   // The boss is the farthest room from the entry.
   expect(plan.bossRoom).toBe(expectedBoss(plan));
 
+  // The boss is a dead-end leaf: its only door is the single link, so it has one
+  // exit until the portal opens (`docs/maps-spec.md` §6).
+  const boss = plan.rooms[plan.bossRoom];
+  expect(boss.openings.filter((opening) => opening.kind === 'link')).toHaveLength(1);
+  expect(boss.shape).toBe('dead-end');
+
   expect(BIOME_ORDER).toContain(plan.biomeId);
   expect(plan.biomeId).toBe(biomeForMap(plan.seed, plan.mapIndex));
 }

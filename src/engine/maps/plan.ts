@@ -240,8 +240,8 @@ function shapeFor(edges: readonly MapEdge[]): MapRoomShape {
   }
 }
 
-/** The room farthest from the entry by graph distance; ties go to the lower id. */
-function farthestRoom(roomCount: number, links: readonly MapLink[]): number {
+/** BFS graph distance from the entry (id 0) to every room; disconnected reads -1. */
+function distancesFrom(roomCount: number, links: readonly MapLink[]): number[] {
   const adjacency: number[][] = Array.from({ length: roomCount }, () => []);
   for (const [a, b] of links) {
     adjacency[a].push(b);
@@ -259,7 +259,12 @@ function farthestRoom(roomCount: number, links: readonly MapLink[]): number {
       queue.push(next);
     }
   }
+  return distance;
+}
 
+/** The room farthest from the entry by graph distance; ties go to the lower id. */
+function farthestRoom(roomCount: number, links: readonly MapLink[]): number {
+  const distance = distancesFrom(roomCount, links);
   let boss = 0;
   for (let id = 1; id < roomCount; id++) {
     if (distance[id] > distance[boss]) boss = id;
@@ -268,10 +273,45 @@ function farthestRoom(roomCount: number, links: readonly MapLink[]): number {
 }
 
 /**
+ * Hangs the **boss room** off the regular graph as a dead-end **leaf**
+ * (`docs/maps-spec.md` §2/§6): its only door is the link to its parent, so it has a
+ * single exit before the portal opens, while the floor keeps its cycles. The parent
+ * is the farthest regular room that still has a free neighbouring cell, so the leaf
+ * becomes the farthest room. Returns the parent id, or `-1` when the grid leaves no
+ * cell to hang a leaf (then the caller keeps the farthest regular room as the boss).
+ */
+function appendBoss(
+  cells: Tile[],
+  links: MapLink[],
+  byCell: Map<string, number>,
+  blocked: ReadonlySet<string>,
+  regularCount: number,
+): number {
+  const distance = distancesFrom(regularCount, links);
+  const order = Array.from({ length: regularCount }, (_, id) => id).sort(
+    (a, b) => distance[b] - distance[a] || a - b,
+  );
+  for (const parent of order) {
+    for (const edge of MAP_EDGES) {
+      const cell = step(cells[parent], edge);
+      const key = cellKey(cell);
+      if (byCell.has(key) || blocked.has(key)) continue;
+      const id = cells.length;
+      cells.push(cell);
+      byCell.set(key, id);
+      links.push(parent < id ? [parent, id] : [id, parent]);
+      return parent;
+    }
+  }
+  return -1;
+}
+
+/**
  * Rolls a floor's full plan: biome, room count, each room's width/height, the grid
  * topology (connected, closed into at least one cycle, no dangling opening), every
- * room's openings and shape, and the boss room. A pure function of
- * `(seed, mapIndex)` (`docs/maps-spec.md` §3, D29).
+ * room's openings and shape, and the boss room. The boss is an extra dead-end leaf
+ * so it always has a single exit. A pure function of `(seed, mapIndex)`
+ * (`docs/maps-spec.md` §3, D29).
  */
 export function planMap(seed: string, mapIndex: number): MapPlan {
   const index = Math.max(1, Math.floor(mapIndex));
@@ -280,13 +320,20 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
 
   const biomeId = pickBiome(rng, previousBiomeOf(seed, index), BIOME_ORDER);
   const roomCount = rng.int(tuning.routes.min, tuning.routes.max);
-  const sizes = Array.from({ length: roomCount }, () => ({
+  // The regular graph needs at least four rooms to close a cycle; the boss is an
+  // extra leaf on top of it, so the floor holds `roomCount` rooms in total.
+  const regularCount = Math.max(4, roomCount - 1);
+  const sizes = Array.from({ length: regularCount + 1 }, () => ({
     width: rng.int(tuning.size.min, tuning.size.max),
     height: rng.int(tuning.size.min, tuning.size.max),
   }));
   const entryEdge = MAP_EDGES[rng.int(0, MAP_EDGES.length - 1)];
 
-  const { cells, links } = buildFloor(rng, roomCount, entryEdge);
+  const { cells, links } = buildFloor(rng, regularCount, entryEdge);
+  const byCell = new Map<string, number>(cells.map((cell, id) => [cellKey(cell), id]));
+  const blocked = new Set<string>([cellKey(step(cells[0], entryEdge))]);
+  const hung = appendBoss(cells, links, byCell, blocked, regularCount);
+  const bossRoom = hung >= 0 ? cells.length - 1 : farthestRoom(regularCount, links);
 
   const rooms: MapRoom[] = cells.map((cell, id) => {
     const edges: MapEdge[] = [];
@@ -321,7 +368,7 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     links: orderedLinks,
     entryRoom: 0,
     entryEdge,
-    bossRoom: farthestRoom(roomCount, links),
+    bossRoom,
   };
 }
 

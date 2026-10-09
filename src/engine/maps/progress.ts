@@ -48,21 +48,27 @@ export type RoomView = Readonly<{
   biomeId: BiomeId;
   width: number;
   height: number;
-  /** Route openings: every link, plus the portal when open (the map entry has none). */
+  /**
+   * Route openings: every link, plus the boss room's portal. The portal is always
+   * part of the geometry (so the room never re-rolls when it opens); the scene seals
+   * it until `portalOpen`.
+   */
   openings: readonly Access[];
   /** The door the player arrives through, or null when the room spawns at its centre. */
   entryEdge: MapEdge | null;
   /** True when this room fields the map's boss. */
   boss: boolean;
-  /** The portal's edge once the boss has fallen, else null. */
+  /** The boss room's portal edge (on a free wall), or null for any other room. */
   portalEdge: MapEdge | null;
+  /** True once the boss has fallen, so the portal is open and can be walked through. */
+  portalOpen: boolean;
 }>;
 
 /**
  * A room as the route builder and the scene need it: its plan size, its carved
- * opening set (every **link**, plus the open portal) and whether it is the boss
- * room. `portalOpen` is false while the boss stands, so the portal wall stays
- * sealed.
+ * opening set (every **link**, plus the boss room's portal) and whether it is the
+ * boss room. The portal is carved from the start but **sealed** while the boss
+ * stands, so the room looks identical before and after it opens.
  *
  * The **map entry room** has no outward door: it spawns the player at the room's
  * **centre** (a fresh run or a portal step), so there is no opening that leads back
@@ -92,10 +98,11 @@ export function roomView(
       : linkedNeighbour(plan, roomId, arrival) !== undefined
         ? arrival
         : arrivalEdgeFor(plan, roomId);
-  const portalEdge = portalOpen ? portalEdgeFor(plan, roomId) : null;
+  // The portal is carved from the start and only opened when the boss falls.
+  const portalEdge = portalEdgeFor(plan, roomId);
 
   // The carved geometry is the plan's **link** openings (the entry room's outward
-  // door is dropped) plus the open portal. It does not depend on the arrival.
+  // door is dropped) plus the portal. It does not depend on the arrival.
   const edges: MapEdge[] = room.openings
     .filter((opening) => opening.kind === 'link')
     .map((opening) => opening.edge);
@@ -117,6 +124,7 @@ export function roomView(
     entryEdge,
     boss: plan.bossRoom === roomId,
     portalEdge,
+    portalOpen: portalOpen && portalEdge !== null,
   };
 }
 

@@ -103,10 +103,10 @@ Plan(seed, mapIndex): MapPlan
     #    adjacent rooms that are not already joined, so the floor closes one or
     #    more loops.
     # 3. shapes: derive each room's shape from its opening set (table above).
-    # 4. boss: BFS from the entry room; the farthest room is the boss.
-    # 5. portal: the boss room's onward opening is the portal (absent on the final map).
-    #    The entry room's outward edge is the map entry; the room spawns the player
-    #    at its centre, with no carved outward door.
+    # 4. boss: the farthest regular room; hang the boss room off it as an extra
+    #    dead-end leaf, so the boss has a single door and the floor keeps its cycle.
+    # 5. portal: the boss room's portal is carved on a free wall from the start and
+    #    sealed until the boss falls. The entry room spawns the player at its centre.
     # 6. specials: hang the special rooms off the tree (see §7).
 ```
 
@@ -142,11 +142,14 @@ a huge maze. Retuning is a data edit, never a generator edit
 
 ## 6. Boss & portal (D31)
 
-- The **farthest room from the entry** fields the **boss** — a fixed, themed
-  trainer at the map's `maxLevel`, distinct from the room's regular trainers.
-- The boss room has **no onward opening** while the boss stands. Once it falls a
-  **new opening appears with the portal**; stepping through it advances the run to
-  the next map (heal stop intact: HP/PP only, never a resurrection).
+- The **boss room** is a **dead-end leaf** hung off the farthest regular room, so
+  its only door is the way in (`docs/maps-spec.md` §2). It is deliberately quiet:
+  **no tall grass and no regular trainers**, just the boss.
+- The boss is a fixed, themed trainer at the map's `maxLevel`.
+- The portal is **carved from the start** on a free wall of the boss room and stays
+  **sealed** while the boss stands, so the room looks the same before and after.
+  Once the boss falls the portal opens; stepping through it advances the run to the
+  next map (heal stop intact: HP/PP only, never a resurrection).
 - The last map of a finite run holds the **final boss**: there is no portal, and
   beating it wins the run. Infinite mode reopens the portal forever.
 

@@ -8,6 +8,13 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The boss room is a quiet dead-end.** The boss is hung off the floor's
+      farthest regular room as an extra **dead-end leaf**, so it has a single door
+      while the floor keeps its cycles (maps now roll at least five rooms). It
+      carries no tall grass and no regular trainers — just the boss. Its **portal**
+      is carved from the start on a free wall and stays **sealed** until the boss
+      falls, so the room looks identical before and after it opens.
+      `docs/maps-spec.md` §2/§6.
 - [x] **Maps start in the centre.** The entry room has no outward door: the run
       spawns the player at the **centre** of the map's first room (a fresh run or a
       portal step), and its only openings are its links, so there is no door that

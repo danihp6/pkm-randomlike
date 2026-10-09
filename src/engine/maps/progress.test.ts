@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FINITE_MAPS } from '../../data/maps';
+import { TALL_GRASS } from '../map';
 import { sketchRoute } from '../routes/sketch';
 import { validateRoute } from '../routes/validate';
 import { MAP_EDGES, OPPOSITE_EDGE, arrivalEdgeFor, linkedNeighbour, planMap, type MapEdge } from './plan';
@@ -52,8 +53,9 @@ describe('arrivalEdgeFor / roomView', () => {
             expect(entry, `${seed} map ${mapIndex} room ${room.id}`).toBeDefined();
             expect(linkedNeighbour(plan, room.id, view.entryEdge!)).toBeDefined();
           }
-          // Every opening is a real link, never a wall.
+          // Every opening is a real link, never a wall (the portal is a free wall).
           for (const opening of view.openings) {
+            if (opening.edge === view.portalEdge) continue;
             expect(linkedNeighbour(plan, room.id, opening.edge)).toBeDefined();
           }
         }
@@ -186,15 +188,21 @@ describe('portal', () => {
     }
   });
 
-  it('adds the portal as an extra exit when open', () => {
+  it('carves the portal from the start and only opens it when the boss falls', () => {
     const plan = planMap('progress-a', 3);
     const sealed = roomView(plan, plan.bossRoom, false);
     const open = roomView(plan, plan.bossRoom, true);
     expect(open.portalEdge).toBe(portalEdgeFor(plan, plan.bossRoom));
-    expect(open.openings.some((opening) => opening.edge === open.portalEdge && opening.role === 'exit')).toBe(
+    expect(sealed.portalEdge).toBe(open.portalEdge);
+    // The geometry is the same sealed or open, so the room never re-rolls.
+    expect(sealed.openings.map((opening) => opening.edge)).toEqual(
+      open.openings.map((opening) => opening.edge),
+    );
+    expect(sealed.openings.some((opening) => opening.edge === open.portalEdge && opening.role === 'exit')).toBe(
       true,
     );
-    expect(sealed.openings).toHaveLength(open.openings.length - 1);
+    expect(sealed.portalOpen).toBe(false);
+    expect(open.portalOpen).toBe(true);
   });
 
   it('builds a valid route for the boss room with its portal open', () => {
@@ -211,6 +219,32 @@ describe('portal', () => {
           height: view.height,
         });
         expect(validateRoute(route).ok, `${seed} map ${mapIndex}`).toBe(true);
+      }
+    }
+  });
+
+  it('is a quiet dead-end: one usable exit, no trainers and no tall grass', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 6; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const view = roomView(plan, plan.bossRoom, false);
+        // One link plus the sealed portal.
+        const links = view.openings.filter((opening) => opening.edge !== view.portalEdge);
+        expect(links, `${seed} map ${mapIndex}`).toHaveLength(1);
+        expect(view.portalOpen).toBe(false);
+        const route = sketchRoute({
+          seed,
+          routeIndex: 1,
+          biomeId: view.biomeId,
+          openings: view.openings,
+          width: view.width,
+          height: view.height,
+          grassPatches: 0,
+          trainerArchetypes: [],
+        });
+        expect(validateRoute(route).ok).toBe(true);
+        expect(route.trainers).toHaveLength(0);
+        expect(route.tiles.some((row) => row.includes(TALL_GRASS))).toBe(false);
       }
     }
   });
