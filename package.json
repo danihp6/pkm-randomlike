@@ -12,7 +12,10 @@
     "typecheck": "tsc --noEmit",
     "data:dex": "node scripts/build-dex.mjs",
     "data:anil": "node scripts/anil/build-pokemon-sprites.mjs",
-    "docs:coverage": "node scripts/effect-coverage.mjs"
+    "docs:coverage": "node scripts/effect-coverage.mjs",
+    "infra:install": "npm --prefix infra install",
+    "infra:synth": "npm --prefix infra run synth",
+    "infra:deploy": "npm run build && npm --prefix infra run deploy"
   },
   "dependencies": {
     "phaser": "^3.90.0"

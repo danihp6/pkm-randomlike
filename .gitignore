@@ -4,6 +4,13 @@ dist-ssr/
 .vite/
 *.local
 *.log
+# Secrets: the Cloudflare token lives here and must never be committed
+.env
+.env.local
+.env.*.local
+# AWS CDK (infra/)
+cdk.out/
+infra/cdk.context.json
 .DS_Store
 Thumbs.db
 .idea/
