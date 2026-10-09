@@ -135,15 +135,23 @@ A Pokémon that holds its **Mega Stone** may Mega Evolve **once per battle**; th
 is the mechanic the mega-stone room's stones feed (`D34`, `docs/maps-spec.md`
 §7).
 
-- The control lives in the command menu and is offered only while the active
-  Pokémon holds the stone that matches its species and has not Mega Evolved yet.
-  Confirming it spends the turn's evolution (like the games): the Mega forme is
-  applied when the turn resolves, not instantly.
-- Both the player and the AI can Mega Evolve. Rival stones are data on the
-  archetypes that may carry them — **bosses, mini-bosses and the `ace`
-  archetype**.
+- The control is a **MEGA** button in the command menu, offered only while the
+  active Pokémon holds the stone that matches its species and has not Mega
+  Evolved yet. Confirming it **arms** the evolution and reopens the menu; the
+  next FIGHT spends it (like the games, the Pokémon still attacks that turn).
+  Picking BAG, SWITCH or RUN instead drops the armed evolution.
+- The Mega forme is applied **at the top of the turn, before any move**, so the
+  turn's order and damage read the Mega's Speed, type and ability. A Mega ability
+  with an on-switch-in effect (Drought, Intimidate…) fires then. The engine half
+  is `src/engine/battle/mega.ts`; the command carries a `mega` flag on
+  `FightCommand`.
+- Both the player and the AI can Mega Evolve. The AI spends its stone on the
+  first fight command it can. Rival stones are data on the archetypes that may
+  carry them — **bosses, mini-bosses and the `ace` archetype** (`carriesMega` and
+  `RosterOptions.allowMega`); a stone is assigned to one Mega-capable member.
 - The Mega forme swaps the fighter's **stats, types and ability** for the rest of
   the battle and never changes the held item, the moves or the HP fraction. The
-  formes come from the generated dex (they may be `isNonstandard: "Past"`).
+  formes come from `dex/megas.json` (generated beside `species.json`, D34); a
+  snapshot after the battle stores the base species again.
 - Evolution is not Mega Evolution: a run member's level evolution still happens
   outside battle (`docs/routes-spec.md` §5) and is unrelated to this.

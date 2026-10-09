@@ -1,6 +1,7 @@
 import { getMove, type Move } from '../../data/dex';
 import type { ItemDef } from '../../data/items';
 import { attemptCapture } from './capture';
+import { canMegaEvolve } from './mega';
 import { applyBoosts, applyHeal, type BattleFighter, type MoveSlot } from './fighter';
 import {
   activeFighter,
@@ -17,7 +18,7 @@ import { cureStatus } from './status';
 import { canRun } from './runAway';
 import { isTaunted } from './volatile';
 
-export type FightCommand = Readonly<{ type: 'fight'; moveIndex: number }>;
+export type FightCommand = Readonly<{ type: 'fight'; moveIndex: number; mega?: boolean }>;
 export type BagCommand = Readonly<{ type: 'bag'; itemId: string }>;
 export type SwitchCommand = Readonly<{ type: 'switch'; partyIndex: number }>;
 export type RunCommand = Readonly<{ type: 'run' }>;
@@ -106,6 +107,9 @@ export function validateCommand(
           return 'The Pokémon is taunted and cannot use status moves.';
         }
         return 'That move has no PP left.';
+      }
+      if (command.mega && !canMegaEvolve(state, side)) {
+        return 'That Pokémon cannot Mega Evolve.';
       }
       return null;
     }

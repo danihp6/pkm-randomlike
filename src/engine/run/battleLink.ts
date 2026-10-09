@@ -20,7 +20,13 @@ export type TrainerTrigger = Readonly<{
   kind: 'trainer';
   trainerId: string;
   trainerName: string;
-  roster: readonly Readonly<{ id: string; speciesId: string; level: number }>[];
+  roster: readonly Readonly<{
+    id: string;
+    speciesId: string;
+    level: number;
+    /** A held item the member starts with (a Mega Stone, D34). */
+    heldItem?: string;
+  }>[];
   /** The archetype whose overworld colour frames the battle, when known. */
   archetypeId?: string;
 }>;

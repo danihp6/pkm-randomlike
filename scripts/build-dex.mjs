@@ -17,6 +17,17 @@ const MIN_LEARNSET_GEN = 8;
 
 const isPlayable = (entry) => !entry.isNonstandard && entry.num > 0;
 
+// Mega formes are `isNonstandard: "Past"` in Gen 9, so they are kept out of the
+// playable set but generated beside it: a Mega is battle-only, entered from its
+// stone rather than spawned. Primals are a separate mechanic (no Mega Stone).
+// `isMega` also catches the X/Y formes (Charizard and Mewtwo).
+const isMega = (entry) => entry.isNonstandard === 'Past' && entry.isMega === true;
+
+// Rayquaza is the one Mega without a stone (it needs Dragon Ascent); the run's
+// stone mechanic still needs one, so derive a name from the base species.
+const megaStoneName = (entry, base) =>
+  entry.requiredItem ?? `${base.name.replace(/[aeiou]$/i, '')}ite`;
+
 const writeJson = async (name, data) => {
   const path = join(OUT_DIR, name);
   await writeFile(path, `${JSON.stringify(data)}\n`);
@@ -73,6 +84,31 @@ const main = async () => {
     evolutions: evolutionOf(entry),
   }));
 
+  const normalizeId = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  // Every Mega whose base species is in the playable set, each tied to its base
+  // and its stone. A Mega whose base is not in Gen 9 has no holder in the run,
+  // so it is skipped rather than shipped as a dead stone. The run only ever
+  // reaches a Mega through `src/engine/battle/mega.ts`.
+  const playableIds = new Set(species.map((entry) => entry.id));
+  const megaFormes = Dex.species
+    .all()
+    .filter(isMega)
+    .filter((entry) => playableIds.has(Dex.species.get(entry.baseSpecies).id))
+    .map((entry) => {
+      const base = Dex.species.get(entry.baseSpecies);
+      const stoneName = megaStoneName(entry, base);
+      return {
+        ...entry,
+        baseSpeciesId: base.id,
+        stoneId: normalizeId(stoneName),
+        stoneName,
+        catchRate: catchRateOf(entry.num),
+        heightm: heights[entry.id] ?? heights[base.id] ?? 1,
+        evolutions: [],
+      };
+    });
+
   // `secondaries` is the resolved array (@pkmn/dex derives it from `secondary`),
   // so the raw `secondary` field is dropped: keeping both made the engine apply
   // single secondaries twice.
@@ -98,6 +134,7 @@ const main = async () => {
   }
 
   await writeJson('species.json', species);
+  await writeJson('megas.json', megaFormes);
   await writeJson('moves.json', moves);
   await writeJson('abilities.json', abilities);
   await writeJson('items.json', items);
@@ -111,6 +148,7 @@ const main = async () => {
     catchRateSource: 'PokeAPI pokemon_species.csv',
     counts: {
       species: species.length,
+      megas: megaFormes.length,
       moves: moves.length,
       abilities: abilities.length,
       items: items.length,

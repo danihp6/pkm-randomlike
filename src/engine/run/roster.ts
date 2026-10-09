@@ -1,8 +1,23 @@
+import { megaFormsForBase } from '../../data/dex/megas';
 import type { LevelBand } from '../../data/run';
 import type { TrainerArchetype } from '../../data/trainers';
 import type { Rng } from '../rng';
 
-export type RosterEntry = Readonly<{ id: string; speciesId: string; level: number }>;
+export type RosterEntry = Readonly<{
+  id: string;
+  speciesId: string;
+  level: number;
+  /** A held item the member starts with; only Mega Stones so far (D34). */
+  heldItem?: string;
+}>;
+
+export type RosterOptions = Readonly<{
+  /**
+   * Bosses, mini-bosses and the `ace` archetype may carry a Mega Stone: one
+   * member whose species has a Mega forme holds its stone (`D34`).
+   */
+  allowMega?: boolean;
+}>;
 
 /**
  * A deterministic trainer roster: `band.trainerSize` species drawn without
@@ -18,6 +33,7 @@ export function trainerRoster(
   band: LevelBand,
   rng: Rng,
   idPrefix: string,
+  options: RosterOptions = {},
 ): readonly RosterEntry[] {
   const source = archetype.pools[band.id].length > 0 ? archetype.pools[band.id] : ['sentret'];
   const pool = [...source];
@@ -32,5 +48,17 @@ export function trainerRoster(
       level: rng.int(band.minLevel, band.maxLevel),
     });
   }
+  if (options.allowMega) assignMegaStone(roster, rng);
   return roster;
+}
+
+/** Gives one Mega-capable member its stone, chosen from the eligible pool. */
+function assignMegaStone(roster: RosterEntry[], rng: Rng): void {
+  const eligible = roster
+    .map((entry, index) => ({ entry, index, forms: megaFormsForBase(entry.speciesId) }))
+    .filter((candidate) => candidate.forms.length > 0);
+  if (eligible.length === 0) return;
+  const pick = eligible[rng.int(0, eligible.length - 1)];
+  const form = pick.forms[rng.int(0, pick.forms.length - 1)];
+  roster[pick.index] = { ...pick.entry, heldItem: form.stoneId };
 }

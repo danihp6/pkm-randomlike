@@ -1,4 +1,5 @@
 import speciesData from './species.json';
+import megasData from './megas.json';
 
 export type StatId = 'hp' | 'atk' | 'def' | 'spa' | 'spd' | 'spe';
 
@@ -41,7 +42,14 @@ export type Species = Readonly<{
 // generation time). It is cast once here; `dex.test.ts` guards the shape.
 const ALL_SPECIES = speciesData as unknown as readonly Species[];
 
-const BY_ID = new Map<string, Species>(ALL_SPECIES.map((species) => [species.id, species]));
+// Mega formes live in their own generated file (`megas.json`, D34) so they never
+// spawn as wild Pokémon or starters. They are still resolvable by id, because the
+// battle builds a Fighter straight from the Mega entry when a stone is spent.
+const MEGA_SPECIES = megasData as unknown as readonly Species[];
+
+const BY_ID = new Map<string, Species>(
+  [...ALL_SPECIES, ...MEGA_SPECIES].map((species) => [species.id, species]),
+);
 
 const BY_NUM = new Map<number, Species>();
 for (const species of ALL_SPECIES) {

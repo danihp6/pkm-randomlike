@@ -442,10 +442,11 @@ Mega Evolution is implemented in the battle engine before the mega-stone room
 ships, so the stones do something. A Pokémon holding its **Mega Stone** may
 **Mega Evolve once per battle** from a control in the command menu (both the
 player and the AI can), changing its stats, type and ability to the Mega forme for
-the rest of the battle. All Mega Evolutions present in the generated dex are in
-(the formes may be `isNonstandard: "Past"`); each gets its stone in
-`src/data/items.ts`. Only **bosses, mini-bosses and the `ace` archetype** carry
-stones, per their data.
+the rest of the battle. The formes are generated into `src/data/dex/megas.json`
+beside `species.json` (they may be `isNonstandard: "Past"`, and a Mega whose base
+species is not in the playable Gen 9 set is skipped rather than shipped as a dead
+stone); each gets its stone in `src/data/items.ts`. Only **bosses, mini-bosses and
+the `ace` archetype** carry stones, per their data.
 
 ## Open questions
 

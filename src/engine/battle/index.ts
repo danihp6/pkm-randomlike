@@ -8,6 +8,7 @@ export * from './status';
 export * from './volatile';
 export * from './turn';
 export * from './commands';
+export * from './mega';
 export * from './runAway';
 export * from './capture';
 export * from './ai';

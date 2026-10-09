@@ -3175,7 +3175,9 @@ export class RouteScene extends Phaser.Scene {
       isBoss && this.room
         ? `${this.run.seed}:boss:${this.room.mapIndex}`
         : `${this.run.seed}:trainer:${this.route.routeIndex}:${trainer.id}`;
-    const roster = trainerRoster(archetype, rosterBand, new Rng(hashSeed(key)), trainer.id);
+    const roster = trainerRoster(archetype, rosterBand, new Rng(hashSeed(key)), trainer.id, {
+      allowMega: isBoss || archetype.carriesMega === true,
+    });
     this.startBattle({
       kind: 'trainer',
       trainerId: trainer.id,

@@ -1,4 +1,5 @@
 import type { BoostId, StatusId } from '../engine/battle/fighter';
+import { getSpecies, MEGA_FORMES } from './dex';
 
 export type ItemKind = 'ball' | 'heal' | 'status' | 'boost' | 'held';
 
@@ -27,10 +28,31 @@ export type ItemDef = Readonly<{
   consumed?: boolean;
   /** Held items: multiplies moves of `type` by `multiplier` (the 1.2x type items). */
   typeBoost?: Readonly<{ type: string; multiplier: number }>;
+  /**
+   * A Mega Stone: `base` is the species the holder must be, `form` the Mega id
+   * it becomes once per battle (`src/engine/battle/mega.ts`, D34).
+   */
+  mega?: Readonly<{ base: string; form: string }>;
   shortDesc: string;
 }>;
 
 const item = (def: ItemDef): ItemDef => def;
+
+/**
+ * Every Mega Stone, one per generated Mega forme (`D34`). They are never sold:
+ * the mega-stone room has yet to ship, and a stone is only ever held by a boss,
+ * a mini-boss or an `ace`. All Mega formes in the dex are covered.
+ */
+const MEGA_STONES: readonly ItemDef[] = MEGA_FORMES.map((mega) =>
+  item({
+    id: mega.stoneId,
+    name: mega.stoneName,
+    kind: 'held',
+    price: 0,
+    mega: { base: mega.baseSpeciesId, form: mega.id },
+    shortDesc: `Holder (${getSpecies(mega.baseSpeciesId)?.name ?? mega.baseSpeciesId}) can Mega Evolve once per battle.`,
+  }),
+);
 
 /**
  * The run's item catalogue: balls, heal/status/boost consumables and `held`
@@ -84,6 +106,8 @@ export const ITEMS: readonly ItemDef[] = [
   item({ id: 'blackglasses', name: 'Black Glasses', kind: 'held', price: 1000, typeBoost: { type: 'Dark', multiplier: 1.2 }, shortDesc: 'Powers up Dark-type moves.' }),
   item({ id: 'metalcoat', name: 'Metal Coat', kind: 'held', price: 1000, typeBoost: { type: 'Steel', multiplier: 1.2 }, shortDesc: 'Powers up Steel-type moves.' }),
   item({ id: 'fairyfeather', name: 'Fairy Feather', kind: 'held', price: 1000, typeBoost: { type: 'Fairy', multiplier: 1.2 }, shortDesc: 'Powers up Fairy-type moves.' }),
+
+  ...MEGA_STONES,
 ];
 
 const BY_ID = new Map<string, ItemDef>(ITEMS.map((entry) => [entry.id, entry]));

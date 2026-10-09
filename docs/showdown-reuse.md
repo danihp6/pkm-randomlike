@@ -25,6 +25,7 @@ an adaptor over its event loop.
 | File | Contents | Count |
 | --- | --- | --- |
 | `species.json` | stats, types, abilities, forms, evolutions, gender ratio, weight, catch rate | 911 playable |
+| `megas.json` | every Mega forme of a playable species: stats, types, ability, `baseSpeciesId`, `stoneId`, `stoneName` | 34 |
 | `moves.json` | type, category, power, accuracy, PP, priority, target, flags, secondaries | 685 |
 | `abilities.json` | name, description, flags | 310 |
 | `items.json` | name, description, battle flags | 249 |
@@ -36,6 +37,10 @@ Notes:
 
 - Only `!isNonstandard && num > 0` entries survive, so CAP/Gigantamax/old-gen
   exclusives are already filtered out.
+- `megas.json` is the one deliberate exception: the Mega formes are
+  `isNonstandard: "Past"` in Gen 9, but they are generated beside the playable
+  set (never inside it) so a held stone has a target (`D34`). A Mega whose base
+  species is not playable is skipped, so no dead stones ship.
 - `@pkmn/dex` carries no catch rate, so `build-dex.mjs` merges one in from
   `scripts/data/catch-rates.json` (PokeAPI `pokemon_species.csv`, keyed by
   national dex number, fetched once by `scripts/fetch-catch-rates.mjs`). Capture

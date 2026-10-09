@@ -14,6 +14,11 @@ merges a canonical `heightm` from `scripts/data/heights.json` (PokeAPI, via
 `scripts/fetch-heights.mjs`), which sizes the battle sprite
 (`src/data/spriteSize.ts`).
 
+`megas.json` is generated beside `species.json`: every Mega forme whose base
+species is in the playable set, each with its `baseSpeciesId`, `stoneId` and
+`stoneName`. It is battle-only content (`D34`) — never spawned, only reached
+through a held stone (`src/engine/battle/mega.ts`).
+
 ## 2. Authored
 
 | File | What it holds | Phase |
@@ -23,7 +28,7 @@ merges a canonical `heightm` from `scripts/data/heights.json` (PokeAPI, via
 | `src/data/biomes.ts` | biome → tileset, encounter table, level band flavour | 2 |
 | `src/data/maps.ts` | per-map tuning: level range, room-count range and room width/height range, plus the infinite-run step | 9 |
 | `src/data/encounters.ts` | per-biome species pools and weights by band | 2 |
-| `src/data/trainers.ts` | trainer archetypes: name, class, sprite, per-band species pools and money ranges | 2 |
+| `src/data/trainers.ts` | trainer archetypes: name, class, sprite, per-band species pools, money ranges and `carriesMega` (bosses/`ace`) | 2/9 |
 | `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), plus **valuables** (sellable) and **Mega Stones**, each with a Poké Dollar price | 3/6 |
 | `src/data/spriteSize.ts` | the battle sprite size curve: canonical height (m) → drawn height (px), the power and clamps | 5 |
 | `src/data/run.ts` | chain length, mini-boss cadence, boss cadence, level caps, starter pool, starting bag | 2 |
@@ -38,6 +43,9 @@ code never sees a `any`:
 
 - `src/data/dex/species.ts` → `Species`, `getSpecies(id)`, `speciesByNum(n)`,
   `playableSpecies()`, `catchRateOf(id)`, `heightOf(id)`
+- `src/data/dex/megas.ts` → `MegaForm`, `MEGA_FORMES`, `megaFormForItem(id)`,
+  `megaFormOf(id)`, `megaFormsForBase(id)`, `isMegaSpecies(id)`,
+  `megaMatchesSpecies(stoneId, speciesId)`
 - `src/data/dex/moves.ts` → `Move`, `getMove(id)`, `moveByType(type)`,
   `isDamaging(move)`
 - `src/data/dex/learnsets.ts` → `learnsetOf(speciesId)`, `levelUpMoves(id, level)`,

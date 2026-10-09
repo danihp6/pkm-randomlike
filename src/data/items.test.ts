@@ -21,9 +21,10 @@ describe('item catalogue', () => {
     }
   });
 
-  it('sells everything except the Master Ball', () => {
+  it('sells everything except the Master Ball and the Mega Stones', () => {
     for (const entry of ITEMS) {
-      expect(isForSale(entry), entry.id).toBe(entry.id !== 'masterball');
+      const expected = entry.id !== 'masterball' && entry.mega === undefined;
+      expect(isForSale(entry), entry.id).toBe(expected);
     }
   });
 
@@ -64,5 +65,24 @@ describe('getItem', () => {
     expect(getItem('Poke Ball')).toBe(getItem('pokeball'));
     expect(getItem('Never-Melt-Ice')).toBe(getItem('nevermeltice'));
     expect(getItem('revive')).toBeUndefined();
+  });
+});
+
+describe('Mega Stones', () => {
+  it('has one held, unsold stone per Mega forme', () => {
+    const stones = ITEMS.filter((entry) => entry.mega !== undefined);
+    expect(stones.length).toBe(34);
+    for (const stone of stones) {
+      expect(stone.kind, stone.id).toBe('held');
+      expect(stone.price, stone.id).toBe(0);
+      expect(stone.mega!.base, stone.id).not.toBe(stone.mega!.form);
+    }
+  });
+
+  it('gives each Mega-capable species a matching stone', () => {
+    expect(getItem('venusaurite')!.mega).toEqual({ base: 'venusaur', form: 'venusaurmega' });
+    expect(getItem('gyaradosite')!.mega).toEqual({ base: 'gyarados', form: 'gyaradosmega' });
+    expect(getItem('charizarditex')!.mega).toEqual({ base: 'charizard', form: 'charizardmegax' });
+    expect(getItem('charizarditey')!.mega).toEqual({ base: 'charizard', form: 'charizardmegay' });
   });
 });

@@ -14,6 +14,7 @@ import type { BattleEvent } from '../engine/battle/state';
 import {
   activeFighter,
   autoReplace,
+  canMegaEvolve,
   createBattle,
   needsReplacement,
   performSwitch,
@@ -66,7 +67,7 @@ const MESSAGE_HOLD_MS = 900;
 const FAST_HOLD_MS = 45;
 /** How long the win / loss / catch line stays up before the battle closes itself. */
 const OUTCOME_HOLD_MS = 1300;
-const MENU_ROWS = 4;
+const MENU_ROWS = 6;
 const MENU_W = 540;
 const MESSAGE_H = 124;
 const PANEL_W = 320;
@@ -201,6 +202,8 @@ export class BattleScene extends Phaser.Scene {
   private afterFeed: (() => void) | null = null;
   private mode: Mode = 'feed';
   private forcedSwitch = false;
+  /** The player armed the Mega control for the move about to be chosen (D34). */
+  private megaIntent = false;
 
   private displayActive!: Record<SideId, BattleFighter>;
   private displayHp!: Record<SideId, number>;
@@ -317,6 +320,7 @@ export class BattleScene extends Phaser.Scene {
     this.playerFighters = [];
     this.enemyFighters = [];
     this.loadedSheets = [];
+    this.megaIntent = false;
     const launch = this.launch;
     if (!launch) return;
     // The fighters are built here rather than in `create` so `preload` can load
@@ -835,6 +839,9 @@ export class BattleScene extends Phaser.Scene {
         case 'move':
           this.playMoveFx(event.side, event.moveId);
           break;
+        case 'mega':
+          this.playMega(event.side);
+          break;
         case 'capture':
           this.playCapture(event.shakes, event.success);
           break;
@@ -845,6 +852,16 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // --- battle presentation --------------------------------------------------
+
+  /** A white flash and a fade-in for the side that just Mega Evolved (D34). */
+  private playMega(side: SideId): void {
+    this.cameras.main.flash(220, 255, 255, 255);
+    const sprite = side === 'player' ? this.playerSprite : this.foeSprite;
+    sprite.setAlpha(0.2);
+    this.tweens.add({ targets: sprite, alpha: 1, duration: 280 });
+    this.displayActive[side] = activeFighter(this.state, side);
+    this.syncMonSprites();
+  }
 
   /** Plays the move's archetype FX over the side it hit. */
   private playMoveFx(side: SideId, moveId: string): void {
@@ -1104,8 +1121,15 @@ export class BattleScene extends Phaser.Scene {
 
   private openMenu(): void {
     const player = activeFighter(this.state, 'player');
+    const canMega = canMegaEvolve(this.state, 'player');
+    if (!canMega) this.megaIntent = false;
     this.menuItems = [
       { label: 'FIGHT', enabled: true, onSelect: () => this.openMoves() },
+      {
+        label: this.megaIntent ? 'MEGA +' : 'MEGA',
+        enabled: canMega,
+        onSelect: () => this.toggleMega(),
+      },
       { label: 'BAG', enabled: this.usableBag().length > 0, onSelect: () => this.openBag() },
       { label: 'SWITCH', enabled: this.hasBench(), onSelect: () => this.openParty() },
       { label: 'RUN', enabled: canRun(this.state, 'player'), onSelect: () => this.submit({ type: 'run' }) },
@@ -1114,6 +1138,13 @@ export class BattleScene extends Phaser.Scene {
     this.mode = 'menu';
     this.setMessage(`What will ${player.name} do?`);
     this.refreshHud();
+  }
+
+  /** Arms or disarms the Mega control; the next FIGHT spends it (D34). */
+  private toggleMega(): void {
+    if (!canMegaEvolve(this.state, 'player')) return;
+    this.megaIntent = !this.megaIntent;
+    this.openMenu();
   }
 
   private openMoves(): void {
@@ -1126,7 +1157,12 @@ export class BattleScene extends Phaser.Scene {
       return {
         label: name,
         enabled,
-        onSelect: () => this.submit({ type: 'fight', moveIndex: index }),
+        onSelect: () =>
+          this.submit({
+            type: 'fight',
+            moveIndex: index,
+            ...(this.megaIntent ? { mega: true } : {}),
+          }),
         move: {
           type: move?.type ?? '',
           category: move?.category ?? 'Status',
@@ -1226,6 +1262,7 @@ export class BattleScene extends Phaser.Scene {
       enemy: activeFighter(this.state, 'enemy').hp,
     };
     takeTurn(this.state, command, chooseAiCommand(this.state, 'enemy'));
+    this.megaIntent = false;
     this.startFeed();
   }
 
