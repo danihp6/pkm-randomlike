@@ -111,8 +111,10 @@ deterministically.
 | `size.min` / `max` | the range each room rolls its **width and height** from, independently |
 
 `MAP_TUNING` is a table per map (1..6 today) and `MAP_TUNING_STEP` grows a map
-past the last row, so an infinite run keeps climbing. Retuning is a data edit,
-never a generator edit (`docs/route-generator.md` §2).
+past the last row, so an infinite run keeps climbing. The room count grows with
+the map as well but is capped at `MAP_MAX_ROUTES`, so a deep floor never becomes
+a huge maze. Retuning is a data edit, never a generator edit
+(`docs/route-generator.md` §2).
 
 ## 5. Levels & the player's cap (D29)
 
