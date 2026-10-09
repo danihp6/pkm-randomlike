@@ -356,6 +356,97 @@ same script from the game's `Icons` folders into `public/anil/portraits.png` and
 megabyte each, read through `src/data/portraits.ts`. A member's `shiny` flag
 picks the shiny atlas.
 
+## D28 — A map groups routes of one biome *(decided)*
+
+The run's chain is now a chain of **maps**, and a map is a **graph of routes**
+(rooms) laid out on a coarse grid — Binding of Isaac's floors with rooms. A map
+owns the three things that used to be rolled per route: the **biome**, the
+**level range** and the route **sizes**. So `biomeForRoute` and a per-route band
+are replaced by one `MapPlan` per map index (`docs/maps-spec.md`). Consequence:
+the same biome repeats across a map's rooms, which reads as one continuous floor,
+and the run advances map to map. Refines D8 (the cadence now sits on top of the
+maps) and D26 (the layout style is per map, not per route).
+
+## D29 — Map composition is rolled from per-map ranges *(decided)*
+
+Everything a map is comes from one `map` stream keyed `(seed, "map", mapIndex)`,
+so a plan is a pure function of the seed and the map index (D11). The biome is
+picked from `BIOME_ORDER`, **never repeating the previous map's**; the room count
+and each room's **width and height** (rolled independently) come from inclusive
+**ranges** in `src/data/maps.ts`; the size range **grows with the map index**, so
+later floors are bigger, and `MAP_TUNING_STEP` keeps growing past the last tuned
+row for infinite mode. Retuning a run is a data edit, never a generator edit. The
+player's cap is the map's `maxLevel` (`levelCapForMap`), generalising the
+per-route cap of D9.
+
+## D30 — The map is a closed room graph on a grid *(decided)*
+
+A map is a Binding of Isaac-style floor: rooms sit on a coarse **grid of cells**
+and a door on one room's wall lines up with the neighbour's **opposite** door
+(leave East → enter West). Each room is still played on its own screen (camera
+follow); the grid lays out the graph and the minimap, not world space. The floor
+is **connected** and **closed into at least one cycle**, and no opening dangles.
+A room with a single `link` is the new **`dead-end`** shape (a leaf that holds the
+usual trainers, items and grass). The shape follows from the room's opening set:
+`dead-end` (1), `corridor` (2 opposite, the "pasillo", no branches), `bend` (2
+adjacent), `tee` (3), `cross` (4) and the older branchy `straight`. The plan fixes
+the openings; the route builder no longer rolls a shape on its own
+(`docs/maps-spec.md` §2–§3).
+
+## D31 — The map boss seals the exit and opens the portal *(decided)*
+
+The **room farthest from the entry** (graph distance) fields the map's **boss**, a
+fixed themed trainer at the map's `maxLevel`. Its onward opening is **sealed**
+while the boss stands; once it falls a **portal** opens and stepping through it
+advances to the next map (heal stop intact: HP/PP only, never a resurrection). A
+finite run's last map holds the **final boss** and no portal, so clearing it wins
+the run; infinite mode reopens the portal forever. This is the map's gate, on top
+of the room cadence of D8.
+
+## D32 — The route HUD shows the map with fog of discovery *(decided)*
+
+The `I` overlay's route header grows into a **minimap of the floor**, exactly the
+Binding of Isaac minimap: a **grid of room cells**, each room drawn at its grid
+position from its `size` and shape with its openings on the matching walls, the
+current room highlighted, the boss room marked and the portal flagged. Rooms that
+have not been **discovered** (entered) yet — and the links to them — stay hidden,
+so the floor reveals itself as the run advances. The pure layout and the reveal
+filter live in `src/ui/mapView.ts`; `RouteScene` only draws it
+(`docs/maps-spec.md` §7).
+
+## D33 — Special rooms and the Poké Dollar economy *(decided)*
+
+Beyond its K regular rooms, a Binding of Isaac floor can hold **special rooms**:
+extra `dead-end` leaves that carry **only their own content** — a guaranteed
+**shop** near the entry, a **mini-boss** room (medium chance) whose strong
+trainer offers a **choice of items**, and a **mega-stone** room (low chance) that
+hands out a random **Mega Stone**. They count outside K and are discovered on
+entry like any room (`docs/maps-spec.md` §7).
+
+Money is **Poké Dollars**, earned **only** by defeating trainers — a **fixed base
+per trainer plus a random jitter** (data, per archetype/band) — and spent in the
+shop; the run starts with none and the economy is tight, Binding of Isaac-style.
+The shop is a **HUD panel that only exists in the shop room** (Pokémon Mart
+style), opened at the counter with the interact key; it sells a fixed core of
+Balls and Potions that improves with the map's band plus one or two random items
+from the map's pool at the catalogue `price`, and buys any item at `sellPrice` —
+but only the new **valuables** (Nugget, Big Nugget, Pearl, …) are worth real
+money, so they are added to the ground-item loot pool. **Mega Stones** are new
+`held` items, one per Mega-capable species, that allow a **Mega Evolution** in
+battle (see `D34`). The run's money lives in `RunState` and shows in the route
+HUD's bag panel.
+
+## D34 — Mega Evolution is a battle mechanic *(decided)*
+
+Mega Evolution is implemented in the battle engine before the mega-stone room
+ships, so the stones do something. A Pokémon holding its **Mega Stone** may
+**Mega Evolve once per battle** from a control in the command menu (both the
+player and the AI can), changing its stats, type and ability to the Mega forme for
+the rest of the battle. All Mega Evolutions present in the generated dex are in
+(the formes may be `isNonstandard: "Past"`); each gets its stone in
+`src/data/items.ts`. Only **bosses, mini-bosses and the `ace` archetype** carry
+stones, per their data.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

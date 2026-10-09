@@ -18,8 +18,18 @@ carries over.
   **Options** (the settings screen). Starting a new run only replaces the saved
   one once its starter is picked, so cancelling at the starter pick returns to
   the menu with the run in progress intact.
-- A run is a chain of **routes** (our word for the floors). Each route is a
-  small top-down map: walls/trees, tall grass, trainers, items, an exit.
+- A run is a chain of **maps** (floors), and a map is a **graph of routes**
+  (rooms) laid out on a grid — Binding of Isaac's floors with rooms. Each route
+  is a small top-down map: walls/trees, tall grass, trainers, items, openings. A
+  map shares one **biome**, one **level range** and its route **sizes**; it is
+  connected and closed into at least one cycle.
+- Rooms join through openings: leaving by one edge enters the neighbour by the
+  **opposite** edge, and a door lines up with the neighbour's. The room farthest
+  from the entry holds the **boss**; beating it opens a **portal** to the next map
+  (`docs/maps-spec.md`).
+- A room with a single opening is a **dead-end** room; a straight two-opening
+  passage is the **corridor** shape. Both carry the usual trainers, items and
+  tall grass.
 - The chain is fixed-length by default (see `docs/routes-spec.md`): a
   **mini-boss** every few routes, a **boss** to close each block, a **final
   boss** at the end. An **infinite mode** reuses the same generator without the
@@ -82,8 +92,8 @@ Full rules in `docs/battle-spec.md`. In short:
 
 - Gen 9 mechanics (types, stats, abilities, items, weather, terrain) driven by
   data extracted from Showdown at build time.
-- XP, levels and evolution are classic, with a **level cap per route** so power
-  always comes from play, not grinding.
+- XP, levels and evolution are classic, with a **level cap per map** (the map's
+  `maxLevel`) so power always comes from play, not grinding.
 - Wild battles can be fled; trainer battles cannot. Fleeing is one press: RUN
   attempts the escape at once, with no yes/no prompt.
 - The command menu takes the **mouse** as well as the keyboard: hovering a row
@@ -120,8 +130,16 @@ Full rules in `docs/battle-spec.md`. In short:
   route. Some look around on a timer, so their line turns with them and can catch
   you even while you stand still. A trainer never spawns already watching the tile
   you arrive on, never stands next to another, and never blocks a passage.
-- The exit opening ends the route (a floor position, no special tile; disabled for
-  now while the generator is in focus).
+- An **opening** joins the room to its neighbour: leaving by one edge enters the
+  neighbour by the **opposite** edge, so the floor reads as one connected map. A
+  room's shape follows from its openings: one opening is a **dead-end**, two
+  opposite a **corridor** (a passage with no branches), two adjacent a `bend`,
+  three a T and four a crossing.
+- The **room farthest from the entry holds the boss** at the map's `maxLevel`.
+  Its onward opening is sealed until the boss falls; then a **portal** opens and
+  steps the run into the next map. (The end-of-route beat is disabled for now
+  while the generator is in focus; the room shapes and the grid graph are Phase
+  9.)
 - Tilesets are **swappable per route** so the same map code renders a wood, a
   cave, a desert or a beach without touching the generator
   (`docs/tileset-spec.md`).
@@ -129,19 +147,40 @@ Full rules in `docs/battle-spec.md`. In short:
 ## 6. What a run looks like
 
 ```
-starter pick -> route 1 -> heal stop -> route 2 -> route 3 -> mini-boss
-  -> ... -> boss -> route ... -> final boss -> run won
+starter pick -> map 1: route 1 -> route 2 -> ... -> boss -> portal
+  -> map 2: route 1 -> ... -> boss -> portal -> ... -> final boss -> run won
 ```
 
-Rewards between routes are the run's only economy: catch, items, and the PC box
-are where the player's power comes from.
+Rewards between rooms are the run's only economy: catch, items, money and the PC
+box are where the player's power comes from. A run ends on a score screen, win or
+loss: routes cleared, Pokémon caught, Pokémon lost and the seed that reproduces
+the run, as the raw seed and as the share string someone else could play
+(`src/ui/runSummary.ts`, `D21`). A win clears its route; a loss does not, and
+nothing carries over (D5).
 
-A run ends on a score screen, win or loss: routes cleared, Pokémon caught,
-Pokémon lost and the seed that reproduces the run, as the raw seed and as the
-share string someone else could play (`src/ui/runSummary.ts`, `D21`). A
-win clears its route; a loss does not, and nothing carries over (D5).
+## 7. Special rooms & money
 
-## 7. Settings
+Besides its regular rooms, a floor can hold **special rooms** — extra dead-end
+leaves with only their own content (`docs/maps-spec.md` §7):
+
+- a **shop**, always one per floor, near the entry: a counter whose interact key
+  (`E`) opens a **Pokémon Mart-style shop panel in the HUD that only exists in
+  that room**;
+- a **mini-boss** room (50% chance): one strong trainer that, when beaten, offers a
+  **choice of items**;
+- a **mega-stone** room (15% chance, only from map 3 on): a random **Mega Stone**
+  item, which lets its holder **Mega Evolve once per battle**.
+
+**Money** is Poké Dollars, earned **only** by defeating trainers — a **fixed base
+plus a random jitter** each, from its archetype/band — and the run starts with
+none, so the economy stays tight (Binding of Isaac-style). The shop sells a core
+of Balls and Potions that improves with the map's band plus one or two random
+items from the map's pool at their catalogue price, and buys any item at
+`sellPrice`, but only the **valuables** (Nugget, Pearl, …) that turn up in the
+ground-item loot are worth real money. The run's money shows in the HUD's **bag
+panel**.
+
+## 8. Settings
 
 The player's preferences outlive a run: text speed (how fast the battle message
 box types itself out), master volume, the tileset preference (`auto` follows
@@ -152,7 +191,7 @@ in the same save document as the run (D22), are stored the moment they change an
 are edited from one screen (`O`, from the main menu, the starter pick or the
 route HUD).
 
-## 8. Out of scope (for now)
+## 9. Out of scope (for now)
 
 - Multiple save slots and cloud saves.
 - Online play, trading, breeding, EVs/IV optimisation as a *goal* (stats and
