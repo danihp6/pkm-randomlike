@@ -1,7 +1,7 @@
 import { STAT_IDS, getSpecies, type StatId, type Stats } from '../data/dex';
 import { defaultHudLayout, parseHudLayout, type HudLayout } from '../data/hudLayout';
 import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybinds';
-import { levelCapForRoute } from '../data/run';
+import { capForRoute } from './run/levelCap';
 import { isTilesetPreference, type TilesetPreference } from '../data/tilesets/ids';
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
@@ -409,7 +409,7 @@ function parseRun(value: unknown): RunState | null {
     seed: value.seed,
     mode: value.mode,
     routeIndex: value.routeIndex,
-    levelCap: levelCapForRoute(value.routeIndex),
+    levelCap: capForRoute(value.seed, value.routeIndex),
     party,
     box: parseMembers(value.box),
     bag,

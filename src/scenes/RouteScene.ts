@@ -21,7 +21,6 @@ import {
   overworldSpriteFrame,
 } from '../data/overworldSprites';
 import { trainerFacingPose, trainerWalkAnimKey } from '../render/trainerAnim';
-import { bandForRoute } from '../data/run';
 import { getTrainerArchetype, TRAINER_ARCHETYPE_IDS } from '../data/trainers';
 import { IS_DEVELOP } from '../dev/env';
 import type { DebugPartyEdit, DebugPartyMember, DebugRouteContext, DebugRouteInput } from '../dev/debugMenu';
@@ -43,6 +42,8 @@ import {
   isTrainerDefeated,
   markItemPicked,
   resolveBattle,
+  runBand,
+  runRoomLevel,
   trainerRoster,
   unequipHeldItem,
   updatePokemon,
@@ -564,7 +565,7 @@ export class RouteScene extends Phaser.Scene {
     this.routeParams = params;
     const pattern = TILESETS[biome.tilesetId].config.wallPattern;
     const wall = pattern ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) } : undefined;
-    const loot = ROUTE_LOOT[bandForRoute(params.routeIndex).id];
+    const loot = ROUTE_LOOT[runBand(this.run.seed, params.routeIndex).id];
     const request = {
       seed,
       routeIndex: params.routeIndex,
@@ -598,13 +599,14 @@ export class RouteScene extends Phaser.Scene {
     this.renderTiles = this.map;
     this.generatorStepIndex = null;
     const biome = biomeForRoute(route.routeIndex);
-    const band = bandForRoute(route.routeIndex);
+    const band = runBand(this.run.seed, route.routeIndex);
+    const roomLevel = runRoomLevel(this.run.seed, route.routeIndex);
     this.tilesetId = resolveTileset(this.settings.tileset, biome.tilesetId);
     this.moveMap = this.movementMap(this.map);
     this.encounters = new RouteEncounters(
       biome.encounters[band.id],
-      band.minLevel,
-      band.maxLevel,
+      roomLevel,
+      roomLevel,
       new Rng(hashSeed(`${route.seed}:encounters:${route.routeIndex}`)),
       undefined,
       // Shinies roll on their own stream, so they never shift the encounter
@@ -2823,7 +2825,7 @@ export class RouteScene extends Phaser.Scene {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     const archetype = getTrainerArchetype(trainer.archetypeId);
     if (!archetype) return;
-    const band = bandForRoute(this.route.routeIndex);
+    const band = runBand(this.run.seed, this.route.routeIndex);
     const roster = trainerRoster(
       archetype,
       band,
@@ -3330,7 +3332,7 @@ export class RouteScene extends Phaser.Scene {
       routeIndex: this.routeParams.routeIndex,
       mode: this.run.mode,
       biomeName: biomeForRoute(this.routeParams.routeIndex).name,
-      bandName: bandForRoute(this.routeParams.routeIndex).name,
+      bandName: runBand(this.run.seed, this.routeParams.routeIndex).name,
       shape: this.routeParams.shape,
       width: this.routeParams.width,
       height: this.routeParams.height,

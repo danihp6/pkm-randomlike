@@ -3,27 +3,23 @@ import { getSpecies } from './dex';
 import { evolutionFamily } from './dex/evolutions';
 import {
   LEVEL_BANDS,
-  ROUTES_PER_BAND,
   RUN_CHAIN,
   STARTER_POOL_SIZE,
   STARTING_BAG,
-  bandForRoute,
-  levelCapForRoute,
+  bandForLevel,
   starterCandidates,
 } from './run';
 
 describe('level bands', () => {
-  it('walks the bands every ROUTES_PER_BAND routes and clamps at the ends', () => {
-    expect(bandForRoute(1).id).toBe('early');
-    expect(bandForRoute(ROUTES_PER_BAND).id).toBe('early');
-    expect(bandForRoute(ROUTES_PER_BAND + 1).id).toBe('low');
-    expect(bandForRoute(999).id).toBe('end');
-    expect(bandForRoute(0).id).toBe('early');
-  });
-
-  it('derives the route level cap from its band', () => {
-    expect(levelCapForRoute(1)).toBe(LEVEL_BANDS[0].maxLevel);
-    expect(levelCapForRoute(999)).toBe(LEVEL_BANDS[LEVEL_BANDS.length - 1].maxLevel);
+  it('picks the band a level floor falls in and clamps at the ends', () => {
+    expect(bandForLevel(0).id).toBe('early');
+    expect(bandForLevel(2).id).toBe('early');
+    expect(bandForLevel(4).id).toBe('early');
+    expect(bandForLevel(5).id).toBe('low');
+    expect(bandForLevel(11).id).toBe('mid');
+    expect(bandForLevel(20).id).toBe('late');
+    expect(bandForLevel(32).id).toBe('end');
+    expect(bandForLevel(999).id).toBe('end');
   });
 
   it('keeps band levels monotonically rising', () => {

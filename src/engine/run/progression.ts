@@ -11,7 +11,7 @@ import {
   type FighterSnapshot,
   type MoveSlot,
 } from '../battle/fighter';
-import { capForRoute, clampToCap } from './levelCap';
+import { clampToCap } from './levelCap';
 
 /** A run party/box member: a battle snapshot plus the XP it carries between battles. */
 export type RunPokemon = Readonly<{
@@ -160,13 +160,13 @@ function gainedMoves(
 }
 
 /**
- * Evolves a run member if its level meets a level-up evolution and the route
- * cap allows it. Exposed so the heal stop can apply an evolution that the cap
- * was blocking (D9).
+ * Evolves a run member if its level meets a level-up evolution and the map cap
+ * allows it. Exposed so the heal stop can apply an evolution that the cap was
+ * blocking (D9).
  */
-export function evolveIfReady(pokemon: RunPokemon, routeIndex: number): ProgressionResult {
+export function evolveIfReady(pokemon: RunPokemon, cap: number): ProgressionResult {
   const level = pokemon.fighter.level;
-  if (level > capForRoute(routeIndex)) return { pokemon, events: [] };
+  if (level > cap) return { pokemon, events: [] };
   const evolution = evolutionFor(pokemon.fighter.speciesId, level);
   if (!evolution) return { pokemon, events: [] };
   return {
@@ -176,14 +176,14 @@ export function evolveIfReady(pokemon: RunPokemon, routeIndex: number): Progress
 }
 
 /**
- * Adds a raw XP amount: clamps at the route cap, levels up on the threshold,
- * learns the level-up moves it crossed (forgetting the oldest when the fourth
- * slot is full) and evolves if the cap allows it. Pure and deterministic: no RNG.
+ * Adds a raw XP amount: clamps at the map cap, levels up on the threshold, learns
+ * the level-up moves it crossed (forgetting the oldest when the fourth slot is
+ * full) and evolves if the cap allows it. Pure and deterministic: no RNG.
  */
 export function addExperience(
   pokemon: RunPokemon,
   amount: number,
-  routeIndex: number,
+  cap: number,
   learnsetSeed?: string,
 ): ProgressionResult {
   const events: ProgressionEvent[] = [];
@@ -191,7 +191,7 @@ export function addExperience(
   const rawXp = pokemon.xp + gain;
   const rawLevel = levelForXp(rawXp);
   let xp = rawXp;
-  const level = clampToCap(rawLevel, routeIndex);
+  const level = clampToCap(rawLevel, cap);
   if (rawLevel > level) {
     // The cap clamps gain: park at the ceiling instead of banking overflow.
     xp = xpForLevel(level);
@@ -217,7 +217,7 @@ export function addExperience(
     fighter = { ...fighter, level, moves };
   }
 
-  const evolved = evolveIfReady({ fighter, xp }, routeIndex);
+  const evolved = evolveIfReady({ fighter, xp }, cap);
   return { pokemon: evolved.pokemon, events: [...events, ...evolved.events] };
 }
 
@@ -228,13 +228,13 @@ export function addExperience(
 export function awardExperience(
   pokemon: RunPokemon,
   defeatedLevel: number,
-  routeIndex: number,
+  cap: number,
   options: Readonly<{ participants?: number; isTrainer?: boolean; learnsetSeed?: string }> = {},
 ): ProgressionResult {
   return addExperience(
     pokemon,
     experienceAward(defeatedLevel, options.participants ?? 1, options.isTrainer ?? false),
-    routeIndex,
+    cap,
     options.learnsetSeed,
   );
 }

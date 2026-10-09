@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { levelCapForRoute } from '../../data/run';
+import { capForRoute } from './levelCap';
 import { createRunPokemon } from './progression';
 import {
   MAX_PARTY_SIZE,
@@ -35,7 +35,7 @@ describe('createRun', () => {
   it('starts on route 1 with the starter and an empty box', () => {
     const run = createRun({ seed: 'run-a', starter });
     expect(run.routeIndex).toBe(1);
-    expect(run.levelCap).toBe(levelCapForRoute(1));
+    expect(run.levelCap).toBe(capForRoute('run-a', 1));
     expect(run.party).toEqual([starter]);
     expect(run.box).toEqual([]);
     expect(run.pickedItems).toEqual([]);
@@ -53,7 +53,7 @@ describe('advanceRoute', () => {
     run = markItemPicked(run, 'item-1-0');
     const next = advanceRoute(run);
     expect(next.routeIndex).toBe(2);
-    expect(next.levelCap).toBe(levelCapForRoute(2));
+    expect(next.levelCap).toBe(capForRoute('run-a', 2));
     expect(next.captureUsed).toBe(false);
     expect(next.defeatedTrainers).toEqual([]);
     expect(next.pickedItems).toEqual([]);
