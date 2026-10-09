@@ -163,7 +163,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `routeSizeRangeForMap` and the `MAP_TUNING_STEP` extrapolation an infinite
       run walks past the last row. Data only; balancing never touches the
       generator (`docs/maps-spec.md` §4). Tests in `src/data/maps.test.ts`.
-- [ ] **Step 2 — `MapPlan` floor generator (`src/engine/maps/plan.ts` +
+- [x] **Step 2 — `MapPlan` floor generator (`src/engine/maps/plan.ts` +
       `streams`).** `Plan(seed, mapIndex)` rolls the biome (never the previous
       map's), the room count and each room's width/height, grows the floor on a
       grid from the entry, closes **one or more cycles** (random, at least one),

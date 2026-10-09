@@ -28,7 +28,10 @@ export type MapTuning = Readonly<{
 export const MAP_MAX_LEVEL = 100;
 
 export const MAP_TUNING: readonly MapTuning[] = [
-  { mapIndex: 1, levels: { minLevel: 2, maxLevel: 6 }, routes: { min: 3, max: 5 }, size: { min: 16, max: 20 } },
+  // A floor needs at least four rooms: a four-neighbour grid can only close a loop
+  // around a 2x2 block, so a smaller map could never satisfy the "closed into at
+  // least one cycle" contract (`docs/maps-spec.md` §2-§3, D30).
+  { mapIndex: 1, levels: { minLevel: 2, maxLevel: 6 }, routes: { min: 4, max: 5 }, size: { min: 16, max: 20 } },
   { mapIndex: 2, levels: { minLevel: 6, maxLevel: 11 }, routes: { min: 4, max: 6 }, size: { min: 18, max: 24 } },
   { mapIndex: 3, levels: { minLevel: 11, maxLevel: 17 }, routes: { min: 4, max: 6 }, size: { min: 22, max: 28 } },
   { mapIndex: 4, levels: { minLevel: 17, maxLevel: 24 }, routes: { min: 5, max: 7 }, size: { min: 26, max: 32 } },
