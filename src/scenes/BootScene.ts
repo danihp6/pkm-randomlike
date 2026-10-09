@@ -89,7 +89,6 @@ export const PANEL_ICON_SIZE = 24;
  */
 export const PANEL_ICON_KEYS = {
   header: 'hud:icon:route',
-  map: 'hud:icon:map',
   party: 'hud:icon:party',
   bag: 'hud:icon:bag',
   box: 'hud:icon:box',
@@ -308,20 +307,6 @@ export class BootScene extends Phaser.Scene {
       graphics.strokePath();
       graphics.fillStyle(0xffffff, 1);
       graphics.fillTriangle(7, 4, 19, 7, 7, 10);
-    });
-
-    // Map: a floor grid of rooms (a filled current cell inside a 3x3 outline).
-    draw(PANEL_ICON_KEYS.map, (graphics) => {
-      graphics.lineStyle(2, 0xffffff, 1);
-      graphics.strokeRect(4, 4, 16, 16);
-      graphics.beginPath();
-      graphics.moveTo(12, 4);
-      graphics.lineTo(12, 20);
-      graphics.moveTo(4, 12);
-      graphics.lineTo(20, 12);
-      graphics.strokePath();
-      graphics.fillStyle(0xffffff, 1);
-      graphics.fillRect(6, 6, 4, 4);
     });
 
     // Party: a Poke Ball.

@@ -82,10 +82,12 @@ export function roomView(
     : arrivalEdgeFor(plan, roomId);
   const portalEdge = portalOpen ? portalEdgeFor(plan, roomId) : null;
 
-  const edges: MapEdge[] = [entryEdge];
-  for (const edge of MAP_EDGES) {
-    if (linkedNeighbour(plan, roomId, edge) !== undefined) edges.push(edge);
-  }
+  // The carved geometry is the plan's opening set — the entry room's outward door
+  // plus every link — and, once open, the portal. It does **not** depend on which
+  // door the player arrived through: the arrival only picks which opening is the
+  // spawn (`entry`). That keeps a room identical on every visit, so its geometry,
+  // its trainers and its items keep the same ids (a beaten trainer stays beaten).
+  const edges: MapEdge[] = room.openings.map((opening) => opening.edge);
   if (portalEdge) edges.push(portalEdge);
   const unique = [...new Set(edges)].sort((a, b) => MAP_EDGES.indexOf(a) - MAP_EDGES.indexOf(b));
   const openings: Access[] = unique.map((edge) => ({

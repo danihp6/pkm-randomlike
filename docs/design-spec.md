@@ -76,11 +76,11 @@ carries over.
   and can then be moved freely. The positions and collapsed states are a global
   preference saved with the settings (D22), so they survive a reload and the next
   run.
-- The floor **minimap** (its own panel) reads the `I` overlay: a Binding of
-  Isaac-style grid of the rooms **discovered** so far, each drawn from the room's
-  own width/height, its openings on the matching walls and a link drawn once
-  **both** its ends are known. The current room, the boss, the open portal and any
-  special room carry their own mark; a room stays hidden until it is entered
+- The route **header is the floor minimap**: the map name over a Binding of Isaac-
+  style grid of the rooms **discovered** so far, each drawn from the room's own
+  width/height, its openings on the matching walls and a link drawn once **both**
+  its ends are known. The current room, the boss, the open portal and any special
+  room carry their own mark; a room stays hidden until it is entered
   (`docs/maps-spec.md` §8).
 - You start a run by picking one of three starters drawn from the base forms of
   every evolution line with at least three members (itself plus two others), so

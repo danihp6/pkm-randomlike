@@ -8,6 +8,14 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Trainers stay beaten.** A room's carved geometry no longer depends on the
+      door the player arrived through: the entry room's outward door is always part
+      of its opening set, so entering it from outside and from a neighbour builds
+      the **same** room, and its trainer/item ids do not change. Before, the entry
+      room regenerated on re-entry and a beaten trainer could reappear. Openings are
+      also a couple of tiles wide now: any cell of the gap leads out, but only when
+      the step is taken **toward** the border (walking along the gap never bounces
+      the player back) — `src/engine/routes/doors.ts`.
 - [x] **A floor's marks persist while you explore it.** Beaten trainers, taken
       ground items and spent captures no longer reset on every room change;
       `RunState` keeps them for the whole floor and only `advanceMap` clears them,
@@ -25,17 +33,18 @@ file is the human-readable summary.
       (`routeIndexForRoom`), not the run's moving counter, so walking back into a
       room lays out the **same** room instead of rerolling it. `docs/maps-spec.md`
       §2/§9 updated.
-- [x] **The floor minimap** (`D32`). The `I` overlay gains a **map panel**: a
-      Binding of Isaac-style grid of the rooms **discovered** so far, each drawn
-      from the room's own width/height with its openings on the matching walls,
-      the current room highlighted, the boss marked and the open portal flagged. A
-      link is drawn only once **both** its ends are known, and a room stays hidden
-      until it is entered, so the floor reveals itself as the run advances. The
-      layout is pure and Phaser-free in `src/ui/mapView.ts` (`buildMapView`,
-      `MAP_VIEW_GAP`) with its own tests; `RouteScene` only scales and paints it on
-      a `Graphics`, redrawn on every room change. Special rooms already carry their
-      own marker (shop, mini-boss, mega-stone), ready for Phase 9 step 11.
-      `docs/maps-spec.md` §8, `docs/design-spec.md` §3 updated.
+- [x] **The floor minimap** (`D32`). The `I` overlay's route header becomes the
+      **floor minimap**: the map name sits over a Binding of Isaac-style grid of
+      the rooms **discovered** so far, each drawn from the room's own width/height
+      with its openings on the matching walls, the current room highlighted, the
+      boss marked and the open portal flagged. A link is drawn only once **both** its
+      ends are known, and a room stays hidden until it is entered, so the floor
+      reveals itself as the run advances. The layout is pure and Phaser-free in
+      `src/ui/mapView.ts` (`buildMapView`, `MAP_VIEW_GAP`) with its own tests;
+      `RouteScene` only scales and paints it on a `Graphics`, redrawn on every room
+      change. Special rooms already carry their own marker (shop, mini-boss,
+      mega-stone), ready for Phase 9 step 11. `docs/maps-spec.md` §8,
+      `docs/design-spec.md` §3 updated.
 - [x] **Randomized learnsets and movesets** (`D17`). Every Pokémon now learns a
       per-run random move set instead of the canon's: `src/engine/battle/
       randomLearnset.ts` rolls a learnset from the run seed keyed by species id,

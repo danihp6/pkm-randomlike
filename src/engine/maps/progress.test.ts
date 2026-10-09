@@ -87,6 +87,50 @@ describe('arrivalEdgeFor / roomView', () => {
     }
   });
 
+  it('keeps the same opening set for the entry room whatever door it is entered by', () => {
+    for (const seed of SEEDS) {
+      const plan = planMap(seed, 2);
+      const room = plan.rooms[plan.entryRoom];
+      const viaEntry = roomView(plan, plan.entryRoom, false, plan.entryEdge);
+      const edges = viaEntry.openings.map((opening) => opening.edge);
+      // The plan's outward door is always part of the carved geometry.
+      expect(edges).toEqual(room.openings.map((opening) => opening.edge));
+      for (const edge of MAP_EDGES) {
+        if (linkedNeighbour(plan, plan.entryRoom, edge) === undefined) continue;
+        const viaLink = roomView(plan, plan.entryRoom, false, edge);
+        // Same set and order; only the `entry` role moves to the arrival door.
+        expect(viaLink.openings.map((opening) => opening.edge)).toEqual(edges);
+        expect(viaLink.entryEdge).toBe(edge);
+      }
+    }
+  });
+
+  it('seeds the same trainers for the entry room however it is entered', () => {
+    for (const seed of SEEDS) {
+      const plan = planMap(seed, 3);
+      const view = roomView(plan, plan.entryRoom, false, plan.entryEdge);
+      const request = {
+        seed,
+        routeIndex: 1,
+        biomeId: view.biomeId,
+        width: view.width,
+        height: view.height,
+      };
+      const base = sketchRoute({ ...request, openings: view.openings });
+      for (const edge of MAP_EDGES) {
+        if (linkedNeighbour(plan, plan.entryRoom, edge) === undefined) continue;
+        const viaLink = roomView(plan, plan.entryRoom, false, edge);
+        const other = sketchRoute({ ...request, openings: viaLink.openings });
+        expect(other.trainers.map((trainer) => trainer.id)).toEqual(
+          base.trainers.map((trainer) => trainer.id),
+        );
+        expect(other.trainers.map((trainer) => `${trainer.position.x},${trainer.position.y}`)).toEqual(
+          base.trainers.map((trainer) => `${trainer.position.x},${trainer.position.y}`),
+        );
+      }
+    }
+  });
+
   it('arrives through the opposite door and can walk straight back', () => {
     for (const seed of SEEDS) {
       for (let mapIndex = 1; mapIndex <= 4; mapIndex++) {
