@@ -436,9 +436,9 @@ lane, a branch or a pocket either, and ledges and water count as impassable.
   pocket (risk/reward), as long as the spine stays clear?
 - **O-R3 - Final boss.** Should the finite run's last route use a fixed,
   hand-shaped arena instead of the same open-field generator?
-- **O-R4 - Which opening is the entry.** A shape lists its openings and the
-  blueprint seeds one as the entry. Should it instead continue from the previous
-  route (entry opposite where the last exit was), so a chain of routes reads as
-  one continuous path?
+- **O-R4 - Which opening is the entry.** *Resolved (D30, `docs/maps-spec.md`).*
+  A map's first room enters from a **random edge** and rooms join by **opposite**
+  openings, so the floor reads as one connected path; the previous chain rule no
+  longer applies.
 - **O-R5 - Field gates.** Cut/Rock Smash-style gates stay out of scope unless the
   design adopts a key/flag gate instead of an HM.

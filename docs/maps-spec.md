@@ -221,7 +221,8 @@ The pure layout (cell positions, links, reveal filter) lives in
   with the portal **appears when the boss falls**.
 - **O-M4 — Special probabilities.** Resolved: shop always; mini-boss 50%;
   mega-stone 15% and only **from map 3 on**; the two may coincide.
-- **O-M5 — Money numbers.** The exact trainer base/jitter, the shop's per-band
-  core and the valuables list/prices are balance, to be fixed in data.
+- **O-M5 — Money numbers.** Balance, not design: the trainer base/jitter, the
+  shop's per-band core and the valuables list/prices start as defaults in data and
+  are tuned in the Phase 7 balance pass.
 - **O-M6 — Mega Stones.** Resolved: functional — holding one allows a Mega
   Evolution once per battle (`D34`); all dex Megas are in.
