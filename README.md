@@ -24,6 +24,16 @@ npm run build      # tsc --noEmit && vite build
 npm run data:dex   # regenerate src/data/dex from @pkmn/dex (rarely needed)
 ```
 
+## Deploy
+
+The site is hosted on S3 + CloudFront at https://pokerandomlike.herreteam.com,
+with DNS in Cloudflare. See `infra/README.md`.
+
+```
+npm run infra:install   # once: installs infra/node_modules
+npm run infra:deploy    # build + cdk deploy --all
+```
+
 The current build generates a route procedurally from a dev seed: the arrow keys
 (or WASD) step the grid (ledges jump down one-way), the camera follows, tall
 grass rolls wild-encounter messages, and trainers trigger on their sight line.
