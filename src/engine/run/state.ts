@@ -53,6 +53,18 @@ export type RunState = Readonly<{
   discoveredRooms: readonly number[];
   /** True once `mapIndex`'s boss has fallen, so its portal stays open (D31). Resets per map. */
   bossDefeated: boolean;
+  /**
+   * True once the run has left the floor's entry room. The PC can be rearranged
+   * freely only on the **first** visit to the entry room, so a return visit finds
+   * the box locked (`docs/routes-spec.md` §6). Resets per map.
+   */
+  entryDeparted: boolean;
+  /**
+   * Ids of the Pokémon caught on `mapIndex` while the party was full. Each stays
+   * swappable out of the PC for the rest of the floor — the catch itself is never
+   * locked in — even after the entry room is left. Resets per map.
+   */
+  pcUnlocked: readonly string[];
   /** Cached level cap for `mapIndex` (D9/D29); kept in sync on a map advance. */
   levelCap: number;
   /**
@@ -91,6 +103,8 @@ export function createRun(init: RunInit): RunState {
     arrivalEdge: plan.entryEdge,
     discoveredRooms: [entryRoom],
     bossDefeated: false,
+    entryDeparted: false,
+    pcUnlocked: [],
     levelCap: levelCapForMap(FIRST_MAP),
     pokevialCharges: POKEVIAL_MAX_CHARGES,
     party: [init.starter],
@@ -123,6 +137,9 @@ export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: Map
     routeIndex: run.routeIndex + 1,
     routeInMap: room,
     arrivalEdge: arrival,
+    // Leaving a room (even the entry back into another) departs the entry room,
+    // so the PC is only fully editable on the very first visit.
+    entryDeparted: true,
     discoveredRooms: discoverRoom(run.discoveredRooms, room),
   };
 }
@@ -144,6 +161,8 @@ export function advanceMap(run: RunState): RunState {
     arrivalEdge: plan.entryEdge,
     discoveredRooms: [plan.entryRoom],
     bossDefeated: false,
+    entryDeparted: false,
+    pcUnlocked: [],
     levelCap: levelCapForMap(mapIndex),
     pokevialCharges: POKEVIAL_MAX_CHARGES,
     defeatedTrainers: [],
@@ -268,6 +287,51 @@ export function canCapture(run: RunState): boolean {
 export function useCapture(run: RunState): RunState {
   if (!canCapture(run)) return run;
   return { ...run, capturedRooms: [...run.capturedRooms, run.routeInMap] };
+}
+
+/**
+ * True while the PC is fully editable: the run still stands in the floor's
+ * **entry room** on its first visit (`docs/routes-spec.md` §6). Leaving the room
+ * and coming back locks it for the rest of the floor. The entry room is id 0.
+ */
+export function pcFullyEditable(run: RunState): boolean {
+  return !run.entryDeparted && run.routeInMap === 0;
+}
+
+/**
+ * True when `memberId` may be moved between the party and the PC: either the PC is
+ * fully editable or the member is the floor's own catch, which is never locked in.
+ */
+export function pcMemberEditable(run: RunState, memberId: string): boolean {
+  return pcFullyEditable(run) || run.pcUnlocked.includes(memberId);
+}
+
+/** Remembers that a member (the floor's catch) stays swappable out of the PC. */
+export function unlockPcMember(run: RunState, memberId: string): RunState {
+  return run.pcUnlocked.includes(memberId)
+    ? run
+    : { ...run, pcUnlocked: [...run.pcUnlocked, memberId] };
+}
+
+/**
+ * Places a caught Pokémon: the party when it has room, otherwise the PC, and
+ * always unlocks it so the floor's catch stays swappable (`docs/routes-spec.md`
+ * §6). The capture screen's "leave it in the PC" choice.
+ */
+export function addCaughtPokemon(run: RunState, pokemon: RunPokemon): RunState {
+  return unlockPcMember(addPokemon(run, pokemon), pokemon.fighter.id);
+}
+
+/**
+ * Places a caught Pokémon by trading it for the party member at `partyIndex` (the
+ * replaced member goes to the PC), and unlocks the catch. The capture screen's
+ * "swap for a party member" choice.
+ */
+export function swapCaughtIntoParty(run: RunState, pokemon: RunPokemon, partyIndex: number): RunState {
+  const placed = addPokemon(run, pokemon);
+  const boxIndex = placed.box.findIndex((member) => member.fighter.id === pokemon.fighter.id);
+  if (boxIndex < 0) return unlockPcMember(placed, pokemon.fighter.id);
+  return unlockPcMember(swapPartyBox(placed, partyIndex, boxIndex), pokemon.fighter.id);
 }
 
 /** Counts a caught Pokémon for the run summary, beside the capture it spends. */

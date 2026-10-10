@@ -118,6 +118,12 @@ export type RouteRequest = Readonly<{
   trainerArchetypes?: readonly string[];
   /** How far a trainer sees down its facing. Defaults to `DEFAULT_TRAINER_SIGHT`. */
   trainerSight?: number;
+  /**
+   * A **quiet** room: no tall grass, no ledges, no ground items and no trainers —
+   * the map's entry room and its boss room (`docs/maps-spec.md` §2/§6). The
+   * geometry (lanes, pockets) is still carved; only its content is emptied.
+   */
+  quiet?: boolean;
 }>;
 
 type MutableMap = number[][];
@@ -1477,10 +1483,12 @@ function attemptRoute(
   const grassForbid = new Set([...openKeys, ...pocketKeys]);
   const ledgeForbid = new Set([...openKeys, ...pocketKeys]);
   // A bigger map stamps more terrain: the biome base scales by the map-size tier
-  // (`src/data/mapSize.ts`), so the density holds across route sizes.
+  // (`src/data/mapSize.ts`), so the density holds across route sizes. A **quiet**
+  // room (the entry and the boss, `docs/maps-spec.md` §2/§6) stamps no terrain.
   const terrainScale = terrainScaleForSize(width, height);
-  carveGrass(tiles, streams.terrain, pocketTiles, (request.grassPatches ?? 0) * terrainScale, grassForbid);
-  carveLedges(tiles, streams.terrain, pocketTiles, ledgeForbid, entry, (request.ledges ?? 0) * terrainScale);
+  const quiet = request.quiet === true;
+  carveGrass(tiles, streams.terrain, pocketTiles, (quiet ? 0 : request.grassPatches ?? 0) * terrainScale, grassForbid);
+  carveLedges(tiles, streams.terrain, pocketTiles, ledgeForbid, entry, (quiet ? 0 : request.ledges ?? 0) * terrainScale);
 
   tiles[entry.y][entry.x] = FLOOR;
   snapshot('terrain', 'terrain pass');
@@ -1498,7 +1506,7 @@ function attemptRoute(
     branches,
     pockets,
     request.routeIndex,
-    request.trainerArchetypes ?? [],
+    quiet ? [] : request.trainerArchetypes ?? [],
     request.trainerSight ?? DEFAULT_TRAINER_SIGHT,
     request.wall !== undefined,
     streams.populate,
@@ -1510,8 +1518,8 @@ function attemptRoute(
     reached,
     request.routeIndex,
     request.loot,
-    request.hiddenChance ?? 0,
-    request.itemChance ?? 1,
+    quiet ? 0 : request.hiddenChance ?? 0,
+    quiet ? 0 : request.itemChance ?? 1,
     streams.populate,
   );
   snapshot('items', 'populate items');

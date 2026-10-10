@@ -111,7 +111,10 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    band's `hiddenChance`; a hidden item shows a faint sparkle instead of a Poke
    Ball. Ids are stable
    (`trainer-<routeIndex>-<n>`, `item-<routeIndex>-<n>`) and the draw order is the
-   deterministic `pockets` order.
+   deterministic `pockets` order. A **quiet** room — the map's entry room and its
+   boss room (`docs/maps-spec.md` §2/§6) — skips the terrain and population passes
+   entirely, so it holds no tall grass, ledges, items or trainers; only its lanes
+   are carved.
 5. **Validation pass**: flood-fill from the entry must reach every exit, with the
    trainers in the way **and** avoiding them (the trainer-free fill is what
    guarantees no forced battle). If it does not, reroll from the same seed with the
@@ -177,6 +180,18 @@ populate them (steps 5-7). The `hedges` and `maze` carvers stay parked in
 - Only the species and level are rolled. Stats, types and evolutions come from
   the species; the moveset and ability are rolled separately when the Pokémon is
   built (`D17`).
+- A successful catch spends the room's single capture (`RunState.capturedRooms`).
+  A room's capture is spent the moment its **first wild battle starts**, whatever
+  the outcome: catching the Pokémon, defeating it or running away all close the
+  room's window, so **only the first wild Pokémon that appears can ever be caught**
+  there. Once spent, the **minimap marks the room** with a Poké Ball and the BALL
+  command is disabled for any later encounter in the room.
+- When a catch leaves the party still **full**, a **capture screen** opens: the
+  caught Pokémon's stats sit beside the party so the player can compare, then
+  **swap it for a party member** (the replaced member goes to the PC) or **send it
+  to the PC**. The floor's catch stays swappable out of the PC for the rest of the
+  floor (`docs/routes-spec.md` §6), and its STATS tab shows the biome and route it
+  was caught in.
 
 ## 4. Run structure
 
@@ -218,8 +233,20 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
 
 Between two routes the player gets a healing stop (a resting point): HP and PP
 restored, no resurrection. The stop no longer opens a screen; the party and the
-PC box are managed from the route HUD (`I` / `P`) at any time, so the player can
-reorder them there and then continue to the next route.
+PC box are managed from the route HUD (`I` / `P`).
+
+**The PC (the HUD's BOX window) is always viewable, but swapping between the
+party and the PC is locked** except in two windows (`docs/maps-spec.md` §7):
+
+- on the **first visit to a floor's entry room** the PC is fully editable, so a
+  player can rearrange the party and the box before setting off;
+- the **Pokémon caught on the current floor** while the party was full stays
+  swappable out of the PC for the rest of that floor, so a catch is never locked
+  in. Leaving the entry room and coming back locks the PC for the rest of the
+  floor, and a new floor resets both windows.
+
+A boxed member the player cannot swap reads as **locked** (a dim veil on its
+cell), and reordering the party within itself stays free.
 
 Each floor also carries a **Pokevial**: a single-charge button in the party
 window's header (top-right). Pressing it applies the same heal on the spot —

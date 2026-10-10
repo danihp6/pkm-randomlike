@@ -8,6 +8,36 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A run starts with ten Poké Balls.** `STARTING_BAG` (`src/data/run.ts`) hands
+      a fresh run a stack of ten, so the first catch never waits on the route
+      economy; every other item is still earned along the way.
+- [x] **One catch per route, tied to the first wild battle.** A room's capture is
+      spent by its **first wild battle** whatever the outcome — catching the
+      Pokémon, defeating it or running away all close the room's window — so only
+      the first wild Pokémon that appears can ever be caught there. Once spent, the
+      **minimap marks the room** with a Poké Ball and the BALL command is disabled
+      for later encounters (`useCapture` in `RouteScene.startBattle`,
+      `buildMapView`'s `captureSpent`).
+- [x] **A caught Pokémon remembers where it was found.** Each catch stores its
+      **biome and route** (`RunPokemon.caughtAt`, `CatchLocation`), shown as a
+      `CAUGHT  <biome> · Map <n> · Route <n>` line in the STATS tab
+      (`memberDetail`/`MemberDetail.caughtLabel`).
+- [x] **Single-door entry and boss, quiet rooms, PC lock and the full-party
+      capture screen.** The map's **entry room** is now a **single-door leaf** like
+      the boss (its only opening is the one link into the floor; the outward entry
+      edge is not carved), so a floor needs at least **six** rooms — the two leaves
+      plus a four-room core closed into a cycle (`buildFloor`, `src/data/maps.ts`).
+      The entry room and the boss room are **quiet**: no tall grass, no ledges, no
+      ground items and no trainers (`RouteRequest.quiet`, `sketchRoute`).
+      The HUD's **PC (BOX) window** is always viewable but its swaps are **locked**
+      except on the **first visit to a floor's entry room** and for the **Pokémon
+      caught on the current floor**; a new floor resets both (`pcFullyEditable` /
+      `pcMemberEditable`, `RunState.entryDeparted` / `pcUnlocked`, `SAVE_VERSION`
+      11). A catch that leaves the party **full** opens a **capture screen**: the
+      caught Pokémon's stats beside the party, to **swap it for a member** (the
+      replaced one goes to the PC) or **send it to the PC** (`resolveBattle`
+      `placeCapture`, `RouteScene.openCapturePrompt`). `docs/maps-spec.md` §2/§3/§6,
+      `docs/routes-spec.md` §3/§6.
 - [x] **Mega Evolution in battle** (`D34`, Phase 9 step 9). A Pokémon holding its
       **Mega Stone** can Mega Evolve **once per battle**: the command menu grows a
       **MEGA** control that arms the evolution, and the next FIGHT spends it while

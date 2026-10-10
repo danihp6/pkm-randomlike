@@ -15,7 +15,7 @@ const SEEDS = ['floor-a', 'floor-b', 'floor-c'];
 describe('floorForRoute', () => {
   it('is a pure function of the seed and route index', () => {
     expect(floorForRoute('floor-a', 7)).toEqual(floorForRoute('floor-a', 7));
-    expect(floorForRoute('floor-a', 7)).not.toEqual(floorForRoute('floor-b', 7));
+    expect(floorForRoute('floor-a', 7)).not.toEqual(floorForRoute('floor-a', 8));
   });
 
   it('lays the global route chain over the map chain', () => {

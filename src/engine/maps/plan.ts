@@ -151,14 +151,17 @@ export function biomeForMap(seed: string, mapIndex: number): BiomeId {
 type Draft = Readonly<{ cells: Tile[]; links: MapLink[] }>;
 
 /**
- * Grows `roomCount` rooms as a spanning tree from the origin, then closes cycles.
+ * Grows `roomCount` rooms with the entry as a **single-door leaf** and a closed
+ * cycle in the rest of the floor (`docs/maps-spec.md` §2/§3, O-M1).
  *
- * The first four rooms are always placed as a 2x2 block with the entry edge left
- * free. That guarantees at least one adjacent pair the tree did not join: a 2x2
- * block has four grid edges and a tree uses at most three of them, so one is
- * always available to close a loop. Without it a floor could grow as a bare path
- * or T, which a four-neighbour grid cannot close into a cycle (`maps-spec.md` §3,
- * O-M1). Every map rolls at least four rooms, so every floor can loop.
+ * The entry room (id 0) joins the floor through exactly one door, so its only
+ * exit is the way forward — never a second door. That door leads into a 2x2
+ * **core** of four rooms closed into a 4-cycle, so the floor still holds its
+ * guaranteed loop without ever giving the entry a second opening. Growth and
+ * cycle-closing then only ever link rooms past the entry, so the single-door
+ * guarantee survives the rest of the build. A floor therefore needs at least
+ * five regular rooms (the entry leaf plus the four-room core); the tuning table
+ * keeps the room count at or above that (`src/data/maps.ts`).
  */
 function buildFloor(rng: Rng, roomCount: number, entryEdge: MapEdge): Draft {
   const cells: Tile[] = [{ x: 0, y: 0 }];
@@ -180,20 +183,25 @@ function buildFloor(rng: Rng, roomCount: number, entryEdge: MapEdge): Draft {
     return id;
   };
 
-  if (roomCount >= 4) {
-    const along = OPPOSITE_EDGE[entryEdge];
-    const side = PERPENDICULAR[entryEdge][rng.int(0, 1)];
-    const roomA = place(step(cells[0], along));
-    const roomB = place(step(cells[0], side));
-    const far = place(step(cells[roomA], side));
-    connect(0, roomA);
-    connect(0, roomB);
-    connect(rng.int(0, 1) === 0 ? roomA : roomB, far);
-  }
+  // The entry's single door points into the map (opposite the outward edge), and
+  // opens onto a 2x2 core closed into a 4-cycle: A-B-D-C-A. The entry links only
+  // to A, so its degree stays 1.
+  const along = OPPOSITE_EDGE[entryEdge];
+  const side = PERPENDICULAR[entryEdge][rng.int(0, 1)];
+  const roomA = place(step(cells[0], along));
+  const roomB = place(step(cells[roomA], side));
+  const roomC = place(step(cells[roomA], along));
+  const roomD = place(step(cells[roomC], side));
+  connect(0, roomA);
+  connect(roomA, roomB);
+  connect(roomA, roomC);
+  connect(roomB, roomD);
+  connect(roomC, roomD);
 
   while (cells.length < roomCount) {
     const candidates: { room: number; cell: Tile }[] = [];
-    for (let id = 0; id < cells.length; id++) {
+    // Never link the entry room again: it must keep its single door.
+    for (let id = 1; id < cells.length; id++) {
       for (const edge of MAP_EDGES) {
         const cell = step(cells[id], edge);
         const key = cellKey(cell);
@@ -207,7 +215,8 @@ function buildFloor(rng: Rng, roomCount: number, entryEdge: MapEdge): Draft {
   }
 
   const cycleCandidates: [number, number][] = [];
-  for (let id = 0; id < cells.length; id++) {
+  // No cycle-closing door may touch the entry either, or it loses its single door.
+  for (let id = 1; id < cells.length; id++) {
     for (const edge of MAP_EDGES) {
       const other = byCell.get(cellKey(step(cells[id], edge)));
       if (other === undefined || other <= id || linked.has(linkKey(id, other))) continue;
@@ -320,9 +329,10 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
 
   const biomeId = pickBiome(rng, previousBiomeOf(seed, index), BIOME_ORDER);
   const roomCount = rng.int(tuning.routes.min, tuning.routes.max);
-  // The regular graph needs at least four rooms to close a cycle; the boss is an
-  // extra leaf on top of it, so the floor holds `roomCount` rooms in total.
-  const regularCount = Math.max(4, roomCount - 1);
+  // The regular graph needs at least five rooms: the single-door entry leaf plus
+  // the four-room core that closes the floor's cycle. The boss is an extra leaf on
+  // top of it, so the floor holds `roomCount` rooms in total.
+  const regularCount = Math.max(5, roomCount - 1);
   const sizes = Array.from({ length: regularCount + 1 }, () => ({
     width: rng.int(tuning.size.min, tuning.size.max),
     height: rng.int(tuning.size.min, tuning.size.max),

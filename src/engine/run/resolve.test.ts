@@ -63,6 +63,29 @@ describe('resolveBattle', () => {
     expect(resolveBattle(run, returned(run, 'win'), wild).run.stats.catches).toBe(0);
   });
 
+  it('records where a catch was made', () => {
+    const run = createRun({ seed: 's', starter });
+    const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
+    const catchLocation = { biomeId: 'forest', mapIndex: 1, routeInMap: 2 };
+    const result = resolveBattle(run, returned(run, 'capture', { captured: caught.fighter }), wild, {
+      catchLocation,
+    });
+    const placed = result.run.party.find((member) => member.fighter.id === 'wild');
+    expect(placed?.caughtAt).toEqual(catchLocation);
+  });
+
+  it('defers the catch location with the capture screen', () => {
+    const run = createRun({ seed: 's', starter });
+    const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
+    const catchLocation = { biomeId: 'forest', mapIndex: 2, routeInMap: 1 };
+    const result = resolveBattle(run, returned(run, 'capture', { captured: caught.fighter }), wild, {
+      placeCapture: false,
+      catchLocation,
+    });
+    expect(result.captured?.caughtAt).toEqual(catchLocation);
+    expect(result.run.party.some((member) => member.fighter.id === 'wild')).toBe(false);
+  });
+
   it('counts every fainted member as a casualty', () => {
     const run = createRun({ seed: 's', starter });
     const reserve = createRunPokemon({ id: 'reserve', speciesId: 'squirtle', level: 4 });

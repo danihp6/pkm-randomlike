@@ -142,6 +142,13 @@ function assertPlan(plan: MapPlan): void {
   expect(boss.openings.filter((opening) => opening.kind === 'link')).toHaveLength(1);
   expect(boss.shape).toBe('dead-end');
 
+  // The entry room is a single-door leaf too: its only **link** opening is the one
+  // into the floor (its plan shape also counts the outward entry edge, which the
+  // route does not carve), so it spawns at its centre and has a single exit.
+  const entry = plan.rooms[plan.entryRoom];
+  expect(entry.openings.filter((opening) => opening.kind === 'link')).toHaveLength(1);
+  expect(entry.openings.filter((opening) => opening.kind === 'entry')).toHaveLength(1);
+
   expect(BIOME_ORDER).toContain(plan.biomeId);
   expect(plan.biomeId).toBe(biomeForMap(plan.seed, plan.mapIndex));
 }

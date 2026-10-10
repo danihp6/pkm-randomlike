@@ -56,6 +56,8 @@ export type RoomView = Readonly<{
   openings: readonly Access[];
   /** The door the player arrives through, or null when the room spawns at its centre. */
   entryEdge: MapEdge | null;
+  /** True when this room is the map's **entry** room (it spawns at its centre). */
+  entry: boolean;
   /** True when this room fields the map's boss. */
   boss: boolean;
   /** The boss room's portal edge (on a free wall), or null for any other room. */
@@ -70,14 +72,18 @@ export type RoomView = Readonly<{
  * boss room. The portal is carved from the start but **sealed** while the boss
  * stands, so the room looks identical before and after it opens.
  *
- * The **map entry room** has no outward door: it spawns the player at the room's
- * **centre** (a fresh run or a portal step), so there is no opening that leads back
- * off the map. Every other arrival is a link the player walked in through
- * (`docs/maps-spec.md` §2: leave East, enter West), which `entryEdge` names; the
- * scene passes `OPPOSITE_EDGE` of the door it used, or `arrivalEdgeFor` is used.
+ * The **map entry room** has no outward door. A fresh run or a portal step (an
+ * arrival on the map's entry edge) spawns the player at the room's **centre**, so
+ * there is no opening that leads back off the map; walking **back** into it through
+ * a link spawns at that link like any other room. Every other arrival is a link the
+ * player walked in through (`docs/maps-spec.md` §2: leave East, enter West), which
+ * `entryEdge` names; the scene passes `OPPOSITE_EDGE` of the door it used, or
+ * `arrivalEdgeFor` is used.
  *
- * The opening set never depends on the arrival, so a room is carved identically on
- * every visit and its trainer/item ids stay stable (a beaten trainer stays beaten).
+ * A room's opening **edges** never depend on the arrival, so a room is carved
+ * identically on every visit and its trainer/item ids stay stable (a beaten trainer
+ * stays beaten). Only the **spawn** differs for the map entry room: its centre on a
+ * fresh arrival, its single link when the player walks back in.
  */
 export function roomView(
   plan: MapPlan,
@@ -90,13 +96,15 @@ export function roomView(
   const arrival = isArrivalEdge(plan, roomId, arrivalEdge)
     ? (arrivalEdge as MapEdge)
     : arrivalEdgeFor(plan, roomId);
-  // The map entry room always spawns at its centre (no outward door); every other
-  // room spawns at the link the player walked in through.
+  // A room spawns at the link the player walked in through. The map entry room is
+  // the one exception: it has no outward door, so a fresh run or a portal step
+  // (arrival on the map's entry edge) spawns at its **centre**, while walking back
+  // into it through a link spawns at that link like any other room.
   const entryEdge =
-    roomId === plan.entryRoom
-      ? null
-      : linkedNeighbour(plan, roomId, arrival) !== undefined
-        ? arrival
+    linkedNeighbour(plan, roomId, arrival) !== undefined
+      ? arrival
+      : roomId === plan.entryRoom
+        ? null
         : arrivalEdgeFor(plan, roomId);
   // The portal is carved from the start and only opened when the boss falls.
   const portalEdge = portalEdgeFor(plan, roomId);
@@ -122,6 +130,7 @@ export function roomView(
     height: room.height,
     openings,
     entryEdge,
+    entry: roomId === plan.entryRoom,
     boss: plan.bossRoom === roomId,
     portalEdge,
     portalOpen: portalOpen && portalEdge !== null,

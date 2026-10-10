@@ -1,7 +1,8 @@
 import { getMove, getSpecies, type MoveCategory, type StatId } from '../data/dex';
+import { getBiome } from '../data/biomes';
 import { restoreFighter, type BattleFighter, type MoveSlot } from '../engine/battle/fighter';
 import { getItem } from '../data/items';
-import { moveMoves, type RunPokemon, type RunState } from '../engine/run';
+import { moveMoves, type CatchLocation, type RunPokemon, type RunState } from '../engine/run';
 import { statusAbbreviation } from './metrics';
 
 /**
@@ -39,6 +40,8 @@ export type MemberDetail = Readonly<{
   heldItemName: string | null;
   stats: Readonly<Record<StatId, number>>;
   moves: readonly MoveDetail[];
+  /** Where the member was caught ("Deep Forest · Map 1 · Route 2"), or null. */
+  caughtLabel: string | null;
 }>;
 
 /** The battle stats the STATS tab lists, in draw order (HP is the bar). */
@@ -77,7 +80,13 @@ function moveDetails(slots: readonly MoveSlot[]): MoveDetail[] {
 export function memberDetail(run: RunState, memberId: string): MemberDetail | null {
   const member = memberById(run, memberId);
   if (!member) return null;
-  return fighterDetail(restoreFighter(member.fighter), member.xp);
+  return { ...fighterDetail(restoreFighter(member.fighter), member.xp), caughtLabel: catchLabel(member.caughtAt) };
+}
+
+/** "Deep Forest · Map 1 · Route 2" for a caught member, or null for the starter. */
+function catchLabel(caughtAt: CatchLocation | undefined): string | null {
+  if (!caughtAt) return null;
+  return `${getBiome(caughtAt.biomeId).name} · Map ${caughtAt.mapIndex} · Route ${caughtAt.routeInMap + 1}`;
 }
 
 /**
@@ -103,6 +112,7 @@ export function fighterDetail(fighter: BattleFighter, xp: number): MemberDetail 
     heldItemName: held?.name ?? fighter.heldItem,
     stats: fighter.stats,
     moves: moveDetails(fighter.moves),
+    caughtLabel: null,
   };
 }
 

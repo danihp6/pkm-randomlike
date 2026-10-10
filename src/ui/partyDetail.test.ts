@@ -45,6 +45,17 @@ describe('memberDetail', () => {
     expect(memberDetail(runWith(), 'boxed')?.name).toBe('Sentret');
     expect(memberDetail(runWith(), 'nobody')).toBeNull();
   });
+
+  it('shows where a caught member was found, and nothing for the starter', () => {
+    const run = runWith();
+    expect(memberDetail(run, 'starter')?.caughtLabel).toBeNull();
+    const caught = {
+      ...createRunPokemon({ id: 'caught', speciesId: 'sentret', level: 4 }),
+      caughtAt: { biomeId: 'forest', mapIndex: 2, routeInMap: 1 },
+    };
+    const withCaught = { ...run, party: [...run.party, caught] };
+    expect(memberDetail(withCaught, 'caught')?.caughtLabel).toBe('Deep Forest · Map 2 · Route 2');
+  });
 });
 
 describe('fighterDetail', () => {

@@ -8,7 +8,7 @@ import { isTilesetPreference, type TilesetPreference } from '../data/tilesets/id
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
-import { MAX_LEVEL, type RunPokemon } from './run/progression';
+import { MAX_LEVEL, type CatchLocation, type RunPokemon } from './run/progression';
 import { emptyRunStats, type RunState, type RunStats } from './run/state';
 
 /** How fast the message box types text (consumed by the settings screen). */
@@ -48,7 +48,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -99,8 +99,10 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * real door); `8` moves a v8 run onto the v9 schema, which turned the per-route
  * `captureUsed` boolean into the per-floor `capturedRooms` list; `9` moves a v9
  * run onto the v10 schema, which added the `pokevialCharges` counter (an old run
- * starts with a full vial). Later changes add the next step, e.g.
- * `10: (doc) => ({ ...doc, version: 11, changed })`.
+ * starts with a full vial); `10` moves a v10 run onto the v11 schema, which added
+ * the PC-lock state (`entryDeparted`, `pcUnlocked`), an old run starting unlocked
+ * only in its entry room. Later changes add the next step, e.g.
+ * `11: (doc) => ({ ...doc, version: 12, changed })`.
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -155,6 +157,13 @@ export const SAVE_MIGRATIONS: Migrations = {
     ...document,
     version: 10,
     run: isRecord(document.run) ? { ...document.run, pokevialCharges: POKEVIAL_MAX_CHARGES } : document.run,
+  }),
+  10: (document) => ({
+    ...document,
+    version: 11,
+    run: isRecord(document.run)
+      ? { ...document.run, entryDeparted: false, pcUnlocked: [] }
+      : document.run,
   }),
 };
 
@@ -428,7 +437,17 @@ function parsePokemon(value: unknown): RunPokemon | null {
   const fighter = parseFighter(value.fighter);
   if (!fighter) return null;
   if (!isNumber(value.xp) || value.xp < 0) return null;
-  return { fighter, xp: value.xp };
+  const caughtAt = parseCatchLocation(value.caughtAt);
+  return caughtAt ? { fighter, xp: value.xp, caughtAt } : { fighter, xp: value.xp };
+}
+
+/** Reads a caught member's location; anything malformed drops the field, not the member. */
+function parseCatchLocation(value: unknown): CatchLocation | null {
+  if (!isRecord(value)) return null;
+  if (!isString(value.biomeId) || value.biomeId === '') return null;
+  if (!isInteger(value.mapIndex) || value.mapIndex < 1) return null;
+  if (!isInteger(value.routeInMap) || value.routeInMap < 0) return null;
+  return { biomeId: value.biomeId, mapIndex: value.mapIndex, routeInMap: value.routeInMap };
 }
 
 /** Keeps the members that parse; a malformed one is dropped, not fatal. */
@@ -535,6 +554,17 @@ function parseRun(value: unknown): RunState | null {
 
   const capturedRooms = parseCapturedRooms(value.capturedRooms, value.captureUsed, routeInMap);
 
+  // The PC lock: a run away from the entry room has necessarily left it, so an
+  // old save without the flag reads as departed; the floor's catch list defaults
+  // to empty (nothing is unlocked beyond the entry room's first visit).
+  const entryDeparted = value.entryDeparted === true || routeInMap !== plan.entryRoom;
+  const pcUnlocked: string[] = [];
+  if (Array.isArray(value.pcUnlocked)) {
+    for (const id of value.pcUnlocked) {
+      if (isString(id) && !pcUnlocked.includes(id)) pcUnlocked.push(id);
+    }
+  }
+
   const pokevialCharges = isInteger(value.pokevialCharges)
     ? Math.max(0, Math.min(POKEVIAL_MAX_CHARGES, value.pokevialCharges))
     : POKEVIAL_MAX_CHARGES;
@@ -548,6 +578,8 @@ function parseRun(value: unknown): RunState | null {
     arrivalEdge,
     discoveredRooms,
     bossDefeated: value.bossDefeated === true,
+    entryDeparted,
+    pcUnlocked,
     levelCap: levelCapForMap(mapIndex),
     pokevialCharges,
     party,
