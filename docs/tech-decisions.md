@@ -211,7 +211,8 @@ map instead of hardcoding a key. The vocabulary is in `src/data/keybinds.ts`
 (pure, no Phaser import, so the save can validate it): one key per action except
 the accept key `E`, which `confirm` and `interact` deliberately share so the same
 press confirms a menu and picks up the item in front of the player; the defaults
-(`E`/`Q`/arrows/`O`), display labels, and the pure rules
+(`E`/`Q`/arrows, the four HUD-panel keys `P`/`I`/`M`/`O` and `Tab` for settings),
+display labels, and the pure rules
 `actionForKey` (explicit binding, then the always-on `Enter`/`Space` confirm and
 `Esc` cancel aliases, so a rebind can never lock a player out of confirm),
 `withBinding` (rebinding swaps with whichever action held the key, so no key is
@@ -220,9 +221,11 @@ half is `src/input/` (`subscribeKeybinds`, `actionKeys`, `keyNameOf`): it listen
 to the plugin's generic `keydown`, so the map is re-read per press and a rebind
 applies at once, and auto-repeat is skipped (the two places that want held state
 — the route's walk, the battle's hold-to-skip — poll `actionKeys`). The bindings
-are part of `Settings`, so `SAVE_VERSION` is 5, `SAVE_MIGRATIONS[3]` adds the
-defaults to a v3 document and `SAVE_MIGRATIONS[4]` resets a v4 document's keys to
-the `E`/`Q` defaults. `SettingsScene` lists them as `keybind` rows beside
+are part of `Settings` (added by `SAVE_MIGRATIONS[3]` and reset by `[4]`; `[11]`
+adds the four panel keys and hands the old `O` to `box`, so `settings` falls back
+to `Tab`). The `party`/`bag`/`map`/`box` actions open the matching route HUD
+panel, the keyboard twin of clicking its icon. `SettingsScene` lists them as
+`keybind` rows beside
 the `step` rows; selecting one and pressing confirm captures the next key (the
 raw press, bound or not, so any key can be chosen), and cancel keeps the old one.
 Keys that are not player actions stay on Phaser directly: the route's debug

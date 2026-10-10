@@ -438,7 +438,7 @@ describe('migrateDocument', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
     // One step per version boundary, because the test starts at v0 and the
-    // current schema is v11.
+    // current schema is v12.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
@@ -450,7 +450,8 @@ describe('migrateDocument', () => {
       7: (doc) => ({ ...doc, version: 8 }),
       8: (doc) => ({ ...doc, version: 9 }),
       9: (doc) => ({ ...doc, version: 10 }),
-      10: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      10: (doc) => ({ ...doc, version: 11 }),
+      11: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({

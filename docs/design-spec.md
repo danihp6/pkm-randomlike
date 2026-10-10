@@ -76,13 +76,16 @@ carries over.
   released off-screen lets go instead of following the pointer. Each panel shows
   its own **icon** at the top-left: clicking it **collapses** the panel to just
   the icon, and clicking again **expands** it and pushes the rest (a collapsed
-  icon included) clear. The icon is also a **drag handle** — press and move to
-  reposition the panel, and a press released without moving is the
-  collapse/expand click. The detail window opens beside the PC box the first time
-  and can then be moved freely. The positions and collapsed states are a global
-  preference saved with the settings (D22), so they survive a reload and the next
-  run. The HUD is **always on screen** — there is no show/hide key — and a fresh
-  save opens **only PARTY**, every other panel collapsed to its icon.
+  icon included) clear. On a keyboard screen the button is a small rectangle that
+  prints, under the icon, the **quick key** that opens that panel (`P` party, `I`
+  bag, `M` map, `O` PC box); a touch screen shows only the icon. The icon is also
+  a **drag handle** — press and move to reposition the panel, and a press released
+  without moving is the collapse/expand click. The detail window opens beside the
+  PC box the first time and can then be moved freely. The positions and collapsed
+  states are a global preference saved with the settings (D22), so they survive a
+  reload and the next run. The HUD is **always on screen** — a quick key opens one
+  panel, it does not show or hide the HUD — and a fresh save opens **only PARTY**,
+  every other panel collapsed to its icon.
 - The route **header is the floor minimap**: the map name over a Binding of Isaac-
   style grid of the rooms **discovered** so far, each drawn from the room's own
   width/height, its openings on the matching walls and a link drawn once **both**
@@ -207,7 +210,7 @@ each biome, or one tileset is forced on every route), **always run** (walk at
 running speed without holding the run key; on by default) and the **HUD layout**
 (where each panel of the route HUD sits and whether it is collapsed). They live
 in the same save document as the run (D22), are stored the moment they change and
-are edited from one screen (`O`, from the main menu, the starter pick or the
+are edited from one screen (`Tab`, from the main menu, the starter pick or the
 route HUD).
 
 ## 9. Out of scope (for now)
