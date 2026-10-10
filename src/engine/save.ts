@@ -7,6 +7,7 @@ import { floorForRoute } from './run/floors';
 import { isTilesetPreference, type TilesetPreference } from '../data/tilesets/ids';
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
+import { POKEVIAL_MAX_CHARGES } from './run/heal';
 import { MAX_LEVEL, type RunPokemon } from './run/progression';
 import { emptyRunStats, type RunState, type RunStats } from './run/state';
 
@@ -47,7 +48,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -96,8 +97,10 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * `bossDefeated` flag; `7` moves a v7 run onto the v8 schema, which added the
  * room's `arrivalEdge` (recovered from the plan, so an old run still spawns at a
  * real door); `8` moves a v8 run onto the v9 schema, which turned the per-route
- * `captureUsed` boolean into the per-floor `capturedRooms` list. Later changes add
- * the next step, e.g. `9: (doc) => ({ ...doc, version: 10, changed })`.
+ * `captureUsed` boolean into the per-floor `capturedRooms` list; `9` moves a v9
+ * run onto the v10 schema, which added the `pokevialCharges` counter (an old run
+ * starts with a full vial). Later changes add the next step, e.g.
+ * `10: (doc) => ({ ...doc, version: 11, changed })`.
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -147,6 +150,11 @@ export const SAVE_MIGRATIONS: Migrations = {
     ...document,
     version: 9,
     run: isRecord(document.run) ? withCapturedRooms(document.run) : document.run,
+  }),
+  9: (document) => ({
+    ...document,
+    version: 10,
+    run: isRecord(document.run) ? { ...document.run, pokevialCharges: POKEVIAL_MAX_CHARGES } : document.run,
   }),
 };
 
@@ -527,6 +535,10 @@ function parseRun(value: unknown): RunState | null {
 
   const capturedRooms = parseCapturedRooms(value.capturedRooms, value.captureUsed, routeInMap);
 
+  const pokevialCharges = isInteger(value.pokevialCharges)
+    ? Math.max(0, Math.min(POKEVIAL_MAX_CHARGES, value.pokevialCharges))
+    : POKEVIAL_MAX_CHARGES;
+
   return {
     seed: value.seed,
     mode: value.mode,
@@ -537,6 +549,7 @@ function parseRun(value: unknown): RunState | null {
     discoveredRooms,
     bossDefeated: value.bossDefeated === true,
     levelCap: levelCapForMap(mapIndex),
+    pokevialCharges,
     party,
     box: parseMembers(value.box),
     bag,

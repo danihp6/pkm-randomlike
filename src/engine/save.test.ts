@@ -223,6 +223,15 @@ describe('decodeSave', () => {
     expect(decoded.settings.keybinds).toEqual(DEFAULT_KEYBINDS);
     expect(decoded.run?.party).toHaveLength(6);
   });
+
+  it('migrates a v9 run onto the current schema, adding the Pokevial charges', () => {
+    const v9run: Record<string, unknown> = { ...sampleRun() };
+    delete v9run.pokevialCharges;
+    const raw = JSON.stringify({ version: 9, run: v9run });
+    const decoded = decodeSave(raw);
+    expect(decoded.version).toBe(SAVE_VERSION);
+    expect(decoded.run?.pokevialCharges).toBe(1);
+  });
 });
 
 describe('settings validation', () => {
@@ -363,6 +372,17 @@ describe('run validation', () => {
     expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0 });
   });
 
+  it('defaults a missing Pokevial count and clamps a junk one', () => {
+    const run = sampleRun();
+    const missing: Record<string, unknown> = { ...run };
+    delete missing.pokevialCharges;
+    const withoutField = document(JSON.stringify({ version: SAVE_VERSION, run: missing }));
+    expect(withoutField.run?.pokevialCharges).toBe(1);
+
+    const over = document(JSON.stringify({ version: SAVE_VERSION, run: { ...run, pokevialCharges: 5 } }));
+    expect(over.run?.pokevialCharges).toBe(1);
+  });
+
   it('drops a member whose species the dex no longer knows', () => {
     const run = sampleRun();
     const stale = { ...run.party[0], fighter: { ...run.party[0].fighter, speciesId: 'missingno' } };
@@ -400,7 +420,8 @@ describe('migrateDocument', () => {
   it('upgrades a pre-envelope document end to end, once a step exists', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
-    // Nine steps, because the test starts at v0 and the current schema is v9.
+    // One step per version boundary, because the test starts at v0 and the
+    // current schema is v10.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
@@ -410,7 +431,8 @@ describe('migrateDocument', () => {
       5: (doc) => ({ ...doc, version: 6 }),
       6: (doc) => ({ ...doc, version: 7 }),
       7: (doc) => ({ ...doc, version: 8 }),
-      8: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      8: (doc) => ({ ...doc, version: 9 }),
+      9: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({

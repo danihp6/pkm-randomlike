@@ -28,6 +28,7 @@ import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
   MAX_PARTY_SIZE,
   MAX_MOVES,
+  POKEVIAL_MAX_CHARGES,
   addItem,
   addPokemon,
   advanceMap,
@@ -53,6 +54,7 @@ import {
   trainerRoster,
   unequipHeldItem,
   updatePokemon,
+  usePokevial,
   type BagCounts,
   type BattleLaunch,
   type BattleReturn,
@@ -187,6 +189,9 @@ const HUD_MAP_H = 250;
 const HUD_MAP_TITLE_H = HUD_PAD_TOP + 34;
 const HUD_PARTY_HEADER = HUD_PAD_TOP + 16 + 12;
 const HUD_PARTY_ROW = 52;
+/** The Pokevial button in the party header's top-right corner: its size in px. */
+const HUD_VIAL_W = 100;
+const HUD_VIAL_H = 22;
 /** The party avatar, enlarged to the row height so the held-item badge reads. */
 const HUD_PARTY_PORTRAIT_SCALE = 0.7;
 /** The held-item icon on an avatar's lower-right corner. */
@@ -524,6 +529,9 @@ export class RouteScene extends Phaser.Scene {
     bar: Phaser.GameObjects.Image;
     fill: Phaser.GameObjects.Rectangle;
   }[] = [];
+  /** The Pokevial button in the party header, and its label (name + charges). */
+  private hudVialBg!: Phaser.GameObjects.Rectangle;
+  private hudVialLabel!: Phaser.GameObjects.BitmapText;
   /** The member detail panel (STATS / MOVES) and the state behind it. */
   private hudDetail!: Phaser.GameObjects.Container;
   private hudDetailState: DetailState = CLOSED_DETAIL;
@@ -965,6 +973,17 @@ export class RouteScene extends Phaser.Scene {
     partyChildren.push(
       addFrlgText(this, x + HUD_CONTENT_LEFT, partyY + HUD_PAD_TOP, 'PARTY', { size: 16, tint: 0x3a3956 }),
     );
+    // The Pokevial sits in the header's top-right corner: one click rests the
+    // whole party and the box, and it refills at each floor's heal stop.
+    const vialX = x + HUD_PANEL_W - HUD_PAD_X - HUD_VIAL_W;
+    const vialY = partyY + HUD_PAD_TOP;
+    this.hudVialBg = this.add.rectangle(vialX, vialY, HUD_VIAL_W, HUD_VIAL_H, 0x2f2c4d).setOrigin(0, 0);
+    this.hudVialLabel = addFrlgText(this, vialX + HUD_VIAL_W / 2, vialY + 3, '', {
+      size: 16,
+      tint: 0xf8fafc,
+      origin: [0.5, 0],
+    });
+    partyChildren.push(this.hudVialBg, this.hudVialLabel);
     this.hudRows = [];
     for (let i = 0; i < MAX_PARTY_SIZE; i++) {
       const rowY = partyY + HUD_PARTY_HEADER + i * HUD_PARTY_ROW;
@@ -1399,6 +1418,13 @@ export class RouteScene extends Phaser.Scene {
         .setFillStyle(hpColorInt(fraction));
     });
 
+    // The Pokevial button: navy when a charge is left, pale and disabled at zero.
+    const vialReady = this.run.pokevialCharges > 0;
+    this.hudVialBg.setFillStyle(vialReady ? 0x2f2c4d : 0xcfcce2);
+    this.hudVialLabel
+      .setText(`POKEVIAL ${this.run.pokevialCharges}/${POKEVIAL_MAX_CHARGES}`)
+      .setTint(vialReady ? 0xf8fafc : 0x6b6887);
+
     // An item taken from the bag is not in the bag while it is being dragged.
     const bagInHand = this.hudDragItemFrom === null ? this.hudDragItem : null;
     const bag = bagForCategory(this.run.bag, this.hudBagCategory)
@@ -1657,6 +1683,18 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
+   * Spends a Pokevial charge to rest the whole party and box. A spent vial is a
+   * no-op, so a click on the disabled button never changes the run.
+   */
+  private drinkPokevial(): void {
+    const next = usePokevial(this.run);
+    if (next === this.run) return;
+    this.run = next;
+    this.persistRun();
+    this.refreshHud();
+  }
+
+  /**
    * HUD pointer input. A click on a party row or a box cell opens that member's
    * detail panel (STATS / MOVES); dragging instead picks the member up (gold
    * highlight), reorders it live over the same pane and a release over the other
@@ -1676,6 +1714,11 @@ export class RouteScene extends Phaser.Scene {
     if (icon) {
       this.hudIconPress = { id: icon.id, originX: pointer.x, originY: pointer.y };
       this.input.setDefaultCursor('pointer');
+      return;
+    }
+    // The Pokevial button rests the party and the box, spending a charge.
+    if (this.vialButtonAt(pointer)) {
+      this.drinkPokevial();
       return;
     }
     // Grabbing a panel's frame moves it (and shoves the others aside); its inner
@@ -1833,11 +1876,12 @@ export class RouteScene extends Phaser.Scene {
     const overMove = this.detailMoveRowAt(pointer) !== null;
     const overItem = this.hudHeldStackAt(pointer) !== null;
     const overIcon = this.hudPanelIconAt(pointer) !== null;
-    const overPanel = overMember || overMove || overItem ? false : this.hudPanelAt(pointer) !== null;
+    const overVial = this.vialButtonAt(pointer);
+    const overPanel = overMember || overMove || overItem || overVial ? false : this.hudPanelAt(pointer) !== null;
     this.input.setDefaultCursor(
       overItem || overMove
         ? 'grab'
-        : overMember || overIcon
+        : overMember || overIcon || overVial
           ? 'pointer'
           : overPanel
             ? 'move'
@@ -2102,6 +2146,20 @@ export class RouteScene extends Phaser.Scene {
     const slot = Math.floor((point.y - rowTop) / HUD_PARTY_ROW);
     if (point.y < rowTop || slot < 0 || slot >= MAX_PARTY_SIZE) return null;
     return slot < this.run.party.length ? slot : null;
+  }
+
+  /** True when the pointer is on the Pokevial button in the party header. */
+  private vialButtonAt(pointer: Phaser.Input.Pointer): boolean {
+    if (!this.panelExpanded('party')) return false;
+    const point = this.panelPoint(pointer, 'party');
+    const left = this.hudX + HUD_PANEL_W - HUD_PAD_X - HUD_VIAL_W;
+    const top = this.hudPartyY + HUD_PAD_TOP;
+    return (
+      point.x >= left &&
+      point.x <= left + HUD_VIAL_W &&
+      point.y >= top &&
+      point.y <= top + HUD_VIAL_H
+    );
   }
 
   /** The box index under the pointer, or null outside a filled cell. */
