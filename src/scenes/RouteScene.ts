@@ -121,7 +121,7 @@ import {
   serializeFrameMap,
 } from '../engine/frameMap';
 import { BAG_CATEGORIES, BAG_CATEGORY_LABELS, bagForCategory, cycleBagCategory, type BagCategory } from '../ui/bag';
-import { buildMapView, type MapViewRoom } from '../ui/mapView';
+import { buildMapView, type MapRoomMarker, type MapViewRoom } from '../ui/mapView';
 import {
   BOX_COLS,
   BOX_PAGE_SIZE,
@@ -798,9 +798,11 @@ export class RouteScene extends Phaser.Scene {
       hiddenChance: loot.hiddenChance,
       itemChance: loot.itemChance,
       trainerArchetypes: TRAINER_ARCHETYPE_IDS,
-      // The map's entry room and its boss room are **quiet**: no tall grass, no
-      // ledges, no ground items and no trainers (`docs/maps-spec.md` §2/§6).
-      quiet: params.room ? params.room.entry || params.room.boss : false,
+      // The map's entry, boss and special rooms are **quiet**: no tall grass, no
+      // ledges, no ground items and no trainers. The entry and boss are quiet
+      // (`docs/maps-spec.md` §2/§6) and a special carries only its own content
+      // (§7).
+      quiet: params.room ? params.room.entry || params.room.boss || params.room.special !== null : false,
       ...(wall ? { wall } : {}),
     };
     const route = sketchRoute(request);
@@ -1685,6 +1687,10 @@ export class RouteScene extends Phaser.Scene {
       currentRoom: this.run.routeInMap,
       portalOpen: this.portalOpen(),
       captureSpent: this.run.capturedRooms,
+      markers: plan.specials.reduce<Record<number, MapRoomMarker>>((all, special) => {
+        all[special.roomId] = special.kind;
+        return all;
+      }, {}),
     });
     this.hudMapEmpty.setVisible(!view.visible);
     if (!view.visible) return;

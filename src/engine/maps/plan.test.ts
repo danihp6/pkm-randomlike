@@ -13,6 +13,7 @@ import {
   pickBiome,
   planMap,
   roomAt,
+  specialRoom,
   type MapEdge,
   type MapPlan,
   type MapRoom,
@@ -74,8 +75,11 @@ function expectedBoss(plan: MapPlan): number {
 
 function assertPlan(plan: MapPlan): void {
   const tuning = mapTuning(plan.mapIndex);
-  expect(plan.rooms.length).toBeGreaterThanOrEqual(tuning.routes.min);
-  expect(plan.rooms.length).toBeLessThanOrEqual(tuning.routes.max);
+  // The tuning range counts the **regular** rooms (entry, four-room core and the
+  // boss leaf); the special leaves hang outside it (`docs/maps-spec.md` §7).
+  const regularRooms = plan.rooms.filter((room) => room.special === null);
+  expect(regularRooms.length).toBeGreaterThanOrEqual(tuning.routes.min);
+  expect(regularRooms.length).toBeLessThanOrEqual(tuning.routes.max);
 
   const seen = new Set<string>();
   for (const room of plan.rooms) {
@@ -156,6 +160,22 @@ function assertPlan(plan: MapPlan): void {
   expect(entry.openings.filter((opening) => opening.kind === 'link')).toHaveLength(1);
   expect(entry.openings.filter((opening) => opening.kind === 'entry')).toHaveLength(1);
 
+  // Special rooms (`docs/maps-spec.md` §7): extra dead-end leaves, never the entry
+  // or the boss, one shop always and at most one mini-boss / mega-stone each.
+  const specials = plan.rooms.filter((room) => room.special !== null);
+  expect(specials.length).toBe(plan.specials.length);
+  expect(specials.filter((room) => room.special === 'shop')).toHaveLength(1);
+  expect(specials.filter((room) => room.special === 'mini-boss').length).toBeLessThanOrEqual(1);
+  expect(specials.filter((room) => room.special === 'mega-stone').length).toBeLessThanOrEqual(1);
+  if (plan.mapIndex < 3) expect(specials.filter((room) => room.special === 'mega-stone')).toHaveLength(0);
+  for (const room of specials) {
+    expect(room.shape).toBe('dead-end');
+    expect(room.openings.filter((opening) => opening.kind === 'link')).toHaveLength(1);
+    expect(room.id).not.toBe(plan.entryRoom);
+    expect(room.id).not.toBe(plan.bossRoom);
+    expect(plan.specials.find((special) => special.roomId === room.id)?.kind).toBe(room.special);
+  }
+
   expect(BIOME_ORDER).toContain(plan.biomeId);
   expect(plan.biomeId).toBe(biomeForMap(plan.seed, plan.mapIndex));
 }
@@ -211,6 +231,71 @@ describe('planMap', () => {
       const outside = neighbourCell(entry, plan.entryEdge);
       expect(roomAt(plan, outside.x, outside.y)).toBeUndefined();
     }
+  });
+});
+
+describe('special rooms', () => {
+  it('gives every floor exactly one shop, hung near the entry', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const shop = specialRoom(plan, 'shop');
+        expect(shop, `${seed} map ${mapIndex}`).toBeDefined();
+        expect(plan.rooms[shop!].shape).toBe('dead-end');
+        // A single door, to a regular room that is neither the entry nor the boss.
+        const neighbours = plan.links
+          .filter(([a, b]) => a === shop || b === shop)
+          .map(([a, b]) => (a === shop ? b : a));
+        expect(neighbours).toHaveLength(1);
+        expect(neighbours[0]).not.toBe(plan.entryRoom);
+        expect(neighbours[0]).not.toBe(plan.bossRoom);
+        // The shop sits nearer the entry than the boss does.
+        const dist = distances(plan);
+        expect(dist[shop!]).toBeLessThan(dist[plan.bossRoom]);
+      }
+    }
+  });
+
+  it('rolls at most one mini-boss and one mega-stone, the latter from map 3 on', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 6; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const mini = plan.rooms.filter((room) => room.special === 'mini-boss');
+        const mega = plan.rooms.filter((room) => room.special === 'mega-stone');
+        expect(mini.length, `${seed} map ${mapIndex}`).toBeLessThanOrEqual(1);
+        expect(mega.length, `${seed} map ${mapIndex}`).toBeLessThanOrEqual(1);
+        if (mapIndex < 3) expect(mega).toHaveLength(0);
+      }
+    }
+  });
+
+  it('hangs a mini-boss about half the time and a mega-stone rarely', () => {
+    let mini = 0;
+    let mega = 0;
+    const total = 400;
+    for (let i = 0; i < total; i++) {
+      const plan = planMap(`special-odds-${i}`, 5);
+      if (specialRoom(plan, 'mini-boss') !== undefined) mini++;
+      if (specialRoom(plan, 'mega-stone') !== undefined) mega++;
+    }
+    expect(mini).toBeGreaterThan(total * 0.35);
+    expect(mini).toBeLessThan(total * 0.65);
+    expect(mega).toBeGreaterThan(0);
+    expect(mega).toBeLessThan(total * 0.3);
+  });
+
+  it('can hold both a mini-boss and a mega-stone on one floor (O-M4)', () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 200; i++) {
+      const plan = planMap(`special-combo-${i}`, 4);
+      const key = `${specialRoom(plan, 'mini-boss') !== undefined}|${specialRoom(plan, 'mega-stone') !== undefined}`;
+      seen.add(key);
+    }
+    expect(seen.has('true|true')).toBe(true);
+  });
+
+  it('is deterministic: the same seed and map give the same specials', () => {
+    expect(planMap('special-seed', 5).specials).toEqual(planMap('special-seed', 5).specials);
   });
 });
 

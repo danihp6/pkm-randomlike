@@ -61,6 +61,14 @@ export type MapOpeningKind = 'link' | 'entry';
 
 export type MapOpening = Readonly<{ edge: MapEdge; kind: MapOpeningKind }>;
 
+/**
+ * A **special** room (`docs/maps-spec.md` §7, D33): an extra dead-end leaf that
+ * carries only its own content, never the regular room's. One **shop** per floor,
+ * a **mini-boss** leaf on a roll, and a **mega-stone** leaf from map 3 on; the
+ * last two may both appear on the same floor.
+ */
+export type MapRoomSpecial = 'shop' | 'mini-boss' | 'mega-stone';
+
 export type MapRoom = Readonly<{
   id: number;
   /** Grid cell the room occupies; the entry sits at the origin, so these may be negative. */
@@ -71,10 +79,15 @@ export type MapRoom = Readonly<{
   shape: MapRoomShape;
   /** Every opening, cardinally ordered; a link per joined neighbour, plus the entry edge. */
   openings: readonly MapOpening[];
+  /** The special this room holds, or null for a regular room (`docs/maps-spec.md` §7). */
+  special: MapRoomSpecial | null;
 }>;
 
 /** An unordered pair of `MapRoom` ids (smaller first) that share a door. */
 export type MapLink = readonly [number, number];
+
+/** A special room and the kind it holds, in room-id order. */
+export type MapSpecialRoom = Readonly<{ roomId: number; kind: MapRoomSpecial }>;
 
 export type MapPlan = Readonly<{
   seed: string;
@@ -87,10 +100,21 @@ export type MapPlan = Readonly<{
   entryEdge: MapEdge;
   /** The room farthest from the entry (graph distance); it fields the boss. */
   bossRoom: number;
+  /** The floor's special rooms (shop/mini-boss/mega-stone), beyond the regular set. */
+  specials: readonly MapSpecialRoom[];
 }>;
 
 /** How many extra cycle-closing doors a floor may add on top of the guaranteed one. */
 const MAX_EXTRA_DOORS = 2;
+
+/** Chance a floor hangs a **mini-boss** leaf (`docs/maps-spec.md` §7, O-M4). */
+const MINI_BOSS_CHANCE = 0.5;
+
+/** Chance a floor hangs a **mega-stone** leaf, only from `MEGA_STONE_FROM_MAP` on. */
+const MEGA_STONE_CHANCE = 0.15;
+
+/** The first map whose floor may hold a mega-stone leaf (`docs/maps-spec.md` §7). */
+const MEGA_STONE_FROM_MAP = 3;
 
 function cellKey(cell: Tile): string {
   return `${cell.x},${cell.y}`;
@@ -281,6 +305,41 @@ function farthestRoom(roomCount: number, links: readonly MapLink[]): number {
   return boss;
 }
 
+/** The first free grid cell beside `parent` (in `MAP_EDGES` order), or null. */
+function firstFreeCell(
+  cells: readonly Tile[],
+  byCell: ReadonlyMap<string, number>,
+  blocked: ReadonlySet<string>,
+  parent: number,
+): Tile | null {
+  for (const edge of MAP_EDGES) {
+    const cell = step(cells[parent], edge);
+    const key = cellKey(cell);
+    if (!byCell.has(key) && !blocked.has(key)) return cell;
+  }
+  return null;
+}
+
+/**
+ * Hangs a dead-end leaf off `parent` on its first free neighbouring cell, joining
+ * the two. Returns the new room id, or `-1` when the parent is boxed in.
+ */
+function appendLeafAt(
+  cells: Tile[],
+  links: MapLink[],
+  byCell: Map<string, number>,
+  blocked: ReadonlySet<string>,
+  parent: number,
+): number {
+  const cell = firstFreeCell(cells, byCell, blocked, parent);
+  if (!cell) return -1;
+  const id = cells.length;
+  cells.push(cell);
+  byCell.set(cellKey(cell), id);
+  links.push(parent < id ? [parent, id] : [id, parent]);
+  return id;
+}
+
 /**
  * Hangs the **boss room** off the regular graph as a dead-end **leaf**
  * (`docs/maps-spec.md` §2/§6): its only door is the link to its parent, so it has a
@@ -301,16 +360,7 @@ function appendBoss(
     (a, b) => distance[b] - distance[a] || a - b,
   );
   for (const parent of order) {
-    for (const edge of MAP_EDGES) {
-      const cell = step(cells[parent], edge);
-      const key = cellKey(cell);
-      if (byCell.has(key) || blocked.has(key)) continue;
-      const id = cells.length;
-      cells.push(cell);
-      byCell.set(key, id);
-      links.push(parent < id ? [parent, id] : [id, parent]);
-      return parent;
-    }
+    if (appendLeafAt(cells, links, byCell, blocked, parent) >= 0) return parent;
   }
   return -1;
 }
@@ -345,6 +395,55 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
   const hung = appendBoss(cells, links, byCell, blocked, regularCount);
   const bossRoom = hung >= 0 ? cells.length - 1 : farthestRoom(regularCount, links);
 
+  // Special leaves, hung off the regular graph beyond the boss (`docs/maps-spec.md`
+  // §7, D33). They are added last, so the regular rooms and the boss never move;
+  // each is a `dead-end` leaf whose parent is a regular room that is **not** the
+  // entry or the boss, so those two keep their single door.
+  const specialKinds = new Map<number, MapRoomSpecial>();
+  const fromEntry = distancesFrom(cells.length, links);
+  const freeParents = (): number[] => {
+    const ids: number[] = [];
+    for (let id = 1; id < regularCount; id++) {
+      // Never the boss, and never a room as far as (or farther than) the boss, so a
+      // special leaf can never outrank the boss as the farthest room.
+      if (id === bossRoom || fromEntry[id] >= fromEntry[bossRoom]) continue;
+      if (firstFreeCell(cells, byCell, blocked, id)) ids.push(id);
+    }
+    return ids;
+  };
+  const addSpecial = (kind: MapRoomSpecial, parent: number): void => {
+    const id = appendLeafAt(cells, links, byCell, blocked, parent);
+    if (id < 0) return;
+    specialKinds.set(id, kind);
+    sizes[id] = {
+      width: rng.int(tuning.size.min, tuning.size.max),
+      height: rng.int(tuning.size.min, tuning.size.max),
+    };
+  };
+
+  // The shop is guaranteed and sits near the entry: the nearest regular room that
+  // still has a free cell is its parent.
+  const shopParents = freeParents();
+  if (shopParents.length > 0) {
+    const nearest = shopParents.reduce((best, id) =>
+      fromEntry[id] < fromEntry[best] || (fromEntry[id] === fromEntry[best] && id < best)
+        ? id
+        : best,
+    );
+    addSpecial('shop', nearest);
+  }
+
+  // The mini-boss and the mega-stone roll their chance on the same stream; the
+  // mega-stone only from map 3 on, and both may land on one floor (`O-M4`).
+  if (rng.next() < MINI_BOSS_CHANCE) {
+    const parents = freeParents();
+    if (parents.length > 0) addSpecial('mini-boss', parents[rng.int(0, parents.length - 1)]);
+  }
+  if (index >= MEGA_STONE_FROM_MAP && rng.next() < MEGA_STONE_CHANCE) {
+    const parents = freeParents();
+    if (parents.length > 0) addSpecial('mega-stone', parents[rng.int(0, parents.length - 1)]);
+  }
+
   // The entry and boss rooms are the floor's quiet leaves; both are pinned to the
   // minimum size so they read the same whatever range the map rolls
   // (`docs/maps-spec.md` §1/§6).
@@ -372,10 +471,14 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
       height: sizes[id].height,
       shape: shapeFor(edges),
       openings,
+      special: specialKinds.get(id) ?? null,
     };
   });
 
   const orderedLinks = [...links].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const specials: MapSpecialRoom[] = [...specialKinds.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([roomId, kind]) => ({ roomId, kind }));
 
   return {
     seed,
@@ -386,12 +489,18 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     entryRoom: 0,
     entryEdge,
     bossRoom,
+    specials,
   };
 }
 
 /** The room occupying a grid cell, if any. */
 export function roomAt(plan: MapPlan, col: number, row: number): MapRoom | undefined {
   return plan.rooms.find((room) => room.col === col && room.row === row);
+}
+
+/** The id of the room holding a `kind` special, or undefined when the floor has none. */
+export function specialRoom(plan: MapPlan, kind: MapRoomSpecial): number | undefined {
+  return plan.rooms.find((room) => room.special === kind)?.id;
 }
 
 /**

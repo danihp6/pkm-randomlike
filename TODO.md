@@ -206,11 +206,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       the Mega forme for the battle. All dex Megas (formes may be nonstandard);
       only bosses, mini-bosses and the `ace` archetype carry stones. Engine +
       data + battle UI, fixed-seed tests.
-- [ ] **Step 11 — Special rooms in the plan.** Extend `MapPlan` to hang the
-      special leaves off the floor: a guaranteed **shop** near the entry, a
-      **mini-boss** leaf (50%) and a **mega-stone** leaf (15%, from map 3 on, may
-      coincide), each extra to K, on the same `map` stream. Tests for placement,
-      count and determinism.
 - [ ] **Step 12 — Shop room & HUD panel.** A shop room (counter + `E`) that opens
       a Pokémon Mart-style **HUD panel only present in that room**: buy from the
       per-band core of Balls and Potions plus one or two random map items at
