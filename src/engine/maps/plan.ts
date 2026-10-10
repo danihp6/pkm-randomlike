@@ -1,5 +1,5 @@
 import { BIOME_ORDER, type BiomeId } from '../../data/biomes';
-import { mapTuning } from '../../data/maps';
+import { MAP_MIN_ROOM_SIZE, mapTuning } from '../../data/maps';
 import type { Tile } from '../grid';
 import type { Rng } from '../rng';
 import { mapStreams } from './streams';
@@ -344,6 +344,13 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
   const blocked = new Set<string>([cellKey(step(cells[0], entryEdge))]);
   const hung = appendBoss(cells, links, byCell, blocked, regularCount);
   const bossRoom = hung >= 0 ? cells.length - 1 : farthestRoom(regularCount, links);
+
+  // The entry and boss rooms are the floor's quiet leaves; both are pinned to the
+  // minimum size so they read the same whatever range the map rolls
+  // (`docs/maps-spec.md` §1/§6).
+  for (const leaf of [0, bossRoom]) {
+    sizes[leaf] = { width: MAP_MIN_ROOM_SIZE, height: MAP_MIN_ROOM_SIZE };
+  }
 
   const rooms: MapRoom[] = cells.map((cell, id) => {
     const edges: MapEdge[] = [];

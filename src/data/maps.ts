@@ -36,6 +36,13 @@ export const MAP_MAX_ROUTES = 12;
 export const MAP_MAX_ROOM_SIZE = 48;
 
 /**
+ * No room is ever smaller than this many tiles a side. The entry room and the
+ * boss room of every floor are pinned to exactly this size (`docs/maps-spec.md`
+ * §1/§6), so the quiet leaves read the same on every map.
+ */
+export const MAP_MIN_ROOM_SIZE = 30;
+
+/**
  * How many maps a finite run walks before its final boss. The last map holds
  * only the final boss and no portal (D31); an infinite run ignores it. Balance
  * data (O-M7), so a longer or shorter campaign never touches the generator.
@@ -46,12 +53,12 @@ export const MAP_TUNING: readonly MapTuning[] = [
   // A floor needs at least six rooms: the entry is a **single-door leaf** and the
   // boss is another, so four more rooms are needed to close the floor's cycle
   // (the two leaves plus a 2x2 core, `docs/maps-spec.md` §2-§3/§6, D30).
-  { mapIndex: 1, levels: { minLevel: 2, maxLevel: 6 }, routes: { min: 6, max: 6 }, size: { min: 16, max: 20 } },
-  { mapIndex: 2, levels: { minLevel: 6, maxLevel: 11 }, routes: { min: 6, max: 6 }, size: { min: 18, max: 24 } },
-  { mapIndex: 3, levels: { minLevel: 11, maxLevel: 17 }, routes: { min: 6, max: 6 }, size: { min: 22, max: 28 } },
-  { mapIndex: 4, levels: { minLevel: 17, maxLevel: 24 }, routes: { min: 6, max: 7 }, size: { min: 26, max: 32 } },
+  { mapIndex: 1, levels: { minLevel: 2, maxLevel: 6 }, routes: { min: 6, max: 6 }, size: { min: 30, max: 30 } },
+  { mapIndex: 2, levels: { minLevel: 6, maxLevel: 11 }, routes: { min: 6, max: 6 }, size: { min: 30, max: 30 } },
+  { mapIndex: 3, levels: { minLevel: 11, maxLevel: 17 }, routes: { min: 6, max: 6 }, size: { min: 30, max: 30 } },
+  { mapIndex: 4, levels: { minLevel: 17, maxLevel: 24 }, routes: { min: 6, max: 7 }, size: { min: 30, max: 32 } },
   { mapIndex: 5, levels: { minLevel: 24, maxLevel: 32 }, routes: { min: 6, max: 7 }, size: { min: 30, max: 36 } },
-  { mapIndex: 6, levels: { minLevel: 32, maxLevel: 40 }, routes: { min: 6, max: 8 }, size: { min: 34, max: 40 } },
+  { mapIndex: 6, levels: { minLevel: 32, maxLevel: 40 }, routes: { min: 6, max: 8 }, size: { min: 30, max: 40 } },
 ];
 
 /** How an out-of-table map steps past the last tuned row (infinite mode). */

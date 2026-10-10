@@ -5,8 +5,8 @@
  * (D11).
  *
  * The ranges live here so retuning them never touches the generator
- * (`docs/routes-spec.md` §2). Tiers are keyed by map **area in tiles**: the
- * default 20x20 route stays in `small`, so it keeps its biome/shape counts as-is.
+ * (`docs/routes-spec.md` §2). Tiers are keyed by map **area in tiles**: every
+ * route is at least 30x30, so the smallest route lands in `medium`.
  */
 export type MapSizeTierId = 'small' | 'medium' | 'large';
 

@@ -408,7 +408,7 @@ lane, a branch or a pocket either, and ledges and water count as impassable.
 - **No plugging:** a trainer never cuts off a tile (lane, branch or pocket); the
   trainer-free fill keeps every reachable tile reachable (ledges/water impassable).
 - **Stable ids:** `trainer-<route>-<i>`, `item-<route>-<i>`.
-- **Bounds:** openings sit on the map border (gaps in the tree ring); the map size is an input (20x20 default for now)
+- **Bounds:** openings sit on the map border (gaps in the tree ring); the map size is an input (30x30 minimum; entry/boss rooms always 30x30)
   (single screen, camera follow, `padMap` margin - D26; no fog - D6).
 
 ## 6. Decisions taken (from the first draft's review)
