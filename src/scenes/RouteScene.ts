@@ -482,8 +482,6 @@ export class RouteScene extends Phaser.Scene {
   /** Whether the detail panel has been placed once (it is not re-docked after). */
   private hudDetailPlaced = false;
   private hudTitle!: Phaser.GameObjects.BitmapText;
-  /** The Poké Ball badge on the route header: shown once the room's capture is spent. */
-  private hudCaptureIcon!: Phaser.GameObjects.Image;
   /** The floor minimap panel: its graphics and the "no map" label. */
   private hudMapGraphics!: Phaser.GameObjects.Graphics;
   private hudMapEmpty!: Phaser.GameObjects.BitmapText;
@@ -993,13 +991,7 @@ export class RouteScene extends Phaser.Scene {
     this.hudTitle = addFrlgText(this, HUD_MAP_X + HUD_CONTENT_LEFT, HUD_MAP_Y + HUD_PAD_TOP, '', {
       size: 16,
       tint: FRLG_INK,
-    }).setMaxWidth(HUD_MAP_W - HUD_CONTENT_LEFT - HUD_PAD_X - 22);
-    // The route header's capture badge: a Poké Ball shown once this room's single
-    // capture is spent, whatever the outcome (`docs/routes-spec.md` §3).
-    this.hudCaptureIcon = this.add
-      .image(HUD_MAP_X + HUD_MAP_W - HUD_PAD_X - 10, HUD_MAP_Y + HUD_PAD_TOP + 8, ITEM_ICON_TEXTURE_KEY, 0)
-      .setScale(0.7)
-      .setVisible(false);
+    }).setMaxWidth(HUD_MAP_W - HUD_CONTENT_LEFT - HUD_PAD_X);
     this.hudMapGraphics = this.add.graphics();
     this.hudMapEmpty = addFrlgText(
       this,
@@ -1008,7 +1000,7 @@ export class RouteScene extends Phaser.Scene {
       'no map',
       { size: 16, tint: 0x6b6887, origin: [0.5, 0] },
     );
-    headerChildren.push(this.hudTitle, this.hudCaptureIcon, this.hudMapGraphics, this.hudMapEmpty);
+    headerChildren.push(this.hudTitle, this.hudMapGraphics, this.hudMapEmpty);
 
     const partyY = HUD_TOP;
     const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + HUD_PAD_BOTTOM;
@@ -1423,11 +1415,6 @@ export class RouteScene extends Phaser.Scene {
     if (!this.hudRoot) return;
     const biomeName = this.route ? getBiome(this.route.biomeId).name : '';
     this.hudTitle.setText(`Map ${this.run.mapIndex} · ${biomeName}`);
-    // The Poké Ball badge: this room's single capture is spent once its first wild
-    // battle ends, whatever the outcome (a catch, a defeat or a run away).
-    const ballFrame = itemIconFrame('pokeball');
-    this.hudCaptureIcon.setVisible(ballFrame !== null && !canCapture(this.run));
-    if (ballFrame !== null) this.hudCaptureIcon.setFrame(ballFrame);
     this.refreshMapView();
 
     this.hudRows.forEach((row, i) => {

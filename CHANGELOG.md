@@ -15,9 +15,8 @@ file is the human-readable summary.
       spent by its **first wild battle** whatever the outcome — catching the
       Pokémon, defeating it or running away all close the room's window — so only
       the first wild Pokémon that appears can ever be caught there. Once spent, the
-      route header shows a **Poké Ball badge**, the **minimap marks the room** with
-      a Poké Ball, and the BALL command is disabled for later encounters
-      (`useCapture` in `RouteScene.applyBattleResult`, `hudCaptureIcon`,
+      **minimap marks the room** with a Poké Ball and the BALL command is disabled
+      for later encounters (`useCapture` in `RouteScene.startBattle`,
       `buildMapView`'s `captureSpent`).
 - [x] **A caught Pokémon remembers where it was found.** Each catch stores its
       **biome and route** (`RunPokemon.caughtAt`, `CatchLocation`), shown as a
