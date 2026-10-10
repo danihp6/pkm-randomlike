@@ -9,6 +9,7 @@ import {
   linkedNeighbour,
   type MapEdge,
   type MapPlan,
+  type MapRoomSpecial,
 } from './plan';
 
 /**
@@ -60,6 +61,8 @@ export type RoomView = Readonly<{
   entry: boolean;
   /** True when this room fields the map's boss. */
   boss: boolean;
+  /** The special this room holds (a shop/mini-boss/mega-stone leaf), or null. */
+  special: MapRoomSpecial | null;
   /** The boss room's portal edge (on a free wall), or null for any other room. */
   portalEdge: MapEdge | null;
   /** True once the boss has fallen, so the portal is open and can be walked through. */
@@ -132,6 +135,7 @@ export function roomView(
     entryEdge,
     entry: roomId === plan.entryRoom,
     boss: plan.bossRoom === roomId,
+    special: room.special,
     portalEdge,
     portalOpen: portalOpen && portalEdge !== null,
   };

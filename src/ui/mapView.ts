@@ -5,6 +5,7 @@ import {
   type MapPlan,
   type MapRoom,
   type MapRoomShape,
+  type MapRoomSpecial,
 } from '../engine/maps';
 
 /**
@@ -21,8 +22,8 @@ import {
  * only filtered afterwards, so the floor never shifts as rooms are revealed.
  */
 
-/** A special room's marker icon (specials arrive in Phase 9 step 11). */
-export type MapRoomMarker = 'shop' | 'mini-boss' | 'mega-stone';
+/** A special room's marker icon; the plan's own special kinds (`D33`). */
+export type MapRoomMarker = MapRoomSpecial;
 
 /** How an opening reads on the minimap: the map entrance, a room link or the portal. */
 export type MapOpeningKind = 'entry' | 'link' | 'portal';

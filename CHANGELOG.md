@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The floor's special rooms are hung in the plan** (Phase 9 step 11).
+      `MapPlan` gains a `specials` list and every `MapRoom` a `special` kind: a
+      guaranteed **shop** leaf near the entry, a **mini-boss** leaf at 50% and a
+      **mega-stone** leaf at 15% **from map 3 on** (the two may coincide). They
+      are extra dead-end leaves on the same `map` stream, hung off regular rooms
+      only (never the entry or the boss, so both keep their single door).
+      `roomView` carries the kind through, the route builder treats a special
+      room as **quiet** (no tall grass, ledges, items or trainers) and the minimap
+      now draws each special's own marker. `docs/maps-spec.md` §7,
+      `docs/routes-spec.md` §2, `D33`; plan tests for placement, counts, odds,
+      coincidence and determinism.
 - [x] **The Poké Dollar economy lands: trainers pay, valuables bank.** `RunState`
       carries `money` (a run starts with none; `SAVE_VERSION` 14 +
       `SAVE_MIGRATIONS[13]`). A beaten trainer drops its archetype's **fixed base

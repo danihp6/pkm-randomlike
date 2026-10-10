@@ -111,8 +111,9 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    band's `hiddenChance`; a hidden item shows a faint sparkle instead of a Poke
    Ball. Ids are stable
    (`trainer-<routeIndex>-<n>`, `item-<routeIndex>-<n>`) and the draw order is the
-   deterministic `pockets` order. A **quiet** room — the map's entry room and its
-   boss room (`docs/maps-spec.md` §2/§6) — skips the terrain and population passes
+   deterministic `pockets` order. A **quiet** room — the map's entry room, its boss
+   room and its special rooms (shop/mini-boss/mega-stone; `docs/maps-spec.md`
+   §2/§6/§7) — skips the terrain and population passes
    entirely, so it holds no tall grass, ledges, items or trainers; only its lanes
    are carved.
 5. **Validation pass**: flood-fill from the entry must reach every exit, with the

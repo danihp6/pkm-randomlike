@@ -76,6 +76,15 @@ describe('arrivalEdgeFor / roomView', () => {
     }
   });
 
+  it('carries each room\'s special kind through to its view', () => {
+    for (const seed of SEEDS) {
+      const plan = planMap(seed, 4);
+      for (const room of plan.rooms) {
+        expect(roomView(plan, room.id, false).special).toBe(room.special);
+      }
+    }
+  });
+
   it('spawns at the door it is told arrived through, and falls back on a wall', () => {
     for (const seed of SEEDS) {
       const plan = planMap(seed, 1);
