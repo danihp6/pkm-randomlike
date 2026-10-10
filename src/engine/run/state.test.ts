@@ -3,6 +3,7 @@ import { restoreFighter } from '../battle/fighter';
 import { levelCapForMap } from '../../data/maps';
 import { MAP_EDGES, arrivalEdgeFor, linkedNeighbour, planMap } from '../maps/plan';
 import { capForRoute } from './levelCap';
+import { POKEVIAL_MAX_CHARGES } from './heal';
 import { createRunPokemon } from './progression';
 import {
   MAX_PARTY_SIZE,
@@ -47,6 +48,7 @@ describe('createRun', () => {
     expect(run.discoveredRooms).toEqual([0]);
     expect(run.bossDefeated).toBe(false);
     expect(run.levelCap).toBe(capForRoute('run-a', 1));
+    expect(run.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
     expect(run.party).toEqual([starter]);
     expect(run.box).toEqual([]);
     expect(run.pickedItems).toEqual([]);
@@ -147,6 +149,11 @@ describe('advanceMap', () => {
     expect(next.party[0].fighter.hp).toBe(starterMaxHp);
     expect(next.party[0].fighter.moves.every((slot) => slot.pp === slot.maxPp)).toBe(true);
     expect(next.box[0].fighter.hp).toBe(0);
+  });
+
+  it('refills the Pokevial at the floor change', () => {
+    const spent = { ...createRun({ seed: 'run-a', starter }), pokevialCharges: 0 };
+    expect(advanceMap(spent).pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
   });
 });
 

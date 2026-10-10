@@ -64,6 +64,10 @@ carries over.
   a badge on the avatar's lower-right corner; dragging **that badge** takes the
   item off the member (onto another member to pass it along, or onto the bag to
   unequip it). An item in hand is not listed in the bag until it is dropped.
+- The **Pokevial** is a one-charge button in the party window's header
+  (top-right): clicking it rests the whole party **and** the PC box on the spot —
+  HP and PP back to full, the same heal as a floor's stop (never a resurrection,
+  no status cure; D5) — and it refills whenever a floor is cleared.
 - The HUD panels — the route header, PARTY, the bag, the PC BOX and the member
   detail window — can be **dragged by their frame** (the interior stays live for
   rows, tabs and cells, so a click there still acts). A dragged panel **pushes**

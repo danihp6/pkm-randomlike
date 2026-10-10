@@ -221,6 +221,12 @@ restored, no resurrection. The stop no longer opens a screen; the party and the
 PC box are managed from the route HUD (`I` / `P`) at any time, so the player can
 reorder them there and then continue to the next route.
 
+Each floor also carries a **Pokevial**: a single-charge button in the party
+window's header (top-right). Pressing it applies the same heal on the spot —
+HP and PP restored across the party **and** the PC box, never a resurrection and
+no status cure — so the player can rest mid-floor without walking back to a
+stop. It refills to its one charge at every floor's heal stop.
+
 Ground items sit on the route's pockets (step 4), nudged onto the most
 wall-hugging tile their lane opened so an item rests against walls (a corner
 where the branch allows it). A visible item draws the FRLG field Poke Ball and

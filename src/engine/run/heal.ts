@@ -3,6 +3,13 @@ import type { RunPokemon } from './progression';
 import { type RunState } from './state';
 
 /**
+ * How many times the Pokevial can rest the party between floors. One charge: a
+ * mid-floor emergency heal, refilled by the heal stop when a floor is cleared
+ * (`advanceMap`).
+ */
+export const POKEVIAL_MAX_CHARGES = 1;
+
+/**
  * A rested member: HP and PP back to full, status untouched (routes-spec §6).
  * A member already at 0 HP is left as it is — the healing stop never resurrects
  * (D5), so a fallen Pokémon cannot be pulled back by resting.
@@ -21,6 +28,18 @@ export function healParty(run: RunState): RunState {
     party: run.party.map(healMember),
     box: run.box.map(healMember),
   };
+}
+
+/**
+ * Drinks the Pokevial: the same heal stop as `healParty` (HP/PP across the party
+ * and the box, never a resurrection and no status cure, D5) applied on demand,
+ * spending one charge. With no charges left it is a no-op, so a click never
+ * wastes anything.
+ */
+export function usePokevial(run: RunState): RunState {
+  if (run.pokevialCharges <= 0) return run;
+  const healed = healParty(run);
+  return { ...healed, pokevialCharges: healed.pokevialCharges - 1 };
 }
 
 /**

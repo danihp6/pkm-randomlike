@@ -1,7 +1,7 @@
 import { levelCapForMap } from '../../data/maps';
 import { arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge } from '../maps/plan';
 import type { BagCounts } from './battleLink';
-import { healParty } from './heal';
+import { POKEVIAL_MAX_CHARGES, healParty } from './heal';
 import type { RunPokemon } from './progression';
 
 export type RunMode = 'finite' | 'infinite';
@@ -55,6 +55,11 @@ export type RunState = Readonly<{
   bossDefeated: boolean;
   /** Cached level cap for `mapIndex` (D9/D29); kept in sync on a map advance. */
   levelCap: number;
+  /**
+   * Pokevial charges left on this floor: one at the start and after every heal
+   * stop, spent by `usePokevial` to rest the party and the box mid-floor.
+   */
+  pokevialCharges: number;
   party: readonly RunPokemon[];
   box: readonly RunPokemon[];
   bag: readonly BagCounts[];
@@ -87,6 +92,7 @@ export function createRun(init: RunInit): RunState {
     discoveredRooms: [entryRoom],
     bossDefeated: false,
     levelCap: levelCapForMap(FIRST_MAP),
+    pokevialCharges: POKEVIAL_MAX_CHARGES,
     party: [init.starter],
     box: [],
     bag: [...(init.bag ?? [])],
@@ -125,7 +131,7 @@ export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: Map
  * Steps through the map's portal onto the next floor (`docs/maps-spec.md` §6,
  * D31): the next map's entry room, a fresh discovery set and its own cap. This is
  * also the **heal stop** — HP/PP restored across the party and the box, never a
- * resurrection (D5) — and the old floor's marks go with it.
+ * resurrection (D5) — the Pokevial refills and the old floor's marks go with it.
  */
 export function advanceMap(run: RunState): RunState {
   const mapIndex = run.mapIndex + 1;
@@ -139,6 +145,7 @@ export function advanceMap(run: RunState): RunState {
     discoveredRooms: [plan.entryRoom],
     bossDefeated: false,
     levelCap: levelCapForMap(mapIndex),
+    pokevialCharges: POKEVIAL_MAX_CHARGES,
     defeatedTrainers: [],
     pickedItems: [],
     capturedRooms: [],
