@@ -1255,7 +1255,7 @@ export class RouteScene extends Phaser.Scene {
         'party',
         x,
         partyY,
-        HUD_PANEL_W,
+        HUD_PARTY_W,
         partyH,
         this.add.container(0, 0, partyChildren),
         PANEL_ICON_KEYS.party,
