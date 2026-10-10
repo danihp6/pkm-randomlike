@@ -8,6 +8,15 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **HUD panel quick keys, and the panel button prints its key.** `P` opens
+      PARTY, `I` the bag, `M` the map and `O` the PC box (the settings key moves to
+      `Tab`); a panel's corner button now sits flush in its top-left and, on a
+      keyboard screen, grows into a small rectangle that prints the key under the
+      icon (a touch screen shows only the icon). The four actions join the keybind
+      map (`SAVE_VERSION` 12, `SAVE_MIGRATIONS[11]`), so they are rebindable and
+      listed in the settings screen (`src/data/keybinds.ts`, `RouteScene`).
+- [x] **The party panel drops its `PARTY` title, and its HP bar is smaller** (0.6
+      of the FRLG bar instead of 0.75), so the row reads cleaner (`RouteScene`).
 - [x] **Every route is at least 30x30, and the entry and boss rooms are always
       exactly 30x30.** `MAP_MIN_ROOM_SIZE` (`src/data/maps.ts`) floors every map's
       size range at 30 — the maxima keep their progression, so maps 1–3 become

@@ -50,7 +50,7 @@ describe('keysForAction', () => {
 
   it('returns only the binding for an action with no aliases', () => {
     expect(keysForAction(DEFAULT_KEYBINDS, 'confirm')).toEqual(['E']);
-    expect(keysForAction(DEFAULT_KEYBINDS, 'settings')).toEqual(['O']);
+    expect(keysForAction(DEFAULT_KEYBINDS, 'settings')).toEqual(['TAB']);
   });
 
   it('keeps every key it is given distinct', () => {
@@ -64,9 +64,11 @@ describe('actionForKey', () => {
     expect(actionForKey(DEFAULT_KEYBINDS, 'E')).toBe('confirm');
     expect(actionForKey(DEFAULT_KEYBINDS, 'Q')).toBe('cancel');
     expect(actionForKey(DEFAULT_KEYBINDS, 'UP')).toBe('up');
-    expect(actionForKey(DEFAULT_KEYBINDS, 'P')).toBeNull();
-    expect(actionForKey(DEFAULT_KEYBINDS, 'O')).toBe('settings');
-    expect(actionForKey(DEFAULT_KEYBINDS, 'I')).toBeNull();
+    expect(actionForKey(DEFAULT_KEYBINDS, 'P')).toBe('party');
+    expect(actionForKey(DEFAULT_KEYBINDS, 'O')).toBe('box');
+    expect(actionForKey(DEFAULT_KEYBINDS, 'I')).toBe('bag');
+    expect(actionForKey(DEFAULT_KEYBINDS, 'M')).toBe('map');
+    expect(actionForKey(DEFAULT_KEYBINDS, 'TAB')).toBe('settings');
     expect(actionForKey(DEFAULT_KEYBINDS, 'Z')).toBeNull();
   });
 

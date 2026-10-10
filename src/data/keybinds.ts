@@ -5,7 +5,13 @@
  * that turns these names into key events lives in `src/input/`.
  */
 
-/** The player-facing actions. A scene never hardcodes a key of its own. */
+/**
+ * The player-facing actions. A scene never hardcodes a key of its own. The four
+ * `party` / `bag` / `map` / `box` actions open the matching route HUD panel; they
+ * are listed **before** `settings` on purpose, so a save that predates them hands
+ * its old `O` (the former settings key) to `box` and falls back to the new
+ * `Tab` for settings (`sanitizeKeybinds` keeps the first taker of a key).
+ */
 export const KEYBIND_ACTIONS = [
   'confirm',
   'cancel',
@@ -16,6 +22,10 @@ export const KEYBIND_ACTIONS = [
   'run',
   'interact',
   'reset',
+  'party',
+  'bag',
+  'map',
+  'box',
   'settings',
 ] as const;
 
@@ -47,7 +57,11 @@ export const DEFAULT_KEYBINDS: Keybinds = {
   run: 'SHIFT',
   interact: 'E',
   reset: 'R',
-  settings: 'O',
+  party: 'P',
+  bag: 'I',
+  map: 'M',
+  box: 'O',
+  settings: 'TAB',
 };
 
 /**
@@ -71,6 +85,10 @@ export const KEYBIND_LABELS: Readonly<Record<KeybindAction, string>> = {
   run: 'Run',
   interact: 'Interact',
   reset: 'Reset run',
+  party: 'Party panel',
+  bag: 'Bag panel',
+  map: 'Map panel',
+  box: 'PC box panel',
   settings: 'Settings',
 };
 

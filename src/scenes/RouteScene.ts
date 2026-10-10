@@ -157,6 +157,7 @@ import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { createTouchControls, type TouchControls } from '../ui/touchControls';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { listenForBack } from '../input/backButton';
+import { prefersTouchControls } from '../input/device';
 import { loadSettings, saveSettings } from '../settings';
 import { browserStorage } from '../storage';
 import {
@@ -211,8 +212,8 @@ const HUD_TAB_H = 26;
 const HUD_TAB_GAP = 4;
 const HUD_BAG_HEADER = HUD_PAD_TOP + HUD_TAB_H + 8;
 const HUD_BAG_ROW = 40;
-/** The 268px FRLG HP bar at 0.75 still reads cleanly and leaves room for the numbers. */
-const HUD_HPBAR_SCALE = 0.75;
+/** The 268px FRLG HP bar, kept small in the party rows so the numbers read. */
+const HUD_HPBAR_SCALE = 0.6;
 /** The PC BOX window: a page tab strip over a grid of avatar cells. */
 const HUD_BOX_PAD = 12;
 const HUD_BOX_TAB_W = 32;
@@ -236,11 +237,26 @@ const HUD_PANEL_PUSH_PASSES = 16;
 const HUD_PANEL_STEP = 8;
 /** Cap on the sub-steps one pointer move may take, so a jump cannot loop. */
 const HUD_PANEL_MAX_SUBSTEPS = 80;
-/** The collapse-icon button at a panel's top-left, and its inset from the corner. */
+/** The collapse-icon button at a panel's top-left, flush with the corner. */
 const HUD_ICON = PANEL_ICON_SIZE;
-const HUD_ICON_INSET = 4;
+const HUD_ICON_INSET = 0;
+/** Height of the key-hint band the button adds under the icon on a keyboard. */
+const HUD_KEY_H = 16;
+/** The key letter's text size, so it sits centred in that band. */
+const HUD_KEY_TEXT = 16;
 /** Where a panel's header/content starts, leaving room for the icon button. */
 const HUD_CONTENT_LEFT = HUD_ICON_INSET + HUD_ICON + 6;
+
+/**
+ * The quick key that opens each panel (`P` party, `I` bag, `M` map, `O` PC box).
+ * The member detail popup has none, so its button stays a plain icon square.
+ */
+const PANEL_KEY_ACTIONS: Readonly<Partial<Record<HudPanelId, KeybindAction>>> = {
+  header: 'map',
+  party: 'party',
+  bag: 'bag',
+  box: 'box',
+};
 
 /** The pause menu (ESC / left-edge swipe): a centred window with two rows. */
 const PAUSE_MENU_W = 360;
@@ -342,6 +358,13 @@ type HudPanel = {
   container: Phaser.GameObjects.Container;
   body: Phaser.GameObjects.Container;
   icon: Phaser.GameObjects.Container;
+  /** The quick-key action that opens this panel, or null for the detail popup. */
+  key: KeybindAction | null;
+  /** The key letter under the icon (null on a touch screen or without a key). */
+  keyLabel: Phaser.GameObjects.BitmapText | null;
+  /** The button's size: a square, or a rectangle when it shows the key letter. */
+  iconW: number;
+  iconH: number;
   x: number;
   y: number;
   w: number;
@@ -945,10 +968,41 @@ export class RouteScene extends Phaser.Scene {
       case 'cancel':
         this.openPauseMenu();
         return;
+      case 'party':
+        this.toggleHudPanel('party');
+        return;
+      case 'bag':
+        this.toggleHudPanel('bag');
+        return;
+      case 'map':
+        this.toggleHudPanel('header');
+        return;
+      case 'box':
+        this.toggleHudPanel('box');
+        return;
       case 'settings':
         this.openSettings();
         return;
     }
+  }
+
+  /**
+   * Opens or collapses the HUD panel a quick key points at, the keyboard twin of
+   * clicking its icon. Ignored while another overlay (a capture, the pause menu, a
+   * release beat) owns the input.
+   */
+  private toggleHudPanel(id: HudPanelId): void {
+    if (
+      this.gameOver ||
+      this.pendingBattle ||
+      this.releaseRoot ||
+      this.captureRoot ||
+      this.pauseMenuOpen
+    ) {
+      return;
+    }
+    const panel = this.panelById(id);
+    if (panel) this.togglePanel(panel);
   }
 
   /** Resolves the movement keys from the shared map; re-run when it changes. */
@@ -1000,9 +1054,6 @@ export class RouteScene extends Phaser.Scene {
     this.hudPartyY = partyY;
     this.hudPartyH = partyH;
     partyChildren.push(addFrlgWindow(this, x, partyY, HUD_PANEL_W, partyH));
-    partyChildren.push(
-      addFrlgText(this, x + HUD_CONTENT_LEFT, partyY + HUD_PAD_TOP, 'PARTY', { size: 16, tint: 0x3a3956 }),
-    );
     // The Pokevial sits in the header's top-right corner: one click rests the
     // whole party and the box, and it refills at each floor's heal stop.
     const vialX = x + HUD_PANEL_W - HUD_PAD_X - HUD_VIAL_W;
@@ -1171,6 +1222,7 @@ export class RouteScene extends Phaser.Scene {
         HUD_MAP_H,
         this.add.container(0, 0, headerChildren),
         PANEL_ICON_KEYS.header,
+        PANEL_KEY_ACTIONS.header ?? null,
       ),
       this.makeHudPanel(
         'party',
@@ -1180,6 +1232,7 @@ export class RouteScene extends Phaser.Scene {
         partyH,
         this.add.container(0, 0, partyChildren),
         PANEL_ICON_KEYS.party,
+        PANEL_KEY_ACTIONS.party ?? null,
       ),
       this.makeHudPanel(
         'bag',
@@ -1189,6 +1242,7 @@ export class RouteScene extends Phaser.Scene {
         bagH,
         this.add.container(0, 0, bagChildren),
         PANEL_ICON_KEYS.bag,
+        PANEL_KEY_ACTIONS.bag ?? null,
       ),
       this.makeHudPanel(
         'box',
@@ -1198,6 +1252,7 @@ export class RouteScene extends Phaser.Scene {
         HUD_BOX_H,
         this.add.container(0, 0, boxChildren),
         PANEL_ICON_KEYS.box,
+        PANEL_KEY_ACTIONS.box ?? null,
       ),
       this.makeHudPanel(
         'detail',
@@ -1207,6 +1262,7 @@ export class RouteScene extends Phaser.Scene {
         HUD_DETAIL_H,
         this.hudDetail,
         PANEL_ICON_KEYS.detail,
+        null,
       ),
     ];
 
@@ -1233,23 +1289,72 @@ export class RouteScene extends Phaser.Scene {
     h: number,
     body: Phaser.GameObjects.Container,
     iconTexture: string,
+    key: KeybindAction | null,
   ): HudPanel {
-    const icon = this.buildPanelIcon(x, y, iconTexture);
+    const { icon, label, w: iconW, h: iconH } = this.buildPanelIcon(x, y, iconTexture, key);
     const container = this.add.container(0, 0, [body, icon]);
-    return { id, container, body, icon, x, y, w, h, dx: 0, dy: 0, expanded: true };
+    return {
+      id,
+      container,
+      body,
+      icon,
+      key,
+      keyLabel: label,
+      iconW,
+      iconH,
+      x,
+      y,
+      w,
+      h,
+      dx: 0,
+      dy: 0,
+      expanded: true,
+    };
   }
 
-  /** The small dark button with a white glyph that collapses its panel. */
-  private buildPanelIcon(x: number, y: number, textureKey: string): Phaser.GameObjects.Container {
-    const bg = this.add
-      .rectangle(x + HUD_ICON_INSET, y + HUD_ICON_INSET, HUD_ICON, HUD_ICON, 0x2f2c4d)
-      .setOrigin(0, 0);
-    const image = this.add.image(
-      x + HUD_ICON_INSET + HUD_ICON / 2,
-      y + HUD_ICON_INSET + HUD_ICON / 2,
-      textureKey,
-    );
-    return this.add.container(0, 0, [bg, image]);
+  /**
+   * The dark button with a white glyph that collapses its panel, flush with the
+   * panel's top-left corner. When the panel has a quick key and this is a keyboard
+   * screen, it grows into a rectangle and prints that key's letter under the icon,
+   * so the shortcut is discoverable; a touch screen shows only the icon.
+   */
+  private buildPanelIcon(
+    x: number,
+    y: number,
+    textureKey: string,
+    key: KeybindAction | null,
+  ): {
+    icon: Phaser.GameObjects.Container;
+    label: Phaser.GameObjects.BitmapText | null;
+    w: number;
+    h: number;
+  } {
+    const showKey = key !== null && !prefersTouchControls();
+    const h = HUD_ICON + (showKey ? HUD_KEY_H : 0);
+    const bg = this.add.rectangle(x, y, HUD_ICON, h, 0x2f2c4d).setOrigin(0, 0);
+    const image = this.add.image(x + HUD_ICON / 2, y + HUD_ICON / 2, textureKey);
+    const children: Phaser.GameObjects.GameObject[] = [bg, image];
+    let label: Phaser.GameObjects.BitmapText | null = null;
+    if (showKey && key !== null) {
+      label = addFrlgText(
+        this,
+        x + HUD_ICON / 2,
+        y + HUD_ICON + (HUD_KEY_H - HUD_KEY_TEXT) / 2,
+        keyLabel(this.settings.keybinds[key]),
+        { size: HUD_KEY_TEXT, tint: 0xf8fafc, origin: [0.5, 0] },
+      );
+      children.push(label);
+    }
+    return { icon: this.add.container(0, 0, children), label, w: HUD_ICON, h };
+  }
+
+  /** Re-prints the quick-key letters after a rebind (see `applySettings`). */
+  private refreshPanelKeyLabels(): void {
+    for (const panel of this.hudPanels) {
+      if (panel.keyLabel && panel.key) {
+        panel.keyLabel.setText(keyLabel(this.settings.keybinds[panel.key]));
+      }
+    }
   }
 
   /**
@@ -2372,7 +2477,12 @@ export class RouteScene extends Phaser.Scene {
   /** A panel's layout rect before the drag offset: the window, or its icon. */
   private panelBase(panel: HudPanel): { x: number; y: number; w: number; h: number } {
     if (!panel.expanded) {
-      return { x: panel.x + HUD_ICON_INSET, y: panel.y + HUD_ICON_INSET, w: HUD_ICON, h: HUD_ICON };
+      return {
+        x: panel.x + HUD_ICON_INSET,
+        y: panel.y + HUD_ICON_INSET,
+        w: panel.iconW,
+        h: panel.iconH,
+      };
     }
     return { x: panel.x, y: panel.y, w: panel.w, h: panel.h };
   }
@@ -2388,8 +2498,8 @@ export class RouteScene extends Phaser.Scene {
     return {
       x: panel.x + HUD_ICON_INSET + panel.dx,
       y: panel.y + HUD_ICON_INSET + panel.dy,
-      w: HUD_ICON,
-      h: HUD_ICON,
+      w: panel.iconW,
+      h: panel.iconH,
     };
   }
 
@@ -3341,7 +3451,7 @@ export class RouteScene extends Phaser.Scene {
     return true;
   }
 
-  /** Opens the settings screen paused-on-top, like a battle (`O`). */
+  /** Opens the settings screen paused-on-top, like a battle (`Tab`). */
   private openSettings(): void {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     this.scene.pause();
@@ -3479,6 +3589,7 @@ export class RouteScene extends Phaser.Scene {
     // A rebind happened behind this screen; re-resolve the movement keys so the
     // new keys are live the moment the route resumes.
     this.refreshMoveKeys();
+    this.refreshPanelKeyLabels();
   }
 
   /** Pauses the route and rolls the battle on top of it (Phase 5 transition). */

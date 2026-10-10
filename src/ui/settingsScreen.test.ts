@@ -30,6 +30,10 @@ describe('rows', () => {
       'run',
       'interact',
       'reset',
+      'party',
+      'bag',
+      'map',
+      'box',
       'settings',
     ]);
     expect(SETTINGS_ROWS.slice(0, 4).every(isStepRow)).toBe(true);

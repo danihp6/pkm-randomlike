@@ -48,7 +48,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -101,8 +101,9 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * run onto the v10 schema, which added the `pokevialCharges` counter (an old run
  * starts with a full vial); `10` moves a v10 run onto the v11 schema, which added
  * the PC-lock state (`entryDeparted`, `pcUnlocked`), an old run starting unlocked
- * only in its entry room. Later changes add the next step, e.g.
- * `11: (doc) => ({ ...doc, version: 12, changed })`.
+ * only in its entry room; `11` moves a v11 settings onto the v12 schema, which
+ * added the four HUD-panel keys (`party`/`bag`/`map`/`box`) and moved `settings`
+ * off its old `O` default to `Tab` (the old `O` becomes the PC box key).
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -164,6 +165,16 @@ export const SAVE_MIGRATIONS: Migrations = {
     run: isRecord(document.run)
       ? { ...document.run, entryDeparted: false, pcUnlocked: [] }
       : document.run,
+  }),
+  11: (document) => ({
+    ...document,
+    version: 12,
+    // `sanitizeKeybinds` fills the four new panel actions from their defaults and,
+    // because they are listed before `settings`, hands the old `O` to `box` while
+    // `settings` falls back to `Tab`.
+    settings: isRecord(document.settings)
+      ? { ...document.settings, keybinds: sanitizeKeybinds(document.settings.keybinds) }
+      : document.settings,
   }),
 };
 
