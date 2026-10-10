@@ -206,12 +206,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       the Mega forme for the battle. All dex Megas (formes may be nonstandard);
       only bosses, mini-bosses and the `ace` archetype carry stones. Engine +
       data + battle UI, fixed-seed tests.
-- [ ] **Step 10 — Money & valuables.** `RunState` gains `money`; each trainer
-      drops a **fixed base + jitter** from its archetype/band data
-      (`src/data/trainers.ts`) and the HUD shows it in the **bag panel**. Add the
-      **valuables** (Nugget, Pearl, …) to the item catalogue and to the
-      ground-item loot pool (`src/data/loot.ts`); the run starts with no money.
-      Pure tests for the reward roll and the bag.
 - [ ] **Step 11 — Special rooms in the plan.** Extend `MapPlan` to hang the
       special leaves off the floor: a guaranteed **shop** near the entry, a
       **mini-boss** leaf (50%) and a **mega-stone** leaf (15%, from map 3 on, may

@@ -62,6 +62,22 @@ describe('resolveBattle', () => {
     expect(resolveBattle(run, returned(run, 'win'), wild).run.pokevialCharges).toBe(0);
   });
 
+  it('drops a trainer\'s money on a win, exactly once', () => {
+    const run = createRun({ seed: 's', starter });
+    const reward: BattleReward = { enemyLevels: [4], isTrainer: true, trainerId: 'trainer-1-0', money: 250 };
+    const first = resolveBattle(run, returned(run, 'win'), reward);
+    expect(first.run.money).toBe(250);
+    const again = resolveBattle(first.run, returned(first.run, 'win'), reward);
+    expect(again.run.money).toBe(250);
+  });
+
+  it('drops no money on a wild win or a trainer loss', () => {
+    const run = createRun({ seed: 's', starter });
+    expect(resolveBattle(run, returned(run, 'win'), wild).run.money).toBe(0);
+    const reward: BattleReward = { enemyLevels: [4], isTrainer: true, trainerId: 'trainer-1-0', money: 250 };
+    expect(resolveBattle(run, returned(run, 'lose'), reward).run.money).toBe(0);
+  });
+
   it('places a catch, spends the room capture and awards XP', () => {
     const run = createRun({ seed: 's', starter });
     const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });

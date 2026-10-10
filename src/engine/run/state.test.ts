@@ -9,6 +9,7 @@ import {
   MAX_PARTY_SIZE,
   addCaughtPokemon,
   addItem,
+  addMoney,
   addPokemon,
   advanceMap,
   advanceRoute,
@@ -32,6 +33,7 @@ import {
   pcMemberEditable,
   recordCatch,
   setParty,
+  spendMoney,
   swapCaughtIntoParty,
   swapPartyBox,
   unequipHeldItem,
@@ -58,8 +60,31 @@ describe('createRun', () => {
     expect(run.box).toEqual([]);
     expect(run.pickedItems).toEqual([]);
     expect(run.capturedRooms).toEqual([]);
+    expect(run.money).toBe(0);
     expect(run.mode).toBe('finite');
     expect(run.stats).toEqual({ catches: 0, casualties: 0 });
+  });
+
+  it('honours a starting money amount, floored at zero', () => {
+    expect(createRun({ seed: 'run-a', starter, money: 500 }).money).toBe(500);
+    expect(createRun({ seed: 'run-a', starter, money: -20 }).money).toBe(0);
+  });
+});
+
+describe('money', () => {
+  it('adds a trainer drop, ignoring a zero or negative amount', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    expect(addMoney(run, 250).money).toBe(250);
+    expect(addMoney(run, 0)).toBe(run);
+    expect(addMoney(run, -5)).toBe(run);
+  });
+
+  it('spends only what the run can afford', () => {
+    const run = addMoney(createRun({ seed: 'run-a', starter }), 300);
+    expect(spendMoney(run, 200).money).toBe(100);
+    expect(spendMoney(run, 300).money).toBe(0);
+    expect(spendMoney(run, 500)).toBe(run);
+    expect(spendMoney(run, 0)).toBe(run);
   });
 });
 

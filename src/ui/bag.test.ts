@@ -11,6 +11,8 @@ describe('bagCategoryFor', () => {
     expect(bagCategoryFor('leftovers')).toBe('equipment');
     expect(bagCategoryFor('charcoal')).toBe('equipment');
     expect(bagCategoryFor('sitrusberry')).toBe('equipment');
+    expect(bagCategoryFor('nugget')).toBe('valuable');
+    expect(bagCategoryFor('cometshard')).toBe('valuable');
   });
 
   it('returns null for an id the catalogue does not carry', () => {
@@ -39,12 +41,12 @@ describe('bagForCategory', () => {
 
 describe('cycleBagCategory', () => {
   it('wraps in both directions', () => {
-    expect(cycleBagCategory('equipment', -1)).toBe('ball');
-    expect(cycleBagCategory('ball', 1)).toBe('equipment');
+    expect(cycleBagCategory('equipment', -1)).toBe('valuable');
+    expect(cycleBagCategory('valuable', 1)).toBe('equipment');
     expect(cycleBagCategory('consumable', 1)).toBe('machine');
   });
 
   it('lists every pocket in tab order', () => {
-    expect(BAG_CATEGORIES).toEqual(['equipment', 'consumable', 'machine', 'ball']);
+    expect(BAG_CATEGORIES).toEqual(['equipment', 'consumable', 'machine', 'ball', 'valuable']);
   });
 });

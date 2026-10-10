@@ -23,14 +23,15 @@ const entry = (itemId: string, weight: number): LootEntry => ({ itemId, weight }
  * `(seed, routeIndex)` fixes positions, contents and which ones are hidden (D11).
  *
  * The pool widens and deepens with the band: early routes hand out Potions and
- * Poke Balls, the late bands bring Hyper Potions, Ultra Balls and the held items
- * the battle engine already supports. No Revive anywhere (D5).
+ * Poke Balls, the late bands bring Hyper Potions, Ultra Balls, the held items
+ * the battle engine already supports, and the **valuables** worth real money at
+ * the shop (`docs/maps-spec.md` §7). No Revive anywhere (D5).
  */
 export const ROUTE_LOOT: Readonly<Record<BandId, BandLoot>> = {
   early: {
     hiddenChance: 0.35,
     itemChance: 0.75,
-    pool: [entry('potion', 4), entry('pokeball', 4), entry('antidote', 1)],
+    pool: [entry('potion', 4), entry('pokeball', 4), entry('antidote', 1), entry('stardust', 1)],
   },
   low: {
     hiddenChance: 0.35,
@@ -40,6 +41,8 @@ export const ROUTE_LOOT: Readonly<Record<BandId, BandLoot>> = {
       entry('potion', 3),
       entry('superpotion', 2),
       entry('paralyzeheal', 1),
+      entry('stardust', 1),
+      entry('pearl', 1),
     ],
   },
   mid: {
@@ -51,6 +54,9 @@ export const ROUTE_LOOT: Readonly<Record<BandId, BandLoot>> = {
       entry('potion', 2),
       entry('fullheal', 2),
       entry('xattack', 1),
+      entry('pearl', 1),
+      entry('nugget', 1),
+      entry('starpiece', 1),
     ],
   },
   high: {
@@ -63,6 +69,9 @@ export const ROUTE_LOOT: Readonly<Record<BandId, BandLoot>> = {
       entry('fullheal', 2),
       entry('xdefense', 1),
       entry('sitrusberry', 1),
+      entry('nugget', 1),
+      entry('starpiece', 1),
+      entry('bigpearl', 1),
     ],
   },
   late: {
@@ -76,6 +85,9 @@ export const ROUTE_LOOT: Readonly<Record<BandId, BandLoot>> = {
       entry('xspeed', 1),
       entry('sitrusberry', 1),
       entry('leftovers', 1),
+      entry('bigpearl', 1),
+      entry('pearlstring', 1),
+      entry('bignugget', 1),
     ],
   },
   end: {
@@ -89,6 +101,9 @@ export const ROUTE_LOOT: Readonly<Record<BandId, BandLoot>> = {
       entry('leftovers', 1),
       entry('sitrusberry', 1),
       entry('xattack', 1),
+      entry('pearlstring', 1),
+      entry('bignugget', 1),
+      entry('cometshard', 1),
     ],
   },
 };

@@ -9,9 +9,10 @@ it in `docs/tech-decisions.md` (D28–D33).
 
 > Status: in progress. The tuning tables (`src/data/maps.ts`), the plan generator
 > (`Plan`), the plan-driven route shapes and size, the per-map levels, the run's
-> floor tracking, the boss/portal and the route HUD **minimap** (`src/ui/mapView.ts`)
-> have shipped; the special rooms and the Poké Dollar economy are the open steps in
-> `TODO.md` Phase 9.
+> floor tracking, the boss/portal, the route HUD **minimap** (`src/ui/mapView.ts`)
+> and the **Poké Dollar economy** (trainer drops, the valuables and the bag's
+> money readout) have shipped; the special rooms and the shop are the open steps
+> in `TODO.md` Phase 9.
 
 ## 1. What a map is
 

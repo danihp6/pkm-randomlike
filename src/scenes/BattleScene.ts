@@ -1436,6 +1436,7 @@ export class BattleScene extends Phaser.Scene {
       (slot) =>
         slot.count > 0 &&
         slot.item.kind !== 'held' &&
+        slot.item.kind !== 'valuable' &&
         (slot.item.kind !== 'ball' || (this.state.isWild && this.launch?.canCapture === true)),
     );
   }

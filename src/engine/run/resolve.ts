@@ -11,6 +11,7 @@ import {
   type RunPokemon,
 } from './progression';
 import {
+  addMoney,
   addPokemon,
   gainExperience,
   isTrainerDefeated,
@@ -27,6 +28,8 @@ export type BattleReward = Readonly<{
   isTrainer: boolean;
   /** Set for a trainer battle, so a win marks the trainer beaten. */
   trainerId?: string;
+  /** Poké Dollars a trainer win drops, already rolled from its archetype/band (D33). */
+  money?: number;
 }>;
 
 export type BattleResolution = Readonly<{
@@ -96,9 +99,14 @@ export function resolveBattle(
   }
 
   if (reward.isTrainer && reward.trainerId !== undefined && result.outcome === 'win') {
-    // A beaten trainer tops the Pokevial up by one charge. Only a first win
-    // counts, so a replay or an already-marked trainer never doubles the meter.
-    if (!isTrainerDefeated(next, reward.trainerId)) next = chargePokevial(next);
+    // A beaten trainer tops the Pokevial up by one charge and drops its money.
+    // Only a first win counts, so a replay or an already-marked trainer never
+    // doubles either.
+    const firstWin = !isTrainerDefeated(next, reward.trainerId);
+    if (firstWin) {
+      next = chargePokevial(next);
+      if (reward.money !== undefined) next = addMoney(next, reward.money);
+    }
     next = markTrainerDefeated(next, reward.trainerId);
   }
 

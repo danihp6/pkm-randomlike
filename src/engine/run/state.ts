@@ -34,8 +34,9 @@ export function emptyRunStats(): RunStats {
 /**
  * The run: everything that survives a route. The party/box hold run members
  * (battle snapshot + XP), the bag is the item stacks the scene passes to battle,
- * `defeatedTrainers` / `pickedItems` / `capturedRooms` are the **per-floor**
- * bookkeeping and `stats` is the running score the end-of-run screen reports.
+ * `money` is the Poké Dollars beat out of trainers, `defeatedTrainers` /
+ * `pickedItems` / `capturedRooms` are the **per-floor** bookkeeping and `stats`
+ * is the running score the end-of-run screen reports.
  * Every helper here is pure and returns a new state (D11: no hidden randomness).
  *
  * A route is a room of a **map** (a Binding of Isaac-style floor), so the global
@@ -90,6 +91,12 @@ export type RunState = Readonly<{
   party: readonly RunPokemon[];
   box: readonly RunPokemon[];
   bag: readonly BagCounts[];
+  /**
+   * Poké Dollars, earned only by beating trainers and spent in the shop
+   * (`docs/maps-spec.md` §7, D33). A run starts with none and it carries across
+   * floors; a lost run carries nothing over (D5).
+   */
+  money: number;
   /** Trainer ids already beaten on `mapIndex`. Resets per map, so revisits stay clear. */
   defeatedTrainers: readonly string[];
   /** Ground-item ids already taken on `mapIndex`. Resets per map. */
@@ -104,6 +111,8 @@ export type RunInit = Readonly<{
   starter: RunPokemon;
   mode?: RunMode;
   bag?: readonly BagCounts[];
+  /** Starting Poké Dollars; a fresh run has none (`docs/maps-spec.md` §7). */
+  money?: number;
   /** The squad's starting XP; defaults to the starter's own level curve. */
   xp?: number;
 }>;
@@ -128,6 +137,7 @@ export function createRun(init: RunInit): RunState {
     party: [init.starter],
     box: [],
     bag: [...(init.bag ?? [])],
+    money: Math.max(0, Math.floor(init.money ?? 0)),
     defeatedTrainers: [],
     pickedItems: [],
     capturedRooms: [],
@@ -426,6 +436,19 @@ export function addItem(run: RunState, itemId: string, count = 1): RunState {
     ? run.bag.map((slot) => (slot.itemId === itemId ? { itemId, count: slot.count + count } : slot))
     : [...run.bag, { itemId, count }];
   return { ...run, bag };
+}
+
+/** Adds Poké Dollars (a beaten trainer's drop). A negative or zero amount is a no-op. */
+export function addMoney(run: RunState, amount: number): RunState {
+  const gain = Math.max(0, Math.floor(amount));
+  return gain === 0 ? run : { ...run, money: run.money + gain };
+}
+
+/** Spends Poké Dollars; refused (a no-op) when the run cannot afford `amount`. */
+export function spendMoney(run: RunState, amount: number): RunState {
+  const cost = Math.max(0, Math.floor(amount));
+  if (cost === 0) return run;
+  return run.money < cost ? run : { ...run, money: run.money - cost };
 }
 
 /** Removes up to `count`; empty stacks drop out of the bag. A miss is a no-op. */

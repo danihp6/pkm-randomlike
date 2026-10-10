@@ -2,6 +2,29 @@ import type { BandId } from './run';
 
 export type TrainerPools = Readonly<Record<BandId, readonly string[]>>;
 
+/**
+ * The Poké Dollars a beaten trainer of this archetype drops: a **fixed base**
+ * plus a **jitter** rolled from `base` to `base + jitter` (`docs/maps-spec.md`
+ * §7, D33). Both scale with the map's band through
+ * `TRAINER_MONEY_BAND_SCALE`, so a late trainer pays more. Balance data (O-M5);
+ * tuning never touches the code that rolls it.
+ */
+export type TrainerMoney = Readonly<{ base: number; jitter: number }>;
+
+/**
+ * How much a map's band multiplies a trainer's money. The base/jitter on each
+ * archetype are the **early** values; a later band scales both, so the reward
+ * tracks the level range the roster fields. Data, so retuning is an edit here.
+ */
+export const TRAINER_MONEY_BAND_SCALE: Readonly<Record<BandId, number>> = {
+  early: 1,
+  low: 1.25,
+  mid: 1.75,
+  high: 2.5,
+  late: 3.5,
+  end: 5,
+};
+
 export type TrainerArchetype = Readonly<{
   id: string;
   name: string;
@@ -26,6 +49,8 @@ export type TrainerArchetype = Readonly<{
    * furrets, greedents and cinccinos late (`docs/routes-spec.md` §5).
    */
   pools: TrainerPools;
+  /** The Poké Dollars a beaten member of this archetype drops (`D33`). */
+  money: TrainerMoney;
   /**
    * True for the `ace` archetype (and, at the call site, map bosses): its
    * roster may carry a Mega Stone, so its Pokémon can Mega Evolve (`D34`).
@@ -36,6 +61,7 @@ export type TrainerArchetype = Readonly<{
 export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
   {
     id: 'youngster',
+    money: { base: 60, jitter: 30 },
     name: 'Youngster',
     className: 'Youngster',
     spriteKey: 'youngster',
@@ -52,6 +78,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
   },
   {
     id: 'lass',
+    money: { base: 70, jitter: 30 },
     name: 'Lass',
     className: 'Lass',
     spriteKey: 'lass',
@@ -68,6 +95,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
   },
   {
     id: 'bugcatcher',
+    money: { base: 50, jitter: 25 },
     name: 'Bug Catcher',
     className: 'Bug Catcher',
     spriteKey: 'bugcatcher',
@@ -84,6 +112,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
   },
   {
     id: 'hiker',
+    money: { base: 90, jitter: 40 },
     name: 'Hiker',
     className: 'Hiker',
     spriteKey: 'hiker',
@@ -100,6 +129,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
   },
   {
     id: 'camper',
+    money: { base: 80, jitter: 35 },
     name: 'Camper',
     className: 'Camper',
     spriteKey: 'camper',
@@ -116,6 +146,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
   },
   {
     id: 'picnicker',
+    money: { base: 80, jitter: 35 },
     name: 'Picnicker',
     className: 'Picnicker',
     spriteKey: 'picnicker',
@@ -132,6 +163,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
   },
   {
     id: 'fisher',
+    money: { base: 100, jitter: 45 },
     name: 'Fisher',
     className: 'Fisher',
     spriteKey: 'fisher',
@@ -148,6 +180,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
   },
   {
     id: 'psychic',
+    money: { base: 120, jitter: 50 },
     name: 'Psychic',
     className: 'Psychic',
     spriteKey: 'psychic',
@@ -164,6 +197,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
   },
   {
     id: 'blackbelt',
+    money: { base: 130, jitter: 55 },
     name: 'Black Belt',
     className: 'Black Belt',
     spriteKey: 'blackbelt',
@@ -180,6 +214,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
   },
   {
     id: 'ace',
+    money: { base: 200, jitter: 80 },
     name: 'Ace Trainer',
     className: 'Ace Trainer',
     spriteKey: 'ace',
