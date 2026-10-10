@@ -37,6 +37,8 @@ through a held stone (`src/engine/battle/mega.ts`).
 | `src/data/frlg/item-icons.json` | generated frame map for the FRLG item icon atlas | 6 |
 | `src/data/typeIcons.ts` | typed view over the generated `frlg/type-icons.json` (FRLG type badge frames) | 7 |
 | `src/data/frlg/type-icons.json` | generated frame map for the FRLG type badge atlas | 7 |
+| `src/data/statusIcons.ts` | typed view over the generated `frlg/status-icons.json` (FRLG status badge frames) | 7 |
+| `src/data/frlg/status-icons.json` | generated frame map for the FRLG status badge atlas | 7 |
 
 ## 3. Typed accessors
 

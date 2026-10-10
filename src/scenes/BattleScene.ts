@@ -9,6 +9,7 @@ import { getTrainerArchetype } from '../data/trainers';
 import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
 import { legalMoveIndices, type Command } from '../engine/battle/commands';
 import { createFighter, restoreFighter, snapshotFighter, type BattleFighter, type StatusId } from '../engine/battle/fighter';
+import { movePreview } from '../engine/battle/preview';
 import { chooseAiCommand } from '../engine/battle/ai';
 import { canRun } from '../engine/battle/runAway';
 import type { BattleEvent } from '../engine/battle/state';
@@ -55,6 +56,8 @@ import { actionKeys, subscribeKeybinds } from '../input/input';
 import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_TEXTBOX_PADDING, FRLG_WINDOW_PADDING } from '../ui/frlg';
 import { FRLG_INK, FRLG_FONT_SIZE, addFrlgText } from '../ui/frlgFont';
 import { typeColor, typeTint } from '../ui/typeColors';
+import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeIcons';
+import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../data/statusIcons';
 import { DETAIL_STATS, STAT_LABELS, fighterDetail } from '../ui/partyDetail';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import {
@@ -93,6 +96,8 @@ const MENU_BAG_ROWS = 3;
 /** The moves menu is a grid so all four moves show at once, with no scrolling. */
 const MENU_GRID_COLS = 2;
 const MENU_GRID_GAP = 8;
+/** The moves grid always reserves the full 2x2, so a short list keeps one cell size. */
+const MENU_GRID_ROWS = Math.ceil(MENU_ROWS / MENU_GRID_COLS);
 /** Width reserved at the left of the moves grid for the ◀ back control. */
 const MOVE_BACK_COL = 46;
 /** Width reserved at the right of the moves grid for the Mega control (D34). */
@@ -100,10 +105,20 @@ const MOVE_MEGA_COL = 62;
 /** Inner padding of a moves cell, and the inset of the whole grid in the window. */
 const MOVE_CELL_PAD = 14;
 const MOVE_GRID_INSET = 8;
-/** The move description popup that sits above the moves menu. */
+/** The ⓘ button in each move cell that reveals the info popup. */
+const MOVE_INFO_SIZE = 22;
+/** The type badge drawn beside the move name; the FRLG badge is 32x14. */
+const MOVE_TYPE_ICON_SCALE = 0.85;
+const MOVE_TYPE_COL = Math.round(TYPE_ICON_W * MOVE_TYPE_ICON_SCALE) + 6;
+/** Below this cell width the power/accuracy line drops under the category row. */
+const MOVE_CELL_NARROW = 220;
+/** The power / accuracy column reserved at a wide cell's right. */
+const MOVE_STAT_COL = 66;
+/** The move description popup that floats over the field on demand. */
 const MOVE_POPUP_MIN_H = 56;
 const MOVE_POPUP_GAP = 8;
-const MOVE_POPUP_TYPE_W = 88;
+/** The popup's left column: the type badge and, under it, the status badge. */
+const MOVE_POPUP_ICON_COL = 44;
 /** The category badge is 32x14; 1.5x reads clearly beside the 16px cell text. */
 const MOVE_CATEGORY_ICON_SCALE = 1.5;
 /** The party (switch) grid: 3 columns of avatar cells. */
@@ -168,18 +183,57 @@ function capitalize(text: string): string {
   return text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
 }
 
+/** Green when a stat line reads above its base, red when below, ink when level. */
+const MOVE_STAT_UP = 0x1b7a3d;
+const MOVE_STAT_DOWN = 0xb3261e;
+
+/** The power line's colour: green raised above its base, red lowered, else ink. */
+function powerTint(move: MenuMove): number {
+  if (move.power > move.basePower) return MOVE_STAT_UP;
+  if (move.power < move.basePower) return MOVE_STAT_DOWN;
+  return FRLG_INK;
+}
+
+/** `ACC 100`, with an ↑ / ↓ when stages or abilities moved the hit chance. */
+function accuracyLabel(move: MenuMove): string {
+  if (move.baseAccuracy === null || move.accuracy === null) return 'ACC --';
+  const arrow =
+    move.accuracy > move.baseAccuracy ? ' \u2191' : move.accuracy < move.baseAccuracy ? ' \u2193' : '';
+  return `ACC ${move.accuracy}${arrow}`;
+}
+
+/** Green for a raised hit chance, red for a lowered one, ink when unchanged. */
+function accuracyTint(move: MenuMove): number {
+  if (move.baseAccuracy === null || move.accuracy === null) return FRLG_INK;
+  if (move.accuracy > move.baseAccuracy) return MOVE_STAT_UP;
+  if (move.accuracy < move.baseAccuracy) return MOVE_STAT_DOWN;
+  return FRLG_INK;
+}
+
 type Mode = 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'over';
 
 /** A sprite beat that owns the mon's position/scale until it completes. */
 type BeatKind = 'faint' | 'switch';
 
-/** Extra data a move grid cell draws: its type, category, PP and description. */
+/** Extra data a move grid cell draws: type, category, PP, power, accuracy, description. */
 type MenuMove = Readonly<{
   type: string;
   category: string;
   pp: number;
   maxPp: number;
   desc: string;
+  /** Effective power, base × ability/item × STAB (0 for a status move). */
+  power: number;
+  basePower: number;
+  stab: boolean;
+  /** Printed accuracy, or null when the move never misses. */
+  baseAccuracy: number | null;
+  /** Final hit chance in percent, or null when the move never misses. */
+  accuracy: number | null;
+  /** Net accuracy stage, so the popup can spell out an increase or reduction. */
+  accuracyStage: number;
+  /** Primary status the move inflicts, for the badge in the info popup. */
+  status: string | null;
 }>;
 
 type MenuItem = Readonly<{ label: string; enabled: boolean; onSelect: () => void; move?: MenuMove }>;
@@ -261,6 +315,8 @@ export class BattleScene extends Phaser.Scene {
   private nameText!: Record<SideId, Phaser.GameObjects.BitmapText>;
   private statText!: Record<SideId, Phaser.GameObjects.BitmapText>;
   private statusText!: Record<SideId, Phaser.GameObjects.BitmapText>;
+  /** The FRLG status badge drawn in a panel instead of the text, when one exists. */
+  private statusBadges!: Record<SideId, Phaser.GameObjects.Image>;
   private xpText!: Phaser.GameObjects.BitmapText;
   private playerSprite!: Phaser.GameObjects.Sprite;
   private foeSprite!: Phaser.GameObjects.Sprite;
@@ -274,9 +330,15 @@ export class BattleScene extends Phaser.Scene {
   private menuZones: Phaser.GameObjects.Zone[] = [];
   /** The cells of the moves grid, drawn behind its text so the 2x2 reads as a grid. */
   private moveCells: Phaser.GameObjects.Rectangle[] = [];
-  /** The category badge and PP text of each moves-grid cell. */
+  /** The type badge, category badge and PP / power / accuracy text of each cell. */
+  private moveTypeIcons: Phaser.GameObjects.Image[] = [];
   private moveCategoryIcons: Phaser.GameObjects.Image[] = [];
   private movePpText: Phaser.GameObjects.BitmapText[] = [];
+  private movePowerText: Phaser.GameObjects.BitmapText[] = [];
+  private moveAccuracyText: Phaser.GameObjects.BitmapText[] = [];
+  /** The per-cell ⓘ button; hovering or clicking the cell's button reveals the info. */
+  private moveInfoButtons: Phaser.GameObjects.Rectangle[] = [];
+  private moveInfoLabels: Phaser.GameObjects.BitmapText[] = [];
   /** The party (switch) grid: a cell, avatar, label, HP bar and hit zone per member. */
   private partyCells: Phaser.GameObjects.Rectangle[] = [];
   private partyAvatars: Phaser.GameObjects.Image[] = [];
@@ -284,11 +346,16 @@ export class BattleScene extends Phaser.Scene {
   private partyHpBars: Phaser.GameObjects.Image[] = [];
   private partyHpFills: Phaser.GameObjects.Rectangle[] = [];
   private partyZones: Phaser.GameObjects.Zone[] = [];
-  /** The description popup shown while the moves menu is open. */
+  /** The description popup shown on demand while the moves menu is open. */
   private movePopup!: Phaser.GameObjects.NineSlice;
   private movePopupType!: Phaser.GameObjects.Rectangle;
   private movePopupTypeText!: Phaser.GameObjects.BitmapText;
+  private movePopupTypeIcon!: Phaser.GameObjects.Image;
+  private movePopupStatusIcon!: Phaser.GameObjects.Image;
   private movePopupText!: Phaser.GameObjects.BitmapText;
+  /** The move whose info popup is up, or null; `infoPinned` keeps it up on click. */
+  private infoMove: number | null = null;
+  private infoPinned = false;
 
   /** The no-tab party detail popup shown above the party grid. */
   private partyDetail!: Phaser.GameObjects.Container;
@@ -508,6 +575,11 @@ export class BattleScene extends Phaser.Scene {
       enemy: addFrlgText(this, 0, 0, '', { size: 16, tint: 0xf8fafc, origin: 0.5 }),
       player: addFrlgText(this, 0, 0, '', { size: 16, tint: 0xf8fafc, origin: 0.5 }),
     };
+    // The FRLG condition badges; drawn at 1.5x to match the panel text size.
+    this.statusBadges = {
+      enemy: this.add.image(0, 0, STATUS_ICON_TEXTURE_KEY, 0).setOrigin(0, 0).setScale(1.5).setVisible(false),
+      player: this.add.image(0, 0, STATUS_ICON_TEXTURE_KEY, 0).setOrigin(0, 0).setScale(1.5).setVisible(false),
+    };
     this.xpText = addFrlgText(this, 0, 0, '', { size: 16, tint: 0x3b82f6 });
 
     this.messageText = addFrlgText(this, 0, 0, '', { lineSpacing: 4 });
@@ -525,6 +597,30 @@ export class BattleScene extends Phaser.Scene {
     );
     this.movePpText = Array.from({ length: MENU_ROWS }, () =>
       addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK }).setVisible(false),
+    );
+    this.moveTypeIcons = Array.from({ length: MENU_ROWS }, () =>
+      this.add
+        .image(0, 0, TYPE_ICON_TEXTURE_KEY, 0)
+        .setOrigin(0, 0)
+        .setScale(MOVE_TYPE_ICON_SCALE)
+        .setVisible(false),
+    );
+    // Power and accuracy read at the cell's right; the accuracy picks up an ↑/↓
+    // when a stage or an ability has moved the hit chance off its printed value.
+    this.movePowerText = Array.from({ length: MENU_ROWS }, () =>
+      addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [1, 0] }).setVisible(false),
+    );
+    this.moveAccuracyText = Array.from({ length: MENU_ROWS }, () =>
+      addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [1, 0] }).setVisible(false),
+    );
+    this.moveInfoButtons = Array.from({ length: MENU_ROWS }, () =>
+      this.add
+        .rectangle(0, 0, MOVE_INFO_SIZE, MOVE_INFO_SIZE, 0xcfcce2)
+        .setStrokeStyle(2, 0x9a94b8)
+        .setVisible(false),
+    );
+    this.moveInfoLabels = Array.from({ length: MENU_ROWS }, () =>
+      addFrlgText(this, 0, 0, 'i', { size: 16, tint: FRLG_INK, origin: 0.5 }).setVisible(false),
     );
     // The party (switch) grid, built once and hidden until the party is open.
     this.partyCells = Array.from({ length: MAX_PARTY_SIZE }, () =>
@@ -564,13 +660,20 @@ export class BattleScene extends Phaser.Scene {
     });
 
     // One invisible zone per row: hovering moves the cursor, clicking picks the
-    // row, so the menu answers the mouse exactly like the keyboard.
+    // row, so the menu answers the mouse exactly like the keyboard. In the moves
+    // grid the same zone also watches its ⓘ button for hover and click.
     this.menuZones = Array.from({ length: MENU_ROWS }, () => {
       const zone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0);
       zone.setData('item', -1);
       zone.setInteractive({ useHandCursor: true });
       zone.on('pointerover', () => this.onMenuHover(zone));
-      zone.on('pointerdown', () => this.onMenuClick(zone));
+      zone.on('pointermove', (_pointer: Phaser.Input.Pointer, x: number, y: number) =>
+        this.onMenuPointerMove(zone, x, y),
+      );
+      zone.on('pointerout', () => this.onMenuPointerOut(zone));
+      zone.on('pointerdown', (_pointer: Phaser.Input.Pointer, x: number, y: number) =>
+        this.onMenuClick(zone, x, y),
+      );
       return zone;
     });
 
@@ -591,12 +694,23 @@ export class BattleScene extends Phaser.Scene {
     // battle behind it. Hidden unless the moves menu is open. The type chip sits
     // at its left, the description (larger) beside it.
     this.movePopup = addFrlgWindow(this, 0, 0, 300, MOVE_POPUP_MIN_H).setVisible(false);
-    this.movePopupType = this.add.rectangle(0, 0, MOVE_POPUP_TYPE_W, 24, 0x9aa0b4).setOrigin(0, 0).setVisible(false);
+    this.movePopupType = this.add
+      .rectangle(0, 0, TYPE_ICON_W, 14, 0x9aa0b4)
+      .setOrigin(0, 0)
+      .setVisible(false);
     this.movePopupTypeText = addFrlgText(this, 0, 0, '', {
       size: 16,
       tint: 0xf8fafc,
       origin: [0.5, 0],
     }).setVisible(false);
+    this.movePopupTypeIcon = this.add
+      .image(0, 0, TYPE_ICON_TEXTURE_KEY, 0)
+      .setOrigin(0, 0)
+      .setVisible(false);
+    this.movePopupStatusIcon = this.add
+      .image(0, 0, STATUS_ICON_TEXTURE_KEY, 0)
+      .setOrigin(0, 0)
+      .setVisible(false);
     this.movePopupText = addFrlgText(this, 0, 0, '', {
       tint: FRLG_INK,
       lineSpacing: 4,
@@ -1194,6 +1308,7 @@ export class BattleScene extends Phaser.Scene {
       const move = getMove(slot.moveId);
       const name = move?.name ?? slot.moveId;
       const enabled = legal.length === 0 ? index === 0 : legal.includes(index);
+      const preview = movePreview(this.state, 'player', index);
       return {
         label: name,
         enabled,
@@ -1204,16 +1319,25 @@ export class BattleScene extends Phaser.Scene {
             ...(this.megaIntent ? { mega: true } : {}),
           }),
         move: {
-          type: move?.type ?? '',
+          type: preview?.type ?? move?.type ?? '',
           category: move?.category ?? 'Status',
           pp: slot.pp,
           maxPp: slot.maxPp,
           desc: move?.shortDesc ?? move?.desc ?? '',
+          power: preview?.power ?? 0,
+          basePower: preview?.basePower ?? 0,
+          stab: preview?.stab ?? false,
+          baseAccuracy: preview?.baseAccuracy ?? null,
+          accuracy: preview?.accuracy ?? null,
+          accuracyStage: preview?.accuracyStage ?? 0,
+          status: move?.status ?? null,
         },
       };
     });
     this.menuIndex = 0;
     this.megaSelected = false;
+    this.infoMove = null;
+    this.infoPinned = false;
     this.mode = 'moves';
     this.refreshHud();
   }
@@ -1490,13 +1614,8 @@ export class BattleScene extends Phaser.Scene {
       playerY = height * 0.6;
     }
 
-    // The move-detail popup sits above the menu; while it is up, lift the
-    // player's data panel so the popup never covers it.
-    const movePopupH = menuOpen && this.mode === 'moves' ? this.movePopupHeight(box.w) : 0;
-    if (movePopupH > 0) {
-      playerInfo = { ...playerInfo, y: playerInfo.y - movePopupH - MOVE_POPUP_GAP };
-      if (compact) playerY -= movePopupH + MOVE_POPUP_GAP;
-    }
+    // The move-detail popup floats over the field when the ⓘ button asks for
+    // it, so it never moves the panels around it (see `showMovePopup`).
 
     // Both boxes span the full bottom width and share it: the choice menu owns
     // the whole box while it is open and the message window steps aside, so a
@@ -1572,11 +1691,23 @@ export class BattleScene extends Phaser.Scene {
       .setText(side === 'player' ? `${hp}/${fighter.maxHp}` : '')
       .setPosition(rect.x + rect.w - pad.x, barY - 23);
 
-    const status = statusAbbreviation(this.displayStatus[side]);
-    this.statusText[side].setText(status ?? '').setPosition(barX + 27, barY - 23);
-    if (status) {
-      this.hud.fillStyle(0x8b5cf6, 1);
-      this.hud.fillRoundedRect(barX, barY - 24, 54, 20, 6);
+    const status = this.displayStatus[side];
+    const statusFrame = status ? statusIconFrame(status) : null;
+    if (statusFrame !== null) {
+      // The FRLG badge carries its own colours, so no chip is painted behind it.
+      this.statusBadges[side].setFrame(statusFrame).setPosition(barX, barY - 22).setVisible(true);
+      this.statusText[side].setVisible(false);
+    } else {
+      this.statusBadges[side].setVisible(false);
+      const abbreviation = statusAbbreviation(status);
+      this.statusText[side]
+        .setText(abbreviation ?? '')
+        .setPosition(barX + 27, barY - 23)
+        .setVisible(abbreviation !== null);
+      if (abbreviation) {
+        this.hud.fillStyle(0x8b5cf6, 1);
+        this.hud.fillRoundedRect(barX, barY - 24, 54, 20, 6);
+      }
     }
 
     const bar = this.hpBars[side];
@@ -1859,7 +1990,9 @@ export class BattleScene extends Phaser.Scene {
     const pad = FRLG_WINDOW_PADDING;
     const count = this.menuItems.length;
     const cols = MENU_GRID_COLS;
-    const rows = Math.max(1, Math.ceil(count / cols));
+    // The grid always keeps its 2x2 shape, so one or two moves draw the same
+    // cell size as a full set instead of stretching to fill the window.
+    const rows = MENU_GRID_ROWS;
     const left = menu.x + pad.x;
     const right = menu.x + menu.w - pad.x - MOVE_GRID_INSET;
     const top = menu.y + pad.top + MOVE_GRID_INSET;
@@ -1871,6 +2004,7 @@ export class BattleScene extends Phaser.Scene {
     const gridRight = mega ? right - MOVE_MEGA_COL : right;
     const cellW = (gridRight - gridLeft - (cols - 1) * MENU_GRID_GAP) / cols;
     const cellH = (bottom - top - (rows - 1) * MENU_GRID_GAP) / rows;
+    const narrow = cellW < MOVE_CELL_NARROW;
     const cellX = (i: number): number => gridLeft + (i % cols) * (cellW + MENU_GRID_GAP);
     const cellY = (i: number): number => top + Math.floor(i / cols) * (cellH + MENU_GRID_GAP);
 
@@ -1889,13 +2023,32 @@ export class BattleScene extends Phaser.Scene {
         row.setVisible(false);
         return;
       }
+      const nameX = narrow ? cellX(i) + MOVE_CELL_PAD + 24 : cellX(i) + MOVE_CELL_PAD + MOVE_TYPE_COL;
+      const nameRight = cellX(i) + cellW - MOVE_CELL_PAD - MOVE_INFO_SIZE - 6 - (narrow ? 0 : MOVE_STAT_COL);
       row
         .setText(item.label)
         .setAlpha(item.enabled ? 1 : 0.4)
         .setFontSize(16)
-        .setMaxWidth(cellW - MOVE_CELL_PAD * 2 - 40)
+        .setMaxWidth(Math.max(40, nameRight - nameX - 6))
         .setOrigin(0, 0)
-        .setPosition(cellX(i) + MOVE_CELL_PAD, cellY(i) + MOVE_CELL_PAD)
+        .setPosition(nameX, cellY(i) + MOVE_CELL_PAD)
+        .setVisible(true);
+    });
+    this.moveTypeIcons.forEach((icon, i) => {
+      const item = i < count ? this.menuItems[i] : undefined;
+      const frame = item?.move ? typeIconFrame(item.move.type) : null;
+      if (!item || frame === null) {
+        icon.setVisible(false);
+        return;
+      }
+      icon
+        .setFrame(frame)
+        .setAlpha(item.enabled ? 1 : 0.4)
+        .setPosition(
+          cellX(i) + MOVE_CELL_PAD,
+          cellY(i) + MOVE_CELL_PAD + (narrow ? 2 : 1),
+        )
+        .setScale(narrow ? 0.7 : MOVE_TYPE_ICON_SCALE)
         .setVisible(true);
     });
     this.moveCategoryIcons.forEach((icon, i) => {
@@ -1905,9 +2058,11 @@ export class BattleScene extends Phaser.Scene {
         icon.setVisible(false);
         return;
       }
+      const scale = narrow ? 1.25 : MOVE_CATEGORY_ICON_SCALE;
       icon
         .setFrame(frame)
         .setAlpha(item.enabled ? 1 : 0.4)
+        .setScale(scale)
         .setPosition(cellX(i) + MOVE_CELL_PAD, cellY(i) + MOVE_CELL_PAD + 20)
         .setVisible(true);
     });
@@ -1917,14 +2072,67 @@ export class BattleScene extends Phaser.Scene {
         text.setVisible(false);
         return;
       }
+      const catW = MOVE_CATEGORY_ICON_W * (narrow ? 1.25 : MOVE_CATEGORY_ICON_SCALE);
       text
         .setText(`PP ${item.move.pp}/${item.move.maxPp}`)
         .setAlpha(item.enabled ? 1 : 0.4)
         .setPosition(
-          cellX(i) + MOVE_CELL_PAD + MOVE_CATEGORY_ICON_W * MOVE_CATEGORY_ICON_SCALE + 6,
-          cellY(i) + MOVE_CELL_PAD + 24,
+          cellX(i) + MOVE_CELL_PAD + catW + 6,
+          cellY(i) + MOVE_CELL_PAD + (narrow ? 22 : 24),
         )
         .setVisible(true);
+    });
+    this.movePowerText.forEach((text, i) => {
+      const item = i < count ? this.menuItems[i] : undefined;
+      if (!item?.move) {
+        text.setVisible(false);
+        return;
+      }
+      const y = narrow ? cellY(i) + MOVE_CELL_PAD + 44 : cellY(i) + MOVE_CELL_PAD;
+      text
+        .setText(item.move.basePower > 0 ? `PWR ${item.move.power}` : 'PWR --')
+        .setTint(powerTint(item.move))
+        .setAlpha(item.enabled ? 1 : 0.4)
+        .setOrigin(narrow ? 0 : 1, 0)
+        .setPosition(
+          narrow ? cellX(i) + MOVE_CELL_PAD : cellX(i) + cellW - MOVE_CELL_PAD - MOVE_INFO_SIZE - 6,
+          y,
+        )
+        .setVisible(true);
+    });
+    this.moveAccuracyText.forEach((text, i) => {
+      const item = i < count ? this.menuItems[i] : undefined;
+      if (!item?.move) {
+        text.setVisible(false);
+        return;
+      }
+      const y = narrow ? cellY(i) + MOVE_CELL_PAD + 44 : cellY(i) + MOVE_CELL_PAD + 22;
+      text
+        .setText(accuracyLabel(item.move))
+        .setTint(accuracyTint(item.move))
+        .setAlpha(item.enabled ? 1 : 0.4)
+        .setOrigin(1, 0)
+        .setPosition(narrow ? cellX(i) + cellW - MOVE_CELL_PAD : cellX(i) + cellW - MOVE_CELL_PAD - MOVE_INFO_SIZE - 6, y)
+        .setVisible(true);
+    });
+    this.moveInfoButtons.forEach((button, i) => {
+      const item = i < count ? this.menuItems[i] : undefined;
+      if (!item) {
+        button.setVisible(false);
+        this.moveInfoLabels[i].setVisible(false);
+        return;
+      }
+      const cx = cellX(i) + cellW - MOVE_CELL_PAD - MOVE_INFO_SIZE / 2;
+      const cy = cellY(i) + MOVE_CELL_PAD + MOVE_INFO_SIZE / 2;
+      const active = this.infoMove === i;
+      button
+        .setPosition(cx, cy)
+        .setSize(MOVE_INFO_SIZE, MOVE_INFO_SIZE)
+        .setFillStyle(active ? 0xf7e0a6 : 0xcfcce2)
+        .setStrokeStyle(2, active ? 0x2f2c4d : 0x9a94b8)
+        .setAlpha(item.enabled ? 1 : 0.4)
+        .setVisible(true);
+      this.moveInfoLabels[i].setPosition(cx, cy).setAlpha(item.enabled ? 1 : 0.4).setVisible(true);
     });
     this.moveCells.forEach((cell, i) => {
       const item = i < count ? this.menuItems[i] : undefined;
@@ -1945,20 +2153,27 @@ export class BattleScene extends Phaser.Scene {
       const item = i < count ? this.menuItems[i] : undefined;
       zone.setData('item', item ? i : -1);
       if (zone.input) zone.input.enabled = Boolean(item);
-      if (item) zone.setPosition(cellX(i), cellY(i)).setSize(cellW, cellH);
+      if (item) {
+        zone
+          .setPosition(cellX(i), cellY(i))
+          .setSize(cellW, cellH)
+          .setData('infoRect', {
+            x: cellW - MOVE_CELL_PAD - MOVE_INFO_SIZE,
+            y: MOVE_CELL_PAD,
+            w: MOVE_INFO_SIZE,
+            h: MOVE_INFO_SIZE,
+          });
+      }
     });
-    // The cursor sits at the end of the selected cell, pointing back at its text;
-    // on the Mega control it points at the button.
+    // The moves grid marks its selection with the cell's highlight alone; the
+    // ▶ cursor only appears on the Mega control when that is the target.
     if (this.megaSelected) {
       this.menuCursor
         .setFlipX(true)
         .setPosition(this.megaCell.x + this.megaCell.width - 12, this.megaCell.y + this.megaCell.height / 2)
         .setVisible(true);
     } else {
-      this.menuCursor
-        .setFlipX(true)
-        .setPosition(cellX(this.menuIndex) + cellW - 48, cellY(this.menuIndex) + cellH / 2)
-        .setVisible(count > 0);
+      this.menuCursor.setVisible(false);
     }
     this.showMovePopup(menu);
   }
@@ -1997,30 +2212,35 @@ export class BattleScene extends Phaser.Scene {
     return width >= 500 ? FRLG_FONT_SIZE : 16;
   }
 
-  /** The popup height, measured from the current move's wrapped description. */
+  /** The move whose info popup is up, or null. */
+  private infoMoveEntry(): MenuMove | null {
+    const index = this.infoMove;
+    if (index === null) return null;
+    return this.menuItems[index]?.move ?? null;
+  }
+
+  /** The popup height, measured from the revealed move's wrapped description. */
   private movePopupHeight(width: number): number {
-    if (this.megaSelected) return 0;
-    const move = this.menuItems[this.menuIndex]?.move;
+    const move = this.infoMoveEntry();
     if (!move || move.desc.length === 0) return 0;
     const pad = FRLG_WINDOW_PADDING;
     this.movePopupText
       .setFontSize(this.movePopupFontSize(width))
       .setText(move.desc)
-      .setMaxWidth(width - pad.x * 2 - MOVE_POPUP_TYPE_W - 12);
+      .setMaxWidth(width - pad.x * 2 - MOVE_POPUP_ICON_COL - 12);
     return Math.max(MOVE_POPUP_MIN_H, pad.top + Math.max(24, this.movePopupText.height) + pad.bottom);
   }
 
   /**
-   * The details popup above the menu: a type chip at its left and the move's
-   * description (larger than the grid text) beside it.
+   * The details popup: it floats over the field above the menu — the panels are
+   * never moved to make room for it — and only while the ⓘ button of a move
+   * asks for it. The FRLG type badge sits at its left with the move's status
+   * badge under it, and the description (larger than the grid text) beside them.
    */
   private showMovePopup(menu: Rect): void {
-    const move = this.menuItems[this.menuIndex]?.move;
+    const move = this.infoMoveEntry();
     if (this.megaSelected || !move || move.desc.length === 0) {
-      this.movePopup.setVisible(false);
-      this.movePopupText.setVisible(false);
-      this.movePopupType.setVisible(false);
-      this.movePopupTypeText.setVisible(false);
+      this.hideMovePopup();
       return;
     }
     const pad = FRLG_WINDOW_PADDING;
@@ -2028,36 +2248,68 @@ export class BattleScene extends Phaser.Scene {
     const height = this.movePopupHeight(menu.w);
     const x = menu.x;
     const y = menu.y - height - MOVE_POPUP_GAP;
-    const chipY = y + pad.top;
+    const iconY = y + pad.top;
     this.movePopup.setSlices(menu.w, height).setPosition(x, y).setVisible(true);
-    this.movePopupType
-      .setPosition(x + pad.x, chipY)
-      .setFillStyle(typeColor(move.type))
-      .setVisible(true);
-    this.movePopupTypeText
-      .setText(move.type.toUpperCase())
-      .setPosition(x + pad.x + MOVE_POPUP_TYPE_W / 2, chipY + 2)
-      .setVisible(true);
+
+    const typeFrame = typeIconFrame(move.type);
+    if (typeFrame !== null) {
+      this.movePopupTypeIcon.setFrame(typeFrame).setPosition(x + pad.x, iconY).setVisible(true);
+      this.movePopupType.setVisible(false);
+      this.movePopupTypeText.setVisible(false);
+    } else {
+      // The FRLG sheet predates Fairy; keep the text chip as the fallback.
+      this.movePopupTypeIcon.setVisible(false);
+      this.movePopupType
+        .setPosition(x + pad.x, iconY)
+        .setSize(TYPE_ICON_W, 14)
+        .setFillStyle(typeColor(move.type))
+        .setVisible(true);
+      this.movePopupTypeText
+        .setText(move.type.toUpperCase())
+        .setPosition(x + pad.x + TYPE_ICON_W / 2, iconY + 2)
+        .setVisible(true);
+    }
+
+    const statusFrame = move.status ? statusIconFrame(move.status) : null;
+    if (statusFrame !== null) {
+      this.movePopupStatusIcon.setFrame(statusFrame).setPosition(x + pad.x, iconY + 20).setVisible(true);
+    } else {
+      this.movePopupStatusIcon.setVisible(false);
+    }
+
     this.movePopupText
       .setText(move.desc)
       .setFontSize(size)
-      .setMaxWidth(menu.w - pad.x * 2 - MOVE_POPUP_TYPE_W - 12)
-      .setPosition(x + pad.x + MOVE_POPUP_TYPE_W + 12, chipY + Math.max(0, (24 - size) / 2))
+      .setMaxWidth(menu.w - pad.x * 2 - MOVE_POPUP_ICON_COL - 12)
+      .setPosition(x + pad.x + MOVE_POPUP_ICON_COL, iconY + Math.max(0, (24 - size) / 2))
       .setVisible(true);
   }
 
-  /** Hides every grid piece: the cells, category badges, PP and the popup. */
-  private hideMoveChrome(): void {
-    for (const cell of this.moveCells) cell.setVisible(false);
-    for (const icon of this.moveCategoryIcons) icon.setVisible(false);
-    for (const text of this.movePpText) text.setVisible(false);
-    this.megaCell.setVisible(false);
-    this.megaText.setVisible(false);
-    if (this.megaZone.input) this.megaZone.input.enabled = false;
+  private hideMovePopup(): void {
     this.movePopup.setVisible(false);
     this.movePopupText.setVisible(false);
     this.movePopupType.setVisible(false);
     this.movePopupTypeText.setVisible(false);
+    this.movePopupTypeIcon.setVisible(false);
+    this.movePopupStatusIcon.setVisible(false);
+  }
+
+  /** Hides every grid piece: cells, badges, PP / power / accuracy, info and popup. */
+  private hideMoveChrome(): void {
+    for (const cell of this.moveCells) cell.setVisible(false);
+    for (const icon of this.moveTypeIcons) icon.setVisible(false);
+    for (const icon of this.moveCategoryIcons) icon.setVisible(false);
+    for (const text of this.movePpText) text.setVisible(false);
+    for (const text of this.movePowerText) text.setVisible(false);
+    for (const text of this.moveAccuracyText) text.setVisible(false);
+    for (const button of this.moveInfoButtons) button.setVisible(false);
+    for (const label of this.moveInfoLabels) label.setVisible(false);
+    this.megaCell.setVisible(false);
+    this.megaText.setVisible(false);
+    if (this.megaZone.input) this.megaZone.input.enabled = false;
+    this.infoMove = null;
+    this.infoPinned = false;
+    this.hideMovePopup();
   }
 
   /** The bag: a pocket tab strip over the active pocket's stacks. */
@@ -2181,14 +2433,41 @@ export class BattleScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  /** Clicking a row selects it: the same as moving the cursor there and confirming. */
-  private onMenuClick(zone: Phaser.GameObjects.Zone): void {
+  /** Clicking a row selects it; in the moves grid a press on its ⓘ opens the info. */
+  private onMenuClick(zone: Phaser.GameObjects.Zone, localX = -1, localY = -1): void {
     const index = zone.getData('item');
     if (typeof index !== 'number' || index < 0) return;
+    if (this.mode === 'moves' && this.insideInfoButton(zone, localX, localY)) {
+      this.onInfoClick(index);
+      return;
+    }
     const item = this.menuItems[index];
     if (!item?.enabled) return;
     this.menuIndex = index;
     this.confirmMenu();
+  }
+
+  /** True when a cell-local point falls inside that cell's ⓘ button. */
+  private insideInfoButton(zone: Phaser.GameObjects.Zone, localX: number, localY: number): boolean {
+    const rect = zone.getData('infoRect') as Rect | undefined;
+    if (!rect || localX < 0 || localY < 0) return false;
+    return localX >= rect.x && localX <= rect.x + rect.w && localY >= rect.y && localY <= rect.y + rect.h;
+  }
+
+  /** Moving over a moves cell watches its ⓘ button for hover. */
+  private onMenuPointerMove(zone: Phaser.GameObjects.Zone, localX: number, localY: number): void {
+    if (this.mode !== 'moves') return;
+    const index = zone.getData('item');
+    if (typeof index !== 'number' || index < 0) return;
+    if (this.insideInfoButton(zone, localX, localY)) this.onInfoHover(index);
+    else this.onInfoOut(index);
+  }
+
+  /** Leaving a moves cell hides an unpinned info popup. */
+  private onMenuPointerOut(zone: Phaser.GameObjects.Zone): void {
+    if (this.mode !== 'moves') return;
+    const index = zone.getData('item');
+    if (typeof index === 'number') this.onInfoOut(index);
   }
 
   /** Hovering the MEGA control moves the keyboard cursor onto it. */
@@ -2203,6 +2482,33 @@ export class BattleScene extends Phaser.Scene {
     if (this.mode !== 'moves' || !this.megaAvailable()) return;
     this.megaSelected = true;
     this.toggleMega();
+  }
+
+  /** Hovering a move's ⓘ button floats its info popup, unless one is pinned. */
+  private onInfoHover(index: number): void {
+    if (this.mode !== 'moves' || this.infoPinned || this.infoMove === index) return;
+    this.infoMove = index;
+    this.refreshHud();
+  }
+
+  /** Leaving the ⓘ button hides an unpinned popup. */
+  private onInfoOut(index: number): void {
+    if (this.infoPinned || this.infoMove !== index) return;
+    this.infoMove = null;
+    this.refreshHud();
+  }
+
+  /** Clicking the ⓘ button pins the popup open, or closes it when already pinned. */
+  private onInfoClick(index: number): void {
+    if (this.mode !== 'moves') return;
+    if (this.infoPinned && this.infoMove === index) {
+      this.infoPinned = false;
+      this.infoMove = null;
+    } else {
+      this.infoPinned = true;
+      this.infoMove = index;
+    }
+    this.refreshHud();
   }
 
   /** The ◀ control: leaves a submenu the same way cancel does. */

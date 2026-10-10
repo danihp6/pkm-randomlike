@@ -196,6 +196,14 @@ the 18 FRLG type badges plus the "???" unknown badge from
 sheet predates Fairy, so a species whose type has no badge keeps its type names as
 text instead.
 
+The **status badges** (PSN / PAR / SLP / FRZ / BRN, plus the PKRS and FNT spares)
+come from the same sheet's sixth row, where each 32x16 cell holds two stacked
+32x8 badges. `scripts/frlg/build-status-icons.mjs` crops them into
+`src/assets/frlg/status-icons.png` (32x8 frames) with the map in
+`src/data/frlg/status-icons.json`, read through `src/data/statusIcons.ts`. Our two
+poison states share the one FRLG badge, which cannot tell poison from bad poison,
+and the battle HP panel draws the badge in place of the text abbreviation.
+
 ## Sprite contract
 
 - Overworld Pokémon sheets: 32x32 frames, 5 rows in the order Down, DownRight,

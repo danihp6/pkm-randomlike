@@ -1,0 +1,25 @@
+{
+  "width": 32,
+  "height": 8,
+  "cols": 4,
+  "rows": 2,
+  "frames": [
+    "psn",
+    "par",
+    "slp",
+    "frz",
+    "brn",
+    "pkrs",
+    "fnt",
+    ""
+  ],
+  "statuses": {
+    "psn": 0,
+    "par": 1,
+    "slp": 2,
+    "frz": 3,
+    "brn": 4,
+    "pkrs": 5,
+    "fnt": 6
+  }
+}
