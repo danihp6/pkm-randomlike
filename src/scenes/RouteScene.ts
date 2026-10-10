@@ -3532,6 +3532,16 @@ export class RouteScene extends Phaser.Scene {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     this.battleCounter += 1;
     const key = trigger.kind === 'wild' ? `${trigger.key}:${this.battleCounter}` : `trainer:${trigger.trainerId}`;
+    // The room's capture is spent the moment its **first wild battle** starts,
+    // whatever the outcome: catching, defeating or fleeing all close the window, so
+    // only the first wild Pokémon that appears can be caught. The battle still
+    // allows the catch (the flag is read before spending) and the route HUD and
+    // minimap mark the room spent as soon as it is back.
+    const captureAllowed = canCapture(this.run);
+    if (trigger.kind === 'wild') {
+      this.run = useCapture(this.run);
+      this.persistRun();
+    }
     const launch: BattleLaunch = {
       trigger,
       player: this.run.party.map((member) => member.fighter),
@@ -3540,7 +3550,7 @@ export class RouteScene extends Phaser.Scene {
       seed: battleSeed(this.run.seed, this.run.routeIndex, key),
       runSeed: this.run.seed,
       routeIndex: this.run.routeIndex,
-      canCapture: canCapture(this.run),
+      canCapture: captureAllowed,
     };
     this.pendingBattle = launch;
     this.scene.pause();
@@ -3648,8 +3658,8 @@ export class RouteScene extends Phaser.Scene {
       },
     });
     this.run = run;
-    // The route's single capture is spent by its **first wild battle**, whatever
-    // the outcome: a catch, a defeat or a run away all close the route's window.
+    // The room's capture was already spent when the wild battle started
+    // (`startBattle`); this keeps it spent even if a path ever skips that.
     if (pending.trigger.kind === 'wild') this.run = useCapture(this.run);
 
     const bossId = this.room?.boss === true ? bossTrainerId(this.room.mapIndex) : null;

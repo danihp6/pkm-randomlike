@@ -181,11 +181,12 @@ populate them (steps 5-7). The `hedges` and `maze` carvers stay parked in
   the species; the moveset and ability are rolled separately when the Pokémon is
   built (`D17`).
 - A successful catch spends the room's single capture (`RunState.capturedRooms`).
-  A room's capture is spent by its **first wild battle**, whatever the outcome:
-  catching the Pokémon, defeating it or running away all close the room's window,
-  so **only the first wild Pokémon that appears can ever be caught** there. Once
-  spent, the HUD's route header shows a **Poké Ball badge** and the BALL command is
-  disabled for any later encounter in the room.
+  A room's capture is spent the moment its **first wild battle starts**, whatever
+  the outcome: catching the Pokémon, defeating it or running away all close the
+  room's window, so **only the first wild Pokémon that appears can ever be caught**
+  there. Once spent, the HUD's route header shows a **Poké Ball badge**, the
+  minimap marks the room with a Poké Ball, and the BALL command is disabled for any
+  later encounter in the room.
 - When a catch leaves the party still **full**, a **capture screen** opens: the
   caught Pokémon's stats sit beside the party so the player can compare, then
   **swap it for a party member** (the replaced member goes to the PC) or **send it
