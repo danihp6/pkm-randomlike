@@ -200,7 +200,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       room highlighted and the boss/portal and each special room marked with its
       **own icon**. Pure layout in `src/ui/mapView.ts` + tests; the scene only
       draws it (`docs/maps-spec.md` §8).
-- [ ] **Step 9 — Mega Evolution in battle (`D34`).** The prerequisite for the
+- [x] **Step 9 — Mega Evolution in battle (`D34`).** The prerequisite for the
       Mega Stones: a Pokémon holding its stone may Mega Evolve **once per battle**
       from a command-menu control (player and AI), changing stats/type/ability to
       the Mega forme for the battle. All dex Megas (formes may be nonstandard);

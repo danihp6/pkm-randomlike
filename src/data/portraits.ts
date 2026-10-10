@@ -1,4 +1,5 @@
 import manifest from './anil/pokemon-sprites.json';
+import { megaFormOf } from './dex/megas';
 
 /**
  * The party/HUD portrait atlases (`public/anil/portraits.png` and
@@ -21,11 +22,15 @@ export type Portrait = Readonly<{ key: string; frame: number }>;
 
 /**
  * The portrait for a species, or null when the atlas has no cell for it. A shiny
- * whose cell is missing falls back to the plain portrait.
+ * whose cell is missing falls back to the plain portrait; a Mega without a cell
+ * of its own falls back to its base species (D34).
  */
 export function portraitFor(speciesId: string, shiny = false): Portrait | null {
   const frame = (shiny ? SHINY : NORMAL)[speciesId] ?? NORMAL[speciesId];
-  if (frame === undefined) return null;
-  const key = shiny && SHINY[speciesId] !== undefined ? PORTRAIT_SHINY_TEXTURE_KEY : PORTRAIT_TEXTURE_KEY;
-  return { key, frame };
+  if (frame !== undefined) {
+    const key = shiny && SHINY[speciesId] !== undefined ? PORTRAIT_SHINY_TEXTURE_KEY : PORTRAIT_TEXTURE_KEY;
+    return { key, frame };
+  }
+  const base = megaFormOf(speciesId)?.baseSpeciesId;
+  return base ? portraitFor(base, shiny) : null;
 }

@@ -6,7 +6,7 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 
 - `dex/` — **generated**, committed, do not edit by hand. Produced by
   `npm run data:dex` from `@pkmn/dex`. See `docs/showdown-reuse.md`. Typed
-  accessors live beside it (`species.ts`, `moves.ts`, `abilities.ts`,
+  accessors live beside it (`species.ts`, `megas.ts`, `moves.ts`, `abilities.ts`,
   `learnsets.ts`, `types.ts`, `natures.ts`, `evolutions.ts`).
 - `tilesets/` — one file per biome tileset plus the shared `palettes.ts` and the
   `index.ts` registry. Contract in `docs/tileset-spec.md`.
@@ -27,8 +27,10 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   their default keys, labels and the pure rebind rules (`D23`). The Phaser half is
   `src/input/`.
 - `items.ts` — the battle item catalogue: balls with catch multipliers, potions,
-  status cures, X-items and held items (Leftovers, berries, the 1.2x type
-  items). Held items are registered by `engine/battle/effects/items.ts`.
+  status cures, X-items and held items (Leftovers, berries, the 1.2x type items).
+  Held items are registered by `engine/battle/effects/items.ts`. Also builds one
+  unsold **Mega Stone** per Mega forme from `dex/megas.ts` (`D34`); holding the
+  matching stone lets a Pokémon Mega Evolve once per battle.
 
 ## Rules
 

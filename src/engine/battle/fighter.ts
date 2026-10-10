@@ -101,6 +101,15 @@ export type TransformBackup = Readonly<{
   gender: Gender;
 }>;
 
+/** The pre-Mega shape, kept so a snapshot after the battle stores the base species. */
+export type MegaBackup = Readonly<{
+  speciesId: string;
+  name: string;
+  types: readonly string[];
+  stats: Stats;
+  ability: string;
+}>;
+
 export type BattleFighter = {
   id: string;
   speciesId: string;
@@ -118,6 +127,10 @@ export type BattleFighter = {
   lastItemId: string | null;
   /** The shape Transform replaced, or null while untransformed. */
   transformBackup: TransformBackup | null;
+  /** True once the holder spent its Mega Stone this battle (D34). */
+  mega: boolean;
+  /** The pre-Mega shape, or null while not Mega Evolved. */
+  megaBackup: MegaBackup | null;
   types: readonly string[];
   stats: Stats;
   ivs: Stats;
@@ -274,6 +287,8 @@ export function createFighter(input: FighterInput): BattleFighter {
     heldItem: input.heldItem ?? null,
     lastItemId: null,
     transformBackup: null,
+    mega: false,
+    megaBackup: null,
     types: species.types,
     stats,
     ivs,
@@ -454,12 +469,15 @@ export type FighterSnapshot = Readonly<{
 }>;
 
 export function snapshotFighter(fighter: BattleFighter): FighterSnapshot {
+  // A Mega Evolution lasts only for the battle; the run keeps the base species,
+  // so the snapshot reads the pre-Mega shape the battle stored.
+  const mega = fighter.megaBackup;
   return {
     id: fighter.id,
-    speciesId: fighter.speciesId,
+    speciesId: mega?.speciesId ?? fighter.speciesId,
     level: fighter.level,
     nature: fighter.nature,
-    ability: fighter.ability,
+    ability: mega?.ability ?? fighter.ability,
     gender: fighter.gender,
     shiny: fighter.shiny,
     heldItem: fighter.heldItem,

@@ -47,6 +47,7 @@ import {
   type FightCommand,
   type SelectedMove,
 } from './commands';
+import { megaEvolve } from './mega';
 import {
   SIDE_IDS,
   activeFighter,
@@ -912,6 +913,14 @@ export function takeTurn(state: BattleState, playerCommand: Command, enemyComman
 
   const commands: Record<SideId, Command> = { player: playerCommand, enemy: enemyCommand };
   resolvePreMoveActions(state, commands);
+  if (state.winner !== null) return;
+
+  // Mega Evolution resolves before any move, so the turn's order and damage read
+  // the Mega's stats, type and ability (D34).
+  for (const side of SIDE_IDS) {
+    const command = commands[side];
+    if (command.type === 'fight' && command.mega) megaEvolve(state, side);
+  }
   if (state.winner !== null) return;
 
   const moveEntries = SIDE_IDS.filter((side) => commands[side].type === 'fight').map((side) => {

@@ -1,4 +1,5 @@
 export * from './species';
+export * from './megas';
 export * from './moves';
 export * from './abilities';
 export * from './learnsets';

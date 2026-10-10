@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Mega Evolution in battle** (`D34`, Phase 9 step 9). A Pokémon holding its
+      **Mega Stone** can Mega Evolve **once per battle**: the command menu grows a
+      **MEGA** control that arms the evolution, and the next FIGHT spends it while
+      still attacking that turn. The forme is applied **before any move**, so the
+      turn reads the Mega's Speed, type and ability (an on-switch-in ability such
+      as Drought fires then), and the engine swaps stats, types and ability while
+      keeping the item, moves and HP. The AI spends its stone on its first fight
+      command. `src/engine/battle/mega.ts` holds `canMegaEvolve`/`megaEvolve` and
+      `FightCommand` carries a `mega` flag; `snapshotFighter` returns to the base
+      species after the battle. The 34 Mega formes of playable Gen 9 species are
+      generated into `src/data/dex/megas.json` (their own file, never spawned) and
+      `src/data/items.ts` builds one unsold stone per forme. Bosses, mini-bosses
+      and the `ace` archetype carry a stone (`carriesMega`/`RosterOptions.allowMega`
+      in `src/engine/run/roster.ts`); the ace pools gained a few Mega-capable
+      species so it triggers. Fixed-seed tests in `mega.test.ts`, `megas.test.ts`
+      and `roster.test.ts`; `docs/battle-spec.md` §9 updated.
 - [x] **The boss room is a quiet dead-end.** The boss is hung off the floor's
       farthest regular room as an extra **dead-end leaf**, so it has a single door
       while the floor keeps its cycles (maps now roll at least five rooms). It

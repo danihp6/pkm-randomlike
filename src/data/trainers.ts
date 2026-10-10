@@ -26,6 +26,11 @@ export type TrainerArchetype = Readonly<{
    * furrets, greedents and cinccinos late (`docs/routes-spec.md` §5).
    */
   pools: TrainerPools;
+  /**
+   * True for the `ace` archetype (and, at the call site, map bosses): its
+   * roster may carry a Mega Stone, so its Pokémon can Mega Evolve (`D34`).
+   */
+  carriesMega?: boolean;
 }>;
 
 export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
@@ -180,13 +185,14 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: 'ace',
     colour: 0x94a3b8,
     battleSprite: 'ace',
+    carriesMega: true,
     pools: {
       early: ['deino', 'axew', 'gible', 'noibat', 'dratini', 'goomy', 'tinkatink', 'pawniard', 'scraggy', 'mimikyu'],
-      low: ['deino', 'axew', 'gible', 'noibat', 'dratini', 'goomy', 'tinkatink', 'pawniard', 'mimikyu'],
-      mid: ['deino', 'axew', 'gible', 'noibat', 'dratini', 'goomy', 'tinkatink', 'pawniard', 'scraggy'],
-      high: ['gabite', 'fraxure', 'tinkatuff', 'scraggy', 'bisharp', 'zweilous', 'axew', 'gible'],
-      late: ['gabite', 'fraxure', 'dragonair', 'sliggoo', 'tinkatuff', 'scrafty', 'bisharp', 'zweilous'],
-      end: ['garchomp', 'dragonite', 'haxorus', 'goodra', 'hydreigon', 'kingambit', 'tinkaton', 'mimikyu', 'scrafty'],
+      low: ['deino', 'axew', 'gible', 'noibat', 'dratini', 'goomy', 'tinkatink', 'pawniard', 'mimikyu', 'houndoom'],
+      mid: ['deino', 'axew', 'gible', 'noibat', 'dratini', 'goomy', 'tinkatink', 'pawniard', 'scraggy', 'scizor'],
+      high: ['gabite', 'fraxure', 'tinkatuff', 'scraggy', 'bisharp', 'zweilous', 'axew', 'gible', 'metagross'],
+      late: ['gabite', 'fraxure', 'dragonair', 'sliggoo', 'tinkatuff', 'scrafty', 'bisharp', 'zweilous', 'lucario'],
+      end: ['garchomp', 'dragonite', 'haxorus', 'goodra', 'hydreigon', 'kingambit', 'tinkaton', 'mimikyu', 'scrafty', 'gallade'],
     },
   },
 ];

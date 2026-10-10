@@ -12,6 +12,7 @@ asserts the counts still match, so a bad regeneration fails loudly.
 | File | Fields that matter to us |
 | --- | --- |
 | `species.json` | `id`, `num`, `name`, `types`, `baseStats`, `abilities`, `prevo`, `evos`, `evolutions[]`, `weightkg`, `heightm`, `genderRatio`, `nfe`, `catchRate`, form fields |
+| `megas.json` | a battle-only `Species` plus `baseSpeciesId`, `stoneId`, `stoneName`; every Mega of a playable base species (D34) |
 | `moves.json` | `id`, `name`, `type`, `category`, `basePower`, `accuracy`, `pp`, `priority`, `target`, `flags`, `secondaries`, `critRatio`, `drain`, `recoil`, `multihit`, `status`, `volatileStatus`, `boosts`, `self`, `weather`, `terrain`, `desc`, `shortDesc` |
 | `abilities.json` | `id`, `name`, `desc`, `shortDesc`, `flags` |
 | `items.json` | `id`, `name`, `desc`, `shortDesc`, `isBerry`, battle flags |
@@ -27,8 +28,10 @@ asserts the counts still match, so a bad regeneration fails loudly.
   sources, to keep the file close to Gen 9. A kept source can still name a move
   that no longer exists in Gen 9, so learnset entries are also intersected with
   `moves.json`: a learnset never references a move id that isn't in the move set.
-- Typed accessors live next to the JSON (`species.ts`, `moves.ts`, `learnsets.ts`,
-  `types.ts`, `natures.ts`, `evolutions.ts`, re-exported from `index.ts`). Only
-  they read the JSON.
+- Typed accessors live next to the JSON (`species.ts`, `megas.ts`, `moves.ts`,
+  `learnsets.ts`, `types.ts`, `natures.ts`, `evolutions.ts`, re-exported from
+  `index.ts`). Only they read the JSON.
 - `isNonstandard` entries (CAP, Gigantamax, old-gen exclusives) were filtered at
-  generation time.
+  generation time. `megas.json` is the deliberate exception: the Mega formes are
+  `isNonstandard: "Past"`, generated beside the playable set (never inside it) so
+  a held stone has a target; a Mega whose base is not playable is skipped.

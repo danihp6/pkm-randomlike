@@ -1,6 +1,7 @@
 import { getMove } from '../../data/dex';
 import { estimateDamage } from './damage';
 import { legalMoveIndices, selectedMove, type Command } from './commands';
+import { canMegaEvolve } from './mega';
 import { activeFighter, opponent, type BattleState, type SideId } from './state';
 import { STATUS_IDS, canApplyStatus } from './status';
 import type { BattleFighter, StatusId } from './fighter';
@@ -76,8 +77,11 @@ export function chooseAiCommand(state: BattleState, side: SideId): Command {
 
   const attacker = activeFighter(state, side);
   const defender = opponent(state, side);
+  // The AI spends its Mega Stone at the first opportunity it can act.
+  const mega = canMegaEvolve(state, side);
+  const fight = (moveIndex: number): Command => (mega ? { type: 'fight', moveIndex, mega } : { type: 'fight', moveIndex });
   const legal = legalMoveIndices(attacker);
-  if (legal.length === 0) return { type: 'fight', moveIndex: 0 };
+  if (legal.length === 0) return fight(0);
 
   const scores = new Map<number, number>();
   for (const index of legal) scores.set(index, moveScore(attacker, defender, index));
@@ -94,5 +98,5 @@ export function chooseAiCommand(state: BattleState, side: SideId): Command {
   for (const index of legal) {
     if ((scores.get(index) ?? 0) > (scores.get(bestIndex) ?? 0)) bestIndex = index;
   }
-  return { type: 'fight', moveIndex: bestIndex };
+  return fight(bestIndex);
 }
