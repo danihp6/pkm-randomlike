@@ -206,12 +206,12 @@ document and screen, but needed their own layer — see `D23`.
 
 ## D23 — One shared keybind map, captured in the settings screen *(decided)*
 
-Every scene reads its confirm / cancel / move / party / settings key from one
+Every scene reads its confirm / cancel / move / interact / settings key from one
 map instead of hardcoding a key. The vocabulary is in `src/data/keybinds.ts`
 (pure, no Phaser import, so the save can validate it): one key per action except
 the accept key `E`, which `confirm` and `interact` deliberately share so the same
 press confirms a menu and picks up the item in front of the player; the defaults
-(`E`/`Q`/arrows/`I`/`O`), display labels, and the pure rules
+(`E`/`Q`/arrows/`O`), display labels, and the pure rules
 `actionForKey` (explicit binding, then the always-on `Enter`/`Space` confirm and
 `Esc` cancel aliases, so a rebind can never lock a player out of confirm),
 `withBinding` (rebinding swaps with whichever action held the key, so no key is
@@ -405,7 +405,7 @@ of the room cadence of D8.
 
 ## D32 — The route HUD shows the map with fog of discovery *(decided)*
 
-The `I` overlay's route header grows into a **minimap of the floor**, exactly the
+The route HUD's header grows into a **minimap of the floor**, exactly the
 Binding of Isaac minimap: a **grid of room cells**, each room drawn at its grid
 position from its `size` and shape with its openings on the matching walls, the
 current room highlighted, the boss room marked and the portal flagged. Rooms that

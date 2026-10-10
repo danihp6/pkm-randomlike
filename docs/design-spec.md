@@ -48,8 +48,8 @@ carries over.
 ## 3. The party
 
 - Up to **6** Pokémon in the active party; extras go to the **PC box**.
-- The party and the PC box are managed outside battle from the route HUD
-  (`I` / `P`): drag a member within the party or the box to reorder it, or
+- The party and the PC box are managed outside battle from the route HUD:
+  drag a member within the party or the box to reorder it, or
   across the two panels to move it between them. Dropping a member **onto** a
   member of the other panel **swaps** the two, so a boxed Pokémon can replace a
   party member even when the party is full (the one it replaces takes the box
@@ -81,7 +81,8 @@ carries over.
   collapse/expand click. The detail window opens beside the PC box the first time
   and can then be moved freely. The positions and collapsed states are a global
   preference saved with the settings (D22), so they survive a reload and the next
-  run.
+  run. The HUD is **always on screen** — there is no show/hide key — and a fresh
+  save opens **only PARTY**, every other panel collapsed to its icon.
 - The route **header is the floor minimap**: the map name over a Binding of Isaac-
   style grid of the rooms **discovered** so far, each drawn from the room's own
   width/height, its openings on the matching walls and a link drawn once **both**
@@ -90,8 +91,12 @@ carries over.
   (`docs/maps-spec.md` §8).
 - You start a run by picking one of three starters drawn from the base forms of
   every evolution line with at least three members (itself plus two others), so
-  every starter has room to grow. The starter cards work with the **mouse**: hover
-  highlights a card and a click picks it, beside the keyboard cursor.
+  every starter has room to grow. The starter cards work with the **mouse or
+  touch**: hover highlights a card and a click or tap picks it, beside the
+  keyboard cursor; on a phone (or any narrow or portrait stage) the three cards
+  stack as full-width rows so the offer never runs off the screen. Each card shows
+  the portrait, the name and the **type badges** (the selected portrait bobs
+  gently); a type the FRLG badge sheet lacks (Fairy) falls back to its name.
 - One capture per room of a floor, the classic way: weaken a wild Pokémon, throw a
   ball, it either clicks or breaks out. A room that spent its capture stays spent
   if you walk back into it; a different room of the floor can still catch.
@@ -127,7 +132,8 @@ Full rules in `docs/battle-spec.md`. In short:
 - Every battle ends by itself: once the closing line has been read, a run, a
   catch, a win or a loss all return to the route with no confirm to press.
 - On a wide screen the battle is a centred **square** (at most 900 px a side);
-  a tall phone screen keeps the stacked, full-height layout.
+  a tall phone screen keeps the stacked, full-height layout, with both battlers
+  drawn 25% smaller so they sit clear of the stacked panels.
 
 ## 5. The route
 
@@ -199,7 +205,7 @@ The player's preferences outlive a run: text speed (how fast the battle message
 box types itself out), master volume, the tileset preference (`auto` follows
 each biome, or one tileset is forced on every route), **always run** (walk at
 running speed without holding the run key; on by default) and the **HUD layout**
-(where each panel of the `I` overlay sits and whether it is collapsed). They live
+(where each panel of the route HUD sits and whether it is collapsed). They live
 in the same save document as the run (D22), are stored the moment they change and
 are edited from one screen (`O`, from the main menu, the starter pick or the
 route HUD).

@@ -16,7 +16,6 @@ export const KEYBIND_ACTIONS = [
   'run',
   'interact',
   'reset',
-  'hud',
   'settings',
 ] as const;
 
@@ -48,7 +47,6 @@ export const DEFAULT_KEYBINDS: Keybinds = {
   run: 'SHIFT',
   interact: 'E',
   reset: 'R',
-  hud: 'I',
   settings: 'O',
 };
 
@@ -73,7 +71,6 @@ export const KEYBIND_LABELS: Readonly<Record<KeybindAction, string>> = {
   run: 'Run',
   interact: 'Interact',
   reset: 'Reset run',
-  hud: 'HUD',
   settings: 'Settings',
 };
 

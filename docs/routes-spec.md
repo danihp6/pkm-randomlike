@@ -233,7 +233,7 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
 
 Between two routes the player gets a healing stop (a resting point): HP and PP
 restored, no resurrection. The stop no longer opens a screen; the party and the
-PC box are managed from the route HUD (`I` / `P`).
+PC box are managed from the route HUD.
 
 **The PC (the HUD's BOX window) is always viewable, but swapping between the
 party and the PC is locked** except in two windows (`docs/maps-spec.md` §7):

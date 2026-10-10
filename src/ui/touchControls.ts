@@ -2,12 +2,7 @@ import Phaser from 'phaser';
 import type { KeybindAction } from '../data/keybinds';
 import { prefersTouchControls } from '../input/device';
 import { addFrlgText } from './frlgFont';
-import {
-  padDirection,
-  touchControlsLayout,
-  type TouchControlsLayout,
-  type TouchDirection,
-} from './touchLayout';
+import { padDirection, touchControlsLayout, type TouchDirection } from './touchLayout';
 
 /**
  * The on-screen touch controls (direction pad + A / B), shown only on a
@@ -25,10 +20,8 @@ const OUTLINE_ALPHA = 0.5;
 const OUTLINE_WIDTH = 3;
 const LABEL_ALPHA = 0.6;
 const DEPTH = 260;
-/** Each arm of the pad is this share of the pad's width. */
-const ARM_RATIO = 0.42;
-/** The glyph size inside an arm, as a share of the arm's full width. */
-const CHEVRON_RATIO = 0.22;
+/** Each arm of the pad is this share of the pad's length — a slim cross. */
+const ARM_RATIO = 0.3;
 
 export type TouchControls = Readonly<{
   /** The overlay's root, so a scene can place it on its own camera. */
@@ -96,15 +89,9 @@ export function createTouchControls(
     const { pad, a, b } = layout;
     const half = pad.size / 2;
     const armHalf = (pad.size * ARM_RATIO) / 2;
-    /** Where an arm's chevron sits, halfway along that arm. */
-    const reach = (half + armHalf) / 2;
     shapes.clear();
     shapes.lineStyle(OUTLINE_WIDTH, OUTLINE_COLOR, OUTLINE_ALPHA);
     drawPadOutline(shapes, pad.x, pad.y, half, armHalf);
-    for (const direction of ['up', 'down', 'left', 'right'] as const) {
-      const { x, y } = armCentre(pad, direction, reach);
-      drawChevron(shapes, direction, x, y, pad.size * ARM_RATIO * CHEVRON_RATIO);
-    }
     shapes.strokeCircle(a.x, a.y, a.radius);
     shapes.strokeCircle(b.x, b.y, b.radius);
     aLabel.setPosition(a.x, a.y);
@@ -180,23 +167,6 @@ export function createTouchControls(
   };
 }
 
-function armCentre(
-  pad: TouchControlsLayout['pad'],
-  direction: TouchDirection,
-  offset: number,
-): { x: number; y: number } {
-  switch (direction) {
-    case 'up':
-      return { x: pad.x, y: pad.y - offset };
-    case 'down':
-      return { x: pad.x, y: pad.y + offset };
-    case 'left':
-      return { x: pad.x - offset, y: pad.y };
-    case 'right':
-      return { x: pad.x + offset, y: pad.y };
-  }
-}
-
 /** The pad's silhouette: one outline around the four arms together. */
 function drawPadOutline(
   graphics: Phaser.GameObjects.Graphics,
@@ -223,44 +193,5 @@ function drawPadOutline(
   graphics.moveTo(points[0][0], points[0][1]);
   for (let i = 1; i < points.length; i++) graphics.lineTo(points[i][0], points[i][1]);
   graphics.closePath();
-  graphics.strokePath();
-}
-
-/** An open chevron pointing `direction`, stroked in the live line style. */
-function drawChevron(
-  graphics: Phaser.GameObjects.Graphics,
-  direction: TouchDirection,
-  cx: number,
-  cy: number,
-  r: number,
-): void {
-  const points: readonly (readonly [number, number])[] =
-    direction === 'up'
-      ? [
-          [cx - r, cy + r * 0.5],
-          [cx, cy - r * 0.5],
-          [cx + r, cy + r * 0.5],
-        ]
-      : direction === 'down'
-        ? [
-            [cx - r, cy - r * 0.5],
-            [cx, cy + r * 0.5],
-            [cx + r, cy - r * 0.5],
-          ]
-        : direction === 'left'
-          ? [
-              [cx + r * 0.5, cy - r],
-              [cx - r * 0.5, cy],
-              [cx + r * 0.5, cy + r],
-            ]
-          : [
-              [cx - r * 0.5, cy - r],
-              [cx + r * 0.5, cy],
-              [cx - r * 0.5, cy + r],
-            ];
-  graphics.beginPath();
-  graphics.moveTo(points[0][0], points[0][1]);
-  graphics.lineTo(points[1][0], points[1][1]);
-  graphics.lineTo(points[2][0], points[2][1]);
   graphics.strokePath();
 }

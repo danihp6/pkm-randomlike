@@ -7,7 +7,6 @@ import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { addFrlgWindow } from '../ui/frlg';
 import { addFrlgText } from '../ui/frlgFont';
-import { createTouchControls } from '../ui/touchControls';
 import { RUN_OVER_INPUT_DELAY_MS, runSummary, runSummaryLines } from '../ui/runSummary';
 
 /**
@@ -64,7 +63,6 @@ export class RunOverScene extends Phaser.Scene {
     );
 
     subscribeKeybinds(this, ({ action }) => this.handleAction(action));
-    createTouchControls(this, { onAction: (action) => this.handleAction(action) });
     this.time.delayedCall(RUN_OVER_INPUT_DELAY_MS, () => {
       this.armed = true;
     });

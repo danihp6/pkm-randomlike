@@ -30,7 +30,6 @@ describe('rows', () => {
       'run',
       'interact',
       'reset',
-      'hud',
       'settings',
     ]);
     expect(SETTINGS_ROWS.slice(0, 4).every(isStepRow)).toBe(true);
@@ -61,7 +60,9 @@ describe('settingValue', () => {
     expect(settingValue(defaultSettings(), 'confirm')).toBe('E');
     expect(settingValue(defaultSettings(), 'cancel')).toBe('Q');
     expect(settingValue(defaultSettings(), 'up')).toBe('\u2191');
-    expect(settingValue({ ...defaultSettings(), keybinds: { ...DEFAULT_KEYBINDS, hud: 'Y' } }, 'hud')).toBe('Y');
+    expect(
+      settingValue({ ...defaultSettings(), keybinds: { ...DEFAULT_KEYBINDS, settings: 'Y' } }, 'settings'),
+    ).toBe('Y');
   });
 });
 

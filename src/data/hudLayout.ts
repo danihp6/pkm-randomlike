@@ -1,9 +1,9 @@
 /**
  * The HUD panel layout (Phase 7): where the player has dragged each panel of the
- * route overlay (the `I` key) and whether it is collapsed to its icon. It is a
- * global preference that outlives a run, so it is stored with the settings in the
- * save (D22). Pure and Phaser-free, so the save can validate it and the route can
- * apply it.
+ * route overlay and whether it is collapsed to its icon. It is a global
+ * preference that outlives a run, so it is stored with the settings in the save
+ * (D22). Pure and Phaser-free, so the save can validate it and the route can
+ * apply it. A fresh save opens only PARTY; every other panel starts collapsed.
  */
 
 /** The panels of the route HUD, in the order they are listed. */
@@ -21,11 +21,11 @@ export const HUD_LAYOUT_LIMIT = 4000;
 
 export function defaultHudLayout(): HudLayout {
   return {
-    header: { dx: 0, dy: 0, collapsed: false },
+    header: { dx: 0, dy: 0, collapsed: true },
     party: { dx: 0, dy: 0, collapsed: false },
-    bag: { dx: 0, dy: 0, collapsed: false },
-    box: { dx: 0, dy: 0, collapsed: false },
-    detail: { dx: 0, dy: 0, collapsed: false },
+    bag: { dx: 0, dy: 0, collapsed: true },
+    box: { dx: 0, dy: 0, collapsed: true },
+    detail: { dx: 0, dy: 0, collapsed: true },
   };
 }
 

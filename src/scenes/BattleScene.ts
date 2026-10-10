@@ -122,6 +122,8 @@ const FOE_PLATFORM_OFFSET = 76;
 const PLAYER_PLATFORM_OFFSET = 80;
 /** Space kept above a sprite's head so the largest mon never clips off-stage. */
 const MON_TOP_MARGIN = 16;
+/** On the phone (compact) layout the battlers draw this much smaller. */
+const COMPACT_MON_SCALE = 0.75;
 
 /**
  * The platform's width tracks its mon, so a titan gets a wide stand and a
@@ -231,6 +233,8 @@ export class BattleScene extends Phaser.Scene {
   private monSizeCap: Record<SideId, number> = { player: SPRITE_SIZE_MAX, enemy: SPRITE_SIZE_MAX };
   /** The drawn height each side's sprite ended up at, so its platform can match. */
   private monDrawHeight: Record<SideId, number> = { player: SPRITE_SIZE_MAX, enemy: SPRITE_SIZE_MAX };
+  /** 1 on the desktop layout, `COMPACT_MON_SCALE` on the phone layout. */
+  private monScaleFactor = 1;
   /** The sheets this battle loaded, dropped on shutdown so the texture cache cannot grow forever. */
   private loadedSheets: PokemonSpriteSheet[] = [];
 
@@ -1014,7 +1018,9 @@ export class BattleScene extends Phaser.Scene {
     const sprite = this.monSprite(side);
     const anim = pokemonIdleAnimKey(sheet);
     const content = this.sheetContent(sheet);
-    const target = Math.min(battleSpriteHeight(heightOf(fighter.speciesId)), this.monSizeCap[side]);
+    const target =
+      Math.min(battleSpriteHeight(heightOf(fighter.speciesId)), this.monSizeCap[side]) *
+      this.monScaleFactor;
     this.monScale[side] = target / (content?.height ?? sheet.size);
     this.monDrawHeight[side] = target;
     const sameSheet = sprite.texture.key === sheet.textureKey && sprite.anims.currentAnim?.key === anim;
@@ -1442,6 +1448,7 @@ export class BattleScene extends Phaser.Scene {
     this.bgBottom.setPosition(0, height * 0.52).setSize(width, height * 0.48);
     const trainer = this.foeTrainer.visible;
     const compact = width < COMPACT_SIZE;
+    this.monScaleFactor = compact ? COMPACT_MON_SCALE : 1;
     const menuOpen = this.menuItems.length > 0;
 
     let box: Rect;

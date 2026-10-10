@@ -188,6 +188,14 @@ a tint recolours it for light or dark windows) and 2x-upscales it into
 (`addFrlgText`). Only the Latin glyphs up to the Japanese sections are packed,
 plus the four named arrows.
 
+The **type badges** are packed by `scripts/frlg/build-type-icons.mjs`: it crops
+the 18 FRLG type badges plus the "???" unknown badge from
+`sprite-sources/frlg-ui/type-status-icons.png` into
+`src/assets/frlg/type-icons.png` (32x14 frames) with the frame map in
+`src/data/frlg/type-icons.json`, read through `src/data/typeIcons.ts`. The FRLG
+sheet predates Fairy, so a species whose type has no badge keeps its type names as
+text instead.
+
 ## Sprite contract
 
 - Overworld Pokémon sheets: 32x32 frames, 5 rows in the order Down, DownRight,

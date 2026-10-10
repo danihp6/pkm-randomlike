@@ -4,7 +4,6 @@ import type { Settings } from '../engine/save';
 import { applyVolume, loadSettings, saveSettings } from '../settings';
 import { addFrlgWindow } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
-import { createTouchControls } from '../ui/touchControls';
 import {
   changeSetting,
   isStepRow,
@@ -98,7 +97,6 @@ export class SettingsScene extends Phaser.Scene {
     });
 
     this.bindInput();
-    createTouchControls(this, { onAction: (action) => this.handleAction(action, null) });
     this.render();
   }
 
