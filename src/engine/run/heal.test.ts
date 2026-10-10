@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { restoreFighter } from '../battle/fighter';
 import { createRunPokemon, type RunPokemon } from './progression';
-import { fullHealMember, healParty, usePokevial } from './heal';
+import { chargePokevial, fillPokevial, fullHealMember, healParty, usePokevial, POKEVIAL_MAX_CHARGES } from './heal';
 import { addPokemon, createRun, type RunState } from './state';
 
 const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch', 'ember'] });
@@ -48,7 +48,7 @@ describe('usePokevial', () => {
     const boxed = damaged(createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 4 }), 2, 0);
     const full: RunState = { ...createRun({ seed: 's', starter: hurt }), party: Array(6).fill(hurt) };
     const used = usePokevial(addPokemon(full, boxed));
-    expect(used.pokevialCharges).toBe(0);
+    expect(used.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES - 1);
     expect(used.party[0].fighter.hp).toBe(starterMaxHp);
     expect(used.party[0].fighter.moves.every((slot) => slot.pp === slot.maxPp)).toBe(true);
     expect(used.box[0].fighter.hp).toBeGreaterThan(2);
@@ -63,6 +63,31 @@ describe('usePokevial', () => {
   it('is a no-op when no charge is left', () => {
     const spent = { ...createRun({ seed: 's', starter: damaged(starter, 3, 1) }), pokevialCharges: 0 };
     expect(usePokevial(spent)).toBe(spent);
+  });
+});
+
+describe('chargePokevial', () => {
+  it('adds a charge per beaten trainer and clamps at the cap', () => {
+    const empty = { ...createRun({ seed: 's', starter }), pokevialCharges: 0 };
+    const one = chargePokevial(empty);
+    expect(one.pokevialCharges).toBe(1);
+    const full = chargePokevial(chargePokevial(one));
+    expect(full.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
+    expect(chargePokevial(full)).toBe(full);
+  });
+
+  it('treats a non-positive amount as a no-op', () => {
+    const empty = { ...createRun({ seed: 's', starter }), pokevialCharges: 0 };
+    expect(chargePokevial(empty, 0)).toBe(empty);
+  });
+});
+
+describe('fillPokevial', () => {
+  it('tops the meter up and is a no-op when already full', () => {
+    const spent = { ...createRun({ seed: 's', starter }), pokevialCharges: 1 };
+    expect(fillPokevial(spent).pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
+    const full = fillPokevial(spent);
+    expect(fillPokevial(full)).toBe(full);
   });
 });
 

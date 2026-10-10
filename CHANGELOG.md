@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The Pokevial holds three charges, earned by fighting.** It is no longer a
+      single-charge, text-labelled button that refilled at each floor's heal stop:
+      the party header draws a **single bar** whose fill climbs through three
+      colour stages with **POKEVIAL** written inside (the `x/3` count is gone and
+      the hand cursor only shows over a **full** bar), each **beaten trainer** adds
+      one charge up to the cap of three, a floor's **boss** fills the bar to the
+      top, and the meter **carries over** between floors — only a fresh run starts
+      full. Drinking it still rests the whole party and box
+      (`POKEVIAL_MAX_CHARGES`, `chargePokevial`/`fillPokevial` in
+      `src/engine/run/heal.ts`; `markBossDefeated` and `resolveBattle`).
 - [x] **The party and the PC share one level and one XP bar.** XP is run-wide now
       (`RunState.xp`, `squadLevel`): a battle fills the squad's single bar and the
       whole party **and box** level with it, learning moves and evolving as they

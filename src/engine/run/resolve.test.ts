@@ -48,6 +48,20 @@ describe('resolveBattle', () => {
     expect(result.run.defeatedTrainers).toEqual(['trainer-1-0']);
   });
 
+  it('earns a Pokevial charge for a new trainer win and never twice', () => {
+    const run = { ...createRun({ seed: 's', starter }), pokevialCharges: 0 };
+    const reward: BattleReward = { enemyLevels: [4], isTrainer: true, trainerId: 'trainer-1-0' };
+    const first = resolveBattle(run, returned(run, 'win'), reward);
+    expect(first.run.pokevialCharges).toBe(1);
+    const again = resolveBattle(first.run, returned(first.run, 'win'), reward);
+    expect(again.run.pokevialCharges).toBe(1);
+  });
+
+  it('does not charge the Pokevial on a wild win', () => {
+    const run = { ...createRun({ seed: 's', starter }), pokevialCharges: 0 };
+    expect(resolveBattle(run, returned(run, 'win'), wild).run.pokevialCharges).toBe(0);
+  });
+
   it('places a catch, spends the room capture and awards XP', () => {
     const run = createRun({ seed: 's', starter });
     const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
