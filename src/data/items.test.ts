@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ITEMS, buyPrice, getItem, isForSale, sellPrice, type ItemKind } from './items';
 
-const KINDS: readonly ItemKind[] = ['ball', 'heal', 'status', 'boost', 'held'];
+const KINDS: readonly ItemKind[] = ['ball', 'heal', 'status', 'boost', 'held', 'valuable'];
 
 describe('item catalogue', () => {
   it('has unique ids and a known kind for every row', () => {
@@ -53,6 +53,13 @@ describe('prices', () => {
     expect(sellPrice(potion)).toBe(Math.floor(potion.price / 2));
     expect(sellPrice(getItem('antidote')!)).toBe(50);
     expect(sellPrice(getItem('masterball')!)).toBe(0);
+  });
+
+  it('sells a valuable for its whole price', () => {
+    const nugget = getItem('nugget')!;
+    expect(nugget.kind).toBe('valuable');
+    expect(sellPrice(nugget)).toBe(nugget.price);
+    expect(sellPrice(getItem('cometshard')!)).toBe(12000);
   });
 });
 

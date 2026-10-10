@@ -1,7 +1,7 @@
 import type { BoostId, StatusId } from '../engine/battle/fighter';
 import { getSpecies, MEGA_FORMES } from './dex';
 
-export type ItemKind = 'ball' | 'heal' | 'status' | 'boost' | 'held';
+export type ItemKind = 'ball' | 'heal' | 'status' | 'boost' | 'held' | 'valuable';
 
 export type ItemDef = Readonly<{
   id: string;
@@ -55,10 +55,10 @@ const MEGA_STONES: readonly ItemDef[] = MEGA_FORMES.map((mega) =>
 );
 
 /**
- * The run's item catalogue: balls, heal/status/boost consumables and `held`
- * items (Leftovers, berries, the 1.2x type items, registered by
- * `effects/items.ts`), each with the price the between-route reward spends.
- * There is no Revive anywhere (D5).
+ * The run's item catalogue: balls, heal/status/boost consumables, `held` items
+ * (Leftovers, berries, the 1.2x type items, registered by `effects/items.ts`) and
+ * `valuable` treasure, each with the price the shop spends. There is no Revive
+ * anywhere (D5).
  */
 export const ITEMS: readonly ItemDef[] = [
   item({ id: 'pokeball', name: 'Poke Ball', kind: 'ball', price: 200, catchBonus: 1, shortDesc: 'A device for catching wild Pokémon.' }),
@@ -107,6 +107,19 @@ export const ITEMS: readonly ItemDef[] = [
   item({ id: 'metalcoat', name: 'Metal Coat', kind: 'held', price: 1000, typeBoost: { type: 'Steel', multiplier: 1.2 }, shortDesc: 'Powers up Steel-type moves.' }),
   item({ id: 'fairyfeather', name: 'Fairy Feather', kind: 'held', price: 1000, typeBoost: { type: 'Fairy', multiplier: 1.2 }, shortDesc: 'Powers up Fairy-type moves.' }),
 
+  // Valuables: pure treasure the ground-item loot turns up, worth real money at
+  // the shop (`sellPrice`) and usable for nothing else, so they are the run's way
+  // to cash out (`docs/maps-spec.md` §7, D33). They are never sold by the shop.
+  item({ id: 'stardust', name: 'Stardust', kind: 'valuable', price: 1000, shortDesc: 'Red sand that shimmers like a star. Sell it for money.' }),
+  item({ id: 'pearl', name: 'Pearl', kind: 'valuable', price: 1400, shortDesc: 'A pretty pearl. Sell it for money.' }),
+  item({ id: 'nugget', name: 'Nugget', kind: 'valuable', price: 5000, shortDesc: 'A lump of pure gold. Sell it for money.' }),
+  item({ id: 'starpiece', name: 'Star Piece', kind: 'valuable', price: 4900, shortDesc: 'A shard of a red star. Sell it for money.' }),
+  item({ id: 'rarebone', name: 'Rare Bone', kind: 'valuable', price: 5000, shortDesc: 'A rare bone. Sell it for money.' }),
+  item({ id: 'bigpearl', name: 'Big Pearl', kind: 'valuable', price: 7500, shortDesc: 'A large, lustrous pearl. Sell it for money.' }),
+  item({ id: 'pearlstring', name: 'Pearl String', kind: 'valuable', price: 8000, shortDesc: 'A string of pearls. Sell it for money.' }),
+  item({ id: 'bignugget', name: 'Big Nugget', kind: 'valuable', price: 10000, shortDesc: 'A big lump of pure gold. Sell it for money.' }),
+  item({ id: 'cometshard', name: 'Comet Shard', kind: 'valuable', price: 12000, shortDesc: 'A shard of a comet. Sell it for money.' }),
+
   ...MEGA_STONES,
 ];
 
@@ -126,7 +139,11 @@ export function buyPrice(item: ItemDef): number {
   return item.price;
 }
 
-/** The Poké Dollars a sale returns: half the buy price, rounded down. */
+/**
+ * The Poké Dollars a sale returns. A **valuable** is pure treasure, so it sells
+ * for its whole listed price; anything else is a used good that recovers half,
+ * rounded down, so the shop stays a sink (`docs/maps-spec.md` §7).
+ */
 export function sellPrice(item: ItemDef): number {
-  return Math.floor(item.price / 2);
+  return item.kind === 'valuable' ? item.price : Math.floor(item.price / 2);
 }

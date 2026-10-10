@@ -7,6 +7,7 @@ import { POKEVIAL_MAX_CHARGES } from './run/heal';
 import { arrivalEdgeFor, planMap } from './maps/plan';
 import {
   addItem,
+  addMoney,
   addPokemon,
   createRun,
   createRunPokemon,
@@ -67,6 +68,7 @@ function sampleRun(): RunState {
   run = addPokemon(run, createRunPokemon({ id: 'boxed', speciesId: 'greedent', level: 4 }));
   run = addItem(run, 'potion', 2);
   run = addItem(run, 'pokeball', 1);
+  run = addMoney(run, 1500);
   run = useCapture(run);
   run = markTrainerDefeated(run, 'trainer-1-0');
   return { ...run, stats: { catches: 2, casualties: 1 } };
@@ -439,7 +441,7 @@ describe('migrateDocument', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
     // One step per version boundary, because the test starts at v0 and the
-    // current schema is v13.
+    // current schema is v14.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
@@ -453,7 +455,8 @@ describe('migrateDocument', () => {
       9: (doc) => ({ ...doc, version: 10 }),
       10: (doc) => ({ ...doc, version: 11 }),
       11: (doc) => ({ ...doc, version: 12 }),
-      12: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      12: (doc) => ({ ...doc, version: 13 }),
+      13: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -521,6 +524,15 @@ describe('map-position migration', () => {
     const raw = JSON.stringify({ version: 8, run });
     const decoded = decodeSave(raw);
     expect(decoded.run?.capturedRooms).toEqual([]);
+  });
+
+  it('adds the money counter to a v13 run', () => {
+    const run: Record<string, unknown> = { ...sampleRun() };
+    delete run.money;
+    const raw = JSON.stringify({ version: 13, run });
+    const decoded = decodeSave(raw);
+    expect(decoded.version).toBe(SAVE_VERSION);
+    expect(decoded.run?.money).toBe(0);
   });
 });
 

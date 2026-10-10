@@ -26,6 +26,7 @@ import { IS_DEVELOP } from '../dev/env';
 import type { DebugPartyEdit, DebugPartyMember, DebugRouteContext, DebugRouteInput } from '../dev/debugMenu';
 import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
+  BOSS_MONEY_MULTIPLIER,
   MAX_PARTY_SIZE,
   MAX_MOVES,
   POKEVIAL_MAX_CHARGES,
@@ -57,6 +58,7 @@ import {
   runRoomLevel,
   squadLevel,
   swapCaughtIntoParty,
+  trainerMoney,
   trainerRoster,
   unequipHeldItem,
   updatePokemon,
@@ -228,12 +230,14 @@ const HUD_HELD_ICON_SCALE = 0.85;
 const HUD_BOX_HELD_ICON_SCALE = 1;
 /** Pointer travel (px) that turns a click into a drag while grabbing a member. */
 const HUD_DRAG_SLOP = 4;
-/** The bag pocket tabs: four across the window's padded inner width. */
-const HUD_TAB_W = 68;
+/** The bag pocket tabs: five across the window's padded inner width. */
+const HUD_TAB_W = 55;
 const HUD_TAB_H = 26;
 const HUD_TAB_GAP = 4;
 const HUD_BAG_HEADER = HUD_PAD_TOP + HUD_TAB_H + 8;
 const HUD_BAG_ROW = 40;
+/** The bag panel's footer band: the Poké Dollar readout under the item rows. */
+const HUD_BAG_FOOTER = 26;
 /** The PC BOX window: a page tab strip over a grid of avatar cells. */
 const HUD_BOX_PAD = 12;
 const HUD_BOX_TAB_W = 32;
@@ -543,6 +547,8 @@ export class RouteScene extends Phaser.Scene {
   }[] = [];
   private hudBagCategory: BagCategory = 'equipment';
   private hudBagEmpty!: Phaser.GameObjects.BitmapText;
+  /** The bag window's Poké Dollar readout, right-aligned in its footer band. */
+  private hudMoneyText!: Phaser.GameObjects.BitmapText;
   /** The HUD's party/box grab (the shared reducer's cursor), and whether it moved. */
   private hudUi: PartyUiState = initialPartyUi();
   private hudGrabMoved = false;
@@ -1144,7 +1150,7 @@ export class RouteScene extends Phaser.Scene {
     }
 
     const bagY = partyY + partyH + HUD_GAP;
-    const bagH = HUD_BAG_HEADER + HUD_BAG_ROWS * HUD_BAG_ROW + HUD_PAD_BOTTOM;
+    const bagH = HUD_BAG_HEADER + HUD_BAG_ROWS * HUD_BAG_ROW + HUD_BAG_FOOTER + HUD_PAD_BOTTOM;
     this.hudBagY = bagY;
     this.hudBagH = bagH;
     bagChildren.push(addFrlgWindow(this, x, bagY, HUD_PANEL_W, bagH));
@@ -1188,6 +1194,23 @@ export class RouteScene extends Phaser.Scene {
       origin: [0.5, 0],
     });
     bagChildren.push(this.hudBagEmpty);
+
+    // The footer holds the run's Poké Dollars: a hairline rule then the readout,
+    // so the money sits with the bag it is spent from (`docs/maps-spec.md` §7).
+    const footerY = bagY + HUD_BAG_HEADER + HUD_BAG_ROWS * HUD_BAG_ROW;
+    const footerRule = this.add
+      .rectangle(x + HUD_PAD_X, footerY + 4, HUD_PANEL_W - HUD_PAD_X * 2, 1, 0x9a97b5)
+      .setOrigin(0, 0);
+    const moneyLabel = addFrlgText(this, x + HUD_PAD_X, footerY + 12, 'MONEY', {
+      size: 16,
+      tint: 0x3a3956,
+    });
+    this.hudMoneyText = addFrlgText(this, x + HUD_PANEL_W - HUD_PAD_X, footerY + 12, '', {
+      size: 16,
+      tint: FRLG_INK,
+      origin: [1, 0],
+    });
+    bagChildren.push(footerRule, moneyLabel, this.hudMoneyText);
 
     // The PC BOX window: a page tab strip over a grid of avatar cells, in a
     // second column to the left of the party/bag stack.
@@ -1593,6 +1616,7 @@ export class RouteScene extends Phaser.Scene {
       tab.label.setTint(active ? 0xf8fafc : FRLG_INK);
     });
     this.hudBagEmpty.setVisible(bag.length === 0);
+    this.hudMoneyText.setText(String(this.run.money));
     this.hudBagRows.forEach((row, i) => {
       const stack = bag[i];
       const frame = stack ? itemIconFrame(stack.itemId) : null;
@@ -4221,10 +4245,22 @@ export class RouteScene extends Phaser.Scene {
 
   private rewardFor(trigger: BattleTrigger): BattleReward {
     if (trigger.kind === 'wild') return { enemyLevels: [trigger.level], isTrainer: false };
+    // A beaten trainer drops Poké Dollars: its archetype's base + jitter, scaled
+    // by the map's band and tripled for the floor boss (`docs/maps-spec.md` §7,
+    // D33). The roll is keyed by the run, map and trainer, so a replay pays the
+    // same (D11).
+    const archetype = trigger.archetypeId ? getTrainerArchetype(trigger.archetypeId) : undefined;
+    let money: number | undefined;
+    if (archetype) {
+      const isBoss = trigger.trainerId === bossTrainerId(this.run.mapIndex);
+      const rng = new Rng(hashSeed(`${this.run.seed}:money:${this.run.mapIndex}:${trigger.trainerId}`));
+      money = trainerMoney(archetype, bandForMap(this.run.mapIndex), rng, isBoss ? BOSS_MONEY_MULTIPLIER : 1);
+    }
     return {
       enemyLevels: trigger.roster.map((entry) => entry.level),
       isTrainer: true,
       trainerId: trigger.trainerId,
+      ...(money !== undefined ? { money } : {}),
     };
   }
 

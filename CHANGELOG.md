@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The Poké Dollar economy lands: trainers pay, valuables bank.** `RunState`
+      carries `money` (a run starts with none; `SAVE_VERSION` 14 +
+      `SAVE_MIGRATIONS[13]`). A beaten trainer drops its archetype's **fixed base
+      plus jitter**, scaled by the map's band and tripled for the floor boss, and
+      only a **first** win pays (`src/engine/run/reward.ts`, `BattleReward.money`,
+      `resolveBattle`). The route HUD's **bag panel** grows a MONEY footer. Nine
+      **valuables** (Stardust, Pearl, Nugget, Star Piece, Rare Bone, Big Pearl,
+      Pearl String, Big Nugget, Comet Shard) join the catalogue as a new
+      `valuable` kind with its own bag pocket (`VALUE`); they sell for their whole
+      price (other goods still half) and turn up in the route loot pools by band
+      (`src/data/loot.ts`). `docs/maps-spec.md` §7, `docs/design-spec.md` §7,
+      `D33`; pure tests for the reward roll, `addMoney`/`spendMoney`, the
+      migration and the pockets.
 - [x] **The battle moves menu reads the numbers and floats its info.** The moves
       grid always reserves its full **2x2**, so one or two moves keep the same cell
       size as a full set, and each cell shows the move's **effective power** (base

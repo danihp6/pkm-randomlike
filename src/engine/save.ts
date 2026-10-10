@@ -48,7 +48,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -105,7 +105,9 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * added the four HUD-panel keys (`party`/`bag`/`map`/`box`) and moved `settings`
  * off its old `O` default to `Tab` (the old `O` becomes the PC box key); `12`
  * moves a v12 run onto the v13 schema, which replaced the per-member XP with the
- * squad's single shared bar (recovered as the highest member's XP).
+ * squad's single shared bar (recovered as the highest member's XP); `13` moves a
+ * v13 run onto the v14 schema, which added the `money` counter (an old run starts
+ * with none).
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -184,6 +186,12 @@ export const SAVE_MIGRATIONS: Migrations = {
     // The shared bar starts at the highest member's XP, so an old run keeps the
     // level of its best Pokémon and everyone else catches up from there.
     run: isRecord(document.run) ? { ...document.run, xp: highestMemberXp(document.run) } : document.run,
+  }),
+  13: (document) => ({
+    ...document,
+    version: 14,
+    // The Poké Dollar economy: an old run has not beaten a trainer for money yet.
+    run: isRecord(document.run) ? { money: 0, ...document.run } : document.run,
   }),
 };
 
@@ -610,6 +618,8 @@ function parseRun(value: unknown): RunState | null {
   // than the party it carries.
   const xp = isNumber(value.xp) && value.xp >= 0 ? value.xp : highestMemberXp(value);
 
+  const money = isInteger(value.money) && value.money >= 0 ? value.money : 0;
+
   return {
     seed: value.seed,
     mode: value.mode,
@@ -627,6 +637,7 @@ function parseRun(value: unknown): RunState | null {
     party,
     box,
     bag,
+    money,
     defeatedTrainers,
     pickedItems,
     capturedRooms,
