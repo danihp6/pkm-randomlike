@@ -59,7 +59,7 @@ An opening is one of:
 
 | Opening | Where | Meaning |
 | --- | --- | --- |
-| **entry** | exactly one, on the entry room | the map entrance; the room spawns the player at its **centre** (no carved outward door) |
+| **entry** | exactly one, on the entry room | the map entrance; a fresh run or a portal step spawns the player at the room's **centre** (no carved outward door) |
 | **portal** | exactly one, on the boss room | sealed until the boss falls, then the way to the next map |
 | **link** | 0–4 per room | joins two rooms; its counterpart is the neighbour's opposite link |
 
@@ -67,7 +67,8 @@ An opening is one of:
 back off it, so the route builder leaves that wall solid and the run starts the
 player in the middle of the room. The entry room's only other opening is the
 single `link` that joins it to the floor, so it too is a **single-door leaf**.
-Every other opening is a `link`.
+Walking **back** into the entry room through that link spawns the player at the
+link like any other room. Every other opening is a `link`.
 
 **No dangling openings:** every `link` is joined to another room. A room whose
 only opening is a single `link` is a **dead-end room** — a deliberate leaf, not an
@@ -116,7 +117,8 @@ Plan(seed, mapIndex): MapPlan
     #    dead-end leaf, so the boss has a single door and the floor keeps its cycle.
     #    Both the entry and the boss are single-door leaves.
     # 5. portal: the boss room's portal is carved on a free wall from the start and
-    #    sealed until the boss falls. The entry room spawns the player at its centre.
+    #    sealed until the boss falls. A fresh arrival spawns the player at the entry
+    #    room's centre; walking back in through its link spawns at that door.
     # 6. specials: hang the special rooms off the tree (see §7).
 ```
 

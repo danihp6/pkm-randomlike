@@ -94,18 +94,40 @@ describe('arrivalEdgeFor / roomView', () => {
     }
   });
 
-  it('carves the entry room identically from every approach', () => {
+  it('carves the entry room from the same openings, spawning at its centre from outside and at the door from a link', () => {
     for (const seed of SEEDS) {
       const plan = planMap(seed, 2);
       const fresh = roomView(plan, plan.entryRoom, false);
       const edges = fresh.openings.map((opening) => opening.edge);
+      // A fresh (outside) arrival has no door and spawns at the centre.
       expect(fresh.entryEdge).toBeNull();
+      expect(fresh.openings.some((opening) => opening.role === 'entry')).toBe(false);
+      const freshRoute = sketchRoute({
+        seed,
+        routeIndex: 1,
+        biomeId: fresh.biomeId,
+        openings: fresh.openings,
+        width: fresh.width,
+        height: fresh.height,
+      });
       for (const edge of MAP_EDGES) {
         if (linkedNeighbour(plan, plan.entryRoom, edge) === undefined) continue;
         const fromLink = roomView(plan, plan.entryRoom, false, edge);
-        // Same openings and the same centre spawn, so the room never rerolls.
+        // The same opening edges, so the lanes stay put...
         expect(fromLink.openings.map((opening) => opening.edge)).toEqual(edges);
-        expect(fromLink.entryEdge).toBeNull();
+        // ...the carved geometry is identical (only the spawn moves)...
+        const linkRoute = sketchRoute({
+          seed,
+          routeIndex: 1,
+          biomeId: fromLink.biomeId,
+          openings: fromLink.openings,
+          width: fromLink.width,
+          height: fromLink.height,
+        });
+        expect(linkRoute.tiles).toEqual(freshRoute.tiles);
+        // ...but walking back in through the link spawns at that link.
+        expect(fromLink.entryEdge).toBe(edge);
+        expect(fromLink.openings.find((opening) => opening.role === 'entry')?.edge).toBe(edge);
       }
     }
   });
@@ -148,13 +170,11 @@ describe('arrivalEdgeFor / roomView', () => {
             // except the map entry, which always spawns at its centre.
             const arrival = OPPOSITE_EDGE[edge];
             const view = roomView(plan, to, false, arrival);
-            if (to === plan.entryRoom) {
-              expect(view.entryEdge, `${seed} ${from.id}->${to} by ${edge}`).toBeNull();
-            } else {
-              expect(view.entryEdge, `${seed} ${from.id}->${to} by ${edge}`).toBe(arrival);
-              // The door the player arrives through leads straight back.
-              expect(linkedNeighbour(plan, to, view.entryEdge!)).toBe(from.id);
-            }
+            // Every room — the map entry included — spawns at the link it is
+            // entered through when the player walks back in.
+            expect(view.entryEdge, `${seed} ${from.id}->${to} by ${edge}`).toBe(arrival);
+            // The door the player arrives through leads straight back.
+            expect(linkedNeighbour(plan, to, view.entryEdge!)).toBe(from.id);
           }
         }
       }
