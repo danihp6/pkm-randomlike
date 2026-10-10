@@ -34,7 +34,9 @@ map  = a grid of K rooms joined by openings      (K random, from the map's range
 - The **room farthest from the entry** (graph distance) holds the **boss** at the
   map's `maxLevel`. Its onward opening is the **portal** to the next map (D31).
 - Room **sizes** grow as the run advances: the map index widens the range a room
-  rolls its width and height from, and each room picks both inside it.
+  rolls its width and height from, and each room picks both inside it. No room is
+  ever smaller than **30x30**, and the floor's **entry room** and **boss room** are
+  always exactly **30x30** — the quiet leaves read the same on every map.
 
 ## 2. Topology: a closed room graph on a grid (D30)
 
@@ -134,7 +136,7 @@ deterministically.
 | --- | --- |
 | `levels.minLevel` / `maxLevel` | the map's Pokémon band; the player cap is `maxLevel` |
 | `routes.min` / `max` | how many rooms the map's graph holds |
-| `size.min` / `max` | the range each room rolls its **width and height** from, independently |
+| `size.min` / `max` | the range each room rolls its **width and height** from, independently; `min` never drops below 30 and the entry/boss leaves are pinned to 30x30 |
 
 `MAP_TUNING` is a table per map (1..6 today) and `MAP_TUNING_STEP` grows a map
 past the last row, so an infinite run keeps climbing. The room count grows with

@@ -8,6 +8,12 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Every route is at least 30x30, and the entry and boss rooms are always
+      exactly 30x30.** `MAP_MIN_ROOM_SIZE` (`src/data/maps.ts`) floors every map's
+      size range at 30 — the maxima keep their progression, so maps 1–3 become
+      30x30 and later maps stay a range — and `planMap` pins the floor's two quiet
+      leaves, the **entry room** and the **boss room**, to that size on every map
+      (`docs/maps-spec.md` §1/§6, `docs/routes-spec.md` §2).
 - [x] **The touch controls live only on the route.** The on-screen pad and A / B
       are gone from the main menu, the starter pick, the settings screen and the
       run-over screen (the battle never had them), so a phone only shows them while

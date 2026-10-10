@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { FLOOR, WALL, mapPixelSize, padMap } from '../map';
-import { MAP_MAX_ROOM_SIZE, mapTuning, routeSizeRangeForMap } from '../../data/maps';
+import {
+  MAP_MAX_ROOM_SIZE,
+  MAP_MIN_ROOM_SIZE,
+  mapTuning,
+  routeSizeRangeForMap,
+} from '../../data/maps';
 import { mapSizeTier, terrainScaleForSize } from '../../data/mapSize';
-import { ROUTE_HEIGHT, ROUTE_WIDTH, sketchRoute } from '../routes/sketch';
+import { sketchRoute } from '../routes/sketch';
 import { validateRoute } from '../routes/validate';
 import { planMap } from './plan';
 import { routeForRoom } from './route';
@@ -74,7 +79,7 @@ describe('plan-driven route size', () => {
       const size = routeSizeRangeForMap(mapIndex);
       expect(size.max).toBeLessThanOrEqual(MAP_MAX_ROOM_SIZE);
     }
-    expect(mapSizeTier(mapTuning(1).size.max, mapTuning(1).size.max).id).toBe('small');
+    expect(mapSizeTier(mapTuning(1).size.max, mapTuning(1).size.max).id).toBe('medium');
     expect(mapSizeTier(mapTuning(6).size.max, mapTuning(6).size.max).id).toBe('large');
     expect(terrainScaleForSize(mapTuning(6).size.max, mapTuning(6).size.max)).toBeGreaterThan(
       terrainScaleForSize(mapTuning(1).size.max, mapTuning(1).size.max),
@@ -86,9 +91,10 @@ describe('plan-driven route size', () => {
     const padded = padMap(large, 3, WALL);
     expect(padded).toHaveLength(MAP_MAX_ROOM_SIZE + 6);
     expect(padded[0]).toHaveLength(MAP_MAX_ROOM_SIZE + 6);
-    // The default route size stays a supported plan size.
-    expect(routeSizeRangeForMap(1).min).toBeLessThanOrEqual(ROUTE_WIDTH);
-    expect(routeSizeRangeForMap(1).max).toBeGreaterThanOrEqual(ROUTE_HEIGHT);
+    // Every plan room is at least the minimum route size.
+    for (let mapIndex = 1; mapIndex <= 6; mapIndex++) {
+      expect(routeSizeRangeForMap(mapIndex).min).toBeGreaterThanOrEqual(MAP_MIN_ROOM_SIZE);
+    }
   });
 
   it('sizes the camera bounds from the map at any plan size', () => {

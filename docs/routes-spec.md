@@ -67,8 +67,8 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    with the map size** (`MAP_SIZE_TIERS` in `src/data/mapSize.ts`): the map's
    area in tiles falls in `small` (terrain ×1), `medium` (×2) or `large` (×3), so a
    bigger route carries proportionally more terrain without the count matching the
-   size pixel by pixel. The default 20x20 route is `small`, so it keeps its biome
-   counts untouched. Both land on the carved floor **off the spine and the
+   size pixel by pixel. Every route is at least **30x30**, so the smallest route
+   lands in `medium`. Both land on the carved floor **off the spine and the
    openings** (ledges also avoid the pockets). A grass patch is packed
    **against the walls**: it first stretches across a wall-to-wall corridor so it
    touches a wall at both ends, but only when that gap is no wider than
@@ -136,7 +136,9 @@ them, blocks their tile, freezes the player while a spotter walks over and opens
 the menu battle, and hides a beaten one. The target generator, with pseudocode
 and a review of the draft, is in `docs/route-generator.md`.
 
-The map size is an input: the default is **20x20** tiles at 24px for now, and the
+The map size is an input: every route is at least **30x30** tiles at 24px, the
+map's size range rolls each room above that floor, and the floor's **entry room**
+and **boss room** are always exactly **30x30** (`docs/maps-spec.md` §1/§6). The
 camera follows the player, bounded to the generated map. The whole map is visible
 at once: there is no fog of war, like the originals (`D6`).
 

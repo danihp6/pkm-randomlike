@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BIOME_ORDER } from '../../data/biomes';
-import { MAP_TUNING, mapTuning } from '../../data/maps';
+import { MAP_MIN_ROOM_SIZE, MAP_TUNING, mapTuning } from '../../data/maps';
 import type { Access } from '../routes/layout';
 import { sketchRoute } from '../routes/sketch';
 import { validateRoute } from '../routes/validate';
@@ -83,10 +83,17 @@ function assertPlan(plan: MapPlan): void {
     expect(seen.has(cell)).toBe(false);
     seen.add(cell);
 
-    expect(room.width).toBeGreaterThanOrEqual(tuning.size.min);
-    expect(room.width).toBeLessThanOrEqual(tuning.size.max);
-    expect(room.height).toBeGreaterThanOrEqual(tuning.size.min);
-    expect(room.height).toBeLessThanOrEqual(tuning.size.max);
+    // The entry and boss rooms are the quiet leaves, pinned to the minimum size
+    // whatever range the map rolls; every other room stays inside that range.
+    if (room.id === plan.entryRoom || room.id === plan.bossRoom) {
+      expect(room.width).toBe(MAP_MIN_ROOM_SIZE);
+      expect(room.height).toBe(MAP_MIN_ROOM_SIZE);
+    } else {
+      expect(room.width).toBeGreaterThanOrEqual(tuning.size.min);
+      expect(room.width).toBeLessThanOrEqual(tuning.size.max);
+      expect(room.height).toBeGreaterThanOrEqual(tuning.size.min);
+      expect(room.height).toBeLessThanOrEqual(tuning.size.max);
+    }
 
     const edges = room.openings.map((opening) => opening.edge);
     expect(new Set(edges).size).toBe(edges.length);
@@ -178,6 +185,19 @@ describe('planMap', () => {
       for (let mapIndex = 1; mapIndex <= MAP_TUNING.length; mapIndex++) {
         const plan = planMap(seed, mapIndex);
         expect(plan.links.length, `${seed} map ${mapIndex}`).toBeGreaterThan(plan.rooms.length - 1);
+      }
+    }
+  });
+
+  it('pins the entry and boss rooms to the minimum room size', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        for (const leaf of [plan.entryRoom, plan.bossRoom]) {
+          const room = plan.rooms[leaf];
+          expect(room.width, `${seed} map ${mapIndex} room ${leaf}`).toBe(MAP_MIN_ROOM_SIZE);
+          expect(room.height, `${seed} map ${mapIndex} room ${leaf}`).toBe(MAP_MIN_ROOM_SIZE);
+        }
       }
     }
   });
