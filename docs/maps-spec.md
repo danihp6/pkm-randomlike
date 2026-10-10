@@ -222,7 +222,8 @@ Binding of Isaac minimap:
 - a **grid of room cells**, each room drawn at its grid position and sized from
   its `size` and shape, with its openings shown on the matching walls;
 - the **current** room highlighted, the boss room marked, the portal flagged and
-  each special room shown with its own icon;
+  each special room shown with its own icon; a room whose **single capture** has
+  been spent (its first wild battle) shows a **Poké Ball**;
 - a link drawn between two rooms only once both are known.
 
 **Fog of discovery:** a room is drawn only once it has been **discovered** (the

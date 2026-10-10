@@ -32,6 +32,24 @@ describe('buildMapView layout', () => {
     }
   });
 
+  it('flags the rooms whose capture has been spent', () => {
+    const plan = planMap('map-view-a', 2);
+    const spent = [plan.rooms[1].id, plan.rooms[3].id];
+    const view = buildMapView(plan, {
+      discovered: allRooms(plan),
+      currentRoom: plan.entryRoom,
+      captureSpent: spent,
+    });
+    const flagged = view.rooms
+      .filter((room) => room.captureSpent)
+      .map((room) => room.id)
+      .sort((a, b) => a - b);
+    expect(flagged).toEqual([...spent].sort((a, b) => a - b));
+    // Nothing is flagged without the input.
+    const none = buildMapView(plan, { discovered: allRooms(plan), currentRoom: plan.entryRoom });
+    expect(none.rooms.every((room) => !room.captureSpent)).toBe(true);
+  });
+
   it('keeps a gap between every pair of rooms', () => {
     for (const seed of SEEDS) {
       const plan = planMap(seed, 3);

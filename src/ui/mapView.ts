@@ -53,6 +53,8 @@ export type MapViewRoom = Readonly<{
   portal: boolean;
   /** The room's special marker, if any (Phase 9 step 11). */
   marker: MapRoomMarker | null;
+  /** True once the room's single capture has been spent (its first wild battle). */
+  captureSpent: boolean;
   openings: readonly MapViewOpening[];
 }>;
 
@@ -85,6 +87,8 @@ export type MapViewInput = Readonly<{
   portalOpen?: boolean;
   /** Optional room-id → special marker map (Phase 9 step 11). */
   markers?: Readonly<Record<number, MapRoomMarker>>;
+  /** Room ids whose single capture has been spent, so the minimap shows a ball. */
+  captureSpent?: readonly number[];
 }>;
 
 /** The gap (grid units) a room keeps from its neighbours so cells never touch. */
@@ -175,6 +179,7 @@ export function buildMapView(plan: MapPlan, input: MapViewInput): MapView {
   const rects = layoutRects(plan);
   const discovered = new Set(input.discovered);
   const markers = input.markers ?? {};
+  const captureSpent = new Set(input.captureSpent ?? []);
   const portalOpen = input.portalOpen === true;
 
   const rooms: MapViewRoom[] = [];
@@ -193,6 +198,7 @@ export function buildMapView(plan: MapPlan, input: MapViewInput): MapView {
       boss: isBoss,
       portal,
       marker: markers[room.id] ?? null,
+      captureSpent: captureSpent.has(room.id),
       openings: roomOpenings(plan, rect, room, portalOpen),
     });
   }

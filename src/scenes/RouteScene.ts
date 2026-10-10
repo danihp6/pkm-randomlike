@@ -1559,6 +1559,7 @@ export class RouteScene extends Phaser.Scene {
       discovered: this.run.discoveredRooms,
       currentRoom: this.run.routeInMap,
       portalOpen: this.portalOpen(),
+      captureSpent: this.run.capturedRooms,
     });
     this.hudMapEmpty.setVisible(!view.visible);
     if (!view.visible) return;
@@ -1636,11 +1637,37 @@ export class RouteScene extends Phaser.Scene {
       graphics.fillStyle(0xf8fafc, 1);
       graphics.fillCircle(cx - radius * 0.4, cy - radius * 0.15, radius * 0.22);
       graphics.fillCircle(cx + radius * 0.4, cy - radius * 0.15, radius * 0.22);
+    } else if (room.captureSpent) {
+      // A room whose single capture has been spent reads as a Poké Ball.
+      this.drawCaptureBall(graphics, cx, cy, radius);
     }
     if (room.portal) {
       graphics.lineStyle(2, 0x3fa9f5, 1);
       graphics.strokeCircle(cx, cy, radius * 1.4);
     }
+  }
+
+  /** A small Poké Ball glyph on a minimap room whose capture has been spent. */
+  private drawCaptureBall(
+    graphics: Phaser.GameObjects.Graphics,
+    cx: number,
+    cy: number,
+    radius: number,
+  ): void {
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillCircle(cx, cy, radius);
+    graphics.fillStyle(0xe2554e, 1);
+    graphics.beginPath();
+    graphics.arc(cx, cy, radius, Math.PI, Math.PI * 2, false);
+    graphics.closePath();
+    graphics.fillPath();
+    graphics.lineStyle(1.5, 0x2f2c4d, 1);
+    graphics.strokeCircle(cx, cy, radius);
+    graphics.lineBetween(cx - radius, cy, cx + radius, cy);
+    graphics.fillStyle(0x2f2c4d, 1);
+    graphics.fillCircle(cx, cy, radius * 0.36);
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillCircle(cx, cy, radius * 0.2);
   }
 
   /**
