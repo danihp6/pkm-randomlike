@@ -2,7 +2,14 @@ import { levelCapForMap } from '../../data/maps';
 import { arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge } from '../maps/plan';
 import type { BagCounts } from './battleLink';
 import { POKEVIAL_MAX_CHARGES, healParty } from './heal';
-import type { RunPokemon } from './progression';
+import { clampToCap } from './levelCap';
+import {
+  levelForXp,
+  levelUpPokemon,
+  xpForLevel,
+  type ProgressionEvent,
+  type RunPokemon,
+} from './progression';
 
 export type RunMode = 'finite' | 'infinite';
 
@@ -72,6 +79,12 @@ export type RunState = Readonly<{
    * stop, spent by `usePokevial` to rest the party and the box mid-floor.
    */
   pokevialCharges: number;
+  /**
+   * The squad's shared XP: the whole party and box level together off this one
+   * bar (`squadLevel` derives the level). A catch is rebuilt at that level, so
+   * there is no per-member XP.
+   */
+  xp: number;
   party: readonly RunPokemon[];
   box: readonly RunPokemon[];
   bag: readonly BagCounts[];
@@ -89,6 +102,8 @@ export type RunInit = Readonly<{
   starter: RunPokemon;
   mode?: RunMode;
   bag?: readonly BagCounts[];
+  /** The squad's starting XP; defaults to the starter's own level curve. */
+  xp?: number;
 }>;
 
 export function createRun(init: RunInit): RunState {
@@ -107,6 +122,7 @@ export function createRun(init: RunInit): RunState {
     pcUnlocked: [],
     levelCap: levelCapForMap(FIRST_MAP),
     pokevialCharges: POKEVIAL_MAX_CHARGES,
+    xp: init.xp ?? xpForLevel(init.starter.fighter.level),
     party: [init.starter],
     box: [],
     bag: [...(init.bag ?? [])],
@@ -180,6 +196,42 @@ export function isRoomDiscovered(run: RunState, roomId: number): boolean {
 /** Marks the current map's boss beaten, so its portal opens (D31); idempotent. */
 export function markBossDefeated(run: RunState): RunState {
   return run.bossDefeated ? run : { ...run, bossDefeated: true };
+}
+
+/** The squad's shared level: the run XP read through the medium-fast curve, capped per map. */
+export function squadLevel(run: RunState): number {
+  return clampToCap(levelForXp(run.xp), run.levelCap);
+}
+
+export type ExperienceGain = Readonly<{ run: RunState; events: readonly ProgressionEvent[] }>;
+
+/**
+ * Adds XP to the squad's single bar and levels the whole party **and** box to the
+ * level it reaches, learning moves and evolving as they go. The per-map cap clamps
+ * gain (D9): overflow is parked at the ceiling instead of banked. Pure and
+ * deterministic, like the rest of the run (D11).
+ */
+export function gainExperience(run: RunState, amount: number, learnsetSeed?: string): ExperienceGain {
+  const events: ProgressionEvent[] = [];
+  const gain = Math.max(0, Math.floor(amount));
+  const rawXp = run.xp + gain;
+  const rawLevel = levelForXp(rawXp);
+  const level = clampToCap(rawLevel, run.levelCap);
+  let xp = rawXp;
+  if (rawLevel > level) {
+    xp = xpForLevel(level);
+    events.push({ kind: 'capped', level });
+  }
+  events.push({ kind: 'xp', amount: gain, xp });
+  const levelMember = (member: RunPokemon): RunPokemon => {
+    const grown = levelUpPokemon(member, level, learnsetSeed);
+    events.push(...grown.events);
+    return grown.pokemon;
+  };
+  return {
+    run: { ...run, xp, party: run.party.map(levelMember), box: run.box.map(levelMember) },
+    events,
+  };
 }
 
 function discoverRoom(rooms: readonly number[], roomId: number): readonly number[] {

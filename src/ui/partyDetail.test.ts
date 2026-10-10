@@ -59,15 +59,15 @@ describe('memberDetail', () => {
 });
 
 describe('fighterDetail', () => {
-  it('resolves a live battle fighter with its carried XP', () => {
+  it('resolves a live battle fighter', () => {
     const fighter = createFighter({
       id: 'starter',
       speciesId: 'charmander',
       level: 5,
       moves: ['ember', 'scratch', 'growl'],
     });
-    const detail = fighterDetail(fighter, 120);
-    expect(detail).toMatchObject({ name: 'Charmander', level: 5, types: ['Fire'], xp: 120 });
+    const detail = fighterDetail(fighter);
+    expect(detail).toMatchObject({ name: 'Charmander', level: 5, types: ['Fire'] });
     expect(detail.moves.map((move) => move.name)).toEqual(['Ember', 'Scratch', 'Growl']);
     expect(detail.maxHp).toBe(fighter.maxHp);
     expect(detail.stats.atk).toBe(fighter.stats.atk);

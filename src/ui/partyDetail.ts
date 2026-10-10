@@ -36,7 +36,6 @@ export type MemberDetail = Readonly<{
   hp: number;
   maxHp: number;
   statusLabel: string | null;
-  xp: number;
   heldItemName: string | null;
   stats: Readonly<Record<StatId, number>>;
   moves: readonly MoveDetail[];
@@ -80,7 +79,7 @@ function moveDetails(slots: readonly MoveSlot[]): MoveDetail[] {
 export function memberDetail(run: RunState, memberId: string): MemberDetail | null {
   const member = memberById(run, memberId);
   if (!member) return null;
-  return { ...fighterDetail(restoreFighter(member.fighter), member.xp), caughtLabel: catchLabel(member.caughtAt) };
+  return { ...fighterDetail(restoreFighter(member.fighter)), caughtLabel: catchLabel(member.caughtAt) };
 }
 
 /** "Deep Forest · Map 1 · Route 2" for a caught member, or null for the starter. */
@@ -90,11 +89,11 @@ function catchLabel(caughtAt: CatchLocation | undefined): string | null {
 }
 
 /**
- * The panel data for a live fighter and the XP it carries. The HUD resolves it
- * through `memberDetail`; the battle passes its own party fighters straight in,
- * so both draw the same STATS / MOVES window.
+ * The panel data for a live fighter. The HUD resolves it through `memberDetail`;
+ * the battle passes its own party fighters straight in, so both draw the same
+ * STATS / MOVES window. The level shown is the squad's shared level.
  */
-export function fighterDetail(fighter: BattleFighter, xp: number): MemberDetail {
+export function fighterDetail(fighter: BattleFighter): MemberDetail {
   const species = getSpecies(fighter.speciesId);
   const held = fighter.heldItem ? getItem(fighter.heldItem) : undefined;
   return {
@@ -108,7 +107,6 @@ export function fighterDetail(fighter: BattleFighter, xp: number): MemberDetail 
     hp: fighter.hp,
     maxHp: fighter.maxHp,
     statusLabel: statusAbbreviation(fighter.status),
-    xp,
     heldItemName: held?.name ?? fighter.heldItem,
     stats: fighter.stats,
     moves: moveDetails(fighter.moves),

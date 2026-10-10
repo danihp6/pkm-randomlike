@@ -24,7 +24,6 @@ function member(
       status: null,
       statusCounter: 0,
     },
-    xp: level ** 3,
   };
 }
 
@@ -44,9 +43,9 @@ describe('levelUpBeats', () => {
     ]);
   });
 
-  it('ignores members that only gained XP or did not change level', () => {
+  it('ignores members that did not change level', () => {
     const before = [member('a', 5)];
-    const after = [{ ...member('a', 5), xp: 200 }];
+    const after = [{ ...member('a', 5), fighter: { ...member('a', 5).fighter, hp: 5 } }];
     expect(levelUpBeats(before, after)).toEqual([]);
   });
 

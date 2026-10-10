@@ -87,17 +87,21 @@ One capture attempt per route (a run-level counter, not a per-battle one).
 
 ## 7. Progression inside the battle
 
-- Winning awards XP to the participants (the classic split), levels up on
-  threshold, learns moves at the level the learnset says, and evolves on level
-  when the evolution method allows it.
-- A **per-route level cap** clamps gain: a Pokémon can never exceed
-  `routeLevelCap(route)`. The cap rises with the route chain so the next route
-  is always a step up. Evolution blocked by the cap waits until the cap allows
-  the level.
+- The **party and the PC share one level and one XP bar** (D35): the XP a battle
+  awards fills the squad's single bar, and every member levels with it, learning
+  the moves the learnset says at that level and evolving on level.
+- A **catch joins the squad at that shared level**: its stats, moveset and any
+  evolution the level already allows are rebuilt from the species at the squad's
+  level, whatever level the wild was.
+- A **per-map level cap** clamps gain: the squad can never exceed
+  `levelCapForMap(map)`. The cap rises with the map chain so the next map is
+  always a step up. Evolution blocked by the cap waits until the cap allows the
+  level.
 - The curve is medium-fast (`level^3`): the generated dex carries no
   base-experience yield, so `experienceAward` scales with the defeated Pokémon's
-  level instead. XP lives on the run member (`RunPokemon`), not the battle
-  snapshot, so it survives a battle; the whole progression is RNG-free (D11).
+  level instead. The bar lives on the run (`RunState.xp`), not on a member, and
+  the award is not split by party size (the squad is one unit). The whole
+  progression is RNG-free (D11).
 - Trainer rosters are generated at the route's level band, never above the cap.
 
 ### 7.1 Randomized learnsets and movesets (`D17`)
