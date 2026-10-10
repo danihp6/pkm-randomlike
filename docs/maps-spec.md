@@ -216,7 +216,7 @@ buying is tied to the room rather than to a menu key.
 
 ## 8. The route HUD map (D32)
 
-The `I` overlay's route header grows into a **minimap of the floor**, exactly the
+The route HUD's header grows into a **minimap of the floor**, exactly the
 Binding of Isaac minimap:
 
 - a **grid of room cells**, each room drawn at its grid position and sized from

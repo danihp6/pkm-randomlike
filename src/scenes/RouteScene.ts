@@ -485,8 +485,6 @@ export class RouteScene extends Phaser.Scene {
   /** The floor minimap panel: its graphics and the "no map" label. */
   private hudMapGraphics!: Phaser.GameObjects.Graphics;
   private hudMapEmpty!: Phaser.GameObjects.BitmapText;
-  /** Whether the route HUD overlay (route header, party and bag) is shown; hidden by default. */
-  private hudVisible = false;
   /** The pinned HUD camera; a rebuild must teach it to ignore the new sprites. */
   private hudCamera: Phaser.Cameras.Scene2D.Camera | null = null;
   private hudBagRows: {
@@ -811,7 +809,6 @@ export class RouteScene extends Phaser.Scene {
     this.trainerSpinIndex.clear();
     this.trainerFacing.clear();
     this.chase = null;
-    this.hudVisible = false;
     this.hudDetailState = CLOSED_DETAIL;
     this.hudDetailView = null;
     this.hudPress = null;
@@ -872,10 +869,9 @@ export class RouteScene extends Phaser.Scene {
       });
       this.input.on('gameout', () => this.clearHoverInspect());
     }
-    // Bag pocket tabs: `[` / `]` cycle them, a click picks one. Both are inert
-    // until the HUD is on screen, so they never fight the movement keys.
+    // Bag pocket tabs: `[` / `]` cycle them, a click picks one.
     this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
-      if (!this.scene.isActive() || !this.hudVisible) return;
+      if (!this.scene.isActive()) return;
       if (event.key === '[') this.stepBagCategory(-1);
       else if (event.key === ']') this.stepBagCategory(1);
     });
@@ -886,11 +882,11 @@ export class RouteScene extends Phaser.Scene {
     // must let go, or the held panel/member keeps following a pointer that is gone.
     this.input.on('pointerupoutside', () => this.cancelHudDrags());
     this.input.on('gameout', () => this.cancelHudDrags());
-    // The mouse wheel flips the PC box pages while the HUD is open.
+    // The mouse wheel flips the PC box pages while the pointer is over it.
     this.input.on(
       'wheel',
       (pointer: Phaser.Input.Pointer, _objects: unknown, _dx: number, dy: number) => {
-        if (!this.scene.isActive() || !this.hudVisible || !this.pointerInBoxPanel(pointer)) return;
+        if (!this.scene.isActive() || !this.pointerInBoxPanel(pointer)) return;
         this.stepBoxPage(dy > 0 ? 1 : -1);
       },
     );
@@ -946,12 +942,8 @@ export class RouteScene extends Phaser.Scene {
       case 'interact':
         this.tryInteract();
         return;
-      case 'hud':
-        this.toggleHud();
-        return;
       case 'cancel':
-        if (this.hudVisible) this.toggleHud();
-        else this.openPauseMenu();
+        this.openPauseMenu();
         return;
       case 'settings':
         this.openSettings();
@@ -1227,8 +1219,7 @@ export class RouteScene extends Phaser.Scene {
 
     this.hudRoot = this.add
       .container(0, 0, [...this.hudPanels.map((panel) => panel.container), this.hudDragGhost])
-      .setDepth(150)
-      .setVisible(this.hudVisible);
+      .setDepth(150);
 
     this.applyStoredHudLayout();
   }
@@ -1390,25 +1381,6 @@ export class RouteScene extends Phaser.Scene {
     children.push(this.hudDetailEmpty);
 
     return this.add.container(0, 0, children).setVisible(false);
-  }
-
-  /** Shows or hides the route HUD overlay (route header, party, PC box and bag). Default hidden. */
-  private toggleHud(): void {
-    this.hudVisible = !this.hudVisible;
-    if (!this.hudVisible) {
-      this.hudUi = dropGrabbed(this.hudUi);
-      this.hudPress = null;
-      this.hudDetailState = closeDetail(this.hudDetailState);
-      this.hudGrabMoved = false;
-      this.hudDragItem = null;
-      this.hudDragItemFrom = null;
-      this.hudPanelDrag = null;
-      this.hudIconPress = null;
-      this.hudDragGhost.setVisible(false);
-      this.input.setDefaultCursor('default');
-    }
-    this.hudRoot.setVisible(this.hudVisible);
-    this.refreshDetail();
   }
 
   private refreshHud(): void {
@@ -1781,7 +1753,7 @@ export class RouteScene extends Phaser.Scene {
    * draggable move list; a press anywhere else closes it.
    */
   private handleHudPointerDown(pointer: Phaser.Input.Pointer): void {
-    if (!this.scene.isActive() || !this.hudVisible) return;
+    if (!this.scene.isActive()) return;
     // The collapse icon sits in the frame band, so it is tested before the drag.
     // A press on it waits: a release without movement toggles the panel, a move
     // past the slop drags the panel from the icon (see pointermove).
@@ -1880,10 +1852,6 @@ export class RouteScene extends Phaser.Scene {
 
   private handleHudPointerMove(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive()) return;
-    if (!this.hudVisible) {
-      this.input.setDefaultCursor('default');
-      return;
-    }
     // A button released off-screen never fired `pointerup`; let go on the next move.
     if (!pointer.isDown) this.cancelHudDrags();
     // A press on a collapse icon becomes a panel drag once it passes the slop.
@@ -2730,7 +2698,6 @@ export class RouteScene extends Phaser.Scene {
       !this.pendingBattle &&
       !this.releaseRoot &&
       !this.captureRoot &&
-      !this.hudVisible &&
       !this.pauseMenuOpen &&
       this.resetKey?.isDown === true;
     if (!allowed) {
@@ -3324,10 +3291,10 @@ export class RouteScene extends Phaser.Scene {
   /**
    * The interact key (`E` by default): take the ground item the player faces, or
    * the one underfoot. Hidden items show only a faint sparkle, so this is how
-   * they are found. Ignored while the HUD, a battle or a beat owns the screen.
+   * they are found. Ignored while a battle or a beat owns the screen.
    */
   private tryInteract(): void {
-    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.hudVisible) return;
+    if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     const step = MOVE_STEP[this.facingDir];
     const ahead = { x: this.player.x + step.x, y: this.player.y + step.y };
     // Talking to a trainer it is facing also opens the battle, like the originals.

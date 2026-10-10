@@ -14,10 +14,18 @@ export type TouchControlsLayout = Readonly<{
   b: Readonly<{ x: number; y: number; radius: number }>;
 }>;
 
-/** The pad scales with the smaller screen edge, so it fits a phone and a desktop. */
-const PAD_SIZE_RATIO = 0.34;
+/**
+ * The pad's arm length scales with the smaller screen edge, so it fits a phone
+ * and a desktop. It is deliberately longer than the A / B scale below, so the
+ * arms read as a slim cross rather than a square block.
+ */
+const PAD_SIZE_RATIO = 0.4;
 const PAD_SIZE_MIN = 120;
-const PAD_SIZE_MAX = 200;
+const PAD_SIZE_MAX = 220;
+/** The A / B buttons keep their own scale, so the pad can grow without them. */
+const BUTTON_SCALE_RATIO = 0.34;
+const BUTTON_SCALE_MIN = 120;
+const BUTTON_SCALE_MAX = 200;
 const MARGIN_RATIO = 0.16;
 const BUTTON_RADIUS_RATIO = 0.26;
 /** The fraction of the pad radius that reads as "no direction" (its centre). */
@@ -29,14 +37,23 @@ function clamp(value: number, min: number, max: number): number {
 
 /** Where the pad and the A / B buttons sit on a `width` x `height` screen. */
 export function touchControlsLayout(width: number, height: number): TouchControlsLayout {
-  const size = Math.round(clamp(Math.min(width, height) * PAD_SIZE_RATIO, PAD_SIZE_MIN, PAD_SIZE_MAX));
-  const margin = Math.round(size * MARGIN_RATIO);
-  const radius = Math.round(size * BUTTON_RADIUS_RATIO);
-  const pad = { x: margin + size / 2, y: height - margin - size / 2, size };
+  const edge = Math.min(width, height);
+  const size = Math.round(clamp(edge * PAD_SIZE_RATIO, PAD_SIZE_MIN, PAD_SIZE_MAX));
+  const buttonScale = Math.round(
+    clamp(edge * BUTTON_SCALE_RATIO, BUTTON_SCALE_MIN, BUTTON_SCALE_MAX),
+  );
+  const padMargin = Math.round(size * MARGIN_RATIO);
+  const buttonMargin = Math.round(buttonScale * MARGIN_RATIO);
+  const radius = Math.round(buttonScale * BUTTON_RADIUS_RATIO);
+  const pad = { x: padMargin + size / 2, y: height - padMargin - size / 2, size };
   // A rides above and to the right of B, the Game Boy arrangement.
-  const a = { x: width - margin - radius, y: height - margin - radius - Math.round(radius * 0.6), radius };
+  const a = {
+    x: width - buttonMargin - radius,
+    y: height - buttonMargin - radius - Math.round(radius * 0.6),
+    radius,
+  };
   const b = {
-    x: a.x - radius * 2 - Math.round(size * 0.22),
+    x: a.x - radius * 2 - Math.round(buttonScale * 0.22),
     y: a.y + Math.round(radius * 0.6),
     radius,
   };

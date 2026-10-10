@@ -8,7 +8,6 @@ import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { addFrlgWindow } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
-import { createTouchControls } from '../ui/touchControls';
 
 /** The three things the menu can do; `continue` only exists with a saved run. */
 type MenuAction = 'continue' | 'new' | 'options';
@@ -117,7 +116,6 @@ export class MainMenuScene extends Phaser.Scene {
       ({ action }) => this.handleAction(action),
       () => this.settings.keybinds,
     );
-    createTouchControls(this, { onAction: (action) => this.handleAction(action) });
     // Coming back from the options: re-read them so a rebind refreshes the hints.
     this.events.on(Phaser.Scenes.Events.RESUME, () => {
       this.settings = loadSettings();

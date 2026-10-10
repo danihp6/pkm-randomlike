@@ -60,6 +60,12 @@ import {
   MOVE_CATEGORY_ICON_W,
   MOVE_CATEGORY_TEXTURE_KEY,
 } from '../data/moveCategoryIcons';
+import {
+  TYPE_ICON_ATLAS_URL,
+  TYPE_ICON_H,
+  TYPE_ICON_TEXTURE_KEY,
+  TYPE_ICON_W,
+} from '../data/typeIcons';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { clearRun, loadSave } from '../engine/save';
 import { hasLivingParty } from '../engine/run';
@@ -151,6 +157,10 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet(MOVE_CATEGORY_TEXTURE_KEY, MOVE_CATEGORY_ATLAS_URL, {
       frameWidth: MOVE_CATEGORY_ICON_W,
       frameHeight: MOVE_CATEGORY_ICON_H,
+    });
+    this.load.spritesheet(TYPE_ICON_TEXTURE_KEY, TYPE_ICON_ATLAS_URL, {
+      frameWidth: TYPE_ICON_W,
+      frameHeight: TYPE_ICON_H,
     });
     this.load.image(FRLG_FONT_TEXTURE_KEY, FRLG_FONT_ATLAS_URL);
   }

@@ -8,6 +8,27 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The touch controls live only on the route.** The on-screen pad and A / B
+      are gone from the main menu, the starter pick, the settings screen and the
+      run-over screen (the battle never had them), so a phone only shows them while
+      walking a route. The pad's arms are also slimmer, longer and drawn without
+      their chevrons (`src/ui/touchLayout.ts`, `src/ui/touchControls.ts`).
+- [x] **The route HUD is always on screen** — the `I` toggle (and its keybind row)
+      is gone — and a fresh save opens **only PARTY**, every other panel collapsed
+      to its icon (`defaultHudLayout`, `RouteScene`). With the HUD always up,
+      interacting (`E`) and hold-to-reset (`R`) are no longer blocked by it.
+- [x] **The starter pick adapts to a phone.** On a narrow or portrait stage the
+      three candidates stack as full-width rows (portrait left, name and type
+      badges beside it), the whole card taps to pick, the level line is gone and
+      the selected Pokémon's portrait bobs gently. Types draw as the FRLG **badge
+      icons** packed by `scripts/frlg/build-type-icons.mjs` into
+      `src/assets/frlg/type-icons.png` (`src/data/typeIcons.ts`); the FRLG sheet
+      predates Fairy, so a Fairy type falls back to its name. `docs/design-spec.md`
+      §3, `docs/art-direction.md`.
+- [x] **Battle battlers draw 25% smaller on the phone layout** (`COMPACT_MON_SCALE`
+      in `BattleScene`), so they sit clear of the stacked panels; the desktop
+      square is unchanged. `docs/design-spec.md` §4.
+
 - [x] **A run starts with ten Poké Balls.** `STARTING_BAG` (`src/data/run.ts`) hands
       a fresh run a stack of ten, so the first catch never waits on the route
       economy; every other item is still earned along the way.

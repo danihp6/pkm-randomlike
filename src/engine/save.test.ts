@@ -287,7 +287,7 @@ describe('settings validation', () => {
       }),
     );
     expect(decoded.settings.hudLayout.party).toEqual({ dx: 40, dy: -20, collapsed: true });
-    expect(decoded.settings.hudLayout.bag).toEqual({ dx: 0, dy: 0, collapsed: false });
+    expect(decoded.settings.hudLayout.bag).toEqual(defaultHudLayout().bag);
     expect(decoded.settings.hudLayout.box).toEqual(defaultHudLayout().box);
   });
 });

@@ -10,7 +10,7 @@ describe('touchControlsLayout', () => {
     ]) {
       const layout = touchControlsLayout(width, height);
       expect(layout.pad.size).toBeGreaterThanOrEqual(120);
-      expect(layout.pad.size).toBeLessThanOrEqual(200);
+      expect(layout.pad.size).toBeLessThanOrEqual(220);
       for (const point of [layout.pad, layout.a, layout.b]) {
         const radius = 'radius' in point ? point.radius : point.size / 2;
         expect(point.x - radius).toBeGreaterThanOrEqual(0);
