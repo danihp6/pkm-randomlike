@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A run starts with ten Poké Balls.** `STARTING_BAG` (`src/data/run.ts`) hands
+      a fresh run a stack of ten, so the first catch never waits on the route
+      economy; every other item is still earned along the way.
+- [x] **One catch per route, tied to the first wild battle.** A room's capture is
+      spent by its **first wild battle** whatever the outcome — catching the
+      Pokémon, defeating it or running away all close the room's window — so only
+      the first wild Pokémon that appears can ever be caught there. Once spent, the
+      route header shows a **Poké Ball badge** and the BALL command is disabled for
+      later encounters (`useCapture` in `RouteScene.applyBattleResult`,
+      `hudCaptureIcon`).
+- [x] **A caught Pokémon remembers where it was found.** Each catch stores its
+      **biome and route** (`RunPokemon.caughtAt`, `CatchLocation`), shown as a
+      `CAUGHT  <biome> · Map <n> · Route <n>` line in the STATS tab
+      (`memberDetail`/`MemberDetail.caughtLabel`).
 - [x] **Single-door entry and boss, quiet rooms, PC lock and the full-party
       capture screen.** The map's **entry room** is now a **single-door leaf** like
       the boss (its only opening is the one link into the floor; the outward entry

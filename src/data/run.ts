@@ -60,7 +60,8 @@ export function starterCandidates(): readonly string[] {
 export type StartingItem = Readonly<{ itemId: string; count: number }>;
 
 /**
- * What a fresh run's bag holds before the first route. Empty: items are earned
- * from the route economy, never handed out at the start.
+ * What a fresh run's bag holds before the first route: a stack of Poké Balls, so
+ * the player can attempt catches from the very first route. Every other item is
+ * still earned along the way.
  */
-export const STARTING_BAG: readonly StartingItem[] = [];
+export const STARTING_BAG: readonly StartingItem[] = [{ itemId: 'pokeball', count: 10 }];

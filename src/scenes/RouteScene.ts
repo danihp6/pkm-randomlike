@@ -57,6 +57,7 @@ import {
   trainerRoster,
   unequipHeldItem,
   updatePokemon,
+  useCapture,
   usePokevial,
   type BagCounts,
   type BattleLaunch,
@@ -481,6 +482,8 @@ export class RouteScene extends Phaser.Scene {
   /** Whether the detail panel has been placed once (it is not re-docked after). */
   private hudDetailPlaced = false;
   private hudTitle!: Phaser.GameObjects.BitmapText;
+  /** The Poké Ball badge on the route header: shown once the room's capture is spent. */
+  private hudCaptureIcon!: Phaser.GameObjects.Image;
   /** The floor minimap panel: its graphics and the "no map" label. */
   private hudMapGraphics!: Phaser.GameObjects.Graphics;
   private hudMapEmpty!: Phaser.GameObjects.BitmapText;
@@ -572,6 +575,7 @@ export class RouteScene extends Phaser.Scene {
     nature: Phaser.GameObjects.BitmapText;
     ability: Phaser.GameObjects.BitmapText;
     held: Phaser.GameObjects.BitmapText;
+    caught: Phaser.GameObjects.BitmapText;
   };
   private hudDetailMoves: {
     highlight: Phaser.GameObjects.Rectangle;
@@ -989,7 +993,13 @@ export class RouteScene extends Phaser.Scene {
     this.hudTitle = addFrlgText(this, HUD_MAP_X + HUD_CONTENT_LEFT, HUD_MAP_Y + HUD_PAD_TOP, '', {
       size: 16,
       tint: FRLG_INK,
-    }).setMaxWidth(HUD_MAP_W - HUD_CONTENT_LEFT - HUD_PAD_X);
+    }).setMaxWidth(HUD_MAP_W - HUD_CONTENT_LEFT - HUD_PAD_X - 22);
+    // The route header's capture badge: a Poké Ball shown once this room's single
+    // capture is spent, whatever the outcome (`docs/routes-spec.md` §3).
+    this.hudCaptureIcon = this.add
+      .image(HUD_MAP_X + HUD_MAP_W - HUD_PAD_X - 10, HUD_MAP_Y + HUD_PAD_TOP + 8, ITEM_ICON_TEXTURE_KEY, 0)
+      .setScale(0.7)
+      .setVisible(false);
     this.hudMapGraphics = this.add.graphics();
     this.hudMapEmpty = addFrlgText(
       this,
@@ -998,7 +1008,7 @@ export class RouteScene extends Phaser.Scene {
       'no map',
       { size: 16, tint: 0x6b6887, origin: [0.5, 0] },
     );
-    headerChildren.push(this.hudTitle, this.hudMapGraphics, this.hudMapEmpty);
+    headerChildren.push(this.hudTitle, this.hudCaptureIcon, this.hudMapGraphics, this.hudMapEmpty);
 
     const partyY = HUD_TOP;
     const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + HUD_PAD_BOTTOM;
@@ -1351,8 +1361,9 @@ export class RouteScene extends Phaser.Scene {
     const nature = addFrlgText(this, left, infoTop, '', { size: 16, tint: 0x3a3956 });
     const ability = addFrlgText(this, left, infoTop + 22, '', { size: 16, tint: 0x3a3956 });
     const held = addFrlgText(this, left, infoTop + 44, '', { size: 16, tint: 0x3a3956 });
-    children.push(nature, ability, held);
-    this.hudDetailStats = { hpBar, hpFill, hpText, rows, nature, ability, held };
+    const caught = addFrlgText(this, left, infoTop + 66, '', { size: 16, tint: 0x3a3956 });
+    children.push(nature, ability, held, caught);
+    this.hudDetailStats = { hpBar, hpFill, hpText, rows, nature, ability, held, caught };
 
     this.hudDetailMoves = [];
     for (let i = 0; i < MAX_MOVES; i++) {
@@ -1412,6 +1423,11 @@ export class RouteScene extends Phaser.Scene {
     if (!this.hudRoot) return;
     const biomeName = this.route ? getBiome(this.route.biomeId).name : '';
     this.hudTitle.setText(`Map ${this.run.mapIndex} · ${biomeName}`);
+    // The Poké Ball badge: this room's single capture is spent once its first wild
+    // battle ends, whatever the outcome (a catch, a defeat or a run away).
+    const ballFrame = itemIconFrame('pokeball');
+    this.hudCaptureIcon.setVisible(ballFrame !== null && !canCapture(this.run));
+    if (ballFrame !== null) this.hudCaptureIcon.setFrame(ballFrame);
     this.refreshMapView();
 
     this.hudRows.forEach((row, i) => {
@@ -1665,7 +1681,7 @@ export class RouteScene extends Phaser.Scene {
     });
 
     const stats = this.hudDetailState.tab === 'stats';
-    const { hpBar, hpFill, hpText, rows, nature, ability, held } = this.hudDetailStats;
+    const { hpBar, hpFill, hpText, rows, nature, ability, held, caught } = this.hudDetailStats;
     hpBar.setVisible(stats);
     hpFill.setVisible(stats);
     hpText.setVisible(stats);
@@ -1685,9 +1701,11 @@ export class RouteScene extends Phaser.Scene {
     nature.setText(`NATURE  ${capitalize(detail.nature)}`);
     ability.setText(`ABILITY  ${detail.ability}`);
     held.setText(`HELD  ${detail.heldItemName ?? 'none'}`);
+    caught.setText(`CAUGHT  ${detail.caughtLabel ?? 'starter'}`);
     nature.setVisible(stats);
     ability.setVisible(stats);
     held.setVisible(stats);
+    caught.setVisible(stats);
 
     const moves = this.hudDetailState.tab === 'moves';
     this.hudDetailEmpty.setVisible(moves && detail.moves.length === 0);
@@ -3594,13 +3612,18 @@ export class RouteScene extends Phaser.Scene {
     // its placement so the capture screen owns that choice.
     const survivors = result.player.filter((fighter) => fighter.hp > 0).length;
     const askCapture = result.captured !== null && survivors >= MAX_PARTY_SIZE;
-    const { run, released, captured } = resolveBattle(
-      this.run,
-      result,
-      reward,
-      askCapture ? { placeCapture: false } : undefined,
-    );
+    const { run, released, captured } = resolveBattle(this.run, result, reward, {
+      ...(askCapture ? { placeCapture: false } : {}),
+      catchLocation: {
+        biomeId: this.route.biomeId,
+        mapIndex: this.run.mapIndex,
+        routeInMap: this.run.routeInMap,
+      },
+    });
     this.run = run;
+    // The route's single capture is spent by its **first wild battle**, whatever
+    // the outcome: a catch, a defeat or a run away all close the route's window.
+    if (pending.trigger.kind === 'wild') this.run = useCapture(this.run);
 
     const bossId = this.room?.boss === true ? bossTrainerId(this.room.mapIndex) : null;
     const wonBoss =

@@ -5,6 +5,7 @@ import {
   addExperience,
   experienceAward,
   runPokemonFromSnapshot,
+  type CatchLocation,
   type ProgressionEvent,
   type RunPokemon,
 } from './progression';
@@ -38,6 +39,8 @@ export type ResolveBattleOptions = Readonly<{
    * as `captured` for the caller to place (the full-party capture screen).
    */
   placeCapture?: boolean;
+  /** The biome and room the catch happened in, stored on the member's STATS tab. */
+  catchLocation?: CatchLocation;
 }>;
 
 /**
@@ -61,7 +64,7 @@ export function resolveBattle(
 
   let captured: RunPokemon | null = null;
   if (result.captured) {
-    const caught = runPokemonFromSnapshot(result.captured);
+    const caught = runPokemonFromSnapshot(result.captured, options?.catchLocation);
     if (options?.placeCapture === false) captured = caught;
     else next = addPokemon(next, caught);
     next = useCapture(next);

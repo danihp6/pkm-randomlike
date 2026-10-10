@@ -60,7 +60,7 @@ describe('starter pool', () => {
     expect(candidates).not.toContain('rattata');
   });
 
-  it('opens the bag empty: items come from the route economy, not a starting kit', () => {
-    expect(STARTING_BAG).toEqual([]);
+  it('starts the run with ten Poke Balls, everything else earned on the route', () => {
+    expect(STARTING_BAG).toEqual([{ itemId: 'pokeball', count: 10 }]);
   });
 });

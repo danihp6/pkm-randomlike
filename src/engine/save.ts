@@ -8,7 +8,7 @@ import { isTilesetPreference, type TilesetPreference } from '../data/tilesets/id
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
-import { MAX_LEVEL, type RunPokemon } from './run/progression';
+import { MAX_LEVEL, type CatchLocation, type RunPokemon } from './run/progression';
 import { emptyRunStats, type RunState, type RunStats } from './run/state';
 
 /** How fast the message box types text (consumed by the settings screen). */
@@ -437,7 +437,17 @@ function parsePokemon(value: unknown): RunPokemon | null {
   const fighter = parseFighter(value.fighter);
   if (!fighter) return null;
   if (!isNumber(value.xp) || value.xp < 0) return null;
-  return { fighter, xp: value.xp };
+  const caughtAt = parseCatchLocation(value.caughtAt);
+  return caughtAt ? { fighter, xp: value.xp, caughtAt } : { fighter, xp: value.xp };
+}
+
+/** Reads a caught member's location; anything malformed drops the field, not the member. */
+function parseCatchLocation(value: unknown): CatchLocation | null {
+  if (!isRecord(value)) return null;
+  if (!isString(value.biomeId) || value.biomeId === '') return null;
+  if (!isInteger(value.mapIndex) || value.mapIndex < 1) return null;
+  if (!isInteger(value.routeInMap) || value.routeInMap < 0) return null;
+  return { biomeId: value.biomeId, mapIndex: value.mapIndex, routeInMap: value.routeInMap };
 }
 
 /** Keeps the members that parse; a malformed one is dropped, not fatal. */

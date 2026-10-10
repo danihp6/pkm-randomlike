@@ -13,10 +13,22 @@ import {
 } from '../battle/fighter';
 import { clampToCap } from './levelCap';
 
+/** Where a caught Pokémon was found: its biome and the room it was caught in. */
+export type CatchLocation = Readonly<{
+  biomeId: string;
+  mapIndex: number;
+  routeInMap: number;
+}>;
+
 /** A run party/box member: a battle snapshot plus the XP it carries between battles. */
 export type RunPokemon = Readonly<{
   fighter: FighterSnapshot;
   xp: number;
+  /**
+   * Set for a Pokémon caught on a route (its biome and room, shown in the STATS
+   * tab); absent for the starter and for a member from a save that predates it.
+   */
+  caughtAt?: CatchLocation;
 }>;
 
 export const MAX_LEVEL = 100;
@@ -81,8 +93,9 @@ export function createRunPokemon(input: FighterInput): RunPokemon {
 }
 
 /** A run member adopted from a battle snapshot (a caught Pokémon), XP set to its level. */
-export function runPokemonFromSnapshot(fighter: FighterSnapshot): RunPokemon {
-  return { fighter, xp: xpForLevel(fighter.level) };
+export function runPokemonFromSnapshot(fighter: FighterSnapshot, caughtAt?: CatchLocation): RunPokemon {
+  const base = { fighter, xp: xpForLevel(fighter.level) };
+  return caughtAt ? { ...base, caughtAt } : base;
 }
 
 /** A partial override of a run member; a missing field is kept as-is. */
@@ -120,6 +133,7 @@ export function editRunPokemon(pokemon: RunPokemon, edit: RunPokemonEdit): RunPo
   // usable); any other edit keeps the current HP, clamped to the new maximum.
   const hp = level !== fighter.level ? maxHp : Math.max(0, Math.min(maxHp, fighter.hp));
   return {
+    ...pokemon,
     fighter: {
       ...fighter,
       level,
@@ -217,7 +231,7 @@ export function addExperience(
     fighter = { ...fighter, level, moves };
   }
 
-  const evolved = evolveIfReady({ fighter, xp }, cap);
+  const evolved = evolveIfReady({ ...pokemon, fighter, xp }, cap);
   return { pokemon: evolved.pokemon, events: [...events, ...evolved.events] };
 }
 
