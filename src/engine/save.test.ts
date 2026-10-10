@@ -3,6 +3,7 @@ import { DEFAULT_KEYBINDS } from '../data/keybinds';
 import { defaultHudLayout } from '../data/hudLayout';
 import { levelCapForMap } from '../data/maps';
 import { floorForRoute } from './run/floors';
+import { POKEVIAL_MAX_CHARGES } from './run/heal';
 import { arrivalEdgeFor, planMap } from './maps/plan';
 import {
   addItem,
@@ -230,7 +231,7 @@ describe('decodeSave', () => {
     const raw = JSON.stringify({ version: 9, run: v9run });
     const decoded = decodeSave(raw);
     expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.run?.pokevialCharges).toBe(1);
+    expect(decoded.run?.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
   });
 });
 
@@ -377,10 +378,10 @@ describe('run validation', () => {
     const missing: Record<string, unknown> = { ...run };
     delete missing.pokevialCharges;
     const withoutField = document(JSON.stringify({ version: SAVE_VERSION, run: missing }));
-    expect(withoutField.run?.pokevialCharges).toBe(1);
+    expect(withoutField.run?.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
 
     const over = document(JSON.stringify({ version: SAVE_VERSION, run: { ...run, pokevialCharges: 5 } }));
-    expect(over.run?.pokevialCharges).toBe(1);
+    expect(over.run?.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
   });
 
   it('defaults the PC-lock fields and reads them back', () => {

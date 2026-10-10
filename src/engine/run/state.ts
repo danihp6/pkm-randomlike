@@ -1,7 +1,7 @@
 import { levelCapForMap } from '../../data/maps';
 import { arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge } from '../maps/plan';
 import type { BagCounts } from './battleLink';
-import { POKEVIAL_MAX_CHARGES, healParty } from './heal';
+import { POKEVIAL_MAX_CHARGES, fillPokevial, healParty } from './heal';
 import { clampToCap } from './levelCap';
 import {
   levelForXp,
@@ -75,8 +75,10 @@ export type RunState = Readonly<{
   /** Cached level cap for `mapIndex` (D9/D29); kept in sync on a map advance. */
   levelCap: number;
   /**
-   * Pokevial charges left on this floor: one at the start and after every heal
-   * stop, spent by `usePokevial` to rest the party and the box mid-floor.
+   * Pokevial charges left: up to `POKEVIAL_MAX_CHARGES`, one earned per beaten
+   * trainer and filled by a boss, spent by `usePokevial` to rest the party and
+   * the box. A run's meter **survives the floor change** (`docs/routes-spec.md`
+   * §6); only a fresh run starts full.
    */
   pokevialCharges: number;
   /**
@@ -164,7 +166,9 @@ export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: Map
  * Steps through the map's portal onto the next floor (`docs/maps-spec.md` §6,
  * D31): the next map's entry room, a fresh discovery set and its own cap. This is
  * also the **heal stop** — HP/PP restored across the party and the box, never a
- * resurrection (D5) — the Pokevial refills and the old floor's marks go with it.
+ * resurrection (D5) — while the old floor's marks go with it. The Pokevial's
+ * charges **carry over** instead: only a boss or a beaten trainer tops the meter
+ * up (`docs/routes-spec.md` §6).
  */
 export function advanceMap(run: RunState): RunState {
   const mapIndex = run.mapIndex + 1;
@@ -180,7 +184,6 @@ export function advanceMap(run: RunState): RunState {
     entryDeparted: false,
     pcUnlocked: [],
     levelCap: levelCapForMap(mapIndex),
-    pokevialCharges: POKEVIAL_MAX_CHARGES,
     defeatedTrainers: [],
     pickedItems: [],
     capturedRooms: [],
@@ -193,9 +196,9 @@ export function isRoomDiscovered(run: RunState, roomId: number): boolean {
   return run.discoveredRooms.includes(roomId);
 }
 
-/** Marks the current map's boss beaten, so its portal opens (D31); idempotent. */
+/** Marks the current map's boss beaten, so its portal opens (D31); also tops the Pokevial up. */
 export function markBossDefeated(run: RunState): RunState {
-  return run.bossDefeated ? run : { ...run, bossDefeated: true };
+  return run.bossDefeated ? run : fillPokevial({ ...run, bossDefeated: true });
 }
 
 /** The squad's shared level: the run XP read through the medium-fast curve, capped per map. */

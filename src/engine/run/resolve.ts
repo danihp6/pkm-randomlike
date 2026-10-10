@@ -1,5 +1,6 @@
 import type { FighterSnapshot } from '../battle/fighter';
 import type { BattleReturn } from './battleLink';
+import { chargePokevial } from './heal';
 import { releaseFainted } from './perms';
 import {
   adoptAtLevel,
@@ -12,6 +13,7 @@ import {
 import {
   addPokemon,
   gainExperience,
+  isTrainerDefeated,
   markTrainerDefeated,
   recordCatch,
   squadLevel,
@@ -94,6 +96,9 @@ export function resolveBattle(
   }
 
   if (reward.isTrainer && reward.trainerId !== undefined && result.outcome === 'win') {
+    // A beaten trainer tops the Pokevial up by one charge. Only a first win
+    // counts, so a replay or an already-marked trainer never doubles the meter.
+    if (!isTrainerDefeated(next, reward.trainerId)) next = chargePokevial(next);
     next = markTrainerDefeated(next, reward.trainerId);
   }
 

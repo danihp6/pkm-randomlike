@@ -3,11 +3,12 @@ import type { RunPokemon } from './progression';
 import { type RunState } from './state';
 
 /**
- * How many times the Pokevial can rest the party between floors. One charge: a
- * mid-floor emergency heal, refilled by the heal stop when a floor is cleared
- * (`advanceMap`).
+ * How many charges the Pokevial holds, drawn as a single three-step bar in the
+ * party header. It no longer refills at the heal stop: a charge is earned by
+ * beating a trainer (one each) and the floor's boss fills it to the cap, and a
+ * run keeps its meter across floors (`docs/routes-spec.md` §6).
  */
-export const POKEVIAL_MAX_CHARGES = 1;
+export const POKEVIAL_MAX_CHARGES = 3;
 
 /**
  * A rested member: HP and PP back to full, status untouched (routes-spec §6).
@@ -28,6 +29,20 @@ export function healParty(run: RunState): RunState {
     party: run.party.map(healMember),
     box: run.box.map(healMember),
   };
+}
+
+/**
+ * Adds Pokevial charges up to the cap, one per beaten trainer. A full meter (or
+ * a non-positive amount) is a no-op, so a replay never overfills it.
+ */
+export function chargePokevial(run: RunState, amount = 1): RunState {
+  const charges = Math.min(POKEVIAL_MAX_CHARGES, run.pokevialCharges + Math.max(0, Math.floor(amount)));
+  return charges === run.pokevialCharges ? run : { ...run, pokevialCharges: charges };
+}
+
+/** Fills the Pokevial to the cap, the boss clear's reward; a no-op when full. */
+export function fillPokevial(run: RunState): RunState {
+  return chargePokevial(run, POKEVIAL_MAX_CHARGES - run.pokevialCharges);
 }
 
 /**

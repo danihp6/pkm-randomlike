@@ -198,9 +198,14 @@ const HUD_MAP_Y = HUD_TOP;
 const HUD_MAP_W = 216;
 const HUD_MAP_H = 250;
 const HUD_MAP_TITLE_H = HUD_PAD_TOP + 34;
-/** The Pokevial button centred under the party header's level/XP line: its size in px. */
+/** The Pokevial bar centred under the party header's level/XP line: its size in px. */
 const HUD_VIAL_W = 100;
-const HUD_VIAL_H = 22;
+const HUD_VIAL_H = 20;
+/**
+ * The Pokevial fill colour at 1, 2 and 3 charges. A single bar that grows and
+ * changes shade as it fills, so the three steps read as one meter topping up.
+ */
+const HUD_VIAL_FILL_COLORS = [0xfde68a, 0xfbbf24, 0xf97316];
 /**
  * The party window is narrower than the bag/box now that its rows drop the HP
  * and level text: portrait, name and the HP bar only. The header stacks the
@@ -579,8 +584,9 @@ export class RouteScene extends Phaser.Scene {
     bar: Phaser.GameObjects.Image;
     fill: Phaser.GameObjects.Rectangle;
   }[] = [];
-  /** The Pokevial button in the party header, and its label (name + charges). */
+  /** The Pokevial bar in the party header: its track, its charged fill and the label inside. */
   private hudVialBg!: Phaser.GameObjects.Rectangle;
+  private hudVialFill!: Phaser.GameObjects.Rectangle;
   private hudVialLabel!: Phaser.GameObjects.BitmapText;
   /** The squad's shared level and XP bar in the party header. */
   private hudLevelText!: Phaser.GameObjects.BitmapText;
@@ -1073,17 +1079,21 @@ export class RouteScene extends Phaser.Scene {
     partyChildren.push(addFrlgWindow(this, x, partyY, HUD_PARTY_W, partyH));
     const partyLeft = x + HUD_PAD_X;
     const partyRight = x + HUD_PARTY_W - HUD_PAD_X;
-    // The Pokevial, centred under the level/XP line: one click rests the whole
-    // party and the box, and it refills at each floor's heal stop.
+    // The Pokevial bar, centred under the level/XP line: a single meter that
+    // grows and changes shade as it fills (one fill step per charge), with its
+    // name written inside. Clicking a charged bar rests the whole party and box.
     const vialX = x + (HUD_PARTY_W - HUD_VIAL_W) / 2;
     const vialY = partyY + HUD_VIAL_Y;
     this.hudVialBg = this.add.rectangle(vialX, vialY, HUD_VIAL_W, HUD_VIAL_H, 0x2f2c4d).setOrigin(0, 0);
-    this.hudVialLabel = addFrlgText(this, vialX + HUD_VIAL_W / 2, vialY + 3, '', {
+    this.hudVialFill = this.add
+      .rectangle(vialX, vialY, 0, HUD_VIAL_H, HUD_VIAL_FILL_COLORS[0])
+      .setOrigin(0, 0);
+    this.hudVialLabel = addFrlgText(this, vialX + HUD_VIAL_W / 2, vialY + 3, 'POKEVIAL', {
       size: 16,
       tint: 0xf8fafc,
       origin: [0.5, 0],
     });
-    partyChildren.push(this.hudVialBg, this.hudVialLabel);
+    partyChildren.push(this.hudVialBg, this.hudVialFill, this.hudVialLabel);
     // The squad's shared level and XP bar: every member levels together off this
     // one bar (`docs/battle-spec.md` §7).
     const xpBarY = partyY + HUD_XP_BAR_Y;
@@ -1565,12 +1575,12 @@ export class RouteScene extends Phaser.Scene {
         .setFillStyle(hpColorInt(fraction));
     });
 
-    // The Pokevial button: navy when a charge is left, pale and disabled at zero.
-    const vialReady = this.run.pokevialCharges > 0;
-    this.hudVialBg.setFillStyle(vialReady ? 0x2f2c4d : 0xcfcce2);
-    this.hudVialLabel
-      .setText(`POKEVIAL ${this.run.pokevialCharges}/${POKEVIAL_MAX_CHARGES}`)
-      .setTint(vialReady ? 0xf8fafc : 0x6b6887);
+    // The Pokevial bar: its fill grows with the charges and takes the shade of
+    // the charge it is at, so the meter reads as filling up.
+    const charges = this.run.pokevialCharges;
+    this.hudVialFill
+      .setSize((HUD_VIAL_W * charges) / POKEVIAL_MAX_CHARGES, HUD_VIAL_H)
+      .setFillStyle(HUD_VIAL_FILL_COLORS[charges - 1] ?? HUD_VIAL_FILL_COLORS[0]);
 
     // An item taken from the bag is not in the bag while it is being dragged.
     const bagInHand = this.hudDragItemFrom === null ? this.hudDragItem : null;
@@ -2051,7 +2061,10 @@ export class RouteScene extends Phaser.Scene {
     const overMove = this.detailMoveRowAt(pointer) !== null;
     const overItem = this.hudHeldStackAt(pointer) !== null;
     const overIcon = this.hudPanelIconAt(pointer) !== null;
-    const overVial = this.vialButtonAt(pointer);
+    // The Pokevial only reads as clickable with a full bar; a partial one still
+    // drinks on click but shows no pointer.
+    const overVial =
+      this.run.pokevialCharges >= POKEVIAL_MAX_CHARGES && this.vialButtonAt(pointer);
     const overPanel = overMember || overMove || overItem || overVial ? false : this.hudPanelAt(pointer) !== null;
     this.input.setDefaultCursor(
       overItem || overMove

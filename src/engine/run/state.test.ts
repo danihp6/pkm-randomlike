@@ -156,9 +156,9 @@ describe('advanceMap', () => {
     expect(next.box[0].fighter.hp).toBe(0);
   });
 
-  it('refills the Pokevial at the floor change', () => {
-    const spent = { ...createRun({ seed: 'run-a', starter }), pokevialCharges: 0 };
-    expect(advanceMap(spent).pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
+  it('carries the Pokevial charges over the floor change', () => {
+    const spent = { ...createRun({ seed: 'run-a', starter }), pokevialCharges: 1 };
+    expect(advanceMap(spent).pokevialCharges).toBe(1);
   });
 });
 
@@ -170,6 +170,11 @@ describe('bossDefeated', () => {
     expect(markBossDefeated(marked)).toBe(marked);
     expect(advanceRoute(marked, 1).bossDefeated).toBe(true);
     expect(advanceMap(marked).bossDefeated).toBe(false);
+  });
+
+  it('fills the Pokevial to the cap when the boss falls', () => {
+    const spent = { ...createRun({ seed: 'run-a', starter }), pokevialCharges: 0 };
+    expect(markBossDefeated(spent).pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
   });
 });
 
