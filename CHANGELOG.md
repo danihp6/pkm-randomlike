@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The mini-boss and mega-stone rooms hold their own content** (Phase 9
+      step 13). A **mini-boss** leaf fields a strong `ace` trainer (a band-level
+      party one size larger, allowed a Mega Stone) that stands while unbeaten;
+      beating it opens a **reward choice** — three distinct items drawn from the
+      map's reward pool (`rewardChoices` in `src/ui/rewards.ts`), taken with `E`
+      or skipped with `Q`. A **mega-stone** leaf holds a random **Mega Stone** on
+      its far tile, taken with the interact key like any ground item, off a
+      per-floor stream (`MEGA_STONE_IDS`). Both use stable content ids
+      (`miniBossTrainerId`, `mega-<map>`), so a revisit rebuilds them identically
+      and a beaten mini-boss stays beaten. `docs/maps-spec.md` §7, `D33`.
 - [x] **The shop room and its Mart panel** (Phase 9 step 12). A shop floor's
       counter (`E`) opens a Pokémon Mart-style HUD window that only exists in that
       room: a **BUY** tab (the band's core of Balls/Potions plus one or two

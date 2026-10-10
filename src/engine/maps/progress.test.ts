@@ -7,6 +7,7 @@ import { MAP_EDGES, OPPOSITE_EDGE, arrivalEdgeFor, linkedNeighbour, planMap, typ
 import {
   bossTrainerId,
   isFinalMap,
+  miniBossTrainerId,
   portalEdgeFor,
   roomAcross,
   roomView,
@@ -310,5 +311,11 @@ describe('bossTrainerId', () => {
   it('is stable per map', () => {
     expect(bossTrainerId(3)).toBe('boss-3');
     expect(bossTrainerId(3)).toBe(bossTrainerId(3));
+  });
+
+  it('gives the mini-boss its own stable id, distinct from the boss', () => {
+    expect(miniBossTrainerId(3)).toBe('miniboss-3');
+    expect(miniBossTrainerId(3)).toBe(miniBossTrainerId(3));
+    expect(miniBossTrainerId(3)).not.toBe(bossTrainerId(3));
   });
 });

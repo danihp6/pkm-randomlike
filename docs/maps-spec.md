@@ -11,10 +11,10 @@ it in `docs/tech-decisions.md` (D28–D33).
 > (`Plan`), the plan-driven route shapes and size, the per-map levels, the run's
 > floor tracking, the boss/portal, the route HUD **minimap** (`src/ui/mapView.ts`),
 > the **Poké Dollar economy** (trainer drops, the valuables and the bag's money
-> readout) and the **special rooms in the plan** (the guaranteed shop, the
-> mini-boss and the mega-stone leaves) have shipped, and the **shop room** opens a
-> Mart panel at its counter; the mini-boss and mega-stone rooms' own content are
-> the open steps in `TODO.md` Phase 9.
+> readout), the **special rooms in the plan** (the guaranteed shop, the mini-boss
+> and the mega-stone leaves) and their **own content** (the Mart panel at the shop
+> counter, the mini-boss's reward choice and the mega-stone treasure) have
+> shipped; only the Phase 9 docs/migration pass is left (`TODO.md`).
 
 ## 1. What a map is
 

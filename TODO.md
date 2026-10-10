@@ -206,10 +206,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       the Mega forme for the battle. All dex Megas (formes may be nonstandard);
       only bosses, mini-bosses and the `ace` archetype carry stones. Engine +
       data + battle UI, fixed-seed tests.
-- [ ] **Step 13 — Mini-boss & mega-stone rooms.** The mini-boss leaf fields one
-      strong trainer whose defeat offers a **choice of items**; the mega-stone
-      leaf holds a random **Mega Stone** (new `held` items, one per Mega-capable
-      species, made functional by step 9). Data + scene wiring.
 - [ ] **Step 14 — Docs & migration pass.** Finish `docs/maps-spec.md`, update
       `design-spec.md` / `routes-spec.md` / `battle-spec.md` / `AGENTS.md` and the
       tech decision addenda, and archive the steps in `CHANGELOG.md`.

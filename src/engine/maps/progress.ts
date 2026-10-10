@@ -30,6 +30,11 @@ export function bossTrainerId(mapIndex: number): string {
   return `boss-${mapIndex}`;
 }
 
+/** The mini-boss's stable trainer id (`docs/maps-spec.md` §7), distinct from a regular one. */
+export function miniBossTrainerId(mapIndex: number): string {
+  return `miniboss-${mapIndex}`;
+}
+
 /**
  * The edge the boss room's portal opens onto, or null when `roomId` is not the
  * boss room (or has no free wall, which the floor graph never produces). The pick
