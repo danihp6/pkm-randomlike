@@ -20,7 +20,6 @@ function member(id: string, level: number, speciesId = 'charmander'): RunPokemon
       status: null,
       statusCounter: 0,
     },
-    xp: level ** 3,
   };
 }
 

@@ -46,8 +46,8 @@ export type BattleLaunch = Readonly<{
   trigger: BattleTrigger;
   player: readonly FighterSnapshot[];
   bag: readonly BagCounts[];
-  /** XP per party member, so the battle can draw the XP bar before any award. */
-  experience: readonly Readonly<{ id: string; xp: number }>[];
+  /** The squad's shared XP, so the battle can draw the general bar before any award. */
+  xp: number;
   seed: number;
   /** The run's seed and route, for art the battle resolves through the route. */
   runSeed: string;

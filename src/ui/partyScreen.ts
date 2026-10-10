@@ -32,7 +32,6 @@ export type PartyRow = Readonly<{
   maxHp: number;
   status: StatusId | null;
   statusLabel: string | null;
-  xp: number;
   heldItem: string | null;
   heldItemName: string | null;
   shiny: boolean;
@@ -50,7 +49,6 @@ export function partyRow(member: RunPokemon): PartyRow {
     maxHp: restoreFighter(fighter).maxHp,
     status: fighter.status,
     statusLabel: statusAbbreviation(fighter.status),
-    xp: member.xp,
     heldItem: fighter.heldItem,
     heldItemName: held?.name ?? fighter.heldItem,
     shiny: fighter.shiny,

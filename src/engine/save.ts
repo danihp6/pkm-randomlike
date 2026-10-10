@@ -8,7 +8,7 @@ import { isTilesetPreference, type TilesetPreference } from '../data/tilesets/id
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
-import { MAX_LEVEL, type CatchLocation, type RunPokemon } from './run/progression';
+import { MAX_LEVEL, xpForLevel, type CatchLocation, type RunPokemon } from './run/progression';
 import { emptyRunStats, type RunState, type RunStats } from './run/state';
 
 /** How fast the message box types text (consumed by the settings screen). */
@@ -48,7 +48,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -103,7 +103,9 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * the PC-lock state (`entryDeparted`, `pcUnlocked`), an old run starting unlocked
  * only in its entry room; `11` moves a v11 settings onto the v12 schema, which
  * added the four HUD-panel keys (`party`/`bag`/`map`/`box`) and moved `settings`
- * off its old `O` default to `Tab` (the old `O` becomes the PC box key).
+ * off its old `O` default to `Tab` (the old `O` becomes the PC box key); `12`
+ * moves a v12 run onto the v13 schema, which replaced the per-member XP with the
+ * squad's single shared bar (recovered as the highest member's XP).
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -176,7 +178,30 @@ export const SAVE_MIGRATIONS: Migrations = {
       ? { ...document.settings, keybinds: sanitizeKeybinds(document.settings.keybinds) }
       : document.settings,
   }),
+  12: (document) => ({
+    ...document,
+    version: 13,
+    // The shared bar starts at the highest member's XP, so an old run keeps the
+    // level of its best Pokémon and everyone else catches up from there.
+    run: isRecord(document.run) ? { ...document.run, xp: highestMemberXp(document.run) } : document.run,
+  }),
 };
+
+/** The highest XP any member of a v12 run carried, or a level-1 bar. */
+function highestMemberXp(run: Record<string, unknown>): number {
+  let xp = 0;
+  for (const list of [run.party, run.box]) {
+    if (!Array.isArray(list)) continue;
+    for (const entry of list) {
+      if (!isRecord(entry)) continue;
+      const memberXp = isNumber(entry.xp) && entry.xp >= 0 ? entry.xp : 0;
+      const fighter = isRecord(entry.fighter) ? entry.fighter : {};
+      const level = isInteger(fighter.level) && fighter.level >= 1 ? fighter.level : 1;
+      xp = Math.max(xp, Math.max(memberXp, xpForLevel(level)));
+    }
+  }
+  return xp > 0 ? xp : xpForLevel(1);
+}
 
 /**
  * Adds the arrival edge a v7 run lacks: the door `arrivalEdgeFor` derives for the
@@ -447,9 +472,8 @@ function parsePokemon(value: unknown): RunPokemon | null {
   if (!isRecord(value)) return null;
   const fighter = parseFighter(value.fighter);
   if (!fighter) return null;
-  if (!isNumber(value.xp) || value.xp < 0) return null;
   const caughtAt = parseCatchLocation(value.caughtAt);
-  return caughtAt ? { fighter, xp: value.xp, caughtAt } : { fighter, xp: value.xp };
+  return caughtAt ? { fighter, caughtAt } : { fighter };
 }
 
 /** Reads a caught member's location; anything malformed drops the field, not the member. */
@@ -538,6 +562,7 @@ function parseRun(value: unknown): RunState | null {
 
   const party = parseMembers(value.party);
   if (party.length === 0) return null;
+  const box = parseMembers(value.box);
   const bag = parseBag(value.bag);
   if (!bag) return null;
 
@@ -580,6 +605,11 @@ function parseRun(value: unknown): RunState | null {
     ? Math.max(0, Math.min(POKEVIAL_MAX_CHARGES, value.pokevialCharges))
     : POKEVIAL_MAX_CHARGES;
 
+  // The shared bar: kept from the save when present, else recovered from the
+  // highest member level so a hand-edited document never starts the squad lower
+  // than the party it carries.
+  const xp = isNumber(value.xp) && value.xp >= 0 ? value.xp : highestMemberXp(value);
+
   return {
     seed: value.seed,
     mode: value.mode,
@@ -593,8 +623,9 @@ function parseRun(value: unknown): RunState | null {
     pcUnlocked,
     levelCap: levelCapForMap(mapIndex),
     pokevialCharges,
+    xp,
     party,
-    box: parseMembers(value.box),
+    box,
     bag,
     defeatedTrainers,
     pickedItems,

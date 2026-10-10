@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The party and the PC share one level and one XP bar.** XP is run-wide now
+      (`RunState.xp`, `squadLevel`): a battle fills the squad's single bar and the
+      whole party **and box** level with it, learning moves and evolving as they
+      go, and a catch joins at that level (its stats, moveset and any allowed
+      evolution are rebuilt from the species there, whatever level the wild was).
+      The party panel leads with the shared `Lv` and a general XP bar and drops
+      the per-row level and HP numbers (portrait, name and bar only), with the
+      Pokevial centred under the bar; the battle's player panel draws the same
+      general bar. The per-map cap still clamps gain (D9/D29, `SAVE_VERSION` 13,
+      `SAVE_MIGRATIONS[12]`).
 - [x] **HUD panel quick keys, and the panel button prints its key.** `P` opens
       PARTY, `I` the bag, `M` the map and `O` the PC box (the settings key moves to
       `Tab`); a panel's corner button now sits flush in its top-left and, on a

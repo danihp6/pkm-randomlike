@@ -32,6 +32,7 @@ import {
   addCaughtPokemon,
   addItem,
   addPokemon,
+  adoptAtLevel,
   advanceMap,
   advanceRoute,
   bandForMap,
@@ -41,6 +42,7 @@ import {
   createRunPokemon,
   editRunPokemon,
   equipHeldItem,
+  experienceFraction,
   fullHealMember,
   hasLivingParty,
   isItemPicked,
@@ -53,12 +55,14 @@ import {
   routeIndexForRoom,
   runBand,
   runRoomLevel,
+  squadLevel,
   swapCaughtIntoParty,
   trainerRoster,
   unequipHeldItem,
   updatePokemon,
   useCapture,
   usePokevial,
+  xpForLevel,
   type BagCounts,
   type BattleLaunch,
   type BattleReturn,
@@ -194,11 +198,24 @@ const HUD_MAP_Y = HUD_TOP;
 const HUD_MAP_W = 216;
 const HUD_MAP_H = 250;
 const HUD_MAP_TITLE_H = HUD_PAD_TOP + 34;
-const HUD_PARTY_HEADER = HUD_PAD_TOP + 16 + 12;
-const HUD_PARTY_ROW = 52;
-/** The Pokevial button in the party header's top-right corner: its size in px. */
+/** The Pokevial button centred under the party header's level/XP line: its size in px. */
 const HUD_VIAL_W = 100;
 const HUD_VIAL_H = 22;
+/**
+ * The party window is narrower than the bag/box now that its rows drop the HP
+ * and level text: portrait, name and the HP bar only. The header stacks the
+ * squad's shared level line, the XP bar and the centred Pokevial.
+ */
+const HUD_PARTY_W = 250;
+const HUD_PARTY_ROW = 52;
+const HUD_PARTY_COLUMN = 56;
+const HUD_PARTY_HPBAR_SCALE = (HUD_PARTY_W - HUD_PAD_X * 2 - HUD_PARTY_COLUMN) / FRLG_HPBAR.width;
+const HUD_XP_BAR_INSET = 12;
+const HUD_XP_BAR_W = HUD_PARTY_W - HUD_PAD_X * 2 - HUD_XP_BAR_INSET * 2;
+const HUD_XP_BAR_H = 8;
+const HUD_XP_BAR_Y = HUD_PAD_TOP + 16 + 6;
+const HUD_VIAL_Y = HUD_XP_BAR_Y + HUD_XP_BAR_H + 8;
+const HUD_PARTY_HEADER = HUD_VIAL_Y + HUD_VIAL_H + 8;
 /** The party avatar, enlarged to the row height so the held-item badge reads. */
 const HUD_PARTY_PORTRAIT_SCALE = 0.7;
 /** The held-item icon on an avatar's lower-right corner. */
@@ -212,8 +229,6 @@ const HUD_TAB_H = 26;
 const HUD_TAB_GAP = 4;
 const HUD_BAG_HEADER = HUD_PAD_TOP + HUD_TAB_H + 8;
 const HUD_BAG_ROW = 40;
-/** The 268px FRLG HP bar, kept small in the party rows so the numbers read. */
-const HUD_HPBAR_SCALE = 0.6;
 /** The PC BOX window: a page tab strip over a grid of avatar cells. */
 const HUD_BOX_PAD = 12;
 const HUD_BOX_TAB_W = 32;
@@ -561,14 +576,16 @@ export class RouteScene extends Phaser.Scene {
     portrait: Phaser.GameObjects.Image;
     held: Phaser.GameObjects.Image;
     name: Phaser.GameObjects.BitmapText;
-    level: Phaser.GameObjects.BitmapText;
-    hpText: Phaser.GameObjects.BitmapText;
     bar: Phaser.GameObjects.Image;
     fill: Phaser.GameObjects.Rectangle;
   }[] = [];
   /** The Pokevial button in the party header, and its label (name + charges). */
   private hudVialBg!: Phaser.GameObjects.Rectangle;
   private hudVialLabel!: Phaser.GameObjects.BitmapText;
+  /** The squad's shared level and XP bar in the party header. */
+  private hudLevelText!: Phaser.GameObjects.BitmapText;
+  private hudXpFill!: Phaser.GameObjects.Rectangle;
+  private hudXpText!: Phaser.GameObjects.BitmapText;
   /** The member detail panel (STATS / MOVES) and the state behind it. */
   private hudDetail!: Phaser.GameObjects.Container;
   private hudDetailState: DetailState = CLOSED_DETAIL;
@@ -1053,11 +1070,13 @@ export class RouteScene extends Phaser.Scene {
     this.hudX = x;
     this.hudPartyY = partyY;
     this.hudPartyH = partyH;
-    partyChildren.push(addFrlgWindow(this, x, partyY, HUD_PANEL_W, partyH));
-    // The Pokevial sits in the header's top-right corner: one click rests the
-    // whole party and the box, and it refills at each floor's heal stop.
-    const vialX = x + HUD_PANEL_W - HUD_PAD_X - HUD_VIAL_W;
-    const vialY = partyY + HUD_PAD_TOP;
+    partyChildren.push(addFrlgWindow(this, x, partyY, HUD_PARTY_W, partyH));
+    const partyLeft = x + HUD_PAD_X;
+    const partyRight = x + HUD_PARTY_W - HUD_PAD_X;
+    // The Pokevial, centred under the level/XP line: one click rests the whole
+    // party and the box, and it refills at each floor's heal stop.
+    const vialX = x + (HUD_PARTY_W - HUD_VIAL_W) / 2;
+    const vialY = partyY + HUD_VIAL_Y;
     this.hudVialBg = this.add.rectangle(vialX, vialY, HUD_VIAL_W, HUD_VIAL_H, 0x2f2c4d).setOrigin(0, 0);
     this.hudVialLabel = addFrlgText(this, vialX + HUD_VIAL_W / 2, vialY + 3, '', {
       size: 16,
@@ -1065,14 +1084,30 @@ export class RouteScene extends Phaser.Scene {
       origin: [0.5, 0],
     });
     partyChildren.push(this.hudVialBg, this.hudVialLabel);
+    // The squad's shared level and XP bar: every member levels together off this
+    // one bar (`docs/battle-spec.md` §7).
+    const xpBarY = partyY + HUD_XP_BAR_Y;
+    const xpBarX = partyLeft + HUD_XP_BAR_INSET;
+    this.hudLevelText = addFrlgText(this, xpBarX, partyY + HUD_PAD_TOP, '', {
+      size: 16,
+      tint: FRLG_INK,
+    });
+    const xpBg = this.add.rectangle(xpBarX, xpBarY, HUD_XP_BAR_W, HUD_XP_BAR_H, 0x2f2c4d).setOrigin(0, 0);
+    this.hudXpFill = this.add.rectangle(xpBarX, xpBarY, 0, HUD_XP_BAR_H, 0x60a5fa).setOrigin(0, 0);
+    this.hudXpText = addFrlgText(this, partyRight - HUD_XP_BAR_INSET, partyY + HUD_PAD_TOP, '', {
+      size: 16,
+      tint: 0x3a3956,
+      origin: [1, 0],
+    });
+    partyChildren.push(this.hudLevelText, xpBg, this.hudXpFill, this.hudXpText);
     this.hudRows = [];
     for (let i = 0; i < MAX_PARTY_SIZE; i++) {
       const rowY = partyY + HUD_PARTY_HEADER + i * HUD_PARTY_ROW;
       const highlight = this.add
-        .rectangle(left, rowY, right - left, HUD_PARTY_ROW - 4, 0xf2c14e, 0.32)
+        .rectangle(partyLeft, rowY, partyRight - partyLeft, HUD_PARTY_ROW - 4, 0xf2c14e, 0.32)
         .setOrigin(0, 0)
         .setVisible(false);
-      const portraitX = left + 24;
+      const portraitX = partyLeft + 24;
       const portrait = this.add
         .image(portraitX, rowY + 26, PORTRAIT_TEXTURE_KEY, 0)
         .setScale(HUD_PARTY_PORTRAIT_SCALE)
@@ -1081,29 +1116,21 @@ export class RouteScene extends Phaser.Scene {
         .image(portraitX + 15, rowY + 39, ITEM_ICON_TEXTURE_KEY, 0)
         .setScale(HUD_HELD_ICON_SCALE)
         .setVisible(false);
-      const column = left + 56;
-      const name = addFrlgText(this, column, rowY + 6, '', { size: 16, tint: FRLG_INK });
-      const level = addFrlgText(this, right, rowY + 6, '', {
-        size: 16,
-        tint: 0x3a3956,
-        origin: [1, 0],
-      });
+      const column = partyLeft + HUD_PARTY_COLUMN;
+      const name = addFrlgText(this, column, rowY + 6, '', { size: 16, tint: FRLG_INK }).setMaxWidth(
+        partyRight - column,
+      );
       const bar = this.add
         .image(column, rowY + 28, FRLG_HPBAR_KEY)
         .setOrigin(0, 0)
-        .setScale(HUD_HPBAR_SCALE)
+        .setScale(HUD_PARTY_HPBAR_SCALE)
         .setVisible(false);
       const fill = this.add
-        .rectangle(column, rowY + 28, 0, FRLG_HPBAR.fill.height * HUD_HPBAR_SCALE, 0x58d080)
+        .rectangle(column, rowY + 28, 0, FRLG_HPBAR.fill.height * HUD_PARTY_HPBAR_SCALE, 0x58d080)
         .setOrigin(0, 0)
         .setVisible(false);
-      const hpText = addFrlgText(this, right, rowY + 30, '', {
-        size: 16,
-        tint: FRLG_INK,
-        origin: [1, 0],
-      });
-      this.hudRows.push({ highlight, portrait, held, name, level, hpText, bar, fill });
-      partyChildren.push(highlight, portrait, held, name, level, bar, fill, hpText);
+      this.hudRows.push({ highlight, portrait, held, name, bar, fill });
+      partyChildren.push(highlight, portrait, held, name, bar, fill);
     }
 
     const bagY = partyY + partyH + HUD_GAP;
@@ -1494,22 +1521,24 @@ export class RouteScene extends Phaser.Scene {
     this.hudTitle.setText(`Map ${this.run.mapIndex} · ${biomeName}`);
     this.refreshMapView();
 
+    // The shared bar: the level everyone sits at and the progress to the next.
+    const level = squadLevel(this.run);
+    this.hudLevelText.setText(`Lv${level}`);
+    this.hudXpFill.setSize(HUD_XP_BAR_W * experienceFraction(this.run.xp, level), HUD_XP_BAR_H);
+    this.hudXpText.setText(`XP ${this.run.xp}`);
+
     this.hudRows.forEach((row, i) => {
       const member = this.run.party[i];
       const visible = member !== undefined;
       const alive = member !== undefined && member.fighter.hp > 0;
       row.highlight.setVisible(this.hudUi.grabbed?.pane === 'party' && this.hudUi.index === i);
       row.name.setVisible(visible);
-      row.level.setVisible(visible);
-      row.hpText.setVisible(visible);
       row.bar.setVisible(alive);
       row.fill.setVisible(alive);
       if (!member) {
         row.portrait.setVisible(false);
         row.held.setVisible(false);
         row.name.setText('');
-        row.level.setText('');
-        row.hpText.setText('');
         return;
       }
       const portrait = member ? portraitFor(member.fighter.speciesId, member.fighter.shiny) : null;
@@ -1522,8 +1551,6 @@ export class RouteScene extends Phaser.Scene {
       const maxHp = restoreFighter(member.fighter).maxHp;
       const hp = member.fighter.hp;
       row.name.setText(getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId);
-      row.level.setText(`Lv${member.fighter.level}`);
-      row.hpText.setText(`${hp}/${maxHp}`);
       const fraction = hpFraction(hp, maxHp);
       const barScale = row.bar.scaleX;
       row.fill
@@ -2300,8 +2327,8 @@ export class RouteScene extends Phaser.Scene {
   private vialButtonAt(pointer: Phaser.Input.Pointer): boolean {
     if (!this.panelExpanded('party')) return false;
     const point = this.panelPoint(pointer, 'party');
-    const left = this.hudX + HUD_PANEL_W - HUD_PAD_X - HUD_VIAL_W;
-    const top = this.hudPartyY + HUD_PAD_TOP;
+    const left = this.hudX + (HUD_PARTY_W - HUD_VIAL_W) / 2;
+    const top = this.hudPartyY + HUD_VIAL_Y;
     return (
       point.x >= left &&
       point.x <= left + HUD_VIAL_W &&
@@ -2328,7 +2355,7 @@ export class RouteScene extends Phaser.Scene {
     const point = this.panelPoint(pointer, 'party');
     return (
       point.x >= this.hudX &&
-      point.x <= this.hudX + HUD_PANEL_W &&
+      point.x <= this.hudX + HUD_PARTY_W &&
       point.y >= this.hudPartyY &&
       point.y <= this.hudPartyY + this.hudPartyH
     );
@@ -3610,7 +3637,7 @@ export class RouteScene extends Phaser.Scene {
     const launch: BattleLaunch = {
       trigger,
       player: this.run.party.map((member) => member.fighter),
-      experience: this.run.party.map((member) => ({ id: member.fighter.id, xp: member.xp })),
+      xp: this.run.xp,
       bag: this.run.bag,
       seed: battleSeed(this.run.seed, this.run.routeIndex, key),
       runSeed: this.run.seed,
@@ -3639,12 +3666,18 @@ export class RouteScene extends Phaser.Scene {
   addDebugPokemon(speciesId: string, level: number): 'party' | 'box' | null {
     if (!IS_DEVELOP || !this.run || this.gameOver) return null;
     this.debugMonCounter += 1;
-    const pokemon = createRunPokemon({
-      id: `debug:${speciesId}:${this.debugMonCounter}`,
-      speciesId,
-      level,
-      learnsetSeed: this.run.seed,
-    });
+    // The squad shares one level, so the new member joins at that level rather
+    // than the requested one; the dev level editor moves the whole squad.
+    const pokemon = adoptAtLevel(
+      createRunPokemon({
+        id: `debug:${speciesId}:${this.debugMonCounter}`,
+        speciesId,
+        level,
+        learnsetSeed: this.run.seed,
+      }),
+      squadLevel(this.run),
+      this.run.seed,
+    );
     this.run = addPokemon(this.run, pokemon);
     this.persistRun();
     this.refreshHud();
@@ -3675,13 +3708,34 @@ export class RouteScene extends Phaser.Scene {
 
   /**
    * Dev only: overrides a party member's level, moves, ability or nature, then
-   * resyncs the save and the HUD. Returns false with no live run or a bad id.
+   * resyncs the save and the HUD. Because the level is shared, a level edit
+   * moves the whole squad onto that level's bar and re-levels the box with it;
+   * the other fields apply to the one member. Returns false with no live run or
+   * a bad id.
    */
   editDebugPokemon(memberId: string, edit: DebugPartyEdit): boolean {
     if (!IS_DEVELOP || !this.run || this.gameOver) return false;
     const member = this.run.party.find((candidate) => candidate.fighter.id === memberId);
     if (!member) return false;
-    this.run = updatePokemon(this.run, editRunPokemon(member, edit));
+    if (edit.level !== undefined) {
+      const bumped = editRunPokemon(member, edit);
+      const level = bumped.fighter.level;
+      const rest: DebugPartyEdit = {
+        ...(edit.nature !== undefined ? { nature: edit.nature } : {}),
+        ...(edit.ability !== undefined ? { ability: edit.ability } : {}),
+        ...(edit.moves !== undefined ? { moves: edit.moves } : {}),
+      };
+      const settle = (target: RunPokemon): RunPokemon =>
+        target.fighter.id === memberId ? editRunPokemon(bumped, rest) : editRunPokemon(target, { level });
+      this.run = {
+        ...this.run,
+        xp: xpForLevel(level),
+        party: this.run.party.map(settle),
+        box: this.run.box.map(settle),
+      };
+    } else {
+      this.run = updatePokemon(this.run, editRunPokemon(member, edit));
+    }
     this.persistRun();
     this.refreshHud();
     return true;
@@ -3792,7 +3846,7 @@ export class RouteScene extends Phaser.Scene {
     this.captureOnDone = onDone;
     this.captureIndex = 0;
     this.captureHighlights = [];
-    const detail = fighterDetail(restoreFighter(caught.fighter), caught.xp);
+    const detail = fighterDetail(restoreFighter(caught.fighter));
 
     const { width, height } = this.scale;
     const x = (width - CAPTURE_W) / 2;
@@ -3825,7 +3879,7 @@ export class RouteScene extends Phaser.Scene {
     children.push(addFrlgText(this, rightX + 16, padY + 12, 'PARTY', { size: 16, tint: 0x3a3956 }));
     const listTop = padY + 40;
     this.run.party.forEach((member, i) => {
-      const row = fighterDetail(restoreFighter(member.fighter), member.xp);
+      const row = fighterDetail(restoreFighter(member.fighter));
       const rowY = listTop + i * CAPTURE_ROW_H;
       const highlight = this.add
         .rectangle(rightX + 10, rowY, CAPTURE_COL_W - 20, CAPTURE_ROW_H - 4, 0xf2c14e, 0.4)
@@ -3978,7 +4032,7 @@ export class RouteScene extends Phaser.Scene {
     this.captureHighlights.forEach((rect, i) => rect.setVisible(i === this.captureIndex));
     const member = this.run.party[this.captureIndex];
     if (!member || !this.captureCompare) return;
-    const detail = fighterDetail(restoreFighter(member.fighter), member.xp);
+    const detail = fighterDetail(restoreFighter(member.fighter));
     this.captureCompare.setText(
       `${detail.name}  Lv${detail.level}   HP ${detail.hp}/${detail.maxHp}\n` +
         `ATK ${detail.stats.atk}   DEF ${detail.stats.def}   SPA ${detail.stats.spa}\n` +
@@ -4122,37 +4176,34 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * The level-up beat: each row that levelled counts its level up from the old
-   * value with a gold flash on the portrait, then the HUD resyncs (Phase 5).
+   * The level-up beat: the squad's shared level counts up in the party header
+   * with a gold flash on every member that levelled, then the HUD resyncs
+   * (Phase 5). Since all members share one level, the count is a single tween.
    */
   private playLevelUp(beats: readonly LevelUpBeat[]): void {
+    if (beats.length === 0) return;
+    const from = Math.min(...beats.map((beat) => beat.fromLevel));
+    const to = Math.max(...beats.map((beat) => beat.toLevel));
+    const counter = { level: from };
+    const paint = (): void => {
+      this.hudLevelText.setText(`Lv${Math.round(counter.level)}`);
+    };
+    paint();
     for (const beat of beats) {
       const index = this.run.party.findIndex((member) => member.fighter.id === beat.id);
-      const row = this.hudRows[index];
-      if (index < 0 || !row) continue;
-      const member = this.run.party[index];
-      const name = getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId;
-      const maxHp = restoreFighter(member.fighter).maxHp;
-      const counter = { level: beat.fromLevel };
-      const paint = () => {
-        row.name.setText(name);
-        row.level.setText(`Lv${Math.round(counter.level)}`);
-        row.hpText.setText(`${member.fighter.hp}/${maxHp}`);
-      };
-      paint();
-      row.portrait.setTint(0xf2c14e);
-      this.tweens.add({
-        targets: counter,
-        level: beat.toLevel,
-        duration: 520,
-        ease: 'Quad.easeOut',
-        onUpdate: paint,
-        onComplete: () => {
-          row.portrait.clearTint();
-          this.refreshHud();
-        },
-      });
+      this.hudRows[index]?.portrait.setTint(0xf2c14e);
     }
+    this.tweens.add({
+      targets: counter,
+      level: to,
+      duration: 520,
+      ease: 'Quad.easeOut',
+      onUpdate: paint,
+      onComplete: () => {
+        for (const row of this.hudRows) row.portrait.clearTint();
+        this.refreshHud();
+      },
+    });
   }
 
   private rewardFor(trigger: BattleTrigger): BattleReward {

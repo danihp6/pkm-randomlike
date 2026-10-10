@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { getSpecies, statAtLevel } from '../../data/dex';
 import {
   MAX_LEVEL,
-  awardExperience,
+  adoptAtLevel,
   createRunPokemon,
   editRunPokemon,
   evolveIfReady,
   experienceAward,
   experienceFraction,
   levelForXp,
+  levelUpPokemon,
   xpForLevel,
 } from './progression';
 
@@ -51,25 +52,25 @@ describe('experienceAward', () => {
   });
 });
 
-describe('awardExperience', () => {
-  it('levels up, learns the crossed move and stops at the map cap', () => {
+describe('levelUpPokemon', () => {
+  it('levels up and learns the move it crossed', () => {
     const pokemon = createRunPokemon({ id: 'ember', speciesId: 'charmander', level: 1, moves: ['scratch'] });
-    const first = awardExperience(pokemon, 20, 5);
-    expect(first.pokemon.fighter.level).toBe(4);
-    expect(first.pokemon.xp).toBe(101);
-    expect(first.events).toContainEqual({ kind: 'xp', amount: 100, xp: 101 });
-    expect(first.events).toContainEqual({ kind: 'level', level: 4 });
-    expect(first.events).toContainEqual({ kind: 'learn', moveId: 'ember' });
-
-    const capped = awardExperience(first.pokemon, 30, 5);
-    expect(capped.pokemon.fighter.level).toBe(5);
-    expect(capped.pokemon.xp).toBe(xpForLevel(5));
-    expect(capped.events).toContainEqual({ kind: 'capped', level: 5 });
+    const grown = levelUpPokemon(pokemon, 4);
+    expect(grown.pokemon.fighter.level).toBe(4);
+    expect(grown.events).toContainEqual({ kind: 'level', level: 4 });
+    expect(grown.events).toContainEqual({ kind: 'learn', moveId: 'ember' });
   });
 
-  it('evolves once the level meets the evolution and the cap allows it', () => {
+  it('leaves a member already at the target alone', () => {
+    const pokemon = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 8, moves: ['ember'] });
+    const same = levelUpPokemon(pokemon, 8);
+    expect(same.pokemon).toBe(pokemon);
+    expect(same.events).toEqual([]);
+  });
+
+  it('evolves once the level meets the evolution', () => {
     const ready = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 15, moves: ['ember'] });
-    const evolved = awardExperience(ready, 150, 20);
+    const evolved = levelUpPokemon(ready, 16);
     expect(evolved.pokemon.fighter.level).toBe(16);
     expect(evolved.pokemon.fighter.speciesId).toBe('charmeleon');
     expect(evolved.events).toContainEqual({ kind: 'evolve', from: 'charmander', into: 'charmeleon' });
@@ -91,7 +92,7 @@ describe('awardExperience', () => {
       level: 1,
       moves: ['scratch', 'growl', 'smokescreen', 'dragonbreath'],
     });
-    const result = awardExperience(pokemon, 20, 5);
+    const result = levelUpPokemon(pokemon, 4);
     const moves = result.pokemon.fighter.moves.map((slot) => slot.moveId);
     expect(moves).toContain('ember');
     expect(moves).not.toContain('scratch');
@@ -100,12 +101,28 @@ describe('awardExperience', () => {
   });
 });
 
+describe('adoptAtLevel', () => {
+  it('rebuilds a catch at the squad level with fresh stats and moves', () => {
+    const caught = createRunPokemon({ id: 'wild', speciesId: 'charmander', level: 3, moves: ['scratch'] });
+    const adopted = adoptAtLevel(caught, 10);
+    expect(adopted.fighter.level).toBe(10);
+    const expected = statAtLevel(getSpecies('charmander')!, 10, caught.fighter.nature, caught.fighter.ivs, caught.fighter.evs);
+    expect(adopted.fighter.hp).toBe(expected.hp);
+    expect(adopted.fighter.moves.length).toBeGreaterThan(0);
+  });
+
+  it('applies an evolution the level already allows', () => {
+    const caught = createRunPokemon({ id: 'wild', speciesId: 'charmander', level: 3 });
+    const adopted = adoptAtLevel(caught, 20);
+    expect(adopted.fighter.speciesId).toBe('charmeleon');
+  });
+});
+
 describe('editRunPokemon', () => {
-  it('changes the level and re-derives its XP, keeping the moveset', () => {
+  it('changes the level, keeping the moveset', () => {
     const pokemon = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 5, moves: ['ember'] });
     const edited = editRunPokemon(pokemon, { level: 20 });
     expect(edited.fighter.level).toBe(20);
-    expect(edited.xp).toBe(xpForLevel(20));
     expect(edited.fighter.moves.map((slot) => slot.moveId)).toEqual(['ember']);
   });
 

@@ -69,7 +69,8 @@ cadences are data (`src/data/run.ts`), not code.
 
 Pokémon gain XP, level up and evolve; the route's level cap clamps gain so the
 next route is always a step up and grinding is impossible. Evolution blocked by
-the cap waits.
+the cap waits. The cap is now the map's (D29) and the bar is shared by the whole
+squad (D35).
 
 ## D10 — Tilesets are swappable per route *(decided)*
 
@@ -450,6 +451,14 @@ beside `species.json` (they may be `isNonstandard: "Past"`, and a Mega whose bas
 species is not in the playable Gen 9 set is skipped rather than shipped as a dead
 stone); each gets its stone in `src/data/items.ts`. Only **bosses, mini-bosses and
 the `ace` archetype** carry stones, per their data.
+
+## D35 — The squad shares one level and one XP bar *(decided)*
+
+XP and level are **run-wide**, not per Pokémon: the party and the PC level
+together off a single bar (`RunState.xp`, `squadLevel`). A catch joins the squad
+at that level — its stats, moves and any allowed evolution are rebuilt from the
+species at the shared level, whatever level the wild was. There is no per-member
+XP field. The per-map cap (D9/D29) still clamps gain, so power comes from play.
 
 ## Open questions
 

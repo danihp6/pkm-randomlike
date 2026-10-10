@@ -2,14 +2,22 @@ import type { FighterSnapshot } from '../battle/fighter';
 import type { BattleReturn } from './battleLink';
 import { releaseFainted } from './perms';
 import {
-  addExperience,
+  adoptAtLevel,
   experienceAward,
   runPokemonFromSnapshot,
   type CatchLocation,
   type ProgressionEvent,
   type RunPokemon,
 } from './progression';
-import { addPokemon, markTrainerDefeated, recordCatch, useCapture, type RunState } from './state';
+import {
+  addPokemon,
+  gainExperience,
+  markTrainerDefeated,
+  recordCatch,
+  squadLevel,
+  useCapture,
+  type RunState,
+} from './state';
 
 export type BattleReward = Readonly<{
   /** Levels of the defeated side, for the XP award. */
@@ -46,9 +54,9 @@ export type ResolveBattleOptions = Readonly<{
 /**
  * Folds a finished battle back into the run: adopts the party and bag as the
  * battle left them (HP, PP, status), enforces permanence (fallen members leave
- * party and box), places a catch and spends the route's capture, marks a beaten
- * trainer and awards XP to the survivors. Pure, so a replay yields the same run
- * (D11).
+ * party and box), awards the squad's shared XP, places a catch at the squad's
+ * level and spends the route's capture, and marks a beaten trainer. Pure, so a
+ * replay yields the same run (D11).
  */
 export function resolveBattle(
   run: RunState,
@@ -62,9 +70,23 @@ export function resolveBattle(
   const death = releaseFainted(next);
   next = death.run;
 
+  const events: ProgressionEvent[] = [];
+  const won = result.outcome === 'win' || result.outcome === 'capture';
+  if (won && next.party.length > 0 && reward.enemyLevels.length > 0) {
+    // The squad shares one bar, so the award is not split by party size.
+    const amount = reward.enemyLevels.reduce(
+      (total, level) => total + experienceAward(level, 1, reward.isTrainer),
+      0,
+    );
+    const grown = gainExperience(next, amount, next.seed);
+    next = grown.run;
+    events.push(...grown.events);
+  }
+
   let captured: RunPokemon | null = null;
   if (result.captured) {
-    const caught = runPokemonFromSnapshot(result.captured, options?.catchLocation);
+    const base = runPokemonFromSnapshot(result.captured, options?.catchLocation);
+    const caught = adoptAtLevel(base, squadLevel(next), next.seed);
     if (options?.placeCapture === false) captured = caught;
     else next = addPokemon(next, caught);
     next = useCapture(next);
@@ -73,26 +95,6 @@ export function resolveBattle(
 
   if (reward.isTrainer && reward.trainerId !== undefined && result.outcome === 'win') {
     next = markTrainerDefeated(next, reward.trainerId);
-  }
-
-  const events: ProgressionEvent[] = [];
-  const won = result.outcome === 'win' || result.outcome === 'capture';
-  if (won && next.party.length > 0 && reward.enemyLevels.length > 0) {
-    // The battle does not yet report which members took part, so the award is
-    // split across the whole surviving party (docs/battle-spec.md §7).
-    const participants = next.party.length;
-    const amount = reward.enemyLevels.reduce(
-      (total, level) => total + experienceAward(level, participants, reward.isTrainer),
-      0,
-    );
-    next = {
-      ...next,
-      party: next.party.map((member) => {
-        const grown = addExperience(member, amount, next.levelCap, next.seed);
-        events.push(...grown.events);
-        return grown.pokemon;
-      }),
-    };
   }
 
   return { run: next, released: death.released, events, captured };

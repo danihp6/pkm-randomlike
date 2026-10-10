@@ -113,8 +113,10 @@ Full rules in `docs/battle-spec.md`. In short:
 
 - Gen 9 mechanics (types, stats, abilities, items, weather, terrain) driven by
   data extracted from Showdown at build time.
-- XP, levels and evolution are classic, with a **level cap per map** (the map's
-  `maxLevel`) so power always comes from play, not grinding.
+- The **whole squad — party and PC — shares one level and one XP bar**: XP fills
+  a single bar, everyone levels together, and a catch joins at that level. A
+  **level cap per map** (the map's `maxLevel`) keeps power coming from play, not
+  grinding.
 - Wild battles can be fled; trainer battles cannot. Fleeing is one press: RUN
   attempts the escape at once, with no yes/no prompt.
 - The command menu takes the **mouse** as well as the keyboard: hovering a row

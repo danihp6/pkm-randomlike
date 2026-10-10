@@ -11,7 +11,6 @@ import {
   type FighterSnapshot,
   type MoveSlot,
 } from '../battle/fighter';
-import { clampToCap } from './levelCap';
 
 /** Where a caught Pokémon was found: its biome and the room it was caught in. */
 export type CatchLocation = Readonly<{
@@ -20,10 +19,14 @@ export type CatchLocation = Readonly<{
   routeInMap: number;
 }>;
 
-/** A run party/box member: a battle snapshot plus the XP it carries between battles. */
+/**
+ * A run party/box member: the battle snapshot the run keeps between battles.
+ * XP and level are **not** per-member — the whole squad shares one bar on the
+ * run (`RunState.xp`), so a member only carries its own shape (species, stats,
+ * moves, HP/PP). See `docs/battle-spec.md` §7.
+ */
 export type RunPokemon = Readonly<{
   fighter: FighterSnapshot;
-  xp: number;
   /**
    * Set for a Pokémon caught on a route (its biome and room, shown in the STATS
    * tab); absent for the starter and for a member from a save that predates it.
@@ -86,16 +89,41 @@ export type ProgressionResult = Readonly<{
   events: readonly ProgressionEvent[];
 }>;
 
-/** A run member built from a species, level and moveset, with XP set to its level. */
+/** A run member built from a species, level and moveset. */
 export function createRunPokemon(input: FighterInput): RunPokemon {
-  const fighter = createFighter(input);
-  return { fighter: snapshotFighter(fighter), xp: xpForLevel(fighter.level) };
+  return { fighter: snapshotFighter(createFighter(input)) };
 }
 
-/** A run member adopted from a battle snapshot (a caught Pokémon), XP set to its level. */
+/** A run member adopted from a battle snapshot (a caught Pokémon). */
 export function runPokemonFromSnapshot(fighter: FighterSnapshot, caughtAt?: CatchLocation): RunPokemon {
-  const base = { fighter, xp: xpForLevel(fighter.level) };
+  const base = { fighter };
   return caughtAt ? { ...base, caughtAt } : base;
+}
+
+/**
+ * Rebuilds a member at `level`: stats and moveset come from the species at that
+ * level, so a Pokémon caught at a lower or higher level than the squad joins at
+ * the squad's own power. HP is set to the new maximum (a catch arrives whole)
+ * and an evolution the level already allows is applied. Used when a catch is
+ * folded into the run.
+ */
+export function adoptAtLevel(pokemon: RunPokemon, level: number, learnsetSeed?: string): RunPokemon {
+  const f = pokemon.fighter;
+  const target = Math.max(1, Math.min(MAX_LEVEL, Math.floor(level)));
+  const fighter = createFighter({
+    id: f.id,
+    speciesId: f.speciesId,
+    level: target,
+    nature: f.nature,
+    ability: f.ability,
+    gender: f.gender,
+    shiny: f.shiny,
+    ivs: f.ivs,
+    evs: f.evs,
+    ...(f.heldItem ? { heldItem: f.heldItem } : {}),
+    ...(learnsetSeed ? { learnsetSeed } : {}),
+  });
+  return evolveIfReady({ ...pokemon, fighter: snapshotFighter(fighter) }, target).pokemon;
 }
 
 /** A partial override of a run member; a missing field is kept as-is. */
@@ -109,9 +137,9 @@ export type RunPokemonEdit = Readonly<{
 /**
  * Rebuilds a run member with the given fields overridden: level, nature and
  * ability are re-resolved, the moveset is re-read from the dex (unknown ids and
- * duplicates dropped) and XP follows the new level like `createRunPokemon`. A
- * level change heals to the new maximum; any other edit keeps the current HP
- * (clamped). Used by the dev menu only; the battle and run rules never call it.
+ * duplicates dropped). A level change heals to the new maximum; any other edit
+ * keeps the current HP (clamped). Used by the dev menu only; the battle and run
+ * rules never call it.
  */
 export function editRunPokemon(pokemon: RunPokemon, edit: RunPokemonEdit): RunPokemon {
   const fighter = pokemon.fighter;
@@ -142,7 +170,6 @@ export function editRunPokemon(pokemon: RunPokemon, edit: RunPokemonEdit): RunPo
       moves,
       hp,
     },
-    xp: xpForLevel(level),
   };
 }
 
@@ -190,29 +217,18 @@ export function evolveIfReady(pokemon: RunPokemon, cap: number): ProgressionResu
 }
 
 /**
- * Adds a raw XP amount: clamps at the map cap, levels up on the threshold, learns
- * the level-up moves it crossed (forgetting the oldest when the fourth slot is
- * full) and evolves if the cap allows it. Pure and deterministic: no RNG.
+ * Raises a member to `targetLevel` (already clamped to the map cap): learns the
+ * level-up moves it crossed (forgetting the oldest when the fourth slot is full)
+ * and applies an evolution the level allows. A member already at or above the
+ * target is left alone. Pure and deterministic: no RNG.
  */
-export function addExperience(
+export function levelUpPokemon(
   pokemon: RunPokemon,
-  amount: number,
-  cap: number,
+  targetLevel: number,
   learnsetSeed?: string,
 ): ProgressionResult {
   const events: ProgressionEvent[] = [];
-  const gain = Math.max(0, Math.floor(amount));
-  const rawXp = pokemon.xp + gain;
-  const rawLevel = levelForXp(rawXp);
-  let xp = rawXp;
-  const level = clampToCap(rawLevel, cap);
-  if (rawLevel > level) {
-    // The cap clamps gain: park at the ceiling instead of banking overflow.
-    xp = xpForLevel(level);
-    events.push({ kind: 'capped', level });
-  }
-  events.push({ kind: 'xp', amount: gain, xp });
-
+  const level = Math.max(1, Math.min(MAX_LEVEL, Math.floor(targetLevel)));
   let fighter = pokemon.fighter;
   if (level > fighter.level) {
     events.push({ kind: 'level', level });
@@ -230,25 +246,7 @@ export function addExperience(
     }
     fighter = { ...fighter, level, moves };
   }
-
-  const evolved = evolveIfReady({ ...pokemon, fighter, xp }, cap);
+  const base = fighter === pokemon.fighter ? pokemon : { ...pokemon, fighter };
+  const evolved = evolveIfReady(base, level);
   return { pokemon: evolved.pokemon, events: [...events, ...evolved.events] };
-}
-
-/**
- * Awards XP for defeating an opponent: the award is split across participants
- * and boosted for trainers, then applied through `addExperience`.
- */
-export function awardExperience(
-  pokemon: RunPokemon,
-  defeatedLevel: number,
-  cap: number,
-  options: Readonly<{ participants?: number; isTrainer?: boolean; learnsetSeed?: string }> = {},
-): ProgressionResult {
-  return addExperience(
-    pokemon,
-    experienceAward(defeatedLevel, options.participants ?? 1, options.isTrainer ?? false),
-    cap,
-    options.learnsetSeed,
-  );
 }

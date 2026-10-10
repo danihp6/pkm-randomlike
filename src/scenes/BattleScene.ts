@@ -213,7 +213,8 @@ export class BattleScene extends Phaser.Scene {
   private displayActive!: Record<SideId, BattleFighter>;
   private displayHp!: Record<SideId, number>;
   private displayStatus!: Record<SideId, StatusId | null>;
-  private experience = new Map<string, number>();
+  /** The squad's shared XP, drawn on the player's panel as the general bar. */
+  private xp = 0;
   /** Battle-sheet frame for the enemy trainer, or null for a wild battle. */
   private trainerFrame: number | null = null;
   /** The last ball thrown, so the capture beat can reuse its icon. */
@@ -392,7 +393,7 @@ export class BattleScene extends Phaser.Scene {
       player: this.displayActive.player.status,
       enemy: this.displayActive.enemy.status,
     };
-    for (const entry of launch.experience) this.experience.set(entry.id, entry.xp);
+    this.xp = launch.xp;
     this.typing = beginTypewriter('');
     const settings = loadSettings();
     this.charMs = TEXT_SPEED_MS[settings.textSpeed];
@@ -1586,17 +1587,16 @@ export class BattleScene extends Phaser.Scene {
     bar.bar.setPosition(barX, barY);
 
     if (side === 'player') {
-      const xp = this.experience.get(fighter.id) ?? 0;
       drawGauge(
         this.hud,
         barX,
         barY + 36,
         FRLG_HPBAR.width,
         8,
-        experienceFraction(xp, fighter.level),
+        experienceFraction(this.xp, fighter.level),
         0x60a5fa,
       );
-      this.xpText.setText(`XP ${xp}`).setPosition(barX, barY + 46).setVisible(true);
+      this.xpText.setText(`XP ${this.xp}`).setPosition(barX, barY + 46).setVisible(true);
     } else {
       this.xpText.setVisible(false);
     }
@@ -1781,7 +1781,7 @@ export class BattleScene extends Phaser.Scene {
    */
   private renderPartyDetail(menu: Rect): void {
     const fighter = this.state.sides.player.party[this.menuIndex];
-    const detail = fighter ? fighterDetail(fighter, this.experience.get(fighter.id) ?? 0) : null;
+    const detail = fighter ? fighterDetail(fighter) : null;
     if (!detail) {
       this.partyDetail.setVisible(false);
       return;
