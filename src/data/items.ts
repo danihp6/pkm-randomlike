@@ -54,6 +54,9 @@ const MEGA_STONES: readonly ItemDef[] = MEGA_FORMES.map((mega) =>
   }),
 );
 
+/** Every Mega Stone id, for the mega-stone room's random draw (`docs/maps-spec.md` §7). */
+export const MEGA_STONE_IDS: readonly string[] = MEGA_STONES.map((stone) => stone.id);
+
 /**
  * The run's item catalogue: balls, heal/status/boost consumables, `held` items
  * (Leftovers, berries, the 1.2x type items, registered by `effects/items.ts`) and

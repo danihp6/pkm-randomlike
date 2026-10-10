@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { ITEMS, buyPrice, getItem, isForSale, sellPrice, type ItemKind } from './items';
+import {
+  ITEMS,
+  MEGA_STONE_IDS,
+  buyPrice,
+  getItem,
+  isForSale,
+  sellPrice,
+  type ItemKind,
+} from './items';
 
 const KINDS: readonly ItemKind[] = ['ball', 'heal', 'status', 'boost', 'held', 'valuable'];
 
@@ -84,6 +92,12 @@ describe('Mega Stones', () => {
       expect(stone.price, stone.id).toBe(0);
       expect(stone.mega!.base, stone.id).not.toBe(stone.mega!.form);
     }
+  });
+
+  it('lists every Mega Stone id for the mega-stone room to draw from', () => {
+    const stones = ITEMS.filter((entry) => entry.mega !== undefined).map((stone) => stone.id);
+    expect(MEGA_STONE_IDS).toEqual(stones);
+    expect(MEGA_STONE_IDS.length).toBe(34);
   });
 
   it('gives each Mega-capable species a matching stone', () => {

@@ -4,7 +4,7 @@ import { getSpecies } from '../data/dex';
 import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { type HudPanelId } from '../data/hudLayout';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
-import { getItem } from '../data/items';
+import { getItem, MEGA_STONE_IDS } from '../data/items';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import {
@@ -106,6 +106,7 @@ import {
   OPPOSITE_EDGE,
   bossTrainerId,
   isFinalMap,
+  miniBossTrainerId,
   planMap,
   roomAcross,
   roomView,
@@ -130,6 +131,7 @@ import {
   sellableStacks,
   type ShopSlot,
 } from '../ui/shop';
+import { rewardChoices } from '../ui/rewards';
 import { buildMapView, type MapRoomMarker, type MapViewRoom } from '../ui/mapView';
 import {
   BOX_COLS,
@@ -335,6 +337,19 @@ type ShopMode = (typeof SHOP_MODES)[number];
 
 /** The shop's two pockets; the label printed on each tab. */
 const SHOP_MODE_LABELS: Readonly<Record<ShopMode, string>> = { buy: 'BUY', sell: 'SELL' };
+
+/** The mini-boss reward choice (Phase 9): a window of items, one is taken. */
+const REWARD_W = 560;
+const REWARD_H = 420;
+const REWARD_PAD = 24;
+const REWARD_ROW_H = 84;
+/** How many items a beaten mini-boss offers (`docs/maps-spec.md` §7). */
+const MINI_BOSS_REWARD_CHOICES = 3;
+
+/** The stable ground-item id of a floor's mega-stone room (`docs/maps-spec.md` §7). */
+function megaStoneItemId(mapIndex: number): string {
+  return `mega-${mapIndex}`;
+}
 
 /**
  * Render depth of a wall cell's walkable tip: above the actors so the character
@@ -706,6 +721,17 @@ export class RouteScene extends Phaser.Scene {
   private shopMoneyText!: Phaser.GameObjects.BitmapText;
   private shopMessageText!: Phaser.GameObjects.BitmapText;
   private shopEmpty!: Phaser.GameObjects.BitmapText;
+  /** The mini-boss reward window: its root, options, cursor and callback. */
+  private miniBossRewardRoot: Phaser.GameObjects.Container | null = null;
+  private miniBossRewardItems: readonly string[] = [];
+  private miniBossRewardIndex = 0;
+  private miniBossRewardOnDone: (() => void) | null = null;
+  private miniBossRewardRows: {
+    highlight: Phaser.GameObjects.Rectangle;
+    icon: Phaser.GameObjects.Image;
+    name: Phaser.GameObjects.BitmapText;
+    desc: Phaser.GameObjects.BitmapText;
+  }[] = [];
 
   constructor() {
     super('Route');
@@ -749,9 +775,25 @@ export class RouteScene extends Phaser.Scene {
       const boss = this.bossTrainer(view);
       if (boss) this.route = { ...this.route, trainers: [...this.route.trainers, boss] };
     }
+    // A special room injects its own content, off stable ids, so a revisit rebuilds
+    // it identically and a beaten mini-boss stays beaten (`docs/maps-spec.md` §7).
+    if (
+      view.special === 'mini-boss' &&
+      !isTrainerDefeated(this.run, miniBossTrainerId(view.mapIndex))
+    ) {
+      const miniBoss = this.miniBossTrainer(view);
+      if (miniBoss) this.route = { ...this.route, trainers: [...this.route.trainers, miniBoss] };
+    }
     // A shop room's counter: the interact key opens the Mart when the player faces
     // it. It is a fixture, so it sits at the room's farthest walkable tile.
     this.shopCounter = view.special === 'shop' ? this.farthestRoomTile() : null;
+    if (
+      view.special === 'mega-stone' &&
+      !isItemPicked(this.run, megaStoneItemId(view.mapIndex))
+    ) {
+      const stone = this.megaStoneItem(view);
+      if (stone) this.route = { ...this.route, items: [...this.route.items, stone] };
+    }
   }
 
   /** The portal is open once the map's boss has fallen, except on the final map (D31). */
@@ -774,6 +816,36 @@ export class RouteScene extends Phaser.Scene {
       sight: DEFAULT_TRAINER_SIGHT,
       archetypeId: 'ace',
     };
+  }
+
+  /**
+   * The mini-boss: a strong `ace` trainer at the special room's farthest tile,
+   * fielding a party one size larger than its band and allowed a Mega Stone. It
+   * stands only while unbeaten, like the boss.
+   */
+  private miniBossTrainer(view: RoomView): RouteTrainer | null {
+    const position = this.farthestRoomTile();
+    if (!position) return null;
+    return {
+      id: miniBossTrainerId(view.mapIndex),
+      position,
+      facing: this.facingFromTo(position, this.route.entry),
+      sight: DEFAULT_TRAINER_SIGHT,
+      archetypeId: 'ace',
+    };
+  }
+
+  /**
+   * The mega-stone room's single treasure: a random Mega Stone (one per floor, off
+   * a dedicated stream) on the room's farthest tile, taken with the interact key
+   * like any ground item (`docs/maps-spec.md` §7, D33).
+   */
+  private megaStoneItem(view: RoomView): RouteItem | null {
+    const position = this.farthestRoomTile();
+    if (!position) return null;
+    const rng = new Rng(hashSeed(`${this.run.seed}:mega:${view.mapIndex}`));
+    const itemId = MEGA_STONE_IDS[rng.int(0, MEGA_STONE_IDS.length - 1)];
+    return { id: megaStoneItemId(view.mapIndex), position, itemId, hidden: false };
   }
 
   /**
@@ -937,6 +1009,10 @@ export class RouteScene extends Phaser.Scene {
     this.shopStockMap = -1;
     this.shopRows = [];
     this.shopTabs = [];
+    this.miniBossRewardRoot = null;
+    this.miniBossRewardItems = [];
+    this.miniBossRewardOnDone = null;
+    this.miniBossRewardRows = [];
     this.facing = 'down';
     this.walkTween = null;
     this.resetHold = 0;
@@ -1039,6 +1115,11 @@ export class RouteScene extends Phaser.Scene {
     // The Mart panel owns the input while it is open.
     if (this.shopRoot) {
       this.handleShopAction(action);
+      return;
+    }
+    // The mini-boss reward owns the input while it is open.
+    if (this.miniBossRewardRoot) {
+      this.handleMiniBossRewardAction(action);
       return;
     }
     if (this.pauseMenuOpen) {
@@ -1989,7 +2070,7 @@ export class RouteScene extends Phaser.Scene {
   private handleHudPointerDown(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive()) return;
     // The Mart panel is modal: its own zones own the pointer while it is up.
-    if (this.shopRoot) return;
+    if (this.shopRoot || this.miniBossRewardRoot) return;
     // The collapse icon sits in the frame band, so it is tested before the drag.
     // A press on it waits: a release without movement toggles the panel, a move
     // past the slop drags the panel from the icon (see pointermove).
@@ -2088,7 +2169,7 @@ export class RouteScene extends Phaser.Scene {
 
   private handleHudPointerMove(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive()) return;
-    if (this.shopRoot) return;
+    if (this.shopRoot || this.miniBossRewardRoot) return;
     // A button released off-screen never fired `pointerup`; let go on the next move.
     if (!pointer.isDown) this.cancelHudDrags();
     // A press on a collapse icon becomes a panel drag once it passes the slop.
@@ -2206,7 +2287,7 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private handleHudPointerUp(pointer: Phaser.Input.Pointer): void {
-    if (this.shopRoot) {
+    if (this.shopRoot || this.miniBossRewardRoot) {
       this.cancelHudDrags();
       return;
     }
@@ -2948,6 +3029,7 @@ export class RouteScene extends Phaser.Scene {
       !this.releaseRoot &&
       !this.captureRoot &&
       !this.shopRoot &&
+      !this.miniBossRewardRoot &&
       !this.pauseMenuOpen &&
       this.resetKey?.isDown === true;
     if (!allowed) {
@@ -3540,16 +3622,22 @@ export class RouteScene extends Phaser.Scene {
     if (!archetype) return;
     const band = this.room ? bandForMap(this.room.mapIndex) : runBand(this.run.seed, this.route.routeIndex);
     const isBoss = this.room !== null && trainer.id === bossTrainerId(this.room.mapIndex);
-    // The map boss fields a max-level party one size larger than its band.
+    const isMiniBoss = this.room !== null && trainer.id === miniBossTrainerId(this.room.mapIndex);
+    // The map boss fields a max-level party one size larger than its band; the
+    // mini-boss a band-level party one size larger, both allowed a Mega Stone.
     const rosterBand = isBoss
       ? { ...band, minLevel: band.maxLevel, trainerSize: band.trainerSize + 1 }
-      : band;
+      : isMiniBoss
+        ? { ...band, trainerSize: band.trainerSize + 1 }
+        : band;
     const key =
       isBoss && this.room
         ? `${this.run.seed}:boss:${this.room.mapIndex}`
-        : `${this.run.seed}:trainer:${this.route.routeIndex}:${trainer.id}`;
+        : isMiniBoss && this.room
+          ? `${this.run.seed}:miniboss:${this.room.mapIndex}`
+          : `${this.run.seed}:trainer:${this.route.routeIndex}:${trainer.id}`;
     const roster = trainerRoster(archetype, rosterBand, new Rng(hashSeed(key)), trainer.id, {
-      allowMega: isBoss || archetype.carriesMega === true,
+      allowMega: isBoss || isMiniBoss || archetype.carriesMega === true,
     });
     this.startBattle({
       kind: 'trainer',
@@ -3928,6 +4016,13 @@ export class RouteScene extends Phaser.Scene {
       pending.trigger.trainerId === bossId &&
       isTrainerDefeated(this.run, bossId);
     if (wonBoss) this.run = markBossDefeated(this.run);
+    // Beating the floor's mini-boss earns the item choice just below.
+    const miniBossId = this.room?.special === 'mini-boss' ? miniBossTrainerId(this.room.mapIndex) : null;
+    const wonMiniBoss =
+      miniBossId !== null &&
+      pending.trigger.kind === 'trainer' &&
+      pending.trigger.trainerId === miniBossId &&
+      isTrainerDefeated(this.run, miniBossId);
     this.persistRun();
     this.refreshHud();
 
@@ -3957,6 +4052,10 @@ export class RouteScene extends Phaser.Scene {
           return;
         }
         this.transitionTo(this.run);
+        return;
+      }
+      if (wonMiniBoss) {
+        this.openMiniBossReward(() => this.playLevelUp(levelUpBeats(before, this.run.party)));
         return;
       }
       this.playLevelUp(levelUpBeats(before, this.run.party));
@@ -4492,6 +4591,146 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
+   * The mini-boss reward (`docs/maps-spec.md` §7, D33): a beaten strong trainer
+   * offers a choice of items from the map's reward pool. `E` takes the highlighted
+   * one, `Q` leaves it; either way the stored callback (the level-up beat) runs.
+   */
+  private openMiniBossReward(onDone: () => void): void {
+    if (this.miniBossRewardRoot) {
+      onDone();
+      return;
+    }
+    const band = bandForMap(this.run.mapIndex);
+    const rng = new Rng(hashSeed(`${this.run.seed}:reward:${this.run.mapIndex}`));
+    this.miniBossRewardItems = rewardChoices(ROUTE_LOOT[band.id].pool, MINI_BOSS_REWARD_CHOICES, rng);
+    if (this.miniBossRewardItems.length === 0) {
+      onDone();
+      return;
+    }
+    this.miniBossRewardIndex = 0;
+    this.miniBossRewardOnDone = onDone;
+    this.buildMiniBossReward();
+    this.refreshMiniBossReward();
+  }
+
+  /** Tears down the reward window and runs its callback (the level-up beat). */
+  private closeMiniBossReward(): void {
+    const onDone = this.miniBossRewardOnDone;
+    this.miniBossRewardOnDone = null;
+    this.miniBossRewardRoot?.destroy(true);
+    this.miniBossRewardRoot = null;
+    this.miniBossRewardRows = [];
+    this.miniBossRewardItems = [];
+    onDone?.();
+  }
+
+  /** Builds the reward window: one row per offered item. */
+  private buildMiniBossReward(): void {
+    const { width, height } = this.scale;
+    const x = (width - REWARD_W) / 2;
+    const y = (height - REWARD_H) / 2;
+    const left = x + REWARD_PAD;
+    const right = x + REWARD_W - REWARD_PAD;
+    const children: Phaser.GameObjects.GameObject[] = [
+      this.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0),
+      addFrlgWindow(this, x, y, REWARD_W, REWARD_H),
+      addFrlgText(this, left, y + 20, 'MINI-BOSS REWARD', { size: 24, tint: FRLG_INK }),
+      addFrlgText(this, left, y + 54, 'Choose one.', { size: 16, tint: 0x6b6887 }),
+    ];
+    this.miniBossRewardRows = [];
+    this.miniBossRewardItems.forEach((_itemId, i) => {
+      const rowY = y + 88 + i * REWARD_ROW_H;
+      const highlight = this.add
+        .rectangle(left, rowY, right - left, REWARD_ROW_H - 8, 0xf2c14e, 0.4)
+        .setOrigin(0, 0)
+        .setVisible(false);
+      const icon = this.add.image(left + 26, rowY + 26, ITEM_ICON_TEXTURE_KEY, 0).setScale(1.1);
+      const name = addFrlgText(this, left + 56, rowY + 8, '', { size: 20, tint: FRLG_INK });
+      const desc = addFrlgText(this, left + 56, rowY + 38, '', {
+        size: 16,
+        tint: 0x6b6887,
+      }).setMaxWidth(right - left - 80);
+      const zone = this.add
+        .zone(left, rowY, right - left, REWARD_ROW_H - 8)
+        .setOrigin(0, 0)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerover', () => {
+        if (i === this.miniBossRewardIndex) return;
+        this.miniBossRewardIndex = i;
+        this.refreshMiniBossReward();
+      });
+      zone.on('pointerdown', () => {
+        this.miniBossRewardIndex = i;
+        this.refreshMiniBossReward();
+        this.chooseMiniBossReward();
+      });
+      this.miniBossRewardRows.push({ highlight, icon, name, desc });
+      children.push(highlight, icon, name, desc, zone);
+    });
+    children.push(
+      addFrlgText(
+        this,
+        left,
+        y + REWARD_H - 40,
+        `${keyLabel(this.settings.keybinds.confirm)}: take    ${keyLabel(this.settings.keybinds.cancel)}: leave`,
+        { size: 16, tint: 0x6b6887 },
+      ),
+    );
+    this.miniBossRewardRoot = this.add.container(0, 0, children).setDepth(520);
+    this.cameras.main.ignore(this.miniBossRewardRoot);
+  }
+
+  /** Paints the offered items and the cursor. */
+  private refreshMiniBossReward(): void {
+    if (!this.miniBossRewardRoot) return;
+    this.miniBossRewardRows.forEach((rowObject, i) => {
+      const itemId = this.miniBossRewardItems[i];
+      const item = itemId ? getItem(itemId) : undefined;
+      rowObject.highlight.setVisible(i === this.miniBossRewardIndex);
+      rowObject.icon.setFrame(itemId ? itemIconFrame(itemId) ?? 0 : 0);
+      rowObject.name.setText(item?.name ?? itemId ?? '');
+      rowObject.desc.setText(item?.shortDesc ?? '');
+    });
+  }
+
+  /** The reward window's keys: move the cursor, take on `E`, leave on `Q`. */
+  private handleMiniBossRewardAction(action: KeybindAction): void {
+    const total = this.miniBossRewardItems.length;
+    if (total === 0) return;
+    switch (action) {
+      case 'up':
+        this.miniBossRewardIndex = (this.miniBossRewardIndex - 1 + total) % total;
+        this.refreshMiniBossReward();
+        return;
+      case 'down':
+        this.miniBossRewardIndex = (this.miniBossRewardIndex + 1) % total;
+        this.refreshMiniBossReward();
+        return;
+      case 'confirm':
+      case 'interact':
+        this.chooseMiniBossReward();
+        return;
+      case 'cancel':
+        this.closeMiniBossReward();
+        return;
+      default:
+        return;
+    }
+  }
+
+  /** Takes the highlighted reward into the bag and closes (a leave grants nothing). */
+  private chooseMiniBossReward(): void {
+    if (!this.miniBossRewardRoot) return;
+    const itemId = this.miniBossRewardItems[this.miniBossRewardIndex];
+    if (itemId) {
+      this.run = addItem(this.run, itemId);
+      this.persistRun();
+      this.refreshHud();
+    }
+    this.closeMiniBossReward();
+  }
+
+  /**
    * Permadeath feedback (Phase 5): one beat per fallen Pokémon — a scrim, its
    * portrait and "<name> was released." — then `onDone`. With nothing to show it
    * calls back straight away, so the caller keeps one code path.
@@ -4889,6 +5128,7 @@ export class RouteScene extends Phaser.Scene {
       this.releaseRoot ||
       this.captureRoot ||
       this.shopRoot ||
+      this.miniBossRewardRoot ||
       this.pauseMenuOpen ||
       this.chase
     ) {
@@ -4923,7 +5163,7 @@ export class RouteScene extends Phaser.Scene {
   /** Turns every "spinning" trainer to the next facing on the shared timer. */
   private updateTrainerSpins(time: number): void {
     if (this.generatorStepIndex !== null) return;
-    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.captureRoot || this.shopRoot || this.pauseMenuOpen || this.chase)
+    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.captureRoot || this.shopRoot || this.miniBossRewardRoot || this.pauseMenuOpen || this.chase)
       return;
     for (const entry of this.trainerSprites) {
       const turns = entry.trainer.turns;
