@@ -30,6 +30,7 @@ through a held stone (`src/engine/battle/mega.ts`).
 | `src/data/encounters.ts` | per-biome species pools and weights by band | 2 |
 | `src/data/trainers.ts` | trainer archetypes: name, class, sprite, per-band species pools, money base/jitter (D33) and `carriesMega` (bosses/`ace`) | 2/9 |
 | `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), plus **valuables** (sellable) and **Mega Stones**, each with a Poké Dollar price | 3/6 |
+| `src/data/shop.ts` | the shop's per-band core (Balls/Potions) and the weighted pool its one or two rotating items are drawn from (D33) | 9 |
 | `src/data/spriteSize.ts` | the battle sprite size curve: canonical height (m) → drawn height (px), the power and clamps | 5 |
 | `src/data/run.ts` | chain length, mini-boss cadence, boss cadence, level caps, starter pool, starting bag | 2 |
 | `src/data/portraits.ts` | portrait atlas URL and frame mapping (dex number − 1) | 6 |

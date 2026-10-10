@@ -121,6 +121,15 @@ import {
   serializeFrameMap,
 } from '../engine/frameMap';
 import { BAG_CATEGORIES, BAG_CATEGORY_LABELS, bagForCategory, cycleBagCategory, type BagCategory } from '../ui/bag';
+import {
+  buildShop,
+  buyItem,
+  buyRows,
+  sellItem,
+  sellRows,
+  sellableStacks,
+  type ShopSlot,
+} from '../ui/shop';
 import { buildMapView, type MapRoomMarker, type MapViewRoom } from '../ui/mapView';
 import {
   BOX_COLS,
@@ -170,6 +179,7 @@ import {
   GRASS_TEXTURE_KEY,
   PANEL_ICON_KEYS,
   PANEL_ICON_SIZE,
+  SHOP_COUNTER_TEXTURE_KEY,
   SPARKLE_TEXTURE_KEY,
   TRAINER_TEXTURE_KEY,
 } from './BootScene';
@@ -309,6 +319,22 @@ const CAPTURE_PAD = 24;
 const CAPTURE_COL_W = 360;
 const CAPTURE_ROW_H = 36;
 const CAPTURE_HPBAR_SCALE = 0.6;
+
+/** The shop window (Phase 9): Mart-style BUY / SELL tabs over a list of rows. */
+const SHOP_W = 640;
+const SHOP_H = 540;
+const SHOP_PAD = 24;
+const SHOP_ROW_H = 44;
+const SHOP_ROWS = 7;
+const SHOP_TAB_W = 108;
+const SHOP_TAB_H = 30;
+const SHOP_TAB_GAP = 6;
+const SHOP_MODES = ['buy', 'sell'] as const;
+
+type ShopMode = (typeof SHOP_MODES)[number];
+
+/** The shop's two pockets; the label printed on each tab. */
+const SHOP_MODE_LABELS: Readonly<Record<ShopMode, string>> = { buy: 'BUY', sell: 'SELL' };
 
 /**
  * Render depth of a wall cell's walkable tip: above the actors so the character
@@ -659,6 +685,27 @@ export class RouteScene extends Phaser.Scene {
   private captureIndex = 0;
   private captureHighlights: Phaser.GameObjects.Rectangle[] = [];
   private captureCompare: Phaser.GameObjects.BitmapText | null = null;
+  /** The shop room's counter tile, or null off a shop room. */
+  private shopCounter: Tile | null = null;
+  /** The Mart panel: its root, stock, tab and the row objects it repaints. */
+  private shopRoot: Phaser.GameObjects.Container | null = null;
+  private shopMode: ShopMode = 'buy';
+  private shopIndex = 0;
+  private shopScroll = 0;
+  private shopStock: readonly ShopSlot[] = [];
+  private shopStockMap = -1;
+  private shopMessage = '';
+  private shopRows: {
+    highlight: Phaser.GameObjects.Rectangle;
+    icon: Phaser.GameObjects.Image;
+    name: Phaser.GameObjects.BitmapText;
+    price: Phaser.GameObjects.BitmapText;
+    count: Phaser.GameObjects.BitmapText;
+  }[] = [];
+  private shopTabs: { mode: ShopMode; bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.BitmapText }[] = [];
+  private shopMoneyText!: Phaser.GameObjects.BitmapText;
+  private shopMessageText!: Phaser.GameObjects.BitmapText;
+  private shopEmpty!: Phaser.GameObjects.BitmapText;
 
   constructor() {
     super('Route');
@@ -702,6 +749,9 @@ export class RouteScene extends Phaser.Scene {
       const boss = this.bossTrainer(view);
       if (boss) this.route = { ...this.route, trainers: [...this.route.trainers, boss] };
     }
+    // A shop room's counter: the interact key opens the Mart when the player faces
+    // it. It is a fixture, so it sits at the room's farthest walkable tile.
+    this.shopCounter = view.special === 'shop' ? this.farthestRoomTile() : null;
   }
 
   /** The portal is open once the map's boss has fallen, except on the final map (D31). */
@@ -881,6 +931,12 @@ export class RouteScene extends Phaser.Scene {
     this.captureIndex = 0;
     this.captureHighlights = [];
     this.captureCompare = null;
+    this.shopRoot = null;
+    this.shopCounter = null;
+    this.shopStock = [];
+    this.shopStockMap = -1;
+    this.shopRows = [];
+    this.shopTabs = [];
     this.facing = 'down';
     this.walkTween = null;
     this.resetHold = 0;
@@ -892,6 +948,7 @@ export class RouteScene extends Phaser.Scene {
     this.drawEntities();
     this.drawItems();
     this.drawTrainers();
+    this.drawShopCounter();
     this.player = { ...this.route.entry };
     this.playerSprite = this.add
       .sprite(0, 0, PLAYER_SPRITE_TEXTURE_KEY, playerSpriteFrame('down'))
@@ -977,6 +1034,11 @@ export class RouteScene extends Phaser.Scene {
     // The full-party capture screen owns the input while it is up.
     if (this.captureRoot) {
       this.handleCaptureAction(action);
+      return;
+    }
+    // The Mart panel owns the input while it is open.
+    if (this.shopRoot) {
+      this.handleShopAction(action);
       return;
     }
     if (this.pauseMenuOpen) {
@@ -1926,6 +1988,8 @@ export class RouteScene extends Phaser.Scene {
    */
   private handleHudPointerDown(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive()) return;
+    // The Mart panel is modal: its own zones own the pointer while it is up.
+    if (this.shopRoot) return;
     // The collapse icon sits in the frame band, so it is tested before the drag.
     // A press on it waits: a release without movement toggles the panel, a move
     // past the slop drags the panel from the icon (see pointermove).
@@ -2024,6 +2088,7 @@ export class RouteScene extends Phaser.Scene {
 
   private handleHudPointerMove(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive()) return;
+    if (this.shopRoot) return;
     // A button released off-screen never fired `pointerup`; let go on the next move.
     if (!pointer.isDown) this.cancelHudDrags();
     // A press on a collapse icon becomes a panel drag once it passes the slop.
@@ -2141,6 +2206,10 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private handleHudPointerUp(pointer: Phaser.Input.Pointer): void {
+    if (this.shopRoot) {
+      this.cancelHudDrags();
+      return;
+    }
     // A press on an icon released without moving is the collapse/expand click.
     if (this.hudIconPress) {
       const press = this.hudIconPress;
@@ -2878,6 +2947,7 @@ export class RouteScene extends Phaser.Scene {
       !this.pendingBattle &&
       !this.releaseRoot &&
       !this.captureRoot &&
+      !this.shopRoot &&
       !this.pauseMenuOpen &&
       this.resetKey?.isDown === true;
     if (!allowed) {
@@ -3141,6 +3211,20 @@ export class RouteScene extends Phaser.Scene {
     this.hudCamera?.ignore(created);
   }
 
+  /**
+   * Draws the shop room's counter at its tile. Only a live shop room has one, and
+   * the dev generator phases draw none.
+   */
+  private drawShopCounter(): void {
+    if (this.generatorStepIndex !== null || !this.shopCounter) return;
+    const sprite = this.add
+      .image(this.centerX(this.shopCounter.x), this.centerY(this.shopCounter.y), SHOP_COUNTER_TEXTURE_KEY)
+      .setScale(TILE_SIZE / 22)
+      .setDepth(5);
+    this.entitySprites.push(sprite);
+    this.hudCamera?.ignore([sprite]);
+  }
+
   /** Poses a resting trainer: the facing's idle frame, flipped for the right side. */
   private faceTrainerSprite(entry: TrainerSpriteEntry, facing: Facing): void {
     const pose = trainerFacingPose(facing);
@@ -3181,6 +3265,7 @@ export class RouteScene extends Phaser.Scene {
     this.drawEntities();
     this.drawItems();
     this.drawTrainers();
+    this.drawShopCounter();
   }
 
   /** Snaps the sprite to a tile, without a step. */
@@ -3320,12 +3405,14 @@ export class RouteScene extends Phaser.Scene {
     this.run = run;
     this.persistRun();
     this.stopWalking();
+    this.closeShop();
     this.clearRouteSprites();
     this.buildRoom();
     this.drawTiles();
     this.drawEntities();
     this.drawItems();
     this.drawTrainers();
+    this.drawShopCounter();
     this.player = { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     const bounds = mapPixelSize(this.map, TILE_SIZE);
@@ -3352,6 +3439,11 @@ export class RouteScene extends Phaser.Scene {
   private liveTrainerAt(tile: Tile): RouteTrainer | undefined {
     const trainer = trainerAt(this.route, tile);
     return trainer && !isTrainerDefeated(this.run, trainer.id) ? trainer : undefined;
+  }
+
+  /** True when `tile` is the shop room's counter (a blocking fixture). */
+  private shopCounterAt(tile: Tile): boolean {
+    return this.shopCounter !== null && tile.x === this.shopCounter.x && tile.y === this.shopCounter.y;
   }
 
   /**
@@ -3477,6 +3569,11 @@ export class RouteScene extends Phaser.Scene {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     const step = MOVE_STEP[this.facingDir];
     const ahead = { x: this.player.x + step.x, y: this.player.y + step.y };
+    // Facing the shop counter opens the Mart (only the shop room has one).
+    if (this.shopCounterAt(ahead)) {
+      this.openShop();
+      return;
+    }
     // Talking to a trainer it is facing also opens the battle, like the originals.
     const trainer = this.liveTrainerAt(ahead);
     if (trainer) {
@@ -4136,6 +4233,265 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
+   * Opens the Mart (`docs/maps-spec.md` §7, D33): only in a shop room, at the
+   * counter. The stock is rolled once per map on a dedicated stream, so reopening
+   * the Mart shows the same shelves. The panel owns the input until `Q`.
+   */
+  private openShop(): void {
+    if (this.shopRoot || this.gameOver || this.pendingBattle || this.releaseRoot || this.pauseMenuOpen) return;
+    if (this.room?.special !== 'shop' || !this.shopCounter) return;
+    if (this.shopStockMap !== this.run.mapIndex) {
+      const band = bandForMap(this.run.mapIndex);
+      this.shopStock = buildShop(band.id, new Rng(hashSeed(`${this.run.seed}:shop:${this.run.mapIndex}`)));
+      this.shopStockMap = this.run.mapIndex;
+    }
+    this.shopMode = 'buy';
+    this.shopIndex = 0;
+    this.shopScroll = 0;
+    this.shopMessage = 'What can I do for you?';
+    this.buildShopPanel();
+    this.refreshShop();
+  }
+
+  /** Tears down the Mart panel (also called when the room changes). */
+  private closeShop(): void {
+    if (!this.shopRoot) return;
+    this.shopRoot.destroy(true);
+    this.shopRoot = null;
+    this.shopRows = [];
+    this.shopTabs = [];
+  }
+
+  /** Builds the Mart's static frame and its row/tab objects once per open. */
+  private buildShopPanel(): void {
+    const { width, height } = this.scale;
+    const x = (width - SHOP_W) / 2;
+    const y = (height - SHOP_H) / 2;
+    const left = x + SHOP_PAD;
+    const right = x + SHOP_W - SHOP_PAD;
+    const children: Phaser.GameObjects.GameObject[] = [
+      this.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0),
+      addFrlgWindow(this, x, y, SHOP_W, SHOP_H),
+      addFrlgText(this, left, y + 20, 'MART', { size: 24, tint: FRLG_INK }),
+    ];
+    this.shopMoneyText = addFrlgText(this, right, y + 24, '', { size: 16, tint: 0x3a3956, origin: [1, 0] });
+    children.push(this.shopMoneyText);
+
+    // BUY / SELL tabs, FRLG style: the active one reads dark-on-light.
+    this.shopTabs = [];
+    SHOP_MODES.forEach((mode, i) => {
+      const tabX = left + i * (SHOP_TAB_W + SHOP_TAB_GAP);
+      const tabY = y + 58;
+      const bg = this.add.rectangle(tabX, tabY, SHOP_TAB_W, SHOP_TAB_H, 0xcfcce2).setOrigin(0, 0);
+      const label = addFrlgText(this, tabX + SHOP_TAB_W / 2, tabY + 6, SHOP_MODE_LABELS[mode], {
+        size: 16,
+        tint: FRLG_INK,
+        origin: [0.5, 0],
+      });
+      const zone = this.add
+        .zone(tabX, tabY, SHOP_TAB_W, SHOP_TAB_H)
+        .setOrigin(0, 0)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => this.switchShopMode(mode));
+      this.shopTabs.push({ mode, bg, label });
+      children.push(bg, label, zone);
+    });
+
+    // The list window: a fixed set of rows the pointer and the cursor drive.
+    const listX = left;
+    const listY = y + 100;
+    const listW = SHOP_W - SHOP_PAD * 2;
+    const listH = SHOP_ROWS * SHOP_ROW_H + 12;
+    children.push(addFrlgWindow(this, listX, listY, listW, listH));
+
+    this.shopRows = [];
+    for (let i = 0; i < SHOP_ROWS; i++) {
+      const rowY = listY + 6 + i * SHOP_ROW_H;
+      const highlight = this.add
+        .rectangle(listX + 6, rowY, listW - 12, SHOP_ROW_H - 4, 0xf2c14e, 0.42)
+        .setOrigin(0, 0)
+        .setVisible(false);
+      const icon = this.add
+        .image(listX + 26, rowY + SHOP_ROW_H / 2 - 2, ITEM_ICON_TEXTURE_KEY, 0)
+        .setScale(0.9)
+        .setVisible(false);
+      const name = addFrlgText(this, listX + 52, rowY + 10, '', { size: 16, tint: FRLG_INK });
+      const price = addFrlgText(this, listX + listW - 92, rowY + 10, '', {
+        size: 16,
+        tint: 0x3a3956,
+        origin: [1, 0],
+      });
+      const count = addFrlgText(this, listX + listW - 18, rowY + 10, '', {
+        size: 16,
+        tint: 0x6b6887,
+        origin: [1, 0],
+      });
+      const zone = this.add
+        .zone(listX + 6, rowY, listW - 12, SHOP_ROW_H)
+        .setOrigin(0, 0)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerover', () => {
+        const index = this.shopScroll + i;
+        if (index === this.shopIndex || index >= this.shopTotal()) return;
+        this.shopIndex = index;
+        this.refreshShop();
+      });
+      zone.on('pointerdown', () => {
+        this.shopIndex = this.shopScroll + i;
+        this.refreshShop();
+        this.activateShop();
+      });
+      this.shopRows.push({ highlight, icon, name, price, count });
+      children.push(highlight, icon, name, price, count, zone);
+    }
+    this.shopEmpty = addFrlgText(this, listX + listW / 2, listY + 20, '', {
+      size: 16,
+      tint: 0x6b6887,
+      origin: [0.5, 0],
+    });
+    children.push(this.shopEmpty);
+
+    this.shopMessageText = addFrlgText(this, left, y + SHOP_H - 74, '', { size: 16, tint: FRLG_INK });
+    children.push(
+      this.shopMessageText,
+      addFrlgText(
+        this,
+        right,
+        y + SHOP_H - 42,
+        `${keyLabel(this.settings.keybinds.confirm)}: buy / sell    ${keyLabel(this.settings.keybinds.cancel)}: leave`,
+        { size: 16, tint: 0x6b6887, origin: [1, 0] },
+      ),
+    );
+
+    this.shopRoot = this.add.container(0, 0, children).setDepth(500);
+    this.cameras.main.ignore(this.shopRoot);
+  }
+
+  /** Repaints the Mart for the current tab, cursor and the run's money and bag. */
+  private refreshShop(): void {
+    if (!this.shopRoot) return;
+    const rows = this.shopMode === 'buy' ? buyRows(this.run, this.shopStock) : sellRows(this.run);
+    const total = rows.length;
+    this.shopIndex = total === 0 ? 0 : Math.max(0, Math.min(this.shopIndex, total - 1));
+    this.shopScroll = Math.max(0, Math.min(this.shopScroll, Math.max(0, total - SHOP_ROWS)));
+    if (this.shopIndex < this.shopScroll) this.shopScroll = this.shopIndex;
+    else if (this.shopIndex >= this.shopScroll + SHOP_ROWS) this.shopScroll = this.shopIndex - SHOP_ROWS + 1;
+
+    this.shopMoneyText.setText(`MONEY  ¥${this.run.money}`);
+    this.shopMessageText.setText(this.shopMessage);
+    this.shopTabs.forEach((tab) => {
+      const active = tab.mode === this.shopMode;
+      tab.bg.setFillStyle(active ? 0x2f2c4d : 0xcfcce2);
+      tab.label.setTint(active ? 0xf8fafc : FRLG_INK);
+    });
+    this.shopEmpty.setText(
+      total === 0 ? (this.shopMode === 'buy' ? 'Nothing in stock.' : 'Nothing to sell.') : '',
+    );
+
+    this.shopRows.forEach((rowObject, i) => {
+      const index = this.shopScroll + i;
+      const row = rows[index];
+      const visible = row !== undefined;
+      rowObject.highlight.setVisible(visible && index === this.shopIndex);
+      rowObject.icon.setVisible(visible);
+      rowObject.name.setVisible(visible);
+      rowObject.price.setVisible(visible);
+      rowObject.count.setVisible(visible);
+      if (!row) {
+        rowObject.name.setText('');
+        rowObject.price.setText('');
+        rowObject.count.setText('');
+        return;
+      }
+      rowObject.icon.setFrame(itemIconFrame(row.itemId) ?? 0);
+      rowObject.name.setText(row.name);
+      rowObject.price.setText(`¥${row.price}`);
+      rowObject.price.setTint(this.shopMode === 'buy' && !row.affordable ? 0xb0304a : 0x3a3956);
+      rowObject.count.setText(row.owned > 0 ? `x${row.owned}` : '');
+    });
+  }
+
+  /** The Mart's keys: move, switch tab, trade on `E`, leave on `Q`. */
+  private handleShopAction(action: KeybindAction): void {
+    switch (action) {
+      case 'up':
+        this.moveShop(-1);
+        return;
+      case 'down':
+        this.moveShop(1);
+        return;
+      case 'left':
+        this.cycleShopMode(-1);
+        return;
+      case 'right':
+        this.cycleShopMode(1);
+        return;
+      case 'confirm':
+      case 'interact':
+        this.activateShop();
+        return;
+      case 'cancel':
+        this.closeShop();
+        return;
+      default:
+        return;
+    }
+  }
+
+  private switchShopMode(mode: ShopMode): void {
+    if (this.shopMode === mode) return;
+    this.shopMode = mode;
+    this.shopIndex = 0;
+    this.shopScroll = 0;
+    this.shopMessage = mode === 'buy' ? 'What can I do for you?' : 'What would you like to sell?';
+    this.refreshShop();
+  }
+
+  private cycleShopMode(delta: number): void {
+    const index = SHOP_MODES.indexOf(this.shopMode);
+    this.switchShopMode(SHOP_MODES[(index + delta + SHOP_MODES.length) % SHOP_MODES.length]);
+  }
+
+  private moveShop(delta: number): void {
+    const total = this.shopTotal();
+    if (total === 0) return;
+    this.shopIndex = (this.shopIndex + delta + total) % total;
+    this.refreshShop();
+  }
+
+  /** How many rows the current tab holds: the stock, or the sellable stacks. */
+  private shopTotal(): number {
+    return this.shopMode === 'buy' ? this.shopStock.length : sellableStacks(this.run).length;
+  }
+
+  /** Buys or sells the highlighted row, then repaints the Mart and the bag HUD. */
+  private activateShop(): void {
+    if (this.shopMode === 'buy') {
+      const slot = this.shopStock[this.shopIndex];
+      if (!slot) return;
+      const trade = buyItem(this.run, slot);
+      if (!trade.ok) {
+        this.shopMessage = "You don't have enough money.";
+        this.refreshShop();
+        return;
+      }
+      this.run = trade.run;
+      const name = getItem(slot.itemId)?.name ?? slot.itemId;
+      this.shopMessage = `Bought ${name} for ¥${trade.amount}.`;
+    } else {
+      const row = sellRows(this.run)[this.shopIndex];
+      if (!row) return;
+      const trade = sellItem(this.run, row.itemId);
+      if (!trade.ok) return;
+      this.run = trade.run;
+      this.shopMessage = `Sold ${row.name} for ¥${trade.amount}.`;
+    }
+    this.persistRun();
+    this.refreshHud();
+    this.refreshShop();
+  }
+
+  /**
    * Permadeath feedback (Phase 5): one beat per fallen Pokémon — a scrim, its
    * portrait and "<name> was released." — then `onDone`. With nothing to show it
    * calls back straight away, so the caller keeps one code path.
@@ -4450,6 +4806,7 @@ export class RouteScene extends Phaser.Scene {
     // The dev generator builds a rolled shape, not a plan room: no map doors.
     this.room = null;
     this.plan = null;
+    this.shopCounter = null;
     this.stopWalking();
     this.clearRouteSprites();
     this.buildRoute(params, attempt);
@@ -4457,6 +4814,7 @@ export class RouteScene extends Phaser.Scene {
     this.drawEntities();
     this.drawItems();
     this.drawTrainers();
+    this.drawShopCounter();
     this.player = { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     const cameraBounds = mapPixelSize(this.map, TILE_SIZE);
@@ -4491,6 +4849,7 @@ export class RouteScene extends Phaser.Scene {
     this.clearRouteSprites();
     this.room = null;
     this.plan = null;
+    this.shopCounter = null;
     const route = routeFromFrameMapExport(exported);
     this.generatorSteps = [];
     this.applyRoute(route);
@@ -4508,6 +4867,7 @@ export class RouteScene extends Phaser.Scene {
     this.drawEntities();
     this.drawItems();
     this.drawTrainers();
+    this.drawShopCounter();
     this.player = { ...route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     const cameraBounds = mapPixelSize(this.map, TILE_SIZE);
@@ -4528,6 +4888,7 @@ export class RouteScene extends Phaser.Scene {
       this.pendingBattle ||
       this.releaseRoot ||
       this.captureRoot ||
+      this.shopRoot ||
       this.pauseMenuOpen ||
       this.chase
     ) {
@@ -4552,7 +4913,7 @@ export class RouteScene extends Phaser.Scene {
     // A visible ground item or a live trainer blocks its tile, like an object in
     // the originals: the item is taken with the interact key and the trainer is
     // talked to. A hidden item can be walked over.
-    if (!result || this.itemBlocks(result.to) || this.liveTrainerAt(result.to)) {
+    if (!result || this.itemBlocks(result.to) || this.liveTrainerAt(result.to) || this.shopCounterAt(result.to)) {
       this.faceIdle(direction);
       return;
     }
@@ -4562,7 +4923,7 @@ export class RouteScene extends Phaser.Scene {
   /** Turns every "spinning" trainer to the next facing on the shared timer. */
   private updateTrainerSpins(time: number): void {
     if (this.generatorStepIndex !== null) return;
-    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.captureRoot || this.pauseMenuOpen || this.chase)
+    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.captureRoot || this.shopRoot || this.pauseMenuOpen || this.chase)
       return;
     for (const entry of this.trainerSprites) {
       const turns = entry.trainer.turns;

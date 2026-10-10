@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The shop room and its Mart panel** (Phase 9 step 12). A shop floor's
+      counter (`E`) opens a Pokémon Mart-style HUD window that only exists in that
+      room: a **BUY** tab (the band's core of Balls/Potions plus one or two
+      rotating items, at catalogue prices) and a **SELL** tab (any item at
+      `sellPrice`), showing the run's money, each row's icon and owned count, and
+      a feedback line. The stock is a pure `(band, rng)` roll
+      (`buildShop` in `src/ui/shop.ts` over `src/data/shop.ts`), so a floor always
+      opens the same shelves; the trades, rows and sellability are pure and
+      headless-tested. `RouteScene` places the counter on the shop room's farthest
+      tile, blocks it and opens the panel with `E`. `docs/maps-spec.md` §7,
+      `docs/design-spec.md` §7, `D33`.
 - [x] **The floor's special rooms are hung in the plan** (Phase 9 step 11).
       `MapPlan` gains a `specials` list and every `MapRoom` a `special` kind: a
       guaranteed **shop** leaf near the entry, a **mini-boss** leaf at 50% and a

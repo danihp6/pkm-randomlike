@@ -90,6 +90,8 @@ export const TRAINER_TEXTURE_KEY = 'route:trainer';
 export const ARROW_TEXTURE_KEY = 'route:arrow';
 /** The faint star a hidden ground item shows instead of a Poke Ball. */
 export const SPARKLE_TEXTURE_KEY = 'route:sparkle';
+/** The shop counter the player interacts with in a shop room (Phase 9). */
+export const SHOP_COUNTER_TEXTURE_KEY = 'route:shop-counter';
 export const BATTLE_MON_TEXTURE_KEY = 'battle:mon';
 export const BATTLE_PLATFORM_TEXTURE_KEY = 'battle:platform';
 
@@ -284,6 +286,18 @@ export class BootScene extends Phaser.Scene {
     sparkle.fillCircle(6, 6, 1.6);
     sparkle.generateTexture(SPARKLE_TEXTURE_KEY, 12, 12);
     sparkle.destroy();
+
+    // The shop counter: a tintable stand-in for the Mart counter until the FRLG
+    // prop art lands (Phase 8). A pale top over a darker body reads as a fixture.
+    const counter = this.make.graphics({ x: 0, y: 0 });
+    counter.fillStyle(0x2f6d78, 1);
+    counter.fillRect(1, 6, 20, 12);
+    counter.fillStyle(0x63c2cf, 1);
+    counter.fillRect(0, 2, 22, 6);
+    counter.fillStyle(0x1f4a52, 1);
+    counter.fillRect(1, 4, 20, 2);
+    counter.generateTexture(SHOP_COUNTER_TEXTURE_KEY, 22, 18);
+    counter.destroy();
 
     // Placeholder battle stand-ins (O1): a tintable body and a shadow platform.
     const mon = this.make.graphics({ x: 0, y: 0 });

@@ -12,8 +12,9 @@ it in `docs/tech-decisions.md` (D28–D33).
 > floor tracking, the boss/portal, the route HUD **minimap** (`src/ui/mapView.ts`),
 > the **Poké Dollar economy** (trainer drops, the valuables and the bag's money
 > readout) and the **special rooms in the plan** (the guaranteed shop, the
-> mini-boss and the mega-stone leaves) have shipped; the shop panel and the
-> special rooms' own content are the open steps in `TODO.md` Phase 9.
+> mini-boss and the mega-stone leaves) have shipped, and the **shop room** opens a
+> Mart panel at its counter; the mini-boss and mega-stone rooms' own content are
+> the open steps in `TODO.md` Phase 9.
 
 ## 1. What a map is
 
