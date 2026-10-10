@@ -126,15 +126,21 @@ Full rules in `docs/battle-spec.md`. In short:
 - The command menu takes the **mouse** as well as the keyboard: hovering a row
   moves the ▶ cursor and a click picks it, and a click advances the battle text.
   **FIGHT / BAG / SWITCH / RUN** is a 2x2 **grid**, and so is the **moves** menu
-  (all four moves show at once, with no scrolling): each move cell is tinted by
-  the move's type and shows its name, the official category **badge** (physical /
-  special / status) and its PP. A popup above the menu lists the move's type and
-  **description** for the move under the cursor and lifts the Pokémon's data panel
-  clear of it. **SWITCH** shows the party as a grid of **avatar** cells (face,
-  name, level and an **HP bar**); the cell under the cursor opens a wide **detail
-  window** above the grid with no tabs — the five battle stats, HP, nature,
-  ability and held item in a left column, and the member's four moves in a 2x2
-  grid on the right. Every submenu puts the ◀ back control centred on its left edge.
+  (all four moves show at once, with no scrolling), which always reserves its full
+  2x2 so a shorter list keeps one cell size: each move cell is tinted by the
+  move's type and shows its name, the FRLG **type badge**, the official category
+  **badge** (physical / special / status), its PP, its **effective power** (base
+  power folded with STAB and the attacker's ability / item boosts) and its **hit
+  chance** (the move's accuracy under the net accuracy / evasion stage and any
+  ability). A power or hit chance that has risen reads **green**, one that has
+  dropped reads **red**, and the hit chance carries an ↑ / ↓. A **ⓘ** button in
+  each cell floats the move's type, status and **description** over the field on
+  hover or click; the popup never moves the panels around it. **SWITCH** shows the
+  party as a grid of **avatar** cells (face, name, level and an **HP bar**); the
+  cell under the cursor opens a wide **detail window** above the grid with no tabs
+  — the five battle stats, HP, nature, ability and held item in a left column, and
+  the member's four moves in a 2x2 grid on the right. Every submenu puts the ◀
+  back control centred on its left edge.
 - The bag opens as pockets like the route HUD — **CONSUM** everywhere and
   **BALL** while a wild can still be caught; trainer battles offer only
   consumables.

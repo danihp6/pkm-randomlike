@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle moves menu reads the numbers and floats its info.** The moves
+      grid always reserves its full **2x2**, so one or two moves keep the same cell
+      size as a full set, and each cell shows the move's **effective power** (base
+      power folded with **STAB** and the attacker's **ability / item** boosts) and
+      its **hit chance** (the move's accuracy under the net accuracy / evasion
+      stage and any ability), both tinted **green** when raised and **red** when
+      lowered, with an ↑ / ↓ on the accuracy. The selection **arrow inside the
+      cell** is gone. The move's type and description moved out of an always-on
+      popup into a floating window opened by a **ⓘ button** on hover or click; it
+      no longer shifts the Pokémon's data panel and now carries the FRLG **type
+      badge** and, for a status move, its **status badge**. The status badges are
+      packed from the same `type-status-icons.png` source by
+      `scripts/frlg/build-status-icons.mjs` (`src/assets/frlg/status-icons.png`,
+      `src/data/statusIcons.ts`) and replace the text abbreviation in the battle HP
+      panels. New pure `movePreview` in `src/engine/battle/preview.ts`.
 - [x] **The Pokevial holds three charges, earned by fighting.** It is no longer a
       single-charge, text-labelled button that refilled at each floor's heal stop:
       the party header draws a **single bar** whose fill climbs through three

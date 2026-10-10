@@ -3,10 +3,10 @@
 // Source: sprite-sources/frlg-ui/type-status-icons.png (gitignored, local-only).
 // The sheet is a 4-column grid of 32x16 cells; each badge is 32x14, inset 2px
 // from the cell top. The 18 types plus the "???" (unknown) badge occupy the first
-// five rows; the status badges below them are not packed. The FRLG sheet predates
-// Fairy, so there is no Fairy badge — the UI falls back to a text chip for it.
-// Only the processed atlas and its manifest are committed; see
-// docs/art-direction.md.
+// five rows; the status badges in the sixth row are packed by the sibling
+// `build-status-icons.mjs`. The FRLG sheet predates Fairy, so there is no Fairy
+// badge — the UI falls back to a text chip for it. Only the processed atlas and
+// its manifest are committed; see docs/art-direction.md.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 

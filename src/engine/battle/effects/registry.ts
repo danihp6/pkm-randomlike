@@ -313,10 +313,11 @@ export function runModifyDamage(
   damage: number,
   effectiveness = 1,
   crit = false,
+  includeTarget = true,
 ): number {
   let value = damage;
   const contact = moveContacts(ctx.source, move);
-  for (const ref of contextEffects(ctx, true, move)) {
+  for (const ref of contextEffects(ctx, includeTarget, move)) {
     const next = ref.effect.handlers.onModifyDamage?.(contextFor(ctx, ref), {
       move,
       damage: value,
