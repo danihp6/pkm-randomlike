@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TALL_GRASS, WALL, isWalkable } from '../map';
+import { LEDGE, TALL_GRASS, WALL, isWalkable } from '../map';
 import type { Tile } from '../grid';
 import { ROUTE_SHAPES, SHAPES, type Access, type AccessEdge, type RouteShape } from './layout';
 import {
@@ -289,6 +289,33 @@ describe('sketchRoute', () => {
     const base = { ...request('item-chance', 2, 'cross'), width: 30, height: 30, loot };
     expect(sketchRoute({ ...base, itemChance: 0 }).items).toEqual([]);
     expect(sketchRoute({ ...base, itemChance: 1 }).items.length).toBeGreaterThan(0);
+  });
+
+  it('empties a quiet room: no grass, no ledges, no items and no trainers', () => {
+    const loot = [{ itemId: 'potion', weight: 1 }];
+    const base = {
+      ...request('quiet', 2, 'cross'),
+      width: 30,
+      height: 30,
+      grassPatches: 16,
+      ledges: 16,
+      loot,
+      itemChance: 1,
+      hiddenChance: 1,
+      trainerArchetypes: ['youngster'],
+    };
+    const loud = sketchRoute(base);
+    expect(loud.trainers.length).toBeGreaterThan(0);
+    expect(loud.items.length).toBeGreaterThan(0);
+    expect(loud.tiles.some((row) => row.includes(TALL_GRASS))).toBe(true);
+
+    const quiet = sketchRoute({ ...base, quiet: true });
+    expect(quiet.trainers).toEqual([]);
+    expect(quiet.items).toEqual([]);
+    expect(quiet.tiles.some((row) => row.includes(TALL_GRASS))).toBe(false);
+    expect(quiet.tiles.some((row) => row.includes(LEDGE))).toBe(false);
+    // The geometry still carves the lanes, so the route stays valid and walkable.
+    expect(validateRoute(quiet).ok).toBe(true);
   });
 
   it('never places an item on tall grass: the pockets stay clear', () => {

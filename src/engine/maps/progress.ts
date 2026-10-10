@@ -56,6 +56,8 @@ export type RoomView = Readonly<{
   openings: readonly Access[];
   /** The door the player arrives through, or null when the room spawns at its centre. */
   entryEdge: MapEdge | null;
+  /** True when this room is the map's **entry** room (it spawns at its centre). */
+  entry: boolean;
   /** True when this room fields the map's boss. */
   boss: boolean;
   /** The boss room's portal edge (on a free wall), or null for any other room. */
@@ -122,6 +124,7 @@ export function roomView(
     height: room.height,
     openings,
     entryEdge,
+    entry: roomId === plan.entryRoom,
     boss: plan.bossRoom === roomId,
     portalEdge,
     portalOpen: portalOpen && portalEdge !== null,

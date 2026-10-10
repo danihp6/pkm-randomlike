@@ -7,6 +7,7 @@ import { POKEVIAL_MAX_CHARGES } from './heal';
 import { createRunPokemon } from './progression';
 import {
   MAX_PARTY_SIZE,
+  addCaughtPokemon,
   addItem,
   addPokemon,
   advanceMap,
@@ -27,10 +28,14 @@ import {
   moveInBox,
   moveInParty,
   moveMoves,
+  pcFullyEditable,
+  pcMemberEditable,
   recordCatch,
   setParty,
+  swapCaughtIntoParty,
   swapPartyBox,
   unequipHeldItem,
+  unlockPcMember,
   updatePokemon,
   useCapture,
   withdrawToParty,
@@ -389,5 +394,61 @@ describe('held items', () => {
   it('will not unequip a member holding nothing', () => {
     const run = createRun({ seed: 'run-a', starter });
     expect(unequipHeldItem(run, 'starter')).toBe(run);
+  });
+});
+
+describe('PC lock and the floor catch', () => {
+  const full = () => {
+    let run = createRun({ seed: 'pc-a', starter });
+    for (let i = 1; i < MAX_PARTY_SIZE; i++) {
+      run = addPokemon(run, createRunPokemon({ id: `p${i}`, speciesId: 'sentret', level: 3 }));
+    }
+    return run;
+  };
+
+  it('is fully editable only on the first visit to the entry room', () => {
+    const run = createRun({ seed: 'pc-a', starter });
+    expect(run.entryDeparted).toBe(false);
+    expect(pcFullyEditable(run)).toBe(true);
+
+    const away = advanceRoute(run, 1);
+    expect(away.entryDeparted).toBe(true);
+    expect(pcFullyEditable(away)).toBe(false);
+
+    // Returning to the entry room does not reopen the PC for the rest of the floor.
+    const back = advanceRoute(away, 0);
+    expect(pcFullyEditable(back)).toBe(false);
+  });
+
+  it('reopens the PC on the next floor and clears the floor catch list', () => {
+    const run = unlockPcMember(advanceRoute(createRun({ seed: 'pc-a', starter }), 1), 'p0');
+    const next = advanceMap(run);
+    expect(pcFullyEditable(next)).toBe(true);
+    expect(next.pcUnlocked).toEqual([]);
+  });
+
+  it('only the floor catch is editable away from the entry room', () => {
+    const run = advanceRoute(createRun({ seed: 'pc-a', starter }), 1);
+    expect(pcMemberEditable(run, 'starter')).toBe(false);
+    const unlocked = unlockPcMember(run, 'starter');
+    expect(pcMemberEditable(unlocked, 'starter')).toBe(true);
+    expect(unlockPcMember(unlocked, 'starter')).toBe(unlocked);
+  });
+
+  it('sends a full-party catch to the PC and keeps it unlocked', () => {
+    const caught = createRunPokemon({ id: 'catch', speciesId: 'pikachu', level: 4 });
+    const next = addCaughtPokemon(full(), caught);
+    expect(next.box.some((member) => member.fighter.id === 'catch')).toBe(true);
+    expect(next.pcUnlocked).toContain('catch');
+    expect(pcMemberEditable(next, 'catch')).toBe(true);
+  });
+
+  it('swaps a full-party catch for a party member, the replaced one going to the PC', () => {
+    const run = full();
+    const caught = createRunPokemon({ id: 'catch', speciesId: 'pikachu', level: 4 });
+    const next = swapCaughtIntoParty(run, caught, 0);
+    expect(next.party[0].fighter.id).toBe('catch');
+    expect(next.box.some((member) => member.fighter.id === run.party[0].fighter.id)).toBe(true);
+    expect(next.pcUnlocked).toContain('catch');
   });
 });

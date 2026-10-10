@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Single-door entry and boss, quiet rooms, PC lock and the full-party
+      capture screen.** The map's **entry room** is now a **single-door leaf** like
+      the boss (its only opening is the one link into the floor; the outward entry
+      edge is not carved), so a floor needs at least **six** rooms — the two leaves
+      plus a four-room core closed into a cycle (`buildFloor`, `src/data/maps.ts`).
+      The entry room and the boss room are **quiet**: no tall grass, no ledges, no
+      ground items and no trainers (`RouteRequest.quiet`, `sketchRoute`).
+      The HUD's **PC (BOX) window** is always viewable but its swaps are **locked**
+      except on the **first visit to a floor's entry room** and for the **Pokémon
+      caught on the current floor**; a new floor resets both (`pcFullyEditable` /
+      `pcMemberEditable`, `RunState.entryDeparted` / `pcUnlocked`, `SAVE_VERSION`
+      11). A catch that leaves the party **full** opens a **capture screen**: the
+      caught Pokémon's stats beside the party, to **swap it for a member** (the
+      replaced one goes to the PC) or **send it to the PC** (`resolveBattle`
+      `placeCapture`, `RouteScene.openCapturePrompt`). `docs/maps-spec.md` §2/§3/§6,
+      `docs/routes-spec.md` §3/§6.
 - [x] **Mega Evolution in battle** (`D34`, Phase 9 step 9). A Pokémon holding its
       **Mega Stone** can Mega Evolve **once per battle**: the command menu grows a
       **MEGA** control that arms the evolution, and the next FIGHT spends it while

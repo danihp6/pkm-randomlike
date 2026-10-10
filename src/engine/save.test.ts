@@ -383,6 +383,23 @@ describe('run validation', () => {
     expect(over.run?.pokevialCharges).toBe(1);
   });
 
+  it('defaults the PC-lock fields and reads them back', () => {
+    const run = sampleRun();
+    // The sample stands in the entry room, so a missing flag reads not-departed.
+    const missing: Record<string, unknown> = { ...run };
+    delete missing.entryDeparted;
+    delete missing.pcUnlocked;
+    const decoded = document(JSON.stringify({ version: SAVE_VERSION, run: missing }));
+    expect(decoded.run?.entryDeparted).toBe(false);
+    expect(decoded.run?.pcUnlocked).toEqual([]);
+
+    const unlocked = document(
+      JSON.stringify({ version: SAVE_VERSION, run: { ...run, entryDeparted: false, pcUnlocked: ['p0', 7, 'p0'] } }),
+    );
+    expect(unlocked.run?.entryDeparted).toBe(false);
+    expect(unlocked.run?.pcUnlocked).toEqual(['p0']);
+  });
+
   it('drops a member whose species the dex no longer knows', () => {
     const run = sampleRun();
     const stale = { ...run.party[0], fighter: { ...run.party[0].fighter, speciesId: 'missingno' } };
@@ -421,7 +438,7 @@ describe('migrateDocument', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
     // One step per version boundary, because the test starts at v0 and the
-    // current schema is v10.
+    // current schema is v11.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
@@ -432,7 +449,8 @@ describe('migrateDocument', () => {
       6: (doc) => ({ ...doc, version: 7 }),
       7: (doc) => ({ ...doc, version: 8 }),
       8: (doc) => ({ ...doc, version: 9 }),
-      9: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      9: (doc) => ({ ...doc, version: 10 }),
+      10: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({

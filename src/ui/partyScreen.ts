@@ -5,6 +5,7 @@ import {
   depositToBox,
   moveInBox,
   moveInParty,
+  pcMemberEditable,
   swapPartyBox,
   withdrawToParty,
   type RunPokemon,
@@ -86,6 +87,27 @@ function listOf(run: RunState, pane: PaneId): readonly RunPokemon[] {
   return pane === 'party' ? run.party : run.box;
 }
 
+/** The member at a pane slot, or undefined for an empty slot. */
+function memberAt(run: RunState, pane: PaneId, index: number): RunPokemon | undefined {
+  return listOf(run, pane)[index];
+}
+
+/**
+ * True when a member may be picked up. The party always reorders; a **box**
+ * member is only grabbable while the PC is editable (`pcMemberEditable`), so a
+ * locked PC cannot be rearranged (`docs/routes-spec.md` §6).
+ */
+function canGrab(run: RunState, pane: PaneId, index: number): boolean {
+  const member = memberAt(run, pane, index);
+  if (!member) return false;
+  return pane === 'party' || pcMemberEditable(run, member.fighter.id);
+}
+
+/** True when a grabbed member may cross between the party and the PC. */
+function canSwapAcross(run: RunState, member: RunPokemon | undefined): boolean {
+  return member !== undefined && pcMemberEditable(run, member.fighter.id);
+}
+
 function reorder(run: RunState, pane: PaneId, from: number, to: number): RunState {
   return pane === 'party' ? moveInParty(run, from, to) : moveInBox(run, from, to);
 }
@@ -117,6 +139,7 @@ export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): 
     if (input === 'left' || input === 'right') {
       const toOther = pane === 'party' ? input === 'right' : input === 'left';
       if (!toOther) return { run, ui };
+      if (!canSwapAcross(run, memberAt(run, pane, ui.index))) return { run, ui };
       if (pane === 'party') {
         const next = depositToBox(run, ui.index);
         return next === run
@@ -147,7 +170,7 @@ export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): 
     return { run, ui: { pane, index: Math.min(ui.index, Math.max(0, listOf(run, pane).length - 1)), grabbed: null } };
   }
 
-  if (input === 'confirm' && list.length > 0) {
+  if (input === 'confirm' && list.length > 0 && canGrab(run, ui.pane, ui.index)) {
     return { run, ui: { ...ui, grabbed: { pane: ui.pane, origin: ui.index } } };
   }
 
@@ -159,8 +182,7 @@ export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): 
  * member up, so a drag can reorder it. An empty slot is a no-op.
  */
 export function grabAt(run: RunState, ui: PartyUiState, pane: PaneId, index: number): PartyInputResult {
-  const list = listOf(run, pane);
-  if (index < 0 || index >= list.length) return { run, ui };
+  if (!canGrab(run, pane, index)) return { run, ui };
   return { run, ui: { pane, index, grabbed: { pane, origin: index } } };
 }
 
@@ -193,6 +215,7 @@ export function dropGrabbed(ui: PartyUiState): PartyUiState {
 export function swapAcross(run: RunState, ui: PartyUiState, index: number): PartyInputResult {
   const grabbed = ui.grabbed;
   if (!grabbed) return { run, ui };
+  if (!canSwapAcross(run, memberAt(run, grabbed.pane, ui.index))) return { run, ui };
   const toPane: PaneId = grabbed.pane === 'party' ? 'box' : 'party';
   if (!listOf(run, toPane)[index]) return { run, ui };
   const next =

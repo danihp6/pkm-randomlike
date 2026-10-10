@@ -22,6 +22,22 @@ export type BattleResolution = Readonly<{
   run: RunState;
   released: readonly RunPokemon[];
   events: readonly ProgressionEvent[];
+  /**
+   * The caught Pokémon when its placement was **deferred** (`resolveBattle`'s
+   * `placeCapture: false`), else null. The interactive capture flow places it
+   * once the player has chosen between the party and the PC.
+   */
+  captured: RunPokemon | null;
+}>;
+
+/** Options for folding a battle back into the run. */
+export type ResolveBattleOptions = Readonly<{
+  /**
+   * Whether the caught Pokémon is placed by `resolveBattle` (the default). When
+   * `false` the capture is still spent and counted, but the Pokémon is returned
+   * as `captured` for the caller to place (the full-party capture screen).
+   */
+  placeCapture?: boolean;
 }>;
 
 /**
@@ -35,6 +51,7 @@ export function resolveBattle(
   run: RunState,
   result: BattleReturn,
   reward: BattleReward,
+  options?: ResolveBattleOptions,
 ): BattleResolution {
   let next: RunState = adoptBattleParty(run, result.player);
   next = { ...next, bag: [...result.bag] };
@@ -42,8 +59,11 @@ export function resolveBattle(
   const death = releaseFainted(next);
   next = death.run;
 
+  let captured: RunPokemon | null = null;
   if (result.captured) {
-    next = addPokemon(next, runPokemonFromSnapshot(result.captured));
+    const caught = runPokemonFromSnapshot(result.captured);
+    if (options?.placeCapture === false) captured = caught;
+    else next = addPokemon(next, caught);
     next = useCapture(next);
     next = recordCatch(next);
   }
@@ -72,7 +92,7 @@ export function resolveBattle(
     };
   }
 
-  return { run: next, released: death.released, events };
+  return { run: next, released: death.released, events, captured };
 }
 
 /**

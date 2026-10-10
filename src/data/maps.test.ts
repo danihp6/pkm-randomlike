@@ -16,7 +16,7 @@ describe('map tuning tables', () => {
   it('exposes the first map and its cap', () => {
     expect(levelRangeForMap(1)).toEqual({ minLevel: 2, maxLevel: 6 });
     expect(levelCapForMap(1)).toBe(6);
-    expect(routeCountRangeForMap(1)).toEqual({ min: 5, max: 5 });
+    expect(routeCountRangeForMap(1)).toEqual({ min: 6, max: 6 });
     expect(routeSizeRangeForMap(1)).toEqual({ min: 16, max: 20 });
   });
 

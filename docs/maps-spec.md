@@ -48,7 +48,12 @@ one room's wall lines up with the neighbour's opposite door:
   (`RunState.arrivalEdge`) so a room seeds the same whatever side it is entered
   from and always lets the player walk straight back;
 - the plan must be **connected** and **closed into at least one cycle** (the rooms
-  form a loop, not a bare tree), and no opening may dangle.
+  form a loop, not a bare tree), and no opening may dangle;
+- the **entry room** and the **boss room** are both **single-door leaves**: each
+  joins the floor through exactly one link, so the entry has a single exit forward
+  and the boss has a single exit until its portal opens. The cycle lives in the
+  rest of the floor, so a floor needs at least **six rooms** (the two leaves plus a
+  four-room core, `src/data/maps.ts`).
 
 An opening is one of:
 
@@ -60,7 +65,9 @@ An opening is one of:
 
 **No outward door on the entry room:** the entry is the map's origin, not a way
 back off it, so the route builder leaves that wall solid and the run starts the
-player in the middle of the room. Every other opening is a `link`.
+player in the middle of the room. The entry room's only other opening is the
+single `link` that joins it to the floor, so it too is a **single-door leaf**.
+Every other opening is a `link`.
 
 **No dangling openings:** every `link` is joined to another room. A room whose
 only opening is a single `link` is a **dead-end room** — a deliberate leaf, not an
@@ -96,15 +103,18 @@ Plan(seed, mapIndex): MapPlan
     K       = RollRange(tuning.routes, rng)
     size[i] = { w: RollRange(tuning.size, rng), h: RollRange(tuning.size, rng) }  per room
 
-    # 1. grow the floor: place the entry at the grid origin, then expand to
-    #    adjacent free cells (one door per new room) until K rooms are placed.
-    #    This is a spanning tree over the grid.
+    # 1. grow the floor: the entry sits at the grid origin with a **single** door
+    #    (its outward edge stays free) into a 2x2 core of four rooms, then expand
+    #    from the core to adjacent free cells (one door per new room) until K rooms
+    #    are placed. The core is closed into a 4-cycle, so the floor always loops
+    #    without ever giving the entry a second door.
     # 2. close cycles: add a random number of extra doors (at least one) between
-    #    adjacent rooms that are not already joined, so the floor closes one or
-    #    more loops.
+    #    adjacent rooms past the entry that are not already joined, so the floor
+    #    closes one or more loops. No door ever touches the entry room.
     # 3. shapes: derive each room's shape from its opening set (table above).
     # 4. boss: the farthest regular room; hang the boss room off it as an extra
     #    dead-end leaf, so the boss has a single door and the floor keeps its cycle.
+    #    Both the entry and the boss are single-door leaves.
     # 5. portal: the boss room's portal is carved on a free wall from the start and
     #    sealed until the boss falls. The entry room spawns the player at its centre.
     # 6. specials: hang the special rooms off the tree (see §7).
@@ -143,8 +153,10 @@ a huge maze. Retuning is a data edit, never a generator edit
 ## 6. Boss & portal (D31)
 
 - The **boss room** is a **dead-end leaf** hung off the farthest regular room, so
-  its only door is the way in (`docs/maps-spec.md` §2). It is deliberately quiet:
-  **no tall grass and no regular trainers**, just the boss.
+  its only door is the way in (`docs/maps-spec.md` §2). It is deliberately **quiet**:
+  **no tall grass, no ledges, no ground items and no regular trainers**, just the
+  boss. The map's **entry room** is quiet the same way, so the run starts and ends
+  each floor in a clean room.
 - The boss is a fixed, themed trainer at the map's `maxLevel`.
 - The portal is **carved from the start** on a free wall of the boss room and stays
   **sealed** while the boss stands, so the room looks the same before and after.
