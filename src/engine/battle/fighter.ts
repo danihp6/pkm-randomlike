@@ -235,6 +235,9 @@ function fullStats(partial: Partial<Stats> | undefined, fallback: number): Stats
   return stats;
 }
 
+/** A species whose whole learnset is absent from Gen 9 (Unown's Hidden Power) still fights. */
+const FALLBACK_MOVE = 'tackle';
+
 /** The last four level-up moves a species knows at `level`, newest first. */
 export function defaultMoveset(
   speciesId: string,
@@ -245,6 +248,7 @@ export function defaultMoveset(
     ? randomLevelUpMoves(speciesId, level, learnsetSeed)
     : levelUpMoves(speciesId, level);
   const ids = learned.map((entry) => entry.moveId);
+  if (ids.length === 0) return [FALLBACK_MOVE];
   return ids.slice(Math.max(0, ids.length - 4));
 }
 

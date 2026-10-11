@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The game ships the full National Dex (Dexit included).** `build-dex.mjs`
+      no longer filters to the Gen 9 standard set: `species.json` is now **1291
+      entries across all 1025 dex numbers** (911 → 1291), with **48 Megas** beside
+      it (`D40`). Only non-species are dropped — CAP/fan entries, `Custom`
+      (MissingNo, Pokéstar), LGPE's partner starters (no art) and the battle-only
+      Gigantamax/Eternamax formes. A Dexit species with no gen-8 learnset falls
+      back to its newest one, a forme inherits its base species', and a species
+      whose whole learnset left Gen 9 (Unown) gets Tackle, so nothing ships with
+      an empty moveset. Battle art repacked (`npm run data:anil`, 1291 species +
+      48 megas). This is the prerequisite for the generalised form abilities.
+      `scripts/build-dex.mjs`, `scripts/anil/build-pokemon-sprites.mjs`,
+      `src/engine/battle/fighter.ts`, `src/data/dex/*.json`.
 - [x] **Encounters and rosters are BST windows per floor, derived from the dex.**
       The hand-authored `ENCOUNTER_TABLES` (per biome) and the archetype `pools`
       are gone: a pure `speciesPool(band, roster)` (`src/engine/run/pool.ts`,

@@ -84,6 +84,9 @@ const FORM_OVERRIDE = {
   kyuremwhite: 'KYUREM_1',
   magearnaoriginal: 'MAGEARNA_1',
   mausholdfour: null,
+  // Anil names the Nidoran icons with its own typo (`fE`/`mA`).
+  nidoranf: 'NIDORANfE',
+  nidoranm: 'NIDORANmA',
   meowsticf: 'MEOWSTIC_1',
   miniororange: 'MINIOR_8',
   minioryellow: 'MINIOR_9',

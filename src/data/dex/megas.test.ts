@@ -17,7 +17,6 @@ const counts = (meta as { counts: Readonly<Record<string, number>> }).counts;
 describe('generated Mega formes', () => {
   it('matches the count recorded in meta.json', () => {
     expect(MEGA_FORMES.length).toBe(counts.megas);
-    expect(MEGA_FORMES.length).toBe(34);
   });
 
   it('resolves every Mega and its base species', () => {

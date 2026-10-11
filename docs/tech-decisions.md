@@ -22,7 +22,8 @@ named `engine/`.
 
 ## D3 — Dex data generated at build time from `@pkmn/dex` *(decided)*
 
-`npm run data:dex` writes `src/data/dex/*.json` (Gen 9, 911 playable species).
+`npm run data:dex` writes `src/data/dex/*.json` (the full National Dex since
+`D40`; 1291 entries).
 The package is a devDependency; the game reads committed JSON. Considered:
 copies of the donor's `pokedex.json` (only 649, Gen 1–5, and its `moves.json`
 carries Mystery Dungeon numbers, not turn-based ones), and PokeAPI at runtime
@@ -544,6 +545,24 @@ lands in exactly one band and the union covers the whole dex.
   spawnable species minus the banned tags, the trainer union every spawnable
   species. Past the last band (an infinite run's deeper floors) the window stays
   `end`: its BST saturates at the top of the dex.
+
+## D40 — The game ships the full National Dex *(decided)*
+
+`build-dex.mjs` no longer keeps only the Gen 9 standard set: the playable
+`species.json` is the **whole National Dex** — every numbered species, the
+`Past` Dexit entries included — 1291 entries across all 1025 dex numbers, with
+48 Megas generated beside it. Only non-species are dropped at generation time:
+CAP/fan entries, `Custom` (MissingNo, Pokéstar), LGPE's partner starters (no
+art), and the battle-only Gigantamax/Eternamax formes.
+
+Two learnset rules keep a Dexit species playable: a species with no gen-8
+source falls back to its own newest learnset, and a forme without one inherits
+its base species'. A species whose whole learnset is gone from Gen 9 (Unown,
+only Hidden Power) falls back to Tackle in `defaultMoveset`. This is what gives
+the generalised form-change abilities a real target: forms like
+Wishiwashi-School, Darmanitan-Zen, Aegislash-Blade and Castform-Sunny now exist
+in the dex. It changes what the wild, the trainers, the starters and the battle
+art (`npm run data:anil`) can meet.
 
 ## Open questions
 

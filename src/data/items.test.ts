@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MEGA_FORMES } from './dex';
 import {
   ITEMS,
   MEGA_STONE_IDS,
@@ -86,7 +87,7 @@ describe('getItem', () => {
 describe('Mega Stones', () => {
   it('has one held, unsold stone per Mega forme', () => {
     const stones = ITEMS.filter((entry) => entry.mega !== undefined);
-    expect(stones.length).toBe(34);
+    expect(stones.length).toBe(MEGA_FORMES.length);
     for (const stone of stones) {
       expect(stone.kind, stone.id).toBe('held');
       expect(stone.price, stone.id).toBe(0);
@@ -97,7 +98,7 @@ describe('Mega Stones', () => {
   it('lists every Mega Stone id for the mega-stone room to draw from', () => {
     const stones = ITEMS.filter((entry) => entry.mega !== undefined).map((stone) => stone.id);
     expect(MEGA_STONE_IDS).toEqual(stones);
-    expect(MEGA_STONE_IDS.length).toBe(34);
+    expect(MEGA_STONE_IDS.length).toBe(MEGA_FORMES.length);
   });
 
   it('gives each Mega-capable species a matching stone', () => {

@@ -15,12 +15,25 @@ const CATCH_RATES_PATH = join(SCRIPT_DIR, 'data', 'catch-rates.json');
 const HEIGHTS_PATH = join(SCRIPT_DIR, 'data', 'heights.json');
 const MIN_LEARNSET_GEN = 8;
 
-const isPlayable = (entry) => !entry.isNonstandard && entry.num > 0;
+// The game ships the **full National Dex** (`D40`): every real species with a
+// number, including the `Past` ones the modern games dropped (Dexit). Only
+// non-species are left out: CAP/fan entries, `Custom` (MissingNo, Pokéstar),
+// LGPE's partner starters (no art), and the battle-only Gigantamax/Eternamax
+// boss formes.
+const isBattleBossForm = (entry) =>
+  entry.forme === 'Gmax' || entry.forme === 'Eternamax' || /Gmax$/i.test(entry.name);
+const isPlayable = (entry) =>
+  entry.num > 0 &&
+  entry.isMega !== true &&
+  !isBattleBossForm(entry) &&
+  entry.isNonstandard !== 'CAP' &&
+  entry.isNonstandard !== 'Custom' &&
+  entry.isNonstandard !== 'LGPE';
 
-// Mega formes are `isNonstandard: "Past"` in Gen 9, so they are kept out of the
-// playable set but generated beside it: a Mega is battle-only, entered from its
-// stone rather than spawned. Primals are a separate mechanic (no Mega Stone).
-// `isMega` also catches the X/Y formes (Charizard and Mewtwo).
+// Mega formes are battle-only, entered from a stone rather than spawned, so they
+// are generated beside the playable set (`megas.json`) instead of inside it.
+// `isMega` catches every Mega (the X/Y formes included); one whose base is a
+// played species gets a stone.
 const isMega = (entry) => entry.isNonstandard === 'Past' && entry.isMega === true;
 
 // Rayquaza is the one Mega without a stone (it needs Dragon Ascent); the run's
@@ -52,13 +65,22 @@ const evolutionOf = (species) => {
   return evolutions;
 };
 
+// A Dexit species may have no gen-8 source at all (its newest learnset is
+// older), so the floor drops to 0 for that species: it keeps its own newest
+// learnset instead of shipping with no moves.
+const hasModernSource = (learnset) =>
+  Object.values(learnset.learnset ?? {}).some((sources) =>
+    sources.some((source) => source[1] !== 'S' && Number(source[0]) >= MIN_LEARNSET_GEN),
+  );
+
 const learnsetOf = (learnset, moveIds) => {
+  const floor = hasModernSource(learnset) ? MIN_LEARNSET_GEN : 0;
   const moves = {};
   for (const [moveId, sources] of Object.entries(learnset.learnset ?? {})) {
-    // A gen-8 source can name a move that no longer exists in gen 9, so the
-    // learnset only keeps moves present in the generated moves.json.
+    // A source can name a move that no longer exists in gen 9, so the learnset
+    // only keeps moves present in the generated moves.json.
     if (!moveIds.has(moveId)) continue;
-    const kept = sources.filter((source) => source[1] !== 'S' && Number(source[0]) >= MIN_LEARNSET_GEN);
+    const kept = sources.filter((source) => source[1] !== 'S' && Number(source[0]) >= floor);
     if (kept.length > 0) moves[moveId] = kept;
   }
   return moves;
@@ -128,7 +150,13 @@ const main = async () => {
 
   const learnsets = {};
   for (const entry of species) {
-    const learnset = await Dex.learnsets.get(entry.id);
+    // A forme has no learnset of its own in @pkmn/dex; it inherits the base
+    // species' learnset.
+    let learnset = await Dex.learnsets.get(entry.id);
+    if (!learnset.learnset && entry.baseSpecies) {
+      const base = Dex.species.get(entry.baseSpecies);
+      if (base.exists && base.id !== entry.id) learnset = await Dex.learnsets.get(base.id);
+    }
     const moves_ = learnsetOf(learnset, moveIds);
     if (Object.keys(moves_).length > 0) learnsets[entry.id] = moves_;
   }
