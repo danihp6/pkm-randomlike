@@ -43,16 +43,33 @@ describe('healParty', () => {
 });
 
 describe('usePokevial', () => {
-  it('rests the party and the box, spending one charge', () => {
+  it('rests the party and the box and empties the full meter', () => {
     const hurt = damaged(starter, 3, 1);
     const boxed = damaged(createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 4 }), 2, 0);
     const full: RunState = { ...createRun({ seed: 's', starter: hurt }), party: Array(6).fill(hurt) };
     const used = usePokevial(addPokemon(full, boxed));
-    expect(used.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES - 1);
+    expect(used.pokevialCharges).toBe(0);
     expect(used.party[0].fighter.hp).toBe(starterMaxHp);
     expect(used.party[0].fighter.moves.every((slot) => slot.pp === slot.maxPp)).toBe(true);
     expect(used.box[0].fighter.hp).toBeGreaterThan(2);
     expect(used.box[0].fighter.moves.every((slot) => slot.pp === slot.maxPp)).toBe(true);
+  });
+
+  it('cures status across the party and the box', () => {
+    const sick = { ...starter, fighter: { ...starter.fighter, status: 'par' as const, statusCounter: 3 } };
+    const boxed = {
+      ...createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 4 }),
+      fighter: {
+        ...createRunPokemon({ id: 'b', speciesId: 'sentret', level: 4 }).fighter,
+        status: 'brn' as const,
+        statusCounter: 0,
+      },
+    };
+    const full: RunState = { ...createRun({ seed: 's', starter: sick }), party: Array(6).fill(sick) };
+    const used = usePokevial(addPokemon(full, boxed));
+    expect(used.party[0].fighter.status).toBeNull();
+    expect(used.party[0].fighter.statusCounter).toBe(0);
+    expect(used.box[0].fighter.status).toBeNull();
   });
 
   it('never resurrects a fainted member (D5)', () => {
@@ -60,8 +77,10 @@ describe('usePokevial', () => {
     expect(usePokevial(run).party[0].fighter.hp).toBe(0);
   });
 
-  it('is a no-op when no charge is left', () => {
-    const spent = { ...createRun({ seed: 's', starter: damaged(starter, 3, 1) }), pokevialCharges: 0 };
+  it('is a no-op unless the meter is full', () => {
+    const partial = { ...createRun({ seed: 's', starter: damaged(starter, 3, 1) }), pokevialCharges: 1 };
+    expect(usePokevial(partial)).toBe(partial);
+    const spent = { ...partial, pokevialCharges: 0 };
     expect(usePokevial(spent)).toBe(spent);
   });
 });

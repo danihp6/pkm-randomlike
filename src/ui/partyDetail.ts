@@ -1,6 +1,6 @@
 import { getMove, getSpecies, type MoveCategory, type StatId } from '../data/dex';
 import { getBiome } from '../data/biomes';
-import { restoreFighter, type BattleFighter, type MoveSlot } from '../engine/battle/fighter';
+import { restoreFighter, type BattleFighter, type MoveSlot, type StatusId } from '../engine/battle/fighter';
 import { getItem } from '../data/items';
 import { moveMoves, type CatchLocation, type RunPokemon, type RunState } from '../engine/run';
 import { statusAbbreviation } from './metrics';
@@ -35,6 +35,7 @@ export type MemberDetail = Readonly<{
   ability: string;
   hp: number;
   maxHp: number;
+  status: StatusId | null;
   statusLabel: string | null;
   heldItemName: string | null;
   stats: Readonly<Record<StatId, number>>;
@@ -106,6 +107,7 @@ export function fighterDetail(fighter: BattleFighter): MemberDetail {
     ability: fighter.ability,
     hp: fighter.hp,
     maxHp: fighter.maxHp,
+    status: fighter.status,
     statusLabel: statusAbbreviation(fighter.status),
     heldItemName: held?.name ?? fighter.heldItem,
     stats: fighter.stats,

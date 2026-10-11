@@ -66,12 +66,12 @@ carries over.
   unequip it). An item in hand is not listed in the bag until it is dropped.
 - The **Pokevial** is a charged button in the party window's header (top-right),
   drawn as a **single bar** whose fill climbs through three colour stages with
-  **POKEVIAL** written inside (no charge count): clicking it rests the whole
-  party **and** the PC box on the spot — HP and PP back to full, the same heal as
-  a floor's stop (never a resurrection, no status cure; D5) — and spends one
-  charge. A charge is earned by beating a trainer (one each, up to the cap) and a
-  floor's **boss** fills the bar to the top; the meter **carries over** between
-  floors, and only a fresh run starts it full.
+  **POKEVIAL** written inside (no charge count): clicking it **only when the bar
+  is full** rests the whole party **and** the PC box on the spot — HP and PP back
+  to full and a primary status cured, though never a resurrection (D5) — and
+  **empties** the meter. A charge is earned by beating a trainer (one each, up to
+  the cap) and a floor's **boss** fills the bar to the top; the meter **carries
+  over** between floors, and only a fresh run starts it full.
 - The HUD panels — the route header, PARTY, the bag, the PC BOX and the member
   detail window — can be **dragged by their frame** (the interior stays live for
   rows, tabs and cells, so a click there still acts). A dragged panel **pushes**
