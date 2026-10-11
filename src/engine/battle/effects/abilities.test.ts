@@ -21,6 +21,7 @@ import {
   runModifySecondaryChance,
   runModifySpe,
   runResidual,
+  runStart,
   runTryEscape,
   runTryHit,
   runTrySubstitute,
@@ -1877,5 +1878,110 @@ describe('reworked random-ability picks', () => {
     const snapshot = snapshotFighter(eevee);
     expect(snapshot.speciesId).toBe('eevee');
     expect(snapshot.ability).toBe('Zero to Hero');
+  });
+});
+
+describe('generalised form abilities (batch 14)', () => {
+  it('Schooling holds School Form above a quarter HP and drops it below', () => {
+    const state = makeBattle(fighter('player', 'eevee', 'Schooling'), fighter('enemy', 'charmander', 'Blaze'));
+    const holder = activeFighter(state, 'player');
+    runStart(ctxOf(state, 'player'));
+    expect(holder.speciesId).toBe('wishiwashischool');
+    holder.hp = Math.floor(holder.maxHp / 4);
+    runResidual(ctxOf(state, 'player'));
+    expect(holder.speciesId).toBe('eevee');
+  });
+
+  it('does nothing below level 20', () => {
+    const low = createFighter({ id: 'player', speciesId: 'eevee', level: 19, ability: 'Schooling' });
+    const state = makeBattle(low, fighter('enemy', 'charmander', 'Blaze'));
+    runStart(ctxOf(state, 'player'));
+    expect(activeFighter(state, 'player').speciesId).toBe('eevee');
+  });
+
+  it('Zen Mode and Zen Mode (Galar) reach their own forme at half HP and keep the ability', () => {
+    const plain = makeBattle(fighter('player', 'eevee', 'Zen Mode'), fighter('enemy', 'charmander', 'Blaze'));
+    const zen = activeFighter(plain, 'player');
+    zen.hp = Math.floor(zen.maxHp / 2);
+    runStart(ctxOf(plain, 'player'));
+    expect(zen.speciesId).toBe('darmanitanzen');
+    expect(zen.ability).toBe('Zen Mode');
+
+    const galar = makeBattle(
+      fighter('player', 'eevee', 'Zen Mode (Galar)'),
+      fighter('enemy', 'charmander', 'Blaze'),
+    );
+    const gzen = activeFighter(galar, 'player');
+    gzen.hp = Math.floor(gzen.maxHp / 2);
+    runStart(ctxOf(galar, 'player'));
+    expect(gzen.speciesId).toBe('darmanitangalarzen');
+    expect(gzen.ability).toBe('Zen Mode (Galar)');
+  });
+
+  it('Shields Down breaks to the Core forme at half HP', () => {
+    const state = makeBattle(fighter('player', 'eevee', 'Shields Down'), fighter('enemy', 'charmander', 'Blaze'));
+    const holder = activeFighter(state, 'player');
+    runStart(ctxOf(state, 'player'));
+    expect(holder.speciesId).toBe('miniormeteor');
+    holder.hp = 1;
+    runResidual(ctxOf(state, 'player'));
+    expect(holder.speciesId).toBe('minior');
+  });
+
+  it('Tera Shift enters Terastal Form as it takes the field', () => {
+    const state = makeBattle(fighter('player', 'eevee', 'Tera Shift'), fighter('enemy', 'charmander', 'Blaze'));
+    runStart(ctxOf(state, 'player'));
+    expect(activeFighter(state, 'player').speciesId).toBe('terapagosterastal');
+  });
+
+  it('Hunger Switch alternates the Hangry forme every turn', () => {
+    const state = makeBattle(fighter('player', 'eevee', 'Hunger Switch'), fighter('enemy', 'charmander', 'Blaze'));
+    const holder = activeFighter(state, 'player');
+    runResidual(ctxOf(state, 'player'));
+    expect(holder.speciesId).toBe('morpekohangry');
+    runResidual(ctxOf(state, 'player'));
+    expect(holder.speciesId).toBe('eevee');
+  });
+
+  it('Forecast follows the weather', () => {
+    const state = makeBattle(fighter('player', 'eevee', 'Forecast'), fighter('enemy', 'charmander', 'Blaze'));
+    const holder = activeFighter(state, 'player');
+    state.weather = 'rain';
+    runStart(ctxOf(state, 'player'));
+    expect(holder.speciesId).toBe('castformrainy');
+    state.weather = null;
+    runResidual(ctxOf(state, 'player'));
+    expect(holder.speciesId).toBe('eevee');
+  });
+
+  it('Flower Gift opens to Sunshine Form in the sun', () => {
+    const state = makeBattle(fighter('player', 'eevee', 'Flower Gift'), fighter('enemy', 'charmander', 'Blaze'));
+    const holder = activeFighter(state, 'player');
+    state.weather = 'sun';
+    runStart(ctxOf(state, 'player'));
+    expect(holder.speciesId).toBe('cherrimsunshine');
+  });
+
+  it('Stance Change reaches Blade Forme on a damaging move and reverts on King\u2019s Shield', () => {
+    const state = makeBattle(
+      fighter('player', 'eevee', 'Stance Change', ['tackle', 'kingsshield']),
+      fighter('enemy', 'charmander', 'Blaze'),
+    );
+    const holder = activeFighter(state, 'player');
+    runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
+    expect(holder.speciesId).toBe('aegislashblade');
+    runAfterMove(ctxOf(state, 'player'), getMove('kingsshield')!);
+    expect(holder.speciesId).toBe('eevee');
+  });
+
+  it('Disguise absorbs the first damaging hit and leaves the holder Busted', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'eevee', 'Disguise'));
+    const mimic = activeFighter(state, 'enemy');
+    runStart(makeContext(state, 'enemy', { source: mimic }));
+    const ctx = ctxOf(state, 'player');
+    expect(runTryHit(ctx, getMove('tackle')!)).toBe(false);
+    expect(mimic.speciesId).toBe('mimikyubusted');
+    // The disguise is spent, so the next hit lands.
+    expect(runTryHit(ctx, getMove('tackle')!)).toBe(true);
   });
 });

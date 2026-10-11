@@ -1,7 +1,7 @@
 import { megaFormsForBase } from '../../data/dex/megas';
 import type { LevelBand } from '../../data/run';
-import type { TrainerArchetype } from '../../data/trainers';
 import type { Rng } from '../rng';
+import { speciesPool } from './pool';
 
 export type RosterEntry = Readonly<{
   id: string;
@@ -17,26 +17,27 @@ export type RosterOptions = Readonly<{
    * member whose species has a Mega forme holds its stone (`D34`).
    */
   allowMega?: boolean;
+  /** A boss fields the upper half of the band's BST window (`D39`). */
+  boss?: boolean;
 }>;
 
 /**
  * A deterministic trainer roster: `band.trainerSize` species drawn without
- * replacement from the archetype's pool for the route's band (repeats only if
- * the pool is smaller than the party), each level inside the band. The band's
- * pool is the archetype's progression: weak base forms early, evolved forms
- * late (`docs/routes-spec.md` §5). The run's battle seed feeds the `rng`, so a
- * replay rebuilds the same team. Phase 6 can layer held items and movesets on
- * top.
+ * replacement from the band's BST pool (repeats only if the pool is smaller than
+ * the party), each level inside the band. The pool is shared by every archetype
+ * — it varies only by the floor's BST window and the bans (`D39`), and a
+ * trainer (unlike the wild) may field a legendary or mythical — and a boss
+ * raises the window to its upper half. The run's battle seed feeds the `rng`, so
+ * a replay rebuilds the same team.
  */
 export function trainerRoster(
-  archetype: TrainerArchetype,
   band: LevelBand,
   rng: Rng,
   idPrefix: string,
   options: RosterOptions = {},
 ): readonly RosterEntry[] {
-  const source = archetype.pools[band.id].length > 0 ? archetype.pools[band.id] : ['sentret'];
-  const pool = [...source];
+  const source = speciesPool(band, 'trainer', { boss: options.boss === true });
+  const pool = source.length > 0 ? [...source] : ['sentret'];
   const size = Math.max(1, band.trainerSize);
   const roster: RosterEntry[] = [];
   for (let i = 0; i < size; i++) {
@@ -53,7 +54,7 @@ export function trainerRoster(
 }
 
 /** Gives one Mega-capable member its stone, chosen from the eligible pool. */
-function assignMegaStone(roster: RosterEntry[], rng: Rng): void {
+export function assignMegaStone(roster: RosterEntry[], rng: Rng): void {
   const eligible = roster
     .map((entry, index) => ({ entry, index, forms: megaFormsForBase(entry.speciesId) }))
     .filter((candidate) => candidate.forms.length > 0);

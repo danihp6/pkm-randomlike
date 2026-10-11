@@ -70,6 +70,13 @@ The whole menu battle minus per-effect behaviour. Contract in
 Ports of Showdown handlers, in batches, on the hook names in
 `docs/showdown-reuse.md` §3.
 
+- [ ] **Reachable-but-unported effects.** The full National Dex (`D40`) and the
+      full move set (`D42`) make ~24 abilities and many `Past` moves meetable that
+      are not ported yet — the `no-op` rows of `docs/balance/effect-coverage.md`
+      plus any move the dev build warns about. A damaging move resolves its base
+      damage generically, but a status move or listed ability without a handler is
+      a silent no-op until ported. Port them so the develop-build warnings clear.
+
 
 ## Phase 5 — Battle UI & presentation
 
@@ -226,3 +233,9 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       The Plates themselves are not obtainable until an Arceus-tier source lands.
 - [ ] **Relearn UI for the bench.** The learnset panel covers the panel's four
       slots; a Move-Relearner style screen for the whole party is not planned yet.
+- [ ] **Hidden Power's type.** `moves.json` ships Hidden Power as a single Normal
+      entry (`D42`); model its type from the holder's IVs so the 17 typings mean
+      something again.
+- [ ] **Max and Z moves.** Dynamax and Z mechanics are not modelled, so their
+      moves are left out of `moves.json` (`D42`). Nothing to do unless a Dynamax or
+      Z-Move mechanic ever lands.

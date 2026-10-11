@@ -8,6 +8,51 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The game ships the full move set (D42).** `build-dex.mjs` generates every
+      real move, the `Past` ones included, so a Dexit species keeps its learnset:
+      `moves.json` grows 685 → **835** (King's Shield, Aromatherapy, Linoone's
+      Belly Drum...). Dynamax (Max) and Z moves are dropped — the engine models
+      neither — as are CAP/Future/Unobtainable entries, and Hidden Power's 17
+      typings collapse to the single Normal entry (its IV-based type is not
+      modelled; this also fixed a duplicate-id bug that corrupted the random
+      learnset). `scripts/build-dex.mjs`, `src/data/dex/*.json`.
+- [x] **Form-change abilities are generalised like Zero to Hero (D41).** Any
+      species may now roll and use **Schooling, Zen Mode, Zen Mode (Galar),
+      Shields Down, Tera Shift, Hunger Switch, Forecast, Flower Gift, Stance
+      Change and Disguise**: from level 20 on, each changes the holder's forme by
+      its own rule (`changeBattleForm`/`restoreBattleForm`, battle-only, snapshot
+      kept on the base species) and flips back when the condition ends.
+      `randomAbility` no longer bans them; `changeBattleForm` keeps the holder's
+      ability so the rule keeps firing. Stance Change's Shield revert needs
+      King's Shield (a `Past` move not shipped yet) and Commander stays excluded
+      (doubles-only). `src/engine/battle/effects/abilities.ts`,
+      `src/engine/battle/fighter.ts`, `src/engine/battle/randomAbility.ts`,
+      `scripts/build-dex.mjs`, `docs/balance/effect-coverage.md`.
+- [x] **The game ships the full National Dex (Dexit included).** `build-dex.mjs`
+      no longer filters to the Gen 9 standard set: `species.json` is now **1291
+      entries across all 1025 dex numbers** (911 → 1291), with **48 Megas** beside
+      it (`D40`). Only non-species are dropped — CAP/fan entries, `Custom`
+      (MissingNo, Pokéstar), LGPE's partner starters (no art) and the battle-only
+      Gigantamax/Eternamax formes. A Dexit species with no gen-8 learnset falls
+      back to its newest one, a forme inherits its base species', and a species
+      whose whole learnset left Gen 9 (Unown) gets Tackle, so nothing ships with
+      an empty moveset. Battle art repacked (`npm run data:anil`, 1291 species +
+      48 megas). This is the prerequisite for the generalised form abilities.
+      `scripts/build-dex.mjs`, `scripts/anil/build-pokemon-sprites.mjs`,
+      `src/engine/battle/fighter.ts`, `src/data/dex/*.json`.
+- [x] **Encounters and rosters are BST windows per floor, derived from the dex.**
+      The hand-authored `ENCOUNTER_TABLES` (per biome) and the archetype `pools`
+      are gone: a pure `speciesPool(band, roster)` (`src/engine/run/pool.ts`,
+      `D39`) filters the playable dex by the band's inclusive **BST window**
+      (`LevelBand.bst`, `src/data/run.ts`) and by the roster's bans. The windows
+      tile `0..800` (~120-150 species each), so every spawnable species now
+      appears somewhere — the wild covers all but the legendary/mythical tags,
+      and a trainer may field any species, legendaries included. The tall grass
+      bans `Restricted Legendary`, `Sub-Legendary` and `Mythical`; battle-only
+      formes never spawn in either. A **boss** (map boss and mini-boss) fields the
+      **upper half** of its band's window. `src/engine/run/pool.ts`,
+      `src/engine/run/roster.ts`, `src/engine/routes/encounters.ts`,
+      `src/data/run.ts`, `src/data/trainers.ts`, `src/data/biomes.ts`.
 - [x] **Abilities are rolled per run, and two once-unimplementable ones are
       reworked around the random pool.** Every wild, trainer and starter Pokémon
       — and each catch — now **rolls its ability** from the implemented set under

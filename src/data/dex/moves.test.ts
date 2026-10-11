@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import meta from './meta.json';
 import { allMoves, getMove, isDamaging, moveByType } from './moves';
+
+const counts = (meta as { counts: Readonly<Record<string, number>> }).counts;
 
 describe('move accessors', () => {
   it('finds a move by id', () => {
@@ -25,6 +28,6 @@ describe('move accessors', () => {
   });
 
   it('exposes the whole generated move set', () => {
-    expect(allMoves().length).toBe(685);
+    expect(allMoves().length).toBe(counts.moves);
   });
 });

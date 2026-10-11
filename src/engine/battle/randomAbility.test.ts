@@ -15,11 +15,20 @@ describe('randomAbilityPool', () => {
     // Now implemented generically, so they are fair game.
     expect(ids).toContain('wonderguard');
     expect(ids).toContain('zerotohero');
+    expect(ids).toContain('schooling');
+    expect(ids).toContain('zenmode');
+    expect(ids).toContain('zenmodegalar');
+    expect(ids).toContain('stancechange');
+    expect(ids).toContain('shieldsdown');
+    expect(ids).toContain('terashift');
+    expect(ids).toContain('forecast');
+    expect(ids).toContain('flowergift');
+    expect(ids).toContain('hungerswitch');
+    expect(ids).toContain('disguise');
     // Still forme-locked: never handed out.
-    expect(ids).not.toContain('schooling');
-    expect(ids).not.toContain('zenmode');
     expect(ids).not.toContain('powerconstruct');
     expect(ids).not.toContain('multitype');
+    expect(ids).not.toContain('gulpmissile');
     expect(ids.length).toBeGreaterThan(200);
   });
 });

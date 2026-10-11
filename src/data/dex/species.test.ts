@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import meta from './meta.json';
 import { getSpecies, normalizeId, playableSpecies, speciesByNum } from './species';
+
+const counts = (meta as { counts: Readonly<Record<string, number>> }).counts;
 
 describe('species accessors', () => {
   it('finds a species by id regardless of case or punctuation', () => {
@@ -18,7 +21,7 @@ describe('species accessors', () => {
 
   it('exposes the whole generated playable set', () => {
     const all = playableSpecies();
-    expect(all.length).toBe(911);
+    expect(all.length).toBe(counts.species);
     expect(all.every((species) => species.num > 0)).toBe(true);
   });
 

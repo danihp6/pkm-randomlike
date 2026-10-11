@@ -92,6 +92,7 @@ import {
   DEFAULT_TRAINER_SIGHT,
   RouteEncounters,
   borderEdge,
+  encounterTableFor,
   exitEdgeAt,
   seesPlayer,
   sketchRoute,
@@ -1126,7 +1127,7 @@ export class RouteScene extends Phaser.Scene {
     this.tilesetId = biome.tilesetId;
     this.moveMap = this.movementMap(this.map);
     this.encounters = new RouteEncounters(
-      biome.encounters[band.id],
+      encounterTableFor(band),
       roomLevel,
       roomLevel,
       new Rng(hashSeed(`${route.seed}:encounters:${route.routeIndex}`)),
@@ -4321,8 +4322,9 @@ export class RouteScene extends Phaser.Scene {
         : isMiniBoss && this.room
           ? `${this.run.seed}:miniboss:${this.room.mapIndex}`
           : `${this.run.seed}:trainer:${this.route.routeIndex}:${trainer.id}`;
-    const roster = trainerRoster(archetype, rosterBand, new Rng(hashSeed(key)), trainer.id, {
+    const roster = trainerRoster(rosterBand, new Rng(hashSeed(key)), trainer.id, {
       allowMega: isBoss || isMiniBoss || archetype.carriesMega === true,
+      boss: isBoss || isMiniBoss,
     });
     this.startBattle({
       kind: 'trainer',

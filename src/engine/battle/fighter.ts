@@ -235,6 +235,9 @@ function fullStats(partial: Partial<Stats> | undefined, fallback: number): Stats
   return stats;
 }
 
+/** A species whose whole learnset is absent from Gen 9 (Unown's Hidden Power) still fights. */
+const FALLBACK_MOVE = 'tackle';
+
 /** The last four level-up moves a species knows at `level`, newest first. */
 export function defaultMoveset(
   speciesId: string,
@@ -245,6 +248,7 @@ export function defaultMoveset(
     ? randomLevelUpMoves(speciesId, level, learnsetSeed)
     : levelUpMoves(speciesId, level);
   const ids = learned.map((entry) => entry.moveId);
+  if (ids.length === 0) return [FALLBACK_MOVE];
   return ids.slice(Math.max(0, ids.length - 4));
 }
 
@@ -280,12 +284,18 @@ function resolveAbility(species: Species, moves: readonly MoveSlot[], input: Fig
 }
 
 /**
- * Swaps a fighter into a battle-only forme (Zero to Hero), reusing the Mega
- * backup so the run snapshot keeps the base species. A fighter already in a
- * forme keeps the first backup, so a Mega's base is never lost. Returns false
- * when the id is unknown or the fighter already wears that forme.
+ * Swaps a fighter into a battle-only forme (Zero to Hero, Schooling...), reusing
+ * the Mega backup so the run snapshot keeps the base species. A fighter already
+ * in a forme keeps the first backup, so a Mega's base is never lost. `keepAbility`
+ * keeps the holder's ability (a form-change ability stays itself); a Mega lets the
+ * forme's own ability win. Returns false when the id is unknown or the fighter
+ * already wears that forme.
  */
-export function changeBattleForm(fighter: BattleFighter, formId: string): boolean {
+export function changeBattleForm(
+  fighter: BattleFighter,
+  formId: string,
+  keepAbility = false,
+): boolean {
   const form = getSpecies(formId);
   if (!form || fighter.speciesId === form.id) return false;
   if (!fighter.megaBackup) {
@@ -304,7 +314,26 @@ export function changeBattleForm(fighter: BattleFighter, formId: string): boolea
     ...statAtLevel(form, fighter.level, fighter.nature, fighter.ivs, fighter.evs),
     hp: fighter.stats.hp,
   };
-  fighter.ability = Object.values(form.abilities)[0] ?? fighter.ability;
+  if (!keepAbility) fighter.ability = Object.values(form.abilities)[0] ?? fighter.ability;
+  return true;
+}
+
+/**
+ * Puts a fighter back into the shape it wore before a battle-only forme change
+ * (`changeBattleForm`: Schooling, Zen Mode, Shields Down...): name, types, stats
+ * and ability come from the stored backup while the **current HP is kept**, so a
+ * threshold ability can flip back and forth. Returns false when there is nothing
+ * to restore.
+ */
+export function restoreBattleForm(fighter: BattleFighter): boolean {
+  const backup = fighter.megaBackup;
+  if (!backup) return false;
+  fighter.speciesId = backup.speciesId;
+  fighter.name = backup.name;
+  fighter.types = backup.types;
+  fighter.stats = { ...backup.stats, hp: fighter.stats.hp };
+  fighter.ability = backup.ability;
+  fighter.megaBackup = null;
   return true;
 }
 

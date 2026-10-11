@@ -22,7 +22,8 @@ named `engine/`.
 
 ## D3 — Dex data generated at build time from `@pkmn/dex` *(decided)*
 
-`npm run data:dex` writes `src/data/dex/*.json` (Gen 9, 911 playable species).
+`npm run data:dex` writes `src/data/dex/*.json` (the full National Dex since
+`D40`; 1291 entries).
 The package is a devDependency; the game reads committed JSON. Considered:
 copies of the donor's `pokedex.json` (only 649, Gen 1–5, and its `moves.json`
 carries Mystery Dungeon numbers, not turn-based ones), and PokeAPI at runtime
@@ -503,8 +504,8 @@ primary type) and Aura Wheel (the Morpeko form). A **held item** hooks the same
 path: the seventeen Plates ship and give Judgment their type (`item.plate`).
 Multi-Attack (Memories), Techno Blast (Drives), Natural Gift (berries) and
 Judgment's form-changing relatives wait for those moves/items to exist in a
-future dex — Judgment stays Normal without a Plate, and Hidden Power is not in
-Gen 9 at all.
+future dex - Judgment stays Normal without a Plate, and Hidden Power ships only
+as a single Normal entry (its IV-based typing is not modelled).
 
 ## D38 — Every evolution is a level evolution and the player clicks it *(decided)*
 
@@ -520,6 +521,79 @@ member never evolves on level-up (`levelUpPokemon`) or on a catch
 (`evolvePokemon`/`evolveMember`), keeping the level, nature, IVs/EVs, moves, PP,
 status and held item and carrying the missing HP across. The graph shows the
 pre-evolutions too, so a final form still reads its line.
+
+## D39 — Encounter and roster pools are BST windows per floor *(decided)*
+
+The wild table and every trainer roster are **derived from the dex at runtime**,
+not hand-authored: a pure `speciesPool(band, roster)` (`src/engine/run/pool.ts`)
+filters `playableSpecies()` by the band's inclusive BST window (`LevelBand.bst`,
+`src/data/run.ts`) and by the roster's ban list. The pool varies **only** by that
+window and the bans — there is no per-biome or per-archetype theming any more;
+`ENCOUNTER_TABLES` and the archetype `pools` are gone. The windows tile `0..800`
+with a rough population split (~120-150 species each), so every spawnable species
+lands in exactly one band and the union covers the whole dex.
+
+- **Wild** bans the legendary and mythical tags (`Restricted Legendary`,
+  `Sub-Legendary`, `Mythical`); the tall grass never spawns one.
+- **Trainers** ban nothing, so a high-BST legendary or mythical appears in the
+  bands its BST falls in, whichever archetype fields it.
+- **Battle-only formes** (Gulp Missile, Hunger Switch, the Crowned/Terastal
+  formes) never appear in either pool; they only exist inside a fight.
+- A **boss** (map boss and mini-boss) fields the **upper half** of its band's
+  window (`bossBstWindow`), one step above the floor's regular trainers.
+- Coverage is a test (`src/engine/run/pool.test.ts`): the wild union is every
+  spawnable species minus the banned tags, the trainer union every spawnable
+  species. Past the last band (an infinite run's deeper floors) the window stays
+  `end`: its BST saturates at the top of the dex.
+
+## D40 — The game ships the full National Dex *(decided)*
+
+`build-dex.mjs` no longer keeps only the Gen 9 standard set: the playable
+`species.json` is the **whole National Dex** — every numbered species, the
+`Past` Dexit entries included — 1291 entries across all 1025 dex numbers, with
+48 Megas generated beside it. Only non-species are dropped at generation time:
+CAP/fan entries, `Custom` (MissingNo, Pokéstar), LGPE's partner starters (no
+art), and the battle-only Gigantamax/Eternamax formes.
+
+Two learnset rules keep a Dexit species playable: a species with no gen-8
+source falls back to its own newest learnset, and a forme without one inherits
+its base species'. A species that somehow ends up with no move at all falls back
+to Tackle in `defaultMoveset` (Unown keeps Hidden Power, which ships as of
+`D42`). This is what gives the generalised form-change abilities a real target:
+forms like Wishiwashi-School, Darmanitan-Zen, Aegislash-Blade and Castform-Sunny
+now exist in the dex. It changes what the wild, the trainers, the starters and
+the battle art (`npm run data:anil`) can meet.
+
+## D41 — Form-change abilities are generalised like Zero to Hero *(decided)*
+
+Every forme- or species-change ability a run can meet is one generic rule: **any**
+holder changes forme when the ability's own condition holds, from level 20 on,
+through `changeBattleForm`/`restoreBattleForm` (`D34`'s battle-only backup, which
+keeps the run snapshot on the base species). The set: Zero to Hero (Palafin-Hero
+on switch-out), Schooling (Wishiwashi-School above 1/4 HP), Zen Mode and **Zen
+Mode (Galar)** (Darmanitan-Zen / Galar-Zen at 1/2 HP — a synthetic dex ability,
+since `@pkmn/dex` has one entry for two formes), Shields Down (Minior's
+Meteor/Core), Tera Shift (Terastal Form on entry), Hunger Switch (the Hangry
+forme alternating every turn), Forecast (Castform follows the weather), Flower
+Gift (Cherrim's Sunshine Form in the sun), Stance Change (Blade Forme on a
+damaging move) and Disguise (the first damaging hit is absorbed and leaves the
+holder Busted).
+
+`changeBattleForm` **keeps the holder's ability** so the rule keeps firing (a
+Mega is the exception — its forme's ability wins). All of them are off
+`randomAbility`'s ban list, so any species may roll them. Stance Change's Shield
+revert needs King's Shield, which ships with the full move set (`D42`); Commander
+stays excluded — it is a doubles mechanic with no single-battle forme to reach.
+
+## D42 — The game ships the full move set *(decided)*
+
+`build-dex.mjs` now generates every real move, the `Past` ones included, so a
+Dexit species keeps its learnset: `moves.json` grows from 685 to **835**. Dropped
+are the Dynamax (Max) and Z moves (the engine models neither) and the
+CAP/Future/Unobtainable entries. Hidden Power's 17 typings all share the id
+`hiddenpower`; the engine keys moves by id and does not model its IV-based type,
+so only the Normal entry ships. A move with no ported effect still resolves its
+base damage generically; an unported status move is a dev-warned no-op.
 
 ## Open questions
 

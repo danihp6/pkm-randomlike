@@ -24,23 +24,29 @@ an adaptor over its event loop.
 
 | File | Contents | Count |
 | --- | --- | --- |
-| `species.json` | stats, types, abilities, forms, evolutions, gender ratio, weight, catch rate | 911 playable |
-| `megas.json` | every Mega forme of a playable species: stats, types, ability, `baseSpeciesId`, `stoneId`, `stoneName` | 34 |
-| `moves.json` | type, category, power, accuracy, PP, priority, target, flags, secondaries | 685 |
-| `abilities.json` | name, description, flags | 310 |
+| `species.json` | stats, types, abilities, forms, evolutions, gender ratio, weight, catch rate | 1291 (full National Dex) |
+| `megas.json` | every Mega forme of a played species: stats, types, ability, `baseSpeciesId`, `stoneId`, `stoneName` | 48 |
+| `moves.json` | type, category, power, accuracy, PP, priority, target, flags, secondaries | 835 |
+| `abilities.json` | name, description, flags | 311 |
 | `items.json` | name, description, battle flags | 249 |
-| `learnsets.json` | per species, move sources (`9L24`, `9M`, `9E`, `8L1`, ...) | 819 |
+| `learnsets.json` | per species, move sources (`9L24`, `9M`, `9E`, `8L1`, ...) | 1290 |
 | `natures.json` | 25 natures with stat deltas | 25 |
 | `types.json` | the 18x18 effectiveness chart | 19 |
 
 Notes:
 
-- Only `!isNonstandard && num > 0` entries survive, so CAP/Gigantamax/old-gen
-  exclusives are already filtered out.
-- `megas.json` is the one deliberate exception: the Mega formes are
-  `isNonstandard: "Past"` in Gen 9, but they are generated beside the playable
-  set (never inside it) so a held stone has a target (`D34`). A Mega whose base
-  species is not playable is skipped, so no dead stones ship.
+- The playable set is the **full National Dex** (`D40`): every numbered species,
+  the `Past` Dexit entries included. Only CAP/fan entries, `Custom` (MissingNo,
+  Pokéstar), LGPE's partner starters and the battle-only Gigantamax/Eternamax
+  formes are dropped.
+- The move set is the **full move list** (`D42`): the `Past` moves included, so a
+  Dexit species keeps its learnset. Dynamax (Max) and Z moves are dropped — the
+  engine models neither — as are CAP/Future/Unobtainable entries. Hidden Power's
+  17 typings share one id, so only the Normal one ships (its IV-based type is not
+  modelled).
+- `megas.json` is generated beside the playable set (never inside it) so a held
+  stone has a target (`D34`). A Mega whose base species is not played is skipped,
+  so no dead stones ship.
 - `@pkmn/dex` carries no catch rate, so `build-dex.mjs` merges one in from
   `scripts/data/catch-rates.json` (PokeAPI `pokemon_species.csv`, keyed by
   national dex number, fetched once by `scripts/fetch-catch-rates.mjs`). Capture

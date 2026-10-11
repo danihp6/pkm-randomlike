@@ -9,23 +9,16 @@ import { normalizeEffectId, registeredEffects } from './effects/registry';
  * this list is a guard for the day one is ported. Downside abilities (Truant,
  * Slow Start, Stall, Klutz, Moody, Normalize...) are deliberately **kept**: a
  * worse ability is part of the random run, and the ones that would be dead on an
- * arbitrary species are implemented generically instead (Zero to Hero, Wonder
- * Guard — see `effects/abilities.ts`).
+ * arbitrary species are implemented generically instead (Zero to Hero, Schooling,
+ * Zen Mode, Wonder Guard — see `effects/abilities.ts`).
  */
 const BANNED: ReadonlySet<string> = new Set([
-  'zenmode',
-  'schooling',
-  'shieldsdown',
-  'stancechange',
   'powerconstruct',
   'multitype',
   'rkssystem',
   'gulpmissile',
-  'hungerswitch',
   'asoneglastrier',
   'asonespectrier',
-  'forecast',
-  'flowergift',
   'mimicry',
   'colorchange',
 ]);
