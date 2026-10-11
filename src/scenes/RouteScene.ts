@@ -732,6 +732,8 @@ export class RouteScene extends Phaser.Scene {
   private hudLearnPrev!: Phaser.GameObjects.BitmapText;
   private hudLearnNext!: Phaser.GameObjects.BitmapText;
   private hudLearnPageText!: Phaser.GameObjects.BitmapText;
+  /** "no moves to learn" when the pool offers nothing to equip. */
+  private hudLearnEmpty!: Phaser.GameObjects.BitmapText;
   /** The pool entries on the page on screen, for hit-testing the drag. */
   private hudLearnPageEntries: readonly LearnEntry[] = [];
   /** The pool move held while dragging it onto a slot, and its ghost chip. */
@@ -1786,7 +1788,19 @@ export class RouteScene extends Phaser.Scene {
       tint: 0x3a3956,
       origin: [0.5, 0],
     }).setVisible(false);
-    children.push(this.hudSearchBg, this.hudSearchText, this.hudLearnPrev, this.hudLearnNext, this.hudLearnPageText);
+    this.hudLearnEmpty = addFrlgText(this, 0, 0, 'no moves to learn', {
+      size: 16,
+      tint: 0x6b6887,
+      origin: [0.5, 0],
+    }).setVisible(false);
+    children.push(
+      this.hudSearchBg,
+      this.hudSearchText,
+      this.hudLearnPrev,
+      this.hudLearnNext,
+      this.hudLearnPageText,
+      this.hudLearnEmpty,
+    );
 
     const container = this.add.container(0, 0, children).setVisible(false);
     // The shared moves grid — the same component the battle's FIGHT menu draws —
@@ -2184,12 +2198,7 @@ export class RouteScene extends Phaser.Scene {
     const move = getMove(entry.moveId);
     const basePower = move?.basePower ?? 0;
     const accuracy = move && move.accuracy !== true ? move.accuracy : null;
-    const tag =
-      entry.source === 'tm'
-        ? `TM${tmNumber(entry.tmId ?? '') ?? '?'}`
-        : entry.level === null
-          ? 'known'
-          : `Lv${entry.level}`;
+    const tag = entry.source === 'tm' ? `TM${tmNumber(entry.tmId ?? '') ?? '?'}` : `Lv${entry.level ?? '?'}`;
     return {
       name: `${move?.name ?? entry.moveId}  ${tag}`,
       type: move ? abilityMoveType(ability, move) : '',
@@ -2220,6 +2229,7 @@ export class RouteScene extends Phaser.Scene {
       .setText(`${this.hudSearchFocus ? '>' : ' '} ${placeholder}`)
       .setTint(this.hudLearnQuery.length === 0 && !this.hudSearchFocus ? 0x6b6887 : FRLG_INK)
       .setPosition(searchX + 6, searchY + 4)
+      .setMaxWidth(searchW - 78)
       .setVisible(moves);
 
     const pool = moves ? this.learnPool() : [];
@@ -2241,24 +2251,28 @@ export class RouteScene extends Phaser.Scene {
       selected: pageEntries.findIndex((entry) => entry.moveId === this.hudLearnDrag),
       info: null,
       popupAtCell: true,
-      leftReserve: 30,
-      rightReserve: 30,
     });
 
-    const arrowY = learnTop + learnH / 2;
+    // The pool spans the full window; its paging arrows ride the search row,
+    // right-aligned beside the page count, so the grid keeps the whole width.
+    const navY = searchY + 4;
+    const navRight = searchX + searchW - 10;
     const showNav = moves && pages > 1;
     this.hudLearnPrev
-      .setPosition(this.hudDetailX + pad.x + 15, arrowY)
+      .setPosition(navRight - 56, navY)
       .setAlpha(this.hudLearnPage > 0 ? 1 : 0.35)
       .setVisible(showNav);
     this.hudLearnNext
-      .setPosition(this.hudDetailX + HUD_DETAIL_W - pad.x - 15, arrowY)
+      .setPosition(navRight, navY)
       .setAlpha(this.hudLearnPage < pages - 1 ? 1 : 0.35)
       .setVisible(showNav);
     this.hudLearnPageText
       .setText(`${this.hudLearnPage + 1}/${pages}`)
-      .setPosition(searchX + searchW - 6, searchY + 4)
+      .setPosition(navRight - 28, navY)
       .setVisible(moves && pool.length > 0);
+    this.hudLearnEmpty
+      .setPosition(this.hudDetailX + HUD_DETAIL_W / 2, learnTop + Math.max(0, learnH / 2 - 8))
+      .setVisible(moves && pool.length === 0);
   }
 
   /** Steps the PC BOX to another page and redraws. */
@@ -2666,6 +2680,13 @@ export class RouteScene extends Phaser.Scene {
    */
   private handleDetailPointerDown(pointer: Phaser.Input.Pointer): void {
     const point = this.panelPoint(pointer, 'detail');
+    // The paging arrows ride the search row, so they are tested before the field.
+    const nav = this.learnNavAt(point);
+    if (nav !== null) {
+      this.hudSearchFocus = false;
+      this.stepLearnPage(nav === 'prev' ? -1 : 1);
+      return;
+    }
     if (pointInRect(point, this.hudSearchRect)) {
       this.hudSearchFocus = true;
       this.refreshDetail();
@@ -2681,11 +2702,6 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     if (this.hudDetailState.tab !== 'moves') return;
-    const nav = this.learnNavAt(point);
-    if (nav !== null) {
-      this.stepLearnPage(nav === 'prev' ? -1 : 1);
-      return;
-    }
     const poolIndex = this.hudLearnGrid.indexAt(point.x, point.y);
     if (poolIndex !== null) {
       const entry = this.hudLearnPageEntries[poolIndex];

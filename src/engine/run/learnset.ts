@@ -7,10 +7,10 @@ import { itemCount, updatePokemon, type RunState } from './state';
 
 /**
  * The learnset panel's pure model (`docs/design-spec.md` §5). It answers what a
- * run member may equip right now: every level-up move it has already learned
- * (even one it has since dropped for a fourth slot) plus every move a TM **in the
- * bag** teaches it. The route HUD only draws what this returns; a drop onto a
- * move slot goes through `equipMove`, so learning is a pure, testable edit.
+ * run member may equip right now: every level-up move it has already learned but
+ * is **not** holding in one of its four slots, plus every move a TM **in the bag**
+ * teaches it. The route HUD only draws what this returns; a drop onto a move slot
+ * goes through `equipMove`, so learning is a pure, testable edit.
  *
  * The available moves follow the run's randomized learnset (`D17`), so the moves
  * a species can be taught stay fixed for the whole run, like its level-up moves.
@@ -18,7 +18,7 @@ import { itemCount, updatePokemon, type RunState } from './state';
 
 export type LearnSourceKind = 'level' | 'tm';
 
-/** One move the panel offers: where it comes from and whether it is slotted. */
+/** One move the panel offers and where it comes from. */
 export type LearnEntry = Readonly<{
   moveId: string;
   source: LearnSourceKind;
@@ -26,8 +26,6 @@ export type LearnEntry = Readonly<{
   level: number | null;
   /** The bag machine that teaches a TM move; null for a level-up move. */
   tmId: string | null;
-  /** The move slot it sits in (0..3), or null when it is on the bench. */
-  slot: number | null;
 }>;
 
 /** The level-up moves a species knows at `level`, oldest first and deduplicated. */
@@ -61,62 +59,30 @@ function tmPool(speciesId: string): readonly string[] {
 
 /**
  * Everything `member` may equip: its learned level-up moves and the TM moves the
- * run's bag can teach it. A move that is both (a TM it already learned) appears
- * once, as the free level-up move. Moves whose id the dex cannot resolve drop out.
+ * run's bag can teach it, minus the moves already in its four slots. A move that
+ * is both (a TM it already learned) appears once, as the free level-up move.
+ * Moves whose id the dex cannot resolve drop out.
  */
 export function learnsetPool(run: RunState, member: RunPokemon, learnsetSeed?: string): LearnEntry[] {
   const { speciesId, level, moves } = member.fighter;
-  const inSlot = new Map<string, number>();
-  moves.forEach((slot, index) => inSlot.set(slot.moveId, index));
+  const equipped = new Set(moves.map((slot) => slot.moveId));
   const entries: LearnEntry[] = [];
   const seen = new Set<string>();
   const push = (entry: LearnEntry): void => {
-    if (seen.has(entry.moveId) || !getMove(entry.moveId)) return;
+    if (equipped.has(entry.moveId) || seen.has(entry.moveId) || !getMove(entry.moveId)) return;
     seen.add(entry.moveId);
     entries.push(entry);
   };
   for (const learned of levelPool(speciesId, level, learnsetSeed)) {
-    push({
-      moveId: learned.moveId,
-      source: 'level',
-      level: learned.level,
-      tmId: null,
-      slot: inSlot.get(learned.moveId) ?? null,
-    });
+    push({ moveId: learned.moveId, source: 'level', level: learned.level, tmId: null });
   }
   for (const moveId of tmPool(speciesId)) {
     const tmId = tmItemIdForMove(moveId);
     if (!tmId || itemCount(run, tmId) <= 0) continue;
-    push({ moveId, source: 'tm', level: null, tmId, slot: inSlot.get(moveId) ?? null });
-  }
-  // Every move the member already holds is offered too, even one the learnset
-  // no longer covers (an old save, a since-sold TM), so a swap can always be
-  // undone. Its level comes from the learnset when known, else null.
-  for (const slot of moves) {
-    const learned = learnedLevel(speciesId, level, slot.moveId, learnsetSeed);
-    push({
-      moveId: slot.moveId,
-      source: 'level',
-      level: learned,
-      tmId: null,
-      slot: inSlot.get(slot.moveId) ?? null,
-    });
+    push({ moveId, source: 'tm', level: null, tmId });
   }
   entries.sort(compareEntries);
   return entries;
-}
-
-/** The level a member learned `moveId` at, or null when the learnset cannot say. */
-function learnedLevel(
-  speciesId: string,
-  level: number,
-  moveId: string,
-  learnsetSeed?: string,
-): number | null {
-  const source = learnsetSeed
-    ? randomLevelUpMoves(speciesId, level, learnsetSeed)
-    : levelUpMoves(speciesId, level);
-  return source.find((entry) => entry.moveId === moveId)?.level ?? null;
 }
 
 /** Level-up moves first (oldest first), then TM moves; ties broken by name. */
@@ -141,11 +107,10 @@ export function poolEntry(
 }
 
 /**
- * Equips a move into a slot. Dropping a benched or TM move onto a slot makes that
- * slot the new move (fresh PP); dropping a move already in **another** slot swaps
- * the two, so the four slots never hold a duplicate. A move the member cannot
- * equip, an unknown member or an out-of-range slot is a no-op, so the run comes
- * back untouched. Pure, like the rest of the run state (D11).
+ * Equips a move into a slot, replacing whatever sits there with a fresh PP. Only a
+ * move the panel offers may be equipped, so a move already in the slots or one the
+ * member cannot learn is a no-op and the run comes back untouched. Pure, like the
+ * rest of the run state (D11).
  */
 export function equipMove(
   run: RunState,
@@ -159,21 +124,13 @@ export function equipMove(
     run.box.find((entry) => entry.fighter.id === memberId);
   if (!member || slot < 0 || slot >= MAX_MOVES) return run;
   if (!poolEntry(run, member, moveId, learnsetSeed)) return run;
+  const move = getMove(moveId);
+  if (!move) return run;
   const moves = member.fighter.moves.map((entry) => ({ ...entry }));
-  const current = moves.findIndex((entry) => entry.moveId === moveId);
-  if (current === slot) return run;
-  if (current >= 0) {
-    const swap = moves[slot];
-    moves[slot] = moves[current];
-    moves[current] = swap;
-  } else {
-    const move = getMove(moveId);
-    if (!move) return run;
-    const fresh = { moveId: move.id, pp: move.pp, maxPp: move.pp };
-    // A drop on the tail (an empty slot past a short moveset) appends; a drop on
-    // a real slot replaces it.
-    if (slot < moves.length) moves[slot] = fresh;
-    else moves.push(fresh);
-  }
+  const fresh = { moveId: move.id, pp: move.pp, maxPp: move.pp };
+  // A drop on the tail (an empty slot past a short moveset) appends; a drop on
+  // a real slot replaces it.
+  if (slot < moves.length) moves[slot] = fresh;
+  else moves.push(fresh);
   return updatePokemon(run, { ...member, fighter: { ...member.fighter, moves } });
 }
