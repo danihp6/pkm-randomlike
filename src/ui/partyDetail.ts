@@ -1,10 +1,11 @@
-import { getMove, getSpecies, type MoveCategory, type StatId } from '../data/dex';
+import { getMove, getNature, getSpecies, type MoveCategory, type StatId } from '../data/dex';
 import { getBiome } from '../data/biomes';
 import { restoreFighter, type BattleFighter, type MoveSlot, type StatusId } from '../engine/battle/fighter';
 import { effectiveMoveType } from '../engine/battle/moveType';
 import { getItem } from '../data/items';
 import { moveMoves, type CatchLocation, type RunPokemon, type RunState } from '../engine/run';
 import { statusAbbreviation } from './metrics';
+import { evolutionGraph, type FamilyNode } from './evolutionGraph';
 
 /**
  * The party detail panel (Phase 6): a click on a party or PC-box member opens a
@@ -34,6 +35,24 @@ export type MoveDetail = Readonly<{
   status: string | null;
 }>;
 
+/**
+ * Which way a nature pushes a stat: `up` (+10%), `down` (-10%) or `neutral`. HP
+ * is never affected, so a nature always reads neutral on it.
+ */
+export type NatureEffect = 'up' | 'down' | 'neutral';
+
+export function natureEffect(nature: string, stat: StatId): NatureEffect {
+  const entry = getNature(nature);
+  if (!entry) return 'neutral';
+  if (entry.plus === stat) return 'up';
+  if (entry.minus === stat) return 'down';
+  return 'neutral';
+}
+
+/** The tints the STATS tab paints a nature-boosted or nature-lowered stat. */
+export const NATURE_UP_TINT = 0x2f9e44;
+export const NATURE_DOWN_TINT = 0xd6453f;
+
 /** Everything the panel shows for one member, in the shape the tabs draw. */
 export type MemberDetail = Readonly<{
   id: string;
@@ -52,6 +71,8 @@ export type MemberDetail = Readonly<{
   moves: readonly MoveDetail[];
   /** Where the member was caught ("Deep Forest · Map 1 · Route 2"), or null. */
   caughtLabel: string | null;
+  /** The member's evolution family as a graph, for the STATS tab. */
+  evolutions: readonly FamilyNode[];
 }>;
 
 /** The battle stats the STATS tab lists, in draw order (HP is the bar). */
@@ -102,7 +123,11 @@ function moveDetails(
 export function memberDetail(run: RunState, memberId: string): MemberDetail | null {
   const member = memberById(run, memberId);
   if (!member) return null;
-  return { ...fighterDetail(restoreFighter(member.fighter)), caughtLabel: catchLabel(member.caughtAt) };
+  return {
+    ...fighterDetail(restoreFighter(member.fighter)),
+    caughtLabel: catchLabel(member.caughtAt),
+    evolutions: evolutionGraph(member.fighter.speciesId, member.fighter.level),
+  };
 }
 
 /** "Deep Forest · Map 1 · Route 2" for a caught member, or null for the starter. */
@@ -135,6 +160,9 @@ export function fighterDetail(fighter: BattleFighter): MemberDetail {
     stats: fighter.stats,
     moves: moveDetails(fighter.moves, fighter.ability, fighter.heldItem),
     caughtLabel: null,
+    // A live battle fighter has no run around it to evolve from; the in-battle
+    // panel only reads stats and moves, so the branch list stays empty.
+    evolutions: [],
   };
 }
 

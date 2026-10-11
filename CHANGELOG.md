@@ -8,6 +8,38 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The debug Party tab sets the squad level once, not per member.** The
+      level moved out of the member editor into a **Squad level** control at the
+      top of the tab: it parks the run's XP and re-levels the **whole party and
+      the PC box** together (they share one level, `D35`), while the member
+      editor keeps moves, ability and nature. The member dropdown also suffixes
+      identical labels (`Eevee Lv20 (1)`, `(2)`) so two same-species members at
+      the same level can be told apart. `src/dev/debugMenu.ts`,
+      `src/scenes/RouteScene.ts`, `src/main.ts`.
+- [x] **Dev-added Pokémon no longer collide on their id.** The debug panel's
+      counter resets on a reload, so a re-added species reused `debug:<sp>:1` and
+      `updatePokemon` (which matches by id) then edited or replaced several
+      members at once. `nextDebugPokemonId` scans the live party and box for a
+      free counter, so every drop stays unique. `src/dev/ids.ts`,
+      `src/scenes/RouteScene.ts`.
+- [x] **Level evolutions, drawn as a family graph and taken with a click.**
+      Every dex evolution — level, stone, trade, friendship, move — is resolved
+      to a level (`evolutionBranches`): a canon level evolution keeps its level,
+      the rest take their species' own level evolution or a stage default (base
+      forms at 20, middle forms at 30), never below the level the species was
+      obtained at, and all of a species' branches share it. Evolution is now
+      **manual** (`D38`): a member no longer evolves on level-up or on a catch;
+      the STATS tab draws its whole family as a graph — one row per species
+      indented by stage, each with its sprite and the level it evolves at, the
+      pre-evolutions included — with the current species gold and a branch whose
+      level is met green, a `click to evolve` hint and a pointer cursor, so
+      Eevee's eight forms are a choice. A click evolves the member, keeping its
+      level, nature, IVs/EVs, moves, PP, status and held item and carrying the
+      missing HP across. The STATS tab also paints the stat a nature raises green
+      and the one it lowers red (in the battle panel too).
+      `src/data/dex/evolutions.ts`, `src/ui/evolutionGraph.ts`,
+      `src/engine/run/progression.ts`, `src/ui/partyDetail.ts`,
+      `src/scenes/RouteScene.ts`, `src/scenes/BattleScene.ts`.
 - [x] **The MOVES tab gains a learnset band: search, learned moves and bag TMs,
       dragged onto the four slots.** Below the slotted moves the detail window
       shows a search field over a paged, full-width grid of every move the member

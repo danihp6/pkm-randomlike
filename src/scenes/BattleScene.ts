@@ -57,7 +57,14 @@ import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR, FRLG_HPBAR_KE
 import { FRLG_INK, FRLG_FONT_SIZE, addFrlgText } from '../ui/frlgFont';
 import { typeColor, typeTint } from '../ui/typeColors';
 import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../data/statusIcons';
-import { DETAIL_STATS, STAT_LABELS, fighterDetail } from '../ui/partyDetail';
+import {
+  DETAIL_STATS,
+  NATURE_DOWN_TINT,
+  NATURE_UP_TINT,
+  STAT_LABELS,
+  fighterDetail,
+  natureEffect,
+} from '../ui/partyDetail';
 import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import type { RouteScene } from './RouteScene';
@@ -1819,7 +1826,15 @@ export class BattleScene extends Phaser.Scene {
 
     const { hpText, rows, nature, ability, held } = this.partyDetailStats;
     hpText.setText(`HP  ${detail.hp}/${detail.maxHp}`);
-    rows.forEach((row, i) => row.value.setText(String(detail.stats[DETAIL_STATS[i]])));
+    rows.forEach((row, i) => {
+      const stat = DETAIL_STATS[i];
+      row.value.setText(String(detail.stats[stat]));
+      // Green for the stat a nature raises, red for the one it lowers.
+      const effect = natureEffect(detail.nature, stat);
+      const tint = effect === 'up' ? NATURE_UP_TINT : effect === 'down' ? NATURE_DOWN_TINT : FRLG_INK;
+      row.value.setTint(tint);
+      if (effect !== 'neutral') row.label.setTint(tint);
+    });
     nature.setText(`NATURE  ${capitalize(detail.nature)}`);
     ability.setText(`ABILITY  ${detail.ability}`);
     held.setText(`HELD  ${detail.heldItemName ?? 'none'}`);

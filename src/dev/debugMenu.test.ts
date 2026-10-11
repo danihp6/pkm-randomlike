@@ -21,6 +21,7 @@ import {
   parseOptionalInt,
   parseOptionalText,
   partyMemberLabel,
+  partyMemberLabels,
   randomRouteInput,
   type DebugPartyMember,
 } from './debugMenu';
@@ -148,6 +149,19 @@ describe('matchPartyMember', () => {
   it('returns null for a blank or unknown query', () => {
     expect(matchPartyMember('  ', party)).toBeNull();
     expect(matchPartyMember('missingno', party)).toBeNull();
+  });
+
+  it('disambiguates identical labels and matches each twin', () => {
+    const twins: readonly DebugPartyMember[] = [
+      { id: 'x', speciesId: 'eevee', name: 'Eevee', level: 20, nature: 'serious', ability: 'Run Away', moves: [] },
+      { id: 'y', speciesId: 'eevee', name: 'Eevee', level: 20, nature: 'adamant', ability: 'Run Away', moves: [] },
+      { id: 'z', speciesId: 'pikachu', name: 'Pikachu', level: 12, nature: 'serious', ability: 'Static', moves: [] },
+    ];
+    expect(partyMemberLabels(twins)).toEqual(['Eevee Lv20 (1)', 'Eevee Lv20 (2)', 'Pikachu Lv12']);
+    expect(matchPartyMember('Eevee Lv20 (2)', twins)?.id).toBe('y');
+    expect(matchPartyMember('eevee lv20 (1)', twins)?.id).toBe('x');
+    expect(matchPartyMember('Eevee Lv20', twins)?.id).toBe('x');
+    expect(matchPartyMember('Eevee', twins)?.id).toBe('x');
   });
 });
 

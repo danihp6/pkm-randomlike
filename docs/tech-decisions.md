@@ -497,6 +497,21 @@ Judgment's form-changing relatives wait for those moves/items to exist in a
 future dex — Judgment stays Normal without a Plate, and Hidden Power is not in
 Gen 9 at all.
 
+## D38 — Every evolution is a level evolution and the player clicks it *(decided)*
+
+The dex's stone, trade, friendship and move evolutions are resolved to a level
+(`evolutionBranches`, `src/data/dex/evolutions.ts`): a canon level evolution
+keeps its level, the rest take their species' own level evolution when it has
+one and otherwise a stage default (base forms at 20, middle forms at 30), never
+below the level the species was obtained at. All of a species' branches share
+that level, so Eevee's eight forms unlock together. Evolution is **manual** — a
+member never evolves on level-up (`levelUpPokemon`) or on a catch
+(`adoptAtLevel`) — the STATS tab draws the whole family as a graph
+(`src/ui/evolutionGraph.ts`) and a click on a ready branch evolves the member
+(`evolvePokemon`/`evolveMember`), keeping the level, nature, IVs/EVs, moves, PP,
+status and held item and carrying the missing HP across. The graph shows the
+pre-evolutions too, so a final form still reads its line.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

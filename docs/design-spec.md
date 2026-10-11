@@ -55,7 +55,12 @@ carries over.
   party member even when the party is full (the one it replaces takes the box
   slot). A plain **click** on a member
   opens a **detail panel** (its own window) with **STATS** — HP, the five battle
-  stats, nature, ability and held item — and **MOVES**, where the four slotted
+  stats (the one a nature raises painted green, the one it lowers red), nature,
+  ability, held item and the member's **evolution graph**: its whole family from
+  the base form on down, one row per species indented by stage, each showing its
+  sprite and the level it evolves at. A branch the member's level already allows
+  is green and a click evolves the member into it — Eevee's eight forms sit
+  side by side and the player picks the one they want — and **MOVES**, where the four slotted
   moves can be dragged to reorder them (that order is what the battle menu lists)
   over a **learnset** band: a search field and a paged grid, spanning the window,
   of every move the member may equip — the level-up moves it has learned so far
