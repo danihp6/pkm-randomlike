@@ -1962,18 +1962,16 @@ describe('generalised form abilities (batch 14)', () => {
     expect(holder.speciesId).toBe('cherrimsunshine');
   });
 
-  it('Stance Change reaches Blade Forme on a damaging move', () => {
+  it('Stance Change reaches Blade Forme on a damaging move and reverts on King\u2019s Shield', () => {
     const state = makeBattle(
-      fighter('player', 'eevee', 'Stance Change', ['tackle', 'swordsdance']),
+      fighter('player', 'eevee', 'Stance Change', ['tackle', 'kingsshield']),
       fighter('enemy', 'charmander', 'Blaze'),
     );
     const holder = activeFighter(state, 'player');
     runAfterMove(ctxOf(state, 'player'), getMove('tackle')!);
     expect(holder.speciesId).toBe('aegislashblade');
-    // Only King's Shield reverts canonically, and that Past move is not in the
-    // shipped move set yet, so a status move leaves the Blade forme in place.
-    runAfterMove(ctxOf(state, 'player'), getMove('swordsdance')!);
-    expect(holder.speciesId).toBe('aegislashblade');
+    runAfterMove(ctxOf(state, 'player'), getMove('kingsshield')!);
+    expect(holder.speciesId).toBe('eevee');
   });
 
   it('Disguise absorbs the first damaging hit and leaves the holder Busted', () => {

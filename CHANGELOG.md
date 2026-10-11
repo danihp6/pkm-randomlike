@@ -8,6 +8,14 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The game ships the full move set (D42).** `build-dex.mjs` generates every
+      real move, the `Past` ones included, so a Dexit species keeps its learnset:
+      `moves.json` grows 685 → **835** (King's Shield, Aromatherapy, Linoone's
+      Belly Drum...). Dynamax (Max) and Z moves are dropped — the engine models
+      neither — as are CAP/Future/Unobtainable entries, and Hidden Power's 17
+      typings collapse to the single Normal entry (its IV-based type is not
+      modelled; this also fixed a duplicate-id bug that corrupted the random
+      learnset). `scripts/build-dex.mjs`, `src/data/dex/*.json`.
 - [x] **Form-change abilities are generalised like Zero to Hero (D41).** Any
       species may now roll and use **Schooling, Zen Mode, Zen Mode (Galar),
       Shields Down, Tera Shift, Hunger Switch, Forecast, Flower Gift, Stance

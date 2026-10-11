@@ -131,17 +131,27 @@ const main = async () => {
       };
     });
 
-  // `secondaries` is the resolved array (@pkmn/dex derives it from `secondary`),
-  // so the raw `secondary` field is dropped: keeping both made the engine apply
-  // single secondaries twice.
-  const moves = Dex.moves
-    .all()
-    .filter((entry) => !entry.isNonstandard)
-    .map((entry) => {
-      const out = { ...entry };
-      delete out.secondary;
-      return out;
-    });
+  // The whole move set (`D42`): every real move, the `Past` ones included, so a
+  // Dexit species keeps its learnset (King's Shield, Aromatherapy...). Dynamax
+  // (Max) and Z moves are dropped — the engine models neither — as are the CAP,
+  // Future and Unobtainable entries. `secondaries` is the resolved array
+  // (@pkmn/dex derives it from `secondary`), so the raw `secondary` field is
+  // dropped: keeping both made the engine apply single secondaries twice.
+  //
+  // Hidden Power's 17 typings all share the id `hiddenpower`; the engine keys
+  // moves by id and does not model its IV-based type, so only the first (Normal)
+  // entry survives and the rest are skipped.
+  const moves = [];
+  const seenMoveIds = new Set();
+  for (const entry of Dex.moves.all()) {
+    if (entry.isMax || entry.isZ) continue;
+    if (['CAP', 'Gigantamax', 'Future', 'Unobtainable'].includes(entry.isNonstandard)) continue;
+    if (seenMoveIds.has(entry.id)) continue;
+    seenMoveIds.add(entry.id);
+    const out = { ...entry };
+    delete out.secondary;
+    moves.push(out);
+  }
   const moveIds = new Set(moves.map((entry) => entry.id));
 
   // Zen Mode has one dex entry but two formes (Darmanitan and its Galar forme),

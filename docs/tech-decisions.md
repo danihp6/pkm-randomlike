@@ -504,8 +504,8 @@ primary type) and Aura Wheel (the Morpeko form). A **held item** hooks the same
 path: the seventeen Plates ship and give Judgment their type (`item.plate`).
 Multi-Attack (Memories), Techno Blast (Drives), Natural Gift (berries) and
 Judgment's form-changing relatives wait for those moves/items to exist in a
-future dex — Judgment stays Normal without a Plate, and Hidden Power is not in
-Gen 9 at all.
+future dex - Judgment stays Normal without a Plate, and Hidden Power ships only
+as a single Normal entry (its IV-based typing is not modelled).
 
 ## D38 — Every evolution is a level evolution and the player clicks it *(decided)*
 
@@ -557,12 +557,12 @@ art), and the battle-only Gigantamax/Eternamax formes.
 
 Two learnset rules keep a Dexit species playable: a species with no gen-8
 source falls back to its own newest learnset, and a forme without one inherits
-its base species'. A species whose whole learnset is gone from Gen 9 (Unown,
-only Hidden Power) falls back to Tackle in `defaultMoveset`. This is what gives
-the generalised form-change abilities a real target: forms like
-Wishiwashi-School, Darmanitan-Zen, Aegislash-Blade and Castform-Sunny now exist
-in the dex. It changes what the wild, the trainers, the starters and the battle
-art (`npm run data:anil`) can meet.
+its base species'. A species that somehow ends up with no move at all falls back
+to Tackle in `defaultMoveset` (Unown keeps Hidden Power, which ships as of
+`D42`). This is what gives the generalised form-change abilities a real target:
+forms like Wishiwashi-School, Darmanitan-Zen, Aegislash-Blade and Castform-Sunny
+now exist in the dex. It changes what the wild, the trainers, the starters and
+the battle art (`npm run data:anil`) can meet.
 
 ## D41 — Form-change abilities are generalised like Zero to Hero *(decided)*
 
@@ -582,9 +582,18 @@ holder Busted).
 `changeBattleForm` **keeps the holder's ability** so the rule keeps firing (a
 Mega is the exception — its forme's ability wins). All of them are off
 `randomAbility`'s ban list, so any species may roll them. Stance Change's Shield
-revert needs King's Shield, a `Past` move not in the shipped move set yet
-(`moves.json` is still Gen 9 only); Commander stays excluded — it is a doubles
-mechanic with no single-battle forme to reach.
+revert needs King's Shield, which ships with the full move set (`D42`); Commander
+stays excluded — it is a doubles mechanic with no single-battle forme to reach.
+
+## D42 — The game ships the full move set *(decided)*
+
+`build-dex.mjs` now generates every real move, the `Past` ones included, so a
+Dexit species keeps its learnset: `moves.json` grows from 685 to **835**. Dropped
+are the Dynamax (Max) and Z moves (the engine models neither) and the
+CAP/Future/Unobtainable entries. Hidden Power's 17 typings all share the id
+`hiddenpower`; the engine keys moves by id and does not model its IV-based type,
+so only the Normal entry ships. A move with no ported effect still resolves its
+base damage generically; an unported status move is a dev-warned no-op.
 
 ## Open questions
 
