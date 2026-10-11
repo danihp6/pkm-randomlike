@@ -56,15 +56,10 @@ import { actionKeys, subscribeKeybinds } from '../input/input';
 import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_TEXTBOX_PADDING, FRLG_WINDOW_PADDING } from '../ui/frlg';
 import { FRLG_INK, FRLG_FONT_SIZE, addFrlgText } from '../ui/frlgFont';
 import { typeColor, typeTint } from '../ui/typeColors';
-import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeIcons';
 import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../data/statusIcons';
 import { DETAIL_STATS, STAT_LABELS, fighterDetail } from '../ui/partyDetail';
+import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
-import {
-  MOVE_CATEGORY_ICON_W,
-  MOVE_CATEGORY_TEXTURE_KEY,
-  categoryIconFrame,
-} from '../data/moveCategoryIcons';
 import type { RouteScene } from './RouteScene';
 
 const MESSAGE_HOLD_MS = 900;
@@ -93,34 +88,16 @@ const MENU_TAB_H = 26;
 const MENU_TAB_GAP = 4;
 /** Bag rows that fit under the tab strip in the 160px menu window. */
 const MENU_BAG_ROWS = 3;
-/** The moves menu is a grid so all four moves show at once, with no scrolling. */
+/** The FIGHT / BAG / SWITCH / RUN grid: 2 columns, one gap and one inset. */
 const MENU_GRID_COLS = 2;
 const MENU_GRID_GAP = 8;
-/** The moves grid always reserves the full 2x2, so a short list keeps one cell size. */
-const MENU_GRID_ROWS = Math.ceil(MENU_ROWS / MENU_GRID_COLS);
-/** Width reserved at the left of the moves grid for the ◀ back control. */
-const MOVE_BACK_COL = 46;
+/** Width reserved at the left of the command grid for the ◀ back control. */
+const MOVE_BACK_COL = 64;
 /** Width reserved at the right of the moves grid for the Mega control (D34). */
 const MOVE_MEGA_COL = 62;
-/** Inner padding of a moves cell, and the inset of the whole grid in the window. */
-const MOVE_CELL_PAD = 14;
 const MOVE_GRID_INSET = 8;
-/** The ⓘ button in each move cell that reveals the info popup. */
-const MOVE_INFO_SIZE = 22;
-/** The type badge drawn beside the move name; the FRLG badge is 32x14. */
-const MOVE_TYPE_ICON_SCALE = 0.85;
-const MOVE_TYPE_COL = Math.round(TYPE_ICON_W * MOVE_TYPE_ICON_SCALE) + 6;
-/** Below this cell width the power/accuracy line drops under the category row. */
-const MOVE_CELL_NARROW = 220;
-/** The power / accuracy column reserved at a wide cell's right. */
-const MOVE_STAT_COL = 66;
-/** The move description popup that floats over the field on demand. */
-const MOVE_POPUP_MIN_H = 56;
+/** How far above the menu the party detail window (and the info popup) sits. */
 const MOVE_POPUP_GAP = 8;
-/** The popup's left column: the type badge and, under it, the status badge. */
-const MOVE_POPUP_ICON_COL = 44;
-/** The category badge is 32x14; 1.5x reads clearly beside the 16px cell text. */
-const MOVE_CATEGORY_ICON_SCALE = 1.5;
 /** The party (switch) grid: 3 columns of avatar cells. */
 const PARTY_COLS = 3;
 const PARTY_AVATAR_SCALE = 0.9;
@@ -181,33 +158,6 @@ const PARTY_DETAIL_H =
 /** "serious" -> "Serious", for the nature line. */
 function capitalize(text: string): string {
   return text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
-}
-
-/** Green when a stat line reads above its base, red when below, ink when level. */
-const MOVE_STAT_UP = 0x1b7a3d;
-const MOVE_STAT_DOWN = 0xb3261e;
-
-/** The power line's colour: green raised above its base, red lowered, else ink. */
-function powerTint(move: MenuMove): number {
-  if (move.power > move.basePower) return MOVE_STAT_UP;
-  if (move.power < move.basePower) return MOVE_STAT_DOWN;
-  return FRLG_INK;
-}
-
-/** `ACC 100`, with an ↑ / ↓ when stages or abilities moved the hit chance. */
-function accuracyLabel(move: MenuMove): string {
-  if (move.baseAccuracy === null || move.accuracy === null) return 'ACC --';
-  const arrow =
-    move.accuracy > move.baseAccuracy ? ' \u2191' : move.accuracy < move.baseAccuracy ? ' \u2193' : '';
-  return `ACC ${move.accuracy}${arrow}`;
-}
-
-/** Green for a raised hit chance, red for a lowered one, ink when unchanged. */
-function accuracyTint(move: MenuMove): number {
-  if (move.baseAccuracy === null || move.accuracy === null) return FRLG_INK;
-  if (move.accuracy > move.baseAccuracy) return MOVE_STAT_UP;
-  if (move.accuracy < move.baseAccuracy) return MOVE_STAT_DOWN;
-  return FRLG_INK;
 }
 
 type Mode = 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'over';
@@ -328,17 +278,10 @@ export class BattleScene extends Phaser.Scene {
   private menuRows: Phaser.GameObjects.BitmapText[] = [];
   /** One pointer zone per menu row, so a click picks it like a cursor press. */
   private menuZones: Phaser.GameObjects.Zone[] = [];
-  /** The cells of the moves grid, drawn behind its text so the 2x2 reads as a grid. */
-  private moveCells: Phaser.GameObjects.Rectangle[] = [];
-  /** The type badge, category badge and PP / power / accuracy text of each cell. */
-  private moveTypeIcons: Phaser.GameObjects.Image[] = [];
-  private moveCategoryIcons: Phaser.GameObjects.Image[] = [];
-  private movePpText: Phaser.GameObjects.BitmapText[] = [];
-  private movePowerText: Phaser.GameObjects.BitmapText[] = [];
-  private moveAccuracyText: Phaser.GameObjects.BitmapText[] = [];
-  /** The per-cell ⓘ button; hovering or clicking the cell's button reveals the info. */
-  private moveInfoButtons: Phaser.GameObjects.Rectangle[] = [];
-  private moveInfoLabels: Phaser.GameObjects.BitmapText[] = [];
+  /** The cells of the FIGHT / BAG / SWITCH / RUN grid, drawn behind its names. */
+  private commandCells: Phaser.GameObjects.Rectangle[] = [];
+  /** The shared moves grid and its floating info popup, drawn in the moves mode. */
+  private moveGrid!: MoveGrid;
   /** The party (switch) grid: a cell, avatar, label, HP bar and hit zone per member. */
   private partyCells: Phaser.GameObjects.Rectangle[] = [];
   private partyAvatars: Phaser.GameObjects.Image[] = [];
@@ -346,13 +289,6 @@ export class BattleScene extends Phaser.Scene {
   private partyHpBars: Phaser.GameObjects.Image[] = [];
   private partyHpFills: Phaser.GameObjects.Rectangle[] = [];
   private partyZones: Phaser.GameObjects.Zone[] = [];
-  /** The description popup shown on demand while the moves menu is open. */
-  private movePopup!: Phaser.GameObjects.NineSlice;
-  private movePopupType!: Phaser.GameObjects.Rectangle;
-  private movePopupTypeText!: Phaser.GameObjects.BitmapText;
-  private movePopupTypeIcon!: Phaser.GameObjects.Image;
-  private movePopupStatusIcon!: Phaser.GameObjects.Image;
-  private movePopupText!: Phaser.GameObjects.BitmapText;
   /** The move whose info popup is up, or null; `infoPinned` keeps it up on click. */
   private infoMove: number | null = null;
   private infoPinned = false;
@@ -524,7 +460,7 @@ export class BattleScene extends Phaser.Scene {
     this.playerPanel = addFrlgWindow(this, 0, 0, PLAYER_PANEL_W, PLAYER_PANEL_H);
     this.messagePanel = addFrlgWindow(this, 0, 0, 100, 100, 'textbox');
     this.menuPanel = addFrlgWindow(this, 0, 0, MENU_W, 100);
-    this.moveCells = Array.from({ length: MENU_ROWS }, () =>
+    this.commandCells = Array.from({ length: MENU_ROWS }, () =>
       this.add
         .rectangle(0, 0, 10, 10, 0xe6e3f2)
         .setOrigin(0, 0)
@@ -586,41 +522,6 @@ export class BattleScene extends Phaser.Scene {
 
     this.menuRows = Array.from({ length: MENU_ROWS }, () =>
       addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
-    );
-    // The moves grid's per-cell category badge and PP line, hidden with the cells.
-    this.moveCategoryIcons = Array.from({ length: MENU_ROWS }, () =>
-      this.add
-        .image(0, 0, MOVE_CATEGORY_TEXTURE_KEY, 0)
-        .setOrigin(0, 0)
-        .setScale(MOVE_CATEGORY_ICON_SCALE)
-        .setVisible(false),
-    );
-    this.movePpText = Array.from({ length: MENU_ROWS }, () =>
-      addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK }).setVisible(false),
-    );
-    this.moveTypeIcons = Array.from({ length: MENU_ROWS }, () =>
-      this.add
-        .image(0, 0, TYPE_ICON_TEXTURE_KEY, 0)
-        .setOrigin(0, 0)
-        .setScale(MOVE_TYPE_ICON_SCALE)
-        .setVisible(false),
-    );
-    // Power and accuracy read at the cell's right; the accuracy picks up an ↑/↓
-    // when a stage or an ability has moved the hit chance off its printed value.
-    this.movePowerText = Array.from({ length: MENU_ROWS }, () =>
-      addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [1, 0] }).setVisible(false),
-    );
-    this.moveAccuracyText = Array.from({ length: MENU_ROWS }, () =>
-      addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [1, 0] }).setVisible(false),
-    );
-    this.moveInfoButtons = Array.from({ length: MENU_ROWS }, () =>
-      this.add
-        .rectangle(0, 0, MOVE_INFO_SIZE, MOVE_INFO_SIZE, 0xcfcce2)
-        .setStrokeStyle(2, 0x9a94b8)
-        .setVisible(false),
-    );
-    this.moveInfoLabels = Array.from({ length: MENU_ROWS }, () =>
-      addFrlgText(this, 0, 0, 'i', { size: 16, tint: FRLG_INK, origin: 0.5 }).setVisible(false),
     );
     // The party (switch) grid, built once and hidden until the party is open.
     this.partyCells = Array.from({ length: MAX_PARTY_SIZE }, () =>
@@ -690,31 +591,9 @@ export class BattleScene extends Phaser.Scene {
       return { bg, label };
     });
 
-    // The move description popup, built last so it rides over the menu and the
-    // battle behind it. Hidden unless the moves menu is open. The type chip sits
-    // at its left, the description (larger) beside it.
-    this.movePopup = addFrlgWindow(this, 0, 0, 300, MOVE_POPUP_MIN_H).setVisible(false);
-    this.movePopupType = this.add
-      .rectangle(0, 0, TYPE_ICON_W, 14, 0x9aa0b4)
-      .setOrigin(0, 0)
-      .setVisible(false);
-    this.movePopupTypeText = addFrlgText(this, 0, 0, '', {
-      size: 16,
-      tint: 0xf8fafc,
-      origin: [0.5, 0],
-    }).setVisible(false);
-    this.movePopupTypeIcon = this.add
-      .image(0, 0, TYPE_ICON_TEXTURE_KEY, 0)
-      .setOrigin(0, 0)
-      .setVisible(false);
-    this.movePopupStatusIcon = this.add
-      .image(0, 0, STATUS_ICON_TEXTURE_KEY, 0)
-      .setOrigin(0, 0)
-      .setVisible(false);
-    this.movePopupText = addFrlgText(this, 0, 0, '', {
-      tint: FRLG_INK,
-      lineSpacing: 4,
-    }).setVisible(false);
+    // The shared moves grid and its floating info popup, built last so the popup
+    // rides over the menu and the battle behind it. Hidden until fights open it.
+    this.moveGrid = new MoveGrid(this);
 
     this.buildPartyDetail();
   }
@@ -1590,7 +1469,7 @@ export class BattleScene extends Phaser.Scene {
     if (compact) {
       const pad = 16;
       const panelW = width - pad * 2;
-      const boxH = 204;
+      const boxH = 236;
       box = { x: pad, y: height - boxH - pad, w: panelW, h: boxH };
       foeInfo = { x: pad, y: pad, w: panelW, h: FOE_PANEL.h };
       playerInfo = { x: pad, y: Math.round(height * 0.46), w: panelW, h: PLAYER_PANEL_H };
@@ -1601,11 +1480,11 @@ export class BattleScene extends Phaser.Scene {
       playerX = width * 0.32;
       playerY = playerInfo.y - 90;
     } else {
-      box = { x: 36, y: height - 186, w: width - 72, h: 160 };
+      box = { x: 36, y: height - 218, w: width - 72, h: 192 };
       foeInfo = { x: 36, y: 28, w: FOE_PANEL.w, h: FOE_PANEL.h };
       playerInfo = {
         x: width - 36 - PLAYER_PANEL_W,
-        y: height - 186 - 24 - PLAYER_PANEL_H,
+        y: box.y - 24 - PLAYER_PANEL_H,
         w: PLAYER_PANEL_W,
         h: PLAYER_PANEL_H,
       };
@@ -1616,7 +1495,7 @@ export class BattleScene extends Phaser.Scene {
     }
 
     // The move-detail popup floats over the field when the ⓘ button asks for
-    // it, so it never moves the panels around it (see `showMovePopup`).
+    // it, so it never moves the panels around it (see `MoveGrid`).
 
     // Both boxes span the full bottom width and share it: the choice menu owns
     // the whole box while it is open and the message window steps aside, so a
@@ -1773,7 +1652,7 @@ export class BattleScene extends Phaser.Scene {
         .setPosition(cellX(i) + cellW / 2, cellY(i) + cellH / 2)
         .setVisible(true);
     });
-    this.moveCells.forEach((cell, i) => {
+    this.commandCells.forEach((cell, i) => {
       const item = i < count ? this.menuItems[i] : undefined;
       if (!item) {
         cell.setVisible(false);
@@ -1978,22 +1857,20 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * The moves menu as a 2-column grid, so all four moves show at once with no
-   * scrolling. The ◀ back control sits centred on the grid's left edge; each cell
-   * is tinted by the move's type and shows its name, a category badge and its PP,
-   * while the popup above the menu lists the type and description of the move the
-   * cursor is on.
+   * The moves menu: the shared grid fills the window (the same component the route
+   * HUD draws in its detail panel), the ◀ back control sits centred on the grid's
+   * left edge and the MEGA control takes a column on the right while it is usable.
+   * The grid's own popup floats the type and description of the move the cursor is
+   * on.
    */
   private renderMoveMenu(menu: Rect): void {
     this.menuPanel.setVisible(true);
     this.hideBagTabs();
     this.hidePartyGrid();
+    for (const row of this.menuRows) row.setVisible(false);
+    for (const cell of this.commandCells) cell.setVisible(false);
     const pad = FRLG_WINDOW_PADDING;
     const count = this.menuItems.length;
-    const cols = MENU_GRID_COLS;
-    // The grid always keeps its 2x2 shape, so one or two moves draw the same
-    // cell size as a full set instead of stretching to fill the window.
-    const rows = MENU_GRID_ROWS;
     const left = menu.x + pad.x;
     const right = menu.x + menu.w - pad.x - MOVE_GRID_INSET;
     const top = menu.y + pad.top + MOVE_GRID_INSET;
@@ -2001,170 +1878,52 @@ export class BattleScene extends Phaser.Scene {
     // The Mega control takes a column on the right, but only while it is usable.
     const mega = this.megaAvailable();
     if (!mega) this.megaSelected = false;
-    const gridLeft = left + MOVE_BACK_COL;
-    const gridRight = mega ? right - MOVE_MEGA_COL : right;
-    const cellW = (gridRight - gridLeft - (cols - 1) * MENU_GRID_GAP) / cols;
-    const cellH = (bottom - top - (rows - 1) * MENU_GRID_GAP) / rows;
-    const narrow = cellW < MOVE_CELL_NARROW;
-    const cellX = (i: number): number => gridLeft + (i % cols) * (cellW + MENU_GRID_GAP);
-    const cellY = (i: number): number => top + Math.floor(i / cols) * (cellH + MENU_GRID_GAP);
 
-    // The ◀ back control, centred on the grid's left edge between the two rows.
-    const backX = left + 14;
+    // The ◀ back control, centred in the grid's reserved left column.
     const backY = (top + bottom) / 2;
+    const backW = this.backArrow.displayWidth;
+    const backX = left + Math.round((MOVE_BACK_COL - backW) / 2);
     this.backArrow.setVisible(true).setPosition(backX, backY);
-    this.backZone.setPosition(backX - 12, backY - 18).setSize(48, 36);
+    this.backZone.setPosition(backX + backW / 2 - 24, backY - 18).setSize(48, 36);
     if (this.backZone.input) this.backZone.input.enabled = true;
 
     this.layoutMegaControl(right, top, bottom, mega);
 
-    this.menuRows.forEach((row, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      if (!item) {
-        row.setVisible(false);
-        return;
-      }
-      const nameX = narrow ? cellX(i) + MOVE_CELL_PAD + 24 : cellX(i) + MOVE_CELL_PAD + MOVE_TYPE_COL;
-      const nameRight = cellX(i) + cellW - MOVE_CELL_PAD - MOVE_INFO_SIZE - 6 - (narrow ? 0 : MOVE_STAT_COL);
-      row
-        .setText(item.label)
-        .setAlpha(item.enabled ? 1 : 0.4)
-        .setFontSize(16)
-        .setMaxWidth(Math.max(40, nameRight - nameX - 6))
-        .setOrigin(0, 0)
-        .setPosition(nameX, cellY(i) + MOVE_CELL_PAD)
-        .setVisible(true);
+    const cells: MoveGridCell[] = this.menuItems.map((item) => ({
+      name: item.label,
+      type: item.move?.type ?? '',
+      category: item.move?.category ?? 'Status',
+      pp: item.move?.pp ?? 0,
+      maxPp: item.move?.maxPp ?? 0,
+      desc: item.move?.desc ?? '',
+      power: item.move?.power ?? 0,
+      basePower: item.move?.basePower ?? 0,
+      accuracy: item.move?.accuracy ?? null,
+      baseAccuracy: item.move?.baseAccuracy ?? null,
+      status: item.move?.status ?? null,
+      enabled: item.enabled,
+    }));
+    this.moveGrid.layout({
+      x: menu.x,
+      y: menu.y,
+      w: menu.w,
+      h: menu.h,
+      cells,
+      selected: this.megaSelected ? -1 : this.menuIndex,
+      info: this.megaSelected ? null : this.infoMove,
+      leftReserve: MOVE_BACK_COL,
+      rightReserve: mega ? MOVE_MEGA_COL : 0,
     });
-    this.moveTypeIcons.forEach((icon, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      const frame = item?.move ? typeIconFrame(item.move.type) : null;
-      if (!item || frame === null) {
-        icon.setVisible(false);
-        return;
-      }
-      icon
-        .setFrame(frame)
-        .setAlpha(item.enabled ? 1 : 0.4)
-        .setPosition(
-          cellX(i) + MOVE_CELL_PAD,
-          cellY(i) + MOVE_CELL_PAD + (narrow ? 2 : 1),
-        )
-        .setScale(narrow ? 0.7 : MOVE_TYPE_ICON_SCALE)
-        .setVisible(true);
-    });
-    this.moveCategoryIcons.forEach((icon, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      const frame = item?.move ? categoryIconFrame(item.move.category) : null;
-      if (!item || frame === null) {
-        icon.setVisible(false);
-        return;
-      }
-      const scale = narrow ? 1.25 : MOVE_CATEGORY_ICON_SCALE;
-      icon
-        .setFrame(frame)
-        .setAlpha(item.enabled ? 1 : 0.4)
-        .setScale(scale)
-        .setPosition(cellX(i) + MOVE_CELL_PAD, cellY(i) + MOVE_CELL_PAD + 20)
-        .setVisible(true);
-    });
-    this.movePpText.forEach((text, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      if (!item?.move) {
-        text.setVisible(false);
-        return;
-      }
-      const catW = MOVE_CATEGORY_ICON_W * (narrow ? 1.25 : MOVE_CATEGORY_ICON_SCALE);
-      text
-        .setText(`PP ${item.move.pp}/${item.move.maxPp}`)
-        .setAlpha(item.enabled ? 1 : 0.4)
-        .setPosition(
-          cellX(i) + MOVE_CELL_PAD + catW + 6,
-          cellY(i) + MOVE_CELL_PAD + (narrow ? 22 : 24),
-        )
-        .setVisible(true);
-    });
-    this.movePowerText.forEach((text, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      if (!item?.move) {
-        text.setVisible(false);
-        return;
-      }
-      const y = narrow ? cellY(i) + MOVE_CELL_PAD + 44 : cellY(i) + MOVE_CELL_PAD;
-      text
-        .setText(item.move.basePower > 0 ? `PWR ${item.move.power}` : 'PWR --')
-        .setTint(powerTint(item.move))
-        .setAlpha(item.enabled ? 1 : 0.4)
-        .setOrigin(narrow ? 0 : 1, 0)
-        .setPosition(
-          narrow ? cellX(i) + MOVE_CELL_PAD : cellX(i) + cellW - MOVE_CELL_PAD - MOVE_INFO_SIZE - 6,
-          y,
-        )
-        .setVisible(true);
-    });
-    this.moveAccuracyText.forEach((text, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      if (!item?.move) {
-        text.setVisible(false);
-        return;
-      }
-      const y = narrow ? cellY(i) + MOVE_CELL_PAD + 44 : cellY(i) + MOVE_CELL_PAD + 22;
-      text
-        .setText(accuracyLabel(item.move))
-        .setTint(accuracyTint(item.move))
-        .setAlpha(item.enabled ? 1 : 0.4)
-        .setOrigin(1, 0)
-        .setPosition(narrow ? cellX(i) + cellW - MOVE_CELL_PAD : cellX(i) + cellW - MOVE_CELL_PAD - MOVE_INFO_SIZE - 6, y)
-        .setVisible(true);
-    });
-    this.moveInfoButtons.forEach((button, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      if (!item) {
-        button.setVisible(false);
-        this.moveInfoLabels[i].setVisible(false);
-        return;
-      }
-      const cx = cellX(i) + cellW - MOVE_CELL_PAD - MOVE_INFO_SIZE / 2;
-      const cy = cellY(i) + MOVE_CELL_PAD + MOVE_INFO_SIZE / 2;
-      const active = this.infoMove === i;
-      button
-        .setPosition(cx, cy)
-        .setSize(MOVE_INFO_SIZE, MOVE_INFO_SIZE)
-        .setFillStyle(active ? 0xf7e0a6 : 0xcfcce2)
-        .setStrokeStyle(2, active ? 0x2f2c4d : 0x9a94b8)
-        .setAlpha(item.enabled ? 1 : 0.4)
-        .setVisible(true);
-      this.moveInfoLabels[i].setPosition(cx, cy).setAlpha(item.enabled ? 1 : 0.4).setVisible(true);
-    });
-    this.moveCells.forEach((cell, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      if (!item) {
-        cell.setVisible(false);
-        return;
-      }
-      const type = item.move?.type ?? '';
-      const selected = i === this.menuIndex;
-      cell
-        .setPosition(cellX(i), cellY(i))
-        .setSize(cellW, cellH)
-        .setFillStyle(typeTint(type, selected ? 0.35 : 0.72))
-        .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
-        .setVisible(true);
-    });
+
     this.menuZones.forEach((zone, i) => {
       const item = i < count ? this.menuItems[i] : undefined;
       zone.setData('item', item ? i : -1);
       if (zone.input) zone.input.enabled = Boolean(item);
-      if (item) {
-        zone
-          .setPosition(cellX(i), cellY(i))
-          .setSize(cellW, cellH)
-          .setData('infoRect', {
-            x: cellW - MOVE_CELL_PAD - MOVE_INFO_SIZE,
-            y: MOVE_CELL_PAD,
-            w: MOVE_INFO_SIZE,
-            h: MOVE_INFO_SIZE,
-          });
-      }
+      if (!item) return;
+      const rect = this.moveGrid.cellRect(i);
+      const infoRect = this.moveGrid.infoRect(i);
+      if (!rect || !infoRect) return;
+      zone.setPosition(rect.x, rect.y).setSize(rect.w, rect.h).setData('infoRect', infoRect);
     });
     // The moves grid marks its selection with the cell's highlight alone; the
     // ▶ cursor only appears on the Mega control when that is the target.
@@ -2176,7 +1935,6 @@ export class BattleScene extends Phaser.Scene {
     } else {
       this.menuCursor.setVisible(false);
     }
-    this.showMovePopup(menu);
   }
 
   /**
@@ -2208,109 +1966,15 @@ export class BattleScene extends Phaser.Scene {
     if (this.megaZone.input) this.megaZone.input.enabled = true;
   }
 
-  /** The popup's description font: large on a full-width menu, small on a phone. */
-  private movePopupFontSize(width: number): number {
-    return width >= 500 ? FRLG_FONT_SIZE : 16;
-  }
-
-  /** The move whose info popup is up, or null. */
-  private infoMoveEntry(): MenuMove | null {
-    const index = this.infoMove;
-    if (index === null) return null;
-    return this.menuItems[index]?.move ?? null;
-  }
-
-  /** The popup height, measured from the revealed move's wrapped description. */
-  private movePopupHeight(width: number): number {
-    const move = this.infoMoveEntry();
-    if (!move || move.desc.length === 0) return 0;
-    const pad = FRLG_WINDOW_PADDING;
-    this.movePopupText
-      .setFontSize(this.movePopupFontSize(width))
-      .setText(move.desc)
-      .setMaxWidth(width - pad.x * 2 - MOVE_POPUP_ICON_COL - 12);
-    return Math.max(MOVE_POPUP_MIN_H, pad.top + Math.max(24, this.movePopupText.height) + pad.bottom);
-  }
-
-  /**
-   * The details popup: it floats over the field above the menu — the panels are
-   * never moved to make room for it — and only while the ⓘ button of a move
-   * asks for it. The FRLG type badge sits at its left with the move's status
-   * badge under it, and the description (larger than the grid text) beside them.
-   */
-  private showMovePopup(menu: Rect): void {
-    const move = this.infoMoveEntry();
-    if (this.megaSelected || !move || move.desc.length === 0) {
-      this.hideMovePopup();
-      return;
-    }
-    const pad = FRLG_WINDOW_PADDING;
-    const size = this.movePopupFontSize(menu.w);
-    const height = this.movePopupHeight(menu.w);
-    const x = menu.x;
-    const y = menu.y - height - MOVE_POPUP_GAP;
-    const iconY = y + pad.top;
-    this.movePopup.setSlices(menu.w, height).setPosition(x, y).setVisible(true);
-
-    const typeFrame = typeIconFrame(move.type);
-    if (typeFrame !== null) {
-      this.movePopupTypeIcon.setFrame(typeFrame).setPosition(x + pad.x, iconY).setVisible(true);
-      this.movePopupType.setVisible(false);
-      this.movePopupTypeText.setVisible(false);
-    } else {
-      // The FRLG sheet predates Fairy; keep the text chip as the fallback.
-      this.movePopupTypeIcon.setVisible(false);
-      this.movePopupType
-        .setPosition(x + pad.x, iconY)
-        .setSize(TYPE_ICON_W, 14)
-        .setFillStyle(typeColor(move.type))
-        .setVisible(true);
-      this.movePopupTypeText
-        .setText(move.type.toUpperCase())
-        .setPosition(x + pad.x + TYPE_ICON_W / 2, iconY + 2)
-        .setVisible(true);
-    }
-
-    const statusFrame = move.status ? statusIconFrame(move.status) : null;
-    if (statusFrame !== null) {
-      this.movePopupStatusIcon.setFrame(statusFrame).setPosition(x + pad.x, iconY + 20).setVisible(true);
-    } else {
-      this.movePopupStatusIcon.setVisible(false);
-    }
-
-    this.movePopupText
-      .setText(move.desc)
-      .setFontSize(size)
-      .setMaxWidth(menu.w - pad.x * 2 - MOVE_POPUP_ICON_COL - 12)
-      .setPosition(x + pad.x + MOVE_POPUP_ICON_COL, iconY + Math.max(0, (24 - size) / 2))
-      .setVisible(true);
-  }
-
-  private hideMovePopup(): void {
-    this.movePopup.setVisible(false);
-    this.movePopupText.setVisible(false);
-    this.movePopupType.setVisible(false);
-    this.movePopupTypeText.setVisible(false);
-    this.movePopupTypeIcon.setVisible(false);
-    this.movePopupStatusIcon.setVisible(false);
-  }
-
-  /** Hides every grid piece: cells, badges, PP / power / accuracy, info and popup. */
+  /** Hides the grid and its popup: cells, badges, PP / power / accuracy, ⓘ and info. */
   private hideMoveChrome(): void {
-    for (const cell of this.moveCells) cell.setVisible(false);
-    for (const icon of this.moveTypeIcons) icon.setVisible(false);
-    for (const icon of this.moveCategoryIcons) icon.setVisible(false);
-    for (const text of this.movePpText) text.setVisible(false);
-    for (const text of this.movePowerText) text.setVisible(false);
-    for (const text of this.moveAccuracyText) text.setVisible(false);
-    for (const button of this.moveInfoButtons) button.setVisible(false);
-    for (const label of this.moveInfoLabels) label.setVisible(false);
+    this.moveGrid.hide();
+    for (const cell of this.commandCells) cell.setVisible(false);
     this.megaCell.setVisible(false);
     this.megaText.setVisible(false);
     if (this.megaZone.input) this.megaZone.input.enabled = false;
     this.infoMove = null;
     this.infoPinned = false;
-    this.hideMovePopup();
   }
 
   /** The bag: a pocket tab strip over the active pocket's stacks. */

@@ -22,6 +22,15 @@ export type MoveDetail = Readonly<{
   category: MoveCategory;
   pp: number;
   maxPp: number;
+  desc: string;
+  /** Printed power (0 for a status move), the same for its base. */
+  power: number;
+  basePower: number;
+  /** Printed hit chance, or null when the move never misses. */
+  accuracy: number | null;
+  baseAccuracy: number | null;
+  /** Primary status the move inflicts, for the info popup badge. */
+  status: string | null;
 }>;
 
 /** Everything the panel shows for one member, in the shape the tabs draw. */
@@ -65,6 +74,8 @@ function memberById(run: RunState, id: string): RunPokemon | undefined {
 function moveDetails(slots: readonly MoveSlot[]): MoveDetail[] {
   return slots.map((slot) => {
     const move = getMove(slot.moveId);
+    const accuracy = move && move.accuracy !== true ? move.accuracy : null;
+    const basePower = move?.basePower ?? 0;
     return {
       moveId: slot.moveId,
       name: move?.name ?? slot.moveId,
@@ -72,6 +83,12 @@ function moveDetails(slots: readonly MoveSlot[]): MoveDetail[] {
       category: move?.category ?? 'Status',
       pp: slot.pp,
       maxPp: slot.maxPp,
+      desc: move?.shortDesc ?? move?.desc ?? '',
+      power: basePower,
+      basePower,
+      accuracy,
+      baseAccuracy: accuracy,
+      status: move?.status ?? null,
     };
   });
 }

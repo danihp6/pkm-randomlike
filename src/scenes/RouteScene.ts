@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { biomeForRoute, getBiome } from '../data/biomes';
-import { getSpecies } from '../data/dex';
+import { getSpecies, type StatId } from '../data/dex';
 import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { type HudPanelId } from '../data/hudLayout';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
@@ -28,7 +28,6 @@ import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
   BOSS_MONEY_MULTIPLIER,
   MAX_PARTY_SIZE,
-  MAX_MOVES,
   POKEVIAL_MAX_CHARGES,
   addCaughtPokemon,
   addItem,
@@ -167,6 +166,7 @@ import {
   type MemberDetail,
 } from '../ui/partyDetail';
 import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
+import { MoveGrid } from '../ui/moveGrid';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../data/statusIcons';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
@@ -308,15 +308,40 @@ const PAUSE_MENU_LABELS = ['Settings', 'Reset run'] as const;
 /**
  * The member detail panel: a click on a party or PC-box member opens it to the
  * left of the box. A header (name, level, types) sits over two tabs — STATS and
- * MOVES — and the MOVES list can be dragged to reorder the member's moves.
+ * MOVES — and the MOVES grid can be dragged to reorder the member's moves.
  */
-const HUD_DETAIL_H = HUD_BOX_H;
 const HUD_DETAIL_TAB_H = 26;
 const HUD_DETAIL_TABS_TOP = 72;
 const HUD_DETAIL_CONTENT_TOP = HUD_DETAIL_TABS_TOP + HUD_DETAIL_TAB_H + 10;
-const HUD_DETAIL_ROW = 40;
 const HUD_DETAIL_STAT_ROW = 26;
-const HUD_DETAIL_HPBAR_SCALE = 0.5;
+const HUD_DETAIL_STAT_COLS = 2;
+const HUD_DETAIL_STAT_ROWS = 3;
+const HUD_DETAIL_INFO_ROW = 22;
+const HUD_DETAIL_INFO_ROWS = 2;
+/**
+ * The detail window is wider and shorter than the party/box windows so six
+ * stats read in two columns of three (no HP bar) and the shared move grid's
+ * cells stay wide enough for the full move names.
+ */
+const HUD_DETAIL_W = 460;
+/** Two rows of move cells need this much height; the stats tab sits inside it. */
+const HUD_DETAIL_MOVES_H = 288;
+const HUD_DETAIL_H = Math.max(
+  HUD_DETAIL_CONTENT_TOP +
+    HUD_DETAIL_STAT_ROWS * HUD_DETAIL_STAT_ROW +
+    8 +
+    HUD_DETAIL_INFO_ROWS * HUD_DETAIL_INFO_ROW +
+    HUD_PAD_BOTTOM,
+  HUD_DETAIL_MOVES_H,
+);
+/**
+ * The STATS tab: the six stats in two columns of three. HP leads the first
+ * column; its bar is gone, so the row prints the current / max HP.
+ */
+const HUD_DETAIL_STATS: readonly (readonly StatId[])[] = [
+  ['hp', 'atk', 'def'],
+  ['spa', 'spd', 'spe'],
+];
 const HUD_DETAIL_TYPE_W = 74;
 
 /** The full-party capture window and the party list inside it. */
@@ -649,7 +674,6 @@ export class RouteScene extends Phaser.Scene {
   /** The member detail panel (STATS / MOVES) and the state behind it. */
   private hudDetail!: Phaser.GameObjects.Container;
   private hudDetailState: DetailState = CLOSED_DETAIL;
-  private hudDetailView: MemberDetail | null = null;
   private hudDetailX = 0;
   private hudDetailY = 0;
   private hudDetailName!: Phaser.GameObjects.BitmapText;
@@ -665,23 +689,18 @@ export class RouteScene extends Phaser.Scene {
     label: Phaser.GameObjects.BitmapText;
   }[] = [];
   private hudDetailStats!: {
-    hpBar: Phaser.GameObjects.Image;
-    hpFill: Phaser.GameObjects.Rectangle;
-    hpText: Phaser.GameObjects.BitmapText;
-    rows: { label: Phaser.GameObjects.BitmapText; value: Phaser.GameObjects.BitmapText }[];
+    rows: { stat: StatId; label: Phaser.GameObjects.BitmapText; value: Phaser.GameObjects.BitmapText }[];
     nature: Phaser.GameObjects.BitmapText;
     ability: Phaser.GameObjects.BitmapText;
     held: Phaser.GameObjects.BitmapText;
     caught: Phaser.GameObjects.BitmapText;
   };
-  private hudDetailMoves: {
-    highlight: Phaser.GameObjects.Rectangle;
-    name: Phaser.GameObjects.BitmapText;
-    typeBg: Phaser.GameObjects.Rectangle;
-    typeLabel: Phaser.GameObjects.BitmapText;
-    pp: Phaser.GameObjects.BitmapText;
-  }[] = [];
   private hudDetailEmpty!: Phaser.GameObjects.BitmapText;
+  /** The shared moves grid drawn in the MOVES tab, with its floating info popup. */
+  private hudMoveGrid!: MoveGrid;
+  /** The move whose ⓘ floats its info popup, or null; `pinned` keeps it up. */
+  private hudDetailInfo: number | null = null;
+  private hudDetailInfoPinned = false;
   /**
    * A member press waiting to become a click or a drag: a release without
    * movement opens the detail panel, a move past the slop grabs and reorders.
@@ -994,7 +1013,6 @@ export class RouteScene extends Phaser.Scene {
     this.trainerFacing.clear();
     this.chase = null;
     this.hudDetailState = CLOSED_DETAIL;
-    this.hudDetailView = null;
     this.hudPress = null;
     this.passThrough = false;
     this.clearHoverInspect();
@@ -1076,7 +1094,10 @@ export class RouteScene extends Phaser.Scene {
     // A drag whose button is released off the canvas (or that leaves the screen)
     // must let go, or the held panel/member keeps following a pointer that is gone.
     this.input.on('pointerupoutside', () => this.cancelHudDrags());
-    this.input.on('gameout', () => this.cancelHudDrags());
+    this.input.on('gameout', () => {
+      this.cancelHudDrags();
+      this.clearDetailInfo();
+    });
     // The mouse wheel flips the PC box pages while the pointer is over it.
     this.input.on(
       'wheel',
@@ -1481,7 +1502,7 @@ export class RouteScene extends Phaser.Scene {
         'detail',
         this.hudDetailX,
         this.hudDetailY,
-        HUD_PANEL_W,
+        HUD_DETAIL_W,
         HUD_DETAIL_H,
         this.hudDetail,
         PANEL_ICON_KEYS.detail,
@@ -1582,18 +1603,19 @@ export class RouteScene extends Phaser.Scene {
 
   /**
    * The member detail window: a header (name, level and type chips) over two
-   * tabs, then either the STATS readout or the draggable MOVES list. Built once;
-   * `refreshDetail` fills it in and shows or hides the whole container.
+   * tabs, then either the STATS readout or the draggable MOVES grid (the shared
+   * battle move grid, with its floating info popup). Built once; `refreshDetail`
+   * fills it in and shows or hides the whole container.
    */
   private buildDetailPanel(): Phaser.GameObjects.Container {
-    const x = this.hudBoxX - HUD_PANEL_W - HUD_GAP;
+    const x = this.hudBoxX - HUD_DETAIL_W - HUD_GAP;
     const y = this.hudBoxY;
     this.hudDetailX = x;
     this.hudDetailY = y;
     const left = x + HUD_PAD_X;
-    const right = x + HUD_PANEL_W - HUD_PAD_X;
-    const innerW = HUD_PANEL_W - HUD_PAD_X * 2;
-    const children: Phaser.GameObjects.GameObject[] = [addFrlgWindow(this, x, y, HUD_PANEL_W, HUD_DETAIL_H)];
+    const right = x + HUD_DETAIL_W - HUD_PAD_X;
+    const innerW = HUD_DETAIL_W - HUD_PAD_X * 2;
+    const children: Phaser.GameObjects.GameObject[] = [addFrlgWindow(this, x, y, HUD_DETAIL_W, HUD_DETAIL_H)];
 
     this.hudDetailName = addFrlgText(this, x + HUD_CONTENT_LEFT, y + HUD_PAD_TOP, '', { size: 16, tint: FRLG_INK });
     this.hudDetailLevel = addFrlgText(this, right, y + HUD_PAD_TOP, '', {
@@ -1641,79 +1663,53 @@ export class RouteScene extends Phaser.Scene {
     });
 
     const contentTop = y + HUD_DETAIL_CONTENT_TOP;
-    const hpBar = this.add
-      .image(left, contentTop, FRLG_HPBAR_KEY)
-      .setOrigin(0, 0)
-      .setScale(HUD_DETAIL_HPBAR_SCALE);
-    const hpFill = this.add
-      .rectangle(
-        left + FRLG_HPBAR.fill.x * HUD_DETAIL_HPBAR_SCALE,
-        contentTop + FRLG_HPBAR.fill.y * HUD_DETAIL_HPBAR_SCALE,
-        0,
-        FRLG_HPBAR.fill.height * HUD_DETAIL_HPBAR_SCALE,
-        0x58d080,
-      )
-      .setOrigin(0, 0);
-    const hpText = addFrlgText(this, right, contentTop + 6, '', {
-      size: 16,
-      tint: FRLG_INK,
-      origin: [1, 0],
-    });
-    children.push(hpBar, hpFill, hpText);
-
-    const statsTop = contentTop + 30;
-    const rows = DETAIL_STATS.map((stat, i) => {
-      const rowY = statsTop + i * HUD_DETAIL_STAT_ROW;
-      const label = addFrlgText(this, left, rowY, STAT_LABELS[stat], { size: 16, tint: 0x3a3956 });
-      const value = addFrlgText(this, right, rowY, '', {
-        size: 16,
-        tint: FRLG_INK,
-        origin: [1, 0],
+    // The six stats in two columns of three; the HP row prints current / max.
+    const colW = innerW / HUD_DETAIL_STAT_COLS;
+    const rows: {
+      stat: StatId;
+      label: Phaser.GameObjects.BitmapText;
+      value: Phaser.GameObjects.BitmapText;
+    }[] = [];
+    HUD_DETAIL_STATS.forEach((column, ci) => {
+      const colLeft = left + ci * colW;
+      const colRight = colLeft + colW - 12;
+      column.forEach((stat, ri) => {
+        const rowY = contentTop + ri * HUD_DETAIL_STAT_ROW;
+        const label = addFrlgText(this, colLeft, rowY, STAT_LABELS[stat], { size: 16, tint: 0x3a3956 });
+        const value = addFrlgText(this, colRight, rowY, '', {
+          size: 16,
+          tint: FRLG_INK,
+          origin: [1, 0],
+        });
+        children.push(label, value);
+        rows.push({ stat, label, value });
       });
-      children.push(label, value);
-      return { label, value };
     });
-    const infoTop = statsTop + DETAIL_STATS.length * HUD_DETAIL_STAT_ROW + 6;
+    const infoTop = contentTop + HUD_DETAIL_STAT_ROWS * HUD_DETAIL_STAT_ROW + 8;
+    // NATURE / ABILITY in the left column, HELD / CAUGHT in the right.
+    const infoColW = innerW / 2;
     const nature = addFrlgText(this, left, infoTop, '', { size: 16, tint: 0x3a3956 });
-    const ability = addFrlgText(this, left, infoTop + 22, '', { size: 16, tint: 0x3a3956 });
-    const held = addFrlgText(this, left, infoTop + 44, '', { size: 16, tint: 0x3a3956 });
-    const caught = addFrlgText(this, left, infoTop + 66, '', { size: 16, tint: 0x3a3956 });
+    const ability = addFrlgText(this, left, infoTop + HUD_DETAIL_INFO_ROW, '', { size: 16, tint: 0x3a3956 });
+    const held = addFrlgText(this, left + infoColW, infoTop, '', { size: 16, tint: 0x3a3956 });
+    const caught = addFrlgText(this, left + infoColW, infoTop + HUD_DETAIL_INFO_ROW, '', {
+      size: 16,
+      tint: 0x3a3956,
+    });
     children.push(nature, ability, held, caught);
-    this.hudDetailStats = { hpBar, hpFill, hpText, rows, nature, ability, held, caught };
+    this.hudDetailStats = { rows, nature, ability, held, caught };
 
-    this.hudDetailMoves = [];
-    for (let i = 0; i < MAX_MOVES; i++) {
-      const rowY = contentTop + i * HUD_DETAIL_ROW;
-      const highlight = this.add
-        .rectangle(left, rowY + 2, innerW, HUD_DETAIL_ROW - 4, 0xf2c14e, 0.32)
-        .setOrigin(0, 0)
-        .setVisible(false);
-      const name = addFrlgText(this, left, rowY + 6, '', { size: 16, tint: FRLG_INK }).setMaxWidth(138);
-      const typeBg = this.add
-        .rectangle(left + 144, rowY + 8, HUD_DETAIL_TYPE_W, 20, 0x9aa0b4)
-        .setOrigin(0, 0)
-        .setVisible(false);
-      const typeLabel = addFrlgText(this, left + 144 + HUD_DETAIL_TYPE_W / 2, rowY + 10, '', {
-        size: 16,
-        tint: 0xf8fafc,
-        origin: [0.5, 0],
-      }).setVisible(false);
-      const pp = addFrlgText(this, right, rowY + 6, '', {
-        size: 16,
-        tint: 0x3a3956,
-        origin: [1, 0],
-      });
-      this.hudDetailMoves.push({ highlight, name, typeBg, typeLabel, pp });
-      children.push(highlight, name, typeBg, typeLabel, pp);
-    }
-    this.hudDetailEmpty = addFrlgText(this, x + HUD_PANEL_W / 2, contentTop + 40, 'no moves', {
+    this.hudDetailEmpty = addFrlgText(this, x + HUD_DETAIL_W / 2, contentTop + 60, 'no moves', {
       size: 16,
       tint: 0x6b6887,
       origin: [0.5, 0],
     });
     children.push(this.hudDetailEmpty);
 
-    return this.add.container(0, 0, children).setVisible(false);
+    const container = this.add.container(0, 0, children).setVisible(false);
+    // The shared moves grid — the same component the battle's FIGHT menu draws —
+    // fills the MOVES tab, with its own floating info popup.
+    this.hudMoveGrid = new MoveGrid(this, container);
+    return container;
   }
 
   private refreshHud(): void {
@@ -1990,7 +1986,6 @@ export class RouteScene extends Phaser.Scene {
     const panel = this.panelById('detail');
     const memberId = this.hudDetailState.memberId;
     const detail = memberId === null ? null : memberDetail(this.run, memberId);
-    this.hudDetailView = detail;
     if (!detail) {
       this.hudDetailState = CLOSED_DETAIL;
       if (panel) panel.container.setVisible(false);
@@ -2026,22 +2021,13 @@ export class RouteScene extends Phaser.Scene {
     });
 
     const stats = this.hudDetailState.tab === 'stats';
-    const { hpBar, hpFill, hpText, rows, nature, ability, held, caught } = this.hudDetailStats;
-    hpBar.setVisible(stats);
-    hpFill.setVisible(stats);
-    hpText.setVisible(stats);
-    const fraction = hpFraction(detail.hp, detail.maxHp);
-    hpText.setText(`${detail.hp}/${detail.maxHp}`);
-    hpFill
-      .setSize(
-        Math.max(0, FRLG_HPBAR.fill.width * hpBar.scaleX * fraction),
-        FRLG_HPBAR.fill.height * hpBar.scaleX,
-      )
-      .setFillStyle(hpColorInt(fraction));
-    rows.forEach((row, i) => {
+    const { rows, nature, ability, held, caught } = this.hudDetailStats;
+    rows.forEach((row) => {
       row.label.setVisible(stats);
       row.value.setVisible(stats);
-      row.value.setText(String(detail.stats[DETAIL_STATS[i]]));
+      row.value.setText(
+        row.stat === 'hp' ? `${detail.hp}/${detail.maxHp}` : String(detail.stats[row.stat]),
+      );
     });
     nature.setText(`NATURE  ${capitalize(detail.nature)}`);
     ability.setText(`ABILITY  ${detail.ability}`);
@@ -2054,24 +2040,34 @@ export class RouteScene extends Phaser.Scene {
 
     const moves = this.hudDetailState.tab === 'moves';
     this.hudDetailEmpty.setVisible(moves && detail.moves.length === 0);
-    this.hudDetailMoves.forEach((row, i) => {
-      const move = detail.moves[i];
-      const visible = moves && move !== undefined;
-      row.highlight.setVisible(visible && this.hudDetailState.grab === i);
-      row.name.setVisible(visible);
-      row.typeBg.setVisible(visible);
-      row.typeLabel.setVisible(visible);
-      row.pp.setVisible(visible);
-      if (!move) {
-        row.name.setText('');
-        row.typeLabel.setText('');
-        row.pp.setText('');
-        return;
-      }
-      row.name.setText(move.name);
-      row.typeBg.setFillStyle(typeColor(move.type));
-      row.typeLabel.setText(move.type.toUpperCase());
-      row.pp.setText(`PP ${move.pp}/${move.maxPp}`);
+    // The MOVES tab is the shared battle move grid, drawn inside the panel's
+    // container so it rides the panel when it is dragged. The info popup floats
+    // over the grid for the hovered / pinned move.
+    const gridTop = this.hudDetailY + HUD_DETAIL_CONTENT_TOP - HUD_PAD_TOP;
+    this.hudMoveGrid.layout({
+      x: this.hudDetailX,
+      y: gridTop,
+      w: HUD_DETAIL_W,
+      h: this.hudDetailY + HUD_DETAIL_H - gridTop,
+      cells: moves
+        ? detail.moves.map((move) => ({
+            name: move.name,
+            type: move.type,
+            category: move.category,
+            pp: move.pp,
+            maxPp: move.maxPp,
+            desc: move.desc,
+            power: move.power,
+            basePower: move.basePower,
+            accuracy: move.accuracy,
+            baseAccuracy: move.baseAccuracy,
+            status: move.status,
+            enabled: true,
+          }))
+        : [],
+      selected: moves ? (this.hudDetailState.grab ?? -1) : -1,
+      info: this.hudDetailInfo,
+      popupAtCell: true,
     });
   }
 
@@ -2237,9 +2233,9 @@ export class RouteScene extends Phaser.Scene {
       this.input.setDefaultCursor('grabbing');
       return;
     }
-    // A held move reorders live as the pointer crosses another row.
+    // A held move reorders live as the pointer crosses another cell.
     if (this.hudDetailState.grab !== null) {
-      const row = this.detailMoveRowAt(pointer);
+      const row = this.detailMoveIndexAt(pointer);
       if (row !== null) {
         const next = reorderMoves(this.run, this.hudDetailState, row);
         if (next.run !== this.run || next.state !== this.hudDetailState) {
@@ -2280,7 +2276,10 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     const overMember = this.hudTarget(pointer) !== null;
-    const overMove = this.detailMoveRowAt(pointer) !== null;
+    const cell = this.detailInfoAt(pointer);
+    const overMove = cell !== null;
+    const overInfo = cell?.onInfo === true;
+    this.updateDetailInfo(cell);
     const overItem = this.hudHeldStackAt(pointer) !== null;
     const overIcon = this.hudPanelIconAt(pointer) !== null;
     // The Pokevial only reads as clickable with a full meter; a partial one does
@@ -2289,10 +2288,10 @@ export class RouteScene extends Phaser.Scene {
       this.run.pokevialCharges >= POKEVIAL_MAX_CHARGES && this.vialButtonAt(pointer);
     const overPanel = overMember || overMove || overItem || overVial ? false : this.hudPanelAt(pointer) !== null;
     this.input.setDefaultCursor(
-      overItem || overMove
-        ? 'grab'
-        : overMember || overIcon || overVial
-          ? 'pointer'
+      overInfo || overMember || overIcon || overVial
+        ? 'pointer'
+        : overItem || overMove
+          ? 'grab'
           : overPanel
             ? 'move'
             : 'default',
@@ -2407,6 +2406,7 @@ export class RouteScene extends Phaser.Scene {
       this.hudDetail.setVisible(true);
     }
     this.hudDetailState = openDetail(memberId);
+    this.resetDetailInfo();
     this.refreshDetail();
     // The first open docks the panel beside the PC box; after that it stays
     // wherever the player dragged it.
@@ -2420,22 +2420,65 @@ export class RouteScene extends Phaser.Scene {
   private closeMemberDetail(): void {
     if (this.hudDetailState.memberId === null) return;
     this.hudDetailState = closeDetail(this.hudDetailState);
+    this.resetDetailInfo();
     this.refreshDetail();
   }
 
-  /** A press inside the panel: switch tab, or pick a move up to reorder it. */
+  /**
+   * A press inside the panel: switch tab, toggle a move's ⓘ info popup, or pick
+   * a move up to reorder it.
+   */
   private handleDetailPointerDown(pointer: Phaser.Input.Pointer): void {
     const tab = this.detailTabAt(pointer);
     if (tab !== null) {
       this.hudDetailState = setDetailTab(this.hudDetailState, tab);
+      this.resetDetailInfo();
       this.refreshDetail();
       return;
     }
     if (this.hudDetailState.tab !== 'moves') return;
-    const row = this.detailMoveRowAt(pointer);
-    if (row === null) return;
-    this.hudDetailState = grabMove(this.hudDetailState, row);
+    const cell = this.detailInfoAt(pointer);
+    if (!cell) return;
+    if (cell.onInfo) {
+      this.toggleDetailInfo(cell.index);
+      return;
+    }
+    this.hudDetailState = grabMove(this.hudDetailState, cell.index);
     this.hudGrabMoved = false;
+    this.refreshDetail();
+  }
+
+  /** Floats or hides the info popup as the pointer moves over a cell's ⓘ button. */
+  private updateDetailInfo(cell: { index: number; onInfo: boolean } | null): void {
+    if (this.hudDetailInfoPinned) return;
+    const next = cell?.onInfo ? cell.index : null;
+    if (next === this.hudDetailInfo) return;
+    this.hudDetailInfo = next;
+    this.refreshDetail();
+  }
+
+  /** Pins the popup of a move's ⓘ open, or closes it when it is already pinned. */
+  private toggleDetailInfo(index: number): void {
+    if (this.hudDetailInfoPinned && this.hudDetailInfo === index) {
+      this.hudDetailInfoPinned = false;
+      this.hudDetailInfo = null;
+    } else {
+      this.hudDetailInfoPinned = true;
+      this.hudDetailInfo = index;
+    }
+    this.refreshDetail();
+  }
+
+  /** Drops the info popup and its pin, e.g. when the panel closes or changes tab. */
+  private resetDetailInfo(): void {
+    this.hudDetailInfo = null;
+    this.hudDetailInfoPinned = false;
+  }
+
+  /** Hides an unpinned info popup when the pointer leaves the canvas. */
+  private clearDetailInfo(): void {
+    if (this.hudDetailInfoPinned || this.hudDetailInfo === null) return;
+    this.hudDetailInfo = null;
     this.refreshDetail();
   }
 
@@ -2445,7 +2488,7 @@ export class RouteScene extends Phaser.Scene {
     const point = this.panelPoint(pointer, 'detail');
     return (
       point.x >= this.hudDetailX &&
-      point.x <= this.hudDetailX + HUD_PANEL_W &&
+      point.x <= this.hudDetailX + HUD_DETAIL_W &&
       point.y >= this.hudDetailY &&
       point.y <= this.hudDetailY + HUD_DETAIL_H
     );
@@ -2465,14 +2508,21 @@ export class RouteScene extends Phaser.Scene {
     return tab?.tab ?? null;
   }
 
-  /** The move row under the pointer in the MOVES tab, or null outside a move. */
-  private detailMoveRowAt(pointer: Phaser.Input.Pointer): number | null {
+  /** The move index under the pointer in the MOVES tab, or null outside a cell. */
+  private detailMoveIndexAt(pointer: Phaser.Input.Pointer): number | null {
     if (!this.pointerInDetailPanel(pointer) || this.hudDetailState.tab !== 'moves') return null;
     const point = this.panelPoint(pointer, 'detail');
-    const rowTop = this.hudDetailY + HUD_DETAIL_CONTENT_TOP;
-    const slot = Math.floor((point.y - rowTop) / HUD_DETAIL_ROW);
-    const count = this.hudDetailView?.moves.length ?? 0;
-    return slot >= 0 && slot < count ? slot : null;
+    return this.hudMoveGrid.indexAt(point.x, point.y);
+  }
+
+  /** The move cell under the pointer and whether it lands on that cell's ⓘ button. */
+  private detailInfoAt(pointer: Phaser.Input.Pointer): { index: number; onInfo: boolean } | null {
+    const index = this.detailMoveIndexAt(pointer);
+    if (index === null) return null;
+    const point = this.panelPoint(pointer, 'detail');
+    const rect = this.hudMoveGrid.cellRect(index);
+    const onInfo = rect !== null && this.hudMoveGrid.infoAt(index, point.x - rect.x, point.y - rect.y);
+    return { index, onInfo };
   }
 
   /** Equips the dragged stack to the member under the drop, saving the swap. */
@@ -3023,7 +3073,7 @@ export class RouteScene extends Phaser.Scene {
     if (!detail || !box) return;
     const snapshot = this.hudPanels.map((entry) => ({ id: entry.id, dx: entry.dx, dy: entry.dy }));
     const boxRect = this.panelRect(box);
-    detail.dx = boxRect.x - HUD_GAP - HUD_PANEL_W - detail.x;
+    detail.dx = boxRect.x - HUD_GAP - HUD_DETAIL_W - detail.x;
     detail.dy = boxRect.y - detail.y;
     this.clampPanel(detail);
     // If the box was moved into the way, nudge it (and the rest) clear of the
