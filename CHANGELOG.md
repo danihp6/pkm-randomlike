@@ -8,6 +8,11 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Starters require two consecutive evolutions.** The starter pool now keeps
+      the base form of a line only when two more evolutions follow in a **chain**
+      (`evolutionDepth >= 2` in `src/data/dex/evolutions.ts`), so a split line
+      whose children are all final (Eevee, Scyther) is no longer offered even
+      though its family has three members. `docs/design-spec.md` §3.
 - [x] **The mini-boss and mega-stone rooms hold their own content** (Phase 9
       step 13). A **mini-boss** leaf fields a strong `ace` trainer (a band-level
       party one size larger, allowed a Mega Stone) that stands while unbeaten;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evolutionFamily, evolutionFor, isLevelEvolution } from './evolutions';
+import { evolutionDepth, evolutionFamily, evolutionFor, isLevelEvolution } from './evolutions';
 import { getSpecies } from './species';
 
 describe('evolution accessors', () => {
@@ -41,5 +41,23 @@ describe('evolution family', () => {
   it('is a single member for a species that cannot evolve', () => {
     expect(evolutionFamily('tauros')).toEqual(['tauros']);
     expect(evolutionFamily('not-a-species')).toEqual([]);
+  });
+});
+
+describe('evolution depth', () => {
+  it('counts the longest chain, not the width of a branch', () => {
+    expect(evolutionDepth('bulbasaur')).toBe(2);
+    expect(evolutionDepth('ivysaur')).toBe(1);
+    expect(evolutionDepth('venusaur')).toBe(0);
+  });
+
+  it('scores a split line whose children are all final as one step', () => {
+    expect(evolutionDepth('scyther')).toBe(1);
+    expect(evolutionDepth('eevee')).toBe(1);
+  });
+
+  it('is zero for a species that cannot evolve or an unknown id', () => {
+    expect(evolutionDepth('tauros')).toBe(0);
+    expect(evolutionDepth('not-a-species')).toBe(0);
   });
 });
