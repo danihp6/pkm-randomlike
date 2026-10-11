@@ -9,6 +9,7 @@ import {
   fighterDetail,
   grabMove,
   memberDetail,
+  natureEffect,
   openDetail,
   reorderMoves,
   setDetailTab,
@@ -41,6 +42,17 @@ describe('memberDetail', () => {
     expect(detail?.maxHp).toBeGreaterThan(0);
   });
 
+  it('carries the whole evolution family as a graph', () => {
+    const detail = memberDetail(runWith(), 'starter');
+    expect(detail?.evolutions.map((node) => node.id)).toEqual([
+      'charmander',
+      'charmeleon',
+      'charizard',
+    ]);
+    expect(detail?.evolutions[0]?.current).toBe(true);
+    expect(detail?.evolutions.some((node) => node.ready)).toBe(false);
+  });
+
   it('reads a box member and returns null for an unknown id', () => {
     expect(memberDetail(runWith(), 'boxed')?.name).toBe('Sentret');
     expect(memberDetail(runWith(), 'nobody')).toBeNull();
@@ -55,6 +67,18 @@ describe('memberDetail', () => {
     };
     const withCaught = { ...run, party: [...run.party, caught] };
     expect(memberDetail(withCaught, 'caught')?.caughtLabel).toBe('Deep Forest · Map 2 · Route 2');
+  });
+});
+
+describe('natureEffect', () => {
+  it('flags the raised and lowered stats and leaves HP neutral', () => {
+    // Adamant is +Attack / -Sp. Atk.
+    expect(natureEffect('adamant', 'atk')).toBe('up');
+    expect(natureEffect('adamant', 'spa')).toBe('down');
+    expect(natureEffect('adamant', 'def')).toBe('neutral');
+    expect(natureEffect('adamant', 'hp')).toBe('neutral');
+    expect(natureEffect('serious', 'atk')).toBe('neutral');
+    expect(natureEffect('not-a-nature', 'atk')).toBe('neutral');
   });
 });
 

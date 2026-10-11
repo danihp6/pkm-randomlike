@@ -1,4 +1,4 @@
-import { evolutionFor } from '../../data/dex/evolutions';
+import { evolutionBranches } from '../../data/dex/evolutions';
 import { levelUpMoves } from '../../data/dex/learnsets';
 import { getMove } from '../../data/dex/moves';
 import { statAtLevel } from '../../data/dex/natures';
@@ -81,7 +81,6 @@ export type ProgressionEvent =
   | Readonly<{ kind: 'level'; level: number }>
   | Readonly<{ kind: 'learn'; moveId: string }>
   | Readonly<{ kind: 'forget'; moveId: string }>
-  | Readonly<{ kind: 'evolve'; from: string; into: string }>
   | Readonly<{ kind: 'capped'; level: number }>;
 
 export type ProgressionResult = Readonly<{
@@ -103,9 +102,9 @@ export function runPokemonFromSnapshot(fighter: FighterSnapshot, caughtAt?: Catc
 /**
  * Rebuilds a member at `level`: stats and moveset come from the species at that
  * level, so a Pokémon caught at a lower or higher level than the squad joins at
- * the squad's own power. HP is set to the new maximum (a catch arrives whole)
- * and an evolution the level already allows is applied. Used when a catch is
- * folded into the run.
+ * the squad's own power. HP is set to the new maximum (a catch arrives whole).
+ * Evolution is never automatic (it is the player's click in the STATS tab), so
+ * the caught species is kept as-is. Used when a catch is folded into the run.
  */
 export function adoptAtLevel(pokemon: RunPokemon, level: number, learnsetSeed?: string): RunPokemon {
   const f = pokemon.fighter;
@@ -123,7 +122,7 @@ export function adoptAtLevel(pokemon: RunPokemon, level: number, learnsetSeed?: 
     ...(f.heldItem ? { heldItem: f.heldItem } : {}),
     ...(learnsetSeed ? { learnsetSeed } : {}),
   });
-  return evolveIfReady({ ...pokemon, fighter: snapshotFighter(fighter) }, target).pokemon;
+  return { ...pokemon, fighter: snapshotFighter(fighter) };
 }
 
 /** A partial override of a run member; a missing field is kept as-is. */
@@ -201,26 +200,46 @@ function gainedMoves(
 }
 
 /**
- * Evolves a run member if its level meets a level-up evolution and the map cap
- * allows it. Exposed so the heal stop can apply an evolution that the cap was
- * blocking (D9).
+ * Evolves a run member into `into` when that branch is ready at its level (every
+ * evolution is a level evolution now, `docs/battle-spec.md` §7). The member
+ * keeps its level, nature, IVs/EVs, moves, PP, status and held item; stats and
+ * types come from the new species and the **missing** HP is carried across, so
+ * an evolution heals the difference in maximum HP rather than the whole bar. A
+ * branch the level does not allow, or an unknown id, is a no-op. Pure, like the
+ * rest of the run (D11).
  */
-export function evolveIfReady(pokemon: RunPokemon, cap: number): ProgressionResult {
-  const level = pokemon.fighter.level;
-  if (level > cap) return { pokemon, events: [] };
-  const evolution = evolutionFor(pokemon.fighter.speciesId, level);
-  if (!evolution) return { pokemon, events: [] };
+export function evolvePokemon(pokemon: RunPokemon, into: string): RunPokemon {
+  const fighter = pokemon.fighter;
+  const target = getSpecies(into);
+  if (!target) return pokemon;
+  const ready = evolutionBranches(fighter.speciesId).some(
+    (branch) => branch.into === target.id && branch.level <= fighter.level,
+  );
+  if (!ready) return pokemon;
+  const source = getSpecies(fighter.speciesId);
+  const oldMaxHp = source
+    ? statAtLevel(source, fighter.level, fighter.nature, fighter.ivs, fighter.evs).hp
+    : fighter.hp;
+  const maxHp = statAtLevel(target, fighter.level, fighter.nature, fighter.ivs, fighter.evs).hp;
+  const missing = Math.max(0, oldMaxHp - fighter.hp);
+  const abilities = Object.values(target.abilities);
   return {
-    pokemon: { ...pokemon, fighter: { ...pokemon.fighter, speciesId: evolution.into } },
-    events: [{ kind: 'evolve', from: pokemon.fighter.speciesId, into: evolution.into }],
+    ...pokemon,
+    fighter: {
+      ...fighter,
+      speciesId: target.id,
+      ability: abilities.includes(fighter.ability) ? fighter.ability : (abilities[0] ?? fighter.ability),
+      hp: Math.max(0, Math.min(maxHp, maxHp - missing)),
+    },
   };
 }
 
 /**
- * Raises a member to `targetLevel` (already clamped to the map cap): learns the
- * level-up moves it crossed (forgetting the oldest when the fourth slot is full)
- * and applies an evolution the level allows. A member already at or above the
- * target is left alone. Pure and deterministic: no RNG.
+ * Raises a member to `targetLevel` (already clamped to the map cap), learning
+ * the level-up moves it crossed and forgetting the oldest when the fourth slot
+ * is full. Evolution is **not** applied here: it waits for the player's click in
+ * the STATS tab. A member already at or above the target is left alone. Pure and
+ * deterministic: no RNG.
  */
 export function levelUpPokemon(
   pokemon: RunPokemon,
@@ -246,7 +265,5 @@ export function levelUpPokemon(
     }
     fighter = { ...fighter, level, moves };
   }
-  const base = fighter === pokemon.fighter ? pokemon : { ...pokemon, fighter };
-  const evolved = evolveIfReady(base, level);
-  return { pokemon: evolved.pokemon, events: [...events, ...evolved.events] };
+  return { pokemon: fighter === pokemon.fighter ? pokemon : { ...pokemon, fighter }, events };
 }

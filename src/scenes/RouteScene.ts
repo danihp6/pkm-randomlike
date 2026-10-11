@@ -43,6 +43,7 @@ import {
   createRunPokemon,
   editRunPokemon,
   equipHeldItem,
+  evolveMember,
   experienceFraction,
   fullHealMember,
   hasLivingParty,
@@ -154,12 +155,15 @@ import {
 import {
   CLOSED_DETAIL,
   DETAIL_STATS,
+  NATURE_DOWN_TINT,
+  NATURE_UP_TINT,
   STAT_LABELS,
   closeDetail,
   dropMove,
   fighterDetail,
   grabMove,
   memberDetail,
+  natureEffect,
   openDetail,
   reorderMoves,
   setDetailTab,
@@ -168,6 +172,7 @@ import {
   type DetailTab,
   type MemberDetail,
 } from '../ui/partyDetail';
+import { type FamilyNode } from '../ui/evolutionGraph';
 import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
 import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
 import { hpColorInt, hpFraction } from '../ui/metrics';
@@ -354,6 +359,23 @@ const HUD_DETAIL_STATS: readonly (readonly StatId[])[] = [
   ['spa', 'spd', 'spe'],
 ];
 const HUD_DETAIL_TYPE_W = 74;
+/**
+ * The STATS tab's evolution band: a title over the family **graph** — one row
+ * per species, indented by stage, joined by elbow edges with each branch's level
+ * on the right. Nine rows cover the widest family (Eevee's eight plus itself);
+ * a ready branch is green and clickable, the current species gold.
+ */
+const HUD_DETAIL_EVO_TITLE_TOP = 250;
+const HUD_DETAIL_EVO_TOP = HUD_DETAIL_EVO_TITLE_TOP + 22;
+const HUD_DETAIL_EVO_MAX = 9;
+const HUD_DETAIL_EVO_ROW_H = 28;
+const HUD_DETAIL_EVO_INDENT = 34;
+const HUD_DETAIL_EVO_PORTRAIT_SCALE = 0.4;
+const HUD_DETAIL_EVO_LINE = 0x9a94b8;
+const HUD_DETAIL_EVO_READY_BG = 0xd7f0d0;
+const HUD_DETAIL_EVO_READY = 0x2f9e44;
+const HUD_DETAIL_EVO_CURRENT_BG = 0xf6e3a6;
+const HUD_DETAIL_EVO_CURRENT = 0x8a6d1f;
 
 /** The full-party capture window and the party list inside it. */
 const CAPTURE_W = 760;
@@ -714,6 +736,23 @@ export class RouteScene extends Phaser.Scene {
     held: Phaser.GameObjects.BitmapText;
     caught: Phaser.GameObjects.BitmapText;
   };
+  /**
+   * The STATS tab's evolution band: an "EVOLUTIONS" title, an empty hint and a
+   * fixed grid of branch cells repainted by `refreshDetail` from
+   * `MemberDetail.evolutions`. The ready cells are green and clickable.
+   */
+  private hudDetailEvoTitle!: Phaser.GameObjects.BitmapText;
+  private hudDetailEvoHint!: Phaser.GameObjects.BitmapText;
+  private hudDetailEvoEmpty!: Phaser.GameObjects.BitmapText;
+  private hudDetailEvoGraphics!: Phaser.GameObjects.Graphics;
+  private hudDetailEvoCells: {
+    node: FamilyNode | null;
+    rect: { x: number; y: number; w: number; h: number };
+    bg: Phaser.GameObjects.Rectangle;
+    portrait: Phaser.GameObjects.Image;
+    name: Phaser.GameObjects.BitmapText;
+    level: Phaser.GameObjects.BitmapText;
+  }[] = [];
   private hudDetailEmpty!: Phaser.GameObjects.BitmapText;
   /** The shared moves grid drawn in the MOVES tab, with its floating info popup. */
   private hudMoveGrid!: MoveGrid;
@@ -739,10 +778,13 @@ export class RouteScene extends Phaser.Scene {
   /** The pool move held while dragging it onto a slot, and its ghost chip. */
   private hudLearnDrag: string | null = null;
   private hudLearnGhost!: Phaser.GameObjects.BitmapText;
-  /** The "X learned Y!" popup shown after a level-up, and whether it is up. */
+  /** The level-up / evolution popup and whether it is up. */
   private learnPopup!: Phaser.GameObjects.Container;
+  private learnPopupTitle!: Phaser.GameObjects.BitmapText;
   private learnPopupBody!: Phaser.GameObjects.BitmapText;
   private learnPopupOpen = false;
+  /** Scene time the popup opened, so the click that opened it cannot dismiss it. */
+  private learnPopupAt = 0;
   /** Timestamps already handled, so a replayed keydown never types twice. */
   private searchKeyStamps = new Set<number>();
   /**
@@ -1766,6 +1808,58 @@ export class RouteScene extends Phaser.Scene {
     children.push(nature, ability, held, caught);
     this.hudDetailStats = { rows, nature, ability, held, caught };
 
+    // The evolution band: a title over a family graph. The nodes are a fixed row
+    // pool the refresh repositions by depth; `refreshDetail` also redraws the
+    // edges. A click on a ready branch evolves the member.
+    this.hudDetailEvoTitle = addFrlgText(this, left, y + HUD_DETAIL_EVO_TITLE_TOP, 'EVOLUTION', {
+      size: 16,
+      tint: 0x3a3956,
+    });
+    this.hudDetailEvoHint = addFrlgText(this, right, y + HUD_DETAIL_EVO_TITLE_TOP, 'click to evolve', {
+      size: 16,
+      tint: HUD_DETAIL_EVO_READY,
+      origin: [1, 0],
+    }).setVisible(false);
+    this.hudDetailEvoEmpty = addFrlgText(
+      this,
+      x + HUD_DETAIL_W / 2,
+      y + HUD_DETAIL_EVO_TOP + 24,
+      'no evolution',
+      { size: 16, tint: 0x6b6887, origin: [0.5, 0] },
+    );
+    children.push(this.hudDetailEvoTitle, this.hudDetailEvoHint, this.hudDetailEvoEmpty);
+    this.hudDetailEvoGraphics = this.add.graphics();
+    children.push(this.hudDetailEvoGraphics);
+    this.hudDetailEvoCells = [];
+    for (let i = 0; i < HUD_DETAIL_EVO_MAX; i++) {
+      const rowY = y + HUD_DETAIL_EVO_TOP + i * HUD_DETAIL_EVO_ROW_H;
+      const bg = this.add
+        .rectangle(left, rowY, innerW, HUD_DETAIL_EVO_ROW_H - 2, 0xffffff)
+        .setOrigin(0, 0)
+        .setVisible(false);
+      const portrait = this.add
+        .image(left + 13, rowY + HUD_DETAIL_EVO_ROW_H / 2, PORTRAIT_TEXTURE_KEY, 0)
+        .setScale(HUD_DETAIL_EVO_PORTRAIT_SCALE)
+        .setVisible(false);
+      const name = addFrlgText(this, left + 30, rowY + 6, '', { size: 16, tint: FRLG_INK })
+        .setMaxWidth(innerW - 96)
+        .setVisible(false);
+      const level = addFrlgText(this, right, rowY + 6, '', {
+        size: 16,
+        tint: 0x3a3956,
+        origin: [1, 0],
+      }).setVisible(false);
+      this.hudDetailEvoCells.push({
+        node: null,
+        rect: { x: left, y: rowY, w: innerW, h: HUD_DETAIL_EVO_ROW_H - 2 },
+        bg,
+        portrait,
+        name,
+        level,
+      });
+      children.push(bg, portrait, name, level);
+    }
+
     this.hudDetailEmpty = addFrlgText(this, x + HUD_DETAIL_W / 2, contentTop + 60, 'no moves', {
       size: 16,
       tint: 0x6b6887,
@@ -2127,6 +2221,12 @@ export class RouteScene extends Phaser.Scene {
       row.value.setText(
         row.stat === 'hp' ? `${detail.hp}/${detail.maxHp}` : String(detail.stats[row.stat]),
       );
+      // Paint the stat a nature raises green and the one it lowers red; HP and a
+      // neutral stat keep the normal ink.
+      const effect = natureEffect(detail.nature, row.stat);
+      const tint = effect === 'up' ? NATURE_UP_TINT : effect === 'down' ? NATURE_DOWN_TINT : FRLG_INK;
+      row.value.setTint(tint);
+      if (effect !== 'neutral') row.label.setTint(tint);
     });
     nature.setText(`NATURE  ${capitalize(detail.nature)}`);
     ability.setText(`ABILITY  ${detail.ability}`);
@@ -2136,6 +2236,7 @@ export class RouteScene extends Phaser.Scene {
     ability.setVisible(stats);
     held.setVisible(stats);
     caught.setVisible(stats);
+    this.refreshDetailEvolutions(stats, detail);
 
     const moves = this.hudDetailState.tab === 'moves';
     this.hudDetailEmpty.setVisible(moves && detail.moves.length === 0);
@@ -2170,6 +2271,79 @@ export class RouteScene extends Phaser.Scene {
     });
 
     this.refreshLearnset(detail.ability, moves);
+  }
+
+  /**
+   * Paints the STATS tab's evolution graph from the member's family: the base
+   * form down to every branch, indented by stage, with each edge's level. The
+   * current species reads gold and a ready branch green and clickable; a branch
+   * whose level is unmet stays grey until it is.
+   */
+  private refreshDetailEvolutions(stats: boolean, detail: MemberDetail): void {
+    const graphics = this.hudDetailEvoGraphics;
+    this.hudDetailEvoTitle.setVisible(stats);
+    graphics.clear();
+    const nodes = stats ? detail.evolutions.slice(0, HUD_DETAIL_EVO_MAX) : [];
+    const show = stats && nodes.length > 0;
+    this.hudDetailEvoEmpty.setVisible(stats && nodes.length === 0);
+    this.hudDetailEvoHint.setVisible(stats && nodes.some((node) => node.ready));
+    graphics.setVisible(show);
+
+    const left = this.hudDetailX + HUD_PAD_X;
+    const right = this.hudDetailX + HUD_DETAIL_W - HUD_PAD_X;
+    const top = this.hudDetailY + HUD_DETAIL_EVO_TOP;
+    const rowY = (row: number): number => top + row * HUD_DETAIL_EVO_ROW_H;
+
+    // Edges first, so the nodes' backgrounds paint over the seams.
+    if (show) {
+      graphics.lineStyle(2, HUD_DETAIL_EVO_LINE, 1);
+      nodes.forEach((node) => {
+        if (node.parent === null) return;
+        const parent = nodes[node.parent];
+        if (!parent) return;
+        const spineX = left + parent.depth * HUD_DETAIL_EVO_INDENT + 13;
+        const parentY = rowY(parent.row) + HUD_DETAIL_EVO_ROW_H / 2;
+        const childY = rowY(node.row) + HUD_DETAIL_EVO_ROW_H / 2;
+        const childX = left + node.depth * HUD_DETAIL_EVO_INDENT - 2;
+        graphics.lineBetween(spineX, parentY, spineX, childY);
+        graphics.lineBetween(spineX, childY, childX, childY);
+      });
+    }
+
+    this.hudDetailEvoCells.forEach((cell, i) => {
+      const node = nodes[i] ?? null;
+      cell.node = node;
+      cell.bg.setVisible(false).setFillStyle(HUD_DETAIL_EVO_READY_BG);
+      const visible = show && node !== null;
+      cell.name.setVisible(visible);
+      cell.level.setVisible(visible);
+      cell.portrait.setVisible(visible);
+      if (!node) return;
+      const nodeX = left + node.depth * HUD_DETAIL_EVO_INDENT;
+      const y = rowY(node.row);
+      const width = right - nodeX;
+      cell.rect = { x: nodeX, y, w: width, h: HUD_DETAIL_EVO_ROW_H - 2 };
+      cell.bg.setPosition(nodeX, y).setSize(width, cell.rect.h);
+      cell.portrait.setPosition(nodeX + 13, y + HUD_DETAIL_EVO_ROW_H / 2);
+      const portrait = portraitFor(node.id);
+      cell.portrait.setVisible(visible && portrait !== null);
+      if (portrait) cell.portrait.setTexture(portrait.key, portrait.frame);
+      cell.name.setPosition(nodeX + 30, y + 6).setText(node.name);
+      cell.level.setText(node.level === null ? '' : `Lv ${node.level}`);
+
+      if (node.ready) {
+        cell.bg.setVisible(true).setFillStyle(HUD_DETAIL_EVO_READY_BG);
+        cell.name.setTint(HUD_DETAIL_EVO_READY);
+        cell.level.setTint(HUD_DETAIL_EVO_READY);
+      } else if (node.current) {
+        cell.bg.setVisible(true).setFillStyle(HUD_DETAIL_EVO_CURRENT_BG);
+        cell.name.setTint(HUD_DETAIL_EVO_CURRENT);
+        cell.level.setTint(HUD_DETAIL_EVO_CURRENT);
+      } else {
+        cell.name.setTint(FRLG_INK);
+        cell.level.setTint(0x6b6887);
+      }
+    });
   }
 
   /** The filtered learnset pool for the open member, in draw order. */
@@ -2501,13 +2675,21 @@ export class RouteScene extends Phaser.Scene {
     this.updateDetailInfo(cell);
     const overItem = this.hudHeldStackAt(pointer) !== null;
     const overIcon = this.hudPanelIconAt(pointer) !== null;
+    // A ready evolution branch in the STATS tab reads as a click target too.
+    const overEvolution =
+      this.hudDetailState.memberId !== null &&
+      this.pointerInDetailPanel(pointer) &&
+      this.evolutionAt(this.panelPoint(pointer, 'detail')) !== null;
     // The Pokevial only reads as clickable with a full meter; a partial one does
     // nothing on click.
     const overVial =
       this.run.pokevialCharges >= POKEVIAL_MAX_CHARGES && this.vialButtonAt(pointer);
-    const overPanel = overMember || overMove || overItem || overVial ? false : this.hudPanelAt(pointer) !== null;
+    const overPanel =
+      overMember || overMove || overItem || overEvolution || overVial
+        ? false
+        : this.hudPanelAt(pointer) !== null;
     this.input.setDefaultCursor(
-      overInfo || overMember || overIcon || overVial
+      overInfo || overMember || overIcon || overEvolution || overVial
         ? 'pointer'
         : overItem || overMove
           ? 'grab'
@@ -2557,7 +2739,7 @@ export class RouteScene extends Phaser.Scene {
 
   private handleHudPointerUp(pointer: Phaser.Input.Pointer): void {
     if (this.learnPopupOpen) {
-      this.closeLearnPopup();
+      this.dismissLearnPopup();
       return;
     }
     if (this.shopRoot || this.miniBossRewardRoot) {
@@ -2699,6 +2881,11 @@ export class RouteScene extends Phaser.Scene {
       this.resetLearnDrag();
       this.resetDetailInfo();
       this.refreshDetail();
+      return;
+    }
+    if (this.hudDetailState.tab === 'stats') {
+      const evolution = this.evolutionAt(point);
+      if (evolution) this.evolveOpenMember(evolution.id);
       return;
     }
     if (this.hudDetailState.tab !== 'moves') return;
@@ -2847,6 +3034,35 @@ export class RouteScene extends Phaser.Scene {
         point.y <= entry.bg.y + entry.bg.height,
     );
     return tab?.tab ?? null;
+  }
+
+  /** The ready evolution branch under a panel-local point, or null. */
+  private evolutionAt(point: { x: number; y: number }): FamilyNode | null {
+    for (const cell of this.hudDetailEvoCells) {
+      if (cell.node?.ready && pointInRect(point, cell.rect)) return cell.node;
+    }
+    return null;
+  }
+
+  /**
+   * Evolves the open member into the clicked branch (the STATS tab), saves and
+   * redraws, then announces it on the popup. `evolveMember` re-checks the level,
+   * so a stale click is a no-op.
+   */
+  private evolveOpenMember(into: string): void {
+    const memberId = this.hudDetailState.memberId;
+    if (memberId === null) return;
+    const member =
+      this.run.party.find((entry) => entry.fighter.id === memberId) ??
+      this.run.box.find((entry) => entry.fighter.id === memberId);
+    if (!member) return;
+    const name = getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId;
+    const next = evolveMember(this.run, memberId, into);
+    if (next === this.run) return;
+    this.run = next;
+    this.persistRun();
+    this.refreshHud();
+    this.showEvoPopup(name, getSpecies(into)?.name ?? into);
   }
 
   /** The move index under the pointer in the MOVES tab, or null outside a cell. */
@@ -4186,7 +4402,7 @@ export class RouteScene extends Phaser.Scene {
     const y = (height - panelH) / 2;
     const scrim = this.add.rectangle(0, 0, width, height, 0x05070c, 0.55).setOrigin(0, 0);
     const panel = addFrlgWindow(this, x, y, panelW, panelH);
-    const title = addFrlgText(this, x + 24, y + 18, 'LEVEL UP', { size: 32, tint: FRLG_INK });
+    this.learnPopupTitle = addFrlgText(this, x + 24, y + 18, 'LEVEL UP', { size: 32, tint: FRLG_INK });
     this.learnPopupBody = addFrlgText(this, x + 24, y + 76, '', { size: 16, tint: FRLG_INK, lineSpacing: 8 })
       .setMaxWidth(panelW - 48);
     const hint = addFrlgText(this, x + panelW - 24, y + panelH - 30, 'press any key', {
@@ -4196,9 +4412,9 @@ export class RouteScene extends Phaser.Scene {
     });
     const zone = this.add.zone(0, 0, width, height).setOrigin(0, 0);
     zone.setInteractive();
-    zone.on('pointerdown', () => this.closeLearnPopup());
+    zone.on('pointerdown', () => this.dismissLearnPopup());
     this.learnPopup = this.add
-      .container(0, 0, [scrim, panel, title, this.learnPopupBody, hint, zone])
+      .container(0, 0, [scrim, panel, this.learnPopupTitle, this.learnPopupBody, hint, zone])
       .setDepth(460)
       .setVisible(false);
     this.cameras.main.ignore(this.learnPopup);
@@ -4216,12 +4432,37 @@ export class RouteScene extends Phaser.Scene {
       }
     }
     if (lines.length === 0) return;
+    this.learnPopupTitle.setText('LEVEL UP');
     this.learnPopupBody.setText(lines.join('\n'));
     this.learnPopupOpen = true;
+    this.learnPopupAt = this.time.now;
     this.learnPopup.setVisible(true);
   }
 
-  /** Dismisses the learn popup; safe when it is not up. */
+  /**
+   * Shows the evolution popup ("X evolved into Y!") on the same window the level
+   * up uses; any key or a click dismisses it like the learn popup.
+   */
+  private showEvoPopup(fromName: string, intoName: string): void {
+    if (this.learnPopupOpen) return;
+    this.learnPopupTitle.setText('EVOLUTION');
+    this.learnPopupBody.setText(`${fromName} evolved into ${intoName}!`);
+    this.learnPopupOpen = true;
+    this.learnPopupAt = this.time.now;
+    this.learnPopup.setVisible(true);
+  }
+
+  /**
+   * Dismisses the learn/evolution popup, unless it was just opened: the click
+   * that evolved a member also raises its pointerup, which must not close the
+   * popup it just showed.
+   */
+  private dismissLearnPopup(): void {
+    if (this.time.now - this.learnPopupAt < 250) return;
+    this.closeLearnPopup();
+  }
+
+  /** Dismisses the learn/evolution popup; safe when it is not up. */
   private closeLearnPopup(): void {
     if (!this.learnPopupOpen) return;
     this.learnPopupOpen = false;

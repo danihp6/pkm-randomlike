@@ -5,7 +5,7 @@ import {
   adoptAtLevel,
   createRunPokemon,
   editRunPokemon,
-  evolveIfReady,
+  evolvePokemon,
   experienceAward,
   experienceFraction,
   levelForXp,
@@ -68,21 +68,11 @@ describe('levelUpPokemon', () => {
     expect(same.events).toEqual([]);
   });
 
-  it('evolves once the level meets the evolution', () => {
+  it('never evolves on level-up: evolution waits for the player', () => {
     const ready = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 15, moves: ['ember'] });
-    const evolved = levelUpPokemon(ready, 16);
-    expect(evolved.pokemon.fighter.level).toBe(16);
-    expect(evolved.pokemon.fighter.speciesId).toBe('charmeleon');
-    expect(evolved.events).toContainEqual({ kind: 'evolve', from: 'charmander', into: 'charmeleon' });
-  });
-
-  it('holds an evolution that the map cap blocks', () => {
-    const pokemon = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 16, moves: ['ember'] });
-    const blocked = evolveIfReady(pokemon, 5);
-    expect(blocked.pokemon).toBe(pokemon);
-    expect(blocked.events).toEqual([]);
-    const allowed = evolveIfReady(pokemon, 20);
-    expect(allowed.pokemon.fighter.speciesId).toBe('charmeleon');
+    const grown = levelUpPokemon(ready, 16);
+    expect(grown.pokemon.fighter.level).toBe(16);
+    expect(grown.pokemon.fighter.speciesId).toBe('charmander');
   });
 
   it('forgets the oldest move when the fourth slot is full', () => {
@@ -111,10 +101,43 @@ describe('adoptAtLevel', () => {
     expect(adopted.fighter.moves.length).toBeGreaterThan(0);
   });
 
-  it('applies an evolution the level already allows', () => {
+  it('keeps the caught species even at an evolution level', () => {
     const caught = createRunPokemon({ id: 'wild', speciesId: 'charmander', level: 3 });
     const adopted = adoptAtLevel(caught, 20);
-    expect(adopted.fighter.speciesId).toBe('charmeleon');
+    expect(adopted.fighter.speciesId).toBe('charmander');
+  });
+});
+
+describe('evolvePokemon', () => {
+  it('evolves into a branch the level allows, rebuilding stats', () => {
+    const ready = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 16, moves: ['ember'] });
+    const evolved = evolvePokemon(ready, 'charmeleon');
+    expect(evolved.fighter.speciesId).toBe('charmeleon');
+    const expected = statAtLevel(getSpecies('charmeleon')!, 16, 'serious', ready.fighter.ivs, ready.fighter.evs);
+    expect(evolved.fighter.hp).toBe(expected.hp);
+  });
+
+  it('carries the missing HP across, so a full member stays full', () => {
+    const ready = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 16, moves: ['ember'] });
+    const evolved = evolvePokemon(ready, 'charmeleon');
+    expect(evolved.fighter.hp).toBe(statAtLevel(getSpecies('charmeleon')!, 16, 'serious', ready.fighter.ivs, ready.fighter.evs).hp);
+  });
+
+  it('ignores a branch whose level is not met', () => {
+    const early = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 10, moves: ['ember'] });
+    expect(evolvePokemon(early, 'charmeleon')).toBe(early);
+  });
+
+  it('picks any ready branch of a split line', () => {
+    const eevee = createRunPokemon({ id: 'e', speciesId: 'eevee', level: 20 });
+    expect(evolvePokemon(eevee, 'vaporeon').fighter.speciesId).toBe('vaporeon');
+    expect(evolvePokemon(eevee, 'espeon').fighter.speciesId).toBe('espeon');
+  });
+
+  it('ignores an unknown or non-branch species', () => {
+    const eevee = createRunPokemon({ id: 'e', speciesId: 'eevee', level: 20 });
+    expect(evolvePokemon(eevee, 'not-a-species')).toBe(eevee);
+    expect(evolvePokemon(eevee, 'pikachu')).toBe(eevee);
   });
 });
 

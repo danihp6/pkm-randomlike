@@ -18,6 +18,7 @@ import {
   createRun,
   depositToBox,
   equipHeldItem,
+  evolveMember,
   hasLivingParty,
   isItemPicked,
   isRoomDiscovered,
@@ -480,5 +481,19 @@ describe('PC lock and the floor catch', () => {
     expect(next.party[0].fighter.id).toBe('catch');
     expect(next.box.some((member) => member.fighter.id === run.party[0].fighter.id)).toBe(true);
     expect(next.pcUnlocked).toContain('catch');
+  });
+});
+
+describe('evolveMember', () => {
+  it('evolves a party member into a branch its level allows', () => {
+    const run = createRun({ seed: 'evo-a', starter: createRunPokemon({ id: 'c', speciesId: 'charmander', level: 16 }) });
+    const next = evolveMember(run, 'c', 'charmeleon');
+    expect(next.party[0].fighter.speciesId).toBe('charmeleon');
+  });
+
+  it('leaves the run untouched for an unknown member or an unready branch', () => {
+    const run = createRun({ seed: 'evo-b', starter: createRunPokemon({ id: 'c', speciesId: 'charmander', level: 10 }) });
+    expect(evolveMember(run, 'c', 'charmeleon')).toBe(run);
+    expect(evolveMember(run, 'nobody', 'charmeleon')).toBe(run);
   });
 });

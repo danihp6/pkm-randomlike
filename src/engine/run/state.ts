@@ -4,6 +4,7 @@ import type { BagCounts } from './battleLink';
 import { POKEVIAL_MAX_CHARGES, fillPokevial, healParty } from './heal';
 import { clampToCap } from './levelCap';
 import {
+  evolvePokemon,
   levelForXp,
   levelUpPokemon,
   xpForLevel,
@@ -270,6 +271,20 @@ export function updatePokemon(run: RunState, pokemon: RunPokemon): RunState {
     return { ...run, box: run.box.map((member) => (member.fighter.id === id ? pokemon : member)) };
   }
   return run;
+}
+
+/**
+ * Evolves a party or box member into `into` when its level allows that branch
+ * (`docs/battle-spec.md` §7). The clicked branch is validated by `evolvePokemon`,
+ * so an unready or unknown target leaves the run untouched. Pure.
+ */
+export function evolveMember(run: RunState, memberId: string, into: string): RunState {
+  const member =
+    run.party.find((entry) => entry.fighter.id === memberId) ??
+    run.box.find((entry) => entry.fighter.id === memberId);
+  if (!member) return run;
+  const evolved = evolvePokemon(member, into);
+  return evolved === member ? run : updatePokemon(run, evolved);
 }
 
 export function setParty(run: RunState, party: readonly RunPokemon[]): RunState {

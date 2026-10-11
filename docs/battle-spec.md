@@ -89,14 +89,26 @@ One capture attempt per route (a run-level counter, not a per-battle one).
 
 - The **party and the PC share one level and one XP bar** (D35): the XP a battle
   awards fills the squad's single bar, and every member levels with it, learning
-  the moves the learnset says at that level and evolving on level.
-- A **catch joins the squad at that shared level**: its stats, moveset and any
-  evolution the level already allows are rebuilt from the species at the squad's
-  level, whatever level the wild was.
+  the moves the learnset says at that level. Levelling never evolves a member.
+- **Evolution is manual and level-only.** Every evolution in the dex — level-up,
+  stone, trade, friendship, move — is resolved to a level (`evolutionBranches`,
+  `src/data/dex/evolutions.ts`): a canon level evolution keeps its level, the
+  rest take their species' own level evolution when it has one and otherwise a
+  stage default (base forms at 20, middle forms at 30), never before the level
+  the species was obtained at. All of a species' branches share that level, so a
+  split line (Eevee's eight) shows every option at once and the player picks in
+  the STATS tab's **evolution graph**: a branch the member's level already meets
+  is green and a click applies it. Evolution keeps the level, nature, IVs/EVs,
+  moves, PP, status and held item, rebuilds the stats and types from the new
+  species and carries the **missing** HP across. It is unrelated to Mega
+  Evolution (§9).
+- A **catch joins the squad at that shared level**: its stats and moveset are
+  rebuilt from the species at the squad's level, whatever level the wild was; it
+  keeps the species it was caught as and evolves only by the player's click.
 - A **per-map level cap** clamps gain: the squad can never exceed
   `levelCapForMap(map)`. The cap rises with the map chain so the next map is
-  always a step up. Evolution blocked by the cap waits until the cap allows the
-  level.
+  always a step up, and an evolution unlocks as soon as the member's level meets
+  its branch (the member's level never exceeds the cap).
 - The curve is medium-fast (`level^3`): the generated dex carries no
   base-experience yield, so `experienceAward` scales with the defeated Pokémon's
   level instead. The bar lives on the run (`RunState.xp`), not on a member, and
