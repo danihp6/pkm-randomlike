@@ -10,7 +10,7 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   `learnsets.ts`, `types.ts`, `natures.ts`, `evolutions.ts`).
 - `tilesets/` — one file per biome tileset plus the shared `palettes.ts` and the
   `index.ts` registry. Contract in `docs/tileset-spec.md`.
-- `biomes.ts` — biome → tileset, terrain flavour and encounter tables.
+- `biomes.ts` — biome → tileset and terrain flavour.
 - `mapSize.ts` — the map-size tiers (small / medium / large by area) that scale a
   biome's base `grassPatches` / `ledges` counts and add optional paths to a
   shape's `branchCount`, so density and exploration hold across route sizes
@@ -18,11 +18,12 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `maps.ts` — the per-map tuning: level range, room-count range and the room
   width/height range, plus the infinite-run step past the last map
   (`docs/maps-spec.md` §4).
-- `encounters.ts` — per-biome species pools and weights by level band.
-- `trainers.ts` — trainer archetypes and their themed species pool per level band.
+- `trainers.ts` — trainer archetypes: identity, sprites and reward only; their
+  roster is the floor's BST pool (`src/engine/run/pool.ts`, `D39`).
 - `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
   each band's `hiddenChance` (`docs/routes-spec.md` §2 step 4).
-- `run.ts` — level bands, the per-route cap and the run chain cadence.
+- `run.ts` — level bands (level range, party size and the BST window, `D39`) and
+  the run chain cadence.
 - `keybinds.ts` — the confirm/cancel/move/run/interact/reset/hud/settings actions,
   their default keys, labels and the pure rebind rules (`D23`). The Phaser half is
   `src/input/`.

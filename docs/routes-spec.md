@@ -177,7 +177,9 @@ populate them (steps 5-7). The `hedges` and `maze` carvers stay parked in
 - Tall grass is stamped from `terrain.grassPatches` on the off-spine floor, never
   on the spine or an opening, so a clean encounter-free lane always exists. A tree
   tip a patch shares (`grassTipKeys`) rolls the same encounter.
-- The table is per **biome**, weighted, and drawn from the route's level band.
+- The table is the route's band **BST pool** (legendaries and mythicals banned,
+  `D39`), weighted flat, so any species whose base-stat total falls in the band's
+  window can appear.
 - The roll uses the route RNG, so walking the same grass in the same order
   produces the same encounters.
 - Only the species and level are rolled. Stats, types and evolutions come from
@@ -222,9 +224,16 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
   routes inside ramp from its `minLevel` to its `maxLevel` and the map's
   `maxLevel` is the **player's cap** that clamps XP gain (`docs/battle-spec.md`
   §7). The old per-route band (`bandForRoute`) becomes the map's range.
-- Each trainer archetype carries one species pool per band (`src/data/trainers.ts`),
-  so a band's rosters field their own mix and the party size grows with the band
-  (`band`'s `trainerSize`).
+- Each trainer archetype is presentation and reward only (identity, sprites,
+  money); it no longer carries a species list. Both the wild table and every
+  roster draw from the floor's **BST pool** (`speciesPool`,
+  `src/engine/run/pool.ts`, `D39`), which varies only by the band's BST window and
+  the roster's bans, and the party size grows with the band (`band`'s
+  `trainerSize`).
+- The wild table bans legendary and mythical species; a trainer roster may field
+  them in the bands their BST lands in. A **boss** (map boss and mini-boss) fields
+  the **upper half** of its band's BST window, one step above the floor's regular
+  trainers.
 - A trainer roster is generated deterministically from the route seed and the
   map's band, and never exceeds the map's level cap. Trainers are placed by the
   population pass (step 4): one guards the main lane, the rest hold the optional

@@ -34,6 +34,8 @@ function species(id: string, name: string, num: number): Species {
     types: ['Normal'],
     baseStats: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: 1 },
     abilities: {},
+    tags: [],
+    bst: 6,
     prevo: '',
     evos: [],
     evolutions: [],

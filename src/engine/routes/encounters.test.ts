@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Rng } from '../rng';
-import { RouteEncounters, pickWeighted, rollEncounter } from './encounters';
-import type { EncounterTable } from '../../data/encounters';
+import { RouteEncounters, pickWeighted, rollEncounter, type EncounterTable } from './encounters';
 
 const table: EncounterTable = [
   { speciesId: 'a', weight: 1 },

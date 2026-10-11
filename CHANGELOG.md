@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Encounters and rosters are BST windows per floor, derived from the dex.**
+      The hand-authored `ENCOUNTER_TABLES` (per biome) and the archetype `pools`
+      are gone: a pure `speciesPool(band, roster)` (`src/engine/run/pool.ts`,
+      `D39`) filters the playable dex by the band's inclusive **BST window**
+      (`LevelBand.bst`, `src/data/run.ts`) and by the roster's bans. The windows
+      tile `0..800` (~120-150 species each), so every spawnable species now
+      appears somewhere — the wild covers all but the legendary/mythical tags,
+      and a trainer may field any species, legendaries included. The tall grass
+      bans `Restricted Legendary`, `Sub-Legendary` and `Mythical`; battle-only
+      formes never spawn in either. A **boss** (map boss and mini-boss) fields the
+      **upper half** of its band's window. `src/engine/run/pool.ts`,
+      `src/engine/run/roster.ts`, `src/engine/routes/encounters.ts`,
+      `src/data/run.ts`, `src/data/trainers.ts`, `src/data/biomes.ts`.
 - [x] **Abilities are rolled per run, and two once-unimplementable ones are
       reworked around the random pool.** Every wild, trainer and starter Pokémon
       — and each catch — now **rolls its ability** from the implemented set under

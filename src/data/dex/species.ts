@@ -25,6 +25,12 @@ export type Species = Readonly<{
   types: readonly string[];
   baseStats: Stats;
   abilities: Readonly<Record<string, string>>;
+  /** Showdown tags, e.g. `Restricted Legendary`, `Sub-Legendary`, `Mythical`. */
+  tags: readonly string[];
+  /** Base stat total (`D39`): the encounter pools bucket species by it. */
+  bst: number;
+  /** Set when the forme only exists inside a battle (never spawns, `D39`). */
+  battleOnly?: string | readonly string[];
   prevo: string;
   evos: readonly string[];
   evolutions: readonly Evolution[];

@@ -521,6 +521,30 @@ member never evolves on level-up (`levelUpPokemon`) or on a catch
 status and held item and carrying the missing HP across. The graph shows the
 pre-evolutions too, so a final form still reads its line.
 
+## D39 — Encounter and roster pools are BST windows per floor *(decided)*
+
+The wild table and every trainer roster are **derived from the dex at runtime**,
+not hand-authored: a pure `speciesPool(band, roster)` (`src/engine/run/pool.ts`)
+filters `playableSpecies()` by the band's inclusive BST window (`LevelBand.bst`,
+`src/data/run.ts`) and by the roster's ban list. The pool varies **only** by that
+window and the bans — there is no per-biome or per-archetype theming any more;
+`ENCOUNTER_TABLES` and the archetype `pools` are gone. The windows tile `0..800`
+with a rough population split (~120-150 species each), so every spawnable species
+lands in exactly one band and the union covers the whole dex.
+
+- **Wild** bans the legendary and mythical tags (`Restricted Legendary`,
+  `Sub-Legendary`, `Mythical`); the tall grass never spawns one.
+- **Trainers** ban nothing, so a high-BST legendary or mythical appears in the
+  bands its BST falls in, whichever archetype fields it.
+- **Battle-only formes** (Gulp Missile, Hunger Switch, the Crowned/Terastal
+  formes) never appear in either pool; they only exist inside a fight.
+- A **boss** (map boss and mini-boss) fields the **upper half** of its band's
+  window (`bossBstWindow`), one step above the floor's regular trainers.
+- Coverage is a test (`src/engine/run/pool.test.ts`): the wild union is every
+  spawnable species minus the banned tags, the trainer union every spawnable
+  species. Past the last band (an infinite run's deeper floors) the window stays
+  `end`: its BST saturates at the top of the dex.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

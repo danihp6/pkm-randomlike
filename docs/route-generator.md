@@ -115,7 +115,7 @@ reachable: Set<Point>               # FloodFill(tiles, entry), computed after te
 | map-size tiers (`small`/`medium`/`large`: terrain scale, branch bonus) | `src/data/mapSize.ts` | terrain multiplier and extra optional paths as the map grows |
 | `trainerSize`, `minLevel`, `maxLevel` | `src/data/run.ts` | population and levels |
 | loot `pool` / `hiddenChance` | `src/data/loot.ts` | item contents and how often one hides |
-| encounter table | `src/data/encounters.ts` | wild species |
+| wild species | `src/engine/run/pool.ts` (`speciesPool`, D39) | the band's BST pool, legendaries/mythicals banned |
 
 Balancing must never require touching `sketch.ts`.
 

@@ -1,5 +1,21 @@
-import type { EncounterTable } from '../../data/encounters';
+import type { LevelBand } from '../../data/run';
+import { speciesPool } from '../run/pool';
 import type { Rng } from '../rng';
+
+export type EncounterEntry = Readonly<{
+  speciesId: string;
+  weight: number;
+}>;
+
+export type EncounterTable = readonly EncounterEntry[];
+
+/**
+ * The wild table for a band: its `wild` pool (legendaries and mythicals banned,
+ * `D39`) with a flat weight, so every non-banned species of the band can appear.
+ */
+export function encounterTableFor(band: LevelBand): EncounterTable {
+  return speciesPool(band, 'wild').map((speciesId) => ({ speciesId, weight: 1 }));
+}
 
 export type Encounter = Readonly<{
   speciesId: string;
