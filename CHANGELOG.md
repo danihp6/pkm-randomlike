@@ -8,6 +8,35 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The MOVES tab gains a learnset band: search, learned moves and bag TMs,
+      dragged onto the four slots.** Below the slotted moves the detail window
+      now shows a search field over a paged grid of every move the member may
+      equip — the level-up moves it has already learned (plus any it still holds,
+      so a swap is always reversible) and the moves a **TM in the bag** can teach
+      it — tagged `Lv##`, `known` or `TM###`. A pool cell drags onto a slot to
+      equip it, swapping if the move already sits in another slot; teaching never
+      spends the TM (`D36`). The panel grew to fit the band. `src/engine/run/learnset.ts`,
+      `src/scenes/RouteScene.ts`.
+- [x] **Technical Machines.** The full base-Gen-9 TM catalogue (TM001 … TM171)
+      ships as **reusable** `machine`-pocket items, hand-authored from the dex's
+      `9M` learnset flags (`src/data/tms.ts`), and drops from route loot and
+      mini-boss rewards. `src/data/items.ts`, `src/data/loot.ts`.
+- [x] **A level-up popup announces "X learned Y!".** When the squad's level ticks
+      up (`playLevelUp`) a modal lists every move each member crossed; any key or
+      click dismisses it. `src/scenes/RouteScene.ts`.
+- [x] **A move's type badge reflects the ability and the battle context.** The
+      `-ate` abilities (Aerilate, Galvanize, Pixilate, Refrigerate), Liquid Voice
+      and Normalize retype a move, and the context moves Weather Ball, Terrain
+      Pulse, Revelation Dance and Aura Wheel read the weather, terrain, user's
+      primary type or form — in the FIGHT menu, the party panel and the damage
+      calc alike. `src/engine/battle/moveType.ts`,
+      `src/engine/battle/effects/moves.ts`.
+- [x] **Plates give Judgment its type.** The seventeen Plates ship as held items
+      (`plate` plus the canon 1.2x `typeBoost`); while one is held, Judgment takes
+      its type in the FIGHT menu, the party panel and the damage calc. Arceus is
+      not spawnable yet, so the Plates are catalogued but not obtainable.
+      `src/data/items.ts`, `src/engine/battle/effects/items.ts`,
+      `src/engine/battle/moveType.ts`.
 - [x] **The HUD move cell's ⓘ floats the description again.** `MoveGrid.infoAt`
       compared a cell-local point against an absolute rect, so the HUD's ⓘ button
       never matched and neither hover nor click showed the info popup; it now

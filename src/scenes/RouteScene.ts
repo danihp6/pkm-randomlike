@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import { biomeForRoute, getBiome } from '../data/biomes';
-import { getSpecies, type StatId } from '../data/dex';
+import { getMove, getSpecies, type StatId } from '../data/dex';
 import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { type HudPanelId } from '../data/hudLayout';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { getItem, MEGA_STONE_IDS } from '../data/items';
+import { tmNumber } from '../data/tms';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import {
@@ -72,6 +73,8 @@ import {
   type RunPokemon,
   type RunState,
 } from '../engine/run';
+import { equipMove, learnsetPool, type LearnEntry } from '../engine/run/learnset';
+import { abilityMoveType } from '../engine/battle/moveType';
 import {
   COMMON_TEXTURE_KEY,
   TILESETS,
@@ -166,7 +169,7 @@ import {
   type MemberDetail,
 } from '../ui/partyDetail';
 import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
-import { MoveGrid } from '../ui/moveGrid';
+import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../data/statusIcons';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
@@ -324,8 +327,16 @@ const HUD_DETAIL_INFO_ROWS = 2;
  * cells stay wide enough for the full move names.
  */
 const HUD_DETAIL_W = 460;
-/** Two rows of move cells need this much height; the stats tab sits inside it. */
-const HUD_DETAIL_MOVES_H = 288;
+/**
+ * The MOVES tab stacks three bands: the 2x2 slotted moves grid, a search field
+ * and the learnset pool (the moves already learned plus the bag TMs). The panel
+ * is tall enough for all three with the pool showing two rows at a time.
+ */
+const HUD_DETAIL_MOVE_GRID_H = 188;
+const HUD_DETAIL_SEARCH_H = 24;
+const HUD_DETAIL_LEARN_GAP = 8;
+const HUD_DETAIL_LEARN_PAGE_SIZE = 4;
+const HUD_DETAIL_MOVES_H = 560;
 const HUD_DETAIL_H = Math.max(
   HUD_DETAIL_CONTENT_TOP +
     HUD_DETAIL_STAT_ROWS * HUD_DETAIL_STAT_ROW +
@@ -490,6 +501,14 @@ function clampInt(value: number, min: number, max: number): number {
 /** "serious" -> "Serious", for the nature line. */
 function capitalize(text: string): string {
   return text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
+}
+
+/** True when a point falls inside a rect, for the detail panel's hit tests. */
+function pointInRect(
+  point: { x: number; y: number },
+  rect: { x: number; y: number; w: number; h: number },
+): boolean {
+  return point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h;
 }
 
 /** True when `tile` is inside the playable map (the border included). */
@@ -701,6 +720,29 @@ export class RouteScene extends Phaser.Scene {
   /** The move whose ⓘ floats its info popup, or null; `pinned` keeps it up. */
   private hudDetailInfo: number | null = null;
   private hudDetailInfoPinned = false;
+  /** The learnset pool: its grid, page, search field, focus and the move in hand. */
+  private hudLearnGrid!: MoveGrid;
+  private hudLearnPage = 0;
+  private hudLearnQuery = '';
+  private hudSearchFocus = false;
+  private hudSearchBg!: Phaser.GameObjects.Rectangle;
+  private hudSearchText!: Phaser.GameObjects.BitmapText;
+  /** The search field and pool grid rects, laid out by `refreshDetail`. */
+  private hudSearchRect = { x: 0, y: 0, w: 0, h: 0 };
+  private hudLearnPrev!: Phaser.GameObjects.BitmapText;
+  private hudLearnNext!: Phaser.GameObjects.BitmapText;
+  private hudLearnPageText!: Phaser.GameObjects.BitmapText;
+  /** The pool entries on the page on screen, for hit-testing the drag. */
+  private hudLearnPageEntries: readonly LearnEntry[] = [];
+  /** The pool move held while dragging it onto a slot, and its ghost chip. */
+  private hudLearnDrag: string | null = null;
+  private hudLearnGhost!: Phaser.GameObjects.BitmapText;
+  /** The "X learned Y!" popup shown after a level-up, and whether it is up. */
+  private learnPopup!: Phaser.GameObjects.Container;
+  private learnPopupBody!: Phaser.GameObjects.BitmapText;
+  private learnPopupOpen = false;
+  /** Timestamps already handled, so a replayed keydown never types twice. */
+  private searchKeyStamps = new Set<number>();
   /**
    * A member press waiting to become a click or a drag: a release without
    * movement opens the detail panel, a move past the slop grabs and reorders.
@@ -1082,9 +1124,20 @@ export class RouteScene extends Phaser.Scene {
       });
       this.input.on('gameout', () => this.clearHoverInspect());
     }
-    // Bag pocket tabs: `[` / `]` cycle them, a click picks one.
+    // Bag pocket tabs: `[` / `]` cycle them, a click picks one. While the
+    // learnset search field holds focus every key filters the pool instead.
     this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
       if (!this.scene.isActive()) return;
+      // Auto-repeat is ignored, so a held key never types (or pages) twice; the
+      // stamp guard drops the same event when the plugin re-delivers it.
+      if (event.repeat || this.searchKeyStamps.has(event.timeStamp)) return;
+      this.searchKeyStamps.add(event.timeStamp);
+      if (this.searchKeyStamps.size > 64) this.searchKeyStamps.clear();
+      if (this.learnPopupOpen) {
+        this.closeLearnPopup();
+        return;
+      }
+      if (this.typeInDetailSearch(event)) return;
       if (event.key === '[') this.stepBagCategory(-1);
       else if (event.key === ']') this.stepBagCategory(1);
     });
@@ -1126,6 +1179,7 @@ export class RouteScene extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.RESUME, () => this.touch?.release());
     this.buildResetOverlay();
     this.buildPauseMenu();
+    this.buildLearnPopup();
     this.refreshHud();
     this.refreshDetail();
   }
@@ -1136,6 +1190,13 @@ export class RouteScene extends Phaser.Scene {
    */
   private handleAction(action: KeybindAction): void {
     if (!this.scene.isActive()) return;
+    // The learnset search field owns the keyboard while it holds focus.
+    if (this.hudSearchFocus) return;
+    // The level-up popup is dismissed by any input.
+    if (this.learnPopupOpen) {
+      this.closeLearnPopup();
+      return;
+    }
     // The full-party capture screen owns the input while it is up.
     if (this.captureRoot) {
       this.handleCaptureAction(action);
@@ -1517,8 +1578,13 @@ export class RouteScene extends Phaser.Scene {
       .setScale(0.9)
       .setVisible(false);
 
+    // The move held in hand while dragging a learnset entry onto a slot: a small
+    // screen-space chip that follows the pointer over the HUD.
+    this.hudLearnGhost = addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [0.5, 0.5] })
+      .setVisible(false);
+
     this.hudRoot = this.add
-      .container(0, 0, [...this.hudPanels.map((panel) => panel.container), this.hudDragGhost])
+      .container(0, 0, [...this.hudPanels.map((panel) => panel.container), this.hudDragGhost, this.hudLearnGhost])
       .setDepth(150);
 
     this.applyStoredHudLayout();
@@ -1705,10 +1771,29 @@ export class RouteScene extends Phaser.Scene {
     });
     children.push(this.hudDetailEmpty);
 
+    // The learnset band: a search field over the pool of learned moves and bag
+    // TMs, paged four at a time. Its grid shares the moves grid's look.
+    this.hudSearchBg = this.add
+      .rectangle(0, 0, 10, HUD_DETAIL_SEARCH_H, 0xffffff)
+      .setOrigin(0, 0)
+      .setStrokeStyle(2, 0x9a94b8)
+      .setVisible(false);
+    this.hudSearchText = addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK }).setVisible(false);
+    this.hudLearnPrev = addFrlgText(this, 0, 0, '<', { size: 16, tint: FRLG_INK, origin: [0.5, 0] }).setVisible(false);
+    this.hudLearnNext = addFrlgText(this, 0, 0, '>', { size: 16, tint: FRLG_INK, origin: [0.5, 0] }).setVisible(false);
+    this.hudLearnPageText = addFrlgText(this, 0, 0, '', {
+      size: 16,
+      tint: 0x3a3956,
+      origin: [0.5, 0],
+    }).setVisible(false);
+    children.push(this.hudSearchBg, this.hudSearchText, this.hudLearnPrev, this.hudLearnNext, this.hudLearnPageText);
+
     const container = this.add.container(0, 0, children).setVisible(false);
     // The shared moves grid — the same component the battle's FIGHT menu draws —
-    // fills the MOVES tab, with its own floating info popup.
+    // fills the MOVES tab, with its own floating info popup. The learnset pool is
+    // a second instance drawn below the search field.
     this.hudMoveGrid = new MoveGrid(this, container);
+    this.hudLearnGrid = new MoveGrid(this, container);
     return container;
   }
 
@@ -2048,7 +2133,7 @@ export class RouteScene extends Phaser.Scene {
       x: this.hudDetailX,
       y: gridTop,
       w: HUD_DETAIL_W,
-      h: this.hudDetailY + HUD_DETAIL_H - gridTop,
+      h: HUD_DETAIL_MOVE_GRID_H,
       cells: moves
         ? detail.moves.map((move) => ({
             name: move.name,
@@ -2066,9 +2151,114 @@ export class RouteScene extends Phaser.Scene {
           }))
         : [],
       selected: moves ? (this.hudDetailState.grab ?? -1) : -1,
-      info: this.hudDetailInfo,
+      info: moves ? this.hudDetailInfo : null,
       popupAtCell: true,
     });
+
+    this.refreshLearnset(detail.ability, moves);
+  }
+
+  /** The filtered learnset pool for the open member, in draw order. */
+  private learnPool(): LearnEntry[] {
+    const memberId = this.hudDetailState.memberId;
+    if (memberId === null) return [];
+    const member =
+      this.run.party.find((entry) => entry.fighter.id === memberId) ??
+      this.run.box.find((entry) => entry.fighter.id === memberId);
+    if (!member) return [];
+    const pool = learnsetPool(this.run, member, this.run.seed);
+    const query = this.hudLearnQuery.trim().toLowerCase();
+    if (query.length === 0) return pool;
+    return pool.filter((entry) => {
+      const move = getMove(entry.moveId);
+      return (
+        entry.moveId.includes(query) ||
+        (move?.name ?? '').toLowerCase().includes(query) ||
+        (move?.type ?? '').toLowerCase().includes(query)
+      );
+    });
+  }
+
+  /** One learnset cell: the move's reading plus a Lv/TM source tag in its name. */
+  private learnCell(entry: LearnEntry, ability: string): MoveGridCell {
+    const move = getMove(entry.moveId);
+    const basePower = move?.basePower ?? 0;
+    const accuracy = move && move.accuracy !== true ? move.accuracy : null;
+    const tag =
+      entry.source === 'tm'
+        ? `TM${tmNumber(entry.tmId ?? '') ?? '?'}`
+        : entry.level === null
+          ? 'known'
+          : `Lv${entry.level}`;
+    return {
+      name: `${move?.name ?? entry.moveId}  ${tag}`,
+      type: move ? abilityMoveType(ability, move) : '',
+      category: move?.category ?? 'Status',
+      pp: move?.pp ?? 0,
+      maxPp: move?.pp ?? 0,
+      desc: move?.shortDesc ?? '',
+      power: basePower,
+      basePower,
+      accuracy,
+      baseAccuracy: accuracy,
+      status: move?.status ?? null,
+      enabled: true,
+    };
+  }
+
+  /** Draws the search field and the paged learnset pool under the moves grid. */
+  private refreshLearnset(ability: string, moves: boolean): void {
+    const pad = FRLG_WINDOW_PADDING;
+    const gridTop = this.hudDetailY + HUD_DETAIL_CONTENT_TOP - HUD_PAD_TOP;
+    const searchX = this.hudDetailX + pad.x;
+    const searchY = gridTop + HUD_DETAIL_MOVE_GRID_H + HUD_DETAIL_LEARN_GAP;
+    const searchW = HUD_DETAIL_W - pad.x * 2;
+    this.hudSearchRect = { x: searchX, y: searchY, w: searchW, h: HUD_DETAIL_SEARCH_H };
+    this.hudSearchBg.setPosition(searchX, searchY).setSize(searchW, HUD_DETAIL_SEARCH_H).setVisible(moves);
+    const placeholder = this.hudSearchFocus || this.hudLearnQuery.length > 0 ? this.hudLearnQuery : 'search moves...';
+    this.hudSearchText
+      .setText(`${this.hudSearchFocus ? '>' : ' '} ${placeholder}`)
+      .setTint(this.hudLearnQuery.length === 0 && !this.hudSearchFocus ? 0x6b6887 : FRLG_INK)
+      .setPosition(searchX + 6, searchY + 4)
+      .setVisible(moves);
+
+    const pool = moves ? this.learnPool() : [];
+    const pages = Math.max(1, Math.ceil(pool.length / HUD_DETAIL_LEARN_PAGE_SIZE));
+    this.hudLearnPage = Math.max(0, Math.min(pages - 1, this.hudLearnPage));
+    const pageEntries = pool.slice(
+      this.hudLearnPage * HUD_DETAIL_LEARN_PAGE_SIZE,
+      (this.hudLearnPage + 1) * HUD_DETAIL_LEARN_PAGE_SIZE,
+    );
+    this.hudLearnPageEntries = pageEntries;
+    const learnTop = searchY + HUD_DETAIL_SEARCH_H + HUD_DETAIL_LEARN_GAP;
+    const learnH = this.hudDetailY + HUD_DETAIL_H - learnTop;
+    this.hudLearnGrid.layout({
+      x: this.hudDetailX,
+      y: learnTop,
+      w: HUD_DETAIL_W,
+      h: learnH,
+      cells: pageEntries.map((entry) => this.learnCell(entry, ability)),
+      selected: pageEntries.findIndex((entry) => entry.moveId === this.hudLearnDrag),
+      info: null,
+      popupAtCell: true,
+      leftReserve: 30,
+      rightReserve: 30,
+    });
+
+    const arrowY = learnTop + learnH / 2;
+    const showNav = moves && pages > 1;
+    this.hudLearnPrev
+      .setPosition(this.hudDetailX + pad.x + 15, arrowY)
+      .setAlpha(this.hudLearnPage > 0 ? 1 : 0.35)
+      .setVisible(showNav);
+    this.hudLearnNext
+      .setPosition(this.hudDetailX + HUD_DETAIL_W - pad.x - 15, arrowY)
+      .setAlpha(this.hudLearnPage < pages - 1 ? 1 : 0.35)
+      .setVisible(showNav);
+    this.hudLearnPageText
+      .setText(`${this.hudLearnPage + 1}/${pages}`)
+      .setPosition(searchX + searchW - 6, searchY + 4)
+      .setVisible(moves && pool.length > 0);
   }
 
   /** Steps the PC BOX to another page and redraws. */
@@ -2112,6 +2302,11 @@ export class RouteScene extends Phaser.Scene {
     if (!this.scene.isActive()) return;
     // The Mart panel is modal: its own zones own the pointer while it is up.
     if (this.shopRoot || this.miniBossRewardRoot) return;
+    // The level-up popup is modal: a click just dismisses it.
+    if (this.learnPopupOpen) {
+      this.closeLearnPopup();
+      return;
+    }
     // The collapse icon sits in the frame band, so it is tested before the drag.
     // A press on it waits: a release without movement toggles the panel, a move
     // past the slop drags the panel from the icon (see pointermove).
@@ -2133,6 +2328,10 @@ export class RouteScene extends Phaser.Scene {
     if (panel) {
       this.startPanelDrag(panel, pointer);
       return;
+    }
+    if (this.hudSearchFocus && !this.pointerInDetailPanel(pointer)) {
+      this.hudSearchFocus = false;
+      this.refreshDetail();
     }
     if (this.hudDetailState.memberId !== null && this.pointerInDetailPanel(pointer)) {
       this.handleDetailPointerDown(pointer);
@@ -2211,7 +2410,7 @@ export class RouteScene extends Phaser.Scene {
 
   private handleHudPointerMove(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive()) return;
-    if (this.shopRoot || this.miniBossRewardRoot) return;
+    if (this.shopRoot || this.miniBossRewardRoot || this.learnPopupOpen) return;
     // A button released off-screen never fired `pointerup`; let go on the next move.
     if (!pointer.isDown) this.cancelHudDrags();
     // A press on a collapse icon becomes a panel drag once it passes the slop.
@@ -2230,6 +2429,12 @@ export class RouteScene extends Phaser.Scene {
     }
     if (this.hudDragItem !== null) {
       this.hudDragGhost.setPosition(pointer.x, pointer.y);
+      this.input.setDefaultCursor('grabbing');
+      return;
+    }
+    // A learnset move rides the pointer until it is dropped on a slot.
+    if (this.hudLearnDrag !== null) {
+      this.hudLearnGhost.setPosition(pointer.x, pointer.y);
       this.input.setDefaultCursor('grabbing');
       return;
     }
@@ -2317,6 +2522,11 @@ export class RouteScene extends Phaser.Scene {
       this.endHudItemDrag();
       return;
     }
+    if (this.hudLearnDrag !== null) {
+      this.endLearnDrag();
+      this.refreshDetail();
+      return;
+    }
     if (this.hudDetailState.grab !== null) {
       this.hudDetailState = dropMove(this.hudDetailState);
       this.persistRun();
@@ -2332,6 +2542,10 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private handleHudPointerUp(pointer: Phaser.Input.Pointer): void {
+    if (this.learnPopupOpen) {
+      this.closeLearnPopup();
+      return;
+    }
     if (this.shopRoot || this.miniBossRewardRoot) {
       this.cancelHudDrags();
       return;
@@ -2346,6 +2560,23 @@ export class RouteScene extends Phaser.Scene {
     }
     if (this.hudPanelDrag) {
       this.endPanelDrag();
+      return;
+    }
+    // A released learnset move equips into the slot it was dropped on, if any.
+    if (this.hudLearnDrag !== null) {
+      const moveId = this.hudLearnDrag;
+      const slot = this.detailMoveIndexAt(pointer);
+      const memberId = this.hudDetailState.memberId;
+      this.endLearnDrag();
+      if (slot !== null && memberId !== null) {
+        const next = equipMove(this.run, memberId, moveId, slot, this.run.seed);
+        if (next !== this.run) {
+          this.run = next;
+          this.persistRun();
+        }
+      }
+      this.refreshDetail();
+      this.refreshHud();
       return;
     }
     if (this.hudDragItem !== null) {
@@ -2407,6 +2638,10 @@ export class RouteScene extends Phaser.Scene {
     }
     this.hudDetailState = openDetail(memberId);
     this.resetDetailInfo();
+    this.hudLearnPage = 0;
+    this.hudLearnQuery = '';
+    this.hudSearchFocus = false;
+    this.endLearnDrag();
     this.refreshDetail();
     // The first open docks the panel beside the PC box; after that it stays
     // wherever the player dragged it.
@@ -2425,18 +2660,38 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * A press inside the panel: switch tab, toggle a move's ⓘ info popup, or pick
-   * a move up to reorder it.
+   * A press inside the panel: focus the search field, page the learnset pool,
+   * pick a pool move up to drag it onto a slot, switch tab, toggle a move's ⓘ
+   * info popup, or pick a slot move up to reorder it.
    */
   private handleDetailPointerDown(pointer: Phaser.Input.Pointer): void {
+    const point = this.panelPoint(pointer, 'detail');
+    if (pointInRect(point, this.hudSearchRect)) {
+      this.hudSearchFocus = true;
+      this.refreshDetail();
+      return;
+    }
+    this.hudSearchFocus = false;
     const tab = this.detailTabAt(pointer);
     if (tab !== null) {
       this.hudDetailState = setDetailTab(this.hudDetailState, tab);
+      this.resetLearnDrag();
       this.resetDetailInfo();
       this.refreshDetail();
       return;
     }
     if (this.hudDetailState.tab !== 'moves') return;
+    const nav = this.learnNavAt(point);
+    if (nav !== null) {
+      this.stepLearnPage(nav === 'prev' ? -1 : 1);
+      return;
+    }
+    const poolIndex = this.hudLearnGrid.indexAt(point.x, point.y);
+    if (poolIndex !== null) {
+      const entry = this.hudLearnPageEntries[poolIndex];
+      if (entry) this.startLearnDrag(entry.moveId, pointer);
+      return;
+    }
     const cell = this.detailInfoAt(pointer);
     if (!cell) return;
     if (cell.onInfo) {
@@ -2446,6 +2701,76 @@ export class RouteScene extends Phaser.Scene {
     this.hudDetailState = grabMove(this.hudDetailState, cell.index);
     this.hudGrabMoved = false;
     this.refreshDetail();
+  }
+
+  /** The pool paging arrow under a panel-local point, or null. */
+  private learnNavAt(point: { x: number; y: number }): 'prev' | 'next' | null {
+    const hit = (text: Phaser.GameObjects.BitmapText): boolean =>
+      text.visible &&
+      Math.abs(point.x - text.x) <= 16 &&
+      Math.abs(point.y - (text.y + 8)) <= 16;
+    if (hit(this.hudLearnPrev)) return 'prev';
+    if (hit(this.hudLearnNext)) return 'next';
+    return null;
+  }
+
+  /** Steps the learnset pool `delta` pages (clamped) and redraws. */
+  private stepLearnPage(delta: number): void {
+    const pages = Math.max(1, Math.ceil(this.learnPool().length / HUD_DETAIL_LEARN_PAGE_SIZE));
+    const page = Math.max(0, Math.min(pages - 1, this.hudLearnPage + delta));
+    if (page === this.hudLearnPage) return;
+    this.hudLearnPage = page;
+    this.refreshDetail();
+  }
+
+  /** Picks a pool move up so it can be dropped onto a slot. */
+  private startLearnDrag(moveId: string, pointer: Phaser.Input.Pointer): void {
+    this.hudLearnDrag = moveId;
+    this.hudGrabMoved = false;
+    this.hudLearnGhost
+      .setText(getMove(moveId)?.name ?? moveId)
+      .setPosition(pointer.x, pointer.y)
+      .setVisible(true);
+    this.input.setDefaultCursor('grabbing');
+    this.refreshDetail();
+  }
+
+  /** Clears the pool drag without equipping anything. */
+  private resetLearnDrag(): void {
+    this.hudLearnDrag = null;
+    this.hudLearnGhost.setVisible(false);
+  }
+
+  /** Ends a learnset drag: hides the ghost and restores the cursor. */
+  private endLearnDrag(): void {
+    if (this.hudLearnDrag === null && !this.hudLearnGhost.visible) return;
+    this.resetLearnDrag();
+    this.hudGrabMoved = false;
+    this.input.setDefaultCursor('default');
+  }
+
+  /**
+   * Routes a key into the learnset search field while it holds focus: letters and
+   * digits filter the pool, Backspace and Escape edit or leave the field. Returns
+   * true when the key was consumed, so it never drives the game underneath.
+   */
+  private typeInDetailSearch(event: KeyboardEvent): boolean {
+    if (!this.hudSearchFocus) return false;
+    if (event.key === 'Escape' || event.key === 'Enter') {
+      this.hudSearchFocus = false;
+    } else if (event.key === 'Backspace') {
+      if (this.hudLearnQuery.length === 0) return true;
+      this.hudLearnQuery = this.hudLearnQuery.slice(0, -1);
+      this.hudLearnPage = 0;
+    } else if (event.key.length === 1 && /[a-z0-9 '-]/i.test(event.key)) {
+      this.hudLearnQuery += event.key;
+      this.hudLearnPage = 0;
+    } else {
+      return true;
+    }
+    event.preventDefault();
+    this.refreshDetail();
+    return true;
   }
 
   /** Floats or hides the info popup as the pointer moves over a cell's ⓘ button. */
@@ -3833,6 +4158,60 @@ export class RouteScene extends Phaser.Scene {
    * pause the scene — the route's update stops walking while it is up — so the
    * pad and A / B still drive it: up/down to pick, A to choose, B to close.
    */
+  /**
+   * The level-up popup: a centred window listing "X learned Y!" for every member
+   * that crossed a move on the way up. Any key or a click dismisses it.
+   */
+  private buildLearnPopup(): void {
+    const { width, height } = this.scale;
+    const panelW = 560;
+    const panelH = 220;
+    const x = (width - panelW) / 2;
+    const y = (height - panelH) / 2;
+    const scrim = this.add.rectangle(0, 0, width, height, 0x05070c, 0.55).setOrigin(0, 0);
+    const panel = addFrlgWindow(this, x, y, panelW, panelH);
+    const title = addFrlgText(this, x + 24, y + 18, 'LEVEL UP', { size: 32, tint: FRLG_INK });
+    this.learnPopupBody = addFrlgText(this, x + 24, y + 76, '', { size: 16, tint: FRLG_INK, lineSpacing: 8 })
+      .setMaxWidth(panelW - 48);
+    const hint = addFrlgText(this, x + panelW - 24, y + panelH - 30, 'press any key', {
+      size: 16,
+      tint: 0x6b6887,
+      origin: [1, 0],
+    });
+    const zone = this.add.zone(0, 0, width, height).setOrigin(0, 0);
+    zone.setInteractive();
+    zone.on('pointerdown', () => this.closeLearnPopup());
+    this.learnPopup = this.add
+      .container(0, 0, [scrim, panel, title, this.learnPopupBody, hint, zone])
+      .setDepth(460)
+      .setVisible(false);
+    this.cameras.main.ignore(this.learnPopup);
+  }
+
+  /** Shows the learn popup for the level-up beats, or stays hidden if none learned. */
+  private showLearnPopup(beats: readonly LevelUpBeat[]): void {
+    if (this.learnPopupOpen) return;
+    const lines: string[] = [];
+    for (const beat of beats) {
+      const species = getSpecies(this.run.party.find((member) => member.fighter.id === beat.id)?.fighter.speciesId ?? '');
+      const name = species?.name ?? 'A Pokemon';
+      for (const moveId of beat.learned) {
+        lines.push(`${name} learned ${getMove(moveId)?.name ?? moveId}!`);
+      }
+    }
+    if (lines.length === 0) return;
+    this.learnPopupBody.setText(lines.join('\n'));
+    this.learnPopupOpen = true;
+    this.learnPopup.setVisible(true);
+  }
+
+  /** Dismisses the learn popup; safe when it is not up. */
+  private closeLearnPopup(): void {
+    if (!this.learnPopupOpen) return;
+    this.learnPopupOpen = false;
+    this.learnPopup.setVisible(false);
+  }
+
   private buildPauseMenu(): void {
     const { width, height } = this.scale;
     const panelH = 88 + PAUSE_MENU_ITEMS.length * PAUSE_MENU_ROW_H;
@@ -4950,6 +5329,8 @@ export class RouteScene extends Phaser.Scene {
       onComplete: () => {
         for (const row of this.hudRows) row.portrait.clearTint();
         this.refreshHud();
+        // Announce each move crossed on the way up, now that the counter landed.
+        this.showLearnPopup(beats);
       },
     });
   }
@@ -5300,6 +5681,7 @@ export class RouteScene extends Phaser.Scene {
    * fight over a direction.
    */
   private heldDirection(): MoveKey | null {
+    if (this.hudSearchFocus) return null;
     const { up, down, left, right } = this.moveKeys;
     const pressed = (keys: Phaser.Input.Keyboard.Key[]): boolean =>
       keys.some((key) => key.isDown || Phaser.Input.Keyboard.JustDown(key));

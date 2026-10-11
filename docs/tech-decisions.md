@@ -460,6 +460,42 @@ at that level — its stats, moves and any allowed evolution are rebuilt from th
 species at the shared level, whatever level the wild was. There is no per-member
 XP field. The per-map cap (D9/D29) still clamps gain, so power comes from play.
 
+## D36 — Technical Machines and the learnset panel *(decided)*
+
+TMs are **items** in the bag's `machine` pocket, one per base-Gen-9 machine
+(TM001 … TM171) and each tied to the move it teaches (`src/data/tms.ts`, the
+`teaches` field). They are **reusable**: teaching never spends one, so a machine
+is a permanent key to its move for any compatible species. Because `@pkmn/dex`
+carries no numbered TM items, the number → move table is hand-authored from the
+learnsets' `9M` flags and the move ids are validated against `moves.json`.
+
+The detail window's MOVES tab is a **learnset panel**: the four slotted moves
+over a search field and a paged grid of everything the member may equip — the
+learned level-up moves (from the run's randomized learnset, D17, plus any move it
+still holds so a swap can never lose one) and the moves a TM **in the bag** can
+teach it. A pool cell is dragged onto a slot to equip it, **swapping** when the
+move already sits in another slot; this goes through the pure `equipMove`, so
+the four slots never hold a duplicate. TM compatibility reads the **canonical**
+learnset, not the randomized one: D17's random TM slots name moves no machine
+sells, so only the real machines gate the panel. TMs drop from route loot and
+mini-boss rewards; a dedicated TM Machine and a real machine icon stay open.
+
+## D37 — A move's shown type follows the ability and the battle context *(decided)*
+
+The type badge a player sees is the **effective** type, not the dexed one. A
+single pure rule (`src/engine/battle/moveType.ts`) handles the ability side —
+the `-ate` abilities (Aerilate, Galvanize, Pixilate, Refrigerate), Liquid Voice
+and Normalize — and is read by the FIGHT menu's preview, the party panel and the
+damage calc. Moves whose type follows the battle situation register their own
+`onModifyMoveType` move effect instead, so the same value reaches all three:
+Weather Ball (weather), Terrain Pulse (terrain), Revelation Dance (the user's
+primary type) and Aura Wheel (the Morpeko form). A **held item** hooks the same
+path: the seventeen Plates ship and give Judgment their type (`item.plate`).
+Multi-Attack (Memories), Techno Blast (Drives), Natural Gift (berries) and
+Judgment's form-changing relatives wait for those moves/items to exist in a
+future dex — Judgment stays Normal without a Plate, and Hidden Power is not in
+Gen 9 at all.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

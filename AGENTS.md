@@ -44,12 +44,13 @@ backlog; `CHANGELOG.md` archives what already shipped (read only when asked).
 - `src/engine/` – pure logic: `rng.ts`, `grid.ts`, `map.ts`,
   `pathfinding.ts`, `tileset.ts`, `tileFrames.ts`, `routes/`
   (`routeMap.ts`, `sketch.ts`, `validate.ts`, `encounters.ts`), `maps/`
-  (`plan.ts`), and `battle/` (`fighter.ts`, `state.ts`, `order.ts`, `damage.ts`,
+  (`plan.ts`), `run/` (`state.ts`, `progression.ts`, `learnset.ts`, `resolve.ts`),
+  and `battle/` (`fighter.ts`, `state.ts`, `order.ts`, `damage.ts`, `moveType.ts`,
   `accuracy.ts`, `status.ts`, `volatile.ts`, `turn.ts`, `commands.ts`,
   `runAway.ts`, `capture.ts`, `ai.ts`).
 - `src/data/` – `dex/` (generated + typed accessors), `tilesets/` (registry +
   palettes), `biomes.ts`, `maps.ts`, `encounters.ts`, `trainers.ts`, `run.ts`,
-  `items.ts`. Contract in `src/data/README.md`.
+  `items.ts`, `tms.ts`. Contract in `src/data/README.md`.
 - `src/scenes/` – `BootScene.ts`, `MainMenuScene.ts`, `StarterScene.ts`,
   `RouteScene.ts`, `BattleScene.ts`, `RunOverScene.ts`, `SettingsScene.ts` (later:
   `BoxScene`).

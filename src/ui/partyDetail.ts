@@ -1,6 +1,7 @@
 import { getMove, getSpecies, type MoveCategory, type StatId } from '../data/dex';
 import { getBiome } from '../data/biomes';
 import { restoreFighter, type BattleFighter, type MoveSlot, type StatusId } from '../engine/battle/fighter';
+import { effectiveMoveType } from '../engine/battle/moveType';
 import { getItem } from '../data/items';
 import { moveMoves, type CatchLocation, type RunPokemon, type RunState } from '../engine/run';
 import { statusAbbreviation } from './metrics';
@@ -71,7 +72,11 @@ function memberById(run: RunState, id: string): RunPokemon | undefined {
   return run.party.find((member) => member.fighter.id === id) ?? run.box.find((member) => member.fighter.id === id);
 }
 
-function moveDetails(slots: readonly MoveSlot[]): MoveDetail[] {
+function moveDetails(
+  slots: readonly MoveSlot[],
+  ability: string,
+  heldItem: string | null,
+): MoveDetail[] {
   return slots.map((slot) => {
     const move = getMove(slot.moveId);
     const accuracy = move && move.accuracy !== true ? move.accuracy : null;
@@ -79,7 +84,7 @@ function moveDetails(slots: readonly MoveSlot[]): MoveDetail[] {
     return {
       moveId: slot.moveId,
       name: move?.name ?? slot.moveId,
-      type: move?.type ?? '',
+      type: move ? effectiveMoveType(ability, heldItem, move) : '',
       category: move?.category ?? 'Status',
       pp: slot.pp,
       maxPp: slot.maxPp,
@@ -128,7 +133,7 @@ export function fighterDetail(fighter: BattleFighter): MemberDetail {
     statusLabel: statusAbbreviation(fighter.status),
     heldItemName: held?.name ?? fighter.heldItem,
     stats: fighter.stats,
-    moves: moveDetails(fighter.moves),
+    moves: moveDetails(fighter.moves, fighter.ability, fighter.heldItem),
     caughtLabel: null,
   };
 }

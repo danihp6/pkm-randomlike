@@ -1,7 +1,8 @@
 import type { BoostId, StatusId } from '../engine/battle/fighter';
-import { getSpecies, MEGA_FORMES } from './dex';
+import { getMove, getSpecies, MEGA_FORMES } from './dex';
+import { TM_MOVE_IDS, tmItemId } from './tms';
 
-export type ItemKind = 'ball' | 'heal' | 'status' | 'boost' | 'held' | 'valuable';
+export type ItemKind = 'ball' | 'heal' | 'status' | 'boost' | 'held' | 'valuable' | 'tm';
 
 export type ItemDef = Readonly<{
   id: string;
@@ -33,6 +34,16 @@ export type ItemDef = Readonly<{
    * it becomes once per battle (`src/engine/battle/mega.ts`, D34).
    */
   mega?: Readonly<{ base: string; form: string }>;
+  /**
+   * A TM's move id. A TM is **reusable**: it never leaves the bag, it only gates
+   * the move in the learnset panel (`src/data/tms.ts`).
+   */
+  teaches?: string;
+  /**
+   * A Plate's type: while held, it gives Judgment its type (`moveType.ts`, D37).
+   * Plates also carry a 1.2x `typeBoost`, like the canon.
+   */
+  plate?: string;
   shortDesc: string;
 }>;
 
@@ -56,6 +67,70 @@ const MEGA_STONES: readonly ItemDef[] = MEGA_FORMES.map((mega) =>
 
 /** Every Mega Stone id, for the mega-stone room's random draw (`docs/maps-spec.md` §7). */
 export const MEGA_STONE_IDS: readonly string[] = MEGA_STONES.map((stone) => stone.id);
+
+/**
+ * Every base-Gen-9 Technical Machine (TM001 … TM171), one item per numbered
+ * machine (`src/data/tms.ts`). They land in the bag's MT/MO pocket and are
+ * **reusable**: the learnset panel offers a TM's move to a member whose
+ * randomized learnset lists that move as a TM, and learning it never spends the
+ * item. A single price keeps the shop's economy simple.
+ */
+const TM_PRICE = 3000;
+
+const TM_ITEMS: readonly ItemDef[] = TM_MOVE_IDS.map((moveId, index) => {
+  const move = getMove(moveId);
+  const label = `TM${String(index + 1).padStart(3, '0')}`;
+  return item({
+    id: tmItemId(index + 1),
+    name: move ? `${label} ${move.name}` : label,
+    kind: 'tm',
+    price: TM_PRICE,
+    teaches: moveId,
+    shortDesc: move
+      ? `Teaches ${move.name} to a compatible Pokémon. Reusable.`
+      : 'A Technical Machine.',
+  });
+});
+
+/** Every TM id, for a shop or a loot roll that hands out a random machine. */
+export const TM_ITEM_IDS: readonly string[] = TM_ITEMS.map((entry) => entry.id);
+
+/**
+ * The seventeen Plates (D37): a held Plate gives **Judgment** its type and
+ * boosts that type's moves 1.2x, exactly like the canon. They are boss-tier
+ * treasure — nothing spawns Arceus yet — so they are catalogued but not sold.
+ */
+const PLATES: readonly (readonly [string, string, string])[] = [
+  ['flameplate', 'Flame Plate', 'Fire'],
+  ['splashplate', 'Splash Plate', 'Water'],
+  ['zapplate', 'Zap Plate', 'Electric'],
+  ['meadowplate', 'Meadow Plate', 'Grass'],
+  ['icicleplate', 'Icicle Plate', 'Ice'],
+  ['fistplate', 'Fist Plate', 'Fighting'],
+  ['toxicplate', 'Toxic Plate', 'Poison'],
+  ['earthplate', 'Earth Plate', 'Ground'],
+  ['skyplate', 'Sky Plate', 'Flying'],
+  ['mindplate', 'Mind Plate', 'Psychic'],
+  ['insectplate', 'Insect Plate', 'Bug'],
+  ['stoneplate', 'Stone Plate', 'Rock'],
+  ['spookyplate', 'Spooky Plate', 'Ghost'],
+  ['dracoplate', 'Draco Plate', 'Dragon'],
+  ['dreadplate', 'Dread Plate', 'Dark'],
+  ['ironplate', 'Iron Plate', 'Steel'],
+  ['pixieplate', 'Pixie Plate', 'Fairy'],
+];
+
+const PLATE_ITEMS: readonly ItemDef[] = PLATES.map(([id, name, type]) =>
+  item({
+    id,
+    name,
+    kind: 'held',
+    price: 4000,
+    plate: type,
+    typeBoost: { type, multiplier: 1.2 },
+    shortDesc: `Powers up ${type}-type moves. Holder's Judgment becomes ${type} type.`,
+  }),
+);
 
 /**
  * The run's item catalogue: balls, heal/status/boost consumables, `held` items
@@ -123,7 +198,9 @@ export const ITEMS: readonly ItemDef[] = [
   item({ id: 'bignugget', name: 'Big Nugget', kind: 'valuable', price: 10000, shortDesc: 'A big lump of pure gold. Sell it for money.' }),
   item({ id: 'cometshard', name: 'Comet Shard', kind: 'valuable', price: 12000, shortDesc: 'A shard of a comet. Sell it for money.' }),
 
+  ...PLATE_ITEMS,
   ...MEGA_STONES,
+  ...TM_ITEMS,
 ];
 
 const BY_ID = new Map<string, ItemDef>(ITEMS.map((entry) => [entry.id, entry]));

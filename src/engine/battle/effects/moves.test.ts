@@ -4,8 +4,11 @@ import { Rng } from '../../rng';
 import { createFighter, type BattleFighter } from '../fighter';
 import { activeFighter, createBattle, type BattleState } from '../state';
 import { autoReplace, needsReplacement, performSwitch, takeTurn, useMove } from '../turn';
+import { movePreview } from '../preview';
 import { getEffect } from './registry';
 import { isProtectMove, moveEffects, protectBlocks } from './moves';
+import { setTerrain } from './terrain';
+import { setWeather } from './weather';
 
 function fighter(id: string, speciesId: string, moves: readonly string[]): BattleFighter {
   return createFighter({ id, speciesId, level: 20, moves });
@@ -293,5 +296,60 @@ describe('transform', () => {
     expect(ditto.speciesId).toBe('ditto');
     expect(ditto.transformBackup).toBeNull();
     expect(ditto.volatiles.transformed).toBe(false);
+  });
+});
+
+describe('variable-type moves', () => {
+  it('Weather Ball follows the weather', () => {
+    const state = battle(['weatherball'], ['tackle']);
+    expect(movePreview(state, 'player', 0)?.type).toBe('Normal');
+    setWeather(state, 'sun');
+    expect(movePreview(state, 'player', 0)?.type).toBe('Fire');
+    setWeather(state, 'rain');
+    expect(movePreview(state, 'player', 0)?.type).toBe('Water');
+    setWeather(state, 'sand');
+    expect(movePreview(state, 'player', 0)?.type).toBe('Rock');
+    setWeather(state, 'snow');
+    expect(movePreview(state, 'player', 0)?.type).toBe('Ice');
+  });
+
+  it('Terrain Pulse follows the terrain', () => {
+    const state = battle(['terrainpulse'], ['tackle']);
+    expect(movePreview(state, 'player', 0)?.type).toBe('Normal');
+    setTerrain(state, 'electric');
+    expect(movePreview(state, 'player', 0)?.type).toBe('Electric');
+    setTerrain(state, 'grassy');
+    expect(movePreview(state, 'player', 0)?.type).toBe('Grass');
+    setTerrain(state, 'misty');
+    expect(movePreview(state, 'player', 0)?.type).toBe('Fairy');
+    setTerrain(state, 'psychic');
+    expect(movePreview(state, 'player', 0)?.type).toBe('Psychic');
+  });
+
+  it('Revelation Dance takes the user primary type', () => {
+    const state = createBattle({
+      player: [fighter('player', 'oricoriopompom', ['revelationdance'])],
+      enemy: [fighter('enemy', 'bulbasaur', ['tackle'])],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    expect(movePreview(state, 'player', 0)?.type).toBe('Electric');
+  });
+
+  it('Aura Wheel is Dark for a Hangry Morpeko, Electric otherwise', () => {
+    const hangry = createBattle({
+      player: [fighter('player', 'morpekohangry', ['aurawheel'])],
+      enemy: [fighter('enemy', 'bulbasaur', ['tackle'])],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    expect(movePreview(hangry, 'player', 0)?.type).toBe('Dark');
+    const full = createBattle({
+      player: [fighter('player', 'morpeko', ['aurawheel'])],
+      enemy: [fighter('enemy', 'bulbasaur', ['tackle'])],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    expect(movePreview(full, 'player', 0)?.type).toBe('Electric');
   });
 });

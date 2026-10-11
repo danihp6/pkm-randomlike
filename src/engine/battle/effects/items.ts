@@ -117,14 +117,23 @@ function typeBoostHandler(item: ItemDef): NonNullable<EffectHandlers['onModifyDa
   };
 }
 
+/** A Plate retypes the holder's Judgment (D37). */
+function plateHandler(item: ItemDef): NonNullable<EffectHandlers['onModifyMoveType']> {
+  const type = item.plate!;
+  return (ctx, move) => {
+    if (ctx.owner !== ctx.source) return;
+    if (move.id !== 'judgment') return;
+    return type;
+  };
+}
+
 function handlersFor(item: ItemDef): EffectHandlers {
   const hasResidual = Boolean(item.cures || item.healAmount || item.healFraction);
-  if (item.typeBoost && hasResidual) {
-    return { onModifyDamage: typeBoostHandler(item), onResidual: residualHandler(item) };
-  }
-  if (item.typeBoost) return { onModifyDamage: typeBoostHandler(item) };
-  if (hasResidual) return { onResidual: residualHandler(item) };
-  return {};
+  let handlers: EffectHandlers = {};
+  if (item.typeBoost) handlers = { ...handlers, onModifyDamage: typeBoostHandler(item) };
+  if (hasResidual) handlers = { ...handlers, onResidual: residualHandler(item) };
+  if (item.plate) handlers = { ...handlers, onModifyMoveType: plateHandler(item) };
+  return handlers;
 }
 
 /** Every held item in the catalogue, as a registrable effect definition. */

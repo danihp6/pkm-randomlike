@@ -1,9 +1,18 @@
 import type { Move } from '../../../data/dex';
 import { applyDamage, moveContacts, transformInto, type BoostId, type StatusId } from '../fighter';
-import { activeFighter, opponent, pushEvent, pushText, type BattleState, type SideId } from '../state';
+import {
+  activeFighter,
+  effectiveWeather,
+  opponent,
+  pushEvent,
+  pushText,
+  type BattleState,
+  type SideId,
+} from '../state';
 import { applyBoostEffect, applyStatusEffect } from './apply';
 import {
   registerEffects,
+  type EffectContext,
   type EffectDefinition,
   type EffectHandlers,
 } from './registry';
@@ -120,6 +129,57 @@ function transformEffect(): EffectHandlers {
   };
 }
 
+/**
+ * Moves whose type follows the battle situation rather than the dex: Weather
+ * Ball reads the weather, Terrain Pulse the terrain, Revelation Dance the user's
+ * primary type and Aura Wheel the user's Morpeko form. Registered as move effects
+ * so their `onModifyMoveType` reaches both the damage calc and the FIGHT menu's
+ * preview; items that retype a move (Plates, Drives, Memories) are not in this
+ * build's catalogue, so Judgment and friends keep their dexed type.
+ */
+const VARIABLE_TYPE_MOVES: Readonly<Record<string, (ctx: EffectContext) => string>> = {
+  weatherball: (ctx) => {
+    switch (effectiveWeather(ctx.state)) {
+      case 'sun':
+        return 'Fire';
+      case 'rain':
+        return 'Water';
+      case 'sand':
+        return 'Rock';
+      case 'snow':
+        return 'Ice';
+      default:
+        return 'Normal';
+    }
+  },
+  terrainpulse: (ctx) => {
+    switch (ctx.state.terrain) {
+      case 'electric':
+        return 'Electric';
+      case 'grassy':
+        return 'Grass';
+      case 'misty':
+        return 'Fairy';
+      case 'psychic':
+        return 'Psychic';
+      default:
+        return 'Normal';
+    }
+  },
+  revelationdance: (ctx) => ctx.source.types[0] ?? 'Normal',
+  aurawheel: (ctx) => (ctx.source.speciesId === 'morpekohangry' ? 'Dark' : 'Electric'),
+};
+
+function variableTypeEffect(typeFor: (ctx: EffectContext) => string): EffectHandlers {
+  return {
+    onModifyMoveType: (ctx, move) => {
+      if (ctx.owner !== ctx.source) return;
+      const type = typeFor(ctx);
+      return type === move.type ? undefined : type;
+    },
+  };
+}
+
 export function moveEffects(): readonly EffectDefinition[] {
   const defs: EffectDefinition[] = Object.keys(PROTECT_MOVES).map((moveId) => ({
     id: moveId,
@@ -128,6 +188,9 @@ export function moveEffects(): readonly EffectDefinition[] {
   }));
   defs.push({ id: 'recycle', kind: 'move', handlers: recycleEffect() });
   defs.push({ id: 'transform', kind: 'move', handlers: transformEffect() });
+  for (const [moveId, typeFor] of Object.entries(VARIABLE_TYPE_MOVES)) {
+    defs.push({ id: moveId, kind: 'move', handlers: variableTypeEffect(typeFor) });
+  }
   return defs;
 }
 

@@ -9,7 +9,7 @@ import {
   type ItemKind,
 } from './items';
 
-const KINDS: readonly ItemKind[] = ['ball', 'heal', 'status', 'boost', 'held', 'valuable'];
+const KINDS: readonly ItemKind[] = ['ball', 'heal', 'status', 'boost', 'held', 'valuable', 'tm'];
 
 describe('item catalogue', () => {
   it('has unique ids and a known kind for every row', () => {

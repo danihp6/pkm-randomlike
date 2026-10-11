@@ -29,7 +29,8 @@ through a held stone (`src/engine/battle/mega.ts`).
 | `src/data/maps.ts` | per-map tuning: level range, room-count range and room width/height range, plus the infinite-run step | 9 |
 | `src/data/encounters.ts` | per-biome species pools and weights by band | 2 |
 | `src/data/trainers.ts` | trainer archetypes: name, class, sprite, per-band species pools, money base/jitter (D33) and `carriesMega` (bosses/`ace`) | 2/9 |
-| `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), plus **valuables** (sellable) and **Mega Stones**, each with a Poké Dollar price | 3/6 |
+| `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), plus **valuables** (sellable), **Mega Stones**, the **Plates** (`plate`, D37) and the **TMs** (`machine` pocket), each with a Poké Dollar price | 3/6/10 |
+| `src/data/tms.ts` | the base-Gen-9 TM table: TM number → move id (TM001 … TM171), hand-authored from the dex's `9M` flags, with the id/number/move helpers `items.ts` turns into reusable machines (D36) | 10 |
 | `src/data/shop.ts` | the shop's per-band core (Balls/Potions) and the weighted pool its one or two rotating items are drawn from (D33) | 9 |
 | `src/data/spriteSize.ts` | the battle sprite size curve: canonical height (m) → drawn height (px), the power and clamps | 5 |
 | `src/data/run.ts` | chain length, mini-boss cadence, boss cadence, level caps, starter pool, starting bag | 2 |

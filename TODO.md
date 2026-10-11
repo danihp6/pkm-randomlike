@@ -209,3 +209,20 @@ into these floors and adds the Poké Dollar economy. Source of truth:
 - [ ] **Step 14 — Docs & migration pass.** Finish `docs/maps-spec.md`, update
       `design-spec.md` / `routes-spec.md` / `battle-spec.md` / `AGENTS.md` and the
       tech decision addenda, and archive the steps in `CHANGELOG.md`.
+
+## Phase 10 - Learnset, TMs & move typing
+
+> The learnset panel, the TM catalogue and the effective-type rules shipped;
+> these are the follow-ups (`D36`/`D37`).
+
+- [ ] **TM acquisition breadth.** TMs only drop from route loot and mini-boss
+      rewards today. A proper TM Machine (or a per-band TM slot in the shop) and a
+      real machine icon � every TM borrows the sheet's question mark until then �
+      are still open.
+- [ ] **Remaining item-driven move retypes.** Judgment + the seventeen Plates
+      shipped; Multi-Attack (Memories), Techno Blast (Drives) and Natural Gift
+      (berries) have no move in the Gen 9 dex this build ships, so they wait on a
+      future dex. All would hook the same `onModifyMoveType` path as the Plates.
+      The Plates themselves are not obtainable until an Arceus-tier source lands.
+- [ ] **Relearn UI for the bench.** The learnset panel covers the panel's four
+      slots; a Move-Relearner style screen for the whole party is not planned yet.

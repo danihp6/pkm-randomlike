@@ -4,6 +4,7 @@ import { applyDamage, applyHeal, isGrounded, stagedStat, transformInto, type Bat
 import { cureStatus, statusName } from '../status';
 import { opponentOf, pushEvent, pushText, effectiveWeather, type WeatherId } from '../state';
 import { applyFlinch, applyConfusion, applyAttract } from '../volatile';
+import { abilityMoveType } from '../moveType';
 import { applyBoostEffect, applyStatusEffect, statLabel } from './apply';
 import { applyHeldItemEffect } from './items';
 import { setTerrain } from './terrain';
@@ -1689,22 +1690,17 @@ function myceliumMight(): EffectHandlers {
   };
 }
 
-/** Galvanize and Pixilate turn Normal moves into another type. */
-function ateMove(fromType: string, toType: string): EffectHandlers {
+/**
+ * The abilities that retype the holder's moves (`-ate` set, Liquid Voice,
+ * Normalize). The rule lives in `../moveType`, so the FIGHT menu, the party
+ * panel and the damage calc all read the same type.
+ */
+function typeChangeAbility(): EffectHandlers {
   return {
     onModifyMoveType: (ctx, move) => {
-      if (ctx.owner !== ctx.source || move.type !== fromType) return;
-      return toType;
-    },
-  };
-}
-
-/** Liquid Voice turns sound moves into Water. */
-function liquidVoice(): EffectHandlers {
-  return {
-    onModifyMoveType: (ctx, move) => {
-      if (ctx.owner !== ctx.source || !move.flags.sound) return;
-      return 'Water';
+      if (ctx.owner !== ctx.source) return;
+      const type = abilityMoveType(ctx.owner.ability, move);
+      return type === move.type ? undefined : type;
     },
   };
 }
@@ -2116,9 +2112,12 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['vesselofruin', {}],
   ['myceliummight', myceliumMight()],
 
-  ['galvanize', ateMove('Normal', 'Electric')],
-  ['pixilate', ateMove('Normal', 'Fairy')],
-  ['liquidvoice', liquidVoice()],
+  ['aerilate', typeChangeAbility()],
+  ['galvanize', typeChangeAbility()],
+  ['pixilate', typeChangeAbility()],
+  ['refrigerate', typeChangeAbility()],
+  ['normalize', typeChangeAbility()],
+  ['liquidvoice', typeChangeAbility()],
   ['cursedbody', cursedBody()],
   ['cutecharm', cuteCharm()],
 
