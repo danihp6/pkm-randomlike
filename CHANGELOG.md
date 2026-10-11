@@ -31,6 +31,12 @@ file is the human-readable summary.
       primary type or form — in the FIGHT menu, the party panel and the damage
       calc alike. `src/engine/battle/moveType.ts`,
       `src/engine/battle/effects/moves.ts`.
+- [x] **Plates give Judgment its type.** The seventeen Plates ship as held items
+      (`plate` plus the canon 1.2x `typeBoost`); while one is held, Judgment takes
+      its type in the FIGHT menu, the party panel and the damage calc. Arceus is
+      not spawnable yet, so the Plates are catalogued but not obtainable.
+      `src/data/items.ts`, `src/engine/battle/effects/items.ts`,
+      `src/engine/battle/moveType.ts`.
 - [x] **The HUD move cell's ⓘ floats the description again.** `MoveGrid.infoAt`
       compared a cell-local point against an absolute rect, so the HUD's ⓘ button
       never matched and neither hover nor click showed the info popup; it now

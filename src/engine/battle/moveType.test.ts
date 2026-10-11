@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { getMove } from '../../data/dex';
-import { abilityMoveType } from './moveType';
+import { abilityMoveType, effectiveMoveType } from './moveType';
 
 const tackle = getMove('tackle')!;
 const ember = getMove('ember')!;
 const hypervoice = getMove('hypervoice')!;
+const judgment = getMove('judgment')!;
 
 describe('abilityMoveType', () => {
   it('retypes a Normal move for the -ate abilities', () => {
@@ -30,5 +31,20 @@ describe('abilityMoveType', () => {
     expect(abilityMoveType('Blaze', ember)).toBe('Fire');
     expect(abilityMoveType(null, ember)).toBe('Fire');
     expect(abilityMoveType(undefined, tackle)).toBe('Normal');
+  });
+});
+
+describe('effectiveMoveType', () => {
+  it('a held Plate gives Judgment its type', () => {
+    expect(effectiveMoveType('Multitype', 'flameplate', judgment)).toBe('Fire');
+    expect(effectiveMoveType('Multitype', 'pixieplate', judgment)).toBe('Fairy');
+    expect(effectiveMoveType('Multitype', null, judgment)).toBe('Normal');
+    // A non-Plate item does not retype it.
+    expect(effectiveMoveType('Multitype', 'charcoal', judgment)).toBe('Normal');
+  });
+
+  it('still applies the ability and leaves other moves alone', () => {
+    expect(effectiveMoveType('Refrigerate', 'flameplate', tackle)).toBe('Ice');
+    expect(effectiveMoveType('Blaze', null, ember)).toBe('Fire');
   });
 });

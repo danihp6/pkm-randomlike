@@ -24,6 +24,8 @@ const FRAMES: Readonly<Record<string, number>> = manifest.items;
 const MEGA_STONE_FALLBACK = 'hardstone';
 const VALUABLE_FALLBACK = 'hardstone';
 const TM_FALLBACK = 'fairyfeather';
+// The Plates (D37) borrow the same ore icon until plate art lands.
+const PLATE_FALLBACK = 'hardstone';
 
 /** The atlas frame for a run item, or null when it has no FRLG icon. */
 export function itemIconFrame(itemId: string): number | null {
@@ -33,5 +35,6 @@ export function itemIconFrame(itemId: string): number | null {
   if (item?.mega) return FRAMES[MEGA_STONE_FALLBACK] ?? null;
   if (item?.kind === 'valuable') return FRAMES[VALUABLE_FALLBACK] ?? null;
   if (item?.kind === 'tm') return FRAMES[TM_FALLBACK] ?? null;
+  if (item?.plate) return FRAMES[PLATE_FALLBACK] ?? null;
   return null;
 }

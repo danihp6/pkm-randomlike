@@ -217,11 +217,12 @@ into these floors and adds the PokÃ© Dollar economy. Source of truth:
 
 - [ ] **TM acquisition breadth.** TMs only drop from route loot and mini-boss
       rewards today. A proper TM Machine (or a per-band TM slot in the shop) and a
-      real machine icon — every TM borrows the sheet's question mark until then —
+      real machine icon ï¿½ every TM borrows the sheet's question mark until then ï¿½
       are still open.
-- [ ] **Item-driven move retypes.** Judgment (Plates), Multi-Attack (Memories),
-      Techno Blast (Drives) and Natural Gift (berries) keep their dexed type until
-      those held items exist; they hook the same `onModifyMoveType` path as
-      Weather Ball and Terrain Pulse.
+- [ ] **Remaining item-driven move retypes.** Judgment + the seventeen Plates
+      shipped; Multi-Attack (Memories), Techno Blast (Drives) and Natural Gift
+      (berries) have no move in the Gen 9 dex this build ships, so they wait on a
+      future dex. All would hook the same `onModifyMoveType` path as the Plates.
+      The Plates themselves are not obtainable until an Arceus-tier source lands.
 - [ ] **Relearn UI for the bench.** The learnset panel covers the panel's four
       slots; a Move-Relearner style screen for the whole party is not planned yet.

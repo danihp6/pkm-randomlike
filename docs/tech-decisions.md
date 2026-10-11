@@ -489,9 +489,12 @@ and Normalize — and is read by the FIGHT menu's preview, the party panel and t
 damage calc. Moves whose type follows the battle situation register their own
 `onModifyMoveType` move effect instead, so the same value reaches all three:
 Weather Ball (weather), Terrain Pulse (terrain), Revelation Dance (the user's
-primary type) and Aura Wheel (the Morpeko form). Moves retyped by a **held item**
-(Judgment with a Plate, Multi-Attack with a Memory, Techno Blast with a Drive)
-and by Hidden Power wait for those items to exist; they would hook the same path.
+primary type) and Aura Wheel (the Morpeko form). A **held item** hooks the same
+path: the seventeen Plates ship and give Judgment their type (`item.plate`).
+Multi-Attack (Memories), Techno Blast (Drives), Natural Gift (berries) and
+Judgment's form-changing relatives wait for those moves/items to exist in a
+future dex — Judgment stays Normal without a Plate, and Hidden Power is not in
+Gen 9 at all.
 
 ## Open questions
 
