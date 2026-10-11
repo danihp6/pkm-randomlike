@@ -196,6 +196,17 @@ import {
   TRAINER_TEXTURE_KEY,
 } from './BootScene';
 
+/**
+ * The world camera's zoom while walking a route: tiles read at 2x on a desktop
+ * window. A touch screen has a much narrower viewport, so it pulls back a quarter
+ * (`ROUTE_TOUCH_ZOOM_OUT`) to keep the same slice of the route on screen. Only
+ * the route uses this camera; the menus and the battle are untouched.
+ */
+const ROUTE_CAMERA_ZOOM = 2;
+const ROUTE_TOUCH_ZOOM_OUT = 0.75;
+const routeCameraZoom = (): number =>
+  ROUTE_CAMERA_ZOOM * (prefersTouchControls() ? ROUTE_TOUCH_ZOOM_OUT : 1);
+
 /** Item stacks the route HUD's bag window shows before it drops the rest. */
 const HUD_BAG_ROWS = 6;
 
@@ -1148,7 +1159,7 @@ export class RouteScene extends Phaser.Scene {
 
     const cameraBounds = mapPixelSize(this.map, TILE_SIZE);
     this.cameras.main.setBounds(0, 0, cameraBounds.width, cameraBounds.height);
-    this.cameras.main.setZoom(2);
+    this.cameras.main.setZoom(routeCameraZoom());
     this.cameras.main.startFollow(this.playerSprite, true, 0.2, 0.2);
 
     this.refreshMoveKeys();
