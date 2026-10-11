@@ -48,6 +48,7 @@ export type BattleEvent =
   | Readonly<{ kind: 'faint'; side: SideId; fighterId: string }>
   | Readonly<{ kind: 'switch'; side: SideId; fighterId: string }>
   | Readonly<{ kind: 'mega'; side: SideId; fighterId: string }>
+  | Readonly<{ kind: 'forme'; side: SideId; fighterId: string }>
   | Readonly<{ kind: 'item'; side: SideId; itemId: string }>
   | Readonly<{ kind: 'capture'; success: boolean; fighterId: string; shakes: number }>
   | Readonly<{ kind: 'run'; side: SideId; success: boolean }>

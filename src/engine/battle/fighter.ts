@@ -4,10 +4,12 @@ import {
   getSpecies,
   levelUpMoves,
   statAtLevel,
+  type Species,
   type StatId,
   type Stats,
 } from '../../data/dex';
 import { MAX_IV } from '../../data/dex/natures';
+import { randomAbility } from './randomAbility';
 import { randomLevelUpMoves } from './randomLearnset';
 
 export type StatusId = 'brn' | 'psn' | 'tox' | 'par' | 'slp' | 'frz';
@@ -52,6 +54,11 @@ export type Volatiles = {
   flashFire: boolean;
   /** Disguise is intact and can absorb one damaging hit. */
   disguise: boolean;
+  /**
+   * Reworked Wonder Guard: intact from the moment the holder switches in until
+   * the first damaging hit lands, and it absorbs a non-super-effective one.
+   */
+  wonderGuard: boolean;
   /** A charge move (Solar Beam, Fly...) is charging and will fire next turn. */
   charging: string | null;
   /** Physical damage taken since the turn started (Counter). */
@@ -186,6 +193,7 @@ export function emptyVolatiles(): Volatiles {
     protectStreak: 0,
     flashFire: false,
     disguise: false,
+    wonderGuard: false,
     charging: null,
     physicalDamageTaken: 0,
     specialDamageTaken: 0,
@@ -253,6 +261,53 @@ function defaultGender(ratio: Readonly<{ M: number; F: number }>): Gender {
   return 'genderless';
 }
 
+/**
+ * The fighter's ability. A provided one is trusted as-is: the dex debug editor
+ * can grant an off-species ability, and a snapshot round-trip must preserve it.
+ * Otherwise a run seed rolls one from the implemented pool (`D17`) — No Guard
+ * is dropped when the moveset carries an OHKO move, so the guaranteed-hit and
+ * one-hit-KO pair never meets — and a blank pool or no seed falls back to the
+ * species' own first ability.
+ */
+function resolveAbility(species: Species, moves: readonly MoveSlot[], input: FighterInput): string {
+  if (input.ability?.trim()) return input.ability;
+  if (input.learnsetSeed) {
+    const hasOhko = moves.some((slot) => getMove(slot.moveId)?.ohko === true);
+    const rolled = randomAbility(species.id, input.learnsetSeed, hasOhko ? ['No Guard'] : []);
+    if (rolled) return rolled.name;
+  }
+  return Object.values(species.abilities)[0] ?? '';
+}
+
+/**
+ * Swaps a fighter into a battle-only forme (Zero to Hero), reusing the Mega
+ * backup so the run snapshot keeps the base species. A fighter already in a
+ * forme keeps the first backup, so a Mega's base is never lost. Returns false
+ * when the id is unknown or the fighter already wears that forme.
+ */
+export function changeBattleForm(fighter: BattleFighter, formId: string): boolean {
+  const form = getSpecies(formId);
+  if (!form || fighter.speciesId === form.id) return false;
+  if (!fighter.megaBackup) {
+    fighter.megaBackup = {
+      speciesId: fighter.speciesId,
+      name: fighter.name,
+      types: fighter.types,
+      stats: fighter.stats,
+      ability: fighter.ability,
+    };
+  }
+  fighter.speciesId = form.id;
+  fighter.name = form.name;
+  fighter.types = form.types;
+  fighter.stats = {
+    ...statAtLevel(form, fighter.level, fighter.nature, fighter.ivs, fighter.evs),
+    hp: fighter.stats.hp,
+  };
+  fighter.ability = Object.values(form.abilities)[0] ?? fighter.ability;
+  return true;
+}
+
 export function createFighter(input: FighterInput): BattleFighter {
   const species = getSpecies(input.speciesId);
   if (!species) throw new Error(`Unknown species "${input.speciesId}"`);
@@ -263,17 +318,16 @@ export function createFighter(input: FighterInput): BattleFighter {
   const evs = fullStats(input.evs, 0);
   const stats = statAtLevel(species, level, nature, ivs, evs);
 
-  // A provided ability is trusted as-is: the dex debug editor can grant an
-  // off-species ability, and a snapshot round-trip must preserve it. Only a
-  // blank field falls back to the species' first ability.
-  const ability = input.ability?.trim() ? input.ability : (Object.values(species.abilities)[0] ?? '');
-
   const moveIds = input.moves ?? defaultMoveset(species.id, level, input.learnsetSeed);
   const moves: MoveSlot[] = [];
   for (const moveId of moveIds) {
     const slot = makeMoveSlot(moveId);
     if (slot) moves.push(slot);
   }
+
+  // The ability is resolved after the moveset so the No Guard / OHKO guard can
+  // read the moves the fighter actually carries.
+  const ability = resolveAbility(species, moves, input);
 
   return {
     id: input.id,

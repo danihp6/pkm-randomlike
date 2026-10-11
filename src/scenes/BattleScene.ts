@@ -870,6 +870,14 @@ export class BattleScene extends Phaser.Scene {
         case 'mega':
           this.playMega(event.side);
           break;
+        case 'forme': {
+          const fighter = this.state.sides[event.side].party.find((p) => p.id === event.fighterId);
+          if (fighter) {
+            this.displayActive[event.side] = fighter;
+            this.syncMonSprites();
+          }
+          break;
+        }
         case 'capture':
           this.playCapture(event.shakes, event.success);
           break;
@@ -970,6 +978,9 @@ export class BattleScene extends Phaser.Scene {
       // mid-battle has no texture to draw (D34).
       const mega = fighter.heldItem ? megaFormForItem(fighter.heldItem) : undefined;
       if (mega) add(mega.id, fighter.shiny, female, kind);
+      // Zero to Hero swaps to Palafin-Hero when it leaves the field, so that
+      // sheet must be loaded before the switch-in draws it.
+      if (fighter.ability === 'Zero to Hero') add('palafinhero', fighter.shiny, female, kind);
     };
     for (const fighter of this.playerFighters) addFighter(fighter, 'back');
     for (const fighter of this.enemyFighters) addFighter(fighter, 'front');

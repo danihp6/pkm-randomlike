@@ -283,7 +283,7 @@ export function evolveMember(run: RunState, memberId: string, into: string): Run
     run.party.find((entry) => entry.fighter.id === memberId) ??
     run.box.find((entry) => entry.fighter.id === memberId);
   if (!member) return run;
-  const evolved = evolvePokemon(member, into);
+  const evolved = evolvePokemon(member, into, run.seed);
   return evolved === member ? run : updatePokemon(run, evolved);
 }
 
