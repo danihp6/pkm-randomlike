@@ -4690,35 +4690,35 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * Dev only: overrides a party member's level, moves, ability or nature, then
-   * resyncs the save and the HUD. Because the level is shared, a level edit
-   * moves the whole squad onto that level's bar and re-levels the box with it;
-   * the other fields apply to the one member. Returns false with no live run or
-   * a bad id.
+   * Dev only: moves the whole squad — the party **and** the PC box — onto
+   * `level`, since they share one level and one XP bar (D35). It parks the XP at
+   * that level and re-levels every member. Returns false with no live run.
+   */
+  setDebugSquadLevel(level: number): boolean {
+    if (!IS_DEVELOP || !this.run || this.gameOver) return false;
+    const settle = (member: RunPokemon): RunPokemon => editRunPokemon(member, { level });
+    const target = Math.max(1, Math.floor(level));
+    this.run = {
+      ...this.run,
+      xp: xpForLevel(target),
+      party: this.run.party.map(settle),
+      box: this.run.box.map(settle),
+    };
+    this.persistRun();
+    this.refreshHud();
+    return true;
+  }
+
+  /**
+   * Dev only: overrides a party member's moves, ability or nature (its level is
+   * the squad's, set by `setDebugSquadLevel`), then resyncs the save and the
+   * HUD. Returns false with no live run or a bad id.
    */
   editDebugPokemon(memberId: string, edit: DebugPartyEdit): boolean {
     if (!IS_DEVELOP || !this.run || this.gameOver) return false;
     const member = this.run.party.find((candidate) => candidate.fighter.id === memberId);
     if (!member) return false;
-    if (edit.level !== undefined) {
-      const bumped = editRunPokemon(member, edit);
-      const level = bumped.fighter.level;
-      const rest: DebugPartyEdit = {
-        ...(edit.nature !== undefined ? { nature: edit.nature } : {}),
-        ...(edit.ability !== undefined ? { ability: edit.ability } : {}),
-        ...(edit.moves !== undefined ? { moves: edit.moves } : {}),
-      };
-      const settle = (target: RunPokemon): RunPokemon =>
-        target.fighter.id === memberId ? editRunPokemon(bumped, rest) : editRunPokemon(target, { level });
-      this.run = {
-        ...this.run,
-        xp: xpForLevel(level),
-        party: this.run.party.map(settle),
-        box: this.run.box.map(settle),
-      };
-    } else {
-      this.run = updatePokemon(this.run, editRunPokemon(member, edit));
-    }
+    this.run = updatePokemon(this.run, editRunPokemon(member, edit));
     this.persistRun();
     this.refreshHud();
     return true;

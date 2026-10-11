@@ -55,6 +55,10 @@ if (IS_DEVELOP) {
         const route = game.scene.getScene('Route') as RouteScene | null;
         return route?.debugParty() ?? [];
       },
+      onSetSquadLevel: (level) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        return route?.setDebugSquadLevel(level) ?? false;
+      },
       onEditPartyMember: (memberId, edit) => {
         const route = game.scene.getScene('Route') as RouteScene | null;
         return route?.editDebugPokemon(memberId, edit) ?? false;

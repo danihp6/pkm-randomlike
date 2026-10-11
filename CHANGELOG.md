@@ -8,6 +8,14 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The debug Party tab sets the squad level once, not per member.** The
+      level moved out of the member editor into a **Squad level** control at the
+      top of the tab: it parks the run's XP and re-levels the **whole party and
+      the PC box** together (they share one level, `D35`), while the member
+      editor keeps moves, ability and nature. The member dropdown also suffixes
+      identical labels (`Eevee Lv20 (1)`, `(2)`) so two same-species members at
+      the same level can be told apart. `src/dev/debugMenu.ts`,
+      `src/scenes/RouteScene.ts`, `src/main.ts`.
 - [x] **Dev-added Pokémon no longer collide on their id.** The debug panel's
       counter resets on a reload, so a re-added species reused `debug:<sp>:1` and
       `updatePokemon` (which matches by id) then edited or replaced several

@@ -80,9 +80,12 @@ export type DebugPartyMember = Readonly<{
   moves: readonly string[];
 }>;
 
-/** A partial override the dev editor sends back; a missing field is kept. */
+/**
+ * A partial override the dev editor sends back; a missing field is kept. The
+ * level is **not** here: the squad shares one level, so it is set from its own
+ * control (`onSetSquadLevel`) that moves the party and the box together.
+ */
 export type DebugPartyEdit = Readonly<{
-  level?: number;
   nature?: string;
   ability?: string;
   moves?: readonly string[];
@@ -96,7 +99,9 @@ export type DebugMenuHandlers = Readonly<{
   onAddItem: (itemId: string, count: number) => void;
   /** Dev only: the party members the editor can target, with their live shape. */
   readParty: () => readonly DebugPartyMember[];
-  /** Dev only: overrides a party member's level, moves, ability or nature. */
+  /** Dev only: moves the whole squad (party and PC) onto one level. */
+  onSetSquadLevel: (level: number) => boolean;
+  /** Dev only: overrides a party member's moves, ability or nature. */
   onEditPartyMember: (memberId: string, edit: DebugPartyEdit) => boolean;
   /** Dev only: fully restores a party member (HP, PP, status and revival). */
   onHealPartyMember: (memberId: string) => boolean;
@@ -165,8 +170,31 @@ export function partyMemberLabel(member: DebugPartyMember): string {
 }
 
 /**
+ * The labels for a whole party, in order: each member's `Name Lv##`, with a
+ * ` (n)` suffix only on the ones that would otherwise share a label (two
+ * identical species at the same level). The panel lists and matches these, so
+ * both can be picked apart; the order is stable within one open.
+ */
+export function partyMemberLabels(members: readonly DebugPartyMember[]): readonly string[] {
+  const total = new Map<string, number>();
+  for (const member of members) {
+    const base = partyMemberLabel(member);
+    total.set(base, (total.get(base) ?? 0) + 1);
+  }
+  const seen = new Map<string, number>();
+  return members.map((member) => {
+    const base = partyMemberLabel(member);
+    if ((total.get(base) ?? 0) <= 1) return base;
+    const n = (seen.get(base) ?? 0) + 1;
+    seen.set(base, n);
+    return `${base} (${n})`;
+  });
+}
+
+/**
  * Resolves a typed party-member label to one of `members`: an exact label
- * (`Pikachu Lv12`), then an exact name, then a name prefix and finally a
+ * (`Pikachu Lv12`, disambiguated `Pikachu Lv12 (2)`), then a plain label (the
+ * first of a duplicate pair), then an exact name, a name prefix and finally a
  * substring on the name or species id.
  */
 export function matchPartyMember(
@@ -175,8 +203,11 @@ export function matchPartyMember(
 ): DebugPartyMember | null {
   const text = query.trim().toLowerCase();
   if (!text) return null;
-  const exactLabel = members.find((member) => partyMemberLabel(member).toLowerCase() === text);
-  if (exactLabel) return exactLabel;
+  const labels = partyMemberLabels(members);
+  const exactLabel = labels.findIndex((label) => label.toLowerCase() === text);
+  if (exactLabel >= 0) return members[exactLabel]!;
+  const plainLabel = members.find((member) => partyMemberLabel(member).toLowerCase() === text);
+  if (plainLabel) return plainLabel;
   const exactName = members.find((member) => member.name.toLowerCase() === text);
   if (exactName) return exactName;
   const prefix = members.find((member) => member.name.toLowerCase().startsWith(text));
@@ -552,6 +583,35 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   const partyStatus = document.createElement('div');
   partyStatus.style.cssText = 'min-height:16px;color:#94a3b8;';
 
+  // Squad level: the party and the PC share one level (D35), so it has its own
+  // control at the top instead of living on the per-member editor.
+  const squadLevelInput = document.createElement('input');
+  squadLevelInput.type = 'number';
+  squadLevelInput.min = String(DEBUG_MIN_LEVEL);
+  squadLevelInput.max = String(DEBUG_MAX_LEVEL);
+  squadLevelInput.title = 'squad level (party and PC)';
+  squadLevelInput.placeholder = 'level';
+  squadLevelInput.style.cssText = compact;
+
+  const setSquadLevel = (): void => {
+    const level = clampLevel(parseOptionalInt(squadLevelInput.value) ?? DEBUG_DEFAULT_LEVEL);
+    squadLevelInput.value = String(level);
+    if (!handlers.onSetSquadLevel(level)) {
+      partyStatus.textContent = 'no active run';
+      return;
+    }
+    refreshPartyOptions();
+    partyStatus.textContent = `party and PC set to Lv${level}`;
+  };
+
+  const squadLevelButton = button('Set level', setSquadLevel);
+  squadLevelButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
+
+  const squadLevelRow = document.createElement('label');
+  squadLevelRow.textContent = 'Squad level';
+  squadLevelRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+  squadLevelRow.append(squadLevelInput, squadLevelButton);
+
   const addPokemon = (): void => {
     const species = matchSpecies(partySpeciesInput.value, SPECIES);
     if (!species) {
@@ -568,10 +628,11 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const addPokemonButton = button('Add', addPokemon);
   addPokemonButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
-  partySection.append(partySpeciesRow, addPokemonButton, partyStatus);
+  partySection.append(squadLevelRow, partySpeciesRow, addPokemonButton, partyStatus);
 
-  // Party editor: pick a party member and override its level, moves, ability
-  // and nature. The member list is rebuilt from the live run on every open.
+  // Party editor: pick a party member and override its moves, ability and
+  // nature (the level is the squad's, set above). The member list is rebuilt
+  // from the live run on every open.
   const partyEditor = document.createElement('div');
   partyEditor.style.cssText =
     'display:flex;flex-direction:column;gap:6px;border-top:1px solid #334155;padding-top:6px;';
@@ -590,18 +651,6 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   partyMemberRow.textContent = 'Member';
   partyMemberRow.style.cssText = partySpeciesRow.style.cssText;
   partyMemberRow.append(partyMemberInput);
-
-  const editLevelInput = document.createElement('input');
-  editLevelInput.type = 'number';
-  editLevelInput.min = String(DEBUG_MIN_LEVEL);
-  editLevelInput.max = String(DEBUG_MAX_LEVEL);
-  editLevelInput.title = 'level';
-  editLevelInput.placeholder = 'level';
-  editLevelInput.style.cssText = compact;
-
-  const editLevelRow = document.createElement('label');
-  editLevelRow.textContent = 'Level';
-  editLevelRow.style.cssText = partySpeciesRow.style.cssText;
 
   const moveInputs = [0, 1, 2, 3].map((index) => {
     const input = document.createElement('input');
@@ -652,8 +701,10 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   let selectedMemberId: string | null = null;
 
   const fillMemberFields = (member: DebugPartyMember): void => {
-    partyMemberInput.value = partyMemberLabel(member);
-    editLevelInput.value = String(member.level);
+    const members = handlers.readParty();
+    const index = members.findIndex((entry) => entry.id === member.id);
+    partyMemberInput.value =
+      index >= 0 ? (partyMemberLabels(members)[index] ?? partyMemberLabel(member)) : partyMemberLabel(member);
     moveInputs.forEach((input, index) => {
       const moveId = member.moves[index];
       input.value = moveId ? (getMove(moveId)?.name ?? moveId) : '';
@@ -664,13 +715,17 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const refreshPartyOptions = (): void => {
     const members = handlers.readParty();
+    const labels = partyMemberLabels(members);
+    // The squad shares one level, so the first member carries the level control.
+    const squadLevel = members[0]?.level;
+    if (squadLevel !== undefined) squadLevelInput.value = String(squadLevel);
     partyList.replaceChildren();
-    for (const member of members) {
+    members.forEach((member, index) => {
       const option = document.createElement('option');
-      option.value = partyMemberLabel(member);
+      option.value = labels[index] ?? partyMemberLabel(member);
       option.label = `#${member.speciesId}`;
       partyList.append(option);
-    }
+    });
     const selected = members.find((member) => member.id === selectedMemberId);
     if (selected) {
       fillMemberFields(selected);
@@ -691,10 +746,14 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   partyMemberInput.addEventListener('input', () => {
     const text = partyMemberInput.value.trim().toLowerCase();
-    const member = handlers
-      .readParty()
-      .find((candidate) => partyMemberLabel(candidate).toLowerCase() === text);
-    if (!member) return;
+    const members = handlers.readParty();
+    const labels = partyMemberLabels(members);
+    let index = labels.findIndex((label) => label.toLowerCase() === text);
+    if (index < 0) {
+      index = members.findIndex((candidate) => partyMemberLabel(candidate).toLowerCase() === text);
+    }
+    if (index < 0) return;
+    const member = members[index]!;
     selectedMemberId = member.id;
     fillMemberFields(member);
     setEditorEnabled(true);
@@ -714,9 +773,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
       editStatus.textContent = partyMemberInput.value.trim() ? 'unknown member' : 'pick a member';
       return;
     }
-    const edit: { level?: number; nature?: string; ability?: string; moves?: readonly string[] } = {};
-    const level = parseOptionalInt(editLevelInput.value);
-    if (level !== undefined) edit.level = clampLevel(level);
+    const edit: { nature?: string; ability?: string; moves?: readonly string[] } = {};
     if (abilityInput.value.trim()) {
       const ability = matchAbility(abilityInput.value);
       if (!ability) {
@@ -754,22 +811,6 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     editStatus.textContent = `edited ${member.name}`;
   };
 
-  const plusOneLevel = (): void => {
-    const member = currentMember();
-    if (!member) {
-      editStatus.textContent = 'pick a member';
-      return;
-    }
-    const level = clampLevel(member.level + 1);
-    if (!handlers.onEditPartyMember(member.id, { level })) {
-      editStatus.textContent = 'no active run';
-      return;
-    }
-    selectedMemberId = member.id;
-    refreshPartyOptions();
-    editStatus.textContent = `${member.name} → Lv${level}`;
-  };
-
   const healSelected = (): void => {
     const member = currentMember();
     if (!member) {
@@ -785,10 +826,6 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     editStatus.textContent = `healed ${member.name}`;
   };
 
-  const plusLevelButton = button('+1 lvl', plusOneLevel);
-  plusLevelButton.style.cssText += 'white-space:nowrap;';
-  editLevelRow.append(editLevelInput, plusLevelButton);
-
   const applyButton = button('Apply', applyEdit);
   applyButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
 
@@ -801,11 +838,9 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   /** The editor only works on a chosen member; with none, every field locks. */
   const setEditorEnabled = (enabled: boolean): void => {
-    editLevelInput.disabled = !enabled;
     abilityInput.disabled = !enabled;
     natureInput.disabled = !enabled;
     for (const input of moveInputs) input.disabled = !enabled;
-    plusLevelButton.disabled = !enabled;
     applyButton.disabled = !enabled;
     healButton.disabled = !enabled;
   };
@@ -813,7 +848,6 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   partyEditor.append(
     partyMemberRow,
-    editLevelRow,
     ...moveRows,
     abilityRow,
     natureRow,
@@ -907,9 +941,9 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     natureList.append(option);
   }
 
-  for (const input of [partyMemberInput, editLevelInput]) {
+  for (const input of [partyMemberInput, squadLevelInput]) {
     input.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') applyEdit();
+      if (event.key === 'Enter') (input === squadLevelInput ? setSquadLevel() : applyEdit());
     });
   }
 
