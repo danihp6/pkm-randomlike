@@ -8,6 +8,38 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The HUD move cell's ⓘ floats the description again.** `MoveGrid.infoAt`
+      compared a cell-local point against an absolute rect, so the HUD's ⓘ button
+      never matched and neither hover nor click showed the info popup; it now
+      tests the point in cell-local space, so hovering the ⓘ floats the move's
+      type and description and clicking it pins the popup. The popup now anchors
+      to the hovered cell (`popupAtCell`) instead of the panel top, so in the HUD
+      it appears right over the move it belongs to. `src/ui/moveGrid.ts`.
+- [x] **The member detail panel is wider and shorter, with the stats in two
+      columns.** The detail window (the STATS / MOVES popup) is now 460px wide
+      instead of a copy of the party/box window: the HP bar is gone (the HP row
+      prints `current / max`) and the six stats read as two columns of three
+      (`HUD_DETAIL_STATS`), with NATURE / ABILITY and HELD / CAUGHT in two columns
+      too. The wider window also gives the shared move grid cells enough room for
+      full move names — the HUD's `MOVES` tab no longer wraps "Thunder Shock" onto
+      the PP line. `src/scenes/RouteScene.ts`.
+- [x] **The HUD's MOVES tab is the battle's move grid.** The member detail panel's
+      MOVES tab now draws the shared `MoveGrid` component the battle's FIGHT menu
+      uses — the same type-tinted 2x2 cells with the type and category badges, PP
+      and power/accuracy, an ⓘ button and the floating description popup — instead
+      of a plain list. The type badge is now the same size as the category badge,
+      so the two read as one stacked column. Hovering or clicking the ⓘ floats
+      (and pins) the move's info while the cells stay draggable to reorder the
+      member's moves. `src/ui/moveGrid.ts`.
+- [x] **The battle menu window is taller and the move names sit higher.** The
+      bottom menu box grew (desktop `160→192`, compact `204→236`) to give the
+      move cells more room, keeping its bottom edge (and so the message box) in
+      place. In the shared grid the content anchors higher (`CELL_TOP`), so the
+      move name reads as the cell's title above the badges. The ◀ back control
+      now sits centred in a wider left column (`MOVE_BACK_COL` 46→64), so the
+      grid starts clear of it instead of touching it. Switching a battle menu
+      also hides the FIGHT / BAG / SWITCH / RUN cells again (they had been left
+      visible under the bag and switch screens after the grid split).
 - [x] **Starters require two consecutive evolutions.** The starter pool now keeps
       the base form of a line only when two more evolutions follow in a **chain**
       (`evolutionDepth >= 2` in `src/data/dex/evolutions.ts`), so a split line
