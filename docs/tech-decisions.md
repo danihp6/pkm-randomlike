@@ -564,6 +564,28 @@ Wishiwashi-School, Darmanitan-Zen, Aegislash-Blade and Castform-Sunny now exist
 in the dex. It changes what the wild, the trainers, the starters and the battle
 art (`npm run data:anil`) can meet.
 
+## D41 — Form-change abilities are generalised like Zero to Hero *(decided)*
+
+Every forme- or species-change ability a run can meet is one generic rule: **any**
+holder changes forme when the ability's own condition holds, from level 20 on,
+through `changeBattleForm`/`restoreBattleForm` (`D34`'s battle-only backup, which
+keeps the run snapshot on the base species). The set: Zero to Hero (Palafin-Hero
+on switch-out), Schooling (Wishiwashi-School above 1/4 HP), Zen Mode and **Zen
+Mode (Galar)** (Darmanitan-Zen / Galar-Zen at 1/2 HP — a synthetic dex ability,
+since `@pkmn/dex` has one entry for two formes), Shields Down (Minior's
+Meteor/Core), Tera Shift (Terastal Form on entry), Hunger Switch (the Hangry
+forme alternating every turn), Forecast (Castform follows the weather), Flower
+Gift (Cherrim's Sunshine Form in the sun), Stance Change (Blade Forme on a
+damaging move) and Disguise (the first damaging hit is absorbed and leaves the
+holder Busted).
+
+`changeBattleForm` **keeps the holder's ability** so the rule keeps firing (a
+Mega is the exception — its forme's ability wins). All of them are off
+`randomAbility`'s ban list, so any species may roll them. Stance Change's Shield
+revert needs King's Shield, a `Past` move not in the shipped move set yet
+(`moves.json` is still Gen 9 only); Commander stays excluded — it is a doubles
+mechanic with no single-battle forme to reach.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

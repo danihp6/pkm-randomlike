@@ -1,6 +1,6 @@
-import { effectiveness, getMove } from '../../../data/dex';
+import { effectiveness, getMove, isDamaging } from '../../../data/dex';
 import { getItem } from '../../../data/items';
-import { applyDamage, applyHeal, changeBattleForm, isGrounded, stagedStat, transformInto, type BattleFighter, type BoostId, type StatusId } from '../fighter';
+import { applyDamage, applyHeal, changeBattleForm, isGrounded, restoreBattleForm, stagedStat, transformInto, type BattleFighter, type BoostId, type StatusId } from '../fighter';
 import { cureStatus, statusName } from '../status';
 import { opponentOf, pushEvent, pushText, effectiveWeather, type WeatherId } from '../state';
 import { applyFlinch, applyConfusion, applyAttract } from '../volatile';
@@ -915,9 +915,10 @@ function disguise(): EffectHandlers {
     },
     onTryHit: (ctx, payload) => {
       if (ctx.owner !== ctx.target || !ctx.owner.volatiles.disguise) return;
+      if (!formReady(ctx)) return;
       if (payload.move.category === 'Status' || payload.move.basePower <= 0) return;
       ctx.owner.volatiles.disguise = false;
-      pushText(ctx.state, `${ctx.owner.name}'s Disguise was busted!`);
+      changeForm(ctx, 'mimikyubusted');
       return false;
     },
   };
@@ -1636,6 +1637,8 @@ const TRACE_BANNED = new Set([
   'Zero to Hero',
   'As One (Glastrier)',
   'As One (Spectrier)',
+  'Tera Shift',
+  'Zen Mode (Galar)',
 ]);
 
 /** Trace copies the foe's ability on entry and runs its entry effects. */
@@ -1788,18 +1791,133 @@ function cudChew(): EffectHandlers {
 
 /**
  * Zero to Hero, generalized: **any** holder changes into Palafin-Hero when it
- * leaves the field (canon's switch-out trigger, without the Palafin lock). The
- * change is battle-only — `changeBattleForm` keeps the base shape for the run
- * snapshot — and a fainted holder is left alone.
+ * leaves the field (canon's switch-out trigger), from level 20 on. The change is
+ * battle-only — `changeBattleForm` keeps the base shape for the run snapshot —
+ * and a fainted holder is left alone.
  */
 function zeroToHero(): EffectHandlers {
   return {
     onSwitchOut: (ctx) => {
-      if (ctx.owner.hp <= 0) return;
-      const baseName = ctx.owner.name;
-      if (!changeBattleForm(ctx.owner, 'palafinhero')) return;
-      pushEvent(ctx.state, { kind: 'forme', side: ctx.side, fighterId: ctx.owner.id });
-      pushText(ctx.state, `${baseName} transformed into Palafin-Hero!`);
+      if (ctx.owner.hp <= 0 || ctx.owner.level < FORM_MIN_LEVEL) return;
+      changeForm(ctx, 'palafinhero');
+    },
+  };
+}
+
+/** Form-changing abilities act from this level on (canon's Schooling gate, applied to all). */
+const FORM_MIN_LEVEL = 20;
+
+/** A holder ready to change forme: alive, at least level 20 and not Transformed. */
+function formReady(ctx: EffectContext): boolean {
+  const holder = ctx.owner;
+  return holder.hp > 0 && holder.level >= FORM_MIN_LEVEL && !holder.volatiles.transformed;
+}
+
+/** Swaps the holder into a battle-only forme (keeping its ability) and announces it. */
+function changeForm(ctx: EffectContext, formId: string): boolean {
+  const baseName = ctx.owner.name;
+  if (!changeBattleForm(ctx.owner, formId, true)) return false;
+  pushEvent(ctx.state, { kind: 'forme', side: ctx.side, fighterId: ctx.owner.id });
+  pushText(ctx.state, `${baseName} changed forme!`);
+  return true;
+}
+
+/** Puts the holder back into its base shape and announces it. */
+function revertForm(ctx: EffectContext): boolean {
+  const baseName = ctx.owner.name;
+  if (!restoreBattleForm(ctx.owner)) return false;
+  pushEvent(ctx.state, { kind: 'forme', side: ctx.side, fighterId: ctx.owner.id });
+  pushText(ctx.state, `${baseName} reverted to its usual forme!`);
+  return true;
+}
+
+/**
+ * A forme that tracks an HP threshold on switch-in and at the end of every turn:
+ * `formId` while `holds` reads true, the base shape otherwise. Schooling (a
+ * quarter of max HP) and Zen Mode / Shields Down (half) share it.
+ */
+function thresholdForm(formId: string, holds: (holder: BattleFighter) => boolean): EffectHandlers {
+  const evaluate = (ctx: EffectContext): void => {
+    if (!formReady(ctx)) return;
+    if (holds(ctx.owner)) changeForm(ctx, formId);
+    else revertForm(ctx);
+  };
+  return { onStart: evaluate, onResidual: evaluate };
+}
+
+/** Schooling: School Form above a quarter of max HP, base forma below (from level 20). */
+function schooling(): EffectHandlers {
+  return thresholdForm('wishiwashischool', (holder) => holder.hp > holder.maxHp / 4);
+}
+
+/** Zen Mode: the Zen forme at half HP or below, the base forme above it. */
+function zenMode(formId: string): EffectHandlers {
+  return thresholdForm(formId, (holder) => holder.hp <= holder.maxHp / 2);
+}
+
+/** Shields Down: the Meteor forme while healthy, the Core forme once the shell breaks. */
+function shieldsDown(): EffectHandlers {
+  const evaluate = (ctx: EffectContext): void => {
+    if (!formReady(ctx)) return;
+    changeForm(ctx, ctx.owner.hp > ctx.owner.maxHp / 2 ? 'miniormeteor' : 'minior');
+  };
+  return { onStart: evaluate, onResidual: evaluate };
+}
+
+/** Tera Shift: Terapagos enters Terastal Form the moment it takes the field. */
+function teraShift(): EffectHandlers {
+  return {
+    onStart: (ctx) => {
+      if (formReady(ctx)) changeForm(ctx, 'terapagosterastal');
+    },
+  };
+}
+
+/** Hunger Switch: Full Belly and Hangry alternate at the end of every turn. */
+function hungerSwitch(): EffectHandlers {
+  return {
+    onResidual: (ctx) => {
+      if (!formReady(ctx)) return;
+      if (ctx.owner.speciesId === 'morpekohangry') revertForm(ctx);
+      else changeForm(ctx, 'morpekohangry');
+    },
+  };
+}
+
+/** Forecast: Castform follows the weather (Sun/Rain/Snow), the base forme with none. */
+function forecast(): EffectHandlers {
+  const formFor = (weather: WeatherId | null): string | null => {
+    if (weather === 'sun') return 'castformsunny';
+    if (weather === 'rain') return 'castformrainy';
+    if (weather === 'snow') return 'castformsnowy';
+    return null;
+  };
+  const evaluate = (ctx: EffectContext): void => {
+    if (!formReady(ctx)) return;
+    const form = formFor(effectiveWeather(ctx.state));
+    if (form) changeForm(ctx, form);
+    else revertForm(ctx);
+  };
+  return { onStart: evaluate, onResidual: evaluate };
+}
+
+/** Flower Gift: Cherrim opens to Sunshine Form in the sun. */
+function flowerGift(): EffectHandlers {
+  const evaluate = (ctx: EffectContext): void => {
+    if (!formReady(ctx)) return;
+    if (effectiveWeather(ctx.state) === 'sun') changeForm(ctx, 'cherrimsunshine');
+    else revertForm(ctx);
+  };
+  return { onStart: evaluate, onResidual: evaluate };
+}
+
+/** Stance Change: Blade Forme on a damaging move, back to Shield on King's Shield. */
+function stanceChange(): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || !formReady(ctx)) return;
+      if (payload.move.id === 'kingsshield') revertForm(ctx);
+      else if (isDamaging(payload.move)) changeForm(ctx, 'aegislashblade');
     },
   };
 }
@@ -2168,6 +2286,15 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
 
   ['battlebond', battleBond()],
   ['zerotohero', zeroToHero()],
+  ['schooling', schooling()],
+  ['zenmode', zenMode('darmanitanzen')],
+  ['zenmodegalar', zenMode('darmanitangalarzen')],
+  ['shieldsdown', shieldsDown()],
+  ['terashift', teraShift()],
+  ['hungerswitch', hungerSwitch()],
+  ['forecast', forecast()],
+  ['flowergift', flowerGift()],
+  ['stancechange', stanceChange()],
   ['cudchew', cudChew()],
   ['hadronengine', hadronEngine()],
   ['orichalcumpulse', orichalcumPulse()],

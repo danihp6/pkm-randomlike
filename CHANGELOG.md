@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Form-change abilities are generalised like Zero to Hero (D41).** Any
+      species may now roll and use **Schooling, Zen Mode, Zen Mode (Galar),
+      Shields Down, Tera Shift, Hunger Switch, Forecast, Flower Gift, Stance
+      Change and Disguise**: from level 20 on, each changes the holder's forme by
+      its own rule (`changeBattleForm`/`restoreBattleForm`, battle-only, snapshot
+      kept on the base species) and flips back when the condition ends.
+      `randomAbility` no longer bans them; `changeBattleForm` keeps the holder's
+      ability so the rule keeps firing. Stance Change's Shield revert needs
+      King's Shield (a `Past` move not shipped yet) and Commander stays excluded
+      (doubles-only). `src/engine/battle/effects/abilities.ts`,
+      `src/engine/battle/fighter.ts`, `src/engine/battle/randomAbility.ts`,
+      `scripts/build-dex.mjs`, `docs/balance/effect-coverage.md`.
 - [x] **The game ships the full National Dex (Dexit included).** `build-dex.mjs`
       no longer filters to the Gen 9 standard set: `species.json` is now **1291
       entries across all 1025 dex numbers** (911 → 1291), with **48 Megas** beside

@@ -143,7 +143,24 @@ const main = async () => {
       return out;
     });
   const moveIds = new Set(moves.map((entry) => entry.id));
-  const abilities = Dex.abilities.all().filter((entry) => !entry.isNonstandard);
+
+  // Zen Mode has one dex entry but two formes (Darmanitan and its Galar forme),
+  // and the generalised form abilities need one ability per forme (`D41`), so a
+  // synthetic "Zen Mode (Galar)" rides beside the generated set.
+  const extraAbilities = [
+    {
+      exists: true,
+      id: 'zenmodegalar',
+      name: 'Zen Mode (Galar)',
+      shortDesc: 'Changes to Galar Zen Form at 1/2 HP or less.',
+      desc: 'Changes to Galar Zen Form at 1/2 HP or less, and back when above it.',
+      flags: {},
+    },
+  ];
+  const abilities = [
+    ...Dex.abilities.all().filter((entry) => !entry.isNonstandard),
+    ...extraAbilities,
+  ];
   const items = Dex.items.all().filter((entry) => !entry.isNonstandard);
   const natures = Dex.natures.all();
   const types = Dex.types.all();

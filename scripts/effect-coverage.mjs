@@ -31,15 +31,18 @@ for (const match of itemsSrc.matchAll(/item\(\{\s*id:\s*'([^']+)',\s*name:\s*'([
   catalogue.set(norm(match[1]), match[2]);
 }
 
-// Abilities no playable species can ever have, so a run can never meet them.
-const UNREACHABLE = new Set(
-  'aerilate aurabreak ballfetch beastboost colorchange cottondown darkaura defeatist deltastream desolateland emergencyexit fairyaura flowergift forecast gorillatactics innardsout ironbarbs mimicry mummy neuroforce normalize parentalbond pastelveil perishbody powerconstruct primordialsea refrigerate rkssystem schooling screencleaner stancechange steelworker victorystar wanderingspirit wimpout wonderguard zenmode'.split(
-    ' ',
-  ),
-);
+// Abilities no species in the shipped dex can have, so a run can never meet
+// them. Derived from the dex (now the full National Dex, `D40`) rather than a
+// hand-kept list, so a new dex entry never leaves a stale reason behind.
+const holders = new Set();
+for (const species of read('src/data/dex/species.json')) {
+  for (const name of Object.values(species.abilities)) holders.add(norm(name));
+}
 
 const EXCLUDED_ABILITIES = new Map();
-for (const id of UNREACHABLE) EXCLUDED_ABILITIES.set(id, 'no playable species has it');
+for (const ability of abilities) {
+  if (!holders.has(norm(ability.name))) EXCLUDED_ABILITIES.set(ability.id, 'no playable species has it');
+}
 for (const id of [
   'battery', 'costar', 'friendguard', 'healer', 'hospitality', 'minus', 'plus',
   'powerofalchemy', 'powerspot', 'receiver', 'symbiosis', 'telepathy', 'commander',
@@ -56,7 +59,7 @@ for (const id of [
 for (const id of ['asoneglastrier', 'asonespectrier']) {
   EXCLUDED_ABILITIES.set(id, 'fused forme (cut)');
 }
-for (const id of ['gulpmissile', 'hungerswitch', 'multitype', 'shieldsdown', 'zerotohero']) {
+for (const id of ['gulpmissile', 'multitype', 'powerconstruct', 'rkssystem']) {
   EXCLUDED_ABILITIES.set(id, 'forme change (cut)');
 }
 for (const id of ['honeygather', 'pickup']) {
