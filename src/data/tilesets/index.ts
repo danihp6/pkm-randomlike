@@ -18,16 +18,7 @@ import {
 import { PLACEHOLDER_TILESET } from './placeholder';
 import { WOOD_TILESET } from './wood';
 
-export {
-  TILESET_IDS,
-  TILESET_NAMES,
-  TILESET_PREFERENCES,
-  isTilesetPreference,
-  resolveTileset,
-  tilesetLabel,
-  type TilesetId,
-  type TilesetPreference,
-} from './ids';
+export { TILESET_IDS, TILESET_NAMES, type TilesetId } from './ids';
 
 export type BiomeTileset = Readonly<{
   id: TilesetId;
