@@ -1,6 +1,6 @@
 import { effectiveness, getMove } from '../../../data/dex';
 import { getItem } from '../../../data/items';
-import { applyDamage, applyHeal, isGrounded, stagedStat, transformInto, type BattleFighter, type BoostId, type StatusId } from '../fighter';
+import { applyDamage, applyHeal, changeBattleForm, isGrounded, stagedStat, transformInto, type BattleFighter, type BoostId, type StatusId } from '../fighter';
 import { cureStatus, statusName } from '../status';
 import { opponentOf, pushEvent, pushText, effectiveWeather, type WeatherId } from '../state';
 import { applyFlinch, applyConfusion, applyAttract } from '../volatile';
@@ -933,6 +933,32 @@ function overcoat(): EffectHandlers {
   };
 }
 
+/**
+ * Reworked Wonder Guard: from the moment the holder enters the field it absorbs
+ * the **first** damaging hit as long as that hit is not super effective. The
+ * shield is spent on that first damaging hit even when a super-effective move
+ * pierces it, so it is one protected hit per entry — the second hits normally.
+ * A move the holder is outright immune to never spends the shield.
+ */
+function wonderGuard(): EffectHandlers {
+  return {
+    onStart: (ctx) => {
+      if (ctx.owner === ctx.source) ctx.owner.volatiles.wonderGuard = true;
+    },
+    onTryHit: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || !ctx.owner.volatiles.wonderGuard) return;
+      const move = payload.move;
+      if (move.category === 'Status' || move.basePower <= 0) return;
+      const chart = effectiveness(move.type, ctx.owner.types);
+      if (chart <= 0) return;
+      ctx.owner.volatiles.wonderGuard = false;
+      if (chart > 1) return;
+      pushText(ctx.state, `${ctx.owner.name}'s Wonder Guard blocked the attack!`);
+      return false;
+    },
+  };
+}
+
 function runAway(): EffectHandlers {
   return {
     onTryEscape: (ctx) => {
@@ -1760,6 +1786,24 @@ function cudChew(): EffectHandlers {
   };
 }
 
+/**
+ * Zero to Hero, generalized: **any** holder changes into Palafin-Hero when it
+ * leaves the field (canon's switch-out trigger, without the Palafin lock). The
+ * change is battle-only — `changeBattleForm` keeps the base shape for the run
+ * snapshot — and a fainted holder is left alone.
+ */
+function zeroToHero(): EffectHandlers {
+  return {
+    onSwitchOut: (ctx) => {
+      if (ctx.owner.hp <= 0) return;
+      const baseName = ctx.owner.name;
+      if (!changeBattleForm(ctx.owner, 'palafinhero')) return;
+      pushEvent(ctx.state, { kind: 'forme', side: ctx.side, fighterId: ctx.owner.id });
+      pushText(ctx.state, `${baseName} transformed into Palafin-Hero!`);
+    },
+  };
+}
+
 /** Hadron Engine sets Electric Terrain and powers up its Special moves there. */
 function hadronEngine(): EffectHandlers {
   return {
@@ -2040,6 +2084,7 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['comatose', comatose()],
 
   ['noguard', noGuard()],
+  ['wonderguard', wonderGuard()],
   ['slushrush', weatherSpeed('snow', 2)],
   ['surgesurfer', surgeSurfer()],
   ['tangledfeet', tangledFeet()],
@@ -2122,6 +2167,7 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['cutecharm', cuteCharm()],
 
   ['battlebond', battleBond()],
+  ['zerotohero', zeroToHero()],
   ['cudchew', cudChew()],
   ['hadronengine', hadronEngine()],
   ['orichalcumpulse', orichalcumPulse()],

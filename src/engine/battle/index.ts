@@ -1,4 +1,5 @@
 export * from './fighter';
+export * from './randomAbility';
 export * from './randomLearnset';
 export * from './state';
 export * from './order';

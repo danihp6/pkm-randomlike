@@ -3,6 +3,7 @@ import { levelUpMoves } from '../../data/dex/learnsets';
 import { getMove } from '../../data/dex/moves';
 import { statAtLevel } from '../../data/dex/natures';
 import { getSpecies } from '../../data/dex/species';
+import { randomAbility } from '../battle/randomAbility';
 import { randomLevelUpMoves } from '../battle/randomLearnset';
 import {
   createFighter,
@@ -205,10 +206,17 @@ function gainedMoves(
  * keeps its level, nature, IVs/EVs, moves, PP, status and held item; stats and
  * types come from the new species and the **missing** HP is carried across, so
  * an evolution heals the difference in maximum HP rather than the whole bar. A
- * branch the level does not allow, or an unknown id, is a no-op. Pure, like the
- * rest of the run (D11).
+ * branch the level does not allow, or an unknown id, is a no-op. When
+ * `abilitySeed` is given the ability is **re-rolled** from the new species' pool
+ * under that seed (`D17`); without it the ability is kept when the new species
+ * has it and the species' first one is used otherwise. Pure, like the rest of
+ * the run (D11).
  */
-export function evolvePokemon(pokemon: RunPokemon, into: string): RunPokemon {
+export function evolvePokemon(
+  pokemon: RunPokemon,
+  into: string,
+  abilitySeed?: string,
+): RunPokemon {
   const fighter = pokemon.fighter;
   const target = getSpecies(into);
   if (!target) return pokemon;
@@ -223,12 +231,14 @@ export function evolvePokemon(pokemon: RunPokemon, into: string): RunPokemon {
   const maxHp = statAtLevel(target, fighter.level, fighter.nature, fighter.ivs, fighter.evs).hp;
   const missing = Math.max(0, oldMaxHp - fighter.hp);
   const abilities = Object.values(target.abilities);
+  const kept = abilities.includes(fighter.ability) ? fighter.ability : (abilities[0] ?? fighter.ability);
+  const ability = abilitySeed ? (randomAbility(target.id, abilitySeed)?.name ?? kept) : kept;
   return {
     ...pokemon,
     fighter: {
       ...fighter,
       speciesId: target.id,
-      ability: abilities.includes(fighter.ability) ? fighter.ability : (abilities[0] ?? fighter.ability),
+      ability,
       hp: Math.max(0, Math.min(maxHp, maxHp - missing)),
     },
   };
@@ -254,6 +264,8 @@ export function levelUpPokemon(
     const moves = fighter.moves.map((slot) => ({ ...slot }));
     for (const moveId of gainedMoves(fighter.speciesId, fighter.level, level, learnsetSeed)) {
       if (moves.some((slot) => slot.moveId === moveId)) continue;
+      // No Guard makes every move hit, so it must never pair with an OHKO move.
+      if (fighter.ability === 'No Guard' && getMove(moveId)?.ohko) continue;
       const slot = moveSlot(moveId);
       if (!slot) continue;
       if (moves.length >= MAX_MOVES) {

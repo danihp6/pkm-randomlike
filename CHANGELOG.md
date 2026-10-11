@@ -8,6 +8,26 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Abilities are rolled per run, and two once-unimplementable ones are
+      reworked around the random pool.** Every wild, trainer and starter Pokémon
+      — and each catch — now **rolls its ability** from the implemented set under
+      the run seed (`randomAbility`), the way its moveset already was (`D17`);
+      an explicit ability (the debug editor) still wins. The roll draws only from
+      the effect registry, so an unported ability can never appear, and No Guard
+      is dropped when the moveset holds an OHKO move so the pair never meets. Two
+      abilities that would be dead on an arbitrary species are now **generic**
+      instead of banned: **Zero to Hero** turns any holder into Palafin-Hero
+      when it leaves the field (battle only, reverts at the end), and **Wonder
+      Guard** absorbs the **first** non-super-effective hit on each switch-in —
+      the next hit lands normally. An **evolution re-rolls** the ability from the
+      new species under the same seed. `src/engine/battle/randomAbility.ts`,
+      `src/engine/battle/fighter.ts`, `src/engine/battle/effects/abilities.ts`,
+      `src/engine/run/progression.ts`, `src/scenes/BattleScene.ts`.
+- [x] **The effect coverage table is regenerated.** `npm run docs:coverage`
+      reports the abilities and items already in the code that the stale table
+      still called `excluded` (Normalize, Aerilate, Refrigerate, Wonder Guard,
+      Zero to Hero, the treasure items…). `docs/balance/effect-coverage.md`.
+
 - [x] **The debug Party tab sets the squad level once, not per member.** The
       level moved out of the member editor into a **Squad level** control at the
       top of the tab: it parks the run's XP and re-levels the **whole party and

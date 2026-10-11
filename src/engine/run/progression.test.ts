@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getSpecies, statAtLevel } from '../../data/dex';
+import '../battle/effects/abilities';
+import { randomAbility } from '../battle/randomAbility';
 import {
   MAX_LEVEL,
   adoptAtLevel,
@@ -121,6 +123,12 @@ describe('evolvePokemon', () => {
     const ready = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 16, moves: ['ember'] });
     const evolved = evolvePokemon(ready, 'charmeleon');
     expect(evolved.fighter.hp).toBe(statAtLevel(getSpecies('charmeleon')!, 16, 'serious', ready.fighter.ivs, ready.fighter.evs).hp);
+  });
+
+  it('re-rolls the ability from the new species when given a seed', () => {
+    const ready = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 16, moves: ['ember'] });
+    const evolved = evolvePokemon(ready, 'charmeleon', 'run-1');
+    expect(evolved.fighter.ability).toBe(randomAbility('charmeleon', 'run-1')?.name);
   });
 
   it('ignores a branch whose level is not met', () => {

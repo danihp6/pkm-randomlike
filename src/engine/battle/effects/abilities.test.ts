@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getMove } from '../../../data/dex';
 import { Rng } from '../../rng';
-import { createFighter, type BattleFighter } from '../fighter';
+import { createFighter, snapshotFighter, type BattleFighter } from '../fighter';
 import { activeFighter, createBattle, effectiveWeather, isTrapped, opponentOf, type BattleState, type SideId } from '../state';
 import {
   getEffect,
@@ -1844,5 +1844,38 @@ describe('transform and illusion abilities (batch 13)', () => {
     });
     runAfterMove(ctx, tackle);
     expect(zoroark.volatiles.illusion).toBeNull();
+  });
+});
+
+describe('reworked random-ability picks', () => {
+  it('Wonder Guard absorbs the first non-super-effective hit, then lets the next land', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'snom', 'Wonder Guard'));
+    const ctx = ctxOf(state, 'player');
+    // Tackle (Normal) is neutral on Snom (Ice/Bug), so the shield blocks it.
+    expect(runTryHit(ctx, getMove('tackle')!)).toBe(false);
+    // The second hit lands normally.
+    expect(runTryHit(ctx, getMove('tackle')!)).toBe(true);
+  });
+
+  it('Wonder Guard lets a super-effective hit through and spends the shield', () => {
+    const state = makeBattle(fighter('player', 'charmander', 'Blaze'), fighter('enemy', 'snom', 'Wonder Guard'));
+    const ctx = ctxOf(state, 'player');
+    // Ember (Fire) is super effective on Snom, so it pierces the shield.
+    expect(runTryHit(ctx, getMove('ember')!)).toBe(true);
+    // The shield is spent, so a later neutral hit lands too.
+    expect(runTryHit(ctx, getMove('tackle')!)).toBe(true);
+  });
+
+  it('Zero to Hero turns any holder into Palafin-Hero on switch-out, battle only', () => {
+    const state = makeBattle(fighter('player', 'eevee', 'Zero to Hero'), fighter('enemy', 'charmander', 'Blaze'));
+    const eevee = activeFighter(state, 'player');
+    state.sides.player.party.push(fighter('buddy', 'charmander', 'Blaze'));
+    performSwitch(state, 'player', 1);
+    expect(eevee.speciesId).toBe('palafinhero');
+    expect(eevee.types).toEqual(['Water']);
+    // The run snapshot keeps the base species and the ability.
+    const snapshot = snapshotFighter(eevee);
+    expect(snapshot.speciesId).toBe('eevee');
+    expect(snapshot.ability).toBe('Zero to Hero');
   });
 });

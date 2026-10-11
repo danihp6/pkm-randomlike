@@ -22,12 +22,12 @@ The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — 310 total (236 port, 0 no-op, 74 excluded)
+## Abilities — 310 total (241 port, 0 no-op, 69 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
 | Adaptability | `port` | ported in `effects/abilities.ts` |
-| Aerilate | `excluded` | no playable species has it |
+| Aerilate | `port` | ported in `effects/abilities.ts` |
 | Aftermath | `port` | ported in `effects/abilities.ts` |
 | Air Lock | `port` | ported in `effects/abilities.ts` |
 | Analytic | `port` | ported in `effects/abilities.ts` |
@@ -185,7 +185,7 @@ catalogue row, not engine code.
 | Neuroforce | `excluded` | no playable species has it |
 | Neutralizing Gas | `port` | ported in `effects/abilities.ts` |
 | No Guard | `port` | ported in `effects/abilities.ts` |
-| Normalize | `excluded` | no playable species has it |
+| Normalize | `port` | ported in `effects/abilities.ts` |
 | Oblivious | `port` | ported in `effects/abilities.ts` |
 | Opportunist | `port` | ported in `effects/abilities.ts` |
 | Orichalcum Pulse | `port` | ported in `effects/abilities.ts` |
@@ -225,7 +225,7 @@ catalogue row, not engine code.
 | Rattled | `port` | ported in `effects/abilities.ts` |
 | Receiver | `excluded` | doubles/ally only |
 | Reckless | `port` | ported in `effects/abilities.ts` |
-| Refrigerate | `excluded` | no playable species has it |
+| Refrigerate | `port` | ported in `effects/abilities.ts` |
 | Regenerator | `port` | ported in `effects/abilities.ts` |
 | Ripen | `port` | ported in `effects/abilities.ts` |
 | Rivalry | `port` | ported in `effects/abilities.ts` |
@@ -332,12 +332,12 @@ catalogue row, not engine code.
 | Wimp Out | `excluded` | no playable species has it |
 | Wind Power | `port` | ported in `effects/abilities.ts` |
 | Wind Rider | `port` | ported in `effects/abilities.ts` |
-| Wonder Guard | `excluded` | no playable species has it |
+| Wonder Guard | `port` | ported in `effects/abilities.ts` |
 | Wonder Skin | `port` | ported in `effects/abilities.ts` |
 | Zen Mode | `excluded` | no playable species has it |
-| Zero to Hero | `excluded` | forme change (cut) |
+| Zero to Hero | `port` | ported in `effects/abilities.ts` |
 
-## Items — 262 total (39 port, 0 no-op, 223 excluded)
+## Items — 269 total (49 port, 0 no-op, 220 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -357,7 +357,8 @@ catalogue row, not engine code.
 | Babiri Berry | `excluded` | not in the run catalogue |
 | Beast Ball | `excluded` | not in the run catalogue |
 | Berry Sweet | `excluded` | not in the run catalogue |
-| Big Nugget | `excluded` | not in the run catalogue |
+| Big Nugget | `port` | in the run catalogue (`src/data/items.ts`) |
+| Big Pearl | `port` | in the run catalogue (`src/data/items.ts`) |
 | Big Root | `excluded` | not in the run catalogue |
 | Binding Band | `excluded` | not in the run catalogue |
 | Black Belt | `port` | in the run catalogue (`src/data/items.ts`) |
@@ -383,6 +384,7 @@ catalogue row, not engine code.
 | Clover Sweet | `excluded` | not in the run catalogue |
 | Coba Berry | `excluded` | not in the run catalogue |
 | Colbur Berry | `excluded` | not in the run catalogue |
+| Comet Shard | `port` | in the run catalogue (`src/data/items.ts`) |
 | Cornerstone Mask | `excluded` | not in the run catalogue |
 | Covert Cloak | `excluded` | not in the run catalogue |
 | Cracked Pot | `excluded` | not in the run catalogue |
@@ -498,12 +500,15 @@ catalogue row, not engine code.
 | Net Ball | `excluded` | not in the run catalogue |
 | Never-Melt Ice | `port` | in the run catalogue (`src/data/items.ts`) |
 | Normal Gem | `excluded` | not in the run catalogue |
+| Nugget | `port` | in the run catalogue (`src/data/items.ts`) |
 | Occa Berry | `excluded` | not in the run catalogue |
 | Oran Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Oval Stone | `excluded` | not in the run catalogue |
 | Paralyze Heal | `port` | in the run catalogue (`src/data/items.ts`) |
 | Passho Berry | `excluded` | not in the run catalogue |
 | Payapa Berry | `excluded` | not in the run catalogue |
+| Pearl | `port` | in the run catalogue (`src/data/items.ts`) |
+| Pearl String | `port` | in the run catalogue (`src/data/items.ts`) |
 | Pecha Berry | `excluded` | not in the run catalogue |
 | Persim Berry | `excluded` | not in the run catalogue |
 | Petaya Berry | `excluded` | not in the run catalogue |
@@ -519,7 +524,7 @@ catalogue row, not engine code.
 | Power Herb | `excluded` | not in the run catalogue |
 | Power Lens | `excluded` | not in the run catalogue |
 | Power Weight | `excluded` | not in the run catalogue |
-| Premier Ball | `excluded` | not in the run catalogue |
+| Premier Ball | `port` | in the run catalogue (`src/data/items.ts`) |
 | Pretty Feather | `excluded` | not in the run catalogue |
 | Prism Scale | `excluded` | not in the run catalogue |
 | Protective Pads | `excluded` | not in the run catalogue |
@@ -529,7 +534,7 @@ catalogue row, not engine code.
 | Qualot Berry | `excluded` | not in the run catalogue |
 | Quick Ball | `excluded` | not in the run catalogue |
 | Quick Claw | `excluded` | not in the run catalogue |
-| Rare Bone | `excluded` | not in the run catalogue |
+| Rare Bone | `port` | in the run catalogue (`src/data/items.ts`) |
 | Rawst Berry | `excluded` | not in the run catalogue |
 | Razor Claw | `excluded` | not in the run catalogue |
 | Razor Fang | `excluded` | not in the run catalogue |
@@ -566,7 +571,9 @@ catalogue row, not engine code.
 | Splash Plate | `excluded` | not in the run catalogue |
 | Spooky Plate | `excluded` | not in the run catalogue |
 | Sport Ball | `excluded` | not in the run catalogue |
+| Star Piece | `port` | in the run catalogue (`src/data/items.ts`) |
 | Star Sweet | `excluded` | not in the run catalogue |
+| Stardust | `port` | in the run catalogue (`src/data/items.ts`) |
 | Starf Berry | `excluded` | not in the run catalogue |
 | Sticky Barb | `excluded` | not in the run catalogue |
 | Stone Plate | `excluded` | not in the run catalogue |

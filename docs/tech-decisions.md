@@ -124,6 +124,15 @@ rolled. Randomness is limited to what a run varies: a wild encounter's species
 and level, a Pokémon's learnset/moveset and ability, and a trainer's team. One
 run seed drives all of it through `Rng` streams.
 
+The random ability (`src/engine/battle/randomAbility.ts`, `randomAbility`) draws
+only from the abilities the effect registry implements (`D16`: an unported
+ability would be a dead no-op) and drops the formes it cannot model. Downside
+abilities are kept on purpose — a worse ability is part of the random run — and
+the ones that would be dead on an arbitrary species are implemented generically
+instead of excluded (Zero to Hero, Wonder Guard). **No Guard is never paired with
+an OHKO move.** An evolution **re-rolls** the ability from the new species' pool
+under the same run seed.
+
 ## D18 — Tile size is a property of the tileset *(decided)*
 
 `TilesetConfig` declares its own `tileSize` instead of relying on a global
