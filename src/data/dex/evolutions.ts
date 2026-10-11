@@ -46,3 +46,25 @@ export function evolutionFamily(speciesId: string): readonly string[] {
   }
   return family;
 }
+
+/**
+ * The longest chain of evolution steps that starts at `speciesId`, so a base
+ * form with two consecutive evolutions (Bulbasaur) scores 2, while a branching
+ * line whose children are all final (Eevee, Scyther) scores 1. Unknown ids and
+ * cycles score 0.
+ */
+export function evolutionDepth(speciesId: string): number {
+  const walk = (id: string, path: ReadonlySet<string>): number => {
+    const species = getSpecies(id);
+    if (!species) return 0;
+    const normalized = normalizeId(species.id);
+    if (path.has(normalized)) return 0;
+    const nextPath = new Set(path).add(normalized);
+    let depth = 0;
+    for (const child of species.evos) {
+      depth = Math.max(depth, 1 + walk(child, nextPath));
+    }
+    return depth;
+  };
+  return walk(speciesId, new Set());
+}

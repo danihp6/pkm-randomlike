@@ -58,10 +58,11 @@ type StarterLayout = Readonly<{
 }>;
 
 /**
- * The run opener: rolls three starter candidates (base forms of evolution lines
- * of at least three, `docs/design-spec.md` §3) from the run seed, then hands the
- * seeded run to the route once one is picked. Cards are FRLG windows with
- * PMDCollab faces (`docs/art-direction.md`); keyboard, mouse and touch all pick.
+ * The run opener: rolls three starter candidates (base forms with two
+ * consecutive evolutions ahead, `docs/design-spec.md` §3) from the run seed,
+ * then hands the seeded run to the route once one is picked. Cards are FRLG
+ * windows with PMDCollab faces (`docs/art-direction.md`); keyboard, mouse and
+ * touch all pick.
  *
  * A wide stage shows the three cards side by side; a narrow or portrait one (a
  * phone) stacks them as full-width rows instead, so the offer never runs off the

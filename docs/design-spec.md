@@ -97,8 +97,9 @@ carries over.
   room carry their own mark; a room stays hidden until it is entered
   (`docs/maps-spec.md` §8).
 - You start a run by picking one of three starters drawn from the base forms of
-  every evolution line with at least three members (itself plus two others), so
-  every starter has room to grow. The starter cards work with the **mouse or
+  every evolution line with two consecutive evolutions ahead (itself plus two
+  more in a chain), so every starter has room to grow; a branching line whose
+  children are all final (Eevee, Scyther) is not offered. The starter cards work with the **mouse or
   touch**: hover highlights a card and a click or tap picks it, beside the
   keyboard cursor; on a phone (or any narrow or portrait stage) the three cards
   stack as full-width rows so the offer never runs off the screen. Each card shows

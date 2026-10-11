@@ -1,4 +1,4 @@
-import { evolutionFamily } from './dex/evolutions';
+import { evolutionDepth } from './dex/evolutions';
 import { playableSpecies } from './dex/species';
 
 export type BandId = 'early' | 'low' | 'mid' | 'high' | 'late' | 'end';
@@ -43,8 +43,10 @@ export const RUN_CHAIN = {
 
 /**
  * Starter options a new run offers. A candidate is the base form of an
- * evolution line of at least three species (itself plus two others), so every
- * starter has somewhere to grow; see `docs/design-spec.md` §3.
+ * evolution line with two consecutive evolutions ahead (itself plus two more in
+ * a chain), so every starter has somewhere to grow; a branching line whose
+ * children are all final (Eevee, Scyther) is not a candidate. See
+ * `docs/design-spec.md` §3.
  */
 export const STARTER_POOL_SIZE = 3;
 
@@ -52,7 +54,7 @@ export function starterCandidates(): readonly string[] {
   const candidates: string[] = [];
   for (const species of playableSpecies()) {
     if (species.prevo !== '' || species.forme !== '') continue;
-    if (evolutionFamily(species.id).length >= 3) candidates.push(species.id);
+    if (evolutionDepth(species.id) >= 2) candidates.push(species.id);
   }
   return candidates;
 }
