@@ -18,6 +18,12 @@ carries over.
   **Options** (the settings screen). Starting a new run only replaces the saved
   one once its starter is picked, so cancelling at the starter pick returns to
   the menu with the run in progress intact.
+- **Options** (the settings screen) lists a **step row** per preference — text
+  speed, a **volume slider** (click or drag the bar), always-run and Transparent
+  HUD — over one **keybind row** per action. A keybind row is hidden on a touch
+  screen, where there is no keyboard to bind; keyboard, click and touch all drive
+  the screen. The tileset is not a preference: a route always renders its biome's
+  own (`D10`).
 - A run is a chain of **maps** (floors), and a map is a **graph of routes**
   (rooms) laid out on a grid — Binding of Isaac's floors with rooms. Each route
   is a small top-down map: walls/trees, tall grass, trainers, items, openings. A
@@ -87,23 +93,29 @@ carries over.
   the cap) and a floor's **boss** fills the bar to the top; the meter **carries
   over** between floors, and only a fresh run starts it full.
 - The HUD panels — the route header, PARTY, the bag, the PC BOX and the member
-  detail window — can be **dragged by their frame** (the interior stays live for
-  rows, tabs and cells, so a click there still acts). A dragged panel **pushes**
-  the others clear, so two panels never overlap; when a push chain reaches the
-  screen edge the dragged panel stops rather than covering another, and a drag
-  released off-screen lets go instead of following the pointer. Each panel shows
+  detail window — **move when grabbed**: by their frame or from any empty spot
+  inside them that is not a control, while a click on a row, tab, cell or button
+  still acts on it. The panels **overlap** freely: a dragged panel is **raised**
+  over the rest, so the one in hand reads on top of the others, and a drag
+  released off-screen lets go instead of following the pointer. A narrow screen
+  clamps every panel to the window width (the detail window also drops its lateral
+  padding), so nothing runs off the side on a phone. Each panel shows
   its own **icon** at the top-left: clicking it **collapses** the panel to just
-  the icon, and clicking again **expands** it and pushes the rest (a collapsed
-  icon included) clear. On a keyboard screen the button is a small rectangle that
-  prints, under the icon, the **quick key** that opens that panel (`P` party, `I`
-  bag, `M` map, `O` PC box); a touch screen shows only the icon. The icon is also
-  a **drag handle** — press and move to reposition the panel, and a press released
-  without moving is the collapse/expand click. The detail window opens beside the
-  PC box the first time and can then be moved freely. The positions and collapsed
-  states are a global preference saved with the settings (D22), so they survive a
-  reload and the next run. The HUD is **always on screen** — a quick key opens one
-  panel, it does not show or hide the HUD — and a fresh save opens **only PARTY**,
-  every other panel collapsed to its icon.
+  the icon, and clicking again **expands** it and raises it over the rest. On a
+  keyboard screen the button is a small rectangle that prints, under the icon, the
+  **quick key** that opens that panel (`P` party, `I` bag, `M` map, `O` PC box); a
+  touch screen shows only the icon. The icon is also a **drag handle** — press and
+  move to reposition the panel, and a press released without moving is the
+  collapse/expand click. The detail window opens beside the PC box the first time
+  and can then be moved freely. The positions and collapsed states are a global
+  preference saved with the settings (D22), so they survive a reload and the next
+  run; the **Transparent HUD** option (see the settings screen) hides every panel's
+  window background so only its content shows over the map behind it, keeping a
+  drawn **outline** around each panel and turning its **text white** so it stays
+  legible. The HUD is
+  **always on screen** — a quick key opens one panel, it does not show or hide the
+  HUD — and a fresh save opens **only PARTY**, every other panel collapsed to its
+  icon.
 - The route **header is the floor minimap**: the map name over a Binding of Isaac-
   style grid of the rooms **discovered** so far, each drawn from the room's own
   width/height, its openings on the matching walls and a link drawn once **both**
@@ -232,13 +244,12 @@ panel**.
 ## 8. Settings
 
 The player's preferences outlive a run: text speed (how fast the battle message
-box types itself out), master volume, the tileset preference (`auto` follows
-each biome, or one tileset is forced on every route), **always run** (walk at
-running speed without holding the run key; on by default) and the **HUD layout**
-(where each panel of the route HUD sits and whether it is collapsed). They live
-in the same save document as the run (D22), are stored the moment they change and
-are edited from one screen (`Tab`, from the main menu, the starter pick or the
-route HUD).
+box types itself out), master volume, **always run** (walk at running speed
+without holding the run key; on by default), the **Transparent HUD** panels and
+the **HUD layout** (where each panel of the route HUD sits and whether it is
+collapsed). They live in the same save document as the run (D22), are stored the
+moment they change and are edited from one screen (`Tab`, from the main menu, the
+starter pick or the route HUD).
 
 ## 9. Out of scope (for now)
 

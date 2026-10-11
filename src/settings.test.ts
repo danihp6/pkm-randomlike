@@ -26,7 +26,7 @@ describe('loadSettings', () => {
 
   it('reads back what was saved', () => {
     const storage = new MemoryStorage();
-    const settings = { ...defaultSettings(), textSpeed: 'fast' as const, volume: 0.3, tileset: 'wood' as const };
+    const settings = { ...defaultSettings(), textSpeed: 'fast' as const, volume: 0.3 };
     saveSettings(settings, storage);
     expect(loadSettings(storage)).toEqual(settings);
   });

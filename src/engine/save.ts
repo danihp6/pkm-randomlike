@@ -4,7 +4,6 @@ import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybi
 import { levelCapForMap } from '../data/maps';
 import { MAP_EDGES, arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge, type MapPlan } from './maps/plan';
 import { floorForRoute } from './run/floors';
-import { isTilesetPreference, type TilesetPreference } from '../data/tilesets/ids';
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
@@ -19,10 +18,10 @@ export type Settings = Readonly<{
   textSpeed: TextSpeed;
   /** Master volume, 0..1. */
   volume: number;
-  /** Which tileset every route renders with: `auto` is the biome's own (D10). */
-  tileset: TilesetPreference;
   /** Walk at running speed without holding the run key. */
   alwaysRun: boolean;
+  /** Draw the route HUD panels without their window background (content only). */
+  hudTransparent: boolean;
   /** Where the route HUD's panels sit and whether they are collapsed. */
   hudLayout: HudLayout;
   /** Which key presses confirm, cancel, move, open the party and open settings. */
@@ -55,15 +54,15 @@ export const SAVE_KEY = 'pokerandomlike.save';
 
 export const DEFAULT_TEXT_SPEED: TextSpeed = 'normal';
 export const DEFAULT_VOLUME = 0.8;
-export const DEFAULT_TILESET: TilesetPreference = 'auto';
 export const DEFAULT_ALWAYS_RUN = true;
+export const DEFAULT_HUD_TRANSPARENT = false;
 
 export function defaultSettings(): Settings {
   return {
     textSpeed: DEFAULT_TEXT_SPEED,
     volume: DEFAULT_VOLUME,
-    tileset: DEFAULT_TILESET,
     alwaysRun: DEFAULT_ALWAYS_RUN,
+    hudTransparent: DEFAULT_HUD_TRANSPARENT,
     hudLayout: defaultHudLayout(),
     keybinds: DEFAULT_KEYBINDS,
   };
@@ -120,9 +119,6 @@ export const SAVE_MIGRATIONS: Migrations = {
   2: (document) => ({
     ...document,
     version: 3,
-    settings: isRecord(document.settings)
-      ? { ...document.settings, tileset: DEFAULT_TILESET }
-      : document.settings,
   }),
   3: (document) => ({
     ...document,
@@ -392,11 +388,12 @@ function parseSettings(value: unknown): Settings {
     ? (value.textSpeed as TextSpeed)
     : base.textSpeed;
   const volume = isNumber(value.volume) ? clampVolume(value.volume) : base.volume;
-  const tileset = isTilesetPreference(value.tileset) ? value.tileset : base.tileset;
   const alwaysRun = typeof value.alwaysRun === 'boolean' ? value.alwaysRun : base.alwaysRun;
+  const hudTransparent =
+    typeof value.hudTransparent === 'boolean' ? value.hudTransparent : base.hudTransparent;
   const hudLayout = parseHudLayout(value.hudLayout);
   const keybinds = sanitizeKeybinds(value.keybinds);
-  return { textSpeed, volume, tileset, alwaysRun, hudLayout, keybinds };
+  return { textSpeed, volume, alwaysRun, hudTransparent, hudLayout, keybinds };
 }
 
 function parseStats(value: unknown): Stats | null {

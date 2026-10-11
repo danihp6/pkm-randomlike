@@ -1,26 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_KEYBINDS } from '../data/keybinds';
-import { TILESET_PREFERENCES } from '../data/tilesets/ids';
 import { defaultSettings } from '../engine/save';
 import {
   changeSetting,
+  cycleSetting,
   isStepRow,
   moveSettingIndex,
   rebindSetting,
   settingValue,
   settingsRow,
+  settingsRows,
   SETTINGS_ROWS,
   TEXT_SPEED_ORDER,
+  volumeFromFraction,
   VOLUME_STEPS,
 } from './settingsScreen';
 
 describe('rows', () => {
-  it('lists the four step settings then one row per keybind action', () => {
+  it('lists the step settings then one row per keybind action', () => {
     expect(SETTINGS_ROWS.map((row) => row.id)).toEqual([
       'textSpeed',
       'volume',
-      'tileset',
       'alwaysRun',
+      'hudTransparent',
       'confirm',
       'cancel',
       'up',
@@ -40,6 +42,14 @@ describe('rows', () => {
     expect(SETTINGS_ROWS.slice(4).every((row) => !isStepRow(row))).toBe(true);
   });
 
+  it('hides the keybind rows on a touch screen', () => {
+    expect(settingsRows(false)).toBe(SETTINGS_ROWS);
+    const touch = settingsRows(true);
+    expect(touch.every(isStepRow)).toBe(true);
+    expect(touch.some((row) => row.id === 'confirm')).toBe(false);
+    expect(touch.map((row) => row.id)).toEqual(['textSpeed', 'volume', 'alwaysRun', 'hudTransparent']);
+  });
+
   it('clamps a selection to the list', () => {
     const last = SETTINGS_ROWS.length - 1;
     expect(moveSettingIndex(0, 1)).toBe(1);
@@ -54,10 +64,10 @@ describe('settingValue', () => {
   it('prints each setting', () => {
     expect(settingValue(defaultSettings(), 'textSpeed')).toBe('Normal');
     expect(settingValue(defaultSettings(), 'volume')).toBe('80%');
-    expect(settingValue(defaultSettings(), 'tileset')).toBe('Auto (biome)');
-    expect(settingValue({ ...defaultSettings(), tileset: 'wood' }, 'tileset')).toBe('Woods');
     expect(settingValue(defaultSettings(), 'alwaysRun')).toBe('On');
     expect(settingValue({ ...defaultSettings(), alwaysRun: false }, 'alwaysRun')).toBe('Off');
+    expect(settingValue(defaultSettings(), 'hudTransparent')).toBe('Off');
+    expect(settingValue({ ...defaultSettings(), hudTransparent: true }, 'hudTransparent')).toBe('On');
   });
 
   it('prints a keybind as its key, arrows and all', () => {
@@ -99,17 +109,14 @@ describe('changeSetting', () => {
     expect(settings.volume).toBeCloseTo(0.9);
   });
 
-  it('cycles the tileset from auto through every id and back-clamps', () => {
-    let settings = changeSetting(defaultSettings(), 'tileset', 1);
-    expect(settings.tileset).toBe(TILESET_PREFERENCES[1]);
-    for (let i = 1; i < TILESET_PREFERENCES.length - 1; i++) {
-      settings = changeSetting(settings, 'tileset', 1);
-      expect(settings.tileset).toBe(TILESET_PREFERENCES[i + 1]);
-    }
-    expect(changeSetting(settings, 'tileset', 1).tileset).toBe(TILESET_PREFERENCES.at(-1));
-    settings = changeSetting(settings, 'tileset', -TILESET_PREFERENCES.length);
-    expect(settings.tileset).toBe('auto');
-    expect(changeSetting(settings, 'tileset', -1).tileset).toBe('auto');
+  it('turns a slider position into a volume snapped to the ten-point steps', () => {
+    expect(volumeFromFraction(0)).toBe(0);
+    expect(volumeFromFraction(1)).toBe(1);
+    expect(volumeFromFraction(-0.5)).toBe(0);
+    expect(volumeFromFraction(2)).toBe(1);
+    expect(volumeFromFraction(0.5)).toBeCloseTo(0.5);
+    expect(volumeFromFraction(0.57)).toBeCloseTo(0.6);
+    expect(volumeFromFraction(0.54)).toBeCloseTo(0.5);
   });
 
   it('toggles always-run off and back on', () => {
@@ -121,18 +128,25 @@ describe('changeSetting', () => {
     expect(settings.alwaysRun).toBe(true);
   });
 
+  it('toggles transparent HUD off and back on', () => {
+    let settings = defaultSettings();
+    expect(settings.hudTransparent).toBe(false);
+    settings = changeSetting(settings, 'hudTransparent', 1);
+    expect(settings.hudTransparent).toBe(true);
+    settings = changeSetting(settings, 'hudTransparent', -1);
+    expect(settings.hudTransparent).toBe(false);
+  });
+
   it('never mutates the settings it is given', () => {
     const settings = defaultSettings();
     changeSetting(settings, 'textSpeed', 1);
     changeSetting(settings, 'volume', -3);
-    changeSetting(settings, 'tileset', 2);
     expect(settings).toEqual(defaultSettings());
   });
 
   it('treats a zero delta as the identity', () => {
     const settings = defaultSettings();
     expect(changeSetting(settings, 'volume', 0)).toBe(settings);
-    expect(changeSetting(settings, 'tileset', 0)).toBe(settings);
   });
 
   it('does nothing to a keybind row', () => {
@@ -144,6 +158,22 @@ describe('changeSetting', () => {
   it('keeps VOLUME_STEPS in step with the percentage the screen prints', () => {
     expect(VOLUME_STEPS).toBe(10);
     expect(settingValue({ ...defaultSettings(), volume: 1 / VOLUME_STEPS }, 'volume')).toBe('10%');
+  });
+});
+
+describe('cycleSetting', () => {
+  it('wraps the ordered rows so a click can reach every value', () => {
+    let settings = cycleSetting(defaultSettings(), 'textSpeed', 1);
+    expect(settings.textSpeed).toBe('fast');
+    settings = cycleSetting(settings, 'textSpeed', 1);
+    expect(settings.textSpeed).toBe('slow');
+    settings = cycleSetting(settings, 'textSpeed', -1);
+    expect(settings.textSpeed).toBe('fast');
+  });
+
+  it('toggles the on/off rows like changeSetting', () => {
+    expect(cycleSetting(defaultSettings(), 'alwaysRun', 1).alwaysRun).toBe(false);
+    expect(cycleSetting(defaultSettings(), 'hudTransparent', 1).hudTransparent).toBe(true);
   });
 });
 
