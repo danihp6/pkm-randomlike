@@ -11,24 +11,31 @@ import { type RunState } from './state';
 export const POKEVIAL_MAX_CHARGES = 3;
 
 /**
- * A rested member: HP and PP back to full, status untouched (routes-spec §6).
- * A member already at 0 HP is left as it is — the healing stop never resurrects
- * (D5), so a fallen Pokémon cannot be pulled back by resting.
+ * A rested member: HP and PP back to full. A member already at 0 HP is left as
+ * it is — the healing stop never resurrects (D5), so a fallen Pokémon cannot be
+ * pulled back by resting. `cureStatus` additionally clears a primary status; the
+ * route stop leaves status alone, the Pokevial cures it (`routes-spec` §6).
  */
-function healMember(member: RunPokemon): RunPokemon {
+function healMember(member: RunPokemon, cureStatus: boolean): RunPokemon {
   const fighter = restoreFighter(member.fighter);
   if (fighter.hp > 0) fighter.hp = fighter.maxHp;
   for (const slot of fighter.moves) slot.pp = slot.maxPp;
+  if (cureStatus) {
+    fighter.status = null;
+    fighter.statusCounter = 0;
+  }
   return { ...member, fighter: snapshotFighter(fighter) };
+}
+
+/** Rests the party and the box, optionally clearing status, never a resurrection. */
+function restParty(run: RunState, cureStatus: boolean): RunState {
+  const rest = (member: RunPokemon) => healMember(member, cureStatus);
+  return { ...run, party: run.party.map(rest), box: run.box.map(rest) };
 }
 
 /** The heal stop between routes: restores HP/PP across the party and the box. */
 export function healParty(run: RunState): RunState {
-  return {
-    ...run,
-    party: run.party.map(healMember),
-    box: run.box.map(healMember),
-  };
+  return restParty(run, false);
 }
 
 /**
@@ -46,15 +53,16 @@ export function fillPokevial(run: RunState): RunState {
 }
 
 /**
- * Drinks the Pokevial: the same heal stop as `healParty` (HP/PP across the party
- * and the box, never a resurrection and no status cure, D5) applied on demand,
- * spending one charge. With no charges left it is a no-op, so a click never
- * wastes anything.
+ * Drinks the Pokevial: it only works with a **full meter** (`POKEVIAL_MAX_CHARGES`),
+ * then rests the whole party and box — HP/PP to full and a primary status cured
+ * across both (never a resurrection, D5) — and empties the vial to zero. A
+ * partial bar is a no-op, so the charges must build up to a full vial before it
+ * can be drunk.
  */
 export function usePokevial(run: RunState): RunState {
-  if (run.pokevialCharges <= 0) return run;
-  const healed = healParty(run);
-  return { ...healed, pokevialCharges: healed.pokevialCharges - 1 };
+  if (run.pokevialCharges < POKEVIAL_MAX_CHARGES) return run;
+  const healed = restParty(run, true);
+  return { ...healed, pokevialCharges: 0 };
 }
 
 /**

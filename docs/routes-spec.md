@@ -253,13 +253,14 @@ cell), and reordering the party within itself stays free.
 
 Each floor also carries a **Pokevial**: a single bar in the party window's
 header (top-right), its fill climbing through three colour stages with
-**POKEVIAL** written inside (no charge count). Pressing it applies the same heal
-on the spot — HP and PP restored across the party **and** the PC box, never a
-resurrection and no status cure — so the player can rest mid-floor without
-walking back to a stop. Each charge is earned by **beating a trainer** (one each,
-up to the cap of three) and a floor's **boss** fills the bar to the top; the
-meter **carries over** from one floor to the next, so only a fresh run starts it
-full. The pointer only reads as a click over a full bar.
+**POKEVIAL** written inside (no charge count). Pressing it **only when the bar is
+full** applies a heal on the spot — HP and PP restored across the party **and**
+the PC box and a primary status cured, though never a resurrection — and empties
+the meter, so the player can rest mid-floor and shake off a poison or a burn
+without walking back to a stop. Each charge is earned by **beating a trainer**
+(one each, up to the cap of three) and a floor's **boss** fills the bar to the
+top; the meter **carries over** from one floor to the next, so only a fresh run
+starts it full. The pointer only reads as a click over a full bar.
 
 Ground items sit on the route's pockets (step 4), nudged onto the most
 wall-hugging tile their lane opened so an item rests against walls (a corner

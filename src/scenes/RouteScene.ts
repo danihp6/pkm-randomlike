@@ -168,6 +168,7 @@ import {
 } from '../ui/partyDetail';
 import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
 import { hpColorInt, hpFraction } from '../ui/metrics';
+import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../data/statusIcons';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
@@ -237,6 +238,10 @@ const HUD_VIAL_Y = HUD_XP_BAR_Y + HUD_XP_BAR_H + 8;
 const HUD_PARTY_HEADER = HUD_VIAL_Y + HUD_VIAL_H + 8;
 /** The party avatar, enlarged to the row height so the held-item badge reads. */
 const HUD_PARTY_PORTRAIT_SCALE = 0.7;
+/** The status badge at the right of a party row's name line. */
+const HUD_PARTY_STATUS_SCALE = 1.5;
+/** Gap (px) kept between the row name and its status badge. */
+const HUD_PARTY_STATUS_GAP = 4;
 /** The held-item icon on an avatar's lower-right corner. */
 const HUD_HELD_ICON_SCALE = 0.85;
 const HUD_BOX_HELD_ICON_SCALE = 1;
@@ -618,6 +623,7 @@ export class RouteScene extends Phaser.Scene {
     bg: Phaser.GameObjects.Rectangle;
     portrait: Phaser.GameObjects.Image;
     held: Phaser.GameObjects.Image;
+    status: Phaser.GameObjects.Image;
     /** A dim veil over a box member that is **locked** (the PC cannot be edited). */
     lock: Phaser.GameObjects.Rectangle;
   }[] = [];
@@ -627,6 +633,7 @@ export class RouteScene extends Phaser.Scene {
     highlight: Phaser.GameObjects.Rectangle;
     portrait: Phaser.GameObjects.Image;
     held: Phaser.GameObjects.Image;
+    status: Phaser.GameObjects.Image;
     name: Phaser.GameObjects.BitmapText;
     bar: Phaser.GameObjects.Image;
     fill: Phaser.GameObjects.Rectangle;
@@ -647,6 +654,7 @@ export class RouteScene extends Phaser.Scene {
   private hudDetailY = 0;
   private hudDetailName!: Phaser.GameObjects.BitmapText;
   private hudDetailLevel!: Phaser.GameObjects.BitmapText;
+  private hudDetailStatus!: Phaser.GameObjects.Image;
   private hudDetailTypes: {
     bg: Phaser.GameObjects.Rectangle;
     label: Phaser.GameObjects.BitmapText;
@@ -1281,6 +1289,11 @@ export class RouteScene extends Phaser.Scene {
       const name = addFrlgText(this, column, rowY + 6, '', { size: 16, tint: FRLG_INK }).setMaxWidth(
         partyRight - column,
       );
+      const status = this.add
+        .image(partyRight, rowY + 5, STATUS_ICON_TEXTURE_KEY, 0)
+        .setOrigin(1, 0)
+        .setScale(HUD_PARTY_STATUS_SCALE)
+        .setVisible(false);
       const bar = this.add
         .image(column, rowY + 28, FRLG_HPBAR_KEY)
         .setOrigin(0, 0)
@@ -1290,8 +1303,8 @@ export class RouteScene extends Phaser.Scene {
         .rectangle(column, rowY + 28, 0, FRLG_HPBAR.fill.height * HUD_PARTY_HPBAR_SCALE, 0x58d080)
         .setOrigin(0, 0)
         .setVisible(false);
-      this.hudRows.push({ highlight, portrait, held, name, bar, fill });
-      partyChildren.push(highlight, portrait, held, name, bar, fill);
+      this.hudRows.push({ highlight, portrait, held, status, name, bar, fill });
+      partyChildren.push(highlight, portrait, held, name, status, bar, fill);
     }
 
     const bagY = partyY + partyH + HUD_GAP;
@@ -1403,12 +1416,17 @@ export class RouteScene extends Phaser.Scene {
         .image(cellX + 62, cellY + 62, ITEM_ICON_TEXTURE_KEY, 0)
         .setScale(HUD_BOX_HELD_ICON_SCALE)
         .setVisible(false);
+      const status = this.add
+        .image(cellX + HUD_BOX_CELL - 3, cellY + 2, STATUS_ICON_TEXTURE_KEY, 0)
+        .setOrigin(1, 0)
+        .setScale(HUD_PARTY_STATUS_SCALE)
+        .setVisible(false);
       const lock = this.add
         .rectangle(cellX, cellY, HUD_BOX_CELL, HUD_BOX_CELL, 0x1b1830, 0.55)
         .setOrigin(0, 0)
         .setVisible(false);
-      this.hudBoxCells.push({ highlight, bg, portrait, held, lock });
-      boxChildren.push(bg, highlight, portrait, held, lock);
+      this.hudBoxCells.push({ highlight, bg, portrait, held, status, lock });
+      boxChildren.push(bg, highlight, portrait, held, status, lock);
     }
 
     // The member detail panel, drawn over the box's left; hidden until a member
@@ -1583,7 +1601,12 @@ export class RouteScene extends Phaser.Scene {
       tint: 0x3a3956,
       origin: [1, 0],
     });
-    children.push(this.hudDetailName, this.hudDetailLevel);
+    this.hudDetailStatus = this.add
+      .image(x + HUD_CONTENT_LEFT, y + HUD_PAD_TOP + 1, STATUS_ICON_TEXTURE_KEY, 0)
+      .setOrigin(0, 0)
+      .setScale(HUD_PARTY_STATUS_SCALE)
+      .setVisible(false);
+    children.push(this.hudDetailName, this.hudDetailLevel, this.hudDetailStatus);
 
     const chipY = y + HUD_PAD_TOP + 22;
     this.hudDetailTypes = [];
@@ -1716,12 +1739,16 @@ export class RouteScene extends Phaser.Scene {
       if (!member) {
         row.portrait.setVisible(false);
         row.held.setVisible(false);
+        row.status.setVisible(false);
         row.name.setText('');
         return;
       }
       const portrait = member ? portraitFor(member.fighter.speciesId, member.fighter.shiny) : null;
       row.portrait.setVisible(portrait !== null);
       if (portrait) row.portrait.setTexture(portrait.key, portrait.frame);
+      const statusFrame = member.fighter.status ? statusIconFrame(member.fighter.status) : null;
+      row.status.setVisible(statusFrame !== null);
+      if (statusFrame !== null) row.status.setFrame(statusFrame);
       const heldFrame = member.fighter.heldItem ? itemIconFrame(member.fighter.heldItem) : null;
       const inHand = this.hudDragItemFrom === member.fighter.id;
       row.held.setVisible(heldFrame !== null && !inHand);
@@ -1729,6 +1756,13 @@ export class RouteScene extends Phaser.Scene {
       const maxHp = restoreFighter(member.fighter).maxHp;
       const hp = member.fighter.hp;
       row.name.setText(getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId);
+      row.name.setMaxWidth(
+        this.hudX +
+          HUD_PARTY_W -
+          HUD_PAD_X -
+          row.name.x -
+          (statusFrame !== null ? STATUS_ICON_W * HUD_PARTY_STATUS_SCALE + HUD_PARTY_STATUS_GAP : 0),
+      );
       const fraction = hpFraction(hp, maxHp);
       const barScale = row.bar.scaleX;
       row.fill
@@ -1800,6 +1834,9 @@ export class RouteScene extends Phaser.Scene {
       const inHand = member !== undefined && this.hudDragItemFrom === member.id;
       cell.held.setVisible(heldFrame !== null && !inHand);
       if (heldFrame !== null) cell.held.setFrame(heldFrame);
+      const statusFrame = member?.status ? statusIconFrame(member.status) : null;
+      cell.status.setVisible(statusFrame !== null);
+      if (statusFrame !== null) cell.status.setFrame(statusFrame);
       // A box member outside the PC's editable window (the entry room's first
       // visit, or the floor's own catch) reads locked.
       cell.lock.setVisible(member !== undefined && !pcMemberEditable(this.run, member.id));
@@ -1964,6 +2001,13 @@ export class RouteScene extends Phaser.Scene {
     if (panel) panel.container.setVisible(true);
     this.hudDetailName.setText(detail.name);
     this.hudDetailLevel.setText(`Lv${detail.level}`);
+    const detailStatus = detail.status ? statusIconFrame(detail.status) : null;
+    this.hudDetailStatus.setVisible(detailStatus !== null);
+    if (detailStatus !== null) {
+      this.hudDetailStatus
+        .setFrame(detailStatus)
+        .setPosition(this.hudDetailName.x + this.hudDetailName.width + 6, this.hudDetailName.y + 1);
+    }
     this.hudDetailTypes.forEach((chip, i) => {
       const type = detail.types[i];
       chip.bg.setVisible(type !== undefined);
@@ -2045,8 +2089,9 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * Spends a Pokevial charge to rest the whole party and box. A spent vial is a
-   * no-op, so a click on the disabled button never changes the run.
+   * Drinks a full Pokevial: rests the whole party and box (clearing status) and
+   * empties the meter. A partial or empty vial is a no-op, so a click never
+   * changes the run.
    */
   private drinkPokevial(): void {
     const next = usePokevial(this.run);
@@ -2080,8 +2125,9 @@ export class RouteScene extends Phaser.Scene {
       this.input.setDefaultCursor('pointer');
       return;
     }
-    // The Pokevial button rests the party and the box, spending a charge.
-    if (this.vialButtonAt(pointer)) {
+    // The Pokevial only drinks with a full meter: it rests the party and the box
+    // (and clears status), then empties.
+    if (this.run.pokevialCharges >= POKEVIAL_MAX_CHARGES && this.vialButtonAt(pointer)) {
       this.drinkPokevial();
       return;
     }
@@ -2237,8 +2283,8 @@ export class RouteScene extends Phaser.Scene {
     const overMove = this.detailMoveRowAt(pointer) !== null;
     const overItem = this.hudHeldStackAt(pointer) !== null;
     const overIcon = this.hudPanelIconAt(pointer) !== null;
-    // The Pokevial only reads as clickable with a full bar; a partial one still
-    // drinks on click but shows no pointer.
+    // The Pokevial only reads as clickable with a full meter; a partial one does
+    // nothing on click.
     const overVial =
       this.run.pokevialCharges >= POKEVIAL_MAX_CHARGES && this.vialButtonAt(pointer);
     const overPanel = overMember || overMove || overItem || overVial ? false : this.hudPanelAt(pointer) !== null;
@@ -3502,6 +3548,22 @@ export class RouteScene extends Phaser.Scene {
     this.refreshHud();
   }
 
+  /**
+   * Removes a beaten trainer's sprite and bookkeeping from the live route, so it
+   * is never iterated again (a spinner's turn, a chase). Idempotent.
+   */
+  private removeTrainerSprite(trainerId: string): void {
+    const index = this.trainerSprites.findIndex((entry) => entry.trainer.id === trainerId);
+    if (index < 0) return;
+    const [entry] = this.trainerSprites.splice(index, 1);
+    this.tweens.killTweensOf(entry.sprite);
+    const entityIndex = this.entitySprites.indexOf(entry.sprite);
+    if (entityIndex >= 0) this.entitySprites.splice(entityIndex, 1);
+    entry.sprite.destroy();
+    this.trainerSpinIndex.delete(trainerId);
+    this.trainerFacing.delete(trainerId);
+  }
+
   /** The first undefeated trainer whose line of sight holds the player. */
   private trainerSpotted(): RouteTrainer | null {
     for (const trainer of this.route.trainers) {
@@ -3535,6 +3597,7 @@ export class RouteScene extends Phaser.Scene {
    */
   private beginChase(trainer: RouteTrainer): void {
     if (this.chase || this.pendingBattle || this.gameOver) return;
+    if (isTrainerDefeated(this.run, trainer.id)) return;
     const entry = this.trainerSprites.find((candidate) => candidate.trainer.id === trainer.id);
     if (!entry) {
       this.startTrainerBattle(trainer);
@@ -3618,6 +3681,7 @@ export class RouteScene extends Phaser.Scene {
   /** Opens the menu battle against a trainer, with a roster seeded for that id. */
   private startTrainerBattle(trainer: RouteTrainer): void {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
+    if (isTrainerDefeated(this.run, trainer.id)) return;
     const archetype = getTrainerArchetype(trainer.archetypeId);
     if (!archetype) return;
     const band = this.room ? bandForMap(this.room.mapIndex) : runBand(this.run.seed, this.route.routeIndex);
@@ -4026,15 +4090,11 @@ export class RouteScene extends Phaser.Scene {
     this.persistRun();
     this.refreshHud();
 
-    // A beaten trainer leaves the route: hide its sprite so the tile is free.
+    // A beaten trainer leaves the route for good: drop its sprite and its entry,
+    // so a spinner can never spot the player and open the battle again.
     if (pending.trigger.kind === 'trainer') {
       const trainerId = pending.trigger.trainerId;
-      const entry = this.trainerSprites.find((candidate) => candidate.trainer.id === trainerId);
-      if (entry && isTrainerDefeated(this.run, trainerId)) {
-        entry.sprite.setVisible(false);
-        this.trainerSpinIndex.delete(trainerId);
-        this.trainerFacing.delete(trainerId);
-      }
+      if (isTrainerDefeated(this.run, trainerId)) this.removeTrainerSprite(trainerId);
     }
 
     const over = !hasLivingParty(this.run);
@@ -5166,6 +5226,7 @@ export class RouteScene extends Phaser.Scene {
     if (this.gameOver || this.pendingBattle || this.releaseRoot || this.captureRoot || this.shopRoot || this.miniBossRewardRoot || this.pauseMenuOpen || this.chase)
       return;
     for (const entry of this.trainerSprites) {
+      if (isTrainerDefeated(this.run, entry.trainer.id)) continue;
       const turns = entry.trainer.turns;
       if (!turns || turns.length < 2) continue;
       const index = Math.floor(time / TRAINER_TURN_MS) % turns.length;

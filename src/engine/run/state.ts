@@ -77,9 +77,10 @@ export type RunState = Readonly<{
   levelCap: number;
   /**
    * Pokevial charges left: up to `POKEVIAL_MAX_CHARGES`, one earned per beaten
-   * trainer and filled by a boss, spent by `usePokevial` to rest the party and
-   * the box. A run's meter **survives the floor change** (`docs/routes-spec.md`
-   * §6); only a fresh run starts full.
+   * trainer and filled by a boss. `usePokevial` **only drinks a full meter**,
+   * resting the party and the box and curing status while emptying it. A run's
+   * meter **survives the floor change** (`docs/routes-spec.md` §6); only a fresh
+   * run starts full.
    */
   pokevialCharges: number;
   /**
