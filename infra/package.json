@@ -7,7 +7,7 @@
     "build": "tsc",
     "synth": "cdk synth",
     "diff": "cdk diff",
-    "deploy": "cdk deploy",
+    "deploy": "cdk deploy --all",
     "destroy": "cdk destroy",
     "bootstrap": "cdk bootstrap"
   },
