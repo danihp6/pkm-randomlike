@@ -14,17 +14,16 @@ function starterRun(moves: readonly string[] = ['scratch'], level = 5): RunState
 }
 
 describe('learnsetPool', () => {
-  it('lists the level-up moves learned so far, marking the slotted ones', () => {
+  it('lists the learned level-up moves that are not in the slots', () => {
     const run = starterRun();
     const pool = learnsetPool(run, run.party[0]);
     const ids = pool.map((entry) => entry.moveId);
-    expect(ids).toContain('scratch');
+    // 'scratch' is slotted, so the pool no longer offers it.
+    expect(ids).not.toContain('scratch');
     expect(ids).toContain('growl');
     expect(ids).toContain('ember');
     // Not learned until level 8.
     expect(ids).not.toContain('smokescreen');
-    expect(pool.find((entry) => entry.moveId === 'scratch')?.slot).toBe(0);
-    expect(pool.find((entry) => entry.moveId === 'ember')?.slot).toBeNull();
     expect(pool.every((entry) => entry.source === 'level')).toBe(true);
   });
 
@@ -38,24 +37,22 @@ describe('learnsetPool', () => {
     const entry = learnsetPool(withTm, member).find((candidate) => candidate.moveId === tmMove);
     expect(entry?.source).toBe('tm');
     expect(entry?.tmId).toBe(tmId);
-    expect(entry?.slot).toBeNull();
   });
 
-  it('keeps a held move the learnset does not cover, so a swap can be undone', () => {
+  it('omits every move already in the slots', () => {
     const run = starterRun(['scratch', 'splash']);
-    const entry = learnsetPool(run, run.party[0], SEED).find((candidate) => candidate.moveId === 'splash');
-    expect(entry?.slot).toBe(1);
-    expect(entry?.source).toBe('level');
+    const ids = learnsetPool(run, run.party[0]).map((entry) => entry.moveId);
+    expect(ids).not.toContain('scratch');
+    expect(ids).not.toContain('splash');
+    expect(ids).toContain('growl');
   });
 
   it('follows the run seed\u2019s randomized learnset', () => {
-    const run = starterRun();
+    const run = starterRun(['scratch']);
     const pool = learnsetPool(run, run.party[0], SEED);
-    // The randomized level moves, plus the moves the member already holds.
-    const expected = new Set([
-      ...randomLevelUpMoves('charmander', 5, SEED).map((entry) => entry.moveId),
-      ...run.party[0].fighter.moves.map((slot) => slot.moveId),
-    ]);
+    // The randomized level moves, minus the one already slotted.
+    const expected = new Set(randomLevelUpMoves('charmander', 5, SEED).map((entry) => entry.moveId));
+    for (const slot of run.party[0].fighter.moves) expected.delete(slot.moveId);
     for (const entry of pool) expect(expected.has(entry.moveId), entry.moveId).toBe(true);
   });
 });
@@ -74,15 +71,9 @@ describe('equipMove', () => {
     expect(next.bag.find((slot) => slot.itemId === tmId)?.count).toBe(1);
   });
 
-  it('swaps two slots when the move already sits in another one', () => {
-    const run = addItem(starterRun(['scratch', 'growl']), tmId);
-    const taught = equipMove(run, 'starter', tmMove, 1, SEED);
-    expect(taught.party[0].fighter.moves[1].moveId).toBe(tmMove);
-    // Re-dropping the same move onto an earlier slot swaps them.
-    const swapped = equipMove(taught, 'starter', tmMove, 0, SEED);
-    expect(swapped.party[0].fighter.moves[0].moveId).toBe(tmMove);
-    expect(swapped.party[0].fighter.moves[1].moveId).toBe('scratch');
-    expect(new Set(swapped.party[0].fighter.moves.map((slot) => slot.moveId)).size).toBe(2);
+  it('ignores a move that already sits in one of the slots', () => {
+    const run = starterRun(['scratch', 'growl']);
+    expect(equipMove(run, 'starter', 'growl', 0, SEED)).toBe(run);
   });
 
   it('appends a move to a short moveset when dropped past its end', () => {
@@ -96,10 +87,5 @@ describe('equipMove', () => {
     expect(equipMove(run, 'starter', 'hydropump', 0, SEED)).toBe(run);
     expect(equipMove(run, 'nobody', 'scratch', 0, SEED)).toBe(run);
     expect(equipMove(run, 'starter', 'scratch', 9, SEED)).toBe(run);
-  });
-
-  it('is a no-op when the move is already in the target slot', () => {
-    const run = starterRun(['scratch', 'growl']);
-    expect(equipMove(run, 'starter', 'scratch', 0, SEED)).toBe(run);
   });
 });

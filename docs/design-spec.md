@@ -57,12 +57,13 @@ carries over.
   opens a **detail panel** (its own window) with **STATS** — HP, the five battle
   stats, nature, ability and held item — and **MOVES**, where the four slotted
   moves can be dragged to reorder them (that order is what the battle menu lists)
-  over a **learnset** band: a search field and a paged grid of every move the
-  member may equip — the level-up moves it has learned so far (and any it still
-  holds, so a swap is always reversible) and the moves a **TM in the bag** can
-  teach it — each tagged `Lv##`, `known` or `TM###`. A cell is dragged onto a
-  slot to equip it, **swapping** if the move already sits in another slot;
-  teaching is free and a TM is **reusable** (D36). When the squad levels up a
+  over a **learnset** band: a search field and a paged grid, spanning the window,
+  of every move the member may equip — the level-up moves it has learned so far
+  (minus the ones already in its four slots) and the moves a **TM in the bag** can
+  teach it — each tagged `Lv##` or `TM###`; an empty pool reads `no moves to
+  learn`. A cell is dragged onto a slot to
+  equip it (replacing what sits there); teaching is free and a TM is
+  **reusable** (D36). When the squad levels up a
   modal pops up announcing **"X learned Y!"** for every move a member crossed on
   the way, dismissed with any key or a click. The party is never left empty and
   the box is never required to be full.

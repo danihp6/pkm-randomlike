@@ -10,12 +10,14 @@ file is the human-readable summary.
 
 - [x] **The MOVES tab gains a learnset band: search, learned moves and bag TMs,
       dragged onto the four slots.** Below the slotted moves the detail window
-      now shows a search field over a paged grid of every move the member may
-      equip — the level-up moves it has already learned (plus any it still holds,
-      so a swap is always reversible) and the moves a **TM in the bag** can teach
-      it — tagged `Lv##`, `known` or `TM###`. A pool cell drags onto a slot to
-      equip it, swapping if the move already sits in another slot; teaching never
-      spends the TM (`D36`). The panel grew to fit the band. `src/engine/run/learnset.ts`,
+      shows a search field over a paged, full-width grid of every move the member
+      may equip — the level-up moves it has already learned and does not hold, and
+      the moves a **TM in the bag** can teach it — tagged `Lv##` or `TM###`. The
+      grid spans the window; its paging arrows ride the search row and an empty
+      pool reads `no moves to learn`. A pool cell
+      drags onto a slot to equip it (replacing what sat there), so a move already
+      in the four slots is never listed; teaching never spends the TM (`D36`). The
+      panel grew to fit the band. `src/engine/run/learnset.ts`,
       `src/scenes/RouteScene.ts`.
 - [x] **Technical Machines.** The full base-Gen-9 TM catalogue (TM001 … TM171)
       ships as **reusable** `machine`-pocket items, hand-authored from the dex's
