@@ -209,3 +209,19 @@ into these floors and adds the PokÃ© Dollar economy. Source of truth:
 - [ ] **Step 14 â€” Docs & migration pass.** Finish `docs/maps-spec.md`, update
       `design-spec.md` / `routes-spec.md` / `battle-spec.md` / `AGENTS.md` and the
       tech decision addenda, and archive the steps in `CHANGELOG.md`.
+
+## Phase 10 - Learnset, TMs & move typing
+
+> The learnset panel, the TM catalogue and the effective-type rules shipped;
+> these are the follow-ups (`D36`/`D37`).
+
+- [ ] **TM acquisition breadth.** TMs only drop from route loot and mini-boss
+      rewards today. A proper TM Machine (or a per-band TM slot in the shop) and a
+      real machine icon — every TM borrows the sheet's question mark until then —
+      are still open.
+- [ ] **Item-driven move retypes.** Judgment (Plates), Multi-Attack (Memories),
+      Techno Blast (Drives) and Natural Gift (berries) keep their dexed type until
+      those held items exist; they hook the same `onModifyMoveType` path as
+      Weather Ball and Terrain Pulse.
+- [ ] **Relearn UI for the bench.** The learnset panel covers the panel's four
+      slots; a Move-Relearner style screen for the whole party is not planned yet.

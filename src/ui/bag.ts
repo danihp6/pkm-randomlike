@@ -4,8 +4,8 @@ import type { BagCounts } from '../engine/run';
 /**
  * The bag's pockets, in the order the HUD's FRLG tab strip shows them. The run
  * catalogue produces `equipment` (held items), `consumable` (heals, status cures
- * and boosts), `ball` and `valuable` (treasure to sell); `machine` exists as a
- * tab but stays empty until TMs land in `src/data/items.ts`.
+ * and boosts), `machine` (the TMs in `src/data/tms.ts`), `ball` and `valuable`
+ * (treasure to sell).
  */
 export type BagCategory = 'equipment' | 'consumable' | 'machine' | 'ball' | 'valuable';
 
@@ -34,6 +34,8 @@ export function bagCategoryForKind(kind: ItemKind): BagCategory {
       return 'equipment';
     case 'valuable':
       return 'valuable';
+    case 'tm':
+      return 'machine';
     case 'heal':
     case 'status':
     case 'boost':
