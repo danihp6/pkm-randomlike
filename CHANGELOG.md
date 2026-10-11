@@ -8,6 +8,12 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Dev-added Pokémon no longer collide on their id.** The debug panel's
+      counter resets on a reload, so a re-added species reused `debug:<sp>:1` and
+      `updatePokemon` (which matches by id) then edited or replaced several
+      members at once. `nextDebugPokemonId` scans the live party and box for a
+      free counter, so every drop stays unique. `src/dev/ids.ts`,
+      `src/scenes/RouteScene.ts`.
 - [x] **Level evolutions, drawn as a family graph and taken with a click.**
       Every dex evolution — level, stone, trade, friendship, move — is resolved
       to a level (`evolutionBranches`): a canon level evolution keeps its level,

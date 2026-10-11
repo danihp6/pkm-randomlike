@@ -24,6 +24,7 @@ import {
 import { trainerFacingPose, trainerWalkAnimKey } from '../render/trainerAnim';
 import { getTrainerArchetype, TRAINER_ARCHETYPE_IDS } from '../data/trainers';
 import { IS_DEVELOP } from '../dev/env';
+import { nextDebugPokemonId } from '../dev/ids';
 import type { DebugPartyEdit, DebugPartyMember, DebugRouteContext, DebugRouteInput } from '../dev/debugMenu';
 import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
@@ -4643,12 +4644,16 @@ export class RouteScene extends Phaser.Scene {
    */
   addDebugPokemon(speciesId: string, level: number): 'party' | 'box' | null {
     if (!IS_DEVELOP || !this.run || this.gameOver) return null;
-    this.debugMonCounter += 1;
+    // The counter resets on a reload, so scan the live ids to stay unique: a
+    // duplicate would make the editor and `updatePokemon` hit several members.
+    const used = [...this.run.party, ...this.run.box].map((member) => member.fighter.id);
+    const { id, counter } = nextDebugPokemonId(speciesId, used, this.debugMonCounter);
+    this.debugMonCounter = counter;
     // The squad shares one level, so the new member joins at that level rather
     // than the requested one; the dev level editor moves the whole squad.
     const pokemon = adoptAtLevel(
       createRunPokemon({
-        id: `debug:${speciesId}:${this.debugMonCounter}`,
+        id,
         speciesId,
         level,
         learnsetSeed: this.run.seed,
