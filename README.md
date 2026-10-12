@@ -14,12 +14,37 @@ battle, and every Pokémon you lose is lost **forever**.
 - `docs/tech-decisions.md` — `D1`..`D18` and the open questions.
 - `TODO.md` — what is open, by phase. `CHANGELOG.md` — what shipped.
 
+## Layout
+
+Every folder under `src/` carries a README as its contract.
+
+- `src/engine/` — the pure rules (no Phaser, no DOM): generators, battle and run state.
+  Contract in `src/engine/README.md`.
+- `src/data/` — everything balanceable: the hand-authored tables here and the generated dex
+  in `src/data/dex/` (`src/data/dex/README.md`). Contract in `src/data/README.md`.
+- `src/scenes/` — one Phaser scene per file, registered in `src/main.ts`. Contract in
+  `src/scenes/README.md`.
+- `src/ui/` — the HUD, panels and windows and their pure models. Contract in
+  `src/ui/README.md`.
+- `src/render/` — Phaser-free animation and geometry registries over the committed atlases.
+  Contract in `src/render/README.md`.
+- `src/input/` — the keyboard layer that turns presses into actions. Contract in
+  `src/input/README.md`.
+- `src/dev/` — dev-only tooling behind the developer gate. Contract in
+  `src/dev/README.md`.
+- `src/assets/` — atlas sheets, sprites and their manifests. Contract in
+  `src/assets/README.md`.
+- `scripts/` — the dex/art build scripts and the imported art pipeline.
+- `docs/` — the specs above, plus the balance spreadsheets in `docs/balance/`
+  (`docs/balance/README.md`).
+
 ## Run it
 
 ```
 npm install
 npm run dev        # http://localhost:5175
 npm test           # pure-logic tests (Vitest)
+npm run lint       # Prettier format check
 npm run build      # tsc --noEmit && vite build
 npm run data:dex   # regenerate src/data/dex from @pkmn/dex (rarely needed)
 ```
