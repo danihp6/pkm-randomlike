@@ -21,14 +21,7 @@ import victoryUrl from '../assets/audio/victory.wav';
 export type AudioCueKind = 'music' | 'sfx';
 
 export type AudioCueId =
-  | 'menu-music'
-  | 'route-music'
-  | 'battle-music'
-  | 'encounter'
-  | 'hit'
-  | 'faint'
-  | 'level-up'
-  | 'victory';
+  'menu-music' | 'route-music' | 'battle-music' | 'encounter' | 'hit' | 'faint' | 'level-up' | 'victory';
 
 export type AudioCue = Readonly<{
   id: AudioCueId;

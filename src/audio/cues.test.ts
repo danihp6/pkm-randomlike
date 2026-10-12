@@ -1,7 +1,15 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { AUDIO_CUES, AUDIO_CUE_IDS, AUDIO_EXTENSION, audioCue, audioCueUrl, isMusic, type AudioCueId } from './cues';
+import {
+  AUDIO_CUES,
+  AUDIO_CUE_IDS,
+  AUDIO_EXTENSION,
+  audioCue,
+  audioCueUrl,
+  isMusic,
+  type AudioCueId,
+} from './cues';
 
 // The cue assets are committed artifacts (`scripts/frlg/build-audio.mjs`), so the
 // table is measured against the files that ship instead of trusted: a cue whose

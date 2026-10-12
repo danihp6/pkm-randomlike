@@ -12,16 +12,16 @@ or sound key, a volume, or a source path; it calls `playMusic(this, 'route-music
 or `playCue(this, 'hit')` and nothing else. Renaming an asset, re-encoding it or
 swapping the whole set for CC0 audio never touches a call site.
 
-| id | kind | loop | gain |
-| --- | --- | --- | --- |
-| `menu-music` | music | true | 0.5 |
-| `route-music` | music | true | 0.5 |
-| `battle-music` | music | true | 0.5 |
-| `encounter` | sfx | false | 0.8 |
-| `hit` | sfx | false | 0.6 |
-| `faint` | sfx | false | 0.8 |
-| `level-up` | sfx | false | 0.8 |
-| `victory` | sfx | false | 0.9 |
+| id             | kind  | loop  | gain |
+| -------------- | ----- | ----- | ---- |
+| `menu-music`   | music | true  | 0.5  |
+| `route-music`  | music | true  | 0.5  |
+| `battle-music` | music | true  | 0.5  |
+| `encounter`    | sfx   | false | 0.8  |
+| `hit`          | sfx   | false | 0.6  |
+| `faint`        | sfx   | false | 0.8  |
+| `level-up`     | sfx   | false | 0.8  |
+| `victory`      | sfx   | false | 0.9  |
 
 ## The Phaser half
 
