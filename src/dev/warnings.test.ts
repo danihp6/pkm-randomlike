@@ -15,6 +15,7 @@ describe('coverage warnings', () => {
   it('is silent outside a develop build', async () => {
     const { warnUnportedEffect } = await import('./warnings');
     warnUnportedEffect('ability', 'plus');
+    warnUnportedEffect('move', 'steamroller');
     expect(console.warn).not.toHaveBeenCalled();
   });
 
@@ -25,7 +26,20 @@ describe('coverage warnings', () => {
     warnUnportedEffect('ability', 'plus');
     warnUnportedEffect('ability', 'plus');
     warnUnportedEffect('item', 'leftovers');
+    warnUnportedEffect('move', 'steamroller');
+    warnUnportedEffect('move', 'steamroller');
 
-    expect(console.warn).toHaveBeenCalledTimes(2);
+    expect(console.warn).toHaveBeenCalledTimes(3);
+  });
+
+  it('names the kind and the id in the message', async () => {
+    vi.doMock('./env', () => ({ ENVIRONMENT: 'develop', IS_DEVELOP: true }));
+    const { warnUnportedEffect } = await import('./warnings');
+
+    warnUnportedEffect('move', 'steamroller');
+
+    expect(console.warn).toHaveBeenCalledWith(
+      '[coverage] move "steamroller" has no ported effect (D16).',
+    );
   });
 });

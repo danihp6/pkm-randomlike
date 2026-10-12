@@ -1,4 +1,5 @@
 import type { Move, MoveEffect } from '../../../data/dex';
+import { isUnportedMove } from '../../../data/moveCoverage';
 import { warnUnportedEffect } from '../../../dev/warnings';
 import type { Rng } from '../../rng';
 import { moveContacts, type BattleFighter, type BoostId } from '../fighter';
@@ -173,7 +174,11 @@ function ownedEffects(
 function moveEffect(move: Move | null, owner: BattleFighter): readonly EffectRef[] {
   if (!move) return [];
   const effect = getEffect(move.id);
-  return effect ? [{ effect, owner }] : [];
+  if (effect) return [{ effect, owner }];
+  // The first hook a used move dispatches lands here, so an unported move pages
+  // the coverage warning (once per id) the moment a battle meets it (D16).
+  if (isUnportedMove(move.id)) warnUnportedEffect('move', move.id);
+  return [];
 }
 
 /** Source first, then the defender's ability, then the move's own handlers. */

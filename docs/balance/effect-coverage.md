@@ -3,6 +3,9 @@
 Tracks every battle ability and item so "Gen 9 complete" is a claim this table
 backs up (`D16` in `docs/tech-decisions.md`). Notes only: nothing here is read
 by the game. Regenerate with `npm run docs:coverage`.
+The same classification is written to `src/data/moveCoverage.json`, which is what
+the develop-build warning reads, so a move that goes off and does nothing cannot
+hide during playtests.
 
 ## Legend
 
@@ -17,6 +20,9 @@ by the game. Regenerate with `npm run docs:coverage`.
   change), or it needs a mechanic the engine does not model (weight, entry
   hazards, forced switching, out-of-battle effects). Excluded effects are never
   a coverage gap.
+- For a move, `port` means a registered handler, an id the turn loop
+  special-cases, or a data-driven field the engine reads; `no-op` means a run
+  can meet the move and nothing happens.
 
 The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
@@ -337,6 +343,846 @@ catalogue row, not engine code.
 | Zen Mode | `port` | ported in `effects/abilities.ts` |
 | Zen Mode (Galar) | `port` | ported in `effects/abilities.ts` |
 | Zero to Hero | `port` | ported in `effects/abilities.ts` |
+
+## Moves — 835 total (718 port, 86 no-op, 31 excluded)
+
+| Effect | Status | Note |
+| --- | --- | --- |
+| Absorb | `port` | data: drain |
+| Accelerock | `port` | data: basePower |
+| Acid | `port` | data: secondaries |
+| Acid Armor | `port` | data: boosts |
+| Acid Spray | `port` | data: secondaries |
+| Acrobatics | `port` | data: basePower |
+| Acupressure | `no-op` | reachable, not ported yet |
+| Aerial Ace | `port` | data: basePower |
+| Aeroblast | `port` | data: basePower |
+| After You | `no-op` | reachable, not ported yet |
+| Agility | `port` | data: boosts |
+| Air Cutter | `port` | data: basePower |
+| Air Slash | `port` | data: secondaries |
+| Alluring Voice | `port` | data: basePower |
+| Ally Switch | `no-op` | reachable, not ported yet |
+| Amnesia | `port` | data: boosts |
+| Anchor Shot | `port` | data: basePower |
+| Ancient Power | `port` | data: secondaries |
+| Apple Acid | `port` | data: secondaries |
+| Aqua Cutter | `port` | data: basePower |
+| Aqua Jet | `port` | data: basePower |
+| Aqua Ring | `no-op` | reachable, not ported yet |
+| Aqua Step | `port` | data: secondaries |
+| Aqua Tail | `port` | data: basePower |
+| Arm Thrust | `port` | data: multihit |
+| Armor Cannon | `port` | data: self.boosts |
+| Aromatherapy | `no-op` | reachable, not ported yet |
+| Aromatic Mist | `port` | data: boosts |
+| Assist | `no-op` | reachable, not ported yet |
+| Assurance | `port` | data: basePower |
+| Astonish | `port` | data: secondaries |
+| Astral Barrage | `port` | data: basePower |
+| Attack Order | `port` | data: basePower |
+| Attract | `port` | data: flags.protect |
+| Aura Sphere | `port` | data: basePower |
+| Aura Wheel | `port` | registry: effects/moves.ts |
+| Aurora Beam | `port` | data: secondaries |
+| Aurora Veil | `no-op` | reachable, not ported yet |
+| Autotomize | `port` | data: boosts |
+| Avalanche | `port` | data: basePower |
+| Axe Kick | `port` | data: secondaries |
+| Baby-Doll Eyes | `port` | data: boosts |
+| Baddy Bad | `excluded` | no playable species has it |
+| Baneful Bunker | `port` | registry: effects/moves.ts |
+| Barb Barrage | `port` | data: secondaries |
+| Barrage | `port` | data: multihit |
+| Barrier | `port` | data: boosts |
+| Baton Pass | `port` | data: selfSwitch |
+| Beak Blast | `port` | data: basePower |
+| Beat Up | `port` | data: flags.protect |
+| Behemoth Bash | `port` | data: basePower |
+| Behemoth Blade | `port` | data: basePower |
+| Belch | `port` | data: basePower |
+| Belly Drum | `no-op` | reachable, not ported yet |
+| Bestow | `excluded` | no playable species has it |
+| Bide | `port` | data: flags.protect |
+| Bind | `port` | data: volatileStatus |
+| Bite | `port` | data: secondaries |
+| Bitter Blade | `port` | data: drain |
+| Bitter Malice | `port` | data: secondaries |
+| Blast Burn | `port` | data: basePower |
+| Blaze Kick | `port` | data: secondaries |
+| Bleakwind Storm | `port` | data: secondaries |
+| Blizzard | `port` | data: secondaries |
+| Block | `no-op` | reachable, not ported yet |
+| Blood Moon | `port` | data: basePower |
+| Blue Flare | `port` | data: secondaries |
+| Body Press | `port` | data: basePower |
+| Body Slam | `port` | data: secondaries |
+| Bolt Beak | `port` | data: basePower |
+| Bolt Strike | `port` | data: secondaries |
+| Bone Club | `port` | data: secondaries |
+| Bone Rush | `port` | data: multihit |
+| Bonemerang | `port` | data: multihit |
+| Boomburst | `port` | data: basePower |
+| Bounce | `port` | data: secondaries |
+| Bouncy Bubble | `excluded` | no playable species has it |
+| Branch Poke | `port` | data: basePower |
+| Brave Bird | `port` | data: recoil |
+| Breaking Swipe | `port` | data: secondaries |
+| Brick Break | `port` | data: basePower |
+| Brine | `port` | data: basePower |
+| Brutal Swing | `port` | data: basePower |
+| Bubble | `port` | data: secondaries |
+| Bubble Beam | `port` | data: secondaries |
+| Bug Bite | `port` | data: basePower |
+| Bug Buzz | `port` | data: secondaries |
+| Bulk Up | `port` | data: boosts |
+| Bulldoze | `port` | data: secondaries |
+| Bullet Punch | `port` | data: basePower |
+| Bullet Seed | `port` | data: multihit |
+| Burning Bulwark | `port` | registry: effects/moves.ts |
+| Burning Jealousy | `port` | data: basePower |
+| Buzzy Buzz | `excluded` | no playable species has it |
+| Calm Mind | `port` | data: boosts |
+| Camouflage | `no-op` | reachable, not ported yet |
+| Captivate | `port` | data: boosts |
+| Ceaseless Edge | `port` | data: basePower |
+| Celebrate | `no-op` | reachable, not ported yet |
+| Charge | `port` | data: boosts |
+| Charge Beam | `port` | data: secondaries |
+| Charm | `port` | data: boosts |
+| Chatter | `port` | data: secondaries |
+| Chilling Water | `port` | data: secondaries |
+| Chilly Reception | `port` | data: selfSwitch |
+| Chip Away | `excluded` | no playable species has it |
+| Chloroblast | `port` | data: basePower |
+| Circle Throw | `port` | data: basePower |
+| Clamp | `port` | data: volatileStatus |
+| Clanging Scales | `port` | data: basePower |
+| Clangorous Soul | `port` | data: boosts |
+| Clear Smog | `port` | data: basePower |
+| Close Combat | `port` | data: self.boosts |
+| Coaching | `port` | data: boosts |
+| Coil | `port` | data: boosts |
+| Collision Course | `port` | data: basePower |
+| Comet Punch | `port` | data: multihit |
+| Comeuppance | `port` | turn loop: turn.ts |
+| Confide | `port` | data: boosts |
+| Confuse Ray | `port` | data: volatileStatus |
+| Confusion | `port` | data: secondaries |
+| Constrict | `port` | data: secondaries |
+| Conversion | `no-op` | reachable, not ported yet |
+| Conversion 2 | `no-op` | reachable, not ported yet |
+| Copycat | `no-op` | reachable, not ported yet |
+| Core Enforcer | `port` | data: basePower |
+| Cosmic Power | `port` | data: boosts |
+| Cotton Guard | `port` | data: boosts |
+| Cotton Spore | `port` | data: boosts |
+| Counter | `port` | turn loop: turn.ts |
+| Court Change | `no-op` | reachable, not ported yet |
+| Covet | `port` | data: basePower |
+| Crabhammer | `port` | data: basePower |
+| Crafty Shield | `no-op` | reachable, not ported yet |
+| Cross Chop | `port` | data: basePower |
+| Cross Poison | `port` | data: secondaries |
+| Crunch | `port` | data: secondaries |
+| Crush Claw | `port` | data: secondaries |
+| Crush Grip | `port` | data: flags.protect |
+| Curse | `no-op` | reachable, not ported yet |
+| Dark Pulse | `port` | data: secondaries |
+| Dark Void | `port` | data: status |
+| Darkest Lariat | `port` | data: basePower |
+| Dazzling Gleam | `port` | data: basePower |
+| Decorate | `port` | data: boosts |
+| Defend Order | `port` | data: boosts |
+| Defense Curl | `port` | data: boosts |
+| Defog | `port` | data: flags.protect |
+| Destiny Bond | `no-op` | reachable, not ported yet |
+| Detect | `port` | registry: effects/moves.ts |
+| Diamond Storm | `port` | data: self.boosts |
+| Dig | `port` | data: flags.charge |
+| Dire Claw | `port` | data: basePower |
+| Disable | `port` | data: flags.protect |
+| Disarming Voice | `port` | data: basePower |
+| Discharge | `port` | data: secondaries |
+| Dive | `port` | data: flags.charge |
+| Dizzy Punch | `port` | data: secondaries |
+| Doodle | `no-op` | reachable, not ported yet |
+| Doom Desire | `port` | data: basePower |
+| Double Hit | `port` | data: multihit |
+| Double Iron Bash | `port` | data: secondaries |
+| Double Kick | `port` | data: multihit |
+| Double Shock | `port` | data: basePower |
+| Double Slap | `port` | data: multihit |
+| Double Team | `port` | data: boosts |
+| Double-Edge | `port` | data: recoil |
+| Draco Meteor | `port` | data: self.boosts |
+| Dragon Ascent | `port` | data: self.boosts |
+| Dragon Breath | `port` | data: secondaries |
+| Dragon Cheer | `no-op` | reachable, not ported yet |
+| Dragon Claw | `port` | data: basePower |
+| Dragon Dance | `port` | data: boosts |
+| Dragon Darts | `port` | data: multihit |
+| Dragon Energy | `port` | data: basePower |
+| Dragon Hammer | `port` | data: basePower |
+| Dragon Pulse | `port` | data: basePower |
+| Dragon Rage | `port` | data: flags.protect |
+| Dragon Rush | `port` | data: secondaries |
+| Dragon Tail | `port` | data: basePower |
+| Drain Punch | `port` | data: drain |
+| Draining Kiss | `port` | data: drain |
+| Dream Eater | `port` | data: drain |
+| Drill Peck | `port` | data: basePower |
+| Drill Run | `port` | data: basePower |
+| Drum Beating | `port` | data: secondaries |
+| Dual Chop | `port` | data: multihit |
+| Dual Wingbeat | `port` | data: multihit |
+| Dynamax Cannon | `port` | data: basePower |
+| Dynamic Punch | `port` | data: secondaries |
+| Earth Power | `port` | data: secondaries |
+| Earthquake | `port` | data: basePower |
+| Echoed Voice | `port` | data: basePower |
+| Eerie Impulse | `port` | data: boosts |
+| Eerie Spell | `port` | data: basePower |
+| Egg Bomb | `port` | data: basePower |
+| Electric Terrain | `port` | data: terrain |
+| Electrify | `port` | data: flags.protect |
+| Electro Ball | `port` | data: flags.protect |
+| Electro Drift | `port` | data: basePower |
+| Electro Shot | `port` | data: flags.charge |
+| Electroweb | `port` | data: secondaries |
+| Embargo | `port` | data: flags.protect |
+| Ember | `port` | data: secondaries |
+| Encore | `port` | data: volatileStatus |
+| Endeavor | `port` | data: flags.protect |
+| Endure | `no-op` | reachable, not ported yet |
+| Energy Ball | `port` | data: secondaries |
+| Entrainment | `port` | data: flags.protect |
+| Eruption | `port` | data: basePower |
+| Esper Wing | `port` | data: secondaries |
+| Eternabeam | `port` | data: basePower |
+| Expanding Force | `port` | data: basePower |
+| Explosion | `port` | data: selfdestruct |
+| Extrasensory | `port` | data: secondaries |
+| Extreme Speed | `port` | data: basePower |
+| Facade | `port` | data: basePower |
+| Fairy Lock | `no-op` | reachable, not ported yet |
+| Fairy Wind | `port` | data: basePower |
+| Fake Out | `port` | data: secondaries |
+| Fake Tears | `port` | data: boosts |
+| False Surrender | `port` | data: basePower |
+| False Swipe | `port` | data: basePower |
+| Feather Dance | `port` | data: boosts |
+| Feint | `port` | data: basePower |
+| Feint Attack | `port` | data: basePower |
+| Fell Stinger | `port` | data: basePower |
+| Fickle Beam | `port` | data: basePower |
+| Fiery Dance | `port` | data: secondaries |
+| Fiery Wrath | `port` | data: secondaries |
+| Fillet Away | `port` | data: boosts |
+| Final Gambit | `port` | data: selfdestruct |
+| Fire Blast | `port` | data: secondaries |
+| Fire Fang | `port` | data: secondaries |
+| Fire Lash | `port` | data: secondaries |
+| Fire Pledge | `port` | data: basePower |
+| Fire Punch | `port` | data: secondaries |
+| Fire Spin | `port` | data: volatileStatus |
+| First Impression | `port` | data: basePower |
+| Fishious Rend | `port` | data: basePower |
+| Fissure | `port` | data: flags.protect |
+| Flail | `port` | data: flags.protect |
+| Flame Burst | `port` | data: basePower |
+| Flame Charge | `port` | data: secondaries |
+| Flame Wheel | `port` | data: secondaries |
+| Flamethrower | `port` | data: secondaries |
+| Flare Blitz | `port` | data: secondaries |
+| Flash | `port` | data: boosts |
+| Flash Cannon | `port` | data: secondaries |
+| Flatter | `port` | data: volatileStatus |
+| Fleur Cannon | `port` | data: self.boosts |
+| Fling | `port` | data: flags.protect |
+| Flip Turn | `port` | data: selfSwitch |
+| Floaty Fall | `excluded` | no playable species has it |
+| Floral Healing | `port` | data: flags.protect |
+| Flower Shield | `no-op` | reachable, not ported yet |
+| Flower Trick | `port` | data: basePower |
+| Fly | `port` | data: flags.charge |
+| Flying Press | `port` | data: basePower |
+| Focus Blast | `port` | data: secondaries |
+| Focus Energy | `no-op` | reachable, not ported yet |
+| Focus Punch | `port` | data: basePower |
+| Follow Me | `no-op` | reachable, not ported yet |
+| Force Palm | `port` | data: secondaries |
+| Foresight | `port` | data: flags.protect |
+| Forest's Curse | `port` | data: flags.protect |
+| Foul Play | `port` | data: basePower |
+| Freeze Shock | `port` | data: secondaries |
+| Freeze-Dry | `port` | data: secondaries |
+| Freezing Glare | `port` | data: secondaries |
+| Freezy Frost | `excluded` | no playable species has it |
+| Frenzy Plant | `port` | data: basePower |
+| Frost Breath | `port` | data: basePower |
+| Frustration | `port` | data: flags.protect |
+| Fury Attack | `port` | data: multihit |
+| Fury Cutter | `port` | data: basePower |
+| Fury Swipes | `port` | data: multihit |
+| Fusion Bolt | `port` | data: basePower |
+| Fusion Flare | `port` | data: basePower |
+| Future Sight | `port` | data: basePower |
+| Gastro Acid | `port` | data: flags.protect |
+| Gear Grind | `port` | data: multihit |
+| Gear Up | `no-op` | reachable, not ported yet |
+| Geomancy | `port` | data: boosts |
+| Giga Drain | `port` | data: drain |
+| Giga Impact | `port` | data: basePower |
+| Gigaton Hammer | `port` | data: basePower |
+| Glacial Lance | `port` | data: basePower |
+| Glaciate | `port` | data: secondaries |
+| Glaive Rush | `port` | data: basePower |
+| Glare | `port` | data: status |
+| Glitzy Glow | `excluded` | no playable species has it |
+| Grass Knot | `port` | data: flags.protect |
+| Grass Pledge | `port` | data: basePower |
+| Grass Whistle | `port` | data: status |
+| Grassy Glide | `port` | data: basePower |
+| Grassy Terrain | `port` | data: terrain |
+| Grav Apple | `port` | data: secondaries |
+| Gravity | `no-op` | reachable, not ported yet |
+| Growl | `port` | data: boosts |
+| Growth | `port` | data: boosts |
+| Grudge | `no-op` | reachable, not ported yet |
+| Guard Split | `port` | data: flags.protect |
+| Guard Swap | `port` | data: flags.protect |
+| Guillotine | `port` | data: flags.protect |
+| Gunk Shot | `port` | data: secondaries |
+| Gust | `port` | data: basePower |
+| Gyro Ball | `port` | data: flags.protect |
+| Hail | `port` | data: weather |
+| Hammer Arm | `port` | data: self.boosts |
+| Happy Hour | `excluded` | no playable species has it |
+| Hard Press | `port` | data: flags.protect |
+| Harden | `port` | data: boosts |
+| Haze | `no-op` | reachable, not ported yet |
+| Head Charge | `port` | data: recoil |
+| Head Smash | `port` | data: recoil |
+| Headbutt | `port` | data: secondaries |
+| Headlong Rush | `port` | data: self.boosts |
+| Heal Bell | `no-op` | reachable, not ported yet |
+| Heal Block | `excluded` | no playable species has it |
+| Heal Order | `excluded` | no playable species has it |
+| Heal Pulse | `port` | data: flags.protect |
+| Healing Wish | `port` | data: selfdestruct |
+| Heart Stamp | `excluded` | no playable species has it |
+| Heart Swap | `port` | data: flags.protect |
+| Heat Crash | `port` | data: flags.protect |
+| Heat Wave | `port` | data: secondaries |
+| Heavy Slam | `port` | data: flags.protect |
+| Helping Hand | `no-op` | reachable, not ported yet |
+| Hex | `port` | data: basePower |
+| Hidden Power | `port` | data: basePower |
+| High Horsepower | `port` | data: basePower |
+| High Jump Kick | `port` | data: basePower |
+| Hone Claws | `port` | data: boosts |
+| Horn Attack | `port` | data: basePower |
+| Horn Drill | `port` | data: flags.protect |
+| Horn Leech | `port` | data: drain |
+| Howl | `port` | data: boosts |
+| Hurricane | `port` | data: secondaries |
+| Hydro Cannon | `port` | data: basePower |
+| Hydro Pump | `port` | data: basePower |
+| Hydro Steam | `port` | data: basePower |
+| Hyper Beam | `port` | data: basePower |
+| Hyper Drill | `port` | data: basePower |
+| Hyper Fang | `port` | data: secondaries |
+| Hyper Voice | `port` | data: basePower |
+| Hyperspace Fury | `port` | data: self.boosts |
+| Hyperspace Hole | `port` | data: basePower |
+| Hypnosis | `port` | data: status |
+| Ice Ball | `excluded` | no playable species has it |
+| Ice Beam | `port` | data: secondaries |
+| Ice Burn | `port` | data: secondaries |
+| Ice Fang | `port` | data: secondaries |
+| Ice Hammer | `port` | data: self.boosts |
+| Ice Punch | `port` | data: secondaries |
+| Ice Shard | `port` | data: basePower |
+| Ice Spinner | `port` | data: basePower |
+| Icicle Crash | `port` | data: secondaries |
+| Icicle Spear | `port` | data: multihit |
+| Icy Wind | `port` | data: secondaries |
+| Imprison | `no-op` | reachable, not ported yet |
+| Incinerate | `port` | data: basePower |
+| Infernal Parade | `port` | data: secondaries |
+| Inferno | `port` | data: secondaries |
+| Infestation | `port` | data: volatileStatus |
+| Ingrain | `no-op` | reachable, not ported yet |
+| Instruct | `port` | data: flags.protect |
+| Ion Deluge | `excluded` | no playable species has it |
+| Iron Defense | `port` | data: boosts |
+| Iron Head | `port` | data: secondaries |
+| Iron Tail | `port` | data: secondaries |
+| Ivy Cudgel | `port` | data: basePower |
+| Jaw Lock | `port` | data: basePower |
+| Jet Punch | `port` | data: basePower |
+| Judgment | `port` | registry: effects/items.ts |
+| Jump Kick | `port` | data: basePower |
+| Jungle Healing | `no-op` | reachable, not ported yet |
+| Karate Chop | `port` | data: basePower |
+| Kinesis | `port` | data: boosts |
+| King's Shield | `no-op` | reachable, not ported yet |
+| Knock Off | `port` | data: basePower |
+| Kowtow Cleave | `port` | data: basePower |
+| Land's Wrath | `port` | data: basePower |
+| Laser Focus | `no-op` | reachable, not ported yet |
+| Lash Out | `port` | data: basePower |
+| Last Resort | `port` | data: basePower |
+| Last Respects | `port` | data: basePower |
+| Lava Plume | `port` | data: secondaries |
+| Leaf Blade | `port` | data: basePower |
+| Leaf Storm | `port` | data: self.boosts |
+| Leaf Tornado | `port` | data: secondaries |
+| Leafage | `port` | data: basePower |
+| Leech Life | `port` | data: drain |
+| Leech Seed | `port` | data: volatileStatus |
+| Leer | `port` | data: boosts |
+| Lick | `port` | data: secondaries |
+| Life Dew | `port` | data: heal |
+| Light of Ruin | `port` | data: recoil |
+| Light Screen | `no-op` | reachable, not ported yet |
+| Liquidation | `port` | data: secondaries |
+| Lock-On | `port` | data: flags.protect |
+| Lovely Kiss | `port` | data: status |
+| Low Kick | `port` | data: flags.protect |
+| Low Sweep | `port` | data: secondaries |
+| Lucky Chant | `no-op` | reachable, not ported yet |
+| Lumina Crash | `port` | data: secondaries |
+| Lunar Blessing | `no-op` | reachable, not ported yet |
+| Lunar Dance | `port` | data: selfdestruct |
+| Lunge | `port` | data: secondaries |
+| Luster Purge | `port` | data: secondaries |
+| Mach Punch | `port` | data: basePower |
+| Magic Coat | `no-op` | reachable, not ported yet |
+| Magic Powder | `port` | data: flags.protect |
+| Magic Room | `no-op` | reachable, not ported yet |
+| Magical Leaf | `port` | data: basePower |
+| Magma Storm | `port` | data: volatileStatus |
+| Magnet Bomb | `excluded` | no playable species has it |
+| Magnet Rise | `no-op` | reachable, not ported yet |
+| Magnetic Flux | `no-op` | reachable, not ported yet |
+| Magnitude | `excluded` | no playable species has it |
+| Make It Rain | `port` | data: self.boosts |
+| Malignant Chain | `port` | data: secondaries |
+| Mat Block | `excluded` | no playable species has it |
+| Matcha Gotcha | `port` | data: secondaries |
+| Me First | `excluded` | no playable species has it |
+| Mean Look | `no-op` | reachable, not ported yet |
+| Meditate | `port` | data: boosts |
+| Mega Drain | `port` | data: drain |
+| Mega Kick | `port` | data: basePower |
+| Mega Punch | `port` | data: basePower |
+| Megahorn | `port` | data: basePower |
+| Memento | `port` | data: boosts |
+| Metal Burst | `port` | turn loop: turn.ts |
+| Metal Claw | `port` | data: secondaries |
+| Metal Sound | `port` | data: boosts |
+| Meteor Assault | `port` | data: basePower |
+| Meteor Beam | `port` | data: flags.charge |
+| Meteor Mash | `port` | data: secondaries |
+| Metronome | `no-op` | reachable, not ported yet |
+| Mighty Cleave | `port` | data: basePower |
+| Milk Drink | `port` | data: heal |
+| Mimic | `port` | data: flags.protect |
+| Mind Blown | `port` | data: basePower |
+| Mind Reader | `port` | data: flags.protect |
+| Minimize | `port` | data: boosts |
+| Miracle Eye | `excluded` | no playable species has it |
+| Mirror Coat | `port` | turn loop: turn.ts |
+| Mirror Move | `no-op` | reachable, not ported yet |
+| Mirror Shot | `port` | data: secondaries |
+| Mist | `no-op` | reachable, not ported yet |
+| Mist Ball | `port` | data: secondaries |
+| Misty Explosion | `port` | data: selfdestruct |
+| Misty Terrain | `port` | data: terrain |
+| Moonblast | `port` | data: secondaries |
+| Moongeist Beam | `port` | data: basePower |
+| Moonlight | `no-op` | reachable, not ported yet |
+| Morning Sun | `no-op` | reachable, not ported yet |
+| Mortal Spin | `port` | data: secondaries |
+| Mountain Gale | `port` | data: secondaries |
+| Mud Bomb | `port` | data: secondaries |
+| Mud Shot | `port` | data: secondaries |
+| Mud Sport | `no-op` | reachable, not ported yet |
+| Mud-Slap | `port` | data: secondaries |
+| Muddy Water | `port` | data: secondaries |
+| Multi-Attack | `port` | data: basePower |
+| Mystical Fire | `port` | data: secondaries |
+| Mystical Power | `port` | data: secondaries |
+| Nasty Plot | `port` | data: boosts |
+| Natural Gift | `port` | data: flags.protect |
+| Nature Power | `no-op` | reachable, not ported yet |
+| Nature's Madness | `port` | data: flags.protect |
+| Needle Arm | `excluded` | no playable species has it |
+| Night Daze | `port` | data: secondaries |
+| Night Shade | `port` | data: flags.protect |
+| Night Slash | `port` | data: basePower |
+| Nightmare | `port` | data: flags.protect |
+| No Retreat | `port` | data: boosts |
+| Noble Roar | `port` | data: boosts |
+| Nuzzle | `port` | data: secondaries |
+| Oblivion Wing | `port` | data: drain |
+| Obstruct | `no-op` | reachable, not ported yet |
+| Octazooka | `port` | data: secondaries |
+| Octolock | `port` | data: flags.protect |
+| Odor Sleuth | `port` | data: flags.protect |
+| Ominous Wind | `port` | data: secondaries |
+| Order Up | `port` | data: basePower |
+| Origin Pulse | `port` | data: basePower |
+| Outrage | `port` | data: basePower |
+| Overdrive | `port` | data: basePower |
+| Overheat | `port` | data: self.boosts |
+| Pain Split | `port` | data: flags.protect |
+| Parabolic Charge | `port` | data: drain |
+| Parting Shot | `port` | data: selfSwitch |
+| Pay Day | `port` | data: basePower |
+| Payback | `port` | data: basePower |
+| Peck | `port` | data: basePower |
+| Perish Song | `no-op` | reachable, not ported yet |
+| Petal Blizzard | `port` | data: basePower |
+| Petal Dance | `port` | data: basePower |
+| Phantom Force | `port` | data: flags.charge |
+| Photon Geyser | `port` | data: basePower |
+| Pika Papow | `excluded` | no playable species has it |
+| Pin Missile | `port` | data: multihit |
+| Plasma Fists | `port` | data: basePower |
+| Play Nice | `port` | data: boosts |
+| Play Rough | `port` | data: secondaries |
+| Pluck | `port` | data: basePower |
+| Poison Fang | `port` | data: secondaries |
+| Poison Gas | `port` | data: status |
+| Poison Jab | `port` | data: secondaries |
+| Poison Powder | `port` | data: status |
+| Poison Sting | `port` | data: secondaries |
+| Poison Tail | `port` | data: secondaries |
+| Pollen Puff | `port` | data: basePower |
+| Poltergeist | `port` | data: basePower |
+| Population Bomb | `port` | data: multihit |
+| Pounce | `port` | data: secondaries |
+| Pound | `port` | data: basePower |
+| Powder | `excluded` | no playable species has it |
+| Powder Snow | `port` | data: secondaries |
+| Power Gem | `port` | data: basePower |
+| Power Split | `port` | data: flags.protect |
+| Power Swap | `port` | data: flags.protect |
+| Power Trick | `no-op` | reachable, not ported yet |
+| Power Trip | `port` | data: basePower |
+| Power Whip | `port` | data: basePower |
+| Power-Up Punch | `port` | data: secondaries |
+| Precipice Blades | `port` | data: basePower |
+| Present | `port` | data: flags.protect |
+| Prismatic Laser | `port` | data: basePower |
+| Protect | `port` | registry: effects/moves.ts |
+| Psybeam | `port` | data: secondaries |
+| Psyblade | `port` | data: basePower |
+| Psych Up | `no-op` | reachable, not ported yet |
+| Psychic | `port` | data: secondaries |
+| Psychic Fangs | `port` | data: basePower |
+| Psychic Noise | `port` | data: basePower |
+| Psychic Terrain | `port` | data: terrain |
+| Psycho Boost | `port` | data: self.boosts |
+| Psycho Cut | `port` | data: basePower |
+| Psycho Shift | `port` | data: flags.protect |
+| Psyshield Bash | `port` | data: secondaries |
+| Psyshock | `port` | data: basePower |
+| Psystrike | `port` | data: basePower |
+| Psywave | `port` | data: flags.protect |
+| Punishment | `excluded` | no playable species has it |
+| Purify | `port` | data: flags.protect |
+| Pursuit | `port` | data: basePower |
+| Pyro Ball | `port` | data: secondaries |
+| Quash | `port` | data: flags.protect |
+| Quick Attack | `port` | data: basePower |
+| Quick Guard | `no-op` | reachable, not ported yet |
+| Quiver Dance | `port` | data: boosts |
+| Rage | `port` | data: basePower |
+| Rage Fist | `port` | data: basePower |
+| Rage Powder | `no-op` | reachable, not ported yet |
+| Raging Bull | `port` | data: basePower |
+| Raging Fury | `port` | data: basePower |
+| Rain Dance | `port` | data: weather |
+| Rapid Spin | `port` | data: secondaries |
+| Razor Leaf | `port` | data: basePower |
+| Razor Shell | `port` | data: secondaries |
+| Razor Wind | `port` | data: flags.charge |
+| Recover | `port` | data: heal |
+| Recycle | `port` | registry: effects/moves.ts |
+| Reflect | `no-op` | reachable, not ported yet |
+| Reflect Type | `port` | data: flags.protect |
+| Refresh | `no-op` | reachable, not ported yet |
+| Relic Song | `port` | data: secondaries |
+| Rest | `no-op` | reachable, not ported yet |
+| Retaliate | `port` | data: basePower |
+| Return | `port` | data: flags.protect |
+| Revelation Dance | `port` | registry: effects/moves.ts |
+| Revenge | `port` | data: basePower |
+| Reversal | `port` | data: flags.protect |
+| Revival Blessing | `port` | data: selfSwitch |
+| Rising Voltage | `port` | data: basePower |
+| Roar | `no-op` | reachable, not ported yet |
+| Roar of Time | `port` | data: basePower |
+| Rock Blast | `port` | data: multihit |
+| Rock Climb | `port` | data: secondaries |
+| Rock Polish | `port` | data: boosts |
+| Rock Slide | `port` | data: secondaries |
+| Rock Smash | `port` | data: secondaries |
+| Rock Throw | `port` | data: basePower |
+| Rock Tomb | `port` | data: secondaries |
+| Rock Wrecker | `port` | data: basePower |
+| Role Play | `no-op` | reachable, not ported yet |
+| Rolling Kick | `port` | data: secondaries |
+| Rollout | `port` | data: basePower |
+| Roost | `port` | data: heal |
+| Rototiller | `no-op` | reachable, not ported yet |
+| Round | `port` | data: basePower |
+| Ruination | `port` | data: flags.protect |
+| Sacred Fire | `port` | data: secondaries |
+| Sacred Sword | `port` | data: basePower |
+| Safeguard | `no-op` | reachable, not ported yet |
+| Salt Cure | `port` | data: basePower |
+| Sand Attack | `port` | data: boosts |
+| Sand Tomb | `port` | data: volatileStatus |
+| Sandsear Storm | `port` | data: secondaries |
+| Sandstorm | `port` | data: weather |
+| Sappy Seed | `excluded` | no playable species has it |
+| Scald | `port` | data: secondaries |
+| Scale Shot | `port` | data: multihit |
+| Scary Face | `port` | data: boosts |
+| Scorching Sands | `port` | data: secondaries |
+| Scratch | `port` | data: basePower |
+| Screech | `port` | data: boosts |
+| Searing Shot | `port` | data: secondaries |
+| Secret Power | `port` | data: secondaries |
+| Secret Sword | `port` | data: basePower |
+| Seed Bomb | `port` | data: basePower |
+| Seed Flare | `port` | data: secondaries |
+| Seismic Toss | `port` | data: flags.protect |
+| Self-Destruct | `port` | data: selfdestruct |
+| Shadow Ball | `port` | data: secondaries |
+| Shadow Bone | `port` | data: secondaries |
+| Shadow Claw | `port` | data: basePower |
+| Shadow Force | `port` | data: flags.charge |
+| Shadow Punch | `port` | data: basePower |
+| Shadow Sneak | `port` | data: basePower |
+| Sharpen | `port` | data: boosts |
+| Shed Tail | `port` | data: volatileStatus |
+| Sheer Cold | `port` | data: flags.protect |
+| Shell Side Arm | `port` | data: secondaries |
+| Shell Smash | `port` | data: boosts |
+| Shell Trap | `port` | data: basePower |
+| Shelter | `port` | data: boosts |
+| Shift Gear | `port` | data: boosts |
+| Shock Wave | `port` | data: basePower |
+| Shore Up | `no-op` | reachable, not ported yet |
+| Signal Beam | `port` | data: secondaries |
+| Silk Trap | `port` | registry: effects/moves.ts |
+| Silver Wind | `port` | data: secondaries |
+| Simple Beam | `port` | data: flags.protect |
+| Sing | `port` | data: status |
+| Sizzly Slide | `excluded` | no playable species has it |
+| Sketch | `no-op` | reachable, not ported yet |
+| Skill Swap | `port` | data: flags.protect |
+| Skitter Smack | `port` | data: secondaries |
+| Skull Bash | `port` | data: flags.charge |
+| Sky Attack | `port` | data: secondaries |
+| Sky Drop | `port` | data: flags.charge |
+| Sky Uppercut | `port` | data: basePower |
+| Slack Off | `port` | data: heal |
+| Slam | `port` | data: basePower |
+| Slash | `port` | data: basePower |
+| Sleep Powder | `port` | data: status |
+| Sleep Talk | `no-op` | reachable, not ported yet |
+| Sludge | `port` | data: secondaries |
+| Sludge Bomb | `port` | data: secondaries |
+| Sludge Wave | `port` | data: secondaries |
+| Smack Down | `port` | data: basePower |
+| Smart Strike | `port` | data: basePower |
+| Smelling Salts | `port` | data: basePower |
+| Smog | `port` | data: secondaries |
+| Smokescreen | `port` | data: boosts |
+| Snap Trap | `port` | data: volatileStatus |
+| Snarl | `port` | data: secondaries |
+| Snatch | `no-op` | reachable, not ported yet |
+| Snipe Shot | `port` | data: basePower |
+| Snore | `port` | data: secondaries |
+| Snowscape | `port` | data: weather |
+| Soak | `port` | data: flags.protect |
+| Soft-Boiled | `port` | data: heal |
+| Solar Beam | `port` | data: flags.charge |
+| Solar Blade | `port` | data: flags.charge |
+| Sonic Boom | `port` | data: flags.protect |
+| Spacial Rend | `port` | data: basePower |
+| Spark | `port` | data: secondaries |
+| Sparkling Aria | `port` | data: basePower |
+| Sparkly Swirl | `excluded` | no playable species has it |
+| Spectral Thief | `port` | data: basePower |
+| Speed Swap | `port` | data: flags.protect |
+| Spicy Extract | `port` | data: boosts |
+| Spider Web | `port` | data: flags.protect |
+| Spike Cannon | `port` | data: multihit |
+| Spikes | `no-op` | reachable, not ported yet |
+| Spiky Shield | `port` | registry: effects/moves.ts |
+| Spin Out | `port` | data: self.boosts |
+| Spirit Break | `port` | data: secondaries |
+| Spirit Shackle | `port` | data: basePower |
+| Spit Up | `port` | data: flags.protect |
+| Spite | `port` | data: flags.protect |
+| Splash | `no-op` | reachable, not ported yet |
+| Splishy Splash | `excluded` | no playable species has it |
+| Spore | `port` | data: status |
+| Spotlight | `port` | data: flags.protect |
+| Springtide Storm | `port` | data: secondaries |
+| Stealth Rock | `no-op` | reachable, not ported yet |
+| Steam Eruption | `port` | data: secondaries |
+| Steamroller | `excluded` | no playable species has it |
+| Steel Beam | `port` | data: basePower |
+| Steel Roller | `port` | data: basePower |
+| Steel Wing | `port` | data: secondaries |
+| Sticky Web | `no-op` | reachable, not ported yet |
+| Stockpile | `no-op` | reachable, not ported yet |
+| Stomp | `port` | data: secondaries |
+| Stomping Tantrum | `port` | data: basePower |
+| Stone Axe | `port` | data: basePower |
+| Stone Edge | `port` | data: basePower |
+| Stored Power | `port` | data: basePower |
+| Storm Throw | `port` | data: basePower |
+| Strange Steam | `port` | data: secondaries |
+| Strength | `port` | data: basePower |
+| Strength Sap | `port` | data: flags.protect |
+| String Shot | `port` | data: boosts |
+| Struggle | `port` | data: struggleRecoil |
+| Struggle Bug | `port` | data: secondaries |
+| Stuff Cheeks | `no-op` | reachable, not ported yet |
+| Stun Spore | `port` | data: status |
+| Submission | `port` | data: recoil |
+| Substitute | `port` | data: volatileStatus |
+| Sucker Punch | `port` | data: basePower |
+| Sunny Day | `port` | data: weather |
+| Sunsteel Strike | `port` | data: basePower |
+| Super Fang | `port` | data: flags.protect |
+| Supercell Slam | `port` | data: basePower |
+| Superpower | `port` | data: self.boosts |
+| Supersonic | `port` | data: volatileStatus |
+| Surf | `port` | data: basePower |
+| Surging Strikes | `port` | data: multihit |
+| Swagger | `port` | data: volatileStatus |
+| Swallow | `no-op` | reachable, not ported yet |
+| Sweet Kiss | `port` | data: volatileStatus |
+| Sweet Scent | `port` | data: boosts |
+| Swift | `port` | data: basePower |
+| Switcheroo | `port` | data: flags.protect |
+| Swords Dance | `port` | data: boosts |
+| Synchronoise | `port` | data: basePower |
+| Synthesis | `no-op` | reachable, not ported yet |
+| Syrup Bomb | `port` | data: basePower |
+| Tachyon Cutter | `port` | data: multihit |
+| Tackle | `port` | data: basePower |
+| Tail Glow | `port` | data: boosts |
+| Tail Slap | `port` | data: multihit |
+| Tail Whip | `port` | data: boosts |
+| Tailwind | `no-op` | reachable, not ported yet |
+| Take Down | `port` | data: recoil |
+| Take Heart | `no-op` | reachable, not ported yet |
+| Tar Shot | `port` | data: boosts |
+| Taunt | `port` | data: volatileStatus |
+| Tearful Look | `port` | data: boosts |
+| Teatime | `no-op` | reachable, not ported yet |
+| Techno Blast | `port` | data: basePower |
+| Teeter Dance | `port` | data: volatileStatus |
+| Telekinesis | `port` | data: flags.protect |
+| Teleport | `port` | data: selfSwitch |
+| Temper Flare | `port` | data: basePower |
+| Tera Blast | `port` | data: basePower |
+| Tera Starstorm | `port` | data: basePower |
+| Terrain Pulse | `port` | registry: effects/moves.ts |
+| Thief | `port` | data: basePower |
+| Thousand Arrows | `port` | data: basePower |
+| Thousand Waves | `port` | data: basePower |
+| Thrash | `port` | data: basePower |
+| Throat Chop | `port` | data: basePower |
+| Thunder | `port` | data: secondaries |
+| Thunder Cage | `port` | data: volatileStatus |
+| Thunder Fang | `port` | data: secondaries |
+| Thunder Punch | `port` | data: secondaries |
+| Thunder Shock | `port` | data: secondaries |
+| Thunder Wave | `port` | data: status |
+| Thunderbolt | `port` | data: secondaries |
+| Thunderclap | `port` | data: basePower |
+| Thunderous Kick | `port` | data: secondaries |
+| Tickle | `port` | data: boosts |
+| Tidy Up | `no-op` | reachable, not ported yet |
+| Topsy-Turvy | `port` | data: flags.protect |
+| Torch Song | `port` | data: secondaries |
+| Torment | `port` | data: flags.protect |
+| Toxic | `port` | data: status |
+| Toxic Spikes | `no-op` | reachable, not ported yet |
+| Toxic Thread | `port` | data: status |
+| Trailblaze | `port` | data: secondaries |
+| Transform | `port` | registry: effects/moves.ts |
+| Tri Attack | `port` | data: basePower |
+| Trick | `port` | data: flags.protect |
+| Trick Room | `no-op` | reachable, not ported yet |
+| Trick-or-Treat | `port` | data: flags.protect |
+| Triple Arrows | `port` | data: secondaries |
+| Triple Axel | `port` | data: multihit |
+| Triple Dive | `port` | data: multihit |
+| Triple Kick | `port` | data: multihit |
+| Trop Kick | `port` | data: secondaries |
+| Trump Card | `excluded` | no playable species has it |
+| Twin Beam | `port` | data: multihit |
+| Twineedle | `port` | data: secondaries |
+| Twister | `port` | data: secondaries |
+| U-turn | `port` | data: selfSwitch |
+| Upper Hand | `port` | data: secondaries |
+| Uproar | `port` | data: basePower |
+| Vacuum Wave | `port` | data: basePower |
+| Veevee Volley | `excluded` | no playable species has it |
+| Venom Drench | `port` | data: flags.protect |
+| Venoshock | `port` | data: basePower |
+| Victory Dance | `port` | data: boosts |
+| Vine Whip | `port` | data: basePower |
+| Vise Grip | `port` | data: basePower |
+| Vital Throw | `port` | data: basePower |
+| Volt Switch | `port` | data: selfSwitch |
+| Volt Tackle | `port` | data: secondaries |
+| Wake-Up Slap | `port` | data: basePower |
+| Water Gun | `port` | data: basePower |
+| Water Pledge | `port` | data: basePower |
+| Water Pulse | `port` | data: secondaries |
+| Water Shuriken | `port` | data: multihit |
+| Water Sport | `no-op` | reachable, not ported yet |
+| Water Spout | `port` | data: basePower |
+| Waterfall | `port` | data: secondaries |
+| Wave Crash | `port` | data: recoil |
+| Weather Ball | `port` | registry: effects/moves.ts |
+| Whirlpool | `port` | data: volatileStatus |
+| Whirlwind | `no-op` | reachable, not ported yet |
+| Wicked Blow | `port` | data: basePower |
+| Wide Guard | `no-op` | reachable, not ported yet |
+| Wild Charge | `port` | data: recoil |
+| Wildbolt Storm | `port` | data: secondaries |
+| Will-O-Wisp | `port` | data: status |
+| Wing Attack | `port` | data: basePower |
+| Wish | `port` | turn loop: turn.ts |
+| Withdraw | `port` | data: boosts |
+| Wonder Room | `no-op` | reachable, not ported yet |
+| Wood Hammer | `port` | data: recoil |
+| Work Up | `port` | data: boosts |
+| Worry Seed | `port` | data: flags.protect |
+| Wrap | `port` | data: volatileStatus |
+| Wring Out | `port` | data: flags.protect |
+| X-Scissor | `port` | data: basePower |
+| Yawn | `port` | data: volatileStatus |
+| Zap Cannon | `port` | data: secondaries |
+| Zen Headbutt | `port` | data: secondaries |
+| Zing Zap | `port` | data: secondaries |
+| Zippy Zap | `excluded` | no playable species has it |
 
 ## Items — 269 total (49 port, 0 no-op, 220 excluded)
 
