@@ -21,15 +21,178 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ---
 
+## Batch plan
+
+Legend:
+- **IDs.** `[Task-NN]` is bound to a task only in this file; everywhere else a task
+  is referenced by name. Two digits, contiguous, in backlog order.
+- **Dependencies.** Every open item ends with `*Dependencies:*` — the authoritative
+  graph. A dependency exists only when a task cannot be written without a file, type,
+  generated asset or data table another task produces. Phase order is *not* a
+  dependency.
+- **Batches.** A batch is an antichain: no task in it depends on another task in it,
+  and no two tasks in it create or modify the same path. A batch is a label on the
+  open items, not a rewrite of the backlog. Batches run in order: a task's branch is
+  cut from `main` once every earlier batch is merged, and the Orchestrator merges one
+  task at a time, in ID order.
+- **Hot files.** At most one task per batch claims `package.json`, `src/main.ts`,
+  `vite.config.ts`, a given `src/scenes/*.ts`, `src/data/dex/**` or any other
+  generated file (the packed atlases under `src/assets/`, `src/data/frlg/*.json`,
+  `src/data/anil/*.json`, `docs/balance/effect-coverage.md`). Each batch names its
+  holder below.
+- **Unscheduled.** An ID that appears in no batch is blocked outside this backlog;
+  see "Open questions for the human".
+
+**Critical path.** Dependency depth is two everywhere: the only chains are
+`Task-03 → Task-04`, `Task-06 → Task-05` and `Task-10 → Task-09`. What serialises the
+tail is a shared resource, not a dependency: `Task-18`, `Task-19` and `Task-20` all
+regenerate `src/data/dex/**` through `scripts/build-dex.mjs`, and `Task-20` and
+`Task-21` both extend `src/ui/evolutionGraph.ts`. Those three dex tasks are
+dependency-free, so the Orchestrator may pull any of them into an earlier batch whose
+paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
+
+### Batch 1 — foundations
+- **Task-01** ESLint + Prettier and a `npm run lint` script.
+- **Task-02** One README per code folder.
+- **Task-03** Step 8 — validation hardening.
+- **Task-06** Move-effect coverage table.
+- **Task-10** Floor trainer XP reaches the floor's cap.
+- **Task-11** Audio: music and sound.
+- **Hot files:** `package.json` → Task-01; `src/scenes/BootScene.ts`,
+  `MainMenuScene.ts`, `RouteScene.ts`, `BattleScene.ts` → Task-11; the generated
+  `docs/balance/effect-coverage.md` → Task-06.
+- **Shape:** six dependency-free tasks, pairwise path-disjoint. Task-01 ships
+  `package.json`, `eslint.config.mjs`, `.prettierrc.json` and `.prettierignore` only,
+  with a ruleset that is green on the tree as it stands: a rule or a format that
+  fires on an existing file would make this task the writer of that file, which the
+  batch cannot allow.
+
+### Batch 2 — docs pass, effect ports, Hidden Power
+- **Task-04** Step 10 — docs pass. Needs Task-03 merged.
+- **Task-05** Reachable-but-unported effects. Needs Task-06 merged.
+- **Task-25** Hidden Power's type.
+- **Hot files:** the generated `docs/balance/effect-coverage.md` → Task-05.
+- **Shape:** prose, ported handlers and one move-typing rule; no shared path.
+
+### Batch 3 — held items, ability popup
+- **Task-07** The competitive held items, with Añil's icons.
+- **Task-12** Ability info popup.
+- **Hot files:** `package.json` → Task-07; `src/scenes/RouteScene.ts` and
+  `BattleScene.ts` → Task-12; the generated `src/assets/anil/item-icons.png`,
+  `src/data/anil/item-icons.json` and `docs/balance/effect-coverage.md` → Task-07.
+- **Shape:** a catalogue plus a panel. Task-07 owns the item icon sheet
+  (`sprite-sources/anil/Graphics/Items/`, materialised into the local clone) and
+  Task-12 owns the detail panels.
+
+### Batch 4 — party data, badges, Legends Z-A Megas
+- **Task-13** Nicknames, typed from the STATS tab.
+- **Task-15** Añil type and status badges.
+- **Task-19** Legends Z-A and Champions Megas.
+- **Hot files:** `package.json` → Task-15; `src/data/dex/**` (regenerated
+  `megas.json`, `meta.json`) and `src/data/anil/pokemon-sprites.json` → Task-19; the
+  generated `src/data/frlg/type-icons.json`, `src/data/frlg/status-icons.json` and the
+  two badge atlases → Task-15.
+- **Shape:** Task-13 touches `src/engine/save.ts` with a `SAVE_VERSION` bump, so
+  nothing else in the batch may; Task-19 owns the regenerated dex.
+
+### Batch 5 — panel chrome, TM acquisition
+- **Task-16** Modernise the panel and menu chrome.
+- **Task-22** TM acquisition breadth.
+- **Hot files:** `src/scenes/RouteScene.ts`, `SettingsScene.ts`, `BattleScene.ts` →
+  Task-16; `package.json` and the packed item-icon sheet → Task-22.
+- **Shape:** Task-16 restyles every window and settles the `hudTransparent`
+  question, Task-22 adds a machine icon to the sheet Task-07 packed. Both are free to
+  assume Batch 4 merged.
+
+### Batch 6 — balance pass, Phase 9 docs, capture bug
+- **Task-09** Balance pass. Needs Task-10 merged.
+- **Task-17** Step 14 — docs & migration pass.
+- **Task-27** Catching a Pokémon stacks a duplicate on top of it.
+- **Hot files:** `src/scenes/RouteScene.ts` → Task-27; the sheets under
+  `docs/balance/` → Task-09.
+- **Shape:** numbers, prose and one scene seam. Task-17 takes `docs/design-spec.md`,
+  `docs/battle-spec.md`, `docs/routes-spec.md` and `AGENTS.md`, so nothing else in the
+  batch may.
+
+### Batch 7 — Gigantamax
+- **Task-18** Gigantamax, in the Mega Evolution mould.
+- **Hot files:** `scripts/build-dex.mjs`, `src/data/dex/**` (the new `gmaxes.json`),
+  `src/data/anil/pokemon-sprites.json` and `src/scenes/BattleScene.ts` → Task-18.
+- **Shape:** one task, because it holds the generated dex and the battle scene, and
+  both are paths Task-08's accessibility sweep and Task-26's i18n sweep want.
+
+### Batch 8 — accessibility, new biomes, Rotom appliances
+- **Task-08** Accessibility pass.
+- **Task-14** New biomes.
+- **Task-20** The Rotom appliances as evolutions.
+- **Hot files:** every `src/scenes/*.ts` → Task-08; `scripts/build-dex.mjs` and
+  `src/data/dex/**` → Task-20; `package.json` and any new tileset atlas → Task-14.
+- **Shape:** Task-08 runs here so the contrast audit is done once, against the chrome
+  Batch 5 shipped.
+
+### Batch 9 — Megas as information in the STATS graph
+- **Task-21** The Megas as information in the STATS graph.
+- **Hot files:** none of the serial resources (`src/ui/evolutionGraph.ts` is not one).
+- **Shape:** a single task, because `src/ui/evolutionGraph.ts` is the file Task-20
+  rewrote in Batch 8 and Task-18 extends in Batch 7.
+
+### Batch 10 — localisation
+- **Task-26** i18n module and the Spanish locale.
+- **Hot files:** every `src/scenes/*.ts` → Task-26; `src/engine/save.ts` → Task-26.
+- **Shape:** last on purpose. It moves every player-facing literal behind a key, so it
+  must see the panels Task-12, Task-13 and Task-16 added and the strings Batch 8's
+  accessibility pass introduced.
+
+### Open questions for the human
+
+1. **`Task-23` (remaining item-driven move retypes) cannot be scheduled.** Multi
+   Attack, Techno Blast and Natural Gift have no move in `src/data/dex/moves.json`,
+   so there is nothing to hook, and no task in this backlog adds them. Unblocking it
+   needs a "future dex" item that does not exist here. The same item also says the
+   Plates are not obtainable "until an Arceus-tier source lands": is Arceus meant to
+   become reachable, and through which system — roster, loot table or boss?
+2. **`Task-24` (relearn UI for the bench) has no design.** The item itself says the
+   screen "is not planned yet". Is it wanted at all, and does it live as a panel
+   inside the existing party HUD (`src/ui/partyDetail.ts` and its detail panel in
+   `src/scenes/RouteScene.ts`) or as a screen of its own?
+3. ~~**The Añil art a batch assumes is not in the working copy.**~~ **Resolved: the
+   art is there.** The Añil clone is sparse + partial (`Graphics/Pokemon`, `PBS`)
+   but the blobs were in the object store, so
+   `git -C sprite-sources/anil sparse-checkout add Graphics/UI Graphics/Items`
+   materialised them (788 files under `Graphics/UI`, 893 under `Graphics/Items`).
+   `Task-07` and `Task-15` are both unblocked; the FRLG-icon fallback is not needed.
+4. **Audio has no source and no decision.** `Task-11` owes route ambience and music,
+   but the repository contains no audio file, `sprite-sources/` has none, and
+   `docs/tech-decisions.md` (D22) only says the volume knob waits for "the sounds
+   themselves". Should the task synthesise its cues procedurally (CC0-safe, in
+   `src/audio/`) or commit supplied CC0 tracks under `src/assets/audio/`? The plan
+   assumes the task decides this itself and documents the choice.
+5. **The balance pass has no harness to run.** `Task-09` is "the scripted-battle
+   harness", but the only one in the tree is `scriptedBattle()` inside
+   `src/engine/battle/golden.test.ts` (a fixed-seed golden log); `CHANGELOG.md` calls
+   that golden test "the seed of the balance harness". May `Task-09` restructure
+   `golden.test.ts` into a reusable harness, or must it tune `src/data/` numbers only
+   and leave the golden log alone?
+6. **The `## Bugs` entry is an open `[ ]` item.** Its own section says "a bug becomes
+   a task in the batch plan", so the plan gives it `[Task-27]` and schedules it in
+   Batch 6, while leaving the section's prose and `## [PENDING FIXES]` untouched. If
+   the bug must stay out of the graph instead, ID 27 disappears and Batch 6 shrinks
+   to `Task-09` and `Task-17`.
+
+---
+
 ## Phase 0 — Repo & scaffolding
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] Add ESLint + Prettier with a `npm run lint` script once the engine has more
-      real code (deferred: TypeScript strict mode covers most of it for now).
-- [ ] Add a README per code folder as the folders appear. Shipped: `src/input/`,
-      `src/data/`, `src/data/dex/`, `src/assets/`. Missing: `src/engine/`,
-      `src/scenes/`, `src/render/`, `src/ui/`, `src/dev/`.
+- [ ] **[Task-01]** Add ESLint + Prettier with a `npm run lint` script once the
+      engine has more real code (deferred: TypeScript strict mode covers most of it
+      for now).
+      *Dependencies:* none. *(Batch 1)*
+- [ ] **[Task-02]** Add a README per code folder as the folders appear. Shipped:
+      `src/input/`, `src/data/`, `src/data/dex/`, `src/assets/`. Missing:
+      `src/engine/`, `src/scenes/`, `src/render/`, `src/ui/`, `src/dev/`.
+      *Dependencies:* none. *(Batch 1)*
 
 ## Phase 1 — Dex accessors & data contracts
 
@@ -49,14 +212,17 @@ algorithm, its guarantees and its open questions are in
 most useful first. The art counterparts (a real tall-grass tile, the
 floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **Step 8 — Validation hardening.** The reroll already exists (`sketchRoute`
-      iterates `MAX_ATTEMPTS` on fresh streams) and `validateRoute` already proves
-      every exit reachable and a trainer-free entry→exit path. What is left is the
-      rest of the checklist — items off grass and ledges, pockets reachable, border
-      intact — plus fixed-seed tests per shape.
-- [ ] **Step 10 — Docs pass.** Update `docs/routes-spec.md` and `AGENTS.md` to the
-      shipped algorithm, mark `docs/route-generator.md` implemented and archive
-      these steps in `CHANGELOG.md`.
+- [ ] **[Task-03] Step 8 — Validation hardening.** The reroll already exists
+      (`sketchRoute` iterates `MAX_ATTEMPTS` on fresh streams) and `validateRoute`
+      already proves every exit reachable and a trainer-free entry→exit path. What is
+      left is the rest of the checklist — items off grass and ledges, pockets
+      reachable, border intact — plus fixed-seed tests per shape.
+      *Dependencies:* none. *(Batch 1)*
+- [ ] **[Task-04] Step 10 — Docs pass.** Update `docs/routes-spec.md` and
+      `AGENTS.md` to the shipped algorithm, mark `docs/route-generator.md`
+      implemented and archive these steps in `CHANGELOG.md`.
+      *Dependencies:* Task-03 (Step 8 — validation hardening) — it documents the
+      checks that task ships. *(Batch 2)*
 
 ## Phase 3 — Battle engine core (pure, headless, tested)
 
@@ -72,24 +238,28 @@ The whole menu battle minus per-effect behaviour. Contract in
 Ports of Showdown handlers, in batches, on the hook names in
 `docs/showdown-reuse.md` §3.
 
-- [ ] **Reachable-but-unported effects.** The full National Dex (`D40`) and the
-      full move set (`D42`) make ~24 abilities and many `Past` moves meetable that
-      are not ported yet — the `no-op` rows of `docs/balance/effect-coverage.md`
+- [ ] **[Task-05] Reachable-but-unported effects.** The full National Dex (`D40`)
+      and the full move set (`D42`) make ~24 abilities and many `Past` moves meetable
+      that are not ported yet — the `no-op` rows of `docs/balance/effect-coverage.md`
       plus any move the dev build warns about. A damaging move resolves its base
       damage generically, but a status move or listed ability without a handler is
       a silent no-op until ported. Port them so the develop-build warnings clear.
-- [ ] **Move-effect coverage table.** `docs/balance/effect-coverage.md` tracks
-      every ability and item (`D16`) but **not moves**, so the non-trivial move
-      long tail (~160 utility/status moves that need a handler) is unaudited —
+      *Dependencies:* Task-06 (Move-effect coverage table) — its move classification
+      is the port list and it adds the develop-build warning the ports must clear.
+      *(Batch 2)*
+- [ ] **[Task-06] Move-effect coverage table.** `docs/balance/effect-coverage.md`
+      tracks every ability and item (`D16`) but **not moves**, so the non-trivial
+      move long tail (~160 utility/status moves that need a handler) is unaudited —
       the gap `docs/showdown-reuse.md` §3 flags. Extend
       `scripts/effect-coverage.mjs` to classify every move as `port | no-op |
       excluded`, deriving `port` from the effect registry, the ids the turn loop
       special-cases and the data-driven fields the engine reads, then emit the
       section and let a develop build warn when a battle meets an unported move
       (the registry warns for abilities and items only today, `registry.ts`).
-- [ ] **The competitive held items, with Añil's icons.** The run's held-item
-      catalogue is a slice of the competitive set (24 `kind: 'held'` entries in
-      `src/data/items.ts`) and their icons all come from the FRLG sheet
+      *Dependencies:* none. *(Batch 1)*
+- [ ] **[Task-07] The competitive held items, with Añil's icons.** The run's
+      held-item catalogue is a slice of the competitive set (24 `kind: 'held'`
+      entries in `src/data/items.ts`) and their icons all come from the FRLG sheet
       (`src/data/itemIcons.ts` → `src/assets/frlg/item-icons.png`), which has no art
       for the modern ones — the Mega Stones, valuables, TMs and Plates already
       borrow placeholders. Bring the whole held-item set over from Añil: its
@@ -105,6 +275,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       items — `src/data/loot.ts` (route loot by band), `src/data/shop.ts` (the Mart)
       and `src/ui/rewards.ts` (the mini-boss choice) — and keep the item tests
       green.
+      *Dependencies:* none. *(Batch 3)*
 
 
 ## Phase 5 — Battle UI & presentation
@@ -119,11 +290,18 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] Accessibility pass: colour-only information audited, HP bars readable
-      without colour, full keyboard play, reduced-flash option.
-- [ ] Balance pass using `docs/balance/` sheets and the scripted-battle harness.
-- [ ] **Floor trainer XP reaches the floor's cap.** Beating roughly **75 %** of a
-      floor's trainers must award the XP the squad needs to reach that floor's
+- [ ] **[Task-08]** Accessibility pass: colour-only information audited, HP bars
+      readable without colour, full keyboard play, reduced-flash option.
+      *Dependencies:* none. Scheduled after Task-16 (Modernise the panel and menu
+      chrome) so the contrast and colour audit runs once, against the final art.
+      *(Batch 8)*
+- [ ] **[Task-09]** Balance pass using `docs/balance/` sheets and the
+      scripted-battle harness.
+      *Dependencies:* Task-10 (Floor trainer XP reaches the floor's cap) — it reads
+      the route curve and the XP rule that task fixes. *(Batch 6)*
+- [ ] **[Task-10] Floor trainer XP reaches the floor's cap.** Beating roughly
+      **75 %** of a floor's trainers must award the XP the squad needs to reach
+      that floor's
       **level cap** (`levelCapForMap`, `src/data/maps.ts`), so the party keeps pace
       with the band by fighting rather than grinding wild encounters. Today the
       award is level-driven only (`experienceAward`, `src/engine/run/progression.ts`:
@@ -138,23 +316,27 @@ Ports of Showdown handlers, in batches, on the hook names in
       test states. Write `docs/balance/route-curve.md` (level bands, caps, roster
       sizes, per-floor trainer counts and this rule): `docs/balance/README.md`
       lists it, but the file does not exist.
-- [ ] **Audio: music and sound.** Route ambience and encounter, hit, faint,
-      level-up and victory cues, plus the music. The `volume` setting exists in
-      the save; `src/audio/` does not exist yet.
-- [ ] **Ability info popup.** The STATS tab prints the ability as plain text
-      (`MemberDetail.ability`, `src/ui/partyDetail.ts`) and there is no way to read
-      what it does. Give the ability row the same ⓘ control the move cells have —
-      `src/ui/moveGrid.ts`'s info button and floating popup over an FRLG window —
-      so hovering or clicking it floats the ability's description. Reach every
-      panel that prints an ability: the route HUD's detail panel
+      *Dependencies:* none. *(Batch 1)*
+- [ ] **[Task-11] Audio: music and sound.** Route ambience and encounter, hit,
+      faint, level-up and victory cues, plus the music. The `volume` setting exists
+      in the save; `src/audio/` does not exist yet.
+      *Dependencies:* none. The source of the cues is undecided — see "Open
+      questions for the human". *(Batch 1)*
+- [ ] **[Task-12] Ability info popup.** The STATS tab prints the ability as plain
+      text (`MemberDetail.ability`, `src/ui/partyDetail.ts`) and there is no way to
+      read what it does. Give the ability row the same ⓘ control the move cells
+      have — `src/ui/moveGrid.ts`'s info button and floating popup over an FRLG
+      window — so hovering or clicking it floats the ability's description. Reach
+      every panel that prints an ability: the route HUD's detail panel
       (`src/scenes/RouteScene.ts`), the battle's SWITCH detail window and the
       capture screen (`src/scenes/BattleScene.ts`, `RouteScene`). The data is
       already generated — `src/data/dex/abilities.json` carries `desc` and
       `shortDesc`, but the accessor drops them (`src/data/dex/abilities.ts` exposes
       only `id` and `name`), so widen it and guard the two fields in
       `src/data/dex/abilities.test.ts`. Document in `docs/design-spec.md` §3/§4.
-- [ ] **Nicknames, typed from the STATS tab.** The battle layer already renders one
-      — `FighterInput.nickname` feeds `fighter.name` (`name: input.nickname ??
+      *Dependencies:* none. *(Batch 3)*
+- [ ] **[Task-13] Nicknames, typed from the STATS tab.** The battle layer already
+      renders one — `FighterInput.nickname` feeds `fighter.name` (`name: input.nickname ??
       species.name`, `src/engine/battle/fighter.ts`) — but nothing ever sets it, so
       every member shows its species name. Add a nickname the player types from the
       STATS tab (`src/ui/partyDetail.ts` and its detail panel in
@@ -169,6 +351,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       follows the repo's DOM-overlay precedent (`src/ui/seedPrompt.ts`'s field, or
       the on-screen keyboard the touch build would need — decide it here). Docs:
       `docs/design-spec.md` §3, `docs/battle-spec.md` §7.
+      *Dependencies:* none. *(Batch 4)*
 
 ## Phase 8 — Biomes & art assets
 
@@ -180,14 +363,15 @@ Ports of Showdown handlers, in batches, on the hook names in
 Only `forest` is in `BIOME_ORDER` even though `BIOMES` defines five, so the run
 cycles one biome.
 
-- [ ] **New biomes.** Decide which biomes join the cycle and add them: a tileset
-      config and palette in `src/data/tilesets/`, a `BIOMES` entry with its `layout`
-      and its `terrain` passes, and a slot in `BIOME_ORDER` (`D10`). Candidate list
-      to decide: desert, prairie/plains, beach, autumn woods, marsh/rain, snow,
-      volcano, ruins/power plant. Each new biome owes a fixed-seed generator
-      regression.
-- [ ] **Añil type and status badges.** The battle menu, the party panels and the
-      starter cards draw the FRLG badges (`src/data/typeIcons.ts`,
+- [ ] **[Task-14] New biomes.** Decide which biomes join the cycle and add them: a
+      tileset config and palette in `src/data/tilesets/`, a `BIOMES` entry with its
+      `layout` and its `terrain` passes, and a slot in `BIOME_ORDER` (`D10`).
+      Candidate list to decide: desert, prairie/plains, beach, autumn woods,
+      marsh/rain, snow, volcano, ruins/power plant. Each new biome owes a fixed-seed
+      generator regression.
+      *Dependencies:* none. *(Batch 8)*
+- [ ] **[Task-15] Añil type and status badges.** The battle menu, the party panels
+      and the starter cards draw the FRLG badges (`src/data/typeIcons.ts`,
       `src/data/statusIcons.ts`, packed from `scripts/frlg/build-type-icons.mjs`
       and `build-status-icons.mjs`), and the FRLG sheet predates Fairy, so a Fairy
       type falls back to a text chip. Repack from Añil's
@@ -195,8 +379,9 @@ cycles one biome.
       `Graphics/UI/Battle/icon_types.png`, `icon_statuses.png`) so every type,
       Fairy included, has a badge, and update both accessors plus the badge note
       in `docs/art-direction.md`.
-- [ ] **Modernise the panel and menu chrome.** Every window in the game is the
-      FRLG frame: one `addFrlgWindow` (`src/ui/frlg.ts`) slicing
+      *Dependencies:* none. *(Batch 4)*
+- [ ] **[Task-16] Modernise the panel and menu chrome.** Every window in the game
+      is the FRLG frame: one `addFrlgWindow` (`src/ui/frlg.ts`) slicing
       `src/assets/frlg/window.png` and `textbox.png`, used by the main menu, the
       starter pick, the settings screen, the run-over screen, every route HUD panel
       (party, bag, PC box, detail, pause, capture, Mart, reward) and the battle
@@ -217,6 +402,7 @@ cycles one biome.
       survives as a preference or becomes a degree (a transparent-HUD step) over the
       new art. If the new chrome is drawn rather than ripped it also gives the public
       build a UI, which `O4` wants.
+      *Dependencies:* none. *(Batch 5)*
 
 ## Phase 9 — Maps (route groups), biomes & progression
 
@@ -279,14 +465,15 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       the Mega forme for the battle. All dex Megas (formes may be nonstandard);
       only bosses, mini-bosses and the `ace` archetype carry stones. Engine +
       data + battle UI, fixed-seed tests.
-- [ ] **Step 14 — Docs & migration pass.** Finish `docs/maps-spec.md`, update
-      `design-spec.md` / `routes-spec.md` / `battle-spec.md` / `AGENTS.md` and the
-      tech decision addenda, and archive the steps in `CHANGELOG.md`.
-- [ ] **Gigantamax, in the Mega Evolution mould.** Model Gigantamax the way the
-      Megas work (`src/engine/battle/mega.ts`, `D34`): once per battle a holder may
-      change to its G-Max forme, taking that forme's stats/types/ability **before
-      any move**, and revert when the battle ends (`snapshotFighter` keeps the base
-      species). The G-Max formes are **not in the build at all** today —
+- [ ] **[Task-17] Step 14 — Docs & migration pass.** Finish `docs/maps-spec.md`,
+      update `design-spec.md` / `routes-spec.md` / `battle-spec.md` / `AGENTS.md`
+      and the tech decision addenda, and archive the steps in `CHANGELOG.md`.
+      *Dependencies:* none. *(Batch 6)*
+- [ ] **[Task-18] Gigantamax, in the Mega Evolution mould.** Model Gigantamax the
+      way the Megas work (`src/engine/battle/mega.ts`, `D34`): once per battle a
+      holder may change to its G-Max forme, taking that forme's stats/types/ability
+      **before any move**, and revert when the battle ends (`snapshotFighter` keeps
+      the base species). The G-Max formes are **not in the build at all** today —
       `isBattleBossForm` in `scripts/build-dex.mjs` excludes every Gmax/Eternamax
       forme from the playable species — so they must be generated beside the
       playable set, a `gmaxes.json` next to `megas.json` (`src/data/dex/megas.ts`),
@@ -303,12 +490,14 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (`D42`): decide here whether a G-Max forme keeps its normal moves or the task
       also brings its G-Max move. Needs a decision entry, `docs/battle-spec.md`, and
       tests (fixed seed, once per battle, the HP doubling, the revert).
-- [ ] **Legends Z-A and Champions Megas.** The build ships only the 48 classic
-      Megas (`src/data/dex/megas.json`, `D40`); the ones Legends Z-A and Champions
-      added are missing. They are **already in the dex**: `@pkmn/dex` 0.10.11 lists
-      **49** further formes tagged `isNonstandard: "Future"` — Dragonite, Meganium,
-      Feraligatr, Emboar, Excadrill, Skarmory, Chandelure, Chesnaught, Delphox,
-      Greninja, Pyroar, Malamar, Hawlucha, Drampa, Falinks, Baxcalibur, Heatran,
+      *Dependencies:* none. *(Batch 7)*
+- [ ] **[Task-19] Legends Z-A and Champions Megas.** The build ships only the 48
+      classic Megas (`src/data/dex/megas.json`, `D40`); the ones Legends Z-A and
+      Champions added are missing. They are **already in the dex**: `@pkmn/dex`
+      0.10.11 lists **49** further formes tagged `isNonstandard: "Future"` —
+      Dragonite, Meganium, Feraligatr, Emboar, Excadrill, Skarmory, Chandelure,
+      Chesnaught, Delphox, Greninja, Pyroar, Malamar, Hawlucha, Drampa, Falinks,
+      Baxcalibur, Heatran,
       Darkrai, Zeraora, Zygarde, Magearna, the three Tatsugiri, Meowstic F,
       Raichu X/Y, Lucario Z, Garchomp Z, Absol Z and the rest — baseStats, types and
       abilities included. Our own filter drops them: `isMega` in
@@ -320,9 +509,11 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (`src/engine/run/roster.ts`) so bosses, mini-bosses and the `ace` can carry
       them, keep a fixed-seed roster test green, and say in the docs that `Future`
       is the dex's own "announced, not released" tag.
-- [ ] **The Rotom appliances as evolutions.** Rotom's five appliance formes are in
-      the dex as species of their own — `rotomheat`, `rotomwash`, `rotomfrost`,
-      `rotomfan`, `rotommow` in `src/data/dex/species.json`, each with its own stats,
+      *Dependencies:* none. *(Batch 4)*
+- [ ] **[Task-20] The Rotom appliances as evolutions.** Rotom's five appliance
+      formes are in the dex as species of their own — `rotomheat`, `rotomwash`,
+      `rotomfrost`, `rotomfan`, `rotommow` in `src/data/dex/species.json`, each with
+      its own stats,
       type and `Levitate` — but they carry no `prevo` and no `evolutions`, so the
       family graph never shows them (`evolutionFamily`, `src/data/dex/evolutions.ts`)
       and there is no way to reach one from a Rotom. Make them an evolution the
@@ -337,11 +528,13 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `scripts/build-dex.mjs` only reads the dex's `evos`, which is empty here — so
       the task says where that override lives. Keep the fixed-seed evolution tests
       green.
-- [ ] **The Megas as information in the STATS graph.** The family graph draws
-      evolutions only (`evolutionGraph`, `src/ui/evolutionGraph.ts`), and a Mega is
-      not one: it is battle-only (`D34`, `src/engine/battle/mega.ts`) and entered
-      from a stone. So a member whose species has a Mega shows no trace of it in the
-      STATS tab. Add the Mega as an **information row** hanging off its base species:
+      *Dependencies:* none. *(Batch 8)*
+- [ ] **[Task-21] The Megas as information in the STATS graph.** The family graph
+      draws evolutions only (`evolutionGraph`, `src/ui/evolutionGraph.ts`), and a
+      Mega is not one: it is battle-only (`D34`, `src/engine/battle/mega.ts`) and
+      entered from a stone. So a member whose species has a Mega shows no trace of
+      it in the STATS tab. Add the Mega as an **information row** hanging off its
+      base species:
       the forme's sprite and name plus "Mega Evolves while holding <stone>", drawn at
       the same indent as an evolution — and **never clickable**, with no pointer
       cursor and no `ready` node, because nothing about the member changes here. The
@@ -356,26 +549,37 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Gigantamax forme, if that task lands, is the same kind of row. Docs:
       `docs/design-spec.md` §3 and `docs/battle-spec.md` §9; graph tests for the new
       rows.
+      *Dependencies:* none. Task-20 (The Rotom appliances as evolutions) rewrites
+      `src/ui/evolutionGraph.ts` first, and Task-18 (Gigantamax) adds a row of the
+      same kind in Batch 7. *(Batch 9)*
 
 ## Phase 10 - Learnset, TMs & move typing
 
 > The learnset panel, the TM catalogue and the effective-type rules shipped;
 > these are the follow-ups (`D36`/`D37`).
 
-- [ ] **TM acquisition breadth.** TMs only drop from route loot and mini-boss
-      rewards today. A proper TM Machine (or a per-band TM slot in the shop) and a
-      real machine icon � every TM borrows the sheet's question mark until then �
+- [ ] **[Task-22] TM acquisition breadth.** TMs only drop from route loot and
+      mini-boss rewards today. A proper TM Machine (or a per-band TM slot in the
+      shop) and a real machine icon � every TM borrows the sheet's question mark until then �
       are still open.
-- [ ] **Remaining item-driven move retypes.** Judgment + the seventeen Plates
-      shipped; Multi-Attack (Memories), Techno Blast (Drives) and Natural Gift
+      *Dependencies:* none. *(Batch 5)*
+- [ ] **[Task-23] Remaining item-driven move retypes.** Judgment + the seventeen
+      Plates shipped; Multi-Attack (Memories), Techno Blast (Drives) and Natural Gift
       (berries) have no move in the Gen 9 dex this build ships, so they wait on a
       future dex. All would hook the same `onModifyMoveType` path as the Plates.
       The Plates themselves are not obtainable until an Arceus-tier source lands.
-- [ ] **Relearn UI for the bench.** The learnset panel covers the panel's four
-      slots; a Move-Relearner style screen for the whole party is not planned yet.
-- [ ] **Hidden Power's type.** `moves.json` ships Hidden Power as a single Normal
-      entry (`D42`); model its type from the holder's IVs so the 17 typings mean
-      something again.
+      *Dependencies:* blocked — none of the three moves exists in
+      `src/data/dex/moves.json` and no task in this backlog adds them, so there is
+      nothing to hook; see "Open questions for the human". *(unscheduled)*
+- [ ] **[Task-24] Relearn UI for the bench.** The learnset panel covers the panel's
+      four slots; a Move-Relearner style screen for the whole party is not planned
+      yet.
+      *Dependencies:* blocked — the screen has no design yet, so it cannot be
+      specced; see "Open questions for the human". *(unscheduled)*
+- [ ] **[Task-25] Hidden Power's type.** `moves.json` ships Hidden Power as a single
+      Normal entry (`D42`); model its type from the holder's IVs so the 17 typings
+      mean something again.
+      *Dependencies:* none. *(Batch 2)*
 
 ## Phase 11 — Localisation (i18n)
 
@@ -384,14 +588,15 @@ into these floors and adds the Poké Dollar economy. Source of truth:
 No player-facing string is translated today: every one is a literal in a scene or
 a UI helper. The target is English plus Spanish.
 
-- [ ] **i18n module and the Spanish locale.** A pure, headless-tested locale layer
-      (`src/i18n/`: a typed key table, `en` as the source, `es` as an overlay, and a
-      `t(key, params)` with named interpolation, no Phaser import), plus the sweep
-      that moves every literal behind a key: the main menu, the starter pick, the
-      settings screen, the run-over screen, the route HUD (party, bag, PC box,
-      detail, pause, capture, Mart, reward), the battle menus and messages, and the
-      dev panel. A `language` setting in `src/engine/save.ts` — defaulting from the
-      browser locale and applied without a `SAVE_VERSION` bump, like `alwaysRun` —
+- [ ] **[Task-26] i18n module and the Spanish locale.** A pure, headless-tested
+      locale layer (`src/i18n/`: a typed key table, `en` as the source, `es` as an
+      overlay, and a `t(key, params)` with named interpolation, no Phaser import),
+      plus the sweep that moves every literal behind a key: the main menu, the
+      starter pick, the settings screen, the run-over screen, the route HUD (party,
+      bag, PC box, detail, pause, capture, Mart, reward), the battle menus and
+      messages, and the dev panel. A `language` setting in `src/engine/save.ts` —
+      defaulting from the browser locale and applied without a `SAVE_VERSION`
+      bump, like `alwaysRun` —
       with its row in `src/ui/settingsScreen.ts`. Tests: `en`/`es` key parity both
       ways, no unresolved interpolation, and the settings round-trip. Scope call to
       take here: **the dex's own names stay English** (`@pkmn/dex` ships English
@@ -399,6 +604,9 @@ a UI helper. The target is English plus Spanish.
       much larger job. Needs `D43` in `docs/tech-decisions.md` and a line in
       `docs/design-spec.md` §7; `AGENTS.md`'s "game text in English" convention
       becomes "English is the source table, a locale overlays by key".
+      *Dependencies:* none. Scheduled last: it moves every player-facing literal
+      behind a key, so it must see the panels Task-12, Task-13 and Task-16 add.
+      *(Batch 10)*
 
 ---
 
@@ -408,14 +616,15 @@ Reported in play, awaiting triage. A bug becomes a task in the batch plan, and t
 fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what
 a finished batch still owes QA.
 
-- [ ] **Catching a Pokémon stacks a duplicate on top of it.** Catching a wild Pokémon
-      leaves a second copy of a member drawn over the caught one. Repro to confirm:
+- [ ] **[Task-27] Catching a Pokémon stacks a duplicate on top of it.** Catching a
+      wild Pokémon leaves a second copy of a member drawn over the caught one. Repro to confirm:
       catch with a **full party** (the capture screen opens) and take both choices —
       *swap* and *send to the PC* — then watch the party, the PC box and the HUD.
       Suspected: the capture placement seam — `resolveBattle`'s `placeCapture`
       (`src/engine/run/resolve.ts`), `addCaughtPokemon` / `swapCaughtIntoParty`
       (`src/engine/run/state.ts`), or `openCapturePrompt`/`refreshCapture` in
       `src/scenes/RouteScene.ts`.
+      *Dependencies:* none. *(Batch 6)*
 
 ---
 
