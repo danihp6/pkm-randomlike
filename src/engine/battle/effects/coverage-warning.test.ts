@@ -44,9 +44,7 @@ it('warns once when a battle uses an unported move', () => {
 
   takeTurn(battleWith(moveId), fight(), fight());
 
-  expect(moveLogs(warn.mock.calls)).toEqual([
-    `[coverage] move "${moveId}" has no ported effect (D16).`,
-  ]);
+  expect(moveLogs(warn.mock.calls)).toEqual([`[coverage] move "${moveId}" has no ported effect (D16).`]);
 });
 
 it('stays silent for a move the engine models', () => {
