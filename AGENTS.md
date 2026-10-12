@@ -1,15 +1,16 @@
 # Project: PokeRandomLike
 
 Browser **Pokémon roguelike**. You walk a procedural **route** (our word for the
-floors): a small top-down map of 24px tiles with tall grass, a route exit, items
-and trainers. Trainers have a line of sight and open a **classic menu battle**
-(fight / bag / switch / run) when they see you; tall grass rolls wild encounters.
-You catch at most one Pokémon per route, the classic way. Every Pokémon you lose
-is lost **forever** — 0 HP means gone, no Revive, no resurrection — and when the
-last one falls the run ends and nothing carries over. A run is a chain of **maps**:
-Binding of Isaac-style floors — a grid of routes of one biome, closed into a loop,
-each with a level range and a boss on the farthest room that opens the portal to
-the next map — plus an infinite mode.
+rooms of a floor): a small top-down screen of 24px tiles with tall grass, its
+openings, items and trainers. Trainers have a line of sight and open a **classic
+menu battle** (fight / bag / switch / run) when they see you; tall grass rolls
+wild encounters. You catch at most one Pokémon per route, the classic way. Every
+Pokémon you lose is lost **forever** — 0 HP means gone, no Revive, no resurrection
+— and when the last one falls the run ends and nothing carries over. A run is a
+chain of **maps**: Binding of Isaac-style floors — a grid of routes (rooms) of one
+biome, closed into a loop, each room joined to its grid neighbours by their
+openings, with a level range per map and a boss in the room farthest from the
+entry that opens the portal to the next map — plus an infinite mode.
 
 Winning is where the roguelike lives: the only way to grow the party is to catch,
 and the only way to keep it is not to lose it.
@@ -45,7 +46,8 @@ workflow uses.
 ## Directory layout
 - `src/engine/` – pure logic: `rng.ts`, `grid.ts`, `map.ts`,
   `pathfinding.ts`, `tileset.ts`, `tileFrames.ts`, `routes/`
-  (`routeMap.ts`, `sketch.ts`, `validate.ts`, `encounters.ts`), `maps/`
+  (`routeMap.ts`, `layout.ts`, `sketch.ts`, `walls.ts`, `trainers.ts`,
+  `validate.ts`, `streams.ts`, `encounters.ts`, `doors.ts`, `index.ts`), `maps/`
   (`plan.ts`), `run/` (`state.ts`, `progression.ts`, `learnset.ts`, `resolve.ts`,
   `pool.ts`, `roster.ts`),
   and `battle/` (`fighter.ts`, `state.ts`, `order.ts`, `damage.ts`, `moveType.ts`,
