@@ -1,14 +1,13 @@
-// ESLint 9 flat config. No rule here may fire on a file as committed: a rule
-// that fired on an existing file would have made this task the writer of that
-// file, so a finding is switched off in this config, never obeyed by the tree.
+// Dormant ESLint 9 flat config: the half of `npm run lint` that switches on the
+// day a `typescript-eslint` release supports this repo's compiler.
 //
-// Known blocker (Task-01 report): `typescript-eslint` cannot load in this tree.
-// The repo's `typescript@7` is the native compiler and ships no JS compiler API
-// (`require('typescript')` is `{ version, versionMajorMinor }`), so the parser
-// and the plugin throw while this config is read, and every `typescript-eslint`
-// release declares a peer range that stops below TypeScript 7. This block is the
-// intended shape and works unchanged as soon as such a release exists; the
-// Prettier half of `npm run lint` is green today.
+// No ESLint is installed today (`lint` is `prettier --check .` only), because
+// `typescript-eslint` cannot load in this tree: the repo's `typescript@7.0.2` is
+// the native compiler and exposes no JS API, and every release up to 8.71.2
+// declares `peerDependencies.typescript: ">=4.8.4 <6.1.0"`, which excludes
+// TypeScript 7. The config below needs no edit when such a release lands: the
+// task that activates it adds `eslint`, `@eslint/js`, `typescript-eslint` and
+// `eslint-config-prettier` back and restores the `eslint .` half of the script.
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
