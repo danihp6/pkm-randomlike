@@ -77,6 +77,9 @@ for (const id of ['heavymetal', 'lightmetal']) {
 }
 EXCLUDED_ABILITIES.set('suctioncups', 'no forced-switch mechanic');
 EXCLUDED_ABILITIES.set('toxicdebris', 'entry hazards are not modelled');
+// Ball Fetch only fires between battles (it retrieves a thrown Ball), so a
+// single battle can never honour it.
+EXCLUDED_ABILITIES.set('ballfetch', 'out of battle only');
 
 const abilityRows = [...abilities]
   .sort((a, b) => a.name.localeCompare(b.name))
@@ -105,6 +108,9 @@ const registeredMoves = new Map();
 for (const id of [
   ...tableKeys(movesEffectSrc, 'PROTECT_MOVES'),
   ...tableKeys(movesEffectSrc, 'VARIABLE_TYPE_MOVES'),
+  ...tableKeys(movesEffectSrc, 'SIDE_CONDITION_MOVES'),
+  ...tableKeys(movesEffectSrc, 'FIELD_CONDITION_MOVES'),
+  ...tableKeys(movesEffectSrc, 'MOVE_EFFECTS'),
   ...[...movesEffectSrc.matchAll(/defs\.push\(\{ id: '([a-z0-9]+)'/g)].map((match) => match[1]),
 ]) {
   registeredMoves.set(id, 'effects/moves.ts');
@@ -114,8 +120,11 @@ for (const match of itemsEffectSrc.matchAll(/move\.id !== '([a-z0-9]+)'/g)) {
 }
 
 // Port: ids `src/engine/battle/turn.ts` special-cases outside the registry —
-// Wish's delayed heal and the four counter moves.
-const TURN_LOOP_MOVES = new Set(['wish', 'counter', 'mirrorcoat', 'metalburst', 'comeuppance']);
+// Wish's delayed heal, the four counter moves and the call-a-move seam.
+const TURN_LOOP_MOVES = new Set([
+  'wish', 'counter', 'mirrorcoat', 'metalburst', 'comeuppance',
+  'metronome', 'copycat', 'mirrormove', 'assist', 'sleeptalk', 'naturepower',
+]);
 
 // Port: data fields the battle reads. The status ids are `STATUS_IDS`
 // (`src/engine/battle/status.ts`), the volatiles are the cases of
@@ -126,6 +135,8 @@ const MOVE_STATUSES = new Set(['brn', 'psn', 'tox', 'par', 'slp', 'frz']);
 const MOVE_VOLATILES = new Set([
   'confusion', 'leechseed', 'taunt', 'encore', 'trapped', 'partiallytrapped',
   'perishsong', 'perish', 'flinch', 'yawn', 'substitute',
+  'aquaring', 'ingrain', 'destinybond', 'dragoncheer', 'focusenergy', 'laserfocus',
+  'endure', 'grudge', 'imprison', 'magiccoat', 'snatch', 'magnetrise', 'powertrick',
 ]);
 const MOVE_WEATHERS = new Set(['sunnyday', 'raindance', 'sandstorm', 'snowscape', 'hail']);
 const MOVE_TERRAINS = new Set(['electricterrain', 'grassyterrain', 'mistyterrain', 'psychicterrain']);
@@ -199,6 +210,22 @@ for (const move of moves) {
 // names its moves here with the mechanic.
 const CUT_MECHANIC_MOVES = new Map();
 for (const [id, reason] of CUT_MECHANIC_MOVES) EXCLUDED_MOVES.set(id, reason);
+
+// Deliberately out of scope for a single battle: the reason names the missing
+// mechanic or situation the engine does not model.
+for (const id of [
+  'afteryou', 'allyswitch', 'craftyshield', 'followme', 'gearup', 'helpinghand',
+  'magneticflux', 'quickguard', 'ragepowder', 'wideguard',
+]) {
+  EXCLUDED_MOVES.set(id, 'doubles/ally only');
+}
+for (const id of ['roar', 'whirlwind']) {
+  EXCLUDED_MOVES.set(id, 'no forced-switch mechanic');
+}
+for (const id of ['spikes', 'toxicspikes', 'stealthrock', 'stickyweb', 'courtchange']) {
+  EXCLUDED_MOVES.set(id, 'entry hazards are not modelled');
+}
+EXCLUDED_MOVES.set('sketch', 'needs a permanent move copy');
 
 const moveEntries = [...moves]
   .sort((a, b) => a.name.localeCompare(b.name))

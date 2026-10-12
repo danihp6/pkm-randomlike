@@ -1,11 +1,18 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { moveCoverage, unportedMoveIds } from '../../../data/moveCoverage';
+import { moveCoverage } from '../../../data/moveCoverage';
 import { Rng } from '../../rng';
 import { createFighter } from '../fighter';
 import { createBattle, type BattleState } from '../state';
 import { takeTurn } from '../turn';
 
 vi.mock('../../../dev/env', () => ({ ENVIRONMENT: 'develop', IS_DEVELOP: true }));
+
+// The manifest no longer has a real gap to warn about, so the move warning is
+// exercised by making one move look unported.
+vi.mock('../../../data/moveCoverage', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../data/moveCoverage')>();
+  return { ...actual, isUnportedMove: (id: string) => id === 'tackle' };
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -25,33 +32,32 @@ const battleWith = (moveId: string): BattleState =>
 const moveLogs = (calls: readonly (readonly unknown[])[]): readonly string[] =>
   calls.map(([message]) => String(message)).filter((message) => message.startsWith('[coverage] move'));
 
-it('warns when a battle meets an unported ability in a develop build', () => {
+it('warns when a battle meets an ability the registry does not know', () => {
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
   createBattle({
-    player: [createFighter({ id: 'p', speciesId: 'charmander', level: 5, ability: 'Solar Power' })],
+    player: [createFighter({ id: 'p', speciesId: 'charmander', level: 5, ability: 'Ball Fetch' })],
     enemy: [createFighter({ id: 'e', speciesId: 'bulbasaur', level: 5, ability: 'Chlorophyll' })],
     rng: new Rng(1),
     isWild: true,
   });
 
-  expect(warn).toHaveBeenCalledWith(expect.stringContaining('Solar Power'));
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('Ball Fetch'));
 });
 
-it('warns once when a battle uses an unported move', () => {
+it('warns once when a battle uses a move the manifest calls unported', () => {
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  const moveId = unportedMoveIds()[0];
 
-  takeTurn(battleWith(moveId), fight(), fight());
+  takeTurn(battleWith('tackle'), fight(), fight());
 
-  expect(moveLogs(warn.mock.calls)).toEqual([`[coverage] move "${moveId}" has no ported effect (D16).`]);
+  expect(moveLogs(warn.mock.calls)).toEqual([`[coverage] move "tackle" has no ported effect (D16).`]);
 });
 
 it('stays silent for a move the engine models', () => {
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  expect(moveCoverage('tackle')?.status).toBe('port');
+  expect(moveCoverage('ember')?.status).toBe('port');
 
-  takeTurn(battleWith('tackle'), fight(), fight());
+  takeTurn(battleWith('ember'), fight(), fight());
 
   expect(moveLogs(warn.mock.calls)).toEqual([]);
 });

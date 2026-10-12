@@ -38,6 +38,11 @@ export function legalMoveIndices(fighter: BattleFighter): readonly number[] {
     const locked = usable.filter((entry) => entry.slot.moveId === fighter.volatiles.encoreMove);
     if (locked.length > 0) return locked.map((entry) => entry.index);
   }
+  // Gorilla Tactics locks the holder into the first move it used.
+  if (fighter.volatiles.gorillaTactics !== null) {
+    const locked = usable.filter((entry) => entry.slot.moveId === fighter.volatiles.gorillaTactics);
+    if (locked.length > 0) return locked.map((entry) => entry.index);
+  }
   return usable.map((entry) => entry.index);
 }
 

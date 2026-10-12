@@ -80,18 +80,25 @@ export function weatherLabel(weather: WeatherId): string {
   return LABELS[weather];
 }
 
-const WEATHER_ABILITIES: readonly (readonly [string, WeatherId])[] = [
+/** Effectively permanent for the length of a battle. */
+export const PRIMORDIAL_TURNS = 999;
+
+const WEATHER_ABILITIES: readonly (readonly [string, WeatherId, number?])[] = [
   ['drizzle', 'rain'],
   ['drought', 'sun'],
   ['sandstream', 'sand'],
   ['snowwarning', 'snow'],
+  // The primordial weathers do not time out during a battle; a large turn count
+  // stands in for "until the holder leaves" without a second weather store.
+  ['primordialsea', 'rain', PRIMORDIAL_TURNS],
+  ['desolateland', 'sun', PRIMORDIAL_TURNS],
 ];
 
 export function weatherEffects(): readonly EffectDefinition[] {
-  return WEATHER_ABILITIES.map(([id, weather]) => ({
+  return WEATHER_ABILITIES.map(([id, weather, turns]) => ({
     id,
     kind: 'ability' as const,
-    handlers: { onSwitchIn: (ctx) => setWeather(ctx.state, weather) },
+    handlers: { onSwitchIn: (ctx) => setWeather(ctx.state, weather, turns ?? WEATHER_TURNS) },
   }));
 }
 

@@ -353,3 +353,204 @@ describe('variable-type moves', () => {
     expect(movePreview(full, 'player', 0)?.type).toBe('Electric');
   });
 });
+
+describe('call-a-move seam', () => {
+  const run = (
+    playerMoves: readonly string[],
+    enemyMoves: readonly string[],
+    seed = 11,
+  ): BattleState =>
+    createBattle({
+      player: [fighter('player', 'charmander', playerMoves)],
+      enemy: [fighter('enemy', 'bulbasaur', enemyMoves)],
+      rng: new Rng(seed),
+      isWild: true,
+    });
+
+  it('Metronome is seed-stable and calls a real move', () => {
+    const a = run(['metronome', 'growl'], ['growl']);
+    const b = run(['metronome', 'growl'], ['growl']);
+    takeTurn(a, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    takeTurn(b, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(a.log).toEqual(b.log);
+    const moves = a.log.flatMap((event) => (event.kind === 'move' ? [event.moveId] : []));
+    expect(moves[0]).toBe('metronome');
+    expect(moves.length).toBeGreaterThan(1);
+  });
+
+  it('Copycat repeats the last move used', () => {
+    const state = run(['growl', 'copycat'], ['tackle']);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    takeTurn(state, { type: 'fight', moveIndex: 1 }, { type: 'fight', moveIndex: 0 });
+    expect(
+      state.log.some(
+        (event) => event.kind === 'move' && event.side === 'player' && event.moveId === 'tackle',
+      ),
+    ).toBe(true);
+  });
+
+  it('Mirror Move copies the foe last move', () => {
+    const state = run(['growl', 'mirrormove'], ['tackle']);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    takeTurn(state, { type: 'fight', moveIndex: 1 }, { type: 'fight', moveIndex: 0 });
+    expect(
+      state.log.some(
+        (event) => event.kind === 'move' && event.side === 'player' && event.moveId === 'tackle',
+      ),
+    ).toBe(true);
+  });
+
+  it('Assist draws a move from the bench', () => {
+    const state = createBattle({
+      player: [fighter('p1', 'charmander', ['assist']), fighter('p2', 'squirtle', ['watergun'])],
+      enemy: [fighter('enemy', 'bulbasaur', ['growl'])],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(
+      state.log.some(
+        (event) => event.kind === 'move' && event.side === 'player' && event.moveId === 'watergun',
+      ),
+    ).toBe(true);
+  });
+
+  it('Nature Power calls the terrain move', () => {
+    const state = run(['naturepower'], ['growl']);
+    setTerrain(state, 'electric');
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(
+      state.log.some(
+        (event) => event.kind === 'move' && event.side === 'player' && event.moveId === 'thunderbolt',
+      ),
+    ).toBe(true);
+  });
+
+  it('Sleep Talk only fires while asleep', () => {
+    const state = run(['sleeptalk', 'growl'], ['growl']);
+    const player = activeFighter(state, 'player');
+    player.status = 'slp';
+    player.statusCounter = 3;
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    const moves = state.log.flatMap((event) =>
+      event.kind === 'move' && event.side === 'player' ? [event.moveId] : [],
+    );
+    expect(moves[0]).toBe('sleeptalk');
+    expect(moves.length).toBeGreaterThan(1);
+  });
+});
+
+describe('ported status moves', () => {
+  it('Reflect sets a side condition on the user side', () => {
+    const state = battle(['reflect', 'growl'], ['growl']);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(state.sides.player.sideConditions.reflect).toBeGreaterThan(0);
+  });
+
+  it('Trick Room twists the dimensions', () => {
+    const state = battle(['trickroom', 'growl'], ['growl']);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(state.field.trickroom).toBeGreaterThan(0);
+  });
+
+  it('Aqua Ring restores HP at the end of the turn', () => {
+    const state = battle(['aquaring', 'growl'], ['growl']);
+    const player = activeFighter(state, 'player');
+    player.hp = Math.floor(player.maxHp / 2);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(player.volatiles.aquaRing).toBe(true);
+    expect(player.hp).toBeGreaterThan(Math.floor(player.maxHp / 2));
+  });
+
+  it('Endure survives the hit at 1 HP', () => {
+    const state = battle(['endure', 'growl'], ['tackle']);
+    const player = activeFighter(state, 'player');
+    player.hp = 1;
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(player.hp).toBe(1);
+    expect(
+      state.log.some((event) => event.kind === 'text' && event.text.includes('endured the hit')),
+    ).toBe(true);
+  });
+
+  it('Focus Energy raises the crit ratio for the rest of the battle', () => {
+    const state = battle(['focusenergy', 'growl'], ['growl']);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').volatiles.focusEnergy).toBe(true);
+  });
+
+  it('Haze clears both sides stat changes', () => {
+    const state = battle(['swordsdance', 'haze'], ['tackle']);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').boosts.atk).toBe(2);
+    takeTurn(state, { type: 'fight', moveIndex: 1 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').boosts.atk).toBe(0);
+  });
+
+  it('Block traps the target', () => {
+    const state = battle(['block', 'growl'], ['growl']);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'enemy').volatiles.trapped).toBe(true);
+  });
+
+  it('Stockpile banks charges and Swallow spends them', () => {
+    const state = battle(['stockpile', 'swallow'], ['growl']);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    const player = activeFighter(state, 'player');
+    expect(player.volatiles.stockpile).toBe(1);
+    expect(player.boosts.def).toBe(1);
+    player.hp = Math.floor(player.maxHp / 2);
+    takeTurn(state, { type: 'fight', moveIndex: 1 }, { type: 'fight', moveIndex: 0 });
+    expect(player.volatiles.stockpile).toBe(0);
+    expect(player.hp).toBeGreaterThan(Math.floor(player.maxHp / 2));
+  });
+
+  it('Conversion takes the type of the first move', () => {
+    const state = battle(['conversion', 'growl'], ['growl']);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').types).toEqual(['Normal']);
+  });
+
+  it('Camouflage follows the terrain', () => {
+    const state = battle(['camouflage', 'growl'], ['growl']);
+    setTerrain(state, 'electric');
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').types).toEqual(['Electric']);
+  });
+
+  it('Rest heals to full and sleeps for two turns', () => {
+    const state = battle(['rest', 'growl'], ['growl']);
+    const player = activeFighter(state, 'player');
+    player.hp = 1;
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(player.hp).toBe(player.maxHp);
+    expect(player.status).toBe('slp');
+    expect(player.statusCounter).toBe(2);
+  });
+
+  it('Tidy Up raises Attack and Speed', () => {
+    const state = battle(['tidyup', 'growl'], ['tackle']);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').boosts.atk).toBe(1);
+    expect(activeFighter(state, 'player').boosts.spe).toBe(1);
+  });
+
+  it('Gravity grounds the field', () => {
+    const state = battle(['gravity', 'growl'], ['growl']);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(state.field.gravity).toBeGreaterThan(0);
+  });
+
+  it('Destiny Bond drags the attacker down', () => {
+    const state = createBattle({
+      player: [fighter('player', 'gastly', ['destinybond'])],
+      enemy: [fighter('enemy', 'charmander', ['ember'])],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    activeFighter(state, 'player').hp = 1;
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'enemy').hp).toBe(0);
+  });
+});
+

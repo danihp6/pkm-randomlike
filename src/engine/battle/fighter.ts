@@ -96,6 +96,42 @@ export type Volatiles = {
   transformed: boolean;
   /** Illusion's disguise: the species id the foe sees, or null. */
   illusion: string | null;
+  /** Aqua Ring restores 1/16 max HP each residual pass. */
+  aquaRing: boolean;
+  /** Cursed by Curse: loses 1/4 max HP each residual pass. */
+  curse: boolean;
+  /** Destiny Bond: fainting to a foe's move drags the foe down too. */
+  destinyBond: boolean;
+  /** Dragon Cheer raised the holder's crit ratio. */
+  dragonCheer: boolean;
+  /** Endure survives the turn's hits at 1 HP. */
+  endure: boolean;
+  /** Focus Energy raised the holder's crit ratio. */
+  focusEnergy: boolean;
+  /** Grudge: the move that faints the holder loses all its PP. */
+  grudge: boolean;
+  /** Imprison: the foe cannot use a move the holder knows. */
+  imprison: boolean;
+  /** Ingrain restores 1/16 max HP each residual pass and roots the holder. */
+  ingrain: boolean;
+  /** Laser Focus: the holder's next move always crits. */
+  laserFocus: boolean;
+  /** Magic Coat reflects a status move aimed at the holder. */
+  magicCoat: boolean;
+  /** Turns of Magnet Rise left (0 = none); a Ground immunity. */
+  magnetRise: number;
+  /** Power Trick swapped the holder's Attack and Defense. */
+  powerTrick: boolean;
+  /** Snatch steals the foe's next snatchable status move. */
+  snatch: boolean;
+  /** Stockpile count (0-3), spent by Swallow and Spit Up. */
+  stockpile: number;
+  /** Damage the last landed hit dealt to the holder (Innards Out). */
+  lastDamageTaken: number;
+  /** Wimp Out / Emergency Exit already asked for a switch this entry. */
+  wimpOut: boolean;
+  /** Gorilla Tactics locked the holder into this move, or null. */
+  gorillaTactics: string | null;
 };
 
 /** The pre-Transform shape, restored when the holder leaves the field. */
@@ -213,6 +249,24 @@ export function emptyVolatiles(): Volatiles {
     cudChew: null,
     transformed: false,
     illusion: null,
+    aquaRing: false,
+    curse: false,
+    destinyBond: false,
+    dragonCheer: false,
+    endure: false,
+    focusEnergy: false,
+    grudge: false,
+    imprison: false,
+    ingrain: false,
+    laserFocus: false,
+    magicCoat: false,
+    magnetRise: 0,
+    powerTrick: false,
+    snatch: false,
+    stockpile: 0,
+    lastDamageTaken: 0,
+    wimpOut: false,
+    gorillaTactics: null,
   };
 }
 
@@ -486,6 +540,7 @@ export function isFainted(fighter: BattleFighter): boolean {
 
 /** A Pokémon on the ground is affected by terrain; Flying types and Levitate are not. */
 export function isGrounded(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.magnetRise > 0) return false;
   if (fighter.types.includes('Flying')) return false;
   return fighter.ability !== 'Levitate';
 }
@@ -603,6 +658,10 @@ export function clearVolatiles(fighter: BattleFighter): void {
 /** Clears battle-only state between battles while keeping HP, PP and status. */
 export function resetBattleState(fighter: BattleFighter): void {
   restoreOriginalForm(fighter);
+  // Power Trick swapped the stats in place, so the swap is undone on the way out.
+  if (fighter.volatiles.powerTrick) {
+    fighter.stats = { ...fighter.stats, atk: fighter.stats.def, def: fighter.stats.atk };
+  }
   fighter.boosts = emptyBoosts();
   fighter.lastMoveId = null;
   fighter.lastItemId = null;

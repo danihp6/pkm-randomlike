@@ -2,8 +2,8 @@ import { effectiveness, getMove, isDamaging } from '../../../data/dex';
 import { getItem } from '../../../data/items';
 import { applyDamage, applyHeal, changeBattleForm, isGrounded, restoreBattleForm, stagedStat, transformInto, type BattleFighter, type BoostId, type StatusId } from '../fighter';
 import { cureStatus, statusName } from '../status';
-import { opponentOf, pushEvent, pushText, effectiveWeather, type WeatherId } from '../state';
-import { applyFlinch, applyConfusion, applyAttract } from '../volatile';
+import { opponentOf, pushEvent, pushText, effectiveWeather, SIDE_IDS, activeFighter, type WeatherId } from '../state';
+import { applyFlinch, applyConfusion, applyAttract, applyPerish } from '../volatile';
 import { abilityMoveType } from '../moveType';
 import { applyBoostEffect, applyStatusEffect, statLabel } from './apply';
 import { applyHeldItemEffect } from './items';
@@ -2044,6 +2044,228 @@ function illusion(): EffectHandlers {
   };
 }
 
+/** The aura abilities power up one type for every Pokémon on the field. */
+function aura(type: string): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (payload.move.type !== type) return;
+      const broken = SIDE_IDS.some((side) => activeFighter(ctx.state, side).ability === 'Aura Break');
+      return scaledDamage(payload.damage, broken ? 0.75 : 4 / 3);
+    },
+  };
+}
+
+/** Defeatist halves Attack and Sp. Atk once the holder is at or below half HP. */
+function defeatist(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (ctx.owner.hp * 2 > ctx.owner.maxHp) return;
+      if (payload.move.category === 'Status' || payload.move.basePower <= 0) return;
+      return Math.max(1, Math.floor(payload.damage / 2));
+    },
+  };
+}
+
+/** Beast Boost raises the holder's highest stat after a knockout. */
+function beastBoost(): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.source || !ctx.target) return;
+      if (ctx.target.hp > 0 || payload.move.basePower <= 0) return;
+      const stat = highestStat(ctx.owner);
+      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { [stat]: 1 }, {
+        self: true,
+        message: `${ctx.owner.name}'s Beast Boost raised its ${statLabel(stat)}!`,
+      });
+    },
+  };
+}
+
+/** Color Change makes the holder take on the type of the move that hit it. */
+function colorChange(): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || ctx.owner.hp <= 0) return;
+      if (payload.move.category === 'Status' || payload.move.basePower <= 0) return;
+      if (ctx.owner.types.length === 1 && ctx.owner.types[0] === payload.move.type) return;
+      ctx.owner.types = [payload.move.type];
+      pushText(ctx.state, `${ctx.owner.name}'s type changed to ${payload.move.type}!`);
+    },
+  };
+}
+
+/** Cotton Down lowers the Speed of whatever hits the holder. */
+function cottonDown(): EffectHandlers {
+  return {
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.target || ctx.owner.hp <= 0) return;
+      if (!payload.hit || payload.move.category === 'Status' || payload.move.basePower <= 0) return;
+      if (ctx.owner.volatiles.substitute > 0) return;
+      applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.source, { spe: -1 }, {
+        message: `${ctx.source.name}'s Speed was lowered by Cotton Down!`,
+      });
+    },
+  };
+}
+
+/** Gorilla Tactics boosts Attack but locks the holder into its first move. */
+function gorillaTactics(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (payload.move.category !== 'Physical' || payload.move.basePower <= 0) return;
+      return scaledDamage(payload.damage, 1.5);
+    },
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (ctx.owner.volatiles.gorillaTactics !== null) return;
+      if (payload.move.category === 'Status' || payload.move.basePower <= 0) return;
+      ctx.owner.volatiles.gorillaTactics = payload.move.id;
+    },
+  };
+}
+
+/** Innards Out deals back the HP the holder had before the hit that fainted it. */
+function innardsOut(): EffectHandlers {
+  return {
+    onAfterMove: (ctx) => {
+      if (ctx.owner !== ctx.target || ctx.owner.hp > 0) return;
+      const damage = ctx.owner.volatiles.lastDamageTaken;
+      if (damage <= 0) return;
+      const attacker = ctx.source;
+      if (attacker.hp <= 0) return;
+      const dealt = applyDamage(attacker, damage);
+      pushEvent(ctx.state, { kind: 'damage', side: opponentOf(ctx.side), amount: dealt, hp: attacker.hp, maxHp: attacker.maxHp, effectiveness: 1, crit: false });
+      pushText(ctx.state, `${attacker.name} was hurt by ${ctx.owner.name}'s Innards Out!`);
+    },
+  };
+}
+
+/** Iron Barbs punishes a contact attacker with an eighth of its max HP. */
+function ironBarbs(): EffectHandlers {
+  return contactReaction((ctx, attacker) => {
+    const dealt = applyDamage(attacker, Math.max(1, Math.floor(attacker.maxHp / 8)));
+    pushEvent(ctx.state, { kind: 'damage', side: opponentOf(ctx.side), amount: dealt, hp: attacker.hp, maxHp: attacker.maxHp, effectiveness: 1, crit: false });
+    pushText(ctx.state, `${attacker.name} was hurt by ${ctx.owner.name}'s Iron Barbs!`);
+  });
+}
+
+/** Mimicry retypes the holder to match the active terrain. */
+function mimicry(): EffectHandlers {
+  const typeFor = (ctx: EffectContext): string => {
+    switch (ctx.state.terrain) {
+      case 'electric':
+        return 'Electric';
+      case 'grassy':
+        return 'Grass';
+      case 'misty':
+        return 'Fairy';
+      case 'psychic':
+        return 'Psychic';
+      default:
+        return 'Normal';
+    }
+  };
+  const evaluate = (ctx: EffectContext): void => {
+    if (ctx.owner !== ctx.source || ctx.owner.hp <= 0) return;
+    const type = typeFor(ctx);
+    if (ctx.owner.types.length === 1 && ctx.owner.types[0] === type) return;
+    ctx.owner.types = [type];
+  };
+  return { onStart: evaluate, onResidual: evaluate };
+}
+
+/** Mummy overwrites the ability of whatever makes contact with the holder. */
+function mummy(): EffectHandlers {
+  return contactReaction((ctx, attacker) => {
+    if (attacker.ability === 'Mummy') return;
+    attacker.ability = 'Mummy';
+    pushText(ctx.state, `${attacker.name}'s Ability became Mummy!`);
+  });
+}
+
+/** Neuroforce powers up super-effective moves. */
+function neuroforce(): EffectHandlers {
+  return {
+    onModifyDamage: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (payload.effectiveness <= 1) return;
+      return scaledDamage(payload.damage, 1.25);
+    },
+  };
+}
+
+/** Pastel Veil shields the holder from poison. */
+function pastelVeil(): EffectHandlers {
+  return {
+    onStatus: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (payload.status !== 'psn' && payload.status !== 'tox') return;
+      pushText(ctx.state, `${ctx.owner.name}'s Pastel Veil prevents poison!`);
+      return false;
+    },
+  };
+}
+
+/** Perish Body puts a perish count on both the holder and the contact attacker. */
+function perishBody(): EffectHandlers {
+  return contactReaction((ctx, attacker) => {
+    if (ctx.owner.volatiles.perish > 0 && attacker.volatiles.perish > 0) return;
+    applyPerish(ctx.owner);
+    applyPerish(attacker);
+    pushText(ctx.state, `${ctx.owner.name}'s Perish Body put a perish count on both Pokémon!`);
+  });
+}
+
+/** Screen Cleaner wipes Reflect, Light Screen and Aurora Veil on entry. */
+function screenCleaner(): EffectHandlers {
+  return {
+    onSwitchIn: (ctx) => {
+      if (ctx.owner.hp <= 0) return;
+      let cleared = false;
+      for (const side of SIDE_IDS) {
+        const conditions = ctx.state.sides[side].sideConditions;
+        if (conditions.reflect > 0 || conditions.lightscreen > 0 || conditions.auroraveil > 0) cleared = true;
+        conditions.reflect = 0;
+        conditions.lightscreen = 0;
+        conditions.auroraveil = 0;
+      }
+      if (cleared) pushText(ctx.state, `${ctx.owner.name} cleaned up the screens!`);
+    },
+  };
+}
+
+/** Wandering Spirit swaps the holder's ability with a contact attacker's. */
+function wanderingSpirit(): EffectHandlers {
+  return contactReaction((ctx, attacker) => {
+    if (attacker.ability === ctx.owner.ability) return;
+    const mine = ctx.owner.ability;
+    ctx.owner.ability = attacker.ability;
+    attacker.ability = mine;
+    pushText(ctx.state, `${ctx.owner.name} swapped Abilities with ${attacker.name} through Wandering Spirit!`);
+  });
+}
+
+/** Wimp Out and Emergency Exit ask for a switch once HP drops to half or below. */
+function escapeBelowHalf(ability: string, message: string): EffectHandlers {
+  return hitReaction(
+    (ctx, payload) => {
+      if (!damagingMove(payload)) return false;
+      if (ctx.owner.hp <= 0 || ctx.owner.hp * 2 > ctx.owner.maxHp) return false;
+      if (ctx.owner.volatiles.wimpOut) return false;
+      // With no healthy bench member the holder simply stays.
+      const side = ctx.state.sides[opponentOf(ctx.side)];
+      return side.party.some((member, index) => index !== side.activeIndex && member.hp > 0);
+    },
+    (ctx) => {
+      ctx.owner.volatiles.wimpOut = true;
+      ctx.state.sides[opponentOf(ctx.side)].awaitingReplacement = true;
+      pushText(ctx.state, `${ctx.owner.name} ${message} (${ability})!`);
+    },
+  );
+}
+
 const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['intimidate', intimidate()],
   ['levitate', levitate()],
@@ -2334,6 +2556,29 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['ripen', {}],
   ['cheekpouch', {}],
   ['unnerve', {}],
+
+  // Ported in the "reachable but unported" pass.
+  ['aurabreak', {}],
+  ['beastboost', beastBoost()],
+  ['colorchange', colorChange()],
+  ['cottondown', cottonDown()],
+  ['darkaura', aura('Dark')],
+  ['defeatist', defeatist()],
+  ['emergencyexit', escapeBelowHalf('Emergency Exit', 'wants to go back')],
+  ['fairyaura', aura('Fairy')],
+  ['gorillatactics', gorillaTactics()],
+  ['innardsout', innardsOut()],
+  ['ironbarbs', ironBarbs()],
+  ['mimicry', mimicry()],
+  ['mummy', mummy()],
+  ['neuroforce', neuroforce()],
+  ['pastelveil', pastelVeil()],
+  ['perishbody', perishBody()],
+  ['screencleaner', screenCleaner()],
+  ['steelworker', outgoingMultiplier(1.5, (payload) => payload.move.type === 'Steel')],
+  ['victorystar', accuracyModifier(1.1, (ctx) => ctx.owner === ctx.source)],
+  ['wanderingspirit', wanderingSpirit()],
+  ['wimpout', escapeBelowHalf('Wimp Out', 'wants to go back')],
 ];
 
 export function abilityEffects(): readonly EffectDefinition[] {
