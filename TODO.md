@@ -44,68 +44,59 @@ Legend:
   generated file (the packed atlases under `src/assets/`, `src/data/frlg/*.json`,
   `src/data/anil/*.json`, `docs/balance/effect-coverage.md`). Each batch names its
   holder below.
-- **Unscheduled.** An ID that appears in no batch is blocked outside this backlog;
-  see "Open questions for the human". There is none today.
+- **Unscheduled.** An ID that appears in no batch is blocked outside this backlog,
+  so it cannot be scheduled however empty the plan looks. `[Task-28]` (activate the
+  ESLint half of `npm run lint`) is the only one: it waits on an upstream
+  `typescript-eslint` release, not on a decision here.
 
-**Critical path.** Dependency depth is two everywhere: the only chains are
-`Task-03 → Task-04`, `Task-06 → Task-05`, `Task-10 → Task-09` and `Task-06 → Task-23`
-beside `Task-07 → Task-23`. What serialises the tail is a shared resource, not a
-dependency: `Task-18`, `Task-19` and `Task-20` all regenerate `src/data/dex/**` through
-`scripts/build-dex.mjs`, `Task-20` and `Task-21` both extend
+**Critical path.** Dependency depth is two: with Batch 1 merged, the only chain left
+is `Task-07 → Task-23` beside `Task-25 → Task-23`. What serialises the tail is a
+shared resource, not a dependency: `Task-18`, `Task-19` and `Task-20` all regenerate
+`src/data/dex/**` through `scripts/build-dex.mjs`, `Task-20` and `Task-21` both extend
 `src/ui/evolutionGraph.ts`, and `Task-23` writes paths earlier tasks already hold —
 `src/data/items.ts` (`Task-07`, `Task-19` and `Task-22`'s TM entries),
 `src/data/shop.ts` and `src/data/loot.ts` (`Task-07`, `Task-22`),
 `src/engine/battle/effects/items.ts` (`Task-07`), `src/engine/battle/moveType.ts`
 (`Task-25`), the `src/data/` numbers (`Task-09`) and the generated
-`docs/balance/effect-coverage.md` (`Task-06`, `Task-05`, `Task-07`, `Task-09`) — which
-is why it sits in Batch 8 rather than beside the item tasks it belongs to. Those three
-dex tasks are dependency-free, so the Orchestrator may pull any of them into an earlier
-batch whose paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
+`docs/balance/effect-coverage.md` (`Task-05`, `Task-07`, `Task-09`) — which is why it
+sits in Batch 8 rather than beside the item tasks it belongs to. Those three dex tasks
+are dependency-free, so the Orchestrator may pull any of them into an earlier batch
+whose paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free. `Task-29` (the
+Prettier reformat pass, Batch 11) is the other serial resource: it claims every
+`src/**` path `.prettierignore` still ledgers, so it runs alone, and last.
 
-### Batch 1 — foundations
-- **Task-01** ESLint + Prettier and a `npm run lint` script.
-- **Task-02** One README per code folder.
-- **Task-03** Step 8 — validation hardening.
-- **Task-06** Move-effect coverage table.
-- **Task-10** Floor trainer XP reaches the floor's cap.
-- **Task-11** Audio: music and sound.
-- **Hot files:** `package.json` and `package-lock.json` → Task-01; `src/scenes/BootScene.ts`,
-  `MainMenuScene.ts`, `RouteScene.ts`, `BattleScene.ts`, `AGENTS.md`,
-  `docs/tech-decisions.md`, `src/assets/README.md` and the derived
-  `src/assets/audio/**` → Task-11; the generated `docs/balance/effect-coverage.md`
-  and the new generated `src/data/moveCoverage.json` → Task-06; the new
-  `docs/balance/route-curve.md` → Task-10; `src/engine/routes/validate.ts` →
-  Task-03. No task in the batch claims `src/main.ts`, `vite.config.ts`, anything
-  under `src/data/dex/**`, `src/scenes/SettingsScene.ts`, `StarterScene.ts` or
-  `RunOverScene.ts`, or the shipped READMEs (`src/input/`, `src/data/`,
-  `src/data/dex/`, `src/assets/`) that Task-02 must leave alone.
-- **Shape:** six dependency-free tasks, pairwise path-disjoint — checked against the
-  tree at `e9dbf88`, not assumed: the six exclusive path sets share no file, and the
-  two tasks that read a path a batch-mate writes (`Task-03` reads the generator it
-  hardens, `Task-10` reads `src/engine/routes/sketch.ts` for the per-room trainer
-  count) only ever read it, so nobody blocks on a file another task produces.
-  Task-01 ships `package.json`, `package-lock.json` (a dependency install rewrites
-  it), `eslint.config.mjs`, `.prettierrc.json` and `.prettierignore` only, with a
-  ruleset that is green on the tree as it stands: a rule or a format that fires on an
-  existing file would make this task the writer of that file, which the batch cannot
-  allow — so `.prettierignore` carries the generated and binary paths and any source
-  file the formatter cannot be made to match, listed rather than rewritten.
-  Task-02's five new READMEs sit in `src/engine/`, `src/scenes/`, `src/render/`,
-  `src/ui/` and `src/dev/`, plus a layout pointer in the root `README.md`; the
-  `src/audio/README.md` the folder convention wants belongs to Task-11, which
-  creates that folder. **`sprite-sources/frlg-audio/` does not exist in this clone**
-  (only `anil/`, `frlg/` and `frlg-ui/` are materialised), so Task-11 ships the cue
-  table, the packer and the wiring over generated procedural placeholder cues:
-  dropping the rip into `sprite-sources/frlg-audio/` and re-running
-  `node scripts/frlg/build-audio.mjs` replaces them without touching a call site
-  (`O4` wants exactly that seam for a public build).
+### Batch 1 — foundations *(shipped, archived)*
+Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
+green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
+parked are registered below: `[Task-28]` (activate the ESLint half, unscheduled) and
+`[Task-29]` (the Prettier reformat pass, Batch 11).
 
 ### Batch 2 — docs pass, effect ports, Hidden Power
-- **Task-04** Step 10 — docs pass. Needs Task-03 merged.
-- **Task-05** Reachable-but-unported effects. Needs Task-06 merged.
+- **Task-04** Step 10 — docs pass.
+- **Task-05** Reachable-but-unported effects.
 - **Task-25** Hidden Power's type.
-- **Hot files:** the generated `docs/balance/effect-coverage.md` → Task-05.
-- **Shape:** prose, ported handlers and one move-typing rule; no shared path.
+- **Hot files:** the generated `docs/balance/effect-coverage.md` **and** the generated
+  `src/data/moveCoverage.json` → Task-05; `AGENTS.md` → Task-04; `src/scenes/RouteScene.ts`
+  → Task-25. No task in the batch claims `package.json`, `package-lock.json`,
+  `src/main.ts`, `vite.config.ts`, another `src/scenes/*.ts`, anything under
+  `src/data/dex/**`, `src/data/anil/**` or `src/assets/**`, `.prettierignore`, or the
+  docs a later docs pass owns (`docs/maps-spec.md`, `docs/design-spec.md`).
+- **Shape:** prose, ported handlers and one move-typing rule — checked against the
+  tree at `23ac1e5`, not assumed. The recorded pair Task-05/Task-25 **shared one path**
+  and this batch separates them: both wanted `src/engine/battle/effects/moves.ts`,
+  which is where a move's type registers, because Task-25 needs a `hiddenpower` move
+  effect and Task-05 ports the move long tail. So **Task-05 owns `effects/moves.ts`**
+  (and every other battle module its ports touch, `turn.ts`/`state.ts` included) and
+  **Task-25 owns `src/engine/battle/moveType.ts` plus a new
+  `src/engine/battle/effects/hiddenPower.ts`, which it registers through
+  `src/engine/battle/index.ts`** — the barrel both scenes already import, so the effect
+  is live in the app without either task editing the other's file. Task-04 reads the
+  generator it documents and writes no code; Task-05 reads
+  `src/data/moveCoverage.json` for its port list and regenerates it; Task-25 reads
+  `moveType.ts` and the panel call sites. No two tasks in the batch write the same file.
+  Paths that belong to no task here: `src/engine/battle/effects/items.ts` and
+  `src/data/items.ts` (Task-07, Batch 3) stay untouched. `docs/battle-spec.md` →
+  Task-05 only; `src/ui/partyDetail.ts` → Task-25 only.
 
 ### Batch 3 — held items, ability popup
 - **Task-07** The competitive held items, with Añil's icons.
@@ -138,7 +129,7 @@ batch whose paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
   assume Batch 4 merged.
 
 ### Batch 6 — balance pass, Phase 9 docs, capture bug
-- **Task-09** Balance pass. Needs Task-10 merged.
+- **Task-09** Balance pass.
 - **Task-17** Step 14 — docs & migration pass.
 - **Task-27** Catching a Pokémon stacks a duplicate on top of it.
 - **Hot files:** `src/scenes/RouteScene.ts` → Task-27; the sheets under
@@ -162,7 +153,8 @@ batch whose paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
 - **Task-14** New biomes.
 - **Task-20** The Rotom appliances as evolutions.
 - **Task-23** Item-driven move retypes: Multi-Attack, Techno Blast, Natural Gift.
-  Needs Task-06 and Task-07 merged.
+  Needs Task-07 merged, and builds on the `moveType.ts` shape Task-25 leaves in
+  Batch 2.
 - **Hot files:** every `src/scenes/*.ts` → Task-08; `scripts/build-dex.mjs` and
   `src/data/dex/**` → Task-20; `package.json` and any new tileset atlas → Task-14; the
   generated `docs/balance/effect-coverage.md` → Task-23.
@@ -186,13 +178,30 @@ batch whose paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
   must see the panels Task-12, Task-13 and Task-16 added and the strings Batch 8's
   accessibility pass introduced.
 
+### Batch 11 — the Prettier reformat pass (last)
+- **Task-29** Format the files `.prettierignore` still ledgers, and delete their lines.
+- **Hot files:** none of the serial resources — but the task claims **every `src/**`
+  path the ledger names**, so no other task may run beside it.
+- **Shape:** one task, alone in its batch, and last on purpose. Task-01 shipped the
+  format gate over a ledger rather than rewrite a file a batch-mate owned, so the
+  `src/**` block it lists is debt, and `[Task-29]` pays it off: `npm run lint` stops
+  depending on the ledger and becomes a gate a new file cannot quietly slip past.
+  This is a **batch-composition** constraint, not a dependency — the reformat needs
+  nothing another task produces, it just cannot share a batch with anything that owns
+  one of the ~105 files it rewrites, and every earlier batch owns at least one. Last,
+  because its formatting is then the final word on those files: every task's own gate
+  keeps the ledger from growing in the meantime, so nothing after it can un-format
+  what it cleared or re-add a line. Re-planned from the ledger as it stands then.
+
 ### Open questions for the human
 
 None. Everything the first plan raised is decided: the Añil art was materialised
 into the local clone, `Task-23` is unblocked (the three moves ship, `D42`),
 `Task-24` is retired, the audio comes from the original games' audio rips under
 `sprite-sources/frlg-audio/`, and the Plates are made obtainable by `Task-07`. A
-question lands here only when the repository genuinely cannot answer it.
+question lands here only when the repository genuinely cannot answer it. The one ID
+without a batch is not a question: `[Task-28]` waits on an upstream
+`typescript-eslint` release.
 
 ---
 
@@ -200,14 +209,40 @@ question lands here only when the repository genuinely cannot answer it.
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] **[Task-01]** Add ESLint + Prettier with a `npm run lint` script once the
-      engine has more real code (deferred: TypeScript strict mode covers most of it
-      for now).
-      *Dependencies:* none. *(Batch 1)*
-- [ ] **[Task-02]** Add a README per code folder as the folders appear. Shipped:
-      `src/input/`, `src/data/`, `src/data/dex/`, `src/assets/`. Missing:
-      `src/engine/`, `src/scenes/`, `src/render/`, `src/ui/`, `src/dev/`.
-      *Dependencies:* none. *(Batch 1)*
+- [ ] **[Task-28] Activate the ESLint half of `npm run lint`.** Task-01 shipped
+      `eslint.config.mjs` committed and **dormant**: the flat config for `src/**/*.ts`
+      and `vite.config.ts` (plus `vite`/`infra`/`public`/`sprite-sources`/`coverage`/
+      `.agent_specs`/`scripts` ignores), written so that switching it on is a
+      dependency install and one script edit, with its header comment as the record.
+      It cannot run today: the repo pins native `typescript@7.0.2`, which exposes no
+      JavaScript API, and every `typescript-eslint` release up to **8.71.2** declares
+      `typescript >=4.8.4 <6.1.0`, so `@typescript-eslint/parser` throws at import and
+      `npx eslint .` exits 2. **Blocked outside this backlog.** It becomes schedulable
+      when a `typescript-eslint` release declares a TypeScript 7 peer — or when the
+      human decides to run the ESLint half on a separate, non-native TypeScript
+      toolchain — and only then does it take a batch. The activation itself is:
+      install `eslint`, `@eslint/js`, `typescript-eslint` and `eslint-config-prettier`
+      (`package.json`, `package-lock.json`), chain `eslint . &&` in front of the frozen
+      `prettier --check .`, and make it green on the tree **as it stands** — switch
+      rules off in `eslint.config.mjs`, never edit a file it reports. Linting
+      `scripts/**` stays out of scope: the config ignores them on purpose.
+      *Dependencies:* none inside this repo — it waits on the upstream release.
+      **Unscheduled** (no batch).
+- [ ] **[Task-29] The Prettier reformat pass.** Task-01 shipped the format gate over a
+      **ledger** rather than rewrite a file a batch-mate owned: `.prettierignore` is a
+      132-entry file, and its `src/**` block is **105 individual files** (plus the four
+      generated-data globs, which stay) that Prettier would rewrite — each verified
+      non-conforming, so the ledger hides no clean file. This task pays that off:
+      format every ledgered `src/**` file with the shipped `.prettierrc.json`
+      (`npx prettier --write <file>`, never a retune of the options), confirm the file
+      now passes `prettier --check`, and delete its ledger line. What stays is exactly
+      what has a reason to stay: the generated/binary globs, the `scripts/**` packers
+      and the prose files the ledger names (`AGENTS.md`, `CHANGELOG.md`, `TODO.md` and
+      the `docs/*.md` it lists), which belong to the docs tasks and to the
+      Orchestrator, and get a clearer comment than today's. Owners: the ledgered `src/**` files and `.prettierignore`. Every task
+      from here on keeps the ledger from growing — a new file conforms, and a task that
+      edits a ledgered file never adds a line to hide it.
+      *Dependencies:* none. *(Batch 11)*
 
 ## Phase 1 — Dex accessors & data contracts
 
@@ -227,12 +262,6 @@ algorithm, its guarantees and its open questions are in
 most useful first. The art counterparts (a real tall-grass tile, the
 floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **[Task-03] Step 8 — Validation hardening.** The reroll already exists
-      (`sketchRoute` iterates `MAX_ATTEMPTS` on fresh streams) and `validateRoute`
-      already proves every exit reachable and a trainer-free entry→exit path. What is
-      left is the rest of the checklist — items off grass and ledges, pockets
-      reachable, border intact — plus fixed-seed tests per shape.
-      *Dependencies:* none. *(Batch 1)*
 - [ ] **[Task-04] Step 10 — Docs pass.** Update `docs/routes-spec.md` and
       `AGENTS.md` to the shipped algorithm, mark `docs/route-generator.md`
       implemented and archive these steps in `CHANGELOG.md`. **`§4` of
@@ -243,8 +272,9 @@ floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
       item** is stranded and that the spine, the fence, the items' terrain and
       the trainer poses hold; an unreachable pocket is reported but not gated,
       because `placeItems` is allowed to skip a pocket a hazard sealed.
-      *Dependencies:* Task-03 (Step 8 — validation hardening) — it documents the
-      checks that task ships. *(Batch 2)*
+      *Dependencies:* none — it documents the checks `src/engine/routes/validate.ts`
+      ships (Step 8, archived with Batch 1), which it reads, not waits on.
+      *(Batch 2)*
 
 ## Phase 3 — Battle engine core (pure, headless, tested)
 
@@ -261,28 +291,19 @@ Ports of Showdown handlers, in batches, on the hook names in
 `docs/showdown-reuse.md` §3.
 
 - [ ] **[Task-05] Reachable-but-unported effects.** The full National Dex (`D40`)
-      and the full move set (`D42`) make ~24 abilities and many `Past` moves meetable
-      that are not ported yet — the `no-op` rows of `docs/balance/effect-coverage.md`
-      plus any move the dev build warns about. A damaging move resolves its base
-      damage generically, but a status move or listed ability without a handler is
-      a silent no-op until ported. Port them so the develop-build warnings clear.
-      *Dependencies:* Task-06 (Move-effect coverage table) — its move classification
-      is the port list and it adds the develop-build warning the ports must clear.
+      and the full move set (`D42`) make **24 abilities and 86 moves** meetable that
+      are not ported yet — the `no-op` rows of `docs/balance/effect-coverage.md` and
+      the ids `unportedMoveIds()` returns from `src/data/moveCoverage.json` (Batch 1,
+      Task-06). A damaging move resolves its base damage generically, but a status
+      move or listed ability without a handler is a silent no-op until ported, and
+      `src/dev/warnings.ts` already warns once per unported move in a develop build.
+      Resolve every one of them: port it, or reclassify it `excluded` with a reason
+      the table's own legend names (allies-only, out of battle, a mechanic the engine
+      does not model). After this task neither section has a `no-op` row, and the
+      develop-build move warnings clear.
+      *Dependencies:* none — its port list is the classification Task-06 shipped
+      (`src/data/moveCoverage.json`), which it reads and regenerates, not waits on.
       *(Batch 2)*
-- [ ] **[Task-06] Move-effect coverage table.** `docs/balance/effect-coverage.md`
-      tracks every ability and item (`D16`) but **not moves**, so the non-trivial
-      move long tail (~160 utility/status moves that need a handler) is unaudited —
-      the gap `docs/showdown-reuse.md` §3 flags. Extend
-      `scripts/effect-coverage.mjs` to classify every move as `port | no-op |
-      excluded`, deriving `port` from the effect registry, the ids the turn loop
-      special-cases and the data-driven fields the engine reads, then emit the
-      section and let a develop build warn when a battle meets an unported move
-      (the registry warns for abilities and items only today, `registry.ts`).
-      The classification is written **twice from one authority**: the table in the
-      doc, and a machine-readable `src/data/moveCoverage.json` read through
-      `src/data/moveCoverage.ts`, because the registry cannot tell a `no-op` move
-      from a generic one on its own. The doc stays notes only.
-      *Dependencies:* none. *(Batch 1)*
 - [ ] **[Task-07] The competitive held items, with Añil's icons.** The run's
       held-item catalogue is a slice of the competitive set (24 `kind: 'held'`
       entries in `src/data/items.ts`) and their icons all come from the FRLG sheet
@@ -334,53 +355,10 @@ Ports of Showdown handlers, in batches, on the hook names in
       the fixed-seed golden log itself intact and green. It then tunes the numbers in
       `src/data/` against the sheets, with a fixed-seed regression for every rule it
       moves.
-      *Dependencies:* Task-10 (Floor trainer XP reaches the floor's cap) — it reads
-      the route curve and the XP rule that task fixes. It is also the producer of the
-      reusable harness: a later task that wants to run a scripted battle depends on
-      Task-09. *(Batch 6)*
-- [ ] **[Task-10] Floor trainer XP reaches the floor's cap.** Beating roughly
-      **75 %** of a floor's trainers must award the XP the squad needs to reach
-      that floor's
-      **level cap** (`levelCapForMap`, `src/data/maps.ts`), so the party keeps pace
-      with the band by fighting rather than grinding wild encounters. Today the
-      award is level-driven only (`experienceAward`, `src/engine/run/progression.ts`:
-      `level * 5`, ×1.5 for a trainer, split by participants), while the trainers a
-      floor offers vary with its rooms and their sizes (the per-room placement in
-      `placeTrainers`, `src/engine/routes/sketch.ts`, plus `trainerBonusForSize` in
-      `src/data/mapSize.ts`). **Decided (Batch 1):** the rule is a per-band
-      `trainerXp` multiplier on `LevelBand` (`src/data/run.ts`) that
-      `experienceAward` (`src/engine/run/progression.ts`) reads off the **defeated
-      Pokémon's level band**, so the award keeps its signature and no scene
-      changes; a bonus, not part of the 75 % budget. Prove it with a pure,
-      fixed-seed test that walks every map of a finite run and asserts the
-      75 %-of-trainers total lands the squad at the cap, inside a window the test
-      states. Write `docs/balance/route-curve.md` (level bands, caps, roster
-      sizes, per-floor trainer counts and this rule): `docs/balance/README.md`
-      lists it, but the file does not exist.
-      *Dependencies:* none. *(Batch 1)*
-- [ ] **[Task-11] Audio: music and sound.** Route ambience and the encounter, hit,
-      faint, level-up and victory cues, plus the music. **The cues come from the
-      original games' audio**, treated exactly like the imported art rips
-      (`AGENTS.md`'s Art convention). So the paths are the art rips' paths: the ripped
-      sources live in the gitignored `sprite-sources/` tree, in their own folder
-      beside the art rips — **`sprite-sources/frlg-audio/`** — and only the derived
-      assets the game loads are committed, under **`src/assets/audio/`**, built by a
-      `scripts/frlg/build-audio.mjs` in the mould of the existing `scripts/frlg/`
-      packers (run directly with `node`, so this task adds no `package.json` script).
-      **That folder is not materialised in this clone** (checked at `e9dbf88`:
-      `sprite-sources/` holds only `anil/`, `frlg/` and `frlg-ui/`), so the packer
-      writes a generated procedural placeholder cue for every source it cannot find
-      and says so loudly; the cue ids, the packer and the scene wiring ship either
-      way, and the rip is one script run away.
-      `O4` covers this as it covers art: the imported audio is local-development-only
-      and can never ship, so the cue ids and their keys stay behind one table in
-      `src/audio/` and a CC0 set can replace the assets without touching a call site.
-      Phaser only: startup, the route ambience, the cues and the mute/volume wiring
-      live in `src/audio/` and the scenes; the `volume` setting already exists in the
-      save (`D22`) and `src/audio/` does not exist yet. Record the source and the
-      local-only status in `docs/tech-decisions.md` beside `D22` and in `AGENTS.md`'s
-      Art convention.
-      *Dependencies:* none. *(Batch 1)*
+      *Dependencies:* none — it reads `docs/balance/route-curve.md` and the per-band
+      `trainerXp` rule Task-10 shipped (archived with Batch 1). It is also the
+      producer of the reusable harness: a later task that wants to run a scripted
+      battle depends on Task-09. *(Batch 6)*
 - [ ] **[Task-12] Ability info popup.** The STATS tab prints the ability as plain
       text (`MemberDetail.ability`, `src/ui/partyDetail.ts`) and there is no way to
       read what it does. Give the ability row the same ⓘ control the move cells
@@ -527,6 +505,12 @@ into these floors and adds the Poké Dollar economy. Source of truth:
 - [ ] **[Task-17] Step 14 — Docs & migration pass.** Finish `docs/maps-spec.md`,
       update `design-spec.md` / `routes-spec.md` / `battle-spec.md` / `AGENTS.md`
       and the tech decision addenda, and archive the steps in `CHANGELOG.md`.
+      **It also writes down the README convention the per-folder READMEs already
+      follow (Task-02, Batch 1): a task that adds, renames or deletes a file updates
+      that folder's `README.md` in the same task** — one role line per file, no
+      exported names, so the folder's map never rots. `AGENTS.md` is where the
+      convention belongs (a line in the Directory layout section), and Task-17 is the
+      only task in the batch that owns it.
       *Dependencies:* none. *(Batch 6)*
 - [ ] **[Task-18] Gigantamax, in the Mega Evolution mould.** Model Gigantamax the
       way the Megas work (`src/engine/battle/mega.ts`, `D34`): once per battle a
@@ -648,15 +632,17 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (`sprite-sources/anil/PBS/items.txt`).
       Out of scope: **the Plates' own obtainability** — `Task-07` makes them drop
       as loot; this item only wires the retype they already hook.
-      *Dependencies:* Task-06 (Move-effect coverage table) — its move classification
-      is where the three moves are listed and the file this task adds its rows to;
-      Task-07 (The competitive held items, with Añil's icons) — it settles the
-      `ItemDef` fields and the handler registration in the two files this task
-      extends. Task-25 (Hidden Power's type) writes `src/engine/battle/moveType.ts` in
-      an earlier batch, so this task builds on the shape it leaves. *(Batch 8)*
+      *Dependencies:* Task-07 (The competitive held items, with Añil's icons) — it
+      settles the `ItemDef` fields and the handler registration in the two files this
+      task extends. Task-25 (Hidden Power's type) writes `src/engine/battle/moveType.ts`
+      in Batch 2, so this task builds on the shape it leaves. The three moves' rows in
+      `docs/balance/effect-coverage.md` are the generated table Task-06 shipped
+      (Batch 1) — read, not waited on. *(Batch 8)*
 - [ ] **[Task-25] Hidden Power's type.** `moves.json` ships Hidden Power as a single
       Normal entry (`D42`); model its type from the holder's IVs so the 17 typings
-      mean something again.
+      mean something again: the battle, the FIGHT menu's preview and the party panel
+      all read the same IV-derived type, and `docs/tech-decisions.md` /
+      `docs/showdown-reuse.md` stop saying the engine does not model it.
       *Dependencies:* none. *(Batch 2)*
 
 ## Phase 11 — Localisation (i18n)

@@ -973,6 +973,62 @@ file is the human-readable summary.
       wall-adjacent seed through grassable cells only (never split by the spine), so
       a patch never floats free. `terrain.test.ts` covers the wall anchor and the
       size cap.
+- [x] **`npm run lint` checks the formatting, with ESLint shipped dormant.** The
+      script is `prettier --check .` over `printWidth: 105` and `endOfLine: "auto"`
+      (the latter is what keeps the check green on a Windows checkout with
+      `core.autocrlf=true`); `.prettierignore` is a 132-entry ledger naming every
+      file Prettier would rewrite — the batch rule forbids reformatting a file a
+      batch-mate owns — and each entry was verified non-conforming, so the ledger
+      never hides a clean file. `eslint.config.mjs` ships as the dormant flat
+      config the ESLint half activates: native `typescript@7.0.2` exposes no JS
+      API and every `typescript-eslint` release up to 8.71.2 declares a peer below
+      TypeScript 6.1, so no ESLint is installed. `package.json`,
+      `.prettierrc.json`, `.prettierignore`, `eslint.config.mjs`.
+- [x] **A contract README per code folder.** `src/engine/`, `src/scenes/`,
+      `src/render/`, `src/ui/` and `src/dev/` gain one, and the root README gains a
+      folder map. Each states the folder's invariant, one role line per file and
+      its rules — deliberately no exported names, so a refactor cannot rot it.
+      `README.md`, `src/{engine,scenes,render,ui,dev}/README.md`.
+- [x] **The route validator checks the whole generator checklist (Step 8).**
+      `validateRoute` now proves the spine walkable, no item stranded or lying on
+      unwalkable terrain, the fence intact but for the openings, and every
+      trainer's pose legal (backing wall, off the entry, the exit and the pockets,
+      not crowded, no sight line into the entry). An unreachable pocket is
+      reported but **not** gated, because `placeItems` is allowed to skip one a
+      hazard sealed. Fixed-seed sweep per shape over every route shape.
+      `src/engine/routes/validate.ts`.
+- [x] **The coverage table classifies every move (the `D16` gap).**
+      `scripts/effect-coverage.mjs` now derives `port | no-op | excluded` for all
+      835 shipped moves (718 port, 86 no-op, 31 excluded) from the effect
+      registry, the ids the turn loop special-cases and the data-driven fields the
+      engine reads. The classification is written twice from one authority: the
+      new Moves section of `docs/balance/effect-coverage.md` and a
+      machine-readable `src/data/moveCoverage.json` behind `moveCoverage()`,
+      `isUnportedMove()` and `unportedMoveIds()`. A develop build warns once per
+      unported move it meets, which is now the port list.
+      `scripts/effect-coverage.mjs`, `src/data/moveCoverage.{json,ts}`,
+      `src/dev/warnings.ts`, `src/engine/battle/effects/registry.ts`.
+- [x] **A floor's trainers pay that floor's level cap.** Beating 75 % of a floor's
+      trainers must award the XP the squad needs to reach `levelCapForMap`:
+      `experienceAward` now reads a per-band `LevelBand.trainerXp` multiplier off
+      the **defeated** Pokémon's band, so the award keeps its signature and no
+      caller changed. A fixed-seed test walks every finite map over three seeds
+      and asserts the window `needed ≤ 0.75 · trainers · award ≤ 1.5 · needed`;
+      `docs/balance/route-curve.md` is the sheet (bands, caps, trainer counts,
+      the rule). `src/data/run.ts`, `src/engine/run/progression.ts`,
+      `docs/balance/route-curve.md`.
+- [x] **Audio: three music beds and five cues.** The cue vocabulary is one table
+      in `src/audio/cues.ts` (pure, no Phaser) and the player in
+      `src/audio/audio.ts`; the menu, route and battle beds and the encounter,
+      hit, faint, level-up and victory cues are wired into Boot, MainMenu, Route
+      and Battle, with the volume setting and the mute seam the accessibility pass
+      will use. Assets are committed under `src/assets/audio/*.wav`, built by
+      `scripts/frlg/build-audio.mjs` from the gitignored
+      `sprite-sources/frlg-audio/`; that rip is not materialised in this clone, so
+      the shipped cues are deterministic procedural placeholders that the rip
+      replaces without touching a call site (`O4`). `D22` addendum, and the
+      `AGENTS.md` Art convention now covers audio. `src/audio/`,
+      `src/assets/audio/`, `scripts/frlg/build-audio.mjs`.
 
 ## Phase 0 — Repo & scaffolding
 
