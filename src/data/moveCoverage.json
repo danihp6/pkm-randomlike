@@ -1,0 +1,5015 @@
+{
+  "source": "scripts/effect-coverage.mjs",
+  "moves": [
+    {
+      "id": "absorb",
+      "name": "Absorb",
+      "status": "port",
+      "note": "data: drain"
+    },
+    {
+      "id": "accelerock",
+      "name": "Accelerock",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "acid",
+      "name": "Acid",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "acidarmor",
+      "name": "Acid Armor",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "acidspray",
+      "name": "Acid Spray",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "acrobatics",
+      "name": "Acrobatics",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "acupressure",
+      "name": "Acupressure",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "aerialace",
+      "name": "Aerial Ace",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "aeroblast",
+      "name": "Aeroblast",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "afteryou",
+      "name": "After You",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "agility",
+      "name": "Agility",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "aircutter",
+      "name": "Air Cutter",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "airslash",
+      "name": "Air Slash",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "alluringvoice",
+      "name": "Alluring Voice",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "allyswitch",
+      "name": "Ally Switch",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "amnesia",
+      "name": "Amnesia",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "anchorshot",
+      "name": "Anchor Shot",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "ancientpower",
+      "name": "Ancient Power",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "appleacid",
+      "name": "Apple Acid",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "aquacutter",
+      "name": "Aqua Cutter",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "aquajet",
+      "name": "Aqua Jet",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "aquaring",
+      "name": "Aqua Ring",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "aquastep",
+      "name": "Aqua Step",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "aquatail",
+      "name": "Aqua Tail",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "armthrust",
+      "name": "Arm Thrust",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "armorcannon",
+      "name": "Armor Cannon",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "aromatherapy",
+      "name": "Aromatherapy",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "aromaticmist",
+      "name": "Aromatic Mist",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "assist",
+      "name": "Assist",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "assurance",
+      "name": "Assurance",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "astonish",
+      "name": "Astonish",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "astralbarrage",
+      "name": "Astral Barrage",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "attackorder",
+      "name": "Attack Order",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "attract",
+      "name": "Attract",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "aurasphere",
+      "name": "Aura Sphere",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "aurawheel",
+      "name": "Aura Wheel",
+      "status": "port",
+      "note": "registry: effects/moves.ts"
+    },
+    {
+      "id": "aurorabeam",
+      "name": "Aurora Beam",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "auroraveil",
+      "name": "Aurora Veil",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "autotomize",
+      "name": "Autotomize",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "avalanche",
+      "name": "Avalanche",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "axekick",
+      "name": "Axe Kick",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "babydolleyes",
+      "name": "Baby-Doll Eyes",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "baddybad",
+      "name": "Baddy Bad",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "banefulbunker",
+      "name": "Baneful Bunker",
+      "status": "port",
+      "note": "registry: effects/moves.ts"
+    },
+    {
+      "id": "barbbarrage",
+      "name": "Barb Barrage",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "barrage",
+      "name": "Barrage",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "barrier",
+      "name": "Barrier",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "batonpass",
+      "name": "Baton Pass",
+      "status": "port",
+      "note": "data: selfSwitch"
+    },
+    {
+      "id": "beakblast",
+      "name": "Beak Blast",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "beatup",
+      "name": "Beat Up",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "behemothbash",
+      "name": "Behemoth Bash",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "behemothblade",
+      "name": "Behemoth Blade",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "belch",
+      "name": "Belch",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "bellydrum",
+      "name": "Belly Drum",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "bestow",
+      "name": "Bestow",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "bide",
+      "name": "Bide",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "bind",
+      "name": "Bind",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "bite",
+      "name": "Bite",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "bitterblade",
+      "name": "Bitter Blade",
+      "status": "port",
+      "note": "data: drain"
+    },
+    {
+      "id": "bittermalice",
+      "name": "Bitter Malice",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "blastburn",
+      "name": "Blast Burn",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "blazekick",
+      "name": "Blaze Kick",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "bleakwindstorm",
+      "name": "Bleakwind Storm",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "blizzard",
+      "name": "Blizzard",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "block",
+      "name": "Block",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "bloodmoon",
+      "name": "Blood Moon",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "blueflare",
+      "name": "Blue Flare",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "bodypress",
+      "name": "Body Press",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "bodyslam",
+      "name": "Body Slam",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "boltbeak",
+      "name": "Bolt Beak",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "boltstrike",
+      "name": "Bolt Strike",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "boneclub",
+      "name": "Bone Club",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "bonerush",
+      "name": "Bone Rush",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "bonemerang",
+      "name": "Bonemerang",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "boomburst",
+      "name": "Boomburst",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "bounce",
+      "name": "Bounce",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "bouncybubble",
+      "name": "Bouncy Bubble",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "branchpoke",
+      "name": "Branch Poke",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "bravebird",
+      "name": "Brave Bird",
+      "status": "port",
+      "note": "data: recoil"
+    },
+    {
+      "id": "breakingswipe",
+      "name": "Breaking Swipe",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "brickbreak",
+      "name": "Brick Break",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "brine",
+      "name": "Brine",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "brutalswing",
+      "name": "Brutal Swing",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "bubble",
+      "name": "Bubble",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "bubblebeam",
+      "name": "Bubble Beam",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "bugbite",
+      "name": "Bug Bite",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "bugbuzz",
+      "name": "Bug Buzz",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "bulkup",
+      "name": "Bulk Up",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "bulldoze",
+      "name": "Bulldoze",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "bulletpunch",
+      "name": "Bullet Punch",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "bulletseed",
+      "name": "Bullet Seed",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "burningbulwark",
+      "name": "Burning Bulwark",
+      "status": "port",
+      "note": "registry: effects/moves.ts"
+    },
+    {
+      "id": "burningjealousy",
+      "name": "Burning Jealousy",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "buzzybuzz",
+      "name": "Buzzy Buzz",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "calmmind",
+      "name": "Calm Mind",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "camouflage",
+      "name": "Camouflage",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "captivate",
+      "name": "Captivate",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "ceaselessedge",
+      "name": "Ceaseless Edge",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "celebrate",
+      "name": "Celebrate",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "charge",
+      "name": "Charge",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "chargebeam",
+      "name": "Charge Beam",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "charm",
+      "name": "Charm",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "chatter",
+      "name": "Chatter",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "chillingwater",
+      "name": "Chilling Water",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "chillyreception",
+      "name": "Chilly Reception",
+      "status": "port",
+      "note": "data: selfSwitch"
+    },
+    {
+      "id": "chipaway",
+      "name": "Chip Away",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "chloroblast",
+      "name": "Chloroblast",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "circlethrow",
+      "name": "Circle Throw",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "clamp",
+      "name": "Clamp",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "clangingscales",
+      "name": "Clanging Scales",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "clangoroussoul",
+      "name": "Clangorous Soul",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "clearsmog",
+      "name": "Clear Smog",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "closecombat",
+      "name": "Close Combat",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "coaching",
+      "name": "Coaching",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "coil",
+      "name": "Coil",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "collisioncourse",
+      "name": "Collision Course",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "cometpunch",
+      "name": "Comet Punch",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "comeuppance",
+      "name": "Comeuppance",
+      "status": "port",
+      "note": "turn loop: turn.ts"
+    },
+    {
+      "id": "confide",
+      "name": "Confide",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "confuseray",
+      "name": "Confuse Ray",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "confusion",
+      "name": "Confusion",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "constrict",
+      "name": "Constrict",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "conversion",
+      "name": "Conversion",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "conversion2",
+      "name": "Conversion 2",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "copycat",
+      "name": "Copycat",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "coreenforcer",
+      "name": "Core Enforcer",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "cosmicpower",
+      "name": "Cosmic Power",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "cottonguard",
+      "name": "Cotton Guard",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "cottonspore",
+      "name": "Cotton Spore",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "counter",
+      "name": "Counter",
+      "status": "port",
+      "note": "turn loop: turn.ts"
+    },
+    {
+      "id": "courtchange",
+      "name": "Court Change",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "covet",
+      "name": "Covet",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "crabhammer",
+      "name": "Crabhammer",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "craftyshield",
+      "name": "Crafty Shield",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "crosschop",
+      "name": "Cross Chop",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "crosspoison",
+      "name": "Cross Poison",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "crunch",
+      "name": "Crunch",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "crushclaw",
+      "name": "Crush Claw",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "crushgrip",
+      "name": "Crush Grip",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "curse",
+      "name": "Curse",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "darkpulse",
+      "name": "Dark Pulse",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "darkvoid",
+      "name": "Dark Void",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "darkestlariat",
+      "name": "Darkest Lariat",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "dazzlinggleam",
+      "name": "Dazzling Gleam",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "decorate",
+      "name": "Decorate",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "defendorder",
+      "name": "Defend Order",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "defensecurl",
+      "name": "Defense Curl",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "defog",
+      "name": "Defog",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "destinybond",
+      "name": "Destiny Bond",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "detect",
+      "name": "Detect",
+      "status": "port",
+      "note": "registry: effects/moves.ts"
+    },
+    {
+      "id": "diamondstorm",
+      "name": "Diamond Storm",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "dig",
+      "name": "Dig",
+      "status": "port",
+      "note": "data: flags.charge"
+    },
+    {
+      "id": "direclaw",
+      "name": "Dire Claw",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "disable",
+      "name": "Disable",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "disarmingvoice",
+      "name": "Disarming Voice",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "discharge",
+      "name": "Discharge",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "dive",
+      "name": "Dive",
+      "status": "port",
+      "note": "data: flags.charge"
+    },
+    {
+      "id": "dizzypunch",
+      "name": "Dizzy Punch",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "doodle",
+      "name": "Doodle",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "doomdesire",
+      "name": "Doom Desire",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "doublehit",
+      "name": "Double Hit",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "doubleironbash",
+      "name": "Double Iron Bash",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "doublekick",
+      "name": "Double Kick",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "doubleshock",
+      "name": "Double Shock",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "doubleslap",
+      "name": "Double Slap",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "doubleteam",
+      "name": "Double Team",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "doubleedge",
+      "name": "Double-Edge",
+      "status": "port",
+      "note": "data: recoil"
+    },
+    {
+      "id": "dracometeor",
+      "name": "Draco Meteor",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "dragonascent",
+      "name": "Dragon Ascent",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "dragonbreath",
+      "name": "Dragon Breath",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "dragoncheer",
+      "name": "Dragon Cheer",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "dragonclaw",
+      "name": "Dragon Claw",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "dragondance",
+      "name": "Dragon Dance",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "dragondarts",
+      "name": "Dragon Darts",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "dragonenergy",
+      "name": "Dragon Energy",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "dragonhammer",
+      "name": "Dragon Hammer",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "dragonpulse",
+      "name": "Dragon Pulse",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "dragonrage",
+      "name": "Dragon Rage",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "dragonrush",
+      "name": "Dragon Rush",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "dragontail",
+      "name": "Dragon Tail",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "drainpunch",
+      "name": "Drain Punch",
+      "status": "port",
+      "note": "data: drain"
+    },
+    {
+      "id": "drainingkiss",
+      "name": "Draining Kiss",
+      "status": "port",
+      "note": "data: drain"
+    },
+    {
+      "id": "dreameater",
+      "name": "Dream Eater",
+      "status": "port",
+      "note": "data: drain"
+    },
+    {
+      "id": "drillpeck",
+      "name": "Drill Peck",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "drillrun",
+      "name": "Drill Run",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "drumbeating",
+      "name": "Drum Beating",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "dualchop",
+      "name": "Dual Chop",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "dualwingbeat",
+      "name": "Dual Wingbeat",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "dynamaxcannon",
+      "name": "Dynamax Cannon",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "dynamicpunch",
+      "name": "Dynamic Punch",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "earthpower",
+      "name": "Earth Power",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "earthquake",
+      "name": "Earthquake",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "echoedvoice",
+      "name": "Echoed Voice",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "eerieimpulse",
+      "name": "Eerie Impulse",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "eeriespell",
+      "name": "Eerie Spell",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "eggbomb",
+      "name": "Egg Bomb",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "electricterrain",
+      "name": "Electric Terrain",
+      "status": "port",
+      "note": "data: terrain"
+    },
+    {
+      "id": "electrify",
+      "name": "Electrify",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "electroball",
+      "name": "Electro Ball",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "electrodrift",
+      "name": "Electro Drift",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "electroshot",
+      "name": "Electro Shot",
+      "status": "port",
+      "note": "data: flags.charge"
+    },
+    {
+      "id": "electroweb",
+      "name": "Electroweb",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "embargo",
+      "name": "Embargo",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "ember",
+      "name": "Ember",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "encore",
+      "name": "Encore",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "endeavor",
+      "name": "Endeavor",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "endure",
+      "name": "Endure",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "energyball",
+      "name": "Energy Ball",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "entrainment",
+      "name": "Entrainment",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "eruption",
+      "name": "Eruption",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "esperwing",
+      "name": "Esper Wing",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "eternabeam",
+      "name": "Eternabeam",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "expandingforce",
+      "name": "Expanding Force",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "explosion",
+      "name": "Explosion",
+      "status": "port",
+      "note": "data: selfdestruct"
+    },
+    {
+      "id": "extrasensory",
+      "name": "Extrasensory",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "extremespeed",
+      "name": "Extreme Speed",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "facade",
+      "name": "Facade",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "fairylock",
+      "name": "Fairy Lock",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "fairywind",
+      "name": "Fairy Wind",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "fakeout",
+      "name": "Fake Out",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "faketears",
+      "name": "Fake Tears",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "falsesurrender",
+      "name": "False Surrender",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "falseswipe",
+      "name": "False Swipe",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "featherdance",
+      "name": "Feather Dance",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "feint",
+      "name": "Feint",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "feintattack",
+      "name": "Feint Attack",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "fellstinger",
+      "name": "Fell Stinger",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "ficklebeam",
+      "name": "Fickle Beam",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "fierydance",
+      "name": "Fiery Dance",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "fierywrath",
+      "name": "Fiery Wrath",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "filletaway",
+      "name": "Fillet Away",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "finalgambit",
+      "name": "Final Gambit",
+      "status": "port",
+      "note": "data: selfdestruct"
+    },
+    {
+      "id": "fireblast",
+      "name": "Fire Blast",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "firefang",
+      "name": "Fire Fang",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "firelash",
+      "name": "Fire Lash",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "firepledge",
+      "name": "Fire Pledge",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "firepunch",
+      "name": "Fire Punch",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "firespin",
+      "name": "Fire Spin",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "firstimpression",
+      "name": "First Impression",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "fishiousrend",
+      "name": "Fishious Rend",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "fissure",
+      "name": "Fissure",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "flail",
+      "name": "Flail",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "flameburst",
+      "name": "Flame Burst",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "flamecharge",
+      "name": "Flame Charge",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "flamewheel",
+      "name": "Flame Wheel",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "flamethrower",
+      "name": "Flamethrower",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "flareblitz",
+      "name": "Flare Blitz",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "flash",
+      "name": "Flash",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "flashcannon",
+      "name": "Flash Cannon",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "flatter",
+      "name": "Flatter",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "fleurcannon",
+      "name": "Fleur Cannon",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "fling",
+      "name": "Fling",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "flipturn",
+      "name": "Flip Turn",
+      "status": "port",
+      "note": "data: selfSwitch"
+    },
+    {
+      "id": "floatyfall",
+      "name": "Floaty Fall",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "floralhealing",
+      "name": "Floral Healing",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "flowershield",
+      "name": "Flower Shield",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "flowertrick",
+      "name": "Flower Trick",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "fly",
+      "name": "Fly",
+      "status": "port",
+      "note": "data: flags.charge"
+    },
+    {
+      "id": "flyingpress",
+      "name": "Flying Press",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "focusblast",
+      "name": "Focus Blast",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "focusenergy",
+      "name": "Focus Energy",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "focuspunch",
+      "name": "Focus Punch",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "followme",
+      "name": "Follow Me",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "forcepalm",
+      "name": "Force Palm",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "foresight",
+      "name": "Foresight",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "forestscurse",
+      "name": "Forest's Curse",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "foulplay",
+      "name": "Foul Play",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "freezeshock",
+      "name": "Freeze Shock",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "freezedry",
+      "name": "Freeze-Dry",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "freezingglare",
+      "name": "Freezing Glare",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "freezyfrost",
+      "name": "Freezy Frost",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "frenzyplant",
+      "name": "Frenzy Plant",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "frostbreath",
+      "name": "Frost Breath",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "frustration",
+      "name": "Frustration",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "furyattack",
+      "name": "Fury Attack",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "furycutter",
+      "name": "Fury Cutter",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "furyswipes",
+      "name": "Fury Swipes",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "fusionbolt",
+      "name": "Fusion Bolt",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "fusionflare",
+      "name": "Fusion Flare",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "futuresight",
+      "name": "Future Sight",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "gastroacid",
+      "name": "Gastro Acid",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "geargrind",
+      "name": "Gear Grind",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "gearup",
+      "name": "Gear Up",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "geomancy",
+      "name": "Geomancy",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "gigadrain",
+      "name": "Giga Drain",
+      "status": "port",
+      "note": "data: drain"
+    },
+    {
+      "id": "gigaimpact",
+      "name": "Giga Impact",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "gigatonhammer",
+      "name": "Gigaton Hammer",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "glaciallance",
+      "name": "Glacial Lance",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "glaciate",
+      "name": "Glaciate",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "glaiverush",
+      "name": "Glaive Rush",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "glare",
+      "name": "Glare",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "glitzyglow",
+      "name": "Glitzy Glow",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "grassknot",
+      "name": "Grass Knot",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "grasspledge",
+      "name": "Grass Pledge",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "grasswhistle",
+      "name": "Grass Whistle",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "grassyglide",
+      "name": "Grassy Glide",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "grassyterrain",
+      "name": "Grassy Terrain",
+      "status": "port",
+      "note": "data: terrain"
+    },
+    {
+      "id": "gravapple",
+      "name": "Grav Apple",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "gravity",
+      "name": "Gravity",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "growl",
+      "name": "Growl",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "growth",
+      "name": "Growth",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "grudge",
+      "name": "Grudge",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "guardsplit",
+      "name": "Guard Split",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "guardswap",
+      "name": "Guard Swap",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "guillotine",
+      "name": "Guillotine",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "gunkshot",
+      "name": "Gunk Shot",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "gust",
+      "name": "Gust",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "gyroball",
+      "name": "Gyro Ball",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "hail",
+      "name": "Hail",
+      "status": "port",
+      "note": "data: weather"
+    },
+    {
+      "id": "hammerarm",
+      "name": "Hammer Arm",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "happyhour",
+      "name": "Happy Hour",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "hardpress",
+      "name": "Hard Press",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "harden",
+      "name": "Harden",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "haze",
+      "name": "Haze",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "headcharge",
+      "name": "Head Charge",
+      "status": "port",
+      "note": "data: recoil"
+    },
+    {
+      "id": "headsmash",
+      "name": "Head Smash",
+      "status": "port",
+      "note": "data: recoil"
+    },
+    {
+      "id": "headbutt",
+      "name": "Headbutt",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "headlongrush",
+      "name": "Headlong Rush",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "healbell",
+      "name": "Heal Bell",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "healblock",
+      "name": "Heal Block",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "healorder",
+      "name": "Heal Order",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "healpulse",
+      "name": "Heal Pulse",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "healingwish",
+      "name": "Healing Wish",
+      "status": "port",
+      "note": "data: selfdestruct"
+    },
+    {
+      "id": "heartstamp",
+      "name": "Heart Stamp",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "heartswap",
+      "name": "Heart Swap",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "heatcrash",
+      "name": "Heat Crash",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "heatwave",
+      "name": "Heat Wave",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "heavyslam",
+      "name": "Heavy Slam",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "helpinghand",
+      "name": "Helping Hand",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "hex",
+      "name": "Hex",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "hiddenpower",
+      "name": "Hidden Power",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "highhorsepower",
+      "name": "High Horsepower",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "highjumpkick",
+      "name": "High Jump Kick",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "honeclaws",
+      "name": "Hone Claws",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "hornattack",
+      "name": "Horn Attack",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "horndrill",
+      "name": "Horn Drill",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "hornleech",
+      "name": "Horn Leech",
+      "status": "port",
+      "note": "data: drain"
+    },
+    {
+      "id": "howl",
+      "name": "Howl",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "hurricane",
+      "name": "Hurricane",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "hydrocannon",
+      "name": "Hydro Cannon",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "hydropump",
+      "name": "Hydro Pump",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "hydrosteam",
+      "name": "Hydro Steam",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "hyperbeam",
+      "name": "Hyper Beam",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "hyperdrill",
+      "name": "Hyper Drill",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "hyperfang",
+      "name": "Hyper Fang",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "hypervoice",
+      "name": "Hyper Voice",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "hyperspacefury",
+      "name": "Hyperspace Fury",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "hyperspacehole",
+      "name": "Hyperspace Hole",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "hypnosis",
+      "name": "Hypnosis",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "iceball",
+      "name": "Ice Ball",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "icebeam",
+      "name": "Ice Beam",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "iceburn",
+      "name": "Ice Burn",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "icefang",
+      "name": "Ice Fang",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "icehammer",
+      "name": "Ice Hammer",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "icepunch",
+      "name": "Ice Punch",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "iceshard",
+      "name": "Ice Shard",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "icespinner",
+      "name": "Ice Spinner",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "iciclecrash",
+      "name": "Icicle Crash",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "iciclespear",
+      "name": "Icicle Spear",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "icywind",
+      "name": "Icy Wind",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "imprison",
+      "name": "Imprison",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "incinerate",
+      "name": "Incinerate",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "infernalparade",
+      "name": "Infernal Parade",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "inferno",
+      "name": "Inferno",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "infestation",
+      "name": "Infestation",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "ingrain",
+      "name": "Ingrain",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "instruct",
+      "name": "Instruct",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "iondeluge",
+      "name": "Ion Deluge",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "irondefense",
+      "name": "Iron Defense",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "ironhead",
+      "name": "Iron Head",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "irontail",
+      "name": "Iron Tail",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "ivycudgel",
+      "name": "Ivy Cudgel",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "jawlock",
+      "name": "Jaw Lock",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "jetpunch",
+      "name": "Jet Punch",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "judgment",
+      "name": "Judgment",
+      "status": "port",
+      "note": "registry: effects/items.ts"
+    },
+    {
+      "id": "jumpkick",
+      "name": "Jump Kick",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "junglehealing",
+      "name": "Jungle Healing",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "karatechop",
+      "name": "Karate Chop",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "kinesis",
+      "name": "Kinesis",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "kingsshield",
+      "name": "King's Shield",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "knockoff",
+      "name": "Knock Off",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "kowtowcleave",
+      "name": "Kowtow Cleave",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "landswrath",
+      "name": "Land's Wrath",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "laserfocus",
+      "name": "Laser Focus",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "lashout",
+      "name": "Lash Out",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "lastresort",
+      "name": "Last Resort",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "lastrespects",
+      "name": "Last Respects",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "lavaplume",
+      "name": "Lava Plume",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "leafblade",
+      "name": "Leaf Blade",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "leafstorm",
+      "name": "Leaf Storm",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "leaftornado",
+      "name": "Leaf Tornado",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "leafage",
+      "name": "Leafage",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "leechlife",
+      "name": "Leech Life",
+      "status": "port",
+      "note": "data: drain"
+    },
+    {
+      "id": "leechseed",
+      "name": "Leech Seed",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "leer",
+      "name": "Leer",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "lick",
+      "name": "Lick",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "lifedew",
+      "name": "Life Dew",
+      "status": "port",
+      "note": "data: heal"
+    },
+    {
+      "id": "lightofruin",
+      "name": "Light of Ruin",
+      "status": "port",
+      "note": "data: recoil"
+    },
+    {
+      "id": "lightscreen",
+      "name": "Light Screen",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "liquidation",
+      "name": "Liquidation",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "lockon",
+      "name": "Lock-On",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "lovelykiss",
+      "name": "Lovely Kiss",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "lowkick",
+      "name": "Low Kick",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "lowsweep",
+      "name": "Low Sweep",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "luckychant",
+      "name": "Lucky Chant",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "luminacrash",
+      "name": "Lumina Crash",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "lunarblessing",
+      "name": "Lunar Blessing",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "lunardance",
+      "name": "Lunar Dance",
+      "status": "port",
+      "note": "data: selfdestruct"
+    },
+    {
+      "id": "lunge",
+      "name": "Lunge",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "lusterpurge",
+      "name": "Luster Purge",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "machpunch",
+      "name": "Mach Punch",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "magiccoat",
+      "name": "Magic Coat",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "magicpowder",
+      "name": "Magic Powder",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "magicroom",
+      "name": "Magic Room",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "magicalleaf",
+      "name": "Magical Leaf",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "magmastorm",
+      "name": "Magma Storm",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "magnetbomb",
+      "name": "Magnet Bomb",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "magnetrise",
+      "name": "Magnet Rise",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "magneticflux",
+      "name": "Magnetic Flux",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "magnitude",
+      "name": "Magnitude",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "makeitrain",
+      "name": "Make It Rain",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "malignantchain",
+      "name": "Malignant Chain",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "matblock",
+      "name": "Mat Block",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "matchagotcha",
+      "name": "Matcha Gotcha",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "mefirst",
+      "name": "Me First",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "meanlook",
+      "name": "Mean Look",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "meditate",
+      "name": "Meditate",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "megadrain",
+      "name": "Mega Drain",
+      "status": "port",
+      "note": "data: drain"
+    },
+    {
+      "id": "megakick",
+      "name": "Mega Kick",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "megapunch",
+      "name": "Mega Punch",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "megahorn",
+      "name": "Megahorn",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "memento",
+      "name": "Memento",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "metalburst",
+      "name": "Metal Burst",
+      "status": "port",
+      "note": "turn loop: turn.ts"
+    },
+    {
+      "id": "metalclaw",
+      "name": "Metal Claw",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "metalsound",
+      "name": "Metal Sound",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "meteorassault",
+      "name": "Meteor Assault",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "meteorbeam",
+      "name": "Meteor Beam",
+      "status": "port",
+      "note": "data: flags.charge"
+    },
+    {
+      "id": "meteormash",
+      "name": "Meteor Mash",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "metronome",
+      "name": "Metronome",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "mightycleave",
+      "name": "Mighty Cleave",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "milkdrink",
+      "name": "Milk Drink",
+      "status": "port",
+      "note": "data: heal"
+    },
+    {
+      "id": "mimic",
+      "name": "Mimic",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "mindblown",
+      "name": "Mind Blown",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "mindreader",
+      "name": "Mind Reader",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "minimize",
+      "name": "Minimize",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "miracleeye",
+      "name": "Miracle Eye",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "mirrorcoat",
+      "name": "Mirror Coat",
+      "status": "port",
+      "note": "turn loop: turn.ts"
+    },
+    {
+      "id": "mirrormove",
+      "name": "Mirror Move",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "mirrorshot",
+      "name": "Mirror Shot",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "mist",
+      "name": "Mist",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "mistball",
+      "name": "Mist Ball",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "mistyexplosion",
+      "name": "Misty Explosion",
+      "status": "port",
+      "note": "data: selfdestruct"
+    },
+    {
+      "id": "mistyterrain",
+      "name": "Misty Terrain",
+      "status": "port",
+      "note": "data: terrain"
+    },
+    {
+      "id": "moonblast",
+      "name": "Moonblast",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "moongeistbeam",
+      "name": "Moongeist Beam",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "moonlight",
+      "name": "Moonlight",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "morningsun",
+      "name": "Morning Sun",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "mortalspin",
+      "name": "Mortal Spin",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "mountaingale",
+      "name": "Mountain Gale",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "mudbomb",
+      "name": "Mud Bomb",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "mudshot",
+      "name": "Mud Shot",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "mudsport",
+      "name": "Mud Sport",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "mudslap",
+      "name": "Mud-Slap",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "muddywater",
+      "name": "Muddy Water",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "multiattack",
+      "name": "Multi-Attack",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "mysticalfire",
+      "name": "Mystical Fire",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "mysticalpower",
+      "name": "Mystical Power",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "nastyplot",
+      "name": "Nasty Plot",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "naturalgift",
+      "name": "Natural Gift",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "naturepower",
+      "name": "Nature Power",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "naturesmadness",
+      "name": "Nature's Madness",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "needlearm",
+      "name": "Needle Arm",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "nightdaze",
+      "name": "Night Daze",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "nightshade",
+      "name": "Night Shade",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "nightslash",
+      "name": "Night Slash",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "nightmare",
+      "name": "Nightmare",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "noretreat",
+      "name": "No Retreat",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "nobleroar",
+      "name": "Noble Roar",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "nuzzle",
+      "name": "Nuzzle",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "oblivionwing",
+      "name": "Oblivion Wing",
+      "status": "port",
+      "note": "data: drain"
+    },
+    {
+      "id": "obstruct",
+      "name": "Obstruct",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "octazooka",
+      "name": "Octazooka",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "octolock",
+      "name": "Octolock",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "odorsleuth",
+      "name": "Odor Sleuth",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "ominouswind",
+      "name": "Ominous Wind",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "orderup",
+      "name": "Order Up",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "originpulse",
+      "name": "Origin Pulse",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "outrage",
+      "name": "Outrage",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "overdrive",
+      "name": "Overdrive",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "overheat",
+      "name": "Overheat",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "painsplit",
+      "name": "Pain Split",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "paraboliccharge",
+      "name": "Parabolic Charge",
+      "status": "port",
+      "note": "data: drain"
+    },
+    {
+      "id": "partingshot",
+      "name": "Parting Shot",
+      "status": "port",
+      "note": "data: selfSwitch"
+    },
+    {
+      "id": "payday",
+      "name": "Pay Day",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "payback",
+      "name": "Payback",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "peck",
+      "name": "Peck",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "perishsong",
+      "name": "Perish Song",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "petalblizzard",
+      "name": "Petal Blizzard",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "petaldance",
+      "name": "Petal Dance",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "phantomforce",
+      "name": "Phantom Force",
+      "status": "port",
+      "note": "data: flags.charge"
+    },
+    {
+      "id": "photongeyser",
+      "name": "Photon Geyser",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "pikapapow",
+      "name": "Pika Papow",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "pinmissile",
+      "name": "Pin Missile",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "plasmafists",
+      "name": "Plasma Fists",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "playnice",
+      "name": "Play Nice",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "playrough",
+      "name": "Play Rough",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "pluck",
+      "name": "Pluck",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "poisonfang",
+      "name": "Poison Fang",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "poisongas",
+      "name": "Poison Gas",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "poisonjab",
+      "name": "Poison Jab",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "poisonpowder",
+      "name": "Poison Powder",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "poisonsting",
+      "name": "Poison Sting",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "poisontail",
+      "name": "Poison Tail",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "pollenpuff",
+      "name": "Pollen Puff",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "poltergeist",
+      "name": "Poltergeist",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "populationbomb",
+      "name": "Population Bomb",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "pounce",
+      "name": "Pounce",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "pound",
+      "name": "Pound",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "powder",
+      "name": "Powder",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "powdersnow",
+      "name": "Powder Snow",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "powergem",
+      "name": "Power Gem",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "powersplit",
+      "name": "Power Split",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "powerswap",
+      "name": "Power Swap",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "powertrick",
+      "name": "Power Trick",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "powertrip",
+      "name": "Power Trip",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "powerwhip",
+      "name": "Power Whip",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "poweruppunch",
+      "name": "Power-Up Punch",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "precipiceblades",
+      "name": "Precipice Blades",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "present",
+      "name": "Present",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "prismaticlaser",
+      "name": "Prismatic Laser",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "protect",
+      "name": "Protect",
+      "status": "port",
+      "note": "registry: effects/moves.ts"
+    },
+    {
+      "id": "psybeam",
+      "name": "Psybeam",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "psyblade",
+      "name": "Psyblade",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "psychup",
+      "name": "Psych Up",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "psychic",
+      "name": "Psychic",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "psychicfangs",
+      "name": "Psychic Fangs",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "psychicnoise",
+      "name": "Psychic Noise",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "psychicterrain",
+      "name": "Psychic Terrain",
+      "status": "port",
+      "note": "data: terrain"
+    },
+    {
+      "id": "psychoboost",
+      "name": "Psycho Boost",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "psychocut",
+      "name": "Psycho Cut",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "psychoshift",
+      "name": "Psycho Shift",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "psyshieldbash",
+      "name": "Psyshield Bash",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "psyshock",
+      "name": "Psyshock",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "psystrike",
+      "name": "Psystrike",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "psywave",
+      "name": "Psywave",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "punishment",
+      "name": "Punishment",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "purify",
+      "name": "Purify",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "pursuit",
+      "name": "Pursuit",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "pyroball",
+      "name": "Pyro Ball",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "quash",
+      "name": "Quash",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "quickattack",
+      "name": "Quick Attack",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "quickguard",
+      "name": "Quick Guard",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "quiverdance",
+      "name": "Quiver Dance",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "rage",
+      "name": "Rage",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "ragefist",
+      "name": "Rage Fist",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "ragepowder",
+      "name": "Rage Powder",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "ragingbull",
+      "name": "Raging Bull",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "ragingfury",
+      "name": "Raging Fury",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "raindance",
+      "name": "Rain Dance",
+      "status": "port",
+      "note": "data: weather"
+    },
+    {
+      "id": "rapidspin",
+      "name": "Rapid Spin",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "razorleaf",
+      "name": "Razor Leaf",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "razorshell",
+      "name": "Razor Shell",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "razorwind",
+      "name": "Razor Wind",
+      "status": "port",
+      "note": "data: flags.charge"
+    },
+    {
+      "id": "recover",
+      "name": "Recover",
+      "status": "port",
+      "note": "data: heal"
+    },
+    {
+      "id": "recycle",
+      "name": "Recycle",
+      "status": "port",
+      "note": "registry: effects/moves.ts"
+    },
+    {
+      "id": "reflect",
+      "name": "Reflect",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "reflecttype",
+      "name": "Reflect Type",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "refresh",
+      "name": "Refresh",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "relicsong",
+      "name": "Relic Song",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "rest",
+      "name": "Rest",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "retaliate",
+      "name": "Retaliate",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "return",
+      "name": "Return",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "revelationdance",
+      "name": "Revelation Dance",
+      "status": "port",
+      "note": "registry: effects/moves.ts"
+    },
+    {
+      "id": "revenge",
+      "name": "Revenge",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "reversal",
+      "name": "Reversal",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "revivalblessing",
+      "name": "Revival Blessing",
+      "status": "port",
+      "note": "data: selfSwitch"
+    },
+    {
+      "id": "risingvoltage",
+      "name": "Rising Voltage",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "roar",
+      "name": "Roar",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "roaroftime",
+      "name": "Roar of Time",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "rockblast",
+      "name": "Rock Blast",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "rockclimb",
+      "name": "Rock Climb",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "rockpolish",
+      "name": "Rock Polish",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "rockslide",
+      "name": "Rock Slide",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "rocksmash",
+      "name": "Rock Smash",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "rockthrow",
+      "name": "Rock Throw",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "rocktomb",
+      "name": "Rock Tomb",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "rockwrecker",
+      "name": "Rock Wrecker",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "roleplay",
+      "name": "Role Play",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "rollingkick",
+      "name": "Rolling Kick",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "rollout",
+      "name": "Rollout",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "roost",
+      "name": "Roost",
+      "status": "port",
+      "note": "data: heal"
+    },
+    {
+      "id": "rototiller",
+      "name": "Rototiller",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "round",
+      "name": "Round",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "ruination",
+      "name": "Ruination",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "sacredfire",
+      "name": "Sacred Fire",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "sacredsword",
+      "name": "Sacred Sword",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "safeguard",
+      "name": "Safeguard",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "saltcure",
+      "name": "Salt Cure",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "sandattack",
+      "name": "Sand Attack",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "sandtomb",
+      "name": "Sand Tomb",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "sandsearstorm",
+      "name": "Sandsear Storm",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "sandstorm",
+      "name": "Sandstorm",
+      "status": "port",
+      "note": "data: weather"
+    },
+    {
+      "id": "sappyseed",
+      "name": "Sappy Seed",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "scald",
+      "name": "Scald",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "scaleshot",
+      "name": "Scale Shot",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "scaryface",
+      "name": "Scary Face",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "scorchingsands",
+      "name": "Scorching Sands",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "scratch",
+      "name": "Scratch",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "screech",
+      "name": "Screech",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "searingshot",
+      "name": "Searing Shot",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "secretpower",
+      "name": "Secret Power",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "secretsword",
+      "name": "Secret Sword",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "seedbomb",
+      "name": "Seed Bomb",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "seedflare",
+      "name": "Seed Flare",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "seismictoss",
+      "name": "Seismic Toss",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "selfdestruct",
+      "name": "Self-Destruct",
+      "status": "port",
+      "note": "data: selfdestruct"
+    },
+    {
+      "id": "shadowball",
+      "name": "Shadow Ball",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "shadowbone",
+      "name": "Shadow Bone",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "shadowclaw",
+      "name": "Shadow Claw",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "shadowforce",
+      "name": "Shadow Force",
+      "status": "port",
+      "note": "data: flags.charge"
+    },
+    {
+      "id": "shadowpunch",
+      "name": "Shadow Punch",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "shadowsneak",
+      "name": "Shadow Sneak",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "sharpen",
+      "name": "Sharpen",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "shedtail",
+      "name": "Shed Tail",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "sheercold",
+      "name": "Sheer Cold",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "shellsidearm",
+      "name": "Shell Side Arm",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "shellsmash",
+      "name": "Shell Smash",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "shelltrap",
+      "name": "Shell Trap",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "shelter",
+      "name": "Shelter",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "shiftgear",
+      "name": "Shift Gear",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "shockwave",
+      "name": "Shock Wave",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "shoreup",
+      "name": "Shore Up",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "signalbeam",
+      "name": "Signal Beam",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "silktrap",
+      "name": "Silk Trap",
+      "status": "port",
+      "note": "registry: effects/moves.ts"
+    },
+    {
+      "id": "silverwind",
+      "name": "Silver Wind",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "simplebeam",
+      "name": "Simple Beam",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "sing",
+      "name": "Sing",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "sizzlyslide",
+      "name": "Sizzly Slide",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "sketch",
+      "name": "Sketch",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "skillswap",
+      "name": "Skill Swap",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "skittersmack",
+      "name": "Skitter Smack",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "skullbash",
+      "name": "Skull Bash",
+      "status": "port",
+      "note": "data: flags.charge"
+    },
+    {
+      "id": "skyattack",
+      "name": "Sky Attack",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "skydrop",
+      "name": "Sky Drop",
+      "status": "port",
+      "note": "data: flags.charge"
+    },
+    {
+      "id": "skyuppercut",
+      "name": "Sky Uppercut",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "slackoff",
+      "name": "Slack Off",
+      "status": "port",
+      "note": "data: heal"
+    },
+    {
+      "id": "slam",
+      "name": "Slam",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "slash",
+      "name": "Slash",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "sleeppowder",
+      "name": "Sleep Powder",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "sleeptalk",
+      "name": "Sleep Talk",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "sludge",
+      "name": "Sludge",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "sludgebomb",
+      "name": "Sludge Bomb",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "sludgewave",
+      "name": "Sludge Wave",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "smackdown",
+      "name": "Smack Down",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "smartstrike",
+      "name": "Smart Strike",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "smellingsalts",
+      "name": "Smelling Salts",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "smog",
+      "name": "Smog",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "smokescreen",
+      "name": "Smokescreen",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "snaptrap",
+      "name": "Snap Trap",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "snarl",
+      "name": "Snarl",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "snatch",
+      "name": "Snatch",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "snipeshot",
+      "name": "Snipe Shot",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "snore",
+      "name": "Snore",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "snowscape",
+      "name": "Snowscape",
+      "status": "port",
+      "note": "data: weather"
+    },
+    {
+      "id": "soak",
+      "name": "Soak",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "softboiled",
+      "name": "Soft-Boiled",
+      "status": "port",
+      "note": "data: heal"
+    },
+    {
+      "id": "solarbeam",
+      "name": "Solar Beam",
+      "status": "port",
+      "note": "data: flags.charge"
+    },
+    {
+      "id": "solarblade",
+      "name": "Solar Blade",
+      "status": "port",
+      "note": "data: flags.charge"
+    },
+    {
+      "id": "sonicboom",
+      "name": "Sonic Boom",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "spacialrend",
+      "name": "Spacial Rend",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "spark",
+      "name": "Spark",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "sparklingaria",
+      "name": "Sparkling Aria",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "sparklyswirl",
+      "name": "Sparkly Swirl",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "spectralthief",
+      "name": "Spectral Thief",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "speedswap",
+      "name": "Speed Swap",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "spicyextract",
+      "name": "Spicy Extract",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "spiderweb",
+      "name": "Spider Web",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "spikecannon",
+      "name": "Spike Cannon",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "spikes",
+      "name": "Spikes",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "spikyshield",
+      "name": "Spiky Shield",
+      "status": "port",
+      "note": "registry: effects/moves.ts"
+    },
+    {
+      "id": "spinout",
+      "name": "Spin Out",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "spiritbreak",
+      "name": "Spirit Break",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "spiritshackle",
+      "name": "Spirit Shackle",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "spitup",
+      "name": "Spit Up",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "spite",
+      "name": "Spite",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "splash",
+      "name": "Splash",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "splishysplash",
+      "name": "Splishy Splash",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "spore",
+      "name": "Spore",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "spotlight",
+      "name": "Spotlight",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "springtidestorm",
+      "name": "Springtide Storm",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "stealthrock",
+      "name": "Stealth Rock",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "steameruption",
+      "name": "Steam Eruption",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "steamroller",
+      "name": "Steamroller",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "steelbeam",
+      "name": "Steel Beam",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "steelroller",
+      "name": "Steel Roller",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "steelwing",
+      "name": "Steel Wing",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "stickyweb",
+      "name": "Sticky Web",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "stockpile",
+      "name": "Stockpile",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "stomp",
+      "name": "Stomp",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "stompingtantrum",
+      "name": "Stomping Tantrum",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "stoneaxe",
+      "name": "Stone Axe",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "stoneedge",
+      "name": "Stone Edge",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "storedpower",
+      "name": "Stored Power",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "stormthrow",
+      "name": "Storm Throw",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "strangesteam",
+      "name": "Strange Steam",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "strength",
+      "name": "Strength",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "strengthsap",
+      "name": "Strength Sap",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "stringshot",
+      "name": "String Shot",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "struggle",
+      "name": "Struggle",
+      "status": "port",
+      "note": "data: struggleRecoil"
+    },
+    {
+      "id": "strugglebug",
+      "name": "Struggle Bug",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "stuffcheeks",
+      "name": "Stuff Cheeks",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "stunspore",
+      "name": "Stun Spore",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "submission",
+      "name": "Submission",
+      "status": "port",
+      "note": "data: recoil"
+    },
+    {
+      "id": "substitute",
+      "name": "Substitute",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "suckerpunch",
+      "name": "Sucker Punch",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "sunnyday",
+      "name": "Sunny Day",
+      "status": "port",
+      "note": "data: weather"
+    },
+    {
+      "id": "sunsteelstrike",
+      "name": "Sunsteel Strike",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "superfang",
+      "name": "Super Fang",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "supercellslam",
+      "name": "Supercell Slam",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "superpower",
+      "name": "Superpower",
+      "status": "port",
+      "note": "data: self.boosts"
+    },
+    {
+      "id": "supersonic",
+      "name": "Supersonic",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "surf",
+      "name": "Surf",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "surgingstrikes",
+      "name": "Surging Strikes",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "swagger",
+      "name": "Swagger",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "swallow",
+      "name": "Swallow",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "sweetkiss",
+      "name": "Sweet Kiss",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "sweetscent",
+      "name": "Sweet Scent",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "swift",
+      "name": "Swift",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "switcheroo",
+      "name": "Switcheroo",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "swordsdance",
+      "name": "Swords Dance",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "synchronoise",
+      "name": "Synchronoise",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "synthesis",
+      "name": "Synthesis",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "syrupbomb",
+      "name": "Syrup Bomb",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "tachyoncutter",
+      "name": "Tachyon Cutter",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "tackle",
+      "name": "Tackle",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "tailglow",
+      "name": "Tail Glow",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "tailslap",
+      "name": "Tail Slap",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "tailwhip",
+      "name": "Tail Whip",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "tailwind",
+      "name": "Tailwind",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "takedown",
+      "name": "Take Down",
+      "status": "port",
+      "note": "data: recoil"
+    },
+    {
+      "id": "takeheart",
+      "name": "Take Heart",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "tarshot",
+      "name": "Tar Shot",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "taunt",
+      "name": "Taunt",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "tearfullook",
+      "name": "Tearful Look",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "teatime",
+      "name": "Teatime",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "technoblast",
+      "name": "Techno Blast",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "teeterdance",
+      "name": "Teeter Dance",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "telekinesis",
+      "name": "Telekinesis",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "teleport",
+      "name": "Teleport",
+      "status": "port",
+      "note": "data: selfSwitch"
+    },
+    {
+      "id": "temperflare",
+      "name": "Temper Flare",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "terablast",
+      "name": "Tera Blast",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "terastarstorm",
+      "name": "Tera Starstorm",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "terrainpulse",
+      "name": "Terrain Pulse",
+      "status": "port",
+      "note": "registry: effects/moves.ts"
+    },
+    {
+      "id": "thief",
+      "name": "Thief",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "thousandarrows",
+      "name": "Thousand Arrows",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "thousandwaves",
+      "name": "Thousand Waves",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "thrash",
+      "name": "Thrash",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "throatchop",
+      "name": "Throat Chop",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "thunder",
+      "name": "Thunder",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "thundercage",
+      "name": "Thunder Cage",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "thunderfang",
+      "name": "Thunder Fang",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "thunderpunch",
+      "name": "Thunder Punch",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "thundershock",
+      "name": "Thunder Shock",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "thunderwave",
+      "name": "Thunder Wave",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "thunderbolt",
+      "name": "Thunderbolt",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "thunderclap",
+      "name": "Thunderclap",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "thunderouskick",
+      "name": "Thunderous Kick",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "tickle",
+      "name": "Tickle",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "tidyup",
+      "name": "Tidy Up",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "topsyturvy",
+      "name": "Topsy-Turvy",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "torchsong",
+      "name": "Torch Song",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "torment",
+      "name": "Torment",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "toxic",
+      "name": "Toxic",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "toxicspikes",
+      "name": "Toxic Spikes",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "toxicthread",
+      "name": "Toxic Thread",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "trailblaze",
+      "name": "Trailblaze",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "transform",
+      "name": "Transform",
+      "status": "port",
+      "note": "registry: effects/moves.ts"
+    },
+    {
+      "id": "triattack",
+      "name": "Tri Attack",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "trick",
+      "name": "Trick",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "trickroom",
+      "name": "Trick Room",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "trickortreat",
+      "name": "Trick-or-Treat",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "triplearrows",
+      "name": "Triple Arrows",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "tripleaxel",
+      "name": "Triple Axel",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "tripledive",
+      "name": "Triple Dive",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "triplekick",
+      "name": "Triple Kick",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "tropkick",
+      "name": "Trop Kick",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "trumpcard",
+      "name": "Trump Card",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "twinbeam",
+      "name": "Twin Beam",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "twineedle",
+      "name": "Twineedle",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "twister",
+      "name": "Twister",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "uturn",
+      "name": "U-turn",
+      "status": "port",
+      "note": "data: selfSwitch"
+    },
+    {
+      "id": "upperhand",
+      "name": "Upper Hand",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "uproar",
+      "name": "Uproar",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "vacuumwave",
+      "name": "Vacuum Wave",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "veeveevolley",
+      "name": "Veevee Volley",
+      "status": "excluded",
+      "note": "no playable species has it"
+    },
+    {
+      "id": "venomdrench",
+      "name": "Venom Drench",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "venoshock",
+      "name": "Venoshock",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "victorydance",
+      "name": "Victory Dance",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "vinewhip",
+      "name": "Vine Whip",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "visegrip",
+      "name": "Vise Grip",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "vitalthrow",
+      "name": "Vital Throw",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "voltswitch",
+      "name": "Volt Switch",
+      "status": "port",
+      "note": "data: selfSwitch"
+    },
+    {
+      "id": "volttackle",
+      "name": "Volt Tackle",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "wakeupslap",
+      "name": "Wake-Up Slap",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "watergun",
+      "name": "Water Gun",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "waterpledge",
+      "name": "Water Pledge",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "waterpulse",
+      "name": "Water Pulse",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "watershuriken",
+      "name": "Water Shuriken",
+      "status": "port",
+      "note": "data: multihit"
+    },
+    {
+      "id": "watersport",
+      "name": "Water Sport",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "waterspout",
+      "name": "Water Spout",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "waterfall",
+      "name": "Waterfall",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "wavecrash",
+      "name": "Wave Crash",
+      "status": "port",
+      "note": "data: recoil"
+    },
+    {
+      "id": "weatherball",
+      "name": "Weather Ball",
+      "status": "port",
+      "note": "registry: effects/moves.ts"
+    },
+    {
+      "id": "whirlpool",
+      "name": "Whirlpool",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "whirlwind",
+      "name": "Whirlwind",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "wickedblow",
+      "name": "Wicked Blow",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "wideguard",
+      "name": "Wide Guard",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "wildcharge",
+      "name": "Wild Charge",
+      "status": "port",
+      "note": "data: recoil"
+    },
+    {
+      "id": "wildboltstorm",
+      "name": "Wildbolt Storm",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "willowisp",
+      "name": "Will-O-Wisp",
+      "status": "port",
+      "note": "data: status"
+    },
+    {
+      "id": "wingattack",
+      "name": "Wing Attack",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "wish",
+      "name": "Wish",
+      "status": "port",
+      "note": "turn loop: turn.ts"
+    },
+    {
+      "id": "withdraw",
+      "name": "Withdraw",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "wonderroom",
+      "name": "Wonder Room",
+      "status": "no-op",
+      "note": "reachable, not ported yet"
+    },
+    {
+      "id": "woodhammer",
+      "name": "Wood Hammer",
+      "status": "port",
+      "note": "data: recoil"
+    },
+    {
+      "id": "workup",
+      "name": "Work Up",
+      "status": "port",
+      "note": "data: boosts"
+    },
+    {
+      "id": "worryseed",
+      "name": "Worry Seed",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "wrap",
+      "name": "Wrap",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "wringout",
+      "name": "Wring Out",
+      "status": "port",
+      "note": "data: flags.protect"
+    },
+    {
+      "id": "xscissor",
+      "name": "X-Scissor",
+      "status": "port",
+      "note": "data: basePower"
+    },
+    {
+      "id": "yawn",
+      "name": "Yawn",
+      "status": "port",
+      "note": "data: volatileStatus"
+    },
+    {
+      "id": "zapcannon",
+      "name": "Zap Cannon",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "zenheadbutt",
+      "name": "Zen Headbutt",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "zingzap",
+      "name": "Zing Zap",
+      "status": "port",
+      "note": "data: secondaries"
+    },
+    {
+      "id": "zippyzap",
+      "name": "Zippy Zap",
+      "status": "excluded",
+      "note": "no playable species has it"
+    }
+  ]
+}

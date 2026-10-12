@@ -4,10 +4,10 @@ const warned = new Set<string>();
 
 /**
  * Dev-only nudge so a coverage gap cannot hide during playtests (D16): a
- * battle met an ability or held item with no registered effect. Fires once per
- * effect for the life of the page.
+ * battle met an ability, held item or move with no registered effect. Fires
+ * once per effect for the life of the page.
  */
-export function warnUnportedEffect(kind: 'ability' | 'item', id: string): void {
+export function warnUnportedEffect(kind: 'ability' | 'item' | 'move', id: string): void {
   if (!IS_DEVELOP) return;
   const key = `${kind}:${id}`;
   if (warned.has(key)) return;

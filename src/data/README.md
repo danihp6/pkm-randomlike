@@ -32,6 +32,11 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   Held items are registered by `engine/battle/effects/items.ts`. Also builds one
   unsold **Mega Stone** per Mega forme from `dex/megas.ts` (`D34`); holding the
   matching stone lets a Pokémon Mega Evolve once per battle.
+- `moveCoverage.json` — **generated**, do not edit by hand: every shipped move as
+  `port | no-op | excluded` with the seam it was derived from, written by
+  `scripts/effect-coverage.mjs` beside the coverage table; regenerate it with
+  `npm run docs:coverage`. `moveCoverage.ts` is its typed accessor, and the
+  develop-build warning reads it (`D16`).
 
 ## Rules
 
