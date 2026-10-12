@@ -408,7 +408,7 @@ export type RouteValidation = Readonly<{
 }>;
 ```
 
-`ok` is true exactly when the six gated lists are empty: `unreachable`,
+`ok` is true exactly when the seven gated lists are empty: `unreachable`,
 `blockedByTrainers`, `strandedItems`, `itemsOnTerrain`, `spineBlocked`,
 `borderBreaches` and `trainerIssues`. **`unreachablePockets` is not in that test**:
 a pocket the entry cannot reach is a finding, not a failure, because `placeItems`
