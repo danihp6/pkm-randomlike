@@ -23,6 +23,9 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
+**Paused after Batch 2 by request.** The plan stops here: Batch 3 is the next to run,
+and nothing below it is in flight.
+
 Legend:
 - **IDs.** `[Task-NN]` is bound to a task only in this file; everywhere else a task
   is referenced by name. Two digits, in backlog order.
@@ -49,21 +52,20 @@ Legend:
   ESLint half of `npm run lint`) is the only one: it waits on an upstream
   `typescript-eslint` release, not on a decision here.
 
-**Critical path.** Dependency depth is two: with Batch 1 merged, the only chain left
-is `Task-07 → Task-23` beside `Task-25 → Task-23`. What serialises the tail is a
-shared resource, not a dependency: `Task-18`, `Task-19` and `Task-20` all regenerate
-`src/data/dex/**` through `scripts/build-dex.mjs`, `Task-20` and `Task-21` both extend
-`src/ui/evolutionGraph.ts`, and `Task-23` writes paths earlier tasks already hold —
-`src/data/items.ts` (`Task-07`, `Task-19` and `Task-22`'s TM entries),
-`src/data/shop.ts` and `src/data/loot.ts` (`Task-07`, `Task-22`),
-`src/engine/battle/effects/items.ts` (`Task-07`), `src/engine/battle/moveType.ts`
-(`Task-25`), the `src/data/` numbers (`Task-09`) and the generated
-`docs/balance/effect-coverage.md` (`Task-05`, `Task-07`, `Task-09`) — which is why it
-sits in Batch 8 rather than beside the item tasks it belongs to. Those three dex tasks
-are dependency-free, so the Orchestrator may pull any of them into an earlier batch
-whose paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free. `Task-29` (the
-Prettier reformat pass, Batch 11) is the other serial resource: it claims every
-`src/**` path `.prettierignore` still ledgers, so it runs alone, and last.
+**Critical path.** Dependency depth is two: with Batches 1 and 2 merged, the only chain
+left is `Task-07 → Task-23`. What serialises the tail is a shared resource, not a
+dependency: `Task-18`, `Task-19` and `Task-20` all regenerate `src/data/dex/**` through
+`scripts/build-dex.mjs`, `Task-20` and `Task-21` both extend `src/ui/evolutionGraph.ts`,
+and `Task-23` writes paths earlier tasks already hold — `src/data/items.ts` (`Task-07`,
+`Task-19` and `Task-22`'s TM entries), `src/data/shop.ts` and `src/data/loot.ts`
+(`Task-07`, `Task-22`), `src/engine/battle/effects/items.ts` (`Task-07`),
+`src/engine/battle/moveType.ts` (`Task-25`, shipped in Batch 2), the `src/data/` numbers
+(`Task-09`) and the generated `docs/balance/effect-coverage.md` (`Task-07`, `Task-09`) —
+which is why it sits in Batch 8 rather than beside the item tasks it belongs to. Those
+three dex tasks are dependency-free, so the Orchestrator may pull any of them into an
+earlier batch whose paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
+`Task-29` (the Prettier reformat pass, Batch 11) is the other serial resource: it claims
+every `src/**` path `.prettierignore` still ledgers, so it runs alone, and last.
 
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
@@ -71,32 +73,11 @@ green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
 parked are registered below: `[Task-28]` (activate the ESLint half, unscheduled) and
 `[Task-29]` (the Prettier reformat pass, Batch 11).
 
-### Batch 2 — docs pass, effect ports, Hidden Power
-- **Task-04** Step 10 — docs pass.
-- **Task-05** Reachable-but-unported effects.
-- **Task-25** Hidden Power's type.
-- **Hot files:** the generated `docs/balance/effect-coverage.md` **and** the generated
-  `src/data/moveCoverage.json` → Task-05; `AGENTS.md` → Task-04; `src/scenes/RouteScene.ts`
-  → Task-25. No task in the batch claims `package.json`, `package-lock.json`,
-  `src/main.ts`, `vite.config.ts`, another `src/scenes/*.ts`, anything under
-  `src/data/dex/**`, `src/data/anil/**` or `src/assets/**`, `.prettierignore`, or the
-  docs a later docs pass owns (`docs/maps-spec.md`, `docs/design-spec.md`).
-- **Shape:** prose, ported handlers and one move-typing rule — checked against the
-  tree at `23ac1e5`, not assumed. The recorded pair Task-05/Task-25 **shared one path**
-  and this batch separates them: both wanted `src/engine/battle/effects/moves.ts`,
-  which is where a move's type registers, because Task-25 needs a `hiddenpower` move
-  effect and Task-05 ports the move long tail. So **Task-05 owns `effects/moves.ts`**
-  (and every other battle module its ports touch, `turn.ts`/`state.ts` included) and
-  **Task-25 owns `src/engine/battle/moveType.ts` plus a new
-  `src/engine/battle/effects/hiddenPower.ts`, which it registers through
-  `src/engine/battle/index.ts`** — the barrel both scenes already import, so the effect
-  is live in the app without either task editing the other's file. Task-04 reads the
-  generator it documents and writes no code; Task-05 reads
-  `src/data/moveCoverage.json` for its port list and regenerates it; Task-25 reads
-  `moveType.ts` and the panel call sites. No two tasks in the batch write the same file.
-  Paths that belong to no task here: `src/engine/battle/effects/items.ts` and
-  `src/data/items.ts` (Task-07, Batch 3) stay untouched. `docs/battle-spec.md` →
-  Task-05 only; `src/ui/partyDetail.ts` → Task-25 only.
+### Batch 2 — docs pass, effect ports, Hidden Power *(shipped, archived)*
+Task-04, Task-05 and Task-25 merged in ID order behind the green gate; the detail is in
+`CHANGELOG.md`'s `## Unreleased`. The effect ports leave `unportedMoveIds()` empty, so
+the coverage table names no `no-op` row, and the `moveType.ts` seam Task-25 shipped is
+what Task-23 extends.
 
 ### Batch 3 — held items, ability popup
 - **Task-07** The competitive held items, with Añil's icons.
@@ -153,8 +134,7 @@ parked are registered below: `[Task-28]` (activate the ESLint half, unscheduled)
 - **Task-14** New biomes.
 - **Task-20** The Rotom appliances as evolutions.
 - **Task-23** Item-driven move retypes: Multi-Attack, Techno Blast, Natural Gift.
-  Needs Task-07 merged, and builds on the `moveType.ts` shape Task-25 leaves in
-  Batch 2.
+  Needs Task-07 merged, and builds on the `moveType.ts` seam Batch 2 shipped.
 - **Hot files:** every `src/scenes/*.ts` → Task-08; `scripts/build-dex.mjs` and
   `src/data/dex/**` → Task-20; `package.json` and any new tileset atlas → Task-14; the
   generated `docs/balance/effect-coverage.md` → Task-23.
@@ -262,20 +242,6 @@ algorithm, its guarantees and its open questions are in
 most useful first. The art counterparts (a real tall-grass tile, the
 floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **[Task-04] Step 10 — Docs pass.** Update `docs/routes-spec.md` and
-      `AGENTS.md` to the shipped algorithm, mark `docs/route-generator.md`
-      implemented and archive these steps in `CHANGELOG.md`. **`§4` of
-      `docs/route-generator.md` must be rewritten to what Step 8 actually
-      validates**: the assert "every pocket has exactly one walkable neighbour"
-      is false for this generator — a branch ends in a 2-4 tile lane or in a
-      chamber (`carveBranches`), so the shipped invariant is that no **placed
-      item** is stranded and that the spine, the fence, the items' terrain and
-      the trainer poses hold; an unreachable pocket is reported but not gated,
-      because `placeItems` is allowed to skip a pocket a hazard sealed.
-      *Dependencies:* none — it documents the checks `src/engine/routes/validate.ts`
-      ships (Step 8, archived with Batch 1), which it reads, not waits on.
-      *(Batch 2)*
-
 ## Phase 3 — Battle engine core (pure, headless, tested)
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
@@ -290,20 +256,6 @@ The whole menu battle minus per-effect behaviour. Contract in
 Ports of Showdown handlers, in batches, on the hook names in
 `docs/showdown-reuse.md` §3.
 
-- [ ] **[Task-05] Reachable-but-unported effects.** The full National Dex (`D40`)
-      and the full move set (`D42`) make **24 abilities and 86 moves** meetable that
-      are not ported yet — the `no-op` rows of `docs/balance/effect-coverage.md` and
-      the ids `unportedMoveIds()` returns from `src/data/moveCoverage.json` (Batch 1,
-      Task-06). A damaging move resolves its base damage generically, but a status
-      move or listed ability without a handler is a silent no-op until ported, and
-      `src/dev/warnings.ts` already warns once per unported move in a develop build.
-      Resolve every one of them: port it, or reclassify it `excluded` with a reason
-      the table's own legend names (allies-only, out of battle, a mechanic the engine
-      does not model). After this task neither section has a `no-op` row, and the
-      develop-build move warnings clear.
-      *Dependencies:* none — its port list is the classification Task-06 shipped
-      (`src/data/moveCoverage.json`), which it reads and regenerates, not waits on.
-      *(Batch 2)*
 - [ ] **[Task-07] The competitive held items, with Añil's icons.** The run's
       held-item catalogue is a slice of the competitive set (24 `kind: 'held'`
       entries in `src/data/items.ts`) and their icons all come from the FRLG sheet
@@ -603,7 +555,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
 
 - [ ] **[Task-22] TM acquisition breadth.** TMs only drop from route loot and
       mini-boss rewards today. A proper TM Machine (or a per-band TM slot in the
-      shop) and a real machine icon � every TM borrows the sheet's question mark until then �
+      shop) and a real machine icon — every TM borrows the sheet's question mark until then —
       are still open.
       *Dependencies:* none. *(Batch 5)*
 - [ ] **[Task-23] Item-driven move retypes: Multi-Attack, Techno Blast, Natural
@@ -634,16 +586,10 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       as loot; this item only wires the retype they already hook.
       *Dependencies:* Task-07 (The competitive held items, with Añil's icons) — it
       settles the `ItemDef` fields and the handler registration in the two files this
-      task extends. Task-25 (Hidden Power's type) writes `src/engine/battle/moveType.ts`
-      in Batch 2, so this task builds on the shape it leaves. The three moves' rows in
+      task extends. The `src/engine/battle/moveType.ts` seam is merged (Task-25, Batch
+      2), so this task extends it rather than waits on it. The three moves' rows in
       `docs/balance/effect-coverage.md` are the generated table Task-06 shipped
       (Batch 1) — read, not waited on. *(Batch 8)*
-- [ ] **[Task-25] Hidden Power's type.** `moves.json` ships Hidden Power as a single
-      Normal entry (`D42`); model its type from the holder's IVs so the 17 typings
-      mean something again: the battle, the FIGHT menu's preview and the party panel
-      all read the same IV-derived type, and `docs/tech-decisions.md` /
-      `docs/showdown-reuse.md` stop saying the engine does not model it.
-      *Dependencies:* none. *(Batch 2)*
 
 ## Phase 11 — Localisation (i18n)
 

@@ -1029,6 +1029,39 @@ file is the human-readable summary.
       replaces without touching a call site (`O4`). `D22` addendum, and the
       `AGENTS.md` Art convention now covers audio. `src/audio/`,
       `src/assets/audio/`, `scripts/frlg/build-audio.mjs`.
+- [x] **The route generator and its validator are documented as they ship (Step
+      10).** `docs/route-generator.md` stops being a blueprint: §4 transcribes
+      `RouteValidation` field by field — the nine fields, `ok` gating the seven
+      lists, `unreachablePockets` reported and never gated — §0's pseudocode uses
+      the shipped names (`MAX_ATTEMPTS`, `attemptRoute`, `validateRoute`,
+      `placeAccess`, `cleanWalls`, `carveBranches`, the six shapes), and the false
+      "every pocket has exactly one walkable neighbour" assert is gone.
+      `docs/routes-spec.md` step 5 and `AGENTS.md` follow: a route is a **room** of
+      a floor, joined to its grid neighbours by their openings, and
+      `src/engine/routes/` is its ten modules.
+- [x] **Every reachable effect is ported — the coverage table has no `no-op` left
+      (`D16`).** Task-06's 86 unported moves and 24 unported abilities are
+      resolved: 68 moves and 23 abilities gained handlers (`effects/moves.ts`,
+      `effects/abilities.ts`, `effects/weather.ts`, the side conditions in
+      `state.ts` and the order/damage/accuracy seams) and the rest are `excluded`
+      with the missing mechanic named — `reachable, not ported yet` is gone,
+      `unportedMoveIds()` returns empty, and a develop build no longer warns.
+      Abilities: 273 port / 38 excluded; moves: 786 port / 49 excluded. The
+      **golden battle log is byte-identical** — no ability roll moved — and
+      `docs/battle-spec.md` gained the screens, the new volatiles and the
+      call-a-move determinism rule. `scripts/effect-coverage.mjs`,
+      `src/engine/battle/effects/`, `docs/balance/effect-coverage.md`.
+- [x] **Hidden Power's type comes from the holder's IVs again.** `moves.json`
+      ships Hidden Power as a single Normal entry; `hiddenPowerType(ivs)` derives
+      the 16 typings the cartridge way — the dex's own weights,
+      `floor(value * 15 / 63)`, a missing IV counted as 31 — and a new
+      `hiddenpower` move effect registers `onModifyMoveType` through
+      `src/engine/battle/index.ts`, so the battle, the FIGHT preview and the STATS
+      panel all show the same type. Precedence is base → Normalize → Liquid Voice
+      → `-ate`. `D37` and `D42` no longer call the type unmodelled, and the shape
+      is the seam Task-23's Multi-Attack, Techno Blast and Natural Gift build on.
+      `src/engine/battle/moveType.ts`,
+      `src/engine/battle/effects/hiddenPower.ts`, `src/ui/partyDetail.ts`.
 
 ## Phase 0 — Repo & scaffolding
 
