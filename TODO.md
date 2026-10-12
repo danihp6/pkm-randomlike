@@ -69,15 +69,36 @@ batch whose paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
 - **Task-06** Move-effect coverage table.
 - **Task-10** Floor trainer XP reaches the floor's cap.
 - **Task-11** Audio: music and sound.
-- **Hot files:** `package.json` → Task-01; `src/scenes/BootScene.ts`,
-  `MainMenuScene.ts`, `RouteScene.ts`, `BattleScene.ts` and the derived
-  `src/assets/audio/**` → Task-11; the generated `docs/balance/effect-coverage.md` →
-  Task-06.
-- **Shape:** six dependency-free tasks, pairwise path-disjoint. Task-01 ships
-  `package.json`, `eslint.config.mjs`, `.prettierrc.json` and `.prettierignore` only,
-  with a ruleset that is green on the tree as it stands: a rule or a format that
-  fires on an existing file would make this task the writer of that file, which the
-  batch cannot allow.
+- **Hot files:** `package.json` and `package-lock.json` → Task-01; `src/scenes/BootScene.ts`,
+  `MainMenuScene.ts`, `RouteScene.ts`, `BattleScene.ts`, `AGENTS.md`,
+  `docs/tech-decisions.md`, `src/assets/README.md` and the derived
+  `src/assets/audio/**` → Task-11; the generated `docs/balance/effect-coverage.md`
+  and the new generated `src/data/moveCoverage.json` → Task-06; the new
+  `docs/balance/route-curve.md` → Task-10; `src/engine/routes/validate.ts` →
+  Task-03. No task in the batch claims `src/main.ts`, `vite.config.ts`, anything
+  under `src/data/dex/**`, `src/scenes/SettingsScene.ts`, `StarterScene.ts` or
+  `RunOverScene.ts`, or the shipped READMEs (`src/input/`, `src/data/`,
+  `src/data/dex/`, `src/assets/`) that Task-02 must leave alone.
+- **Shape:** six dependency-free tasks, pairwise path-disjoint — checked against the
+  tree at `e9dbf88`, not assumed: the six exclusive path sets share no file, and the
+  two tasks that read a path a batch-mate writes (`Task-03` reads the generator it
+  hardens, `Task-10` reads `src/engine/routes/sketch.ts` for the per-room trainer
+  count) only ever read it, so nobody blocks on a file another task produces.
+  Task-01 ships `package.json`, `package-lock.json` (a dependency install rewrites
+  it), `eslint.config.mjs`, `.prettierrc.json` and `.prettierignore` only, with a
+  ruleset that is green on the tree as it stands: a rule or a format that fires on an
+  existing file would make this task the writer of that file, which the batch cannot
+  allow — so `.prettierignore` carries the generated and binary paths and any source
+  file the formatter cannot be made to match, listed rather than rewritten.
+  Task-02's five new READMEs sit in `src/engine/`, `src/scenes/`, `src/render/`,
+  `src/ui/` and `src/dev/`, plus a layout pointer in the root `README.md`; the
+  `src/audio/README.md` the folder convention wants belongs to Task-11, which
+  creates that folder. **`sprite-sources/frlg-audio/` does not exist in this clone**
+  (only `anil/`, `frlg/` and `frlg-ui/` are materialised), so Task-11 ships the cue
+  table, the packer and the wiring over generated procedural placeholder cues:
+  dropping the rip into `sprite-sources/frlg-audio/` and re-running
+  `node scripts/frlg/build-audio.mjs` replaces them without touching a call site
+  (`O4` wants exactly that seam for a public build).
 
 ### Batch 2 — docs pass, effect ports, Hidden Power
 - **Task-04** Step 10 — docs pass. Needs Task-03 merged.
@@ -214,7 +235,14 @@ floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
       *Dependencies:* none. *(Batch 1)*
 - [ ] **[Task-04] Step 10 — Docs pass.** Update `docs/routes-spec.md` and
       `AGENTS.md` to the shipped algorithm, mark `docs/route-generator.md`
-      implemented and archive these steps in `CHANGELOG.md`.
+      implemented and archive these steps in `CHANGELOG.md`. **`§4` of
+      `docs/route-generator.md` must be rewritten to what Step 8 actually
+      validates**: the assert "every pocket has exactly one walkable neighbour"
+      is false for this generator — a branch ends in a 2-4 tile lane or in a
+      chamber (`carveBranches`), so the shipped invariant is that no **placed
+      item** is stranded and that the spine, the fence, the items' terrain and
+      the trainer poses hold; an unreachable pocket is reported but not gated,
+      because `placeItems` is allowed to skip a pocket a hazard sealed.
       *Dependencies:* Task-03 (Step 8 — validation hardening) — it documents the
       checks that task ships. *(Batch 2)*
 
@@ -250,6 +278,10 @@ Ports of Showdown handlers, in batches, on the hook names in
       special-cases and the data-driven fields the engine reads, then emit the
       section and let a develop build warn when a battle meets an unported move
       (the registry warns for abilities and items only today, `registry.ts`).
+      The classification is written **twice from one authority**: the table in the
+      doc, and a machine-readable `src/data/moveCoverage.json` read through
+      `src/data/moveCoverage.ts`, because the registry cannot tell a `no-op` move
+      from a generic one on its own. The doc stays notes only.
       *Dependencies:* none. *(Batch 1)*
 - [ ] **[Task-07] The competitive held items, with Añil's icons.** The run's
       held-item catalogue is a slice of the competitive set (24 `kind: 'held'`
@@ -315,12 +347,14 @@ Ports of Showdown handlers, in batches, on the hook names in
       `level * 5`, ×1.5 for a trainer, split by participants), while the trainers a
       floor offers vary with its rooms and their sizes (the per-room placement in
       `placeTrainers`, `src/engine/routes/sketch.ts`, plus `trainerBonusForSize` in
-      `src/data/mapSize.ts`). Decide where the rule lives — a per-band trainer XP
-      multiplier in `src/data/run.ts`, a per-archetype yield in
-      `src/data/trainers.ts`, or the band itself — and prove it with a pure,
+      `src/data/mapSize.ts`). **Decided (Batch 1):** the rule is a per-band
+      `trainerXp` multiplier on `LevelBand` (`src/data/run.ts`) that
+      `experienceAward` (`src/engine/run/progression.ts`) reads off the **defeated
+      Pokémon's level band**, so the award keeps its signature and no scene
+      changes; a bonus, not part of the 75 % budget. Prove it with a pure,
       fixed-seed test that walks every map of a finite run and asserts the
-      75 %-of-trainers total lands the squad at the cap, within a tolerance the
-      test states. Write `docs/balance/route-curve.md` (level bands, caps, roster
+      75 %-of-trainers total lands the squad at the cap, inside a window the test
+      states. Write `docs/balance/route-curve.md` (level bands, caps, roster
       sizes, per-floor trainer counts and this rule): `docs/balance/README.md`
       lists it, but the file does not exist.
       *Dependencies:* none. *(Batch 1)*
@@ -333,6 +367,11 @@ Ports of Showdown handlers, in batches, on the hook names in
       assets the game loads are committed, under **`src/assets/audio/`**, built by a
       `scripts/frlg/build-audio.mjs` in the mould of the existing `scripts/frlg/`
       packers (run directly with `node`, so this task adds no `package.json` script).
+      **That folder is not materialised in this clone** (checked at `e9dbf88`:
+      `sprite-sources/` holds only `anil/`, `frlg/` and `frlg-ui/`), so the packer
+      writes a generated procedural placeholder cue for every source it cannot find
+      and says so loudly; the cue ids, the packer and the scene wiring ship either
+      way, and the rip is one script run away.
       `O4` covers this as it covers art: the imported audio is local-development-only
       and can never ship, so the cue ids and their keys stay behind one table in
       `src/audio/` and a CC0 set can replace the assets without touching a call site.
