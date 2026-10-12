@@ -8,6 +8,15 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Every Pokémon opens with a full four-move set by level 5.** At or below
+      level 5 `defaultMoveset` now tops an under-full moveset up from the
+      species' own learnset — earliest level-up moves first, then its
+      TM/tutor/egg moves — keeping at least one damaging move, so a level-1 catch
+      (or a wild Pokémon at the bottom of its band) never fights with one or two
+      moves. A species with fewer than four legal moves gets everything it has,
+      never a duplicate; above level 5 the "newest four" rule is unchanged. Pure
+      and seed-stable, no RNG added. `src/engine/battle/fighter.ts`,
+      `docs/battle-spec.md` §7.1.
 - [x] **The game ships the full move set (D42).** `build-dex.mjs` generates every
       real move, the `Past` ones included, so a Dexit species keeps its learnset:
       `moves.json` grows 685 → **835** (King's Shield, Aromatherapy, Linoone's

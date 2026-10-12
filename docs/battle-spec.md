@@ -135,6 +135,12 @@ moves. The rules:
   four moves its randomized learnset knows at its level (`defaultMoveset`), so
   the menu battle reflects the same roll. The learnset is keyed by the run seed,
   so a Pokémon keeps the same learnset as it levels and a replay rebuilds it.
+- Every Pokémon carries a **full four-move set by level 5**: at or below that
+  level `defaultMoveset` tops an under-full set up from the species' own
+  learnset — the earliest level-up moves first, then its TM/tutor/egg moves —
+  keeping at least one damaging move, so a level-1 catch never fights with one
+  or two moves. A species with fewer than four legal moves gets everything it
+  has, never a duplicate.
 
 ## 8. Ordering and determinism
 

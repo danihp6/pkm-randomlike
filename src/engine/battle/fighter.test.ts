@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getSpecies, statAtLevel } from '../../data/dex';
+import { getMove, getSpecies, levelUpMoves, statAtLevel } from '../../data/dex';
 import {
   accuracyStageMultiplier,
   applyBoosts,
@@ -12,6 +12,7 @@ import {
   snapshotFighter,
   stageMultiplier,
 } from './fighter';
+import { randomLevelUpMoves } from './randomLearnset';
 
 const level = 20;
 
@@ -62,6 +63,59 @@ describe('defaultMoveset', () => {
     const moves = defaultMoveset('charmander', 30);
     expect(moves.length).toBeLessThanOrEqual(4);
     expect(moves.length).toBeGreaterThan(0);
+  });
+
+  it('pads a level-1 moveset to four moves with at least one damaging', () => {
+    const moves = defaultMoveset('charmander', 1);
+    expect(moves).toHaveLength(4);
+    expect(new Set(moves).size).toBe(4);
+    expect(moves.some((moveId) => getMove(moveId)?.category !== 'Status')).toBe(true);
+  });
+
+  it('pads every level up to five, and leaves level six untouched', () => {
+    for (let level = 1; level <= 5; level++) {
+      expect(defaultMoveset('charmander', level)).toHaveLength(4);
+    }
+    const learned = levelUpMoves('charmander', 6).map((entry) => entry.moveId);
+    expect(defaultMoveset('charmander', 6)).toEqual(learned.slice(Math.max(0, learned.length - 4)));
+  });
+
+  it('is a pure function of the seed on the randomized path', () => {
+    const a = defaultMoveset('charmander', 1, 'run-1');
+    const b = defaultMoveset('charmander', 1, 'run-1');
+    const c = defaultMoveset('charmander', 1, 'run-2');
+    expect(a).toEqual(b);
+    expect(a).toHaveLength(4);
+    expect(new Set(a).size).toBe(4);
+    expect(c).not.toEqual(a);
+  });
+
+  it('never duplicates moves and keeps a damaging move when one exists', () => {
+    for (const speciesId of ['pidgey', 'rattata', 'magikarp', 'sentret', 'charmander', 'bulbasaur']) {
+      for (let level = 1; level <= 5; level++) {
+        const moves = defaultMoveset(speciesId, level, 'run-1');
+        expect(new Set(moves).size).toBe(moves.length);
+        expect(moves.length).toBeLessThanOrEqual(4);
+        expect(moves.some((moveId) => getMove(moveId)?.category !== 'Status')).toBe(true);
+      }
+    }
+  });
+
+  it('gives a one-move species only what it can legally learn', () => {
+    expect(defaultMoveset('unown', 1)).toEqual(['hiddenpower']);
+    expect(defaultMoveset('ditto', 1)).toEqual(['transform']);
+  });
+
+  it('still falls back to Tackle when the level grants no moves and has no seed', () => {
+    // Pidgey's level-up moves ship as Virtual Console sources the accessor does
+    // not read as level moves, so a high-level set is empty on the canon path.
+    expect(defaultMoveset('pidgey', 30)).toEqual(['tackle']);
+  });
+
+  it('feeds randomized level-up moves through the same padding', () => {
+    const learned = randomLevelUpMoves('charmander', 1, 'run-1').map((entry) => entry.moveId);
+    expect(learned.length).toBeLessThan(4);
+    expect(defaultMoveset('charmander', 1, 'run-1').slice(0, learned.length)).toEqual(learned);
   });
 });
 

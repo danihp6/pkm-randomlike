@@ -2,6 +2,7 @@ import {
   STAT_IDS,
   getMove,
   getSpecies,
+  learnsetOf,
   levelUpMoves,
   statAtLevel,
   type Species,
@@ -10,7 +11,7 @@ import {
 } from '../../data/dex';
 import { MAX_IV } from '../../data/dex/natures';
 import { randomAbility } from './randomAbility';
-import { randomLevelUpMoves } from './randomLearnset';
+import { randomLearnset, randomLevelUpMoves } from './randomLearnset';
 
 export type StatusId = 'brn' | 'psn' | 'tox' | 'par' | 'slp' | 'frz';
 
@@ -238,7 +239,84 @@ function fullStats(partial: Partial<Stats> | undefined, fallback: number): Stats
 /** A species whose whole learnset is absent from Gen 9 (Unown's Hidden Power) still fights. */
 const FALLBACK_MOVE = 'tackle';
 
-/** The last four level-up moves a species knows at `level`, newest first. */
+/** The moveset cap; mirrors `MAX_MOVES` in `run/progression.ts` without the import cycle. */
+const MOVESET_SIZE = 4;
+
+/**
+ * By the time a Pokémon reaches level 5 it should already field a full moveset,
+ * so a level-1 catch is never stuck with one or two moves (`docs/battle-spec.md`
+ * §7.1). Below this level the moveset is padded up to `MOVESET_SIZE` from the
+ * species' own learnset — a level-1 Pokémon therefore opens with four moves.
+ */
+const FULL_MOVESET_BY_LEVEL = 5;
+
+/** Reads the whole level-up curve, past any real level, so the padding can reach forward. */
+const ALL_LEVELS = 100;
+
+function isDamaging(moveId: string): boolean {
+  return (getMove(moveId)?.category ?? 'Status') !== 'Status';
+}
+
+/**
+ * Every move the species can learn under this learnset: level-up moves first
+ * (earliest level first, so the weakest come before the strong late ones) and
+ * the TM/tutor/egg moves after, deduplicated and with unknown ids dropped. The
+ * padding always prefers the move it would learn soonest.
+ */
+function learnableOrder(speciesId: string, learnsetSeed?: string): readonly string[] {
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+  const push = (moveId: string): void => {
+    if (seen.has(moveId) || !getMove(moveId)) return;
+    seen.add(moveId);
+    ordered.push(moveId);
+  };
+  const learned = learnsetSeed
+    ? randomLevelUpMoves(speciesId, ALL_LEVELS, learnsetSeed)
+    : levelUpMoves(speciesId, ALL_LEVELS);
+  for (const entry of learned) push(entry.moveId);
+  const learnset = learnsetSeed ? randomLearnset(speciesId, learnsetSeed) : learnsetOf(speciesId);
+  if (learnset) {
+    for (const moveId of Object.keys(learnset).sort()) push(moveId);
+  }
+  return ordered;
+}
+
+/**
+ * Pads an under-full moveset up to `MOVESET_SIZE` from the species' learnset and
+ * keeps at least one damaging move when it can (a species with fewer than four
+ * legal moves just gets everything it has, never a duplicate).
+ */
+function padMoveset(
+  speciesId: string,
+  moves: readonly string[],
+  learnsetSeed?: string,
+): readonly string[] {
+  if (moves.length >= MOVESET_SIZE) return moves;
+  const pool = learnableOrder(speciesId, learnsetSeed);
+  const chosen = [...moves];
+  const have = new Set(chosen);
+  for (const moveId of pool) {
+    if (chosen.length >= MOVESET_SIZE) break;
+    if (have.has(moveId)) continue;
+    have.add(moveId);
+    chosen.push(moveId);
+  }
+  if (!chosen.some(isDamaging)) {
+    const damaging = pool.find((moveId) => !have.has(moveId) && isDamaging(moveId));
+    if (damaging) {
+      have.add(damaging);
+      chosen[chosen.length - 1] = damaging;
+    }
+  }
+  return chosen;
+}
+
+/**
+ * The last four level-up moves a species knows at `level`, newest first. At or
+ * below `FULL_MOVESET_BY_LEVEL` the set is topped up to four moves from the
+ * species' own learnset, so every Pokémon starts with a full moveset.
+ */
 export function defaultMoveset(
   speciesId: string,
   level: number,
@@ -248,8 +326,10 @@ export function defaultMoveset(
     ? randomLevelUpMoves(speciesId, level, learnsetSeed)
     : levelUpMoves(speciesId, level);
   const ids = learned.map((entry) => entry.moveId);
-  if (ids.length === 0) return [FALLBACK_MOVE];
-  return ids.slice(Math.max(0, ids.length - 4));
+  const known = ids.length === 0 ? [] : ids.slice(Math.max(0, ids.length - MOVESET_SIZE));
+  const moves =
+    level <= FULL_MOVESET_BY_LEVEL ? padMoveset(speciesId, known, learnsetSeed) : known;
+  return moves.length > 0 ? moves : [FALLBACK_MOVE];
 }
 
 function makeMoveSlot(moveId: string): MoveSlot | undefined {
