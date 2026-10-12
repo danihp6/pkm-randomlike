@@ -76,6 +76,15 @@ Ports of Showdown handlers, in batches, on the hook names in
       plus any move the dev build warns about. A damaging move resolves its base
       damage generically, but a status move or listed ability without a handler is
       a silent no-op until ported. Port them so the develop-build warnings clear.
+- [ ] **Move-effect coverage table.** `docs/balance/effect-coverage.md` tracks
+      every ability and item (`D16`) but **not moves**, so the non-trivial move
+      long tail (~160 utility/status moves that need a handler) is unaudited —
+      the gap `docs/showdown-reuse.md` §3 flags. Extend
+      `scripts/effect-coverage.mjs` to classify every move as `port | no-op |
+      excluded`, deriving `port` from the effect registry, the ids the turn loop
+      special-cases and the data-driven fields the engine reads, then emit the
+      section and let a develop build warn when a battle meets an unported move
+      (the registry warns for abilities and items only today, `registry.ts`).
 
 
 ## Phase 5 — Battle UI & presentation
