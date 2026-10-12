@@ -529,8 +529,11 @@ primary type) and Aura Wheel (the Morpeko form). A **held item** hooks the same
 path: the seventeen Plates ship and give Judgment their type (`item.plate`).
 Multi-Attack (Memories), Techno Blast (Drives), Natural Gift (berries) and
 Judgment's form-changing relatives wait for those moves/items to exist in a
-future dex - Judgment stays Normal without a Plate, and Hidden Power ships only
-as a single Normal entry (its IV-based typing is not modelled).
+future dex - Judgment stays Normal without a Plate. Hidden Power ships as a single
+entry whose type is computed from the holder's IVs by `hiddenPowerType`
+(`src/engine/battle/moveType.ts`): the battle publishes it through the
+`hiddenpower` move effect (`src/engine/battle/effects/hiddenPower.ts`) and the
+party panel reads the same function.
 
 ## D38 — Every evolution is a level evolution and the player clicks it *(decided)*
 
@@ -616,9 +619,10 @@ stays excluded — it is a doubles mechanic with no single-battle forme to reach
 Dexit species keeps its learnset: `moves.json` grows from 685 to **835**. Dropped
 are the Dynamax (Max) and Z moves (the engine models neither) and the
 CAP/Future/Unobtainable entries. Hidden Power's 17 typings all share the id
-`hiddenpower`; the engine keys moves by id and does not model its IV-based type,
-so only the Normal entry ships. A move with no ported effect still resolves its
-base damage generically; an unported status move is a dev-warned no-op.
+`hiddenpower`; the engine keys moves by id, so only the single Normal-typed entry
+ships, and its type is now derived from the holder's IVs at battle time. A move
+with no ported effect still resolves its base damage generically; an unported
+status move is a dev-warned no-op.
 
 ## Open questions
 

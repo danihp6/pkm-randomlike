@@ -98,6 +98,33 @@ describe('fighterDetail', () => {
   });
 });
 
+describe('Hidden Power type', () => {
+  const FIRE_IVS = { hp: 0, atk: 31, def: 0, spa: 0, spd: 31, spe: 0 };
+
+  it('shows the IV-derived type on a live fighter detail', () => {
+    const fighter = createFighter({
+      id: 'hp',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['hiddenpower'],
+      ivs: FIRE_IVS,
+    });
+    expect(fighterDetail(fighter).moves[0]?.type).toBe('Fire');
+  });
+
+  it('shows it on a run member detail too', () => {
+    const member = createRunPokemon({
+      id: 'hp',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['hiddenpower'],
+      ivs: FIRE_IVS,
+    });
+    const run = { ...createRun({ seed: 'run-a', starter }), party: [member] };
+    expect(memberDetail(run, 'hp')?.moves[0]?.type).toBe('Fire');
+  });
+});
+
 describe('detail state', () => {
   it('opens, switches tab, grabs and drops', () => {
     const opened = openDetail('starter');
