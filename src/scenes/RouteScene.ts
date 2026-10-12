@@ -185,6 +185,7 @@ import { createTouchControls, type TouchControls } from '../ui/touchControls';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { listenForBack } from '../input/backButton';
 import { prefersTouchControls } from '../input/device';
+import { playCue, playMusic } from '../audio/audio';
 import { loadSettings, saveSettings } from '../settings';
 import { browserStorage } from '../storage';
 import {
@@ -1278,12 +1279,17 @@ export class RouteScene extends Phaser.Scene {
     // A battle pauses the route mid-walk; drop the pad's held direction so the
     // player does not keep stepping the moment the route comes back.
     this.events.on(Phaser.Scenes.Events.PAUSE, () => this.touch?.release());
-    this.events.on(Phaser.Scenes.Events.RESUME, () => this.touch?.release());
+    // The battle above took the music channel; the route takes it back.
+    this.events.on(Phaser.Scenes.Events.RESUME, () => {
+      this.touch?.release();
+      playMusic(this, 'route-music');
+    });
     this.buildResetOverlay();
     this.buildPauseMenu();
     this.buildLearnPopup();
     this.refreshHud();
     this.refreshDetail();
+    playMusic(this, 'route-music');
   }
 
   /**
@@ -4616,6 +4622,8 @@ export class RouteScene extends Phaser.Scene {
   /** Pauses the route and rolls the battle on top of it (Phase 5 transition). */
   private startBattle(trigger: BattleTrigger): void {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
+    // A wild roll and a trainer's sight open with the same cue.
+    playCue(this, 'encounter');
     this.battleCounter += 1;
     const key = trigger.kind === 'wild' ? `${trigger.key}:${this.battleCounter}` : `trainer:${trigger.trainerId}`;
     // The room's capture is spent the moment its **first wild battle** starts,
@@ -5586,6 +5594,7 @@ export class RouteScene extends Phaser.Scene {
    */
   private playLevelUp(beats: readonly LevelUpBeat[]): void {
     if (beats.length === 0) return;
+    playCue(this, 'level-up');
     const from = Math.min(...beats.map((beat) => beat.fromLevel));
     const to = Math.max(...beats.map((beat) => beat.toLevel));
     const counter = { level: from };

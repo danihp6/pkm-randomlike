@@ -215,6 +215,31 @@ display names live in the asset-free `src/data/tilesets/ids.ts`, which the
 registry in `index.ts` builds on. Keybinds live beside them in the same document
 and screen, but needed their own layer — see `D23`.
 
+### D22 — addendum: the imported audio *(decided)*
+
+The sounds are imported game rips, treated exactly like the imported art: the raw
+files live in the gitignored `sprite-sources/frlg-audio/`, renamed to the cue id
+(`<cue-id>.wav`), and only the derived `src/assets/audio/*.wav` is committed,
+built by `scripts/frlg/build-audio.mjs` (plain `node`, no `package.json` script,
+no dependency). The rip is local-only and must never be redistributed; a public
+build replaces it with a CC0 set by re-running the packer, not by editing code.
+
+The seam is a **cue table** in `src/audio/cues.ts` (pure, no Phaser import): three
+music beds and five one-shot cues, each with a `gain` that is a share of the
+master volume. A cue id is the only name a scene uses — no scene names a file, a
+key or a volume — and `src/audio/audio.ts` is the Phaser half: it preloads every
+cue and owns the game's single music channel, switched by cue id (a scene on top
+takes the bed over, the scene underneath takes it back when it resumes). `D22`'s
+master volume stays the only audio knob; the per-cue `gain` is the only tunable
+beside it.
+
+`sprite-sources/frlg-audio/` is not materialised in this clone, so the committed
+cues are **generated procedural placeholders** (a plain fading sine, 22050 Hz
+mono, ours and safe to redistribute) that the packer writes whenever a source is
+missing, with a warning per missing file. A source that exists but is not a
+readable PCM WAV is a hard error instead: a file that is there is never silently
+replaced.
+
 ## D23 — One shared keybind map, captured in the settings screen *(decided)*
 
 Every scene reads its confirm / cancel / move / interact / settings key from one

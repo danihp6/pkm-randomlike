@@ -124,7 +124,11 @@ drives the rest.
 - No new deps/addons unless a few lines cannot do it.
 - Art: respect licences. Preference order is procedural/CC0, then the imported
   game rips for local development only. `sprite-sources/` is gitignored and must
-  never be redistributed.
+  never be redistributed. Audio follows the same rule: the rip lives in the
+  gitignored `sprite-sources/frlg-audio/`, only `src/assets/audio/*.wav` is
+  committed (`node scripts/frlg/build-audio.mjs`), and every cue is named in
+  `src/audio/cues.ts`, so a CC0 set can replace the assets without touching a
+  call site.
 - Performance: no per-frame allocations in hot paths (movement, fog, geometry);
   keep a route to a single screen unless a chapter explicitly needs scroll.
 
