@@ -1,26 +1,34 @@
-# Route Generator — algorithm blueprint
+# Route Generator — algorithm rationale
 
-> Design blueprint, not code. Live behaviour is `docs/routes-spec.md` and the
-> pure implementation is `src/engine/routes/`. This file is the agreed **target**
-> algorithm so the next iteration has one place to build from.
+> **Implemented, not a blueprint.** The algorithm below ships in
+> `src/engine/routes/`; `docs/routes-spec.md` is the live spec, and this file is
+> kept as the algorithm's rationale and its open questions (§7). Where a name or a
+> rule below disagrees with the code, the code wins — the divergences the draft
+> left behind are noted in place.
 > Status: the terrain pass (tall grass, ledges), the **ground-item** population
 > and the **trainers** are all **on** (`docs/routes-spec.md` §2). `PlaceItems`
-> and `PlaceTrainers` below both run today; the pool is the only difference (the
-> caller passes the loot pool and the archetype ids, so an unconfigured build
-> places neither).
+> and `PlaceTrainers` below both run today (shipped as `placeItems` and
+> `placeTrainers`); the pool is the only difference (the caller passes the loot
+> pool and the archetype ids, so an unconfigured build places neither).
 
 ## 0. Inputs and determinism
 
 ```
 GenerateRoute(seed, routeIndex, mode): RouteMap
 
-    for attempt in 0 .. BUILD_ATTEMPTS:
+    for attempt in 0 .. MAX_ATTEMPTS:
         rngs = Streams(seed, routeIndex, attempt)   # see below
         route = BuildRoute(routeIndex, rngs)
         if Validate(route):
             return route
     throw "could not generate a valid route"        # never emit a bad map
 ```
+
+The shipped entry point is `sketchRoute` (`src/engine/routes/sketch.ts`): it builds
+an attempt on fresh streams and retries while `!validateRoute(route).ok`, up to
+**`MAX_ATTEMPTS = 8`** (declared at the top of `sketch.ts`), then throws. The draft
+below called the bound `BUILD_ATTEMPTS` and the two steps `BuildRoute`/`Validate`;
+they ship as `MAX_ATTEMPTS`, `attemptRoute` and `validateRoute`.
 
 `BuildRoute` is a **pure function** of `(seed, routeIndex, attempt)` and the data
 tables (D11). The attempt index is part of every stream key, so a reroll is a new
@@ -57,6 +65,13 @@ connect those openings. Three shapes for now (more later):
 | `straight` (recta) | 2 | one axis, opposite (e.g. W in / E out) |
 | `bend` (L) | 2 | two adjacent edges (e.g. W in / N out) |
 | `cross` (+) | 4 | both axes, opposite pairs (W/E and N/S) |
+
+> **Shipped names.** The draft's trio is superseded: the registry in
+> `src/engine/routes/layout.ts` holds six shapes — `dead-end`, `corridor`, `bend`,
+> `tee`, `cross` and `straight` — and a room's shape is derived from its opening
+> set (`shapeForEdges`), so two opposite openings read as `corridor`, not
+> `straight`. `PlaceAccess`, `CleanWalls` and `CarveBranches` ship as
+> `placeAccess`, `cleanWalls` and `carveBranches`.
 
 ```
 ShapeSpec:
@@ -376,19 +391,53 @@ to a prop frame (`D18`). The generator owns placement, not pixels.
 
 ## 4. Validation
 
-```
-Validate(route):
-    reachable = FloodFill(route.tiles, route.entry)
+The shipped checklist is `validateRoute` (`src/engine/routes/validate.ts`). It
+returns a report rather than throwing:
 
-    assert every exit in reachable
-    assert FloodFillAvoiding(route.tiles - trainerTiles, route.entry) contains every exit
-    assert every item in reachable
-    assert every trainer stands on floor hugging a solid wall, off the entry/exits/pockets,
-           not next to another trainer, and never sees the entry (even when it turns)
-    assert no spine cell is WALL / WATER / LEDGE / TALL_GRASS
-    assert the one-tile border is solid but for the openings
-    assert every pocket has exactly one walkable neighbour (a real dead end)
+```ts
+export type RouteValidation = Readonly<{
+  ok: boolean;                          // gates the reroll
+  unreachable: readonly string[];        // exits the entry cannot reach
+  blockedByTrainers: readonly string[];  // exits reachable only through a trainer
+  strandedItems: readonly string[];      // placed items not reachable from the entry
+  itemsOnTerrain: readonly string[];     // placed items on TALL_GRASS or LEDGE
+  spineBlocked: readonly string[];       // spine tiles that are not FLOOR
+  borderBreaches: readonly string[];     // open ring tiles no opening justifies
+  unreachablePockets: readonly string[]; // REPORTED, never gated
+  trainerIssues: readonly TrainerIssue[]; // pose rule failures
+}>;
 ```
+
+`ok` is true exactly when the six gated lists are empty: `unreachable`,
+`blockedByTrainers`, `strandedItems`, `itemsOnTerrain`, `spineBlocked`,
+`borderBreaches` and `trainerIssues`. **`unreachablePockets` is not in that test**:
+a pocket the entry cannot reach is a finding, not a failure, because `placeItems`
+may skip a pocket a hazard sealed.
+
+- `unreachable` / `blockedByTrainers`: the entry must reach every exit, and reach
+  them again with the trainers treated as blockers, so no placement soft-locks the
+  route behind an unwinnable fight.
+- `strandedItems` / `itemsOnTerrain`: no placed item may sit off the entry's
+  flood-fill or on `TALL_GRASS`/`LEDGE`.
+- `spineBlocked`: the guaranteed lane stays `FLOOR`.
+- `borderBreaches`: a ring flood-fill runs from the entry and the exits along the
+  border, so a ring cell `cleanWalls` widened beside an opening is legal and a lane
+  that punched through the fence elsewhere is a breach.
+- `unreachablePockets`: reported, never gated (see above).
+- `trainerIssues`: one `TrainerIssue` per trainer that fails a pose rule, in
+  `route.trainers` order, each carrying every reason it fails.
+
+The pose rules are `TrainerIssueReason`'s seven values and nothing else:
+`off-floor`, `no-backing-wall`, `on-entry`, `on-exit`, `on-pocket`, `crowded`,
+`sees-entry`. `crowded` is one trainer in any of the eight tiles around another
+(Chebyshev distance 1); `sees-entry` is checked on the trainer's own facing **and
+on every turning facing**.
+
+The reroll is `sketchRoute` (`src/engine/routes/sketch.ts`): it builds an attempt
+on fresh streams and retries while `!validateRoute(route).ok`, up to
+**`MAX_ATTEMPTS = 8`** (declared at the top of `sketch.ts`), then throws rather
+than return a bad map. The attempt index is part of every stream key, so a reroll
+is a new deterministic map, never a mutation of the previous one.
 
 The trainer-free flood fill is the guarantee that no placement can soft-lock the
 route behind an unwinnable fight. The generator is stricter than that: it keeps a

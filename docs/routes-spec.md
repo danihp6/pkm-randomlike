@@ -68,9 +68,10 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    area in tiles falls in `small` (terrain ×1), `medium` (×2) or `large` (×3), so a
    bigger route carries proportionally more terrain without the count matching the
    size pixel by pixel. Every route is at least **30x30**, so the smallest route
-   lands in `medium`. Both land on the carved floor **off the spine and the
-   openings** (ledges also avoid the pockets). A grass patch is packed
-   **against the walls**: it first stretches across a wall-to-wall corridor so it
+   lands in `medium`. Both land on the carved floor **off the spine, the openings
+   and the pockets** (a pocket is a loot spot, kept clear for its item). A grass
+   patch is packed **against the walls**: it first stretches across a wall-to-wall
+   corridor so it
    touches a wall at both ends, but only when that gap is no wider than
    `GRASS_SPAN_MAX` (5 tiles); otherwise it falls back to a small block anchored on
    a wall, so grass never floats in open floor. A patch may also **spill onto a
@@ -116,11 +117,21 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    §2/§6/§7) — skips the terrain and population passes
    entirely, so it holds no tall grass, ledges, items or trainers; only its lanes
    are carved.
-5. **Validation pass**: flood-fill from the entry must reach every exit, with the
-   trainers in the way **and** avoiding them (the trainer-free fill is what
-   guarantees no forced battle). If it does not, reroll from the same seed with the
-   next stream value. This validation is what makes the generator safe to call
-   blind.
+5. **Validation pass**: `validateRoute` (`src/engine/routes/validate.ts`) reports a
+   checklist instead of throwing, and its `ok` flag is what gates the reroll. It
+   gates the exit flood-fill **with** the trainers in the way (`blockedByTrainers`)
+   and **avoiding** them (`unreachable`) — the trainer-free fill is what guarantees
+   no forced battle — plus `strandedItems` and `itemsOnTerrain` (no placed item off
+   the entry's flood-fill or on tall grass or a ledge), `spineBlocked` (the
+   guaranteed lane stays floor), `borderBreaches` (the ring opens only where an
+   opening justifies it) and `trainerIssues` (every pose rule in step 4 above).
+   `unreachablePockets` is **reported, never gated**: a pocket the entry cannot
+   reach is a finding, not a failure, because `placeItems` may skip a pocket a
+   hazard sealed. A route whose `ok` is false is rerolled by `sketchRoute`
+   (`src/engine/routes/sketch.ts`) on fresh streams — the attempt index is part of
+   every stream key, so a reroll is a new deterministic map — up to `MAX_ATTEMPTS`
+   (8), then it throws rather than return a bad map. This validation is what makes
+   the generator safe to call blind.
 
 Every build pass draws from its own `Rng` stream, all derived from
 `(seed, routeIndex, attempt)` (`src/engine/routes/streams.ts`), so `(seed,
@@ -134,8 +145,8 @@ pockets and the terrain flavour), the entry, its exits, the items and the
 trainers. The trainer archetypes (`src/data/trainers.ts`) and the roster builder
 (`src/engine/run/roster.ts`) field a team per trainer, and the route scene draws
 them, blocks their tile, freezes the player while a spotter walks over and opens
-the menu battle, and hides a beaten one. The target generator, with pseudocode
-and a review of the draft, is in `docs/route-generator.md`.
+the menu battle, and hides a beaten one. The algorithm's rationale and its open
+questions are in `docs/route-generator.md`.
 
 The map size is an input: every route is at least **30x30** tiles at 24px, the
 map's size range rolls each room above that floor, and the floor's **entry room**
@@ -149,7 +160,7 @@ tileset and encounter table. A route's **shape** — the set of openings that jo
 it to its grid neighbours — is a first-class generator input: the registry in
 `src/engine/routes/layout.ts` defines `dead-end` (1 opening), `corridor` (2
 opposite, no branches), `straight` (2 opposite, branchy), `bend` (2 adjacent),
-`tee` (3) and `cross` (4), each with its `openings` (edge + entry/exit/link) and
+`tee` (3) and `cross` (4), each with its `openings` (an edge and a role) and
 the `links` the spine joins, and `RouteMap` carries an `entry`, a list of
 `exits`, the `spine` and the optional `branches`/`pockets`.
 The **biome, size and the opening set now come from the map plan**
@@ -164,11 +175,11 @@ secondary paths are then carved off the **network** (the spine plus every lane
 already carved, so a branch can grow off another branch, not only off the spine):
 the count is the shape's base `branchCount` plus a map-size tier bonus, lanes are
 **at least two tiles wide** and scale with the free space, opening into a small
-**chamber** on a roomy map. The far end is the **pocket** — the future loot
-spot. Branches stay inside the one-tile
+**chamber** on a roomy map. The far end is the **pocket** — the loot spot.
+Branches stay inside the one-tile
 border. The interior is solid tree, so the carved spine, branches and pockets are
 the visible lanes; the terrain pass and the population pass keep them clear and
-populate them (steps 5-7). The `hedges` and `maze` carvers stay parked in
+populate them (steps 3-4). The `hedges` and `maze` carvers stay parked in
 `src/engine/routes/sketch.ts` for later biomes (`D6`).
 
 ## 3. Wild encounters
