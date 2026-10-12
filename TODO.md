@@ -1,7 +1,8 @@
 # PokeRandomLike — Roadmap (TODO)
 
 Browser Pokémon roguelike: procedural routes, classic menu battles, permanent
-death. Backlog source of truth. One branch per task off `main`.
+death. Backlog source of truth. One branch per task off `main` (`feature/...` or
+`task-<ID>` for an agent batch).
 
 Legend: `[ ]` open, `[~]` in progress. Only open work lives here; completed items
 are archived in `CHANGELOG.md`, grouped by phase. Phases are ordered; a phase is
@@ -26,9 +27,9 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 - [ ] Add ESLint + Prettier with a `npm run lint` script once the engine has more
       real code (deferred: TypeScript strict mode covers most of it for now).
-- [ ] Add a README per code folder as the folders appear (`src/scenes/README.md`,
-      `src/render/README.md`; `src/input/README.md` shipped with the keybind
-      layer).
+- [ ] Add a README per code folder as the folders appear. Shipped: `src/input/`,
+      `src/data/`, `src/data/dex/`, `src/assets/`. Missing: `src/engine/`,
+      `src/scenes/`, `src/render/`, `src/ui/`, `src/dev/`.
 
 ## Phase 1 — Dex accessors & data contracts
 
@@ -48,10 +49,11 @@ algorithm, its guarantees and its open questions are in
 most useful first. The art counterparts (a real tall-grass tile, the
 floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **Step 8 — Validation hardening.** Grow `validateRoute` to the full
-      checklist (every exit, trainer-free path, items, clean spine, pockets,
-      border) and reroll within `BUILD_ATTEMPTS` before throwing. Fixed-seed tests
-      per shape.
+- [ ] **Step 8 — Validation hardening.** The reroll already exists (`sketchRoute`
+      iterates `MAX_ATTEMPTS` on fresh streams) and `validateRoute` already proves
+      every exit reachable and a trainer-free entry→exit path. What is left is the
+      rest of the checklist — items off grass and ledges, pockets reachable, border
+      intact — plus fixed-seed tests per shape.
 - [ ] **Step 10 — Docs pass.** Update `docs/routes-spec.md` and `AGENTS.md` to the
       shipped algorithm, mark `docs/route-generator.md` implemented and archive
       these steps in `CHANGELOG.md`.
@@ -85,6 +87,24 @@ Ports of Showdown handlers, in batches, on the hook names in
       special-cases and the data-driven fields the engine reads, then emit the
       section and let a develop build warn when a battle meets an unported move
       (the registry warns for abilities and items only today, `registry.ts`).
+- [ ] **The competitive held items, with Añil's icons.** The run's held-item
+      catalogue is a slice of the competitive set (24 `kind: 'held'` entries in
+      `src/data/items.ts`) and their icons all come from the FRLG sheet
+      (`src/data/itemIcons.ts` → `src/assets/frlg/item-icons.png`), which has no art
+      for the modern ones — the Mega Stones, valuables, TMs and Plates already
+      borrow placeholders. Bring the whole held-item set over from Añil: its
+      `sprite-sources/anil/PBS/items.txt` for the definitions and its 911
+      `sprite-sources/anil/Graphics/Items/*.png` for the art. That is three pieces:
+      the catalogue entries in `src/data/items.ts` with the fields the engine reads;
+      the effect handlers in `src/engine/battle/effects/items.ts` with their row in
+      `docs/balance/effect-coverage.md` (`D16` — `port`, `no-op` or `excluded`, and
+      `no-op` is the honest answer for an item a run can meet that the engine does
+      not model yet); and a packer script (`scripts/anil/build-item-icons.mjs`)
+      writing `src/assets/anil/item-icons.png` plus its manifest, read by
+      `src/data/itemIcons.ts`. Make them **obtainable** wherever the run hands out
+      items — `src/data/loot.ts` (route loot by band), `src/data/shop.ts` (the Mart)
+      and `src/ui/rewards.ts` (the mini-boss choice) — and keep the item tests
+      green.
 
 
 ## Phase 5 — Battle UI & presentation
@@ -102,64 +122,101 @@ Ports of Showdown handlers, in batches, on the hook names in
 - [ ] Accessibility pass: colour-only information audited, HP bars readable
       without colour, full keyboard play, reduced-flash option.
 - [ ] Balance pass using `docs/balance/` sheets and the scripted-battle harness.
+- [ ] **Floor trainer XP reaches the floor's cap.** Beating roughly **75 %** of a
+      floor's trainers must award the XP the squad needs to reach that floor's
+      **level cap** (`levelCapForMap`, `src/data/maps.ts`), so the party keeps pace
+      with the band by fighting rather than grinding wild encounters. Today the
+      award is level-driven only (`experienceAward`, `src/engine/run/progression.ts`:
+      `level * 5`, ×1.5 for a trainer, split by participants), while the trainers a
+      floor offers vary with its rooms and their sizes (the per-room placement in
+      `placeTrainers`, `src/engine/routes/sketch.ts`, plus `trainerBonusForSize` in
+      `src/data/mapSize.ts`). Decide where the rule lives — a per-band trainer XP
+      multiplier in `src/data/run.ts`, a per-archetype yield in
+      `src/data/trainers.ts`, or the band itself — and prove it with a pure,
+      fixed-seed test that walks every map of a finite run and asserts the
+      75 %-of-trainers total lands the squad at the cap, within a tolerance the
+      test states. Write `docs/balance/route-curve.md` (level bands, caps, roster
+      sizes, per-floor trainer counts and this rule): `docs/balance/README.md`
+      lists it, but the file does not exist.
+- [ ] **Audio: music and sound.** Route ambience and encounter, hit, faint,
+      level-up and victory cues, plus the music. The `volume` setting exists in
+      the save; `src/audio/` does not exist yet.
+- [ ] **Ability info popup.** The STATS tab prints the ability as plain text
+      (`MemberDetail.ability`, `src/ui/partyDetail.ts`) and there is no way to read
+      what it does. Give the ability row the same ⓘ control the move cells have —
+      `src/ui/moveGrid.ts`'s info button and floating popup over an FRLG window —
+      so hovering or clicking it floats the ability's description. Reach every
+      panel that prints an ability: the route HUD's detail panel
+      (`src/scenes/RouteScene.ts`), the battle's SWITCH detail window and the
+      capture screen (`src/scenes/BattleScene.ts`, `RouteScene`). The data is
+      already generated — `src/data/dex/abilities.json` carries `desc` and
+      `shortDesc`, but the accessor drops them (`src/data/dex/abilities.ts` exposes
+      only `id` and `name`), so widen it and guard the two fields in
+      `src/data/dex/abilities.test.ts`. Document in `docs/design-spec.md` §3/§4.
+- [ ] **Nicknames, typed from the STATS tab.** The battle layer already renders one
+      — `FighterInput.nickname` feeds `fighter.name` (`name: input.nickname ??
+      species.name`, `src/engine/battle/fighter.ts`) — but nothing ever sets it, so
+      every member shows its species name. Add a nickname the player types from the
+      STATS tab (`src/ui/partyDetail.ts` and its detail panel in
+      `src/scenes/RouteScene.ts`), shown wherever a member is named (party rows, HUD,
+      battle, capture screen) and clearable back to the species name. It must
+      survive Mega Evolution and every forme change: `changeBattleForm` rewrites
+      `fighter.name` with the forme's name and restores it from `megaBackup.name`
+      (`fighter.ts`), so the nickname needs **its own field, not `name`**. Persist
+      it: `FighterSnapshot` carries no name at all today, so the save gains one (a
+      `SAVE_VERSION` bump plus a migration that leaves it undefined) and
+      `runPokemonFromSnapshot` / `adoptBattleParty` thread it through. Text entry
+      follows the repo's DOM-overlay precedent (`src/ui/seedPrompt.ts`'s field, or
+      the on-screen keyboard the touch build would need — decide it here). Docs:
+      `docs/design-spec.md` §3, `docs/battle-spec.md` §7.
 
-## Phase 8 — Art, audio & release
+## Phase 8 — Biomes & art assets
 
-> Completed work for this phase is archived in `CHANGELOG.md`.
+> The FRLG art pass (route interiors, ground vs path, exit art, ledge and route
+> props, beach, animated portraits, FRLG move/attack FX replacing the PMD art,
+> per-biome battle backgrounds) and the release chores are out of the backlog; what
+> shipped stays in `CHANGELOG.md`.
 
-### Route generation & FRLG fields (`D26`) — in progress
+Only `forest` is in `BIOME_ORDER` even though `BIOMES` defines five, so the run
+cycles one biome.
 
-Shipped: the whole-object wall motif (`wallPattern`, `src/engine/tileFrames.ts`)
-drawn with the real 3x4 FireRed tree (each crown stacks on the lower leaves of the
-tree above, the body hides the trunk and only the foot shows the platform), the
-FRLG floor/pond/ledge atlas, the biome wiring, a follow camera, and every route
-built by **carving the shape's lanes out of a solid tree interior** — openings
-punched in the one-tile border, wide, chamber-ended branches — with no fog of war.
-The default map is 20x20 for now and the beyond-the-edge tree frame (`padMap`) is
-parked while the generator is the focus. The `hedges`/`maze` carvers and the
-terrain passes (tall grass, ledges) are kept but off; water is decoration. Open,
-most useful first:
-
-- [ ] **Route interiors.** Bring shape back per biome: re-enable the `hedges`
-      (Route 1) and `maze` (Viridian Forest, Mt. Moon) carvers once the carved
-      lanes have served their purpose; the biome terrain passes are on again
-      (Phase 2 step 5). Generator logic tracked in Phase 2 steps 6-8.
-
-- [ ] **FRLG ground vs path.** The outdoor base floor matches the game's ground
-      colour (`rgb(112,200,160)`, sheet tile `6,1`) and the forest mixes its darker
-      ground tiles with weights (`rgb(88,160,128)`: `0,34` base, `2,34`/`3,34`/`5,34`
-      variety, the flowered `0,38` rare). The lighter tiles (`2,3`, `1,3`,
-      `1,4`, `2,4`) are a separate grass and the tan `2,0` is the route path.
-      Decide which is ground, which is the path and which is decoration, and give
-      the generator a real path to draw through a route (the current routes are
-      all-ground with no path tile).
-- [ ] **Route exit art.** The exit is a plain floor **opening** punched in the tree
-      border (no special tile, and it does not end the route yet). Give an outdoor
-      route a real exit marker/opening and restore the end-of-route beat.
-- [ ] **Ledge and route props.** The ledge lip shipped (`FRAME_LEDGE`); signs,
-      boulders, flowers and the rest of the FRLG props are still missing.
-- [ ] **Beach field.** Compose the FRLG beach (open-water and sand tiles) and add
-      it to the biome cycle.
-
-### Remaining Phase 8
-
-- [ ] **Battle mon size and ground line.** Añil's sheets are native-sized (30-248
-      px) and the battle caps the scale, but the sprite is still centre-anchored
-      on its platform: use Añil's `PBS/pokemon_metrics.txt` (front/back offsets,
-      female/forms variants) so every mon's feet sit on the platform.
-- [ ] **Animated portraits.** The party/HUD portraits are the icons' first frame;
-      the icons ship two, so the HUD could breathe like the battle sprites.
-- [ ] FRLG move and attack FX (`sprite-sources/frlg-ui/move-effects.png`,
-      `attack-effects.png`) replacing the PMD `moves.png`.
-- [ ] Remove the PMD art once the FRLG replacements land: the `wood.png` tileset
-      and its biome, `moves.png`, the `pokemon/*.png` sheets and the PMD
-      `scripts/legacy-art/` extractors.
-- [ ] Adapt the remaining biome tileset configs (desert, apple-woods,
-      lush-prairie, beach-cave) and palettes into `src/data/tilesets/`.
-- [ ] Battle background per biome (FRLG `battle-backgrounds.png`).
-- [ ] Audio: route ambience, encounter, hit, faint, level-up, victory.
-- [ ] Free-art fallback set so a public build can drop the game rips (O4).
-- [ ] Build/publish pass for itch.io.
+- [ ] **New biomes.** Decide which biomes join the cycle and add them: a tileset
+      config and palette in `src/data/tilesets/`, a `BIOMES` entry with its `layout`
+      and its `terrain` passes, and a slot in `BIOME_ORDER` (`D10`). Candidate list
+      to decide: desert, prairie/plains, beach, autumn woods, marsh/rain, snow,
+      volcano, ruins/power plant. Each new biome owes a fixed-seed generator
+      regression.
+- [ ] **Añil type and status badges.** The battle menu, the party panels and the
+      starter cards draw the FRLG badges (`src/data/typeIcons.ts`,
+      `src/data/statusIcons.ts`, packed from `scripts/frlg/build-type-icons.mjs`
+      and `build-status-icons.mjs`), and the FRLG sheet predates Fairy, so a Fairy
+      type falls back to a text chip. Repack from Añil's
+      `Graphics/UI/types.png` / `statuses.png` (and
+      `Graphics/UI/Battle/icon_types.png`, `icon_statuses.png`) so every type,
+      Fairy included, has a badge, and update both accessors plus the badge note
+      in `docs/art-direction.md`.
+- [ ] **Modernise the panel and menu chrome.** Every window in the game is the
+      FRLG frame: one `addFrlgWindow` (`src/ui/frlg.ts`) slicing
+      `src/assets/frlg/window.png` and `textbox.png`, used by the main menu, the
+      starter pick, the settings screen, the run-over screen, every route HUD panel
+      (party, bag, PC box, detail, pause, capture, Mart, reward) and the battle
+      menus and HP panels (`moveGrid` included). Redraw that chrome as a modern set
+      that keeps the originals' shapes and bezel as its base, with a **baked
+      translucency** so the route and the battle stay legible with the panels open
+      — building on what the `hudTransparent` setting does today, which is an
+      all-or-nothing alpha plus an outline on the route HUD only. Update
+      `src/ui/frlg.ts` (frame, corner radius and paddings), the new assets under
+      `src/assets/`, and the panel notes in `docs/art-direction.md`,
+      `docs/design-spec.md` §3/§4 and `src/assets/README.md`. Take the **type as
+      well**: every string is the FRLG bitmap face (`src/ui/frlgFont.ts` slicing
+      `src/assets/frlg/font.png`, drawn by `addFrlgText`), so pick the modernised
+      face and rework `FRLG_INK` with it. Lean on **deep black tones** rather than
+      the current navy (`FRLG_INK` is `0x25243b`) — for the panel interior, the
+      border and the text, on both the light windows and the light-on-map text the
+      transparent HUD draws. Decide at the same time whether `hudTransparent`
+      survives as a preference or becomes a degree (a transparent-HUD step) over the
+      new art. If the new chrome is drawn rather than ripped it also gives the public
+      build a UI, which `O4` wants.
 
 ## Phase 9 — Maps (route groups), biomes & progression
 
@@ -225,6 +282,80 @@ into these floors and adds the Poké Dollar economy. Source of truth:
 - [ ] **Step 14 — Docs & migration pass.** Finish `docs/maps-spec.md`, update
       `design-spec.md` / `routes-spec.md` / `battle-spec.md` / `AGENTS.md` and the
       tech decision addenda, and archive the steps in `CHANGELOG.md`.
+- [ ] **Gigantamax, in the Mega Evolution mould.** Model Gigantamax the way the
+      Megas work (`src/engine/battle/mega.ts`, `D34`): once per battle a holder may
+      change to its G-Max forme, taking that forme's stats/types/ability **before
+      any move**, and revert when the battle ends (`snapshotFighter` keeps the base
+      species). The G-Max formes are **not in the build at all** today —
+      `isBattleBossForm` in `scripts/build-dex.mjs` excludes every Gmax/Eternamax
+      forme from the playable species — so they must be generated beside the
+      playable set, a `gmaxes.json` next to `megas.json` (`src/data/dex/megas.ts`),
+      with their art. **The stats are Añil's rule, not a
+      G-Max stat table**: as in Sword/Shield, Gigantamax only **doubles HP** and
+      leaves every other stat alone — which is what the dex's own G-Max formes
+      encode (`charizardgmax` and `pikachugmax` carry `baseStats` identical to
+      their base species; the ×2 lives in the Dynamax mechanic, never in the data).
+      So a G-Max forme keeps the base species' stats, types and ability, and the
+      doubling is applied by the mechanic the way Añil does it. Añil is also the
+      source for the G-Max art and its sprite placement
+      (`sprite-sources/anil/PBS/pokemon_metrics_gmax.txt` and the numbered form
+      sprites `Graphics/Pokemon/Front/<SPECIES>_<n>.png`). Max moves stay unmodelled
+      (`D42`): decide here whether a G-Max forme keeps its normal moves or the task
+      also brings its G-Max move. Needs a decision entry, `docs/battle-spec.md`, and
+      tests (fixed seed, once per battle, the HP doubling, the revert).
+- [ ] **Legends Z-A and Champions Megas.** The build ships only the 48 classic
+      Megas (`src/data/dex/megas.json`, `D40`); the ones Legends Z-A and Champions
+      added are missing. They are **already in the dex**: `@pkmn/dex` 0.10.11 lists
+      **49** further formes tagged `isNonstandard: "Future"` — Dragonite, Meganium,
+      Feraligatr, Emboar, Excadrill, Skarmory, Chandelure, Chesnaught, Delphox,
+      Greninja, Pyroar, Malamar, Hawlucha, Drampa, Falinks, Baxcalibur, Heatran,
+      Darkrai, Zeraora, Zygarde, Magearna, the three Tatsugiri, Meowstic F,
+      Raichu X/Y, Lucario Z, Garchomp Z, Absol Z and the rest — baseStats, types and
+      abilities included. Our own filter drops them: `isMega` in
+      `scripts/build-dex.mjs` only accepts `isNonstandard === 'Past'` and the general
+      species pass excludes `Future`. Decide the rule (take every `Future` Mega, or a
+      named whitelist) and regenerate: `npm run data:dex`, the battle art
+      (`npm run data:anil`) and the Mega Stones `src/data/items.ts` builds one per
+      forme. Check the new formes against `carriesMega` / `RosterOptions.allowMega`
+      (`src/engine/run/roster.ts`) so bosses, mini-bosses and the `ace` can carry
+      them, keep a fixed-seed roster test green, and say in the docs that `Future`
+      is the dex's own "announced, not released" tag.
+- [ ] **The Rotom appliances as evolutions.** Rotom's five appliance formes are in
+      the dex as species of their own — `rotomheat`, `rotomwash`, `rotomfrost`,
+      `rotomfan`, `rotommow` in `src/data/dex/species.json`, each with its own stats,
+      type and `Levitate` — but they carry no `prevo` and no `evolutions`, so the
+      family graph never shows them (`evolutionFamily`, `src/data/dex/evolutions.ts`)
+      and there is no way to reach one from a Rotom. Make them an evolution the
+      player takes by click, the way every other one works (`D38`; the STATS tab
+      graph, `src/ui/evolutionGraph.ts`): Rotom gains a branch per appliance and the
+      click applies the forme change, keeping the member's level, nature, IVs/EVs,
+      moves, PP, status and held item. **One-way, Eevee-style**: Rotom picks one
+      appliance and keeps it, like Eevee's eight branches — the base form offers all
+      five, a forme offers none. The branches take the base form's stage level
+      (`speciesEvolutionLevel` → 20) through `evolutionLevel`, so there is no level
+      left to decide. The forme data is hand-authored — `evolutionOf` in
+      `scripts/build-dex.mjs` only reads the dex's `evos`, which is empty here — so
+      the task says where that override lives. Keep the fixed-seed evolution tests
+      green.
+- [ ] **The Megas as information in the STATS graph.** The family graph draws
+      evolutions only (`evolutionGraph`, `src/ui/evolutionGraph.ts`), and a Mega is
+      not one: it is battle-only (`D34`, `src/engine/battle/mega.ts`) and entered
+      from a stone. So a member whose species has a Mega shows no trace of it in the
+      STATS tab. Add the Mega as an **information row** hanging off its base species:
+      the forme's sprite and name plus "Mega Evolves while holding <stone>", drawn at
+      the same indent as an evolution — and **never clickable**, with no pointer
+      cursor and no `ready` node, because nothing about the member changes here. The
+      data already exists: `megaFormsForBase` (`src/data/dex/megas.ts`) returns every
+      Mega of a species in dex order (Charizard's two included) and each carries
+      `stoneName`, with the stone built per forme in `src/data/items.ts`. So the
+      graph gains a node kind, not a new source. **Several Megas are several rows**,
+      branching off the base species the way Eevee's eight evolutions do, so
+      Charizard shows `Mega Charizard X` and `Mega Charizard Y` side by side, each
+      with its own stone. One call left to make: how the row reads when the member
+      does **not** hold the stone (dimmed with the same text, or hidden). A
+      Gigantamax forme, if that task lands, is the same kind of row. Docs:
+      `docs/design-spec.md` §3 and `docs/battle-spec.md` §9; graph tests for the new
+      rows.
 
 ## Phase 10 - Learnset, TMs & move typing
 
@@ -245,6 +376,57 @@ into these floors and adds the Poké Dollar economy. Source of truth:
 - [ ] **Hidden Power's type.** `moves.json` ships Hidden Power as a single Normal
       entry (`D42`); model its type from the holder's IVs so the 17 typings mean
       something again.
-- [ ] **Max and Z moves.** Dynamax and Z mechanics are not modelled, so their
-      moves are left out of `moves.json` (`D42`). Nothing to do unless a Dynamax or
-      Z-Move mechanic ever lands.
+
+## Phase 11 — Localisation (i18n)
+
+> English is the source table; a locale overlays it by key. New decision `D43`.
+
+No player-facing string is translated today: every one is a literal in a scene or
+a UI helper. The target is English plus Spanish.
+
+- [ ] **i18n module and the Spanish locale.** A pure, headless-tested locale layer
+      (`src/i18n/`: a typed key table, `en` as the source, `es` as an overlay, and a
+      `t(key, params)` with named interpolation, no Phaser import), plus the sweep
+      that moves every literal behind a key: the main menu, the starter pick, the
+      settings screen, the run-over screen, the route HUD (party, bag, PC box,
+      detail, pause, capture, Mart, reward), the battle menus and messages, and the
+      dev panel. A `language` setting in `src/engine/save.ts` — defaulting from the
+      browser locale and applied without a `SAVE_VERSION` bump, like `alwaysRun` —
+      with its row in `src/ui/settingsScreen.ts`. Tests: `en`/`es` key parity both
+      ways, no unresolved interpolation, and the settings round-trip. Scope call to
+      take here: **the dex's own names stay English** (`@pkmn/dex` ships English
+      only), so localising Pokémon, move, ability and item names is a separate and
+      much larger job. Needs `D43` in `docs/tech-decisions.md` and a line in
+      `docs/design-spec.md` §7; `AGENTS.md`'s "game text in English" convention
+      becomes "English is the source table, a locale overlays by key".
+
+---
+
+## Bugs
+
+Reported in play, awaiting triage. A bug becomes a task in the batch plan, and the
+fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what
+a finished batch still owes QA.
+
+- [ ] **Catching a Pokémon stacks a duplicate on top of it.** Catching a wild Pokémon
+      leaves a second copy of a member drawn over the caught one. Repro to confirm:
+      catch with a **full party** (the capture screen opens) and take both choices —
+      *swap* and *send to the PC* — then watch the party, the PC box and the HUD.
+      Suspected: the capture placement seam — `resolveBattle`'s `placeCapture`
+      (`src/engine/run/resolve.ts`), `addCaughtPokemon` / `swapCaughtIntoParty`
+      (`src/engine/run/state.ts`), or `openCapturePrompt`/`refreshCapture` in
+      `src/scenes/RouteScene.ts`.
+
+---
+
+## [PENDING FIXES]
+
+Written by QA. The format is fixed — one entry per task. Empty means nothing is red.
+
+```markdown
+- [ ] **[TASK-<ID>]:** <one-line description>
+  - **Expected:** ...
+  - **Actual / error log:** ...
+  - **Affected path:** ...
+```
+

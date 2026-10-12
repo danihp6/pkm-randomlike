@@ -4,6 +4,9 @@ dist-ssr/
 .vite/
 *.local
 *.log
+# Agent workflow: per-task specs are local to the run and never committed
+.agent_specs/
+# Worktrees for parallel agents live outside the repo as siblings (../wt-pkm-<ID>)
 # Secrets: the Cloudflare token lives here and must never be committed
 .env
 .env.local
