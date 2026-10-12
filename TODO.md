@@ -25,7 +25,11 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 Legend:
 - **IDs.** `[Task-NN]` is bound to a task only in this file; everywhere else a task
-  is referenced by name. Two digits, contiguous, in backlog order.
+  is referenced by name. Two digits, in backlog order.
+- **Retired IDs.** `[Task-24]` (a Move-Relearner screen for the bench) was retired:
+  the learnset panel already covers its four slots, so the screen is not wanted. A
+  retired ID is **never reused** — new work takes the next unused number — so the
+  sequence stays in backlog order but is no longer gapless.
 - **Dependencies.** Every open item ends with `*Dependencies:*` — the authoritative
   graph. A dependency exists only when a task cannot be written without a file, type,
   generated asset or data table another task produces. Phase order is *not* a
@@ -41,15 +45,22 @@ Legend:
   `src/data/anil/*.json`, `docs/balance/effect-coverage.md`). Each batch names its
   holder below.
 - **Unscheduled.** An ID that appears in no batch is blocked outside this backlog;
-  see "Open questions for the human".
+  see "Open questions for the human". There is none today.
 
 **Critical path.** Dependency depth is two everywhere: the only chains are
-`Task-03 → Task-04`, `Task-06 → Task-05` and `Task-10 → Task-09`. What serialises the
-tail is a shared resource, not a dependency: `Task-18`, `Task-19` and `Task-20` all
-regenerate `src/data/dex/**` through `scripts/build-dex.mjs`, and `Task-20` and
-`Task-21` both extend `src/ui/evolutionGraph.ts`. Those three dex tasks are
-dependency-free, so the Orchestrator may pull any of them into an earlier batch whose
-paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
+`Task-03 → Task-04`, `Task-06 → Task-05`, `Task-10 → Task-09` and `Task-06 → Task-23`
+beside `Task-07 → Task-23`. What serialises the tail is a shared resource, not a
+dependency: `Task-18`, `Task-19` and `Task-20` all regenerate `src/data/dex/**` through
+`scripts/build-dex.mjs`, `Task-20` and `Task-21` both extend
+`src/ui/evolutionGraph.ts`, and `Task-23` writes paths earlier tasks already hold —
+`src/data/items.ts` (`Task-07`, `Task-19` and `Task-22`'s TM entries),
+`src/data/shop.ts` and `src/data/loot.ts` (`Task-07`, `Task-22`),
+`src/engine/battle/effects/items.ts` (`Task-07`), `src/engine/battle/moveType.ts`
+(`Task-25`), the `src/data/` numbers (`Task-09`) and the generated
+`docs/balance/effect-coverage.md` (`Task-06`, `Task-05`, `Task-07`, `Task-09`) — which
+is why it sits in Batch 8 rather than beside the item tasks it belongs to. Those three
+dex tasks are dependency-free, so the Orchestrator may pull any of them into an earlier
+batch whose paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
 
 ### Batch 1 — foundations
 - **Task-01** ESLint + Prettier and a `npm run lint` script.
@@ -59,8 +70,9 @@ paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
 - **Task-10** Floor trainer XP reaches the floor's cap.
 - **Task-11** Audio: music and sound.
 - **Hot files:** `package.json` → Task-01; `src/scenes/BootScene.ts`,
-  `MainMenuScene.ts`, `RouteScene.ts`, `BattleScene.ts` → Task-11; the generated
-  `docs/balance/effect-coverage.md` → Task-06.
+  `MainMenuScene.ts`, `RouteScene.ts`, `BattleScene.ts` and the derived
+  `src/assets/audio/**` → Task-11; the generated `docs/balance/effect-coverage.md` →
+  Task-06.
 - **Shape:** six dependency-free tasks, pairwise path-disjoint. Task-01 ships
   `package.json`, `eslint.config.mjs`, `.prettierrc.json` and `.prettierignore` only,
   with a ruleset that is green on the tree as it stands: a rule or a format that
@@ -110,9 +122,12 @@ paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
 - **Task-27** Catching a Pokémon stacks a duplicate on top of it.
 - **Hot files:** `src/scenes/RouteScene.ts` → Task-27; the sheets under
   `docs/balance/` → Task-09.
-- **Shape:** numbers, prose and one scene seam. Task-17 takes `docs/design-spec.md`,
-  `docs/battle-spec.md`, `docs/routes-spec.md` and `AGENTS.md`, so nothing else in the
-  batch may.
+- **Shape:** numbers, one harness, prose and one scene seam. Task-09 owns
+  `src/engine/battle/golden.test.ts` and any harness module it extracts beside it —
+  the only task allowed to restructure the golden log — over the numbers in
+  `src/data/`, while Task-27 stays in the run save seams. Task-17 takes
+  `docs/design-spec.md`, `docs/battle-spec.md`, `docs/routes-spec.md` and `AGENTS.md`,
+  so nothing else in the batch may.
 
 ### Batch 7 — Gigantamax
 - **Task-18** Gigantamax, in the Mega Evolution mould.
@@ -121,14 +136,21 @@ paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
 - **Shape:** one task, because it holds the generated dex and the battle scene, and
   both are paths Task-08's accessibility sweep and Task-26's i18n sweep want.
 
-### Batch 8 — accessibility, new biomes, Rotom appliances
+### Batch 8 — accessibility, new biomes, Rotom appliances, item retypes
 - **Task-08** Accessibility pass.
 - **Task-14** New biomes.
 - **Task-20** The Rotom appliances as evolutions.
+- **Task-23** Item-driven move retypes: Multi-Attack, Techno Blast, Natural Gift.
+  Needs Task-06 and Task-07 merged.
 - **Hot files:** every `src/scenes/*.ts` → Task-08; `scripts/build-dex.mjs` and
-  `src/data/dex/**` → Task-20; `package.json` and any new tileset atlas → Task-14.
+  `src/data/dex/**` → Task-20; `package.json` and any new tileset atlas → Task-14; the
+  generated `docs/balance/effect-coverage.md` → Task-23.
 - **Shape:** Task-08 runs here so the contrast audit is done once, against the chrome
-  Batch 5 shipped.
+  Batch 5 shipped. Task-23 is late on purpose: Batch 5's Task-22 writes the same TM
+  entries in `src/data/items.ts` and the shop rotation, and Batch 6's Task-09 balance
+  pass owns the `src/data/` numbers and the `docs/balance/` sheets that Task-23 also
+  touches — so this batch, whose tasks run over the scenes, the tilesets and the
+  regenerated dex, is the first one that leaves Task-23's paths free.
 
 ### Batch 9 — Megas as information in the STATS graph
 - **Task-21** The Megas as information in the STATS graph.
@@ -145,39 +167,11 @@ paths leave `scripts/build-dex.mjs` and `src/data/dex/**` free.
 
 ### Open questions for the human
 
-1. **`Task-23` (remaining item-driven move retypes) cannot be scheduled.** Multi
-   Attack, Techno Blast and Natural Gift have no move in `src/data/dex/moves.json`,
-   so there is nothing to hook, and no task in this backlog adds them. Unblocking it
-   needs a "future dex" item that does not exist here. The same item also says the
-   Plates are not obtainable "until an Arceus-tier source lands": is Arceus meant to
-   become reachable, and through which system — roster, loot table or boss?
-2. **`Task-24` (relearn UI for the bench) has no design.** The item itself says the
-   screen "is not planned yet". Is it wanted at all, and does it live as a panel
-   inside the existing party HUD (`src/ui/partyDetail.ts` and its detail panel in
-   `src/scenes/RouteScene.ts`) or as a screen of its own?
-3. ~~**The Añil art a batch assumes is not in the working copy.**~~ **Resolved: the
-   art is there.** The Añil clone is sparse + partial (`Graphics/Pokemon`, `PBS`)
-   but the blobs were in the object store, so
-   `git -C sprite-sources/anil sparse-checkout add Graphics/UI Graphics/Items`
-   materialised them (788 files under `Graphics/UI`, 893 under `Graphics/Items`).
-   `Task-07` and `Task-15` are both unblocked; the FRLG-icon fallback is not needed.
-4. **Audio has no source and no decision.** `Task-11` owes route ambience and music,
-   but the repository contains no audio file, `sprite-sources/` has none, and
-   `docs/tech-decisions.md` (D22) only says the volume knob waits for "the sounds
-   themselves". Should the task synthesise its cues procedurally (CC0-safe, in
-   `src/audio/`) or commit supplied CC0 tracks under `src/assets/audio/`? The plan
-   assumes the task decides this itself and documents the choice.
-5. **The balance pass has no harness to run.** `Task-09` is "the scripted-battle
-   harness", but the only one in the tree is `scriptedBattle()` inside
-   `src/engine/battle/golden.test.ts` (a fixed-seed golden log); `CHANGELOG.md` calls
-   that golden test "the seed of the balance harness". May `Task-09` restructure
-   `golden.test.ts` into a reusable harness, or must it tune `src/data/` numbers only
-   and leave the golden log alone?
-6. **The `## Bugs` entry is an open `[ ]` item.** Its own section says "a bug becomes
-   a task in the batch plan", so the plan gives it `[Task-27]` and schedules it in
-   Batch 6, while leaving the section's prose and `## [PENDING FIXES]` untouched. If
-   the bug must stay out of the graph instead, ID 27 disappears and Batch 6 shrinks
-   to `Task-09` and `Task-17`.
+None. Everything the first plan raised is decided: the Añil art was materialised
+into the local clone, `Task-23` is unblocked (the three moves ship, `D42`),
+`Task-24` is retired, the audio comes from the original games' audio rips under
+`sprite-sources/frlg-audio/`, and the Plates are made obtainable by `Task-07`. A
+question lands here only when the repository genuinely cannot answer it.
 
 ---
 
@@ -274,7 +268,11 @@ Ports of Showdown handlers, in batches, on the hook names in
       `src/data/itemIcons.ts`. Make them **obtainable** wherever the run hands out
       items — `src/data/loot.ts` (route loot by band), `src/data/shop.ts` (the Mart)
       and `src/ui/rewards.ts` (the mini-boss choice) — and keep the item tests
-      green.
+      green. **The seventeen Plates join that sweep**: they are catalogued and their
+      Judgment retype already shipped, but `docs/balance/effect-coverage.md` still
+      classifies every one of them `excluded` ("not in the run catalogue") and a run
+      can never hold one. They need no Arceus to drop as loot, so this change moves
+      those rows to `port` at the same time.
       *Dependencies:* none. *(Batch 3)*
 
 
@@ -296,9 +294,18 @@ Ports of Showdown handlers, in batches, on the hook names in
       chrome) so the contrast and colour audit runs once, against the final art.
       *(Batch 8)*
 - [ ] **[Task-09]** Balance pass using `docs/balance/` sheets and the
-      scripted-battle harness.
+      scripted-battle harness. The harness is `scriptedBattle()` inside
+      `src/engine/battle/golden.test.ts` — the only one in the tree, called "the seed
+      of the balance harness" in `CHANGELOG.md` — and this task may restructure that
+      file into a **reusable harness** (export it, or lift it into a module beside the
+      test, with the knobs the pass needs: seed, the two teams, a turn cap), keeping
+      the fixed-seed golden log itself intact and green. It then tunes the numbers in
+      `src/data/` against the sheets, with a fixed-seed regression for every rule it
+      moves.
       *Dependencies:* Task-10 (Floor trainer XP reaches the floor's cap) — it reads
-      the route curve and the XP rule that task fixes. *(Batch 6)*
+      the route curve and the XP rule that task fixes. It is also the producer of the
+      reusable harness: a later task that wants to run a scripted battle depends on
+      Task-09. *(Batch 6)*
 - [ ] **[Task-10] Floor trainer XP reaches the floor's cap.** Beating roughly
       **75 %** of a floor's trainers must award the XP the squad needs to reach
       that floor's
@@ -317,11 +324,24 @@ Ports of Showdown handlers, in batches, on the hook names in
       sizes, per-floor trainer counts and this rule): `docs/balance/README.md`
       lists it, but the file does not exist.
       *Dependencies:* none. *(Batch 1)*
-- [ ] **[Task-11] Audio: music and sound.** Route ambience and encounter, hit,
-      faint, level-up and victory cues, plus the music. The `volume` setting exists
-      in the save; `src/audio/` does not exist yet.
-      *Dependencies:* none. The source of the cues is undecided — see "Open
-      questions for the human". *(Batch 1)*
+- [ ] **[Task-11] Audio: music and sound.** Route ambience and the encounter, hit,
+      faint, level-up and victory cues, plus the music. **The cues come from the
+      original games' audio**, treated exactly like the imported art rips
+      (`AGENTS.md`'s Art convention). So the paths are the art rips' paths: the ripped
+      sources live in the gitignored `sprite-sources/` tree, in their own folder
+      beside the art rips — **`sprite-sources/frlg-audio/`** — and only the derived
+      assets the game loads are committed, under **`src/assets/audio/`**, built by a
+      `scripts/frlg/build-audio.mjs` in the mould of the existing `scripts/frlg/`
+      packers (run directly with `node`, so this task adds no `package.json` script).
+      `O4` covers this as it covers art: the imported audio is local-development-only
+      and can never ship, so the cue ids and their keys stay behind one table in
+      `src/audio/` and a CC0 set can replace the assets without touching a call site.
+      Phaser only: startup, the route ambience, the cues and the mute/volume wiring
+      live in `src/audio/` and the scenes; the `volume` setting already exists in the
+      save (`D22`) and `src/audio/` does not exist yet. Record the source and the
+      local-only status in `docs/tech-decisions.md` beside `D22` and in `AGENTS.md`'s
+      Art convention.
+      *Dependencies:* none. *(Batch 1)*
 - [ ] **[Task-12] Ability info popup.** The STATS tab prints the ability as plain
       text (`MemberDetail.ability`, `src/ui/partyDetail.ts`) and there is no way to
       read what it does. Give the ability row the same ⓘ control the move cells
@@ -563,19 +583,38 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       shop) and a real machine icon � every TM borrows the sheet's question mark until then �
       are still open.
       *Dependencies:* none. *(Batch 5)*
-- [ ] **[Task-23] Remaining item-driven move retypes.** Judgment + the seventeen
-      Plates shipped; Multi-Attack (Memories), Techno Blast (Drives) and Natural Gift
-      (berries) have no move in the Gen 9 dex this build ships, so they wait on a
-      future dex. All would hook the same `onModifyMoveType` path as the Plates.
-      The Plates themselves are not obtainable until an Arceus-tier source lands.
-      *Dependencies:* blocked — none of the three moves exists in
-      `src/data/dex/moves.json` and no task in this backlog adds them, so there is
-      nothing to hook; see "Open questions for the human". *(unscheduled)*
-- [ ] **[Task-24] Relearn UI for the bench.** The learnset panel covers the panel's
-      four slots; a Move-Relearner style screen for the whole party is not planned
-      yet.
-      *Dependencies:* blocked — the screen has no design yet, so it cannot be
-      specced; see "Open questions for the human". *(unscheduled)*
+- [ ] **[Task-23] Item-driven move retypes: Multi-Attack, Techno Blast, Natural
+      Gift.** Judgment and the seventeen Plates already hook `onModifyMoveType`
+      (`plateHandler`, `src/engine/battle/effects/items.ts`) and show the same type in
+      the FIGHT menu and in the party panel (`effectiveMoveType` and its `judgeType`
+      helper, `src/engine/battle/moveType.ts`); the other three item-driven retypes are
+      still unmodelled. **Their moves do exist in this build**: `multiattack`,
+      `technoblast` and `naturalgift` are all in `src/data/dex/moves.json`, each
+      `isNonstandard: "Past"` — `D42` ships every real move, the `Past` ones included —
+      so nothing here waits on a future dex. Implement them on the Plates' seam: the
+      held-item data in `src/data/items.ts` (Multi-Attack's Memories, Techno Blast's
+      Drives, and the berry each Natural Gift reads), the handlers in
+      `src/engine/battle/effects/items.ts` (a move-scoped type, as `plateHandler` has,
+      with Natural Gift consuming the berry it read), the panel rule in
+      `src/engine/battle/moveType.ts` so the panel agrees with the battle, their rows
+      in `docs/balance/effect-coverage.md` (`D16`), and the tests in
+      `src/engine/battle/moveType.test.ts` and `src/engine/battle/effects/items.test.ts`.
+      Make the new entries obtainable the way Task-07 made the rest
+      (`src/data/loot.ts`, `src/data/shop.ts`, `src/ui/rewards.ts`). Two data facts to
+      work from: the **berries already carry** their type and power in
+      `src/data/dex/items.json` (`naturalGift: {basePower, type}`, 53 berries), while
+      the **Memories and Drives do not** — `scripts/build-dex.mjs` drops every
+      nonstandard item — so their type mapping is hand-authored in the catalogue, with
+      the names and icons Task-07 brings over from Añil
+      (`sprite-sources/anil/PBS/items.txt`).
+      Out of scope: **the Plates' own obtainability** — `Task-07` makes them drop
+      as loot; this item only wires the retype they already hook.
+      *Dependencies:* Task-06 (Move-effect coverage table) — its move classification
+      is where the three moves are listed and the file this task adds its rows to;
+      Task-07 (The competitive held items, with Añil's icons) — it settles the
+      `ItemDef` fields and the handler registration in the two files this task
+      extends. Task-25 (Hidden Power's type) writes `src/engine/battle/moveType.ts` in
+      an earlier batch, so this task builds on the shape it leaves. *(Batch 8)*
 - [ ] **[Task-25] Hidden Power's type.** `moves.json` ships Hidden Power as a single
       Normal entry (`D42`); model its type from the holder's IVs so the 17 typings
       mean something again.
