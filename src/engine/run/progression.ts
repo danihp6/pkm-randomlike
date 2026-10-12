@@ -3,6 +3,7 @@ import { levelUpMoves } from '../../data/dex/learnsets';
 import { getMove } from '../../data/dex/moves';
 import { statAtLevel } from '../../data/dex/natures';
 import { getSpecies } from '../../data/dex/species';
+import { bandForLevel } from '../../data/run';
 import { randomAbility } from '../battle/randomAbility';
 import { randomLevelUpMoves } from '../battle/randomLearnset';
 import {
@@ -64,7 +65,7 @@ export function experienceFraction(xp: number, level: number): number {
 
 /**
  * XP for defeating a level-`defeatedLevel` Pokémon: a band-scaled base, split
- * across the participants and boosted for trainers. No RNG, so a replay awards
+ * across the participants and multiplied for trainers. No RNG, so a replay awards
  * the same XP.
  */
 export function experienceAward(
@@ -72,9 +73,10 @@ export function experienceAward(
   participants = 1,
   isTrainer = false,
 ): number {
-  const base = Math.max(1, Math.floor(defeatedLevel)) * 5;
-  const multiplier = isTrainer ? 1.5 : 1;
-  return Math.max(1, Math.floor((base * multiplier) / Math.max(1, Math.floor(participants))));
+  const level = Math.max(1, Math.floor(defeatedLevel));
+  const base = level * 5;
+  const scale = isTrainer ? 1.5 * bandForLevel(level).trainerXp : 1;
+  return Math.max(1, Math.floor((base * scale) / Math.max(1, Math.floor(participants))));
 }
 
 export type ProgressionEvent =

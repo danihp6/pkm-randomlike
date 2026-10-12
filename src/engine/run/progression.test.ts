@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getSpecies, statAtLevel } from '../../data/dex';
+import { LEVEL_BANDS, bandForLevel } from '../../data/run';
 import '../battle/effects/abilities';
 import { randomAbility } from '../battle/randomAbility';
 import {
@@ -48,8 +49,18 @@ describe('experienceAward', () => {
     expect(experienceAward(0)).toBe(5);
   });
 
-  it('pays more for a trainer battle', () => {
-    expect(experienceAward(10, 1, true)).toBe(75);
+  it('pays the band multiplier of the defeated level to a trainer battle', () => {
+    for (const band of LEVEL_BANDS) {
+      // The level bands meet at their boundaries and the higher one owns the
+      // shared level, so the award follows `bandForLevel`, not the map's band.
+      for (const level of [band.minLevel, band.maxLevel]) {
+        const owner = bandForLevel(level);
+        expect(experienceAward(level, 1, true), `${band.id} @${level} (${owner.id})`).toBe(
+          Math.floor(level * 5 * 1.5 * owner.trainerXp),
+        );
+      }
+    }
+    expect(bandForLevel(10).id).toBe('mid');
     expect(experienceAward(10, 1, true)).toBeGreaterThan(experienceAward(10));
   });
 });

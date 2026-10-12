@@ -28,6 +28,14 @@ describe('level bands', () => {
       expect(LEVEL_BANDS[i].maxLevel).toBeGreaterThan(LEVEL_BANDS[i - 1].maxLevel);
     }
   });
+
+  it('gives every band a finite, positive trainer XP multiplier', () => {
+    for (const band of LEVEL_BANDS) {
+      expect(Number.isFinite(band.trainerXp), band.id).toBe(true);
+      expect(band.trainerXp, band.id).toBeGreaterThan(0);
+      expect(band.trainerXp, band.id).toBe(Math.round(band.trainerXp * 100) / 100);
+    }
+  });
 });
 
 describe('run chain', () => {
