@@ -24,12 +24,60 @@ export type LevelBand = Readonly<{
 }>;
 
 export const LEVEL_BANDS: readonly LevelBand[] = [
-  { id: 'early', name: 'Early', minLevel: 2, maxLevel: 5, trainerSize: 1, trainerXp: 0.3, bst: { min: 0, max: 305 } },
-  { id: 'low', name: 'Low', minLevel: 5, maxLevel: 9, trainerSize: 1, trainerXp: 0.6, bst: { min: 306, max: 355 } },
-  { id: 'mid', name: 'Mid', minLevel: 9, maxLevel: 14, trainerSize: 2, trainerXp: 3.9, bst: { min: 356, max: 440 } },
-  { id: 'high', name: 'High', minLevel: 14, maxLevel: 20, trainerSize: 2, trainerXp: 1.7, bst: { min: 441, max: 490 } },
-  { id: 'late', name: 'Late', minLevel: 20, maxLevel: 28, trainerSize: 3, trainerXp: 6, bst: { min: 491, max: 520 } },
-  { id: 'end', name: 'End', minLevel: 28, maxLevel: 40, trainerSize: 4, trainerXp: 3.2, bst: { min: 521, max: 800 } },
+  {
+    id: 'early',
+    name: 'Early',
+    minLevel: 2,
+    maxLevel: 5,
+    trainerSize: 1,
+    trainerXp: 0.3,
+    bst: { min: 0, max: 305 },
+  },
+  {
+    id: 'low',
+    name: 'Low',
+    minLevel: 5,
+    maxLevel: 9,
+    trainerSize: 1,
+    trainerXp: 0.6,
+    bst: { min: 306, max: 355 },
+  },
+  {
+    id: 'mid',
+    name: 'Mid',
+    minLevel: 9,
+    maxLevel: 14,
+    trainerSize: 2,
+    trainerXp: 3.9,
+    bst: { min: 356, max: 440 },
+  },
+  {
+    id: 'high',
+    name: 'High',
+    minLevel: 14,
+    maxLevel: 20,
+    trainerSize: 2,
+    trainerXp: 1.7,
+    bst: { min: 441, max: 490 },
+  },
+  {
+    id: 'late',
+    name: 'Late',
+    minLevel: 20,
+    maxLevel: 28,
+    trainerSize: 3,
+    trainerXp: 6,
+    bst: { min: 491, max: 520 },
+  },
+  {
+    id: 'end',
+    name: 'End',
+    minLevel: 28,
+    maxLevel: 40,
+    trainerSize: 4,
+    trainerXp: 3.2,
+    bst: { min: 521, max: 800 },
+  },
 ];
 
 /**

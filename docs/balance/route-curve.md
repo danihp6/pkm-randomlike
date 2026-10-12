@@ -16,19 +16,19 @@ Every floor reads one band (`bandForLevel(minLevel)` in `src/data/run.ts`): a le
 window, the typical trainer party size, the trainer XP multiplier the battle awards,
 and the BST window the archetype pools draw from.
 
-| Band | Levels | Trainer party | `trainerXp` | BST window |
-| --- | ---: | ---: | ---: | --- |
-| Early | 2–5 | 1 | 0.3 | 0–305 |
-| Low | 5–9 | 1 | 0.6 | 306–355 |
-| Mid | 9–14 | 2 | 3.9 | 356–440 |
-| High | 14–20 | 2 | 1.7 | 441–490 |
-| Late | 20–28 | 3 | 6 | 491–520 |
-| End | 28–40 | 4 | 3.2 | 521–800 |
+| Band  | Levels | Trainer party | `trainerXp` | BST window |
+| ----- | -----: | ------------: | ----------: | ---------- |
+| Early |    2–5 |             1 |         0.3 | 0–305      |
+| Low   |    5–9 |             1 |         0.6 | 306–355    |
+| Mid   |   9–14 |             2 |         3.9 | 356–440    |
+| High  |  14–20 |             2 |         1.7 | 441–490    |
+| Late  |  20–28 |             3 |           6 | 491–520    |
+| End   |  28–40 |             4 |         3.2 | 521–800    |
 
 `trainerXp` is **not** a difficulty ramp and is not monotonic: a floor's trainer
 party already carries its own levels and party size, so the multiplier is only what
 is left to reach the floor's cap. A level-40 roster of four Pokémon per trainer
-needs a *smaller* multiplier than a level-28 roster of three, which is why `End`
+needs a _smaller_ multiplier than a level-28 roster of three, which is why `End`
 sits below `Late`.
 
 ## Level caps per map
@@ -39,13 +39,13 @@ XP the squad still needs on floor `m` if it capped out on floor `m - 1`: the `le
 curve at the new cap minus the curve at the old one.
 
 | Map | Levels | Cap | `needed(m)` |
-| ---: | --- | ---: | ---: |
-| 1 | 2–6 | 6 | 91 |
-| 2 | 6–11 | 11 | 1115 |
-| 3 | 11–17 | 17 | 3582 |
-| 4 | 17–24 | 24 | 8911 |
-| 5 | 24–32 | 32 | 18944 |
-| 6 | 32–40 | 40 | 31232 |
+| --: | ------ | --: | ----------: |
+|   1 | 2–6    |   6 |          91 |
+|   2 | 6–11   |  11 |        1115 |
+|   3 | 11–17  |  17 |        3582 |
+|   4 | 17–24  |  24 |        8911 |
+|   5 | 24–32  |  32 |       18944 |
+|   6 | 32–40  |  40 |       31232 |
 
 ## The per-floor trainer budget
 
@@ -57,23 +57,23 @@ the budget), averaged over the three seeds. `A(m)` is what one of those trainers
 awards on average: `trainerSize` roster members drawn uniformly across the map's
 level range, each worth `experienceAward(level, 1, true)`.
 
-| Map | Band | Trainers per seed (rooms) | `T̄(m)` | `A(m)` | `0.75 × T̄(m) × A(m)` | Window | Fill |
-| ---: | --- | --- | ---: | ---: | ---: | --- | ---: |
-| 1 | Early | 11 (8), 10 (7), 13 (8) | 11.33 | 13.40 | 113.90 | 91 – 136.5 | 1.25 |
-| 2 | Low | 10 (8), 11 (7), 12 (7) | 11.00 | 161.50 | 1332.38 | 1115 – 1672.5 | 1.20 |
-| 3 | Mid | 11 (8), 11 (7), 13 (7) | 11.67 | 526.00 | 4602.50 | 3582 – 5373 | 1.28 |
-| 4 | High | 11 (9), 9 (9), 11 (9) | 10.33 | 1409.25 | 10921.69 | 8911 – 13366.5 | 1.23 |
-| 5 | Late | 17 (8), 10 (8), 10 (8) | 12.33 | 2730.00 | 25252.50 | 18944 – 28416 | 1.33 |
-| 6 | End | 12 (8), 16 (7), 16 (9) | 14.67 | 3456.00 | 38016.00 | 31232 – 46848 | 1.22 |
+| Map | Band  | Trainers per seed (rooms) | `T̄(m)` |  `A(m)` | `0.75 × T̄(m) × A(m)` | Window         | Fill |
+| --: | ----- | ------------------------- | -----: | ------: | -------------------: | -------------- | ---: |
+|   1 | Early | 11 (8), 10 (7), 13 (8)    |  11.33 |   13.40 |               113.90 | 91 – 136.5     | 1.25 |
+|   2 | Low   | 10 (8), 11 (7), 12 (7)    |  11.00 |  161.50 |              1332.38 | 1115 – 1672.5  | 1.20 |
+|   3 | Mid   | 11 (8), 11 (7), 13 (7)    |  11.67 |  526.00 |              4602.50 | 3582 – 5373    | 1.28 |
+|   4 | High  | 11 (9), 9 (9), 11 (9)     |  10.33 | 1409.25 |             10921.69 | 8911 – 13366.5 | 1.23 |
+|   5 | Late  | 17 (8), 10 (8), 10 (8)    |  12.33 | 2730.00 |             25252.50 | 18944 – 28416  | 1.33 |
+|   6 | End   | 12 (8), 16 (7), 16 (9)    |  14.67 | 3456.00 |             38016.00 | 31232 – 46848  | 1.22 |
 
 "Fill" is `0.75 × T̄(m) × A(m) / needed(m)`; the rule wants it inside `1 – 1.5`, and
 every floor lands there with at least 0.16 of slack to the nearer edge.
 
 A floor's level range **straddles two bands**, and the multiplier comes from the
-*defeated* Pokémon's band, so `A(m)` mixes its own band's rate with the next band's:
+_defeated_ Pokémon's band, so `A(m)` mixes its own band's rate with the next band's:
 map 1's roster spans levels 2–6, so its 2–4 roster members are paid Early's 0.3 and
 its 5–6 members Low's 0.6. That is why the six multipliers are solved as a chain —
-each floor's window constrains its own band *and* the one above it — rather than one
+each floor's window constrains its own band _and_ the one above it — rather than one
 band at a time.
 
 Two bands land **below 1**, which means they were **over-rewarding** trainers before
@@ -91,7 +91,7 @@ encounter is worth the same without the 1.5 × `trainerXp` factor.
 
 From Mid up (a multiplier of 3.9 or more) a trainer's Pokémon is worth several times
 a wild one of the same level, so a floor is paid by fighting its trainers. In Early
-and Low the multiplier is below 0.67, so a single trainer's Pokémon is worth *less*
+and Low the multiplier is below 0.67, so a single trainer's Pokémon is worth _less_
 than the wild one of the same level: that is the over-rewarding correction above, and
 the floor still pays its cap because it places a dozen or so trainers and the bar is
 shared.

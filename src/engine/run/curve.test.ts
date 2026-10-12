@@ -116,7 +116,7 @@ describe('floor trainer curve', () => {
     }
   });
 
-  it('pays for each floor\'s level cap with 75 % of that floor\'s trainers', () => {
+  it("pays for each floor's level cap with 75 % of that floor's trainers", () => {
     for (const floor of floors()) {
       const label = `map ${floor.mapIndex} (${floor.band.id})`;
       expect(floor.meanTrainers, `${label} places trainers`).toBeGreaterThan(0);
