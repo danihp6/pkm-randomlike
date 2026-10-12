@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { biomeForRoute, getBiome } from '../data/biomes';
-import { getMove, getSpecies, type StatId } from '../data/dex';
+import { getMove, getSpecies, type StatId, type Stats } from '../data/dex';
 import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { type HudPanelId } from '../data/hudLayout';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
@@ -2432,13 +2432,19 @@ export class RouteScene extends Phaser.Scene {
     });
   }
 
+  /** The party/box member the open detail panel shows, or undefined. */
+  private detailMember(): RunPokemon | undefined {
+    const memberId = this.hudDetailState.memberId;
+    if (memberId === null) return undefined;
+    return (
+      this.run.party.find((entry) => entry.fighter.id === memberId) ??
+      this.run.box.find((entry) => entry.fighter.id === memberId)
+    );
+  }
+
   /** The filtered learnset pool for the open member, in draw order. */
   private learnPool(): LearnEntry[] {
-    const memberId = this.hudDetailState.memberId;
-    if (memberId === null) return [];
-    const member =
-      this.run.party.find((entry) => entry.fighter.id === memberId) ??
-      this.run.box.find((entry) => entry.fighter.id === memberId);
+    const member = this.detailMember();
     if (!member) return [];
     const pool = learnsetPool(this.run, member, this.run.seed);
     const query = this.hudLearnQuery.trim().toLowerCase();
@@ -2454,14 +2460,14 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /** One learnset cell: the move's reading plus a Lv/TM source tag in its name. */
-  private learnCell(entry: LearnEntry, ability: string): MoveGridCell {
+  private learnCell(entry: LearnEntry, ability: string, ivs: Partial<Stats> | null | undefined): MoveGridCell {
     const move = getMove(entry.moveId);
     const basePower = move?.basePower ?? 0;
     const accuracy = move && move.accuracy !== true ? move.accuracy : null;
     const tag = entry.source === 'tm' ? `TM${tmNumber(entry.tmId ?? '') ?? '?'}` : `Lv${entry.level ?? '?'}`;
     return {
       name: `${move?.name ?? entry.moveId}  ${tag}`,
-      type: move ? abilityMoveType(ability, move) : '',
+      type: move ? abilityMoveType(ability, move, ivs) : '',
       category: move?.category ?? 'Status',
       pp: move?.pp ?? 0,
       maxPp: move?.pp ?? 0,
@@ -2493,6 +2499,7 @@ export class RouteScene extends Phaser.Scene {
       .setVisible(moves);
 
     const pool = moves ? this.learnPool() : [];
+    const memberIvs = this.detailMember()?.fighter.ivs;
     const pages = Math.max(1, Math.ceil(pool.length / HUD_DETAIL_LEARN_PAGE_SIZE));
     this.hudLearnPage = Math.max(0, Math.min(pages - 1, this.hudLearnPage));
     const pageEntries = pool.slice(
@@ -2507,7 +2514,7 @@ export class RouteScene extends Phaser.Scene {
       y: learnTop,
       w: this.hud.detailW,
       h: learnH,
-      cells: pageEntries.map((entry) => this.learnCell(entry, ability)),
+      cells: pageEntries.map((entry) => this.learnCell(entry, ability, memberIvs)),
       selected: pageEntries.findIndex((entry) => entry.moveId === this.hudLearnDrag),
       info: null,
       popupAtCell: true,

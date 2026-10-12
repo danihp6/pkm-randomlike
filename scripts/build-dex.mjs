@@ -139,8 +139,8 @@ const main = async () => {
   // dropped: keeping both made the engine apply single secondaries twice.
   //
   // Hidden Power's 17 typings all share the id `hiddenpower`; the engine keys
-  // moves by id and does not model its IV-based type, so only the first (Normal)
-  // entry survives and the rest are skipped.
+  // moves by id and derives the type from the holder's IVs at battle time, so
+  // only the first (Normal) entry survives and the rest are skipped.
   const moves = [];
   const seenMoveIds = new Set();
   for (const entry of Dex.moves.all()) {

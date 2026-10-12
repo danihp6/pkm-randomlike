@@ -1,4 +1,4 @@
-import { getMove, getNature, getSpecies, type MoveCategory, type StatId } from '../data/dex';
+import { getMove, getNature, getSpecies, type MoveCategory, type StatId, type Stats } from '../data/dex';
 import { getBiome } from '../data/biomes';
 import { restoreFighter, type BattleFighter, type MoveSlot, type StatusId } from '../engine/battle/fighter';
 import { effectiveMoveType } from '../engine/battle/moveType';
@@ -97,6 +97,7 @@ function moveDetails(
   slots: readonly MoveSlot[],
   ability: string,
   heldItem: string | null,
+  ivs: Partial<Stats> | null | undefined,
 ): MoveDetail[] {
   return slots.map((slot) => {
     const move = getMove(slot.moveId);
@@ -105,7 +106,7 @@ function moveDetails(
     return {
       moveId: slot.moveId,
       name: move?.name ?? slot.moveId,
-      type: move ? effectiveMoveType(ability, heldItem, move) : '',
+      type: move ? effectiveMoveType(ability, heldItem, move, ivs) : '',
       category: move?.category ?? 'Status',
       pp: slot.pp,
       maxPp: slot.maxPp,
@@ -158,7 +159,7 @@ export function fighterDetail(fighter: BattleFighter): MemberDetail {
     statusLabel: statusAbbreviation(fighter.status),
     heldItemName: held?.name ?? fighter.heldItem,
     stats: fighter.stats,
-    moves: moveDetails(fighter.moves, fighter.ability, fighter.heldItem),
+    moves: moveDetails(fighter.moves, fighter.ability, fighter.heldItem, fighter.ivs),
     caughtLabel: null,
     // A live battle fighter has no run around it to evolve from; the in-battle
     // panel only reads stats and moves, so the branch list stays empty.

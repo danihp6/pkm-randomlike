@@ -42,8 +42,8 @@ Notes:
 - The move set is the **full move list** (`D42`): the `Past` moves included, so a
   Dexit species keeps its learnset. Dynamax (Max) and Z moves are dropped — the
   engine models neither — as are CAP/Future/Unobtainable entries. Hidden Power's
-  17 typings share one id, so only the Normal one ships (its IV-based type is not
-  modelled).
+  17 typings share one id, so only the single Normal-typed entry ships, and its
+  type is derived from the holder's IVs at battle time.
 - `megas.json` is generated beside the playable set (never inside it) so a held
   stone has a target (`D34`). A Mega whose base species is not played is skipped,
   so no dead stones ship.
