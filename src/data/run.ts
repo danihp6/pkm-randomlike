@@ -11,6 +11,11 @@ export type LevelBand = Readonly<{
   /** Typical trainer party size in this band. */
   trainerSize: number;
   /**
+   * XP multiplier for a beaten **trainer's** Pokémon of this band, so 75 % of a
+   * floor's trainers pays for that floor's level cap (`docs/balance/route-curve.md`).
+   */
+  trainerXp: number;
+  /**
    * Inclusive base-stat-total window the band draws its species pools from
    * (`D39`). The windows tile 0..800 with a rough population split, so every
    * species falls in exactly one band and the pool climbs with the floor.
@@ -19,12 +24,60 @@ export type LevelBand = Readonly<{
 }>;
 
 export const LEVEL_BANDS: readonly LevelBand[] = [
-  { id: 'early', name: 'Early', minLevel: 2, maxLevel: 5, trainerSize: 1, bst: { min: 0, max: 305 } },
-  { id: 'low', name: 'Low', minLevel: 5, maxLevel: 9, trainerSize: 1, bst: { min: 306, max: 355 } },
-  { id: 'mid', name: 'Mid', minLevel: 9, maxLevel: 14, trainerSize: 2, bst: { min: 356, max: 440 } },
-  { id: 'high', name: 'High', minLevel: 14, maxLevel: 20, trainerSize: 2, bst: { min: 441, max: 490 } },
-  { id: 'late', name: 'Late', minLevel: 20, maxLevel: 28, trainerSize: 3, bst: { min: 491, max: 520 } },
-  { id: 'end', name: 'End', minLevel: 28, maxLevel: 40, trainerSize: 4, bst: { min: 521, max: 800 } },
+  {
+    id: 'early',
+    name: 'Early',
+    minLevel: 2,
+    maxLevel: 5,
+    trainerSize: 1,
+    trainerXp: 0.3,
+    bst: { min: 0, max: 305 },
+  },
+  {
+    id: 'low',
+    name: 'Low',
+    minLevel: 5,
+    maxLevel: 9,
+    trainerSize: 1,
+    trainerXp: 0.6,
+    bst: { min: 306, max: 355 },
+  },
+  {
+    id: 'mid',
+    name: 'Mid',
+    minLevel: 9,
+    maxLevel: 14,
+    trainerSize: 2,
+    trainerXp: 3.9,
+    bst: { min: 356, max: 440 },
+  },
+  {
+    id: 'high',
+    name: 'High',
+    minLevel: 14,
+    maxLevel: 20,
+    trainerSize: 2,
+    trainerXp: 1.7,
+    bst: { min: 441, max: 490 },
+  },
+  {
+    id: 'late',
+    name: 'Late',
+    minLevel: 20,
+    maxLevel: 28,
+    trainerSize: 3,
+    trainerXp: 6,
+    bst: { min: 491, max: 520 },
+  },
+  {
+    id: 'end',
+    name: 'End',
+    minLevel: 28,
+    maxLevel: 40,
+    trainerSize: 4,
+    trainerXp: 3.2,
+    bst: { min: 521, max: 800 },
+  },
 ];
 
 /**
