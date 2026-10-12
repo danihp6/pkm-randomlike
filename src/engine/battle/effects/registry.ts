@@ -162,8 +162,8 @@ function ownedEffects(
     if (ability) refs.push({ effect: ability, owner: fighter });
     else if (fighter.ability) warnUnportedEffect('ability', fighter.ability);
   }
-  // Klutz suppresses the holder's held item entirely.
-  if (fighter.heldItem && fighter.ability !== 'Klutz') {
+  // Klutz suppresses the holder's held item entirely, and Magic Room every held item.
+  if (fighter.heldItem && fighter.ability !== 'Klutz' && state.field.magicroom <= 0) {
     const item = getEffect(fighter.heldItem);
     if (item) refs.push({ effect: item, owner: fighter });
     else warnUnportedEffect('item', fighter.heldItem);

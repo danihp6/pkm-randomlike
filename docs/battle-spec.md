@@ -33,6 +33,10 @@ Phaser scene only renders state and forwards choices.
   (Showdown's `Nature`/`Stat` data), cached on the battle fighter.
 - Damage follows the Gen 9 formula, including STAB, type effectiveness, critical
   hits, the 85–100% roll on the seeded battle RNG, weather and burn modifiers.
+- **Screens** halve damage while they last: Reflect the physical, Light Screen the
+  special, Aurora Veil both (and only while it is snowing). **Wonder Room** swaps
+  the defensive stat a hit reads; **Magic Room** switches held items off for its
+  duration.
 - Type effectiveness comes from the generated 18x18 chart, not a hand-written
   table.
 
@@ -44,6 +48,18 @@ perish count, protection (Protect and friends), charge state (a two-turn move
 waiting to fire), Yawn countdown, stat stages (−6..+6). Effects live in
 `src/engine/battle/effects/` and follow Showdown's semantics, ported category by
 category (see `docs/showdown-reuse.md` for the coverage table).
+
+The later ports add volatiles a single battle can honour: Aqua Ring and Ingrain
+(residual healing, Ingrain also rooting the holder), Curse, Destiny Bond, Grudge,
+Focus Energy, Laser Focus, Dragon Cheer, Endure, Imprison, Magic Coat, Snatch,
+Magnet Rise, Power Trick and the Stockpile counter (spent by Swallow).
+
+Side and field conditions live on the battle state, not on a Pokémon:
+**Reflect**, **Light Screen**, **Aurora Veil**, **Tailwind**, **Lucky Chant**,
+**Mist** and **Safeguard** on a side; **Trick Room**, **Gravity**, **Magic
+Room**, **Wonder Room**, **Fairy Lock**, **Mud Sport** and **Water Sport** on the
+field. Each carries a turn count ticked in the residual pass
+(`src/engine/battle/effects/conditions.ts`).
 
 Special move shapes:
 
@@ -147,8 +163,16 @@ moves. The rules:
 - The battle takes its randomness from one seeded `Rng` derived from the run
   seed, the route index and the encounter id, so a replay of the same inputs
   produces the same battle.
+- Order is priority, then the per-bracket tie-break (Quick Draw, Stall), then
+  effective Speed, with exact ties broken by the seeded RNG. **Trick Room**
+  reverses the Speed order for the whole field; **Tailwind** doubles a side's
+  Speed. Both are read in `order.ts` / `modifiers.ts` from the field and side
+  conditions.
 - A Pokémon's randomized learnset and moveset are derived from the run seed and
   its species id, so they are stable for the whole run and across a replay.
+- Call-a-move effects (Metronome, Copycat, Mirror Move, Assist, Sleep Talk,
+  Nature Power) draw their pick from the same seeded RNG, so a fixed seed
+  reproduces the called move.
 - The adapter in the scene never rolls: it only presents choices.
 
 ## 9. Mega Evolution

@@ -19,8 +19,6 @@ const BANNED: ReadonlySet<string> = new Set([
   'gulpmissile',
   'asoneglastrier',
   'asonespectrier',
-  'mimicry',
-  'colorchange',
 ]);
 
 /**

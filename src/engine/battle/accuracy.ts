@@ -6,11 +6,14 @@ export function accuracyChance(
   moveAccuracy: number | true,
   attacker: BattleFighter,
   defender: BattleFighter,
+  gravity = false,
 ): number {
   if (moveAccuracy === true) return 1;
   const evasion = attacker.ability === "Mind's Eye" ? 0 : defender.boosts.evasion;
   const stage = clampBoost(attacker.boosts.accuracy - evasion);
-  return Math.min(1, (moveAccuracy / 100) * accuracyStageMultiplier(stage));
+  const chance = Math.min(1, (moveAccuracy / 100) * accuracyStageMultiplier(stage));
+  // Gravity bends every move's aim by 5/3.
+  return gravity ? Math.min(1, chance * (5 / 3)) : chance;
 }
 
 export function rollHit(

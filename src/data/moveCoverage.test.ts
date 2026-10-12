@@ -38,15 +38,10 @@ describe('move coverage manifest', () => {
     expect(isUnportedMove('notamove')).toBe(false);
   });
 
-  it('lists exactly the no-op rows as the port list', () => {
+  it('has no unported move left, so the port list is empty', () => {
     const noOps = MOVE_COVERAGE.filter((entry) => entry.status === 'no-op').map((entry) => entry.id);
+    expect(noOps).toEqual([]);
     expect(unportedMoveIds()).toEqual(noOps);
-    expect(noOps.length).toBeGreaterThan(0);
-    for (const id of noOps) expect(isUnportedMove(id)).toBe(true);
-
-    for (const entry of MOVE_COVERAGE) {
-      if (entry.status === 'no-op') continue;
-      expect(isUnportedMove(entry.id)).toBe(false);
-    }
+    for (const entry of MOVE_COVERAGE) expect(isUnportedMove(entry.id)).toBe(false);
   });
 });

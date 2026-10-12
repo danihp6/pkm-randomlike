@@ -27,6 +27,12 @@ export type DamageContext = Readonly<{
   /** Stat auras (the Ruin quartet) as a multiplier on the final stat. */
   attackMultiplier?: number;
   defenseMultiplier?: number;
+  /** Reflect / Aurora Veil halve physical damage; Light Screen the special one. */
+  reflect?: boolean;
+  lightScreen?: boolean;
+  auroraVeil?: boolean;
+  /** Wonder Room swaps the defensive stats a hit reads. */
+  wonderRoom?: boolean;
 }>;
 
 export type DamageResult = Readonly<{
@@ -91,7 +97,14 @@ export function computeDamage(
 ): DamageResult {
   const physical = isPhysical(move);
   const attackStat = physical ? 'atk' : 'spa';
-  const defenseStat = physical ? 'def' : 'spd';
+  // Wonder Room swaps which defense the hit reads.
+  const defenseStat = physical
+    ? context.wonderRoom
+      ? 'spd'
+      : 'def'
+    : context.wonderRoom
+      ? 'def'
+      : 'spd';
 
   const attackStage = context.ignoreAttackBoosts
     ? 0
@@ -119,6 +132,8 @@ export function computeDamage(
   damage = Math.floor(damage * weatherModifier(context.weather, move.type));
   damage = Math.floor(damage * terrainModifier(attacker, defender, move, context.terrain));
   if (crit) damage = Math.floor(damage * 1.5);
+  if (physical && (context.reflect || context.auroraVeil)) damage = Math.floor(damage * 0.5);
+  if (!physical && (context.lightScreen || context.auroraVeil)) damage = Math.floor(damage * 0.5);
   damage = Math.floor((damage * rng.int(85, 100)) / 100);
 
   const stab = attacker.types.includes(move.type);

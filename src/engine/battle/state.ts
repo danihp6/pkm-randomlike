@@ -10,6 +10,41 @@ export const SIDE_IDS: readonly SideId[] = ['player', 'enemy'];
 export type WeatherId = 'sun' | 'rain' | 'sand' | 'snow';
 export type TerrainId = 'electric' | 'grassy' | 'misty' | 'psychic';
 
+/** Per-side conditions a move can set (Reflect, Tailwind...), with turns left. */
+export type SideConditionId =
+  'reflect' | 'lightscreen' | 'auroraveil' | 'tailwind' | 'luckychant' | 'mist' | 'safeguard';
+
+/** Whole-field conditions a move can set (Trick Room, Gravity...), with turns left. */
+export type FieldConditionId =
+  'trickroom' | 'gravity' | 'magicroom' | 'wonderroom' | 'fairylock' | 'mudsport' | 'watersport';
+
+export type SideConditions = Record<SideConditionId, number>;
+export type FieldConditions = Record<FieldConditionId, number>;
+
+export function emptySideConditions(): SideConditions {
+  return {
+    reflect: 0,
+    lightscreen: 0,
+    auroraveil: 0,
+    tailwind: 0,
+    luckychant: 0,
+    mist: 0,
+    safeguard: 0,
+  };
+}
+
+export function emptyFieldConditions(): FieldConditions {
+  return {
+    trickroom: 0,
+    gravity: 0,
+    magicroom: 0,
+    wonderroom: 0,
+    fairylock: 0,
+    mudsport: 0,
+    watersport: 0,
+  };
+}
+
 export type BagSlot = {
   item: ItemDef;
   count: number;
@@ -26,6 +61,8 @@ export type BattleSide = {
   wishTurns: number;
   /** Boosts Baton Pass hands to the incoming Pokémon, consumed on switch-in. */
   batonPassBoosts: Partial<Record<BoostId, number>> | null;
+  /** Screens, Tailwind and the other side conditions, with turns left. */
+  sideConditions: SideConditions;
 };
 
 export type BattleEvent =
@@ -61,6 +98,8 @@ export type BattleState = {
   weatherTurns: number;
   terrain: TerrainId | null;
   terrainTurns: number;
+  /** Whole-field conditions (Trick Room, Gravity...), with turns left. */
+  field: FieldConditions;
   rng: Rng;
   log: BattleEvent[];
   bag: BagSlot[];
@@ -74,6 +113,8 @@ export type BattleState = {
   switchedSides: SideId[];
   /** The attacker whose move ignores the target's ability (Mold Breaker and friends). */
   abilityPierce: BattleFighter | null;
+  /** The last move id used this battle, for Copycat. */
+  lastMove: string | null;
 };
 
 export type BattleSetup = Readonly<{
@@ -101,6 +142,7 @@ export function createBattle(setup: BattleSetup): BattleState {
         awaitingReplacement: false,
         wishTurns: 0,
         batonPassBoosts: null,
+        sideConditions: emptySideConditions(),
       },
       enemy: {
         id: 'enemy',
@@ -110,6 +152,7 @@ export function createBattle(setup: BattleSetup): BattleState {
         awaitingReplacement: false,
         wishTurns: 0,
         batonPassBoosts: null,
+        sideConditions: emptySideConditions(),
       },
     },
     turn: 0,
@@ -117,6 +160,7 @@ export function createBattle(setup: BattleSetup): BattleState {
     weatherTurns: 0,
     terrain: null,
     terrainTurns: 0,
+    field: emptyFieldConditions(),
     rng: setup.rng,
     log: [],
     bag: (setup.bag ?? []).map((slot) => ({ item: slot.item, count: slot.count })),
@@ -126,6 +170,7 @@ export function createBattle(setup: BattleSetup): BattleState {
     movedSides: [],
     switchedSides: [],
     abilityPierce: null,
+    lastMove: null,
   };
 
   for (const side of SIDE_IDS) {
@@ -177,6 +222,8 @@ export function hasHealthy(state: BattleState, side: SideId): boolean {
 export function isTrapped(state: BattleState, side: SideId): boolean {
   const holder = activeFighter(state, side);
   if (holder.volatiles.trapped) return true;
+  if (holder.volatiles.ingrain) return true;
+  if (state.field.fairylock > 0) return true;
   return trappedBy(opponent(state, side), holder);
 }
 

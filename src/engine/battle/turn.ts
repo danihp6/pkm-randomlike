@@ -1,4 +1,4 @@
-import { effectiveness, getMove, type Move, type MoveEffect } from '../../data/dex';
+import { allMoves, effectiveness, getMove, type Move, type MoveEffect } from '../../data/dex';
 import {
   applyDamage,
   applyHeal,
@@ -34,7 +34,8 @@ import {
 } from './effects/registry';
 import { rollHitWith } from './modifiers';
 import { applyBoostEffect, applyStatusEffect } from './effects/apply';
-import { isProtectMove, protectBlocks } from './effects/moves';
+import { FIELD_CONDITION_MOVES, SIDE_CONDITION_MOVES, isProtectMove, protectBlocks } from './effects/moves';
+import { setFieldCondition, setSideCondition, tickConditions } from './effects/conditions';
 import { setTerrain, terrainFromMove, terrainHeal, tickTerrain } from './effects/terrain';
 import { setWeather, tickWeather, weatherChip, weatherFromMove, weatherLabel } from './effects/weather';
 import { computeDamage, rollCrit, type DamageContext, type DamageResult } from './damage';
@@ -169,6 +170,22 @@ function multihitHits(move: Move, rng: BattleState['rng']): number {
   return rng.int(move.multihit[0], move.multihit[1]);
 }
 
+const VOLATILE_MESSAGES: Readonly<Record<string, (name: string) => string>> = {
+  aquaring: (name) => `${name} surrounded itself with a veil of water!`,
+  ingrain: (name) => `${name} planted its roots!`,
+  destinybond: (name) => `${name} is trying to take its foe down with it!`,
+  dragoncheer: (name) => `${name} cheered and sharpened its focus!`,
+  focusenergy: (name) => `${name} is getting pumped!`,
+  laserfocus: (name) => `${name} concentrated intensely!`,
+  endure: (name) => `${name} braced itself!`,
+  grudge: (name) => `${name} wants to take its foe's move down with it!`,
+  imprison: (name) => `${name} sealed the foe's moves!`,
+  magiccoat: (name) => `${name} shrouded itself with Magic Coat!`,
+  snatch: (name) => `${name} waits for its foe to make a move!`,
+  magnetrise: (name) => `${name} levitated with electromagnetism!`,
+  powertrick: (name) => `${name} switched its Attack and Defense!`,
+};
+
 function applyVolatileEffect(
   state: BattleState,
   targetSide: SideId,
@@ -202,6 +219,47 @@ function applyVolatileEffect(
       case 'yawn':
         target.volatiles.yawn = 2;
         return true;
+      case 'aquaring':
+        target.volatiles.aquaRing = true;
+        return true;
+      case 'ingrain':
+        target.volatiles.ingrain = true;
+        return true;
+      case 'destinybond':
+        target.volatiles.destinyBond = true;
+        return true;
+      case 'dragoncheer':
+        target.volatiles.dragonCheer = true;
+        return true;
+      case 'focusenergy':
+        target.volatiles.focusEnergy = true;
+        return true;
+      case 'laserfocus':
+        target.volatiles.laserFocus = true;
+        return true;
+      case 'endure':
+        target.volatiles.endure = true;
+        return true;
+      case 'grudge':
+        target.volatiles.grudge = true;
+        return true;
+      case 'imprison':
+        target.volatiles.imprison = true;
+        return true;
+      case 'magiccoat':
+        target.volatiles.magicCoat = true;
+        return true;
+      case 'snatch':
+        target.volatiles.snatch = true;
+        return true;
+      case 'magnetrise':
+        target.volatiles.magnetRise = 5;
+        return true;
+      case 'powertrick':
+        if (target.volatiles.powerTrick) return false;
+        target.volatiles.powerTrick = true;
+        target.stats = { ...target.stats, atk: target.stats.def, def: target.stats.atk };
+        return true;
       case 'substitute': {
         const cost = makeSubstitute(target);
         if (cost > 0) pushText(state, `${target.name} put in a substitute!`);
@@ -212,11 +270,14 @@ function applyVolatileEffect(
     }
   })();
   if (applied) {
+    const custom = VOLATILE_MESSAGES[volatileStatus];
     pushText(
       state,
-      volatileStatus === 'yawn'
-        ? `${target.name} grew drowsy!`
-        : `${target.name} was affected by ${volatileStatus}!`,
+      custom
+        ? custom(target.name)
+        : volatileStatus === 'yawn'
+          ? `${target.name} grew drowsy!`
+          : `${target.name} was affected by ${volatileStatus}!`,
     );
   }
 }
@@ -259,102 +320,116 @@ function applyMoveEffects(
   const defender = opponent(state, side);
   const selfTarget = move.target === 'self';
 
-  // Magic Bounce sends a reflectable status move straight back at its user.
-  const bounced =
+  // Magic Bounce and Magic Coat send a reflectable status move back at its user.
+  const reflects =
     !selfTarget &&
     move.category === 'Status' &&
     Boolean(move.flags.reflectable) &&
-    defender.ability === 'Magic Bounce' &&
-    attacker.ability !== 'Neutralizing Gas' &&
-    state.abilityPierce !== defender;
-  if (bounced) pushText(state, `${defender.name}'s Magic Bounce reflected the move!`);
-  const targetSide = bounced ? side : opponentOf(side);
-  const target = bounced ? attacker : defender;
+    (defender.volatiles.magicCoat ||
+      (defender.ability === 'Magic Bounce' &&
+        attacker.ability !== 'Neutralizing Gas' &&
+        state.abilityPierce !== defender));
+  if (reflects) {
+    if (defender.volatiles.magicCoat) {
+      defender.volatiles.magicCoat = false;
+      pushText(state, `${defender.name} shrouded itself with Magic Coat!`);
+    } else {
+      pushText(state, `${defender.name}'s Magic Bounce reflected the move!`);
+    }
+  }
 
-  if (move.status) applyStatusEffect(state, targetSide, target, move.status);
+  // Snatch steals the move: the defender becomes its user.
+  const snatches =
+    !reflects &&
+    move.category === 'Status' &&
+    Boolean(move.flags.snatch) &&
+    defender.volatiles.snatch;
+  if (snatches) {
+    defender.volatiles.snatch = false;
+    pushText(state, `${defender.name} snatched the move!`);
+  }
+
+  const actingSide = snatches ? opponentOf(side) : side;
+  const acting = snatches ? defender : attacker;
+  const targetSide = reflects ? side : opponentOf(actingSide);
+  const target = reflects ? attacker : opponent(state, actingSide);
+  const effectSide = selfTarget ? actingSide : targetSide;
+  const effectTarget = selfTarget ? acting : target;
+
+  if (move.status) applyStatusEffect(state, effectSide, effectTarget, move.status);
 
   if (move.volatileStatus) {
-    applyVolatileEffect(state, selfTarget ? side : targetSide, selfTarget ? attacker : target, move.volatileStatus);
+    applyVolatileEffect(state, effectSide, effectTarget, move.volatileStatus);
   }
 
   if (move.boosts) {
-    applyBoostEffect(state, selfTarget ? side : targetSide, selfTarget ? attacker : target, move.boosts, {
-      self: selfTarget,
-    });
+    applyBoostEffect(state, effectSide, effectTarget, move.boosts, { self: selfTarget });
   }
 
   if (move.heal && move.heal.length === 2) {
-    const healed = applyHeal(attacker, Math.floor((attacker.maxHp * move.heal[0]) / move.heal[1]));
+    const healed = applyHeal(acting, Math.floor((acting.maxHp * move.heal[0]) / move.heal[1]));
     if (healed > 0) {
-      pushEvent(state, { kind: 'heal', side, amount: healed, hp: attacker.hp, maxHp: attacker.maxHp });
-      pushText(state, `${attacker.name} regained health!`);
+      pushEvent(state, { kind: 'heal', side: actingSide, amount: healed, hp: acting.hp, maxHp: acting.maxHp });
+      pushText(state, `${acting.name} regained health!`);
     }
   }
 
   if (move.id === 'wish') {
-    state.sides[side].wishTurns = 2;
-    pushText(state, `${attacker.name} made a wish!`);
+    state.sides[actingSide].wishTurns = 2;
+    pushText(state, `${acting.name} made a wish!`);
   }
 
-  if (move.self?.boosts) applyBoostEffect(state, side, attacker, move.self.boosts, { self: true });
+  if (move.self?.boosts) applyBoostEffect(state, actingSide, acting, move.self.boosts, { self: true });
 
   const secondaries: MoveEffect[] = [];
   if (move.secondaries) secondaries.push(...move.secondaries);
-  const sheerForce = attacker.ability === 'Sheer Force' && move.basePower > 0;
+  const sheerForce = acting.ability === 'Sheer Force' && move.basePower > 0;
   if (defenderDamaged && !sheerForce) {
-    for (const secondary of secondaries) applySecondary(state, side, secondary, attacker, defender);
+    for (const secondary of secondaries) applySecondary(state, actingSide, secondary, acting, target);
   }
 
   if (move.drain && move.drain.length === 2 && totalDamage > 0) {
     const drained = Math.max(1, Math.floor((totalDamage * move.drain[0]) / move.drain[1]));
-    if (defender.ability === 'Liquid Ooze') {
-      if (takesIndirectDamage(attacker)) {
-        const dealt = applyDamage(attacker, drained);
-        pushEvent(state, {
-          kind: 'damage',
-          side,
-          amount: dealt,
-          hp: attacker.hp,
-          maxHp: attacker.maxHp,
-          effectiveness: 1,
-          crit: false,
-        });
-        pushText(state, `${attacker.name} sucked up the liquid ooze!`);
+    if (target.ability === 'Liquid Ooze') {
+      if (takesIndirectDamage(acting)) {
+        const dealt = applyDamage(acting, drained);
+        pushEvent(state, { kind: 'damage', side: actingSide, amount: dealt, hp: acting.hp, maxHp: acting.maxHp, effectiveness: 1, crit: false });
+        pushText(state, `${acting.name} sucked up the liquid ooze!`);
       }
     } else {
-      const healed = applyHeal(attacker, drained);
+      const healed = applyHeal(acting, drained);
       if (healed > 0) {
-        pushEvent(state, { kind: 'heal', side, amount: healed, hp: attacker.hp, maxHp: attacker.maxHp });
-        pushText(state, `${attacker.name} had its energy drained!`);
+        pushEvent(state, { kind: 'heal', side: actingSide, amount: healed, hp: acting.hp, maxHp: acting.maxHp });
+        pushText(state, `${acting.name} had its energy drained!`);
       }
     }
   }
 
-  if (move.recoil && move.recoil.length === 2 && totalDamage > 0 && takesIndirectDamage(attacker)) {
+  if (move.recoil && move.recoil.length === 2 && totalDamage > 0 && takesIndirectDamage(acting)) {
     const raw = Math.max(1, Math.floor((totalDamage * move.recoil[0]) / move.recoil[1]));
     const recoil = runModifyRecoil(
-      makeContext(state, side, { source: attacker, target: opponent(state, side), move }),
+      makeContext(state, actingSide, { source: acting, target: opponent(state, actingSide), move }),
       move,
       raw,
     );
     if (recoil > 0) {
-      const dealt = applyDamage(attacker, recoil);
-      pushEvent(state, { kind: 'damage', side, amount: dealt, hp: attacker.hp, maxHp: attacker.maxHp, effectiveness: 1, crit: false });
-      pushText(state, `${attacker.name} is damaged by recoil!`);
+      const dealt = applyDamage(acting, recoil);
+      pushEvent(state, { kind: 'damage', side: actingSide, amount: dealt, hp: acting.hp, maxHp: acting.maxHp, effectiveness: 1, crit: false });
+      pushText(state, `${acting.name} is damaged by recoil!`);
     }
   }
 
-  if (move.struggleRecoil && attacker.hp > 0 && takesIndirectDamage(attacker)) {
-    const recoil = Math.max(1, Math.floor(attacker.maxHp / 4));
-    const dealt = applyDamage(attacker, recoil);
-    pushEvent(state, { kind: 'damage', side, amount: dealt, hp: attacker.hp, maxHp: attacker.maxHp, effectiveness: 1, crit: false });
-    pushText(state, `${attacker.name} is damaged by recoil!`);
+  if (move.struggleRecoil && acting.hp > 0 && takesIndirectDamage(acting)) {
+    const recoil = Math.max(1, Math.floor(acting.maxHp / 4));
+    const dealt = applyDamage(acting, recoil);
+    pushEvent(state, { kind: 'damage', side: actingSide, amount: dealt, hp: acting.hp, maxHp: acting.maxHp, effectiveness: 1, crit: false });
+    pushText(state, `${acting.name} is damaged by recoil!`);
   }
 
   if (move.selfdestruct) {
-    applyDamage(attacker, attacker.hp);
-    pushText(state, `${attacker.name} fainted!`);
-    pushEvent(state, { kind: 'faint', side, fighterId: attacker.id });
+    applyDamage(acting, acting.hp);
+    pushText(state, `${acting.name} fainted!`);
+    pushEvent(state, { kind: 'faint', side: actingSide, fighterId: acting.id });
   }
 
   const newWeather = weatherFromMove(move);
@@ -367,6 +442,23 @@ function applyMoveEffects(
   if (newTerrain) {
     if (state.terrain === newTerrain) pushText(state, 'But it failed!');
     else setTerrain(state, newTerrain);
+  }
+
+  const sideCondition = SIDE_CONDITION_MOVES[move.id];
+  if (sideCondition) {
+    if (sideCondition === 'auroraveil' && effectiveWeather(state) !== 'snow') {
+      pushText(state, 'But it failed!');
+    } else if (state.sides[actingSide].sideConditions[sideCondition] > 0) {
+      pushText(state, 'But it failed!');
+    } else {
+      setSideCondition(state, actingSide, sideCondition);
+    }
+  }
+
+  const fieldCondition = FIELD_CONDITION_MOVES[move.id];
+  if (fieldCondition) {
+    if (state.field[fieldCondition] > 0) pushText(state, 'But it failed!');
+    else setFieldCondition(state, fieldCondition);
   }
 }
 
@@ -580,6 +672,79 @@ function damageStatContext(
   };
 }
 
+/** Moves that call another move; never callable from one another. */
+const CALLER_MOVES = new Set([
+  'metronome',
+  'copycat',
+  'mirrormove',
+  'assist',
+  'sleeptalk',
+  'naturepower',
+  'sketch',
+  'struggle',
+]);
+
+const TERRAIN_CALL_MOVES: Readonly<Record<string, string>> = {
+  electric: 'thunderbolt',
+  grassy: 'energyball',
+  misty: 'moonblast',
+  psychic: 'psychic',
+};
+
+/**
+ * The id a call-a-move move resolves to, drawn from the seeded battle RNG so a
+ * fixed seed reproduces the pick. `null` means the move fails.
+ */
+function calledMoveId(
+  state: BattleState,
+  side: SideId,
+  attacker: BattleFighter,
+  move: Move,
+  previousMove: string | null,
+): string | null {
+  switch (move.id) {
+    case 'metronome': {
+      const pool = allMoves().filter((entry) => Boolean(entry.flags.metronome) && !CALLER_MOVES.has(entry.id));
+      if (pool.length === 0) return null;
+      return pool[state.rng.int(0, pool.length - 1)].id;
+    }
+    case 'copycat': {
+      if (!previousMove || CALLER_MOVES.has(previousMove)) return null;
+      return previousMove;
+    }
+    case 'mirrormove': {
+      const last = opponent(state, side).lastMoveId;
+      if (!last || CALLER_MOVES.has(last)) return null;
+      return last;
+    }
+    case 'assist': {
+      const pool: string[] = [];
+      for (const member of state.sides[side].party) {
+        if (member === attacker) continue;
+        for (const entry of member.moves) {
+          const candidate = getMove(entry.moveId);
+          if (!candidate || candidate.flags.noassist || CALLER_MOVES.has(candidate.id)) continue;
+          pool.push(candidate.id);
+        }
+      }
+      if (pool.length === 0) return null;
+      return pool[state.rng.int(0, pool.length - 1)];
+    }
+    case 'sleeptalk': {
+      if (attacker.status !== 'slp') return null;
+      const pool = attacker.moves
+        .map((entry) => entry.moveId)
+        .filter((id) => id !== 'sleeptalk' && !getMove(id)?.flags.nosleeptalk && !CALLER_MOVES.has(id));
+      if (pool.length === 0) return null;
+      return pool[state.rng.int(0, pool.length - 1)];
+    }
+    case 'naturepower':
+      return state.terrain ? (TERRAIN_CALL_MOVES[state.terrain] ?? 'triattack') : 'triattack';
+    default:
+      return null;
+  }
+}
+
 function resolveMove(
   state: BattleState,
   side: SideId,
@@ -597,8 +762,10 @@ function resolveMove(
     attacker.volatiles.truant = true;
   }
 
+  const previousMove = state.lastMove;
   pushEvent(state, { kind: 'move', side, moveId: move.id });
   pushText(state, `${attacker.name} used ${move.name}!`);
+  state.lastMove = move.id;
   if (!isProtectMove(move.id)) attacker.volatiles.protectStreak = 0;
 
   if (move.category === 'Status' && isTaunted(attacker)) {
@@ -608,8 +775,13 @@ function resolveMove(
 
   const statusCheck = beforeMoveStatus(attacker, state.rng);
   if (statusCheck && 'blocked' in statusCheck) {
-    pushText(state, blockedMessage(attacker, statusCheck.blocked));
-    return;
+    // Sleep Talk and Snore are the two moves usable while asleep.
+    const usableWhileAsleep =
+      statusCheck.blocked === 'slp' && (move.id === 'sleeptalk' || move.id === 'snore');
+    if (!usableWhileAsleep) {
+      pushText(state, blockedMessage(attacker, statusCheck.blocked));
+      return;
+    }
   }
   if (statusCheck && 'cured' in statusCheck) {
     pushText(
@@ -651,6 +823,25 @@ function resolveMove(
   if (slot) slot.pp = Math.max(0, slot.pp - ppCost(state, side, move));
   attacker.lastMoveId = move.id;
 
+  // Imprison seals any move the foe knows.
+  const foe = opponent(state, side);
+  if (foe.volatiles.imprison && foe.moves.some((entry) => entry.moveId === move.id)) {
+    pushText(state, `${attacker.name} can't use the sealed ${move.name}!`);
+    return;
+  }
+
+  const calledId = calledMoveId(state, side, attacker, move, previousMove);
+  if (calledId !== null) {
+    const called = getMove(calledId);
+    if (called && called.id !== move.id) {
+      pushText(state, `${attacker.name} used ${called.name}!`);
+      resolveMove(state, side, attacker, called, null);
+    } else {
+      pushText(state, 'But it failed!');
+    }
+    return;
+  }
+
   if (protectBlocks(state, side, move)) return;
 
   const defender = opponent(state, side);
@@ -690,22 +881,31 @@ function resolveMove(
     for (let hit = 0; hit < hits; hit++) {
       const target = opponent(state, side);
       if (target.hp <= 0) break;
+      const critRatio =
+        activeMove.critRatio +
+        (attacker.volatiles.focusEnergy ? 2 : 0) +
+        (attacker.volatiles.dragonCheer ? 1 : 0);
       const crit = runModifyCrit(
         makeContext(state, side, { source: attacker, target, move: activeMove }),
         activeMove,
-        rollCrit(
-          state.rng,
-          runModifyCritRatio(
-            makeContext(state, side, { source: attacker, target, move: activeMove }),
-            activeMove,
-            activeMove.critRatio,
+        attacker.volatiles.laserFocus ||
+          rollCrit(
+            state.rng,
+            runModifyCritRatio(
+              makeContext(state, side, { source: attacker, target, move: activeMove }),
+              activeMove,
+              critRatio,
+            ),
           ),
-        ),
       );
       const result = computeDamage(attacker, target, activeMove, state.rng, {
         weather: effectiveWeather(state),
         terrain: state.terrain,
         critical: crit,
+        reflect: state.sides[opponentOf(side)].sideConditions.reflect > 0,
+        lightScreen: state.sides[opponentOf(side)].sideConditions.lightscreen > 0,
+        auroraVeil: state.sides[opponentOf(side)].sideConditions.auroraveil > 0,
+        wonderRoom: state.field.wonderroom > 0,
         ...statContext,
         effectiveness: runModifyEffectiveness(
           makeContext(state, side, { source: attacker, target, move: activeMove }),
@@ -717,13 +917,17 @@ function resolveMove(
         if (hit === 0) pushText(state, `It doesn't affect ${target.name}...`);
         break;
       }
-      const damage = runModifyDamage(
+      let damage = runModifyDamage(
         makeContext(state, side, { source: attacker, target, move: activeMove }),
         activeMove,
         result.damage,
         result.effectiveness,
         result.crit,
       );
+      if (target.volatiles.endure && damage >= target.hp) {
+        damage = Math.max(0, target.hp - 1);
+        pushText(state, `${target.name} endured the hit!`);
+      }
       const bypassSubstitute = runTrySubstitute(
         makeContext(state, side, { source: attacker, target, move: activeMove }),
         activeMove,
@@ -735,17 +939,31 @@ function resolveMove(
         continue;
       }
       const dealt = applyDamage(target, damage);
+      target.volatiles.lastDamageTaken = dealt;
       totalDamage += dealt;
       if (activeMove.category === 'Physical') target.volatiles.physicalDamageTaken += dealt;
       else if (activeMove.category === 'Special') target.volatiles.specialDamageTaken += dealt;
       pushEvent(state, { kind: 'damage', side: opponentOf(side), amount: dealt, hp: target.hp, maxHp: target.maxHp, effectiveness: result.effectiveness, crit: result.crit });
       pushText(state, damageMessage(activeMove.name, result, target));
       if (target.hp <= 0) {
+        const bonded = target.volatiles.destinyBond;
+        const grudged = target.volatiles.grudge;
         faint(state, opponentOf(side));
+        if (bonded && attacker.hp > 0) {
+          pushText(state, `${target.name} took its attacker down with it!`);
+          applyDamage(attacker, attacker.hp);
+          faint(state, side);
+        }
+        if (grudged && slot) {
+          slot.pp = 0;
+          pushText(state, `${attacker.name}'s ${activeMove.name} lost all its PP due to the grudge!`);
+        }
         break;
       }
     }
   }
+
+  if (activeMove.category !== 'Status') attacker.volatiles.laserFocus = false;
 
   applyMoveEffects(state, side, activeMove, totalDamage, totalDamage > 0);
   // Contact reactions are not "the move's effect", so Mold Breaker stops piercing here.
@@ -869,10 +1087,29 @@ function resolveResiduals(state: BattleState): void {
 
   for (const side of SIDE_IDS) {
     const fighter = activeFighter(state, side);
+    if (fighter.hp <= 0) continue;
+    if (fighter.volatiles.aquaRing || fighter.volatiles.ingrain) {
+      const healed = applyHeal(fighter, Math.max(1, Math.floor(fighter.maxHp / 16)));
+      if (healed > 0) {
+        pushEvent(state, { kind: 'heal', side, amount: healed, hp: fighter.hp, maxHp: fighter.maxHp });
+        pushText(state, `${fighter.name} restored a little HP with ${fighter.volatiles.aquaRing ? 'Aqua Ring' : 'Ingrain'}!`);
+      }
+    }
+    if (fighter.volatiles.curse && takesIndirectDamage(fighter)) {
+      const dealt = applyDamage(fighter, Math.max(1, Math.floor(fighter.maxHp / 4)));
+      pushEvent(state, { kind: 'damage', side, amount: dealt, hp: fighter.hp, maxHp: fighter.maxHp, effectiveness: 1, crit: false });
+      pushText(state, `${fighter.name} is afflicted by the curse!`);
+      if (fighter.hp <= 0) faint(state, side);
+    }
+  }
+
+  for (const side of SIDE_IDS) {
+    const fighter = activeFighter(state, side);
     if (fighter.hp > 0) endOfTurnVolatile(fighter);
   }
   tickWeather(state);
   tickTerrain(state);
+  tickConditions(state);
 }
 
 function resolveFaints(state: BattleState): void {

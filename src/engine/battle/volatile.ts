@@ -84,6 +84,12 @@ export function leechSeedDamage(fighter: BattleFighter): number {
 export function endOfTurnVolatile(fighter: BattleFighter): void {
   fighter.volatiles.flinched = false;
   fighter.volatiles.protect = null;
+  fighter.volatiles.endure = false;
+  fighter.volatiles.destinyBond = false;
+  fighter.volatiles.grudge = false;
+  fighter.volatiles.magicCoat = false;
+  fighter.volatiles.snatch = false;
+  if (fighter.volatiles.magnetRise > 0) fighter.volatiles.magnetRise -= 1;
   if (fighter.volatiles.taunt > 0) fighter.volatiles.taunt -= 1;
   if (fighter.volatiles.disableTurns > 0) {
     fighter.volatiles.disableTurns -= 1;

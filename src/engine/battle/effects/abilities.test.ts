@@ -22,6 +22,7 @@ import {
   runModifySpe,
   runResidual,
   runStart,
+  runSwitchIn,
   runTryEscape,
   runTryHit,
   runTrySubstitute,
@@ -34,6 +35,7 @@ import { performSwitch, takeTurn, useMove } from '../turn';
 import { canRun, rollRun } from '../runAway';
 import { hitChance } from '../modifiers';
 import { protectBlocks } from './moves';
+import { setTerrain } from './terrain';
 import { legalMoveIndices, validateCommand } from '../commands';
 import { beforeMoveVolatile } from '../volatile';
 
@@ -1983,5 +1985,166 @@ describe('generalised form abilities (batch 14)', () => {
     expect(mimic.speciesId).toBe('mimikyubusted');
     // The disguise is spent, so the next hit lands.
     expect(runTryHit(ctx, getMove('tackle')!)).toBe(true);
+  });
+});
+
+describe('ported reachable abilities', () => {
+  it('Dark Aura boosts Dark moves and Aura Break reverses it', () => {
+    const move = getMove('bite')!;
+    const of = (state: BattleState): number =>
+      runModifyDamage(moveCtxOf(state, 'player', 'bite'), move, 100, 1, false);
+    const plain = makeBattle(fighter('p', 'umbreon', 'Synchronize'), fighter('e', 'snorlax', 'Immunity'));
+    const aura = makeBattle(fighter('p', 'umbreon', 'Dark Aura'), fighter('e', 'snorlax', 'Immunity'));
+    const broken = makeBattle(fighter('p', 'umbreon', 'Dark Aura'), fighter('e', 'snorlax', 'Aura Break'));
+    expect(of(aura)).toBeGreaterThan(of(plain));
+    expect(of(broken)).toBeLessThan(of(plain));
+  });
+
+  it('Beast Boost raises the holder highest stat after a knockout', () => {
+    const state = makeBattle(
+      fighter('p', 'kartana', 'Beast Boost', ['tackle']),
+      fighter('e', 'bulbasaur', 'Overgrow', ['tackle']),
+    );
+    activeFighter(state, 'enemy').hp = 0;
+    runAfterMove(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!);
+    const player = activeFighter(state, 'player');
+    const best = (['atk', 'def', 'spa', 'spd', 'spe'] as const).reduce((a, b) =>
+      player.stats[a] >= player.stats[b] ? a : b,
+    );
+    expect(player.boosts[best]).toBe(1);
+  });
+
+  it('Defeatist halves damage at or below half HP', () => {
+    const state = makeBattle(fighter('p', 'archen', 'Defeatist', ['tackle']), fighter('e', 'snorlax', 'Immunity'));
+    const ctx = moveCtxOf(state, 'player', 'tackle');
+    const move = getMove('tackle')!;
+    const full = runModifyDamage(ctx, move, 100, 1, false);
+    activeFighter(state, 'player').hp = 1;
+    expect(runModifyDamage(ctx, move, 100, 1, false)).toBeLessThan(full);
+  });
+
+  it('Color Change takes the type of the move that hit the holder', () => {
+    const state = makeBattle(fighter('p', 'charmander', 'Blaze', ['ember']), fighter('e', 'kecleon', 'Color Change'));
+    runAfterMove(moveCtxOf(state, 'player', 'ember'), getMove('ember')!);
+    expect(activeFighter(state, 'enemy').types).toEqual(['Fire']);
+  });
+
+  it('Mimicry retypes the holder to the terrain', () => {
+    const state = makeBattle(fighter('p', 'charmander', 'Blaze'), fighter('e', 'stunfisk', 'Mimicry'));
+    setTerrain(state, 'grassy');
+    runResidual(ctxOf(state, 'enemy'));
+    expect(activeFighter(state, 'enemy').types).toEqual(['Grass']);
+  });
+
+  it('Cotton Down lowers the Speed of whatever hits the holder', () => {
+    const state = makeBattle(fighter('p', 'charmander', 'Blaze', ['tackle']), fighter('e', 'cufant', 'Cotton Down'));
+    runAfterMove(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').boosts.spe).toBe(-1);
+  });
+
+  it('Iron Barbs hurts a contact attacker', () => {
+    const state = makeBattle(fighter('p', 'charmander', 'Blaze', ['tackle']), fighter('e', 'ferrothorn', 'Iron Barbs'));
+    const before = activeFighter(state, 'player').hp;
+    runAfterMove(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').hp).toBeLessThan(before);
+  });
+
+  it('Mummy overwrites a contact attacker ability', () => {
+    const state = makeBattle(fighter('p', 'charmander', 'Blaze', ['tackle']), fighter('e', 'cacturne', 'Mummy'));
+    runAfterMove(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').ability).toBe('Mummy');
+  });
+
+  it('Wandering Spirit swaps abilities on contact', () => {
+    const state = makeBattle(
+      fighter('p', 'charmander', 'Blaze', ['tackle']),
+      fighter('e', 'cacturne', 'Wandering Spirit'),
+    );
+    runAfterMove(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').ability).toBe('Wandering Spirit');
+    expect(activeFighter(state, 'enemy').ability).toBe('Blaze');
+  });
+
+  it('Perish Body puts a perish count on both Pokémon', () => {
+    const state = makeBattle(fighter('p', 'charmander', 'Blaze', ['tackle']), fighter('e', 'corsola', 'Perish Body'));
+    runAfterMove(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').volatiles.perish).toBe(3);
+    expect(activeFighter(state, 'enemy').volatiles.perish).toBe(3);
+  });
+
+  it('Pastel Veil blocks poison', () => {
+    const state = makeBattle(fighter('p', 'ponyta', 'Pastel Veil'), fighter('e', 'charmander', 'Blaze'));
+    const holder = activeFighter(state, 'player');
+    applyStatusEffect(state, 'player', holder, 'psn');
+    expect(holder.status).toBeNull();
+  });
+
+  it('Screen Cleaner wipes the screens on entry', () => {
+    const state = makeBattle(fighter('p', 'charmander', 'Blaze'), fighter('e', 'snorlax', 'Immunity'));
+    state.sides.player.sideConditions.reflect = 5;
+    state.sides.enemy.sideConditions.lightscreen = 5;
+    activeFighter(state, 'player').ability = 'Screen Cleaner';
+    runSwitchIn(ctxOf(state, 'player'));
+    expect(state.sides.player.sideConditions.reflect).toBe(0);
+    expect(state.sides.enemy.sideConditions.lightscreen).toBe(0);
+  });
+
+  it('Steelworker powers up Steel moves', () => {
+    const move = getMove('gyroball')!;
+    const steel = makeBattle(fighter('p', 'dhelmise', 'Steelworker', ['gyroball']), fighter('e', 'snorlax', 'Immunity'));
+    const plain = makeBattle(fighter('p', 'dhelmise', 'Synchronize', ['gyroball']), fighter('e', 'snorlax', 'Immunity'));
+    expect(runModifyDamage(moveCtxOf(steel, 'player', 'gyroball'), move, 100, 1, false)).toBeGreaterThan(
+      runModifyDamage(moveCtxOf(plain, 'player', 'gyroball'), move, 100, 1, false),
+    );
+  });
+
+  it('Victory Star raises accuracy', () => {
+    const state = makeBattle(fighter('p', 'victini', 'Victory Star'), fighter('e', 'snorlax', 'Immunity'));
+    expect(runModifyAccuracy(moveCtxOf(state, 'player', 'tackle'), 0.75)).toBeCloseTo(0.825);
+  });
+
+  it('Innards Out deals back the fainting hit', () => {
+    const state = makeBattle(fighter('p', 'charmander', 'Blaze', ['tackle']), fighter('e', 'pyukumuku', 'Innards Out'));
+    const enemy = activeFighter(state, 'enemy');
+    enemy.hp = 0;
+    enemy.volatiles.lastDamageTaken = 5;
+    const before = activeFighter(state, 'player').hp;
+    runAfterMove(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!);
+    expect(activeFighter(state, 'player').hp).toBe(before - 5);
+  });
+
+  it('Wimp Out asks for a switch below half HP', () => {
+    const state = createBattle({
+      player: [fighter('p', 'charmander', 'Blaze', ['tackle'])],
+      enemy: [fighter('e1', 'crabrawler', 'Wimp Out'), fighter('e2', 'bulbasaur', 'Overgrow')],
+      rng: new Rng(1),
+      isWild: true,
+    });
+    const enemy = activeFighter(state, 'enemy');
+    enemy.hp = Math.floor(enemy.maxHp / 2);
+    runAfterMove(moveCtxOf(state, 'player', 'tackle'), getMove('tackle')!);
+    expect(state.sides.enemy.awaitingReplacement).toBe(true);
+  });
+
+  it('Gorilla Tactics boosts Attack and locks the holder into its move', () => {
+    const state = makeBattle(
+      fighter('p', 'charmander', 'Gorilla Tactics', ['tackle', 'growl']),
+      fighter('e', 'snorlax', 'Immunity'),
+    );
+    const move = getMove('tackle')!;
+    expect(runModifyDamage(moveCtxOf(state, 'player', 'tackle'), move, 100, 1, false)).toBeGreaterThan(100);
+    runAfterMove(moveCtxOf(state, 'player', 'tackle'), move);
+    expect(activeFighter(state, 'player').volatiles.gorillaTactics).toBe('tackle');
+    expect(legalMoveIndices(activeFighter(state, 'player'))).toEqual([0]);
+  });
+
+  it('Desolate Land sets harsh sunlight', () => {
+    const state = makeBattle(fighter('p', 'groudon', 'Desolate Land'), fighter('e', 'snorlax', 'Immunity'));
+    expect(effectiveWeather(state)).toBe('sun');
+  });
+
+  it('Primordial Sea sets rain', () => {
+    const state = makeBattle(fighter('p', 'kyogre', 'Primordial Sea'), fighter('e', 'snorlax', 'Immunity'));
+    expect(effectiveWeather(state)).toBe('rain');
   });
 });
