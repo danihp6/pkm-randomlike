@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { playMusic } from '../audio/audio';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { hasLivingParty, type RunState } from '../engine/run';
 import { randomSeed } from '../engine/rng';
@@ -119,8 +120,10 @@ export class MainMenuScene extends Phaser.Scene {
     // Coming back from the options: re-read them so a rebind refreshes the hints.
     this.events.on(Phaser.Scenes.Events.RESUME, () => {
       this.settings = loadSettings();
+      playMusic(this, 'menu-music');
       this.render();
     });
+    playMusic(this, 'menu-music');
     this.render();
   }
 

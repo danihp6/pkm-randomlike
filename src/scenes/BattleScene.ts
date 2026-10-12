@@ -53,6 +53,7 @@ import {
 } from '../ui/typewriter';
 import { loadSettings } from '../settings';
 import { actionKeys, subscribeKeybinds } from '../input/input';
+import { playCue, playMusic } from '../audio/audio';
 import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_TEXTBOX_PADDING, FRLG_WINDOW_PADDING } from '../ui/frlg';
 import { FRLG_INK, FRLG_FONT_SIZE, addFrlgText } from '../ui/frlgFont';
 import { typeColor, typeTint } from '../ui/typeColors';
@@ -426,6 +427,7 @@ export class BattleScene extends Phaser.Scene {
     // The battle owns a centred square; hide the paused route so the letterbox
     // around it stays clean instead of showing the overworld through it.
     this.scene.setVisible(false, 'Route');
+    playMusic(this, 'battle-music');
     this.startFeed();
   }
 
@@ -837,10 +839,17 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private applyEvents(events: readonly BattleEvent[]): void {
+    // A batched frame must not stack eight sounds: one hit and one faint.
+    let hitPlayed = false;
+    let faintPlayed = false;
     for (const event of events) {
       switch (event.kind) {
         case 'damage':
         case 'heal':
+          if (event.kind === 'damage' && !hitPlayed) {
+            hitPlayed = true;
+            playCue(this, 'hit');
+          }
           this.displayHp[event.side] = event.hp;
           break;
         case 'status':
@@ -861,6 +870,10 @@ export class BattleScene extends Phaser.Scene {
           break;
         }
         case 'faint':
+          if (!faintPlayed) {
+            faintPlayed = true;
+            playCue(this, 'faint');
+          }
           this.displayHp[event.side] = 0;
           this.playFaint(event.side);
           break;
@@ -1121,9 +1134,11 @@ export class BattleScene extends Phaser.Scene {
   private showOver(): void {
     this.mode = 'over';
     this.menuItems = [];
+    const outcome = this.outcome();
+    if (outcome === 'win' || outcome === 'capture') playCue(this, 'victory');
     // Every end of battle leaves on its own after the line is read — a run, a
     // catch, a win or a loss all need no confirm to get back to the route.
-    this.setMessage(this.outcomeMessage(this.outcome()));
+    this.setMessage(this.outcomeMessage(outcome));
     this.refreshHud();
     this.time.delayedCall(OUTCOME_HOLD_MS, () => this.returnToRoute());
   }

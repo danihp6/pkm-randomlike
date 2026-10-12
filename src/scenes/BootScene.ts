@@ -72,10 +72,10 @@ import {
   STATUS_ICON_TEXTURE_KEY,
   STATUS_ICON_W,
 } from '../data/statusIcons';
+import { preloadAudio, syncAudioVolume } from '../audio/audio';
 import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import { clearRun, loadSave } from '../engine/save';
 import { hasLivingParty } from '../engine/run';
-import { applyVolume } from '../settings';
 import {
   COMMON_ATLAS_URL,
   COMMON_TEXTURE_KEY,
@@ -175,6 +175,7 @@ export class BootScene extends Phaser.Scene {
       frameHeight: STATUS_ICON_H,
     });
     this.load.image(FRLG_FONT_TEXTURE_KEY, FRLG_FONT_ATLAS_URL);
+    preloadAudio(this);
   }
 
   create(): void {
@@ -192,7 +193,7 @@ export class BootScene extends Phaser.Scene {
     const save = loadSave(storage);
     // The master volume is a preference that outlives the run, so it is applied
     // to the sound manager as soon as the boot scene can (D5 keeps settings).
-    applyVolume(this.sound, save.settings);
+    syncAudioVolume(this);
     if (save.run && !hasLivingParty(save.run)) clearRun(storage);
     this.scene.start('MainMenu');
   }
