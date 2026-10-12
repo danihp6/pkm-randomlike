@@ -19,6 +19,8 @@ and the only way to keep it is not to lose it.
 `docs/showdown-reuse.md` and `docs/data-spec.md` narrow it down by area.
 `docs/tech-decisions.md` holds the `D##` decisions. `TODO.md` is the open
 backlog; `CHANGELOG.md` archives what already shipped (read only when asked).
+`docs/agent-spec-template.md` is the per-task spec format the multi-agent
+workflow uses.
 
 ## Stack decisions
 - **Engine**: Phaser 3 on **Vite + TypeScript**. Same scaffolding and versions as
@@ -63,10 +65,37 @@ backlog; `CHANGELOG.md` archives what already shipped (read only when asked).
 - `docs/` – the specs above, `balance/` for spreadsheets.
 - `TODO.md`, `CHANGELOG.md`.
 
+## Multi-agent workflow
+
+Work is cut into **batches** of parallel tasks and one seed stays reproducible.
+Roles live in `.agent_roles/`, are wired in `opencode.json`, and are described in
+full in that folder. The human talks only to the **Orchestrator**; the Orchestrator
+drives the rest.
+
+- **Roles.** `orchestrator` (primary), `architect` (read-only on the codebase),
+  `dev` (TypeScript, launched once per task), `qa`. There is no artist role: art is
+  either procedural or imported and both are ordinary `dev` tasks.
+- **Batches.** The Architect cuts a batch out of the backlog so that no two tasks in
+  it touch the same path and no task needs a file a batch-mate produces. Hot files
+  are serial resources: `package.json`, `src/main.ts`, `vite.config.ts`, each
+  `src/scenes/*.ts` a batch touches, `src/data/dex/**` and any generated data file —
+  at most one task per batch claims each, and the plan names who holds it.
+- **Worktrees.** One per task, outside the repo as siblings:
+  `git worktree add ../wt-pkm-<ID> -b task-<ID>` (note `wt-pkm-`, `wt-task-` belongs
+  to a sibling project). Agents work only inside their own worktree.
+- **Specs.** The Architect writes `.agent_specs/task-<ID>.md` following
+  `docs/agent-spec-template.md`. `.agent_specs/` is gitignored and local to the run;
+  the Orchestrator copies the spec into the worktree before launching its agent. A
+  subagent receives **only** its spec path plus `AGENTS.md` — never the parent
+  conversation. The spec must be enough for someone who has read nothing else.
+- **Task IDs** are bound to tasks only in `TODO.md`. Everywhere else a task is
+  referenced by name.
+
 ## Workflow
 - Backlog and phases live in `TODO.md`. Pick the next open task and work it on its
-  own branch off `main` (e.g. `feature/phase1-route-generator`). Completed items
-  move to `CHANGELOG.md`, grouped by phase.
+  own branch off `main` (e.g. `feature/phase1-route-generator`, or `task-<ID>` when
+  it is part of an agent batch). Completed items move to `CHANGELOG.md`, grouped by
+  phase.
 - New rules go in `src/engine/` as pure functions with tests; Phaser work stays in
   `src/scenes/` and `src/render/`.
 - Run `npm test` and `npm run build` before committing.
@@ -79,6 +108,10 @@ backlog; `CHANGELOG.md` archives what already shipped (read only when asked).
 ## Git workflow
 - NEVER commit or push directly to `main`. Always create a feature branch first,
   unless the user explicitly says otherwise.
+- `main` moves only through the Orchestrator's batch merges, after QA approves the
+  batch: one `git merge --no-ff task-<ID>` per task in ID order, with the full gate
+  `npm test` + `npm run build` green after each merge. An authoring role (Architect,
+  Dev, QA) never merges its own work and never commits to `main`.
 - Run `git init` before the first code task if the repo does not exist yet.
 
 ## Conventions

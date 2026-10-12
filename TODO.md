@@ -1,7 +1,8 @@
 # PokeRandomLike — Roadmap (TODO)
 
 Browser Pokémon roguelike: procedural routes, classic menu battles, permanent
-death. Backlog source of truth. One branch per task off `main`.
+death. Backlog source of truth. One branch per task off `main` (`feature/...` or
+`task-<ID>` for an agent batch).
 
 Legend: `[ ]` open, `[~]` in progress. Only open work lives here; completed items
 are archived in `CHANGELOG.md`, grouped by phase. Phases are ordered; a phase is
@@ -248,3 +249,17 @@ into these floors and adds the Poké Dollar economy. Source of truth:
 - [ ] **Max and Z moves.** Dynamax and Z mechanics are not modelled, so their
       moves are left out of `moves.json` (`D42`). Nothing to do unless a Dynamax or
       Z-Move mechanic ever lands.
+
+---
+
+## [PENDING FIXES]
+
+Written by QA. The format is fixed — one entry per task. Empty means nothing is red.
+
+```markdown
+- [ ] **[TASK-<ID>]:** <one-line description>
+  - **Expected:** ...
+  - **Actual / error log:** ...
+  - **Affected path:** ...
+```
+
