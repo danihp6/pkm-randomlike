@@ -175,7 +175,7 @@ import {
   type MemberDetail,
 } from '../ui/partyDetail';
 import { type FamilyNode } from '../ui/evolutionGraph';
-import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
+import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_ALPHA, FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
 import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
 import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
 import { InfoPopup } from '../ui/infoPopup';
@@ -301,9 +301,11 @@ const HUD_ICON_INSET = 0;
 const HUD_BG_TRANSPARENT_ALPHA = 0;
 /**
  * With the window hidden, each panel keeps a drawn outline so its edge still
- * reads, and its text turns white to stay legible over the map behind it.
+ * reads, and its text turns white to stay legible over the map behind it. The
+ * outline is the drawn chrome's keyline tone (`scripts/ui/build-chrome.mjs`),
+ * so the Transparent HUD still matches the window it stands in for.
  */
-const HUD_BG_BORDER = 0xf8fafc;
+const HUD_BG_BORDER = 0x3a3d52;
 const HUD_BG_BORDER_WIDTH = 3;
 const HUD_BG_BORDER_RADIUS = 12;
 const HUD_BG_TEXT = 0xffffff;
@@ -3799,7 +3801,7 @@ export class RouteScene extends Phaser.Scene {
    */
   private applyHudBackground(): void {
     const transparent = this.settings.hudTransparent;
-    const alpha = transparent ? HUD_BG_TRANSPARENT_ALPHA : 1;
+    const alpha = transparent ? HUD_BG_TRANSPARENT_ALPHA : FRLG_WINDOW_ALPHA;
     for (const panel of this.hudPanels) {
       panel.window.setAlpha(alpha);
       panel.border.setVisible(transparent);

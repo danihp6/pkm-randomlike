@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import manifest from '../data/frlg/font.json';
+import manifest from '../data/ui/font.json';
 import { FRLG_LINE_HEIGHT, FRLG_FONT_SIZE, frlgFontData } from './frlgFont';
 
 const data = frlgFontData();

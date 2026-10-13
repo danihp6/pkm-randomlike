@@ -128,10 +128,11 @@ carries over.
   collapse/expand click. The detail window opens beside the PC box the first time
   and can then be moved freely. The positions and collapsed states are a global
   preference saved with the settings (D22), so they survive a reload and the next
-  run; the **Transparent HUD** option (see the settings screen) hides every panel's
-  window background so only its content shows over the map behind it, keeping a
-  drawn **outline** around each panel and turning its **text white** so it stays
-  legible. The HUD is
+  run; every panel's window is the drawn chrome at its own **translucency**, so
+  the map reads through it, and the **Transparent HUD** option (see the settings
+  screen) drops that window altogether — only the panel's content shows over the
+  map behind it — keeping a drawn **outline** around each panel and turning its
+  **text white** so it stays legible. The HUD is
   **always on screen** — a quick key opens one panel, it does not show or hide the
   HUD — and a fresh save opens **only PARTY**, every other panel collapsed to its
   icon.
@@ -199,6 +200,11 @@ Full rules in `docs/battle-spec.md`. In short:
 - On a wide screen the battle is a centred **square** (at most 900 px a side);
   a tall phone screen keeps the stacked, full-height layout, with both battlers
   drawn 25% smaller so they sit clear of the stacked panels.
+- The battle's windows are the drawn chrome: the dark **textbox** behind the
+  message text, the light **window** behind the HP panels, the command and moves
+  menus and the switch grid's detail window, each at its own degree of
+  translucency so the field stays readable through it, and the light windows ink
+  their text with the deep-black `FRLG_INK`.
 
 ## 5. The route
 

@@ -1,16 +1,17 @@
 # `src/ui/` — HUD, panels and windows
 
 The chrome the player reads: windows, textboxes, panels, grids and the models behind them.
-`frlg.ts` draws the FRLG window and textbox nine-slices (plus the HP bar and the cursor) and
-`frlgFont.ts` the bitmap font every panel writes text with. The split is the rule: a module
+`frlg.ts` draws the drawn chrome set's window and textbox nine-slices (plus the FRLG HP bar and the
+▶ cursor) and `frlgFont.ts` the bitmap font every panel writes text with. The split is the rule: a module
 either **draws** (it takes a Phaser scene and returns game objects) or **computes** (pure layout,
 metrics or data mapping with a co-located `*.test.ts` that `npm test` runs headless), and the
 testable logic belongs in the computing half.
 
 ## Layout
 
-- `frlg.ts` — the FRLG window, textbox, HP-bar and cursor chrome, and the texture keys it loads.
-- `frlgFont.ts` — the bitmap font and its metrics, from `src/assets/frlg/font.png`.
+- `frlg.ts` — the drawn window and textbox nine-slices, their corner, padding and translucency
+  (`src/data/ui/chrome.json`), the FRLG HP bar and ▶ cursor, and the texture keys it loads.
+- `frlgFont.ts` — the bitmap font and its metrics, from `src/assets/ui/font.png`, and the deep-black ink.
 - `panel.ts` — the plain panel background and gauge, and the colours they use.
 - `moveGrid.ts` — the shared moves grid: a type-tinted cell with type and category badges, PP and
   power, and a floating description window; the battle and the route HUD draw the same component.
