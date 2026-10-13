@@ -839,17 +839,12 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private applyEvents(events: readonly BattleEvent[]): void {
-    // A batched frame must not stack eight sounds: one hit and one faint.
-    let hitPlayed = false;
+    // A batched frame must not stack eight faints.
     let faintPlayed = false;
     for (const event of events) {
       switch (event.kind) {
         case 'damage':
         case 'heal':
-          if (event.kind === 'damage' && !hitPlayed) {
-            hitPlayed = true;
-            playCue(this, 'hit');
-          }
           this.displayHp[event.side] = event.hp;
           break;
         case 'status':

@@ -218,14 +218,23 @@ and screen, but needed their own layer — see `D23`.
 ### D22 — addendum: the imported audio *(decided)*
 
 The sounds are imported game rips, treated exactly like the imported art: the raw
-files live in the gitignored `sprite-sources/frlg-audio/`, renamed to the cue id
-(`<cue-id>.wav`), and only the derived `src/assets/audio/*.wav` is committed,
-built by `scripts/frlg/build-audio.mjs` (plain `node`, no `package.json` script,
-no dependency). The rip is local-only and must never be redistributed; a public
-build replaces it with a CC0 set by re-running the packer, not by editing code.
+sources live in the gitignored `sprite-sources/`, one rendered file per cue id
+(`frlg-audio/<cue-id>.wav`), and only the derived `src/assets/audio/*.wav` is
+committed, packed by `scripts/frlg/build-audio.mjs` (plain `node`, no
+`package.json` script, no dependency). The rip is local-only and must never be
+redistributed; a public build replaces it with a CC0 set by re-running the
+packer, not by editing code.
+
+`pret/pokefirered` ships the soundtrack as MIDI plus the instrument bank and
+samples, not as audio, so a cue is produced by `scripts/frlg/render-frlg-audio.mjs`
+— a sparse checkout of that decomp and the `huderlem/poryaaaa` m4a renderer, both
+fetched into `sprite-sources/` — and a looping bed is cut down to its loop body so
+the file Phaser loops is the song's own loop. The second renderer is the one
+external tool this pipeline needs; a CC0 set skips it entirely and just drops
+files in for the packer.
 
 The seam is a **cue table** in `src/audio/cues.ts` (pure, no Phaser import): three
-music beds and five one-shot cues, each with a `gain` that is a share of the
+music beds and three one-shot cues, each with a `gain` that is a share of the
 master volume. A cue id is the only name a scene uses — no scene names a file, a
 key or a volume — and `src/audio/audio.ts` is the Phaser half: it preloads every
 cue and owns the game's single music channel, switched by cue id (a scene on top
@@ -233,12 +242,16 @@ takes the bed over, the scene underneath takes it back when it resumes). `D22`'s
 master volume stays the only audio knob; the per-cue `gain` is the only tunable
 beside it.
 
-`sprite-sources/frlg-audio/` is not materialised in this clone, so the committed
-cues are **generated procedural placeholders** (a plain fading sine, 22050 Hz
-mono, ours and safe to redistribute) that the packer writes whenever a source is
-missing, with a warning per missing file. A source that exists but is not a
-readable PCM WAV is a hard error instead: a file that is there is never silently
-replaced.
+Two moments deliberately have **no** cue: a hit and an encounter. The original
+varies both — a hit plays the move's own sound (`SE_M_*`, one per move) and an
+encounter is the appearing Pokémon's cry — so a single shared cue could only be
+an approximation of either. They are the backlog's job, not the table's.
+
+A cue whose rendered source is missing falls back to a **generated procedural
+placeholder** (a plain fading sine, 22050 Hz mono, ours and safe to
+redistribute) that the packer writes with a warning per missing file. A source
+that exists but is not a readable PCM WAV is a hard error instead: a file that is
+there is never silently replaced.
 
 ## D23 — One shared keybind map, captured in the settings screen *(decided)*
 

@@ -17,6 +17,23 @@ import {
 
 const AUDIO_DIR = new URL('../assets/audio/', import.meta.url);
 
+// The caps mirror `scripts/frlg/build-audio.mjs` (and `render-frlg-audio.mjs`):
+// high enough that a music bed holds a whole loop body and a fanfare is never
+// cut mid-phrase.
+const CUE_SECONDS_CAP: Readonly<Record<AudioCueId, number>> = {
+  'menu-music': 120,
+  'route-music': 120,
+  'battle-music': 120,
+  faint: 6,
+  'level-up': 8,
+  victory: 20,
+};
+
+// What `build-audio.mjs` generates for a cue whose rip is missing: a plain sine,
+// 1.5 s for a music bed and 0.2 s for an sfx. A shipped cue that short means the
+// rip was never rendered and the placeholder leaked into the repo.
+const PLACEHOLDER_SECONDS: Readonly<Record<string, number>> = { music: 1.5, sfx: 0.2 };
+
 type WavInfo = Readonly<{
   magic: readonly string[];
   format: number;
@@ -60,8 +77,6 @@ describe('audio cue table', () => {
       'menu-music',
       'route-music',
       'battle-music',
-      'encounter',
-      'hit',
       'faint',
       'level-up',
       'victory',
@@ -108,11 +123,12 @@ describe('audio cue assets', () => {
     }
   });
 
-  it('caps an sfx at 5 s and a music bed at 60 s', () => {
+  it('caps every cue and rejects a cue that is still its placeholder sine', () => {
     for (const cue of AUDIO_CUES) {
       const wav = readCue(cue.id);
       const seconds = wav.dataBytes / (wav.sampleRate * wav.channels * (wav.bitsPerSample / 8));
-      expect(seconds, cue.id).toBeLessThanOrEqual(isMusic(cue.id) ? 60 : 5);
+      expect(seconds, cue.id).toBeLessThanOrEqual(CUE_SECONDS_CAP[cue.id]);
+      expect(seconds, cue.id).toBeGreaterThan(PLACEHOLDER_SECONDS[cue.kind]);
     }
   });
 });

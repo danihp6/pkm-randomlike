@@ -158,7 +158,7 @@ what Task-23 extends.
   must see the panels Task-12, Task-13 and Task-16 added and the strings Batch 8's
   accessibility pass introduced.
 
-### Batch 11 — the Prettier reformat pass (last)
+### Batch 11 — the Prettier reformat pass (last of the planned backlog)
 - **Task-29** Format the files `.prettierignore` still ledgers, and delete their lines.
 - **Hot files:** none of the serial resources — but the task claims **every `src/**`
   path the ledger names**, so no other task may run beside it.
@@ -172,6 +172,17 @@ what Task-23 extends.
   because its formatting is then the final word on those files: every task's own gate
   keeps the ledger from growing in the meantime, so nothing after it can un-format
   what it cleared or re-add a line. Re-planned from the ledger as it stands then.
+
+### Batch 12 — a hit's sound, a cry (added after the audio pass)
+- **Task-30** Per-move hit sounds and per-species cries.
+- **Hot files:** `src/scenes/BattleScene.ts` and `RouteScene.ts` → Task-30; the packed
+  `src/assets/audio/*.wav` and the two `scripts/frlg/` audio scripts → Task-30.
+- **Shape:** one task, in its own batch, because it is the only open item that owns a
+  scene once the plan above is merged: every batch that touches `BattleScene.ts` (3,
+  5, 7, 8, 10) or `RouteScene.ts` (3, 5, 6, 8, 10) has already claimed one. It runs
+  **after** Batch 11's reformat and keeps the two ledgered scenes conforming, so it
+  adds no ledger debt — which is why the reformat is still the last of the *planned*
+  backlog rather than the last thing to land.
 
 ### Open questions for the human
 
@@ -392,6 +403,28 @@ cycles one biome.
       new art. If the new chrome is drawn rather than ripped it also gives the public
       build a UI, which `O4` wants.
       *Dependencies:* none. *(Batch 5)*
+- [ ] **[Task-30] A hit plays the move's sound, and an encounter the Pokémon's
+      cry.** Both moments were dropped from the cue table rather than faked with one
+      shared sound, because the original varies them. The material is in
+      `pret/pokefirered`: `sound/songs/midi/se_m_*.mid` carries one `SE_M_*` sound per
+      move (`include/constants/songs.h`), and the 388 cries are
+      `sound/direct_sound_samples/cries/<species>.wav`, with `gCryTable` in
+      `sound/cry_tables.inc` mapping dex order to `Cry_<Species>` — the game plays a
+      cry through a `PokemonCrySong` (`include/gba/m4a_internal.h`), not as a bare
+      sample, so decide whether to reproduce that or ship the sample. The dex's own
+      `species.json` carries no cry, so the species→cry map comes from that table or
+      from the file names. `scripts/frlg/render-frlg-audio.mjs` already renders a MIDI
+      through the m4a engine, so the move sounds extend it; the cries need their own
+      seam. **The cue-table contract is the decision to take here**: a cue id is the
+      only name a scene may use (`src/audio/cues.ts`, `D22` addendum), so either give
+      every move and species its own cue id or add one parameterised call that
+      resolves a generated table — pick one and say why. Wire the hit into
+      `BattleScene`'s damage event and the cry into `RouteScene.startBattle` (and the
+      battle's send-out), keep `cues.test.ts`'s placeholder guard over whatever ships,
+      and note that the original also varies a hit by effectiveness
+      (`Cmd_effectivenesssound`: `SE_EFFECTIVE`, `SE_SUPER_EFFECTIVE`,
+      `SE_NOT_EFFECTIVE`) if that is wanted too.
+      *Dependencies:* none. *(Batch 12)*
 
 ## Phase 9 — Maps (route groups), biomes & progression
 
