@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getSpecies, statAtLevel } from '../../data/dex';
 import { memberDetail } from '../../ui/partyDetail';
 import type { BattleReturn, BattleOutcome } from './battleLink';
 import { createRunPokemon, xpForLevel, type RunPokemon } from './progression';
@@ -92,6 +93,21 @@ describe('resolveBattle', () => {
   it('does not count a battle that was not a capture', () => {
     const run = createRun({ seed: 's', starter });
     expect(resolveBattle(run, returned(run, 'win'), wild).run.stats.catches).toBe(0);
+  });
+
+  it('folds a damaged catch at the share of health it had in the wild', () => {
+    const run = createRun({ seed: 's', starter });
+    const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 5 });
+    const f = caught.fighter;
+    const oldMax = statAtLevel(getSpecies('sentret')!, 5, f.nature, f.ivs, f.evs).hp;
+    const damaged = { ...f, hp: Math.max(1, Math.floor(oldMax / 4)) };
+    const result = resolveBattle(run, returned(run, 'capture', { captured: damaged }), wild);
+    const placed = result.run.party.find((member) => member.fighter.id === 'catch-1');
+    expect(placed).toBeDefined();
+    const target = placed!.fighter.level;
+    const newMax = statAtLevel(getSpecies('sentret')!, target, f.nature, f.ivs, f.evs).hp;
+    expect(placed!.fighter.hp).toBe(Math.max(1, Math.round((damaged.hp / oldMax) * newMax)));
+    expect(placed!.fighter.hp).toBeLessThan(newMax);
   });
 
   it('records where a catch was made', () => {
