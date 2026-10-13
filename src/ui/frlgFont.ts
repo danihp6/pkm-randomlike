@@ -1,14 +1,16 @@
 import type Phaser from 'phaser';
-import fontAtlasUrl from '../assets/frlg/font.png';
-import manifest from '../data/frlg/font.json';
+import fontAtlasUrl from '../assets/ui/font.png';
+import manifest from '../data/ui/font.json';
 
 /**
- * The FireRed/LeafGreen bitmap font, packed by `scripts/frlg/build-font.mjs`
- * from `latin_normal.png` + `charmap.txt`: a 2x atlas plus the per-glyph metrics
- * in `src/data/frlg/font.json`. The atlas is two-tone on purpose — letter
- * white, shadow mid grey — so one texture serves both the navy message box
- * (left untinted, white text) and the light windows (tinted dark). Local-only
- * art — see `docs/art-direction.md`.
+ * The game's bitmap font, the modernised twin of the FRLG face: the same glyph
+ * shapes and metrics (`src/data/ui/font.json`, derived from the committed
+ * `src/assets/frlg/font.png` + `src/data/frlg/font.json` by
+ * `scripts/ui/build-chrome.mjs`, `npm run data:ui`), with the glyph shadow
+ * half-alpha so a letter reads as a soft halo on a translucent panel instead of
+ * a solid second tone. The atlas is white ink on purpose — one texture serves
+ * both the dark battle box (left untinted) and the light windows (tinted
+ * `FRLG_INK`), so a drawn chrome, not the rip, carries the public build's UI.
  */
 export const FRLG_FONT_ATLAS_URL = fontAtlasUrl;
 export const FRLG_FONT_TEXTURE_KEY = 'frlg:font';
@@ -90,10 +92,10 @@ export type FrlgTextOptions = Readonly<{
   lineSpacing?: number;
 }>;
 
-/** Dark ink for text drawn on a light FRLG window. */
-export const FRLG_INK = 0x25243b;
+/** Dark ink for text drawn on the light window: deep black, not the old navy. */
+export const FRLG_INK = 0x0b0b10;
 
-/** Adds FRLG bitmap text with the shared defaults. */
+/** Adds the UI bitmap text with the shared defaults. */
 export function addFrlgText(
   scene: Phaser.Scene,
   x: number,

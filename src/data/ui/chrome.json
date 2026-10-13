@@ -1,0 +1,29 @@
+{
+  "size": 4,
+  "window": {
+    "corner": 20,
+    "padding": {
+      "x": 20,
+      "top": 16,
+      "bottom": 8
+    },
+    "alpha": 0.88,
+    "texture": {
+      "width": 96,
+      "height": 96
+    }
+  },
+  "textbox": {
+    "corner": 24,
+    "padding": {
+      "x": 36,
+      "top": 28,
+      "bottom": 28
+    },
+    "alpha": 0.94,
+    "texture": {
+      "width": 128,
+      "height": 128
+    }
+  }
+}
