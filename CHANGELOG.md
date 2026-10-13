@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Every catch now mints its own member id, so a party row and its detail panel finally
+      agree.** Reported in play: catch a third Pokémon and clicking it showed the **second**
+      one's stats. The wild fighter was built with a constant id (`createFighter({ id: 'wild'
+      })`, `BattleScene`), the encounter key behind it (`grass:x,y`) is not unique per run
+      either, and `memberById` resolves a member by **first match** — so every catch of a run
+      entered the party and the box as `wild` and the panel answered with the earliest one,
+      while the row (drawn by index) looked right. `resolveBattle` now mints the catch's id at
+      the fold through a pure `nextMemberId(run)` — grammar `catch-<n>`, stepped past any id
+      the party or the box already holds, deterministic and with **no** `Rng` draw (`D11`) —
+      which is engine-only, so no scene changed. An old save whose members already collide is
+      repaired by `dedupeMemberIds(run)` in the save decoder's `parseRun`, a decode-time
+      normalisation like `parseDiscoveredRooms`, so **no** `SAVE_VERSION` bump and no
+      migration step; `pcUnlocked` is remapped by the same repair, so a catch keeps the box
+      lock it named. `src/engine/run/{state,resolve}.ts` + tests, `src/engine/save.ts` +
+      `save.test.ts`, `src/ui/partyDetail.ts` + test, `docs/battle-spec.md` §7.
 - [x] **The run's held-item catalogue is the whole competitive set, with Añil's own
       icons.** `src/data/items.ts` grows to 143 new rows (51 the engine can model,
       92 honest `no-op`, 21 hand-authored), `ItemDef` gains nine fields
