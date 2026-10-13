@@ -76,7 +76,7 @@ import {
   type RunState,
 } from '../engine/run';
 import { equipMove, learnsetPool, type LearnEntry } from '../engine/run/learnset';
-import { normalizeNickname, renameMember } from '../engine/run/nickname';
+import { NICKNAME_MAX_LENGTH, normalizeNickname, renameMember } from '../engine/run/nickname';
 import { abilityMoveType } from '../engine/battle/moveType';
 import {
   COMMON_TEXTURE_KEY,
@@ -190,7 +190,6 @@ import { listenForBack } from '../input/backButton';
 import { prefersTouchControls } from '../input/device';
 import { playCue, playMusic } from '../audio/audio';
 import { loadSettings, saveSettings } from '../settings';
-import { openNicknamePrompt } from '../ui/nicknamePrompt';
 import { browserStorage } from '../storage';
 import {
   GRASS_TEXTURE_KEY,
@@ -339,9 +338,16 @@ const PAUSE_MENU_LABELS = ['Settings', 'Reset run'] as const;
  */
 const HUD_DETAIL_TAB_H = 26;
 const HUD_DETAIL_TABS_TOP = 72;
-/** The name row's band: the rename click target and the "click to name" hint. */
-const HUD_DETAIL_NAME_H = 20;
 const HUD_DETAIL_CONTENT_TOP = HUD_DETAIL_TABS_TOP + HUD_DETAIL_TAB_H + 10;
+/**
+ * The STATS tab's nickname field: an editable box in the header's name row, the
+ * same look and height as the MOVES tab's search field. It stops short of the
+ * right-aligned level column, so the two share the row without touching.
+ */
+const HUD_NICKNAME_FIELD_H = 22;
+const HUD_NICKNAME_FIELD_TOP = HUD_PAD_TOP - 1;
+const HUD_NICKNAME_LEVEL_W = 72;
+const HUD_NICKNAME_MIN_W = 48;
 const HUD_DETAIL_STAT_ROW = 26;
 const HUD_DETAIL_STAT_COLS = 2;
 const HUD_DETAIL_STAT_ROWS = 3;
@@ -782,10 +788,16 @@ export class RouteScene extends Phaser.Scene {
   private hudDetailX = 0;
   private hudDetailY = 0;
   private hudDetailName!: Phaser.GameObjects.BitmapText;
-  /** "click to name" beside the level while the STATS tab is up. */
+  /** The nickname field's box, drawn under the name text on the STATS tab. */
+  private hudNicknameBg!: Phaser.GameObjects.Rectangle;
+  /** The nickname field's hit rectangle, in the panel's layout coordinates. */
+  private hudNicknameRect = { x: 0, y: 0, w: 0, h: 0 };
+  /** True while the nickname field owns the keyboard. */
+  private hudNicknameFocus = false;
+  /** The in-progress text; null while the field is not being edited. */
+  private hudNicknameEdit: string | null = null;
+  /** "click to name" inside the field's rectangle while the STATS tab is up. */
   private hudDetailNameHint!: Phaser.GameObjects.BitmapText;
-  /** The name row's hit band on the STATS tab, in panel coordinates. */
-  private hudDetailNameRect = { x: 0, y: 0, w: 0, h: 0 };
   private hudDetailLevel!: Phaser.GameObjects.BitmapText;
   private hudDetailStatus!: Phaser.GameObjects.Image;
   private hudDetailTypes: {
@@ -1240,6 +1252,8 @@ export class RouteScene extends Phaser.Scene {
     );
     if (IS_DEVELOP) {
       this.input.keyboard!.on('keydown-B', () => {
+        // A typed `b` belongs to the nickname field, not to the debug battle.
+        if (this.textFieldFocused()) return;
         if (this.scene.isActive()) this.startBattle({ kind: 'wild', speciesId: 'scatterbug', level: 5, key: 'dev' });
       });
       this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
@@ -1260,6 +1274,9 @@ export class RouteScene extends Phaser.Scene {
         this.closeLearnPopup();
         return;
       }
+      // The nickname field owns the keyboard while it is focused: it consumes every
+      // key, so `[` / `]` (and everything else) is dead while typing.
+      if (this.typeInNickname(event)) return;
       if (this.typeInDetailSearch(event)) return;
       if (event.key === '[') this.stepBagCategory(-1);
       else if (event.key === ']') this.stepBagCategory(1);
@@ -1298,8 +1315,12 @@ export class RouteScene extends Phaser.Scene {
       this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.detachBack?.());
     }
     // A battle pauses the route mid-walk; drop the pad's held direction so the
-    // player does not keep stepping the moment the route comes back.
-    this.events.on(Phaser.Scenes.Events.PAUSE, () => this.touch?.release());
+    // player does not keep stepping the moment the route comes back, and give up
+    // an in-progress nickname edit rather than resuming into a focused field.
+    this.events.on(Phaser.Scenes.Events.PAUSE, () => {
+      this.touch?.release();
+      this.cancelNicknameEdit();
+    });
     // The battle above took the music channel; the route takes it back.
     this.events.on(Phaser.Scenes.Events.RESUME, () => {
       this.touch?.release();
@@ -1319,8 +1340,9 @@ export class RouteScene extends Phaser.Scene {
    */
   private handleAction(action: KeybindAction): void {
     if (!this.scene.isActive()) return;
-    // The learnset search field owns the keyboard while it holds focus.
-    if (this.hudSearchFocus) return;
+    // The learnset search field and the nickname field own the keyboard while
+    // either holds focus.
+    if (this.textFieldFocused()) return;
     // The level-up popup is dismissed by any input.
     if (this.learnPopupOpen) {
       this.closeLearnPopup();
@@ -1833,6 +1855,14 @@ export class RouteScene extends Phaser.Scene {
     const innerW = detailW - detailPadX * 2;
     this.hudDetailWindow = addFrlgWindow(this, x, y, detailW, HUD_DETAIL_H);
     const children: Phaser.GameObjects.GameObject[] = [this.hudDetailWindow];
+    // The nickname field's box, in the header's name row. It is pushed first, so
+    // it sits under the name text and rides the panel with everything else.
+    this.hudNicknameBg = this.add
+      .rectangle(0, 0, 10, HUD_NICKNAME_FIELD_H, 0xffffff)
+      .setOrigin(0, 0)
+      .setStrokeStyle(2, 0x9a94b8)
+      .setVisible(false);
+    children.push(this.hudNicknameBg);
 
     this.hudDetailName = addFrlgText(this, x + HUD_CONTENT_LEFT, y + HUD_PAD_TOP, '', { size: 16, tint: FRLG_INK });
     this.hudDetailLevel = addFrlgText(this, right, y + HUD_PAD_TOP, '', {
@@ -1840,15 +1870,8 @@ export class RouteScene extends Phaser.Scene {
       tint: 0x3a3956,
       origin: [1, 0],
     });
-    // The name row is the rename control while STATS is up: the whole band from the
-    // name's left edge to the level reads as clickable, and the hint says so.
-    this.hudDetailNameRect = {
-      x: x + HUD_CONTENT_LEFT,
-      y: y + HUD_PAD_TOP,
-      w: right - (x + HUD_CONTENT_LEFT),
-      h: HUD_DETAIL_NAME_H,
-    };
-    this.hudDetailNameHint = addFrlgText(this, right, y + HUD_PAD_TOP + 1, 'click to name', {
+    // The hint sits at the field's right end; `refreshNicknameField` places it.
+    this.hudDetailNameHint = addFrlgText(this, right, y + HUD_PAD_TOP + 3, 'click to name', {
       size: 16,
       tint: 0x6b6887,
       origin: [1, 0],
@@ -2304,8 +2327,12 @@ export class RouteScene extends Phaser.Scene {
     const memberId = this.hudDetailState.memberId;
     const detail = memberId === null ? null : memberDetail(this.run, memberId);
     if (!detail) {
+      // The member left the run: the panel hides and the field gives up its buffer.
+      this.hudNicknameFocus = false;
+      this.hudNicknameEdit = null;
       this.hudDetailState = CLOSED_DETAIL;
       if (panel) panel.container.setVisible(false);
+      this.refreshNicknameField(null);
       return;
     }
     // The panel decides whether it is on screen; the body follows its state.
@@ -2313,12 +2340,6 @@ export class RouteScene extends Phaser.Scene {
     if (panel) panel.container.setVisible(true);
     this.hudDetailName.setText(detail.name);
     this.hudDetailLevel.setText(`Lv${detail.level}`);
-    // The hint rides just left of the level; the level's width moves with the text,
-    // so the hint is placed after it rather than at a fixed x.
-    this.hudDetailNameHint.setPosition(
-      this.hudDetailLevel.x - this.hudDetailLevel.width - 8,
-      this.hudDetailLevel.y + 1,
-    );
     const detailStatus = detail.status ? statusIconFrame(detail.status) : null;
     this.hudDetailStatus.setVisible(detailStatus !== null);
     if (detailStatus !== null) {
@@ -2344,7 +2365,6 @@ export class RouteScene extends Phaser.Scene {
     });
 
     const stats = this.hudDetailState.tab === 'stats';
-    this.hudDetailNameHint.setVisible(stats);
     const { rows, nature, ability, held, caught } = this.hudDetailStats;
     rows.forEach((row) => {
       row.label.setVisible(stats);
@@ -2413,6 +2433,119 @@ export class RouteScene extends Phaser.Scene {
     });
 
     this.refreshLearnset(detail.ability, moves);
+    this.refreshNicknameField(detail);
+  }
+
+  /**
+   * Lays the STATS tab's nickname field out for the open member and fills it from
+   * the edit buffer: the box under the name text, the name row's own text (with a
+   * `>` mark while it is being edited, like the learnset search field) and the
+   * `click to name` hint at the box's right end. Drawing never ends an edit: the
+   * buffer and the focus flag are read here, never written.
+   */
+  private refreshNicknameField(detail: MemberDetail | null): void {
+    const x = this.hudDetailX + HUD_CONTENT_LEFT - 4;
+    this.hudNicknameRect = {
+      x,
+      y: this.hudDetailY + HUD_NICKNAME_FIELD_TOP,
+      w: Math.max(
+        HUD_NICKNAME_MIN_W,
+        this.hudDetailX + this.hud.detailW - this.hud.detailPadX - HUD_NICKNAME_LEVEL_W - x,
+      ),
+      h: HUD_NICKNAME_FIELD_H,
+    };
+    const show = this.hudDetailState.tab === 'stats' && detail !== null;
+    this.hudNicknameBg
+      .setPosition(this.hudNicknameRect.x, this.hudNicknameRect.y)
+      .setSize(this.hudNicknameRect.w, this.hudNicknameRect.h)
+      .setVisible(show);
+    this.hudDetailName
+      .setText(this.hudNicknameFocus ? `>${this.hudNicknameEdit ?? ''}` : (detail?.name ?? ''))
+      .setMaxWidth(this.hudNicknameRect.w - 4);
+    this.hudDetailNameHint
+      .setPosition(this.hudNicknameRect.x + this.hudNicknameRect.w - 6, this.hudNicknameRect.y + 3)
+      .setVisible(show && !this.hudNicknameFocus);
+  }
+
+  /** True when the pointer is on the nickname field's rectangle (STATS tab only). */
+  private nicknameRowAt(pointer: Phaser.Input.Pointer): boolean {
+    if (this.hudDetailState.tab !== 'stats') return false;
+    return pointInRect(this.panelPoint(pointer, 'detail'), this.hudNicknameRect);
+  }
+
+  /** Focuses the nickname field and seeds it with the name the row shows. */
+  private beginNicknameEdit(): void {
+    const memberId = this.hudDetailState.memberId;
+    if (memberId === null) return;
+    const detail = memberDetail(this.run, memberId);
+    if (!detail) return;
+    this.unpinAbilityInfo();
+    this.hudNicknameEdit = detail.nickname ?? detail.name;
+    this.hudNicknameFocus = true;
+    this.hudSearchFocus = false;
+    this.refreshDetail();
+  }
+
+  /**
+   * Enter: the pure `normalizeNickname` decides the stored text and `renameMember`
+   * the run, so the scene never re-implements the rule. The save follows only when
+   * the run object actually changed.
+   */
+  private commitNicknameEdit(): void {
+    const memberId = this.hudDetailState.memberId;
+    const text = this.hudNicknameEdit;
+    this.hudNicknameFocus = false;
+    this.hudNicknameEdit = null;
+    if (memberId !== null && text !== null) {
+      const next = renameMember(this.run, memberId, normalizeNickname(text));
+      if (next !== this.run) {
+        this.run = next;
+        this.persistRun();
+      }
+    }
+    this.refreshDetail();
+    this.refreshHud();
+  }
+
+  /** Escape, a press elsewhere, a tab switch, closing the panel, a battle: no write. */
+  private cancelNicknameEdit(): void {
+    if (!this.hudNicknameFocus && this.hudNicknameEdit === null) return;
+    this.hudNicknameFocus = false;
+    this.hudNicknameEdit = null;
+    this.refreshDetail();
+  }
+
+  /**
+   * The nickname field's key router: it consumes **every** key while the field is
+   * focused, so nothing typed reaches the game underneath. Characters and
+   * Backspace work in code points, Enter commits and Escape cancels.
+   */
+  private typeInNickname(event: KeyboardEvent): boolean {
+    if (!this.hudNicknameFocus) return false;
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.commitNicknameEdit();
+      return true;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.cancelNicknameEdit();
+      return true;
+    }
+    if (event.key === 'Backspace') {
+      this.hudNicknameEdit = [...(this.hudNicknameEdit ?? '')].slice(0, -1).join('');
+    } else if (event.key.length === 1 && /[a-z0-9 '-]/i.test(event.key)) {
+      const points = [...(this.hudNicknameEdit ?? ''), event.key];
+      if (points.length <= NICKNAME_MAX_LENGTH) this.hudNicknameEdit = points.join('');
+    }
+    event.preventDefault();
+    this.refreshDetail();
+    return true;
+  }
+
+  /** True while *either* in-panel text field owns the keyboard. */
+  private textFieldFocused(): boolean {
+    return this.hudNicknameFocus || this.hudSearchFocus;
   }
 
   /**
@@ -2670,6 +2803,8 @@ export class RouteScene extends Phaser.Scene {
       this.hudSearchFocus = false;
       this.refreshDetail();
     }
+    // A press outside the panel likewise ends an in-progress nickname edit.
+    if (this.hudNicknameFocus && !this.pointerInDetailPanel(pointer)) this.cancelNicknameEdit();
     if (this.hudDetailState.memberId !== null && this.pointerInDetailPanel(pointer)) {
       // A control inside the detail panel acts; an empty spot falls through to
       // the panel drag at the end (so the detail window can be moved anywhere).
@@ -2845,11 +2980,11 @@ export class RouteScene extends Phaser.Scene {
       this.hudDetailState.memberId !== null &&
       this.pointerInDetailPanel(pointer) &&
       this.evolutionAt(this.panelPoint(pointer, 'detail')) !== null;
-    // The name row is the rename control, so it reads as a click target as well.
+    // The name row is the rename field, so it reads as a click target as well.
     const overDetailName =
       this.hudDetailState.memberId !== null &&
       this.pointerInDetailPanel(pointer) &&
-      this.detailNameAt(this.panelPoint(pointer, 'detail'));
+      this.nicknameRowAt(pointer);
     // The Pokevial only reads as clickable with a full meter; a partial one does
     // nothing on click.
     const overVial =
@@ -3007,6 +3142,7 @@ export class RouteScene extends Phaser.Scene {
     this.hudLearnPage = 0;
     this.hudLearnQuery = '';
     this.hudSearchFocus = false;
+    this.cancelNicknameEdit();
     this.endLearnDrag();
     this.refreshDetail();
     // The first open docks the panel beside the PC box; after that it stays
@@ -3022,6 +3158,7 @@ export class RouteScene extends Phaser.Scene {
     if (this.hudDetailState.memberId === null) return;
     this.hudDetailState = closeDetail(this.hudDetailState);
     this.resetDetailInfo();
+    this.cancelNicknameEdit();
     this.refreshDetail();
   }
 
@@ -3037,6 +3174,7 @@ export class RouteScene extends Phaser.Scene {
     const nav = this.learnNavAt(point);
     if (nav !== null) {
       this.hudSearchFocus = false;
+      this.cancelNicknameEdit();
       this.stepLearnPage(nav === 'prev' ? -1 : 1);
       return true;
     }
@@ -3046,6 +3184,9 @@ export class RouteScene extends Phaser.Scene {
       return true;
     }
     this.hudSearchFocus = false;
+    // Any other press inside the panel leaves both text fields - except a press on
+    // the nickname field itself, which keeps its edit (and its typed text) going.
+    if (!this.nicknameRowAt(pointer)) this.cancelNicknameEdit();
     const tab = this.detailTabAt(pointer);
     if (tab !== null) {
       this.hudDetailState = setDetailTab(this.hudDetailState, tab);
@@ -3055,15 +3196,16 @@ export class RouteScene extends Phaser.Scene {
       return true;
     }
     if (this.hudDetailState.tab === 'stats') {
-      // The name row opens the rename field, so it is tested before the rest of
-      // the STATS tab (the ability ⓘ and the evolution rows sit below it).
-      if (this.detailNameAt(point)) {
-        this.openRenameField();
-        return true;
-      }
-      // The ability ⓘ is tested first: a press on it never evolves the member.
+      // The ability ⓘ comes first: a press on it never starts the rename field and
+      // never evolves the member.
       if (this.abilityInfoAt(pointer)) {
         this.toggleAbilityInfo();
+        return true;
+      }
+      // The name row is the editable field: a press focuses it (or keeps it focused),
+      // and never falls through to the panel drag or the evolution rows.
+      if (this.nicknameRowAt(pointer)) {
+        if (!this.hudNicknameFocus) this.beginNicknameEdit();
         return true;
       }
       // Any other press in the panel drops the ability window's pin.
@@ -3265,38 +3407,6 @@ export class RouteScene extends Phaser.Scene {
       if (cell.node?.ready && pointInRect(point, cell.rect)) return cell.node;
     }
     return null;
-  }
-
-  /** True when a panel-local point lands on the STATS tab's name row, the rename control. */
-  private detailNameAt(point: { x: number; y: number }): boolean {
-    return this.hudDetailState.tab === 'stats' && pointInRect(point, this.hudDetailNameRect);
-  }
-
-  /**
-   * Opens the nickname field on the open member, prefilled with its nickname or
-   * its species name. The field hands back the raw text: `normalizeNickname` and
-   * `renameMember` own every rule, so the scene never re-implements them.
-   */
-  private openRenameField(): void {
-    const memberId = this.hudDetailState.memberId;
-    if (memberId === null) return;
-    const detail = memberDetail(this.run, memberId);
-    if (!detail) return;
-    openNicknamePrompt({
-      initial: detail.nickname ?? detail.name,
-      speciesName: getSpecies(detail.speciesId)?.name ?? detail.speciesId,
-      onConfirm: (value) => this.renameOpenMember(value),
-    });
-  }
-
-  /** Applies the typed name to the open member: the pure rule decides, then the save follows. */
-  private renameOpenMember(value: string): void {
-    const memberId = this.hudDetailState.memberId;
-    if (memberId === null) return;
-    this.run = renameMember(this.run, memberId, normalizeNickname(value));
-    this.persistRun();
-    this.refreshDetail();
-    this.refreshHud();
   }
 
   /**
@@ -3720,6 +3830,8 @@ export class RouteScene extends Phaser.Scene {
    */
   private togglePanel(panel: HudPanel): void {
     if (panel.expanded) {
+      // Collapsing the detail panel takes the nickname field off screen too.
+      if (panel.id === 'detail') this.cancelNicknameEdit();
       panel.expanded = false;
       panel.body.setVisible(false);
       this.applyPanelPositions();
@@ -3881,6 +3993,8 @@ export class RouteScene extends Phaser.Scene {
       !this.shopRoot &&
       !this.miniBossRewardRoot &&
       !this.pauseMenuOpen &&
+      // A held `R` while typing a name must not fill the ring and restart the run.
+      !this.textFieldFocused() &&
       this.resetKey?.isDown === true;
     if (!allowed) {
       if (this.resetHold !== 0) {
@@ -4693,6 +4807,9 @@ export class RouteScene extends Phaser.Scene {
 
   private openPauseMenu(): void {
     if (this.pauseMenuOpen || this.gameOver || this.pendingBattle || this.releaseRoot || this.captureRoot) return;
+    // The pause menu takes the player away from the panel, so an in-progress
+    // nickname edit is discarded (the phone's Back gesture can open it directly).
+    this.cancelNicknameEdit();
     this.pauseMenuOpen = true;
     this.pauseMenuIndex = 0;
     this.pauseMenuArmed = false;
@@ -6191,7 +6308,7 @@ export class RouteScene extends Phaser.Scene {
    * fight over a direction.
    */
   private heldDirection(): MoveKey | null {
-    if (this.hudSearchFocus) return null;
+    if (this.textFieldFocused()) return null;
     const { up, down, left, right } = this.moveKeys;
     const pressed = (keys: Phaser.Input.Keyboard.Key[]): boolean =>
       keys.some((key) => key.isDown || Phaser.Input.Keyboard.JustDown(key));

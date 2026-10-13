@@ -80,16 +80,23 @@ carries over.
   modal pops up announcing **"X learned Y!"** for every move a member crossed on
   the way, dismissed with any key or a click. The party is never left empty and
   the box is never required to be full.
-- A member can be **named**: its name on the STATS tab is the rename control (a
-  `click to name` hint sits beside its level), opening a small text field that
-  starts on the current nickname, or the species name. The name the player types —
+- A member can be **named**: the name row on the STATS tab **is** an editable field
+  (a bordered box with a `click to name` hint at its right end, drawn inside the
+  detail panel's own window — there is no separate window). A click focuses it and it
+  starts on the name the row shows — the nickname when there is one, else the species
+  name — with a `>` mark printed while it is being typed; **Enter commits, Escape
+  cancels** and Backspace erases one character at a time. The name the player types —
   up to **12 characters**, whitespace collapsed and trimmed — is shown **everywhere
   the member is named**: the party and PC rows, the detail window, the level-up and
   evolution popups, the capture screen, the release beat and the battle. Typing the
-  **species name** again (in any case) or leaving the field empty **clears** the
-  nickname back to the species name. It lives beside `fighter.name` — which keeps
+  **species name** again (in any case) or clearing the field to nothing **clears** the
+  nickname back to the species name, while a click elsewhere in the panel, a tab
+  switch, closing or collapsing the panel and the battle that interrupts a route all
+  **discard** an unconfirmed edit. It lives beside `fighter.name` — which keeps
   meaning "creation name, then the battle-only forme's" — so a nickname survives a
-  save, an evolution, a Mega Evolution and every other forme change.
+  save, an evolution, a Mega Evolution and every other forme change. The field is
+  keyboard-only, like the MOVES tab's learnset search, so a touch player cannot name a
+  member yet.
 - **Held items** are equipped from the same HUD: drag an equipment stack from the
   bag onto a party or box member to give it the item (any item it already held
   returns to the bag, so an equip is a swap, never a loss). The held item shows as

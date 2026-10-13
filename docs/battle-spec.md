@@ -125,7 +125,8 @@ One capture attempt per route (a run-level counter, not a per-battle one).
   `src/engine/run/state.ts`), unique across the party and the box and kept for the
   member's life, so a panel that resolves a member by id always shows that member.
 - A member may carry a **nickname** (`src/engine/run/nickname.ts`): up to twelve
-  code points, typed from the STATS tab of the route HUD's detail panel. It rides
+  code points, typed in place in the STATS tab's own name row (the field the route
+  HUD draws in the detail panel; Enter commits, Escape cancels). It rides
   in the battle snapshot as its own optional field `FighterSnapshot.nickname`,
   beside `fighter.name` — a creation name, then the battle-only forme's — so **no
   forme change and no Mega Evolution (`§9`) can rewrite it**. Every site that names
