@@ -23,7 +23,7 @@ named `engine/`.
 ## D3 — Dex data generated at build time from `@pkmn/dex` *(decided)*
 
 `npm run data:dex` writes `src/data/dex/*.json` (the full National Dex since
-`D40`; 1291 entries).
+`D40`; 1282 entries).
 The package is a devDependency; the game reads committed JSON. Considered:
 copies of the donor's `pokedex.json` (only 649, Gen 1–5, and its `moves.json`
 carries Mystery Dungeon numbers, not turn-based ones), and PokeAPI at runtime
@@ -591,10 +591,13 @@ lands in exactly one band and the union covers the whole dex.
 
 `build-dex.mjs` no longer keeps only the Gen 9 standard set: the playable
 `species.json` is the **whole National Dex** — every numbered species, the
-`Past` Dexit entries included — 1291 entries across all 1025 dex numbers, with
+`Past` Dexit entries included — 1282 entries across all 1025 dex numbers, with
 48 Megas generated beside it. Only non-species are dropped at generation time:
 CAP/fan entries, `Custom` (MissingNo, Pokéstar), LGPE's partner starters (no
-art), and the battle-only Gigantamax/Eternamax formes.
+art), the battle-only Gigantamax/Eternamax formes, and the nine `Future` formes
+whose entry names a Mega (`Mega-Z`, `M-Mega`, `F-Mega`, `Original-Mega` and the
+three Tatsugiri): a stone's target, never a grass spawn, and no fit for
+`megas.json` because three of them share a stone its one-stone guard rejects.
 
 Two learnset rules keep a Dexit species playable: a species with no gen-8
 source falls back to its own newest learnset, and a forme without one inherits

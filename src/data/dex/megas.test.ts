@@ -11,13 +11,15 @@ import {
   megaMatchesSpecies,
   type MegaForm,
 } from './megas';
-import { getSpecies, playableSpecies } from './species';
+import { getSpecies, playableSpecies, type Species } from './species';
 
 const counts = (meta as { counts: Readonly<Record<string, number>> }).counts;
 
 type GeneratedRow = MegaForm & Readonly<{ isNonstandard?: string }>;
+type GeneratedSpeciesRow = Species & Readonly<{ isNonstandard?: string | null }>;
 
 const ROWS = MEGA_FORMES as readonly GeneratedRow[];
+const SPECIES_ROWS = playableSpecies() as readonly GeneratedSpeciesRow[];
 const FUTURE = ROWS.filter((mega) => mega.isNonstandard === 'Future');
 
 describe('generated Mega formes', () => {
@@ -44,20 +46,32 @@ describe('generated Mega formes', () => {
 
   // The nine `Future` formes the dex leaves `isMega` unset on (Absol Z, Garchomp
   // Z, Lucario Z, both Meowstic, Magearna-Original and the three Tatsugiri) name
-  // the forme instead, so `isPlayable` keeps them in the playable set: they are
-  // ownable wild species today. Taking them into `megas.json` would ship one id
-  // in both files, which is a species-set change this data pass does not make.
-  it('leaves a Future forme the playable set already carries out of the megas', () => {
-    for (const id of [
-      'absolmegaz',
-      'garchompmegaz',
-      'lucariomegaz',
-      'meowsticmmega',
-      'tatsugiricurlymega',
-    ]) {
-      expect(isMegaSpecies(id), id).toBe(false);
-      expect(playableSpecies().some((species) => species.id === id), id).toBe(true);
+  // the forme instead. `isPlayable` drops them by name-shape, so they ship in
+  // neither file and the two generated id sets stay disjoint.
+  it('keeps the species and Mega id sets disjoint', () => {
+    const playable = new Set(playableSpecies().map((species) => species.id));
+    for (const mega of MEGA_FORMES) {
+      expect(playable.has(mega.id), mega.id).toBe(false);
+      expect(isMegaSpecies(mega.id), mega.id).toBe(true);
     }
+    for (const id of ['absolmegaz', 'meowsticfmega', 'tatsugiristretchymega']) {
+      expect(playable.has(id), id).toBe(false);
+      expect(isMegaSpecies(id), id).toBe(false);
+    }
+  });
+
+  it('anchors every Mega to a base species in the playable set', () => {
+    const playable = new Set(playableSpecies().map((species) => species.id));
+    for (const mega of MEGA_FORMES) {
+      expect(playable.has(mega.baseSpeciesId), `${mega.id} -> ${mega.baseSpeciesId}`).toBe(true);
+    }
+  });
+
+  it('leaves no Future forme that names a Mega in the playable set', () => {
+    const leaked = SPECIES_ROWS.filter(
+      (species) => species.isNonstandard === 'Future' && /mega/i.test(species.forme ?? ''),
+    );
+    expect(leaked.map((species) => species.id)).toEqual([]);
   });
 
   it('resolves every Mega and its base species', () => {

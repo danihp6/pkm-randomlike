@@ -22,9 +22,21 @@ const MIN_LEARNSET_GEN = 8;
 // boss formes.
 const isBattleBossForm = (entry) =>
   entry.forme === 'Gmax' || entry.forme === 'Eternamax' || /Gmax$/i.test(entry.name);
+
+// A `Future` forme whose own `forme` names a Mega is a Mega the dex leaves
+// `isMega` unset on (`Mega-Z`, `M-Mega`, `F-Mega`, `Original-Mega`, and the
+// Tatsugiri ones): the games reach it from a stone, never from the grass, so it
+// belongs beside `megas.json` rather than inside the playable set. It is *not*
+// taken into `megas.json` either: three of them would share a stone
+// (`meowsticite`, `magearnite`, `tatsugirinite`) that the one-stone-per-forme
+// guard rejects.
+const isUnflaggedMegaForme = (entry) =>
+  entry.isNonstandard === 'Future' && /mega/i.test(entry.forme ?? '');
+
 const isPlayable = (entry) =>
   entry.num > 0 &&
   entry.isMega !== true &&
+  !isUnflaggedMegaForme(entry) &&
   !isBattleBossForm(entry) &&
   entry.isNonstandard !== 'CAP' &&
   entry.isNonstandard !== 'Custom' &&
@@ -36,13 +48,12 @@ const isPlayable = (entry) =>
 // `Future` ones Legends Z-A and Champions announced (the dex's own "announced,
 // not released" tag). Everything else about a Mega is unchanged.
 //
-// The rule takes a `Future` forme exactly as it takes a `Past` one, and the tag
-// alone is not enough: the nine `Future` formes the dex leaves `isMega` unset on
-// (`forme: 'Mega-Z'` for Absol/Garchomp/Lucario Z, `'M-Mega'`/`'F-Mega'` for
-// Meowstic, `'Original-Mega'` for Magearna-Original, the three Tatsugiri) are
-// already in the playable set, because `isPlayable` only drops `isMega === true`.
-// Taking them here would put one id in `species.json` and `megas.json` at once.
-// `src/data/dex/README.md` records the tag; the gap is reported, not papered over.
+// The tag alone is not enough: the nine `Future` formes the dex leaves `isMega`
+// unset on (`forme: 'Mega-Z'` for Absol/Garchomp/Lucario Z, `'M-Mega'`/`'F-Mega'`
+// for Meowstic, `'Original-Mega'` for Magearna-Original, the three Tatsugiri)
+// name the forme instead, so `isPlayable` drops them by name-shape and they ship
+// in neither file — three of them share a stone, which `megas.json` refuses.
+// `src/data/dex/README.md` records the tag.
 const isMega = (entry) =>
   (entry.isNonstandard === 'Past' || entry.isNonstandard === 'Future') && entry.isMega === true;
 

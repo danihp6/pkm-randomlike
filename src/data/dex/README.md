@@ -43,6 +43,7 @@ asserts the counts still match, so a bad regeneration fails loudly.
   "announced, not released" mark for the formes Legends Z-A and Champions
   announced — and both are taken alike. The nine `Future` formes the dex leaves
   `isMega` unset on (Absol Z, Garchomp Z, Lucario Z, Meowstic, Magearna-Original,
-  the three Tatsugiri) name the forme instead, so `isPlayable` keeps them in the
-  playable set: they are ownable species, not stones, and adding them here would
-  ship one id in both files.
+  the three Tatsugiri) name the forme instead, so `isPlayable` drops them by
+  name-shape: they are reached from a stone, never from the grass, and adding
+  them here would ship one id in both files — three of them share a stone the
+  generator's one-stone guard rejects.
