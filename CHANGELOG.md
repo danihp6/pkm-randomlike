@@ -8,6 +8,41 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Nine Mega formes are no longer playable species.** `@pkmn/dex` tags its future
+      formes `isNonstandard: "Future"`, and 40 of the 49 set `isMega: true` — but nine
+      name the forme instead (`absolmegaz`, `garchompmegaz`, `lucariomegaz`, the two
+      Meowstic, `magearnaoriginalmega` and the three Tatsugiri), so `isMega` missed them
+      and `isPlayable` shipped them as ordinary wild species with **no** stone: the
+      playable set was wider than the Mega set by exactly those ids. The shipped rule is
+      the named predicate `isUnflaggedMegaForme` — a `Future`, non-`Past` forme whose
+      `forme` is a `Mega`-style name carrying no `isMega` flag — added to the
+      `isPlayable` chain, so `species.json` and `megas.json` now agree about what a Mega
+      is. The playable set falls **1291 → 1282** and `learnsets` **1290 → 1281** while
+      `megas.json` stays at 88; the three files the batch had arbitrated for a re-pin
+      needed none, because no fixed-seed expectation depended on the nine.
+      `scripts/build-dex.mjs`, the regenerated `src/data/dex/{species,learnsets,meta}.json`,
+      `src/data/dex/megas.test.ts` + `README.md`, `docs/data-spec.md` §1,
+      `docs/tech-decisions.md` (`D3`/`D40` counts), `docs/showdown-reuse.md` §2.
+- [x] **A route can no longer ship with no trainer guarding its main lane.** Reported
+      against `docs/route-generator.md` §3.4's promise: `placeTrainers` commits a spine
+      trainer through `tryFrom` and ignores a `false` return, so a seed whose candidates
+      all failed (`candidateOk`: wall-hugging, off the entries and pockets, crowded,
+      seeing the entry, or cutting the route) shipped a route with no main-lane fight,
+      and `validateRoute` had no field to say so. `RouteValidation` gains
+      `missingLaneGuard` (the `'no-trainers'` reason), `ok` gains its conjunct, and
+      `sketchRoute`/`sketchRouteSteps` re-roll inside the unchanged `MAX_ATTEMPTS = 8` —
+      the attempt index is already part of every stream key, so a re-roll still yields
+      one deterministic `(seed, routeIndex)` and draws no extra `Rng` value. The gate is
+      **conditional**: the new exported `wantsTrainers(request)` (non-quiet, non-empty
+      archetype pool) decides, because a `RouteMap` alone cannot know a quiet room — the
+      map's entry and boss rooms — legitimately shipped none. §3.4's promise is now true
+      and §4 lists `missingLaneGuard` beside the `borderBandGaps` Task-32 added (nine
+      gated lists). One fixed seed changed its shipped attempt (`sweep-b` in
+      `validate.test.ts`: attempt 0 → 1, 0 → 4 trainers); a 4 059-request sweep found 42
+      requests that now re-roll and none that exhausts the eight attempts, and QA
+      re-measured that seed independently.
+      `src/engine/routes/{validate,sketch}.ts` + tests, `docs/route-generator.md`.
+
 - [x] **A Pokémon can be named, right in its own STATS panel.** The battle layer already
       rendered a `FighterInput.nickname` but nothing ever set it, so every member showed its
       species name — and the nickname could not simply be `fighter.name`, because Mega
