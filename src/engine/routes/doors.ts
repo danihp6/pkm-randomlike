@@ -27,6 +27,37 @@ export function borderEdge(tile: Tile, width: number, height: number): AccessEdg
 }
 
 /**
+ * The border cells an opening's band occupies: the lane's own cross-section at the
+ * ring, in the orientation `carveSquare` carves the lane - index 0 is the opening's
+ * own seeded cell, then the cells toward `+y` (a `W`/`E` opening) or `+x` (an `N`/`S`
+ * opening).
+ */
+export function openingBandCells(
+  edge: AccessEdge,
+  opening: Tile,
+  width: number,
+  height: number,
+  laneWidth: number,
+): readonly Tile[] {
+  const cells: Tile[] = [opening];
+  for (let step = 1; step < laneWidth; step++) {
+    const cell =
+      edge === 'W'
+        ? { x: 0, y: opening.y + step }
+        : edge === 'E'
+          ? { x: width - 1, y: opening.y + step }
+          : edge === 'N'
+            ? { x: opening.x + step, y: 0 }
+            : { x: opening.x + step, y: height - 1 };
+    // An opening jammed against the map's far corner yields a shorter band rather
+    // than an off-map tile; the anchor at index 0 is always on the ring.
+    if (cell.x >= width || cell.y >= height) continue;
+    cells.push(cell);
+  }
+  return cells;
+}
+
+/**
  * The edge a border cell exits through: its border edge when the cell is a carved
  * opening (raw `FLOOR`) and the route declares an opening on that edge. Any cell
  * of the gap counts, not just the seeded one. When `approach` is given, the cell

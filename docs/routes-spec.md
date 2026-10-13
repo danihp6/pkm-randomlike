@@ -10,7 +10,10 @@ camera follow), containing:
 
 - a **entry** opening, where the player arrives from the previous route;
 - one or more **exit** openings (the shape's far ends). Openings sit on the map
-  border and punch a gap in the tree ring; they are plain floor and stepping on
+  border and punch a gap in the tree ring: the **band** the lane leaves there
+  (`openingBandCells`: the seeded cell plus the cells toward `+y` on a `W`/`E`
+  opening or `+x` on an `N`/`S` one, `pathWidth` cells in all) is all door, not just
+  the one cell the tidy may or may not widen. They are plain floor and stepping on
   one does **not** end the route yet, so the map can be inspected without leaving
   it;
 - a one-tile ring of trees/rock along the border and a solid tree interior, with
@@ -43,9 +46,11 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    never lands a one-row stump at the border. Only an opening pierces the ring, where the corridor runs straight in
    for `margin` tiles before it may turn; the opening is aligned to its motif band,
    so the `pathWidth`-wide approach never spills into the tree in the band beside
-   it. An opening also keeps a clearance of the motif's footprint (`2 * cols`) from
-   every map corner, so a corner tree is never bitten into a partial or one-tile
-   piece.
+   it, and `placeAccess` opens the opening's **whole band**
+   (`openingBandCells`), so a `pathWidth`-wide lane always leaves a `pathWidth`-wide
+   gap in the ring. An opening also keeps a clearance of the motif's footprint
+   (`2 * cols`) from every map corner, so a corner tree is never bitten into a
+   partial or one-tile piece.
 2. **Wall tidy**: `cleanWalls` (`src/engine/routes/walls.ts`) removes any wall
    remnant the tileset's wall motif would draw cut off. The motif's footprint
    (`WallFootprint`, taken from the tileset's `wallPattern`) gives the width a run
@@ -69,7 +74,8 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    bigger route carries proportionally more terrain without the count matching the
    size pixel by pixel. Every route is at least **30x30**, so the smallest route
    lands in `medium`. Both land on the carved floor **off the spine, the openings
-   and the pockets** (a pocket is a loot spot, kept clear for its item). A grass
+   (their whole band) and the pockets** (a pocket is a loot spot, kept clear for its
+   item). A grass
    patch is packed **against the walls**: it first stretches across a wall-to-wall
    corridor so it
    touches a wall at both ends, but only when that gap is no wider than
@@ -124,7 +130,9 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    no forced battle — plus `strandedItems` and `itemsOnTerrain` (no placed item off
    the entry's flood-fill or on tall grass or a ledge), `spineBlocked` (the
    guaranteed lane stays floor), `borderBreaches` (the ring opens only where an
-   opening justifies it) and `trainerIssues` (every pose rule in step 4 above).
+   opening justifies it), `borderBandGaps` (every declared opening's whole band is
+   `FLOOR` and exits, so a route the tidy left half-open is re-rolled) and
+   `trainerIssues` (every pose rule in step 4 above).
    `unreachablePockets` is **reported, never gated**: a pocket the entry cannot
    reach is a finding, not a failure, because `placeItems` may skip a pocket a
    hazard sealed. A route whose `ok` is false is rerolled by `sketchRoute`

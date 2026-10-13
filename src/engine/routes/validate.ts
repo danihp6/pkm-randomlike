@@ -1,5 +1,7 @@
 import type { Tile } from '../grid';
 import { FLOOR, LEDGE, TALL_GRASS, WALL, isWalkable, tileAt, type TileMap } from '../map';
+import { borderEdge, exitEdgeAt, openingBandCells } from './doors';
+import { SHAPES, type AccessEdge } from './layout';
 import {
   sameTile,
   tileKey,
@@ -81,6 +83,11 @@ export type RouteValidation = Readonly<{
   spineBlocked: readonly string[];
   /** Open border tiles not connected to an opening along the ring (tile keys). */
   borderBreaches: readonly string[];
+  /**
+   * Border cells of a declared opening whose band cell is not a door (tile keys),
+   * in row-major order. Empty means every opening's whole band is walkable and exits.
+   */
+  borderBandGaps: readonly string[];
   /** Pockets the entry cannot reach (tile keys). Reported, never gated. */
   unreachablePockets: readonly string[];
   /** Trainers that fail a pose rule, one entry each, in `route.trainers` order. */
@@ -130,6 +137,39 @@ function trainerIssuesOf(route: RouteMap): TrainerIssue[] {
 }
 
 /**
+ * The border cells of a declared opening whose band cell is not a door: the lane
+ * is carved `pathWidth` wide, so its whole cross-section has to reach the ring as
+ * `FLOOR`. A band cell the tidy or a hazard left a wall is a gap. A route whose
+ * spawn is its centre (the map entry room) declares no opening on the ring and is
+ * skipped, band and all.
+ */
+function borderBandGaps(route: RouteMap): string[] {
+  const anchors = [route.entry, ...route.exits];
+  const declaredEdges: AccessEdge[] = [];
+  for (const anchor of anchors) {
+    const edge = borderEdge(anchor, route.width, route.height);
+    if (edge && !declaredEdges.includes(edge)) declaredEdges.push(edge);
+  }
+  const laneWidth = SHAPES[route.shape].pathWidth;
+  const gaps: string[] = [];
+  for (const anchor of anchors) {
+    const edge = borderEdge(anchor, route.width, route.height);
+    if (!edge) continue;
+    const band = openingBandCells(edge, anchor, route.width, route.height, laneWidth);
+    for (const cell of band) {
+      if (exitEdgeAt(route.tiles, route.width, route.height, declaredEdges, cell) !== edge) {
+        gaps.push(tileKey(cell));
+      }
+    }
+  }
+  return gaps.sort((a, b) => {
+    const [ax, ay] = a.split(',').map(Number);
+    const [bx, by] = b.split(',').map(Number);
+    return ay - by || ax - bx;
+  });
+}
+
+/**
  * The ring cells that open the fence without an opening to justify them: a flood
  * runs along the ring from the entry and the exits, so every open ring cell
  * connected to an opening is legal - including the cells `cleanWalls` widens
@@ -170,8 +210,9 @@ function borderBreaches(route: RouteMap): string[] {
  * The generator's own checklist (`docs/route-generator.md` §4), as a report: the
  * entry must reach every exit with and without the trainers in the way, no placed
  * item may be stranded or sit on terrain, the guaranteed lane stays `FLOOR`, the
- * border ring stays solid but for its openings, and every trainer is posed the
- * way `placeTrainers` promises. A route is rerolled (`sketchRoute`) unless `ok`.
+ * border ring stays solid but for its openings — with every opening's whole band a
+ * door — and every trainer is posed the way `placeTrainers` promises. A route is
+ * rerolled (`sketchRoute`) unless `ok`.
  *
  * A pocket the entry cannot reach is **reported only**: `placeItems` may skip a
  * pocket a hazard sealed, so it is a finding, never a reason to reroll.
@@ -198,6 +239,7 @@ export function validateRoute(route: RouteMap): RouteValidation {
     .filter((tile) => tileAt(route.tiles, tile) !== FLOOR)
     .map((tile) => tileKey(tile));
   const breaches = borderBreaches(route);
+  const bandGaps = borderBandGaps(route);
   const unreachablePockets = route.pockets
     .map((pocket) => tileKey(pocket))
     .filter((key) => !reached.has(key));
@@ -210,6 +252,7 @@ export function validateRoute(route: RouteMap): RouteValidation {
       itemsOnTerrain.length === 0 &&
       spineBlocked.length === 0 &&
       breaches.length === 0 &&
+      bandGaps.length === 0 &&
       trainerIssues.length === 0,
     unreachable,
     blockedByTrainers,
@@ -217,6 +260,7 @@ export function validateRoute(route: RouteMap): RouteValidation {
     itemsOnTerrain,
     spineBlocked,
     borderBreaches: breaches,
+    borderBandGaps: bandGaps,
     unreachablePockets,
     trainerIssues,
   };
