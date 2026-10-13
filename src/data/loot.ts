@@ -225,7 +225,6 @@ export const ROUTE_LOOT: Readonly<Record<BandId, BandLoot>> = {
       entry('rockmemory', 1),
       entry('steelmemory', 1),
       entry('watermemory', 1),
-      entry('normalmemory', 1),
       entry('burndrive', 1),
       entry('chilldrive', 1),
       entry('dousedrive', 1),

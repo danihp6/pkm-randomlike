@@ -87,9 +87,9 @@ describe('getItem', () => {
 });
 
 describe('competitive held set', () => {
-  it('catalogues 144 unique held rows, priced by the berry rule', () => {
-    expect(COMPETITIVE_HELD.length).toBe(144);
-    expect(new Set(COMPETITIVE_HELD.map((row) => row.id)).size).toBe(144);
+  it('catalogues 143 unique held rows, priced by the berry rule', () => {
+    expect(COMPETITIVE_HELD.length).toBe(143);
+    expect(new Set(COMPETITIVE_HELD.map((row) => row.id)).size).toBe(143);
     expect(COMPETITIVE_HELD_IDS).toEqual(COMPETITIVE_HELD.map((row) => row.id));
     for (const row of COMPETITIVE_HELD) {
       expect(row.kind, row.id).toBe('held');

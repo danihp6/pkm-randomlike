@@ -105,7 +105,6 @@ export const UNMODELLED_ITEMS: readonly string[] = [
   'rockmemory',
   'steelmemory',
   'watermemory',
-  'normalmemory',
   'burndrive',
   'chilldrive',
   'dousedrive',
@@ -305,9 +304,9 @@ function accuracyBoostHandler(item: ItemDef): NonNullable<EffectHandlers['onModi
   return (ctx, chance) => {
     if (ctx.owner !== ctx.source) return;
     // An accuracy chance is a 0..1 fraction, not a stat: the item multiplies it,
-    // the way the accuracy abilities do (`Math.max(1, Math.floor(chance * n))`
-    // would floor every chance below 1 to a guaranteed hit).
-    return chance * multiplier;
+    // the way `accuracyModifier` in `abilities.ts` does. Flooring it (`Math.max(1,
+    // Math.floor(...))`) would turn every sub-1 chance into a guaranteed hit.
+    return Math.min(1, chance * multiplier);
   };
 }
 

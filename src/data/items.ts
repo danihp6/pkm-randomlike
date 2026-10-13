@@ -329,9 +329,11 @@ const NOOP_ITEMS: readonly ItemDef[] = [
 ];
 
 /**
- * The 22 hand-authored held items the dex drops as nonstandard: the eighteen
+ * The 21 hand-authored held items the dex drops as nonstandard: the seventeen
  * **Memories** and four **Drives** a Silvally/Genesect retype will read. The dex
- * has neither, so the name and the text are literal (English, `D12`).
+ * has neither, so the name and the text are literal (English, `D12`). There is no
+ * `normalmemory` row: the dex has no such item, and a Silvally holding no Memory is
+ * already Normal, so Multi-Attack's Normal case is the "no Memory held" case.
  */
 const AUTHORED_ITEMS: readonly ItemDef[] = [
   item({ id: 'bugmemory', name: 'Bug Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Bug.' }),
@@ -351,7 +353,6 @@ const AUTHORED_ITEMS: readonly ItemDef[] = [
   item({ id: 'rockmemory', name: 'Rock Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Rock.' }),
   item({ id: 'steelmemory', name: 'Steel Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Steel.' }),
   item({ id: 'watermemory', name: 'Water Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Water.' }),
-  item({ id: 'normalmemory', name: 'Normal Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Normal.' }),
   item({ id: 'burndrive', name: 'Burn Drive', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Fire.' }),
   item({ id: 'chilldrive', name: 'Chill Drive', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Ice.' }),
   item({ id: 'dousedrive', name: 'Douse Drive', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Water.' }),

@@ -123,9 +123,10 @@ each). The battle's switch grid, the route HUD, the starter cards and the
 release beat draw from it.
 
 Item icons come from Añil as well: `sprite-sources/anil/Graphics/Items/` holds
-893 48x48 icons whose file names are the `[ID]` headers of `PBS/items.txt`.
-`scripts/anil/build-item-icons.mjs` (`npm run data:anil:items`) scales each of
-them to a 24px frame and packs them into the committed
+893 icons (48x48, except 44 at 50-60 px) whose file names are the `[ID]` headers
+of `PBS/items.txt`. `scripts/anil/build-item-icons.mjs` (`npm run data:anil:items`)
+packs each of them into a 24px frame — the 48x48 sources sampled 2:1, the 50-60 px
+ones scaled per axis — into the committed
 `src/assets/anil/item-icons.png` (8 columns, nearest-neighbour) plus
 `src/data/anil/item-icons.json`, read through `src/data/itemIcons.ts`. The
 manifest is keyed by the **normalised** file name, so a catalogue id that matches

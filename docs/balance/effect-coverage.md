@@ -1187,7 +1187,7 @@ catalogue row, not engine code.
 | Zing Zap | `port` | data: secondaries |
 | Zippy Zap | `excluded` | no playable species has it |
 
-## Items — 291 total (117 port, 93 no-op, 81 excluded)
+## Items — 290 total (117 port, 92 no-op, 81 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -1365,7 +1365,6 @@ catalogue row, not engine code.
 | Net Ball | `excluded` | not in the run catalogue |
 | Never-Melt Ice | `port` | in the run catalogue (`src/data/items.ts`) |
 | Normal Gem | `port` | in the run catalogue (`src/data/items.ts`) |
-| Normal Memory | `no-op` | reachable, not modelled yet |
 | Nugget | `port` | in the run catalogue (`src/data/items.ts`) |
 | Occa Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Oran Berry | `port` | in the run catalogue (`src/data/items.ts`) |
