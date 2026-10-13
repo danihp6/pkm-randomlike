@@ -105,9 +105,11 @@ export function runPokemonFromSnapshot(fighter: FighterSnapshot, caughtAt?: Catc
 /**
  * Rebuilds a member at `level`: stats and moveset come from the species at that
  * level, so a Pokémon caught at a lower or higher level than the squad joins at
- * the squad's own power. HP is set to the new maximum (a catch arrives whole).
- * Evolution is never automatic (it is the player's click in the STATS tab), so
- * the caught species is kept as-is. Used when a catch is folded into the run.
+ * the squad's own power. The catch keeps the **share** of its maximum HP it had
+ * when it was caught (`Math.round`ed onto the new maximum), never below 1 HP, so
+ * a wild caught at a third of its bar arrives at a third of its bar. Evolution is
+ * never automatic (it is the player's click in the STATS tab), so the caught
+ * species is kept as-is. Used when a catch is folded into the run.
  */
 export function adoptAtLevel(pokemon: RunPokemon, level: number, learnsetSeed?: string): RunPokemon {
   const f = pokemon.fighter;
@@ -125,7 +127,16 @@ export function adoptAtLevel(pokemon: RunPokemon, level: number, learnsetSeed?: 
     ...(f.heldItem ? { heldItem: f.heldItem } : {}),
     ...(learnsetSeed ? { learnsetSeed } : {}),
   });
-  return { ...pokemon, fighter: snapshotFighter(fighter) };
+  // `createFighter` starts the rebuilt fighter at its full maximum, so `rebuilt.hp`
+  // is the new maximum at `target`; the catch's share of its **old** maximum is
+  // carried onto that new bar. The source maximum is re-derived the way
+  // `evolvePokemon` does, since `FighterSnapshot` carries no maximum of its own.
+  const rebuilt = snapshotFighter(fighter);
+  const source = getSpecies(f.speciesId);
+  const oldMaxHp = source ? statAtLevel(source, f.level, f.nature, f.ivs, f.evs).hp : f.hp;
+  const share = oldMaxHp > 0 ? Math.max(0, Math.min(1, f.hp / oldMaxHp)) : 1;
+  const hp = Math.max(1, Math.min(rebuilt.hp, Math.round(share * rebuilt.hp)));
+  return { ...pokemon, fighter: { ...rebuilt, hp } };
 }
 
 /** A partial override of a run member; a missing field is kept as-is. */
