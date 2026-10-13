@@ -128,9 +128,11 @@ drives the rest.
   game rips for local development only. `sprite-sources/` is gitignored and must
   never be redistributed. Audio follows the same rule: the rip lives in the
   gitignored `sprite-sources/frlg-audio/`, only `src/assets/audio/*.wav` is
-  committed (`node scripts/frlg/build-audio.mjs`), and every cue is named in
-  `src/audio/cues.ts`, so a CC0 set can replace the assets without touching a
-  call site.
+  committed, and every cue is named in `src/audio/cues.ts`, so a CC0 set can
+  replace the assets without touching a call site. Since the decomp only ships
+  MIDI and instrument samples, the rip is rendered with
+  `node scripts/frlg/render-frlg-audio.mjs` and then packed with
+  `node scripts/frlg/build-audio.mjs`.
 - Performance: no per-frame allocations in hot paths (movement, fog, geometry);
   keep a route to a single screen unless a chapter explicitly needs scroll.
 

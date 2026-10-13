@@ -19,7 +19,7 @@
 | `frlg/window.png`, `frlg/textbox.png` | FRLG menu window + battle message box nine-slices, 4x, from `scripts/frlg/build-battle-ui.mjs` | **game rip, local only** |
 | `frlg/hpbar.png`, `frlg/cursor.png` | FRLG HP bar (chip + empty track) and ▶ command cursor, 4x, from `scripts/frlg/build-battle-ui.mjs` (geometry in `src/data/frlg/battle-ui.json`) | **game rip, local only** |
 | `frlg/font.png` | FRLG bitmap font atlas, 2x, from `scripts/frlg/build-font.mjs` (metrics in `src/data/frlg/font.json`, read by `src/ui/frlgFont.ts`) | **game rip, local only** |
-| `audio/<cue-id>.wav` | one sound per cue id in `src/audio/cues.ts` (three music beds, five cues), 16-bit PCM mono WAV, packed by `scripts/frlg/build-audio.mjs` from `sprite-sources/frlg-audio/` | generated placeholder, safe — **game rip, local only** once the renamed rip is dropped in |
+| `audio/<cue-id>.wav` | one sound per cue id in `src/audio/cues.ts` (three music beds, five cues), 16-bit PCM mono WAV, rendered from the FRLG soundtrack by `scripts/frlg/render-frlg-audio.mjs` and packed by `scripts/frlg/build-audio.mjs` | **game rip, local only** |
 
 Everything under "local only" is Nintendo/GameFreak/Chunsoft art imported from
 the sibling project `pkm-mystery-dungeon-like` for development, per the project

@@ -8,14 +8,17 @@
 //
 // Every cue is written as 16-bit PCM WAV, mono, at the source's own sample rate
 // (stereo is downmixed by averaging the channels) and trimmed to the cue's cap
-// (music 60 s, sfx 5 s). A source that is not a readable PCM WAV container is a
-// hard error: a file that exists is never silently replaced by a placeholder.
+// (high enough for a music bed to hold a whole loop, the cue's own bound for a
+// one-shot so a fanfare is never cut mid-phrase). A source that is not a
+// readable PCM WAV container is a hard error: a file that exists is never
+// silently replaced by a placeholder.
 //
-// sprite-sources/frlg-audio/ does not exist in this clone, so today every cue
-// falls back to its generated procedural placeholder: a plain sine with a 10 ms
-// fade at both ends, mono, 22050 Hz, 1.5 s for a music bed and 0.2 s for an
-// sfx. The placeholder is ours and safe to redistribute (the same status as
-// src/assets/tileset.png); dropping the renamed rip in and re-running this
+// The rip itself is rendered by render-frlg-audio.mjs, which drives the m4a
+// emulator over the pret/pokefirered MIDI and instrument bank; a cue whose
+// source is missing falls back to its generated procedural placeholder: a plain
+// sine with a 10 ms fade at both ends, mono, 22050 Hz, 1.5 s for a music bed and
+// 0.2 s for an sfx. The placeholder is ours and safe to redistribute (the same
+// status as src/assets/tileset.png); rendering the cue in and re-running this
 // script replaces it without touching a call site.
 //
 // Run: node scripts/frlg/build-audio.mjs
@@ -33,16 +36,17 @@ const FADE_SECONDS = 0.01;
 
 // Mirrors the cue table in src/audio/cues.ts, in its order: what each cue is,
 // the source file the game must never know and the length its asset is capped
-// to. `source` is the rip, renamed to the cue id.
+// to. `source` is the rip, named after the cue id. A music bed is capped high
+// enough that a whole loop body fits, so the seam is never a cut.
 const CUES = [
-  { id: 'menu-music', kind: 'music', capSeconds: 60 },
-  { id: 'route-music', kind: 'music', capSeconds: 60 },
-  { id: 'battle-music', kind: 'music', capSeconds: 60 },
-  { id: 'encounter', kind: 'sfx', capSeconds: 5 },
-  { id: 'hit', kind: 'sfx', capSeconds: 5 },
-  { id: 'faint', kind: 'sfx', capSeconds: 5 },
-  { id: 'level-up', kind: 'sfx', capSeconds: 5 },
-  { id: 'victory', kind: 'sfx', capSeconds: 5 },
+  { id: 'menu-music', kind: 'music', capSeconds: 120 },
+  { id: 'route-music', kind: 'music', capSeconds: 120 },
+  { id: 'battle-music', kind: 'music', capSeconds: 120 },
+  { id: 'encounter', kind: 'sfx', capSeconds: 8 },
+  { id: 'hit', kind: 'sfx', capSeconds: 4 },
+  { id: 'faint', kind: 'sfx', capSeconds: 6 },
+  { id: 'level-up', kind: 'sfx', capSeconds: 8 },
+  { id: 'victory', kind: 'sfx', capSeconds: 20 },
 ].map((cue) => ({
   ...cue,
   source: new URL(`../../sprite-sources/frlg-audio/${cue.id}.wav`, import.meta.url),
