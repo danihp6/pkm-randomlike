@@ -76,6 +76,7 @@ import {
   type RunState,
 } from '../engine/run';
 import { equipMove, learnsetPool, type LearnEntry } from '../engine/run/learnset';
+import { normalizeNickname, renameMember } from '../engine/run/nickname';
 import { abilityMoveType } from '../engine/battle/moveType';
 import {
   COMMON_TEXTURE_KEY,
@@ -189,6 +190,7 @@ import { listenForBack } from '../input/backButton';
 import { prefersTouchControls } from '../input/device';
 import { playCue, playMusic } from '../audio/audio';
 import { loadSettings, saveSettings } from '../settings';
+import { openNicknamePrompt } from '../ui/nicknamePrompt';
 import { browserStorage } from '../storage';
 import {
   GRASS_TEXTURE_KEY,
@@ -337,6 +339,8 @@ const PAUSE_MENU_LABELS = ['Settings', 'Reset run'] as const;
  */
 const HUD_DETAIL_TAB_H = 26;
 const HUD_DETAIL_TABS_TOP = 72;
+/** The name row's band: the rename click target and the "click to name" hint. */
+const HUD_DETAIL_NAME_H = 20;
 const HUD_DETAIL_CONTENT_TOP = HUD_DETAIL_TABS_TOP + HUD_DETAIL_TAB_H + 10;
 const HUD_DETAIL_STAT_ROW = 26;
 const HUD_DETAIL_STAT_COLS = 2;
@@ -778,6 +782,10 @@ export class RouteScene extends Phaser.Scene {
   private hudDetailX = 0;
   private hudDetailY = 0;
   private hudDetailName!: Phaser.GameObjects.BitmapText;
+  /** "click to name" beside the level while the STATS tab is up. */
+  private hudDetailNameHint!: Phaser.GameObjects.BitmapText;
+  /** The name row's hit band on the STATS tab, in panel coordinates. */
+  private hudDetailNameRect = { x: 0, y: 0, w: 0, h: 0 };
   private hudDetailLevel!: Phaser.GameObjects.BitmapText;
   private hudDetailStatus!: Phaser.GameObjects.Image;
   private hudDetailTypes: {
@@ -1832,12 +1840,25 @@ export class RouteScene extends Phaser.Scene {
       tint: 0x3a3956,
       origin: [1, 0],
     });
+    // The name row is the rename control while STATS is up: the whole band from the
+    // name's left edge to the level reads as clickable, and the hint says so.
+    this.hudDetailNameRect = {
+      x: x + HUD_CONTENT_LEFT,
+      y: y + HUD_PAD_TOP,
+      w: right - (x + HUD_CONTENT_LEFT),
+      h: HUD_DETAIL_NAME_H,
+    };
+    this.hudDetailNameHint = addFrlgText(this, right, y + HUD_PAD_TOP + 1, 'click to name', {
+      size: 16,
+      tint: 0x6b6887,
+      origin: [1, 0],
+    }).setVisible(false);
     this.hudDetailStatus = this.add
       .image(x + HUD_CONTENT_LEFT, y + HUD_PAD_TOP + 1, STATUS_ICON_TEXTURE_KEY, 0)
       .setOrigin(0, 0)
       .setScale(HUD_PARTY_STATUS_SCALE)
       .setVisible(false);
-    children.push(this.hudDetailName, this.hudDetailLevel, this.hudDetailStatus);
+    children.push(this.hudDetailName, this.hudDetailNameHint, this.hudDetailLevel, this.hudDetailStatus);
 
     const chipY = y + HUD_PAD_TOP + 22;
     this.hudDetailTypes = [];
@@ -2047,7 +2068,7 @@ export class RouteScene extends Phaser.Scene {
       if (heldFrame !== null) row.held.setFrame(heldFrame);
       const maxHp = restoreFighter(member.fighter).maxHp;
       const hp = member.fighter.hp;
-      row.name.setText(getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId);
+      row.name.setText(member.fighter.nickname ?? getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId);
       row.name.setMaxWidth(
         this.hudX +
           this.hud.partyW -
@@ -2292,6 +2313,12 @@ export class RouteScene extends Phaser.Scene {
     if (panel) panel.container.setVisible(true);
     this.hudDetailName.setText(detail.name);
     this.hudDetailLevel.setText(`Lv${detail.level}`);
+    // The hint rides just left of the level; the level's width moves with the text,
+    // so the hint is placed after it rather than at a fixed x.
+    this.hudDetailNameHint.setPosition(
+      this.hudDetailLevel.x - this.hudDetailLevel.width - 8,
+      this.hudDetailLevel.y + 1,
+    );
     const detailStatus = detail.status ? statusIconFrame(detail.status) : null;
     this.hudDetailStatus.setVisible(detailStatus !== null);
     if (detailStatus !== null) {
@@ -2317,6 +2344,7 @@ export class RouteScene extends Phaser.Scene {
     });
 
     const stats = this.hudDetailState.tab === 'stats';
+    this.hudDetailNameHint.setVisible(stats);
     const { rows, nature, ability, held, caught } = this.hudDetailStats;
     rows.forEach((row) => {
       row.label.setVisible(stats);
@@ -2817,6 +2845,11 @@ export class RouteScene extends Phaser.Scene {
       this.hudDetailState.memberId !== null &&
       this.pointerInDetailPanel(pointer) &&
       this.evolutionAt(this.panelPoint(pointer, 'detail')) !== null;
+    // The name row is the rename control, so it reads as a click target as well.
+    const overDetailName =
+      this.hudDetailState.memberId !== null &&
+      this.pointerInDetailPanel(pointer) &&
+      this.detailNameAt(this.panelPoint(pointer, 'detail'));
     // The Pokevial only reads as clickable with a full meter; a partial one does
     // nothing on click.
     const overVial =
@@ -2826,7 +2859,7 @@ export class RouteScene extends Phaser.Scene {
         ? false
         : this.hudPanelAt(pointer) !== null;
     this.input.setDefaultCursor(
-      overInfo || overAbilityInfo || overMember || overIcon || overEvolution || overVial
+      overInfo || overAbilityInfo || overMember || overIcon || overEvolution || overDetailName || overVial
         ? 'pointer'
         : overItem || overMove
           ? 'grab'
@@ -3022,6 +3055,12 @@ export class RouteScene extends Phaser.Scene {
       return true;
     }
     if (this.hudDetailState.tab === 'stats') {
+      // The name row opens the rename field, so it is tested before the rest of
+      // the STATS tab (the ability ⓘ and the evolution rows sit below it).
+      if (this.detailNameAt(point)) {
+        this.openRenameField();
+        return true;
+      }
       // The ability ⓘ is tested first: a press on it never evolves the member.
       if (this.abilityInfoAt(pointer)) {
         this.toggleAbilityInfo();
@@ -3228,6 +3267,38 @@ export class RouteScene extends Phaser.Scene {
     return null;
   }
 
+  /** True when a panel-local point lands on the STATS tab's name row, the rename control. */
+  private detailNameAt(point: { x: number; y: number }): boolean {
+    return this.hudDetailState.tab === 'stats' && pointInRect(point, this.hudDetailNameRect);
+  }
+
+  /**
+   * Opens the nickname field on the open member, prefilled with its nickname or
+   * its species name. The field hands back the raw text: `normalizeNickname` and
+   * `renameMember` own every rule, so the scene never re-implements them.
+   */
+  private openRenameField(): void {
+    const memberId = this.hudDetailState.memberId;
+    if (memberId === null) return;
+    const detail = memberDetail(this.run, memberId);
+    if (!detail) return;
+    openNicknamePrompt({
+      initial: detail.nickname ?? detail.name,
+      speciesName: getSpecies(detail.speciesId)?.name ?? detail.speciesId,
+      onConfirm: (value) => this.renameOpenMember(value),
+    });
+  }
+
+  /** Applies the typed name to the open member: the pure rule decides, then the save follows. */
+  private renameOpenMember(value: string): void {
+    const memberId = this.hudDetailState.memberId;
+    if (memberId === null) return;
+    this.run = renameMember(this.run, memberId, normalizeNickname(value));
+    this.persistRun();
+    this.refreshDetail();
+    this.refreshHud();
+  }
+
   /**
    * Evolves the open member into the clicked branch (the STATS tab), saves and
    * redraws, then announces it on the popup. `evolveMember` re-checks the level,
@@ -3240,7 +3311,8 @@ export class RouteScene extends Phaser.Scene {
       this.run.party.find((entry) => entry.fighter.id === memberId) ??
       this.run.box.find((entry) => entry.fighter.id === memberId);
     if (!member) return;
-    const name = getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId;
+    const name =
+      member.fighter.nickname ?? getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId;
     const next = evolveMember(this.run, memberId, into);
     if (next === this.run) return;
     this.run = next;
@@ -4536,8 +4608,9 @@ export class RouteScene extends Phaser.Scene {
     if (this.learnPopupOpen) return;
     const lines: string[] = [];
     for (const beat of beats) {
-      const species = getSpecies(this.run.party.find((member) => member.fighter.id === beat.id)?.fighter.speciesId ?? '');
-      const name = species?.name ?? 'A Pokemon';
+      const member = this.run.party.find((entry) => entry.fighter.id === beat.id);
+      const species = getSpecies(member?.fighter.speciesId ?? '');
+      const name = member?.fighter.nickname ?? species?.name ?? 'A Pokemon';
       for (const moveId of beat.learned) {
         lines.push(`${name} learned ${getMove(moveId)?.name ?? moveId}!`);
       }

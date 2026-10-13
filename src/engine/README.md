@@ -32,7 +32,8 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   `run/progression.ts` (XP and levels), `run/battleLink.ts` + `run/resolve.ts` (the post-battle
   resolve), `run/roster.ts` + `run/pool.ts` (rosters and the species pool, `D39`), plus
   `run/chain.ts`, `run/floors.ts`, `run/levelCap.ts`, `run/heal.ts`, `run/learnset.ts`,
-  `run/reward.ts`, `run/perms.ts`, `run/starters.ts` and `run/share.ts`.
+  `run/nickname.ts` (the member names the player types), `run/reward.ts`, `run/perms.ts`,
+  `run/starters.ts` and `run/share.ts`.
 
 ## Rules
 

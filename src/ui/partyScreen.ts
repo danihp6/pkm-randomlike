@@ -26,6 +26,7 @@ export type PaneId = 'party' | 'box';
 export type PartyRow = Readonly<{
   id: string;
   speciesId: string;
+  /** The nickname when it has one, else the species name: one field, both draw sites. */
   name: string;
   level: number;
   hp: number;
@@ -43,7 +44,7 @@ export function partyRow(member: RunPokemon): PartyRow {
   return {
     id: fighter.id,
     speciesId: fighter.speciesId,
-    name: getSpecies(fighter.speciesId)?.name ?? fighter.speciesId,
+    name: fighter.nickname ?? getSpecies(fighter.speciesId)?.name ?? fighter.speciesId,
     level: fighter.level,
     hp: fighter.hp,
     maxHp: restoreFighter(fighter).maxHp,

@@ -18,7 +18,7 @@ export type ReleaseBeat = Readonly<{
   /** The run member's id, so the beat can be tied back to the run. */
   id: string;
   speciesId: string;
-  /** The display name the message uses. */
+  /** The display name the message uses: the nickname when it has one, else the species name. */
   name: string;
   level: number;
   /** A shiny member keeps its alternate-palette portrait. */
@@ -34,7 +34,8 @@ export function releaseBeats(released: readonly RunPokemon[]): ReleaseBeat[] {
   return released.map((member) => ({
     id: member.fighter.id,
     speciesId: member.fighter.speciesId,
-    name: getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId,
+    name:
+      member.fighter.nickname ?? getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId,
     level: member.fighter.level,
     shiny: member.fighter.shiny,
   }));

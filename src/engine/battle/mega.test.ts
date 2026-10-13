@@ -114,6 +114,35 @@ describe('megaEvolve', () => {
     expect(snapshotFighter(fighter).ability).toBe('Intimidate');
   });
 
+  it('keeps the nickname while the battle name follows the forme', () => {
+    const state = createBattle({
+      player: [
+        createFighter({
+          id: 'player',
+          speciesId: 'gyarados',
+          level: 40,
+          nature: 'serious',
+          moves: ['waterfall'],
+          heldItem: 'gyaradosite',
+          nickname: 'Nessie',
+        }),
+      ],
+      enemy: [
+        createFighter({ id: 'enemy', speciesId: 'bulbasaur', level: 40, nature: 'serious', moves: ['tackle'] }),
+      ],
+      rng: new Rng(2026),
+      isWild: true,
+    });
+    const fighter = activeFighter(state, 'player');
+    expect(fighter.name).toBe('Nessie');
+
+    expect(megaEvolve(state, 'player')).toBe(true);
+    expect(fighter.nickname).toBe('Nessie');
+    expect(fighter.name).not.toBe('Nessie');
+    expect(snapshotFighter(fighter).nickname).toBe('Nessie');
+    expect(snapshotFighter(fighter).speciesId).toBe('gyarados');
+  });
+
   it('is deterministic for a fixed seed', () => {
     const run = (): BattleState => {
       const state = battle('gyaradosite');

@@ -157,6 +157,12 @@ export type MegaBackup = Readonly<{
 export type BattleFighter = {
   id: string;
   speciesId: string;
+  /** The player-given name, or null while the member shows its species name. */
+  nickname: string | null;
+  /**
+   * The display name: `nickname ?? species.name` at creation, then the battle-only
+   * forme's. A forme change rewrites it, which is why the nickname is its own field.
+   */
   name: string;
   level: number;
   nature: string;
@@ -495,6 +501,7 @@ export function createFighter(input: FighterInput): BattleFighter {
   return {
     id: input.id,
     speciesId: species.id,
+    nickname: input.nickname ?? null,
     name: input.nickname ?? species.name,
     level,
     nature,
@@ -676,6 +683,11 @@ export function resetBattleState(fighter: BattleFighter): void {
 export type FighterSnapshot = Readonly<{
   id: string;
   speciesId: string;
+  /**
+   * The member's nickname; absent means "show the species name" (a v14 save, or a
+   * member that was never named).
+   */
+  nickname?: string;
   level: number;
   nature: string;
   ability: string;
@@ -697,6 +709,9 @@ export function snapshotFighter(fighter: BattleFighter): FighterSnapshot {
   return {
     id: fighter.id,
     speciesId: mega?.speciesId ?? fighter.speciesId,
+    // The nickname lives beside `name`, so a Mega (or any forme change) never
+    // rewrites it; an unnamed member's snapshot carries no key at all.
+    ...(fighter.nickname ? { nickname: fighter.nickname } : {}),
     level: fighter.level,
     nature: fighter.nature,
     ability: mega?.ability ?? fighter.ability,
@@ -721,6 +736,7 @@ export function restoreFighter(snapshot: FighterSnapshot): BattleFighter {
   const base: FighterInput = {
     id: snapshot.id,
     speciesId: snapshot.speciesId,
+    ...(snapshot.nickname ? { nickname: snapshot.nickname } : {}),
     level: snapshot.level,
     nature: snapshot.nature,
     ability: snapshot.ability,

@@ -60,6 +60,19 @@ describe('memberDetail', () => {
     expect(memberDetail(runWith(), 'nobody')).toBeNull();
   });
 
+  it('prefers the nickname and exposes the raw field', () => {
+    const named = createRunPokemon({ id: 'named', speciesId: 'charmander', level: 5, nickname: 'Sparky' });
+    const detail = memberDetail({ ...runWith(), party: [named] }, 'named');
+    expect(detail?.name).toBe('Sparky');
+    expect(detail?.nickname).toBe('Sparky');
+  });
+
+  it('reads the species name and a null nickname for a member that has none', () => {
+    const detail = memberDetail(runWith(), 'starter');
+    expect(detail?.name).toBe('Charmander');
+    expect(detail?.nickname).toBeNull();
+  });
+
   it('shows where a caught member was found, and nothing for the starter', () => {
     const run = runWith();
     expect(memberDetail(run, 'starter')?.caughtLabel).toBeNull();
@@ -159,6 +172,17 @@ describe('fighterDetail', () => {
     expect(detail.moves.map((move) => move.name)).toEqual(['Ember', 'Scratch', 'Growl']);
     expect(detail.maxHp).toBe(fighter.maxHp);
     expect(detail.stats.atk).toBe(fighter.stats.atk);
+  });
+
+  it('names a live fighter from its nickname when it has one', () => {
+    const fighter = createFighter({
+      id: 'named',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['ember', 'scratch', 'growl'],
+      nickname: 'Sparky',
+    });
+    expect(fighterDetail(fighter)).toMatchObject({ name: 'Sparky', nickname: 'Sparky' });
   });
 });
 

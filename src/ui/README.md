@@ -37,6 +37,7 @@ testable logic belongs in the computing half.
 - `typeColors.ts` — the canon type colours and tints.
 - `touchLayout.ts` — the pure geometry of the on-screen pad and A/B; `touchControls.ts` draws it.
 - `seedPrompt.ts` — the DOM seed/share prompt the starter screen opens.
+- `nicknamePrompt.ts` — the DOM nickname field the detail panel's name row opens.
 
 ## Rules
 

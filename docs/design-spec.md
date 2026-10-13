@@ -80,6 +80,16 @@ carries over.
   modal pops up announcing **"X learned Y!"** for every move a member crossed on
   the way, dismissed with any key or a click. The party is never left empty and
   the box is never required to be full.
+- A member can be **named**: its name on the STATS tab is the rename control (a
+  `click to name` hint sits beside its level), opening a small text field that
+  starts on the current nickname, or the species name. The name the player types —
+  up to **12 characters**, whitespace collapsed and trimmed — is shown **everywhere
+  the member is named**: the party and PC rows, the detail window, the level-up and
+  evolution popups, the capture screen, the release beat and the battle. Typing the
+  **species name** again (in any case) or leaving the field empty **clears** the
+  nickname back to the species name. It lives beside `fighter.name` — which keeps
+  meaning "creation name, then the battle-only forme's" — so a nickname survives a
+  save, an evolution, a Mega Evolution and every other forme change.
 - **Held items** are equipped from the same HUD: drag an equipment stack from the
   bag onto a party or box member to give it the item (any item it already held
   returns to the bag, so an equip is a swap, never a loss). The held item shows as

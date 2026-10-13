@@ -52,6 +52,12 @@ describe('rows', () => {
     const rows = boxRows(runWith(['starter'], ['a', 'b']));
     expect(rows.map((row) => row.id)).toEqual(['a', 'b']);
   });
+
+  it('shows the nickname when a member has one, in the party and in the box', () => {
+    const named = { ...starter, fighter: { ...starter.fighter, nickname: 'Sparky' } };
+    expect(partyRows({ ...runWith(['starter']), party: [named] })[0].name).toBe('Sparky');
+    expect(boxRows({ ...runWith(['starter'], []), box: [named] })[0].name).toBe('Sparky');
+  });
 });
 
 describe('windowStart', () => {

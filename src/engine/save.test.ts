@@ -455,7 +455,7 @@ describe('migrateDocument', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
     // One step per version boundary, because the test starts at v0 and the
-    // current schema is v14.
+    // current schema is v15.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
@@ -470,7 +470,8 @@ describe('migrateDocument', () => {
       10: (doc) => ({ ...doc, version: 11 }),
       11: (doc) => ({ ...doc, version: 12 }),
       12: (doc) => ({ ...doc, version: 13 }),
-      13: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      13: (doc) => ({ ...doc, version: 14 }),
+      14: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -547,6 +548,51 @@ describe('map-position migration', () => {
     const decoded = decodeSave(raw);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.money).toBe(0);
+  });
+});
+
+describe('nickname migration', () => {
+  it('reads a v14 run as a current-schema run with its members intact and unnamed', () => {
+    const raw = JSON.stringify({ version: 14, settings: defaultSettings(), run: sampleRun() });
+    const decoded = decodeSave(raw);
+    expect(SAVE_VERSION).toBe(15);
+    expect(decoded.version).toBe(15);
+    expect(decoded.run?.party).toHaveLength(6);
+    expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
+    expect(decoded.run?.box[0].fighter.speciesId).toBe('greedent');
+    expect('nickname' in (decoded.run?.party[0].fighter ?? {})).toBe(false);
+  });
+
+  it('round-trips a nickname on the current schema', () => {
+    const run = sampleRun();
+    const named: RunState = {
+      ...run,
+      party: run.party.map((member, index) =>
+        index === 0 ? { ...member, fighter: { ...member.fighter, nickname: 'Sparky' } } : member,
+      ),
+    };
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: named }));
+    expect(decoded.run?.party[0].fighter.nickname).toBe('Sparky');
+    expect(decoded.run?.party[1].fighter.nickname).toBeUndefined();
+    expect('nickname' in (decoded.run?.party[1].fighter ?? {})).toBe(false);
+  });
+
+  it('sanitises a stored nickname, and drops a malformed one rather than the member', () => {
+    const raw = (nickname: unknown): string => {
+      const run: Record<string, unknown> = { ...sampleRun() };
+      const party = run.party as Record<string, unknown>[];
+      const [first, ...rest] = party;
+      const fighter = first.fighter as Record<string, unknown>;
+      const member: Record<string, unknown> = { ...first, fighter: { ...fighter, nickname } };
+      return JSON.stringify({ version: SAVE_VERSION, run: { ...run, party: [member, ...rest] } });
+    };
+
+    expect(document(raw('  Sparky  ')).run?.party[0].fighter.nickname).toBe('Sparky');
+    expect(document(raw('ABCDEFGHIJKLMNOP')).run?.party[0].fighter.nickname).toBe('ABCDEFGHIJKL');
+    expect(document(raw(7)).run?.party).toHaveLength(6);
+    expect('nickname' in (document(raw(7)).run?.party[0].fighter ?? {})).toBe(false);
+    expect(document(raw('   ')).run?.party).toHaveLength(6);
+    expect(document(raw('   ')).run?.party[0].fighter.nickname).toBeUndefined();
   });
 });
 

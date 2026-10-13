@@ -7,6 +7,7 @@ import { floorForRoute } from './run/floors';
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
+import { normalizeNickname } from './run/nickname';
 import { MAX_LEVEL, xpForLevel, type CatchLocation, type RunPokemon } from './run/progression';
 import { dedupeMemberIds, emptyRunStats, type RunState, type RunStats } from './run/state';
 
@@ -47,7 +48,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -106,7 +107,8 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * moves a v12 run onto the v13 schema, which replaced the per-member XP with the
  * squad's single shared bar (recovered as the highest member's XP); `13` moves a
  * v13 run onto the v14 schema, which added the `money` counter (an old run starts
- * with none).
+ * with none); `14` moves a v14 run onto the v15 schema, which added the optional
+ * per-member `nickname` (a v14 run has none, so it shows species names).
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -188,6 +190,12 @@ export const SAVE_MIGRATIONS: Migrations = {
     version: 14,
     // The Poké Dollar economy: an old run has not beaten a trainer for money yet.
     run: isRecord(document.run) ? { money: 0, ...document.run } : document.run,
+  }),
+  // The nickname: a v14 run has none. The field is optional and the decoder leaves it
+  // out, so an old run simply shows species names - nothing to add here.
+  14: (document) => ({
+    ...document,
+    version: 15,
   }),
 };
 
@@ -454,10 +462,14 @@ function parseFighter(value: unknown): FighterSnapshot | null {
 
   const gender = GENDERS.includes(value.gender as Gender) ? (value.gender as Gender) : 'genderless';
   const shiny = value.shiny === true;
+  // A malformed nickname (a number, or text the sanitiser empties) drops the field,
+  // never the member; a v14 document simply has none.
+  const nickname = typeof value.nickname === 'string' ? normalizeNickname(value.nickname) : null;
 
   return {
     id: value.id,
     speciesId: value.speciesId,
+    ...(nickname ? { nickname } : {}),
     level: Math.min(MAX_LEVEL, value.level),
     nature: value.nature,
     ability: value.ability,
