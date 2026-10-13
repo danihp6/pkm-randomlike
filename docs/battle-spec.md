@@ -124,6 +124,17 @@ One capture attempt per route (a run-level counter, not a per-battle one).
   enters the run under an id minted by `nextMemberId` (`catch-<n>`,
   `src/engine/run/state.ts`), unique across the party and the box and kept for the
   member's life, so a panel that resolves a member by id always shows that member.
+- A member may carry a **nickname** (`src/engine/run/nickname.ts`): up to twelve
+  code points, typed in place in the STATS tab's own name row (the field the route
+  HUD draws in the detail panel; Enter commits, Escape cancels). It rides
+  in the battle snapshot as its own optional field `FighterSnapshot.nickname`,
+  beside `fighter.name` — a creation name, then the battle-only forme's — so **no
+  forme change and no Mega Evolution (`§9`) can rewrite it**. Every site that names
+  a member draws the nickname when it has one and the species name when it does
+  not: the party and PC rows, the detail panel, the level-up and evolution popups,
+  the capture screen, the release beat and the battle. Typing the species name
+  (case-insensitively) or an empty field clears it, and the clear **omits** the
+  field rather than storing an empty string.
 - A **per-map level cap** clamps gain: the squad can never exceed
   `levelCapForMap(map)`. The cap rises with the map chain so the next map is
   always a step up, and an evolution unlocks as soon as the member's level meets
@@ -199,7 +210,8 @@ is the mechanic the mega-stone room's stones feed (`D34`, `docs/maps-spec.md`
   carry them — **bosses, mini-bosses and the `ace` archetype** (`carriesMega` and
   `RosterOptions.allowMega`); a stone is assigned to one Mega-capable member.
 - The Mega forme swaps the fighter's **stats, types and ability** for the rest of
-  the battle and never changes the held item, the moves or the HP fraction. The
+  the battle and never changes the held item, the moves, the HP fraction or the
+  **nickname** (which lives beside `name`, §7). The
   formes come from `dex/megas.json` (generated beside `species.json`, D34); a
   snapshot after the battle stores the base species again.
 - Evolution is not Mega Evolution: a run member's level evolution still happens

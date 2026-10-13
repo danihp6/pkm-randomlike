@@ -188,4 +188,27 @@ describe('fighter snapshots', () => {
     fighter.hp = 0;
     expect(restoreFighter(snapshotFighter(fighter)).hp).toBe(0);
   });
+
+  it('round-trips a nickname and names an unnamed member from its species', () => {
+    const named = createFighter({ id: 'buddy', speciesId: 'charmander', level, nickname: 'Sparky' });
+    expect(named.nickname).toBe('Sparky');
+    expect(named.name).toBe('Sparky');
+    const snapshot = snapshotFighter(named);
+    expect(snapshot.nickname).toBe('Sparky');
+    const restored = restoreFighter(snapshot);
+    expect(restored.nickname).toBe('Sparky');
+    expect(restored.name).toBe('Sparky');
+    expect(restored.speciesId).toBe('charmander');
+  });
+
+  it('carries no nickname key for a member that never had one', () => {
+    const plain = createFighter({ id: 'plain', speciesId: 'charmander', level });
+    expect(plain.nickname).toBeNull();
+    expect(plain.name).toBe('Charmander');
+    const snapshot = snapshotFighter(plain);
+    expect('nickname' in snapshot).toBe(false);
+    const restored = restoreFighter(snapshot);
+    expect(restored.nickname).toBeNull();
+    expect(restored.name).toBe('Charmander');
+  });
 });

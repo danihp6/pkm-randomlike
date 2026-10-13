@@ -66,6 +66,8 @@ export type MemberDetail = Readonly<{
   id: string;
   speciesId: string;
   name: string;
+  /** The member's nickname, or null when it shows its species name. */
+  nickname: string | null;
   level: number;
   types: readonly string[];
   nature: string;
@@ -169,7 +171,8 @@ export function fighterDetail(fighter: BattleFighter): MemberDetail {
   return {
     id: fighter.id,
     speciesId: fighter.speciesId,
-    name: species?.name ?? fighter.speciesId,
+    name: fighter.nickname ?? species?.name ?? fighter.speciesId,
+    nickname: fighter.nickname,
     level: fighter.level,
     types: species?.types ?? fighter.types,
     nature: fighter.nature,
