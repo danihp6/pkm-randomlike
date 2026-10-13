@@ -9,14 +9,55 @@ import {
   megaFormForItem,
   megaFormsForBase,
   megaMatchesSpecies,
+  type MegaForm,
 } from './megas';
 import { getSpecies, playableSpecies } from './species';
 
 const counts = (meta as { counts: Readonly<Record<string, number>> }).counts;
 
+type GeneratedRow = MegaForm & Readonly<{ isNonstandard?: string }>;
+
+const ROWS = MEGA_FORMES as readonly GeneratedRow[];
+const FUTURE = ROWS.filter((mega) => mega.isNonstandard === 'Future');
+
 describe('generated Mega formes', () => {
   it('matches the count recorded in meta.json', () => {
     expect(MEGA_FORMES.length).toBe(counts.megas);
+  });
+
+  it('carries the Future Megas the Past filter alone would have missed', () => {
+    expect(MEGA_FORMES.length).toBeGreaterThan(48);
+    expect(FUTURE.length).toBeGreaterThan(0);
+    const ids = new Set(MEGA_FORMES.map((mega) => mega.id));
+    for (const id of [
+      'raichumegax',
+      'raichumegay',
+      'clefablemega',
+      'dragonitemega',
+      'chesnaughtmega',
+      'garchompmega',
+      'baxcaliburmega',
+    ]) {
+      expect(ids.has(id), id).toBe(true);
+    }
+  });
+
+  // The nine `Future` formes the dex leaves `isMega` unset on (Absol Z, Garchomp
+  // Z, Lucario Z, both Meowstic, Magearna-Original and the three Tatsugiri) name
+  // the forme instead, so `isPlayable` keeps them in the playable set: they are
+  // ownable wild species today. Taking them into `megas.json` would ship one id
+  // in both files, which is a species-set change this data pass does not make.
+  it('leaves a Future forme the playable set already carries out of the megas', () => {
+    for (const id of [
+      'absolmegaz',
+      'garchompmegaz',
+      'lucariomegaz',
+      'meowsticmmega',
+      'tatsugiricurlymega',
+    ]) {
+      expect(isMegaSpecies(id), id).toBe(false);
+      expect(playableSpecies().some((species) => species.id === id), id).toBe(true);
+    }
   });
 
   it('resolves every Mega and its base species', () => {
@@ -41,6 +82,8 @@ describe('generated Mega formes', () => {
   });
 
   it('ties every Mega to a held stone that maps back to it', () => {
+    const stoneIds = MEGA_FORMES.map((mega) => mega.stoneId);
+    expect(new Set(stoneIds).size, 'stoneId must be unique').toBe(stoneIds.length);
     for (const mega of MEGA_FORMES) {
       const stone = getItem(mega.stoneId);
       expect(stone, `${mega.id} needs ${mega.stoneId}`).toBeDefined();

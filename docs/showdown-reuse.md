@@ -25,7 +25,7 @@ an adaptor over its event loop.
 | File | Contents | Count |
 | --- | --- | --- |
 | `species.json` | stats, types, abilities, forms, evolutions, gender ratio, weight, catch rate | 1291 (full National Dex) |
-| `megas.json` | every Mega forme of a played species: stats, types, ability, `baseSpeciesId`, `stoneId`, `stoneName` | 48 |
+| `megas.json` | every Mega forme of a played species: stats, types, ability, `baseSpeciesId`, `stoneId`, `stoneName` | 88 |
 | `moves.json` | type, category, power, accuracy, PP, priority, target, flags, secondaries | 835 |
 | `abilities.json` | name, description, flags | 311 |
 | `items.json` | name, description, battle flags | 249 |
@@ -46,7 +46,12 @@ Notes:
   type is derived from the holder's IVs at battle time.
 - `megas.json` is generated beside the playable set (never inside it) so a held
   stone has a target (`D34`). A Mega whose base species is not played is skipped,
-  so no dead stones ship.
+  so no dead stones ship. A Mega may carry either of the dex's two tags: `Past`
+  (the games already ran it) and `Future`, its own "announced, not released" mark
+  for the formes Legends Z-A and Champions announced. Both are taken alike, so the
+  new X/Y formes (Raichu) and the new single-forme ones (Dragonite, Chesnaught,
+  Baxcalibur…) each get a stone. The nine `Future` formes the dex leaves `isMega`
+  unset on stay where they are, in the playable set (`docs/data-spec.md` §1).
 - `@pkmn/dex` carries no catch rate, so `build-dex.mjs` merges one in from
   `scripts/data/catch-rates.json` (PokeAPI `pokemon_species.csv`, keyed by
   national dex number, fetched once by `scripts/fetch-catch-rates.mjs`). Capture
