@@ -119,6 +119,72 @@ describe('adoptAtLevel', () => {
     const adopted = adoptAtLevel(caught, 20);
     expect(adopted.fighter.speciesId).toBe('charmander');
   });
+
+  it('carries the caught share of HP onto the new maximum, on a level up and a level down', () => {
+    const cases = [
+      { speciesId: 'charmander', caughtLevel: 5, adoptLevel: 12 },
+      { speciesId: 'squirtle', caughtLevel: 20, adoptLevel: 8 },
+    ];
+    for (const { speciesId, caughtLevel, adoptLevel } of cases) {
+      const caught = createRunPokemon({ id: 'wild', speciesId, level: caughtLevel });
+      const f = caught.fighter;
+      const oldMax = statAtLevel(getSpecies(speciesId)!, caughtLevel, f.nature, f.ivs, f.evs).hp;
+      const h = Math.max(1, Math.floor(oldMax / 3));
+      const damaged = { ...caught, fighter: { ...f, hp: h } };
+      const adopted = adoptAtLevel(damaged, adoptLevel);
+      const newMax = statAtLevel(getSpecies(speciesId)!, adoptLevel, f.nature, f.ivs, f.evs).hp;
+      expect(adopted.fighter.hp, `${speciesId} @${caughtLevel}->${adoptLevel}`).toBe(
+        Math.max(1, Math.round((h / oldMax) * newMax)),
+      );
+      expect(adopted.fighter.hp).toBeLessThanOrEqual(newMax);
+    }
+  });
+
+  it('leaves a full-HP catch at exactly the new maximum (the dev path)', () => {
+    const caught = createRunPokemon({ id: 'wild', speciesId: 'charmander', level: 5 });
+    const f = caught.fighter;
+    const adopted = adoptAtLevel(caught, 15);
+    expect(adopted.fighter.hp).toBe(
+      statAtLevel(getSpecies('charmander')!, 15, f.nature, f.ivs, f.evs).hp,
+    );
+  });
+
+  it('floors a catch at 1 HP, so a 0-HP snapshot never arrives fainted', () => {
+    const caught = createRunPokemon({ id: 'wild', speciesId: 'charmander', level: 5 });
+    const f = caught.fighter;
+    const newMax = statAtLevel(getSpecies('charmander')!, 15, f.nature, f.ivs, f.evs).hp;
+    const zero = adoptAtLevel({ ...caught, fighter: { ...f, hp: 0 } }, 15);
+    expect(zero.fighter.hp).toBe(1);
+    const one = adoptAtLevel({ ...caught, fighter: { ...f, hp: 1 } }, 15);
+    expect(one.fighter.hp).toBeGreaterThanOrEqual(1);
+    expect(one.fighter.hp).toBeLessThanOrEqual(newMax);
+  });
+
+  it('rebuilds every other field exactly as before and mutates nothing', () => {
+    const caught = createRunPokemon({ id: 'wild', speciesId: 'charmander', level: 5, moves: ['scratch'] });
+    const damaged = { ...caught, fighter: { ...caught.fighter, hp: 4, heldItem: 'oran-berry' } };
+    const before = JSON.stringify(damaged);
+    const adopted = adoptAtLevel(damaged, 12, 'run-1');
+    expect(JSON.stringify(damaged)).toBe(before);
+    expect(adopted).not.toBe(damaged);
+    expect(adopted.fighter).not.toBe(damaged.fighter);
+    const f = damaged.fighter;
+    const rebuilt = createRunPokemon({
+      id: f.id,
+      speciesId: f.speciesId,
+      level: 12,
+      nature: f.nature,
+      ability: f.ability,
+      gender: f.gender,
+      shiny: f.shiny,
+      ivs: f.ivs,
+      evs: f.evs,
+      heldItem: 'oran-berry',
+      learnsetSeed: 'run-1',
+    });
+    expect(adopted.fighter).toEqual({ ...rebuilt.fighter, hp: adopted.fighter.hp });
+    expect(adopted.fighter.hp).toBe(Math.max(1, Math.round((4 / statAtLevel(getSpecies('charmander')!, 5, f.nature, f.ivs, f.evs).hp) * rebuilt.fighter.hp)));
+  });
 });
 
 describe('evolvePokemon', () => {
