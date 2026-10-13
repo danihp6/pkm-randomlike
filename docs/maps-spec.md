@@ -204,8 +204,10 @@ buying is tied to the room rather than to a menu key.
   **jitter**, and the run starts with **none**. The economy is tight and fair,
   Binding of Isaac-style: every purchase is a real trade-off.
 - The **shop** sells a **fixed core** — Balls and Potions that improve with the
-  map's band — plus **one or two random items** from the map's pool, at the
-  catalogue `price` (`src/data/items.ts`), and **buys any item** at `sellPrice`.
+  map's band — plus **one or two random items** from the map's pool and **one TM**
+  from the band's own machine list (`SHOP_TM`), at the catalogue `price`
+  (`src/data/items.ts`), and **buys any item** at `sellPrice`. A machine can
+  therefore be bought at the counter, not only found on the ground.
   Only the new **valuables** (Nugget, Big Nugget, Pearl, Big Pearl, Stardust, Star
   Piece, …) are worth real money; anything else sells for a token, so the shop is a
   sink and valuables are the way to cash out.
