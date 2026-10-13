@@ -31,15 +31,55 @@ const isPlayable = (entry) =>
   entry.isNonstandard !== 'LGPE';
 
 // Mega formes are battle-only, entered from a stone rather than spawned, so they
-// are generated beside the playable set (`megas.json`) instead of inside it.
-// `isMega` catches every Mega (the X/Y formes included); one whose base is a
-// played species gets a stone.
-const isMega = (entry) => entry.isNonstandard === 'Past' && entry.isMega === true;
+// are generated beside the playable set (`megas.json`) instead of inside it. A
+// Mega is a Mega in any edition: the `Past` ones the games already ran, and the
+// `Future` ones Legends Z-A and Champions announced (the dex's own "announced,
+// not released" tag). Everything else about a Mega is unchanged.
+//
+// The rule takes a `Future` forme exactly as it takes a `Past` one, and the tag
+// alone is not enough: the nine `Future` formes the dex leaves `isMega` unset on
+// (`forme: 'Mega-Z'` for Absol/Garchomp/Lucario Z, `'M-Mega'`/`'F-Mega'` for
+// Meowstic, `'Original-Mega'` for Magearna-Original, the three Tatsugiri) are
+// already in the playable set, because `isPlayable` only drops `isMega === true`.
+// Taking them here would put one id in `species.json` and `megas.json` at once.
+// `src/data/dex/README.md` records the tag; the gap is reported, not papered over.
+const isMega = (entry) =>
+  (entry.isNonstandard === 'Past' || entry.isNonstandard === 'Future') && entry.isMega === true;
 
 // Rayquaza is the one Mega without a stone (it needs Dragon Ascent); the run's
 // stone mechanic still needs one, so derive a name from the base species.
 const megaStoneName = (entry, base) =>
   entry.requiredItem ?? `${base.name.replace(/[aeiou]$/i, '')}ite`;
+
+// A Mega never changes HP: the battle keeps the holder's HP (`mega.ts` rewrites
+// the stats but restores `hp`), so a row whose HP disagrees with its base
+// species is wrong on the data side. `bst` is the dex's own sum of `baseStats`,
+// so it is repaired by the same delta. The two `Future` rows the dex ships
+// unreconciled (Mega Floette 74 vs 54, Mega Zygarde 216 vs 108) are normalised
+// here; a `Past` row disagreeing would be a dex regression and stops the build.
+const withBaseHp = (entry, base) => {
+  const hp = base.baseStats.hp;
+  if (entry.baseStats.hp === hp) return entry;
+  if (entry.isNonstandard !== 'Future') {
+    throw new Error(`Mega ${entry.id} changes HP: ${entry.baseStats.hp} vs ${base.id} ${hp}`);
+  }
+  return {
+    ...entry,
+    baseStats: { ...entry.baseStats, hp },
+    bst: entry.bst - (entry.baseStats.hp - hp),
+  };
+};
+
+/** The values appearing more than once, in first-seen order. */
+const duplicates = (values) => {
+  const seen = new Set();
+  const repeated = new Set();
+  for (const value of values) {
+    if (seen.has(value)) repeated.add(value);
+    seen.add(value);
+  }
+  return [...repeated];
+};
 
 const writeJson = async (name, data) => {
   const path = join(OUT_DIR, name);
@@ -109,27 +149,43 @@ const main = async () => {
   const normalizeId = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
   // Every Mega whose base species is in the playable set, each tied to its base
-  // and its stone. A Mega whose base is not in Gen 9 has no holder in the run,
-  // so it is skipped rather than shipped as a dead stone. The run only ever
-  // reaches a Mega through `src/engine/battle/mega.ts`.
+  // and its stone. A Mega whose base the run cannot own has no holder, so it is
+  // skipped rather than shipped as a dead stone. The run only ever reaches a
+  // Mega through `src/engine/battle/mega.ts`.
   const playableIds = new Set(species.map((entry) => entry.id));
+  let normalisedHp = 0;
   const megaFormes = Dex.species
     .all()
     .filter(isMega)
     .filter((entry) => playableIds.has(Dex.species.get(entry.baseSpecies).id))
     .map((entry) => {
       const base = Dex.species.get(entry.baseSpecies);
-      const stoneName = megaStoneName(entry, base);
+      const row = withBaseHp(entry, base);
+      if (row !== entry) normalisedHp++;
+      const stoneName = megaStoneName(row, base);
       return {
-        ...entry,
+        ...row,
         baseSpeciesId: base.id,
         stoneId: normalizeId(stoneName),
         stoneName,
-        catchRate: catchRateOf(entry.num),
-        heightm: heights[entry.id] ?? heights[base.id] ?? 1,
+        catchRate: catchRateOf(row.num),
+        heightm: heights[row.id] ?? heights[base.id] ?? 1,
         evolutions: [],
       };
     });
+
+  // A duplicate id or stone would silently drop a forme (both are map keys), so
+  // the generator refuses to write a dex that has one.
+  const duplicateIds = duplicates(megaFormes.map((entry) => entry.id));
+  if (duplicateIds.length > 0) {
+    throw new Error(`two Mega formes share an id: ${duplicateIds.join(', ')}`);
+  }
+  const duplicateStones = duplicates(megaFormes.map((entry) => entry.stoneId));
+  if (duplicateStones.length > 0) {
+    throw new Error(`two Mega formes share a Mega Stone: ${duplicateStones.join(', ')}`);
+  }
+  const pastMegas = megaFormes.filter((entry) => entry.isNonstandard === 'Past').length;
+  const futureMegas = megaFormes.filter((entry) => entry.isNonstandard === 'Future').length;
 
   // The whole move set (`D42`): every real move, the `Past` ones included, so a
   // Dexit species keeps its learnset (King's Shield, Aromatherapy...). Dynamax
@@ -212,6 +268,13 @@ const main = async () => {
       types: types.length,
     },
   });
+
+  // The Mega summary: `megas.json` is battle-only (`D34`), so how many formes it
+  // carries and which dex tag they came in under is the line to read.
+  console.log(
+    `megas            ${String(megaFormes.length).padStart(4)} (${pastMegas} Past, ` +
+      `${futureMegas} Future, ${normalisedHp} HP normalised)`,
+  );
 };
 
 main().catch((error) => {

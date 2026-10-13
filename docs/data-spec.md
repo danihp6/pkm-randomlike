@@ -16,8 +16,17 @@ merges a canonical `heightm` from `scripts/data/heights.json` (PokeAPI, via
 
 `megas.json` is generated beside `species.json`: every Mega forme whose base
 species is in the playable set, each with its `baseSpeciesId`, `stoneId` and
-`stoneName`. It is battle-only content (`D34`) — never spawned, only reached
-through a held stone (`src/engine/battle/mega.ts`).
+`stoneName` — 88 today, `meta.json`'s `counts.megas` being the authority. It is
+battle-only content (`D34`) — never spawned, only reached through a held stone
+(`src/engine/battle/mega.ts`). A Mega may be tagged `Past` (the games already ran
+it) or `Future`, the dex's own "announced, not released" tag for the formes
+Legends Z-A and Champions announced, and the filter takes both exactly alike. The
+nine `Future` formes whose dex entry leaves `isMega` unset — Absol Z, Garchomp Z
+and Lucario Z (`forme: 'Mega-Z'`), Meowstic (`'M-Mega'`/`'F-Mega'`),
+Magearna-Original (`'Original-Mega'`) and the three Tatsugiri (`'Curly-Mega'` and
+the two others) — are not in it: `isPlayable` only drops `isMega === true`, so
+they already ride the playable set as ownable species, and taking them here would
+ship one id in both files.
 
 ## 2. Authored
 
@@ -37,10 +46,10 @@ through a held stone (`src/engine/battle/mega.ts`).
 | `src/data/itemIcons.ts` | typed view over the generated `anil/item-icons.json` (Añil item icon frames, 24px, normalised id → frame, with `hasItemIcon`/`itemIconFrame` and the Mega Stone / TM fallbacks) | 6 |
 | `src/data/anil/item-icons.json` | generated frame map for the Añil item icon atlas | 6 |
 | `src/data/frlg/item-icons.json` | generated frame map for the FRLG item icon atlas (superseded by the Añil one) | 6 |
-| `src/data/typeIcons.ts` | typed view over the generated `frlg/type-icons.json` (FRLG type badge frames) | 7 |
-| `src/data/frlg/type-icons.json` | generated frame map for the FRLG type badge atlas | 7 |
-| `src/data/statusIcons.ts` | typed view over the generated `frlg/status-icons.json` (FRLG status badge frames) | 7 |
-| `src/data/frlg/status-icons.json` | generated frame map for the FRLG status badge atlas | 7 |
+| `src/data/typeIcons.ts` | typed view over the generated `frlg/type-icons.json` (Añil type badge frames, repacked in place) | 7 |
+| `src/data/frlg/type-icons.json` | generated frame map for the Añil type badge atlas | 7 |
+| `src/data/statusIcons.ts` | typed view over the generated `frlg/status-icons.json` (Añil status badge frames, repacked in place) | 7 |
+| `src/data/frlg/status-icons.json` | generated frame map for the Añil status badge atlas | 7 |
 
 ## 3. Typed accessors
 

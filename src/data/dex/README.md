@@ -12,7 +12,7 @@ asserts the counts still match, so a bad regeneration fails loudly.
 | File | Fields that matter to us |
 | --- | --- |
 | `species.json` | `id`, `num`, `name`, `types`, `baseStats`, `abilities`, `prevo`, `evos`, `evolutions[]`, `weightkg`, `heightm`, `genderRatio`, `nfe`, `catchRate`, form fields |
-| `megas.json` | a battle-only `Species` plus `baseSpeciesId`, `stoneId`, `stoneName`; every Mega of a playable base species (D34) |
+| `megas.json` | a battle-only `Species` plus `baseSpeciesId`, `stoneId`, `stoneName`; every Mega of a playable base species, `Past` or `Future` — the dex's own "announced, not released" tag (D34) |
 | `moves.json` | `id`, `name`, `type`, `category`, `basePower`, `accuracy`, `pp`, `priority`, `target`, `flags`, `secondaries`, `critRatio`, `drain`, `recoil`, `multihit`, `status`, `volatileStatus`, `boosts`, `self`, `weather`, `terrain`, `desc`, `shortDesc` |
 | `abilities.json` | `id`, `name`, `desc`, `shortDesc`, `flags` |
 | `items.json` | `id`, `name`, `desc`, `shortDesc`, `isBerry`, battle flags |
@@ -38,4 +38,11 @@ asserts the counts still match, so a bad regeneration fails loudly.
   generation time — CAP/fan entries, `Custom` (MissingNo, Pokéstar), LGPE's
   partner starters (no art), and the battle-only Gigantamax/Eternamax formes.
   `megas.json` is generated beside the set (never inside it) so a held stone has
-  a target; a Mega whose base is not played is skipped.
+  a target; a Mega whose base is not played is skipped. A Mega may carry either of
+  the dex's two tags — `Past` (the games already ran it) or `Future`, its own
+  "announced, not released" mark for the formes Legends Z-A and Champions
+  announced — and both are taken alike. The nine `Future` formes the dex leaves
+  `isMega` unset on (Absol Z, Garchomp Z, Lucario Z, Meowstic, Magearna-Original,
+  the three Tatsugiri) name the forme instead, so `isPlayable` keeps them in the
+  playable set: they are ownable species, not stones, and adding them here would
+  ship one id in both files.
