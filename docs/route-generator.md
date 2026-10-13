@@ -325,6 +325,16 @@ already watching — or able to spin and watch — the tile the player arrives o
 Some trainers cycle their facing on a timer (a "spinning" trainer) so their line
 turns with them.
 
+The lane guard holds **when the population pass was asked for trainers**: the
+request carries a non-empty archetype pool and the room is not `quiet` (the map's
+entry and boss rooms, `docs/maps-spec.md` §2/§6, ship no trainer legitimately).
+A route the pass was asked to guard that holds no trainer is
+reported by `validateRoute`'s `missingLaneGuard` (`'no-trainers'`) and re-rolled
+by `sketchRoute` inside `MAX_ATTEMPTS = 8` (`wantsTrainers` is the single
+definition of the condition), so the promise below never ships a bare lane. The
+guard is checked on the finished `RouteMap`; it draws no `Rng` value and adds no
+stream.
+
 ```
 PlaceTrainers(tiles, entry, exits, spine, branches, pockets, band, rng):
     chosen = Set()
@@ -403,16 +413,20 @@ export type RouteValidation = Readonly<{
   itemsOnTerrain: readonly string[];     // placed items on TALL_GRASS or LEDGE
   spineBlocked: readonly string[];       // spine tiles that are not FLOOR
   borderBreaches: readonly string[];     // open ring tiles no opening justifies
+  borderBandGaps: readonly string[];     // an opening band cell that is not a door
+  missingLaneGuard: readonly string[];   // §3.4's lane guard, gated on `expectTrainers`
   unreachablePockets: readonly string[]; // REPORTED, never gated
   trainerIssues: readonly TrainerIssue[]; // pose rule failures
 }>;
 ```
 
-`ok` is true exactly when the seven gated lists are empty: `unreachable`,
-`blockedByTrainers`, `strandedItems`, `itemsOnTerrain`, `spineBlocked`,
-`borderBreaches` and `trainerIssues`. **`unreachablePockets` is not in that test**:
-a pocket the entry cannot reach is a finding, not a failure, because `placeItems`
-may skip a pocket a hazard sealed.
+`validateRoute(route, options?)` takes the caller's `RouteValidationOptions`
+(`expectTrainers?: boolean`, default `false`). `ok` is true exactly when the
+**nine** gated lists are empty: `unreachable`, `blockedByTrainers`,
+`strandedItems`, `itemsOnTerrain`, `spineBlocked`, `borderBreaches`,
+`borderBandGaps`, `missingLaneGuard` and `trainerIssues`. **`unreachablePockets`
+is not in that test**: a pocket the entry cannot reach is a finding, not a
+failure, because `placeItems` may skip a pocket a hazard sealed.
 
 - `unreachable` / `blockedByTrainers`: the entry must reach every exit, and reach
   them again with the trainers treated as blockers, so no placement soft-locks the
@@ -423,6 +437,15 @@ may skip a pocket a hazard sealed.
 - `borderBreaches`: a ring flood-fill runs from the entry and the exits along the
   border, so a ring cell `cleanWalls` widened beside an opening is legal and a lane
   that punched through the fence elsewhere is a breach.
+- `borderBandGaps`: an opening's whole band must be a door — the lane is carved
+  `pathWidth` wide, so every cell of it (`openingBandCells`) must reach the ring as
+  `FLOOR` and read as that opening (`exitEdgeAt`); a band cell a tidy or a hazard
+  left a wall is a gap.
+- `missingLaneGuard`: §3.4's lane guard, reported as `['no-trainers']` only when
+  `options.expectTrainers` is true **and** the route holds no trainer, and `[]`
+  otherwise — including the quiet entry/boss rooms and the callers that pass no
+  archetype pool. It is a marker, not a `TrainerIssue`: a reason there needs a
+  `trainerId` to attribute it to, and a trainer-free route has none.
 - `unreachablePockets`: reported, never gated (see above).
 - `trainerIssues`: one `TrainerIssue` per trainer that fails a pose rule, in
   `route.trainers` order, each carrying every reason it fails.
@@ -434,10 +457,14 @@ The pose rules are `TrainerIssueReason`'s seven values and nothing else:
 on every turning facing**.
 
 The reroll is `sketchRoute` (`src/engine/routes/sketch.ts`): it builds an attempt
-on fresh streams and retries while `!validateRoute(route).ok`, up to
+on fresh streams and retries while
+`!validateRoute(route, { expectTrainers: wantsTrainers(request) }).ok`, up to
 **`MAX_ATTEMPTS = 8`** (declared at the top of `sketch.ts`), then throws rather
-than return a bad map. The attempt index is part of every stream key, so a reroll
-is a new deterministic map, never a mutation of the previous one.
+than return a bad map. The gate is **conditional**: `expectTrainers` is true only
+for a non-quiet room the caller passed an archetype pool for, so a quiet
+entry/boss room or a pool-free build is never failed for shipping no trainer. The
+attempt index is part of every stream key, so a reroll is a new deterministic map,
+never a mutation of the previous one.
 
 The trainer-free flood fill is the guarantee that no placement can soft-lock the
 route behind an unwinnable fight. The generator is stricter than that: it keeps a
@@ -451,6 +478,10 @@ lane, a branch or a pocket either, and ledges and water count as impassable.
 - **Solvability:** every exit reachable, and reachable without meeting a trainer.
 - **No stranding:** every spawned item is reachable.
 - **Clean main lane:** the spine holds no hazard or grass.
+- **Guarded main lane:** a route the population pass was asked to guard (a
+  non-quiet room with an archetype pool) always holds at least one trainer; a route
+  that would ship none is reported (`missingLaneGuard`) and re-rolled inside
+  `MAX_ATTEMPTS`.
 - **Posed trainers:** each stands on floor, backed by a **solid** wall, looking
   down a passable lane, never next to another trainer and never watching the
   entry; some cycle their facing.

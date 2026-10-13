@@ -71,6 +71,7 @@ const GATED = [
   'spineBlocked',
   'borderBreaches',
   'borderBandGaps',
+  'missingLaneGuard',
   'trainerIssues',
 ] as const;
 
@@ -417,13 +418,47 @@ describe('validateRoute', () => {
     });
   });
 
+  describe('the lane guard', () => {
+    it('passes a trainer-free route when no options ask for trainers', () => {
+      const validation = validateRoute(route(mapFromSketch(ROOM), { x: 1, y: 1 }, [{ x: 5, y: 5 }]));
+      expectOnly(validation, []);
+      expect(validation.missingLaneGuard).toEqual([]);
+    });
+
+    it('fails a trainer-free route the pass was asked to guard, naming no-trainers', () => {
+      const validation = validateRoute(
+        route(mapFromSketch(ROOM), { x: 1, y: 1 }, [{ x: 5, y: 5 }]),
+        { expectTrainers: true },
+      );
+      expectOnly(validation, ['missingLaneGuard']);
+      expect(validation.missingLaneGuard).toEqual(['no-trainers']);
+    });
+
+    it('keeps the default options a no-op, so no pre-existing caller changes', () => {
+      const base = route(mapFromSketch(ROOM), { x: 1, y: 1 }, [{ x: 5, y: 5 }]);
+      expect(validateRoute(base, {})).toEqual(validateRoute(base));
+      expect(validateRoute(base, { expectTrainers: false })).toEqual(validateRoute(base));
+    });
+
+    it('never reports the guard on a route that holds a trainer', () => {
+      const validation = validateRoute(
+        route(mapFromSketch(ROOM), { x: 1, y: 1 }, [{ x: 5, y: 5 }], {
+          trainers: [trainer(0, { x: 1, y: 2 }, 'S')],
+        }),
+        { expectTrainers: true },
+      );
+      expectOnly(validation, []);
+      expect(validation.missingLaneGuard).toEqual([]);
+    });
+  });
+
   describe('the live generator', () => {
-    // `sweep-b` is out and `sweep-d` in: the band fix re-rolls the terrain stream as
-    // intended, and the dead-end route of `sweep-b` then has no wall-hugging lane
-    // spot left, so it places no trainer at all (a pre-existing `placeTrainers`
-    // weakness, 3 of 720 seeds on `main` already had none). `sweep-d` exercises the
-    // same promise on the fixed map.
-    const SWEEP_SEEDS = ['sweep-a', 'sweep-c', 'sweep-d'] as const;
+    // `sweep-b` is the seed the old comment named: its dead-end route leaves no
+    // wall-hugging lane spot, so attempt 0 ships no trainer at all (3 of 720 seeds
+    // on `main` already did, plus the ones Task-32's band fix exposed). The lane
+    // guard re-rolls past attempt 0 there; the other seeds validate without a
+    // re-roll, so the gate stays a no-op where the route already guards its lane.
+    const SWEEP_SEEDS = ['sweep-a', 'sweep-b', 'sweep-c', 'sweep-d'] as const;
 
     function request(seed: string, routeIndex: number, shape?: RouteShape): RouteRequest {
       return { seed, routeIndex, biomeId: 'wood', ...(shape ? { shape } : {}) };
@@ -470,6 +505,11 @@ describe('validateRoute', () => {
           expect(validation.ok, `${where} ok`).toBe(true);
           expectOnly(validation, []);
           expect(validation.unreachablePockets, `${where} unreachablePockets`).toEqual([]);
+          // The lane guard the pass was asked for is satisfied: the gate is why a
+          // trainer-free attempt 0 (sweep-b) shipped a later attempt instead.
+          const guarded = validateRoute(route, { expectTrainers: true });
+          expect(guarded.missingLaneGuard, `${where} lane guard`).toEqual([]);
+          expect(guarded.ok, `${where} guarded ok`).toBe(true);
           expect(sketchRouteSteps(sized).at(-1)!.tiles, `${where} attempt 0`).toEqual(route.tiles);
         }
       }
