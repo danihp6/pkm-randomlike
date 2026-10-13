@@ -243,13 +243,23 @@ const moveRows = moveEntries.map((entry) => [entry.name, entry.status, entry.not
 const itemNames = new Map(items.map((item) => [norm(item.id), item.name]));
 for (const [id, name] of catalogue) if (!itemNames.has(id)) itemNames.set(id, name);
 
+// Held items a run can meet that `effects/items.ts` does not model yet (`D16`
+// `no-op`). `UNMODELLED_ITEMS` in that file is the source of truth; it is read as
+// text, like the move tables above.
+const unmodelledItems = (() => {
+  const start = itemsEffectSrc.indexOf('const UNMODELLED_ITEMS');
+  if (start < 0) return new Set();
+  const end = itemsEffectSrc.indexOf('\n];', start);
+  return new Set([...itemsEffectSrc.slice(start, end).matchAll(/'([a-z0-9]+)'/g)].map((m) => m[1]));
+})();
+
 const itemRows = [...itemNames.entries()]
   .sort((a, b) => a[1].localeCompare(b[1]))
-  .map(([id, name]) =>
-    catalogue.has(id)
-      ? [name, 'port', 'in the run catalogue (`src/data/items.ts`)']
-      : [name, 'excluded', 'not in the run catalogue'],
-  );
+  .map(([id, name]) => {
+    if (!catalogue.has(id)) return [name, 'excluded', 'not in the run catalogue'];
+    if (unmodelledItems.has(id)) return [name, 'no-op', 'reachable, not modelled yet'];
+    return [name, 'port', 'in the run catalogue (`src/data/items.ts`)'];
+  });
 
 const count = (rows, status) => rows.filter((row) => row[1] === status).length;
 
@@ -281,6 +291,9 @@ hide during playtests.
 - For a move, \`port\` means a registered handler, an id the turn loop
   special-cases, or a data-driven field the engine reads; \`no-op\` means a run
   can meet the move and nothing happens.
+- For an item, \`port\` means the held item registers a handler
+  (\`effects/items.ts\`) or the Bag item is one \`commands.ts\` reads; \`no-op\`
+  means a run can meet the item and nothing happens.
 
 The run only ever hands out the items in \`src/data/items.ts\`, so a dex item that
 is not in that catalogue is \`excluded\` by definition: adding it later is a

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ITEMS } from './items';
+import { UNMODELLED_ITEMS } from '../engine/battle/effects/items';
+import { COMPETITIVE_HELD_IDS, ITEMS } from './items';
 import { ROUTE_LOOT } from './loot';
 import { LEVEL_BANDS } from './run';
+import { SHOP_ROTATION } from './shop';
 
 const KNOWN = new Set(ITEMS.map((item) => item.id));
 
@@ -21,6 +23,13 @@ describe('ROUTE_LOOT', () => {
     }
   });
 
+  it('never repeats an id inside one band', () => {
+    for (const band of LEVEL_BANDS) {
+      const ids = ROUTE_LOOT[band.id].pool.map((entry) => entry.itemId);
+      expect(new Set(ids).size, band.id).toBe(ids.length);
+    }
+  });
+
   it('keeps the hidden chance a probability', () => {
     for (const band of LEVEL_BANDS) {
       const chance = ROUTE_LOOT[band.id].hiddenChance;
@@ -34,6 +43,32 @@ describe('ROUTE_LOOT', () => {
       for (const entry of ROUTE_LOOT[band.id].pool) {
         expect(entry.itemId).not.toMatch(/revive/i);
       }
+    }
+  });
+
+  it('makes every competitive held item reachable from the ground or the Mart', () => {
+    const reachable = new Set<string>();
+    for (const band of LEVEL_BANDS) {
+      for (const entry of ROUTE_LOOT[band.id].pool) reachable.add(entry.itemId);
+      for (const entry of SHOP_ROTATION[band.id]) reachable.add(entry.itemId);
+    }
+    for (const id of COMPETITIVE_HELD_IDS) expect(reachable.has(id), id).toBe(true);
+  });
+
+  it('hands the unmodelled items out on the ground only, never from the Mart (D16)', () => {
+    for (const band of LEVEL_BANDS) {
+      for (const entry of SHOP_ROTATION[band.id]) {
+        expect(UNMODELLED_ITEMS, `${band.id} ${entry.itemId}`).not.toContain(entry.itemId);
+      }
+    }
+  });
+
+  it('drops the Plates as late-game treasure', () => {
+    for (const band of LEVEL_BANDS) {
+      const ids = ROUTE_LOOT[band.id].pool.map((entry) => entry.itemId);
+      const plateIds = ids.filter((id) => id.endsWith('plate'));
+      if (band.id === 'late' || band.id === 'end') expect(plateIds.length, band.id).toBe(17);
+      else expect(plateIds.length, band.id).toBe(0);
     }
   });
 });

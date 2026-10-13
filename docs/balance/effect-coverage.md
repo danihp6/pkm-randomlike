@@ -23,6 +23,9 @@ hide during playtests.
 - For a move, `port` means a registered handler, an id the turn loop
   special-cases, or a data-driven field the engine reads; `no-op` means a run
   can meet the move and nothing happens.
+- For an item, `port` means the held item registers a handler
+  (`effects/items.ts`) or the Bag item is one `commands.ts` reads; `no-op`
+  means a run can meet the item and nothing happens.
 
 The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
@@ -1184,183 +1187,200 @@ catalogue row, not engine code.
 | Zing Zap | `port` | data: secondaries |
 | Zippy Zap | `excluded` | no playable species has it |
 
-## Items — 269 total (49 port, 0 no-op, 220 excluded)
+## Items — 291 total (117 port, 93 no-op, 81 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
-| Ability Shield | `excluded` | not in the run catalogue |
-| Absorb Bulb | `excluded` | not in the run catalogue |
-| Adamant Crystal | `excluded` | not in the run catalogue |
-| Adamant Orb | `excluded` | not in the run catalogue |
+| Ability Shield | `no-op` | reachable, not modelled yet |
+| Absorb Bulb | `no-op` | reachable, not modelled yet |
+| Adamant Crystal | `no-op` | reachable, not modelled yet |
+| Adamant Orb | `no-op` | reachable, not modelled yet |
 | Adrenaline Orb | `excluded` | not in the run catalogue |
-| Aguav Berry | `excluded` | not in the run catalogue |
-| Air Balloon | `excluded` | not in the run catalogue |
+| Aguav Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Air Balloon | `no-op` | reachable, not modelled yet |
 | Antidote | `port` | in the run catalogue (`src/data/items.ts`) |
-| Apicot Berry | `excluded` | not in the run catalogue |
-| Aspear Berry | `excluded` | not in the run catalogue |
-| Assault Vest | `excluded` | not in the run catalogue |
+| Apicot Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Aspear Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Assault Vest | `no-op` | reachable, not modelled yet |
 | Auspicious Armor | `excluded` | not in the run catalogue |
 | Awakening | `port` | in the run catalogue (`src/data/items.ts`) |
-| Babiri Berry | `excluded` | not in the run catalogue |
+| Babiri Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Beast Ball | `excluded` | not in the run catalogue |
 | Berry Sweet | `excluded` | not in the run catalogue |
 | Big Nugget | `port` | in the run catalogue (`src/data/items.ts`) |
 | Big Pearl | `port` | in the run catalogue (`src/data/items.ts`) |
-| Big Root | `excluded` | not in the run catalogue |
-| Binding Band | `excluded` | not in the run catalogue |
+| Big Root | `no-op` | reachable, not modelled yet |
+| Binding Band | `no-op` | reachable, not modelled yet |
 | Black Belt | `port` | in the run catalogue (`src/data/items.ts`) |
 | Black Glasses | `port` | in the run catalogue (`src/data/items.ts`) |
-| Black Sludge | `excluded` | not in the run catalogue |
-| Blunder Policy | `excluded` | not in the run catalogue |
-| Booster Energy | `excluded` | not in the run catalogue |
+| Black Sludge | `no-op` | reachable, not modelled yet |
+| Blunder Policy | `no-op` | reachable, not modelled yet |
+| Booster Energy | `no-op` | reachable, not modelled yet |
 | Bottle Cap | `excluded` | not in the run catalogue |
-| Bright Powder | `excluded` | not in the run catalogue |
+| Bright Powder | `no-op` | reachable, not modelled yet |
+| Bug Memory | `no-op` | reachable, not modelled yet |
+| Burn Drive | `no-op` | reachable, not modelled yet |
 | Burn Heal | `port` | in the run catalogue (`src/data/items.ts`) |
-| Cell Battery | `excluded` | not in the run catalogue |
+| Cell Battery | `no-op` | reachable, not modelled yet |
 | Charcoal | `port` | in the run catalogue (`src/data/items.ts`) |
-| Charti Berry | `excluded` | not in the run catalogue |
-| Cheri Berry | `excluded` | not in the run catalogue |
-| Chesto Berry | `excluded` | not in the run catalogue |
-| Chilan Berry | `excluded` | not in the run catalogue |
+| Charti Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Cheri Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Chesto Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Chilan Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Chill Drive | `no-op` | reachable, not modelled yet |
 | Chipped Pot | `excluded` | not in the run catalogue |
-| Choice Band | `excluded` | not in the run catalogue |
-| Choice Scarf | `excluded` | not in the run catalogue |
-| Choice Specs | `excluded` | not in the run catalogue |
-| Chople Berry | `excluded` | not in the run catalogue |
-| Clear Amulet | `excluded` | not in the run catalogue |
+| Choice Band | `port` | in the run catalogue (`src/data/items.ts`) |
+| Choice Scarf | `port` | in the run catalogue (`src/data/items.ts`) |
+| Choice Specs | `port` | in the run catalogue (`src/data/items.ts`) |
+| Chople Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Clear Amulet | `no-op` | reachable, not modelled yet |
 | Clover Sweet | `excluded` | not in the run catalogue |
-| Coba Berry | `excluded` | not in the run catalogue |
-| Colbur Berry | `excluded` | not in the run catalogue |
+| Coba Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Colbur Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Comet Shard | `port` | in the run catalogue (`src/data/items.ts`) |
 | Cornerstone Mask | `excluded` | not in the run catalogue |
-| Covert Cloak | `excluded` | not in the run catalogue |
+| Covert Cloak | `no-op` | reachable, not modelled yet |
 | Cracked Pot | `excluded` | not in the run catalogue |
-| Custap Berry | `excluded` | not in the run catalogue |
-| Damp Rock | `excluded` | not in the run catalogue |
+| Custap Berry | `no-op` | reachable, not modelled yet |
+| Damp Rock | `no-op` | reachable, not modelled yet |
+| Dark Memory | `no-op` | reachable, not modelled yet |
 | Dawn Stone | `excluded` | not in the run catalogue |
 | Destiny Knot | `excluded` | not in the run catalogue |
 | Dive Ball | `excluded` | not in the run catalogue |
-| Draco Plate | `excluded` | not in the run catalogue |
+| Douse Drive | `no-op` | reachable, not modelled yet |
+| Draco Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Dragon Fang | `port` | in the run catalogue (`src/data/items.ts`) |
+| Dragon Memory | `no-op` | reachable, not modelled yet |
 | Dragon Scale | `excluded` | not in the run catalogue |
-| Dread Plate | `excluded` | not in the run catalogue |
+| Dread Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Dream Ball | `excluded` | not in the run catalogue |
 | Dubious Disc | `excluded` | not in the run catalogue |
 | Dusk Ball | `excluded` | not in the run catalogue |
 | Dusk Stone | `excluded` | not in the run catalogue |
-| Earth Plate | `excluded` | not in the run catalogue |
-| Eject Button | `excluded` | not in the run catalogue |
-| Eject Pack | `excluded` | not in the run catalogue |
+| Earth Plate | `port` | in the run catalogue (`src/data/items.ts`) |
+| Eject Button | `no-op` | reachable, not modelled yet |
+| Eject Pack | `no-op` | reachable, not modelled yet |
 | Electirizer | `excluded` | not in the run catalogue |
-| Electric Seed | `excluded` | not in the run catalogue |
-| Enigma Berry | `excluded` | not in the run catalogue |
-| Eviolite | `excluded` | not in the run catalogue |
-| Expert Belt | `excluded` | not in the run catalogue |
+| Electric Memory | `no-op` | reachable, not modelled yet |
+| Electric Seed | `no-op` | reachable, not modelled yet |
+| Enigma Berry | `no-op` | reachable, not modelled yet |
+| Eviolite | `no-op` | reachable, not modelled yet |
+| Expert Belt | `port` | in the run catalogue (`src/data/items.ts`) |
 | Fairy Feather | `port` | in the run catalogue (`src/data/items.ts`) |
+| Fairy Memory | `no-op` | reachable, not modelled yet |
 | Fast Ball | `excluded` | not in the run catalogue |
-| Figy Berry | `excluded` | not in the run catalogue |
+| Fighting Memory | `no-op` | reachable, not modelled yet |
+| Figy Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Fire Memory | `no-op` | reachable, not modelled yet |
 | Fire Stone | `excluded` | not in the run catalogue |
-| Fist Plate | `excluded` | not in the run catalogue |
-| Flame Orb | `excluded` | not in the run catalogue |
-| Flame Plate | `excluded` | not in the run catalogue |
-| Float Stone | `excluded` | not in the run catalogue |
+| Fist Plate | `port` | in the run catalogue (`src/data/items.ts`) |
+| Flame Orb | `port` | in the run catalogue (`src/data/items.ts`) |
+| Flame Plate | `port` | in the run catalogue (`src/data/items.ts`) |
+| Float Stone | `no-op` | reachable, not modelled yet |
 | Flower Sweet | `excluded` | not in the run catalogue |
-| Focus Band | `excluded` | not in the run catalogue |
-| Focus Sash | `excluded` | not in the run catalogue |
+| Flying Memory | `no-op` | reachable, not modelled yet |
+| Focus Band | `port` | in the run catalogue (`src/data/items.ts`) |
+| Focus Sash | `port` | in the run catalogue (`src/data/items.ts`) |
 | Friend Ball | `excluded` | not in the run catalogue |
 | Full Heal | `port` | in the run catalogue (`src/data/items.ts`) |
 | Full Restore | `port` | in the run catalogue (`src/data/items.ts`) |
 | Galarica Cuff | `excluded` | not in the run catalogue |
 | Galarica Wreath | `excluded` | not in the run catalogue |
-| Ganlon Berry | `excluded` | not in the run catalogue |
+| Ganlon Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Ghost Memory | `no-op` | reachable, not modelled yet |
 | Gold Bottle Cap | `excluded` | not in the run catalogue |
-| Grassy Seed | `excluded` | not in the run catalogue |
+| Grass Memory | `no-op` | reachable, not modelled yet |
+| Grassy Seed | `no-op` | reachable, not modelled yet |
 | Great Ball | `port` | in the run catalogue (`src/data/items.ts`) |
 | Grepa Berry | `excluded` | not in the run catalogue |
-| Grip Claw | `excluded` | not in the run catalogue |
-| Griseous Core | `excluded` | not in the run catalogue |
-| Griseous Orb | `excluded` | not in the run catalogue |
-| Haban Berry | `excluded` | not in the run catalogue |
+| Grip Claw | `no-op` | reachable, not modelled yet |
+| Griseous Core | `no-op` | reachable, not modelled yet |
+| Griseous Orb | `no-op` | reachable, not modelled yet |
+| Ground Memory | `no-op` | reachable, not modelled yet |
+| Haban Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Hard Stone | `port` | in the run catalogue (`src/data/items.ts`) |
 | Heal Ball | `excluded` | not in the run catalogue |
 | Hearthflame Mask | `excluded` | not in the run catalogue |
-| Heat Rock | `excluded` | not in the run catalogue |
+| Heat Rock | `no-op` | reachable, not modelled yet |
 | Heavy Ball | `excluded` | not in the run catalogue |
-| Heavy-Duty Boots | `excluded` | not in the run catalogue |
+| Heavy-Duty Boots | `no-op` | reachable, not modelled yet |
 | Hondew Berry | `excluded` | not in the run catalogue |
 | Hyper Potion | `port` | in the run catalogue (`src/data/items.ts`) |
-| Iapapa Berry | `excluded` | not in the run catalogue |
+| Iapapa Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Ice Heal | `port` | in the run catalogue (`src/data/items.ts`) |
+| Ice Memory | `no-op` | reachable, not modelled yet |
 | Ice Stone | `excluded` | not in the run catalogue |
-| Icicle Plate | `excluded` | not in the run catalogue |
-| Icy Rock | `excluded` | not in the run catalogue |
-| Insect Plate | `excluded` | not in the run catalogue |
-| Iron Ball | `excluded` | not in the run catalogue |
-| Iron Plate | `excluded` | not in the run catalogue |
-| Jaboca Berry | `excluded` | not in the run catalogue |
-| Kasib Berry | `excluded` | not in the run catalogue |
-| Kebia Berry | `excluded` | not in the run catalogue |
-| Kee Berry | `excluded` | not in the run catalogue |
+| Icicle Plate | `port` | in the run catalogue (`src/data/items.ts`) |
+| Icy Rock | `no-op` | reachable, not modelled yet |
+| Insect Plate | `port` | in the run catalogue (`src/data/items.ts`) |
+| Iron Ball | `port` | in the run catalogue (`src/data/items.ts`) |
+| Iron Plate | `port` | in the run catalogue (`src/data/items.ts`) |
+| Jaboca Berry | `no-op` | reachable, not modelled yet |
+| Kasib Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Kebia Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Kee Berry | `no-op` | reachable, not modelled yet |
 | Kelpsy Berry | `excluded` | not in the run catalogue |
-| King's Rock | `excluded` | not in the run catalogue |
-| Lagging Tail | `excluded` | not in the run catalogue |
-| Lansat Berry | `excluded` | not in the run catalogue |
+| King's Rock | `no-op` | reachable, not modelled yet |
+| Lagging Tail | `port` | in the run catalogue (`src/data/items.ts`) |
+| Lansat Berry | `no-op` | reachable, not modelled yet |
 | Leaf Stone | `excluded` | not in the run catalogue |
 | Leftovers | `port` | in the run catalogue (`src/data/items.ts`) |
-| Leppa Berry | `excluded` | not in the run catalogue |
+| Leppa Berry | `no-op` | reachable, not modelled yet |
 | Level Ball | `excluded` | not in the run catalogue |
-| Liechi Berry | `excluded` | not in the run catalogue |
-| Life Orb | `excluded` | not in the run catalogue |
-| Light Ball | `excluded` | not in the run catalogue |
-| Light Clay | `excluded` | not in the run catalogue |
-| Loaded Dice | `excluded` | not in the run catalogue |
+| Liechi Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Life Orb | `port` | in the run catalogue (`src/data/items.ts`) |
+| Light Ball | `no-op` | reachable, not modelled yet |
+| Light Clay | `no-op` | reachable, not modelled yet |
+| Loaded Dice | `no-op` | reachable, not modelled yet |
 | Love Ball | `excluded` | not in the run catalogue |
 | Love Sweet | `excluded` | not in the run catalogue |
 | Lum Berry | `port` | in the run catalogue (`src/data/items.ts`) |
-| Luminous Moss | `excluded` | not in the run catalogue |
+| Luminous Moss | `no-op` | reachable, not modelled yet |
 | Lure Ball | `excluded` | not in the run catalogue |
-| Lustrous Globe | `excluded` | not in the run catalogue |
-| Lustrous Orb | `excluded` | not in the run catalogue |
+| Lustrous Globe | `no-op` | reachable, not modelled yet |
+| Lustrous Orb | `no-op` | reachable, not modelled yet |
 | Luxury Ball | `excluded` | not in the run catalogue |
 | Magmarizer | `excluded` | not in the run catalogue |
 | Magnet | `port` | in the run catalogue (`src/data/items.ts`) |
-| Mago Berry | `excluded` | not in the run catalogue |
+| Mago Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Malicious Armor | `excluded` | not in the run catalogue |
-| Maranga Berry | `excluded` | not in the run catalogue |
+| Maranga Berry | `no-op` | reachable, not modelled yet |
 | Master Ball | `port` | in the run catalogue (`src/data/items.ts`) |
 | Masterpiece Teacup | `excluded` | not in the run catalogue |
-| Meadow Plate | `excluded` | not in the run catalogue |
-| Mental Herb | `excluded` | not in the run catalogue |
+| Meadow Plate | `port` | in the run catalogue (`src/data/items.ts`) |
+| Mental Herb | `no-op` | reachable, not modelled yet |
 | Metal Alloy | `excluded` | not in the run catalogue |
 | Metal Coat | `port` | in the run catalogue (`src/data/items.ts`) |
-| Metronome | `excluded` | not in the run catalogue |
-| Micle Berry | `excluded` | not in the run catalogue |
-| Mind Plate | `excluded` | not in the run catalogue |
+| Metronome | `no-op` | reachable, not modelled yet |
+| Micle Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Mind Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Miracle Seed | `port` | in the run catalogue (`src/data/items.ts`) |
-| Mirror Herb | `excluded` | not in the run catalogue |
-| Misty Seed | `excluded` | not in the run catalogue |
+| Mirror Herb | `no-op` | reachable, not modelled yet |
+| Misty Seed | `no-op` | reachable, not modelled yet |
 | Moon Ball | `excluded` | not in the run catalogue |
 | Moon Stone | `excluded` | not in the run catalogue |
-| Muscle Band | `excluded` | not in the run catalogue |
+| Muscle Band | `port` | in the run catalogue (`src/data/items.ts`) |
 | Mystic Water | `port` | in the run catalogue (`src/data/items.ts`) |
 | Nest Ball | `excluded` | not in the run catalogue |
 | Net Ball | `excluded` | not in the run catalogue |
 | Never-Melt Ice | `port` | in the run catalogue (`src/data/items.ts`) |
-| Normal Gem | `excluded` | not in the run catalogue |
+| Normal Gem | `port` | in the run catalogue (`src/data/items.ts`) |
+| Normal Memory | `no-op` | reachable, not modelled yet |
 | Nugget | `port` | in the run catalogue (`src/data/items.ts`) |
-| Occa Berry | `excluded` | not in the run catalogue |
+| Occa Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Oran Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Oval Stone | `excluded` | not in the run catalogue |
 | Paralyze Heal | `port` | in the run catalogue (`src/data/items.ts`) |
-| Passho Berry | `excluded` | not in the run catalogue |
-| Payapa Berry | `excluded` | not in the run catalogue |
+| Passho Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Payapa Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Pearl | `port` | in the run catalogue (`src/data/items.ts`) |
 | Pearl String | `port` | in the run catalogue (`src/data/items.ts`) |
-| Pecha Berry | `excluded` | not in the run catalogue |
-| Persim Berry | `excluded` | not in the run catalogue |
-| Petaya Berry | `excluded` | not in the run catalogue |
-| Pixie Plate | `excluded` | not in the run catalogue |
+| Pecha Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Persim Berry | `no-op` | reachable, not modelled yet |
+| Petaya Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Pixie Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Poison Barb | `port` | in the run catalogue (`src/data/items.ts`) |
+| Poison Memory | `no-op` | reachable, not modelled yet |
 | Poke Ball | `port` | in the run catalogue (`src/data/items.ts`) |
 | Pomeg Berry | `excluded` | not in the run catalogue |
 | Potion | `port` | in the run catalogue (`src/data/items.ts`) |
@@ -1368,92 +1388,97 @@ catalogue row, not engine code.
 | Power Band | `excluded` | not in the run catalogue |
 | Power Belt | `excluded` | not in the run catalogue |
 | Power Bracer | `excluded` | not in the run catalogue |
-| Power Herb | `excluded` | not in the run catalogue |
+| Power Herb | `no-op` | reachable, not modelled yet |
 | Power Lens | `excluded` | not in the run catalogue |
 | Power Weight | `excluded` | not in the run catalogue |
 | Premier Ball | `port` | in the run catalogue (`src/data/items.ts`) |
 | Pretty Feather | `excluded` | not in the run catalogue |
 | Prism Scale | `excluded` | not in the run catalogue |
-| Protective Pads | `excluded` | not in the run catalogue |
+| Protective Pads | `no-op` | reachable, not modelled yet |
 | Protector | `excluded` | not in the run catalogue |
-| Psychic Seed | `excluded` | not in the run catalogue |
-| Punching Glove | `excluded` | not in the run catalogue |
+| Psychic Memory | `no-op` | reachable, not modelled yet |
+| Psychic Seed | `no-op` | reachable, not modelled yet |
+| Punching Glove | `no-op` | reachable, not modelled yet |
 | Qualot Berry | `excluded` | not in the run catalogue |
 | Quick Ball | `excluded` | not in the run catalogue |
-| Quick Claw | `excluded` | not in the run catalogue |
+| Quick Claw | `no-op` | reachable, not modelled yet |
 | Rare Bone | `port` | in the run catalogue (`src/data/items.ts`) |
-| Rawst Berry | `excluded` | not in the run catalogue |
-| Razor Claw | `excluded` | not in the run catalogue |
-| Razor Fang | `excluded` | not in the run catalogue |
+| Rawst Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Razor Claw | `port` | in the run catalogue (`src/data/items.ts`) |
+| Razor Fang | `no-op` | reachable, not modelled yet |
 | Reaper Cloth | `excluded` | not in the run catalogue |
-| Red Card | `excluded` | not in the run catalogue |
+| Red Card | `no-op` | reachable, not modelled yet |
 | Repeat Ball | `excluded` | not in the run catalogue |
 | Ribbon Sweet | `excluded` | not in the run catalogue |
-| Rindo Berry | `excluded` | not in the run catalogue |
-| Ring Target | `excluded` | not in the run catalogue |
-| Rocky Helmet | `excluded` | not in the run catalogue |
-| Room Service | `excluded` | not in the run catalogue |
-| Roseli Berry | `excluded` | not in the run catalogue |
-| Rowap Berry | `excluded` | not in the run catalogue |
+| Rindo Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Ring Target | `no-op` | reachable, not modelled yet |
+| Rock Memory | `no-op` | reachable, not modelled yet |
+| Rocky Helmet | `no-op` | reachable, not modelled yet |
+| Room Service | `no-op` | reachable, not modelled yet |
+| Roseli Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Rowap Berry | `no-op` | reachable, not modelled yet |
 | Rusted Shield | `excluded` | not in the run catalogue |
 | Rusted Sword | `excluded` | not in the run catalogue |
 | Safari Ball | `excluded` | not in the run catalogue |
-| Safety Goggles | `excluded` | not in the run catalogue |
-| Salac Berry | `excluded` | not in the run catalogue |
-| Scope Lens | `excluded` | not in the run catalogue |
+| Safety Goggles | `no-op` | reachable, not modelled yet |
+| Salac Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Scope Lens | `port` | in the run catalogue (`src/data/items.ts`) |
 | Sharp Beak | `port` | in the run catalogue (`src/data/items.ts`) |
-| Shed Shell | `excluded` | not in the run catalogue |
-| Shell Bell | `excluded` | not in the run catalogue |
+| Shed Shell | `no-op` | reachable, not modelled yet |
+| Shell Bell | `no-op` | reachable, not modelled yet |
 | Shiny Stone | `excluded` | not in the run catalogue |
-| Shuca Berry | `excluded` | not in the run catalogue |
+| Shock Drive | `no-op` | reachable, not modelled yet |
+| Shuca Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Silk Scarf | `port` | in the run catalogue (`src/data/items.ts`) |
 | Silver Powder | `port` | in the run catalogue (`src/data/items.ts`) |
 | Sitrus Berry | `port` | in the run catalogue (`src/data/items.ts`) |
-| Sky Plate | `excluded` | not in the run catalogue |
+| Sky Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Smooth Rock | `excluded` | not in the run catalogue |
-| Snowball | `excluded` | not in the run catalogue |
+| Snowball | `no-op` | reachable, not modelled yet |
 | Soft Sand | `port` | in the run catalogue (`src/data/items.ts`) |
-| Soul Dew | `excluded` | not in the run catalogue |
+| Soul Dew | `no-op` | reachable, not modelled yet |
 | Spell Tag | `port` | in the run catalogue (`src/data/items.ts`) |
-| Splash Plate | `excluded` | not in the run catalogue |
-| Spooky Plate | `excluded` | not in the run catalogue |
+| Splash Plate | `port` | in the run catalogue (`src/data/items.ts`) |
+| Spooky Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Sport Ball | `excluded` | not in the run catalogue |
 | Star Piece | `port` | in the run catalogue (`src/data/items.ts`) |
 | Star Sweet | `excluded` | not in the run catalogue |
 | Stardust | `port` | in the run catalogue (`src/data/items.ts`) |
-| Starf Berry | `excluded` | not in the run catalogue |
-| Sticky Barb | `excluded` | not in the run catalogue |
-| Stone Plate | `excluded` | not in the run catalogue |
+| Starf Berry | `no-op` | reachable, not modelled yet |
+| Steel Memory | `no-op` | reachable, not modelled yet |
+| Sticky Barb | `no-op` | reachable, not modelled yet |
+| Stone Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Strawberry Sweet | `excluded` | not in the run catalogue |
 | Sun Stone | `excluded` | not in the run catalogue |
 | Super Potion | `port` | in the run catalogue (`src/data/items.ts`) |
 | Sweet Apple | `excluded` | not in the run catalogue |
 | Syrupy Apple | `excluded` | not in the run catalogue |
-| Tamato Berry | `excluded` | not in the run catalogue |
-| Tanga Berry | `excluded` | not in the run catalogue |
+| Tamato Berry | `no-op` | reachable, not modelled yet |
+| Tanga Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Tart Apple | `excluded` | not in the run catalogue |
-| Terrain Extender | `excluded` | not in the run catalogue |
-| Throat Spray | `excluded` | not in the run catalogue |
+| Terrain Extender | `no-op` | reachable, not modelled yet |
+| Throat Spray | `no-op` | reachable, not modelled yet |
 | Thunder Stone | `excluded` | not in the run catalogue |
 | Timer Ball | `excluded` | not in the run catalogue |
-| Toxic Orb | `excluded` | not in the run catalogue |
-| Toxic Plate | `excluded` | not in the run catalogue |
+| Toxic Orb | `port` | in the run catalogue (`src/data/items.ts`) |
+| Toxic Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Twisted Spoon | `port` | in the run catalogue (`src/data/items.ts`) |
 | Ultra Ball | `port` | in the run catalogue (`src/data/items.ts`) |
 | Unremarkable Teacup | `excluded` | not in the run catalogue |
 | Up-Grade | `excluded` | not in the run catalogue |
-| Utility Umbrella | `excluded` | not in the run catalogue |
-| Wacan Berry | `excluded` | not in the run catalogue |
+| Utility Umbrella | `no-op` | reachable, not modelled yet |
+| Wacan Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Water Memory | `no-op` | reachable, not modelled yet |
 | Water Stone | `excluded` | not in the run catalogue |
-| Weakness Policy | `excluded` | not in the run catalogue |
+| Weakness Policy | `no-op` | reachable, not modelled yet |
 | Wellspring Mask | `excluded` | not in the run catalogue |
-| White Herb | `excluded` | not in the run catalogue |
-| Wide Lens | `excluded` | not in the run catalogue |
-| Wiki Berry | `excluded` | not in the run catalogue |
-| Wise Glasses | `excluded` | not in the run catalogue |
+| White Herb | `no-op` | reachable, not modelled yet |
+| Wide Lens | `port` | in the run catalogue (`src/data/items.ts`) |
+| Wiki Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Wise Glasses | `port` | in the run catalogue (`src/data/items.ts`) |
 | X Attack | `port` | in the run catalogue (`src/data/items.ts`) |
 | X Defense | `port` | in the run catalogue (`src/data/items.ts`) |
 | X Speed | `port` | in the run catalogue (`src/data/items.ts`) |
-| Yache Berry | `excluded` | not in the run catalogue |
-| Zap Plate | `excluded` | not in the run catalogue |
+| Yache Berry | `port` | in the run catalogue (`src/data/items.ts`) |
+| Zap Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Zoom Lens | `excluded` | not in the run catalogue |

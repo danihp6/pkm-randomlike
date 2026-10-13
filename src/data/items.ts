@@ -1,5 +1,5 @@
 import type { BoostId, StatusId } from '../engine/battle/fighter';
-import { getMove, getSpecies, MEGA_FORMES } from './dex';
+import { MEGA_FORMES, getDexItem, getMove, getSpecies, type MoveCategory } from './dex';
 import { TM_MOVE_IDS, tmItemId } from './tms';
 
 export type ItemKind = 'ball' | 'heal' | 'status' | 'boost' | 'held' | 'valuable' | 'tm';
@@ -21,14 +21,49 @@ export type ItemDef = Readonly<{
   healFraction?: readonly [number, number];
   /** Primary statuses this cures; `'all'` clears whatever is there. */
   cures?: readonly StatusId[] | 'all';
-  /** Stat stages granted to the active Pokémon. */
+  /**
+   * Stat stages granted to the active Pokémon: the X-items read it from the Bag
+   * (`commands.ts`), the **pinch berries** through the held-item residual branch
+   * (`effects/items.ts`).
+   */
   boosts?: Partial<Record<BoostId, number>>;
   /** Held items: fire at the end of the turn only when HP is at or below this fraction. */
   below?: readonly [number, number];
-  /** Held items: a single-use berry, removed from the holder once it fires. */
+  /**
+   * Held items: removed from the holder once it fires — a berry, a gem or a
+   * Focus Sash alike, not only a berry.
+   */
   consumed?: boolean;
   /** Held items: multiplies moves of `type` by `multiplier` (the 1.2x type items). */
   typeBoost?: Readonly<{ type: string; multiplier: number }>;
+  /**
+   * Held items: multiplies the holder's move damage when the item's condition
+   * holds. `typeBoost` and `damageBoost` are mutually exclusive: one item, one
+   * damage handler.
+   */
+  damageBoost?: Readonly<{
+    multiplier: number;
+    /** Only moves of this category (Choice Band → Physical, Choice Specs → Special). */
+    category?: MoveCategory;
+    /** Only when the hit is super effective. */
+    superEffective?: boolean;
+  }>;
+  /** Held items: multiplies the holder's Speed (Choice Scarf 1.5, Iron Ball 0.5). */
+  speedBoost?: number;
+  /** Held items: multiplies the holder's hit chance (Wide Lens 1.1). */
+  accuracyBoost?: number;
+  /** Held items: crit stages added while the holder attacks (Scope Lens, Razor Claw). */
+  critStages?: number;
+  /** Held items: the holder acts last inside its priority bracket (Lagging Tail). */
+  alwaysLast?: boolean;
+  /** Held items: halves a hit of `type` and is then spent (the resist berries). */
+  resistBerry?: string;
+  /** Held items: the holder's own damaging move costs this fraction of its max HP (Life Orb). */
+  recoil?: readonly [number, number];
+  /** Held items: inflicts `status` on the holder once, at the end of a turn (Flame Orb). */
+  selfStatus?: StatusId;
+  /** Held items: may leave the holder at 1 HP from a hit that would KO it, then is spent. */
+  survive?: Readonly<{ chance: readonly [number, number]; fullHpOnly?: boolean }>;
   /**
    * A Mega Stone: `base` is the species the holder must be, `form` the Mega id
    * it becomes once per battle (`src/engine/battle/mega.ts`, D34).
@@ -47,12 +82,18 @@ export type ItemDef = Readonly<{
   shortDesc: string;
 }>;
 
-const item = (def: ItemDef): ItemDef => def;
+type ItemInput = Omit<ItemDef, 'shortDesc'> & Readonly<{ shortDesc?: string }>;
+
+/** A catalogue row. A row that omits `shortDesc` reads the dex's own text for the id. */
+const item = (def: ItemInput): ItemDef => ({
+  ...def,
+  shortDesc: def.shortDesc ?? getDexItem(def.id)?.shortDesc ?? def.name,
+});
 
 /**
- * Every Mega Stone, one per generated Mega forme (`D34`). They are never sold:
- * the mega-stone room has yet to ship, and a stone is only ever held by a boss,
- * a mini-boss or an `ace`. All Mega formes in the dex are covered.
+ * Every Mega Stone, one per generated Mega forme (`D34`). They are never sold: the
+ * mega-stone room has yet to ship, and a stone is only ever held by a boss, a
+ * mini-boss or an `ace`. All Mega formes in the dex are covered.
  */
 const MEGA_STONES: readonly ItemDef[] = MEGA_FORMES.map((mega) =>
   item({
@@ -100,43 +141,254 @@ export const TM_ITEM_IDS: readonly string[] = TM_ITEMS.map((entry) => entry.id);
  * boosts that type's moves 1.2x, exactly like the canon. They are boss-tier
  * treasure — nothing spawns Arceus yet — so they are catalogued but not sold.
  */
-const PLATES: readonly (readonly [string, string, string])[] = [
-  ['flameplate', 'Flame Plate', 'Fire'],
-  ['splashplate', 'Splash Plate', 'Water'],
-  ['zapplate', 'Zap Plate', 'Electric'],
-  ['meadowplate', 'Meadow Plate', 'Grass'],
-  ['icicleplate', 'Icicle Plate', 'Ice'],
-  ['fistplate', 'Fist Plate', 'Fighting'],
-  ['toxicplate', 'Toxic Plate', 'Poison'],
-  ['earthplate', 'Earth Plate', 'Ground'],
-  ['skyplate', 'Sky Plate', 'Flying'],
-  ['mindplate', 'Mind Plate', 'Psychic'],
-  ['insectplate', 'Insect Plate', 'Bug'],
-  ['stoneplate', 'Stone Plate', 'Rock'],
-  ['spookyplate', 'Spooky Plate', 'Ghost'],
-  ['dracoplate', 'Draco Plate', 'Dragon'],
-  ['dreadplate', 'Dread Plate', 'Dark'],
-  ['ironplate', 'Iron Plate', 'Steel'],
-  ['pixieplate', 'Pixie Plate', 'Fairy'],
+const PLATE_ITEMS: readonly ItemDef[] = [
+  item({ id: 'flameplate', name: 'Flame Plate', kind: 'held', price: 4000, plate: 'Fire', typeBoost: { type: 'Fire', multiplier: 1.2 }, shortDesc: 'Powers up Fire-type moves. Holder\'s Judgment becomes Fire type.' }),
+  item({ id: 'splashplate', name: 'Splash Plate', kind: 'held', price: 4000, plate: 'Water', typeBoost: { type: 'Water', multiplier: 1.2 }, shortDesc: 'Powers up Water-type moves. Holder\'s Judgment becomes Water type.' }),
+  item({ id: 'zapplate', name: 'Zap Plate', kind: 'held', price: 4000, plate: 'Electric', typeBoost: { type: 'Electric', multiplier: 1.2 }, shortDesc: 'Powers up Electric-type moves. Holder\'s Judgment becomes Electric type.' }),
+  item({ id: 'meadowplate', name: 'Meadow Plate', kind: 'held', price: 4000, plate: 'Grass', typeBoost: { type: 'Grass', multiplier: 1.2 }, shortDesc: 'Powers up Grass-type moves. Holder\'s Judgment becomes Grass type.' }),
+  item({ id: 'icicleplate', name: 'Icicle Plate', kind: 'held', price: 4000, plate: 'Ice', typeBoost: { type: 'Ice', multiplier: 1.2 }, shortDesc: 'Powers up Ice-type moves. Holder\'s Judgment becomes Ice type.' }),
+  item({ id: 'fistplate', name: 'Fist Plate', kind: 'held', price: 4000, plate: 'Fighting', typeBoost: { type: 'Fighting', multiplier: 1.2 }, shortDesc: 'Powers up Fighting-type moves. Holder\'s Judgment becomes Fighting type.' }),
+  item({ id: 'toxicplate', name: 'Toxic Plate', kind: 'held', price: 4000, plate: 'Poison', typeBoost: { type: 'Poison', multiplier: 1.2 }, shortDesc: 'Powers up Poison-type moves. Holder\'s Judgment becomes Poison type.' }),
+  item({ id: 'earthplate', name: 'Earth Plate', kind: 'held', price: 4000, plate: 'Ground', typeBoost: { type: 'Ground', multiplier: 1.2 }, shortDesc: 'Powers up Ground-type moves. Holder\'s Judgment becomes Ground type.' }),
+  item({ id: 'skyplate', name: 'Sky Plate', kind: 'held', price: 4000, plate: 'Flying', typeBoost: { type: 'Flying', multiplier: 1.2 }, shortDesc: 'Powers up Flying-type moves. Holder\'s Judgment becomes Flying type.' }),
+  item({ id: 'mindplate', name: 'Mind Plate', kind: 'held', price: 4000, plate: 'Psychic', typeBoost: { type: 'Psychic', multiplier: 1.2 }, shortDesc: 'Powers up Psychic-type moves. Holder\'s Judgment becomes Psychic type.' }),
+  item({ id: 'insectplate', name: 'Insect Plate', kind: 'held', price: 4000, plate: 'Bug', typeBoost: { type: 'Bug', multiplier: 1.2 }, shortDesc: 'Powers up Bug-type moves. Holder\'s Judgment becomes Bug type.' }),
+  item({ id: 'stoneplate', name: 'Stone Plate', kind: 'held', price: 4000, plate: 'Rock', typeBoost: { type: 'Rock', multiplier: 1.2 }, shortDesc: 'Powers up Rock-type moves. Holder\'s Judgment becomes Rock type.' }),
+  item({ id: 'spookyplate', name: 'Spooky Plate', kind: 'held', price: 4000, plate: 'Ghost', typeBoost: { type: 'Ghost', multiplier: 1.2 }, shortDesc: 'Powers up Ghost-type moves. Holder\'s Judgment becomes Ghost type.' }),
+  item({ id: 'dracoplate', name: 'Draco Plate', kind: 'held', price: 4000, plate: 'Dragon', typeBoost: { type: 'Dragon', multiplier: 1.2 }, shortDesc: 'Powers up Dragon-type moves. Holder\'s Judgment becomes Dragon type.' }),
+  item({ id: 'dreadplate', name: 'Dread Plate', kind: 'held', price: 4000, plate: 'Dark', typeBoost: { type: 'Dark', multiplier: 1.2 }, shortDesc: 'Powers up Dark-type moves. Holder\'s Judgment becomes Dark type.' }),
+  item({ id: 'ironplate', name: 'Iron Plate', kind: 'held', price: 4000, plate: 'Steel', typeBoost: { type: 'Steel', multiplier: 1.2 }, shortDesc: 'Powers up Steel-type moves. Holder\'s Judgment becomes Steel type.' }),
+  item({ id: 'pixieplate', name: 'Pixie Plate', kind: 'held', price: 4000, plate: 'Fairy', typeBoost: { type: 'Fairy', multiplier: 1.2 }, shortDesc: 'Powers up Fairy-type moves. Holder\'s Judgment becomes Fairy type.' }),
 ];
 
-const PLATE_ITEMS: readonly ItemDef[] = PLATES.map(([id, name, type]) =>
-  item({
-    id,
-    name,
-    kind: 'held',
-    price: 4000,
-    plate: type,
-    typeBoost: { type, multiplier: 1.2 },
-    shortDesc: `Powers up ${type}-type moves. Holder's Judgment becomes ${type} type.`,
-  }),
-);
+/** Damage boosters: one `damageBoost` multiplier each, gated by category or effectiveness. */
+const PORT_DAMAGE_ITEMS: readonly ItemDef[] = [
+  item({ id: 'choiceband', name: 'Choice Band', kind: 'held', price: 4000, damageBoost: { multiplier: 1.5, category: 'Physical' } }),
+  item({ id: 'choicespecs', name: 'Choice Specs', kind: 'held', price: 4000, damageBoost: { multiplier: 1.5, category: 'Special' } }),
+  item({ id: 'muscleband', name: 'Muscle Band', kind: 'held', price: 4000, damageBoost: { multiplier: 1.1, category: 'Physical' } }),
+  item({ id: 'wiseglasses', name: 'Wise Glasses', kind: 'held', price: 4000, damageBoost: { multiplier: 1.1, category: 'Special' } }),
+  item({ id: 'expertbelt', name: 'Expert Belt', kind: 'held', price: 4000, damageBoost: { multiplier: 1.2, superEffective: true } }),
+  item({ id: 'lifeorb', name: 'Life Orb', kind: 'held', price: 4000, damageBoost: { multiplier: 1.3 }, recoil: [1, 10] }),
+  item({ id: 'normalgem', name: 'Normal Gem', kind: 'held', price: 4000, damageBoost: { multiplier: 1.3, superEffective: true }, consumed: true }),
+];
+
+const PORT_SPEED_ITEMS: readonly ItemDef[] = [
+  item({ id: 'choicescarf', name: 'Choice Scarf', kind: 'held', price: 4000, speedBoost: 1.5 }),
+  item({ id: 'ironball', name: 'Iron Ball', kind: 'held', price: 4000, speedBoost: 0.5 }),
+];
+
+const PORT_ACCURACY_ITEMS: readonly ItemDef[] = [
+  item({ id: 'widelens', name: 'Wide Lens', kind: 'held', price: 4000, accuracyBoost: 1.1 }),
+];
+
+const PORT_CRIT_ITEMS: readonly ItemDef[] = [
+  item({ id: 'scopelens', name: 'Scope Lens', kind: 'held', price: 4000, critStages: 1 }),
+  item({ id: 'razorclaw', name: 'Razor Claw', kind: 'held', price: 4000, critStages: 1 }),
+];
+
+const PORT_LAST_ITEMS: readonly ItemDef[] = [
+  item({ id: 'laggingtail', name: 'Lagging Tail', kind: 'held', price: 4000, alwaysLast: true }),
+];
+
+const PORT_SURVIVE_ITEMS: readonly ItemDef[] = [
+  item({ id: 'focussash', name: 'Focus Sash', kind: 'held', price: 4000, survive: { chance: [1, 1], fullHpOnly: true }, consumed: true }),
+  item({ id: 'focusband', name: 'Focus Band', kind: 'held', price: 4000, survive: { chance: [1, 10] } }),
+];
+
+const PORT_RESIST_BERRY_ITEMS: readonly ItemDef[] = [
+  item({ id: 'occaberry', name: 'Occa Berry', kind: 'held', price: 200, resistBerry: 'Fire', consumed: true }),
+  item({ id: 'passhoberry', name: 'Passho Berry', kind: 'held', price: 200, resistBerry: 'Water', consumed: true }),
+  item({ id: 'wacanberry', name: 'Wacan Berry', kind: 'held', price: 200, resistBerry: 'Electric', consumed: true }),
+  item({ id: 'rindoberry', name: 'Rindo Berry', kind: 'held', price: 200, resistBerry: 'Grass', consumed: true }),
+  item({ id: 'yacheberry', name: 'Yache Berry', kind: 'held', price: 200, resistBerry: 'Ice', consumed: true }),
+  item({ id: 'chopleberry', name: 'Chople Berry', kind: 'held', price: 200, resistBerry: 'Fighting', consumed: true }),
+  item({ id: 'kebiaberry', name: 'Kebia Berry', kind: 'held', price: 200, resistBerry: 'Poison', consumed: true }),
+  item({ id: 'shucaberry', name: 'Shuca Berry', kind: 'held', price: 200, resistBerry: 'Ground', consumed: true }),
+  item({ id: 'cobaberry', name: 'Coba Berry', kind: 'held', price: 200, resistBerry: 'Flying', consumed: true }),
+  item({ id: 'payapaberry', name: 'Payapa Berry', kind: 'held', price: 200, resistBerry: 'Psychic', consumed: true }),
+  item({ id: 'tangaberry', name: 'Tanga Berry', kind: 'held', price: 200, resistBerry: 'Bug', consumed: true }),
+  item({ id: 'chartiberry', name: 'Charti Berry', kind: 'held', price: 200, resistBerry: 'Rock', consumed: true }),
+  item({ id: 'kasibberry', name: 'Kasib Berry', kind: 'held', price: 200, resistBerry: 'Ghost', consumed: true }),
+  item({ id: 'habanberry', name: 'Haban Berry', kind: 'held', price: 200, resistBerry: 'Dragon', consumed: true }),
+  item({ id: 'colburberry', name: 'Colbur Berry', kind: 'held', price: 200, resistBerry: 'Dark', consumed: true }),
+  item({ id: 'babiriberry', name: 'Babiri Berry', kind: 'held', price: 200, resistBerry: 'Steel', consumed: true }),
+  item({ id: 'roseliberry', name: 'Roseli Berry', kind: 'held', price: 200, resistBerry: 'Fairy', consumed: true }),
+  item({ id: 'chilanberry', name: 'Chilan Berry', kind: 'held', price: 200, resistBerry: 'Normal', consumed: true }),
+];
+
+/** The pinch berries: one stat stage at 1/4 HP or less, then spent. */
+const PORT_PINCH_BERRY_ITEMS: readonly ItemDef[] = [
+  item({ id: 'liechiberry', name: 'Liechi Berry', kind: 'held', price: 200, boosts: { atk: 1 }, below: [1, 4], consumed: true }),
+  item({ id: 'ganlonberry', name: 'Ganlon Berry', kind: 'held', price: 200, boosts: { def: 1 }, below: [1, 4], consumed: true }),
+  item({ id: 'petayaberry', name: 'Petaya Berry', kind: 'held', price: 200, boosts: { spa: 1 }, below: [1, 4], consumed: true }),
+  item({ id: 'apicotberry', name: 'Apicot Berry', kind: 'held', price: 200, boosts: { spd: 1 }, below: [1, 4], consumed: true }),
+  item({ id: 'salacberry', name: 'Salac Berry', kind: 'held', price: 200, boosts: { spe: 1 }, below: [1, 4], consumed: true }),
+  item({ id: 'micleberry', name: 'Micle Berry', kind: 'held', price: 200, boosts: { accuracy: 1 }, below: [1, 4], consumed: true }),
+];
+
+/** The status berries: cure one primary status (bad poison shares poison's). */
+const PORT_STATUS_BERRY_ITEMS: readonly ItemDef[] = [
+  item({ id: 'cheriberry', name: 'Cheri Berry', kind: 'held', price: 200, cures: ['par'], consumed: true }),
+  item({ id: 'chestoberry', name: 'Chesto Berry', kind: 'held', price: 200, cures: ['slp'], consumed: true }),
+  item({ id: 'pechaberry', name: 'Pecha Berry', kind: 'held', price: 200, cures: ['psn', 'tox'], consumed: true }),
+  item({ id: 'rawstberry', name: 'Rawst Berry', kind: 'held', price: 200, cures: ['brn'], consumed: true }),
+  item({ id: 'aspearberry', name: 'Aspear Berry', kind: 'held', price: 200, cures: ['frz'], consumed: true }),
+];
+
+/** The 1/3-HP berries: the Figy family, at 1/4 HP or less like the canon. */
+const PORT_HEAL_BERRY_ITEMS: readonly ItemDef[] = [
+  item({ id: 'figyberry', name: 'Figy Berry', kind: 'held', price: 200, healFraction: [1, 3], below: [1, 4], consumed: true }),
+  item({ id: 'wikiberry', name: 'Wiki Berry', kind: 'held', price: 200, healFraction: [1, 3], below: [1, 4], consumed: true }),
+  item({ id: 'magoberry', name: 'Mago Berry', kind: 'held', price: 200, healFraction: [1, 3], below: [1, 4], consumed: true }),
+  item({ id: 'aguavberry', name: 'Aguav Berry', kind: 'held', price: 200, healFraction: [1, 3], below: [1, 4], consumed: true }),
+  item({ id: 'iapapaberry', name: 'Iapapa Berry', kind: 'held', price: 200, healFraction: [1, 3], below: [1, 4], consumed: true }),
+];
+
+const PORT_SELF_STATUS_ITEMS: readonly ItemDef[] = [
+  item({ id: 'flameorb', name: 'Flame Orb', kind: 'held', price: 4000, selfStatus: 'brn' }),
+  item({ id: 'toxicorb', name: 'Toxic Orb', kind: 'held', price: 4000, selfStatus: 'tox' }),
+];
+
+/** The berry-class `no-op`s: catalogued for the art and the `D16` record, modelled by nothing. */
+const NOOP_BERRY_ITEMS: readonly ItemDef[] = [
+  item({ id: 'custapberry', name: 'Custap Berry', kind: 'held', price: 200 }),
+  item({ id: 'enigmaberry', name: 'Enigma Berry', kind: 'held', price: 200 }),
+  item({ id: 'jabocaberry', name: 'Jaboca Berry', kind: 'held', price: 200 }),
+  item({ id: 'keeberry', name: 'Kee Berry', kind: 'held', price: 200 }),
+  item({ id: 'lansatberry', name: 'Lansat Berry', kind: 'held', price: 200 }),
+  item({ id: 'leppaberry', name: 'Leppa Berry', kind: 'held', price: 200 }),
+  item({ id: 'marangaberry', name: 'Maranga Berry', kind: 'held', price: 200 }),
+  item({ id: 'persimberry', name: 'Persim Berry', kind: 'held', price: 200 }),
+  item({ id: 'rowapberry', name: 'Rowap Berry', kind: 'held', price: 200 }),
+  item({ id: 'starfberry', name: 'Starf Berry', kind: 'held', price: 200 }),
+  item({ id: 'tamatoberry', name: 'Tamato Berry', kind: 'held', price: 200 }),
+];
+
+/** The competitive held items nothing models yet; each id is also named in `UNMODELLED_ITEMS`. */
+const NOOP_ITEMS: readonly ItemDef[] = [
+  item({ id: 'abilityshield', name: 'Ability Shield', kind: 'held', price: 4000 }),
+  item({ id: 'absorbbulb', name: 'Absorb Bulb', kind: 'held', price: 4000 }),
+  item({ id: 'adamantcrystal', name: 'Adamant Crystal', kind: 'held', price: 4000 }),
+  item({ id: 'adamantorb', name: 'Adamant Orb', kind: 'held', price: 4000 }),
+  item({ id: 'airballoon', name: 'Air Balloon', kind: 'held', price: 4000 }),
+  item({ id: 'assaultvest', name: 'Assault Vest', kind: 'held', price: 4000 }),
+  item({ id: 'bigroot', name: 'Big Root', kind: 'held', price: 4000 }),
+  item({ id: 'bindingband', name: 'Binding Band', kind: 'held', price: 4000 }),
+  item({ id: 'blacksludge', name: 'Black Sludge', kind: 'held', price: 4000 }),
+  item({ id: 'blunderpolicy', name: 'Blunder Policy', kind: 'held', price: 4000 }),
+  item({ id: 'boosterenergy', name: 'Booster Energy', kind: 'held', price: 4000 }),
+  item({ id: 'brightpowder', name: 'Bright Powder', kind: 'held', price: 4000 }),
+  item({ id: 'cellbattery', name: 'Cell Battery', kind: 'held', price: 4000 }),
+  item({ id: 'clearamulet', name: 'Clear Amulet', kind: 'held', price: 4000 }),
+  item({ id: 'covertcloak', name: 'Covert Cloak', kind: 'held', price: 4000 }),
+  item({ id: 'damprock', name: 'Damp Rock', kind: 'held', price: 4000 }),
+  item({ id: 'ejectbutton', name: 'Eject Button', kind: 'held', price: 4000 }),
+  item({ id: 'ejectpack', name: 'Eject Pack', kind: 'held', price: 4000 }),
+  item({ id: 'electricseed', name: 'Electric Seed', kind: 'held', price: 4000 }),
+  item({ id: 'eviolite', name: 'Eviolite', kind: 'held', price: 4000 }),
+  item({ id: 'floatstone', name: 'Float Stone', kind: 'held', price: 4000 }),
+  item({ id: 'grassyseed', name: 'Grassy Seed', kind: 'held', price: 4000 }),
+  item({ id: 'gripclaw', name: 'Grip Claw', kind: 'held', price: 4000 }),
+  item({ id: 'griseouscore', name: 'Griseous Core', kind: 'held', price: 4000 }),
+  item({ id: 'griseousorb', name: 'Griseous Orb', kind: 'held', price: 4000 }),
+  item({ id: 'heatrock', name: 'Heat Rock', kind: 'held', price: 4000 }),
+  item({ id: 'heavydutyboots', name: 'Heavy-Duty Boots', kind: 'held', price: 4000 }),
+  item({ id: 'icyrock', name: 'Icy Rock', kind: 'held', price: 4000 }),
+  item({ id: 'kingsrock', name: 'King\'s Rock', kind: 'held', price: 4000 }),
+  item({ id: 'lightball', name: 'Light Ball', kind: 'held', price: 4000 }),
+  item({ id: 'lightclay', name: 'Light Clay', kind: 'held', price: 4000 }),
+  item({ id: 'loadeddice', name: 'Loaded Dice', kind: 'held', price: 4000 }),
+  item({ id: 'luminousmoss', name: 'Luminous Moss', kind: 'held', price: 4000 }),
+  item({ id: 'lustrousglobe', name: 'Lustrous Globe', kind: 'held', price: 4000 }),
+  item({ id: 'lustrousorb', name: 'Lustrous Orb', kind: 'held', price: 4000 }),
+  item({ id: 'mentalherb', name: 'Mental Herb', kind: 'held', price: 4000 }),
+  item({ id: 'metronome', name: 'Metronome', kind: 'held', price: 4000 }),
+  item({ id: 'mirrorherb', name: 'Mirror Herb', kind: 'held', price: 4000 }),
+  item({ id: 'mistyseed', name: 'Misty Seed', kind: 'held', price: 4000 }),
+  item({ id: 'powerherb', name: 'Power Herb', kind: 'held', price: 4000 }),
+  item({ id: 'protectivepads', name: 'Protective Pads', kind: 'held', price: 4000 }),
+  item({ id: 'psychicseed', name: 'Psychic Seed', kind: 'held', price: 4000 }),
+  item({ id: 'punchingglove', name: 'Punching Glove', kind: 'held', price: 4000 }),
+  item({ id: 'quickclaw', name: 'Quick Claw', kind: 'held', price: 4000 }),
+  item({ id: 'razorfang', name: 'Razor Fang', kind: 'held', price: 4000 }),
+  item({ id: 'redcard', name: 'Red Card', kind: 'held', price: 4000 }),
+  item({ id: 'ringtarget', name: 'Ring Target', kind: 'held', price: 4000 }),
+  item({ id: 'rockyhelmet', name: 'Rocky Helmet', kind: 'held', price: 4000 }),
+  item({ id: 'roomservice', name: 'Room Service', kind: 'held', price: 4000 }),
+  item({ id: 'safetygoggles', name: 'Safety Goggles', kind: 'held', price: 4000 }),
+  item({ id: 'shedshell', name: 'Shed Shell', kind: 'held', price: 4000 }),
+  item({ id: 'shellbell', name: 'Shell Bell', kind: 'held', price: 4000 }),
+  item({ id: 'snowball', name: 'Snowball', kind: 'held', price: 4000 }),
+  item({ id: 'souldew', name: 'Soul Dew', kind: 'held', price: 4000 }),
+  item({ id: 'stickybarb', name: 'Sticky Barb', kind: 'held', price: 4000 }),
+  item({ id: 'terrainextender', name: 'Terrain Extender', kind: 'held', price: 4000 }),
+  item({ id: 'throatspray', name: 'Throat Spray', kind: 'held', price: 4000 }),
+  item({ id: 'utilityumbrella', name: 'Utility Umbrella', kind: 'held', price: 4000 }),
+  item({ id: 'weaknesspolicy', name: 'Weakness Policy', kind: 'held', price: 4000 }),
+  item({ id: 'whiteherb', name: 'White Herb', kind: 'held', price: 4000 }),
+];
+
+/**
+ * The 22 hand-authored held items the dex drops as nonstandard: the eighteen
+ * **Memories** and four **Drives** a Silvally/Genesect retype will read. The dex
+ * has neither, so the name and the text are literal (English, `D12`).
+ */
+const AUTHORED_ITEMS: readonly ItemDef[] = [
+  item({ id: 'bugmemory', name: 'Bug Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Bug.' }),
+  item({ id: 'darkmemory', name: 'Dark Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Dark.' }),
+  item({ id: 'dragonmemory', name: 'Dragon Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Dragon.' }),
+  item({ id: 'electricmemory', name: 'Electric Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Electric.' }),
+  item({ id: 'fairymemory', name: 'Fairy Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Fairy.' }),
+  item({ id: 'fightingmemory', name: 'Fighting Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Fighting.' }),
+  item({ id: 'firememory', name: 'Fire Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Fire.' }),
+  item({ id: 'flyingmemory', name: 'Flying Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Flying.' }),
+  item({ id: 'ghostmemory', name: 'Ghost Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Ghost.' }),
+  item({ id: 'grassmemory', name: 'Grass Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Grass.' }),
+  item({ id: 'groundmemory', name: 'Ground Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Ground.' }),
+  item({ id: 'icememory', name: 'Ice Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Ice.' }),
+  item({ id: 'poisonmemory', name: 'Poison Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Poison.' }),
+  item({ id: 'psychicmemory', name: 'Psychic Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Psychic.' }),
+  item({ id: 'rockmemory', name: 'Rock Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Rock.' }),
+  item({ id: 'steelmemory', name: 'Steel Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Steel.' }),
+  item({ id: 'watermemory', name: 'Water Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Water.' }),
+  item({ id: 'normalmemory', name: 'Normal Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Normal.' }),
+  item({ id: 'burndrive', name: 'Burn Drive', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Fire.' }),
+  item({ id: 'chilldrive', name: 'Chill Drive', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Ice.' }),
+  item({ id: 'dousedrive', name: 'Douse Drive', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Water.' }),
+  item({ id: 'shockdrive', name: 'Shock Drive', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Electric.' }),
+];
+
+/**
+ * The competitive held-item set this catalogue adds: every `Port` row (its effect
+ * is modelled by `engine/battle/effects/items.ts`, so the Mart may sell it) and
+ * every `No-op` row (art, price and the `D16` record only, so only the ground
+ * hands it out). The pools in `loot.ts` and `shop.ts` read this authority.
+ */
+export const COMPETITIVE_HELD: readonly ItemDef[] = [
+  ...PORT_DAMAGE_ITEMS,
+  ...PORT_SPEED_ITEMS,
+  ...PORT_ACCURACY_ITEMS,
+  ...PORT_CRIT_ITEMS,
+  ...PORT_LAST_ITEMS,
+  ...PORT_SURVIVE_ITEMS,
+  ...PORT_RESIST_BERRY_ITEMS,
+  ...PORT_PINCH_BERRY_ITEMS,
+  ...PORT_STATUS_BERRY_ITEMS,
+  ...PORT_HEAL_BERRY_ITEMS,
+  ...PORT_SELF_STATUS_ITEMS,
+  ...NOOP_BERRY_ITEMS,
+  ...NOOP_ITEMS,
+  ...AUTHORED_ITEMS,
+];
+
+/** The ids of `COMPETITIVE_HELD`, for the obtainability test. */
+export const COMPETITIVE_HELD_IDS: readonly string[] = COMPETITIVE_HELD.map((row) => row.id);
 
 /**
  * The run's item catalogue: balls, heal/status/boost consumables, `held` items
- * (Leftovers, berries, the 1.2x type items, registered by `effects/items.ts`) and
- * `valuable` treasure, each with the price the shop spends. There is no Revive
- * anywhere (D5).
+ * (Leftovers, berries, the 1.2x type items, the competitive held set, registered
+ * by `effects/items.ts`) and `valuable` treasure, each with the price the shop
+ * spends. There is no Revive anywhere (D5).
  */
 export const ITEMS: readonly ItemDef[] = [
   item({ id: 'pokeball', name: 'Poke Ball', kind: 'ball', price: 200, catchBonus: 1, shortDesc: 'A device for catching wild Pokémon.' }),
@@ -199,6 +451,7 @@ export const ITEMS: readonly ItemDef[] = [
   item({ id: 'cometshard', name: 'Comet Shard', kind: 'valuable', price: 12000, shortDesc: 'A shard of a comet. Sell it for money.' }),
 
   ...PLATE_ITEMS,
+  ...COMPETITIVE_HELD,
   ...MEGA_STONES,
   ...TM_ITEMS,
 ];
