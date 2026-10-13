@@ -8,6 +8,66 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Every window in the game is drawn now instead of ripped, and the chrome carries its
+      own translucency.** `src/ui/frlg.ts` sliced the FRLG sheets for all six scenes; it now
+      serves a committed, **drawn** set under `src/assets/ui/**` (`window.png` 96x96,
+      `textbox.png` 128x128, `font.png`) described by `src/data/ui/chrome.json` /
+      `src/data/ui/font.json` and produced deterministically by the new
+      `scripts/ui/build-chrome.mjs` (`npm run data:ui`), which also derives the font atlas —
+      same glyph metrics, shadow pixels' alpha 255 → 128, white ink kept — from the FRLG
+      originals, which stay in the tree as the source. Every exported name survives: the
+      paddings (20/16/8, 36/28/28), the corners (20/24) and `addFrlgWindow`'s signature are
+      unchanged, so no scene's layout was re-cut, while `addFrlgWindow` now applies the set's
+      own alpha (0.88 window / 0.94 textbox) so the map and the field stay legible through
+      every panel. `FRLG_INK` moves to the deep black `0x0b0b10` and the light window's field
+      stays `#f8f8f8` — a dark field would have made the frozen ink unreadable (1.05:1) —
+      and `hudTransparent` keeps its id, labels, default and storage, re-read as a degree:
+      `Off` is the chrome's own alpha, `On` is the route HUD's alpha 0 plus its outline and
+      light text (`applyHudBackground`'s base is `FRLG_WINDOW_ALPHA`). `src/ui/frlgFont.ts`,
+      `src/ui/frlgFont.test.ts` (the manifest import), `src/ui/README.md`,
+      `src/scenes/RouteScene.ts`, `src/assets/README.md` (three superseded),
+      `docs/art-direction.md`, `docs/design-spec.md` §3/§4, `.prettierignore` (one generated
+      line), `package.json` (`data:ui`). No settings-model, `src/engine/**` or `SAVE_VERSION`
+      change.
+- [x] **A Mart always offers one machine, and every machine shows its own type's art.**
+      `SHOP_TM` (`src/data/shop.ts`) is the new per-band TM table — six bands, eight catalogue
+      ids each, every band's list inside its own TM-number range and strictly after the
+      previous band's — and `buildShop` (`src/ui/shop.ts`) draws **one** id from it **last**,
+      so every pre-existing pick keeps its fixed-seed sequence. The slot is priced at the
+      catalogue's `buyPrice` (¥3,000), deliberately not discounted, because a price under
+      `sellPrice` would be a buy-and-sell money loop. `itemIconFrame` (`src/data/itemIcons.ts`)
+      now resolves a TM to the `machine<type>` frame of the move it `teaches` — all 171 of
+      them, with `machinenormal` as the fallback for an unknown move — because Añil's own
+      `machine_<TYPE>` set was already packed: **no repack, no new art, no npm script**, and
+      `hasItemIcon` still answers `false` for a TM. The Mart panel already drew whatever
+      `buyRows` returned, so no scene changed. `src/data/shop.test.ts`, `src/ui/shop.test.ts`,
+      `src/data/itemIcons.test.ts`, `docs/maps-spec.md` §7.
+- [x] **A caught Pokémon keeps the share of health it had in the wild.** Reported in play as a
+      catch that arrived healed; the loss was the **fold**, not the battle.
+      `adoptAtLevel` (`src/engine/run/progression.ts`) rebuilt the member through
+      `createFighter`, which starts at full HP, so the level it adopts (`squadLevel`) healed it
+      too. It now re-derives the wild's own maximum (`statAtLevel` at the snapshot's level) and
+      carries the **fraction**, `Math.round`ed and clamped to `[1, newMax]` — the
+      `evolvePokemon` shape one function below — so a wild caught at 30% arrives at 30%, a
+      full-HP member (the dev-only `addDebugPokemon`) is unchanged and a 0-HP fixture lands on
+      1 HP instead of being released as fainted. Species, level, nature, IVs, EVs, ability,
+      gender, shiny and held item are carried as before and the moveset/PP/status rebuild is
+      untouched. No `Rng` draw moved, so **no fixed-seed expectation changed** and no re-pin
+      was owed; no `SAVE_VERSION` step. `src/engine/run/progression.test.ts`,
+      `src/engine/run/resolve.test.ts` (additions only).
+- [x] **Run Away's ⓘ stops quoting the dex's competitive blurb.** Measured on `main`, the
+      ability was implemented and `port`ed all along — `runAway()` sets `onTryEscape`,
+      `runTryEscape` is consulted by `rollRun` **before** the speed odds, and `canRun` refuses
+      while trapped — so the defect was the copy: all three ⓘ homes drew
+      `detail.abilityDesc`, which carried the dex's "No competitive use" text. The new
+      hand-authored `src/data/abilityText.ts` (`abilityText(id)`, ids normalised like
+      `getAbility`) holds the override table, and `abilityDescription` (`src/ui/partyDetail.ts`)
+      reads **override → dex → null**, so the one change fixes the route HUD's detail panel,
+      the capture screen and the battle's SWITCH window. The measurement the entry asked for is
+      in the report: the class is `ballfetch honeygather runaway`, and only Run Away is
+      `port`ed (the other two are `excluded`, so their blurb does not lie).
+      `src/data/abilityText.test.ts`, `src/ui/partyDetail.test.ts`, `docs/data-spec.md` §2,
+      `src/data/README.md`.
 - [x] **Nine Mega formes are no longer playable species.** `@pkmn/dex` tags its future
       formes `isNonstandard: "Future"`, and 40 of the 49 set `isMega: true` — but nine
       name the forme instead (`absolmegaz`, `garchompmegaz`, `lucariomegaz`, the two
