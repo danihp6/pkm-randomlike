@@ -261,6 +261,84 @@ export function addPokemon(run: RunState, pokemon: RunPokemon): RunState {
   return { ...run, box: [...run.box, pokemon] };
 }
 
+/**
+ * The run id the next caught member is minted under: `catch-<n>`, where `n` starts at
+ * the run's own catch count + 1 (`RunState.stats.catches`) and steps up while the id is
+ * already held by a member of the party or the box. Pure: it reads the run and draws
+ * nothing from any Rng (D11). The id is unique across the party **and** the box, and
+ * stable for the life of the member, because it is stored in the snapshot and never
+ * re-derived.
+ */
+export function nextMemberId(run: RunState): string {
+  const taken = new Set<string>();
+  for (const member of run.party) taken.add(member.fighter.id);
+  for (const member of run.box) taken.add(member.fighter.id);
+  let counter = Math.max(0, Math.floor(run.stats.catches)) + 1;
+  let id = `catch-${counter}`;
+  while (taken.has(id)) {
+    counter += 1;
+    id = `catch-${counter}`;
+  }
+  return id;
+}
+
+/**
+ * Re-keys every party/box member whose id another member already holds, in party-then-box
+ * order. The **first** member holding an id keeps it; a later one is re-minted with an id
+ * that is guaranteed not to collide with any id the run held when the repair started.
+ * `pcUnlocked` follows the members: an entry that named a re-keyed member's old id stays
+ * and that member's new id is appended (deduplicated). Pure and deterministic — the same
+ * run always repairs to the same ids — and a run whose ids are already unique is returned
+ * **as the same object** (`===`), so a decoder call site is free.
+ */
+export function dedupeMemberIds(run: RunState): RunState {
+  const original = new Set<string>();
+  for (const member of run.party) original.add(member.fighter.id);
+  for (const member of run.box) original.add(member.fighter.id);
+
+  const claimed = new Set<string>();
+  const rekeyed: { oldId: string; newId: string }[] = [];
+  let counter = 0;
+  const mint = (): string => {
+    let candidate = '';
+    do {
+      counter += 1;
+      candidate = `catch-${counter}`;
+    } while (original.has(candidate) || claimed.has(candidate));
+    return candidate;
+  };
+  const dedupeList = (members: readonly RunPokemon[]): readonly RunPokemon[] => {
+    let touched = false;
+    const next = members.map((member) => {
+      const id = member.fighter.id;
+      if (!claimed.has(id)) {
+        claimed.add(id);
+        return member;
+      }
+      const newId = mint();
+      claimed.add(newId);
+      rekeyed.push({ oldId: id, newId });
+      touched = true;
+      return { ...member, fighter: { ...member.fighter, id: newId } };
+    });
+    return touched ? next : members;
+  };
+
+  const party = dedupeList(run.party);
+  const box = dedupeList(run.box);
+  if (rekeyed.length === 0) return run;
+
+  // The floor's catch list follows the members it named: the old id still names the
+  // member that kept it, so both entries stay.
+  const pcUnlocked: string[] = [];
+  for (const id of run.pcUnlocked) if (!pcUnlocked.includes(id)) pcUnlocked.push(id);
+  for (const { oldId, newId } of rekeyed) {
+    if (run.pcUnlocked.includes(oldId) && !pcUnlocked.includes(newId)) pcUnlocked.push(newId);
+  }
+
+  return { ...run, party, box, pcUnlocked };
+}
+
 /** Replaces a party or box member by id; a miss leaves the run untouched. */
 export function updatePokemon(run: RunState, pokemon: RunPokemon): RunState {
   const id = pokemon.fighter.id;

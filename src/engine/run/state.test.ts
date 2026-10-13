@@ -16,6 +16,7 @@ import {
   canCapture,
   consumeItem,
   createRun,
+  dedupeMemberIds,
   depositToBox,
   equipHeldItem,
   evolveMember,
@@ -30,6 +31,7 @@ import {
   moveInBox,
   moveInParty,
   moveMoves,
+  nextMemberId,
   pcFullyEditable,
   pcMemberEditable,
   recordCatch,
@@ -46,6 +48,14 @@ import {
 
 const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch'] });
 const starterMaxHp = restoreFighter(starter.fighter).maxHp;
+
+function member(id: string, speciesId = 'sentret', level = 3): ReturnType<typeof createRunPokemon> {
+  return createRunPokemon({ id, speciesId, level });
+}
+
+function withCatches(catches: number): ReturnType<typeof createRun> {
+  return { ...createRun({ seed: 'run-a', starter }), stats: { catches, casualties: 0 } };
+}
 
 describe('createRun', () => {
   it('starts on route 1 of map 1 with the starter and an empty box', () => {
@@ -322,6 +332,90 @@ describe('move reorder', () => {
     expect(moveMoves(run, 'boxed', 0, 0)).toBe(run);
     expect(moveMoves(run, 'boxed', 0, 9)).toBe(run);
     expect(moveMoves(run, 'nobody', 0, 1)).toBe(run);
+  });
+});
+
+describe('nextMemberId', () => {
+  it('mints catch-1 for a fresh run with only its starter', () => {
+    expect(nextMemberId(createRun({ seed: 'run-a', starter }))).toBe('catch-1');
+  });
+
+  it('follows the run catch count', () => {
+    expect(nextMemberId(withCatches(2))).toBe('catch-3');
+  });
+
+  it('steps past an id the box already holds', () => {
+    const run = { ...withCatches(0), box: [member('catch-1')] };
+    expect(nextMemberId(run)).toBe('catch-2');
+  });
+
+  it('never mints wild or an id the party or the box already holds', () => {
+    const run = {
+      ...withCatches(1),
+      party: [starter, member('catch-2')],
+      box: [member('catch-3')],
+    };
+    const id = nextMemberId(run);
+    expect(id).toBe('catch-4');
+    expect(id).not.toBe('wild');
+    expect([...run.party, ...run.box].some((entry) => entry.fighter.id === id)).toBe(false);
+  });
+});
+
+describe('dedupeMemberIds', () => {
+  it('re-keys the duplicate party ids and then the box, never reusing a party id', () => {
+    const run = {
+      ...createRun({ seed: 'run-a', starter }),
+      party: [member('wild'), member('wild'), member('wild')],
+      box: [member('wild')],
+    };
+    const next = dedupeMemberIds(run);
+    expect(next.party.map((entry) => entry.fighter.id)).toEqual(['wild', 'catch-1', 'catch-2']);
+    expect(next.box.map((entry) => entry.fighter.id)).toEqual(['catch-3']);
+  });
+
+  it('gives a re-keyed member its new id in the unlock list that named the old one', () => {
+    const run = {
+      ...createRun({ seed: 'run-a', starter }),
+      party: [member('wild'), member('wild')],
+      pcUnlocked: ['wild'],
+    };
+    expect(dedupeMemberIds(run).pcUnlocked).toEqual(['wild', 'catch-1']);
+  });
+
+  it('leaves an unlock list that never named the re-keyed member alone', () => {
+    const run = {
+      ...createRun({ seed: 'run-a', starter }),
+      party: [member('wild'), member('wild')],
+      pcUnlocked: [],
+    };
+    const next = dedupeMemberIds(run);
+    expect(next.party.map((entry) => entry.fighter.id)).toEqual(['wild', 'catch-1']);
+    expect(next.pcUnlocked).toEqual([]);
+  });
+
+  it('touches nothing but the id of a re-keyed member', () => {
+    const caught = member('wild', 'sentret', 4);
+    const original = {
+      ...caught,
+      fighter: { ...caught.fighter, hp: 7, status: 'brn' as const, statusCounter: 3 },
+      caughtAt: { biomeId: 'forest', mapIndex: 1, routeInMap: 2 },
+    };
+    const run = { ...withCatches(2), party: [member('wild'), original] };
+    const next = dedupeMemberIds(run);
+    const rekeyed = next.party[1];
+    expect(rekeyed.fighter.id).toBe('catch-1');
+    expect({ ...rekeyed, fighter: { ...rekeyed.fighter, id: 'wild' } }).toEqual(original);
+    expect(next.stats).toEqual({ catches: 2, casualties: 0 });
+  });
+
+  it('returns a run whose ids are already unique as the same object', () => {
+    const run = {
+      ...createRun({ seed: 'run-a', starter }),
+      party: [starter, member('catch-1')],
+      box: [member('boxed')],
+    };
+    expect(dedupeMemberIds(run)).toBe(run);
   });
 });
 

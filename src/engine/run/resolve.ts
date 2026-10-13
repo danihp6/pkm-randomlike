@@ -16,6 +16,7 @@ import {
   gainExperience,
   isTrainerDefeated,
   markTrainerDefeated,
+  nextMemberId,
   recordCatch,
   squadLevel,
   useCapture,
@@ -91,7 +92,8 @@ export function resolveBattle(
   let captured: RunPokemon | null = null;
   if (result.captured) {
     const base = runPokemonFromSnapshot(result.captured, options?.catchLocation);
-    const caught = adoptAtLevel(base, squadLevel(next), next.seed);
+    const keyed: RunPokemon = { ...base, fighter: { ...base.fighter, id: nextMemberId(next) } };
+    const caught = adoptAtLevel(keyed, squadLevel(next), next.seed);
     if (options?.placeCapture === false) captured = caught;
     else next = addPokemon(next, caught);
     next = useCapture(next);

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { memberDetail } from '../../ui/partyDetail';
 import type { BattleReturn, BattleOutcome } from './battleLink';
 import { createRunPokemon, xpForLevel, type RunPokemon } from './progression';
 import { resolveBattle, type BattleReward } from './resolve';
@@ -83,7 +84,7 @@ describe('resolveBattle', () => {
     const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
     const result = resolveBattle(run, returned(run, 'capture', { captured: caught.fighter }), wild);
     expect(result.run.capturedRooms).toContain(run.routeInMap);
-    expect(result.run.party.map((member) => member.fighter.id)).toEqual(['starter', 'wild']);
+    expect(result.run.party.map((member) => member.fighter.id)).toEqual(['starter', 'catch-1']);
     expect(result.run.xp).toBeGreaterThan(run.xp);
     expect(result.run.stats.catches).toBe(1);
   });
@@ -100,7 +101,7 @@ describe('resolveBattle', () => {
     const result = resolveBattle(run, returned(run, 'capture', { captured: caught.fighter }), wild, {
       catchLocation,
     });
-    const placed = result.run.party.find((member) => member.fighter.id === 'wild');
+    const placed = result.run.party.find((member) => member.fighter.id === 'catch-1');
     expect(placed?.caughtAt).toEqual(catchLocation);
   });
 
@@ -112,8 +113,10 @@ describe('resolveBattle', () => {
       placeCapture: false,
       catchLocation,
     });
+    expect(result.captured?.fighter.id).toBe('catch-1');
     expect(result.captured?.caughtAt).toEqual(catchLocation);
     expect(result.run.party.some((member) => member.fighter.id === 'wild')).toBe(false);
+    expect(result.run.party.map((member) => member.fighter.id)).toEqual(['starter']);
   });
 
   it('counts every fainted member as a casualty', () => {
@@ -129,7 +132,39 @@ describe('resolveBattle', () => {
     const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
     const result = resolveBattle(full, returned(full, 'capture', { captured: caught.fighter }), wild);
     expect(result.run.party).toHaveLength(6);
-    expect(result.run.box.map((member) => member.fighter.id)).toEqual(['wild']);
+    expect(result.run.box.map((member) => member.fighter.id)).toEqual(['catch-1']);
+  });
+
+  it('re-keys every catch so a later one cannot shadow an earlier one', () => {
+    let run = createRun({ seed: 'catch-a', starter });
+    // What `BattleScene` sends for a `grass:x,y` encounter: both wild fighters carry
+    // the constant id `wild`, so the run has to re-key each catch as it enters.
+    const first = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
+    const second = createRunPokemon({ id: 'wild', speciesId: 'pikachu', level: 3 });
+    run = resolveBattle(run, returned(run, 'capture', { captured: first.fighter }), wild).run;
+    run = resolveBattle(run, returned(run, 'capture', { captured: second.fighter }), wild).run;
+
+    expect(run.party.map((member) => member.fighter.id)).toEqual(['starter', 'catch-1', 'catch-2']);
+    // A first-match lookup would have answered both ids with the first catch.
+    expect(memberDetail(run, run.party[1].fighter.id)?.name).toBe('Sentret');
+    expect(memberDetail(run, run.party[2].fighter.id)?.name).toBe('Pikachu');
+    expect(memberDetail(run, run.party[2].fighter.id)?.id).toBe('catch-2');
+    expect(run.stats.catches).toBe(2);
+  });
+
+  it('mints the same ids when the same two catches are replayed', () => {
+    const play = (): RunState => {
+      let run = createRun({ seed: 'catch-a', starter });
+      const first = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
+      const second = createRunPokemon({ id: 'wild', speciesId: 'pikachu', level: 3 });
+      run = resolveBattle(run, returned(run, 'capture', { captured: first.fighter }), wild).run;
+      return resolveBattle(run, returned(run, 'capture', { captured: second.fighter }), wild).run;
+    };
+    const once = play();
+    const again = play();
+    expect(again.party.map((member) => member.fighter.id)).toEqual(['starter', 'catch-1', 'catch-2']);
+    expect(again).toEqual(once);
+    expect(again.stats.catches).toBe(2);
   });
 
   it('releases every fainted member on a loss', () => {

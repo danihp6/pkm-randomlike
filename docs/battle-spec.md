@@ -120,7 +120,10 @@ One capture attempt per route (a run-level counter, not a per-battle one).
   Evolution (§9).
 - A **catch joins the squad at that shared level**: its stats and moveset are
   rebuilt from the species at the squad's level, whatever level the wild was; it
-  keeps the species it was caught as and evolves only by the player's click.
+  keeps the species it was caught as and evolves only by the player's click. It
+  enters the run under an id minted by `nextMemberId` (`catch-<n>`,
+  `src/engine/run/state.ts`), unique across the party and the box and kept for the
+  member's life, so a panel that resolves a member by id always shows that member.
 - A **per-map level cap** clamps gain: the squad can never exceed
   `levelCapForMap(map)`. The cap rises with the map chain so the next map is
   always a step up, and an evolution unlocks as soon as the member's level meets
