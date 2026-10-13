@@ -24,12 +24,12 @@ an adaptor over its event loop.
 
 | File | Contents | Count |
 | --- | --- | --- |
-| `species.json` | stats, types, abilities, forms, evolutions, gender ratio, weight, catch rate | 1291 (full National Dex) |
+| `species.json` | stats, types, abilities, forms, evolutions, gender ratio, weight, catch rate | 1282 (full National Dex) |
 | `megas.json` | every Mega forme of a played species: stats, types, ability, `baseSpeciesId`, `stoneId`, `stoneName` | 88 |
 | `moves.json` | type, category, power, accuracy, PP, priority, target, flags, secondaries | 835 |
 | `abilities.json` | name, description, flags | 311 |
 | `items.json` | name, description, battle flags | 249 |
-| `learnsets.json` | per species, move sources (`9L24`, `9M`, `9E`, `8L1`, ...) | 1290 |
+| `learnsets.json` | per species, move sources (`9L24`, `9M`, `9E`, `8L1`, ...) | 1281 |
 | `natures.json` | 25 natures with stat deltas | 25 |
 | `types.json` | the 18x18 effectiveness chart | 19 |
 
@@ -51,7 +51,9 @@ Notes:
   for the formes Legends Z-A and Champions announced. Both are taken alike, so the
   new X/Y formes (Raichu) and the new single-forme ones (Dragonite, Chesnaught,
   Baxcalibur…) each get a stone. The nine `Future` formes the dex leaves `isMega`
-  unset on stay where they are, in the playable set (`docs/data-spec.md` §1).
+  unset on name the forme instead (`Mega-Z`, `M-Mega`, `F-Mega`, `Original-Mega`)
+  and ship in neither file: they are reached from a stone, never from the grass,
+  and three of them share a stone `megas.json` refuses (`docs/data-spec.md` §1).
 - `@pkmn/dex` carries no catch rate, so `build-dex.mjs` merges one in from
   `scripts/data/catch-rates.json` (PokeAPI `pokemon_species.csv`, keyed by
   national dex number, fetched once by `scripts/fetch-catch-rates.mjs`). Capture

@@ -24,9 +24,11 @@ Legends Z-A and Champions announced, and the filter takes both exactly alike. Th
 nine `Future` formes whose dex entry leaves `isMega` unset — Absol Z, Garchomp Z
 and Lucario Z (`forme: 'Mega-Z'`), Meowstic (`'M-Mega'`/`'F-Mega'`),
 Magearna-Original (`'Original-Mega'`) and the three Tatsugiri (`'Curly-Mega'` and
-the two others) — are not in it: `isPlayable` only drops `isMega === true`, so
-they already ride the playable set as ownable species, and taking them here would
-ship one id in both files.
+the two others) — are in neither file: the games reach them from a stone, never
+from the grass, so `isPlayable` drops them by name-shape (`isUnflaggedMegaForme`)
+instead of leaving them ownable, and `megas.json` cannot take them either —
+three would share one of `meowsticite`/`magearnite`/`tatsugirinite`, which its
+one-stone-per-forme guard rejects.
 
 ## 2. Authored
 
