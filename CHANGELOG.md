@@ -15,9 +15,12 @@ file is the human-readable summary.
       soundtrack as MIDI plus the instrument bank and samples, never as audio, so
       `scripts/frlg/render-frlg-audio.mjs` now fetches a sparse checkout of that
       decomp plus the `huderlem/poryaaaa` m4a renderer and renders one file per cue
-      (the title, Route 1 and vs.-trainer beds; warp-in, bang, faint, level-up and
-      the trainer-victory fanfare), cutting a looping bed down to its loop body so
-      the file Phaser loops is the song's own loop. One master gain lifts the lot —
+      (the title, Route 1 and vs.-trainer beds; the Poké Ball opening, the
+      effectiveness sound, faint, level-up and the trainer-victory fanfare),
+      cutting a looping bed down to its loop body so the file Phaser loops is the
+      song's own loop. The effects are the ones the original plays at those
+      moments — `se_bang` (the Cut-door bang) and `se_warp_in` (a warp) were not —
+      and `SE_FAINT` was already right. One master gain lifts the lot —
       the decomp's own `-V` mix lands near a tenth of full scale — and the packer's
       caps are per-cue now, so a fanfare is never cut mid-phrase; `cues.test.ts`
       fails if a committed cue is still a placeholder sine. Every cue is still one

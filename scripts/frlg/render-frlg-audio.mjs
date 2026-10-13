@@ -66,8 +66,13 @@ const CUES = [
     voicegroup: 'voicegroup156',
     volume: 90,
   },
-  { id: 'encounter', kind: 'sfx', song: 'se_warp_in', voicegroup: 'voicegroup127', volume: 90 },
-  { id: 'hit', kind: 'sfx', song: 'se_bang', voicegroup: 'voicegroup128', volume: 110 },
+  // A wild roll and a trainer's sight share the cue, and the original plays no
+  // sound for either (a trainer's "!" is silent and the battle music follows), so
+  // the cue is the Poké Ball opening: the game's own "a Pokémon appears".
+  { id: 'encounter', kind: 'sfx', song: 'se_ball_open', voicegroup: 'voicegroup127', volume: 100 },
+  // A hit has no single sound in the original — each move carries its own — but
+  // the game does play SE_EFFECTIVE when a hit lands (Cmd_effectivenesssound).
+  { id: 'hit', kind: 'sfx', song: 'se_effective', voicegroup: 'voicegroup127', volume: 110 },
   { id: 'faint', kind: 'sfx', song: 'se_faint', voicegroup: 'voicegroup127', volume: 110 },
   { id: 'level-up', kind: 'sfx', song: 'mus_level_up', voicegroup: 'voicegroup008', volume: 90 },
   {
