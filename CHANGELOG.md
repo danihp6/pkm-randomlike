@@ -8,6 +8,71 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A Pokémon can be named, right in its own STATS panel.** The battle layer already
+      rendered a `FighterInput.nickname` but nothing ever set it, so every member showed its
+      species name — and the nickname could not simply be `fighter.name`, because Mega
+      Evolution and every forme change rewrite that field and restore it from
+      `megaBackup.name`. So the nickname is its **own field**: `createFighter`,
+      `snapshotFighter` and `restoreFighter` carry it (a test proves it survives a Mega),
+      `partyRow`/`fighterDetail` prefer it, and the learn popup and the evolution message name
+      the member by it. Typing it happens **in place**: the STATS tab's name row *is* the field
+      (`HUD_NICKNAME_*`, a rectangle inside the panel's own window with the `>` focus mark and
+      a `click to name` hint), following the MOVES tab's learnset search instead of a modal —
+      and while it has focus **every** route key is inert (`handleAction`, `heldDirection`,
+      `updateReset` and the dev key), with Enter committing, Escape discarding, and a press
+      outside, a tab switch, closing or collapsing the panel or a pause discarding too.
+      `normalizeNickname` collapses whitespace, trims and truncates to 12 **code points**, and
+      `renameMember` reads the species' own name as "clear it". The save gains the field with a
+      `SAVE_VERSION` 14 → 15 step whose migration adds nothing. `src/engine/run/nickname.ts` +
+      test, `src/engine/battle/fighter.ts` + tests, `src/engine/save.ts` + test,
+      `src/ui/{partyDetail,partyScreen,permadeath}.ts` + tests, `src/scenes/RouteScene.ts`,
+      `docs/design-spec.md` §3, `docs/battle-spec.md` §7.
+- [x] **Every type has its badge, Fairy included, and the statuses come from Añil too.** The
+      FRLG sheet predates Fairy, so a Fairy type fell back to a text chip. Both atlases are now
+      packed from Añil's own UI art (`Graphics/UI/types.png`, `statuses.png`) by two packers
+      that take their source as an argument and fail loudly when it is missing — the repo's
+      answer to keeping a gitignored asset out of a worktree. Frames keep the old geometry
+      (types **32x14**, status **32x8**, 4 columns), so no consumer changed. Types: 19 badges —
+      the 18 types plus the sheet's `???` slot, a flat bar with no glyph kept for manifest
+      parity — and `fairy` draws. Statuses: Añil ships seven (SLP/PSN/BRN/PAR/FRZ/FNT/PKRS) and
+      **no badly-poisoned** one, so `tox` keeps the `psn` frame and the test asserts the
+      fallback instead of inventing a badge. Both tests decode the committed PNGs and check the
+      frames are not empty, so a packer that wrote a blank sheet cannot pass.
+      `scripts/frlg/build-{type,status}-icons.mjs`, the two `src/data/frlg/*.json` + atlases,
+      `src/data/{typeIcons,statusIcons}.ts` + tests, `package.json` (`data:frlg:icons`),
+      `docs/art-direction.md`.
+- [x] **The dex ships the Z-A and Champions Megas: 48 → 88 Mega formes.** `@pkmn/dex` already
+      carried them, tagged `isNonstandard: "Future"`, and our own `isMega` filter accepted only
+      `Past`, so 40 formes were missing. The rule as shipped is the dex's own tag: a `Future`
+      row counts when it carries **`isMega: true`**, not when its name ends in Mega — because
+      nine `Future` entries name the forme instead (`absolmegaz`, `lucariomegaz`,
+      `garchompmegaz`, the two Meowstic, `magearnaoriginalmega` and the three Tatsugiri), they
+      are already in `species.json` as *playable* species, and three of them would share a stone
+      (`meowsticite`, `magearnite`, `tatsugirinite`), which the one-stone-per-forme guard
+      rejects; fixing that is registered as its own task. Two dex rows carried an inconsistent
+      HP (`floettemega` 74, `zygardemega` 216) and the generator now normalises the HP **and**
+      the `bst`, while still throwing when the discrepancy belongs to a `Past` Mega. Every new
+      forme maps to its own Añil sheet (no art fallback), all of them get a stone row through
+      `MEGA_STONES`, and `roster.test.ts` needed no re-pin. `scripts/build-dex.mjs`, the
+      regenerated `src/data/dex/{megas,meta}.json`, `src/data/dex/megas.test.ts` + `README.md`,
+      `src/data/anil/pokemon-sprites.json`, `public/anil/portraits*.png`, `docs/data-spec.md`,
+      `docs/showdown-reuse.md`.
+- [x] **An opening now owns its whole border band.** Reported in play: a route's opening showed
+      only part of its door, with border tiles the opening occupied still wall/fence.
+      `exitEdgeAt` was never the problem — it already counts any walkable border cell of an
+      opening edge as a door — the **geometry** was: `placeAccess` opened a single ring cell
+      while `carveGuaranteedPath` carved a two-wide lane, so the band's second cell existed only
+      where `cleanWalls` happened to widen the hole, and that pass's bite band is three columns
+      anchored at the map's left edge, so it never reached the second cell of an **east**
+      opening in a room whose side is ≡ 1 mod 3 (maps 4-6). The fix is engine-only: a pure
+      `openingBandCells` in `doors.ts`, `placeAccess` opening the whole band, the band cells
+      joining the terrain passes' forbids, and a new `borderBandGaps` gate (sorted row-major) in
+      `validateRoute` so `sketchRoute` re-rolls instead of shipping a half-band door. The
+      regression freezes the failing case — seed `doors-c`, map 4, room 3, edge `E`, the
+      `(30,20)` cell that used to be a wall — and the sweep covers maps 1-6. **A pre-existing
+      hole it exposed** is registered as its own task: `placeTrainers` may return zero trainers
+      and nothing gates it, against `docs/route-generator.md` §3.4's promise.
+      `src/engine/routes/{doors,sketch,validate}.ts` + tests, `docs/routes-spec.md`.
 - [x] **Every catch now mints its own member id, so a party row and its detail panel finally
       agree.** Reported in play: catch a third Pokémon and clicking it showed the **second**
       one's stats. The wild fighter was built with a constant id (`createFighter({ id: 'wild'

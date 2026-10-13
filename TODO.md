@@ -23,12 +23,13 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 3b is shipped and archived.** **Batch 4** is the next to run: it is cut, its four
-specs are written, and the Añil clone it needs is **back** (`sprite-sources/anil`,
-materialised from the human's `POKEMON ANIL V4.13` download and verified by re-running both
-packers, whose output is byte-identical to what is committed). Every batch from here follows
-the Legend's **Asset trees** rule: the clone's absolute path goes to the packer, and no tree
-under `sprite-sources/` is ever linked into a worktree. Nothing else below is in flight.
+**Batch 4 is shipped and archived.** The four tasks merged in ID order behind the green
+gate and the detail is in `CHANGELOG.md`'s `## Unreleased`; the workflow is **paused here**
+for the human's playtest. Batch 4's own findings are registered as **Batch 4b**
+immediately below — it is **not cut** and has no specs. Every batch from here follows the
+Legend's **Asset trees** rule: the Añil clone's absolute path goes to the packer, and no
+tree under `sprite-sources/` is ever linked into a worktree (Batch 3's junction is what
+emptied it once).
 
 Legend:
 - **IDs.** `[Task-NN]` is bound to a task only in this file; everywhere else a task
@@ -89,6 +90,10 @@ batch sits behind Batch 6 and behind the mechanics whose options the AI weighs �
 dependency-free and only waits for the scene to be free, which Batch 6 is. `Task-33` is
 the bug batch cut in front of Batch 4.
 
+`Task-36` and `Task-37` (Batch 4b, below) are what the four Batch-4 devs found: each waits
+on exactly one Batch-4 task and on nothing else — `Task-36` on `Task-19`, `Task-37` on
+`Task-32` — and they share no path, so that batch is an antichain one batch deep.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
@@ -122,38 +127,41 @@ decode-time normalisation, like `parseDiscoveredRooms` — so Batch 4's Task-13 
 14 → 15 step and Task-31's 15 → 16 in Batch 7 is unchanged. `docs/battle-spec.md` §7 is free
 again for Task-13.
 
-### Batch 4 — party data, badges, Legends Z-A Megas, the opening band
-- **Task-13** Nicknames, typed from the STATS tab.
-- **Task-15** Añil type and status badges.
-- **Task-19** Legends Z-A and Champions Megas.
-- **Task-32** An opening's border band is only partly a door.
-- **Hot files:** `package.json` → Task-15; `src/scenes/RouteScene.ts`, and
-  `src/engine/save.ts` + `save.test.ts` → Task-13; `src/data/dex/**` (the regenerated
-  `megas.json`, `meta.json`), `src/data/anil/pokemon-sprites.json`, the two Añil
-  portrait atlases, and the generated `docs/balance/effect-coverage.md` → Task-19; the
-  generated `src/data/frlg/type-icons.json`, `status-icons.json` and the two badge
-  atlases → Task-15. Task-32 holds no hot file: `src/engine/routes/**` is free here.
-- **Shape:** four tasks that share no path. Task-13 is the only one on
-  `src/scenes/RouteScene.ts` — it draws the STATS tab's name row the nickname is typed
-  from — and the only one on `src/engine/save.ts`, which it bumps 14 → 15 (the
-  migration adds no field: `nickname` stays `undefined`), so Task-31 (Batch 7) takes
-  15 → 16 as its own entry already assumes; no other task in this batch may touch
-  either file. Task-19 owns the regenerated dex and its counts; Task-15 repacks the
-  two `frlg` badge atlases in place at their existing 32x14 / 32x8 frames, so no
-  consumer scene or UI file changes and the batch's only scene stays Task-13's;
-  Task-32 re-pins the route generator's fixed-seed expectations, which no other task
-  reads. Nothing here depends on anything else here.
-- **Blocked — resolved.** Task-15 and Task-19 both read the local Añil clone
-  (`sprite-sources/anil`, the badge and sprite packers) and that clone was **empty**:
-  Batch 3 junctioned it into a worktree, Windows' `git worktree remove` followed the
-  link and emptied the target. The human re-downloaded the game
-  (`POKEMON ANIL V4.13.zip`) and the clone is back — `Graphics/` (893 item icons,
-  `Pokemon/`, `Icons/`, `UI/`) and `PBS/` — verified by re-running both packers:
-  `npm run data:anil:items` and `npm run data:anil` reproduce the committed atlases,
-  portraits and manifests **byte-identically**. Batch 3b runs first; this batch is cut
-  from `main` once it merges. From here on the Legend's **Asset trees** rule applies to
-  every batch: the clone's absolute path goes to the packer, and no tree under
-  `sprite-sources/` is ever linked into a worktree.
+### Batch 4 — party data, badges, Legends Z-A Megas, the opening band *(shipped, archived)*
+Task-13, Task-15, Task-19 and Task-32 merged in ID order behind the green gate; the detail is
+in `CHANGELOG.md`'s `## Unreleased`. Task-13 took `src/engine/save.ts` 14 → 15 as planned, so
+Task-31 (Batch 7) takes 15 → 16 next; Task-19 widened the dex's Mega set 48 → 88 and took
+`scripts/build-dex.mjs` with it; Task-15 repacked the two badge atlases from Añil in place, at
+their existing frame sizes; and Task-32 fixed the opening band in `src/engine/routes/**`,
+re-pinning the generator's fixed-seed expectations — no other task read those. The three
+findings the devs left behind are registered as **Batch 4b** below.
+
+### Batch 4b — follow-ups from Batch 4 *(registered; not cut)*
+- **Task-36** The nine Z-A/Champions Megas that are species today.
+- **Task-37** The trainer guarantee has no gate, and the validator's checklist is not
+  in the doc.
+- **Hot files:** `scripts/build-dex.mjs`, `src/data/dex/**` (the regenerated
+  `species.json` and `meta.json`), `docs/data-spec.md`, `docs/tech-decisions.md`,
+  `src/engine/run/pool.test.ts`, `src/engine/run/roster.test.ts` and — arbitrated below
+  — `src/engine/routes/encounters.test.ts` → Task-36; everything else under
+  `src/engine/routes/**` and `docs/route-generator.md` → Task-37. Neither claims
+  `package.json`, `src/main.ts`, `vite.config.ts`, a `src/scenes/*.ts` or a packed
+  asset, and `public/anil/**` rides Task-36 only if the packer actually moves it.
+- **One path is arbitrated between the two:** a smaller playable species set can move
+  the wild-encounter pool, so a route-side expectation can move with it. The single file
+  `src/engine/routes/encounters.test.ts` is therefore **Task-36's** (re-pin only), and
+  Task-37 keeps every other `src/engine/routes/**` file. Without that split the two
+  tasks would share a path and the batch would stop being an antichain.
+- **Shape:** two tasks that share no path, both cut from the four Batch-4 devs' reports
+  and **both waiting on Batch 4**: Task-36 needs Task-19's widened `isMega`, the
+  regenerated `megas.json`/`meta.json` and the nine ids it left behind, and Task-37
+  needs Task-32's band fix — which moves the fixed-seed expectations it re-pins — and
+  the `borderBandGaps` field its doc line names. It sits **before Batch 5** for one
+  reason: both items correct what Batch 4 shipped (the playable species set and the
+  generator's own checklist), and Batch 6's Task-17 docs pass writes `D40`'s Mega count
+  and `docs/battle-spec.md` §9, so the dex rule wants to be settled once, before those
+  numbers are written. It is **registered only** — no spec exists for either task,
+  because the workflow pauses here for the human's playtest.
 
 ### Batch 5 — panel chrome, TM acquisition
 - **Task-16** Modernise the panel and menu chrome.
@@ -175,7 +183,8 @@ again for Task-13.
   `src/engine/battle/golden.test.ts` and any harness module it extracts beside it —
   the only task allowed to restructure the golden log — over the numbers in
   `src/data/`. Task-17 takes `docs/design-spec.md`, `docs/battle-spec.md`,
-  `docs/routes-spec.md` and `AGENTS.md`, so nothing else in the batch may — which is
+  `docs/routes-spec.md`, `docs/tech-decisions.md` and `AGENTS.md`, so nothing else in
+  the batch may — which is
   why the capture task registered as `[Task-31]` sits in Batch 7 instead of here: it
   must rewrite the PC rule in `docs/routes-spec.md` §6, and Task-17 holds that file
   in this batch. The bug it replaces, `[Task-27]` (Catching a Pokémon stacks a
@@ -360,6 +369,43 @@ algorithm, its guarantees and its open questions are in
 `docs/route-generator.md`; these are the steps to get there, one branch each,
 most useful first. The art counterparts (a real tall-grass tile, the
 floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
+
+- [ ] **[Task-37] The trainer guarantee has no gate, and the validator's checklist is
+      not in the doc.** Two things Batch 4's Task-32 dev found while measuring, both in
+      this phase's own files.
+      **One: `placeTrainers` can return zero trainers, and nothing gates it.** The
+      population pass (`src/engine/routes/sketch.ts`) commits a spine trainer through
+      `tryFrom(spineTiles)` with a branch fallback, and `tryFrom` returns `false` when
+      no candidate survives its own rules (`candidateOk`: floor hugging a solid wall,
+      off the entry/exits/pockets, not crowded, not seeing the entry, and never cutting
+      the route) — and the caller ignores the result, so the route ships with no main
+      lane guarded. The dev measured it on pristine `main`: **3 of 720 seeds** produce
+      no trainer, and Task-32's own band fix (which reshuffles the terrain pools)
+      exposed **two more**. `docs/route-generator.md` §3.4 promises "One of them always
+      guards the main lane" and `validateRoute` has no field that says a route has none,
+      so `sketchRoute` ships it instead of re-rolling. The promise and the code
+      disagree, and the doc is the side that is wrong today.
+      **The task decides which way and says which**, in the report and in the files:
+      1. **Add the gate** (recommended): a `RouteValidation` field for "no main-lane
+         trainer" (a `trainerIssues` reason, or its own list beside
+         `borderBandGaps`), `ok` gains the conjunct, and those seeds then re-roll
+         inside `sketchRoute`'s existing `MAX_ATTEMPTS = 8` — the attempt index is part
+         of every stream key, so a reroll is still one deterministic map per seed. This
+         makes §3.4 true rather than changing it. It moves the fixed-seed expectations
+         of every seed whose shipped attempt changes, so the re-pin list is part of the
+         diff and is reported file by file.
+      2. **Amend the promise** — delete "One of them always guards the main lane" and
+         say the count is best-effort. Say why if so: the dev's measurement says a
+         trainer-free route is reachable, not theoretical, and a route with no fight on
+         it is a rarity the roguelike would rather not have.
+      **Two, folded in here because it is the same file and the same validator:**
+      `docs/route-generator.md` §4 is the shipped checklist (`RouteValidation`) that
+      `src/engine/routes/validate.ts`'s doc block cites by name, and it does **not**
+      list the `borderBandGaps` field Task-32 added — one line, one writer, no other
+      task in the batch holds the file.
+      *Dependencies:* Task-32 (An opening owns its whole border band) — it changes the
+      fixed-seed expectations this task re-pins and it is the task that added the
+      `borderBandGaps` field the doc line names. *(Batch 4b)*
 
 ## Phase 3 — Battle engine core (pure, headless, tested)
 
@@ -603,7 +649,11 @@ Ports of Showdown handlers, in batches, on the hook names in
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
 - [ ] **[Task-08]** Accessibility pass: colour-only information audited, HP bars
-      readable without colour, full keyboard play, reduced-flash option.
+      readable without colour, full keyboard play, reduced-flash option. It absorbs the
+      stale comment Task-15 parked: `src/scenes/StarterScene.ts` (~line 287) still
+      claims the sheet has no Fairy badge, and the dead Fairy-fallback path in that
+      method goes with it — this sweep owns every `src/scenes/*.ts`, so one line of
+      dead code is not worth its own ID.
       *Dependencies:* none. Scheduled after Task-16 (Modernise the panel and menu
       chrome) so the contrast and colour audit runs once, against the final art.
       *(Batch 8)*
@@ -620,23 +670,6 @@ Ports of Showdown handlers, in batches, on the hook names in
       `trainerXp` rule Task-10 shipped (archived with Batch 1). It is also the
       producer of the reusable harness: a later task that wants to run a scripted
       battle depends on Task-09 — `Task-35`'s fixed-seed AI regressions do. *(Batch 6)*
-- [ ] **[Task-13] Nicknames, typed from the STATS tab.** The battle layer already
-      renders one — `FighterInput.nickname` feeds `fighter.name` (`name: input.nickname ??
-      species.name`, `src/engine/battle/fighter.ts`) — but nothing ever sets it, so
-      every member shows its species name. Add a nickname the player types from the
-      STATS tab (`src/ui/partyDetail.ts` and its detail panel in
-      `src/scenes/RouteScene.ts`), shown wherever a member is named (party rows, HUD,
-      battle, capture screen) and clearable back to the species name. It must
-      survive Mega Evolution and every forme change: `changeBattleForm` rewrites
-      `fighter.name` with the forme's name and restores it from `megaBackup.name`
-      (`fighter.ts`), so the nickname needs **its own field, not `name`**. Persist
-      it: `FighterSnapshot` carries no name at all today, so the save gains one (a
-      `SAVE_VERSION` bump plus a migration that leaves it undefined) and
-      `runPokemonFromSnapshot` / `adoptBattleParty` thread it through. Text entry
-      follows the repo's DOM-overlay precedent (`src/ui/seedPrompt.ts`'s field, or
-      the on-screen keyboard the touch build would need — decide it here). Docs:
-      `docs/design-spec.md` §3, `docs/battle-spec.md` §7.
-      *Dependencies:* none. *(Batch 4)*
 
 ## Phase 8 — Biomes & art assets
 
@@ -655,16 +688,6 @@ cycles one biome.
       marsh/rain, snow, volcano, ruins/power plant. Each new biome owes a fixed-seed
       generator regression.
       *Dependencies:* none. *(Batch 8)*
-- [ ] **[Task-15] Añil type and status badges.** The battle menu, the party panels
-      and the starter cards draw the FRLG badges (`src/data/typeIcons.ts`,
-      `src/data/statusIcons.ts`, packed from `scripts/frlg/build-type-icons.mjs`
-      and `build-status-icons.mjs`), and the FRLG sheet predates Fairy, so a Fairy
-      type falls back to a text chip. Repack from Añil's
-      `Graphics/UI/types.png` / `statuses.png` (and
-      `Graphics/UI/Battle/icon_types.png`, `icon_statuses.png`) so every type,
-      Fairy included, has a badge, and update both accessors plus the badge note
-      in `docs/art-direction.md`.
-      *Dependencies:* none. *(Batch 4)*
 - [ ] **[Task-16] Modernise the panel and menu chrome.** Every window in the game
       is the FRLG frame: one `addFrlgWindow` (`src/ui/frlg.ts`) slicing
       `src/assets/frlg/window.png` and `textbox.png`, used by the main menu, the
@@ -781,6 +804,12 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       exported names, so the folder's map never rots. `AGENTS.md` is where the
       convention belongs (a line in the Directory layout section), and Task-17 is the
       only task in the batch that owns it.
+      **Two stale spots Batch 4 left behind ride here, because this task already owns
+      both files (one writer each):** `docs/tech-decisions.md`'s `D40` still says "48
+      Megas" after Task-19 shipped **88**, and `docs/battle-spec.md` §9's Mega section
+      still reads as if the set were the classic ones. Write the counts as they stand
+      when this task runs: Task-36 (Batch 4b) may move the species side again before
+      it, and the stale line is the number, not the rule.
       *Dependencies:* none. *(Batch 6)*
 - [ ] **[Task-18] Gigantamax, in the Mega Evolution mould.** Model Gigantamax the
       way the Megas work (`src/engine/battle/mega.ts`, `D34`): once per battle a
@@ -804,25 +833,48 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       also brings its G-Max move. Needs a decision entry, `docs/battle-spec.md`, and
       tests (fixed seed, once per battle, the HP doubling, the revert).
       *Dependencies:* none. *(Batch 7)*
-- [ ] **[Task-19] Legends Z-A and Champions Megas.** The build ships only the 48
-      classic Megas (`src/data/dex/megas.json`, `D40`); the ones Legends Z-A and
-      Champions added are missing. They are **already in the dex**: `@pkmn/dex`
-      0.10.11 lists **49** further formes tagged `isNonstandard: "Future"` —
-      Dragonite, Meganium, Feraligatr, Emboar, Excadrill, Skarmory, Chandelure,
-      Chesnaught, Delphox, Greninja, Pyroar, Malamar, Hawlucha, Drampa, Falinks,
-      Baxcalibur, Heatran,
-      Darkrai, Zeraora, Zygarde, Magearna, the three Tatsugiri, Meowstic F,
-      Raichu X/Y, Lucario Z, Garchomp Z, Absol Z and the rest — baseStats, types and
-      abilities included. Our own filter drops them: `isMega` in
-      `scripts/build-dex.mjs` only accepts `isNonstandard === 'Past'` and the general
-      species pass excludes `Future`. Decide the rule (take every `Future` Mega, or a
-      named whitelist) and regenerate: `npm run data:dex`, the battle art
-      (`npm run data:anil`) and the Mega Stones `src/data/items.ts` builds one per
-      forme. Check the new formes against `carriesMega` / `RosterOptions.allowMega`
-      (`src/engine/run/roster.ts`) so bosses, mini-bosses and the `ace` can carry
-      them, keep a fixed-seed roster test green, and say in the docs that `Future`
-      is the dex's own "announced, not released" tag.
-      *Dependencies:* none. *(Batch 4)*
+- [ ] **[Task-36] The nine Z-A/Champions Megas that are species today.** Task-19 widened
+      `isMega` (`scripts/build-dex.mjs`) to take every `Future` forme that sets
+      `isMega === true` — **40** of the dex's **49** `Future` entries, so `megas.json`
+      went 48 → **88** — and deliberately left the other **nine** alone:
+      `absolmegaz`, `garchompmegaz`, `lucariomegaz`, `meowsticmmega`,
+      `meowsticfmega`, `magearnaoriginalmega` and the three Tatsugiri Mega formes. They
+      do not set `isMega` (the dex names the **forme**, `Mega-Z`/`Mega`, instead), and
+      `isPlayable` (`scripts/build-dex.mjs`) drops only `isMega === true` — so all nine
+      ship in `species.json` as ordinary **capturable wild species with no stone**,
+      while the `Future`-tagged Mega-Z form is the one the games intend. The playable
+      pool is wider than the Mega set by exactly those ids, and that is a rule hole,
+      not an art one.
+      **The task decides the rule and says which**, and the two readings are not
+      equivalent:
+      1. **Exclude them from the playable pool** — a named predicate beside
+         `isPlayable`'s other tags (a forme-shaped tag, or the nine ids with the
+         reason), regenerated so `counts.species` and `counts.learnsets` fall by nine
+         and `species.json` no longer carries them. Cheapest, and it makes
+         `species.json` agree with `megas.json` about what a Mega is.
+      2. **Model them as stones** — keep the species, give each its `Mega-Z` forme in
+         `megas.json` and a Mega Stone. The "the games intend this" reading, and the
+         expensive one: the group's stones repeat (`meowsticite`, `magearnite`,
+         `tatsugirinite` — only three ids cover it), which is **exactly what Task-19's
+         duplicate-`stoneId` guard rejects**, so a stone would have to map to several
+         formes, and `src/data/dex/megas.ts`'s `BY_ITEM`/`megaFormForItem`, the
+         `MEGA_STONES` derivation in `src/data/items.ts` and the battle's one-stone
+         rule (`D34`) all assume one forme per stone.
+      Regenerate with `npm run data:dex`, move `counts.megas` / `counts.species` /
+      `counts.learnsets` together, and keep the fixed-seed pool and roster expectations
+      green (`src/engine/run/pool.test.ts`, `src/engine/run/roster.test.ts` — re-pin
+      only). A smaller playable set can also move the wild-encounter pool, and the one
+      arbitrated file in the batch is this task's for that reason:
+      `src/engine/routes/encounters.test.ts` (re-pin only — every other
+      `src/engine/routes/**` file is Task-37's).
+      `src/data/dex/species.test.ts` and `src/data/dex/dex.test.ts` read the
+      counts and the playable set. If `npm run data:anil` moves
+      `src/data/anil/pokemon-sprites.json` or `public/anil/**` because a species left
+      the set, that regeneration is this task's too. Docs: `docs/data-spec.md` §1 and
+      the `D40` rule in `docs/tech-decisions.md`.
+      *Dependencies:* Task-19 (Legends Z-A and Champions Megas) — it reads the widened
+      `isMega`, the regenerated `megas.json`/`meta.json` and the nine ids it left
+      behind. *(Batch 4b)*
 - [ ] **[Task-20] The Rotom appliances as evolutions.** Rotom's five appliance
       formes are in the dex as species of their own — `rotomheat`, `rotomwash`,
       `rotomfrost`, `rotomfan`, `rotommow` in `src/data/dex/species.json`, each with
@@ -944,59 +996,6 @@ Reported in play, awaiting triage. A bug becomes a task in the batch plan, and t
 fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what
 a finished batch still owes QA.
 
-- [ ] **[Task-32] An opening's border band is only partly a door.** Reported in play:
-      a route's opening shows **part of its band** as a door — some of the border
-      tiles the opening occupies are still wall/fence, and the cells the wall tidy
-      rewrites are the ones that misbehave. The door **rule** is sound and is not the
-      suspect: `exitEdgeAt` (`src/engine/routes/doors.ts`) already counts **any**
-      walkable border cell of an opening edge as a door, and the scene asks it with
-      the **raw** map (`RouteScene.doorEdgeAt` passes `this.map = route.tiles`, not
-      the movement copy), so a decorative tree tip is never mistaken for a door.
-      The **geometry** it reads is what is wrong. `placeAccess`
-      (`src/engine/routes/sketch.ts`) opens **one** ring cell per opening
-      (`tiles[tile.y][tile.x] = FLOOR`) while `carveGuaranteedPath` carves the lane
-      `pathWidth` (2) wide, so the band's remaining cell exists **only** where
-      `cleanWalls` (`src/engine/routes/walls.ts`) happens to widen the ring — and the
-      tidy's ring licence is motif-band shaped: its bitten-tree pass drops a ring cell
-      only when the 3-wide band it belongs to (`bandStart[x] = x - x % cols`,
-      anchored at the map's **left** edge) holds both wall and floor *in that row*.
-      On the **east** column that band is clipped by the map edge: for a room whose
-      `(width - 1) % cols === 0` the band it tests is the single cell `width - 1`, so
-      it is never mixed, the widening never fires, and the east door stays one cell
-      wide while its lane is two — this is the reading's prediction of the failing
-      case, to be confirmed by the search below. The column un-stack pass cannot
-      compensate: `onRing` is true for **every** cell of `column 0` and
-      `column width - 1`, so `topRing && bottomRing` skips every run in those columns,
-      and it trims an interior end on purpose. A second mechanism un-doors a band cell
-      the tidy **does** open: the terrain passes guard only the anchors
-      (`ends = [entry, ...exits]` in `openKeys`), so a band cell sits in the grass and
-      ledge pools (`pocketTiles`) and can catch `TALL_GRASS` — walkable, but
-      `exitEdgeAt` reads a raw `FLOOR`, so that cell silently stops being a door.
-      **Expected:** every border cell of an opening's **band** is a door, on **every**
-      edge, including the cells the tidy pass rewrites. The band is the lane's own
-      cross-section at the ring: for a `W`/`E` opening the `pathWidth` cells
-      `y … y + pathWidth - 1` on that edge column, for an `N`/`S` opening the
-      `pathWidth` cells `x … x + pathWidth - 1` on that edge row. The generator owns
-      the band; the tidy may widen a hole, never leave one half-open.
-      **The fix** is engine-only, `src/engine/routes/**`: a pure `openingBandCells`
-      helper in `doors.ts`, `placeAccess` opening the whole band, the band cells
-      joining the terrain forbids in `attemptRoute`, and a `borderBandGaps` gate in
-      `validateRoute` so `sketchRoute` re-rolls instead of shipping a half-band door.
-      **The failing case is not frozen yet**: the dev finds it by search over
-      `planMap`/`roomView` rooms (the reading says: an **east** opening in a room with
-      `(width - 1) % 3 === 0`), then writes the seed, the map, the room, the edge and
-      the exact coordinates into the regression test and reports them for the archive.
-      The test gap that let this through: `src/engine/routes/doors.test.ts`'s real-room
-      case asserts only that each declared edge has **at least one** walkable border
-      cell (`openTiles.size` plus one cell per edge), never that the band is complete.
-      *Dependencies:* none — it reads only `src/engine/routes/**`, whose fixed-seed
-      expectations it re-pins. *(Batch 4)*
-- `[Task-27]` (Catching a Pokémon stacks a duplicate on top of it) was absorbed into
-      `[Task-31]` (Batch 7) and retired, and the live diagnosis of its repro now sits on
-      `[Task-31]`'s own entry and on `[Task-33]`'s: the colliding id was never the capture
-      placement, so `[Task-33]` (Batch 3b) fixes it first and `[Task-31]` re-runs the repro
-      over the fixed seam and reports the result to QA.
-
 ---
 
 ## [PENDING FIXES]
@@ -1009,4 +1008,3 @@ Written by QA. The format is fixed — one entry per task. Empty means nothing i
   - **Actual / error log:** ...
   - **Affected path:** ...
 ```
-
