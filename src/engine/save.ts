@@ -8,7 +8,7 @@ import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fight
 import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
 import { MAX_LEVEL, xpForLevel, type CatchLocation, type RunPokemon } from './run/progression';
-import { emptyRunStats, type RunState, type RunStats } from './run/state';
+import { dedupeMemberIds, emptyRunStats, type RunState, type RunStats } from './run/state';
 
 /** How fast the message box types text (consumed by the settings screen). */
 export type TextSpeed = 'slow' | 'normal' | 'fast';
@@ -617,7 +617,10 @@ function parseRun(value: unknown): RunState | null {
 
   const money = isInteger(value.money) && value.money >= 0 ? value.money : 0;
 
-  return {
+  // A save written while member ids could collide (`grass:x,y` encounters all
+  // entered the run as `wild`) is repaired here, so every later by-id lookup has
+  // one member to find.
+  return dedupeMemberIds({
     seed: value.seed,
     mode: value.mode,
     routeIndex: value.routeIndex,
@@ -639,5 +642,5 @@ function parseRun(value: unknown): RunState | null {
     pickedItems,
     capturedRooms,
     stats: parseRunStats(value.stats),
-  };
+  });
 }

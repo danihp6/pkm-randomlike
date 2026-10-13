@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createRun } from '../engine/run/state';
-import { createRunPokemon } from '../engine/run/progression';
+import { createRun, type RunState } from '../engine/run/state';
+import { createRunPokemon, type RunPokemon } from '../engine/run/progression';
+import { resolveBattle } from '../engine/run/resolve';
+import type { BattleReturn } from '../engine/run/battleLink';
 import { createFighter } from '../engine/battle/fighter';
 import {
   CLOSED_DETAIL,
@@ -67,6 +69,51 @@ describe('memberDetail', () => {
     };
     const withCaught = { ...run, party: [...run.party, caught] };
     expect(memberDetail(withCaught, 'caught')?.caughtLabel).toBe('Deep Forest · Map 2 · Route 2');
+  });
+});
+
+describe('memberDetail on two catches of the same species', () => {
+  const reward = { enemyLevels: [4], isTrainer: false };
+
+  function captureReturn(run: RunState, captured: RunPokemon): BattleReturn {
+    return {
+      outcome: 'capture',
+      message: 'done',
+      player: run.party.map((member) => member.fighter),
+      bag: run.bag,
+      captured: captured.fighter,
+    };
+  }
+
+  function withMoves(member: RunPokemon, moveIds: readonly string[]): RunPokemon {
+    return {
+      ...member,
+      fighter: {
+        ...member.fighter,
+        moves: moveIds.map((moveId) => ({ moveId, pp: 20, maxPp: 20 })),
+      },
+    };
+  }
+
+  it('resolves each member id to that member\'s own moves', () => {
+    // Two wild fighters built the way `BattleScene` builds them: both called `wild`.
+    const first = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 4 });
+    const second = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 4 });
+    let run = createRun({ seed: 'catch-a', starter });
+    run = resolveBattle(run, captureReturn(run, first), reward).run;
+    run = resolveBattle(run, captureReturn(run, second), reward).run;
+    run = {
+      ...run,
+      party: run.party.map((member, index) =>
+        index === 1 ? withMoves(member, ['tackle']) : index === 2 ? withMoves(member, ['scratch']) : member,
+      ),
+    };
+
+    const firstId = run.party[1].fighter.id;
+    const secondId = run.party[2].fighter.id;
+    expect(firstId).not.toBe(secondId);
+    expect(memberDetail(run, firstId)?.moves.map((move) => move.moveId)).toEqual(['tackle']);
+    expect(memberDetail(run, secondId)?.moves.map((move) => move.moveId)).toEqual(['scratch']);
   });
 });
 

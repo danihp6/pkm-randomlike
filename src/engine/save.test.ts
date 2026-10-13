@@ -395,6 +395,28 @@ describe('run validation', () => {
     expect(unlocked.run?.pcUnlocked).toEqual(['p0']);
   });
 
+  it('re-keys a saved run whose members share an id', () => {
+    const party = [0, 1].map(() => createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 }));
+    const run: RunState = {
+      ...sampleRun(),
+      party,
+      pcUnlocked: ['wild'],
+      stats: { catches: 2, casualties: 0 },
+    };
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    expect(decoded.run?.party.map((member) => member.fighter.id)).toEqual(['wild', 'catch-1']);
+    expect(decoded.run?.pcUnlocked).toEqual(['wild', 'catch-1']);
+    expect(decoded.run?.stats).toEqual({ catches: 2, casualties: 0 });
+  });
+
+  it('round-trips a run whose ids are already unique', () => {
+    const run = sampleRun();
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    expect(decoded.run?.party.map((member) => member.fighter.id)).toEqual(run.party.map((member) => member.fighter.id));
+    expect(decoded.run?.box.map((member) => member.fighter.id)).toEqual(['boxed']);
+    expect(decoded.run).toEqual(run);
+  });
+
   it('drops a member whose species the dex no longer knows', () => {
     const run = sampleRun();
     const stale = { ...run.party[0], fighter: { ...run.party[0].fighter, speciesId: 'missingno' } };

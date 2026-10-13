@@ -102,6 +102,7 @@ export const STAT_LABELS: Readonly<Record<StatId, string>> = {
 
 export { typeColor, typeTint } from './typeColors';
 
+// The first match is the only match: `nextMemberId` (src/engine/run/state.ts) keeps ids unique.
 function memberById(run: RunState, id: string): RunPokemon | undefined {
   return run.party.find((member) => member.fighter.id === id) ?? run.box.find((member) => member.fighter.id === id);
 }
