@@ -23,8 +23,12 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 3 is shipped and archived.** Batch 4 is the next to run, and nothing below it is
-in flight: its specs are written when the batch is cut.
+**Batch 3b is shipped and archived.** **Batch 4** is the next to run: it is cut, its four
+specs are written, and the Añil clone it needs is **back** (`sprite-sources/anil`,
+materialised from the human's `POKEMON ANIL V4.13` download and verified by re-running both
+packers, whose output is byte-identical to what is committed). Every batch from here follows
+the Legend's **Asset trees** rule: the clone's absolute path goes to the packer, and no tree
+under `sprite-sources/` is ever linked into a worktree. Nothing else below is in flight.
 
 Legend:
 - **IDs.** `[Task-NN]` is bound to a task only in this file; everywhere else a task
@@ -50,6 +54,13 @@ Legend:
   generated file (the packed atlases under `src/assets/`, `src/data/frlg/*.json`,
   `src/data/anil/*.json`, `docs/balance/effect-coverage.md`). Each batch names its
   holder below.
+- **Asset trees.** A gitignored asset tree (`sprite-sources/**`) is **never** junctioned
+  or symlinked into a worktree: Windows' `git worktree remove` follows the link and
+  empties the link's **target**, which is how Batch 3 lost the Añil clone. A task that
+  needs the clone passes its **absolute path** to the packer, and every packer takes its
+  source directory through argv or the environment — none of them reads a path inside a
+  worktree. The permanent copy of this rule belongs in `AGENTS.md`; `Task-17` holds that
+  file in Batch 6.
 - **Unscheduled.** An ID that appears in no batch is blocked outside this backlog,
   so it cannot be scheduled however empty the plan looks. `[Task-28]` (activate the
   ESLint half of `npm run lint`) is the only one: it waits on an upstream
@@ -70,6 +81,14 @@ earlier batch whose paths leave `scripts/build-dex.mjs` and `src/data/dex/**` fr
 `Task-29` (the Prettier reformat pass, Batch 11) is the other serial resource: it claims
 every `src/**` path `.prettierignore` still ledgers, so it runs alone, and last.
 
+The items registered since the first plan add one link each, and one batch that is not a
+link at all. `Task-35` (the enemy AI, Batch 8b) reads the reusable scripted-battle
+harness `Task-09` extracts beside `src/engine/battle/golden.test.ts` (Batch 6), so its
+batch sits behind Batch 6 and behind the mechanics whose options the AI weighs — Gigantamax
+(Batch 7) and the item-driven retypes (Batch 8). `Task-34` (the battle SWITCH grid) is
+dependency-free and only waits for the scene to be free, which Batch 6 is. `Task-33` is
+the bug batch cut in front of Batch 4.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
@@ -88,18 +107,53 @@ Task-07 and Task-12 merged in ID order behind the green gate; the detail is in
 competitive set, with Añil's own 893-icon atlas packed at 24 px so no scene changed,
 and every catalogue row is either a `port` or an honest `no-op`; the ability row reads
 the dex's own text through the popup both tasks share. Task-07's paths — the one chain
-left, `Task-07 → Task-23` — are free again for Batch 8.
+left, `Task-07 → Task-23` — are free again for Batch 8. One casualty, recorded because
+Batch 4 waits on it: the Orchestrator junctioned `sprite-sources/anil` into a worktree, and
+Windows' `git worktree remove` followed the link and emptied the **clone**. No committed
+output was lost — the packed atlas and every generated file are in the tree — but the
+clone itself is empty and is being re-downloaded; the Legend's **Asset trees** rule is the
+mitigation.
 
-### Batch 4 — party data, badges, Legends Z-A Megas
+### Batch 3b — a catch's unique id *(shipped, archived)*
+- **Task-33** The duplicate-Pokémon bug: every catch was minted with the same member id.
+Task-33 merged alone behind the green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`.
+It took `src/engine/save.ts` **without** a version bump — repairing an old save is a
+decode-time normalisation, like `parseDiscoveredRooms` — so Batch 4's Task-13 still takes the
+14 → 15 step and Task-31's 15 → 16 in Batch 7 is unchanged. `docs/battle-spec.md` §7 is free
+again for Task-13.
+
+### Batch 4 — party data, badges, Legends Z-A Megas, the opening band
 - **Task-13** Nicknames, typed from the STATS tab.
 - **Task-15** Añil type and status badges.
 - **Task-19** Legends Z-A and Champions Megas.
-- **Hot files:** `package.json` → Task-15; `src/data/dex/**` (regenerated
-  `megas.json`, `meta.json`) and `src/data/anil/pokemon-sprites.json` → Task-19; the
-  generated `src/data/frlg/type-icons.json`, `src/data/frlg/status-icons.json` and the
-  two badge atlases → Task-15.
-- **Shape:** Task-13 touches `src/engine/save.ts` with a `SAVE_VERSION` bump, so
-  nothing else in the batch may; Task-19 owns the regenerated dex.
+- **Task-32** An opening's border band is only partly a door.
+- **Hot files:** `package.json` → Task-15; `src/scenes/RouteScene.ts`, and
+  `src/engine/save.ts` + `save.test.ts` → Task-13; `src/data/dex/**` (the regenerated
+  `megas.json`, `meta.json`), `src/data/anil/pokemon-sprites.json`, the two Añil
+  portrait atlases, and the generated `docs/balance/effect-coverage.md` → Task-19; the
+  generated `src/data/frlg/type-icons.json`, `status-icons.json` and the two badge
+  atlases → Task-15. Task-32 holds no hot file: `src/engine/routes/**` is free here.
+- **Shape:** four tasks that share no path. Task-13 is the only one on
+  `src/scenes/RouteScene.ts` — it draws the STATS tab's name row the nickname is typed
+  from — and the only one on `src/engine/save.ts`, which it bumps 14 → 15 (the
+  migration adds no field: `nickname` stays `undefined`), so Task-31 (Batch 7) takes
+  15 → 16 as its own entry already assumes; no other task in this batch may touch
+  either file. Task-19 owns the regenerated dex and its counts; Task-15 repacks the
+  two `frlg` badge atlases in place at their existing 32x14 / 32x8 frames, so no
+  consumer scene or UI file changes and the batch's only scene stays Task-13's;
+  Task-32 re-pins the route generator's fixed-seed expectations, which no other task
+  reads. Nothing here depends on anything else here.
+- **Blocked — resolved.** Task-15 and Task-19 both read the local Añil clone
+  (`sprite-sources/anil`, the badge and sprite packers) and that clone was **empty**:
+  Batch 3 junctioned it into a worktree, Windows' `git worktree remove` followed the
+  link and emptied the target. The human re-downloaded the game
+  (`POKEMON ANIL V4.13.zip`) and the clone is back — `Graphics/` (893 item icons,
+  `Pokemon/`, `Icons/`, `UI/`) and `PBS/` — verified by re-running both packers:
+  `npm run data:anil:items` and `npm run data:anil` reproduce the committed atlases,
+  portraits and manifests **byte-identically**. Batch 3b runs first; this batch is cut
+  from `main` once it merges. From here on the Legend's **Asset trees** rule applies to
+  every batch: the clone's absolute path goes to the packer, and no tree under
+  `sprite-sources/` is ever linked into a worktree.
 
 ### Batch 5 — panel chrome, TM acquisition
 - **Task-16** Modernise the panel and menu chrome.
@@ -110,10 +164,13 @@ left, `Task-07 → Task-23` — are free again for Batch 8.
   question, Task-22 adds a machine icon to the sheet Task-07 packed. Both are free to
   assume Batch 4 merged.
 
-### Batch 6 — balance pass, Phase 9 docs
+### Batch 6 — balance pass, Phase 9 docs, the battle SWITCH grid
 - **Task-09** Balance pass.
 - **Task-17** Step 14 — docs & migration pass.
-- **Hot files:** the sheets under `docs/balance/` → Task-09.
+- **Task-34** The battle SWITCH grid: one sixth per row, a name that cannot stretch it,
+  arrows that move the cursor.
+- **Hot files:** the sheets under `docs/balance/` → Task-09; `src/scenes/BattleScene.ts`
+  → Task-34.
 - **Shape:** numbers, one harness and prose. Task-09 owns
   `src/engine/battle/golden.test.ts` and any harness module it extracts beside it —
   the only task allowed to restructure the golden log — over the numbers in
@@ -122,7 +179,15 @@ left, `Task-07 → Task-23` — are free again for Batch 8.
   why the capture task registered as `[Task-31]` sits in Batch 7 instead of here: it
   must rewrite the PC rule in `docs/routes-spec.md` §6, and Task-17 holds that file
   in this batch. The bug it replaces, `[Task-27]` (Catching a Pokémon stacks a
-  duplicate on top of it), was absorbed into `[Task-31]` and is retired.
+  duplicate on top of it), was absorbed into `[Task-31]` and is retired — its live
+  diagnosis is `[Task-33]`'s, which Batch 3b fixes before any of this.
+  Task-34 is the third task and takes the one path the other two leave free: the
+  party grid's geometry lives in `BattleScene` alone, and this is the first batch whose
+  scene claims leave that file open — Batch 5's chrome pass owns it in the batch before,
+  and Batch 7's Gigantamax and Batch 8's accessibility sweep own it after. It reads the
+  long names Batch 4's nicknames (Task-13) make possible but produces nothing anyone in
+  this batch reads, and it takes no `docs/` path: Task-17 holds every spec it could want
+  a line in, and the row geometry changes no rule.
 
 ### Batch 7 — Gigantamax, route-scoped catch swap
 - **Task-18** Gigantamax, in the Mega Evolution mould.
@@ -137,7 +202,7 @@ left, `Task-07 → Task-23` — are free again for Batch 8.
   one side, the run save, the route scene and the PC rule on the other. It is the
   first batch whose serial resources are all free for Task-31 — every earlier batch
   that touches `src/scenes/RouteScene.ts` (3, 5, 6, 8, 10) or `src/engine/save.ts`
-  (4, 10) already claimed one, and Task-17 holds `docs/routes-spec.md` in Batch 6.
+  (3b, 4, 10) already claimed one, and Task-17 holds `docs/routes-spec.md` in Batch 6.
   Task-18 keeps `docs/tech-decisions.md` for its decision entry; Task-31 takes no
   `D##`, because its rule is a gameplay one and `docs/routes-spec.md` carries it.
   Running here also puts the new popup in front of Batch 8's accessibility sweep
@@ -158,6 +223,24 @@ left, `Task-07 → Task-23` — are free again for Batch 8.
   pass owns the `src/data/` numbers and the `docs/balance/` sheets that Task-23 also
   touches — so this batch, whose tasks run over the scenes, the tilesets and the
   regenerated dex, is the first one that leaves Task-23's paths free.
+
+### Batch 8b — the enemy AI, and the difficulty parameter
+- **Task-35** Enemy AI: the cartridge's AI scripts for a known roster, expected value and
+  a bounded search for a random one, and the difficulty knob on top.
+- **Hot files:** `src/engine/battle/ai.ts` + `ai.test.ts`, `src/data/trainers.ts`,
+  `src/scenes/BattleScene.ts`, `src/scenes/RouteScene.ts`, `src/scenes/SettingsScene.ts`,
+  `src/ui/settingsScreen.ts`, `src/engine/save.ts`, `docs/tech-decisions.md` and
+  `docs/battle-spec.md` → Task-35.
+- **Shape:** one task, alone, and it needs the batch to be that wide: the AI's own module
+  is free, but its difficulty parameter reaches the launch (`RouteScene`), the call site
+  (`BattleScene`), the settings row (`src/ui/settingsScreen.ts` + `SettingsScene`) and the
+  save (`src/engine/save.ts`) — no earlier batch leaves all four of those plus
+  `docs/battle-spec.md` and `docs/tech-decisions.md` free at once, and Batch 8's own
+  Task-08 claims **every** `src/scenes/*.ts` in the batch before. Running here also puts
+  the AI after every mechanic whose options it weighs — Mega Evolution (D34, shipped),
+  Gigantamax (Batch 7) and the item-driven move retypes (Batch 8) — and after Task-09's
+  reusable scripted-battle harness (Batch 6), which its fixed-seed AI regressions run on.
+  It is **before** Batch 9 on purpose: Task-21 writes `docs/battle-spec.md` §9 there.
 
 ### Batch 9 — Megas as information in the STATS graph
 - **Task-21** The Megas as information in the STATS graph.
@@ -201,13 +284,23 @@ left, `Task-07 → Task-23` — are free again for Batch 8.
 
 ### Open questions for the human
 
-None. Everything the first plan raised is decided: the Añil art was materialised
-into the local clone, `Task-23` is unblocked (the three moves ship, `D42`),
-`Task-24` is retired, the audio comes from the original games' audio rips under
-`sprite-sources/frlg-audio/`, and the Plates are made obtainable by `Task-07`. A
-question lands here only when the repository genuinely cannot answer it. The one ID
-without a batch is not a question: `[Task-28]` waits on an upstream
+One, and it has a written default rather than a guess. Everything the first plan raised
+is decided: the Añil art was materialised into the local clone, `Task-23` is unblocked
+(the three moves ship, `D42`), `Task-24` is retired, the audio comes from the original
+games' audio rips under `sprite-sources/frlg-audio/`, and the Plates are made obtainable
+by `Task-07`. A question lands here only when the repository genuinely cannot answer it.
+The one ID without a batch is not a question: `[Task-28]` waits on an upstream
 `typescript-eslint` release.
+
+- **`[Task-34]` (the battle SWITCH grid, Batch 6): is "1/6" one row per member?** The
+  request says the cells must occupy a sixth and that six party rows fill the panel, so
+  the entry is written as **one row per member in a single column** — the classic party
+  list — with the label clipped instead of wrapped and the arrow keys stepping member to
+  member. The other reading is that the 3-column avatar grid (`PARTY_COLS`) stays and only
+  its cell height is capped at a sixth of the window. The default is the first, because
+  only that layout makes six rows fill the panel and makes a single-column cursor the
+  right cursor; say so before Batch 6's branch is cut if the avatar grid is meant to stay.
+  Nothing else in the plan changes either way.
 
 ---
 
@@ -275,6 +368,101 @@ floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
 The whole menu battle minus per-effect behaviour. Contract in
 `docs/battle-spec.md`.
 
+- [ ] **[Task-35] Enemy AI: the cartridge's AI scripts, expected value, and the
+      difficulty knob.** The enemies think with one shallow scorer today: `chooseAiCommand`
+      (`src/engine/battle/ai.ts`) takes `estimateDamage × accuracy`, adds 1000 when the hit
+      would KO, 60 for a status that can land, 40 for a favourable boost, 50 for healing at
+      low HP and 25 for a volatile, switches only when nothing it has can hurt the foe and a
+      reserve can (`bestOffense`), spends its Mega at the first chance and breaks ties to the
+      **lowest index with no Rng draw at all**. It is deterministic and hidden-information
+      honest — it never reads the foe's unrevealed moves — and it is also blind to the
+      situation: no item use, no predicted switch, no two-turn plan, no speed or hazard
+      reasoning, and a wild fights exactly as well as an Ace. An archetype
+      (`src/data/trainers.ts`) carries presentation, sprites, money and `carriesMega` and
+      **no AI setting**, while a roster is the closed, known BST-pool list
+      (`RosterOptions`, `speciesPool`, D39) and a wild's moveset and ability are rolled per
+      run seed (D17) — so the game has both cases the request names: a side whose moves it
+      can know and a side whose moves are random.
+      **What to build it from**, best first:
+      1. **The cartridges' own AI scripts (FRLG/Emerald), the recommendation.** Each move
+         starts at 100 and each of the trainer's AI settings adds or subtracts points:
+         *check bad move* (skip what fails or does nothing), *try to faint* (prefer the KO,
+         on the game's own damage formula), *check viability* (heal at low HP, set up when
+         safe, and the rest of the situation scores), *setup first turn*, *risky* (Explosion
+         and friends), *prefer Baton Pass*; the **highest score wins and a tie is broken at
+         random**; switching follows Emerald's rules (about to faint to Perish Song; the
+         player's last move was Electric/Water/Fire and a bench absorbs it; no
+         super-effective move and the bench has something the player cannot hurt) and a
+         trapped Pokémon never switches; carried items are used **without randomness**
+         (Full Restore and Potions below ¼ HP, cures on the matching status, X items on turn
+         one); **wild Pokémon pick a random move that has PP left**; *Hard Mode* is nothing
+         but "every trainer also gets check bad move, try to faint and check viability". The
+         sources are `pret/pokefirered`'s AI script commands
+         (`src/battle_ai_script_commands.c`) and the pkmn wiki's Battle AI page, which
+         documents the settings, the switching rules, the item rules and Hard Mode.
+         **Cost: low to moderate** — it is a closed list of checks over data we already
+         have (`estimateDamage`, `canApplyStatus`, `legalMoveIndices`, `canMegaEvolve`), a
+         flags field on the archetype, and one Rng-drawn tie-break; the port is faithful to
+         the game this project is styling itself on (`D19`) and it makes the archetype the
+         difficulty knob instead of a number.
+      2. **A real one-ply expected-value layer.** Today's score is a damage estimate with no
+         switch evaluation and no risk term. Expected damage over accuracy, crit and the
+         85–100 roll, a status/boost value that accounts for the target's state, and a switch
+         score that compares the bench's best offence against the active's — all data the
+         engine already exposes. **Cost: low.** It is the *check viability* half of 1, and
+         the two are the same code.
+      3. **A bounded search over our own engine** — determinized minimax/expectimax or MCTS
+         on cloned states, which is what the Showdown-lineage bots do (Showdown's own
+         `battle-ai` search/eval module set is **not** in `smogon/pokemon-showdown`'s tree
+         today, so read it from an archived copy before porting it; `pmariglia/foul-play`
+         carries a heuristic eval plus `fp/search/` with an external engine bridge), and
+         `pkmn/engine` exists exactly to make it fast (a battle simulator "optimized for
+         performance", Zig with Node/WASM bindings). **Cost: high.** It needs a pure
+         clone/rollout seam on `BattleState` (`takeTurn` mutates in place), a per-turn node
+         or time budget, and its own determinism rule — every rollout seeded from a derived
+         stream, never the battle's ambient draws.
+      4. **Learned agents** (poke-env, Metagrok, AlphaMon, *Laplace* — determinized MCTS,
+         2231 Elo in Gen 9 Random Battle — and the 2025 "Human-Level Competitive Pokémon via
+         Scalable Offline RL" line): the strongest play by far and the wrong shape here —
+         training infrastructure, model weights, no determinism story, and nothing a
+         browser roguelike can ship in its bundle.
+      **The run's shape, as recommended:** trainers think with the cartridge flag set
+      (Youngster gets few, Ace/boss/mini-boss get all of them, and the carried items the
+      engine already models are used by the cartridge's own rules), wilds keep the
+      cartridge's random-with-PP policy at normal difficulty and may use the flagged scorer
+      at the top one — a policy switch, not a second AI.
+      **The difficulty parameter: yes, and discrete and visible rather than adaptive.** The
+      cartridge ships one (Hard Mode above) and the roguelike canon prefers explicit tiers
+      (Slay the Spire's Ascension, Hades' Heat, Isaac's unlock ladder), while the DDA
+      literature is the argument against the hidden alternative: a rubber band that keeps
+      every fight at the same perceived difficulty ruins pacing and reads as cheating in a
+      game whose whole promise is that a loss is the player's. So one setting — a small
+      `aiLevel`/`hardMode` — chooses the archetypes' default flag set, the wild
+      policy and the tie-break's noise; the per-archetype flags stay data. It reaches
+      `src/engine/save.ts` as a **settings** field (defaulted in `parseSettings`, so **no**
+      `SAVE_VERSION` bump — the `Task-26` precedent), a row in `src/ui/settingsScreen.ts`
+      drawn by `src/scenes/SettingsScene.ts`, and the launch: `RouteScene.startBattle` puts
+      it on `BattleLaunch` and `BattleScene.submit`'s `chooseAiCommand(this.state, 'enemy')`
+      reads it. This task owns all of those paths in its batch.
+      **Determinism (D11):** the AI draws its tie-break from the **battle's own Rng**
+      (`state.rng`), so the same seed replays the same battle; that draw moves the stream,
+      which re-pins the fixed-seed expectations in `src/engine/battle/golden.test.ts` (and
+      `ai.test.ts`, `mega.test.ts`) — Task-09 owns the golden log and extracts the reusable
+      scripted-battle harness in Batch 6, so this task re-pins it after and runs its
+      AI regressions on that harness.
+      **Honesty:** keep the AI on information the player also has. A set-predicting AI needs
+      a per-battle **revealed** record and `BattleState` tracks none today; adding one is
+      allowed only if it stays honest.
+      Needs a `D##` in `docs/tech-decisions.md` (the next free number when it runs; `D43` is
+      Task-26's) and a section in `docs/battle-spec.md`. Fixed-seed tests for the flags, the
+      scoring and the tie-break. Out of scope: doubles (the game has none), reading the
+      foe's unrevealed set, and coaching or telegraphing the choice in the UI.
+      *Dependencies:* Task-09 (Balance pass) — the reusable scripted-battle harness it
+      extracts beside `src/engine/battle/golden.test.ts`, on which this task's fixed-seed AI
+      regressions run. Batch order covers the rest: Mega Evolution is merged (D34),
+      Gigantamax lands in Batch 7 and the item-driven retypes in Batch 8, so the AI weighs
+      every option the rules have by the time it is written. *(Batch 8b)*
+
 ## Phase 4 — Battle effects: abilities, items, weather, terrain
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
@@ -285,6 +473,49 @@ Ports of Showdown handlers, in batches, on the hook names in
 ## Phase 5 — Battle UI & presentation
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
+
+- [ ] **[Task-34] The battle SWITCH grid: a sixth per row, a name that cannot stretch it,
+      and arrows that move the cursor.** Reported in play, in the battle's SWITCH window.
+      The builder is `renderPartyGrid` (`src/scenes/BattleScene.ts`) and the defect is its
+      geometry. It lays the party out as `PARTY_COLS = 3` avatar cells and derives the cell
+      height from the **member count**: `rows = Math.max(1, Math.ceil(count / PARTY_COLS))`,
+      then `cellH = (bottom - top - (rows - 1) * MENU_GRID_GAP) / rows`. With one, two or
+      three members `rows` is 1, so a single cell is the window's whole content height; the
+      avatar, the label and the HP bar stay pinned at that box's top-left corner and the box
+      grows around them, which is what "the cells must not grow their height" is about. The
+      label is the second half: `openParty` builds one string for the cell (`name  LvN` plus
+      the status abbreviation) and `renderPartyGrid` draws it with
+      `setMaxWidth(cellW - avatarW - 22)`, so a long name **wraps** inside a cell that never
+      accounted for a second line, while the HP bar is placed at a fixed `cellY + 30` under
+      it and the label's own height is whatever the wrap made it. The third half is the
+      cursor: `navigateMenu` sends every direction to `moveMenu(±1)` in `mode === 'party'` —
+      linear previous/next — even though the cells sit in three columns, so `up`/`down`
+      slides along the row and `left`/`right` skip the member that is actually beside the
+      cursor.
+      **Expected:** one row per member in a single column, each row exactly **1/6** of the
+      window's content height (so a full party of six fills the panel and a party of two
+      leaves the rest of the panel empty rather than two giant cells) — **confirmed by the
+      human**, whose words for the bug are "with two Pokémon the two cells take the whole
+      grid" — and the row's height
+      **never** depends on what it draws: a name that overflows the row is clipped (an
+      ellipsis is fine) and never wrapped or allowed to push the HP bar. The arrow keys move
+      the selection **between party members** in the direction that matches that layout —
+      `up`/`down` are previous/next, and `left`/`right` may do the same since a single column
+      has no second axis — and the cursor still refuses to land on a fainted or already
+      active member exactly as `moveMenu` does today. The ◀ back control, the per-cell HP
+      bar (`PARTY_CELL_HPBAR_SCALE`, already scaled from the cell width so it never runs into
+      a neighbour), `PARTY_AVATAR_SCALE` and the detail window `renderPartyDetail` keeps
+      drawing above the grid all stay as they are. Six rows is `MAX_PARTY_SIZE`
+      (`src/engine/run/state.ts`), not a new magic number; if the layout needs a pure helper
+      (a row rect per index), it goes in `src/ui/` with a test, the way `moveGrid` and
+      `mapView` do.
+      Out of scope: the FIGHT/BAG/SWITCH/RUN command grid and the moves grid
+      (`MENU_GRID_COLS`, `moveMenuGrid` — they are 2x2 and correct), the route HUD's
+      party/PC list (`src/ui/partyScreen.ts`), and the detail window's own layout. Docs: none
+      — the row geometry is presentation and changes no rule, and Task-17 holds
+      `docs/battle-spec.md` in this batch.
+      *Dependencies:* none. It reads the nicknames Task-13 (Batch 4) makes possible — a long
+      name is what exposes the wrap — but needs nothing Task-13 produces. *(Batch 6)*
 
 ## Phase 6 — Run structure, party & economy
 
@@ -340,13 +571,27 @@ Ports of Showdown handlers, in batches, on the hook names in
       party, take both choices, watch the party, the PC box and the HUD — must be
       re-run and reported gone, because with one placement path and no second copy of
       the catch there is nothing left to stack.
+      **The live diagnosis, recorded here because Task-27's ID points at it:** the stacking
+      was never the placement seam. Every wild fighter is built with a **constant** id
+      (`createFighter({ id: 'wild' })`, `src/scenes/BattleScene.ts:368`), the encounter key
+      behind it (`grass:x,y`, `src/scenes/RouteScene.ts:4183`) is not unique per run, and
+      `memberById` (`src/ui/partyDetail.ts:106`) resolves a member by **first match** — so
+      the party row drew correctly while its detail panel showed an earlier catch. That is
+      `[Task-33]` (Batch 3b), which lands **before** this task and mints a unique id at the
+      fold; this task's replay must therefore re-run the repro with `[Task-33]` merged and
+      report the panel showing the clicked member, then re-check it again after the deferred
+      placement path is deleted — the id mint is upstream of the placement, so it survives
+      the removal of `placeCapture` unchanged, and `pcCatch.memberId` is free to hold the id
+      `[Task-33]` mints.
       Out of scope: the party/PC panel's own UI and page size, the battle's ball-shake
       presentation (`src/ui/capture.ts` is the battle's, not this modal's — leave it
       alone), the entry room's free PC window (`pcFullyEditable` / `entryDeparted`),
       and localising the notice (Task-26, Batch 10).
       *Dependencies:* none — it needs nothing another open task produces. Batch order
-      covers two facts: Task-13 (Batch 4) takes the next `SAVE_VERSION` (15) first, so
-      this migration is the step after it (15 → 16 as the plan stands), and it
+      covers three facts: Task-13 (Batch 4) takes the next `SAVE_VERSION` (15) first, so
+      this migration is the step after it (15 → 16 as the plan stands); Task-33 (Batch 3b)
+      lands even earlier and mints the unique member id at the fold this task keeps, so
+      `pcCatch.memberId` and the `[Task-27]` replay below both build on it; and it
       **supersedes the capture-screen half of Task-12** (Batch 3): the ability ⓘ
       Task-12 adds to the route HUD's detail panel and to the battle's SWITCH window
       stays, while the one it adds to the capture screen is deleted here with the
@@ -374,7 +619,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       *Dependencies:* none — it reads `docs/balance/route-curve.md` and the per-band
       `trainerXp` rule Task-10 shipped (archived with Batch 1). It is also the
       producer of the reusable harness: a later task that wants to run a scripted
-      battle depends on Task-09. *(Batch 6)*
+      battle depends on Task-09 — `Task-35`'s fixed-seed AI regressions do. *(Batch 6)*
 - [ ] **[Task-13] Nicknames, typed from the STATS tab.** The battle layer already
       renders one — `FighterInput.nickname` feeds `fighter.name` (`name: input.nickname ??
       species.name`, `src/engine/battle/fighter.ts`) — but nothing ever sets it, so
@@ -699,9 +944,58 @@ Reported in play, awaiting triage. A bug becomes a task in the batch plan, and t
 fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what
 a finished batch still owes QA.
 
-- [ ] None open. `[Task-27]` (Catching a Pokémon stacks a duplicate on top of it) was
-      absorbed into `[Task-31]` (Batch 7) and retired; `[Task-31]` owes its repro
-      re-run, and reports the result to QA.
+- [ ] **[Task-32] An opening's border band is only partly a door.** Reported in play:
+      a route's opening shows **part of its band** as a door — some of the border
+      tiles the opening occupies are still wall/fence, and the cells the wall tidy
+      rewrites are the ones that misbehave. The door **rule** is sound and is not the
+      suspect: `exitEdgeAt` (`src/engine/routes/doors.ts`) already counts **any**
+      walkable border cell of an opening edge as a door, and the scene asks it with
+      the **raw** map (`RouteScene.doorEdgeAt` passes `this.map = route.tiles`, not
+      the movement copy), so a decorative tree tip is never mistaken for a door.
+      The **geometry** it reads is what is wrong. `placeAccess`
+      (`src/engine/routes/sketch.ts`) opens **one** ring cell per opening
+      (`tiles[tile.y][tile.x] = FLOOR`) while `carveGuaranteedPath` carves the lane
+      `pathWidth` (2) wide, so the band's remaining cell exists **only** where
+      `cleanWalls` (`src/engine/routes/walls.ts`) happens to widen the ring — and the
+      tidy's ring licence is motif-band shaped: its bitten-tree pass drops a ring cell
+      only when the 3-wide band it belongs to (`bandStart[x] = x - x % cols`,
+      anchored at the map's **left** edge) holds both wall and floor *in that row*.
+      On the **east** column that band is clipped by the map edge: for a room whose
+      `(width - 1) % cols === 0` the band it tests is the single cell `width - 1`, so
+      it is never mixed, the widening never fires, and the east door stays one cell
+      wide while its lane is two — this is the reading's prediction of the failing
+      case, to be confirmed by the search below. The column un-stack pass cannot
+      compensate: `onRing` is true for **every** cell of `column 0` and
+      `column width - 1`, so `topRing && bottomRing` skips every run in those columns,
+      and it trims an interior end on purpose. A second mechanism un-doors a band cell
+      the tidy **does** open: the terrain passes guard only the anchors
+      (`ends = [entry, ...exits]` in `openKeys`), so a band cell sits in the grass and
+      ledge pools (`pocketTiles`) and can catch `TALL_GRASS` — walkable, but
+      `exitEdgeAt` reads a raw `FLOOR`, so that cell silently stops being a door.
+      **Expected:** every border cell of an opening's **band** is a door, on **every**
+      edge, including the cells the tidy pass rewrites. The band is the lane's own
+      cross-section at the ring: for a `W`/`E` opening the `pathWidth` cells
+      `y … y + pathWidth - 1` on that edge column, for an `N`/`S` opening the
+      `pathWidth` cells `x … x + pathWidth - 1` on that edge row. The generator owns
+      the band; the tidy may widen a hole, never leave one half-open.
+      **The fix** is engine-only, `src/engine/routes/**`: a pure `openingBandCells`
+      helper in `doors.ts`, `placeAccess` opening the whole band, the band cells
+      joining the terrain forbids in `attemptRoute`, and a `borderBandGaps` gate in
+      `validateRoute` so `sketchRoute` re-rolls instead of shipping a half-band door.
+      **The failing case is not frozen yet**: the dev finds it by search over
+      `planMap`/`roomView` rooms (the reading says: an **east** opening in a room with
+      `(width - 1) % 3 === 0`), then writes the seed, the map, the room, the edge and
+      the exact coordinates into the regression test and reports them for the archive.
+      The test gap that let this through: `src/engine/routes/doors.test.ts`'s real-room
+      case asserts only that each declared edge has **at least one** walkable border
+      cell (`openTiles.size` plus one cell per edge), never that the band is complete.
+      *Dependencies:* none — it reads only `src/engine/routes/**`, whose fixed-seed
+      expectations it re-pins. *(Batch 4)*
+- `[Task-27]` (Catching a Pokémon stacks a duplicate on top of it) was absorbed into
+      `[Task-31]` (Batch 7) and retired, and the live diagnosis of its repro now sits on
+      `[Task-31]`'s own entry and on `[Task-33]`'s: the colliding id was never the capture
+      placement, so `[Task-33]` (Batch 3b) fixes it first and `[Task-31]` re-runs the repro
+      over the fixed seam and reports the result to QA.
 
 ---
 
