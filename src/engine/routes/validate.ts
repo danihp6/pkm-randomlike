@@ -18,6 +18,9 @@ const CARDINALS: readonly Tile[] = [
   { x: 0, y: -1 },
 ];
 
+/** The one `missingLaneGuard` marker today: the lane guard the route lacks. */
+const NO_TRAINERS = 'no-trainers';
+
 /** Cardinal flood-fill over walkable tiles, from `from` (inclusive). */
 export function reachableTiles(map: TileMap, from: Tile): Set<string> {
   return reachableAvoiding(map, from, EMPTY);
@@ -69,6 +72,15 @@ export type TrainerIssue = Readonly<{
   reasons: readonly TrainerIssueReason[];
 }>;
 
+/**
+ * What the caller knows and the route alone does not: the population pass was
+ * asked for trainers, so `docs/route-generator.md` §3.4's lane guard applies.
+ * A route nobody asked trainers for is never failed for having none.
+ */
+export type RouteValidationOptions = Readonly<{
+  expectTrainers?: boolean;
+}>;
+
 export type RouteValidation = Readonly<{
   ok: boolean;
   /** Exits the entry cannot reach at all (tile keys). Unchanged. */
@@ -88,6 +100,8 @@ export type RouteValidation = Readonly<{
    * in row-major order. Empty means every opening's whole band is walkable and exits.
    */
   borderBandGaps: readonly string[];
+  /** §3.4's lane guard the route was asked for and does not have. Gated by `ok`. */
+  missingLaneGuard: readonly string[];
   /** Pockets the entry cannot reach (tile keys). Reported, never gated. */
   unreachablePockets: readonly string[];
   /** Trainers that fail a pose rule, one entry each, in `route.trainers` order. */
@@ -211,13 +225,24 @@ function borderBreaches(route: RouteMap): string[] {
  * entry must reach every exit with and without the trainers in the way, no placed
  * item may be stranded or sit on terrain, the guaranteed lane stays `FLOOR`, the
  * border ring stays solid but for its openings — with every opening's whole band a
- * door — and every trainer is posed the way `placeTrainers` promises. A route is
- * rerolled (`sketchRoute`) unless `ok`.
+ * door — the route keeps §3.4's lane guard whenever the caller says the population
+ * pass was asked for trainers, and every trainer is posed the way `placeTrainers`
+ * promises. A route is rerolled (`sketchRoute`) unless `ok`.
+ *
+ * The lane-guard check is **conditional** on `options.expectTrainers`: the guard is
+ * about the population pass having been asked for trainers, and a `RouteMap` alone
+ * cannot know that (the quiet entry/boss rooms and every no-pool caller ship no
+ * trainers legitimately). It is a plain marker rather than a `TrainerIssue` because
+ * that type carries a `trainerId` to attribute the reason to, and a trainer-free
+ * route has no id to name.
  *
  * A pocket the entry cannot reach is **reported only**: `placeItems` may skip a
  * pocket a hazard sealed, so it is a finding, never a reason to reroll.
  */
-export function validateRoute(route: RouteMap): RouteValidation {
+export function validateRoute(
+  route: RouteMap,
+  options?: RouteValidationOptions,
+): RouteValidation {
   const reached = reachableTiles(route.tiles, route.entry);
   const unreachable = route.exits
     .map((exit) => tileKey(exit))
@@ -244,6 +269,10 @@ export function validateRoute(route: RouteMap): RouteValidation {
     .map((pocket) => tileKey(pocket))
     .filter((key) => !reached.has(key));
   const trainerIssues = trainerIssuesOf(route);
+  // §3.4's lane guard: only when the population pass was asked for trainers and the
+  // route holds none. A list so `ok` stays "every gated list is empty".
+  const missingLaneGuard: string[] =
+    options?.expectTrainers === true && route.trainers.length === 0 ? [NO_TRAINERS] : [];
   return {
     ok:
       unreachable.length === 0 &&
@@ -253,6 +282,7 @@ export function validateRoute(route: RouteMap): RouteValidation {
       spineBlocked.length === 0 &&
       breaches.length === 0 &&
       bandGaps.length === 0 &&
+      missingLaneGuard.length === 0 &&
       trainerIssues.length === 0,
     unreachable,
     blockedByTrainers,
@@ -261,6 +291,7 @@ export function validateRoute(route: RouteMap): RouteValidation {
     spineBlocked,
     borderBreaches: breaches,
     borderBandGaps: bandGaps,
+    missingLaneGuard,
     unreachablePockets,
     trainerIssues,
   };

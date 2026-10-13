@@ -8,6 +8,7 @@ import {
   cornerClearance,
   sketchRoute,
   sketchRouteSteps,
+  wantsTrainers,
   type RouteRequest,
 } from './sketch';
 import type { RouteMap } from './routeMap';
@@ -526,4 +527,104 @@ describe('sketchRoute', () => {
     expect(route.spine.length).toBeGreaterThan(0);
     expect(validateRoute(route).ok).toBe(true);
   });
+
+  it('gates the lane guard on a non-quiet room that carries an archetype pool', () => {
+    expect(wantsTrainers(request('wants', 1, 'cross'))).toBe(false);
+    expect(wantsTrainers({ ...request('wants', 1, 'cross'), trainerArchetypes: [] })).toBe(false);
+    expect(wantsTrainers({ ...request('wants', 1, 'cross'), trainerArchetypes: ['youngster'] })).toBe(true);
+    expect(
+      wantsTrainers({ ...request('wants', 1, 'cross'), trainerArchetypes: ['youngster'], quiet: true }),
+    ).toBe(false);
+  });
+
+  it('always ships a guarding trainer the pass was asked for, across a bounded seed sweep', () => {
+    const archetypes = ['youngster', 'lass'];
+    for (const shape of ROUTE_SHAPES) {
+      for (let i = 0; i < 120; i++) {
+        const sized: RouteRequest = {
+          seed: `guard-${i}`,
+          routeIndex: 2,
+          biomeId: 'wood',
+          shape,
+          width: 30,
+          height: 30,
+          trainerArchetypes: archetypes,
+        };
+        const route = sketchRoute(sized);
+        expect(route.trainers.length, `${shape} guard-${i} trainers`).toBeGreaterThan(0);
+        expect(
+          validateRoute(route, { expectTrainers: true }).ok,
+          `${shape} guard-${i} guarded`,
+        ).toBe(true);
+      }
+    }
+  }, 120_000);
+
+  it('keeps the archetype pool a pure function of the request (D11)', () => {
+    const sized: RouteRequest = {
+      ...request('pure-trainers', 3, 'cross'),
+      width: 30,
+      height: 30,
+      trainerArchetypes: ['youngster', 'lass'],
+    };
+    expect(sketchRoute(sized)).toEqual(sketchRoute(sized));
+    expect(sketchRoute(sized).trainers.length).toBeGreaterThan(0);
+  });
+
+  it('ships no trainers for an empty pool or a quiet room, and still validates', () => {
+    const empty: RouteRequest = {
+      ...request('no-pool', 2, 'cross'),
+      width: 30,
+      height: 30,
+      trainerArchetypes: [],
+    };
+    const quiet: RouteRequest = {
+      ...request('quiet-room', 2, 'cross'),
+      width: 30,
+      height: 30,
+      trainerArchetypes: ['youngster'],
+      quiet: true,
+    };
+    const emptyRoute = sketchRoute(empty);
+    const quietRoute = sketchRoute(quiet);
+    expect(emptyRoute.trainers).toEqual([]);
+    expect(quietRoute.trainers).toEqual([]);
+    expect(validateRoute(emptyRoute).ok).toBe(true);
+    expect(validateRoute(quietRoute).ok).toBe(true);
+  });
+
+  it('replays the attempt sketchRoute ships, with and without an archetype pool', () => {
+    const phases = [
+      'walls',
+      'access',
+      'spine',
+      'branches',
+      'clean',
+      'terrain',
+      'trainers',
+      'items',
+      'final',
+    ];
+    const archetypeRequest: RouteRequest = {
+      ...request('steps-archetype', 3, 'cross'),
+      width: 30,
+      height: 30,
+      trainerArchetypes: ['youngster'],
+    };
+    // sweep-b's dead-end attempt 0 ships no trainer, so the gate re-rolls and the
+    // stepper must follow it to the shipped attempt instead of replaying attempt 0.
+    const rerolledRequest: RouteRequest = {
+      ...request('sweep-b', 5, 'dead-end'),
+      width: 30,
+      height: 30,
+      trainerArchetypes: ['youngster', 'lass'],
+    };
+    const plainRequest: RouteRequest = { ...request('steps-plain', 3, 'cross'), width: 30, height: 30 };
+    for (const sized of [archetypeRequest, rerolledRequest, plainRequest]) {
+      const steps = sketchRouteSteps(sized);
+      expect(steps.map((step) => step.phase)).toEqual(phases);
+      expect(steps.at(-1)!.tiles).toEqual(sketchRoute(sized).tiles);
+    }
+    expect(sketchRoute(rerolledRequest).trainers.length).toBeGreaterThan(0);
+  }, 60_000);
 });

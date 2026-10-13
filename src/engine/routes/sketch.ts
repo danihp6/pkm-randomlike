@@ -1564,33 +1564,54 @@ function attemptRoute(
  * own RNG stream, derived from `(seed, routeIndex, attempt)`; a map that fails
  * validation is rerolled on fresh streams, so the result is still a pure function
  * of the seed and index and a reroll never shifts an earlier attempt (D11).
+ * The gate is conditional: only a request `wantsTrainers` promises is held to
+ * `docs/route-generator.md` §3.4's lane guard.
  */
 export function sketchRoute(request: RouteRequest): RouteMap {
   const width = request.width ?? ROUTE_WIDTH;
   const height = request.height ?? ROUTE_HEIGHT;
+  const options = { expectTrainers: wantsTrainers(request) };
   let last: RouteMap | undefined;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const streams = routeStreams(request.seed, request.routeIndex, attempt);
     last = attemptRoute(request, streams, width, height);
-    if (validateRoute(last).ok) return last;
+    if (validateRoute(last, options).ok) return last;
   }
   throw new Error(`Could not generate a valid route for "${request.seed}" #${request.routeIndex}`);
 }
 
 /**
+ * The population pass was asked for trainers: an archetype pool is present and the
+ * room is not `quiet` (the map's entry and boss rooms). The single definition of
+ * the condition the lane guard (`validateRoute`'s `missingLaneGuard`) is gated on.
+ */
+export function wantsTrainers(request: RouteRequest): boolean {
+  return request.quiet !== true && (request.trainerArchetypes?.length ?? 0) > 0;
+}
+
+/**
  * Dev only: one snapshot per build phase (`walls` → `access` → `spine` →
  * `branches` → `terrain` → `final`), so the debug panel can render the generator
- * one step at a time. It replays attempt 0, which is the attempt `sketchRoute`
- * returns whenever it validates, so the steps match the route on screen.
+ * one step at a time. It replays attempts from 0 until the same gate `sketchRoute`
+ * uses accepts, then returns **that** attempt's steps, so the steps match the route
+ * on screen whenever attempt 0 passes the same gate. When all `MAX_ATTEMPTS` fail
+ * it returns the last attempt's steps (the stepper never throws).
  */
 export function sketchRouteSteps(request: RouteRequest): readonly RouteStep[] {
-  const steps: RouteStep[] = [];
-  attemptRoute(
-    request,
-    routeStreams(request.seed, request.routeIndex, 0),
-    request.width ?? ROUTE_WIDTH,
-    request.height ?? ROUTE_HEIGHT,
-    steps,
-  );
+  const width = request.width ?? ROUTE_WIDTH;
+  const height = request.height ?? ROUTE_HEIGHT;
+  const options = { expectTrainers: wantsTrainers(request) };
+  let steps: RouteStep[] = [];
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    steps = [];
+    const route = attemptRoute(
+      request,
+      routeStreams(request.seed, request.routeIndex, attempt),
+      width,
+      height,
+      steps,
+    );
+    if (validateRoute(route, options).ok) return steps;
+  }
   return steps;
 }
