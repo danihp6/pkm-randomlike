@@ -15,6 +15,7 @@ import {
 } from '../map';
 import { findPath } from '../pathfinding';
 import { Rng } from '../rng';
+import { borderEdge, openingBandCells } from './doors';
 import { pickWeighted } from './encounters';
 import {
   FACINGS,
@@ -228,7 +229,7 @@ function keyToTile(key: string): Tile {
   return { x, y };
 }
 
-/** Places every opening of `shape` on its edge; returns the tiles by opening index. */
+/** Places every opening of `shape` on its edge and opens its whole border band. */
 function placeAccess(
   tiles: MutableMap,
   shape: ShapeSpec,
@@ -240,7 +241,9 @@ function placeAccess(
 ): Tile[] {
   return shape.openings.map((opening) => {
     const tile = edgeTile(opening.edge, rng, width, height, corner, band, shape.pathWidth);
-    tiles[tile.y][tile.x] = FLOOR;
+    for (const cell of openingBandCells(opening.edge, tile, width, height, shape.pathWidth)) {
+      tiles[cell.y][cell.x] = FLOOR;
+    }
     return tile;
   });
 }
@@ -1477,7 +1480,19 @@ function attemptRoute(
   const ends = [entry, ...exits];
   const pocketTiles = collectFloorTiles(tiles).filter((tile) => !spine.has(tileKey(tile)));
   const pocketKeys = pockets.map(tileKey);
-  const openKeys = new Set([...spine, ...ends.map(tileKey)]);
+  // The anchor of each opening is the cell just placed; a room whose spawn is its
+  // centre (no opening) contributes nothing, which `borderEdge`'s null expresses.
+  // The whole band joins the hazard forbids, so the terrain never lands on an
+  // opening at all (`docs/routes-spec.md` §2 step 3).
+  const bandKeys = new Set<string>();
+  for (const anchor of ends) {
+    const edge = borderEdge(anchor, width, height);
+    if (!edge) continue;
+    for (const cell of openingBandCells(edge, anchor, width, height, shape.pathWidth)) {
+      bandKeys.add(tileKey(cell));
+    }
+  }
+  const openKeys = new Set([...spine, ...ends.map(tileKey), ...bandKeys]);
   // A pocket is a loot spot: tall grass may not cover it (an item never spawns on
   // grass) and a ledge may not seal it. Grass is otherwise free to fill the lanes.
   const grassForbid = new Set([...openKeys, ...pocketKeys]);
