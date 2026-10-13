@@ -31,8 +31,8 @@ asserts the counts still match, so a bad regeneration fails loudly.
   can still name a move that no longer exists in Gen 9, so learnset entries are
   intersected with `moves.json`.
 - Typed accessors live next to the JSON (`species.ts`, `megas.ts`, `moves.ts`,
-  `learnsets.ts`, `types.ts`, `natures.ts`, `evolutions.ts`, re-exported from
-  `index.ts`). Only they read the JSON.
+  `items.ts`, `learnsets.ts`, `types.ts`, `natures.ts`, `evolutions.ts`,
+  re-exported from `index.ts`). Only they read the JSON.
 - The playable set is the **full National Dex** (`D40`): every species with a
   number, `Past` Dexit entries included. Only non-species are dropped at
   generation time — CAP/fan entries, `Custom` (MissingNo, Pokéstar), LGPE's

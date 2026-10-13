@@ -1,20 +1,48 @@
 import { describe, expect, it } from 'vitest';
 import { ITEMS } from './items';
-import { ITEM_ICON_SIZE, itemIconFrame } from './itemIcons';
+import { ITEM_ICON_SIZE, hasItemIcon, itemIconFrame } from './itemIcons';
 
-describe('FRLG item icons', () => {
-  it('exposes a positive frame size', () => {
-    expect(ITEM_ICON_SIZE).toBeGreaterThan(0);
+/** The two fallback keys `itemIcons.ts` resolves through. */
+const MEGA_FALLBACK = 'hardstone';
+const TM_FALLBACK = 'machinenormal';
+
+describe('Añil item icons', () => {
+  it('keeps a 24px frame, so every draw site keeps its geometry', () => {
+    expect(ITEM_ICON_SIZE).toBe(24);
   });
 
   it('has an atlas frame for every catalogue item', () => {
+    for (const item of ITEMS) expect(itemIconFrame(item.id), item.id).not.toBeNull();
+  });
+
+  it("carries the item's own icon for everything but the TMs and the Mega Stones", () => {
     for (const item of ITEMS) {
-      expect(itemIconFrame(item.id), item.id).not.toBeNull();
+      if (item.kind === 'tm' || item.mega !== undefined) continue;
+      expect(hasItemIcon(item.id), item.id).toBe(true);
     }
   });
 
-  it('returns null for an item with no FRLG icon', () => {
-    expect(itemIconFrame('revive')).toBeNull();
+  it('falls back inside the same atlas for a Mega Stone and a TM', () => {
+    expect(itemIconFrame('venusaurite')).toBe(itemIconFrame(MEGA_FALLBACK));
+    expect(itemIconFrame('tm001')).toBe(itemIconFrame(TM_FALLBACK));
+    expect(hasItemIcon('venusaurite')).toBe(false);
+    expect(hasItemIcon('tm001')).toBe(false);
+  });
+
+  it('keeps a stone whose Añil spelling matches its own icon', () => {
+    expect(hasItemIcon('abomasite')).toBe(true);
+  });
+
+  it('returns null for an id the Añil atlas does not carry', () => {
     expect(itemIconFrame('not-an-item')).toBeNull();
+    expect(itemIconFrame('masterballx')).toBeNull();
+    expect(hasItemIcon('not-an-item')).toBe(false);
+  });
+
+  it('resolves any Añil file name, catalogue row or not', () => {
+    // The atlas is Añil's whole icon set, so an id with no catalogue row still
+    // resolves when the file exists (the run never draws it).
+    expect(itemIconFrame('revive')).toBe(itemIconFrame('REVIVE'));
+    expect(itemIconFrame('revive')).not.toBeNull();
   });
 });

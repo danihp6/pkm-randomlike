@@ -122,6 +122,19 @@ order, from the `Icons` folders, into `public/anil/portraits.png` and
 each). The battle's switch grid, the route HUD, the starter cards and the
 release beat draw from it.
 
+Item icons come from Añil as well: `sprite-sources/anil/Graphics/Items/` holds
+893 icons (48x48, except 44 at 50-60 px) whose file names are the `[ID]` headers
+of `PBS/items.txt`. `scripts/anil/build-item-icons.mjs` (`npm run data:anil:items`)
+packs each of them into a 24px frame — the 48x48 sources sampled 2:1, the 50-60 px
+ones scaled per axis — into the committed
+`src/assets/anil/item-icons.png` (8 columns, nearest-neighbour) plus
+`src/data/anil/item-icons.json`, read through `src/data/itemIcons.ts`. The
+manifest is keyed by the **normalised** file name, so a catalogue id that matches
+an Añil file gets its own art with no table to keep; a TM falls back to Añil's
+Normal machine until a per-type machine is sliced (the atlas already carries
+Añil's `machine_<TYPE>.png` set). The FRLG item-icons sheet
+(`src/assets/frlg/item-icons.png`) and its packer stay in the tree, unused.
+
 Never redistributed: keep the checkout out of the repo (`sprite-sources/` is
 gitignored). Credits, as the game itself prints them in
 `Settings.game_credits`:
@@ -129,6 +142,7 @@ gitignored). Credits, as the game itself prints them in
 | What | Who |
 | --- | --- |
 | Battle sprites (Gen 4/5/DS style) | TheLuiz, leparagon, French-Cyndaquil, Z-nogyroP, Prodigal96, Vanilla Sunshine, fishbowlsoul90, zlolxd, elazulmax, mangamanga, MrDollSteak, Spherical-Ice, Dreadwing93, the **Smogon Gen 8 Sprite Project**, the **Smogon Sun/Moon Sprite Project** and the **Gen VI: Pokémon Sprite Resource** |
+| Item icons | Pokémon Añil (EricLostie) — see its `Settings.game_credits` |
 | 9th-gen icons | CarmaNekko, Divaruta 666, Okyo, JLauz735, ShenseyGrenin, Carnek |
 | Sun/Moon graphics | Pingupollas |
 | Footprints | भाग्य ज्योति, WolfPP, Caruban, komeiji514 |
@@ -151,13 +165,6 @@ spriters-resource [`game_boy_advance/pokemonfireredleafgreen`](https://www.sprit
 | `type-status-icons.png` | type/status badges |
 | `fonts.png` | the FRLG glyph set |
 | `attack-effects.png`, `move-effects.png`, `stat-effects.png`, `battle-backgrounds.png` | battle FX and backdrops |
-
-Item icons are packed separately: `sprite-sources/frlg-ui/item-icons/` holds the
-24x24 FRLG item icons named per the [pret/pokefirered](https://github.com/pret/pokefirered)
-decomp (`graphics/items/icons`, the same art as the sheet's Items section), so
-the id → icon mapping is authoritative. `scripts/frlg/build-item-icons.mjs`
-packs the icons the run uses into the committed `src/assets/frlg/item-icons.png`
-plus `src/data/frlg/item-icons.json`, read through `src/data/itemIcons.ts`.
 
 The route's **ground-item** sprite is the standalone Poke Ball that sits above the
 right corner of the Pokemon Center on the Hoeloo compilation

@@ -28,14 +28,15 @@ through a held stone (`src/engine/battle/mega.ts`).
 | `src/data/biomes.ts` | biome → tileset, layout and terrain flavour | 2 |
 | `src/data/maps.ts` | per-map tuning: level range, room-count range and room width/height range, plus the infinite-run step | 9 |
 | `src/data/trainers.ts` | trainer archetypes: name, class, sprite, money base/jitter (D33) and `carriesMega` (bosses/`ace`); the roster is the floor's BST pool (`D39`), not a species list here | 2/9 |
-| `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), plus **valuables** (sellable), **Mega Stones**, the **Plates** (`plate`, D37) and the **TMs** (`machine` pocket), each with a Poké Dollar price | 3/6/10 |
+| `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), plus the **competitive held set** (`COMPETITIVE_HELD`: the damage/Speed/accuracy/crit/last/survive items, the resist and pinch berries and the self-status orbs whose effect `effects/items.ts` models, and the items it does not model yet, which `UNMODELLED_ITEMS` records by name, D16), **valuables** (sellable), **Mega Stones**, the **Plates** (`plate` + 1.2x `typeBoost`, D37) and the **TMs** (`machine` pocket), each with a Poké Dollar price | 3/6/10 |
 | `src/data/tms.ts` | the base-Gen-9 TM table: TM number → move id (TM001 … TM171), hand-authored from the dex's `9M` flags, with the id/number/move helpers `items.ts` turns into reusable machines (D36) | 10 |
 | `src/data/shop.ts` | the shop's per-band core (Balls/Potions) and the weighted pool its one or two rotating items are drawn from (D33) | 9 |
 | `src/data/spriteSize.ts` | the battle sprite size curve: canonical height (m) → drawn height (px), the power and clamps | 5 |
 | `src/data/run.ts` | chain length, boss cadence, level bands (level range, party size and BST window, D39), starter pool, starting bag | 2 |
 | `src/data/portraits.ts` | portrait atlas URL and frame mapping (dex number − 1) | 6 |
-| `src/data/itemIcons.ts` | typed view over the generated `frlg/item-icons.json` (FRLG icon frames) | 6 |
-| `src/data/frlg/item-icons.json` | generated frame map for the FRLG item icon atlas | 6 |
+| `src/data/itemIcons.ts` | typed view over the generated `anil/item-icons.json` (Añil item icon frames, 24px, normalised id → frame, with `hasItemIcon`/`itemIconFrame` and the Mega Stone / TM fallbacks) | 6 |
+| `src/data/anil/item-icons.json` | generated frame map for the Añil item icon atlas | 6 |
+| `src/data/frlg/item-icons.json` | generated frame map for the FRLG item icon atlas (superseded by the Añil one) | 6 |
 | `src/data/typeIcons.ts` | typed view over the generated `frlg/type-icons.json` (FRLG type badge frames) | 7 |
 | `src/data/frlg/type-icons.json` | generated frame map for the FRLG type badge atlas | 7 |
 | `src/data/statusIcons.ts` | typed view over the generated `frlg/status-icons.json` (FRLG status badge frames) | 7 |
@@ -60,6 +61,8 @@ code never sees a `any`:
   `statAtLevel(species, level, nature, ivs, evs)`
 - `src/data/dex/evolutions.ts` → `evolutionFor(speciesId, level)`,
   `isLevelEvolution(evolution)`
+- `src/data/dex/items.ts` → `DexItem`, `getDexItem(id)`, `allDexItems()`
+  (the catalogue's own text and a berry's `naturalGift`)
 
 Accessors are pure and unit-tested; the JSON shape is checked by a test that
 asserts counts against `meta.json` so a bad regeneration fails loudly.

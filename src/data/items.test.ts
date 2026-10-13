@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { MEGA_FORMES } from './dex';
+import { MEGA_FORMES, getDexItem } from './dex';
 import {
+  COMPETITIVE_HELD,
+  COMPETITIVE_HELD_IDS,
   ITEMS,
   MEGA_STONE_IDS,
   buyPrice,
@@ -81,6 +83,57 @@ describe('getItem', () => {
     expect(getItem('Poke Ball')).toBe(getItem('pokeball'));
     expect(getItem('Never-Melt-Ice')).toBe(getItem('nevermeltice'));
     expect(getItem('revive')).toBeUndefined();
+  });
+});
+
+describe('competitive held set', () => {
+  it('catalogues 143 unique held rows, priced by the berry rule', () => {
+    expect(COMPETITIVE_HELD.length).toBe(143);
+    expect(new Set(COMPETITIVE_HELD.map((row) => row.id)).size).toBe(143);
+    expect(COMPETITIVE_HELD_IDS).toEqual(COMPETITIVE_HELD.map((row) => row.id));
+    for (const row of COMPETITIVE_HELD) {
+      expect(row.kind, row.id).toBe('held');
+      const authored = row.id.endsWith('memory') || row.id.endsWith('drive');
+      const expected = authored ? 3000 : getDexItem(row.id)?.isBerry ? 200 : 4000;
+      expect(row.price, row.id).toBe(expected);
+      expect(row.shortDesc.length, row.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('reaches the catalogue exactly once per row', () => {
+    for (const row of COMPETITIVE_HELD) expect(getItem(row.id), row.id).toBe(row);
+  });
+
+  it('keeps the seventeen Plates literal, priced and without a damage boost', () => {
+    const plates = COMPETITIVE_HELD.filter((row) => row.plate !== undefined);
+    expect(plates.length).toBe(0);
+    for (const id of [
+      'flameplate',
+      'splashplate',
+      'zapplate',
+      'meadowplate',
+      'icicleplate',
+      'fistplate',
+      'toxicplate',
+      'earthplate',
+      'skyplate',
+      'mindplate',
+      'insectplate',
+      'stoneplate',
+      'spookyplate',
+      'dracoplate',
+      'dreadplate',
+      'ironplate',
+      'pixieplate',
+    ]) {
+      const plate = getItem(id)!;
+      expect(plate.kind, id).toBe('held');
+      expect(plate.plate, id).toBeDefined();
+      expect(plate.typeBoost?.multiplier, id).toBe(1.2);
+      expect(plate.damageBoost, id).toBeUndefined();
+      expect(plate.price, id).toBe(4000);
+      expect(plate.shortDesc, id).toContain('Judgment');
+    }
   });
 });
 
