@@ -14,6 +14,7 @@
     "data:dex": "node scripts/build-dex.mjs",
     "data:anil": "node scripts/anil/build-pokemon-sprites.mjs",
     "data:anil:items": "node scripts/anil/build-item-icons.mjs",
+    "data:frlg:icons": "node scripts/frlg/build-type-icons.mjs && node scripts/frlg/build-status-icons.mjs",
     "docs:coverage": "node scripts/effect-coverage.mjs",
     "infra:install": "npm --prefix infra install",
     "infra:synth": "npm --prefix infra run synth",

@@ -4,22 +4,22 @@
   "cols": 4,
   "rows": 2,
   "frames": [
-    "psn",
-    "par",
     "slp",
-    "frz",
+    "psn",
     "brn",
-    "pkrs",
+    "par",
+    "frz",
     "fnt",
+    "pkrs",
     ""
   ],
   "statuses": {
-    "psn": 0,
-    "par": 1,
-    "slp": 2,
-    "frz": 3,
-    "brn": 4,
-    "pkrs": 5,
-    "fnt": 6
+    "slp": 0,
+    "psn": 1,
+    "brn": 2,
+    "par": 3,
+    "frz": 4,
+    "fnt": 5,
+    "pkrs": 6
   }
 }

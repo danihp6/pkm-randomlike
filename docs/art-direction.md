@@ -195,21 +195,26 @@ a tint recolours it for light or dark windows) and 2x-upscales it into
 (`addFrlgText`). Only the Latin glyphs up to the Japanese sections are packed,
 plus the four named arrows.
 
-The **type badges** are packed by `scripts/frlg/build-type-icons.mjs`: it crops
-the 18 FRLG type badges plus the "???" unknown badge from
-`sprite-sources/frlg-ui/type-status-icons.png` into
-`src/assets/frlg/type-icons.png` (32x14 frames) with the frame map in
-`src/data/frlg/type-icons.json`, read through `src/data/typeIcons.ts`. The FRLG
-sheet predates Fairy, so a species whose type has no badge keeps its type names as
-text instead.
+The **type badges** now come from Pokémon Añil rather than this FRLG sheet: the
+fangame's `Graphics/UI/types.png` is one column of 19 badges — the 18 types in dex
+order with the "???" slot between Steel and Fire, then Fairy — that
+`scripts/frlg/build-type-icons.mjs` nearest-neighbour scales into the frozen 32x14
+frames of `src/assets/frlg/type-icons.png`, with the frame map in
+`src/data/frlg/type-icons.json`, read through `src/data/typeIcons.ts`. The packer
+takes the sheet path (`node scripts/frlg/build-type-icons.mjs
+<anil>/Graphics/UI/types.png`, or `npm run data:frlg:icons`). Every type the dex
+lists has a badge now, Fairy included, so the text-chip fallback is dead for real
+types. Añil's "???" slot is a flat blue placeholder with no glyph; the `unknown`
+frame is packed but nothing draws it.
 
-The **status badges** (PSN / PAR / SLP / FRZ / BRN, plus the PKRS and FNT spares)
-come from the same sheet's sixth row, where each 32x16 cell holds two stacked
-32x8 badges. `scripts/frlg/build-status-icons.mjs` crops them into
+The **status badges** (SLP / PSN / BRN / PAR / FRZ, plus the FNT and PKRS spares)
+come from the same fangame's `Graphics/UI/statuses.png`, one column of seven 44x16
+badges (DOR / ENV / QUE / PAR / CON / DEB / PKRS).
+`scripts/frlg/build-status-icons.mjs` nearest-neighbour scales them into
 `src/assets/frlg/status-icons.png` (32x8 frames) with the map in
-`src/data/frlg/status-icons.json`, read through `src/data/statusIcons.ts`. Our two
-poison states share the one FRLG badge, which cannot tell poison from bad poison,
-and the battle HP panel draws the badge in place of the text abbreviation.
+`src/data/frlg/status-icons.json`, read through `src/data/statusIcons.ts`. Añil's UI
+sheet ships no separate badly-poisoned badge, so `tox` keeps sharing the poison
+frame, and the battle HP panel draws the badge in place of the text abbreviation.
 
 ## Sprite contract
 
