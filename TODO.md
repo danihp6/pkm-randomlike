@@ -23,12 +23,12 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 4 is shipped and archived.** The four tasks merged in ID order behind the green
-gate and the detail is in `CHANGELOG.md`'s `## Unreleased`; the playtest is over, so
-Batch 4's own findings are **cut below as Batch 4b** — both of its specs are written and
-it runs next. Every batch from here follows the Legend's **Asset trees** rule: the Añil
-clone's absolute path goes to the packer, and no tree under `sprite-sources/` is ever
-linked into a worktree (Batch 3's junction is what emptied it once).
+**Batch 5 is shipped and archived.** Its four tasks merged in ID order behind the green
+gate and the detail is in `CHANGELOG.md`'s `## Unreleased`; **Batch 5b is the next batch
+cut**, with the reports that arrived while Batch 5 was in flight registered below. Every
+batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
+goes to the packer, and no tree under `sprite-sources/` is ever linked into a worktree
+(Batch 3's junction is what emptied it once).
 
 Legend:
 - **IDs.** `[Task-NN]` is bound to a task only in this file; everywhere else a task
@@ -94,7 +94,14 @@ takes the one `src/scenes/BattleScene.ts` slot Batch 5b leaves free — and the 
 single report, Task-57 (a trainer's remaining team as Poké Balls under its panel), takes the next
 one, in **Batch 6b**, whose Task-38 wants `src/scenes/RouteScene.ts` instead — and the sixth round's two
 scene reports, Task-55 and Task-56, extend that same `src/scenes/RouteScene.ts` queue into the
-new **Batch 18** and **Batch 19**, which changes nothing ahead of them. The version chain gains
+new **Batch 18** and **Batch 19**, which changes nothing ahead of them — and the
+eighth round's three reports land in three places behind them: `Task-58` (the whole
+chrome in the debug panel's palette) claims `src/scenes/RouteScene.ts` **and every other
+scene**, so it opens the new **Batch 20**; `Task-59` (the switch window's move ⓘ) takes
+the one free `src/scenes/BattleScene.ts` in **Batch 13**, whose Task-44 wants the route
+scene instead; and `Task-60` (the battle's info window) takes that same scene in
+**Batch 17**, the first batch after 13 that leaves the scene *and* the i18n key table
+free. The version chain gains
 one more step from that same Task-52: it is **14 → 15** (Task-13, shipped) → **15 → 16**
 (Task-31, Batch 7) → **16 → 17** (Task-44, Batch 13) → **17 → 18** (Task-52, Batch 17) — and the
 sixth round's three tasks add **no** step at all (Task-54 is a shop table and a view model,
@@ -103,7 +110,9 @@ because none of the third round's three
 adds a step — Task-47 reads what the save already holds, Task-48 reads the
 saved `stats.catches` and Task-49 adds no run field at all — and neither does the fourth
 round's Task-50 (no run field) or Task-51 (no state), nor the fifth round's Task-53 (no state
-at all): the new step is Task-52's alone.
+at all): the new step is Task-52's alone, and the eighth round's three add none either —
+Task-58 is presentation and touches no state, Task-59 adds no run field and Task-60 only
+reads the battle's own state.
 
 The items registered since the first plan add one link each, and one batch that is not a
 link at all. `Task-35` (the enemy AI, Batch 8b) reads the reusable scripted-battle
@@ -279,6 +288,64 @@ its "alone" claim remains true of the route scene. Landing here also puts the ro
 the way Task-53 does. Nothing here re-plans `Task-38`–`Task-56`, and Batch 4b is untouched: it is
 `cut`, so it can gain no member.
 
+An **eighth round** of **three reports** arrived while Batch 5 (Task-16, Task-22, Task-42,
+Task-43) was being devved. Between them they add **one dependency edge** and open the plan's
+new **Batch 20**, and the first of the three is a report *against* the batch in flight, so it
+is handled as a follow-up rather than folded into it: **Batch 5 is cut**, its four specs are
+written and its four branches are cut, so it can gain no member and nothing in it is
+re-planned — the contradicting report becomes the task below, written against Task-16's
+shipped state.
+
+`Task-58` (every panel takes the **debug** panel's visual style) is the round's one edge, and
+it is a **whole-chrome** task rather than a small follow-up. The chrome it re-tunes is the set
+`Task-16` is drawing in the batch in flight — `scripts/ui/build-chrome.mjs`,
+`src/data/ui/chrome.json`, the three `src/assets/ui/*.png`, `src/ui/frlg.ts` and
+`src/ui/frlgFont.ts`, none of which exists on `main` today — so the edge points at Task-16 and
+this task's spec is written when its own batch is cut, by which time Task-16 has merged. It is
+whole-chrome because the referent is the dev overlay's CSS (`src/dev/debugMenu.ts`, 296-299:
+`background:#10161fe6`, `border:2px solid #7dd3fc`, `border-radius:8px`, `color:#e2e8f0`),
+whose surface `#10161f` is the palette `docs/art-direction.md` line 14 already declares and
+which Task-16's own set contradicts twice: its window keeps the FRLG light field (`#f8f8f8`
+under the deep-black `FRLG_INK`, `0x0b0b10`) and its keyline is the slate `0x3a3d52`, where the
+debug panel is dark with a bright accent and light text. Every container the chrome carries
+pairs a **light** fill with that dark ink — `moveGrid`'s cells and info buttons,
+`abilityInfo`'s button, the battle's command cells and bag tabs, the HUD's rows and cells, the
+starter cards — so the re-tune reaches every `src/scenes/*.ts` and most of `src/ui/**`: the
+**same shape as the reformat** (`Task-29`), and likewise **alone in its batch**, because every
+batch from 5 to 19 holds at least one of its paths (5 Task-16's chrome set, 5b Task-45 and
+Task-53, 6 Task-34 and Task-41, 6b Task-38 and Task-57, 7 Task-18, Task-31 and Task-47, 8
+Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26's every-scene
+sweep, 11 Task-29's ledger, 12 Task-30, 13 Task-44 and Task-59, 14 Task-48, 15 Task-49, 16
+Task-50, 17 Task-52 and Task-60, 18 Task-55, 19 Task-56). It therefore opens **Batch 20**, and
+it runs after Batch 11's reformat so it edits cleared files and keeps them conforming, the way
+Batches 12–19 do. One consequence is recorded with it rather than hidden: Batch 8's
+accessibility audit runs against Task-16's chrome, so this task carries its own contrast
+check instead of re-running Task-08, and the open question below offers the light-panel
+alternative that would need none of that.
+
+`Task-59` (the battle's SWITCH window gives each move row the HUD's ⓘ) and `Task-60` (a battle
+**info** window with the weather, the terrain, the stat stages and the screens) are the round's
+two battle reports, and they are **siblings rather than one task** with `Task-39` (Batch 9):
+`Task-39` fixes a *classifier* on cells the MOVES window and the learnset band already draw and
+takes no `docs/` line, while `Task-59` adds *rows* to a popup that has none and has to change
+the switch window's own "hover only" rule — but both want `src/scenes/BattleScene.ts` **and**
+`src/ui/moveGrid.ts`, so **at most one of them can sit in any batch**, and `Task-59` takes
+**Batch 13**: the first batch after `Task-39` whose `BattleScene.ts` is free (`Task-40` holds it
+in 9b, `Task-26` in 10, `Task-30` in 12), whose `src/ui/moveGrid.ts` is free (Task-55's in 18)
+and whose `docs/design-spec.md` §4 is free — and the first in which it need not touch the i18n
+key table, because its popup carries the move's own text and adds no literal. `Task-60` could
+not ride beside it (they share both of those paths) and takes **Batch 17** as its second member:
+`BattleScene.ts` is free there and so is the i18n table its own labels do need (Task-49 holds it
+in 15, Task-50 in 16), while its batch-mate `Task-52` claims none of its paths. Neither adds a
+run field and neither moves a rule.
+
+None of the three takes a `SAVE_VERSION` step: `Task-58` is presentation and touches no state,
+`Task-59` adds no field and changes no rule, and `Task-60` only *reads* the battle state the
+engine already carries — so the chain stays **14 → 15** (Task-13, shipped) → **15 → 16**
+(Task-31, Batch 7) → **16 → 17** (Task-44, Batch 13) → **17 → 18** (Task-52, Batch 17). Nothing
+here re-plans `Task-38`–`Task-57`, and Batch 4b is untouched: it is `cut`, so it can gain no
+member.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
@@ -340,26 +407,22 @@ shipped attempt (`sweep-b` in `src/engine/routes/validate.test.ts`: attempt 0 �
 eight attempts. Task-36, not Task-37, would have held the dex hot files, which is why
 `Task-17` (Batch 6) still writes `D40`'s Mega count afterwards.
 
-### Batch 5 — panel chrome, TM acquisition, two shipped-work fixes
-- **Task-16** Modernise the panel and menu chrome.
-- **Task-22** TM acquisition breadth.
-- **Task-42** A caught Pokémon keeps the HP it had in the wild.
-- **Task-43** Run Away works, and its ⓘ floats the dex's competitive text.
-- **Hot files:** `src/scenes/RouteScene.ts`, `SettingsScene.ts`, `BattleScene.ts` →
-  Task-16; `package.json` and the packed item-icon sheet → Task-22;
-  `src/engine/run/progression.ts` + `progression.test.ts` → Task-42;
-  `src/ui/partyDetail.ts` + `partyDetail.test.ts`, the new `src/data/abilityText.ts` and
-  `docs/data-spec.md` → Task-43.
-- **Shape:** Task-16 restyles every window and settles the `hudTransparent`
-  question, Task-22 adds a machine icon to the sheet Task-07 packed. Both are free to
-  assume Batch 4 merged. The two new ones are **fixes of shipped work** and take the
-  first batch whose one file they leave alone: Task-42 fixes the fold Task-31 keeps
-  (`adoptAtLevel`, `src/engine/run/progression.ts`, which no batch claims) and Task-43
-  fixes the text Task-12's popup reads (`abilityDescription`, `src/ui/partyDetail.ts`).
-  Neither touches a scene, so neither waits for Task-16; Task-42 lands **before** Batch
-  7's Task-31, which rewrites the catch's placement around it, and Task-43's
-  `docs/data-spec.md` is free because Batch 4b's Task-36 wrote §1 of it in the batch
-  before.
+### Batch 5 — panel chrome, TM acquisition, two shipped-work fixes *(shipped, archived)*
+Task-16, Task-22, Task-42 and Task-43 merged in ID order behind the green gate; the
+detail is in `CHANGELOG.md`'s `## Unreleased`. Task-16 replaced the ripped FRLG chrome
+with a **drawn** set under `src/assets/ui/**` + `src/data/ui/**`, packed by the new
+`scripts/ui/build-chrome.mjs` (`npm run data:ui`), keeping every exported name, padding
+and corner value the scenes are written against and applying the set's own alpha once in
+`addFrlgWindow`; its window field stayed light (`#f8f8f8`) so the frozen `FRLG_INK` stays
+legible, and `hudTransparent` survived as the same boolean re-read as a degree. Task-22
+gave the Mart a per-band TM slot, drawn **last** at the catalogue price, and resolved each
+of the 171 machines to its move's own type art — the Añil atlas already carried the whole
+`machine_<TYPE>` set, so no packer ran, no art was added and `package.json` stayed
+Task-16's. Task-42 made a catch keep the **share** of health it had in the wild
+(`adoptAtLevel`, the `evolvePokemon` shape, with a 1 HP floor), and Task-43 fixed Run
+Away's copy through the new `src/data/abilityText.ts` override that `abilityDescription`
+reads before the dex. None of the four added a run field or a `SAVE_VERSION` step, so the
+version chain is unchanged, and each of its three declared re-pins needed none.
 
 ### Batch 5b — FireRed's grass step, a finished run's destination, the evolution curve, the battle panel's types and the Mart's four rows
 - **Task-45** Tall grass rustles when the player steps through it, as in FireRed.
@@ -653,21 +716,39 @@ eight attempts. Task-36, not Task-37, would have held the dex hot files, which i
   14, 15 and 16 edit
   the same ledgered files and carry the same obligation.
 
-### Batch 13 — the PC's RIP tab
+### Batch 13 — the PC's RIP tab, and the switch window's move ⓘ
 - **Task-44** The PC box gains a fixed RIP tab listing the dead.
+- **Task-59** Each of the switch window's move rows gets an ⓘ that floats the move's info,
+  on hover or on click, as the route HUD's does.
 - **Hot files:** `src/scenes/RouteScene.ts`, `src/engine/run/state.ts` + `state.test.ts`,
   `src/engine/run/perms.ts` + `perms.test.ts`, `src/engine/save.ts` + `save.test.ts`,
   `src/ui/partyScreen.ts` + `partyScreen.test.ts`, `src/ui/partyDetail.ts` and
-  `docs/routes-spec.md` §6 → Task-44.
-- **Shape:** one task, and it opens a batch at the tail because its file set is the union
+  `docs/routes-spec.md` §6 → Task-44; `src/scenes/BattleScene.ts` and `src/ui/moveGrid.ts`
+  (the shared popup-content builder it exports and the battle's ⓘ rows reuse), plus
+  `docs/design-spec.md` §4's switch-window sentence → Task-59. Task-59 claims no new
+  `src/ui/**` file (so no `src/ui/README.md` line), no i18n key — its popup carries the
+  move's own text through the existing fallback — no `package.json`, `src/main.ts`,
+  `vite.config.ts`, `src/data/**`, `src/engine/**`, `src/engine/save.ts` or packed asset.
+  The two tasks share no path: `src/ui/partyDetail.ts` is Task-44's to **write** while
+  Task-59 only reads its `MemberDetail`.
+- **Shape:** two tasks. Task-44 opens a batch at the tail because its file set is the union
   of two serial resources: `src/scenes/RouteScene.ts` (free again only after Batch 12's
   audio work) and `src/engine/save.ts` (free after Batch 10). It could not sit before
   Batch 7 either, although both files were free in Batch 6: Task-17 holds
   `docs/routes-spec.md` §6 there, and Task-31 rewrites the exact seam this task extends —
   one placement helper, the route-scoped `pcCatch`, the same PC panel — so this task is
   written **against Task-31's shipped state** and takes the **next** `SAVE_VERSION` step,
-  **16 → 17**, after Task-31's 15 → 16. It edits files Batch 11's reformat cleared, so it
-  keeps them conforming (no new ledger line), the way Batch 12 does for its two scenes.
+  **16 → 17**, after Task-31's 15 → 16. Task-59 is the second member and takes the one free
+  `src/scenes/BattleScene.ts` slot of the batch: that file is free in 13, 15, 16, 17 and 19
+  because Task-39 held it in Batch 9, Task-40 in 9b, Task-26 in 10 and Task-30 in 12 — and
+  this is the first of those five whose `src/ui/moveGrid.ts` (free after Task-39, Task-55's in
+  18) and `docs/design-spec.md` §4 (free: Task-44 holds `docs/routes-spec.md` instead) are
+  free too. It is written **against Task-39's shipped classifier**, three batches earlier, and
+  it deliberately adds **no literal**, so the i18n key table Task-49 and Task-50 hold in the
+  two batches after this one is nobody's here. Both tasks edit files Batch 11's reformat
+  cleared, so they keep them conforming (no new ledger line), the way Batch 12 does for its
+  two scenes. Neither adds a run field: Task-59 changes presentation only, so no
+  `SAVE_VERSION` step.
 
 ### Batch 14 — the run's first wild catches easily
 - **Task-48** The run's first wild Pokémon is much easier to catch.
@@ -739,24 +820,32 @@ eight attempts. Task-36, not Task-37, would have held the dex hot files, which i
   so it keeps them conforming (no new ledger line), the way Batches 12–15 do. It adds no run
   field, so no `SAVE_VERSION` step.
 
-### Batch 17 — the wild pool remembers what the run caught
+### Batch 17 — the wild pool remembers what the run caught, and the battle's info window
 - **Task-52** The wild table never offers a species the run has already caught — nor any of
   its evolutions, nor any of its forms (regional forms included), dead members included.
   **This is the plan's next `SAVE_VERSION` step: 17 → 18.**
+- **Task-60** A battle ⓘ opens a window with the battle's own state: the weather and the
+  terrain, each side's screens and the other conditions, and the active Pokémon's stat stages.
 - **Hot files:** `src/scenes/RouteScene.ts` (the single construction site of the encounter
   table, `applyRoute` 1163-1172) → Task-52; `src/engine/routes/encounters.ts` +
   `encounters.test.ts` → Task-52; `src/engine/run/pool.ts` + `pool.test.ts` → Task-52;
   `src/engine/run/state.ts` + `state.test.ts` and `src/engine/run/resolve.ts` +
   `resolve.test.ts` → Task-52; `src/engine/save.ts` + `save.test.ts` → Task-52;
   `src/data/dex/evolutions.ts` + `evolutions.test.ts` (the family-plus-formes expansion) →
-  Task-52; `docs/routes-spec.md` §3 (the wild-table bullet) → Task-52. It claims no
-  `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**` (the accessor it extends
-  is hand-authored — nothing is regenerated and no packer runs), `src/ui/**` or packed asset.
-- **Shape:** one task, in its own batch, and it needs the batch to be that wide for two
-  independent reasons: `src/scenes/RouteScene.ts` is the **only** place the wild table is
-  built and every batch from 5 to 16 holds it (5 Task-16, 5b Task-45, 6 Task-41, 6b Task-38,
-  7 Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26,
-  11 Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48, 15 Task-49, 16 Task-50), and
+  Task-52; `docs/routes-spec.md` §3 (the wild-table bullet) → Task-52; `src/scenes/BattleScene.ts`,
+  the new `src/ui/battleInfo.ts` + `battleInfo.test.ts`, the `src/ui/README.md` role line
+  (the folder's per-file convention), `docs/design-spec.md` §4's window list and the i18n key
+  table plus both locales (`src/i18n/**`, whose exact files are read from what Task-26 ships)
+  → Task-60. Task-52 claims no `package.json`, `src/main.ts`, `vite.config.ts`,
+  `src/data/dex/**` (the accessor it extends is hand-authored — nothing is regenerated and no
+  packer runs), `src/ui/**` or packed asset; Task-60 claims no `package.json`, `src/main.ts`,
+  `vite.config.ts`, `src/data/**`, `src/engine/**`, `src/engine/save.ts` or packed asset —
+  and the two share no path.
+- **Shape:** two tasks. Task-52 stays in its own batch because it needs the batch to be that
+  wide for two independent reasons: `src/scenes/RouteScene.ts` is the **only** place the wild
+  table is built and every batch from 5 to 16 holds it (5 Task-16, 5b Task-45, 6 Task-41, 6b
+  Task-38, 7 Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10
+  Task-26, 11 Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48, 15 Task-49, 16 Task-50), and
   `src/engine/save.ts` is held by 7, 8b, 10 and 13 — so this is the first batch that leaves
   both of the resources the rule needs free at once. Its dependency points **backwards**,
   not forwards: it is written against Task-44's shipped `RunState` (Batch 13, whose RIP list
@@ -765,8 +854,17 @@ eight attempts. Task-36, not Task-37, would have held the dex hot files, which i
   `SAVE_VERSION` step, **17 → 18**, after Task-44's 16 → 17, defaulting an older run's record
   to empty the way Task-13's and Task-44's steps do. It also runs after Batch 8's Task-20,
   which makes Rotom's appliances evolutions and so moves them inside the family walk this
-  rule reads. It edits files Batch 11's reformat cleared, so it keeps them conforming (no new
-  ledger line), the way Batches 12–16 do. Batch 4b is untouched — it is `cut`, so it can gain
+  rule reads. Task-60 is the second member and takes the paths Task-52 leaves: `BattleScene.ts`
+  is free here (13's Task-59 and 15's Task-49 and 16's Task-50 each hold only the route scene
+  or the notice module), `src/ui/README.md` is free (Task-55 claims it in the batch after),
+  `docs/design-spec.md` §4 is free (Task-52 holds `docs/routes-spec.md` §3) and so is the i18n
+  key table its own labels need — free here for the first time since Task-26 wrote it, because
+  Task-49 held it in 15 and Task-50 in 16. It shares no path with Task-52 and produces nothing
+  Task-52 reads, so the batch stays an antichain while Task-52's own width claim is unchanged.
+  It is a **reader** of the battle state and changes no engine rule, so it owes no
+  `docs/battle-spec.md` line and **no** `SAVE_VERSION` step. Both tasks edit files Batch 11's
+  reformat cleared, so they keep them conforming (no new ledger line), the way Batches 12–16
+  do. Batch 4b is untouched — it is `cut`, so it can gain
   no member.
 
 ### Batch 18 — the MOVES panel draws four slots
@@ -818,6 +916,41 @@ eight attempts. Task-36, not Task-37, would have held the dex hot files, which i
   and simply stop receiving new ones for free. It edits files Batch 11's reformat cleared, so it
   keeps them conforming (no new ledger line), the way Batches 12–18 do.
 
+### Batch 20 — the whole chrome takes the debug panel's palette
+- **Task-58** Every panel is the debug panel's own visual style: one dark, translucent
+  surface, one bright accent frame and one light ink, in place of the drawn set's light
+  windows and deep-black text.
+- **Hot files:** all of them, which is why the pick says the task runs **alone**:
+  `scripts/ui/build-chrome.mjs` (the palette it draws with), the three generated
+  `src/assets/ui/{window,textbox,font}.png`, the generated `src/data/ui/chrome.json` and
+  `font.json`, `src/ui/frlg.ts`, `src/ui/frlgFont.ts` + `frlgFont.test.ts`,
+  `src/ui/README.md` and `src/assets/README.md`, every `src/scenes/*.ts` (`BootScene` only
+  if its loader derives a colour; the drawn keys do not move) and every `src/ui/**` module
+  that fills a container or inks text (`moveGrid.ts`, `abilityInfo.ts`, `infoPopup.ts`,
+  `panel.ts`, `partyScreen.ts`, `partyDetail.ts`, `capture.ts`, `settingsScreen.ts`,
+  `bag.ts`, `rewards.ts`, `permadeath.ts`, `evolutionGraph.ts`, `mapView.ts`,
+  `seedPrompt.ts`, `typewriter.ts` and `shop.ts` if its rows draw a chip) — plus
+  `docs/art-direction.md` (the §Palette paragraph Task-16 rewrote) and `docs/design-spec.md`
+  (§3's panel sentence and §4's window list). It claims no `package.json` (Task-16 ships the
+  `data:ui` script), no `src/main.ts`, no `vite.config.ts`, no `src/data/dex/**`, no
+  `src/engine/**`, no `src/engine/save.ts` and no art outside `src/assets/ui/**`.
+- **Shape:** one task, **alone in its batch**, and that is the whole reason Batch 20 exists:
+  the re-tune reaches every scene and most of `src/ui/**`, so every batch from 5 to 19 holds
+  at least one path it rewrites (5 Task-16's chrome set, 5b Task-45's atlases and Task-53's
+  battle scene, 6 Task-34's battle scene and Task-41's route scene, 6b Task-38's route scene
+  and Task-57's battle scene, 7 Task-18's battle scene, Task-31's route scene and Task-47's
+  main menu, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26's
+  every-scene sweep, 11 Task-29's `src/**` ledger, 12 Task-30, 13 Task-44 and Task-59, 14
+  Task-48, 15 Task-49, 16 Task-50, 17 Task-52 and Task-60, 18 Task-55, 19 Task-56) — the same
+  shape as the reformat (`Task-29`, Batch 11), and like it, **last**. It runs **after**
+  Task-16 (whose chrome it re-tunes: the packer's palette constants, `chrome.json`'s alphas
+  and corners, the three atlases, `frlg.ts`'s exports and `frlgFont.ts`'s `FRLG_INK`) and
+  **after** Batch 11, so it edits reformat-cleared files and keeps them conforming (no new
+  ledger line), the way Batches 12–19 do. One consequence is written into the entry rather
+  than hidden: Batch 8's accessibility audit ran against Task-16's chrome, so this task owes
+  its own contrast check instead of re-running Task-08, and the open question below offers
+  the light-panel alternative that would need neither the extra check nor this batch.
+
 ### Open questions for the human
 
 Batch 4b's three reports added two more, this second round of six added four, the third
@@ -826,7 +959,10 @@ four (three behind the wild-pool rule and one behind the battle panel's types) a
 round of four adds three (two behind the four-row Mart and one behind the four containers) —
 the sixth round's fourth report is a measurement rather than a question, and it is written into
 `[Task-09]`'s entry instead — and the seventh round's single report adds two (both behind the
-trainer's Poké Ball row) — and every
+trainer's Poké Ball row) — and the eighth round's three reports add five (two behind the debug
+panel's palette, one behind the switch window's move ⓘ and two behind the battle's info
+window) — and Batch 5's own one (Task-42's catch HP: the number or the fraction) was
+**answered with the fraction** and shipped, so its bullet is gone — and every
 question here carries a written default rather than a guess. Everything the first plan
 raised is decided: the Añil art was materialised into the local clone, `Task-23` is unblocked
 (the three moves ship, `D42`), `Task-24` is retired, the audio comes from the original
@@ -877,16 +1013,6 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
   alternative is that this report also owes a sheet-extension job (a new `legacy-art`
   pack for the ids the clone does not cover), which is a task of its own and not this one.
   Say which before Batch 6's branch is cut. Nothing else in the plan changes either way.
-
-- **`[Task-42]` (the catch's HP, Batch 5): is "mismo HP" the same number or the same
-  fraction?** A catch is re-built at the squad's level (`adoptAtLevel`), so its maximum HP
-  changes on the way in: keeping the number and keeping the proportion are different
-  rules. The written default is the **fraction** (the missing-HP share is carried across,
-  exactly as `evolvePokemon` already does when a maximum changes), so a wild caught at 30%
-  arrives at 30% and the dev-only `addDebugPokemon`, which feeds a full-HP member, is
-  unchanged. The other reading is the raw number, clamped to the new maximum, which
-  quietly changes the dev path too. Say which before Batch 5's branch is cut. Nothing else
-  in the plan changes either way.
 
 - **`[Task-45]` (the grass step, Batch 5b): does the tile animate always, or only under the
   player?** `TilesetConfig` has no animation contract today, so the reading is free: the
@@ -1059,6 +1185,84 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
   trainer started with; the alternative is the literal shrinking count, which is one fewer line
   (`take(liveCount)`) and never reveals the original team size. Say which before Batch 6b's branch
   is cut. Nothing else in the plan changes either way.
+
+- **`[Task-58]` (the whole-chrome restyle, Batch 20): does the panel **interior** go dark, or
+  only the frame?** The report says the panels should be "estilo visual como el de debug", and
+  the debug panel is dark (`background:#10161fe6`, `src/dev/debugMenu.ts` 296-299) while
+  Task-16's shipped set keeps the FRLG **light** window (`#f8f8f8` under the deep-black
+  `FRLG_INK`) and only darkens its battle box. The written default is the **full match**: the
+  interior becomes the palette's own `#10161f` at the panel's degree (~0.90), the 2px frame is
+  the debug panel's accent `#7dd3fc`, the ink flips to the light body tone the palette already
+  names (`docs/art-direction.md` 14: "UI text `#f8fafc`") with one muted tone for the
+  secondary lines, and every light container fill that pairs with that ink moves with it
+  (`moveGrid`'s cells, `abilityInfo`'s button, the command cells, the HUD's rows, the starter
+  cards) — which is why the task claims every scene and most of `src/ui/**` and sits in
+  **Batch 20**, behind every batch that owns one of those files. The alternative is the
+  **frame-only** re-skin: the accent border, its 2px width, the corner and the ~0.90 alpha over
+  the light interiors with `FRLG_INK` kept, which needs no ink flip and no container re-tint and
+  would therefore fit in **Batch 5b**, right after Task-16 — but it leaves the panels light, so
+  it is only "like debug" in their frame. Say which before Batch 20's branch is cut. Answering
+  it the alternative way empties Batch 20 and moves this task to 5b; nothing else in the plan
+  changes either way. (The panel's own type treatment is *not* a question: the debug overlay's
+  `12px/1.4 monospace` is a DOM font, and adopting a typeface is a separate job Task-16 already
+  ruled out of its own scope — this task keeps the bitmap face and moves only its tone and its
+  halo.)
+
+- **`[Task-58]` (the whole-chrome restyle, Batch 20): does the accessibility audit have to be
+  re-run after it?** `[Task-08]` (Batch 8) audits contrast, colour-only information and
+  reduced flash **against the chrome Batch 5 shipped**, and this task lands twelve batches
+  later with a palette that flips every one of those relationships. The written default is that
+  Task-08 is **not** re-run and this task carries its own contrast check (it is the task that
+  introduces the new tones, so it is the one that owes the pairs that read as one on the new
+  surface — the selected tab against the unselected one, the HP bar's green against the darker
+  field, a dimmed ball or a faint status badge); the alternative is to treat the restyle as an
+  accessibility change and re-open the sweep, which is a second `Task-08`-shaped task and not
+  something this plan can schedule without the human saying so. Say which before Batch 20's
+  branch is cut; nothing else in the plan changes either way.
+
+- **`[Task-59]` (the switch window's move ⓘ, Batch 13): does a press on the ⓘ swallow the
+  member selection?** `docs/design-spec.md` §4 states the rule the switch window's ⓘ lives
+  today — "the ⓘ is **hover only**, so a press there still selects the member under it" (191-192,
+  the ability row's rule and `partyAbilityZone`'s own comment, `BattleScene` 707-717) — and the
+  report asks for a press as well as a hover on the **move** rows. The written default is that
+  the move ⓘ gets a zone of its own sized to the button that **swallows** the press and pins its
+  popup, so one control never both pins a description and re-selects the member underneath; the
+  ability ⓘ keeps its hover-only rule unchanged, and a press anywhere else on the window still
+  selects the member as it does today. The alternative is that the move ⓘ is **hover-only too**
+  (the report's "o ponerse encima" taken alone), which needs no new press path and no §4
+  sentence about presses but leaves a pad or touch player unable to pin a move's text. Say which
+  before Batch 13's branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-60]` (the battle's info window, Batch 17): where does the ⓘ button live?** The
+  report says "un boton info en el combate" and names no control. The written default is a
+  **fifth control reserved at the right edge of the command window**, the shape the moves menu
+  already gives the Mega control (`MOVE_MEGA_COL`, `BattleScene` 108, laid out as a
+  `rightReserve`), so the FIGHT / BAG / SWITCH / RUN 2x2 (`MENU_GRID_COLS = 2`, 103;
+  `openMenu`, 1204-1218; `renderCommandMenu`, 1670-1728) keeps its geometry and the info window
+  opens like any other menu; the alternatives are a **fifth `menuItems` cell**, which makes the
+  grid three rows in the same 100px window, or a small control on the HP panels, which is
+  colour-free but sits inside the panel `Task-53` (Batch 5b) and `Task-57` (Batch 6b) already
+  fill. Say which before Batch 17's branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-60]` (the battle's info window, Batch 17): how much of the battle state does the
+  window list?** The engine carries four groups the report names — `state.weather` +
+  `weatherTurns`, `state.terrain` + `terrainTurns` (`src/engine/battle/state.ts` 97-100), the
+  seven per-side `sideConditions` (14-15, 21, 24-34, 65 — Reflect, Light Screen, Aurora Veil,
+  Tailwind, Lucky Chant, Mist, Safeguard) and the seven whole-field conditions (18-19, 36-46,
+  102 — Trick Room, Gravity, Magic Room, Wonder Room, Fairy Lock, Mud Sport, Water Sport) — plus
+  the per-fighter `boosts` (`fighter.ts` 194, `BoostId` 20) and, beside them, a per-side
+  `wishTurns` (60-61), each active's `status`/`statusCounter` (190-192) and its `volatiles`
+  (195: confusion, Leech Seed, Substitute, Taunt, Encore, Perish Song and the rest). The written
+  default is the report's own four groups **plus** each active's non-volatile status — weather,
+  terrain, the field conditions with a count, each side's conditions with their counts, each
+  side's stat stages — and **not** the volatiles, because a volatile is a per-fighter state the
+  active Pokémon's own row already implies and the report asks for "contexts" rather than a
+  combat log; the alternative is to list every non-zero volatile under each active too, which is
+  more rows in the same window and one more pure-model case. Whatever is picked, the panel
+  **says what the engine lacks**: the entry hazards (Stealth Rock, Spikes, Toxic Spikes, Sticky
+  Web) are not modelled at all (`src/engine/battle/effects/moves.ts` 594 says so in the tree),
+  so the window must not pretend to list them. Say which before Batch 17's branch is cut.
+  Nothing else in the plan changes either way.
 
 ---
 
@@ -1414,48 +1618,6 @@ The whole menu battle minus per-effect behaviour. Contract in
 Ports of Showdown handlers, in batches, on the hook names in
 `docs/showdown-reuse.md` §3.
 
-- [ ] **[Task-43] The ability's ⓘ floats the dex's competitive text, not what the ability
-      does here.** Reported in play as a doubt about the ability itself: "bug habilidad run
-      away funciona? en la descripcion pone ningun efecto en competitivo". **Measured on
-      `main`, the ability works and the description is what is wrong** — and the task's
-      first job is to keep that split explicit in its report.
-      **Run Away is implemented and honoured.** `runAway()` (`src/engine/battle/effects/abilities.ts`,
-      963-970) sets `onTryEscape` and the registry's `runTryEscape(ctx)` flag
-      (`src/engine/battle/effects/registry.ts`, ~72) is consulted by `rollRun`
-      (`src/engine/battle/runAway.ts`, 16-27) **before** the speed odds, so a wild escape is
-      guaranteed; `src/engine/battle/effects/abilities.test.ts` (893-897) asserts exactly
-      that, and `docs/balance/effect-coverage.md` (245) carries the ability as `port`, not as
-      a `no-op`. Two honest caveats still belong in the report: `canRun` (`runAway.ts`,
-      6-8) refuses while `isTrapped`, so Run Away does **not** beat Mean Look / Arena Trap,
-      and nothing else in the engine reads the ability.
-      **The text is the bug.** The three ⓘ homes — the battle's SWITCH window
-      (`src/scenes/BattleScene.ts`, 1930) and the route HUD's detail panel and capture
-      screen (`src/scenes/RouteScene.ts`, 2392/5248/5388) — all draw `detail.abilityDesc`,
-      which `abilityDescription` (`src/ui/partyDetail.ts`, 156-160) fills with the dex's own
-      `shortDesc || desc`. For `runaway` that is Showdown's competitive-play blurb (the
-      human's words, "ningun efecto en competitivo", are that string's meaning), and it is
-      exactly what Task-12 shipped on purpose: "the ability row reads the dex's own text
-      through the popup". The dex text is the side that is wrong, because this game's Run
-      Away *does* have an effect.
-      **Fix shape:** a hand-authored override beside the dex, `src/data/abilityText.ts`
-      exporting `abilityText(id: string): string | null` — an override map for the ids whose
-      dex blurb is competitive-play boilerplate while the engine ports the ability — read by
-      `abilityDescription` **before** the dex fallback, so one change fixes all three homes.
-      The measurement half is part of the work: list every ability whose `shortDesc`/`desc`
-      reads as "no competitive/in-game use" and is `port`ed in the coverage table, fix at
-      least Run Away, and say in the report which ids are in that class and which were left
-      (with the reason). Tests: `src/ui/partyDetail.test.ts` (the override wins for an id that
-      has one, and an id without one still reads the dex) plus the table's own test. Docs:
-      one line in `docs/data-spec.md` (`docs/battle-spec.md` §9 is Task-17's in Batch 6 —
-      one writer per file). No engine rule changes, so no fixed-seed test and **no**
-      `SAVE_VERSION` impact; the description is not saved anywhere.
-      Out of scope: the ability's own implementation (it is already correct and `port`ed),
-      the ⓘ button's hit tests (`[Task-39]`, Batch 9, is about hover and click, not copy),
-      the ability row's layout, and every Pokémon/move/item description — only abilities get
-      an override here.
-      *Dependencies:* none. Batch order covers it: Task-12 (Batch 3, shipped) added the
-      popup and the dex read this task corrects, and `docs/data-spec.md` is free in Batch 5
-      because Batch 4b's Task-36 wrote §1 of it in the batch before. *(Batch 5)*
 
 ## Phase 5 — Battle UI & presentation
 
@@ -1768,6 +1930,136 @@ Ports of Showdown handlers, in batches, on the hook names in
       audit and Batch 10's i18n sweep on purpose, like Task-53: a dimmed ball is colour-only
       information a contrast pass has to see, and the sweeps are cheaper against a row that exists.
       *(Batch 6b)*
+- [ ] **[Task-59] Each of the battle SWITCH window's move rows gets the HUD's ⓘ, on hover and
+      on click.** Reported in play: «en combate panel de info en switch los moves deberian tener
+      boton i que abre panel con info ataque al pulsar o ponsrse encima como el del hud» — in a
+      battle, the SWITCH window's own info panel lists the member's moves with no control that
+      explains them, while the route HUD's detail panel has floated a move's description from an
+      ⓘ since Phase 6. It is a **sibling** of `[Task-39]` (Batch 9), not the same task: that one
+      fixes the ⓘ **classifier** on cells that already exist, and this one adds rows to a window
+      that has none — but the two want the same two files (`src/scenes/BattleScene.ts` and
+      `src/ui/moveGrid.ts`), so a batch can hold only one of them.
+      **Today the switch detail window draws the moves as plain rows, and its one ⓘ is the
+      ability's.** `buildPartyDetail` (`src/scenes/BattleScene.ts`, 624-719) builds the window
+      once — the name and the level (634-639), the two type chips (642-657), the HP line (660),
+      the five stat rows (663-670), nature / ability / held (671-676) and a 2x2 of four move
+      cells (`partyDetailMoves`, 678-698: a bare rectangle, a name and a `PP n/m` line) — and
+      `renderPartyDetail` (1886-1901) fills them from `MemberDetail.moves`. That list is already
+      the popup's whole payload: `MoveDetail` (`src/ui/partyDetail.ts`, 28-44) carries `moveId`,
+      `name`, `type`, `category`, `pp`, `maxPp`, `desc`, `power`, `basePower`, `accuracy`,
+      `baseAccuracy` and `status`, and `fighterDetail` (168-193) with `moveDetails` (112-137)
+      builds it for a live battle fighter — so the scene reads the dex nowhere.
+      **The ⓘ the window does have is hover-only on purpose.** `renderPartyAbilityInfo`
+      (1924-1934) places `AbilityInfoButton` (`src/ui/abilityInfo.ts`, 41-116) from the ability
+      text's own width (`abilityInfoSpot`, 27-34) and floats `abilityInfoContent` (37-39) in the
+      shared `InfoPopup`; the zone it rides registers **only** `pointerover` / `pointerout`
+      (713-717), and the comment says why — the party cells under the window own the presses, so
+      "a press must not change the member the window describes" — which is exactly the rule
+      `docs/design-spec.md` §4 states in words (186-193: "In the switch window the ⓘ is **hover
+      only**, so a press there still selects the member under it").
+      **What the HUD does, and what is reusable.** The route HUD floats on hover
+      (`updateDetailInfo`, `RouteScene` 3309-3316), pins on a click (`toggleDetailInfo`,
+      3318-3328), drops the popup on a press elsewhere or a panel change (`resetDetailInfo`,
+      3358+), and is hit-tested from the live pointer against `MoveGrid.cellRect(index)` plus
+      `MoveGrid.infoAt(index, …)` (`detailInfoAt`, 3441-3449). The content it floats is the shared
+      builder in `MoveGrid.drawPopup` (`src/ui/moveGrid.ts`, 356-393) — the type badge, the
+      status badge and the description, through `InfoPopup` (`src/ui/infoPopup.ts`, 23-28) — and
+      that private method is what this task lifts into one **exported pure helper**
+      (`MoveGridCell` and `MoveGridOptions` are exported already), so the grid and the switch
+      window's rows can never drift.
+      **Fix shape:** four ⓘs, one per move row, on the seam that already works. Each row gets an
+      `AbilityInfoButton`-shaped control (the same 22x22 `ABILITY_INFO_SIZE` button,
+      `src/ui/abilityInfo.ts` 14) beside its `PP` line, its content built by the exported helper,
+      and **a zone of its own sized to the button** — the tree's only hover that cannot miss
+      (`partyAbilityZone`, 713-717, and Task-39's own recommendation for the battle's MOVES
+      window) — which drives `pointerover` / `pointerout` **and** a `pointerdown` that pins, since
+      the press is the report's ask and the one thing the ability ⓘ does not do. A press anywhere
+      else on the window keeps its current meaning. The dev's spec freezes the row and button
+      geometry and whether the popup rides above or below its row through `InfoPopup`'s
+      `above`/`below` pair, and it must **not** reintroduce a sub-rect classifier: the
+      `insideInfoButton`-style test Task-39 deletes from the MOVES window (2216-2221) stays
+      deleted.
+      Out of scope: `[Task-39]`'s own two sites (Batch 9 — this task is written against its
+      shipped state), the ability row's ⓘ and its hover-only rule, the capture screen's ability
+      ⓘ, the route HUD's detail panel and its band, the avatar grid's cell geometry
+      (`[Task-34]`, Batch 6) and its ball row (`[Task-57]`, Batch 6b), move reordering (the
+      battle has no drag), `src/ui/infoPopup.ts`'s own layout, the move cells' own numbers, and
+      every string — the popup carries the move's own text through the existing, already-keyed
+      fallback, so **no i18n key** is owed and the key table Task-49 and Task-50 hold in the two
+      batches after this one is nobody's here.
+      *Dependencies:* none. Batch order covers it: it is written against `[Task-39]`'s shipped ⓘ
+      classifier (Batch 9) and reuses the content builder that batch leaves in
+      `src/ui/moveGrid.ts`; it needs `src/scenes/BattleScene.ts` (Task-39's in 9, Task-40's in 9b,
+      Task-26's in 10, Task-30's in 12), `src/ui/moveGrid.ts` (Task-55's in 18) and
+      `docs/design-spec.md` §4 free at once, and the first batch after Batch 9 that leaves all
+      three is **Batch 13** — whose Task-44 wants `src/scenes/RouteScene.ts`, the save and the
+      party panel instead, so the two share no path and the batch stays an antichain. It adds no
+      run field and changes no rule, so **no `SAVE_VERSION`** step. *(Batch 13)*
+- [ ] **[Task-60] A battle ⓘ opens a window with the battle's own state: the weather, the
+      terrain, each side's screens and the active Pokémon's stat stages.** Reported in play:
+      «añade tarea añadir un boton info en el combate que abre un panel de informacion con info
+      del estado del combate como climas, los cambios de estadisticas en pokemons activos,
+      terrenos, cosas como reflejo, pantalla luz y otros ataques que causan contextos» — one
+      control that answers "what is going on right now" without opening the log.
+      **Nothing in the battle draws any of it today, and the engine carries all of it.** A search
+      for weather, terrain or `sideConditions` in `src/scenes/BattleScene.ts` finds nothing:
+      `drawSidePanel` (1604-1663) draws the name, the HP bar, the status badge and the player's XP
+      row, and the command window is the 2x2 of `MENU_ROWS = 4` (80) that `openMenu` fills
+      (1204-1218) and `renderCommandMenu` lays out (1670-1728). The state behind the request:
+      - **Weather and terrain:** `BattleState.weather: WeatherId | null` with `weatherTurns`, and
+        `terrain: TerrainId | null` with `terrainTurns` (`src/engine/battle/state.ts`, 97-100; the
+        two unions at 10-11 — `'sun' | 'rain' | 'sand' | 'snow'` and
+        `'electric' | 'grassy' | 'misty' | 'psychic'`), set by the ported moves and abilities and
+        already read by the damage model (`damage.ts`, 51-83).
+      - **Reflect, Light Screen and the rest of the "contexts":** the seven per-side
+        `SideConditions` (`state.ts`, 14-15, 21, 24-34) held per side
+        (`BattleSide.sideConditions`, 65) — `reflect`, `lightscreen`, `auroraveil`, `tailwind`,
+        `luckychant`, `mist`, `safeguard`, each a turn count — folded into the damage roll
+        (`damage.ts`, 135-136) and into Speed (`src/engine/battle/modifiers.ts`, 13); plus the
+        seven whole-field `FieldConditions` (`state.ts`, 18-19, 22, 36-46, 102) — `trickroom`,
+        `gravity`, `magicroom`, `wonderroom`, `fairylock`, `mudsport`, `watersport`.
+      - **The active Pokémon's stat changes:** `BattleFighter.boosts: Boosts` (`fighter.ts`, 194;
+        `BoostId` at 20 is `atk`, `def`, `spa`, `spd`, `spe`, `accuracy`, `evasion`; `Boosts` at
+        32, `emptyBoosts` 220-222), read per side off that side's active fighter.
+      - **What the engine does not model, and the panel must not pretend to:** the entry hazards —
+        Stealth Rock, Spikes, Toxic Spikes, Sticky Web — are absent from the whole engine, and
+        `src/engine/battle/effects/moves.ts` line 594 says so ("the entry hazards it would clear
+        are not modelled"). Everything else the report names exists in the tree.
+      **Fix shape:** one control, one window and one pure model. The control is a fifth one
+      reserved at the right edge of the command window — the column `MOVE_MEGA_COL` already
+      reserves in the moves menu (108) — so the FIGHT / BAG / SWITCH / RUN 2x2 keeps its geometry;
+      it opens the window as a `mode` of its own (like `'party'`), which never spends a turn and
+      closes on any confirm/back press or a click. The window is `addFrlgWindow`, and its content
+      comes from **one new pure module**, `src/ui/battleInfo.ts`: a computing-half view model
+      whose `battleInfoRows(state)` returns a readonly list of grouped rows — the weather and its
+      count, the terrain and its count, the field's live conditions, each side's live conditions
+      and each side's active stat stages — plus the explicit "nothing is up" case, with its
+      co-located test, so every row is asserted headless and the scene only draws. It reads
+      `BattleState` and nothing else: no Phaser, no RNG draw (D11) and no engine change.
+      Files: `src/scenes/BattleScene.ts` (the control, the mode and the window),
+      `src/ui/battleInfo.ts` + `battleInfo.test.ts`, the `src/ui/README.md` role line (the
+      folder's per-file convention), `docs/design-spec.md` §4 (the battle's own section, whose
+      window list names every window a battle draws), and the i18n key table plus both locales
+      (`src/i18n/**`, whose exact files are read from what Task-26 ships) — every label the
+      window shows is a new player-facing literal created **after** the sweep, which is the
+      Task-49 / Task-50 precedent and the reason this task takes the first batch after 13 whose
+      i18n files are free.
+      Out of scope: the engine's conditions themselves (`src/engine/battle/**` does not move, and
+      the hazards it does not model are not invented here), the HP panels (`[Task-53]`'s types
+      row, `[Task-57]`'s ball row), the move and ability ⓘs (`[Task-39]`'s and `[Task-59]`'s), the
+      message box, the feed and the log, the capture screen, a weather or terrain **sprite** on
+      the field, and `docs/battle-spec.md` — no rule changes and the window's geometry is
+      presentation (the `[Task-34]`, `[Task-53]` and `[Task-57]` precedent).
+      *Dependencies:* none — every field it reads is shipped and the scene already holds
+      `this.state`; the two questions below are calls, not edges. Batch order covers it:
+      `src/scenes/BattleScene.ts` is free in 13, 15, 16, 17 and 19 (Task-39's in 9, Task-40's in
+      9b, Task-26's in 10, Task-30's in 12, Task-48's in 14), and it takes **Batch 17** because
+      that is the first of them whose i18n key table is free as well (Task-49 holds it in 15 and
+      Task-50 in 16) — Batch 13's free `BattleScene.ts` slot is `[Task-59]`'s. It is the batch's
+      second member beside Task-52, which claims none of its paths, and it is written with
+      `[Task-53]`'s row and `[Task-57]`'s row already inside the panels it draws over. It adds no
+      run field, so **no `SAVE_VERSION`** step — the chain stays 14 → 15 (Task-13) → 16
+      (Task-31) → 17 (Task-44) → 18 (Task-52). *(Batch 17)*
 
 ## Phase 6 — Run structure, party & economy
 
@@ -1849,43 +2141,6 @@ Ports of Showdown handlers, in batches, on the hook names in
       stays, while the one it adds to the capture screen is deleted here with the
       modal it lives on, so this task's diff removes a Batch-3 feature on purpose.
       *(Batch 7)*
-- [ ] **[Task-42] A caught Pokémon keeps the HP it had in the wild.** Reported in play:
-      "bug al atrapar un poke se cura debería mantener mismo hp". The catch is healed on the
-      way into the run, and the battle is not the culprit.
-      **Today's code.** `resolveBattle` (`src/engine/run/resolve.ts`, 93-101) folds a
-      capture by `runPokemonFromSnapshot(result.captured, …)` and then
-      `adoptAtLevel(keyed, squadLevel(next), next.seed)`; `adoptAtLevel`
-      (`src/engine/run/progression.ts`, 112-129) rebuilds the member with `createFighter`,
-      which starts a fighter at **full HP**, and the function's own docstring says so: "HP is
-      set to the new maximum (a catch arrives whole)". The snapshot itself is faithful —
-      `BattleScene.returnToRoute` takes `snapshotFighter(this.state.sides.enemy.party[0])`
-      (`src/scenes/BattleScene.ts`, 1187) with the wild's live HP, and `attemptCapture`
-      (`src/engine/battle/capture.ts`) only *reads* `fighter.hp` — so the loss happens at the
-      fold, in `adoptAtLevel`, on every catch path (the party placement and, until Task-31
-      deletes it, the deferred capture screen).
-      **Fix shape:** carry the snapshot's health through the rebuild instead of resetting it.
-      The precedent is one function away: `evolvePokemon` (`progression.ts`, 230-244) carries
-      the **missing** HP across a maximum-HP change, so the same shape applies here. The
-      recommended reading — **for the dev's spec to freeze** — is the **fraction**: the member
-      arrives with the same share of its new maximum (clamped to at least 1 HP, since a catch
-      is never at 0), which is the only reading that survives the level change `adoptAtLevel`
-      makes. The alternative is the raw number clamped to the new maximum. One measured
-      consequence to report either way: `addDebugPokemon` (`src/scenes/RouteScene.ts`, ~4954)
-      also calls `adoptAtLevel`, and with the fraction reading its full-HP input is
-      unchanged, where the raw-number reading would quietly change that dev path. **Record in
-      the report what else the rebuild resets** (the wild's own moveset, its PP and its
-      status): those are the existing "a catch joins at the squad's level and power" rule and
-      this task does not touch them.
-      Tests: `src/engine/run/progression.test.ts` (a damaged snapshot keeps its share through
-      `adoptAtLevel`; a full one stays full; the 1-HP floor) and the capture case
-      `src/engine/run/resolve.test.ts` already folds. No RNG is involved, so no stream moves
-      and no fixed-seed re-pin.
-      Out of scope: the capture-path restructure (`[Task-31]`, Batch 7 — this fix lands
-      before it and must stay true through it), the level a catch adopts, its
-      moveset/PP/status, and the catch odds (`src/engine/battle/capture.ts` is correct).
-      *Dependencies:* none. It needs nothing another open task produces, and Batch order
-      matters once: it sits in Batch 5, **before** Task-31 (Batch 7) rewrites the placement
-      and keeps `adoptAtLevel` as the single fold every catch goes through. *(Batch 5)*
 - [ ] **[Task-44] The PC box gains a fixed RIP tab, listing the dead.** Reported in play:
       "en pc un tab fijo de rip donde aparecen los pokes muertos sin poder meterlos en el
       party ni dejar pokes en rip" — a fixed RIP tab in the PC, showing the dead, with the
@@ -2343,29 +2598,6 @@ cycles one biome.
       marsh/rain, snow, volcano, ruins/power plant. Each new biome owes a fixed-seed
       generator regression.
       *Dependencies:* none. *(Batch 8)*
-- [ ] **[Task-16] Modernise the panel and menu chrome.** Every window in the game
-      is the FRLG frame: one `addFrlgWindow` (`src/ui/frlg.ts`) slicing
-      `src/assets/frlg/window.png` and `textbox.png`, used by the main menu, the
-      starter pick, the settings screen, the run-over screen, every route HUD panel
-      (party, bag, PC box, detail, pause, capture, Mart, reward) and the battle
-      menus and HP panels (`moveGrid` included). Redraw that chrome as a modern set
-      that keeps the originals' shapes and bezel as its base, with a **baked
-      translucency** so the route and the battle stay legible with the panels open
-      — building on what the `hudTransparent` setting does today, which is an
-      all-or-nothing alpha plus an outline on the route HUD only. Update
-      `src/ui/frlg.ts` (frame, corner radius and paddings), the new assets under
-      `src/assets/`, and the panel notes in `docs/art-direction.md`,
-      `docs/design-spec.md` §3/§4 and `src/assets/README.md`. Take the **type as
-      well**: every string is the FRLG bitmap face (`src/ui/frlgFont.ts` slicing
-      `src/assets/frlg/font.png`, drawn by `addFrlgText`), so pick the modernised
-      face and rework `FRLG_INK` with it. Lean on **deep black tones** rather than
-      the current navy (`FRLG_INK` is `0x25243b`) — for the panel interior, the
-      border and the text, on both the light windows and the light-on-map text the
-      transparent HUD draws. Decide at the same time whether `hudTransparent`
-      survives as a preference or becomes a degree (a transparent-HUD step) over the
-      new art. If the new chrome is drawn rather than ripped it also gives the public
-      build a UI, which `O4` wants.
-      *Dependencies:* none. *(Batch 5)*
 - [ ] **[Task-30] A hit plays the move's sound, and an encounter the Pokémon's
       cry.** Both moments were dropped from the cue table rather than faked with one
       shared sound, because the original varies them. The material is in
@@ -2489,6 +2721,109 @@ cycles one biome.
       `src/scenes/RouteScene.ts` (Task-16's in Batch 5) and the biome atlases are free, and
       it runs **before** Batch 6 so Task-17's docs pass reads a settled
       `docs/tileset-spec.md`. *(Batch 5b)*
+- [ ] **[Task-58] Every panel takes the debug panel's own visual style.** Reported in play, while
+      Batch 5 was in flight: «los paneles que sean estilo visual como el de debug» — the game's
+      windows should read like the dev overlay's, which means one **dark** translucent surface,
+      one **bright accent** frame, one **light** ink and the muted tone that goes with it, instead
+      of the drawn set's light windows and deep-black text.
+      **This is a follow-up to `[Task-16]`, and the edge is real.** The chrome it re-tunes is the
+      set Task-16 is drawing in the batch in flight — `scripts/ui/build-chrome.mjs`, the generated
+      `src/data/ui/chrome.json` and `src/data/ui/font.json`, the three `src/assets/ui/*.png`,
+      `src/ui/frlg.ts` and `src/ui/frlgFont.ts` — none of which exists on `main` today, so this
+      task cannot be written before that one ships; Batch 5 is **cut** (its four specs are written
+      and its four branches are cut), so the contradicting report is registered here as the
+      follow-up rather than folded into it, and this task's own spec is written when its batch is
+      cut, by which time Task-16 has merged. The values it is written against are the ones Task-16
+      ships, verified in its worktree today.
+      **What the debug panel's style is, exactly.** `installDebugMenu` (`src/dev/debugMenu.ts`) is
+      the tree's only debug panel and it is a **DOM overlay**, so its style is CSS, not a nine-slice
+      (296-299): `position:fixed;right:8px;bottom:8px;z-index:9999;…;padding:10px;min-width:238px;`
+      `background:#10161fe6;border:2px solid #7dd3fc;border-radius:8px;color:#e2e8f0;`
+      `font:12px/1.4 monospace;`. Its parts are the palette: a bold accent title `#7dd3fc` (302-304,
+      the `DEBUG · tools` line), a muted status tone `#94a3b8` (307), sunken fields
+      `background:#0f172a;border:1px solid #334155;border-radius:5px` (317-318), ordinary buttons
+      `background:#1e293b;border:1px solid #7dd3fc` (278-279) and primary actions
+      `background:#0e7490;color:#f8fafc` (361, 463, 608, 630, 830, 905) with the heal control at
+      `#166534` (833). Its surface is not invented either: `docs/art-direction.md` line 14 already
+      declares "Background `#10161f`, UI text `#f8fafc` on `#000000aa`", and the overlay is that
+      sentence's only implementation in the tree.
+      **What Task-16 ships instead, so the task has something concrete to change.** The drawn set
+      goes the other way on both counts: `scripts/ui/build-chrome.mjs` draws `BEZEL = 0x0b0b10`,
+      `KEYLINE = 0x3a3d52`, `FIELD_DARK = 0x11121a`, `HIGHLIGHT = 0xffffff` and
+      `FRAME_SHADOW = 0x000000` (23-27) with the **light** window keeping the FRLG sheet's own
+      dominant opaque colour (`dominantColour`, 59-77 — `#f8f8f8`, per the worktree's
+      `docs/art-direction.md` 17-20), the nine-slice corners and alphas frozen in
+      `src/data/ui/chrome.json` (window corner 20 / alpha 0.88, textbox corner 24 / alpha 0.94) and
+      the ink `FRLG_INK = 0x0b0b10` (`src/ui/frlgFont.ts`, 96) inking every string in the game.
+      Task-16's own §4 sentence says it in words (`docs/design-spec.md`, worktree 203-207: the dark
+      textbox, "the light **window** behind the HP panels … and the light windows ink their text
+      with the deep-black `FRLG_INK`"). Four tokens therefore differ, and each is one place:
+      **the surface** (a light `#f8f8f8` window against `#10161f` at the debug panel's ~0.90), **the
+      frame** (a `#3a3d52` keyline against a 2px `#7dd3fc` accent), **the corner** (20/24 texels at
+      the 4x canvas against an 8px radius) and **the text** (deep-black `FRLG_INK` against the
+      light body tone `#f8fafc` with `#94a3b8` for the muted lines). The controls' own tones travel
+      with them: the light fills that every container draws today (`MoveGrid`'s cells, badges and
+      info buttons, `src/ui/moveGrid.ts` 128-161; `AbilityInfoButton`, `src/ui/abilityInfo.ts`
+      51-52; the battle's command cells and bag tabs, `BattleScene` 481 and 600-604, 1704-1717; the
+      HUD's rows and cells, `RouteScene` 1525-1570 and 2618; the starter cards, `StarterScene`
+      253-277) become the overlay's own control tones — fill `#1e293b`, border `#334155`, sunken
+      `#0f172a` for a field, the accent `#7dd3fc` and its `#0e7490` for the selected or primary
+      one — which is exactly why this is a whole-chrome task and why it cannot share a batch with
+      anything.
+      **Fix shape:** one re-tuned chrome set, one ink flip and one sweep of the containers. The
+      packer's palette constants and `chrome.json` carry the new tokens (Task-16's own rule: a
+      chrome value lives in `src/data/ui/chrome.json` through the packer, and **no scene re-derives
+      one**), `src/ui/frlg.ts` exports whatever new token a scene needs (the accent and the muted
+      tone join `FRLG_WINDOW_PADDING` / `FRLG_WINDOW_ALPHA`), `FRLG_INK` becomes the body ink so
+      every existing `tint: FRLG_INK` draw site flips with one constant, and the containers whose
+      fills were light move with it. Two things the task must decide and freeze as data, because
+      they are the only ones `FRLG_INK` cannot carry: the sites that pair **two** tones — the four
+      tab pairs in the route HUD (`RouteScene` 2131, 2161, 2364, 5599, `active ? 0xf8fafc :
+      FRLG_INK`) and the battle's own (`BattleScene` 2104) — whose "selected" tone becomes the
+      accent rather than white, and the ad-hoc greys the scenes pass today (`0x6b6887`, `0x3a3956`,
+      `0x94a3b8`), which collapse into the one exported muted tone. The corner is the one token
+      that cannot grow freely: a nine-slice's band must fit inside the corner, and the window's
+      band is its own `padding.x = 20` (the worktree's `scripts/ui/build-chrome.mjs` 96-107 clamps
+      it), so the drawn radius grows at most to that and the **content insets do not move** —
+      `FRLG_WINDOW_PADDING`, `FRLG_TEXTBOX_PADDING`, every panel rect and every layout stay exactly
+      where they are, which is the whole reason Task-16 kept them.
+      **What stays:** the nine-slice geometry and the frozen content insets, the glyph **shapes**
+      and the bitmap face (the overlay's `monospace` is a DOM font: adopting a typeface is a
+      separate job, and Task-16's spec already rules it out of scope), the HP bar, the ▶ cursor,
+      the type / status / category / item icons and their atlases, and every panel's layout. The
+      one thing the task owes beyond the tones is the check the new pairing needs: it introduces
+      the light-on-dark pairs itself (a selected tab against an unselected one, the HP bar's green
+      on a darker field, a dimmed ball or a faint status badge), so it carries its own contrast
+      pass — Batch 8's accessibility audit ran against Task-16's chrome and is not re-run (the open
+      question below).
+      Files: `scripts/ui/build-chrome.mjs`, the generated `src/assets/ui/{window,textbox,font}.png`
+      and `src/data/ui/{chrome,font}.json`, `src/ui/frlg.ts`, `src/ui/frlgFont.ts` +
+      `frlgFont.test.ts`, `src/ui/README.md` and `src/assets/README.md`, every `src/scenes/*.ts`
+      with a drawn string or fill (`BootScene` only if its loader derives a colour; the drawn
+      texture keys do not move), every `src/ui/**` module that fills a container or inks text, and
+      the two docs that describe the chrome (`docs/art-direction.md`, whose §Palette paragraph is
+      Task-16's, and `docs/design-spec.md` §3/§4). Tests: the packer's own determinism check (two
+      runs byte-identical, as Task-16 lays it down), `src/ui/frlgFont.test.ts` for the ink and the
+      manifest, and a contrast check over the new pairs — the pixel art itself is still validated
+      by the smoke pass rather than by a Phaser unit test, the Task-16 precedent.
+      Out of scope: the debug overlay itself (`src/dev/**` is dev-only and stays as it is — it is
+      the reference, not a consumer), a different typeface or a webfont, any layout re-cut, the
+      FRLG originals under `src/assets/frlg/**` and their packers, `src/engine/**` (no rule moves),
+      the settings model (`hudTransparent` keeps its id, its values and its meaning, as Task-16
+      re-read it), and `Task-08`'s audit, which is not re-run.
+      *Dependencies:* `Task-16` — the drawn chrome set this task re-tunes: the packer
+      `scripts/ui/build-chrome.mjs`, the generated `src/data/ui/chrome.json` and the three
+      `src/assets/ui/*.png`, and the `src/ui/frlg.ts` / `src/ui/frlgFont.ts` exports
+      (`FRLG_INK`, `FRLG_WINDOW_ALPHA`, `FRLG_TEXTBOX_ALPHA`, the frozen paddings) whose values
+      move. It adds no run field, so **no `SAVE_VERSION`** step and no change to the 14 → … → 18
+      chain. Batch order covers the rest: it claims every scene and most of `src/ui/**`, so every
+      batch from 5 to 19 holds at least one of its paths (5 Task-16's chrome set, 5b Task-45 and
+      Task-53, 6 Task-34 and Task-41, 6b Task-38 and Task-57, 7 Task-18, Task-31 and Task-47, 8
+      Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26's every-scene
+      sweep, 11 Task-29's `src/**` ledger, 12 Task-30, 13 Task-44 and Task-59, 14 Task-48, 15
+      Task-49, 16 Task-50, 17 Task-52 and Task-60, 18 Task-55, 19 Task-56) — which is why it opens
+      the new **Batch 20** on its own, the way the reformat opens Batch 11, and why it runs
+      **after** Batch 11 so it edits reformat-cleared files and keeps them conforming. *(Batch 20)*
 
 ## Phase 9 — Maps (route groups), biomes & progression
 
@@ -2725,11 +3060,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
 > The learnset panel, the TM catalogue and the effective-type rules shipped;
 > these are the follow-ups (`D36`/`D37`).
 
-- [ ] **[Task-22] TM acquisition breadth.** TMs only drop from route loot and
-      mini-boss rewards today. A proper TM Machine (or a per-band TM slot in the
-      shop) and a real machine icon — every TM borrows the sheet's question mark until then —
-      are still open.
-      *Dependencies:* none. *(Batch 5)*
 - [ ] **[Task-23] Item-driven move retypes: Multi-Attack, Techno Blast, Natural
       Gift.** Judgment and the seventeen Plates already hook `onModifyMoveType`
       (`plateHandler`, `src/engine/battle/effects/items.ts`) and show the same type in
