@@ -2,12 +2,12 @@ import atlasUrl from '../assets/frlg/status-icons.png';
 import manifest from './frlg/status-icons.json';
 
 /**
- * The FRLG status badges (PSN / PAR / SLP / FRZ / BRN, plus the PKRS and FNT
+ * The Añil status badges (SLP / PSN / BRN / PAR / FRZ, plus the FNT and PKRS
  * spares), packed into `src/assets/frlg/status-icons.png` by
- * `scripts/frlg/build-status-icons.mjs` at 32x8 frames. Both atlases come from
- * the same `type-status-icons.png` source. Our two poison states share the one
- * FRLG badge, which cannot tell poison from bad poison. Local-only art — see
- * `docs/art-direction.md`.
+ * `scripts/frlg/build-status-icons.mjs` from the fangame Pokémon Añil's own
+ * `Graphics/UI/statuses.png`, at 32x8 frames. Añil's UI sheet carries no separate
+ * badly-poisoned badge, so `tox` keeps sharing the poison frame. Local-only art —
+ * see `docs/art-direction.md`.
  */
 export const STATUS_ICON_ATLAS_URL = atlasUrl;
 export const STATUS_ICON_TEXTURE_KEY = 'frlg:status-icons';
@@ -16,7 +16,7 @@ export const STATUS_ICON_H = manifest.height;
 
 const FRAMES: Readonly<Record<string, number>> = manifest.statuses;
 
-/** Our status id → the FRLG badge key, which only has one poison badge. */
+/** Our status id → the Añil badge key; bad poison shares the poison badge. */
 const STATUS_FRAMES: Readonly<Record<string, string>> = {
   brn: 'brn',
   psn: 'psn',

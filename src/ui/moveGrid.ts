@@ -372,7 +372,7 @@ export class MoveGrid {
     if (statusFrame !== null) {
       badges.push({ textureKey: STATUS_ICON_TEXTURE_KEY, frame: statusFrame, y: 20 });
     }
-    // The FRLG sheet predates Fairy; keep the text chip as the fallback.
+    // A type the atlas lacks still falls back to the text chip.
     const chip: InfoPopupChip | null =
       typeFrame === null
         ? { label: cell.type.toUpperCase(), color: typeColor(cell.type), y: 0 }
