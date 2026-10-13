@@ -23,14 +23,17 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Paused after Batch 2 by request.** The plan stops here: Batch 3 is the next to run,
-and nothing below it is in flight.
+**Batch 3 is shipped and archived.** Batch 4 is the next to run, and nothing below it is
+in flight: its specs are written when the batch is cut.
 
 Legend:
 - **IDs.** `[Task-NN]` is bound to a task only in this file; everywhere else a task
   is referenced by name. Two digits, in backlog order.
 - **Retired IDs.** `[Task-24]` (a Move-Relearner screen for the bench) was retired:
-  the learnset panel already covers its four slots, so the screen is not wanted. A
+  the learnset panel already covers its four slots, so the screen is not wanted, and
+  `[Task-27]` (a catch that stacks a duplicate on top of itself) was retired into
+  `[Task-31]`, which deletes the capture screen its repro needed and then owns the
+  whole placement seam alone. A
   retired ID is **never reused** — new work takes the next unused number — so the
   sequence stays in backlog order but is no longer gapless.
 - **Dependencies.** Every open item ends with `*Dependencies:*` — the authoritative
@@ -79,15 +82,13 @@ Task-04, Task-05 and Task-25 merged in ID order behind the green gate; the detai
 the coverage table names no `no-op` row, and the `moveType.ts` seam Task-25 shipped is
 what Task-23 extends.
 
-### Batch 3 — held items, ability popup
-- **Task-07** The competitive held items, with Añil's icons.
-- **Task-12** Ability info popup.
-- **Hot files:** `package.json` → Task-07; `src/scenes/RouteScene.ts` and
-  `BattleScene.ts` → Task-12; the generated `src/assets/anil/item-icons.png`,
-  `src/data/anil/item-icons.json` and `docs/balance/effect-coverage.md` → Task-07.
-- **Shape:** a catalogue plus a panel. Task-07 owns the item icon sheet
-  (`sprite-sources/anil/Graphics/Items/`, materialised into the local clone) and
-  Task-12 owns the detail panels.
+### Batch 3 — held items, ability popup *(shipped, archived)*
+Task-07 and Task-12 merged in ID order behind the green gate; the detail is in
+`CHANGELOG.md`'s `## Unreleased`. The run's held-item catalogue is now the whole
+competitive set, with Añil's own 893-icon atlas packed at 24 px so no scene changed,
+and every catalogue row is either a `port` or an honest `no-op`; the ability row reads
+the dex's own text through the popup both tasks share. Task-07's paths — the one chain
+left, `Task-07 → Task-23` — are free again for Batch 8.
 
 ### Batch 4 — party data, badges, Legends Z-A Megas
 - **Task-13** Nicknames, typed from the STATS tab.
@@ -109,25 +110,38 @@ what Task-23 extends.
   question, Task-22 adds a machine icon to the sheet Task-07 packed. Both are free to
   assume Batch 4 merged.
 
-### Batch 6 — balance pass, Phase 9 docs, capture bug
+### Batch 6 — balance pass, Phase 9 docs
 - **Task-09** Balance pass.
 - **Task-17** Step 14 — docs & migration pass.
-- **Task-27** Catching a Pokémon stacks a duplicate on top of it.
-- **Hot files:** `src/scenes/RouteScene.ts` → Task-27; the sheets under
-  `docs/balance/` → Task-09.
-- **Shape:** numbers, one harness, prose and one scene seam. Task-09 owns
+- **Hot files:** the sheets under `docs/balance/` → Task-09.
+- **Shape:** numbers, one harness and prose. Task-09 owns
   `src/engine/battle/golden.test.ts` and any harness module it extracts beside it —
   the only task allowed to restructure the golden log — over the numbers in
-  `src/data/`, while Task-27 stays in the run save seams. Task-17 takes
-  `docs/design-spec.md`, `docs/battle-spec.md`, `docs/routes-spec.md` and `AGENTS.md`,
-  so nothing else in the batch may.
+  `src/data/`. Task-17 takes `docs/design-spec.md`, `docs/battle-spec.md`,
+  `docs/routes-spec.md` and `AGENTS.md`, so nothing else in the batch may — which is
+  why the capture task registered as `[Task-31]` sits in Batch 7 instead of here: it
+  must rewrite the PC rule in `docs/routes-spec.md` §6, and Task-17 holds that file
+  in this batch. The bug it replaces, `[Task-27]` (Catching a Pokémon stacks a
+  duplicate on top of it), was absorbed into `[Task-31]` and is retired.
 
-### Batch 7 — Gigantamax
+### Batch 7 — Gigantamax, route-scoped catch swap
 - **Task-18** Gigantamax, in the Mega Evolution mould.
+- **Task-31** A full party sends the catch to the PC, swappable only on that route.
 - **Hot files:** `scripts/build-dex.mjs`, `src/data/dex/**` (the new `gmaxes.json`),
-  `src/data/anil/pokemon-sprites.json` and `src/scenes/BattleScene.ts` → Task-18.
-- **Shape:** one task, because it holds the generated dex and the battle scene, and
-  both are paths Task-08's accessibility sweep and Task-26's i18n sweep want.
+  `src/data/anil/pokemon-sprites.json` and `src/scenes/BattleScene.ts` → Task-18;
+  `src/scenes/RouteScene.ts`, `src/engine/run/state.ts` + `state.test.ts`,
+  `src/engine/run/resolve.ts` + `resolve.test.ts`, `src/engine/save.ts` +
+  `save.test.ts`, `src/ui/partyScreen.ts`, the new `src/ui/notice.ts` +
+  `notice.test.ts` and `docs/routes-spec.md` → Task-31.
+- **Shape:** two tasks that share no path: the battle engine and the generated dex on
+  one side, the run save, the route scene and the PC rule on the other. It is the
+  first batch whose serial resources are all free for Task-31 — every earlier batch
+  that touches `src/scenes/RouteScene.ts` (3, 5, 6, 8, 10) or `src/engine/save.ts`
+  (4, 10) already claimed one, and Task-17 holds `docs/routes-spec.md` in Batch 6.
+  Task-18 keeps `docs/tech-decisions.md` for its decision entry; Task-31 takes no
+  `D##`, because its rule is a gameplay one and `docs/routes-spec.md` carries it.
+  Running here also puts the new popup in front of Batch 8's accessibility sweep
+  (Task-08 claims every `src/scenes/*.ts`) and Batch 10's i18n sweep.
 
 ### Batch 8 — accessibility, new biomes, Rotom appliances, item retypes
 - **Task-08** Accessibility pass.
@@ -155,7 +169,8 @@ what Task-23 extends.
 - **Task-26** i18n module and the Spanish locale.
 - **Hot files:** every `src/scenes/*.ts` → Task-26; `src/engine/save.ts` → Task-26.
 - **Shape:** last on purpose. It moves every player-facing literal behind a key, so it
-  must see the panels Task-12, Task-13 and Task-16 added and the strings Batch 8's
+  must see the panels Task-12, Task-13 and Task-16 added, Task-31's catch notice, and
+  the strings Batch 8's
   accessibility pass introduced.
 
 ### Batch 11 — the Prettier reformat pass (last of the planned backlog)
@@ -179,7 +194,7 @@ what Task-23 extends.
   `src/assets/audio/*.wav` and the two `scripts/frlg/` audio scripts → Task-30.
 - **Shape:** one task, in its own batch, because it is the only open item that owns a
   scene once the plan above is merged: every batch that touches `BattleScene.ts` (3,
-  5, 7, 8, 10) or `RouteScene.ts` (3, 5, 6, 8, 10) has already claimed one. It runs
+  5, 7, 8, 10) or `RouteScene.ts` (3, 5, 6, 7, 8, 10) has already claimed one. It runs
   **after** Batch 11's reformat and keeps the two ledgered scenes conforming, so it
   adds no ledger debt — which is why the reformat is still the last of the *planned*
   backlog rather than the last thing to land.
@@ -267,31 +282,6 @@ The whole menu battle minus per-effect behaviour. Contract in
 Ports of Showdown handlers, in batches, on the hook names in
 `docs/showdown-reuse.md` §3.
 
-- [ ] **[Task-07] The competitive held items, with Añil's icons.** The run's
-      held-item catalogue is a slice of the competitive set (24 `kind: 'held'`
-      entries in `src/data/items.ts`) and their icons all come from the FRLG sheet
-      (`src/data/itemIcons.ts` → `src/assets/frlg/item-icons.png`), which has no art
-      for the modern ones — the Mega Stones, valuables, TMs and Plates already
-      borrow placeholders. Bring the whole held-item set over from Añil: its
-      `sprite-sources/anil/PBS/items.txt` for the definitions and its 911
-      `sprite-sources/anil/Graphics/Items/*.png` for the art. That is three pieces:
-      the catalogue entries in `src/data/items.ts` with the fields the engine reads;
-      the effect handlers in `src/engine/battle/effects/items.ts` with their row in
-      `docs/balance/effect-coverage.md` (`D16` — `port`, `no-op` or `excluded`, and
-      `no-op` is the honest answer for an item a run can meet that the engine does
-      not model yet); and a packer script (`scripts/anil/build-item-icons.mjs`)
-      writing `src/assets/anil/item-icons.png` plus its manifest, read by
-      `src/data/itemIcons.ts`. Make them **obtainable** wherever the run hands out
-      items — `src/data/loot.ts` (route loot by band), `src/data/shop.ts` (the Mart)
-      and `src/ui/rewards.ts` (the mini-boss choice) — and keep the item tests
-      green. **The seventeen Plates join that sweep**: they are catalogued and their
-      Judgment retype already shipped, but `docs/balance/effect-coverage.md` still
-      classifies every one of them `excluded` ("not in the run catalogue") and a run
-      can never hold one. They need no Arceus to drop as loot, so this change moves
-      those rows to `port` at the same time.
-      *Dependencies:* none. *(Batch 3)*
-
-
 ## Phase 5 — Battle UI & presentation
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
@@ -299,6 +289,69 @@ Ports of Showdown handlers, in batches, on the hook names in
 ## Phase 6 — Run structure, party & economy
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
+
+- [ ] **[Task-31] A full party sends the catch to the PC, swappable only on that
+      route.** Catching a wild Pokémon with the party full today **defers** the
+      placement and opens a full-screen modal: `RouteScene.applyBattleResult` calls
+      `resolveBattle` with `placeCapture: false`, reads the deferred
+      `BattleResolution.captured` and hands it to `openCapturePrompt`
+      (`captureDetailChildren`, `refreshCapture`, `handleCaptureAction`,
+      `chooseCaptureSwap`, `chooseCapturePc`, `closeCapturePrompt`, the `CAPTURE_*`
+      constants and the `captureRoot` input guards, all in
+      `src/scenes/RouteScene.ts`), which offers "swap it in" or "send it to the PC".
+      Delete that whole path and the seam that exists only to feed it: `placeCapture`
+      and `captured` in `src/engine/run/resolve.ts`, the `askCapture` branch in
+      `applyBattleResult`, and `swapCaughtIntoParty` in `src/engine/run/state.ts`. A
+      catch is then placed by `resolveBattle` itself, the classic way — into the
+      party while it has room, into the PC box when it is full (`addPokemon` /
+      `MAX_PARTY_SIZE`) — with `addCaughtPokemon` as the single placement helper
+      every catch goes through.
+      **The new rule:** the swap window is no longer the whole floor. A catch that
+      went to the box is swappable only **while the run is still in the room it was
+      caught in**; the first exit closes it, a door (`advanceRoute`) and the portal
+      (`advanceMap`) alike. So the floor-scoped `pcUnlocked` becomes a route-scoped
+      `pcCatch: { roomInMap: number; memberId: string } | null`, set by the placement
+      when the catch landed in the box and cleared by both advances; `pcMemberEditable`
+      reads it beside `pcFullyEditable`, so the HUD's box cells — whose lock veil
+      `src/scenes/RouteScene.ts` already draws from it — lock the catch the moment
+      the player walks out. Nothing new to build: the party/PC panel already performs
+      the swap (`canGrab` / `canSwapAcross` → `swapAcross`, `swapPartyBox`,
+      `withdrawToParty`, `depositToBox`, `BOX_PAGE_SIZE` in `src/ui/partyScreen.ts`).
+      **The popup** replaces the modal with a temporary notice at the **top of the
+      screen**, in English (D12): "Your party is full — <name> went to the PC. You
+      can swap it in before you leave this route." It is raised when the catch is
+      placed (inside `playReleaseBeats`' callback, so a permadeath overlay and the
+      notice never share the screen), drawn by the pinned HUD camera on the
+      `learnPopup` / release-overlay seam, and **auto-dismissed**: it takes no key,
+      blocks no movement and carries no stats, because the detail panel and the PC box
+      panel already show the Pokémon. Its copy and its hold time live in one pure
+      helper, `src/ui/notice.ts`, with a test — one string for Task-26 to key.
+      **Save and state:** the run gains a field, so this task bumps `SAVE_VERSION` and
+      adds its step to `SAVE_MIGRATIONS` the way Task-13 does it: an old run's
+      floor-scoped `pcUnlocked` cannot be re-scoped, so the step drops it and the
+      decoder defaults `pcCatch` to `null`, leaving the party, the box and every other
+      field untouched. Tests: `src/engine/run/state.test.ts` (a full party lands the
+      catch in the box, it is editable there, and `advanceRoute` / `advanceMap` close
+      the window), `src/engine/run/resolve.test.ts` (the `placeCapture` cases fall
+      away with the option), `src/engine/save.test.ts` (the migration round-trip) and
+      `src/ui/notice.test.ts`. Docs: the capture bullet in `docs/routes-spec.md` §3
+      and the PC windows in §6.
+      **`[Task-27]` is absorbed here** and retired: its repro — catch with a full
+      party, take both choices, watch the party, the PC box and the HUD — must be
+      re-run and reported gone, because with one placement path and no second copy of
+      the catch there is nothing left to stack.
+      Out of scope: the party/PC panel's own UI and page size, the battle's ball-shake
+      presentation (`src/ui/capture.ts` is the battle's, not this modal's — leave it
+      alone), the entry room's free PC window (`pcFullyEditable` / `entryDeparted`),
+      and localising the notice (Task-26, Batch 10).
+      *Dependencies:* none — it needs nothing another open task produces. Batch order
+      covers two facts: Task-13 (Batch 4) takes the next `SAVE_VERSION` (15) first, so
+      this migration is the step after it (15 → 16 as the plan stands), and it
+      **supersedes the capture-screen half of Task-12** (Batch 3): the ability ⓘ
+      Task-12 adds to the route HUD's detail panel and to the battle's SWITCH window
+      stays, while the one it adds to the capture screen is deleted here with the
+      modal it lives on, so this task's diff removes a Batch-3 feature on purpose.
+      *(Batch 7)*
 
 ## Phase 7 — Persistence, meta & polish
 
@@ -322,19 +375,6 @@ Ports of Showdown handlers, in batches, on the hook names in
       `trainerXp` rule Task-10 shipped (archived with Batch 1). It is also the
       producer of the reusable harness: a later task that wants to run a scripted
       battle depends on Task-09. *(Batch 6)*
-- [ ] **[Task-12] Ability info popup.** The STATS tab prints the ability as plain
-      text (`MemberDetail.ability`, `src/ui/partyDetail.ts`) and there is no way to
-      read what it does. Give the ability row the same ⓘ control the move cells
-      have — `src/ui/moveGrid.ts`'s info button and floating popup over an FRLG
-      window — so hovering or clicking it floats the ability's description. Reach
-      every panel that prints an ability: the route HUD's detail panel
-      (`src/scenes/RouteScene.ts`), the battle's SWITCH detail window and the
-      capture screen (`src/scenes/BattleScene.ts`, `RouteScene`). The data is
-      already generated — `src/data/dex/abilities.json` carries `desc` and
-      `shortDesc`, but the accessor drops them (`src/data/dex/abilities.ts` exposes
-      only `id` and `name`), so widen it and guard the two fields in
-      `src/data/dex/abilities.test.ts`. Document in `docs/design-spec.md` §3/§4.
-      *Dependencies:* none. *(Batch 3)*
 - [ ] **[Task-13] Nicknames, typed from the STATS tab.** The battle layer already
       renders one — `FighterInput.nickname` feeds `fighter.name` (`name: input.nickname ??
       species.name`, `src/engine/battle/fighter.ts`) — but nothing ever sets it, so
@@ -659,15 +699,9 @@ Reported in play, awaiting triage. A bug becomes a task in the batch plan, and t
 fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what
 a finished batch still owes QA.
 
-- [ ] **[Task-27] Catching a Pokémon stacks a duplicate on top of it.** Catching a
-      wild Pokémon leaves a second copy of a member drawn over the caught one. Repro to confirm:
-      catch with a **full party** (the capture screen opens) and take both choices —
-      *swap* and *send to the PC* — then watch the party, the PC box and the HUD.
-      Suspected: the capture placement seam — `resolveBattle`'s `placeCapture`
-      (`src/engine/run/resolve.ts`), `addCaughtPokemon` / `swapCaughtIntoParty`
-      (`src/engine/run/state.ts`), or `openCapturePrompt`/`refreshCapture` in
-      `src/scenes/RouteScene.ts`.
-      *Dependencies:* none. *(Batch 6)*
+- [ ] None open. `[Task-27]` (Catching a Pokémon stacks a duplicate on top of it) was
+      absorbed into `[Task-31]` (Batch 7) and retired; `[Task-31]` owes its repro
+      re-run, and reports the result to QA.
 
 ---
 

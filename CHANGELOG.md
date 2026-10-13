@@ -8,6 +8,43 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The run's held-item catalogue is the whole competitive set, with Añil's own
+      icons.** `src/data/items.ts` grows to 143 new rows (51 the engine can model,
+      92 honest `no-op`, 21 hand-authored), `ItemDef` gains nine fields
+      (`damageBoost`, `speedBoost`, `accuracyBoost`, `critStages`, `alwaysLast`,
+      `resistBerry`, `recoil`, `selfStatus`, `survive`) and
+      `src/engine/battle/effects/items.ts` gains the handlers that read them plus
+      `UNMODELLED_ITEMS`, the by-name record `scripts/effect-coverage.mjs` reads to
+      print an honest `no-op` row (`D16`; the Items table is now 117 `port` / 92
+      `no-op` / 81 `excluded`). **The seventeen Plates are obtainable at last**: they
+      are catalogued rows the coverage table can see and they drop as `late`/`end`
+      loot, where before a run could never hold one. The Mart stocks only what works
+      and the ground hands out what does not, so no player buys a dead item. The FRLG
+      sheet had no art for the modern items, so `scripts/anil/build-item-icons.mjs`
+      packs Añil's 893 item icons into one 24 px atlas
+      (`src/assets/anil/item-icons.png` + `src/data/anil/item-icons.json`, keyed by
+      the normalised file name, with `hasItemIcon`/`itemIconFrame` over it) — which is
+      exactly why no scene changed. `src/data/dex/items.ts` is the typed accessor the
+      catalogue reads instead of raw JSON. No new `Rng` stream: the two probabilistic
+      handlers draw the battle's own, and the loot and shop tables keep a fixed-seed
+      regression. `package.json` (`data:anil:items`), `src/data/{items,loot,shop}.ts`
+      plus their tests, `scripts/anil/build-item-icons.mjs`,
+      `scripts/effect-coverage.mjs`, `docs/{art-direction,data-spec}.md`,
+      `src/assets/README.md`, `src/data/README.md`, `src/data/dex/README.md`.
+- [x] **An ability explains itself: the ability row carries the ⓘ the move cells
+      have.** Hovering it floats the dex's own description and a click pins it, in
+      the route HUD's STATS tab, the battle's SWITCH detail window and the capture
+      screen. The floating window moved out of `MoveGrid` into
+      `src/ui/infoPopup.ts`, so the move cells and the ability rows draw one
+      implementation instead of drifting apart, and `src/ui/abilityInfo.ts` owns the
+      ability row's control and the text it floats. The data was already generated
+      and thrown away: `src/data/dex/abilities.ts` now carries `desc` and `shortDesc`
+      (both coerced to `''`, so a consumer concatenates without a guard) and
+      `MemberDetail.abilityDesc` carries the one-line text. The smoke pass also found
+      and fixed a real bug on the capture screen: a pinned popup no longer closes when
+      the pointer leaves it. `src/ui/{infoPopup,abilityInfo,partyDetail,moveGrid}.ts`
+      plus their tests, `src/scenes/{RouteScene,BattleScene}.ts`,
+      `docs/design-spec.md` §3/§4, `src/ui/README.md`.
 - [x] **The shipped cues are the real FRLG soundtrack, not sine placeholders.** The
       first cut of the audio table committed a generated 1.5 s sine per music bed
       and a 0.2 s sine per cue, because `sprite-sources/frlg-audio/` was never
