@@ -112,7 +112,10 @@ saved `stats.catches` and Task-49 adds no run field at all — and neither does 
 round's Task-50 (no run field) or Task-51 (no state), nor the fifth round's Task-53 (no state
 at all): the new step is Task-52's alone, and the eighth round's three add none either —
 Task-58 is presentation and touches no state, Task-59 adds no run field and Task-60 only
-reads the battle's own state.
+reads the battle's own state — and the ninth and tenth rounds' **six** reports extend that
+same `src/scenes/RouteScene.ts` queue into six new one-task batches, **Batch 21** to **Batch
+26**, because every one of the six wants that one scene and Batch 20's Task-58 is its last
+holder; none of the six adds a run field, so the chain stays **14 → 15 → 16 → 17 → 18**.
 
 The items registered since the first plan add one link each, and one batch that is not a
 link at all. `Task-35` (the enemy AI, Batch 8b) reads the reusable scripted-battle
@@ -345,6 +348,88 @@ engine already carries — so the chain stays **14 → 15** (Task-13, shipped) �
 (Task-31, Batch 7) → **16 → 17** (Task-44, Batch 13) → **17 → 18** (Task-52, Batch 17). Nothing
 here re-plans `Task-38`–`Task-57`, and Batch 4b is untouched: it is `cut`, so it can gain no
 member.
+
+A **ninth round** of **three reports** arrived after that one, and between them they add **no
+dependency edge** and **no `SAVE_VERSION` step**; what they add is **six more claims on
+`src/scenes/RouteScene.ts`** and one on `src/scenes/BattleScene.ts`. The first is a **defect of
+the boss win**, reproduced before it was written: `applyBattleResult` rebuilds the boss room
+through the **room-change** path when the boss falls (`transitionTo`, 5107 → 4437-4454), which
+repositions the player on the room's entry door (`this.player = { ...this.route.entry }`, 4449)
+although the run's map position never moved — `[Task-61]`, the round's only defect and the one
+report of the two rounds that is a bug rather than a wish. The other two are wishes against
+shipped seams: a trainer or boss room's battle should be able to begin under a weather, a
+terrain or a room condition, with dense fog (−20 accuracy), Gravity and Trick Room among them
+and the route drawing an animation or filter for it (`[Task-62]`; the four effects except fog
+all ship in `src/engine/battle/**` but `createBattle` seeds none of them, `state.ts` 159-162 /
+`BattleSetup` 120-128), and a beaten mini-boss should also offer **three unidentifiable
+Pokémon** beside its item rows, presented by their highest stat and their nature (`[Task-63]`;
+the reward window is items only, `openMiniBossReward` 5715-5731 over `rewardChoices`,
+`src/ui/rewards.ts` 10-32, while a run-seeded ability/moveset and the catch's own placement
+already ship, D17). All three want `src/scenes/RouteScene.ts`, which **every** batch from 5 to
+20 holds (5 Task-16, 5b Task-45, 6 Task-41, 6b Task-38, 7 Task-31, 8 Task-08's every-scene
+sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26, 11 Task-29's ledger, 12 Task-30, 13
+Task-44, 14 Task-48, 15 Task-49, 16 Task-50, 17 Task-52, 18 Task-55, 19 Task-56, 20 Task-58's
+whole-chrome pass), so a batch can hold only one of them and they open **Batch 21**, **Batch
+22** and **Batch 23**, one task each. `Task-62` additionally wants `src/scenes/BattleScene.ts`
+(free after Batch 20, and held by 5, 5b, 6, 6b, 7, 8, 8b, 9, 9b, 10, 11, 12, 14, 17, 18 and 20
+before that) and the battle engine's own setup seam, and `Task-63` wants `src/ui/rewards.ts`;
+the two are also the round's only claims on `src/data/` (Task-62's condition table) and on the
+`docs/` files (`docs/maps-spec.md` §6/§7 and `docs/battle-spec.md` §4), all free from Batch 21
+on. Nothing here re-plans `Task-38`–`Task-60`, and Batch 4b is untouched: it is `cut`, so it can
+gain no member.
+
+A **tenth round** of **three reports** arrived after that one, and between them they add **no
+dependency edge** and **no `SAVE_VERSION` step** either; what they add is **three more claims
+on `src/scenes/RouteScene.ts`** and three on the **special-room layer** — `src/engine/maps/
+plan.ts` (`MapRoomSpecial`, 70) and `src/ui/mapView.ts` (`MapRoomMarker`, 26). All three are
+**wishes** rather than defects, and all three are new special rooms in the shop/mini-boss
+mould (a dead-end leaf with only its own content, `docs/maps-spec.md` §7): a **casino** room
+with a Team Rocket grunt, a pay-per-spin slot machine whose prizes are items and an **egg**
+that yields a random Pokémon when the run advances a floor, and a chance of a battle that locks
+the machine (`[Task-64]`); a **gated reward room** whose reward sits behind bushes, rocks or
+water that only a party move opens — Cut, Rock Smash, Surf (`[Task-65]`); and a **trade room**
+where a Pokémon is given for a random one (`[Task-66]`). Because they share the route scene
+**and** both halves of the special-room layer, no two can sit in a batch: they open **Batch
+24**, **Batch 25** and **Batch 26**, one task each, one batch apart. `Task-64` is the one of the
+round that may repack the FRLG overworld/trainer atlases (a new `rocket` archetype's two
+sprites), `Task-65` may add obstacle frames to the FRLG tileset atlases and the run's first
+`knowsMove`-style accessor, and `Task-66` the run's first deliberate member **removal** beside
+permadeath's — none of the three touches `src/engine/save.ts`, and the recommended reading of
+the casino's per-floor lock and its egg is a bag item, so the chain stays **14 → 15 → 16 → 17 →
+18**. Nothing here re-plans `Task-38`–`Task-63`, and Batch 4b is untouched: it is `cut`, so it
+can gain no member.
+
+An **eleventh round** of **one report** arrived after that one, and it adds **no dependency edge**
+and **no `SAVE_VERSION` step**; what it adds is one more claim on `src/scenes/RouteScene.ts` and
+one on `src/scenes/BattleScene.ts`. It is a **wish** rather than a defect: a room whose effect is
+that the player cannot use items and cannot use healing moves (`[Task-67]`; the BAG is the
+player's alone — `validateBag`, `src/engine/battle/commands.ts` 80-87 — and the healing moves the
+engine models are named by id in its entry). It wants the two scenes together and the special-room
+layer (`MapRoomSpecial`, `src/engine/maps/plan.ts` 70) that Task-64, Task-65 and Task-66 already
+extend in the three batches before it, so it opens the plan's new **Batch 27**, one batch behind
+Task-66 — and it cannot ride beside Task-62, which holds both scenes and the battle-start seam in
+**Batch 22**. It adds no run field, so the chain stays **14 → 15 → 16 → 17 → 18**. Nothing here
+re-plans `Task-38`–`Task-66`, and Batch 4b is untouched: it is `cut`, so it can gain no member.
+
+A **twelfth round** of **one report** arrived after that one, and it adds **no dependency
+edge** and **no `SAVE_VERSION` step**; what it adds is one more claim on
+`src/scenes/RouteScene.ts`, one on `src/engine/run/learnset.ts` and one on the two docs that
+record the MOVES tab's own operations. It is a **wish** rather than a defect: the route HUD's
+MOVES tab should be able to **delete an equipped move** (`[Task-68]`; the tab is the detail
+panel's `'moves'` mode — `DetailTab`, `src/ui/partyDetail.ts` 26, the `MOVES` label at
+`RouteScene` 1911 — and its equip seam is a learnset-band cell dragged onto a slot,
+`equipMove`, `src/engine/run/learnset.ts` 115-136). It wants `src/scenes/RouteScene.ts`,
+which **every** batch from 5 to 27 holds (5 Task-16, 5b Task-45, 6 Task-41, 6b Task-38, 7
+Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26, 11
+Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48, 15 Task-49, 16 Task-50, 17 Task-52, 18
+Task-55, 19 Task-56, 20 Task-58, 21 Task-61, 22 Task-62, 23 Task-63, 24 Task-64, 25 Task-65,
+26 Task-66, 27 Task-67), so it opens the plan's new **Batch 28**, the first batch that leaves
+the route scene free at all — and its second path, `src/engine/run/learnset.ts` with its test,
+is Task-56's in Batch 19 and free from Batch 20 on. It runs **after** Task-56 (Batch 19),
+whose rule makes the learnset the only equip path, so the slot it empties stays empty instead
+of being refilled by the next level-up. It adds no run field — a member's moves are already
+persisted — so the chain stays **14 → 15 → 16 → 17 → 18**. Nothing here re-plans
+`Task-38`–`Task-67`, and Batch 4b is untouched: it is `cut`, so it can gain no member.
 
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
@@ -951,6 +1036,208 @@ version chain is unchanged, and each of its three declared re-pins needed none.
   its own contrast check instead of re-running Task-08, and the open question below offers
   the light-panel alternative that would need neither the extra check nor this batch.
 
+### Batch 21 — the boss win no longer moves the player
+- **Task-61** Beating the map boss keeps the player where they stand instead of warping them
+  to the room's door.
+- **Hot files:** `src/scenes/RouteScene.ts` (the boss-win branch of `applyBattleResult`,
+  5069-5108, and the `transitionTo` it calls, 4437-4454) → Task-61. Nothing else is in the
+  batch; it claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/**`,
+  `src/engine/**`, `src/engine/save.ts`, packed asset or `docs/` file.
+- **Shape:** one task, alone, and the first of the round because it is the only **defect** of
+  the six reports (the file's precedent: the bug batch was cut in front of Batch 4). It wants
+  `src/scenes/RouteScene.ts`, which every batch from 5 to 20 holds (5 Task-16, 5b Task-45, 6
+  Task-41, 6b Task-38, 7 Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b
+  Task-40, 10 Task-26, 11 Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48, 15 Task-49, 16
+  Task-50, 17 Task-52, 18 Task-55, 19 Task-56, 20 Task-58), so this is the first batch that
+  leaves it free again — and the batch holds only one task because a batch is an antichain and
+  every other report of the two rounds wants the same file. It produces nothing another task
+  reads, changes no rule (the portal still opens when the boss falls, D31), adds no run field,
+  so **no `SAVE_VERSION`** step and no fixed-seed re-pin — it is pure scene behaviour.
+
+### Batch 22 — a room's battle begins under a weather, a terrain or a room condition
+- **Task-62** A trainer or boss room may begin its battles under a weather, a terrain or a
+  room condition (dense fog, Gravity, Trick Room), and the route draws an animation or filter
+  for it.
+- **Hot files:** `src/scenes/RouteScene.ts` (the room's roll and the map filter; `startBattle`
+  4904-4931) and `src/scenes/BattleScene.ts` (`create`, 390-441) → Task-62; the new
+  `src/engine/routes/battlefield.ts` + `battlefield.test.ts` (the pure roll) → Task-62;
+  `src/engine/battle/state.ts` (`BattleSetup` 120-128 and `createBattle`'s seed, 159-162),
+  `src/engine/battle/accuracy.ts` + `accuracy.test.ts` and `src/engine/battle/modifiers.ts`
+  (the fog term), `src/engine/battle/effects/weather.ts`/`terrain.ts` only if a label moves,
+  and `src/engine/run/battleLink.ts` (`BattleLaunch`, 45-57) → Task-62; the new condition
+  table + chance in `src/data/` (a `src/data/battlefields.ts` beside its test) → Task-62;
+  `docs/maps-spec.md` §6/§7 and `docs/battle-spec.md` §4 → Task-62. It claims no
+  `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts` or
+  packed asset.
+- **Shape:** one task, alone, and it needs the batch to be that wide: it is the only task of
+  the two rounds that wants **both** scenes at once, and every batch from 5 to 20 holds
+  `src/scenes/RouteScene.ts` while the battle scene is held by 5, 5b, 6, 6b, 7, 8, 8b, 9, 9b,
+  10, 11, 12, 14, 17, 18 and 20 — so it opens the new **Batch 22**, one batch behind Task-61.
+  It is the round's only engine rule: it adds the fog accuracy term and the setup seam, and it
+  is written **against** the shipped weather/terrain/gravity/trick-room rules rather than
+  re-porting them (the coverage table already marks all four `port`,
+  `docs/balance/effect-coverage.md` 652/1133 and the terrain/weather rows). Its map filter may
+  reuse Task-45's `TilesetConfig.tileAnimations` (Batch 5b, merged long before) or draw an
+  overlay of its own — the spec freezes which, and the overlay keeps it free of a dependency.
+  The roll owns a dedicated stream keyed to the room's **stable** index
+  (`routeIndexForRoom`, 969-972), so no existing `map`/`encounters`/`battle` stream moves and a
+  fixed seed reproduces every condition; it lands **before** no batch in particular, but it is
+  placed here because the report is a wish against shipped rules and nothing blocks it.
+
+### Batch 23 — the mini-boss reward offers three unidentifiable Pokémon
+- **Task-63** A beaten mini-boss offers, beside its item rows, three Pokémon the player cannot
+  identify — no name, no sprite — each presented by its highest stat and its nature.
+- **Hot files:** `src/scenes/RouteScene.ts` (the reward window, `openMiniBossReward` 5715-5731
+  through `chooseMiniBossReward` 5838-5848) → Task-63; `src/ui/rewards.ts` +
+  `src/ui/rewards.test.ts` (the new pure Pokémon chooser beside `rewardChoices`, 10-32) →
+  Task-63; `docs/maps-spec.md` §7 (185) and `docs/design-spec.md` §7 (259-260) → Task-63. It
+  claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/**`, `src/data/dex/**`,
+  `src/engine/**`, `src/engine/save.ts` or packed asset — every primitive it composes is
+  shipped (`createFighter` + `randomAbility`/`defaultMoveset`, D17; `speciesPool`, D39;
+  `statAtLevel`; `addPokemon`).
+- **Shape:** one task, alone, because it wants `src/scenes/RouteScene.ts` (held by every batch
+  5-20, Batch 20 last) and `src/ui/rewards.ts`, and no other report of the round claims that
+  second file — so it could not ride beside Task-61 or Task-62 and opens the new **Batch 23**,
+  one batch behind Task-62. It is a **presentation + placement** task with no new rule: the
+  chooser draws from its own stream (a sibling of `:reward:${mapIndex}`, 5721), so the item
+  rows a fixed seed already produces do not move and the fixed-seed regression is that the
+  three (stat, nature) pairs are stable. The chosen Pokémon lands through `addPokemon` at the
+  squad's level, exactly as a catch does — it is not a catch, so it spends no room capture and
+  bumps no `stats.catches` — and it adds no run field, so **no `SAVE_VERSION`** step.
+
+### Batch 24 — the casino room
+- **Task-64** A casino room: a Team Rocket grunt, a slot machine the player pays to spin, items
+  and an egg among its prizes, and a chance of a battle that locks the machine.
+- **Hot files:** `src/scenes/RouteScene.ts` (the room's fixtures, the spin and the egg's hatch
+  beat on `advanceMap`) → Task-64; `src/engine/maps/plan.ts` + `plan.test.ts` (the new
+  `MapRoomSpecial` value and its placement) and `src/ui/mapView.ts` + `mapView.test.ts` (its
+  marker) → Task-64; the new casino table (price, prize weights, the battle chance) in
+  `src/data/` beside its test, and the new `egg` entry in `src/data/items.ts` → Task-64;
+  `src/data/trainers.ts` (the new `rocket`/`grunt` archetype) and the packed
+  `src/assets/frlg/overworld.png`/`trainers.png` with `src/data/frlg/overworld.json`/
+  `trainers.json` (the repack) → Task-64; `docs/maps-spec.md` §7 and `docs/design-spec.md` §7 →
+  Task-64. It claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**` or
+  `src/engine/save.ts`.
+- **Shape:** one task, alone, and it opens the new **Batch 24** for two independent reasons:
+  `src/scenes/RouteScene.ts` is held by every batch 5-20 (Batch 20's Task-58 last), and the
+  special-room layer it extends (`src/engine/maps/plan.ts` 70, `src/ui/mapView.ts` 26) is
+  claimed by Task-65 and Task-66 in the two batches after it — so no two of the three can share
+  a batch. It is also the one task of the two rounds that repacks a generated asset (the FRLG
+  overworld/trainer atlases), which alone would keep it from sharing a batch. Its money and
+  prize tables live in `src/data/` (balance), the spin draws its own stream
+  (`${seed}:casino:${mapIndex}`), so a fixed seed's shop stock, reward picks and rosters do not
+  move; the recommended reading adds **no** run field (the machine's per-floor lock rides the
+  run's existing per-floor bookkeeping and the egg is an ordinary bag item whose species rolls
+  at hatch time), so **no `SAVE_VERSION`** step — the alternative is the open question below.
+
+### Batch 25 — the gated reward room
+- **Task-65** A special room whose reward sits behind bushes, rocks or water that only a party
+  Pokémon's move opens — Cut, Rock Smash, Surf.
+- **Hot files:** `src/scenes/RouteScene.ts` (the room's obstacle, the reward pocket and the
+  interact gate) → Task-65; `src/engine/maps/plan.ts` + `plan.test.ts` (the new
+  `MapRoomSpecial` value and its placement) and `src/ui/mapView.ts` + `mapView.test.ts` (its
+  marker) → Task-65; the new `knowsMove`-style accessor beside its test under `src/engine/run/`
+  and the obstacle→move mapping in `src/data/` → Task-65; the packed
+  `src/assets/frlg/{outdoor,forest,cave}.png` (the new bush/rock frames, via
+  `scripts/frlg/build-tilesets.mjs`) and `docs/maps-spec.md` §7 → Task-65. It claims no
+  `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts`,
+  `src/engine/run/pool.ts` or `src/engine/run/state.ts`.
+- **Shape:** one task, alone: it wants `src/scenes/RouteScene.ts` (every batch 5-20, Batch 20
+  last) **and** the special-room layer Task-64 extends one batch earlier and Task-66 one batch
+  later, so it opens the new **Batch 25**. It deliberately claims **neither** `[Task-52]`'s
+  pool file (`src/engine/run/pool.ts`) **nor** `[Task-31]`'s placement seam
+  (`addCaughtPokemon`/`pcCatch`), so it cannot silently duplicate either: the reward it gates is
+  an ordinary ground item placed off a stable room id (the `megaStoneItem` shape, 1049-1055),
+  not a catch. Surf's gate needs no new tile (the map already carries `WATER` and treats it as
+  solid, `src/engine/map.ts` 11/16), so only the bush and the rock owe art; the opening is
+  recorded per-floor, so a fixed seed's route geometry is unchanged and **no `SAVE_VERSION`**
+  step is owed.
+
+### Batch 26 — the trade room
+- **Task-66** A trade room: give one Pokémon, receive a random one.
+- **Hot files:** `src/scenes/RouteScene.ts` (the room's fixture and its panel) → Task-66;
+  `src/engine/maps/plan.ts` + `plan.test.ts` (the new `MapRoomSpecial` value and its placement)
+  and `src/ui/mapView.ts` + `mapView.test.ts` (its marker) → Task-66; the deliberate-removal
+  helper and its test under `src/engine/run/` (beside `perms.ts`, whose `releaseFainted` it
+  must **not** change) and the received member's build → Task-66; `docs/maps-spec.md` §7 and
+  `docs/routes-spec.md` §6's party/PC rule → Task-66. It claims no `package.json`,
+  `src/main.ts`, `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts`, packed asset or
+  `src/engine/run/pool.ts`.
+- **Shape:** one task, alone, and last of the round: it wants `src/scenes/RouteScene.ts` (every
+  batch 5-20, Batch 20 last) and the special-room layer its two batch-mates extend one and two
+  batches earlier, so it opens the new **Batch 26**. It is the round's only task that removes a
+  **living** member on purpose, so it adds a helper that drops exactly one member and leaves
+  `stats.casualties` alone — the permadeath path (`releaseFainted`, 17-29) counts a loss and is
+  not the right seam. The received member is built and placed exactly as a catch is
+  (`speciesPool` + `createFighter({ learnsetSeed: run.seed })`, D17, at the squad's level
+  through `adoptAtLevel`, then `addPokemon`), the trade is one per room and refused on a
+  single-member party, and the per-room used flag rides the run's existing per-floor
+  bookkeeping — so **no `SAVE_VERSION`** step.
+
+### Batch 27 — the room that bars items and healing moves
+- **Task-67** A special room whose battles bar the player's BAG items and healing moves.
+- **Hot files:** `src/scenes/RouteScene.ts` (the room's own trainer and the launch flag;
+  `buildRoom` 961-1003, `startBattle` 4904-4931) and `src/scenes/BattleScene.ts` (the greyed BAG
+  row and healing rows; `openMenu` 1204-1218, `openBag` 1273-1285, `openMoves` 1232-1271) →
+  Task-67; `src/engine/maps/plan.ts` + `plan.test.ts` (the new `MapRoomSpecial` kind and its
+  placement) and `src/ui/mapView.ts` + `mapView.test.ts` (its marker) → Task-67;
+  `src/engine/battle/commands.ts` + `commands.test.ts` (the gate) → Task-67;
+  `src/engine/battle/state.ts` (`BattleSetup`/`createBattle`) and `src/engine/run/battleLink.ts`
+  (`BattleLaunch`) → Task-67; `src/ui/notice.ts` + `notice.test.ts` (the room's entrance beat,
+  the module Task-31 ships in Batch 7) → Task-67; the new room/barred-move table in `src/data/`
+  beside its test → Task-67; `docs/maps-spec.md` §7 and `docs/battle-spec.md` §2 → Task-67. It
+  claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`,
+  `src/engine/save.ts` or packed asset.
+- **Shape:** one task, alone, and the batch is the only one that leaves its paths free. It is the
+  round's one report and it wants `src/scenes/RouteScene.ts` **and** `src/scenes/BattleScene.ts`
+  together: the route scene is held by **every** batch from 5 to 26 (5 Task-16, 5b Task-45, 6
+  Task-41, 6b Task-38, 7 Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b
+  Task-40, 10 Task-26, 11 Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48, 15 Task-49, 16
+  Task-50, 17 Task-52, 18 Task-55, 19 Task-56, 20 Task-58, 21 Task-61, 22 Task-62, 23 Task-63, 24
+  Task-64, 25 Task-65, 26 Task-66), so no batch before this one leaves it free at all. It could
+  not ride beside Task-62 in **Batch 22**, the batch that would otherwise fit: they share both
+  scenes, the battle-start seam (`src/engine/battle/state.ts`, `src/engine/run/battleLink.ts`) and
+  `docs/battle-spec.md` §4, and `docs/maps-spec.md` §7 is Task-62's there — so the batch would stop
+  being an antichain. Nor can it join Task-64/65/66, whose special-room layer
+  (`src/engine/maps/plan.ts`, `src/ui/mapView.ts`) it extends in the three batches before it. It
+  therefore opens **Batch 27**, one batch behind Task-66, alone. It produces nothing another task
+  reads, adds no run field and takes **no** `SAVE_VERSION` step — the room is a plan fact and the
+  gate draws no RNG — so the chain stays **14 → 15 → 16 → 17 → 18**. It runs after Batch 11's
+  reformat and edits files it cleared, so it keeps them conforming (no new ledger line), the way
+  Batches 12–26 do.
+
+### Batch 28 — the MOVES tab deletes an equipped move
+- **Task-68** The route HUD's MOVES tab can delete an equipped move: the slot is dropped onto
+  the learnset band, the slot becomes empty and the move waits in the band to be re-equipped.
+- **Hot files:** `src/scenes/RouteScene.ts` (the MOVES tab's slot press, the live reorder and
+  the release; `handleHudPointerMove` 2899-2943, `handleHudPointerUp` 3047-3115,
+  `handleDetailPointerDown` 3223-3238, the band's own hit test beside `pointerInBagPanel`
+  3638-3645) → Task-68; `src/engine/run/learnset.ts` + `learnset.test.ts` (the new pure
+  inverse of `equipMove`, 115-136) → Task-68; `docs/design-spec.md` §3's MOVES paragraph
+  (71-78) and `docs/tech-decisions.md` **D36** (520-530, the panel's own operation list) →
+  Task-68. It claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/**`,
+  `src/data/dex/**`, `src/engine/save.ts`, `src/scenes/BattleScene.ts`, `src/ui/moveGrid.ts`
+  or packed asset — and no `docs/` file another batch holds: `docs/design-spec.md` §3 is
+  Task-58's in Batch 20 and free here (Task-63 takes §7, not §3), and `docs/tech-decisions.md`
+  is nobody's.
+- **Shape:** one task, alone, and it is the first batch that leaves the route scene free at
+  all: `src/scenes/RouteScene.ts` is held by **every** batch from 5 to 27 (5 Task-16, 5b
+  Task-45, 6 Task-41, 6b Task-38, 7 Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9
+  Task-39, 9b Task-40, 10 Task-26, 11 Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48,
+  15 Task-49, 16 Task-50, 17 Task-52, 18 Task-55, 19 Task-56, 20 Task-58, 21 Task-61, 22
+  Task-62, 23 Task-63, 24 Task-64, 25 Task-65, 26 Task-66, 27 Task-67), so no batch before
+  this one can host it, and the second path it wants — `src/engine/run/learnset.ts` with its
+  test — is Task-56's in Batch 19 and free from Batch 20 on. It is written **against** Task-56's
+  shipped state: with the learnset the only equip path, a deleted move stays learned and the
+  slot it frees stays empty until the player drags something back, which is the rule this task
+  completes rather than fights. The three other paths the report could reach are free in this
+  batch too, so the open questions below can be answered either way without re-cutting it:
+  `src/scenes/BattleScene.ts` (held by Task-67 in Batch 27), `src/ui/moveGrid.ts` (Task-58's
+  in Batch 20) and `src/engine/run/progression.ts` (Task-56's in Batch 19) are all nobody's
+  here — and the default reading touches none of them. It edits files Batch 11's reformat
+  cleared, so it keeps them conforming (no new ledger line), the way Batches 12–27 do. It adds
+  no run field and draws no RNG, so **no `SAVE_VERSION`** step and no fixed-seed re-pin.
+
 ### Open questions for the human
 
 Batch 4b's three reports added two more, this second round of six added four, the third
@@ -962,7 +1249,13 @@ the sixth round's fourth report is a measurement rather than a question, and it 
 trainer's Poké Ball row) — and the eighth round's three reports add five (two behind the debug
 panel's palette, one behind the switch window's move ⓘ and two behind the battle's info
 window) — and Batch 5's own one (Task-42's catch HP: the number or the fraction) was
-**answered with the fraction** and shipped, so its bullet is gone — and every
+**answered with the fraction** and shipped, so its bullet is gone — and the ninth round's three
+reports add six (one behind the boss win, three behind the room battle condition and two
+behind the mini-boss reward) and the tenth round's three add eight (four behind the casino,
+two behind the gated reward room and two behind the trade room) and the eleventh round's single
+report adds six (all behind the no-items/no-heal room) and the twelfth round's single report
+adds four (the surface, the last move, the gesture and the confirm, all behind the MOVES tab's
+delete) — and every
 question here carries a written default rather than a guess. Everything the first plan
 raised is decided: the Añil art was materialised into the local clone, `Task-23` is unblocked
 (the three moves ship, `D42`), `Task-24` is retired, the audio comes from the original
@@ -1263,6 +1556,243 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
   Web) are not modelled at all (`src/engine/battle/effects/moves.ts` 594 says so in the tree),
   so the window must not pretend to list them. Say which before Batch 17's branch is cut.
   Nothing else in the plan changes either way.
+
+- **`[Task-61]` (the boss win, Batch 21): does the room get rebuilt, or is the portal un-sealed
+  in place?** The portal is carved from the start and only **sealed** while the boss stands
+  (`applyRoute`'s `sealEdge`, 1151-1153), so the two readings are: **rebuild** the room through
+  `transitionTo` with the player's tile preserved (the written default — the un-sealed room is
+  then exactly the room a revisit draws, portal art included), or **un-seal the single edge** on
+  the live map and repaint (cheaper, no sprite churn, but it leaves the room built by the sealed
+  pass). Either way the player stays on the tile they fought from; say which before Batch 21's
+  branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-62]` (the room battle condition, Batch 22): is dense fog a weather or a field
+  condition?** The engine's weathers are `sun | rain | sand | snow` (`WeatherId`, `state.ts` 10)
+  and its field conditions are `trickroom | gravity | magicroom | wonderroom | fairylock |
+  mudsport | watersport` (`FieldConditionId`, 18-19). The written default is the **field
+  condition**, because fog must not enter `weatherModifier`/`weatherChip` (`damage.ts` 51-67,
+  `turn.ts` 985-998) and the field shape is the one Gravity and Trick Room already use; the
+  alternative is `'fog'` joining `WeatherId` (the games' own shape, and the label table at
+  `effects/weather.ts` 20-32 is the ready seam), which drags the damage and chip paths in.
+  Say which before Batch 22's branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-62]` (the room battle condition, Batch 22): does the −20 touch a never-miss move?**
+  The report asks for a flat −20 accuracy on attacks, and `accuracyChance` short-circuits a move
+  whose `accuracy` is `true` before any multiplier (`accuracy.ts`, 11). The written default is
+  that a never-miss move (`true`) is **unaffected**, because fog bends aim rather than removing
+  a move's guarantee; the alternative is to fold the −20 into the chance for every move,
+  including the `true` ones, which would make Swift and Aerial Ace missable. Say which before
+  Batch 22's branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-62]` (the room battle condition, Batch 22): does a **wild** battle in that room start
+  under it too?** The report names trainer rooms and the boss room, and a regular room can carry
+  tall grass beside its trainers (`docs/routes-spec.md` §2). The written default is that the
+  condition belongs to the **room**, so **every** battle that starts there begins with it, wild
+  encounters included; the alternative is to gate it on the battle being a **trainer** battle
+  (`trigger.kind === 'trainer'`, the launch's own field), so a wild encounter in the same room
+  fights clean. Say which before Batch 22's branch is cut. Nothing else in the plan changes
+  either way.
+
+- **`[Task-63]` (the mini-boss reward, Batch 23): highest stat + nature, or the report's
+  alternatives?** The report's primary ask is that each of the three be presented by its
+  **highest stat and its nature**, with the name and the sprite hidden — that is the written
+  default. The alternatives it floats are that the three read by their **rolled abilities**
+  (which are random, D17, so never the species' own — the report's own words) or by their
+  **random movesets**; either would show a different (and, for abilities, deliberately false)
+  hint in the same three rows. Say which before Batch 23's branch is cut. Nothing else in the
+  plan changes either way.
+
+- **`[Task-63]` (the mini-boss reward, Batch 23): one window with two row kinds, or a first
+  choice between items and Pokémon?** The report says the Pokémon options sit **beside** the
+  item options («a parte de opciones de objeto»). The written default is **one** reward window
+  whose three rows are the item rows and whose Pokémon options appear beside them (so the
+  cursor, `E`/`Q` and the leave path stay one control, and a beaten mini-boss still always
+  offers items); the alternative is a first pick — items or a Pokémon — followed by the three
+  rows of whichever was chosen, which reads cleaner on a small screen but adds a second window
+  and a second cursor. Say which before Batch 23's branch is cut. Nothing else in the plan
+  changes either way.
+
+- **`[Task-64]` (the casino, Batch 24): when does the machine lock — on the battle's trigger, or
+  on a win?** The report's words are «posibilidad de combate contra el recluta y ya no se puede
+  tirar de la tragaperras», which can be read either way. The written default is that the
+  machine locks the moment the grunt battle **triggers** (the grunt stops the game whatever the
+  outcome, and a loss ends or costs the run anyway); the alternative is that it locks only once
+  the grunt is **beaten** (`isTrainerDefeated`, `state.ts` 501-503), which lets a player who
+  flees or loses come back and spin again. Say which before Batch 24's branch is cut. Nothing
+  else in the plan changes either way.
+
+- **`[Task-64]` (the casino, Batch 24): does the egg open on a floor advance or on a room
+  change?** «se abre al pasar de piso» names a **floor**, and the run has two advances: the map
+  advance (`advanceMap`, `state.ts` 185-204, the portal step at `RouteScene` 4398) and the room
+  change (`advanceRoute`, 161-175). The written default is the **map advance** — a floor is a
+  map (`docs/maps-spec.md` §1) — so the egg hatches at the heal stop, at the same beat the run
+  steps onto the next biome; the alternative is the room change, which hatches it almost
+  immediately and makes the egg a delayed pickup rather than a floor promise. Say which before
+  Batch 24's branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-64]` (the casino, Batch 24): is the egg a bag item or a run field?** The recommended
+  reading is a **bag item** (a new `egg` entry in `src/data/items.ts`) whose species rolls at
+  hatch time from the new floor's band, so the egg is a plain stack the save already carries and
+  the task adds **no** run field and **no** `SAVE_VERSION` step; the alternative is a run field
+  that remembers the species (or the whole prize) at **spin** time, which fixes what the egg
+  will be the moment it is won but takes the next `SAVE_VERSION` step (**18 → 19**, after
+  Task-52's 17 → 18) and a migration. Say which before Batch 24's branch is cut. Nothing else in
+  the plan changes either way.
+
+- **`[Task-64]` (the casino, Batch 24): is the grunt battle a spin outcome, or the room's own
+  entrance beat?** The report lists the battle among what the machine does. The written default
+  is that it is a **spin outcome** — the prize table (or the machine's own chance) rolls it, so
+  the player can spend a spin and get a fight instead of a prize — and the machine then locks
+  (the question above); the alternative is that entering the room always opens the battle first,
+  with the machine available only after it, which makes the grunt a gate rather than a gamble.
+  Say which before Batch 24's branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-65]` (the gated reward room, Batch 25): may any party member open it, or only the
+  lead?** The report says «algun poke del party conoce cierto movimiento» — **some** Pokémon of
+  the party — so the written default is **any** member, the lead included, with no
+  lead special-case; the alternative is that only the lead's moveset is asked (the follower
+  Pokémon the route already draws is the lead, `[Task-41]`), which reads as a visible
+  requirement but silently ignores a move the rest of the party knows. Say which before Batch
+  25's branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-65]` (the gated reward room, Batch 25): does an opened obstacle stay open for the
+  floor?** The written default is **permanent for the floor**: the opening is recorded like a
+  taken ground item (`pickedItems` with a stable room-scoped id, `state.ts` 104-107), so a
+  revisit finds it open and `advanceMap` clears it (199-201) — no run field and no
+  `SAVE_VERSION` step. The alternative is that the obstacle closes again when the player leaves
+  the room, which makes the reward a one-shot visit and needs no bookkeeping at all, but also
+  lets a player who walked in, opened it and walked out re-open it for free. Say which before
+  Batch 25's branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-66]` (the trade room, Batch 26): is the trade optional, and can the player decline
+  after seeing what is offered?** The report says «das un poke y te da otro random» and does not
+  say the offer is visible first. The written default is that the trade is **optional** — the
+  panel opens on the interact key, the player picks a member and takes the random one, and
+  leaving with the cancel key grants nothing (the reward window's own `Q` path, `RouteScene`
+  5830-5832) — and that the received Pokémon is **rolled on acceptance**, not previewed, so the
+  gamble is the report's own. The alternative is that the panel first shows what it will give
+  (species and level) and the player then accepts or declines, which turns the room into a
+  straightforward upgrade. Say which before Batch 26's branch is cut. Nothing else in the plan
+  changes either way.
+
+- **`[Task-66]` (the trade room, Batch 26): what level does the received Pokémon join at?** The
+  written default is the **squad's level** — the exact rule a catch already follows
+  (`adoptAtLevel(keyed, squadLevel(run), run.seed)`, `resolve.ts` 96, `docs/battle-spec.md` §7)
+  — so a trade is never a level loss or gain; the alternative is the **room's own band level**
+  (`bandForMap(run.mapIndex)`, the roster's source), which makes a trade on a deep floor hand
+  back a stronger Pokémon than the squad and on an early floor a weaker one. Say which before
+  Batch 26's branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-67]` (the no-items/no-heal room, Batch 27): is the room a special leaf, or a condition
+  on a regular room?** The report says «habitacion con efecto», and the mould the casino, the
+  gated reward room and the trade room all use is the special leaf (`MapRoomSpecial`,
+  `src/engine/maps/plan.ts` 70). The written default is the **special leaf** — a new kind placed
+  like the mini-boss, quiet, with its own trainer — because it is the same shape the three rooms
+  just planned take and the special pass already exists. The alternative is a **condition on a
+  regular room** (the `[Task-62]` shape), which lets any trainer or wild battle in that room begin
+  barred and needs no new room kind, but makes the effect a property rather than a room the player
+  recognises. Say which before Batch 27's branch is cut. Nothing else in the plan changes either
+  way.
+
+- **`[Task-67]` (the no-items/no-heal room, Batch 27): does the rule bind the player alone, or
+  both sides?** The report's words are the player's («no se pueden usar objetos» is the player's
+  bag, and `validateBag` already refuses every other side, `commands.ts` 81). The written default
+  is the **player alone** — the room is a challenge for the player, and the enemy's own heals stay
+  part of the fight. The alternative is **both sides**, which the enemy AI would also have to obey
+  (Task-35's scorer weighs healing, so a barred heal must not be chosen) and which makes the room
+  a clean no-heal duel. Say which before Batch 27's branch is cut. Nothing else in the plan
+  changes either way.
+
+- **`[Task-67]` (the no-items/no-heal room, Batch 27): does it bar the passive heals too —
+  abilities, held items and the residual heals?** The engine models healing abilities
+  (Regenerator, Water Absorb / Volt Absorb / Dry Skin, Ice Body / Rain Dish, Poison Heal;
+  `src/engine/battle/effects/abilities.ts` 178 / 215 / 429 / 563 / 683), held-item heals
+  (Leftovers, Black Sludge, the Berries; `effects/items.ts` 152 / 207) and the residual heals
+  (Wish, Leech Seed, Aqua Ring / Ingrain, Grassy Terrain; `turn.ts` 1049-1097). The written
+  default is **no** — the rule bars the BAG action and the named healing moves only, because those
+  are the two things the report names and a full suppression is a Heal Block-sized rule the engine
+  does not have (`healblock` is `excluded`, moveCoverage 1919-1923). The alternative is the **full
+  Heal-Block reading**, which suppresses every HP restoration on the barred side and needs a term
+  in each heal path. Say which before Batch 27's branch is cut. Nothing else in the plan changes
+  either way.
+
+- **`[Task-67]` (the no-items/no-heal room, Batch 27): does the room also bar healing outside the
+  battle — the Pokevial and the PC?** The report names items and moves, both battle things, but
+  the run heals outside battle too: `usePokevial` rests the party and the box
+  (`src/engine/run/heal.ts` 62) and the map advance is the heal stop (`advanceMap`, `state.ts`
+  185-204). The written default is **no** — the rule is a battle rule and the room only
+  bars what the report names, so a Pokevial drunk in that room still works and the heal stop is
+  untouched. The alternative is that the room **also refuses the Pokevial** (and the PC) while the
+  player stands in it, which makes the effect a room-wide one. Say which before Batch 27's branch
+  is cut. Nothing else in the plan changes either way.
+
+- **`[Task-67]` (the no-items/no-heal room, Batch 27): what happens when the player's last Pokémon
+  faints in a barred battle?** The report removes the ability to heal but says nothing about
+  losing. The written default is the **normal rule**: the battle is lost, a wipe ends the run and
+  permadeath applies (D5, `docs/battle-spec.md` §5), because the room changes what the player may
+  do, not what a loss costs. The alternative is that the room's battle **cannot end the run** (a
+  loss only retreats the player), which reads as a mercy the roguelike's own promise argues
+  against. Say which before Batch 27's branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-67]` (the no-items/no-heal room, Batch 27): how is the rule surfaced to the player?**
+  The written default is **both**: the battle's own feed announces the room's effect when the
+  battle opens, the BAG row and the healing rows are drawn disabled (`openMenu` 1210,
+  `openMoves` 1235-1238), and the route raises a temporary notice on entering the room through the
+  existing `src/ui/notice.ts` module Task-31 ships (Batch 7) — one module, N strings, the way
+  Task-49 and Task-50 extend it. The alternatives are the battle-side controls alone (no entrance
+  beat) or the entrance beat alone (the battle just refuses the command). Say which before Batch
+  27's branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-68]` (the MOVES tab's delete, Batch 28): which surface does "menu moves" mean?**
+  The report names "menu moves" and the tree has three: the route HUD's **MOVES** tab (the
+  detail panel's `'moves'` mode, the only place a move is ever equipped), the battle's **moves**
+  menu (the per-turn FIGHT command menu, `docs/design-spec.md` §4 175-176) and the battle's
+  SWITCH detail window (read-only rows). The written default is the **route HUD's MOVES tab
+  alone** — "equipado" is a fact about the run's member, and the battle has no equip seam, no
+  drag and only a restored snapshot of the member — which leaves `src/scenes/BattleScene.ts` and
+  `src/ui/moveGrid.ts` untouched; the alternative is **both** surfaces, which adds a battle-time
+  delete whose result would have to travel back through `BattleReturn` to reach the run and
+  which puts `src/scenes/BattleScene.ts` in this task (free in Batch 28, so the batch would not
+  have to be re-cut). Say which before Batch 28's branch is cut. Nothing else in the plan
+  changes either way.
+
+- **`[Task-68]` (the MOVES tab's delete, Batch 28): may the last remaining move be deleted?**
+  The tree forbids a zero-move member in three places — the save decoder **drops** such a
+  member (`parseFighter`, `src/engine/save.ts` 442-449), the fight branch of `validateCommand`
+  refuses every index once the list is empty (`commands.ts` 103-105) and the FIGHT menu would
+  draw nothing (`openMoves`, `BattleScene` 1235) — while the engine's Struggle fallback covers
+  only a moveset whose moves are all **spent** (`selectedMove`, 52-66). The written default is
+  that a **one-move member is refused**, so the invariant those three places already assume
+  survives and the save decoder stays out of the task; the alternative is that the last move may
+  go, which needs the decoder's guard relaxed (`parseFighter` 449) **and** a fight path for a
+  move-less member — the battle's menu would have to offer Struggle, a rule `[Task-35]`'s AI
+  also weighs — and takes `src/engine/save.ts` + `save.test.ts` and
+  `src/engine/battle/commands.ts` into this task. Neither reading adds a run field, so **no
+  `SAVE_VERSION`** step either way: relaxing a decoder's tolerance is a decode-time
+  normalisation, the `[Task-33]` precedent. Say which before Batch 28's branch is cut. Nothing
+  else in the plan changes either way.
+
+- **`[Task-68]` (the MOVES tab's delete, Batch 28): how does the player delete — a drag back
+  onto the band, or a control in the slot?** The report names no gesture. The written default is
+  the **drag onto the learnset band**, the exact inverse of `[Task-55]`'s equip drag and the
+  shape the tree already uses for the other equipped thing (a held-item badge dropped on the
+  bag, `RouteScene` 3089-3105), which keeps the diff in `RouteScene` and the one engine helper;
+  the alternative is a small **✕ control** drawn in each slot cell, which is more discoverable
+  but adds a per-cell piece and a hit test to `src/ui/moveGrid.ts` (and the test `[Task-55]`
+  creates) and would be drawn by the battle's grid too — free in Batch 28, so that reading costs
+  no re-cut. A third reading, a key on a selected slot, needs a persistent cursor the MOVES tab
+  does not have. Say which before Batch 28's branch is cut. Nothing else in the plan changes
+  either way.
+
+- **`[Task-68]` (the MOVES tab's delete, Batch 28): is the delete confirmed?** The report says
+  nothing, and the action is **free and reversible** — the move stays in the band and teaching is
+  free (D36), so a delete costs the player nothing but a drag back — while the gesture itself is
+  a drag that ends on the band, which is also where a reorder drag may end by accident. The
+  written default is **no prompt**: the delete lands on release and a mis-drop is undone by
+  dragging the move back, the way a mis-dropped held item is; the alternative is a yes/no prompt
+  on the drop, which guards the mis-drop but introduces the HUD's first confirm window (the
+  capture prompt `[Task-31]` deletes is the only one the tree ever had). Say which before Batch
+  28's branch is cut. Nothing else in the plan changes either way.
 
 ---
 
@@ -3054,6 +3584,445 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       which is **Batch 5b** and nowhere earlier (Batch 5's Task-22 holds the shop table, Batch 6's
       Task-17 holds `docs/maps-spec.md` and Task-09 holds the `docs/balance/` sheets), and it runs
       **before Batch 6** so Task-09's balance pass tunes the stock that ships. *(Batch 5b)*
+- [ ] **[Task-61] Beating the map boss no longer teleports the player to the room's door.**
+      Reported in play: «al derrotar boss esta teletransportando a puerta cuando no deberia» —
+      when the map boss falls the player is warped back to the boss room's entry door.
+      **Reproduced, and the defect is the boss-win rebuild.** `applyBattleResult`
+      (`src/scenes/RouteScene.ts`, 5043-5128) marks the boss beaten (`markBossDefeated`, 5075)
+      and, on every map but the final one, calls `this.transitionTo(this.run)` (5107) so the room
+      is rebuilt with its portal now open. `transitionTo` (4437-4454) is the **room-change**
+      path — the same one a door (`advanceRoute`, 4404) and a portal step (`advanceMap`, 4398)
+      use — and it ends by **repositioning the player on the room's entry tile**:
+      `this.player = { ...this.route.entry }` (4449) then
+      `this.movePlayerTo(this.player.x, this.player.y)` (4450). That is right when the run's map
+      position moved, and wrong here, because the run did **not** move: the player fought the
+      boss at the room's farthest tile (`bossTrainer` places it with `farthestRoomTile`, 1015-1025
+      / 1061-1090) and is put back on the door they walked in through. The portal itself is
+      innocent: `portalOpen()` (1006-1008) only flips the flag, `applyRoute` seals the portal
+      edge while the boss stands (1151-1153), and `tryLeaveRoom` steps through it only on a real
+      step toward that border (4391-4406) — nothing moves the player onto the portal.
+      **Fix shape:** rebuild the room **without** respawning. The boss-win branch asks for a
+      rebuild that keeps the player's tile — the spec freezes the shape (a `keepPosition` option
+      on `transitionTo`, or a `rebuildRoom()` that runs the same `buildRoom`/`drawTiles`/
+      `drawEntities`/`drawItems`/`drawTrainers`/`drawShopCounter` chain and then re-applies the
+      stored tile) — while the door and portal paths keep today's respawn. The stored tile is
+      already in hand: the route scene is only **paused** behind a battle
+      (`startBattle`'s `this.scene.pause()`, 4929), never stopped, so `this.player` still holds
+      the tile the boss's sight triggered the fight from; the camera already follows the sprite
+      (`startFollow`, 1244), so it re-centres on that same tile by itself.
+      Out of scope: the portal's own rule (it still opens when the boss falls, D31, and the
+      final boss still ends the run, 5103-5105), the mini-boss reward window, the room's
+      regeneration, the boss's own roster and the `docs/` rules, none of which move.
+      *Dependencies:* none. Batch order covers it: it wants `src/scenes/RouteScene.ts`, which
+      **every** batch from 5 to 20 holds (5 Task-16, 5b Task-45, 6 Task-41, 6b Task-38, 7
+      Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26, 11
+      Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48, 15 Task-49, 16 Task-50, 17 Task-52,
+      18 Task-55, 19 Task-56, 20 Task-58), so it opens the plan's new **Batch 21** — and it is
+      the round's only defect, so it runs first. *(Batch 21)*
+- [ ] **[Task-62] A trainer or boss room's battle may begin under a weather, a terrain or a room
+      condition, and the route draws it.** Reported in play: «en habitaciones de entrenadores y
+      boss añadir una baja probabilidad de que la habitacion los combates empiezan con un clima o
+      terreno, en el mapa debe aparecer animacion o filtro que representa el clima terreno», and
+      extended with «a parte de probabilidad de combates con clima y terrenos añadir niebla densa
+      ataques tienen menos 20 de precision, habitacion gravedad esta puesta el ataque gravedad,
+      espacio raro los lentos van antes que los rapidos».
+      **What the engine models today, verified.** All four of the report's named effects except
+      fog already ship — and **none of them is set at battle start**:
+      - **Weather** `sun | rain | sand | snow` with `weatherTurns` (`src/engine/battle/state.ts`,
+        10, 97-98), set by the ported moves and abilities (`setWeather`,
+        `src/engine/battle/effects/weather.ts`, 39-43, `WEATHER_TURNS = 5` at 10), read by the
+        damage model (`weatherModifier`, `src/engine/battle/damage.ts`, 51-67) and the
+        end-of-turn chip (`turn.ts`, 985-998).
+      - **Terrain** `electric | grassy | misty | psychic` with `terrainTurns` (`state.ts`, 11,
+        99-100), set by `setTerrain` (`src/engine/battle/effects/terrain.ts`), read by
+        `terrainModifier` (`damage.ts`, 69-83) and the Grassy heal (`turn.ts`, 1000-1008).
+      - **Gravity** is the field condition `state.field.gravity` (`state.ts`, 18-19, 36-46, 102),
+        set by the move Gravity (`effects/moves.ts`; the coverage table marks it `port`,
+        `docs/balance/effect-coverage.md` 652) and read by `accuracyChance`'s `gravity` flag,
+        which bends every move's aim by 5/3 (`src/engine/battle/accuracy.ts`, 5-17), reached from
+        `hitChance` (`src/engine/battle/modifiers.ts`, 21) and `preview.ts` (91).
+      - **Trick Room** is the field condition `state.field.trickroom` (same lines), read by
+        `orderActions` to invert the Speed order for the whole field
+        (`src/engine/battle/order.ts`, 18, 27).
+      - **Fog is not modelled at all** — no `fog` in `WeatherId`, `FieldConditionId` or anywhere
+        under `src/engine/battle/**`; the only accuracy knob is Gravity's multiplier. Dense fog
+        is therefore the one rule this task **adds**.
+      **A battle start cannot set any of them today.** `createBattle(setup)` (`state.ts`, 130-…)
+      hard-codes `weather: null`/`weatherTurns: 0`/`terrain: null`/`terrainTurns: 0` (159-162) and
+      `emptyFieldConditions()` (36-46), and `BattleSetup` (120-128) carries player/enemy/rng/
+      isWild/bag/names only. The seam that already carries run facts into a battle is
+      `BattleLaunch` (`src/engine/run/battleLink.ts`, 45-57), set by `RouteScene.startBattle`
+      (4918-4927) and consumed by `BattleScene.create` (395-405).
+      **The call the plan takes: the condition belongs to the ROOM, not to the battle start.** It
+      is rolled when the room is built, on a stream of its own keyed to the room's **stable**
+      index — the key `buildRoute` already uses, `routeIndexForRoom(plan, view.roomId)`
+      (RouteScene 969-972) — so a fixed seed reproduces it, a revisit shows the same room and the
+      map filter is a room fact rather than a per-battle surprise; and the report's own words are
+      plural («los combates empiezan»), so **every** battle that starts in that room begins with
+      it. The alternative — a per-battle roll — would make the same room flip conditions on every
+      entry and would put the roll inside `BattleScene`, the wrong owner: the battle scene takes
+      no run state (`battleLink.ts`, 36-44).
+      **The roll, as the recommended reading (rule in `src/engine/`, numbers in `src/data/`):** a
+      pure `roomBattlefield(seed, roomIndex, kind)` in a new `src/engine/routes/battlefield.ts`
+      with a co-located test, returning `null` for most rooms and a condition at a **low chance**
+      for the rooms the report names (a room that fields regular trainers, and the boss room). It
+      draws exactly **one** `rng.next()` for the chance and, on a hit, one `rng.int` for the
+      table entry, from its own stream `Rng(hashSeed(`${seed}:battlefield:${roomIndex}`))`, so no
+      existing `map`/`encounters`/roster stream moves (D11) and a fresh seed's geometry,
+      encounters and rosters are unchanged. The table and the chance live in `src/data/` — a
+      `ROOM_BATTLEFIELDS` list of `{ id, kind }` entries (a weather, a terrain, `fog`, `gravity`,
+      `trickroom`) plus the chance constant, beside a test — never in the engine.
+      **Dense fog is a new rule and the task must add it.** The report asks for a flat **−20**
+      accuracy on attacks. The recommended home is the accuracy path: `accuracyChance`
+      (`accuracy.ts`, 5-17) gains the fog term — the move's own accuracy drops by 20 before the
+      stage multiplier, clamped at 0, and a move whose `accuracy` is `true` is **unaffected** —
+      and `hitChance` (`modifiers.ts`, 17-23) passes the new flag beside `gravity`. Whether fog
+      is a **weather** (`'fog'` joining `WeatherId`) or a **field condition** (`'fog'` joining
+      `FieldConditionId`) is the call below; the recommended reading is the **field condition**,
+      because fog must not enter `weatherModifier`/`weatherChip` and the field shape is the one
+      Gravity and Trick Room already use.
+      **Fix shape:** one pure roll, one launch field, one setup field, one added rule.
+      `BattleSetup` and `createBattle` gain optional `weather`, `terrain` and `field`, defaulted
+      to today's nulls so every existing test and the pure engine stay green; `BattleLaunch`
+      (45-57) gains the same optional condition; `RouteScene.startBattle` (4918-4927) attaches
+      the room's condition and `BattleScene.create` (395-405) hands it to `createBattle`; and the
+      route draws the room's condition as an **overlay/filter** — the report's "animacion o
+      filtro" — over the tiles (a tinted full-screen rectangle or a camera post-FX plus a light
+      particle pass, drawn with the existing `TILE_SIZE`/`actorDepth` conventions and allocating
+      nothing per frame). The engine's `setWeather`/`setTerrain`/`setFieldCondition` are **not**
+      called from the route: the state is seeded through `createBattle`, so the battle's own log
+      and turn counters stay the only writers. The filter may reuse the tile-animation contract
+      `[Task-45]` ships (`TilesetConfig.tileAnimations`, Batch 5b) or be an overlay of its own;
+      the spec freezes which.
+      **Determinism (AGENTS.md's fixed-seed rule):** the roll is a pure function of the seed and
+      the room index and draws from a dedicated stream; the fog/field term draws no RNG — so the
+      regression is a fixed-seed walk: a seed's room conditions are identical on every rebuild, a
+      room with no condition is still `null`, the roll never moves the `encounters`/`map`
+      streams, and a fog battle rolls the same turn order and the same hit sequence as before the
+      fog existed.
+      **Docs:** the room condition is a map rule (`docs/maps-spec.md` §7's special-room table
+      gains the condition rooms, and §6 the boss room's own chance) and the battle-start seeding
+      is a battle rule (`docs/battle-spec.md` §4, whose side/field-condition paragraph is 57-62).
+      No `D##` is owed: the rules are gameplay and the shape is `D31`/`D33`'s.
+      Out of scope: the existing weather/terrain/gravity/trick-room rules and the moves that set
+      them (they do not move), the info window `[Task-60]` (Batch 17) that lists the battle's own
+      state, the encounter table, the room generator's geometry, and the trainer placement.
+      *Dependencies:* none — every rule it reads is shipped and the roll composes shipped
+      primitives. Batch order covers it: it wants `src/scenes/RouteScene.ts` **and**
+      `src/scenes/BattleScene.ts` together, and every batch from 5 to 20 holds the route scene
+      while the battle scene is held by 5, 5b, 6, 6b, 7, 8, 8b, 9, 9b, 10, 11, 12, 14, 17, 18 and
+      20 — so it opens the plan's new **Batch 22**, one batch behind Task-61. *(Batch 22)*
+- [ ] **[Task-63] A beaten mini-boss also offers three unidentifiable Pokémon beside its item
+      rows.** Reported in play: «para que miniboss su recompensa a parte de opciones de objeto
+      tambien esta la posibilidad de darte 3 opciones de pokemon pero sin saber su nombre o sprite,
+      dado su estadistica más alta y su naturaleza o simplemente da 3 habilidades y eligues a
+      partir de habilidades que no será la suya original porque son random o dado los moveset
+      random de los tres, esas 3 opciones hay».
+      **The reward seam today is items only.** `openMiniBossReward` (`src/scenes/RouteScene.ts`,
+      5715-5731) draws `rewardChoices(ROUTE_LOOT[band.id].pool, MINI_BOSS_REWARD_CHOICES, rng)`
+      from `Rng(hashSeed(`${seed}:reward:${mapIndex}`))` (5721) with
+      `MINI_BOSS_REWARD_CHOICES = 3` (472); `buildMiniBossReward` (5744-5798) and
+      `refreshMiniBossReward` (5800-5811) draw one row per item (icon, name, short description)
+      and `chooseMiniBossReward` (5838-5848) folds the pick through `addItem`; `rewardChoices` is
+      the pure chooser (`src/ui/rewards.ts`, 10-32). The window opens from the boss-win branch
+      (5110-5113) and the cancel key leaves with nothing (5830-5832).
+      **Every primitive the Pokémon half needs already ships.** A run-seeded ability and moveset
+      is `createFighter({ id, speciesId, level, learnsetSeed })` (`src/engine/battle/fighter.ts`,
+      480-…; the ability is `randomAbility(speciesId, seed, ['No Guard'] when the moveset carries
+      an OHKO)`, `resolveAbility` 416-…, `src/engine/battle/randomAbility.ts`, and the moveset is
+      `defaultMoveset`/`randomLevelUpMoves`, D17); a species is `speciesPool(band, 'wild' |
+      'trainer')` (`src/engine/run/pool.ts`, 35-46, D39); a member is
+      `runPokemonFromSnapshot`/`createRunPokemon` (`src/engine/run/progression.ts`, 94-103); the
+      nature, IVs/EVs and the six stats are on the fighter, so the **highest stat** is one
+      `Math.max` over `statAtLevel(species, level, nature, ivs, evs)` (`src/data/dex/natures.ts`,
+      59-…); and the placement a catch already goes through is `addPokemon` (`src/engine/run/
+      state.ts`, 257-…) with `adoptAtLevel` (`progression.ts`, 114-140) so the reward joins at the
+      squad's level, exactly as `resolveBattle`'s fold does it (`src/engine/run/resolve.ts`,
+      92-101).
+      **Fix shape:** one chooser, one row kind, one placement. `src/ui/rewards.ts` gains the
+      Pokémon chooser beside `rewardChoices` — a pure `pokemonRewardChoices(...)` returning the
+      unidentifiable entries `{ speciesId, level, nature, topStat, ability, moves }` built from
+      the shipped primitives (the spec freezes the exact names) — with its cases in
+      `src/ui/rewards.test.ts`; `RouteScene`'s reward window gains a second **row kind** beside
+      the item rows, whose label is the report's own presentation (the **highest stat and the
+      nature**) and which **never** draws a name or a sprite, with `chooseMiniBossReward`
+      branching to the Pokémon placement when the highlighted row is a Pokémon; the chosen one
+      lands through `addPokemon` at the squad's level, so a full party sends it to the box. The
+      reward stays **one** window with two row kinds, so the cursor, `E`/`Q` and the leave path
+      stay one control.
+      **The reading the entry freezes (the report's primary ask):** each option is presented by
+      its **highest base stat** and its **nature**, and never by its name, sprite, types or
+      moves, so the choice is a real gamble. The alternatives the report floats — the three read
+      by their **rolled abilities** (random, D17, so never the species' own) or by their **random
+      movesets** — are the open question below, with the highest-stat-plus-nature reading as the
+      written default.
+      **Determinism (AGENTS.md):** the chooser draws from its own stream (a sibling of
+      `:reward:${mapIndex}`, 5721), so the item rows a fixed seed already produces do not move,
+      and the regression is a fixed-seed test: the same seed offers the same three
+      (stat, nature) pairs and the same item rows.
+      **Docs:** the mini-boss row in `docs/maps-spec.md` §7 (185) and the mini-boss bullet in
+      `docs/design-spec.md` §7 (259-260, "offers a choice of items") gain the Pokémon option.
+      Out of scope: the item half (`rewardChoices`, the loot pools), the mini-boss's own roster
+      and Mega Stone, the catch's own rules — this placement is **not** a catch, so it spends no
+      room capture and bumps no `stats.catches` — the party/PC panel, and `[Task-52]`'s wild-pool
+      exclusion (a different rule on the encounter table).
+      *Dependencies:* none — the chooser composes shipped primitives. Batch order covers it: it
+      wants `src/scenes/RouteScene.ts` and `src/ui/rewards.ts`, and the route scene is held by
+      every batch from 5 to 20 — so it opens the plan's new **Batch 23**, one batch behind
+      Task-62. *(Batch 23)*
+- [ ] **[Task-64] A casino room: a Team Rocket grunt, a slot machine the player pays to spin, and
+      its prizes.** Reported in play: «añade tarea para añadir habitacion casino, aparece un sprite
+      de un recluta team rocket, aparece una tragaperras y pagas por tiradas con posibilidad de
+      huevo da un poke random se abre al pasar de piso, objetos, posibilidad de combate contra el
+      recluta y ya no se puede tirar de la tragaperras».
+      **What a special room is today.** `MapRoomSpecial` is `'shop' | 'mini-boss' | 'mega-stone'`
+      (`src/engine/maps/plan.ts`, 70), placed as **dead-end leaves** by `planMap`'s special pass
+      (402-445): the guaranteed shop near the entry, the mini-boss at `MINI_BOSS_CHANCE = 0.5`
+      (111) and the mega-stone at 0.15 from map 3 (114, 442-445), each hung off a regular room
+      that is neither the entry nor the boss (404-413), listed in `plan.specials` (479-481) and
+      found by `specialRoom(plan, kind)` (502-504). The route builds a special's content in
+      `buildRoom` (`src/scenes/RouteScene.ts`, 986-1002): the mini-boss's trainer (987-992), the
+      mega-stone's item (996-1002) and the shop's counter (`this.shopCounter = view.special ===
+      'shop' ? this.farthestRoomTile() : null`, 995). That counter is the **model for a room-local
+      fixture**: it is drawn by `drawShopCounter` (4266-4274), its interact key is `tryInteract`'s
+      first branch (4630-4634 → `openShop`, 5456-5470), and its panel is the Mart
+      (`buildShopPanel` 5482-…, `refreshShop` 5587-…, `activateShop` 5684-…), a HUD window that
+      exists only in that room. `mapView` draws each special's own minimap icon (`MapRoomMarker`,
+      `src/ui/mapView.ts`, 26) through `RouteScene.drawMapMarker` (2263-2297).
+      **What already exists for the machine's content.** Items are granted by `addItem`
+      (`src/engine/run/state.ts`, 526-533) and drawn as rows from an item id (`itemIconFrame`,
+      `getItem`, the reward window's own row shape, 5764-5769); money is spent by `spendMoney`
+      (541-546) and read by the Mart's readout; a prize table is the loot pool's shape
+      (`LootEntry`, `src/data/loot.ts`, picked by `rewardChoices`, `src/ui/rewards.ts`, 10-32); a
+      random Pokémon from a band is `speciesPool(band, 'wild')` + `createFighter({ learnsetSeed:
+      run.seed })` (D17) placed by `addPokemon` (`state.ts`, 257-…); and a trainer battle is
+      `startTrainerBattle` (4587-4619) → `startBattle` (4904-4931), with a beaten trainer marked
+      by `markTrainerDefeated`/`isTrainerDefeated` (`state.ts`, 501-509) — the same per-floor id
+      list the boss and mini-boss use. **No egg exists**, and a floor advance is `advanceMap`
+      (`state.ts`, 185-204), the portal step `tryLeaveRoom` calls at 4398; a room change is
+      `advanceRoute` (161-175).
+      **Fix shape, as the recommended reading (the spec freezes the names):**
+      1. `MapRoomSpecial` gains `'casino'` (`plan.ts`, 70) and the special pass hangs it like the
+         mini-boss, on a chance constant beside `MINI_BOSS_CHANCE`/`MEGA_STONE_CHANCE` drawn on
+         the same `map` stream; `mapView`'s marker and `drawMapMarker` gain its own icon.
+      2. `buildRoom` places the room's **two fixtures** — the slot machine and the grunt's
+         overworld sprite — at the room's farthest free tiles (the `farthestRoomTile` helper,
+         1061-1090, is the model). The grunt is a new `rocket`/`grunt` **archetype**
+         (`src/data/trainers.ts`, the `TrainerArchetype` shape at 31-56), so its overworld frame
+         and battle sprite come from the packed FRLG atlases (`src/data/frlg/overworld.json`,
+         `src/data/frlg/trainers.json`, packed by `scripts/frlg/build-overworld-sprites.mjs` and
+         `build-trainer-sprites.mjs`) — a repack, so this task holds those packed files.
+      3. The machine's **price, prize table and odds** live in `src/data/` (a new table beside the
+         shop's — `{ price, prizes: [{ kind: 'item' | 'egg', itemId?, weight }] }` plus the battle
+         chance) and the roll is one pure chooser beside `rewardChoices` (`src/ui/rewards.ts`) or
+         a sibling, on its **own stream** `Rng(hashSeed(`${seed}:casino:${mapIndex}`))`, so the
+         floor's shop stock, reward picks and rosters do not move (D11).
+      4. A spin costs `spendMoney` and rolls the prize table: an **item** lands through `addItem`;
+         an **egg** lands as an ordinary bag item (a new `egg` entry in `src/data/items.ts`) and
+         **hatches on a floor advance** — the beat is `advanceMap`'s, where the run steps onto the
+         next floor, not `advanceRoute`'s — turning into a random Pokémon of the new floor's band
+         (a pure `hatchEgg(...)` the scene calls after `transitionTo(advanceMap(...))`, placed by
+         `addPokemon` so a full party sends it to the box). Rolling the species **at hatch time**
+         rather than storing it keeps the egg a plain bag stack: **no new run field and no
+         `SAVE_VERSION` step**.
+      5. The **grunt battle** is a spin outcome; when it triggers the machine **locks**. The lock
+         is per-floor, so it rides the run's existing per-floor bookkeeping rather than a new
+         field: the spec freezes whether it reuses `pickedItems` with a stable room-scoped id
+         (the `megaStoneItemId(view.mapIndex)` shape, 1049-1055) or adds a dedicated per-floor
+         list; either way it clears on `advanceMap` like `defeatedTrainers`/`pickedItems`/
+         `capturedRooms` (`state.ts`, 102-107, 199-201).
+      **`SAVE_VERSION` verdict:** the recommended reading adds **no** run field (the lock is a
+      per-floor id and the egg is a bag item), so the chain stays 14 → … → 18; the alternative
+      (an egg that remembers its species, or a dedicated per-floor list) takes the next step,
+      which is the open question below.
+      **Docs:** the special-room table and its content bullets in `docs/maps-spec.md` §7 and the
+      special-rooms bullet in `docs/design-spec.md` §7 (251-262) gain the casino.
+      Out of scope: the Mart and its stock, the mini-boss reward, the mega-stone, the loot pools,
+      the money a trainer drops, and the battle rules themselves — the grunt fights through the
+      existing trainer path.
+      *Dependencies:* none. Batch order covers it: it wants `src/scenes/RouteScene.ts` (held by
+      every batch 5-20, Batch 20's Task-58 last), `src/engine/maps/plan.ts` and
+      `src/ui/mapView.ts` — the special-room layer `[Task-65]` and `[Task-66]` also extend, which
+      is why the three cannot share a batch — so it opens the plan's new **Batch 24**, one batch
+      behind Task-63. *(Batch 24)*
+- [ ] **[Task-65] A gated reward room: a reward behind a blocked path only a party move opens.**
+      Reported in play: «añade tarea habitacion especial que da recompensa pero el camino esta
+      bloqueado y solo se puede entrar si algun poke del party conoce cierto movimiento por ejemplo
+      corte y aparecen arbustos o rocas y necesitas golpe roca o agua y necesitas surf».
+      **What the generator can already place.** A room's tiles are the route builder's
+      (`sketchRoute`, `src/engine/routes/`), whose terrain pass carves tall grass and ledges and
+      whose `WATER` is decoration only (`docs/route-generator.md`, 167; D18). The tile vocabulary
+      is `FLOOR/WALL/EXIT/TRAP/CHEST/ITEM/WATER/CARPET/TALL_GRASS/LEDGE` (`src/engine/map.ts`,
+      5-14), `isWalkable` refuses `WALL/WATER/LEDGE` (16-27) and `resolveMove`/`tileAt` are the
+      step rules (57-77). A **reward pocket** is an item placed on a flood-fill-reachable pocket
+      (the ground-item pass, `docs/route-generator.md` §"Items", 381), and a room's content is
+      injected in `buildRoom` (`RouteScene`, 986-1002) off stable ids — the mega-stone's
+      `megaStoneItem` (1049-1055) is the model for a room-scoped item. A special room kind is
+      `MapRoomSpecial` (`plan.ts`, 70) with its minimap marker (`mapView.ts`, 26).
+      **What "the party knows this move" can read.** Every member carries its four slots:
+      `member.fighter.moves` (`MoveSlot[]`, `src/engine/battle/fighter.ts`, 144) — a test is
+      `member.fighter.moves.some((slot) => slot.moveId === moveId)`, the shape the engine's own
+      OHKO guard already uses (`fighter.ts`, 419) — and the party and box are `run.party`/
+      `run.box` (`state.ts`, 93-94). There is **no** `knowsMove` accessor today, so this task adds
+      one (a pure helper under `src/engine/run/`, with a test).
+      **Fix shape:** one room kind, one obstacle kind, one gate rule. `MapRoomSpecial` gains a
+      gated-reward kind; `buildRoom` carves the room's obstacle across the only path to a reward
+      pocket and places the reward on the far side — the room's tiles come from `buildRoute`'s
+      request, so the spec freezes whether that is an `obstacle` field on the route params or a
+      post-carve pass on the built `RouteMap`, with the pocket's reachability proven by the same
+      flood-fill the generator already uses. The obstacle maps to the report's own moves — a
+      **bush** for Cut, a **rock** for Rock Smash, **water** for Surf (the `WATER` tile already
+      ships and is already solid, so Surf's gate needs no new tile) — and the interact key, facing
+      the obstacle, opens it only when a party member knows the move, with the opening recorded
+      per-floor (the `pickedItems`-with-a-stable-id shape, so it stays open on a revisit and
+      clears on `advanceMap`, `state.ts`, 104-107, 199-201). New bush/rock frames go into the
+      packed FRLG tileset atlases (`scripts/frlg/build-tilesets.mjs`, `src/assets/frlg/*.png`), so
+      this task holds that packed file.
+      **The gating call the entry freezes:** **any** party member may open it (the report says
+      «algun poke del party») with no lead special-case; the alternative (the lead alone) is the
+      open question below. The task must not duplicate `[Task-52]`'s pool rule (a different rule
+      on the encounter table) or `[Task-31]`'s placement seam (a catch's placement): it claims
+      neither `src/engine/run/pool.ts` nor `addCaughtPokemon`/`pcCatch`, and the reward it gates
+      is an ordinary ground item off a stable room id, not a catch.
+      Out of scope: the wild pool, the catch placement, the route generator's geometry beyond the
+      room's own carve, the field moves' battle effects (Cut/Rock Smash/Surf as moves stay as they
+      are), the party/PC panel, and the map filter `[Task-62]` draws.
+      *Dependencies:* none. Batch order covers it: it wants `src/scenes/RouteScene.ts` (every
+      batch 5-20, Batch 20 last), `src/engine/maps/plan.ts` and `src/ui/mapView.ts`, so it opens
+      the plan's new **Batch 25**, one batch behind Task-64, and it can share neither of the
+      special-room files with Task-64 or Task-66. *(Batch 25)*
+- [ ] **[Task-66] A trade room: give a Pokémon, receive a random one.** Reported in play:
+      «añade tarea habitacion intercambio pokemon donde das un poke y te da otro random».
+      **What a member removal and addition may use.** A member is removed today only by
+      permadeath: `releaseFainted` (`src/engine/run/perms.ts`, 17-29) filters every 0-HP member
+      out of `party` and `box` and **bumps `stats.casualties`** — the wrong counter for a
+      deliberate trade, so this task adds a removal helper that drops exactly one member and
+      leaves `casualties` alone. A member is added by `addPokemon` (`state.ts`, 257-…, party then
+      box) and a catch is placed by `addCaughtPokemon` (480-482, which also unlocks the box
+      member); the PC box is `run.box` and the party/PC panel is `src/ui/partyScreen.ts`. A random
+      member is `speciesPool(band, 'wild')` + `createFighter({ learnsetSeed: run.seed })` (D17) +
+      `runPokemonFromSnapshot`, at the squad's level through `adoptAtLevel` (`progression.ts`,
+      114-140) — exactly the catch's own fold (`resolve.ts`, 92-101).
+      **Fix shape:** one room kind, one panel, one pure trade. `MapRoomSpecial` gains a trade kind
+      (`plan.ts`, 70) with its marker (`mapView.ts`, 26); `buildRoom` places the room's fixture
+      (the shop-counter model, `RouteScene` 995 / `drawShopCounter` 4266-4274); the interact key
+      opens a room-local panel (the Mart's shape, `openShop` 5456-5470) that lists the party and
+      takes one pick; choosing removes that member and adds a random one **at the squad's level**
+      (the catch rule, `docs/battle-spec.md` §7). The trade is **optional** (leaving grants
+      nothing, the reward window's `Q` path) and **one per room**, recorded per-floor like the
+      gated room's opening, so a revisit finds it used and `advanceMap` clears it (`state.ts`,
+      104-107, 199-201) — no new run field and **no `SAVE_VERSION`** step.
+      **The calls the entry freezes:** optional (the report says "das un poke", not "you must"),
+      one per room, and **refused when the party holds a single member** — a trade would leave the
+      run with an empty party, which the run cannot represent (`hasLivingParty`, `RouteScene`
+      5093); the received member joins the party, or the box when the party is full (it never is
+      here, since one left). The received Pokémon's level is the squad's (the catch rule); the
+      alternative (the room's band level) is the open question below.
+      **Docs:** the special-room table in `docs/maps-spec.md` §7 and the party/PC rule in
+      `docs/routes-spec.md` §6 (the one place a member is removed outside a battle) gain the
+      trade.
+      Out of scope: the catch's placement and its capture window, the permadeath rule and its
+      release beat (`releaseFainted` is read, never changed), the party/PC panel's own layout and
+      swap rules, the wild pool, and the other two new special rooms.
+      *Dependencies:* none. Batch order covers it: it wants `src/scenes/RouteScene.ts` (every
+      batch 5-20, Batch 20 last), `src/engine/maps/plan.ts` and `src/ui/mapView.ts` — the layer
+      Task-64 and Task-65 also extend — so it opens the plan's new **Batch 26**, the last of the
+      round. *(Batch 26)*
+- [ ] **[Task-67] A room whose battles bar the player's items and healing moves.** Reported in
+      play: «añadir habitacion con efecto no se pueden usar objetos ni movimientos de cura» — a
+      room whose effect is that the player cannot use items and cannot use healing moves.
+      **What "using an item" is today, verified.** The BAG is the **player's alone**:
+      `validateBag` (`src/engine/battle/commands.ts`, 80-87) refuses any other side ("Only the
+      player has a Bag.", 81) and `useBagItem` (131-184) is the single place a stack is spent —
+      the heal branch at 157-168 (`healFraction`/`healAmount`, the Potion shape), the cures at
+      169-171, the boosts at 172-179 and the ball at 144-155. The command is `BagCommand` (22),
+      validated in `validateCommand`'s `case 'bag'` (121-122) and applied in
+      `resolvePreMoveActions` (`turn.ts`, 127-128), both reached from `takeTurn` (1136-1138).
+      The run's bag is `RunState.bag: readonly BagCounts[]` (`src/engine/run/state.ts`, 95),
+      carried on `BattleLaunch.bag` (`src/engine/run/battleLink.ts`, 48), mapped into
+      `BattleSetup.bag`/`BattleState.bag` (`BattleScene.create`, 401-404; `state.ts`, 105,
+      120-128) and handed back on `BattleReturn.bag` (66). The scene side is `openMenu`'s BAG row
+      (`enabled: this.usableBag().length > 0`, `BattleScene` 1210), `openBag` (1273-1285) and
+      `usableBag` (1362-1370).
+      **A "healing move" is frozen by id, split by the path that applies the heal** (the spec
+      names them; nothing else is a healing move):
+      - the **fraction self-heals** through the move's own `heal` field (`turn.ts`, 369-375):
+        `recover`, `softboiled`, `slackoff`, `milkdrink`, `roost` and `lifedew` (each `port`,
+        `data: heal` — `src/data/moveCoverage.json`, 3383 / 3995 / 3875 / 2645 / 3545 / 2381);
+      - the **effect-handled heals** in `src/engine/battle/effects/moves.ts` (`MOVE_EFFECTS`,
+        604-638): `synthesis` / `moonlight` / `morningsun` (`sunHeal`, 546-553, 621-622 / 634),
+        `shoreup` (`shoreUp`, 556-563, 629), `rest` (626), `junglehealing` / `lunarblessing`
+        (`healAndCure`, 618-619) and `swallow` (633);
+      - the **drain moves** through `move.drain` (`turn.ts`, 391-406), which restore half the
+        damage dealt or less: `absorb`, `megadrain`, `gigadrain`, `drainpunch`, `drainingkiss`,
+        `dreameater`, `hornleech`, `leechlife`, `oblivionwing` and `paraboliccharge` (all `port`,
+        `data: drain` — moveCoverage 5 / 2567 / 1709 / 1085 / 1091 / 1097 / 2021 / 2357 / 2879 /
+        2951).
+      **Excluded, and why.** `healpulse`, `floralhealing` and `healingwish` are `port` only
+      through `data: flags.protect` (moveCoverage 1931-1935, 1529-1533, 1937-1941): the protect
+      flag is data, but **no handler restores HP**, so they heal nothing today and the rule must
+      not name them; `healorder` and `healblock` are `excluded` ("no playable species has it",
+      1925-1929), so there is no Heal Block to reuse. `wish` (a delayed self-heal, `turn.ts`,
+      1049-1061) and the **passive** heals — `leechseed` (1063-1076), `aquaring` / `ingrain`
+      (1088-1097), `grassyterrain` (999-1011), the healing abilities (`effects/abilities.ts`,
+      178 / 215 / 429 / 563 / 683) and the held-item heals (`effects/items.ts`, 152 / 207) — are
+      not "moves the player uses", so the default rule leaves them alone (the open question below
+      offers the full Heal-Block reading).
+      **The room layer the other rooms use.** `MapRoomSpecial` is `'shop' | 'mini-boss' |
+      'mega-stone'` (`src/engine/maps/plan.ts`, 70), placed as dead-end leaves by the special pass
+      (402-445) and found by `specialRoom` (502-504); `mapView` draws each kind's own marker
+      (`MapRoomMarker`, `src/ui/mapView.ts`, 26); `RouteScene.buildRoom` injects a special's
+      content (961-1003) and `buildRoute` marks a special room **quiet** — no grass, no regular
+      trainers, no ground items (1129-1133) — so a special that must hold a battle owes its own
+      trainer the way the mini-boss does (986-992).
+      **Fix shape, as the recommended reading (the spec freezes the names).**
+      1. `MapRoomSpecial` gains a kind (e.g. `'no-heal'`) placed like the mini-boss, on its own
+         chance constant beside `MINI_BOSS_CHANCE` / `MEGA_STONE_CHANCE` (111 / 114), with its
+         marker in `mapView`.
+      2. `buildRoom` fields the room's own trainer (the mini-boss's shape, 986-992), because a
+         special room is quiet.
+      3. `BattleLaunch` (`battleLink.ts`, 45-57) gains the room's flag, set by
+         `RouteScene.startBattle` (4918-4927); `BattleSetup` / `createBattle` (`state.ts`,
+         120-128, 130-174) carry it; `commands.ts` gates the BAG (`validateBag`, 80-87) and the
+         healing moves (the fight branch of `validateCommand`, 101-120, reads the barred set);
+         and `BattleScene`'s `openMenu` / `openBag` / `openMoves` (1204-1271) grey the BAG row and
+         the healing rows while the feed announces the room's effect.
+      4. The barred-move set and the room's own parameters live in `src/data/` (a new table beside
+         the shop's and the loot's), never in the engine.
+      **The reading the entry freezes:** the rule is the **player's** alone (the report's "no se
+      pueden usar objetos" is the player's bag, and `validateBag` already refuses every other
+      side) and it bars the **BAG action and the healing moves only** — not abilities, not held
+      items and not the passive heals. Both halves are the open question below.
+      **RNG (AGENTS.md's fixed-seed rule):** the recommended reading rolls the room on the
+      existing `map` stream (the special pass's shape), so a fixed seed's floor plan **re-pins** —
+      `src/engine/maps/plan.test.ts` and any fixed-seed expectation that reads the plan — and the
+      draw is appended **after** the mega-stone chance, so only floors whose stream reaches it
+      change. The alternative (a regular-room condition on its own stream keyed to
+      `routeIndexForRoom`, the `[Task-62]` shape) moves nothing. The gate itself draws **no RNG**:
+      a barred move or item is rejected before any roll, so no existing `battle` stream moves.
+      **`SAVE_VERSION` verdict: no step.** The room is a plan fact (no run field) and its trainer's
+      defeat rides the existing per-floor `defeatedTrainers` (`state.ts`, 102-103), so nothing new
+      is persisted and the chain stays **14 → 15** (Task-13, shipped) → **15 → 16** (Task-31,
+      Batch 7) → **16 → 17** (Task-44, Batch 13) → **17 → 18** (Task-52, Batch 17).
+      **Docs:** the special-room table in `docs/maps-spec.md` §7 (182-193) gains the room, and the
+      bag rule in `docs/battle-spec.md` §2 (26, "Trainer battles allow items") gains the room's
+      exception.
+      Out of scope: the Mart and the Pokevial, the PC, the catch and the ball branch, the enemy's
+      own items (it carries none — `validateBag` refuses every other side), the healing abilities
+      and the held items, and the field/weather conditions `[Task-62]` seeds.
+      *Dependencies:* none — every primitive it reads is shipped. Batch order covers the rest: it
+      wants `src/scenes/RouteScene.ts` **and** `src/scenes/BattleScene.ts` together, and every
+      batch from 5 to 26 holds the route scene (5 Task-16, 5b Task-45, 6 Task-41, 6b Task-38, 7
+      Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26, 11
+      Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48, 15 Task-49, 16 Task-50, 17 Task-52,
+      18 Task-55, 19 Task-56, 20 Task-58, 21 Task-61, 22 Task-62, 23 Task-63, 24 Task-64, 25
+      Task-65, 26 Task-66) — so it opens the plan's new **Batch 27**, one batch behind Task-66.
+      It could not ride beside Task-62 in **Batch 22**: they share both scenes, the battle-start
+      seam (`src/engine/battle/state.ts`, `src/engine/run/battleLink.ts`) and
+      `docs/battle-spec.md` §4, and `docs/maps-spec.md` §7 is Task-62's there — so the batch would
+      stop being an antichain. Nor can it join Task-64/65/66, whose special-room layer
+      (`src/engine/maps/plan.ts`, `src/ui/mapView.ts`) it extends in the three batches before it.
+      *(Batch 27)*
 
 ## Phase 10 - Learnset, TMs & move typing
 
@@ -3286,6 +4255,129 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       field — an older save's members keep the moves they hold — so **no** `SAVE_VERSION` step.
       *(Batch 19)*
 
+- [ ] **[Task-68] The MOVES tab can delete an equipped move.** Reported in play: «añade tarea
+      en menu moves permitir borrar un movimiento equipado» — the MOVES menu should let the
+      player delete a move the member has equipped.
+      **What "the MOVES menu" is today, in each of its three homes.** The **route HUD's MOVES
+      tab** is the detail panel's `'moves'` mode (`DetailTab = 'stats' | 'moves'`,
+      `src/ui/partyDetail.ts` 26; the tab's own label is `MOVES`, `RouteScene` 1911) and it
+      stacks the three bands this report is about (the grid's height and the pool's page size,
+      369-373): the four slotted moves drawn by the shared `MoveGrid` (`hudMoveGrid.layout`,
+      2411-2435), a search field and the learnset band (`refreshLearnset`, 2676-2734, the pool
+      sliced to one page at 2696-2699) — and it is the **only** one of the three with an equip
+      seam: a press on a band cell picks that move up (`startLearnDrag`, 3262-3271, reached at
+      3223-3227), the release asks `detailMoveIndexAt` (3437-3441) and folds the drop through
+      `equipMove` (3069-3083). The **battle's moves menu** (`Mode` includes `'moves'`,
+      `BattleScene` 174; `openMoves`, 1232-1271; `renderMoveMenu`, 1967-2038) draws the same
+      grid, but it is the per-turn **command** menu: a cell spends the turn, there is no drag,
+      and the fighter it lists is a **restored snapshot** built in `init` (364-375) from the
+      launch — not the run's member, which only comes back through `applyBattleResult`. The
+      third home is the battle's SWITCH detail window, whose 2x2 move rows are read-only
+      (`partyDetailMoves`, 678-698, filled at 1886-1901) and are `[Task-59]`'s to give an ⓘ.
+      **The report means the route HUD's MOVES tab**, and the reason is in the code: "equipado"
+      is a fact about the run's member — `RunPokemon.fighter.moves` — and the tab is the only
+      place a move is ever equipped; the battle has no equip, no drag and no persistent member,
+      so a delete there would have to travel back through `BattleReturn` to mean anything. The
+      consequence for each is written down rather than implied: the battle's menu needs **no**
+      change (it lists whatever slots remain, in slot order, and a member keeps at least one
+      move — the rule below — so its grid is never empty), and the SWITCH window's rows keep
+      their read-only shape.
+      **What a delete must do to a member.** A member's equipped moves are exactly
+      `fighter.moves` (`MoveSlot[]`, `src/engine/battle/fighter.ts` 144) capped at
+      `MAX_MOVES = 4` (`src/engine/run/progression.ts` 40), and the learnset is **derived**, not
+      stored: `learnsetPool` (`src/engine/run/learnset.ts` 66-86) is the level-up moves the
+      species knows at its level minus the equipped ones, plus the moves a TM **in the bag** can
+      teach — so a move that leaves the slots reappears in the band **by itself**, as a `Lv##`
+      entry when it is a level-up move and as a `TM###` one while the machine is still in the
+      bag (TMs are reusable, `docs/tech-decisions.md` 513-518), and `equipMove` (115-136) is the
+      only way back in. A delete therefore needs **one** new pure rule — the inverse of
+      `equipMove`, an `unequipMove(run, memberId, slot)` beside it that drops slot `slot`
+      and returns the run **untouched** (same reference) when the member is unknown, the slot is
+      out of range or the member holds a single move, re-saving the member through
+      `updatePokemon` (`src/engine/run/state.ts` 343-352) otherwise — with its cases in
+      `learnset.test.ts` beside the `equipMove` ones (60-90, the tail-append at 79-82). Nothing
+      else about the member moves: no XP, no PP, no ability and no stats.
+      **What forbids an empty moveset today, and why the last move stays.** The tree holds a
+      member to at least one move in three places, and this task does not open that door:
+      `parseFighter` **drops** a member whose `moves` parse to an empty list
+      (`if (moves.length === 0) return null;`, `src/engine/save.ts` 442-449, consumed by
+      `parseMembers` 506-514), so a saved zero-move member would silently vanish on the next
+      load; the fight branch of `validateCommand` refuses every index once `fighter.moves.length`
+      is 0 (`src/engine/battle/commands.ts` 103-105) and `legalMoveIndices` (32-47) returns
+      `[]`, so no move can be submitted at all; and `openMoves` builds one menu item per move
+      (`BattleScene` 1235), so the FIGHT menu would draw nothing (`menuOpen`,
+      `this.menuItems.length > 0`, 1506). The engine's Struggle fallback (`selectedMove`, 52-66,
+      pinned by `commands.test.ts` 39-44) covers only a moveset whose moves are all **spent**,
+      not an absent one, and `editRunPokemon` refuses to build an empty set too
+      (`progression.ts` 170). The reading this entry freezes is therefore that **the last
+      remaining move cannot be deleted** — a one-move member is refused — so the invariant the
+      save, the validator and the battle menu all already assume survives and
+      `src/engine/save.ts` stays out of this task entirely; the alternative (allow it, and give
+      the empty member Struggle everywhere) is the open question below, and it is the only
+      reading that would put the save decoder and `commands.ts` here.
+      **The gesture, and the freed slot.** The delete is the **inverse of the equip drag**, and
+      the tree already has that shape for the other equipped thing: a held item is taken off by
+      dragging its badge onto the bag (`pointerInBagPanel`, `RouteScene` 3089-3105, over
+      `unequipHeldItem`, `src/engine/run/state.ts` 581-586). So a slot cell released over the
+      **learnset band** deletes that move: `handleHudPointerMove` (2899-2943) stops reordering
+      while the pointer is over the band, and `handleHudPointerUp` (3047-3115) folds the release
+      through `unequipMove` where it today folds a band drag through `equipMove` (3069-3083).
+      The freed slot is **empty**: the four containers `[Task-55]` draws (Batch 18) already
+      answer for a slot with no move, and `[Task-56]` (Batch 19) makes a short moveset the
+      ordinary case, so nothing is refilled for the player — a slot that emptied by itself would
+      also make the delete a swap rather than a delete. The deleted move stays in the band and
+      comes back for free (teaching is free, D36), which is what makes the delete reversible
+      rather than destructive, and why it needs **no** confirmation prompt. The spec freezes the
+      band's own hit test (a `pointerInLearnBand`-style sibling of `pointerInDetailPanel` and
+      `pointerInBagPanel`, 3381-3390 / 3638-3645) and the exact signature of the new helper.
+      **The two tasks that own the seam.** `[Task-56]` (Batch 19) owns **learned vs equipped**:
+      it stops a level-up from writing the slots, so the band becomes the only equip path and
+      the OHKO / No Guard guard moves there. This task owns the **inverse of that path** — the
+      unequip — and must not touch `levelUpPokemon`, `learnsetPool` or the guard. It runs one
+      batch after it because pre-`Task-56` a level-up that crossed a move would refill the slot
+      the player had just emptied (`moves.push`, `progression.ts` 284-289), which would make the
+      delete read as broken.
+      **No `SAVE_VERSION` step:** a member's moves are **already persisted** — `encodeSave`
+      writes the run verbatim (`src/engine/save.ts` 272-278) and `parseFighter` reads the slots
+      back (442-449) — so a delete edits an existing field and adds no run field. The chain
+      stays **14 → 15** (Task-13, shipped) → **15 → 16** (Task-31, Batch 7) → **16 → 17**
+      (Task-44, Batch 13) → **17 → 18** (Task-52, Batch 17). The only reading that would move it
+      is the "last move may go" one below, and even that is a decode-time tolerance rather than
+      a schema step (the `[Task-33]` precedent), so it would still add **no** version.
+      **Files:** `src/scenes/RouteScene.ts` (the slot press, the live reorder's band guard and
+      the release), `src/engine/run/learnset.ts` + `learnset.test.ts` (the new pure inverse),
+      and the two records of the panel's own operations — `docs/design-spec.md` §3 (71-78, the
+      paragraph that says "A cell is dragged onto a slot to equip it") and
+      `docs/tech-decisions.md` **D36** (520-530, whose "A pool cell is dragged onto a slot to
+      equip it, replacing what sat there" gains the inverse). No `D##` is owed beyond that
+      amendment: the rule is the equip rule's inverse and no new decision is taken.
+      **Tests.** `src/engine/run/learnset.test.ts`: the deleted move leaves the slots, the slot
+      is empty and the pool offers the move again (a level-up move as `Lv##`, a bag TM as
+      `TM###`); a one-move member is refused and the run comes back by reference; an unknown
+      member and an out-of-range slot are no-ops; and a delete-then-re-equip round-trip restores
+      the moveset with fresh PP. No RNG is involved, so no fixed-seed re-pin. QA reproduces the
+      report in `npm run dev`: a member with three moves, drag a slot onto the learnset band →
+      the tab draws three moves and one empty container, the deleted move is in the band,
+      dragging it back restores it, and the battle's FIGHT menu lists the remaining moves.
+      Out of scope: the equip rule itself and the band's pool (`learnsetPool`, `equipMove`,
+      `[Task-56]`'s level-up rule), the four containers (`[Task-55]`), the ⓘ classifier
+      (`[Task-39]`), the SWITCH window's move rows and their ⓘ (`[Task-59]`), the battle's
+      FIGHT menu and its Struggle fallback, the party reorder, the nickname field, the dev
+      menu's `editRunPokemon`, and the deleted move's own PP, which `equipMove` rebuilds fresh
+      when it returns.
+      *Dependencies:* none — the member's slots, the derived pool, the equip helper and the
+      badge-onto-bag unequip are all shipped, and the two questions below are calls, not edges.
+      Batch order covers it: it wants `src/scenes/RouteScene.ts`, which **every** batch from 5 to
+      27 holds (5 Task-16, 5b Task-45, 6 Task-41, 6b Task-38, 7 Task-31, 8 Task-08's every-scene
+      sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26, 11 Task-29's ledger, 12 Task-30, 13
+      Task-44, 14 Task-48, 15 Task-49, 16 Task-50, 17 Task-52, 18 Task-55, 19 Task-56, 20
+      Task-58, 21 Task-61, 22 Task-62, 23 Task-63, 24 Task-64, 25 Task-65, 26 Task-66, 27
+      Task-67), and `src/engine/run/learnset.ts` with its test (Task-56's in Batch 19) — so it
+      opens the plan's new **Batch 28**, the first batch that leaves the route scene free at all.
+      It is written **against** `[Task-56]`'s shipped state and `[Task-55]`'s four containers,
+      nine and ten batches earlier, so the slot it frees is a drawn, empty container rather than
+      a missing cell. *(Batch 28)*
+
 ## Phase 11 — Localisation (i18n)
 
 > English is the source table; a locale overlays it by key. New decision `D43`.
@@ -3429,6 +4521,74 @@ fighting" by `hasHealthy` 217-219), `BattleState.isWild` says whether there is a
 and the ball frame is the packed Añil item atlas's own (`itemIconFrame('pokeball')`,
 `src/data/itemIcons.ts` 14-16 / 29-36), already drawn by the capture throw at 950-990. It carries
 its repro, its file-level diagnosis and its fix shape in its own entry above.
+
+A **ninth round** of **three reports** arrived together and is triaged in the same pass, so
+nothing waits here either. One is a **defect of the boss win**: beating the map boss warps the
+player back to the boss room's door, because the boss-win branch rebuilds the room through the
+**room-change** path — `applyBattleResult` calls `transitionTo` (`src/scenes/RouteScene.ts`,
+5107) and `transitionTo` respawns the player on the room's entry tile (`this.player = {
+...this.route.entry }`, 4449) although the run's map position never moved (`[Task-61]`; the
+portal itself is innocent — `portalOpen` 1006-1008, the seal at 1151-1153, the walk-through at
+4397-4399). Two are **wishes** rather than defects: a trainer or boss room's battle should be
+able to begin under a weather, a terrain or a room condition — dense fog (−20 accuracy),
+Gravity and Trick Room among them — with the route drawing an animation or filter for it
+(`[Task-62]`; the four effects except fog all ship in `src/engine/battle/**` — `state.ts`
+97-100, `accuracy.ts` 5-17, `order.ts` 18/27 — but `createBattle` seeds none of them,
+`state.ts` 159-162, and `BattleSetup` 120-128 carries no condition at all), and a beaten
+mini-boss should also offer **three unidentifiable Pokémon** beside its item rows, presented by
+their highest stat and their nature (`[Task-63]`; the reward window is items only,
+`openMiniBossReward` 5715-5731 over `rewardChoices`, `src/ui/rewards.ts` 10-32, while a
+run-seeded ability/moveset and the catch's own placement already ship, D17). Each carries its
+repro, its file-level diagnosis and its fix shape in its own entry above.
+
+A **tenth round** of **three reports** arrived together and is triaged in the same pass, so
+nothing waits here either. All three are **wishes** rather than defects — three new special
+rooms in the shop/mini-boss mould (a dead-end leaf with only its own content,
+`docs/maps-spec.md` §7): a **casino** room with a Team Rocket grunt, a pay-per-spin slot machine
+whose prizes are items and an **egg** that yields a random Pokémon when the run advances a
+floor, and a chance of a battle that locks the machine (`[Task-64]`; the special-room layer is
+`MapRoomSpecial`, `src/engine/maps/plan.ts` 70, placed by `planMap` 402-445, and the room-local
+fixture's model is the shop counter, `RouteScene` 995 / `openShop` 5456-5470); a **gated reward
+room** whose reward sits behind bushes, rocks or water that only a party move opens — Cut, Rock
+Smash, Surf (`[Task-65]`; the tile vocabulary is `src/engine/map.ts` 5-14 and `WATER` already
+ships and is already solid, 11/16, while a "party knows this move" test is
+`member.fighter.moves.some(...)`, `fighter.ts` 144/419, with no accessor today); and a **trade
+room** where a Pokémon is given for a random one (`[Task-66]`; a member is removed only by
+`releaseFainted`, `perms.ts` 17-29, which counts a casualty, and a random one is
+`speciesPool` + `createFighter({ learnsetSeed: run.seed })` placed as a catch is,
+`resolve.ts` 92-101). All three extend the special-room layer and the route scene, which is why
+they land one batch apart. Each carries its file-level diagnosis and its fix shape in its own
+entry above.
+
+An **eleventh round** of **one report** arrived together and is triaged in the same pass, so
+nothing waits here either. It is a **wish** rather than a defect: a room whose effect is that the
+player cannot use items and cannot use healing moves (`[Task-67]`; the BAG is the player's alone
+— `validateBag`, `src/engine/battle/commands.ts` 80-87, over the `RunState.bag` the launch carries,
+`battleLink.ts` 48 — and the healing moves the engine models are the fraction self-heals
+(`turn.ts` 369-375), the effect-handled heals (`effects/moves.ts` 604-638) and the drain moves
+(`turn.ts` 391-406), while `healblock` is `excluded`, moveCoverage 1919-1923, so there is nothing
+to reuse). It wants the two scenes and the special-room layer (`MapRoomSpecial`,
+`src/engine/maps/plan.ts` 70) the casino/gated/trade rooms already extend, which is why it lands
+one batch behind them. It carries its file-level diagnosis and its fix shape in its own entry
+above.
+
+A **twelfth round** of **one report** arrived together and is triaged in the same pass, so
+nothing waits here either. It is a **wish** rather than a defect: the MOVES menu should let the
+player delete an equipped move (`[Task-68]`). The surface the report means is the route HUD's
+**MOVES** tab — the detail panel's `'moves'` mode (`DetailTab`, `src/ui/partyDetail.ts` 26, the
+`MOVES` label at `RouteScene` 1911), whose four slots are the shared `MoveGrid` (2411-2435) and
+whose equip seam is a band cell dragged onto a slot (`startLearnDrag` 3262-3271 →
+`detailMoveIndexAt` 3437-3441 → `equipMove`, `src/engine/run/learnset.ts` 115-136) — because
+"equipped" is a fact about the run's member (`fighter.moves`, `src/engine/battle/fighter.ts`
+144, capped at `MAX_MOVES`, `progression.ts` 40) while the battle's own moves menu is a per-turn
+command menu over a restored snapshot. The learnset is **derived** (`learnsetPool`, 66-86), so a
+deleted move reappears in the band for free and the freed slot stays empty — which is why the
+task adds one pure inverse of `equipMove` and **no** run field, and therefore **no**
+`SAVE_VERSION` step. A zero-move member is a state the tree already forbids three times over
+(the save decoder drops it, `src/engine/save.ts` 442-449; `validateCommand` refuses every fight
+index, `commands.ts` 103-105; the FIGHT menu would draw nothing, `BattleScene` 1235), so the
+entry refuses to delete the last move unless the human says otherwise. It carries its
+file-level diagnosis and its fix shape in its own entry above.
 
 ---
 
