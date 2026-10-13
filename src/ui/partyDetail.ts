@@ -1,4 +1,12 @@
-import { getMove, getNature, getSpecies, type MoveCategory, type StatId, type Stats } from '../data/dex';
+import {
+  getAbility,
+  getMove,
+  getNature,
+  getSpecies,
+  type MoveCategory,
+  type StatId,
+  type Stats,
+} from '../data/dex';
 import { getBiome } from '../data/biomes';
 import { restoreFighter, type BattleFighter, type MoveSlot, type StatusId } from '../engine/battle/fighter';
 import { effectiveMoveType } from '../engine/battle/moveType';
@@ -62,6 +70,11 @@ export type MemberDetail = Readonly<{
   types: readonly string[];
   nature: string;
   ability: string;
+  /**
+   * The ability's one-line description, read from `dex/abilities.ts`
+   * (`shortDesc`, falling back to `desc`), or null when the id is unknown.
+   */
+  abilityDesc: string | null;
   hp: number;
   maxHp: number;
   status: StatusId | null;
@@ -137,6 +150,13 @@ function catchLabel(caughtAt: CatchLocation | undefined): string | null {
   return `${getBiome(caughtAt.biomeId).name} · Map ${caughtAt.mapIndex} · Route ${caughtAt.routeInMap + 1}`;
 }
 
+/** The ability's one-line text, or null when the id is unknown or both halves are blank. */
+function abilityDescription(id: string): string | null {
+  const ability = getAbility(id);
+  if (!ability) return null;
+  return ability.shortDesc || ability.desc || null;
+}
+
 /**
  * The panel data for a live fighter. The HUD resolves it through `memberDetail`;
  * the battle passes its own party fighters straight in, so both draw the same
@@ -153,6 +173,7 @@ export function fighterDetail(fighter: BattleFighter): MemberDetail {
     types: species?.types ?? fighter.types,
     nature: fighter.nature,
     ability: fighter.ability,
+    abilityDesc: abilityDescription(fighter.ability),
     hp: fighter.hp,
     maxHp: fighter.maxHp,
     status: fighter.status,

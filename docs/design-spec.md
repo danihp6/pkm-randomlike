@@ -64,7 +64,9 @@ carries over.
   stats (the one a nature raises painted green, the one it lowers red), nature,
   ability, held item and the member's **evolution graph**: its whole family from
   the base form on down, one row per species indented by stage, each showing its
-  sprite and the level it evolves at. A branch the member's level already allows
+  sprite and the level it evolves at. The **ABILITY** row carries the same **ⓘ**
+  control a move cell does, floating that ability's own one-line description over
+  the panel on hover or a click. A branch the member's level already allows
   is green and a click evolves the member into it — Eevee's eight forms sit
   side by side and the player picks the one they want — and **MOVES**, where the four slotted
   moves can be dragged to reorder them (that order is what the battle menu lists)
@@ -166,7 +168,11 @@ Full rules in `docs/battle-spec.md`. In short:
   party as a grid of **avatar** cells (face, name, level and an **HP bar**); the
   cell under the cursor opens a wide **detail window** above the grid with no tabs
   — the five battle stats, HP, nature, ability and held item in a left column, and
-  the member's four moves in a 2x2 grid on the right. Every submenu puts the ◀
+  the member's four moves in a 2x2 grid on the right. Both battle-side ability
+  readers — this window and the **capture screen** — carry the same **ⓘ** a move
+  cell does: hovering floats the ability's own one-line description and a press
+  pins it. In the switch window the ⓘ is **hover only**, so a press there still
+  selects the member under it. Every submenu puts the ◀
   back control centred on its left edge.
 - The bag opens as pockets like the route HUD — **CONSUM** everywhere and
   **BALL** while a wild can still be caught; trainer battles offer only

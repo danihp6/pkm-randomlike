@@ -65,8 +65,11 @@ import {
   STAT_LABELS,
   fighterDetail,
   natureEffect,
+  type MemberDetail,
 } from '../ui/partyDetail';
 import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
+import { AbilityInfoButton, ABILITY_INFO_SIZE, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
+import { InfoPopup } from '../ui/infoPopup';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import type { RouteScene } from './RouteScene';
 
@@ -319,6 +322,11 @@ export class BattleScene extends Phaser.Scene {
     pp: Phaser.GameObjects.BitmapText;
   }[] = [];
   private partyDetailEmpty!: Phaser.GameObjects.BitmapText;
+  /** The ⓘ beside the detail window's ability row, its window and its hover zone. */
+  private partyAbilityPopup!: InfoPopup;
+  private partyAbilityButton!: AbilityInfoButton;
+  private partyAbilityZone!: Phaser.GameObjects.Zone;
+  private partyAbilityInfo = false;
 
   private menuItems: readonly MenuItem[] = [];
   private menuIndex = 0;
@@ -346,6 +354,7 @@ export class BattleScene extends Phaser.Scene {
     this.enemyFighters = [];
     this.loadedSheets = [];
     this.megaIntent = false;
+    this.partyAbilityInfo = false;
     const launch = this.launch;
     if (!launch) return;
     // The fighters are built here rather than in `create` so `preload` can load
@@ -695,6 +704,18 @@ export class BattleScene extends Phaser.Scene {
     children.push(this.partyDetailEmpty);
 
     this.partyDetail = this.add.container(0, 0, children).setVisible(false);
+    // The ability row's ⓘ and the window it floats, built once the container
+    // exists so both ride above the panel. The zone only watches hover: the party
+    // cells under the window own the presses, and a press must not change the
+    // member the window describes.
+    this.partyAbilityPopup = new InfoPopup(this, this.partyDetail);
+    this.partyAbilityButton = new AbilityInfoButton(this, this.partyAbilityPopup, this.partyDetail);
+    this.partyAbilityZone = this.add.zone(0, 0, ABILITY_INFO_SIZE, ABILITY_INFO_SIZE).setOrigin(0, 0);
+    this.partyAbilityZone.setInteractive({ useHandCursor: true });
+    this.partyAbilityZone.on('pointerover', () => this.setPartyAbilityInfo(true));
+    this.partyAbilityZone.on('pointerout', () => this.setPartyAbilityInfo(false));
+    if (this.partyAbilityZone.input) this.partyAbilityZone.input.enabled = false;
+    this.partyDetail.add(this.partyAbilityZone);
   }
 
   private bindInput(): void {
@@ -1823,6 +1844,7 @@ export class BattleScene extends Phaser.Scene {
     const detail = fighter ? fighterDetail(fighter) : null;
     if (!detail) {
       this.partyDetail.setVisible(false);
+      this.hidePartyAbilityInfo();
       return;
     }
     const scale = Math.min(1, menu.w / PARTY_DETAIL_W);
@@ -1859,6 +1881,7 @@ export class BattleScene extends Phaser.Scene {
     nature.setText(`NATURE  ${capitalize(detail.nature)}`);
     ability.setText(`ABILITY  ${detail.ability}`);
     held.setText(`HELD  ${detail.heldItemName ?? 'none'}`);
+    this.renderPartyAbilityInfo(detail);
 
     this.partyDetailEmpty.setVisible(detail.moves.length === 0);
     this.partyDetailMoves.forEach((row, i) => {
@@ -1890,6 +1913,48 @@ export class BattleScene extends Phaser.Scene {
       if (zone.input) zone.input.enabled = false;
     }
     this.partyDetail.setVisible(false);
+    this.hidePartyAbilityInfo();
+  }
+
+  /**
+   * The detail window's ability ⓘ: the spot comes from the ability text's own
+   * width, and both the spot and the zone stay in the container's coordinates
+   * (the panel is scaled and offset as a whole).
+   */
+  private renderPartyAbilityInfo(detail: MemberDetail): void {
+    const ability = this.partyDetailStats.ability;
+    const spot = abilityInfoSpot(ability.x + ability.width, ability.y);
+    this.partyAbilityButton.layout(
+      spot,
+      this.partyAbilityInfo,
+      abilityInfoContent(detail.ability, detail.abilityDesc),
+    );
+    this.partyAbilityZone.setPosition(spot.x, spot.y).setSize(spot.width, spot.height);
+    if (this.partyAbilityZone.input) this.partyAbilityZone.input.enabled = true;
+  }
+
+  /** Redraws the ability ⓘ for the member the cursor is on. */
+  private refreshPartyAbilityInfo(): void {
+    const fighter = this.state.sides.player.party[this.menuIndex];
+    if (!fighter || this.mode !== 'party') {
+      this.hidePartyAbilityInfo();
+      return;
+    }
+    this.renderPartyAbilityInfo(fighterDetail(fighter));
+  }
+
+  /** Shows or hides the ability window as the pointer reaches or leaves the ⓘ. */
+  private setPartyAbilityInfo(over: boolean): void {
+    if (over === this.partyAbilityInfo) return;
+    this.partyAbilityInfo = over;
+    this.refreshPartyAbilityInfo();
+  }
+
+  /** Hides the ability ⓘ, its window and its hover zone. */
+  private hidePartyAbilityInfo(): void {
+    this.partyAbilityInfo = false;
+    this.partyAbilityButton.hide();
+    if (this.partyAbilityZone.input) this.partyAbilityZone.input.enabled = false;
   }
 
   /**

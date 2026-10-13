@@ -70,6 +70,23 @@ describe('memberDetail', () => {
   });
 });
 
+describe('ability descriptions', () => {
+  it('reads the ability text of a member with a known ability', () => {
+    const detail = memberDetail(runWith(), 'starter');
+    expect(detail?.ability.length).toBeGreaterThan(0);
+    expect(detail?.abilityDesc?.length).toBeGreaterThan(0);
+  });
+
+  it('is null when the ability id the member carries is unknown', () => {
+    const member = createRunPokemon({ id: 'odd', speciesId: 'sentret', level: 3 });
+    const run = {
+      ...createRun({ seed: 'run-a', starter }),
+      party: [{ ...member, fighter: { ...member.fighter, ability: 'not-an-ability' } }],
+    };
+    expect(memberDetail(run, 'odd')?.abilityDesc).toBeNull();
+  });
+});
+
 describe('natureEffect', () => {
   it('flags the raised and lowered stats and leaves HP neutral', () => {
     // Adamant is +Attack / -Sp. Atk.
