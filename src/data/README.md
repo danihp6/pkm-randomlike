@@ -38,6 +38,10 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   named in that file's `UNMODELLED_ITEMS` (`D16`). Also builds one
   unsold **Mega Stone** per Mega forme from `dex/megas.ts` (`D34`); holding the
   matching stone lets a Pokémon Mega Evolve once per battle.
+- `abilityText.ts` — the ability-text override table: the ids whose dex blurb is
+  competitive-play boilerplate while the engine ports the ability
+  (`docs/balance/effect-coverage.md`), read by `abilityDescription`
+  (`src/ui/partyDetail.ts`) before the dex's own text.
 - `moveCoverage.json` — **generated**, do not edit by hand: every shipped move as
   `port | no-op | excluded` with the seam it was derived from, written by
   `scripts/effect-coverage.mjs` beside the coverage table; regenerate it with

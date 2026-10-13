@@ -8,6 +8,7 @@ import {
   type Stats,
 } from '../data/dex';
 import { getBiome } from '../data/biomes';
+import { abilityText } from '../data/abilityText';
 import { restoreFighter, type BattleFighter, type MoveSlot, type StatusId } from '../engine/battle/fighter';
 import { effectiveMoveType } from '../engine/battle/moveType';
 import { getItem } from '../data/items';
@@ -73,8 +74,10 @@ export type MemberDetail = Readonly<{
   nature: string;
   ability: string;
   /**
-   * The ability's one-line description, read from `dex/abilities.ts`
-   * (`shortDesc`, falling back to `desc`), or null when the id is unknown.
+   * The ability's one-line description: the hand-authored override in
+   * `src/data/abilityText.ts` when the id has one, else the dex's text read from
+   * `dex/abilities.ts` (`shortDesc`, falling back to `desc`), or null when the
+   * id is unknown.
    */
   abilityDesc: string | null;
   hp: number;
@@ -153,8 +156,13 @@ function catchLabel(caughtAt: CatchLocation | undefined): string | null {
   return `${getBiome(caughtAt.biomeId).name} · Map ${caughtAt.mapIndex} · Route ${caughtAt.routeInMap + 1}`;
 }
 
-/** The ability's one-line text, or null when the id is unknown or both halves are blank. */
+/**
+ * The ability's one-line text: the hand-authored override first, then the dex,
+ * or null when the id is unknown or both dex halves are blank.
+ */
 function abilityDescription(id: string): string | null {
+  const override = abilityText(id);
+  if (override) return override;
   const ability = getAbility(id);
   if (!ability) return null;
   return ability.shortDesc || ability.desc || null;

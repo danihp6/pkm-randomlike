@@ -4,6 +4,7 @@ import { createRunPokemon, type RunPokemon } from '../engine/run/progression';
 import { resolveBattle } from '../engine/run/resolve';
 import type { BattleReturn } from '../engine/run/battleLink';
 import { createFighter } from '../engine/battle/fighter';
+import { getAbility } from '../data/dex';
 import {
   CLOSED_DETAIL,
   closeDetail,
@@ -145,6 +146,29 @@ describe('ability descriptions', () => {
     };
     expect(memberDetail(run, 'odd')?.abilityDesc).toBeNull();
   });
+
+  it('takes the hand-authored override over the dex blurb for Run Away', () => {
+    const member = createRunPokemon({ id: 'runner', speciesId: 'sentret', level: 3 });
+    const run = {
+      ...createRun({ seed: 'run-a', starter }),
+      party: [{ ...member, fighter: { ...member.fighter, ability: 'Run Away' } }],
+    };
+    expect(memberDetail(run, 'runner')?.abilityDesc).toBe(
+      'Always escapes from a wild Pokémon. A trapping effect still stops it.',
+    );
+    expect(memberDetail(run, 'runner')?.abilityDesc).not.toBe(getAbility('runaway')!.shortDesc);
+  });
+
+  it('falls back to the dex blurb for an ability with no override', () => {
+    const member = createRunPokemon({ id: 'blazing', speciesId: 'sentret', level: 3 });
+    const run = {
+      ...createRun({ seed: 'run-a', starter }),
+      party: [{ ...member, fighter: { ...member.fighter, ability: 'Blaze' } }],
+    };
+    const blaze = getAbility('blaze')!;
+    expect(memberDetail(run, 'blazing')?.abilityDesc).toBe(blaze.shortDesc || blaze.desc);
+    expect(memberDetail(run, 'blazing')?.abilityDesc).not.toBeNull();
+  });
 });
 
 describe('natureEffect', () => {
@@ -183,6 +207,19 @@ describe('fighterDetail', () => {
       nickname: 'Sparky',
     });
     expect(fighterDetail(fighter)).toMatchObject({ name: 'Sparky', nickname: 'Sparky' });
+  });
+
+  it('floats the hand-authored override for Run Away, like the run detail does', () => {
+    const fighter = createFighter({
+      id: 'runner',
+      speciesId: 'sentret',
+      level: 5,
+      moves: ['tackle'],
+      ability: 'Run Away',
+    });
+    expect(fighterDetail(fighter).abilityDesc).toBe(
+      'Always escapes from a wild Pokémon. A trapping effect still stops it.',
+    );
   });
 });
 
