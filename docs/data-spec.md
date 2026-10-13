@@ -52,6 +52,7 @@ one-stone-per-forme guard rejects.
 | `src/data/frlg/type-icons.json` | generated frame map for the Añil type badge atlas | 7 |
 | `src/data/statusIcons.ts` | typed view over the generated `frlg/status-icons.json` (Añil status badge frames, repacked in place) | 7 |
 | `src/data/frlg/status-icons.json` | generated frame map for the Añil status badge atlas | 7 |
+| `src/data/abilityText.ts` | the ability-text override table: the ids whose dex blurb is competitive-play boilerplate while the engine ports the ability (`docs/balance/effect-coverage.md`), read by `abilityDescription` | 6 |
 
 ## 3. Typed accessors
 
