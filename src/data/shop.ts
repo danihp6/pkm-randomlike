@@ -1,3 +1,4 @@
+import { tmItemId } from './tms';
 import type { BandId } from './run';
 
 export type ShopEntry = Readonly<{ itemId: string; weight: number }>;
@@ -130,6 +131,79 @@ export const SHOP_ROTATION: Readonly<Record<BandId, readonly ShopEntry[]>> = {
     e('focusband', 1),
     e('flameorb', 1),
     e('toxicorb', 1),
+  ],
+};
+
+/**
+ * The Mart's **TM slot** (`docs/maps-spec.md` §7): the machines a band's counter
+ * may offer beside its core and its rotation. A band's list is non-empty, holds at
+ * least six ids, is written in TM-catalogue order, shares no id with any other
+ * band, and every later band's list starts after the previous band's last id, so
+ * the machines on sale follow the band's power. Within those invariants the picks
+ * are balance data (O-M5): each band spans eight moves whose types its core and
+ * rotation do not cover, and no id duplicates a machine the ground loot already
+ * drops (`src/data/loot.ts`).
+ */
+export const SHOP_TM: Readonly<Record<BandId, readonly string[]>> = {
+  early: [
+    tmItemId(1),
+    tmItemId(8),
+    tmItemId(9),
+    tmItemId(10),
+    tmItemId(11),
+    tmItemId(12),
+    tmItemId(15),
+    tmItemId(16),
+  ],
+  low: [
+    tmItemId(33),
+    tmItemId(34),
+    tmItemId(36),
+    tmItemId(37),
+    tmItemId(44),
+    tmItemId(45),
+    tmItemId(48),
+    tmItemId(53),
+  ],
+  mid: [
+    tmItemId(61),
+    tmItemId(62),
+    tmItemId(67),
+    tmItemId(68),
+    tmItemId(69),
+    tmItemId(77),
+    tmItemId(79),
+    tmItemId(86),
+  ],
+  high: [
+    tmItemId(93),
+    tmItemId(95),
+    tmItemId(97),
+    tmItemId(101),
+    tmItemId(107),
+    tmItemId(110),
+    tmItemId(112),
+    tmItemId(119),
+  ],
+  late: [
+    tmItemId(121),
+    tmItemId(123),
+    tmItemId(125),
+    tmItemId(126),
+    tmItemId(127),
+    tmItemId(131),
+    tmItemId(133),
+    tmItemId(140),
+  ],
+  end: [
+    tmItemId(153),
+    tmItemId(154),
+    tmItemId(155),
+    tmItemId(156),
+    tmItemId(158),
+    tmItemId(160),
+    tmItemId(162),
+    tmItemId(170),
   ],
 };
 

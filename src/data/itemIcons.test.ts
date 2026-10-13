@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { ITEMS } from './items';
+import { getMove, normalizeId } from './dex';
+import { ITEMS, TM_ITEM_IDS, getItem } from './items';
 import { ITEM_ICON_SIZE, hasItemIcon, itemIconFrame } from './itemIcons';
+import { tmItemIdForMove } from './tms';
 
 /** The two fallback keys `itemIcons.ts` resolves through. */
 const MEGA_FALLBACK = 'hardstone';
@@ -27,6 +29,17 @@ describe('Añil item icons', () => {
     expect(itemIconFrame('tm001')).toBe(itemIconFrame(TM_FALLBACK));
     expect(hasItemIcon('venusaurite')).toBe(false);
     expect(hasItemIcon('tm001')).toBe(false);
+  });
+
+  it('resolves every TM to the machine of the move it teaches', () => {
+    // Take Down, a Normal move, so the shared boot frame is literally its own.
+    expect(itemIconFrame('tm001')).toBe(itemIconFrame('machinenormal'));
+    expect(itemIconFrame(tmItemIdForMove('flamethrower')!)).toBe(itemIconFrame('machinefire'));
+    expect(itemIconFrame(tmItemIdForMove('thunderbolt')!)).toBe(itemIconFrame('machineelectric'));
+    for (const id of TM_ITEM_IDS) {
+      const move = getMove(getItem(id)!.teaches!)!;
+      expect(itemIconFrame(id), id).toBe(itemIconFrame(`machine${normalizeId(move.type)}`));
+    }
   });
 
   it('keeps a stone whose Añil spelling matches its own icon', () => {

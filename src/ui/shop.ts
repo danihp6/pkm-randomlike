@@ -1,6 +1,6 @@
 import { buyPrice, getItem, isForSale, sellPrice } from '../data/items';
 import type { BandId } from '../data/run';
-import { SHOP_CORE, SHOP_ROTATION, SHOP_ROTATION_COUNT, type ShopEntry } from '../data/shop';
+import { SHOP_CORE, SHOP_ROTATION, SHOP_ROTATION_COUNT, SHOP_TM, type ShopEntry } from '../data/shop';
 import type { Rng } from '../engine/rng';
 import {
   addItem,
@@ -23,9 +23,16 @@ import {
 export type ShopSlot = Readonly<{ itemId: string; price: number }>;
 
 /**
- * The stock a shop shows: the band's fixed core of Balls/Potions plus one or two
- * rotating items drawn (weighted, without replacement) from the band's pool,
- * never repeating a core id. Deterministic for a fixed `rng`.
+ * The stock a shop shows: the band's fixed core of Balls/Potions, one or two
+ * rotating items drawn (weighted, without replacement) from the band's pool, and
+ * one machine off the band's own `SHOP_TM` list — each appended after the one
+ * before it and never repeating an id already on the shelf. Deterministic for a
+ * fixed `rng`.
+ *
+ * The course is **core → rotation → TM**, so the machines land **last** and the
+ * rotation's own rolls keep their old positions for a fixed seed. The TM's price
+ * is the catalogue's own (`buyPrice`) and is deliberately not discounted: a slot
+ * priced below `sellPrice` would be a buy-and-sell money loop.
  */
 export function buildShop(bandId: BandId, rng: Rng): readonly ShopSlot[] {
   const ids = [...SHOP_CORE[bandId]];
@@ -36,6 +43,11 @@ export function buildShop(bandId: BandId, rng: Rng): readonly ShopSlot[] {
     const index = weightedIndex(remaining, rng);
     ids.push(remaining[index].itemId);
     remaining.splice(index, 1);
+  }
+  const machines = SHOP_TM[bandId];
+  if (machines.length > 0) {
+    const machine = machines[rng.int(0, machines.length - 1)];
+    if (!ids.includes(machine)) ids.push(machine);
   }
   return ids.flatMap((id) => {
     const item = getItem(id);

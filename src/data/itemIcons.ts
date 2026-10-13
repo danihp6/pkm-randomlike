@@ -1,6 +1,6 @@
 import itemIconsUrl from '../assets/anil/item-icons.png';
 import manifest from './anil/item-icons.json';
-import { normalizeId } from './dex';
+import { getMove, normalizeId } from './dex';
 import { getItem } from './items';
 
 /**
@@ -20,8 +20,9 @@ const FRAMES: Readonly<Record<string, number>> = manifest.frames;
 // Añil ships no art for the Mega Stones (the packer predates them and `D34` adds
 // one per Mega), so the ones whose spelling does not match a file borrow the Hard
 // Stone icon; a stone whose name does match keeps its own art. The **TMs** (`D36`
-// learnset) borrow Añil's Normal machine until a per-type machine is sliced (the
-// atlas already carries Añil's `machine_<TYPE>.png` set).
+// learnset) resolve to the machine of the move they teach — the atlas already
+// carries Añil's whole `machine_<TYPE>` set, so every machine shows its own type.
+// A TM whose move or type frame is missing still lands on the Normal machine.
 const MEGA_STONE_FALLBACK = 'hardstone';
 const TM_FALLBACK = 'machinenormal';
 
@@ -31,7 +32,10 @@ export function itemIconFrame(itemId: string): number | null {
   if (frame !== undefined) return frame;
   const item = getItem(itemId);
   if (item?.mega) return FRAMES[MEGA_STONE_FALLBACK] ?? null;
-  if (item?.kind === 'tm') return FRAMES[TM_FALLBACK] ?? null;
+  if (item?.kind === 'tm') {
+    const type = normalizeId(getMove(item.teaches ?? '')?.type ?? '');
+    return FRAMES[`machine${type}`] ?? FRAMES[TM_FALLBACK] ?? null;
+  }
   return null;
 }
 
