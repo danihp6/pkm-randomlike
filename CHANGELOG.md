@@ -15,20 +15,22 @@ file is the human-readable summary.
       soundtrack as MIDI plus the instrument bank and samples, never as audio, so
       `scripts/frlg/render-frlg-audio.mjs` now fetches a sparse checkout of that
       decomp plus the `huderlem/poryaaaa` m4a renderer and renders one file per cue
-      (the title, Route 1 and vs.-trainer beds; the Poké Ball opening, the
-      effectiveness sound, faint, level-up and the trainer-victory fanfare),
-      cutting a looping bed down to its loop body so the file Phaser loops is the
-      song's own loop. The effects are the ones the original plays at those
-      moments — `se_bang` (the Cut-door bang) and `se_warp_in` (a warp) were not —
-      and `SE_FAINT` was already right. One master gain lifts the lot —
-      the decomp's own `-V` mix lands near a tenth of full scale — and the packer's
+      (the title, Route 1 and vs.-trainer beds, faint, level-up and the
+      trainer-victory fanfare), cutting a looping bed down to its loop body so the
+      file Phaser loops is the song's own loop. One master gain lifts the lot — the
+      decomp's own `-V` mix lands near a tenth of full scale — and the packer's
       caps are per-cue now, so a fanfare is never cut mid-phrase; `cues.test.ts`
-      fails if a committed cue is still a placeholder sine. Every cue is still one
-      cue-id row in `src/audio/cues.ts`, so a CC0 set replaces the rip without
-      touching a call site. `scripts/frlg/render-frlg-audio.mjs`,
-      `scripts/frlg/build-audio.mjs`, `src/assets/audio/*.wav`,
-      `src/audio/cues.test.ts`, `src/audio/README.md`, `src/assets/README.md`,
-      `docs/tech-decisions.md` (`D22` addendum).
+      fails if a committed cue is still a placeholder sine. **The `hit` and
+      `encounter` cues were dropped rather than faked**: the original varies a hit
+      per move (`SE_M_*`) and an encounter is the appearing Pokémon's cry, so
+      `se_bang` (the Cut-door bang) and `se_warp_in` (a warp) were never going to
+      stand in for them; both moments now play nothing until `[Task-30]` lands.
+      Every remaining cue is still one cue-id row in `src/audio/cues.ts`, so a CC0
+      set replaces the rip without touching a call site.
+      `scripts/frlg/render-frlg-audio.mjs`, `scripts/frlg/build-audio.mjs`,
+      `src/assets/audio/*.wav`, `src/audio/{cues,cues.test}.ts`,
+      `src/scenes/{RouteScene,BattleScene}.ts`, `src/audio/README.md`,
+      `src/assets/README.md`, `docs/tech-decisions.md` (`D22` addendum).
 - [x] **Every Pokémon opens with a full four-move set by level 5.** At or below
       level 5 `defaultMoveset` now tops an under-full moveset up from the
       species' own learnset — earliest level-up moves first, then its

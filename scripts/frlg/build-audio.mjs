@@ -42,8 +42,6 @@ const CUES = [
   { id: 'menu-music', kind: 'music', capSeconds: 120 },
   { id: 'route-music', kind: 'music', capSeconds: 120 },
   { id: 'battle-music', kind: 'music', capSeconds: 120 },
-  { id: 'encounter', kind: 'sfx', capSeconds: 8 },
-  { id: 'hit', kind: 'sfx', capSeconds: 4 },
   { id: 'faint', kind: 'sfx', capSeconds: 6 },
   { id: 'level-up', kind: 'sfx', capSeconds: 8 },
   { id: 'victory', kind: 'sfx', capSeconds: 20 },

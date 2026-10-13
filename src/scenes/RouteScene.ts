@@ -4629,8 +4629,6 @@ export class RouteScene extends Phaser.Scene {
   /** Pauses the route and rolls the battle on top of it (Phase 5 transition). */
   private startBattle(trigger: BattleTrigger): void {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
-    // A wild roll and a trainer's sight open with the same cue.
-    playCue(this, 'encounter');
     this.battleCounter += 1;
     const key = trigger.kind === 'wild' ? `${trigger.key}:${this.battleCounter}` : `trainer:${trigger.trainerId}`;
     // The room's capture is spent the moment its **first wild battle** starts,

@@ -234,13 +234,18 @@ external tool this pipeline needs; a CC0 set skips it entirely and just drops
 files in for the packer.
 
 The seam is a **cue table** in `src/audio/cues.ts` (pure, no Phaser import): three
-music beds and five one-shot cues, each with a `gain` that is a share of the
+music beds and three one-shot cues, each with a `gain` that is a share of the
 master volume. A cue id is the only name a scene uses — no scene names a file, a
 key or a volume — and `src/audio/audio.ts` is the Phaser half: it preloads every
 cue and owns the game's single music channel, switched by cue id (a scene on top
 takes the bed over, the scene underneath takes it back when it resumes). `D22`'s
 master volume stays the only audio knob; the per-cue `gain` is the only tunable
 beside it.
+
+Two moments deliberately have **no** cue: a hit and an encounter. The original
+varies both — a hit plays the move's own sound (`SE_M_*`, one per move) and an
+encounter is the appearing Pokémon's cry — so a single shared cue could only be
+an approximation of either. They are the backlog's job, not the table's.
 
 A cue whose rendered source is missing falls back to a **generated procedural
 placeholder** (a plain fading sine, 22050 Hz mono, ours and safe to

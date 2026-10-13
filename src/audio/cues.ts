@@ -10,9 +10,7 @@
  * CC0 set means re-running the packer, never editing a scene.
  */
 import battleMusicUrl from '../assets/audio/battle-music.wav';
-import encounterUrl from '../assets/audio/encounter.wav';
 import faintUrl from '../assets/audio/faint.wav';
-import hitUrl from '../assets/audio/hit.wav';
 import levelUpUrl from '../assets/audio/level-up.wav';
 import menuMusicUrl from '../assets/audio/menu-music.wav';
 import routeMusicUrl from '../assets/audio/route-music.wav';
@@ -21,7 +19,7 @@ import victoryUrl from '../assets/audio/victory.wav';
 export type AudioCueKind = 'music' | 'sfx';
 
 export type AudioCueId =
-  'menu-music' | 'route-music' | 'battle-music' | 'encounter' | 'hit' | 'faint' | 'level-up' | 'victory';
+  'menu-music' | 'route-music' | 'battle-music' | 'faint' | 'level-up' | 'victory';
 
 export type AudioCue = Readonly<{
   id: AudioCueId;
@@ -43,8 +41,6 @@ const AUDIO_CUE_URLS: Readonly<Record<AudioCueId, string>> = {
   'menu-music': menuMusicUrl,
   'route-music': routeMusicUrl,
   'battle-music': battleMusicUrl,
-  encounter: encounterUrl,
-  hit: hitUrl,
   faint: faintUrl,
   'level-up': levelUpUrl,
   victory: victoryUrl,
@@ -55,8 +51,6 @@ export const AUDIO_CUES: readonly AudioCue[] = [
   { id: 'menu-music', kind: 'music', loop: true, gain: 0.5 },
   { id: 'route-music', kind: 'music', loop: true, gain: 0.5 },
   { id: 'battle-music', kind: 'music', loop: true, gain: 0.5 },
-  { id: 'encounter', kind: 'sfx', loop: false, gain: 0.8 },
-  { id: 'hit', kind: 'sfx', loop: false, gain: 0.6 },
   { id: 'faint', kind: 'sfx', loop: false, gain: 0.8 },
   { id: 'level-up', kind: 'sfx', loop: false, gain: 0.8 },
   { id: 'victory', kind: 'sfx', loop: false, gain: 0.9 },

@@ -3,13 +3,13 @@
 ## The cue table is the vocabulary
 
 `src/audio/cues.ts` is the whole list of sounds the game can play: three music
-beds and five one-shot cues. Each row is an id, its kind, whether it loops and
+beds and three one-shot cues. Each row is an id, its kind, whether it loops and
 its `gain` — the per-cue share of the master volume (D22), which is the one knob
 a balance pass turns.
 
 A **cue id is the only name a scene may use**. No scene names a file, a texture
 or sound key, a volume, or a source path; it calls `playMusic(this, 'route-music')`
-or `playCue(this, 'hit')` and nothing else. Renaming an asset, re-encoding it or
+or `playCue(this, 'faint')` and nothing else. Renaming an asset, re-encoding it or
 swapping the whole set for CC0 audio never touches a call site.
 
 | id             | kind  | loop  | gain |
@@ -17,11 +17,15 @@ swapping the whole set for CC0 audio never touches a call site.
 | `menu-music`   | music | true  | 0.5  |
 | `route-music`  | music | true  | 0.5  |
 | `battle-music` | music | true  | 0.5  |
-| `encounter`    | sfx   | false | 0.8  |
-| `hit`          | sfx   | false | 0.6  |
 | `faint`        | sfx   | false | 0.8  |
 | `level-up`     | sfx   | false | 0.8  |
 | `victory`      | sfx   | false | 0.9  |
+
+**A hit and an encounter are not cues.** The original varies both: a hit plays
+the move's own sound (`SE_M_*`, one per move) and an encounter is the appearing
+Pokémon's cry, so one shared cue could only approximate either. Both are on the
+backlog; until then the battle plays no hit sound and the route plays no
+encounter sound.
 
 ## The Phaser half
 
