@@ -176,6 +176,8 @@ import {
 import { type FamilyNode } from '../ui/evolutionGraph';
 import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
 import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
+import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
+import { InfoPopup } from '../ui/infoPopup';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../data/statusIcons';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
@@ -817,6 +819,11 @@ export class RouteScene extends Phaser.Scene {
   /** The move whose ⓘ floats its info popup, or null; `pinned` keeps it up. */
   private hudDetailInfo: number | null = null;
   private hudDetailInfoPinned = false;
+  /** The ⓘ beside the STATS tab's ability row, and the window it floats. */
+  private hudAbilityPopup!: InfoPopup;
+  private hudAbilityInfoButton!: AbilityInfoButton;
+  private hudAbilityInfo = false;
+  private hudAbilityInfoPinned = false;
   /** The learnset pool: its grid, page, search field, focus and the move in hand. */
   private hudLearnGrid!: MoveGrid;
   private hudLearnPage = 0;
@@ -871,6 +878,12 @@ export class RouteScene extends Phaser.Scene {
   private captureIndex = 0;
   private captureHighlights: Phaser.GameObjects.Rectangle[] = [];
   private captureCompare: Phaser.GameObjects.BitmapText | null = null;
+  /** The capture screen's ability row and its own ⓘ, window and hit zone. */
+  private captureAbilityLabel: Phaser.GameObjects.BitmapText | null = null;
+  private captureAbilityPopup: InfoPopup | null = null;
+  private captureAbilityButton: AbilityInfoButton | null = null;
+  private captureAbilityActive = false;
+  private captureAbilityPinned = false;
   /** The shop room's counter tile, or null off a shop room. */
   private shopCounter: Tile | null = null;
   /** The Mart panel: its root, stock, tab and the row objects it repaints. */
@@ -1988,6 +2001,10 @@ export class RouteScene extends Phaser.Scene {
     // a second instance drawn below the search field.
     this.hudMoveGrid = new MoveGrid(this, container);
     this.hudLearnGrid = new MoveGrid(this, container);
+    // The ability row's ⓘ and the window it floats, built after the grids so the
+    // window rides over them like the move popup does.
+    this.hudAbilityPopup = new InfoPopup(this, container);
+    this.hudAbilityInfoButton = new AbilityInfoButton(this, this.hudAbilityPopup, container);
     return container;
   }
 
@@ -2322,6 +2339,17 @@ export class RouteScene extends Phaser.Scene {
     ability.setVisible(stats);
     held.setVisible(stats);
     caught.setVisible(stats);
+    // The ABILITY row carries the same ⓘ a move cell does: the STATS tab shows it
+    // and the window floats the ability's own text.
+    if (stats && detail.abilityDesc !== null) {
+      this.hudAbilityInfoButton.layout(
+        abilityInfoSpot(ability.x + ability.width, ability.y),
+        this.hudAbilityInfo,
+        abilityInfoContent(detail.ability, detail.abilityDesc),
+      );
+    } else {
+      this.hudAbilityInfoButton.hide();
+    }
     this.refreshDetailEvolutions(stats, detail);
 
     const moves = this.hudDetailState.tab === 'moves';
@@ -2780,6 +2808,8 @@ export class RouteScene extends Phaser.Scene {
     const overMove = cell !== null;
     const overInfo = cell?.onInfo === true;
     this.updateDetailInfo(cell);
+    const overAbilityInfo = this.abilityInfoAt(pointer);
+    this.updateAbilityInfo(overAbilityInfo);
     const overItem = this.hudHeldStackAt(pointer) !== null;
     const overIcon = this.hudPanelIconAt(pointer) !== null;
     // A ready evolution branch in the STATS tab reads as a click target too.
@@ -2796,7 +2826,7 @@ export class RouteScene extends Phaser.Scene {
         ? false
         : this.hudPanelAt(pointer) !== null;
     this.input.setDefaultCursor(
-      overInfo || overMember || overIcon || overEvolution || overVial
+      overInfo || overAbilityInfo || overMember || overIcon || overEvolution || overVial
         ? 'pointer'
         : overItem || overMove
           ? 'grab'
@@ -2992,6 +3022,13 @@ export class RouteScene extends Phaser.Scene {
       return true;
     }
     if (this.hudDetailState.tab === 'stats') {
+      // The ability ⓘ is tested first: a press on it never evolves the member.
+      if (this.abilityInfoAt(pointer)) {
+        this.toggleAbilityInfo();
+        return true;
+      }
+      // Any other press in the panel drops the ability window's pin.
+      this.unpinAbilityInfo();
       const evolution = this.evolutionAt(point);
       if (evolution) {
         this.evolveOpenMember(evolution.id);
@@ -3109,17 +3146,52 @@ export class RouteScene extends Phaser.Scene {
     this.refreshDetail();
   }
 
+  /** Floats or hides the ability ⓘ window as the pointer moves on and off it. */
+  private updateAbilityInfo(over: boolean): void {
+    if (this.hudAbilityInfoPinned) return;
+    if (over === this.hudAbilityInfo) return;
+    this.hudAbilityInfo = over;
+    this.refreshDetail();
+  }
+
+  /** Pins the ability ⓘ window open, or closes it when it is already pinned. */
+  private toggleAbilityInfo(): void {
+    if (this.hudAbilityInfoPinned) {
+      this.hudAbilityInfoPinned = false;
+      this.hudAbilityInfo = false;
+    } else {
+      this.hudAbilityInfoPinned = true;
+      this.hudAbilityInfo = true;
+    }
+    this.refreshDetail();
+  }
+
+  /** Drops the ability window and its pin, e.g. when a press lands elsewhere. */
+  private unpinAbilityInfo(): void {
+    if (!this.hudAbilityInfoPinned) return;
+    this.hudAbilityInfoPinned = false;
+    this.hudAbilityInfo = false;
+    this.refreshDetail();
+  }
+
   /** Drops the info popup and its pin, e.g. when the panel closes or changes tab. */
   private resetDetailInfo(): void {
     this.hudDetailInfo = null;
     this.hudDetailInfoPinned = false;
+    this.hudAbilityInfo = false;
+    this.hudAbilityInfoPinned = false;
   }
 
   /** Hides an unpinned info popup when the pointer leaves the canvas. */
   private clearDetailInfo(): void {
-    if (this.hudDetailInfoPinned || this.hudDetailInfo === null) return;
-    this.hudDetailInfo = null;
-    this.refreshDetail();
+    if (!this.hudDetailInfoPinned && this.hudDetailInfo !== null) {
+      this.hudDetailInfo = null;
+      this.refreshDetail();
+    }
+    if (!this.hudAbilityInfoPinned && this.hudAbilityInfo) {
+      this.hudAbilityInfo = false;
+      this.refreshDetail();
+    }
   }
 
   /** True when the pointer is over the open detail panel. */
@@ -3192,6 +3264,16 @@ export class RouteScene extends Phaser.Scene {
     const rect = this.hudMoveGrid.cellRect(index);
     const onInfo = rect !== null && this.hudMoveGrid.infoAt(index, point.x - rect.x, point.y - rect.y);
     return { index, onInfo };
+  }
+
+  /**
+   * True when the pointer is over the STATS tab's ability ⓘ. The panel container
+   * sits at the origin with no scale, so its own point is the button's frame.
+   */
+  private abilityInfoAt(pointer: Phaser.Input.Pointer): boolean {
+    if (!this.pointerInDetailPanel(pointer)) return false;
+    const point = this.panelPoint(pointer, 'detail');
+    return this.hudAbilityInfoButton.contains(point.x, point.y);
   }
 
   /** Equips the dragged stack to the member under the drop, saving the swap. */
@@ -4864,6 +4946,8 @@ export class RouteScene extends Phaser.Scene {
     this.captureOnDone = onDone;
     this.captureIndex = 0;
     this.captureHighlights = [];
+    this.captureAbilityActive = false;
+    this.captureAbilityPinned = false;
     const detail = fighterDetail(restoreFighter(caught.fighter));
 
     const { width, height } = this.scale;
@@ -4961,6 +5045,29 @@ export class RouteScene extends Phaser.Scene {
     );
 
     this.captureRoot = this.add.container(0, 0, children).setDepth(500);
+    // The ability row's ⓘ floats over both columns, built from the root so it
+    // rides above them; its window is the same `InfoPopup` a move cell uses.
+    this.captureAbilityPopup = new InfoPopup(this, this.captureRoot);
+    this.captureAbilityButton = new AbilityInfoButton(this, this.captureAbilityPopup, this.captureRoot);
+    const abilityLabel = this.captureAbilityLabel;
+    if (abilityLabel) {
+      const spot = abilityInfoSpot(abilityLabel.x + abilityLabel.width, abilityLabel.y);
+      this.captureAbilityButton.layout(
+        spot,
+        false,
+        abilityInfoContent(detail.ability, detail.abilityDesc),
+      );
+      // The button's column does not overlap the party row zones, so a press here
+      // is safe: it pins the window instead of swapping a member.
+      const zone = this.add
+        .zone(spot.x, spot.y, spot.width, spot.height)
+        .setOrigin(0, 0)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerover', () => this.setCaptureAbilityActive(true));
+      zone.on('pointerout', () => this.setCaptureAbilityActive(false));
+      zone.on('pointerdown', () => this.toggleCaptureAbility());
+      this.captureRoot.add(zone);
+    }
     this.cameras.main.ignore(this.captureRoot);
     this.refreshCapture();
   }
@@ -5022,8 +5129,12 @@ export class RouteScene extends Phaser.Scene {
       );
     });
     const infoY = y + 128 + DETAIL_STATS.length * 24 + 6;
+    this.captureAbilityLabel = addFrlgText(this, x + 16, infoY, `Ability  ${detail.ability}`, {
+      size: 16,
+      tint: 0x3a3956,
+    });
     children.push(
-      addFrlgText(this, x + 16, infoY, `Ability  ${detail.ability}`, { size: 16, tint: 0x3a3956 }),
+      this.captureAbilityLabel,
       addFrlgText(this, x + 16, infoY + 22, `Nature   ${detail.nature}`, { size: 16, tint: 0x3a3956 }),
     );
 
@@ -5055,6 +5166,36 @@ export class RouteScene extends Phaser.Scene {
       `${detail.name}  Lv${detail.level}   HP ${detail.hp}/${detail.maxHp}\n` +
         `ATK ${detail.stats.atk}   DEF ${detail.stats.def}   SPA ${detail.stats.spa}\n` +
         `SPD ${detail.stats.spd}   SPE ${detail.stats.spe}`,
+    );
+  }
+
+  /** Floats or hides the capture screen's ability window as the pointer moves. */
+  private setCaptureAbilityActive(active: boolean): void {
+    if (this.captureAbilityPinned) return;
+    if (active === this.captureAbilityActive) return;
+    this.captureAbilityActive = active;
+    this.refreshCaptureAbility();
+  }
+
+  /** Pins the capture screen's ability window open, or closes it when pinned. */
+  private toggleCaptureAbility(): void {
+    const pinned = !this.captureAbilityPinned;
+    this.captureAbilityPinned = pinned;
+    this.captureAbilityActive = pinned;
+    this.refreshCaptureAbility();
+  }
+
+  /** Redraws the capture screen's ability ⓘ from the caught Pokémon's detail. */
+  private refreshCaptureAbility(): void {
+    const button = this.captureAbilityButton;
+    const caught = this.captureCaught;
+    const label = this.captureAbilityLabel;
+    if (!button || !caught || !label) return;
+    const detail = fighterDetail(restoreFighter(caught.fighter));
+    button.layout(
+      abilityInfoSpot(label.x + label.width, label.y),
+      this.captureAbilityActive,
+      abilityInfoContent(detail.ability, detail.abilityDesc),
     );
   }
 
@@ -5105,6 +5246,11 @@ export class RouteScene extends Phaser.Scene {
     this.captureCaught = null;
     this.captureHighlights = [];
     this.captureCompare = null;
+    this.captureAbilityLabel = null;
+    this.captureAbilityPopup = null;
+    this.captureAbilityButton = null;
+    this.captureAbilityActive = false;
+    this.captureAbilityPinned = false;
     this.captureRoot?.destroy(true);
     this.captureRoot = null;
     onDone?.();

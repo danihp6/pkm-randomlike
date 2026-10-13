@@ -11,6 +11,14 @@ describe('ability accessors', () => {
     expect(getAbility('not-an-ability')).toBeUndefined();
   });
 
+  it('carries both description fields, never undefined', () => {
+    const levitate = getAbility('levitate');
+    expect(levitate?.desc.length).toBeGreaterThan(0);
+    expect(levitate?.shortDesc.length).toBeGreaterThan(0);
+    expect(allAbilities().every((ability) => typeof ability.desc === 'string')).toBe(true);
+    expect(allAbilities().every((ability) => typeof ability.shortDesc === 'string')).toBe(true);
+  });
+
   it('exposes the whole generated ability set', () => {
     expect(allAbilities().length).toBe(counts.abilities);
     expect(allAbilities().every((ability) => ability.id !== '' && ability.name !== '')).toBe(true);

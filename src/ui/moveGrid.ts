@@ -1,10 +1,11 @@
 import type Phaser from 'phaser';
-import { addFrlgText, FRLG_FONT_SIZE, FRLG_INK } from './frlgFont';
-import { addFrlgWindow, FRLG_WINDOW_PADDING } from './frlg';
+import { addFrlgText, FRLG_INK } from './frlgFont';
+import { FRLG_WINDOW_PADDING } from './frlg';
 import { typeColor, typeTint } from './typeColors';
 import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeIcons';
 import { MOVE_CATEGORY_ICON_W, MOVE_CATEGORY_TEXTURE_KEY, categoryIconFrame } from '../data/moveCategoryIcons';
 import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../data/statusIcons';
+import { InfoPopup, type InfoPopupBadge, type InfoPopupChip } from './infoPopup';
 
 /**
  * The shared moves grid + floating info popup. The battle's FIGHT menu and the
@@ -77,11 +78,8 @@ const INFO_SIZE = 22;
 const CELL_NARROW = 220;
 /** The power / accuracy column reserved at a wide cell's right. */
 const STAT_COL = 66;
-/** The move description popup that floats over the scene on demand. */
-const POPUP_MIN_H = 56;
+/** The gap between the info anchor (a cell's top) and the description window. */
 const POPUP_GAP = 8;
-/** The popup's left column: the type badge and, under it, the status badge. */
-const POPUP_ICON_COL = 44;
 /** The category badge is 32x14; 1.5x reads clearly beside the 16px cell text. */
 const CATEGORY_ICON_SCALE = 1.5;
 
@@ -122,12 +120,7 @@ export class MoveGrid {
   private accuracyTexts: Phaser.GameObjects.BitmapText[] = [];
   private infoButtons: Phaser.GameObjects.Rectangle[] = [];
   private infoLabels: Phaser.GameObjects.BitmapText[] = [];
-  private popup: Phaser.GameObjects.NineSlice;
-  private popupType: Phaser.GameObjects.Rectangle;
-  private popupTypeText: Phaser.GameObjects.BitmapText;
-  private popupTypeIcon: Phaser.GameObjects.Image;
-  private popupStatusIcon: Phaser.GameObjects.Image;
-  private popupText: Phaser.GameObjects.BitmapText;
+  private popup: InfoPopup;
   /** The laid-out cell rects, for hit testing until the next layout. */
   private cellRects: Rect[] = [];
 
@@ -166,26 +159,6 @@ export class MoveGrid {
     this.infoLabels = Array.from({ length: GRID_CELLS }, () =>
       addFrlgText(scene, 0, 0, 'i', { size: 16, tint: FRLG_INK, origin: 0.5 }).setVisible(false),
     );
-    // The popup is built last so it floats over the grid and the scene behind it.
-    this.popup = addFrlgWindow(scene, 0, 0, 300, POPUP_MIN_H).setVisible(false);
-    this.popupType = scene.add
-      .rectangle(0, 0, TYPE_ICON_W, 14, 0x9aa0b4)
-      .setOrigin(0, 0)
-      .setVisible(false);
-    this.popupTypeText = addFrlgText(scene, 0, 0, '', {
-      size: 16,
-      tint: 0xf8fafc,
-      origin: [0.5, 0],
-    }).setVisible(false);
-    this.popupTypeIcon = scene.add
-      .image(0, 0, TYPE_ICON_TEXTURE_KEY, 0)
-      .setOrigin(0, 0)
-      .setVisible(false);
-    this.popupStatusIcon = scene.add
-      .image(0, 0, STATUS_ICON_TEXTURE_KEY, 0)
-      .setOrigin(0, 0)
-      .setVisible(false);
-    this.popupText = addFrlgText(scene, 0, 0, '', { tint: FRLG_INK, lineSpacing: 4 }).setVisible(false);
 
     const objects: Phaser.GameObjects.GameObject[] = [
       ...this.cells,
@@ -197,14 +170,10 @@ export class MoveGrid {
       ...this.accuracyTexts,
       ...this.infoButtons,
       ...this.infoLabels,
-      this.popup,
-      this.popupType,
-      this.popupTypeText,
-      this.popupTypeIcon,
-      this.popupStatusIcon,
-      this.popupText,
     ];
     if (container) container.add(objects);
+    // The popup is built last so it floats over the grid and the scene behind it.
+    this.popup = new InfoPopup(scene, container);
   }
 
   /**
@@ -340,7 +309,7 @@ export class MoveGrid {
   hide(): void {
     this.cellRects = [];
     for (let i = 0; i < GRID_CELLS; i++) this.hidePiece(i);
-    this.hidePopup();
+    this.popup.hide();
   }
 
   /** The index of the cell under a window-local point, or null outside one. */
@@ -384,83 +353,42 @@ export class MoveGrid {
     this.infoLabels[i].setVisible(false);
   }
 
-  /** The popup's description font: large on a full-width menu, small on a phone. */
-  private popupFontSize(width: number): number {
-    return width >= 500 ? FRLG_FONT_SIZE : 16;
-  }
-
-  /** The popup height, measured from the revealed move's wrapped description. */
-  private popupHeight(cell: MoveGridCell, width: number): number {
-    const pad = FRLG_WINDOW_PADDING;
-    this.popupText
-      .setFontSize(this.popupFontSize(width))
-      .setText(cell.desc)
-      .setMaxWidth(width - pad.x * 2 - POPUP_ICON_COL - 12);
-    return Math.max(POPUP_MIN_H, pad.top + Math.max(24, this.popupText.height) + pad.bottom);
-  }
-
-  /** Floats the info popup over the grid, above it when there is room, else below. */
+  /**
+   * Floats the info popup for the asked cell through the shared `InfoPopup`,
+   * above the anchor when there is room and below it otherwise. The anchor is the
+   * hovered cell's top (HUD) or the whole window's (battle).
+   */
   private drawPopup(options: MoveGridOptions): void {
     const index = options.info;
     const cell = index === null ? undefined : options.cells[index];
     if (!cell || cell.desc.length === 0) {
-      this.hidePopup();
+      this.popup.hide();
       return;
     }
-    const pad = FRLG_WINDOW_PADDING;
-    const size = this.popupFontSize(options.w);
-    const height = this.popupHeight(cell, options.w);
-    // Over the hovered cell (HUD) or above the whole window (battle).
-    const rect = index !== null ? this.cellRects[index] : undefined;
-    const anchorY = options.popupAtCell === true && rect ? rect.y : options.y;
-    const belowY =
-      options.popupAtCell === true && rect ? rect.y + rect.h + POPUP_GAP : options.y + options.h + POPUP_GAP;
-    const above = anchorY - height - POPUP_GAP;
-    const x = options.x;
-    const y = above >= 0 ? above : belowY;
-    const iconY = y + pad.top;
-    this.popup.setSlices(options.w, height).setPosition(x, y).setVisible(true);
-
     const typeFrame = typeIconFrame(cell.type);
-    if (typeFrame !== null) {
-      this.popupTypeIcon.setFrame(typeFrame).setPosition(x + pad.x, iconY).setVisible(true);
-      this.popupType.setVisible(false);
-      this.popupTypeText.setVisible(false);
-    } else {
-      // The FRLG sheet predates Fairy; keep the text chip as the fallback.
-      this.popupTypeIcon.setVisible(false);
-      this.popupType
-        .setPosition(x + pad.x, iconY)
-        .setSize(TYPE_ICON_W, 14)
-        .setFillStyle(typeColor(cell.type))
-        .setVisible(true);
-      this.popupTypeText
-        .setText(cell.type.toUpperCase())
-        .setPosition(x + pad.x + TYPE_ICON_W / 2, iconY + 2)
-        .setVisible(true);
-    }
-
     const statusFrame = cell.status ? statusIconFrame(cell.status) : null;
+    const badges: InfoPopupBadge[] = [];
+    if (typeFrame !== null) badges.push({ textureKey: TYPE_ICON_TEXTURE_KEY, frame: typeFrame, y: 0 });
     if (statusFrame !== null) {
-      this.popupStatusIcon.setFrame(statusFrame).setPosition(x + pad.x, iconY + 20).setVisible(true);
-    } else {
-      this.popupStatusIcon.setVisible(false);
+      badges.push({ textureKey: STATUS_ICON_TEXTURE_KEY, frame: statusFrame, y: 20 });
     }
-
-    this.popupText
-      .setText(cell.desc)
-      .setFontSize(size)
-      .setMaxWidth(options.w - pad.x * 2 - POPUP_ICON_COL - 12)
-      .setPosition(x + pad.x + POPUP_ICON_COL, iconY + Math.max(0, (24 - size) / 2))
-      .setVisible(true);
-  }
-
-  private hidePopup(): void {
-    this.popup.setVisible(false);
-    this.popupText.setVisible(false);
-    this.popupType.setVisible(false);
-    this.popupTypeText.setVisible(false);
-    this.popupTypeIcon.setVisible(false);
-    this.popupStatusIcon.setVisible(false);
+    // The FRLG sheet predates Fairy; keep the text chip as the fallback.
+    const chip: InfoPopupChip | null =
+      typeFrame === null
+        ? { label: cell.type.toUpperCase(), color: typeColor(cell.type), y: 0 }
+        : null;
+    const rect =
+      options.popupAtCell === true && index !== null ? this.cellRects[index] : undefined;
+    const anchorY = rect ? rect.y : options.y;
+    const belowY = rect ? rect.y + rect.h + POPUP_GAP : options.y + options.h + POPUP_GAP;
+    this.popup.show(
+      {
+        x: options.x,
+        width: options.w,
+        above: anchorY - POPUP_GAP,
+        below: belowY,
+      },
+      { text: cell.desc, badges, chip },
+    );
   }
 }
