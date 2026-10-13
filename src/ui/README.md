@@ -14,6 +14,11 @@ testable logic belongs in the computing half.
 - `panel.ts` — the plain panel background and gauge, and the colours they use.
 - `moveGrid.ts` — the shared moves grid: a type-tinted cell with type and category badges, PP and
   power, and a floating description window; the battle and the route HUD draw the same component.
+- `infoPopup.ts` — the floating description window: an FRLG window sized from its wrapped text,
+  with an optional left column of badges or a colour chip; the move cells and the ability rows
+  float the same one.
+- `abilityInfo.ts` — the ability row's info control and the text it floats, so the route HUD,
+  the battle's switch window and the capture screen read the same way.
 - `partyScreen.ts` — the party/box model: rows, panes, cursor, drag/drop and the box page math.
 - `partyDetail.ts` — the party detail popup: STATS/MOVES tabs, nature effects and move reordering.
 - `bag.ts` — the bag pockets, their labels and the pure categorisation of an item.
