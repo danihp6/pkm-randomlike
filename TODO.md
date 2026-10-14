@@ -27,7 +27,7 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 behind the green gate (four, then five, then three) and the detail is in `CHANGELOG.md`'s
 `## Unreleased`; Batch 5b is the batch that ended up packing the decomp's real FireRed grass
 rustle and Batch 5c the one that re-planned the level curve and finished that overlay, and both
-are closed below. **Batch 5cb is the next batch cut** — `[Task-74]`, the forest's tall grass
+are closed below. **Batch 5cb is cut** — `[Task-74]`, the forest's tall grass
 painting a lighter green over its dark tuft (a defect, cut in front the way Batch 3b was cut in
 front of Batch 4) — followed by **Batch 5d** (`[Task-70]`, the first-floor on-ramp: fewer
 trainers, less loot, and map 1 hanging no shop leaf) and **Batch 5e** (`[Task-71]`,
@@ -674,29 +674,35 @@ rule, and none of the three added a run field or a `SAVE_VERSION` step, so the v
 stays **14 → 15 → 16 → 17 → 18**. Its three IDs are retired: they keep their place in the
 sequence and are never reused.
 
-### Batch 5cb — the forest's tall grass stops painting a lighter green
-- **Task-74** The parked grass overlay and its hit are tinted per field, so the forest's dark tuft
-  stops being covered by the outdoor palette's light blades: `grassRustleTint` in the tileset data
-  (`0xC1D7EF` for the forest, none for outdoor and cave), applied by the scene to its one overlay
-  sprite.
-- **Hot files:** `src/engine/tileset.ts` (the one optional `grassRustleTint?: number` field),
-  `src/data/tilesets/frlg.ts` + `frlg.test.ts` (the per-field rows and the case that pins them to
-  the decoded cells) and `docs/tileset-spec.md` §6 → Task-74; `src/scenes/RouteScene.ts` (one
-  `setTint` where the sprite is built) → Task-74 as well, since it is the only task in this batch.
+### Batch 5cb — the forest's tall grass stops painting a lighter green *(cut)*
+**Cut.** Its one spec is written (`.agent_specs/task-74.md`) and its branch may be cut; it can gain
+no member.
+- **Task-74** The forest's tall grass stops painting a lighter green: each FRLG field declares a
+  **`grassRustleTint`** in the tileset data (`0xC1D7EF` for the forest, `0xffffff` for outdoor and
+  cave, derived as the per-channel ratio of the two cell means) and `RouteScene` applies it to the
+  one overlay sprite it already builds — no repack, no atlas change, the blades tinted and the
+  field's own ground still showing through their alpha.
+- **Hot files, one holder per path — all four are Task-74's, the batch's only task:**
+  `src/engine/tileset.ts` (the one optional `grassRustleTint?: number` field),
+  `src/data/tilesets/frlg.ts` + `frlg.test.ts` (the per-field values and the case that decodes the
+  cells and pins them with the declared tints applied), `src/scenes/RouteScene.ts` (one
+  `setTint` in `drawEntities`' overlay builder) and `docs/tileset-spec.md` §6 (the per-field rule).
   It claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`,
   `src/engine/save.ts`, `src/data/**` beyond the tileset table, and **no packed asset**: the
   packer and the three `src/assets/frlg/*.png` stay exactly as Batch 5c shipped them, which is the
   point of the tint over the rejected palette remap.
-- **Shape:** one task, alone, and it is a **defect cut in front** of the batch behind it — the
-  `[Task-33]` precedent ("the bug batch cut in front of Batch 4"), which is why it takes the
-  letter of the batch it follows (`5cb`, the way `4b` follows `4` and `3b` follows `3`) and runs
-  **before Batch 5d**. It is the only batch that can host it: this is the first point at which
-  `src/data/tilesets/frlg.ts` + its test and `src/engine/tileset.ts` are nobody's, and the one
-  scene line it needs (`src/scenes/RouteScene.ts`) is held by 5d's Task-70 and 5e's Task-71 only
-  in the batches **after** it — a batch may hold a path a later batch also claims, so the
-  antichain is intact and the defect does not have to wait behind the on-ramp work. It adds no run
-  field, so **no** `SAVE_VERSION` step — the chain stays 14 → 15 (Task-13) → 16 (Task-31) → 17
-  (Task-44) → 18 (Task-52) — and it touches no RNG.
+- **Shape:** one task — so the batch is an antichain trivially — and it is a **defect cut in
+  front** of the batch behind it: the `[Task-33]` precedent ("the bug batch cut in front of Batch
+  4"), which is why it takes the letter of the batch it follows (`5cb`, the way `4b` follows `4`
+  and `3b` follows `3`). **Three batches in a row now want `src/scenes/RouteScene.ts`** — this
+  one, 5d's Task-70 and 5e's Task-71 — and the order 5cb → 5d → 5e is exactly what that serial
+  resource forces: a batch may hold a path a **later** batch also claims, but no two batches run
+  at once and no batch may hold a path a batch-mate does (each of these has one member, so each
+  is an antichain by construction). The defect goes first because a bug is cut in front, because
+  `src/data/tilesets/frlg.ts` + its test and `src/engine/tileset.ts` are nobody's right now
+  (Task-73's §6 line shipped with 5c), and because it must land **before** the two pending scene
+  tasks rewrite the same file. It adds no run field, so **no** `SAVE_VERSION` step — the chain
+  stays 14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44) → 18 (Task-52) — and it touches no RNG.
 
 ### Batch 5d — the early floors thin out
 - **Task-70** Maps 1-2 place fewer trainers and less loot, and **map 1 hangs no shop leaf**, so
