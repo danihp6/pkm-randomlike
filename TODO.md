@@ -626,10 +626,13 @@ its three branches may be cut; it can gain no member.
   and an infinite run whose floors keep climbing from the bottom as well as the top.
 - **Task-72** The battle panels' type badges are bigger, for both the active Pokémon and the
   rival.
-- **Task-73** The tall-grass rustle stops drawing over the character: it sits at the player's
-  own feet, hiding the legs and leaving the head and torso visible, as the cartridge does.
+- **Task-73** The tall-grass rustle stops drawing over the character: its atlas cells are
+  repacked with the rip's own **alpha** (no re-grounding), so the grass hides the legs and the
+  head and torso show through, as the cartridge does.
 - **Hot files, one holder per path:** `src/data/maps.ts` + `maps.test.ts`, `src/data/run.ts` +
-  `run.test.ts`, `src/engine/run/curve.test.ts`, `docs/balance/route-curve.md`,
+  `run.test.ts`, `src/engine/run/curve.test.ts`, `src/engine/run/progression.test.ts`
+  (one assertion — line 63's `bandForLevel(10)` boundary, which the re-spanned window moves),
+  `docs/balance/route-curve.md`,
   `docs/maps-spec.md` §4/§5 **and §10's `O-M7`** and `src/data/README.md`'s `maps.ts` line
   → **Task-69** (its own `src/engine/save.test.ts` expectation reads `levelCapForMap(3)` and so
   follows the data instead of moving; it claims no `package.json`, `src/main.ts`,
@@ -638,9 +641,13 @@ its three branches may be cut; it can gain no member.
   `src/scenes/BattleScene.ts` → **Task-72** alone (it reads the shipped `[Task-53]` row and the
   Añil type atlas unchanged, so it writes no `src/data/**` file, opens no `src/ui/**` module,
   takes no `docs/` line and claims no generated file or packed asset).
-  `src/scenes/RouteScene.ts` → **Task-73** alone (plus `src/engine/tileFrames.ts` only if its
-  **measurement** needs the accessor — the spec freezes whether; no `src/data/**`, no
-  `docs/` line and no packed asset). **No two of the three share a path.**
+  `scripts/frlg/build-tilesets.mjs`, the three generated
+  `src/assets/frlg/{outdoor,forest,cave}.png` (one writer per batch), `src/data/tilesets/frlg.ts`
+  + `frlg.test.ts`, `docs/tileset-spec.md` **§6** and `src/scenes/RouteScene.ts` (claimed,
+  expected byte-identical to `f1117ca` — the anchor is proven not to be the blocker) → **Task-73**
+  alone; it also claims `src/engine/tileFrames.ts` only if its measurement proves the accessor
+  must change (not expected). No `src/data/**` other than the tileset table, no `src/ui/**`, no
+  packed asset beyond the three atlases. **No two of the three share a path.**
 - **Shape:** three tasks that share no path, and the batch is the only one that can host all
   three. Task-69 is the batch the human's own decision opens and it is the **only** batch that
   can host it: `docs/balance/route-curve.md` is Task-51's in 5b and the `docs/balance/` sheets
@@ -650,9 +657,10 @@ its three branches may be cut; it can gain no member.
   caps and before the balance pass reads a curve it no longer has to design. Its sibling, the
   density pass, cannot ride beside it: **Batch 5d** re-reads the walk this task solves and
   re-pins the same `curve.test.ts` and the same `src/data/run.ts` rows. Task-72 and Task-73 are
-  the batch's other two members and take the two scenes this batch leaves free: `5d`'s Task-70
+  the batch's other two members and take what this batch leaves free: `5d`'s Task-70
   holds `src/scenes/RouteScene.ts` and `5e`'s Task-71 holds `src/scenes/BattleScene.ts`, so
-  **5c is the earliest batch whose path list leaves both scenes free** — which is why the
+  **5c is the earliest batch whose path list leaves both scenes free** — and Task-73 also takes
+  the three generated FRLG atlases, which no other batch claims — which is why the
   badges and the rustle land here rather than at the tail. Both produce nothing Task-69 reads
   and vice versa. None of the three adds a run field, so **no** `SAVE_VERSION` step — the chain
   stays 14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44) → 18 (Task-52).
@@ -3370,41 +3378,75 @@ cycles one biome.
       "only the red peak of the cap shows" of the sprite left), and the hit's frames — the pack's
       own `[6, 45, 46, 47, 48]` (`src/data/tilesets/frlg.ts`, 83 and 151) — inherit the same
       anchor.
-      **The right art already ships, so only the anchor is wrong.** The parked rest frame is the
-      field's own tuft, **byte-identical to tile frame 5** (`FRLG_TALL_GRASS`, 76) — Task-45's
-      packer stamped it from each field's own `tallGrass` source for exactly that reason — so an
-      overlay that sits on the tile's own band *is* the cartridge's "covered" layer. The fix is
-      therefore the **anchor and the origin as one pair**: place the rustle on the player's own
-      line — `this.centerY(y) + TILE_SIZE / 2`, the same feet line the player sprite uses — **and**
-      give it `setOrigin(0.5, 1)` (today it is a plain centre-anchored sprite, 4186-4193), while
-      keeping it above the actor band (`GRASS_STEP_DEPTH = 10`) so it still reads as the covered
-      layer and stays under `TREE_TIP_DEPTH` (491). Setting the position without the origin would
-      drop the art half a tile; setting the origin without the position would raise it. **The
-      spec's first duty is the measurement, not the guess** (the `[Task-39]` precedent): standing
-      in grass, on the **desktop** and on the **compact** layout, it must record how much of the
-      player sprite is covered before and after (the criterion is the **lower half — the 24 px
-      tile band of the 48 px frame — not the whole body**), that the **hit plays at the feet**,
-      that **only the player's own tile** animates, and that nothing else in the scene moves. If
-      the measurement shows the drawn overlay is larger than one tile (a size or scale defect
-      rather than an anchor one), that is the bug to fix first and the report says so.
-      **Paths:** `src/scenes/RouteScene.ts` alone — no art, no packer, no `src/data/**`, no
-      `src/ui/**`, no new constant outside the scene. **No `docs/` line**, decided and stated:
-      the anchor is scene geometry that changes no rule (the `[Task-53]`, `[Task-34]` and
-      `[Task-57]` precedent for panel geometry), and `docs/tileset-spec.md` §6 — the archived
-      Task-45's doc line — records the *atlas cells and the beat*, neither of which moves here.
+      **The dev's own measurement moved the blocker, and this entry is re-frozen on it.** A first
+      cut froze a *scene* change (anchor + origin) and the dev implemented it exactly (`f1117ca`),
+      then measured it: two full captures (929x869, 806 001 px) are **pixel-identical** before and
+      after it — the old centre-origin placement at the tile centre and the new `(0.5, 1)` at
+      `centerY + TILE_SIZE / 2` draw the same band, world y **144…168** — so **the anchor is not
+      the blocker. The art is, twice over:** (i) in `tiles:forest` the rustle cells **6 and 45-48
+      are alpha 255 on all 256 px**, because the packer re-grounded the rip's frames onto each
+      field's floor — the overlay is a solid copy of the ground, where the rip's own frames are
+      mostly transparent blades; and (ii) one cell is a whole tile of art (24 px drawn) while the
+      player's **visible** art is only **28.5 px** (frame rows 12…30 of 32 → world y
+      **138…166.5**), of which **18 px** sit inside the tile band, so the band covers **22.5 of
+      28.5 px (79 %)** and leaves a 6 px cap. With opaque cells, no anchor inside the player's own
+      tile can do better.
+      **Fix shape, as the dev's own recommendation (alternative A — the cartridge's own fix).**
+      The **packer stops re-grounding these cells**: `scripts/frlg/build-tilesets.mjs` stamps the
+      rip's five `tall_grass.png` frames **keeping their alpha** — the rest cell (6) becomes the
+      rip's **frame 0** (`effectTile(0)`, blades only) instead of a re-stamp of the field's own
+      `tallGrass` source, and the four hit cells (45-48) are `effectTile(1…4)` stamped raw, with
+      no `keyBackground`/`compositeOver` onto the floor — so the tile below *and the player* show
+      through the transparent pixels, and the parked state is a transparent overlay whose opaque
+      pixels stop at the hips. **The one closing frame stays opaque and is allowed to close over
+      the player for its ~70 ms** (the cartridge does); the standing state is what must not hide
+      the torso. The **scene geometry `f1117ca` froze stays** (origin `(0.5, 1)`, position
+      `centerY + TILE_SIZE / 2`, `GRASS_STEP_DEPTH = 10`, `GRASS_STEP_MS = 70`, the rest parked,
+      one hit per step) — the criterion is met by the art, so `src/scenes/RouteScene.ts` is
+      claimed but expected to stay byte-identical.
+      **The acceptance criterion is measurable on the opaque band, not the sprite quad** (the dev
+      froze this and it is the one to keep): *standing still in tall grass, the overlay's **opaque
+      pixels** cover the player from the feet up to **no higher than `centerY − 4 ± 5`** — the
+      bottom ~14.25 px of the 28.5 visible px, hips and legs — and are **transparent above it**,
+      so the top **13.5-15 px** (cap, face, shoulders, upper torso) stay visible*, with the
+      anchors `artTop = centerY − 18` and `artBottom = centerY + 10.5` frozen alongside it. The
+      measurement is the spec's first duty: before/after, **desktop and compact layout**, in
+      pixels, read off the **live canvas** (a shared browser and a throttled game loop are the
+      harness traps the dev hit).
+      **Paths — this task now owns the art too:** `scripts/frlg/build-tilesets.mjs`, the three
+      generated `src/assets/frlg/{outdoor,forest,cave}.png`, `src/data/tilesets/frlg.ts` +
+      `frlg.test.ts`, `docs/tileset-spec.md` **§6** and `src/scenes/RouteScene.ts` (claimed,
+      expected untouched), plus `src/engine/tileFrames.ts` **only** if the measurement proves the
+      accessor must change (not expected). All are free in Batch 5c, so the batch stays an
+      antichain. The repack keeps the Legend's way: `sprite-sources/**` is gitignored and never
+      linked into a worktree, and the packer takes the two sheets by **absolute path** on the
+      command line exactly as `[Task-45]` shipped it
+      (`node scripts/frlg/build-tilesets.mjs "<…>\sprite-sources\frlg\tileset-2.png" "<…>\sprite-sources\frlg\tall_grass.png"`),
+      twice for byte-identical output. **`docs/tileset-spec.md` §6 is now this task's** (its
+      tall-grass bullet 176-193 loses "re-grounded onto each field's floor" and "byte-identical
+      to cell 5"), because the cells' rule is what changed.
+      **The repack's own checks change.** `src/data/tilesets/frlg.test.ts` today pins that the
+      rest cell is **opaque** and **byte-identical to cell 5** (152-166) — wrong by construction
+      now; it is replaced by: the rest cell's upper rows are transparent and it is *not* cell 5,
+      the four hit cells keep the rip's alpha (46-48 not fully opaque; 45 is the closing frame),
+      the five cells are still `[6, 45, 46, 47, 48]`, cells 49/50 stay blank, and the three
+      atlases stay in step. Everything else in that file (the 4x13 geometry, the wall bank, the
+      pond, the floors, the ledge, the tall-grass **ground** cell and the 1.5 scale rule) stays
+      pinned and is not loosened. Cell **5** (the ground the map draws), the floor variants, the
+      wall bank, the pond and the ledge are byte-identical to the previous repack.
       No run field, no RNG, no engine rule, so **no `SAVE_VERSION`** step: the chain stays
-      14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44) → 18 (Task-52). `src/engine/tileFrames.ts`
-      and its test move **only** if the measurement needs the accessor to change — the spec
-      freezes which, and a change there would carry its own test.
-      Out of scope: the rustle's frames, its beat and its `grassRustleFrames`/`isGrassStepTile`
-      contract (shipped by `[Task-45]`, unchanged), the atlas and its packer, the wall/ledge/
-      water stamps, the tree tips and their depth, the trainers' and items' own depths and their
-      sprites, the fog/weather overlays (Task-62's), the camera and the HUD, and every other
-      scene's rendering.
-      *Dependencies:* none — the shipped rustle sprite, the accessors and the tide of constants
-      above are all in the tree, and the task adds no state. Batch order covers it: it wants
-      `src/scenes/RouteScene.ts` alone, and the earliest pending batch whose path list leaves
-      that file free is **Batch 5c** — whose Task-69 owns `src/data/` and the docs and whose
+      14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44) → 18 (Task-52).
+      Out of scope: the scene's geometry, its beat, its depths and its two accessors
+      (`grassRustleFrames`/`isGrassStepTile`, unchanged), the tall-grass **ground** cell 5, the
+      wall/ledge/water/floor stamps, the common atlas and the tileset ids, the player's and the
+      trainers'/items'/tree tips' own sprites and depths, the fog/weather overlays (Task-62's),
+      the camera, the HUD and every other scene's rendering.
+      *Dependencies:* none — the shipped rustle sprite, the accessors, the packer and both source
+      sheets are all in place, and the task adds no state. Batch order covers it: it wants the
+      three FRLG atlases (generated — one writer per batch) and the route scene, and the earliest
+      pending batch whose path list leaves both free is **Batch 5c** — whose Task-69 owns the
+      `src/data/` number tables and the curve docs (`docs/maps-spec.md`,
+      `docs/balance/route-curve.md`, a different file from `docs/tileset-spec.md`) and whose
       Task-72 owns `src/scenes/BattleScene.ts` — while 5d's Task-70 and 5e's Task-71 already hold
       the route scene. So it joins 5c as its **third** member, sharing no path with either of
       them, and lands **before** Batch 6, so Batch 8's accessibility pass and Batch 10's i18n
@@ -4184,7 +4226,21 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (56-65: `extra.levels.minLevel` is no longer `last.levels.maxLevel` but one step below
       `extra.levels.maxLevel`) — and `src/data/run.test.ts`'s `bandForLevel` cases (15-22:
       `5 → low`, `11 → mid`, `20 → late`, `32 → end` become e.g. `9 → low`, `16 → mid`,
-      `23 → high`, `30 → late`, `37 → end`, `55 → end`). **Pins that follow the data and must
+      `23 → high`, `30 → late`, `37 → end`, `55 → end`) — and
+      **`src/engine/run/progression.test.ts` line 63**, the one-line pin
+      `expect(bandForLevel(10).id).toBe('mid')` → `'low'` (the re-spanned `low` owns 9-16). It is
+      the **only** red test the first cut of this rework produced (1368 of 1369 green), and it is
+      a pin on a band **boundary** rather than on a rule, so that one expectation is edited and
+      nothing else in the file. **The constraint that cost the dev that round trip, recorded here
+      so nobody re-derives it:** the same file's boundary loop (52-61) pins
+      `experienceAward(level, 1, true) === Math.floor(level * 5 * 1.5 * owner.trainerXp)` while
+      `experienceAward` computes `floor((level * 5 * (1.5 * t)))` (`progression.ts` 71-80) — the
+      same arithmetic in a different multiplication order, so every solved multiplier must
+      survive `floor(((level*5)*1.5)*t) === floor((level*5)*(1.5*t))` **at every band edge**:
+      `late = 4.64` gives `experienceAward(30, 1, true) = 1043` where the test's path gives 1044,
+      while `late = 4.65` holds the identity and leaves the fills unchanged (the pre-task table's
+      `6` holds it too). A value that fails is moved to the nearest one that passes; the assertion
+      is never widened. **Pins that follow the data and must
       not be edited:** `src/engine/save.test.ts` 294 (`levelCapForMap(3)`),
       `src/engine/save.ts` 646, `src/engine/run/levelCap.test.ts` (7) and the four tests that
       simply iterate `LEVEL_BANDS` (`src/data/shop.test.ts`, `src/data/loot.test.ts`,
