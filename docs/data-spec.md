@@ -38,6 +38,7 @@ one-stone-per-forme guard rejects.
 | `src/data/tilesets/*.ts` | one biome tileset config + palette per biome | 0 |
 | `src/data/biomes.ts` | biome → tileset, layout and terrain flavour | 2 |
 | `src/data/maps.ts` | per-map tuning: level range, room-count range and room width/height range, plus the infinite-run step | 9 |
+| `src/data/bosses.ts` | the fixed party sizes a floor's boss and mini-boss field (six and three, three and two on map 1), read by the route scene's roster build (`docs/maps-spec.md` §6/§7) | 9 |
 | `src/data/trainers.ts` | trainer archetypes: name, class, sprite, money base/jitter (D33) and `carriesMega` (bosses/`ace`); the roster is the floor's BST pool (`D39`), not a species list here | 2/9 |
 | `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), plus the **competitive held set** (`COMPETITIVE_HELD`: the damage/Speed/accuracy/crit/last/survive items, the resist and pinch berries and the self-status orbs whose effect `effects/items.ts` models, and the items it does not model yet, which `UNMODELLED_ITEMS` records by name, D16), **valuables** (sellable), **Mega Stones**, the **Plates** (`plate` + 1.2x `typeBoost`, D37) and the **TMs** (`machine` pocket), each with a Poké Dollar price | 3/6/10 |
 | `src/data/tms.ts` | the base-Gen-9 TM table: TM number → move id (TM001 … TM171), hand-authored from the dex's `9M` flags, with the id/number/move helpers `items.ts` turns into reusable machines (D36) | 10 |

@@ -17,6 +17,7 @@ import {
 import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
 import { ROUTE_LOOT } from '../data/loot';
 import { POPULATION } from '../data/population';
+import { bossPartySize, type BossPartyKind } from '../data/bosses';
 import {
   OVERWORLD_SPRITE_TEXTURE_KEY,
   OVERWORLD_SPRITE_WIDTH,
@@ -1025,8 +1026,9 @@ export class RouteScene extends Phaser.Scene {
 
   /**
    * The map boss: a themed `ace` trainer at the room's farthest walkable tile,
-   * fielding a max-level party. It stands only while the map's boss is alive, so
-   * the portal stays sealed until it falls.
+   * fielding a fixed six-member party (three on map 1) at the map's `maxLevel`. It
+   * stands only while the map's boss is alive, so the portal stays sealed until it
+   * falls.
    */
   private bossTrainer(view: RoomView): RouteTrainer | null {
     const position = this.farthestRoomTile();
@@ -1042,8 +1044,8 @@ export class RouteScene extends Phaser.Scene {
 
   /**
    * The mini-boss: a strong `ace` trainer at the special room's farthest tile,
-   * fielding a party one size larger than its band and allowed a Mega Stone. It
-   * stands only while unbeaten, like the boss.
+   * fielding a fixed three-member party (two on map 1) at band levels and allowed a
+   * Mega Stone. It stands only while unbeaten, like the boss.
    */
   private miniBossTrainer(view: RoomView): RouteTrainer | null {
     const position = this.farthestRoomTile();
@@ -4679,15 +4681,14 @@ export class RouteScene extends Phaser.Scene {
     const archetype = getTrainerArchetype(trainer.archetypeId);
     if (!archetype) return;
     const band = this.room ? bandForMap(this.room.mapIndex) : runBand(this.run.seed, this.route.routeIndex);
-    const isBoss = this.room !== null && trainer.id === bossTrainerId(this.room.mapIndex);
-    const isMiniBoss = this.room !== null && trainer.id === miniBossTrainerId(this.room.mapIndex);
-    // The map boss fields a max-level party one size larger than its band; the
-    // mini-boss a band-level party one size larger, both allowed a Mega Stone.
-    const rosterBand = isBoss
-      ? { ...band, minLevel: band.maxLevel, trainerSize: band.trainerSize + 1 }
-      : isMiniBoss
-        ? { ...band, trainerSize: band.trainerSize + 1 }
-        : band;
+    const mapIndex = this.room ? this.room.mapIndex : null;
+    const isBoss = mapIndex !== null && trainer.id === bossTrainerId(mapIndex);
+    const isMiniBoss = mapIndex !== null && trainer.id === miniBossTrainerId(mapIndex);
+    const kind: BossPartyKind | null = isBoss ? 'boss' : isMiniBoss ? 'miniboss' : null;
+    // The map boss fields a fixed max-level party (six, three on map 1) and the
+    // mini-boss a fixed band-level party (three, two on map 1), both allowed a Mega
+    // Stone; a regular trainer keeps its band's size (`src/data/bosses.ts`).
+    const rosterBand = isBoss ? { ...band, minLevel: band.maxLevel } : band;
     const key =
       isBoss && this.room
         ? `${this.run.seed}:boss:${this.room.mapIndex}`
@@ -4697,6 +4698,7 @@ export class RouteScene extends Phaser.Scene {
     const roster = trainerRoster(rosterBand, new Rng(hashSeed(key)), trainer.id, {
       allowMega: isBoss || isMiniBoss || archetype.carriesMega === true,
       boss: isBoss || isMiniBoss,
+      ...(kind !== null && mapIndex !== null ? { count: bossPartySize(kind, mapIndex) } : {}),
     });
     this.startBattle({
       kind: 'trainer',

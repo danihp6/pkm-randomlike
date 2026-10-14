@@ -123,9 +123,14 @@ the one call site, `resolveBattle` in `src/engine/run/resolve.ts`).
 
 ## Exceptions
 
-- **The map boss** fields a max-level party one size larger than its band and the
-  **mini-boss** one size larger still; both are injected by the scene on top of the
-  route, so they award beyond the 75 % budget.
+- **The map boss** fields a fixed six (three on **map 1**) at the floor's cap and
+  the **mini-boss** a fixed three (two on map 1) at band levels
+  (`src/data/bosses.ts`); both are injected by the scene on top of the route, so
+  they award beyond the 75 % budget and that award is **left uncapped** on
+  purpose — a six-member max-level roster pays `experienceAward(cap, 1, true)`
+  six times, roughly six times what `A(m)` assumes, because the boss is the
+  floor's finale and its reward sits outside the rule that a floor's regular
+  trainers pay its cap.
 - The floor's **entry, boss and special leaves** (the shop, the mini-boss room and
   the mega-stone room) are quiet: they place no route trainers at all, and the shop
   holds a counter rather than a trainer. **Map 1 hangs no shop leaf** at all

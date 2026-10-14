@@ -149,7 +149,11 @@ One capture attempt per route (a run-level counter, not a per-battle one).
   level instead. The bar lives on the run (`RunState.xp`), not on a member, and
   the award is not split by party size (the squad is one unit). The whole
   progression is RNG-free (D11).
-- Trainer rosters are generated at the route's level band, never above the cap.
+- Trainer rosters are generated at the route's level band, never above the cap,
+  with two exceptions the floor injects on top of the route: the **boss** fields
+  a fixed six (three on map 1) at the map's `maxLevel`, and the **mini-boss** a
+  fixed three (two on map 1) at band levels (`src/data/bosses.ts`,
+  `bossPartySize`; `docs/maps-spec.md` §6/§7).
 
 ### 7.1 Randomized learnsets and movesets (`D17`)
 
