@@ -22,6 +22,9 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   roster is the floor's BST pool (`src/engine/run/pool.ts`, `D39`).
 - `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
   each band's `hiddenChance` (`docs/routes-spec.md` §2 step 4).
+- `population.ts` — the per-band **population thinning** the route generator reads
+  (`trainerBonus` added to the map-size tier's own, and the chance a pocket's guard
+  exists at all, `O-M5`; `docs/route-generator.md` §3.4).
 - `run.ts` — level bands (level range, party size and the BST window, `D39`) and
   the run chain cadence.
 - `keybinds.ts` — the confirm/cancel/move/run/interact/reset/hud/settings actions,

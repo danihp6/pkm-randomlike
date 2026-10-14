@@ -20,8 +20,8 @@ with no gap.
 
 | Band  | Levels | Trainer party | `trainerXp` | BST window |
 | ----- | -----: | ------------: | ----------: | ---------- |
-| Early |    2–9 |             1 |        1.35 | 0–305      |
-| Low   |   9–16 |             1 |        6.08 | 306–355    |
+| Early |    2–9 |             1 |        2.67 | 0–305      |
+| Low   |   9–16 |             1 |       10.68 | 306–355    |
 | Mid   |  16–23 |             2 |        3.04 | 356–440    |
 | High  |  23–30 |             2 |        5.82 | 441–490    |
 | Late  |  30–37 |             3 |        4.65 | 491–520    |
@@ -32,11 +32,12 @@ party already carries its own levels and party size, so the multiplier is only w
 is left to reach the floor's cap. It tracks two things: how many Pokémon the floor
 fields (`T̄(m)` × `trainerSize`) and how far its cap jumps (`needed(m)`) against the
 levels those members stand at. `Low` is therefore the peak — map 2's cap leaps
-9 → 16 while its roster is still one Pokémon per trainer, so twelve-odd defeats have
+9 → 16 while its roster is still one Pokémon per trainer, so six-odd defeats have
 to carry 3367 XP — and `End` is the lowest — its floors field four members each,
-over sixteen or more trainers, so map 6 alone beats 64 Pokémon. `Mid` sits under
-`High` for the same reason: map 4 places _fewer_ trainers (eleven against thirteen)
-for a one-band cap jump of the same size, so each of its defeats carries more.
+over fourteen or more trainers, so map 6 alone beats 58 Pokémon. `High` sits over
+`Mid` for a related reason: map 4's step (23 → 30) is the same seven levels as
+map 3's, but it is taken higher up the curve, where a defeat is worth more while
+the floor places only about one trainer more, so each defeat still carries more.
 
 ## Level caps per map
 
@@ -74,29 +75,35 @@ level range, each worth `experienceAward(level, 1, true)`.
 
 | Map | Band  | Trainers per seed (rooms) | `T̄(m)` |  `A(m)` | `0.75 × T̄(m) × A(m)` | Window          | Fill |
 | --: | ----- | ------------------------- | -----: | ------: | -------------------: | --------------- | ---: |
-|   1 | Early | 12 (8), 12 (7), 12 (8)    |  12.00 |   95.13 |               856.13 | 604 – 906       | 1.42 |
-|   2 | Low   | 11 (8), 12 (7), 14 (7)    |  12.33 |  524.00 |              4847.00 | 3367 – 5050.5   | 1.44 |
-|   3 | Mid   | 13 (8), 13 (7), 14 (7)    |  13.33 | 1008.00 |             10080.00 | 8071 – 12106.5  | 1.25 |
-|   4 | High  | 12 (9), 9 (9), 12 (9)     |  11.00 | 2246.50 |             18533.63 | 14833 – 22249.5 | 1.25 |
-|   5 | Late  | 16 (8), 10 (8), 10 (8)    |  12.00 | 3291.38 |             29622.38 | 23653 – 35479.5 | 1.25 |
-|   6 | End   | 14 (8), 17 (7), 17 (9)    |  16.00 | 3130.29 |             37563.43 | 28854 – 43281   | 1.30 |
-|   7 | End   | 13 (8), 15 (9), 23 (10)   |  17.00 | 3600.00 |             45900.00 | 38142 – 57213   | 1.20 |
-|   8 | End   | 25 (11), 15 (7), 12 (8)   |  17.33 | 4069.71 |             52906.29 | 48726 – 73089   | 1.09 |
+|   1 | Early | 7 (7), 5 (6), 5 (7)       |   5.67 |  177.50 |               754.38 | 604 – 906       | 1.25 |
+|   2 | Low   | 5 (8), 8 (7), 6 (7)       |   6.33 |  886.25 |              4209.69 | 3367 – 5050.5   | 1.25 |
+|   3 | Mid   | 11 (8), 13 (7), 12 (7)    |  12.00 | 1008.00 |              9072.00 | 8071 – 12106.5  | 1.12 |
+|   4 | High  | 15 (9), 12 (9), 12 (9)    |  13.00 | 2246.50 |             21903.38 | 14833 – 22249.5 | 1.48 |
+|   5 | Late  | 16 (8), 12 (8), 9 (8)     |  12.33 | 3291.38 |             30445.22 | 23653 – 35479.5 | 1.29 |
+|   6 | End   | 14 (8), 15 (7), 15 (9)    |  14.67 | 3130.29 |             34433.14 | 28854 – 43281   | 1.19 |
+|   7 | End   | 13 (8), 12 (9), 19 (10)   |  14.67 | 3600.00 |             39600.00 | 38142 – 57213   | 1.04 |
+|   8 | End   | 23 (11), 15 (7), 14 (8)   |  17.33 | 4069.71 |             52906.29 | 48726 – 73089   | 1.09 |
 
 "Fill" is `0.75 × T̄(m) × A(m) / needed(m)`; the rule wants it inside `1 – 1.5`, and
-every floor lands there. Maps 1-2 sit in the **upper half** of the window (1.42 and
-1.44) on purpose: the pass that thins those two floors strips trainers and loot, and
-a floor that leaves the window's slack to spend is what lets it stay above 1 without
-re-solving the whole chain.
+every floor lands there. Maps 1-2 sit in the **middle** of the window (1.25 and
+1.25): they are the run's on-ramp, and the population pass that thins them
+(`POPULATION`, `O-M5`) cancels the map-size tier's `+1` and hangs each pocket's
+guard only a chance of the time. Map 1 hangs no shop leaf either, so its floor
+reads **six rooms, seven with its mini-boss**. That thinner density is what the
+`early` and `low` `trainerXp` numbers above are solved against: before the pass the
+two floors placed 12.00 and 12.33 trainers and read 1.42 and 1.44 — the upper half
+of the window, held open on purpose for exactly this re-solve.
 
 A floor's level range **straddles two bands**, and the multiplier comes from the
 _defeated_ Pokémon's band, so `A(m)` mixes its own band's rate with the next band's:
-map 1's roster spans levels 2–9, so its 2–8 roster members are paid Early's 1.35 and
-its level-9 member Low's 6.08. That is why the six multipliers are solved as a chain —
+map 1's roster spans levels 2–9, so its 2–8 roster members are paid Early's 2.67 and
+its level-9 member Low's 10.68. That is why the six multipliers are solved as a chain —
 each floor's window constrains its own band _and_ the one above it — rather than one
 band at a time. Re-solve by measuring first: `A(m)` is fixed by the floor's own level
 range and party size, so the sheet's numbers follow the walk in
-`src/engine/run/curve.test.ts`, never the other way round.
+`src/engine/run/curve.test.ts`, never the other way round. Solvable from the bottom:
+`low` from map 2, then `early` from map 1 (whose level-9 rosters are paid `low`'s
+multiplier), then the four later bands the same way.
 
 ## The rule
 
@@ -121,7 +128,9 @@ the one call site, `resolveBattle` in `src/engine/run/resolve.ts`).
   route, so they award beyond the 75 % budget.
 - The floor's **entry, boss and special leaves** (the shop, the mini-boss room and
   the mega-stone room) are quiet: they place no route trainers at all, and the shop
-  holds a counter rather than a trainer.
+  holds a counter rather than a trainer. **Map 1 hangs no shop leaf** at all
+  (`docs/maps-spec.md` §7, `hangsShop`): the leaf it would hold is quiet either way,
+  so not one trainer moves for it — its floor simply reads one room fewer.
 - **Wild encounters** are outside the budget entirely; they are how a floor is
   walked, not how it is paid for.
 - **Infinite mode** reuses the `End` band past map 8 while the cap keeps climbing

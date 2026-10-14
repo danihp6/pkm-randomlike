@@ -30,7 +30,7 @@ export const LEVEL_BANDS: readonly LevelBand[] = [
     minLevel: 2,
     maxLevel: 9,
     trainerSize: 1,
-    trainerXp: 1.35,
+    trainerXp: 2.67,
     bst: { min: 0, max: 305 },
   },
   {
@@ -39,7 +39,7 @@ export const LEVEL_BANDS: readonly LevelBand[] = [
     minLevel: 9,
     maxLevel: 16,
     trainerSize: 1,
-    trainerXp: 6.08,
+    trainerXp: 10.68,
     bst: { min: 306, max: 355 },
   },
   {

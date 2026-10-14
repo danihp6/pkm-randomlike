@@ -8,6 +8,7 @@ import { Rng } from '../rng';
 import {
   MAP_EDGES,
   OPPOSITE_EDGE,
+  SHOP_FROM_MAP,
   biomeForMap,
   linkedNeighbour,
   pickBiome,
@@ -161,10 +162,13 @@ function assertPlan(plan: MapPlan): void {
   expect(entry.openings.filter((opening) => opening.kind === 'entry')).toHaveLength(1);
 
   // Special rooms (`docs/maps-spec.md` §7): extra dead-end leaves, never the entry
-  // or the boss, one shop always and at most one mini-boss / mega-stone each.
+  // or the boss, exactly one shop from map 2 on (map 1 hangs none) and at most one
+  // mini-boss / mega-stone each.
   const specials = plan.rooms.filter((room) => room.special !== null);
   expect(specials.length).toBe(plan.specials.length);
-  expect(specials.filter((room) => room.special === 'shop')).toHaveLength(1);
+  expect(specials.filter((room) => room.special === 'shop')).toHaveLength(
+    plan.mapIndex >= SHOP_FROM_MAP ? 1 : 0,
+  );
   expect(specials.filter((room) => room.special === 'mini-boss').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'mega-stone').length).toBeLessThanOrEqual(1);
   if (plan.mapIndex < 3) expect(specials.filter((room) => room.special === 'mega-stone')).toHaveLength(0);
@@ -235,9 +239,21 @@ describe('planMap', () => {
 });
 
 describe('special rooms', () => {
-  it('gives every floor exactly one shop, hung near the entry', () => {
+  it('hangs no shop on map 1, whose floor reads six rooms or seven with its mini-boss', () => {
     for (const seed of SEEDS) {
-      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+      const plan = planMap(seed, 1);
+      expect(plan.rooms.some((room) => room.special === 'shop'), `${seed} map 1 room`).toBe(false);
+      expect(plan.specials.some((special) => special.kind === 'shop'), `${seed} map 1 special`).toBe(
+        false,
+      );
+      const mini = specialRoom(plan, 'mini-boss') !== undefined ? 1 : 0;
+      expect(plan.rooms.length, `${seed} map 1 rooms`).toBe(6 + mini);
+    }
+  });
+
+  it('gives every floor from map 2 on exactly one shop, hung near the entry', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = SHOP_FROM_MAP; mapIndex <= 8; mapIndex++) {
         const plan = planMap(seed, mapIndex);
         const shop = specialRoom(plan, 'shop');
         expect(shop, `${seed} map ${mapIndex}`).toBeDefined();

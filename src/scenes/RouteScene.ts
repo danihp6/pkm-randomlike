@@ -16,6 +16,7 @@ import {
 } from '../data/playerSprite';
 import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
 import { ROUTE_LOOT } from '../data/loot';
+import { POPULATION } from '../data/population';
 import {
   OVERWORLD_SPRITE_TEXTURE_KEY,
   OVERWORLD_SPRITE_WIDTH,
@@ -1140,6 +1141,7 @@ export class RouteScene extends Phaser.Scene {
       loot: loot.pool,
       hiddenChance: loot.hiddenChance,
       itemChance: loot.itemChance,
+      population: POPULATION[band.id],
       trainerArchetypes: TRAINER_ARCHETYPE_IDS,
       // The map's entry, boss and special rooms are **quiet**: no tall grass, no
       // ledges, no ground items and no trainers. The entry and boss are quiet

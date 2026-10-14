@@ -571,6 +571,62 @@ describe('sketchRoute', () => {
     expect(sketchRoute(sized).trainers.length).toBeGreaterThan(0);
   });
 
+  it('treats a neutral population row exactly like no population at all', () => {
+    const loot = [
+      { itemId: 'potion', weight: 1 },
+      { itemId: 'pokeball', weight: 1 },
+    ];
+    const base: RouteRequest = {
+      ...request('pop-neutral', 3, 'cross'),
+      width: 30,
+      height: 30,
+      grassPatches: 8,
+      loot,
+      hiddenChance: 0.35,
+      itemChance: 0.75,
+      trainerArchetypes: ['youngster', 'lass'],
+    };
+    const bare = sketchRoute(base);
+    const neutral = sketchRoute({ ...base, population: { trainerBonus: 0, guardChance: 1 } });
+    expect(neutral).toEqual(bare);
+    expect(bare.trainers.length).toBeGreaterThan(0);
+    expect(bare.items.length).toBeGreaterThan(0);
+  });
+
+  it('keeps only the spine guard when the band cancels the tier bonus and gates every pocket', () => {
+    const sized: RouteRequest = {
+      ...request('thin-guard', 2, 'cross'),
+      width: 30,
+      height: 30,
+      trainerArchetypes: ['youngster', 'lass'],
+    };
+    const thinned = sketchRoute({ ...sized, population: { trainerBonus: -1, guardChance: 0 } });
+    expect(wantsTrainers(sized)).toBe(true);
+    expect(thinned.trainers).toHaveLength(1);
+    expect(validateRoute(thinned, { expectTrainers: true }).ok).toBe(true);
+  });
+
+  it('never places more trainers with a negative trainer bonus than without a population', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (let i = 0; i < 16; i++) {
+        const base: RouteRequest = {
+          seed: `thin-${i}`,
+          routeIndex: 2,
+          biomeId: 'wood',
+          shape,
+          width: 30,
+          height: 30,
+          trainerArchetypes: ['youngster', 'lass'],
+        };
+        const bare = sketchRoute(base);
+        const thinned = sketchRoute({ ...base, population: { trainerBonus: -1, guardChance: 1 } });
+        expect(thinned.trainers.length, `${shape} thin-${i}`).toBeLessThanOrEqual(
+          bare.trainers.length,
+        );
+      }
+    }
+  }, 120_000);
+
   it('ships no trainers for an empty pool or a quiet room, and still validates', () => {
     const empty: RouteRequest = {
       ...request('no-pool', 2, 'cross'),

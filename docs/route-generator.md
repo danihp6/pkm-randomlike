@@ -129,6 +129,7 @@ reachable: Set<Point>               # FloodFill(tiles, entry), computed after te
 | `grassPatches`, `ledges` | `src/data/biomes.ts` | terrain flavour (base counts) |
 | map-size tiers (`small`/`medium`/`large`: terrain scale, branch bonus) | `src/data/mapSize.ts` | terrain multiplier and extra optional paths as the map grows |
 | `trainerSize`, `minLevel`, `maxLevel` | `src/data/run.ts` | population and levels |
+| band population (`trainerBonus`, `guardChance`) | `src/data/population.ts` | how a band thins its floors' trainers (`O-M5`) |
 | loot `pool` / `hiddenChance` | `src/data/loot.ts` | item contents and how often one hides |
 | wild species | `src/engine/run/pool.ts` (`speciesPool`, D39) | the band's BST pool, legendaries/mythicals banned |
 
@@ -325,6 +326,20 @@ already watching — or able to spin and watch — the tile the player arrives o
 Some trainers cycle their facing on a timer (a "spinning" trainer) so their line
 turns with them.
 
+A **band** may thin that count (`POPULATION[band]`, balance data, `O-M5`): its
+`trainerBonus` is added to the map-size tier's own bonus — the loop runs
+`max(0, tier + trainerBonus)` times, so a negative value can never *add* a pass —
+and each pocket's guard exists only with its `guardChance` probability. A
+`guardChance` of `0` skips the pocket outright, a fraction between `0` and `1`
+spends exactly one draw on the `populate` stream per pocket before the attempt, and
+`1` keeps the full behaviour with **no draw at all**. A neutral row
+(`{ trainerBonus: 0, guardChance: 1 }`) is therefore bit-identical to a request
+that passes no population — the same draws, the same routes. The **spine guard is
+never thinned**: the first `tryFrom(spineTiles)` runs whatever the band says, so
+the lane-guard promise below holds for every band, and only the tier bonus and the
+pocket guards move. The two on-ramp bands (`early`, `low`) thin their floors this
+way; the four later bands ship the neutral row.
+
 The lane guard holds **when the population pass was asked for trainers**: the
 request carries a non-empty archetype pool and the room is not `quiet` (the map's
 entry and boss rooms, `docs/maps-spec.md` §2/§6, ship no trainer legitimately).
@@ -342,8 +357,9 @@ PlaceTrainers(tiles, entry, exits, spine, branches, pockets, band, rng):
     candidates = floor tiles hugging a solid wall, off the entry/exits/pockets,
                  not next to a chosen trainer, at least 3 from the entry,
                  with a passable facing
-    # 1 on the main lane, 1 per pocket on its branch, + tier.trainerBonus
-    for i in 0 .. 1 + len(pockets) + trainerBonusForSize(size):
+    # 1 on the main lane (never thinned), 1 per pocket on its branch gated by the
+    # band's guardChance, + max(0, tier.trainerBonus + band.trainerBonus)
+    for i in 0 .. 1 + len(pockets) + max(0, trainerBonusForSize(size) + band.trainerBonus):
         pos   = PopRandom(candidates without a spot)
         if pos is null: break
         if not KeepsEverythingReachable(tiles, entry, reach, chosen + {pos}): continue
@@ -381,7 +397,8 @@ PlaceItems(tiles, reachable, pockets, band, rng, hiddenChance, itemChance):
 Items are placed **after** terrain, on the pockets that flood-fill proved
 reachable, so a hazard that sealed a pocket simply makes it hold nothing instead
 of stranding loot. An optional path holds an item only with `itemChance`
-probability (`ROUTE_LOOT`, 75% for now), and when it does the pocket is the
+probability (per band in `ROUTE_LOOT`: 50 % on the `early` on-ramp, 60 % on `low`,
+75 % from `mid` on), and when it does the pocket is the
 **deepest** tile of the branch — the item sits as far down the path as it can.
 Because a route carves more optional paths as the map grows
 (`BranchBonusForSize`), the number of items follows the route's **size** rather
