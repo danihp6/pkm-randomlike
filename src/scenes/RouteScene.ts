@@ -3,6 +3,7 @@ import { biomeForRoute, getBiome } from '../data/biomes';
 import { getMove, getSpecies, type StatId, type Stats } from '../data/dex';
 import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { type HudPanelId } from '../data/hudLayout';
+import { FINITE_MAPS, levelCapForMap } from '../data/maps';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { getItem, MEGA_STONE_IDS } from '../data/items';
 import { tmNumber } from '../data/tms';
@@ -27,7 +28,7 @@ import { trainerFacingPose, trainerWalkAnimKey } from '../render/trainerAnim';
 import { getTrainerArchetype, TRAINER_ARCHETYPE_IDS } from '../data/trainers';
 import { IS_DEVELOP } from '../dev/env';
 import { nextDebugPokemonId } from '../dev/ids';
-import type { DebugPartyEdit, DebugPartyMember, DebugRouteContext, DebugRouteInput } from '../dev/debugMenu';
+import type { DebugPartyEdit, DebugPartyMember, DebugRouteContext, DebugRouteInput, DebugTeleportResult } from '../dev/debugMenu';
 import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
   BOSS_MONEY_MULTIPLIER,
@@ -87,7 +88,7 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { FLOOR, TALL_GRASS, WALL, isWalkable, mapPixelSize, resolveMove, type TileMap } from '../engine/map';
+import { FLOOR, TALL_GRASS, WALL, isWalkable, mapPixelSize, mapSize, resolveMove, type TileMap } from '../engine/map';
 import { hashSeed, randomSeed, Rng } from '../engine/rng';
 import { clearRun, storeRun, type Settings } from '../engine/save';
 import {
@@ -673,6 +674,10 @@ export class RouteScene extends Phaser.Scene {
   private passThrough = false;
   /** Dev only: color the cell under the mouse and show its tile coordinates. */
   private hoverInspect = false;
+  /** Dev only: while true the tall grass rolls no wild encounter. */
+  private ignoreEncounters = false;
+  /** Dev only: while true no line of sight opens a trainer battle. */
+  private ignoreTrainers = false;
   private hoverCell: Tile | null = null;
   private hoverMarker: Phaser.GameObjects.Rectangle | null = null;
   private hoverLabel: Phaser.GameObjects.BitmapText | null = null;
@@ -1213,6 +1218,8 @@ export class RouteScene extends Phaser.Scene {
     this.hudDetailState = CLOSED_DETAIL;
     this.hudPress = null;
     this.passThrough = false;
+    this.ignoreEncounters = false;
+    this.ignoreTrainers = false;
     this.clearHoverInspect();
     this.gameOver = false;
     this.pendingBattle = null;
@@ -4449,7 +4456,7 @@ export class RouteScene extends Phaser.Scene {
     // A door on the border changes room (or steps through the open portal).
     if (this.tryLeaveRoom(direction)) return;
     const grassy = isGrassStepTile(this.map, this.player.x, this.player.y, this.grassTipKeys);
-    if (grassy) {
+    if (grassy && !this.ignoreEncounters) {
       // A step that lands in the grass plays the field's own rustle once.
       this.playGrassRustle();
       const encounter = this.encounters.step();
@@ -4562,6 +4569,7 @@ export class RouteScene extends Phaser.Scene {
 
   /** The first undefeated trainer whose line of sight holds the player. */
   private trainerSpotted(): RouteTrainer | null {
+    if (this.ignoreTrainers) return null;
     for (const trainer of this.route.trainers) {
       if (isTrainerDefeated(this.run, trainer.id)) continue;
       if (seesPlayer(this.route, this.effectiveTrainer(trainer), this.player, this.moveMap)) return trainer;
@@ -6126,6 +6134,12 @@ export class RouteScene extends Phaser.Scene {
       height: this.routeParams.height,
       passThrough: this.passThrough,
       hoverInspect: this.hoverInspect,
+      mapIndex: this.run.mapIndex,
+      roomInMap: this.run.routeInMap,
+      roomCount: this.room ? this.room.roomCount : 0,
+      tile: { x: this.player.x, y: this.player.y },
+      ignoreEncounters: this.ignoreEncounters,
+      ignoreTrainers: this.ignoreTrainers,
     };
   }
 
@@ -6145,6 +6159,18 @@ export class RouteScene extends Phaser.Scene {
     }
     // The pointer is already over a cell: show it without waiting for a move.
     this.updateHoverInspect(this.input.activePointer);
+  }
+
+  /** Debug only: while true the tall grass rolls no wild encounter. */
+  setIgnoreEncounters(enabled: boolean): void {
+    if (!IS_DEVELOP) return;
+    this.ignoreEncounters = enabled;
+  }
+
+  /** Debug only: while true no line of sight opens a trainer battle. */
+  setIgnoreTrainers(enabled: boolean): void {
+    if (!IS_DEVELOP) return;
+    this.ignoreTrainers = enabled;
   }
 
   /**
@@ -6274,6 +6300,84 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
+   * Debug only: moves the run to `mapIndex`, clamped to the run's map range and
+   * built exactly as `advanceMap` builds a new floor — except that it does **not**
+   * heal (that is the map transition's own reward) and it resets the destination
+   * floor's bookkeeping even when that floor is the one the run is already on.
+   */
+  teleportToFloor(mapIndex: number): DebugTeleportResult {
+    if (!IS_DEVELOP || !this.run || this.gameOver || !this.scene.isActive()) {
+      return { ok: false, error: 'no active route' };
+    }
+    const requested = Number.isFinite(mapIndex) ? Math.floor(mapIndex) : this.run.mapIndex;
+    const floor =
+      this.run.mode === 'finite'
+        ? Math.max(1, Math.min(FINITE_MAPS, requested))
+        : Math.max(1, requested);
+    const plan = planMap(this.run.seed, floor);
+    const run: RunState = {
+      ...this.run,
+      routeIndex: this.run.routeIndex + 1,
+      mapIndex: floor,
+      routeInMap: plan.entryRoom,
+      arrivalEdge: plan.entryEdge,
+      discoveredRooms: [plan.entryRoom],
+      bossDefeated: false,
+      entryDeparted: false,
+      pcUnlocked: [],
+      levelCap: levelCapForMap(floor),
+      defeatedTrainers: [],
+      pickedItems: [],
+      capturedRooms: [],
+    };
+    this.transitionTo(run);
+    return { ok: true };
+  }
+
+  /**
+   * Debug only: moves the run to a room of the current floor, clamped to the
+   * plan. No arrival edge is passed, so `advanceRoute` derives a real door and the
+   * destination is a room reached through one.
+   */
+  teleportToRoom(roomInMap: number): DebugTeleportResult {
+    if (!IS_DEVELOP || !this.run || this.gameOver || !this.scene.isActive()) {
+      return { ok: false, error: 'no active route' };
+    }
+    const plan = this.plan;
+    if (!plan) return { ok: false, error: 'no floor plan' };
+    const requested = Number.isFinite(roomInMap) ? Math.floor(roomInMap) : this.run.routeInMap;
+    const room = Math.max(0, Math.min(plan.rooms.length - 1, requested));
+    this.transitionTo(advanceRoute(this.run, room));
+    return { ok: true };
+  }
+
+  /**
+   * Debug only: moves the player onto a tile of the current room, clamped to the
+   * map. A solid tile is refused — the player would be stuck in it (tick *Pass
+   * through obstacles* first). A teleport is a position change, not a step: it
+   * rolls no encounter and runs no sight check on arrival.
+   */
+  teleportToTile(x: number, y: number): DebugTeleportResult {
+    if (!IS_DEVELOP || !this.run || this.gameOver || !this.scene.isActive()) {
+      return { ok: false, error: 'no active route' };
+    }
+    const size = mapSize(this.map);
+    const tile = {
+      x: Number.isFinite(x) ? Math.floor(x) : this.player.x,
+      y: Number.isFinite(y) ? Math.floor(y) : this.player.y,
+    };
+    tile.x = Math.max(0, Math.min(size.width - 1, tile.x));
+    tile.y = Math.max(0, Math.min(size.height - 1, tile.y));
+    if (!isWalkable(this.moveMap, tile)) return { ok: false, error: 'solid tile' };
+    // The in-flight tween must not carry the sprite back to the old destination
+    // and run `onTileEntered` there.
+    this.stopWalking();
+    this.movePlayerTo(tile.x, tile.y);
+    this.refreshHud();
+    return { ok: true };
+  }
+
+  /**
    * Debug only: the on-screen route described cell by cell (tile value, resolved
    * atlas frame, wall-pattern row/column and the whole-object tree each cell
    * belongs to), as JSON for the menu's "Map" tab. Null when no route is active.
@@ -6389,7 +6493,10 @@ export class RouteScene extends Phaser.Scene {
       this.faceTrainerSprite(entry, turns[index]);
       // A spinner that swings its cone onto a player standing still still spots
       // them, the same as stepping into a fixed trainer's line of sight.
-      if (seesPlayer(this.route, this.effectiveTrainer(entry.trainer), this.player, this.moveMap)) {
+      if (
+        !this.ignoreTrainers &&
+        seesPlayer(this.route, this.effectiveTrainer(entry.trainer), this.player, this.moveMap)
+      ) {
         this.beginChase(entry.trainer);
         return;
       }

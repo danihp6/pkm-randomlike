@@ -50,7 +50,22 @@ export type DebugRouteContext = Readonly<{
   passThrough: boolean;
   /** Dev inspect: color the hovered cell and show its tile coordinates. */
   hoverInspect: boolean;
+  /** 1-based floor of the live run. */
+  mapIndex: number;
+  /** 0-based room id inside that floor (`RunState.routeInMap`). */
+  roomInMap: number;
+  /** Rooms in the floor's plan; 0 on a dev-built route (the generator/import tools have no plan). */
+  roomCount: number;
+  /** The player's tile. The scene always fills it; nullable only so the helper's clause-drop is defined. */
+  tile: { x: number; y: number } | null;
+  /** Dev only: while true the tall grass rolls no wild encounter. */
+  ignoreEncounters: boolean;
+  /** Dev only: while true no line of sight opens a trainer battle. */
+  ignoreTrainers: boolean;
 }>;
+
+/** Where a dev teleport landed, or why it refused. `where` is reserved and stays unset here. */
+export type DebugTeleportResult = Readonly<{ ok: boolean; where?: string; error?: string }>;
 
 /** The resolved inputs the panel sends back; a blank field already fell back. */
 export type DebugRouteInput = Readonly<{
@@ -116,6 +131,16 @@ export type DebugMenuHandlers = Readonly<{
   exportFrameMap: () => string | null;
   /** Loads an exported frame map back into the scene; reports why it failed. */
   importFrameMap: (text: string) => Readonly<{ ok: boolean; error?: string }>;
+  /** Dev only: moves the run to a floor, clamped to the run's map range. */
+  onTeleportFloor: (mapIndex: number) => DebugTeleportResult;
+  /** Dev only: moves the run to a room of the current floor, clamped to the plan. */
+  onTeleportRoom: (roomInMap: number) => DebugTeleportResult;
+  /** Dev only: moves the player onto a tile of the current room. */
+  onTeleportTile: (x: number, y: number) => DebugTeleportResult;
+  /** Dev only: while true the tall grass rolls no wild encounter. */
+  onToggleIgnoreEncounters: (enabled: boolean) => void;
+  /** Dev only: while true no line of sight opens a trainer battle. */
+  onToggleIgnoreTrainers: (enabled: boolean) => void;
 }>;
 
 /**
@@ -218,6 +243,21 @@ export function matchPartyMember(
       (member) => member.name.toLowerCase().includes(text) || member.speciesId.includes(id),
     ) ?? null
   );
+}
+
+/**
+ * One line naming the run's position: `map 3 · room 2/7 · (14,9)`. Clauses join
+ * with `space · space` and are **dropped** rather than printed empty: the room
+ * clause only when the floor has a plan (`roomCount > 0`), the tile clause only
+ * when there is a tile. The `map` clause is always printed.
+ */
+export function debugLocationLabel(
+  context: Pick<DebugRouteContext, 'mapIndex' | 'roomInMap' | 'roomCount' | 'tile'>,
+): string {
+  const clauses = [`map ${context.mapIndex}`];
+  if (context.roomCount > 0) clauses.push(`room ${context.roomInMap}/${context.roomCount}`);
+  if (context.tile) clauses.push(`(${context.tile.x},${context.tile.y})`);
+  return clauses.join(' · ');
 }
 
 /** A level the wild can legally hold; a blank or broken field falls back to 5. */
@@ -425,6 +465,81 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   const routeStatus = document.createElement('div');
   routeStatus.style.cssText = 'min-height:16px;color:#94a3b8;';
 
+  const locationInfo = document.createElement('div');
+  locationInfo.id = 'debug-location';
+  locationInfo.style.cssText = 'color:#94a3b8;';
+
+  // Teleport block: jump the run to a floor, to a room of the current floor or
+  // to a tile of the current room. A blank field means "wherever the run is now",
+  // so it reads back the live position rather than guessing one.
+  const teleportSection = document.createElement('div');
+  teleportSection.style.cssText =
+    'display:flex;flex-direction:column;gap:6px;border-top:1px solid #334155;padding-top:6px;';
+
+  const teleportGrid = document.createElement('div');
+  teleportGrid.style.cssText = routeGrid.style.cssText;
+
+  const teleportField = (labelText: string, control: HTMLElement): void => {
+    const label = document.createElement('span');
+    label.textContent = labelText;
+    teleportGrid.append(label, control);
+  };
+
+  const floorInput = numberField('floor', 'auto');
+  const roomInput = numberField('room', 'auto');
+  const tileXInput = numberField('tile x', 'auto');
+  const tileYInput = numberField('tile y', 'auto');
+
+  teleportField('Floor', floorInput);
+  teleportField('Room', roomInput);
+  teleportField('X', tileXInput);
+  teleportField('Y', tileYInput);
+
+  const teleportStatus = document.createElement('div');
+  teleportStatus.id = 'debug-teleport-status';
+  teleportStatus.style.cssText = 'min-height:16px;color:#94a3b8;';
+
+  /** Rewrites the position readout; called on the tick and after every teleport. */
+  const refreshLocation = (): void => {
+    const ctx = handlers.readRouteContext();
+    locationInfo.textContent = ctx ? debugLocationLabel(ctx) : 'no active route';
+  };
+
+  const teleport = (run: (ctx: DebugRouteContext) => DebugTeleportResult): void => {
+    const ctx = handlers.readRouteContext();
+    if (!ctx) {
+      teleportStatus.textContent = 'no active route';
+      return;
+    }
+    const result = run(ctx);
+    teleportStatus.textContent = result.ok ? 'teleported' : `teleport failed: ${result.error ?? 'unknown'}`;
+    refreshLocation();
+  };
+
+  const floorGo = button('Go', () => {
+    teleport((ctx) => handlers.onTeleportFloor(parseOptionalInt(floorInput.value) ?? ctx.mapIndex));
+  });
+  floorGo.title = 'teleport to floor';
+  const roomGo = button('Go', () => {
+    teleport((ctx) => handlers.onTeleportRoom(parseOptionalInt(roomInput.value) ?? ctx.roomInMap));
+  });
+  roomGo.title = 'teleport to room';
+  const tileGo = button('Go', () => {
+    teleport((ctx) =>
+      handlers.onTeleportTile(
+        parseOptionalInt(tileXInput.value) ?? ctx.tile?.x ?? 0,
+        parseOptionalInt(tileYInput.value) ?? ctx.tile?.y ?? 0,
+      ),
+    );
+  });
+  tileGo.title = 'teleport to tile';
+
+  const teleportButtons = document.createElement('div');
+  teleportButtons.style.cssText = 'display:flex;gap:6px;';
+  teleportButtons.append(floorGo, roomGo, tileGo);
+
+  teleportSection.append(teleportGrid, teleportButtons, teleportStatus);
+
   /** True while the fields hold the user's edits; pauses the live refresh. */
   let dirty = false;
 
@@ -521,7 +636,23 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   });
   const hoverInspectRow = toggleRow(hoverInspectInput, 'Inspect hovered cell');
 
-  generalSection.append(passThroughRow, hoverInspectRow);
+  const ignoreEncountersInput = document.createElement('input');
+  ignoreEncountersInput.type = 'checkbox';
+  ignoreEncountersInput.title = 'the tall grass rolls no wild encounter';
+  ignoreEncountersInput.addEventListener('change', () => {
+    handlers.onToggleIgnoreEncounters(ignoreEncountersInput.checked);
+  });
+  const ignoreEncountersRow = toggleRow(ignoreEncountersInput, 'Ignore wild encounters');
+
+  const ignoreTrainersInput = document.createElement('input');
+  ignoreTrainersInput.type = 'checkbox';
+  ignoreTrainersInput.title = 'no trainer line of sight opens a battle';
+  ignoreTrainersInput.addEventListener('change', () => {
+    handlers.onToggleIgnoreTrainers(ignoreTrainersInput.checked);
+  });
+  const ignoreTrainersRow = toggleRow(ignoreTrainersInput, 'Ignore trainers');
+
+  generalSection.append(passThroughRow, hoverInspectRow, ignoreEncountersRow, ignoreTrainersRow);
 
   // Live values refresh while the panel is idle; a field the user is editing
   // (or has randomized) is left alone until the next "Regenerate".
@@ -531,6 +662,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     if (!ctx) {
       routeInfo.textContent = 'no active route';
       routeStatus.textContent = '';
+      refreshLocation();
       refreshGeneratorStep();
       return;
     }
@@ -542,8 +674,11 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     heightInput.value = String(ctx.height);
     passThroughInput.checked = ctx.passThrough;
     hoverInspectInput.checked = ctx.hoverInspect;
+    ignoreEncountersInput.checked = ctx.ignoreEncounters;
+    ignoreTrainersInput.checked = ctx.ignoreTrainers;
     routeInfo.textContent = `${ctx.mode} · ${ctx.biomeName} · band ${ctx.bandName}`;
     routeStatus.textContent = '';
+    refreshLocation();
     refreshGeneratorStep();
   };
 
@@ -557,7 +692,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     if (!dirty && root.style.display !== 'none') refreshRouteFields();
   }, 500);
 
-  routeSection.append(routeGrid, stepRow, routeButtons, routeStatus, routeInfo);
+  routeSection.append(routeGrid, stepRow, routeButtons, routeStatus, routeInfo, locationInfo, teleportSection);
 
   const battlePanel = document.createElement('div');
   battlePanel.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
