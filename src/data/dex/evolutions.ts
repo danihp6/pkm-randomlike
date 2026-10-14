@@ -40,39 +40,57 @@ export function evolutionStage(speciesId: string): number {
 }
 
 /**
- * The level a non-level evolution happens at: base forms at 20, middle forms at
- * 30. A species that already evolves by level reuses that level instead, so all
- * of a species' branches (Eevee's eight, Kirlia's Gardevoir/Gallade) fire
- * together and the player picks. A species obtained by an evolution never
- * evolves before the level it arrived at (Seadra's Kingdra waits past 32).
+ * The BST windows a non-level evolution's level reads, as `maxBst -> level`. The
+ * windows mirror the run's `LEVEL_BANDS.bst` (`D39`) and are pinned equal by a
+ * test in this task's own test file; the ceiling band stays 40 however deep the
+ * dex goes. A mirrored table, not an import: `src/data/run.ts` already imports
+ * this module, so a value import back would be a cycle.
  */
-const STAGE_EVOLUTION_LEVEL = [20, 30] as const;
+export const EVOLUTION_BST_LEVELS: readonly Readonly<{ maxBst: number; level: number }>[] = [
+  { maxBst: 355, level: 20 },
+  { maxBst: 440, level: 30 },
+  { maxBst: Number.POSITIVE_INFINITY, level: 40 },
+];
 
-/** The level at which a pre-evolution hands over a canon level evolution, if any. */
-function obtainedLevel(species: Species): number | null {
-  if (!species.prevo) return null;
-  const previous = getSpecies(species.prevo);
-  if (!previous) return null;
-  const levels = previous.evolutions
-    .filter(isLevelEvolution)
-    .map((evolution) => evolution.level)
-    .filter((level): level is number => level !== null);
-  return levels.length > 0 ? Math.min(...levels) : null;
+/** The floor a non-level evolution keeps above the evolution that produced it. */
+export const EVOLUTION_MIN_GAP = 10;
+
+/** The level a species' BST band reads: 20, 30 or 40. */
+export function evolutionLevelForBst(bst: number): number {
+  if (!Number.isFinite(bst) || bst < 0) return EVOLUTION_BST_LEVELS[0].level;
+  for (const window of EVOLUTION_BST_LEVELS) {
+    if (window.maxBst >= bst) return window.level;
+  }
+  return EVOLUTION_BST_LEVELS[EVOLUTION_BST_LEVELS.length - 1].level;
 }
 
-function speciesEvolutionLevel(species: Species): number {
+const NO_ANCESTORS: ReadonlySet<string> = new Set<string>();
+
+/**
+ * The level a species' non-level branches resolve at: the species' BST band,
+ * floored at `EVOLUTION_MIN_GAP` levels above the level the species was obtained
+ * at — the **resolved** level of its pre-evolution, so a late canon level-up deep
+ * in a line (Horsea 32) pushes the stone/trade branch above it (Seadra 42). All
+ * of a species' branches share the level, so a split line (Eevee's eight,
+ * Kirlia's Gardevoir/Gallade) fires together and the player picks. The walk is
+ * one `prevo` per step and cycle-safe even though the dex's chains are acyclic.
+ */
+function speciesEvolutionLevel(species: Species, visited: ReadonlySet<string> = NO_ANCESTORS): number {
   const levelEvolution = species.evolutions.find(isLevelEvolution);
   if (levelEvolution?.level != null) return levelEvolution.level;
-  const stage = evolutionStage(species.id);
-  const base = STAGE_EVOLUTION_LEVEL[Math.min(stage, STAGE_EVOLUTION_LEVEL.length - 1)];
-  const obtained = obtainedLevel(species);
-  return obtained !== null ? Math.max(base, obtained + 1) : base;
+  const base = evolutionLevelForBst(species.bst);
+  if (!species.prevo) return base;
+  const ancestors = new Set(visited).add(normalizeId(species.id));
+  const previous = getSpecies(species.prevo);
+  if (!previous || ancestors.has(normalizeId(previous.id))) return base;
+  return Math.max(base, speciesEvolutionLevel(previous, ancestors) + EVOLUTION_MIN_GAP);
 }
 
 /**
  * The level an evolution happens at. A canon level evolution keeps its level;
- * every other method (stone, trade, friendship, move) takes its species'
- * evolution level, so the game is level-only.
+ * every other method (stone, trade, friendship, move) takes its species' own
+ * evolution level (BST band, +10 over the pre-evolution's resolved level), so
+ * the game is level-only.
  */
 export function evolutionLevel(speciesId: string, evolution: Evolution): number {
   if (isLevelEvolution(evolution) && evolution.level !== null) return evolution.level;

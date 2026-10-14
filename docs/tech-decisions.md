@@ -552,10 +552,13 @@ party panel reads the same function.
 
 The dex's stone, trade, friendship and move evolutions are resolved to a level
 (`evolutionBranches`, `src/data/dex/evolutions.ts`): a canon level evolution
-keeps its level, the rest take their species' own level evolution when it has
-one and otherwise a stage default (base forms at 20, middle forms at 30), never
-below the level the species was obtained at. All of a species' branches share
-that level, so Eevee's eight forms unlock together. Evolution is **manual** — a
+keeps its level, the rest read their species' **BST band** — 20, 30 or 40 on the
+same windows the run's own `LevelBand.bst` tiles (`EVOLUTION_BST_LEVELS`, `D39`,
+`src/data/run.ts`) — floored at `EVOLUTION_MIN_GAP` (10) levels over the
+**pre-evolution's own resolved level**, so the level a species was obtained at is
+itself derived from the rule rather than only from a canon level-up (Horsea 32 →
+Seadra 42). All of a species' branches share that level, so Eevee's eight forms
+unlock together. Evolution is **manual** — a
 member never evolves on level-up (`levelUpPokemon`) or on a catch
 (`adoptAtLevel`) — the STATS tab draws the whole family as a graph
 (`src/ui/evolutionGraph.ts`) and a click on a ready branch evolves the member
