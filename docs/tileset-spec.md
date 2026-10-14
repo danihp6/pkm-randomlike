@@ -180,6 +180,12 @@ Swapping is `config = TILESETS[nextId].config` plus loading
   no grass tile, so they keep the plain-ground fallback plus the procedural tuft
   overlay (`BootScene` builds it). `RouteScene` only draws that overlay when the
   tileset's `TALL_GRASS` frame is its floor frame.
+  Walking into — or standing in — tall grass rustles **only the tile the player
+  occupies**: a single overlay sprite follows their feet, hidden the moment they
+  step onto plain ground, so no other cell on the map ever moves. The FRLG fields
+  show their own tuft (`FRLG_TALL_GRASS`, frame 5) lifted 2 px on a 130 ms beat
+  above the player, so their feet are covered as in the cartridge; the tilesets
+  whose tall-grass frame is their floor keep the procedural tuft instead.
 - **Ledge** draws a three-tile run: frame 51 is the centre lip and frames `3`/`4`
   its end caps (`FRLG_LEDGE_LEFT`/`FRLG_LEDGE_RIGHT`, `LedgeFrames` in
   `src/engine/tileset.ts`); the FRLG fields stamp all three (`D26`), and the PMD

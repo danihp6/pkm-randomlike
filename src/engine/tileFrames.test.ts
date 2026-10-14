@@ -12,7 +12,21 @@ import {
   type TilesetConfig,
   type WallPattern,
 } from './tileset';
-import { autotileFrame, grassTipKeys, isNearWall, ledgeFrame, patternFrame, resolveGroundFrame, resolveTileFrame, treeTipKeys, variantFrame } from './tileFrames';
+import { FRLG_FOREST_TILESET, FRLG_TALL_GRASS, FRLG_TILESET } from '../data/tilesets/frlg';
+import { WOOD_TILESET } from '../data/tilesets/wood';
+import {
+  autotileFrame,
+  grassStepFrame,
+  grassTipKeys,
+  isGrassStepTile,
+  isNearWall,
+  ledgeFrame,
+  patternFrame,
+  resolveGroundFrame,
+  resolveTileFrame,
+  treeTipKeys,
+  variantFrame,
+} from './tileFrames';
 
 const tileset: TilesetConfig = {
   atlas: { tileSize: 24, cols: 4, rows: 13, width: 96, height: 312 },
@@ -366,6 +380,40 @@ describe('variantFrame', () => {
       { frame: 9, weight: 0 },
     ];
     for (let y = 0; y < 20; y++) for (let x = 0; x < 20; x++) expect(variantFrame(x, y, options)).toBe(7);
+  });
+});
+
+describe('isGrassStepTile', () => {
+  it('rustles a tall-grass cell and not plain floor', () => {
+    const map: TileMap = [[FLOOR, TALL_GRASS]];
+    expect(isGrassStepTile(map, 1, 0, new Set())).toBe(true);
+    expect(isGrassStepTile(map, 0, 0, new Set())).toBe(false);
+  });
+
+  it('rustles a tree tip only while it is in the passed grass-tip set', () => {
+    const map: TileMap = [
+      [FLOOR, FLOOR, FLOOR],
+      [FLOOR, WALL, FLOOR],
+    ];
+    expect(isGrassStepTile(map, 1, 1, new Set(['1,1']))).toBe(true);
+    expect(isGrassStepTile(map, 1, 1, new Set(['0,1']))).toBe(false);
+  });
+
+  it('reads off the map edge as not a step tile', () => {
+    expect(isGrassStepTile([[FLOOR]], 1, 0, new Set())).toBe(false);
+    expect(isGrassStepTile([[FLOOR]], 0, 5, new Set())).toBe(false);
+  });
+});
+
+describe('grassStepFrame', () => {
+  it('takes the FRLG fields\' own tall-grass frame', () => {
+    expect(grassStepFrame(FRLG_TILESET)).toBe(FRLG_TALL_GRASS);
+    expect(grassStepFrame(FRLG_FOREST_TILESET)).toBe(FRLG_TALL_GRASS);
+  });
+
+  it('is null when the tall-grass frame is the floor frame (the procedural tuft)', () => {
+    expect(grassStepFrame(WOOD_TILESET)).toBeNull();
+    expect(grassStepFrame(tileset)).toBeNull();
   });
 });
 
