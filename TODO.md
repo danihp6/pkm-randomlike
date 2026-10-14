@@ -23,14 +23,13 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 5 and Batch 5b are shipped and archived.** Their nine tasks merged in ID order behind
-the green gate (four, then five) and the detail is in `CHANGELOG.md`'s `## Unreleased`; Batch 5b
-is the batch that ended up packing the decomp's real FireRed grass rustle, and it is closed
-below. **Batch 5c is cut** — `[Task-69]`, the level curve re-plan, with
-`[Task-72]` (bigger type badges in the battle panels) and `[Task-73]` (the rustle drawn at the
-player's feet, not over them) beside it — followed by
-**Batch 5d** (`[Task-70]`, the early floors thinned, and map 1 hanging no shop leaf) and
-**Batch 5e** (`[Task-71]`, the fixed boss and mini-boss parties). All three sit **before**
+**Batch 5, Batch 5b and Batch 5c are shipped and archived.** Their twelve tasks merged in ID order
+behind the green gate (four, then five, then three) and the detail is in `CHANGELOG.md`'s
+`## Unreleased`; Batch 5b is the batch that ended up packing the decomp's real FireRed grass
+rustle and Batch 5c the one that re-planned the level curve and finished that overlay, and both
+are closed below. **Batch 5d is the next batch cut** — `[Task-70]`, the first-floor on-ramp (fewer
+trainers, less loot, and map 1 hanging no shop leaf) — followed by **Batch 5e** (`[Task-71]`,
+the fixed boss and mini-boss parties). Both sit **before**
 Batch 6 so that Task-09's balance pass reads the curve, the density and the parties that
 actually ship. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
@@ -455,12 +454,14 @@ rise. The reason the alternative was rejected is arithmetic the repository alrea
 constant ten-level step to 100 would spend **271 000 XP on its last floor alone**, nine times
 today's entire run. The same decision answers the question `[Task-09]` had open about a floor
 worth a single level (it is not the wanted shape) and hands Task-09 a curve to tune instead of
-a curve to design; its entry records that. The rework lands in **Batch 5c** because
-`docs/balance/route-curve.md` is Task-51's in 5b and the `docs/balance/` sheets are Task-09's
-in Batch 6, and a second task — **Batch 5d** — thins maps 1-2 so the on-ramp is gentler before
+a curve to design; its entry records that. The rework landed in **Batch 5c**, now shipped, because
+`docs/balance/route-curve.md` was Task-51's in 5b and the `docs/balance/` sheets are Task-09's
+in Batch 6, and a second task — **Batch 5d**, the next batch cut — thins maps 1-2 so the on-ramp is
+gentler before
 Task-09 reads it. `Task-70` runs one batch behind `Task-69` on purpose: it re-reads the walk
 that task solved and re-pins it, and it writes the same `src/data/run.ts` rows and the same
-`src/engine/run/curve.test.ts` — a batch is an antichain, so those two cannot ride together.
+`src/engine/run/curve.test.ts` — a batch is an antichain, so those two could not ride together,
+which is why the re-plan went first.
 Neither adds a run field or a rule the save carries, so the chain stays **14 → 15** (Task-13,
 shipped) → **15 → 16** (Task-31, Batch 7) → **16 → 17** (Task-44, Batch 13) → **17 → 18**
 (Task-52, Batch 17), and nothing here re-plans `Task-38`–`Task-68` or touches Batch 4b, which
@@ -490,28 +491,28 @@ batches are new so nothing already cut gains a member, and Batch 4b stays `cut`.
 
 A **fourteenth round** of **one report** arrived after that one, and it adds **no dependency
 edge** and **no `SAVE_VERSION` step**: `Task-72` (the battle panels' **type badges** bigger, on
-both the active Pokémon's panel and the rival's) reads the row the now-archived `[Task-53]`
-shipped and changes only its drawn size, so it claims `src/scenes/BattleScene.ts` alone — no
-`src/data/**`, no `src/ui/**` module, no `docs/` line, no state. It takes **the earliest pending
-batch that leaves that file free**, and that is **Batch 5c**: its `Task-69` claims no scene at
-all, while 5d's `Task-70` holds `src/scenes/RouteScene.ts` and 5e's `Task-71` holds the battle
-scene. So 5c gains a second member and stays an antichain — the two share no path — and its
-Shape prose now says so. The two consequences the entry measures are why it is not a one-line
-change: the band's growth takes both panel heights with it (134 -> 150 and 168 -> 184 at the
+both the active Pokémon's panel and the rival's) read the row the now-archived `[Task-53]`
+shipped and changed only its drawn size, so it claimed `src/scenes/BattleScene.ts` alone — no
+`src/data/**`, no `src/ui/**` module, no `docs/` line, no state. It took **the earliest batch
+that left that file free**, and that was **Batch 5c**: its `Task-69` claimed no scene at
+all, while 5d's `Task-70` held `src/scenes/RouteScene.ts` and 5e's `Task-71` held the battle
+scene. So 5c took a second member and stayed an antichain — the two shared no path — and it
+shipped with the batch. The two consequences the entry measured are why it was not a one-line
+change: the band's growth took both panel heights with it (134 -> 150 and 168 -> 184 at the
 default x2), and
 the compact layout's clearance above the player panel is the same budget QA failed `[Task-53]` on
 once, so the entry holds the 0-px invariant and names the knob. Nothing here re-plans
-`Task-38`–`Task-71`, 5c was still un-cut when this report arrived so no already-cut batch gains a
-member (it is cut below, with this task in it), and Batch 4b stays `cut`.
+`Task-38`–`Task-71`, and Batch 4b stays `cut`.
 
 A **fifteenth round** of **one report** arrived after that one, and it adds **no dependency edge**
 and **no `SAVE_VERSION` step**: `Task-73` — «arregla animacion hierba sale por encima de
-personaje», answered with **«igual que juego original»** — is the rustle the now-archived
-`[Task-45]` shipped drawing **over the character** instead of at their feet. It claims
-`src/scenes/RouteScene.ts` alone, and `src/scenes/RouteScene.ts` is free in **Batch 5c** (whose
-Task-69 owns `src/data/` and the docs and whose Task-72 owns `src/scenes/BattleScene.ts`) while
-5d's `Task-70` and 5e's `Task-71` already hold it — so **5c is the earliest batch that leaves
-the file free**, it becomes the batch's third member, and all three still share no path. Nothing
+personaje», answered with **«igual que juego original»** — was the rustle the now-archived
+`[Task-45]` shipped drawing **over the character** instead of at their feet. It claimed
+`src/scenes/RouteScene.ts` alone, and that file was free in **Batch 5c** (whose
+Task-69 owned `src/data/` and the docs and whose Task-72 owned `src/scenes/BattleScene.ts`) while
+5d's `Task-70` and 5e's `Task-71` already held it — so **5c was the earliest batch that left
+the file free**, and it took the task as its third member; all three still shared no path. It
+needed three cuts and shipped in the batch (see the batch's summary above). Nothing
 here re-plans `Task-38`–`Task-72`, and Batch 4b stays `cut`.
 
 ### Batch 1 — foundations *(shipped, archived)*
@@ -619,52 +620,35 @@ five added a run field or a `SAVE_VERSION` step, so the version chain stays
 `vite.config.ts`, `src/data/dex/**` or `src/engine/save.ts`. Its five IDs are retired: they keep
 their place in the sequence and are never reused.
 
-### Batch 5c — the level curve re-planned, the battle panels' type badges grow, and the rustle drops to the player's feet *(cut)*
-**Cut.** Its three specs are written (`.agent_specs/task-69.md`, `task-72.md`, `task-73.md`) and
-its three branches may be cut; it can gain no member.
-- **Task-69** A finite run becomes eight maps that end at level 55, with a 2–9 first floor,
-  and an infinite run whose floors keep climbing from the bottom as well as the top.
-- **Task-72** The battle panels' type badges are bigger, for both the active Pokémon and the
-  rival.
-- **Task-73** The tall-grass rustle stops covering the character: its atlas cells keep the rip's
-  own **alpha** (no re-grounding) and its **rest state covers about half** — the parked cell is
-  the rip's *settled* frame, whose opaque band starts at cell row 6 — so the grass hides the hips
-  and legs while the cap, face and torso stay visible, as the cartridge does.
-- **Hot files, one holder per path:** `src/data/maps.ts` + `maps.test.ts`, `src/data/run.ts` +
-  `run.test.ts`, `src/engine/run/curve.test.ts`, `src/engine/run/progression.test.ts`
-  (one assertion — line 63's `bandForLevel(10)` boundary, which the re-spanned window moves),
-  `docs/balance/route-curve.md`,
-  `docs/maps-spec.md` §4/§5 **and §10's `O-M7`** and `src/data/README.md`'s `maps.ts` line
-  → **Task-69** (its own `src/engine/save.test.ts` expectation reads `levelCapForMap(3)` and so
-  follows the data instead of moving; it claims no `package.json`, `src/main.ts`,
-  `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts`, `src/scenes/*.ts`, packed asset or
-  `docs/` file another batch holds — `docs/maps-spec.md` §7 was Task-54's in 5b, now shipped).
-  `src/scenes/BattleScene.ts` → **Task-72** alone (it reads the shipped `[Task-53]` row and the
-  Añil type atlas unchanged, so it writes no `src/data/**` file, opens no `src/ui/**` module,
-  takes no `docs/` line and claims no generated file or packed asset).
-  `scripts/frlg/build-tilesets.mjs`, the three generated
-  `src/assets/frlg/{outdoor,forest,cave}.png` (one writer per batch), `src/data/tilesets/frlg.ts`
-  + `frlg.test.ts`, `docs/tileset-spec.md` **§6** and `src/scenes/RouteScene.ts` (claimed,
-  expected byte-identical to `f1117ca` — the anchor is proven not to be the blocker) → **Task-73**
-  alone; it also claims `src/engine/tileFrames.ts` only if its measurement proves the accessor
-  must change (not expected). No `src/data/**` other than the tileset table, no `src/ui/**`, no
-  packed asset beyond the three atlases. **No two of the three share a path.**
-- **Shape:** three tasks that share no path, and the batch is the only one that can host all
-  three. Task-69 is the batch the human's own decision opens and it is the **only** batch that
-  can host it: `docs/balance/route-curve.md` is Task-51's in 5b and the `docs/balance/` sheets
-  are Task-09's in Batch 6, `docs/maps-spec.md` is Task-17's in Batch 6, and the `src/data/`
-  number tables it moves are exactly the ones Task-09 tunes there — so a level rework has to
-  land **between** the two: after Task-51 has re-pinned the evolution curve against the shipped
-  caps and before the balance pass reads a curve it no longer has to design. Its sibling, the
-  density pass, cannot ride beside it: **Batch 5d** re-reads the walk this task solves and
-  re-pins the same `curve.test.ts` and the same `src/data/run.ts` rows. Task-72 and Task-73 are
-  the batch's other two members and take what this batch leaves free: `5d`'s Task-70
-  holds `src/scenes/RouteScene.ts` and `5e`'s Task-71 holds `src/scenes/BattleScene.ts`, so
-  **5c is the earliest batch whose path list leaves both scenes free** — and Task-73 also takes
-  the three generated FRLG atlases, which no other batch claims — which is why the
-  badges and the rustle land here rather than at the tail. Both produce nothing Task-69 reads
-  and vice versa. None of the three adds a run field, so **no** `SAVE_VERSION` step — the chain
-  stays 14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44) → 18 (Task-52).
+### Batch 5c — the level curve re-planned, the battle panels' type badges doubled, and the tall grass laid over the player's legs *(shipped, archived)*
+Task-69, Task-72 and Task-73 merged in ID order behind the green gate (1369 tests, `npm test` +
+`npm run build` after each merge — 1369 again) and the detail is in `CHANGELOG.md`'s
+`## Unreleased`; QA validated the batch green twice, once whole and once focused after Task-73's
+third cut. **Two of the three changed shape on the way, and that is what shipped.** **Task-69**
+re-planned the level curve: a finite run is **eight maps, levels 2 → 55**, first floor **2–9**
+(cap **9**, which is +4 for the level-5 starter), caps **9 / 16 / 23 / 30 / 37 / 43 / 49 / 55**,
+`LEVEL_BANDS` re-spanned over `2..55` with `trainerXp` **re-solved** so the repo's own rule still
+holds — `0.75 ×` a floor's trainers pays that floor's cap, every fill inside `1 – 1.5`
+(**1.09-1.44**, the two early floors at **≥ 1.3** for the density pass behind it) — and the
+`mapTuning` defect fixed so a map past the last row climbs at **both** ends and saturates at
+`MAP_MAX_LEVEL` instead of settling into a widening 40–100 band; one line of
+`src/engine/run/progression.test.ts` was re-pinned (`bandForLevel(10)`: `mid` → `low`) and the
+floating-point identity its boundary loop pins constrained the solved multipliers (`late = 4.64`
+fails it, `4.65` holds). **Task-72** drew the battle panels' type badges at **×2** — 64×28 badges
+in a **36** px row, `FOE_PANEL.h` **150**, `PLAYER_PANEL_H` **184** and the fallback chip at
+72×36 — and kept the compact invariant Task-53's correction round established: **0 px** of either
+battler behind a panel at the `COMPACT_SIZE` threshold and on a 640-px-tall phone, with
+`FOE_PLATFORM_CLEAR` left untouched. **Task-73** took **three cuts**: the first froze a scene
+anchor and the dev proved it was not the blocker (the captures before and after are
+pixel-identical); the second stopped the packer re-grounding the rip's frames, so the overlay
+draws **only the blades**, with the rip's own alpha; and the third — on the human's ruling that
+the still pose must cover about half too — parked the sprite on the rip's **settled frame**, so
+standing still covers **13.5 of the player's 28.5 visible px (47 %)** and leaves **15 px** clear,
+while the closing frame still closes over the cell for its ~70 ms. Cells **6** and **45-48** of
+the three FRLG atlases are the only art that moved, `docs/tileset-spec.md` §6 records the new
+rule, and none of the three added a run field or a `SAVE_VERSION` step, so the version chain
+stays **14 → 15 → 16 → 17 → 18**. Its three IDs are retired: they keep their place in the
+sequence and are never reused.
 
 ### Batch 5d — the early floors thin out
 - **Task-70** Maps 1-2 place fewer trainers and less loot, and **map 1 hangs no shop leaf**, so
@@ -685,7 +669,8 @@ its three branches may be cut; it can gain no member.
 - **Shape:** one task, and it needs a batch of its own twice over. First because it wants
   `src/scenes/RouteScene.ts` — the floor's band meets the generator in exactly one place —
   and every batch from 6 to 28 already holds that scene (6 Task-41, 6b Task-38, 7 Task-31 and
-  on), so no existing batch can host it. Second because it **depends on Batch 5c**: the
+  on), so no existing batch can host it. Second because it **depended on Batch 5c** (now
+  shipped): the
   eight-floor walk, the re-spanned bands and the `needed(m)` numbers `Task-69` ships are the
   rule this task's thinning has to keep inside `1 – 1.5`, and its own re-pin is that same
   walk. It runs after Task-51 too, whose evolution curve is one of the things the sheet it
@@ -700,7 +685,7 @@ its three branches may be cut; it can gain no member.
   **One consequence to read into the plan's own prose:** `Task-70` holds
   `src/scenes/RouteScene.ts` for that one line, so every later enumeration of the route
   scene's queue (Batches 6–28) gains **5d** between 5b's Task-45 and 6's Task-41, and **5e**
-  behind it; `Task-69` claims no scene at all.
+  behind it; `Task-69` (5c) claimed no scene at all.
 
 ### Batch 5e — a boss fields six, a mini-boss three
 - **Task-71** A boss always fields **six** Pokémon and a mini-boss always **three**, whatever
@@ -2750,94 +2735,6 @@ Ports of Showdown handlers, in batches, on the hook names in
       `[Task-53]`'s row and `[Task-57]`'s row already inside the panels it draws over. It adds no
       run field, so **no `SAVE_VERSION`** step — the chain stays 14 → 15 (Task-13) → 16
       (Task-31) → 17 (Task-44) → 18 (Task-52). *(Batch 17)*
-- [ ] **[Task-72] The battle panels' type badges are bigger.** Reported in play: «haz mas grande
-      el icono de tipos del contenedor de combate del poke actual y rival» — the **type badges**
-      in the battle's HP panels are too small to read, on **both** sides: the active Pokémon's
-      panel and the rival's.
-      **Today the row the shipped `[Task-53]` added draws them at scale 1.** `drawSidePanel`
-      (`src/scenes/BattleScene.ts`, 1657-1707) is the one builder for both panels: it lays out
-      `nameY = rect.y + pad.top`, `typesY = nameY + PANEL_NAME_H` and
-      `barY = typesY + PANEL_TYPES_H + PANEL_NAME_GAP` (1668-1671), then walks up to
-      `PANEL_TYPE_SLOTS = 2` types (96) drawing each badge from the Añil atlas at
-      `(typeX, typesY + 3)` with **no `setScale`** — the atlas frames are 32x14
-      (`src/data/typeIcons.ts`, 13-23) — advancing `typeX` by `TYPE_ICON_W + PANEL_TYPE_GAP`
-      (1686-1689) and falling back to a text chip whose box is
-      `PANEL_CHIP_W = 74` x `PANEL_CHIP_H = PANEL_TYPES_H` (99-100) with a 16px label
-      (1690-1701). The band is `PANEL_TYPES_H = 20` (92), the badges are the **live fighter's**
-      own types (`displayActive[side].types`, 1677 — a Mega or a form change shows the forme's),
-      the panels are `PLAYER_PANEL_H = 168` (87) and `FOE_PANEL.h = 134` (88), and every other
-      row — the status badge at `barY - 22` (1717), the stat text at `barY - 23` (1711) and the
-      player's XP row below the bar — is measured **from `barY`**, not from the panel's top.
-      **Fix shape, as the recommended reading (the spec freezes the exact names).** One knob
-      scales the band: a `PANEL_TYPE_SCALE` applied to the badge images, to the chip's box and
-      to the chip's label, so the fallback can never disagree with the badges it replaces. The
-      **default is ×2** — the badge's drawn height goes 14 -> **28 px** (32x14 -> 64x28 at scale
-      2), which is the natural reading of "más grande" and still leaves `2 x 64 + 4 = 132 px` of
-      the panel's `320 - 2 x 20 = 280 px` content width free, so two badges and two chips both
-      fit; the band's own height follows the badges (`PANEL_TYPES_H` 20 -> **36**, i.e. the 28px
-      badge at its 3px offset plus a 5px bottom margin) and the chip's box grows with it
-      (`PANEL_CHIP_H = PANEL_TYPES_H`, its width staying about one badge plus label room so the
-      pair still fits). The rows **above** the band do not move: `PANEL_NAME_H` (90) and
-      `PANEL_NAME_GAP` (94) keep their values, and every row at or below `barY` keeps its offset
-      from `barY`, so the only thing that moves is `barY` itself and the panel that contains it.
-      **The first real consequence, measured: both panels grow, and the field slack with them.**
-      The panel absorbs the band (that is what Task-53 froze: its `FOE_PANEL.h` went 114 -> 134
-      and `PLAYER_PANEL_H` 148 -> 168 for the 20px band), so ×2 takes `FOE_PANEL.h` **134 -> 150**
-      and `PLAYER_PANEL_H` **168 -> 184**, i.e. **+16 px each**. On the desktop layout that moves
-      the foe panel's bottom 162 -> **178** (`foeInfo = { x: 36, y: 28 }`, 1586) and the player
-      panel's top 16 px further up (`playerInfo.y = box.y - 24 - PLAYER_PANEL_H`, 1589, so its
-      bottom stays pinned at `box.y - 24`); the two battlers do not sit under those panels
-      because the panels are on the left and the right and the mons are at `width * 0.27` /
-      `0.72-0.78` (1593-1596), so the desktop check is that this is still true for the widest
-      sprite — and the mon-size caps there are `foePlatformY - MON_TOP_MARGIN` (1615-1622), which
-      do not read the panel at all.
-      **The second, and it is the one QA already failed once: the compact layout.** Task-53's
-      correction round was exactly this: the foe panel's +20 px left **33 px of the foe battler
-      behind the player panel**, and the fix pinned the foe's platform `FOE_PLATFORM_CLEAR = 28`
-      above the player panel (`foeY = min(foePanelBottom + SPRITE_SIZE_MAX, max(foePanelBottom,
-      playerInfo.y - FOE_PLATFORM_CLEAR)) - FOE_PLATFORM_OFFSET`, 1576-1581), which reports
-      **0 px** today. That clearance is a fixed vertical budget — `foePanelBottom` down to the
-      player panel's top — and the mon-size cap on a phone is `foePlatformY - panelBottom`
-      (1617), so **the band's growth comes straight out of the foe sprite's size**: at a
-      640-px-tall viewport the platform stays at `round(640 * 0.46) - 28 = 266` while the panel's
-      bottom goes 150 -> 166, so the cap drops **116 -> 100 px** (the same 16 px), and the
-      invariant to hold is the one QA measures: **no battler behind a panel, 0 px, on the
-      desktop and the compact layout, with no titan clipped**. If the squeeze reads badly the
-      knob is `FOE_PLATFORM_CLEAR` and the platform's floor rather than the band's growth — but
-      moving the platform **down** toward the player panel to buy the sprite room is what
-      reintroduced the overlap, so the spec freezes whichever it picks and re-measures both
-      layouts at the shipped `COMPACT_SIZE = 700` threshold and at a 640-px-tall phone. A third
-      reading is named and rejected: a smaller scale under `COMPACT_SIZE` (say x1.5 on a phone)
-      keeps every sprite where it is, but it makes one report two looks and splits the band's
-      constant.
-      **What it does not need.** No `src/data/**` (the atlas stays 32x14 — the *drawn* size
-      changes, not the art), no new module, no new constant outside `BattleScene.ts`, no i18n
-      literal (the chip carries the type's own name, already keyed by the data), no run field,
-      and therefore **no `SAVE_VERSION`** step — the version chain stays 14 → 15 (Task-13) → 16
-      (Task-31) → 17 (Task-44) → 18 (Task-52). No RNG, no engine rule, no fixed-seed test.
-      **Paths:** `src/scenes/BattleScene.ts` alone. **No `docs/` line**, decided and not
-      forgotten: the HP panels' geometry is presentation and changes no rule, `docs/design-spec.md`
-      §4 lists the battle's windows without describing the panels' bands, `docs/battle-spec.md`
-      carries rules rather than pixel sizes, and the archived `[Task-53]` took no doc line for
-      the very same row (the `[Task-34]` and `[Task-57]` precedent) — so this task owes none
-      either. Its test plan is the Playwright pass (both panels, both layouts, the chip path read
-      by code) and the untouched `npm test`/`npm run build` gate, because the scene owns no pure
-      logic.
-      Out of scope: the atlas itself and every other type badge in the game (the move cells'
-      `MoveGrid` badges, the starter cards, the party-detail chips, the capture screen), the Añil
-      64px battle icons, the name/level text, the HP bar and its colour, the status badge, the
-      XP row, the command/moves/party grids, the message box, the type-icon *art* (a bigger
-      source frame would be a `scripts/frlg/build-type-icons.mjs` change and its own task), and
-      the desktop layouts' horizontal placement.
-      *Dependencies:* none — the shipped `[Task-53]` row, the Añil type atlas, `displayActive`
-      and the layout constants are all in the tree, and the task adds no state.
-      Batch order covers it: it wants `src/scenes/BattleScene.ts` alone, and the earliest
-      pending batch whose path list leaves that file free is **Batch 5c**, whose Task-69 claims
-      no scene at all — 5d's Task-70 holds `src/scenes/RouteScene.ts` and 5e's Task-71 holds the
-      battle scene — so it joins 5c as its second member, sharing no path with Task-69, and
-      lands **before** Batch 6, so Batch 8's accessibility pass (which audits colour-only
-      information) and Batch 10's i18n sweep both see the bigger row rather than an older one.
-      *(Batch 5c)*
 
 ## Phase 6 — Run structure, party & economy
 
@@ -3163,13 +3060,14 @@ Ports of Showdown handlers, in batches, on the hook names in
       - **The shape is decided, so this pass no longer has to choose it.** The human re-planned
         the curve after a design discussion: a finite run becomes **eight maps that end at 55**
         with a **2-9** first floor — so a floor worth a single level is *not* the wanted shape —
-        and `[Task-69]` (Batch 5c) implements the table, the re-spanned `LEVEL_BANDS` and the
-        `trainerXp` chain, with `[Task-70]` (Batch 5d) thinning maps 1-2 behind it. Both run
+        and `[Task-69]` (Batch 5c, **shipped**) implemented the table, the re-spanned `LEVEL_BANDS`
+        and the
+        `trainerXp` chain, with `[Task-70]` (Batch 5d) thinning maps 1-2 behind it. Both land
         **before** this batch, so what is left here is the harness, the battle-side numbers and
         whatever the new walk's `A(m)` measures still disagree with: read
         `docs/balance/route-curve.md` as `[Task-70]` leaves it, do not re-tune the curve, and do
         not re-pin `src/engine/run/curve.test.ts` (it is theirs). Its claim on the sheets under
-        `docs/balance/` is unchanged — `[Task-69]` writes `route-curve.md` two batches earlier
+        `docs/balance/` is unchanged — `[Task-69]` wrote `route-curve.md` two batches earlier
         and `[Task-51]`'s `## Evolution levels` section is in it by then.
       *Dependencies:* none — it reads `docs/balance/route-curve.md` and the per-band
       `trainerXp` rule Task-10 shipped (archived with Batch 1). It is also the
@@ -3262,15 +3160,19 @@ cycles one biome.
       Candidate list to decide: desert, prairie/plains, beach, autumn woods,
       marsh/rain, snow, volcano, ruins/power plant. Each new biome owes a fixed-seed
       generator regression.
-      **Inherited condition from `[Task-45]` (Batch 5b), not open work:** that task's
-      packer composites the tall grass's four rustle **hit** frames over each field's own
-      **floor**, and the **cave** field's tuft is drawn on a lighter ground
-      (`src/data/biomes.ts`, 48-54; `grassPatches: 0`, and `BIOME_ORDER` is
-      `['forest']`, line 58, so no route reaches the cave or the outdoor field today) — so
-      the day a field whose tuft sits on a ground other than its floor gains grass
-      patches, its hit frames must be composited over that field's own **tall-grass cell**
-      (`overFill` against the tuft, not the floor), because the decomp draws the effect as
-      an overlay over the tile; only this task can put such a field in the cycle.
+      **Inherited condition from the rustle's own work (Batch 5b, shipped; Task-73 in 5c,
+      shipped) — closed, and what it means now.** The packer **no longer re-grounds** the
+      rustle's frames: cells 6 and 45-48 carry the decomp's `tall_grass.png` frames **with their
+      own alpha**, so the overlay is ground-neutral and no field's floor is ever composited into
+      them. The condition the earlier note carried — a field whose tuft sat on a ground other than
+      its floor needing its hit frames re-grounded onto the tuft — **no longer applies**: nothing
+      is composited for those cells. What a new field still owes is the rest: its own
+      **tall-grass ground tile** (cell 5, still stamped per field from that field's `tallGrass`
+      source, `[7,0]` light / `[2,33]` dark) and its own `terrain.grassPatches` — the cave field
+      is the one with `grassPatches: 0` today (`src/data/biomes.ts`, 48-54, and `BIOME_ORDER` is
+      `['forest']`, line 58, so no route reaches the cave or the outdoor field), and it joins the
+      cycle from this task alone. The overlay's five cells are shared by all fields and are
+      correct on any ground.
       *Dependencies:* none. *(Batch 8)*
 - [ ] **[Task-30] A hit plays the move's sound, and an encounter the Pokémon's
       cry.** Both moments were dropped from the cue table rather than faked with one
@@ -3357,119 +3259,6 @@ cycles one biome.
       Batch 6 (`src/scenes/RouteScene.ts` is Task-16's in Batch 5, Task-45's in 5b, Task-38's
       in 6b and Task-31's in Batch 7) and its new `src/data/` file is not one of the number
       tables Task-09 tunes in the same batch. *(Batch 6)*
-- [ ] **[Task-73] The tall-grass rustle draws at the player's feet, not over them.** Reported in
-      play: «arregla animacion hierba sale por encima de personaje» — the rustle the archived
-      `[Task-45]` shipped renders **over the character**. Asked what he wants instead, the human
-      answered **«igual que juego original»**, so the target is the cartridge's own read: the
-      rustle sits **at the player's feet** and hides the **legs**, while the **head and torso stay
-      visible**.
-      **The diagnosis, verified line by line in the shipped scene.** `movePlayerTo`
-      (`src/scenes/RouteScene.ts`, 4340-4347) places the player sprite at
-      `(this.centerX(x), this.centerY(y) + TILE_SIZE / 2)` — the tile's **bottom edge**, the FRLG
-      frame's feet line, which is what makes a 16x32 frame (`src/data/frlg/player.json`, 2-3)
-      drawn at `TILE_SIZE / PLAYER_SPRITE_WIDTH = 1.5` a 24x48 sprite spanning
-      `centerY - 36 .. centerY + 12` — and gives it `actorDepth(...)` (503-504: `ACTOR_DEPTH = 8`
-      at 499 plus a foot-y step), i.e. the actor band. `refreshGrassStep` (4355-4366) places the
-      rustle sprite at `(this.centerX(this.player.x), this.centerY(this.player.y))` — the tile's
-      **centre**, half a tile **above** the player's own anchor — and `drawEntities` (4177-4196)
-      builds that sprite with `setDepth(GRASS_STEP_DEPTH)`, `GRASS_STEP_DEPTH = 10` (517), which
-      is **above** the whole actor band. So the overlay is anchored on a different line from the
-      character it is supposed to cover the legs of, and it draws over them. QA confirmed the
-      result in play at cut time (the parked rest frame covering the player's **torso and head**,
-      "only the red peak of the cap shows" of the sprite left), and the hit's frames — the pack's
-      own `[6, 45, 46, 47, 48]` (`src/data/tilesets/frlg.ts`, 83 and 151) — inherit the same
-      anchor.
-      **The dev's own measurement moved the blocker, and this entry is re-frozen on it.** A first
-      cut froze a *scene* change (anchor + origin) and the dev implemented it exactly (`f1117ca`),
-      then measured it: two full captures (929x869, 806 001 px) are **pixel-identical** before and
-      after it — the old centre-origin placement at the tile centre and the new `(0.5, 1)` at
-      `centerY + TILE_SIZE / 2` draw the same band, world y **144…168** — so **the anchor is not
-      the blocker. The art is, twice over:** (i) in `tiles:forest` the rustle cells **6 and 45-48
-      are alpha 255 on all 256 px**, because the packer re-grounded the rip's frames onto each
-      field's floor — the overlay is a solid copy of the ground, where the rip's own frames are
-      mostly transparent blades; and (ii) one cell is a whole tile of art (24 px drawn) while the
-      player's **visible** art is only **28.5 px** (frame rows 12…30 of 32 → world y
-      **138…166.5**), of which **18 px** sit inside the tile band, so the band covers **22.5 of
-      28.5 px (79 %)** and leaves a 6 px cap. With opaque cells, no anchor inside the player's own
-      tile can do better.
-      **Fix shape, as the dev's own recommendation, and the third cut's amendment on top of it.**
-      The **packer stops re-grounding these cells**: `scripts/frlg/build-tilesets.mjs` stamps the
-      rip's five `tall_grass.png` frames **keeping their alpha** (the second cut, `66ce2bc`), with
-      the four hit cells (45-48) as `effectTile(1…4)` stamped raw and no `keyBackground`/
-      `compositeOver` onto the floor. **The third cut re-freezes the rest cell on the measurement
-      that cut produced:** the parked cell 6 was the rip's **frame 0** (blades-only) and QA
-      measured only **7.5 of the 28.5 px (26 %)** covered — so the human ruled
-      («realmente la hierba quieta sin animacion tambien la mitad debe star como por encima si no
-      al quedarme quieto queda raro») that the **still** grass must cover about **half** — and cell
-      **6 becomes the rip's frame 4, the settled blades**. Its opaque band starts at **cell row 6**
-      (world y **153**, because a cell row `r` maps to `tileTop + 1.5 r` with the tile at
-      `144…168`), i.e. **13.5 px of the 28.5 (47 %)** covered with the **top 15 px** visible — the
-      only candidate dead centre of "about half" that is also **the hit's own last frame**, so the
-      parked state and the end of the hit are the same art and the settle has **no jump**. Named
-      and rejected: the rip's frame 3 (row 5, 53 % — inside the band, but a mid-flick frame, so the
-      hit would *rise* into the parked state), frame 2 (row 2, 68 % — hides the torso), the field's
-      own tuft (cell 5) with its ground keyed out (the most faithful reading, but it needs a second
-      keying pass in the packer and its rows were never measured, so it cannot be frozen against
-      the criterion) and a hand-composed stack. **The one closing frame stays opaque and is allowed
-      to close over the player for its ~70 ms** (the cartridge does). The **scene geometry
-      `f1117ca` froze stays** (origin `(0.5, 1)`, position `centerY + TILE_SIZE / 2`,
-      `GRASS_STEP_DEPTH = 10`, `GRASS_STEP_MS = 70`, `frames[0]` parked, one hit per step) — the
-      list order and the parked index do **not** move, so `src/scenes/RouteScene.ts` stays
-      byte-identical and `FRLG_GRASS_RUSTLE_FRAMES`/`grassRustle`/the accessors are unchanged.
-      **The acceptance criterion is two-sided** — one-sided is exactly what let the 26 % band pass:
-      *standing still in tall grass, on the desktop and on the compact layout, the overlay's
-      **opaque** pixels **(a)** cover the player's **lower half — 13.5-15 px of their 28.5 visible
-      px, the band starting at cell row 6 ± 1 (world y 153 ± 1.5)** — and **(b)** leave the top
-      **~13 px** (cap, face, shoulders, upper torso) **uncovered by any overlay pixel***, with the
-      anchors `artTop = centerY − 18` and `artBottom = centerY + 10.5` frozen alongside it and the
-      closing frame allowed to cover the cell during its own ~70 ms. The measurement is the spec's
-      first duty: before/after (`66ce2bc`'s 7.5 px), **desktop and compact layout**, in pixels, read
-      off the **live canvas** (a shared browser and a throttled game loop are the harness traps the
-      dev hit).
-      **Paths — this task now owns the art too:** `scripts/frlg/build-tilesets.mjs`, the three
-      generated `src/assets/frlg/{outdoor,forest,cave}.png`, `src/data/tilesets/frlg.ts` +
-      `frlg.test.ts`, `docs/tileset-spec.md` **§6** and `src/scenes/RouteScene.ts` (claimed,
-      expected untouched), plus `src/engine/tileFrames.ts` **only** if the measurement proves the
-      accessor must change (not expected). All are free in Batch 5c, so the batch stays an
-      antichain. The repack keeps the Legend's way: `sprite-sources/**` is gitignored and never
-      linked into a worktree, and the packer takes the two sheets by **absolute path** on the
-      command line exactly as `[Task-45]` shipped it
-      (`node scripts/frlg/build-tilesets.mjs "<…>\sprite-sources\frlg\tileset-2.png" "<…>\sprite-sources\frlg\tall_grass.png"`),
-      twice for byte-identical output. **`docs/tileset-spec.md` §6 is now this task's** (its
-      tall-grass bullet 176-193 loses "re-grounded onto each field's floor" and "byte-identical
-      to cell 5") and the third cut adds the rest state's own line there: the parked cell is the
-      rip's **settled** frame, opaque from cell **row 6** (~13.5 px of the character), the
-      blades-only frame 0 is not used because it covers too little, and the hit's last frame is
-      the same art as the parked state — the cells' rule is what changed.
-      **The repack's own checks change, twice over.** `src/data/tilesets/frlg.test.ts` today pins
-      that the rest cell is **opaque** and **byte-identical to cell 5** (152-166) — wrong by
-      construction since the second cut — and the third cut replaces it with the rest cell's new
-      rule: **cell 6 is byte-identical to cell 48** (the rip's frame 4, so the hit's last frame and
-      the parked state are the same art), **rows 0-5 of cell 6 are fully transparent** (the
-      criterion's arithmetic in a unit test), cell 6 is not fully opaque and not cell 5, the four
-      hit cells keep the rip's alpha (46-48 not fully opaque; 45 is the closing frame), the five
-      cells are still `[6, 45, 46, 47, 48]`, cells 49/50 stay blank, and the three
-      atlases stay in step. Everything else in that file (the 4x13 geometry, the wall bank, the
-      pond, the floors, the ledge, the tall-grass **ground** cell and the 1.5 scale rule) stays
-      pinned and is not loosened. Cell **5** (the ground the map draws), the floor variants, the
-      wall bank, the pond and the ledge are byte-identical to the previous repack.
-      No run field, no RNG, no engine rule, so **no `SAVE_VERSION`** step: the chain stays
-      14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44) → 18 (Task-52).
-      Out of scope: the scene's geometry, its beat, its depths and its two accessors
-      (`grassRustleFrames`/`isGrassStepTile`, unchanged), the tall-grass **ground** cell 5, the
-      wall/ledge/water/floor stamps, the common atlas and the tileset ids, the player's and the
-      trainers'/items'/tree tips' own sprites and depths, the fog/weather overlays (Task-62's),
-      the camera, the HUD and every other scene's rendering.
-      *Dependencies:* none — the shipped rustle sprite, the accessors, the packer and both source
-      sheets are all in place, and the task adds no state. Batch order covers it: it wants the
-      three FRLG atlases (generated — one writer per batch) and the route scene, and the earliest
-      pending batch whose path list leaves both free is **Batch 5c** — whose Task-69 owns the
-      `src/data/` number tables and the curve docs (`docs/maps-spec.md`,
-      `docs/balance/route-curve.md`, a different file from `docs/tileset-spec.md`) and whose
-      Task-72 owns `src/scenes/BattleScene.ts` — while 5d's Task-70 and 5e's Task-71 already hold
-      the route scene. So it joins 5c as its **third** member, sharing no path with either of
-      them, and lands **before** Batch 6, so Batch 8's accessibility pass and Batch 10's i18n
-      sweep both see the corrected overlay. *(Batch 5c)*
 - [ ] **[Task-58] Every panel becomes a dark glass card (the `t-glass` direction).** Reported in
       play, while Batch 5 was in flight: «los paneles que sean estilo visual como el de debug» —
       the dev overlay is where the report points, and the look it seeded has now been rendered and
@@ -4195,101 +3984,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       stop being an antichain. Nor can it join Task-64/65/66, whose special-room layer
       (`src/engine/maps/plan.ts`, `src/ui/mapView.ts`) it extends in the three batches before it.
       *(Batch 27)*
-- [ ] **[Task-69] The level curve re-planned: eight maps that end at 55, and an infinite run
-      whose floors keep climbing from the bottom too.** Decided by the human after a design
-      discussion, not reported as a bug: the finite run is too short and its last floor is
-      already at the medium-fast curve's knee, so the campaign becomes **eight maps, levels
-      2 → 55**, with a **2–9** first floor and the per-floor step narrowing as the levels rise.
-      **The evidence, all of it already in the repo.** `xpForLevel` is `level³`
-      (`src/engine/run/progression.ts`, 47-50), so the XP a floor owes grows as the cube of its
-      cap: today's six floors need `needed(m)` = **91 / 1115 / 3582 / 8911 / 18944 / 31232**
-      (`docs/balance/route-curve.md`) and the **whole run to 40 is 64 000 XP** — while a
-      constant ten-level step to 100 would spend **271 000 XP on its last floor alone**
-      (`xpForLevel(100) − xpForLevel(90)`), nine times today's entire run. That arithmetic is
-      why the step has to shrink as the levels climb, and it is the shape this task freezes:
-      caps **9 / 16 / 23 / 30 / 37 / 43 / 49 / 55** over `MAP_TUNING`'s eight rows, i.e. steps
-      of **7 / 7 / 7 / 7 / 6 / 6 / 6** and level ranges `2–9, 9–16, 16–23, 23–30, 30–37,
-      37–43, 43–49, 49–55`, so `needed(m)` becomes **604 / 3367 / 8071 / 14833 / 23653 / 28854
-      / 38142 / 48726** and the whole run to 55 is **166 375 XP**. The first floor's cap of 9 is
-      **+4 for the level-5 starter** (`START_LEVEL`, `StarterScene` 27), which is the "one level
-      for a whole floor" the sixth round measured, fixed at the source.
-      **The rule that must still hold, and the numbers it constrains.** Beating **0.75 × T̄(m)**
-      of a floor's trainers must pay that floor's cap: `0.75 × T̄(m) × A(m) / needed(m)` inside
-      **1 – 1.5** (`src/engine/run/curve.test.ts` rebuilds every room of every map the way
-      `RouteScene` does, over the seeds `curve-a`/`curve-b`/`curve-c`; `docs/balance/route-curve.md`
-      records the walk). `T̄(m)` comes from the generator and `A(m)` = `trainerSize` × the mean
-      `experienceAward(level, 1, true)` across the map's range, so the free knobs are
-      `MAP_TUNING`'s ranges and `LEVEL_BANDS`' `trainerSize` / `trainerXp` chain
-      (`src/data/run.ts`, 26-81). **Re-span the six bands over 2..55, keeping their `BandId`s**
-      (`early` 2–9, `low` 9–16, `mid` 16–23, `high` 23–30, `late` 30–37, `end` 37–55 is the
-      recommended reading) so that each map still reads the band it reads today —
-      `bandForMap(m)` is `bandForLevel(levels.minLevel)` (`src/engine/run/floors.ts`, 88-95), so
-      a mistake here reshuffles which **BST pool** a floor fields (`D39`) and every floor's
-      roster, not just its XP. The `bst` windows themselves are re-checked rather than assumed:
-      they tile `0..800` for the pools and are pinned by `src/engine/run/pool.test.ts`, so if
-      they stay, the report says so and says why.
-      **The defect this task also fixes.** `mapTuning` (`src/data/maps.ts`, 72-93) grows a map
-      past the last row by pinning `minLevel` at the last row's `maxLevel` (line 78:
-      `Math.min(MAP_MAX_LEVEL, last.levels.maxLevel)`) while only `maxLevel` climbs, so an
-      infinite run's floors become **40–48, 40–56, …** and settle at a 40–100 range: the floor
-      stops climbing and starts *widening*. `minLevel` must keep climbing with `maxLevel`
-      (`last.levels.maxLevel + (extra - 1) * MAP_TUNING_STEP.levelStep`, clamped at
-      `MAP_MAX_LEVEL`, with `maxLevel` one step above it), which is what makes an infinite run
-      a ramp rather than a plateau. `MAP_MAX_LEVEL = 100` stays (the new top cap, 55, is well
-      below it) and `MAP_MAX_ROUTES` / `MAP_MAX_ROOM_SIZE` do not move.
-      **What moves, file by file.** `FINITE_MAPS` **6 → 8** and `MAP_TUNING`'s eight rows
-      (`src/data/maps.ts`); `LEVEL_BANDS`' level windows, `trainerSize` and `trainerXp`
-      (`src/data/run.ts`). **Pins that move:** `src/data/maps.test.ts` —
-      `levelRangeForMap(1)`/`levelCapForMap(1)` (16-21: `2–6`/`6` become `2–9`/`9`), the
-      contiguity loop (50-54, hardcoded to 2..6 → to `FINITE_MAPS`) and the infinite-step case
-      (56-65: `extra.levels.minLevel` is no longer `last.levels.maxLevel` but one step below
-      `extra.levels.maxLevel`) — and `src/data/run.test.ts`'s `bandForLevel` cases (15-22:
-      `5 → low`, `11 → mid`, `20 → late`, `32 → end` become e.g. `9 → low`, `16 → mid`,
-      `23 → high`, `30 → late`, `37 → end`, `55 → end`) — and
-      **`src/engine/run/progression.test.ts` line 63**, the one-line pin
-      `expect(bandForLevel(10).id).toBe('mid')` → `'low'` (the re-spanned `low` owns 9-16). It is
-      the **only** red test the first cut of this rework produced (1368 of 1369 green), and it is
-      a pin on a band **boundary** rather than on a rule, so that one expectation is edited and
-      nothing else in the file. **The constraint that cost the dev that round trip, recorded here
-      so nobody re-derives it:** the same file's boundary loop (52-61) pins
-      `experienceAward(level, 1, true) === Math.floor(level * 5 * 1.5 * owner.trainerXp)` while
-      `experienceAward` computes `floor((level * 5 * (1.5 * t)))` (`progression.ts` 71-80) — the
-      same arithmetic in a different multiplication order, so every solved multiplier must
-      survive `floor(((level*5)*1.5)*t) === floor((level*5)*(1.5*t))` **at every band edge**:
-      `late = 4.64` gives `experienceAward(30, 1, true) = 1043` where the test's path gives 1044,
-      while `late = 4.65` holds the identity and leaves the fills unchanged (the pre-task table's
-      `6` holds it too). A value that fails is moved to the nearest one that passes; the assertion
-      is never widened. **Pins that follow the data and must
-      not be edited:** `src/engine/save.test.ts` 294 (`levelCapForMap(3)`),
-      `src/engine/save.ts` 646, `src/engine/run/levelCap.test.ts` (7) and the four tests that
-      simply iterate `LEVEL_BANDS` (`src/data/shop.test.ts`, `src/data/loot.test.ts`,
-      `src/ui/shop.test.ts`) plus the pool coverage in `src/engine/run/pool.test.ts`. The walk
-      itself (`src/engine/run/curve.test.ts`) needs no new expectation beyond its existing
-      window assertion, which must stay green for all **eight** floors — re-measure `A(m)`
-      first, because the sheet prints 13.40 for map 1 and the test's own average over the
-      Early range disagrees with it.
-      **Docs:** `docs/balance/route-curve.md` (the caps table, `needed(m)`, the eight-floor walk
-      and the re-solved `trainerXp` — its `A(m)` column must then agree with the test's own
-      average) and `docs/maps-spec.md` §4/§5 (the "a table per map (1..6 today)" line at 144,
-      the cap sentences at 140/157-159, and the fact that the run has eight floors) plus §10's
-      **`O-M7`** (271-272, "How many maps a finite run walks … starts at **6** … the Phase 7 pass
-      may retune it"), which the human's decision resolves at **eight** — the answer this task
-      implements rather than leaves to the balance pass.
-      `docs/design-spec.md` §6's chain diagram is generic and stays. **`RUN_CHAIN.finiteLength`**
-      (40, `src/data/run.ts` 106-110) is deliberately **not moved**: it is the legacy flat-chain
-      length read only by `src/engine/run/chain.ts` and the dev menu, and the finite run is the
-      map chain (`FINITE_MAPS`) — say in the report that it was left alone.
-      Out of scope: the generator's population pass and the loot table (Task-70, Batch 5d), the
-      battle-side numbers and the harness (Task-09, Batch 6), `xpForLevel`/`MAX_LEVEL`
-      (`progression.ts`), `src/engine/run/chain.ts`, the evolution curve (Task-51, Batch 5b),
-      the save format (no run field moves, so **no `SAVE_VERSION`** step) and
-      `src/data/trainers.ts`'s money tables.
-      *Dependencies:* none — every table is shipped and this task moves numbers, not rules.
-      Batch order covers it: it needs `docs/balance/route-curve.md` (Task-51's in **Batch 5b**,
-      which re-pins the evolution curve against the shipped caps first), `docs/maps-spec.md`
-      and the `docs/balance/` sheets free at once (Task-17 and Task-09 hold them in **Batch 6**)
-      — so it opens the plan's new **Batch 5c**, alone, **after** 5b, and
-      Task-70's density pass follows it in **Batch 5d**. *(Batch 5c)*
 - [ ] **[Task-71] A boss fields six Pokémon and a mini-boss three.** Reported in play:
       «los minibosses tendran siempre 3 pokes y bosses 6 menos en primer piso que es 2 y 3
       relativamente» — the two fights that close a floor and open its reward should field a
@@ -4763,9 +4457,9 @@ a finished batch still owes QA.
 
 **The level curve is re-planned, and it is not a report.** After a design discussion the human
 chose the campaign's new shape — **eight maps, levels 2 → 55**, a 2–9 first floor, with the
-per-floor step shrinking as the curve's cube bites — and it is registered as two tasks ahead of
-the balance pass rather than as a bug: `[Task-69]` (Batch 5c) rewrites `MAP_TUNING`,
-`FINITE_MAPS` and the level bands and fixes the infinite-run step that pins a deep floor's
+per-floor step shrinking as the curve's cube bites — and it was registered as two tasks ahead of
+the balance pass rather than as a bug: `[Task-69]` (Batch 5c, **shipped**) rewrote `MAP_TUNING`,
+`FINITE_MAPS` and the level bands and fixed the infinite-run step that pinned a deep floor's
 minimum at the last row's cap, and `[Task-70]` (Batch 5d) thins maps 1-2 — fewer trainers and
 less loot — so the on-ramp is gentler, without touching geometry (a floor already needs six
 rooms and 30x30 is already the room minimum, so the population pass and the loot table are the
