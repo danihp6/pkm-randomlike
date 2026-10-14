@@ -23,21 +23,22 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d and Batch 5e are shipped and archived.** Their
-fifteen
+**Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e and Batch 5eb are shipped and
+archived.** Their
+sixteen
 tasks merged
 in ID order
-behind the green gate (four, then five, then three, then one, then one, then one) and the detail is
+behind the green gate (four, then five, then three, then one, then one, then one, then one) and the
+detail is
 in
 `CHANGELOG.md`'s
 `## Unreleased`; Batch 5b is the batch that ended up packing the decomp's real FireRed grass
 rustle, Batch 5c the one that re-planned the level curve and laid that overlay over the player's
 legs, Batch 5cb the defect in front of 5d that fixed its colour and clipped its hit, Batch 5d
-the on-ramp thinning, and Batch 5e the fixed boss and mini-boss parties, and all five are closed
-below. **Batch 5eb is the next batch cut** — `[Task-75]`, the debug overlay's teleports and its two
-ignore toggles. It sits **before**
-Batch 6 so that Task-09's balance pass reads the curve, the density and the parties that
-actually ship. Every
+the on-ramp thinning, Batch 5e the fixed boss and mini-boss parties, and Batch 5eb the debug
+overlay's teleports and its two ignore toggles, and all seven are closed
+below. **Batch 6 is the next batch cut** — the balance pass, the Phase 9 docs pass, the battle
+SWITCH grid and the follower Pokémon. It is the first batch of the post-on-ramp plan. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
 goes to the packer, and no tree under `sprite-sources/` is ever linked into a worktree
 (Batch 3's junction is what emptied it once).
@@ -770,29 +771,26 @@ and recorded as a decision for Task-09 to weigh. It adds no run field, so **no `
 step** — the chain stays **14 → 15 → 16 → 17 → 18**. Its ID is retired: it keeps its place in the
 sequence and is never reused.
 
-### Batch 5eb — dev teleports and the two ignore toggles
-- **Task-75** The debug overlay gets three teleports — a floor, a room inside the floor and a
-  concrete tile in the room — plus two dev booleans, one that stops the tall grass rolling wild
-  encounters and one that stops a trainer's line of sight; all of them dev-only, none persisted.
-- **Hot files:** `src/dev/debugMenu.ts` + `src/dev/debugMenu.test.ts` (the `DebugMenuHandlers`
-  additions, the Route tab's *Teleport* block, the two General checkboxes and the
-  `debugLocationLabel` helper + its case), `src/scenes/RouteScene.ts` (the five dev methods, the
-  two fields and the two hooks — `onTileEntered`'s roll at 4451 and `trainerSpotted`, 4559-4566)
-  and **`src/main.ts`** (the five wiring entries, the pattern every handler already follows) →
-  Task-75. It claims no `src/data/**`, `src/ui/**`, `src/engine/**` (the transitions are reused as
-  they are), `src/engine/save.ts`, `package.json`, `vite.config.ts`, packed asset or `docs/` line.
-- **Shape:** one task, alone, and it is the **earliest batch that leaves `src/scenes/RouteScene.ts`
-  free**: the scene's claimants are **5cb** (shipped, Task-74), **5d** (Task-70) and **5e**
-  (Task-71) — a batch may hold a path a *later* batch also claims, but a shipped batch is closed
-  and a cut one can gain no member — so this batch opens **one behind 5e** and takes the letter of
-  the batch it follows
-  (`5eb`, the way `4b` follows `4` and `5cb` follows `5c`). It is a **dev tool with no effect on
-  the player**: nothing depends on it, nothing waits on it, and it adds neither a rule nor a run
-  field — so **no** `SAVE_VERSION` step, the chain staying 14 → 15 (Task-13) → 16 (Task-31) → 17
-  (Task-44) → 18 (Task-52). Its toggles **do** move a run off its seeded stream while they are on
-  (a skipped roll spends no draw), which is acceptable *only* because they are dev-only and
-  unsaved, and the entry says so rather than pretending otherwise. It runs **before Batch 6** so
-  its three paths are nobody's when Batch 6's Task-09/Task-17/Task-34/Task-41 claim theirs.
+### Batch 5eb — dev teleports and the two ignore toggles *(shipped, archived)*
+Task-75 merged alone behind the green gate (**1399** tests, `npm test` + `npm run build`) and the
+detail is in `CHANGELOG.md`'s `## Unreleased`; QA validated it green, its Task QA exercising the
+three teleports and both toggles on a live run and its Integration QA rehearsing the merge. The
+debug overlay's Route tab gained a *Teleport* block (`Floor` / `Room` / `X`,`Y` inputs with `auto`
+placeholders, three `Go` buttons, a `#debug-location` readout and its own `#debug-teleport-status`
+line) and its General tab the two checkboxes; `src/main.ts` wires the five new handlers, the
+pattern every handler in the tree already follows. `src/scenes/RouteScene.ts` adds
+`teleportToFloor` / `teleportToRoom` / `teleportToTile` and `setIgnoreEncounters` /
+`setIgnoreTrainers`, reusing the shipped `advanceMap`/`advanceRoute`, `transitionTo` and
+`movePlayerTo` rather than inventing a second way to change rooms; `debugLocationLabel` is the new
+pure helper (four exact strings, one test each). The **boss and mini-boss are trainers** for the
+sight toggle, so it stops them too and the portal stays sealed until the boss falls (D31); the
+floor teleport does **not** heal (the menu has its own *Heal*) and resets the destination floor's
+per-floor bookkeeping exactly as `advanceMap` does. Both toggles are dev-only and unsaved — a run
+they are on no longer matches its seeded stream, because a skipped roll spends no draw, and the
+entry states that plainly — and the ignore-trainers gate covers **both** sight paths
+(`trainerSpotted` and the spinning trainer's `seesPlayer` branch). It adds no run field, so **no
+`SAVE_VERSION` step** — the chain stays **14 → 15 → 16 → 17 → 18**. Its ID is retired: it keeps
+its place in the sequence and is never reused.
 
 ### Batch 6 — balance pass, Phase 9 docs, the battle SWITCH grid
 - **Task-09** Balance pass.
@@ -1985,134 +1983,6 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
       from here on keeps the ledger from growing — a new file conforms, and a task that
       edits a ledgered file never adds a line to hide it.
       *Dependencies:* none. *(Batch 11)*
-- [ ] **[Task-75] The debug overlay can teleport between floors, rooms and tiles, and can ignore
-      wild encounters or trainers.** Reported as a task: «añade tarea para añadir a debug input
-      para hacer tp entre pisos, entre rutas y a posicion concreta en la ruta — y boolean que
-      permite ignorar salvajes y otro para ignorar entrenadores». Both halves are **developer
-      tools**, which is what makes them cheap and what keeps them out of the game's own rules.
-      **The surface today, verified.** `src/dev/debugMenu.ts` is the tree's only dev surface: a
-      DOM overlay mounted by `installDebugMenu` (288), which bails out unless `IS_DEVELOP` (289)
-      and which `src/main.ts` only imports behind the same gate (39-40, the dynamic import keeping
-      it out of the production chunk). Its contract is `DebugMenuHandlers` (**94-119**, the type
-      the reporter called `DebugHandlers`) and its tabs are General / Battle / Party / Bag / Route
-      / Map (1042-1050); the handlers are **wired in `src/main.ts`** (41-106), each one resolving
-      `game.scene.getScene('Route')` and calling a dev method on the scene. The scene's own dev
-      surface is the set of methods that begin `if (!IS_DEVELOP …) return` — `startDebugWildBattle`
-      (5024), `addDebugPokemon` (5034), `addDebugItem` (5061), `debugParty` (5069),
-      `setDebugSquadLevel` (5087), `editDebugPokemon` (5107), `healDebugPokemon` (5121),
-      `debugRouteContext` (6109, which mirrors the scene's `passThrough`/`hoverInspect` fields into
-      `DebugRouteContext` at 6123-6124), `setPassThrough` (6130), `setHoverInspect` (6136),
-      `generatorStepInfo`/`stepGenerator`/`resetGeneratorStep` (6199/6206/6219), `regenerateRoute`
-      (6238), `exportFrameMap` (6278) and `importFrameMap` (6288) — with the toggles' own fields
-      declared at 671-673 and reset in `create` (1211). **That pair is the pattern the two new
-      booleans copy.**
-      **What the teleports must reuse, not reinvent.** The run's position is `mapIndex`,
-      `routeInMap` and `arrivalEdge` (`RunState`, `src/engine/run/state.ts` 53-61), and both
-      transitions already exist as pure functions: `advanceRoute(run, roomInMap, arrivalEdge?)`
-      (161-175, which clamps the room and derives the door through `arrivalEdgeFor`) and
-      `advanceMap(run)` (185-204, which moves the map, resets the **per-map** bookkeeping —
-      `bossDefeated`, `discoveredRooms`, `defeatedTrainers`, `pickedItems`, `capturedRooms` — and
-      caches the new `levelCap`). The scene's own room-change path is `transitionTo(run)`
-      (**4524-4541**): it repaints the room (`buildRoom`/`drawTiles`/`drawEntities`/`drawItems`/
-      `drawTrainers`/`drawShopCounter`), spawns the player on the room's entry tile
-      (`this.player = { ...this.route.entry }`, 4536), re-bounds the camera and refreshes the HUD
-      (4540). `buildRoom` (976-1003) is what makes a room look like itself — the plan view
-      (`roomView`, 978), the boss when the floor's boss is alive (980-983, `bossTrainerId`) and the
-      mini-boss (986-992, `miniBossTrainerId`) — and `movePlayerTo` (~4340) is what puts the sprite,
-      its depth and the grass overlay on a tile. A teleport that goes through those three is
-      indistinguishable from a door.
-      **The two hooks the toggles short-circuit.** The wild roll is one line in `onTileEntered`
-      (4444-4461): the grass branch at 4447-4461 plays the rustle and then spends the room's stream
-      — `const encounter = this.encounters.step();` (**4451**) — to open a wild battle if it
-      returns one. The trainer trigger is `trainerSpotted()` (**4559-4566**), the first undefeated
-      trainer whose line of sight holds the player, which `onTileEntered` uses to start the chase
-      (`beginChase`, 4590) and hence `startTrainerBattle`.
-      **Fix shape, as the recommended reading (the spec freezes the names).**
-      1. **Three teleport handlers**, one per granularity, each returning the panel's own
-         result shape so the status line can say where it landed or why it refused:
-         `onTeleportFloor(mapIndex)`, `onTeleportRoom(roomInMap)` and `onTeleportTile(x, y)`, all
-         `DebugTeleportResult = Readonly<{ ok: boolean; where?: string; error?: string }>` (the
-         `importFrameMap` shape, 118).
-      2. **The floor teleport** builds the new `RunState` the way `advanceMap` does (position plus
-         the per-map resets) with the map index **clamped to `1 … FINITE_MAPS`** in a finite run
-         (and to `≥ 1` in infinite mode), then calls `transitionTo`. It **deliberately does not**
-         mark a skipped boss defeated, open a portal, spend a capture or touch `stats` — the floor's
-         own rules still hold on arrival (its boss alive, its portal sealed, D31), so crossing a
-         portal stays the boss's job.
-      3. **The room teleport** is `advanceRoute`-shaped (`roomInMap` **clamped** to the plan's
-         `0 … rooms.length - 1`, the arrival edge derived) plus `transitionTo`, so the destination
-         is a room reached through a door: its trainers live, its items present, its fog entry
-         recorded. Clamping rather than rejecting is the frozen call because the panel has a
-         status line to report the landing (`landed room 4 of 7`) — a silent reject would leave the
-         dev guessing; say which of the two the spec took in the report.
-      4. **The tile teleport** checks the requested tile against the live map: out of bounds is
-         clamped, a **solid** tile is refused (`ok: false, error: 'solid tile'`) because the player
-         would be stuck in it, and it does **not** change the room — that is the room teleport's
-         job. On success it sets `this.player`, calls `movePlayerTo` (which refreshes the sprite,
-         its depth and the grass overlay) and `refreshHud`, so the HUD and the minimap follow.
-      5. **`ignoreEncounters`** returns early from the grass branch **before** `this.encounters.step()`
-         (4451), so the tall grass never opens a battle; **`ignoreTrainers`** makes
-         `trainerSpotted()` (4559-4566) return `null`, so no sight-triggered battle opens. Both are
-         scene fields defaulting `false` and reset in `create` beside `passThrough`/`hoverInspect`
-         (671-673, 1211), mirrored into `DebugRouteContext` like their two siblings (6123-6124),
-         and **never written to the save**.
-      6. **The boss and the mini-boss count as trainers**: they are injected into
-         `this.route.trainers` by `buildRoom` (980-992), so `ignoreTrainers` also stops their sight
-         — which is the useful reading for walking a floor's geometry without a fight. **What that
-         does to the portal is stated, not hidden:** nothing in this task sets `bossDefeated`, so
-         the boss room's portal stays **sealed** (D31) while the toggle is on; a dev who wants
-         through either turns the toggle off and beats the boss, or teleports a floor up.
-      7. **The determinism note, stated honestly.** A toggle that skips a roll spends a different
-         number of `Rng` draws, so a run with **either** toggle on no longer matches its seeded
-         stream (the encounter sequence shifts by however many rolls were skipped). That is
-         acceptable **only** because both toggles are dev-only and unsaved: no shipped path can
-         reach them, no run field records them, and a normal run's stream is untouched. The entry
-         says that instead of pretending the stream is preserved.
-      **Contract, frozen (the scene is written against it).** In `src/dev/debugMenu.ts`:
-      `DebugMenuHandlers` gains `onTeleportFloor: (mapIndex: number) => DebugTeleportResult`,
-      `onTeleportRoom: (roomInMap: number) => DebugTeleportResult`,
-      `onTeleportTile: (x: number, y: number) => DebugTeleportResult`,
-      `onToggleIgnoreEncounters: (enabled: boolean) => void` and
-      `onToggleIgnoreTrainers: (enabled: boolean) => void`; `DebugRouteContext` gains
-      `mapIndex: number`, `roomInMap: number`, `roomCount: number`,
-      `tile: { x: number; y: number } | null`, `ignoreEncounters: boolean` and
-      `ignoreTrainers: boolean`; and one new pure, tested helper formats the readout —
-      `debugLocationLabel(context)` → `` `map 3 · room 2/7 · (14,9)` `` (a null tile drops the last
-      clause), the same shape as `partyMemberLabel`/`clampLevel` (167-236). The scene gains
-      `teleportToFloor(mapIndex)`, `teleportToRoom(roomInMap)`, `teleportToTile(x, y)` (all
-      `DebugTeleportResult`), `setIgnoreEncounters(enabled)` and `setIgnoreTrainers(enabled)` (both
-      `void`), each beginning `if (!IS_DEVELOP …) return`, and `src/main.ts` gains the five wiring
-      entries beside their siblings (41-106). **Controls, frozen:** the **Route** tab gains a
-      *Teleport* block — `Floor [input] Go`, `Room [input] Go`, `X [input] Y [input] Go` (the
-      existing `numberField`/`button` helpers, 274-384) and the `debugLocationLabel` readout on the
-      `routeInfo` line — and the **General** tab gains the two checkboxes in the row style already
-      there for *Pass through obstacles* / *Inspect hovered cell* (508-524), re-ticked by
-      `refreshRouteFields` from the context (543-544).
-      **Paths:** `src/dev/debugMenu.ts` + `src/dev/debugMenu.test.ts` (the contract, the controls,
-      the readout helper and its case), `src/scenes/RouteScene.ts` (the five dev methods, the two
-      fields and the two hooks) and **`src/main.ts`** (the five wiring entries — the one other file
-      the half needs, because *every* handler in this tree is resolved there rather than in the
-      scene). Nothing else: no engine change (`advanceRoute`/`advanceMap`/`roomView`/`arrivalEdgeFor`
-      are reused as they are), no `src/data/**`, no `src/ui/**`, no packer or atlas, no docs line
-      (a dev tool changes no rule and no player-facing text) and no `package.json`.
-      **No state, therefore no `SAVE_VERSION`:** the toggles are scene fields, the teleports only
-      move the run's existing position, and nothing is persisted beyond the run's own save write
-      that a door already does — the chain stays 14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44)
-      → 18 (Task-52). No RNG is drawn by either half (only *skipped*, as above).
-      Out of scope: the production build (the whole module stays behind `IS_DEVELOP`), a
-      teleport's own effect on the floor's rules (the boss, the portal, the capture and the
-      reward windows all keep their own state), the battle scene and its dev battle, the run's
-      save format, `src/dev/env.ts` and the menu's toggle key, the panel's own styling and tab
-      layout beyond the two new blocks, and any *gameplay* use of the two toggles.
-      *Dependencies:* none — the panel, the handlers, the scene's dev surface and both transition
-      helpers are all shipped. Batch order: it wants `src/scenes/RouteScene.ts` (its one scene
-      path) plus `src/dev/**` and `src/main.ts`, and the scene was claimed by **5cb** (Task-74,
-      shipped before this task's batch was cut) and is held by **5d** (Task-70) and **5e**
-      (Task-71) — a batch may hold a path a *later* batch also claims, but it cannot join a
-      **cut** batch and a **shipped** one is closed, and those three are the only ones that ever
-      claimed it — so it
-      opens its own **Batch 5eb**, one batch behind 5e, which is the earliest slot that leaves the
-      scene free (and `src/main.ts` free with it: no open task claims it). *(Batch 5eb)*
 
 ## Phase 1 — Dex accessors & data contracts
 

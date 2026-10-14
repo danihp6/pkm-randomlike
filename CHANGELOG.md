@@ -8,6 +8,28 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The debug overlay can teleport between floors, rooms and tiles, and ignore wild encounters
+      and trainer sight.** The Route tab gains a *Teleport* block — `Floor`, `Room` and `X`/`Y`
+      inputs (blank means `auto`) with a `Go` button each, a `#debug-location` readout and its own
+      `#debug-teleport-status` line — and the General tab the two checkboxes; `src/main.ts` wires
+      the five new handlers, the pattern every handler in the tree already follows. The scene
+      reuses the **shipped** transitions rather than inventing a second way to change rooms:
+      `teleportToFloor` runs the real `advanceMap` (resetting the destination floor's per-floor
+      bookkeeping exactly as a normal floor change does — fog, trainers, items, captures, boss,
+      `pcUnlocked`, level cap) but deliberately **does not heal** (the menu has its own *Heal*, and
+      a silent heal would hide the very bug the tool is used to chase), `teleportToRoom` runs
+      `advanceRoute` + `transitionTo` so it lands on a real door with the opposite arrival edge,
+      and `teleportToTile` stops any walk first and then calls `movePlayerTo`, so a mid-step
+      teleport cannot let the tween drag the player back and fire `onTileEntered` at the old tile.
+      All three clamp into range and refuse a solid tile or a missing floor plan
+      (`teleport failed: no floor plan` / `solid tile`). `debugLocationLabel(context)` is the new
+      pure, tested helper (four exact strings). The two toggles are dev-only and unsaved: the
+      ignore-encounters flag gates the grass roll and the ignore-trainers flag gates **both** sight
+      paths (`trainerSpotted` and the spinning trainer's `seesPlayer` branch), the **boss and
+      mini-boss count as trainers** so their sight stops too and the portal stays sealed until the
+      boss falls (D31), and because a skipped roll spends no draw a run with a toggle on no longer
+      matches its seeded stream — stated plainly rather than hidden. It adds no run field, so **no
+      `SAVE_VERSION` step**; the chain stays **14 → 15 → 16 → 17 → 18**.
 - [x] **A boss always fields six Pokémon and a mini-boss three — map 1 the exception, at three and
       two.** Both rosters used to be derived from the floor's band (`band.trainerSize + 1`), so a
       boss's team grew and shrank with the level curve and a map-1 boss met you with two. The rule
