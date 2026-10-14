@@ -3708,6 +3708,24 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       still reads as if the set were the classic ones. Write the counts as they stand
       when this task runs: Task-36 (Batch 4b) may move the species side again before
       it, and the stale line is the number, not the rule.
+      **It is also the task that carries the build-process change the Orchestrator made
+      on `main`, and `AGENTS.md`'s multi-agent section must stop describing one serial
+      QA.** The rewrite says there are now **two waves**: **Task QA** — one QA subagent
+      **per task**, in **parallel**, each from its own integration worktree (that task's
+      branch merged onto the batch base), running that task's plan and auditing that
+      task's diff — and **Integration QA** — one short pass on the combined tree for the
+      batch gates, the **cross-task** audit and the merge rehearsal. The same rewrite
+      carries the spec template's new rule, because a criterion nobody can execute is
+      the failure mode both halves of the change exist to stop: **every acceptance
+      criterion is tagged `[unit]`** (a headless command, a decoded asset, a pinned
+      number — seconds and deterministic) **or `[live]`** (it only exists in the running
+      game: layering, overlap, a band, a beat, a colour on screen), **each `[live]` one
+      states its measurement** — what to read, on which layout, against which bound —
+      because QA's browser budget goes to the `[live]` criteria and **a task whose
+      criteria are all `[unit]` owes no browser pass at all**. Point at
+      `docs/agent-spec-template.md` for the rule itself (it already states it) instead of
+      copying it into `AGENTS.md`, and say in one line what it means for the batch loop:
+      a task's plan is run per task, the batch gates are run once on the combined tree.
       *Dependencies:* none. *(Batch 6)*
 - [ ] **[Task-18] Gigantamax, in the Mega Evolution mould.** Model Gigantamax the
       way the Megas work (`src/engine/battle/mega.ts`, `D34`): once per battle a
@@ -4681,8 +4699,9 @@ a UI helper. The target is English plus Spanish.
 ## Bugs
 
 Reported in play, awaiting triage. A bug becomes a task in the batch plan, and the
-fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what
-a finished batch still owes QA.
+fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what a
+finished **task** still owes its Task QA — and a batch, its one Integration QA pass on
+the combined tree.
 
 **The level curve is re-planned, and it is not a report.** After a design discussion the human
 chose the campaign's new shape — **eight maps, levels 2 → 55**, a 2–9 first floor, with the
