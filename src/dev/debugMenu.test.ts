@@ -12,6 +12,7 @@ import {
   DEBUG_MIN_LEVEL,
   DEBUG_ROUTE_HEIGHT,
   DEBUG_ROUTE_WIDTH,
+  debugLocationLabel,
   matchAbility,
   matchItem,
   matchMove,
@@ -164,6 +165,36 @@ describe('matchPartyMember', () => {
     expect(matchPartyMember('eevee lv20 (1)', twins)?.id).toBe('x');
     expect(matchPartyMember('Eevee Lv20', twins)?.id).toBe('x');
     expect(matchPartyMember('Eevee', twins)?.id).toBe('x');
+  });
+});
+
+describe('debugLocationLabel', () => {
+  it('joins the floor, room and tile clauses with " · "', () => {
+    expect(
+      debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: { x: 14, y: 9 } }),
+    ).toBe('map 3 · room 2/7 · (14,9)');
+  });
+
+  it('drops the room clause when the floor has no plan', () => {
+    expect(
+      debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 0, tile: { x: 14, y: 9 } }),
+    ).toBe('map 3 · (14,9)');
+  });
+
+  it('drops the tile clause when there is no tile', () => {
+    expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: null })).toBe(
+      'map 3 · room 2/7',
+    );
+  });
+
+  it('prints only the map clause with neither rooms nor a tile', () => {
+    expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 0, tile: null })).toBe('map 3');
+  });
+
+  it('never pads a number', () => {
+    expect(debugLocationLabel({ mapIndex: 1, roomInMap: 0, roomCount: 6, tile: { x: 4, y: 9 } })).toBe(
+      'map 1 · room 0/6 · (4,9)',
+    );
   });
 });
 

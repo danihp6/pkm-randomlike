@@ -103,6 +103,26 @@ if (IS_DEVELOP) {
         const route = game.scene.getScene('Route') as RouteScene | null;
         return route?.importFrameMap(text) ?? { ok: false, error: 'no active route' };
       },
+      onTeleportFloor: (mapIndex) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        return route?.teleportToFloor(mapIndex) ?? { ok: false, error: 'no active route' };
+      },
+      onTeleportRoom: (roomInMap) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        return route?.teleportToRoom(roomInMap) ?? { ok: false, error: 'no active route' };
+      },
+      onTeleportTile: (x, y) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        return route?.teleportToTile(x, y) ?? { ok: false, error: 'no active route' };
+      },
+      onToggleIgnoreEncounters: (enabled) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        route?.setIgnoreEncounters(enabled);
+      },
+      onToggleIgnoreTrainers: (enabled) => {
+        const route = game.scene.getScene('Route') as RouteScene | null;
+        route?.setIgnoreTrainers(enabled);
+      },
     });
   });
 }
