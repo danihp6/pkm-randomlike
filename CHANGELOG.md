@@ -8,6 +8,57 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The tall grass rustles on the tile the player walks through, with FireRed's own
+      animation.** Walking into (or standing in) a grass patch now plays the cartridge's
+      *hit* on the player's tile: `scripts/frlg/build-tilesets.mjs` stamps the five
+      `graphics/field_effects/pics/tall_grass.png` frames of the pret/pokefirered
+      decompilation — materialised in the gitignored `sprite-sources/frlg/` and passed to
+      the packer as **command-line paths**, so no packer ever reads inside a worktree — into
+      the unused cells `6, 45-48` of each of the three FRLG atlases (cell 6 is the field's
+      own tuft, byte-identical to the tall-grass frame 5; the four hits are re-grounded on
+      the field's floor), and `RouteScene` cycles them on a single sprite over the player's
+      own tile once per step, parking on the rest frame, hiding the moment they step out,
+      and covering their feet while the opaque frame plays. `TilesetConfig` gains exactly one
+      optional field (`grassRustle`), read through the new pure `grassRustleFrames`
+      accessor beside `isGrassStepTile`; no other cell of the map animates, no RNG is drawn
+      and no `SAVE_VERSION` step is taken. `docs/tileset-spec.md` §2/§6 and
+      `docs/art-direction.md` (the new rip's provenance) record it.
+- [x] **A finished run returns to the main menu instead of the starter pick.** `RunOverScene`
+      now sends **both** outcomes — a wipe and a win — to `MainMenu` through one
+      `returnToMenu()`, so the route the player came from is where a new run is started; the
+      summary still reports the victory, the save is still cleared (`clearRun`) and the input
+      guards (`RUN_OVER_INPUT_DELAY_MS`, `armed`, `leaving`) are unchanged. `docs/design-spec.md`
+      §6 states the destination.
+- [x] **An evolution that is not a level-up takes a BST level: 20 / 30 / 40, at least +10
+      above the evolution that produced it.** `evolutionLevelForBst` and its
+      `EVOLUTION_BST_LEVELS` bands (`src/data/dex/evolutions.ts`) resolve every **non-level**
+      branch from the species' own `bst`, anchored on the run's `LevelBand.bst` windows, with
+      a `EVOLUTION_MIN_GAP = 10` floor over the resolved level of the pre-evolution; the 69
+      canon level-up branches keep their own cartridge levels byte-for-byte, and 60 of the
+      156 non-level branches move (Primeape 30 → 40, Seadra 33 → 42, Scyther 20 → 40 …). The
+      rule is written for the **shipped** caps and hardcodes none, so a later level-curve
+      change moves the numbers and not the rule. `docs/battle-spec.md` §7, the `D38` entry and
+      the new `docs/balance/route-curve.md` section carry it.
+- [x] **The battle's two HP panels show the active Pokémon's types under its name.** One
+      loop in `drawSidePanel` (`src/scenes/BattleScene.ts`) draws up to two badges per side
+      from the live fighter (`displayActive`, so a switch, a forme change and a Mega all
+      repaint it), read from the Añil type atlas the move cells already use and falling back
+      to a coloured text chip for a type the atlas lacks; the panels grew `PANEL_TYPES_H` and
+      every other row keeps its offset from `barY`. The compact phone layout needed a
+      correction round once QA measured it: the taller foe panel was leaving 33 px of the foe
+      battler behind the player panel, so the compact platform is now pinned a platform's
+      depth above that panel and the overlap is **0 px**, with the desktop layout, the type
+      row and the mon-size caps untouched. No new module, no `src/data/**`, no docs line and
+      no literal.
+- [x] **The Mart always stocks four rows, and every band's machine beside them.** The stock
+      is a **10× ball pack** at half the catalogue price rounded to the hundred (¥1,000 /
+      3,000 / 6,000), the band's **Potion** rung, and **two held items** at their catalogue
+      price, followed by the per-band TM Task-22 ships — so every `kind: 'status'` cure and
+      every X-item has left the buy list and now reaches a run only from ground loot and the
+      mini-boss reward. `ShopSlot`/`ShopRow` gained `count` (the pack adds ten units for one
+      price, the sell side is byte-identical and still unit-by-unit, so no buy-and-sell loop
+      exists) and `SHOP_CORE`/`SHOP_ROTATION_COUNT` are gone. `docs/maps-spec.md` §7 and
+      `docs/balance/economy.md` record the stock; `src/scenes/RouteScene.ts` was not touched.
 - [x] **Every window in the game is drawn now instead of ripped, and the chrome carries its
       own translucency.** `src/ui/frlg.ts` sliced the FRLG sheets for all six scenes; it now
       serves a committed, **drawn** set under `src/assets/ui/**` (`window.png` 96x96,
