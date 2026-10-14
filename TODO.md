@@ -27,9 +27,11 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 behind the green gate (four, then five, then three) and the detail is in `CHANGELOG.md`'s
 `## Unreleased`; Batch 5b is the batch that ended up packing the decomp's real FireRed grass
 rustle and Batch 5c the one that re-planned the level curve and finished that overlay, and both
-are closed below. **Batch 5d is the next batch cut** — `[Task-70]`, the first-floor on-ramp (fewer
-trainers, less loot, and map 1 hanging no shop leaf) — followed by **Batch 5e** (`[Task-71]`,
-the fixed boss and mini-boss parties). Both sit **before**
+are closed below. **Batch 5cb is the next batch cut** — `[Task-74]`, the forest's tall grass
+painting a lighter green over its dark tuft (a defect, cut in front the way Batch 3b was cut in
+front of Batch 4) — followed by **Batch 5d** (`[Task-70]`, the first-floor on-ramp: fewer
+trainers, less loot, and map 1 hanging no shop leaf) and **Batch 5e** (`[Task-71]`,
+the fixed boss and mini-boss parties). All three sit **before**
 Batch 6 so that Task-09's balance pass reads the curve, the density and the parties that
 actually ship. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
@@ -515,6 +517,28 @@ the file free**, and it took the task as its third member; all three still share
 needed three cuts and shipped in the batch (see the batch's summary above). Nothing
 here re-plans `Task-38`–`Task-72`, and Batch 4b stays `cut`.
 
+A **sixteenth round** of **one report** arrived after that one, and it is a **defect** rather than a
+wish; it adds **no dependency edge** and **no `SAVE_VERSION` step**. `Task-74` — «nada mas
+entrar el fondo se pone de otro color creo no se usa el fondo tile del bosque si no de prado por
+eso es un verde mas claro» — is the tall grass's overlay painting the **outdoor palette's** blades
+over the forest's dark tuft, and it is a **palette mismatch, not a wrong tileset**: the three
+committed atlases decode to `78,160,99` (cell 5) in `outdoor` and `cave` against `59,125,76` in the
+`forest`, while the rustle cells (6, 45-48) carry the **outdoor** numbers in all three fields, so
+only the forest — the one biome `BIOME_ORDER` walks — shows it. The fix the entry freezes is a
+**per-field `grassRustleTint`** in the tileset data (`0xC1D7EF` for the forest, none for the other
+two, derived from the two means), applied by the scene to the one overlay sprite: no repack, only
+the blades are tinted (the alpha still lets the field's own ground through), and the criterion is a
+measured one on the committed cells (the parked cell no more than 6 lighter than that field's tuft
+and no more than 30 darker; the four hit cells within ±30). The rejected reading — remapping the
+five frames' palette per field in the packer — is named with its costs (a repack of the three
+atlases and a per-field recolour map). Because the repo cuts a **defect in front** of the batch
+behind it (`[Task-33]` was "the bug batch cut in front of Batch 4"), it opens **Batch 5cb**, the
+letter following the batch it extends the way `4b` follows `4`, one batch ahead of **5d**. Its
+paths are `src/engine/tileset.ts`, `src/data/tilesets/frlg.ts` + `frlg.test.ts`,
+`src/scenes/RouteScene.ts` (one line) and `docs/tileset-spec.md` §6 — all of them free here, since
+the route scene is claimed by 5d and 5e only in the batches after it — so the batch is a single
+task and an antichain. Nothing here re-plans `Task-38`–`Task-73`, and Batch 4b stays `cut`.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
@@ -649,6 +673,30 @@ the three FRLG atlases are the only art that moved, `docs/tileset-spec.md` §6 r
 rule, and none of the three added a run field or a `SAVE_VERSION` step, so the version chain
 stays **14 → 15 → 16 → 17 → 18**. Its three IDs are retired: they keep their place in the
 sequence and are never reused.
+
+### Batch 5cb — the forest's tall grass stops painting a lighter green
+- **Task-74** The parked grass overlay and its hit are tinted per field, so the forest's dark tuft
+  stops being covered by the outdoor palette's light blades: `grassRustleTint` in the tileset data
+  (`0xC1D7EF` for the forest, none for outdoor and cave), applied by the scene to its one overlay
+  sprite.
+- **Hot files:** `src/engine/tileset.ts` (the one optional `grassRustleTint?: number` field),
+  `src/data/tilesets/frlg.ts` + `frlg.test.ts` (the per-field rows and the case that pins them to
+  the decoded cells) and `docs/tileset-spec.md` §6 → Task-74; `src/scenes/RouteScene.ts` (one
+  `setTint` where the sprite is built) → Task-74 as well, since it is the only task in this batch.
+  It claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`,
+  `src/engine/save.ts`, `src/data/**` beyond the tileset table, and **no packed asset**: the
+  packer and the three `src/assets/frlg/*.png` stay exactly as Batch 5c shipped them, which is the
+  point of the tint over the rejected palette remap.
+- **Shape:** one task, alone, and it is a **defect cut in front** of the batch behind it — the
+  `[Task-33]` precedent ("the bug batch cut in front of Batch 4"), which is why it takes the
+  letter of the batch it follows (`5cb`, the way `4b` follows `4` and `3b` follows `3`) and runs
+  **before Batch 5d**. It is the only batch that can host it: this is the first point at which
+  `src/data/tilesets/frlg.ts` + its test and `src/engine/tileset.ts` are nobody's, and the one
+  scene line it needs (`src/scenes/RouteScene.ts`) is held by 5d's Task-70 and 5e's Task-71 only
+  in the batches **after** it — a batch may hold a path a later batch also claims, so the
+  antichain is intact and the defect does not have to wait behind the on-ramp work. It adds no run
+  field, so **no** `SAVE_VERSION` step — the chain stays 14 → 15 (Task-13) → 16 (Task-31) → 17
+  (Task-44) → 18 (Task-52) — and it touches no RNG.
 
 ### Batch 5d — the early floors thin out
 - **Task-70** Maps 1-2 place fewer trainers and less loot, and **map 1 hangs no shop leaf**, so
@@ -3402,6 +3450,102 @@ cycles one biome.
       Task-49, 16 Task-50, 17 Task-52 and Task-60, 18 Task-55, 19 Task-56) — which is why it opens
       the new **Batch 20** on its own, the way the reformat opens Batch 11, and why it runs
       **after** Batch 11 so it edits reformat-cleared files and keeps them conforming. *(Batch 20)*
+- [ ] **[Task-74] The forest's tall grass stops painting a lighter green over the dark tuft.**
+      Reported in play: «nada mas entrar el fondo se pone de otro color creo no se usa el fondo tile
+      del bosque si no de prado por eso es un verde mas claro» — the moment the player steps into
+      tall grass the floor under them changes colour; he suspects a meadow floor tile is used
+      instead of the forest's, which is why it reads as a lighter green.
+      **The diagnosis is measured, and it is a palette mismatch, not a wrong tileset.** The three
+      committed atlases were decoded and their opaque pixels averaged per cell:
+
+      | field | tall-grass ground (cell 5) | the rustle cells (6 and 45-48) |
+      | --- | --- | --- |
+      | `outdoor` | `78,160,99` | `78,148,81` · `80,162,101` · `101,171,84` · `92,160,75` |
+      | `forest` | **`59,125,76`** (the dark tuft, `tallGrass: [2,33]`) | **exactly the outdoor field's numbers** |
+      | `cave` | `78,160,99` (`tallGrass: [7,0]`) | the same as outdoor |
+
+      The cause in one sentence: the decompilation's `graphics/field_effects/pics/tall_grass.png`
+      that `[Task-45]`/`[Task-73]` pack is the **outdoor palette's** effect art, and the packer
+      stamps the **same five cells for all three fields** (`scripts/frlg/build-tilesets.mjs`;
+      `FRLG_GRASS_RUSTLE_FRAMES = [6, 45, 46, 47, 48]` in `src/data/tilesets/frlg.ts`), so on the
+      forest's dark tuft the parked overlay and the hit paint **light** blades — and the forest is
+      the **only** biome in `BIOME_ORDER` today, i.e. the field every run actually walks. The two
+      other fields match their own art well enough that nobody has ever seen this.
+      **Fix shape — the default is a per-field tint on the overlay sprite (a), and the rejected
+      reading is the packer's per-field palette remap (b).**
+      - **(a, frozen) a `grassRustleTint` per field, in data.** `TilesetConfig` gains one optional
+        field (`grassRustleTint?: number`, the multiplicative tint the scene applies to the one
+        overlay sprite it already builds), and `src/data/tilesets/frlg.ts` declares the row per
+        field. Its value is the factor that maps the effect art onto that field's own tuft,
+        computed from the two means — `59/78 ≈ 0.756`, `125/148 ≈ 0.845`, `76/81 ≈ 0.938`, i.e.
+        **`0xC1D7EF`** — which lands on the forest's tuft by construction (`78·0.7569 = 59`,
+        `148·0.8431 = 125`, `81·0.9373 = 76`); `outdoor` and `cave` declare **`0xFFFFFF`** (no
+        tint), since their blades already sit under their own tuft's tone. `RouteScene` applies it
+        once, where it builds the rustle sprite (`drawEntities`, `.setTint(config.grassRustleTint
+        ?? 0xffffff)`), so nothing per-frame and nothing on a tileset with no `grassRustle`.
+        **Why (a):** the overlay keeps its rip alpha (`[Task-73]`), so a multiplicative tint
+        colours **only the blades** and leaves the field's own ground showing through the
+        transparent pixels — exactly the wrong part of the composition is fixed and the right part
+        is untouched; no repack, so the three generated atlases and the packer stay as `[Task-73]`
+        left them; and a third palette (a new biome, `[Task-14]`) is one more row in the same
+        table, derived the same way.
+      - **(b, rejected) remapping the five frames' palette per field in the packer**, so the
+        forest's cells are stamped in the forest's own tones. It is the most faithful reading —
+        the atlas itself is then self-consistent per field — but it costs a **repack of the three
+        atlases**, a per-field recolour map to keep in step with each field's tuft source, and a
+        second image-recolour routine beside the alpha work `[Task-73]` just finished; it also
+        re-touches art for a defect the tint closes exactly. It is named here so nobody
+        re-discovers it as the "proper" fix without weighing the repack.
+      **Acceptance criterion, measurable — the "match within a small tolerance" reading made
+      concrete.** For **every** field, computed from the **committed atlas cells** (never by eye),
+      with the field's declared tint applied by the test's own arithmetic:
+      - the **parked** cell (6), per channel, must be **no more than 6 lighter** than that field's
+        own tuft mean (cell 5) and **no more than 30 darker** — i.e. the overlay must stop painting
+        a light plate over the dark tuft without becoming a black one. Today's forest cells are
+        **+19/+23/+5 lighter** and fail; outdoor's are `−12/−18` on G/B and pass; the tinted forest
+        is `0/0/0` and passes;
+      - the four **hit** cells (45-48), per channel, must stay **within ±30** of that field's tuft
+        mean — the family test: outdoor's own art sits inside that band (`+23` on R is its worst),
+        and the forest's tinted cells land within `±20`.
+      Because the tint is a channel multiplication with factors ≤ 1, the criterion is deliberately
+      directional on the parked cell: a Phaser tint can only darken, so a field whose blades are
+      already darker than its ground (outdoor, cave) is correct without a tint and could not be
+      "brightened" by one. If the fix ever becomes (b), the same two tests move to the stamped
+      cells and the tolerance story is unchanged.
+      **Tests.** `src/data/tilesets/frlg.test.ts` grows the case: for each of the three atlases,
+      decode cell 5, cell 6 and cells 45-48, apply that field's declared `grassRustleTint` to the
+      rustle cells' means, and assert the two bounds above — so the numbers in `frlg.ts` are pinned
+      to the art they are derived from and a future repack (or a new field's row) cannot silently
+      drift. The one sprite's tint is checked in the browser: standing in the forest's grass, the
+      parked overlay's mean colour read off the **live canvas** matches the forest tuft's own tone
+      (the same numbers, same tolerance), and the same capture on an outdoor/cave room shows no
+      change from today. No new test file, no new constant in the scene beyond the tint lookup.
+      **Paths:** `src/engine/tileset.ts` (the one optional field), `src/data/tilesets/frlg.ts` +
+      `frlg.test.ts` (the per-field rows and their pinning case), `src/scenes/RouteScene.ts` (one
+      `setTint` where the overlay sprite is built) and `docs/tileset-spec.md` §6 (the rustle
+      bullet gains the per-field tint rule and the reason). **Unchanged:** the packer, the three
+      `src/assets/frlg/*.png`, `FRLG_GRASS_RUSTLE_FRAMES`/`grassRustle`, the beat, the scene's
+      geometry and depths, cell 5 and every other atlas cell, and every other tileset (a tileset
+      with no list keeps the procedural tuft and no tint). No run field, no RNG, no engine rule, so
+      **no `SAVE_VERSION`** step — the chain stays 14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44)
+      → 18 (Task-52). No `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`,
+      `src/engine/save.ts` or packed asset.
+      Out of scope: `BIOME_ORDER` and which biomes are reachable (the cave/outdoor fields keep
+      their rows and are simply not walked — `[Task-14]` owns putting a third field in the cycle);
+      the tall-grass **ground** tile (cell 5) and its per-field sources; the rustle's alpha, cells,
+      order and beat (`[Task-45]`/`[Task-73]`, shipped); the packer and the atlases (the rejected
+      (b)); the player's, trainers' and items' own tints; the fog/weather overlays (`[Task-62]`);
+      the HUD, the camera and every other scene.
+      *Dependencies:* none — the shipped art, the accessors and the overlay are all in place and
+      the task adds no state. Batch order: it is a **defect**, and the repo's precedent is that a
+      defect is cut **in front** of the batch behind it (`[Task-33]` was "the bug batch cut in
+      front of Batch 4"), so it opens **Batch 5cb** — the letter follows the batch it extends, the
+      way `4b` follows `4` and `3b` follows `3` — one batch ahead of **5d** and before **5e**.
+      `src/data/tilesets/frlg.ts` and its test are nobody's right now, `src/engine/tileset.ts` is
+      nobody's, and `docs/tileset-spec.md` §6 was `[Task-73]`'s in 5c, now shipped, with Batch 6's
+      Task-17 holding the whole file later — while `src/scenes/RouteScene.ts`, which the tint
+      needs for one line, is claimed by **5d**'s Task-70 and **5e**'s Task-71 only in the batches
+      **after** this one, so this batch may hold it. *(Batch 5cb)*
 
 ## Phase 9 — Maps (route groups), biomes & progression
 
@@ -4660,6 +4804,17 @@ task adds one pure inverse of `equipMove` and **no** run field, and therefore **
 index, `commands.ts` 103-105; the FIGHT menu would draw nothing, `BattleScene` 1235), so the
 entry refuses to delete the last move unless the human says otherwise. It carries its
 file-level diagnosis and its fix shape in its own entry above.
+
+A **sixteenth round** of **one report** arrived after that one and is triaged in the same pass, so
+nothing waits here: it is a **defect of the tall grass's overlay**, not a wish — «nada mas entrar el
+fondo se pone de otro color creo no se usa el fondo tile del bosque si
+no de prado por eso es un verde mas claro» (`[Task-74]`). The measured cause is a **palette
+mismatch**: `forest`'s tall-grass ground averages `59,125,76` while the rustle cells carry the
+`outdoor` art's numbers in all three fields, so the dark tuft is covered by light blades the moment
+the player steps in (and the forest is the only biome `BIOME_ORDER` walks). It is fixed as a
+per-field `grassRustleTint` in the tileset data, and because the repo cuts a defect in front of the
+batch behind it, it opens **Batch 5cb** ahead of 5d. It carries its measured table, its rejected
+reading and its fix shape in its own entry above.
 
 ---
 
