@@ -8,6 +8,39 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The early floors thin out: maps 1-2 place fewer trainers and less loot, and map 1 hangs
+      no shop leaf.** A run's first steps were the heaviest in the game — floor 1 fielded **11.33
+      trainers** in the sheet and up to 12 on a seed, near end-game density — and the geometry
+      cannot shrink (a floor already sits on the guaranteed six rooms, `D30`), so the fix is the
+      floor's *population pass* plus one special leaf. `src/data/population.ts` is new and holds
+      `POPULATION: Record<BandId, BandPopulation>` (`BandPopulation = { trainerBonus; guardChance }`):
+      **`early { -1, 0.5 }`**, **`low { -1, 0.75 }`**, and the four later bands `{ 0, 1 }`, which is
+      *bit-identical* to a request that passes no population at all (no extra draw), so maps 3-8's
+      routes are untouched by the default. `RouteRequest` gains an optional `population` and
+      `placeTrainers` reads it: the tier bonus is `max(0, tier + trainerBonus)` and each pocket's
+      guard exists only with `guardChance` (**one draw from the existing `populate` stream, and
+      none at all when the chance is `>= 1` or `<= 0`**) — the spine guard is never thinned, so the
+      lane-guard promise and the `wantsTrainers` gate keep their meaning. `ROUTE_LOOT`'s `early`
+      and `low` `itemChance` fall to **0.5 / 0.6** (`pool` and `hiddenChance` byte-identical), and
+      `src/engine/maps/plan.ts` gains `SHOP_FROM_MAP = 2` and `hangsShop(mapIndex)` so **map 1
+      hangs no shop leaf** — a counter the run has no money for is dead weight and it already
+      starts with its 10-ball pack — leaving floor 1 at **six rooms, seven when its mini-boss
+      rolls**. `src/scenes/RouteScene.ts` passes `population: POPULATION[band.id]` in `buildRoute`
+      (one line); `src/ui/mapView.ts` and `mapView.test.ts` closed **untouched**, because the
+      minimap draws a leaf's marker from the plan and an absent leaf is simply a missing marker.
+      **The re-measured eight-floor walk is the acceptance criterion**, and it moved more than the
+      two floors the task set out to thin: dropping the shop leaf removes two `rng.int` draws from
+      map 1's `map` stream (its special pass shifts), and `routeIndexForRoom`
+      (`src/engine/run/floors.ts`, 48-53) sums the earlier maps' `rooms.length`, so a six-room map 1
+      shifts **every route index from map 2 on** and re-rolls maps 2-8's routes. Floor 1 now measures
+      **5.67 trainers** (was 12.00) and floor 2 **6.33** (was 12.33), every floor's
+      `0.75 · T̄·A / needed` sits inside `1 – 1.5` (maps 1-2 inside `1.20 – 1.35`), and
+      `LEVEL_BANDS.trainerXp` is re-solved **early 1.35 → 2.67**, **low 6.08 → 10.68** — numbers
+      only, no other row moved. `docs/balance/route-curve.md` is rewritten to that measurement,
+      `docs/maps-spec.md` §7 and `docs/design-spec.md` §7 and `docs/route-generator.md` carry the
+      per-band population, the guard chance and the "from map 2 on" shop rule, and
+      `src/data/README.md` lists `population.ts`. No run field and no `SAVE_VERSION` step, so the
+      chain stays **14 → 15 → 16 → 17 → 18**.
 - [x] **The forest's tall grass draws in the forest's own palette, and nothing it draws ever
       covers the player's upper body.** Two halves, both scene/data: the FRLG fields declare a
       per-field **`grassRustleTint`** on the tileset (`0xC1D7EF` for the forest, none for the

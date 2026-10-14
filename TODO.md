@@ -23,17 +23,17 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 5, Batch 5b, Batch 5c and Batch 5cb are shipped and archived.** Their thirteen tasks merged
+**Batch 5, Batch 5b, Batch 5c, Batch 5cb and Batch 5d are shipped and archived.** Their fourteen
+tasks merged
 in ID order
-behind the green gate (four, then five, then three, then one) and the detail is in `CHANGELOG.md`'s
+behind the green gate (four, then five, then three, then one, then one) and the detail is in
+`CHANGELOG.md`'s
 `## Unreleased`; Batch 5b is the batch that ended up packing the decomp's real FireRed grass
 rustle, Batch 5c the one that re-planned the level curve and laid that overlay over the player's
-legs, and Batch 5cb the defect in front of 5d that fixed its colour and clipped its hit, and all
-three are closed below. **Batch 5d is the next batch cut** — `[Task-70]`, the first-floor on-ramp:
-fewer
-trainers, less loot, and map 1 hanging no shop leaf — followed by **Batch 5e** (`[Task-71]`,
-the fixed boss and mini-boss parties) and **Batch 5eb** (`[Task-75]`, the debug overlay's
-teleports and its two ignore toggles). All three sit **before**
+legs, Batch 5cb the defect in front of 5d that fixed its colour and clipped its hit, and Batch 5d
+the on-ramp thinning, and all four are closed below. **Batch 5e is the next batch cut** —
+`[Task-71]`, the fixed boss and mini-boss parties — followed by **Batch 5eb** (`[Task-75]`, the
+debug overlay's teleports and its two ignore toggles). Both sit **before**
 Batch 6 so that Task-09's balance pass reads the curve, the density and the parties that
 actually ship. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
@@ -727,42 +727,27 @@ The task added no run field, so **no `SAVE_VERSION`** step — the chain stays
 **14 → 15 → 16 → 17 → 18** — and it drew no RNG. Its ID is retired: it keeps its place in the
 sequence and is never reused.
 
-### Batch 5d — the early floors thin out
-- **Task-70** Maps 1-2 place fewer trainers and less loot, and **map 1 hangs no shop leaf**, so
-  the on-ramp is gentler without touching the geometry of a single room.
-- **Hot files:** the new `src/data/population.ts` + `population.test.ts`, `src/data/loot.ts` +
-  `loot.test.ts`, `src/engine/routes/sketch.ts` + `sketch.test.ts`,
-  **`src/engine/maps/plan.ts` + `plan.test.ts`** (the shop leaf's own map),
-  **`src/ui/mapView.test.ts`** (re-pin only; `src/ui/mapView.ts` only if a marker actually
-  changes), `src/scenes/RouteScene.ts`
-  (the one line that hands the floor's population to the generator), `src/engine/run/curve.test.ts`
-  (the walk re-pinned and the request mirrored), `src/data/run.ts` (**the `early` and `low`
-  rows' `trainerXp` only**, if the thinned floors need it), `docs/balance/route-curve.md`, the
-  `docs/route-generator.md` population section, **`docs/maps-spec.md` §7** (the shop bullet and
-  its `O-M4` line), **`docs/design-spec.md` §7** (the shop bullet) and `src/data/README.md`'s
-  new-file line. It claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`,
-  `src/engine/save.ts` or packed asset, and no `docs/maps-spec.md` section another batch holds:
-  §4/§5 are Task-69's in 5c and §6 is Task-71's in 5e, both **other batches**.
-- **Shape:** one task, and it needs a batch of its own twice over. First because it wants
-  `src/scenes/RouteScene.ts` — the floor's band meets the generator in exactly one place —
-  and every batch from 6 to 28 already holds that scene (6 Task-41, 6b Task-38, 7 Task-31 and
-  on), so no existing batch can host it. Second because it **depended on Batch 5c** (now
-  shipped): the
-  eight-floor walk, the re-spanned bands and the `needed(m)` numbers `Task-69` ships are the
-  rule this task's thinning has to keep inside `1 – 1.5`, and its own re-pin is that same
-  walk. It runs after Task-51 too, whose evolution curve is one of the things the sheet it
-  re-reads records. It adds no run field, so **no** `SAVE_VERSION` step either.
-  **The shop leaf is folded in on purpose rather than given a task of its own:** the second
-  report of the thirteenth round asks for fewer routes on map 1, the regular count cannot move
-  (`regularCount = max(5, roomCount - 1)`, `plan.ts` 385, already sitting on the guaranteed
-  entry + 2x2 core), and the only free rooms are the specials — so the floor's **guaranteed shop
-  leaf** is the one to drop, and that is the same floor, the same on-ramp and one file away from
-  what this task already owns. A second task would have shared `src/scenes/RouteScene.ts` with
-  it and could not have been cut at all.
-  **One consequence to read into the plan's own prose:** `Task-70` holds
-  `src/scenes/RouteScene.ts` for that one line, so every later enumeration of the route
-  scene's queue (Batches 6–28) gains **5d** between 5b's Task-45 and 6's Task-41, and **5e**
-  behind it; `Task-69` (5c) claimed no scene at all.
+### Batch 5d — the early floors thin out *(shipped, archived)*
+Task-70 merged alone behind the green gate (**1382** tests, `npm test` + `npm run build`) and the
+detail is in `CHANGELOG.md`'s `## Unreleased`; QA validated it green in both waves, its Task QA
+driving a real seeded run. **It shipped as designed, and the spec's one discovery — that a smaller
+map 1 shifts `routeIndexForRoom` (`src/engine/run/floors.ts`, 48-53) and re-rolls maps 2-8's
+routes — is what shaped the result.** `src/data/population.ts` holds
+`POPULATION: Record<BandId, BandPopulation>` (`early { -1, 0.5 }`, `low { -1, 0.75 }`, the four
+later bands `{ 0, 1 }` and thus bit-identical to a request that passes none),
+`RouteRequest.population?` threads it into `placeTrainers` (the spine guard is never thinned; a
+pocket's guard spends one draw only when `0 < guardChance < 1`), and the scene passes
+`population: POPULATION[band.id]` in `buildRoute` (one line). `ROUTE_LOOT`'s `early`/`low`
+`itemChance` fall to **0.5 / 0.6**; `plan.ts` gains `SHOP_FROM_MAP = 2` and `hangsShop(mapIndex)`,
+so **map 1 hangs no shop leaf** (six rooms, seven when its mini-boss rolls). The eight-floor walk
+now measures floor 1 at **5.67 trainers** (was 12.00) and floor 2 at **6.33** (was 12.33), and
+`trainerXp` re-solved **early 1.35 → 2.67** and **low 6.08 → 10.68** (no other row moved) so every
+floor's fill sits inside `1 – 1.5`, maps 1-2 inside `1.20 – 1.35`. `docs/balance/route-curve.md`
+is rewritten to the measurement, and `docs/maps-spec.md` §7, `docs/design-spec.md` §7,
+`docs/route-generator.md` and `src/data/README.md` carry the new rule. It adds no run field, so
+**no `SAVE_VERSION` step** — the chain stays **14 → 15 → 16 → 17 → 18** — and `src/ui/mapView.ts` /
+`mapView.test.ts` closed **untouched** as the design predicted. Its ID is retired: it keeps its
+place in the sequence and is never reused.
 
 ### Batch 5e — a boss fields six, a mini-boss three
 - **Task-71** A boss always fields **six** Pokémon and a mini-boss always **three**, whatever
@@ -2268,145 +2253,6 @@ floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
       (`parseRun`, `src/engine/save.ts`, 574-657) — unless Task-48's open question is answered
       with its "first **attempt**" reading, which would take 17 → 18 in Batch 14 and push this
       step to 18 → 19. *(Batch 17)*
-- [ ] **[Task-70] The early floors thin out: maps 1-2 place fewer trainers and less loot, and
-      map 1 hangs fewer routes.**
-      The second half of the level curve's re-plan, and a balance wish rather than a defect: a
-      run's first steps are the heaviest in the game. **The measurement, from the sheet's own
-      table:** map 1 places **T̄(1) = 11.33 trainers** over the three seeds while the last floor
-      places **14.67** (`docs/balance/route-curve.md`; `src/engine/run/curve.test.ts` rebuilds
-      every room of every map the way `RouteScene` does and is where those numbers are
-      re-measured), so the opening floor already fields near end-game density — and it holds
-      **7 or 8 rooms** against a guaranteed minimum of six.
-      **Geometry is not an option, and that is the whole reason this task touches the
-      population pass instead.** A floor needs at least **six rooms** — the entry leaf and the
-      boss leaf plus a closed cycle (`docs/maps-spec.md`, 57-61, `D30`) — and a room is never
-      smaller than **30x30**, with the entry and boss rooms pinned to exactly that
-      (`docs/maps-spec.md`, 41-42; `MAP_MIN_ROOM_SIZE`, `src/data/maps.ts` 43), so maps 1-2
-      already sit at the generator's hard minimum (`MAP_TUNING` rows 1-2: `routes 6..6`,
-      `size 30..30`, 56-57) — the **regular** floor cannot shrink, and the only rooms a floor
-      still chooses are its **special leaves** (fix shape 5) — and a 30x30 room already lands in
-      the **medium** map-size tier
-      (`src/data/mapSize.ts`, 26-28: `minArea` 24x24 = 576), which is where a slice of the
-      population comes from. What is left is **how many** trainers and items a floor's rooms
-      are populated with.
-      **How a floor's population is built today.** `placeTrainers` (`src/engine/routes/sketch.ts`,
-      1208-1387) places **one guard on the spine** (1362-1364), **one more by every optional
-      pocket** (1366-1378) and then the map-size tier's bonus
-      (`trainerBonusForSize(tiles[0].length, tiles.length)`, 1380-1384,
-      `src/data/mapSize.ts` 56), and `placeItems` weights each pocket by the band's
-      `itemChance` / `hiddenChance` (`ROUTE_LOOT`, `src/data/loot.ts`). Both knobs are per
-      **band** in the numbers and per **room** in the generator, and the generator receives the
-      band only through what the caller passes it — which is why the fix has to reach the
-      request.
-      **Fix shape, as the recommended reading (the spec freezes the names).**
-      1. A new `src/data/population.ts` beside its test: a per-band
-         `BandPopulation = { trainerBonus: number; guardChance: number }` — the early bands
-         place one fewer trainer than their size tier asks for and give each pocket's guard
-         only a chance of existing, so the count thins without touching the geometry or the
-         spine guard. The numbers are balance data (`O-M5`).
-      2. `RouteRequest` (`src/engine/routes/sketch.ts`, 84-128) gains an **optional**
-         `population?: BandPopulation`; absent means today's behaviour (`trainerBonus 0`,
-         `guardChance 1`, no extra draw), so every existing test and caller is unchanged.
-         `placeTrainers` reads it: the tier bonus is `max(0, tier + population.trainerBonus)`
-         and each pocket's guard is rolled off the route's own `Rng` with `guardChance` —
-         **one extra draw per pocket**, which is exactly the sort of thing that re-pins a fixed
-         seed, so it is named below.
-      3. `src/scenes/RouteScene.ts` passes it in `buildRoute`'s request beside `loot`,
-         `hiddenChance` and `itemChance` (`population: POPULATION[band.id]`, around
-         1113-1136) — one line, the only scene change.
-      4. The loot half is the per-band table itself: `early` and `low` in `ROUTE_LOOT`
-         (`src/data/loot.ts`, 37-55) get a smaller `itemChance` (and, if needed, a slightly
-         flatter pool), so the early floors hold fewer ground items.
-      5. **Map 1 hangs no shop leaf** (the thirteenth round's second report, «en el piso 1 igual
-         es mejor reducir numero de rutas»). The regular room count is already at the
-         generator's floor and cannot drop: `planMap` rolls `roomCount = rng.int(routes.min,
-         routes.max)` (`src/engine/maps/plan.ts`, 381) and then clamps `regularCount = max(5,
-         roomCount - 1)` (385), because `buildFloor` (190-259) always grows the single-door
-         **entry** plus the 2x2 core closed into a 4-cycle — a floor needs at least six rooms
-         (`docs/maps-spec.md`, 57-61, `D30`) — and the **boss** is one more dead-end leaf on top
-         (`appendBoss`, 351-366), so with `routes: { min: 6, max: 6 }` map 1 is already the
-         minimum six before any special. What it *does* carry is the **guaranteed shop leaf**
-         (424-434) and, on half the seeds, the **mini-boss** leaf (`rng.next() <
-         MINI_BOSS_CHANCE`, 438-441; the mega-stone leaf only from map 3, 442-445), i.e. **7 or 8
-         rooms — the 8 / 7 / 8 the curve test already measures**. The frozen reading is that
-         **map 1 hangs no shop leaf** (a shop the run has no money for is dead weight, and the
-         run starts with its 10-ball pack anyway) and that the mini-boss roll stays as it is, so
-         map 1 becomes **6 rooms, or 7 when its mini-boss rolls**. The two rejected readings are
-         named rather than hidden: dropping the mini-boss roll as well (one more room, but it
-         also removes the run's first mini-boss), and taking the regular count below six, which
-         means rewriting the guaranteed entry + core — **rejected**, because it re-pins every map
-         and route fixed-seed test and kills the `D30` guarantee the docs state.
-         *Where the code goes:* the special pass takes a per-map switch (e.g. a
-         `hangsShop(mapIndex)` helper beside the other chances, or a `no-specials` map guard) —
-         the spec freezes the name, and it must stay data-shaped rather than a literal inside
-         `planMap`.
-      **What it must not break.** The curve's own rule — `0.75 × T̄(m) × A(m) / needed(m)`
-      inside **1 – 1.5** for every finite floor (`src/engine/run/curve.test.ts`) — is the
-      acceptance criterion: thinning a floor lowers its budget, so maps 1-2's `early`/`low`
-      rows in `LEVEL_BANDS` (`src/data/run.ts`, 26-81) may have their `trainerXp` raised by
-      this task, **numbers only**, and nothing else in that file moves (`bst` windows,
-      `trainerSize` and the level windows are Task-69's). The window must hold at both ends —
-      the thinned floors may not fall under **1**, because the rule is what makes the game
-      pay its own cap by fighting trainers.
-      **Tests.** `src/engine/run/curve.test.ts` mirrors the scene's request in
-      `buildFloorRoom` (37-53) and so learns the population field with it, and its window
-      assertion (119-131) is the one that must stay green over all eight floors — its `T̄(m)`
-      per seed is re-pinned by the sheet. `src/engine/routes/trainers.test.ts`'s
-      "scales the count with the map size" case (227-232) and `src/engine/routes/sketch.test.ts`'s
-      `trainers.length > 0` cases (309, 571, 628) are the generator-side regressions that must
-      still hold; the request's own determinism cases (`sketchRoute(a)` twice, 145 / 570) still
-      pass because the draw is seeded. `src/data/loot.test.ts` is a **reader** and must stay
-      green: the early pool keeps every id its reachability and `D16` rules cover.
-      `src/engine/routes/validate.test.ts`'s fixed-seed attempt pin (456-513, `sweep-b`
-      attempt 0) builds its request without a population, so it must stay untouched — if it
-      moves, the default is not neutral, and that is a defect to fix rather than a pin to bump.
-      **The room-count half re-pins the map tests.** `src/engine/maps/plan.test.ts` asserts a
-      shop on **every** floor twice — the shared plan assertion (`expect(specials.filter((room)
-      => room.special === 'shop')).toHaveLength(1)`, 167) and the dedicated case "gives every
-      floor exactly one shop, hung near the entry" (238-257, which loops `mapIndex` 1..8) — and
-      both become "every floor but map 1", with a new case pinning that **map 1 hangs no shop
-      leaf and therefore holds six rooms (seven when its mini-boss rolls)**: the shop leaf was
-      the last special added before the mini-boss roll, and dropping it removes the two
-      `rng.int` draws that rolled the leaf's own width and height (`addSpecial`, 414-422), so
-      **map 1's special pass shifts** — the mini-boss roll moves to the draws the shop's size
-      used to spend — while every other map's plan is untouched. That is the fixed-seed
-      re-pin to state in the report, together with the sheet's rooms column (8 / 7 / 8 becomes
-      7 / 6 / 7) and `src/engine/run/curve.test.ts`'s per-seed room counts, which it measures
-      rather than pins. `src/ui/mapView.test.ts` builds its own marker fixture (229-231) and is
-      expected to stay untouched; `src/ui/mapView.ts` changes only if a marker really moves
-      (the view draws a leaf's marker from the plan, so an absent leaf is a missing marker, not
-      a new branch) — say which in the report.
-      **Docs:** `docs/route-generator.md`'s population pass (§3.4-3.5, 243-260 and the trainer
-      section) gains the per-band population table and the guard chance;
-      `docs/balance/route-curve.md` records the re-measured walk (Task-69 owns that file in
-      Batch 5c, so this task re-reads and re-pins it); the two files this task owes are
-      **`docs/maps-spec.md` §7** (the shop row's
-      "exactly one" and the "The shop is guaranteed; the mini-boss leaf rolls with a 50%
-      chance" sentence, 184-193, plus `O-M4` at 264-265) and **`docs/design-spec.md` §7** (the
-      shop bullet, 256-258, which says "a shop, always one per floor, near the entry"); and
-      `src/data/README.md` gains its `population.ts` line.
-      Out of scope: `MAP_TUNING`, `FINITE_MAPS` and the level bands (Task-69's), the **route
-      geometry** (layer sizes, the entry + 2x2 core, the cycle-closing pass, the 30x30 minimum),
-      the map-size tiers (`src/data/mapSize.ts`'s own thresholds), the biome terrain counts
-      (`grassPatches`/`ledges`), the archetype pool and its roster rules, the boss/mini-boss
-      **party sizes** (Task-71, Batch 5e) and their injections (the scene adds those on top of
-      the route, so they are outside the budget), the shop's own stock (Task-54, Batch 5b) and
-      the Mart panel. No run field moves, so **no `SAVE_VERSION`** step.
-      *Dependencies:* **Task-69 (Batch 5c)** — the eight-floor walk, the re-spanned
-      `LEVEL_BANDS` and the `needed(m)` numbers it ships are the rule this thinning must stay
-      inside, and its `docs/balance/route-curve.md` is the sheet this task re-pins. Batch order
-      covers the rest: it wants `src/scenes/RouteScene.ts`, which **every** batch from 6 to 28
-      already holds (6 Task-41, 6b Task-38, 7 Task-31, 8 Task-08's every-scene sweep, 8b
-      Task-35, 9 Task-39, 9b Task-40, 10 Task-26, 11 Task-29's ledger, 12 Task-30, 13 Task-44,
-      14 Task-48, 15 Task-49, 16 Task-50, 17 Task-52, 18 Task-55, 19 Task-56, 20 Task-58, 21
-      Task-61, 22 Task-62, 23 Task-63, 24 Task-64, 25 Task-65, 26 Task-66, 27 Task-67, 28
-      Task-68), so it opens the plan's new **Batch 5d**, one batch behind Task-69 and still
-      **before** Batch 6, so the balance pass tunes the density that ships. It runs after
-      Task-51 (Batch 5b) too, whose evolution curve is one of the things the sheet it re-pins
-      records. The room-count half keeps the plan's other two writers apart rather than beside
-      it: `docs/maps-spec.md` §4/§5 are Task-69's in 5c and §6 is Task-71's in 5e, and this task
-      takes §7 — **different batches**, which is what an antichain allows; the same file's
-      §7 is Task-54's in 5b, already merged by the time this branch is cut. *(Batch 5d)*
 
 ## Phase 3 — Battle engine core (pure, headless, tested)
 
