@@ -570,15 +570,21 @@ version chain is unchanged, and each of its three declared re-pins needed none.
 **Cut.** Its five specs are written (`.agent_specs/task-45.md`, `task-46.md`, `task-51.md`,
 `task-53.md`, `task-54.md`) and its five branches may be cut; it can gain no member. The seven
 questions that gated it are **answered**, and the answers are frozen in the specs:
-- **Task-45 (the grass step) is faithful to FireRed, and that means the tile the player
-  occupies.** The rustle plays **only** on the tile the player is standing in or walking
-  through, it stays alive while they stay in the grass and disappears when they leave. The
+- **Task-45 (the grass step) is the real FireRed art, packed.** The rustle plays **only** on
+  the tile the player is standing in or walking through, it stays alive while they stay in the
+  grass and disappears when they leave — and it is the decompilation's field effect
+  (`pret/pokefirered` `graphics/field_effects/pics/tall_grass.png`, five 16x16 frames,
+  materialised by the Orchestrator at `sprite-sources/frlg/tall_grass.png`), **not** the
+  synthetic lift the first draft of this task shipped as a plan: the Orchestrator has to run
+  **`scripts/frlg/build-tilesets.mjs`** with the two **absolute** source paths (AGENTS.md's
+  Asset trees rule) to stamp the five frames into cells `6` and `45`-`48` of the three
+  `src/assets/frlg/*.png`, `src/data/tilesets/frlg.ts` declares the sequence and
+  `RouteScene` cycles it on the player's tile at ~70 ms a frame, one hit per step. So the
   earlier default — every tall-grass cell on the map swaying continuously, through a new
-  `TilesetConfig.tileAnimations` contract — is **rejected**, which is why the task reuses the
-  overlay path the procedural tuft already takes (`drawEntities`, 4162-4179) and claims the
-  packed FRLG atlases and `scripts/frlg/build-tilesets.mjs` as **reserved, expected
-  untouched**: the mechanism needs no new art. The player's feet are covered by the overlay,
-  so the cartridge's occlusion comes for free and is in scope.
+  `TilesetConfig.tileAnimations` contract — is **rejected twice over**: the beat is one tile
+  and the contract is a single optional frame list (`grassRustle`), nothing more. The
+  player's feet are covered by the overlay (its opaque frame is the cartridge's "the grass
+  closes over you"), so the cartridge's occlusion comes for free and is in scope.
 - **Task-46 (the score screen) sends both outcomes to the main menu.** A win and a loss share
   the screen, so both return to `'MainMenu'`; the summary still reports the win.
 - **Task-51 (the evolution curve) is BST bands 20 / 30 / 40 anchored on the run's
@@ -612,9 +618,12 @@ Its five members, as reported:
 - **Hot files:** `scripts/frlg/build-tilesets.mjs`, the three packed
   `src/assets/frlg/{outdoor,forest,cave}.png`, `src/data/tilesets/frlg.ts` + its test,
   `src/engine/tileset.ts`, `src/engine/tileFrames.ts` + `tileFrames.test.ts`,
-  `src/scenes/RouteScene.ts` and `docs/tileset-spec.md` → Task-45 (the atlas set, its
-  tileset table and `src/engine/tileset.ts` are **reserved, expected untouched**: the frozen
-  mechanism adds no frame and no tileset contract);
+  `src/scenes/RouteScene.ts`, `docs/tileset-spec.md` and `docs/art-direction.md`
+  (the provenance line) → Task-45. The packer, the three atlases, the tileset table and
+  `src/engine/tileset.ts` are **Task-45's to write** — the shipped mechanism repacks the
+  atlases and adds one optional `grassRustle?: readonly number[]` field — while
+  `docs/art-direction.md` is new to the batch's list and is free: no batch mate holds it
+  (Task-41 excludes it in Batch 6 and Batch 20's Task-58 claims it later);
   `src/scenes/RunOverScene.ts` and `docs/design-spec.md` §6 → Task-46;
   `src/data/dex/evolutions.ts` + `evolutions.test.ts` (the hand-authored accessor only —
   **not** the generated `species.json`), the re-pins in `src/ui/evolutionGraph.test.ts` and
@@ -640,9 +649,10 @@ Its five members, as reported:
   scene Task-16 holds there, the biome atlases and `docs/design-spec.md` are all free
   again the moment it lands — which is why this batch sits between 5 and 6 rather than at
   the tail. Task-45 claims the FRLG biome atlases and their packer (a generated file, so
-  nothing else in the batch may) but the decision above leaves them **reserved and
-  untouched**: the step is the scene's own overlay on the player's tile, so the tileset
-  gains no animation contract and no art moves;
+  nothing else in the batch may) and **writes them**: the decision above repacks the three
+  atlases with the decomp's five rustle frames and `src/engine/tileset.ts` gains one optional
+  frame-list field, so the batch's antichain is unchanged — the hot-file line already named
+  Task-45 as their holder;
   Task-46 takes the score screen's single destination and the one sentence
   `docs/design-spec.md` §6 needs. Task-51 is the third task and the only batch that can host
   it: every path it moves is free here and **nowhere earlier** — Batch 5's Task-42 holds
@@ -1265,9 +1275,9 @@ Its five members, as reported:
   is written **against** the shipped weather/terrain/gravity/trick-room rules rather than
   re-porting them (the coverage table already marks all four `port`,
   `docs/balance/effect-coverage.md` 652/1133 and the terrain/weather rows). Its map filter is an
-  overlay of its own (Batch 5b's Task-45 ships **no** tile-animation contract: its grass step is
-  the scene's own overlay on the player's tile, so there is nothing to reuse and nothing to wait
-  for).
+  overlay of its own (Batch 5b's Task-45 ships **no** tile-animation contract — only the tall
+  grass's own frame list, `grassRustle`, which is its own art — so there is nothing to reuse
+  and nothing to wait for).
   The roll owns a dedicated stream keyed to the room's **stable** index
   (`routeIndexForRoom`, 969-972), so no existing `map`/`encounters`/`battle` stream moves and a
   fixed seed reproduces every condition; it lands **before** no batch in particular, but it is
@@ -1450,7 +1460,8 @@ adds four (the surface, the last move, the gesture and the confirm, all behind t
 delete) — and every
 question here carries a written default rather than a guess. **Batch 5b's seven are all
 answered**, so their bullets are gone and the answers live in `### Batch 5b` above and in its
-five specs: Task-45's two readings of the grass step (FireRed's own, on the player's tile),
+five specs: Task-45's two readings of the grass step (FireRed's own, on the player's tile —
+and its art is the decomp's field effect, five frames packed into the atlases),
 Task-46's destination (both outcomes to the main menu), Task-51's two calls (BST bands
 20 / 30 / 40 over the `LevelBand.bst` windows with the +10 floor, and the cap kept so a late
 line waits), Task-53's two panels (both, with the badge atlas and the chip fallback) and
@@ -3483,32 +3494,49 @@ cycles one biome.
       stamped into the sheet's unused chest slot by `scripts/frlg/build-tilesets.mjs`, and a
       cell draws it through `resolveTileFrame` (`src/engine/tileFrames.ts`) and
       `RouteScene.tileFrames` (4086-4099); the old procedural tuft overlay only exists for
-      tilesets whose `TALL_GRASS` frame *is* their floor frame (`drawEntities`, 4160-4177 —
+      tilesets whose `TALL_GRASS` frame *is* their floor frame (`drawEntities`, 4162-4179 —
       the FRLG fields deliberately opt out). Walking on one rolls the encounter
-      (`onTileEntered`, 4358-4378) and changes nothing on screen. `TilesetConfig`
+      (`onTileEntered`, 4357-4380) and changes nothing on screen. `TilesetConfig`
       (`src/engine/tileset.ts`, 172-209) carries frames, autotile rules, the wall pattern,
       ledge frames, variants and common frames — and **no animation contract**, so the scene
       has nothing to play even where the art exists. The FRLG sheets do have free cells:
       frame 6 sits unused beside the grass, and the wall-shape slots 45-50 are dead while
-      `wallPattern` wins the wall resolution.
-      **Fix shape:** an animation contract in the engine, frames in the packed atlas, and a
-      player in the scene. `scripts/frlg/build-tilesets.mjs` stamps FireRed's tall-grass
-      animation frames into unused cells of `src/assets/frlg/{outdoor,forest,cave}.png` (a
-      generated file — one writer per batch); `TilesetConfig` gains
-      `tileAnimations?: Readonly<Record<number, TileAnimation>>` of shape
-      `{ frames: readonly number[]; frameMs: number }` (the spec freezes the exact names),
-      plus one pure accessor beside `variantFrame` in `src/engine/` with a test;
-      `src/data/tilesets/frlg.ts` declares the tall grass's sequence; and `RouteScene` drives
-      it — **one** timer advancing every tall-grass cell's image, no per-frame allocation,
-      and it must not fight the `TILE_SIZE / FRLG_TILE_SIZE` scaling, the two-layer
-      `tileFrames` draw or `TREE_TIP_DEPTH`. Docs: `docs/tileset-spec.md` gets the animation
-      slots and the rule (the atlas contract's own file).
-      **Decision for the dev's spec:** FireRed animates **every** tall-grass cell
-      continuously, which is what "como en rojo fuego" describes and is the recommended
-      reading; the alternative is a one-shot rustle only on the tile the player stands on.
+      `wallPattern` wins the wall resolution (33-40 are **not** free — `stampBlock` fills them
+      with the water corners and `frlg.test.ts` asserts them non-blank).
+      **Fix shape, as the human decided it (the real decomp art, not a synthetic beat):** the
+      **Art of the rip, the frames in the packed atlas and the player in the scene.** The
+      `.agent_specs/task-45.md` spec is the authority; in brief:
+      `scripts/frlg/build-tilesets.mjs` takes **two** sources through the repo's argv
+      convention (`process.argv[2] ?? <repo-relative default>`, like
+      `build-player-sprite.mjs:42-43`) — the terrain rip it already reads and the new
+      pret/pokefirered `graphics/field_effects/pics/tall_grass.png`, materialised by the
+      Orchestrator at `sprite-sources/frlg/tall_grass.png` (16x80: five 16x16 frames — rest,
+      opaque, two blade frames, settling) — and stamps the **five rustle frames into cells
+      `6` and `45`-`48`** of `src/assets/frlg/{outdoor,forest,cave}.png` (a generated file —
+      one writer per batch; 49/50 stay free): the rest cell from the field's **own** tuft
+      source, so it stays byte-identical to cell 5, and the four hit cells re-grounded onto
+      that field's floor (`overFill`, the ledge's own treatment), so the grass closes over the
+      player in the field's own colours and no foreign ground plate is ever painted.
+      `TilesetConfig` gains **exactly one optional field** — `grassRustle?: readonly number[]`
+      — and nothing else (no `tileAnimations`), with **one** pure accessor beside
+      `variantFrame` (`grassRustleFrames`, replacing `grassStepFrame`) that keeps the existing
+      `isGrassStepTile` predicate beside it; `src/data/tilesets/frlg.ts` declares
+      `FRLG_GRASS_RUSTLE_FRAMES = [6, 45, 46, 47, 48]`; and `RouteScene` drives it — **one**
+      sprite on the player's own tile cycling the frames at ~70 ms a frame, one hit per step
+      with the sprite parked at rest between steps, no per-frame allocation, and it must not
+      fight the `TILE_SIZE / FRLG_TILE_SIZE` scaling, the two-layer `tileFrames` draw or
+      `TREE_TIP_DEPTH`. Docs: `docs/tileset-spec.md` (§2's snippet and §6) gets the contract
+      line, the five cells and the beat, and `docs/art-direction.md`'s FRLG provenance block
+      gains the new rip's credit — that file is claimed here because no batch mate holds it.
+      **Decided:** the rustle plays **only on the tile the player occupies**, while they stand
+      in or walk through grass — not a continuous sway of every cell — and **every tall-grass
+      cell else stays static**; the earlier default on this entry (FireRed animating every
+      cell through a `tileAnimations` contract) is **rejected**, as is the first synthetic
+      draft (a `GRASS_STEP_LIFT` + `translateY` wobble of the tile).
       Out of scope: a general animated-tile system for every biome (only the tall-grass
-      frame is asked for), the encounter roll, the grass frame itself (`FRLG_TALL_GRASS`
-      stays frame 5), the tilesets that still draw the procedural tuft, and per-move or
+      rustle is asked for), the encounter roll, the grass frame itself (`FRLG_TALL_GRASS`
+      stays frame 5), the tilesets that still draw the procedural tuft, the other FRLG
+      packers, `package.json` (the packer stays a manual `node` run), and per-move or
       per-weather effects.
       *Dependencies:* none. Batch order covers it: Batch 5b is the first batch in which
       `src/scenes/RouteScene.ts` (Task-16's in Batch 5) and the biome atlases are free, and
@@ -3996,7 +4024,8 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       called from the route: the state is seeded through `createBattle`, so the battle's own log
       and turn counters stay the only writers. The filter is an overlay of its own (there is no
       tile-animation contract to reuse: Batch 5b's Task-45 draws its grass step as the scene's own
-      overlay on the player's tile, 5b above).
+      overlay on the player's tile, from the tall grass's own frame list — no per-cell system and
+      nothing to wait for).
       **Determinism (AGENTS.md's fixed-seed rule):** the roll is a pure function of the seed and
       the room index and draws from a dedicated stream; the fog/field term draws no RNG — so the
       regression is a fixed-seed walk: a seed's room conditions are identical on every rebuild, a
@@ -4927,7 +4956,10 @@ and a lost run lands on the **starter pick** instead of the main menu (`[Task-46
 defects: the party's **lead should walk behind the player** with its idle and its running
 animation, from the committed `src/assets/pokemon/**` sheets nothing reads yet (`[Task-41]`),
 and the **tall grass should move when the player steps through it**, FireRed-style, which
-the tileset cannot do today because `TilesetConfig` has no animation contract (`[Task-45]`).
+the tileset cannot do today because `TilesetConfig` has no frame list to cycle and every cell
+draws the one static frame 5 (`[Task-45]`; the human later chose the decomp's own field effect
+— `graphics/field_effects/pics/tall_grass.png`, five frames — over a synthetic beat, so the
+task repacks the three FRLG atlases with it).
 Each carries its repro, its file-level diagnosis and its fix shape in its own entry above.
 
 Three more arrived together and were triaged in the same pass, so nothing waits here either.
