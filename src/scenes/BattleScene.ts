@@ -57,6 +57,7 @@ import { playCue, playMusic } from '../audio/audio';
 import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_TEXTBOX_PADDING, FRLG_WINDOW_PADDING } from '../ui/frlg';
 import { FRLG_INK, FRLG_FONT_SIZE, addFrlgText } from '../ui/frlgFont';
 import { typeColor, typeTint } from '../ui/typeColors';
+import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeIcons';
 import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../data/statusIcons';
 import {
   DETAIL_STATS,
@@ -82,12 +83,23 @@ const MENU_W = 540;
 const MESSAGE_H = 124;
 const PANEL_W = 320;
 const PLAYER_PANEL_W = 320;
-/** Tall enough for the padded name (16 + 32), the bar and the XP row. */
-const PLAYER_PANEL_H = 148;
-const FOE_PANEL = { w: PANEL_W, h: 114 } as const;
-/** Gap between the padded name and the HP bar inside an HP panel. */
+/** Tall enough for the padded name row, the types band, the bar and the XP row. */
+const PLAYER_PANEL_H = 168;
+const FOE_PANEL = { w: PANEL_W, h: 134 } as const;
+/** The name row's height inside an HP panel, above the types band. */
 const PANEL_NAME_H = 32;
+/** The types band: the badge row between the name row and the HP-bar gap. */
+const PANEL_TYPES_H = 20;
+/** Gap between the name row and the HP bar inside an HP panel. */
 const PANEL_NAME_GAP = 26;
+/** The band's slots (a Pokémon has at most two types) and the gap after a badge. */
+const PANEL_TYPE_SLOTS = 2;
+const PANEL_TYPE_GAP = 4;
+/** The fallback chip's box in the band, sized like the party detail chips. */
+const PANEL_CHIP_W = 74;
+const PANEL_CHIP_H = PANEL_TYPES_H;
+/** The engine's blank texture the badges start on, as `InfoPopup` does. */
+const BLANK_TEXTURE_KEY = '__DEFAULT';
 const ROW_H = 34;
 /** The battle plays inside a centred square, at most this many pixels a side. */
 const MAX_BATTLE_SIZE = 900;
@@ -123,6 +135,12 @@ const PARTY_CELL_HPBAR_SCALE = 0.4;
 const MON_SCALE = 2.2;
 const FOE_PLATFORM_OFFSET = 76;
 const PLAYER_PLATFORM_OFFSET = 80;
+/**
+ * The clearance the compact stack leaves above the player panel for the foe's
+ * own platform — the 50 px ellipse's half height at its 1.1 max scale — so the
+ * taller panel never sinks the foe's feet and shadow behind it.
+ */
+const FOE_PLATFORM_CLEAR = 28;
 /** Space kept above a sprite's head so the largest mon never clips off-stage. */
 const MON_TOP_MARGIN = 16;
 /** On the phone (compact) layout the battlers draw this much smaller. */
@@ -278,6 +296,14 @@ export class BattleScene extends Phaser.Scene {
   private statusText!: Record<SideId, Phaser.GameObjects.BitmapText>;
   /** The FRLG status badge drawn in a panel instead of the text, when one exists. */
   private statusBadges!: Record<SideId, Phaser.GameObjects.Image>;
+  /**
+   * The live types row under each panel's name: one Añil badge per type, plus a
+   * coloured chip (its box and label) standing in for a name the atlas lacks.
+   * All three are built once in `buildScene` and only repositioned per repaint.
+   */
+  private typeBadges!: Record<SideId, Phaser.GameObjects.Image[]>;
+  private typeChipBgs!: Record<SideId, Phaser.GameObjects.Rectangle[]>;
+  private typeChips!: Record<SideId, Phaser.GameObjects.BitmapText[]>;
   private xpText!: Phaser.GameObjects.BitmapText;
   private playerSprite!: Phaser.GameObjects.Sprite;
   private foeSprite!: Phaser.GameObjects.Sprite;
@@ -534,6 +560,24 @@ export class BattleScene extends Phaser.Scene {
       enemy: this.add.image(0, 0, STATUS_ICON_TEXTURE_KEY, 0).setOrigin(0, 0).setScale(1.5).setVisible(false),
       player: this.add.image(0, 0, STATUS_ICON_TEXTURE_KEY, 0).setOrigin(0, 0).setScale(1.5).setVisible(false),
     };
+    // The types row: one Añil badge per type, starting on the engine's blank
+    // texture until `drawSidePanel` picks the frame, with the chip beside it as
+    // the fallback for a name the atlas lacks.
+    const typeBadgeRow = (): Phaser.GameObjects.Image[] =>
+      Array.from({ length: PANEL_TYPE_SLOTS }, () =>
+        this.add.image(0, 0, BLANK_TEXTURE_KEY).setOrigin(0, 0).setScale(1).setVisible(false),
+      );
+    const typeChipBoxRow = (): Phaser.GameObjects.Rectangle[] =>
+      Array.from({ length: PANEL_TYPE_SLOTS }, () =>
+        this.add.rectangle(0, 0, PANEL_CHIP_W, PANEL_CHIP_H, 0x9aa0b4).setOrigin(0, 0).setVisible(false),
+      );
+    const typeChipLabelRow = (): Phaser.GameObjects.BitmapText[] =>
+      Array.from({ length: PANEL_TYPE_SLOTS }, () =>
+        addFrlgText(this, 0, 0, '', { size: 16, tint: 0xf8fafc, origin: [0.5, 0] }).setVisible(false),
+      );
+    this.typeBadges = { enemy: typeBadgeRow(), player: typeBadgeRow() };
+    this.typeChipBgs = { enemy: typeChipBoxRow(), player: typeChipBoxRow() };
+    this.typeChips = { enemy: typeChipLabelRow(), player: typeChipLabelRow() };
     this.xpText = addFrlgText(this, 0, 0, '', { size: 16, tint: 0x3b82f6 });
 
     this.messageText = addFrlgText(this, 0, 0, '', { lineSpacing: 4 });
@@ -1524,8 +1568,17 @@ export class BattleScene extends Phaser.Scene {
       playerInfo = { x: pad, y: Math.round(height * 0.46), w: panelW, h: PLAYER_PANEL_H };
       foeX = width * 0.72;
       // Leave the tallest possible sprite a full box between the foe panel and
-      // its platform, so a titan is never clipped behind the panel.
-      foeY = foeInfo.y + foeInfo.h + SPRITE_SIZE_MAX - FOE_PLATFORM_OFFSET;
+      // its platform, so a titan is never clipped behind the panel — but the
+      // compact stack must also keep that platform clear of the player panel
+      // below, which is opaque and would hide the foe's feet (`foePanelBottom`
+      // is the floor: the mon-size caps read the feet, so they cannot go above
+      // it without squeezing the sprite to nothing).
+      const foePanelBottom = foeInfo.y + foeInfo.h;
+      foeY =
+        Math.min(
+          foePanelBottom + SPRITE_SIZE_MAX,
+          Math.max(foePanelBottom, playerInfo.y - FOE_PLATFORM_CLEAR),
+        ) - FOE_PLATFORM_OFFSET;
       playerX = width * 0.32;
       playerY = playerInfo.y - 90;
     } else {
@@ -1609,13 +1662,50 @@ export class BattleScene extends Phaser.Scene {
     const fraction = hpFraction(hp, fighter.maxHp);
 
     // Content stays inside the FRLG window's baked border: the name drops below
-    // the top frame and the bar keeps its gap, so nothing rides the bevel.
+    // the top frame, then the types row and the HP bar keep their gaps, so
+    // nothing rides the bevel.
     const pad = FRLG_WINDOW_PADDING;
     const nameY = rect.y + pad.top;
     const barX = rect.x + pad.x;
-    const barY = nameY + PANEL_NAME_H + PANEL_NAME_GAP;
+    const typesY = nameY + PANEL_NAME_H;
+    const barY = typesY + PANEL_TYPES_H + PANEL_NAME_GAP;
 
     this.nameText[side].setText(`${fighter.name}  Lv${fighter.level}`).setPosition(barX, nameY);
+
+    // The row is the live fighter's own types, so a Mega Evolution or a form
+    // change shows the forme's (`displayActive` follows both).
+    const types = fighter.types;
+    let typeX = barX;
+    for (let i = 0; i < PANEL_TYPE_SLOTS; i++) {
+      const type = types[i];
+      const frame = type === undefined ? null : typeIconFrame(type);
+      const badge = this.typeBadges[side][i];
+      const chipBg = this.typeChipBgs[side][i];
+      const chip = this.typeChips[side][i];
+      if (frame !== null && type !== undefined) {
+        badge.setTexture(TYPE_ICON_TEXTURE_KEY, frame).setPosition(typeX, typesY + 3).setVisible(true);
+        chipBg.setVisible(false);
+        chip.setVisible(false);
+        typeX += TYPE_ICON_W + PANEL_TYPE_GAP;
+      } else if (type !== undefined) {
+        badge.setVisible(false);
+        chipBg
+          .setPosition(typeX, typesY)
+          .setSize(PANEL_CHIP_W, PANEL_CHIP_H)
+          .setFillStyle(typeColor(type))
+          .setVisible(true);
+        chip
+          .setText(type.toUpperCase())
+          .setPosition(typeX + PANEL_CHIP_W / 2, typesY + 2)
+          .setVisible(true);
+        typeX += PANEL_CHIP_W + PANEL_TYPE_GAP;
+      } else {
+        badge.setVisible(false);
+        chipBg.setVisible(false);
+        chip.setVisible(false);
+      }
+    }
+
     this.statText[side]
       .setText(side === 'player' ? `${hp}/${fighter.maxHp}` : '')
       .setPosition(rect.x + rect.w - pad.x, barY - 23);
