@@ -12,9 +12,10 @@ import { RUN_OVER_INPUT_DELAY_MS, runSummary, runSummaryLines } from '../ui/runS
 /**
  * The end-of-run score screen (Phase 7). The route hands over the run and
  * whether it was won; a lost run is the permadeath payoff — the party is gone
- * and nothing carries over, so this is where the run stops and a new one begins.
- * The summary reports the routes cleared, the catches, the casualties and the
- * seed, all from the run itself.
+ * and nothing carries over, so this is where the run stops. A win and a loss
+ * both end here, and the confirm returns to the main menu, where a new run is
+ * started. The summary reports the routes cleared, the catches, the casualties
+ * and the seed, all from the run itself.
  */
 export class RunOverScene extends Phaser.Scene {
   private run!: RunState;
@@ -54,7 +55,7 @@ export class RunOverScene extends Phaser.Scene {
       this,
       width / 2,
       y + panelH + 28,
-      `${keyLabel(loadSettings().keybinds.confirm)} — start a new run`,
+      `${keyLabel(loadSettings().keybinds.confirm)} — return to the main menu`,
       {
         size: 16,
         tint: 0x94a3b8,
@@ -68,14 +69,14 @@ export class RunOverScene extends Phaser.Scene {
     });
   }
 
-  /** The one shared action this screen answers: A / confirm starts a new run. */
+  /** The one shared action this screen answers: A / confirm returns to the main menu. */
   private handleAction(action: KeybindAction): void {
-    if (action === 'confirm' && this.armed) this.startNewRun();
+    if (action === 'confirm' && this.armed) this.returnToMenu();
   }
 
-  private startNewRun(): void {
+  private returnToMenu(): void {
     if (this.leaving) return;
     this.leaving = true;
-    this.scene.start('Starter');
+    this.scene.start('MainMenu');
   }
 }
