@@ -8,6 +8,44 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The level curve is re-planned: eight finite maps, levels 2 → 55, and an infinite floor
+      that keeps climbing.** `MAP_TUNING` (`src/data/maps.ts`) carries eight rows — caps
+      **9 / 16 / 23 / 30 / 37 / 43 / 49 / 55**, stepping 7/7/7/7/6/6/6 — so the first floor is
+      worth **+4** to a fresh level-5 starter instead of the single level it used to be, and
+      `FINITE_MAPS` is 8. `LEVEL_BANDS` (`src/data/run.ts`) is re-spanned over the same six ids
+      with its `bst` windows and `trainerSize` chain untouched, and `trainerXp` is re-solved
+      (1.35 / 6.08 / 3.04 / 5.82 / 4.65 / 2.61) so the repo's own rule still holds — *0.75 × a
+      floor's trainers pays that floor's cap* — with the walk's fills landing inside **1.09-1.44**
+      (maps 1-2 at 1.42/1.44, with slack for the floor-1 thinning task). The `mapTuning` defect is
+      fixed on the way: an out-of-table (infinite) map used to pin its `minLevel` at the last row's
+      `maxLevel` while only the max climbed — floors became 40-48, 40-56 … and settled at a 40-100
+      range — and now **both** ends climb and saturate at `MAP_MAX_LEVEL` (map 9 is 55-63, map 10
+      63-71, and 10 000 is 100-100). `docs/balance/route-curve.md` is rewritten over the eight-row
+      walk with the measured `T̄/A/needed/fill`, and `docs/maps-spec.md` §4/§5/§10 resolve `O-M7` in
+      eight. One line of `src/engine/run/progression.test.ts` is re-pinned (`bandForLevel(10)`:
+      `mid` → `low`), and the band-boundary floating-point identity the solver must survive is
+      recorded in the spec. No run field, so no `SAVE_VERSION` step.
+- [x] **The battle panels' type badges are twice the size.** The row `[Task-53]` shipped now draws
+      each badge at **×2** — a 32×14 atlas frame becomes **64×28** — with `PANEL_TYPES_H` 20 → 36,
+      `FOE_PANEL.h` **150** and `PLAYER_PANEL_H` **184**, and the text-chip fallback scaled with
+      them (72×36, a 24 px label clipped to the box) so the two can never disagree. Every other row
+      keeps its offset from `barY`; the panels' extra height comes out of the battlers' size caps,
+      and the compact layout is still measured at **0 px** of battler behind a panel (cross-checked
+      at the `COMPACT_SIZE` threshold and on a 640-px-tall phone) with `FOE_PLATFORM_CLEAR`
+      untouched. `src/scenes/BattleScene.ts` alone; no data, no docs line, no run field.
+- [x] **The tall-grass rustle draws only its blades, at the player's feet, and the still pose
+      covers half the character.** Three cuts' worth: the packer no longer re-grounds the
+      decompilation's `tall_grass.png` frames onto each field's floor — they are stamped with their
+      **own alpha**, so the overlay shows the tile and the player through its transparent pixels
+      instead of painting a solid cell over them — and the parked cell is the rip's **settled**
+      frame, so standing in grass covers **13.5 of the player's 28.5 visible px (47 %)** and leaves
+      the cap, face, shoulders and upper torso clear, while the hit's closing frame still closes
+      over the cell for its ~70 ms and the sprite settles on a cell **byte-identical to the hit's
+      last frame**, so the settle has no jump. Cells **6 and 45-48** of the three FRLG atlases are
+      the only art that moved, repacked from the two sheets by absolute path, and
+      `docs/tileset-spec.md` §6 records the rule and the rows. The earlier cuts are why: the anchor
+      was provably not the blocker (pixel-identical captures), and the one-sided criterion that let
+      a 26 % band pass was replaced by a two-sided one measured on both layouts.
 - [x] **The tall grass rustles on the tile the player walks through, with FireRed's own
       animation.** Walking into (or standing in) a grass patch now plays the cartridge's
       *hit* on the player's tile: `scripts/frlg/build-tilesets.mjs` stamps the five
