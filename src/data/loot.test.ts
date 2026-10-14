@@ -30,6 +30,36 @@ describe('ROUTE_LOOT', () => {
     }
   });
 
+  it('thins the two on-ramp bands, leaving the later four at 0.75', () => {
+    expect(ROUTE_LOOT.early.itemChance).toBe(0.5);
+    expect(ROUTE_LOOT.low.itemChance).toBe(0.6);
+    expect(ROUTE_LOOT.mid.itemChance).toBe(0.75);
+    expect(ROUTE_LOOT.high.itemChance).toBe(0.75);
+    expect(ROUTE_LOOT.late.itemChance).toBe(0.75);
+    expect(ROUTE_LOOT.end.itemChance).toBe(0.75);
+  });
+
+  it('keeps the on-ramp rows hidden at 0.35 with the pools they ship', () => {
+    expect(ROUTE_LOOT.early.hiddenChance).toBe(0.35);
+    expect(ROUTE_LOOT.low.hiddenChance).toBe(0.35);
+    expect(ROUTE_LOOT.early.pool.map((entry) => entry.itemId)).toEqual([
+      'potion',
+      'pokeball',
+      'antidote',
+      'stardust',
+      'tm032',
+    ]);
+    expect(ROUTE_LOOT.low.pool.map((entry) => entry.itemId)).toEqual([
+      'pokeball',
+      'potion',
+      'superpotion',
+      'paralyzeheal',
+      'stardust',
+      'pearl',
+      'tm020',
+    ]);
+  });
+
   it('keeps the hidden chance a probability', () => {
     for (const band of LEVEL_BANDS) {
       const chance = ROUTE_LOOT[band.id].hiddenChance;

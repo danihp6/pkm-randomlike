@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getBiome } from '../../data/biomes';
 import { ROUTE_LOOT } from '../../data/loot';
 import { FINITE_MAPS, levelCapForMap } from '../../data/maps';
+import { POPULATION } from '../../data/population';
 import { LEVEL_BANDS, type LevelBand } from '../../data/run';
 import { TILESETS } from '../../data/tilesets';
 import { TRAINER_ARCHETYPE_IDS } from '../../data/trainers';
@@ -19,6 +20,13 @@ const SEEDS = ['curve-a', 'curve-b', 'curve-c'];
 
 /** A fresh run's starter level (`src/scenes/StarterScene.ts`), where map 1 starts. */
 const START_LEVEL = 5;
+
+/**
+ * The floor totals (`T̄(m)`) maps 1-2 shipped before the on-ramp's population pass
+ * thinned them, as `docs/balance/route-curve.md` recorded them. The thinned floors
+ * must read strictly below these, or the table is not wired in.
+ */
+const PRE_THINNING_TRAINERS: Readonly<Record<number, number>> = { 1: 12.0, 2: 12.33 };
 
 /**
  * One room of one floor, built exactly as `RouteScene.buildRoute` builds it: the
@@ -47,6 +55,7 @@ function buildFloorRoom(seed: string, mapIndex: number, roomId: number): RouteRe
     loot: loot.pool,
     hiddenChance: loot.hiddenChance,
     itemChance: loot.itemChance,
+    population: POPULATION[bandForMap(mapIndex).id],
     trainerArchetypes: TRAINER_ARCHETYPE_IDS,
     quiet: view.entry || view.boss || view.special !== null,
     ...(wall ? { wall } : {}),
@@ -125,12 +134,18 @@ describe('floor trainer curve', () => {
         expect(count.trainers, `${label} ${count.seed} trainers`).toBeGreaterThan(0);
       }
       const budget = 0.75 * floor.meanTrainers * floor.award;
-      expect(budget, `${label} budget`).toBeGreaterThanOrEqual(floor.needed);
-      expect(budget, `${label} budget`).toBeLessThanOrEqual(1.5 * floor.needed);
-      // Maps 1-2 keep the window's upper half on purpose: a later pass thins those
-      // two floors (fewer trainers, less loot), so they need the slack to stay in.
+      const fill = budget / floor.needed;
+      expect(fill, `${label} fill`).toBeGreaterThanOrEqual(1);
+      expect(fill, `${label} fill`).toBeLessThanOrEqual(1.5);
+      // The on-ramp (maps 1-2) lands in the middle of the window on purpose: its
+      // population pass cancels the tier bonus and gates every pocket guard, so it
+      // places strictly fewer trainers than it shipped before (`O-M5`).
       if (floor.mapIndex <= 2) {
-        expect(budget, `${label} slack`).toBeGreaterThanOrEqual(1.3 * floor.needed);
+        expect(fill, `${label} on-ramp fill`).toBeGreaterThanOrEqual(1.2);
+        expect(fill, `${label} on-ramp fill`).toBeLessThanOrEqual(1.35);
+        expect(floor.meanTrainers, `${label} thinned`).toBeLessThan(
+          PRE_THINNING_TRAINERS[floor.mapIndex],
+        );
       }
     }
   }, 120_000);

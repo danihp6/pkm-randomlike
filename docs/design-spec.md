@@ -254,9 +254,10 @@ clears its route; a loss does not, and nothing carries over (D5).
 Besides its regular rooms, a floor can hold **special rooms** — extra dead-end
 leaves with only their own content (`docs/maps-spec.md` §7):
 
-- a **shop**, always one per floor, near the entry: a counter whose interact key
-  (`E`) opens a **Pokémon Mart-style shop panel in the HUD that only exists in
-  that room**;
+- a **shop**, one per floor **from map 2 on** (map 1 is the run's on-ramp and hangs
+  none: no money for a counter and already a 10-ball pack), near the entry: a
+  counter whose interact key (`E`) opens a **Pokémon Mart-style shop panel in the
+  HUD that only exists in that room**;
 - a **mini-boss** room (50% chance): one strong trainer that, when beaten, offers a
   **choice of items**;
 - a **mega-stone** room (15% chance, only from map 3 on): a random **Mega Stone**

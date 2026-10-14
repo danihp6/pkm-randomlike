@@ -184,16 +184,17 @@ no tall grass, no regular trainers, no ground items:
 
 | Room | Per floor | Placement | Content |
 | --- | --- | --- | --- |
-| **shop** | exactly one | a leaf near the entry | a counter; the interact key (`E`) opens a Pokémon-style **shop panel in the HUD** that exists only in this room |
+| **shop** | exactly one, **from map 2 on** (map 1 has none) | a leaf near the entry | a counter; the interact key (`E`) opens a Pokémon-style **shop panel in the HUD** that exists only in this room |
 | **mini-boss** | medium chance | a leaf anywhere | one strong trainer; beating it offers a **choice of items** |
 | **mega-stone** | low chance, **from map 3 onward** | a leaf anywhere | one random **Mega Stone** item |
 
 Specials count **outside** K (`K` regular rooms + the specials), are rolled on
 the same `map` stream, and are discovered like any room: they appear on the
-minimap only once **entered**, with their own icon. The shop is guaranteed; the
-**mini-boss** leaf rolls with a **50%** chance and the **mega-stone** leaf with
-**15%**, the mega-stone only **from map 3 onward**, and the two may coincide on
-the same floor.
+minimap only once **entered**, with their own icon. The shop is guaranteed **from
+map 2 on** — map 1 is the run's on-ramp, with no money for a counter and already a
+10-ball pack, so its floor hangs no shop leaf at all; the **mini-boss** leaf rolls
+with a **50%** chance and the **mega-stone** leaf with **15%**, the mega-stone only
+**from map 3 onward**, and the two may coincide on the same floor.
 
 The **shop panel** is a HUD window like the party/bag panels: a Pokémon
 Mart-style list with prices that **only appears while the player is in the shop
@@ -273,8 +274,9 @@ The pure layout (cell positions, links, reveal filter) lives in
   link only once **both** its ends are known.
 - **O-M3 — Portal.** Resolved: the boss room has no onward opening; a new one
   with the portal **appears when the boss falls**.
-- **O-M4 — Special probabilities.** Resolved: shop always; mini-boss 50%;
-  mega-stone 15% and only **from map 3 on**; the two may coincide.
+- **O-M4 — Special probabilities.** Resolved: shop guaranteed **from map 2 on**
+  (map 1 hangs none); mini-boss 50%; mega-stone 15% and only **from map 3 on**;
+  the two may coincide.
 - **O-M5 — Money numbers.** Balance, not design: the trainer base/jitter, the
   shop's per-band core and the valuables list/prices start as defaults in data and
   are tuned in the Phase 7 balance pass.

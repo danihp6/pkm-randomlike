@@ -4,6 +4,7 @@ import {
   terrainScaleForSize,
   trainerBonusForSize,
 } from '../../data/mapSize';
+import type { BandPopulation } from '../../data/population';
 import type { Tile } from '../grid';
 import {
   FLOOR,
@@ -119,6 +120,12 @@ export type RouteRequest = Readonly<{
   trainerArchetypes?: readonly string[];
   /** How far a trainer sees down its facing. Defaults to `DEFAULT_TRAINER_SIGHT`. */
   trainerSight?: number;
+  /**
+   * The band's population thinning (`POPULATION`). Absent — or a neutral row —
+   * is exactly the request that passes none: `trainerBonus 0`, `guardChance 1`
+   * and **no extra draw**.
+   */
+  population?: BandPopulation;
   /**
    * A **quiet** room: no tall grass, no ledges, no ground items and no trainers —
    * the map's entry room and its boss room (`docs/maps-spec.md` §2/§6). The
@@ -1228,6 +1235,7 @@ function placeTrainers(
   archetypes: readonly string[],
   sight: number,
   walkableTips: boolean,
+  population: BandPopulation | undefined,
   rng: Rng,
 ): RouteTrainer[] {
   if (archetypes.length === 0) return [];
@@ -1361,11 +1369,19 @@ function placeTrainers(
 
   // A minimum on the main lane: one trainer on the spine (the fallback pool lets
   // it land on a branch when the spine has no room, so a route still gets one).
+  // The spine guard is never thinned, whatever the population says: the lane-guard
+  // promise holds for every band (`docs/route-generator.md` §3.4).
   if (!tryFrom(spineTiles)) tryFrom([...spineTiles, ...branchTiles]);
 
   // One more guarding each optional path, standing as close to the loot pocket as
-  // its branch allows and looking across the path (wall to wall).
+  // its branch allows and looking across the path (wall to wall). The band's
+  // `guardChance` gates each pocket's guard: zero skips it outright, a fraction
+  // spends exactly one draw on the `populate` stream, and `1` keeps today's
+  // behaviour with no draw at all (so a neutral row is bit-identical).
+  const guardChance = population?.guardChance ?? 1;
   for (const pocket of pockets) {
+    if (guardChance <= 0) continue;
+    if (guardChance < 1 && rng.next() >= guardChance) continue;
     const near = branchTiles
       .filter((tile) => !(tile.x === pocket.x && tile.y === pocket.y))
       .filter((tile) => Math.abs(tile.x - pocket.x) + Math.abs(tile.y - pocket.y) <= TRAINER_POCKET_RANGE)
@@ -1377,8 +1393,11 @@ function placeTrainers(
     tryFrom(near);
   }
 
-  // Then the map-size tier's bonus, anywhere the network still has room.
-  const bonus = trainerBonusForSize(tiles[0].length, tiles.length);
+  // Then the map-size tier's bonus, anywhere the network still has room, offset by
+  // the band's own `trainerBonus`. The clamp is part of the contract: a negative
+  // bonus can never invert the loop bound and *add* a pass.
+  const tier = trainerBonusForSize(tiles[0].length, tiles.length);
+  const bonus = Math.max(0, tier + (population?.trainerBonus ?? 0));
   for (let i = 0; i < bonus; i++) {
     if (!tryFrom([...spineTiles, ...branchTiles])) break;
   }
@@ -1524,6 +1543,7 @@ function attemptRoute(
     quiet ? [] : request.trainerArchetypes ?? [],
     request.trainerSight ?? DEFAULT_TRAINER_SIGHT,
     request.wall !== undefined,
+    request.population,
     streams.populate,
   );
   snapshot('trainers', 'place trainers');

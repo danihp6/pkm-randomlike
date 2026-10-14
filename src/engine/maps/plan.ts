@@ -116,6 +116,18 @@ const MEGA_STONE_CHANCE = 0.15;
 /** The first map whose floor may hold a mega-stone leaf (`docs/maps-spec.md` §7). */
 const MEGA_STONE_FROM_MAP = 3;
 
+/** The first map whose floor hangs its guaranteed **shop** leaf (`docs/maps-spec.md` §7). */
+export const SHOP_FROM_MAP = 2;
+
+/**
+ * Whether a floor hangs the guaranteed shop leaf. Map 1 is the run's on-ramp: it
+ * has no money for a counter and already starts with its 10-ball pack, so the
+ * first floor spends the leaf on nothing (`docs/maps-spec.md` §7, O-M4).
+ */
+export function hangsShop(mapIndex: number): boolean {
+  return Math.max(1, Math.floor(mapIndex)) >= SHOP_FROM_MAP;
+}
+
 function cellKey(cell: Tile): string {
   return `${cell.x},${cell.y}`;
 }
@@ -421,16 +433,19 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     };
   };
 
-  // The shop is guaranteed and sits near the entry: the nearest regular room that
-  // still has a free cell is its parent.
-  const shopParents = freeParents();
-  if (shopParents.length > 0) {
-    const nearest = shopParents.reduce((best, id) =>
-      fromEntry[id] < fromEntry[best] || (fromEntry[id] === fromEntry[best] && id < best)
-        ? id
-        : best,
-    );
-    addSpecial('shop', nearest);
+  // The shop is guaranteed from map 2 on and sits near the entry: the nearest
+  // regular room that still has a free cell is its parent. Map 1 hangs none
+  // (the run's on-ramp has nothing to spend there).
+  if (hangsShop(index)) {
+    const shopParents = freeParents();
+    if (shopParents.length > 0) {
+      const nearest = shopParents.reduce((best, id) =>
+        fromEntry[id] < fromEntry[best] || (fromEntry[id] === fromEntry[best] && id < best)
+          ? id
+          : best,
+      );
+      addSpecial('shop', nearest);
+    }
   }
 
   // The mini-boss and the mega-stone roll their chance on the same stream; the
