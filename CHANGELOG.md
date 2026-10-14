@@ -8,6 +8,26 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A boss always fields six Pokémon and a mini-boss three — map 1 the exception, at three and
+      two.** Both rosters used to be derived from the floor's band (`band.trainerSize + 1`), so a
+      boss's team grew and shrank with the level curve and a map-1 boss met you with two. The rule
+      is now a fact about the boss: `src/data/bosses.ts` is new and holds
+      `BOSS_PARTY: Readonly<Record<BossPartyKind, { firstMap; size }>>` — **`boss { firstMap: 3,
+      size: 6 }`**, **`miniboss { firstMap: 2, size: 3 }`** — plus the pure
+      `bossPartySize(kind, mapIndex)` (map 1 and any degenerate index read the map-1 row; from the
+      kind's `firstMap` on it reads its `size`). `RosterOptions` (`src/engine/run/roster.ts`) gains
+      an optional **`count`**, resolved as `Math.max(1, options.count ?? band.trainerSize)`, so the
+      band default and every ordinary roster are **untouched** — the new field is optional and
+      `roster.test.ts`'s band-size pin is unmodified. `src/scenes/RouteScene.ts` passes
+      `count: bossPartySize(kind, room.mapIndex)` for exactly the two fights (the boss and the
+      mini-boss) and nothing else; the boss keeps its `minLevel: band.maxLevel` and the stream keys
+      are unchanged, so the task drew **no RNG of its own** — it only changes how many draws the
+      roster's existing stream spends. `docs/maps-spec.md` §6 and its §7 mini-boss row,
+      `docs/battle-spec.md` §7, `docs/balance/route-curve.md`'s Exceptions bullet,
+      `docs/data-spec.md` and `src/data/README.md` carry the rule. The boss's XP **award is left
+      uncapped** (a six-Pokémon boss pays six times `experienceAward`) and that is recorded as a
+      decision for the balance pass to weigh, not a defect. No run field and no `SAVE_VERSION`
+      step, so the chain stays **14 → 15 → 16 → 17 → 18**.
 - [x] **The early floors thin out: maps 1-2 place fewer trainers and less loot, and map 1 hangs
       no shop leaf.** A run's first steps were the heaviest in the game — floor 1 fielded **11.33
       trainers** in the sheet and up to 12 on a seed, near end-game density — and the geometry
