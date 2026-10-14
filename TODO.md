@@ -3401,6 +3401,15 @@ cycles one biome.
       Candidate list to decide: desert, prairie/plains, beach, autumn woods,
       marsh/rain, snow, volcano, ruins/power plant. Each new biome owes a fixed-seed
       generator regression.
+      **Inherited condition from `[Task-45]` (Batch 5b), not open work:** that task's
+      packer composites the tall grass's four rustle **hit** frames over each field's own
+      **floor**, and the **cave** field's tuft is drawn on a lighter ground
+      (`src/data/biomes.ts`, 48-54; `grassPatches: 0`, and `BIOME_ORDER` is
+      `['forest']`, line 58, so no route reaches the cave or the outdoor field today) — so
+      the day a field whose tuft sits on a ground other than its floor gains grass
+      patches, its hit frames must be composited over that field's own **tall-grass cell**
+      (`overFill` against the tuft, not the floor), because the decomp draws the effect as
+      an overlay over the tile; only this task can put such a field in the cycle.
       *Dependencies:* none. *(Batch 8)*
 - [ ] **[Task-30] A hit plays the move's sound, and an encounter the Pokémon's
       cry.** Both moments were dropped from the cue table rather than faked with one
@@ -3516,7 +3525,12 @@ cycles one biome.
       one writer per batch; 49/50 stay free): the rest cell from the field's **own** tuft
       source, so it stays byte-identical to cell 5, and the four hit cells re-grounded onto
       that field's floor (`overFill`, the ledge's own treatment), so the grass closes over the
-      player in the field's own colours and no foreign ground plate is ever painted.
+      player in the field's own colours and no foreign ground plate is ever painted. *(The
+      **cave** field is the one exception to watch: its tuft sits on a lighter ground than its
+      floor, and no route reaches it until `[Task-14]` puts it in the cycle — `BIOME_ORDER` is
+      `['forest']`, `src/data/biomes.ts` 48-54/58 — so a field that ever gains grass with a
+      tuft off its floor must composite those four hit frames over its own **tall-grass cell**
+      instead of its bare floor. That condition is written into `[Task-14]`'s entry too.)*
       `TilesetConfig` gains **exactly one optional field** — `grassRustle?: readonly number[]`
       — and nothing else (no `tileAnimations`), with **one** pure accessor beside
       `variantFrame` (`grassRustleFrames`, replacing `grassStepFrame`) that keeps the existing
