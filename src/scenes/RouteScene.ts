@@ -4188,6 +4188,7 @@ export class RouteScene extends Phaser.Scene {
         ? this.add.sprite(0, 0, GRASS_TEXTURE_KEY)
         : this.add.sprite(0, 0, tilesetTextureKey(this.tilesetId), rest);
     step
+      .setOrigin(0.5, 1) // was the default centre anchor
       .setScale(rest === undefined ? 1 : this.tileScale('atlas'))
       .setDepth(GRASS_STEP_DEPTH)
       .setVisible(false);
@@ -4361,7 +4362,9 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     const frames = grassRustleFrames(TILESETS[this.tilesetId].config);
-    sprite.setPosition(this.centerX(this.player.x), this.centerY(this.player.y)).setVisible(true);
+    sprite
+      .setPosition(this.centerX(this.player.x), this.centerY(this.player.y) + TILE_SIZE / 2)
+      .setVisible(true);
     if (frames.length > 0) sprite.setFrame(frames[0]);
   }
 

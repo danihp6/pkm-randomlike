@@ -76,9 +76,11 @@ export const FRLG_LEDGE_RIGHT = 4;
 export const FRLG_TALL_GRASS = 5;
 
 /**
- * The tall grass's own rustle, in rip order: cell 6 is the rest (the tuft band, the
- * same art as `FRLG_TALL_GRASS`), 45-48 the hit's four frames. Must stay in step with
- * `scripts/frlg/build-tilesets.mjs`.
+ * The tall grass's own rustle, in rip order: cell 6 is the parked frame — the rip's
+ * **settled** frame (its frame 4, which is the hit's own last frame, so the settle has
+ * no jump) — and 45-48 the hit's four frames, all stamped with their alpha kept (45 is
+ * the closing frame, opaque over the cell for its one beat). Raw, so the overlay never
+ * paints a ground of its own. Must stay in step with `scripts/frlg/build-tilesets.mjs`.
  */
 export const FRLG_GRASS_RUSTLE_FRAMES = [6, 45, 46, 47, 48] as const;
 

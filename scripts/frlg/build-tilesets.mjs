@@ -63,12 +63,19 @@ const FRAME_FLOOR_ALT_5 = 43
 // draws chest/item from the common atlas). Source is the tufted grass blades
 // (`tallGrass`) drawn whole, with their own ground baked in.
 const FRAME_TALL_GRASS = 5
-// The tall grass' own rustle: cell 6 is the rest - the very cell `tallGrass` stamps
-// as FRAME_TALL_GRASS, so a rustle at rest is byte-identical to the tile under it -
-// and 45-48 are the field effect's four hit frames. 6 is the last unused cell of the
-// tall grass' own row; 45-50 are the dead wall-shape slots (`wallPattern` wins every
-// wall, so the autotiler never draws them) and 49-50 stay free. Must stay in step
-// with FRLG_GRASS_RUSTLE_FRAMES in src/data/tilesets/frlg.ts.
+// The tall grass' own rustle, one overlay the route player carries: cell 6 is the
+// effect sheet's **settled** frame - frame 4, the hit's own last frame, so the sprite
+// parks on art byte-identical to `FRAME_GRASS_HIT[3]` and the settle has no jump - and
+// 45-48 its four hit frames (the sheet's 1-4). All five are stamped raw, alpha kept:
+// their transparent pixels stay transparent, so the overlay paints no ground of its own
+// and the tile under it shows through. Frame 4's opaque band starts at the cell's row
+// 6, which is what covers the player's lower half (13.5 of their 28.5 visible px) while
+// leaving the head, face, shoulders and upper torso clear; the sheet's blades-only rest
+// frame (frame 0) is **not** used - its band starts at row 10 and covers 7.5 px, too
+// little for the standing pose. 6 is the last unused cell of the tall grass' own row;
+// 45-50 are the dead wall-shape slots (`wallPattern` wins every wall, so the autotiler
+// never draws them) and 49-50 stay free. Must stay in step with FRLG_GRASS_RUSTLE_FRAMES
+// in src/data/tilesets/frlg.ts.
 const FRAME_GRASS_REST = 6
 const FRAME_GRASS_HIT = [45, 46, 47, 48]
 // The last cell of the 4x13 sheet, the rocky ledge lip the route walks off.
@@ -250,9 +257,9 @@ function keyBackground(over, fill, bg) {
  * trunk; only the mass's foot shows the trunk platform. `ledge` is `{ left,
  * center, right }`, the three-source-cell run the ledge draws. `tallGrass` is the
  * tufted grass ground tile the walkable patches stamp, drawn whole (each field
- * picks the tuft drawn on its own ground). The ledge lip and the rustle's hit
- * frames are re-grounded onto the field's floor (`overFill`), so a dark-ground field
- * draws them on that ground.
+ * picks the tuft drawn on its own ground). The ledge lip is re-grounded onto the
+ * field's floor (`overFill`), so a dark-ground field draws it on that ground; the
+ * rustle's five cells are the effect sheet's own frames, stamped raw.
  */
 function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = [10, 0] }) {
   stamp(atlas, FRAME_FLOOR, floor[0], floor[1])
@@ -295,15 +302,18 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = 
   // variant, so it keeps the field's own ground (its sheet background is keyed off
   // and filled with the floor).
   if (tallGrass) stamp(atlas, FRAME_TALL_GRASS, tallGrass[0], tallGrass[1])
-  // The rustle the route player draws over their own tile: the rest cell restamps
-  // the field's own tuft, so it is byte-identical to the tile under it, and the hit
-  // cells are the field effect's four frames re-grounded onto the field's own floor
-  // (`overFill`'s key-then-composite, the ledge lip's treatment), so a frame drawn
-  // over the tile never paints a foreign ground and the opaque frame closes over the
-  // player in the field's own colours.
-  if (tallGrass) stamp(atlas, FRAME_GRASS_REST, tallGrass[0], tallGrass[1])
+  // The rustle the route player draws over their own tile: one overlay, the effect
+  // sheet's five frames stamped **raw**, alpha kept. The rest cell is the sheet's
+  // **settled** frame - frame 4, the hit's own last frame, so the parked state and the
+  // end of the hit are the same art - a transparent band from the cell's row 6 down:
+  // it covers the player's lower half (13.5 of their 28.5 visible px) and leaves the
+  // head, face, shoulders and upper torso clear. The hit keeps its gaps, with the one
+  // closing frame opaque over the whole cell for the single beat it is on screen.
+  // (`keyBackground`/`compositeOver` would re-ground the cells onto the field's floor
+  // and make them opaque, which is exactly what the overlay must not be.)
+  stampTile(atlas, FRAME_GRASS_REST, effectTile(4))
   FRAME_GRASS_HIT.forEach((frame, index) => {
-    stampTile(atlas, frame, compositeOver(keyBackground(effectTile(index + 1), floorTile, bg), floorTile))
+    stampTile(atlas, frame, effectTile(index + 1))
   })
   stampTile(atlas, FRAME_LEDGE_LEFT, overFill(ledge.left, floor))
   stampTile(atlas, FRAME_LEDGE, overFill(ledge.center, floor))

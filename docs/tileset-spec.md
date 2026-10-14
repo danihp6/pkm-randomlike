@@ -184,13 +184,21 @@ Swapping is `config = TILESETS[nextId].config` plus loading
   Walking into — or standing in — tall grass rustles **only the tile the player
   occupies**: one overlay sprite follows their feet, hidden the moment they step
   onto plain ground, so no other cell on the map ever moves. The FRLG fields carry
-  that sprite's five cells in `grassRustle` (`FRLG_GRASS_RUSTLE_FRAMES`): cell 6 is
-  the field's own tuft (byte-identical to cell 5, so the rustle at rest is invisible
-  over the tile) and 45-48 are the hit, the real field effect of pret/pokefirered's
-  `tall_grass.png` re-grounded onto each field's floor — one frame where the grass
-  closes over the player, then the blades flicking and settling. The beat is ~70 ms
-  a frame, played **once per step** on the player's own tile (never looping while
-  they stand still). A tileset with no `grassRustle` keeps the procedural tuft.
+  that sprite's five cells in `grassRustle` (`FRLG_GRASS_RUSTLE_FRAMES`): the five
+  stacked 16x16 frames of pret/pokefirered's `tall_grass.png` field effect, stamped
+  **raw with their own alpha** — the sheet's frames 1-4 as cells 45-48 and its
+  **settled frame (frame 4) as the parked cell 6**, which is the hit's own last frame,
+  so the sprite parks on art byte-identical to `frames[4]` and the settle has no jump.
+  So the overlay paints no ground of its own: the tile under it is untouched and the
+  character shows through it, and because frame 4's alpha is empty until cell row 6 the
+  parked overlay covers the player's **lower half** — 13.5 of their 28.5 visible px,
+  from world y 153 down — while the cap, face, shoulders and upper torso stay clear.
+  The sheet's blades-only rest frame (frame 0, empty until row 10, 7.5 px) is **not**
+  used: it covers too little for the standing pose. Only cell 45, the closing frame, is
+  opaque over the whole cell, for the one beat it is on screen; the three after it keep
+  the rip's transparent gaps. The beat is ~70 ms a frame, played **once per step** on
+  the player's own tile (never looping while they stand still). A tileset with no
+  `grassRustle` keeps the procedural tuft.
 - **Ledge** draws a three-tile run: frame 51 is the centre lip and frames `3`/`4`
   its end caps (`FRLG_LEDGE_LEFT`/`FRLG_LEDGE_RIGHT`, `LedgeFrames` in
   `src/engine/tileset.ts`); the FRLG fields stamp all three (`D26`), and the PMD
