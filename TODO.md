@@ -23,16 +23,14 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 5 is shipped and archived.** Its four tasks merged in ID order behind the green
-gate and the detail is in `CHANGELOG.md`'s `## Unreleased`. **Batch 5b is cut** — its five
-specs are written (`task-45`, `task-46`, `task-51`, `task-53`, `task-54`), the seven
-questions it was waiting on are answered and frozen in them, and its five branches can be
-cut — and the level curve the human re-planned right after it opens two more batches
-behind it: **Batch 5c** (`[Task-69]`, the eight-map run) and **Batch 5d** (`[Task-70]`,
-the early floors thinned), plus the round of two wishes that arrived after that, whose new
-task opens **Batch 5e** (`[Task-71]`, the fixed boss and mini-boss parties) while its second
-report widens 5d (map 1 hangs no shop leaf). All three sit **before** Batch 6 so that Task-09's
-balance pass reads the curve, the density and the parties that actually ship. Every
+**Batch 5 and Batch 5b are shipped and archived.** Their nine tasks merged in ID order behind
+the green gate (four, then five) and the detail is in `CHANGELOG.md`'s `## Unreleased`; Batch 5b
+is the batch that ended up packing the decomp's real FireRed grass rustle, and it is closed
+below. **Batch 5c is the next batch cut** — `[Task-69]`, the level curve re-plan — followed by
+**Batch 5d** (`[Task-70]`, the early floors thinned, and map 1 hanging no shop leaf) and
+**Batch 5e** (`[Task-71]`, the fixed boss and mini-boss parties). All three sit **before**
+Batch 6 so that Task-09's balance pass reads the curve, the density and the parties that
+actually ship. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
 goes to the packer, and no tree under `sprite-sources/` is ever linked into a worktree
 (Batch 3's junction is what emptied it once).
@@ -566,122 +564,32 @@ Away's copy through the new `src/data/abilityText.ts` override that `abilityDesc
 reads before the dex. None of the four added a run field or a `SAVE_VERSION` step, so the
 version chain is unchanged, and each of its three declared re-pins needed none.
 
-### Batch 5b — FireRed's grass step, a finished run's destination, the evolution curve, the battle panel's types and the Mart's four rows
-**Cut.** Its five specs are written (`.agent_specs/task-45.md`, `task-46.md`, `task-51.md`,
-`task-53.md`, `task-54.md`) and its five branches may be cut; it can gain no member. The seven
-questions that gated it are **answered**, and the answers are frozen in the specs:
-- **Task-45 (the grass step) is the real FireRed art, packed.** The rustle plays **only** on
-  the tile the player is standing in or walking through, it stays alive while they stay in the
-  grass and disappears when they leave — and it is the decompilation's field effect
-  (`pret/pokefirered` `graphics/field_effects/pics/tall_grass.png`, five 16x16 frames,
-  materialised by the Orchestrator at `sprite-sources/frlg/tall_grass.png`), **not** the
-  synthetic lift the first draft of this task shipped as a plan: the Orchestrator has to run
-  **`scripts/frlg/build-tilesets.mjs`** with the two **absolute** source paths (AGENTS.md's
-  Asset trees rule) to stamp the five frames into cells `6` and `45`-`48` of the three
-  `src/assets/frlg/*.png`, `src/data/tilesets/frlg.ts` declares the sequence and
-  `RouteScene` cycles it on the player's tile at ~70 ms a frame, one hit per step. So the
-  earlier default — every tall-grass cell on the map swaying continuously, through a new
-  `TilesetConfig.tileAnimations` contract — is **rejected twice over**: the beat is one tile
-  and the contract is a single optional frame list (`grassRustle`), nothing more. The
-  player's feet are covered by the overlay (its opaque frame is the cartridge's "the grass
-  closes over you"), so the cartridge's occlusion comes for free and is in scope.
-- **Task-46 (the score screen) sends both outcomes to the main menu.** A win and a loss share
-  the screen, so both return to `'MainMenu'`; the summary still reports the win.
-- **Task-51 (the evolution curve) is BST bands 20 / 30 / 40 anchored on the run's
-  `LevelBand.bst` windows**, with the **+10 floor** above the evolution that produced the
-  species, and the **cap is kept** — a line whose +10 target lands above the current map's cap
-  simply waits. The spec writes that rule against the **shipped** numbers only and hardcodes
-  no cap, because Batch 5c raises the finite run's top cap and the late stone lines then fire
-  inside a finite run **without the rule moving**.
-- **Task-53 (the battle panel's types) draws the row on both panels**, foe and player, with
-  the Añil badge atlas the move cells and the starter cards already draw and the text chip as
-  the fallback for a name the atlas lacks. It writes no `src/data/**` file, opens no
-  `src/ui/**` module and adds no literal.
-- **Task-54 (the Mart) is taken literally: four stock rows.** Every `kind: 'status'` cure and
-  every X-item leaves the buy list (they reach a run from ground loot and the mini-boss reward
-  only), and the two held rows take the **catalogue price** with no per-band markup table, so
-  cheap berry rows on the early floors are accepted and the intent holds from `mid` on.
-  **One assumption is recorded rather than hidden:** the report predates Task-22's per-band TM
-  slot, and the entry's own out-of-scope line protects it, so the four rows are the **stock**
-  and the band's one machine stays appended last — the Mart shows five rows. If the human
-  means four rows including the machine, the change is one line (drop the `SHOP_TM` append in
-  `buildShop`) and nothing else in the plan moves.
-
-Its five members, as reported:
-- **Task-45** Tall grass rustles when the player steps through it, as in FireRed.
-- **Task-46** A finished run returns to the main menu, not to the starter pick.
-- **Task-51** The species whose real evolution is not a level-up take a BST level of
-  20 / 30 / 40, at least +10 above the evolution that produced them.
-- **Task-53** The battle panel shows the active Pokémon's types under its name.
-- **Task-54** The Mart always stocks four rows: a 10× ball pack at a cheap price, a
-  Potion at a middling one and two held items priced per item.
-- **Hot files:** `scripts/frlg/build-tilesets.mjs`, the three packed
-  `src/assets/frlg/{outdoor,forest,cave}.png`, `src/data/tilesets/frlg.ts` + its test,
-  `src/engine/tileset.ts`, `src/engine/tileFrames.ts` + `tileFrames.test.ts`,
-  `src/scenes/RouteScene.ts`, `docs/tileset-spec.md` and `docs/art-direction.md`
-  (the provenance line) → Task-45. The packer, the three atlases, the tileset table and
-  `src/engine/tileset.ts` are **Task-45's to write** — the shipped mechanism repacks the
-  atlases and adds one optional `grassRustle?: readonly number[]` field — while
-  `docs/art-direction.md` is new to the batch's list and is free: no batch mate holds it
-  (Task-41 excludes it in Batch 6 and Batch 20's Task-58 claims it later);
-  `src/scenes/RunOverScene.ts` and `docs/design-spec.md` §6 → Task-46;
-  `src/data/dex/evolutions.ts` + `evolutions.test.ts` (the hand-authored accessor only —
-  **not** the generated `species.json`), the re-pins in `src/ui/evolutionGraph.test.ts` and
-  `src/engine/run/progression.test.ts`, `docs/battle-spec.md` §7, `docs/tech-decisions.md`
-  `D38` and `docs/balance/route-curve.md` → Task-51;
-  `src/scenes/BattleScene.ts` → Task-53 (one row under each HP panel's name; it reads the
-  Añil badge atlas `src/data/typeIcons.ts` and the live fighter's `types`, so it writes no
-  `src/data/**` file, opens no `src/ui/**` module and takes no `docs/` line);
-  `src/data/shop.ts` + `shop.test.ts`, `src/ui/shop.ts` + `shop.test.ts`,
-  `docs/maps-spec.md` §7 and `docs/balance/economy.md` → Task-54 (the four-row stock: the
-  pack table, the held-only rotation and the row's unit count all live in the shop model, so
-  it claims no scene, no `package.json`, no generated file and no `docs/balance/` sheet
-  another task writes — Task-51's is `route-curve.md`). Task-45, Task-46, Task-53 and
-  Task-54 claim no
-  `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**` or
-  `src/engine/save.ts`, and Task-51 takes the one `src/data/dex/**` slot for a
-  **hand-authored** file — it regenerates nothing, runs no packer and touches no scene, no
-  save and no build script. None of the five takes a second scene, and each takes exactly one
-  `src/scenes/*.ts` at most: Task-45 the route, Task-46 the score screen, Task-53 the battle
-  (Task-51 and Task-54 take none).
-- **Shape:** five tasks that share no path, and the two original ones wait only for Batch 5
-  to merge: the
-  scene Task-16 holds there, the biome atlases and `docs/design-spec.md` are all free
-  again the moment it lands — which is why this batch sits between 5 and 6 rather than at
-  the tail. Task-45 claims the FRLG biome atlases and their packer (a generated file, so
-  nothing else in the batch may) and **writes them**: the decision above repacks the three
-  atlases with the decomp's five rustle frames and `src/engine/tileset.ts` gains one optional
-  frame-list field, so the batch's antichain is unchanged — the hot-file line already named
-  Task-45 as their holder;
-  Task-46 takes the score screen's single destination and the one sentence
-  `docs/design-spec.md` §6 needs. Task-51 is the third task and the only batch that can host
-  it: every path it moves is free here and **nowhere earlier** — Batch 5's Task-42 holds
-  `src/engine/run/progression.test.ts`, Batch 6's Task-17 holds `docs/battle-spec.md` and
-  `docs/tech-decisions.md` while Task-09 holds the `docs/balance/` sheets, and Batch 6b's
-  Task-38 holds `docs/tech-decisions.md` again — so a level rework that moves the numbers
-  those three test files pin is blocked until this batch. Task-53 is the fourth and takes the
-  one free scene path: `src/scenes/BattleScene.ts` is Task-16's in the batch before this one,
-  Task-34's in the batch after, and then held again by Batches 7, 8, 8b, 9, 9b, 10, 12 and 14,
-  so this is the first
-  batch whose chrome is **settled** and its scene still free — which is what its row wants,
-  because it draws inside the HP panels Task-16 re-chromed and reads the
-  `FRLG_WINDOW_PADDING` Task-16 retuned. It produces nothing anyone in this batch reads, takes
-  no `docs/` path (`docs/design-spec.md` is Task-46's here, and §4 does not describe the HP
-  panels at all today), and adds no state, so it is the one task of the round that changes no
-  number and no rule. Task-54 is the fifth, and the only report of the whole round that claims
-  **no scene at all** — which is what puts it here rather than at the tail: it is a `ShopSlot`
-  field (`count`), a pack table in `src/data/shop.ts`, a held-only rotation and the pack's own row
-  label in `src/ui/shop.ts`, while the Mart panel already draws whatever `buyRows` returns
-  (`row.name`, `¥row.price`, `x{owned}` — `refreshShop`, 5605-5625), so nothing in `RouteScene`
-  moves. Its three data/doc paths are free here and in no earlier batch: `src/data/shop.ts` is
-  Task-22's in Batch 5, `docs/maps-spec.md` is Task-17's and `docs/balance/economy.md` is
-  Task-09's in Batch 6. It runs **before** Batch 6 on
-  purpose, for three reasons now: Task-09's balance pass
-  reads the new evolution curve, the new shop stock and the new pack prices rather than the ones
-  they replace, and Task-17 rewrites that
-  spec file there, so §6's new sentence (Task-46) is in place before the docs pass reads it
-  and Task-09's balance numbers read the same scene. Every batch from Batch 6 on runs one
-  batch later than this plan first said.
+### Batch 5b — FireRed's grass step, a finished run's destination, the evolution curve, the battle panel's types and the Mart's four rows *(shipped, archived)*
+Task-45, Task-46, Task-51, Task-53 and Task-54 merged in ID order behind the green gate; the
+detail is in `CHANGELOG.md`'s `## Unreleased`, and QA validated the batch twice and reported it
+fully green. The batch changed shape on the way, and that is what it shipped. **Task-45 ended up
+packing the real FireRed rustle**: the decompilation's `graphics/field_effects/pics/tall_grass.png`
+(five 16x16 frames) is stamped into atlas cells **6** and **45-48** of all three
+`src/assets/frlg/*.png` by `scripts/frlg/build-tilesets.mjs`, which now takes **both** source
+sheets on the command line (absolute paths, per the Legend's Asset trees rule), with the sequence
+declared as `FRLG_GRASS_RUSTLE_FRAMES` in `src/data/tilesets/frlg.ts` and the only new contract a
+single optional `TilesetConfig.grassRustle` frame list — and `RouteScene` **cycles those frames
+once per step on the player's own tile** (~70 ms a frame, the sprite parked on the rest frame
+between steps), which replaces the synthetic 2 px lift the plan first froze; `docs/art-direction.md`
+gained the rip's provenance line beside its FRLG block, and no other tall-grass cell animates.
+**Task-46** sends both a win and a loss to the main menu, the summary still reporting the win.
+**Task-51** resolves every non-level evolution to the species' **BST band** (20 / 30 / 40) with the
+**+10 floor** above the evolution that produced it and the map's cap kept, so a late stone line
+waits. **Task-53** draws the active Pokémon's types under **both** HP panels and **needed a
+correction round after QA**: the taller foe panel was hiding 33 px of the compact layout's foe
+battler, so the platform is now pinned clear of it and the check reports **0 px**. **Task-54** gave
+the Mart its four stock rows (a 10x ball pack, the band's potion rung and two held items at their
+catalogue prices, with every cure and X-item gone from the buy list) and — as the entry recorded —
+Task-22's per-band machine row is still appended last, so the shelf shows five rows. None of the
+five added a run field or a `SAVE_VERSION` step, so the version chain stays
+**14 → 15 → 16 → 17 → 18**, and none of them claimed `package.json`, `src/main.ts`,
+`vite.config.ts`, `src/data/dex/**` or `src/engine/save.ts`. Its five IDs are retired: they keep
+their place in the sequence and are never reused.
 
 ### Batch 5c — the level curve re-planned: eight maps, levels 2 → 55
 - **Task-69** A finite run becomes eight maps that end at level 55, with a 2–9 first floor,
@@ -1459,8 +1367,8 @@ report adds six (all behind the no-items/no-heal room) and the twelfth round's s
 adds four (the surface, the last move, the gesture and the confirm, all behind the MOVES tab's
 delete) — and every
 question here carries a written default rather than a guess. **Batch 5b's seven are all
-answered**, so their bullets are gone and the answers live in `### Batch 5b` above and in its
-five specs: Task-45's two readings of the grass step (FireRed's own, on the player's tile —
+answered**, so their bullets are gone and the answers live in `### Batch 5b` above, archived, and
+in its five specs: Task-45's two readings of the grass step (FireRed's own, on the player's tile —
 and its art is the decomp's field effect, five frames packed into the atlases),
 Task-46's destination (both outcomes to the main menu), Task-51's two calls (BST bands
 20 / 30 / 40 over the `LevelBand.bst` windows with the +10 floor, and the cap kept so a late
@@ -2582,69 +2490,6 @@ Ports of Showdown handlers, in batches, on the hook names in
       Batch order covers the rest: both scenes are free here and nowhere earlier, and this
       task runs before Batch 10's i18n sweep so its lines can be keyed with the rest.
       *(Batch 9b)*
-- [ ] **[Task-53] The battle panel shows the Pokémon's types under its name.** Reported in
-      play: «añadir tipos pokemon en panel de combate debajo del nombre» — the battle's HP/party
-      panels should carry the active Pokémon's types under its name.
-      **Today the field panels carry a name, a level, the HP bar and the status badge, and no
-      type at all.** `drawSidePanel` (`src/scenes/BattleScene.ts`, 1604-1663) is the one builder
-      for both sides — called by `refreshHud` at 1584-1585, which owns the two rects laid out at
-      1523-1538 — and it writes the whole panel: the name and level at 1618, the HP/status row
-      at 1623-1647 and the player's XP bar at 1649-1659. The band the name owns is
-      `PANEL_NAME_H = 32` (89) with `PANEL_NAME_GAP = 26` (90) before the bar
-      (`barY = nameY + PANEL_NAME_H + PANEL_NAME_GAP`, 1616); the panels are
-      `FOE_PANEL = { w: 320, h: 114 }` (87) and `PLAYER_PANEL_W`/`PLAYER_PANEL_H = 320`/`148`
-      (84-86), and the foe's panel is the tight one.
-      **Every piece the row needs already exists.** The types are on the fighter the scene
-      already displays: `displayActive[side].types` (the `BattleFighter` in
-      `src/engine/battle/fighter.ts`, 184; declared 228, built 407-410, refreshed 881/905/927)
-      — read from there
-      and not from `getSpecies(...)`, because the form changes rewrite it
-      (`changeBattleForm`, 440-452), so a Mega's or a G-Max forme's own types are what the panel
-      shows. The art is Añil's badge atlas Task-15 repacked: `typeIconFrame` and
-      `TYPE_ICON_TEXTURE_KEY` at 32x14 (`src/data/typeIcons.ts`, 13-23), loaded once at boot
-      (`src/scenes/BootScene.ts`, 169-171), and every type the dex lists resolves there (Añil
-      ships the Fairy badge, so the comment that says otherwise in `StarterScene` (287) is stale
-      and Task-08 removes it in Batch 8). It is the same source the move cells already draw
-      (`src/ui/moveGrid.ts`, 231-240) and the starter cards do (`StarterScene`, 285-317) — not
-      the 64px Añil battle icons and not the overworld art Task-41 introduces. The fallback for
-      a name the atlas lacks is a text chip, exactly as `MoveGrid`'s popup already draws it
-      (`src/ui/moveGrid.ts`, 368-378, with `typeColor` from `src/ui/typeColors.ts`, 29-31), and
-      the SWITCH window's own detail popup already draws type chips (built 642-657, filled
-      1858-1868), so this row is a second reader of one pattern rather than a new one.
-      **Fix shape:** one row inside `drawSidePanel`, built once with the panel and filled per
-      side — one badge image per type (at most two) laid out under the name, falling back to the
-      text chip when `typeIconFrame` returns null — and **no new module**: the images can be
-      built in `buildScene` beside `nameText` (520-527) and hidden, positioned and framed in
-      `drawSidePanel` the way `statusBadges` already is (533-536, 1623-1640), which keeps the
-      diff in the one file the report names. If the row cannot fit without moving the bar, the
-      panel's own height grows a few pixels and the field layout at 1523-1538 follows (same
-      file, same task); the spec freezes which of the two absorbs it — the `PANEL_NAME_GAP` band
-      or the panel height — with the compact phone layout at 1518-1530 checked either way.
-      **One row per panel:** the two panels are one builder, so the foe's carries the foe's
-      types too — that is the information the player chooses a move with; the open question
-      below is only whether the human wants the player's panel alone.
-      No `docs/` line: the battle panel's geometry is presentation and changes no rule (the
-      precedent is Task-34, Batch 6), `docs/design-spec.md` §4 does not describe the HP panels
-      at all today, and that file belongs to a batch-mate in this batch anyway.
-      No engine rule, no RNG draw and no run field, so **no `SAVE_VERSION`** impact and no
-      fixed-seed test; the row's text is the type names out of the data rather than a literal,
-      so Batch 10's i18n sweep has nothing to key — but it lands **before** that sweep (and
-      before Batch 8's accessibility pass, which audits every scene for colour-only
-      information) on purpose.
-      Out of scope: the route HUD's detail panel and the capture screen (they already draw their
-      own type chips — `RouteScene` 2351-2358 and 5279-5283), the SWITCH cells themselves (the
-      chips live in that window's detail popup), the starter cards' badges, the move cells' own
-      type badge, the status badge, the ability ⓘ (Task-12's / Task-39's) and the entry beat
-      (Task-40's).
-      *Dependencies:* none — `displayActive`, the Añil badge atlas and the chip pattern are all
-      shipped. Batch order covers it: its chrome is what Task-16 rewrote (Batch 5, which holds
-      this scene and `src/ui/frlg.ts`, `FRLG_WINDOW_PADDING` included), and Batch 5b is the
-      first batch after it whose three tasks — the route's grass animation, the score screen's
-      destination and the evolution curve — leave `src/scenes/BattleScene.ts` entirely free.
-      Every later batch that wants that scene does so for a different panel (Task-34's SWITCH
-      grid, Task-39's ⓘ, Task-40's opening, Task-18's Gigantamax control, Task-08's
-      accessibility sweep, Task-30's sounds), and none of them reworks `drawSidePanel`.
-      *(Batch 5b)*
 - [ ] **[Task-57] A trainer's remaining team sits under its HP panel as Poké Balls.** Reported in
       play: «los entrenadores debajo de su panel del pokemon que aparezcan dibujo de pokeballs
       segun la cantidad de pokes que le quedan» — in a trainer battle, **under the trainer's HP
@@ -3117,100 +2962,6 @@ Ports of Showdown handlers, in batches, on the hook names in
       through the shipped i18n module instead of beside it, and after Batch 11 so it edits
       reformat-cleared files and keeps them conforming. It adds no run field, so **no**
       `SAVE_VERSION` step. *(Batch 16)*
-- [ ] **[Task-51] Evolution levels depend on the species' BST, at least +10 apart.**
-      Reported in play: «rework ahora los niveles para evolucionar de pokes que por defecto no
-      evolucionan por nivel son al 20 y al 30 si tienen 2 evos ... porque por ejemplo mankey
-      evoluciona al 28 y enseguida evoluciona al 30 o idear otra formula que al menos la
-      siguiente evo tenga +10lvl ajustando a numero redondo» — the species whose real
-      evolution is a stone, a trade, friendship, an item or a conditional level-up are pinned
-      to **20** (and to **30** when they have a second evolution), so a species can evolve
-      again two levels after the evolution that produced it. The report wants the level to
-      depend on the species' **BST** and to be **20 / 30 / 40**, and no evolution to sit less
-      than **+10 levels** above the one before it, rounded to a round number.
-      **Today's rule is a stage-indexed constant, not a curve — and it lives in the dex
-      accessor, not in `learnset.ts`.** `speciesEvolutionLevel(species: Species)`
-      (`src/data/dex/evolutions.ts`, 63-70) is the pure function the report is about (the
-      report's pointer to `src/engine/run/learnset.ts` is wrong: that file is the learnset
-      panel's move pool and holds no evolution logic). A canon level-up evolution keeps its
-      own level (`isLevelEvolution`, 3-5: `method === 'level' && level !== null`); every
-      other method takes `STAGE_EVOLUTION_LEVEL[stage]` —
-      `const STAGE_EVOLUTION_LEVEL = [20, 30]` (49) — indexed by `evolutionStage` (25-40),
-      the `prevo` chain length, so base forms read 20 and middle forms 30. `obtainedLevel`
-      (52-61) then raises the result to `max(base, obtained + 1)`, so a species never evolves
-      before the level its pre-evolution handed it over at.
-      `evolutionLevel(speciesId, evolution)` (77-81) is the public accessor,
-      `evolutionBranches` (91-99) resolves every branch, `availableEvolutions` (102-104)
-      filters by level, the run reads them at `evolvePokemon`
-      (`src/engine/run/progression.ts`, 225-228) and the STATS tab draws them at
-      `evolutionGraph` (`src/ui/evolutionGraph.ts`, 63-64).
-      **The crowding is real and readable from the code.** Mankey → Primeape is a canon
-      level-up evolution at **28**; Primeape → Annihilape is not a plain level-up (its dex
-      `evoLevel` is null, its `evoType` a conditional one, `scripts/build-dex.mjs` 96-103),
-      so `speciesEvolutionLevel(primeape)` falls to `STAGE_EVOLUTION_LEVEL[1] = 30` — two
-      levels after the evolution that produced it. The same shape hits every
-      stone/trade/friendship line: Eevee's eight branches all fire at 20 (stage 0), Pikachu's
-      Raichu at 30 (stage 1), Kirlia's two branches at 30, and Seadra's Kingdra at **33** —
-      `obtained(32) + 1` — one level after Horsea's own evolution.
-      **Which numbers move.** The `[20, 30]` constant and the `+1` step in `obtainedLevel`;
-      what stays is a canon level-up evolution's own level. The recommended reading, as data
-      in the same pure function:
-      1. A canon level-up evolution keeps its level (Mankey's 28, Charmander's 16) — the
-         report reworks only the species that do **not** evolve by level.
-      2. Every other evolution takes a level from a **BST band**: low → **20**, mid → **30**,
-         high → **40** (the thresholds are the dev's spec's to freeze; the natural anchor is
-         the run's own `LevelBand.bst` windows, `src/data/run.ts`, `D39`, which
-         `docs/balance/route-curve.md` records).
-      3. The level is then raised to **at least +10 over the evolution that produced the
-         species** — `obtainedLevel(species) + 10` — and **snapped up to a round number**, so
-         Primeape (obtained at 28) reads **40** (≥ 38), Pikachu (obtained at 20) reads **30**
-         (today's value, now earned by the rule rather than by the stage index) and Kirlia
-         (obtained at 20) reads **30**. Seadra (obtained at 32) needs ≥ 42; the dev's spec
-         freezes how that rounds and says what it means against the map caps.
-      4. **Measure against the sheet.** `docs/balance/route-curve.md` records the level bands
-         and the per-map caps (**6 / 11 / 17 / 24 / 32 / 40** for the six finite maps) and has
-         **no evolution row today**; this task adds the resolved curve to that sheet (or to a
-         new sheet under `docs/balance/`) and states, per map, which new levels are still
-         reachable inside the cap — a level above 40 only ever fires in infinite mode, and
-         that is a balance consequence to report, not to hide.
-      **A balance model, so a fixed-seed regression.** AGENTS.md's rule is that any change to
-      a balance model keeps a given seed reproducible and ships a fixed-seed regression; the
-      function draws no RNG (D11), so the regression is a fixed-seed walk over the shipped
-      evolution data: for a fixed seed every species resolves the same levels on every run,
-      and every line whose stages are consecutive reads **≥ +10** between them (the report's
-      own acceptance criterion). The task re-pins every test that pins the old numbers and
-      says which it re-pinned: `src/data/dex/evolutions.test.ts` (Eevee's eight branches and
-      `availableEvolutions('eevee', 20)`, 61-67 and 89; Pikachu 30; Kirlia `[30, 30]`;
-      Slowpoke `[37, 37]`; Seadra 33 — 69-77), `src/ui/evolutionGraph.test.ts` (Eevee's eight
-      ready at 20, 15-21; Pikachu's incoming edge and its ready set, 29-36) and
-      `src/engine/run/progression.test.ts` (Eevee's branches ready at level 20, 150-159).
-      Two tests pin canon levels and must stay green untouched — `evolutionGraph.test.ts`'s
-      Charizard chain (16/36) and `progression.test.ts`'s Charmander cases — and
-      `src/engine/run/curve.test.ts` does **not** read the evolution accessors at all (it
-      rebuilds the trainer budget from `experienceAward`/`xpForLevel`), so it is not a
-      re-pin; the report's assumption that it and `learnset.test.ts` pin these numbers is
-      wrong and the report says so.
-      Docs, both of which restate the rule and must move with the numbers:
-      `docs/battle-spec.md` §7 (109-120, "otherwise a stage default (base forms at 20, middle
-      forms at 30)") and `docs/tech-decisions.md` **D38** (551-564), the decision record for
-      the level-only rule — one writer each. `docs/data-spec.md` (71-72) names the accessors
-      and no number, so it stays.
-      Out of scope: the evolution graph's layout and the click (`src/ui/evolutionGraph.ts`
-      draws what `evolutionBranches` returns; only the levels move), `evolvePokemon`'s own
-      rebuild and the manual-click rule (D38), the starter pick's `evolutionDepth` (counts
-      chain length, not levels — `docs/design-spec.md` §5, 144-146), the per-map caps and
-      `MAP_TUNING_STEP` (this task measures against them, it does not move them), the ability
-      re-roll on evolution, and the dex regeneration (`evolutions.ts` is hand-authored: no
-      packer and no `npm run data:dex`).
-      *Dependencies:* none — the dex's `bst` field (`src/data/dex/species.ts`, 30-31, D39),
-      the evolution accessors and the balance sheet are all shipped, and the task adds no
-      state. Batch order covers it: it needs `src/data/dex/evolutions.ts`,
-      `src/engine/run/progression.test.ts`, `docs/battle-spec.md` and
-      `docs/tech-decisions.md` free at once, and Batch 5's Task-42 holds the test, Batch 6's
-      Task-17 holds both docs while Task-09 holds the `docs/balance/` sheets, and Batch 6b's
-      Task-38 holds `docs/tech-decisions.md` again — so the first batch that leaves all of
-      them free is **Batch 5b**, whose Task-45 and Task-46 touch none of them. It runs
-      **before** Batch 6 so the balance pass reads the new curve rather than the one it
-      replaces. *(Batch 5b)*
 
 ## Phase 7 — Persistence, meta & polish
 
@@ -3284,36 +3035,6 @@ Ports of Showdown handlers, in batches, on the hook names in
       `trainerXp` rule Task-10 shipped (archived with Batch 1). It is also the
       producer of the reusable harness: a later task that wants to run a scripted
       battle depends on Task-09 — `Task-35`'s fixed-seed AI regressions do. *(Batch 6)*
-- [ ] **[Task-46] A finished run returns to the main menu, not to the starter pick.**
-      Reported in play: "al perder deberia volver a menu principal no a elegir starter".
-      **Today the score screen's one confirm starts a new run.** `RunOverScene.create`
-      draws the summary, arms itself after `RUN_OVER_INPUT_DELAY_MS` and shows one hint
-      (`RunOverScene.ts`, line 57: `` `${keyLabel(confirm)} — start a new run` ``);
-      `handleAction` answers only `confirm`, and `startNewRun()` calls
-      `this.scene.start('Starter')` (line 79). The screen is reached from
-      `RouteScene.applyBattleResult` once the party is dead
-      (`this.scene.start('RunOver', { run, won: false })`, ~5095) and from the same place
-      on a win (~5102) — **one screen, two outcomes** — and `create` clears the save
-      (`clearRun`) before it draws, so whatever this screen does next, the run is gone.
-      The main menu (`'MainMenu'`, `src/scenes/MainMenuScene.ts` 160-174) is where a run is
-      actually started: **New run** (`scene.start('Starter', …)`), **Continue** (only while
-      the save holds a run — now never, after `clearRun`) and **Options**.
-      **Fix shape:** the score screen's confirm returns to `'MainMenu'` and the hint's copy
-      follows, so a finished run lands where the three choices are instead of being pushed
-      into the starter offer with a fresh seed. That is one destination and one string.
-      **Decision for the dev's spec:** the report is about a loss, but the screen is shared —
-      the recommended reading is that **both** outcomes go to the main menu (the run is over
-      either way and the summary still reports the win); the alternative is that only
-      `won: false` does and a win keeps the current behaviour. Docs: the sentence in
-      `docs/design-spec.md` §6, whose paragraph already says "A run ends on a score screen,
-      win or loss" and should name where it goes next.
-      Out of scope: the summary's own lines and numbers (`src/ui/runSummary.ts`), the
-      score screen's layout, and the death-to-screen transition (`[Task-40]`'s entry beat is
-      the battle's opening, not this one).
-      *Dependencies:* none. Batch order matters once: it sits in Batch 5b, the first batch
-      after Task-16 releases `docs/design-spec.md` (Batch 5) and **before** Task-17 rewrites
-      that file (Batch 6), so §6's new sentence is in place when the docs pass reads it.
-      *(Batch 5b)*
 - [ ] **[Task-47] The main menu's Continue row shows the map, its biome and the party's
       icons.** Reported in play: «en menu principal en continue el string ruta deberia
       salir que mapa y bioma y deberia salir el icono sprite de los pokes del party» —
@@ -3496,66 +3217,6 @@ cycles one biome.
       Batch 6 (`src/scenes/RouteScene.ts` is Task-16's in Batch 5, Task-45's in 5b, Task-38's
       in 6b and Task-31's in Batch 7) and its new `src/data/` file is not one of the number
       tables Task-09 tunes in the same batch. *(Batch 6)*
-- [ ] **[Task-45] Tall grass moves when the player steps through it, FireRed-style.**
-      Reported as a task: "añadir animacion pisar hierba como en rojo fuego".
-      **Today the FRLG tall grass is one static frame, and there is no way to animate a tile
-      at all.** The tile is `FRLG_TALL_GRASS = 5` (`src/data/tilesets/frlg.ts`, 71-76),
-      stamped into the sheet's unused chest slot by `scripts/frlg/build-tilesets.mjs`, and a
-      cell draws it through `resolveTileFrame` (`src/engine/tileFrames.ts`) and
-      `RouteScene.tileFrames` (4086-4099); the old procedural tuft overlay only exists for
-      tilesets whose `TALL_GRASS` frame *is* their floor frame (`drawEntities`, 4162-4179 —
-      the FRLG fields deliberately opt out). Walking on one rolls the encounter
-      (`onTileEntered`, 4357-4380) and changes nothing on screen. `TilesetConfig`
-      (`src/engine/tileset.ts`, 172-209) carries frames, autotile rules, the wall pattern,
-      ledge frames, variants and common frames — and **no animation contract**, so the scene
-      has nothing to play even where the art exists. The FRLG sheets do have free cells:
-      frame 6 sits unused beside the grass, and the wall-shape slots 45-50 are dead while
-      `wallPattern` wins the wall resolution (33-40 are **not** free — `stampBlock` fills them
-      with the water corners and `frlg.test.ts` asserts them non-blank).
-      **Fix shape, as the human decided it (the real decomp art, not a synthetic beat):** the
-      **Art of the rip, the frames in the packed atlas and the player in the scene.** The
-      `.agent_specs/task-45.md` spec is the authority; in brief:
-      `scripts/frlg/build-tilesets.mjs` takes **two** sources through the repo's argv
-      convention (`process.argv[2] ?? <repo-relative default>`, like
-      `build-player-sprite.mjs:42-43`) — the terrain rip it already reads and the new
-      pret/pokefirered `graphics/field_effects/pics/tall_grass.png`, materialised by the
-      Orchestrator at `sprite-sources/frlg/tall_grass.png` (16x80: five 16x16 frames — rest,
-      opaque, two blade frames, settling) — and stamps the **five rustle frames into cells
-      `6` and `45`-`48`** of `src/assets/frlg/{outdoor,forest,cave}.png` (a generated file —
-      one writer per batch; 49/50 stay free): the rest cell from the field's **own** tuft
-      source, so it stays byte-identical to cell 5, and the four hit cells re-grounded onto
-      that field's floor (`overFill`, the ledge's own treatment), so the grass closes over the
-      player in the field's own colours and no foreign ground plate is ever painted. *(The
-      **cave** field is the one exception to watch: its tuft sits on a lighter ground than its
-      floor, and no route reaches it until `[Task-14]` puts it in the cycle — `BIOME_ORDER` is
-      `['forest']`, `src/data/biomes.ts` 48-54/58 — so a field that ever gains grass with a
-      tuft off its floor must composite those four hit frames over its own **tall-grass cell**
-      instead of its bare floor. That condition is written into `[Task-14]`'s entry too.)*
-      `TilesetConfig` gains **exactly one optional field** — `grassRustle?: readonly number[]`
-      — and nothing else (no `tileAnimations`), with **one** pure accessor beside
-      `variantFrame` (`grassRustleFrames`, replacing `grassStepFrame`) that keeps the existing
-      `isGrassStepTile` predicate beside it; `src/data/tilesets/frlg.ts` declares
-      `FRLG_GRASS_RUSTLE_FRAMES = [6, 45, 46, 47, 48]`; and `RouteScene` drives it — **one**
-      sprite on the player's own tile cycling the frames at ~70 ms a frame, one hit per step
-      with the sprite parked at rest between steps, no per-frame allocation, and it must not
-      fight the `TILE_SIZE / FRLG_TILE_SIZE` scaling, the two-layer `tileFrames` draw or
-      `TREE_TIP_DEPTH`. Docs: `docs/tileset-spec.md` (§2's snippet and §6) gets the contract
-      line, the five cells and the beat, and `docs/art-direction.md`'s FRLG provenance block
-      gains the new rip's credit — that file is claimed here because no batch mate holds it.
-      **Decided:** the rustle plays **only on the tile the player occupies**, while they stand
-      in or walk through grass — not a continuous sway of every cell — and **every tall-grass
-      cell else stays static**; the earlier default on this entry (FireRed animating every
-      cell through a `tileAnimations` contract) is **rejected**, as is the first synthetic
-      draft (a `GRASS_STEP_LIFT` + `translateY` wobble of the tile).
-      Out of scope: a general animated-tile system for every biome (only the tall-grass
-      rustle is asked for), the encounter roll, the grass frame itself (`FRLG_TALL_GRASS`
-      stays frame 5), the tilesets that still draw the procedural tuft, the other FRLG
-      packers, `package.json` (the packer stays a manual `node` run), and per-move or
-      per-weather effects.
-      *Dependencies:* none. Batch order covers it: Batch 5b is the first batch in which
-      `src/scenes/RouteScene.ts` (Task-16's in Batch 5) and the biome atlases are free, and
-      it runs **before** Batch 6 so Task-17's docs pass reads a settled
-      `docs/tileset-spec.md`. *(Batch 5b)*
 - [ ] **[Task-58] Every panel becomes a dark glass card (the `t-glass` direction).** Reported in
       play, while Batch 5 was in flight: «los paneles que sean estilo visual como el de debug» —
       the dev overlay is where the report points, and the look it seeded has now been rendered and
@@ -3841,94 +3502,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* none. Task-20 (The Rotom appliances as evolutions) rewrites
       `src/ui/evolutionGraph.ts` first, and Task-18 (Gigantamax) adds a row of the
       same kind in Batch 7. *(Batch 9)*
-- [ ] **[Task-54] The Mart always stocks four rows: a 10× ball pack, a Potion and two held
-      items.** Reported in play: «en la tienda siempre que hayan 4 objetos, un pack de 10x
-      pokeballs precio asequible, 1 pocion precio medio asequible y 2 objetos equipables ya mas
-      caros segun el objeto» — the shop must always show exactly four rows, in that order, with
-      the pack cheap, the potion middling and the two **held** items priced by the item.
-      **Today the stock is a fixed core plus a roll, and its size is 3 to 5.** `buildShop`
-      (`src/ui/shop.ts`, 30-44) starts from `SHOP_CORE[band]` — two or three **fixed** ids per
-      band, a ball, a potion and often a cure (`src/data/shop.ts`, 12-19: `mid` is
-      `['greatball','superpotion','antidote']`, `end` is `['ultraball','fullrestore','fullheal']`)
-      — then draws `rng.int(SHOP_ROTATION_COUNT.min, SHOP_ROTATION_COUNT.max)` = **one or two**
-      (`SHOP_ROTATION_COUNT`, 137; drawn at 33) weighted picks without replacement from
-      `SHOP_ROTATION[band]` (35-39, `weightedIndex` 47-56, one `rng.int(0, total - 1)` per pick),
-      skipping ids the core already holds (32). So the panel shows **3, 4 or 5** rows, its
-      rotation mixes held items, berries **and X-items/status cures** (the pools at 34-134:
-      `early` is `antidote`, `oranberry`, `xattack`), and **no 10× pack exists anywhere**:
-      `ShopSlot` is `{ itemId, price }` (`src/ui/shop.ts`, 23) with no unit count, `buyItem`
-      (62-65) adds exactly one unit (`addItem(spendMoney(run, slot.price), slot.itemId)`), and
-      `addItem` already takes a count (`src/engine/run/state.ts`, 526) — so a pack is one
-      argument away, not an item row. Prices live on the catalogue: `ItemDef.price`
-      (`src/data/items.ts`, 7-15, read by `buyPrice` 472-474): Poke Ball **200**, Great Ball
-      **600**, Ultra Ball **1200**, Potion **300**, Super Potion **700**, Hyper Potion **1200**,
-      Full Restore **3000**, and the held catalogue runs 100 (Oran Berry) to 4000 (the
-      competitive held set).
-      **The panel needs no change, and that is what makes this a balance task.**
-      `refreshShop` (`src/scenes/RouteScene.ts`, 5585-5626) draws whatever `buyRows` returns —
-      `row.name`, `¥row.price`, `x{row.owned}` — and `shopTotal()` (5677-5679) is
-      `shopStock.length`, so a four-row stock with a pack label falls out of the model. The stock
-      itself is rolled once per map on `new Rng(hashSeed(\`${seed}:shop:${mapIndex}\`))`
-      (`openShop`, 5457-5461) and `shopStock` is **never saved**, so the draw shape may change
-      with **no** `SAVE_VERSION` step and no migration — but a seed's stock changes, which is
-      the fixed-seed subject below.
-      **Fix shape, as the recommended reading** (the spec freezes the exact names):
-      1. `SHOP_CORE` shrinks to the band's **ball and potion only** (a `{ ball, potion }` pair or
-         a two-element list — freeze one). The potion row is the band's own heal rung, i.e. the
-         `kind: 'heal'` core entry it already carries: `potion`, `superpotion`, `superpotion`,
-         `hyperpotion`, `hyperpotion`, `fullrestore`. **Consequence to report:** every cure then
-         leaves the buy list (Antidote, Full Heal, and Full Restore from `end`), so status cures
-         reach a run from loot and mini-boss rewards alone — the open question below asks whether
-         that is wanted.
-      2. A new table beside it, `SHOP_BALL_PACK: Record<BandId, { itemId; count; price }>`, sells
-         the band's own ball in a pack of **ten** at a discount. Recommended prices — ten ball at
-         **half** price, snapped to a round hundred: **Poké Ball ¥1,000 / Great Ball ¥3,000 /
-         Ultra Ball ¥6,000**. Measured against the income the report calls "asequible":
-         `trainerMoney` (`src/engine/run/reward.ts`, 15-25) pays an archetype's base + jitter
-         scaled by `TRAINER_MONEY_BAND_SCALE` (`src/data/trainers.ts`, 17-24), so an Early
-         trainer pays **¥50-175** and map 1's ~11 trainers pay **≈¥550-1,900 on a full clear,
-         typically ≈¥1,200** — one floor's money, so a ¥1,000 pack is a real trade-off rather
-         than a formality. A steeper discount is
-         the alternative; the sheet records whichever ships.
-      3. `SHOP_ROTATION`'s pools keep only `kind === 'held'` rows — the berries and the held
-         items they already list — so the X-items and the cures leave them, and **every band must
-         keep at least two distinct held rows**: `early` lists only `oranberry` today (36-42), so
-         it gains at least one more from the catalogue (the status berries at 200 are `held` rows
-         already). `SHOP_ROTATION_COUNT` goes away, or is pinned to exactly **2** — freeze one.
-      4. `buildShop` returns exactly **four** slots in a fixed order — pack, potion, held, held —
-         and draws the two held rows as today's weighted picks **without replacement** over the
-         held pool: two `rng.int(0, total - 1)` draws and the `rng.int(1, 2)` count draw gone.
-      5. `ShopSlot` gains `count: number` (defaulted `1`, so every existing construction and test
-         stays valid), `buyItem` adds `slot.count` units (`addItem(run, slot.itemId, slot.count)`),
-         and `ShopRow`/`toRow` (86-109) carry the same `count` with the pack's label
-         (`10x Poke Ball` — freeze the wording) while `owned` stays the bag's own count.
-      **Tests.** `src/data/shop.test.ts`: the four rows per band, the pack table's ids/prices, the
-      held-only rule, at least two held rows per band, and the re-pinned
-      `SHOP_ROTATION_COUNT` case (44-46). `src/ui/shop.test.ts`: `buildShop`'s determinism and the
-      fixed order (19-30 re-pinned), exactly four rows for every band, no repeat between the core
-      rows and the two held ones, `buyItem` on the pack adding **ten** units and charging the pack
-      price, and `buyRows`'s pack label (81-90). `src/data/loot.test.ts` (49-64) reads
-      `SHOP_ROTATION` for reachability and for the `D16` no-op rule and **must stay green** —
-      re-pin only if a pool row moves. Fixed-seed regression, which AGENTS.md requires for
-      anything touching the RNG: for a fixed seed the stock is stable across calls and across
-      band ids, is always four rows, and its two held rows are distinct and drawn from that
-      band's held pool.
-      **Docs:** the shop bullet in `docs/maps-spec.md` §7 (206-208: "a **fixed core** … plus
-      **one or two random items**", and O-M5 at 264-266 if it names the core) becomes the four-row
-      stock; and `docs/balance/economy.md` — the sheet that records the reasoning while the
-      numbers live in `src/data/*` — gains the pack prices, the per-band potion rung, the held
-      tiers and the note that the cures now come from the ground and the rewards only.
-      Out of scope: the Mart panel's layout and input (`SHOP_ROWS`, the tabs, the cursor,
-      `activateShop`'s own message — `RouteScene`), the **sell** side (`sellPrice`, `sellRows`,
-      `sellableStacks`, unchanged), the money a trainer drops, the loot pools, the mini-boss
-      reward, the TMs and their price (Task-22's), the Mega Stones, the valuables and the Plates
-      (never sold), and `isForSale`'s `price > 0` rule.
-      *Dependencies:* none — the shop model, the catalogue prices and the money streams are all
-      shipped, and the task adds no state, so **no** `SAVE_VERSION` step. Batch order covers it:
-      it needs `src/data/shop.ts`, `docs/maps-spec.md` and `docs/balance/economy.md` free at once,
-      which is **Batch 5b** and nowhere earlier (Batch 5's Task-22 holds the shop table, Batch 6's
-      Task-17 holds `docs/maps-spec.md` and Task-09 holds the `docs/balance/` sheets), and it runs
-      **before Batch 6** so Task-09's balance pass tunes the stock that ships. *(Batch 5b)*
 - [ ] **[Task-61] Beating the map boss no longer teleports the player to the room's door.**
       Reported in play: «al derrotar boss esta teletransportando a puerta cuando no deberia» —
       when the map boss falls the player is warped back to the boss room's entry door.
