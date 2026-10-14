@@ -84,20 +84,24 @@ const MESSAGE_H = 124;
 const PANEL_W = 320;
 const PLAYER_PANEL_W = 320;
 /** Tall enough for the padded name row, the types band, the bar and the XP row. */
-const PLAYER_PANEL_H = 168;
-const FOE_PANEL = { w: PANEL_W, h: 134 } as const;
+const PLAYER_PANEL_H = 184;
+const FOE_PANEL = { w: PANEL_W, h: 150 } as const;
 /** The name row's height inside an HP panel, above the types band. */
 const PANEL_NAME_H = 32;
+/** How much bigger than the atlas frame a panel's type badge draws. */
+const PANEL_TYPE_SCALE = 2;
 /** The types band: the badge row between the name row and the HP-bar gap. */
-const PANEL_TYPES_H = 20;
+const PANEL_TYPES_H = 36;
 /** Gap between the name row and the HP bar inside an HP panel. */
 const PANEL_NAME_GAP = 26;
 /** The band's slots (a Pokémon has at most two types) and the gap after a badge. */
 const PANEL_TYPE_SLOTS = 2;
 const PANEL_TYPE_GAP = 4;
-/** The fallback chip's box in the band, sized like the party detail chips. */
-const PANEL_CHIP_W = 74;
+/** The fallback chip's box in the band: one badge's footprint plus its own padding. */
+const PANEL_CHIP_W = TYPE_ICON_W * PANEL_TYPE_SCALE + 8;
 const PANEL_CHIP_H = PANEL_TYPES_H;
+/** The chip's label, one font step up from the panel text, clipped to the box. */
+const PANEL_TYPE_LABEL_SIZE = 24;
 /** The engine's blank texture the badges start on, as `InfoPopup` does. */
 const BLANK_TEXTURE_KEY = '__DEFAULT';
 const ROW_H = 34;
@@ -565,7 +569,7 @@ export class BattleScene extends Phaser.Scene {
     // the fallback for a name the atlas lacks.
     const typeBadgeRow = (): Phaser.GameObjects.Image[] =>
       Array.from({ length: PANEL_TYPE_SLOTS }, () =>
-        this.add.image(0, 0, BLANK_TEXTURE_KEY).setOrigin(0, 0).setScale(1).setVisible(false),
+        this.add.image(0, 0, BLANK_TEXTURE_KEY).setOrigin(0, 0).setScale(PANEL_TYPE_SCALE).setVisible(false),
       );
     const typeChipBoxRow = (): Phaser.GameObjects.Rectangle[] =>
       Array.from({ length: PANEL_TYPE_SLOTS }, () =>
@@ -573,7 +577,9 @@ export class BattleScene extends Phaser.Scene {
       );
     const typeChipLabelRow = (): Phaser.GameObjects.BitmapText[] =>
       Array.from({ length: PANEL_TYPE_SLOTS }, () =>
-        addFrlgText(this, 0, 0, '', { size: 16, tint: 0xf8fafc, origin: [0.5, 0] }).setVisible(false),
+        addFrlgText(this, 0, 0, '', { size: PANEL_TYPE_LABEL_SIZE, tint: 0xf8fafc, origin: [0.5, 0] })
+          .setMaxWidth(PANEL_CHIP_W - 8)
+          .setVisible(false),
       );
     this.typeBadges = { enemy: typeBadgeRow(), player: typeBadgeRow() };
     this.typeChipBgs = { enemy: typeChipBoxRow(), player: typeChipBoxRow() };
@@ -1686,7 +1692,7 @@ export class BattleScene extends Phaser.Scene {
         badge.setTexture(TYPE_ICON_TEXTURE_KEY, frame).setPosition(typeX, typesY + 3).setVisible(true);
         chipBg.setVisible(false);
         chip.setVisible(false);
-        typeX += TYPE_ICON_W + PANEL_TYPE_GAP;
+        typeX += TYPE_ICON_W * PANEL_TYPE_SCALE + PANEL_TYPE_GAP;
       } else if (type !== undefined) {
         badge.setVisible(false);
         chipBg
