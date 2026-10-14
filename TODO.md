@@ -23,17 +23,19 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 5, Batch 5b, Batch 5c, Batch 5cb and Batch 5d are shipped and archived.** Their fourteen
+**Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d and Batch 5e are shipped and archived.** Their
+fifteen
 tasks merged
 in ID order
-behind the green gate (four, then five, then three, then one, then one) and the detail is in
+behind the green gate (four, then five, then three, then one, then one, then one) and the detail is
+in
 `CHANGELOG.md`'s
 `## Unreleased`; Batch 5b is the batch that ended up packing the decomp's real FireRed grass
 rustle, Batch 5c the one that re-planned the level curve and laid that overlay over the player's
-legs, Batch 5cb the defect in front of 5d that fixed its colour and clipped its hit, and Batch 5d
-the on-ramp thinning, and all four are closed below. **Batch 5e is the next batch cut** —
-`[Task-71]`, the fixed boss and mini-boss parties — followed by **Batch 5eb** (`[Task-75]`, the
-debug overlay's teleports and its two ignore toggles). Both sit **before**
+legs, Batch 5cb the defect in front of 5d that fixed its colour and clipped its hit, Batch 5d
+the on-ramp thinning, and Batch 5e the fixed boss and mini-boss parties, and all five are closed
+below. **Batch 5eb is the next batch cut** — `[Task-75]`, the debug overlay's teleports and its two
+ignore toggles. It sits **before**
 Batch 6 so that Task-09's balance pass reads the curve, the density and the parties that
 actually ship. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
@@ -749,30 +751,24 @@ is rewritten to the measurement, and `docs/maps-spec.md` §7, `docs/design-spec.
 `mapView.test.ts` closed **untouched** as the design predicted. Its ID is retired: it keeps its
 place in the sequence and is never reused.
 
-### Batch 5e — a boss fields six, a mini-boss three
-- **Task-71** A boss always fields **six** Pokémon and a mini-boss always **three**, whatever
-  band the floor reads; **map 1** is the one exception, at **three** and **two**.
-- **Hot files:** `src/scenes/RouteScene.ts` (the boss/mini-boss roster build, 4587-4619) →
-  Task-71; `src/engine/run/roster.ts` + `roster.test.ts` (the new `count` option) → Task-71;
-  the new **`src/data/bosses.ts`** + `bosses.test.ts` → Task-71; `docs/maps-spec.md` §6 and its
-  §7 mini-boss row, `docs/battle-spec.md` §7's trainer-roster sentence,
-  `docs/balance/route-curve.md`'s Exceptions bullet, `docs/data-spec.md`'s table row and
-  `src/data/README.md`'s layout line → Task-71. It claims no `package.json`, `src/main.ts`,
-  `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts`, `src/data/run.ts`, `src/data/maps.ts`
-  or packed asset.
-- **Shape:** one task, alone, and it is the only batch that can host it. It wants
-  `src/scenes/RouteScene.ts` — the single place a boss or mini-boss roster is built — which
-  **5d's Task-70** already holds, and `docs/maps-spec.md`, which 5c (§4/§5) and 5d (§7) both
-  write; a batch is an antichain, so it can join neither and opens **Batch 5e**, one batch
-  behind 5d. It runs **before Batch 6** so Task-09's balance pass measures the parties that
-  ship and Task-17's docs pass reads a settled `docs/maps-spec.md` §6 and
-  `docs/battle-spec.md` §7. Its two numbers could have ridden `src/data/run.ts` (a field on
-  `LevelBand`) or `MAP_TUNING` (a `bossParty` column), and they deliberately do not: both files
-  are Task-69's in **5c**, and a boss's party size is a fact about the boss rather than about a
-  band or a map row — so they live in their own `src/data/bosses.ts`, which keeps the three
-  consecutive batches an antichain and leaves `src/engine/run/roster.ts` a single new optional
-  option. It adds no run field, so **no** `SAVE_VERSION` step, and it draws no RNG of its own:
-  the size only changes how many draws the roster's existing stream spends.
+### Batch 5e — a boss fields six, a mini-boss three *(shipped, archived)*
+Task-71 merged alone behind the green gate (**1394** tests, `npm test` + `npm run build`) and the
+detail is in `CHANGELOG.md`'s `## Unreleased`; QA validated it green in both waves, its Task QA
+walking a real seeded run through the doors into the boss's cone. `src/data/bosses.ts` is new and
+holds `BOSS_PARTY: Record<BossPartyKind, { firstMap; size }>` (`boss { firstMap: 3, size: 6 }`,
+`miniboss { firstMap: 2, size: 3 }`) plus the pure `bossPartySize(kind, mapIndex)`, and
+`RosterOptions` gains an optional `count` (`Math.max(1, options.count ?? band.trainerSize)`), so
+the two fights no longer derive their size from the band. The scene passes
+`count: bossPartySize(kind, room.mapIndex)` for exactly the boss and mini-boss rosters, so a boss
+always fields **six** and a mini-boss **three**, with **map 1** the exception at **three** and
+**two**. The band default is untouched (the new `count` is optional, so the ordinary rosters and
+every existing fixed-seed expectation stay as they were), and the task drew no RNG of its own — it
+only changes how many draws the roster's existing stream spends. `docs/maps-spec.md` §6 and its §7
+mini-boss row, `docs/battle-spec.md` §7, `docs/balance/route-curve.md`'s Exceptions bullet,
+`docs/data-spec.md` and `src/data/README.md` carry the rule; the boss award is left **uncapped**
+and recorded as a decision for Task-09 to weigh. It adds no run field, so **no `SAVE_VERSION`
+step** — the chain stays **14 → 15 → 16 → 17 → 18**. Its ID is retired: it keeps its place in the
+sequence and is never reused.
 
 ### Batch 5eb — dev teleports and the two ignore toggles
 - **Task-75** The debug overlay gets three teleports — a floor, a room inside the floor and a
@@ -4077,87 +4073,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       stop being an antichain. Nor can it join Task-64/65/66, whose special-room layer
       (`src/engine/maps/plan.ts`, `src/ui/mapView.ts`) it extends in the three batches before it.
       *(Batch 27)*
-- [ ] **[Task-71] A boss fields six Pokémon and a mini-boss three.** Reported in play:
-      «los minibosses tendran siempre 3 pokes y bosses 6 menos en primer piso que es 2 y 3
-      relativamente» — the two fights that close a floor and open its reward should field a
-      **fixed** party instead of one that grows with the band, and **map 1** is the exception:
-      **three** on its boss and **two** on its mini-boss.
-      **Today the size is band-derived twice over.** `RouteScene.startTrainerBattle`
-      (4587-4619) copies the floor's band and mutates it: the boss gets
-      `{ ...band, minLevel: band.maxLevel, trainerSize: band.trainerSize + 1 }` (4597-4598) and
-      the mini-boss `{ ...band, trainerSize: band.trainerSize + 1 }` (4599-4601), and the size
-      itself is read by the roster builder — `const size = Math.max(1, band.trainerSize)`
-      (`src/engine/run/roster.ts`, 41). So the shipped bands make map 1 a **2-and-2** fight
-      (`early.trainerSize` 1, `src/data/run.ts` 32) and a late floor a **5-and-5**
-      (`end.trainerSize` 4, 77): the same floor's boss and mini-boss differ only by level, and
-      the party size is a side effect of the band the regular trainers read. The two streams
-      that build those teams are `${seed}:boss:${mapIndex}` and `${seed}:miniboss:${mapIndex}`
-      (4602-4607), which is where a fixed size changes what a seed rolls.
-      **Where the numbers live — the decision this entry must take.** They go in a **new
-      `src/data/bosses.ts`** beside its test, not on `LevelBand` and not on `MAP_TUNING`: the
-      band's `trainerSize` is the *regular trainer's* party (`D39`, read by `A(m)` in the curve
-      sheet), and a boss's party is a fact about the boss; `src/data/run.ts` and
-      `src/data/maps.ts` are also Task-69's files in **Batch 5c**, and a rule of its own keeps
-      the batches an antichain. Frozen surface:
-      `export type BossPartyKind = 'boss' | 'miniboss'`,
-      `export const BOSS_PARTY: Readonly<Record<BossPartyKind, Readonly<{ firstMap: number; size: number }>>>`
-      with `{ boss: { firstMap: 3, size: 6 }, miniboss: { firstMap: 2, size: 3 } }`, and
-      `export function bossPartySize(kind: BossPartyKind, mapIndex: number): number`
-      returning `firstMap` on map 1 (and for any degenerate index) and `size` from map 2 on —
-      an **infinite** run keeps the fixed size too.
-      **How it reaches the roster.** `RosterOptions` (`src/engine/run/roster.ts`, 14-22) gains
-      `count?: number`, and `trainerRoster` reads `Math.max(1, options.count ?? band.trainerSize)`
-      instead of the band alone; `RouteScene` passes `count: bossPartySize(isBoss ? 'boss' :
-      'miniboss', this.room.mapIndex)` and stops lying about `trainerSize` in its band copy
-      (the boss keeps `minLevel: band.maxLevel`, which is the cap; the mini-boss stays at band
-      levels). That leaves `src/engine/run/roster.ts` a two-line change and every existing
-      caller untouched, because the option defaults to today's behaviour.
-      **The award, stated rather than hidden (the second thing this entry freezes).** A
-      six-member max-level roster pays `experienceAward(cap, 1, true)` **six times** — roughly
-      six times what the floor budget's `A(m)` assumes — and bosses are **excluded** from the
-      75 % budget on purpose (`docs/balance/route-curve.md`, 105-107 and the 52-58 note that the
-      hand-placed boss and mini-boss are injected on top and are not part of the budget). The
-      frozen default is to **leave the award alone**: the boss is the floor's finale and its
-      reward is deliberately outside the rule that a floor's regular trainers pay its cap; the
-      alternative — capping it (the first member only, or a share of the roster) — is a new rule
-      inside `resolveBattle`'s award path (`src/engine/run/resolve.ts`, 92-101) and a balance
-      change of its own. Whichever ships, the report names it and the sheet's Exceptions bullet
-      records it. **A consequence to report as a reading, not a defect:** with the shipped
-      bands a fixed **3** makes a mini-boss *smaller* than an `end`-band regular trainer's party
-      (4), which is exactly what the human asked for and is Task-09's to weigh.
-      **Tests.** `src/engine/run/roster.test.ts` keeps its `toHaveLength(end.trainerSize)` case
-      (21) green — the default is unchanged — and gains: `count` overrides the band size, is
-      clamped to at least 1, a `count` larger than the pool repeats species the way the
-      existing splice does (43-51), and `assignMegaStone` still hands out one stone once (52).
-      A new `src/data/bosses.test.ts` pins the four numbers, the map-1 row and that an infinite
-      index (say 1, 2, 99) reads the fixed size. No test in the tree pins a boss **team** by
-      seed — the two stream keys live only in `RouteScene` and no test builds them — so the
-      fixed-seed subject here is the roster's draw count, and the regression is: for a fixed
-      `Rng`, a boss roster of `count` members is stable and its members come from the boss BST
-      window (`speciesPool(band, 'trainer', { boss: true })`, 45-49).
-      **Docs:** `docs/maps-spec.md` §6 (168, "The boss is a fixed, themed trainer at the map's
-      `maxLevel`" gains the fixed party and map 1's three) and §7's mini-boss row (185, "one
-      strong trainer" gains its three, two on map 1 — Task-70 writes §7's **shop** bullet in
-      5d and this task writes its **mini-boss** row one batch later, which is exactly what an
-      antichain allows); `docs/battle-spec.md` §7 (147, "Trainer rosters are generated at the
-      route's level band, never above the cap" — the boss is the exception, at the cap and at a
-      fixed size); `docs/balance/route-curve.md`'s Exceptions bullet (105-107), including the
-      uncapped-award note; `docs/data-spec.md`'s table (a row for `bosses.ts`) and
-      `src/data/README.md`'s layout list (its line).
-      Out of scope: the **levels** those parties field (the boss stays at the map's cap, the
-      mini-boss at band levels), the boss's archetype and sprite (`ace`), the mini-boss reward
-      window (`src/ui/rewards.ts`), the boss BST window (`bossBstWindow`, D39), the regular
-      trainers' `trainerSize`, the map's room count and its shop leaf (Task-70, Batch 5d), the
-      level curve (Task-69, Batch 5c), the palette rows in `docs/balance/` that Task-09 owns in
-      Batch 6, and `src/engine/save.ts` (no run field moves, so **no `SAVE_VERSION`** step).
-      *Dependencies:* none — the roster builder, the two trainer ids, the band accessors and the
-      balance sheet are all shipped, and the entry's own two calls (the numbers' home and the
-      boss award) are decisions taken here rather than edges. Batch order is the whole story: it
-      wants `src/scenes/RouteScene.ts` — the single place the two rosters are built — which
-      Task-70 holds in **Batch 5d**, and `docs/maps-spec.md` §6, which Task-69 (§4/§5, 5c) and
-      Task-70 (§7, 5d) both write, so no cut batch can host it and it opens the plan's new
-      **Batch 5e**, one batch behind 5d and still **before Batch 6**, so Task-09's balance pass
-      measures the parties that ship and Task-17's docs pass reads a settled §6. *(Batch 5e)*
 
 ## Phase 10 - Learnset, TMs & move typing
 
