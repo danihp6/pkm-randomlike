@@ -109,14 +109,19 @@ One capture attempt per route (a run-level counter, not a per-battle one).
 - **Evolution is manual and level-only.** Every evolution in the dex — level-up,
   stone, trade, friendship, move — is resolved to a level (`evolutionBranches`,
   `src/data/dex/evolutions.ts`): a canon level evolution keeps its level, the
-  rest take their species' own level evolution when it has one and otherwise a
-  stage default (base forms at 20, middle forms at 30), never before the level
-  the species was obtained at. All of a species' branches share that level, so a
-  split line (Eevee's eight) shows every option at once and the player picks in
-  the STATS tab's **evolution graph**: a branch the member's level already meets
-  is green and a click applies it. Evolution keeps the level, nature, IVs/EVs,
-  moves, PP, status and held item, rebuilds the stats and types from the new
-  species and carries the **missing** HP across. It is unrelated to Mega
+  rest read their species' **BST band** — 20, 30 or 40, on the same windows the
+  run's own `LevelBand.bst` tiles (`EVOLUTION_BST_LEVELS`, `D39`) — and never
+  before the level the species was obtained at, which is **`EVOLUTION_MIN_GAP`
+  (10) levels over the resolved level of the evolution that produced it**, so a
+  stone/trade branch waits out a late canon level-up in its line. All of a
+  species' branches share that level, so a split line (Eevee's eight) shows every
+  option at once and the player picks in the STATS tab's **evolution graph**: a
+  branch the member's level already meets is green and a click applies it. The
+  rule reads no RNG and no map cap: a branch whose level lands above the current
+  map's cap simply stays grey — it **waits** for a deeper map (or, in a finite
+  run, forever) instead of being clamped. Evolution keeps the level, nature,
+  IVs/EVs, moves, PP, status and held item, rebuilds the stats and types from the
+  new species and carries the **missing** HP across. It is unrelated to Mega
   Evolution (§9).
 - A **catch joins the squad at that shared level**: its stats and moveset are
   rebuilt from the species at the squad's level, whatever level the wild was; it

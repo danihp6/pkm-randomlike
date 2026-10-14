@@ -116,6 +116,63 @@ the one call site, `resolveBattle` in `src/engine/run/resolve.ts`).
 - A single capture per route is untouched by any of this: the XP curve never gates a
   catch.
 
+## Evolution levels
+
+Every evolution is a level evolution (`D38`), and a non-level one (stone, trade,
+friendship, move) reads its species' **BST band** from `EVOLUTION_BST_LEVELS`
+(`src/data/dex/evolutions.ts`), which mirrors the BST windows the level bands
+above tile:
+
+| BST band          | `LevelBand.bst` | Level |
+| ----------------- | --------------- | ----: |
+| Early + Low       | 0–355           |    20 |
+| Mid               | 356–440         |    30 |
+| High + Late + End | 441–800         |    40 |
+
+A branch never resolves below its band's level, and never below **10 levels over
+the evolution that produced the species** (`EVOLUTION_MIN_GAP`): the floor is the
+pre-evolution's **own resolved level**, so a line whose canon level-up is late
+pushes its stone/trade branch along with it (Horsea 32 → Seadra 42). A canon
+level-up evolution keeps its own level untouched — the starters still read 16 and
+36 — which is why the two rules coexist on the same graph. Across the playable
+dex the rule moves **60 of the 156** non-level branches away from the old stage
+constant: up where a middle form's band beats 30 (Primeape 30 → 40, Scyther
+20 → 40) and down where a pre-evolution levels early (Lombre and Nuzleaf
+30 → 24).
+
+| Species  | `bst` | Level | Why                                            |
+| -------- | ----: | ----: | ---------------------------------------------- |
+| Eevee    |   325 |    20 | base form, Early+Low band                      |
+| Pichu    |   205 |    20 | base form, Early+Low band                      |
+| Ralts    |   198 |    20 | base form, Early+Low band                      |
+| Mankey   |   305 |    28 | canon level-up, unchanged                      |
+| Horsea   |   295 |    32 | canon level-up, unchanged                      |
+| Slowpoke |   315 |    37 | canon level-up, unchanged                      |
+| Pikachu  |   320 |    30 | Early+Low band 20, +10 over Pichu's 20         |
+| Kirlia   |   278 |    30 | canon level-up 30, shared by Gardevoir/Gallade |
+| Primeape |   455 |    40 | End band 40, over Mankey's 28 (was 30)         |
+| Seadra   |   440 |    42 | Mid band 30, +10 over Horsea's 32 (was 33)     |
+
+Per **finite** map, read against `levelCapForMap` (`src/data/maps.ts`, the Cap
+column) at the time this sheet is read, which of those levels the squad can
+actually reach:
+
+| Map | Cap | Evolution levels of the table the cap reaches      |
+| --: | --: | -------------------------------------------------- |
+|   1 |   6 | none (the earliest canon level-up in the dex is 7) |
+|   2 |  11 | none                                               |
+|   3 |  17 | none (the lowest level in the table is 20)         |
+|   4 |  24 | 20 — Eevee, Pichu, Ralts                           |
+|   5 |  32 | 28 Mankey, 30 Pikachu/Kirlia, 32 Horsea            |
+|   6 |  40 | 37 Slowpoke, 40 Primeape                           |
+
+Only **Seadra's 42** stays out of reach: past map 6 the cap grows by
+`MAP_TUNING_STEP.levelStep` (8) a map, so an **infinite** run's map 7 already caps
+above it. A branch the cap blocks is not clamped — it stays grey until the squad
+legally reaches its level, and in a finite run the late stone lines simply never
+fire. Retuning `MAP_TUNING` moves this table; the rule above does not move with
+it.
+
 ## Re-reading this sheet
 
 Change `trainerXp` (or a map's level range) in `src/data/`, run `npm test`, and
