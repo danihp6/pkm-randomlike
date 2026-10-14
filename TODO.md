@@ -626,9 +626,10 @@ its three branches may be cut; it can gain no member.
   and an infinite run whose floors keep climbing from the bottom as well as the top.
 - **Task-72** The battle panels' type badges are bigger, for both the active Pokémon and the
   rival.
-- **Task-73** The tall-grass rustle stops drawing over the character: its atlas cells are
-  repacked with the rip's own **alpha** (no re-grounding), so the grass hides the legs and the
-  head and torso show through, as the cartridge does.
+- **Task-73** The tall-grass rustle stops covering the character: its atlas cells keep the rip's
+  own **alpha** (no re-grounding) and its **rest state covers about half** — the parked cell is
+  the rip's *settled* frame, whose opaque band starts at cell row 6 — so the grass hides the hips
+  and legs while the cap, face and torso stay visible, as the cartridge does.
 - **Hot files, one holder per path:** `src/data/maps.ts` + `maps.test.ts`, `src/data/run.ts` +
   `run.test.ts`, `src/engine/run/curve.test.ts`, `src/engine/run/progression.test.ts`
   (one assertion — line 63's `bandForLevel(10)` boundary, which the re-spanned window moves),
@@ -3391,28 +3392,40 @@ cycles one biome.
       **138…166.5**), of which **18 px** sit inside the tile band, so the band covers **22.5 of
       28.5 px (79 %)** and leaves a 6 px cap. With opaque cells, no anchor inside the player's own
       tile can do better.
-      **Fix shape, as the dev's own recommendation (alternative A — the cartridge's own fix).**
+      **Fix shape, as the dev's own recommendation, and the third cut's amendment on top of it.**
       The **packer stops re-grounding these cells**: `scripts/frlg/build-tilesets.mjs` stamps the
-      rip's five `tall_grass.png` frames **keeping their alpha** — the rest cell (6) becomes the
-      rip's **frame 0** (`effectTile(0)`, blades only) instead of a re-stamp of the field's own
-      `tallGrass` source, and the four hit cells (45-48) are `effectTile(1…4)` stamped raw, with
-      no `keyBackground`/`compositeOver` onto the floor — so the tile below *and the player* show
-      through the transparent pixels, and the parked state is a transparent overlay whose opaque
-      pixels stop at the hips. **The one closing frame stays opaque and is allowed to close over
-      the player for its ~70 ms** (the cartridge does); the standing state is what must not hide
-      the torso. The **scene geometry `f1117ca` froze stays** (origin `(0.5, 1)`, position
-      `centerY + TILE_SIZE / 2`, `GRASS_STEP_DEPTH = 10`, `GRASS_STEP_MS = 70`, the rest parked,
-      one hit per step) — the criterion is met by the art, so `src/scenes/RouteScene.ts` is
-      claimed but expected to stay byte-identical.
-      **The acceptance criterion is measurable on the opaque band, not the sprite quad** (the dev
-      froze this and it is the one to keep): *standing still in tall grass, the overlay's **opaque
-      pixels** cover the player from the feet up to **no higher than `centerY − 4 ± 5`** — the
-      bottom ~14.25 px of the 28.5 visible px, hips and legs — and are **transparent above it**,
-      so the top **13.5-15 px** (cap, face, shoulders, upper torso) stay visible*, with the
-      anchors `artTop = centerY − 18` and `artBottom = centerY + 10.5` frozen alongside it. The
-      measurement is the spec's first duty: before/after, **desktop and compact layout**, in
-      pixels, read off the **live canvas** (a shared browser and a throttled game loop are the
-      harness traps the dev hit).
+      rip's five `tall_grass.png` frames **keeping their alpha** (the second cut, `66ce2bc`), with
+      the four hit cells (45-48) as `effectTile(1…4)` stamped raw and no `keyBackground`/
+      `compositeOver` onto the floor. **The third cut re-freezes the rest cell on the measurement
+      that cut produced:** the parked cell 6 was the rip's **frame 0** (blades-only) and QA
+      measured only **7.5 of the 28.5 px (26 %)** covered — so the human ruled
+      («realmente la hierba quieta sin animacion tambien la mitad debe star como por encima si no
+      al quedarme quieto queda raro») that the **still** grass must cover about **half** — and cell
+      **6 becomes the rip's frame 4, the settled blades**. Its opaque band starts at **cell row 6**
+      (world y **153**, because a cell row `r` maps to `tileTop + 1.5 r` with the tile at
+      `144…168`), i.e. **13.5 px of the 28.5 (47 %)** covered with the **top 15 px** visible — the
+      only candidate dead centre of "about half" that is also **the hit's own last frame**, so the
+      parked state and the end of the hit are the same art and the settle has **no jump**. Named
+      and rejected: the rip's frame 3 (row 5, 53 % — inside the band, but a mid-flick frame, so the
+      hit would *rise* into the parked state), frame 2 (row 2, 68 % — hides the torso), the field's
+      own tuft (cell 5) with its ground keyed out (the most faithful reading, but it needs a second
+      keying pass in the packer and its rows were never measured, so it cannot be frozen against
+      the criterion) and a hand-composed stack. **The one closing frame stays opaque and is allowed
+      to close over the player for its ~70 ms** (the cartridge does). The **scene geometry
+      `f1117ca` froze stays** (origin `(0.5, 1)`, position `centerY + TILE_SIZE / 2`,
+      `GRASS_STEP_DEPTH = 10`, `GRASS_STEP_MS = 70`, `frames[0]` parked, one hit per step) — the
+      list order and the parked index do **not** move, so `src/scenes/RouteScene.ts` stays
+      byte-identical and `FRLG_GRASS_RUSTLE_FRAMES`/`grassRustle`/the accessors are unchanged.
+      **The acceptance criterion is two-sided** — one-sided is exactly what let the 26 % band pass:
+      *standing still in tall grass, on the desktop and on the compact layout, the overlay's
+      **opaque** pixels **(a)** cover the player's **lower half — 13.5-15 px of their 28.5 visible
+      px, the band starting at cell row 6 ± 1 (world y 153 ± 1.5)** — and **(b)** leave the top
+      **~13 px** (cap, face, shoulders, upper torso) **uncovered by any overlay pixel***, with the
+      anchors `artTop = centerY − 18` and `artBottom = centerY + 10.5` frozen alongside it and the
+      closing frame allowed to cover the cell during its own ~70 ms. The measurement is the spec's
+      first duty: before/after (`66ce2bc`'s 7.5 px), **desktop and compact layout**, in pixels, read
+      off the **live canvas** (a shared browser and a throttled game loop are the harness traps the
+      dev hit).
       **Paths — this task now owns the art too:** `scripts/frlg/build-tilesets.mjs`, the three
       generated `src/assets/frlg/{outdoor,forest,cave}.png`, `src/data/tilesets/frlg.ts` +
       `frlg.test.ts`, `docs/tileset-spec.md` **§6** and `src/scenes/RouteScene.ts` (claimed,
@@ -3424,12 +3437,18 @@ cycles one biome.
       (`node scripts/frlg/build-tilesets.mjs "<…>\sprite-sources\frlg\tileset-2.png" "<…>\sprite-sources\frlg\tall_grass.png"`),
       twice for byte-identical output. **`docs/tileset-spec.md` §6 is now this task's** (its
       tall-grass bullet 176-193 loses "re-grounded onto each field's floor" and "byte-identical
-      to cell 5"), because the cells' rule is what changed.
-      **The repack's own checks change.** `src/data/tilesets/frlg.test.ts` today pins that the
-      rest cell is **opaque** and **byte-identical to cell 5** (152-166) — wrong by construction
-      now; it is replaced by: the rest cell's upper rows are transparent and it is *not* cell 5,
-      the four hit cells keep the rip's alpha (46-48 not fully opaque; 45 is the closing frame),
-      the five cells are still `[6, 45, 46, 47, 48]`, cells 49/50 stay blank, and the three
+      to cell 5") and the third cut adds the rest state's own line there: the parked cell is the
+      rip's **settled** frame, opaque from cell **row 6** (~13.5 px of the character), the
+      blades-only frame 0 is not used because it covers too little, and the hit's last frame is
+      the same art as the parked state — the cells' rule is what changed.
+      **The repack's own checks change, twice over.** `src/data/tilesets/frlg.test.ts` today pins
+      that the rest cell is **opaque** and **byte-identical to cell 5** (152-166) — wrong by
+      construction since the second cut — and the third cut replaces it with the rest cell's new
+      rule: **cell 6 is byte-identical to cell 48** (the rip's frame 4, so the hit's last frame and
+      the parked state are the same art), **rows 0-5 of cell 6 are fully transparent** (the
+      criterion's arithmetic in a unit test), cell 6 is not fully opaque and not cell 5, the four
+      hit cells keep the rip's alpha (46-48 not fully opaque; 45 is the closing frame), the five
+      cells are still `[6, 45, 46, 47, 48]`, cells 49/50 stay blank, and the three
       atlases stay in step. Everything else in that file (the 4x13 geometry, the wall bank, the
       pond, the floors, the ledge, the tall-grass **ground** cell and the 1.5 scale rule) stays
       pinned and is not loosened. Cell **5** (the ground the map draws), the floor variants, the
