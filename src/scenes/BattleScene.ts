@@ -135,6 +135,12 @@ const PARTY_CELL_HPBAR_SCALE = 0.4;
 const MON_SCALE = 2.2;
 const FOE_PLATFORM_OFFSET = 76;
 const PLAYER_PLATFORM_OFFSET = 80;
+/**
+ * The clearance the compact stack leaves above the player panel for the foe's
+ * own platform — the 50 px ellipse's half height at its 1.1 max scale — so the
+ * taller panel never sinks the foe's feet and shadow behind it.
+ */
+const FOE_PLATFORM_CLEAR = 28;
 /** Space kept above a sprite's head so the largest mon never clips off-stage. */
 const MON_TOP_MARGIN = 16;
 /** On the phone (compact) layout the battlers draw this much smaller. */
@@ -1562,8 +1568,17 @@ export class BattleScene extends Phaser.Scene {
       playerInfo = { x: pad, y: Math.round(height * 0.46), w: panelW, h: PLAYER_PANEL_H };
       foeX = width * 0.72;
       // Leave the tallest possible sprite a full box between the foe panel and
-      // its platform, so a titan is never clipped behind the panel.
-      foeY = foeInfo.y + foeInfo.h + SPRITE_SIZE_MAX - FOE_PLATFORM_OFFSET;
+      // its platform, so a titan is never clipped behind the panel — but the
+      // compact stack must also keep that platform clear of the player panel
+      // below, which is opaque and would hide the foe's feet (`foePanelBottom`
+      // is the floor: the mon-size caps read the feet, so they cannot go above
+      // it without squeezing the sprite to nothing).
+      const foePanelBottom = foeInfo.y + foeInfo.h;
+      foeY =
+        Math.min(
+          foePanelBottom + SPRITE_SIZE_MAX,
+          Math.max(foePanelBottom, playerInfo.y - FOE_PLATFORM_CLEAR),
+        ) - FOE_PLATFORM_OFFSET;
       playerX = width * 0.32;
       playerY = playerInfo.y - 90;
     } else {
