@@ -14,11 +14,13 @@ describe('level bands', () => {
   it('picks the band a level floor falls in and clamps at the ends', () => {
     expect(bandForLevel(0).id).toBe('early');
     expect(bandForLevel(2).id).toBe('early');
-    expect(bandForLevel(4).id).toBe('early');
-    expect(bandForLevel(5).id).toBe('low');
-    expect(bandForLevel(11).id).toBe('mid');
-    expect(bandForLevel(20).id).toBe('late');
-    expect(bandForLevel(32).id).toBe('end');
+    expect(bandForLevel(8).id).toBe('early');
+    expect(bandForLevel(9).id).toBe('low');
+    expect(bandForLevel(16).id).toBe('mid');
+    expect(bandForLevel(23).id).toBe('high');
+    expect(bandForLevel(30).id).toBe('late');
+    expect(bandForLevel(37).id).toBe('end');
+    expect(bandForLevel(55).id).toBe('end');
     expect(bandForLevel(999).id).toBe('end');
   });
 

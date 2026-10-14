@@ -60,7 +60,7 @@ describe('experienceAward', () => {
         );
       }
     }
-    expect(bandForLevel(10).id).toBe('mid');
+    expect(bandForLevel(10).id).toBe('low');
     expect(experienceAward(10, 1, true)).toBeGreaterThan(experienceAward(10));
   });
 });

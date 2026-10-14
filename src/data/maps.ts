@@ -47,18 +47,23 @@ export const MAP_MIN_ROOM_SIZE = 30;
  * only the final boss and no portal (D31); an infinite run ignores it. Balance
  * data (O-M7), so a longer or shorter campaign never touches the generator.
  */
-export const FINITE_MAPS = 6;
+export const FINITE_MAPS = 8;
 
 export const MAP_TUNING: readonly MapTuning[] = [
   // A floor needs at least six rooms: the entry is a **single-door leaf** and the
   // boss is another, so four more rooms are needed to close the floor's cycle
   // (the two leaves plus a 2x2 core, `docs/maps-spec.md` §2-§3/§6, D30).
-  { mapIndex: 1, levels: { minLevel: 2, maxLevel: 6 }, routes: { min: 6, max: 6 }, size: { min: 30, max: 30 } },
-  { mapIndex: 2, levels: { minLevel: 6, maxLevel: 11 }, routes: { min: 6, max: 6 }, size: { min: 30, max: 30 } },
-  { mapIndex: 3, levels: { minLevel: 11, maxLevel: 17 }, routes: { min: 6, max: 6 }, size: { min: 30, max: 30 } },
-  { mapIndex: 4, levels: { minLevel: 17, maxLevel: 24 }, routes: { min: 6, max: 7 }, size: { min: 30, max: 32 } },
-  { mapIndex: 5, levels: { minLevel: 24, maxLevel: 32 }, routes: { min: 6, max: 7 }, size: { min: 30, max: 36 } },
-  { mapIndex: 6, levels: { minLevel: 32, maxLevel: 40 }, routes: { min: 6, max: 8 }, size: { min: 30, max: 40 } },
+  // The level step narrows with the run (7 levels, then 6) so the last floors stay
+  // affordable on the `level³` curve: a constant step to the engine ceiling would
+  // want more XP on its top floor than a whole run (`docs/balance/route-curve.md`).
+  { mapIndex: 1, levels: { minLevel: 2, maxLevel: 9 }, routes: { min: 6, max: 6 }, size: { min: 30, max: 30 } },
+  { mapIndex: 2, levels: { minLevel: 9, maxLevel: 16 }, routes: { min: 6, max: 6 }, size: { min: 30, max: 30 } },
+  { mapIndex: 3, levels: { minLevel: 16, maxLevel: 23 }, routes: { min: 6, max: 6 }, size: { min: 30, max: 30 } },
+  { mapIndex: 4, levels: { minLevel: 23, maxLevel: 30 }, routes: { min: 6, max: 7 }, size: { min: 30, max: 32 } },
+  { mapIndex: 5, levels: { minLevel: 30, maxLevel: 37 }, routes: { min: 6, max: 7 }, size: { min: 30, max: 36 } },
+  { mapIndex: 6, levels: { minLevel: 37, maxLevel: 43 }, routes: { min: 6, max: 8 }, size: { min: 30, max: 40 } },
+  { mapIndex: 7, levels: { minLevel: 43, maxLevel: 49 }, routes: { min: 6, max: 8 }, size: { min: 30, max: 44 } },
+  { mapIndex: 8, levels: { minLevel: 49, maxLevel: 55 }, routes: { min: 6, max: 9 }, size: { min: 30, max: 48 } },
 ];
 
 /** How an out-of-table map steps past the last tuned row (infinite mode). */
@@ -74,15 +79,18 @@ export function mapTuning(mapIndex: number): MapTuning {
   const row = MAP_TUNING[index - 1];
   if (row) return row;
   const last = MAP_TUNING[MAP_TUNING.length - 1];
+  // `extra` counts from 1, so the first out-of-table map continues at the last
+  // row's cap and each further one steps up by `levelStep`; the **floor** has to
+  // climb too, not just the ceiling, or a deep floor only widens.
   const extra = index - MAP_TUNING.length;
-  const minLevel = Math.min(MAP_MAX_LEVEL, last.levels.maxLevel);
+  const minLevel = Math.min(MAP_MAX_LEVEL, last.levels.maxLevel + (extra - 1) * MAP_TUNING_STEP.levelStep);
   const routeMin = Math.min(MAP_MAX_ROUTES, last.routes.min + extra * MAP_TUNING_STEP.routeStep);
   const routeMax = Math.min(MAP_MAX_ROUTES, last.routes.max + extra * MAP_TUNING_STEP.routeStep);
   return {
     mapIndex: index,
     levels: {
       minLevel,
-      maxLevel: Math.min(MAP_MAX_LEVEL, minLevel + extra * MAP_TUNING_STEP.levelStep),
+      maxLevel: Math.min(MAP_MAX_LEVEL, minLevel + MAP_TUNING_STEP.levelStep),
     },
     routes: { min: Math.min(routeMin, routeMax), max: routeMax },
     size: {
