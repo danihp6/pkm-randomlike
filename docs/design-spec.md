@@ -245,8 +245,9 @@ Rewards between rooms are the run's only economy: catch, items, money and the PC
 box are where the player's power comes from. A run ends on a score screen, win or
 loss: routes cleared, Pokémon caught, Pokémon lost and the seed that reproduces
 the run, as the raw seed and as the share string someone else could play
-(`src/ui/runSummary.ts`, `D21`). A win clears its route; a loss does not, and
-nothing carries over (D5).
+(`src/ui/runSummary.ts`, `D21`). Both a win and a loss end on the score screen,
+and its confirm returns to the main menu, where a new run is started. A win
+clears its route; a loss does not, and nothing carries over (D5).
 
 ## 7. Special rooms & money
 
