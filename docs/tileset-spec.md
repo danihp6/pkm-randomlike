@@ -199,6 +199,15 @@ Swapping is `config = TILESETS[nextId].config` plus loading
   the rip's transparent gaps. The beat is ~70 ms a frame, played **once per step** on
   the player's own tile (never looping while they stand still). A tileset with no
   `grassRustle` keeps the procedural tuft.
+
+  Those five cells are the **outdoor palette's** effect art, stamped the same for every
+  field, so a field whose own tuft is a different palette declares a `grassRustleTint`
+  that the route applies to the overlay sprite: the forest is the only one today
+  (`0xC1D7EF`, the per-channel ratio of its dark tuft's mean `59,125,76` to the art's
+  `78,148,81` — `59/78`, `125/148`, `76/81`), while outdoor and cave take `0xffffff` and
+  are left exactly as they were. A tint multiplies colour and leaves alpha alone, so it
+  reaches the blades only and the field's own ground still shows through their gaps; the
+  beat, the parked cell and the cells' alpha are untouched.
 - **Ledge** draws a three-tile run: frame 51 is the centre lip and frames `3`/`4`
   its end caps (`FRLG_LEDGE_LEFT`/`FRLG_LEDGE_RIGHT`, `LedgeFrames` in
   `src/engine/tileset.ts`); the FRLG fields stamp all three (`D26`), and the PMD

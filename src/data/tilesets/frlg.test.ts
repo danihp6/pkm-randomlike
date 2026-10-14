@@ -20,6 +20,7 @@ import {
   FRLG_ATLAS_WIDTH,
   FRLG_FOREST_TILESET,
   FRLG_GRASS_RUSTLE_FRAMES,
+  FRLG_GRASS_RUSTLE_TINT_FOREST,
   FRLG_LEDGE_LEFT,
   FRLG_LEDGE_RIGHT,
   FRLG_TALL_GRASS,
@@ -107,6 +108,24 @@ function cellAlpha(
     opaque += row;
   }
   return { opaque, rows, opaqueRows };
+}
+
+/**
+ * A cell's mean colour per channel over its **opaque** pixels only: the rustle cells
+ * keep the rip's own alpha, so only the pixels that actually draw a blade count.
+ */
+function tileMean(png: { width: number; data: Uint8Array }, frame: number): number[] {
+  const bytes = tileBytes(png, frame);
+  const sum = [0, 0, 0];
+  let opaque = 0;
+  for (let i = 0; i < bytes.length; i += 4) {
+    if (bytes[i + 3] === 0) continue;
+    sum[0] += bytes[i];
+    sum[1] += bytes[i + 1];
+    sum[2] += bytes[i + 2];
+    opaque++;
+  }
+  return sum.map((channel) => channel / opaque);
 }
 
 describe('frlg tileset atlases', () => {
@@ -206,6 +225,60 @@ describe('frlg tileset atlases', () => {
       for (const name of ATLASES.slice(1)) {
         expect(tileBytes(atlas(name), frame), `${name} rustle frame ${frame}`).toEqual(reference);
       }
+    }
+  });
+
+  it("declares the forest's rustle tint and leaves the shared field untinted", () => {
+    // Outdoor and cave share one config, so one field on it covers both.
+    expect(FRLG_TILESET.grassRustleTint).toBe(0xffffff);
+    expect(FRLG_FOREST_TILESET.grassRustleTint).toBe(FRLG_GRASS_RUSTLE_TINT_FOREST);
+    expect(FRLG_GRASS_RUSTLE_TINT_FOREST).toBe(0xc1d7ef);
+  });
+
+  it("tints the rustle overlay into each field's own tall-grass palette", () => {
+    // The tinted parked cell may not read lighter than the tuft it parks on, and it
+    // may not sink into a black blob; the hit's flashes stay within the same band.
+    const LIGHTER = 6;
+    const DARKER = 30;
+    const FIELDS = [
+      { name: 'outdoor', config: FRLG_TILESET },
+      { name: 'forest', config: FRLG_FOREST_TILESET },
+      { name: 'cave', config: FRLG_TILESET },
+    ] as const;
+
+    for (const { name, config } of FIELDS) {
+      const png = atlas(name);
+      const tint = config.grassRustleTint ?? 0xffffff;
+      // The route's own arithmetic: a multiplicative tint is per channel.
+      const tinted = (frame: number): number[] =>
+        tileMean(png, frame).map((mean, channel) =>
+          Math.round((mean * ((tint >> (8 * (2 - channel))) & 0xff)) / 255),
+        );
+      const tuft = tileMean(png, FRLG_TALL_GRASS).map(Math.round);
+      const parked = tinted(FRLG_GRASS_RUSTLE_FRAMES[0]);
+      for (let channel = 0; channel < 3; channel++) {
+        expect(parked[channel] - tuft[channel], `${name} parked cell channel ${channel}`).toBeLessThanOrEqual(LIGHTER);
+        expect(parked[channel] - tuft[channel], `${name} parked cell channel ${channel}`).toBeGreaterThanOrEqual(-DARKER);
+      }
+      for (const frame of FRLG_GRASS_RUSTLE_FRAMES.slice(1)) {
+        const hit = tinted(frame);
+        for (let channel = 0; channel < 3; channel++) {
+          expect(Math.abs(hit[channel] - tuft[channel]), `${name} hit cell ${frame} channel ${channel}`).toBeLessThanOrEqual(DARKER);
+        }
+      }
+      if (name !== 'forest') continue;
+      // The shipped numbers: the tint lands the parked cell on the dark tuft exactly.
+      expect(parked).toEqual([59, 125, 76]);
+      expect(FRLG_GRASS_RUSTLE_FRAMES.slice(1).map(tinted)).toEqual([
+        [61, 137, 95],
+        [76, 144, 79],
+        [69, 135, 70],
+        [59, 125, 76],
+      ]);
+      // Untinted it is 78,148,81 - +19/+23/+5 lighter, the lighter green the report saw -
+      // so the forest is the field the tint has to close.
+      const untinted = tileMean(png, FRLG_GRASS_RUSTLE_FRAMES[0]).map(Math.round);
+      expect(untinted.some((value, channel) => value - tuft[channel] > LIGHTER)).toBe(true);
     }
   });
 

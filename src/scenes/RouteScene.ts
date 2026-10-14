@@ -4191,6 +4191,7 @@ export class RouteScene extends Phaser.Scene {
       .setOrigin(0.5, 1) // was the default centre anchor
       .setScale(rest === undefined ? 1 : this.tileScale('atlas'))
       .setDepth(GRASS_STEP_DEPTH)
+      .setTint(config.grassRustleTint ?? 0xffffff)
       .setVisible(false);
     this.grassStep = step;
     this.entitySprites.push(step);

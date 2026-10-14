@@ -84,6 +84,9 @@ export const FRLG_TALL_GRASS = 5;
  */
 export const FRLG_GRASS_RUSTLE_FRAMES = [6, 45, 46, 47, 48] as const;
 
+/** The forest's rustle tint: its tuft is the dark one (`tallGrass: [2,33]`), the art is not. */
+export const FRLG_GRASS_RUSTLE_TINT_FOREST = 0xc1d7ef;
+
 const WALL_PATTERN: WallPattern = {
   value: WALL,
   cols: 3,
@@ -151,6 +154,7 @@ export const FRLG_TILESET: TilesetConfig = {
     [LEDGE]: FRAME_LEDGE,
   },
   grassRustle: FRLG_GRASS_RUSTLE_FRAMES,
+  grassRustleTint: 0xffffff,
   autotile: [{ value: WATER, openValue: FLOOR, variants: WATER_SHAPES }],
   wallPattern: WALL_PATTERN,
   ledgeFrames: { left: FRLG_LEDGE_LEFT, center: FRAME_LEDGE, right: FRLG_LEDGE_RIGHT },
@@ -170,5 +174,6 @@ export const FRLG_TILESET: TilesetConfig = {
  */
 export const FRLG_FOREST_TILESET: TilesetConfig = {
   ...FRLG_TILESET,
+  grassRustleTint: FRLG_GRASS_RUSTLE_TINT_FOREST,
   variants: { ...FRLG_TILESET.variants, [FLOOR]: FOREST_FLOOR_VARIANTS },
 };
