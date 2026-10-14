@@ -203,11 +203,20 @@ buying is tied to the room rather than to a menu key.
   amount** (data, `src/data/trainers.ts`, per archetype/band) plus a random
   **jitter**, and the run starts with **none**. The economy is tight and fair,
   Binding of Isaac-style: every purchase is a real trade-off.
-- The **shop** sells a **fixed core** — Balls and Potions that improve with the
-  map's band — plus **one or two random items** from the map's pool and **one TM**
-  from the band's own machine list (`SHOP_TM`), at the catalogue `price`
-  (`src/data/items.ts`), and **buys any item** at `sellPrice`. A machine can
-  therefore be bought at the counter, not only found on the ground.
+- The **shop** always stocks the same **four rows**, in this order: a **10× pack**
+  of the band's own ball at **half** the catalogue price snapped to a round hundred
+  (Poke / Great / Ultra Ball for 1000 / 3000 / 6000), the band's **potion rung**
+  (Potion → Super Potion → Hyper Potion → Full Restore), and **two distinct held
+  items** drawn from the band's weighted pool (`SHOP_ROTATION`, banded by power), at
+  the catalogue `price` (`src/data/items.ts`). The band's **one TM** off `SHOP_TM`
+  is appended after them at the catalogue 3000, so the counter shows **five rows**;
+  a machine can therefore be bought at the counter, not only found on the ground.
+  The shop **buys any sellable item** at `sellPrice`, and a bought pack resold unit
+  by unit returns exactly what it cost, so the pack is never a money loop.
+  **Cures and X-items are no longer sold**: every `kind: 'status'` item (Antidote,
+  Full Heal, …) and every `kind: 'boost'` item (X Attack, X Defense, X Speed) has
+  left the buy list, so they reach a run from **ground loot** and the **mini-boss
+  reward** alone.
   Only the new **valuables** (Nugget, Big Nugget, Pearl, Big Pearl, Stardust, Star
   Piece, …) are worth real money; anything else sells for a token, so the shop is a
   sink and valuables are the way to cash out.

@@ -1,43 +1,65 @@
-import { tmItemId } from './tms';
+import { buyPrice, getItem } from './items';
 import type { BandId } from './run';
+import { tmItemId } from './tms';
 
 export type ShopEntry = Readonly<{ itemId: string; weight: number }>;
 
 const e = (itemId: string, weight: number): ShopEntry => ({ itemId, weight });
 
+/** One Mart stock row's unit count and price: a pack buys `count` units for `price`. */
+export type ShopPack = Readonly<{ itemId: string; count: number; price: number }>;
+
 /**
- * The **core** a shop always stocks for a band: the Balls and Potions that improve
- * with the map, plus a cure (`docs/maps-spec.md` §7, D33). Balance data (O-M5),
- * so retuning a shop never touches the model that builds it.
+ * A pack priced at **half** the catalogue sum of its units, snapped to a round
+ * hundred. `sellPrice` is half the catalogue price too, so a pack resold unit by
+ * unit returns exactly what it cost and never a profit (`docs/balance/economy.md`).
  */
-export const SHOP_CORE: Readonly<Record<BandId, readonly string[]>> = {
-  early: ['pokeball', 'potion'],
-  low: ['pokeball', 'superpotion'],
-  mid: ['greatball', 'superpotion', 'antidote'],
-  high: ['greatball', 'hyperpotion', 'fullheal'],
-  late: ['ultraball', 'hyperpotion', 'fullrestore'],
-  end: ['ultraball', 'fullrestore', 'fullheal'],
+const ballPack = (itemId: string, count: number): ShopPack => {
+  const item = getItem(itemId);
+  const unitPrice = item ? buyPrice(item) : 0;
+  return { itemId, count, price: Math.round((unitPrice * count) / 2 / 100) * 100 };
+};
+
+/** The band's own ball, in a pack of ten at a discount. Stock row 1. */
+export const SHOP_BALL_PACK: Readonly<Record<BandId, ShopPack>> = {
+  early: ballPack('pokeball', 10),
+  low: ballPack('pokeball', 10),
+  mid: ballPack('greatball', 10),
+  high: ballPack('greatball', 10),
+  late: ballPack('ultraball', 10),
+  end: ballPack('ultraball', 10),
+};
+
+/** The band's own heal rung. Stock row 2. */
+export const SHOP_POTION: Readonly<Record<BandId, string>> = {
+  early: 'potion',
+  low: 'superpotion',
+  mid: 'superpotion',
+  high: 'hyperpotion',
+  late: 'hyperpotion',
+  end: 'fullrestore',
 };
 
 /**
- * The weighted pool the shop's one or two **rotating** items are drawn from: the
- * held items, berries and X-items that turn a floor's stock around. It never holds
- * a valuable (those are what the player sells here), a Mega Stone or an item the
- * engine does not model (`UNMODELLED_ITEMS`): those reach a run from the ground
- * alone (`src/data/loot.ts`), so the player is never sold a dead ball.
+ * The weighted pool the shelf's **two held rows** are drawn from: the held items
+ * and berries that turn a floor's stock around. It never holds a valuable (those
+ * are what the player sells here), a Mega Stone, an item the engine does not model
+ * (`UNMODELLED_ITEMS`), a cure (`kind: 'status'`) or an X-item (`kind: 'boost'`):
+ * the Mart sells no cure and no booster, so those reach a run from ground loot and
+ * the mini-boss reward alone (`src/data/loot.ts`). Every band lists at least
+ * `SHOP_HELD_ROWS` distinct rows, or its shelf could not fill.
  *
  * Every **Port** row of `COMPETITIVE_HELD` (`src/data/items.ts`) is here exactly
- * once, banded by power: the status berries at `low`, the cheap utility and the
- * 1/3-HP berries at `mid`, the Expert Belt and the pinch berries at `high`, and
- * the category boosters, the Life Orb, the Sashes and the resist berries from
- * `late` on. Every weight is 1; the banding is balance data (O-M5).
+ * once, banded by power: the cheap berries at `early`, the status berries and the
+ * 1/3-HP berries at `low`, the 1000-class utility and the 1/3-HP berries at `mid`,
+ * the Expert Belt and the pinch berries at `high`, and the category boosters, the
+ * Life Orb, the Sashes and the resist berries from `late` on. The weights are the
+ * pre-existing ones; the banding is balance data (O-M5).
  */
 export const SHOP_ROTATION: Readonly<Record<BandId, readonly ShopEntry[]>> = {
-  early: [e('antidote', 2), e('oranberry', 2), e('xattack', 1)],
+  early: [e('oranberry', 2), e('cheriberry', 2), e('chestoberry', 2)],
   low: [
-    e('paralyzeheal', 2),
     e('oranberry', 2),
-    e('xattack', 2),
     e('sitrusberry', 1),
     e('cheriberry', 1),
     e('chestoberry', 1),
@@ -46,8 +68,6 @@ export const SHOP_ROTATION: Readonly<Record<BandId, readonly ShopEntry[]>> = {
     e('aspearberry', 1),
   ],
   mid: [
-    e('fullheal', 2),
-    e('xdefense', 2),
     e('sitrusberry', 1),
     e('charcoal', 1),
     e('mysticwater', 1),
@@ -64,8 +84,6 @@ export const SHOP_ROTATION: Readonly<Record<BandId, readonly ShopEntry[]>> = {
     e('iapapaberry', 1),
   ],
   high: [
-    e('xattack', 2),
-    e('xdefense', 2),
     e('sitrusberry', 1),
     e('lumberry', 1),
     e('miracleseed', 1),
@@ -81,8 +99,6 @@ export const SHOP_ROTATION: Readonly<Record<BandId, readonly ShopEntry[]>> = {
     e('micleberry', 1),
   ],
   late: [
-    e('xattack', 1),
-    e('xspeed', 2),
     e('sitrusberry', 1),
     e('lumberry', 1),
     e('leftovers', 1),
@@ -116,8 +132,6 @@ export const SHOP_ROTATION: Readonly<Record<BandId, readonly ShopEntry[]>> = {
     e('chilanberry', 1),
   ],
   end: [
-    e('xspeed', 2),
-    e('fullheal', 1),
     e('sitrusberry', 1),
     e('leftovers', 1),
     e('dragonfang', 1),
@@ -134,15 +148,18 @@ export const SHOP_ROTATION: Readonly<Record<BandId, readonly ShopEntry[]>> = {
   ],
 };
 
+/** How many held rows a shop stocks. Frozen at 2 (`docs/maps-spec.md` §7). */
+export const SHOP_HELD_ROWS = 2;
+
 /**
  * The Mart's **TM slot** (`docs/maps-spec.md` §7): the machines a band's counter
- * may offer beside its core and its rotation. A band's list is non-empty, holds at
- * least six ids, is written in TM-catalogue order, shares no id with any other
- * band, and every later band's list starts after the previous band's last id, so
- * the machines on sale follow the band's power. Within those invariants the picks
- * are balance data (O-M5): each band spans eight moves whose types its core and
- * rotation do not cover, and no id duplicates a machine the ground loot already
- * drops (`src/data/loot.ts`).
+ * may offer after its four stock rows. A band's list is non-empty, holds at least
+ * six ids, is written in TM-catalogue order, shares no id with any other band, and
+ * every later band's list starts after the previous band's last id, so the
+ * machines on sale follow the band's power. Within those invariants the picks are
+ * balance data (O-M5): each band spans eight moves whose types its stock does not
+ * cover, and no id duplicates a machine the ground loot already drops
+ * (`src/data/loot.ts`).
  */
 export const SHOP_TM: Readonly<Record<BandId, readonly string[]>> = {
   early: [
@@ -206,6 +223,3 @@ export const SHOP_TM: Readonly<Record<BandId, readonly string[]>> = {
     tmItemId(170),
   ],
 };
-
-/** How many rotating items a shop stocks: one or two (`docs/maps-spec.md` §7). */
-export const SHOP_ROTATION_COUNT = { min: 1, max: 2 } as const;
