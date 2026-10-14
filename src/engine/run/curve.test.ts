@@ -127,6 +127,11 @@ describe('floor trainer curve', () => {
       const budget = 0.75 * floor.meanTrainers * floor.award;
       expect(budget, `${label} budget`).toBeGreaterThanOrEqual(floor.needed);
       expect(budget, `${label} budget`).toBeLessThanOrEqual(1.5 * floor.needed);
+      // Maps 1-2 keep the window's upper half on purpose: a later pass thins those
+      // two floors (fewer trainers, less loot), so they need the slack to stay in.
+      if (floor.mapIndex <= 2) {
+        expect(budget, `${label} slack`).toBeGreaterThanOrEqual(1.3 * floor.needed);
+      }
     }
   }, 120_000);
 });

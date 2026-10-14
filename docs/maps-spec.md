@@ -141,10 +141,12 @@ deterministically.
 | `routes.min` / `max` | how many rooms the map's graph holds |
 | `size.min` / `max` | the range each room rolls its **width and height** from, independently; `min` never drops below 30 and the entry/boss leaves are pinned to 30x30 |
 
-`MAP_TUNING` is a table per map (1..6 today) and `MAP_TUNING_STEP` grows a map
-past the last row, so an infinite run keeps climbing. The room count grows with
-the map as well but is capped at `MAP_MAX_ROUTES`, so a deep floor never becomes
-a huge maze. Retuning is a data edit, never a generator edit
+`MAP_TUNING` is a table per map (1..8 today) and `MAP_TUNING_STEP` grows a map
+past the last row, so an infinite run keeps climbing: the level range steps up by
+`levelStep` at **both** ends, so a deep floor is a narrow ramp rather than a floor
+that only widens, and both ends saturate at `MAP_MAX_LEVEL`. The room count grows
+with the map as well but is capped at `MAP_MAX_ROUTES`, so a deep floor never
+becomes a huge maze. Retuning is a data edit, never a generator edit
 (`docs/route-generator.md` §2).
 
 ## 5. Levels & the player's cap (D29)
@@ -155,8 +157,9 @@ a huge maze. Retuning is a data edit, never a generator edit
   (maxLevel - minLevel)` as its working level, so the map ramps and the boss sits
   at the top.
 - The **player's own cap** for the map is `levelCapForMap(mapIndex)`
-  (`= maxLevel`): XP gain clamps there, exactly as the per-route cap did (D9),
-  and an evolution the cap blocked waits until the next map.
+  (`= maxLevel`), 9 on the first floor up to 55 on the eighth
+  (`docs/balance/route-curve.md`): XP gain clamps there, exactly as the per-route
+  cap did (D9), and an evolution the cap blocked waits until the next map.
 
 ## 6. Boss & portal (D31)
 
@@ -277,6 +280,6 @@ The pure layout (cell positions, links, reveal filter) lives in
   are tuned in the Phase 7 balance pass.
 - **O-M6 — Mega Stones.** Resolved: functional — holding one allows a Mega
   Evolution once per battle (`D34`); all dex Megas are in.
-- **O-M7 — Finite campaign length.** How many maps a finite run walks
-  (`FINITE_MAPS` in `src/data/maps.ts`) starts at **6**, matching the tuned rows;
-  balance, not design, so the Phase 7 pass may retune it.
+- **O-M7 — Finite campaign length.** Resolved: a finite run walks **eight** maps
+  (`FINITE_MAPS` in `src/data/maps.ts`), capping the squad at 9 → 55, one tuned row
+  per map — a length decided here rather than left to the balance pass.
