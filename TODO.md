@@ -24,8 +24,15 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 ## Batch plan
 
 **Batch 5 is shipped and archived.** Its four tasks merged in ID order behind the green
-gate and the detail is in `CHANGELOG.md`'s `## Unreleased`; **Batch 5b is the next batch
-cut**, with the reports that arrived while Batch 5 was in flight registered below. Every
+gate and the detail is in `CHANGELOG.md`'s `## Unreleased`. **Batch 5b is cut** — its five
+specs are written (`task-45`, `task-46`, `task-51`, `task-53`, `task-54`), the seven
+questions it was waiting on are answered and frozen in them, and its five branches can be
+cut — and the level curve the human re-planned right after it opens two more batches
+behind it: **Batch 5c** (`[Task-69]`, the eight-map run) and **Batch 5d** (`[Task-70]`,
+the early floors thinned), plus the round of two wishes that arrived after that, whose new
+task opens **Batch 5e** (`[Task-71]`, the fixed boss and mini-boss parties) while its second
+report widens 5d (map 1 hangs no shop leaf). All three sit **before** Batch 6 so that Task-09's
+balance pass reads the curve, the density and the parties that actually ship. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
 goes to the packer, and no tree under `sprite-sources/` is ever linked into a worktree
 (Batch 3's junction is what emptied it once).
@@ -82,7 +89,7 @@ earlier batch whose paths leave `scripts/build-dex.mjs` and `src/data/dex/**` fr
 every `src/**` path `.prettierignore` still ledgers, so it runs alone, and last.
 `src/scenes/RouteScene.ts` and `SAVE_VERSION` are the two serial resources the second round
 of reports adds to that list, and they are what fixes the tail of the plan: Task-45
-(Batch 5b), Task-41 (Batch 6), Task-31 (Batch 7), Task-39 (Batch 9), Task-40 (Batch 9b),
+(Batch 5b), Task-70 (Batch 5d), Task-71 (Batch 5e), Task-41 (Batch 6), Task-31 (Batch 7), Task-39 (Batch 9), Task-40 (Batch 9b),
 Task-44 (Batch 13) and Task-30 (Batch 12) each want that one scene, so they line up one
 batch apart — and the third round's Task-48 and Task-49, the two reports that want it after
 every one of them, extend the same queue into the new **Batch 14** and **Batch 15** — and the
@@ -96,7 +103,8 @@ one, in **Batch 6b**, whose Task-38 wants `src/scenes/RouteScene.ts` instead —
 scene reports, Task-55 and Task-56, extend that same `src/scenes/RouteScene.ts` queue into the
 new **Batch 18** and **Batch 19**, which changes nothing ahead of them — and the
 eighth round's three reports land in three places behind them: `Task-58` (the whole
-chrome in the debug panel's palette) claims `src/scenes/RouteScene.ts` **and every other
+chrome as the dark glass card the human picked from `chrome-options.html`) claims
+`src/scenes/RouteScene.ts` **and every other
 scene**, so it opens the new **Batch 20**; `Task-59` (the switch window's move ⓘ) takes
 the one free `src/scenes/BattleScene.ts` in **Batch 13**, whose Task-44 wants the route
 scene instead; and `Task-60` (the battle's info window) takes that same scene in
@@ -310,7 +318,13 @@ whole-chrome because the referent is the dev overlay's CSS (`src/dev/debugMenu.t
 whose surface `#10161f` is the palette `docs/art-direction.md` line 14 already declares and
 which Task-16's own set contradicts twice: its window keeps the FRLG light field (`#f8f8f8`
 under the deep-black `FRLG_INK`, `0x0b0b10`) and its keyline is the slate `0x3a3d52`, where the
-debug panel is dark with a bright accent and light text. Every container the chrome carries
+debug panel is dark with light text. **The look is no longer the overlay's own, though: it is
+the `t-glass` card of `chrome-options.html`**, the dark glass direction the human picked over
+the full debug match, the frame-only variant, the slate flat variant and Task-16's set — the
+surface at **0.72**, a **1px hairline** instead of the overlay's 2px accent, an **11px** corner,
+the accent kept for selection and controls only, and **no real blur** (Phaser has no
+`backdrop-filter`; the tokens are frozen in `[Task-58]`'s entry). Every container the chrome
+carries
 pairs a **light** fill with that dark ink — `moveGrid`'s cells and info buttons,
 `abilityInfo`'s button, the battle's command cells and bag tabs, the HUD's rows and cells, the
 starter cards — so the re-tune reaches every `src/scenes/*.ts` and most of `src/ui/**`: the
@@ -323,8 +337,8 @@ Task-50, 17 Task-52 and Task-60, 18 Task-55, 19 Task-56). It therefore opens **B
 it runs after Batch 11's reformat so it edits cleared files and keeps them conforming, the way
 Batches 12–19 do. One consequence is recorded with it rather than hidden: Batch 8's
 accessibility audit runs against Task-16's chrome, so this task carries its own contrast
-check instead of re-running Task-08, and the open question below offers the light-panel
-alternative that would need none of that.
+check instead of re-running Task-08 — the one question of the eighth round that its answer did
+not settle.
 
 `Task-59` (the battle's SWITCH window gives each move row the HUD's ⓘ) and `Task-60` (a battle
 **info** window with the weather, the terrain, the stat stages and the screens) are the round's
@@ -431,6 +445,49 @@ of being refilled by the next level-up. It adds no run field — a member's move
 persisted — so the chain stays **14 → 15 → 16 → 17 → 18**. Nothing here re-plans
 `Task-38`–`Task-67`, and Batch 4b is untouched: it is `cut`, so it can gain no member.
 
+**The level curve is re-planned, and it is a decision rather than a report.** After a design
+discussion the human chose the shape Batch 5c implements: a finite run becomes **eight maps
+that end at level 55** instead of six that end at 40, with a first floor of **2–9** (cap 9,
+which is +4 for the level-5 starter) and steps of seven levels narrowing to six as the levels
+rise. The reason the alternative was rejected is arithmetic the repository already carries:
+`xpForLevel` is `level³` (`src/engine/run/progression.ts` 47-50), so today's six floors need
+91 / 1115 / 3582 / 8911 / 18944 / 31232 XP and the whole run to 40 is **64 000** — while a
+constant ten-level step to 100 would spend **271 000 XP on its last floor alone**, nine times
+today's entire run. The same decision answers the question `[Task-09]` had open about a floor
+worth a single level (it is not the wanted shape) and hands Task-09 a curve to tune instead of
+a curve to design; its entry records that. The rework lands in **Batch 5c** because
+`docs/balance/route-curve.md` is Task-51's in 5b and the `docs/balance/` sheets are Task-09's
+in Batch 6, and a second task — **Batch 5d** — thins maps 1-2 so the on-ramp is gentler before
+Task-09 reads it. `Task-70` runs one batch behind `Task-69` on purpose: it re-reads the walk
+that task solved and re-pins it, and it writes the same `src/data/run.ts` rows and the same
+`src/engine/run/curve.test.ts` — a batch is an antichain, so those two cannot ride together.
+Neither adds a run field or a rule the save carries, so the chain stays **14 → 15** (Task-13,
+shipped) → **15 → 16** (Task-31, Batch 7) → **16 → 17** (Task-44, Batch 13) → **17 → 18**
+(Task-52, Batch 17), and nothing here re-plans `Task-38`–`Task-68` or touches Batch 4b, which
+is `cut` and can gain no member.
+
+A **thirteenth round** of **two reports** arrived after that one, and **neither adds a dependency
+edge** and **neither adds a `SAVE_VERSION` step**; between them they add one more claim on
+`src/scenes/RouteScene.ts`, one on `src/engine/maps/plan.ts` and **a new batch, 5e**.
+`Task-71` (a boss always fields six Pokémon and a mini-boss three, with map 1's own 2 and 3) is
+the round's one new task: it wants the route scene — where the boss and mini-boss rosters are
+built —
+which `Task-70` holds in **5d**, and `docs/maps-spec.md` §6, which `Task-69` (§4/§5, **5c**) and
+`Task-70` (§7, **5d**) already write in the two batches before it, so it cannot join either and
+opens the plan's new **Batch 5e**, one batch behind 5d — still **before Batch 6**, so Task-09's
+balance pass reads the fixed parties and Task-17's docs pass reads the settled `docs/maps-spec.md`
+§6 and `docs/battle-spec.md` §7. It keeps its numbers out of `src/data/run.ts` and
+`src/data/maps.ts` on purpose — both are `Task-69`'s in 5c — by putting them in a new
+`src/data/bosses.ts` beside its test, plus a `count` option on `trainerRoster`
+(`src/engine/run/roster.ts`): that is the arbitration that keeps three consecutive batches an
+antichain. The round's **second** report — map 1 hangs fewer routes — is **folded into
+`[Task-70]`**, which already owns that floor's on-ramp: it widens 5d's claim with
+`src/engine/maps/plan.ts` + `plan.test.ts`, `src/ui/mapView.test.ts`, `docs/maps-spec.md` §7 and
+`docs/design-spec.md` §7, and it takes the cheap reading the entry freezes — **map 1 hangs no
+shop leaf** (a shop with no money is dead weight) — rather than dropping the regular room count,
+which the guaranteed core does not allow. Nothing here re-plans `Task-38`–`Task-70`, both
+batches are new so nothing already cut gains a member, and Batch 4b stays `cut`.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
@@ -510,6 +567,41 @@ reads before the dex. None of the four added a run field or a `SAVE_VERSION` ste
 version chain is unchanged, and each of its three declared re-pins needed none.
 
 ### Batch 5b — FireRed's grass step, a finished run's destination, the evolution curve, the battle panel's types and the Mart's four rows
+**Cut.** Its five specs are written (`.agent_specs/task-45.md`, `task-46.md`, `task-51.md`,
+`task-53.md`, `task-54.md`) and its five branches may be cut; it can gain no member. The seven
+questions that gated it are **answered**, and the answers are frozen in the specs:
+- **Task-45 (the grass step) is faithful to FireRed, and that means the tile the player
+  occupies.** The rustle plays **only** on the tile the player is standing in or walking
+  through, it stays alive while they stay in the grass and disappears when they leave. The
+  earlier default — every tall-grass cell on the map swaying continuously, through a new
+  `TilesetConfig.tileAnimations` contract — is **rejected**, which is why the task reuses the
+  overlay path the procedural tuft already takes (`drawEntities`, 4162-4179) and claims the
+  packed FRLG atlases and `scripts/frlg/build-tilesets.mjs` as **reserved, expected
+  untouched**: the mechanism needs no new art. The player's feet are covered by the overlay,
+  so the cartridge's occlusion comes for free and is in scope.
+- **Task-46 (the score screen) sends both outcomes to the main menu.** A win and a loss share
+  the screen, so both return to `'MainMenu'`; the summary still reports the win.
+- **Task-51 (the evolution curve) is BST bands 20 / 30 / 40 anchored on the run's
+  `LevelBand.bst` windows**, with the **+10 floor** above the evolution that produced the
+  species, and the **cap is kept** — a line whose +10 target lands above the current map's cap
+  simply waits. The spec writes that rule against the **shipped** numbers only and hardcodes
+  no cap, because Batch 5c raises the finite run's top cap and the late stone lines then fire
+  inside a finite run **without the rule moving**.
+- **Task-53 (the battle panel's types) draws the row on both panels**, foe and player, with
+  the Añil badge atlas the move cells and the starter cards already draw and the text chip as
+  the fallback for a name the atlas lacks. It writes no `src/data/**` file, opens no
+  `src/ui/**` module and adds no literal.
+- **Task-54 (the Mart) is taken literally: four stock rows.** Every `kind: 'status'` cure and
+  every X-item leaves the buy list (they reach a run from ground loot and the mini-boss reward
+  only), and the two held rows take the **catalogue price** with no per-band markup table, so
+  cheap berry rows on the early floors are accepted and the intent holds from `mid` on.
+  **One assumption is recorded rather than hidden:** the report predates Task-22's per-band TM
+  slot, and the entry's own out-of-scope line protects it, so the four rows are the **stock**
+  and the band's one machine stays appended last — the Mart shows five rows. If the human
+  means four rows including the machine, the change is one line (drop the `SHOP_TM` append in
+  `buildShop`) and nothing else in the plan moves.
+
+Its five members, as reported:
 - **Task-45** Tall grass rustles when the player steps through it, as in FireRed.
 - **Task-46** A finished run returns to the main menu, not to the starter pick.
 - **Task-51** The species whose real evolution is not a level-up take a BST level of
@@ -520,7 +612,9 @@ version chain is unchanged, and each of its three declared re-pins needed none.
 - **Hot files:** `scripts/frlg/build-tilesets.mjs`, the three packed
   `src/assets/frlg/{outdoor,forest,cave}.png`, `src/data/tilesets/frlg.ts` + its test,
   `src/engine/tileset.ts`, `src/engine/tileFrames.ts` + `tileFrames.test.ts`,
-  `src/scenes/RouteScene.ts` and `docs/tileset-spec.md` → Task-45;
+  `src/scenes/RouteScene.ts` and `docs/tileset-spec.md` → Task-45 (the atlas set, its
+  tileset table and `src/engine/tileset.ts` are **reserved, expected untouched**: the frozen
+  mechanism adds no frame and no tileset contract);
   `src/scenes/RunOverScene.ts` and `docs/design-spec.md` §6 → Task-46;
   `src/data/dex/evolutions.ts` + `evolutions.test.ts` (the hand-authored accessor only —
   **not** the generated `species.json`), the re-pins in `src/ui/evolutionGraph.test.ts` and
@@ -545,8 +639,10 @@ version chain is unchanged, and each of its three declared re-pins needed none.
   to merge: the
   scene Task-16 holds there, the biome atlases and `docs/design-spec.md` are all free
   again the moment it lands — which is why this batch sits between 5 and 6 rather than at
-  the tail. Task-45 takes the FRLG biome atlases (a generated file, so nothing else in
-  the batch may) and the one tile-animation contract the tileset does not have yet;
+  the tail. Task-45 claims the FRLG biome atlases and their packer (a generated file, so
+  nothing else in the batch may) but the decision above leaves them **reserved and
+  untouched**: the step is the scene's own overlay on the player's tile, so the tileset
+  gains no animation contract and no art moves;
   Task-46 takes the score screen's single destination and the one sentence
   `docs/design-spec.md` §6 needs. Task-51 is the third task and the only batch that can host
   it: every path it moves is free here and **nowhere earlier** — Batch 5's Task-42 holds
@@ -576,6 +672,90 @@ version chain is unchanged, and each of its three declared re-pins needed none.
   spec file there, so §6's new sentence (Task-46) is in place before the docs pass reads it
   and Task-09's balance numbers read the same scene. Every batch from Batch 6 on runs one
   batch later than this plan first said.
+
+### Batch 5c — the level curve re-planned: eight maps, levels 2 → 55
+- **Task-69** A finite run becomes eight maps that end at level 55, with a 2–9 first floor,
+  and an infinite run whose floors keep climbing from the bottom as well as the top.
+- **Hot files:** `src/data/maps.ts` + `maps.test.ts`, `src/data/run.ts` + `run.test.ts`,
+  `docs/balance/route-curve.md`, `docs/maps-spec.md` §4/§5 **and §10's `O-M7`**,
+  `src/engine/run/curve.test.ts` and
+  `src/data/README.md`'s `maps.ts` line if the wording
+  changes (its `src/engine/save.test.ts` expectation reads `levelCapForMap(3)` and so follows
+  the data instead of moving). It claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`,
+  `src/engine/save.ts`, `src/scenes/*.ts`, packed asset or `docs/` file another batch holds
+  (`docs/maps-spec.md` §7 is Task-54's in 5b, and §4/§5 are nobody's after that).
+- **Shape:** one task, alone, and it is the batch the human's own decision opens. It is the
+  **only** batch that can host it: `docs/balance/route-curve.md` is Task-51's in 5b and the
+  `docs/balance/` sheets are Task-09's in Batch 6, `docs/maps-spec.md` is Task-17's in Batch 6,
+  and the `src/data/` number tables it moves are exactly the ones Task-09 tunes there — so a
+  level rework has to land **between** the two: after Task-51 has re-pinned the evolution
+  curve against the shipped caps and before the balance pass reads a curve it no longer has to
+  design. Nothing in it produces a path a batch mate reads, and it adds no state, so **no**
+  `SAVE_VERSION` step — the chain stays 14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44) → 18
+  (Task-52). Its sibling, the density pass, cannot ride beside it: **Batch 5d** re-reads the
+  walk this task solves and re-pins the same `curve.test.ts` and the same `src/data/run.ts`
+  rows, and a batch is an antichain.
+
+### Batch 5d — the early floors thin out
+- **Task-70** Maps 1-2 place fewer trainers and less loot, and **map 1 hangs no shop leaf**, so
+  the on-ramp is gentler without touching the geometry of a single room.
+- **Hot files:** the new `src/data/population.ts` + `population.test.ts`, `src/data/loot.ts` +
+  `loot.test.ts`, `src/engine/routes/sketch.ts` + `sketch.test.ts`,
+  **`src/engine/maps/plan.ts` + `plan.test.ts`** (the shop leaf's own map),
+  **`src/ui/mapView.test.ts`** (re-pin only; `src/ui/mapView.ts` only if a marker actually
+  changes), `src/scenes/RouteScene.ts`
+  (the one line that hands the floor's population to the generator), `src/engine/run/curve.test.ts`
+  (the walk re-pinned and the request mirrored), `src/data/run.ts` (**the `early` and `low`
+  rows' `trainerXp` only**, if the thinned floors need it), `docs/balance/route-curve.md`, the
+  `docs/route-generator.md` population section, **`docs/maps-spec.md` §7** (the shop bullet and
+  its `O-M4` line), **`docs/design-spec.md` §7** (the shop bullet) and `src/data/README.md`'s
+  new-file line. It claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`,
+  `src/engine/save.ts` or packed asset, and no `docs/maps-spec.md` section another batch holds:
+  §4/§5 are Task-69's in 5c and §6 is Task-71's in 5e, both **other batches**.
+- **Shape:** one task, and it needs a batch of its own twice over. First because it wants
+  `src/scenes/RouteScene.ts` — the floor's band meets the generator in exactly one place —
+  and every batch from 6 to 28 already holds that scene (6 Task-41, 6b Task-38, 7 Task-31 and
+  on), so no existing batch can host it. Second because it **depends on Batch 5c**: the
+  eight-floor walk, the re-spanned bands and the `needed(m)` numbers `Task-69` ships are the
+  rule this task's thinning has to keep inside `1 – 1.5`, and its own re-pin is that same
+  walk. It runs after Task-51 too, whose evolution curve is one of the things the sheet it
+  re-reads records. It adds no run field, so **no** `SAVE_VERSION` step either.
+  **The shop leaf is folded in on purpose rather than given a task of its own:** the second
+  report of the thirteenth round asks for fewer routes on map 1, the regular count cannot move
+  (`regularCount = max(5, roomCount - 1)`, `plan.ts` 385, already sitting on the guaranteed
+  entry + 2x2 core), and the only free rooms are the specials — so the floor's **guaranteed shop
+  leaf** is the one to drop, and that is the same floor, the same on-ramp and one file away from
+  what this task already owns. A second task would have shared `src/scenes/RouteScene.ts` with
+  it and could not have been cut at all.
+  **One consequence to read into the plan's own prose:** `Task-70` holds
+  `src/scenes/RouteScene.ts` for that one line, so every later enumeration of the route
+  scene's queue (Batches 6–28) gains **5d** between 5b's Task-45 and 6's Task-41, and **5e**
+  behind it; `Task-69` claims no scene at all.
+
+### Batch 5e — a boss fields six, a mini-boss three
+- **Task-71** A boss always fields **six** Pokémon and a mini-boss always **three**, whatever
+  band the floor reads; **map 1** is the one exception, at **three** and **two**.
+- **Hot files:** `src/scenes/RouteScene.ts` (the boss/mini-boss roster build, 4587-4619) →
+  Task-71; `src/engine/run/roster.ts` + `roster.test.ts` (the new `count` option) → Task-71;
+  the new **`src/data/bosses.ts`** + `bosses.test.ts` → Task-71; `docs/maps-spec.md` §6 and its
+  §7 mini-boss row, `docs/battle-spec.md` §7's trainer-roster sentence,
+  `docs/balance/route-curve.md`'s Exceptions bullet, `docs/data-spec.md`'s table row and
+  `src/data/README.md`'s layout line → Task-71. It claims no `package.json`, `src/main.ts`,
+  `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts`, `src/data/run.ts`, `src/data/maps.ts`
+  or packed asset.
+- **Shape:** one task, alone, and it is the only batch that can host it. It wants
+  `src/scenes/RouteScene.ts` — the single place a boss or mini-boss roster is built — which
+  **5d's Task-70** already holds, and `docs/maps-spec.md`, which 5c (§4/§5) and 5d (§7) both
+  write; a batch is an antichain, so it can join neither and opens **Batch 5e**, one batch
+  behind 5d. It runs **before Batch 6** so Task-09's balance pass measures the parties that
+  ship and Task-17's docs pass reads a settled `docs/maps-spec.md` §6 and
+  `docs/battle-spec.md` §7. Its two numbers could have ridden `src/data/run.ts` (a field on
+  `LevelBand`) or `MAP_TUNING` (a `bossParty` column), and they deliberately do not: both files
+  are Task-69's in **5c**, and a boss's party size is a fact about the boss rather than about a
+  band or a map row — so they live in their own `src/data/bosses.ts`, which keeps the three
+  consecutive batches an antichain and leaves `src/engine/run/roster.ts` a single new optional
+  option. It adds no run field, so **no** `SAVE_VERSION` step, and it draws no RNG of its own:
+  the size only changes how many draws the roster's existing stream spends.
 
 ### Batch 6 — balance pass, Phase 9 docs, the battle SWITCH grid
 - **Task-09** Balance pass.
@@ -615,7 +795,8 @@ version chain is unchanged, and each of its three declared re-pins needed none.
   for `docs/routes-spec.md` §6, so the scroll takes the batch after this one, 6b.
   `Task-41` (the follower Pokémon) takes the one scene path this batch leaves free:
   Task-34 claims `src/scenes/BattleScene.ts`, so `src/scenes/RouteScene.ts` — free here,
-  held by Task-45 in Batch 5b and by Task-38 in 6b — is Task-41's, and its one `src/data/`
+  held by Task-45 in Batch 5b, by Task-70 in Batch 5d, by Task-71 in Batch 5e and by Task-38 in 6b
+  — is Task-41's, and its one `src/data/`
   path is a **new** accessor (`src/data/pokemonOverworld.ts`) rather than one of the number
   tables Task-09 tunes, so the two never share a file; its art is the committed
   `src/assets/pokemon/**`, which no batch claims.
@@ -1001,10 +1182,16 @@ version chain is unchanged, and each of its three declared re-pins needed none.
   and simply stop receiving new ones for free. It edits files Batch 11's reformat cleared, so it
   keeps them conforming (no new ledger line), the way Batches 12–18 do.
 
-### Batch 20 — the whole chrome takes the debug panel's palette
-- **Task-58** Every panel is the debug panel's own visual style: one dark, translucent
-  surface, one bright accent frame and one light ink, in place of the drawn set's light
-  windows and deep-black text.
+### Batch 20 — the whole chrome goes dark glass (the debug panel's seed)
+- **Task-58** Every panel becomes a **dark glass card**: one `#10161f` surface at **0.72**
+  alpha, a **1px hairline** frame with an inset top highlight and a soft drop shadow, an
+  **11px** corner, `#f8fafc` ink with `#94a3b8` for the secondary lines and the accent
+  `#7dd3fc` **only** on selection and controls — in place of the drawn set's light windows and
+  deep-black text. The direction is the **`t-glass` card of the untracked
+  `chrome-options.html`** in the repo root, picked by the human over the four other cards, and
+  it ships **without a real background blur** (Phaser has no `backdrop-filter`): the glass
+  reads from the low alpha, the hairline and the highlight. The full token list, the caveat and
+  the corner value live in `[Task-58]`'s entry below.
 - **Hot files:** all of them, which is why the pick says the task runs **alone**:
   `scripts/ui/build-chrome.mjs` (the palette it draws with), the three generated
   `src/assets/ui/{window,textbox,font}.png`, the generated `src/data/ui/chrome.json` and
@@ -1033,8 +1220,9 @@ version chain is unchanged, and each of its three declared re-pins needed none.
   **after** Batch 11, so it edits reformat-cleared files and keeps them conforming (no new
   ledger line), the way Batches 12–19 do. One consequence is written into the entry rather
   than hidden: Batch 8's accessibility audit ran against Task-16's chrome, so this task owes
-  its own contrast check instead of re-running Task-08, and the open question below offers
-  the light-panel alternative that would need neither the extra check nor this batch.
+  its own contrast check instead of re-running Task-08 — the only question of the two that the
+  eighth round raised and this batch still carries (the **direction** one is answered: the
+  light-panel alternative is rejected and the task ships the `t-glass` card).
 
 ### Batch 21 — the boss win no longer moves the player
 - **Task-61** Beating the map boss keeps the player where they stand instead of warping them
@@ -1076,9 +1264,10 @@ version chain is unchanged, and each of its three declared re-pins needed none.
   It is the round's only engine rule: it adds the fog accuracy term and the setup seam, and it
   is written **against** the shipped weather/terrain/gravity/trick-room rules rather than
   re-porting them (the coverage table already marks all four `port`,
-  `docs/balance/effect-coverage.md` 652/1133 and the terrain/weather rows). Its map filter may
-  reuse Task-45's `TilesetConfig.tileAnimations` (Batch 5b, merged long before) or draw an
-  overlay of its own — the spec freezes which, and the overlay keeps it free of a dependency.
+  `docs/balance/effect-coverage.md` 652/1133 and the terrain/weather rows). Its map filter is an
+  overlay of its own (Batch 5b's Task-45 ships **no** tile-animation contract: its grass step is
+  the scene's own overlay on the player's tile, so there is nothing to reuse and nothing to wait
+  for).
   The roll owns a dedicated stream keyed to the room's **stable** index
   (`routeIndexForRoom`, 969-972), so no existing `map`/`encounters`/`battle` stream moves and a
   fixed seed reproduces every condition; it lands **before** no batch in particular, but it is
@@ -1247,7 +1436,10 @@ round of four adds three (two behind the four-row Mart and one behind the four c
 the sixth round's fourth report is a measurement rather than a question, and it is written into
 `[Task-09]`'s entry instead — and the seventh round's single report adds two (both behind the
 trainer's Poké Ball row) — and the eighth round's three reports add five (two behind the debug
-panel's palette, one behind the switch window's move ⓘ and two behind the battle's info
+panel's palette — **the panel direction is answered** with the `t-glass` card of
+`chrome-options.html`, recorded in `[Task-58]`'s entry below, so that bullet is gone and only
+whether the audit is re-run stays open — plus one behind the switch window's move ⓘ and two
+behind the battle's info
 window) — and Batch 5's own one (Task-42's catch HP: the number or the fraction) was
 **answered with the fraction** and shipped, so its bullet is gone — and the ninth round's three
 reports add six (one behind the boss win, three behind the room battle condition and two
@@ -1256,7 +1448,14 @@ two behind the gated reward room and two behind the trade room) and the eleventh
 report adds six (all behind the no-items/no-heal room) and the twelfth round's single report
 adds four (the surface, the last move, the gesture and the confirm, all behind the MOVES tab's
 delete) — and every
-question here carries a written default rather than a guess. Everything the first plan
+question here carries a written default rather than a guess. **Batch 5b's seven are all
+answered**, so their bullets are gone and the answers live in `### Batch 5b` above and in its
+five specs: Task-45's two readings of the grass step (FireRed's own, on the player's tile),
+Task-46's destination (both outcomes to the main menu), Task-51's two calls (BST bands
+20 / 30 / 40 over the `LevelBand.bst` windows with the +10 floor, and the cap kept so a late
+line waits), Task-53's two panels (both, with the badge atlas and the chip fallback) and
+Task-54's two (the four stock rows taken literally, and the catalogue price with no markup
+table). Everything the first plan
 raised is decided: the Añil art was materialised into the local clone, `Task-23` is unblocked
 (the three moves ship, `D42`), `Task-24` is retired, the audio comes from the original
 games' audio rips under `sprite-sources/frlg-audio/`, and the Plates are made obtainable
@@ -1307,22 +1506,6 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
   pack for the ids the clone does not cover), which is a task of its own and not this one.
   Say which before Batch 6's branch is cut. Nothing else in the plan changes either way.
 
-- **`[Task-45]` (the grass step, Batch 5b): does the tile animate always, or only under the
-  player?** `TilesetConfig` has no animation contract today, so the reading is free: the
-  written default is FireRed's own — **every tall-grass cell sways continuously** on one
-  shared timer, which is what "como en rojo fuego" describes — and the alternative is a
-  rustle only on the tile the player stands on (a stepped beat, cheaper, but not what the
-  cartridge does and it reads as a one-off). Say which before Batch 5b's branch is cut.
-  Nothing else in the plan changes either way.
-
-- **`[Task-46]` (the score screen, Batch 5b): does a *won* run also return to the main
-  menu?** The report is only about losing, and one screen serves both outcomes
-  (`RunOverScene`'s `won` flag). The written default is **both** — the run is over either
-  way, the summary still reports the win, and the main menu is where a new run is started —
-  and the alternative is that only `won: false` goes to the menu while a win keeps pushing
-  the player into the starter pick. Say which before Batch 5b's branch is cut. Nothing else
-  in the plan changes either way.
-
 - **`[Task-47]` (the Continue row, Batch 7): `Map 3 · Deep Forest`, or the room as a third
   clause too?** The report asks for the map and the biome *instead of* the route string, and
   the route HUD's own title already reads `Map <n> · <biome>` (`RouteScene`, 2058). The
@@ -1371,21 +1554,6 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
   `docs/design-spec.md` §5's own sentence describes. Say which before Batch 16's branch is
   cut. Nothing else in the plan changes either way.
 
-- **`[Task-51]` (the evolution rework, Batch 5b): where do the BST bands sit, and how does
-  the +10 rule round past the cap?** Two calls, both written as defaults. First: the bands
-  are the dex's own `bst`, low → **20**, mid → **30**, high → **40**, anchored on the run's
-  `LevelBand.bst` windows (`src/data/run.ts`, the windows `docs/balance/route-curve.md`
-  records), so a species lands where its power says — Eevee (325) stays 20, Pikachu (320)
-  rises to 30 by the +10 rule, Primeape (455, obtained at Mankey's 28) goes to 40; say if
-  the thresholds should instead be flat cutoffs, or if a plain "band value" should override
-  the +10 floor. Second: a species obtained above level 30 must now evolve at ≥ +10, and the
-  six finite maps cap out at **40** (`levelCapForMap`), so the late stone lines the report
-  does not name — Seadra (obtained at 32) wants ≥ 42 — only ever fire in infinite mode. The
-  written default is to **keep the cap** and let such an evolution wait (the report's rule
-  taken literally); the alternative is to clamp the rule to the last reachable level (40) so
-  a late line still evolves inside a finite run. Say which before Batch 5b's branch is cut.
-  Nothing else in the plan changes either way.
-
 - **`[Task-52]` (the wild pool, Batch 17): does the run's own starter count as caught?** The
   report says "un poke ya capturado", and the starter was picked rather than caught: the
   record the task adds is written by the catch fold (`resolveBattle`, 92-101) and `createRun`
@@ -1413,39 +1581,6 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
   move the room's stream and leave that band with no encounters at all; the alternative is to
   honour the rule literally and let the grass go quiet there. Say which before Batch 17's
   branch is cut. Nothing else in the plan changes either way.
-
-- **`[Task-53]` (the battle panel's types, Batch 5b): both panels, or only the player's?**
-  The report says "panel de combate" and the two HP panels are one builder (`drawSidePanel`,
-  `BattleScene` 1604-1663), so the written default is **both** — the foe's types are what the
-  player reads to pick a move, exactly as the panel already shows the foe's HP and status. The
-  alternative is the player's own panel alone. A second, smaller call travels with it: the
-  badges are the Añil type atlas the move cells and the starter cards already draw
-  (`src/data/typeIcons.ts`), with the text chip as the fallback for a name the atlas lacks —
-  say if a plain coloured chip is wanted instead everywhere, which is one line. Say which
-  before Batch 5b's branch is cut. Nothing else in the plan changes either way.
-
-- **`[Task-54]` (the Mart's four rows, Batch 5b): do the cures and the X-items leave the buy
-  list?** "Siempre … 4 objetos" is the whole stock, and the four rows it names are a ball pack,
-  one potion and two held items — so every `kind: 'status'` cure and every X-item the core and
-  the rotation carry today (Antidote, Full Heal, X Attack / Defense / Speed) can no longer be
-  **bought**; they would reach a run from the ground loot and the mini-boss reward only. The
-  written default is that the report is taken literally — exactly four rows, so the cures and the
-  X-items leave the Mart — because a fifth row is the thing the human is asking to be rid of; the
-  alternative is that the potion row becomes the band's cure row on the floors whose core carried
-  one (`mid`/`high`/`late`/`end`), which keeps the cures purchasable but stops the second row
-  being a Potion. Say which before Batch 5b's branch is cut. Nothing else in the plan changes
-  either way.
-
-- **`[Task-54]` (the Mart's four rows, Batch 5b): are cheap berry rows acceptable on the early
-  floors?** The two held rows take their **catalogue** price, and the cheapest held rows in the
-  catalogue are the berries (Oran 100, the status berries 200) — below the Potion's 300 on the
-  `early` and `low` bands, while "ya mas caros segun el objeto" describes the intention. The
-  written default is to **keep the catalogue price** and let the intent hold from `mid` on, where
-  the 1000-class utility items and then the 4000-class competitive set enter the pools (so the
-  two rows are the expensive ones exactly where the player has money); the alternative is a
-  per-band held **markup** table beside `SHOP_BALL_PACK`, so every band's held rows sit above its
-  own potion and the early floor sells berries at a premium. Say which before Batch 5b's branch is
-  cut. Nothing else in the plan changes either way.
 
 - **`[Task-55]` (the four containers, Batch 18): does the battle's FIGHT menu draw them too?**
   "en moves" names the panel, and the MOVES **tab** is what the report's reason needs (a TM is
@@ -1478,28 +1613,6 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
   trainer started with; the alternative is the literal shrinking count, which is one fewer line
   (`take(liveCount)`) and never reveals the original team size. Say which before Batch 6b's branch
   is cut. Nothing else in the plan changes either way.
-
-- **`[Task-58]` (the whole-chrome restyle, Batch 20): does the panel **interior** go dark, or
-  only the frame?** The report says the panels should be "estilo visual como el de debug", and
-  the debug panel is dark (`background:#10161fe6`, `src/dev/debugMenu.ts` 296-299) while
-  Task-16's shipped set keeps the FRLG **light** window (`#f8f8f8` under the deep-black
-  `FRLG_INK`) and only darkens its battle box. The written default is the **full match**: the
-  interior becomes the palette's own `#10161f` at the panel's degree (~0.90), the 2px frame is
-  the debug panel's accent `#7dd3fc`, the ink flips to the light body tone the palette already
-  names (`docs/art-direction.md` 14: "UI text `#f8fafc`") with one muted tone for the
-  secondary lines, and every light container fill that pairs with that ink moves with it
-  (`moveGrid`'s cells, `abilityInfo`'s button, the command cells, the HUD's rows, the starter
-  cards) — which is why the task claims every scene and most of `src/ui/**` and sits in
-  **Batch 20**, behind every batch that owns one of those files. The alternative is the
-  **frame-only** re-skin: the accent border, its 2px width, the corner and the ~0.90 alpha over
-  the light interiors with `FRLG_INK` kept, which needs no ink flip and no container re-tint and
-  would therefore fit in **Batch 5b**, right after Task-16 — but it leaves the panels light, so
-  it is only "like debug" in their frame. Say which before Batch 20's branch is cut. Answering
-  it the alternative way empties Batch 20 and moves this task to 5b; nothing else in the plan
-  changes either way. (The panel's own type treatment is *not* a question: the debug overlay's
-  `12px/1.4 monospace` is a DOM font, and adopting a typeface is a separate job Task-16 already
-  ruled out of its own scope — this task keeps the bitmap face and moves only its tone and its
-  halo.)
 
 - **`[Task-58]` (the whole-chrome restyle, Batch 20): does the accessibility audit have to be
   re-run after it?** `[Task-08]` (Batch 8) audits contrast, colour-only information and
@@ -1970,6 +2083,145 @@ floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
       (`parseRun`, `src/engine/save.ts`, 574-657) — unless Task-48's open question is answered
       with its "first **attempt**" reading, which would take 17 → 18 in Batch 14 and push this
       step to 18 → 19. *(Batch 17)*
+- [ ] **[Task-70] The early floors thin out: maps 1-2 place fewer trainers and less loot, and
+      map 1 hangs fewer routes.**
+      The second half of the level curve's re-plan, and a balance wish rather than a defect: a
+      run's first steps are the heaviest in the game. **The measurement, from the sheet's own
+      table:** map 1 places **T̄(1) = 11.33 trainers** over the three seeds while the last floor
+      places **14.67** (`docs/balance/route-curve.md`; `src/engine/run/curve.test.ts` rebuilds
+      every room of every map the way `RouteScene` does and is where those numbers are
+      re-measured), so the opening floor already fields near end-game density — and it holds
+      **7 or 8 rooms** against a guaranteed minimum of six.
+      **Geometry is not an option, and that is the whole reason this task touches the
+      population pass instead.** A floor needs at least **six rooms** — the entry leaf and the
+      boss leaf plus a closed cycle (`docs/maps-spec.md`, 57-61, `D30`) — and a room is never
+      smaller than **30x30**, with the entry and boss rooms pinned to exactly that
+      (`docs/maps-spec.md`, 41-42; `MAP_MIN_ROOM_SIZE`, `src/data/maps.ts` 43), so maps 1-2
+      already sit at the generator's hard minimum (`MAP_TUNING` rows 1-2: `routes 6..6`,
+      `size 30..30`, 56-57) — the **regular** floor cannot shrink, and the only rooms a floor
+      still chooses are its **special leaves** (fix shape 5) — and a 30x30 room already lands in
+      the **medium** map-size tier
+      (`src/data/mapSize.ts`, 26-28: `minArea` 24x24 = 576), which is where a slice of the
+      population comes from. What is left is **how many** trainers and items a floor's rooms
+      are populated with.
+      **How a floor's population is built today.** `placeTrainers` (`src/engine/routes/sketch.ts`,
+      1208-1387) places **one guard on the spine** (1362-1364), **one more by every optional
+      pocket** (1366-1378) and then the map-size tier's bonus
+      (`trainerBonusForSize(tiles[0].length, tiles.length)`, 1380-1384,
+      `src/data/mapSize.ts` 56), and `placeItems` weights each pocket by the band's
+      `itemChance` / `hiddenChance` (`ROUTE_LOOT`, `src/data/loot.ts`). Both knobs are per
+      **band** in the numbers and per **room** in the generator, and the generator receives the
+      band only through what the caller passes it — which is why the fix has to reach the
+      request.
+      **Fix shape, as the recommended reading (the spec freezes the names).**
+      1. A new `src/data/population.ts` beside its test: a per-band
+         `BandPopulation = { trainerBonus: number; guardChance: number }` — the early bands
+         place one fewer trainer than their size tier asks for and give each pocket's guard
+         only a chance of existing, so the count thins without touching the geometry or the
+         spine guard. The numbers are balance data (`O-M5`).
+      2. `RouteRequest` (`src/engine/routes/sketch.ts`, 84-128) gains an **optional**
+         `population?: BandPopulation`; absent means today's behaviour (`trainerBonus 0`,
+         `guardChance 1`, no extra draw), so every existing test and caller is unchanged.
+         `placeTrainers` reads it: the tier bonus is `max(0, tier + population.trainerBonus)`
+         and each pocket's guard is rolled off the route's own `Rng` with `guardChance` —
+         **one extra draw per pocket**, which is exactly the sort of thing that re-pins a fixed
+         seed, so it is named below.
+      3. `src/scenes/RouteScene.ts` passes it in `buildRoute`'s request beside `loot`,
+         `hiddenChance` and `itemChance` (`population: POPULATION[band.id]`, around
+         1113-1136) — one line, the only scene change.
+      4. The loot half is the per-band table itself: `early` and `low` in `ROUTE_LOOT`
+         (`src/data/loot.ts`, 37-55) get a smaller `itemChance` (and, if needed, a slightly
+         flatter pool), so the early floors hold fewer ground items.
+      5. **Map 1 hangs no shop leaf** (the thirteenth round's second report, «en el piso 1 igual
+         es mejor reducir numero de rutas»). The regular room count is already at the
+         generator's floor and cannot drop: `planMap` rolls `roomCount = rng.int(routes.min,
+         routes.max)` (`src/engine/maps/plan.ts`, 381) and then clamps `regularCount = max(5,
+         roomCount - 1)` (385), because `buildFloor` (190-259) always grows the single-door
+         **entry** plus the 2x2 core closed into a 4-cycle — a floor needs at least six rooms
+         (`docs/maps-spec.md`, 57-61, `D30`) — and the **boss** is one more dead-end leaf on top
+         (`appendBoss`, 351-366), so with `routes: { min: 6, max: 6 }` map 1 is already the
+         minimum six before any special. What it *does* carry is the **guaranteed shop leaf**
+         (424-434) and, on half the seeds, the **mini-boss** leaf (`rng.next() <
+         MINI_BOSS_CHANCE`, 438-441; the mega-stone leaf only from map 3, 442-445), i.e. **7 or 8
+         rooms — the 8 / 7 / 8 the curve test already measures**. The frozen reading is that
+         **map 1 hangs no shop leaf** (a shop the run has no money for is dead weight, and the
+         run starts with its 10-ball pack anyway) and that the mini-boss roll stays as it is, so
+         map 1 becomes **6 rooms, or 7 when its mini-boss rolls**. The two rejected readings are
+         named rather than hidden: dropping the mini-boss roll as well (one more room, but it
+         also removes the run's first mini-boss), and taking the regular count below six, which
+         means rewriting the guaranteed entry + core — **rejected**, because it re-pins every map
+         and route fixed-seed test and kills the `D30` guarantee the docs state.
+         *Where the code goes:* the special pass takes a per-map switch (e.g. a
+         `hangsShop(mapIndex)` helper beside the other chances, or a `no-specials` map guard) —
+         the spec freezes the name, and it must stay data-shaped rather than a literal inside
+         `planMap`.
+      **What it must not break.** The curve's own rule — `0.75 × T̄(m) × A(m) / needed(m)`
+      inside **1 – 1.5** for every finite floor (`src/engine/run/curve.test.ts`) — is the
+      acceptance criterion: thinning a floor lowers its budget, so maps 1-2's `early`/`low`
+      rows in `LEVEL_BANDS` (`src/data/run.ts`, 26-81) may have their `trainerXp` raised by
+      this task, **numbers only**, and nothing else in that file moves (`bst` windows,
+      `trainerSize` and the level windows are Task-69's). The window must hold at both ends —
+      the thinned floors may not fall under **1**, because the rule is what makes the game
+      pay its own cap by fighting trainers.
+      **Tests.** `src/engine/run/curve.test.ts` mirrors the scene's request in
+      `buildFloorRoom` (37-53) and so learns the population field with it, and its window
+      assertion (119-131) is the one that must stay green over all eight floors — its `T̄(m)`
+      per seed is re-pinned by the sheet. `src/engine/routes/trainers.test.ts`'s
+      "scales the count with the map size" case (227-232) and `src/engine/routes/sketch.test.ts`'s
+      `trainers.length > 0` cases (309, 571, 628) are the generator-side regressions that must
+      still hold; the request's own determinism cases (`sketchRoute(a)` twice, 145 / 570) still
+      pass because the draw is seeded. `src/data/loot.test.ts` is a **reader** and must stay
+      green: the early pool keeps every id its reachability and `D16` rules cover.
+      `src/engine/routes/validate.test.ts`'s fixed-seed attempt pin (456-513, `sweep-b`
+      attempt 0) builds its request without a population, so it must stay untouched — if it
+      moves, the default is not neutral, and that is a defect to fix rather than a pin to bump.
+      **The room-count half re-pins the map tests.** `src/engine/maps/plan.test.ts` asserts a
+      shop on **every** floor twice — the shared plan assertion (`expect(specials.filter((room)
+      => room.special === 'shop')).toHaveLength(1)`, 167) and the dedicated case "gives every
+      floor exactly one shop, hung near the entry" (238-257, which loops `mapIndex` 1..8) — and
+      both become "every floor but map 1", with a new case pinning that **map 1 hangs no shop
+      leaf and therefore holds six rooms (seven when its mini-boss rolls)**: the shop leaf was
+      the last special added before the mini-boss roll, and dropping it removes the two
+      `rng.int` draws that rolled the leaf's own width and height (`addSpecial`, 414-422), so
+      **map 1's special pass shifts** — the mini-boss roll moves to the draws the shop's size
+      used to spend — while every other map's plan is untouched. That is the fixed-seed
+      re-pin to state in the report, together with the sheet's rooms column (8 / 7 / 8 becomes
+      7 / 6 / 7) and `src/engine/run/curve.test.ts`'s per-seed room counts, which it measures
+      rather than pins. `src/ui/mapView.test.ts` builds its own marker fixture (229-231) and is
+      expected to stay untouched; `src/ui/mapView.ts` changes only if a marker really moves
+      (the view draws a leaf's marker from the plan, so an absent leaf is a missing marker, not
+      a new branch) — say which in the report.
+      **Docs:** `docs/route-generator.md`'s population pass (§3.4-3.5, 243-260 and the trainer
+      section) gains the per-band population table and the guard chance;
+      `docs/balance/route-curve.md` records the re-measured walk (Task-69 owns that file in
+      Batch 5c, so this task re-reads and re-pins it); the two files this task owes are
+      **`docs/maps-spec.md` §7** (the shop row's
+      "exactly one" and the "The shop is guaranteed; the mini-boss leaf rolls with a 50%
+      chance" sentence, 184-193, plus `O-M4` at 264-265) and **`docs/design-spec.md` §7** (the
+      shop bullet, 256-258, which says "a shop, always one per floor, near the entry"); and
+      `src/data/README.md` gains its `population.ts` line.
+      Out of scope: `MAP_TUNING`, `FINITE_MAPS` and the level bands (Task-69's), the **route
+      geometry** (layer sizes, the entry + 2x2 core, the cycle-closing pass, the 30x30 minimum),
+      the map-size tiers (`src/data/mapSize.ts`'s own thresholds), the biome terrain counts
+      (`grassPatches`/`ledges`), the archetype pool and its roster rules, the boss/mini-boss
+      **party sizes** (Task-71, Batch 5e) and their injections (the scene adds those on top of
+      the route, so they are outside the budget), the shop's own stock (Task-54, Batch 5b) and
+      the Mart panel. No run field moves, so **no `SAVE_VERSION`** step.
+      *Dependencies:* **Task-69 (Batch 5c)** — the eight-floor walk, the re-spanned
+      `LEVEL_BANDS` and the `needed(m)` numbers it ships are the rule this thinning must stay
+      inside, and its `docs/balance/route-curve.md` is the sheet this task re-pins. Batch order
+      covers the rest: it wants `src/scenes/RouteScene.ts`, which **every** batch from 6 to 28
+      already holds (6 Task-41, 6b Task-38, 7 Task-31, 8 Task-08's every-scene sweep, 8b
+      Task-35, 9 Task-39, 9b Task-40, 10 Task-26, 11 Task-29's ledger, 12 Task-30, 13 Task-44,
+      14 Task-48, 15 Task-49, 16 Task-50, 17 Task-52, 18 Task-55, 19 Task-56, 20 Task-58, 21
+      Task-61, 22 Task-62, 23 Task-63, 24 Task-64, 25 Task-65, 26 Task-66, 27 Task-67, 28
+      Task-68), so it opens the plan's new **Batch 5d**, one batch behind Task-69 and still
+      **before** Batch 6, so the balance pass tunes the density that ships. It runs after
+      Task-51 (Batch 5b) too, whose evolution curve is one of the things the sheet it re-pins
+      records. The room-count half keeps the plan's other two writers apart rather than beside
+      it: `docs/maps-spec.md` §4/§5 are Task-69's in 5c and §6 is Task-71's in 5e, and this task
+      takes §7 — **different batches**, which is what an antichain allows; the same file's
+      §7 is Task-54's in 5b, already merged by the time this branch is cut. *(Batch 5d)*
 
 ## Phase 3 — Battle engine core (pure, headless, tested)
 
@@ -3006,6 +3258,17 @@ Ports of Showdown handlers, in batches, on the hook names in
         `trainerXp` chain (`src/data/run.ts` 26-81), both balance data; whatever moves,
         `src/engine/run/curve.test.ts` re-pins it and `docs/balance/route-curve.md` records the
         new walk (its `A(m)` column should then agree with the test's own average).
+      - **The shape is decided, so this pass no longer has to choose it.** The human re-planned
+        the curve after a design discussion: a finite run becomes **eight maps that end at 55**
+        with a **2-9** first floor — so a floor worth a single level is *not* the wanted shape —
+        and `[Task-69]` (Batch 5c) implements the table, the re-spanned `LEVEL_BANDS` and the
+        `trainerXp` chain, with `[Task-70]` (Batch 5d) thinning maps 1-2 behind it. Both run
+        **before** this batch, so what is left here is the harness, the battle-side numbers and
+        whatever the new walk's `A(m)` measures still disagree with: read
+        `docs/balance/route-curve.md` as `[Task-70]` leaves it, do not re-tune the curve, and do
+        not re-pin `src/engine/run/curve.test.ts` (it is theirs). Its claim on the sheets under
+        `docs/balance/` is unchanged — `[Task-69]` writes `route-curve.md` two batches earlier
+        and `[Task-51]`'s `## Evolution levels` section is in it by then.
       *Dependencies:* none — it reads `docs/balance/route-curve.md` and the per-band
       `trainerXp` rule Task-10 shipped (archived with Batch 1). It is also the
       producer of the reusable harness: a later task that wants to run a scripted
@@ -3251,11 +3514,13 @@ cycles one biome.
       `src/scenes/RouteScene.ts` (Task-16's in Batch 5) and the biome atlases are free, and
       it runs **before** Batch 6 so Task-17's docs pass reads a settled
       `docs/tileset-spec.md`. *(Batch 5b)*
-- [ ] **[Task-58] Every panel takes the debug panel's own visual style.** Reported in play, while
-      Batch 5 was in flight: «los paneles que sean estilo visual como el de debug» — the game's
-      windows should read like the dev overlay's, which means one **dark** translucent surface,
-      one **bright accent** frame, one **light** ink and the muted tone that goes with it, instead
-      of the drawn set's light windows and deep-black text.
+- [ ] **[Task-58] Every panel becomes a dark glass card (the `t-glass` direction).** Reported in
+      play, while Batch 5 was in flight: «los paneles que sean estilo visual como el de debug» —
+      the dev overlay is where the report points, and the look it seeded has now been rendered and
+      chosen: the game's windows become one **dark, translucent** `#10161f` surface behind a
+      **1px hairline** frame, one **light** ink, one muted secondary tone and one accent reserved
+      for **controls and selection**, instead of the drawn set's light windows and deep-black
+      text.
       **This is a follow-up to `[Task-16]`, and the edge is real.** The chrome it re-tunes is the
       set Task-16 is drawing in the batch in flight — `scripts/ui/build-chrome.mjs`, the generated
       `src/data/ui/chrome.json` and `src/data/ui/font.json`, the three `src/assets/ui/*.png`,
@@ -3263,81 +3528,119 @@ cycles one biome.
       task cannot be written before that one ships; Batch 5 is **cut** (its four specs are written
       and its four branches are cut), so the contradicting report is registered here as the
       follow-up rather than folded into it, and this task's own spec is written when its batch is
-      cut, by which time Task-16 has merged. The values it is written against are the ones Task-16
-      ships, verified in its worktree today.
-      **What the debug panel's style is, exactly.** `installDebugMenu` (`src/dev/debugMenu.ts`) is
-      the tree's only debug panel and it is a **DOM overlay**, so its style is CSS, not a nine-slice
-      (296-299): `position:fixed;right:8px;bottom:8px;z-index:9999;…;padding:10px;min-width:238px;`
-      `background:#10161fe6;border:2px solid #7dd3fc;border-radius:8px;color:#e2e8f0;`
-      `font:12px/1.4 monospace;`. Its parts are the palette: a bold accent title `#7dd3fc` (302-304,
-      the `DEBUG · tools` line), a muted status tone `#94a3b8` (307), sunken fields
-      `background:#0f172a;border:1px solid #334155;border-radius:5px` (317-318), ordinary buttons
-      `background:#1e293b;border:1px solid #7dd3fc` (278-279) and primary actions
-      `background:#0e7490;color:#f8fafc` (361, 463, 608, 630, 830, 905) with the heal control at
-      `#166534` (833). Its surface is not invented either: `docs/art-direction.md` line 14 already
-      declares "Background `#10161f`, UI text `#f8fafc` on `#000000aa`", and the overlay is that
-      sentence's only implementation in the tree.
-      **What Task-16 ships instead, so the task has something concrete to change.** The drawn set
-      goes the other way on both counts: `scripts/ui/build-chrome.mjs` draws `BEZEL = 0x0b0b10`,
-      `KEYLINE = 0x3a3d52`, `FIELD_DARK = 0x11121a`, `HIGHLIGHT = 0xffffff` and
-      `FRAME_SHADOW = 0x000000` (23-27) with the **light** window keeping the FRLG sheet's own
-      dominant opaque colour (`dominantColour`, 59-77 — `#f8f8f8`, per the worktree's
-      `docs/art-direction.md` 17-20), the nine-slice corners and alphas frozen in
-      `src/data/ui/chrome.json` (window corner 20 / alpha 0.88, textbox corner 24 / alpha 0.94) and
-      the ink `FRLG_INK = 0x0b0b10` (`src/ui/frlgFont.ts`, 96) inking every string in the game.
-      Task-16's own §4 sentence says it in words (`docs/design-spec.md`, worktree 203-207: the dark
-      textbox, "the light **window** behind the HP panels … and the light windows ink their text
-      with the deep-black `FRLG_INK`"). Four tokens therefore differ, and each is one place:
-      **the surface** (a light `#f8f8f8` window against `#10161f` at the debug panel's ~0.90), **the
-      frame** (a `#3a3d52` keyline against a 2px `#7dd3fc` accent), **the corner** (20/24 texels at
-      the 4x canvas against an 8px radius) and **the text** (deep-black `FRLG_INK` against the
-      light body tone `#f8fafc` with `#94a3b8` for the muted lines). The controls' own tones travel
-      with them: the light fills that every container draws today (`MoveGrid`'s cells, badges and
-      info buttons, `src/ui/moveGrid.ts` 128-161; `AbilityInfoButton`, `src/ui/abilityInfo.ts`
-      51-52; the battle's command cells and bag tabs, `BattleScene` 481 and 600-604, 1704-1717; the
-      HUD's rows and cells, `RouteScene` 1525-1570 and 2618; the starter cards, `StarterScene`
-      253-277) become the overlay's own control tones — fill `#1e293b`, border `#334155`, sunken
-      `#0f172a` for a field, the accent `#7dd3fc` and its `#0e7490` for the selected or primary
-      one — which is exactly why this is a whole-chrome task and why it cannot share a batch with
-      anything.
+      cut, by which time Task-16 has merged. The values it **starts from** are the ones Task-16
+      ships (verified in its worktree today); the values it **ships** are the glass tokens below.
+      **The direction is decided, and the debug panel is only its seed.** The report's "estilo
+      visual como el de debug" was rendered before it was chosen: the untracked
+      `chrome-options.html` in the repo root draws the candidates on the same mock panels, and
+      the human picked its fourth card, **`t-glass` ("Glass oscuro")**, over (1) what Task-16
+      ships today, (2) the full debug-panel match, (3) the frame-only variant and (5) the slate
+      flat variant. This entry freezes that card's tokens; the spec is written against the
+      rendering, so whoever cuts Batch 20 opens `chrome-options.html` beside it.
+      **The frozen values, taken from the `t-glass` card (162-175).**
+      - **Surface:** `#10161f` — the tone `docs/art-direction.md` line 14 already declares — at
+        **alpha 0.72**, far more translucent than Task-16's light `#f8f8f8` windows (0.88) or
+        its battle box (0.94).
+      - **Frame:** a **1px hairline** `rgba(255,255,255,0.16)` at the panel's own edge — *not*
+        the debug panel's 2px `#7dd3fc` accent — with an inset top highlight
+        `rgba(255,255,255,0.14)` and a soft drop shadow under the card.
+      - **Corner:** **11px** at runtime.
+      - **Accent `#7dd3fc`, used sparingly:** only where something is selected or is a control —
+        a selected move slot, the Mega control, the command cell under the cursor, the HP chip —
+        and **never** as the border.
+      - **Ink:** `#f8fafc` body, `#94a3b8` secondary; a selected cell is
+        `rgba(125,211,252,0.16)` with an accent outline; ordinary rows are
+        `rgba(255,255,255,0.06)` with a `1px rgba(255,255,255,0.10)` border; the HP and XP
+        tracks are `rgba(255,255,255,0.12)` and the HP fill keeps its green gradient.
+      - The card's **typeface** is not a token: it is HTML, its `ui-monospace` is a DOM font,
+        and this task keeps the bitmap face (see *what stays*).
+      **What Task-16 ships that this replaces, so the diff is concrete.** The drawn set goes the
+      other way on every one of those tokens: `scripts/ui/build-chrome.mjs` draws
+      `BEZEL = 0x0b0b10`, `KEYLINE = 0x3a3d52`, `FIELD_DARK = 0x11121a`, `HIGHLIGHT = 0xffffff`
+      and `FRAME_SHADOW = 0x000000` (23-27) with the **light** window keeping the FRLG sheet's own
+      dominant opaque colour (`dominantColour`, 59-77 — `#f8f8f8`), the nine-slice corners and
+      alphas frozen in `src/data/ui/chrome.json` (window corner 20 / alpha 0.88, textbox corner
+      24 / alpha 0.94) and the ink `FRLG_INK = 0x0b0b10` (`src/ui/frlgFont.ts`, 96) inking every
+      string in the game. Task-16's own §4 sentence says it in words (`docs/design-spec.md`,
+      worktree 203-207: the dark textbox, "the light **window** behind the HP panels … and the
+      light windows ink their text with the deep-black `FRLG_INK`"). Four tokens move, and each
+      is one place: the **surface**, the **frame**, the **corner** and the **text**.
+      **The caveat this note exists for: the card's blur does not ship.** The card reads
+      `background: rgba(11,18,32,.72); backdrop-filter: blur(9px) saturate(1.15)` (162-163), and
+      **Phaser has no `backdrop-filter`**: a real blur behind a panel needs a render pipeline or
+      a render-texture pass, and the panels are repainted every feed frame (`refreshHud`,
+      1583-1585), which is exactly the hot path AGENTS.md forbids allocating in. The frozen
+      default is **no real blur**: the glass reads from the **0.72 alpha** plus the **1px
+      hairline** and the **inline top highlight**, with **no** per-panel blur pass, no new
+      dependency and no post-FX pipeline. The rejected alternative is named and parked — a
+      WebGL blur / render-texture pipeline is **out of scope for this task**, and if it is ever
+      wanted it is a task of its own. One surface gets a written second value instead of a
+      question: the battle **message box** is the one panel whose text sits over the busiest
+      background, so if the same 0.72 reads badly there the task may hold **that one** skin at
+      **0.80** — a data value in `chrome.json`, frozen by the spec and reported with the
+      contrast check.
+      **The corner is the one number to get right.** The card draws 11px, and the **packed
+      corner is the runtime radius in this set**: `addFrlgWindow` hands `chrome.window.corner`
+      straight to `setSlices` (`src/ui/frlg.ts`, 63-83) and the atlas is drawn 1:1, so the
+      shipped 20 / 24 *are* 20px / 24px on screen and the manifest's `size: 4` is the packer's
+      authoring note, which no runtime code reads. The packer must therefore draw **corner 11**
+      for both skins (not 44), and the frame's own band moves with the shape: `frameBand` is
+      `min(padding, corner)` (`build-chrome.mjs`, 101-107), so a 1px hairline at the panel's edge
+      replaces the inset `KEYLINE_WIDTH = 2` keyline (121-133) and the window's *drawn* band
+      clamps from 20 to 11 while the **content insets stay frozen** (`FRLG_WINDOW_PADDING`
+      20/16/8, `FRLG_TEXTBOX_PADDING` 36/28/28) — the spec verifies the content still clears the
+      ring on both skins and both layouts. Recorded so nobody mis-reads the direction: 11px is
+      rounder than the card's own "today" preview (7px) but **less** round than what actually
+      ships (20 / 24), and that is the card's look rather than an oversight.
       **Fix shape:** one re-tuned chrome set, one ink flip and one sweep of the containers. The
       packer's palette constants and `chrome.json` carry the new tokens (Task-16's own rule: a
-      chrome value lives in `src/data/ui/chrome.json` through the packer, and **no scene re-derives
-      one**), `src/ui/frlg.ts` exports whatever new token a scene needs (the accent and the muted
-      tone join `FRLG_WINDOW_PADDING` / `FRLG_WINDOW_ALPHA`), `FRLG_INK` becomes the body ink so
-      every existing `tint: FRLG_INK` draw site flips with one constant, and the containers whose
-      fills were light move with it. Two things the task must decide and freeze as data, because
-      they are the only ones `FRLG_INK` cannot carry: the sites that pair **two** tones — the four
-      tab pairs in the route HUD (`RouteScene` 2131, 2161, 2364, 5599, `active ? 0xf8fafc :
-      FRLG_INK`) and the battle's own (`BattleScene` 2104) — whose "selected" tone becomes the
-      accent rather than white, and the ad-hoc greys the scenes pass today (`0x6b6887`, `0x3a3956`,
-      `0x94a3b8`), which collapse into the one exported muted tone. The corner is the one token
-      that cannot grow freely: a nine-slice's band must fit inside the corner, and the window's
-      band is its own `padding.x = 20` (the worktree's `scripts/ui/build-chrome.mjs` 96-107 clamps
-      it), so the drawn radius grows at most to that and the **content insets do not move** —
-      `FRLG_WINDOW_PADDING`, `FRLG_TEXTBOX_PADDING`, every panel rect and every layout stay exactly
-      where they are, which is the whole reason Task-16 kept them.
+      chrome value lives in `src/data/ui/chrome.json` through the packer, and **no scene
+      re-derives one**), `src/ui/frlg.ts` exports whatever new token a scene needs (the accent,
+      the muted tone and the hairline join `FRLG_WINDOW_PADDING` / `FRLG_WINDOW_ALPHA`),
+      `FRLG_INK` becomes the light body ink so every existing `tint: FRLG_INK` draw site flips
+      with one constant, and the containers whose fills were light move with it: an ordinary row
+      or cell is `rgba(255,255,255,0.06)` over a `1px rgba(255,255,255,0.10)` border, the
+      selected or primary one is the accent's `rgba(125,211,252,0.16)` with an accent outline,
+      and the HP/XP tracks become `rgba(255,255,255,0.12)` with the HP fill's green gradient kept
+      (`MoveGrid`'s cells, badges and info buttons, `src/ui/moveGrid.ts` 128-161;
+      `AbilityInfoButton`, `src/ui/abilityInfo.ts` 51-52; the battle's command cells and bag
+      tabs, `BattleScene` 481 and 600-604, 1704-1717; the HUD's rows and cells, `RouteScene`
+      1525-1570 and 2618; the starter cards, `StarterScene` 253-277). Two things the task must
+      freeze as data, because `FRLG_INK` cannot carry them: the sites that pair **two** tones —
+      the four tab pairs in the route HUD (`RouteScene` 2131, 2161, 2364, 5599,
+      `active ? 0xf8fafc : FRLG_INK`) and the battle's own (`BattleScene` 2104) — whose
+      "selected" tone becomes the accent's fill plus outline rather than white, and the ad-hoc
+      greys the scenes pass today (`0x6b6887`, `0x3a3956`, `0x94a3b8`), which collapse into the
+      one exported muted tone `#94a3b8`. The **content insets do not move** —
+      `FRLG_WINDOW_PADDING`, `FRLG_TEXTBOX_PADDING`, every panel rect and every layout stay
+      exactly where they are, which is the whole reason Task-16 kept them.
       **What stays:** the nine-slice geometry and the frozen content insets, the glyph **shapes**
-      and the bitmap face (the overlay's `monospace` is a DOM font: adopting a typeface is a
-      separate job, and Task-16's spec already rules it out of scope), the HP bar, the ▶ cursor,
-      the type / status / category / item icons and their atlases, and every panel's layout. The
-      one thing the task owes beyond the tones is the check the new pairing needs: it introduces
-      the light-on-dark pairs itself (a selected tab against an unselected one, the HP bar's green
-      on a darker field, a dimmed ball or a faint status badge), so it carries its own contrast
-      pass — Batch 8's accessibility audit ran against Task-16's chrome and is not re-run (the open
-      question below).
+      and the bitmap face (the card's `ui-monospace` is a DOM font: adopting a typeface is a
+      separate job, and Task-16's spec already rules it out of scope — this task keeps the face
+      and moves only its tone and its halo), the HP bar and its green, the ▶ cursor, the type /
+      status / category / item icons and their atlases, and every panel's layout. The one thing
+      the task owes beyond the tones is the check the new pairing needs: it introduces the
+      light-on-dark pairs itself (a selected cell against an unselected one, the HP track's white
+      on the glass field, a dimmed ball or a faint status badge, the 0.72 surface against the
+      route behind it), so it carries its own contrast pass — Batch 8's accessibility audit ran
+      against Task-16's chrome and is not re-run (the open question below, which is the only one
+      of the eighth round's two that survives).
       Files: `scripts/ui/build-chrome.mjs`, the generated `src/assets/ui/{window,textbox,font}.png`
       and `src/data/ui/{chrome,font}.json`, `src/ui/frlg.ts`, `src/ui/frlgFont.ts` +
       `frlgFont.test.ts`, `src/ui/README.md` and `src/assets/README.md`, every `src/scenes/*.ts`
       with a drawn string or fill (`BootScene` only if its loader derives a colour; the drawn
       texture keys do not move), every `src/ui/**` module that fills a container or inks text, and
-      the two docs that describe the chrome (`docs/art-direction.md`, whose §Palette paragraph is
-      Task-16's, and `docs/design-spec.md` §3/§4). Tests: the packer's own determinism check (two
+      the two docs that describe the chrome — `docs/art-direction.md`'s §Palette paragraph and
+      `docs/design-spec.md` §3's panel sentence **and §4's window list**, all three of which are
+      **rewritten to describe the glass tones** (the dark surface, the hairline, the accent used
+      only for selection, the light ink) instead of the deep-black-on-light-field set they state
+      today. Tests: the packer's own determinism check (two
       runs byte-identical, as Task-16 lays it down), `src/ui/frlgFont.test.ts` for the ink and the
       manifest, and a contrast check over the new pairs — the pixel art itself is still validated
       by the smoke pass rather than by a Phaser unit test, the Task-16 precedent.
       Out of scope: the debug overlay itself (`src/dev/**` is dev-only and stays as it is — it is
-      the reference, not a consumer), a different typeface or a webfont, any layout re-cut, the
+      the seed of the look, not a consumer), **a real background blur** (a WebGL blur or a
+      render-texture pass per panel), a different typeface or a webfont, any layout re-cut, the
       FRLG originals under `src/assets/frlg/**` and their packers, `src/engine/**` (no rule moves),
       the settings model (`hudTransparent` keeps its id, its values and its meaning, as Task-16
       re-read it), and `Task-08`'s audit, which is not re-run.
@@ -3691,9 +3994,9 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       particle pass, drawn with the existing `TILE_SIZE`/`actorDepth` conventions and allocating
       nothing per frame). The engine's `setWeather`/`setTerrain`/`setFieldCondition` are **not**
       called from the route: the state is seeded through `createBattle`, so the battle's own log
-      and turn counters stay the only writers. The filter may reuse the tile-animation contract
-      `[Task-45]` ships (`TilesetConfig.tileAnimations`, Batch 5b) or be an overlay of its own;
-      the spec freezes which.
+      and turn counters stay the only writers. The filter is an overlay of its own (there is no
+      tile-animation contract to reuse: Batch 5b's Task-45 draws its grass step as the scene's own
+      overlay on the player's tile, 5b above).
       **Determinism (AGENTS.md's fixed-seed rule):** the roll is a pure function of the seed and
       the room index and draws from a dedicated stream; the fog/field term draws no RNG — so the
       regression is a fixed-seed walk: a seed's room conditions are identical on every rebuild, a
@@ -4023,6 +4326,168 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       stop being an antichain. Nor can it join Task-64/65/66, whose special-room layer
       (`src/engine/maps/plan.ts`, `src/ui/mapView.ts`) it extends in the three batches before it.
       *(Batch 27)*
+- [ ] **[Task-69] The level curve re-planned: eight maps that end at 55, and an infinite run
+      whose floors keep climbing from the bottom too.** Decided by the human after a design
+      discussion, not reported as a bug: the finite run is too short and its last floor is
+      already at the medium-fast curve's knee, so the campaign becomes **eight maps, levels
+      2 → 55**, with a **2–9** first floor and the per-floor step narrowing as the levels rise.
+      **The evidence, all of it already in the repo.** `xpForLevel` is `level³`
+      (`src/engine/run/progression.ts`, 47-50), so the XP a floor owes grows as the cube of its
+      cap: today's six floors need `needed(m)` = **91 / 1115 / 3582 / 8911 / 18944 / 31232**
+      (`docs/balance/route-curve.md`) and the **whole run to 40 is 64 000 XP** — while a
+      constant ten-level step to 100 would spend **271 000 XP on its last floor alone**
+      (`xpForLevel(100) − xpForLevel(90)`), nine times today's entire run. That arithmetic is
+      why the step has to shrink as the levels climb, and it is the shape this task freezes:
+      caps **9 / 16 / 23 / 30 / 37 / 43 / 49 / 55** over `MAP_TUNING`'s eight rows, i.e. steps
+      of **7 / 7 / 7 / 7 / 6 / 6 / 6** and level ranges `2–9, 9–16, 16–23, 23–30, 30–37,
+      37–43, 43–49, 49–55`, so `needed(m)` becomes **604 / 3367 / 8071 / 14833 / 23653 / 28854
+      / 38142 / 48726** and the whole run to 55 is **166 375 XP**. The first floor's cap of 9 is
+      **+4 for the level-5 starter** (`START_LEVEL`, `StarterScene` 27), which is the "one level
+      for a whole floor" the sixth round measured, fixed at the source.
+      **The rule that must still hold, and the numbers it constrains.** Beating **0.75 × T̄(m)**
+      of a floor's trainers must pay that floor's cap: `0.75 × T̄(m) × A(m) / needed(m)` inside
+      **1 – 1.5** (`src/engine/run/curve.test.ts` rebuilds every room of every map the way
+      `RouteScene` does, over the seeds `curve-a`/`curve-b`/`curve-c`; `docs/balance/route-curve.md`
+      records the walk). `T̄(m)` comes from the generator and `A(m)` = `trainerSize` × the mean
+      `experienceAward(level, 1, true)` across the map's range, so the free knobs are
+      `MAP_TUNING`'s ranges and `LEVEL_BANDS`' `trainerSize` / `trainerXp` chain
+      (`src/data/run.ts`, 26-81). **Re-span the six bands over 2..55, keeping their `BandId`s**
+      (`early` 2–9, `low` 9–16, `mid` 16–23, `high` 23–30, `late` 30–37, `end` 37–55 is the
+      recommended reading) so that each map still reads the band it reads today —
+      `bandForMap(m)` is `bandForLevel(levels.minLevel)` (`src/engine/run/floors.ts`, 88-95), so
+      a mistake here reshuffles which **BST pool** a floor fields (`D39`) and every floor's
+      roster, not just its XP. The `bst` windows themselves are re-checked rather than assumed:
+      they tile `0..800` for the pools and are pinned by `src/engine/run/pool.test.ts`, so if
+      they stay, the report says so and says why.
+      **The defect this task also fixes.** `mapTuning` (`src/data/maps.ts`, 72-93) grows a map
+      past the last row by pinning `minLevel` at the last row's `maxLevel` (line 78:
+      `Math.min(MAP_MAX_LEVEL, last.levels.maxLevel)`) while only `maxLevel` climbs, so an
+      infinite run's floors become **40–48, 40–56, …** and settle at a 40–100 range: the floor
+      stops climbing and starts *widening*. `minLevel` must keep climbing with `maxLevel`
+      (`last.levels.maxLevel + (extra - 1) * MAP_TUNING_STEP.levelStep`, clamped at
+      `MAP_MAX_LEVEL`, with `maxLevel` one step above it), which is what makes an infinite run
+      a ramp rather than a plateau. `MAP_MAX_LEVEL = 100` stays (the new top cap, 55, is well
+      below it) and `MAP_MAX_ROUTES` / `MAP_MAX_ROOM_SIZE` do not move.
+      **What moves, file by file.** `FINITE_MAPS` **6 → 8** and `MAP_TUNING`'s eight rows
+      (`src/data/maps.ts`); `LEVEL_BANDS`' level windows, `trainerSize` and `trainerXp`
+      (`src/data/run.ts`). **Pins that move:** `src/data/maps.test.ts` —
+      `levelRangeForMap(1)`/`levelCapForMap(1)` (16-21: `2–6`/`6` become `2–9`/`9`), the
+      contiguity loop (50-54, hardcoded to 2..6 → to `FINITE_MAPS`) and the infinite-step case
+      (56-65: `extra.levels.minLevel` is no longer `last.levels.maxLevel` but one step below
+      `extra.levels.maxLevel`) — and `src/data/run.test.ts`'s `bandForLevel` cases (15-22:
+      `5 → low`, `11 → mid`, `20 → late`, `32 → end` become e.g. `9 → low`, `16 → mid`,
+      `23 → high`, `30 → late`, `37 → end`, `55 → end`). **Pins that follow the data and must
+      not be edited:** `src/engine/save.test.ts` 294 (`levelCapForMap(3)`),
+      `src/engine/save.ts` 646, `src/engine/run/levelCap.test.ts` (7) and the four tests that
+      simply iterate `LEVEL_BANDS` (`src/data/shop.test.ts`, `src/data/loot.test.ts`,
+      `src/ui/shop.test.ts`) plus the pool coverage in `src/engine/run/pool.test.ts`. The walk
+      itself (`src/engine/run/curve.test.ts`) needs no new expectation beyond its existing
+      window assertion, which must stay green for all **eight** floors — re-measure `A(m)`
+      first, because the sheet prints 13.40 for map 1 and the test's own average over the
+      Early range disagrees with it.
+      **Docs:** `docs/balance/route-curve.md` (the caps table, `needed(m)`, the eight-floor walk
+      and the re-solved `trainerXp` — its `A(m)` column must then agree with the test's own
+      average) and `docs/maps-spec.md` §4/§5 (the "a table per map (1..6 today)" line at 144,
+      the cap sentences at 140/157-159, and the fact that the run has eight floors) plus §10's
+      **`O-M7`** (271-272, "How many maps a finite run walks … starts at **6** … the Phase 7 pass
+      may retune it"), which the human's decision resolves at **eight** — the answer this task
+      implements rather than leaves to the balance pass.
+      `docs/design-spec.md` §6's chain diagram is generic and stays. **`RUN_CHAIN.finiteLength`**
+      (40, `src/data/run.ts` 106-110) is deliberately **not moved**: it is the legacy flat-chain
+      length read only by `src/engine/run/chain.ts` and the dev menu, and the finite run is the
+      map chain (`FINITE_MAPS`) — say in the report that it was left alone.
+      Out of scope: the generator's population pass and the loot table (Task-70, Batch 5d), the
+      battle-side numbers and the harness (Task-09, Batch 6), `xpForLevel`/`MAX_LEVEL`
+      (`progression.ts`), `src/engine/run/chain.ts`, the evolution curve (Task-51, Batch 5b),
+      the save format (no run field moves, so **no `SAVE_VERSION`** step) and
+      `src/data/trainers.ts`'s money tables.
+      *Dependencies:* none — every table is shipped and this task moves numbers, not rules.
+      Batch order covers it: it needs `docs/balance/route-curve.md` (Task-51's in **Batch 5b**,
+      which re-pins the evolution curve against the shipped caps first), `docs/maps-spec.md`
+      and the `docs/balance/` sheets free at once (Task-17 and Task-09 hold them in **Batch 6**)
+      — so it opens the plan's new **Batch 5c**, alone, **after** 5b, and
+      Task-70's density pass follows it in **Batch 5d**. *(Batch 5c)*
+- [ ] **[Task-71] A boss fields six Pokémon and a mini-boss three.** Reported in play:
+      «los minibosses tendran siempre 3 pokes y bosses 6 menos en primer piso que es 2 y 3
+      relativamente» — the two fights that close a floor and open its reward should field a
+      **fixed** party instead of one that grows with the band, and **map 1** is the exception:
+      **three** on its boss and **two** on its mini-boss.
+      **Today the size is band-derived twice over.** `RouteScene.startTrainerBattle`
+      (4587-4619) copies the floor's band and mutates it: the boss gets
+      `{ ...band, minLevel: band.maxLevel, trainerSize: band.trainerSize + 1 }` (4597-4598) and
+      the mini-boss `{ ...band, trainerSize: band.trainerSize + 1 }` (4599-4601), and the size
+      itself is read by the roster builder — `const size = Math.max(1, band.trainerSize)`
+      (`src/engine/run/roster.ts`, 41). So the shipped bands make map 1 a **2-and-2** fight
+      (`early.trainerSize` 1, `src/data/run.ts` 32) and a late floor a **5-and-5**
+      (`end.trainerSize` 4, 77): the same floor's boss and mini-boss differ only by level, and
+      the party size is a side effect of the band the regular trainers read. The two streams
+      that build those teams are `${seed}:boss:${mapIndex}` and `${seed}:miniboss:${mapIndex}`
+      (4602-4607), which is where a fixed size changes what a seed rolls.
+      **Where the numbers live — the decision this entry must take.** They go in a **new
+      `src/data/bosses.ts`** beside its test, not on `LevelBand` and not on `MAP_TUNING`: the
+      band's `trainerSize` is the *regular trainer's* party (`D39`, read by `A(m)` in the curve
+      sheet), and a boss's party is a fact about the boss; `src/data/run.ts` and
+      `src/data/maps.ts` are also Task-69's files in **Batch 5c**, and a rule of its own keeps
+      the batches an antichain. Frozen surface:
+      `export type BossPartyKind = 'boss' | 'miniboss'`,
+      `export const BOSS_PARTY: Readonly<Record<BossPartyKind, Readonly<{ firstMap: number; size: number }>>>`
+      with `{ boss: { firstMap: 3, size: 6 }, miniboss: { firstMap: 2, size: 3 } }`, and
+      `export function bossPartySize(kind: BossPartyKind, mapIndex: number): number`
+      returning `firstMap` on map 1 (and for any degenerate index) and `size` from map 2 on —
+      an **infinite** run keeps the fixed size too.
+      **How it reaches the roster.** `RosterOptions` (`src/engine/run/roster.ts`, 14-22) gains
+      `count?: number`, and `trainerRoster` reads `Math.max(1, options.count ?? band.trainerSize)`
+      instead of the band alone; `RouteScene` passes `count: bossPartySize(isBoss ? 'boss' :
+      'miniboss', this.room.mapIndex)` and stops lying about `trainerSize` in its band copy
+      (the boss keeps `minLevel: band.maxLevel`, which is the cap; the mini-boss stays at band
+      levels). That leaves `src/engine/run/roster.ts` a two-line change and every existing
+      caller untouched, because the option defaults to today's behaviour.
+      **The award, stated rather than hidden (the second thing this entry freezes).** A
+      six-member max-level roster pays `experienceAward(cap, 1, true)` **six times** — roughly
+      six times what the floor budget's `A(m)` assumes — and bosses are **excluded** from the
+      75 % budget on purpose (`docs/balance/route-curve.md`, 105-107 and the 52-58 note that the
+      hand-placed boss and mini-boss are injected on top and are not part of the budget). The
+      frozen default is to **leave the award alone**: the boss is the floor's finale and its
+      reward is deliberately outside the rule that a floor's regular trainers pay its cap; the
+      alternative — capping it (the first member only, or a share of the roster) — is a new rule
+      inside `resolveBattle`'s award path (`src/engine/run/resolve.ts`, 92-101) and a balance
+      change of its own. Whichever ships, the report names it and the sheet's Exceptions bullet
+      records it. **A consequence to report as a reading, not a defect:** with the shipped
+      bands a fixed **3** makes a mini-boss *smaller* than an `end`-band regular trainer's party
+      (4), which is exactly what the human asked for and is Task-09's to weigh.
+      **Tests.** `src/engine/run/roster.test.ts` keeps its `toHaveLength(end.trainerSize)` case
+      (21) green — the default is unchanged — and gains: `count` overrides the band size, is
+      clamped to at least 1, a `count` larger than the pool repeats species the way the
+      existing splice does (43-51), and `assignMegaStone` still hands out one stone once (52).
+      A new `src/data/bosses.test.ts` pins the four numbers, the map-1 row and that an infinite
+      index (say 1, 2, 99) reads the fixed size. No test in the tree pins a boss **team** by
+      seed — the two stream keys live only in `RouteScene` and no test builds them — so the
+      fixed-seed subject here is the roster's draw count, and the regression is: for a fixed
+      `Rng`, a boss roster of `count` members is stable and its members come from the boss BST
+      window (`speciesPool(band, 'trainer', { boss: true })`, 45-49).
+      **Docs:** `docs/maps-spec.md` §6 (168, "The boss is a fixed, themed trainer at the map's
+      `maxLevel`" gains the fixed party and map 1's three) and §7's mini-boss row (185, "one
+      strong trainer" gains its three, two on map 1 — Task-70 writes §7's **shop** bullet in
+      5d and this task writes its **mini-boss** row one batch later, which is exactly what an
+      antichain allows); `docs/battle-spec.md` §7 (147, "Trainer rosters are generated at the
+      route's level band, never above the cap" — the boss is the exception, at the cap and at a
+      fixed size); `docs/balance/route-curve.md`'s Exceptions bullet (105-107), including the
+      uncapped-award note; `docs/data-spec.md`'s table (a row for `bosses.ts`) and
+      `src/data/README.md`'s layout list (its line).
+      Out of scope: the **levels** those parties field (the boss stays at the map's cap, the
+      mini-boss at band levels), the boss's archetype and sprite (`ace`), the mini-boss reward
+      window (`src/ui/rewards.ts`), the boss BST window (`bossBstWindow`, D39), the regular
+      trainers' `trainerSize`, the map's room count and its shop leaf (Task-70, Batch 5d), the
+      level curve (Task-69, Batch 5c), the palette rows in `docs/balance/` that Task-09 owns in
+      Batch 6, and `src/engine/save.ts` (no run field moves, so **no `SAVE_VERSION`** step).
+      *Dependencies:* none — the roster builder, the two trainer ids, the band accessors and the
+      balance sheet are all shipped, and the entry's own two calls (the numbers' home and the
+      boss award) are decisions taken here rather than edges. Batch order is the whole story: it
+      wants `src/scenes/RouteScene.ts` — the single place the two rosters are built — which
+      Task-70 holds in **Batch 5d**, and `docs/maps-spec.md` §6, which Task-69 (§4/§5, 5c) and
+      Task-70 (§7, 5d) both write, so no cut batch can host it and it opens the plan's new
+      **Batch 5e**, one batch behind 5d and still **before Batch 6**, so Task-09's balance pass
+      measures the parties that ship and Task-17's docs pass reads a settled §6. *(Batch 5e)*
 
 ## Phase 10 - Learnset, TMs & move typing
 
@@ -4412,6 +4877,32 @@ a UI helper. The target is English plus Spanish.
 Reported in play, awaiting triage. A bug becomes a task in the batch plan, and the
 fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what
 a finished batch still owes QA.
+
+**The level curve is re-planned, and it is not a report.** After a design discussion the human
+chose the campaign's new shape — **eight maps, levels 2 → 55**, a 2–9 first floor, with the
+per-floor step shrinking as the curve's cube bites — and it is registered as two tasks ahead of
+the balance pass rather than as a bug: `[Task-69]` (Batch 5c) rewrites `MAP_TUNING`,
+`FINITE_MAPS` and the level bands and fixes the infinite-run step that pins a deep floor's
+minimum at the last row's cap, and `[Task-70]` (Batch 5d) thins maps 1-2 — fewer trainers and
+less loot — so the on-ramp is gentler, without touching geometry (a floor already needs six
+rooms and 30x30 is already the room minimum, so the population pass and the loot table are the
+only levers left). Both carry their evidence, their paths and their re-pins in their own
+entries above, and neither adds a run field: the version chain stays **14 → 15 → 16 → 17 → 18**.
+
+A **thirteenth round** of **two reports** arrived after that one and is triaged in the same
+pass, so nothing waits here either. Both are **wishes** rather than defects. One is a fixed
+party size for the two fights that close a floor: «los minibosses tendran siempre 3 pokes y
+bosses 6 menos en primer piso que es 2 y 3 relativamente» (`[Task-71]`) — today the size is the
+band's `trainerSize` plus one, so map 1 is a 2-and-2 fight and a late floor a 5-and-5
+(`RouteScene` 4597-4601 over `trainerRoster`'s `Math.max(1, band.trainerSize)`, `roster.ts` 41),
+and the fix moves the numbers into a new `src/data/bosses.ts` with a `count` option on the
+roster builder — the boss's award stays outside the floor budget, which the entry states and the
+sheet records. The other is **fewer routes on map 1** (`[Task-70]`, which it widens): the
+regular room count is already `max(5, roomCount - 1)` over the guaranteed entry + 2x2 core
+(`plan.ts` 385 / 190-259), so the only free rooms are the special leaves and the floor drops its
+**guaranteed shop leaf**, becoming six rooms — seven when the mini-boss rolls — instead of the
+7-8 it holds today. Both carry their file-level diagnosis and their fix shape in their own
+entries above.
 
 Three reports arrived in one sitting and were triaged into the plan in the same pass, so
 nothing waits here: the learnset band's page controls (`[Task-38]`; the report itself is
