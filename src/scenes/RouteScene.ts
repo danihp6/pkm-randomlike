@@ -4191,7 +4191,12 @@ export class RouteScene extends Phaser.Scene {
       .setOrigin(0.5, 1) // was the default centre anchor
       .setScale(rest === undefined ? 1 : this.tileScale('atlas'))
       .setDepth(GRASS_STEP_DEPTH)
+      .setTint(config.grassRustleTint ?? 0xffffff)
       .setVisible(false);
+    // The atlas art's own first blade row is 6 on the parked cell but 0 on the closing one, so
+    // the overlay is clipped to the cell's rows 6-15: no frame of the beat ever draws above the
+    // player's hips (`docs/tileset-spec.md` §6). The procedural 24px tuft keeps its whole art.
+    if (rest !== undefined) step.setCrop(0, 6, 16, 10);
     this.grassStep = step;
     this.entitySprites.push(step);
     created.push(step);

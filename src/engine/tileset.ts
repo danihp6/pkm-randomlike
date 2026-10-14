@@ -211,6 +211,12 @@ export type TilesetConfig = Readonly<{
    * frames. Absent on a tileset with no grass art of its own (`docs/tileset-spec.md` §6).
    */
   grassRustle?: readonly number[];
+  /**
+   * The tint the route applies to the tall grass's rustle overlay so its blades sit in this
+   * field's own palette (`docs/tileset-spec.md` §6). `0xffffff` (or absent) leaves the art as
+   * stamped.
+   */
+  grassRustleTint?: number;
 }>;
 
 export const WALL_SHAPES: AutotileShapeSet = {

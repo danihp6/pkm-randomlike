@@ -194,11 +194,26 @@ Swapping is `config = TILESETS[nextId].config` plus loading
   parked overlay covers the player's **lower half** — 13.5 of their 28.5 visible px,
   from world y 153 down — while the cap, face, shoulders and upper torso stay clear.
   The sheet's blades-only rest frame (frame 0, empty until row 10, 7.5 px) is **not**
-  used: it covers too little for the standing pose. Only cell 45, the closing frame, is
-  opaque over the whole cell, for the one beat it is on screen; the three after it keep
-  the rip's transparent gaps. The beat is ~70 ms a frame, played **once per step** on
-  the player's own tile (never looping while they stand still). A tileset with no
-  `grassRustle` keeps the procedural tuft.
+  used: it covers too little for the standing pose. The four hit frames keep the rip's
+  transparent gaps; cell 45, the closing one, is opaque over its whole cell. The beat is
+  ~70 ms a frame, played **once per step** on the player's own tile (never looping while
+  they stand still). A tileset with no `grassRustle` keeps the procedural tuft.
+
+  Those five cells are the **outdoor palette's** effect art, stamped the same for every
+  field, so a field whose own tuft is a different palette declares a `grassRustleTint`
+  that the route applies to the overlay sprite: the forest is the only one today
+  (`0xC1D7EF`, the per-channel ratio of its dark tuft's mean `59,125,76` to the art's
+  `78,148,81` — `59/78`, `125/148`, `76/81`), while outdoor and cave take `0xffffff` and
+  are left exactly as they were. The route also **clips the overlay to the cell's rows
+  6-15** (`setCrop(0, 6, 16, 10)`, atlas branch only): the art's own first blade row is
+  6 on the parked cell but 0, 2 and 5 on the first three hit frames, so an unclipped
+  closing frame would paint the whole cell — tinted, the ground itself over the player.
+  Clipped, every frame of the beat draws the same 15 px band (world y 153 down, the
+  player's lower half) and the cap, face, shoulders and upper torso stay clear. A tint
+  multiplies colour and leaves alpha alone, so it reaches the blades only and the
+  field's own ground still shows through their gaps; a tileset with no `grassRustle` —
+  the PMD sheets' 24 px procedural tuft — takes neither the tint nor the crop. The beat,
+  the parked cell and the cells' alpha are untouched.
 - **Ledge** draws a three-tile run: frame 51 is the centre lip and frames `3`/`4`
   its end caps (`FRLG_LEDGE_LEFT`/`FRLG_LEDGE_RIGHT`, `LedgeFrames` in
   `src/engine/tileset.ts`); the FRLG fields stamp all three (`D26`), and the PMD
