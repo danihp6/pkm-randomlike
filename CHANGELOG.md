@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The forest's tall grass draws in the forest's own palette, and nothing it draws ever
+      covers the player's upper body.** Two halves, both scene/data: the FRLG fields declare a
+      per-field **`grassRustleTint`** on the tileset (`0xC1D7EF` for the forest, none for the
+      outdoor and cave fields, which share one config) applied to the single rustle overlay
+      sprite, because the decompilation's `tall_grass.png` is the **outdoor** palette's art and
+      the packer stamps the same five cells for every field — so in the forest (the only biome
+      `BIOME_ORDER` walks) the overlay painted light blades (78,148,81) over the field's dark
+      tuft (59,125,76), a `+19/+23/+5` per-channel mismatch the player read as "the floor turns a
+      lighter green when I step in"; the tint brings the parked overlay to (59,125,76), matching
+      the neighbouring tuft within a unit. And that same sprite is **cropped to the cell's rows
+      6-15**, so **no frame of the hit draws above cell row 6** — the closing frame used to be
+      opaque over the whole cell (816 px over the character on the desktop, 864 on the compact
+      layout) and, now carrying the ground's own colour, read as the background jumping on top
+      of the player; every frame's band now starts at row 6 (world y 153) and the character's
+      top ~15 px stays visible through the whole beat, on both layouts. The three atlases and
+      the packer are untouched, no run field, no `SAVE_VERSION` step, no RNG.
 - [x] **The level curve is re-planned: eight finite maps, levels 2 → 55, and an infinite floor
       that keeps climbing.** `MAP_TUNING` (`src/data/maps.ts`) carries eight rows — caps
       **9 / 16 / 23 / 30 / 37 / 43 / 49 / 55**, stepping 7/7/7/7/6/6/6 — so the first floor is

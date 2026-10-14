@@ -23,15 +23,17 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 5, Batch 5b and Batch 5c are shipped and archived.** Their twelve tasks merged in ID order
-behind the green gate (four, then five, then three) and the detail is in `CHANGELOG.md`'s
+**Batch 5, Batch 5b, Batch 5c and Batch 5cb are shipped and archived.** Their thirteen tasks merged
+in ID order
+behind the green gate (four, then five, then three, then one) and the detail is in `CHANGELOG.md`'s
 `## Unreleased`; Batch 5b is the batch that ended up packing the decomp's real FireRed grass
-rustle and Batch 5c the one that re-planned the level curve and finished that overlay, and both
-are closed below. **Batch 5cb is cut** — `[Task-74]`, the forest's tall grass
-painting a lighter green over its dark tuft (a defect, cut in front the way Batch 3b was cut in
-front of Batch 4) — followed by **Batch 5d** (`[Task-70]`, the first-floor on-ramp: fewer
-trainers, less loot, and map 1 hanging no shop leaf) and **Batch 5e** (`[Task-71]`,
-the fixed boss and mini-boss parties). All three sit **before**
+rustle, Batch 5c the one that re-planned the level curve and laid that overlay over the player's
+legs, and Batch 5cb the defect in front of 5d that fixed its colour and clipped its hit, and all
+three are closed below. **Batch 5d is the next batch cut** — `[Task-70]`, the first-floor on-ramp:
+fewer
+trainers, less loot, and map 1 hanging no shop leaf — followed by **Batch 5e** (`[Task-71]`,
+the fixed boss and mini-boss parties) and **Batch 5eb** (`[Task-75]`, the debug overlay's
+teleports and its two ignore toggles). All three sit **before**
 Batch 6 so that Task-09's balance pass reads the curve, the density and the parties that
 actually ship. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
@@ -532,12 +534,31 @@ measured one on the committed cells (the parked cell no more than 6 lighter than
 and no more than 30 darker; the four hit cells within ±30). The rejected reading — remapping the
 five frames' palette per field in the packer — is named with its costs (a repack of the three
 atlases and a per-field recolour map). Because the repo cuts a **defect in front** of the batch
-behind it (`[Task-33]` was "the bug batch cut in front of Batch 4"), it opens **Batch 5cb**, the
-letter following the batch it extends the way `4b` follows `4`, one batch ahead of **5d**. Its
-paths are `src/engine/tileset.ts`, `src/data/tilesets/frlg.ts` + `frlg.test.ts`,
-`src/scenes/RouteScene.ts` (one line) and `docs/tileset-spec.md` §6 — all of them free here, since
-the route scene is claimed by 5d and 5e only in the batches after it — so the batch is a single
+behind it (`[Task-33]` was "the bug batch cut in front of Batch 4"), it opened **Batch 5cb**, the
+letter following the batch it extends the way `4b` follows `4`, one batch ahead of **5d** — and it
+**shipped** there. Its
+paths were `src/engine/tileset.ts`, `src/data/tilesets/frlg.ts` + `frlg.test.ts`,
+`src/scenes/RouteScene.ts` (two lines) and `docs/tileset-spec.md` §6 — all of them free there, since
+the route scene is claimed by 5d and 5e only in the batches after it — so the batch was a single
 task and an antichain. Nothing here re-plans `Task-38`–`Task-73`, and Batch 4b stays `cut`.
+
+A **seventeenth round** of **one report** arrived after that one, and it is a **dev-tool** request
+rather than a play report; it adds **no dependency edge**, **no run field** and **no
+`SAVE_VERSION` step**. `Task-75` — «añade tarea para añadir a debug input para hacer tp entre pisos,
+entre rutas y a posicion concreta en la ruta — y boolean que permite ignorar salvajes y otro para
+ignorar entrenadores» — gives the debug overlay three teleports (floor, room, tile) and two
+booleans (no wild encounters, no trainer sight). It claims `src/dev/debugMenu.ts` + its test,
+`src/scenes/RouteScene.ts` and **`src/main.ts`** (every handler in this tree is wired there, not in
+the scene), and it reuses the shipped transitions (`advanceMap`/`advanceRoute`, `transitionTo`,
+`movePlayerTo`) instead of inventing a second way to change rooms. The route scene was held by
+**5cb** (cut when this report landed, now shipped) and is held by **5d** and **5e**, so the earliest slot that leaves it free
+is one behind 5e — the plan's new **Batch 5eb**, which takes the letter of the batch it follows the
+way `4b` follows `4` and `5cb` follows `5c`. Because the toggles are dev-only and unsaved, a run
+they are on no longer matches its seeded stream (a skipped roll spends no draw); the entry states
+that plainly instead of pretending the stream is untouched, and it also freezes that the boss and
+the mini-boss **are** trainers for the toggle's purposes — so the toggle stops their sight too, and
+the portal stays sealed until the boss falls (D31). Nothing here re-plans `Task-38`–`Task-74`, and
+Batch 4b stays `cut`.
 
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
@@ -667,42 +688,44 @@ anchor and the dev proved it was not the blocker (the captures before and after 
 pixel-identical); the second stopped the packer re-grounding the rip's frames, so the overlay
 draws **only the blades**, with the rip's own alpha; and the third — on the human's ruling that
 the still pose must cover about half too — parked the sprite on the rip's **settled frame**, so
-standing still covers **13.5 of the player's 28.5 visible px (47 %)** and leaves **15 px** clear,
-while the closing frame still closes over the cell for its ~70 ms. Cells **6** and **45-48** of
+standing still covers **13.5 of the player's 28.5 visible px (47 %)** and leaves **15 px** clear.
+Its closing frame was opaque over the whole cell — correct against the rip, but it hid the
+character's head (**816 px** over the player on the desktop, **864** on the compact layout), so the
+shipped defect batch **5cb** (Task-74) crops the overlay at cell **row 6**
+and no frame of the beat draws above the player's hips any more; that crop is the fix for the
+follow-up report, not a change to 5c's own cells. Cells **6** and **45-48** of
 the three FRLG atlases are the only art that moved, `docs/tileset-spec.md` §6 records the new
 rule, and none of the three added a run field or a `SAVE_VERSION` step, so the version chain
 stays **14 → 15 → 16 → 17 → 18**. Its three IDs are retired: they keep their place in the
 sequence and are never reused.
 
-### Batch 5cb — the forest's tall grass stops painting a lighter green *(cut)*
-**Cut.** Its one spec is written (`.agent_specs/task-74.md`) and its branch may be cut; it can gain
-no member.
-- **Task-74** The forest's tall grass stops painting a lighter green: each FRLG field declares a
-  **`grassRustleTint`** in the tileset data (`0xC1D7EF` for the forest, `0xffffff` for outdoor and
-  cave, derived as the per-channel ratio of the two cell means) and `RouteScene` applies it to the
-  one overlay sprite it already builds — no repack, no atlas change, the blades tinted and the
-  field's own ground still showing through their alpha.
-- **Hot files, one holder per path — all four are Task-74's, the batch's only task:**
-  `src/engine/tileset.ts` (the one optional `grassRustleTint?: number` field),
-  `src/data/tilesets/frlg.ts` + `frlg.test.ts` (the per-field values and the case that decodes the
-  cells and pins them with the declared tints applied), `src/scenes/RouteScene.ts` (one
-  `setTint` in `drawEntities`' overlay builder) and `docs/tileset-spec.md` §6 (the per-field rule).
-  It claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`,
-  `src/engine/save.ts`, `src/data/**` beyond the tileset table, and **no packed asset**: the
-  packer and the three `src/assets/frlg/*.png` stay exactly as Batch 5c shipped them, which is the
-  point of the tint over the rejected palette remap.
-- **Shape:** one task — so the batch is an antichain trivially — and it is a **defect cut in
-  front** of the batch behind it: the `[Task-33]` precedent ("the bug batch cut in front of Batch
-  4"), which is why it takes the letter of the batch it follows (`5cb`, the way `4b` follows `4`
-  and `3b` follows `3`). **Three batches in a row now want `src/scenes/RouteScene.ts`** — this
-  one, 5d's Task-70 and 5e's Task-71 — and the order 5cb → 5d → 5e is exactly what that serial
-  resource forces: a batch may hold a path a **later** batch also claims, but no two batches run
-  at once and no batch may hold a path a batch-mate does (each of these has one member, so each
-  is an antichain by construction). The defect goes first because a bug is cut in front, because
-  `src/data/tilesets/frlg.ts` + its test and `src/engine/tileset.ts` are nobody's right now
-  (Task-73's §6 line shipped with 5c), and because it must land **before** the two pending scene
-  tasks rewrite the same file. It adds no run field, so **no** `SAVE_VERSION` step — the chain
-  stays 14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44) → 18 (Task-52) — and it touches no RNG.
+### Batch 5cb — the forest's tall grass stops painting a lighter green over its dark tuft *(shipped, archived)*
+Task-74 merged alone behind the green gate (**1372** tests, `npm test` + `npm run build`) and the
+detail is in `CHANGELOG.md`'s `## Unreleased`; QA validated it green **twice**, once for the
+per-field tint and once for the row-6 clip. It shipped in two halves, both **data plus one scene
+line**, with no repack of any atlas. **(a) The tint.** The decompilation's effect art is the
+**outdoor** palette's while the packer stamps the same five rustle cells in every field, so in the
+forest — the only biome `BIOME_ORDER` walks — the parked overlay painted light blades
+(`78,148,81`) over the field's own dark tuft (`59,125,76`), `+19/+23/+5` per channel. Each FRLG
+field now declares a **`grassRustleTint`** in the tileset data (`0xC1D7EF` for the forest,
+`0xffffff` for outdoor and cave, which share one config, derived as the per-channel ratio of the
+two means) and `RouteScene` applies it to its single overlay sprite — `TilesetConfig` gained one
+optional field and nothing else, the tint colours the blades **only** (the cells keep their alpha,
+so the field's own ground still shows through), and the forest's parked overlay now measures
+`59.4, 125.2, 76.7` against the neighbouring tuft's `59.8, 125.3, 76.4`. **(b) The clip.** With the
+closing frame now wearing the ground's own colour it read as the background jumping on top of the
+player: it was opaque over the whole cell (its art starts at row 0, so it covered the head —
+**816 px** over the character on the desktop, **864** on the compact layout) and the hit "tapa todo
+el personaje". The same sprite is now cropped to the cell's **rows 6-15**
+(`setCrop(0, 6, 16, 10)`), so **no frame of the hit ever draws above cell row 6** and the parked
+band still covers the lower half exactly as before; the beat, the anchor, the frame list and the
+three atlases all stayed as Batch 5c shipped them. `src/data/tilesets/frlg.test.ts` pins both
+halves to the art (the tinted means against each field's tuft, and the five cells' first opaque
+rows `45 → 0, 46 → 2, 47 → 5, 6/48 → 6`), and `docs/tileset-spec.md` §6 records the per-field tint
+rule and the row-6 clip in place of the sentence that said the closing frame closed over the cell.
+The task added no run field, so **no `SAVE_VERSION`** step — the chain stays
+**14 → 15 → 16 → 17 → 18** — and it drew no RNG. Its ID is retired: it keeps its place in the
+sequence and is never reused.
 
 ### Batch 5d — the early floors thin out
 - **Task-70** Maps 1-2 place fewer trainers and less loot, and **map 1 hangs no shop leaf**, so
@@ -765,6 +788,30 @@ no member.
   consecutive batches an antichain and leaves `src/engine/run/roster.ts` a single new optional
   option. It adds no run field, so **no** `SAVE_VERSION` step, and it draws no RNG of its own:
   the size only changes how many draws the roster's existing stream spends.
+
+### Batch 5eb — dev teleports and the two ignore toggles
+- **Task-75** The debug overlay gets three teleports — a floor, a room inside the floor and a
+  concrete tile in the room — plus two dev booleans, one that stops the tall grass rolling wild
+  encounters and one that stops a trainer's line of sight; all of them dev-only, none persisted.
+- **Hot files:** `src/dev/debugMenu.ts` + `src/dev/debugMenu.test.ts` (the `DebugMenuHandlers`
+  additions, the Route tab's *Teleport* block, the two General checkboxes and the
+  `debugLocationLabel` helper + its case), `src/scenes/RouteScene.ts` (the five dev methods, the
+  two fields and the two hooks — `onTileEntered`'s roll at 4451 and `trainerSpotted`, 4559-4566)
+  and **`src/main.ts`** (the five wiring entries, the pattern every handler already follows) →
+  Task-75. It claims no `src/data/**`, `src/ui/**`, `src/engine/**` (the transitions are reused as
+  they are), `src/engine/save.ts`, `package.json`, `vite.config.ts`, packed asset or `docs/` line.
+- **Shape:** one task, alone, and it is the **earliest batch that leaves `src/scenes/RouteScene.ts`
+  free**: the scene's claimants are **5cb** (shipped, Task-74), **5d** (Task-70) and **5e**
+  (Task-71) — a batch may hold a path a *later* batch also claims, but a shipped batch is closed
+  and a cut one can gain no member — so this batch opens **one behind 5e** and takes the letter of
+  the batch it follows
+  (`5eb`, the way `4b` follows `4` and `5cb` follows `5c`). It is a **dev tool with no effect on
+  the player**: nothing depends on it, nothing waits on it, and it adds neither a rule nor a run
+  field — so **no** `SAVE_VERSION` step, the chain staying 14 → 15 (Task-13) → 16 (Task-31) → 17
+  (Task-44) → 18 (Task-52). Its toggles **do** move a run off its seeded stream while they are on
+  (a skipped roll spends no draw), which is acceptable *only* because they are dev-only and
+  unsaved, and the entry says so rather than pretending otherwise. It runs **before Batch 6** so
+  its three paths are nobody's when Batch 6's Task-09/Task-17/Task-34/Task-41 claim theirs.
 
 ### Batch 6 — balance pass, Phase 9 docs, the battle SWITCH grid
 - **Task-09** Balance pass.
@@ -1957,6 +2004,134 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
       from here on keeps the ledger from growing — a new file conforms, and a task that
       edits a ledgered file never adds a line to hide it.
       *Dependencies:* none. *(Batch 11)*
+- [ ] **[Task-75] The debug overlay can teleport between floors, rooms and tiles, and can ignore
+      wild encounters or trainers.** Reported as a task: «añade tarea para añadir a debug input
+      para hacer tp entre pisos, entre rutas y a posicion concreta en la ruta — y boolean que
+      permite ignorar salvajes y otro para ignorar entrenadores». Both halves are **developer
+      tools**, which is what makes them cheap and what keeps them out of the game's own rules.
+      **The surface today, verified.** `src/dev/debugMenu.ts` is the tree's only dev surface: a
+      DOM overlay mounted by `installDebugMenu` (288), which bails out unless `IS_DEVELOP` (289)
+      and which `src/main.ts` only imports behind the same gate (39-40, the dynamic import keeping
+      it out of the production chunk). Its contract is `DebugMenuHandlers` (**94-119**, the type
+      the reporter called `DebugHandlers`) and its tabs are General / Battle / Party / Bag / Route
+      / Map (1042-1050); the handlers are **wired in `src/main.ts`** (41-106), each one resolving
+      `game.scene.getScene('Route')` and calling a dev method on the scene. The scene's own dev
+      surface is the set of methods that begin `if (!IS_DEVELOP …) return` — `startDebugWildBattle`
+      (5024), `addDebugPokemon` (5034), `addDebugItem` (5061), `debugParty` (5069),
+      `setDebugSquadLevel` (5087), `editDebugPokemon` (5107), `healDebugPokemon` (5121),
+      `debugRouteContext` (6109, which mirrors the scene's `passThrough`/`hoverInspect` fields into
+      `DebugRouteContext` at 6123-6124), `setPassThrough` (6130), `setHoverInspect` (6136),
+      `generatorStepInfo`/`stepGenerator`/`resetGeneratorStep` (6199/6206/6219), `regenerateRoute`
+      (6238), `exportFrameMap` (6278) and `importFrameMap` (6288) — with the toggles' own fields
+      declared at 671-673 and reset in `create` (1211). **That pair is the pattern the two new
+      booleans copy.**
+      **What the teleports must reuse, not reinvent.** The run's position is `mapIndex`,
+      `routeInMap` and `arrivalEdge` (`RunState`, `src/engine/run/state.ts` 53-61), and both
+      transitions already exist as pure functions: `advanceRoute(run, roomInMap, arrivalEdge?)`
+      (161-175, which clamps the room and derives the door through `arrivalEdgeFor`) and
+      `advanceMap(run)` (185-204, which moves the map, resets the **per-map** bookkeeping —
+      `bossDefeated`, `discoveredRooms`, `defeatedTrainers`, `pickedItems`, `capturedRooms` — and
+      caches the new `levelCap`). The scene's own room-change path is `transitionTo(run)`
+      (**4524-4541**): it repaints the room (`buildRoom`/`drawTiles`/`drawEntities`/`drawItems`/
+      `drawTrainers`/`drawShopCounter`), spawns the player on the room's entry tile
+      (`this.player = { ...this.route.entry }`, 4536), re-bounds the camera and refreshes the HUD
+      (4540). `buildRoom` (976-1003) is what makes a room look like itself — the plan view
+      (`roomView`, 978), the boss when the floor's boss is alive (980-983, `bossTrainerId`) and the
+      mini-boss (986-992, `miniBossTrainerId`) — and `movePlayerTo` (~4340) is what puts the sprite,
+      its depth and the grass overlay on a tile. A teleport that goes through those three is
+      indistinguishable from a door.
+      **The two hooks the toggles short-circuit.** The wild roll is one line in `onTileEntered`
+      (4444-4461): the grass branch at 4447-4461 plays the rustle and then spends the room's stream
+      — `const encounter = this.encounters.step();` (**4451**) — to open a wild battle if it
+      returns one. The trainer trigger is `trainerSpotted()` (**4559-4566**), the first undefeated
+      trainer whose line of sight holds the player, which `onTileEntered` uses to start the chase
+      (`beginChase`, 4590) and hence `startTrainerBattle`.
+      **Fix shape, as the recommended reading (the spec freezes the names).**
+      1. **Three teleport handlers**, one per granularity, each returning the panel's own
+         result shape so the status line can say where it landed or why it refused:
+         `onTeleportFloor(mapIndex)`, `onTeleportRoom(roomInMap)` and `onTeleportTile(x, y)`, all
+         `DebugTeleportResult = Readonly<{ ok: boolean; where?: string; error?: string }>` (the
+         `importFrameMap` shape, 118).
+      2. **The floor teleport** builds the new `RunState` the way `advanceMap` does (position plus
+         the per-map resets) with the map index **clamped to `1 … FINITE_MAPS`** in a finite run
+         (and to `≥ 1` in infinite mode), then calls `transitionTo`. It **deliberately does not**
+         mark a skipped boss defeated, open a portal, spend a capture or touch `stats` — the floor's
+         own rules still hold on arrival (its boss alive, its portal sealed, D31), so crossing a
+         portal stays the boss's job.
+      3. **The room teleport** is `advanceRoute`-shaped (`roomInMap` **clamped** to the plan's
+         `0 … rooms.length - 1`, the arrival edge derived) plus `transitionTo`, so the destination
+         is a room reached through a door: its trainers live, its items present, its fog entry
+         recorded. Clamping rather than rejecting is the frozen call because the panel has a
+         status line to report the landing (`landed room 4 of 7`) — a silent reject would leave the
+         dev guessing; say which of the two the spec took in the report.
+      4. **The tile teleport** checks the requested tile against the live map: out of bounds is
+         clamped, a **solid** tile is refused (`ok: false, error: 'solid tile'`) because the player
+         would be stuck in it, and it does **not** change the room — that is the room teleport's
+         job. On success it sets `this.player`, calls `movePlayerTo` (which refreshes the sprite,
+         its depth and the grass overlay) and `refreshHud`, so the HUD and the minimap follow.
+      5. **`ignoreEncounters`** returns early from the grass branch **before** `this.encounters.step()`
+         (4451), so the tall grass never opens a battle; **`ignoreTrainers`** makes
+         `trainerSpotted()` (4559-4566) return `null`, so no sight-triggered battle opens. Both are
+         scene fields defaulting `false` and reset in `create` beside `passThrough`/`hoverInspect`
+         (671-673, 1211), mirrored into `DebugRouteContext` like their two siblings (6123-6124),
+         and **never written to the save**.
+      6. **The boss and the mini-boss count as trainers**: they are injected into
+         `this.route.trainers` by `buildRoom` (980-992), so `ignoreTrainers` also stops their sight
+         — which is the useful reading for walking a floor's geometry without a fight. **What that
+         does to the portal is stated, not hidden:** nothing in this task sets `bossDefeated`, so
+         the boss room's portal stays **sealed** (D31) while the toggle is on; a dev who wants
+         through either turns the toggle off and beats the boss, or teleports a floor up.
+      7. **The determinism note, stated honestly.** A toggle that skips a roll spends a different
+         number of `Rng` draws, so a run with **either** toggle on no longer matches its seeded
+         stream (the encounter sequence shifts by however many rolls were skipped). That is
+         acceptable **only** because both toggles are dev-only and unsaved: no shipped path can
+         reach them, no run field records them, and a normal run's stream is untouched. The entry
+         says that instead of pretending the stream is preserved.
+      **Contract, frozen (the scene is written against it).** In `src/dev/debugMenu.ts`:
+      `DebugMenuHandlers` gains `onTeleportFloor: (mapIndex: number) => DebugTeleportResult`,
+      `onTeleportRoom: (roomInMap: number) => DebugTeleportResult`,
+      `onTeleportTile: (x: number, y: number) => DebugTeleportResult`,
+      `onToggleIgnoreEncounters: (enabled: boolean) => void` and
+      `onToggleIgnoreTrainers: (enabled: boolean) => void`; `DebugRouteContext` gains
+      `mapIndex: number`, `roomInMap: number`, `roomCount: number`,
+      `tile: { x: number; y: number } | null`, `ignoreEncounters: boolean` and
+      `ignoreTrainers: boolean`; and one new pure, tested helper formats the readout —
+      `debugLocationLabel(context)` → `` `map 3 · room 2/7 · (14,9)` `` (a null tile drops the last
+      clause), the same shape as `partyMemberLabel`/`clampLevel` (167-236). The scene gains
+      `teleportToFloor(mapIndex)`, `teleportToRoom(roomInMap)`, `teleportToTile(x, y)` (all
+      `DebugTeleportResult`), `setIgnoreEncounters(enabled)` and `setIgnoreTrainers(enabled)` (both
+      `void`), each beginning `if (!IS_DEVELOP …) return`, and `src/main.ts` gains the five wiring
+      entries beside their siblings (41-106). **Controls, frozen:** the **Route** tab gains a
+      *Teleport* block — `Floor [input] Go`, `Room [input] Go`, `X [input] Y [input] Go` (the
+      existing `numberField`/`button` helpers, 274-384) and the `debugLocationLabel` readout on the
+      `routeInfo` line — and the **General** tab gains the two checkboxes in the row style already
+      there for *Pass through obstacles* / *Inspect hovered cell* (508-524), re-ticked by
+      `refreshRouteFields` from the context (543-544).
+      **Paths:** `src/dev/debugMenu.ts` + `src/dev/debugMenu.test.ts` (the contract, the controls,
+      the readout helper and its case), `src/scenes/RouteScene.ts` (the five dev methods, the two
+      fields and the two hooks) and **`src/main.ts`** (the five wiring entries — the one other file
+      the half needs, because *every* handler in this tree is resolved there rather than in the
+      scene). Nothing else: no engine change (`advanceRoute`/`advanceMap`/`roomView`/`arrivalEdgeFor`
+      are reused as they are), no `src/data/**`, no `src/ui/**`, no packer or atlas, no docs line
+      (a dev tool changes no rule and no player-facing text) and no `package.json`.
+      **No state, therefore no `SAVE_VERSION`:** the toggles are scene fields, the teleports only
+      move the run's existing position, and nothing is persisted beyond the run's own save write
+      that a door already does — the chain stays 14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44)
+      → 18 (Task-52). No RNG is drawn by either half (only *skipped*, as above).
+      Out of scope: the production build (the whole module stays behind `IS_DEVELOP`), a
+      teleport's own effect on the floor's rules (the boss, the portal, the capture and the
+      reward windows all keep their own state), the battle scene and its dev battle, the run's
+      save format, `src/dev/env.ts` and the menu's toggle key, the panel's own styling and tab
+      layout beyond the two new blocks, and any *gameplay* use of the two toggles.
+      *Dependencies:* none — the panel, the handlers, the scene's dev surface and both transition
+      helpers are all shipped. Batch order: it wants `src/scenes/RouteScene.ts` (its one scene
+      path) plus `src/dev/**` and `src/main.ts`, and the scene was claimed by **5cb** (Task-74,
+      shipped before this task's batch was cut) and is held by **5d** (Task-70) and **5e**
+      (Task-71) — a batch may hold a path a *later* batch also claims, but it cannot join a
+      **cut** batch and a **shipped** one is closed, and those three are the only ones that ever
+      claimed it — so it
+      opens its own **Batch 5eb**, one batch behind 5e, which is the earliest slot that leaves the
+      scene free (and `src/main.ts` free with it: no open task claims it). *(Batch 5eb)*
 
 ## Phase 1 — Dex accessors & data contracts
 
@@ -3456,102 +3631,6 @@ cycles one biome.
       Task-49, 16 Task-50, 17 Task-52 and Task-60, 18 Task-55, 19 Task-56) — which is why it opens
       the new **Batch 20** on its own, the way the reformat opens Batch 11, and why it runs
       **after** Batch 11 so it edits reformat-cleared files and keeps them conforming. *(Batch 20)*
-- [ ] **[Task-74] The forest's tall grass stops painting a lighter green over the dark tuft.**
-      Reported in play: «nada mas entrar el fondo se pone de otro color creo no se usa el fondo tile
-      del bosque si no de prado por eso es un verde mas claro» — the moment the player steps into
-      tall grass the floor under them changes colour; he suspects a meadow floor tile is used
-      instead of the forest's, which is why it reads as a lighter green.
-      **The diagnosis is measured, and it is a palette mismatch, not a wrong tileset.** The three
-      committed atlases were decoded and their opaque pixels averaged per cell:
-
-      | field | tall-grass ground (cell 5) | the rustle cells (6 and 45-48) |
-      | --- | --- | --- |
-      | `outdoor` | `78,160,99` | `78,148,81` · `80,162,101` · `101,171,84` · `92,160,75` |
-      | `forest` | **`59,125,76`** (the dark tuft, `tallGrass: [2,33]`) | **exactly the outdoor field's numbers** |
-      | `cave` | `78,160,99` (`tallGrass: [7,0]`) | the same as outdoor |
-
-      The cause in one sentence: the decompilation's `graphics/field_effects/pics/tall_grass.png`
-      that `[Task-45]`/`[Task-73]` pack is the **outdoor palette's** effect art, and the packer
-      stamps the **same five cells for all three fields** (`scripts/frlg/build-tilesets.mjs`;
-      `FRLG_GRASS_RUSTLE_FRAMES = [6, 45, 46, 47, 48]` in `src/data/tilesets/frlg.ts`), so on the
-      forest's dark tuft the parked overlay and the hit paint **light** blades — and the forest is
-      the **only** biome in `BIOME_ORDER` today, i.e. the field every run actually walks. The two
-      other fields match their own art well enough that nobody has ever seen this.
-      **Fix shape — the default is a per-field tint on the overlay sprite (a), and the rejected
-      reading is the packer's per-field palette remap (b).**
-      - **(a, frozen) a `grassRustleTint` per field, in data.** `TilesetConfig` gains one optional
-        field (`grassRustleTint?: number`, the multiplicative tint the scene applies to the one
-        overlay sprite it already builds), and `src/data/tilesets/frlg.ts` declares the row per
-        field. Its value is the factor that maps the effect art onto that field's own tuft,
-        computed from the two means — `59/78 ≈ 0.756`, `125/148 ≈ 0.845`, `76/81 ≈ 0.938`, i.e.
-        **`0xC1D7EF`** — which lands on the forest's tuft by construction (`78·0.7569 = 59`,
-        `148·0.8431 = 125`, `81·0.9373 = 76`); `outdoor` and `cave` declare **`0xFFFFFF`** (no
-        tint), since their blades already sit under their own tuft's tone. `RouteScene` applies it
-        once, where it builds the rustle sprite (`drawEntities`, `.setTint(config.grassRustleTint
-        ?? 0xffffff)`), so nothing per-frame and nothing on a tileset with no `grassRustle`.
-        **Why (a):** the overlay keeps its rip alpha (`[Task-73]`), so a multiplicative tint
-        colours **only the blades** and leaves the field's own ground showing through the
-        transparent pixels — exactly the wrong part of the composition is fixed and the right part
-        is untouched; no repack, so the three generated atlases and the packer stay as `[Task-73]`
-        left them; and a third palette (a new biome, `[Task-14]`) is one more row in the same
-        table, derived the same way.
-      - **(b, rejected) remapping the five frames' palette per field in the packer**, so the
-        forest's cells are stamped in the forest's own tones. It is the most faithful reading —
-        the atlas itself is then self-consistent per field — but it costs a **repack of the three
-        atlases**, a per-field recolour map to keep in step with each field's tuft source, and a
-        second image-recolour routine beside the alpha work `[Task-73]` just finished; it also
-        re-touches art for a defect the tint closes exactly. It is named here so nobody
-        re-discovers it as the "proper" fix without weighing the repack.
-      **Acceptance criterion, measurable — the "match within a small tolerance" reading made
-      concrete.** For **every** field, computed from the **committed atlas cells** (never by eye),
-      with the field's declared tint applied by the test's own arithmetic:
-      - the **parked** cell (6), per channel, must be **no more than 6 lighter** than that field's
-        own tuft mean (cell 5) and **no more than 30 darker** — i.e. the overlay must stop painting
-        a light plate over the dark tuft without becoming a black one. Today's forest cells are
-        **+19/+23/+5 lighter** and fail; outdoor's are `−12/−18` on G/B and pass; the tinted forest
-        is `0/0/0` and passes;
-      - the four **hit** cells (45-48), per channel, must stay **within ±30** of that field's tuft
-        mean — the family test: outdoor's own art sits inside that band (`+23` on R is its worst),
-        and the forest's tinted cells land within `±20`.
-      Because the tint is a channel multiplication with factors ≤ 1, the criterion is deliberately
-      directional on the parked cell: a Phaser tint can only darken, so a field whose blades are
-      already darker than its ground (outdoor, cave) is correct without a tint and could not be
-      "brightened" by one. If the fix ever becomes (b), the same two tests move to the stamped
-      cells and the tolerance story is unchanged.
-      **Tests.** `src/data/tilesets/frlg.test.ts` grows the case: for each of the three atlases,
-      decode cell 5, cell 6 and cells 45-48, apply that field's declared `grassRustleTint` to the
-      rustle cells' means, and assert the two bounds above — so the numbers in `frlg.ts` are pinned
-      to the art they are derived from and a future repack (or a new field's row) cannot silently
-      drift. The one sprite's tint is checked in the browser: standing in the forest's grass, the
-      parked overlay's mean colour read off the **live canvas** matches the forest tuft's own tone
-      (the same numbers, same tolerance), and the same capture on an outdoor/cave room shows no
-      change from today. No new test file, no new constant in the scene beyond the tint lookup.
-      **Paths:** `src/engine/tileset.ts` (the one optional field), `src/data/tilesets/frlg.ts` +
-      `frlg.test.ts` (the per-field rows and their pinning case), `src/scenes/RouteScene.ts` (one
-      `setTint` where the overlay sprite is built) and `docs/tileset-spec.md` §6 (the rustle
-      bullet gains the per-field tint rule and the reason). **Unchanged:** the packer, the three
-      `src/assets/frlg/*.png`, `FRLG_GRASS_RUSTLE_FRAMES`/`grassRustle`, the beat, the scene's
-      geometry and depths, cell 5 and every other atlas cell, and every other tileset (a tileset
-      with no list keeps the procedural tuft and no tint). No run field, no RNG, no engine rule, so
-      **no `SAVE_VERSION`** step — the chain stays 14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44)
-      → 18 (Task-52). No `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`,
-      `src/engine/save.ts` or packed asset.
-      Out of scope: `BIOME_ORDER` and which biomes are reachable (the cave/outdoor fields keep
-      their rows and are simply not walked — `[Task-14]` owns putting a third field in the cycle);
-      the tall-grass **ground** tile (cell 5) and its per-field sources; the rustle's alpha, cells,
-      order and beat (`[Task-45]`/`[Task-73]`, shipped); the packer and the atlases (the rejected
-      (b)); the player's, trainers' and items' own tints; the fog/weather overlays (`[Task-62]`);
-      the HUD, the camera and every other scene.
-      *Dependencies:* none — the shipped art, the accessors and the overlay are all in place and
-      the task adds no state. Batch order: it is a **defect**, and the repo's precedent is that a
-      defect is cut **in front** of the batch behind it (`[Task-33]` was "the bug batch cut in
-      front of Batch 4"), so it opens **Batch 5cb** — the letter follows the batch it extends, the
-      way `4b` follows `4` and `3b` follows `3` — one batch ahead of **5d** and before **5e**.
-      `src/data/tilesets/frlg.ts` and its test are nobody's right now, `src/engine/tileset.ts` is
-      nobody's, and `docs/tileset-spec.md` §6 was `[Task-73]`'s in 5c, now shipped, with Batch 6's
-      Task-17 holding the whole file later — while `src/scenes/RouteScene.ts`, which the tint
-      needs for one line, is claimed by **5d**'s Task-70 and **5e**'s Task-71 only in the batches
-      **after** this one, so this batch may hold it. *(Batch 5cb)*
 
 ## Phase 9 — Maps (route groups), biomes & progression
 
@@ -4817,10 +4896,11 @@ fondo se pone de otro color creo no se usa el fondo tile del bosque si
 no de prado por eso es un verde mas claro» (`[Task-74]`). The measured cause is a **palette
 mismatch**: `forest`'s tall-grass ground averages `59,125,76` while the rustle cells carry the
 `outdoor` art's numbers in all three fields, so the dark tuft is covered by light blades the moment
-the player steps in (and the forest is the only biome `BIOME_ORDER` walks). It is fixed as a
-per-field `grassRustleTint` in the tileset data, and because the repo cuts a defect in front of the
-batch behind it, it opens **Batch 5cb** ahead of 5d. It carries its measured table, its rejected
-reading and its fix shape in its own entry above.
+the player steps in (and the forest is the only biome `BIOME_ORDER` walks). It was fixed as a
+per-field `grassRustleTint` in the tileset data plus a clip of the one overlay sprite at cell row 6,
+and because the repo cuts a defect in front of the batch behind it, it opened **Batch 5cb** ahead of
+5d and **shipped** there. Its measured table, its rejected reading and its fix shape are recorded in
+that batch's archived summary above.
 
 ---
 
