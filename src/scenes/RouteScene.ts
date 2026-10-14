@@ -123,7 +123,7 @@ import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
 import {
   resolveTileFrame,
   resolveGroundFrame,
-  grassStepFrame,
+  grassRustleFrames,
   grassTipKeys,
   isGrassStepTile,
   treeTipKeys,
@@ -511,10 +511,8 @@ type MoveKey = 'up' | 'down' | 'left' | 'right';
 const WALK_STEP_MS = 200;
 const RUN_STEP_MS = 110;
 
-/** Half-beat of the player's own tall-grass rustle, in ms. */
-const GRASS_STEP_MS = 130;
-/** How far the tuft lifts while the tile rustles, in px. */
-const GRASS_STEP_LIFT = 2;
+/** One frame of the player's own tall-grass rustle, in ms. */
+const GRASS_STEP_MS = 70;
 /** Over the actor band (`ACTOR_DEPTH` + foot-y step, 491-497), under `TREE_TIP_DEPTH`. */
 const GRASS_STEP_DEPTH = 10;
 
@@ -647,8 +645,8 @@ export class RouteScene extends Phaser.Scene {
   private tileSprites: Phaser.GameObjects.Image[][][] = [];
   /** Tall-grass overlays and any future entities, so a rebuild can clear them. */
   private entitySprites: Phaser.GameObjects.GameObject[] = [];
-  /** The one image the player's own grass step draws; hidden when out of grass. */
-  private grassStep: Phaser.GameObjects.Image | null = null;
+  /** The one sprite the player's own grass rustle draws; hidden when out of grass. */
+  private grassStep: Phaser.GameObjects.Sprite | null = null;
   /** The ground items on screen, so a pickup can hide one and a rebuild clear all. */
   private itemSprites: { item: RouteItem; sprite: Phaser.GameObjects.Image }[] = [];
   /** The trainers on screen, so a win can hide one and a rebuild clear all. */
@@ -4179,16 +4177,18 @@ export class RouteScene extends Phaser.Scene {
   private drawEntities(): void {
     const created: Phaser.GameObjects.GameObject[] = [];
     const config = TILESETS[this.tilesetId].config;
-    // The player's own grass step: one hidden image, shown by `refreshGrassStep`
-    // on the tile they occupy. It draws the field's own tuft frame when the
-    // tileset has one and the procedural texture otherwise (`grassStepFrame`).
-    const stepFrame = grassStepFrame(config);
+    // The player's own grass rustle: one hidden sprite, parked and played by
+    // `refreshGrassStep` / `playGrassRustle` on the tile they occupy. It cycles the
+    // field's own rustle frames when the tileset declares them and draws the
+    // procedural tuft at one frame otherwise (`grassRustleFrames`).
+    const rustle = grassRustleFrames(config);
+    const rest = rustle[0];
     const step =
-      stepFrame === null
-        ? this.add.image(0, 0, GRASS_TEXTURE_KEY)
-        : this.add.image(0, 0, tilesetTextureKey(this.tilesetId), stepFrame);
+      rest === undefined
+        ? this.add.sprite(0, 0, GRASS_TEXTURE_KEY)
+        : this.add.sprite(0, 0, tilesetTextureKey(this.tilesetId), rest);
     step
-      .setScale(stepFrame === null ? 1 : this.tileScale('atlas'))
+      .setScale(rest === undefined ? 1 : this.tileScale('atlas'))
       .setDepth(GRASS_STEP_DEPTH)
       .setVisible(false);
     this.grassStep = step;
@@ -4347,30 +4347,45 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * Paints the player's own tall-grass rustle on the one image `drawEntities`
-   * built: shown on the tile they occupy, hidden the moment they leave the grass,
-   * so no other cell ever animates. The beat is the sprite's own repeating tween,
-   * restarted per step so the tuft sits centred when the step lands. Called from
-   * `movePlayerTo` and the end of a step tween, never per frame.
+   * Paints the player's own tall-grass rustle on the one sprite `drawEntities`
+   * built: parked on the rest frame on the tile they occupy, hidden the moment they
+   * leave the grass, so no other cell ever animates. Called from `movePlayerTo` and
+   * the end of every step tween, never per frame.
    */
   private refreshGrassStep(): void {
     const sprite = this.grassStep;
     if (!sprite) return;
-    this.tweens.killTweensOf(sprite);
+    sprite.anims.stop();
     if (!isGrassStepTile(this.map, this.player.x, this.player.y, this.grassTipKeys)) {
       sprite.setVisible(false);
       return;
     }
-    const y = this.centerY(this.player.y);
-    sprite.setPosition(this.centerX(this.player.x), y).setVisible(true);
-    this.tweens.add({
-      targets: sprite,
-      y: y - GRASS_STEP_LIFT,
-      duration: GRASS_STEP_MS,
-      ease: 'Sine.easeInOut',
-      yoyo: true,
-      repeat: -1,
-    });
+    const frames = grassRustleFrames(TILESETS[this.tilesetId].config);
+    sprite.setPosition(this.centerX(this.player.x), this.centerY(this.player.y)).setVisible(true);
+    if (frames.length > 0) sprite.setFrame(frames[0]);
+  }
+
+  /**
+   * The hit, once per step: the field's own rustle frames in order (`frames[1]` on),
+   * `GRASS_STEP_MS` apart, then back to the rest frame the sequence parks on. The
+   * cycle is a Phaser animation built once per sequence, so a beat costs no
+   * allocation and nothing drives the sprite while the player stands still.
+   */
+  private playGrassRustle(): void {
+    const sprite = this.grassStep;
+    if (!sprite) return;
+    const frames = grassRustleFrames(TILESETS[this.tilesetId].config);
+    if (frames.length < 2) return;
+    const key = `grass-rustle:${sprite.texture.key}:${frames.join('-')}`;
+    if (!this.anims.exists(key)) {
+      this.anims.create({
+        key,
+        frames: [...frames.slice(1), frames[0]].map((frame) => ({ key: sprite.texture.key, frame })),
+        frameRate: 1000 / GRASS_STEP_MS,
+        repeat: 0,
+      });
+    }
+    sprite.anims.play(key);
   }
 
   /** Turns the sprite to face a direction, flipping the left-facing side frame. */
@@ -4423,6 +4438,8 @@ export class RouteScene extends Phaser.Scene {
     if (this.tryLeaveRoom(direction)) return;
     const grassy = isGrassStepTile(this.map, this.player.x, this.player.y, this.grassTipKeys);
     if (grassy) {
+      // A step that lands in the grass plays the field's own rustle once.
+      this.playGrassRustle();
       const encounter = this.encounters.step();
       if (encounter) {
         this.startBattle({
@@ -6064,7 +6081,7 @@ export class RouteScene extends Phaser.Scene {
     this.tileSprites = [];
     for (const entry of this.itemSprites) this.tweens.killTweensOf(entry.sprite);
     for (const entry of this.trainerSprites) this.tweens.killTweensOf(entry.sprite);
-    if (this.grassStep) this.tweens.killTweensOf(this.grassStep);
+    if (this.grassStep) this.grassStep.anims.stop();
     this.grassStep = null;
     for (const sprite of this.entitySprites) sprite.destroy();
     this.entitySprites = [];

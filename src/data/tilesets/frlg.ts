@@ -75,6 +75,13 @@ export const FRLG_LEDGE_RIGHT = 4;
  */
 export const FRLG_TALL_GRASS = 5;
 
+/**
+ * The tall grass's own rustle, in rip order: cell 6 is the rest (the tuft band, the
+ * same art as `FRLG_TALL_GRASS`), 45-48 the hit's four frames. Must stay in step with
+ * `scripts/frlg/build-tilesets.mjs`.
+ */
+export const FRLG_GRASS_RUSTLE_FRAMES = [6, 45, 46, 47, 48] as const;
+
 const WALL_PATTERN: WallPattern = {
   value: WALL,
   cols: 3,
@@ -136,10 +143,12 @@ export const FRLG_TILESET: TilesetConfig = {
     [CARPET]: FRAME_FLOOR,
     [WATER]: WATER_SHAPES.interior,
     // Tall grass and the ledge draw their own field tiles; the tall grass tuft is
-    // no longer a procedural overlay on the FRLG fields.
+    // no longer a procedural overlay on the FRLG fields. The rustle sequence is the
+    // field effect the route cycles on the player's own cell.
     [TALL_GRASS]: FRLG_TALL_GRASS,
     [LEDGE]: FRAME_LEDGE,
   },
+  grassRustle: FRLG_GRASS_RUSTLE_FRAMES,
   autotile: [{ value: WATER, openValue: FLOOR, variants: WATER_SHAPES }],
   wallPattern: WALL_PATTERN,
   ledgeFrames: { left: FRLG_LEDGE_LEFT, center: FRAME_LEDGE, right: FRLG_LEDGE_RIGHT },

@@ -280,14 +280,12 @@ export function isGrassStepTile(
 }
 
 /**
- * The atlas frame the player's own grass step draws, or `null` when the tileset has
- * no tall-grass art of its own (its `TALL_GRASS` frame is its floor frame, so the
- * step draws the procedural tuft instead).
+ * The rustle sequence a tileset declares, in atlas cells, the **rest frame first**,
+ * or `[]` when it declares none (the PMD-derived fields, which keep the procedural
+ * tuft).
  */
-export function grassStepFrame(tileset: TilesetConfig): number | null {
-  const frame = tileset.frames[TALL_GRASS];
-  if (frame === undefined || frame === tileset.frames[FLOOR]) return null;
-  return frame;
+export function grassRustleFrames(tileset: TilesetConfig): readonly number[] {
+  return tileset.grassRustle ?? [];
 }
 
 /**

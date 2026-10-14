@@ -12,11 +12,11 @@ import {
   type TilesetConfig,
   type WallPattern,
 } from './tileset';
-import { FRLG_FOREST_TILESET, FRLG_TALL_GRASS, FRLG_TILESET } from '../data/tilesets/frlg';
+import { FRLG_FOREST_TILESET, FRLG_GRASS_RUSTLE_FRAMES, FRLG_TILESET } from '../data/tilesets/frlg';
 import { WOOD_TILESET } from '../data/tilesets/wood';
 import {
   autotileFrame,
-  grassStepFrame,
+  grassRustleFrames,
   grassTipKeys,
   isGrassStepTile,
   isNearWall,
@@ -405,15 +405,22 @@ describe('isGrassStepTile', () => {
   });
 });
 
-describe('grassStepFrame', () => {
-  it('takes the FRLG fields\' own tall-grass frame', () => {
-    expect(grassStepFrame(FRLG_TILESET)).toBe(FRLG_TALL_GRASS);
-    expect(grassStepFrame(FRLG_FOREST_TILESET)).toBe(FRLG_TALL_GRASS);
+describe('grassRustleFrames', () => {
+  it('reads the sequence the tileset declares, the rest frame first', () => {
+    expect(grassRustleFrames(FRLG_TILESET)).toEqual([6, 45, 46, 47, 48]);
+    expect(grassRustleFrames(FRLG_FOREST_TILESET)).toEqual([6, 45, 46, 47, 48]);
   });
 
-  it('is null when the tall-grass frame is the floor frame (the procedural tuft)', () => {
-    expect(grassStepFrame(WOOD_TILESET)).toBeNull();
-    expect(grassStepFrame(tileset)).toBeNull();
+  it('is empty for a tileset with no grass art of its own', () => {
+    expect(grassRustleFrames(WOOD_TILESET)).toEqual([]);
+    expect(grassRustleFrames(tileset)).toEqual([]);
+  });
+
+  it('hands back the tileset\'s own list, unmutated by a caller', () => {
+    const frames = grassRustleFrames(FRLG_TILESET);
+    const declared = FRLG_TILESET.grassRustle!;
+    expect(frames).toBe(declared);
+    expect(declared).toEqual(FRLG_GRASS_RUSTLE_FRAMES);
   });
 });
 
