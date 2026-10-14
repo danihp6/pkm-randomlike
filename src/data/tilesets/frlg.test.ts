@@ -88,9 +88,13 @@ function tileIsOpaque(png: { width: number; data: Uint8Array }, frame: number): 
   return true;
 }
 
-/** A cell's alpha shape: its opaque pixel count and the rows that carry any. */
-function cellAlpha(png: { width: number; data: Uint8Array }, frame: number): { opaque: number; opaqueRows: number[] } {
+/** A cell's alpha shape: its opaque pixel count and every row's opaque pixel count. */
+function cellAlpha(
+  png: { width: number; data: Uint8Array },
+  frame: number,
+): { opaque: number; rows: number[]; opaqueRows: number[] } {
   const bytes = tileBytes(png, frame);
+  const rows: number[] = [];
   const opaqueRows: number[] = [];
   let opaque = 0;
   for (let y = 0; y < FRLG_TILE_SIZE; y++) {
@@ -98,10 +102,11 @@ function cellAlpha(png: { width: number; data: Uint8Array }, frame: number): { o
     for (let x = 0; x < FRLG_TILE_SIZE; x++) {
       if (bytes[(y * FRLG_TILE_SIZE + x) * 4 + 3] > 0) row++;
     }
+    rows.push(row);
     if (row > 0) opaqueRows.push(y);
     opaque += row;
   }
-  return { opaque, opaqueRows };
+  return { opaque, rows, opaqueRows };
 }
 
 describe('frlg tileset atlases', () => {
@@ -165,23 +170,29 @@ describe('frlg tileset atlases', () => {
     }
   });
 
-  it('stamps the five rustle cells raw: a transparent blade band and one closing frame', () => {
+  it('stamps the five rustle cells raw: the settled rest band and one closing frame', () => {
     expect(FRLG_GRASS_RUSTLE_FRAMES).toEqual([6, 45, 46, 47, 48]);
     for (const name of ATLASES) {
       const png = atlas(name);
       for (const frame of FRLG_GRASS_RUSTLE_FRAMES) {
         expect(tileIsBlank(png, frame), `${name} rustle frame ${frame}`).toBe(false);
       }
-      const rest = cellAlpha(png, FRLG_GRASS_RUSTLE_FRAMES[0]);
-      // The overlay is stamped with the rip's own alpha, so the tile under it and the
-      // character show through: the rest cell is a blade band, not an opaque plate.
-      expect(tileIsOpaque(png, FRLG_GRASS_RUSTLE_FRAMES[0]), `${name} rest cell fully opaque`).toBe(false);
-      // Its upper rows are clear, so the opaque pixels sit in the cell's lower half and
-      // the overlay can never cover the player's head and torso.
-      expect(rest.opaqueRows[0], `${name} rest cell first blade row`).toBeGreaterThanOrEqual(FRLG_TILE_SIZE / 2);
+      const restFrame = FRLG_GRASS_RUSTLE_FRAMES[0];
+      const rest = cellAlpha(png, restFrame);
+      // The parked cell is the rip's settled frame, which is the hit's own last frame:
+      // the sprite plays 1-4 and parks on art byte-identical to `frames[4]`, so the end
+      // of the hit and the standing pose are the same picture (no jump when it settles).
+      expect(tileBytes(png, restFrame), `${name} rest frame`).toEqual(tileBytes(png, 48));
+      // Its alpha is the rip's own: rows 0-5 are empty, so the opaque band starts at
+      // row 6 of 16 - world y 153 at the shipped 1.5 scale - which covers the player's
+      // lower half (13.5 of their 28.5 visible px) and leaves the head, face, shoulders
+      // and upper torso clear. It is neither the opaque copy of the tall-grass tile nor
+      // the blades-only frame the second cut parked on (its band started at row 10).
+      expect(rest.rows.slice(0, 6), `${name} rest cell rows 0-5`).toEqual(new Array(6).fill(0));
+      expect(rest.opaqueRows[0], `${name} rest cell first blade row`).toBe(6);
       expect(rest.opaque, `${name} rest cell blade pixels`).toBeLessThan((FRLG_TILE_SIZE * FRLG_TILE_SIZE) / 2);
-      // The copy of the tall-grass tile is exactly what the rest cell no longer is.
-      expect(tileBytes(png, FRLG_GRASS_RUSTLE_FRAMES[0]), `${name} rest frame`).not.toEqual(tileBytes(png, FRLG_TALL_GRASS));
+      expect(tileIsOpaque(png, restFrame), `${name} rest cell fully opaque`).toBe(false);
+      expect(tileBytes(png, restFrame), `${name} rest frame vs ground`).not.toEqual(tileBytes(png, FRLG_TALL_GRASS));
       // The hit keeps the rip's alpha: its closing frame is the one allowed to cover
       // the cell, the three that flick and settle stay see-through.
       expect(tileIsOpaque(png, 45), `${name} closing frame 45 opaque`).toBe(true);
