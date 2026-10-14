@@ -1,5 +1,5 @@
 import type { Tile } from './grid';
-import { FLOOR, LEDGE, TALL_GRASS, WALL, padMap, type TileMap } from './map';
+import { FLOOR, LEDGE, TALL_GRASS, WALL, padMap, tileAt, type TileMap } from './map';
 import type { AutotileRule, LedgeFrames, TilesetConfig, VariantFrames, WallPattern } from './tileset';
 
 export type TileFrameSource = 'atlas' | 'common';
@@ -263,6 +263,29 @@ export function grassTipKeys(map: TileMap, tileset: TilesetConfig): Set<string> 
     }
   }
   return keys;
+}
+
+/**
+ * Whether `(x, y)` is a tile the player rustles: `TALL_GRASS`, or a walkable tree
+ * tip a grass patch shares (`grassTipKeys`). The same predicate the wild-encounter
+ * roll uses, so the roll and the step beat can never disagree.
+ */
+export function isGrassStepTile(
+  map: TileMap,
+  x: number,
+  y: number,
+  tips: ReadonlySet<string>,
+): boolean {
+  return tileAt(map, { x, y }) === TALL_GRASS || tips.has(`${x},${y}`);
+}
+
+/**
+ * The rustle sequence a tileset declares, in atlas cells, the **rest frame first**,
+ * or `[]` when it declares none (the PMD-derived fields, which keep the procedural
+ * tuft).
+ */
+export function grassRustleFrames(tileset: TilesetConfig): readonly number[] {
+  return tileset.grassRustle ?? [];
 }
 
 /**

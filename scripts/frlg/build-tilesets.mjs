@@ -2,19 +2,28 @@
 // (docs/tileset-spec.md): a 4-column x 13-row sheet whose frame indices match the
 // constants in src/engine/tileset.ts, declared with `tileSize: 16` (D18).
 //
-// Source: sprite-sources/frlg/tileset-2.png (gitignored, ripped by fabnt from
-// PokemonFireRed/LeafGreen, spriters-resource; never redistributed). The sheet is
-// laid out on a 17px pitch: a 1px gutter, then a 16x16 tile, so tile (col,row)
-// starts at (1 + col*17, 1 + row*17). Every tile the atlas uses is picked by hand
-// from a named bank of the compilation; the comments below record which is which.
+// Sources (both gitignored, never redistributed): sprite-sources/frlg/tileset-2.png
+// (ripped by fabnt from PokemonFireRed/LeafGreen, spriters-resource) for the terrain
+// and sprite-sources/frlg/tall_grass.png for the tall grass' own rustle, cut from
+// pret/pokefirered's graphics/field_effects/pics/tall_grass.png (five 16x16 frames
+// stacked vertically). Both are read through argv (`build-player-sprite.mjs` 42-43,
+// AGENTS.md's Asset trees rule), so a dev passes their absolute paths and nothing
+// under sprite-sources/ is ever linked into the worktree. The terrain sheet is laid
+// out on a 17px pitch: a 1px gutter, then a 16x16 tile, so tile (col,row) starts at
+// (1 + col*17, 1 + row*17). Every tile the atlas uses is picked by hand from a named
+// bank of the compilation; the comments below record which is which.
 //
 // Only FLOOR/WALL/WATER/LEDGE are real art: stairs/trap/chest/item/carpet come
 // from the shared common atlas at render time (commonFrames) or fall back to the
 // floor, the same split the PMD biome atlases use.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
-const SRC = new URL('../../sprite-sources/frlg/tileset-2.png', import.meta.url)
+const DEFAULT_TERRAIN = fileURLToPath(new URL('../../sprite-sources/frlg/tileset-2.png', import.meta.url))
+const DEFAULT_EFFECTS = fileURLToPath(new URL('../../sprite-sources/frlg/tall_grass.png', import.meta.url))
+const terrainSource = process.argv[2] ?? DEFAULT_TERRAIN
+const effectsSource = process.argv[3] ?? DEFAULT_EFFECTS
 const OUT_DIR = new URL('../../src/assets/frlg/', import.meta.url)
 
 const SRC_TILE = 16
@@ -54,6 +63,14 @@ const FRAME_FLOOR_ALT_5 = 43
 // draws chest/item from the common atlas). Source is the tufted grass blades
 // (`tallGrass`) drawn whole, with their own ground baked in.
 const FRAME_TALL_GRASS = 5
+// The tall grass' own rustle: cell 6 is the rest - the very cell `tallGrass` stamps
+// as FRAME_TALL_GRASS, so a rustle at rest is byte-identical to the tile under it -
+// and 45-48 are the field effect's four hit frames. 6 is the last unused cell of the
+// tall grass' own row; 45-50 are the dead wall-shape slots (`wallPattern` wins every
+// wall, so the autotiler never draws them) and 49-50 stay free. Must stay in step
+// with FRLG_GRASS_RUSTLE_FRAMES in src/data/tilesets/frlg.ts.
+const FRAME_GRASS_REST = 6
+const FRAME_GRASS_HIT = [45, 46, 47, 48]
 // The last cell of the 4x13 sheet, the rocky ledge lip the route walks off.
 const FRAME_LEDGE = 51
 // The ledge run's end caps: the sheet leaves the stair/trap slots (3 and 4)
@@ -82,7 +99,13 @@ const FLOOR_ALT_FRAMES = [
   FRAME_FLOOR_ALT_5,
 ]
 
-const source = decodePng(readFileSync(SRC))
+const source = decodePng(readFileSync(terrainSource))
+const effects = decodePng(readFileSync(effectsSource))
+if (effects.width !== SRC_TILE || effects.height % SRC_TILE !== 0 || effects.height / SRC_TILE < FRAME_GRASS_HIT.length + 1) {
+  throw new Error(
+    `expected a 16xN stack of at least ${FRAME_GRASS_HIT.length + 1} 16px effect frames, got ${effects.width}x${effects.height}`,
+  )
+}
 
 /** The 16x16 tile at (col,row) of the 17px-pitch source grid. */
 function sourceTile(col, row) {
@@ -92,6 +115,19 @@ function sourceTile(col, row) {
   for (let y = 0; y < SRC_TILE; y++) {
     const from = ((y0 + y) * source.width + x0) * 4
     source.data.copy(out, y * SRC_TILE * 4, from, from + SRC_TILE * 4)
+  }
+  return out
+}
+
+/**
+ * The 16x16 frame at `index` of the field-effect sheet, whose frames are stacked
+ * vertically: 0 is the rest (the tuft band) and 1-4 the hit's own frames.
+ */
+function effectTile(index) {
+  const out = Buffer.alloc(SRC_TILE * SRC_TILE * 4)
+  for (let y = 0; y < SRC_TILE; y++) {
+    const from = ((index * SRC_TILE + y) * effects.width) * 4
+    effects.data.copy(out, y * SRC_TILE * 4, from, from + SRC_TILE * 4)
   }
   return out
 }
@@ -214,8 +250,9 @@ function keyBackground(over, fill, bg) {
  * trunk; only the mass's foot shows the trunk platform. `ledge` is `{ left,
  * center, right }`, the three-source-cell run the ledge draws. `tallGrass` is the
  * tufted grass ground tile the walkable patches stamp, drawn whole (each field
- * picks the tuft drawn on its own ground). The ledge lip is re-grounded onto the
- * field's floor (`overFill`), so a dark-ground field draws it on that ground.
+ * picks the tuft drawn on its own ground). The ledge lip and the rustle's hit
+ * frames are re-grounded onto the field's floor (`overFill`), so a dark-ground field
+ * draws them on that ground.
  */
 function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = [10, 0] }) {
   stamp(atlas, FRAME_FLOOR, floor[0], floor[1])
@@ -258,6 +295,16 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = 
   // variant, so it keeps the field's own ground (its sheet background is keyed off
   // and filled with the floor).
   if (tallGrass) stamp(atlas, FRAME_TALL_GRASS, tallGrass[0], tallGrass[1])
+  // The rustle the route player draws over their own tile: the rest cell restamps
+  // the field's own tuft, so it is byte-identical to the tile under it, and the hit
+  // cells are the field effect's four frames re-grounded onto the field's own floor
+  // (`overFill`'s key-then-composite, the ledge lip's treatment), so a frame drawn
+  // over the tile never paints a foreign ground and the opaque frame closes over the
+  // player in the field's own colours.
+  if (tallGrass) stamp(atlas, FRAME_GRASS_REST, tallGrass[0], tallGrass[1])
+  FRAME_GRASS_HIT.forEach((frame, index) => {
+    stampTile(atlas, frame, compositeOver(keyBackground(effectTile(index + 1), floorTile, bg), floorTile))
+  })
   stampTile(atlas, FRAME_LEDGE_LEFT, overFill(ledge.left, floor))
   stampTile(atlas, FRAME_LEDGE, overFill(ledge.center, floor))
   stampTile(atlas, FRAME_LEDGE_RIGHT, overFill(ledge.right, floor))

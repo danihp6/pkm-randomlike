@@ -206,6 +206,11 @@ export type TilesetConfig = Readonly<{
   wallAdjacentVariants?: Readonly<Record<number, VariantFrames>>;
   /** Map values drawn from the shared common atlas instead of the biome sheet. */
   commonFrames?: Readonly<Record<number, number>>;
+  /**
+   * The tall grass's own rustle, in atlas cells: the rest frame first, then the hit's
+   * frames. Absent on a tileset with no grass art of its own (`docs/tileset-spec.md` §6).
+   */
+  grassRustle?: readonly number[];
 }>;
 
 export const WALL_SHAPES: AutotileShapeSet = {

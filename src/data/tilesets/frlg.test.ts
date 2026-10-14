@@ -19,6 +19,7 @@ import {
   FRLG_ATLAS_HEIGHT,
   FRLG_ATLAS_WIDTH,
   FRLG_FOREST_TILESET,
+  FRLG_GRASS_RUSTLE_FRAMES,
   FRLG_LEDGE_LEFT,
   FRLG_LEDGE_RIGHT,
   FRLG_TALL_GRASS,
@@ -64,6 +65,26 @@ function tileIsBlank(png: { width: number; data: Uint8Array }, frame: number): b
       if (alpha > 0) return false;
     }
   }
+  return true;
+}
+
+/** A cell's pixels, for comparing two cells byte for byte. */
+function tileBytes(png: { width: number; data: Uint8Array }, frame: number): Uint8Array {
+  const cols = png.width / FRLG_TILE_SIZE;
+  const col = frame % cols;
+  const row = Math.floor(frame / cols);
+  const out = new Uint8Array(FRLG_TILE_SIZE * FRLG_TILE_SIZE * 4);
+  for (let y = 0; y < FRLG_TILE_SIZE; y++) {
+    const from = ((row * FRLG_TILE_SIZE + y) * png.width + col * FRLG_TILE_SIZE) * 4;
+    out.set(png.data.subarray(from, from + FRLG_TILE_SIZE * 4), y * FRLG_TILE_SIZE * 4);
+  }
+  return out;
+}
+
+/** Whether every pixel of a cell is opaque (the rustle closes over the player). */
+function tileIsOpaque(png: { width: number; data: Uint8Array }, frame: number): boolean {
+  const bytes = tileBytes(png, frame);
+  for (let i = 3; i < bytes.length; i += 4) if (bytes[i] !== 255) return false;
   return true;
 }
 
@@ -125,6 +146,30 @@ describe('frlg tileset atlases', () => {
   it('stamps the tall-grass ground tile', () => {
     for (const name of ATLASES) {
       expect(tileIsBlank(atlas(name), FRLG_TALL_GRASS), `${name} tall grass frame ${FRLG_TALL_GRASS}`).toBe(false);
+    }
+  });
+
+  it('stamps the five rustle cells, the rest frame identical to the tall-grass tile', () => {
+    for (const name of ATLASES) {
+      const png = atlas(name);
+      for (const frame of FRLG_GRASS_RUSTLE_FRAMES) {
+        expect(tileIsBlank(png, frame), `${name} rustle frame ${frame}`).toBe(false);
+        // The hit closes over the player, so no rustle cell may be see-through.
+        expect(tileIsOpaque(png, frame), `${name} rustle frame ${frame} opaque`).toBe(true);
+      }
+      // The rest frame is the field's own tuft, so a rustle at rest is invisible
+      // over the tile the player stands on.
+      expect(tileBytes(png, FRLG_GRASS_RUSTLE_FRAMES[0]), `${name} rest frame`).toEqual(
+        tileBytes(png, FRLG_TALL_GRASS),
+      );
+    }
+  });
+
+  it('leaves the two unused wall-shape cells blank', () => {
+    for (const name of ATLASES) {
+      for (const frame of [49, 50]) {
+        expect(tileIsBlank(atlas(name), frame), `${name} cell ${frame}`).toBe(true);
+      }
     }
   });
 });

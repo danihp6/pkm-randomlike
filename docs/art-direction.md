@@ -98,6 +98,11 @@ pose of its facing and walks toward a player it spots. The player comes from the
 `src/data/frlg/player.json`, read through `src/data/playerSprite.ts`, so the
 route draws the FRLG protagonist instead of the PMD placeholder. The
 `npc-overworld.png` and `player-sprites.png` compilations stay unused.
+The tall grass' rustle is the same decomp's
+`graphics/field_effects/pics/tall_grass.png` (16x80, five 16x16 frames), packed by
+`scripts/frlg/build-tilesets.mjs` into the three field atlases' unused cells, and
+like every other rip it lives in `sprite-sources/frlg/` (gitignored, never
+redistributed).
 
 ## Pokémon battle sprites (Pokémon Añil, local only)
 

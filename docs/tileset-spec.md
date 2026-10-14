@@ -67,6 +67,7 @@ type TilesetConfig = {
   variants?: Record<number, VariantFrames>      // deterministic per-tile variety
   wallAdjacentVariants?: Record<number, VariantFrames>
   commonFrames?: Record<number, number>    // map values drawn from the common sheet
+  grassRustle?: number[]                   // tall grass' own rustle; rest frame first
 }
 ```
 
@@ -180,6 +181,16 @@ Swapping is `config = TILESETS[nextId].config` plus loading
   no grass tile, so they keep the plain-ground fallback plus the procedural tuft
   overlay (`BootScene` builds it). `RouteScene` only draws that overlay when the
   tileset's `TALL_GRASS` frame is its floor frame.
+  Walking into — or standing in — tall grass rustles **only the tile the player
+  occupies**: one overlay sprite follows their feet, hidden the moment they step
+  onto plain ground, so no other cell on the map ever moves. The FRLG fields carry
+  that sprite's five cells in `grassRustle` (`FRLG_GRASS_RUSTLE_FRAMES`): cell 6 is
+  the field's own tuft (byte-identical to cell 5, so the rustle at rest is invisible
+  over the tile) and 45-48 are the hit, the real field effect of pret/pokefirered's
+  `tall_grass.png` re-grounded onto each field's floor — one frame where the grass
+  closes over the player, then the blades flicking and settling. The beat is ~70 ms
+  a frame, played **once per step** on the player's own tile (never looping while
+  they stand still). A tileset with no `grassRustle` keeps the procedural tuft.
 - **Ledge** draws a three-tile run: frame 51 is the centre lip and frames `3`/`4`
   its end caps (`FRLG_LEDGE_LEFT`/`FRLG_LEDGE_RIGHT`, `LedgeFrames` in
   `src/engine/tileset.ts`); the FRLG fields stamp all three (`D26`), and the PMD
