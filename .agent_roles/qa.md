@@ -27,6 +27,12 @@ Your caller tells you which one you are; if it does not, ask before starting.
   **live canvas** (`renderer.snapshotArea` + `getImageData`) over screenshots: a
   throttled game loop makes `browser_take_screenshot` return stale, identical frames.
   Say which method produced each piece of evidence, and stop your server when done.
+- A fresh worktree has no `node_modules` (worktrees share `.git`, not the tree).
+  Install once with `npm ci --prefer-offline --no-audit --no-fund`: it still
+  honours the lockfile, but reads packed tarballs from the local npm cache instead
+  of revalidating them against the registry, so it is seconds rather than minutes.
+  Never use a network-only `npm ci` and never junction `node_modules` in from
+  another tree (see `AGENTS.md`'s **Asset trees** rule).
 
 ## How you validate
 
