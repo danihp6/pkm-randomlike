@@ -19,16 +19,22 @@ export type RosterOptions = Readonly<{
   allowMega?: boolean;
   /** A boss fields the upper half of the band's BST window (`D39`). */
   boss?: boolean;
+  /**
+   * Overrides the band's party size. A floor's boss and mini-boss field a fixed
+   * count (`docs/maps-spec.md` §6/§7, `src/data/bosses.ts`); absent, the roster
+   * keeps `band.trainerSize`, which is what every existing caller reads.
+   */
+  count?: number;
 }>;
 
 /**
- * A deterministic trainer roster: `band.trainerSize` species drawn without
- * replacement from the band's BST pool (repeats only if the pool is smaller than
- * the party), each level inside the band. The pool is shared by every archetype
- * — it varies only by the floor's BST window and the bans (`D39`), and a
- * trainer (unlike the wild) may field a legendary or mythical — and a boss
- * raises the window to its upper half. The run's battle seed feeds the `rng`, so
- * a replay rebuilds the same team.
+ * A deterministic trainer roster: `options.count ?? band.trainerSize` species
+ * drawn without replacement from the band's BST pool (repeats only if the pool is
+ * smaller than the party), each level inside the band. The pool is shared by
+ * every archetype — it varies only by the floor's BST window and the bans
+ * (`D39`), and a trainer (unlike the wild) may field a legendary or mythical —
+ * and a boss raises the window to its upper half. The run's battle seed feeds the
+ * `rng`, so a replay rebuilds the same team.
  */
 export function trainerRoster(
   band: LevelBand,
@@ -38,7 +44,7 @@ export function trainerRoster(
 ): readonly RosterEntry[] {
   const source = speciesPool(band, 'trainer', { boss: options.boss === true });
   const pool = source.length > 0 ? [...source] : ['sentret'];
-  const size = Math.max(1, band.trainerSize);
+  const size = Math.max(1, options.count ?? band.trainerSize);
   const roster: RosterEntry[] = [];
   for (let i = 0; i < size; i++) {
     const speciesId =

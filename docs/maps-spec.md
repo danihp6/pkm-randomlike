@@ -168,7 +168,10 @@ becomes a huge maze. Retuning is a data edit, never a generator edit
   **no tall grass, no ledges, no ground items and no regular trainers**, just the
   boss. The map's **entry room** is quiet the same way, so the run starts and ends
   each floor in a clean room.
-- The boss is a fixed, themed trainer at the map's `maxLevel`.
+- The boss is a fixed, themed trainer at the map's `maxLevel`, fielding a
+  **fixed party of six** (`bossPartySize('boss', mapIndex)`, `src/data/bosses.ts`);
+  **map 1** is the exception at **three**, because the first floor is the run's
+  on-ramp.
 - The portal is **carved from the start** on a free wall of the boss room and stays
   **sealed** while the boss stands, so the room looks the same before and after.
   Once the boss falls the portal opens; stepping through it advances the run to the
@@ -185,7 +188,7 @@ no tall grass, no regular trainers, no ground items:
 | Room | Per floor | Placement | Content |
 | --- | --- | --- | --- |
 | **shop** | exactly one, **from map 2 on** (map 1 has none) | a leaf near the entry | a counter; the interact key (`E`) opens a Pokémon-style **shop panel in the HUD** that exists only in this room |
-| **mini-boss** | medium chance | a leaf anywhere | one strong trainer; beating it offers a **choice of items** |
+| **mini-boss** | medium chance | a leaf anywhere | one strong trainer fielding a **fixed party of three** (**two** on map 1, `bossPartySize('miniboss', mapIndex)`); beating it offers a **choice of items** |
 | **mega-stone** | low chance, **from map 3 onward** | a leaf anywhere | one random **Mega Stone** item |
 
 Specials count **outside** K (`K` regular rooms + the specials), are rolled on

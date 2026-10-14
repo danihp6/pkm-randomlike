@@ -47,6 +47,57 @@ describe('trainerRoster', () => {
     const roster = trainerRoster(end, new Rng(11), 'boss', { boss: true });
     for (const entry of roster) expect(pool).toContain(entry.speciesId);
   });
+
+  it('overrides the band party size with count', () => {
+    const roster = trainerRoster(end, new Rng(7), 't1', { count: 6 });
+    expect(roster).toHaveLength(6);
+    expect(roster.map((entry) => entry.id)).toEqual(['t1:0', 't1:1', 't1:2', 't1:3', 't1:4', 't1:5']);
+    expect(roster.length).toBeGreaterThan(end.trainerSize);
+  });
+
+  it('clamps count to at least one member', () => {
+    expect(trainerRoster(end, new Rng(7), 't1', { count: 0 })).toHaveLength(1);
+    expect(trainerRoster(end, new Rng(7), 't1', { count: -3 })).toHaveLength(1);
+  });
+
+  it('repeats species once the count passes the pool', () => {
+    const pool = speciesPool(end, 'trainer');
+    const count = pool.length + 3;
+    const roster = trainerRoster(end, new Rng(5), 't1', { count });
+    expect(roster).toHaveLength(count);
+    for (const entry of roster) expect(getSpecies(entry.speciesId)).toBeDefined();
+    expect(new Set(roster.map((entry) => entry.speciesId)).size).toBeLessThanOrEqual(pool.length);
+  });
+
+  it('draws a fixed boss party from the boss window, stable for a fixed Rng', () => {
+    const pool = speciesPool(end, 'trainer', { boss: true });
+    const build = (): readonly RosterEntry[] =>
+      trainerRoster(end, new Rng(42), 'boss', { boss: true, count: 6 });
+    const roster = build();
+    expect(roster).toHaveLength(6);
+    expect(roster).toEqual(build());
+    for (const entry of roster) {
+      expect(pool).toContain(entry.speciesId);
+      expect(entry.level).toBeGreaterThanOrEqual(end.minLevel);
+      expect(entry.level).toBeLessThanOrEqual(end.maxLevel);
+    }
+  });
+
+  it('appends when the count grows, so the stream keeps its prefix', () => {
+    const short = trainerRoster(end, new Rng(21), 't1', { count: 3 });
+    const long = trainerRoster(end, new Rng(21), 't1', { count: 6 });
+    expect(long.slice(0, 3)).toEqual(short);
+  });
+
+  it('still hands out at most one Mega Stone with a count', () => {
+    const roster = trainerRoster(end, new Rng(9), 'boss', {
+      allowMega: true,
+      boss: true,
+      count: 6,
+    });
+    const held = roster.filter((entry) => entry.heldItem !== undefined);
+    expect(held.length).toBeLessThanOrEqual(1);
+  });
 });
 
 describe('trainerRoster Mega Stones', () => {

@@ -18,6 +18,9 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `maps.ts` — the per-map tuning: level range, room-count range and the room
   width/height range, plus the infinite-run step past the last map
   (`docs/maps-spec.md` §4).
+- `bosses.ts` — the fixed party sizes a floor's boss and mini-boss field: six and
+  three, or three and two on map 1, the run's on-ramp (`docs/maps-spec.md`
+  §6/§7).
 - `trainers.ts` — trainer archetypes: identity, sprites and reward only; their
   roster is the floor's BST pool (`src/engine/run/pool.ts`, `D39`).
 - `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
