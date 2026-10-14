@@ -1,6 +1,13 @@
 import { buyPrice, getItem, isForSale, sellPrice } from '../data/items';
 import type { BandId } from '../data/run';
-import { SHOP_CORE, SHOP_ROTATION, SHOP_ROTATION_COUNT, SHOP_TM, type ShopEntry } from '../data/shop';
+import {
+  SHOP_BALL_PACK,
+  SHOP_HELD_ROWS,
+  SHOP_POTION,
+  SHOP_ROTATION,
+  SHOP_TM,
+  type ShopEntry,
+} from '../data/shop';
 import type { Rng } from '../engine/rng';
 import {
   addItem,
@@ -19,40 +26,51 @@ import {
  * pure function of `(bandId, rng)`, so a fixed run always opens the same Mart.
  */
 
-/** One thing the shop sells: an item and what a single unit costs. */
-export type ShopSlot = Readonly<{ itemId: string; price: number }>;
+/**
+ * One thing the shop sells: an item, what one purchase costs and how many units
+ * that purchase adds. Every stock row but the pack buys a single unit.
+ */
+export type ShopSlot = Readonly<{ itemId: string; price: number; count: number }>;
+
+/** The catalogue price of an id; `0` for an id the catalogue does not hold. */
+const priceOf = (itemId: string): number => {
+  const item = getItem(itemId);
+  return item ? buyPrice(item) : 0;
+};
 
 /**
- * The stock a shop shows: the band's fixed core of Balls/Potions, one or two
- * rotating items drawn (weighted, without replacement) from the band's pool, and
- * one machine off the band's own `SHOP_TM` list — each appended after the one
- * before it and never repeating an id already on the shelf. Deterministic for a
- * fixed `rng`.
+ * The shelf a shop shows: the band's **four fixed stock rows** — its ball pack,
+ * its potion rung and `SHOP_HELD_ROWS` distinct held items — and then the band's
+ * one machine off `SHOP_TM`, appended last when it is not already on the shelf.
+ * Deterministic for a fixed `rng`.
  *
- * The course is **core → rotation → TM**, so the machines land **last** and the
- * rotation's own rolls keep their old positions for a fixed seed. The TM's price
- * is the catalogue's own (`buyPrice`) and is deliberately not discounted: a slot
- * priced below `sellPrice` would be a buy-and-sell money loop.
+ * The draw order is frozen: one `weightedIndex` per held row over that band's held
+ * pool, **without replacement**, then one `rng.int` for the machine. Every row but
+ * the pack takes the catalogue price; the pack carries its own discounted `price`
+ * of ten units at half the catalogue sum.
  */
 export function buildShop(bandId: BandId, rng: Rng): readonly ShopSlot[] {
-  const ids = [...SHOP_CORE[bandId]];
-  const pool = SHOP_ROTATION[bandId].filter((entry) => !ids.includes(entry.itemId));
-  const count = rng.int(SHOP_ROTATION_COUNT.min, SHOP_ROTATION_COUNT.max);
-  const remaining = [...pool];
-  for (let picked = 0; picked < count && remaining.length > 0; picked++) {
-    const index = weightedIndex(remaining, rng);
-    ids.push(remaining[index].itemId);
-    remaining.splice(index, 1);
+  const pack = SHOP_BALL_PACK[bandId];
+  const potion = SHOP_POTION[bandId];
+  const stock: ShopSlot[] = [
+    { itemId: pack.itemId, price: pack.price, count: pack.count },
+    { itemId: potion, price: priceOf(potion), count: 1 },
+  ];
+  const pool = [...SHOP_ROTATION[bandId]];
+  for (let picked = 0; picked < SHOP_HELD_ROWS && pool.length > 0; picked++) {
+    const index = weightedIndex(pool, rng);
+    const id = pool[index].itemId;
+    stock.push({ itemId: id, price: priceOf(id), count: 1 });
+    pool.splice(index, 1);
   }
   const machines = SHOP_TM[bandId];
   if (machines.length > 0) {
     const machine = machines[rng.int(0, machines.length - 1)];
-    if (!ids.includes(machine)) ids.push(machine);
+    if (!stock.some((slot) => slot.itemId === machine)) {
+      stock.push({ itemId: machine, price: priceOf(machine), count: 1 });
+    }
   }
-  return ids.flatMap((id) => {
-    const item = getItem(id);
-    return item ? [{ itemId: id, price: buyPrice(item) }] : [];
-  });
+  return stock.filter((slot) => getItem(slot.itemId) !== undefined);
 }
 
 /** A weighted pick from a pool: the item whose cumulative weight covers the roll. */
@@ -70,10 +88,11 @@ function weightedIndex(pool: readonly ShopEntry[], rng: Rng): number {
 /** A shop trade: the run afterwards, whether it happened, and the money moved. */
 export type ShopTrade = Readonly<{ run: RunState; ok: boolean; amount: number }>;
 
-/** Buys one unit of `slot` when the run can afford it; otherwise a no-op. */
+/** Buys one row's units when the run can afford it; otherwise a no-op. */
 export function buyItem(run: RunState, slot: ShopSlot): ShopTrade {
   if (run.money < slot.price) return { run, ok: false, amount: 0 };
-  return { run: addItem(spendMoney(run, slot.price), slot.itemId), ok: true, amount: slot.price };
+  const paid = spendMoney(run, slot.price);
+  return { run: addItem(paid, slot.itemId, slot.count), ok: true, amount: slot.price };
 }
 
 /** The bag stacks the shop will buy: any catalogue stack worth real money, in bag order. */
@@ -99,17 +118,23 @@ export type ShopRow = Readonly<{
   itemId: string;
   name: string;
   price: number;
+  /** Units one purchase adds; `1` for everything but the pack. */
+  count: number;
   owned: number;
   /** True when a **buy** row is affordable; always true for a sell row. */
   affordable: boolean;
 }>;
 
+/** A row's label: a multi-unit row says how many units one purchase adds. */
+const rowName = (name: string, count: number): string => (count > 1 ? `${count}x ${name}` : name);
+
 const toRow = (run: RunState, slot: ShopSlot): ShopRow => {
   const item = getItem(slot.itemId);
   return {
     itemId: slot.itemId,
-    name: item?.name ?? slot.itemId,
+    name: item ? rowName(item.name, slot.count) : slot.itemId,
     price: slot.price,
+    count: slot.count,
     owned: itemCount(run, slot.itemId),
     affordable: run.money >= slot.price,
   };
@@ -120,10 +145,10 @@ export function buyRows(run: RunState, stock: readonly ShopSlot[]): readonly Sho
   return stock.map((slot) => toRow(run, slot));
 }
 
-/** The sell rows: every sellable stack at its `sellPrice`, in bag order. */
+/** The sell rows: every sellable stack at its `sellPrice`, one unit at a time, in bag order. */
 export function sellRows(run: RunState): readonly ShopRow[] {
   return sellableStacks(run).map((stack) => ({
-    ...toRow(run, { itemId: stack.itemId, price: sellPriceOf(stack.itemId) }),
+    ...toRow(run, { itemId: stack.itemId, price: sellPriceOf(stack.itemId), count: 1 }),
     // A sale is always available: the price is what the shop pays, not a cost.
     affordable: true,
   }));
