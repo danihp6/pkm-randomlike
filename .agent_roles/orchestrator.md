@@ -31,6 +31,12 @@ workflow and the git rules; if it conflicts with this file, `AGENTS.md` wins.
    - **Wave 2 — one Integration QA on the combined tree.** Merge every task branch onto
      the batch base in one worktree, run the batch gates there, and launch one short
      `qa` subagent for the cross-task audit, the gates and the merge rehearsal.
+   - **A batch of exactly one task collapses to a single QA pass.** Its per-task
+     integration worktree *is* the combined tree, so Wave 2 would re-run the same suite
+     on the same commit: launch **one** `qa` subagent that covers both scopes (the task's
+     plan verbatim, plus the gates, the cross-task audit and the merge rehearsal). Keep
+     the two waves as soon as the batch has two or more tasks, where Wave 2 is a real
+     second tree and a real cross-task check.
 8. **Error loop.** A red criterion goes back to the author of **that** task with the
    failure log; when it is fixed, re-run **that task's** QA only — the other tasks'
    results stay valid as long as their branch tips did not move (a commit id is a
