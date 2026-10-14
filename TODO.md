@@ -26,7 +26,9 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 **Batch 5 and Batch 5b are shipped and archived.** Their nine tasks merged in ID order behind
 the green gate (four, then five) and the detail is in `CHANGELOG.md`'s `## Unreleased`; Batch 5b
 is the batch that ended up packing the decomp's real FireRed grass rustle, and it is closed
-below. **Batch 5c is the next batch cut** — `[Task-69]`, the level curve re-plan — followed by
+below. **Batch 5c is cut** — `[Task-69]`, the level curve re-plan, with
+`[Task-72]` (bigger type badges in the battle panels) and `[Task-73]` (the rustle drawn at the
+player's feet, not over them) beside it — followed by
 **Batch 5d** (`[Task-70]`, the early floors thinned, and map 1 hanging no shop leaf) and
 **Batch 5e** (`[Task-71]`, the fixed boss and mini-boss parties). All three sit **before**
 Batch 6 so that Task-09's balance pass reads the curve, the density and the parties that
@@ -486,6 +488,32 @@ shop leaf** (a shop with no money is dead weight) — rather than dropping the r
 which the guaranteed core does not allow. Nothing here re-plans `Task-38`–`Task-70`, both
 batches are new so nothing already cut gains a member, and Batch 4b stays `cut`.
 
+A **fourteenth round** of **one report** arrived after that one, and it adds **no dependency
+edge** and **no `SAVE_VERSION` step**: `Task-72` (the battle panels' **type badges** bigger, on
+both the active Pokémon's panel and the rival's) reads the row the now-archived `[Task-53]`
+shipped and changes only its drawn size, so it claims `src/scenes/BattleScene.ts` alone — no
+`src/data/**`, no `src/ui/**` module, no `docs/` line, no state. It takes **the earliest pending
+batch that leaves that file free**, and that is **Batch 5c**: its `Task-69` claims no scene at
+all, while 5d's `Task-70` holds `src/scenes/RouteScene.ts` and 5e's `Task-71` holds the battle
+scene. So 5c gains a second member and stays an antichain — the two share no path — and its
+Shape prose now says so. The two consequences the entry measures are why it is not a one-line
+change: the band's growth takes both panel heights with it (134 -> 150 and 168 -> 184 at the
+default x2), and
+the compact layout's clearance above the player panel is the same budget QA failed `[Task-53]` on
+once, so the entry holds the 0-px invariant and names the knob. Nothing here re-plans
+`Task-38`–`Task-71`, 5c was still un-cut when this report arrived so no already-cut batch gains a
+member (it is cut below, with this task in it), and Batch 4b stays `cut`.
+
+A **fifteenth round** of **one report** arrived after that one, and it adds **no dependency edge**
+and **no `SAVE_VERSION` step**: `Task-73` — «arregla animacion hierba sale por encima de
+personaje», answered with **«igual que juego original»** — is the rustle the now-archived
+`[Task-45]` shipped drawing **over the character** instead of at their feet. It claims
+`src/scenes/RouteScene.ts` alone, and `src/scenes/RouteScene.ts` is free in **Batch 5c** (whose
+Task-69 owns `src/data/` and the docs and whose Task-72 owns `src/scenes/BattleScene.ts`) while
+5d's `Task-70` and 5e's `Task-71` already hold it — so **5c is the earliest batch that leaves
+the file free**, it becomes the batch's third member, and all three still share no path. Nothing
+here re-plans `Task-38`–`Task-72`, and Batch 4b stays `cut`.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
@@ -591,28 +619,43 @@ five added a run field or a `SAVE_VERSION` step, so the version chain stays
 `vite.config.ts`, `src/data/dex/**` or `src/engine/save.ts`. Its five IDs are retired: they keep
 their place in the sequence and are never reused.
 
-### Batch 5c — the level curve re-planned: eight maps, levels 2 → 55
+### Batch 5c — the level curve re-planned, the battle panels' type badges grow, and the rustle drops to the player's feet *(cut)*
+**Cut.** Its three specs are written (`.agent_specs/task-69.md`, `task-72.md`, `task-73.md`) and
+its three branches may be cut; it can gain no member.
 - **Task-69** A finite run becomes eight maps that end at level 55, with a 2–9 first floor,
   and an infinite run whose floors keep climbing from the bottom as well as the top.
-- **Hot files:** `src/data/maps.ts` + `maps.test.ts`, `src/data/run.ts` + `run.test.ts`,
-  `docs/balance/route-curve.md`, `docs/maps-spec.md` §4/§5 **and §10's `O-M7`**,
-  `src/engine/run/curve.test.ts` and
-  `src/data/README.md`'s `maps.ts` line if the wording
-  changes (its `src/engine/save.test.ts` expectation reads `levelCapForMap(3)` and so follows
-  the data instead of moving). It claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`,
-  `src/engine/save.ts`, `src/scenes/*.ts`, packed asset or `docs/` file another batch holds
-  (`docs/maps-spec.md` §7 is Task-54's in 5b, and §4/§5 are nobody's after that).
-- **Shape:** one task, alone, and it is the batch the human's own decision opens. It is the
-  **only** batch that can host it: `docs/balance/route-curve.md` is Task-51's in 5b and the
-  `docs/balance/` sheets are Task-09's in Batch 6, `docs/maps-spec.md` is Task-17's in Batch 6,
-  and the `src/data/` number tables it moves are exactly the ones Task-09 tunes there — so a
-  level rework has to land **between** the two: after Task-51 has re-pinned the evolution
-  curve against the shipped caps and before the balance pass reads a curve it no longer has to
-  design. Nothing in it produces a path a batch mate reads, and it adds no state, so **no**
-  `SAVE_VERSION` step — the chain stays 14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44) → 18
-  (Task-52). Its sibling, the density pass, cannot ride beside it: **Batch 5d** re-reads the
-  walk this task solves and re-pins the same `curve.test.ts` and the same `src/data/run.ts`
-  rows, and a batch is an antichain.
+- **Task-72** The battle panels' type badges are bigger, for both the active Pokémon and the
+  rival.
+- **Task-73** The tall-grass rustle stops drawing over the character: it sits at the player's
+  own feet, hiding the legs and leaving the head and torso visible, as the cartridge does.
+- **Hot files, one holder per path:** `src/data/maps.ts` + `maps.test.ts`, `src/data/run.ts` +
+  `run.test.ts`, `src/engine/run/curve.test.ts`, `docs/balance/route-curve.md`,
+  `docs/maps-spec.md` §4/§5 **and §10's `O-M7`** and `src/data/README.md`'s `maps.ts` line
+  → **Task-69** (its own `src/engine/save.test.ts` expectation reads `levelCapForMap(3)` and so
+  follows the data instead of moving; it claims no `package.json`, `src/main.ts`,
+  `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts`, `src/scenes/*.ts`, packed asset or
+  `docs/` file another batch holds — `docs/maps-spec.md` §7 was Task-54's in 5b, now shipped).
+  `src/scenes/BattleScene.ts` → **Task-72** alone (it reads the shipped `[Task-53]` row and the
+  Añil type atlas unchanged, so it writes no `src/data/**` file, opens no `src/ui/**` module,
+  takes no `docs/` line and claims no generated file or packed asset).
+  `src/scenes/RouteScene.ts` → **Task-73** alone (plus `src/engine/tileFrames.ts` only if its
+  **measurement** needs the accessor — the spec freezes whether; no `src/data/**`, no
+  `docs/` line and no packed asset). **No two of the three share a path.**
+- **Shape:** three tasks that share no path, and the batch is the only one that can host all
+  three. Task-69 is the batch the human's own decision opens and it is the **only** batch that
+  can host it: `docs/balance/route-curve.md` is Task-51's in 5b and the `docs/balance/` sheets
+  are Task-09's in Batch 6, `docs/maps-spec.md` is Task-17's in Batch 6, and the `src/data/`
+  number tables it moves are exactly the ones Task-09 tunes there — so a level rework has to
+  land **between** the two: after Task-51 has re-pinned the evolution curve against the shipped
+  caps and before the balance pass reads a curve it no longer has to design. Its sibling, the
+  density pass, cannot ride beside it: **Batch 5d** re-reads the walk this task solves and
+  re-pins the same `curve.test.ts` and the same `src/data/run.ts` rows. Task-72 and Task-73 are
+  the batch's other two members and take the two scenes this batch leaves free: `5d`'s Task-70
+  holds `src/scenes/RouteScene.ts` and `5e`'s Task-71 holds `src/scenes/BattleScene.ts`, so
+  **5c is the earliest batch whose path list leaves both scenes free** — which is why the
+  badges and the rustle land here rather than at the tail. Both produce nothing Task-69 reads
+  and vice versa. None of the three adds a run field, so **no** `SAVE_VERSION` step — the chain
+  stays 14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44) → 18 (Task-52).
 
 ### Batch 5d — the early floors thin out
 - **Task-70** Maps 1-2 place fewer trainers and less loot, and **map 1 hangs no shop leaf**, so
@@ -2698,6 +2741,94 @@ Ports of Showdown handlers, in batches, on the hook names in
       `[Task-53]`'s row and `[Task-57]`'s row already inside the panels it draws over. It adds no
       run field, so **no `SAVE_VERSION`** step — the chain stays 14 → 15 (Task-13) → 16
       (Task-31) → 17 (Task-44) → 18 (Task-52). *(Batch 17)*
+- [ ] **[Task-72] The battle panels' type badges are bigger.** Reported in play: «haz mas grande
+      el icono de tipos del contenedor de combate del poke actual y rival» — the **type badges**
+      in the battle's HP panels are too small to read, on **both** sides: the active Pokémon's
+      panel and the rival's.
+      **Today the row the shipped `[Task-53]` added draws them at scale 1.** `drawSidePanel`
+      (`src/scenes/BattleScene.ts`, 1657-1707) is the one builder for both panels: it lays out
+      `nameY = rect.y + pad.top`, `typesY = nameY + PANEL_NAME_H` and
+      `barY = typesY + PANEL_TYPES_H + PANEL_NAME_GAP` (1668-1671), then walks up to
+      `PANEL_TYPE_SLOTS = 2` types (96) drawing each badge from the Añil atlas at
+      `(typeX, typesY + 3)` with **no `setScale`** — the atlas frames are 32x14
+      (`src/data/typeIcons.ts`, 13-23) — advancing `typeX` by `TYPE_ICON_W + PANEL_TYPE_GAP`
+      (1686-1689) and falling back to a text chip whose box is
+      `PANEL_CHIP_W = 74` x `PANEL_CHIP_H = PANEL_TYPES_H` (99-100) with a 16px label
+      (1690-1701). The band is `PANEL_TYPES_H = 20` (92), the badges are the **live fighter's**
+      own types (`displayActive[side].types`, 1677 — a Mega or a form change shows the forme's),
+      the panels are `PLAYER_PANEL_H = 168` (87) and `FOE_PANEL.h = 134` (88), and every other
+      row — the status badge at `barY - 22` (1717), the stat text at `barY - 23` (1711) and the
+      player's XP row below the bar — is measured **from `barY`**, not from the panel's top.
+      **Fix shape, as the recommended reading (the spec freezes the exact names).** One knob
+      scales the band: a `PANEL_TYPE_SCALE` applied to the badge images, to the chip's box and
+      to the chip's label, so the fallback can never disagree with the badges it replaces. The
+      **default is ×2** — the badge's drawn height goes 14 -> **28 px** (32x14 -> 64x28 at scale
+      2), which is the natural reading of "más grande" and still leaves `2 x 64 + 4 = 132 px` of
+      the panel's `320 - 2 x 20 = 280 px` content width free, so two badges and two chips both
+      fit; the band's own height follows the badges (`PANEL_TYPES_H` 20 -> **36**, i.e. the 28px
+      badge at its 3px offset plus a 5px bottom margin) and the chip's box grows with it
+      (`PANEL_CHIP_H = PANEL_TYPES_H`, its width staying about one badge plus label room so the
+      pair still fits). The rows **above** the band do not move: `PANEL_NAME_H` (90) and
+      `PANEL_NAME_GAP` (94) keep their values, and every row at or below `barY` keeps its offset
+      from `barY`, so the only thing that moves is `barY` itself and the panel that contains it.
+      **The first real consequence, measured: both panels grow, and the field slack with them.**
+      The panel absorbs the band (that is what Task-53 froze: its `FOE_PANEL.h` went 114 -> 134
+      and `PLAYER_PANEL_H` 148 -> 168 for the 20px band), so ×2 takes `FOE_PANEL.h` **134 -> 150**
+      and `PLAYER_PANEL_H` **168 -> 184**, i.e. **+16 px each**. On the desktop layout that moves
+      the foe panel's bottom 162 -> **178** (`foeInfo = { x: 36, y: 28 }`, 1586) and the player
+      panel's top 16 px further up (`playerInfo.y = box.y - 24 - PLAYER_PANEL_H`, 1589, so its
+      bottom stays pinned at `box.y - 24`); the two battlers do not sit under those panels
+      because the panels are on the left and the right and the mons are at `width * 0.27` /
+      `0.72-0.78` (1593-1596), so the desktop check is that this is still true for the widest
+      sprite — and the mon-size caps there are `foePlatformY - MON_TOP_MARGIN` (1615-1622), which
+      do not read the panel at all.
+      **The second, and it is the one QA already failed once: the compact layout.** Task-53's
+      correction round was exactly this: the foe panel's +20 px left **33 px of the foe battler
+      behind the player panel**, and the fix pinned the foe's platform `FOE_PLATFORM_CLEAR = 28`
+      above the player panel (`foeY = min(foePanelBottom + SPRITE_SIZE_MAX, max(foePanelBottom,
+      playerInfo.y - FOE_PLATFORM_CLEAR)) - FOE_PLATFORM_OFFSET`, 1576-1581), which reports
+      **0 px** today. That clearance is a fixed vertical budget — `foePanelBottom` down to the
+      player panel's top — and the mon-size cap on a phone is `foePlatformY - panelBottom`
+      (1617), so **the band's growth comes straight out of the foe sprite's size**: at a
+      640-px-tall viewport the platform stays at `round(640 * 0.46) - 28 = 266` while the panel's
+      bottom goes 150 -> 166, so the cap drops **116 -> 100 px** (the same 16 px), and the
+      invariant to hold is the one QA measures: **no battler behind a panel, 0 px, on the
+      desktop and the compact layout, with no titan clipped**. If the squeeze reads badly the
+      knob is `FOE_PLATFORM_CLEAR` and the platform's floor rather than the band's growth — but
+      moving the platform **down** toward the player panel to buy the sprite room is what
+      reintroduced the overlap, so the spec freezes whichever it picks and re-measures both
+      layouts at the shipped `COMPACT_SIZE = 700` threshold and at a 640-px-tall phone. A third
+      reading is named and rejected: a smaller scale under `COMPACT_SIZE` (say x1.5 on a phone)
+      keeps every sprite where it is, but it makes one report two looks and splits the band's
+      constant.
+      **What it does not need.** No `src/data/**` (the atlas stays 32x14 — the *drawn* size
+      changes, not the art), no new module, no new constant outside `BattleScene.ts`, no i18n
+      literal (the chip carries the type's own name, already keyed by the data), no run field,
+      and therefore **no `SAVE_VERSION`** step — the version chain stays 14 → 15 (Task-13) → 16
+      (Task-31) → 17 (Task-44) → 18 (Task-52). No RNG, no engine rule, no fixed-seed test.
+      **Paths:** `src/scenes/BattleScene.ts` alone. **No `docs/` line**, decided and not
+      forgotten: the HP panels' geometry is presentation and changes no rule, `docs/design-spec.md`
+      §4 lists the battle's windows without describing the panels' bands, `docs/battle-spec.md`
+      carries rules rather than pixel sizes, and the archived `[Task-53]` took no doc line for
+      the very same row (the `[Task-34]` and `[Task-57]` precedent) — so this task owes none
+      either. Its test plan is the Playwright pass (both panels, both layouts, the chip path read
+      by code) and the untouched `npm test`/`npm run build` gate, because the scene owns no pure
+      logic.
+      Out of scope: the atlas itself and every other type badge in the game (the move cells'
+      `MoveGrid` badges, the starter cards, the party-detail chips, the capture screen), the Añil
+      64px battle icons, the name/level text, the HP bar and its colour, the status badge, the
+      XP row, the command/moves/party grids, the message box, the type-icon *art* (a bigger
+      source frame would be a `scripts/frlg/build-type-icons.mjs` change and its own task), and
+      the desktop layouts' horizontal placement.
+      *Dependencies:* none — the shipped `[Task-53]` row, the Añil type atlas, `displayActive`
+      and the layout constants are all in the tree, and the task adds no state.
+      Batch order covers it: it wants `src/scenes/BattleScene.ts` alone, and the earliest
+      pending batch whose path list leaves that file free is **Batch 5c**, whose Task-69 claims
+      no scene at all — 5d's Task-70 holds `src/scenes/RouteScene.ts` and 5e's Task-71 holds the
+      battle scene — so it joins 5c as its second member, sharing no path with Task-69, and
+      lands **before** Batch 6, so Batch 8's accessibility pass (which audits colour-only
+      information) and Batch 10's i18n sweep both see the bigger row rather than an older one.
+      *(Batch 5c)*
 
 ## Phase 6 — Run structure, party & economy
 
@@ -3217,6 +3348,67 @@ cycles one biome.
       Batch 6 (`src/scenes/RouteScene.ts` is Task-16's in Batch 5, Task-45's in 5b, Task-38's
       in 6b and Task-31's in Batch 7) and its new `src/data/` file is not one of the number
       tables Task-09 tunes in the same batch. *(Batch 6)*
+- [ ] **[Task-73] The tall-grass rustle draws at the player's feet, not over them.** Reported in
+      play: «arregla animacion hierba sale por encima de personaje» — the rustle the archived
+      `[Task-45]` shipped renders **over the character**. Asked what he wants instead, the human
+      answered **«igual que juego original»**, so the target is the cartridge's own read: the
+      rustle sits **at the player's feet** and hides the **legs**, while the **head and torso stay
+      visible**.
+      **The diagnosis, verified line by line in the shipped scene.** `movePlayerTo`
+      (`src/scenes/RouteScene.ts`, 4340-4347) places the player sprite at
+      `(this.centerX(x), this.centerY(y) + TILE_SIZE / 2)` — the tile's **bottom edge**, the FRLG
+      frame's feet line, which is what makes a 16x32 frame (`src/data/frlg/player.json`, 2-3)
+      drawn at `TILE_SIZE / PLAYER_SPRITE_WIDTH = 1.5` a 24x48 sprite spanning
+      `centerY - 36 .. centerY + 12` — and gives it `actorDepth(...)` (503-504: `ACTOR_DEPTH = 8`
+      at 499 plus a foot-y step), i.e. the actor band. `refreshGrassStep` (4355-4366) places the
+      rustle sprite at `(this.centerX(this.player.x), this.centerY(this.player.y))` — the tile's
+      **centre**, half a tile **above** the player's own anchor — and `drawEntities` (4177-4196)
+      builds that sprite with `setDepth(GRASS_STEP_DEPTH)`, `GRASS_STEP_DEPTH = 10` (517), which
+      is **above** the whole actor band. So the overlay is anchored on a different line from the
+      character it is supposed to cover the legs of, and it draws over them. QA confirmed the
+      result in play at cut time (the parked rest frame covering the player's **torso and head**,
+      "only the red peak of the cap shows" of the sprite left), and the hit's frames — the pack's
+      own `[6, 45, 46, 47, 48]` (`src/data/tilesets/frlg.ts`, 83 and 151) — inherit the same
+      anchor.
+      **The right art already ships, so only the anchor is wrong.** The parked rest frame is the
+      field's own tuft, **byte-identical to tile frame 5** (`FRLG_TALL_GRASS`, 76) — Task-45's
+      packer stamped it from each field's own `tallGrass` source for exactly that reason — so an
+      overlay that sits on the tile's own band *is* the cartridge's "covered" layer. The fix is
+      therefore the **anchor and the origin as one pair**: place the rustle on the player's own
+      line — `this.centerY(y) + TILE_SIZE / 2`, the same feet line the player sprite uses — **and**
+      give it `setOrigin(0.5, 1)` (today it is a plain centre-anchored sprite, 4186-4193), while
+      keeping it above the actor band (`GRASS_STEP_DEPTH = 10`) so it still reads as the covered
+      layer and stays under `TREE_TIP_DEPTH` (491). Setting the position without the origin would
+      drop the art half a tile; setting the origin without the position would raise it. **The
+      spec's first duty is the measurement, not the guess** (the `[Task-39]` precedent): standing
+      in grass, on the **desktop** and on the **compact** layout, it must record how much of the
+      player sprite is covered before and after (the criterion is the **lower half — the 24 px
+      tile band of the 48 px frame — not the whole body**), that the **hit plays at the feet**,
+      that **only the player's own tile** animates, and that nothing else in the scene moves. If
+      the measurement shows the drawn overlay is larger than one tile (a size or scale defect
+      rather than an anchor one), that is the bug to fix first and the report says so.
+      **Paths:** `src/scenes/RouteScene.ts` alone — no art, no packer, no `src/data/**`, no
+      `src/ui/**`, no new constant outside the scene. **No `docs/` line**, decided and stated:
+      the anchor is scene geometry that changes no rule (the `[Task-53]`, `[Task-34]` and
+      `[Task-57]` precedent for panel geometry), and `docs/tileset-spec.md` §6 — the archived
+      Task-45's doc line — records the *atlas cells and the beat*, neither of which moves here.
+      No run field, no RNG, no engine rule, so **no `SAVE_VERSION`** step: the chain stays
+      14 → 15 (Task-13) → 16 (Task-31) → 17 (Task-44) → 18 (Task-52). `src/engine/tileFrames.ts`
+      and its test move **only** if the measurement needs the accessor to change — the spec
+      freezes which, and a change there would carry its own test.
+      Out of scope: the rustle's frames, its beat and its `grassRustleFrames`/`isGrassStepTile`
+      contract (shipped by `[Task-45]`, unchanged), the atlas and its packer, the wall/ledge/
+      water stamps, the tree tips and their depth, the trainers' and items' own depths and their
+      sprites, the fog/weather overlays (Task-62's), the camera and the HUD, and every other
+      scene's rendering.
+      *Dependencies:* none — the shipped rustle sprite, the accessors and the tide of constants
+      above are all in the tree, and the task adds no state. Batch order covers it: it wants
+      `src/scenes/RouteScene.ts` alone, and the earliest pending batch whose path list leaves
+      that file free is **Batch 5c** — whose Task-69 owns `src/data/` and the docs and whose
+      Task-72 owns `src/scenes/BattleScene.ts` — while 5d's Task-70 and 5e's Task-71 already hold
+      the route scene. So it joins 5c as its **third** member, sharing no path with either of
+      them, and lands **before** Batch 6, so Batch 8's accessibility pass and Batch 10's i18n
+      sweep both see the corrected overlay. *(Batch 5c)*
 - [ ] **[Task-58] Every panel becomes a dark glass card (the `t-glass` direction).** Reported in
       play, while Batch 5 was in flight: «los paneles que sean estilo visual como el de debug» —
       the dev overlay is where the report points, and the look it seeded has now been rendered and
