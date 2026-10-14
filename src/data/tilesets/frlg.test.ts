@@ -88,6 +88,22 @@ function tileIsOpaque(png: { width: number; data: Uint8Array }, frame: number): 
   return true;
 }
 
+/** A cell's alpha shape: its opaque pixel count and the rows that carry any. */
+function cellAlpha(png: { width: number; data: Uint8Array }, frame: number): { opaque: number; opaqueRows: number[] } {
+  const bytes = tileBytes(png, frame);
+  const opaqueRows: number[] = [];
+  let opaque = 0;
+  for (let y = 0; y < FRLG_TILE_SIZE; y++) {
+    let row = 0;
+    for (let x = 0; x < FRLG_TILE_SIZE; x++) {
+      if (bytes[(y * FRLG_TILE_SIZE + x) * 4 + 3] > 0) row++;
+    }
+    if (row > 0) opaqueRows.push(y);
+    opaque += row;
+  }
+  return { opaque, opaqueRows };
+}
+
 describe('frlg tileset atlases', () => {
   it('is a 4x13 grid of 16px cells', () => {
     expect(FRLG_TILE_SIZE).toBe(16);
@@ -149,19 +165,36 @@ describe('frlg tileset atlases', () => {
     }
   });
 
-  it('stamps the five rustle cells, the rest frame identical to the tall-grass tile', () => {
+  it('stamps the five rustle cells raw: a transparent blade band and one closing frame', () => {
+    expect(FRLG_GRASS_RUSTLE_FRAMES).toEqual([6, 45, 46, 47, 48]);
     for (const name of ATLASES) {
       const png = atlas(name);
       for (const frame of FRLG_GRASS_RUSTLE_FRAMES) {
         expect(tileIsBlank(png, frame), `${name} rustle frame ${frame}`).toBe(false);
-        // The hit closes over the player, so no rustle cell may be see-through.
-        expect(tileIsOpaque(png, frame), `${name} rustle frame ${frame} opaque`).toBe(true);
       }
-      // The rest frame is the field's own tuft, so a rustle at rest is invisible
-      // over the tile the player stands on.
-      expect(tileBytes(png, FRLG_GRASS_RUSTLE_FRAMES[0]), `${name} rest frame`).toEqual(
-        tileBytes(png, FRLG_TALL_GRASS),
-      );
+      const rest = cellAlpha(png, FRLG_GRASS_RUSTLE_FRAMES[0]);
+      // The overlay is stamped with the rip's own alpha, so the tile under it and the
+      // character show through: the rest cell is a blade band, not an opaque plate.
+      expect(tileIsOpaque(png, FRLG_GRASS_RUSTLE_FRAMES[0]), `${name} rest cell fully opaque`).toBe(false);
+      // Its upper rows are clear, so the opaque pixels sit in the cell's lower half and
+      // the overlay can never cover the player's head and torso.
+      expect(rest.opaqueRows[0], `${name} rest cell first blade row`).toBeGreaterThanOrEqual(FRLG_TILE_SIZE / 2);
+      expect(rest.opaque, `${name} rest cell blade pixels`).toBeLessThan((FRLG_TILE_SIZE * FRLG_TILE_SIZE) / 2);
+      // The copy of the tall-grass tile is exactly what the rest cell no longer is.
+      expect(tileBytes(png, FRLG_GRASS_RUSTLE_FRAMES[0]), `${name} rest frame`).not.toEqual(tileBytes(png, FRLG_TALL_GRASS));
+      // The hit keeps the rip's alpha: its closing frame is the one allowed to cover
+      // the cell, the three that flick and settle stay see-through.
+      expect(tileIsOpaque(png, 45), `${name} closing frame 45 opaque`).toBe(true);
+      for (const frame of [46, 47, 48]) {
+        expect(tileIsOpaque(png, frame), `${name} hit frame ${frame} opaque`).toBe(false);
+      }
+    }
+    // The three fields stamp the same five cells, byte for byte.
+    for (const frame of FRLG_GRASS_RUSTLE_FRAMES) {
+      const reference = tileBytes(atlas(ATLASES[0]), frame);
+      for (const name of ATLASES.slice(1)) {
+        expect(tileBytes(atlas(name), frame), `${name} rustle frame ${frame}`).toEqual(reference);
+      }
     }
   });
 
