@@ -69,13 +69,18 @@ read the rest of the spec is not a criterion.
     adds.
   - `npm run build` — `tsc --noEmit && vite build`.
   - `git diff --name-only main...task-<ID>` audit against the exclusive paths list.
-  - For a task that changes what the player sees: a Playwright smoke pass against
-    `npm run dev`.
-- **Acceptance criteria:**
-  - [ ] It typechecks and builds clean.
-  - [ ] The declared tests exist and pass.
-  - [ ] Nothing outside the exclusive paths was touched.
-  - [ ] <task-specific, objective, checkable condition>
+  - A task whose criteria are all `[unit]` owes **no** browser pass; say so.
+- **Acceptance criteria:** every one is tagged **`[unit]`** (a headless command, a
+  decoded asset, a pinned number — seconds and deterministic) or **`[live]`** (it only
+  exists in the running game: layering, overlap, a band, a beat, a colour on screen).
+  QA runs them all, but its browser budget goes to the `[live]` ones, so an untagged
+  criterion is a spec bug. A `[live]` criterion states its **measurement** — what to
+  read, on which layout, against which bound — so QA reproduces it instead of
+  inventing one.
+  - [ ] `[unit]` It typechecks and builds clean.
+  - [ ] `[unit]` The declared tests exist and pass.
+  - [ ] `[unit]` Nothing outside the exclusive paths was touched.
+  - [ ] `[live]` <task-specific, objective, checkable condition, with its measurement>
 
 ## 📣 Coordination
 
