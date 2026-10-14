@@ -42,6 +42,12 @@ Implement them exactly. If you believe a signature is wrong, say so in your repo
 9. Write the tests your spec declares and run the gate yourself:
    `npm test` and `npm run build`. Do not hand a task to QA that you have not
    verified against your own checklist.
+10. A fresh worktree has no `node_modules` (worktrees share `.git`, not the tree).
+    Install once with `npm ci --prefer-offline --no-audit --no-fund`: it still
+    honours the lockfile, but reads packed tarballs from the local npm cache
+    instead of revalidating them against the registry, so it is seconds rather
+    than minutes. Never use a network-only `npm ci` and never junction
+    `node_modules` in from another tree (see `AGENTS.md`'s **Asset trees** rule).
 
 ## Reporting
 
