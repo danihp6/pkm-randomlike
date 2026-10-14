@@ -282,6 +282,23 @@ describe('frlg tileset atlases', () => {
     }
   });
 
+  it('starts each rustle cell at the row the overlay clips to', () => {
+    // The rustle builder clips the overlay to the cell's rows 6-15 (`setCrop(0, 6, 16, 10)`), so
+    // every frame of the beat stops at the player's hips. The art's own first blade row is what
+    // makes that clip load-bearing: the parked cell starts exactly at the clip row, the three
+    // trim-carrying hit frames above it and the closing frame at the very top of the cell.
+    const FIRST_BLADE_ROW: Readonly<Record<number, number>> = { 6: 6, 45: 0, 46: 2, 47: 5, 48: 6 };
+    for (const name of ATLASES) {
+      const png = atlas(name);
+      for (const frame of FRLG_GRASS_RUSTLE_FRAMES) {
+        const alpha = cellAlpha(png, frame);
+        expect(alpha.opaqueRows[0], `${name} cell ${frame} first blade row`).toBe(FIRST_BLADE_ROW[frame]);
+        // Every cell still draws inside the clipped band, so the clip never blanks a frame.
+        expect(alpha.rows.slice(6).some((row) => row > 0), `${name} cell ${frame} art below the clip`).toBe(true);
+      }
+    }
+  });
+
   it('leaves the two unused wall-shape cells blank', () => {
     for (const name of ATLASES) {
       for (const frame of [49, 50]) {
