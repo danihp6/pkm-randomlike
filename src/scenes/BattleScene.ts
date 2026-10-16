@@ -103,6 +103,12 @@ const PANEL_CHIP_W = TYPE_ICON_W * PANEL_TYPE_SCALE + 8;
 const PANEL_CHIP_H = PANEL_TYPES_H;
 /** The chip's label, one font step up from the panel text, clipped to the box. */
 const PANEL_TYPE_LABEL_SIZE = 24;
+/** The trainer's ball row: one Añil Poké Ball per roster member, under the foe panel. */
+const FOE_BALL_SCALE = 0.75;
+const FOE_BALL_PITCH = 22;
+const FOE_BALL_GAP = 4;
+const FOE_BALL_SPENT_TINT = 0x4b5563;
+const FOE_BALL_SPENT_ALPHA = 0.45;
 /** The engine's blank texture the badges start on, as `InfoPopup` does. */
 const BLANK_TEXTURE_KEY = '__DEFAULT';
 const ROW_H = 34;
@@ -302,6 +308,8 @@ export class BattleScene extends Phaser.Scene {
   private statusText!: Record<SideId, Phaser.GameObjects.BitmapText>;
   /** The FRLG status badge drawn in a panel instead of the text, when one exists. */
   private statusBadges!: Record<SideId, Phaser.GameObjects.Image>;
+  /** One ball per enemy roster member; built once, positioned and dimmed per repaint. */
+  private foeBallRow: Phaser.GameObjects.Image[] = [];
   /**
    * The live types row under each panel's name: one Añil badge per type, plus a
    * coloured chip (its box and label) standing in for a name the atlas lacks.
@@ -566,6 +574,13 @@ export class BattleScene extends Phaser.Scene {
       enemy: this.add.image(0, 0, STATUS_ICON_TEXTURE_KEY, 0).setOrigin(0, 0).setScale(1.5).setVisible(false),
       player: this.add.image(0, 0, STATUS_ICON_TEXTURE_KEY, 0).setOrigin(0, 0).setScale(1.5).setVisible(false),
     };
+    this.foeBallRow = Array.from({ length: MAX_PARTY_SIZE }, () =>
+      this.add
+        .image(0, 0, ITEM_ICON_TEXTURE_KEY, itemIconFrame('pokeball') ?? 0)
+        .setOrigin(0, 0)
+        .setScale(FOE_BALL_SCALE)
+        .setVisible(false),
+    );
     // The types row: one Añil badge per type, starting on the engine's blank
     // texture until `drawSidePanel` picks the frame, with the chip beside it as
     // the fallback for a name the atlas lacks.
@@ -1758,6 +1773,41 @@ export class BattleScene extends Phaser.Scene {
     } else {
       this.xpText.setVisible(false);
     }
+
+    if (side === 'enemy') {
+      if (this.state.isWild) this.hideFoeBallRow();
+      else this.drawFoeBallRow(rect);
+    }
+  }
+
+  /**
+   * The foe's remaining team as a fixed row of balls under its panel: one per
+   * member the trainer brought, in roster order, with the fainted ones emptied.
+   * The active member's ball follows the displayed HP, so it dims on the same
+   * repaint that empties the HP bar.
+   */
+  private drawFoeBallRow(rect: Rect): void {
+    const party = this.state.sides.enemy.party;
+    const active = this.state.sides.enemy.activeIndex;
+    const x = rect.x + FRLG_WINDOW_PADDING.x;
+    const y = rect.y + rect.h + FOE_BALL_GAP;
+    this.foeBallRow.forEach((ball, i) => {
+      if (i >= party.length) {
+        ball.setVisible(false);
+        return;
+      }
+      const spent = i === active ? this.displayHp.enemy <= 0 : party[i].hp <= 0;
+      ball
+        .setPosition(x + i * FOE_BALL_PITCH, y)
+        .setAlpha(spent ? FOE_BALL_SPENT_ALPHA : 1)
+        .setVisible(true);
+      if (spent) ball.setTint(FOE_BALL_SPENT_TINT);
+      else ball.clearTint();
+    });
+  }
+
+  private hideFoeBallRow(): void {
+    this.foeBallRow.forEach((ball) => ball.setVisible(false));
   }
 
   /**
