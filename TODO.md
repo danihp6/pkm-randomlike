@@ -37,8 +37,12 @@ rustle, Batch 5c the one that re-planned the level curve and laid that overlay o
 legs, Batch 5cb the defect in front of 5d that fixed its colour and clipped its hit, Batch 5d
 the on-ramp thinning, Batch 5e the fixed boss and mini-boss parties, and Batch 5eb the debug
 overlay's teleports and its two ignore toggles, and all seven are closed
-below. **Batch 6 is the next batch cut** — the balance pass, the Phase 9 docs pass, the battle
-SWITCH grid and the follower Pokémon. It is the first batch of the post-on-ramp plan. Every
+below. **Batch 5f is the next batch cut** — the overworld sprite set, alone, one art task cut
+immediately in front of Batch 6 so the batch behind it reads art that has already merged.
+**Batch 6 is the batch after it** — the balance pass, the Phase 9 docs pass, the battle SWITCH
+grid and the party's lead walking behind the player. 5f is the first batch of the post-on-ramp
+plan (the eighteenth round below put the follower back in Batch 6 and gave its art its own
+batch, 5f, ahead of it). Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
 goes to the packer, and no tree under `sprite-sources/` is ever linked into a worktree
 (Batch 3's junction is what emptied it once).
@@ -95,7 +99,8 @@ earlier batch whose paths leave `scripts/build-dex.mjs` and `src/data/dex/**` fr
 every `src/**` path `.prettierignore` still ledgers, so it runs alone, and last.
 `src/scenes/RouteScene.ts` and `SAVE_VERSION` are the two serial resources the second round
 of reports adds to that list, and they are what fixes the tail of the plan: Task-45
-(Batch 5b), Task-70 (Batch 5d), Task-71 (Batch 5e), Task-41 (Batch 6), Task-31 (Batch 7), Task-39 (Batch 9), Task-40 (Batch 9b),
+(Batch 5b), Task-70 (Batch 5d), Task-71 (Batch 5e), Task-41 (Batch 6, kept there by the eighteenth
+round below), Task-31 (Batch 7), Task-39 (Batch 9), Task-40 (Batch 9b),
 Task-44 (Batch 13) and Task-30 (Batch 12) each want that one scene, so they line up one
 batch apart — and the third round's Task-48 and Task-49, the two reports that want it after
 every one of them, extend the same queue into the new **Batch 14** and **Batch 15** — and the
@@ -130,6 +135,11 @@ reads the battle's own state — and the ninth and tenth rounds' **six** reports
 same `src/scenes/RouteScene.ts` queue into six new one-task batches, **Batch 21** to **Batch
 26**, because every one of the six wants that one scene and Batch 20's Task-58 is its last
 holder; none of the six adds a run field, so the chain stays **14 → 15 → 16 → 17 → 18**.
+**This paragraph is the master list of that one scene's queue**: the eighteenth round below
+leaves `Task-41` in **Batch 6**, where it was cut, so the queue runs 6 → 28 unbroken — the
+round's new art task, `[Task-76]`, opens its own single-task **Batch 5f** in front of Batch 6
+and claims no scene at all — and the per-entry lists written before that round still read
+`6 Task-41`, which is correct as they stand.
 
 The items registered since the first plan add one link each, and one batch that is not a
 link at all. `Task-35` (the enemy AI, Batch 8b) reads the reusable scripted-battle
@@ -463,7 +473,7 @@ today's entire run. The same decision answers the question `[Task-09]` had open 
 worth a single level (it is not the wanted shape) and hands Task-09 a curve to tune instead of
 a curve to design; its entry records that. The rework landed in **Batch 5c**, now shipped, because
 `docs/balance/route-curve.md` was Task-51's in 5b and the `docs/balance/` sheets are Task-09's
-in Batch 6, and a second task — **Batch 5d**, the next batch cut — thins maps 1-2 so the on-ramp is
+in Batch 6, and a second task — **Batch 5d**, the batch cut next at the time — thins maps 1-2 so the on-ramp is
 gentler before
 Task-09 reads it. `Task-70` runs one batch behind `Task-69` on purpose: it re-reads the walk
 that task solved and re-pins it, and it writes the same `src/data/run.ts` rows and the same
@@ -562,6 +572,48 @@ that plainly instead of pretending the stream is untouched, and it also freezes 
 the mini-boss **are** trainers for the toggle's purposes — so the toggle stops their sight too, and
 the portal stays sealed until the boss falls (D31). Nothing here re-plans `Task-38`–`Task-74`, and
 Batch 4b stays `cut`.
+
+An **eighteenth round** is **two decisions**, not reports: the human settled the two questions
+the plan was still carrying, and neither of them is a bug. **`[Task-34]`'s grid is answered.**
+The battle SWITCH window becomes **six rows of a fixed cell size that never stretches to fill the
+panel**: one row per party member in a **single column**, each row exactly a sixth of the
+window's content height, so a party of two draws two rows and leaves the rest of the panel
+**empty** rather than two giant cells — and the row's contents (the avatar, the name and the HP
+bar) scale **down to the row** instead of the row growing around them, because a sixth of the
+menu panel's 192px content is only ~19px. The other reading the entry carried — the 3-column
+avatar grid (`PARTY_COLS`) with its cell height merely capped at a sixth — is **rejected**, and
+the question bullet it had below is gone. **`[Task-76]` is registered and gets its own batch in
+front of `[Task-41]`.** The human wants overworld art for **every** species and form, so the
+follower no longer
+waits on "a lead with no sheet draws nothing" — it waits on a new **art** task that fetches the
+PMDCollab packs into the gitignored `sprite-sources/` and packs the missing frames into the
+committed `src/assets/pokemon/<id>.png` + `<id>.json` pairs (the 652 that ship today are dex
+**nums 1-649** — some of them still the procedural placeholders `generate-pokemon.mjs` seeded —
+**plus Castform's three Forecast formes** at `35101`-`35103`; the plan's older wording called
+those three "Deoxys formes", and the repository's own table says otherwise), reusing the
+dependency-free pipeline `scripts/legacy-art/` already carries (`fetch-pmdcollab.mjs`,
+`zip-codec.mjs`, `pmdcollab-species.mjs`, `extract-real-sprites.mjs`), adapted to this repo's
+paths, to argv-passed absolute source directories (the Legend's **Asset trees** rule) and to a
+**coverage manifest** the follower resolves a species id through. **`Task-76` opens its own
+single-task batch, the new `Batch 5f`, cut immediately in front of `Batch 6`** — one art task,
+so the follower is written against art that has already merged rather than beside the task that
+packs it. It shares no path with Task-09's `docs/balance/` sheets and its `golden.test.ts`
+harness, with Task-17's five docs or with Task-34's `src/scenes/BattleScene.ts`, and it takes
+`src/assets/README.md` plus `docs/art-direction.md`
+for the provenance the repo records for its other imported art; it adds **no** `SAVE_VERSION`
+step, so the chain stays **14 → 15 → 16 → 17 → 18**. **`Task-41` therefore stays in `Batch 6`,
+where it was cut, as that batch's fourth task** — the slot its own art no longer needs — because
+Batch 6 is already the first batch that leaves `src/scenes/RouteScene.ts` free (5c's Task-73,
+5cb's Task-74, 5d's Task-70, 5e's Task-71 and 5eb's Task-75 each held it in the batches before),
+and nobody in it claims its new `src/data/` accessor or its `src/render/` module. Its
+dependency now points at `Task-76`'s committed pairs and coverage manifest **one batch earlier**,
+so the question that
+asked what a lead with no art draws becomes a **fallback for the ids that manifest lists as
+missing** instead of the ordinary case for every Gen 6+ species. `src/assets/README.md` is
+`Task-76`'s and `Task-41` must not claim it — the follower only **reads** the committed
+`src/assets/pokemon/**`, which is Batch 5f's generated output and no Batch 6 task's path.
+Nothing else in the plan moves,
+no batch that is already `cut` gains a member, and the two decisions add no run field.
 
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
@@ -792,49 +844,95 @@ entry states that plainly — and the ignore-trainers gate covers **both** sight
 `SAVE_VERSION` step** — the chain stays **14 → 15 → 16 → 17 → 18**. Its ID is retired: it keeps
 its place in the sequence and is never reused.
 
-### Batch 6 — balance pass, Phase 9 docs, the battle SWITCH grid
+### Batch 5f — the overworld sprite set *(cut immediately in front of Batch 6)*
+- **Task-76** The overworld sprite set: every species and form PMD Collab has, packed into
+  `src/assets/pokemon/**`, with the coverage manifest (`src/assets/pokemon/index.json`) the
+  follower reads.
+- **Hot files:** every one of them is this single task's, because the batch is one task:
+  `scripts/legacy-art/**` (the adapted `fetch-pmdcollab.mjs`, `pmdcollab-species.mjs`,
+  `extract-real-sprites.mjs` and the new `build-pokemon-index.mjs`), the generated
+  `src/assets/pokemon/**` — the pairs it adds or re-cuts, its new `index.json` and that
+  manifest's own headless test — plus `src/assets/README.md` and `docs/art-direction.md`, the
+  two contracts it amends. It claims no `package.json` (the tools run under plain `node`), no
+  `src/main.ts`, no `vite.config.ts`, no `src/data/**`, no `src/engine/**`, no scene and no
+  `docs/` file another batch holds.
+- **Shape:** one task, alone, and it is cut as its own batch rather than inside Batch 6 because
+  it **produces** the art `[Task-41]` reads, and a batch is an
+  antichain — the follower cannot be written beside the task that packs the sheets it draws. So
+  the round's two decisions split into two batches: this one commits the set (a network fetch
+  into the gitignored `sprite-sources/pokemons/`, one deliberate run like `npm run data:dex`,
+  and the packed pairs plus the coverage manifest as the committed output), and Batch 6 writes
+  the follower against it. It is also why the letter is **5f**: the on-ramp family `5b` → `5eb`
+  is exhausted at `e`, and a batch cut in front of Batch 6 belongs to that family rather than
+  opening a `6*` series it is not part of — the way `4b` follows `4` and `5cb` follows `5c`. It
+  shares no path with any Batch 6 task: not Task-09's `docs/balance/` sheets and its harness,
+  not Task-17's five docs and `AGENTS.md`, not Task-34's battle scene, and not Task-41's route
+  scene, accessor or render module. It adds **no** run field, draws no RNG and changes no rule,
+  so the chain stays **14 → 15 → 16 → 17 → 18** — and both tools take their source tree through
+  **argv or the environment**, as an absolute path under the main checkout, never a tree under
+  `sprite-sources/` linked into a worktree (the Legend's **Asset trees** rule, and the way
+  Batch 3 lost the Añil clone).
+
+### Batch 6 — balance pass, Phase 9 docs, the battle SWITCH grid, the party's lead walks behind the player
 - **Task-09** Balance pass.
 - **Task-17** Step 14 — docs & migration pass.
-- **Task-34** The battle SWITCH grid: one sixth per row, a name that cannot stretch it,
-  arrows that move the cursor.
-- **Task-41** The party's lead Pokémon walks behind the player on a route.
-- **Hot files:** the sheets under `docs/balance/` → Task-09; `src/scenes/BattleScene.ts`
-  → Task-34; `src/scenes/RouteScene.ts`, the new `src/data/pokemonOverworld.ts` +
+- **Task-34** The battle SWITCH grid: six rows of a **fixed** cell size, a name that cannot
+  stretch them, arrows that move the cursor.
+- **Task-41** The party's lead Pokémon walks behind the player on a route, with its idle and
+  its running animation, drawn from the overworld pairs `[Task-76]` committed one batch
+  earlier (Batch 5f).
+- **Hot files:** the sheets under `docs/balance/` (`economy.md`, `route-curve.md`,
+  `README.md`) → Task-09; `src/scenes/BattleScene.ts` and the new
+  `src/ui/partyGrid.ts` + `partyGrid.test.ts` + its `src/ui/README.md` role line →
+  Task-34; `src/scenes/RouteScene.ts`, the new `src/data/pokemonOverworld.ts` +
   `pokemonOverworld.test.ts`, the new `src/render/pokemonFollower.ts` +
-  `pokemonFollower.test.ts` and `src/assets/README.md` + `src/data/README.md` (and
-  `BootScene` only if its dev preloads there instead of loading lazily in the scene)
-  → Task-41.
-- **Shape:** numbers, one harness and prose. Task-09 owns
+  `pokemonFollower.test.ts` and the two per-folder README role lines
+  (`src/data/README.md`, `src/render/README.md`) → Task-41; `CHANGELOG.md`, for the Phase 9
+  archive section alone, → Task-17. Nobody claims `package.json`,
+  `src/main.ts`, `vite.config.ts`, `src/data/dex/**` or
+  `docs/balance/effect-coverage.md` (generated; Task-23's in Batch 8) — and
+  `src/assets/**` and `docs/art-direction.md` are **Batch 5f's** (Task-76), so Task-41 only
+  *reads* the committed `src/assets/pokemon/**` and takes no line about it.
+- **Shape:** numbers, one harness, prose, one scene, one pure UI grid and one follower.
+  Task-09 owns
   `src/engine/battle/golden.test.ts` and any harness module it extracts beside it —
   the only task allowed to restructure the golden log — over the numbers in
   `src/data/`. Task-17 takes `docs/design-spec.md`, `docs/battle-spec.md`,
-  `docs/routes-spec.md`, `docs/tech-decisions.md` and `AGENTS.md`, so nothing else in
+  `docs/routes-spec.md`, `docs/tech-decisions.md`, `AGENTS.md` and the Phase 9 archive
+  in `CHANGELOG.md`, so nothing else in
   the batch may — which is
   why the capture task registered as `[Task-31]` sits in Batch 7 instead of here: it
   must rewrite the PC rule in `docs/routes-spec.md` §6, and Task-17 holds that file
   in this batch. The bug it replaces, `[Task-27]` (Catching a Pokémon stacks a
   duplicate on top of it), was absorbed into `[Task-31]` and is retired — its live
   diagnosis is `[Task-33]`'s, which Batch 3b fixes before any of this.
-  Task-34 is the third task and takes the one path the other two leave free: the
+  Task-34 is the third task and takes the one scene the other two leave free: the
   party grid's geometry lives in `BattleScene` alone, and this is the first batch whose
   scene claims leave that file open — Batch 5's chrome pass owns it in the batch before,
   and Batch 7's Gigantamax and Batch 8's accessibility sweep own it after. It reads the
   long names Batch 4's nicknames (Task-13) make possible but produces nothing anyone in
   this batch reads, and it takes no `docs/` path: Task-17 holds every spec it could want
-  a line in, and the row geometry changes no rule.
-  `Task-38` (the learnset band scrolls) is **not** here even though its scene is:
-  `src/scenes/RouteScene.ts` is free in this batch — Task-16 took it in the batch before
-  and Task-34 takes a different file — but the task has to rewrite `docs/design-spec.md`
+  a line in, and the row geometry changes no rule. Its pure row geometry is the one
+  `src/ui/**` file this batch opens, and `src/ui/README.md` is nobody's here — Task-38
+  takes it in 6b, the batch after.
+  `Task-41` is the fourth task and takes the batch's second scene: `src/scenes/RouteScene.ts`
+  is free here for the first time since Batch 5b — 5c's Task-73, 5cb's Task-74, 5d's
+  Task-70, 5e's Task-71 and 5eb's Task-75 each held it in the batches before — Task-34 takes
+  a different file, and the follower's other paths (a new `src/data/` accessor, a new
+  `src/render/` registry and the two per-folder README lines) are nobody's. Its art is **not**
+  in this batch: the committed `src/assets/pokemon/**` pairs and the coverage manifest are
+  `Task-76`'s, in **Batch 5f**, the single-task batch immediately before this one — which is
+  exactly why the follower waits for that batch to merge: it resolves a member's `speciesId`
+  through the manifest and draws the pair it names, and the ids the manifest lists as `missing`
+  are the only ones it cannot draw. It writes no line about the art, because
+  `src/assets/README.md` and `docs/art-direction.md` are Task-76's, and it takes no
+  `docs/design-spec.md` line either, because Task-17 holds that file here.
+  `Task-38` (the learnset band scrolls) is **not** here even though its scene is free:
+  Task-41 holds `src/scenes/RouteScene.ts` in this batch, and the scroll has to rewrite
+  `docs/design-spec.md`
   §3's "a **paged** grid" and `docs/tech-decisions.md` `D36`'s "a paged, full-width grid",
-  and Task-17 holds both files here. That is the same rule that sends Task-31 to Batch 7
+  both of which Task-17 holds here. That is the same rule that sends Task-31 to Batch 7
   for `docs/routes-spec.md` §6, so the scroll takes the batch after this one, 6b.
-  `Task-41` (the follower Pokémon) takes the one scene path this batch leaves free:
-  Task-34 claims `src/scenes/BattleScene.ts`, so `src/scenes/RouteScene.ts` — free here,
-  held by Task-45 in Batch 5b, by Task-70 in Batch 5d, by Task-71 in Batch 5e and by Task-38 in 6b
-  — is Task-41's, and its one `src/data/`
-  path is a **new** accessor (`src/data/pokemonOverworld.ts`) rather than one of the number
-  tables Task-09 tunes, so the two never share a file; its art is the committed
-  `src/assets/pokemon/**`, which no batch claims.
 
 ### Batch 6b — the learnset band scrolls, and a trainer's remaining team sits under its panel
 - **Task-38** The learnset band scrolls instead of paging.
@@ -1482,7 +1580,10 @@ behind the mini-boss reward) and the tenth round's three add eight (four behind 
 two behind the gated reward room and two behind the trade room) and the eleventh round's single
 report adds six (all behind the no-items/no-heal room) and the twelfth round's single report
 adds four (the surface, the last move, the gesture and the confirm, all behind the MOVES tab's
-delete) — and every
+delete) — and the **eighteenth round's two decisions add no question at all**: they *answer* two
+of them, so the grid's reading and the follower's missing-sheet case leave this list (both are
+frozen in `[Task-34]`'s and `[Task-41]`'s entries and in the round's own paragraph above, and the
+follower's bullet below is rewritten to the ids `[Task-76]`'s manifest lists as missing) — and every
 question here carries a written default rather than a guess. **Batch 5b's seven are all
 answered**, so their bullets are gone and the answers live in `### Batch 5b` above, archived, and
 in its five specs: Task-45's two readings of the grass step (FireRed's own, on the player's tile —
@@ -1498,16 +1599,6 @@ games' audio rips under `sprite-sources/frlg-audio/`, and the Plates are made ob
 by `Task-07`. A question lands here only when the repository genuinely cannot answer it.
 The one ID without a batch is not a question: `[Task-28]` waits on an upstream
 `typescript-eslint` release.
-
-- **`[Task-34]` (the battle SWITCH grid, Batch 6): is "1/6" one row per member?** The
-  request says the cells must occupy a sixth and that six party rows fill the panel, so
-  the entry is written as **one row per member in a single column** — the classic party
-  list — with the label clipped instead of wrapped and the arrow keys stepping member to
-  member. The other reading is that the 3-column avatar grid (`PARTY_COLS`) stays and only
-  its cell height is capped at a sixth of the window. The default is the first, because
-  only that layout makes six rows fill the panel and makes a single-column cursor the
-  right cursor; say so before Batch 6's branch is cut if the avatar grid is meant to stay.
-  Nothing else in the plan changes either way.
 
 - **`[Task-38]` (the learnset band, Batch 6b): does the band keep a control, or is the
   wheel alone enough?** The band is mouse-first today — its cells are dragged onto the
@@ -1531,16 +1622,16 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
   all, with the difference carried entirely by the two entrance beats. Nothing else in the
   plan changes either way.
 
-- **`[Task-41]` (the follower, Batch 6): what does the follower show for a species with no
-  sheet?** `src/assets/pokemon/**` is 652 committed pairs — dex **nums 1-649** plus the
-  three Deoxys formes (`35101`-`35103`) — while the playable set is much wider, so a lead
-  whose species is Gen 6+ (or a forme with no sheet of its own) has no overworld art to
-  draw. The written default is: resolve the member's `speciesId` through
-  `getSpecies(id)?.num` (`speciesByNum`, `src/data/dex/species.ts`) and **draw nothing**
-  when no sheet matches, so the follower simply is not there for those leads; the
-  alternative is that this report also owes a sheet-extension job (a new `legacy-art`
-  pack for the ids the clone does not cover), which is a task of its own and not this one.
-  Say which before Batch 6's branch is cut. Nothing else in the plan changes either way.
+- **`[Task-41]` (the follower, Batch 6): what does the follower show for an id the sprite set
+  does not cover?** `[Task-76]` (Batch 5f) packs a pair for **every** species and form PMDCollab
+  has — the shipped 652 pairs are extended, not replaced — and commits a coverage manifest whose
+  `missing` list names the ids no pack was found for, so this is a fallback rather than the
+  ordinary Gen 6+ case the bullet used to describe. The written default is: resolve the member's
+  `speciesId` through that manifest and **draw nothing** when it is missing, so the follower
+  simply is not there for those leads; the alternative is a base-species fallback (the
+  `portraitFor` / `megaFormOf` shape, `src/data/portraits.ts` 28-36), which draws the base form's
+  art for a forme that has none. Say which before Batch 6's branch is cut. Nothing else in the
+  plan changes either way.
 
 - **`[Task-47]` (the Continue row, Batch 7): `Map 3 · Deep Forest`, or the room as a third
   clause too?** The report asks for the map and the biome *instead of* the route string, and
@@ -2324,19 +2415,26 @@ Ports of Showdown handlers, in batches, on the hook names in
       window's content height (so a full party of six fills the panel and a party of two
       leaves the rest of the panel empty rather than two giant cells) — **confirmed by the
       human**, whose words for the bug are "with two Pokémon the two cells take the whole
-      grid" — and the row's height
+      grid", and whose reading of the fix is a **fixed cell size that does not stretch to fill
+      the panel**: the panel keeps its geometry, a smaller party leaves the freed space
+      **empty**, and nothing in the row grows to fill it. The row's height
       **never** depends on what it draws: a name that overflows the row is clipped (an
-      ellipsis is fine) and never wrapped or allowed to push the HP bar. The arrow keys move
+      ellipsis is fine) and never wrapped or allowed to push the HP bar. Because a sixth of
+      the menu panel's content is only ~19px (the panel is 192px tall and the frozen
+      `FRLG_WINDOW_PADDING` plus `MOVE_GRID_INSET` leave 152px), the row's **contents scale
+      down to the row** instead of the row growing around them — the avatar is scaled to the
+      row, the label is one clipped line, and the HP bar is drawn inside the row rather than
+      at today's fixed `cellY + 30`. The arrow keys move
       the selection **between party members** in the direction that matches that layout —
-      `up`/`down` are previous/next, and `left`/`right` may do the same since a single column
+      `up`/`down` are previous/next, and `left`/`right` do the same since a single column
       has no second axis — and the cursor still refuses to land on a fainted or already
-      active member exactly as `moveMenu` does today. The ◀ back control, the per-cell HP
-      bar (`PARTY_CELL_HPBAR_SCALE`, already scaled from the cell width so it never runs into
-      a neighbour), `PARTY_AVATAR_SCALE` and the detail window `renderPartyDetail` keeps
+      active member exactly as `moveMenu` does today. The ◀ back control and the detail window
+      `renderPartyDetail` keeps
       drawing above the grid all stay as they are. Six rows is `MAX_PARTY_SIZE`
-      (`src/engine/run/state.ts`), not a new magic number; if the layout needs a pure helper
-      (a row rect per index), it goes in `src/ui/` with a test, the way `moveGrid` and
-      `mapView` do.
+      (`src/engine/run/state.ts`), not a new magic number, and the geometry is a **pure helper**
+      (`src/ui/partyGrid.ts`: the row rects and the inner metrics for a menu rect and a member
+      count, with a co-located test), the way `moveGrid` and `mapView` do — a new file in
+      `src/ui/` owes its one role line in `src/ui/README.md`, which no task in this batch holds.
       Out of scope: the FIGHT/BAG/SWITCH/RUN command grid and the moves grid
       (`MENU_GRID_COLS`, `moveMenuGrid` — they are 2x2 and correct), the route HUD's
       party/PC list (`src/ui/partyScreen.ts`), and the detail window's own layout. Docs: none
@@ -3150,9 +3248,12 @@ cycles one biome.
       `onTileEntered` (4355-4378) rolls the encounter. **Nothing follows it, and the scene
       keeps no movement history** — `this.player = { x, y }` is the only position state, and
       `actorDepth` the only z-ordering.
-      **The art exists, is committed, and nothing in `src/` reads it.**
-      `src/assets/pokemon/<num>.png` + `<num>.json` is 652 pairs — dex **nums 1-649** plus
-      the three Deoxys formes `35101`-`35103` — written by
+      **The art exists, is committed, and nothing in `src/` reads it — and Task-76 widens it
+      to the whole playable set.** `src/assets/pokemon/<id>.png` + `<id>.json` is 652 pairs
+      today — dex **nums 1-649** (a handful of them still the procedural placeholders
+      `generate-pokemon.mjs` seeded, identifiable by a manifest with no `durationsMs`) plus
+      **Castform's three Forecast formes** at `35101`-`35103`, which is what that synthetic id
+      scheme (`num × 100 + the form's SpriteCollab index`) is for — written by
       `scripts/legacy-art/extract-real-sprites.mjs` and seeded by
       `scripts/legacy-art/generate-pokemon.mjs`. Each sheet is variable-width but exactly
       **five direction rows of 32x32 frames**, in the fixed order `down, downRight, up,
@@ -3162,13 +3263,21 @@ cycles one biome.
       strip played faster, exactly as the player does it. `src/assets/README.md` documents the
       sheets and `src/data/README.md` the accessor contract;
       `src/data/pokemonSprites.ts` is a *different* set (the Anil **battle** sprites under
-      `public/anil/`), so it is a shape to copy, not to reuse.
+      `public/anil/`), so it is a shape to copy, not to reuse. **`[Task-76]` (Batch 5f, the
+      single-task batch cut immediately before this one) packs a
+      pair for every species and form PMDCollab has and commits
+      `src/assets/pokemon/index.json`, a coverage manifest mapping a species id to the pair it
+      draws — so this task resolves through that manifest, not through `num` arithmetic, and
+      the ids it lists as `missing` are the only ones with no art.**
       **Fix shape:** two new modules and the scene. `src/data/pokemonOverworld.ts` is the
-      lazy accessor — `pokemonOverworldSheet(speciesId)` resolves
-      `getSpecies(speciesId)?.num` (`speciesByNum`, `src/data/dex/species.ts`) to
-      `src/assets/pokemon/<num>.png` + `<num>.json` through `import.meta.glob` and returns
-      `{ textureKey, url, size, frames, rows, anims }`, or null when no sheet exists — with
-      its own test; `src/render/pokemonFollower.ts` is the animation registry, the way
+      accessor — `pokemonOverworldSheet(speciesId)` reads the coverage manifest
+      (`src/assets/pokemon/index.json`, written by Task-76) and resolves the pair it names to
+      `src/assets/pokemon/<id>.png` + `<id>.json` through `import.meta.glob`, returning
+      `{ speciesId, fileId, textureKey, url, size, rows, cols, dirRows, anims }`, or null for an
+      id the manifest lists as `missing` — with
+      its own test (the exact names and the frozen JSON keys are in `.agent_specs/task-41.md`,
+      which is written against `.agent_specs/task-76.md`'s manifest); `src/render/pokemonFollower.ts`
+      is the animation registry, the way
       `playerAnim.ts` and `trainerAnim.ts` are (an idle key, a walk key and the row for a
       facing, registered per species the way `PLAYER_WALK_ANIMS` is). `RouteScene` loads the
       sheet when `party[0]`'s species changes (a reorder, a catch that lands in the party, a
@@ -3182,24 +3291,31 @@ cycles one biome.
       never rolls an encounter or trips a trainer cone), it draws with `actorDepth` so a tree
       tip still passes over it, it is hidden in battle (`applyBattleResult` /
       `scene.pause`), and it allocates nothing per frame.
-      **Decision for the dev's spec:** a species with **no** sheet (a dex num above 649, or a
-      forme with no art of its own) — the recommended reading is to draw **nothing** for that
-      lead and say so in the report; extending `src/assets/pokemon/**` is a separate job.
+      **Decision for the dev's spec:** an id the manifest lists as **`missing`** — the
+      recommended reading is to draw **nothing** for that lead and say so in the report; the
+      alternative (a base-species fallback, the `portraitFor` shape) is the open question
+      below.
       Files: `src/data/pokemonOverworld.ts` + test, `src/render/pokemonFollower.ts` + test,
-      `src/scenes/RouteScene.ts`, `src/data/README.md` and `src/assets/README.md` (the
-      per-folder convention), and `src/scenes/BootScene.ts` **only** if the dev preloads
-      there instead of loading from the scene. Docs: `docs/design-spec.md` §5 is where a
-      route presentation line would go, and that file is Task-17's in this batch, so the spec
-      either takes it from Task-17 or takes no doc line — the two READMEs above are the
-      required ones.
+      `src/scenes/RouteScene.ts`, `src/data/README.md` and `src/render/README.md` (the
+      per-folder convention: one role line per file this task adds). It claims no
+      `src/scenes/BootScene.ts` — the sheet is loaded by the route scene when the lead's species
+      changes, which is what keeps a boot from paying for the whole set — and no
+      `src/assets/README.md`, which is `[Task-76]`'s. Docs: `docs/design-spec.md` §5 is where a
+      route presentation line would go; Task-17 holds that file in this batch, so this task
+      takes no `docs/` line — the two READMEs above are the required ones.
       Out of scope: a queue of several followers (the report names the **first** party member
       only), the battle's own sprites, a new `run` animation in the sheets (the walk strip
-      played faster is the rule), collision or interaction for the follower, and
-      `docs/art-direction.md`.
-      *Dependencies:* none. Batch order covers it: it takes the one free scene path in
-      Batch 6 (`src/scenes/RouteScene.ts` is Task-16's in Batch 5, Task-45's in 5b, Task-38's
-      in 6b and Task-31's in Batch 7) and its new `src/data/` file is not one of the number
-      tables Task-09 tunes in the same batch. *(Batch 6)*
+      played faster is the rule), collision or interaction for the follower, the packed art
+      itself (Task-76's) and `docs/art-direction.md` (also Task-76's).
+      *Dependencies:* **Task-76** (the overworld sprite set, Batch 5f) — the committed
+      `src/assets/pokemon/**` pairs and the `index.json` coverage manifest this task's
+      accessor reads; the follower draws any lead through them, and the ids Task-76 records as
+      `missing` are the only ones it cannot draw. Batch order covers the rest: it is **Batch
+      6**'s fourth task, in the first batch that leaves `src/scenes/RouteScene.ts` free (5c's
+      Task-73, 5cb's Task-74, 5d's Task-70, 5e's Task-71 and 5eb's Task-75 each held it in the
+      batches before), and its art lands one batch earlier, in **5f**, so the follower is
+      written against sheets that have already merged.
+      *(Batch 6)*
 - [ ] **[Task-58] Every panel becomes a dark glass card (the `t-glass` direction).** Reported in
       play, while Batch 5 was in flight: «los paneles que sean estilo visual como el de debug» —
       the dev overlay is where the report points, and the look it seeded has now been rendered and
@@ -3343,6 +3459,90 @@ cycles one biome.
       Task-49, 16 Task-50, 17 Task-52 and Task-60, 18 Task-55, 19 Task-56) — which is why it opens
       the new **Batch 20** on its own, the way the reformat opens Batch 11, and why it runs
       **after** Batch 11 so it edits reformat-cleared files and keeps them conforming. *(Batch 20)*
+- [ ] **[Task-76] The overworld sprite set: every species and form packed into
+      `src/assets/pokemon/**`.** Decided by the human while the follower Pokémon (`[Task-41]`)
+      was being planned: the follower must be able to draw **any** lead, so the art is its own
+      task, cut in its own batch (`Batch 5f`) immediately in front of the follower's (the
+      eighteenth round above). The report's words are
+      that the art for **every species and form** comes from **PMD Collab**.
+      **What ships today, verified.** `src/assets/pokemon/<id>.png` + `<id>.json` is **652
+      pairs**: dex **nums 1-649** — written by `scripts/legacy-art/extract-real-sprites.mjs`,
+      with the gaps it skipped still holding the procedural placeholders
+      `scripts/legacy-art/generate-pokemon.mjs` seeded (a placeholder manifest is the one
+      shape with **no `durationsMs`**: `cols: 10` and a flat 2-frame `idle`/`walk`/`attack`/
+      `special`/`hurt` plan) — plus **Castform's three Forecast formes** at `35101`-`35103`.
+      The playable set is **1282 species** (`species.json`, `D40`), so most of it has no
+      overworld art at all: every Gen 6-9 species (dex numbers **650-1025**) and every forme
+      the dex carries as a species of its own. (The plan's older wording calls `35101`-`35103`
+      "three Deoxys formes"; the repository's own table says **Castform** —
+      `scripts/legacy-art/pmdcollab-species.mjs` 668-675 — and that is the reading this entry
+      freezes.)
+      **The pipeline already exists in this repo and is dependency-free.** `scripts/legacy-art/`
+      carries the sibling project's four tools verbatim: `fetch-pmdcollab.mjs` (downloads
+      `https://spriteserver.pmdcollab.org/assets/<NNNN>/sprites.zip` and the portrait sheet,
+      redirect-aware, through `zip-codec.mjs`), `zip-codec.mjs` (a hand-rolled zip reader on
+      `node:zlib`, **no npm dependency** — which is the whole point), `pmdcollab-species.mjs`
+      (the id/slug table `extract-real-sprites.mjs` iterates) and `extract-real-sprites.mjs`
+      (crops the frames out of each pack's `AnimData.xml` and writes the 5-row, 32px-cell pair
+      plus its manifest). **Their internal paths still target the donor project**
+      (`SOURCES = '../sprite-sources/pokemons/'` and `OUT_DIR = '../src/assets/pokemon/'`,
+      resolved from `scripts/legacy-art/`, land in `scripts/…` here), which is exactly what
+      `src/assets/README.md` rule 2 warns about: they are adapted **as each sheet is
+      regenerated**.
+      **The PMDCollab endpoint shapes, probed against the live server for this entry** (so the
+      dev does not have to rediscover them): a **base** species is
+      `https://spriteserver.pmdcollab.org/assets/<NNNN>/sprites.zip` with the dex number
+      zero-padded to four digits (`0001`, `0650`), and a **forme** is
+      `…/assets/<NNNN>/<FFFF>/sprites.zip`, where `<FFFF>` is SpriteCollab's own 4-digit form
+      index (`0351/0001` is Castform-Sunny and answers **200**; `0351-sunny` and `035101` both
+      answer **404**). Gen 6-9 art exists upstream (`0650`'s pack and `AnimData.xml` are
+      there), and `sprite/<NNNN>/<FFFF>/` is the upstream layout for every forme.
+      **Fix shape, as the recommended reading (the spec freezes the names).**
+      1. Both tools take the gitignored source tree's **absolute** path — argv first
+         (`--source=<abs>` / `--dest=<abs>`), then the environment — and never a path inside
+         the worktree, per the Legend's **Asset trees** rule (Batch 3 lost the Añil clone to a
+         junction). The fetch writes `sprite-sources/pokemons/<slug>-pmdcollab/` under the
+         **main checkout** and the packer reads it from there.
+      2. `pmdcollab-species.mjs` grows from 652 rows to the whole playable set: every base
+         species resolves mechanically (its dex number), every forme is a hand-resolved row
+         `{ speciesId, num, formIndex }` — the index is SpriteCollab's, **not** our dex order,
+         so the dev confirms each against the form's own portrait on sprites.pmdcollab.org —
+         and the table is the one place a wrong forme is visible in review.
+      3. The packer writes each covered species' pair as `<fileId>.png` + `<fileId>.json`,
+         where `<fileId>` is the species' dex **num** for a base entry and
+         **`num × 100 + formIndex`** for a forme (the shipped Castform precedent:
+         `351 × 100 + 1..3`). It **leaves the 652 existing pairs' names alone**.
+      4. The packer also writes `src/assets/pokemon/index.json`, the **coverage manifest** the
+         follower reads: `{ "sprite": 32, "rows": 5, "dirRows": ["down", "downright", "up",
+         "upright", "left"], "files": { "<speciesId>": <fileId>, … }, "missing":
+         ["<speciesId>", …] }`, built from the **whole playable set** — so it covers
+         the 652 pairs that already ship, not only the new ones — with every id the server has
+         no pack for recorded in `missing` rather than failing the run.
+      5. Provenance: the PMD Collab art is **fan-made, not CC0** (SpriteCollab's `LICENSE.md`
+         and `credit_names.txt`), so the source stays gitignored and only the packed output is
+         committed; `docs/art-direction.md`'s §Provenance and §Sprite contract gain the tier's
+         real entry (author credit, the endpoint, the per-field note that a form's index is
+         SpriteCollab's) and `src/assets/README.md`'s `pokemon/<id>.png` row stops calling it a
+         plain game rip.
+      **Determinism and cost:** the packer draws no RNG and touches no `src/engine/**`, so
+      nothing about a run's seed moves. The fetch is a **network** step of a few hundred packs
+      (a few hundred MB in `sprite-sources/`), and it is a one-time, deliberate run like
+      `npm run data:dex`; the committed output is what QA validates, because QA has no reason
+      to re-download it.
+      Out of scope: the follower itself (`[Task-41]`, Batch 6), any change to the 652 shipped
+      pairs' art or names, the **portrait** set (`public/anil/portraits.png` is Añil's, packed
+      by `scripts/anil/build-pokemon-sprites.mjs`), the battle sprites, `src/data/**` (this
+      task writes no accessor — Task-41's is the reader), the trainer/player overworld atlases
+      (`src/assets/frlg/**`), and a shiny variant of the overworld art (PMDCollab's shiny packs
+      are a different fetch and the follower draws the normal set).
+      *Dependencies:* none — the pipeline, the dex and the gitignored source tree are all in
+      the repo. Batch order covers it: it shares no path with Task-09's `docs/balance/` sheets
+      and its harness, Task-17's five docs, Task-34's battle scene or Task-41's route scene,
+      accessor and render module — and it takes `src/assets/README.md` and
+      `docs/art-direction.md`, which no Batch 6 task claims — so it opens **Batch 5f**, the
+      single-task batch cut immediately in front of Batch 6, whose only reader is `[Task-41]`
+      one batch later. It adds no run field, so **no
+      `SAVE_VERSION`** step: the chain stays **14 → 15 → 16 → 17 → 18**. *(Batch 5f)*
 
 ## Phase 9 — Maps (route groups), biomes & progression
 
