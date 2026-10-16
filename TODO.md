@@ -903,6 +903,13 @@ glyphs gone) is not what ships. **Task-57's** two are also their written default
 is on the **foe's panel alone** and a **wild** battle draws **no row at all**, and the row
 is **fixed** — one ball per roster member with the fainted ones emptied, so it also says
 how many the trainer started with — rather than a row that shrinks to the live count.
+One correction is recorded against Task-38's spec: its `[live]` band-background-drag
+criterion first froze its press point **4 px inside the band's left edge**, which the
+panel's own `HUD_PANEL_BORDER` (12 px) move ring swallows — `hudPanelAt` →
+`onPanelBorder` runs before `handleDetailPointerDown`, so that press moved the panel and
+did not scroll the band. The point is re-frozen to the band's **row gutter at its
+horizontal middle** (at least 12 px inside that edge); the shipped implementation was
+correct as written and **no code changes**.
 
 - **Task-38** The learnset band scrolls instead of paging.
 - **Task-57** A trainer's remaining team is drawn as Poké Balls under its HP panel.
