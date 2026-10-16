@@ -55,7 +55,7 @@ import { loadSettings } from '../settings';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { playCue, playMusic } from '../audio/audio';
 import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_TEXTBOX_PADDING, FRLG_WINDOW_PADDING } from '../ui/frlg';
-import { FRLG_INK, FRLG_FONT_SIZE, addFrlgText } from '../ui/frlgFont';
+import { FRLG_INK, FRLG_FONT_SIZE, FRLG_LINE_HEIGHT, addFrlgText } from '../ui/frlgFont';
 import { typeColor, typeTint } from '../ui/typeColors';
 import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeIcons';
 import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../data/statusIcons';
@@ -69,6 +69,7 @@ import {
   type MemberDetail,
 } from '../ui/partyDetail';
 import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
+import { fitPartyLabel, partyGridLayout } from '../ui/partyGrid';
 import { AbilityInfoButton, ABILITY_INFO_SIZE, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
 import { InfoPopup } from '../ui/infoPopup';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
@@ -125,10 +126,11 @@ const MOVE_MEGA_COL = 62;
 const MOVE_GRID_INSET = 8;
 /** How far above the menu the party detail window (and the info popup) sits. */
 const MOVE_POPUP_GAP = 8;
-/** The party (switch) grid: 3 columns of avatar cells. */
-const PARTY_COLS = 3;
+/** The party (switch) grid: one fixed-size row per member. */
+const PARTY_LABEL_SIZE = 16;
+/** The largest avatar scale a switch row may use; the row geometry caps it further. */
 const PARTY_AVATAR_SCALE = 0.9;
-/** The HP bar drawn inside every switch cell; the detail popup carries the numbers. */
+/** The largest HP-bar scale a switch row may use; the row geometry caps it further. */
 const PARTY_CELL_HPBAR_SCALE = 0.4;
 /**
  * Fallback zoom for the placeholder mon and any sheet whose pixels cannot be
@@ -603,7 +605,7 @@ export class BattleScene extends Phaser.Scene {
       this.add.image(0, 0, PORTRAIT_TEXTURE_KEY, 0).setScale(PARTY_AVATAR_SCALE).setVisible(false),
     );
     this.partyLabels = Array.from({ length: MAX_PARTY_SIZE }, () =>
-      addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK }).setVisible(false),
+      addFrlgText(this, 0, 0, '', { size: PARTY_LABEL_SIZE, tint: FRLG_INK }).setVisible(false),
     );
     // A small HP bar in every cell; the fill is drawn over the baked track.
     this.partyHpBars = Array.from({ length: MAX_PARTY_SIZE }, () =>
@@ -1819,53 +1821,55 @@ export class BattleScene extends Phaser.Scene {
     });
     this.menuCursor
       .setFlipX(true)
+      .setScale(1)
       .setPosition(cellX(this.menuIndex) + cellW - 48, cellY(this.menuIndex) + cellH / 2)
       .setVisible(count > 0);
   }
 
   /**
-   * The party (switch) menu as an avatar grid: one cell per member, with its face,
-   * name, level and HP. The ◀ back control sits centred on the grid's left edge,
+   * The party (switch) menu as a single column of rows: one fixed-size row per
+   * member — the same size whether the party holds two Pokémon or six — with the
+   * portrait, name and HP bar scaled down into the row rather than the row
+   * growing around them. The ◀ back control sits centred on the grid's left edge,
    * as in the moves menu.
    */
   private renderPartyGrid(menu: Rect): void {
     this.menuPanel.setVisible(true);
     this.hideBagTabs();
     this.hideMoveChrome();
-    const pad = FRLG_WINDOW_PADDING;
     const party = this.state.sides.player.party;
     const count = this.menuItems.length;
-    const cols = PARTY_COLS;
-    const rows = Math.max(1, Math.ceil(count / cols));
-    const left = menu.x + pad.x;
-    const right = menu.x + menu.w - pad.x - MOVE_GRID_INSET;
-    const top = menu.y + pad.top + MOVE_GRID_INSET;
-    const bottom = menu.y + menu.h - pad.bottom - MOVE_GRID_INSET;
-    const gridLeft = left + MOVE_BACK_COL;
-    const cellW = (right - gridLeft - (cols - 1) * MENU_GRID_GAP) / cols;
-    const cellH = (bottom - top - (rows - 1) * MENU_GRID_GAP) / rows;
-    const cellX = (i: number): number => gridLeft + (i % cols) * (cellW + MENU_GRID_GAP);
-    const cellY = (i: number): number => top + Math.floor(i / cols) * (cellH + MENU_GRID_GAP);
+    const { rects, avatarScale, hpBarScale, labelMaxWidth } = partyGridLayout(menu, {
+      padding: FRLG_WINDOW_PADDING,
+      avatarScaleCap: PARTY_AVATAR_SCALE,
+      hpBarScaleCap: PARTY_CELL_HPBAR_SCALE,
+    });
+    const avatarW = PORTRAIT_SIZE * avatarScale;
+    const hpBarW = FRLG_HPBAR.width * hpBarScale;
+    const hpBarH = FRLG_HPBAR.height * hpBarScale;
+    const labelH = (FRLG_LINE_HEIGHT * PARTY_LABEL_SIZE) / FRLG_FONT_SIZE;
 
     // The ◀ back control, centred on the grid's left edge, as in the moves menu.
-    const backX = left + 14;
+    const top = rects[0].y;
+    const bottom = rects[rects.length - 1].y + rects[rects.length - 1].h;
+    const backX = menu.x + FRLG_WINDOW_PADDING.x + 14;
     const backY = (top + bottom) / 2;
     this.backArrow.setVisible(true).setPosition(backX, backY);
     this.backZone.setPosition(backX - 12, backY - 18).setSize(48, 36);
     if (this.backZone.input) this.backZone.input.enabled = true;
 
-    // The shared list rows are not used by the avatar grid.
+    // The shared list rows are not used by the row grid.
     for (const row of this.menuRows) row.setVisible(false);
     for (const zone of this.menuZones) {
       zone.setData('item', -1);
       if (zone.input) zone.input.enabled = false;
     }
 
-    const avatarW = PORTRAIT_SIZE * PARTY_AVATAR_SCALE;
     this.partyCells.forEach((cell, i) => {
       const item = i < count ? this.menuItems[i] : undefined;
       const member = i < count ? party[i] : undefined;
-      if (!item || !member) {
+      const rect = rects[i];
+      if (!item || !member || !rect) {
         cell.setVisible(false);
         this.partyAvatars[i].setVisible(false);
         this.partyLabels[i].setVisible(false);
@@ -1875,8 +1879,8 @@ export class BattleScene extends Phaser.Scene {
       }
       const selected = i === this.menuIndex;
       cell
-        .setPosition(cellX(i), cellY(i))
-        .setSize(cellW, cellH)
+        .setPosition(rect.x, rect.y)
+        .setSize(rect.w, rect.h)
         .setFillStyle(selected ? 0xf7e0a6 : 0xe6e3f2)
         .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
         .setVisible(true);
@@ -1884,47 +1888,50 @@ export class BattleScene extends Phaser.Scene {
       this.partyAvatars[i]
         .setVisible(portrait !== null)
         .setAlpha(item.enabled ? 1 : 0.45)
-        .setPosition(cellX(i) + 8 + avatarW / 2, cellY(i) + cellH / 2);
+        .setScale(avatarScale)
+        .setPosition(rect.x + 8 + avatarW / 2, rect.y + rect.h / 2);
       if (portrait) this.partyAvatars[i].setTexture(portrait.key, portrait.frame);
-      const labelX = cellX(i) + 8 + avatarW + 6;
+
+      // The label is clipped to one line, never wrapped, and the HP bar sits at
+      // the row's right edge, so a long nickname can never stretch the row.
+      const labelX = rect.x + 8 + avatarW + 6;
       this.partyLabels[i]
-        .setText(item.label)
+        .setText(fitPartyLabel(item.label, labelMaxWidth, PARTY_LABEL_SIZE))
         .setAlpha(item.enabled ? 1 : 0.45)
-        .setMaxWidth(cellW - avatarW - 22)
         .setOrigin(0, 0)
-        .setPosition(labelX, cellY(i) + 6)
+        .setPosition(labelX, rect.y + (rect.h - labelH) / 2)
         .setVisible(true);
 
-      // The HP bar shrinks with the cell so it never runs into its neighbour.
-      const barScale = Math.min(
-        PARTY_CELL_HPBAR_SCALE,
-        Math.max(24, cellW - avatarW - 22) / FRLG_HPBAR.width,
-      );
+      const barX = rect.x + rect.w - 8 - hpBarW;
+      const barY = rect.y + (rect.h - hpBarH) / 2;
       const fraction = hpFraction(member.hp, member.maxHp);
       const alive = member.hp > 0;
-      const barY = cellY(i) + 30;
       this.partyHpBars[i]
         .setVisible(alive)
-        .setScale(barScale)
-        .setPosition(labelX, barY);
+        .setScale(hpBarScale)
+        .setPosition(barX, barY);
       this.partyHpFills[i]
         .setVisible(alive)
-        .setPosition(labelX + FRLG_HPBAR.fill.x * barScale, barY + FRLG_HPBAR.fill.y * barScale)
+        .setPosition(barX + FRLG_HPBAR.fill.x * hpBarScale, barY + FRLG_HPBAR.fill.y * hpBarScale)
         .setSize(
-          Math.max(0, FRLG_HPBAR.fill.width * barScale * fraction),
-          FRLG_HPBAR.fill.height * barScale,
+          Math.max(0, FRLG_HPBAR.fill.width * hpBarScale * fraction),
+          FRLG_HPBAR.fill.height * hpBarScale,
         )
         .setFillStyle(hpColorInt(fraction));
     });
     this.partyZones.forEach((zone, i) => {
       const item = i < count ? this.menuItems[i] : undefined;
+      const rect = rects[i];
       zone.setData('item', item ? i : -1);
       if (zone.input) zone.input.enabled = Boolean(item);
-      if (item) zone.setPosition(cellX(i), cellY(i)).setSize(cellW, cellH);
+      if (item && rect) zone.setPosition(rect.x, rect.y).setSize(rect.w, rect.h);
     });
+    // The row is only a sixth of the panel, so the cursor shrinks to fit it.
+    const cursorRow = rects[this.menuIndex];
     this.menuCursor
       .setFlipX(true)
-      .setPosition(cellX(this.menuIndex) + cellW - 48, cellY(this.menuIndex) + cellH / 2)
+      .setScale(Math.min(1, cursorRow.h / this.menuCursor.height))
+      .setPosition(cursorRow.x + cursorRow.w - 48, cursorRow.y + cursorRow.h / 2)
       .setVisible(count > 0);
     this.renderPartyDetail(menu);
   }
@@ -2127,6 +2134,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.megaSelected) {
       this.menuCursor
         .setFlipX(true)
+        .setScale(1)
         .setPosition(this.megaCell.x + this.megaCell.width - 12, this.megaCell.y + this.megaCell.height / 2)
         .setVisible(true);
     } else {
@@ -2257,6 +2265,7 @@ export class BattleScene extends Phaser.Scene {
     });
     this.menuCursor
       .setFlipX(false)
+      .setScale(1)
       .setPosition(menu.x + 18 + leftInset, top + (this.menuIndex - windowStart) * ROW_H + 16)
       .setVisible(count > 0);
   }
