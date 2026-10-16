@@ -16,6 +16,10 @@ wrong art.
   `src/data/playerSprite.ts` and keyed for Phaser's animation manager.
 - `trainerAnim.ts` — the same for the trainer overworld sheets: one two-frame cycle per
   archetype and facing, framed through `src/data/overworldSprites.ts`.
+- `pokemonFollower.ts` — the party follower's animation registry: a Pokémon overworld
+  pair's manifest (`src/data/pokemonOverworld.ts`) becomes one looping idle and walk
+  strip per facing the route draws, keyed for Phaser's animation manager. Running is
+  the walk strip played with the player's own time scale (`D24`).
 - `spriteBounds.ts` — measures how much of a battle sheet is actually drawn and where its
   feet are, so a sprite can be zoomed and anchored by its feet; reads the pixels through a
   canvas and caches the result per texture key.
