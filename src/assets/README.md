@@ -7,7 +7,8 @@
 | `tileset.png` | procedural placeholder biome sheet, 4x13 of 24px cells (96x312) | generated, safe |
 | `common.png` | shared 5x1 sheet: exit, trap, chest, item, carpet | generated, safe |
 | `wood.png`, `desert.png`, `apple-woods.png`, `lush-prairie.png`, `beach-cave.png` | real biome sheets, same 96x312 layout | **game rip, local only** |
-| `pokemon/<id>.png` + `<id>.json` | overworld sheets (32x32 frames, 5 direction rows) + animation manifest | **game rip, local only** |
+| `pokemon/<id>.png` + `<id>.json` | overworld sheets (32x32 frames, 5 direction rows) + animation manifest, one pair per species and per forme — `<id>` is the dex number, or `num * 100 + form index` for a forme (Castform-Sunny is `35101`); packed from PMDCollab by `scripts/legacy-art/extract-real-sprites.mjs` | **game rip, local only** |
+| `pokemon/index.json` | the overworld **coverage manifest**: `files` maps a species id to the pair it draws and `missing` lists the ids PMDCollab has no art for, written by `scripts/legacy-art/build-pokemon-index.mjs` | **generated, safe** |
 | `items.png`, `moves.png`, `hud.png` | battle/UI art for later phases | **game rip, local only** |
 | `frlg/outdoor.png`, `frlg/forest.png`, `frlg/cave.png` | FRLG field atlases, 4x13 of 16px cells (64x208), from `scripts/frlg/build-tilesets.mjs` (config in `src/data/tilesets/frlg.ts`) | **game rip, local only** |
 | `frlg/trainers.png` | FRLG battle trainer sprites, 64x64 per archetype, from `scripts/frlg/build-trainer-sprites.mjs` (frame map in `src/data/frlg/trainers.json`) | **game rip, local only** |
@@ -40,6 +41,9 @@ copies them in. Same rule: game rip, local only.
 1. Any biome sheet must satisfy the atlas contract in `docs/tileset-spec.md`,
    otherwise `resolveTileFrame` cannot draw it.
 2. Regenerating sheets/sprites goes through `scripts/legacy-art/` (imported from
-   the sibling project; paths inside still target that project and are adapted
-   as each sheet is regenerated).
-3. Adding a sheet means adding a registry entry in `src/data/tilesets/index.ts`.
+   the sibling project; the overworld pipeline takes the sprite-source tree as an
+   absolute `--dest`/`--source`, never a path inside the repo, and derives its
+   work list from `src/data/dex/species.json` — see `docs/art-direction.md`).
+3. `pokemon/index.json` is **generated**: regenerate it with
+   `node scripts/legacy-art/build-pokemon-index.mjs` instead of editing it.
+4. Adding a sheet means adding a registry entry in `src/data/tilesets/index.ts`.

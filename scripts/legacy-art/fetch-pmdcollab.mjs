@@ -1,75 +1,102 @@
-// Downloads one or more species' sprite packs from PMDCollab and unzips them
-// into sprite-sources/pokemons/<NNNN>-pmdcollab/, ready for
-// extract-real-sprites.mjs. Also fetches that species' portrait sheet
-// (portrait-sheet.png) from PMDCollab's separate portrait endpoint, ready
-// for extract-real-portraits.mjs.
+// Downloads species' overworld sprite packs from PMDCollab and unzips them
+// into <dest>/<slug>-pmdcollab/, ready for extract-real-sprites.mjs.
 //
 // Usage:
-//   node scripts/fetch-pmdcollab.mjs <ids> [name] [--anims=Idle,Walk]
+//   node scripts/legacy-art/fetch-pmdcollab.mjs <assetId>[,<assetId>…] [--slug=<name>] \
+//     [--anims=Idle,Walk,Attack,Shoot,Hurt] --dest=<abs>
+//   node scripts/legacy-art/fetch-pmdcollab.mjs --table [--missing] --dest=<abs>
 //
-//   ids   - one PMDCollab/National-Dex id ("4"), a comma list ("1,4,10"),
-//           a range ("1-9"), or any mix ("1,4,10-15"). Ids are zero-padded
-//           to 4 digits for the download URL and the destination folder
-//           name (sprite-sources/pokemons/0004-pmdcollab/).
-//   name  - optional, human-readable folder name instead of the zero-padded
-//           id (sprite-sources/pokemons/<name>-pmdcollab/). Only valid when
-//           `ids` resolves to a single id.
-//   --anims=A,B  - optional: only keep files for these animations (matches
-//           "<Anim>-Anim.png", "<Anim>-Offsets.png", "<Anim>-Shadow.png").
-//           AnimData.xml is always kept. Omit to keep every file in the zip
-//           (idle, walk, attack, sleep, hurt, ...).
+//   assetId  - a 4-digit base id ("0658") or "NNNN/FFFF" for a forme
+//              ("0351/0001", Castform-Sunny). Digits are zero-padded, so
+//              "658" and "351/1" are accepted too.
+//   --slug   - the destination folder name; only valid for a single assetId.
+//              Omit to use the id itself with the slash replaced by a dash.
+//   --anims  - only keep the files for these animations (matches
+//              "<Anim>-Anim.png", "<Anim>-Offsets.png", "<Anim>-Shadow.png").
+//              AnimData.xml is always kept. Omit to keep every file in the zip.
+//   --table  - fetch every row of PMDCOLLAB_SPECIES; with --missing, only the
+//              rows whose <dest>/<slug>-pmdcollab/AnimData.xml is absent.
+//   --dest   - absolute destination directory, required, with the
+//              PMDCOLLAB_SOURCES environment variable as the fallback. No
+//              default inside the repo: a source tree under sprite-sources/ is
+//              never junctioned or symlinked into a worktree (see AGENTS.md's
+//              "Asset trees" rule).
+//
+// A pack the server does not have (HTTP 404) is data, not a failure: it is
+// logged and the run continues, and build-pokemon-index.mjs records the
+// species in index.json's `missing` list.
 //
 // Examples:
-//   node scripts/fetch-pmdcollab.mjs 4 charmander
-//   node scripts/fetch-pmdcollab.mjs 1,4,10 --anims=Idle,Walk
-//   node scripts/fetch-pmdcollab.mjs 1-9 --anims=Idle,Walk
-import { mkdirSync, writeFileSync } from 'node:fs'
+//   node scripts/legacy-art/fetch-pmdcollab.mjs 0658 --dest=/abs/pokemons
+//   node scripts/legacy-art/fetch-pmdcollab.mjs 0351/0001 --slug=0351-sunny --dest=/abs/pokemons
+//   node scripts/legacy-art/fetch-pmdcollab.mjs --table --missing --dest=/abs/pokemons
+import { mkdirSync, writeFileSync, existsSync } from 'node:fs'
 import { get } from 'node:https'
+import { isAbsolute, join, resolve } from 'node:path'
 import { readZip } from './zip-codec.mjs'
-
-const SOURCES = new URL('../sprite-sources/pokemons/', import.meta.url)
-
-function parseIds(spec) {
-  const ids = new Set()
-  for (const part of spec.split(',')) {
-    const range = part.match(/^(\d+)-(\d+)$/)
-    if (range) {
-      const [, a, b] = range
-      for (let i = Number(a); i <= Number(b); i++) ids.add(i)
-    } else if (/^\d+$/.test(part)) {
-      ids.add(Number(part))
-    } else {
-      throw new Error(`bad id/range: "${part}"`)
-    }
-  }
-  return [...ids].sort((a, b) => a - b)
-}
+import { PMDCOLLAB_SPECIES } from './pmdcollab-species.mjs'
 
 const rawArgs = process.argv.slice(2)
-const animsArg = rawArgs.find((a) => a.startsWith('--anims='))
-const anims = animsArg ? animsArg.slice('--anims='.length).split(',').filter(Boolean) : null
-const positional = rawArgs.filter((a) => !a.startsWith('--'))
-const [idSpec, name] = positional
-
-if (!idSpec) {
-  console.error('Usage: node scripts/fetch-pmdcollab.mjs <ids> [name] [--anims=Idle,Walk]')
+if (rawArgs.length === 0) {
+  console.error('Usage: node scripts/legacy-art/fetch-pmdcollab.mjs <assetId>[,<assetId>…] [--slug=<name>] [--anims=Idle,Walk] --dest=<abs>')
+  console.error('       node scripts/legacy-art/fetch-pmdcollab.mjs --table [--missing] --dest=<abs>')
   console.error('Examples:')
-  console.error('  node scripts/fetch-pmdcollab.mjs 4 charmander')
-  console.error('  node scripts/fetch-pmdcollab.mjs 1,4,10 --anims=Idle,Walk')
-  console.error('  node scripts/fetch-pmdcollab.mjs 1-9 --anims=Idle,Walk')
+  console.error('  node scripts/legacy-art/fetch-pmdcollab.mjs 0658 --dest=/abs/pokemons')
+  console.error('  node scripts/legacy-art/fetch-pmdcollab.mjs 0351/0001 --slug=0351-sunny --dest=/abs/pokemons')
   process.exit(1)
+}
+const flag = (name) => rawArgs.find((a) => a === `--${name}` || a.startsWith(`--${name}=`))
+const value = (name) => {
+  const arg = flag(name)
+  return arg && arg.includes('=') ? arg.slice(name.length + 3) : null
+}
+const positional = rawArgs.filter((a) => !a.startsWith('--'))
+
+function resolveDest() {
+  const dest = value('dest') ?? process.env.PMDCOLLAB_SOURCES ?? null
+  if (!dest) {
+    console.error('error: --dest=<abs> is required (or set PMDCOLLAB_SOURCES)')
+    console.error('       the source tree is never defaulted inside the repo (AGENTS.md "Asset trees")')
+    process.exit(1)
+  }
+  if (!isAbsolute(dest)) {
+    console.error(`error: --dest must be an absolute path, got "${dest}"`)
+    process.exit(1)
+  }
+  return resolve(dest)
 }
 
-const ids = parseIds(idSpec)
-if (name && ids.length > 1) {
-  console.error(
-    `a custom name ("${name}") only makes sense for a single id, got ${ids.length}: ${idSpec}`,
-  )
-  process.exit(1)
+function padId(spec) {
+  const parts = spec.split('/')
+  if (parts.length === 1 && /^\d+$/.test(parts[0])) return parts[0].padStart(4, '0')
+  if (parts.length === 2 && parts.every((p) => /^\d+$/.test(p))) {
+    return `${parts[0].padStart(4, '0')}/${parts[1].padStart(4, '0')}`
+  }
+  throw new Error(`bad asset id: "${spec}" (expected "0658" or "0351/0001")`)
 }
+
+function parseIds(spec) {
+  const seen = new Set()
+  for (const part of spec.split(',')) {
+    if (part) seen.add(padId(part))
+  }
+  if (!seen.size) throw new Error(`no asset id in "${spec}"`)
+  return [...seen]
+}
+
+function defaultSlug(assetId) {
+  return assetId.replace('/', '-')
+}
+
+const dest = resolveDest()
+const animsArg = value('anims')
+const anims = animsArg ? animsArg.split(',').filter(Boolean) : null
+const slugArg = value('slug')
+const byTable = flag('table') !== undefined
+const onlyMissing = flag('missing') !== undefined
 
 function fetchBuffer(fetchUrl, redirectsLeft = 5) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolvePromise, reject) => {
     get(fetchUrl, (res) => {
       if (
         res.statusCode >= 300 &&
@@ -78,17 +105,17 @@ function fetchBuffer(fetchUrl, redirectsLeft = 5) {
         redirectsLeft > 0
       ) {
         res.resume()
-        resolve(fetchBuffer(new URL(res.headers.location, fetchUrl).href, redirectsLeft - 1))
+        resolvePromise(fetchBuffer(new URL(res.headers.location, fetchUrl).href, redirectsLeft - 1))
         return
       }
       if (res.statusCode !== 200) {
-        reject(new Error(`GET ${fetchUrl} -> HTTP ${res.statusCode}`))
         res.resume()
+        reject(new Error(`GET ${fetchUrl} -> HTTP ${res.statusCode}`))
         return
       }
       const chunks = []
       res.on('data', (c) => chunks.push(c))
-      res.on('end', () => resolve(Buffer.concat(chunks)))
+      res.on('end', () => resolvePromise(Buffer.concat(chunks)))
       res.on('error', reject)
     }).on('error', reject)
   })
@@ -115,60 +142,78 @@ function keepEntry(entryName, resolvedAnims) {
   return [...resolvedAnims].some((a) => entryName.startsWith(`${a}-`))
 }
 
-for (const id of ids) {
-  const padded = String(id).padStart(4, '0')
-  const url = `https://spriteserver.pmdcollab.org/assets/${padded}/sprites.zip`
-  const slug = name ?? padded
-
-  console.log(`[${padded}] fetching ${url}`)
+async function fetchOne(assetId, slug) {
+  const url = `https://spriteserver.pmdcollab.org/assets/${assetId}/sprites.zip`
+  console.log(`[${slug}] fetching ${url}`)
   let zipBuf
   try {
     zipBuf = await fetchBuffer(url)
   } catch (err) {
-    console.error(`[${padded}] failed: ${err.message}`)
-    continue
+    console.error(`[${slug}] no pack: ${err.message}`)
+    return false
   }
 
   const allEntries = readZip(zipBuf)
+  const animData = allEntries.find((e) => e.name === 'AnimData.xml')
+  if (!animData) {
+    // Some ids answer 200 with an empty archive instead of a 404/500 when the
+    // sprite folder is missing upstream — an unusable pack all the same.
+    console.error(`[${slug}] no pack: the bundle carries no AnimData.xml`)
+    return false
+  }
   let resolvedAnims = null
   if (anims) {
-    const animDataXml =
-      allEntries.find((e) => e.name === 'AnimData.xml')?.data.toString('utf8') ?? ''
-    resolvedAnims = resolveAnims(anims, animDataXml)
+    resolvedAnims = resolveAnims(anims, animData.data.toString('utf8'))
   }
   const entries = allEntries.filter((e) => keepEntry(e.name, resolvedAnims))
   if (anims && entries.length <= 1) {
     console.error(
-      `[${padded}] no files matched --anims=${anims.join(',')} (check the anim names against AnimData.xml)`,
+      `[${slug}] no files matched --anims=${anims.join(',')} (check the anim names against AnimData.xml)`,
     )
-    continue
+    return false
   }
 
-  const destDir = new URL(`${slug}-pmdcollab/`, SOURCES)
+  const destDir = join(dest, `${slug}-pmdcollab`)
   mkdirSync(destDir, { recursive: true })
   for (const { name: entryName, data } of entries) {
-    writeFileSync(new URL(entryName, destDir), data)
+    writeFileSync(join(destDir, entryName), data)
   }
-  console.log(
-    `[${padded}] wrote ${entries.length} files to sprite-sources/pokemons/${slug}-pmdcollab/`,
-  )
-
-  // Portrait sheet: a separate endpoint from sprites.zip, one 200x320 PNG of
-  // 40x40 emotion cells (Normal is the top-left cell; see
-  // extract-real-portraits.mjs). Best-effort - some ids have no portrait art
-  // yet on PMDCollab, so a 404 here shouldn't fail the whole species fetch.
-  const portraitUrl = `https://spriteserver.pmdcollab.org/assets/portrait/${padded}.png`
-  try {
-    const portraitBuf = await fetchBuffer(portraitUrl)
-    writeFileSync(new URL('portrait-sheet.png', destDir), portraitBuf)
-    console.log(`[${padded}] wrote portrait-sheet.png`)
-  } catch (err) {
-    console.error(`[${padded}] no portrait: ${err.message}`)
-  }
+  console.log(`[${slug}] wrote ${entries.length} files to ${destDir}`)
+  return true
 }
 
-console.log(
-  `Add a { id, slug, row, ... } entry to PMDCOLLAB_SPECIES in scripts/pmdcollab-species.mjs for each new species, then run:`,
-)
-console.log(`  node scripts/generate-pokemon.mjs && node scripts/extract-real-sprites.mjs`)
-console.log(`  node scripts/generate-portraits.mjs && node scripts/extract-real-portraits.mjs`)
+if (byTable) {
+  const rows = onlyMissing
+    ? PMDCOLLAB_SPECIES.filter((row) => !existsSync(join(dest, `${row.slug}-pmdcollab`, 'AnimData.xml')))
+    : PMDCOLLAB_SPECIES
+  console.log(`[table] ${rows.length} of ${PMDCOLLAB_SPECIES.length} rows to fetch into ${dest}`)
+  let ok = 0
+  let failed = 0
+  for (const row of rows) {
+    if (await fetchOne(row.assetId, row.slug)) ok++
+    else failed++
+  }
+  console.log(`[table] fetched ${ok}, unavailable ${failed}`)
+} else {
+  const [idSpec] = positional
+  if (!idSpec) {
+    console.error('Usage: node scripts/legacy-art/fetch-pmdcollab.mjs <assetId>[,<assetId>…] [--slug=<name>] [--anims=Idle,Walk] --dest=<abs>')
+    console.error('       node scripts/legacy-art/fetch-pmdcollab.mjs --table [--missing] --dest=<abs>')
+    console.error('Examples:')
+    console.error('  node scripts/legacy-art/fetch-pmdcollab.mjs 0658 --dest=/abs/pokemons')
+    console.error('  node scripts/legacy-art/fetch-pmdcollab.mjs 0351/0001 --slug=0351-sunny --dest=/abs/pokemons')
+    process.exit(1)
+  }
+  let ids
+  try {
+    ids = parseIds(idSpec)
+  } catch (err) {
+    console.error(`error: ${err.message}`)
+    process.exit(1)
+  }
+  if (slugArg && ids.length > 1) {
+    console.error(`error: --slug only makes sense for a single assetId, got ${ids.length}`)
+    process.exit(1)
+  }
+  for (const id of ids) await fetchOne(id, slugArg ?? defaultSlug(id))
+}
