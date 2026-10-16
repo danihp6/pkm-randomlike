@@ -865,7 +865,10 @@ is additions only; the three Castform pairs untouched), `src/assets/README.md` a
 `SAVE_VERSION` step** — the chain stays **14 → 15 → 16 → 17 → 18**. Its ID is retired: it keeps
 its place in the sequence and is never reused.
 
-### Batch 6 — balance pass, Phase 9 docs, the battle SWITCH grid, the party's lead walks behind the player
+### Batch 6 — balance pass, Phase 9 docs, the battle SWITCH grid, the party's lead walks behind the player *(cut)*
+- **Status:** **cut** — its four specs (`.agent_specs/task-09.md`, `task-17.md`, `task-34.md`,
+  `task-41.md`) are written against the tree Batches 5d, 5e, 5eb and 5f left behind, so the
+  batch can gain no member. It is an antichain: no two of the four share a path.
 - **Task-09** Balance pass.
 - **Task-17** Step 14 — docs & migration pass.
 - **Task-34** The battle SWITCH grid: six rows of a **fixed** cell size, a name that cannot
