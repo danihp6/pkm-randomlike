@@ -9,7 +9,7 @@ import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
 import { normalizeNickname } from './run/nickname';
 import { MAX_LEVEL, xpForLevel, type CatchLocation, type RunPokemon } from './run/progression';
-import { dedupeMemberIds, emptyRunStats, type RunState, type RunStats } from './run/state';
+import { dedupeMemberIds, emptyRunStats, type PcCatch, type RunState, type RunStats } from './run/state';
 
 /** How fast the message box types text (consumed by the settings screen). */
 export type TextSpeed = 'slow' | 'normal' | 'fast';
@@ -48,7 +48,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -108,7 +108,10 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * squad's single shared bar (recovered as the highest member's XP); `13` moves a
  * v13 run onto the v14 schema, which added the `money` counter (an old run starts
  * with none); `14` moves a v14 run onto the v15 schema, which added the optional
- * per-member `nickname` (a v14 run has none, so it shows species names).
+ * per-member `nickname` (a v14 run has none, so it shows species names); `15` moves
+ * a v15 run onto the v16 schema, which replaced the floor-scoped `pcUnlocked` list
+ * with the route-scoped `pcCatch` (an old run's list cannot be re-scoped — the room
+ * it was caught in was never stored — so it starts with no pending catch).
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -197,6 +200,13 @@ export const SAVE_MIGRATIONS: Migrations = {
     ...document,
     version: 15,
   }),
+  // The floor-scoped catch list becomes the route-scoped catch: the room the old
+  // list's member was caught in was never stored, so the new field starts empty.
+  15: (document) => ({
+    ...document,
+    version: 16,
+    run: isRecord(document.run) ? withPcCatch(document.run) : document.run,
+  }),
 };
 
 /** The highest XP any member of a v12 run carried, or a level-1 bar. */
@@ -234,6 +244,18 @@ function withArrivalEdge(run: Record<string, unknown>): Record<string, unknown> 
 function withCapturedRooms(run: Record<string, unknown>): Record<string, unknown> {
   if (!isInteger(run.routeInMap) || run.routeInMap < 0) return run;
   return { ...run, capturedRooms: run.captureUsed === true ? [run.routeInMap] : [] };
+}
+
+/**
+ * Drops a v15 run's floor-scoped `pcUnlocked` list and writes the v16 `pcCatch`
+ * field: the room a member of the old list was caught in was never stored, so
+ * there is no window to reopen and the field starts null.
+ */
+function withPcCatch(run: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...run };
+  delete next.pcUnlocked;
+  next.pcCatch = null;
+  return next;
 }
 
 /**
@@ -493,6 +515,18 @@ function parsePokemon(value: unknown): RunPokemon | null {
   return caughtAt ? { fighter, caughtAt } : { fighter };
 }
 
+/**
+ * Reads the route's own catch: the room it was caught in and the member it is. A
+ * malformed field (a bad room id or an empty member id) reads as no catch, so a
+ * hand-edited or truncated document cannot strand the run.
+ */
+function parsePcCatch(value: unknown): PcCatch | null {
+  if (!isRecord(value)) return null;
+  if (!isInteger(value.roomInMap) || value.roomInMap < 0) return null;
+  if (!isString(value.memberId) || value.memberId === '') return null;
+  return { roomInMap: value.roomInMap, memberId: value.memberId };
+}
+
 /** Reads a caught member's location; anything malformed drops the field, not the member. */
 function parseCatchLocation(value: unknown): CatchLocation | null {
   if (!isRecord(value)) return null;
@@ -608,15 +642,12 @@ function parseRun(value: unknown): RunState | null {
   const capturedRooms = parseCapturedRooms(value.capturedRooms, value.captureUsed, routeInMap);
 
   // The PC lock: a run away from the entry room has necessarily left it, so an
-  // old save without the flag reads as departed; the floor's catch list defaults
-  // to empty (nothing is unlocked beyond the entry room's first visit).
+  // old save without the flag reads as departed; the route's own catch defaults
+  // to none (nothing is swappable beyond the entry room's first visit).
   const entryDeparted = value.entryDeparted === true || routeInMap !== plan.entryRoom;
-  const pcUnlocked: string[] = [];
-  if (Array.isArray(value.pcUnlocked)) {
-    for (const id of value.pcUnlocked) {
-      if (isString(id) && !pcUnlocked.includes(id)) pcUnlocked.push(id);
-    }
-  }
+  // A v15 document's floor-scoped `pcUnlocked` list is ignored: it cannot be
+  // re-scoped onto a room, so the catch window opens empty.
+  const pcCatch = parsePcCatch(value.pcCatch);
 
   const pokevialCharges = isInteger(value.pokevialCharges)
     ? Math.max(0, Math.min(POKEVIAL_MAX_CHARGES, value.pokevialCharges))
@@ -642,7 +673,7 @@ function parseRun(value: unknown): RunState | null {
     discoveredRooms,
     bossDefeated: value.bossDefeated === true,
     entryDeparted,
-    pcUnlocked,
+    pcCatch,
     levelCap: levelCapForMap(mapIndex),
     pokevialCharges,
     xp,

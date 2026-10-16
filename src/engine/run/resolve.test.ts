@@ -121,18 +121,19 @@ describe('resolveBattle', () => {
     expect(placed?.caughtAt).toEqual(catchLocation);
   });
 
-  it('defers the catch location with the capture screen', () => {
+  it('places a catch in the party when there is room, with no PC window', () => {
     const run = createRun({ seed: 's', starter });
     const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
     const catchLocation = { biomeId: 'forest', mapIndex: 2, routeInMap: 1 };
     const result = resolveBattle(run, returned(run, 'capture', { captured: caught.fighter }), wild, {
-      placeCapture: false,
       catchLocation,
     });
-    expect(result.captured?.fighter.id).toBe('catch-1');
-    expect(result.captured?.caughtAt).toEqual(catchLocation);
-    expect(result.run.party.some((member) => member.fighter.id === 'wild')).toBe(false);
-    expect(result.run.party.map((member) => member.fighter.id)).toEqual(['starter']);
+    expect(result.capture?.toPc).toBe(false);
+    expect(result.capture?.member.fighter.id).toBe('catch-1');
+    expect(result.capture?.member.caughtAt).toEqual(catchLocation);
+    expect(result.run.party.map((member) => member.fighter.id)).toEqual(['starter', 'catch-1']);
+    expect(result.run.box).toEqual([]);
+    expect(result.run.pcCatch).toBeNull();
   });
 
   it('counts every fainted member as a casualty', () => {
@@ -143,12 +144,18 @@ describe('resolveBattle', () => {
     expect(result.run.stats.casualties).toBe(2);
   });
 
-  it('sends a catch to the box when the party is full', () => {
+  it('sends a catch to the box when the party is full, opening its route window', () => {
     const full: RunState = { ...createRun({ seed: 's', starter }), party: Array(6).fill(starter) };
     const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
     const result = resolveBattle(full, returned(full, 'capture', { captured: caught.fighter }), wild);
     expect(result.run.party).toHaveLength(6);
     expect(result.run.box.map((member) => member.fighter.id)).toEqual(['catch-1']);
+    expect(result.capture?.toPc).toBe(true);
+    expect(result.capture?.member.fighter.id).toBe('catch-1');
+    expect(result.run.pcCatch).toEqual({ roomInMap: full.routeInMap, memberId: 'catch-1' });
+    // The room's single capture is spent and the catch counted.
+    expect(result.run.capturedRooms).toContain(full.routeInMap);
+    expect(result.run.stats.catches).toBe(1);
   });
 
   it('re-keys every catch so a later one cannot shadow an earlier one', () => {

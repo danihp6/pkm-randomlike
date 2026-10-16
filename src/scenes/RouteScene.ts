@@ -36,7 +36,6 @@ import {
   BOSS_MONEY_MULTIPLIER,
   MAX_PARTY_SIZE,
   POKEVIAL_MAX_CHARGES,
-  addCaughtPokemon,
   addItem,
   addPokemon,
   adoptAtLevel,
@@ -64,7 +63,6 @@ import {
   runBand,
   runRoomLevel,
   squadLevel,
-  swapCaughtIntoParty,
   trainerMoney,
   trainerRoster,
   unequipHeldItem,
@@ -169,13 +167,11 @@ import {
 } from '../ui/partyScreen';
 import {
   CLOSED_DETAIL,
-  DETAIL_STATS,
   NATURE_DOWN_TINT,
   NATURE_UP_TINT,
   STAT_LABELS,
   closeDetail,
   dropMove,
-  fighterDetail,
   grabMove,
   memberDetail,
   natureEffect,
@@ -192,6 +188,7 @@ import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_ALPHA, FRLG_WINDOW_PADDING, add
 import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
 import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
 import { InfoPopup } from '../ui/infoPopup';
+import { catchToPcNotice, type Notice } from '../ui/notice';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../data/statusIcons';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
@@ -455,13 +452,13 @@ function hudMetrics(width: number): HudMetrics {
   };
 }
 
-/** The full-party capture window and the party list inside it. */
-const CAPTURE_W = 760;
-const CAPTURE_H = 600;
-const CAPTURE_PAD = 24;
-const CAPTURE_COL_W = 360;
-const CAPTURE_ROW_H = 36;
-const CAPTURE_HPBAR_SCALE = 0.6;
+/**
+ * The transient notice strip (`src/ui/notice.ts`): a slim FRLG textbox pinned at
+ * the top of the screen, narrowed when the viewport cannot hold its full width.
+ */
+const NOTICE_W = 720;
+const NOTICE_H = 44;
+const NOTICE_TOP = 24;
 
 /** The shop window (Phase 9): Mart-style BUY / SELL tabs over a list of rows. */
 const SHOP_W = 640;
@@ -932,19 +929,13 @@ export class RouteScene extends Phaser.Scene {
   private releaseArmed = false;
   private releasePortrait!: Phaser.GameObjects.Image;
   private releaseText!: Phaser.GameObjects.BitmapText;
-  /** The full-party capture screen: its root, the caught mon, cursor and callback. */
-  private captureRoot: Phaser.GameObjects.Container | null = null;
-  private captureCaught: RunPokemon | null = null;
-  private captureOnDone: (() => void) | null = null;
-  private captureIndex = 0;
-  private captureHighlights: Phaser.GameObjects.Rectangle[] = [];
-  private captureCompare: Phaser.GameObjects.BitmapText | null = null;
-  /** The capture screen's ability row and its own ⓘ, window and hit zone. */
-  private captureAbilityLabel: Phaser.GameObjects.BitmapText | null = null;
-  private captureAbilityPopup: InfoPopup | null = null;
-  private captureAbilityButton: AbilityInfoButton | null = null;
-  private captureAbilityActive = false;
-  private captureAbilityPinned = false;
+  /**
+   * The transient notice strip at the top of the screen (`src/ui/notice.ts`): one
+   * at a time, dismissed by its own timer, never blocking input.
+   */
+  private noticeRoot: Phaser.GameObjects.Container | null = null;
+  private noticeText: Phaser.GameObjects.BitmapText | null = null;
+  private noticeTimer: Phaser.Time.TimerEvent | null = null;
   /** The shop room's counter tile, or null off a shop room. */
   private shopCounter: Tile | null = null;
   /** The Mart panel: its root, stock, tab and the row objects it repaints. */
@@ -1245,12 +1236,6 @@ export class RouteScene extends Phaser.Scene {
     this.releaseOnDone = null;
     this.releaseWait = null;
     this.releaseArmed = false;
-    this.captureRoot = null;
-    this.captureCaught = null;
-    this.captureOnDone = null;
-    this.captureIndex = 0;
-    this.captureHighlights = [];
-    this.captureCompare = null;
     this.shopRoot = null;
     this.shopCounter = null;
     this.shopStock = [];
@@ -1384,6 +1369,7 @@ export class RouteScene extends Phaser.Scene {
     this.buildResetOverlay();
     this.buildPauseMenu();
     this.buildLearnPopup();
+    this.buildNotice();
     this.refreshHud();
     this.refreshDetail();
     playMusic(this, 'route-music');
@@ -1401,11 +1387,6 @@ export class RouteScene extends Phaser.Scene {
     // The level-up popup is dismissed by any input.
     if (this.learnPopupOpen) {
       this.closeLearnPopup();
-      return;
-    }
-    // The full-party capture screen owns the input while it is up.
-    if (this.captureRoot) {
-      this.handleCaptureAction(action);
       return;
     }
     // The Mart panel owns the input while it is open.
@@ -1458,17 +1439,11 @@ export class RouteScene extends Phaser.Scene {
 
   /**
    * Opens or collapses the HUD panel a quick key points at, the keyboard twin of
-   * clicking its icon. Ignored while another overlay (a capture, the pause menu, a
-   * release beat) owns the input.
+   * clicking its icon. Ignored while another overlay (the pause menu, a release
+   * beat) owns the input.
    */
   private toggleHudPanel(id: HudPanelId): void {
-    if (
-      this.gameOver ||
-      this.pendingBattle ||
-      this.releaseRoot ||
-      this.captureRoot ||
-      this.pauseMenuOpen
-    ) {
+    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.pauseMenuOpen) {
       return;
     }
     const panel = this.panelById(id);
@@ -4112,7 +4087,6 @@ export class RouteScene extends Phaser.Scene {
       !this.gameOver &&
       !this.pendingBattle &&
       !this.releaseRoot &&
-      !this.captureRoot &&
       !this.shopRoot &&
       !this.miniBossRewardRoot &&
       !this.pauseMenuOpen &&
@@ -5098,6 +5072,50 @@ export class RouteScene extends Phaser.Scene {
     this.learnPopup.setVisible(false);
   }
 
+  /**
+   * The transient notice strip (`src/ui/notice.ts`): one fixed FRLG textbox at the
+   * top of the screen, built screen-space after the HUD camera exists so only the
+   * pinned camera draws it, hidden until a notice arrives.
+   */
+  private buildNotice(): void {
+    const width = Math.min(NOTICE_W, this.scale.width - 32);
+    const x = (this.scale.width - width) / 2;
+    const strip = addFrlgWindow(this, x, NOTICE_TOP, width, NOTICE_H, 'textbox');
+    this.noticeText = addFrlgText(this, this.scale.width / 2, NOTICE_TOP + NOTICE_H / 2, '', {
+      align: 'center',
+      origin: 0.5,
+      size: 16,
+      tint: FRLG_INK,
+    });
+    this.noticeText.setMaxWidth(width - 32);
+    this.noticeRoot = this.add.container(0, 0, [strip, this.noticeText]).setDepth(440).setVisible(false);
+    this.cameras.main.ignore(this.noticeRoot);
+  }
+
+  /**
+   * Floats one transient notice. One at a time: a second notice replaces the first
+   * and restarts its hold. Nothing is blocked and no key is consumed.
+   */
+  private showNotice(notice: Notice): void {
+    if (!this.noticeRoot || !this.noticeText) return;
+    this.noticeText.setText(notice.text);
+    this.noticeRoot.setVisible(true);
+    this.noticeTimer?.remove(false);
+    this.noticeTimer = this.time.delayedCall(notice.holdMs, () => this.hideNotice());
+  }
+
+  /** Takes the notice strip down; safe when it is not up. */
+  private hideNotice(): void {
+    this.noticeTimer?.remove(false);
+    this.noticeTimer = null;
+    this.noticeRoot?.setVisible(false);
+  }
+
+  /** The display name a notice uses: nickname, else species, the way `partyRow` reads it. */
+  private memberName(member: RunPokemon): string {
+    return member.fighter.nickname ?? getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId;
+  }
+
   private buildPauseMenu(): void {
     const { width, height } = this.scale;
     const panelH = 88 + PAUSE_MENU_ITEMS.length * PAUSE_MENU_ROW_H;
@@ -5137,7 +5155,7 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private openPauseMenu(): void {
-    if (this.pauseMenuOpen || this.gameOver || this.pendingBattle || this.releaseRoot || this.captureRoot) return;
+    if (this.pauseMenuOpen || this.gameOver || this.pendingBattle || this.releaseRoot) return;
     // The pause menu takes the player away from the panel, so an in-progress
     // nickname edit is discarded (the phone's Back gesture can open it directly).
     this.cancelNicknameEdit();
@@ -5377,13 +5395,7 @@ export class RouteScene extends Phaser.Scene {
 
     const reward = this.rewardFor(pending.trigger);
     const before = this.run.party;
-    // A catch that still leaves the party full (after any releases) asks the
-    // player to choose: swap it for a party member, or send it to the PC. Defer
-    // its placement so the capture screen owns that choice.
-    const survivors = result.player.filter((fighter) => fighter.hp > 0).length;
-    const askCapture = result.captured !== null && survivors >= MAX_PARTY_SIZE;
-    const { run, released, captured } = resolveBattle(this.run, result, reward, {
-      ...(askCapture ? { placeCapture: false } : {}),
+    const { run, released, capture } = resolveBattle(this.run, result, reward, {
       catchLocation: {
         biomeId: this.route.biomeId,
         mapIndex: this.run.mapIndex,
@@ -5444,337 +5456,11 @@ export class RouteScene extends Phaser.Scene {
     };
 
     this.playReleaseBeats(releaseBeats(released), () => {
-      if (captured) {
-        this.openCapturePrompt(captured, () => {
-          this.persistRun();
-          this.refreshHud();
-          finish();
-        });
-        return;
-      }
+      // Raised inside the callback, so a permadeath overlay and the notice never
+      // share the screen, and it never delays `finish()`.
+      if (capture?.toPc) this.showNotice(catchToPcNotice(this.memberName(capture.member)));
       finish();
     });
-  }
-
-  /**
-   * The full-party capture screen: the caught Pokémon's stats beside the party,
-   * so the player can compare before deciding. `E` swaps it for the highlighted
-   * party member; `Q` (or the button) sends it to the PC. Either choice runs the
-   * stored callback. Screen-space, drawn only by the pinned HUD camera.
-   */
-  private openCapturePrompt(caught: RunPokemon, onDone: () => void): void {
-    this.captureCaught = caught;
-    this.captureOnDone = onDone;
-    this.captureIndex = 0;
-    this.captureHighlights = [];
-    this.captureAbilityActive = false;
-    this.captureAbilityPinned = false;
-    const detail = fighterDetail(restoreFighter(caught.fighter));
-
-    const { width, height } = this.scale;
-    const x = (width - CAPTURE_W) / 2;
-    const y = (height - CAPTURE_H) / 2;
-    const children: Phaser.GameObjects.GameObject[] = [
-      this.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0),
-      addFrlgWindow(this, x, y, CAPTURE_W, CAPTURE_H),
-      addFrlgText(this, x + CAPTURE_PAD, y + 16, `Gotcha! ${detail.name} was caught!`, {
-        size: 24,
-        tint: FRLG_INK,
-      }),
-      addFrlgText(this, x + CAPTURE_PAD, y + 50, 'Your party is full. Swap it in, or send it to the PC.', {
-        size: 16,
-        tint: 0x6b6887,
-      }),
-    ];
-
-    const padY = y + 84;
-    const padH = CAPTURE_H - 156;
-    const leftX = x + CAPTURE_PAD;
-    const rightX = x + CAPTURE_W - CAPTURE_PAD - CAPTURE_COL_W;
-
-    // Left column: the caught Pokémon's full readout.
-    children.push(addFrlgWindow(this, leftX, padY, CAPTURE_COL_W, padH));
-    children.push(...this.captureDetailChildren(detail, leftX, padY));
-
-    // Right column: the party, one row per member, then the highlighted member's
-    // stats so the two can be compared side by side.
-    children.push(addFrlgWindow(this, rightX, padY, CAPTURE_COL_W, padH));
-    children.push(addFrlgText(this, rightX + 16, padY + 12, 'PARTY', { size: 16, tint: 0x3a3956 }));
-    const listTop = padY + 40;
-    this.run.party.forEach((member, i) => {
-      const row = fighterDetail(restoreFighter(member.fighter));
-      const rowY = listTop + i * CAPTURE_ROW_H;
-      const highlight = this.add
-        .rectangle(rightX + 10, rowY, CAPTURE_COL_W - 20, CAPTURE_ROW_H - 4, 0xf2c14e, 0.4)
-        .setOrigin(0, 0)
-        .setVisible(i === this.captureIndex);
-      this.captureHighlights.push(highlight);
-      children.push(
-        highlight,
-        addFrlgText(this, rightX + 20, rowY + 6, row.name, { size: 16, tint: FRLG_INK }),
-        addFrlgText(this, rightX + 210, rowY + 6, `Lv${row.level}`, { size: 16, tint: 0x3a3956 }),
-        addFrlgText(this, rightX + CAPTURE_COL_W - 20, rowY + 6, `${row.hp}/${row.maxHp}`, {
-          size: 16,
-          tint: 0x3a3956,
-          origin: [1, 0],
-        }),
-      );
-      const zone = this.add
-        .zone(rightX + 10, rowY, CAPTURE_COL_W - 20, CAPTURE_ROW_H)
-        .setOrigin(0, 0)
-        .setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => {
-        this.captureIndex = i;
-        this.refreshCapture();
-        this.chooseCaptureSwap();
-      });
-      children.push(zone);
-    });
-
-    const compareTop = listTop + this.run.party.length * CAPTURE_ROW_H + 14;
-    children.push(addFrlgText(this, rightX + 16, compareTop, 'SWITCH OUT', { size: 16, tint: 0x3a3956 }));
-    this.captureCompare = addFrlgText(this, rightX + 16, compareTop + 24, '', {
-      size: 16,
-      tint: FRLG_INK,
-      lineSpacing: 4,
-    });
-    children.push(this.captureCompare);
-
-    // Footer: the "send to the PC" button on the left, the key hints on the right.
-    const buttonY = y + CAPTURE_H - 52;
-    const buttonW = 220;
-    children.push(
-      this.add.rectangle(x + CAPTURE_PAD, buttonY, buttonW, 32, 0x2f2c4d).setOrigin(0, 0),
-      addFrlgText(this, x + CAPTURE_PAD + buttonW / 2, buttonY + 7, 'SEND TO THE PC', {
-        size: 16,
-        tint: 0xf8fafc,
-        origin: [0.5, 0],
-      }),
-    );
-    const pcZone = this.add
-      .zone(x + CAPTURE_PAD, buttonY, buttonW, 32)
-      .setOrigin(0, 0)
-      .setInteractive({ useHandCursor: true });
-    pcZone.on('pointerdown', () => this.chooseCapturePc());
-    children.push(pcZone);
-    children.push(
-      addFrlgText(this, x + CAPTURE_W - CAPTURE_PAD, buttonY + 7, 'E: swap   Q: PC', {
-        size: 16,
-        tint: 0x6b6887,
-        origin: [1, 0],
-      }),
-    );
-
-    this.captureRoot = this.add.container(0, 0, children).setDepth(500);
-    // The ability row's ⓘ floats over both columns, built from the root so it
-    // rides above them; its window is the same `InfoPopup` a move cell uses.
-    this.captureAbilityPopup = new InfoPopup(this, this.captureRoot);
-    this.captureAbilityButton = new AbilityInfoButton(this, this.captureAbilityPopup, this.captureRoot);
-    const abilityLabel = this.captureAbilityLabel;
-    if (abilityLabel) {
-      const spot = abilityInfoSpot(abilityLabel.x + abilityLabel.width, abilityLabel.y);
-      this.captureAbilityButton.layout(
-        spot,
-        false,
-        abilityInfoContent(detail.ability, detail.abilityDesc),
-      );
-      // The button's column does not overlap the party row zones, so a press here
-      // is safe: it pins the window instead of swapping a member.
-      const zone = this.add
-        .zone(spot.x, spot.y, spot.width, spot.height)
-        .setOrigin(0, 0)
-        .setInteractive({ useHandCursor: true });
-      zone.on('pointerover', () => this.setCaptureAbilityActive(true));
-      zone.on('pointerout', () => this.setCaptureAbilityActive(false));
-      zone.on('pointerdown', () => this.toggleCaptureAbility());
-      this.captureRoot.add(zone);
-    }
-    this.cameras.main.ignore(this.captureRoot);
-    this.refreshCapture();
-  }
-
-  /** The caught Pokémon's readout: types, HP, stats, ability and moves. */
-  private captureDetailChildren(
-    detail: MemberDetail,
-    x: number,
-    y: number,
-  ): Phaser.GameObjects.GameObject[] {
-    const children: Phaser.GameObjects.GameObject[] = [];
-    const right = x + CAPTURE_COL_W - 16;
-    children.push(addFrlgText(this, x + 16, y + 12, 'NEW', { size: 16, tint: 0x3a3956 }));
-    children.push(
-      addFrlgText(this, x + 16, y + 34, `${detail.name}  Lv${detail.level}`, { size: 20, tint: FRLG_INK }),
-    );
-
-    // Type chips.
-    detail.types.forEach((type, i) => {
-      const chipX = x + 16 + i * (HUD_DETAIL_TYPE_W + 6);
-      const chipY = y + 62;
-      children.push(
-        this.add.rectangle(chipX, chipY, HUD_DETAIL_TYPE_W, 20, typeColor(type)).setOrigin(0, 0),
-        addFrlgText(this, chipX + HUD_DETAIL_TYPE_W / 2, chipY + 2, type.toUpperCase(), {
-          size: 16,
-          tint: 0xf8fafc,
-          origin: [0.5, 0],
-        }),
-      );
-    });
-
-    // HP bar.
-    const barY = y + 96;
-    const fraction = hpFraction(detail.hp, detail.maxHp);
-    children.push(
-      this.add.image(x + 16, barY, FRLG_HPBAR_KEY).setOrigin(0, 0).setScale(CAPTURE_HPBAR_SCALE),
-      this.add
-        .rectangle(
-          x + 16 + FRLG_HPBAR.fill.x * CAPTURE_HPBAR_SCALE,
-          barY + FRLG_HPBAR.fill.y * CAPTURE_HPBAR_SCALE,
-          Math.max(0, FRLG_HPBAR.fill.width * CAPTURE_HPBAR_SCALE * fraction),
-          FRLG_HPBAR.fill.height * CAPTURE_HPBAR_SCALE,
-          hpColorInt(fraction),
-        )
-        .setOrigin(0, 0),
-      addFrlgText(this, right, barY + 2, `${detail.hp}/${detail.maxHp}`, {
-        size: 16,
-        tint: FRLG_INK,
-        origin: [1, 0],
-      }),
-    );
-
-    // Stats.
-    DETAIL_STATS.forEach((stat, i) => {
-      const rowY = y + 128 + i * 24;
-      children.push(
-        addFrlgText(this, x + 16, rowY, STAT_LABELS[stat], { size: 16, tint: 0x3a3956 }),
-        addFrlgText(this, right, rowY, String(detail.stats[stat]), { size: 16, tint: FRLG_INK, origin: [1, 0] }),
-      );
-    });
-    const infoY = y + 128 + DETAIL_STATS.length * 24 + 6;
-    this.captureAbilityLabel = addFrlgText(this, x + 16, infoY, `Ability  ${detail.ability}`, {
-      size: 16,
-      tint: 0x3a3956,
-    });
-    children.push(
-      this.captureAbilityLabel,
-      addFrlgText(this, x + 16, infoY + 22, `Nature   ${detail.nature}`, { size: 16, tint: 0x3a3956 }),
-    );
-
-    // Moves.
-    const movesY = infoY + 52;
-    children.push(addFrlgText(this, x + 16, movesY, 'MOVES', { size: 16, tint: 0x3a3956 }));
-    detail.moves.forEach((move, i) => {
-      const rowY = movesY + 24 + i * 24;
-      children.push(
-        addFrlgText(this, x + 16, rowY, move.name, { size: 16, tint: FRLG_INK }),
-        addFrlgText(this, right, rowY, `PP ${move.pp}/${move.maxPp}`, {
-          size: 16,
-          tint: 0x3a3956,
-          origin: [1, 0],
-        }),
-      );
-    });
-    return children;
-  }
-
-  /** Repaints the capture screen's cursor and the highlighted member's stats. */
-  private refreshCapture(): void {
-    if (!this.captureRoot) return;
-    this.captureHighlights.forEach((rect, i) => rect.setVisible(i === this.captureIndex));
-    const member = this.run.party[this.captureIndex];
-    if (!member || !this.captureCompare) return;
-    const detail = fighterDetail(restoreFighter(member.fighter));
-    this.captureCompare.setText(
-      `${detail.name}  Lv${detail.level}   HP ${detail.hp}/${detail.maxHp}\n` +
-        `ATK ${detail.stats.atk}   DEF ${detail.stats.def}   SPA ${detail.stats.spa}\n` +
-        `SPD ${detail.stats.spd}   SPE ${detail.stats.spe}`,
-    );
-  }
-
-  /** Floats or hides the capture screen's ability window as the pointer moves. */
-  private setCaptureAbilityActive(active: boolean): void {
-    if (this.captureAbilityPinned) return;
-    if (active === this.captureAbilityActive) return;
-    this.captureAbilityActive = active;
-    this.refreshCaptureAbility();
-  }
-
-  /** Pins the capture screen's ability window open, or closes it when pinned. */
-  private toggleCaptureAbility(): void {
-    const pinned = !this.captureAbilityPinned;
-    this.captureAbilityPinned = pinned;
-    this.captureAbilityActive = pinned;
-    this.refreshCaptureAbility();
-  }
-
-  /** Redraws the capture screen's ability ⓘ from the caught Pokémon's detail. */
-  private refreshCaptureAbility(): void {
-    const button = this.captureAbilityButton;
-    const caught = this.captureCaught;
-    const label = this.captureAbilityLabel;
-    if (!button || !caught || !label) return;
-    const detail = fighterDetail(restoreFighter(caught.fighter));
-    button.layout(
-      abilityInfoSpot(label.x + label.width, label.y),
-      this.captureAbilityActive,
-      abilityInfoContent(detail.ability, detail.abilityDesc),
-    );
-  }
-
-  /** The capture screen's keys: move the cursor, swap on `E`, send to the PC on `Q`. */
-  private handleCaptureAction(action: KeybindAction): void {
-    const count = this.run.party.length;
-    switch (action) {
-      case 'up':
-        this.captureIndex = (this.captureIndex - 1 + count) % count;
-        this.refreshCapture();
-        return;
-      case 'down':
-        this.captureIndex = (this.captureIndex + 1) % count;
-        this.refreshCapture();
-        return;
-      case 'confirm':
-      case 'interact':
-        this.chooseCaptureSwap();
-        return;
-      case 'cancel':
-        this.chooseCapturePc();
-        return;
-      default:
-        return;
-    }
-  }
-
-  /** Swaps the caught Pokémon for the highlighted party member. */
-  private chooseCaptureSwap(): void {
-    const caught = this.captureCaught;
-    if (!caught || !this.run.party[this.captureIndex]) return;
-    this.run = swapCaughtIntoParty(this.run, caught, this.captureIndex);
-    this.closeCapturePrompt();
-  }
-
-  /** Sends the caught Pokémon to the PC. */
-  private chooseCapturePc(): void {
-    const caught = this.captureCaught;
-    if (!caught) return;
-    this.run = addCaughtPokemon(this.run, caught);
-    this.closeCapturePrompt();
-  }
-
-  /** Tears down the capture screen and runs its callback. */
-  private closeCapturePrompt(): void {
-    const onDone = this.captureOnDone;
-    this.captureOnDone = null;
-    this.captureCaught = null;
-    this.captureHighlights = [];
-    this.captureCompare = null;
-    this.captureAbilityLabel = null;
-    this.captureAbilityPopup = null;
-    this.captureAbilityButton = null;
-    this.captureAbilityActive = false;
-    this.captureAbilityPinned = false;
-    this.captureRoot?.destroy(true);
-    this.captureRoot = null;
-    onDone?.();
   }
 
   /**
@@ -6557,7 +6243,7 @@ export class RouteScene extends Phaser.Scene {
       discoveredRooms: [plan.entryRoom],
       bossDefeated: false,
       entryDeparted: false,
-      pcUnlocked: [],
+      pcCatch: null,
       levelCap: levelCapForMap(floor),
       defeatedTrainers: [],
       pickedItems: [],
@@ -6677,7 +6363,6 @@ export class RouteScene extends Phaser.Scene {
       this.gameOver ||
       this.pendingBattle ||
       this.releaseRoot ||
-      this.captureRoot ||
       this.shopRoot ||
       this.miniBossRewardRoot ||
       this.pauseMenuOpen ||
@@ -6714,7 +6399,7 @@ export class RouteScene extends Phaser.Scene {
   /** Turns every "spinning" trainer to the next facing on the shared timer. */
   private updateTrainerSpins(time: number): void {
     if (this.generatorStepIndex !== null) return;
-    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.captureRoot || this.shopRoot || this.miniBossRewardRoot || this.pauseMenuOpen || this.chase)
+    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.shopRoot || this.miniBossRewardRoot || this.pauseMenuOpen || this.chase)
       return;
     for (const entry of this.trainerSprites) {
       if (isTrainerDefeated(this.run, entry.trainer.id)) continue;

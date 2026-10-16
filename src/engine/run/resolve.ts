@@ -11,8 +11,8 @@ import {
   type RunPokemon,
 } from './progression';
 import {
+  addCaughtPokemon,
   addMoney,
-  addPokemon,
   gainExperience,
   isTrainerDefeated,
   markTrainerDefeated,
@@ -38,21 +38,14 @@ export type BattleResolution = Readonly<{
   released: readonly RunPokemon[];
   events: readonly ProgressionEvent[];
   /**
-   * The caught Pokémon when its placement was **deferred** (`resolveBattle`'s
-   * `placeCapture: false`), else null. The interactive capture flow places it
-   * once the player has chosen between the party and the PC.
+   * The catch this battle placed, and where it landed: `toPc` is true when the
+   * party was full and the member went to the box. Null when nothing was caught.
    */
-  captured: RunPokemon | null;
+  capture: Readonly<{ member: RunPokemon; toPc: boolean }> | null;
 }>;
 
 /** Options for folding a battle back into the run. */
 export type ResolveBattleOptions = Readonly<{
-  /**
-   * Whether the caught Pokémon is placed by `resolveBattle` (the default). When
-   * `false` the capture is still spent and counted, but the Pokémon is returned
-   * as `captured` for the caller to place (the full-party capture screen).
-   */
-  placeCapture?: boolean;
   /** The biome and room the catch happened in, stored on the member's STATS tab. */
   catchLocation?: CatchLocation;
 }>;
@@ -89,13 +82,15 @@ export function resolveBattle(
     events.push(...grown.events);
   }
 
-  let captured: RunPokemon | null = null;
+  let capture: BattleResolution['capture'] = null;
   if (result.captured) {
     const base = runPokemonFromSnapshot(result.captured, options?.catchLocation);
     const keyed: RunPokemon = { ...base, fighter: { ...base.fighter, id: nextMemberId(next) } };
     const caught = adoptAtLevel(keyed, squadLevel(next), next.seed);
-    if (options?.placeCapture === false) captured = caught;
-    else next = addPokemon(next, caught);
+    const placed = addCaughtPokemon(next, caught);
+    // Read the placement back off the run, so it cannot disagree with `pcCatch`.
+    capture = { member: caught, toPc: placed.box.some((member) => member.fighter.id === caught.fighter.id) };
+    next = placed;
     next = useCapture(next);
     next = recordCatch(next);
   }
@@ -112,7 +107,7 @@ export function resolveBattle(
     next = markTrainerDefeated(next, reward.trainerId);
   }
 
-  return { run: next, released: death.released, events, captured };
+  return { run: next, released: death.released, events, capture };
 }
 
 /**

@@ -18,6 +18,8 @@ testable logic belongs in the computing half.
 - `infoPopup.ts` — the floating description window: an FRLG window sized from its wrapped text,
   with an optional left column of badges or a colour chip; the move cells and the ability rows
   float the same one.
+- `notice.ts` — the run's transient notices: their copy and hold time, one at a time, with no
+  key and no input taken.
 - `abilityInfo.ts` — the ability row's info control and the text it floats, so the route HUD,
   the battle's switch window and the capture screen read the same way.
 - `partyScreen.ts` — the party/box model: rows, panes, cursor, drag/drop and the box page math.

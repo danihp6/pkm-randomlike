@@ -33,6 +33,14 @@ export function emptyRunStats(): RunStats {
 }
 
 /**
+ * The room the run's own catch was caught in, and the member it is, while the run
+ * still stands in that room (`docs/routes-spec.md` §6). Replaces the floor-scoped
+ * `pcUnlocked`: the window closes on the first door or portal, not at the next
+ * floor.
+ */
+export type PcCatch = Readonly<{ roomInMap: number; memberId: string }>;
+
+/**
  * The run: everything that survives a route. The party/box hold run members
  * (battle snapshot + XP), the bag is the item stacks the scene passes to battle,
  * `money` is the Poké Dollars beat out of trainers, `defeatedTrainers` /
@@ -69,11 +77,11 @@ export type RunState = Readonly<{
    */
   entryDeparted: boolean;
   /**
-   * Ids of the Pokémon caught on `mapIndex` while the party was full. Each stays
-   * swappable out of the PC for the rest of the floor — the catch itself is never
-   * locked in — even after the entry room is left. Resets per map.
+   * The route's own catch and the room it was caught in, while the run still
+   * stands there: a catch that went to the PC stays swappable until the first
+   * door or portal (`docs/routes-spec.md` §6). Null once nothing is pending.
    */
-  pcUnlocked: readonly string[];
+  pcCatch: PcCatch | null;
   /** Cached level cap for `mapIndex` (D9/D29); kept in sync on a map advance. */
   levelCap: number;
   /**
@@ -132,7 +140,7 @@ export function createRun(init: RunInit): RunState {
     discoveredRooms: [entryRoom],
     bossDefeated: false,
     entryDeparted: false,
-    pcUnlocked: [],
+    pcCatch: null,
     levelCap: levelCapForMap(FIRST_MAP),
     pokevialCharges: POKEVIAL_MAX_CHARGES,
     xp: init.xp ?? xpForLevel(init.starter.fighter.level),
@@ -168,8 +176,10 @@ export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: Map
     routeInMap: room,
     arrivalEdge: arrival,
     // Leaving a room (even the entry back into another) departs the entry room,
-    // so the PC is only fully editable on the very first visit.
+    // so the PC is only fully editable on the very first visit; it also closes the
+    // room's own catch window, which never follows the run through a door.
     entryDeparted: true,
+    pcCatch: null,
     discoveredRooms: discoverRoom(run.discoveredRooms, room),
   };
 }
@@ -194,7 +204,7 @@ export function advanceMap(run: RunState): RunState {
     discoveredRooms: [plan.entryRoom],
     bossDefeated: false,
     entryDeparted: false,
-    pcUnlocked: [],
+    pcCatch: null,
     levelCap: levelCapForMap(mapIndex),
     defeatedTrainers: [],
     pickedItems: [],
@@ -286,10 +296,10 @@ export function nextMemberId(run: RunState): string {
  * Re-keys every party/box member whose id another member already holds, in party-then-box
  * order. The **first** member holding an id keeps it; a later one is re-minted with an id
  * that is guaranteed not to collide with any id the run held when the repair started.
- * `pcUnlocked` follows the members: an entry that named a re-keyed member's old id stays
- * and that member's new id is appended (deduplicated). Pure and deterministic — the same
- * run always repairs to the same ids — and a run whose ids are already unique is returned
- * **as the same object** (`===`), so a decoder call site is free.
+ * `pcCatch` follows the member it names: a re-keyed catch is recorded under its new id,
+ * while the room it was caught in stays. Pure and deterministic — the same run always
+ * repairs to the same ids — and a run whose ids are already unique is returned **as the
+ * same object** (`===`), so a decoder call site is free.
  */
 export function dedupeMemberIds(run: RunState): RunState {
   const original = new Set<string>();
@@ -328,15 +338,13 @@ export function dedupeMemberIds(run: RunState): RunState {
   const box = dedupeList(run.box);
   if (rekeyed.length === 0) return run;
 
-  // The floor's catch list follows the members it named: the old id still names the
-  // member that kept it, so both entries stay.
-  const pcUnlocked: string[] = [];
-  for (const id of run.pcUnlocked) if (!pcUnlocked.includes(id)) pcUnlocked.push(id);
-  for (const { oldId, newId } of rekeyed) {
-    if (run.pcUnlocked.includes(oldId) && !pcUnlocked.includes(newId)) pcUnlocked.push(newId);
-  }
+  // The catch follows the member it names; a `pcCatch` naming an id no member holds
+  // is left alone (it is inert: `pcMemberEditable` can only match a live member id).
+  const pcCatch = run.pcCatch;
+  const rekeyedCatch = pcCatch ? rekeyed.find(({ oldId }) => oldId === pcCatch.memberId) : undefined;
+  const nextCatch = pcCatch && rekeyedCatch ? { ...pcCatch, memberId: rekeyedCatch.newId } : pcCatch;
 
-  return { ...run, party, box, pcUnlocked };
+  return { ...run, party, box, pcCatch: nextCatch };
 }
 
 /** Replaces a party or box member by id; a miss leaves the run untouched. */
@@ -459,38 +467,26 @@ export function pcFullyEditable(run: RunState): boolean {
 
 /**
  * True when `memberId` may be moved between the party and the PC: either the PC is
- * fully editable or the member is the floor's own catch, which is never locked in.
+ * fully editable, or the member is the room's own catch and the run still stands
+ * in the room it was caught in (`docs/routes-spec.md` §6).
  */
 export function pcMemberEditable(run: RunState, memberId: string): boolean {
-  return pcFullyEditable(run) || run.pcUnlocked.includes(memberId);
-}
-
-/** Remembers that a member (the floor's catch) stays swappable out of the PC. */
-export function unlockPcMember(run: RunState, memberId: string): RunState {
-  return run.pcUnlocked.includes(memberId)
-    ? run
-    : { ...run, pcUnlocked: [...run.pcUnlocked, memberId] };
+  return (
+    pcFullyEditable(run) ||
+    (run.pcCatch !== null && run.pcCatch.roomInMap === run.routeInMap && run.pcCatch.memberId === memberId)
+  );
 }
 
 /**
- * Places a caught Pokémon: the party when it has room, otherwise the PC, and
- * always unlocks it so the floor's catch stays swappable (`docs/routes-spec.md`
- * §6). The capture screen's "leave it in the PC" choice.
+ * Places a caught Pokémon, the classic way (D7): the party while it has room, else
+ * the PC. A catch that landed in the box records the room it is swappable in
+ * (`pcCatch`), so the BOX panel lets the player take it back **only** while the run
+ * stays there (`docs/routes-spec.md` §6). Pure, like the rest of the run (D11).
  */
 export function addCaughtPokemon(run: RunState, pokemon: RunPokemon): RunState {
-  return unlockPcMember(addPokemon(run, pokemon), pokemon.fighter.id);
-}
-
-/**
- * Places a caught Pokémon by trading it for the party member at `partyIndex` (the
- * replaced member goes to the PC), and unlocks the catch. The capture screen's
- * "swap for a party member" choice.
- */
-export function swapCaughtIntoParty(run: RunState, pokemon: RunPokemon, partyIndex: number): RunState {
   const placed = addPokemon(run, pokemon);
-  const boxIndex = placed.box.findIndex((member) => member.fighter.id === pokemon.fighter.id);
-  if (boxIndex < 0) return unlockPcMember(placed, pokemon.fighter.id);
-  return unlockPcMember(swapPartyBox(placed, partyIndex, boxIndex), pokemon.fighter.id);
+  if (placed.box.length === run.box.length) return placed;
+  return { ...placed, pcCatch: { roomInMap: run.routeInMap, memberId: pokemon.fighter.id } };
 }
 
 /** Counts a caught Pokémon for the run summary, beside the capture it spends. */

@@ -37,10 +37,8 @@ import {
   recordCatch,
   setParty,
   spendMoney,
-  swapCaughtIntoParty,
   swapPartyBox,
   unequipHeldItem,
-  unlockPcMember,
   updatePokemon,
   useCapture,
   withdrawToParty,
@@ -374,24 +372,24 @@ describe('dedupeMemberIds', () => {
     expect(next.box.map((entry) => entry.fighter.id)).toEqual(['catch-3']);
   });
 
-  it('gives a re-keyed member its new id in the unlock list that named the old one', () => {
+  it('gives a re-keyed member its new id in the route catch that named the old one', () => {
     const run = {
       ...createRun({ seed: 'run-a', starter }),
       party: [member('wild'), member('wild')],
-      pcUnlocked: ['wild'],
+      pcCatch: { roomInMap: 2, memberId: 'wild' },
     };
-    expect(dedupeMemberIds(run).pcUnlocked).toEqual(['wild', 'catch-1']);
+    expect(dedupeMemberIds(run).pcCatch).toEqual({ roomInMap: 2, memberId: 'catch-1' });
   });
 
-  it('leaves an unlock list that never named the re-keyed member alone', () => {
+  it('leaves a route catch that never named the re-keyed member alone', () => {
     const run = {
       ...createRun({ seed: 'run-a', starter }),
       party: [member('wild'), member('wild')],
-      pcUnlocked: [],
+      pcCatch: { roomInMap: 2, memberId: 'nobody' },
     };
     const next = dedupeMemberIds(run);
     expect(next.party.map((entry) => entry.fighter.id)).toEqual(['wild', 'catch-1']);
-    expect(next.pcUnlocked).toEqual([]);
+    expect(next.pcCatch).toEqual({ roomInMap: 2, memberId: 'nobody' });
   });
 
   it('touches nothing but the id of a re-keyed member', () => {
@@ -522,7 +520,7 @@ describe('held items', () => {
   });
 });
 
-describe('PC lock and the floor catch', () => {
+describe('PC lock and the route catch', () => {
   const full = () => {
     let run = createRun({ seed: 'pc-a', starter });
     for (let i = 1; i < MAX_PARTY_SIZE; i++) {
@@ -530,51 +528,58 @@ describe('PC lock and the floor catch', () => {
     }
     return run;
   };
+  const caught = () => createRunPokemon({ id: 'catch', speciesId: 'pikachu', level: 4 });
+  // A full party that has already walked one room on, where the PC is locked
+  // except for the room's own catch.
+  const away = () => advanceRoute(full(), 1);
 
   it('is fully editable only on the first visit to the entry room', () => {
     const run = createRun({ seed: 'pc-a', starter });
     expect(run.entryDeparted).toBe(false);
     expect(pcFullyEditable(run)).toBe(true);
 
-    const away = advanceRoute(run, 1);
-    expect(away.entryDeparted).toBe(true);
-    expect(pcFullyEditable(away)).toBe(false);
+    const awayFromEntry = advanceRoute(run, 1);
+    expect(awayFromEntry.entryDeparted).toBe(true);
+    expect(pcFullyEditable(awayFromEntry)).toBe(false);
 
     // Returning to the entry room does not reopen the PC for the rest of the floor.
-    const back = advanceRoute(away, 0);
+    const back = advanceRoute(awayFromEntry, 0);
     expect(pcFullyEditable(back)).toBe(false);
   });
 
-  it('reopens the PC on the next floor and clears the floor catch list', () => {
-    const run = unlockPcMember(advanceRoute(createRun({ seed: 'pc-a', starter }), 1), 'p0');
-    const next = advanceMap(run);
+  it('reopens the PC on the next floor and forgets the route catch', () => {
+    const placed = addCaughtPokemon(away(), caught());
+    expect(placed.pcCatch).toEqual({ roomInMap: 1, memberId: 'catch' });
+
+    const next = advanceMap(placed);
     expect(pcFullyEditable(next)).toBe(true);
-    expect(next.pcUnlocked).toEqual([]);
+    expect(next.pcCatch).toBeNull();
+    // The new floor's entry room reopens the whole PC, but the catch's own window
+    // is closed: one door in, the box is locked again.
+    expect(pcMemberEditable(advanceRoute(next, 1), 'catch')).toBe(false);
   });
 
-  it('only the floor catch is editable away from the entry room', () => {
+  it('sends a full-party catch to the PC, swappable in the room it was caught in only', () => {
+    const placed = addCaughtPokemon(away(), caught());
+    expect(placed.box.map((member) => member.fighter.id)).toEqual(['catch']);
+    expect(placed.pcCatch).toEqual({ roomInMap: 1, memberId: 'catch' });
+    expect(pcMemberEditable(placed, 'catch')).toBe(true);
+    expect(pcMemberEditable(placed, 'p1')).toBe(false);
+
+    // The first door closes the window, and coming back does not reopen it.
+    const out = advanceRoute(placed, 2);
+    expect(out.pcCatch).toBeNull();
+    expect(pcMemberEditable(out, 'catch')).toBe(false);
+    expect(pcMemberEditable(advanceRoute(out, 1), 'catch')).toBe(false);
+  });
+
+  it('leaves the catch window closed when the catch landed in the party', () => {
     const run = advanceRoute(createRun({ seed: 'pc-a', starter }), 1);
-    expect(pcMemberEditable(run, 'starter')).toBe(false);
-    const unlocked = unlockPcMember(run, 'starter');
-    expect(pcMemberEditable(unlocked, 'starter')).toBe(true);
-    expect(unlockPcMember(unlocked, 'starter')).toBe(unlocked);
-  });
-
-  it('sends a full-party catch to the PC and keeps it unlocked', () => {
-    const caught = createRunPokemon({ id: 'catch', speciesId: 'pikachu', level: 4 });
-    const next = addCaughtPokemon(full(), caught);
-    expect(next.box.some((member) => member.fighter.id === 'catch')).toBe(true);
-    expect(next.pcUnlocked).toContain('catch');
-    expect(pcMemberEditable(next, 'catch')).toBe(true);
-  });
-
-  it('swaps a full-party catch for a party member, the replaced one going to the PC', () => {
-    const run = full();
-    const caught = createRunPokemon({ id: 'catch', speciesId: 'pikachu', level: 4 });
-    const next = swapCaughtIntoParty(run, caught, 0);
-    expect(next.party[0].fighter.id).toBe('catch');
-    expect(next.box.some((member) => member.fighter.id === run.party[0].fighter.id)).toBe(true);
-    expect(next.pcUnlocked).toContain('catch');
+    const placed = addCaughtPokemon(run, caught());
+    expect(placed.party.map((member) => member.fighter.id)).toEqual(['starter', 'catch']);
+    expect(placed.box).toEqual([]);
+    expect(placed.pcCatch).toBeNull();
+    expect(pcMemberEditable(placed, 'catch')).toBe(false);
   });
 });
 
