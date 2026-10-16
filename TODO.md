@@ -23,14 +23,14 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e, Batch 5eb and Batch 5f are shipped
-and
+**Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e, Batch 5eb, Batch 5f and Batch 6 are
+shipped and
 archived.** Their
-seventeen
+twenty-one
 tasks merged
 in ID order
 behind the green gate (four, then five, then three, then one, then one, then one, then one, then
-one) and the
+one, then four) and the
 detail is
 in
 `CHANGELOG.md`'s
@@ -38,10 +38,11 @@ in
 rustle, Batch 5c the one that re-planned the level curve and laid that overlay over the player's
 legs, Batch 5cb the defect in front of 5d that fixed its colour and clipped its hit, Batch 5d
 the on-ramp thinning, Batch 5e the fixed boss and mini-boss parties, Batch 5eb the debug
-overlay's teleports and its two ignore toggles, and Batch 5f the overworld sprite set, and all
-eight are closed
-below. **Batch 6 is the next batch cut** — the balance pass, the Phase 9 docs pass, the battle
-SWITCH grid and the party's lead walking behind the player. The eighteenth round below put the
+overlay's teleports and its two ignore toggles, Batch 5f the overworld sprite set, and Batch 6
+the balance pass, the Phase 9 docs, the battle SWITCH grid and the follower, and all
+nine are closed
+below. **Batch 6b is the next batch cut** — the learnset band scrolls and a trainer's remaining
+team sits under its panel. The eighteenth round below put the
 follower back in Batch 6 and gave its art its own batch, 5f, ahead of it. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
 goes to the packer, and no tree under `sprite-sources/` is ever linked into a worktree
@@ -865,69 +866,25 @@ is additions only; the three Castform pairs untouched), `src/assets/README.md` a
 `SAVE_VERSION` step** — the chain stays **14 → 15 → 16 → 17 → 18**. Its ID is retired: it keeps
 its place in the sequence and is never reused.
 
-### Batch 6 — balance pass, Phase 9 docs, the battle SWITCH grid, the party's lead walks behind the player *(cut)*
-- **Status:** **cut** — its four specs (`.agent_specs/task-09.md`, `task-17.md`, `task-34.md`,
-  `task-41.md`) are written against the tree Batches 5d, 5e, 5eb and 5f left behind, so the
-  batch can gain no member. It is an antichain: no two of the four share a path.
-- **Task-09** Balance pass.
-- **Task-17** Step 14 — docs & migration pass.
-- **Task-34** The battle SWITCH grid: six rows of a **fixed** cell size, a name that cannot
-  stretch them, arrows that move the cursor.
-- **Task-41** The party's lead Pokémon walks behind the player on a route, with its idle and
-  its running animation, drawn from the overworld pairs `[Task-76]` committed one batch
-  earlier (Batch 5f).
-- **Hot files:** the sheets under `docs/balance/` (`economy.md`, `route-curve.md`,
-  `README.md`) → Task-09; `src/scenes/BattleScene.ts` and the new
-  `src/ui/partyGrid.ts` + `partyGrid.test.ts` + its `src/ui/README.md` role line →
-  Task-34; `src/scenes/RouteScene.ts`, the new `src/data/pokemonOverworld.ts` +
-  `pokemonOverworld.test.ts`, the new `src/render/pokemonFollower.ts` +
-  `pokemonFollower.test.ts` and the two per-folder README role lines
-  (`src/data/README.md`, `src/render/README.md`) → Task-41; `CHANGELOG.md`, for the Phase 9
-  archive section alone, → Task-17. Nobody claims `package.json`,
-  `src/main.ts`, `vite.config.ts`, `src/data/dex/**` or
-  `docs/balance/effect-coverage.md` (generated; Task-23's in Batch 8) — and
-  `src/assets/**` and `docs/art-direction.md` are **Batch 5f's** (Task-76), so Task-41 only
-  *reads* the committed `src/assets/pokemon/**` and takes no line about it.
-- **Shape:** numbers, one harness, prose, one scene, one pure UI grid and one follower.
-  Task-09 owns
-  `src/engine/battle/golden.test.ts` and any harness module it extracts beside it —
-  the only task allowed to restructure the golden log — over the numbers in
-  `src/data/`. Task-17 takes `docs/design-spec.md`, `docs/battle-spec.md`,
-  `docs/routes-spec.md`, `docs/tech-decisions.md`, `AGENTS.md` and the Phase 9 archive
-  in `CHANGELOG.md`, so nothing else in
-  the batch may — which is
-  why the capture task registered as `[Task-31]` sits in Batch 7 instead of here: it
-  must rewrite the PC rule in `docs/routes-spec.md` §6, and Task-17 holds that file
-  in this batch. The bug it replaces, `[Task-27]` (Catching a Pokémon stacks a
-  duplicate on top of it), was absorbed into `[Task-31]` and is retired — its live
-  diagnosis is `[Task-33]`'s, which Batch 3b fixes before any of this.
-  Task-34 is the third task and takes the one scene the other two leave free: the
-  party grid's geometry lives in `BattleScene` alone, and this is the first batch whose
-  scene claims leave that file open — Batch 5's chrome pass owns it in the batch before,
-  and Batch 7's Gigantamax and Batch 8's accessibility sweep own it after. It reads the
-  long names Batch 4's nicknames (Task-13) make possible but produces nothing anyone in
-  this batch reads, and it takes no `docs/` path: Task-17 holds every spec it could want
-  a line in, and the row geometry changes no rule. Its pure row geometry is the one
-  `src/ui/**` file this batch opens, and `src/ui/README.md` is nobody's here — Task-38
-  takes it in 6b, the batch after.
-  `Task-41` is the fourth task and takes the batch's second scene: `src/scenes/RouteScene.ts`
-  is free here for the first time since Batch 5b — 5c's Task-73, 5cb's Task-74, 5d's
-  Task-70, 5e's Task-71 and 5eb's Task-75 each held it in the batches before — Task-34 takes
-  a different file, and the follower's other paths (a new `src/data/` accessor, a new
-  `src/render/` registry and the two per-folder README lines) are nobody's. Its art is **not**
-  in this batch: the committed `src/assets/pokemon/**` pairs and the coverage manifest are
-  `Task-76`'s, in **Batch 5f**, the single-task batch immediately before this one — which is
-  exactly why the follower waits for that batch to merge: it resolves a member's `speciesId`
-  through the manifest and draws the pair it names, and the ids the manifest lists as `missing`
-  are the only ones it cannot draw. It writes no line about the art, because
-  `src/assets/README.md` and `docs/art-direction.md` are Task-76's, and it takes no
-  `docs/design-spec.md` line either, because Task-17 holds that file here.
-  `Task-38` (the learnset band scrolls) is **not** here even though its scene is free:
-  Task-41 holds `src/scenes/RouteScene.ts` in this batch, and the scroll has to rewrite
-  `docs/design-spec.md`
-  §3's "a **paged** grid" and `docs/tech-decisions.md` `D36`'s "a paged, full-width grid",
-  both of which Task-17 holds here. That is the same rule that sends Task-31 to Batch 7
-  for `docs/routes-spec.md` §6, so the scroll takes the batch after this one, 6b.
+### Batch 6 — balance pass, Phase 9 docs, the battle SWITCH grid, the party's lead walks behind the player *(shipped, archived)*
+The batch's four tasks merged in ID order behind the green gate (**1433** tests, `npm test` +
+`npm run build` after each merge) and the detail is in `CHANGELOG.md`'s `## Unreleased`; QA
+validated each task in its own lane and then the combined tree. **Task-09** ran the balance pass
+over the shipped numbers and extracted the reusable `scriptedBattle()` harness beside
+`golden.test.ts` — the golden log itself is byte-identical, only its source moved. **Task-17**
+closed the Phase 9 docs: `docs/maps-spec.md`'s open questions became resolved records, the stale
+counts were corrected against the tree (88 Megas, eight maps to level 55, the fixed boss parties,
+the "from map 2 on" shop), and `AGENTS.md` gained the README convention, the two-wave QA loop and
+the Asset-trees rule. **Task-34** redrew the battle SWITCH window as **six rows of a fixed cell
+size** (the new pure `src/ui/partyGrid.ts` owns the geometry; the label is clipped, not wrapped,
+and the arrows step member to member) — the cells no longer stretch to fill the panel. **Task-41**
+put the party's lead behind the player on a route: `src/data/pokemonOverworld.ts` resolves a
+species id through Task-76's manifest, `src/render/pokemonFollower.ts` registers the idle and walk
+strips per facing, and `RouteScene` trails it one tile, flips it and rebuilds it on a lead or room
+change — **with its idle looping while the player stands still** (a change the human asked for
+after the first QA). None of the four added a run field, so **no `SAVE_VERSION` step** — the chain
+stays **14 → 15 → 16 → 17 → 18**. Their four IDs are retired: they keep their place in the
+sequence and are never reused.
 
 ### Batch 6b — the learnset band scrolls, and a trainer's remaining team sits under its panel
 - **Task-38** The learnset band scrolls instead of paging.
@@ -2388,55 +2345,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] **[Task-34] The battle SWITCH grid: a sixth per row, a name that cannot stretch it,
-      and arrows that move the cursor.** Reported in play, in the battle's SWITCH window.
-      The builder is `renderPartyGrid` (`src/scenes/BattleScene.ts`) and the defect is its
-      geometry. It lays the party out as `PARTY_COLS = 3` avatar cells and derives the cell
-      height from the **member count**: `rows = Math.max(1, Math.ceil(count / PARTY_COLS))`,
-      then `cellH = (bottom - top - (rows - 1) * MENU_GRID_GAP) / rows`. With one, two or
-      three members `rows` is 1, so a single cell is the window's whole content height; the
-      avatar, the label and the HP bar stay pinned at that box's top-left corner and the box
-      grows around them, which is what "the cells must not grow their height" is about. The
-      label is the second half: `openParty` builds one string for the cell (`name  LvN` plus
-      the status abbreviation) and `renderPartyGrid` draws it with
-      `setMaxWidth(cellW - avatarW - 22)`, so a long name **wraps** inside a cell that never
-      accounted for a second line, while the HP bar is placed at a fixed `cellY + 30` under
-      it and the label's own height is whatever the wrap made it. The third half is the
-      cursor: `navigateMenu` sends every direction to `moveMenu(±1)` in `mode === 'party'` —
-      linear previous/next — even though the cells sit in three columns, so `up`/`down`
-      slides along the row and `left`/`right` skip the member that is actually beside the
-      cursor.
-      **Expected:** one row per member in a single column, each row exactly **1/6** of the
-      window's content height (so a full party of six fills the panel and a party of two
-      leaves the rest of the panel empty rather than two giant cells) — **confirmed by the
-      human**, whose words for the bug are "with two Pokémon the two cells take the whole
-      grid", and whose reading of the fix is a **fixed cell size that does not stretch to fill
-      the panel**: the panel keeps its geometry, a smaller party leaves the freed space
-      **empty**, and nothing in the row grows to fill it. The row's height
-      **never** depends on what it draws: a name that overflows the row is clipped (an
-      ellipsis is fine) and never wrapped or allowed to push the HP bar. Because a sixth of
-      the menu panel's content is only ~19px (the panel is 192px tall and the frozen
-      `FRLG_WINDOW_PADDING` plus `MOVE_GRID_INSET` leave 152px), the row's **contents scale
-      down to the row** instead of the row growing around them — the avatar is scaled to the
-      row, the label is one clipped line, and the HP bar is drawn inside the row rather than
-      at today's fixed `cellY + 30`. The arrow keys move
-      the selection **between party members** in the direction that matches that layout —
-      `up`/`down` are previous/next, and `left`/`right` do the same since a single column
-      has no second axis — and the cursor still refuses to land on a fainted or already
-      active member exactly as `moveMenu` does today. The ◀ back control and the detail window
-      `renderPartyDetail` keeps
-      drawing above the grid all stay as they are. Six rows is `MAX_PARTY_SIZE`
-      (`src/engine/run/state.ts`), not a new magic number, and the geometry is a **pure helper**
-      (`src/ui/partyGrid.ts`: the row rects and the inner metrics for a menu rect and a member
-      count, with a co-located test), the way `moveGrid` and `mapView` do — a new file in
-      `src/ui/` owes its one role line in `src/ui/README.md`, which no task in this batch holds.
-      Out of scope: the FIGHT/BAG/SWITCH/RUN command grid and the moves grid
-      (`MENU_GRID_COLS`, `moveMenuGrid` — they are 2x2 and correct), the route HUD's
-      party/PC list (`src/ui/partyScreen.ts`), and the detail window's own layout. Docs: none
-      — the row geometry is presentation and changes no rule, and Task-17 holds
-      `docs/battle-spec.md` in this batch.
-      *Dependencies:* none. It reads the nicknames Task-13 (Batch 4) makes possible — a long
-      name is what exposes the wrap — but needs nothing Task-13 produces. *(Batch 6)*
 - [ ] **[Task-39] The ⓘ detail button is dead in two places.** Reported in play, in one
       breath: "al ponerse encima del boton i en moves no se abre modal solo al darle click
       y en los del learnset ninguna de las dos formas" — in the battle's **MOVES** window
@@ -3047,66 +2955,6 @@ Ports of Showdown handlers, in batches, on the hook names in
       *Dependencies:* none. Scheduled after Task-16 (Modernise the panel and menu
       chrome) so the contrast and colour audit runs once, against the final art.
       *(Batch 8)*
-- [ ] **[Task-09]** Balance pass using `docs/balance/` sheets and the
-      scripted-battle harness. The harness is `scriptedBattle()` inside
-      `src/engine/battle/golden.test.ts` — the only one in the tree, called "the seed
-      of the balance harness" in `CHANGELOG.md` — and this task may restructure that
-      file into a **reusable harness** (export it, or lift it into a module beside the
-      test, with the knobs the pass needs: seed, the two teams, a turn cap), keeping
-      the fixed-seed golden log itself intact and green. It then tunes the numbers in
-      `src/data/` against the sheets, with a fixed-seed regression for every rule it
-      moves.
-      **The XP/level-cap half is not done, and the sixth round's one playtest reading is
-      already measured for it.** Reported in play: «se supone que la tarea de equilibrar
-      experiencia para llegar al level cap esta ya? para piso 1 me he cargado todos los
-      entrenadores menos el boss pero solo he subido 1 nivel». The reading is **not a defect of
-      the shipped curve — it is that curve working at map 1** — and it is recorded here because
-      the number it turns on is this pass's to tune:
-      - **Map 1's cap is 6** (`levelCapForMap(1)`, `src/data/maps.ts` 104-106 over
-        `MAP_TUNING[0]`, `levels: 2-6`, 56) and a fresh starter begins at level **5**
-        (`START_LEVEL`, `src/scenes/StarterScene.ts` 27), so **one level is that floor's whole
-        cap**: the bar from 5 to 6 is `xpForLevel(6) − xpForLevel(5)` = 216 − 125 = **91 XP**
-        (`xpForLevel = level³`, `src/engine/run/progression.ts` 47-50) — which is the sheet's own
-        `needed(1)`. A floor's designed level gain is therefore **1 / 5 / 6 / 7 / 8 / 8** across
-        maps 1-6 (the cap chain 6 → 11 → 17 → 24 → 32 → 40), so the human's "+1 level" is the cap
-        being **reached**, not missed.
-      - **One map-1 trainer's roster member is worth 4-27 XP.** `experienceAward(level, 1,
-        true)` = `floor(level × 5 × 1.5 × trainerXp)` (`src/engine/run/progression.ts` 71-80)
-        reads the **defeated** Pokémon's band (`bandForLevel`, `src/data/run.ts` 97-103), so
-        levels 2 / 3 / 4 pay Early's 0.3 (4 / 6 / 9 XP) and levels 5 / 6 pay Low's 0.6 (22 / 27
-        XP). Mean over map 1's own range (2-6): **13.6**; over the Early band's range (2-5, the
-        span `curve.test.ts` averages, 88-91): **10.25**. A floor's mean is `trainerSize` 1, so
-        `A(1)` is one of those two — and the sheet prints **13.40**, which matches neither
-        exactly, so **re-measure `A(1)` first**.
-      - **What the curve delivers on floor 1.** With the sheet's `T̄(1) = 11.33` trainers, 75 %
-        of them pay `0.75 × 11.33 × A(1)` = **87.1** (band-range `A`) or **115.6** (map-range
-        `A`) against the **91** the cap needs, and a full clear (~11 trainers, what the human
-        walked) pays **44-297 XP, typically ≈150**. So the cap is reached and the overflow is
-        **parked at the ceiling**, not banked (`gainExperience`, `src/engine/run/state.ts`
-        229-239, the `capped` event). Two readings straddling the lower edge of the `1 - 1.5`
-        window is exactly the kind of thing this pass exists to settle; as shipped the numbers
-        are **generous, not short**.
-      - **What to decide here, then:** whether a floor worth a single level is the wanted shape.
-        The knobs are `MAP_TUNING[0].levels` (map 1's cap and its 2-6 range) and the per-band
-        `trainerXp` chain (`src/data/run.ts` 26-81), both balance data; whatever moves,
-        `src/engine/run/curve.test.ts` re-pins it and `docs/balance/route-curve.md` records the
-        new walk (its `A(m)` column should then agree with the test's own average).
-      - **The shape is decided, so this pass no longer has to choose it.** The human re-planned
-        the curve after a design discussion: a finite run becomes **eight maps that end at 55**
-        with a **2-9** first floor — so a floor worth a single level is *not* the wanted shape —
-        and `[Task-69]` (Batch 5c, **shipped**) implemented the table, the re-spanned `LEVEL_BANDS`
-        and the
-        `trainerXp` chain, with `[Task-70]` (Batch 5d) thinning maps 1-2 behind it. Both land
-        **before** this batch, so what is left here is the harness, the battle-side numbers and
-        whatever the new walk's `A(m)` measures still disagree with: read
-        `docs/balance/route-curve.md` as `[Task-70]` leaves it, do not re-tune the curve, and do
-        not re-pin `src/engine/run/curve.test.ts` (it is theirs). Its claim on the sheets under
-        `docs/balance/` is unchanged — `[Task-69]` wrote `route-curve.md` two batches earlier
-        and `[Task-51]`'s `## Evolution levels` section is in it by then.
-      *Dependencies:* none — it reads `docs/balance/route-curve.md` and the per-band
-      `trainerXp` rule Task-10 shipped (archived with Batch 1). It is also the
-      producer of the reusable harness: a later task that wants to run a scripted
-      battle depends on Task-09 — `Task-35`'s fixed-seed AI regressions do. *(Batch 6)*
 - [ ] **[Task-47] The main menu's Continue row shows the map, its biome and the party's
       icons.** Reported in play: «en menu principal en continue el string ruta deberia
       salir que mapa y bioma y deberia salir el icono sprite de los pokes del party» —
@@ -3230,87 +3078,6 @@ cycles one biome.
       (`Cmd_effectivenesssound`: `SE_EFFECTIVE`, `SE_SUPER_EFFECTIVE`,
       `SE_NOT_EFFECTIVE`) if that is wanted too.
       *Dependencies:* none. *(Batch 12)*
-- [ ] **[Task-41] The party's lead Pokémon walks behind the player on a route, with its
-      idle and its running animation.** Reported as a wish: "usar `assets/pokemon/` para que
-      el primer poke del party vaya detrás del jugador con su animacion idle y correr".
-      **Today the route draws exactly one actor.** `RouteScene.create` builds
-      `this.playerSprite` from the FRLG player atlas (`PLAYER_SPRITE_TEXTURE_KEY`,
-      `src/data/playerSprite.ts`) at 1232-1237 and drives it with `movePlayerTo` / `face` /
-      `walkStep` / `settleMovement` (4302-4353): `walkStep` plays
-      `playerWalkAnimKey(this.facing)` at `playerWalkTimeScale(running, WALK_STEP_MS,
-      RUN_STEP_MS)` (so "running" is the same walk cycle at a higher `timeScale`, the
-      FireRed rule of `D24`, `src/render/playerAnim.ts`) and tweens the sprite tile to tile;
-      `onTileEntered` (4355-4378) rolls the encounter. **Nothing follows it, and the scene
-      keeps no movement history** — `this.player = { x, y }` is the only position state, and
-      `actorDepth` the only z-ordering.
-      **The art exists, is committed, and nothing in `src/` reads it — and Task-76 widens it
-      to the whole playable set.** `src/assets/pokemon/<id>.png` + `<id>.json` is 652 pairs
-      today — dex **nums 1-649** (a handful of them still the procedural placeholders
-      `generate-pokemon.mjs` seeded, identifiable by a manifest with no `durationsMs`) plus
-      **Castform's three Forecast formes** at `35101`-`35103`, which is what that synthetic id
-      scheme (`num × 100 + the form's SpriteCollab index`) is for — written by
-      `scripts/legacy-art/extract-real-sprites.mjs` and seeded by
-      `scripts/legacy-art/generate-pokemon.mjs`. Each sheet is variable-width but exactly
-      **five direction rows of 32x32 frames**, in the fixed order `down, downRight, up,
-      upRight, left` (the script's `ATLAS_DIR_ROW`), and each manifest carries `cols` plus
-      `anims` for `idle`, `walk`, `attack`, `special` and `hurt`, each with `start`, `count`
-      and `durationsMs` — **there is no `run` animation**, which is why "correr" is the walk
-      strip played faster, exactly as the player does it. `src/assets/README.md` documents the
-      sheets and `src/data/README.md` the accessor contract;
-      `src/data/pokemonSprites.ts` is a *different* set (the Anil **battle** sprites under
-      `public/anil/`), so it is a shape to copy, not to reuse. **`[Task-76]` (Batch 5f, the
-      single-task batch cut immediately before this one) packs a
-      pair for every species and form PMDCollab has and commits
-      `src/assets/pokemon/index.json`, a coverage manifest mapping a species id to the pair it
-      draws — so this task resolves through that manifest, not through `num` arithmetic, and
-      the ids it lists as `missing` are the only ones with no art.**
-      **Fix shape:** two new modules and the scene. `src/data/pokemonOverworld.ts` is the
-      accessor — `pokemonOverworldSheet(speciesId)` reads the coverage manifest
-      (`src/assets/pokemon/index.json`, written by Task-76) and resolves the pair it names to
-      `src/assets/pokemon/<id>.png` + `<id>.json` through `import.meta.glob`, returning
-      `{ speciesId, fileId, textureKey, url, size, rows, cols, dirRows, anims }`, or null for an
-      id the manifest lists as `missing` — with
-      its own test (the exact names and the frozen JSON keys are in `.agent_specs/task-41.md`,
-      which is written against `.agent_specs/task-76.md`'s manifest); `src/render/pokemonFollower.ts`
-      is the animation registry, the way
-      `playerAnim.ts` and `trainerAnim.ts` are (an idle key, a walk key and the row for a
-      facing, registered per species the way `PLAYER_WALK_ANIMS` is). `RouteScene` loads the
-      sheet when `party[0]`'s species changes (a reorder, a catch that lands in the party, a
-      permadeath release, `transitionTo` — never per frame), keeps a **bounded trail** of the
-      player's last tiles, and steps the follower one tile behind with the same tween
-      duration: idle while the player stands, the walk cycle while a step is in flight, and
-      running reusing the player's `playerWalkTimeScale` factor. The three facings it needs
-      are the player's (`down` / `up` / `side`, the left row flipped for right); the two
-      diagonal rows go unused, as they do for the player. Measured constraints to honour: the
-      follower occupies no tile (the movement map and `grassTipKeys` are untouched, and it
-      never rolls an encounter or trips a trainer cone), it draws with `actorDepth` so a tree
-      tip still passes over it, it is hidden in battle (`applyBattleResult` /
-      `scene.pause`), and it allocates nothing per frame.
-      **Decision for the dev's spec:** an id the manifest lists as **`missing`** — the
-      recommended reading is to draw **nothing** for that lead and say so in the report; the
-      alternative (a base-species fallback, the `portraitFor` shape) is the open question
-      below.
-      Files: `src/data/pokemonOverworld.ts` + test, `src/render/pokemonFollower.ts` + test,
-      `src/scenes/RouteScene.ts`, `src/data/README.md` and `src/render/README.md` (the
-      per-folder convention: one role line per file this task adds). It claims no
-      `src/scenes/BootScene.ts` — the sheet is loaded by the route scene when the lead's species
-      changes, which is what keeps a boot from paying for the whole set — and no
-      `src/assets/README.md`, which is `[Task-76]`'s. Docs: `docs/design-spec.md` §5 is where a
-      route presentation line would go; Task-17 holds that file in this batch, so this task
-      takes no `docs/` line — the two READMEs above are the required ones.
-      Out of scope: a queue of several followers (the report names the **first** party member
-      only), the battle's own sprites, a new `run` animation in the sheets (the walk strip
-      played faster is the rule), collision or interaction for the follower, the packed art
-      itself (Task-76's) and `docs/art-direction.md` (also Task-76's).
-      *Dependencies:* **Task-76** (the overworld sprite set, Batch 5f) — the committed
-      `src/assets/pokemon/**` pairs and the `index.json` coverage manifest this task's
-      accessor reads; the follower draws any lead through them, and the ids Task-76 records as
-      `missing` are the only ones it cannot draw. Batch order covers the rest: it is **Batch
-      6**'s fourth task, in the first batch that leaves `src/scenes/RouteScene.ts` free (5c's
-      Task-73, 5cb's Task-74, 5d's Task-70, 5e's Task-71 and 5eb's Task-75 each held it in the
-      batches before), and its art lands one batch earlier, in **5f**, so the follower is
-      written against sheets that have already merged.
-      *(Batch 6)*
 - [ ] **[Task-58] Every panel becomes a dark glass card (the `t-glass` direction).** Reported in
       play, while Batch 5 was in flight: «los paneles que sean estilo visual como el de debug» —
       the dev overlay is where the report points, and the look it seeded has now been rendered and
@@ -3516,40 +3283,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       the Mega forme for the battle. All dex Megas (formes may be nonstandard);
       only bosses, mini-bosses and the `ace` archetype carry stones. Engine +
       data + battle UI, fixed-seed tests.
-- [ ] **[Task-17] Step 14 — Docs & migration pass.** Finish `docs/maps-spec.md`,
-      update `design-spec.md` / `routes-spec.md` / `battle-spec.md` / `AGENTS.md`
-      and the tech decision addenda, and archive the steps in `CHANGELOG.md`.
-      **It also writes down the README convention the per-folder READMEs already
-      follow (Task-02, Batch 1): a task that adds, renames or deletes a file updates
-      that folder's `README.md` in the same task** — one role line per file, no
-      exported names, so the folder's map never rots. `AGENTS.md` is where the
-      convention belongs (a line in the Directory layout section), and Task-17 is the
-      only task in the batch that owns it.
-      **Two stale spots Batch 4 left behind ride here, because this task already owns
-      both files (one writer each):** `docs/tech-decisions.md`'s `D40` still says "48
-      Megas" after Task-19 shipped **88**, and `docs/battle-spec.md` §9's Mega section
-      still reads as if the set were the classic ones. Write the counts as they stand
-      when this task runs: Task-36 (Batch 4b) may move the species side again before
-      it, and the stale line is the number, not the rule.
-      **It is also the task that carries the build-process change the Orchestrator made
-      on `main`, and `AGENTS.md`'s multi-agent section must stop describing one serial
-      QA.** The rewrite says there are now **two waves**: **Task QA** — one QA subagent
-      **per task**, in **parallel**, each from its own integration worktree (that task's
-      branch merged onto the batch base), running that task's plan and auditing that
-      task's diff — and **Integration QA** — one short pass on the combined tree for the
-      batch gates, the **cross-task** audit and the merge rehearsal. The same rewrite
-      carries the spec template's new rule, because a criterion nobody can execute is
-      the failure mode both halves of the change exist to stop: **every acceptance
-      criterion is tagged `[unit]`** (a headless command, a decoded asset, a pinned
-      number — seconds and deterministic) **or `[live]`** (it only exists in the running
-      game: layering, overlap, a band, a beat, a colour on screen), **each `[live]` one
-      states its measurement** — what to read, on which layout, against which bound —
-      because QA's browser budget goes to the `[live]` criteria and **a task whose
-      criteria are all `[unit]` owes no browser pass at all**. Point at
-      `docs/agent-spec-template.md` for the rule itself (it already states it) instead of
-      copying it into `AGENTS.md`, and say in one line what it means for the batch loop:
-      a task's plan is run per task, the batch gates are run once on the combined tree.
-      *Dependencies:* none. *(Batch 6)*
 - [ ] **[Task-18] Gigantamax, in the Mega Evolution mould.** Model Gigantamax the
       way the Megas work (`src/engine/battle/mega.ts`, `D34`): once per battle a
       holder may change to its G-Max forme, taking that forme's stats/types/ability

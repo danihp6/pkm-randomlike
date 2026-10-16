@@ -8,6 +8,39 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The party's lead walks behind the player on a route, idle and running.** A new
+      `src/data/pokemonOverworld.ts` resolves a member's species id through Task-76's coverage
+      manifest (`src/assets/pokemon/index.json`) to its `<fileId>` pair and the frame arithmetic
+      `dirRow * cols + start + i`; a new `src/render/pokemonFollower.ts` registers one looping
+      **idle** and one looping **walk** strip per facing (down / up / side, the right-facing side
+      flipped), and `src/scenes/RouteScene.ts` trails the sprite exactly **one tile** behind the
+      player, plays `walk` (faster while running) on each step and **loops `idle` while the player
+      stands still** — a change the human asked for after the first QA, over the spec's parked rest
+      frame — rebuilds it on a lead or room change, ignores it in the HUD camera and sorts it as a
+      ground actor so a tree draws over it. A lead whose id is in the manifest's `missing` list
+      draws nothing and never blocks the run. No run field and no rule, so no `SAVE_VERSION` step.
+- [x] **The battle SWITCH window draws six fixed rows.** The party list is now **one row per
+      member at a fixed cell size that does not stretch to fill the panel** — the new pure
+      `src/ui/partyGrid.ts` owns the geometry (`partyGridLayout`, `fitPartyLabel`), the label is
+      clipped with an ellipsis instead of wrapping, and the arrow keys step member to member.
+      `PARTY_COLS` and the member-count-derived row height are gone from `BattleScene.ts`; a
+      two-member party draws two rows and leaves the lower four sixths empty. `src/ui/README.md`
+      gains its role line. No data, no rule, no run field.
+- [x] **The Phase 9 docs close and `AGENTS.md` gains three standing rules.** `docs/maps-spec.md`'s
+      open questions become resolved records and its §3 reads as the shipped algorithm; stale
+      counts are corrected against the tree — **88** Megas (`D40`), eight maps to level 55, the
+      fixed boss and mini-boss parties, the "from map 2 on" shop — and `docs/design-spec.md`,
+      `docs/battle-spec.md`, `docs/routes-spec.md` and `docs/tech-decisions.md` are brought to the
+      shipped state, with the Phase 9 steps archived in `CHANGELOG.md`. `AGENTS.md` records the
+      per-folder README convention, the two-wave QA loop and the **Asset trees** rule. Docs only,
+      no code.
+- [x] **The balance pass, and the reusable scripted-battle harness.** The `docs/balance/` sheets
+      are re-measured against the shipped numbers, and the seed-driven `scriptedBattle()` helper
+      moves out of `src/engine/battle/golden.test.ts` into a shared
+      `src/engine/battle/harness.ts` with its own test — the **golden log itself is
+      byte-identical**, only its source moved, so the one task allowed to restructure it left it
+      untouched. The harness fixes a seed, a turn cap, a player/enemy policy and the auto-replace
+      path, and renders every `BattleEvent` kind. No engine rule changed, no run field.
 - [x] **The overworld sprite set covers every species and form PMD Collab has — 1163 of the 1282
       playable ids — behind a coverage manifest the follower reads.** The three tools under
       `scripts/legacy-art/` were adapted from the sibling project's dependency-free pipeline
