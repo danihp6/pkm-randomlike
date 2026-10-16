@@ -66,6 +66,9 @@ workflow uses.
 - `scripts/` – `build-dex.mjs` and `legacy-art/` (the imported art pipeline).
 - `docs/` – the specs above, `balance/` for spreadsheets.
 - `TODO.md`, `CHANGELOG.md`.
+- Every code folder carries a `README.md` that maps it: **a task that adds,
+  renames or deletes a file updates that folder's `README.md` in the same task**
+  — one role line per file, no exported names — so the folder's map never rots.
 
 ## Multi-agent workflow
 
@@ -90,6 +93,15 @@ drives the rest.
   the Orchestrator copies the spec into the worktree before launching its agent. A
   subagent receives **only** its spec path plus `AGENTS.md` — never the parent
   conversation. The spec must be enough for someone who has read nothing else.
+- **QA runs in two waves.** **Task QA** — one QA subagent **per task**, in
+  **parallel**, each from its own **integration worktree** (that task's branch
+  merged onto the batch base), running that task's plan and auditing that task's
+  diff — and **Integration QA** — one short pass on the **combined** tree for the
+  batch gates, the **cross-task** audit and the merge rehearsal. The criterion rule
+  lives in `docs/agent-spec-template.md` (every acceptance criterion tagged
+  `[unit]` or `[live]`, each `[live]` one stating its measurement); for the batch
+  loop it means **a task's plan is run per task; the batch gates are run once on
+  the combined tree**.
 - **Task IDs** are bound to tasks only in `TODO.md`. Everywhere else a task is
   referenced by name.
 
@@ -133,6 +145,11 @@ drives the rest.
   MIDI and instrument samples, the rip is rendered with
   `node scripts/frlg/render-frlg-audio.mjs` and then packed with
   `node scripts/frlg/build-audio.mjs`.
+  **Asset trees:** a gitignored asset tree (`sprite-sources/**`) is **never**
+  junctioned or symlinked into a worktree — Windows' `git worktree remove`
+  follows the link and empties the link's **target** (Batch 3 lost the Añil clone
+  that way) — and every packer takes its source directory through **argv or the
+  environment**, never a path inside a worktree.
 - Performance: no per-frame allocations in hot paths (movement, fog, geometry);
   keep a route to a single screen unless a chapter explicitly needs scroll.
 

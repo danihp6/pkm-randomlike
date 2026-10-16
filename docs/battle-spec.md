@@ -88,7 +88,9 @@ Special move shapes:
 
 ## 6. Capture
 
-One capture attempt per route (a run-level counter, not a per-battle one).
+One capture attempt per room: the room's window closes the moment its **first
+wild battle** starts, whatever the outcome (the run tracks the rooms that spent
+theirs, `RunState.capturedRooms`, not a per-battle counter).
 
 1. Only wild battles can be captured, and only while the wild Pokémon is
    weakened.
@@ -225,3 +227,8 @@ is the mechanic the mega-stone room's stones feed (`D34`, `docs/maps-spec.md`
   snapshot after the battle stores the base species again.
 - Evolution is not Mega Evolution: a run member's level evolution still happens
   outside battle (`docs/routes-spec.md` §5) and is unrelated to this.
+- The set is **every** dex Mega, nonstandard formes included: **88** formes in
+  `src/data/dex/megas.json`, generated beside `species.json` (`D34`), each with
+  its own stone in `src/data/items.ts`. **Gigantamax is not in it yet** — the
+  G-Max formes are excluded from the playable set and the mechanic is `[Task-18]`
+  (Batch 7).

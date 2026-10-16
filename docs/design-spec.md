@@ -33,22 +33,26 @@ carries over.
   **opposite** edge, and a door lines up with the neighbour's. The **entry room**
   has no outward door — the run starts you at its **centre** — and the floor's
   farthest room is a **dead-end boss room** (one door, no tall grass, no regular
-  trainers); beating its boss opens the **portal** to the next map
+  trainers; a fixed party of **six**, **three** on map 1); beating its boss opens
+  the **portal** to the next map
   (`docs/maps-spec.md`).
 - A room with a single opening is a **dead-end** room; a straight two-opening
   passage is the **corridor** shape. Both carry the usual trainers, items and
   tall grass.
-- The chain is fixed-length by default (see `docs/routes-spec.md`): a
-  **mini-boss** every few routes, a **boss** to close each block, a **final
-  boss** at the end. An **infinite mode** reuses the same generator without the
-  finish line.
+- The chain is fixed-length by default: a finite run walks **eight maps**
+  (`FINITE_MAPS`), and the levels climb **2 → 55** — the first floor is **2–9**,
+  the cap a level-5 starter lives under. Maps 1-2 are the on-ramp: they thin
+  their trainers and loot (`src/data/population.ts`) and map 1 hangs no shop
+  leaf. Each map's boss closes it and opens the **portal** to the next, and the
+  **last map's final boss** wins the run. An **infinite mode** reuses the same
+  generator without the finish line.
 - A run is defined by one **seed**: the starter screen shows it as a share
   string and `S` opens a prompt to type a seed or paste a friend's share string,
   so the same seed always plays the same run (`D11`, `D21`). The share string
   carries the seed and the mode, not the progress, so a shared run starts on
   route 1.
-- Beating a route's exit moves you to the next route, with a healing stop in
-  between (heals HP and PP, never resurrects).
+- Beating a map's boss opens its **portal** and steps the run into the next map,
+  with a healing stop in between (heals HP and PP, never resurrects).
 - Losing every Pokémon in the party ends the run.
 
 ## 3. The party
@@ -227,9 +231,7 @@ Full rules in `docs/battle-spec.md`. In short:
   three a T and four a crossing.
 - The **room farthest from the entry holds the boss** at the map's `maxLevel`.
   Its onward opening is sealed until the boss falls; then a **portal** opens and
-  steps the run into the next map. (The end-of-route beat is disabled for now
-  while the generator is in focus; the room shapes and the grid graph are Phase
-  9.)
+  steps the run into the next map.
 - Tilesets are **swappable per route** so the same map code renders a wood, a
   cave, a desert or a beach without touching the generator
   (`docs/tileset-spec.md`).
@@ -240,6 +242,10 @@ Full rules in `docs/battle-spec.md`. In short:
 starter pick -> map 1: route 1 -> route 2 -> ... -> boss -> portal
   -> map 2: route 1 -> ... -> boss -> portal -> ... -> final boss -> run won
 ```
+
+A finite run walks **eight maps** (`FINITE_MAPS`), the levels climbing **2 → 55**
+— one tuned row per map (`src/data/maps.ts`) — and the **last map's final boss**
+wins it.
 
 Rewards between rooms are the run's only economy: catch, items, money and the PC
 box are where the player's power comes from. A run ends on a score screen, win or
@@ -258,19 +264,20 @@ leaves with only their own content (`docs/maps-spec.md` §7):
   none: no money for a counter and already a 10-ball pack), near the entry: a
   counter whose interact key (`E`) opens a **Pokémon Mart-style shop panel in the
   HUD that only exists in that room**;
-- a **mini-boss** room (50% chance): one strong trainer that, when beaten, offers a
-  **choice of items**;
+- a **mini-boss** room (50% chance): one strong trainer fielding a fixed party of
+  **three** (**two** on map 1) that, when beaten, offers a **choice of items**;
 - a **mega-stone** room (15% chance, only from map 3 on): a random **Mega Stone**
   item, which lets its holder **Mega Evolve once per battle**.
 
 **Money** is Poké Dollars, earned **only** by defeating trainers — a **fixed base
 plus a random jitter** each, from its archetype/band — and the run starts with
-none, so the economy stays tight (Binding of Isaac-style). The shop sells a core
-of Balls and Potions that improves with the map's band plus one or two random
-items from the map's pool at their catalogue price, and buys any item at
-`sellPrice`, but only the **valuables** (Nugget, Pearl, …) that turn up in the
-ground-item loot are worth real money. The run's money shows in the HUD's **bag
-panel**.
+none, so the economy stays tight (Binding of Isaac-style). The shop always stocks
+the same **four rows** — a **10× pack** of the band's own ball at half the
+catalogue price, the band's **potion rung**, and **two** held items from the
+band's weighted pool at their catalogue price — with the band's **one TM**
+appended after them, and buys any item at `sellPrice`, but only the **valuables**
+(Nugget, Pearl, …) that turn up in the ground-item loot are worth real money. The
+run's money shows in the HUD's **bag panel**.
 
 ## 8. Settings
 

@@ -343,8 +343,9 @@ background is keyed out at bake time so the trunk still shows — which is why a
 wall reads as stacked complete trees instead of a flat stamp or a column of
 trunks. The wall's ground is transparent where the tree meets the floor, and the
 scene lays a floor frame under every cell (`resolveGroundFrame`), so the tree sits
-on the field's plain floor frame instead of a baked flat colour. A route is now
-larger than the camera view (56x32 tiles), so the camera follows the player and
+on the field's plain floor frame instead of a baked flat colour. A route is
+larger than the camera view (its size now comes from the map plan, 30x30 up to
+48x48 tiles, `docs/maps-spec.md` §1), so the camera follows the player and
 scrolls; the scene renders a tree/rock margin past the playable edge (`padMap`,
 three tiles on the sides and four top/bottom with the route's own border) and
 bounds the camera to it, so the route border never shows the empty background. The map is drawn in
@@ -354,7 +355,8 @@ plus its tileset. **Addendum (current):** only the `forest` style is active —
 `route` and `cavern` were removed for now. The open field was replaced by
 **carving the shape's lanes out of a solid interior** (openings punched in the
 one-tile border), with wide, chamber-ended branches; water is decoration now, not
-a terrain pass, the default map is 20x20, and the beyond-the-edge tree frame
+a terrain pass, a room's size comes from the map plan (30x30 up to 48x48 tiles,
+never the fixed 20x20), and the beyond-the-edge tree frame
 (`padMap`) is parked while the generator is the focus. The `hedges` and `maze`
 carvers wait until the interiors come back.
 
@@ -470,7 +472,7 @@ filter live in `src/ui/mapView.ts`; `RouteScene` only draws it
 
 Beyond its K regular rooms, a Binding of Isaac floor can hold **special rooms**:
 extra `dead-end` leaves that carry **only their own content** — a guaranteed
-**shop** near the entry, a **mini-boss** room (medium chance) whose strong
+**shop** near the entry (from map 2 on), a **mini-boss** room (medium chance) whose strong
 trainer offers a **choice of items**, and a **mega-stone** room (low chance) that
 hands out a random **Mega Stone**. They count outside K and are discovered on
 entry like any room (`docs/maps-spec.md` §7).
@@ -595,7 +597,7 @@ lands in exactly one band and the union covers the whole dex.
 `build-dex.mjs` no longer keeps only the Gen 9 standard set: the playable
 `species.json` is the **whole National Dex** — every numbered species, the
 `Past` Dexit entries included — 1282 entries across all 1025 dex numbers, with
-48 Megas generated beside it. Only non-species are dropped at generation time:
+88 Megas generated beside it. Only non-species are dropped at generation time:
 CAP/fan entries, `Custom` (MissingNo, Pokéstar), LGPE's partner starters (no
 art), the battle-only Gigantamax/Eternamax formes, and the nine `Future` formes
 whose entry names a Mega (`Mega-Z`, `M-Mega`, `F-Mega`, `Original-Mega` and the

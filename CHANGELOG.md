@@ -2426,3 +2426,108 @@ file is the human-readable summary.
       updated; the three field atlases regenerated with `node
       scripts/frlg/build-tilesets.mjs` (reproducible: same hashes); 666 tests pass;
       `npm run build` clean.
+
+## Phase 9 — Maps (route groups), biomes & progression
+
+A **map** is a Binding of Isaac-style floor: a grid of routes (rooms) of one
+biome, closed into at least one cycle, with its own level range, its special
+rooms and a boss on the room farthest from the entry that opens the portal to the
+next map. This phase reworked the flat route chain into those floors and added
+the Poké Dollar economy. `[Task-17]` (Batch 6) is the docs/migration pass that
+closed it.
+
+### Step 1 — Map tuning tables (`src/data/maps.ts`)
+
+- [x] **The per-map tuning tables land.** `MAP_TUNING` holds one row per map —
+  its level range, its route-count range and the range each room rolls its width
+  and height from — behind `mapTuning`, `levelRangeForMap`, `levelCapForMap`,
+  `routeCountRangeForMap` and `routeSizeRangeForMap`, and `MAP_TUNING_STEP`
+  extrapolates past the last row so an infinite run keeps climbing: the level
+  range steps up at **both** ends and saturates at `MAP_MAX_LEVEL`, and the room
+  count stops at `MAP_MAX_ROUTES` so a deep floor never becomes a maze. Data only
+  — retuning never touches the generator. `docs/maps-spec.md` §4; tests in
+  `src/data/maps.test.ts`.
+
+### Step 2 — `MapPlan` floor generator (`src/engine/maps/plan.ts` + `streams.ts`)
+
+- [x] **`planMap` rolls a whole floor off one `map` stream.** Everything a map is
+  comes from `Rng(seed : "map" : mapIndex)`: the biome (never the previous map's),
+  the room count and each room's width and height (rolled independently). The
+  floor grows a **single-door entry leaf** into a 2x2 core closed into a 4-cycle,
+  then expands onto adjacent free cells, closes **one or more** extra cycles, hangs
+  the boss off the farthest room as an extra `dead-end` leaf and derives every
+  room's opening set and shape. `MapPlan` is a pure function of `(seed, mapIndex)`
+  with fixed-seed determinism, connectivity, cycle and no-dangling-opening tests.
+  `docs/maps-spec.md` §2/§3; `D29`/`D30`.
+
+### Step 3 — Route shapes from the opening set
+
+- [x] **A route takes its shape from the plan, not a roll.** `dead-end`,
+  `corridor` and `tee` join `straight`/`bend`/`cross` in
+  `src/engine/routes/layout.ts`, and the route builder reads its opening set from
+  the plan: every opening is the grid neighbour's **opposite** edge, aligned to
+  the same border band, so leaving by one edge enters the neighbour by the other.
+  Per-shape and connection regression tests.
+
+### Step 4 — Plan-driven route size
+
+- [x] **A room's size comes from the plan.** `routeForRoom`
+  (`src/engine/maps/route.ts`) hands `sketchRoute` the room's own width and height
+  — never the fixed 20x20 — with its opening set; the map-size tiers, the camera
+  bounds and the beyond-edge margin (`padMap`) still hold at every plan size.
+  Every room is at least **30x30** and the entry and boss rooms are pinned to it
+  on every map. Fixed-seed regression per size; `docs/routes-spec.md` §2.
+
+### Step 5 — Per-map levels & cap
+
+- [x] **The map's level range is the band.** Wild encounters and trainer rosters
+  read `levelRangeForMap` (rooms ramp `minLevel → maxLevel`), the player's cap is
+  the map's `maxLevel` (`levelCapForMap`), and an evolution the cap blocks waits
+  for the next map instead of being clamped. `bandForRoute`/`levelCapForRoute`
+  are gone; the rosters stay RNG-free and their fixed-seed tests pin the band.
+
+### Step 6 — Run state: floors & discovery
+
+- [x] **`RunState` tracks the floor and its fog of discovery.** `mapIndex`,
+  `routeInMap` and `discoveredRooms` sit beside the global `routeIndex`;
+  `advanceRoute` moves a room while `advanceMap` changes floor and carries the
+  heal stop (HP/PP only, never a resurrection), and a save migration lands the new
+  fields. Pure tests, including the discovery rule; `docs/maps-spec.md` §2/§9.
+
+### Step 7 — Boss & portal
+
+- [x] **The boss seals the exit and opens the portal (`D31`).** The room farthest
+  from the entry fields the map boss at the map's `maxLevel`; its portal is carved
+  from the start on a free wall and stays **sealed** while the boss stands, so the
+  room looks identical before and after, and stepping through it once it opens
+  advances the run to the next map. A finite run's last map holds the **final
+  boss** and no portal, so beating it wins the run; infinite mode reopens the
+  portal forever. Pure guard/portal logic + `RouteScene` wiring.
+
+### Step 8 — Route HUD minimap
+
+- [x] **The route HUD header is the floor minimap (`src/ui/mapView.ts`, `D32`).**
+  `buildMapView` lays out a Binding of Isaac-style grid of the **discovered**
+  rooms — a cell per room from its own width/height with its openings on the
+  matching walls, a link drawn only once **both** its ends are known, the current
+  room highlighted, the boss marked and the open portal flagged — and `RouteScene`
+  only scales and paints it. A room stays hidden until it is entered, so the floor
+  reveals itself as the run advances. Pure layout + tests; `docs/maps-spec.md` §8.
+
+### Step 9 — Mega Evolution in battle (`D34`)
+
+- [x] **Mega Evolution is a battle mechanic (`src/engine/battle/mega.ts`).** A
+  Pokémon holding its **Mega Stone** may Mega Evolve **once per battle** from the
+  command menu's **MEGA** control: confirming it arms the evolution and the next
+  FIGHT spends it while still attacking that turn, and the forme is applied
+  **before any move**, so the turn reads the Mega's Speed, type and ability. Both
+  the player and the AI can Mega Evolve, and only bosses, mini-bosses and the
+  `ace` archetype carry stones. Every dex Mega ships — **88** formes in
+  `src/data/dex/megas.json`, the nonstandard ones included — each with its own
+  `held` stone in `src/data/items.ts`. `docs/battle-spec.md` §9; fixed-seed tests
+  in `mega.test.ts`, `megas.test.ts` and `roster.test.ts`.
+
+`[Task-17]` is the docs/migration pass that closes the phase: it finishes
+`docs/maps-spec.md`, carries the shipped numbers into `docs/design-spec.md`,
+`docs/routes-spec.md`, `docs/battle-spec.md` and `AGENTS.md`, fixes the stale
+`D##` counts, and writes this archive.
