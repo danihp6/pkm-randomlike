@@ -8,6 +8,28 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The overworld sprite set covers every species and form PMD Collab has — 1163 of the 1282
+      playable ids — behind a coverage manifest the follower reads.** The three tools under
+      `scripts/legacy-art/` were adapted from the sibling project's dependency-free pipeline
+      (`fetch-pmdcollab.mjs`, `pmdcollab-species.mjs`, `extract-real-sprites.mjs`, reusing
+      `zip-codec.mjs`/`png-codec.mjs`, **no new npm package**), taking their source tree through
+      `--dest`/`--source` as an **absolute** path under the main checkout — never a tree under
+      `sprite-sources/` linked into a worktree (the Legend's **Asset trees** rule, which is how
+      Batch 3 lost the Añil clone). The work list is **derived** from our own dex, never
+      hand-listed: a pair is covered only when its JSON carries `durationsMs`, so a
+      `generate-pokemon.mjs` placeholder counts as uncovered. **526 new pairs** were packed from
+      PMD Collab (the 652 that already carried real animation were left byte-identical — the diff
+      is additions only, the three Castform pairs untouched), and the other **119** ids go into
+      the new manifest's `missing` list: 15 nums below 650 whose committed pair is still a
+      placeholder and which the server has no usable pack for, plus Gen 6+ formes with no upstream
+      art. The new `src/assets/pokemon/index.json` is **generated** by
+      `scripts/legacy-art/build-pokemon-index.mjs` (byte-reproducible, like `src/data/dex/**`) and
+      is the frozen interface `[Task-41]` reads: `sprite` 32, `rows` 5, `dirRows`
+      `down/downright/up/upright/left`, `files` (species id → `fileId`, where `fileId = num` or
+      `num * 100 + formIndex`) and `missing`. `src/assets/README.md` and `docs/art-direction.md`
+      record the PMD Collab tier's provenance, and its own headless `index.test.ts` asserts the
+      coverage from the committed tree alone. No run field, so **no `SAVE_VERSION` step** — the
+      chain stays **14 → 15 → 16 → 17 → 18**.
 - [x] **The debug overlay can teleport between floors, rooms and tiles, and ignore wild encounters
       and trainer sight.** The Route tab gains a *Teleport* block — `Floor`, `Room` and `X`/`Y`
       inputs (blank means `auto`) with a `Go` button each, a `#debug-location` readout and its own

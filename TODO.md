@@ -23,26 +23,26 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e and Batch 5eb are shipped and
+**Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e, Batch 5eb and Batch 5f are shipped
+and
 archived.** Their
-sixteen
+seventeen
 tasks merged
 in ID order
-behind the green gate (four, then five, then three, then one, then one, then one, then one) and the
+behind the green gate (four, then five, then three, then one, then one, then one, then one, then
+one) and the
 detail is
 in
 `CHANGELOG.md`'s
 `## Unreleased`; Batch 5b is the batch that ended up packing the decomp's real FireRed grass
 rustle, Batch 5c the one that re-planned the level curve and laid that overlay over the player's
 legs, Batch 5cb the defect in front of 5d that fixed its colour and clipped its hit, Batch 5d
-the on-ramp thinning, Batch 5e the fixed boss and mini-boss parties, and Batch 5eb the debug
-overlay's teleports and its two ignore toggles, and all seven are closed
-below. **Batch 5f is the next batch cut** — the overworld sprite set, alone, one art task cut
-immediately in front of Batch 6 so the batch behind it reads art that has already merged.
-**Batch 6 is the batch after it** — the balance pass, the Phase 9 docs pass, the battle SWITCH
-grid and the party's lead walking behind the player. 5f is the first batch of the post-on-ramp
-plan (the eighteenth round below put the follower back in Batch 6 and gave its art its own
-batch, 5f, ahead of it). Every
+the on-ramp thinning, Batch 5e the fixed boss and mini-boss parties, Batch 5eb the debug
+overlay's teleports and its two ignore toggles, and Batch 5f the overworld sprite set, and all
+eight are closed
+below. **Batch 6 is the next batch cut** — the balance pass, the Phase 9 docs pass, the battle
+SWITCH grid and the party's lead walking behind the player. The eighteenth round below put the
+follower back in Batch 6 and gave its art its own batch, 5f, ahead of it. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
 goes to the packer, and no tree under `sprite-sources/` is ever linked into a worktree
 (Batch 3's junction is what emptied it once).
@@ -844,34 +844,26 @@ entry states that plainly — and the ignore-trainers gate covers **both** sight
 `SAVE_VERSION` step** — the chain stays **14 → 15 → 16 → 17 → 18**. Its ID is retired: it keeps
 its place in the sequence and is never reused.
 
-### Batch 5f — the overworld sprite set *(cut immediately in front of Batch 6)*
-- **Task-76** The overworld sprite set: every species and form PMD Collab has, packed into
-  `src/assets/pokemon/**`, with the coverage manifest (`src/assets/pokemon/index.json`) the
-  follower reads.
-- **Hot files:** every one of them is this single task's, because the batch is one task:
-  `scripts/legacy-art/**` (the adapted `fetch-pmdcollab.mjs`, `pmdcollab-species.mjs`,
-  `extract-real-sprites.mjs` and the new `build-pokemon-index.mjs`), the generated
-  `src/assets/pokemon/**` — the pairs it adds or re-cuts, its new `index.json` and that
-  manifest's own headless test — plus `src/assets/README.md` and `docs/art-direction.md`, the
-  two contracts it amends. It claims no `package.json` (the tools run under plain `node`), no
-  `src/main.ts`, no `vite.config.ts`, no `src/data/**`, no `src/engine/**`, no scene and no
-  `docs/` file another batch holds.
-- **Shape:** one task, alone, and it is cut as its own batch rather than inside Batch 6 because
-  it **produces** the art `[Task-41]` reads, and a batch is an
-  antichain — the follower cannot be written beside the task that packs the sheets it draws. So
-  the round's two decisions split into two batches: this one commits the set (a network fetch
-  into the gitignored `sprite-sources/pokemons/`, one deliberate run like `npm run data:dex`,
-  and the packed pairs plus the coverage manifest as the committed output), and Batch 6 writes
-  the follower against it. It is also why the letter is **5f**: the on-ramp family `5b` → `5eb`
-  is exhausted at `e`, and a batch cut in front of Batch 6 belongs to that family rather than
-  opening a `6*` series it is not part of — the way `4b` follows `4` and `5cb` follows `5c`. It
-  shares no path with any Batch 6 task: not Task-09's `docs/balance/` sheets and its harness,
-  not Task-17's five docs and `AGENTS.md`, not Task-34's battle scene, and not Task-41's route
-  scene, accessor or render module. It adds **no** run field, draws no RNG and changes no rule,
-  so the chain stays **14 → 15 → 16 → 17 → 18** — and both tools take their source tree through
-  **argv or the environment**, as an absolute path under the main checkout, never a tree under
-  `sprite-sources/` linked into a worktree (the Legend's **Asset trees** rule, and the way
-  Batch 3 lost the Añil clone).
+### Batch 5f — the overworld sprite set *(shipped, archived)*
+Task-76 merged alone behind the green gate (**1404** tests, `npm test` + `npm run build`) and the
+detail is in `CHANGELOG.md`'s `## Unreleased`; QA validated it in a single pass (a one-task batch)
+with its `[live]` criterion comparing three hand-resolved formes against PMD Collab. The three
+tools under `scripts/legacy-art/` were adapted from the sibling project's dependency-free pipeline
+(`zip-codec.mjs` / `png-codec.mjs`, no new npm package), taking their source tree through
+`--dest`/`--source` as an **absolute** path under the main checkout, never a tree linked into a
+worktree (the Legend's **Asset trees** rule). The set now covers **1163 of the 1282 playable
+species and formes** — the 637 shipped pairs that carried real animation plus **526 new pairs**
+packed from PMD Collab — with the other **119** recorded in the new coverage manifest
+`src/assets/pokemon/index.json`'s `missing` list: 15 nums below 650 whose committed pair is still a
+`generate-pokemon.mjs` placeholder and which the server has no usable art for, and the rest Gen 6+
+formes with no upstream pack. The manifest (`sprite` 32, `rows` 5, `dirRows`
+`down/downright/up/upright/left`, `files` id → `fileId`, `missing` ids) is a **generated** file
+(`node scripts/legacy-art/build-pokemon-index.mjs`, byte-reproducible) and is the frozen interface
+`[Task-41]` reads. The 652 pairs that already carried `durationsMs` were **not re-cut** (the diff
+is additions only; the three Castform pairs untouched), `src/assets/README.md` and
+`docs/art-direction.md` record the tier's provenance, and it adds no run field, so **no
+`SAVE_VERSION` step** — the chain stays **14 → 15 → 16 → 17 → 18**. Its ID is retired: it keeps
+its place in the sequence and is never reused.
 
 ### Batch 6 — balance pass, Phase 9 docs, the battle SWITCH grid, the party's lead walks behind the player
 - **Task-09** Balance pass.
@@ -3459,90 +3451,6 @@ cycles one biome.
       Task-49, 16 Task-50, 17 Task-52 and Task-60, 18 Task-55, 19 Task-56) — which is why it opens
       the new **Batch 20** on its own, the way the reformat opens Batch 11, and why it runs
       **after** Batch 11 so it edits reformat-cleared files and keeps them conforming. *(Batch 20)*
-- [ ] **[Task-76] The overworld sprite set: every species and form packed into
-      `src/assets/pokemon/**`.** Decided by the human while the follower Pokémon (`[Task-41]`)
-      was being planned: the follower must be able to draw **any** lead, so the art is its own
-      task, cut in its own batch (`Batch 5f`) immediately in front of the follower's (the
-      eighteenth round above). The report's words are
-      that the art for **every species and form** comes from **PMD Collab**.
-      **What ships today, verified.** `src/assets/pokemon/<id>.png` + `<id>.json` is **652
-      pairs**: dex **nums 1-649** — written by `scripts/legacy-art/extract-real-sprites.mjs`,
-      with the gaps it skipped still holding the procedural placeholders
-      `scripts/legacy-art/generate-pokemon.mjs` seeded (a placeholder manifest is the one
-      shape with **no `durationsMs`**: `cols: 10` and a flat 2-frame `idle`/`walk`/`attack`/
-      `special`/`hurt` plan) — plus **Castform's three Forecast formes** at `35101`-`35103`.
-      The playable set is **1282 species** (`species.json`, `D40`), so most of it has no
-      overworld art at all: every Gen 6-9 species (dex numbers **650-1025**) and every forme
-      the dex carries as a species of its own. (The plan's older wording calls `35101`-`35103`
-      "three Deoxys formes"; the repository's own table says **Castform** —
-      `scripts/legacy-art/pmdcollab-species.mjs` 668-675 — and that is the reading this entry
-      freezes.)
-      **The pipeline already exists in this repo and is dependency-free.** `scripts/legacy-art/`
-      carries the sibling project's four tools verbatim: `fetch-pmdcollab.mjs` (downloads
-      `https://spriteserver.pmdcollab.org/assets/<NNNN>/sprites.zip` and the portrait sheet,
-      redirect-aware, through `zip-codec.mjs`), `zip-codec.mjs` (a hand-rolled zip reader on
-      `node:zlib`, **no npm dependency** — which is the whole point), `pmdcollab-species.mjs`
-      (the id/slug table `extract-real-sprites.mjs` iterates) and `extract-real-sprites.mjs`
-      (crops the frames out of each pack's `AnimData.xml` and writes the 5-row, 32px-cell pair
-      plus its manifest). **Their internal paths still target the donor project**
-      (`SOURCES = '../sprite-sources/pokemons/'` and `OUT_DIR = '../src/assets/pokemon/'`,
-      resolved from `scripts/legacy-art/`, land in `scripts/…` here), which is exactly what
-      `src/assets/README.md` rule 2 warns about: they are adapted **as each sheet is
-      regenerated**.
-      **The PMDCollab endpoint shapes, probed against the live server for this entry** (so the
-      dev does not have to rediscover them): a **base** species is
-      `https://spriteserver.pmdcollab.org/assets/<NNNN>/sprites.zip` with the dex number
-      zero-padded to four digits (`0001`, `0650`), and a **forme** is
-      `…/assets/<NNNN>/<FFFF>/sprites.zip`, where `<FFFF>` is SpriteCollab's own 4-digit form
-      index (`0351/0001` is Castform-Sunny and answers **200**; `0351-sunny` and `035101` both
-      answer **404**). Gen 6-9 art exists upstream (`0650`'s pack and `AnimData.xml` are
-      there), and `sprite/<NNNN>/<FFFF>/` is the upstream layout for every forme.
-      **Fix shape, as the recommended reading (the spec freezes the names).**
-      1. Both tools take the gitignored source tree's **absolute** path — argv first
-         (`--source=<abs>` / `--dest=<abs>`), then the environment — and never a path inside
-         the worktree, per the Legend's **Asset trees** rule (Batch 3 lost the Añil clone to a
-         junction). The fetch writes `sprite-sources/pokemons/<slug>-pmdcollab/` under the
-         **main checkout** and the packer reads it from there.
-      2. `pmdcollab-species.mjs` grows from 652 rows to the whole playable set: every base
-         species resolves mechanically (its dex number), every forme is a hand-resolved row
-         `{ speciesId, num, formIndex }` — the index is SpriteCollab's, **not** our dex order,
-         so the dev confirms each against the form's own portrait on sprites.pmdcollab.org —
-         and the table is the one place a wrong forme is visible in review.
-      3. The packer writes each covered species' pair as `<fileId>.png` + `<fileId>.json`,
-         where `<fileId>` is the species' dex **num** for a base entry and
-         **`num × 100 + formIndex`** for a forme (the shipped Castform precedent:
-         `351 × 100 + 1..3`). It **leaves the 652 existing pairs' names alone**.
-      4. The packer also writes `src/assets/pokemon/index.json`, the **coverage manifest** the
-         follower reads: `{ "sprite": 32, "rows": 5, "dirRows": ["down", "downright", "up",
-         "upright", "left"], "files": { "<speciesId>": <fileId>, … }, "missing":
-         ["<speciesId>", …] }`, built from the **whole playable set** — so it covers
-         the 652 pairs that already ship, not only the new ones — with every id the server has
-         no pack for recorded in `missing` rather than failing the run.
-      5. Provenance: the PMD Collab art is **fan-made, not CC0** (SpriteCollab's `LICENSE.md`
-         and `credit_names.txt`), so the source stays gitignored and only the packed output is
-         committed; `docs/art-direction.md`'s §Provenance and §Sprite contract gain the tier's
-         real entry (author credit, the endpoint, the per-field note that a form's index is
-         SpriteCollab's) and `src/assets/README.md`'s `pokemon/<id>.png` row stops calling it a
-         plain game rip.
-      **Determinism and cost:** the packer draws no RNG and touches no `src/engine/**`, so
-      nothing about a run's seed moves. The fetch is a **network** step of a few hundred packs
-      (a few hundred MB in `sprite-sources/`), and it is a one-time, deliberate run like
-      `npm run data:dex`; the committed output is what QA validates, because QA has no reason
-      to re-download it.
-      Out of scope: the follower itself (`[Task-41]`, Batch 6), any change to the 652 shipped
-      pairs' art or names, the **portrait** set (`public/anil/portraits.png` is Añil's, packed
-      by `scripts/anil/build-pokemon-sprites.mjs`), the battle sprites, `src/data/**` (this
-      task writes no accessor — Task-41's is the reader), the trainer/player overworld atlases
-      (`src/assets/frlg/**`), and a shiny variant of the overworld art (PMDCollab's shiny packs
-      are a different fetch and the follower draws the normal set).
-      *Dependencies:* none — the pipeline, the dex and the gitignored source tree are all in
-      the repo. Batch order covers it: it shares no path with Task-09's `docs/balance/` sheets
-      and its harness, Task-17's five docs, Task-34's battle scene or Task-41's route scene,
-      accessor and render module — and it takes `src/assets/README.md` and
-      `docs/art-direction.md`, which no Batch 6 task claims — so it opens **Batch 5f**, the
-      single-task batch cut immediately in front of Batch 6, whose only reader is `[Task-41]`
-      one batch later. It adds no run field, so **no
-      `SAVE_VERSION`** step: the chain stays **14 → 15 → 16 → 17 → 18**. *(Batch 5f)*
 
 ## Phase 9 — Maps (route groups), biomes & progression
 
