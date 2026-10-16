@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The learnset band scrolls instead of paging.** The band no longer pages: a new pure
+      `src/ui/scroll.ts` (`maxScrollTop`, `clampScrollTop`, `scrollByRows`, `visibleRange`) owns
+      the maths, and the **mouse wheel**, the `<` / `>` controls and a **drag on the band's own
+      background** all move it one row at a time. The `<` / `>` pair stays as the keyboard/pad
+      control (the search field keeps the ~78 px those glyphs occupy) and the old `1/3` counter and
+      page-step are gone. The change is confined to `src/scenes/RouteScene.ts`, the new module and
+      its test, one `src/ui/README.md` role line, and `docs/design-spec.md` §3 / `docs/tech-decisions.md`
+      `D36` (which stop saying "paged"). One `[live]` criterion was **corrected in its spec**, not in
+      the code: its first frozen press point fell inside the panel's 12 px move handle
+      (`HUD_PANEL_BORDER`), so the drag moved the panel; the point now clears that ring. No run
+      field, no RNG, no `SAVE_VERSION` step.
+- [x] **A trainer's remaining team sits under its HP panel as Poké Balls.** In a **trainer** battle
+      the foe's panel now carries a fixed row of balls — one per roster member with the fainted ones
+      emptied, so it also shows how many the trainer started with — drawn from the packed Añil item
+      atlas's own `itemIconFrame('pokeball')`, the same frame the capture throw already uses. A
+      **wild** battle draws **no row**, and the active ball dims in the same repaint that empties its
+      HP bar. `src/scenes/BattleScene.ts` alone (+50): no data, no `src/ui/**` module, no docs line,
+      no packed asset, no run field.
 - [x] **The party's lead walks behind the player on a route, idle and running.** A new
       `src/data/pokemonOverworld.ts` resolves a member's species id through Task-76's coverage
       manifest (`src/assets/pokemon/index.json`) to its `<fileId>` pair and the frame arithmetic
