@@ -15,7 +15,9 @@ import {
   playerSpriteFrame,
   type PlayerFacing,
 } from '../data/playerSprite';
+import { pokemonOverworldSheet, type PokemonOverworldSheet } from '../data/pokemonOverworld';
 import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
+import { followerAnimKey, followerAnims, followerIdleFrame } from '../render/pokemonFollower';
 import { ROUTE_LOOT } from '../data/loot';
 import { POPULATION } from '../data/population';
 import { bossPartySize, type BossPartyKind } from '../data/bosses';
@@ -712,6 +714,14 @@ export class RouteScene extends Phaser.Scene {
   private facingDir: MoveKey = 'down';
   /** The in-flight step, while the sprite slides from one tile to the next. */
   private walkTween: Phaser.Tweens.Tween | null = null;
+  /** The party's lead Pokémon, drawn trailing the player; null when it has no art. */
+  private followerSprite: Phaser.GameObjects.Sprite | null = null;
+  /** The pair the follower draws from, so a step plays the right facing's strip. */
+  private followerSheet: PokemonOverworldSheet | null = null;
+  /** The lead species the follower is resolved for, so a lead change loads once. */
+  private followerSpecies: string | null = null;
+  /** The follower's own in-flight step, which trails the player's by one tile. */
+  private followerTween: Phaser.Tweens.Tween | null = null;
   private hudRoot!: Phaser.GameObjects.Container;
   /** The draggable panels of the HUD, in draw order. */
   private hudPanels: HudPanel[] = [];
@@ -1246,6 +1256,10 @@ export class RouteScene extends Phaser.Scene {
     this.miniBossRewardRows = [];
     this.facing = 'down';
     this.walkTween = null;
+    this.followerSprite = null;
+    this.followerSheet = null;
+    this.followerSpecies = null;
+    this.followerTween = null;
     this.resetHold = 0;
     this.settings = loadSettings();
 
@@ -2140,6 +2154,10 @@ export class RouteScene extends Phaser.Scene {
         )
         .setFillStyle(hpColorInt(fraction));
     });
+
+    // The party's lead walks behind the player: a lead change loads its pair once
+    // and rebuilds the follower, so nothing here runs per frame.
+    this.refreshFollower();
 
     // The Pokevial bar: its fill grows with the charges and takes the shade of
     // the charge it is at, so the meter reads as filling up.
@@ -4360,7 +4378,18 @@ export class RouteScene extends Phaser.Scene {
     // same placement the route's trainers use.
     this.playerSprite.setPosition(this.centerX(x), this.centerY(y) + TILE_SIZE / 2);
     this.playerSprite.setDepth(actorDepth(this.playerSprite.y));
+    // A snap (a room change, a debug teleport) leaves the follower on the player's
+    // own tile; it only trails once a step is taken.
+    this.placeFollower(this.player.x, this.player.y);
     this.refreshGrassStep();
+  }
+
+  /** Parks the follower on a tile with no step, when it has a sprite. */
+  private placeFollower(tileX: number, tileY: number): void {
+    const sprite = this.followerSprite;
+    if (!sprite) return;
+    sprite.setPosition(this.centerX(tileX), this.centerY(tileY) + TILE_SIZE / 2);
+    sprite.setDepth(actorDepth(sprite.y));
   }
 
   /**
@@ -4412,6 +4441,7 @@ export class RouteScene extends Phaser.Scene {
     this.facingDir = direction;
     this.facing = direction === 'up' ? 'up' : direction === 'down' ? 'down' : 'side';
     this.playerSprite.setFlipX(direction === 'right');
+    this.followerSprite?.setFlipX(direction === 'right');
   }
 
   /** Pushes into a blocked tile: turn to face it and stand. */
@@ -4439,6 +4469,9 @@ export class RouteScene extends Phaser.Scene {
         this.onTileEntered(direction);
       },
     });
+    // The follower trails by exactly one tile: it steps onto the tile the player is
+    // leaving, on the player's own cadence and run factor, so the two land together.
+    this.followStep(running);
   }
 
   /**
@@ -4450,6 +4483,122 @@ export class RouteScene extends Phaser.Scene {
     if (this.walkTween) return;
     if (this.playerSprite.anims.isPlaying) this.playerSprite.anims.stop();
     this.playerSprite.setFrame(playerSpriteFrame(this.facing));
+    this.restFollower();
+  }
+
+  /**
+   * Keeps the follower in step with the party's lead: the pair is resolved and
+   * loaded once per lead species, so a lead change pays one load and a re-lead
+   * costs none. Called from `refreshHud`, never per frame.
+   */
+  private refreshFollower(): void {
+    const leadId: string | null =
+      this.run.party.length > 0 ? this.run.party[0].fighter.speciesId : null;
+    if (leadId === this.followerSpecies) return;
+    // A load already in flight must finish first: returning here keeps the guard
+    // unconsumed, so the next HUD repaint retries and a lead change is not lost.
+    if (this.load.isLoading()) return;
+    const sheet = leadId === null ? null : pokemonOverworldSheet(leadId);
+    if (sheet && !this.textures.exists(sheet.textureKey)) {
+      this.queueFollowerLoad(sheet);
+      return;
+    }
+    this.followerSpecies = leadId;
+    this.buildFollower(sheet);
+  }
+
+  /** Queues a pair's spritesheet and builds the follower once the loader completes. */
+  private queueFollowerLoad(sheet: PokemonOverworldSheet): void {
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+      this.followerSpecies = sheet.speciesId;
+      this.buildFollower(sheet);
+    });
+    this.load.spritesheet(sheet.textureKey, sheet.url, {
+      frameWidth: sheet.size,
+      frameHeight: sheet.size,
+    });
+    // A loader only starts itself inside a scene's `preload`, so a queue built at
+    // run time (a lead change) is started by hand.
+    this.load.start();
+  }
+
+  /**
+   * Builds the follower sprite for a pair, snapped to the player's own tile, or
+   * clears it for a lead the manifest carries no art for. The texture is
+   * registered once per file id and the strips once per key, so a re-lead is free.
+   */
+  private buildFollower(sheet: PokemonOverworldSheet | null): void {
+    this.destroyFollower();
+    this.followerSheet = sheet;
+    if (!sheet) return;
+    this.registerFollowerAnims(sheet);
+    const footY = this.centerY(this.player.y) + TILE_SIZE / 2;
+    const sprite = this.add
+      .sprite(this.centerX(this.player.x), footY, sheet.textureKey, 0)
+      .setOrigin(0.5, 1)
+      .setScale(TILE_SIZE / sheet.size)
+      .setDepth(actorDepth(footY))
+      .setFlipX(this.facingDir === 'right');
+    const idle = followerIdleFrame(sheet, this.facing);
+    if (idle !== null) sprite.setFrame(idle);
+    this.followerSprite = sprite;
+    this.entitySprites.push(sprite);
+    this.hudCamera?.ignore([sprite]);
+  }
+
+  /** Registers a pair's idle and walk strips, once per animation key. */
+  private registerFollowerAnims(sheet: PokemonOverworldSheet): void {
+    for (const anim of followerAnims(sheet)) {
+      if (this.anims.exists(anim.key)) continue;
+      this.anims.create({
+        key: anim.key,
+        frames: anim.frames.map((frame) => ({ key: sheet.textureKey, frame })),
+        frameRate: anim.frameRate,
+        repeat: anim.repeat,
+      });
+    }
+  }
+
+  /** Drops the follower sprite and its in-flight step, leaving the texture loaded. */
+  private destroyFollower(): void {
+    this.followerTween?.remove();
+    this.followerTween = null;
+    this.followerSprite?.destroy();
+    this.followerSprite = null;
+  }
+
+  /**
+   * Steps the follower onto the tile the player is leaving, over the player's own
+   * step duration and at its run factor, so the two tweens start and end together.
+   */
+  private followStep(running: boolean): void {
+    const sprite = this.followerSprite;
+    const sheet = this.followerSheet;
+    if (!sprite || !sheet) return;
+    const key = followerAnimKey(sheet, this.facing, 'walk');
+    sprite.anims.timeScale = playerWalkTimeScale(running, WALK_STEP_MS, RUN_STEP_MS);
+    if (this.anims.exists(key)) sprite.play(key, true);
+    this.followerTween?.remove();
+    this.followerTween = this.tweens.add({
+      targets: sprite,
+      x: this.centerX(this.player.x),
+      y: this.centerY(this.player.y) + TILE_SIZE / 2,
+      duration: running ? RUN_STEP_MS : WALK_STEP_MS,
+      ease: 'Linear',
+      onComplete: () => {
+        this.followerTween = null;
+      },
+    });
+  }
+
+  /** Parks the follower on its facing's idle strip, so it stands with the player. */
+  private restFollower(): void {
+    const sprite = this.followerSprite;
+    const sheet = this.followerSheet;
+    if (!sprite || !sheet) return;
+    if (sprite.anims.isPlaying) sprite.anims.stop();
+    const frame = followerIdleFrame(sheet, this.facing);
+    if (frame !== null) sprite.setFrame(frame);
   }
 
   private onTileEntered(direction: MoveKey): void {
@@ -6103,6 +6252,9 @@ export class RouteScene extends Phaser.Scene {
     for (const entry of this.trainerSprites) this.tweens.killTweensOf(entry.sprite);
     if (this.grassStep) this.grassStep.anims.stop();
     this.grassStep = null;
+    this.destroyFollower();
+    this.followerSheet = null;
+    this.followerSpecies = null;
     for (const sprite of this.entitySprites) sprite.destroy();
     this.entitySprites = [];
     this.itemSprites = [];
@@ -6439,6 +6591,7 @@ export class RouteScene extends Phaser.Scene {
     // The player sorts against the trainers by its foot row every frame, so the
     // depth follows a step in flight instead of snapping when it lands.
     this.playerSprite.setDepth(actorDepth(this.playerSprite.y));
+    if (this.followerSprite) this.followerSprite.setDepth(actorDepth(this.followerSprite.y));
     if (
       this.gameOver ||
       this.pendingBattle ||

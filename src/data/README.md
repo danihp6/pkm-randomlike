@@ -53,6 +53,12 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   `scripts/effect-coverage.mjs` beside the coverage table; regenerate it with
   `npm run docs:coverage`. `moveCoverage.ts` is its typed accessor, and the
   develop-build warning reads it (`D16`).
+- `pokemonOverworld.ts` — the accessor over Task-76's committed overworld pairs
+  (`src/assets/pokemon/<fileId>.png` + `<fileId>.json`) and their coverage manifest
+  (`index.json`): a species id resolves to its pair's file id, texture key, URL, cell
+  size, five direction rows and five animation blocks, so a scene draws the party's
+  overworld art without knowing the sheet layout. An id the manifest lists as
+  `missing` resolves to null. This file is the manifest's only reader.
 
 ## Rules
 
