@@ -1,676 +1,1219 @@
-// Shared id/slug/row list for every species with a real PMDCollab sprite
-// pack fetched into sprite-sources/pokemons/<slug>-pmdcollab/ (see that
-// folder's README section and scripts/fetch-pmdcollab.mjs). Consumed by
-// scripts/extract-real-sprites.mjs (walk/attack/idle/hurt frames, one file
-// pair per species — no longer atlas-row-based, see that script) and
-// scripts/extract-real-portraits.mjs (portrait sheet, still one shared
-// atlas keyed by `row`), which both key off the same `slug` to find each
-// species' local source folder - a species only needs adding here once to
-// be picked up by both.
+// One row per playable species PMDCollab has overworld art for, in dex order.
+// The row is the species' identity for the whole overworld pipeline:
+//   speciesId  - the dex id src/assets/pokemon/index.json keys on
+//   num        - the dex number
+//   formIndex  - SpriteCollab's own 4-digit form index, present only for a forme
+//   slug       - the local pack folder, <source>/<slug>-pmdcollab/
+//   assetId    - the download path, a 4-digit base id or "NNNN/FFFF" for a forme
+//   shootAnim  - optional PMDCollab anim name standing in for the special slot,
+//                for the species that have no "Shoot" anim (not even a CopyOf):
+//                "SpAttack" where the pack has one, "Charge" otherwise, and
+//                "Strike" for the one pack (Tarountula) that has neither
 //
-// `row` is only meaningful to the portrait atlas now (row index = id - 1).
-// `shootAnim` substitutes a different PMDCollab anim name for the
-// special-attack sprite slot, for species with no "Shoot" anim of their own.
+// The file id of the packed pair (src/assets/pokemon/<fileId>.png + .json) is
+// `num` for a base species and `num * 100 + formIndex` for a forme — so
+// Castform's three Forecast formes are 35101, 35102 and 35103. A species whose
+// form has no pack on the server is not listed here and lands in index.json's
+// `missing` list instead.
 //
+// The list is derived from src/data/dex/species.json: every base species, plus
+// every forme whose `forme` name matches a SpriteCollab form of its dex number
+// (a handful of names are aliases, e.g. Showdown's "PhD" for PMDCollab's "Ph_D"
+// and "Savanna" for "Savannah"), minus the rows SpriteCollab has no sprite
+// folder for — the server answers HTTP 500 ("No such file or directory") and
+// the repository has no `sprite/<assetId>/` for them (the Pikachu cap formes,
+// Gourgeist Small/Large, Greninja-Ash, Necrozma-Dusk-Mane/Dawn-Wings, the
+// Gen 7-9 gaps such as Maschiff or Iron Crown). Those species are not listed
+// here and land in index.json's `missing` list instead, which keeps
+// `fetch-pmdcollab.mjs --table --missing` a no-op on a populated source tree.
+// A row whose pack has no usable Walk/Attack/Hurt block (a stub-quality folder
+// such as Jellicent's or Stonjourner's) stays listed — the server does carry a
+// folder — but extract-real-sprites.mjs cannot build the frozen five-anim pair
+// from it, so it lands in `missing` too.
+// Regenerate it by re-deriving against the server rather than by hand.
+//
+// Consumed by fetch-pmdcollab.mjs (--table), extract-real-sprites.mjs and
+// build-pokemon-index.mjs.
 export const PMDCOLLAB_SPECIES = [
-  { id: 1, slug: 'bulbasaur', row: 0 },
-  { id: 2, slug: 'ivysaur', row: 1 },
-  { id: 3, slug: 'venusaur', row: 2 },
-  { id: 4, slug: 'charmander', row: 3 }, // 4-frame idle/walk, defaults fine
-  { id: 5, slug: 'charmeleon', row: 4 },
-  { id: 6, slug: 'charizard', row: 5 },
-  { id: 7, slug: 'squirtle', row: 6 },
-  { id: 8, slug: 'wartortle', row: 7 },
-  { id: 9, slug: 'blastoise', row: 8 },
-  { id: 10, slug: 'caterpie', row: 9 }, // 3-frame walk, defaults fine
-  { id: 11, slug: 'metapod', row: 10 },
-  { id: 12, slug: 'butterfree', row: 11 },
-  { id: 13, slug: 'weedle', row: 12 },
-  { id: 14, slug: 'kakuna', row: 13 },
-  { id: 15, slug: 'beedrill', row: 14 }, // Idle is <CopyOf>Walk</CopyOf>
-  { id: 16, slug: 'pidgey', row: 15 },
-  { id: 17, slug: 'pidgeotto', row: 16 },
-  { id: 18, slug: 'pidgeot', row: 17 },
-  { id: 19, slug: 'rattata', row: 18 },
-  { id: 20, slug: 'raticate', row: 19 },
-  { id: 21, slug: 'spearow', row: 20 },
-  { id: 22, slug: 'fearow', row: 21 },
-  { id: 23, slug: 'ekans', row: 22 },
-  { id: 24, slug: 'arbok', row: 23 },
-  { id: 25, slug: 'pikachu', row: 24 },
-  { id: 26, slug: 'raichu', row: 25 },
-  { id: 27, slug: 'sandshrew', row: 26 },
-  { id: 28, slug: 'sandslash', row: 27 },
-  { id: 29, slug: 'nidoran-f', row: 28 },
-  { id: 30, slug: 'nidorina', row: 29 },
-  { id: 31, slug: 'nidoqueen', row: 30 },
-  { id: 32, slug: 'nidoran-m', row: 31 },
-  { id: 33, slug: 'nidorino', row: 32 },
-  { id: 34, slug: 'nidoking', row: 33 },
-  { id: 35, slug: 'clefairy', row: 34, shootAnim: 'Charge' }, // no Shoot anim on PMDCollab
-  { id: 36, slug: 'clefable', row: 35, shootAnim: 'Charge' }, // no Shoot anim on PMDCollab
-  { id: 37, slug: 'vulpix', row: 36 },
-  { id: 38, slug: 'ninetales', row: 37 },
-  { id: 39, slug: 'jigglypuff', row: 38 },
-  { id: 40, slug: 'wigglytuff', row: 39 },
-  { id: 41, slug: 'zubat', row: 40 },
-  { id: 42, slug: 'golbat', row: 41 },
-  { id: 43, slug: 'oddish', row: 42 },
-  { id: 44, slug: 'gloom', row: 43 },
-  { id: 45, slug: 'vileplume', row: 44 },
-  { id: 46, slug: 'paras', row: 45 },
-  { id: 47, slug: 'parasect', row: 46 },
-  { id: 48, slug: 'venonat', row: 47 },
-  { id: 49, slug: 'venomoth', row: 48 },
-  { id: 50, slug: 'diglett', row: 49 },
-  { id: 51, slug: 'dugtrio', row: 50 }, // 3-frame walk, defaults fine
-  { id: 52, slug: 'meowth', row: 51 },
-  { id: 53, slug: 'persian', row: 52 },
-  { id: 54, slug: 'psyduck', row: 53 },
-  { id: 55, slug: 'golduck', row: 54 },
-  { id: 56, slug: 'mankey', row: 55 },
-  { id: 57, slug: 'primeape', row: 56 },
-  { id: 58, slug: 'growlithe', row: 57 },
-  { id: 59, slug: 'arcanine', row: 58 },
-  { id: 60, slug: 'poliwag', row: 59 },
-  { id: 61, slug: 'poliwhirl', row: 60 },
-  { id: 62, slug: 'poliwrath', row: 61 },
-  { id: 63, slug: 'abra', row: 62 },
-  { id: 64, slug: 'kadabra', row: 63 },
-  { id: 65, slug: 'alakazam', row: 64 },
-  { id: 66, slug: 'machop', row: 65 },
-  { id: 67, slug: 'machoke', row: 66 },
-  { id: 68, slug: 'machamp', row: 67 },
-  { id: 69, slug: 'bellsprout', row: 68 },
-  { id: 70, slug: 'weepinbell', row: 69 },
-  { id: 71, slug: 'victreebel', row: 70 },
-  { id: 72, slug: 'tentacool', row: 71 },
-  { id: 73, slug: 'tentacruel', row: 72 },
-  { id: 74, slug: 'geodude', row: 73 },
-  { id: 75, slug: 'graveler', row: 74 },
-  { id: 76, slug: 'golem', row: 75 },
-  { id: 77, slug: 'ponyta', row: 76 },
-  { id: 78, slug: 'rapidash', row: 77 },
-  { id: 79, slug: 'slowpoke', row: 78 },
-  { id: 80, slug: 'slowbro', row: 79 },
-  { id: 81, slug: 'magnemite', row: 80 },
-  { id: 82, slug: 'magneton', row: 81 },
-  { id: 83, slug: 'farfetchd', row: 82 },
-  { id: 84, slug: 'doduo', row: 83 },
-  { id: 85, slug: 'dodrio', row: 84 },
-  { id: 86, slug: 'seel', row: 85 },
-  { id: 87, slug: 'dewgong', row: 86 },
-  { id: 88, slug: 'grimer', row: 87 },
-  { id: 89, slug: 'muk', row: 88 },
-  { id: 90, slug: 'shellder', row: 89 },
-  { id: 91, slug: 'cloyster', row: 90 },
-  { id: 92, slug: 'gastly', row: 91 },
-  { id: 93, slug: 'haunter', row: 92 },
-  { id: 94, slug: 'gengar', row: 93 },
-  { id: 95, slug: 'onix', row: 94 },
-  { id: 96, slug: 'drowzee', row: 95 },
-  { id: 97, slug: 'hypno', row: 96 },
-  { id: 98, slug: 'krabby', row: 97 },
-  { id: 99, slug: 'kingler', row: 98 },
-  { id: 100, slug: 'voltorb', row: 99 },
-  { id: 101, slug: 'electrode', row: 100 },
-  { id: 102, slug: 'exeggcute', row: 101 },
-  { id: 103, slug: 'exeggutor', row: 102 },
-  { id: 104, slug: 'cubone', row: 103 },
-  { id: 105, slug: 'marowak', row: 104 },
-  { id: 106, slug: 'hitmonlee', row: 105 },
-  { id: 107, slug: 'hitmonchan', row: 106 },
-  { id: 108, slug: 'lickitung', row: 107 },
-  { id: 109, slug: 'koffing', row: 108 },
-  { id: 110, slug: 'weezing', row: 109 },
-  { id: 111, slug: 'rhyhorn', row: 110 },
-  { id: 112, slug: 'rhydon', row: 111 },
-  { id: 113, slug: 'chansey', row: 112 },
-  { id: 114, slug: 'tangela', row: 113 },
-  { id: 115, slug: 'kangaskhan', row: 114 },
-  { id: 116, slug: 'horsea', row: 115 },
-  { id: 117, slug: 'seadra', row: 116 },
-  { id: 118, slug: 'goldeen', row: 117 },
-  { id: 119, slug: 'seaking', row: 118 },
-  { id: 120, slug: 'staryu', row: 119 },
-  { id: 121, slug: 'starmie', row: 120 },
-  { id: 122, slug: 'mr-mime', row: 121 },
-  { id: 123, slug: 'scyther', row: 122 },
-  { id: 124, slug: 'jynx', row: 123 },
-  { id: 125, slug: 'electabuzz', row: 124 },
-  { id: 126, slug: 'magmar', row: 125 },
-  { id: 127, slug: 'pinsir', row: 126 },
-  { id: 128, slug: 'tauros', row: 127 },
-  { id: 129, slug: 'magikarp', row: 128 },
-  { id: 130, slug: 'gyarados', row: 129 },
-  { id: 131, slug: 'lapras', row: 130 },
-  { id: 132, slug: 'ditto', row: 131 },
-  { id: 133, slug: 'eevee', row: 132 },
-  { id: 134, slug: 'vaporeon', row: 133 },
-  { id: 135, slug: 'jolteon', row: 134 },
-  { id: 136, slug: 'flareon', row: 135 },
-  { id: 137, slug: 'porygon', row: 136 },
-  { id: 138, slug: 'omanyte', row: 137 },
-  { id: 139, slug: 'omastar', row: 138 },
-  { id: 140, slug: 'kabuto', row: 139 },
-  { id: 141, slug: 'kabutops', row: 140 },
-  { id: 142, slug: 'aerodactyl', row: 141 },
-  { id: 143, slug: 'snorlax', row: 142 },
-  { id: 144, slug: 'articuno', row: 143 },
-  { id: 145, slug: 'zapdos', row: 144 },
-  { id: 146, slug: 'moltres', row: 145 },
-  { id: 147, slug: 'dratini', row: 146 },
-  { id: 148, slug: 'dragonair', row: 147 }, // Idle is <CopyOf>Walk</CopyOf>
-  { id: 149, slug: 'dragonite', row: 148 },
-  { id: 150, slug: 'mewtwo', row: 149 },
-  { id: 151, slug: 'mew', row: 150 },
-  { id: 152, slug: 'chikorita', row: 151 },
-  { id: 153, slug: 'bayleef', row: 152 },
-  { id: 154, slug: 'meganium', row: 153 },
-  { id: 155, slug: 'cyndaquil', row: 154 },
-  { id: 156, slug: 'quilava', row: 155 },
-  { id: 157, slug: 'typhlosion', row: 156 },
-  { id: 158, slug: 'totodile', row: 157 },
-  { id: 159, slug: 'croconaw', row: 158 },
-  { id: 160, slug: 'feraligatr', row: 159 },
-  { id: 161, slug: 'sentret', row: 160 },
-  { id: 162, slug: 'furret', row: 161 },
-  { id: 163, slug: 'hoothoot', row: 162 },
-  { id: 164, slug: 'noctowl', row: 163 },
-  { id: 165, slug: 'ledyba', row: 164 },
-  { id: 166, slug: 'ledian', row: 165 },
-  { id: 167, slug: 'spinarak', row: 166 },
-  { id: 168, slug: 'ariados', row: 167 },
-  { id: 169, slug: 'crobat', row: 168 },
-  { id: 170, slug: 'chinchou', row: 169 },
-  { id: 171, slug: 'lanturn', row: 170 },
-  { id: 172, slug: 'pichu', row: 171, shootAnim: 'Charge' }, // no Shoot anim on PMDCollab
-  { id: 173, slug: 'cleffa', row: 172 },
-  { id: 174, slug: 'igglybuff', row: 173 },
-  { id: 175, slug: 'togepi', row: 174, shootAnim: 'Charge' }, // no Shoot anim on PMDCollab
-  { id: 176, slug: 'togetic', row: 175, shootAnim: 'Charge' }, // no Shoot anim on PMDCollab
-  { id: 177, slug: 'natu', row: 176 },
-  { id: 178, slug: 'xatu', row: 177 },
-  { id: 179, slug: 'mareep', row: 178 },
-  { id: 180, slug: 'flaaffy', row: 179 },
-  { id: 181, slug: 'ampharos', row: 180 },
-  { id: 182, slug: 'bellossom', row: 181 },
-  { id: 183, slug: 'marill', row: 182 },
-  { id: 184, slug: 'azumarill', row: 183 },
-  { id: 185, slug: 'sudowoodo', row: 184 },
-  { id: 186, slug: 'politoed', row: 185 },
-  { id: 187, slug: 'hoppip', row: 186 },
-  { id: 188, slug: 'skiploom', row: 187 },
-  { id: 189, slug: 'jumpluff', row: 188 },
-  { id: 190, slug: 'aipom', row: 189 },
-  { id: 191, slug: 'sunkern', row: 190 },
-  { id: 192, slug: 'sunflora', row: 191 },
-  { id: 193, slug: 'yanma', row: 192 },
-  { id: 194, slug: 'wooper', row: 193 },
-  { id: 195, slug: 'quagsire', row: 194 },
-  { id: 196, slug: 'espeon', row: 195 },
-  { id: 197, slug: 'umbreon', row: 196 },
-  { id: 198, slug: 'murkrow', row: 197 },
-  { id: 199, slug: 'slowking', row: 198 },
-  { id: 200, slug: 'misdreavus', row: 199 },
-  { id: 201, slug: 'unown', row: 200 },
-  { id: 202, slug: 'wobbuffet', row: 201 },
-  { id: 203, slug: 'girafarig', row: 202 },
-  { id: 204, slug: 'pineco', row: 203 },
-  { id: 205, slug: 'forretress', row: 204 },
-  { id: 206, slug: 'dunsparce', row: 205 },
-  { id: 207, slug: 'gligar', row: 206 },
-  { id: 208, slug: 'steelix', row: 207 },
-  { id: 209, slug: 'snubbull', row: 208 },
-  { id: 210, slug: 'granbull', row: 209 },
-  { id: 211, slug: 'qwilfish', row: 210 },
-  { id: 212, slug: 'scizor', row: 211 },
-  { id: 213, slug: 'shuckle', row: 212 },
-  { id: 214, slug: 'heracross', row: 213 },
-  { id: 215, slug: 'sneasel', row: 214 },
-  { id: 216, slug: 'teddiursa', row: 215 },
-  { id: 217, slug: 'ursaring', row: 216 },
-  { id: 218, slug: 'slugma', row: 217 },
-  { id: 219, slug: 'magcargo', row: 218 },
-  { id: 220, slug: 'swinub', row: 219 },
-  { id: 221, slug: 'piloswine', row: 220 },
-  { id: 222, slug: 'corsola', row: 221 },
-  { id: 223, slug: 'remoraid', row: 222 },
-  { id: 224, slug: 'octillery', row: 223 },
-  { id: 225, slug: 'delibird', row: 224 },
-  { id: 226, slug: 'mantine', row: 225 },
-  { id: 227, slug: 'skarmory', row: 226 },
-  { id: 228, slug: 'houndour', row: 227 },
-  { id: 229, slug: 'houndoom', row: 228 },
-  { id: 230, slug: 'kingdra', row: 229 },
-  { id: 231, slug: 'phanpy', row: 230 },
-  { id: 232, slug: 'donphan', row: 231 },
-  { id: 233, slug: 'porygon2', row: 232 },
-  { id: 234, slug: 'stantler', row: 233 },
-  { id: 235, slug: 'smeargle', row: 234 },
-  { id: 236, slug: 'tyrogue', row: 235 },
-  { id: 237, slug: 'hitmontop', row: 236 },
-  { id: 238, slug: 'smoochum', row: 237 },
-  { id: 239, slug: 'elekid', row: 238 },
-  { id: 240, slug: 'magby', row: 239 },
-  { id: 241, slug: 'miltank', row: 240 },
-  { id: 242, slug: 'blissey', row: 241 },
-  { id: 243, slug: 'raikou', row: 242 },
-  { id: 244, slug: 'entei', row: 243 },
-  { id: 245, slug: 'suicune', row: 244 },
-  { id: 246, slug: 'larvitar', row: 245 },
-  { id: 247, slug: 'pupitar', row: 246 },
-  { id: 248, slug: 'tyranitar', row: 247 },
-  { id: 249, slug: 'lugia', row: 248 },
-  { id: 250, slug: 'ho-oh', row: 249 },
-  { id: 251, slug: 'celebi', row: 250 },
-  // Gen 3 (Treecko-Deoxys): fetched by numeric National-Dex id rather than
-  // name slug (node scripts/fetch-pmdcollab.mjs 252-386 --anims=...), so
-  // slug here is the zero-padded id instead of a species name.
-  { id: 252, slug: '0252', row: 251 }, // Treecko
-  { id: 253, slug: '0253', row: 252 }, // Grovyle
-  { id: 254, slug: '0254', row: 253 }, // Sceptile
-  { id: 255, slug: '0255', row: 254 }, // Torchic
-  { id: 256, slug: '0256', row: 255 }, // Combusken
-  { id: 257, slug: '0257', row: 256 }, // Blaziken
-  { id: 258, slug: '0258', row: 257 }, // Mudkip
-  { id: 259, slug: '0259', row: 258 }, // Marshtomp
-  { id: 260, slug: '0260', row: 259 }, // Swampert
-  { id: 261, slug: '0261', row: 260 }, // Poochyena
-  { id: 262, slug: '0262', row: 261 }, // Mightyena
-  { id: 263, slug: '0263', row: 262 }, // Zigzagoon
-  { id: 264, slug: '0264', row: 263 }, // Linoone
-  { id: 265, slug: '0265', row: 264 }, // Wurmple
-  { id: 266, slug: '0266', row: 265 }, // Silcoon
-  { id: 267, slug: '0267', row: 266 }, // Beautifly
-  { id: 268, slug: '0268', row: 267 }, // Cascoon
-  { id: 269, slug: '0269', row: 268 }, // Dustox
-  { id: 270, slug: '0270', row: 269 }, // Lotad
-  { id: 271, slug: '0271', row: 270 }, // Lombre
-  { id: 272, slug: '0272', row: 271 }, // Ludicolo
-  { id: 273, slug: '0273', row: 272 }, // Seedot
-  { id: 274, slug: '0274', row: 273 }, // Nuzleaf
-  { id: 275, slug: '0275', row: 274 }, // Shiftry
-  { id: 276, slug: '0276', row: 275 }, // Taillow
-  { id: 277, slug: '0277', row: 276 }, // Swellow
-  { id: 278, slug: '0278', row: 277 }, // Wingull
-  { id: 279, slug: '0279', row: 278 }, // Pelipper
-  { id: 280, slug: '0280', row: 279 }, // Ralts
-  { id: 281, slug: '0281', row: 280 }, // Kirlia
-  { id: 282, slug: '0282', row: 281 }, // Gardevoir
-  { id: 283, slug: '0283', row: 282 }, // Surskit
-  { id: 284, slug: '0284', row: 283 }, // Masquerain
-  { id: 285, slug: '0285', row: 284 }, // Shroomish
-  { id: 286, slug: '0286', row: 285 }, // Breloom
-  { id: 287, slug: '0287', row: 286 }, // Slakoth
-  { id: 288, slug: '0288', row: 287 }, // Vigoroth
-  { id: 289, slug: '0289', row: 288 }, // Slaking
-  { id: 290, slug: '0290', row: 289 }, // Nincada
-  { id: 291, slug: '0291', row: 290 }, // Ninjask
-  { id: 292, slug: '0292', row: 291 }, // Shedinja
-  { id: 293, slug: '0293', row: 292 }, // Whismur
-  { id: 294, slug: '0294', row: 293 }, // Loudred
-  { id: 295, slug: '0295', row: 294 }, // Exploud
-  { id: 296, slug: '0296', row: 295 }, // Makuhita
-  { id: 297, slug: '0297', row: 296 }, // Hariyama
-  { id: 298, slug: '0298', row: 297 }, // Azurill
-  { id: 299, slug: '0299', row: 298 }, // Nosepass
-  { id: 300, slug: '0300', row: 299 }, // Skitty
-  { id: 301, slug: '0301', row: 300 }, // Delcatty
-  { id: 302, slug: '0302', row: 301 }, // Sableye
-  { id: 303, slug: '0303', row: 302 }, // Mawile
-  { id: 304, slug: '0304', row: 303 }, // Aron
-  { id: 305, slug: '0305', row: 304 }, // Lairon
-  { id: 306, slug: '0306', row: 305 }, // Aggron
-  { id: 307, slug: '0307', row: 306 }, // Meditite
-  { id: 308, slug: '0308', row: 307 }, // Medicham
-  { id: 309, slug: '0309', row: 308 }, // Electrike
-  { id: 310, slug: '0310', row: 309 }, // Manectric
-  { id: 311, slug: '0311', row: 310 }, // Plusle
-  { id: 312, slug: '0312', row: 311 }, // Minun
-  { id: 313, slug: '0313', row: 312 }, // Volbeat
-  { id: 314, slug: '0314', row: 313 }, // Illumise
-  { id: 315, slug: '0315', row: 314 }, // Roselia
-  { id: 316, slug: '0316', row: 315 }, // Gulpin
-  { id: 317, slug: '0317', row: 316 }, // Swalot
-  { id: 318, slug: '0318', row: 317 }, // Carvanha
-  { id: 319, slug: '0319', row: 318 }, // Sharpedo
-  { id: 320, slug: '0320', row: 319 }, // Wailmer
-  { id: 321, slug: '0321', row: 320 }, // Wailord
-  { id: 322, slug: '0322', row: 321 }, // Numel
-  { id: 323, slug: '0323', row: 322 }, // Camerupt
-  { id: 324, slug: '0324', row: 323 }, // Torkoal
-  { id: 325, slug: '0325', row: 324 }, // Spoink
-  { id: 326, slug: '0326', row: 325 }, // Grumpig
-  { id: 327, slug: '0327', row: 326 }, // Spinda
-  { id: 328, slug: '0328', row: 327 }, // Trapinch
-  { id: 329, slug: '0329', row: 328 }, // Vibrava
-  { id: 330, slug: '0330', row: 329 }, // Flygon
-  { id: 331, slug: '0331', row: 330 }, // Cacnea
-  { id: 332, slug: '0332', row: 331 }, // Cacturne
-  { id: 333, slug: '0333', row: 332 }, // Swablu
-  { id: 334, slug: '0334', row: 333 }, // Altaria
-  { id: 335, slug: '0335', row: 334 }, // Zangoose
-  { id: 336, slug: '0336', row: 335 }, // Seviper
-  { id: 337, slug: '0337', row: 336 }, // Lunatone
-  { id: 338, slug: '0338', row: 337 }, // Solrock
-  { id: 339, slug: '0339', row: 338 }, // Barboach
-  { id: 340, slug: '0340', row: 339 }, // Whiscash
-  { id: 341, slug: '0341', row: 340 }, // Corphish
-  { id: 342, slug: '0342', row: 341 }, // Crawdaunt
-  { id: 343, slug: '0343', row: 342 }, // Baltoy
-  { id: 344, slug: '0344', row: 343 }, // Claydol
-  { id: 345, slug: '0345', row: 344 }, // Lileep
-  { id: 346, slug: '0346', row: 345 }, // Cradily
-  { id: 347, slug: '0347', row: 346 }, // Anorith
-  { id: 348, slug: '0348', row: 347 }, // Armaldo
-  { id: 349, slug: '0349', row: 348 }, // Feebas
-  { id: 350, slug: '0350', row: 349 }, // Milotic
-  { id: 351, slug: '0351', row: 350 }, // Castform
-  { id: 352, slug: '0352', row: 351 }, // Kecleon
-  { id: 353, slug: '0353', row: 352 }, // Shuppet
-  { id: 354, slug: '0354', row: 353 }, // Banette
-  { id: 355, slug: '0355', row: 354 }, // Duskull
-  { id: 356, slug: '0356', row: 355 }, // Dusclops
-  { id: 357, slug: '0357', row: 356 }, // Tropius
-  { id: 358, slug: '0358', row: 357 }, // Chimecho
-  { id: 359, slug: '0359', row: 358 }, // Absol
-  { id: 360, slug: '0360', row: 359 }, // Wynaut
-  { id: 361, slug: '0361', row: 360 }, // Snorunt
-  { id: 362, slug: '0362', row: 361 }, // Glalie
-  { id: 363, slug: '0363', row: 362 }, // Spheal
-  { id: 364, slug: '0364', row: 363 }, // Sealeo
-  { id: 365, slug: '0365', row: 364 }, // Walrein
-  { id: 366, slug: '0366', row: 365 }, // Clamperl
-  { id: 367, slug: '0367', row: 366 }, // Huntail
-  { id: 368, slug: '0368', row: 367 }, // Gorebyss
-  { id: 369, slug: '0369', row: 368 }, // Relicanth
-  { id: 370, slug: '0370', row: 369 }, // Luvdisc
-  { id: 371, slug: '0371', row: 370 }, // Bagon
-  { id: 372, slug: '0372', row: 371 }, // Shelgon
-  { id: 373, slug: '0373', row: 372 }, // Salamence
-  { id: 374, slug: '0374', row: 373 }, // Beldum
-  { id: 375, slug: '0375', row: 374 }, // Metang
-  { id: 376, slug: '0376', row: 375 }, // Metagross
-  { id: 377, slug: '0377', row: 376 }, // Regirock
-  { id: 378, slug: '0378', row: 377 }, // Regice
-  { id: 379, slug: '0379', row: 378 }, // Registeel
-  { id: 380, slug: '0380', row: 379 }, // Latias
-  { id: 381, slug: '0381', row: 380 }, // Latios
-  { id: 382, slug: '0382', row: 381 }, // Kyogre
-  { id: 383, slug: '0383', row: 382 }, // Groudon
-  { id: 384, slug: '0384', row: 383 }, // Rayquaza
-  { id: 385, slug: '0385', row: 384 }, // Jirachi
-  { id: 386, slug: '0386', row: 385 }, // Deoxys
-  // Gen 4 (Turtwig-Arceus): fetched by numeric National-Dex id, same as gen 3.
-  { id: 387, slug: '0387', row: 386 }, // Turtwig
-  { id: 388, slug: '0388', row: 387 }, // Grotle
-  { id: 389, slug: '0389', row: 388 }, // Torterra
-  { id: 390, slug: '0390', row: 389 }, // Chimchar
-  { id: 391, slug: '0391', row: 390 }, // Monferno
-  { id: 392, slug: '0392', row: 391 }, // Infernape
-  { id: 393, slug: '0393', row: 392 }, // Piplup
-  { id: 394, slug: '0394', row: 393 }, // Prinplup
-  { id: 395, slug: '0395', row: 394 }, // Empoleon
-  { id: 396, slug: '0396', row: 395 }, // Starly
-  { id: 397, slug: '0397', row: 396 }, // Staravia
-  { id: 398, slug: '0398', row: 397 }, // Staraptor
-  { id: 399, slug: '0399', row: 398 }, // Bidoof
-  { id: 400, slug: '0400', row: 399 }, // Bibarel
-  { id: 401, slug: '0401', row: 400 }, // Kricketot
-  { id: 402, slug: '0402', row: 401 }, // Kricketune
-  { id: 403, slug: '0403', row: 402 }, // Shinx
-  { id: 404, slug: '0404', row: 403 }, // Luxio
-  { id: 405, slug: '0405', row: 404 }, // Luxray
-  { id: 406, slug: '0406', row: 405 }, // Budew
-  { id: 407, slug: '0407', row: 406 }, // Roserade
-  { id: 408, slug: '0408', row: 407 }, // Cranidos
-  { id: 409, slug: '0409', row: 408 }, // Rampardos
-  { id: 410, slug: '0410', row: 409 }, // Shieldon
-  { id: 411, slug: '0411', row: 410 }, // Bastiodon
-  { id: 412, slug: '0412', row: 411 }, // Burmy
-  { id: 413, slug: '0413', row: 412 }, // Wormadam
-  { id: 414, slug: '0414', row: 413 }, // Mothim
-  { id: 415, slug: '0415', row: 414 }, // Combee
-  { id: 416, slug: '0416', row: 415 }, // Vespiquen
-  { id: 417, slug: '0417', row: 416 }, // Pachirisu
-  { id: 418, slug: '0418', row: 417 }, // Buizel
-  { id: 419, slug: '0419', row: 418 }, // Floatzel
-  { id: 420, slug: '0420', row: 419 }, // Cherubi
-  { id: 421, slug: '0421', row: 420 }, // Cherrim
-  { id: 422, slug: '0422', row: 421 }, // Shellos
-  { id: 423, slug: '0423', row: 422 }, // Gastrodon
-  { id: 424, slug: '0424', row: 423 }, // Ambipom
-  { id: 425, slug: '0425', row: 424 }, // Drifloon
-  { id: 426, slug: '0426', row: 425 }, // Drifblim
-  { id: 427, slug: '0427', row: 426 }, // Buneary
-  { id: 428, slug: '0428', row: 427 }, // Lopunny
-  { id: 429, slug: '0429', row: 428 }, // Mismagius
-  { id: 430, slug: '0430', row: 429 }, // Honchkrow
-  { id: 431, slug: '0431', row: 430 }, // Glameow
-  { id: 432, slug: '0432', row: 431 }, // Purugly
-  { id: 433, slug: '0433', row: 432 }, // Chingling
-  { id: 434, slug: '0434', row: 433 }, // Stunky
-  { id: 435, slug: '0435', row: 434 }, // Skuntank
-  { id: 436, slug: '0436', row: 435 }, // Bronzor
-  { id: 437, slug: '0437', row: 436 }, // Bronzong
-  { id: 438, slug: '0438', row: 437 }, // Bonsly
-  { id: 439, slug: '0439', row: 438 }, // Mime Jr.
-  { id: 440, slug: '0440', row: 439 }, // Happiny
-  { id: 441, slug: '0441', row: 440 }, // Chatot
-  { id: 442, slug: '0442', row: 441 }, // Spiritomb
-  { id: 443, slug: '0443', row: 442 }, // Gible
-  { id: 444, slug: '0444', row: 443 }, // Gabite
-  { id: 445, slug: '0445', row: 444 }, // Garchomp
-  { id: 446, slug: '0446', row: 445 }, // Munchlax
-  { id: 447, slug: '0447', row: 446, shootAnim: 'SpAttack' }, // Riolu, Shoot -> SpAttack (CopyOf RearUp)
-  { id: 448, slug: '0448', row: 447, shootAnim: 'SpAttack' }, // Lucario, Shoot -> SpAttack (CopyOf RearUp)
-  { id: 449, slug: '0449', row: 448 }, // Hippopotas
-  { id: 450, slug: '0450', row: 449 }, // Hippowdon
-  { id: 451, slug: '0451', row: 450 }, // Skorupi
-  { id: 452, slug: '0452', row: 451 }, // Drapion
-  { id: 453, slug: '0453', row: 452 }, // Croagunk
-  { id: 454, slug: '0454', row: 453 }, // Toxicroak
-  { id: 455, slug: '0455', row: 454 }, // Carnivine
-  { id: 456, slug: '0456', row: 455 }, // Finneon
-  { id: 457, slug: '0457', row: 456 }, // Lumineon
-  { id: 458, slug: '0458', row: 457 }, // Mantyke
-  { id: 459, slug: '0459', row: 458 }, // Snover
-  { id: 460, slug: '0460', row: 459 }, // Abomasnow
-  { id: 461, slug: '0461', row: 460 }, // Weavile
-  { id: 462, slug: '0462', row: 461 }, // Magnezone
-  { id: 463, slug: '0463', row: 462 }, // Lickilicky
-  { id: 464, slug: '0464', row: 463 }, // Rhyperior
-  { id: 465, slug: '0465', row: 464 }, // Tangrowth
-  { id: 466, slug: '0466', row: 465 }, // Electivire
-  { id: 467, slug: '0467', row: 466 }, // Magmortar
-  { id: 468, slug: '0468', row: 467 }, // Togekiss
-  { id: 469, slug: '0469', row: 468 }, // Yanmega
-  { id: 470, slug: '0470', row: 469 }, // Leafeon
-  { id: 471, slug: '0471', row: 470 }, // Glaceon
-  { id: 472, slug: '0472', row: 471 }, // Gliscor
-  { id: 473, slug: '0473', row: 472 }, // Mamoswine
-  { id: 474, slug: '0474', row: 473 }, // Porygon-Z
-  { id: 475, slug: '0475', row: 474 }, // Gallade
-  { id: 476, slug: '0476', row: 475 }, // Probopass
-  { id: 477, slug: '0477', row: 476 }, // Dusknoir
-  { id: 478, slug: '0478', row: 477 }, // Froslass
-  { id: 479, slug: '0479', row: 478 }, // Rotom
-  { id: 480, slug: '0480', row: 479 }, // Uxie
-  { id: 481, slug: '0481', row: 480 }, // Mesprit
-  { id: 482, slug: '0482', row: 481 }, // Azelf
-  { id: 483, slug: '0483', row: 482 }, // Dialga
-  { id: 484, slug: '0484', row: 483 }, // Palkia
-  { id: 485, slug: '0485', row: 484 }, // Heatran
-  { id: 486, slug: '0486', row: 485 }, // Regigigas
-  { id: 487, slug: '0487', row: 486 }, // Giratina
-  { id: 488, slug: '0488', row: 487 }, // Cresselia
-  { id: 489, slug: '0489', row: 488 }, // Phione
-  { id: 490, slug: '0490', row: 489 }, // Manaphy
-  { id: 491, slug: '0491', row: 490 }, // Darkrai
-  { id: 492, slug: '0492', row: 491 }, // Shaymin
-  { id: 493, slug: '0493', row: 492 }, // Arceus
-  { id: 494, slug: '0494', row: 493 }, // Victini
-  { id: 495, slug: '0495', row: 494 }, // Snivy
-  { id: 496, slug: '0496', row: 495 }, // Servine
-  { id: 497, slug: '0497', row: 496 }, // Serperior
-  { id: 498, slug: '0498', row: 497 }, // Tepig
-  { id: 499, slug: '0499', row: 498 }, // Pignite
-  { id: 500, slug: '0500', row: 499 }, // Emboar
-  { id: 501, slug: '0501', row: 500 }, // Oshawott
-  { id: 502, slug: '0502', row: 501 }, // Dewott
-  { id: 503, slug: '0503', row: 502 }, // Samurott
-  { id: 504, slug: '0504', row: 503 }, // Patrat
-  { id: 505, slug: '0505', row: 504 }, // Watchog
-  { id: 506, slug: '0506', row: 505 }, // Lillipup
-  { id: 507, slug: '0507', row: 506 }, // Herdier
-  { id: 508, slug: '0508', row: 507 }, // Stoutland
-  { id: 509, slug: '0509', row: 508 }, // Purrloin
-  { id: 510, slug: '0510', row: 509 }, // Liepard
-  { id: 511, slug: '0511', row: 510 }, // Pansage
-  { id: 512, slug: '0512', row: 511 }, // Simisage
-  { id: 513, slug: '0513', row: 512 }, // Pansear
-  { id: 514, slug: '0514', row: 513 }, // Simisear
-  { id: 515, slug: '0515', row: 514 }, // Panpour
-  { id: 516, slug: '0516', row: 515 }, // Simipour
-  { id: 517, slug: '0517', row: 516 }, // Munna
-  { id: 518, slug: '0518', row: 517 }, // Musharna
-  { id: 519, slug: '0519', row: 518 }, // Pidove
-  { id: 520, slug: '0520', row: 519 }, // Tranquill
-  { id: 521, slug: '0521', row: 520 }, // Unfezant
-  { id: 522, slug: '0522', row: 521 }, // Blitzle
-  { id: 523, slug: '0523', row: 522 }, // Zebstrika
-  { id: 524, slug: '0524', row: 523 }, // Roggenrola
-  { id: 525, slug: '0525', row: 524 }, // Boldore
-  { id: 526, slug: '0526', row: 525 }, // Gigalith
-  { id: 527, slug: '0527', row: 526 }, // Woobat
-  { id: 528, slug: '0528', row: 527 }, // Swoobat
-  { id: 529, slug: '0529', row: 528 }, // Drilbur
-  { id: 530, slug: '0530', row: 529 }, // Excadrill
-  { id: 531, slug: '0531', row: 530 }, // Audino
-  { id: 532, slug: '0532', row: 531, shootAnim: 'Charge' }, // Timburr, no Shoot anim on PMDCollab
-  { id: 533, slug: '0533', row: 532 }, // Gurdurr
-  { id: 534, slug: '0534', row: 533 }, // Conkeldurr
-  { id: 535, slug: '0535', row: 534 }, // Tympole
-  { id: 536, slug: '0536', row: 535 }, // Palpitoad
-  { id: 537, slug: '0537', row: 536 }, // Seismitoad
-  { id: 538, slug: '0538', row: 537 }, // Throh
-  { id: 539, slug: '0539', row: 538 }, // Sawk
-  { id: 540, slug: '0540', row: 539 }, // Sewaddle
-  { id: 541, slug: '0541', row: 540 }, // Swadloon
-  { id: 542, slug: '0542', row: 541 }, // Leavanny
-  { id: 543, slug: '0543', row: 542 }, // Venipede
-  { id: 544, slug: '0544', row: 543 }, // Whirlipede
-  { id: 545, slug: '0545', row: 544 }, // Scolipede
-  { id: 546, slug: '0546', row: 545 }, // Cottonee
-  { id: 547, slug: '0547', row: 546 }, // Whimsicott
-  { id: 548, slug: '0548', row: 547 }, // Petilil
-  { id: 549, slug: '0549', row: 548 }, // Lilligant
-  { id: 550, slug: '0550', row: 549 }, // Basculin
-  { id: 551, slug: '0551', row: 550 }, // Sandile
-  { id: 552, slug: '0552', row: 551 }, // Krokorok
-  { id: 553, slug: '0553', row: 552 }, // Krookodile
-  { id: 554, slug: '0554', row: 553, shootAnim: 'Charge' }, // Darumaka, no Shoot anim on PMDCollab
-  { id: 555, slug: '0555', row: 554 }, // Darmanitan
-  { id: 556, slug: '0556', row: 555 }, // Maractus
-  { id: 557, slug: '0557', row: 556 }, // Dwebble
-  { id: 558, slug: '0558', row: 557 }, // Crustle
-  { id: 559, slug: '0559', row: 558 }, // Scraggy
-  { id: 560, slug: '0560', row: 559 }, // Scrafty
-  { id: 561, slug: '0561', row: 560 }, // Sigilyph
-  { id: 562, slug: '0562', row: 561 }, // Yamask
-  { id: 563, slug: '0563', row: 562 }, // Cofagrigus
-  { id: 564, slug: '0564', row: 563 }, // Tirtouga
-  { id: 565, slug: '0565', row: 564 }, // Carracosta
-  { id: 566, slug: '0566', row: 565 }, // Archen
-  { id: 567, slug: '0567', row: 566 }, // Archeops
-  { id: 568, slug: '0568', row: 567 }, // Trubbish
-  { id: 569, slug: '0569', row: 568 }, // Garbodor
-  { id: 570, slug: '0570', row: 569 }, // Zorua
-  { id: 571, slug: '0571', row: 570 }, // Zoroark
-  { id: 572, slug: '0572', row: 571, shootAnim: 'Charge' }, // Minccino, no Shoot anim on PMDCollab
-  { id: 573, slug: '0573', row: 572 }, // Cinccino
-  { id: 574, slug: '0574', row: 573 }, // Gothita
-  { id: 575, slug: '0575', row: 574 }, // Gothorita
-  { id: 576, slug: '0576', row: 575 }, // Gothitelle
-  { id: 577, slug: '0577', row: 576 }, // Solosis
-  { id: 578, slug: '0578', row: 577 }, // Duosion
-  { id: 579, slug: '0579', row: 578 }, // Reuniclus
-  { id: 580, slug: '0580', row: 579 }, // Ducklett
-  { id: 581, slug: '0581', row: 580 }, // Swanna
-  { id: 582, slug: '0582', row: 581 }, // Vanillite
-  { id: 583, slug: '0583', row: 582 }, // Vanillish
-  { id: 584, slug: '0584', row: 583 }, // Vanilluxe
-  { id: 585, slug: '0585', row: 584 }, // Deerling
-  { id: 586, slug: '0586', row: 585 }, // Sawsbuck
-  { id: 587, slug: '0587', row: 586 }, // Emolga
-  { id: 588, slug: '0588', row: 587 }, // Karrablast
-  { id: 589, slug: '0589', row: 588 }, // Escavalier
-  { id: 590, slug: '0590', row: 589 }, // Foongus
-  { id: 591, slug: '0591', row: 590 }, // Amoonguss
-  { id: 592, slug: '0592', row: 591 }, // Frillish
-  { id: 594, slug: '0594', row: 593 }, // Alomomola
-  { id: 595, slug: '0595', row: 594 }, // Joltik
-  { id: 596, slug: '0596', row: 595 }, // Galvantula
-  { id: 597, slug: '0597', row: 596 }, // Ferroseed
-  { id: 598, slug: '0598', row: 597 }, // Ferrothorn
-  { id: 599, slug: '0599', row: 598 }, // Klink
-  { id: 600, slug: '0600', row: 599 }, // Klang
-  { id: 601, slug: '0601', row: 600 }, // Klinklang
-  { id: 602, slug: '0602', row: 601 }, // Tynamo
-  { id: 603, slug: '0603', row: 602 }, // Eelektrik
-  { id: 604, slug: '0604', row: 603 }, // Eelektross
-  { id: 605, slug: '0605', row: 604 }, // Elgyem
-  { id: 606, slug: '0606', row: 605 }, // Beheeyem
-  { id: 607, slug: '0607', row: 606 }, // Litwick
-  { id: 608, slug: '0608', row: 607 }, // Lampent
-  { id: 609, slug: '0609', row: 608 }, // Chandelure
-  { id: 610, slug: '0610', row: 609 }, // Axew
-  { id: 611, slug: '0611', row: 610 }, // Fraxure
-  { id: 612, slug: '0612', row: 611 }, // Haxorus
-  { id: 613, slug: '0613', row: 612 }, // Cubchoo
-  { id: 614, slug: '0614', row: 613 }, // Beartic
-  { id: 615, slug: '0615', row: 614 }, // Cryogonal
-  { id: 616, slug: '0616', row: 615 }, // Shelmet
-  { id: 617, slug: '0617', row: 616 }, // Accelgor
-  { id: 619, slug: '0619', row: 618, shootAnim: 'Charge' }, // Mienfoo, no Shoot anim on PMDCollab
-  { id: 620, slug: '0620', row: 619 }, // Mienshao
-  { id: 621, slug: '0621', row: 620 }, // Druddigon
-  { id: 622, slug: '0622', row: 621 }, // Golett
-  { id: 623, slug: '0623', row: 622 }, // Golurk
-  { id: 624, slug: '0624', row: 623 }, // Pawniard
-  { id: 625, slug: '0625', row: 624 }, // Bisharp
-  { id: 626, slug: '0626', row: 625 }, // Bouffalant
-  { id: 627, slug: '0627', row: 626 }, // Rufflet
-  { id: 628, slug: '0628', row: 627 }, // Braviary
-  { id: 629, slug: '0629', row: 628 }, // Vullaby
-  { id: 630, slug: '0630', row: 629 }, // Mandibuzz
-  { id: 631, slug: '0631', row: 630 }, // Heatmor
-  { id: 632, slug: '0632', row: 631 }, // Durant
-  { id: 633, slug: '0633', row: 632 }, // Deino
-  { id: 634, slug: '0634', row: 633 }, // Zweilous
-  { id: 635, slug: '0635', row: 634 }, // Hydreigon
-  { id: 636, slug: '0636', row: 635 }, // Larvesta
-  { id: 637, slug: '0637', row: 636 }, // Volcarona
-  { id: 638, slug: '0638', row: 637 }, // Cobalion
-  { id: 639, slug: '0639', row: 638 }, // Terrakion
-  { id: 640, slug: '0640', row: 639 }, // Virizion
-  { id: 641, slug: '0641', row: 640 }, // Tornadus
-  { id: 642, slug: '0642', row: 641 }, // Thundurus
-  { id: 643, slug: '0643', row: 642 }, // Reshiram
-  { id: 644, slug: '0644', row: 643 }, // Zekrom
-  { id: 645, slug: '0645', row: 644 }, // Landorus
-  { id: 646, slug: '0646', row: 645 }, // Kyurem
-  { id: 647, slug: '0647', row: 646 }, // Keldeo
-  { id: 648, slug: '0648', row: 647 }, // Meloetta
-  { id: 649, slug: '0649', row: 648 }, // Genesect
-
-  // Castform's Forecast forms (see abilities.ts) - cosmetic-only alternate
-  // sprites, keyed by synthetic id (base dex id * 100 + PMDCollab form
-  // index) rather than a real dex id, since Forecast never changes species.
-  // No portrait pack fetched for these (row unused, see extract-real-
-  // portraits.mjs's existsSync skip) - only the overworld sprite matters.
-  { id: 35101, slug: '0351-sunny', row: -1 }, // Castform (Sunny Form)
-  { id: 35102, slug: '0351-rainy', row: -1 }, // Castform (Rainy Form)
-  { id: 35103, slug: '0351-snowy', row: -1 }, // Castform (Snowy Form)
+  { speciesId: 'bulbasaur', num: 1, slug: 'bulbasaur', assetId: '0001' },
+  { speciesId: 'ivysaur', num: 2, slug: 'ivysaur', assetId: '0002' },
+  { speciesId: 'venusaur', num: 3, slug: 'venusaur', assetId: '0003' },
+  { speciesId: 'charmander', num: 4, slug: 'charmander', assetId: '0004' },
+  { speciesId: 'charmeleon', num: 5, slug: 'charmeleon', assetId: '0005' },
+  { speciesId: 'charizard', num: 6, slug: 'charizard', assetId: '0006' },
+  { speciesId: 'squirtle', num: 7, slug: 'squirtle', assetId: '0007' },
+  { speciesId: 'wartortle', num: 8, slug: 'wartortle', assetId: '0008' },
+  { speciesId: 'blastoise', num: 9, slug: 'blastoise', assetId: '0009' },
+  { speciesId: 'caterpie', num: 10, slug: 'caterpie', assetId: '0010' },
+  { speciesId: 'metapod', num: 11, slug: 'metapod', assetId: '0011' },
+  { speciesId: 'butterfree', num: 12, slug: 'butterfree', assetId: '0012' },
+  { speciesId: 'weedle', num: 13, slug: 'weedle', assetId: '0013' },
+  { speciesId: 'kakuna', num: 14, slug: 'kakuna', assetId: '0014' },
+  { speciesId: 'beedrill', num: 15, slug: 'beedrill', assetId: '0015' },
+  { speciesId: 'pidgey', num: 16, slug: 'pidgey', assetId: '0016' },
+  { speciesId: 'pidgeotto', num: 17, slug: 'pidgeotto', assetId: '0017' },
+  { speciesId: 'pidgeot', num: 18, slug: 'pidgeot', assetId: '0018' },
+  { speciesId: 'rattata', num: 19, slug: 'rattata', assetId: '0019' },
+  { speciesId: 'rattataalola', num: 19, formIndex: 1, slug: '0019-alola', assetId: '0019/0001' },
+  { speciesId: 'raticate', num: 20, slug: 'raticate', assetId: '0020' },
+  { speciesId: 'raticatealola', num: 20, formIndex: 1, slug: '0020-alola', assetId: '0020/0001' },
+  { speciesId: 'spearow', num: 21, slug: 'spearow', assetId: '0021' },
+  { speciesId: 'fearow', num: 22, slug: 'fearow', assetId: '0022' },
+  { speciesId: 'ekans', num: 23, slug: 'ekans', assetId: '0023' },
+  { speciesId: 'arbok', num: 24, slug: 'arbok', assetId: '0024' },
+  { speciesId: 'pikachu', num: 25, slug: 'pikachu', assetId: '0025' },
+  { speciesId: 'pikachucosplay', num: 25, formIndex: 7, slug: '0025-cosplay', assetId: '0025/0007' },
+  { speciesId: 'pikachulibre', num: 25, formIndex: 6, slug: '0025-libre', assetId: '0025/0006' },
+  { speciesId: 'raichu', num: 26, slug: 'raichu', assetId: '0026' },
+  { speciesId: 'raichualola', num: 26, formIndex: 1, slug: '0026-alola', assetId: '0026/0001' },
+  { speciesId: 'sandshrew', num: 27, slug: 'sandshrew', assetId: '0027' },
+  { speciesId: 'sandshrewalola', num: 27, formIndex: 1, slug: '0027-alola', assetId: '0027/0001' },
+  { speciesId: 'sandslash', num: 28, slug: 'sandslash', assetId: '0028' },
+  { speciesId: 'sandslashalola', num: 28, formIndex: 1, slug: '0028-alola', assetId: '0028/0001' },
+  { speciesId: 'nidoranf', num: 29, slug: 'nidoran-f', assetId: '0029' },
+  { speciesId: 'nidorina', num: 30, slug: 'nidorina', assetId: '0030' },
+  { speciesId: 'nidoqueen', num: 31, slug: 'nidoqueen', assetId: '0031' },
+  { speciesId: 'nidoranm', num: 32, slug: 'nidoran-m', assetId: '0032' },
+  { speciesId: 'nidorino', num: 33, slug: 'nidorino', assetId: '0033' },
+  { speciesId: 'nidoking', num: 34, slug: 'nidoking', assetId: '0034' },
+  { speciesId: 'clefairy', num: 35, slug: 'clefairy', assetId: '0035', shootAnim: 'Charge' },
+  { speciesId: 'clefable', num: 36, slug: 'clefable', assetId: '0036', shootAnim: 'Charge' },
+  { speciesId: 'vulpix', num: 37, slug: 'vulpix', assetId: '0037' },
+  { speciesId: 'vulpixalola', num: 37, formIndex: 1, slug: '0037-alola', assetId: '0037/0001' },
+  { speciesId: 'ninetales', num: 38, slug: 'ninetales', assetId: '0038' },
+  { speciesId: 'ninetalesalola', num: 38, formIndex: 1, slug: '0038-alola', assetId: '0038/0001' },
+  { speciesId: 'jigglypuff', num: 39, slug: 'jigglypuff', assetId: '0039' },
+  { speciesId: 'wigglytuff', num: 40, slug: 'wigglytuff', assetId: '0040' },
+  { speciesId: 'zubat', num: 41, slug: 'zubat', assetId: '0041' },
+  { speciesId: 'golbat', num: 42, slug: 'golbat', assetId: '0042' },
+  { speciesId: 'oddish', num: 43, slug: 'oddish', assetId: '0043' },
+  { speciesId: 'gloom', num: 44, slug: 'gloom', assetId: '0044' },
+  { speciesId: 'vileplume', num: 45, slug: 'vileplume', assetId: '0045' },
+  { speciesId: 'paras', num: 46, slug: 'paras', assetId: '0046' },
+  { speciesId: 'parasect', num: 47, slug: 'parasect', assetId: '0047' },
+  { speciesId: 'venonat', num: 48, slug: 'venonat', assetId: '0048' },
+  { speciesId: 'venomoth', num: 49, slug: 'venomoth', assetId: '0049' },
+  { speciesId: 'diglett', num: 50, slug: 'diglett', assetId: '0050' },
+  { speciesId: 'diglettalola', num: 50, formIndex: 1, slug: '0050-alola', assetId: '0050/0001' },
+  { speciesId: 'dugtrio', num: 51, slug: 'dugtrio', assetId: '0051' },
+  { speciesId: 'dugtrioalola', num: 51, formIndex: 1, slug: '0051-alola', assetId: '0051/0001' },
+  { speciesId: 'meowth', num: 52, slug: 'meowth', assetId: '0052' },
+  { speciesId: 'meowthalola', num: 52, formIndex: 1, slug: '0052-alola', assetId: '0052/0001' },
+  { speciesId: 'meowthgalar', num: 52, formIndex: 2, slug: '0052-galar', assetId: '0052/0002' },
+  { speciesId: 'persian', num: 53, slug: 'persian', assetId: '0053' },
+  { speciesId: 'persianalola', num: 53, formIndex: 1, slug: '0053-alola', assetId: '0053/0001' },
+  { speciesId: 'psyduck', num: 54, slug: 'psyduck', assetId: '0054' },
+  { speciesId: 'golduck', num: 55, slug: 'golduck', assetId: '0055' },
+  { speciesId: 'mankey', num: 56, slug: 'mankey', assetId: '0056' },
+  { speciesId: 'primeape', num: 57, slug: 'primeape', assetId: '0057' },
+  { speciesId: 'growlithe', num: 58, slug: 'growlithe', assetId: '0058' },
+  { speciesId: 'growlithehisui', num: 58, formIndex: 1, slug: '0058-hisui', assetId: '0058/0001' },
+  { speciesId: 'arcanine', num: 59, slug: 'arcanine', assetId: '0059' },
+  { speciesId: 'arcaninehisui', num: 59, formIndex: 1, slug: '0059-hisui', assetId: '0059/0001' },
+  { speciesId: 'poliwag', num: 60, slug: 'poliwag', assetId: '0060' },
+  { speciesId: 'poliwhirl', num: 61, slug: 'poliwhirl', assetId: '0061' },
+  { speciesId: 'poliwrath', num: 62, slug: 'poliwrath', assetId: '0062' },
+  { speciesId: 'abra', num: 63, slug: 'abra', assetId: '0063' },
+  { speciesId: 'kadabra', num: 64, slug: 'kadabra', assetId: '0064' },
+  { speciesId: 'alakazam', num: 65, slug: 'alakazam', assetId: '0065' },
+  { speciesId: 'machop', num: 66, slug: 'machop', assetId: '0066' },
+  { speciesId: 'machoke', num: 67, slug: 'machoke', assetId: '0067' },
+  { speciesId: 'machamp', num: 68, slug: 'machamp', assetId: '0068' },
+  { speciesId: 'bellsprout', num: 69, slug: 'bellsprout', assetId: '0069' },
+  { speciesId: 'weepinbell', num: 70, slug: 'weepinbell', assetId: '0070' },
+  { speciesId: 'victreebel', num: 71, slug: 'victreebel', assetId: '0071' },
+  { speciesId: 'tentacool', num: 72, slug: 'tentacool', assetId: '0072' },
+  { speciesId: 'tentacruel', num: 73, slug: 'tentacruel', assetId: '0073' },
+  { speciesId: 'geodude', num: 74, slug: 'geodude', assetId: '0074' },
+  { speciesId: 'geodudealola', num: 74, formIndex: 1, slug: '0074-alola', assetId: '0074/0001' },
+  { speciesId: 'graveler', num: 75, slug: 'graveler', assetId: '0075' },
+  { speciesId: 'graveleralola', num: 75, formIndex: 1, slug: '0075-alola', assetId: '0075/0001' },
+  { speciesId: 'golem', num: 76, slug: 'golem', assetId: '0076' },
+  { speciesId: 'golemalola', num: 76, formIndex: 1, slug: '0076-alola', assetId: '0076/0001' },
+  { speciesId: 'ponyta', num: 77, slug: 'ponyta', assetId: '0077' },
+  { speciesId: 'ponytagalar', num: 77, formIndex: 1, slug: '0077-galar', assetId: '0077/0001' },
+  { speciesId: 'rapidash', num: 78, slug: 'rapidash', assetId: '0078' },
+  { speciesId: 'rapidashgalar', num: 78, formIndex: 1, slug: '0078-galar', assetId: '0078/0001' },
+  { speciesId: 'slowpoke', num: 79, slug: 'slowpoke', assetId: '0079' },
+  { speciesId: 'slowpokegalar', num: 79, formIndex: 1, slug: '0079-galar', assetId: '0079/0001' },
+  { speciesId: 'slowbro', num: 80, slug: 'slowbro', assetId: '0080' },
+  { speciesId: 'slowbrogalar', num: 80, formIndex: 1, slug: '0080-galar', assetId: '0080/0001' },
+  { speciesId: 'magnemite', num: 81, slug: 'magnemite', assetId: '0081' },
+  { speciesId: 'magneton', num: 82, slug: 'magneton', assetId: '0082' },
+  { speciesId: 'farfetchd', num: 83, slug: 'farfetchd', assetId: '0083' },
+  { speciesId: 'farfetchdgalar', num: 83, formIndex: 1, slug: '0083-galar', assetId: '0083/0001' },
+  { speciesId: 'doduo', num: 84, slug: 'doduo', assetId: '0084' },
+  { speciesId: 'dodrio', num: 85, slug: 'dodrio', assetId: '0085' },
+  { speciesId: 'seel', num: 86, slug: 'seel', assetId: '0086' },
+  { speciesId: 'dewgong', num: 87, slug: 'dewgong', assetId: '0087' },
+  { speciesId: 'grimer', num: 88, slug: 'grimer', assetId: '0088' },
+  { speciesId: 'grimeralola', num: 88, formIndex: 1, slug: '0088-alola', assetId: '0088/0001' },
+  { speciesId: 'muk', num: 89, slug: 'muk', assetId: '0089' },
+  { speciesId: 'mukalola', num: 89, formIndex: 1, slug: '0089-alola', assetId: '0089/0001' },
+  { speciesId: 'shellder', num: 90, slug: 'shellder', assetId: '0090' },
+  { speciesId: 'cloyster', num: 91, slug: 'cloyster', assetId: '0091' },
+  { speciesId: 'gastly', num: 92, slug: 'gastly', assetId: '0092' },
+  { speciesId: 'haunter', num: 93, slug: 'haunter', assetId: '0093' },
+  { speciesId: 'gengar', num: 94, slug: 'gengar', assetId: '0094' },
+  { speciesId: 'onix', num: 95, slug: 'onix', assetId: '0095' },
+  { speciesId: 'drowzee', num: 96, slug: 'drowzee', assetId: '0096' },
+  { speciesId: 'hypno', num: 97, slug: 'hypno', assetId: '0097' },
+  { speciesId: 'krabby', num: 98, slug: 'krabby', assetId: '0098' },
+  { speciesId: 'kingler', num: 99, slug: 'kingler', assetId: '0099' },
+  { speciesId: 'voltorb', num: 100, slug: 'voltorb', assetId: '0100' },
+  { speciesId: 'voltorbhisui', num: 100, formIndex: 1, slug: '0100-hisui', assetId: '0100/0001' },
+  { speciesId: 'electrode', num: 101, slug: 'electrode', assetId: '0101' },
+  { speciesId: 'electrodehisui', num: 101, formIndex: 1, slug: '0101-hisui', assetId: '0101/0001' },
+  { speciesId: 'exeggcute', num: 102, slug: 'exeggcute', assetId: '0102' },
+  { speciesId: 'exeggutor', num: 103, slug: 'exeggutor', assetId: '0103' },
+  { speciesId: 'exeggutoralola', num: 103, formIndex: 1, slug: '0103-alola', assetId: '0103/0001' },
+  { speciesId: 'cubone', num: 104, slug: 'cubone', assetId: '0104' },
+  { speciesId: 'marowak', num: 105, slug: 'marowak', assetId: '0105' },
+  { speciesId: 'marowakalola', num: 105, formIndex: 1, slug: '0105-alola', assetId: '0105/0001' },
+  { speciesId: 'hitmonlee', num: 106, slug: 'hitmonlee', assetId: '0106' },
+  { speciesId: 'hitmonchan', num: 107, slug: 'hitmonchan', assetId: '0107' },
+  { speciesId: 'lickitung', num: 108, slug: 'lickitung', assetId: '0108' },
+  { speciesId: 'koffing', num: 109, slug: 'koffing', assetId: '0109' },
+  { speciesId: 'weezing', num: 110, slug: 'weezing', assetId: '0110' },
+  { speciesId: 'weezinggalar', num: 110, formIndex: 1, slug: '0110-galar', assetId: '0110/0001' },
+  { speciesId: 'rhyhorn', num: 111, slug: 'rhyhorn', assetId: '0111' },
+  { speciesId: 'rhydon', num: 112, slug: 'rhydon', assetId: '0112' },
+  { speciesId: 'chansey', num: 113, slug: 'chansey', assetId: '0113' },
+  { speciesId: 'tangela', num: 114, slug: 'tangela', assetId: '0114' },
+  { speciesId: 'kangaskhan', num: 115, slug: 'kangaskhan', assetId: '0115' },
+  { speciesId: 'horsea', num: 116, slug: 'horsea', assetId: '0116' },
+  { speciesId: 'seadra', num: 117, slug: 'seadra', assetId: '0117' },
+  { speciesId: 'goldeen', num: 118, slug: 'goldeen', assetId: '0118' },
+  { speciesId: 'seaking', num: 119, slug: 'seaking', assetId: '0119' },
+  { speciesId: 'staryu', num: 120, slug: 'staryu', assetId: '0120' },
+  { speciesId: 'starmie', num: 121, slug: 'starmie', assetId: '0121' },
+  { speciesId: 'mrmime', num: 122, slug: 'mr-mime', assetId: '0122' },
+  { speciesId: 'mrmimegalar', num: 122, formIndex: 1, slug: '0122-galar', assetId: '0122/0001' },
+  { speciesId: 'scyther', num: 123, slug: 'scyther', assetId: '0123' },
+  { speciesId: 'jynx', num: 124, slug: 'jynx', assetId: '0124' },
+  { speciesId: 'electabuzz', num: 125, slug: 'electabuzz', assetId: '0125' },
+  { speciesId: 'magmar', num: 126, slug: 'magmar', assetId: '0126' },
+  { speciesId: 'pinsir', num: 127, slug: 'pinsir', assetId: '0127' },
+  { speciesId: 'tauros', num: 128, slug: 'tauros', assetId: '0128' },
+  { speciesId: 'taurospaldeacombat', num: 128, formIndex: 1, slug: '0128-paldea-combat', assetId: '0128/0001' },
+  { speciesId: 'taurospaldeablaze', num: 128, formIndex: 2, slug: '0128-paldea-blaze', assetId: '0128/0002' },
+  { speciesId: 'taurospaldeaaqua', num: 128, formIndex: 3, slug: '0128-paldea-aqua', assetId: '0128/0003' },
+  { speciesId: 'magikarp', num: 129, slug: 'magikarp', assetId: '0129' },
+  { speciesId: 'gyarados', num: 130, slug: 'gyarados', assetId: '0130' },
+  { speciesId: 'lapras', num: 131, slug: 'lapras', assetId: '0131' },
+  { speciesId: 'ditto', num: 132, slug: 'ditto', assetId: '0132' },
+  { speciesId: 'eevee', num: 133, slug: 'eevee', assetId: '0133' },
+  { speciesId: 'vaporeon', num: 134, slug: 'vaporeon', assetId: '0134' },
+  { speciesId: 'jolteon', num: 135, slug: 'jolteon', assetId: '0135' },
+  { speciesId: 'flareon', num: 136, slug: 'flareon', assetId: '0136' },
+  { speciesId: 'porygon', num: 137, slug: 'porygon', assetId: '0137' },
+  { speciesId: 'omanyte', num: 138, slug: 'omanyte', assetId: '0138' },
+  { speciesId: 'omastar', num: 139, slug: 'omastar', assetId: '0139' },
+  { speciesId: 'kabuto', num: 140, slug: 'kabuto', assetId: '0140' },
+  { speciesId: 'kabutops', num: 141, slug: 'kabutops', assetId: '0141' },
+  { speciesId: 'aerodactyl', num: 142, slug: 'aerodactyl', assetId: '0142' },
+  { speciesId: 'snorlax', num: 143, slug: 'snorlax', assetId: '0143' },
+  { speciesId: 'articuno', num: 144, slug: 'articuno', assetId: '0144' },
+  { speciesId: 'articunogalar', num: 144, formIndex: 1, slug: '0144-galar', assetId: '0144/0001' },
+  { speciesId: 'zapdos', num: 145, slug: 'zapdos', assetId: '0145' },
+  { speciesId: 'zapdosgalar', num: 145, formIndex: 1, slug: '0145-galar', assetId: '0145/0001' },
+  { speciesId: 'moltres', num: 146, slug: 'moltres', assetId: '0146' },
+  { speciesId: 'moltresgalar', num: 146, formIndex: 1, slug: '0146-galar', assetId: '0146/0001', shootAnim: 'Charge' },
+  { speciesId: 'dratini', num: 147, slug: 'dratini', assetId: '0147' },
+  { speciesId: 'dragonair', num: 148, slug: 'dragonair', assetId: '0148' },
+  { speciesId: 'dragonite', num: 149, slug: 'dragonite', assetId: '0149' },
+  { speciesId: 'mewtwo', num: 150, slug: 'mewtwo', assetId: '0150' },
+  { speciesId: 'mew', num: 151, slug: 'mew', assetId: '0151' },
+  { speciesId: 'chikorita', num: 152, slug: 'chikorita', assetId: '0152' },
+  { speciesId: 'bayleef', num: 153, slug: 'bayleef', assetId: '0153' },
+  { speciesId: 'meganium', num: 154, slug: 'meganium', assetId: '0154' },
+  { speciesId: 'cyndaquil', num: 155, slug: 'cyndaquil', assetId: '0155' },
+  { speciesId: 'quilava', num: 156, slug: 'quilava', assetId: '0156' },
+  { speciesId: 'typhlosion', num: 157, slug: 'typhlosion', assetId: '0157' },
+  { speciesId: 'typhlosionhisui', num: 157, formIndex: 1, slug: '0157-hisui', assetId: '0157/0001' },
+  { speciesId: 'totodile', num: 158, slug: 'totodile', assetId: '0158' },
+  { speciesId: 'croconaw', num: 159, slug: 'croconaw', assetId: '0159' },
+  { speciesId: 'feraligatr', num: 160, slug: 'feraligatr', assetId: '0160' },
+  { speciesId: 'sentret', num: 161, slug: 'sentret', assetId: '0161' },
+  { speciesId: 'furret', num: 162, slug: 'furret', assetId: '0162' },
+  { speciesId: 'hoothoot', num: 163, slug: 'hoothoot', assetId: '0163' },
+  { speciesId: 'noctowl', num: 164, slug: 'noctowl', assetId: '0164' },
+  { speciesId: 'ledyba', num: 165, slug: 'ledyba', assetId: '0165' },
+  { speciesId: 'ledian', num: 166, slug: 'ledian', assetId: '0166' },
+  { speciesId: 'spinarak', num: 167, slug: 'spinarak', assetId: '0167' },
+  { speciesId: 'ariados', num: 168, slug: 'ariados', assetId: '0168' },
+  { speciesId: 'crobat', num: 169, slug: 'crobat', assetId: '0169' },
+  { speciesId: 'chinchou', num: 170, slug: 'chinchou', assetId: '0170' },
+  { speciesId: 'lanturn', num: 171, slug: 'lanturn', assetId: '0171' },
+  { speciesId: 'pichu', num: 172, slug: 'pichu', assetId: '0172', shootAnim: 'Charge' },
+  { speciesId: 'pichuspikyeared', num: 172, formIndex: 1, slug: '0172-spiky-eared', assetId: '0172/0001', shootAnim: 'Charge' },
+  { speciesId: 'cleffa', num: 173, slug: 'cleffa', assetId: '0173' },
+  { speciesId: 'igglybuff', num: 174, slug: 'igglybuff', assetId: '0174' },
+  { speciesId: 'togepi', num: 175, slug: 'togepi', assetId: '0175', shootAnim: 'Charge' },
+  { speciesId: 'togetic', num: 176, slug: 'togetic', assetId: '0176', shootAnim: 'Charge' },
+  { speciesId: 'natu', num: 177, slug: 'natu', assetId: '0177' },
+  { speciesId: 'xatu', num: 178, slug: 'xatu', assetId: '0178' },
+  { speciesId: 'mareep', num: 179, slug: 'mareep', assetId: '0179' },
+  { speciesId: 'flaaffy', num: 180, slug: 'flaaffy', assetId: '0180' },
+  { speciesId: 'ampharos', num: 181, slug: 'ampharos', assetId: '0181' },
+  { speciesId: 'bellossom', num: 182, slug: 'bellossom', assetId: '0182' },
+  { speciesId: 'marill', num: 183, slug: 'marill', assetId: '0183' },
+  { speciesId: 'azumarill', num: 184, slug: 'azumarill', assetId: '0184' },
+  { speciesId: 'sudowoodo', num: 185, slug: 'sudowoodo', assetId: '0185' },
+  { speciesId: 'politoed', num: 186, slug: 'politoed', assetId: '0186' },
+  { speciesId: 'hoppip', num: 187, slug: 'hoppip', assetId: '0187' },
+  { speciesId: 'skiploom', num: 188, slug: 'skiploom', assetId: '0188' },
+  { speciesId: 'jumpluff', num: 189, slug: 'jumpluff', assetId: '0189' },
+  { speciesId: 'aipom', num: 190, slug: 'aipom', assetId: '0190' },
+  { speciesId: 'sunkern', num: 191, slug: 'sunkern', assetId: '0191' },
+  { speciesId: 'sunflora', num: 192, slug: 'sunflora', assetId: '0192' },
+  { speciesId: 'yanma', num: 193, slug: 'yanma', assetId: '0193' },
+  { speciesId: 'wooper', num: 194, slug: 'wooper', assetId: '0194' },
+  { speciesId: 'wooperpaldea', num: 194, formIndex: 2, slug: '0194-paldea', assetId: '0194/0002' },
+  { speciesId: 'quagsire', num: 195, slug: 'quagsire', assetId: '0195' },
+  { speciesId: 'espeon', num: 196, slug: 'espeon', assetId: '0196' },
+  { speciesId: 'umbreon', num: 197, slug: 'umbreon', assetId: '0197' },
+  { speciesId: 'murkrow', num: 198, slug: 'murkrow', assetId: '0198' },
+  { speciesId: 'slowking', num: 199, slug: 'slowking', assetId: '0199' },
+  { speciesId: 'slowkinggalar', num: 199, formIndex: 1, slug: '0199-galar', assetId: '0199/0001' },
+  { speciesId: 'misdreavus', num: 200, slug: 'misdreavus', assetId: '0200' },
+  { speciesId: 'unown', num: 201, slug: 'unown', assetId: '0201' },
+  { speciesId: 'wobbuffet', num: 202, slug: 'wobbuffet', assetId: '0202' },
+  { speciesId: 'girafarig', num: 203, slug: 'girafarig', assetId: '0203' },
+  { speciesId: 'pineco', num: 204, slug: 'pineco', assetId: '0204' },
+  { speciesId: 'forretress', num: 205, slug: 'forretress', assetId: '0205' },
+  { speciesId: 'dunsparce', num: 206, slug: 'dunsparce', assetId: '0206' },
+  { speciesId: 'gligar', num: 207, slug: 'gligar', assetId: '0207' },
+  { speciesId: 'steelix', num: 208, slug: 'steelix', assetId: '0208' },
+  { speciesId: 'snubbull', num: 209, slug: 'snubbull', assetId: '0209' },
+  { speciesId: 'granbull', num: 210, slug: 'granbull', assetId: '0210' },
+  { speciesId: 'qwilfish', num: 211, slug: 'qwilfish', assetId: '0211' },
+  { speciesId: 'qwilfishhisui', num: 211, formIndex: 1, slug: '0211-hisui', assetId: '0211/0001' },
+  { speciesId: 'scizor', num: 212, slug: 'scizor', assetId: '0212' },
+  { speciesId: 'shuckle', num: 213, slug: 'shuckle', assetId: '0213' },
+  { speciesId: 'heracross', num: 214, slug: 'heracross', assetId: '0214' },
+  { speciesId: 'sneasel', num: 215, slug: 'sneasel', assetId: '0215' },
+  { speciesId: 'sneaselhisui', num: 215, formIndex: 1, slug: '0215-hisui', assetId: '0215/0001' },
+  { speciesId: 'teddiursa', num: 216, slug: 'teddiursa', assetId: '0216' },
+  { speciesId: 'ursaring', num: 217, slug: 'ursaring', assetId: '0217' },
+  { speciesId: 'slugma', num: 218, slug: 'slugma', assetId: '0218' },
+  { speciesId: 'magcargo', num: 219, slug: 'magcargo', assetId: '0219' },
+  { speciesId: 'swinub', num: 220, slug: 'swinub', assetId: '0220' },
+  { speciesId: 'piloswine', num: 221, slug: 'piloswine', assetId: '0221' },
+  { speciesId: 'corsola', num: 222, slug: 'corsola', assetId: '0222' },
+  { speciesId: 'corsolagalar', num: 222, formIndex: 1, slug: '0222-galar', assetId: '0222/0001' },
+  { speciesId: 'remoraid', num: 223, slug: 'remoraid', assetId: '0223' },
+  { speciesId: 'octillery', num: 224, slug: 'octillery', assetId: '0224' },
+  { speciesId: 'delibird', num: 225, slug: 'delibird', assetId: '0225' },
+  { speciesId: 'mantine', num: 226, slug: 'mantine', assetId: '0226' },
+  { speciesId: 'skarmory', num: 227, slug: 'skarmory', assetId: '0227' },
+  { speciesId: 'houndour', num: 228, slug: 'houndour', assetId: '0228' },
+  { speciesId: 'houndoom', num: 229, slug: 'houndoom', assetId: '0229' },
+  { speciesId: 'kingdra', num: 230, slug: 'kingdra', assetId: '0230' },
+  { speciesId: 'phanpy', num: 231, slug: 'phanpy', assetId: '0231' },
+  { speciesId: 'donphan', num: 232, slug: 'donphan', assetId: '0232' },
+  { speciesId: 'porygon2', num: 233, slug: 'porygon2', assetId: '0233' },
+  { speciesId: 'stantler', num: 234, slug: 'stantler', assetId: '0234' },
+  { speciesId: 'smeargle', num: 235, slug: 'smeargle', assetId: '0235' },
+  { speciesId: 'tyrogue', num: 236, slug: 'tyrogue', assetId: '0236' },
+  { speciesId: 'hitmontop', num: 237, slug: 'hitmontop', assetId: '0237' },
+  { speciesId: 'smoochum', num: 238, slug: 'smoochum', assetId: '0238' },
+  { speciesId: 'elekid', num: 239, slug: 'elekid', assetId: '0239' },
+  { speciesId: 'magby', num: 240, slug: 'magby', assetId: '0240' },
+  { speciesId: 'miltank', num: 241, slug: 'miltank', assetId: '0241' },
+  { speciesId: 'blissey', num: 242, slug: 'blissey', assetId: '0242' },
+  { speciesId: 'raikou', num: 243, slug: 'raikou', assetId: '0243' },
+  { speciesId: 'entei', num: 244, slug: 'entei', assetId: '0244' },
+  { speciesId: 'suicune', num: 245, slug: 'suicune', assetId: '0245' },
+  { speciesId: 'larvitar', num: 246, slug: 'larvitar', assetId: '0246' },
+  { speciesId: 'pupitar', num: 247, slug: 'pupitar', assetId: '0247' },
+  { speciesId: 'tyranitar', num: 248, slug: 'tyranitar', assetId: '0248' },
+  { speciesId: 'lugia', num: 249, slug: 'lugia', assetId: '0249' },
+  { speciesId: 'hooh', num: 250, slug: 'ho-oh', assetId: '0250' },
+  { speciesId: 'celebi', num: 251, slug: 'celebi', assetId: '0251' },
+  { speciesId: 'treecko', num: 252, slug: '0252', assetId: '0252' },
+  { speciesId: 'grovyle', num: 253, slug: '0253', assetId: '0253' },
+  { speciesId: 'sceptile', num: 254, slug: '0254', assetId: '0254' },
+  { speciesId: 'torchic', num: 255, slug: '0255', assetId: '0255' },
+  { speciesId: 'combusken', num: 256, slug: '0256', assetId: '0256' },
+  { speciesId: 'blaziken', num: 257, slug: '0257', assetId: '0257' },
+  { speciesId: 'mudkip', num: 258, slug: '0258', assetId: '0258' },
+  { speciesId: 'marshtomp', num: 259, slug: '0259', assetId: '0259' },
+  { speciesId: 'swampert', num: 260, slug: '0260', assetId: '0260' },
+  { speciesId: 'poochyena', num: 261, slug: '0261', assetId: '0261' },
+  { speciesId: 'mightyena', num: 262, slug: '0262', assetId: '0262' },
+  { speciesId: 'zigzagoon', num: 263, slug: '0263', assetId: '0263' },
+  { speciesId: 'zigzagoongalar', num: 263, formIndex: 1, slug: '0263-galar', assetId: '0263/0001' },
+  { speciesId: 'linoone', num: 264, slug: '0264', assetId: '0264' },
+  { speciesId: 'linoonegalar', num: 264, formIndex: 1, slug: '0264-galar', assetId: '0264/0001' },
+  { speciesId: 'wurmple', num: 265, slug: '0265', assetId: '0265' },
+  { speciesId: 'silcoon', num: 266, slug: '0266', assetId: '0266' },
+  { speciesId: 'beautifly', num: 267, slug: '0267', assetId: '0267' },
+  { speciesId: 'cascoon', num: 268, slug: '0268', assetId: '0268' },
+  { speciesId: 'dustox', num: 269, slug: '0269', assetId: '0269' },
+  { speciesId: 'lotad', num: 270, slug: '0270', assetId: '0270' },
+  { speciesId: 'lombre', num: 271, slug: '0271', assetId: '0271' },
+  { speciesId: 'ludicolo', num: 272, slug: '0272', assetId: '0272' },
+  { speciesId: 'seedot', num: 273, slug: '0273', assetId: '0273' },
+  { speciesId: 'nuzleaf', num: 274, slug: '0274', assetId: '0274' },
+  { speciesId: 'shiftry', num: 275, slug: '0275', assetId: '0275' },
+  { speciesId: 'taillow', num: 276, slug: '0276', assetId: '0276' },
+  { speciesId: 'swellow', num: 277, slug: '0277', assetId: '0277' },
+  { speciesId: 'wingull', num: 278, slug: '0278', assetId: '0278' },
+  { speciesId: 'pelipper', num: 279, slug: '0279', assetId: '0279' },
+  { speciesId: 'ralts', num: 280, slug: '0280', assetId: '0280' },
+  { speciesId: 'kirlia', num: 281, slug: '0281', assetId: '0281' },
+  { speciesId: 'gardevoir', num: 282, slug: '0282', assetId: '0282' },
+  { speciesId: 'surskit', num: 283, slug: '0283', assetId: '0283' },
+  { speciesId: 'masquerain', num: 284, slug: '0284', assetId: '0284' },
+  { speciesId: 'shroomish', num: 285, slug: '0285', assetId: '0285' },
+  { speciesId: 'breloom', num: 286, slug: '0286', assetId: '0286' },
+  { speciesId: 'slakoth', num: 287, slug: '0287', assetId: '0287' },
+  { speciesId: 'vigoroth', num: 288, slug: '0288', assetId: '0288' },
+  { speciesId: 'slaking', num: 289, slug: '0289', assetId: '0289' },
+  { speciesId: 'nincada', num: 290, slug: '0290', assetId: '0290' },
+  { speciesId: 'ninjask', num: 291, slug: '0291', assetId: '0291' },
+  { speciesId: 'shedinja', num: 292, slug: '0292', assetId: '0292' },
+  { speciesId: 'whismur', num: 293, slug: '0293', assetId: '0293' },
+  { speciesId: 'loudred', num: 294, slug: '0294', assetId: '0294' },
+  { speciesId: 'exploud', num: 295, slug: '0295', assetId: '0295' },
+  { speciesId: 'makuhita', num: 296, slug: '0296', assetId: '0296' },
+  { speciesId: 'hariyama', num: 297, slug: '0297', assetId: '0297' },
+  { speciesId: 'azurill', num: 298, slug: '0298', assetId: '0298' },
+  { speciesId: 'nosepass', num: 299, slug: '0299', assetId: '0299' },
+  { speciesId: 'skitty', num: 300, slug: '0300', assetId: '0300' },
+  { speciesId: 'delcatty', num: 301, slug: '0301', assetId: '0301' },
+  { speciesId: 'sableye', num: 302, slug: '0302', assetId: '0302' },
+  { speciesId: 'mawile', num: 303, slug: '0303', assetId: '0303' },
+  { speciesId: 'aron', num: 304, slug: '0304', assetId: '0304' },
+  { speciesId: 'lairon', num: 305, slug: '0305', assetId: '0305' },
+  { speciesId: 'aggron', num: 306, slug: '0306', assetId: '0306' },
+  { speciesId: 'meditite', num: 307, slug: '0307', assetId: '0307' },
+  { speciesId: 'medicham', num: 308, slug: '0308', assetId: '0308' },
+  { speciesId: 'electrike', num: 309, slug: '0309', assetId: '0309' },
+  { speciesId: 'manectric', num: 310, slug: '0310', assetId: '0310' },
+  { speciesId: 'plusle', num: 311, slug: '0311', assetId: '0311' },
+  { speciesId: 'minun', num: 312, slug: '0312', assetId: '0312' },
+  { speciesId: 'volbeat', num: 313, slug: '0313', assetId: '0313' },
+  { speciesId: 'illumise', num: 314, slug: '0314', assetId: '0314' },
+  { speciesId: 'roselia', num: 315, slug: '0315', assetId: '0315' },
+  { speciesId: 'gulpin', num: 316, slug: '0316', assetId: '0316' },
+  { speciesId: 'swalot', num: 317, slug: '0317', assetId: '0317' },
+  { speciesId: 'carvanha', num: 318, slug: '0318', assetId: '0318' },
+  { speciesId: 'sharpedo', num: 319, slug: '0319', assetId: '0319' },
+  { speciesId: 'wailmer', num: 320, slug: '0320', assetId: '0320' },
+  { speciesId: 'wailord', num: 321, slug: '0321', assetId: '0321' },
+  { speciesId: 'numel', num: 322, slug: '0322', assetId: '0322' },
+  { speciesId: 'camerupt', num: 323, slug: '0323', assetId: '0323' },
+  { speciesId: 'torkoal', num: 324, slug: '0324', assetId: '0324' },
+  { speciesId: 'spoink', num: 325, slug: '0325', assetId: '0325' },
+  { speciesId: 'grumpig', num: 326, slug: '0326', assetId: '0326' },
+  { speciesId: 'spinda', num: 327, slug: '0327', assetId: '0327' },
+  { speciesId: 'trapinch', num: 328, slug: '0328', assetId: '0328' },
+  { speciesId: 'vibrava', num: 329, slug: '0329', assetId: '0329' },
+  { speciesId: 'flygon', num: 330, slug: '0330', assetId: '0330' },
+  { speciesId: 'cacnea', num: 331, slug: '0331', assetId: '0331' },
+  { speciesId: 'cacturne', num: 332, slug: '0332', assetId: '0332' },
+  { speciesId: 'swablu', num: 333, slug: '0333', assetId: '0333' },
+  { speciesId: 'altaria', num: 334, slug: '0334', assetId: '0334' },
+  { speciesId: 'zangoose', num: 335, slug: '0335', assetId: '0335' },
+  { speciesId: 'seviper', num: 336, slug: '0336', assetId: '0336' },
+  { speciesId: 'lunatone', num: 337, slug: '0337', assetId: '0337' },
+  { speciesId: 'solrock', num: 338, slug: '0338', assetId: '0338' },
+  { speciesId: 'barboach', num: 339, slug: '0339', assetId: '0339' },
+  { speciesId: 'whiscash', num: 340, slug: '0340', assetId: '0340' },
+  { speciesId: 'corphish', num: 341, slug: '0341', assetId: '0341' },
+  { speciesId: 'crawdaunt', num: 342, slug: '0342', assetId: '0342' },
+  { speciesId: 'baltoy', num: 343, slug: '0343', assetId: '0343' },
+  { speciesId: 'claydol', num: 344, slug: '0344', assetId: '0344' },
+  { speciesId: 'lileep', num: 345, slug: '0345', assetId: '0345' },
+  { speciesId: 'cradily', num: 346, slug: '0346', assetId: '0346' },
+  { speciesId: 'anorith', num: 347, slug: '0347', assetId: '0347' },
+  { speciesId: 'armaldo', num: 348, slug: '0348', assetId: '0348' },
+  { speciesId: 'feebas', num: 349, slug: '0349', assetId: '0349' },
+  { speciesId: 'milotic', num: 350, slug: '0350', assetId: '0350' },
+  { speciesId: 'castform', num: 351, slug: '0351', assetId: '0351' },
+  { speciesId: 'castformsunny', num: 351, formIndex: 1, slug: '0351-sunny', assetId: '0351/0001' },
+  { speciesId: 'castformrainy', num: 351, formIndex: 2, slug: '0351-rainy', assetId: '0351/0002' },
+  { speciesId: 'castformsnowy', num: 351, formIndex: 3, slug: '0351-snowy', assetId: '0351/0003' },
+  { speciesId: 'kecleon', num: 352, slug: '0352', assetId: '0352' },
+  { speciesId: 'shuppet', num: 353, slug: '0353', assetId: '0353' },
+  { speciesId: 'banette', num: 354, slug: '0354', assetId: '0354' },
+  { speciesId: 'duskull', num: 355, slug: '0355', assetId: '0355' },
+  { speciesId: 'dusclops', num: 356, slug: '0356', assetId: '0356' },
+  { speciesId: 'tropius', num: 357, slug: '0357', assetId: '0357' },
+  { speciesId: 'chimecho', num: 358, slug: '0358', assetId: '0358' },
+  { speciesId: 'absol', num: 359, slug: '0359', assetId: '0359' },
+  { speciesId: 'wynaut', num: 360, slug: '0360', assetId: '0360' },
+  { speciesId: 'snorunt', num: 361, slug: '0361', assetId: '0361' },
+  { speciesId: 'glalie', num: 362, slug: '0362', assetId: '0362' },
+  { speciesId: 'spheal', num: 363, slug: '0363', assetId: '0363' },
+  { speciesId: 'sealeo', num: 364, slug: '0364', assetId: '0364' },
+  { speciesId: 'walrein', num: 365, slug: '0365', assetId: '0365' },
+  { speciesId: 'clamperl', num: 366, slug: '0366', assetId: '0366' },
+  { speciesId: 'huntail', num: 367, slug: '0367', assetId: '0367' },
+  { speciesId: 'gorebyss', num: 368, slug: '0368', assetId: '0368' },
+  { speciesId: 'relicanth', num: 369, slug: '0369', assetId: '0369' },
+  { speciesId: 'luvdisc', num: 370, slug: '0370', assetId: '0370' },
+  { speciesId: 'bagon', num: 371, slug: '0371', assetId: '0371' },
+  { speciesId: 'shelgon', num: 372, slug: '0372', assetId: '0372' },
+  { speciesId: 'salamence', num: 373, slug: '0373', assetId: '0373' },
+  { speciesId: 'beldum', num: 374, slug: '0374', assetId: '0374' },
+  { speciesId: 'metang', num: 375, slug: '0375', assetId: '0375' },
+  { speciesId: 'metagross', num: 376, slug: '0376', assetId: '0376' },
+  { speciesId: 'regirock', num: 377, slug: '0377', assetId: '0377' },
+  { speciesId: 'regice', num: 378, slug: '0378', assetId: '0378' },
+  { speciesId: 'registeel', num: 379, slug: '0379', assetId: '0379' },
+  { speciesId: 'latias', num: 380, slug: '0380', assetId: '0380' },
+  { speciesId: 'latios', num: 381, slug: '0381', assetId: '0381' },
+  { speciesId: 'kyogre', num: 382, slug: '0382', assetId: '0382' },
+  { speciesId: 'kyogreprimal', num: 382, formIndex: 1, slug: '0382-primal', assetId: '0382/0001' },
+  { speciesId: 'groudon', num: 383, slug: '0383', assetId: '0383' },
+  { speciesId: 'groudonprimal', num: 383, formIndex: 1, slug: '0383-primal', assetId: '0383/0001' },
+  { speciesId: 'rayquaza', num: 384, slug: '0384', assetId: '0384' },
+  { speciesId: 'jirachi', num: 385, slug: '0385', assetId: '0385' },
+  { speciesId: 'deoxys', num: 386, slug: '0386', assetId: '0386' },
+  { speciesId: 'deoxysattack', num: 386, formIndex: 1, slug: '0386-attack', assetId: '0386/0001' },
+  { speciesId: 'deoxysdefense', num: 386, formIndex: 2, slug: '0386-defense', assetId: '0386/0002' },
+  { speciesId: 'deoxysspeed', num: 386, formIndex: 3, slug: '0386-speed', assetId: '0386/0003' },
+  { speciesId: 'turtwig', num: 387, slug: '0387', assetId: '0387' },
+  { speciesId: 'grotle', num: 388, slug: '0388', assetId: '0388' },
+  { speciesId: 'torterra', num: 389, slug: '0389', assetId: '0389' },
+  { speciesId: 'chimchar', num: 390, slug: '0390', assetId: '0390' },
+  { speciesId: 'monferno', num: 391, slug: '0391', assetId: '0391' },
+  { speciesId: 'infernape', num: 392, slug: '0392', assetId: '0392' },
+  { speciesId: 'piplup', num: 393, slug: '0393', assetId: '0393' },
+  { speciesId: 'prinplup', num: 394, slug: '0394', assetId: '0394' },
+  { speciesId: 'empoleon', num: 395, slug: '0395', assetId: '0395' },
+  { speciesId: 'starly', num: 396, slug: '0396', assetId: '0396' },
+  { speciesId: 'staravia', num: 397, slug: '0397', assetId: '0397' },
+  { speciesId: 'staraptor', num: 398, slug: '0398', assetId: '0398' },
+  { speciesId: 'bidoof', num: 399, slug: '0399', assetId: '0399' },
+  { speciesId: 'bibarel', num: 400, slug: '0400', assetId: '0400' },
+  { speciesId: 'kricketot', num: 401, slug: '0401', assetId: '0401' },
+  { speciesId: 'kricketune', num: 402, slug: '0402', assetId: '0402' },
+  { speciesId: 'shinx', num: 403, slug: '0403', assetId: '0403' },
+  { speciesId: 'luxio', num: 404, slug: '0404', assetId: '0404' },
+  { speciesId: 'luxray', num: 405, slug: '0405', assetId: '0405' },
+  { speciesId: 'budew', num: 406, slug: '0406', assetId: '0406' },
+  { speciesId: 'roserade', num: 407, slug: '0407', assetId: '0407' },
+  { speciesId: 'cranidos', num: 408, slug: '0408', assetId: '0408' },
+  { speciesId: 'rampardos', num: 409, slug: '0409', assetId: '0409' },
+  { speciesId: 'shieldon', num: 410, slug: '0410', assetId: '0410' },
+  { speciesId: 'bastiodon', num: 411, slug: '0411', assetId: '0411' },
+  { speciesId: 'burmy', num: 412, slug: '0412', assetId: '0412' },
+  { speciesId: 'burmysandy', num: 412, formIndex: 1, slug: '0412-sandy', assetId: '0412/0001' },
+  { speciesId: 'burmytrash', num: 412, formIndex: 2, slug: '0412-trash', assetId: '0412/0002' },
+  { speciesId: 'wormadam', num: 413, slug: '0413', assetId: '0413' },
+  { speciesId: 'wormadamsandy', num: 413, formIndex: 1, slug: '0413-sandy', assetId: '0413/0001' },
+  { speciesId: 'wormadamtrash', num: 413, formIndex: 2, slug: '0413-trash', assetId: '0413/0002' },
+  { speciesId: 'mothim', num: 414, slug: '0414', assetId: '0414' },
+  { speciesId: 'combee', num: 415, slug: '0415', assetId: '0415' },
+  { speciesId: 'vespiquen', num: 416, slug: '0416', assetId: '0416' },
+  { speciesId: 'pachirisu', num: 417, slug: '0417', assetId: '0417' },
+  { speciesId: 'buizel', num: 418, slug: '0418', assetId: '0418' },
+  { speciesId: 'floatzel', num: 419, slug: '0419', assetId: '0419' },
+  { speciesId: 'cherubi', num: 420, slug: '0420', assetId: '0420' },
+  { speciesId: 'cherrim', num: 421, slug: '0421', assetId: '0421' },
+  { speciesId: 'cherrimsunshine', num: 421, formIndex: 1, slug: '0421-sunshine', assetId: '0421/0001' },
+  { speciesId: 'shellos', num: 422, slug: '0422', assetId: '0422' },
+  { speciesId: 'shelloseast', num: 422, formIndex: 1, slug: '0422-east', assetId: '0422/0001' },
+  { speciesId: 'gastrodon', num: 423, slug: '0423', assetId: '0423' },
+  { speciesId: 'gastrodoneast', num: 423, formIndex: 1, slug: '0423-east', assetId: '0423/0001' },
+  { speciesId: 'ambipom', num: 424, slug: '0424', assetId: '0424' },
+  { speciesId: 'drifloon', num: 425, slug: '0425', assetId: '0425' },
+  { speciesId: 'drifblim', num: 426, slug: '0426', assetId: '0426' },
+  { speciesId: 'buneary', num: 427, slug: '0427', assetId: '0427' },
+  { speciesId: 'lopunny', num: 428, slug: '0428', assetId: '0428' },
+  { speciesId: 'mismagius', num: 429, slug: '0429', assetId: '0429' },
+  { speciesId: 'honchkrow', num: 430, slug: '0430', assetId: '0430' },
+  { speciesId: 'glameow', num: 431, slug: '0431', assetId: '0431' },
+  { speciesId: 'purugly', num: 432, slug: '0432', assetId: '0432' },
+  { speciesId: 'chingling', num: 433, slug: '0433', assetId: '0433' },
+  { speciesId: 'stunky', num: 434, slug: '0434', assetId: '0434' },
+  { speciesId: 'skuntank', num: 435, slug: '0435', assetId: '0435' },
+  { speciesId: 'bronzor', num: 436, slug: '0436', assetId: '0436' },
+  { speciesId: 'bronzong', num: 437, slug: '0437', assetId: '0437' },
+  { speciesId: 'bonsly', num: 438, slug: '0438', assetId: '0438' },
+  { speciesId: 'mimejr', num: 439, slug: '0439', assetId: '0439' },
+  { speciesId: 'happiny', num: 440, slug: '0440', assetId: '0440' },
+  { speciesId: 'chatot', num: 441, slug: '0441', assetId: '0441' },
+  { speciesId: 'spiritomb', num: 442, slug: '0442', assetId: '0442' },
+  { speciesId: 'gible', num: 443, slug: '0443', assetId: '0443' },
+  { speciesId: 'gabite', num: 444, slug: '0444', assetId: '0444' },
+  { speciesId: 'garchomp', num: 445, slug: '0445', assetId: '0445' },
+  { speciesId: 'munchlax', num: 446, slug: '0446', assetId: '0446' },
+  { speciesId: 'riolu', num: 447, slug: '0447', assetId: '0447', shootAnim: 'SpAttack' },
+  { speciesId: 'lucario', num: 448, slug: '0448', assetId: '0448', shootAnim: 'SpAttack' },
+  { speciesId: 'hippopotas', num: 449, slug: '0449', assetId: '0449' },
+  { speciesId: 'hippowdon', num: 450, slug: '0450', assetId: '0450' },
+  { speciesId: 'skorupi', num: 451, slug: '0451', assetId: '0451' },
+  { speciesId: 'drapion', num: 452, slug: '0452', assetId: '0452' },
+  { speciesId: 'croagunk', num: 453, slug: '0453', assetId: '0453' },
+  { speciesId: 'toxicroak', num: 454, slug: '0454', assetId: '0454' },
+  { speciesId: 'carnivine', num: 455, slug: '0455', assetId: '0455' },
+  { speciesId: 'finneon', num: 456, slug: '0456', assetId: '0456' },
+  { speciesId: 'lumineon', num: 457, slug: '0457', assetId: '0457' },
+  { speciesId: 'mantyke', num: 458, slug: '0458', assetId: '0458' },
+  { speciesId: 'snover', num: 459, slug: '0459', assetId: '0459' },
+  { speciesId: 'abomasnow', num: 460, slug: '0460', assetId: '0460' },
+  { speciesId: 'weavile', num: 461, slug: '0461', assetId: '0461' },
+  { speciesId: 'magnezone', num: 462, slug: '0462', assetId: '0462' },
+  { speciesId: 'lickilicky', num: 463, slug: '0463', assetId: '0463' },
+  { speciesId: 'rhyperior', num: 464, slug: '0464', assetId: '0464' },
+  { speciesId: 'tangrowth', num: 465, slug: '0465', assetId: '0465' },
+  { speciesId: 'electivire', num: 466, slug: '0466', assetId: '0466' },
+  { speciesId: 'magmortar', num: 467, slug: '0467', assetId: '0467' },
+  { speciesId: 'togekiss', num: 468, slug: '0468', assetId: '0468' },
+  { speciesId: 'yanmega', num: 469, slug: '0469', assetId: '0469' },
+  { speciesId: 'leafeon', num: 470, slug: '0470', assetId: '0470' },
+  { speciesId: 'glaceon', num: 471, slug: '0471', assetId: '0471' },
+  { speciesId: 'gliscor', num: 472, slug: '0472', assetId: '0472' },
+  { speciesId: 'mamoswine', num: 473, slug: '0473', assetId: '0473' },
+  { speciesId: 'porygonz', num: 474, slug: '0474', assetId: '0474' },
+  { speciesId: 'gallade', num: 475, slug: '0475', assetId: '0475' },
+  { speciesId: 'probopass', num: 476, slug: '0476', assetId: '0476' },
+  { speciesId: 'dusknoir', num: 477, slug: '0477', assetId: '0477' },
+  { speciesId: 'froslass', num: 478, slug: '0478', assetId: '0478' },
+  { speciesId: 'rotom', num: 479, slug: '0479', assetId: '0479' },
+  { speciesId: 'rotomheat', num: 479, formIndex: 1, slug: '0479-heat', assetId: '0479/0001' },
+  { speciesId: 'rotomwash', num: 479, formIndex: 2, slug: '0479-wash', assetId: '0479/0002' },
+  { speciesId: 'rotomfrost', num: 479, formIndex: 3, slug: '0479-frost', assetId: '0479/0003' },
+  { speciesId: 'rotomfan', num: 479, formIndex: 4, slug: '0479-fan', assetId: '0479/0004' },
+  { speciesId: 'rotommow', num: 479, formIndex: 5, slug: '0479-mow', assetId: '0479/0005' },
+  { speciesId: 'uxie', num: 480, slug: '0480', assetId: '0480' },
+  { speciesId: 'mesprit', num: 481, slug: '0481', assetId: '0481' },
+  { speciesId: 'azelf', num: 482, slug: '0482', assetId: '0482' },
+  { speciesId: 'dialga', num: 483, slug: '0483', assetId: '0483' },
+  { speciesId: 'dialgaorigin', num: 483, formIndex: 1, slug: '0483-origin', assetId: '0483/0001', shootAnim: 'SpAttack' },
+  { speciesId: 'palkia', num: 484, slug: '0484', assetId: '0484' },
+  { speciesId: 'palkiaorigin', num: 484, formIndex: 1, slug: '0484-origin', assetId: '0484/0001', shootAnim: 'SpAttack' },
+  { speciesId: 'heatran', num: 485, slug: '0485', assetId: '0485' },
+  { speciesId: 'regigigas', num: 486, slug: '0486', assetId: '0486' },
+  { speciesId: 'giratina', num: 487, slug: '0487', assetId: '0487' },
+  { speciesId: 'giratinaorigin', num: 487, formIndex: 1, slug: '0487-origin', assetId: '0487/0001' },
+  { speciesId: 'cresselia', num: 488, slug: '0488', assetId: '0488' },
+  { speciesId: 'phione', num: 489, slug: '0489', assetId: '0489' },
+  { speciesId: 'manaphy', num: 490, slug: '0490', assetId: '0490' },
+  { speciesId: 'darkrai', num: 491, slug: '0491', assetId: '0491' },
+  { speciesId: 'shaymin', num: 492, slug: '0492', assetId: '0492' },
+  { speciesId: 'shayminsky', num: 492, formIndex: 1, slug: '0492-sky', assetId: '0492/0001' },
+  { speciesId: 'arceus', num: 493, slug: '0493', assetId: '0493' },
+  { speciesId: 'arceusbug', num: 493, formIndex: 1, slug: '0493-bug', assetId: '0493/0001' },
+  { speciesId: 'arceusdark', num: 493, formIndex: 2, slug: '0493-dark', assetId: '0493/0002' },
+  { speciesId: 'arceusdragon', num: 493, formIndex: 3, slug: '0493-dragon', assetId: '0493/0003' },
+  { speciesId: 'arceuselectric', num: 493, formIndex: 4, slug: '0493-electric', assetId: '0493/0004' },
+  { speciesId: 'arceusfairy', num: 493, formIndex: 17, slug: '0493-fairy', assetId: '0493/0017' },
+  { speciesId: 'arceusfighting', num: 493, formIndex: 5, slug: '0493-fighting', assetId: '0493/0005' },
+  { speciesId: 'arceusfire', num: 493, formIndex: 6, slug: '0493-fire', assetId: '0493/0006' },
+  { speciesId: 'arceusflying', num: 493, formIndex: 7, slug: '0493-flying', assetId: '0493/0007' },
+  { speciesId: 'arceusghost', num: 493, formIndex: 8, slug: '0493-ghost', assetId: '0493/0008' },
+  { speciesId: 'arceusgrass', num: 493, formIndex: 9, slug: '0493-grass', assetId: '0493/0009' },
+  { speciesId: 'arceusground', num: 493, formIndex: 10, slug: '0493-ground', assetId: '0493/0010' },
+  { speciesId: 'arceusice', num: 493, formIndex: 11, slug: '0493-ice', assetId: '0493/0011' },
+  { speciesId: 'arceuspoison', num: 493, formIndex: 12, slug: '0493-poison', assetId: '0493/0012' },
+  { speciesId: 'arceuspsychic', num: 493, formIndex: 13, slug: '0493-psychic', assetId: '0493/0013' },
+  { speciesId: 'arceusrock', num: 493, formIndex: 14, slug: '0493-rock', assetId: '0493/0014' },
+  { speciesId: 'arceussteel', num: 493, formIndex: 15, slug: '0493-steel', assetId: '0493/0015' },
+  { speciesId: 'arceuswater', num: 493, formIndex: 16, slug: '0493-water', assetId: '0493/0016' },
+  { speciesId: 'victini', num: 494, slug: '0494', assetId: '0494' },
+  { speciesId: 'snivy', num: 495, slug: '0495', assetId: '0495' },
+  { speciesId: 'servine', num: 496, slug: '0496', assetId: '0496' },
+  { speciesId: 'serperior', num: 497, slug: '0497', assetId: '0497' },
+  { speciesId: 'tepig', num: 498, slug: '0498', assetId: '0498' },
+  { speciesId: 'pignite', num: 499, slug: '0499', assetId: '0499' },
+  { speciesId: 'emboar', num: 500, slug: '0500', assetId: '0500' },
+  { speciesId: 'oshawott', num: 501, slug: '0501', assetId: '0501' },
+  { speciesId: 'dewott', num: 502, slug: '0502', assetId: '0502' },
+  { speciesId: 'samurott', num: 503, slug: '0503', assetId: '0503' },
+  { speciesId: 'samurotthisui', num: 503, formIndex: 1, slug: '0503-hisui', assetId: '0503/0001' },
+  { speciesId: 'patrat', num: 504, slug: '0504', assetId: '0504' },
+  { speciesId: 'watchog', num: 505, slug: '0505', assetId: '0505' },
+  { speciesId: 'lillipup', num: 506, slug: '0506', assetId: '0506' },
+  { speciesId: 'herdier', num: 507, slug: '0507', assetId: '0507' },
+  { speciesId: 'stoutland', num: 508, slug: '0508', assetId: '0508' },
+  { speciesId: 'purrloin', num: 509, slug: '0509', assetId: '0509' },
+  { speciesId: 'liepard', num: 510, slug: '0510', assetId: '0510' },
+  { speciesId: 'pansage', num: 511, slug: '0511', assetId: '0511' },
+  { speciesId: 'simisage', num: 512, slug: '0512', assetId: '0512' },
+  { speciesId: 'pansear', num: 513, slug: '0513', assetId: '0513' },
+  { speciesId: 'panpour', num: 515, slug: '0515', assetId: '0515' },
+  { speciesId: 'munna', num: 517, slug: '0517', assetId: '0517' },
+  { speciesId: 'musharna', num: 518, slug: '0518', assetId: '0518' },
+  { speciesId: 'pidove', num: 519, slug: '0519', assetId: '0519' },
+  { speciesId: 'unfezant', num: 521, slug: '0521', assetId: '0521' },
+  { speciesId: 'roggenrola', num: 524, slug: '0524', assetId: '0524' },
+  { speciesId: 'boldore', num: 525, slug: '0525', assetId: '0525' },
+  { speciesId: 'gigalith', num: 526, slug: '0526', assetId: '0526' },
+  { speciesId: 'woobat', num: 527, slug: '0527', assetId: '0527' },
+  { speciesId: 'swoobat', num: 528, slug: '0528', assetId: '0528' },
+  { speciesId: 'drilbur', num: 529, slug: '0529', assetId: '0529' },
+  { speciesId: 'excadrill', num: 530, slug: '0530', assetId: '0530' },
+  { speciesId: 'audino', num: 531, slug: '0531', assetId: '0531' },
+  { speciesId: 'timburr', num: 532, slug: '0532', assetId: '0532', shootAnim: 'Charge' },
+  { speciesId: 'gurdurr', num: 533, slug: '0533', assetId: '0533' },
+  { speciesId: 'conkeldurr', num: 534, slug: '0534', assetId: '0534' },
+  { speciesId: 'tympole', num: 535, slug: '0535', assetId: '0535' },
+  { speciesId: 'palpitoad', num: 536, slug: '0536', assetId: '0536' },
+  { speciesId: 'seismitoad', num: 537, slug: '0537', assetId: '0537' },
+  { speciesId: 'sawk', num: 539, slug: '0539', assetId: '0539' },
+  { speciesId: 'sewaddle', num: 540, slug: '0540', assetId: '0540' },
+  { speciesId: 'swadloon', num: 541, slug: '0541', assetId: '0541' },
+  { speciesId: 'leavanny', num: 542, slug: '0542', assetId: '0542' },
+  { speciesId: 'venipede', num: 543, slug: '0543', assetId: '0543' },
+  { speciesId: 'whirlipede', num: 544, slug: '0544', assetId: '0544' },
+  { speciesId: 'scolipede', num: 545, slug: '0545', assetId: '0545' },
+  { speciesId: 'cottonee', num: 546, slug: '0546', assetId: '0546' },
+  { speciesId: 'whimsicott', num: 547, slug: '0547', assetId: '0547' },
+  { speciesId: 'petilil', num: 548, slug: '0548', assetId: '0548' },
+  { speciesId: 'lilligant', num: 549, slug: '0549', assetId: '0549' },
+  { speciesId: 'lilliganthisui', num: 549, formIndex: 1, slug: '0549-hisui', assetId: '0549/0001' },
+  { speciesId: 'basculin', num: 550, slug: '0550', assetId: '0550' },
+  { speciesId: 'basculinbluestriped', num: 550, formIndex: 1, slug: '0550-blue-striped', assetId: '0550/0001' },
+  { speciesId: 'basculinwhitestriped', num: 550, formIndex: 2, slug: '0550-white-striped', assetId: '0550/0002' },
+  { speciesId: 'sandile', num: 551, slug: '0551', assetId: '0551' },
+  { speciesId: 'krokorok', num: 552, slug: '0552', assetId: '0552' },
+  { speciesId: 'krookodile', num: 553, slug: '0553', assetId: '0553' },
+  { speciesId: 'darumaka', num: 554, slug: '0554', assetId: '0554', shootAnim: 'Charge' },
+  { speciesId: 'darumakagalar', num: 554, formIndex: 1, slug: '0554-galar', assetId: '0554/0001', shootAnim: 'Charge' },
+  { speciesId: 'darmanitan', num: 555, slug: '0555', assetId: '0555' },
+  { speciesId: 'darmanitanzen', num: 555, formIndex: 1, slug: '0555-zen', assetId: '0555/0001' },
+  { speciesId: 'darmanitangalar', num: 555, formIndex: 2, slug: '0555-galar', assetId: '0555/0002' },
+  { speciesId: 'maractus', num: 556, slug: '0556', assetId: '0556' },
+  { speciesId: 'dwebble', num: 557, slug: '0557', assetId: '0557' },
+  { speciesId: 'scraggy', num: 559, slug: '0559', assetId: '0559' },
+  { speciesId: 'scrafty', num: 560, slug: '0560', assetId: '0560' },
+  { speciesId: 'sigilyph', num: 561, slug: '0561', assetId: '0561' },
+  { speciesId: 'yamask', num: 562, slug: '0562', assetId: '0562' },
+  { speciesId: 'yamaskgalar', num: 562, formIndex: 1, slug: '0562-galar', assetId: '0562/0001' },
+  { speciesId: 'cofagrigus', num: 563, slug: '0563', assetId: '0563' },
+  { speciesId: 'archen', num: 566, slug: '0566', assetId: '0566' },
+  { speciesId: 'archeops', num: 567, slug: '0567', assetId: '0567' },
+  { speciesId: 'trubbish', num: 568, slug: '0568', assetId: '0568' },
+  { speciesId: 'garbodor', num: 569, slug: '0569', assetId: '0569' },
+  { speciesId: 'zorua', num: 570, slug: '0570', assetId: '0570' },
+  { speciesId: 'zoruahisui', num: 570, formIndex: 1, slug: '0570-hisui', assetId: '0570/0001' },
+  { speciesId: 'zoroark', num: 571, slug: '0571', assetId: '0571' },
+  { speciesId: 'zoroarkhisui', num: 571, formIndex: 1, slug: '0571-hisui', assetId: '0571/0001' },
+  { speciesId: 'minccino', num: 572, slug: '0572', assetId: '0572', shootAnim: 'Charge' },
+  { speciesId: 'cinccino', num: 573, slug: '0573', assetId: '0573' },
+  { speciesId: 'gothita', num: 574, slug: '0574', assetId: '0574' },
+  { speciesId: 'gothorita', num: 575, slug: '0575', assetId: '0575' },
+  { speciesId: 'gothitelle', num: 576, slug: '0576', assetId: '0576' },
+  { speciesId: 'solosis', num: 577, slug: '0577', assetId: '0577' },
+  { speciesId: 'duosion', num: 578, slug: '0578', assetId: '0578' },
+  { speciesId: 'reuniclus', num: 579, slug: '0579', assetId: '0579' },
+  { speciesId: 'ducklett', num: 580, slug: '0580', assetId: '0580' },
+  { speciesId: 'swanna', num: 581, slug: '0581', assetId: '0581' },
+  { speciesId: 'vanillite', num: 582, slug: '0582', assetId: '0582' },
+  { speciesId: 'vanillish', num: 583, slug: '0583', assetId: '0583' },
+  { speciesId: 'vanilluxe', num: 584, slug: '0584', assetId: '0584' },
+  { speciesId: 'deerling', num: 585, slug: '0585', assetId: '0585' },
+  { speciesId: 'deerlingsummer', num: 585, formIndex: 1, slug: '0585-summer', assetId: '0585/0001' },
+  { speciesId: 'deerlingautumn', num: 585, formIndex: 2, slug: '0585-autumn', assetId: '0585/0002' },
+  { speciesId: 'deerlingwinter', num: 585, formIndex: 3, slug: '0585-winter', assetId: '0585/0003' },
+  { speciesId: 'sawsbuck', num: 586, slug: '0586', assetId: '0586' },
+  { speciesId: 'emolga', num: 587, slug: '0587', assetId: '0587' },
+  { speciesId: 'karrablast', num: 588, slug: '0588', assetId: '0588' },
+  { speciesId: 'escavalier', num: 589, slug: '0589', assetId: '0589' },
+  { speciesId: 'foongus', num: 590, slug: '0590', assetId: '0590' },
+  { speciesId: 'jellicent', num: 593, slug: '0593', assetId: '0593' },
+  { speciesId: 'alomomola', num: 594, slug: '0594', assetId: '0594' },
+  { speciesId: 'joltik', num: 595, slug: '0595', assetId: '0595' },
+  { speciesId: 'galvantula', num: 596, slug: '0596', assetId: '0596' },
+  { speciesId: 'ferroseed', num: 597, slug: '0597', assetId: '0597' },
+  { speciesId: 'ferrothorn', num: 598, slug: '0598', assetId: '0598' },
+  { speciesId: 'klink', num: 599, slug: '0599', assetId: '0599' },
+  { speciesId: 'klang', num: 600, slug: '0600', assetId: '0600' },
+  { speciesId: 'klinklang', num: 601, slug: '0601', assetId: '0601' },
+  { speciesId: 'tynamo', num: 602, slug: '0602', assetId: '0602' },
+  { speciesId: 'eelektrik', num: 603, slug: '0603', assetId: '0603' },
+  { speciesId: 'eelektross', num: 604, slug: '0604', assetId: '0604' },
+  { speciesId: 'elgyem', num: 605, slug: '0605', assetId: '0605' },
+  { speciesId: 'beheeyem', num: 606, slug: '0606', assetId: '0606' },
+  { speciesId: 'litwick', num: 607, slug: '0607', assetId: '0607' },
+  { speciesId: 'lampent', num: 608, slug: '0608', assetId: '0608' },
+  { speciesId: 'chandelure', num: 609, slug: '0609', assetId: '0609' },
+  { speciesId: 'axew', num: 610, slug: '0610', assetId: '0610' },
+  { speciesId: 'fraxure', num: 611, slug: '0611', assetId: '0611' },
+  { speciesId: 'haxorus', num: 612, slug: '0612', assetId: '0612' },
+  { speciesId: 'cubchoo', num: 613, slug: '0613', assetId: '0613' },
+  { speciesId: 'beartic', num: 614, slug: '0614', assetId: '0614' },
+  { speciesId: 'cryogonal', num: 615, slug: '0615', assetId: '0615' },
+  { speciesId: 'accelgor', num: 617, slug: '0617', assetId: '0617' },
+  { speciesId: 'stunfisk', num: 618, slug: '0618', assetId: '0618' },
+  { speciesId: 'mienfoo', num: 619, slug: '0619', assetId: '0619', shootAnim: 'Charge' },
+  { speciesId: 'mienshao', num: 620, slug: '0620', assetId: '0620' },
+  { speciesId: 'druddigon', num: 621, slug: '0621', assetId: '0621' },
+  { speciesId: 'golett', num: 622, slug: '0622', assetId: '0622' },
+  { speciesId: 'golurk', num: 623, slug: '0623', assetId: '0623' },
+  { speciesId: 'pawniard', num: 624, slug: '0624', assetId: '0624' },
+  { speciesId: 'bisharp', num: 625, slug: '0625', assetId: '0625' },
+  { speciesId: 'rufflet', num: 627, slug: '0627', assetId: '0627' },
+  { speciesId: 'braviary', num: 628, slug: '0628', assetId: '0628' },
+  { speciesId: 'braviaryhisui', num: 628, formIndex: 1, slug: '0628-hisui', assetId: '0628/0001' },
+  { speciesId: 'vullaby', num: 629, slug: '0629', assetId: '0629' },
+  { speciesId: 'mandibuzz', num: 630, slug: '0630', assetId: '0630' },
+  { speciesId: 'heatmor', num: 631, slug: '0631', assetId: '0631' },
+  { speciesId: 'durant', num: 632, slug: '0632', assetId: '0632' },
+  { speciesId: 'deino', num: 633, slug: '0633', assetId: '0633' },
+  { speciesId: 'zweilous', num: 634, slug: '0634', assetId: '0634' },
+  { speciesId: 'hydreigon', num: 635, slug: '0635', assetId: '0635' },
+  { speciesId: 'larvesta', num: 636, slug: '0636', assetId: '0636' },
+  { speciesId: 'volcarona', num: 637, slug: '0637', assetId: '0637' },
+  { speciesId: 'cobalion', num: 638, slug: '0638', assetId: '0638' },
+  { speciesId: 'terrakion', num: 639, slug: '0639', assetId: '0639' },
+  { speciesId: 'virizion', num: 640, slug: '0640', assetId: '0640' },
+  { speciesId: 'tornadus', num: 641, slug: '0641', assetId: '0641' },
+  { speciesId: 'thundurus', num: 642, slug: '0642', assetId: '0642' },
+  { speciesId: 'reshiram', num: 643, slug: '0643', assetId: '0643' },
+  { speciesId: 'zekrom', num: 644, slug: '0644', assetId: '0644' },
+  { speciesId: 'landorus', num: 645, slug: '0645', assetId: '0645' },
+  { speciesId: 'landorustherian', num: 645, formIndex: 1, slug: '0645-therian', assetId: '0645/0001' },
+  { speciesId: 'kyurem', num: 646, slug: '0646', assetId: '0646' },
+  { speciesId: 'kyuremblack', num: 646, formIndex: 1, slug: '0646-black', assetId: '0646/0001' },
+  { speciesId: 'kyuremwhite', num: 646, formIndex: 2, slug: '0646-white', assetId: '0646/0002' },
+  { speciesId: 'keldeo', num: 647, slug: '0647', assetId: '0647' },
+  { speciesId: 'meloetta', num: 648, slug: '0648', assetId: '0648' },
+  { speciesId: 'meloettapirouette', num: 648, formIndex: 1, slug: '0648-pirouette', assetId: '0648/0001' },
+  { speciesId: 'genesect', num: 649, slug: '0649', assetId: '0649' },
+  { speciesId: 'genesectdouse', num: 649, formIndex: 1, slug: '0649-douse', assetId: '0649/0001' },
+  { speciesId: 'genesectshock', num: 649, formIndex: 2, slug: '0649-shock', assetId: '0649/0002' },
+  { speciesId: 'genesectburn', num: 649, formIndex: 3, slug: '0649-burn', assetId: '0649/0003' },
+  { speciesId: 'genesectchill', num: 649, formIndex: 4, slug: '0649-chill', assetId: '0649/0004' },
+  { speciesId: 'chespin', num: 650, slug: '0650', assetId: '0650' },
+  { speciesId: 'quilladin', num: 651, slug: '0651', assetId: '0651' },
+  { speciesId: 'chesnaught', num: 652, slug: '0652', assetId: '0652' },
+  { speciesId: 'fennekin', num: 653, slug: '0653', assetId: '0653' },
+  { speciesId: 'braixen', num: 654, slug: '0654', assetId: '0654' },
+  { speciesId: 'delphox', num: 655, slug: '0655', assetId: '0655' },
+  { speciesId: 'froakie', num: 656, slug: '0656', assetId: '0656' },
+  { speciesId: 'frogadier', num: 657, slug: '0657', assetId: '0657' },
+  { speciesId: 'greninja', num: 658, slug: '0658', assetId: '0658' },
+  { speciesId: 'bunnelby', num: 659, slug: '0659', assetId: '0659' },
+  { speciesId: 'diggersby', num: 660, slug: '0660', assetId: '0660' },
+  { speciesId: 'fletchling', num: 661, slug: '0661', assetId: '0661' },
+  { speciesId: 'fletchinder', num: 662, slug: '0662', assetId: '0662' },
+  { speciesId: 'talonflame', num: 663, slug: '0663', assetId: '0663' },
+  { speciesId: 'scatterbug', num: 664, slug: '0664', assetId: '0664' },
+  { speciesId: 'spewpa', num: 665, slug: '0665', assetId: '0665' },
+  { speciesId: 'vivillon', num: 666, slug: '0666', assetId: '0666' },
+  { speciesId: 'vivillonicysnow', num: 666, formIndex: 1, slug: '0666-icy-snow', assetId: '0666/0001' },
+  { speciesId: 'vivillonpolar', num: 666, formIndex: 2, slug: '0666-polar', assetId: '0666/0002' },
+  { speciesId: 'vivillontundra', num: 666, formIndex: 3, slug: '0666-tundra', assetId: '0666/0003' },
+  { speciesId: 'vivilloncontinental', num: 666, formIndex: 4, slug: '0666-continental', assetId: '0666/0004' },
+  { speciesId: 'vivillongarden', num: 666, formIndex: 5, slug: '0666-garden', assetId: '0666/0005' },
+  { speciesId: 'vivillonelegant', num: 666, formIndex: 6, slug: '0666-elegant', assetId: '0666/0006' },
+  { speciesId: 'vivillonmodern', num: 666, formIndex: 7, slug: '0666-modern', assetId: '0666/0007' },
+  { speciesId: 'vivillonmarine', num: 666, formIndex: 8, slug: '0666-marine', assetId: '0666/0008' },
+  { speciesId: 'vivillonarchipelago', num: 666, formIndex: 9, slug: '0666-archipelago', assetId: '0666/0009' },
+  { speciesId: 'vivillonhighplains', num: 666, formIndex: 10, slug: '0666-high-plains', assetId: '0666/0010' },
+  { speciesId: 'vivillonsandstorm', num: 666, formIndex: 11, slug: '0666-sandstorm', assetId: '0666/0011' },
+  { speciesId: 'vivillonriver', num: 666, formIndex: 12, slug: '0666-river', assetId: '0666/0012' },
+  { speciesId: 'vivillonmonsoon', num: 666, formIndex: 13, slug: '0666-monsoon', assetId: '0666/0013' },
+  { speciesId: 'vivillonsavanna', num: 666, formIndex: 14, slug: '0666-savanna', assetId: '0666/0014' },
+  { speciesId: 'vivillonsun', num: 666, formIndex: 15, slug: '0666-sun', assetId: '0666/0015' },
+  { speciesId: 'vivillonocean', num: 666, formIndex: 16, slug: '0666-ocean', assetId: '0666/0016' },
+  { speciesId: 'vivillonjungle', num: 666, formIndex: 17, slug: '0666-jungle', assetId: '0666/0017' },
+  { speciesId: 'vivillonfancy', num: 666, formIndex: 18, slug: '0666-fancy', assetId: '0666/0018' },
+  { speciesId: 'vivillonpokeball', num: 666, formIndex: 19, slug: '0666-pokeball', assetId: '0666/0019' },
+  { speciesId: 'litleo', num: 667, slug: '0667', assetId: '0667' },
+  { speciesId: 'flabebe', num: 669, slug: '0669', assetId: '0669' },
+  { speciesId: 'floette', num: 670, slug: '0670', assetId: '0670' },
+  { speciesId: 'floetteeternal', num: 670, formIndex: 5, slug: '0670-eternal', assetId: '0670/0005' },
+  { speciesId: 'florges', num: 671, slug: '0671', assetId: '0671' },
+  { speciesId: 'skiddo', num: 672, slug: '0672', assetId: '0672' },
+  { speciesId: 'gogoat', num: 673, slug: '0673', assetId: '0673' },
+  { speciesId: 'pancham', num: 674, slug: '0674', assetId: '0674' },
+  { speciesId: 'pangoro', num: 675, slug: '0675', assetId: '0675' },
+  { speciesId: 'furfrou', num: 676, slug: '0676', assetId: '0676' },
+  { speciesId: 'espurr', num: 677, slug: '0677', assetId: '0677', shootAnim: 'SpAttack' },
+  { speciesId: 'meowstic', num: 678, slug: '0678', assetId: '0678', shootAnim: 'SpAttack' },
+  { speciesId: 'honedge', num: 679, slug: '0679', assetId: '0679' },
+  { speciesId: 'doublade', num: 680, slug: '0680', assetId: '0680' },
+  { speciesId: 'aegislash', num: 681, slug: '0681', assetId: '0681' },
+  { speciesId: 'aegislashblade', num: 681, formIndex: 1, slug: '0681-blade', assetId: '0681/0001' },
+  { speciesId: 'spritzee', num: 682, slug: '0682', assetId: '0682' },
+  { speciesId: 'aromatisse', num: 683, slug: '0683', assetId: '0683' },
+  { speciesId: 'swirlix', num: 684, slug: '0684', assetId: '0684' },
+  { speciesId: 'slurpuff', num: 685, slug: '0685', assetId: '0685' },
+  { speciesId: 'inkay', num: 686, slug: '0686', assetId: '0686' },
+  { speciesId: 'malamar', num: 687, slug: '0687', assetId: '0687' },
+  { speciesId: 'binacle', num: 688, slug: '0688', assetId: '0688' },
+  { speciesId: 'barbaracle', num: 689, slug: '0689', assetId: '0689' },
+  { speciesId: 'skrelp', num: 690, slug: '0690', assetId: '0690' },
+  { speciesId: 'dragalge', num: 691, slug: '0691', assetId: '0691' },
+  { speciesId: 'clauncher', num: 692, slug: '0692', assetId: '0692' },
+  { speciesId: 'clawitzer', num: 693, slug: '0693', assetId: '0693' },
+  { speciesId: 'helioptile', num: 694, slug: '0694', assetId: '0694' },
+  { speciesId: 'heliolisk', num: 695, slug: '0695', assetId: '0695' },
+  { speciesId: 'tyrunt', num: 696, slug: '0696', assetId: '0696' },
+  { speciesId: 'tyrantrum', num: 697, slug: '0697', assetId: '0697' },
+  { speciesId: 'amaura', num: 698, slug: '0698', assetId: '0698' },
+  { speciesId: 'aurorus', num: 699, slug: '0699', assetId: '0699' },
+  { speciesId: 'sylveon', num: 700, slug: '0700', assetId: '0700' },
+  { speciesId: 'hawlucha', num: 701, slug: '0701', assetId: '0701' },
+  { speciesId: 'dedenne', num: 702, slug: '0702', assetId: '0702', shootAnim: 'Charge' },
+  { speciesId: 'carbink', num: 703, slug: '0703', assetId: '0703', shootAnim: 'Charge' },
+  { speciesId: 'goomy', num: 704, slug: '0704', assetId: '0704' },
+  { speciesId: 'sliggoo', num: 705, slug: '0705', assetId: '0705' },
+  { speciesId: 'sliggoohisui', num: 705, formIndex: 1, slug: '0705-hisui', assetId: '0705/0001' },
+  { speciesId: 'goodra', num: 706, slug: '0706', assetId: '0706' },
+  { speciesId: 'goodrahisui', num: 706, formIndex: 1, slug: '0706-hisui', assetId: '0706/0001' },
+  { speciesId: 'klefki', num: 707, slug: '0707', assetId: '0707', shootAnim: 'Charge' },
+  { speciesId: 'phantump', num: 708, slug: '0708', assetId: '0708' },
+  { speciesId: 'trevenant', num: 709, slug: '0709', assetId: '0709' },
+  { speciesId: 'pumpkaboo', num: 710, slug: '0710', assetId: '0710' },
+  { speciesId: 'pumpkaboosmall', num: 710, formIndex: 1, slug: '0710-small', assetId: '0710/0001' },
+  { speciesId: 'pumpkaboolarge', num: 710, formIndex: 2, slug: '0710-large', assetId: '0710/0002' },
+  { speciesId: 'pumpkaboosuper', num: 710, formIndex: 3, slug: '0710-super', assetId: '0710/0003' },
+  { speciesId: 'gourgeist', num: 711, slug: '0711', assetId: '0711' },
+  { speciesId: 'gourgeistsuper', num: 711, formIndex: 3, slug: '0711-super', assetId: '0711/0003' },
+  { speciesId: 'bergmite', num: 712, slug: '0712', assetId: '0712' },
+  { speciesId: 'avalugg', num: 713, slug: '0713', assetId: '0713' },
+  { speciesId: 'avalugghisui', num: 713, formIndex: 1, slug: '0713-hisui', assetId: '0713/0001' },
+  { speciesId: 'noibat', num: 714, slug: '0714', assetId: '0714' },
+  { speciesId: 'noivern', num: 715, slug: '0715', assetId: '0715' },
+  { speciesId: 'xerneas', num: 716, slug: '0716', assetId: '0716' },
+  { speciesId: 'yveltal', num: 717, slug: '0717', assetId: '0717' },
+  { speciesId: 'zygarde', num: 718, slug: '0718', assetId: '0718' },
+  { speciesId: 'zygarde10', num: 718, formIndex: 1, slug: '0718-10', assetId: '0718/0001' },
+  { speciesId: 'zygardecomplete', num: 718, formIndex: 2, slug: '0718-complete', assetId: '0718/0002' },
+  { speciesId: 'diancie', num: 719, slug: '0719', assetId: '0719' },
+  { speciesId: 'hoopa', num: 720, slug: '0720', assetId: '0720' },
+  { speciesId: 'hoopaunbound', num: 720, formIndex: 1, slug: '0720-unbound', assetId: '0720/0001', shootAnim: 'Charge' },
+  { speciesId: 'volcanion', num: 721, slug: '0721', assetId: '0721' },
+  { speciesId: 'rowlet', num: 722, slug: '0722', assetId: '0722' },
+  { speciesId: 'dartrix', num: 723, slug: '0723', assetId: '0723' },
+  { speciesId: 'decidueye', num: 724, slug: '0724', assetId: '0724' },
+  { speciesId: 'decidueyehisui', num: 724, formIndex: 1, slug: '0724-hisui', assetId: '0724/0001' },
+  { speciesId: 'litten', num: 725, slug: '0725', assetId: '0725' },
+  { speciesId: 'torracat', num: 726, slug: '0726', assetId: '0726' },
+  { speciesId: 'incineroar', num: 727, slug: '0727', assetId: '0727', shootAnim: 'Charge' },
+  { speciesId: 'popplio', num: 728, slug: '0728', assetId: '0728' },
+  { speciesId: 'brionne', num: 729, slug: '0729', assetId: '0729' },
+  { speciesId: 'primarina', num: 730, slug: '0730', assetId: '0730' },
+  { speciesId: 'pikipek', num: 731, slug: '0731', assetId: '0731' },
+  { speciesId: 'toucannon', num: 733, slug: '0733', assetId: '0733' },
+  { speciesId: 'yungoos', num: 734, slug: '0734', assetId: '0734' },
+  { speciesId: 'grubbin', num: 736, slug: '0736', assetId: '0736' },
+  { speciesId: 'charjabug', num: 737, slug: '0737', assetId: '0737' },
+  { speciesId: 'vikavolt', num: 738, slug: '0738', assetId: '0738' },
+  { speciesId: 'crabrawler', num: 739, slug: '0739', assetId: '0739' },
+  { speciesId: 'crabominable', num: 740, slug: '0740', assetId: '0740' },
+  { speciesId: 'oricorio', num: 741, slug: '0741', assetId: '0741' },
+  { speciesId: 'oricoriopompom', num: 741, formIndex: 1, slug: '0741-pom-pom', assetId: '0741/0001' },
+  { speciesId: 'oricoriopau', num: 741, formIndex: 2, slug: '0741-pa-u', assetId: '0741/0002' },
+  { speciesId: 'oricoriosensu', num: 741, formIndex: 3, slug: '0741-sensu', assetId: '0741/0003' },
+  { speciesId: 'cutiefly', num: 742, slug: '0742', assetId: '0742' },
+  { speciesId: 'ribombee', num: 743, slug: '0743', assetId: '0743' },
+  { speciesId: 'rockruff', num: 744, slug: '0744', assetId: '0744' },
+  { speciesId: 'lycanroc', num: 745, slug: '0745', assetId: '0745' },
+  { speciesId: 'lycanrocmidnight', num: 745, formIndex: 1, slug: '0745-midnight', assetId: '0745/0001' },
+  { speciesId: 'lycanrocdusk', num: 745, formIndex: 2, slug: '0745-dusk', assetId: '0745/0002' },
+  { speciesId: 'wishiwashi', num: 746, slug: '0746', assetId: '0746' },
+  { speciesId: 'wishiwashischool', num: 746, formIndex: 1, slug: '0746-school', assetId: '0746/0001' },
+  { speciesId: 'mareanie', num: 747, slug: '0747', assetId: '0747' },
+  { speciesId: 'toxapex', num: 748, slug: '0748', assetId: '0748' },
+  { speciesId: 'mudbray', num: 749, slug: '0749', assetId: '0749' },
+  { speciesId: 'mudsdale', num: 750, slug: '0750', assetId: '0750' },
+  { speciesId: 'dewpider', num: 751, slug: '0751', assetId: '0751' },
+  { speciesId: 'araquanid', num: 752, slug: '0752', assetId: '0752' },
+  { speciesId: 'fomantis', num: 753, slug: '0753', assetId: '0753' },
+  { speciesId: 'lurantis', num: 754, slug: '0754', assetId: '0754' },
+  { speciesId: 'morelull', num: 755, slug: '0755', assetId: '0755' },
+  { speciesId: 'salandit', num: 757, slug: '0757', assetId: '0757' },
+  { speciesId: 'salazzle', num: 758, slug: '0758', assetId: '0758' },
+  { speciesId: 'stufful', num: 759, slug: '0759', assetId: '0759' },
+  { speciesId: 'bewear', num: 760, slug: '0760', assetId: '0760' },
+  { speciesId: 'bounsweet', num: 761, slug: '0761', assetId: '0761' },
+  { speciesId: 'steenee', num: 762, slug: '0762', assetId: '0762' },
+  { speciesId: 'tsareena', num: 763, slug: '0763', assetId: '0763' },
+  { speciesId: 'comfey', num: 764, slug: '0764', assetId: '0764' },
+  { speciesId: 'passimian', num: 766, slug: '0766', assetId: '0766' },
+  { speciesId: 'wimpod', num: 767, slug: '0767', assetId: '0767' },
+  { speciesId: 'golisopod', num: 768, slug: '0768', assetId: '0768' },
+  { speciesId: 'sandygast', num: 769, slug: '0769', assetId: '0769' },
+  { speciesId: 'palossand', num: 770, slug: '0770', assetId: '0770' },
+  { speciesId: 'pyukumuku', num: 771, slug: '0771', assetId: '0771' },
+  { speciesId: 'typenull', num: 772, slug: '0772', assetId: '0772' },
+  { speciesId: 'silvally', num: 773, slug: '0773', assetId: '0773' },
+  { speciesId: 'silvallybug', num: 773, formIndex: 6, slug: '0773-bug', assetId: '0773/0006' },
+  { speciesId: 'silvallydark', num: 773, formIndex: 16, slug: '0773-dark', assetId: '0773/0016' },
+  { speciesId: 'silvallydragon', num: 773, formIndex: 15, slug: '0773-dragon', assetId: '0773/0015' },
+  { speciesId: 'silvallyelectric', num: 773, formIndex: 12, slug: '0773-electric', assetId: '0773/0012' },
+  { speciesId: 'silvallyfairy', num: 773, formIndex: 17, slug: '0773-fairy', assetId: '0773/0017' },
+  { speciesId: 'silvallyfighting', num: 773, formIndex: 1, slug: '0773-fighting', assetId: '0773/0001' },
+  { speciesId: 'silvallyfire', num: 773, formIndex: 9, slug: '0773-fire', assetId: '0773/0009' },
+  { speciesId: 'silvallyflying', num: 773, formIndex: 2, slug: '0773-flying', assetId: '0773/0002' },
+  { speciesId: 'silvallyghost', num: 773, formIndex: 7, slug: '0773-ghost', assetId: '0773/0007' },
+  { speciesId: 'silvallygrass', num: 773, formIndex: 11, slug: '0773-grass', assetId: '0773/0011' },
+  { speciesId: 'silvallyground', num: 773, formIndex: 4, slug: '0773-ground', assetId: '0773/0004' },
+  { speciesId: 'silvallyice', num: 773, formIndex: 14, slug: '0773-ice', assetId: '0773/0014' },
+  { speciesId: 'silvallypoison', num: 773, formIndex: 3, slug: '0773-poison', assetId: '0773/0003' },
+  { speciesId: 'silvallypsychic', num: 773, formIndex: 13, slug: '0773-psychic', assetId: '0773/0013' },
+  { speciesId: 'silvallyrock', num: 773, formIndex: 5, slug: '0773-rock', assetId: '0773/0005' },
+  { speciesId: 'silvallysteel', num: 773, formIndex: 8, slug: '0773-steel', assetId: '0773/0008' },
+  { speciesId: 'silvallywater', num: 773, formIndex: 10, slug: '0773-water', assetId: '0773/0010' },
+  { speciesId: 'minior', num: 774, slug: '0774', assetId: '0774' },
+  { speciesId: 'miniororange', num: 774, formIndex: 2, slug: '0774-orange', assetId: '0774/0002' },
+  { speciesId: 'minioryellow', num: 774, formIndex: 3, slug: '0774-yellow', assetId: '0774/0003' },
+  { speciesId: 'miniorgreen', num: 774, formIndex: 4, slug: '0774-green', assetId: '0774/0004' },
+  { speciesId: 'miniorblue', num: 774, formIndex: 5, slug: '0774-blue', assetId: '0774/0005' },
+  { speciesId: 'miniorindigo', num: 774, formIndex: 6, slug: '0774-indigo', assetId: '0774/0006' },
+  { speciesId: 'miniorviolet', num: 774, formIndex: 7, slug: '0774-violet', assetId: '0774/0007' },
+  { speciesId: 'komala', num: 775, slug: '0775', assetId: '0775', shootAnim: 'Charge' },
+  { speciesId: 'turtonator', num: 776, slug: '0776', assetId: '0776' },
+  { speciesId: 'togedemaru', num: 777, slug: '0777', assetId: '0777', shootAnim: 'Charge' },
+  { speciesId: 'mimikyu', num: 778, slug: '0778', assetId: '0778' },
+  { speciesId: 'mimikyubusted', num: 778, formIndex: 1, slug: '0778-busted', assetId: '0778/0001' },
+  { speciesId: 'bruxish', num: 779, slug: '0779', assetId: '0779' },
+  { speciesId: 'drampa', num: 780, slug: '0780', assetId: '0780' },
+  { speciesId: 'dhelmise', num: 781, slug: '0781', assetId: '0781' },
+  { speciesId: 'jangmoo', num: 782, slug: '0782', assetId: '0782' },
+  { speciesId: 'hakamoo', num: 783, slug: '0783', assetId: '0783' },
+  { speciesId: 'kommoo', num: 784, slug: '0784', assetId: '0784' },
+  { speciesId: 'tapukoko', num: 785, slug: '0785', assetId: '0785' },
+  { speciesId: 'tapulele', num: 786, slug: '0786', assetId: '0786', shootAnim: 'Charge' },
+  { speciesId: 'tapubulu', num: 787, slug: '0787', assetId: '0787' },
+  { speciesId: 'tapufini', num: 788, slug: '0788', assetId: '0788' },
+  { speciesId: 'cosmog', num: 789, slug: '0789', assetId: '0789', shootAnim: 'Charge' },
+  { speciesId: 'cosmoem', num: 790, slug: '0790', assetId: '0790' },
+  { speciesId: 'solgaleo', num: 791, slug: '0791', assetId: '0791', shootAnim: 'Charge' },
+  { speciesId: 'lunala', num: 792, slug: '0792', assetId: '0792' },
+  { speciesId: 'nihilego', num: 793, slug: '0793', assetId: '0793' },
+  { speciesId: 'buzzwole', num: 794, slug: '0794', assetId: '0794' },
+  { speciesId: 'pheromosa', num: 795, slug: '0795', assetId: '0795' },
+  { speciesId: 'xurkitree', num: 796, slug: '0796', assetId: '0796' },
+  { speciesId: 'celesteela', num: 797, slug: '0797', assetId: '0797' },
+  { speciesId: 'kartana', num: 798, slug: '0798', assetId: '0798' },
+  { speciesId: 'guzzlord', num: 799, slug: '0799', assetId: '0799' },
+  { speciesId: 'necrozma', num: 800, slug: '0800', assetId: '0800' },
+  { speciesId: 'necrozmaultra', num: 800, formIndex: 3, slug: '0800-ultra', assetId: '0800/0003' },
+  { speciesId: 'magearna', num: 801, slug: '0801', assetId: '0801' },
+  { speciesId: 'magearnaoriginal', num: 801, formIndex: 1, slug: '0801-original', assetId: '0801/0001' },
+  { speciesId: 'marshadow', num: 802, slug: '0802', assetId: '0802' },
+  { speciesId: 'poipole', num: 803, slug: '0803', assetId: '0803' },
+  { speciesId: 'naganadel', num: 804, slug: '0804', assetId: '0804' },
+  { speciesId: 'stakataka', num: 805, slug: '0805', assetId: '0805' },
+  { speciesId: 'blacephalon', num: 806, slug: '0806', assetId: '0806' },
+  { speciesId: 'zeraora', num: 807, slug: '0807', assetId: '0807', shootAnim: 'SpAttack' },
+  { speciesId: 'meltan', num: 808, slug: '0808', assetId: '0808' },
+  { speciesId: 'melmetal', num: 809, slug: '0809', assetId: '0809' },
+  { speciesId: 'grookey', num: 810, slug: '0810', assetId: '0810' },
+  { speciesId: 'thwackey', num: 811, slug: '0811', assetId: '0811' },
+  { speciesId: 'rillaboom', num: 812, slug: '0812', assetId: '0812' },
+  { speciesId: 'scorbunny', num: 813, slug: '0813', assetId: '0813' },
+  { speciesId: 'raboot', num: 814, slug: '0814', assetId: '0814' },
+  { speciesId: 'cinderace', num: 815, slug: '0815', assetId: '0815' },
+  { speciesId: 'sobble', num: 816, slug: '0816', assetId: '0816' },
+  { speciesId: 'drizzile', num: 817, slug: '0817', assetId: '0817' },
+  { speciesId: 'inteleon', num: 818, slug: '0818', assetId: '0818' },
+  { speciesId: 'skwovet', num: 819, slug: '0819', assetId: '0819' },
+  { speciesId: 'greedent', num: 820, slug: '0820', assetId: '0820' },
+  { speciesId: 'rookidee', num: 821, slug: '0821', assetId: '0821' },
+  { speciesId: 'corvisquire', num: 822, slug: '0822', assetId: '0822' },
+  { speciesId: 'corviknight', num: 823, slug: '0823', assetId: '0823' },
+  { speciesId: 'blipbug', num: 824, slug: '0824', assetId: '0824' },
+  { speciesId: 'dottler', num: 825, slug: '0825', assetId: '0825' },
+  { speciesId: 'orbeetle', num: 826, slug: '0826', assetId: '0826' },
+  { speciesId: 'nickit', num: 827, slug: '0827', assetId: '0827' },
+  { speciesId: 'thievul', num: 828, slug: '0828', assetId: '0828' },
+  { speciesId: 'gossifleur', num: 829, slug: '0829', assetId: '0829' },
+  { speciesId: 'eldegoss', num: 830, slug: '0830', assetId: '0830' },
+  { speciesId: 'wooloo', num: 831, slug: '0831', assetId: '0831' },
+  { speciesId: 'dubwool', num: 832, slug: '0832', assetId: '0832' },
+  { speciesId: 'chewtle', num: 833, slug: '0833', assetId: '0833' },
+  { speciesId: 'drednaw', num: 834, slug: '0834', assetId: '0834' },
+  { speciesId: 'yamper', num: 835, slug: '0835', assetId: '0835' },
+  { speciesId: 'boltund', num: 836, slug: '0836', assetId: '0836' },
+  { speciesId: 'applin', num: 840, slug: '0840', assetId: '0840' },
+  { speciesId: 'flapple', num: 841, slug: '0841', assetId: '0841' },
+  { speciesId: 'appletun', num: 842, slug: '0842', assetId: '0842' },
+  { speciesId: 'silicobra', num: 843, slug: '0843', assetId: '0843' },
+  { speciesId: 'sandaconda', num: 844, slug: '0844', assetId: '0844' },
+  { speciesId: 'cramorant', num: 845, slug: '0845', assetId: '0845' },
+  { speciesId: 'arrokuda', num: 846, slug: '0846', assetId: '0846' },
+  { speciesId: 'barraskewda', num: 847, slug: '0847', assetId: '0847' },
+  { speciesId: 'toxel', num: 848, slug: '0848', assetId: '0848' },
+  { speciesId: 'toxtricity', num: 849, slug: '0849', assetId: '0849' },
+  { speciesId: 'toxtricitylowkey', num: 849, formIndex: 1, slug: '0849-low-key', assetId: '0849/0001' },
+  { speciesId: 'sizzlipede', num: 850, slug: '0850', assetId: '0850' },
+  { speciesId: 'centiskorch', num: 851, slug: '0851', assetId: '0851' },
+  { speciesId: 'clobbopus', num: 852, slug: '0852', assetId: '0852' },
+  { speciesId: 'grapploct', num: 853, slug: '0853', assetId: '0853' },
+  { speciesId: 'sinistea', num: 854, slug: '0854', assetId: '0854' },
+  { speciesId: 'polteageist', num: 855, slug: '0855', assetId: '0855' },
+  { speciesId: 'hatenna', num: 856, slug: '0856', assetId: '0856' },
+  { speciesId: 'hattrem', num: 857, slug: '0857', assetId: '0857' },
+  { speciesId: 'hatterene', num: 858, slug: '0858', assetId: '0858' },
+  { speciesId: 'impidimp', num: 859, slug: '0859', assetId: '0859' },
+  { speciesId: 'morgrem', num: 860, slug: '0860', assetId: '0860' },
+  { speciesId: 'grimmsnarl', num: 861, slug: '0861', assetId: '0861' },
+  { speciesId: 'obstagoon', num: 862, slug: '0862', assetId: '0862' },
+  { speciesId: 'perrserker', num: 863, slug: '0863', assetId: '0863' },
+  { speciesId: 'cursola', num: 864, slug: '0864', assetId: '0864' },
+  { speciesId: 'sirfetchd', num: 865, slug: '0865', assetId: '0865' },
+  { speciesId: 'runerigus', num: 867, slug: '0867', assetId: '0867' },
+  { speciesId: 'milcery', num: 868, slug: '0868', assetId: '0868' },
+  { speciesId: 'alcremie', num: 869, slug: '0869', assetId: '0869' },
+  { speciesId: 'alcremierubycream', num: 869, formIndex: 7, slug: '0869-ruby-cream', assetId: '0869/0007' },
+  { speciesId: 'alcremiematchacream', num: 869, formIndex: 14, slug: '0869-matcha-cream', assetId: '0869/0014' },
+  { speciesId: 'alcremiemintcream', num: 869, formIndex: 21, slug: '0869-mint-cream', assetId: '0869/0021' },
+  { speciesId: 'alcremielemoncream', num: 869, formIndex: 28, slug: '0869-lemon-cream', assetId: '0869/0028' },
+  { speciesId: 'alcremierubyswirl', num: 869, formIndex: 42, slug: '0869-ruby-swirl', assetId: '0869/0042' },
+  { speciesId: 'alcremiecaramelswirl', num: 869, formIndex: 49, slug: '0869-caramel-swirl', assetId: '0869/0049' },
+  { speciesId: 'alcremierainbowswirl', num: 869, formIndex: 56, slug: '0869-rainbow-swirl', assetId: '0869/0056' },
+  { speciesId: 'pincurchin', num: 871, slug: '0871', assetId: '0871' },
+  { speciesId: 'snom', num: 872, slug: '0872', assetId: '0872' },
+  { speciesId: 'frosmoth', num: 873, slug: '0873', assetId: '0873' },
+  { speciesId: 'stonjourner', num: 874, slug: '0874', assetId: '0874' },
+  { speciesId: 'eiscue', num: 875, slug: '0875', assetId: '0875' },
+  { speciesId: 'eiscuenoice', num: 875, formIndex: 1, slug: '0875-noice', assetId: '0875/0001' },
+  { speciesId: 'indeedee', num: 876, slug: '0876', assetId: '0876' },
+  { speciesId: 'morpeko', num: 877, slug: '0877', assetId: '0877' },
+  { speciesId: 'morpekohangry', num: 877, formIndex: 1, slug: '0877-hangry', assetId: '0877/0001' },
+  { speciesId: 'copperajah', num: 879, slug: '0879', assetId: '0879' },
+  { speciesId: 'dracozolt', num: 880, slug: '0880', assetId: '0880' },
+  { speciesId: 'arctozolt', num: 881, slug: '0881', assetId: '0881' },
+  { speciesId: 'dracovish', num: 882, slug: '0882', assetId: '0882' },
+  { speciesId: 'arctovish', num: 883, slug: '0883', assetId: '0883' },
+  { speciesId: 'duraludon', num: 884, slug: '0884', assetId: '0884' },
+  { speciesId: 'dreepy', num: 885, slug: '0885', assetId: '0885' },
+  { speciesId: 'drakloak', num: 886, slug: '0886', assetId: '0886' },
+  { speciesId: 'dragapult', num: 887, slug: '0887', assetId: '0887' },
+  { speciesId: 'zacian', num: 888, slug: '0888', assetId: '0888' },
+  { speciesId: 'zaciancrowned', num: 888, formIndex: 1, slug: '0888-crowned', assetId: '0888/0001' },
+  { speciesId: 'zamazenta', num: 889, slug: '0889', assetId: '0889' },
+  { speciesId: 'zamazentacrowned', num: 889, formIndex: 1, slug: '0889-crowned', assetId: '0889/0001' },
+  { speciesId: 'eternatus', num: 890, slug: '0890', assetId: '0890' },
+  { speciesId: 'kubfu', num: 891, slug: '0891', assetId: '0891' },
+  { speciesId: 'urshifu', num: 892, slug: '0892', assetId: '0892' },
+  { speciesId: 'urshifurapidstrike', num: 892, formIndex: 1, slug: '0892-rapid-strike', assetId: '0892/0001' },
+  { speciesId: 'regieleki', num: 894, slug: '0894', assetId: '0894', shootAnim: 'Charge' },
+  { speciesId: 'regidrago', num: 895, slug: '0895', assetId: '0895' },
+  { speciesId: 'glastrier', num: 896, slug: '0896', assetId: '0896' },
+  { speciesId: 'spectrier', num: 897, slug: '0897', assetId: '0897' },
+  { speciesId: 'calyrex', num: 898, slug: '0898', assetId: '0898' },
+  { speciesId: 'wyrdeer', num: 899, slug: '0899', assetId: '0899' },
+  { speciesId: 'kleavor', num: 900, slug: '0900', assetId: '0900' },
+  { speciesId: 'ursaluna', num: 901, slug: '0901', assetId: '0901' },
+  { speciesId: 'ursalunabloodmoon', num: 901, formIndex: 1, slug: '0901-bloodmoon', assetId: '0901/0001' },
+  { speciesId: 'basculegion', num: 902, slug: '0902', assetId: '0902' },
+  { speciesId: 'sneasler', num: 903, slug: '0903', assetId: '0903' },
+  { speciesId: 'overqwil', num: 904, slug: '0904', assetId: '0904' },
+  { speciesId: 'enamorus', num: 905, slug: '0905', assetId: '0905' },
+  { speciesId: 'enamorustherian', num: 905, formIndex: 1, slug: '0905-therian', assetId: '0905/0001' },
+  { speciesId: 'sprigatito', num: 906, slug: '0906', assetId: '0906' },
+  { speciesId: 'floragato', num: 907, slug: '0907', assetId: '0907', shootAnim: 'SpAttack' },
+  { speciesId: 'meowscarada', num: 908, slug: '0908', assetId: '0908' },
+  { speciesId: 'fuecoco', num: 909, slug: '0909', assetId: '0909' },
+  { speciesId: 'crocalor', num: 910, slug: '0910', assetId: '0910' },
+  { speciesId: 'skeledirge', num: 911, slug: '0911', assetId: '0911' },
+  { speciesId: 'quaxly', num: 912, slug: '0912', assetId: '0912' },
+  { speciesId: 'quaxwell', num: 913, slug: '0913', assetId: '0913' },
+  { speciesId: 'quaquaval', num: 914, slug: '0914', assetId: '0914' },
+  { speciesId: 'lechonk', num: 915, slug: '0915', assetId: '0915' },
+  { speciesId: 'oinkologne', num: 916, slug: '0916', assetId: '0916' },
+  { speciesId: 'tarountula', num: 917, slug: '0917', assetId: '0917', shootAnim: 'Strike' },
+  { speciesId: 'spidops', num: 918, slug: '0918', assetId: '0918' },
+  { speciesId: 'nymble', num: 919, slug: '0919', assetId: '0919' },
+  { speciesId: 'lokix', num: 920, slug: '0920', assetId: '0920' },
+  { speciesId: 'pawmi', num: 921, slug: '0921', assetId: '0921' },
+  { speciesId: 'pawmo', num: 922, slug: '0922', assetId: '0922' },
+  { speciesId: 'pawmot', num: 923, slug: '0923', assetId: '0923' },
+  { speciesId: 'tandemaus', num: 924, slug: '0924', assetId: '0924' },
+  { speciesId: 'maushold', num: 925, slug: '0925', assetId: '0925' },
+  { speciesId: 'fidough', num: 926, slug: '0926', assetId: '0926' },
+  { speciesId: 'dachsbun', num: 927, slug: '0927', assetId: '0927' },
+  { speciesId: 'smoliv', num: 928, slug: '0928', assetId: '0928' },
+  { speciesId: 'dolliv', num: 929, slug: '0929', assetId: '0929' },
+  { speciesId: 'arboliva', num: 930, slug: '0930', assetId: '0930' },
+  { speciesId: 'nacli', num: 932, slug: '0932', assetId: '0932' },
+  { speciesId: 'naclstack', num: 933, slug: '0933', assetId: '0933' },
+  { speciesId: 'garganacl', num: 934, slug: '0934', assetId: '0934' },
+  { speciesId: 'charcadet', num: 935, slug: '0935', assetId: '0935' },
+  { speciesId: 'armarouge', num: 936, slug: '0936', assetId: '0936' },
+  { speciesId: 'ceruledge', num: 937, slug: '0937', assetId: '0937' },
+  { speciesId: 'tadbulb', num: 938, slug: '0938', assetId: '0938' },
+  { speciesId: 'bellibolt', num: 939, slug: '0939', assetId: '0939' },
+  { speciesId: 'wattrel', num: 940, slug: '0940', assetId: '0940' },
+  { speciesId: 'kilowattrel', num: 941, slug: '0941', assetId: '0941' },
+  { speciesId: 'grafaiai', num: 945, slug: '0945', assetId: '0945' },
+  { speciesId: 'bramblin', num: 946, slug: '0946', assetId: '0946' },
+  { speciesId: 'toedscool', num: 948, slug: '0948', assetId: '0948' },
+  { speciesId: 'capsakid', num: 951, slug: '0951', assetId: '0951' },
+  { speciesId: 'scovillain', num: 952, slug: '0952', assetId: '0952' },
+  { speciesId: 'rellor', num: 953, slug: '0953', assetId: '0953', shootAnim: 'Charge' },
+  { speciesId: 'flittle', num: 955, slug: '0955', assetId: '0955' },
+  { speciesId: 'tinkatink', num: 957, slug: '0957', assetId: '0957' },
+  { speciesId: 'tinkatuff', num: 958, slug: '0958', assetId: '0958' },
+  { speciesId: 'tinkaton', num: 959, slug: '0959', assetId: '0959' },
+  { speciesId: 'wiglett', num: 960, slug: '0960', assetId: '0960' },
+  { speciesId: 'wugtrio', num: 961, slug: '0961', assetId: '0961' },
+  { speciesId: 'finizen', num: 963, slug: '0963', assetId: '0963' },
+  { speciesId: 'palafin', num: 964, slug: '0964', assetId: '0964' },
+  { speciesId: 'palafinhero', num: 964, formIndex: 1, slug: '0964-hero', assetId: '0964/0001', shootAnim: 'SpAttack' },
+  { speciesId: 'varoom', num: 965, slug: '0965', assetId: '0965' },
+  { speciesId: 'revavroom', num: 966, slug: '0966', assetId: '0966' },
+  { speciesId: 'cyclizar', num: 967, slug: '0967', assetId: '0967' },
+  { speciesId: 'orthworm', num: 968, slug: '0968', assetId: '0968' },
+  { speciesId: 'glimmet', num: 969, slug: '0969', assetId: '0969' },
+  { speciesId: 'glimmora', num: 970, slug: '0970', assetId: '0970' },
+  { speciesId: 'greavard', num: 971, slug: '0971', assetId: '0971' },
+  { speciesId: 'houndstone', num: 972, slug: '0972', assetId: '0972' },
+  { speciesId: 'cetoddle', num: 974, slug: '0974', assetId: '0974' },
+  { speciesId: 'cetitan', num: 975, slug: '0975', assetId: '0975' },
+  { speciesId: 'veluza', num: 976, slug: '0976', assetId: '0976' },
+  { speciesId: 'dondozo', num: 977, slug: '0977', assetId: '0977' },
+  { speciesId: 'tatsugiri', num: 978, slug: '0978', assetId: '0978' },
+  { speciesId: 'tatsugiridroopy', num: 978, formIndex: 2, slug: '0978-droopy', assetId: '0978/0002' },
+  { speciesId: 'tatsugiristretchy', num: 978, formIndex: 1, slug: '0978-stretchy', assetId: '0978/0001' },
+  { speciesId: 'annihilape', num: 979, slug: '0979', assetId: '0979' },
+  { speciesId: 'clodsire', num: 980, slug: '0980', assetId: '0980' },
+  { speciesId: 'farigiraf', num: 981, slug: '0981', assetId: '0981' },
+  { speciesId: 'dudunsparce', num: 982, slug: '0982', assetId: '0982' },
+  { speciesId: 'kingambit', num: 983, slug: '0983', assetId: '0983' },
+  { speciesId: 'greattusk', num: 984, slug: '0984', assetId: '0984' },
+  { speciesId: 'screamtail', num: 985, slug: '0985', assetId: '0985' },
+  { speciesId: 'fluttermane', num: 987, slug: '0987', assetId: '0987' },
+  { speciesId: 'slitherwing', num: 988, slug: '0988', assetId: '0988' },
+  { speciesId: 'sandyshocks', num: 989, slug: '0989', assetId: '0989' },
+  { speciesId: 'irontreads', num: 990, slug: '0990', assetId: '0990' },
+  { speciesId: 'ironbundle', num: 991, slug: '0991', assetId: '0991' },
+  { speciesId: 'ironhands', num: 992, slug: '0992', assetId: '0992' },
+  { speciesId: 'ironmoth', num: 994, slug: '0994', assetId: '0994' },
+  { speciesId: 'ironthorns', num: 995, slug: '0995', assetId: '0995' },
+  { speciesId: 'frigibax', num: 996, slug: '0996', assetId: '0996' },
+  { speciesId: 'arctibax', num: 997, slug: '0997', assetId: '0997' },
+  { speciesId: 'baxcalibur', num: 998, slug: '0998', assetId: '0998' },
+  { speciesId: 'gimmighoulroaming', num: 999, formIndex: 1, slug: '0999-roaming', assetId: '0999/0001' },
+  { speciesId: 'gholdengo', num: 1000, slug: '1000', assetId: '1000' },
+  { speciesId: 'tinglu', num: 1003, slug: '1003', assetId: '1003' },
+  { speciesId: 'chiyu', num: 1004, slug: '1004', assetId: '1004' },
+  { speciesId: 'roaringmoon', num: 1005, slug: '1005', assetId: '1005' },
+  { speciesId: 'ironvaliant', num: 1006, slug: '1006', assetId: '1006', shootAnim: 'SpAttack' },
+  { speciesId: 'koraidon', num: 1007, slug: '1007', assetId: '1007' },
+  { speciesId: 'walkingwake', num: 1009, slug: '1009', assetId: '1009' },
+  { speciesId: 'ironleaves', num: 1010, slug: '1010', assetId: '1010' },
+  { speciesId: 'dipplin', num: 1011, slug: '1011', assetId: '1011' },
+  { speciesId: 'poltchageist', num: 1012, slug: '1012', assetId: '1012' },
+  { speciesId: 'sinistcha', num: 1013, slug: '1013', assetId: '1013' },
+  { speciesId: 'munkidori', num: 1015, slug: '1015', assetId: '1015' },
+  { speciesId: 'fezandipiti', num: 1016, slug: '1016', assetId: '1016', shootAnim: 'Charge' },
+  { speciesId: 'ogerpon', num: 1017, slug: '1017', assetId: '1017' },
+  { speciesId: 'ogerponwellspring', num: 1017, formIndex: 1, slug: '1017-wellspring', assetId: '1017/0001' },
+  { speciesId: 'ogerponhearthflame', num: 1017, formIndex: 2, slug: '1017-hearthflame', assetId: '1017/0002' },
+  { speciesId: 'ogerponcornerstone', num: 1017, formIndex: 3, slug: '1017-cornerstone', assetId: '1017/0003' },
+  { speciesId: 'ogerpontealtera', num: 1017, formIndex: 4, slug: '1017-teal-tera', assetId: '1017/0004' },
+  { speciesId: 'ogerponwellspringtera', num: 1017, formIndex: 5, slug: '1017-wellspring-tera', assetId: '1017/0005' },
+  { speciesId: 'ogerponhearthflametera', num: 1017, formIndex: 6, slug: '1017-hearthflame-tera', assetId: '1017/0006' },
+  { speciesId: 'ogerponcornerstonetera', num: 1017, formIndex: 7, slug: '1017-cornerstone-tera', assetId: '1017/0007' },
+  { speciesId: 'archaludon', num: 1018, slug: '1018', assetId: '1018' },
+  { speciesId: 'hydrapple', num: 1019, slug: '1019', assetId: '1019' },
+  { speciesId: 'gougingfire', num: 1020, slug: '1020', assetId: '1020' },
+  { speciesId: 'ragingbolt', num: 1021, slug: '1021', assetId: '1021' },
+  { speciesId: 'terapagos', num: 1024, slug: '1024', assetId: '1024' },
+  { speciesId: 'terapagosterastal', num: 1024, formIndex: 1, slug: '1024-terastal', assetId: '1024/0001' },
+  { speciesId: 'pecharunt', num: 1025, slug: '1025', assetId: '1025' },
 ]

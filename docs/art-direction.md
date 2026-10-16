@@ -40,7 +40,9 @@ Three tiers, in order of preference:
    `frlg/overworld.png`, `frlg/player.png`) and the battle sprites in
    `public/anil/`. The PMD ones
    come from Pokémon Mystery Dungeon rips (PMDCollab and spriters-resource) via the
-   sibling project `pkm-mystery-dungeon-like`; the FRLG ones come from
+   sibling project `pkm-mystery-dungeon-like`; the overworld set is now packed
+   straight from **PMDCollab's SpriteCollab** project (see the PMD Collab section
+   below); the FRLG ones come from
    spriters-resource and the pret/pokefirered decomp (see the FRLG sections below);
    the battle sprites come from the fangame Pokémon Añil (see the Añil section
    below). All are Nintendo/GameFreak/Chunsoft art, as the user asked. **Never
@@ -267,13 +269,66 @@ badges (DOR / ENV / QUE / PAR / CON / DEB / PKRS).
 sheet ships no separate badly-poisoned badge, so `tox` keeps sharing the poison
 frame, and the battle HP panel draws the badge in place of the text abbreviation.
 
+## Pokémon overworld sprites (PMDCollab, local only)
+
+The overworld Pokémon art is **PMDCollab's SpriteCollab** project
+(`github.com/PMDCollab/SpriteCollab`, served by `spriteserver.pmdcollab.org`):
+top-down Mystery Dungeon dungeon sprites for Pokémon of every generation, one
+pack per species and per forme at `assets/<NNNN>/sprites.zip` (a forme is
+`assets/<NNNN>/<FFFF>/sprites.zip`, `FFFF` SpriteCollab's own 4-digit form
+index — Castform-Sunny is `0351/0001`). Each pack carries one PNG per animation
+plus an `AnimData.xml` with the exact frame size, frame count and per-frame tick
+durations, so no coordinate is hand-eyeballed and no chroma-keying is needed
+(the sheets already have a real alpha channel).
+
+The pipeline is the three dependency-free tools under `scripts/legacy-art/`, and
+its **work list is derived from our dex**, never hand-written:
+
+| Step | Tool | What it does |
+| --- | --- | --- |
+| 1 | `fetch-pmdcollab.mjs` | downloads a pack (or `--table`, every row of `pmdcollab-species.mjs`; `--missing` only the rows with no local pack) into `<dest>/<slug>-pmdcollab/` |
+| 2 | `extract-real-sprites.mjs` | crops, trims, scales and repacks the frames into the committed `src/assets/pokemon/<fileId>.png` + `.json` pair (`--only-missing` skips a pair that is already packed) |
+| 3 | `build-pokemon-index.mjs` | writes the committed coverage manifest `src/assets/pokemon/index.json` from those pairs and `src/data/dex/species.json` |
+
+`--dest` and `--source` are **absolute** paths, required, with `PMDCOLLAB_SOURCES`
+as the environment fallback; no tool defaults to a path inside the repo, because a
+source tree under `sprite-sources/` is never junctioned or symlinked into a
+worktree (AGENTS.md's "Asset trees" rule). `scripts/legacy-art/pmdcollab-species.mjs`
+is the table the three share: one row per playable species PMDCollab has art for,
+in dex order, giving the dex id, the dex number, the SpriteCollab form index, the
+local folder slug and the download path.
+
+The pair's file id is `num` for a base species and `num * 100 + formIndex` for a
+forme, so Castform's three Forecast formes are `35101`, `35102` and `35103`. A
+species PMDCollab has no pack for (the Totem formes, Minior-Meteor,
+Sinistea/Polteageist-Antique, Basculegion-F, Oinkologne-F, Maushold-Four,
+Rockruff-Dusk, Greninja-Bond) is listed in the manifest's `missing` array instead
+and a reader draws nothing for it, as is one whose pack carries no usable
+Walk/Attack/Hurt block (Jellicent, Stonjourner, Iron Treads...). A pack with no
+`Shoot` anim gets its special slot from the row's `shootAnim` override
+(`SpAttack`, or `Charge` where there is no `SpAttack`), so the special block is
+never left empty.
+
+Credit, as the repository itself prints it: the SpriteCollab contributors. Its
+custom graphics are licensed **CC BY-NC 4.0**; the art derived from the official
+games is Nintendo/GameFreak/Chunsoft's. Like every other rip here it is local
+development art only — `sprite-sources/` is gitignored and the packed sheets must
+not be redistributed.
+
 ## Sprite contract
 
 - Overworld Pokémon sheets: 32x32 frames, 5 rows in the order Down, DownRight,
-  Up, UpRight, Left; columns are concatenated animation frames. A per-species
-  JSON manifest (from the donor project) describes `cols` and the animation
-  ranges. Only the first 25 species have real art; the rest are procedural
-  placeholders from `generate-pokemon.mjs`.
+  Up, UpRight, Left; columns are concatenated animation frames. One pair per
+  species and per forme, `<fileId>.png` + `<fileId>.json` side by side, named
+  after the dex number (or `num * 100 + form index` for a forme). The JSON
+  manifest carries `cols` and the five animation blocks (`idle`, `walk`,
+  `attack`, `special`, `hurt`) with `start`, `count`, `durationsMs` and, where
+  the source declares one, `hitFrame` — `start` and `count` are row-0 column
+  offsets, so the frame at step `i` of an animation in direction row `r` is
+  `r * cols + start + i`. `src/assets/pokemon/index.json` is the coverage
+  manifest a reader resolves a species through: `files` maps a species id to its
+  pair, `missing` lists the ids PMDCollab has no art for. Packed from PMDCollab
+  by `scripts/legacy-art/` (see the PMD Collab section above).
 - Trainer overworld sprites: one 16x32 frame per archetype, the down-facing idle
   from the FRLG decomp sheet, drawn at `TILE_SIZE / 16` with its feet on the tile
   bottom; the tinted arrow still shows facing (`D24`).

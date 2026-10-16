@@ -1,8 +1,21 @@
 // Writes real Pokemon Mystery Dungeon sprite frames as per-species files
-// (src/assets/pokemon/<id>.png + <id>.json) for every species with a local
-// PMDCollab pack — overwriting whatever scripts/generate-pokemon.mjs wrote
-// there (run that script first to seed placeholders for everyone, then this
-// one to replace the species it covers with real art).
+// (src/assets/pokemon/<fileId>.png + <fileId>.json) for every species of
+// PMDCOLLAB_SPECIES that has a local PMDCollab pack — overwriting whatever
+// scripts/legacy-art/generate-pokemon.mjs wrote there (that script seeds
+// procedural placeholders; this one replaces every species it can pack with
+// real art). A species whose local pack is absent keeps its placeholder.
+//
+// Usage:
+//   node scripts/legacy-art/extract-real-sprites.mjs --source=<abs> [--out=<abs>] [--only-missing]
+//
+//   --source  - absolute path to the sprite-sources/pokemons directory holding
+//               <slug>-pmdcollab/ packs, required, with PMDCOLLAB_SOURCES as
+//               the fallback. Never defaulted inside the repo (AGENTS.md's
+//               "Asset trees" rule).
+//   --out     - output directory, default src/assets/pokemon (committed output,
+//               so a relative default is correct here).
+//   --only-missing - skip a pair that already carries `durationsMs`, i.e. one
+//               extract-real-sprites.mjs has already packed.
 //
 // All species here are sourced from PMDCollab (pmdcollab.org,
 // sprites.pmdcollab.org): one PNG per animation plus an AnimData.xml giving
@@ -10,49 +23,62 @@
 // hand-eyeballed coordinates, and they already carry a real alpha channel
 // (no chroma-keying needed). Each PMDCollab sheet has 8 compass-direction
 // rows in fixed order (Down, DownRight, Right, UpRight, Up, UpLeft, Left,
-// DownLeft; row 0 = Down), columns = frames — confirmed by cropping and
-// eyeballing, since AnimData.xml doesn't spell the order out.
+// DownLeft; row 0 = Down), confirmed by cropping and eyeballing, since
+// AnimData.xml doesn't spell the order out.
 //
 // The game only stores 5 of those 8 direction rows per species: Down,
 // DownRight, Up, UpRight, Left (Right/UpLeft/DownLeft are Left/UpRight/
-// DownRight flipped horizontally at render time, see
-// PokemonSprite.direction() in src/entities/pokemon-sprite.ts). Unlike the
-// old shared-atlas version of this script, frame *count* is no longer
-// forced to 2 per animation — every real frame from AnimData.xml is kept,
-// so a species' Walk/Attack/etc. animates through as many poses as the
-// source game actually used. Each species' PNG is a variable-width strip:
-// 5 direction rows tall, animations (idle, walk, attack, special, hurt)
-// concatenated in columns at the offsets recorded in that species' manifest
-// (see src/entities/pokemon-sprite-manifest.ts) — a fixed global column
-// layout no longer makes sense once frame counts vary per species.
+// DownRight flipped horizontally at render time). Every real frame from
+// AnimData.xml is kept, so a species' Walk/Attack/etc. animates through as
+// many poses as the source game actually used. Each species' PNG is a
+// variable-width strip: 5 direction rows tall, animations (idle, walk,
+// attack, special, hurt) concatenated in columns at the offsets recorded in
+// that species' manifest. The frame at step `i` of an animation in direction
+// row `r` is `r * cols + start + i`.
 //
-// Source packs live in sprite-sources/pokemons/<slug>-pmdcollab/ (gitignored
-// — copyrighted Nintendo/GameFreak/Chunsoft art, kept local, never
-// redistributed; only the cropped/processed per-species PNGs are
-// committed). Fetch a species with:
-//   node scripts/fetch-pmdcollab.mjs <pokedexId> <slug> --anims=Idle,Walk,Attack,Shoot,Hurt
-// then add a { id, slug } entry to PMDCOLLAB_SPECIES below.
-//
-// Currently wired up: pokedex ids 1-649 (Bulbasaur through Genesect), whose
-// PMDCollab id happens to equal their pokedex id (both are the national
-// dex number for gen-1 through gen-5 species). Add an entry for any further
-// species added to src/entities/pokedex.json. Species with no sprite pack
-// fetched locally (PMDCollab returned an error, e.g. a missing bundle
-// server-side) are skipped and keep their procedural placeholder.
+// The pair's file id is `num` for a base species and `num * 100 + formIndex`
+// for a forme (SpriteCollab's own 4-digit form index) — see
+// scripts/legacy-art/pmdcollab-species.mjs and src/assets/pokemon/index.json.
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
+import { isAbsolute, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { decodePng, encodePng } from './png-codec.mjs'
 import { PMDCOLLAB_SPECIES } from './pmdcollab-species.mjs'
 
-const OUT_DIR = new URL('../src/assets/pokemon/', import.meta.url)
-const SOURCES = new URL('../sprite-sources/pokemons/', import.meta.url)
+const rawArgs = process.argv.slice(2)
+const flag = (name) => rawArgs.find((a) => a === `--${name}` || a.startsWith(`--${name}=`))
+const value = (name) => {
+  const arg = flag(name)
+  return arg && arg.includes('=') ? arg.slice(name.length + 3) : null
+}
+
+function resolveSource() {
+  const source = value('source') ?? process.env.PMDCOLLAB_SOURCES ?? null
+  if (!source) {
+    console.error('error: --source=<abs> is required (or set PMDCOLLAB_SOURCES)')
+    console.error('       the source tree is never defaulted inside the repo (AGENTS.md "Asset trees")')
+    process.exit(1)
+  }
+  if (!isAbsolute(source)) {
+    console.error(`error: --source must be an absolute path, got "${source}"`)
+    process.exit(1)
+  }
+  if (!existsSync(source)) {
+    console.error(`error: --source does not exist: ${source}`)
+    process.exit(1)
+  }
+  return resolve(source)
+}
+
+const SOURCES = resolveSource()
+const OUT_DIR = resolve(
+  value('out') ?? fileURLToPath(new URL('../../src/assets/pokemon/', import.meta.url)),
+)
+const onlyMissing = flag('only-missing') !== undefined
 const SPRITE = 32
 
 // PMD games' AnimData.xml durations are in engine ticks; the underlying
-// games run their animation timers at roughly 30 ticks/sec. Only feeds
-// `durationsMs` in the manifest today — not yet wired into playback (see
-// IDLE_FRAME_MS/WALK_FRAME_MS in src/entities/pokemon-sprite.ts), so this is
-// a reasonable-but-unverified assumption, fine to revisit once per-frame
-// timing is actually used.
+// games run their animation timers at roughly 30 ticks/sec.
 const MS_PER_TICK = 1000 / 30
 
 const ATLAS_DIR_ROW = { down: 0, downright: 1, up: 2, upright: 3, left: 4 }
@@ -84,9 +110,8 @@ function trimBBox(img, x0, y0, x1, y1) {
 // Crops `region` from `src`, trims it to its content bbox, downsamples it by
 // `scale` (1 = no-op, exact pixel copy) and centers it (horizontally
 // centered, bottom-anchored) into `dst` cell (col,row). `dst` is a plain
-// {width, height, data} RGBA buffer sized for one species — unlike the old
-// shared-atlas version, each species gets its own freshly allocated (already
-// transparent) buffer, so there's no need to clear a cell before writing it.
+// {width, height, data} RGBA buffer sized for one species, freshly allocated
+// and already transparent.
 //
 // `scale` is computed once per anim (see scaleFor below), not per frame, so
 // every frame of e.g. a Walk cycle shrinks by the same factor — otherwise a
@@ -158,9 +183,8 @@ function frameRegion(meta, srcDirRow, i) {
 // Largest trimmed-content bbox across all directions/frames actually used
 // for this anim, turned into a single "shrink to fit the 32x32 cell" factor
 // (capped at 1 — small species that already fit aren't scaled up). PMDCollab
-// canvases vary wildly by species (legendary birds, Gyarados, Onix, Lapras,
-// Dragonair's Walk-aliased Idle run 48-136px on a side vs ~24-32px for most
-// gen-1 mons) since the source games don't use a fixed sprite footprint.
+// canvases vary wildly by species since the source games don't use a fixed
+// sprite footprint.
 function scaleFor(src, meta, frameIndices) {
   let maxW = 0,
     maxH = 0
@@ -176,7 +200,7 @@ function scaleFor(src, meta, frameIndices) {
 }
 
 function loadSheetRGBA(name) {
-  return decodePng(readFileSync(new URL(name, SOURCES)))
+  return decodePng(readFileSync(join(SOURCES, name)))
 }
 
 // Reads FrameWidth/FrameHeight/frame-count/per-frame Duration/HitFrame for a
@@ -188,7 +212,7 @@ function loadSheetRGBA(name) {
 // with no frame data or PNG of its own) — follow one level of CopyOf and
 // report `sourceAnim` so callers load the right sprite sheet file.
 function readAnimMeta(slug, animName) {
-  const xml = readFileSync(new URL(`${slug}-pmdcollab/AnimData.xml`, SOURCES), 'utf8')
+  const xml = readFileSync(join(SOURCES, `${slug}-pmdcollab`, 'AnimData.xml'), 'utf8')
   const blockRe = new RegExp(`<Anim>\\s*<Name>${animName}</Name>[\\s\\S]*?</Anim>`)
   const block = xml.match(blockRe)?.[0]
   if (!block)
@@ -207,12 +231,6 @@ function readAnimMeta(slug, animName) {
   return { frameWidth, frameHeight, frameCount, durationTicks, hitFrame, sourceAnim: animName }
 }
 
-// PMDCOLLAB_SPECIES (imported above) lists every species with a local
-// PMDCollab sprite pack: id, slug (matches sprite-sources/pokemons/<slug>-pmdcollab/)
-// and per-species overrides (shootAnim) for species whose "Shoot" anim needs
-// substituting. See scripts/pmdcollab-species.mjs for the full list and how
-// to add a species.
-
 // Which manifest anim key each PMDCollab anim name maps to. A few species
 // (Clefairy/Clefable) have no "Shoot" anim at all, not even as a <CopyOf>
 // alias — set `shootAnim` in PMDCOLLAB_SPECIES to substitute a different
@@ -227,20 +245,44 @@ function animPlan(shootAnim) {
   ]
 }
 
+function fileIdOf(row) {
+  return row.formIndex ? row.num * 100 + row.formIndex : row.num
+}
+
+function isCovered(fileId) {
+  const manifestPath = join(OUT_DIR, `${fileId}.json`)
+  if (!existsSync(manifestPath)) return false
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  return Object.values(manifest.anims ?? {}).every((anim) => Array.isArray(anim.durationsMs))
+}
+
 let written = 0
-for (const { id, slug, shootAnim } of PMDCOLLAB_SPECIES) {
-  if (!existsSync(new URL(`${slug}-pmdcollab/AnimData.xml`, SOURCES))) {
+let skipped = 0
+for (const row of PMDCOLLAB_SPECIES) {
+  const { slug, shootAnim } = row
+  const fileId = fileIdOf(row)
+  if (onlyMissing && isCovered(fileId)) {
+    skipped++
+    continue
+  }
+  if (!existsSync(join(SOURCES, `${slug}-pmdcollab`, 'AnimData.xml'))) {
     console.error(`[${slug}] no local sprite pack, skipping`)
     continue
   }
 
-  const anims = animPlan(shootAnim).map(({ key, animName }) => {
-    const meta = readAnimMeta(slug, animName)
-    const src = loadSheetRGBA(`${slug}-pmdcollab/${meta.sourceAnim}-Anim.png`)
-    const frames = Array.from({ length: meta.frameCount }, (_, i) => i)
-    const scale = scaleFor(src, meta, frames)
-    return { key, meta, src, frames, scale }
-  })
+  let anims
+  try {
+    anims = animPlan(shootAnim).map(({ key, animName }) => {
+      const meta = readAnimMeta(slug, animName)
+      const src = loadSheetRGBA(join(`${slug}-pmdcollab`, `${meta.sourceAnim}-Anim.png`))
+      const frames = Array.from({ length: meta.frameCount }, (_, i) => i)
+      const scale = scaleFor(src, meta, frames)
+      return { key, meta, src, frames, scale }
+    })
+  } catch (err) {
+    console.error(`[${slug}] no usable pack: ${err.message}`)
+    continue
+  }
 
   let col = 0
   const manifestAnims = {}
@@ -272,9 +314,12 @@ for (const { id, slug, shootAnim } of PMDCOLLAB_SPECIES) {
     }
   }
 
-  writeFileSync(new URL(`${id}.png`, OUT_DIR), encodePng(dst.width, dst.height, dst.data))
-  writeFileSync(new URL(`${id}.json`, OUT_DIR), JSON.stringify({ cols: totalCols, anims: manifestAnims }))
+  writeFileSync(join(OUT_DIR, `${fileId}.png`), encodePng(dst.width, dst.height, dst.data))
+  writeFileSync(
+    join(OUT_DIR, `${fileId}.json`),
+    JSON.stringify({ cols: totalCols, anims: manifestAnims }),
+  )
   written++
 }
 
-console.log(`wrote ${written} real species to src/assets/pokemon/`)
+console.log(`wrote ${written} real species to ${OUT_DIR} (${skipped} already packed, skipped)`)
