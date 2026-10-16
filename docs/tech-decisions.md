@@ -520,8 +520,9 @@ carries no numbered TM items, the number → move table is hand-authored from th
 learnsets' `9M` flags and the move ids are validated against `moves.json`.
 
 The detail window's MOVES tab is a **learnset panel**: the four slotted moves
-over a search field and a paged, full-width grid of everything the member may
-equip — the learned level-up moves (from the run's randomized learnset, D17) that
+over a search field and a full-width grid scrolled one row at a time, of
+everything the member may equip — the learned level-up moves (from the run's
+randomized learnset, D17) that
 are not already in one of its four slots, and the moves a TM **in the bag** can
 teach it. A pool cell is dragged onto a slot to equip it, replacing what sat
 there; this goes through the pure `equipMove`, so a move the member already holds
