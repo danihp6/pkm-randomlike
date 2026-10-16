@@ -23,14 +23,15 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e, Batch 5eb, Batch 5f and Batch 6 are
+**Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e, Batch 5eb, Batch 5f, Batch 6 and
+Batch 6b are
 shipped and
 archived.** Their
-twenty-one
+twenty-three
 tasks merged
 in ID order
 behind the green gate (four, then five, then three, then one, then one, then one, then one, then
-one, then four) and the
+one, then four, then two) and the
 detail is
 in
 `CHANGELOG.md`'s
@@ -38,13 +39,12 @@ in
 rustle, Batch 5c the one that re-planned the level curve and laid that overlay over the player's
 legs, Batch 5cb the defect in front of 5d that fixed its colour and clipped its hit, Batch 5d
 the on-ramp thinning, Batch 5e the fixed boss and mini-boss parties, Batch 5eb the debug
-overlay's teleports and its two ignore toggles, Batch 5f the overworld sprite set, and Batch 6
-the balance pass, the Phase 9 docs, the battle SWITCH grid and the follower, and all
-nine are closed
-below. **Batch 6b is cut** — the learnset band scrolls and a trainer's remaining
-team sits under its panel: its two specs are written (`.agent_specs/task-38.md`,
-`.agent_specs/task-57.md`), it is an antichain and its two tasks share no path, and the
-three open questions it carried are **answered and frozen in `### Batch 6b` below**. The
+overlay's teleports and its two ignore toggles, Batch 5f the overworld sprite set, Batch 6
+the balance pass, the Phase 9 docs, the battle SWITCH grid and the follower, and Batch 6b the
+learnset band's one-row scroll and the trainer's Poké Ball row, and all
+ten are closed
+below. **Batch 7 is the next batch cut** — Gigantamax, the route-scoped catch swap and the main
+menu's Continue row. The
 eighteenth round below put the
 follower back in Batch 6 and gave its art its own batch, 5f, ahead of it. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
@@ -619,6 +619,37 @@ missing** instead of the ordinary case for every Gen 6+ species. `src/assets/REA
 Nothing else in the plan moves,
 no batch that is already `cut` gains a member, and the two decisions add no run field.
 
+A **nineteenth round** of **one report** arrived after that one, and it adds **no dependency
+edge** and **no `SAVE_VERSION` step**: «quita la barra de xp del contenedor de combate» — the
+battle's player panel draws a **second, smaller bar** under the health bar, and it goes. It is
+**presentation**, not a defect and not a rule: the row is `drawSidePanel`'s player branch
+(`src/scenes/BattleScene.ts`, 1747-1760) — `drawGauge(this.hud, barX, barY + 36,
+FRLG_HPBAR.width, 8, experienceFraction(this.xp, fighter.level), 0x60a5fa)` plus the
+`` `XP ${this.xp}` `` label at `barY + 46` — and everything it reads is the scene's own: the
+`xp` field (255-256, assigned from `launch.xp` at 448) and the `xpText` `BitmapText` (313, built
+at 589), whose only other mention is the foe branch that hides it. Nothing under
+`src/engine/**` moves: `experienceFraction` (`src/engine/run/progression.ts` 59) is what the
+**route HUD** draws its own bar with (`RouteScene`, 2106-2107), and `D35`'s rule — the squad
+shares **one** bar — is untouched, because the bar it means is the route HUD's. `[Task-77]`
+claims `src/scenes/BattleScene.ts` and one clarifying line in `docs/design-spec.md` §4 (171-174,
+the "one XP bar" bullet in the battle's own section: the rule stays and the sentence gains only
+*where* that bar is drawn), and it takes **the earliest batch that leaves that scene free**:
+Batch 6b is `cut` and can gain no member, and every batch from 7 to 14 holds the file (7
+Task-18's Gigantamax, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10
+Task-26's every-scene sweep, 11 Task-29's ledger — `src/scenes/BattleScene.ts` is line 140 of
+`.prettierignore` — 12 Task-30, 13 Task-59, 14 Task-48), while 15's Task-49 claims the route
+scene, the notice module, `docs/routes-spec.md` §2 and the i18n files instead. So **Batch 15**
+takes a second member and stays an antichain, and its one doc line is free there too. The one
+number the report does not settle is the panel's own height — `PLAYER_PANEL_H = 184` (88, "Tall
+enough for the padded name row, the types band, the bar and the XP row") against the foe's 150,
+which is the same content without that band — so the entry freezes the panel to **150** and the
+question below carries the alternative. It lands **before** the scene's three later claimants,
+so their own "free" lists lose 15: Task-60's (Batch 17) reads 13, 16, 17 and 19 from here and
+its choice of 17 is unchanged, Task-55's (Batch 18) parenthetical reads "Task-48 held it in
+Batch 14, Task-77 in 15 and Task-60 in 17", and Batch 18's shape paragraph lists 6b, 13, 16 and
+17 as the batches that leave that scene alone. Nothing here re-plans `Task-38`–`Task-76`, and
+Batch 4b stays `cut`.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
@@ -889,57 +920,23 @@ after the first QA). None of the four added a run field, so **no `SAVE_VERSION` 
 stays **14 → 15 → 16 → 17 → 18**. Their four IDs are retired: they keep their place in the
 sequence and are never reused.
 
-### Batch 6b — the learnset band scrolls, and a trainer's remaining team sits under its panel *(cut)*
-Task-38 and Task-57 are the batch, one spec each (`.agent_specs/task-38.md`,
-`.agent_specs/task-57.md`), and they share no path — the route scene, the new
-`src/ui/scroll.ts` + its test, `src/ui/README.md` and the two doc files are Task-38's,
-while `src/scenes/BattleScene.ts` is Task-57's — so the batch is an antichain. **All three
-of its open questions are answered**, and their bullets are gone from the list below.
-**Task-38's** reading is its written default: the `<` / `>` pair **stays as a one-row
-scroll** (a control that reads "one row", so a keyboard or pad player can reach row five),
-the search field keeps the ~78px those glyphs occupy, and the mouse wheel **and a drag on
-the band's own background** scroll it too; the rejected reading (wheel and drag only, the
-glyphs gone) is not what ships. **Task-57's** two are also their written defaults: the row
-is on the **foe's panel alone** and a **wild** battle draws **no row at all**, and the row
-is **fixed** — one ball per roster member with the fainted ones emptied, so it also says
-how many the trainer started with — rather than a row that shrinks to the live count.
-One correction is recorded against Task-38's spec: its `[live]` band-background-drag
-criterion first froze its press point **4 px inside the band's left edge**, which the
-panel's own `HUD_PANEL_BORDER` (12 px) move ring swallows — `hudPanelAt` →
-`onPanelBorder` runs before `handleDetailPointerDown`, so that press moved the panel and
-did not scroll the band. The point is re-frozen to the band's **row gutter at its
-horizontal middle** (at least 12 px inside that edge); the shipped implementation was
-correct as written and **no code changes**.
-
-- **Task-38** The learnset band scrolls instead of paging.
-- **Task-57** A trainer's remaining team is drawn as Poké Balls under its HP panel.
-- **Hot files:** `src/scenes/RouteScene.ts`, the new `src/ui/scroll.ts` (+ its test) and
-  `src/ui/README.md` → Task-38; its two doc files, `docs/design-spec.md` §3 and
-  `docs/tech-decisions.md` `D36`, are Task-38's too — both are free only now, after
-  Task-16 (Batch 5) and Task-17 (Batch 6) wrote them. `src/scenes/BattleScene.ts` → Task-57
-  (the ball row alone; it reads the packed Añil item atlas's own ball frame and the enemy bench
-  the battle state already carries, so it writes no `src/data/**`, opens no `src/ui/**` module
-  and takes no `docs/` line). Neither task claims `package.json`, `src/main.ts`,
-  `vite.config.ts`, a `src/data/**` path or a packed asset, and no `docs/` file another batch
-  still holds.
-- **Shape:** two tasks that share no path, and the scroll is still alone in what it claims:
-  Task-38 is the only open item that needs
-  `src/scenes/RouteScene.ts`, and no batch that runs beside it claims that file — Batch 4b's
-  two tasks own `scripts/build-dex.mjs`, `src/data/dex/**` and `src/engine/routes/**`,
-  Batch 5's chrome pass and Batch 6's docs pass own the scene or its docs in the batches
-  before, and Batch 7's Task-31 rewrites the same scene's capture path after it. It runs
-  **after** Batch 5 so the band's search row and pool are re-laid out inside the new
-  windows once, and **after** Batch 6 so Task-17's two doc files are its own to amend —
-  which is exactly why the scroll cannot be one of Batch 6's tasks. Task-57 is the second
-  member and takes the one free `src/scenes/BattleScene.ts` slot: Task-16 re-chromed that file
-  in Batch 5, Task-53 takes it in 5b and Task-34 in Batch 6, and Batch 7's Task-18 reclaims it —
-  so this is the first batch after the chrome pass whose battle panel is nobody's, and the row
-  is drawn with the settled `FRLG_WINDOW_PADDING` and panel heights rather than against the
-  chrome they replace. It shares no path with Task-38 (the route scene, the scroll module and
-  the two doc files all stay Task-38's) and produces nothing the scroll reads, and it is placed
-  here rather than at the plan's tail on purpose: Batch 8's accessibility sweep audits every
-  scene and a dimmed ball is colour-only information, and Batch 10's i18n sweep keys every
-  player-facing literal while this row carries no text at all.
+### Batch 6b — the learnset band scrolls, and a trainer's remaining team sits under its panel *(shipped, archived)*
+Task-38 and Task-57 merged in ID order behind the green gate (**1447** tests, `npm test` +
+`npm run build` after each merge) and the detail is in `CHANGELOG.md`'s `## Unreleased`; QA
+validated each task in its own lane and then the combined tree. **Task-38** replaced the band's
+paging with a one-row **scroll**: the new pure `src/ui/scroll.ts` (`maxScrollTop` /
+`clampScrollTop` / `scrollByRows` / `visibleRange`) owns the maths, the wheel, the `<` / `>`
+controls and a drag on the band's own background all scroll it, the search field keeps the width
+the glyphs occupied, and the `1/3` counter and the page-step are gone. Its `[live]`
+band-background-drag criterion was **corrected in the spec** — its first press point fell inside
+the panel's 12 px move ring (`HUD_PANEL_BORDER`), which is not a code defect — and the shipped
+implementation was correct as written. **Task-57** draws a trainer's remaining team as **Poké
+Balls under its HP panel**: the row is the **foe's alone**, a **wild** battle draws **none**, and
+it is **fixed** — one ball per roster member with the fainted ones emptied, so it also says how
+many the trainer started with — with the active ball dimmed in the same repaint that empties its
+bar. Neither added a run field, so **no `SAVE_VERSION` step** — the chain stays
+**14 → 15 → 16 → 17 → 18**. Their two IDs are retired: they keep their place in the sequence and
+are never reused.
 
 ### Batch 7 — Gigantamax, route-scoped catch swap, the main menu's Continue row
 - **Task-18** Gigantamax, in the Mega Evolution mould.
@@ -1149,17 +1146,24 @@ correct as written and **no code changes**.
   Batch 12 and Batch 13 do. It has **no** `SAVE_VERSION` step: the run fact it reads,
   `RunState.stats.catches`, is already saved.
 
-### Batch 15 — the item pickup popup
+### Batch 15 — the item pickup popup, and the battle panel's XP bar
 - **Task-49** Obtaining an item raises a temporary popup.
+- **Task-77** The battle's HP panel loses its XP bar (registered by the nineteenth round; it
+  takes this batch's free `src/scenes/BattleScene.ts`).
 - **Hot files:** `src/scenes/RouteScene.ts` → Task-49; `src/ui/notice.ts` +
   `notice.test.ts` → Task-49 (the module Task-31 creates in Batch 7, extended here with
   the pickup notice); `docs/routes-spec.md` §2 (the ground-item bullet) and the i18n key
   table plus both locales (`src/i18n/**`, whose exact files are read from what Task-26
-  ships) → Task-49. Nothing else in the batch, and no `package.json`, `src/main.ts`,
-  `vite.config.ts`, `src/data/**`, `src/engine/**` or packed asset.
-- **Shape:** one task, one batch after Batch 14, because it is the second report in this
-  round that owns `src/scenes/RouteScene.ts` — and after Batch 14 the scene is free of the
-  whole 7–13 queue. Its dependency points backwards, not forwards: it **extends**
+  ships) → Task-49; `src/scenes/BattleScene.ts` (the XP row alone: the gauge, the `XP n`
+  label, the `xp`/`xpText` fields and the two imports that exist only for them) → Task-77,
+  and the one clarifying clause in `docs/design-spec.md` §4 (171-174) is Task-77's too — it
+  is free here because Task-49 holds `docs/routes-spec.md` §2 instead. Task-77 claims no
+  `src/ui/**` file (`drawGauge` is left in place), no `src/engine/**` file, no `src/data/**`,
+  no `package.json`, `src/main.ts`, `vite.config.ts` and no packed asset. Nothing else in the
+  batch.
+- **Shape:** two tasks that share no path, one batch after Batch 14. Task-49 is the second
+  report of its round that owns `src/scenes/RouteScene.ts` — and after Batch 14 the scene is
+  free of the whole 7–13 queue. Its dependency points backwards, not forwards: it **extends**
   `src/ui/notice.ts` and the HUD notice seam Task-31 ships in Batch 7 rather than inventing
   a second transient window, so it is written against Task-31's shipped state and takes the
   same seam, its copy and its hold time. It also has to work **through** Batch 10's i18n
@@ -1170,7 +1174,18 @@ correct as written and **no code changes**.
   **second of three notices** on `src/ui/notice.ts`: Task-31 (Batch 7) ships the module and
   the catch notice, this task adds the pickup notice, and Task-50 (Batch 16) adds the
   level-up notice one batch later because it wants the same scene and the same module — one
-  module, N strings, one batch each.
+  module, N strings, one batch each. Task-77 is the batch's second member and takes the one
+  free `src/scenes/BattleScene.ts` slot: that file is free here and nowhere earlier, because
+  Batch 6b is `cut` (it can gain no member) and every batch from 7 to 14 holds it (7
+  Task-18's Gigantamax, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10
+  Task-26's every-scene sweep, 11 Task-29's ledger, 12 Task-30, 13 Task-59, 14 Task-48) —
+  so this is the **first** batch that leaves the battle panel nobody's, and it is
+  presentation only: it removes the squad's XP gauge and label from the player's panel, adds
+  no run field, changes no rule and draws no RNG, so **no `SAVE_VERSION`** step. It edits a
+  file Batch 11's reformat cleared, so it keeps it conforming (no new ledger line), the way
+  Batch 12–14 do. It lands **before** the scene's three later claimants — Task-60 (Batch
+  17), Task-55 (Batch 18) and Task-62 (Batch 22) — so none of them is re-planned; their own
+  "free batch" lists lose 15 as the nineteenth round records.
 
 ### Batch 16 — the level-up popup
 - **Task-50** A level-up raises a temporary popup.
@@ -1564,8 +1579,10 @@ adds four (the surface, the last move, the gesture and the confirm, all behind t
 delete) — and the **eighteenth round's two decisions add no question at all**: they *answer* two
 of them, so the grid's reading and the follower's missing-sheet case leave this list (both are
 frozen in `[Task-34]`'s and `[Task-41]`'s entries and in the round's own paragraph above, and the
-follower's bullet below is rewritten to the ids `[Task-76]`'s manifest lists as missing) — and every
-question here carries a written default rather than a guess. **Batch 5b's seven are all
+follower's bullet below is rewritten to the ids `[Task-76]`'s manifest lists as missing) — and the
+**nineteenth round's single report adds one** (behind the battle panel's XP row, whose height the
+report itself does not settle) — and every question here carries a written default rather than a
+guess. **Batch 5b's seven are all
 answered**, so their bullets are gone and the answers live in `### Batch 5b` above, archived, and
 in its five specs: Task-45's two readings of the grass step (FireRed's own, on the player's tile —
 and its art is the decomp's field effect, five frames packed into the atlases),
@@ -1635,6 +1652,22 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
   (`Obtained <name>!`), since every path but the Mart grants one unit — say if a stack's
   count is wanted in the string. Say which before Batch 15's branch is cut. Nothing else in
   the plan changes either way.
+
+- **`[Task-77]` (the battle panel's XP bar, Batch 15): does the player's HP panel shrink to the
+  foe's height, or keep its own?** The row this report removes is the panel's **last band**: the
+  gauge sits at `barY + 36` (8 px tall, `FRLG_HPBAR.width` wide) and the `XP n` label at
+  `barY + 46`, while the panel's content otherwise ends with the HP bar at
+  `barY + FRLG_HPBAR.height` — so `PLAYER_PANEL_H = 184` (`BattleScene` 88) is the foe's 150 plus
+  exactly that band, and with the row gone the frame would hold a ~38 px empty field at its foot.
+  The written default is that the panel takes **150** and hugs its content the way the foe's does
+  (4 px of slack each); it moves no sprite and no clearance — on the desktop the rect's bottom
+  stays put (`y = box.y - 24 - PLAYER_PANEL_H`, 1597, so only the top drops by 34 px) and on the
+  compact layout the rect's `y` is `Math.round(height * 0.46)` (1576) and never reads the height,
+  so `FOE_PLATFORM_CLEAR` and the battlers' size caps are untouched — but the frame's own shape is
+  a screen the human reads, so it is worth a word. The alternative is to keep **184**, which
+  changes no geometry at all and leaves the band empty inside the frame. Say which before Batch
+  15's branch is cut; nothing else in the plan changes either way, and the two readings share the
+  same file, so neither re-cuts the batch.
 
 - **`[Task-50]` (the level-up popup, Batch 16): does the temporary notice replace the
   learned-move modal, or sit beside it?** The route HUD already opens a *modal* on a
@@ -2464,84 +2497,6 @@ Ports of Showdown handlers, in batches, on the hook names in
       Batch order covers the rest: both scenes are free here and nowhere earlier, and this
       task runs before Batch 10's i18n sweep so its lines can be keyed with the rest.
       *(Batch 9b)*
-- [ ] **[Task-57] A trainer's remaining team sits under its HP panel as Poké Balls.** Reported in
-      play: «los entrenadores debajo de su panel del pokemon que aparezcan dibujo de pokeballs
-      segun la cantidad de pokes que le quedan» — in a trainer battle, **under the trainer's HP
-      panel**, one Poké Ball drawing per Pokémon the trainer has left, the spent ones emptied or
-      greyed as they faint, which is how the cartridges show the opponent's team.
-      **Today the panel says nothing about the team behind the active Pokémon.** `drawSidePanel`
-      (`src/scenes/BattleScene.ts`, 1604-1663) is the one builder for both sides — called by
-      `refreshHud` at 1584-1585, which owns the two rects laid out at 1518-1544 — and it writes
-      the name and level (1618), the HP/status row (1623-1647) and the player's XP bar (1649-1659)
-      and then stops: the foe's box is `FOE_PANEL = { w: 320, h: 114 }` (87), placed at
-      `{ x: 36, y: 28 }` on a wide screen and full width at `y: 16` on the compact phone layout
-      (1523), and the space below it belongs to the battler sprite and its platform.
-      **The bench the row counts is already in the scene.** `state.sides.enemy.party` is the whole
-      enemy roster (`BattleSide.party`, `src/engine/battle/state.ts`, 53-56): built in `init`
-      (364-375) from `trigger.roster` for a trainer, or as a single `'wild'` fighter for an
-      encounter. A fainted fighter **stays in that array at `hp = 0`** — that is exactly what the
-      engine reads for "can this side still fight" (`hasHealthy`, `state.ts` 217-219 —
-      `party.some((fighter) => fighter.hp > 0)`) and what the AI's own tests set to force a
-      replacement (`src/engine/battle/ai.test.ts`, 55-56) — so **what the report calls "how many
-      are left" is `party.filter((fighter) => fighter.hp > 0).length`**: the roster minus the
-      fainted, the active member included, because the row describes the whole team and not just
-      its reserve. The row's **total** is `party.length`, i.e. the team the trainer brought, and
-      `MAX_PARTY_SIZE = 6` (`src/engine/run/state.ts`, 17, already imported at `BattleScene` 28)
-      is the bound on how many icons can ever exist. Nothing has to be added to the engine for any
-      of this: the state and the launch are both in hand inside `drawSidePanel`.
-      **A trainer whose roster is the one Pokémon on the field shows a single ball**, dimmed when
-      it faints — the row describes the team, not the reserve, so there is no "no bench, no row"
-      case; the only battle with **no row at all** is a **wild** one, because it has no trainer,
-      and the fact that gates it is `state.isWild` (set in `create` from `trigger.kind === 'wild'`,
-      395-399; the launch's `trigger.kind` says the same thing).
-      **The art already ships.** The icon is the run's own Poke Ball frame in the packed Añil item
-      atlas: `itemIconFrame('pokeball')` with `ITEM_ICON_TEXTURE_KEY` and `ITEM_ICON_SIZE = 24`
-      (`src/data/itemIcons.ts`, 14-16 and 29-36) — the same frame the capture throw already draws
-      (`BattleScene`, 953-957, its image built at 471) and the same atlas `BootScene` loads once
-      (144). No new art, no packer and no `src/data/**` write. That sheet is Task-07's (Batch 3,
-      shipped) and Task-22 **repacks** it with a machine icon in Batch 5, so this is a
-      **coordinated read rather than a dependency**: the frame comes out of the manifest
-      (`itemIconFrame`), so a repack that moves the frame indices cannot stale it, and Task-22 runs
-      three batches before this one anyway. A spent ball has no art of its own in the atlas, so it
-      is the same frame **emptied** — a dark tint and/or a reduced alpha, the way the cartridge's
-      used ball reads.
-      **Fix shape:** one row of at most `MAX_PARTY_SIZE` images, built once in `buildScene` beside
-      the other panel chrome and positioned, framed, dimmed and hidden in `drawSidePanel` exactly
-      the way `statusBadges` already is (built 533-536, drawn 1623-1640), so the whole diff stays
-      in the one file the report names; only the foe's row is ever visible. It sits in the panel's
-      own left padding (`FRLG_WINDOW_PADDING.x`, `src/ui/frlg.ts`, 34 — the constant Task-16
-      settles in Batch 5) at the panel's foot, and the compact layout has to keep it clear of the
-      battler: the sprite's own size cap is measured from the panel's floor (`foeInfo.y +
-      foeInfo.h`, 1526-1528 and 1560-1569), so either the row takes a small band under the panel
-      and that cap shrinks by it, or the row is drawn over the field with the sprite's top margin
-      checked — the spec freezes which, with the desktop and the phone rects both verified. The row
-      repaints with the panel, and `refreshHud` runs once per feed frame through `showFrame`
-      (820-825), so a ball dims on the same repaint that empties the active member's HP bar
-      (`applyEvents` sets `displayHp` to 0 on the faint event, 888-895, and `playFaint` sinks the
-      sprite, 1090-1108).
-      No engine rule, no RNG draw and no run field, so **no `SAVE_VERSION`** impact and no
-      fixed-seed test; the row's own arithmetic is one `filter().length` over state the panel
-      already reads, so **no `src/ui/**` module and no test file are owed** (the `Task-53`
-      precedent), and it carries no text at all, so Batch 10's i18n sweep has nothing to key.
-      **No `docs/` line:** the HP panels' geometry is presentation and changes no rule (the
-      `Task-34` precedent), `docs/design-spec.md` §4 — the battle's own section — does not describe
-      the HP panels at all today, and `docs/battle-spec.md` carries the battle's rules rather than
-      its panels.
-      Out of scope: the route HUD's party rows (they name the members already), the SWITCH window's
-      own cells (`renderPartyGrid`) and its detail window, Task-53's types row inside the same
-      panel, the capture beat's thrown ball (`BattleScene`, 950-990), the party-balls marker
-      `src/ui/mapView.ts` draws on a map, and anything about the **player's** own team, which is
-      one keypress away in SWITCH (the open question below asks whether the human wants it anyway).
-      *Dependencies:* none — the enemy bench (`BattleSide.party`, with the `hp = 0` faint), the
-      `isWild` gate and the ball frame are all shipped, and the two questions below are calls, not
-      edges. Batch order covers it: `Task-16` (Batch 5) re-chromed this scene and set
-      `FRLG_WINDOW_PADDING`, `Task-53` takes the scene in Batch 5b and `Task-34` in Batch 6 — so
-      **Batch 6b** is the first batch after the chrome whose one free `BattleScene.ts` slot exists,
-      its batch-mate `Task-38` claiming `src/scenes/RouteScene.ts`, `src/ui/scroll.ts`,
-      `src/ui/README.md` and the two doc files instead. It lands **before** Batch 8's accessibility
-      audit and Batch 10's i18n sweep on purpose, like Task-53: a dimmed ball is colour-only
-      information a contrast pass has to see, and the sweeps are cheaper against a row that exists.
-      *(Batch 6b)*
 - [ ] **[Task-59] Each of the battle SWITCH window's move rows gets the HUD's ⓘ, on hover and
       on click.** Reported in play: «en combate panel de info en switch los moves deberian tener
       boton i que abre panel con info ataque al pulsar o ponsrse encima como el del hud» — in a
@@ -2672,6 +2627,89 @@ Ports of Showdown handlers, in batches, on the hook names in
       `[Task-53]`'s row and `[Task-57]`'s row already inside the panels it draws over. It adds no
       run field, so **no `SAVE_VERSION`** step — the chain stays 14 → 15 (Task-13) → 16
       (Task-31) → 17 (Task-44) → 18 (Task-52). *(Batch 17)*
+- [ ] **[Task-77] The battle's HP panel loses its XP bar.** Reported in play: «quita la barra de
+      xp del contenedor de combate» — the player's HP panel in a battle draws a **second, smaller
+      bar** under the health bar that shows the squad's experience, and the human wants it gone.
+      **Today that row is the player's panel's last band, and it is the only thing in it.**
+      `drawSidePanel` (`src/scenes/BattleScene.ts`, 1665-1761) is the one builder for both sides
+      (called from `refreshHud`, 1645-1646) and it ends with the player-only branch at
+      **1747-1760**: `drawGauge(this.hud, barX, barY + 36, FRLG_HPBAR.width, 8,
+      experienceFraction(this.xp, fighter.level), 0x60a5fa)` and
+      `` this.xpText.setText(`XP ${this.xp}`).setPosition(barX, barY + 46).setVisible(true) ``, with
+      the foe's branch only hiding the label. The row's place is `barY`'s: `nameY = rect.y +
+      FRLG_WINDOW_PADDING.top`, `typesY = nameY + PANEL_NAME_H` and `barY = typesY + PANEL_TYPES_H +
+      PANEL_NAME_GAP` (1676-1679), so the gauge sits 36 px under the HP bar's top (8 px tall, the
+      full `FRLG_HPBAR.width` of 268) and the label 10 px under the gauge — i.e. the band from
+      `barY + 36` to the panel's own foot, while the panel's content otherwise ends with the HP bar
+      at `barY + FRLG_HPBAR.height` (28).
+      **Everything the row reads is the scene's own, and nothing else reads it.** The value is
+      `private xp = 0` (255-256, "The squad's shared XP, drawn on the player's panel as the general
+      bar"), assigned once in `init` from `launch.xp` (448); the label is `private xpText!:
+      Phaser.GameObjects.BitmapText` (313), built once in `buildScene` (589,
+      `addFrlgText(this, 0, 0, '', { size: 16, tint: 0x3b82f6 })`) and written nowhere else; and
+      `drawGauge` (`src/ui/panel.ts`, 23-38) has this call site as its **only** consumer in the
+      tree. The **level is not in this row** — the name row writes `` `${fighter.name}
+      Lv${fighter.level}` `` (1681) and does not move — and neither is any rule: `experienceFraction`
+      (`src/engine/run/progression.ts`, 59) is also what the **route HUD** fills its own bar with
+      (`RouteScene`, 2106-2107), so the engine helper and `D35`'s rule ("the squad shares one level
+      and one XP bar", `docs/tech-decisions.md` 505-511) both stay as they are; the bar that rule
+      means is the route HUD's, which this task does not touch.
+      **Expected:** the player's HP panel draws the name and level, the types row, the HP bar and
+      the status badge and **nothing under the HP bar** — no gauge, no `XP n` label — in a wild
+      battle and a trainer battle alike, on the wide desktop layout and the compact phone one. No
+      other panel, window, menu or sprite moves, and nothing is lost: the level stays on the panel
+      and the squad's XP stays on the route HUD's own bar.
+      **Fix shape:** delete the row and everything that exists only for it. `drawSidePanel`'s player
+      branch goes, and the foe branch's `setVisible(false)` goes with it because the object it hides
+      no longer exists; the `xp` field and its `init` assignment go; the `xpText` field and its
+      `buildScene` creation go; and the now-unused `experienceFraction` (imported at 28) and
+      `drawGauge` (imported at 44) imports go with them. The one number the report does not settle is
+      the panel's own height: `PLAYER_PANEL_H = 184` (88, "Tall enough for the padded name row, the
+      types band, the bar and the XP row") against `FOE_PANEL.h = 150` (89), which is the same
+      content without that band (the foe's content also ends at `barY + 28`, leaving the same 4 px of
+      slack). The written reading is that the player's panel takes **150**, so the frame hugs its
+      content instead of holding a ~38 px empty band; it moves no sprite and no clearance — on the
+      desktop the rect's **bottom** stays where it is (`y = box.y - 24 - PLAYER_PANEL_H`, 1597, so
+      the top drops by 34 px) and on the compact layout the rect's `y` is `Math.round(height * 0.46)`
+      (1576) and does not read the height, so `FOE_PLATFORM_CLEAR` and the battlers' caps are
+      untouched. The alternative — keep 184 and leave the band empty — is the open question below.
+      `BattleLaunch.xp` (`src/engine/run/battleLink.ts`, set by `RouteScene` at 5173) **stays**: it
+      is the launch's own field and dropping it would take two files the report does not name.
+      **Docs:** `docs/design-spec.md` §4's bullet at 171-174 ("The **whole squad — party and PC —
+      shares one level and one XP bar**: XP fills a single bar …") sits in the battle's own section,
+      so it gains the clause that says **where** that one bar is drawn — the route HUD — with
+      `D35`'s rule and the level-cap sentence unchanged; the panel's own contents are not described
+      there today (the `Task-57` precedent), so this is a clarification rather than a rule change.
+      The alternative — leave the file untouched, because the sentence states a rule and the battle
+      panel's bar was never documented — is named and is **not** the default, and it costs no re-cut
+      either way. `docs/battle-spec.md` §7 (108-110) states the same rule and **does not move**: it
+      never says the battle draws the bar.
+      **Tests:** none in the pure half — this is a scene's drawing, with no engine rule, no RNG draw
+      and no run field (so no fixed-seed regression and **no `SAVE_VERSION`** step) — and the check
+      is the browser one, the `Task-57` precedent: in `npm run dev` a battle's player panel shows no
+      gauge and no `XP` line under the HP bar on the desktop layout and on a 640-px-tall phone, the
+      route HUD's own XP bar still fills as the squad gains XP, and the compact layout still clears
+      the foe's platform by the same margin it did before.
+      Out of scope: the route HUD's XP bar and its `XP n` text (`RouteScene`, 2106-2107 and
+      1542-1549 — the run's one bar, `D35`), `experienceFraction` and every XP/level rule,
+      `BattleLaunch.xp`, the battle's outcome lines and its XP award, the party rows and the SWITCH
+      window, `PLAYER_PANEL_W`, `FOE_PANEL`, the panel chrome and its paddings (`FRLG_WINDOW_PADDING`,
+      Task-16's), the type badge row (`Task-53` / `Task-72`) and `Task-57`'s ball row, and
+      `src/ui/panel.ts`'s helpers — `drawGauge` is **left in place**, because its sibling
+      `drawPanel` already has no call site in the tree, so the module is the shared chrome-helper
+      file and a dead-code sweep of it is not this task; the alternative, deleting `drawGauge` and
+      `GAUGE_TRACK` with the `src/ui/README.md` role line (15) that names the gauge, is named and is
+      free in this batch too, so it costs no re-cut.
+      *Dependencies:* none — every symbol it removes is the scene's own and every rule it leaves
+      behind is shipped. Batch order covers it: it wants `src/scenes/BattleScene.ts`, and Batch 6b is
+      `cut` (so it can gain no member) while every batch from 7 to 14 holds that file (7 Task-18, 8
+      Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26's every-scene sweep,
+      11 Task-29's ledger, 12 Task-30, 13 Task-59, 14 Task-48) — so **Batch 15** is the first batch
+      that leaves it free, and its Task-49 claims the route scene, `src/ui/notice.ts`,
+      `docs/routes-spec.md` §2 and the i18n files instead, so the two share no path. It is
+      presentation only: no run field, no rule and no RNG, so **no `SAVE_VERSION`** step — the chain
+      stays **14 → 15** (Task-13, shipped) → **15 → 16** (Task-31, Batch 7) → **16 → 17** (Task-44,
+      Batch 13) → **17 → 18** (Task-52, Batch 17). *(Batch 15)*
 
 ## Phase 6 — Run structure, party & economy
 
@@ -3820,57 +3858,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       2), so this task extends it rather than waits on it. The three moves' rows in
       `docs/balance/effect-coverage.md` are the generated table Task-06 shipped
       (Batch 1) — read, not waited on. *(Batch 8)*
-- [ ] **[Task-38] The learnset band scrolls instead of paging.** Reported in play, in the
-      detail window's MOVES tab: the pool under the search field moves in **pages** — four
-      cells at a time, with a `<` / `>` pair and a `1/3` counter on the search row — and the
-      human wants it to **scroll continuously** instead. The band itself shipped in Phase 10
-      (archived: "The MOVES tab gains a learnset band: search, learned moves and bag TMs,
-      dragged onto the four slots"), and the paging is exactly what that task built: this is
-      a follow-up on shipped work, not a new rule.
-      **Today's code, all in `src/scenes/RouteScene.ts`:** `HUD_DETAIL_LEARN_PAGE_SIZE = 4`
-      (370) is the page size and `HUD_DETAIL_MOVES_H = 560` (371) the panel height that
-      fits the band; `refreshLearnset` (2673-2732) slices the filtered pool to one page
-      (`pool.slice(this.hudLearnPage * HUD_DETAIL_LEARN_PAGE_SIZE, (this.hudLearnPage + 1) *
-      HUD_DETAIL_LEARN_PAGE_SIZE)`), hands that slice to `hudLearnGrid.layout({ cells, info:
-      null, popupAtCell: true })` and stores it in `hudLearnPageEntries` (declared 861-862,
-      read only by the drag at 3221-3226); the controls are `hudLearnPrev`/`hudLearnNext`
-      (the `<`/`>` `BitmapText`s built 2021-2022) plus `hudLearnPageText`, laid out on the
-      search row right-aligned (2712-2728) — which is why the search field's `setMaxWidth`
-      reserves 78px (2687); `learnNavAt` (3239-3248) hit-tests them within 16px of the glyph
-      and `handleDetailPointerDown` tests them **before** the field (3173-3180) →
-      `stepLearnPage(±1)` (3250-3257); the counter reads `${this.hudLearnPage + 1}/${pages}`;
-      and `hudLearnPage` is reset in `openMemberDetail` (3142), clamped in `refreshLearnset`
-      (2693) and zeroed by every search keystroke (`typeInDetailSearch`, 3297/3300). The one
-      scroll in the HUD today is the **PC box's wheel**: the `'wheel'` handler at 1294-1301
-      gates on `pointerInBoxPanel(pointer)` and calls `stepBoxPage(dy > 0 ? 1 : -1)`.
-      **Expected:** the pool is a **window that moves**, not a page that flips: no page
-      counter and no page-step; the offset re-clamped whenever the filtered pool shrinks (a
-      search that leaves three entries must not leave the window past its end); the last row
-      reachable and the whole pool reachable without a second control. The band keeps the
-      shared `MoveGrid`'s 2x2 cells and their rects, so the window is a whole number of the
-      grid's own rows: the offset is in **rows of two cells**, the view shows two of them,
-      and the clamp is `max(0, ceil(pool.length / LEARN_COLS) - LEARN_ROWS)`; the mouse wheel
-      over the band scrolls it, mirroring the PC box's handler and its
-      `pointerIn…Panel`-style gate. The clamp is the off-by-one-prone half, so it goes in a
-      pure helper with a test — `src/ui/scroll.ts` (`maxScrollTop`, `clampScrollTop`,
-      `scrollByRows`, names frozen in the spec), the way `moveGrid` and `mapView` carry
-      their own geometry — and the pool's own model (`src/engine/run/learnset.ts`) does not
-      change: the pool is and stays a flat list.
-      **Files:** `src/scenes/RouteScene.ts`, the new `src/ui/scroll.ts` + `scroll.test.ts`
-      with its one role line in `src/ui/README.md` (the per-folder convention Task-02
-      froze: a new file updates that folder's README in the same task),
-      `docs/design-spec.md` §3 (line 73's "a search field and a **paged** grid") and
-      `docs/tech-decisions.md` `D36` (line ~520, "a search field and a paged, full-width
-      grid") — one writer each, and both say the band scrolls with a clamped offset once
-      this lands. `hudLearnPageEntries` is renamed to the visible window.
-      Out of scope: the battle's moves menu (`docs/design-spec.md` §4's "all four moves show
-      at once, with no scrolling" is about its four slots, not this pool), the search
-      field's filter semantics, the clicked-cell drag's own behaviour (Task-39 anchors the
-      band's ⓘ to a visible row), and the PC box's paging, which keeps its tabs.
-      *Dependencies:* none. Batch order covers it: Batch 5's Task-16 restyles the band's
-      windows and Batch 6's Task-17 writes both doc files, so the band is re-chromed and
-      re-documented once **before** this task moves its window — which is why it sits in
-      Batch 6b rather than beside them. *(Batch 6b)*
 - [ ] **[Task-55] The MOVES panel draws four slots, and a TM can be learned into an empty
       one.** Reported in play: «en moves añadir los 4 contenedores aunque no tenga 4 moves porque
       se debe poder aprender un move de mt teniendo 3 moves actualmente si arrastras al hueco lo
