@@ -110,7 +110,8 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    neighbouring tiles, and no trainer spawns watching — or able to spin and watch —
    the player's entry tile. A pocket a hazard sealed, or that is no longer
    walkable, is skipped, so loot is never stranded. An optional path holds an item
-   only with the band's `itemChance` probability (75% for now); when it does, the
+   only with the band's `itemChance` probability (0.5 / 0.6 on the on-ramp's maps
+   1-2, 0.75 from map 3 on); when it does, the
    item sits on the **deepest** tile of the branch, as far down the path as it can.
    The number of items also follows the route's **size** (a bigger map carves more
    optional paths), not its band. A pocket is kept clear of tall grass (an item
@@ -234,15 +235,16 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
 - Infinite mode: same generator, no final boss; the maps keep climbing and the
   run ends only when the party is wiped.
 - The older mini-boss/boss cadence (`RUN_CHAIN` in `src/data/run.ts`) is folded
-  into the map boss; the route kinds are re-derived from the map plan (Phase 9,
-  step 6).
+  into the map boss; the route kinds are re-derived from the map plan
+  (`docs/maps-spec.md` §3).
 
 ## 5. Difficulty bands
 
 - Each **map** has a level range (`docs/maps-spec.md` §5, `levelRangeForMap`); the
   routes inside ramp from its `minLevel` to its `maxLevel` and the map's
   `maxLevel` is the **player's cap** that clamps XP gain (`docs/battle-spec.md`
-  §7). The old per-route band (`bandForRoute`) becomes the map's range.
+  §7). The per-route band is gone: the map's range **is** the band
+  (`levelRangeForMap`, `bandForLevel`).
 - Each trainer archetype is presentation and reward only (identity, sprites,
   money); it no longer carries a species list. Both the wild table and every
   roster draw from the floor's **BST pool** (`speciesPool`,
@@ -258,7 +260,11 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
   population pass (step 4): one guards the main lane, the rest hold the optional
   paths by the pocket items, and their count scales with the map size.
 - The map's **farthest room from the entry** fields the boss at the map's
-  `maxLevel` (Phase 9, step 7).
+  `maxLevel`, a fixed party of **six** (**three** on map 1, `src/data/bosses.ts`).
+- The floor's **population** thins on the on-ramp: maps 1-2 cancel the map-size
+  tier's trainer bonus and gate each pocket's guard (`POPULATION`,
+  `src/data/population.ts`), so the first two floors read as a walkable start
+  while the later maps are untouched.
 
 ## 6. Healing stops
 

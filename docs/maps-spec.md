@@ -7,14 +7,16 @@ is what a run actually walks. This file is the source of truth for that layer; t
 per-route geometry stays in `docs/routes-spec.md` and the `D##` decisions behind
 it in `docs/tech-decisions.md` (D28–D33).
 
-> Status: in progress. The tuning tables (`src/data/maps.ts`), the plan generator
-> (`Plan`), the plan-driven route shapes and size, the per-map levels, the run's
+> Status: shipped. The tuning tables (`src/data/maps.ts`), the plan generator
+> (`planMap`), the plan-driven route shapes and size, the per-map levels, the run's
 > floor tracking, the boss/portal, the route HUD **minimap** (`src/ui/mapView.ts`),
 > the **Poké Dollar economy** (trainer drops, the valuables and the bag's money
 > readout), the **special rooms in the plan** (the guaranteed shop, the mini-boss
 > and the mega-stone leaves) and their **own content** (the Mart panel at the shop
-> counter, the mini-boss's reward choice and the mega-stone treasure) have
-> shipped; only the Phase 9 docs/migration pass is left (`TODO.md`).
+> counter, the mini-boss's reward choice and the mega-stone treasure) have all
+> shipped, and the Phase 9 docs/migration pass closed the phase: the algorithm
+> below is what the tree runs, and every number in it is the tree's. The `D##`
+> decisions behind it are D28–D33.
 
 ## 1. What a map is
 
@@ -97,13 +99,13 @@ The **shape** of a room follows from its opening set (its count and edges):
 | 4 | `cross` | a crossing |
 | 2, opposite, branchy | `straight` | the older wide route with optional branches |
 
-## 3. Composition (target algorithm)
+## 3. Composition (shipped algorithm)
 
 Everything a map is comes from one **map stream** keyed `(seed, "map", mapIndex)`,
 so a plan is a pure function of the seed and the map index (D11 / D29):
 
 ```
-Plan(seed, mapIndex): MapPlan
+planMap(seed, mapIndex): MapPlan
     tuning  = mapTuning(mapIndex)                    # src/data/maps.ts
     rng     = Rng(seed : "map" : mapIndex)
     biome   = Pick(BIOME_ORDER \ { previousBiome }, rng)
@@ -260,8 +262,9 @@ The pure layout (cell positions, links, reveal filter) lives in
 
 ## 9. Determinism
 
-- The plan is `Plan(seed, mapIndex)`; the rooms are `BuildRoute(seed, mapPlan,
-  routeInMap)` with their own `layout` / `terrain` / `populate` streams.
+- The plan is `planMap(seed, mapIndex)`; each room is `sketchRoute` over the
+  plan's `routeForRoom(plan, roomId, routeIndex)`, with its own
+  `layout` / `terrain` / `populate` streams.
 - Streams are keyed by the **map and the room inside it**
   (`routeIndexForRoom(plan, roomId)`), never by the run's moving counter, wall-clock
   or player input, so revisiting a room rebuilds the same room and a seed
@@ -269,22 +272,38 @@ The pure layout (cell positions, links, reveal filter) lives in
 - Adding a roll to a later step cannot shift earlier geometry because each pass
   owns its stream.
 
-## 10. Open questions
+## 10. Resolved records
 
-- **O-M1 — Floor shape.** Resolved: the number of extra cycle-closing doors is
-  random with a minimum of one; leaves are whatever the growth produces.
-- **O-M2 — Discovery.** Resolved: a room reveals when it is **entered**, and a
-  link only once **both** its ends are known.
-- **O-M3 — Portal.** Resolved: the boss room has no onward opening; a new one
-  with the portal **appears when the boss falls**.
-- **O-M4 — Special probabilities.** Resolved: shop guaranteed **from map 2 on**
-  (map 1 hangs none); mini-boss 50%; mega-stone 15% and only **from map 3 on**;
-  the two may coincide.
-- **O-M5 — Money numbers.** Balance, not design: the trainer base/jitter, the
-  shop's per-band core and the valuables list/prices start as defaults in data and
-  are tuned in the Phase 7 balance pass.
-- **O-M6 — Mega Stones.** Resolved: functional — holding one allows a Mega
-  Evolution once per battle (`D34`); all dex Megas are in.
-- **O-M7 — Finite campaign length.** Resolved: a finite run walks **eight** maps
-  (`FINITE_MAPS` in `src/data/maps.ts`), capping the squad at 9 → 55, one tuned row
-  per map — a length decided here rather than left to the balance pass.
+Every question this spec opened now has the answer the tree ships; each record
+names its answer and the Phase 9 step (or the later batch) that landed it.
+
+- **O-M1 — Floor shape.** Resolved by Phase 9 step 2 (`planMap`,
+  `src/engine/maps/plan.ts`): the floor grows a single-door entry leaf into a 2x2
+  core closed into a 4-cycle, then expands onto adjacent free cells; the extra
+  cycle-closing doors are random with a minimum of one (up to two more), and the
+  leaves are whatever the growth and the boss/special hangs produce.
+- **O-M2 — Discovery.** Resolved by Phase 9 steps 6 and 8: the run tracks the
+  rooms it has entered (`RunState.discoveredRooms`), a room reveals when it is
+  **entered**, and a link is drawn only once **both** its ends are known.
+- **O-M3 — Portal.** Resolved by Phase 9 step 7: the portal is **carved from the
+  start** on a free wall of the boss room and stays **sealed** while the boss
+  stands, so the room looks identical before and after; once the boss falls it
+  opens, and stepping through it advances the run to the next map.
+- **O-M4 — Special probabilities.** Resolved by the plan's special pass and the
+  rooms' own content (archived in `CHANGELOG.md`), with the shop-from-map-2 rule
+  landed by Batch 5d (`Task-70`): the shop is guaranteed **from map 2 on** (map 1
+  hangs none), the mini-boss leaf rolls at **50%** and the mega-stone leaf at
+  **15%** — the mega-stone only **from map 3 on** — and the two may coincide on one
+  floor.
+- **O-M5 — Money numbers.** Resolved as balance, not design: the trainer
+  base/jitter, the shop's per-band core and the valuables list/prices are defaults
+  in data (the economy pass, `src/data/shop.ts` / `src/data/loot.ts`) that the
+  Batch 6 balance pass (`Task-09`) tunes without touching the generator.
+- **O-M6 — Mega Stones.** Resolved by Phase 9 step 9 and the mega-stone room: a
+  stone is a `held` item, one per Mega forme, and holding it allows a Mega
+  Evolution once per battle (`D34`); every dex Mega is in
+  (`src/data/dex/megas.json`, 88 formes).
+- **O-M7 — Finite campaign length.** Resolved by Phase 9 step 1 and Batch 5c
+  (`Task-69`): a finite run walks **eight** maps (`FINITE_MAPS` in
+  `src/data/maps.ts`), capping the squad at 9 → 55, one tuned row per map — a
+  length decided here rather than left to the balance pass.
