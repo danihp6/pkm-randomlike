@@ -41,8 +41,11 @@ the on-ramp thinning, Batch 5e the fixed boss and mini-boss parties, Batch 5eb t
 overlay's teleports and its two ignore toggles, Batch 5f the overworld sprite set, and Batch 6
 the balance pass, the Phase 9 docs, the battle SWITCH grid and the follower, and all
 nine are closed
-below. **Batch 6b is the next batch cut** — the learnset band scrolls and a trainer's remaining
-team sits under its panel. The eighteenth round below put the
+below. **Batch 6b is cut** — the learnset band scrolls and a trainer's remaining
+team sits under its panel: its two specs are written (`.agent_specs/task-38.md`,
+`.agent_specs/task-57.md`), it is an antichain and its two tasks share no path, and the
+three open questions it carried are **answered and frozen in `### Batch 6b` below**. The
+eighteenth round below put the
 follower back in Batch 6 and gave its art its own batch, 5f, ahead of it. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
 goes to the packer, and no tree under `sprite-sources/` is ever linked into a worktree
@@ -886,7 +889,21 @@ after the first QA). None of the four added a run field, so **no `SAVE_VERSION` 
 stays **14 → 15 → 16 → 17 → 18**. Their four IDs are retired: they keep their place in the
 sequence and are never reused.
 
-### Batch 6b — the learnset band scrolls, and a trainer's remaining team sits under its panel
+### Batch 6b — the learnset band scrolls, and a trainer's remaining team sits under its panel *(cut)*
+Task-38 and Task-57 are the batch, one spec each (`.agent_specs/task-38.md`,
+`.agent_specs/task-57.md`), and they share no path — the route scene, the new
+`src/ui/scroll.ts` + its test, `src/ui/README.md` and the two doc files are Task-38's,
+while `src/scenes/BattleScene.ts` is Task-57's — so the batch is an antichain. **All three
+of its open questions are answered**, and their bullets are gone from the list below.
+**Task-38's** reading is its written default: the `<` / `>` pair **stays as a one-row
+scroll** (a control that reads "one row", so a keyboard or pad player can reach row five),
+the search field keeps the ~78px those glyphs occupy, and the mouse wheel **and a drag on
+the band's own background** scroll it too; the rejected reading (wheel and drag only, the
+glyphs gone) is not what ships. **Task-57's** two are also their written defaults: the row
+is on the **foe's panel alone** and a **wild** battle draws **no row at all**, and the row
+is **fixed** — one ball per roster member with the fainted ones emptied, so it also says
+how many the trainer started with — rather than a row that shrinks to the live count.
+
 - **Task-38** The learnset band scrolls instead of paging.
 - **Task-57** A trainer's remaining team is drawn as Poké Balls under its HP panel.
 - **Hot files:** `src/scenes/RouteScene.ts`, the new `src/ui/scroll.ts` (+ its test) and
@@ -1514,13 +1531,18 @@ sequence and are never reused.
 
 ### Open questions for the human
 
-Batch 4b's three reports added two more, this second round of six added four, the third
-round of three adds three, a fourth round of two adds two, the fifth round of two adds
+Batch 4b's three reports added two more (the learnset band's is **answered** — the
+`<` / `>` pair stays as a one-row scroll, frozen in `### Batch 6b` above — so its bullet
+is gone), this second round of six added four, the third round of three adds three, a
+fourth round of two adds two, the fifth round of two adds
 four (three behind the wild-pool rule and one behind the battle panel's types) and the sixth
 round of four adds three (two behind the four-row Mart and one behind the four containers) —
 the sixth round's fourth report is a measurement rather than a question, and it is written into
 `[Task-09]`'s entry instead — and the seventh round's single report adds two (both behind the
-trainer's Poké Ball row) — and the eighth round's three reports add five (two behind the debug
+trainer's Poké Ball row, and **both answered** — the row is the foe's alone and it is
+**fixed**, one ball per roster member with the fainted ones emptied, frozen in
+`### Batch 6b` above, so their bullets are gone) — and the eighth round's three reports add
+five (two behind the debug
 panel's palette — **the panel direction is answered** with the `t-glass` card of
 `chrome-options.html`, recorded in `[Task-58]`'s entry below, so that bullet is gone and only
 whether the audit is re-run stays open — plus one behind the switch window's move ⓘ and two
@@ -1551,17 +1573,6 @@ games' audio rips under `sprite-sources/frlg-audio/`, and the Plates are made ob
 by `Task-07`. A question lands here only when the repository genuinely cannot answer it.
 The one ID without a batch is not a question: `[Task-28]` waits on an upstream
 `typescript-eslint` release.
-
-- **`[Task-38]` (the learnset band, Batch 6b): does the band keep a control, or is the
-  wheel alone enough?** The band is mouse-first today — its cells are dragged onto the
-  four slots and its only other input is the search field — so the written default is: the
-  `<` / `>` pair **stays as a one-row scroll** (a control that reads "one row" instead of
-  "four cells"), so a keyboard or pad player, who has no wheel, can still reach row five,
-  and the search field keeps the ~78px those glyphs occupy today. The other reading is that
-  the band scrolls by wheel and drag only and the glyphs go, which frees that width on the
-  search row and leaves a touch/TV player unable to see past the first two rows. Say so
-  before Batch 6b's branch is cut if the arrows are meant to go; nothing else in the plan
-  changes either way.
 
 - **`[Task-40]` (the battle's entry beat, Batch 9b): how loud is the opening, and what
   does the trainer's own beat do?** "Parpadeos en negro o algo así" leaves the cadence
@@ -1669,29 +1680,6 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
   two-move Pokémon reads the same in battle as on the route. The alternative is the route HUD's
   MOVES tab alone, which leaves the battle's menu drawing one cell per move. Say which before
   Batch 18's branch is cut. Nothing else in the plan changes either way.
-
-- **`[Task-57]` (the trainer's balls, Batch 6b): one row per battle, or one on each panel?** The
-  report names the **trainers** ("los entrenadores … debajo de su panel"), so the written default
-  is the **foe's panel alone** — the trainer's team is the one fact the player does not already
-  have, while their own team is one keypress away in SWITCH — and a **wild** battle, having no
-  trainer, draws **no row at all** (the alternative there being a single dimmed ball, which says
-  nothing the sprite on the field does not). The other reading is **both** panels, the player's row
-  reading `state.sides.player.party` and gated on the party rather than on `isWild`, which is one
-  more branch in the same builder and one more row to place on the player's taller panel
-  (`PLAYER_PANEL_H = 148`, 86). Say which before Batch 6b's branch is cut. Nothing else in the plan
-  changes either way.
-
-- **`[Task-57]` (the trainer's balls, Batch 6b): how many balls are drawn — the team the trainer
-  brought, or only the ones still standing?** The report's own words are "según la cantidad de
-  pokes que le quedan", which reads either way: a **fixed** row of one ball per roster member with
-  the fainted ones emptied (so a trainer with two left of three shows three balls, one of them
-  spent, and "how many are left" is the filled ones), or a row that **shrinks**, drawing only the
-  live members (so that same trainer shows two). The written default is the **fixed row** — the
-  size is in the scene (`state.sides.enemy.party.length`, the fighters `init` builds at 364-375)
-  and it is what the cartridges draw, and it is the only reading that also says how many the
-  trainer started with; the alternative is the literal shrinking count, which is one fewer line
-  (`take(liveCount)`) and never reveals the original team size. Say which before Batch 6b's branch
-  is cut. Nothing else in the plan changes either way.
 
 - **`[Task-58]` (the whole-chrome restyle, Batch 20): does the accessibility audit have to be
   re-run after it?** `[Task-08]` (Batch 8) audits contrast, colour-only information and
