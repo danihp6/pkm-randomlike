@@ -17,7 +17,7 @@ import {
 } from '../data/playerSprite';
 import { pokemonOverworldSheet, type PokemonOverworldSheet } from '../data/pokemonOverworld';
 import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
-import { followerAnimKey, followerAnims, followerIdleFrame } from '../render/pokemonFollower';
+import { followerAnimKey, followerAnims } from '../render/pokemonFollower';
 import { ROUTE_LOOT } from '../data/loot';
 import { POPULATION } from '../data/population';
 import { bossPartySize, type BossPartyKind } from '../data/bosses';
@@ -4384,12 +4384,13 @@ export class RouteScene extends Phaser.Scene {
     this.refreshGrassStep();
   }
 
-  /** Parks the follower on a tile with no step, when it has a sprite. */
+  /** Parks the follower on a tile with no step, idling, when it has a sprite. */
   private placeFollower(tileX: number, tileY: number): void {
     const sprite = this.followerSprite;
     if (!sprite) return;
     sprite.setPosition(this.centerX(tileX), this.centerY(tileY) + TILE_SIZE / 2);
     sprite.setDepth(actorDepth(sprite.y));
+    this.restFollower();
   }
 
   /**
@@ -4539,11 +4540,10 @@ export class RouteScene extends Phaser.Scene {
       .setScale(TILE_SIZE / sheet.size)
       .setDepth(actorDepth(footY))
       .setFlipX(this.facingDir === 'right');
-    const idle = followerIdleFrame(sheet, this.facing);
-    if (idle !== null) sprite.setFrame(idle);
     this.followerSprite = sprite;
     this.entitySprites.push(sprite);
     this.hudCamera?.ignore([sprite]);
+    this.restFollower();
   }
 
   /** Registers a pair's idle and walk strips, once per animation key. */
@@ -4591,14 +4591,18 @@ export class RouteScene extends Phaser.Scene {
     });
   }
 
-  /** Parks the follower on its facing's idle strip, so it stands with the player. */
+  /**
+   * Plays the follower's facing's looping idle strip, so it breathes while it stands
+   * with the player. The strip is a loop, so re-entering rest does not restart it and
+   * the walk path's run factor is dropped back to normal speed.
+   */
   private restFollower(): void {
     const sprite = this.followerSprite;
     const sheet = this.followerSheet;
     if (!sprite || !sheet) return;
-    if (sprite.anims.isPlaying) sprite.anims.stop();
-    const frame = followerIdleFrame(sheet, this.facing);
-    if (frame !== null) sprite.setFrame(frame);
+    sprite.anims.timeScale = 1;
+    const key = followerAnimKey(sheet, this.facing, 'idle');
+    if (this.anims.exists(key)) sprite.play(key, true);
   }
 
   private onTileEntered(direction: MoveKey): void {
