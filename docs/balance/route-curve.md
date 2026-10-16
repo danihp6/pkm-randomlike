@@ -10,6 +10,14 @@ run walks eight of them. The rule below is what makes a squad keep pace with the
 by fighting **trainers** instead of grinding the tall grass: beating 75 % of a
 floor's trainers is enough to reach that floor's level cap.
 
+**Re-measured (Task-09).** Every number on this sheet was re-walked against the
+shipped tree: the band table and the caps are read from `src/data/run.ts` and
+`src/data/maps.ts`, and `T̄(m)`, `A(m)` and the fill column are the per-map figures
+`src/engine/run/curve.test.ts` computes over its three fixed seeds (`curve-a`,
+`curve-b`, `curve-c`). The walk reproduced the tables below **unchanged**, so no
+number on this sheet moved in that pass; the one decision it took is the boss's
+award, recorded under Exceptions.
+
 ## Level bands
 
 Every floor reads one band (`bandForLevel(minLevel)` in `src/data/run.ts`): a level
@@ -38,6 +46,16 @@ over fourteen or more trainers, so map 6 alone beats 58 Pokémon. `High` sits ov
 `Mid` for a related reason: map 4's step (23 → 30) is the same seven levels as
 map 3's, but it is taken higher up the curve, where a defeat is worth more while
 the floor places only about one trainer more, so each defeat still carries more.
+
+The **BST windows** were re-checked against the shipped dex in the same pass and
+**did not move**: they tile `0..800` with no gap and no overlap (the tiling
+`src/engine/run/pool.test.ts` asserts), no band straddles an `EVOLUTION_BST_LEVELS`
+mirror (0–355 / 356–440 / 441–800, the table under _Evolution levels_), and the
+six bands hold 208 / 171 / 202 / 223 / 158 / 290 spawnable species for a trainer
+and 206 / 171 / 200 / 220 / 157 / 137 for the wild, which drops the legendary and
+mythical tags. The `trainerSize` column is `LEVEL_BANDS`' own and did not move
+either: it is solved into `A(m)`, and every floor's fill below already sits inside
+the window.
 
 ## Level caps per map
 
@@ -105,6 +123,15 @@ range and party size, so the sheet's numbers follow the walk in
 `low` from map 2, then `early` from map 1 (whose level-9 rosters are paid `low`'s
 multiplier), then the four later bands the same way.
 
+Worked once, so the column can be checked by hand: map 1's band spans levels 2-9,
+so `A(1)` is `(40 + 60 + 80 + 100 + 120 + 140 + 160 + 720) / 8 = 177.50` — levels
+2-8 paid `early`'s 2.67 (`floor(level × 5 × 1.5 × trainerXp)`) and level 9 paid
+`low`'s 10.68, which is the straddle above in one figure. Map 2 straddles the
+other way: its band spans levels 9-16, so `A(2)` is
+`(720 + 801 + 881 + 961 + 1041 + 1121 + 1201 + 364) / 8 = 886.25`, seven levels at
+`low`'s 10.68 and the eighth at `mid`'s 3.04. Every later row is the same sum over
+that floor's own band.
+
 ## The rule
 
 A Pokémon defeated in a **trainer** battle is worth `experienceAward(level, 1, true)`
@@ -126,11 +153,22 @@ the one call site, `resolveBattle` in `src/engine/run/resolve.ts`).
 - **The map boss** fields a fixed six (three on **map 1**) at the floor's cap and
   the **mini-boss** a fixed three (two on map 1) at band levels
   (`src/data/bosses.ts`); both are injected by the scene on top of the route, so
-  they award beyond the 75 % budget and that award is **left uncapped** on
-  purpose — a six-member max-level roster pays `experienceAward(cap, 1, true)`
-  six times, roughly six times what `A(m)` assumes, because the boss is the
-  floor's finale and its reward sits outside the rule that a floor's regular
-  trainers pay its cap.
+  they award beyond the 75 % budget. **Verdict, re-measured in this pass: the
+  award stays uncapped and outside the budget.** A boss roster pays
+  `experienceAward(cap, 1, true)` once per member — 2160, 2184, 6018, 6276, 4344,
+  5046, 5754 and 6456 XP on maps 1-8, which is 3.58x, 0.65x, 0.75x, 0.42x, 0.18x,
+  0.17x, 0.15x and 0.13x of that floor's own `needed(m)`. Folding it into the
+  budget would put maps 1-4 past the rule's `1.5` ceiling (fill 4.83, 1.90, 1.87
+  and 1.90) while maps 5-8 would still land inside it (1.47, 1.37, 1.19, 1.22), so
+  a boss folded into the rule would make the rule meaningless exactly where the
+  run is an on-ramp. The window measures whether 75 % of a floor's **regular**
+  trainers pays its cap; the boss is the floor's finale, injected on top of the
+  route like the mini-boss — whose own three members pay 240, 3123, 1368, 3534,
+  3555, 2349, 2700 and 3051 XP, the map 2 fight alone reading 93 % of that floor's
+  `needed(m)` because `low` carries the chain's peak multiplier — and capping
+  either would be a change to the award rule (`experienceAward`, a battle rule),
+  not an edit to balance data. The surplus the finale pays is clamped by the
+  floor's cap (`levelCapForMap`) like any other gain.
 - The floor's **entry, boss and special leaves** (the shop, the mini-boss room and
   the mega-stone room) are quiet: they place no route trainers at all, and the shop
   holds a counter rather than a trainer. **Map 1 hangs no shop leaf** at all
