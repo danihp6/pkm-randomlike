@@ -23,6 +23,7 @@ testable logic belongs in the computing half.
 - `partyScreen.ts` — the party/box model: rows, panes, cursor, drag/drop and the box page math.
 - `partyDetail.ts` — the party detail popup: STATS/MOVES tabs, nature effects and move reordering.
 - `partyGrid.ts` — the battle SWITCH window's row geometry: one fixed-size row per party member and the pure label truncation.
+- `scroll.ts` — the pure row-window arithmetic a scrolling grid shares: the clamped row offset, the one-row step and the visible item range.
 - `bag.ts` — the bag pockets, their labels and the pure categorisation of an item.
 - `capture.ts` — the capture sequence's beats: the shakes, the holds and the click.
 - `shop.ts` — the Mart and the sell list: stock, prices and the pure trades against the run.

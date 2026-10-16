@@ -197,6 +197,7 @@ import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../data
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
+import { clampScrollTop, maxScrollTop, scrollByRows, visibleRange } from '../ui/scroll';
 import { createTouchControls, type TouchControls } from '../ui/touchControls';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { listenForBack } from '../input/backButton';
@@ -382,7 +383,9 @@ const HUD_DETAIL_W = 460;
 const HUD_DETAIL_MOVE_GRID_H = 188;
 const HUD_DETAIL_SEARCH_H = 24;
 const HUD_DETAIL_LEARN_GAP = 8;
-const HUD_DETAIL_LEARN_PAGE_SIZE = 4;
+/** The learnset pool's window: two columns of two rows, scrolled one row at a time. */
+const HUD_DETAIL_LEARN_COLS = 2;
+const HUD_DETAIL_LEARN_ROWS = 2;
 const HUD_DETAIL_MOVES_H = 560;
 const HUD_DETAIL_H = Math.max(
   HUD_DETAIL_CONTENT_TOP +
@@ -878,9 +881,16 @@ export class RouteScene extends Phaser.Scene {
   private hudAbilityInfoButton!: AbilityInfoButton;
   private hudAbilityInfo = false;
   private hudAbilityInfoPinned = false;
-  /** The learnset pool: its grid, page, search field, focus and the move in hand. */
+  /** The learnset pool: its grid, scroll window, search field, focus and the move in hand. */
   private hudLearnGrid!: MoveGrid;
-  private hudLearnPage = 0;
+  /** The first visible row of the pool window. */
+  private hudLearnScrollTop = 0;
+  /** The entries the window shows at `hudLearnScrollTop`, for hit-testing the drag. */
+  private hudLearnWindow: readonly LearnEntry[] = [];
+  /** The band's own rect as laid out, for the wheel and the background drag. */
+  private hudLearnRect = { x: 0, y: 0, w: 0, h: 0 };
+  /** The band's background drag in progress, or null. */
+  private hudLearnScrollDrag: { startY: number; startTop: number; rowPitch: number } | null = null;
   private hudLearnQuery = '';
   private hudSearchFocus = false;
   private hudSearchBg!: Phaser.GameObjects.Rectangle;
@@ -889,11 +899,8 @@ export class RouteScene extends Phaser.Scene {
   private hudSearchRect = { x: 0, y: 0, w: 0, h: 0 };
   private hudLearnPrev!: Phaser.GameObjects.BitmapText;
   private hudLearnNext!: Phaser.GameObjects.BitmapText;
-  private hudLearnPageText!: Phaser.GameObjects.BitmapText;
   /** "no moves to learn" when the pool offers nothing to equip. */
   private hudLearnEmpty!: Phaser.GameObjects.BitmapText;
-  /** The pool entries on the page on screen, for hit-testing the drag. */
-  private hudLearnPageEntries: readonly LearnEntry[] = [];
   /** The pool move held while dragging it onto a slot, and its ghost chip. */
   private hudLearnDrag: string | null = null;
   private hudLearnGhost!: Phaser.GameObjects.BitmapText;
@@ -1333,12 +1340,18 @@ export class RouteScene extends Phaser.Scene {
       this.cancelHudDrags();
       this.clearDetailInfo();
     });
-    // The mouse wheel flips the PC box pages while the pointer is over it.
+    // The mouse wheel flips the PC box pages while the pointer is over it, and
+    // scrolls the learnset band one row at a time while it is over that instead.
+    // The box is tested first, so it wins where the two rects overlap.
     this.input.on(
       'wheel',
       (pointer: Phaser.Input.Pointer, _objects: unknown, _dx: number, dy: number) => {
-        if (!this.scene.isActive() || !this.pointerInBoxPanel(pointer)) return;
-        this.stepBoxPage(dy > 0 ? 1 : -1);
+        if (!this.scene.isActive()) return;
+        if (this.pointerInBoxPanel(pointer)) {
+          this.stepBoxPage(dy > 0 ? 1 : -1);
+          return;
+        }
+        if (this.pointerInLearnBand(pointer)) this.scrollLearnset(dy > 0 ? 1 : -1);
       },
     );
     this.hud = hudMetrics(this.scale.width);
@@ -2053,7 +2066,8 @@ export class RouteScene extends Phaser.Scene {
     children.push(this.hudDetailEmpty);
 
     // The learnset band: a search field over the pool of learned moves and bag
-    // TMs, paged four at a time. Its grid shares the moves grid's look.
+    // TMs, scrolled one row of the 2x2 grid at a time. Its grid shares the moves
+    // grid's look; the `<` / `>` pair rides the search row as a one-row scroll.
     this.hudSearchBg = this.add
       .rectangle(0, 0, 10, HUD_DETAIL_SEARCH_H, 0xffffff)
       .setOrigin(0, 0)
@@ -2062,11 +2076,6 @@ export class RouteScene extends Phaser.Scene {
     this.hudSearchText = addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK }).setVisible(false);
     this.hudLearnPrev = addFrlgText(this, 0, 0, '<', { size: 16, tint: FRLG_INK, origin: [0.5, 0] }).setVisible(false);
     this.hudLearnNext = addFrlgText(this, 0, 0, '>', { size: 16, tint: FRLG_INK, origin: [0.5, 0] }).setVisible(false);
-    this.hudLearnPageText = addFrlgText(this, 0, 0, '', {
-      size: 16,
-      tint: 0x3a3956,
-      origin: [0.5, 0],
-    }).setVisible(false);
     this.hudLearnEmpty = addFrlgText(this, 0, 0, 'no moves to learn', {
       size: 16,
       tint: 0x6b6887,
@@ -2077,7 +2086,6 @@ export class RouteScene extends Phaser.Scene {
       this.hudSearchText,
       this.hudLearnPrev,
       this.hudLearnNext,
-      this.hudLearnPageText,
       this.hudLearnEmpty,
     );
 
@@ -2716,7 +2724,7 @@ export class RouteScene extends Phaser.Scene {
     };
   }
 
-  /** Draws the search field and the paged learnset pool under the moves grid. */
+  /** Draws the search field and the scrolled learnset pool under the moves grid. */
   private refreshLearnset(ability: string, moves: boolean): void {
     const pad = FRLG_WINDOW_PADDING;
     const gridTop = this.hudDetailY + HUD_DETAIL_CONTENT_TOP - HUD_PAD_TOP;
@@ -2735,43 +2743,44 @@ export class RouteScene extends Phaser.Scene {
 
     const pool = moves ? this.learnPool() : [];
     const memberIvs = this.detailMember()?.fighter.ivs;
-    const pages = Math.max(1, Math.ceil(pool.length / HUD_DETAIL_LEARN_PAGE_SIZE));
-    this.hudLearnPage = Math.max(0, Math.min(pages - 1, this.hudLearnPage));
-    const pageEntries = pool.slice(
-      this.hudLearnPage * HUD_DETAIL_LEARN_PAGE_SIZE,
-      (this.hudLearnPage + 1) * HUD_DETAIL_LEARN_PAGE_SIZE,
+    const maxTop = maxScrollTop(pool.length, HUD_DETAIL_LEARN_COLS, HUD_DETAIL_LEARN_ROWS);
+    this.hudLearnScrollTop = clampScrollTop(this.hudLearnScrollTop, maxTop);
+    const { start, end } = visibleRange(
+      this.hudLearnScrollTop,
+      HUD_DETAIL_LEARN_COLS,
+      HUD_DETAIL_LEARN_ROWS,
+      pool.length,
     );
-    this.hudLearnPageEntries = pageEntries;
+    this.hudLearnWindow = pool.slice(start, end);
     const learnTop = searchY + HUD_DETAIL_SEARCH_H + HUD_DETAIL_LEARN_GAP;
     const learnH = this.hudDetailY + HUD_DETAIL_H - learnTop;
+    this.hudLearnRect = moves
+      ? { x: this.hudDetailX, y: learnTop, w: this.hud.detailW, h: learnH }
+      : { x: 0, y: 0, w: 0, h: 0 };
     this.hudLearnGrid.layout({
       x: this.hudDetailX,
       y: learnTop,
       w: this.hud.detailW,
       h: learnH,
-      cells: pageEntries.map((entry) => this.learnCell(entry, ability, memberIvs)),
-      selected: pageEntries.findIndex((entry) => entry.moveId === this.hudLearnDrag),
+      cells: this.hudLearnWindow.map((entry) => this.learnCell(entry, ability, memberIvs)),
+      selected: this.hudLearnWindow.findIndex((entry) => entry.moveId === this.hudLearnDrag),
       info: null,
       popupAtCell: true,
     });
 
-    // The pool spans the full window; its paging arrows ride the search row,
-    // right-aligned beside the page count, so the grid keeps the whole width.
+    // The pool spans the full window; its scroll arrows ride the search row,
+    // right-aligned, so the grid keeps the whole width.
     const navY = searchY + 4;
     const navRight = searchX + searchW - 10;
-    const showNav = moves && pages > 1;
+    const showNav = moves && maxTop > 0;
     this.hudLearnPrev
       .setPosition(navRight - 56, navY)
-      .setAlpha(this.hudLearnPage > 0 ? 1 : 0.35)
+      .setAlpha(this.hudLearnScrollTop > 0 ? 1 : 0.35)
       .setVisible(showNav);
     this.hudLearnNext
       .setPosition(navRight, navY)
-      .setAlpha(this.hudLearnPage < pages - 1 ? 1 : 0.35)
+      .setAlpha(this.hudLearnScrollTop < maxTop ? 1 : 0.35)
       .setVisible(showNav);
-    this.hudLearnPageText
-      .setText(`${this.hudLearnPage + 1}/${pages}`)
-      .setPosition(navRight - 28, navY)
-      .setVisible(moves && pool.length > 0);
     this.hudLearnEmpty
       .setPosition(this.hudDetailX + this.hud.detailW / 2, learnTop + Math.max(0, learnH / 2 - 8))
       .setVisible(moves && pool.length === 0);
@@ -2959,6 +2968,10 @@ export class RouteScene extends Phaser.Scene {
       this.updatePanelDrag(pointer);
       return;
     }
+    if (this.hudLearnScrollDrag) {
+      this.updateLearnScrollDrag(pointer);
+      return;
+    }
     if (this.hudDragItem !== null) {
       this.hudDragGhost.setPosition(pointer.x, pointer.y);
       this.input.setDefaultCursor('grabbing');
@@ -3060,6 +3073,10 @@ export class RouteScene extends Phaser.Scene {
       this.endPanelDrag();
       return;
     }
+    if (this.hudLearnScrollDrag) {
+      this.endLearnScrollDrag();
+      return;
+    }
     if (this.hudIconPress) {
       this.hudIconPress = null;
       this.input.setDefaultCursor('default');
@@ -3107,6 +3124,10 @@ export class RouteScene extends Phaser.Scene {
     }
     if (this.hudPanelDrag) {
       this.endPanelDrag();
+      return;
+    }
+    if (this.hudLearnScrollDrag) {
+      this.endLearnScrollDrag();
       return;
     }
     // A released learnset move equips into the slot it was dropped on, if any.
@@ -3185,7 +3206,7 @@ export class RouteScene extends Phaser.Scene {
     }
     this.hudDetailState = openDetail(memberId);
     this.resetDetailInfo();
-    this.hudLearnPage = 0;
+    this.hudLearnScrollTop = 0;
     this.hudLearnQuery = '';
     this.hudSearchFocus = false;
     this.cancelNicknameEdit();
@@ -3209,19 +3230,19 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * A press inside the panel: focus the search field, page the learnset pool,
+   * A press inside the panel: focus the search field, scroll the learnset pool,
    * pick a pool move up to drag it onto a slot, switch tab, toggle a move's ⓘ
    * info popup, or pick a slot move up to reorder it. Returns false when the
    * press landed on an empty spot (no control), so the caller can move the panel.
    */
   private handleDetailPointerDown(pointer: Phaser.Input.Pointer): boolean {
     const point = this.panelPoint(pointer, 'detail');
-    // The paging arrows ride the search row, so they are tested before the field.
+    // The scroll arrows ride the search row, so they are tested before the field.
     const nav = this.learnNavAt(point);
     if (nav !== null) {
       this.hudSearchFocus = false;
       this.cancelNicknameEdit();
-      this.stepLearnPage(nav === 'prev' ? -1 : 1);
+      this.scrollLearnset(nav === 'prev' ? -1 : 1);
       return true;
     }
     if (pointInRect(point, this.hudSearchRect)) {
@@ -3266,8 +3287,14 @@ export class RouteScene extends Phaser.Scene {
     if (this.hudDetailState.tab !== 'moves') return false;
     const poolIndex = this.hudLearnGrid.indexAt(point.x, point.y);
     if (poolIndex !== null) {
-      const entry = this.hudLearnPageEntries[poolIndex];
+      const entry = this.hudLearnWindow[poolIndex];
       if (entry) this.startLearnDrag(entry.moveId, pointer);
+      return true;
+    }
+    // A press on the band's own background (its inset or the gutter between its
+    // rows) starts a scroll drag, so it never moves the panel instead.
+    if (this.pointerInLearnBand(pointer)) {
+      this.startLearnScrollDrag(point);
       return true;
     }
     const cell = this.detailInfoAt(pointer);
@@ -3282,7 +3309,7 @@ export class RouteScene extends Phaser.Scene {
     return true;
   }
 
-  /** The pool paging arrow under a panel-local point, or null. */
+  /** The pool scroll arrow under a panel-local point, or null. */
   private learnNavAt(point: { x: number; y: number }): 'prev' | 'next' | null {
     const hit = (text: Phaser.GameObjects.BitmapText): boolean =>
       text.visible &&
@@ -3293,13 +3320,63 @@ export class RouteScene extends Phaser.Scene {
     return null;
   }
 
-  /** Steps the learnset pool `delta` pages (clamped) and redraws. */
-  private stepLearnPage(delta: number): void {
-    const pages = Math.max(1, Math.ceil(this.learnPool().length / HUD_DETAIL_LEARN_PAGE_SIZE));
-    const page = Math.max(0, Math.min(pages - 1, this.hudLearnPage + delta));
-    if (page === this.hudLearnPage) return;
-    this.hudLearnPage = page;
+  /** The last row the pool window may start at, or 0 when it all fits. */
+  private maxLearnScrollTop(): number {
+    return maxScrollTop(this.learnPool().length, HUD_DETAIL_LEARN_COLS, HUD_DETAIL_LEARN_ROWS);
+  }
+
+  /** Moves the pool window `deltaRows` rows (clamped) and redraws when it moved. */
+  private scrollLearnset(deltaRows: number): void {
+    const next = scrollByRows(this.hudLearnScrollTop, deltaRows, this.maxLearnScrollTop());
+    if (next === this.hudLearnScrollTop) return;
+    this.hudLearnScrollTop = next;
     this.refreshDetail();
+  }
+
+  /** True when the pointer is over the MOVES tab's learnset band. */
+  private pointerInLearnBand(pointer: Phaser.Input.Pointer): boolean {
+    if (this.hudDetailState.tab !== 'moves' || !this.panelExpanded('detail')) return false;
+    return pointInRect(this.panelPoint(pointer, 'detail'), this.hudLearnRect);
+  }
+
+  /** The drawn pitch between two pool rows, read off the laid-out grid. */
+  private learnRowPitch(): number {
+    const first = this.hudLearnGrid.cellRect(0);
+    const second = this.hudLearnGrid.cellRect(HUD_DETAIL_LEARN_COLS);
+    if (!first || !second || second.y <= first.y) return 0;
+    return second.y - first.y;
+  }
+
+  /** Starts a scroll drag from the band's background at a panel-local point. */
+  private startLearnScrollDrag(point: { x: number; y: number }): void {
+    this.hudLearnScrollDrag = {
+      startY: point.y,
+      startTop: this.hudLearnScrollTop,
+      rowPitch: this.learnRowPitch(),
+    };
+    this.input.setDefaultCursor('grabbing');
+  }
+
+  /**
+   * Drags the pool window by whole rows: dragging down moves it towards the top
+   * of the list and dragging up moves it down the list.
+   */
+  private updateLearnScrollDrag(pointer: Phaser.Input.Pointer): void {
+    const drag = this.hudLearnScrollDrag;
+    if (!drag || drag.rowPitch <= 0) return;
+    const point = this.panelPoint(pointer, 'detail');
+    const deltaRows = Math.round((point.y - drag.startY) / drag.rowPitch);
+    const next = clampScrollTop(drag.startTop - deltaRows, this.maxLearnScrollTop());
+    if (next === this.hudLearnScrollTop) return;
+    this.hudLearnScrollTop = next;
+    this.refreshDetail();
+  }
+
+  /** Ends a scroll drag and restores the cursor. */
+  private endLearnScrollDrag(): void {
+    if (!this.hudLearnScrollDrag) return;
+    this.hudLearnScrollDrag = null;
+    this.input.setDefaultCursor('default');
   }
 
   /** Picks a pool move up so it can be dropped onto a slot. */
@@ -3340,10 +3417,10 @@ export class RouteScene extends Phaser.Scene {
     } else if (event.key === 'Backspace') {
       if (this.hudLearnQuery.length === 0) return true;
       this.hudLearnQuery = this.hudLearnQuery.slice(0, -1);
-      this.hudLearnPage = 0;
+      this.hudLearnScrollTop = 0;
     } else if (event.key.length === 1 && /[a-z0-9 '-]/i.test(event.key)) {
       this.hudLearnQuery += event.key;
-      this.hudLearnPage = 0;
+      this.hudLearnScrollTop = 0;
     } else {
       return true;
     }

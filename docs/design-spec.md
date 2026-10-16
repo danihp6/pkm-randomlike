@@ -74,7 +74,8 @@ carries over.
   is green and a click evolves the member into it — Eevee's eight forms sit
   side by side and the player picks the one they want — and **MOVES**, where the four slotted
   moves can be dragged to reorder them (that order is what the battle menu lists)
-  over a **learnset** band: a search field and a paged grid, spanning the window,
+  over a **learnset** band: a search field and a full-width grid the wheel, the
+  `<` / `>` pair or a drag on the band's own background scrolls a row at a time,
   of every move the member may equip — the level-up moves it has learned so far
   (minus the ones already in its four slots) and the moves a **TM in the bag** can
   teach it — each tagged `Lv##` or `TM###`; an empty pool reads `no moves to
