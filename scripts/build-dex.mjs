@@ -57,6 +57,13 @@ const isPlayable = (entry) =>
 const isMega = (entry) =>
   (entry.isNonstandard === 'Past' || entry.isNonstandard === 'Future') && entry.isMega === true;
 
+// Gigantamax formes are battle-only too (`gmaxes.json`, D44) and the dex marks
+// them by name: every `…-Gmax` entry, the same test `isBattleBossForm` uses to
+// keep them out of the playable set, so the two filters can never disagree.
+// `Eternatus-Eternamax` ends in `-Eternamax`, not `Gmax`, so it is in neither
+// file and Eternatus cannot Gigantamax in this game (`docs/data-spec.md` §1).
+const isGmax = (entry) => /Gmax$/i.test(entry.name);
+
 // Rayquaza is the one Mega without a stone (it needs Dragon Ascent); the run's
 // stone mechanic still needs one, so derive a name from the base species.
 const megaStoneName = (entry, base) =>
@@ -198,6 +205,43 @@ const main = async () => {
   const pastMegas = megaFormes.filter((entry) => entry.isNonstandard === 'Past').length;
   const futureMegas = megaFormes.filter((entry) => entry.isNonstandard === 'Future').length;
 
+  // Every Gigantamax forme whose base species the run can own (`gmaxes.json`,
+  // D44). `changesFrom` names the **exact** base forme — what makes the two
+  // forme-of-a-forme rows resolvable (`Toxtricity-Low-Key-Gmax` changes from
+  // `Toxtricity-Low-Key`) — so `baseSpeciesId` is that, and a G-Max whose base is
+  // not playable is skipped exactly as a Mega's is. `weightkg` is the base
+  // species' own: the dex's G-Max entries carry the placeholder `weightkg: 0` and
+  // the forme changes nothing but HP.
+  const playableById = new Map(species.map((entry) => [entry.id, entry]));
+  const gmaxFormes = Dex.species
+    .all()
+    .filter(isGmax)
+    .map((entry) => ({ entry, baseId: normalizeId(entry.changesFrom ?? entry.baseSpecies) }))
+    .filter((row) => playableById.has(row.baseId))
+    .map(({ entry, baseId }) => {
+      const base = playableById.get(baseId);
+      return {
+        ...entry,
+        baseSpeciesId: baseId,
+        catchRate: catchRateOf(entry.num),
+        heightm: heights[entry.id] ?? heights[baseId] ?? 1,
+        weightkg: base.weightkg,
+        evolutions: [],
+      };
+    });
+
+  // Both are map keys in `gmaxes.ts`: a duplicate id would silently drop a forme
+  // and a duplicate base would break the one-G-Max-per-species promise
+  // `gmaxFormForBase` makes, so the generator refuses to write either.
+  const duplicateGmaxIds = duplicates(gmaxFormes.map((entry) => entry.id));
+  if (duplicateGmaxIds.length > 0) {
+    throw new Error(`two G-Max formes share an id: ${duplicateGmaxIds.join(', ')}`);
+  }
+  const duplicateGmaxBases = duplicates(gmaxFormes.map((entry) => entry.baseSpeciesId));
+  if (duplicateGmaxBases.length > 0) {
+    throw new Error(`two G-Max formes share a base species: ${duplicateGmaxBases.join(', ')}`);
+  }
+
   // The whole move set (`D42`): every real move, the `Past` ones included, so a
   // Dexit species keeps its learnset (King's Shield, Aromatherapy...). Dynamax
   // (Max) and Z moves are dropped — the engine models neither — as are the CAP,
@@ -257,6 +301,7 @@ const main = async () => {
 
   await writeJson('species.json', species);
   await writeJson('megas.json', megaFormes);
+  await writeJson('gmaxes.json', gmaxFormes);
   await writeJson('moves.json', moves);
   await writeJson('abilities.json', abilities);
   await writeJson('items.json', items);
@@ -271,6 +316,7 @@ const main = async () => {
     counts: {
       species: species.length,
       megas: megaFormes.length,
+      gmaxes: gmaxFormes.length,
       moves: moves.length,
       abilities: abilities.length,
       items: items.length,
@@ -286,6 +332,9 @@ const main = async () => {
     `megas            ${String(megaFormes.length).padStart(4)} (${pastMegas} Past, ` +
       `${futureMegas} Future, ${normalisedHp} HP normalised)`,
   );
+  // The G-Max summary, beside the Mega one: `gmaxes.json` is battle-only too
+  // (`D44`), and none of its rows is a second tag — the dex marks them by name.
+  console.log(`gmaxes           ${String(gmaxFormes.length).padStart(4)}`);
 };
 
 main().catch((error) => {

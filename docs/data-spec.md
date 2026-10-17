@@ -30,6 +30,23 @@ instead of leaving them ownable, and `megas.json` cannot take them either —
 three would share one of `meowsticite`/`magearnite`/`tatsugirinite`, which its
 one-stone-per-forme guard rejects.
 
+`gmaxes.json` is generated beside it too: every Gigantamax forme whose base species
+is in the playable set, each with its `baseSpeciesId` — **34** today, `meta.json`'s
+`counts.gmaxes` being the authority. The filter is the dex entry's **name**
+(`/Gmax$/i`, the same test `isBattleBossForm` uses), so the G-Max formes stay out of
+`species.json` exactly as they are kept out of the wild tables, the rosters and the
+starter offers (`D39`), and `baseSpeciesId` is `normalizeId(changesFrom)` — the
+**exact** base forme, which is what resolves `Toxtricity-Low-Key-Gmax` to
+`toxtricitylowkey` and `Urshifu-Rapid-Strike-Gmax` to `urshifurapidstrike`. A row
+takes its base species' `weightkg` (the dex's G-Max entries carry the placeholder
+`weightkg: 0`), plus a `catchRate` and a `heightm`, and **no evolutions**; a G-Max
+whose base is out of the set is skipped, and a duplicate id or base species stops the
+build. Both are map keys in `gmaxes.ts`, so the generator refuses either. The mechanic
+is `D44` (`src/engine/battle/gmax.ts`), and it is item-free: the only condition is
+that the Pokémon's own species has a G-Max forme. **`Eternatus-Eternamax` is not a
+Gigantamax forme** — its name ends in `-Eternamax`, not `Gmax` — so it is in neither
+generated file and Eternatus cannot Gigantamax in this game.
+
 ## 2. Authored
 
 | File | What it holds | Phase |
@@ -65,6 +82,8 @@ code never sees a `any`:
 - `src/data/dex/megas.ts` → `MegaForm`, `MEGA_FORMES`, `megaFormForItem(id)`,
   `megaFormOf(id)`, `megaFormsForBase(id)`, `isMegaSpecies(id)`,
   `megaMatchesSpecies(stoneId, speciesId)`
+- `src/data/dex/gmaxes.ts` → `GmaxForm`, `GMAX_FORMES`, `gmaxFormOf(id)`,
+  `gmaxFormForBase(id)`, `isGmaxSpecies(id)`
 - `src/data/dex/moves.ts` → `Move`, `getMove(id)`, `moveByType(type)`,
   `isDamaging(move)`
 - `src/data/dex/learnsets.ts` → `learnsetOf(speciesId)`, `levelUpMoves(id, level)`,

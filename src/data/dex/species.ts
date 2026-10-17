@@ -1,5 +1,6 @@
 import speciesData from './species.json';
 import megasData from './megas.json';
+import gmaxesData from './gmaxes.json';
 
 export type StatId = 'hp' | 'atk' | 'def' | 'spa' | 'spd' | 'spe';
 
@@ -53,8 +54,13 @@ const ALL_SPECIES = speciesData as unknown as readonly Species[];
 // battle builds a Fighter straight from the Mega entry when a stone is spent.
 const MEGA_SPECIES = megasData as unknown as readonly Species[];
 
+// G-Max formes live in their own generated file too (`gmaxes.json`, D44). The
+// battle never builds a fighter from one, but a Gigantamax swaps `speciesId` to
+// the forme's id, so `getSpecies` has to resolve it (as it does a Mega's).
+const GMAX_SPECIES = gmaxesData as unknown as readonly Species[];
+
 const BY_ID = new Map<string, Species>(
-  [...ALL_SPECIES, ...MEGA_SPECIES].map((species) => [species.id, species]),
+  [...ALL_SPECIES, ...MEGA_SPECIES, ...GMAX_SPECIES].map((species) => [species.id, species]),
 );
 
 const BY_NUM = new Map<number, Species>();

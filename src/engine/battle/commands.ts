@@ -1,6 +1,7 @@
 import { getMove, type Move } from '../../data/dex';
 import type { ItemDef } from '../../data/items';
 import { attemptCapture } from './capture';
+import { canGigantamax } from './gmax';
 import { canMegaEvolve } from './mega';
 import { applyBoosts, applyHeal, type BattleFighter, type MoveSlot } from './fighter';
 import {
@@ -18,7 +19,7 @@ import { cureStatus } from './status';
 import { canRun } from './runAway';
 import { isTaunted } from './volatile';
 
-export type FightCommand = Readonly<{ type: 'fight'; moveIndex: number; mega?: boolean }>;
+export type FightCommand = Readonly<{ type: 'fight'; moveIndex: number; mega?: boolean; gmax?: boolean }>;
 export type BagCommand = Readonly<{ type: 'bag'; itemId: string }>;
 export type SwitchCommand = Readonly<{ type: 'switch'; partyIndex: number }>;
 export type RunCommand = Readonly<{ type: 'run' }>;
@@ -115,6 +116,9 @@ export function validateCommand(
       }
       if (command.mega && !canMegaEvolve(state, side)) {
         return 'That Pokémon cannot Mega Evolve.';
+      }
+      if (command.gmax && !canGigantamax(state, side)) {
+        return 'That Pokémon cannot Gigantamax.';
       }
       return null;
     }
