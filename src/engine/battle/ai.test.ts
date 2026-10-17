@@ -3,6 +3,7 @@ import { Rng } from '../rng';
 import { HARD_MODE_FLAGS, chooseAiCommand } from './ai';
 import { legalMoveIndices } from './commands';
 import { createFighter, type FighterInput } from './fighter';
+import { formatBattleLog, scriptedBattle } from './harness';
 import { activeFighter, createBattle, type BattleState } from './state';
 
 const SEED = 1;
@@ -344,6 +345,26 @@ describe('the switch rules', () => {
     expect(chooseAiCommand(state, 'enemy')).toEqual({ type: 'switch', partyIndex: 1 });
     activeFighter(state, 'enemy').volatiles.trapped = true;
     expect(chooseAiCommand(state, 'enemy').type).toBe('fight');
+  });
+});
+
+describe('the scripted battle (D11)', () => {
+  it('drives the hard policy through the harness enemyCommand hook', () => {
+    const run = (): string =>
+      formatBattleLog(
+        scriptedBattle({
+          isWild: false,
+          turnCap: 2,
+          player: [{ id: 'p', speciesId: 'magikarp', level: 20, moves: ['splash'] }],
+          enemy: [{ id: 'e', speciesId: 'charmander', level: 1, moves: ['tackle', 'thunderwave'] }],
+          enemyCommand: (state) => chooseAiCommand(state, 'enemy', { level: 'hard' }),
+        }),
+      );
+    const log = run();
+    // `hard` handed the trainer checkViability: the 60-point status move wins.
+    expect(log).toContain('  > enemy thunderwave');
+    expect(log).toContain('# turn 2');
+    expect(run()).toBe(log);
   });
 });
 
