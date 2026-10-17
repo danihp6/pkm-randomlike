@@ -1,0 +1,158 @@
+name: agent / cycle
+
+# The first end-to-end cycle, and deliberately the faithful one: a single job, one
+# batch, and the Orchestrator role driving the ritual it already knows — cut, spec,
+# worktree, dev, QA, merge to `main` — instead of a five-job fan-out. Nested
+# subagents were measured working headlessly in `agent-role-smoke.yml`, so the
+# roles can be used exactly as written.
+#
+# Dispatch only: nothing here reads `AUTOPILOT`, so the loop cannot start itself
+# yet. The batch is one task whose human decision is already taken, and `merge`
+# lets a trial run stop before `main` moves at all.
+#
+# What the runner has to tell the role, because the local flow took it for granted:
+#   * There is no human. The `question` tool would hang the job: a blocking doubt
+#     must stop the run cleanly instead.
+#   * The asset store is materialised outside the checkout (a private clone), and
+#     `AGENTS.md`'s asset rule applies: pass its absolute path, never a junction.
+
+on:
+  workflow_dispatch:
+    inputs:
+      batch:
+        description: Batch to run (one task for now)
+        default: '14'
+        required: true
+      model:
+        description: Model the whole cycle runs on
+        default: opencode-go/deepseek-v4.1-flash
+        required: true
+      merge:
+        description: Merge to main at the end (false stops after QA)
+        type: boolean
+        default: true
+
+concurrency:
+  group: agent-cycle
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  cycle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Remember where main was
+        run: echo "BEFORE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - run: npm install -g @opencode/cli
+
+      - name: Materialise the asset store outside the checkout
+        env:
+          ASSETS_DEPLOY_KEY: ${{ secrets.ASSETS_DEPLOY_KEY }}
+          ASSETS_REPO: ${{ vars.ASSETS_REPO }}
+          ASSETS_COMMIT: ${{ vars.ASSETS_COMMIT }}
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/assets"
+          mkdir -p "$root" && chmod 700 "$root"
+          printf '%s\n' "$ASSETS_DEPLOY_KEY" > "$root/key" && chmod 600 "$root/key"
+          export GIT_SSH_COMMAND="ssh -i $root/key -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes"
+          git clone --quiet --depth 1 "git@github.com:${ASSETS_REPO}.git" "$root/store"
+          git -C "$root/store" fetch --quiet --depth 1 origin "$ASSETS_COMMIT"
+          git -C "$root/store" checkout --quiet "$ASSETS_COMMIT"
+          {
+            echo "ASSETS_ROOT=$root/store"
+            echo "POKEANIL_POKEMON=$root/store/anil/Graphics/Pokemon"
+            echo "POKEANIL_ITEMS=$root/store/anil/Graphics/Items"
+          } >> "$GITHUB_ENV"
+          echo "assets en $root/store @ $ASSETS_COMMIT"
+
+      - name: Configure git identity
+        run: |
+          git config user.name opencode-bot
+          git config user.email opencode-bot@users.noreply.github.com
+
+      - name: Run the cycle
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          set -o pipefail
+          opencode run --agent orchestrator --auto --model '${{ inputs.model }}' \
+            "Eres el Orchestrator de POKERANDOMLIKE y esto corre DESATENDIDO en un runner de
+             GitHub Actions. Lee AGENTS.md entero y los ficheros de rol antes de nada.
+
+             HECHOS DEL ENTORNO (no los descubras a base de fallos):
+             - No hay ningún humano. NUNCA uses la herramienta `question`: colgaría el job
+               hasta el timeout. Si algo te bloquea de verdad, escribe
+               .agent_specs/blocked.md con la pregunta, NO toques main, y termina el turno
+               con el informe.
+             - El árbol de assets ya está materializado FUERA del checkout: su raíz es
+               \$ASSETS_ROOT, y POKEANIL_POKEMON / POKEANIL_ITEMS ya apuntan dentro de él.
+               Aplica la regla de AGENTS.md (Asset trees): pasa siempre la ruta absoluta a
+               quien deba leerla; jamás un junction ni un symlink, ni dentro de un worktree.
+             - `origin` es alcanzable y tienes permiso de escritura: los push funcionan.
+             - El runner es Linux y efímero. No hay nada más en la máquina.
+
+             TU ENCARGO, en este orden y sin ampliarlo:
+             1. Corta un lote de UNA sola tarea: [Task-14] en TODO.md, cuyo texto está ahí.
+                La decisión humana ya está tomada: **solo existe el bosque**. Es decir:
+                - BIOME_ORDER se queda en ['forest'] y de BIOMES desaparecen `wood`,
+                  `outdoor` y `cave`.
+                - `placeholder` NO es un bioma de juego: es el tileset de los tests
+                  (src/data/tilesets/placeholder.ts, su entrada en TILESET_NAMES) y
+                  scripts/frlg/build-audio.mjs lo nombra. Decides tú, y lo escribes en la
+                  spec: queda como fixture solo-para-tests, o desaparece si los tests no lo
+                  necesitan.
+                - Revisa también las entradas de tileset de los biomas borrados y la única
+                  referencia de juego (src/scenes/RouteScene.ts:650). Nada más.
+             2. Escribe su spec en .agent_specs/task-14.md con docs/agent-spec-template.md,
+                con criterios [unit] y, si hace falta, [live] con su medida.
+             3. Crea el worktree del ritual, lanza UN subagente dev con SOLO la ruta de su
+                spec, y espera su informe.
+             4. Valida con UN subagente qa (un lote de una tarea colapsa a una sola pasada,
+                como dicen tu rol y el suyo): el plan de la spec verbatim, las dos gates
+                (`npm test`, `npm run build`) y la auditoría del diff contra sus exclusive
+                paths.
+             5. Si QA aprueba: mergea task-14 en main con --no-ff, corre las dos gates
+                después del merge, tickea [Task-14] en TODO.md, archívalo en CHANGELOG.md
+                (una entrada, en inglés, al principio de ## Unreleased), commit y push a
+                origin main.
+             6. Si QA es roja: NO mergees, deja el diagnóstico escrito y termina el informe.
+
+             Merge autorizado en esta ejecución: ${{ inputs.merge }}.
+             Si es false, para después de QA y no toques main.
+
+             Termina con el informe corto y en español del rol: lote, tarea, qué se
+             verificó y cómo, qué está bloqueado, y el commit final de main si lo hubo." \
+            2>&1 | tee /tmp/cycle.txt
+
+      - name: What the cycle changed
+        if: always()
+        run: |
+          echo "== main antes: $BEFORE_SHA"
+          echo "== main ahora: $(git rev-parse HEAD)"
+          echo "== commits nuevos"
+          git log --oneline "$BEFORE_SHA..HEAD" || true
+          echo "== ficheros tocados"
+          git diff --stat "$BEFORE_SHA..HEAD" || true
+          echo "== estado del árbol"
+          git status --short
+
+      - name: The merged tree still passes the gate
+        if: always()
+        run: |
+          npm test
+          npm run build

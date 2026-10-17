@@ -13,3 +13,7 @@ rules, once written). A workflow that can write to `main` is named as such below
   job pushes a throwaway `smoke/role-probe-<run>` branch (deleted at the end), and
   the private asset store is cloned with the deploy key at `ASSETS_COMMIT`. Writes
   only that throwaway branch.
+- `agent-cycle.yml` — **the autopilot's unit of work, and the only workflow allowed
+  to write `main`**: one batch, the Orchestrator driving plan → dev → QA → merge
+  (--no-ff) → TODO/CHANGELOG bookkeeping → push. Dispatch-only for now; it does not
+  read `AUTOPILOT` yet, and its `merge` input lets a trial stop after QA.
