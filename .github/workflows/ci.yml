@@ -1,0 +1,40 @@
+name: CI
+
+# The repo's own gate: `AGENTS.md` says a merge to `main` happens only behind a
+# green `npm test` + `npm run build`, and the Orchestrator runs it after every
+# task merge. In CI it runs on the merged tree too, so a push to `main` that
+# slipped through the local ritual is caught here.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only on purpose: only the cycle's closing job is allowed to write (`main`).
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Test (Vitest, headless)
+        run: npm test
+
+      - name: Build (tsc --noEmit && vite build)
+        run: npm run build

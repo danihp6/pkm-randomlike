@@ -1,0 +1,66 @@
+name: agent / smoke
+
+# First CI increment: prove the three unknowns of an unattended runner before any
+# cycle exists — that `OPENCODE_API_KEY` reaches the inference API, that the CLI
+# runs headless on a clean machine, and that `opencode-go` serves the model id we
+# plan to fan out with. Dispatch only, read-only, no side effects on the repo.
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Model to try through the provider
+        default: opencode-go/deepseek-v4.1-flash
+        required: true
+
+concurrency:
+  group: agent-smoke
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install OpenCode
+        run: |
+          npm install -g @opencode/cli
+          opencode --version
+
+      - name: The key reaches the inference API
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          set -o pipefail
+          code=$(curl -sS -o /tmp/probe.json -w '%{http_code}' \
+            -X POST 'https://opencode.ai/inference/openai/v1/chat/completions' \
+            -H "Authorization: Bearer $OPENCODE_API_KEY" \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"deepseek-v4.1-flash","max_tokens":16,"messages":[{"role":"user","content":"Say OK"}]}')
+          echo "HTTP $code"
+          head -c 800 /tmp/probe.json; echo
+          test "$code" = "200"
+
+      - name: OpenCode runs headless through the provider
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          opencode run --auto --model '${{ inputs.model }}' \
+            'Reply with exactly OK and nothing else.' | tee /tmp/run.txt
+          grep -qi 'ok' /tmp/run.txt
+
+      - name: What the key can see
+        if: always()
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          opencode models | grep '^opencode-go/' | head -20 || true
