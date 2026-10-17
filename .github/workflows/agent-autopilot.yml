@@ -42,6 +42,7 @@ jobs:
         id: gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTOPILOT: ${{ vars.AUTOPILOT }}
         run: |
           set -euo pipefail
           go() { echo "go=$1" >> "$GITHUB_OUTPUT"; echo "$2"; }
@@ -85,8 +86,6 @@ jobs:
           fi
 
           go true "Dispatching a cycle."
-        env:
-          AUTOPILOT: ${{ vars.AUTOPILOT }}
 
       - name: Dispatch a cycle
         if: steps.gate.outputs.go == 'true'
