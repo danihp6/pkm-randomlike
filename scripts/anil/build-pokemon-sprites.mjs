@@ -258,6 +258,84 @@ function megaAnilName(mega) {
   return pick ? `${base}_${pick.index}` : mega.baseSpeciesId
 }
 
+// Battle-only Gigantamax formes (`src/data/dex/gmaxes.json`, D44). Anil lists its
+// own G-Max roster in `PBS/pokemon_metrics_gmax.txt`, whose headers are
+// `[BASE,n]`; that index is taken **verbatim** (it is the only mapping the clone
+// ships for the roster) and paired in dex order when one base has several rows
+// (Toxtricity amped / Low Key, Urshifu / Rapid Strike).
+//
+// A verified caveat, frozen here and reported rather than silently fixed: some
+// of those indices are numbered for *other* formes of the same species in
+// `pokemon_forms.txt` (`GENGAR,2` is Mega Gengar Y, `PIKACHU,17` is Mega
+// Pikachu), and this revision of the clone carries no enabled Gigantamax form of
+// its own (`UngmaxForm` is commented out everywhere, no `FormName` says
+// "Gigamax"). The sheet the metrics file names is a distinct, larger design
+// rather than the base sprite, so the index is used as-is; a G-Max forme whose
+// numbered sheet the set does not carry falls back to its base species' sheet.
+const GMAXES = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../src/data/dex/gmaxes.json', import.meta.url)), 'utf8'),
+)
+
+/** Anil's `pokemon_metrics_gmax.txt`: base species name -> its G-Max indices, in file order. */
+function parseAnilGmaxMetrics(path) {
+  const metrics = new Map()
+  for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
+    const header = line.match(/^\[([^,\]]+),(\d+)\]/)
+    if (!header) continue
+    const base = header[1].toUpperCase()
+    const list = metrics.get(base) ?? []
+    list.push(Number(header[2]))
+    metrics.set(base, list)
+  }
+  return metrics
+}
+
+const ANIL_GMAX_METRICS = parseAnilGmaxMetrics(
+  resolve(sourceDir, '..', '..', 'PBS', 'pokemon_metrics_gmax.txt'),
+)
+
+/** The metrics-file base a G-Max row is paired under (the exact base forme's species). */
+const gmaxBase = (gmax) => (gmax.baseSpecies ?? gmax.baseSpeciesId).toUpperCase()
+
+/** G-Max id -> its metrics index; a base with several rows consumes them in order. */
+const GMAX_METRICS_INDEX = new Map()
+{
+  const consumed = new Map()
+  for (const gmax of GMAXES) {
+    const base = gmaxBase(gmax)
+    const list = ANIL_GMAX_METRICS.get(base) ?? []
+    const position = consumed.get(base) ?? 0
+    consumed.set(base, position + 1)
+    if (list[position] !== undefined) GMAX_METRICS_INDEX.set(gmax.id, list[position])
+  }
+}
+
+const SPECIES_BY_ID = new Map(SPECIES.map((species) => [species.id, species]))
+
+/** The Anil sheet name (no extension) a G-Max draws from, or its base species. */
+function gmaxAnilName(gmax) {
+  const index = GMAX_METRICS_INDEX.get(gmax.id)
+  return index === undefined ? gmax.baseSpeciesId : `${gmaxBase(gmax)}_${index}`
+}
+
+/** The sheet name the G-Max forme's base species resolves to (its own Anil forme). */
+function gmaxBaseAnilName(gmax) {
+  const base = SPECIES_BY_ID.get(gmax.baseSpeciesId)
+  return base ? anilName(base) : gmax.baseSpeciesId
+}
+
+/**
+ * Which case a G-Max row's sheet fell in: `resolved` (a sheet of its own),
+ * `shared` (the index is numbered for another forme of that species in
+ * `pokemon_forms.txt`) or `missing` (no such sheet, so the base species' is used).
+ */
+function gmaxSheetCase(gmax) {
+  const index = GMAX_METRICS_INDEX.get(gmax.id)
+  if (index === undefined || !indexes.front.has(norm(`${gmaxBase(gmax)}_${index}`))) return 'missing'
+  const declared = (ANIL_FORMS.get(gmaxBase(gmax)) ?? []).find((form) => form.index === index)
+  return declared && !/gmax|gigamax/i.test(declared.formName) ? 'shared' : 'resolved'
+}
+
 /** The manifest entry for one sheet name, falling back to a base species. */
 function sheetEntry(name, fallbackBase) {
   if (!name) return null
@@ -313,6 +391,16 @@ for (const mega of MEGAS) {
   megasResolved++
 }
 
+// The G-Max formes ride along the same way, so a Gigantamax mid-battle has a
+// sheet to swap to (D44).
+let gmaxesResolved = 0
+for (const gmax of GMAXES) {
+  const entry = sheetEntry(gmaxAnilName(gmax), gmaxBaseAnilName(gmax))
+  if (!entry) continue
+  frames[gmax.id] = entry
+  gmaxesResolved++
+}
+
 /** Scales a sheet's first `src`x`src` frame into a `size`x`size` atlas cell. */
 function blitFrame(atlas, index, sheet, src, size) {
   const col = index % PORTRAIT_COLS
@@ -335,10 +423,12 @@ function blitFrame(atlas, index, sheet, src, size) {
 /** Packs one portrait atlas off the icon folder; returns the id -> frame map. */
 function buildPortraits(out, file) {
   // Species first (their indices are stable), then the Mega formes so the switch
-  // grid can draw the Mega's own face (D34).
+  // grid can draw the Mega's own face (D34), then the G-Max formes for the same
+  // reason (D44) — appended last, so no frame index moves.
   const entries = [
     ...SPECIES.map((species) => ({ id: species.id, name: anilName(species), fallback: species.baseSpecies })),
     ...MEGAS.map((mega) => ({ id: mega.id, name: megaAnilName(mega), fallback: mega.baseSpeciesId })),
+    ...GMAXES.map((gmax) => ({ id: gmax.id, name: gmaxAnilName(gmax), fallback: gmaxBaseAnilName(gmax) })),
   ]
   const rows = Math.ceil(entries.length / PORTRAIT_COLS)
   const atlas = Buffer.alloc(PORTRAIT_COLS * PORTRAIT_SIZE * rows * PORTRAIT_SIZE * 4)
@@ -372,3 +462,21 @@ console.log(
   `copied ${files} sheets into public/anil/ and wrote the manifest for ${resolved} species ` +
     `(${formes} formes, ${megasResolved} megas) with ${Object.keys(normal).length} portraits and ${Object.keys(shiny).length} shiny portraits`,
 )
+
+// The G-Max art table: per id, whether the metrics file's index named a sheet of
+// its own, a sheet `pokemon_forms.txt` numbers for another forme of the same
+// species, or no sheet at all (the base species' is drawn instead).
+const gmaxCases = GMAXES.map((gmax) => ({
+  id: gmax.id,
+  name: gmaxAnilName(gmax),
+  case: gmaxSheetCase(gmax),
+}))
+const ofCase = (kind) => gmaxCases.filter((entry) => entry.case === kind)
+console.log(
+  `gmax sheets      ${String(GMAXES.length).padStart(4)} (${ofCase('resolved').length} resolved, ` +
+    `${ofCase('shared').length} shared, ${ofCase('missing').length} missing, ${gmaxesResolved} in the manifest)`,
+)
+for (const kind of ['shared', 'missing']) {
+  const list = ofCase(kind)
+  if (list.length > 0) console.log(`  ${kind.padEnd(7)} ${list.map((e) => `${e.id}->${e.name}`).join(', ')}`)
+}

@@ -6,8 +6,9 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 
 - `dex/` — **generated**, committed, do not edit by hand. Produced by
   `npm run data:dex` from `@pkmn/dex`. See `docs/showdown-reuse.md`. Typed
-  accessors live beside it (`species.ts`, `megas.ts`, `moves.ts`, `abilities.ts`,
-  `items.ts`, `learnsets.ts`, `types.ts`, `natures.ts`, `evolutions.ts`).
+  accessors live beside it (`species.ts`, `megas.ts`, `gmaxes.ts`, `moves.ts`,
+  `abilities.ts`, `items.ts`, `learnsets.ts`, `types.ts`, `natures.ts`,
+  `evolutions.ts`).
 - `tilesets/` — one file per biome tileset plus the shared `palettes.ts` and the
   `index.ts` registry. Contract in `docs/tileset-spec.md`.
 - `biomes.ts` — biome → tileset and terrain flavour.
@@ -43,7 +44,8 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   are read by `engine/battle/effects/items.ts`, and the ids nothing models yet are
   named in that file's `UNMODELLED_ITEMS` (`D16`). Also builds one
   unsold **Mega Stone** per Mega forme from `dex/megas.ts` (`D34`); holding the
-  matching stone lets a Pokémon Mega Evolve once per battle.
+  matching stone lets a Pokémon Mega Evolve once per battle. It builds **no**
+  G-Max item and no "Gigantamax factor": Gigantamax needs neither (`D44`).
 - `abilityText.ts` — the ability-text override table: the ids whose dex blurb is
   competitive-play boilerplate while the engine ports the ability
   (`docs/balance/effect-coverage.md`), read by `abilityDescription`

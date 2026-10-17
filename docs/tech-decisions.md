@@ -646,6 +646,30 @@ ships, and its type is now derived from the holder's IVs at battle time. A move
 with no ported effect still resolves its base damage generically; an unported
 status move is a dev-warned no-op.
 
+## D44 — Gigantamax is a battle mechanic in the Mega mould *(decided)*
+
+Gigantamax exists with the shape Mega Evolution already has (`D34`,
+`src/engine/battle/gmax.ts`). A Pokémon **whose own species has a G-Max forme** may
+**Gigantamax once per battle** from a control in the battle's MOVES window (both the
+player and the AI can), before any move; there is **no held item and no
+"Gigantamax factor" gate**, unlike a Mega Stone. Taking its G-Max forme changes its
+**name and species/sprite** while **keeping its stats, types, ability, moves and held
+item**, and the **HP pool doubles** (`× 2`, the current HP included, so the HP
+fraction holds). It lasts the whole battle — a switch-out does not end it — and
+everything reverts when the battle ends, before the run snapshot, so no doubled pool
+(a captured wild included) ever reaches the run. Gigantamax and Mega Evolution are
+**mutually exclusive per Pokémon per battle**, and the mechanic draws **no RNG at
+all**: it is deterministic, so a fixed seed's battle log is unchanged.
+
+The formes are generated into `src/data/dex/gmaxes.json` beside `megas.json`: one row
+per dex `…-Gmax` entry (the name filter `isBattleBossForm` already uses) whose base
+species is playable, each carrying the exact `changesFrom` as `baseSpeciesId`, so
+`gmaxFormForBase(id)` resolves one forme per species. **Max / G-Max moves are not
+modelled** (`D42`): a G-Max forme keeps its normal moves, with no damage bonus and
+no Dynamax timer. `Eternatus-Eternamax` is **not** a Gigantamax forme — its name ends
+in `-Eternamax`, not `Gmax` — so it is in neither generated file and Eternatus cannot
+Gigantamax in this game.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

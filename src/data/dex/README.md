@@ -13,6 +13,7 @@ asserts the counts still match, so a bad regeneration fails loudly.
 | --- | --- |
 | `species.json` | `id`, `num`, `name`, `types`, `baseStats`, `abilities`, `prevo`, `evos`, `evolutions[]`, `weightkg`, `heightm`, `genderRatio`, `nfe`, `catchRate`, form fields |
 | `megas.json` | a battle-only `Species` plus `baseSpeciesId`, `stoneId`, `stoneName`; every Mega of a playable base species, `Past` or `Future` — the dex's own "announced, not released" tag (D34) |
+| `gmaxes.json` | a battle-only `Species` plus `baseSpeciesId` (the exact `changesFrom`); every dex `…-Gmax` entry whose base species is playable — 34 today, one per species (D44) |
 | `moves.json` | `id`, `name`, `type`, `category`, `basePower`, `accuracy`, `pp`, `priority`, `target`, `flags`, `secondaries`, `critRatio`, `drain`, `recoil`, `multihit`, `status`, `volatileStatus`, `boosts`, `self`, `weather`, `terrain`, `desc`, `shortDesc` |
 | `abilities.json` | `id`, `name`, `desc`, `shortDesc`, `flags` |
 | `items.json` | `id`, `name`, `desc`, `shortDesc`, `isBerry`, battle flags |
@@ -30,7 +31,7 @@ asserts the counts still match, so a bad regeneration fails loudly.
   forme without a learnset of its own inherits its base species'. A kept source
   can still name a move that no longer exists in Gen 9, so learnset entries are
   intersected with `moves.json`.
-- Typed accessors live next to the JSON (`species.ts`, `megas.ts`, `moves.ts`,
+- Typed accessors live next to the JSON (`species.ts`, `megas.ts`, `gmaxes.ts`, `moves.ts`,
   `items.ts`, `learnsets.ts`, `types.ts`, `natures.ts`, `evolutions.ts`,
   re-exported from `index.ts`). Only they read the JSON.
 - The playable set is the **full National Dex** (`D40`): every species with a
@@ -47,3 +48,8 @@ asserts the counts still match, so a bad regeneration fails loudly.
   name-shape: they are reached from a stone, never from the grass, and adding
   them here would ship one id in both files — three of them share a stone the
   generator's one-stone guard rejects.
+- `gmaxes.json` rides beside `megas.json` as the battle-only **Gigantamax** set
+  (`D44`): one row per dex `…-Gmax` entry whose base species is playable, keyed by
+  its exact `changesFrom` (`baseSpeciesId`), so `gmaxFormForBase(id)` resolves one
+  G-Max forme per species. It is reached through
+  `src/engine/battle/gmax.ts`; no item and no stone gates it.

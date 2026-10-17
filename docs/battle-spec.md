@@ -229,6 +229,37 @@ is the mechanic the mega-stone room's stones feed (`D34`, `docs/maps-spec.md`
   outside battle (`docs/routes-spec.md` §5) and is unrelated to this.
 - The set is **every** dex Mega, nonstandard formes included: **88** formes in
   `src/data/dex/megas.json`, generated beside `species.json` (`D34`), each with
-  its own stone in `src/data/items.ts`. **Gigantamax is not in it yet** — the
-  G-Max formes are excluded from the playable set and the mechanic is `[Task-18]`
-  (Batch 7).
+  its own stone in `src/data/items.ts`. Gigantamax is a **separate mechanic**
+  (`D44`, §10): no stone and no item gate at all.
+
+## 10. Gigantamax
+
+A Pokémon **whose own species has a G-Max forme** may Gigantamax **once per
+battle** (`D44`); no item, no stone and no archetype flag is involved.
+
+- The control is a **G-MAX** button in the moves window, in the slot immediately
+  inside the MEGA one, offered only while the active Pokémon's own species has a
+  G-Max forme and it has not Gigantamaxed yet. Confirming it **arms** the forme and
+  the next FIGHT spends it (the Pokémon still attacks that turn); arming one forme
+  disarms the other, and picking BAG, SWITCH or RUN drops the armed forme. The
+  engine half is `src/engine/battle/gmax.ts`; the command carries a `gmax` flag on
+  `FightCommand`.
+- It resolves **at the top of the turn, before any move**, beside the Mega loop, so
+  the turn's order and damage read the Gigantamaxed fighter.
+- The forme takes the G-Max **name and sprite** and keeps the fighter's **stats,
+  types, ability, moves and held item**; the **HP pool doubles** (`× 2`, the current
+  HP included, so the HP fraction holds). The ability never changes, so unlike a
+  Mega no on-switch-in effect fires.
+- Both the player and the AI can Gigantamax. The AI spends it on the first fight
+  command it can, exactly as it spends a Mega Stone.
+- It lasts the whole battle (a **switch-out does not end it**) and **reverts at the
+  battle's end**, before the run snapshot: the route HUD, the PC box and a captured
+  wild keep the **base** species and the normal, undoubled HP maximum.
+- Gigantamax and Mega Evolution are **mutually exclusive per Pokémon per battle**:
+  a fighter that Gigantamaxed cannot Mega Evolve, and vice versa.
+- The formes come from `src/data/dex/gmaxes.json` (generated beside `megas.json`,
+  `D44`) — **34** today, `meta.json`'s `counts.gmaxes` being the authority, and one
+  per species (`gmaxFormForBase(id)`). **Max / G-Max moves are not modelled**
+  (`D42`): a Gigantamaxed Pokémon uses its normal moves, with no damage bonus and no
+  Dynamax timer. `Eternatus-Eternamax` is **not** a Gigantamax forme, so Eternatus
+  cannot Gigantamax.

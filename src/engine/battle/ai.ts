@@ -1,6 +1,7 @@
 import { getMove } from '../../data/dex';
 import { estimateDamage } from './damage';
 import { legalMoveIndices, selectedMove, type Command } from './commands';
+import { canGigantamax } from './gmax';
 import { canMegaEvolve } from './mega';
 import { activeFighter, opponent, type BattleState, type SideId } from './state';
 import { STATUS_IDS, canApplyStatus } from './status';
@@ -77,9 +78,17 @@ export function chooseAiCommand(state: BattleState, side: SideId): Command {
 
   const attacker = activeFighter(state, side);
   const defender = opponent(state, side);
-  // The AI spends its Mega Stone at the first opportunity it can act.
+  // The AI spends its Mega Stone and its Gigantamax at the first opportunity it
+  // can act, exactly as it spends the stone (D34, D44). A holder can have both
+  // available; a Mega resolves first (`turn.ts`), so it is the only one the
+  // command arms.
   const mega = canMegaEvolve(state, side);
-  const fight = (moveIndex: number): Command => (mega ? { type: 'fight', moveIndex, mega } : { type: 'fight', moveIndex });
+  const gmax = canGigantamax(state, side);
+  const fight = (moveIndex: number): Command => {
+    if (mega) return { type: 'fight', moveIndex, mega: true };
+    if (gmax) return { type: 'fight', moveIndex, gmax: true };
+    return { type: 'fight', moveIndex };
+  };
   const legal = legalMoveIndices(attacker);
   if (legal.length === 0) return fight(0);
 

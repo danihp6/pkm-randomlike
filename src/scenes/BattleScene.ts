@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { getMove, heightOf } from '../data/dex';
 import { megaFormForItem } from '../data/dex/megas';
+import { gmaxFormForBase } from '../data/dex/gmaxes';
 import { getItem } from '../data/items';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { type KeybindAction, type Keybinds } from '../data/keybinds';
@@ -9,11 +10,13 @@ import { getTrainerArchetype } from '../data/trainers';
 import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
 import { legalMoveIndices, type Command } from '../engine/battle/commands';
 import { createFighter, restoreFighter, snapshotFighter, type BattleFighter, type StatusId } from '../engine/battle/fighter';
+import { canGigantamax, revertGigantamax } from '../engine/battle/gmax';
 import { movePreview } from '../engine/battle/preview';
 import { chooseAiCommand } from '../engine/battle/ai';
 import { canRun } from '../engine/battle/runAway';
 import type { BattleEvent } from '../engine/battle/state';
 import {
+  SIDE_IDS,
   activeFighter,
   autoReplace,
   canMegaEvolve,
@@ -129,6 +132,8 @@ const MENU_GRID_GAP = 8;
 const MOVE_BACK_COL = 64;
 /** Width reserved at the right of the moves grid for the Mega control (D34). */
 const MOVE_MEGA_COL = 62;
+/** Width reserved at the right of the moves grid for the G-Max control (D44). */
+const MOVE_GMAX_COL = 62;
 const MOVE_GRID_INSET = 8;
 /** How far above the menu the party detail window (and the info popup) sits. */
 const MOVE_POPUP_GAP = 8;
@@ -254,6 +259,8 @@ export class BattleScene extends Phaser.Scene {
   private forcedSwitch = false;
   /** The player armed the Mega control for the move about to be chosen (D34). */
   private megaIntent = false;
+  /** The player armed the G-Max control for the move about to be chosen (D44). */
+  private gmaxIntent = false;
 
   private displayActive!: Record<SideId, BattleFighter>;
   private displayHp!: Record<SideId, number>;
@@ -301,6 +308,12 @@ export class BattleScene extends Phaser.Scene {
   private megaZone!: Phaser.GameObjects.Zone;
   /** True while the keyboard cursor sits on the Mega control instead of a move. */
   private megaSelected = false;
+  /** The G-MAX control, in the slot immediately inside the Mega one (D44). */
+  private gmaxCell!: Phaser.GameObjects.Rectangle;
+  private gmaxText!: Phaser.GameObjects.BitmapText;
+  private gmaxZone!: Phaser.GameObjects.Zone;
+  /** True while the keyboard cursor sits on the G-Max control instead of a move. */
+  private gmaxSelected = false;
   private hpBars!: Record<SideId, { fill: Phaser.GameObjects.Rectangle; bar: Phaser.GameObjects.Image }>;
   private messageText!: Phaser.GameObjects.BitmapText;
   private nameText!: Record<SideId, Phaser.GameObjects.BitmapText>;
@@ -394,6 +407,7 @@ export class BattleScene extends Phaser.Scene {
     this.enemyFighters = [];
     this.loadedSheets = [];
     this.megaIntent = false;
+    this.gmaxIntent = false;
     this.partyAbilityInfo = false;
     const launch = this.launch;
     if (!launch) return;
@@ -556,6 +570,21 @@ export class BattleScene extends Phaser.Scene {
     this.megaZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     this.megaZone.on('pointerover', () => this.onMegaHover());
     this.megaZone.on('pointerdown', () => this.onMegaClick());
+
+    // The G-MAX control, in the slot immediately inside the Mega one: the same
+    // cell, label and hit zone, shown while the active Pokémon's own species has
+    // a G-Max forme (D44).
+    this.gmaxCell = this.add
+      .rectangle(0, 0, 10, 10, 0xe6e3f2)
+      .setOrigin(0, 0)
+      .setStrokeStyle(2, 0x9a94b8)
+      .setVisible(false);
+    this.gmaxText = addFrlgText(this, 0, 0, 'G-MAX', { size: 16, tint: FRLG_INK, origin: 0.5 }).setVisible(
+      false,
+    );
+    this.gmaxZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    this.gmaxZone.on('pointerover', () => this.onGmaxHover());
+    this.gmaxZone.on('pointerdown', () => this.onGmaxClick());
 
     this.nameText = {
       enemy: addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
@@ -966,6 +995,9 @@ export class BattleScene extends Phaser.Scene {
         case 'mega':
           this.playMega(event.side);
           break;
+        case 'gmax':
+          this.playGmax(event.side);
+          break;
         case 'forme': {
           const fighter = this.state.sides[event.side].party.find((p) => p.id === event.fighterId);
           if (fighter) {
@@ -988,6 +1020,16 @@ export class BattleScene extends Phaser.Scene {
   /** A white flash and a fade-in for the side that just Mega Evolved (D34). */
   private playMega(side: SideId): void {
     this.cameras.main.flash(220, 255, 255, 255);
+    const sprite = side === 'player' ? this.playerSprite : this.foeSprite;
+    sprite.setAlpha(0.2);
+    this.tweens.add({ targets: sprite, alpha: 1, duration: 280 });
+    this.displayActive[side] = activeFighter(this.state, side);
+    this.syncMonSprites();
+  }
+
+  /** The same beat in G-Max red for the side that just Gigantamaxed (D44). */
+  private playGmax(side: SideId): void {
+    this.cameras.main.flash(220, 255, 96, 96);
     const sprite = side === 'player' ? this.playerSprite : this.foeSprite;
     sprite.setAlpha(0.2);
     this.tweens.add({ targets: sprite, alpha: 1, duration: 280 });
@@ -1074,6 +1116,9 @@ export class BattleScene extends Phaser.Scene {
       // mid-battle has no texture to draw (D34).
       const mega = fighter.heldItem ? megaFormForItem(fighter.heldItem) : undefined;
       if (mega) add(mega.id, fighter.shiny, female, kind);
+      // A G-Max forme the species may take needs its sheet up front the same way.
+      const gmax = gmaxFormForBase(fighter.speciesId);
+      if (gmax) add(gmax.id, fighter.shiny, female, kind);
       // Zero to Hero swaps to Palafin-Hero when it leaves the field, so that
       // sheet must be loaded before the switch-in draws it.
       if (fighter.ability === 'Zero to Hero') add('palafinhero', fighter.shiny, female, kind);
@@ -1250,6 +1295,12 @@ export class BattleScene extends Phaser.Scene {
 
   /** Hands the route the party and bag as they stand, then closes the battle. */
   private returnToRoute(): void {
+    // A Gigantamax only lasts the battle, so both pools halve back before any
+    // snapshot is taken: no doubled pool (a captured wild included) reaches the
+    // run, and the snapshot's own HP is the base pool (D44).
+    for (const side of SIDE_IDS) {
+      for (const fighter of this.state.sides[side].party) revertGigantamax(fighter);
+    }
     const outcome = this.outcome();
     const captured = outcome === 'capture' ? snapshotFighter(this.state.sides.enemy.party[0]) : null;
     const result: BattleReturn = {
@@ -1271,7 +1322,9 @@ export class BattleScene extends Phaser.Scene {
   private openMenu(): void {
     const player = activeFighter(this.state, 'player');
     if (!canMegaEvolve(this.state, 'player')) this.megaIntent = false;
+    if (!canGigantamax(this.state, 'player')) this.gmaxIntent = false;
     this.megaSelected = false;
+    this.gmaxSelected = false;
     this.menuItems = [
       { label: 'FIGHT', enabled: true, onSelect: () => this.openMoves() },
       { label: 'BAG', enabled: this.usableBag().length > 0, onSelect: () => this.openBag() },
@@ -1289,10 +1342,24 @@ export class BattleScene extends Phaser.Scene {
     return canMegaEvolve(this.state, 'player');
   }
 
-  /** Arms or disarms the Mega control; the next move spends it (D34). */
+  /** True while the active Pokémon's own species has a G-Max forme to take (D44). */
+  private gmaxAvailable(): boolean {
+    return canGigantamax(this.state, 'player');
+  }
+
+  /** Arms or disarms the Mega control; the next move spends it (D34). Only one control is ever armed. */
   private toggleMega(): void {
     if (!this.megaAvailable()) return;
     this.megaIntent = !this.megaIntent;
+    this.gmaxIntent = false;
+    this.refreshHud();
+  }
+
+  /** Arms or disarms the G-Max control; the next move spends it (D44). */
+  private toggleGmax(): void {
+    if (!this.gmaxAvailable()) return;
+    this.gmaxIntent = !this.gmaxIntent;
+    this.megaIntent = false;
     this.refreshHud();
   }
 
@@ -1312,6 +1379,7 @@ export class BattleScene extends Phaser.Scene {
             type: 'fight',
             moveIndex: index,
             ...(this.megaIntent ? { mega: true } : {}),
+            ...(this.gmaxIntent ? { gmax: true } : {}),
           }),
         move: {
           type: preview?.type ?? move?.type ?? '',
@@ -1331,6 +1399,7 @@ export class BattleScene extends Phaser.Scene {
     });
     this.menuIndex = 0;
     this.megaSelected = false;
+    this.gmaxSelected = false;
     this.infoMove = null;
     this.infoPinned = false;
     this.mode = 'moves';
@@ -1423,6 +1492,7 @@ export class BattleScene extends Phaser.Scene {
     };
     takeTurn(this.state, command, chooseAiCommand(this.state, 'enemy'));
     this.megaIntent = false;
+    this.gmaxIntent = false;
     this.startFeed();
   }
 
@@ -1469,12 +1539,26 @@ export class BattleScene extends Phaser.Scene {
     const cols = MENU_GRID_COLS;
     const rows = Math.max(1, Math.ceil(count / cols));
     const mega = this.mode === 'moves' && this.megaAvailable();
+    const gmax = this.mode === 'moves' && this.gmaxAvailable();
 
-    // The Mega control sits to the right of the grid: `right` from the last
-    // column lands on it, and `left` returns to the moves (D34).
-    if (mega && this.megaSelected) {
+    // The Mega and G-Max controls sit to the right of the grid, the G-Max one
+    // innermost: `right` from the last column reaches them, and `left` walks back
+    // out (D34, D44).
+    if (this.megaSelected || this.gmaxSelected) {
       if (action === 'left') {
-        this.megaSelected = false;
+        if (this.megaSelected && gmax) {
+          this.megaSelected = false;
+          this.gmaxSelected = true;
+        } else {
+          this.megaSelected = false;
+          this.gmaxSelected = false;
+        }
+        this.refreshHud();
+        return;
+      }
+      if (action === 'right' && this.gmaxSelected && mega) {
+        this.gmaxSelected = false;
+        this.megaSelected = true;
         this.refreshHud();
       }
       return;
@@ -1484,8 +1568,9 @@ export class BattleScene extends Phaser.Scene {
     for (let step = 0; step < count; step++) {
       const row = Math.floor(index / cols);
       const col = index % cols;
-      if (action === 'right' && mega && (col === cols - 1 || index === count - 1)) {
-        this.megaSelected = true;
+      if (action === 'right' && (mega || gmax) && (col === cols - 1 || index === count - 1)) {
+        if (gmax) this.gmaxSelected = true;
+        else this.megaSelected = true;
         this.refreshHud();
         return;
       }
@@ -1506,6 +1591,10 @@ export class BattleScene extends Phaser.Scene {
   private confirmMenu(): void {
     if (this.mode === 'moves' && this.megaSelected && this.megaAvailable()) {
       this.toggleMega();
+      return;
+    }
+    if (this.mode === 'moves' && this.gmaxSelected && this.gmaxAvailable()) {
+      this.toggleGmax();
       return;
     }
     const item = this.menuItems[this.menuIndex];
@@ -2129,9 +2218,12 @@ export class BattleScene extends Phaser.Scene {
     const right = menu.x + menu.w - pad.x - MOVE_GRID_INSET;
     const top = menu.y + pad.top + MOVE_GRID_INSET;
     const bottom = menu.y + menu.h - pad.bottom - MOVE_GRID_INSET;
-    // The Mega control takes a column on the right, but only while it is usable.
+    // The Mega and G-Max controls take a column each on the right, but only while
+    // they are usable.
     const mega = this.megaAvailable();
+    const gmax = this.gmaxAvailable();
     if (!mega) this.megaSelected = false;
+    if (!gmax) this.gmaxSelected = false;
 
     // The ◀ back control, centred in the grid's reserved left column.
     const backY = (top + bottom) / 2;
@@ -2142,6 +2234,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.backZone.input) this.backZone.input.enabled = true;
 
     this.layoutMegaControl(right, top, bottom, mega);
+    this.layoutGmaxControl(right, top, bottom, gmax, mega);
 
     const cells: MoveGridCell[] = this.menuItems.map((item) => ({
       name: item.label,
@@ -2163,10 +2256,10 @@ export class BattleScene extends Phaser.Scene {
       w: menu.w,
       h: menu.h,
       cells,
-      selected: this.megaSelected ? -1 : this.menuIndex,
-      info: this.megaSelected ? null : this.infoMove,
+      selected: this.megaSelected || this.gmaxSelected ? -1 : this.menuIndex,
+      info: this.megaSelected || this.gmaxSelected ? null : this.infoMove,
       leftReserve: MOVE_BACK_COL,
-      rightReserve: mega ? MOVE_MEGA_COL : 0,
+      rightReserve: (mega ? MOVE_MEGA_COL : 0) + (gmax ? MOVE_GMAX_COL : 0),
     });
 
     this.menuZones.forEach((zone, i) => {
@@ -2180,12 +2273,13 @@ export class BattleScene extends Phaser.Scene {
       zone.setPosition(rect.x, rect.y).setSize(rect.w, rect.h).setData('infoRect', infoRect);
     });
     // The moves grid marks its selection with the cell's highlight alone; the
-    // ▶ cursor only appears on the Mega control when that is the target.
-    if (this.megaSelected) {
+    // ▶ cursor only appears on whichever forme control is the target.
+    const control = this.megaSelected ? this.megaCell : this.gmaxSelected ? this.gmaxCell : null;
+    if (control) {
       this.menuCursor
         .setFlipX(true)
         .setScale(1)
-        .setPosition(this.megaCell.x + this.megaCell.width - 12, this.megaCell.y + this.megaCell.height / 2)
+        .setPosition(control.x + control.width - 12, control.y + control.height / 2)
         .setVisible(true);
     } else {
       this.menuCursor.setVisible(false);
@@ -2221,6 +2315,41 @@ export class BattleScene extends Phaser.Scene {
     if (this.megaZone.input) this.megaZone.input.enabled = true;
   }
 
+  /**
+   * Lays out the G-MAX control in the slot immediately inside the Mega one, or
+   * hides it when the active Pokémon's own species has no G-Max forme (D44). The
+   * label shows a `+` while the forme is armed, as the Mega control's does.
+   */
+  private layoutGmaxControl(
+    right: number,
+    top: number,
+    bottom: number,
+    show: boolean,
+    mega: boolean,
+  ): void {
+    if (!show) {
+      this.gmaxCell.setVisible(false);
+      this.gmaxText.setVisible(false);
+      if (this.gmaxZone.input) this.gmaxZone.input.enabled = false;
+      return;
+    }
+    const x = right - (mega ? MOVE_MEGA_COL : 0) - MOVE_GMAX_COL;
+    const h = bottom - top;
+    const selected = this.gmaxSelected;
+    this.gmaxCell
+      .setPosition(x, top)
+      .setSize(MOVE_GMAX_COL, h)
+      .setFillStyle(selected ? 0xf7e0a6 : this.gmaxIntent ? 0xc7d2fe : 0xe6e3f2)
+      .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
+      .setVisible(true);
+    this.gmaxText
+      .setText(this.gmaxIntent ? 'G-MAX +' : 'G-MAX')
+      .setPosition(x + MOVE_GMAX_COL / 2, top + h / 2)
+      .setVisible(true);
+    this.gmaxZone.setPosition(x, top).setSize(MOVE_GMAX_COL, h);
+    if (this.gmaxZone.input) this.gmaxZone.input.enabled = true;
+  }
+
   /** Hides the grid and its popup: cells, badges, PP / power / accuracy, ⓘ and info. */
   private hideMoveChrome(): void {
     this.moveGrid.hide();
@@ -2228,6 +2357,9 @@ export class BattleScene extends Phaser.Scene {
     this.megaCell.setVisible(false);
     this.megaText.setVisible(false);
     if (this.megaZone.input) this.megaZone.input.enabled = false;
+    this.gmaxCell.setVisible(false);
+    this.gmaxText.setVisible(false);
+    if (this.gmaxZone.input) this.gmaxZone.input.enabled = false;
     this.infoMove = null;
     this.infoPinned = false;
   }
@@ -2347,8 +2479,9 @@ export class BattleScene extends Phaser.Scene {
   private onMenuHover(zone: Phaser.GameObjects.Zone): void {
     const index = zone.getData('item');
     if (typeof index !== 'number' || index < 0) return;
-    const changed = this.megaSelected || index !== this.menuIndex;
+    const changed = this.megaSelected || this.gmaxSelected || index !== this.menuIndex;
     this.megaSelected = false;
+    this.gmaxSelected = false;
     if (!changed) return;
     this.menuIndex = index;
     this.refreshHud();
@@ -2395,6 +2528,7 @@ export class BattleScene extends Phaser.Scene {
   private onMegaHover(): void {
     if (this.mode !== 'moves' || this.megaSelected || !this.megaAvailable()) return;
     this.megaSelected = true;
+    this.gmaxSelected = false;
     this.refreshHud();
   }
 
@@ -2402,7 +2536,24 @@ export class BattleScene extends Phaser.Scene {
   private onMegaClick(): void {
     if (this.mode !== 'moves' || !this.megaAvailable()) return;
     this.megaSelected = true;
+    this.gmaxSelected = false;
     this.toggleMega();
+  }
+
+  /** Hovering the G-MAX control moves the keyboard cursor onto it. */
+  private onGmaxHover(): void {
+    if (this.mode !== 'moves' || this.gmaxSelected || !this.gmaxAvailable()) return;
+    this.gmaxSelected = true;
+    this.megaSelected = false;
+    this.refreshHud();
+  }
+
+  /** Clicking the G-MAX control arms or disarms it. */
+  private onGmaxClick(): void {
+    if (this.mode !== 'moves' || !this.gmaxAvailable()) return;
+    this.gmaxSelected = true;
+    this.megaSelected = false;
+    this.toggleGmax();
   }
 
   /** Hovering a move's ⓘ button floats its info popup, unless one is pinned. */

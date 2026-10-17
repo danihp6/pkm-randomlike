@@ -49,6 +49,7 @@ import {
   type SelectedMove,
 } from './commands';
 import { megaEvolve } from './mega';
+import { gigantamax } from './gmax';
 import {
   SIDE_IDS,
   activeFighter,
@@ -1157,6 +1158,14 @@ export function takeTurn(state: BattleState, playerCommand: Command, enemyComman
   for (const side of SIDE_IDS) {
     const command = commands[side];
     if (command.type === 'fight' && command.mega) megaEvolve(state, side);
+  }
+  if (state.winner !== null) return;
+
+  // Gigantamax resolves at the same point (D44): the doubled pool and the forme's
+  // name are in place before the turn's first move.
+  for (const side of SIDE_IDS) {
+    const command = commands[side];
+    if (command.type === 'fight' && command.gmax) gigantamax(state, side);
   }
   if (state.winner !== null) return;
 

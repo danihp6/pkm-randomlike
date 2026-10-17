@@ -10,7 +10,9 @@ import { activeFighter, opponent, pushEvent, pushText, type BattleState, type Si
  */
 export function canMegaEvolve(state: BattleState, side: SideId): boolean {
   const fighter = activeFighter(state, side);
-  if (fighter.hp <= 0 || fighter.mega || !fighter.heldItem) return false;
+  // A Gigantamax excludes the Mega (D44): the two are mutually exclusive per
+  // Pokémon per battle.
+  if (fighter.hp <= 0 || fighter.mega || fighter.gmax || !fighter.heldItem) return false;
   return megaMatchesSpecies(fighter.heldItem, fighter.speciesId);
 }
 

@@ -115,6 +115,8 @@ export function formatBattleLog(state: BattleState): string {
           return `  = ${event.side} sent ${event.fighterId}`;
         case 'mega':
           return `  = ${event.side} mega ${event.fighterId}`;
+        case 'gmax':
+          return `  = ${event.side} gmax ${event.fighterId}`;
         case 'forme':
           return `  = ${event.side} forme ${event.fighterId}`;
         case 'item':
