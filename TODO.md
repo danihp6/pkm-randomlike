@@ -23,15 +23,15 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
-**Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e, Batch 5eb, Batch 5f, Batch 6 and
-Batch 6b are
+**Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e, Batch 5eb, Batch 5f, Batch 6,
+Batch 6b and Batch 7 are
 shipped and
 archived.** Their
-twenty-three
+twenty-six
 tasks merged
 in ID order
 behind the green gate (four, then five, then three, then one, then one, then one, then one, then
-one, then four, then two) and the
+one, then four, then two, then three) and the
 detail is
 in
 `CHANGELOG.md`'s
@@ -41,12 +41,11 @@ legs, Batch 5cb the defect in front of 5d that fixed its colour and clipped its 
 the on-ramp thinning, Batch 5e the fixed boss and mini-boss parties, Batch 5eb the debug
 overlay's teleports and its two ignore toggles, Batch 5f the overworld sprite set, Batch 6
 the balance pass, the Phase 9 docs, the battle SWITCH grid and the follower, and Batch 6b the
-learnset band's one-row scroll and the trainer's Poké Ball row, and all
-ten are closed
-below. **Batch 7 is cut** — Gigantamax, the route-scoped catch swap and the main
-menu's Continue row: its three specs are written
-(`.agent_specs/task-18.md`, `task-31.md`, `task-47.md`) and its three worktrees are
-next, so it can gain no member. The
+learnset band's one-row scroll and the trainer's Poké Ball row, and Batch 7 the G-Max
+formes, the route-scoped catch swap and the main
+menu's Continue row, and all
+eleven are closed
+below. The
 eighteenth round below put the
 follower back in Batch 6 and gave its art its own batch, 5f, ahead of it. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
@@ -941,9 +940,9 @@ bar. Neither added a run field, so **no `SAVE_VERSION` step** — the chain stay
 are never reused.
 
 ### Batch 7 — Gigantamax, route-scoped catch swap, the main menu's Continue row
-**(cut)**: the three specs are written (`task-18.md`, `task-31.md`, `task-47.md`
-under `.agent_specs/`) and the Orchestrator cuts the three worktrees next; the batch
-can gain no member from here, and every claim below is what its specs freeze.
+**(shipped and archived)**: its three tasks merged in ID order behind the green gate
+(`task-18`, `task-31`, `task-47`), the gate green after each merge, and the detail is
+in `CHANGELOG.md`'s `## Unreleased`. What follows is the cut's own record.
 - **Task-18** Gigantamax, in the Mega Evolution mould.
 - **Task-31** A full party sends the catch to the PC, swappable only on that route.
 - **Task-47** The main menu's Continue row shows the map, its biome and the party's icons.
@@ -2719,73 +2718,6 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] **[Task-31] A full party sends the catch to the PC, swappable only on that
-      route.** Catching a wild Pokémon with the party full today **defers** the
-      placement and opens a full-screen modal: `RouteScene.applyBattleResult` calls
-      `resolveBattle` with `placeCapture: false`, reads the deferred
-      `BattleResolution.captured` and hands it to `openCapturePrompt`
-      (`captureDetailChildren`, `refreshCapture`, `handleCaptureAction`,
-      `chooseCaptureSwap`, `chooseCapturePc`, `closeCapturePrompt`, the `CAPTURE_*`
-      constants and the `captureRoot` input guards, all in
-      `src/scenes/RouteScene.ts`), which offers "swap it in" or "send it to the PC".
-      Delete that whole path and the seam that exists only to feed it: `placeCapture`
-      and `captured` in `src/engine/run/resolve.ts`, the `askCapture` branch in
-      `applyBattleResult`, and `swapCaughtIntoParty` in `src/engine/run/state.ts`. A
-      catch is then placed by `resolveBattle` itself, the classic way — into the
-      party while it has room, into the PC box when it is full (`addPokemon` /
-      `MAX_PARTY_SIZE`) — with `addCaughtPokemon` as the single placement helper
-      every catch goes through.
-      **The new rule:** the swap window is no longer the whole floor. A catch that
-      went to the box is swappable only **while the run is still in the room it was
-      caught in**; the first exit closes it, a door (`advanceRoute`) and the portal
-      (`advanceMap`) alike. So the floor-scoped `pcUnlocked` becomes a route-scoped
-      `pcCatch: { roomInMap: number; memberId: string } | null`, set by the placement
-      when the catch landed in the box and cleared by both advances; `pcMemberEditable`
-      reads it beside `pcFullyEditable`, so the HUD's box cells — whose lock veil
-      `src/scenes/RouteScene.ts` already draws from it — lock the catch the moment
-      the player walks out. Nothing new to build: the party/PC panel already performs
-      the swap (`canGrab` / `canSwapAcross` → `swapAcross`, `swapPartyBox`,
-      `withdrawToParty`, `depositToBox`, `BOX_PAGE_SIZE` in `src/ui/partyScreen.ts`).
-      **The popup** replaces the modal with a temporary notice at the **top of the
-      screen**, in English (D12): "Your party is full — <name> went to the PC. You
-      can swap it in before you leave this route." It is raised when the catch is
-      placed (inside `playReleaseBeats`' callback, so a permadeath overlay and the
-      notice never share the screen), drawn by the pinned HUD camera on the
-      `learnPopup` / release-overlay seam, and **auto-dismissed**: it takes no key,
-      blocks no movement and carries no stats, because the detail panel and the PC box
-      panel already show the Pokémon. Its copy and its hold time live in one pure
-      helper, `src/ui/notice.ts`, with a test — one string for Task-26 to key.
-      **Save and state:** the run gains a field, so this task bumps `SAVE_VERSION` and
-      adds its step to `SAVE_MIGRATIONS` the way Task-13 does it: an old run's
-      floor-scoped `pcUnlocked` cannot be re-scoped, so the step drops it and the
-      decoder defaults `pcCatch` to `null`, leaving the party, the box and every other
-      field untouched. Tests: `src/engine/run/state.test.ts` (a full party lands the
-      catch in the box, it is editable there, and `advanceRoute` / `advanceMap` close
-      the window), `src/engine/run/resolve.test.ts` (the `placeCapture` cases fall
-      away with the option), `src/engine/save.test.ts` (the migration round-trip) and
-      `src/ui/notice.test.ts`. Docs: the capture bullet in `docs/routes-spec.md` §3
-      and the PC windows in §6.
-      **`[Task-27]` is absorbed here** and retired: its repro — catch with a full
-      party, take both choices, watch the party, the PC box and the HUD — must be
-      re-run and reported gone, because with one placement path and no second copy of
-      the catch there is nothing left to stack.
-      **The live diagnosis, recorded here because Task-27's ID points at it:** the stacking
-      was never the placement seam. Every wild fighter is built with a **constant** id
-      (`createFighter({ id: 'wild' })`, `src/scenes/BattleScene.ts` **408**), the encounter key
-      behind it (`grass:x,y`, `src/scenes/RouteScene.ts` **4699**) is not unique per run, and
-      `memberById` (`src/ui/partyDetail.ts` **110-114**) resolves a member by **first match** — so
-      the party row drew correctly while its detail panel showed an earlier catch. That is
-      `[Task-33]` (Batch 3b), which lands **before** this task and mints a unique id at the
-      fold; this task's replay must therefore re-run the repro with `[Task-33]` merged and
-      report the panel showing the clicked member, then re-check it again after the deferred
-      placement path is deleted — the id mint is upstream of the placement, so it survives
-      the removal of `placeCapture` unchanged, and `pcCatch.memberId` is free to hold the id
-      `[Task-33]` mints.
-      Out of scope: the party/PC panel's own UI and page size, the battle's ball-shake
-      presentation (`src/ui/capture.ts` is the battle's, not this modal's — leave it
-      alone), the entry room's free PC window (`pcFullyEditable` / `entryDeparted`),
-      and localising the notice (Task-26, Batch 10).
-      *Dependencies:* none — it needs nothing another open task produces. Batch order
       covers three facts: Task-13 (Batch 4) takes the next `SAVE_VERSION` (15) first, so
       this migration is the step after it (15 → 16 as the plan stands); Task-33 (Batch 3b)
       lands even earlier and mints the unique member id at the fold this task keeps, so
@@ -2992,70 +2924,6 @@ Ports of Showdown handlers, in batches, on the hook names in
       *Dependencies:* none. Scheduled after Task-16 (Modernise the panel and menu
       chrome) so the contrast and colour audit runs once, against the final art.
       *(Batch 8)*
-- [ ] **[Task-47] The main menu's Continue row shows the map, its biome and the party's
-      icons.** Reported in play: «en menu principal en continue el string ruta deberia
-      salir que mapa y bioma y deberia salir el icono sprite de los pokes del party» —
-      instead of the route string, the row should name the map and its biome, and it
-      should also show the party's Pokémon as sprites.
-      **Today the row counts rooms and nothing else.** `MainMenuScene.create` (56-128)
-      builds one row per action; a row is a `RowView` (27-31) of a highlight rectangle, a
-      left-hand `BitmapText` label (`MENU_LABELS`, 16-20) and a right-aligned value text
-      drawn at `rowX + rowW - 20` (90-94) — and `rowValue` (130-134) is the whole of it:
-      `Route ${this.run.routeIndex}`, the run's **global room counter**, for the continue
-      row and `''` for the other two. So the menu tells the player how many rooms they
-      have walked and nothing about where they are. Everything the report asks for is
-      already in hand: the scene holds the whole `RunState` in `this.run` (45, 59), and
-      `'continue'` only exists while that run has a living party.
-      **Where the map and the biome come from.** `biomeForMap(run.seed, run.mapIndex)`
-      (`src/engine/maps/plan.ts`, 178-185) recovers a floor's biome from the seed **without
-      building the plan** — it walks the same `map` stream `planMap` does, so the two can
-      never disagree — and `getBiome(id).name` (`src/data/biomes.ts`, 61-63) names it. That
-      pair is exactly what the route HUD's own title draws (`src/scenes/RouteScene.ts`,
-      2107-2108: `` `Map ${this.run.mapIndex} · ${biomeName}` ``), so the menu can show the
-      string the player already reads on the map instead of a second dialect.
-      **The party-icon accessor already exists, and it is not the art this report might
-      suggest.** `portraitFor(speciesId, shiny)` (`src/data/portraits.ts`, 28-36) returns
-      the `{ key, frame }` of the 64px portrait atlas (`PORTRAIT_SIZE`, `PORTRAIT_ATLAS_URL`,
-      10-15) which `BootScene` loads at boot (`src/scenes/BootScene.ts`, 136-142), so
-      `MainMenuScene` — which has no `preload` today — needs none. It is the identical call
-      the party rows and cells already draw with (`RouteScene` 2132, 2220, 2926, 6235;
-      `BattleScene` 1937, the battle's SWITCH grid). The two other candidate sources are
-      the wrong ones and the report should say so: `src/data/pokemonSprites.ts`'s `icon`
-      variant is Añil's 64px **battle** icon strip (`public/anil/icons/**`), which nothing
-      in the tree draws today and which would need a per-species lazy load, and
-      `src/assets/pokemon/**` is the overworld follower art Task-41 introduces (Batch 6) —
-      neither is the party icon the HUD shows.
-      **Fix shape:** the label as a pure helper, then one drawing pass. The string is a
-      view model with no rule behind it, so it belongs in the computing half of `src/ui/`
-      beside its test — and it goes into the run's **existing** text model,
-      `src/ui/runSummary.ts`, as an exported `runPositionLabel(run: RunState): string`, with
-      its cases in `src/ui/runSummary.test.ts`, rather than into a new `src/ui/*.ts` file:
-      a new file in that folder owes a `README.md` line in the same task, and
-      `src/ui/README.md` is Task-31's in this very batch, so a new module here would share
-      a path with a batch-mate and break the antichain. `MainMenuScene` then draws it:
-      `rowValue('continue')` returns that label, `RowView` gains the row's portrait images
-      built in `create` from `portraitFor(member.fighter.speciesId, member.fighter.shiny)` in
-      party order (the lead first, exactly as the party rows read), at a fixed scale the spec
-      freezes so six icons fit the row's `ROW_H = 60` between the label and the right-aligned
-      value, and hidden/updated in the same place the row's value text is today. A species
-      the atlas has no cell for draws nothing in that slot (`portraitFor` returns null) — the
-      alternative is a sheet-extension job, which is not this task.
-      **The string, as the recommended reading:** `Map <mapIndex> · <biome name>` — the route
-      HUD's own title (`RouteScene` **2107-2108**), because the report asks for the map and
-      the biome *instead of* the route string. **That is the decided string** (the human
-      settled it when the batch was cut; the third-clause alternative —
-      `… · Route <routeInMap + 1>`, the order `partyDetail.ts`'s `catchLabel` uses at 151-154 —
-      is **rejected**), and it is what `.agent_specs/task-47.md` freezes.
-      Out of scope: the row's key handling, the New run and Options rows, the save/load path,
-      `RowView`'s highlight, the settings screen, any new art or atlas, and the run-over
-      screen. Docs: the main menu bullet in `docs/design-spec.md` §2 (line 16-17, "it shows
-      the route it is on" — the sentence this replaces).
-      Tests: `src/ui/runSummary.test.ts` over `runPositionLabel` — a run on map 3 reads
-      `Map 3 · <name>`, and the name is the one `biomeForMap(seed, 3)` resolves, so the label
-      and the HUD cannot drift; plus the empty/edge case of the helper. QA checks the menu in
-      `npm run dev` with a saved run: the Continue row shows the map and biome and one
-      portrait per party member, and a rebind or an options round-trip redraws it unchanged.
-      *Dependencies:* none — `portraitFor`, `biomeForMap` and `getBiome` are all shipped, and
       it reads no file another open task produces. Batch order covers the doc: this is the
       first batch in which `src/scenes/MainMenuScene.ts` (nobody's until Batch 8's
       every-scene sweep) and `docs/design-spec.md` §2 (held by a batch-mate in every batch
@@ -3320,33 +3188,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       the Mega forme for the battle. All dex Megas (formes may be nonstandard);
       only bosses, mini-bosses and the `ace` archetype carry stones. Engine +
       data + battle UI, fixed-seed tests.
-- [ ] **[Task-18] Gigantamax, in the Mega Evolution mould.** Model Gigantamax the
-      way the Megas work (`src/engine/battle/mega.ts`, `D34`): once per battle a
-      holder may change to its G-Max forme — **the holder is the Pokémon whose own species
-      has a G-Max forme; there is no stone and no held item in the gate**, because the
-      task's paths carry no `src/data/items.ts` entry (`.agent_specs/task-18.md`, `D44`)** —
-      taking that forme's stats/types/ability
-      **before any move**, and revert when the battle ends (`snapshotFighter` keeps
-      the base species). The G-Max formes are **not in the build at all** today —
-      `isBattleBossForm` in `scripts/build-dex.mjs` excludes every Gmax/Eternamax
-      forme from the playable species — so they must be generated beside the
-      playable set, a `gmaxes.json` next to `megas.json` (`src/data/dex/megas.ts`),
-      with their art. **The stats are Añil's rule, not a
-      G-Max stat table**: as in Sword/Shield, Gigantamax only **doubles HP** and
-      leaves every other stat alone — which is what the dex's own G-Max formes
-      encode (`charizardgmax` and `pikachugmax` carry `baseStats` identical to
-      their base species; the ×2 lives in the Dynamax mechanic, never in the data).
-      So a G-Max forme keeps the base species' stats, types and ability, and the
-      doubling is applied by the mechanic the way Añil does it. Añil is also the
-      source for the G-Max art and its sprite placement
-      (`sprite-sources/anil/PBS/pokemon_metrics_gmax.txt` and the numbered form
-      sprites `Graphics/Pokemon/Front/<SPECIES>_<n>.png`). **Max moves stay unmodelled
-      (`D42`), and that settles the one call this entry carried: a G-Max forme keeps its
-      normal moves and the task brings no G-Max/Max move** (the human's decision when the
-      batch was cut; frozen in `.agent_specs/task-18.md` `D44` and in `docs/battle-spec.md`).
-      Needs a decision entry (**`D44`** — `D43` is Task-26's, Batch 10), `docs/battle-spec.md`,
-      and tests (fixed seed, once per battle, the HP doubling, the revert).
-      *Dependencies:* none. *(Batch 7)*
 - [ ] **[Task-20] The Rotom appliances as evolutions.** Rotom's five appliance
       formes are in the dex as species of their own — `rotomheat`, `rotomwash`,
       `rotomfrost`, `rotomfan`, `rotommow` in `src/data/dex/species.json`, each with

@@ -8,6 +8,33 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Gigantamax, in the Mega Evolution mould (`D44`).** A G-Max forme is a **battle state**: a holder
+      whose own species has one may take it **before any move**, it **doubles HP** and leaves every
+      other stat, its types and its ability alone (Añil's rule, not a G-Max stat table), and the battle
+      end reverts it from the fighter's snapshot. The formes are generated, not hand-written:
+      `scripts/build-dex.mjs` now emits `src/data/dex/gmaxes.json` beside `megas.json` (read through the
+      new `src/data/dex/gmaxes.ts` + `gmaxes.test.ts`), and `scripts/anil/build-pokemon-sprites.mjs`
+      regenerates the two portrait atlases (`public/anil/portraits{,-shiny}.png`) for the new cells.
+      The mechanic is the new `src/engine/battle/gmax.ts` + `gmax.test.ts` — fixed seed, it fires **once
+      per battle**, the doubling, the revert — threaded through
+      `src/engine/battle/{turn,commands,fighter,state,ai}.ts`, with `src/scenes/BattleScene.ts` (+181)
+      drawing the gate. **No Max moves**: a G-Max forme keeps its normal moves (`D42`, and the human's
+      call when the batch was cut).
+- [x] **A full party sends the catch to the PC, and only that route's boxed catch is swappable.** The
+      capture screen is **gone**: the engine alone places the catch now (`addCaughtPokemon`), so
+      `src/scenes/RouteScene.ts` lost **457 lines** net, `placeCapture` and the old `captured` field
+      disappeared and `toPc` is derived from the resulting run. `createRun` seeds `pcCatch: null`, both
+      `advanceRoute` and `advanceMap` clear it, and `pcMemberEditable(run, memberId)` is the single
+      answer to whether the PC is editable on the current route, so a boxed catch is swapped there and
+      nowhere else. The strip is the new `src/ui/notice.ts` (+ its test and the folder's role line, with
+      a doc-comment-only touch in `src/ui/partyScreen.ts`), and `src/engine/save.ts` takes the
+      **`SAVE_VERSION` step 15 → 16**: `SAVE_MIGRATIONS[15]` drops the old field and `parseRun` ignores
+      `pcUnlocked` entirely.
+- [x] **The main menu's Continue row shows where the run is.** `src/ui/runSummary.ts` gains
+      `runPositionLabel(run)` — `Map <n> · <biome>` — and `src/scenes/MainMenuScene.ts` (+33) draws the
+      label with the party's portraits beside the row, so Continue says which map and biome the run
+      holds before loading it. `docs/design-spec.md` §2 records the row's third clause and
+      `src/ui/runSummary.test.ts` (+46) pins the label. No run field, no `SAVE_VERSION` step.
 - [x] **The learnset band scrolls instead of paging.** The band no longer pages: a new pure
       `src/ui/scroll.ts` (`maxScrollTop`, `clampScrollTop`, `scrollByRows`, `visibleRange`) owns
       the maths, and the **mouse wheel**, the `<` / `>` controls and a **drag on the band's own
