@@ -17,7 +17,7 @@
     },
     "architect": {
       "description": "Decomposes work into dependency-ordered batches, writes TODO.md and .agent_specs/task-<ID>.md. Read-only on the codebase.",
-      "mode": "subagent",
+      "mode": "all",
       "temperature": 0.1,
       "prompt": "{file:./.agent_roles/architect.md}",
       "permission": {
@@ -34,7 +34,7 @@
     },
     "dev": {
       "description": "Implements pure TypeScript engine rules, Phaser scenes and data tables from a task spec, with tests.",
-      "mode": "subagent",
+      "mode": "all",
       "temperature": 0.2,
       "prompt": "{file:./.agent_roles/dev.md}",
       "permission": {
@@ -45,7 +45,7 @@
     },
     "qa": {
       "description": "Validates a finished batch against every task's test plan, audits path conflicts and reports pass/fail/not-run.",
-      "mode": "subagent",
+      "mode": "all",
       "temperature": 0,
       "prompt": "{file:./.agent_roles/qa.md}",
       "permission": {
