@@ -63,3 +63,11 @@ export function cycleBagCategory(category: BagCategory, offset: number): BagCate
   const next = (index + offset + BAG_CATEGORIES.length) % BAG_CATEGORIES.length;
   return BAG_CATEGORIES[next];
 }
+
+/** The bag row cursor after `delta`, wrapping; 0 for an empty list. */
+export function stepBagCursor(index: number, delta: number, count: number): number {
+  if (count <= 0) return 0;
+  const from = Number.isFinite(index) ? Math.trunc(index) : 0;
+  const current = Math.min(Math.max(0, from), count - 1);
+  return (((current + delta) % count) + count) % count;
+}

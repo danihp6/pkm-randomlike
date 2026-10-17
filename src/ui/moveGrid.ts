@@ -294,11 +294,14 @@ export class MoveGrid {
       this.infoLabels[i].setPosition(buttonX, buttonY).setAlpha(alpha).setVisible(true);
 
       const selected = i === options.selected;
+      // A disabled cell reads by shape as well as by luminance: it takes the dark
+      // 3-px stroke the selection uses, so "cannot be picked" never rests on alpha.
+      const marked = selected || !cell.enabled;
       this.cells[i]
         .setPosition(cellX(i), cellY(i))
         .setSize(cellW, cellH)
         .setFillStyle(typeTint(cell.type, selected ? 0.35 : 0.72))
-        .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
+        .setStrokeStyle(marked ? 3 : 2, marked ? 0x2f2c4d : 0x9a94b8)
         .setVisible(visible);
     }
 

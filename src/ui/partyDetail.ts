@@ -225,6 +225,53 @@ export function setDetailTab(state: DetailState, tab: DetailTab): DetailState {
   return state.tab === tab && state.grab === null ? state : { ...state, tab, grab: null };
 }
 
+export const DETAIL_TABS: readonly DetailTab[] = ['stats', 'moves'];
+
+/** The tab `delta` steps away from `tab`, wrapping. */
+export function nextDetailTab(tab: DetailTab, delta: number): DetailTab {
+  const index = DETAIL_TABS.indexOf(tab);
+  const next = (((index + delta) % DETAIL_TABS.length) + DETAIL_TABS.length) % DETAIL_TABS.length;
+  return DETAIL_TABS[next];
+}
+
+/** What a keyboard stop of the open detail panel points at. */
+export type DetailStopKind = 'name' | 'ability' | 'evolution' | 'search' | 'slot' | 'pool';
+
+export type DetailStop = Readonly<{ kind: DetailStopKind; index: number }>;
+
+/**
+ * The ordered stops of a tab:
+ *  - `stats`: one `name`, one `ability`, then one `evolution` per ready branch
+ *    (`counts.evolutions`).
+ *  - `moves`: one `search`, then `counts.slots` `slot` stops, then `counts.pool` `pool` stops.
+ */
+export function detailStops(
+  tab: DetailTab,
+  counts: Readonly<{ evolutions: number; slots: number; pool: number }>,
+): readonly DetailStop[] {
+  const stops: DetailStop[] = [];
+  if (tab === 'stats') {
+    stops.push({ kind: 'name', index: 0 }, { kind: 'ability', index: 0 });
+    for (let i = 0; i < Math.max(0, Math.trunc(counts.evolutions)); i++) {
+      stops.push({ kind: 'evolution', index: i });
+    }
+    return stops;
+  }
+  stops.push({ kind: 'search', index: 0 });
+  for (let i = 0; i < Math.max(0, Math.trunc(counts.slots)); i++) stops.push({ kind: 'slot', index: i });
+  for (let i = 0; i < Math.max(0, Math.trunc(counts.pool)); i++) stops.push({ kind: 'pool', index: i });
+  return stops;
+}
+
+/** The stop `delta` away from `index`, wrapping; 0 for an empty list. */
+export function stepStop(stops: readonly DetailStop[], index: number, delta: number): number {
+  const count = stops.length;
+  if (count === 0) return 0;
+  const from = Number.isFinite(index) ? Math.trunc(index) : 0;
+  const current = Math.min(Math.max(0, from), count - 1);
+  return (((current + delta) % count) + count) % count;
+}
+
 export function grabMove(state: DetailState, index: number): DetailState {
   return state.grab === index ? state : { ...state, grab: index };
 }

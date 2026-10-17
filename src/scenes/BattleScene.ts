@@ -43,7 +43,7 @@ import {
 import { CAPTURE_SHAKE_SPEED, captureBeat } from '../ui/capture';
 import { BAG_CATEGORY_LABELS, bagCategoryForKind, type BagCategory } from '../ui/bag';
 import { battleFrames, type FeedFrame } from '../ui/feed';
-import { hpColorInt, hpFraction, statusAbbreviation } from '../ui/metrics';
+import { HP_CUE_GAP, hpColorInt, hpCueNotches, hpFraction, isLowHp, statusAbbreviation } from '../ui/metrics';
 import { drawGauge } from '../ui/panel';
 import {
   advanceTypewriter,
@@ -253,6 +253,8 @@ export class BattleScene extends Phaser.Scene {
   /** The message box's typewriter, at the player's text speed (Phase 7). */
   private typing: Typewriter = beginTypewriter('');
   private charMs = TEXT_SPEED_MS.normal;
+  /** The saved reduce-flashing preference, read once in `create` (D45). */
+  private reducedFlash = false;
   private logLength = 0;
   private afterFeed: (() => void) | null = null;
   private mode: Mode = 'feed';
@@ -292,6 +294,12 @@ export class BattleScene extends Phaser.Scene {
   private loadedSheets: PokemonSpriteSheet[] = [];
 
   private hud!: Phaser.GameObjects.Graphics;
+  /**
+   * The non-hue marks that have to ride **over** an icon — a spent ball's slash and
+   * the active bag pocket's underline. `this.hud` is built before the ball row and
+   * the pocket tabs, so anything drawn there lands under them.
+   */
+  private marks!: Phaser.GameObjects.Graphics;
   private bgTop!: Phaser.GameObjects.Rectangle;
   private bgBottom!: Phaser.GameObjects.Rectangle;
   private foePanel!: Phaser.GameObjects.NineSlice;
@@ -472,6 +480,7 @@ export class BattleScene extends Phaser.Scene {
     const settings = loadSettings();
     this.charMs = TEXT_SPEED_MS[settings.textSpeed];
     this.keybinds = settings.keybinds;
+    this.reducedFlash = settings.reducedFlash;
 
     if (trigger.kind === 'trainer' && trigger.archetypeId) {
       const sprite = getTrainerArchetype(trigger.archetypeId)?.battleSprite ?? null;
@@ -705,6 +714,9 @@ export class BattleScene extends Phaser.Scene {
       return { bg, label };
     });
 
+    // The overlay marks ride over the ball row and the pocket tabs built above.
+    this.marks = this.add.graphics();
+
     // The shared moves grid and its floating info popup, built last so the popup
     // rides over the menu and the battle behind it. Hidden until fights open it.
     this.moveGrid = new MoveGrid(this);
@@ -842,12 +854,22 @@ export class BattleScene extends Phaser.Scene {
    * A / B and pad. The battle routes it the same way either way.
    */
   private handleAction(action: KeybindAction): void {
+    // The bag's pocket strip is reachable with the arrows, not only the raw
+    // `[` / `]` keys (which stay as an alias). (§10.3)
+    if (this.mode === 'bag' && (action === 'left' || action === 'right')) {
+      this.cycleBagTab(action === 'left' ? -1 : 1);
+      return;
+    }
     switch (action) {
       case 'confirm':
         this.onConfirm();
         return;
       case 'cancel':
         this.onCancel();
+        return;
+      case 'run':
+        // The secondary action toggles the focused move cell's ⓘ popup.
+        if (this.mode === 'moves') this.toggleMoveInfo();
         return;
       case 'up':
       case 'down':
@@ -1019,7 +1041,7 @@ export class BattleScene extends Phaser.Scene {
 
   /** A white flash and a fade-in for the side that just Mega Evolved (D34). */
   private playMega(side: SideId): void {
-    this.cameras.main.flash(220, 255, 255, 255);
+    if (!this.reducedFlash) this.cameras.main.flash(220, 255, 255, 255);
     const sprite = side === 'player' ? this.playerSprite : this.foeSprite;
     sprite.setAlpha(0.2);
     this.tweens.add({ targets: sprite, alpha: 1, duration: 280 });
@@ -1029,7 +1051,7 @@ export class BattleScene extends Phaser.Scene {
 
   /** The same beat in G-Max red for the side that just Gigantamaxed (D44). */
   private playGmax(side: SideId): void {
-    this.cameras.main.flash(220, 255, 96, 96);
+    if (!this.reducedFlash) this.cameras.main.flash(220, 255, 96, 96);
     const sprite = side === 'player' ? this.playerSprite : this.foeSprite;
     sprite.setAlpha(0.2);
     this.tweens.add({ targets: sprite, alpha: 1, duration: 280 });
@@ -1746,6 +1768,7 @@ export class BattleScene extends Phaser.Scene {
     this.playerSprite.setVisible(this.displayHp.player > 0 || this.beat.player === 'faint');
 
     this.hud.clear();
+    this.marks.clear();
     this.drawSidePanel(foeInfo, 'enemy');
     this.drawSidePanel(playerInfo, 'player');
     this.messagePanel.setSlices(message.w, message.h).setPosition(message.x, message.y);
@@ -1823,7 +1846,9 @@ export class BattleScene extends Phaser.Scene {
       .setPosition(rect.x + rect.w - pad.x, barY - 23);
 
     const status = this.displayStatus[side];
-    const statusFrame = status ? statusIconFrame(status) : null;
+    // A badly poisoned Pokémon gets the `TOX` chip: the badge atlas maps `tox` and
+    // `psn` onto one frame, so the badge alone cannot tell the two apart (§10.1).
+    const statusFrame = status && status !== 'tox' ? statusIconFrame(status) : null;
     if (statusFrame !== null) {
       // The FRLG badge carries its own colours, so no chip is painted behind it.
       this.statusBadges[side].setFrame(statusFrame).setPosition(barX, barY - 22).setVisible(true);
@@ -1847,6 +1872,20 @@ export class BattleScene extends Phaser.Scene {
       .setSize(Math.max(0, FRLG_HPBAR.fill.width * fraction), FRLG_HPBAR.fill.height)
       .setFillStyle(hpColorInt(fraction));
     bar.bar.setPosition(barX, barY);
+
+    // The danger band carries a shape as well as its hue: the fill is cut into
+    // blocks by dark notches, so a low HP reads without colour (D45, §10.2).
+    if (isLowHp(fraction)) {
+      this.hud.fillStyle(FRLG_INK, 1);
+      for (const dx of hpCueNotches(FRLG_HPBAR.fill.width * fraction)) {
+        this.hud.fillRect(
+          barX + FRLG_HPBAR.fill.x + dx - HP_CUE_GAP / 2,
+          barY + FRLG_HPBAR.fill.y,
+          HP_CUE_GAP,
+          FRLG_HPBAR.fill.height,
+        );
+      }
+    }
 
     if (side === 'player') {
       drawGauge(
@@ -1890,8 +1929,20 @@ export class BattleScene extends Phaser.Scene {
         .setPosition(x + i * FOE_BALL_PITCH, y)
         .setAlpha(spent ? FOE_BALL_SPENT_ALPHA : 1)
         .setVisible(true);
-      if (spent) ball.setTint(FOE_BALL_SPENT_TINT);
-      else ball.clearTint();
+      if (spent) {
+        ball.setTint(FOE_BALL_SPENT_TINT);
+        // A spent ball reads as "out" without its tint too: a dark slash across
+        // the icon's own box (§10.1). The dim tint stays as a second cue.
+        this.marks.lineStyle(2, FRLG_INK, 1);
+        this.marks.lineBetween(
+          ball.x,
+          ball.y,
+          ball.x + ball.displayWidth,
+          ball.y + ball.displayHeight,
+        );
+      } else {
+        ball.clearTint();
+      }
     });
   }
 
@@ -2272,8 +2323,8 @@ export class BattleScene extends Phaser.Scene {
       if (!rect || !infoRect) return;
       zone.setPosition(rect.x, rect.y).setSize(rect.w, rect.h).setData('infoRect', infoRect);
     });
-    // The moves grid marks its selection with the cell's highlight alone; the
-    // ▶ cursor only appears on whichever forme control is the target.
+    // The moves grid marks its selection with the cell's highlight alone and a
+    // dark ▶ cursor; the cursor jumps to whichever forme control is the target.
     const control = this.megaSelected ? this.megaCell : this.gmaxSelected ? this.gmaxCell : null;
     if (control) {
       this.menuCursor
@@ -2281,9 +2332,18 @@ export class BattleScene extends Phaser.Scene {
         .setScale(1)
         .setPosition(control.x + control.width - 12, control.y + control.height / 2)
         .setVisible(true);
-    } else {
-      this.menuCursor.setVisible(false);
+      return;
     }
+    const selectedCell = count > 0 ? this.moveGrid.cellRect(this.menuIndex) : null;
+    if (selectedCell) {
+      this.menuCursor
+        .setFlipX(true)
+        .setScale(1)
+        .setPosition(selectedCell.x + selectedCell.w - 48, selectedCell.y + selectedCell.h / 2)
+        .setVisible(true);
+      return;
+    }
+    this.menuCursor.setVisible(false);
   }
 
   /**
@@ -2385,6 +2445,11 @@ export class BattleScene extends Phaser.Scene {
         .setSize(MENU_TAB_W, MENU_TAB_H)
         .setFillStyle(active ? 0x2f2c4d : 0xcfcce2)
         .setVisible(true);
+      if (active) {
+        // The active pocket carries a shape, not only a fill inversion (§10.1).
+        this.marks.fillStyle(FRLG_INK, 1);
+        this.marks.fillRect(x, tabY + MENU_TAB_H - 2, MENU_TAB_W, 2);
+      }
       tab.label
         .setText(BAG_CATEGORY_LABELS[category])
         .setTint(active ? 0xf8fafc : FRLG_INK)
@@ -2581,6 +2646,12 @@ export class BattleScene extends Phaser.Scene {
       this.infoMove = index;
     }
     this.refreshHud();
+  }
+
+  /** The `run` key on the moves grid: toggles the focused cell's ⓘ popup. */
+  private toggleMoveInfo(): void {
+    if (this.megaSelected || this.gmaxSelected) return;
+    this.onInfoClick(this.menuIndex);
   }
 
   /** The ◀ control: leaves a submenu the same way cancel does. */

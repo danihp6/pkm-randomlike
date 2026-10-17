@@ -37,6 +37,7 @@ export type SettingsRowId =
   | 'volume'
   | 'alwaysRun'
   | 'hudTransparent'
+  | 'reducedFlash'
   | KeybindAction;
 
 export type SettingsRowKind = 'step' | 'keybind';
@@ -71,6 +72,12 @@ const STEP_ROWS: readonly SettingsRow[] = [
     id: 'hudTransparent',
     label: 'Transparent HUD',
     hint: 'Hide the route panels’ window background, leaving only their content.',
+    kind: 'step',
+  },
+  {
+    id: 'reducedFlash',
+    label: 'Reduce flashing',
+    hint: 'Use calmer transitions: no full-screen flashes.',
     kind: 'step',
   },
 ];
@@ -120,6 +127,8 @@ export function settingValue(settings: Settings, row: SettingsRowId): string {
       return settings.alwaysRun ? 'On' : 'Off';
     case 'hudTransparent':
       return settings.hudTransparent ? 'On' : 'Off';
+    case 'reducedFlash':
+      return settings.reducedFlash ? 'On' : 'Off';
     default:
       return isKeybindAction(row) ? keyLabel(settings.keybinds[row]) : '';
   }
@@ -141,6 +150,8 @@ export function changeSetting(settings: Settings, row: SettingsRowId, delta: num
       return { ...settings, alwaysRun: !settings.alwaysRun };
     case 'hudTransparent':
       return { ...settings, hudTransparent: !settings.hudTransparent };
+    case 'reducedFlash':
+      return { ...settings, reducedFlash: !settings.reducedFlash };
     default:
       return settings;
   }

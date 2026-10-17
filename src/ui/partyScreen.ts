@@ -242,3 +242,21 @@ export function boxPageCount(length: number): number {
 export function boxCellIndex(page: number, col: number, row: number): number {
   return page * BOX_PAGE_SIZE + row * BOX_COLS + col;
 }
+
+/** The PC box page a flat box index is shown on: the page follows the cursor. */
+export function boxPageForIndex(index: number): number {
+  return Math.floor(Math.max(0, index) / BOX_PAGE_SIZE);
+}
+
+/**
+ * The cursor over a pane that has a header stop: `rows` member rows numbered 0..rows-1
+ * and the header at -1. Steps `delta` (up = -1, down = +1), wrapping through the whole
+ * ring (-1 -> 0 -> ... -> rows-1 -> -1). `stepCursorWithHeader(cursor, d, 0)` returns -1.
+ */
+export function stepCursorWithHeader(cursor: number, delta: number, rows: number): number {
+  const count = Math.max(1, rows + 1);
+  const from = Number.isFinite(cursor) ? Math.trunc(cursor) : 0;
+  const current = Math.min(Math.max(-1, from), rows - 1) + 1;
+  const next = (((current + delta) % count) + count) % count;
+  return next - 1;
+}

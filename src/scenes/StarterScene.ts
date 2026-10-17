@@ -283,9 +283,8 @@ export class StarterScene extends Phaser.Scene {
   }
 
   /**
-   * A species' type badges, laid out as a centred row (or from a left edge). The
-   * FRLG sheet has no Fairy badge, so a species with any type the sheet lacks
-   * keeps its type names as text instead.
+   * A species' type badges, laid out as a centred row (or from a left edge). Every
+   * battle type has a badge (`src/data/typeIcons.test.ts`), so the row is always art.
    */
   private typeBadges(
     types: readonly string[],
@@ -295,15 +294,6 @@ export class StarterScene extends Phaser.Scene {
     align: 'center' | 'left' = 'center',
   ): Phaser.GameObjects.GameObject[] {
     if (types.length === 0) return [];
-    if (!types.every((type) => typeIconFrame(type) !== null)) {
-      return [
-        addFrlgText(this, x, y, types.join(' / '), {
-          size: 16,
-          tint: 0x3a3956,
-          origin: align === 'left' ? [0, 0.5] : 0.5,
-        }),
-      ];
-    }
     const w = TYPE_ICON_W * scale;
     const gap = Math.round(6 * scale);
     const total = types.length * w + (types.length - 1) * gap;

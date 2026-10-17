@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampScrollTop, maxScrollTop, scrollByRows, visibleRange } from './scroll';
+import { clampScrollTop, maxScrollTop, scrollByRows, stepGridCursor, visibleRange } from './scroll';
 
 describe('maxScrollTop', () => {
   it('reads the last row that still fills the window, at the band’s 2x2 shape', () => {
@@ -88,5 +88,26 @@ describe('visibleRange', () => {
     expect(visibleRange(0, 3, 1, 7)).toEqual({ start: 0, end: 3 });
     expect(visibleRange(2, 3, 1, 7)).toEqual({ start: 6, end: 7 });
     expect(visibleRange(9, 3, 1, 7)).toEqual({ start: 6, end: 7 });
+  });
+});
+
+describe('stepGridCursor', () => {
+  it('scrolls the cursor row into the window', () => {
+    expect(stepGridCursor(3, 1, 12, 2, 2, 0)).toEqual({ cursor: 4, top: 1 });
+    expect(stepGridCursor(4, -1, 12, 2, 2, 1)).toEqual({ cursor: 3, top: 1 });
+  });
+
+  it('wraps the cursor and follows it to the far end', () => {
+    expect(stepGridCursor(0, -1, 12, 2, 2, 0)).toEqual({ cursor: 11, top: 4 });
+    expect(stepGridCursor(11, 1, 12, 2, 2, 4)).toEqual({ cursor: 0, top: 0 });
+  });
+
+  it('keeps a short list in one window', () => {
+    expect(stepGridCursor(0, 1, 3, 2, 2, 0)).toEqual({ cursor: 1, top: 0 });
+    expect(stepGridCursor(2, 1, 3, 2, 2, 0)).toEqual({ cursor: 0, top: 0 });
+  });
+
+  it('reads cursor 0 for an empty grid', () => {
+    expect(stepGridCursor(0, 1, 0, 2, 2, 0)).toEqual({ cursor: 0, top: 0 });
   });
 });

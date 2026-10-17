@@ -38,7 +38,7 @@ testable logic belongs in the computing half.
 - `typewriter.ts` — the message box's typewriter at the player's text speed.
 - `beats.ts` — the faint, switch and level-up animation beats.
 - `feed.ts` — the battle events as the frames the feed draws, and a frame's message.
-- `metrics.ts` — HP fraction and colour and the status abbreviations.
+- `metrics.ts` — HP fraction, colour and the low-HP danger cue, and the status abbreviations.
 - `typeColors.ts` — the canon type colours and tints.
 - `touchLayout.ts` — the pure geometry of the on-screen pad and A/B; `touchControls.ts` draws it.
 - `seedPrompt.ts` — the DOM seed/share prompt the starter screen opens.

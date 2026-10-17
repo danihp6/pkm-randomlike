@@ -17,7 +17,7 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
 - `BattleScene.ts` — the menu battle: fight / bag / switch / run, the message box, the HP
   bars and the capture sequence.
 - `RunOverScene.ts` — the run summary when the last Pokémon falls.
-- `SettingsScene.ts` — text speed, volume, always-run and every key rebind.
+- `SettingsScene.ts` — text speed, volume, always-run, transparent HUD, reduced flashing and every key rebind.
 
 ## Rules
 

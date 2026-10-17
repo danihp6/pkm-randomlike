@@ -7,15 +7,19 @@ import { createFighter } from '../engine/battle/fighter';
 import { getAbility } from '../data/dex';
 import {
   CLOSED_DETAIL,
+  DETAIL_TABS,
   closeDetail,
+  detailStops,
   dropMove,
   fighterDetail,
   grabMove,
   memberDetail,
   natureEffect,
+  nextDetailTab,
   openDetail,
   reorderMoves,
   setDetailTab,
+  stepStop,
 } from './partyDetail';
 
 const starter = createRunPokemon({
@@ -262,6 +266,55 @@ describe('detail state', () => {
     expect(dropMove(grabbed).grab).toBeNull();
     expect(closeDetail(grabbed)).toEqual(CLOSED_DETAIL);
     expect(closeDetail(CLOSED_DETAIL)).toBe(CLOSED_DETAIL);
+  });
+});
+
+describe('detail stops', () => {
+  it('lists the tabs and wraps between them', () => {
+    expect(DETAIL_TABS).toEqual(['stats', 'moves']);
+    expect(nextDetailTab('stats', 1)).toBe('moves');
+    expect(nextDetailTab('moves', 1)).toBe('stats');
+    expect(nextDetailTab('stats', -1)).toBe('moves');
+    expect(nextDetailTab('moves', 2)).toBe('moves');
+  });
+
+  it('reads the STATS stops as name, ability and one per ready branch', () => {
+    expect(detailStops('stats', { evolutions: 2, slots: 0, pool: 0 })).toEqual([
+      { kind: 'name', index: 0 },
+      { kind: 'ability', index: 0 },
+      { kind: 'evolution', index: 0 },
+      { kind: 'evolution', index: 1 },
+    ]);
+    expect(detailStops('stats', { evolutions: 0, slots: 4, pool: 2 })).toEqual([
+      { kind: 'name', index: 0 },
+      { kind: 'ability', index: 0 },
+    ]);
+  });
+
+  it('reads the MOVES stops as search, the slots then the pool', () => {
+    expect(detailStops('moves', { evolutions: 0, slots: 4, pool: 2 })).toEqual([
+      { kind: 'search', index: 0 },
+      { kind: 'slot', index: 0 },
+      { kind: 'slot', index: 1 },
+      { kind: 'slot', index: 2 },
+      { kind: 'slot', index: 3 },
+      { kind: 'pool', index: 0 },
+      { kind: 'pool', index: 1 },
+    ]);
+    expect(detailStops('moves', { evolutions: 3, slots: 0, pool: 0 })).toEqual([
+      { kind: 'search', index: 0 },
+    ]);
+  });
+
+  it('steps a stop list and wraps it at both ends', () => {
+    const stops = detailStops('moves', { evolutions: 0, slots: 2, pool: 1 });
+    expect(stops.map((stop) => stop.kind)).toEqual(['search', 'slot', 'slot', 'pool']);
+    expect(stepStop(stops, 0, 1)).toBe(1);
+    expect(stepStop(stops, 3, 1)).toBe(0);
+    expect(stepStop(stops, 0, -1)).toBe(3);
+    expect(stepStop(stops, 2, 0)).toBe(2);
+    expect(stepStop(stops, 9, 1)).toBe(0);
+    expect(stepStop([], 0, 1)).toBe(0);
   });
 });
 

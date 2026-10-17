@@ -137,7 +137,14 @@ import {
   routeFromFrameMapExport,
   serializeFrameMap,
 } from '../engine/frameMap';
-import { BAG_CATEGORIES, BAG_CATEGORY_LABELS, bagForCategory, cycleBagCategory, type BagCategory } from '../ui/bag';
+import {
+  BAG_CATEGORIES,
+  BAG_CATEGORY_LABELS,
+  bagForCategory,
+  cycleBagCategory,
+  stepBagCursor,
+  type BagCategory,
+} from '../ui/bag';
 import {
   buildShop,
   buyItem,
@@ -155,13 +162,16 @@ import {
   BOX_ROWS,
   boxCellIndex,
   boxPageCount,
+  boxPageForIndex,
   boxRows,
   dragTo,
   dropGrabbed,
   grabAt,
   initialPartyUi,
   partyInput,
+  stepCursorWithHeader,
   swapAcross,
+  type PartyInput,
   type PartyUiState,
   type PaneId,
 } from '../ui/partyScreen';
@@ -171,15 +181,19 @@ import {
   NATURE_UP_TINT,
   STAT_LABELS,
   closeDetail,
+  detailStops,
   dropMove,
   grabMove,
   memberDetail,
   natureEffect,
+  nextDetailTab,
   openDetail,
   reorderMoves,
   setDetailTab,
+  stepStop,
   typeColor,
   type DetailState,
+  type DetailStop,
   type DetailTab,
   type MemberDetail,
 } from '../ui/partyDetail';
@@ -194,7 +208,7 @@ import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../data
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
-import { clampScrollTop, maxScrollTop, scrollByRows, visibleRange } from '../ui/scroll';
+import { clampScrollTop, maxScrollTop, scrollByRows, stepGridCursor, visibleRange } from '../ui/scroll';
 import { createTouchControls, type TouchControls } from '../ui/touchControls';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { listenForBack } from '../input/backButton';
@@ -512,6 +526,17 @@ function actorDepth(footY: number): number {
 /** The four directions, in the order the update loop tests them. */
 type MoveKey = 'up' | 'down' | 'left' | 'right';
 
+/**
+ * The HUD panes the keyboard can hold (D45). The header is never one: it is the
+ * minimap and has no controls to walk.
+ */
+type HudPaneId = 'party' | 'bag' | 'box' | 'detail';
+
+/** The keyboard pane a HUD panel maps onto, or null when it has no controls. */
+function paneForPanel(id: HudPanelId): HudPaneId | null {
+  return id === 'header' ? null : id;
+}
+
 /** How long one tile takes to cross on foot, and with the run key held. */
 const WALK_STEP_MS = 200;
 const RUN_STEP_MS = 110;
@@ -672,6 +697,8 @@ export class RouteScene extends Phaser.Scene {
   private plan: MapPlan | null = null;
   private room: RoomView | null = null;
   private settings!: Settings;
+  /** The saved reduce-flashing preference, re-read with the settings (D45). */
+  private reducedFlash = false;
   /** Dev only: walk through solid tiles so a route can be inspected quickly. */
   private passThrough = false;
   /** Dev only: color the cell under the mouse and show its tile coordinates. */
@@ -749,6 +776,7 @@ export class RouteScene extends Phaser.Scene {
   /** The pinned HUD camera; a rebuild must teach it to ignore the new sprites. */
   private hudCamera: Phaser.Cameras.Scene2D.Camera | null = null;
   private hudBagRows: {
+    highlight: Phaser.GameObjects.Rectangle;
     icon: Phaser.GameObjects.Image;
     name: Phaser.GameObjects.BitmapText;
     count: Phaser.GameObjects.BitmapText;
@@ -766,6 +794,17 @@ export class RouteScene extends Phaser.Scene {
   /** The HUD's party/box grab (the shared reducer's cursor), and whether it moved. */
   private hudUi: PartyUiState = initialPartyUi();
   private hudGrabMoved = false;
+  /**
+   * The HUD pane the keyboard holds, or null while the player walks (D45). A pane
+   * takes the arrows off the walker: `update` stays settled while it is held.
+   */
+  private hudKeyboardPane: HudPaneId | null = null;
+  /** The party pane's header stop (the Pokevial row) is focused instead of a member. */
+  private hudPartyHeaderFocus = false;
+  /** The bag pane's row cursor, clamped with `stepBagCursor` as the pocket changes. */
+  private hudBagIndex = 0;
+  /** The open detail panel's keyboard stop, an index into `hudDetailStops`. */
+  private hudDetailStop = 0;
   /** The equipment stack in hand while a bag item is dragged; null otherwise. */
   private hudDragItem: string | null = null;
   /** The member a badge grab came from, so a stray drop puts the item back. */
@@ -1254,6 +1293,7 @@ export class RouteScene extends Phaser.Scene {
     this.followerTween = null;
     this.resetHold = 0;
     this.settings = loadSettings();
+    this.reducedFlash = this.settings.reducedFlash;
 
     this.buildRoom();
 
@@ -1360,6 +1400,10 @@ export class RouteScene extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.PAUSE, () => {
       this.touch?.release();
       this.cancelNicknameEdit();
+      // The screen above (a battle, the settings) owns the keyboard now, so the HUD
+      // gives it up rather than resuming into a pane that eats the arrows.
+      this.hudKeyboardPane = null;
+      this.hudPartyHeaderFocus = false;
     });
     // The battle above took the music channel; the route takes it back.
     this.events.on(Phaser.Scenes.Events.RESUME, () => {
@@ -1403,6 +1447,10 @@ export class RouteScene extends Phaser.Scene {
       this.handlePauseMenuAction(action);
       return;
     }
+    // A HUD pane holding the keyboard answers first, so the arrows browse the pane
+    // instead of walking. It only consumes the actions it actually handles, so the
+    // quick keys and the settings key still reach the toggles below (D45).
+    if (this.handleHudKeyboard(action)) return;
     switch (action) {
       case 'confirm':
         // `E` is the accept key: it moves a release beat on, and otherwise
@@ -1441,13 +1489,418 @@ export class RouteScene extends Phaser.Scene {
    * Opens or collapses the HUD panel a quick key points at, the keyboard twin of
    * clicking its icon. Ignored while another overlay (the pause menu, a release
    * beat) owns the input.
+   *
+   * A pane quick key **enters**: it expands the pane and gives it the keyboard. A
+   * second press on the pane that already holds it hides the pane and hands the
+   * keyboard back, so one press always enters (D45). The pointer's collapse icon
+   * keeps its own plain toggle.
    */
   private toggleHudPanel(id: HudPanelId): void {
     if (this.gameOver || this.pendingBattle || this.releaseRoot || this.pauseMenuOpen) {
       return;
     }
     const panel = this.panelById(id);
-    if (panel) this.togglePanel(panel);
+    if (!panel) return;
+    const pane = paneForPanel(id);
+    if (pane === null) {
+      this.togglePanel(panel);
+      return;
+    }
+    if (this.hudKeyboardPane === pane) {
+      this.hudKeyboardPane = null;
+      this.hudPartyHeaderFocus = false;
+      if (panel.expanded) this.togglePanel(panel);
+      else this.refreshHud();
+      return;
+    }
+    if (!panel.expanded) this.togglePanel(panel);
+    this.focusHudPane(pane);
+  }
+
+  // --- HUD keyboard focus (D45) ---------------------------------------------
+
+  /**
+   * Hands one pane the keyboard: the cursor keeps its position, clamped into that
+   * pane's list, so entering a pane never jumps the selection.
+   */
+  private focusHudPane(pane: HudPaneId): void {
+    this.hudKeyboardPane = pane;
+    this.hudPartyHeaderFocus = false;
+    if (pane === 'party' || pane === 'box') {
+      const rows = this.paneRows(pane).length;
+      this.hudUi = { pane, index: Math.min(Math.max(0, this.hudUi.index), Math.max(0, rows - 1)), grabbed: null };
+      if (pane === 'box') this.hudBoxPage = boxPageForIndex(this.hudUi.index);
+    } else if (pane === 'bag') {
+      this.hudBagIndex = stepBagCursor(this.hudBagIndex, 0, this.hudBagStacks().length);
+    } else {
+      this.hudDetailStop = 0;
+    }
+    this.refreshHud();
+    if (pane === 'detail') this.refreshDetail();
+  }
+
+  /** Gives the keyboard back to the walker; the panels keep their state. */
+  private releaseHudKeyboard(): void {
+    if (this.hudKeyboardPane === null) return;
+    this.hudKeyboardPane = null;
+    this.hudPartyHeaderFocus = false;
+    this.refreshHud();
+  }
+
+  /** The member list of a party/box pane. */
+  private paneRows(pane: PaneId): readonly RunPokemon[] {
+    return pane === 'party' ? this.run.party : this.run.box;
+  }
+
+  /**
+   * The action router of the pane that holds the keyboard, run before the walker's
+   * own switch. It returns true only when it consumed the action, so the quick keys
+   * and the settings key still reach the panel toggles.
+   */
+  private handleHudKeyboard(action: KeybindAction): boolean {
+    switch (this.hudKeyboardPane) {
+      case 'party':
+      case 'box':
+        return this.handleMemberKeyboard(this.hudKeyboardPane, action);
+      case 'bag':
+        return this.handleBagKeyboard(action);
+      case 'detail':
+        return this.handleDetailKeyboard(action);
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * A party or box pane: the shipped `partyInput` reducer owns the cursor, the
+   * grab, the reorder and the cross-pane deposit, exactly as it does for the
+   * pointer. The party pane adds the header stop above row 0.
+   */
+  private handleMemberKeyboard(pane: PaneId, action: KeybindAction): boolean {
+    switch (action) {
+      case 'up':
+      case 'down':
+        this.stepMemberCursor(pane, action === 'up' ? -1 : 1);
+        return true;
+      case 'left':
+      case 'right':
+        this.applyHudPartyInput(action);
+        return true;
+      case 'confirm':
+        return this.confirmMemberStop(pane);
+      case 'run':
+        // The secondary action is the shipped grab: `confirm` on the reducer.
+        if (this.hudPartyHeaderFocus) return true;
+        this.applyHudPartyInput('confirm');
+        return true;
+      case 'cancel':
+        if (this.hudUi.grabbed) {
+          this.hudPartyHeaderFocus = false;
+          this.applyHudPartyInput('cancel');
+          return true;
+        }
+        this.releaseHudKeyboard();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /** One `up`/`down` in a member pane: the header stop, a reorder, or a plain move. */
+  private stepMemberCursor(pane: PaneId, delta: number): void {
+    if (this.hudUi.grabbed) {
+      this.applyHudPartyInput(delta < 0 ? 'up' : 'down');
+      return;
+    }
+    const rows = this.paneRows(pane).length;
+    if (pane === 'party') {
+      const next = stepCursorWithHeader(this.hudPartyHeaderFocus ? -1 : this.hudUi.index, delta, rows);
+      this.hudPartyHeaderFocus = next === -1;
+      this.hudUi = { pane, index: Math.max(0, next), grabbed: null };
+    } else {
+      this.hudUi = { pane, index: stepBagCursor(this.hudUi.index, delta, rows), grabbed: null };
+      this.hudBoxPage = boxPageForIndex(this.hudUi.index);
+    }
+    this.refreshHud();
+  }
+
+  /** `confirm` in a member pane: drink from the header, equip, or open the detail. */
+  private confirmMemberStop(pane: PaneId): boolean {
+    if (this.hudUi.grabbed) {
+      this.applyHudPartyInput('confirm');
+      return true;
+    }
+    if (this.hudPartyHeaderFocus) {
+      this.drinkPokevial();
+      return true;
+    }
+    const target = { pane, index: this.hudUi.index };
+    const itemId = this.hudDragItem;
+    if (itemId !== null) {
+      const memberId = this.memberIdAt(target);
+      this.endHudItemDrag();
+      if (memberId !== null) this.equipHudItem(itemId, target);
+      return true;
+    }
+    const memberId = this.memberIdAt(target);
+    if (memberId !== null) this.openMemberDetail(memberId);
+    return true;
+  }
+
+  /** Feeds one input to the shipped reducer and repaints; a changed run is saved. */
+  private applyHudPartyInput(input: PartyInput): void {
+    const next = partyInput(this.run, this.hudUi, input);
+    if (next.run === this.run && next.ui === this.hudUi) {
+      this.refreshHud();
+      return;
+    }
+    if (next.run !== this.run) {
+      this.run = next.run;
+      this.persistRun();
+    }
+    this.hudUi = next.ui;
+    // `left`/`right` may have crossed panes; the keyboard and the page follow it.
+    if (this.hudKeyboardPane === 'party' || this.hudKeyboardPane === 'box') {
+      this.hudKeyboardPane = this.hudUi.pane;
+      this.hudPartyHeaderFocus = false;
+    }
+    if (this.hudUi.pane === 'box') this.hudBoxPage = boxPageForIndex(this.hudUi.index);
+    this.refreshHud();
+  }
+
+  /** The bag pane: the cursor walks the active pocket's stacks and the pocket steps. */
+  private handleBagKeyboard(action: KeybindAction): boolean {
+    switch (action) {
+      case 'up':
+      case 'down': {
+        const count = this.hudBagStacks().length;
+        this.hudBagIndex = stepBagCursor(this.hudBagIndex, action === 'up' ? -1 : 1, count);
+        this.refreshHud();
+        return true;
+      }
+      case 'left':
+        // `stepBagCategory` repaints for the new pocket, and that repaint clamps
+        // the row cursor into the new (shorter) list.
+        this.stepBagCategory(-1);
+        return true;
+      case 'right':
+        this.stepBagCategory(1);
+        return true;
+      case 'confirm':
+      case 'run': {
+        // A stack in hand: there is nothing to pick up, `cancel` puts it back.
+        if (this.hudDragItem !== null) return true;
+        const itemId = this.hudHeldStackAtCursor();
+        if (itemId !== null) this.startHudItemDrag(itemId, null);
+        return true;
+      }
+      case 'cancel':
+        if (this.hudDragItem !== null) {
+          this.endHudItemDrag();
+          return true;
+        }
+        this.releaseHudKeyboard();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /** The stacks the bag window draws, in draw order. */
+  private hudBagStacks(): readonly BagCounts[] {
+    const inHand = this.hudDragItemFrom === null ? this.hudDragItem : null;
+    return bagForCategory(this.run.bag, this.hudBagCategory)
+      .filter((stack) => stack.itemId !== inHand)
+      .slice(0, HUD_BAG_ROWS);
+  }
+
+  /**
+   * The **held** stack under the bag cursor, or null. Only a held item is worth
+   * picking up: it is the one the equip path can place on a member, the same rule
+   * the pointer's `hudHeldStackAt` applies.
+   */
+  private hudHeldStackAtCursor(): string | null {
+    const stack = this.hudBagStacks()[this.hudBagIndex];
+    if (!stack) return null;
+    return getItem(stack.itemId)?.kind === 'held' ? stack.itemId : null;
+  }
+
+  /** The open detail panel: tabs, its stop list, and the act on the focused stop. */
+  private handleDetailKeyboard(action: KeybindAction): boolean {
+    if (this.hudDetailState.memberId === null) return false;
+    switch (action) {
+      case 'left':
+      case 'right':
+        this.stepDetailTab(action === 'left' ? -1 : 1);
+        return true;
+      case 'up':
+      case 'down':
+        this.stepDetailStop(action === 'up' ? -1 : 1);
+        return true;
+      case 'confirm':
+        this.confirmDetailStop();
+        return true;
+      case 'run':
+        this.toggleDetailStopInfo();
+        return true;
+      case 'cancel':
+        if (this.hudLearnDrag !== null) {
+          this.resetLearnDrag();
+          this.refreshDetail();
+          return true;
+        }
+        this.closeMemberDetail();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /** The open member's keyboard stops for the active tab. */
+  private hudDetailStops(): readonly DetailStop[] {
+    const memberId = this.hudDetailState.memberId;
+    const member = this.detailMember();
+    if (memberId === null || !member) return [];
+    const detail = memberDetail(this.run, memberId);
+    if (!detail) return [];
+    return detailStops(this.hudDetailState.tab, {
+      evolutions: this.readyEvolutions().length,
+      slots: member.fighter.moves.length,
+      pool: this.learnPool().length,
+    });
+  }
+
+  /** The evolution branches the member may take right now, in family order. */
+  private readyEvolutions(): readonly FamilyNode[] {
+    const memberId = this.hudDetailState.memberId;
+    const detail = memberId === null ? null : memberDetail(this.run, memberId);
+    return detail ? detail.evolutions.filter((node) => node.ready) : [];
+  }
+
+  /** The stop the detail panel's keyboard sits on, or undefined for an empty list. */
+  private focusedDetailStop(): DetailStop | undefined {
+    return this.hudDetailStops()[this.hudDetailStop];
+  }
+
+  /** `left`/`right` in the detail panel cycle STATS / MOVES, as a tab click does. */
+  private stepDetailTab(delta: number): void {
+    this.hudDetailState = setDetailTab(this.hudDetailState, nextDetailTab(this.hudDetailState.tab, delta));
+    this.resetLearnDrag();
+    this.resetDetailInfo();
+    this.hudDetailStop = 0;
+    this.refreshDetail();
+  }
+
+  /** One `up`/`down` over the stop list, reordering a held move and scrolling the pool. */
+  private stepDetailStop(delta: number): void {
+    const stops = this.hudDetailStops();
+    this.hudDetailStop = stepStop(stops, this.hudDetailStop, delta);
+    const stop = stops[this.hudDetailStop];
+    if (!stop) return;
+    if (stop.kind === 'slot' && this.hudDetailState.grab !== null) {
+      const next = reorderMoves(this.run, this.hudDetailState, stop.index);
+      if (next.run !== this.run || next.state !== this.hudDetailState) {
+        this.run = next.run;
+        this.hudDetailState = next.state;
+        this.persistRun();
+      }
+    }
+    // The pool window follows its cursor, the same arithmetic the wheel uses.
+    if (stop.kind === 'pool') this.scrollPoolTo(stop.index);
+    this.refreshDetail();
+  }
+
+  /** Scrolls the learnset window so the pool cell `index` is inside it. */
+  private scrollPoolTo(index: number): void {
+    const { top } = stepGridCursor(
+      index,
+      0,
+      this.learnPool().length,
+      HUD_DETAIL_LEARN_COLS,
+      HUD_DETAIL_LEARN_ROWS,
+      this.hudLearnScrollTop,
+    );
+    this.hudLearnScrollTop = top;
+  }
+
+  /** `confirm` on the focused stop: the keyboard twin of every panel control. */
+  private confirmDetailStop(): void {
+    const stop = this.focusedDetailStop();
+    if (!stop) return;
+    switch (stop.kind) {
+      case 'name':
+        this.beginNicknameEdit();
+        return;
+      case 'ability':
+        this.toggleAbilityInfo();
+        return;
+      case 'evolution': {
+        const node = this.readyEvolutions()[stop.index];
+        if (node) this.evolveOpenMember(node.id);
+        return;
+      }
+      case 'search':
+        this.cancelNicknameEdit();
+        this.hudSearchFocus = true;
+        this.refreshDetail();
+        return;
+      case 'slot':
+        this.confirmDetailSlot(stop.index);
+        return;
+      case 'pool': {
+        const entry = this.learnPool()[stop.index];
+        if (entry) this.startLearnDrag(entry.moveId, null);
+        return;
+      }
+    }
+  }
+
+  /** A move slot: equip the pool move in hand, or grab / drop the slot's own move. */
+  private confirmDetailSlot(index: number): void {
+    const memberId = this.hudDetailState.memberId;
+    if (memberId === null) return;
+    const poolMove = this.hudLearnDrag;
+    if (poolMove !== null) {
+      const next = equipMove(this.run, memberId, poolMove, index, this.run.seed);
+      this.endLearnDrag();
+      if (next !== this.run) {
+        this.run = next;
+        this.persistRun();
+      }
+      this.refreshDetail();
+      this.refreshHud();
+      return;
+    }
+    const grabbed = this.hudDetailState.grab;
+    this.hudDetailState =
+      grabbed === index ? dropMove(this.hudDetailState) : grabMove(this.hudDetailState, index);
+    this.refreshDetail();
+  }
+
+  /** `run` on the focused stop: toggle its info window, when the stop has one. */
+  private toggleDetailStopInfo(): void {
+    const stop = this.focusedDetailStop();
+    if (!stop) return;
+    if (stop.kind === 'slot') this.toggleDetailInfo(stop.index);
+    else if (stop.kind === 'ability') this.toggleAbilityInfo();
+  }
+
+  /** The move grid's marked cell: the grabbed move, or the focused slot stop. */
+  private detailSlotCursor(): number {
+    if (this.hudDetailState.grab !== null) return this.hudDetailState.grab;
+    if (this.hudKeyboardPane !== 'detail') return -1;
+    const stop = this.focusedDetailStop();
+    return stop?.kind === 'slot' ? stop.index : -1;
+  }
+
+  /** The pool grid's marked cell: the move in hand, or the focused pool stop. */
+  private learnWindowCursor(windowStart: number): number {
+    if (this.hudLearnDrag !== null) {
+      return this.hudLearnWindow.findIndex((entry) => entry.moveId === this.hudLearnDrag);
+    }
+    if (this.hudKeyboardPane !== 'detail') return -1;
+    const stop = this.focusedDetailStop();
+    return stop?.kind === 'pool' ? stop.index - windowStart : -1;
   }
 
   /** Resolves the movement keys from the shared map; re-run when it changes. */
@@ -1599,6 +2052,11 @@ export class RouteScene extends Phaser.Scene {
     this.hudBagRows = [];
     for (let i = 0; i < HUD_BAG_ROWS; i++) {
       const rowY = bagY + HUD_BAG_HEADER + i * HUD_BAG_ROW;
+      // The keyboard cursor rides the same gold highlight the party rows use.
+      const highlight = this.add
+        .rectangle(left, rowY, right - left, HUD_BAG_ROW - 4, 0xf2c14e, 0.32)
+        .setOrigin(0, 0)
+        .setVisible(false);
       const icon = this.add
         .image(left + 10, rowY + 20, ITEM_ICON_TEXTURE_KEY, 0)
         .setScale(0.75)
@@ -1609,8 +2067,8 @@ export class RouteScene extends Phaser.Scene {
         tint: 0x3a3956,
         origin: [1, 0],
       });
-      this.hudBagRows.push({ icon, name, count });
-      bagChildren.push(icon, name, count);
+      this.hudBagRows.push({ highlight, icon, name, count });
+      bagChildren.push(highlight, icon, name, count);
     }
 
     this.hudBagEmpty = addFrlgText(this, x + panelW / 2, bagY + HUD_BAG_HEADER + 36, 'no items', {
@@ -2093,7 +2551,10 @@ export class RouteScene extends Phaser.Scene {
       const member = this.run.party[i];
       const visible = member !== undefined;
       const alive = member !== undefined && member.fighter.hp > 0;
-      row.highlight.setVisible(this.hudUi.grabbed?.pane === 'party' && this.hudUi.index === i);
+      row.highlight.setVisible(
+        (this.hudUi.grabbed?.pane === 'party' && this.hudUi.index === i) ||
+          (this.hudKeyboardPane === 'party' && !this.hudPartyHeaderFocus && this.hudUi.index === i),
+      );
       row.name.setVisible(visible);
       row.bar.setVisible(alive);
       row.fill.setVisible(alive);
@@ -2148,12 +2609,17 @@ export class RouteScene extends Phaser.Scene {
     this.hudVialFill
       .setSize((HUD_VIAL_W * charges) / POKEVIAL_MAX_CHARGES, HUD_VIAL_H)
       .setFillStyle(HUD_VIAL_FILL_COLORS[charges - 1] ?? HUD_VIAL_FILL_COLORS[0]);
+    // The keyboard's header stop rings the vial, so "confirm drinks" has a target.
+    // Gold, like the row highlight: the vial's own fill is the dark panel colour.
+    this.hudVialBg.setStrokeStyle(
+      this.hudKeyboardPane === 'party' && this.hudPartyHeaderFocus ? 2 : 0,
+      0xf2c14e,
+      1,
+    );
 
     // An item taken from the bag is not in the bag while it is being dragged.
-    const bagInHand = this.hudDragItemFrom === null ? this.hudDragItem : null;
-    const bag = bagForCategory(this.run.bag, this.hudBagCategory)
-      .filter((stack) => stack.itemId !== bagInHand)
-      .slice(0, HUD_BAG_ROWS);
+    const bag = this.hudBagStacks();
+    this.hudBagIndex = stepBagCursor(this.hudBagIndex, 0, bag.length);
     this.hudBagTabs.forEach((tab) => {
       const active = tab.category === this.hudBagCategory;
       tab.bg.setFillStyle(active ? 0x2f2c4d : 0xcfcce2);
@@ -2165,6 +2631,9 @@ export class RouteScene extends Phaser.Scene {
       const stack = bag[i];
       const frame = stack ? itemIconFrame(stack.itemId) : null;
       const visible = stack !== undefined && frame !== null;
+      row.highlight.setVisible(
+        visible && this.hudKeyboardPane === 'bag' && this.hudBagIndex === i,
+      );
       row.icon.setVisible(visible);
       row.name.setVisible(visible);
       row.count.setVisible(visible);
@@ -2205,7 +2674,10 @@ export class RouteScene extends Phaser.Scene {
       // A box member outside the PC's editable window (the entry room's first
       // visit, or the floor's own catch) reads locked.
       cell.lock.setVisible(member !== undefined && !pcMemberEditable(this.run, member.id));
-      cell.highlight.setVisible(this.hudUi.grabbed?.pane === 'box' && this.hudUi.index === index);
+      cell.highlight.setVisible(
+        (this.hudUi.grabbed?.pane === 'box' && this.hudUi.index === index) ||
+          (this.hudKeyboardPane === 'box' && this.hudUi.index === index),
+      );
     });
 
     this.refreshDetail();
@@ -2456,7 +2928,7 @@ export class RouteScene extends Phaser.Scene {
             enabled: true,
           }))
         : [],
-      selected: moves ? (this.hudDetailState.grab ?? -1) : -1,
+      selected: moves ? this.detailSlotCursor() : -1,
       info: moves ? this.hudDetailInfo : null,
       popupAtCell: true,
     });
@@ -2738,7 +3210,7 @@ export class RouteScene extends Phaser.Scene {
       w: this.hud.detailW,
       h: learnH,
       cells: this.hudLearnWindow.map((entry) => this.learnCell(entry, ability, memberIvs)),
-      selected: this.hudLearnWindow.findIndex((entry) => entry.moveId === this.hudLearnDrag),
+      selected: moves ? this.learnWindowCursor(start) : -1,
       info: null,
       popupAtCell: true,
     });
@@ -2909,18 +3381,23 @@ export class RouteScene extends Phaser.Scene {
       .setVisible(true);
   }
 
-  /** Picks an equipment stack up so it can be dropped on a member to equip it. */
-  private startHudItemDrag(itemId: string, pointer: Phaser.Input.Pointer, from: string | null = null): void {
+  /**
+   * Picks an equipment stack up so it can be dropped on a member to equip it. The
+   * keyboard path passes no pointer: the stack simply leaves the list while in hand.
+   */
+  private startHudItemDrag(itemId: string, pointer: Phaser.Input.Pointer | null, from: string | null = null): void {
     const frame = itemIconFrame(itemId);
     if (frame === null) return;
     this.hudDragItem = itemId;
     this.hudDragItemFrom = from;
     this.hudGrabMoved = false;
-    this.hudDragGhost
-      .setTexture(ITEM_ICON_TEXTURE_KEY, frame)
-      .setPosition(pointer.x, pointer.y)
-      .setVisible(true);
-    this.input.setDefaultCursor('grabbing');
+    if (pointer) {
+      this.hudDragGhost
+        .setTexture(ITEM_ICON_TEXTURE_KEY, frame)
+        .setPosition(pointer.x, pointer.y)
+        .setVisible(true);
+      this.input.setDefaultCursor('grabbing');
+    }
     this.refreshHud();
   }
 
@@ -3186,6 +3663,13 @@ export class RouteScene extends Phaser.Scene {
     this.hudSearchFocus = false;
     this.cancelNicknameEdit();
     this.endLearnDrag();
+    // A keyboard-driven open hands the detail panel the keyboard, so the arrows walk
+    // its stops instead of the party list behind it (D45). A pointer open leaves the
+    // keyboard with the walker, so a click can never trap the player in the panel.
+    if (this.hudKeyboardPane !== null) {
+      this.hudKeyboardPane = 'detail';
+      this.hudDetailStop = 0;
+    }
     this.refreshDetail();
     // The first open docks the panel beside the PC box; after that it stays
     // wherever the player dragged it.
@@ -3195,13 +3679,19 @@ export class RouteScene extends Phaser.Scene {
     }
   }
 
-  /** Closes the detail panel. */
+  /** Closes the detail panel; a keyboard-driven close returns focus to its pane. */
   private closeMemberDetail(): void {
     if (this.hudDetailState.memberId === null) return;
     this.hudDetailState = closeDetail(this.hudDetailState);
     this.resetDetailInfo();
     this.cancelNicknameEdit();
+    this.endLearnDrag();
+    if (this.hudKeyboardPane === 'detail') {
+      this.hudKeyboardPane = this.hudUi.pane;
+      this.hudDetailStop = 0;
+    }
     this.refreshDetail();
+    this.refreshHud();
   }
 
   /**
@@ -3354,15 +3844,21 @@ export class RouteScene extends Phaser.Scene {
     this.input.setDefaultCursor('default');
   }
 
-  /** Picks a pool move up so it can be dropped onto a slot. */
-  private startLearnDrag(moveId: string, pointer: Phaser.Input.Pointer): void {
+  /**
+   * Picks a pool move up so it can be dropped onto a slot. The keyboard path passes
+   * no pointer: the picked-up move reads off the pool grid's own selection instead
+   * of a chip that follows a cursor there is none of.
+   */
+  private startLearnDrag(moveId: string, pointer: Phaser.Input.Pointer | null): void {
     this.hudLearnDrag = moveId;
     this.hudGrabMoved = false;
-    this.hudLearnGhost
-      .setText(getMove(moveId)?.name ?? moveId)
-      .setPosition(pointer.x, pointer.y)
-      .setVisible(true);
-    this.input.setDefaultCursor('grabbing');
+    if (pointer) {
+      this.hudLearnGhost
+        .setText(getMove(moveId)?.name ?? moveId)
+        .setPosition(pointer.x, pointer.y)
+        .setVisible(true);
+      this.input.setDefaultCursor('grabbing');
+    }
     this.refreshDetail();
   }
 
@@ -3773,6 +4269,11 @@ export class RouteScene extends Phaser.Scene {
     );
     if (!tab) return false;
     this.hudBoxPage = tab.page;
+    // The cursor follows the page the pointer picked, so a page tab can never leave
+    // the cursor pointing past the box it just switched to.
+    if (!this.hudUi.grabbed) {
+      this.hudUi = { ...this.hudUi, index: Math.min(this.hudUi.index, this.run.box.length - 1) };
+    }
     this.refreshHud();
     return true;
   }
@@ -4132,6 +4633,12 @@ export class RouteScene extends Phaser.Scene {
   /** Releasing the key fades the dark scrim and the ring back out. */
   private fadeResetOverlayIn(): void {
     this.tweens.killTweensOf([this.resetScrim, this.resetRing]);
+    if (this.reducedFlash) {
+      // The reduce-flashing preference releases the scrim instantly (D45).
+      this.resetRing.clear();
+      this.resetScrim.setAlpha(0);
+      return;
+    }
     this.tweens.add({
       targets: [this.resetScrim, this.resetRing],
       alpha: 0,
@@ -4322,8 +4829,9 @@ export class RouteScene extends Phaser.Scene {
             .setScale(1.5)
             .setVisible(!taken)
             .setDepth(5);
-      if (item.hidden && !taken) {
-        // A slow, shallow shimmer so it reads as a glint, not a beacon.
+      if (item.hidden && !taken && !this.reducedFlash) {
+        // A slow, shallow shimmer so it reads as a glint, not a beacon. The
+        // reduce-flashing preference leaves it at the fixed 0.55 it was built with.
         this.tweens.add({
           targets: sprite,
           alpha: { from: 0.3, to: 0.7 },
@@ -5159,8 +5667,10 @@ export class RouteScene extends Phaser.Scene {
   private openPauseMenu(): void {
     if (this.pauseMenuOpen || this.gameOver || this.pendingBattle || this.releaseRoot) return;
     // The pause menu takes the player away from the panel, so an in-progress
-    // nickname edit is discarded (the phone's Back gesture can open it directly).
+    // nickname edit is discarded (the phone's Back gesture can open it directly)
+    // and a HUD pane gives the keyboard back.
     this.cancelNicknameEdit();
+    this.releaseHudKeyboard();
     this.pauseMenuOpen = true;
     this.pauseMenuIndex = 0;
     this.pauseMenuArmed = false;
@@ -5240,13 +5750,23 @@ export class RouteScene extends Phaser.Scene {
    * Transparent HUD option redraws the panels).
    */
   applySettings(): void {
+    const wasReducedFlash = this.reducedFlash;
     this.settings = loadSettings();
+    this.reducedFlash = this.settings.reducedFlash;
     // A rebind happened behind this screen; re-resolve the movement keys so the
     // new keys are live the moment the route resumes.
     this.refreshMoveKeys();
     this.refreshPanelKeyLabels();
     // The Transparent HUD option may have changed.
     this.applyHudBackground();
+    // Turning Reduce flashing on also stops the glints already running.
+    if (this.reducedFlash && !wasReducedFlash) {
+      for (const entry of this.itemSprites) {
+        if (!entry.item.hidden) continue;
+        this.tweens.killTweensOf(entry.sprite);
+        entry.sprite.setAlpha(isItemPicked(this.run, entry.item.id) ? 0 : 0.55);
+      }
+    }
   }
 
   /** Pauses the route and rolls the battle on top of it (Phase 5 transition). */
@@ -5473,6 +5993,8 @@ export class RouteScene extends Phaser.Scene {
   private openShop(): void {
     if (this.shopRoot || this.gameOver || this.pendingBattle || this.releaseRoot || this.pauseMenuOpen) return;
     if (this.room?.special !== 'shop' || !this.shopCounter) return;
+    // The Mart is modal: it takes the keyboard off whatever HUD pane held it.
+    this.releaseHudKeyboard();
     if (this.shopStockMap !== this.run.mapIndex) {
       const band = bandForMap(this.run.mapIndex);
       this.shopStock = buildShop(band.id, new Rng(hashSeed(`${this.run.seed}:shop:${this.run.mapIndex}`)));
@@ -5737,6 +6259,8 @@ export class RouteScene extends Phaser.Scene {
     const band = bandForMap(this.run.mapIndex);
     const rng = new Rng(hashSeed(`${this.run.seed}:reward:${this.run.mapIndex}`));
     this.miniBossRewardItems = rewardChoices(ROUTE_LOOT[band.id].pool, MINI_BOSS_REWARD_CHOICES, rng);
+    // The reward window is modal: it takes the keyboard off whatever HUD pane held it.
+    this.releaseHudKeyboard();
     if (this.miniBossRewardItems.length === 0) {
       onDone();
       return;
@@ -6368,6 +6892,8 @@ export class RouteScene extends Phaser.Scene {
       this.shopRoot ||
       this.miniBossRewardRoot ||
       this.pauseMenuOpen ||
+      // A HUD pane holding the keyboard takes the arrows off the walker (D45).
+      this.hudKeyboardPane !== null ||
       this.chase
     ) {
       this.settleMovement();
