@@ -24,7 +24,7 @@ const CARDINAL_DIRS: readonly Tile[] = [
 const request = (seed: string, routeIndex: number, shape?: RouteShape): RouteRequest => ({
   seed,
   routeIndex,
-  biomeId: 'wood',
+  biomeId: 'forest',
   ...(shape ? { shape } : {}),
 });
 
@@ -544,7 +544,7 @@ describe('sketchRoute', () => {
         const sized: RouteRequest = {
           seed: `guard-${i}`,
           routeIndex: 2,
-          biomeId: 'wood',
+          biomeId: 'forest',
           shape,
           width: 30,
           height: 30,
@@ -612,7 +612,7 @@ describe('sketchRoute', () => {
         const base: RouteRequest = {
           seed: `thin-${i}`,
           routeIndex: 2,
-          biomeId: 'wood',
+          biomeId: 'forest',
           shape,
           width: 30,
           height: 30,

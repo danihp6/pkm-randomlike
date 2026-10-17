@@ -13,7 +13,7 @@ import {
   type WallPattern,
 } from './tileset';
 import { FRLG_FOREST_TILESET, FRLG_GRASS_RUSTLE_FRAMES, FRLG_TILESET } from '../data/tilesets/frlg';
-import { WOOD_TILESET } from '../data/tilesets/wood';
+import { PLACEHOLDER_TILESET } from '../data/tilesets/placeholder';
 import {
   autotileFrame,
   grassRustleFrames,
@@ -412,7 +412,7 @@ describe('grassRustleFrames', () => {
   });
 
   it('is empty for a tileset with no grass art of its own', () => {
-    expect(grassRustleFrames(WOOD_TILESET)).toEqual([]);
+    expect(grassRustleFrames(PLACEHOLDER_TILESET)).toEqual([]);
     expect(grassRustleFrames(tileset)).toEqual([]);
   });
 

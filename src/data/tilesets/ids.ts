@@ -6,15 +6,11 @@
  * (`D10`), so there is no player preference to read here.
  */
 
-export const TILESET_IDS = ['placeholder', 'wood', 'outdoor', 'forest', 'cave'] as const;
+export const TILESET_IDS = ['forest'] as const;
 
 export type TilesetId = (typeof TILESET_IDS)[number];
 
 /** Display names, kept here so the registry and any UI agree. */
 export const TILESET_NAMES: Readonly<Record<TilesetId, string>> = {
-  placeholder: 'Procedural placeholder',
-  wood: 'Woods',
-  outdoor: 'FRLG Route',
   forest: 'FRLG Forest',
-  cave: 'FRLG Cave',
 };

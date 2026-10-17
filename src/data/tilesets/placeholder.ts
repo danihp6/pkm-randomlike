@@ -39,8 +39,9 @@ const FLOOR_VARIANTS = [
 ];
 
 /**
- * The procedural placeholder sheet. Same atlas contract as every biome, so a
- * route can swap it for real art without touching the map or the renderer.
+ * The procedural sheet, kept as a **test fixture**: a `TilesetConfig` with the
+ * shared atlas contract (no `grassRustle`, no `wallPattern`) that the frame tests
+ * build against. It is not a registry row, so no route renders it.
  */
 export const PLACEHOLDER_TILESET: TilesetConfig = {
   atlas: {

@@ -65,7 +65,6 @@ src/data/shop.ts
 src/data/tilesets/frlg.test.ts
 src/data/tilesets/frlg.ts
 src/data/tilesets/placeholder.ts
-src/data/tilesets/wood.ts
 src/data/tms.test.ts
 src/dev/debugMenu.test.ts
 src/dev/debugMenu.ts

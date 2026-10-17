@@ -9,8 +9,10 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   accessors live beside it (`species.ts`, `megas.ts`, `gmaxes.ts`, `moves.ts`,
   `abilities.ts`, `items.ts`, `learnsets.ts`, `types.ts`, `natures.ts`,
   `evolutions.ts`).
-- `tilesets/` — one file per biome tileset plus the shared `palettes.ts` and the
-  `index.ts` registry. Contract in `docs/tileset-spec.md`.
+- `tilesets/` — one file per biome tileset — the forest's row in `frlg.ts`, wired
+  by the `index.ts` registry — plus the shared `palettes.ts` and `placeholder.ts`,
+  the procedural sheet kept as a **test fixture**. Contract in
+  `docs/tileset-spec.md`.
 - `biomes.ts` — biome → tileset and terrain flavour.
 - `mapSize.ts` — the map-size tiers (small / medium / large by area) that scale a
   biome's base `grassPatches` / `ledges` counts and add optional paths to a

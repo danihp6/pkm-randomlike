@@ -644,7 +644,7 @@ export class RouteScene extends Phaser.Scene {
   private generatorSteps: readonly RouteStep[] = [];
   private generatorStepIndex: number | null = null;
   private encounters!: RouteEncounters;
-  private tilesetId: TilesetId = 'wood';
+  private tilesetId: TilesetId = 'forest';
   private player: Tile = { x: 1, y: 1 };
   private playerSprite!: Phaser.GameObjects.Sprite;
   private tileSprites: Phaser.GameObjects.Image[][][] = [];
