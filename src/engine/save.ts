@@ -27,6 +27,8 @@ export type Settings = Readonly<{
   hudLayout: HudLayout;
   /** Which key presses confirm, cancel, move, open the party and open settings. */
   keybinds: Keybinds;
+  /** New: drop or shorten the full-screen flashes a beat would play. */
+  reducedFlash: boolean;
 }>;
 
 /**
@@ -57,6 +59,11 @@ export const DEFAULT_TEXT_SPEED: TextSpeed = 'normal';
 export const DEFAULT_VOLUME = 0.8;
 export const DEFAULT_ALWAYS_RUN = true;
 export const DEFAULT_HUD_TRANSPARENT = false;
+/**
+ * The accessibility knob. Off is the shipped look, on drops or shortens every
+ * full-screen flash a beat would play (`docs/design-spec.md` §10).
+ */
+export const DEFAULT_REDUCED_FLASH = false;
 
 export function defaultSettings(): Settings {
   return {
@@ -66,6 +73,7 @@ export function defaultSettings(): Settings {
     hudTransparent: DEFAULT_HUD_TRANSPARENT,
     hudLayout: defaultHudLayout(),
     keybinds: DEFAULT_KEYBINDS,
+    reducedFlash: DEFAULT_REDUCED_FLASH,
   };
 }
 
@@ -423,7 +431,9 @@ function parseSettings(value: unknown): Settings {
     typeof value.hudTransparent === 'boolean' ? value.hudTransparent : base.hudTransparent;
   const hudLayout = parseHudLayout(value.hudLayout);
   const keybinds = sanitizeKeybinds(value.keybinds);
-  return { textSpeed, volume, alwaysRun, hudTransparent, hudLayout, keybinds };
+  const reducedFlash =
+    typeof value.reducedFlash === 'boolean' ? value.reducedFlash : base.reducedFlash;
+  return { textSpeed, volume, alwaysRun, hudTransparent, hudLayout, keybinds, reducedFlash };
 }
 
 function parseStats(value: unknown): Stats | null {

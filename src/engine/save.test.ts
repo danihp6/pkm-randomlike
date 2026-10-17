@@ -19,6 +19,7 @@ import {
 import {
   DEFAULT_ALWAYS_RUN,
   DEFAULT_HUD_TRANSPARENT,
+  DEFAULT_REDUCED_FLASH,
   DEFAULT_TEXT_SPEED,
   DEFAULT_VOLUME,
   SAVE_KEY,
@@ -34,6 +35,7 @@ import {
   storeSave,
   storeSettings,
   type Migrations,
+  type Settings,
   type StorageLike,
 } from './save';
 
@@ -87,6 +89,7 @@ describe('defaults', () => {
       hudTransparent: DEFAULT_HUD_TRANSPARENT,
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
+      reducedFlash: DEFAULT_REDUCED_FLASH,
     });
   });
 
@@ -107,6 +110,7 @@ describe('encodeSave', () => {
         hudTransparent: DEFAULT_HUD_TRANSPARENT,
         hudLayout: defaultHudLayout(),
         keybinds: DEFAULT_KEYBINDS,
+        reducedFlash: DEFAULT_REDUCED_FLASH,
       },
       run,
     });
@@ -120,6 +124,7 @@ describe('encodeSave', () => {
       hudTransparent: DEFAULT_HUD_TRANSPARENT,
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
+      reducedFlash: DEFAULT_REDUCED_FLASH,
     });
     expect(decoded.run).toEqual(run);
   });
@@ -150,6 +155,7 @@ describe('decodeSave', () => {
       hudTransparent: DEFAULT_HUD_TRANSPARENT,
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
+      reducedFlash: DEFAULT_REDUCED_FLASH,
     });
   });
 
@@ -171,6 +177,7 @@ describe('decodeSave', () => {
       hudTransparent: DEFAULT_HUD_TRANSPARENT,
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
+      reducedFlash: DEFAULT_REDUCED_FLASH,
     });
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0 });
@@ -187,6 +194,7 @@ describe('decodeSave', () => {
       hudTransparent: DEFAULT_HUD_TRANSPARENT,
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
+      reducedFlash: DEFAULT_REDUCED_FLASH,
     });
     expect(decoded.run?.party).toHaveLength(6);
   });
@@ -206,6 +214,7 @@ describe('decodeSave', () => {
       hudTransparent: DEFAULT_HUD_TRANSPARENT,
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
+      reducedFlash: DEFAULT_REDUCED_FLASH,
     });
     expect(decoded.run?.party).toHaveLength(6);
   });
@@ -246,6 +255,7 @@ describe('settings validation', () => {
       hudTransparent: DEFAULT_HUD_TRANSPARENT,
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
+      reducedFlash: DEFAULT_REDUCED_FLASH,
     });
   });
 
@@ -257,6 +267,7 @@ describe('settings validation', () => {
       hudTransparent: DEFAULT_HUD_TRANSPARENT,
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
+      reducedFlash: DEFAULT_REDUCED_FLASH,
     });
     expect(document(JSON.stringify({ version: SAVE_VERSION, settings: {} })).settings).toEqual(defaultSettings());
   });
@@ -267,6 +278,19 @@ describe('settings validation', () => {
     );
     expect(decoded.settings.keybinds.confirm).toBe('Q');
     expect(decoded.settings.keybinds.cancel).toBe(DEFAULT_KEYBINDS.cancel);
+  });
+
+  it('keeps the reduce-flashing preference through a round trip', () => {
+    const settings: Settings = { ...defaultSettings(), reducedFlash: true };
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings, run: null }));
+    expect(decoded.settings.reducedFlash).toBe(true);
+  });
+
+  it('reads a document with no reduce-flashing field as off', () => {
+    const raw = JSON.stringify({ version: 16, settings: { textSpeed: 'fast', volume: 0.4 } });
+    const decoded = document(raw);
+    expect(SAVE_VERSION).toBe(16);
+    expect(decoded.settings.reducedFlash).toBe(false);
   });
 
   it('keeps a saved HUD layout and repairs a junk offset', () => {
@@ -504,6 +528,7 @@ describe('migrateDocument', () => {
       hudTransparent: DEFAULT_HUD_TRANSPARENT,
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
+      reducedFlash: DEFAULT_REDUCED_FLASH,
     });
     expect(decoded.run).toEqual(run);
   });

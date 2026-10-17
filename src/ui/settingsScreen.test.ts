@@ -23,6 +23,7 @@ describe('rows', () => {
       'volume',
       'alwaysRun',
       'hudTransparent',
+      'reducedFlash',
       'confirm',
       'cancel',
       'up',
@@ -38,8 +39,8 @@ describe('rows', () => {
       'box',
       'settings',
     ]);
-    expect(SETTINGS_ROWS.slice(0, 4).every(isStepRow)).toBe(true);
-    expect(SETTINGS_ROWS.slice(4).every((row) => !isStepRow(row))).toBe(true);
+    expect(SETTINGS_ROWS.slice(0, 5).every(isStepRow)).toBe(true);
+    expect(SETTINGS_ROWS.slice(5).every((row) => !isStepRow(row))).toBe(true);
   });
 
   it('hides the keybind rows on a touch screen', () => {
@@ -47,7 +48,14 @@ describe('rows', () => {
     const touch = settingsRows(true);
     expect(touch.every(isStepRow)).toBe(true);
     expect(touch.some((row) => row.id === 'confirm')).toBe(false);
-    expect(touch.map((row) => row.id)).toEqual(['textSpeed', 'volume', 'alwaysRun', 'hudTransparent']);
+    expect(touch.map((row) => row.id)).toEqual([
+      'textSpeed',
+      'volume',
+      'alwaysRun',
+      'hudTransparent',
+      'reducedFlash',
+    ]);
+    expect(touch[touch.length - 1].id).toBe('reducedFlash');
   });
 
   it('clamps a selection to the list', () => {
@@ -68,6 +76,8 @@ describe('settingValue', () => {
     expect(settingValue({ ...defaultSettings(), alwaysRun: false }, 'alwaysRun')).toBe('Off');
     expect(settingValue(defaultSettings(), 'hudTransparent')).toBe('Off');
     expect(settingValue({ ...defaultSettings(), hudTransparent: true }, 'hudTransparent')).toBe('On');
+    expect(settingValue(defaultSettings(), 'reducedFlash')).toBe('Off');
+    expect(settingValue({ ...defaultSettings(), reducedFlash: true }, 'reducedFlash')).toBe('On');
   });
 
   it('prints a keybind as its key, arrows and all', () => {
@@ -137,6 +147,15 @@ describe('changeSetting', () => {
     expect(settings.hudTransparent).toBe(false);
   });
 
+  it('toggles the reduce-flashing preference off and back on', () => {
+    let settings = defaultSettings();
+    expect(settings.reducedFlash).toBe(false);
+    settings = changeSetting(settings, 'reducedFlash', 1);
+    expect(settings.reducedFlash).toBe(true);
+    settings = changeSetting(settings, 'reducedFlash', -1);
+    expect(settings.reducedFlash).toBe(false);
+  });
+
   it('never mutates the settings it is given', () => {
     const settings = defaultSettings();
     changeSetting(settings, 'textSpeed', 1);
@@ -174,6 +193,7 @@ describe('cycleSetting', () => {
   it('toggles the on/off rows like changeSetting', () => {
     expect(cycleSetting(defaultSettings(), 'alwaysRun', 1).alwaysRun).toBe(false);
     expect(cycleSetting(defaultSettings(), 'hudTransparent', 1).hudTransparent).toBe(true);
+    expect(cycleSetting(defaultSettings(), 'reducedFlash', 1).reducedFlash).toBe(true);
   });
 });
 
