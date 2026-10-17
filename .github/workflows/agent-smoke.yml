@@ -1,25 +1,26 @@
 name: agent / smoke
 
-# First CI increment: prove the three unknowns of an unattended runner before any
-# cycle exists — that `OPENCODE_API_KEY` authenticates against the inference API,
-# that the CLI runs headless on a clean machine, and that `opencode-go` serves the
-# model we plan to fan out with. Dispatch only, read-only, no side effects on the repo.
+# First CI increment: prove the unknowns of an unattended runner before any cycle
+# exists — that `OPENCODE_API_KEY` works, that the CLI runs headless on a clean
+# machine, and which `opencode-go` models answer through the provider.
 #
-# The probe step is diagnostic and never fails the job: a paid model answering
-# `402 Insufficient account funds` is a fact about the key's *workspace* (billing,
-# plan, wrong account), not about the runner, and the Console config probe below is
-# what tells the two apart. The job's verdict comes from the CLI step alone.
+# Scope note: everything here goes through *OpenCode*, never through the Console
+# inference API by hand. Measured on 2026-10-17, that other door answers
+# `402 Insufficient account funds` for a paid model and `403 FreeTierError` for a
+# free one — the free tier is only served from inside OpenCode, and the raw
+# inference API belongs to the service-account flow we do not use. A probe there
+# would only raise false alarms about credential state we depend on.
 
 on:
   workflow_dispatch:
     inputs:
-      model:
-        description: Model the cycle will actually use
+      primary:
+        description: Model the cycle will fan out with (must answer)
         default: opencode-go/deepseek-v4.1-flash
         required: true
-      free_model:
-        description: Free model used only to separate "unfunded" from "broken"
-        default: opencode-go/longcat-2.5-preview-free
+      secondary:
+        description: Cheaper candidate worth verifying through the same path
+        default: opencode-go/glm-5.3-flash
         required: true
 
 concurrency:
@@ -46,33 +47,20 @@ jobs:
           npm install -g @opencode/cli
           opencode --version
 
-      - name: Probe the inference API (diagnostic, never fails)
+      - name: The provider answers
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         run: |
-          probe() {
-            local model="$1" code
-            code=$(curl -sS -o /tmp/probe.json -w '%{http_code}' \
-              -X POST 'https://opencode.ai/inference/openai/v1/chat/completions' \
-              -H "Authorization: Bearer $OPENCODE_API_KEY" \
-              -H 'Content-Type: application/json' \
-              -d "{\"model\":\"${model}\",\"max_tokens\":16,\"messages\":[{\"role\":\"user\",\"content\":\"Say OK\"}]}")
-            echo "== ${model}: HTTP ${code}"
-            head -c 400 /tmp/probe.json; echo
+          ask() {
+            local model="$1" out
+            out=$(opencode run --auto --model "${model}" \
+              'Reply with exactly OK and nothing else.' 2>&1) || { echo "$out"; return 1; }
+            echo "== ${model}"
+            echo "$out" | tail -3
+            echo "$out" | grep -qi 'ok'
           }
-          probe 'deepseek-v4.1-flash'
-          probe 'longcat-2.5-preview-free'
-          echo "== what the key is bound to"
-          curl -sS -H "Authorization: Bearer $OPENCODE_API_KEY" \
-            'https://opencode.ai/api/v2/config' | head -c 600; echo
-
-      - name: OpenCode runs headless through the provider
-        env:
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-        run: |
-          opencode run --auto --model '${{ inputs.model }}' \
-            'Reply with exactly OK and nothing else.' | tee /tmp/run.txt
-          grep -qi 'ok' /tmp/run.txt
+          ask '${{ inputs.primary }}'
+          ask '${{ inputs.secondary }}'
 
       - name: What the key can see
         if: always()
