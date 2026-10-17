@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { playMusic } from '../audio/audio';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
+import { PORTRAIT_SIZE, portraitFor } from '../data/portraits';
 import { hasLivingParty, type RunState } from '../engine/run';
 import { randomSeed } from '../engine/rng';
 import { loadSave, type Settings } from '../engine/save';
@@ -9,6 +10,7 @@ import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { addFrlgWindow } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
+import { runPositionLabel } from '../ui/runSummary';
 
 /** The three things the menu can do; `continue` only exists with a saved run. */
 type MenuAction = 'continue' | 'new' | 'options';
@@ -24,10 +26,17 @@ const ROW_H = 60;
 const ROW_GAP = 2;
 const ROW_TOP = 56;
 
+/** The party portraits in the Continue row: pitch, drawn size and the gap to the value. */
+const MENU_ICON_PITCH = 32;
+const MENU_ICON_SCALE = 0.44; // a 64px portrait cell draws 28px
+const MENU_ICON_VALUE_GAP = 10;
+const MENU_ICON_DRAW = PORTRAIT_SIZE * MENU_ICON_SCALE;
+
 type RowView = {
   highlight: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.BitmapText;
   value: Phaser.GameObjects.BitmapText;
+  portraits: Phaser.GameObjects.Image[];
 };
 
 /**
@@ -92,6 +101,24 @@ export class MainMenuScene extends Phaser.Scene {
         tint: 0x3a3956,
         origin: [1, 0],
       });
+      // The party portraits ride between the label and the value, right-aligned
+      // against it. The cell's centre (origin 0.5) sits half a drawn cell left of
+      // the block's right edge, so `MENU_ICON_VALUE_GAP` is the gap the value
+      // text's left edge actually measures. An empty slot is a member the atlas
+      // has no cell for: it keeps its place so the party's order still reads.
+      const portraits: Phaser.GameObjects.Image[] = [];
+      const members = action === 'continue' && this.run ? this.run.party : [];
+      const blockRight = value.x - value.width - MENU_ICON_VALUE_GAP;
+      members.forEach((member, slot) => {
+        const portrait = portraitFor(member.fighter.speciesId, member.fighter.shiny);
+        if (!portrait) return;
+        const iconX = blockRight - MENU_ICON_DRAW / 2 - (members.length - 1 - slot) * MENU_ICON_PITCH;
+        portraits.push(
+          this.add
+            .image(iconX, rowY + ROW_H / 2, portrait.key, portrait.frame)
+            .setScale(MENU_ICON_SCALE),
+        );
+      });
       // The row is a click target: hovering moves the highlight, clicking picks.
       const zone = this.add.zone(rowX, rowY, rowW, ROW_H).setOrigin(0, 0);
       zone.setInteractive({ useHandCursor: true });
@@ -103,7 +130,7 @@ export class MainMenuScene extends Phaser.Scene {
         this.index = i;
         this.choose();
       });
-      return { highlight, label, value };
+      return { highlight, label, value, portraits };
     });
 
     this.controls = addFrlgText(this, width / 2, y + panelH + 24, '', {
@@ -127,9 +154,9 @@ export class MainMenuScene extends Phaser.Scene {
     this.render();
   }
 
-  /** The right-hand value of a row: the route a saved run is sitting on. */
+  /** The right-hand value of a row: the map a saved run stands on and its biome. */
   private rowValue(action: MenuAction): string {
-    if (action === 'continue' && this.run) return `Route ${this.run.routeIndex}`;
+    if (action === 'continue' && this.run) return runPositionLabel(this.run);
     return '';
   }
 

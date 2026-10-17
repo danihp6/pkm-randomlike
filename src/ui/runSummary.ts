@@ -1,3 +1,5 @@
+import { getBiome } from '../data/biomes';
+import { biomeForMap } from '../engine/maps/plan';
 import { encodeRunShare, type RunState } from '../engine/run';
 
 /**
@@ -49,4 +51,13 @@ export function runSummaryLines(summary: RunSummary): string[] {
     `Seed: ${summary.seed}`,
     `Share: ${summary.share}`,
   ];
+}
+
+/**
+ * The saved run's position for the main menu's Continue row: the map it stands on
+ * and that map's biome, in the route HUD's own wording, so the menu and the HUD
+ * can never disagree.
+ */
+export function runPositionLabel(run: RunState): string {
+  return `Map ${run.mapIndex} · ${getBiome(biomeForMap(run.seed, run.mapIndex)).name}`;
 }

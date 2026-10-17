@@ -14,10 +14,11 @@ carries over.
 ## 2. The run
 
 - The game opens on a **main menu**: **New run**, **Continue** (only when the save
-  holds a run with a living party, and it shows the route it is on) and
-  **Options** (the settings screen). Starting a new run only replaces the saved
-  one once its starter is picked, so cancelling at the starter pick returns to
-  the menu with the run in progress intact.
+  holds a run with a living party, and it shows the map it stands on, that map's
+  biome and a portrait per party member, in party order) and **Options** (the
+  settings screen). Starting a new run only replaces the saved one once its
+  starter is picked, so cancelling at the starter pick returns to the menu with
+  the run in progress intact.
 - **Options** (the settings screen) lists a **step row** per preference — text
   speed, a **volume slider** (click or drag the bar), always-run and Transparent
   HUD — over one **keybind row** per action. A keybind row is hidden on a touch
