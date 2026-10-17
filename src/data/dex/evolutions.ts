@@ -55,6 +55,37 @@ export const EVOLUTION_BST_LEVELS: readonly Readonly<{ maxBst: number; level: nu
 /** The floor a non-level evolution keeps above the evolution that produced it. */
 export const EVOLUTION_MIN_GAP = 10;
 
+/**
+ * The branches the generated dex cannot carry: canon Rotom has no evolution at
+ * all — its appliances are a forme change from a key item — so the dex's own
+ * `evos` is empty for every one of the six entries and this is a game rule
+ * (`D38`) layered over the dex, not dex data. One key per species that evolves;
+ * `into` is the appliance's own species id, so the member's `speciesId` becomes
+ * it and nothing else about the member moves. One-way, Eevee-style: the base
+ * form offers all five and an appliance offers none, so the table has no second
+ * key and every appliance is absent from its values.
+ */
+const FORM_EVOLUTIONS: Readonly<Record<string, readonly Evolution[]>> = {
+  rotom: [
+    { into: 'rotomheat', method: 'forme', level: null, item: null, move: null, condition: null },
+    { into: 'rotomwash', method: 'forme', level: null, item: null, move: null, condition: null },
+    { into: 'rotomfrost', method: 'forme', level: null, item: null, move: null, condition: null },
+    { into: 'rotomfan', method: 'forme', level: null, item: null, move: null, condition: null },
+    { into: 'rotommow', method: 'forme', level: null, item: null, move: null, condition: null },
+  ],
+};
+
+/** The hand-authored branches of a species; empty for every other species. */
+function formEvolutions(speciesId: string): readonly Evolution[] {
+  return FORM_EVOLUTIONS[speciesId] ?? [];
+}
+
+/** A species' own branches plus its hand-authored ones, in that order. */
+function evolutionsOf(species: Species): readonly Evolution[] {
+  const extra = formEvolutions(species.id);
+  return extra.length === 0 ? species.evolutions : [...species.evolutions, ...extra];
+}
+
 /** The level a species' BST band reads: 20, 30 or 40. */
 export function evolutionLevelForBst(bst: number): number {
   if (!Number.isFinite(bst) || bst < 0) return EVOLUTION_BST_LEVELS[0].level;
@@ -76,7 +107,7 @@ const NO_ANCESTORS: ReadonlySet<string> = new Set<string>();
  * one `prevo` per step and cycle-safe even though the dex's chains are acyclic.
  */
 function speciesEvolutionLevel(species: Species, visited: ReadonlySet<string> = NO_ANCESTORS): number {
-  const levelEvolution = species.evolutions.find(isLevelEvolution);
+  const levelEvolution = evolutionsOf(species).find(isLevelEvolution);
   if (levelEvolution?.level != null) return levelEvolution.level;
   const base = evolutionLevelForBst(species.bst);
   if (!species.prevo) return base;
@@ -109,7 +140,7 @@ export type EvolutionBranch = Readonly<{
 export function evolutionBranches(speciesId: string): readonly EvolutionBranch[] {
   const species = getSpecies(speciesId);
   if (!species) return [];
-  return species.evolutions.map((evolution) => ({
+  return evolutionsOf(species).map((evolution) => ({
     into: evolution.into,
     level: evolutionLevel(species.id, evolution),
     method: evolution.method,
@@ -125,7 +156,9 @@ export function availableEvolutions(speciesId: string, level: number): readonly 
  * Every species in the same evolution line as `speciesId`, including itself.
  * Walks `prevo` up to the base form and then `evos` back down, so a branching
  * line (Eevee) counts all of its children and a forme child (Raichu-Alola)
- * counts too. Unknown ids and cycles are skipped.
+ * counts too. The hand-authored `FORM_EVOLUTIONS` branches join the walk
+ * additively, so a base form reaches its appliances though an appliance never
+ * walks back to it (one-way). Unknown ids and cycles are skipped.
  */
 export function evolutionFamily(speciesId: string): readonly string[] {
   const start = getSpecies(speciesId);
@@ -151,6 +184,7 @@ export function evolutionFamily(speciesId: string): readonly string[] {
     seen.add(id);
     family.push(id);
     for (const next of species.evos) stack.push(next);
+    for (const evolution of formEvolutions(species.id)) stack.push(evolution.into);
   }
   return family;
 }
@@ -158,8 +192,9 @@ export function evolutionFamily(speciesId: string): readonly string[] {
 /**
  * The longest chain of evolution steps that starts at `speciesId`, so a base
  * form with two consecutive evolutions (Bulbasaur) scores 2, while a branching
- * line whose children are all final (Eevee, Scyther) scores 1. Unknown ids and
- * cycles score 0.
+ * line whose children are all final (Eevee, Scyther) scores 1. The
+ * hand-authored `FORM_EVOLUTIONS` branches join the walk additively. Unknown
+ * ids and cycles score 0.
  */
 export function evolutionDepth(speciesId: string): number {
   const walk = (id: string, path: ReadonlySet<string>): number => {
@@ -171,6 +206,9 @@ export function evolutionDepth(speciesId: string): number {
     let depth = 0;
     for (const child of species.evos) {
       depth = Math.max(depth, 1 + walk(child, nextPath));
+    }
+    for (const evolution of formEvolutions(normalized)) {
+      depth = Math.max(depth, 1 + walk(evolution.into, nextPath));
     }
     return depth;
   };

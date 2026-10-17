@@ -34,6 +34,13 @@ asserts the counts still match, so a bad regeneration fails loudly.
 - Typed accessors live next to the JSON (`species.ts`, `megas.ts`, `gmaxes.ts`, `moves.ts`,
   `items.ts`, `learnsets.ts`, `types.ts`, `natures.ts`, `evolutions.ts`,
   re-exported from `index.ts`). Only they read the JSON.
+- `evolutions.ts` also owns one **hand-authored override** beside the dex: Rotom's
+  five appliances (`rotomheat`, `rotomwash`, `rotomfrost`, `rotomfan`, `rotommow`)
+  are one level from the BST band (30), **one-way** — an appliance offers none and
+  never leads back — and keyed by the evolving species' id. The generated
+  `species.json` is untouched: the `rotom` row still reads `evolutions: []`,
+  `evos: []`, `prevo: ""`, because this is a game rule (`D38`) layered over the
+  dex, not dex data.
 - The playable set is the **full National Dex** (`D40`): every species with a
   number, `Past` Dexit entries included. Only non-species are dropped at
   generation time — CAP/fan entries, `Custom` (MissingNo, Pokéstar), LGPE's
