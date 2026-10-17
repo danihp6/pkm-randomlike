@@ -8,6 +8,45 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The enemy AI thinks with the cartridges' own script flags, and difficulty is one
+      visible setting (`D46`).** `chooseAiCommand` stops scoring with one hard-coded
+      function: `AiFlag` — `checkBadMove`, `tryToFaint`, `checkViability`,
+      `setupFirstTurn`, `risky`, `preferBatonPass` — became **data** on the trainer
+      archetype (`TrainerArchetype.aiFlags`; the union is declared in
+      `src/data/trainers.ts` and the engine imports the **type** only), the six flags are
+      a closed list of checks over `estimateDamage` / `canApplyStatus` /
+      `legalMoveIndices` / `canMegaEvolve`, and **the highest score wins**, with an exact
+      tie broken to the lowest index at the default level and from the battle's own
+      `state.rng` at the top one. The flag ladder ships per class: a Youngster only skips
+      a move that can do nothing and otherwise attacks, the middle classes heal and use
+      their status moves, a Psychic and a Black Belt also go for the faint (the Black Belt
+      gambles), and the **`ace`** archetype — which is also what the boss and the
+      mini-boss are, so the plan's "Ace/boss/mini-boss get all of them" is one data row —
+      carries all six. A wild no longer out-thinks an Ace: at the default level it picks a
+      **random move that has PP left** (exactly one draw per turn) and only at the top one
+      does it think with the flags. The run gains **`settings.aiLevel`** — `Normal` (the
+      default) or `Hard` — as one `Difficulty` step row on the options screen (drawn by
+      the data-driven screen, no scene change), a required `BattleLaunch.aiLevel` the
+      route fills from the settings, and `Hard` is nothing but the cartridge's own Hard
+      Mode: every trainer also gets *check bad move*, *try to faint* and *check
+      viability*. It is defaulted per field in `parseSettings` (the `reducedFlash`
+      shape), so **`SAVE_VERSION` stays 16** and the plan's chain stays
+      14 → 15 → 16 → 17 → 18. The AI reads nothing but legal information — its own party
+      and movesets, the **active** fighters' public facts, the field and `state.turn` —
+      and never the opposing bench or its unrevealed moves, and it draws from `state.rng`
+      alone. The enemy still gains **no Bag**: `validateBag` refuses every side but the
+      player and the items the engine models on an enemy are held ones its own hooks
+      apply, so the two levels differ in flag set, wild policy and tie-break, not in
+      items. Every moved fixed-seed expectation carries its reason: the golden log — its
+      snapshot **and** `harness.test.ts`'s line-for-line copy of it — moves because the
+      golden battle is a wild one, so the new policy picks Vine Whip over the scored
+      Tackle **and** spends one `Rng` draw per turn, while `mega.test.ts`, `gmax.test.ts`
+      and `randomLearnsetBattle.test.ts` stayed byte-identical and `harness.ts` untouched.
+      `docs/battle-spec.md` gained §11, `docs/tech-decisions.md` `D46`, `docs/data-spec.md`
+      the archetype's new field and `src/data/README.md` a corrected role line. One
+      `agent-review` issue carries the one `[live]` criterion (the options row on screen
+      and the setting reaching a battle) this environment cannot measure.
+
 - [x] **The accessibility pass: one reduced-flash knob, HP that reads without hue, the
       colour-only cues fixed, and the whole game playable from the keyboard (`D45`).**
       `Settings` gains `reducedFlash` (default off, `DEFAULT_REDUCED_FLASH`, read per field in

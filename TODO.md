@@ -1014,6 +1014,15 @@ measure. What follows is the cut's own record.
   regenerated dex, is the first one that leaves Task-23's paths free.
 
 ### Batch 8b — the enemy AI, and the difficulty parameter
+**(shipped and archived)**: its one task is closed — Task-35 merged alone behind the
+green gate (`task-35`; **1565** tests, `npm test` + `npm run build` green on the merge
+commit), and the detail is in `CHANGELOG.md`'s `## Unreleased`. It shipped the
+cartridge's AI flags as **data** on `TrainerArchetype.aiFlags`, a rewritten
+`chooseAiCommand` whose tie-break draws from the battle's own `Rng` (the lowest index at
+the default level), the wild's random-with-PP policy and one `Settings.aiLevel` row
+(`Normal` / `Hard`, no `SAVE_VERSION` step — the chain stays 14 → 15 → 16 → 17 → 18).
+One `agent-review` issue carries the one `[live]` criterion this environment cannot
+measure. What follows is the cut's own record.
 - **Task-35** Enemy AI: the cartridge's AI scripts for a known roster, expected value and
   a bounded search for a random one, and the difficulty knob on top.
 - **Hot files:** `src/engine/battle/ai.ts` + `ai.test.ts`, `src/data/trainers.ts`,
@@ -2212,7 +2221,7 @@ floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
 The whole menu battle minus per-effect behaviour. Contract in
 `docs/battle-spec.md`.
 
-- [ ] **[Task-35] Enemy AI: the cartridge's AI scripts, expected value, and the
+- [x] **[Task-35] Enemy AI: the cartridge's AI scripts, expected value, and the
       difficulty knob.** The enemies think with one shallow scorer today: `chooseAiCommand`
       (`src/engine/battle/ai.ts`) takes `estimateDamage × accuracy`, adds 1000 when the hit
       would KO, 60 for a status that can land, 40 for a favourable boost, 50 for healing at
