@@ -20,8 +20,8 @@ testable logic belongs in the computing half.
   float the same one.
 - `notice.ts` — the run's transient notices: their copy and hold time, one at a time, with no
   key and no input taken.
-- `abilityInfo.ts` — the ability row's info control and the text it floats, so the route HUD,
-  the battle's switch window and the capture screen read the same way.
+- `abilityInfo.ts` — the ability row's info control and the text it floats, so the route HUD and
+  the battle's switch window read the same way.
 - `partyScreen.ts` — the party/box model: rows, panes, cursor, drag/drop and the box page math.
 - `partyDetail.ts` — the party detail popup: STATS/MOVES tabs, nature effects and move reordering.
 - `partyGrid.ts` — the battle SWITCH window's row geometry: one fixed-size row per party member and the pure label truncation.
