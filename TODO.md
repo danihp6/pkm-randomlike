@@ -43,8 +43,10 @@ overlay's teleports and its two ignore toggles, Batch 5f the overworld sprite se
 the balance pass, the Phase 9 docs, the battle SWITCH grid and the follower, and Batch 6b the
 learnset band's one-row scroll and the trainer's Poké Ball row, and all
 ten are closed
-below. **Batch 7 is the next batch cut** — Gigantamax, the route-scoped catch swap and the main
-menu's Continue row. The
+below. **Batch 7 is cut** — Gigantamax, the route-scoped catch swap and the main
+menu's Continue row: its three specs are written
+(`.agent_specs/task-18.md`, `task-31.md`, `task-47.md`) and its three worktrees are
+next, so it can gain no member. The
 eighteenth round below put the
 follower back in Batch 6 and gave its art its own batch, 5f, ahead of it. Every
 batch from here follows the Legend's **Asset trees** rule: the Añil clone's absolute path
@@ -939,19 +941,27 @@ bar. Neither added a run field, so **no `SAVE_VERSION` step** — the chain stay
 are never reused.
 
 ### Batch 7 — Gigantamax, route-scoped catch swap, the main menu's Continue row
+**(cut)**: the three specs are written (`task-18.md`, `task-31.md`, `task-47.md`
+under `.agent_specs/`) and the Orchestrator cuts the three worktrees next; the batch
+can gain no member from here, and every claim below is what its specs freeze.
 - **Task-18** Gigantamax, in the Mega Evolution mould.
 - **Task-31** A full party sends the catch to the PC, swappable only on that route.
 - **Task-47** The main menu's Continue row shows the map, its biome and the party's icons.
-- **Hot files:** `scripts/build-dex.mjs`, `src/data/dex/**` (the new `gmaxes.json`),
-  `src/data/anil/pokemon-sprites.json` and `src/scenes/BattleScene.ts` → Task-18;
+- **Hot files:** `scripts/build-dex.mjs`, `scripts/anil/build-pokemon-sprites.mjs`,
+  `src/data/dex/**` (the new `gmaxes.json`), `src/data/anil/pokemon-sprites.json`
+  and the two regenerated portrait atlases `public/anil/portraits{,-shiny}.png`
+  (the packer's own output for the new G-Max cells — the batch's one packed asset,
+  see the correction below) and `src/scenes/BattleScene.ts` → Task-18;
   `src/scenes/RouteScene.ts`, `src/engine/run/state.ts` + `state.test.ts`,
   `src/engine/run/resolve.ts` + `resolve.test.ts`, `src/engine/save.ts` +
   `save.test.ts`, `src/ui/partyScreen.ts`, the new `src/ui/notice.ts` +
   `notice.test.ts`, `src/ui/README.md` (its `notice.ts` role line, the per-folder
   convention) and `docs/routes-spec.md` → Task-31; `src/scenes/MainMenuScene.ts`,
   `src/ui/runSummary.ts` + `runSummary.test.ts` and `docs/design-spec.md` §2 → Task-47.
-  None of the three claims `package.json`, `src/main.ts`, `vite.config.ts` or a packed
-  asset.
+  None of the three claims `package.json`, `src/main.ts` or `vite.config.ts`, and
+  Task-18's own regeneration of the Añil manifest is what rewrites the two packed
+  portrait atlases named above (the entry first read "or a packed asset": the
+  manifest is written by its packer, so the atlases it packs go with it).
 - **Shape:** three tasks that share no path: the battle engine and the generated dex on
   one side, the run save, the route scene and the PC rule on the other, and the landing
   screen's one row on the third. It is the
@@ -1027,8 +1037,10 @@ are never reused.
   10, 12) or `src/scenes/RouteScene.ts` (3, 5, 6b, 7, 8, 8b, 10, 12) has claimed one
   before, and Batch 6b's Task-38 takes `RouteScene` three batches earlier — so the ⓘ fix
   waits until here. Task-21 still runs alone in its own file for the reason it was
-  planned: `src/ui/evolutionGraph.ts` is the file Task-20 rewrote in Batch 8 and Task-18
-  extends in Batch 7. Task-39's file `src/ui/moveGrid.ts` is free here and stays free
+  planned: `src/ui/evolutionGraph.ts` is the file Task-20 rewrote in Batch 8, and Batch 7's
+  Task-18 does **not** claim it (the G-Max formes reach the graph as Task-21's own sibling
+  row, "the same kind of row", so Batch 7 leaves the file free and Task-21 is its first
+  writer here). Task-39's file `src/ui/moveGrid.ts` is free here and stays free
   until Batch 11's reformat.
 
 ### Batch 9b — the battle's entry beat
@@ -1576,7 +1588,10 @@ behind the mini-boss reward) and the tenth round's three add eight (four behind 
 two behind the gated reward room and two behind the trade room) and the eleventh round's single
 report adds six (all behind the no-items/no-heal room) and the twelfth round's single report
 adds four (the surface, the last move, the gesture and the confirm, all behind the MOVES tab's
-delete) — and the **eighteenth round's two decisions add no question at all**: they *answer* two
+delete) — and the **third round's Task-47 question is answered** (the human settled it when
+Batch 7 was cut: the Continue row reads the route HUD's own string, `` `Map <n> · <biome>` ``,
+with **no** third clause, frozen in `### Batch 7` above and in `.agent_specs/task-47.md`, so
+its bullet is gone) — and the **eighteenth round's two decisions add no question at all**: they *answer* two
 of them, so the grid's reading and the follower's missing-sheet case leave this list (both are
 frozen in `[Task-34]`'s and `[Task-41]`'s entries and in the round's own paragraph above, and the
 follower's bullet below is rewritten to the ids `[Task-76]`'s manifest lists as missing) — and the
@@ -1619,17 +1634,6 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
   `portraitFor` / `megaFormOf` shape, `src/data/portraits.ts` 28-36), which draws the base form's
   art for a forme that has none. Say which before Batch 6's branch is cut. Nothing else in the
   plan changes either way.
-
-- **`[Task-47]` (the Continue row, Batch 7): `Map 3 · Deep Forest`, or the room as a third
-  clause too?** The report asks for the map and the biome *instead of* the route string, and
-  the route HUD's own title already reads `Map <n> · <biome>` (`RouteScene`, 2058). The
-  written default is that exact string, so the menu and the HUD never disagree; the
-  alternative is `Map 3 · Deep Forest · Route 2` in `partyDetail.ts`'s `catchLabel` order
-  (biome first, then map, then room, 151-154), which keeps telling the player how far in they
-  are. Say which before Batch 7's branch is cut if the room is wanted back. (The party
-  strip's own scale and pick — `portraitFor` over the boot-loaded portrait atlas rather than
-  the unused Añil icon strips or Task-41's overworld sheets — is written into the entry and
-  is not a question.) Nothing else in the plan changes either way.
 
 - **`[Task-48]` (the first catch, Batch 14): is the boost the run's first *success*, and is
   it a flat 255?** Two calls, both written as defaults. First: the boost belongs to the run's
@@ -2767,9 +2771,9 @@ Ports of Showdown handlers, in batches, on the hook names in
       the catch there is nothing left to stack.
       **The live diagnosis, recorded here because Task-27's ID points at it:** the stacking
       was never the placement seam. Every wild fighter is built with a **constant** id
-      (`createFighter({ id: 'wild' })`, `src/scenes/BattleScene.ts:368`), the encounter key
-      behind it (`grass:x,y`, `src/scenes/RouteScene.ts:4183`) is not unique per run, and
-      `memberById` (`src/ui/partyDetail.ts:106`) resolves a member by **first match** — so
+      (`createFighter({ id: 'wild' })`, `src/scenes/BattleScene.ts` **408**), the encounter key
+      behind it (`grass:x,y`, `src/scenes/RouteScene.ts` **4699**) is not unique per run, and
+      `memberById` (`src/ui/partyDetail.ts` **110-114**) resolves a member by **first match** — so
       the party row drew correctly while its detail panel showed an earlier catch. That is
       `[Task-33]` (Batch 3b), which lands **before** this task and mints a unique id at the
       fold; this task's replay must therefore re-run the repro with `[Task-33]` merged and
@@ -3003,19 +3007,19 @@ Ports of Showdown handlers, in batches, on the hook names in
       already in hand: the scene holds the whole `RunState` in `this.run` (45, 59), and
       `'continue'` only exists while that run has a living party.
       **Where the map and the biome come from.** `biomeForMap(run.seed, run.mapIndex)`
-      (`src/engine/maps/plan.ts`, 166-173) recovers a floor's biome from the seed **without
+      (`src/engine/maps/plan.ts`, 178-185) recovers a floor's biome from the seed **without
       building the plan** — it walks the same `map` stream `planMap` does, so the two can
       never disagree — and `getBiome(id).name` (`src/data/biomes.ts`, 61-63) names it. That
       pair is exactly what the route HUD's own title draws (`src/scenes/RouteScene.ts`,
-      2057-2058: `` `Map ${this.run.mapIndex} · ${biomeName}` ``), so the menu can show the
+      2107-2108: `` `Map ${this.run.mapIndex} · ${biomeName}` ``), so the menu can show the
       string the player already reads on the map instead of a second dialect.
       **The party-icon accessor already exists, and it is not the art this report might
       suggest.** `portraitFor(speciesId, shiny)` (`src/data/portraits.ts`, 28-36) returns
       the `{ key, frame }` of the 64px portrait atlas (`PORTRAIT_SIZE`, `PORTRAIT_ATLAS_URL`,
       10-15) which `BootScene` loads at boot (`src/scenes/BootScene.ts`, 136-142), so
       `MainMenuScene` — which has no `preload` today — needs none. It is the identical call
-      the party rows and cells already draw with (`RouteScene` 1517, 1651, 2082, 2166;
-      `BattleScene` 1787, the battle's SWITCH grid). The two other candidate sources are
+      the party rows and cells already draw with (`RouteScene` 2132, 2220, 2926, 6235;
+      `BattleScene` 1937, the battle's SWITCH grid). The two other candidate sources are
       the wrong ones and the report should say so: `src/data/pokemonSprites.ts`'s `icon`
       variant is Añil's 64px **battle** icon strip (`public/anil/icons/**`), which nothing
       in the tree draws today and which would need a per-species lazy load, and
@@ -3037,11 +3041,11 @@ Ports of Showdown handlers, in batches, on the hook names in
       the atlas has no cell for draws nothing in that slot (`portraitFor` returns null) — the
       alternative is a sheet-extension job, which is not this task.
       **The string, as the recommended reading:** `Map <mapIndex> · <biome name>` — the route
-      HUD's own title, because the report asks for the map and the biome *instead of* the
-      route string; the alternative keeps the room as a third clause
-      (`… · Route <routeInMap + 1>`, the order `partyDetail.ts`'s `catchLabel` uses at 151-154)
-      so the player still sees how far in they are, and it is the one question to settle
-      before this batch's branch is cut.
+      HUD's own title (`RouteScene` **2107-2108**), because the report asks for the map and
+      the biome *instead of* the route string. **That is the decided string** (the human
+      settled it when the batch was cut; the third-clause alternative —
+      `… · Route <routeInMap + 1>`, the order `partyDetail.ts`'s `catchLabel` uses at 151-154 —
+      is **rejected**), and it is what `.agent_specs/task-47.md` freezes.
       Out of scope: the row's key handling, the New run and Options rows, the save/load path,
       `RowView`'s highlight, the settings screen, any new art or atlas, and the run-over
       screen. Docs: the main menu bullet in `docs/design-spec.md` §2 (line 16-17, "it shows
@@ -3318,7 +3322,10 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       data + battle UI, fixed-seed tests.
 - [ ] **[Task-18] Gigantamax, in the Mega Evolution mould.** Model Gigantamax the
       way the Megas work (`src/engine/battle/mega.ts`, `D34`): once per battle a
-      holder may change to its G-Max forme, taking that forme's stats/types/ability
+      holder may change to its G-Max forme — **the holder is the Pokémon whose own species
+      has a G-Max forme; there is no stone and no held item in the gate**, because the
+      task's paths carry no `src/data/items.ts` entry (`.agent_specs/task-18.md`, `D44`)** —
+      taking that forme's stats/types/ability
       **before any move**, and revert when the battle ends (`snapshotFighter` keeps
       the base species). The G-Max formes are **not in the build at all** today —
       `isBattleBossForm` in `scripts/build-dex.mjs` excludes every Gmax/Eternamax
@@ -3333,10 +3340,12 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       doubling is applied by the mechanic the way Añil does it. Añil is also the
       source for the G-Max art and its sprite placement
       (`sprite-sources/anil/PBS/pokemon_metrics_gmax.txt` and the numbered form
-      sprites `Graphics/Pokemon/Front/<SPECIES>_<n>.png`). Max moves stay unmodelled
-      (`D42`): decide here whether a G-Max forme keeps its normal moves or the task
-      also brings its G-Max move. Needs a decision entry, `docs/battle-spec.md`, and
-      tests (fixed seed, once per battle, the HP doubling, the revert).
+      sprites `Graphics/Pokemon/Front/<SPECIES>_<n>.png`). **Max moves stay unmodelled
+      (`D42`), and that settles the one call this entry carried: a G-Max forme keeps its
+      normal moves and the task brings no G-Max/Max move** (the human's decision when the
+      batch was cut; frozen in `.agent_specs/task-18.md` `D44` and in `docs/battle-spec.md`).
+      Needs a decision entry (**`D44`** — `D43` is Task-26's, Batch 10), `docs/battle-spec.md`,
+      and tests (fixed seed, once per battle, the HP doubling, the revert).
       *Dependencies:* none. *(Batch 7)*
 - [ ] **[Task-20] The Rotom appliances as evolutions.** Rotom's five appliance
       formes are in the dex as species of their own — `rotomheat`, `rotomwash`,
