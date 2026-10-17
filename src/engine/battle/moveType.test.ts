@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { getMove, type StatId, type Stats } from '../../data/dex';
+import { ITEMS } from '../../data/items';
+import { Rng } from '../rng';
+import { createFighter } from './fighter';
+import { activeFighter, createBattle, type BattleState } from './state';
+import { makeContext, runModifyMove, runModifyMoveType } from './effects/registry';
 import {
   HIDDEN_POWER_TYPES,
   abilityMoveType,
@@ -58,6 +63,54 @@ describe('effectiveMoveType', () => {
     expect(effectiveMoveType('Blaze', null, ember)).toBe('Fire');
   });
 });
+
+describe('the panel reads the other item retypes too (D37)', () => {
+  const multiattack = getMove('multiattack')!;
+  const technoblast = getMove('technoblast')!;
+  const naturalgift = getMove('naturalgift')!;
+
+  it('answers a Memory, a Drive and a Natural Gift berry', () => {
+    expect(effectiveMoveType('Blaze', 'sitrusberry', naturalgift)).toBe('Psychic');
+    expect(effectiveMoveType('Blaze', 'firememory', multiattack)).toBe('Fire');
+    expect(effectiveMoveType('Blaze', 'shockdrive', technoblast)).toBe('Electric');
+    for (const move of [multiattack, technoblast, naturalgift]) {
+      expect(effectiveMoveType('Blaze', null, move), move.id).toBe(move.type);
+      expect(effectiveMoveType('Blaze', 'charcoal', move), move.id).toBe(move.type);
+    }
+  });
+
+  it('agrees with the battle for every catalogue item and every retype move', () => {
+    for (const item of ITEMS) {
+      const state = holderState(item.kind === 'held' ? item.id : undefined);
+      const ctx = makeContext(state, 'player', {
+        source: activeFighter(state, 'player'),
+        target: activeFighter(state, 'enemy'),
+      });
+      for (const move of [multiattack, technoblast, naturalgift, judgment]) {
+        const battleType = runModifyMoveType(ctx, runModifyMove(ctx, move));
+        expect(effectiveMoveType('Blaze', item.id, move), `${item.id} ${move.id}`).toBe(battleType);
+      }
+    }
+  });
+});
+
+function holderState(heldItem?: string): BattleState {
+  return createBattle({
+    player: [
+      createFighter({
+        id: 'player',
+        speciesId: 'charmander',
+        level: 20,
+        ability: 'Blaze',
+        moves: ['ember'],
+        ...(heldItem ? { heldItem } : {}),
+      }),
+    ],
+    enemy: [createFighter({ id: 'enemy', speciesId: 'bulbasaur', level: 18, moves: ['tackle'] })],
+    rng: new Rng(1),
+    isWild: true,
+  });
+}
 
 describe('hiddenPowerType', () => {
   it('anchors all-31 and all-0 IVs, and defaults the missing ones to MAX_IV', () => {

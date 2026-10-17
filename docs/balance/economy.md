@@ -53,8 +53,9 @@ The catalogue as it stands. A row's price is what `buyPrice` charges and what
 | Type items (18x)                |               1000 | held, 1.2x to one type — one per type, Silk Scarf … Fairy Feather   |
 | Leftovers                       |               4000 | held, strongest sustain                                            |
 | Berries (Oran / Sitrus / Lum)   |      100 / 200 / 200 | held, single use                                                  |
-| Competitive held set (143 rows) | 200 / 3000 / 4000 | held: a dex berry 200, a Memory or a Drive 3000, the rest 4000     |
+| Competitive held set (122 rows) |           200 / 4000 | held: a dex berry 200, the rest 4000                                |
 | Plates (17x)                    |               4000 | held, boss-tier treasure; retypes Judgment (D37)                   |
+| Memories and Drives (21x)       |               3000 | held, ground-only treasure; retypes Multi-Attack / Techno Blast (D37) |
 | Mega Stones                     |                  0 | never sold; held by a boss, a mini-boss or an `ace` (D34)          |
 | TMs (TM001–TM171)               |               3000 | reusable: it gates a move in the learnset panel, never spent       |
 | Valuables (9x)                  |      1000 … 12000 | treasure: sells for its whole price, usable for nothing else       |
@@ -62,8 +63,8 @@ The catalogue as it stands. A row's price is what `buyPrice` charges and what
 Balls are priced in step with their catch bonus (200 / 600 / 1200 for 1 / 1.5 /
 2x), so a better ball is a real economy choice and not a strict upgrade you
 always afford. The held tiers are the catalogue's own, and `items.test.ts` pins
-them: a competitive row is `200` when the dex calls it a berry, `3000` when it is
-a hand-authored Memory or Drive and `4000` otherwise.
+them: a competitive row is `200` when the dex calls it a berry and `4000`
+otherwise, while a Memory or a Drive is its own ground-only `3000` row.
 
 ## The Mart's stock
 

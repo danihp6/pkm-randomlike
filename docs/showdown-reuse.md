@@ -75,7 +75,8 @@ effect registry with the same hooks as Showdown's handlers:
    damage, STAB, type chart, crits, accuracy, PP, primary status, capture, XP,
    switching, bag, run, permadeath.
 2. **Hooks**: `onSwitchIn`, `onStart`, `onResidual`, `onModifyStat`,
-   `onModifyDamage`, `onTryHit`, `onAfterMove`, `onStatus`, `onBoost`, ...
+   `onModifyMove`, `onModifyDamage`, `onTryHit`, `onAfterMove`, `onStatus`,
+   `onBoost`, ...
    Effects register handlers, exactly like Showdown, just with a smaller
    battle-state object.
 3. **Effect files** grouped by category under `src/engine/battle/effects/`,

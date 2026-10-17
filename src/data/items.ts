@@ -79,6 +79,12 @@ export type ItemDef = Readonly<{
    * Plates also carry a 1.2x `typeBoost`, like the canon.
    */
   plate?: string;
+  /**
+   * A Memory's type: while held, it gives Multi-Attack its type (`moveType.ts`, D37).
+   */
+  memory?: string;
+  /** A Drive's type: while held, it gives Techno Blast its type (`moveType.ts`, D37). */
+  drive?: string;
   shortDesc: string;
 }>;
 
@@ -330,33 +336,34 @@ const NOOP_ITEMS: readonly ItemDef[] = [
 
 /**
  * The 21 hand-authored held items the dex drops as nonstandard: the seventeen
- * **Memories** and four **Drives** a Silvally/Genesect retype will read. The dex
- * has neither, so the name and the text are literal (English, `D12`). There is no
- * `normalmemory` row: the dex has no such item, and a Silvally holding no Memory is
- * already Normal, so Multi-Attack's Normal case is the "no Memory held" case.
+ * **Memories** and four **Drives** that retype Multi-Attack and Techno Blast
+ * (`engine/battle/effects/items.ts`, D37). The dex has neither, so the name and
+ * the text are literal (English, `D12`). There is no `normalmemory` row: the dex
+ * has no such item, and a Silvally holding no Memory is already Normal, so
+ * Multi-Attack's Normal case is the "no Memory held" case.
  */
-const AUTHORED_ITEMS: readonly ItemDef[] = [
-  item({ id: 'bugmemory', name: 'Bug Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Bug.' }),
-  item({ id: 'darkmemory', name: 'Dark Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Dark.' }),
-  item({ id: 'dragonmemory', name: 'Dragon Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Dragon.' }),
-  item({ id: 'electricmemory', name: 'Electric Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Electric.' }),
-  item({ id: 'fairymemory', name: 'Fairy Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Fairy.' }),
-  item({ id: 'fightingmemory', name: 'Fighting Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Fighting.' }),
-  item({ id: 'firememory', name: 'Fire Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Fire.' }),
-  item({ id: 'flyingmemory', name: 'Flying Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Flying.' }),
-  item({ id: 'ghostmemory', name: 'Ghost Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Ghost.' }),
-  item({ id: 'grassmemory', name: 'Grass Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Grass.' }),
-  item({ id: 'groundmemory', name: 'Ground Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Ground.' }),
-  item({ id: 'icememory', name: 'Ice Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Ice.' }),
-  item({ id: 'poisonmemory', name: 'Poison Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Poison.' }),
-  item({ id: 'psychicmemory', name: 'Psychic Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Psychic.' }),
-  item({ id: 'rockmemory', name: 'Rock Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Rock.' }),
-  item({ id: 'steelmemory', name: 'Steel Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Steel.' }),
-  item({ id: 'watermemory', name: 'Water Memory', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Water.' }),
-  item({ id: 'burndrive', name: 'Burn Drive', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Fire.' }),
-  item({ id: 'chilldrive', name: 'Chill Drive', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Ice.' }),
-  item({ id: 'dousedrive', name: 'Douse Drive', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Water.' }),
-  item({ id: 'shockdrive', name: 'Shock Drive', kind: 'held', price: 3000, shortDesc: 'Changes the holder\'s type to Electric.' }),
+export const MEMORY_DRIVE_ITEMS: readonly ItemDef[] = [
+  item({ id: 'bugmemory', name: 'Bug Memory', kind: 'held', price: 3000, memory: 'Bug', shortDesc: 'Holder\'s Multi-Attack becomes Bug type.' }),
+  item({ id: 'darkmemory', name: 'Dark Memory', kind: 'held', price: 3000, memory: 'Dark', shortDesc: 'Holder\'s Multi-Attack becomes Dark type.' }),
+  item({ id: 'dragonmemory', name: 'Dragon Memory', kind: 'held', price: 3000, memory: 'Dragon', shortDesc: 'Holder\'s Multi-Attack becomes Dragon type.' }),
+  item({ id: 'electricmemory', name: 'Electric Memory', kind: 'held', price: 3000, memory: 'Electric', shortDesc: 'Holder\'s Multi-Attack becomes Electric type.' }),
+  item({ id: 'fairymemory', name: 'Fairy Memory', kind: 'held', price: 3000, memory: 'Fairy', shortDesc: 'Holder\'s Multi-Attack becomes Fairy type.' }),
+  item({ id: 'fightingmemory', name: 'Fighting Memory', kind: 'held', price: 3000, memory: 'Fighting', shortDesc: 'Holder\'s Multi-Attack becomes Fighting type.' }),
+  item({ id: 'firememory', name: 'Fire Memory', kind: 'held', price: 3000, memory: 'Fire', shortDesc: 'Holder\'s Multi-Attack becomes Fire type.' }),
+  item({ id: 'flyingmemory', name: 'Flying Memory', kind: 'held', price: 3000, memory: 'Flying', shortDesc: 'Holder\'s Multi-Attack becomes Flying type.' }),
+  item({ id: 'ghostmemory', name: 'Ghost Memory', kind: 'held', price: 3000, memory: 'Ghost', shortDesc: 'Holder\'s Multi-Attack becomes Ghost type.' }),
+  item({ id: 'grassmemory', name: 'Grass Memory', kind: 'held', price: 3000, memory: 'Grass', shortDesc: 'Holder\'s Multi-Attack becomes Grass type.' }),
+  item({ id: 'groundmemory', name: 'Ground Memory', kind: 'held', price: 3000, memory: 'Ground', shortDesc: 'Holder\'s Multi-Attack becomes Ground type.' }),
+  item({ id: 'icememory', name: 'Ice Memory', kind: 'held', price: 3000, memory: 'Ice', shortDesc: 'Holder\'s Multi-Attack becomes Ice type.' }),
+  item({ id: 'poisonmemory', name: 'Poison Memory', kind: 'held', price: 3000, memory: 'Poison', shortDesc: 'Holder\'s Multi-Attack becomes Poison type.' }),
+  item({ id: 'psychicmemory', name: 'Psychic Memory', kind: 'held', price: 3000, memory: 'Psychic', shortDesc: 'Holder\'s Multi-Attack becomes Psychic type.' }),
+  item({ id: 'rockmemory', name: 'Rock Memory', kind: 'held', price: 3000, memory: 'Rock', shortDesc: 'Holder\'s Multi-Attack becomes Rock type.' }),
+  item({ id: 'steelmemory', name: 'Steel Memory', kind: 'held', price: 3000, memory: 'Steel', shortDesc: 'Holder\'s Multi-Attack becomes Steel type.' }),
+  item({ id: 'watermemory', name: 'Water Memory', kind: 'held', price: 3000, memory: 'Water', shortDesc: 'Holder\'s Multi-Attack becomes Water type.' }),
+  item({ id: 'burndrive', name: 'Burn Drive', kind: 'held', price: 3000, drive: 'Fire', shortDesc: 'Holder\'s Techno Blast becomes Fire type.' }),
+  item({ id: 'chilldrive', name: 'Chill Drive', kind: 'held', price: 3000, drive: 'Ice', shortDesc: 'Holder\'s Techno Blast becomes Ice type.' }),
+  item({ id: 'dousedrive', name: 'Douse Drive', kind: 'held', price: 3000, drive: 'Water', shortDesc: 'Holder\'s Techno Blast becomes Water type.' }),
+  item({ id: 'shockdrive', name: 'Shock Drive', kind: 'held', price: 3000, drive: 'Electric', shortDesc: 'Holder\'s Techno Blast becomes Electric type.' }),
 ];
 
 /**
@@ -364,6 +371,10 @@ const AUTHORED_ITEMS: readonly ItemDef[] = [
  * is modelled by `engine/battle/effects/items.ts`, so the Mart may sell it) and
  * every `No-op` row (art, price and the `D16` record only, so only the ground
  * hands it out). The pools in `loot.ts` and `shop.ts` read this authority.
+ *
+ * The seventeen Plates (above) and the 21 **Memories/Drives** stay out of it:
+ * they are modelled, **ground-only** treasure, and the Mart only sells what it
+ * may buy at a shelf that already knows.
  */
 export const COMPETITIVE_HELD: readonly ItemDef[] = [
   ...PORT_DAMAGE_ITEMS,
@@ -379,11 +390,13 @@ export const COMPETITIVE_HELD: readonly ItemDef[] = [
   ...PORT_SELF_STATUS_ITEMS,
   ...NOOP_BERRY_ITEMS,
   ...NOOP_ITEMS,
-  ...AUTHORED_ITEMS,
 ];
 
 /** The ids of `COMPETITIVE_HELD`, for the obtainability test. */
 export const COMPETITIVE_HELD_IDS: readonly string[] = COMPETITIVE_HELD.map((row) => row.id);
+
+/** The ids of `MEMORY_DRIVE_ITEMS`, the ground-only obtainability list. */
+export const MEMORY_DRIVE_IDS: readonly string[] = MEMORY_DRIVE_ITEMS.map((row) => row.id);
 
 /**
  * The run's item catalogue: balls, heal/status/boost consumables, `held` items
@@ -452,6 +465,7 @@ export const ITEMS: readonly ItemDef[] = [
   item({ id: 'cometshard', name: 'Comet Shard', kind: 'valuable', price: 12000, shortDesc: 'A shard of a comet. Sell it for money.' }),
 
   ...PLATE_ITEMS,
+  ...MEMORY_DRIVE_ITEMS,
   ...COMPETITIVE_HELD,
   ...MEGA_STONES,
   ...TM_ITEMS,

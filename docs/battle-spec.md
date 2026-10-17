@@ -72,6 +72,11 @@ Special move shapes:
 - **Self-switch moves** (U-turn, Volt Switch, Flip Turn, Parting Shot, Teleport,
   Baton Pass) deal their effect and then require a replacement; Baton Pass copies
   the user's stat stages to the incoming Pokémon.
+- **Item-driven retypes**: a held **Plate**, **Memory**, **Drive** or berry
+  rewrites the one move that belongs to it — Judgment, Multi-Attack, Techno Blast
+  and Natural Gift. Natural Gift takes its type and base power from the berry's
+  dex `naturalGift` pair and spends the berry once the move has resolved
+  (`src/engine/battle/effects/items.ts`).
 
 ## 5. Permadeath
 

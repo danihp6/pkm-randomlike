@@ -6,6 +6,7 @@ import {
   makeContext,
   runModifyAccuracy,
   runModifyDamage,
+  runModifyMove,
   runModifyMoveType,
 } from './effects/registry';
 
@@ -49,8 +50,9 @@ export function movePreview(
 
   const target = opponent(state, side);
   const ctx = makeContext(state, side, { source: fighter, target, move });
-  const type = runModifyMoveType(ctx, move);
-  const activeMove = type === move.type ? move : { ...move, type };
+  const modified = runModifyMove(ctx, move);
+  const type = runModifyMoveType(ctx, modified);
+  const activeMove = type === modified.type ? modified : { ...modified, type };
   const damaging = activeMove.category !== 'Status' && activeMove.basePower > 0;
 
   // A probe of 100 turns the attacker's damage hooks into a plain multiplier:

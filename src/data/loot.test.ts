@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { UNMODELLED_ITEMS } from '../engine/battle/effects/items';
-import { COMPETITIVE_HELD_IDS, ITEMS } from './items';
+import { COMPETITIVE_HELD_IDS, ITEMS, MEMORY_DRIVE_IDS } from './items';
 import { ROUTE_LOOT } from './loot';
 import { LEVEL_BANDS } from './run';
 import { SHOP_ROTATION } from './shop';
@@ -82,7 +82,22 @@ describe('ROUTE_LOOT', () => {
       for (const entry of ROUTE_LOOT[band.id].pool) reachable.add(entry.itemId);
       for (const entry of SHOP_ROTATION[band.id]) reachable.add(entry.itemId);
     }
-    for (const id of COMPETITIVE_HELD_IDS) expect(reachable.has(id), id).toBe(true);
+    for (const id of [...COMPETITIVE_HELD_IDS, ...MEMORY_DRIVE_IDS]) {
+      expect(reachable.has(id), id).toBe(true);
+    }
+  });
+
+  it('drops the Memories and Drives as end-band ground treasure only (D37)', () => {
+    const endIds = ROUTE_LOOT.end.pool.map((entry) => entry.itemId);
+    for (const id of MEMORY_DRIVE_IDS) {
+      expect(endIds, id).toContain(id);
+      for (const band of LEVEL_BANDS) {
+        expect(
+          SHOP_ROTATION[band.id].some((entry) => entry.itemId === id),
+          `${band.id} ${id}`,
+        ).toBe(false);
+      }
+    }
   });
 
   it('hands the unmodelled items out on the ground only, never from the Mart (D16)', () => {

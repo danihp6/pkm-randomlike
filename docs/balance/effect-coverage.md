@@ -815,11 +815,11 @@ catalogue row, not engine code.
 | Mud Sport | `port` | registry: effects/moves.ts |
 | Mud-Slap | `port` | data: secondaries |
 | Muddy Water | `port` | data: secondaries |
-| Multi-Attack | `port` | data: basePower |
+| Multi-Attack | `port` | registry: effects/items.ts |
 | Mystical Fire | `port` | data: secondaries |
 | Mystical Power | `port` | data: secondaries |
 | Nasty Plot | `port` | data: boosts |
-| Natural Gift | `port` | data: flags.protect |
+| Natural Gift | `port` | registry: effects/items.ts |
 | Nature Power | `port` | turn loop: turn.ts |
 | Nature's Madness | `port` | data: flags.protect |
 | Needle Arm | `excluded` | no playable species has it |
@@ -1096,7 +1096,7 @@ catalogue row, not engine code.
 | Taunt | `port` | data: volatileStatus |
 | Tearful Look | `port` | data: boosts |
 | Teatime | `port` | registry: effects/moves.ts |
-| Techno Blast | `port` | data: basePower |
+| Techno Blast | `port` | registry: effects/items.ts |
 | Teeter Dance | `port` | data: volatileStatus |
 | Telekinesis | `port` | data: flags.protect |
 | Teleport | `port` | data: selfSwitch |
@@ -1187,7 +1187,7 @@ catalogue row, not engine code.
 | Zing Zap | `port` | data: secondaries |
 | Zippy Zap | `excluded` | no playable species has it |
 
-## Items — 290 total (117 port, 92 no-op, 81 excluded)
+## Items — 290 total (138 port, 71 no-op, 81 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -1218,8 +1218,8 @@ catalogue row, not engine code.
 | Booster Energy | `no-op` | reachable, not modelled yet |
 | Bottle Cap | `excluded` | not in the run catalogue |
 | Bright Powder | `no-op` | reachable, not modelled yet |
-| Bug Memory | `no-op` | reachable, not modelled yet |
-| Burn Drive | `no-op` | reachable, not modelled yet |
+| Bug Memory | `port` | in the run catalogue (`src/data/items.ts`) |
+| Burn Drive | `port` | in the run catalogue (`src/data/items.ts`) |
 | Burn Heal | `port` | in the run catalogue (`src/data/items.ts`) |
 | Cell Battery | `no-op` | reachable, not modelled yet |
 | Charcoal | `port` | in the run catalogue (`src/data/items.ts`) |
@@ -1227,7 +1227,7 @@ catalogue row, not engine code.
 | Cheri Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Chesto Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Chilan Berry | `port` | in the run catalogue (`src/data/items.ts`) |
-| Chill Drive | `no-op` | reachable, not modelled yet |
+| Chill Drive | `port` | in the run catalogue (`src/data/items.ts`) |
 | Chipped Pot | `excluded` | not in the run catalogue |
 | Choice Band | `port` | in the run catalogue (`src/data/items.ts`) |
 | Choice Scarf | `port` | in the run catalogue (`src/data/items.ts`) |
@@ -1243,14 +1243,14 @@ catalogue row, not engine code.
 | Cracked Pot | `excluded` | not in the run catalogue |
 | Custap Berry | `no-op` | reachable, not modelled yet |
 | Damp Rock | `no-op` | reachable, not modelled yet |
-| Dark Memory | `no-op` | reachable, not modelled yet |
+| Dark Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Dawn Stone | `excluded` | not in the run catalogue |
 | Destiny Knot | `excluded` | not in the run catalogue |
 | Dive Ball | `excluded` | not in the run catalogue |
-| Douse Drive | `no-op` | reachable, not modelled yet |
+| Douse Drive | `port` | in the run catalogue (`src/data/items.ts`) |
 | Draco Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Dragon Fang | `port` | in the run catalogue (`src/data/items.ts`) |
-| Dragon Memory | `no-op` | reachable, not modelled yet |
+| Dragon Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Dragon Scale | `excluded` | not in the run catalogue |
 | Dread Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Dream Ball | `excluded` | not in the run catalogue |
@@ -1261,24 +1261,24 @@ catalogue row, not engine code.
 | Eject Button | `no-op` | reachable, not modelled yet |
 | Eject Pack | `no-op` | reachable, not modelled yet |
 | Electirizer | `excluded` | not in the run catalogue |
-| Electric Memory | `no-op` | reachable, not modelled yet |
+| Electric Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Electric Seed | `no-op` | reachable, not modelled yet |
 | Enigma Berry | `no-op` | reachable, not modelled yet |
 | Eviolite | `no-op` | reachable, not modelled yet |
 | Expert Belt | `port` | in the run catalogue (`src/data/items.ts`) |
 | Fairy Feather | `port` | in the run catalogue (`src/data/items.ts`) |
-| Fairy Memory | `no-op` | reachable, not modelled yet |
+| Fairy Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Fast Ball | `excluded` | not in the run catalogue |
-| Fighting Memory | `no-op` | reachable, not modelled yet |
+| Fighting Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Figy Berry | `port` | in the run catalogue (`src/data/items.ts`) |
-| Fire Memory | `no-op` | reachable, not modelled yet |
+| Fire Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Fire Stone | `excluded` | not in the run catalogue |
 | Fist Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Flame Orb | `port` | in the run catalogue (`src/data/items.ts`) |
 | Flame Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Float Stone | `no-op` | reachable, not modelled yet |
 | Flower Sweet | `excluded` | not in the run catalogue |
-| Flying Memory | `no-op` | reachable, not modelled yet |
+| Flying Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Focus Band | `port` | in the run catalogue (`src/data/items.ts`) |
 | Focus Sash | `port` | in the run catalogue (`src/data/items.ts`) |
 | Friend Ball | `excluded` | not in the run catalogue |
@@ -1287,16 +1287,16 @@ catalogue row, not engine code.
 | Galarica Cuff | `excluded` | not in the run catalogue |
 | Galarica Wreath | `excluded` | not in the run catalogue |
 | Ganlon Berry | `port` | in the run catalogue (`src/data/items.ts`) |
-| Ghost Memory | `no-op` | reachable, not modelled yet |
+| Ghost Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Gold Bottle Cap | `excluded` | not in the run catalogue |
-| Grass Memory | `no-op` | reachable, not modelled yet |
+| Grass Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Grassy Seed | `no-op` | reachable, not modelled yet |
 | Great Ball | `port` | in the run catalogue (`src/data/items.ts`) |
 | Grepa Berry | `excluded` | not in the run catalogue |
 | Grip Claw | `no-op` | reachable, not modelled yet |
 | Griseous Core | `no-op` | reachable, not modelled yet |
 | Griseous Orb | `no-op` | reachable, not modelled yet |
-| Ground Memory | `no-op` | reachable, not modelled yet |
+| Ground Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Haban Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Hard Stone | `port` | in the run catalogue (`src/data/items.ts`) |
 | Heal Ball | `excluded` | not in the run catalogue |
@@ -1308,7 +1308,7 @@ catalogue row, not engine code.
 | Hyper Potion | `port` | in the run catalogue (`src/data/items.ts`) |
 | Iapapa Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Ice Heal | `port` | in the run catalogue (`src/data/items.ts`) |
-| Ice Memory | `no-op` | reachable, not modelled yet |
+| Ice Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Ice Stone | `excluded` | not in the run catalogue |
 | Icicle Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Icy Rock | `no-op` | reachable, not modelled yet |
@@ -1379,7 +1379,7 @@ catalogue row, not engine code.
 | Petaya Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Pixie Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Poison Barb | `port` | in the run catalogue (`src/data/items.ts`) |
-| Poison Memory | `no-op` | reachable, not modelled yet |
+| Poison Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Poke Ball | `port` | in the run catalogue (`src/data/items.ts`) |
 | Pomeg Berry | `excluded` | not in the run catalogue |
 | Potion | `port` | in the run catalogue (`src/data/items.ts`) |
@@ -1395,7 +1395,7 @@ catalogue row, not engine code.
 | Prism Scale | `excluded` | not in the run catalogue |
 | Protective Pads | `no-op` | reachable, not modelled yet |
 | Protector | `excluded` | not in the run catalogue |
-| Psychic Memory | `no-op` | reachable, not modelled yet |
+| Psychic Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Psychic Seed | `no-op` | reachable, not modelled yet |
 | Punching Glove | `no-op` | reachable, not modelled yet |
 | Qualot Berry | `excluded` | not in the run catalogue |
@@ -1411,7 +1411,7 @@ catalogue row, not engine code.
 | Ribbon Sweet | `excluded` | not in the run catalogue |
 | Rindo Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Ring Target | `no-op` | reachable, not modelled yet |
-| Rock Memory | `no-op` | reachable, not modelled yet |
+| Rock Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Rocky Helmet | `no-op` | reachable, not modelled yet |
 | Room Service | `no-op` | reachable, not modelled yet |
 | Roseli Berry | `port` | in the run catalogue (`src/data/items.ts`) |
@@ -1426,7 +1426,7 @@ catalogue row, not engine code.
 | Shed Shell | `no-op` | reachable, not modelled yet |
 | Shell Bell | `no-op` | reachable, not modelled yet |
 | Shiny Stone | `excluded` | not in the run catalogue |
-| Shock Drive | `no-op` | reachable, not modelled yet |
+| Shock Drive | `port` | in the run catalogue (`src/data/items.ts`) |
 | Shuca Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Silk Scarf | `port` | in the run catalogue (`src/data/items.ts`) |
 | Silver Powder | `port` | in the run catalogue (`src/data/items.ts`) |
@@ -1444,7 +1444,7 @@ catalogue row, not engine code.
 | Star Sweet | `excluded` | not in the run catalogue |
 | Stardust | `port` | in the run catalogue (`src/data/items.ts`) |
 | Starf Berry | `no-op` | reachable, not modelled yet |
-| Steel Memory | `no-op` | reachable, not modelled yet |
+| Steel Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Sticky Barb | `no-op` | reachable, not modelled yet |
 | Stone Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Strawberry Sweet | `excluded` | not in the run catalogue |
@@ -1467,7 +1467,7 @@ catalogue row, not engine code.
 | Up-Grade | `excluded` | not in the run catalogue |
 | Utility Umbrella | `no-op` | reachable, not modelled yet |
 | Wacan Berry | `port` | in the run catalogue (`src/data/items.ts`) |
-| Water Memory | `no-op` | reachable, not modelled yet |
+| Water Memory | `port` | in the run catalogue (`src/data/items.ts`) |
 | Water Stone | `excluded` | not in the run catalogue |
 | Weakness Policy | `no-op` | reachable, not modelled yet |
 | Wellspring Mask | `excluded` | not in the run catalogue |

@@ -1,5 +1,6 @@
-import { MAX_IV, type Move, type StatId, type Stats } from '../../data/dex';
+import { MAX_IV, getDexItem, type Move, type StatId, type Stats } from '../../data/dex';
 import { getItem } from '../../data/items';
+import { UNMODELLED_ITEMS } from './effects/items';
 
 /**
  * Ability- and item-driven move-type changes, as one pure rule the battle engine
@@ -16,7 +17,9 @@ import { getItem } from '../../data/items';
  *  - the base type is read before the ability: Normalize still forces Normal, but
  *    an `-ate` ability only retypes a move whose *base* is Normal, so it leaves
  *    Hidden Power (never Normal in Gen 6+) alone;
- *  - a held **Plate** gives Judgment its type (`item.plate`).
+ *  - a held item retypes its move (`itemMoveType`): a **Plate** gives Judgment
+ *    its type, a **Memory** Multi-Attack, a **Drive** Techno Blast, and a berry
+ *    with a dex `naturalGift` pair gives it to Natural Gift (`D37`).
  *
  * Field effects that would retype for a turn (Plasma Fists, Electrify, Ion
  * Deluge) do not exist in the Gen 9 dex this build ships, so nothing else hooks
@@ -87,16 +90,24 @@ export function abilityMoveType(
   return base;
 }
 
-/** The type a Plate confers on Judgment, or null when none is held. */
-function judgeType(itemId: string | null | undefined): string | null {
-  const plate = itemId ? getItem(itemId)?.plate : undefined;
-  return plate ?? null;
+/** The type a held item confers on this move, or null when the item retypes nothing. */
+function itemMoveType(itemId: string | null | undefined, move: Move): string | null {
+  const item = itemId ? getItem(itemId) : undefined;
+  if (!item) return null;
+  if (item.plate && move.id === 'judgment') return item.plate;
+  if (item.memory && move.id === 'multiattack') return item.memory;
+  if (item.drive && move.id === 'technoblast') return item.drive;
+  if (move.id === 'naturalgift' && !UNMODELLED_ITEMS.includes(item.id)) {
+    return getDexItem(item.id)?.naturalGift?.type ?? null;
+  }
+  return null;
 }
 
 /**
  * The type a move is used as once the user's ability **and** held item are
  * applied. This is what the party panel shows; the battle reads the same rules
- * through the effect registry (the item's own `onModifyMoveType`).
+ * through the effect registry (the item's own `onModifyMoveType`), and the item
+ * wins because `ownedEffects` pushes the ability before the held item.
  */
 export function effectiveMoveType(
   ability: string | null | undefined,
@@ -104,9 +115,7 @@ export function effectiveMoveType(
   move: Move,
   ivs?: Partial<Stats> | null,
 ): string {
-  if (move.id === 'judgment') {
-    const plate = judgeType(itemId);
-    if (plate) return plate;
-  }
+  const itemType = itemMoveType(itemId, move);
+  if (itemType) return itemType;
   return abilityMoveType(ability, move, ivs);
 }

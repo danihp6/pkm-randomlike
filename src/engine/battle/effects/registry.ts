@@ -62,6 +62,12 @@ export type EffectHandlers = Readonly<{
   onModifyEffectiveness?: (ctx: EffectContext, move: Move, effectiveness: number) => number | void;
   /** The move's type as used (Galvanize, Pixilate, Liquid Voice). */
   onModifyMoveType?: (ctx: EffectContext, move: Move) => string | void;
+  /**
+   * The move as it will be used, before its type resolves: the seam an item that
+   * rewrites a move's own data (Natural Gift reads its berry) hooks. Return a new
+   * `Move` to replace it, `void` to leave it alone.
+   */
+  onModifyMove?: (ctx: EffectContext, move: Move) => Move | void;
   /** Runs on the survivors when any active Pokémon faints (Soul-Heart). */
   onFaint?: (ctx: EffectContext) => void;
   onTryHit?: (ctx: EffectContext, payload: MovePayload) => boolean | void;
@@ -391,6 +397,16 @@ export function runModifyMoveType(ctx: EffectContext, move: Move): string {
   for (const ref of contextEffects(ctx, false, move)) {
     const next = ref.effect.handlers.onModifyMoveType?.(contextFor(ctx, ref), move);
     if (typeof next === 'string') value = next;
+  }
+  return value;
+}
+
+/** Rewrites the move itself from the attacker's own effects; never null. */
+export function runModifyMove(ctx: EffectContext, move: Move): Move {
+  let value = move;
+  for (const ref of contextEffects(ctx, false, move)) {
+    const next = ref.effect.handlers.onModifyMove?.(contextFor(ctx, ref), value);
+    if (next) value = next;
   }
   return value;
 }

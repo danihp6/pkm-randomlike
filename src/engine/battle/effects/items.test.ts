@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { getMove } from '../../../data/dex';
+import { getDexItem, getMove } from '../../../data/dex';
 import { ITEMS, getItem, type ItemDef } from '../../../data/items';
 import { Rng } from '../../rng';
 import { createFighter, type BattleFighter } from '../fighter';
 import { activeFighter, createBattle, type BattleState } from '../state';
 import { takeTurn } from '../turn';
+import { movePreview } from '../preview';
 import {
   getEffect,
   makeContext,
@@ -12,6 +13,8 @@ import {
   runModifyAccuracy,
   runModifyCritRatio,
   runModifyDamage,
+  runModifyMove,
+  runModifyMoveType,
   runModifySpe,
   runResidual,
   type EffectContext,
@@ -481,5 +484,162 @@ describe('berry abilities (batch 7)', () => {
     expect(player.hp).toBe(before);
     expect(player.heldItem).toBe('sitrusberry');
     expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Unnerve'))).toBe(true);
+  });
+});
+
+describe('item-driven move retypes (D37)', () => {
+  const multiattack = getMove('multiattack')!;
+  const technoblast = getMove('technoblast')!;
+  const naturalgift = getMove('naturalgift')!;
+  const judgmentMove = getMove('judgment')!;
+
+  it('retypes Multi-Attack to the held Memory, and to nothing else', () => {
+    expect(runModifyMoveType(playerContext(battle('firememory')), multiattack)).toBe('Fire');
+    expect(runModifyMoveType(playerContext(battle()), multiattack)).toBe('Normal');
+    expect(runModifyMoveType(playerContext(battle('charcoal')), multiattack)).toBe('Normal');
+    expect(runModifyMoveType(playerContext(battle('shockdrive')), multiattack)).toBe('Normal');
+  });
+
+  it('retypes Techno Blast to the held Drive, and to nothing else', () => {
+    expect(runModifyMoveType(playerContext(battle('shockdrive')), technoblast)).toBe('Electric');
+    expect(runModifyMoveType(playerContext(battle()), technoblast)).toBe('Normal');
+    expect(runModifyMoveType(playerContext(battle('charcoal')), technoblast)).toBe('Normal');
+    expect(runModifyMoveType(playerContext(battle('firememory')), technoblast)).toBe('Normal');
+  });
+
+  it('finds every Memory on Multi-Attack and every Drive on Techno Blast', () => {
+    const memories = ITEMS.filter((item) => item.memory !== undefined);
+    expect(memories.length).toBe(17);
+    for (const item of memories) {
+      const ctx = playerContext(battle(item.id));
+      expect(runModifyMoveType(ctx, multiattack), item.id).toBe(item.memory);
+      for (const move of [technoblast, judgmentMove, getMove('tackle')!, naturalgift]) {
+        expect(runModifyMoveType(ctx, move), `${item.id} ${move.id}`).toBe(move.type);
+      }
+    }
+
+    const drives = ITEMS.filter((item) => item.drive !== undefined);
+    expect(drives.length).toBe(4);
+    for (const item of drives) {
+      const ctx = playerContext(battle(item.id));
+      expect(runModifyMoveType(ctx, technoblast), item.id).toBe(item.drive);
+      for (const move of [multiattack, judgmentMove, getMove('tackle')!, naturalgift]) {
+        expect(runModifyMoveType(ctx, move), `${item.id} ${move.id}`).toBe(move.type);
+      }
+    }
+  });
+
+  it('reads Natural Gift from the berry, and leaves other holders alone', () => {
+    const gift = runModifyMove(playerContext(battle('sitrusberry')), naturalgift);
+    expect(gift.type).toBe('Psychic');
+    expect(gift.basePower).toBe(80);
+
+    for (const heldItem of [undefined, 'charcoal', 'firememory', 'shockdrive']) {
+      expect(runModifyMove(playerContext(battle(heldItem)), naturalgift), heldItem).toBe(naturalgift);
+    }
+  });
+
+  it('answers every catalogue row its dex pair, or the move itself', () => {
+    for (const item of ITEMS) {
+      const state = item.kind === 'held' ? battle(item.id) : battle();
+      const result = runModifyMove(playerContext(state), naturalgift);
+      const gift = getDexItem(item.id)?.naturalGift;
+      if (gift && !UNMODELLED_ITEMS.includes(item.id)) {
+        expect(result.type, item.id).toBe(gift.type);
+        expect(result.basePower, item.id).toBe(gift.basePower);
+      } else {
+        expect(result, item.id).toBe(naturalgift);
+      }
+    }
+  });
+
+  it('leaves the eleven unmodelled berries unregistered and Natural Gift alone', () => {
+    for (const id of [
+      'custapberry', 'enigmaberry', 'jabocaberry', 'keeberry', 'lansatberry', 'leppaberry',
+      'marangaberry', 'persimberry', 'rowapberry', 'starfberry', 'tamatoberry',
+    ]) {
+      expect(UNMODELLED_ITEMS, id).toContain(id);
+      expect(getEffect(id), id).toBeUndefined();
+      expect(runModifyMove(playerContext(battle(id)), naturalgift), id).toBe(naturalgift);
+    }
+  });
+
+  it('reads the retype through the registry, so Klutz and Magic Room suppress it', () => {
+    const klutz = createBattle({
+      player: [createFighter({ id: 'player', speciesId: 'charmander', level: 20, ability: 'Klutz', heldItem: 'firememory', moves: ['ember'] })],
+      enemy: [fighter('enemy', 'bulbasaur')],
+      rng: new Rng(99),
+      isWild: true,
+    });
+    expect(runModifyMoveType(playerContext(klutz), multiattack)).toBe('Normal');
+
+    const magicRoom = battle('firememory');
+    magicRoom.field.magicroom = 5;
+    expect(runModifyMoveType(playerContext(magicRoom), multiattack)).toBe('Normal');
+  });
+});
+
+describe('Natural Gift in a real turn', () => {
+  const fight = { type: 'fight', moveIndex: 0 } as const;
+
+  function giftBattle(heldItem?: string): BattleState {
+    return createBattle({
+      player: [
+        createFighter({
+          id: 'player',
+          speciesId: 'snorlax',
+          level: 20,
+          moves: ['naturalgift'],
+          ...(heldItem ? { heldItem } : {}),
+        }),
+      ],
+      enemy: [createFighter({ id: 'enemy', speciesId: 'caterpie', level: 5, moves: ['tackle'] })],
+      rng: new Rng(99),
+      isWild: true,
+    });
+  }
+
+  const usedUp = (state: BattleState): number =>
+    state.log.filter((event) => event.kind === 'text' && event.text.includes('used up its Sitrus Berry!')).length;
+
+  it('spends the berry once and deals the damage it powered', () => {
+    const control = giftBattle();
+    takeTurn(control, fight, fight);
+    const controlEnemy = activeFighter(control, 'enemy');
+    expect(controlEnemy.maxHp - controlEnemy.hp).toBe(0);
+
+    const state = giftBattle('sitrusberry');
+    takeTurn(state, fight, fight);
+    const player = activeFighter(state, 'player');
+    const enemy = activeFighter(state, 'enemy');
+
+    expect(player.heldItem).toBeNull();
+    expect(player.lastItemId).toBe('sitrusberry');
+    expect(usedUp(state)).toBe(1);
+    expect(enemy.maxHp - enemy.hp).toBeGreaterThan(0);
+
+    takeTurn(state, fight, fight);
+    expect(usedUp(state)).toBe(1);
+  });
+
+  it('keeps the berry when the move never resolved (the foe protected itself)', () => {
+    const state = giftBattle('sitrusberry');
+    activeFighter(state, 'enemy').volatiles.protect = 'protect';
+
+    takeTurn(state, fight, fight);
+
+    expect(activeFighter(state, 'player').heldItem).toBe('sitrusberry');
+    expect(usedUp(state)).toBe(0);
+  });
+
+  it('shows the same type and power in the FIGHT preview', () => {
+    const berry = movePreview(giftBattle('sitrusberry'), 'player', 0)!;
+    expect(berry.type).toBe('Psychic');
+    expect(berry.basePower).toBe(80);
+    expect(berry.power).toBeGreaterThan(0);
+
+    const plain = movePreview(giftBattle(), 'player', 0)!;
+    expect(plain.type).toBe('Normal');
+    expect(plain.basePower).toBe(0);
   });
 });
