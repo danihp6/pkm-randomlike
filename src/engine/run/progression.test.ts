@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getSpecies, statAtLevel } from '../../data/dex';
 import { LEVEL_BANDS, bandForLevel } from '../../data/run';
 import '../battle/effects/abilities';
+import { restoreFighter } from '../battle/fighter';
 import { randomAbility } from '../battle/randomAbility';
 import {
   MAX_LEVEL,
@@ -14,6 +15,7 @@ import {
   levelForXp,
   levelUpPokemon,
   xpForLevel,
+  type RunPokemon,
 } from './progression';
 
 describe('xp curve', () => {
@@ -223,6 +225,105 @@ describe('evolvePokemon', () => {
     const eevee = createRunPokemon({ id: 'e', speciesId: 'eevee', level: 20 });
     expect(evolvePokemon(eevee, 'not-a-species')).toBe(eevee);
     expect(evolvePokemon(eevee, 'pikachu')).toBe(eevee);
+  });
+});
+
+/** The hand-authored Rotom appliances behave as any other evolution branch (`D38`). */
+describe('evolvePokemon across a rotom appliance', () => {
+  const APPLIANCES: readonly string[] = [
+    'rotomheat',
+    'rotomwash',
+    'rotomfrost',
+    'rotomfan',
+    'rotommow',
+  ];
+  const LEVEL = 30;
+
+  function rotom(): RunPokemon {
+    return createRunPokemon({
+      id: 'r',
+      speciesId: 'rotom',
+      level: LEVEL,
+      nickname: 'Sparky',
+      nature: 'modest',
+      ability: 'Levitate',
+      gender: 'male',
+      shiny: true,
+      heldItem: 'oran-berry',
+      moves: ['thunderbolt'],
+    });
+  }
+
+  it('keeps every field of the member and only swaps the species', () => {
+    const base = rotom();
+    const damaged: RunPokemon = {
+      ...base,
+      fighter: {
+        ...base.fighter,
+        hp: base.fighter.hp - 5,
+        status: 'par',
+        statusCounter: 1,
+        moves: [{ moveId: 'thunderbolt', pp: 3, maxPp: 15 }],
+      },
+    };
+    const evolved = evolvePokemon(damaged, 'rotomheat');
+    expect(evolved.fighter.speciesId).toBe('rotomheat');
+    expect(evolved.fighter.level).toBe(LEVEL);
+    expect(evolved.fighter.nickname).toBe('Sparky');
+    expect(evolved.fighter.nature).toBe('modest');
+    expect(evolved.fighter.gender).toBe('male');
+    expect(evolved.fighter.shiny).toBe(true);
+    expect(evolved.fighter.heldItem).toBe('oran-berry');
+    expect(evolved.fighter.ivs).toEqual(damaged.fighter.ivs);
+    expect(evolved.fighter.evs).toEqual(damaged.fighter.evs);
+    expect(evolved.fighter.status).toBe('par');
+    expect(evolved.fighter.statusCounter).toBe(1);
+    expect(evolved.fighter.moves).toEqual(damaged.fighter.moves);
+    expect(evolved.fighter).toEqual({
+      ...damaged.fighter,
+      speciesId: 'rotomheat',
+      ability: 'Levitate',
+      hp: evolved.fighter.hp,
+    });
+    const f = evolved.fighter;
+    const applianceSpa = statAtLevel(getSpecies('rotomheat')!, LEVEL, f.nature, f.ivs, f.evs).spa;
+    expect(restoreFighter(f).stats.spa).toBe(applianceSpa);
+    expect(applianceSpa).not.toBe(
+      statAtLevel(getSpecies('rotom')!, LEVEL, f.nature, f.ivs, f.evs).spa,
+    );
+  });
+
+  it('carries the missing HP across and keeps the maximum, for all five appliances', () => {
+    const base = rotom();
+    const f = base.fighter;
+    const oldMax = statAtLevel(getSpecies('rotom')!, LEVEL, f.nature, f.ivs, f.evs).hp;
+    const damaged: RunPokemon = { ...base, fighter: { ...f, hp: oldMax - 5 } };
+    for (const into of APPLIANCES) {
+      const target = getSpecies(into)!;
+      expect(target.baseStats.hp, into).toBe(getSpecies('rotom')!.baseStats.hp);
+      const evolved = evolvePokemon(damaged, into);
+      const newMax = statAtLevel(target, LEVEL, f.nature, f.ivs, f.evs).hp;
+      expect(newMax, into).toBe(oldMax);
+      expect(evolved.fighter.hp, into).toBe(newMax - 5);
+    }
+  });
+
+  it('keeps Levitate without a seed and re-rolls it deterministically with one', () => {
+    expect(Object.values(getSpecies('rotom')!.abilities)).toContain('Levitate');
+    expect(Object.values(getSpecies('rotomheat')!.abilities)).toContain('Levitate');
+    const base = rotom();
+    expect(evolvePokemon(base, 'rotomheat').fighter.ability).toBe('Levitate');
+    const rolled = evolvePokemon(base, 'rotomheat', 'run-1');
+    expect(rolled.fighter.ability).toBe(randomAbility('rotomheat', 'run-1')?.name);
+    expect(evolvePokemon(base, 'rotomheat', 'run-1')).toEqual(rolled);
+  });
+
+  it('ignores a click below the resolved level and one from an appliance back', () => {
+    const early = createRunPokemon({ id: 'r', speciesId: 'rotom', level: LEVEL - 1 });
+    expect(evolvePokemon(early, 'rotomheat')).toBe(early);
+    const appliance = createRunPokemon({ id: 'r', speciesId: 'rotomheat', level: LEVEL });
+    expect(evolvePokemon(appliance, 'rotom')).toBe(appliance);
+    expect(evolvePokemon(appliance, 'rotomwash')).toBe(appliance);
   });
 });
 
