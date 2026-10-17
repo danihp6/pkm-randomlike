@@ -38,3 +38,27 @@ export function visibleRange(
   const start = clampScrollTop(top, maxScrollTop(itemCount, cols, rows)) * cols;
   return { start, end: Math.min(itemCount, start + cols * rows) };
 }
+
+/**
+ * A grid cursor after `delta` cells (wrapping within `count`) plus the row window that
+ * keeps it visible: the cursor's row is scrolled into `[top, top + rows - 1]` and the
+ * result is clamped with the shipped `clampScrollTop`/`maxScrollTop`.
+ */
+export function stepGridCursor(
+  cursor: number,
+  delta: number,
+  count: number,
+  cols: number,
+  rows: number,
+  top: number,
+): Readonly<{ cursor: number; top: number }> {
+  const maxTop = maxScrollTop(count, cols, rows);
+  if (count <= 0 || cols < 1) return { cursor: 0, top: clampScrollTop(top, maxTop) };
+  const from = Number.isFinite(cursor) ? Math.trunc(cursor) : 0;
+  const next = (((Math.min(Math.max(0, from), count - 1) + delta) % count) + count) % count;
+  const row = Math.floor(next / cols);
+  let nextTop = clampScrollTop(top, maxTop);
+  if (row < nextTop) nextTop = row;
+  else if (row > nextTop + rows - 1) nextTop = row - rows + 1;
+  return { cursor: next, top: clampScrollTop(nextTop, maxTop) };
+}

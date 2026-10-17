@@ -5,6 +5,7 @@ import type { RunPokemon } from '../engine/run/progression';
 import {
   boxCellIndex,
   boxPageCount,
+  boxPageForIndex,
   BOX_PAGE_SIZE,
   boxRows,
   dragTo,
@@ -13,6 +14,7 @@ import {
   initialPartyUi,
   partyInput,
   partyRows,
+  stepCursorWithHeader,
   swapAcross,
   windowStart,
   type PartyInput,
@@ -230,5 +232,35 @@ describe('box grid', () => {
     expect(boxCellIndex(0, 3, 0)).toBe(3);
     expect(boxCellIndex(0, 0, 1)).toBe(4);
     expect(boxCellIndex(1, 0, 0)).toBe(BOX_PAGE_SIZE);
+  });
+
+  it('shows a flat index on the page the cursor sits on', () => {
+    expect(boxPageForIndex(0)).toBe(0);
+    expect(boxPageForIndex(15)).toBe(0);
+    expect(boxPageForIndex(16)).toBe(1);
+    expect(boxPageForIndex(31)).toBe(1);
+    expect(boxPageForIndex(32)).toBe(2);
+    expect(boxPageForIndex(-3)).toBe(0);
+  });
+});
+
+describe('cursor with a header stop', () => {
+  it('wraps through the header and every member row', () => {
+    expect(stepCursorWithHeader(-1, 1, 3)).toBe(0);
+    expect(stepCursorWithHeader(0, 1, 3)).toBe(1);
+    expect(stepCursorWithHeader(2, 1, 3)).toBe(-1);
+    expect(stepCursorWithHeader(0, -1, 3)).toBe(-1);
+    expect(stepCursorWithHeader(-1, -1, 3)).toBe(2);
+  });
+
+  it('reads the header for an empty pane', () => {
+    expect(stepCursorWithHeader(-1, 1, 0)).toBe(-1);
+    expect(stepCursorWithHeader(-1, -1, 0)).toBe(-1);
+    expect(stepCursorWithHeader(0, 0, 0)).toBe(-1);
+  });
+
+  it('is the identity for a zero step', () => {
+    expect(stepCursorWithHeader(1, 0, 3)).toBe(1);
+    expect(stepCursorWithHeader(-1, 0, 3)).toBe(-1);
   });
 });

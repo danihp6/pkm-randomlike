@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { hpColorInt, hpFraction, statusAbbreviation } from './metrics';
+import {
+  HP_CUE_BLOCKS,
+  HP_CUE_GAP,
+  LOW_HP_FRACTION,
+  hpColorInt,
+  hpCueNotches,
+  hpFraction,
+  isLowHp,
+  statusAbbreviation,
+} from './metrics';
 
 describe('hp gauges', () => {
   it('clamps the HP fraction to 0..1', () => {
@@ -16,6 +25,26 @@ describe('hp gauges', () => {
     expect(hpColorInt(0.21)).toBe(0xf5c242);
     expect(hpColorInt(0.2)).toBe(0xef4444);
     expect(hpColorInt(0)).toBe(0xef4444);
+  });
+
+  it('reads the danger band as the living fifth', () => {
+    expect(LOW_HP_FRACTION).toBe(0.2);
+    expect(isLowHp(1)).toBe(false);
+    expect(isLowHp(0.21)).toBe(false);
+    expect(isLowHp(0.2)).toBe(true);
+    expect(isLowHp(0.01)).toBe(true);
+    expect(isLowHp(0)).toBe(false);
+  });
+
+  it('cuts a fill into four blocks, and leaves a narrow one whole', () => {
+    expect(HP_CUE_BLOCKS).toBe(4);
+    expect(HP_CUE_GAP).toBe(2);
+    expect(hpCueNotches(192)).toEqual([48, 96, 144]);
+    expect(hpCueNotches(38)).toEqual([10, 19, 29]);
+    expect(hpCueNotches(16)).toEqual([4, 8, 12]);
+    expect(hpCueNotches(15)).toEqual([]);
+    expect(hpCueNotches(0)).toEqual([]);
+    expect(hpCueNotches(Number.NaN)).toEqual([]);
   });
 });
 

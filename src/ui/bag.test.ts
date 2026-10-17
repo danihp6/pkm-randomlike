@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BAG_CATEGORIES, bagCategoryFor, bagForCategory, cycleBagCategory } from './bag';
+import { BAG_CATEGORIES, bagCategoryFor, bagForCategory, cycleBagCategory, stepBagCursor } from './bag';
 
 describe('bagCategoryFor', () => {
   it('maps each item kind to its pocket', () => {
@@ -48,5 +48,19 @@ describe('cycleBagCategory', () => {
 
   it('lists every pocket in tab order', () => {
     expect(BAG_CATEGORIES).toEqual(['equipment', 'consumable', 'machine', 'ball', 'valuable']);
+  });
+});
+
+describe('stepBagCursor', () => {
+  it('wraps in both directions', () => {
+    expect(stepBagCursor(0, 1, 3)).toBe(1);
+    expect(stepBagCursor(2, 1, 3)).toBe(0);
+    expect(stepBagCursor(0, -1, 3)).toBe(2);
+    expect(stepBagCursor(1, 0, 3)).toBe(1);
+  });
+
+  it('reads the first row for an empty list', () => {
+    expect(stepBagCursor(0, 1, 0)).toBe(0);
+    expect(stepBagCursor(4, -1, 0)).toBe(0);
   });
 });
