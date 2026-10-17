@@ -91,9 +91,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
-          opencode run --agent orchestrator --auto --model '${{ inputs.model }}' \
-            "Eres el Orchestrator de POKERANDOMLIKE y esto corre DESATENDIDO en un runner de
-             GitHub Actions. Lee AGENTS.md entero y tu fichero de rol antes de nada.
+          PROMPT=$(cat <<'PROMPT_EOF'
+          Eres el Orchestrator de POKERANDOMLIKE y esto corre DESATENDIDO en un runner de
+          GitHub Actions. Lee AGENTS.md entero y tu fichero de rol antes de nada.
 
              HECHOS DEL ENTORNO (no los descubras a base de fallos):
              - No hay ningún humano. NUNCA uses la herramienta `question`: colgaría el job
@@ -109,7 +109,7 @@ jobs:
                hay que mirar, y sigue: eso es el estado de revisión del diseño y no impide
                el merge por sí solo, siempre que los criterios [unit] estén verdes.
              - El árbol de assets ya está materializado FUERA del checkout: su raíz es
-               \$ASSETS_ROOT, y POKEANIL_POKEMON / POKEANIL_ITEMS ya apuntan dentro de él.
+               $ASSETS_ROOT, y POKEANIL_POKEMON / POKEANIL_ITEMS ya apuntan dentro de él.
                Aplica la regla de AGENTS.md (Asset trees): pasa siempre la ruta absoluta a
                quien deba leerla; jamás un junction ni un symlink, ni dentro de un worktree.
              - `origin` es alcanzable y tienes permiso de escritura: los push funcionan.
@@ -160,8 +160,10 @@ jobs:
 
              Termina con el informe corto y en español del rol: qué tarea tomaste y por qué,
              qué se verificó y cómo, qué issues abriste, qué está bloqueado, y el commit
-             final de main si lo hubo." \
-            2>&1 | tee /tmp/cycle.txt
+             final de main si lo hubo.
+          PROMPT_EOF
+          )
+          opencode run --agent orchestrator --auto --model '${{ inputs.model }}' "$PROMPT" 2>&1 | tee /tmp/cycle.txt
 
       - name: What the cycle changed
         if: always()
