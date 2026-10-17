@@ -10,9 +10,14 @@ name: agent / autopilot
 # the loop (it ships as `off`). Setting it is a two-click change in the repo's
 # settings, and it takes effect at the next boundary, so no cycle is ever cut in
 # half. A blocked or red task does NOT stop the loop by itself: the cycle marks it
-# `[!]` in `TODO.md` and takes the next candidate. The loop stops when there is
-# nothing left to take, when it is switched off, or when it is hurting itself
-# (three red cycles in a day, or more cycles than the daily cap).
+# `[!]` in `TODO.md` and takes the next candidate.
+#
+# There is no daily cap by default (`AGENT_DAILY_CYCLES` unset or `0`), so the only
+# thing bounding the loop is the backlog's own finiteness: with no open `[ ]` left it
+# parks itself, and ~10 whole-batch cycles cover today's 30 tasks. The two stops that
+# remain are the day's three red cycles (something is broken; carrying on would only
+# bill minutes for garbage — re-run `agent / cycle` by hand to resume) and the
+# in-flight check.
 
 on:
   schedule:
@@ -43,13 +48,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AUTOPILOT: ${{ vars.AUTOPILOT }}
-          # Runner minutes are the loop's real budget: a cycle costs ~25 minutes, and a
-          # private repo on the Free plan gets 2,000 minutes a month. Tunable without a
-          # commit, which is why it is a variable and not a literal.
+          # `0` or unset means no cap: the backlog's own finiteness is then the only
+          # thing bounding the loop (30 tasks in whole batches is ~10 cycles, and the
+          # loop parks itself when no `[ ]` is left). Set it to a number to bound a day.
           AGENT_DAILY_CYCLES: ${{ vars.AGENT_DAILY_CYCLES }}
         run: |
           set -euo pipefail
-          cap="${AGENT_DAILY_CYCLES:-6}"
+          cap="${AGENT_DAILY_CYCLES:-0}"
           go() { echo "go=$1" >> "$GITHUB_OUTPUT"; echo "$2"; }
           red() { gh issue create --label agent-blocked --title "$1" --body "$2" || true; }
 
@@ -85,7 +90,7 @@ jobs:
             exit 0
           fi
 
-          if [ "$started" -ge "$cap" ]; then
+          if [ "$cap" -gt 0 ] && [ "$started" -ge "$cap" ]; then
             go false "Daily cap reached ($started cycles today, cap $cap)."
             exit 0
           fi
