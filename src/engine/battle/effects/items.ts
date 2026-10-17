@@ -1,3 +1,4 @@
+import { getDexItem } from '../../../data/dex';
 import { ITEMS, type ItemDef } from '../../../data/items';
 import { applyBoosts, applyDamage, applyHeal, type BattleFighter } from '../fighter';
 import { opponent, pushEvent, pushText } from '../state';
@@ -88,27 +89,6 @@ export const UNMODELLED_ITEMS: readonly string[] = [
   'utilityumbrella',
   'weaknesspolicy',
   'whiteherb',
-  'bugmemory',
-  'darkmemory',
-  'dragonmemory',
-  'electricmemory',
-  'fairymemory',
-  'fightingmemory',
-  'firememory',
-  'flyingmemory',
-  'ghostmemory',
-  'grassmemory',
-  'groundmemory',
-  'icememory',
-  'poisonmemory',
-  'psychicmemory',
-  'rockmemory',
-  'steelmemory',
-  'watermemory',
-  'burndrive',
-  'chilldrive',
-  'dousedrive',
-  'shockdrive',
 ];
 
 function healAmountOf(item: ItemDef, maxHp: number): number {
@@ -364,6 +344,49 @@ function plateHandler(item: ItemDef): NonNullable<EffectHandlers['onModifyMoveTy
   };
 }
 
+/** A Memory retypes the holder's Multi-Attack (D37). */
+function memoryHandler(type: string): NonNullable<EffectHandlers['onModifyMoveType']> {
+  return (ctx, move) => {
+    if (ctx.owner !== ctx.source) return;
+    if (move.id !== 'multiattack') return;
+    return type;
+  };
+}
+
+/** A Drive retypes the holder's Techno Blast (D37). */
+function driveHandler(type: string): NonNullable<EffectHandlers['onModifyMoveType']> {
+  return (ctx, move) => {
+    if (ctx.owner !== ctx.source) return;
+    if (move.id !== 'technoblast') return;
+    return type;
+  };
+}
+
+/**
+ * The berry a Natural Gift reads (D37): the move is used as the berry's type and
+ * base power, and the berry is spent once the move has resolved. `null` for an
+ * item the dex gives no `naturalGift` pair.
+ */
+function naturalGiftHandlers(item: ItemDef): EffectHandlers | null {
+  const gift = getDexItem(item.id)?.naturalGift;
+  if (!gift) return null;
+  return {
+    onModifyMove: (ctx, move) => {
+      if (ctx.owner !== ctx.source) return;
+      if (move.id !== 'naturalgift') return;
+      return { ...move, type: gift.type, basePower: gift.basePower };
+    },
+    // The spend lives here, not in the retype: `onModifyMove` runs in the FIGHT
+    // menu's preview too, and `onAfterMove` fires once per resolved move, after
+    // the move the berry powered has already produced the turn's damage.
+    onAfterMove: (ctx, payload) => {
+      if (ctx.owner !== ctx.source) return;
+      if (payload.move.id !== 'naturalgift') return;
+      spend(ctx, item);
+    },
+  };
+}
+
 function handlersFor(item: ItemDef): EffectHandlers {
   const hasResidual = Boolean(
     item.cures || item.healAmount || item.healFraction || (item.boosts && item.below),
@@ -376,6 +399,15 @@ function handlersFor(item: ItemDef): EffectHandlers {
   if (hasResidual) handlers = { ...handlers, onResidual: residualHandler(item) };
   if (item.selfStatus) handlers = { ...handlers, onResidual: selfStatusHandler(item) };
   if (item.plate) handlers = { ...handlers, onModifyMoveType: plateHandler(item) };
+  if (item.memory) handlers = { ...handlers, onModifyMoveType: memoryHandler(item.memory) };
+  if (item.drive) handlers = { ...handlers, onModifyMoveType: driveHandler(item.drive) };
+  // The berries whose own effect is still unported stay an honest `no-op` row
+  // (D16): they must register nothing at all, or `items.test.ts` would demand a
+  // `port` row for an item whose real effect does nothing.
+  if (!UNMODELLED_ITEMS.includes(item.id)) {
+    const gift = naturalGiftHandlers(item);
+    if (gift) handlers = { ...handlers, ...gift };
+  }
   if (item.speedBoost) handlers = { ...handlers, onModifySpe: speedBoostHandler(item) };
   if (item.accuracyBoost) handlers = { ...handlers, onModifyAccuracy: accuracyBoostHandler(item) };
   if (item.critStages) handlers = { ...handlers, onModifyCritRatio: critStagesHandler(item) };

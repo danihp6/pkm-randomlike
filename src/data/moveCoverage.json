@@ -2789,7 +2789,7 @@
       "id": "multiattack",
       "name": "Multi-Attack",
       "status": "port",
-      "note": "data: basePower"
+      "note": "registry: effects/items.ts"
     },
     {
       "id": "mysticalfire",
@@ -2813,7 +2813,7 @@
       "id": "naturalgift",
       "name": "Natural Gift",
       "status": "port",
-      "note": "data: flags.protect"
+      "note": "registry: effects/items.ts"
     },
     {
       "id": "naturepower",
@@ -4475,7 +4475,7 @@
       "id": "technoblast",
       "name": "Techno Blast",
       "status": "port",
-      "note": "data: basePower"
+      "note": "registry: effects/items.ts"
     },
     {
       "id": "teeterdance",

@@ -30,6 +30,7 @@ import {
   runTrySubstitute,
   runTryVolatile,
   runModifySecondaryChance,
+  runModifyMove,
   runModifyMoveType,
 } from './effects/registry';
 import { rollHitWith } from './modifiers';
@@ -851,13 +852,13 @@ function resolveMove(
     return;
   }
 
-  // Type-changing abilities (Galvanize, Pixilate, Liquid Voice) apply before
-  // any immunity check, so the move is treated as its new type throughout.
-  const moveType = runModifyMoveType(
-    makeContext(state, side, { source: attacker, target: defender, move }),
-    move,
-  );
-  const activeMove: Move = moveType === move.type ? move : { ...move, type: moveType };
+  // Type-changing abilities (Galvanize, Pixilate, Liquid Voice) and item-driven
+  // rewrites (a berry's Natural Gift) apply before any immunity check, so the
+  // move is treated as its new type throughout.
+  const moveContext = makeContext(state, side, { source: attacker, target: defender, move });
+  const modified = runModifyMove(moveContext, move);
+  const moveType = runModifyMoveType(moveContext, modified);
+  const activeMove: Move = moveType === modified.type ? modified : { ...modified, type: moveType };
 
   const hitContext = makeContext(state, side, { source: attacker, target: defender, move: activeMove });
   if (!runTryHit(hitContext, activeMove)) return;

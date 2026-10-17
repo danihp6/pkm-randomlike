@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { MEGA_FORMES, getDexItem } from './dex';
+import { MEGA_FORMES, TYPE_NAMES, getDexItem } from './dex';
 import {
   COMPETITIVE_HELD,
   COMPETITIVE_HELD_IDS,
   ITEMS,
+  MEMORY_DRIVE_IDS,
+  MEMORY_DRIVE_ITEMS,
   MEGA_STONE_IDS,
   buyPrice,
   getItem,
@@ -87,15 +89,13 @@ describe('getItem', () => {
 });
 
 describe('competitive held set', () => {
-  it('catalogues 143 unique held rows, priced by the berry rule', () => {
-    expect(COMPETITIVE_HELD.length).toBe(143);
-    expect(new Set(COMPETITIVE_HELD.map((row) => row.id)).size).toBe(143);
+  it('catalogues 122 unique held rows, priced by the berry rule', () => {
+    expect(COMPETITIVE_HELD.length).toBe(122);
+    expect(new Set(COMPETITIVE_HELD.map((row) => row.id)).size).toBe(122);
     expect(COMPETITIVE_HELD_IDS).toEqual(COMPETITIVE_HELD.map((row) => row.id));
     for (const row of COMPETITIVE_HELD) {
       expect(row.kind, row.id).toBe('held');
-      const authored = row.id.endsWith('memory') || row.id.endsWith('drive');
-      const expected = authored ? 3000 : getDexItem(row.id)?.isBerry ? 200 : 4000;
-      expect(row.price, row.id).toBe(expected);
+      expect(row.price, row.id).toBe(getDexItem(row.id)?.isBerry ? 200 : 4000);
       expect(row.shortDesc.length, row.id).toBeGreaterThan(0);
     }
   });
@@ -133,6 +133,41 @@ describe('competitive held set', () => {
       expect(plate.damageBoost, id).toBeUndefined();
       expect(plate.price, id).toBe(4000);
       expect(plate.shortDesc, id).toContain('Judgment');
+    }
+  });
+});
+
+describe('Memories and Drives', () => {
+  it('is 21 held, 3000-priced rows, each with exactly one Memory or Drive type', () => {
+    expect(MEMORY_DRIVE_ITEMS.length).toBe(21);
+    expect(MEMORY_DRIVE_IDS).toEqual(MEMORY_DRIVE_ITEMS.map((row) => row.id));
+    expect(new Set(MEMORY_DRIVE_IDS).size).toBe(21);
+    for (const row of MEMORY_DRIVE_ITEMS) {
+      expect(row.kind, row.id).toBe('held');
+      expect(row.price, row.id).toBe(3000);
+      const fields = [row.memory, row.drive].filter((value) => value !== undefined);
+      expect(fields.length, row.id).toBe(1);
+      expect(TYPE_NAMES, row.id).toContain(fields[0]);
+      expect(row.shortDesc.length, row.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('stays out of the competitive held set and still resolves through getItem', () => {
+    for (const row of COMPETITIVE_HELD) {
+      expect(row.memory, row.id).toBeUndefined();
+      expect(row.drive, row.id).toBeUndefined();
+    }
+    for (const id of [...MEMORY_DRIVE_IDS, ...COMPETITIVE_HELD_IDS]) {
+      expect(getItem(id), id).toBeDefined();
+      expect(ITEMS, id).toContain(getItem(id));
+    }
+  });
+
+  it('says Multi-Attack for a Memory and Techno Blast for a Drive', () => {
+    for (const row of MEMORY_DRIVE_ITEMS) {
+      const moveName = row.memory ? 'Multi-Attack' : 'Techno Blast';
+      expect(row.shortDesc, row.id).toContain(moveName);
+      expect(row.shortDesc, row.id).not.toContain("holder's type");
     }
   });
 });

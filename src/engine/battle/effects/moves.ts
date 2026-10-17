@@ -181,8 +181,9 @@ function transformEffect(): EffectHandlers {
  * Ball reads the weather, Terrain Pulse the terrain, Revelation Dance the user's
  * primary type and Aura Wheel the user's Morpeko form. Registered as move effects
  * so their `onModifyMoveType` reaches both the damage calc and the FIGHT menu's
- * preview; items that retype a move (Plates, Drives, Memories) are not in this
- * build's catalogue, so Judgment and friends keep their dexed type.
+ * preview; a held item's own retype (a Plate's Judgment, a Memory's Multi-Attack,
+ * a Drive's Techno Blast, a berry's Natural Gift) is registered in
+ * `effects/items.ts` instead.
  */
 const VARIABLE_TYPE_MOVES: Readonly<Record<string, (ctx: EffectContext) => string>> = {
   weatherball: (ctx) => {

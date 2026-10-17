@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { UNMODELLED_ITEMS } from '../engine/battle/effects/items';
-import { COMPETITIVE_HELD_IDS, buyPrice, getItem, sellPrice } from './items';
+import { COMPETITIVE_HELD_IDS, MEMORY_DRIVE_IDS, buyPrice, getItem, sellPrice } from './items';
 import type { BandId } from './run';
 import { LEVEL_BANDS } from './run';
 import { SHOP_BALL_PACK, SHOP_HELD_ROWS, SHOP_POTION, SHOP_ROTATION, SHOP_TM } from './shop';
@@ -85,6 +85,17 @@ describe('shop tables', () => {
       for (const entry of SHOP_ROTATION[band.id]) stocked.add(entry.itemId);
     }
     for (const id of PORT_IDS) expect(stocked.has(id), id).toBe(true);
+  });
+
+  it('never stocks a Memory or a Drive in any band (D37)', () => {
+    for (const band of LEVEL_BANDS) {
+      for (const entry of SHOP_ROTATION[band.id]) {
+        const item = getItem(entry.itemId)!;
+        expect(MEMORY_DRIVE_IDS, `${band.id} ${entry.itemId}`).not.toContain(item.id);
+        expect(item.memory, `${band.id} ${entry.itemId}`).toBeUndefined();
+        expect(item.drive, `${band.id} ${entry.itemId}`).toBeUndefined();
+      }
+    }
   });
 
   it('never rotates a valuable, a Mega Stone or the Master Ball', () => {
