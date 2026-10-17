@@ -24,7 +24,8 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `bosses.ts` — the fixed party sizes a floor's boss and mini-boss field: six and
   three, or three and two on map 1, the run's on-ramp (`docs/maps-spec.md`
   §6/§7).
-- `trainers.ts` — trainer archetypes: identity, sprites and reward only; their
+- `trainers.ts` — trainer archetypes: identity, sprites, reward and the AI script
+  flags their trainers think with (`aiFlags`, `docs/battle-spec.md` §11); their
   roster is the floor's BST pool (`src/engine/run/pool.ts`, `D39`).
 - `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
   each band's `hiddenChance` (`docs/routes-spec.md` §2 step 4).

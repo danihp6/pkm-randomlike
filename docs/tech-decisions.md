@@ -710,6 +710,57 @@ keyboard model adds no keybind action either — the shipped `up` / `down` / `le
 `right` / `confirm` / `cancel` / `run` and the four panel keys carry the whole
 route HUD, and `src/data/keybinds.ts` is byte-identical.
 
+## D46 — Enemy AI: the cartridge's script flags, and one difficulty knob *(decided)*
+
+The enemy used to think with one hard-coded scorer. It now thinks with the
+cartridge's **own AI script flags**, read as **data** off the trainer archetype
+(`TrainerArchetype.aiFlags`, `src/data/trainers.ts`), scored as expected value in
+`src/engine/battle/ai.ts`. The six flags are `checkBadMove`, `tryToFaint`,
+`checkViability`, `setupFirstTurn`, `risky` and `preferBatonPass`; the archetype
+ladder is early classes → `checkBadMove` only, the middle classes →
+`+checkViability`, `psychic` → `+tryToFaint`, `blackbelt` → `+risky`, and `ace` —
+therefore **every boss and mini-boss**, which are the `ace` archetype — all six. A
+flag's bonuses (the `+1000` faint, the 60/40/50/25 status rungs, the `+80` and
+`+60`) stay where they were, in `ai.ts`: the per-archetype *flags* are the knob a
+later balance sheet should move. `docs/battle-spec.md` §11 is the write-up.
+
+**A wild Pokémon stops out-thinking an Ace.** At the default difficulty it picks a
+**random move that still has PP**, exactly as the cartridge does, so `chooseAiCommand`
+takes the wild branch for `state.isWild` on the enemy side at `normal`. Trainers keep
+the scored policy. A trainer that is **trapped** never switches, whatever the score,
+and an active that cannot hurt the foe switches to a reserve that can; the Emerald
+bench-absorption rules are **not** implemented because no ability-versus-type table
+exists here. The enemy's **items** are equally out of scope: `validateBag` refuses
+every side but the player, so the cartridge's item AI (Full Restores, X items) is
+not built — the only item the AI spends is the Mega Stone (`D34`), through the
+shipped `canMegaEvolve` arming. The two difficulties differ in **flag set, wild
+policy and tie-break, and in nothing else**.
+
+**One discrete, visible knob: `settings.aiLevel`** (`DEFAULT_AI_LEVEL`, `normal`).
+`hard` is nothing but the cartridge's *Hard Mode*: it hands **every** trainer the
+trio `HARD_MODE_FLAGS` = `checkBadMove`, `tryToFaint`, `checkViability` on top of
+the archetype's own flags, so the ladder's bottom rows become `ace`-like and the top
+rows gain nothing new. It is strictly additive, and the only level that draws an
+exact tie from the battle's `Rng`; `normal` keeps the lowest index and spends no
+draw. The row is the Options screen's **Difficulty** step row (last of the step
+rows, so every shipped index keeps its order), reaching the battle as
+`BattleLaunch.aiLevel` — read from the settings at launch, so a battle's AI is
+reproducible from the battle's inputs alone. It is a `Settings` field read per field
+in `parseSettings` (`value.aiLevel === 'hard' ? 'hard' : base.aiLevel`), so a save
+with no such key reads the default: **no `SAVE_VERSION` bump and no migration step**
+(the `D22`/`D45` precedent), and `SAVE_VERSION` stays **16**.
+
+The AI draws from **`state.rng`** and from nowhere else, never `Math.random()` and
+never a stream of its own, so one seed and the same board replay the same command.
+Those draws — a wild's pick, an exact tie at `hard` — advance the battle's stream,
+which is why the fixed-seed battle logs (`golden.test.ts`) move with this rule and
+were re-pinned with it. The AI reads nothing but legal information: its own side's
+party, movesets and PP; the **active** fighters' public facts; the field;
+`state.turn`, `state.isWild`, `state.lastMove` and `state.rng`. It never reads the
+opposing **bench** and never the opposing side's unrevealed moves. A second knob —
+per-archetype difficulty, a per-beat row, adaptive or rubber-band difficulty,
+telegraphing the enemy's choice — is deliberately **not** built here.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

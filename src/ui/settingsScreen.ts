@@ -6,7 +6,7 @@ import {
   withBinding,
   type KeybindAction,
 } from '../data/keybinds';
-import type { Settings, TextSpeed } from '../engine/save';
+import type { AiLevel, Settings, TextSpeed } from '../engine/save';
 
 /**
  * The settings screen's model (Phase 7): the rows the player can change and the
@@ -23,6 +23,9 @@ import type { Settings, TextSpeed } from '../engine/save';
 
 export const TEXT_SPEED_ORDER: readonly TextSpeed[] = ['slow', 'normal', 'fast'];
 
+/** The difficulty a click or a left/right key steps through (`D46`). */
+export const AI_LEVELS: readonly AiLevel[] = ['normal', 'hard'];
+
 /** Volume moves in ten-point steps; the stored value is normalised to one. */
 export const VOLUME_STEPS = 10;
 
@@ -38,6 +41,7 @@ export type SettingsRowId =
   | 'alwaysRun'
   | 'hudTransparent'
   | 'reducedFlash'
+  | 'aiLevel'
   | KeybindAction;
 
 export type SettingsRowKind = 'step' | 'keybind';
@@ -78,6 +82,12 @@ const STEP_ROWS: readonly SettingsRow[] = [
     id: 'reducedFlash',
     label: 'Reduce flashing',
     hint: 'Use calmer transitions: no full-screen flashes.',
+    kind: 'step',
+  },
+  {
+    id: 'aiLevel',
+    label: 'Difficulty',
+    hint: 'Hard: trainers also check their moves, go for the faint and heal.',
     kind: 'step',
   },
 ];
@@ -129,6 +139,8 @@ export function settingValue(settings: Settings, row: SettingsRowId): string {
       return settings.hudTransparent ? 'On' : 'Off';
     case 'reducedFlash':
       return settings.reducedFlash ? 'On' : 'Off';
+    case 'aiLevel':
+      return settings.aiLevel === 'hard' ? 'Hard' : 'Normal';
     default:
       return isKeybindAction(row) ? keyLabel(settings.keybinds[row]) : '';
   }
@@ -152,6 +164,10 @@ export function changeSetting(settings: Settings, row: SettingsRowId, delta: num
       return { ...settings, hudTransparent: !settings.hudTransparent };
     case 'reducedFlash':
       return { ...settings, reducedFlash: !settings.reducedFlash };
+    case 'aiLevel': {
+      const index = clamp(AI_LEVELS.indexOf(settings.aiLevel) + delta, 0, AI_LEVELS.length - 1);
+      return { ...settings, aiLevel: AI_LEVELS[index] };
+    }
     default:
       return settings;
   }
@@ -167,6 +183,8 @@ export function cycleSetting(settings: Settings, row: SettingsRowId, delta: numb
   switch (row) {
     case 'textSpeed':
       return { ...settings, textSpeed: TEXT_SPEED_ORDER[wrap(TEXT_SPEED_ORDER.indexOf(settings.textSpeed), TEXT_SPEED_ORDER.length)] };
+    case 'aiLevel':
+      return { ...settings, aiLevel: AI_LEVELS[wrap(AI_LEVELS.indexOf(settings.aiLevel), AI_LEVELS.length)] };
     default:
       return changeSetting(settings, row, delta);
   }

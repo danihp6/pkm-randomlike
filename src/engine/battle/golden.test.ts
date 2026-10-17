@@ -6,6 +6,10 @@ import { formatBattleLog, scriptedBattle, type HarnessFighterSpec } from './harn
  * teams and the seed are frozen here and the log below must stay byte-identical.
  * The loop itself lives in `./harness` (`scriptedBattle`), so an AI regression
  * (`[Task-35]`) runs the very same script with its own policies.
+ *
+ * The battle is a wild one, so its enemy now picks a random legal move and spends
+ * one `Rng` draw before each turn (`D46`): the log below is the same battle after
+ * that rule, re-pinned with the draw included.
  */
 const PLAYER: readonly HarnessFighterSpec[] = [
   { id: 'player', speciesId: 'charmander', level: 20, nature: 'serious', moves: ['ember', 'growl'] },
@@ -23,16 +27,16 @@ describe('golden battle', () => {
       "# turn 1
         > player ember
       Charmander used Ember!
-        = enemy -24 (25/49 x2)
+        = enemy -26 (23/49 x2)
       Ember hit Bulbasaur! It's super effective!
-        > enemy tackle
-      Bulbasaur used Tackle!
-        = player -7 (44/51)
-      Tackle hit Charmander!
+        > enemy vinewhip
+      Bulbasaur used Vine Whip!
+        = player -6 (45/51 x0.5)
+      Vine Whip hit Charmander! It's not very effective...
       # turn 2
         > player ember
       Charmander used Ember!
-        = enemy -25 (0/49 x2)
+        = enemy -23 (0/49 x2)
       Ember hit Bulbasaur! It's super effective!
         = enemy fainted
       Bulbasaur fainted!

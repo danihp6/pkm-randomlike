@@ -4,6 +4,7 @@ import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybi
 import { levelCapForMap } from '../data/maps';
 import { MAP_EDGES, arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge, type MapPlan } from './maps/plan';
 import { floorForRoute } from './run/floors';
+import type { AiLevel } from './battle/ai';
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
@@ -13,6 +14,8 @@ import { dedupeMemberIds, emptyRunStats, type PcCatch, type RunState, type RunSt
 
 /** How fast the message box types text (consumed by the settings screen). */
 export type TextSpeed = 'slow' | 'normal' | 'fast';
+
+export type { AiLevel };
 
 /** Player preferences that outlive a run. */
 export type Settings = Readonly<{
@@ -29,6 +32,8 @@ export type Settings = Readonly<{
   keybinds: Keybinds;
   /** New: drop or shorten the full-screen flashes a beat would play. */
   reducedFlash: boolean;
+  /** How well the enemies fight (`D46`). */
+  aiLevel: AiLevel;
 }>;
 
 /**
@@ -64,6 +69,11 @@ export const DEFAULT_HUD_TRANSPARENT = false;
  * full-screen flash a beat would play (`docs/design-spec.md` §10).
  */
 export const DEFAULT_REDUCED_FLASH = false;
+/**
+ * The difficulty the enemies think at (`D46`). `normal` is the shipped game: a
+ * wild picks a random move and a trainer thinks with its archetype's own flags.
+ */
+export const DEFAULT_AI_LEVEL: AiLevel = 'normal';
 
 export function defaultSettings(): Settings {
   return {
@@ -74,6 +84,7 @@ export function defaultSettings(): Settings {
     hudLayout: defaultHudLayout(),
     keybinds: DEFAULT_KEYBINDS,
     reducedFlash: DEFAULT_REDUCED_FLASH,
+    aiLevel: DEFAULT_AI_LEVEL,
   };
 }
 
@@ -433,7 +444,8 @@ function parseSettings(value: unknown): Settings {
   const keybinds = sanitizeKeybinds(value.keybinds);
   const reducedFlash =
     typeof value.reducedFlash === 'boolean' ? value.reducedFlash : base.reducedFlash;
-  return { textSpeed, volume, alwaysRun, hudTransparent, hudLayout, keybinds, reducedFlash };
+  const aiLevel = value.aiLevel === 'hard' ? 'hard' : base.aiLevel;
+  return { textSpeed, volume, alwaysRun, hudTransparent, hudLayout, keybinds, reducedFlash, aiLevel };
 }
 
 function parseStats(value: unknown): Stats | null {

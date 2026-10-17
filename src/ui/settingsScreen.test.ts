@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_KEYBINDS } from '../data/keybinds';
 import { defaultSettings } from '../engine/save';
 import {
+  AI_LEVELS,
   changeSetting,
   cycleSetting,
   isStepRow,
@@ -24,6 +25,7 @@ describe('rows', () => {
       'alwaysRun',
       'hudTransparent',
       'reducedFlash',
+      'aiLevel',
       'confirm',
       'cancel',
       'up',
@@ -39,8 +41,8 @@ describe('rows', () => {
       'box',
       'settings',
     ]);
-    expect(SETTINGS_ROWS.slice(0, 5).every(isStepRow)).toBe(true);
-    expect(SETTINGS_ROWS.slice(5).every((row) => !isStepRow(row))).toBe(true);
+    expect(SETTINGS_ROWS.slice(0, 6).every(isStepRow)).toBe(true);
+    expect(SETTINGS_ROWS.slice(6).every((row) => !isStepRow(row))).toBe(true);
   });
 
   it('hides the keybind rows on a touch screen', () => {
@@ -54,8 +56,9 @@ describe('rows', () => {
       'alwaysRun',
       'hudTransparent',
       'reducedFlash',
+      'aiLevel',
     ]);
-    expect(touch[touch.length - 1].id).toBe('reducedFlash');
+    expect(touch[touch.length - 1].id).toBe('aiLevel');
   });
 
   it('clamps a selection to the list', () => {
@@ -78,6 +81,8 @@ describe('settingValue', () => {
     expect(settingValue({ ...defaultSettings(), hudTransparent: true }, 'hudTransparent')).toBe('On');
     expect(settingValue(defaultSettings(), 'reducedFlash')).toBe('Off');
     expect(settingValue({ ...defaultSettings(), reducedFlash: true }, 'reducedFlash')).toBe('On');
+    expect(settingValue(defaultSettings(), 'aiLevel')).toBe('Normal');
+    expect(settingValue({ ...defaultSettings(), aiLevel: 'hard' }, 'aiLevel')).toBe('Hard');
   });
 
   it('prints a keybind as its key, arrows and all', () => {
@@ -156,6 +161,18 @@ describe('changeSetting', () => {
     expect(settings.reducedFlash).toBe(false);
   });
 
+  it('steps the difficulty and stops at the ends', () => {
+    let settings = defaultSettings();
+    expect(settings.aiLevel).toBe('normal');
+    settings = changeSetting(settings, 'aiLevel', 1);
+    expect(settings.aiLevel).toBe('hard');
+    expect(changeSetting(settings, 'aiLevel', 1).aiLevel).toBe('hard');
+    settings = changeSetting(settings, 'aiLevel', -1);
+    settings = changeSetting(settings, 'aiLevel', -1);
+    expect(settings.aiLevel).toBe('normal');
+    expect(AI_LEVELS).toEqual(['normal', 'hard']);
+  });
+
   it('never mutates the settings it is given', () => {
     const settings = defaultSettings();
     changeSetting(settings, 'textSpeed', 1);
@@ -194,6 +211,14 @@ describe('cycleSetting', () => {
     expect(cycleSetting(defaultSettings(), 'alwaysRun', 1).alwaysRun).toBe(false);
     expect(cycleSetting(defaultSettings(), 'hudTransparent', 1).hudTransparent).toBe(true);
     expect(cycleSetting(defaultSettings(), 'reducedFlash', 1).reducedFlash).toBe(true);
+  });
+
+  it('wraps the difficulty so a click reaches both values from either one', () => {
+    const hard = cycleSetting(defaultSettings(), 'aiLevel', 1);
+    expect(hard.aiLevel).toBe('hard');
+    expect(cycleSetting(hard, 'aiLevel', 1).aiLevel).toBe('normal');
+    expect(cycleSetting(hard, 'aiLevel', -1).aiLevel).toBe('normal');
+    expect(cycleSetting(defaultSettings(), 'aiLevel', -1).aiLevel).toBe('hard');
   });
 });
 
