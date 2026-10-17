@@ -1,3 +1,4 @@
+import type { AiLevel } from '../battle/ai';
 import type { FighterSnapshot } from '../battle/fighter';
 import { hashSeed } from '../rng';
 
@@ -54,6 +55,8 @@ export type BattleLaunch = Readonly<{
   routeIndex: number;
   /** False once the route's single capture has been spent. */
   canCapture: boolean;
+  /** The difficulty the battle's AI thinks at, read from the settings at launch (D46). */
+  aiLevel: AiLevel;
 }>;
 
 export type BattleOutcome = 'win' | 'lose' | 'run' | 'capture';

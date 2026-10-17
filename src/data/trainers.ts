@@ -24,9 +24,17 @@ export const TRAINER_MONEY_BAND_SCALE: Readonly<Record<BandId, number>> = {
 };
 
 /**
- * A trainer archetype is presentation and reward only: identity, sprites and
- * money. Its roster comes from the floor's BST pool (`speciesPool`, `D39`), so
- * the archetype no longer carries a themed species list.
+ * The AI script flags an archetype's trainers think with (`D46`). `absent` means
+ * none, so every existing reader and every archetype literal keeps working.
+ */
+export type AiFlag =
+  'checkBadMove' | 'tryToFaint' | 'checkViability' | 'setupFirstTurn' | 'risky' | 'preferBatonPass';
+
+/**
+ * A trainer archetype is presentation, reward and AI policy: identity, sprites,
+ * money and the script flags its trainers think with. Its roster comes from the
+ * floor's BST pool (`speciesPool`, `D39`), so the archetype carries no themed
+ * species list.
  */
 export type TrainerArchetype = Readonly<{
   id: string;
@@ -53,6 +61,12 @@ export type TrainerArchetype = Readonly<{
    * roster may carry a Mega Stone, so its Pokémon can Mega Evolve (`D34`).
    */
   carriesMega?: boolean;
+  /**
+   * The cartridge AI flags this archetype's trainers think with (D46). Absent
+   * means none, so every existing reader and every test that builds an archetype
+   * literal keeps working.
+   */
+  aiFlags?: readonly AiFlag[];
 }>;
 
 export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
@@ -64,6 +78,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: 'youngster',
     colour: 0x60a5fa,
     battleSprite: 'youngster',
+    aiFlags: ['checkBadMove'],
   },
   {
     id: 'lass',
@@ -73,6 +88,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: 'lass',
     colour: 0xf472b6,
     battleSprite: 'lass',
+    aiFlags: ['checkBadMove'],
   },
   {
     id: 'bugcatcher',
@@ -82,6 +98,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: 'bugcatcher',
     colour: 0x84cc16,
     battleSprite: 'bugcatcher',
+    aiFlags: ['checkBadMove'],
   },
   {
     id: 'hiker',
@@ -91,6 +108,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: 'hiker',
     colour: 0xf59e0b,
     battleSprite: 'hiker',
+    aiFlags: ['checkBadMove', 'checkViability'],
   },
   {
     id: 'camper',
@@ -100,6 +118,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: 'camper',
     colour: 0x22c55e,
     battleSprite: 'camper',
+    aiFlags: ['checkBadMove', 'checkViability'],
   },
   {
     id: 'picnicker',
@@ -109,6 +128,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: 'picnicker',
     colour: 0xfacc15,
     battleSprite: 'picnicker',
+    aiFlags: ['checkBadMove', 'checkViability'],
   },
   {
     id: 'fisher',
@@ -118,6 +138,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: 'fisher',
     colour: 0x38bdf8,
     battleSprite: 'fisher',
+    aiFlags: ['checkBadMove', 'checkViability'],
   },
   {
     id: 'psychic',
@@ -127,6 +148,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: 'psychic',
     colour: 0xa78bfa,
     battleSprite: 'psychic',
+    aiFlags: ['checkBadMove', 'checkViability', 'tryToFaint'],
   },
   {
     id: 'blackbelt',
@@ -136,6 +158,7 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     spriteKey: 'blackbelt',
     colour: 0xef4444,
     battleSprite: 'blackbelt',
+    aiFlags: ['checkBadMove', 'checkViability', 'tryToFaint', 'risky'],
   },
   {
     id: 'ace',
@@ -146,6 +169,14 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
     colour: 0x94a3b8,
     battleSprite: 'ace',
     carriesMega: true,
+    aiFlags: [
+      'checkBadMove',
+      'tryToFaint',
+      'checkViability',
+      'setupFirstTurn',
+      'risky',
+      'preferBatonPass',
+    ],
   },
 ];
 

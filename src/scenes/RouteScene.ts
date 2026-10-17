@@ -5793,6 +5793,10 @@ export class RouteScene extends Phaser.Scene {
       runSeed: this.run.seed,
       routeIndex: this.run.routeIndex,
       canCapture: captureAllowed,
+      // The difficulty the battle's AI reads from the launch (D46): the settings
+      // are re-read whenever the options screen closes, so a change reaches the
+      // next battle.
+      aiLevel: this.settings.aiLevel,
     };
     this.pendingBattle = launch;
     this.scene.pause();

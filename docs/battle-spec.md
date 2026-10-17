@@ -268,3 +268,66 @@ battle** (`D44`); no item, no stone and no archetype flag is involved.
   (`D42`): a Gigantamaxed Pokémon uses its normal moves, with no damage bonus and no
   Dynamax timer. `Eternatus-Eternamax` is **not** a Gigantamax forme, so Eternatus
   cannot Gigantamax.
+
+## 11. The enemy AI
+
+The enemy thinks with the cartridge's own **AI script flags**, read as data off the
+trainer archetype (`TrainerArchetype.aiFlags`, `D46`), and scores each legal move by
+expected value. The engine half is `src/engine/battle/ai.ts`
+(`chooseAiCommand(state, side, options?)`).
+
+- **The flags** are six, and they are data: `checkBadMove`, `tryToFaint`,
+  `checkViability`, `setupFirstTurn`, `risky`, `preferBatonPass`. An archetype
+  carries the set its class thinks with, and the ladder runs from the early
+  `youngster` / `lass` / `bugcatcher` (a single `checkBadMove`) through the middle
+  classes (`checkViability`: heal and use the status moves) to `psychic`
+  (`tryToFaint`), `blackbelt` (`risky`) and `ace` (all six). A **wild Pokémon is not
+  a trainer**: at the default difficulty it picks a random move that still has PP,
+  the cartridge's own rule, so a wild never out-thinks an Ace.
+- **What each flag buys:** `checkBadMove` refuses a move that could do nothing
+  (a damage type the foe is immune to, a status it already has, a heal at full HP,
+  a boost already at its cap); `tryToFaint` adds **+1000** to a move that would
+  faint the foe; `checkViability` scores the status rows (60 for a status it can
+  inflict, 40 for a favourable boost, 50 for a heal below a quarter of the pool, 25
+  for a volatile), each times the move's accuracy; `setupFirstTurn` adds **+80** to
+  a self-boost on turn 0; `risky` adds **+60** to a self-destructing or recoiling
+  move; `preferBatonPass` makes a self-switch move worth **60** while the active
+  Pokémon holds a positive stat stage. A damage move is worth its best-case damage
+  times its accuracy; a move worth 0 stays a legal fallback, never a third rule.
+- **The difficulty** is one setting, `settings.aiLevel` — `normal` (default) or
+  `hard` — drawn as the Options screen's **Difficulty** row and carried into the
+  battle on `BattleLaunch.aiLevel`, so a battle's AI is reproducible from the
+  battle's inputs alone. `hard` is **strictly additive**: it hands every trainer the
+  cartridge's *Hard Mode* trio (`HARD_MODE_FLAGS` = `checkBadMove`, `tryToFaint`,
+  `checkViability`) on top of whatever the archetype carries, and it is the only
+  level that draws an exact tie from the battle's `Rng` — `normal` keeps the lowest
+  index and spends no draw. The two levels differ in **flag set, wild policy and
+  tie-break, and in nothing else**: the enemy's *items* are not part of it.
+- **The enemy has no Bag.** `validateBag` refuses every side but the player, so the
+  cartridge's item AI (Full Restores and Potions below a quarter HP, a cure on the
+  matching status, X items on turn one) is **not** built and never becomes a `bag`
+  command. The items the engine does model on an enemy are **held** items
+  (Leftovers, the berries, the resist berries), which the engine's own hooks apply
+  with no decision. The one item the AI spends is the **Mega Stone**, through the
+  shipped `canMegaEvolve` arming (§9): the first fight command the AI can send
+  carries the `mega` flag, else the `gmax` one (§10), else neither.
+- **Switching** is the cartridge's four rules and no more: a fainted active is
+  replaced by the best reserve (alive, non-active, highest `bestOffense + hp`); a
+  Perish Song about to claim the active leaves while it can; an active that cannot
+  hurt the foe at all (every legal move scores 0) switches to a reserve that can;
+  and a **trapped** Pokémon (`isTrapped`: the volatile, Ingrain, Fairy Lock or the
+  foe's own trapping ability) never switches, whatever the score. The Emerald rules
+  that need a primitive this engine does not carry — "the player's last move was
+  Electric / Water / Fire and a bench absorbs it" needs an ability-versus-type table
+  over `effects/abilities.ts` — are **not** implemented. Nor is a bounded search
+  (minimax / expectimax / MCTS), a learned agent, a predicted switch or a read of
+  the foe's unrevealed set.
+- **Honesty**: the AI reads only legal information — its own side's party, movesets
+  and PP; both **active** fighters' public facts (species, types, stats, HP, status,
+  boosts, volatiles); the field (weather, terrain, side and field conditions);
+  `state.turn`, `state.isWild`, `state.lastMove` and `state.rng`. It never reads the
+  opposing **bench** and never the opposing side's unrevealed moves.
+- **Determinism (`D11`)**: the AI draws from `state.rng` and from nowhere else — a
+  wild's pick, and an exact tie at `hard`. Those draws advance the battle's stream,
+  which is why the fixed-seed battle logs move with this rule. Nothing else in the
+  AI allocates per frame: it is one call per turn.

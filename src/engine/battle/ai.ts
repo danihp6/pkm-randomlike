@@ -1,11 +1,25 @@
-import { getMove } from '../../data/dex';
+import { getMove, type Move } from '../../data/dex';
+import type { AiFlag } from '../../data/trainers';
 import { estimateDamage } from './damage';
 import { legalMoveIndices, selectedMove, type Command } from './commands';
 import { canGigantamax } from './gmax';
 import { canMegaEvolve } from './mega';
-import { activeFighter, opponent, type BattleState, type SideId } from './state';
+import { activeFighter, isTrapped, opponent, type BattleState, type SideId } from './state';
 import { STATUS_IDS, canApplyStatus } from './status';
-import type { BattleFighter, StatusId } from './fighter';
+import { BOOST_IDS, type BattleFighter, type StatusId } from './fighter';
+
+/** The difficulty the run's settings select (D46). */
+export type AiLevel = 'normal' | 'hard';
+
+export interface AiOptions {
+  /** Default `'normal'`. */
+  readonly level?: AiLevel;
+  /** The archetype's own flags (`TrainerArchetype.aiFlags`). Default `[]`. */
+  readonly flags?: readonly AiFlag[];
+}
+
+/** What the cartridge's Hard Mode is, exactly: the trio added at `hard`. */
+export const HARD_MODE_FLAGS: readonly AiFlag[] = ['checkBadMove', 'tryToFaint', 'checkViability'];
 
 function isStatusId(value: string | undefined): value is StatusId {
   return value !== undefined && (STATUS_IDS as readonly string[]).includes(value);
@@ -24,30 +38,92 @@ function bestOffense(attacker: BattleFighter, defender: BattleFighter): number {
   return best;
 }
 
-function moveScore(attacker: BattleFighter, defender: BattleFighter, index: number): number {
+/** A move that raises the user's stats (self-target) or lowers the foe's. */
+function isFavourableBoost(move: Move): boolean {
+  if (!move.boosts) return false;
+  const boosts = Object.values(move.boosts);
+  return move.target === 'self' ? boosts.some((value) => value > 0) : boosts.some((value) => value < 0);
+}
+
+function hasPositiveStage(fighter: BattleFighter): boolean {
+  return BOOST_IDS.some((stat) => fighter.boosts[stat] > 0);
+}
+
+/**
+ * The cartridge's *check bad move*: whether the move could do anything at all
+ * right now. A damage move the foe is immune to, a status it already carries, a
+ * heal at full HP and a boost already at its cap are all refused.
+ */
+function canDoSomething(attacker: BattleFighter, defender: BattleFighter, move: Move): boolean {
+  if (move.category !== 'Status') return estimateDamage(attacker, defender, move).effectiveness > 0;
+  if (move.status !== undefined) return isStatusId(move.status) && canApplyStatus(defender, move.status);
+  if (move.heal !== undefined) return attacker.hp < attacker.maxHp;
+  if (move.boosts !== undefined) {
+    const selfTarget = move.target === 'self';
+    for (const stat of BOOST_IDS) {
+      const delta = move.boosts[stat];
+      if (delta === undefined) continue;
+      if (selfTarget) {
+        if (delta > 0 && attacker.boosts[stat] < 6) return true;
+      } else if (delta < 0 && defender.boosts[stat] > -6) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return true;
+}
+
+/** The expected value of one legal move under the given flag set. */
+function moveScore(
+  state: BattleState,
+  attacker: BattleFighter,
+  defender: BattleFighter,
+  index: number,
+  flags: ReadonlySet<AiFlag>,
+): number {
   const selected = selectedMove(attacker, { type: 'fight', moveIndex: index });
   if (!selected) return -1;
   const { move } = selected;
   const accuracy = move.accuracy === true ? 1 : move.accuracy / 100;
 
+  if (flags.has('checkBadMove') && !canDoSomething(attacker, defender, move)) return 0;
+
   if (move.category !== 'Status') {
     const estimate = estimateDamage(attacker, defender, move);
     if (estimate.effectiveness === 0) return 0;
     let score = estimate.damage * accuracy;
-    if (estimate.damage >= defender.hp) score += 1000;
+    if (flags.has('tryToFaint') && estimate.damage >= defender.hp) score += 1000;
+    if (flags.has('risky') && (move.selfdestruct !== undefined || move.recoil !== undefined)) score += 60;
+    if (flags.has('preferBatonPass') && move.selfSwitch !== undefined && hasPositiveStage(attacker)) {
+      score += 60;
+    }
     return score;
   }
 
-  if (isStatusId(move.status) && canApplyStatus(defender, move.status)) return 60 * accuracy;
-  if (move.boosts) {
-    const selfTarget = move.target === 'self';
-    const boosts = Object.values(move.boosts);
-    const favourable = selfTarget ? boosts.some((v) => v > 0) : boosts.some((v) => v < 0);
-    if (favourable) return 40 * accuracy;
+  let score = 0;
+  if (flags.has('checkViability')) {
+    if (move.status !== undefined && isStatusId(move.status) && canApplyStatus(defender, move.status)) {
+      score = Math.max(score, 60 * accuracy);
+    }
+    if (move.boosts !== undefined && isFavourableBoost(move)) score = Math.max(score, 40 * accuracy);
+    if (move.heal !== undefined && attacker.hp * 4 <= attacker.maxHp) {
+      score = Math.max(score, 50 * accuracy);
+    }
+    if (move.volatileStatus !== undefined) score = Math.max(score, 25 * accuracy);
   }
-  if (move.heal && attacker.hp < attacker.maxHp) return 50 * accuracy;
-  if (move.volatileStatus) return 25 * accuracy;
-  return 0;
+  if (
+    flags.has('setupFirstTurn') &&
+    state.turn === 0 &&
+    move.target === 'self' &&
+    isFavourableBoost(move)
+  ) {
+    score += 80;
+  }
+  if (flags.has('preferBatonPass') && move.selfSwitch !== undefined && hasPositiveStage(attacker)) {
+    score = Math.max(score, 60);
+  }
+  return score;
 }
 
 function bestReserve(state: BattleState, side: SideId): number {
@@ -67,11 +143,19 @@ function bestReserve(state: BattleState, side: SideId): number {
 }
 
 /**
- * Trainer AI: expected value over legal moves, switching only when the active
- * Pokémon cannot hurt the foe and a reserve can. It reads nothing but legal
- * state, so it never sees hidden information.
+ * Enemy AI: the cartridge's script flags, read as data off the archetype, scored
+ * as expected value over the legal moves. A wild Pokémon at the default level
+ * picks a random move that has PP left instead, exactly as the games do, so a
+ * wild never out-thinks an Ace. The highest score wins; at `hard` an exact tie is
+ * drawn from the battle's own `Rng`, at `normal` the lowest index wins it. It
+ * reads nothing but legal state, so it never sees hidden information.
  */
-export function chooseAiCommand(state: BattleState, side: SideId): Command {
+export function chooseAiCommand(state: BattleState, side: SideId, options: AiOptions = {}): Command {
+  const level = options.level ?? 'normal';
+  const flags = new Set<AiFlag>(options.flags ?? []);
+  if (level === 'hard') for (const flag of HARD_MODE_FLAGS) flags.add(flag);
+  const wildPolicy = level === 'normal' && state.isWild && side === 'enemy';
+
   if (state.sides[side].awaitingReplacement) {
     return { type: 'switch', partyIndex: Math.max(0, bestReserve(state, side)) };
   }
@@ -89,23 +173,42 @@ export function chooseAiCommand(state: BattleState, side: SideId): Command {
     if (gmax) return { type: 'fight', moveIndex, gmax: true };
     return { type: 'fight', moveIndex };
   };
+
+  if (wildPolicy) {
+    const legal = legalMoveIndices(attacker);
+    if (legal.length === 0) return fight(0);
+    return fight(legal[state.rng.int(0, legal.length - 1)]);
+  }
+
+  // Perish Song is about to kill the active Pokémon: leave while it still can.
+  if (attacker.volatiles.perish === 1) {
+    const reserve = bestReserve(state, side);
+    if (reserve >= 0 && !isTrapped(state, side)) return { type: 'switch', partyIndex: reserve };
+  }
+
   const legal = legalMoveIndices(attacker);
   if (legal.length === 0) return fight(0);
 
   const scores = new Map<number, number>();
-  for (const index of legal) scores.set(index, moveScore(attacker, defender, index));
-  const bestScore = Math.max(...scores.values());
+  let best = Number.NEGATIVE_INFINITY;
+  for (const index of legal) {
+    const score = moveScore(state, attacker, defender, index, flags);
+    scores.set(index, score);
+    if (score > best) best = score;
+  }
 
-  if (bestScore <= 0) {
+  if (best <= 0) {
     const reserve = bestReserve(state, side);
-    if (reserve >= 0 && bestOffense(state.sides[side].party[reserve], defender) > 0) {
+    if (
+      reserve >= 0 &&
+      !isTrapped(state, side) &&
+      bestOffense(state.sides[side].party[reserve], defender) > 0
+    ) {
       return { type: 'switch', partyIndex: reserve };
     }
   }
 
-  let bestIndex = legal[0];
-  for (const index of legal) {
-    if ((scores.get(index) ?? 0) > (scores.get(bestIndex) ?? 0)) bestIndex = index;
-  }
-  return fight(bestIndex);
+  const tied = legal.filter((index) => scores.get(index) === best);
+  const chosen = level === 'hard' ? tied[state.rng.int(0, tied.length - 1)] : tied[0];
+  return fight(chosen);
 }

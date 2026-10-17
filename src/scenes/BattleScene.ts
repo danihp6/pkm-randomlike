@@ -12,7 +12,7 @@ import { legalMoveIndices, type Command } from '../engine/battle/commands';
 import { createFighter, restoreFighter, snapshotFighter, type BattleFighter, type StatusId } from '../engine/battle/fighter';
 import { canGigantamax, revertGigantamax } from '../engine/battle/gmax';
 import { movePreview } from '../engine/battle/preview';
-import { chooseAiCommand } from '../engine/battle/ai';
+import { chooseAiCommand, type AiLevel } from '../engine/battle/ai';
 import { canRun } from '../engine/battle/runAway';
 import type { BattleEvent } from '../engine/battle/state';
 import {
@@ -255,6 +255,8 @@ export class BattleScene extends Phaser.Scene {
   private charMs = TEXT_SPEED_MS.normal;
   /** The saved reduce-flashing preference, read once in `create` (D45). */
   private reducedFlash = false;
+  /** The difficulty the enemy AI thinks at, read from the launch (D46). */
+  private aiLevel: AiLevel = 'normal';
   private logLength = 0;
   private afterFeed: (() => void) | null = null;
   private mode: Mode = 'feed';
@@ -407,6 +409,7 @@ export class BattleScene extends Phaser.Scene {
 
   init(data?: BattleLaunch): void {
     this.launch = data ?? null;
+    this.aiLevel = data?.aiLevel ?? 'normal';
     this.trainerFrame = null;
     this.lastBallId = null;
     this.captured = false;
@@ -1512,7 +1515,14 @@ export class BattleScene extends Phaser.Scene {
       player: activeFighter(this.state, 'player').hp,
       enemy: activeFighter(this.state, 'enemy').hp,
     };
-    takeTurn(this.state, command, chooseAiCommand(this.state, 'enemy'));
+    // The enemy thinks with its archetype's own script flags (D46): a boss and a
+    // mini-boss are the `ace` archetype, and a wild battle carries none.
+    const trigger = this.launch?.trigger;
+    const flags =
+      trigger?.kind === 'trainer' && trigger.archetypeId
+        ? (getTrainerArchetype(trigger.archetypeId)?.aiFlags ?? [])
+        : [];
+    takeTurn(this.state, command, chooseAiCommand(this.state, 'enemy', { level: this.aiLevel, flags }));
     this.megaIntent = false;
     this.gmaxIntent = false;
     this.startFeed();

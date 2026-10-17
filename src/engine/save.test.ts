@@ -17,6 +17,7 @@ import {
   type RunState,
 } from './run';
 import {
+  DEFAULT_AI_LEVEL,
   DEFAULT_ALWAYS_RUN,
   DEFAULT_HUD_TRANSPARENT,
   DEFAULT_REDUCED_FLASH,
@@ -90,6 +91,7 @@ describe('defaults', () => {
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
+      aiLevel: DEFAULT_AI_LEVEL,
     });
   });
 
@@ -111,6 +113,7 @@ describe('encodeSave', () => {
         hudLayout: defaultHudLayout(),
         keybinds: DEFAULT_KEYBINDS,
         reducedFlash: DEFAULT_REDUCED_FLASH,
+        aiLevel: DEFAULT_AI_LEVEL,
       },
       run,
     });
@@ -125,6 +128,7 @@ describe('encodeSave', () => {
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
+      aiLevel: DEFAULT_AI_LEVEL,
     });
     expect(decoded.run).toEqual(run);
   });
@@ -156,6 +160,7 @@ describe('decodeSave', () => {
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
+      aiLevel: DEFAULT_AI_LEVEL,
     });
   });
 
@@ -178,6 +183,7 @@ describe('decodeSave', () => {
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
+      aiLevel: DEFAULT_AI_LEVEL,
     });
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0 });
@@ -195,6 +201,7 @@ describe('decodeSave', () => {
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
+      aiLevel: DEFAULT_AI_LEVEL,
     });
     expect(decoded.run?.party).toHaveLength(6);
   });
@@ -215,6 +222,7 @@ describe('decodeSave', () => {
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
+      aiLevel: DEFAULT_AI_LEVEL,
     });
     expect(decoded.run?.party).toHaveLength(6);
   });
@@ -256,6 +264,7 @@ describe('settings validation', () => {
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
+      aiLevel: DEFAULT_AI_LEVEL,
     });
   });
 
@@ -268,6 +277,7 @@ describe('settings validation', () => {
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
+      aiLevel: DEFAULT_AI_LEVEL,
     });
     expect(document(JSON.stringify({ version: SAVE_VERSION, settings: {} })).settings).toEqual(defaultSettings());
   });
@@ -291,6 +301,27 @@ describe('settings validation', () => {
     const decoded = document(raw);
     expect(SAVE_VERSION).toBe(16);
     expect(decoded.settings.reducedFlash).toBe(false);
+  });
+
+  it('starts the enemies at the normal difficulty', () => {
+    expect(defaultSettings().aiLevel).toBe('normal');
+    expect(DEFAULT_AI_LEVEL).toBe('normal');
+  });
+
+  it('keeps the hard difficulty through a round trip', () => {
+    const settings: Settings = { ...defaultSettings(), aiLevel: 'hard' };
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings, run: null }));
+    expect(decoded.settings.aiLevel).toBe('hard');
+  });
+
+  it('reads an absent or unknown difficulty as normal, with no version step', () => {
+    expect(
+      document(JSON.stringify({ version: 16, settings: { textSpeed: 'fast' } })).settings.aiLevel,
+    ).toBe('normal');
+    expect(
+      document(JSON.stringify({ version: 16, settings: { aiLevel: 'nightmare' } })).settings.aiLevel,
+    ).toBe('normal');
+    expect(SAVE_VERSION).toBe(16);
   });
 
   it('keeps a saved HUD layout and repairs a junk offset', () => {
@@ -529,6 +560,7 @@ describe('migrateDocument', () => {
       hudLayout: defaultHudLayout(),
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
+      aiLevel: DEFAULT_AI_LEVEL,
     });
     expect(decoded.run).toEqual(run);
   });
