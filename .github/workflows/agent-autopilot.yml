@@ -43,8 +43,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AUTOPILOT: ${{ vars.AUTOPILOT }}
+          # Runner minutes are the loop's real budget: a cycle costs ~25 minutes, and a
+          # private repo on the Free plan gets 2,000 minutes a month. Tunable without a
+          # commit, which is why it is a variable and not a literal.
+          AGENT_DAILY_CYCLES: ${{ vars.AGENT_DAILY_CYCLES }}
         run: |
           set -euo pipefail
+          cap="${AGENT_DAILY_CYCLES:-6}"
           go() { echo "go=$1" >> "$GITHUB_OUTPUT"; echo "$2"; }
           red() { gh issue create --label agent-blocked --title "$1" --body "$2" || true; }
 
@@ -71,7 +76,7 @@ jobs:
           today=$(date -u +%Y-%m-%d)
           started=$(gh run list --workflow=agent-cycle.yml --created "$today" --json databaseId --jq 'length')
           failed=$(gh run list --workflow=agent-cycle.yml --created "$today" --status failure --json databaseId --jq 'length')
-          echo "cycles today=$started failed=$failed"
+          echo "cycles today=$started failed=$failed cap=$cap"
 
           if [ "$failed" -ge 3 ]; then
             red "Autopilot parked: $failed red cycles today" \
@@ -80,8 +85,8 @@ jobs:
             exit 0
           fi
 
-          if [ "$started" -ge 12 ]; then
-            go false "Daily cap reached ($started cycles today)."
+          if [ "$started" -ge "$cap" ]; then
+            go false "Daily cap reached ($started cycles today, cap $cap)."
             exit 0
           fi
 
