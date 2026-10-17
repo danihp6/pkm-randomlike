@@ -8,6 +8,62 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The accessibility pass: one reduced-flash knob, HP that reads without hue, the
+      colour-only cues fixed, and the whole game playable from the keyboard (`D45`).**
+      `Settings` gains `reducedFlash` (default off, `DEFAULT_REDUCED_FLASH`, read per field in
+      `parseSettings`, so `SAVE_VERSION` stays **16** and `SAVE_MIGRATIONS` gains no step) with
+      its `Reduce flashing` row in `src/ui/settingsScreen.ts`, and every full-frame effect in
+      the tree obeys it: the two `cameras.main.flash` calls (`playMega`, `playGmax`), the route's
+      hidden-item glint and the hold-to-reset scrim's release. HP survives the loss of hue: the
+      new pure `src/ui/metrics.ts` exports (`LOW_HP_FRACTION`, `isLowHp`, `hpCueNotches`) cut the
+      low-HP fill into ink notches in **both** battle panels while the player's panel keeps the
+      `hp/maxHp` numbers it already printed. The hue-only readings are gone — a slash on a spent
+      Poké Ball, `TOX` through the shipped abbreviation chip, the FRLG ▶ on the selected move
+      cell, an underline on the active bag pocket, a 3-px stroke on a disabled cell — and the
+      route HUD and every battle menu are operable from the keyboard alone (new pure
+      `stepCursorWithHeader` / `boxPageForIndex` / `stepBagCursor` / `stepGridCursor` /
+      `detailStops` / `stepStop` / `nextDetailTab`, plus a `hudKeyboardPane` focus that stops the
+      walk and clears on pause; no keybind action, default or alias was added). `StarterScene`'s
+      `typeBadges` loses the stale "no Fairy badge" claim and its provably dead text fallback.
+      No panel geometry moved (the compact 0-px clearances and `FOE_PLATFORM_CLEAR` are
+      untouched) and the contract is written down: `docs/design-spec.md` §10 with the audit
+      table, `docs/tech-decisions.md` `D45`.
+- [x] **Rotom's five appliances are a one-way, click-driven evolution (`D38`).**
+      `src/data/dex/evolutions.ts` gains one module-private `FORM_EVOLUTIONS` override table —
+      canon Rotom has no evolution at all, its appliances are a forme change from a key item, so
+      the generated `evos` is honestly empty and the five branches are a **game rule** layered
+      over the dex — read by `speciesEvolutionLevel`/`evolutionBranches` and walked **additively**
+      by `evolutionFamily`/`evolutionDepth` (the only species whose answer moves is Rotom:
+      family 1 → 6, depth 0 → 1, measured across all 1282 playable species). All five branches
+      share the level the shipped BST-band rule resolves (**30** for Rotom's 440, asserted by
+      identity rather than by a literal), the STATS tab's family graph draws the six rows and a
+      click carries the member into the appliance keeping level, nickname, nature, gender, shiny,
+      IVs/EVs, moves and PP, status and held item — only `speciesId` and the stats/ability derived
+      from it move, with the missing HP carried onto the same maximum — and the change is
+      **one-way, Eevee-style**: an appliance offers no branch and never leads back to Rotom or a
+      sibling. No scene change was needed (the shipped click path carries it), the generated
+      `species.json`/`meta.json` and `scripts/build-dex.mjs` are byte-identical (`npm run data:dex`
+      was not run) and no fixed seed moved.
+- [x] **The last three item-driven move retypes ship on the Plates' seam (`D37`).**
+      Multi-Attack reads a **Memory**, Techno Blast a **Drive** — the 21 hand-authored rows gain
+      `ItemDef.memory`/`ItemDef.drive`, the shape the `plate` field already froze, with their
+      `shortDesc` finally true — and Natural Gift reads the berry's own dex pair
+      (`getDexItem(id)?.naturalGift`, `{ type, basePower }`) through a new `onModifyMove` hook in
+      the effect registry, spending the berry on `onAfterMove` so a missed or Protect-blocked
+      move keeps it while the turn that used it still resolves with the berry's type and power.
+      The panel rule moved to `itemMoveType` in `src/engine/battle/moveType.ts` (and
+      `movePreview` now folds `runModifyMove`), so the FIGHT menu, the party panel and the battle
+      can no longer disagree; the eleven unmodelled berries stay honest `no-op` rows. The 21 rows
+      leave `COMPETITIVE_HELD` (**143 → 122**) and become `MEMORY_DRIVE_ITEMS`/`MEMORY_DRIVE_IDS`
+      — ground-only `end`-band treasure exactly as the Plates are, with the Mart stocking none of
+      them and no shelf moving — and the `D16` coverage table is regenerated
+      (`npm run docs:coverage`: Items `290 total (138 port, 71 no-op, 81 excluded)`, the three
+      move rows now reading `registry: effects/items.ts`), with `docs/balance/economy.md` following
+      the split. No packer ran, no dex file changed and no fixed seed moved. One consequence is
+      recorded rather than hidden: the route HUD's learnset-**pool** cells still classify with the
+      ability-only `abilityMoveType`, so a pooled Multi-Attack, Techno Blast or Natural Gift row
+      does not yet show the held item's type while the party panel and the FIGHT menu do — the way
+      the pool has always read, and a follow-up rather than a regression.
 - [x] **One biome ships: the never-wired entries are pruned (`D10`).** The backlog asked which
       biomes join the cycle; the human's answer was the inverse — *solo existe el bosque* — so
       nothing was added and everything unreachable was deleted. `src/data/biomes.ts` loses `wood`,

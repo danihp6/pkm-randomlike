@@ -989,6 +989,15 @@ in `CHANGELOG.md`'s `## Unreleased`. What follows is the cut's own record.
   never share a path inside a batch and no second transient window is ever invented.
 
 ### Batch 8 — accessibility, new biomes, Rotom appliances, item retypes
+**(shipped and archived)**: its four tasks are closed — Task-14 alone in the first
+end-to-end cycle (*solo existe el bosque*), then Task-08, Task-20 and Task-23 merged
+in ID order behind the green gate (`task-08`, `task-20`, `task-23`; **1535** tests,
+`npm test` + `npm run build` green after each merge), and the detail is in
+`CHANGELOG.md`'s `## Unreleased`. Task-08 took `D45`; Task-20 needed **no** scene
+change (the shipped click path carries the new branches) and left the generated dex
+untouched; Task-23 regenerated the `D16` coverage table and moved no fixed seed.
+Three `agent-review` issues carry the six `[live]` criteria this environment cannot
+measure. What follows is the cut's own record.
 - **Task-08** Accessibility pass.
 - **Task-14** New biomes.
 - **Task-20** The Rotom appliances as evolutions.
@@ -2924,7 +2933,7 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] **[Task-08]** Accessibility pass: colour-only information audited, HP bars
+- [x] **[Task-08]** Accessibility pass: colour-only information audited, HP bars
       readable without colour, full keyboard play, reduced-flash option. It absorbs the
       stale comment Task-15 parked: `src/scenes/StarterScene.ts` (~line 287) still
       claims the sheet has no Fairy badge, and the dead Fairy-fallback path in that
@@ -3195,7 +3204,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       the Mega forme for the battle. All dex Megas (formes may be nonstandard);
       only bosses, mini-bosses and the `ace` archetype carry stones. Engine +
       data + battle UI, fixed-seed tests.
-- [ ] **[Task-20] The Rotom appliances as evolutions.** Rotom's five appliance
+- [x] **[Task-20] The Rotom appliances as evolutions.** Rotom's five appliance
       formes are in the dex as species of their own — `rotomheat`, `rotomwash`,
       `rotomfrost`, `rotomfan`, `rotommow` in `src/data/dex/species.json`, each with
       its own stats,
@@ -3691,7 +3700,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
 > The learnset panel, the TM catalogue and the effective-type rules shipped;
 > these are the follow-ups (`D36`/`D37`).
 
-- [ ] **[Task-23] Item-driven move retypes: Multi-Attack, Techno Blast, Natural
+- [x] **[Task-23] Item-driven move retypes: Multi-Attack, Techno Blast, Natural
       Gift.** Judgment and the seventeen Plates already hook `onModifyMoveType`
       (`plateHandler`, `src/engine/battle/effects/items.ts`) and show the same type in
       the FIGHT menu and in the party panel (`effectiveMoveType` and its `judgeType`
