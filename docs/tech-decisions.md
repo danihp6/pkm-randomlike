@@ -670,6 +670,46 @@ no Dynamax timer. `Eternatus-Eternamax` is **not** a Gigantamax forme — its na
 in `-Eternamax`, not `Gmax` — so it is in neither generated file and Eternatus cannot
 Gigantamax in this game.
 
+## D45 — Accessibility: hue is never the only carrier, and one reduced-flash knob *(decided)*
+
+The game carries a written accessibility contract, in `docs/design-spec.md` §10.
+Two rules hold it up. **First: colour is never the only carrier.** Wherever a
+state is told apart by hue, a second, non-colour carrier tells it apart too — a
+shape, a stroke width, a mark or a printed value. The audit found five hue-only
+readings and fixed each at a named seam: a spent trainer ball now carries a 2-px
+dark slash as well as its dim tint (`BattleScene.drawFoeBallRow`); `tox` takes the
+abbreviation chip and prints `TOX`, because `src/data/statusIcons.ts` maps `psn`
+and `tox` onto the **same** art (`BattleScene.drawSidePanel`); the battle's FIGHT
+window draws the FRLG ▶ on the selected cell, as the command and switch grids
+already did (`BattleScene.renderMoveMenu`); the active bag pocket carries a 2-px
+dark underline beside its fill inversion (`BattleScene.renderBagMenu`); and a
+disabled move cell keeps its `0.4` alpha but gains a 3-px dark stroke
+(`src/ui/moveGrid.ts`). **Type badges are adequate as they stand**: every type that
+rides on a hue carries an Añil badge with it (both battle panels, both move
+windows, the move info popup) and the move cell's tinted background always has one
+of those badges inside it — no change. **Second: HP is readable without colour**
+(`docs/design-spec.md` §10.2): the player's panel keeps its `hp/maxHp` numbers and
+a living Pokémon at or below `LOW_HP_FRACTION` (`0.2`, `src/ui/metrics.ts`) has its
+bar's fill cut into `HP_CUE_BLOCKS` (`4`) blocks by 2-px `FRLG_INK` notches
+(`hpCueNotches`), with the two big battle panels as the only surface that gets it.
+The cue is a pure function of the fraction — it reads no RNG, no run and no battle
+state.
+
+**One knob, and only one: `settings.reducedFlash`** (`DEFAULT_REDUCED_FLASH`,
+off). It drops the full-screen camera flash a Mega Evolution / Gigantamax beat
+would play (`BattleScene.playMega` / `playGmax` keep their sprite fade-in), stops
+the route's hidden-item glint from pulsing (`RouteScene.drawItems` builds it at a
+fixed `0.55` alpha) and releases the hold-to-reset scrim at once instead of
+`RESET_FADE_IN_MS` (`RouteScene.fadeResetOverlayIn`). It is a `Settings` boolean
+read per field in `parseSettings`, so a save with no such key simply reads `false`:
+**no `SAVE_VERSION` bump and no migration step** (the `D22` precedent). It draws
+**no RNG** and touches no generator, so every fixed seed still reproduces. A second
+knob (per-beat speed, a full motion-reduction mode, colour-blind palettes,
+subtitles, i18n of the new strings) is deliberately **not** built here; the
+keyboard model adds no keybind action either — the shipped `up` / `down` / `left` /
+`right` / `confirm` / `cancel` / `run` and the four panel keys carry the whole
+route HUD, and `src/data/keybinds.ts` is byte-identical.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

@@ -285,11 +285,13 @@ run's money shows in the HUD's **bag panel**.
 
 The player's preferences outlive a run: text speed (how fast the battle message
 box types itself out), master volume, **always run** (walk at running speed
-without holding the run key; on by default), the **Transparent HUD** panels and
-the **HUD layout** (where each panel of the route HUD sits and whether it is
-collapsed). They live in the same save document as the run (D22), are stored the
-moment they change and are edited from one screen (`Tab`, from the main menu, the
-starter pick or the route HUD).
+without holding the run key; on by default), the **Transparent HUD** panels, the
+**Reduce flashing** option (drop the full-screen flashes a beat would play, stop
+the route's hidden-item glint from pulsing and release the hold-to-reset scrim at
+once; off by default, §10) and the **HUD layout** (where each panel of the route
+HUD sits and whether it is collapsed). They live in the same save document as the
+run (D22), are stored the moment they change and are edited from one screen
+(`Tab`, from the main menu, the starter pick or the route HUD).
 
 ## 9. Out of scope (for now)
 
@@ -297,3 +299,103 @@ starter pick or the route HUD).
 - Online play, trading, breeding, EVs/IV optimisation as a *goal* (stats and
   IVs exist because Showdown's data has them; the game never asks you to farm).
 - Contests, berries as a farming loop, day/night, cutscenes.
+
+## 10. Accessibility
+
+The game is playable on a keyboard alone, from the first menu to the run-over
+screen, and no rule it teaches ever rides on colour only. One preference guards
+the flashing: **Reduce flashing** (`settings.reducedFlash`, off by default, `D45`).
+
+### 10.1 Colour is never the only carrier
+
+**The rule:** wherever a state is told apart by hue, a second, non-colour carrier
+tells it apart too — a shape, a stroke width, a mark or a printed value. The audit
+below lists every surface where this task found a hue-only reading, and each was
+fixed at a named seam:
+
+1. **A spent trainer ball** (`BattleScene.drawFoeBallRow`) was dimmed and tinted
+   only; it now also carries a 2-px dark slash across the icon's box. The dim tint
+   stays as a secondary cue.
+2. **Badly poisoned and poisoned** shared one badge frame — `src/data/statusIcons.ts`
+   maps both `psn` and `tox` onto the same `psn` art — so `tox` now takes the
+   abbreviation chip and prints `TOX` instead. `brn` / `psn` / `par` / `slp` /
+   `frz` keep their badge art.
+3. **The battle's FIGHT window** (`BattleScene.renderMoveMenu`) marked its
+   selection with the cell's fill and stroke alone; the FRLG ▶ cursor now rides the
+   selected cell, exactly as the command grid and the switch grid already do.
+4. **The battle's bag pockets** (`BattleScene.renderBagMenu`) inverted the active
+   tab's fill only; it also carries a 2-px dark underline along its bottom edge.
+5. **A disabled move** (`src/ui/moveGrid.ts`) was a luminance-only state (alpha
+   `0.4`); it keeps the alpha and gains a 3-px dark stroke, and the cursor already
+   skips it, so two carriers say "cannot be picked".
+6. **Type badges.** Recorded as **adequate**, with reasons: wherever a type rides
+   on a hue, a badge rides with it. Both battle panels and both move windows draw
+   the Añil type badge (`src/data/typeIcons.test.ts` measures non-empty art for
+   every `TYPE_NAMES` entry, Fairy included), the move info popup draws the badge
+   or the type's upper-case name chip, and the route's detail window prints the
+   type names. The one hue-only reading left is a move cell's tinted background,
+   which always carries one of those badges inside it (see `D45`).
+
+### 10.2 HP is readable without colour
+
+The two big battle panels keep their green / yellow / red fill, and say the same
+thing three other ways:
+
+- the **player's** panel prints `hp/maxHp` as numbers, unchanged, in the same slot
+  at the same size;
+- a living Pokémon at or below **one fifth** (`LOW_HP_FRACTION`, `src/ui/metrics.ts`)
+  has its bar's fill **cut into four blocks** by three 2-px dark notches
+  (`hpCueNotches`), so the danger band reads at a glance with no hue at all;
+- a fill under 16 px is left whole rather than striped into nothing, and a fainted
+  Pokémon (fraction 0) gets no cue — it is not low, it is gone.
+
+The cue is a pure function of the fraction: it reads no RNG, no run and no battle
+state. It applies to the two big panels only; the battle's switch-window HP bars
+(`partyHpFills`) keep their plain fill.
+
+### 10.3 Keyboard play
+
+**The rule:** every panel, menu, prompt and modal is operable from the keyboard
+alone, through the shipped keybind vocabulary (`src/data/keybinds.ts`, unchanged).
+No new action was added; the four panel quick keys **enter** a pane (one press
+expands and focuses it, a second press on the focused pane hides it and gives the
+keyboard back), the arrows browse the focused pane instead of walking — the walk
+stays settled while a pane holds the keyboard — and `cancel` leaves, from the
+innermost thing outwards (a pool move, then the detail, then the pane, then the
+pause menu). Only two things stay pointer-first by design: moving a panel and the
+hold-to-reset ring's own gesture.
+
+| Surface | File | Keyboard path | Verdict |
+| --- | --- | --- | --- |
+| Route HUD panel enter / leave / hide | `RouteScene.toggleHudPanel` | `party`/`bag`/`box` quick keys: one press enters, a second press on the focused pane hides it, `cancel` leaves | keyboard (new) |
+| Party rows | `RouteScene.handleHudKeyboard` | `up`/`down` cursor, `confirm` opens the detail | keyboard (new) |
+| Party row reorder / deposit / withdraw | `RouteScene.handleHudKeyboard` | `run` grabs, `up`/`down` reorders, `left`/`right` crosses panes, `cancel` puts back | keyboard (new) |
+| Party header / Pokevial | `RouteScene.drinkPokevial` | `up` from row 0 is the header stop, `confirm` drinks | keyboard (new) |
+| PC box cells and pages | `RouteScene.handleHudKeyboard` | `up`/`down` cursor, page follows the cursor | keyboard (new) |
+| Bag stacks | `RouteScene.handleHudKeyboard` | `up`/`down` cursor, `confirm` picks up, `confirm` on a member equips | keyboard (new) |
+| Bag pockets | `RouteScene.stepBagCategory` | `left`/`right` (`[` / `]` alias) | keyboard |
+| Detail tabs STATS/MOVES | `RouteScene.handleHudKeyboard` | `left`/`right` | keyboard (new) |
+| Detail nickname field | `RouteScene.beginNicknameEdit` | `confirm` on the `name` stop, then typing | keyboard (new) |
+| Detail ability info | `RouteScene.toggleAbilityInfo` | `confirm`/`run` on the `ability` stop | keyboard (new) |
+| Detail evolution rows | `RouteScene.evolveOpenMember` | `confirm` on an `evolution` stop | keyboard (new) |
+| Detail search field | `RouteScene.hudSearchFocus` | `confirm` on the `search` stop, then typing | keyboard (new) |
+| Detail move slots / ⓘ | `RouteScene.handleHudKeyboard` | `confirm` grab/drop, `run` toggles the ⓘ | keyboard (new) |
+| Learnset pool + scroll | `RouteScene.stepGridCursor` | `up`/`down` cursor, window follows | keyboard (new) |
+| Panel drag | `RouteScene.startPanelDrag` | none: a layout affordance, persisted in `HudLayout` | pointer-only by intent |
+| Reset hold ring | `RouteScene.updateReset` | `reset` held | keyboard |
+| Mart panel | `RouteScene.handleShopAction` | arrows/confirm/cancel, `left`/`right` tabs | keyboard |
+| Mini-boss reward | `RouteScene.handleMiniBossRewardAction` | arrows/confirm | keyboard |
+| Pause menu | `RouteScene.handlePauseMenuAction` | `cancel`, arrows, `confirm` | keyboard |
+| Release overlay / level-up popup | `RouteScene.playReleaseBeats` | `confirm` advances, any input dismisses | keyboard |
+| Battle feed / result screen | `BattleScene.onConfirm` | `confirm` (click only advances) | keyboard |
+| Battle command grid | `BattleScene.moveMenuGrid` | arrows, `confirm`, `cancel` | keyboard |
+| Battle moves grid + ⓘ | `BattleScene.renderMoveMenu` | arrows, `confirm`, `run` toggles the ⓘ | keyboard (new) |
+| Battle MEGA / G-MAX cells | `BattleScene.moveMenuGrid` | `right` reaches them, `confirm` toggles | keyboard |
+| Battle bag list and pockets | `BattleScene.handleAction` | `up`/`down` list, `left`/`right` pockets | keyboard (new) |
+| Battle switch grid and its detail | `BattleScene.renderPartyGrid` | `up`/`down`, `confirm`, `cancel`, `run` toggles the ability ⓘ | keyboard (new) |
+| Battle back control | `BattleScene.onCancel` | `cancel` | keyboard |
+| Main menu rows | `MainMenuScene` | `up`/`down`/`confirm`/`settings` | keyboard |
+| Starter cards and seed prompt | `StarterScene` | `left`/`right`/`confirm`/`cancel`, `S` opens the prompt | keyboard |
+| Settings rows and volume | `SettingsScene` | arrows, `confirm`, `cancel`; volume steps with `left`/`right` | keyboard |
+| Run-over screen | `RunOverScene` | `confirm` | keyboard |
+| Boot | `BootScene` | no input | keyboard |
