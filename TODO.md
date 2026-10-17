@@ -2938,28 +2938,24 @@ Ports of Showdown handlers, in batches, on the hook names in
 > per-biome battle backgrounds) and the release chores are out of the backlog; what
 > shipped stays in `CHANGELOG.md`.
 
-Only `forest` is in `BIOME_ORDER` even though `BIOMES` defines five, so the run
-cycles one biome.
+**One biome exists: `forest`.** `BIOME_ORDER`, `BIOMES` and the tileset registry
+each hold exactly one entry, so the run cycles the forest and nothing else ships a
+field it cannot reach. The procedural sheet is not a biome: it survives as the
+tests' fixture.
 
-- [ ] **[Task-14] New biomes.** Decide which biomes join the cycle and add them: a
-      tileset config and palette in `src/data/tilesets/`, a `BIOMES` entry with its
-      `layout` and its `terrain` passes, and a slot in `BIOME_ORDER` (`D10`).
-      Candidate list to decide: desert, prairie/plains, beach, autumn woods,
-      marsh/rain, snow, volcano, ruins/power plant. Each new biome owes a fixed-seed
-      generator regression.
-      **Inherited condition from the rustle's own work (Batch 5b, shipped; Task-73 in 5c,
-      shipped) — closed, and what it means now.** The packer **no longer re-grounds** the
-      rustle's frames: cells 6 and 45-48 carry the decomp's `tall_grass.png` frames **with their
-      own alpha**, so the overlay is ground-neutral and no field's floor is ever composited into
-      them. The condition the earlier note carried — a field whose tuft sat on a ground other than
-      its floor needing its hit frames re-grounded onto the tuft — **no longer applies**: nothing
-      is composited for those cells. What a new field still owes is the rest: its own
-      **tall-grass ground tile** (cell 5, still stamped per field from that field's `tallGrass`
-      source, `[7,0]` light / `[2,33]` dark) and its own `terrain.grassPatches` — the cave field
-      is the one with `grassPatches: 0` today (`src/data/biomes.ts`, 48-54, and `BIOME_ORDER` is
-      `['forest']`, line 58, so no route reaches the cave or the outdoor field), and it joins the
-      cycle from this task alone. The overlay's five cells are shared by all fields and are
-      correct on any ground.
+- [x] **[Task-14] One biome ships: the never-wired entries are pruned.** The human's
+      decision was the inverse of the item's original text — **solo existe el bosque**,
+      no new biome joins the cycle. So the four entries nothing could reach are gone
+      (`D10`): `BIOMES` is `{ forest }`, `BiomeId` is the singleton `'forest'`,
+      `BIOME_ORDER` stays `['forest']`, `TILESET_IDS`/`TILESET_NAMES`/`TILESETS` hold
+      the forest field alone, and `wood`/`outdoor`/`cave` lost their registry rows,
+      palettes and `src/data/tilesets/wood.ts`. `PLACEHOLDER_TILESET` stays as a
+      **test-only fixture** (out of the registry, so `BootScene` no longer loads the
+      procedural sheet), `FRLG_TILESET` stays as the shared field layout
+      `FRLG_FOREST_TILESET` specialises, and `RouteScene`'s pre-route `tilesetId`
+      default became the forest it preloads. Adding a biome later still follows the
+      `D10` recipe against the now-single-entry registry, and owes the fixed-seed
+      regression the original text asked for.
       *Dependencies:* none. *(Batch 8)*
 - [ ] **[Task-30] A hit plays the move's sound, and an encounter the Pokémon's
       cry.** Both moments were dropped from the cue table rather than faked with one

@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **One biome ships: the never-wired entries are pruned (`D10`).** The backlog asked which
+      biomes join the cycle; the human's answer was the inverse — *solo existe el bosque* — so
+      nothing was added and everything unreachable was deleted. `src/data/biomes.ts` loses `wood`,
+      `outdoor`, `cave` and the non-biome `placeholder` row: `BiomeId` is the singleton `'forest'`,
+      `BIOMES` is `{ forest }` with its exact previous `name`/`tilesetId`/`layout`/`terrain`, and
+      `BIOME_ORDER` stays `['forest']`, so `biomeForMap`/`biomeForRoute` answer exactly what they
+      answered before for every seed — the frozen regression route in `sketch.test.ts` passes
+      untouched. The registry follows: `TILESET_IDS`/`TILESET_NAMES`/`TILESETS` hold the forest field
+      alone, `src/data/tilesets/palettes.ts` keeps only `FRLG_FOREST_PALETTE`, `wood.ts` is deleted
+      (with its `.prettierignore` line) and `FRLG_TILESET` stays as the shared FRLG field layout that
+      `FRLG_FOREST_TILESET` specialises. `PLACEHOLDER_TILESET` survives as a **test-only fixture** —
+      exported from `placeholder.ts`, out of the registry, so `BootScene` no longer preloads the
+      procedural sheet; the four parked atlas PNGs stay on disk, unreferenced, for a later art task.
+      `RouteScene`'s pre-route `tilesetId` initialiser moves `'wood'` → `'forest'`, the only id boot
+      preloads. Tests move with it (`exit.test.ts` and `tileFrames.test.ts` build against the fixture
+      instead of `WOOD_TILESET`, the FRLG atlas sweep measures the shipped forest atlas only, the
+      route fixtures stop labelling themselves `'wood'`), and `biomes.test.ts`/`ids.test.ts` now pin
+      the singleton registries: 1484 tests, green.
 - [x] **Gigantamax, in the Mega Evolution mould (`D44`).** A G-Max forme is a **battle state**: a holder
       whose own species has one may take it **before any move**, it **doubles HP** and leaves every
       other stat, its types and its ability alone (Añil's rule, not a G-Max stat table), and the battle
