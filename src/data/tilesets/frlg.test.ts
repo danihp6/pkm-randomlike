@@ -41,7 +41,7 @@ import {
  * every frame the autotiler can return are measured against the real PNGs here
  * instead of trusted.
  */
-const ATLASES = ['outdoor', 'forest', 'cave'] as const;
+const ATLASES = ['forest'] as const;
 
 const FLOOR_FRAMES = [
   FRAME_FLOOR,
@@ -219,32 +219,21 @@ describe('frlg tileset atlases', () => {
         expect(tileIsOpaque(png, frame), `${name} hit frame ${frame} opaque`).toBe(false);
       }
     }
-    // The three fields stamp the same five cells, byte for byte.
-    for (const frame of FRLG_GRASS_RUSTLE_FRAMES) {
-      const reference = tileBytes(atlas(ATLASES[0]), frame);
-      for (const name of ATLASES.slice(1)) {
-        expect(tileBytes(atlas(name), frame), `${name} rustle frame ${frame}`).toEqual(reference);
-      }
-    }
   });
 
   it("declares the forest's rustle tint and leaves the shared field untinted", () => {
-    // Outdoor and cave share one config, so one field on it covers both.
+    // The shared field layout carries no tint of its own; the forest declares one.
     expect(FRLG_TILESET.grassRustleTint).toBe(0xffffff);
     expect(FRLG_FOREST_TILESET.grassRustleTint).toBe(FRLG_GRASS_RUSTLE_TINT_FOREST);
     expect(FRLG_GRASS_RUSTLE_TINT_FOREST).toBe(0xc1d7ef);
   });
 
-  it("tints the rustle overlay into each field's own tall-grass palette", () => {
+  it("tints the rustle overlay into the forest's own tall-grass palette", () => {
     // The tinted parked cell may not read lighter than the tuft it parks on, and it
     // may not sink into a black blob; the hit's flashes stay within the same band.
     const LIGHTER = 6;
     const DARKER = 30;
-    const FIELDS = [
-      { name: 'outdoor', config: FRLG_TILESET },
-      { name: 'forest', config: FRLG_FOREST_TILESET },
-      { name: 'cave', config: FRLG_TILESET },
-    ] as const;
+    const FIELDS = [{ name: 'forest', config: FRLG_FOREST_TILESET }] as const;
 
     for (const { name, config } of FIELDS) {
       const png = atlas(name);
@@ -266,7 +255,6 @@ describe('frlg tileset atlases', () => {
           expect(Math.abs(hit[channel] - tuft[channel]), `${name} hit cell ${frame} channel ${channel}`).toBeLessThanOrEqual(DARKER);
         }
       }
-      if (name !== 'forest') continue;
       // The shipped numbers: the tint lands the parked cell on the dark tuft exactly.
       expect(parked).toEqual([59, 125, 76]);
       expect(FRLG_GRASS_RUSTLE_FRAMES.slice(1).map(tinted)).toEqual([

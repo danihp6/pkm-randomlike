@@ -1,7 +1,7 @@
 import type { LayoutStyle } from '../engine/routes/layout';
 import type { TilesetId } from './tilesets';
 
-export type BiomeId = 'wood' | 'outdoor' | 'forest' | 'cave' | 'placeholder';
+export type BiomeId = 'forest';
 
 export type Biome = Readonly<{
   id: BiomeId;
@@ -17,27 +17,6 @@ export type Biome = Readonly<{
 }>;
 
 export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
-  wood: {
-    id: 'wood',
-    name: 'Woods',
-    tilesetId: 'wood',
-    layout: 'forest',
-    terrain: { grassPatches: 3, ledges: 2 },
-  },
-  placeholder: {
-    id: 'placeholder',
-    name: 'Test Grounds',
-    tilesetId: 'placeholder',
-    layout: 'forest',
-    terrain: { grassPatches: 2, ledges: 1 },
-  },
-  outdoor: {
-    id: 'outdoor',
-    name: 'Sunlit Route',
-    tilesetId: 'outdoor',
-    layout: 'forest',
-    terrain: { grassPatches: 3, ledges: 2 },
-  },
   forest: {
     id: 'forest',
     name: 'Deep Forest',
@@ -45,16 +24,9 @@ export const BIOMES: Readonly<Record<BiomeId, Biome>> = {
     layout: 'forest',
     terrain: { grassPatches: 4, ledges: 1 },
   },
-  cave: {
-    id: 'cave',
-    name: 'Rocky Cave',
-    tilesetId: 'cave',
-    layout: 'forest',
-    terrain: { grassPatches: 0, ledges: 2 },
-  },
 };
 
-/** The biomes a route cycles through. Only the forest for now. */
+/** The biomes a route cycles through. The forest is the only one that ships. */
 export const BIOME_ORDER: readonly BiomeId[] = ['forest'];
 
 /** A biome by id, falling back to the first of the cycle for an unknown one. */

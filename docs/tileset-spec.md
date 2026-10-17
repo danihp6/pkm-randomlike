@@ -43,10 +43,11 @@ Every biome ships two images:
   one tuft per ground palette (the outdoor `7,0` on the light ground, the forest
   `2,33` on the dark one), so each field picks the tuft drawn on its own floor; the
   ledge lip has no dark-ground variant, so it is re-grounded onto the field's floor
-  (`overFill` keys its light sheet background and fills it with the floor). Each
-  FRLG field picks that floor: outdoor `6,1` (`rgb(112,200,160)`), forest the darker
-  `0,34` (`rgb(88,160,128)`, the tone the tree bank is drawn on) and cave the rock
-  `2,24`. The forest floor is a **weighted mix** of its dark-ground tiles (`0,34`
+  (`overFill` keys its light sheet background and fills it with the floor). The
+  **forest is the only field wired to a biome**: it picks the darker `0,34`
+  (`rgb(88,160,128)`, the tone the tree bank is drawn on), while the outdoor light
+  floor `6,1` (`rgb(112,200,160)`) and the cave rock `2,24` stay in their atlases,
+  unwired. The forest floor is a **weighted mix** of its dark-ground tiles (`0,34`
   base, `2,34`, `3,34`, `5,34` and the rare flowered `0,38`; §3,
   `FRLG_FOREST_TILESET`), so the ground reads varied instead of one repeated tile.
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
@@ -203,11 +204,11 @@ Swapping is `config = TILESETS[nextId].config` plus loading
   field, so a field whose own tuft is a different palette declares a `grassRustleTint`
   that the route applies to the overlay sprite: the forest is the only one today
   (`0xC1D7EF`, the per-channel ratio of its dark tuft's mean `59,125,76` to the art's
-  `78,148,81` — `59/78`, `125/148`, `76/81`), while outdoor and cave take `0xffffff` and
-  are left exactly as they were. The route also **clips the overlay to the cell's rows
-  6-15** (`setCrop(0, 6, 16, 10)`, atlas branch only): the art's own first blade row is
-  6 on the parked cell but 0, 2 and 5 on the first three hit frames, so an unclipped
-  closing frame would paint the whole cell — tinted, the ground itself over the player.
+  `78,148,81` — `59/78`, `125/148`, `76/81`). The route also **clips the overlay to
+  the cell's rows 6-15** (`setCrop(0, 6, 16, 10)`, atlas branch only): the art's own
+  first blade row is 6 on the parked cell but 0, 2 and 5 on the first three hit frames,
+  so an unclipped closing frame would paint the whole cell — tinted, the ground itself
+  over the player.
   Clipped, every frame of the beat draws the same 15 px band (world y 153 down, the
   player's lower half) and the cap, face, shoulders and upper torso stay clear. A tint
   multiplies colour and leaves alpha alone, so it reaches the blades only and the

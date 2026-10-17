@@ -15,7 +15,7 @@ function route(
   return {
     seed: 'test',
     routeIndex: 1,
-    biomeId: 'wood',
+    biomeId: 'forest',
     shape: 'straight',
     width: tiles[0].length,
     height: tiles.length,
@@ -461,7 +461,7 @@ describe('validateRoute', () => {
     const SWEEP_SEEDS = ['sweep-a', 'sweep-b', 'sweep-c', 'sweep-d'] as const;
 
     function request(seed: string, routeIndex: number, shape?: RouteShape): RouteRequest {
-      return { seed, routeIndex, biomeId: 'wood', ...(shape ? { shape } : {}) };
+      return { seed, routeIndex, biomeId: 'forest', ...(shape ? { shape } : {}) };
     }
 
     it('validates every shape at a fixed seed and size, attempt 0 included', () => {

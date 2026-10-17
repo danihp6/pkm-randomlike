@@ -101,11 +101,11 @@ const WALL_PATTERN: WallPattern = {
 };
 
 /**
- * The field's ground is uniform: the lighter floor frames (`FLOOR_ALT_*`) are a
+ * A field's ground is uniform: the lighter floor frames (`FLOOR_ALT_*`) are a
  * second, paler grass on the source sheet, and laid beside a wall they read as a
- * route path rather than a shadow. The outdoor and cave fields keep only the clean
- * frame and drop the PMD-style wall-edge decal (`wallAdjacentVariants`) until a
- * real path is drawn. The forest mixes its dark ground tiles instead (below).
+ * route path rather than a shadow, so a field keeps only the clean frame and drops
+ * the PMD-style wall-edge decal (`wallAdjacentVariants`) until a real path is
+ * drawn. The forest mixes its dark ground tiles instead (below).
  */
 const FLOOR_CLEAN = [FRAME_FLOOR];
 
@@ -125,10 +125,10 @@ const FOREST_FLOOR_VARIANTS: VariantFrames = [
 ];
 
 /**
- * The FRLG route fields (grass, forest, cave) share one atlas layout: floor
- * variants, the wall motif (a three-wide tree/rock run, `wallPattern`) and the
- * rocky-banked pond. Only the art per biome differs, so `FRLG_TILESET` serves the
- * outdoor and cave sheets; `FRLG_FOREST_TILESET` reuses it and only swaps the floor
+ * The shared FRLG field layout the forest field — and the tileset tests — build
+ * on: floor variants, the wall motif (a three-wide tree run, `wallPattern`) and
+ * the rocky-banked pond, at the atlas's own 16px cells. Only the forest's art
+ * ships, so `FRLG_FOREST_TILESET` reuses this layout and only swaps the floor
  * variant mix for the forest's weighted dark ground.
  */
 export const FRLG_TILESET: TilesetConfig = {
