@@ -97,9 +97,13 @@ jobs:
 
              HECHOS DEL ENTORNO (no los descubras a base de fallos):
              - No hay ningún humano. NUNCA uses la herramienta `question`: colgaría el job
-               hasta el timeout. Cualquier duda que te bloquee se convierte en un issue:
-               `gh issue create --label agent-blocked --title '...' --body '...'`
-               (tienes GH_TOKEN y permiso de escritura sobre issues).
+               hasta el timeout. Si de verdad te bloqueas, el issue es obligatorio y con
+               contenido REAL, nunca un comodín:
+                 gh issue create --label agent-blocked --title "Task-<ID>: <el bloqueo en una
+                 frase>" --body "<qué intentaste, el error o la contradicción literal que lo
+                 impide, y qué decisión humana hace falta>"
+               (tienes GH_TOKEN y permiso de escritura sobre issues). Un issue sin ese
+               contenido no sirve de nada y cuenta como fallo tuyo.
              - No hay navegador. Un criterio [live] NO se puede medir aquí: no lo reportes
                NUNCA como pass. Ábrele un issue con la etiqueta `agent-review` diciendo qué
                hay que mirar, y sigue: eso es el estado de revisión del diseño y no impide
@@ -111,33 +115,42 @@ jobs:
              - `origin` es alcanzable y tienes permiso de escritura: los push funcionan.
              - El runner es Linux y efímero. No hay nada más en la máquina.
 
-             ELIGE TÚ EL LOTE. La fase actual del plan son lotes de UNA sola tarea:
-             1. Mira el plan de TODO.md y los *Dependencies:* de cada item abierto, y toma
-                el lote pendiente más bajo (el de la tarea cuya dependencia esté cerrada).
-                Cada item lleva una línea *Decision:* con la decisión humana ya tomada.
-             2. ESA DECISIÓN ES LEY: aplícala tal cual. Si un item del lote no trae
-                *Decision:* y su spec no puede escribirse sin una, NO la inventes: abre un
-                issue `agent-blocked` y pasa a la siguiente tarea candidata.
-             3. **Cuando bloquees una tarea, márcala.** Cambia su casilla en TODO.md de
+             ELIGE TÚ EL LOTE:
+             1. Mira el plan de TODO.md y los *Dependencies:* de cada item abierto, y toma el
+                lote pendiente MÁS BAJO, COMPLETO tal y como está cortado en el plan (2-4
+                tareas: dentro de un lote nadie comparte paths, así que caben juntas).
+             2. Cada item que trae una línea *Decision:* lleva la decisión humana YA tomada,
+                y ESA DECISIÓN ES LEY: aplícala tal cual. **Que un item NO traiga
+                *Decision:* significa que no necesita ninguna** (la auditoría lo determinó):
+                procede sin más. Solo te bloqueas si al escribir la spec encuentras una
+                contradicción real, y entonces el issue lleva el motivo concreto.
+             3. Bloquear una tarea NO para el lote: márcala (punto siguiente) y sigue con las
+                demás.
+             4. **Bloquear una tarea significa marcarla.** Cambia su casilla en TODO.md de
                 `- [ ]` a `- [!]` y añade `BLOCKED: <motivo en una línea>` al final de su
                 línea *Decision:*, y empuja ese cambio a main. El conteo del driver es solo
                 `- [ ]`, así que una tarea marcada sale de la cola sola y el siguiente ciclo
                 no la vuelve a elegir hasta que un humano la suelte.
-             4. Si no queda ninguna tarea elegible, escribe el informe final diciéndolo y
+             5. Si no queda ninguna tarea elegible, escribe el informe final diciéndolo y
                 termina. No toques main.
 
-             CON LA TAREA ELEGIDA, haz el ritual y nada más:
-             1. Escribe su spec en .agent_specs/task-<ID>.md con docs/agent-spec-template.md,
-                con criterios [unit] y, solo si de verdad aplican aquí, [live] con su medida.
-             2. Crea su worktree, lanza UN subagente dev con SOLO la ruta de su spec, y
-                espera su informe.
-             3. Valida con UN subagente qa (un lote de una tarea colapsa a una sola pasada):
-                el plan de la spec verbatim, las dos gates (`npm test`, `npm run build`) y la
-                auditoría del diff contra sus exclusive paths.
-             4. Si QA aprueba: mergea la rama de la tarea en main con --no-ff, corre las dos
-                gates después del merge, tickea su casilla en TODO.md, archívalo en
-                CHANGELOG.md (una entrada, en inglés, al principio de ## Unreleased), commit
-                y push a origin main. Borra tu worktree y el de QA.
+             CON EL LOTE ELEGIDO, haz el ritual y nada más:
+             1. Una spec por tarea del lote en .agent_specs/task-<ID>.md siguiendo
+                docs/agent-spec-template.md, con criterios [unit] y, solo si de verdad
+                aplican aquí, [live] con su medida.
+             2. Un worktree por tarea y un subagente dev por tarea, cada uno con SOLO la ruta
+                de su spec. Espera todos sus informes.
+             3. Valida como manda tu rol: **una Task QA por tarea, en paralelo**, cada una
+                desde su propio árbol de integración (su rama sobre la base del lote),
+                corriendo el plan de su spec verbatim, las dos gates (`npm test`,
+                `npm run build`) y la auditoría de su diff contra sus exclusive paths. Un
+                lote de UNA sola tarea colapsa a una única pasada que cubre también la
+                integración; con dos o más, añade la ola de integración sobre el árbol
+                combinado (auditoría cruzada y ensayo del merge).
+             4. Si QA aprueba: mergea las ramas en main con --no-ff EN ORDEN DE ID, corre las
+                dos gates después de CADA merge, tickea cada casilla en TODO.md, archívalas en
+                CHANGELOG.md (una entrada por tarea, en inglés, al principio de
+                ## Unreleased), commit y push a origin main. Borra los worktrees.
              5. Si QA es roja: NO mergees. Marca la tarea `[!]` en TODO.md con
                 `BLOCKED: QA red, issue #<n>`, abre un issue `agent-blocked` con el
                 diagnóstico, empuja el cambio de TODO.md a main y termina el informe.
