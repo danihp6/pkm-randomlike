@@ -5080,12 +5080,14 @@ export class RouteScene extends Phaser.Scene {
   private buildNotice(): void {
     const width = Math.min(NOTICE_W, this.scale.width - 32);
     const x = (this.scale.width - width) / 2;
+    // The dark `textbox` slice carries white glyphs: `FRLG_INK` would be black on
+    // black here, so the strip keeps the font's default tint (as the release
+    // overlay does on the same slice).
     const strip = addFrlgWindow(this, x, NOTICE_TOP, width, NOTICE_H, 'textbox');
     this.noticeText = addFrlgText(this, this.scale.width / 2, NOTICE_TOP + NOTICE_H / 2, '', {
       align: 'center',
       origin: 0.5,
       size: 16,
-      tint: FRLG_INK,
     });
     this.noticeText.setMaxWidth(width - 32);
     this.noticeRoot = this.add.container(0, 0, [strip, this.noticeText]).setDepth(440).setVisible(false);
