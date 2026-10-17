@@ -2041,6 +2041,7 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
       rules off in `eslint.config.mjs`, never edit a file it reports. Linting
       `scripts/**` stays out of scope: the config ignores them on purpose.
       *Dependencies:* none inside this repo — it waits on the upstream release.
+      *Decision:* **Dormant and unscheduled.** The blocker is upstream: `typescript-eslint` peers `typescript <6.1` while the repo pins 7. Neither a second toolchain nor dropping the half.
       **Unscheduled** (no batch).
 - [ ] **[Task-29] The Prettier reformat pass.** Task-01 shipped the format gate over a
       **ledger** rather than rewrite a file a batch-mate owned: `.prettierignore` is a
@@ -2180,6 +2181,7 @@ floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
       bans, the starter pick's own offer, the dex's playable set, and `stats.catches` /
       `pcUnlocked` / `capturedRooms`, which this task reads and does not move.
       *Dependencies:* none — `evolutionFamily`, the `num`/`forme` fields and the run's save are
+      *Decision:* All three written defaults: the starter is **not** tracked, the rule binds the **wild table only**, and a table the exclusions would empty **falls back to the unfiltered band**.
       all shipped. Batch order covers it: it needs `src/scenes/RouteScene.ts` and
       `src/engine/save.ts` at once, and `RouteScene` is held by every batch from 5 to 16 (5
       Task-16, 5b Task-45, 6 Task-41, 6b Task-38, 7 Task-31, 8 Task-08's every-scene sweep, 8b
@@ -2355,6 +2357,7 @@ The whole menu battle minus per-effect behaviour. Contract in
       Gen 9 formula in `catchValue` itself, the capture's ball-shake presentation
       (`src/ui/capture.ts`), the ball row's visibility rules, and the deferred capture
       screen Task-31 deletes.
+      *Decision:* The boost is the run's first **successful** capture, live while `stats.catches === 0`, applied as a flat **255**. No new run field, so Task-52 keeps the `SAVE_VERSION` step 17 -> 18.
       *Dependencies:* none — everything it reads is shipped, and it adds no run field.
       Batch order covers it: it needs `src/scenes/RouteScene.ts` and
       `src/scenes/BattleScene.ts` together, and every batch from 7 to 13 holds one of them
@@ -2492,6 +2495,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       (`this.scene.setVisible(true, 'Route')` in the `shutdown` handler, 431-435, and
       `applyBattleResult`), which keeps its own end-of-battle beats; a second setting row
       (Batch 8's accessibility pass and Batch 8b's Task-35 own the settings); and the Mega
+      *Decision:* One camera flash and one fade plus the trainer's own entrance beat before the send-out, and no second full-screen blink; skippable by any confirm or cancel press, or a click.
       Evolution flash, which is a battle beat already and stays one.
       *Dependencies:* Task-08 (Accessibility pass) — the reduced-flash preference it adds to
       `src/engine/save.ts` and its settings row is what a black-flash opening must obey, and
@@ -2558,6 +2562,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       fallback, so **no i18n key** is owed and the key table Task-49 and Task-50 hold in the two
       batches after this one is nobody's here.
       *Dependencies:* none. Batch order covers it: it is written against `[Task-39]`'s shipped ⓘ
+      *Decision:* The move info button gets a zone of its own sized to the button, swallowing the press and pinning the popup; the ability one keeps its hover-only rule (one new sentence in `docs/design-spec.md` section 4).
       classifier (Batch 9) and reuses the content builder that batch leaves in
       `src/ui/moveGrid.ts`; it needs `src/scenes/BattleScene.ts` (Task-39's in 9, Task-40's in 9b,
       Task-26's in 10, Task-30's in 12), `src/ui/moveGrid.ts` (Task-55's in 18) and
@@ -2621,6 +2626,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       the field, and `docs/battle-spec.md` — no rule changes and the window's geometry is
       presentation (the `[Task-34]`, `[Task-53]` and `[Task-57]` precedent).
       *Dependencies:* none — every field it reads is shipped and the scene already holds
+      *Decision:* A fifth control reserved at the right edge of the command window, listing weather and terrain with their counts, every side and field condition with its count, each side's active stat stages and each active's non-volatile status. **Not** the volatiles, and none of the entry hazards the engine does not model.
       `this.state`; the two questions below are calls, not edges. Batch order covers it:
       `src/scenes/BattleScene.ts` is free in 13, 15, 16, 17 and 19 (Task-39's in 9, Task-40's in
       9b, Task-26's in 10, Task-30's in 12, Task-48's in 14), and it takes **Batch 17** because
@@ -2704,6 +2710,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       `GAUGE_TRACK` with the `src/ui/README.md` role line (15) that names the gauge, is named and is
       free in this batch too, so it costs no re-cut.
       *Dependencies:* none — every symbol it removes is the scene's own and every rule it leaves
+      *Decision:* The player's HP panel shrinks to **150**, hugging its content as the foe's panel does; no clearance invariant moves.
       behind is shipped. Batch order covers it: it wants `src/scenes/BattleScene.ts`, and Batch 6b is
       `cut` (so it can gain no member) while every batch from 7 to 14 holds that file (7 Task-18, 8
       Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26's every-scene sweep,
@@ -2825,6 +2832,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       the parity test green — the one report of the three that has to write a key by hand.
       Tests: `src/ui/notice.test.ts` (the pickup builder's text and the shared hold time,
       beside Task-31's cases), the i18n parity test over the new key, and QA checks the
+      *Decision:* Only the two otherwise-silent paths (the ground item and the mini-boss reward). The Mart keeps its own line and the string names the item only.
       corner of the screen in `npm run dev`: taking a ground item and picking a mini-boss
       reward each raise and self-dismiss the popup, and walking while it is up is
       unaffected.
@@ -2896,6 +2904,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       raises and self-dismisses the notice, and a level-up that learned a move raises both
       the notice and the modal.
       Out of scope: the counter tween and the portrait flash themselves, the learned-move
+      *Decision:* Both: the notice fires on **every** level-up beat, so a level that crosses nothing is no longer silent, and the key-dismissed `LEVEL UP` modal stays for the move names.
       modal's layout and copy, `showEvoPopup`, the battle's own level-up presentation,
       Task-31's catch notice and Task-49's pickup notice — this task adds a third notice, it
       redesigns neither of the others.
@@ -2971,6 +2980,7 @@ tests' fixture.
       through the m4a engine, so the move sounds extend it; the cries need their own
       seam. **The cue-table contract is the decision to take here**: a cue id is the
       only name a scene may use (`src/audio/cues.ts`, `D22` addendum), so either give
+      *Decision:* Raw `cries/<species>.wav` samples plus one `SE_M_*` per move, one cue id per species/move (D22 addendum) and one hit cue: no `PokemonCrySong` replay, no effectiveness variants. **The Anil checkout carries no audio tree**, so the set is rendered from FRLG's `sound/` for now; the cue table makes the source swappable later without touching a call site.
       every move and species its own cue id or add one parameterised call that
       resolves a generated table — pick one and say why. Wire the hit into
       `BattleScene`'s damage event and the cry into `RouteScene.startBattle` (and the
@@ -3107,6 +3117,7 @@ tests' fixture.
       the seed of the look, not a consumer), **a real background blur** (a WebGL blur or a
       render-texture pass per panel), a different typeface or a webfont, any layout re-cut, the
       FRLG originals under `src/assets/frlg/**` and their packers, `src/engine/**` (no rule moves),
+      *Decision:* Task-08 is **not** re-run: this task carries its own contrast pass over the pairs it introduces.
       the settings model (`hudTransparent` keeps its id, its values and its meaning, as Task-16
       re-read it), and `Task-08`'s audit, which is not re-run.
       *Dependencies:* `Task-16` — the drawn chrome set this task re-tunes: the packer
@@ -3213,6 +3224,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       the same indent as an evolution — and **never clickable**, with no pointer
       cursor and no `ready` node, because nothing about the member changes here. The
       data already exists: `megaFormsForBase` (`src/data/dex/megas.ts`) returns every
+      *Decision:* The Mega row is **dimmed and always visible**, naming the stone; a row exists to be information (D34).
       Mega of a species in dex order (Charizard's two included) and each carries
       `stoneName`, with the stone built per forme in `src/data/items.ts`. So the
       graph gains a node kind, not a new source. **Several Megas are several rows**,
@@ -3255,6 +3267,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the portal's own rule (it still opens when the boss falls, D31, and the
       final boss still ends the run, 5103-5105), the mini-boss reward window, the room's
       regeneration, the boss's own roster and the `docs/` rules, none of which move.
+      *Decision:* Rebuild through `transitionTo` with a `keepPosition` option, so the un-sealed room is exactly the room a revisit draws, portal art included.
       *Dependencies:* none. Batch order covers it: it wants `src/scenes/RouteScene.ts`, which
       **every** batch from 5 to 20 holds (5 Task-16, 5b Task-45, 6 Task-41, 6b Task-38, 7
       Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26, 11
@@ -3350,6 +3363,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the existing weather/terrain/gravity/trick-room rules and the moves that set
       them (they do not move), the info window `[Task-60]` (Batch 17) that lists the battle's own
       state, the encounter table, the room generator's geometry, and the trainer placement.
+      *Decision:* Fog is a **field condition** (it never enters `weatherModifier`/`weatherChip`), a never-miss move is **unaffected**, and the condition belongs to the **room**, so every battle there, wilds included, begins with it.
       *Dependencies:* none — every rule it reads is shipped and the roll composes shipped
       primitives. Batch order covers it: it wants `src/scenes/RouteScene.ts` **and**
       `src/scenes/BattleScene.ts` together, and every batch from 5 to 20 holds the route scene
@@ -3409,6 +3423,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       and Mega Stone, the catch's own rules — this placement is **not** a catch, so it spends no
       room capture and bumps no `stats.catches` — the party/PC panel, and `[Task-52]`'s wild-pool
       exclusion (a different rule on the encounter table).
+      *Decision:* One reward window whose item rows sit beside three Pokemon rows presented by **highest stat plus nature**, with the cursor, the page keys and the leave path staying one control.
       *Dependencies:* none — the chooser composes shipped primitives. Batch order covers it: it
       wants `src/scenes/RouteScene.ts` and `src/ui/rewards.ts`, and the route scene is held by
       every batch from 5 to 20 — so it opens the plan's new **Batch 23**, one batch behind
@@ -3483,6 +3498,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the Mart and its stock, the mini-boss reward, the mega-stone, the loot pools,
       the money a trainer drops, and the battle rules themselves — the grunt fights through the
       existing trainer path.
+      *Decision:* The machine locks the moment the battle **triggers**, the egg hatches on the **map advance**, the egg is a **bag item** whose species rolls at hatch time (no run field, no `SAVE_VERSION`), and the battle is a **spin outcome**.
       *Dependencies:* none. Batch order covers it: it wants `src/scenes/RouteScene.ts` (held by
       every batch 5-20, Batch 20's Task-58 last), `src/engine/maps/plan.ts` and
       `src/ui/mapView.ts` — the special-room layer `[Task-65]` and `[Task-66]` also extend, which
@@ -3530,6 +3546,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the wild pool, the catch placement, the route generator's geometry beyond the
       room's own carve, the field moves' battle effects (Cut/Rock Smash/Surf as moves stay as they
       are), the party/PC panel, and the map filter `[Task-62]` draws.
+      *Decision:* **Any** party member opens the obstacle (the lead included, no special case) and the opening is **permanent for the floor** (the `pickedItems`-with-a-stable-id shape, cleared by `advanceMap`). This adopts the key/flag gate that `docs/route-generator.md` section 7 kept out of scope as **O-R5**, so that line is now closed by this task.
       *Dependencies:* none. Batch order covers it: it wants `src/scenes/RouteScene.ts` (every
       batch 5-20, Batch 20 last), `src/engine/maps/plan.ts` and `src/ui/mapView.ts`, so it opens
       the plan's new **Batch 25**, one batch behind Task-64, and it can share neither of the
@@ -3567,6 +3584,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the catch's placement and its capture window, the permadeath rule and its
       release beat (`releaseFainted` is read, never changed), the party/PC panel's own layout and
       swap rules, the wild pool, and the other two new special rooms.
+      *Decision:* Optional, one per room, refused on a single-member party; the received Pokemon is **rolled on acceptance** (never previewed) and joins at the **squad's level**, the rule a catch already follows.
       *Dependencies:* none. Batch order covers it: it wants `src/scenes/RouteScene.ts` (every
       batch 5-20, Batch 20 last), `src/engine/maps/plan.ts` and `src/ui/mapView.ts` — the layer
       Task-64 and Task-65 also extend — so it opens the plan's new **Batch 26**, the last of the
@@ -3653,6 +3671,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the Mart and the Pokevial, the PC, the catch and the ball branch, the enemy's
       own items (it carries none — `validateBag` refuses every other side), the healing abilities
       and the held items, and the field/weather conditions `[Task-62]` seeds.
+      *Decision:* All six written defaults: a **special leaf** with its own trainer, the **player's** BAG and the named healing moves only (no abilities, no held items, no residual heals, no Pokevial and no PC), a loss being a **normal loss** (D5), surfaced **both** ways (the battle feed plus the disabled rows, and the entrance notice through `src/ui/notice.ts`).
       *Dependencies:* none — every primitive it reads is shipped. Batch order covers the rest: it
       wants `src/scenes/RouteScene.ts` **and** `src/scenes/BattleScene.ts` together, and every
       batch from 5 to 26 holds the route scene (5 Task-16, 5b Task-45, 6 Task-41, 6b Task-38, 7
@@ -3758,6 +3777,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       and the move is appended". No engine rule, no RNG draw and no run field, so **no**
       `SAVE_VERSION` step and no fixed-seed test; the four slots are `MAX_MOVES`, not a new
       constant.
+      *Decision:* Both surfaces: the shared `MoveGrid` gains one empty-slot marker and both scenes draw four containers, the battle's empty ones disabled.
       **Tests.** `src/ui/moveGrid.test.ts` covers the pure half: four rects for a short list,
       `indexAt` inside an empty container, no hit outside the four, and the empty cell drawing no
       ⓘ. QA reproduces the report in `npm run dev`: a member with three moves and a matching TM
@@ -3957,6 +3977,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       FIGHT menu and its Struggle fallback, the party reorder, the nickname field, the dev
       menu's `editRunPokemon`, and the deleted move's own PP, which `equipMove` rebuilds fresh
       when it returns.
+      *Decision:* All four written defaults: the **route HUD's MOVES tab alone**, a **one-move member is refused**, the **drag onto the learnset band**, and **no confirm**.
       *Dependencies:* none — the member's slots, the derived pool, the equip helper and the
       badge-onto-bag unequip are all shipped, and the two questions below are calls, not edges.
       Batch order covers it: it wants `src/scenes/RouteScene.ts`, which **every** batch from 5 to

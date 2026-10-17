@@ -1,28 +1,27 @@
 name: agent / cycle
 
-# The first end-to-end cycle, and deliberately the faithful one: a single job, one
-# batch, and the Orchestrator role driving the ritual it already knows — cut, spec,
-# worktree, dev, QA, merge to `main` — instead of a five-job fan-out. Nested
-# subagents were measured working headlessly in `agent-role-smoke.yml`, so the
-# roles can be used exactly as written.
+# The autopilot's unit of work, and the only workflow allowed to write `main`: one
+# batch, the Orchestrator driving the ritual it already knows — cut, spec, worktree,
+# dev, QA, merge --no-ff, bookkeeping, push. Nested subagents were measured working
+# headlessly in `agent-role-smoke.yml`, so the roles are used exactly as written.
 #
-# Dispatch only: nothing here reads `AUTOPILOT`, so the loop cannot start itself
-# yet. The batch is one task whose human decision is already taken, and `merge`
-# lets a trial run stop before `main` moves at all.
+# The batch is NOT named here. The role reads `TODO.md`'s plan and picks the lowest
+# pending batch whose dependencies are closed, applying the `*Decision:*` line each
+# item carries. A decision that is not written is never invented: the task is
+# blocked in an issue and the next candidate is taken.
 #
 # What the runner has to tell the role, because the local flow took it for granted:
 #   * There is no human. The `question` tool would hang the job: a blocking doubt
-#     must stop the run cleanly instead.
+#     becomes an `agent-blocked` issue instead.
+#   * There is no browser. A `[live]` criterion cannot be measured here, so it is
+#     never reported as passing: it becomes an `agent-review` issue, which is the
+#     `[?]` state of the design, and does not by itself stop the merge.
 #   * The asset store is materialised outside the checkout (a private clone), and
 #     `AGENTS.md`'s asset rule applies: pass its absolute path, never a junction.
 
 on:
   workflow_dispatch:
     inputs:
-      batch:
-        description: Batch to run (one task for now)
-        default: '14'
-        required: true
       model:
         description: Model the whole cycle runs on
         default: opencode-go/deepseek-v4.1-flash
@@ -38,11 +37,12 @@ concurrency:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   cycle:
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v6
         with:
@@ -78,7 +78,7 @@ jobs:
             echo "POKEANIL_POKEMON=$root/store/anil/Graphics/Pokemon"
             echo "POKEANIL_ITEMS=$root/store/anil/Graphics/Items"
           } >> "$GITHUB_ENV"
-          echo "assets en $root/store @ $ASSETS_COMMIT"
+          echo "assets in $root/store at $ASSETS_COMMIT"
 
       - name: Configure git identity
         run: |
@@ -88,17 +88,22 @@ jobs:
       - name: Run the cycle
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
           opencode run --agent orchestrator --auto --model '${{ inputs.model }}' \
             "Eres el Orchestrator de POKERANDOMLIKE y esto corre DESATENDIDO en un runner de
-             GitHub Actions. Lee AGENTS.md entero y los ficheros de rol antes de nada.
+             GitHub Actions. Lee AGENTS.md entero y tu fichero de rol antes de nada.
 
              HECHOS DEL ENTORNO (no los descubras a base de fallos):
              - No hay ningún humano. NUNCA uses la herramienta `question`: colgaría el job
-               hasta el timeout. Si algo te bloquea de verdad, escribe
-               .agent_specs/blocked.md con la pregunta, NO toques main, y termina el turno
-               con el informe.
+               hasta el timeout. Cualquier duda que te bloquee se convierte en un issue:
+               `gh issue create --label agent-blocked --title '...' --body '...'`
+               (tienes GH_TOKEN y permiso de escritura sobre issues).
+             - No hay navegador. Un criterio [live] NO se puede medir aquí: no lo reportes
+               NUNCA como pass. Ábrele un issue con la etiqueta `agent-review` diciendo qué
+               hay que mirar, y sigue: eso es el estado de revisión del diseño y no impide
+               el merge por sí solo, siempre que los criterios [unit] estén verdes.
              - El árbol de assets ya está materializado FUERA del checkout: su raíz es
                \$ASSETS_ROOT, y POKEANIL_POKEMON / POKEANIL_ITEMS ya apuntan dentro de él.
                Aplica la regla de AGENTS.md (Asset trees): pasa siempre la ruta absoluta a
@@ -106,49 +111,55 @@ jobs:
              - `origin` es alcanzable y tienes permiso de escritura: los push funcionan.
              - El runner es Linux y efímero. No hay nada más en la máquina.
 
-             TU ENCARGO, en este orden y sin ampliarlo:
-             1. Corta un lote de UNA sola tarea: [Task-14] en TODO.md, cuyo texto está ahí.
-                La decisión humana ya está tomada: **solo existe el bosque**. Es decir:
-                - BIOME_ORDER se queda en ['forest'] y de BIOMES desaparecen `wood`,
-                  `outdoor` y `cave`.
-                - `placeholder` NO es un bioma de juego: es el tileset de los tests
-                  (src/data/tilesets/placeholder.ts, su entrada en TILESET_NAMES) y
-                  scripts/frlg/build-audio.mjs lo nombra. Decides tú, y lo escribes en la
-                  spec: queda como fixture solo-para-tests, o desaparece si los tests no lo
-                  necesitan.
-                - Revisa también las entradas de tileset de los biomas borrados y la única
-                  referencia de juego (src/scenes/RouteScene.ts:650). Nada más.
-             2. Escribe su spec en .agent_specs/task-14.md con docs/agent-spec-template.md,
-                con criterios [unit] y, si hace falta, [live] con su medida.
-             3. Crea el worktree del ritual, lanza UN subagente dev con SOLO la ruta de su
-                spec, y espera su informe.
-             4. Valida con UN subagente qa (un lote de una tarea colapsa a una sola pasada,
-                como dicen tu rol y el suyo): el plan de la spec verbatim, las dos gates
-                (`npm test`, `npm run build`) y la auditoría del diff contra sus exclusive
-                paths.
-             5. Si QA aprueba: mergea task-14 en main con --no-ff, corre las dos gates
-                después del merge, tickea [Task-14] en TODO.md, archívalo en CHANGELOG.md
-                (una entrada, en inglés, al principio de ## Unreleased), commit y push a
-                origin main.
-             6. Si QA es roja: NO mergees, deja el diagnóstico escrito y termina el informe.
+             ELIGE TÚ EL LOTE. La fase actual del plan son lotes de UNA sola tarea:
+             1. Mira el plan de TODO.md y los *Dependencies:* de cada item abierto, y toma
+                el lote pendiente más bajo (el de la tarea cuya dependencia esté cerrada).
+                Cada item lleva una línea *Decision:* con la decisión humana ya tomada.
+             2. ESA DECISIÓN ES LEY: aplícala tal cual. Si un item del lote no trae
+                *Decision:* y su spec no puede escribirse sin una, NO la inventes: abre un
+                issue `agent-blocked` y pasa a la siguiente tarea candidata.
+             3. **Cuando bloquees una tarea, márcala.** Cambia su casilla en TODO.md de
+                `- [ ]` a `- [!]` y añade `BLOCKED: <motivo en una línea>` al final de su
+                línea *Decision:*, y empuja ese cambio a main. El conteo del driver es solo
+                `- [ ]`, así que una tarea marcada sale de la cola sola y el siguiente ciclo
+                no la vuelve a elegir hasta que un humano la suelte.
+             4. Si no queda ninguna tarea elegible, escribe el informe final diciéndolo y
+                termina. No toques main.
+
+             CON LA TAREA ELEGIDA, haz el ritual y nada más:
+             1. Escribe su spec en .agent_specs/task-<ID>.md con docs/agent-spec-template.md,
+                con criterios [unit] y, solo si de verdad aplican aquí, [live] con su medida.
+             2. Crea su worktree, lanza UN subagente dev con SOLO la ruta de su spec, y
+                espera su informe.
+             3. Valida con UN subagente qa (un lote de una tarea colapsa a una sola pasada):
+                el plan de la spec verbatim, las dos gates (`npm test`, `npm run build`) y la
+                auditoría del diff contra sus exclusive paths.
+             4. Si QA aprueba: mergea la rama de la tarea en main con --no-ff, corre las dos
+                gates después del merge, tickea su casilla en TODO.md, archívalo en
+                CHANGELOG.md (una entrada, en inglés, al principio de ## Unreleased), commit
+                y push a origin main. Borra tu worktree y el de QA.
+             5. Si QA es roja: NO mergees. Marca la tarea `[!]` en TODO.md con
+                `BLOCKED: QA red, issue #<n>`, abre un issue `agent-blocked` con el
+                diagnóstico, empuja el cambio de TODO.md a main y termina el informe.
 
              Merge autorizado en esta ejecución: ${{ inputs.merge }}.
              Si es false, para después de QA y no toques main.
 
-             Termina con el informe corto y en español del rol: lote, tarea, qué se
-             verificó y cómo, qué está bloqueado, y el commit final de main si lo hubo." \
+             Termina con el informe corto y en español del rol: qué tarea tomaste y por qué,
+             qué se verificó y cómo, qué issues abriste, qué está bloqueado, y el commit
+             final de main si lo hubo." \
             2>&1 | tee /tmp/cycle.txt
 
       - name: What the cycle changed
         if: always()
         run: |
-          echo "== main antes: $BEFORE_SHA"
-          echo "== main ahora: $(git rev-parse HEAD)"
-          echo "== commits nuevos"
+          echo "== main before: $BEFORE_SHA"
+          echo "== main now:    $(git rev-parse HEAD)"
+          echo "== new commits"
           git log --oneline "$BEFORE_SHA..HEAD" || true
-          echo "== ficheros tocados"
+          echo "== files touched"
           git diff --stat "$BEFORE_SHA..HEAD" || true
-          echo "== estado del árbol"
+          echo "== tree state"
           git status --short
 
       - name: The merged tree still passes the gate

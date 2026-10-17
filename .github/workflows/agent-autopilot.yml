@@ -1,0 +1,95 @@
+name: agent / autopilot
+
+# The loop. This workflow spends nothing on tokens: it only decides whether a cycle
+# may start, and dispatches one. Running the decision on a schedule instead of
+# chaining cycles from inside the cycle means a dead cycle, a cancelled run or a
+# crashed runner cannot end the loop — and that the human's brake is read at a
+# boundary, never in the middle of a merge.
+#
+# The brake is the repository variable `AUTOPILOT`: anything other than `on` stops
+# the loop (it ships as `off`). Setting it is a two-click change in the repo's
+# settings, and it takes effect at the next boundary, so no cycle is ever cut in
+# half. A blocked or red task does NOT stop the loop by itself: the cycle marks it
+# `[!]` in `TODO.md` and takes the next candidate. The loop stops when there is
+# nothing left to take, when it is switched off, or when it is hurting itself
+# (three red cycles in a day, or more cycles than the daily cap).
+
+on:
+  schedule:
+    # Every 30 minutes. GitHub's shortest cron interval is 5 minutes, and a busy
+    # cluster can delay a scheduled run; the concurrency group below is what keeps
+    # two cycles from overlapping.
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: agent-autopilot
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: write
+  issues: write
+
+jobs:
+  drive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Should a cycle start?
+        id: gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          go() { echo "go=$1" >> "$GITHUB_OUTPUT"; echo "$2"; }
+          red() { gh issue create --label agent-blocked --title "$1" --body "$2" || true; }
+
+          if [ "${AUTOPILOT:-}" != "on" ]; then
+            go false "AUTOPILOT is '${AUTOPILOT:-unset}': the loop stays parked."
+            exit 0
+          fi
+
+          open_tasks=$(grep -cE '^[[:space:]]*-[[:space:]]*\[ \][[:space:]]*\*\*\[Task-' TODO.md || true)
+          blocked=$(grep -cE '^[[:space:]]*-[[:space:]]*\[!\][[:space:]]*\*\*\[Task-' TODO.md || true)
+          echo "open=$open_tasks blocked=$blocked"
+          if [ "$open_tasks" -eq 0 ]; then
+            red "Autopilot: nothing left to take" \
+                "No open \`[ ]\` task remains in TODO.md ($blocked marked \`[!]\`). The loop is parked until a human frees one or adds work."
+            go false "No open task left."
+            exit 0
+          fi
+
+          if [ -n "$(gh run list --workflow=agent-cycle.yml --status in_progress --json databaseId --jq '.[0].databaseId')" ]; then
+            go false "A cycle is already in flight."
+            exit 0
+          fi
+
+          today=$(date -u +%Y-%m-%d)
+          started=$(gh run list --workflow=agent-cycle.yml --created "$today" --json databaseId --jq 'length')
+          failed=$(gh run list --workflow=agent-cycle.yml --created "$today" --status failure --json databaseId --jq 'length')
+          echo "cycles today=$started failed=$failed"
+
+          if [ "$failed" -ge 3 ]; then
+            red "Autopilot parked: $failed red cycles today" \
+                "The loop stopped itself after $failed failed cycles on $today (limit 3). Look at the last agent / cycle runs, fix or free the task it was on, then re-run this workflow."
+            go false "Too many red cycles today."
+            exit 0
+          fi
+
+          if [ "$started" -ge 12 ]; then
+            go false "Daily cap reached ($started cycles today)."
+            exit 0
+          fi
+
+          go true "Dispatching a cycle."
+        env:
+          AUTOPILOT: ${{ vars.AUTOPILOT }}
+
+      - name: Dispatch a cycle
+        if: steps.gate.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run agent-cycle.yml --ref main

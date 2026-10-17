@@ -15,5 +15,12 @@ rules, once written). A workflow that can write to `main` is named as such below
   only that throwaway branch.
 - `agent-cycle.yml` — **the autopilot's unit of work, and the only workflow allowed
   to write `main`**: one batch, the Orchestrator driving plan → dev → QA → merge
-  (--no-ff) → TODO/CHANGELOG bookkeeping → push. Dispatch-only for now; it does not
-  read `AUTOPILOT` yet, and its `merge` input lets a trial stop after QA.
+  (--no-ff) → TODO/CHANGELOG bookkeeping → push. It picks the batch itself from the
+  plan in `TODO.md`, applies each item's `*Decision:*` line, and marks a task `[!]`
+  (pushing the mark) when it has to block it. A `[live]` criterion cannot be measured
+  on a runner, so it opens an `agent-review` issue instead of ever reporting it as
+  passing. Dispatch-only.
+- `agent-autopilot.yml` — **the loop**: on a 30-minute schedule it reads the
+  `AUTOPILOT` variable and the backlog, and dispatches at most one `agent-cycle`
+  when nothing is in flight, work is left, and the day's caps allow it. Spends no
+  tokens; the brake is the repository variable, read at a cycle boundary.
