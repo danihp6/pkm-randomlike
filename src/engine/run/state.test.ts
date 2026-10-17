@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { restoreFighter } from '../battle/fighter';
 import { levelCapForMap } from '../../data/maps';
+import { evolutionBranches } from '../../data/dex/evolutions';
 import { MAP_EDGES, arrivalEdgeFor, linkedNeighbour, planMap } from '../maps/plan';
 import { capForRoute } from './levelCap';
 import { POKEVIAL_MAX_CHARGES } from './heal';
-import { createRunPokemon } from './progression';
+import { createRunPokemon, runPokemonFromSnapshot } from './progression';
 import {
   MAX_PARTY_SIZE,
   addCaughtPokemon,
@@ -594,5 +595,41 @@ describe('evolveMember', () => {
     const run = createRun({ seed: 'evo-b', starter: createRunPokemon({ id: 'c', speciesId: 'charmander', level: 10 }) });
     expect(evolveMember(run, 'c', 'charmeleon')).toBe(run);
     expect(evolveMember(run, 'nobody', 'charmeleon')).toBe(run);
+  });
+});
+
+/** The STATS tab's click path over a Rotom's hand-authored appliance branches (`D38`). */
+describe('evolveMember rotom appliance', () => {
+  const level = evolutionBranches('rotom')[0]!.level;
+
+  function rotomRun(speciesId: string, at: number): ReturnType<typeof createRun> {
+    const fighter = createRunPokemon({ id: 'r', speciesId, level: at }).fighter;
+    const caught = runPokemonFromSnapshot(fighter, { biomeId: 'meadow', mapIndex: 1, routeInMap: 0 });
+    return createRun({ seed: 'rotom-evo', starter: caught });
+  }
+
+  it('applies the click at the resolved level and keeps the catch location', () => {
+    const run = rotomRun('rotom', level);
+    const next = evolveMember(run, 'r', 'rotomheat');
+    expect(next).not.toBe(run);
+    expect(next.party[0]!.fighter.speciesId).toBe('rotomheat');
+    expect(next.party[0]!.caughtAt).toEqual(run.party[0]!.caughtAt);
+    expect(run.party[0]!.fighter.speciesId).toBe('rotom');
+  });
+
+  it('is a no-op below the level and from an appliance back to rotom', () => {
+    const early = rotomRun('rotom', level - 1);
+    expect(evolveMember(early, 'r', 'rotomheat')).toBe(early);
+    const appliance = rotomRun('rotomheat', 100);
+    expect(evolveMember(appliance, 'r', 'rotom')).toBe(appliance);
+    expect(evolveMember(appliance, 'r', 'rotomwash')).toBe(appliance);
+  });
+
+  it('is deterministic: the same click twice gives deep-equal members', () => {
+    const run = rotomRun('rotom', level);
+    const once = evolveMember(run, 'r', 'rotomheat');
+    const twice = evolveMember(run, 'r', 'rotomheat');
+    expect(twice).toEqual(once);
+    expect(twice.party).toEqual(once.party);
   });
 });

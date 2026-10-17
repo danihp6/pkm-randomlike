@@ -14,7 +14,7 @@ import {
   evolutionStage,
   isLevelEvolution,
 } from './evolutions';
-import { getSpecies, playableSpecies, type Species } from './species';
+import { getSpecies, playableSpecies, type Evolution, type Species } from './species';
 
 /** The level a species' own branches resolve at (all of them share it). */
 function resolvedLevel(speciesId: string): number {
@@ -242,5 +242,84 @@ describe('evolution depth', () => {
   it('is zero for a species that cannot evolve or an unknown id', () => {
     expect(evolutionDepth('tauros')).toBe(0);
     expect(evolutionDepth('not-a-species')).toBe(0);
+  });
+});
+
+/** Rotom's five appliances are a hand-authored override, not dex data (`D38`). */
+describe('rotom appliance override', () => {
+  const APPLIANCES: readonly string[] = [
+    'rotomheat',
+    'rotomwash',
+    'rotomfrost',
+    'rotomfan',
+    'rotommow',
+  ];
+
+  /** The `Evolution` the accessor's branch stands for (all five share the shape). */
+  function evolutionOf(branch: { into: string; level: number; method: string }): Evolution {
+    return {
+      into: branch.into,
+      method: branch.method,
+      level: branch.level,
+      item: null,
+      move: null,
+      condition: null,
+    };
+  }
+
+  it('offers exactly the five appliances, all at one level, none a level evolution', () => {
+    const branches = evolutionBranches('rotom');
+    expect(branches.map((branch) => branch.into)).toEqual([...APPLIANCES]);
+    expect(new Set(branches.map((branch) => branch.level)).size).toBe(1);
+    for (const branch of branches) {
+      expect(branch.method).toBe('forme');
+      expect(isLevelEvolution(evolutionOf(branch))).toBe(false);
+    }
+  });
+
+  it('resolves that one level through the rotom bst band', () => {
+    const level = evolutionBranches('rotom')[0]!.level;
+    expect(level).toBe(evolutionLevelForBst(getSpecies('rotom')!.bst));
+    expect(level).toBe(30);
+    for (const branch of evolutionBranches('rotom')) {
+      expect(branch.level).toBe(level);
+      expect(evolutionLevel('rotom', evolutionOf(branch))).toBe(branch.level);
+    }
+    // The override is not a canon level-up, so the raw dex check stays empty.
+    expect(evolutionFor('rotom', 100)).toBeUndefined();
+  });
+
+  it('is grey below the resolved level and the five at it', () => {
+    const level = evolutionBranches('rotom')[0]!.level;
+    expect(availableEvolutions('rotom', level - 1)).toEqual([]);
+    expect(availableEvolutions('rotom', level).map((branch) => branch.into)).toEqual([...APPLIANCES]);
+  });
+
+  it('reaches all six members from rotom, and only itself from an appliance', () => {
+    expect([...evolutionFamily('rotom')].sort()).toEqual([
+      'rotom',
+      'rotomfan',
+      'rotomfrost',
+      'rotomheat',
+      'rotommow',
+      'rotomwash',
+    ]);
+    expect(evolutionDepth('rotom')).toBe(1);
+    for (const id of APPLIANCES) {
+      expect(evolutionBranches(id), id).toEqual([]);
+      expect(evolutionFamily(id), id).toEqual([id]);
+      expect(evolutionStage(id), id).toBe(0);
+      // One-way: no override branch of an appliance points back to rotom.
+      expect(evolutionFamily(id), id).not.toContain('rotom');
+    }
+  });
+
+  it('leaves the generated dex rows untouched', () => {
+    for (const id of ['rotom', ...APPLIANCES]) {
+      const species = playableSpecies().find((entry) => entry.id === id)!;
+      expect(species.evolutions, id).toEqual([]);
+      expect(species.evos, id).toEqual([]);
+      expect(species.prevo, id).toBe('');
+    }
   });
 });

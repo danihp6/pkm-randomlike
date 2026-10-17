@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { evolutionBranches } from '../data/dex/evolutions';
 import { evolutionGraph } from './evolutionGraph';
 
 describe('evolutionGraph', () => {
@@ -38,5 +39,46 @@ describe('evolutionGraph', () => {
 
   it('is empty for an unknown species', () => {
     expect(evolutionGraph('not-a-species', 50)).toEqual([]);
+  });
+
+  it('shows a rotom with its five appliance children, only them ready', () => {
+    const level = evolutionBranches('rotom')[0]!.level;
+    const graph = evolutionGraph('rotom', level);
+    expect(graph.map((node) => node.id)).toEqual([
+      'rotom',
+      'rotomheat',
+      'rotomwash',
+      'rotomfrost',
+      'rotomfan',
+      'rotommow',
+    ]);
+    expect(graph.map((node) => node.depth)).toEqual([0, 1, 1, 1, 1, 1]);
+    expect(graph.map((node) => node.parent)).toEqual([null, 0, 0, 0, 0, 0]);
+    expect(graph.map((node) => node.level)).toEqual([null, level, level, level, level, level]);
+    expect(graph.filter((node) => node.current).map((node) => node.id)).toEqual(['rotom']);
+    expect(graph.filter((node) => node.ready).map((node) => node.id)).toEqual([
+      'rotomheat',
+      'rotomwash',
+      'rotomfrost',
+      'rotomfan',
+      'rotommow',
+    ]);
+  });
+
+  it('greys every rotom appliance row below the resolved level', () => {
+    const level = evolutionBranches('rotom')[0]!.level;
+    const graph = evolutionGraph('rotom', level - 1);
+    expect(graph).toHaveLength(6);
+    expect(graph.every((node) => !node.ready)).toBe(true);
+  });
+
+  it('shows a single, never-ready row for an appliance: the change is one-way', () => {
+    const graph = evolutionGraph('rotomheat', 100);
+    expect(graph).toHaveLength(1);
+    expect(graph[0]!.id).toBe('rotomheat');
+    expect(graph[0]!.current).toBe(true);
+    expect(graph[0]!.ready).toBe(false);
+    expect(graph[0]!.parent).toBeNull();
+    expect(graph[0]!.level).toBeNull();
   });
 });
