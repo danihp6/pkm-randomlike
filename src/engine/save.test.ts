@@ -380,19 +380,41 @@ describe('run validation', () => {
 
   it('defaults the PC-lock fields and reads them back', () => {
     const run = sampleRun();
-    // The sample stands in the entry room, so a missing flag reads not-departed.
+    // The sample stands in the entry room, so a missing flag reads not-departed
+    // and the route catch window starts closed.
     const missing: Record<string, unknown> = { ...run };
     delete missing.entryDeparted;
-    delete missing.pcUnlocked;
+    delete missing.pcCatch;
     const decoded = document(JSON.stringify({ version: SAVE_VERSION, run: missing }));
     expect(decoded.run?.entryDeparted).toBe(false);
-    expect(decoded.run?.pcUnlocked).toEqual([]);
+    expect(decoded.run?.pcCatch).toBeNull();
 
-    const unlocked = document(
-      JSON.stringify({ version: SAVE_VERSION, run: { ...run, entryDeparted: false, pcUnlocked: ['p0', 7, 'p0'] } }),
+    const caught = document(
+      JSON.stringify({
+        version: SAVE_VERSION,
+        run: { ...run, entryDeparted: false, pcCatch: { roomInMap: 2, memberId: 'p0' } },
+      }),
     );
-    expect(unlocked.run?.entryDeparted).toBe(false);
-    expect(unlocked.run?.pcUnlocked).toEqual(['p0']);
+    expect(caught.run?.entryDeparted).toBe(false);
+    expect(caught.run?.pcCatch).toEqual({ roomInMap: 2, memberId: 'p0' });
+  });
+
+  it('round-trips a current-schema route catch', () => {
+    const run: RunState = { ...sampleRun(), pcCatch: { roomInMap: 3, memberId: 'boxed' } };
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    expect(decoded.run?.pcCatch).toEqual({ roomInMap: 3, memberId: 'boxed' });
+  });
+
+  it('defaults a malformed route catch to none rather than stranding the run', () => {
+    const run = sampleRun();
+    const raw = (pcCatch: unknown): string =>
+      JSON.stringify({ version: SAVE_VERSION, run: { ...run, pcCatch } });
+    expect(document(raw({ roomInMap: -1, memberId: 'p0' })).run?.pcCatch).toBeNull();
+    expect(document(raw({ roomInMap: 1.5, memberId: 'p0' })).run?.pcCatch).toBeNull();
+    expect(document(raw({ roomInMap: 2, memberId: '' })).run?.pcCatch).toBeNull();
+    expect(document(raw({ roomInMap: 2, memberId: 7 })).run?.pcCatch).toBeNull();
+    expect(document(raw('catch-1')).run?.pcCatch).toBeNull();
+    expect(document(raw(null)).run?.pcCatch).toBeNull();
   });
 
   it('re-keys a saved run whose members share an id', () => {
@@ -400,12 +422,12 @@ describe('run validation', () => {
     const run: RunState = {
       ...sampleRun(),
       party,
-      pcUnlocked: ['wild'],
+      pcCatch: { roomInMap: 2, memberId: 'wild' },
       stats: { catches: 2, casualties: 0 },
     };
     const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
     expect(decoded.run?.party.map((member) => member.fighter.id)).toEqual(['wild', 'catch-1']);
-    expect(decoded.run?.pcUnlocked).toEqual(['wild', 'catch-1']);
+    expect(decoded.run?.pcCatch).toEqual({ roomInMap: 2, memberId: 'catch-1' });
     expect(decoded.run?.stats).toEqual({ catches: 2, casualties: 0 });
   });
 
@@ -455,7 +477,7 @@ describe('migrateDocument', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
     // One step per version boundary, because the test starts at v0 and the
-    // current schema is v15.
+    // current schema is v16.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
@@ -471,7 +493,8 @@ describe('migrateDocument', () => {
       11: (doc) => ({ ...doc, version: 12 }),
       12: (doc) => ({ ...doc, version: 13 }),
       13: (doc) => ({ ...doc, version: 14 }),
-      14: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      14: (doc) => ({ ...doc, version: 15 }),
+      15: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -549,14 +572,26 @@ describe('map-position migration', () => {
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.money).toBe(0);
   });
+
+  it('turns a v15 floor catch list into an empty route catch', () => {
+    const run: Record<string, unknown> = { ...sampleRun(), pcUnlocked: ['catch-1'] };
+    delete run.pcCatch;
+    const raw = JSON.stringify({ version: 15, run });
+    const decoded = decodeSave(raw);
+    expect(emptySave().version).toBe(16);
+    expect(decoded.version).toBe(SAVE_VERSION);
+    expect(decoded.run?.pcCatch).toBeNull();
+    expect('pcUnlocked' in (decoded.run ?? {})).toBe(false);
+    expect(decoded.run?.party).toHaveLength(6);
+  });
 });
 
 describe('nickname migration', () => {
   it('reads a v14 run as a current-schema run with its members intact and unnamed', () => {
     const raw = JSON.stringify({ version: 14, settings: defaultSettings(), run: sampleRun() });
     const decoded = decodeSave(raw);
-    expect(SAVE_VERSION).toBe(15);
-    expect(decoded.version).toBe(15);
+    expect(SAVE_VERSION).toBe(16);
+    expect(decoded.version).toBe(16);
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
     expect(decoded.run?.box[0].fighter.speciesId).toBe('greedent');

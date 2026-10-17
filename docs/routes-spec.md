@@ -277,13 +277,18 @@ party and the PC is locked** except in two windows (`docs/maps-spec.md` §7):
 
 - on the **first visit to a floor's entry room** the PC is fully editable, so a
   player can rearrange the party and the box before setting off;
-- the **Pokémon caught on the current floor** while the party was full stays
-  swappable out of the PC for the rest of that floor, so a catch is never locked
-  in. Leaving the entry room and coming back locks the PC for the rest of the
-  floor, and a new floor resets both windows.
+- a catch that lands in the PC while the party is full — the engine places the
+  catch itself, party first, PC second — stays swappable out of the PC **only
+  while the run still stands in the room it was caught in**: the first door or
+  portal closes that window (`RunState.pcCatch`), so a catch is never locked in
+  the room that took it and never follows the run out of it. Leaving the entry
+  room and coming back locks the PC for the rest of the floor, and a new floor
+  resets both windows.
 
 A boxed member the player cannot swap reads as **locked** (a dim veil on its
-cell), and reordering the party within itself stays free.
+cell), and reordering the party within itself stays free. A catch that goes to
+the PC says so in a **transient notice** at the top of the screen — one line,
+dismissed by itself, taking no key and blocking no movement.
 
 Each floor also carries a **Pokevial**: a single bar in the party window's
 header (top-right), its fill climbing through three colour stages with
