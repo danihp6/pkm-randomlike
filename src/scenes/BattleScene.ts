@@ -34,11 +34,16 @@ import { MOVE_FX_TEXTURE_KEY, moveFxAnimKey, moveFxFor, moveFxTrack } from '../r
 import { spriteContentBounds, type SpriteBounds } from '../render/spriteBounds';
 import { battleSpriteHeight, SPRITE_SIZE_MAX } from '../data/spriteSize';
 import {
+  ENTRY_FOE_DROP,
+  ENTRY_TRAINER_WALK,
   FAINT_DROP,
   FAINT_MS,
   SWITCH_RECALL_MS,
   SWITCH_SENDOUT_MS,
   SWITCH_SHRINK,
+  entryBeat,
+  type EntryKind,
+  type EntryStep,
 } from '../ui/beats';
 import { CAPTURE_SHAKE_SPEED, captureBeat } from '../ui/capture';
 import { BAG_CATEGORY_LABELS, bagCategoryForKind, type BagCategory } from '../ui/bag';
@@ -206,7 +211,7 @@ function capitalize(text: string): string {
   return text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
 }
 
-type Mode = 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'over';
+type Mode = 'entry' | 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'over';
 
 /** A sprite beat that owns the mon's position/scale until it completes. */
 type BeatKind = 'faint' | 'switch';
@@ -260,6 +265,10 @@ export class BattleScene extends Phaser.Scene {
   private logLength = 0;
   private afterFeed: (() => void) | null = null;
   private mode: Mode = 'feed';
+  /** The steps of the opening beat still to play, and which one is running. */
+  private entrySteps: readonly EntryStep[] = [];
+  private entryIndex = 0;
+  private entryTimer: Phaser.Time.TimerEvent | null = null;
   private forcedSwitch = false;
   /** The player armed the Mega control for the move about to be chosen (D34). */
   private megaIntent = false;
@@ -505,7 +514,7 @@ export class BattleScene extends Phaser.Scene {
     // around it stays clean instead of showing the overworld through it.
     this.scene.setVisible(false, 'Route');
     playMusic(this, 'battle-music');
-    this.startFeed();
+    this.startEntry(trigger.kind);
   }
 
   /** Re-centres the square stage (and everything in it) when the window changes. */
@@ -889,6 +898,10 @@ export class BattleScene extends Phaser.Scene {
 
   /** A click on the scene: feed taps and the result screen answer it. */
   private onPointerDown(objects: readonly Phaser.GameObjects.GameObject[]): void {
+    if (this.mode === 'entry') {
+      this.finishEntry();
+      return;
+    }
     if (objects.length > 0) return;
     if (this.mode === 'feed') {
       this.onConfirm();
@@ -898,6 +911,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private onConfirm(): void {
+    if (this.mode === 'entry') {
+      this.finishEntry();
+      return;
+    }
     if (this.mode === 'feed') {
       // A tap reveals the rest of the line before it moves the feed on.
       if (!typewriterDone(this.typing)) {
@@ -915,6 +932,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private onCancel(): void {
+    if (this.mode === 'entry') {
+      this.finishEntry();
+      return;
+    }
     if (this.mode === 'over') {
       this.returnToRoute();
       return;
@@ -922,6 +943,85 @@ export class BattleScene extends Phaser.Scene {
     if (this.mode === 'moves' || this.mode === 'bag' || this.mode === 'party') {
       this.openMenu();
     }
+  }
+
+  // --- entry beat ---------------------------------------------------------
+
+  /**
+   * Opens the battle: lays the stage out, hides only what the beat brings in and
+   * plays step 0, whose fade is what covers the route-to-battle cut.
+   */
+  private startEntry(kind: EntryKind): void {
+    this.entrySteps = entryBeat(kind, this.reducedFlash);
+    this.entryIndex = 0;
+    this.entryTimer = null;
+    this.mode = 'entry';
+    this.refreshHud();
+    if (this.entrySteps.some((step) => step.kind === 'foe-appear' || step.kind === 'sendout')) {
+      this.foeSprite.setAlpha(0);
+    }
+    if (this.entrySteps.some((step) => step.kind === 'trainer-appear')) {
+      this.foeTrainer.setAlpha(0);
+    }
+    this.playEntryStep();
+  }
+
+  private playEntryStep(): void {
+    const step = this.entrySteps[this.entryIndex];
+    if (!step) {
+      this.finishEntry();
+      return;
+    }
+    switch (step.kind) {
+      case 'fade':
+        this.cameras.main.fadeIn(step.ms, 0, 0, 0);
+        break;
+      case 'flash':
+        this.cameras.main.flash(step.ms, 255, 255, 255);
+        break;
+      case 'foe-appear':
+        this.appearSprite(this.foeSprite, step.ms, 0, -ENTRY_FOE_DROP);
+        break;
+      case 'trainer-appear':
+        this.appearSprite(this.foeTrainer, step.ms, ENTRY_TRAINER_WALK, 0);
+        break;
+      case 'sendout':
+        this.appearSprite(this.foeSprite, step.ms, 0, -ENTRY_FOE_DROP);
+        break;
+    }
+    this.entryTimer = this.time.delayedCall(step.ms, () => {
+      this.entryIndex += 1;
+      this.playEntryStep();
+    });
+  }
+
+  /** The single exit from the beat, whether it ran out or a press cut it short. */
+  private finishEntry(): void {
+    if (this.mode !== 'entry') return;
+    this.entryTimer?.remove();
+    this.entryTimer = null;
+    this.tweens.killTweensOf(this.foeSprite);
+    this.tweens.killTweensOf(this.foeTrainer);
+    this.cameras.main.resetFX();
+    this.foeSprite.setAlpha(1);
+    this.foeTrainer.setAlpha(1);
+    this.entryIndex = 0;
+    this.entrySteps = [];
+    this.refreshHud();
+    this.startFeed();
+  }
+
+  /** Brings a sprite in from an offset, at rest at the layout's position. */
+  private appearSprite(
+    target: Phaser.GameObjects.Image | Phaser.GameObjects.Sprite,
+    ms: number,
+    offsetX: number,
+    offsetY: number,
+  ): void {
+    const x = target.x;
+    const y = target.y;
+    target.setAlpha(0).setPosition(x + offsetX, y + offsetY);
+    this.tweens.add({ targets: target, alpha: 1, x, y, duration: ms, ease: 'Quad.easeOut' });
   }
 
   // --- feed playback ------------------------------------------------------

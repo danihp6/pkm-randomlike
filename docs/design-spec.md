@@ -183,6 +183,12 @@ Full rules in `docs/battle-spec.md`. In short:
   grinding.
 - Wild battles can be fled; trainer battles cannot. Fleeing is one press: RUN
   attempts the escape at once, with no yes/no prompt.
+- A battle **opens with an entry beat**: one black-out fade covers the
+  route-to-battle cut, one white camera flash marks the encounter, and the foe drops
+  onto its platform — a trainer battle walks the trainer in first and its **send-out**
+  brings the partner out after. Any confirm or cancel press, or a click, skips the
+  beat to the first line, and **Reduce flashing** drops the flash and keeps the fade
+  and the appearance beats.
 - The command menu takes the **mouse** as well as the keyboard: hovering a row
   moves the ▶ cursor and a click picks it, and a click advances the battle text.
   **FIGHT / BAG / SWITCH / RUN** is a 2x2 **grid**, and so is the **moves** menu
