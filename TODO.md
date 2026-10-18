@@ -1040,7 +1040,28 @@ measure. What follows is the cut's own record.
   reusable scripted-battle harness (Batch 6), which its fixed-seed AI regressions run on.
   It is **before** Batch 9 on purpose: Task-21 writes `docs/battle-spec.md` §9 there.
 
-### Batch 9 — the STATS graph's Mega row, and the ⓘ's two dead hit tests
+### Batch 9 — the STATS graph's Mega row, and the ⓘ's two dead hit tests **(shipped and archived)**
+**(shipped and archived)**: its two tasks are closed — Task-21 and Task-39 merged in ID
+order behind the green gate (`task-21`, `task-39`; **1577** tests, `npm test` + `npm run
+build` green after each merge, 135 test files), and the detail is in `CHANGELOG.md`'s
+`## Unreleased`. QA validated each task in its own lane (both green, on tips `d3331d2f` and
+`57a5a510`) and then the combined tree: the eight paths of the union with no overlap, no hot
+file, `src/engine/` byte-identical and the generated dex reproduced byte for byte, and both
+merge orders conflict-free. Three findings the cut did not carry, recorded here because they
+are what shipped: **(a)** Task-21 claimed a fifth path, `src/ui/partyDetail.test.ts`, to
+**re-pin** its Charmander family expectation — the information rows hang off the node of the
+species that owns the forme (`a row hanging off its base species`, read literally), so a
+Charmander's panel lists Charizard's rows and that test's three ids became six; no batch-mate
+held the path, so the batch stayed an antichain. **(b)** The row's clause is `Mega Evolves
+**with** <stone>`, not the plan's `while holding`: measured against the shipped font, the long
+form is 312 px against the 288 px box a depth-3 row has, the shipped one 267 px. **(c)** The
+battle half's hover **could not be reproduced** as an arithmetic defect — on pristine `main`
+the click and the hover were fed the same local point and the same rect, so the two
+classifiers returned the same boolean — so Task-39 ships the duplicate's removal and the live
+pointer classifier, and that hover is a `[live]` check rather than a proven fix. One
+`agent-review` issue (#6) carries the batch's six `[live]` criteria. Their two IDs are
+retired: they keep their place in the sequence and are never reused. What follows is the
+cut's own record.
 - **Task-21** The Megas as information in the STATS graph.
 - **Task-39** The ⓘ detail button is dead on hover in the battle's MOVES window and dead
   in both forms in the learnset band.
@@ -2397,7 +2418,7 @@ Ports of Showdown handlers, in batches, on the hook names in
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] **[Task-39] The ⓘ detail button is dead in two places.** Reported in play, in one
+- [x] **[Task-39] The ⓘ detail button is dead in two places.** Reported in play, in one
       breath: "al ponerse encima del boton i en moves no se abre modal solo al darle click
       y en los del learnset ninguna de las dos formas" — in the battle's **MOVES** window
       hovering the ⓘ floats nothing and only a **click** opens the popup, and in the
@@ -3232,7 +3253,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       the task says where that override lives. Keep the fixed-seed evolution tests
       green.
       *Dependencies:* none. *(Batch 8)*
-- [ ] **[Task-21] The Megas as information in the STATS graph.** The family graph
+- [x] **[Task-21] The Megas as information in the STATS graph.** The family graph
       draws evolutions only (`evolutionGraph`, `src/ui/evolutionGraph.ts`), and a
       Mega is not one: it is battle-only (`D34`, `src/engine/battle/mega.ts`) and
       entered from a stone. So a member whose species has a Mega shows no trace of

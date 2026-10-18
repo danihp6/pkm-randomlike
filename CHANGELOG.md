@@ -8,6 +8,58 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The STATS tab lists every Mega and every G-Max forme as an information row.** A Mega is
+      battle-only (`D34`), so the family graph had no trace of one; `src/ui/evolutionGraph.ts`
+      now returns `kind` (`'species' | 'mega' | 'gmax'`) on **every** node and appends, at the
+      end of each visited species node's body (after its whole evolution subtree, before its
+      next sibling), one row per Mega `megaFormsForBase` returns — dex order, so Charizard
+      shows X and Y side by side — and one for its G-Max forme (`gmaxFormForBase`), so a
+      Charmander's panel lists Charizard's rows under the Charizard node exactly as a
+      Charizard's panel does. Each row is inert by construction: `level` null, `current` and
+      `ready` false whatever the held item, `id` = the forme's own species id so the band's
+      `portraitFor` draws the forme's own cell (Task-15's packed portrait atlases already
+      carry them), and the whole visible copy rides the node's `name`, which the shipped band
+      draws with **no scene change at all**. The copy is the new `formeDisplayName`'s
+      (`Charizard-Mega-X` → `Mega Charizard X`, `Toxtricity-Low-Key-Gmax` → `Gigantamax
+      Toxtricity Low Key`) plus the forme's own `stoneName`: `Mega Charizard X · Mega Evolves
+      with Charizardite X` and, because a G-Max has no stone gate at all (`D44`), `Gigantamax
+      Charizard · Gigantamaxes with no stone`. The clause reads **`with`** rather than the
+      plan's `while holding` on measurement, not taste: the long form is 312 px against the
+      288 px box a depth-3 row has (`460 − 2·20 − 34·3 − 30`), the shipped one is 267 px, and
+      the new test re-derives every width from `src/data/ui/font.json`. A sweep over all
+      **88** Megas and **34** G-Max formes pins each row's `kind`, `parent`, `depth`, copy and
+      non-null portrait; `src/ui/evolutionGraph.test.ts` grew to 20 tests (charizard 3 → 6
+      ids, eevee 9 → 10, pikachu 4 → 7) and `src/ui/partyDetail.test.ts` re-pinned its
+      Charmander family expectation to the same six ids — the suite went **1565 → 1577**
+      tests. `docs/design-spec.md` §3 and `docs/battle-spec.md` §9 record the row and its
+      dimmed, always-visible, never-clickable rule, and no run field, no rule and no
+      `SAVE_VERSION` step moved. One known limit is documented rather than hidden: an Eevee's
+      graph is 10 rows and the band's cell pool is `HUD_DETAIL_EVO_MAX = 9` (a `RouteScene.ts`
+      constant this batch did not own), so its G-Max row is the one clipped row.
+- [x] **The ⓘ detail button has one classifier, and the learnset band's now works.** The battle's
+      MOVES window and the route HUD's learnset band hit-test the same `MoveGrid` cell two
+      different ways; now there is one. `src/scenes/BattleScene.ts` loses the per-zone
+      `pointermove`, `insideInfoButton` and the cell-local `infoRect` it stashed on each menu
+      zone, and classifies the ⓘ from the **live pointer**
+      (`this.cameras.main.getWorldPoint(pointer.x, pointer.y, this.hitPoint)` — the reusable
+      `Vector2` keeps the no-per-frame-allocation rule — then `moveGrid.indexAt` + `cellRect` +
+      `infoAt`), with a `gameout` drop for an unpinned popup; the **press** keeps its own exact
+      arithmetic (`zone.x + localX`) so the path the play report says already worked cannot
+      regress. `src/ui/moveGrid.ts` loses `infoRect`, whose only consumer that stash was, and
+      keeps every other member byte-identical (Batch 18's `moveGrid.test.ts` and the four-slot
+      work are written against that surface). In `src/scenes/RouteScene.ts` the band's ⓘ is
+      wired for the first time: `refreshLearnset` stops passing `info: null`, the panel's
+      single info index is tagged `{ grid: 'moves' | 'learn'; index }` (it is an index into
+      the band's **window**, so `scrollLearnset`, `updateLearnScrollDrag`, `scrollPoolTo` and
+      both search branches call the new `dropLearnInfo` when they rebuild it), a
+      `detailLearnInfoAt` mirrors the moves grid's helper, and the press order flips so the ⓘ
+      wins over `startLearnDrag` while the cell's body still starts the drag. The dev's static
+      reproduction is recorded in the spec: on pristine `main` the battle half's hover and
+      click were fed the same local point and the same rect, so the two classifications
+      returned the same boolean — the change removes that duplicate rather than fixing a
+      formula, and the on-screen hover is one of the three `[live]` checks handed to a human.
+      No test file was added, so the suite stayed at 135 files / **1565** tests, and no doc,
+      data, engine or serial resource was touched.
 - [x] **The enemy AI thinks with the cartridges' own script flags, and difficulty is one
       visible setting (`D46`).** `chooseAiCommand` stops scoring with one hard-coded
       function: `AiFlag` — `checkBadMove`, `tryToFaint`, `checkViability`,
