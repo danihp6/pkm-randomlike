@@ -1202,7 +1202,7 @@ one tree — with every `[unit]` criterion green and both measurable `[live]` cr
 **measured** on a dev server over CDP (the vocabulary boots whole: 525 loaded keys against
 525 table ids, 0 failed files; a wild encounter plays `cry-pikachu` exactly once; a turn
 plays the move's own cue or `hit`); the third `[live]` criterion is a **listening**
-judgement this runner cannot make, so it went to an `agent-review` issue and did not block
+judgement this runner cannot make, so it went to an `agent-review` issue (#9) and did not block
 the merge. **What shipped, and the counts the cut got wrong.** The vocabulary grows from six
 cues to **525** — the six that ship (byte-identical), the shared `hit`, **130** `move-*`
 (one per `SE_M_*` MIDI) and **388** `cry-*` (one per cry sample) — committed as **519 new**
