@@ -211,6 +211,10 @@ Full rules in `docs/battle-spec.md`. In short:
   pins it. In the switch window the ⓘ is **hover only**, so a press there still
   selects the member under it. Every submenu puts the ◀
   back control centred on its left edge.
+  Each of the window's four **move** rows carries the same **ⓘ** on a hit zone of
+  its own, sized to the button: hovering one floats that move's own description and
+  a press on it **pins** the description open — the press is swallowed there, so
+  the member the window describes is not switched.
 - The bag opens as pockets like the route HUD — **CONSUM** everywhere and
   **BALL** while a wild can still be caught; trainer battles offer only
   consumables.

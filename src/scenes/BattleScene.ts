@@ -109,7 +109,7 @@ import {
   statLabel,
   type MemberDetail,
 } from '../ui/partyDetail';
-import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
+import { MoveGrid, moveInfoContent, type MoveGridCell } from '../ui/moveGrid';
 import { fitPartyLabel, partyGridLayout } from '../ui/partyGrid';
 import {
   AbilityInfoButton,
@@ -445,6 +445,21 @@ export class BattleScene extends Phaser.Scene {
   private partyAbilityZone!: Phaser.GameObjects.Zone;
   private partyAbilityInfo = false;
 
+  /** One ⓘ per move row of the switch detail window: its button, its label and its own hit zone. */
+  private partyMoveInfoRows: {
+    button: Phaser.GameObjects.Rectangle;
+    label: Phaser.GameObjects.BitmapText;
+    zone: Phaser.GameObjects.Zone;
+  }[] = [];
+  /** The description window the four move rows share. */
+  private partyMoveInfoPopup!: InfoPopup;
+  /** The move row whose description is floated, or null. */
+  private partyMoveInfo: number | null = null;
+  /** True while a press pinned the description, so leaving the button keeps it up. */
+  private partyMoveInfoPinned = false;
+  /** The member the floated description belongs to; a repaint for anyone else drops it. */
+  private partyMoveInfoMember: string | null = null;
+
   private menuItems: readonly MenuItem[] = [];
   private menuIndex = 0;
 
@@ -475,6 +490,9 @@ export class BattleScene extends Phaser.Scene {
     this.megaIntent = false;
     this.gmaxIntent = false;
     this.partyAbilityInfo = false;
+    this.partyMoveInfo = null;
+    this.partyMoveInfoPinned = false;
+    this.partyMoveInfoMember = null;
     const launch = this.launch;
     if (!launch) return;
     // The fighters are built here rather than in `create` so `preload` can load
@@ -873,7 +891,7 @@ export class BattleScene extends Phaser.Scene {
       const name = addFrlgText(this, moveCellX(i) + 8, moveCellY(i) + 4, '', {
         size: 16,
         tint: FRLG_INK,
-      }).setMaxWidth(cellW - 16);
+      }).setMaxWidth(cellW - 8 - ABILITY_INFO_SIZE - 12);
       const pp = addFrlgText(this, moveCellX(i) + 8, moveCellY(i) + 18, '', {
         size: 16,
         tint: 0x3a3956,
@@ -901,6 +919,40 @@ export class BattleScene extends Phaser.Scene {
     this.partyAbilityZone.on('pointerout', () => this.setPartyAbilityInfo(false));
     if (this.partyAbilityZone.input) this.partyAbilityZone.input.enabled = false;
     this.partyDetail.add(this.partyAbilityZone);
+    // One ⓘ per move row, each on a hit zone of its own so a press is swallowed
+    // at the button and never reaches the switch row under the panel.
+    const moveInfoX = (i: number): number => moveCellX(i) + cellW - 8 - ABILITY_INFO_SIZE;
+    const moveInfoY = (i: number): number =>
+      moveCellY(i) + (PARTY_DETAIL_MOVE_ROW - ABILITY_INFO_SIZE) / 2;
+    const moveInfoButtons = Array.from({ length: MAX_MOVES }, (_, i) => {
+      const centerX = moveInfoX(i) + ABILITY_INFO_SIZE / 2;
+      const centerY = moveInfoY(i) + ABILITY_INFO_SIZE / 2;
+      const button = this.add
+        .rectangle(centerX, centerY, ABILITY_INFO_SIZE, ABILITY_INFO_SIZE, 0xcfcce2)
+        .setStrokeStyle(2, 0x9a94b8)
+        .setVisible(false);
+      const label = addFrlgText(this, centerX, centerY, 'i', {
+        size: 16,
+        tint: FRLG_INK,
+        origin: 0.5,
+      }).setVisible(false);
+      this.partyDetail.add([button, label]);
+      return { button, label };
+    });
+    this.partyMoveInfoRows = moveInfoButtons.map(({ button, label }, i) => {
+      const zone = this.add
+        .zone(moveInfoX(i), moveInfoY(i), ABILITY_INFO_SIZE, ABILITY_INFO_SIZE)
+        .setOrigin(0, 0);
+      zone.setInteractive({ useHandCursor: true });
+      zone.setData('move', i);
+      zone.on('pointerover', () => this.setPartyMoveInfo(i));
+      zone.on('pointerout', () => this.clearPartyMoveInfo(i));
+      zone.on('pointerdown', () => this.togglePartyMoveInfo(i));
+      if (zone.input) zone.input.enabled = false;
+      this.partyDetail.add(zone);
+      return { button, label, zone };
+    });
+    this.partyMoveInfoPopup = new InfoPopup(this, this.partyDetail);
   }
 
   private bindInput(): void {
@@ -2346,8 +2398,10 @@ export class BattleScene extends Phaser.Scene {
     if (!detail) {
       this.partyDetail.setVisible(false);
       this.hidePartyAbilityInfo();
+      this.hidePartyMoveInfo();
       return;
     }
+    if (this.partyMoveInfoMember !== detail.id) this.hidePartyMoveInfo();
     const scale = Math.min(1, menu.w / PARTY_DETAIL_W);
     const height = PARTY_DETAIL_H * scale;
     const x = Math.max(0, Math.min(menu.x, menu.x * 2 + menu.w - PARTY_DETAIL_W * scale));
@@ -2400,6 +2454,7 @@ export class BattleScene extends Phaser.Scene {
       row.name.setText(move.name);
       row.pp.setText(t('move.pp', { pp: move.pp, max: move.maxPp }));
     });
+    this.renderPartyMoveInfo(detail);
   }
 
   /** Hides the party grid's cells, avatars, labels, HP bars and hit zones. */
@@ -2415,6 +2470,7 @@ export class BattleScene extends Phaser.Scene {
     }
     this.partyDetail.setVisible(false);
     this.hidePartyAbilityInfo();
+    this.hidePartyMoveInfo();
   }
 
   /**
@@ -2456,6 +2512,103 @@ export class BattleScene extends Phaser.Scene {
     this.partyAbilityInfo = false;
     this.partyAbilityButton.hide();
     if (this.partyAbilityZone.input) this.partyAbilityZone.input.enabled = false;
+  }
+
+  /** Lays the four ⓘ controls out for the described member and floats (or hides) the window. */
+  private renderPartyMoveInfo(detail: MemberDetail): void {
+    this.partyMoveInfoMember = detail.id;
+    this.partyMoveInfoRows.forEach((row, i) => {
+      const move = detail.moves[i];
+      const visible = move !== undefined;
+      row.button.setVisible(visible);
+      row.label.setVisible(visible);
+      if (row.zone.input) row.zone.input.enabled = visible;
+      if (!move) return;
+      const active = i === this.partyMoveInfo;
+      row.button
+        .setFillStyle(active ? 0xf7e0a6 : 0xcfcce2)
+        .setStrokeStyle(2, active ? 0x2f2c4d : 0x9a94b8);
+    });
+    const index = this.partyMoveInfo;
+    const anchor = index === null ? undefined : this.partyDetailMoves[index];
+    const move = index === null ? undefined : detail.moves[index];
+    if (!anchor || !move || move.desc.length === 0) {
+      this.partyMoveInfoPopup.hide();
+      return;
+    }
+    const cell: MoveGridCell = {
+      name: move.name,
+      type: move.type,
+      category: move.category,
+      pp: move.pp,
+      maxPp: move.maxPp,
+      desc: move.desc,
+      power: move.power,
+      basePower: move.basePower,
+      accuracy: move.accuracy,
+      baseAccuracy: move.baseAccuracy,
+      status: move.status,
+      enabled: true,
+    };
+    const infoY = anchor.cell.y + 6;
+    this.partyMoveInfoPopup.show(
+      {
+        x: FRLG_WINDOW_PADDING.x,
+        width: PARTY_DETAIL_W - FRLG_WINDOW_PADDING.x * 2,
+        above: infoY - MOVE_POPUP_GAP,
+        below: infoY + ABILITY_INFO_SIZE + MOVE_POPUP_GAP,
+      },
+      moveInfoContent(cell),
+    );
+  }
+
+  /** Redraws the ⓘ for the member the cursor is on. */
+  private refreshPartyMoveInfo(): void {
+    const fighter = this.state.sides.player.party[this.menuIndex];
+    if (!fighter || this.mode !== 'party') {
+      this.hidePartyMoveInfo();
+      return;
+    }
+    this.renderPartyMoveInfo(fighterDetail(fighter));
+  }
+
+  /** Hovering the ⓘ of row `index` floats its description, unless one is pinned. */
+  private setPartyMoveInfo(index: number): void {
+    if (this.partyMoveInfoPinned || this.partyMoveInfo === index) return;
+    this.partyMoveInfo = index;
+    this.refreshPartyMoveInfo();
+  }
+
+  /** Leaving the ⓘ hides an unpinned description. */
+  private clearPartyMoveInfo(index: number): void {
+    if (this.partyMoveInfoPinned || this.partyMoveInfo !== index) return;
+    this.partyMoveInfo = null;
+    this.refreshPartyMoveInfo();
+  }
+
+  /** A press pins that description, or closes it when it is already pinned. */
+  private togglePartyMoveInfo(index: number): void {
+    if (this.partyMoveInfoPinned && this.partyMoveInfo === index) {
+      this.partyMoveInfoPinned = false;
+      this.partyMoveInfo = null;
+    } else {
+      this.partyMoveInfoPinned = true;
+      this.partyMoveInfo = index;
+    }
+    this.refreshPartyMoveInfo();
+  }
+
+  /** Hides the four ⓘ controls, their zones and the window. */
+  private hidePartyMoveInfo(): void {
+    this.partyMoveInfo = null;
+    this.partyMoveInfoPinned = false;
+    this.partyMoveInfoMember = null;
+    for (const row of this.partyMoveInfoRows) {
+      row.button.setVisible(false);
+      row.label.setVisible(false);
+      if (row.zone.input) row.zone.input.enabled = false;
+    }
+    this.partyMoveInfoPopup.hide();
   }
 
   /**
