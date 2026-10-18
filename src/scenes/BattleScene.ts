@@ -535,6 +535,7 @@ export class BattleScene extends Phaser.Scene {
       enemy: this.enemyFighters,
       rng: new Rng(launch.seed),
       isWild: trigger.kind === 'wild',
+      firstCatch: launch.firstCatch,
       enemyName: trigger.kind === 'trainer' ? trigger.trainerName : 'Foe',
       bag: launch.bag.flatMap((slot) => {
         const item = getItem(slot.itemId);

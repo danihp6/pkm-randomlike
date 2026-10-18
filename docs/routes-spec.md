@@ -211,6 +211,10 @@ populate them (steps 3-4). The `hedges` and `maze` carvers stay parked in
   room's window, so **only the first wild Pokémon that appears can ever be caught**
   there. Once spent, the **minimap marks the room** with a Poké Ball and the BALL
   command is disabled for any later encounter in the room.
+- **The run's very first catch is certain** (`docs/battle-spec.md` §6): while
+  `RunState.stats.catches === 0`, every capture attempt is an outright success
+  whatever the species, the target's HP, the ball or its status, so the party can
+  never be left with nothing to grow.
 - When a catch leaves the party still **full**, a **capture screen** opens: the
   caught Pokémon's stats sit beside the party so the player can compare, then
   **swap it for a party member** (the replaced member goes to the PC) or **send it

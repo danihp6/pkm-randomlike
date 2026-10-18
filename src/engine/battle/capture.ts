@@ -19,6 +19,18 @@ export function shakeThreshold(value: number): number {
   return Math.floor(1048560 / Math.sqrt(Math.sqrt(16711680 / value)));
 }
 
+/** The catch value the run's first capture rolls against: a certain catch (Task-48). */
+export const FIRST_CATCH_VALUE = 255;
+
+/**
+ * The catch value the roll uses: `catchValue`'s own result, or the flat first-catch
+ * override while the run that launched this battle has caught nothing yet.
+ */
+export function catchValueFor(fighter: BattleFighter, ballBonus: number, firstCatch: boolean): number {
+  if (firstCatch) return FIRST_CATCH_VALUE;
+  return catchValue(fighter, catchRateOf(fighter.speciesId), ballBonus);
+}
+
 export type CaptureResult = Readonly<{ success: boolean; shakes: number; value: number }>;
 
 export function attemptCapture(
@@ -28,7 +40,7 @@ export function attemptCapture(
   rng: Rng = state.rng,
 ): CaptureResult {
   const target = activeFighter(state, targetSide);
-  const value = catchValue(target, catchRateOf(target.speciesId), ballBonus);
+  const value = catchValueFor(target, ballBonus, state.firstCatch);
 
   if (!state.isWild || value <= 0) return { success: false, shakes: 0, value };
   if (value >= 255) return { success: true, shakes: 4, value };

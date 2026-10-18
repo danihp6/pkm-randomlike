@@ -102,7 +102,12 @@ theirs, `RunState.capturedRooms`, not a per-battle counter).
 2. The catch chance is the classic Gen 9 formula (ball bonus, catch rate, HP
    ratio, status bonus, level). The catch rate comes from the dex
    (`catchRateOf`, sourced from PokeAPI) and the ball bonus from
-   `src/data/items.ts`.
+   `src/data/items.ts`. **The run's first catch is certain**: while the run has
+   caught nothing (`RunState.stats.catches === 0`), the capture's catch **value**
+   is the flat 255 that `attemptCapture` already treats as an outright success
+   (`FIRST_CATCH_VALUE`, `catchValueFor`), so neither the species' rate, the
+   target's HP, the ball nor the status can make the run's first catch fail. The
+   moment it lands, the flag is false and the next wild is back to its own rate.
 3. A failed throw consumes the ball and the wild Pokémon keeps fighting; there is
    no re-throw penalty beyond the ball cost.
 4. A successful catch adds the Pokémon to the party, or to the PC box if the
