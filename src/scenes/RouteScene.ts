@@ -6077,6 +6077,7 @@ export class RouteScene extends Phaser.Scene {
     // allows the catch (the flag is read before spending) and the route HUD and
     // minimap mark the room spent as soon as it is back.
     const captureAllowed = canCapture(this.run);
+    const firstCatch = this.run.stats.catches === 0;
     if (trigger.kind === 'wild') {
       this.run = useCapture(this.run);
       this.persistRun();
@@ -6090,6 +6091,7 @@ export class RouteScene extends Phaser.Scene {
       runSeed: this.run.seed,
       routeIndex: this.run.routeIndex,
       canCapture: captureAllowed,
+      firstCatch,
       // The difficulty the battle's AI reads from the launch (D46): the settings
       // are re-read whenever the options screen closes, so a change reaches the
       // next battle.

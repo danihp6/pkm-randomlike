@@ -55,6 +55,8 @@ export type BattleLaunch = Readonly<{
   routeIndex: number;
   /** False once the route's single capture has been spent. */
   canCapture: boolean;
+  /** The run has caught nothing yet, so its next capture is certain (Task-48). */
+  firstCatch: boolean;
   /** The difficulty the battle's AI thinks at, read from the settings at launch (D46). */
   aiLevel: AiLevel;
 }>;

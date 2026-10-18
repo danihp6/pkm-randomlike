@@ -105,6 +105,8 @@ export type BattleState = {
   log: BattleEvent[];
   bag: BagSlot[];
   isWild: boolean;
+  /** True while the run that launched this battle has caught nothing yet (Task-48). */
+  firstCatch: boolean;
   winner: SideId | 'draw' | null;
   /** Failed run attempts this battle, feeding the classic escape odds. */
   escapeAttempts: number;
@@ -123,6 +125,8 @@ export type BattleSetup = Readonly<{
   enemy: readonly BattleFighter[];
   rng: Rng;
   isWild: boolean;
+  /** The run that launched this battle has not caught anything yet (Task-48). */
+  firstCatch?: boolean;
   bag?: readonly Readonly<{ item: ItemDef; count: number }>[];
   playerName?: string;
   enemyName?: string;
@@ -166,6 +170,7 @@ export function createBattle(setup: BattleSetup): BattleState {
     log: [],
     bag: (setup.bag ?? []).map((slot) => ({ item: slot.item, count: slot.count })),
     isWild: setup.isWild,
+    firstCatch: setup.firstCatch ?? false,
     winner: null,
     escapeAttempts: 0,
     movedSides: [],
