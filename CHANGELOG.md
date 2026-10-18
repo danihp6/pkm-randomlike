@@ -8,6 +8,43 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **`npm run lint` is `prettier --check .` with no per-file escape hatch left under
+      `src/**`.** Task-01 shipped the format gate over a ledger instead of reformatting a file
+      a batch-mate owned, so `.prettierignore` carried an `src/**` block of **104 individual
+      files** (the backlog's own prose said 105; the measured number is 104) plus five
+      generated-data globs. This task pays that debt off: each of the 104 is formatted with the
+      shipped `.prettierrc.json` (`npx prettier --write <file>` — never a retune of the options)
+      and its line deleted, so the ledger goes **132 → 29 entries** (51 lines). **103 of the
+      104 actually rewrote**; `src/data/shop.ts` was already Prettier-clean under those options,
+      so its line is deleted like the rest and its file stays byte-identical — which is why the
+      audited diff is **104 paths** (103 reformats plus `.prettierignore`), one path fewer than
+      the exclusive list it is audited against. What stays is exactly what has a reason to stay:
+      the generated/binary globs, `package-lock.json`, the `scripts/**` packers, the regenerated
+      `docs/balance/effect-coverage.md`, the five generated `src/**` globs (`src/assets/**`,
+      `src/data/dex/**`, `src/data/frlg/**`, `src/data/anil/**`, `src/data/ui/**`) and the
+      prose/process documents — and each surviving block now says what it holds and why, in
+      place of the obsolete "Prettier 3.9 rewrites 157 tracked files" comment, which is gone.
+      **One new entry:** `docs/agent-ci.md`, a tracked process doc the CI work added which
+      `prettier --check .` flagged and the ledger had never listed; it is **not** reformatted but
+      joins the prose block (Prettier's markdown printer would only realign its tables, and it is
+      the CI/Orchestrator's own document, not a lint target), and that entry is what makes
+      `npm run lint` exit **0** on the tree as it stands. The reflow of 4 144/1 644 lines is
+      proved mechanical rather than read: for every one of the 103 changed files, feeding its
+      base revision through Prettier 3.9.10 reproduces the task's file **byte for byte**
+      (103/103), `npm run build` (`tsc --noEmit && vite build`) is green, the suite is **1627
+      tests** across 136 files with the same counts as the batch base (which QA re-ran for
+      comparison), and the one test that reads these sources as text — `src/i18n/index.test.ts`'s
+      call-site scanner — sees exactly what it saw before the reflow (170 files, **279** call
+      sites, the same `(file, key, params)` multiset, its 25 assertions green in isolation). No
+      symbol, signature, string, number, table or rule moved; `.prettierrc.json` and
+      `package.json` are untouched; no file was added, renamed or deleted, so no folder
+      `README.md` changed. QA validated it in the single pass a one-task batch collapses to —
+      the task's plan, both gates, the cross-task audit and the merge rehearsal on one tree —
+      with all eight `[unit]` criteria green and **zero** browser budget, because the task
+      declares no `[live]` criterion; one criterion was amended by the Orchestrator before that
+      pass (the ledger check anchors at `^docs/agent-ci\.md$`, since the byte-frozen prose block
+      names that file in its own comment). From here on a new file conforms, a task that edits a
+      formatted file keeps it conforming, and no task adds a ledger line.
 - [x] **Every player-facing string is a key in one English table, and Spanish overlays it.**
       The new pure module `src/i18n/` holds the source table (`en.ts`, 293 keys), the Spanish
       overlay (`es.ts`, the same keys, `Readonly<Record<TranslationKey, string>>` so a missing

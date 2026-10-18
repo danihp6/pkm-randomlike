@@ -1152,6 +1152,33 @@ its place in the sequence and is never reused. What follows is the cut's own rec
   accessibility pass introduced.
 
 ### Batch 11 — the Prettier reformat pass (last of the planned backlog)
+**(shipped and archived)**: its one task is closed — Task-29 merged alone behind the green
+gate (`task-29`; **1627** tests, `npm test` + `npm run build` green on the merge commit
+`e89b80a5`, and `npm run lint` green with it) and the detail is in `CHANGELOG.md`'s
+`## Unreleased`. QA validated it in the single pass a one-task batch collapses to — the
+task's plan, the two gates, the cross-task audit and the merge rehearsal on one tree — and
+it spends **zero** browser budget, because every criterion of the task is `[unit]` and it
+declares no `[live]` one: all eight came back green on the first tip, with the rehearsal's
+`--no-ff` merge landing on the integration commit's own tree. **What shipped, and the
+counts the cut got wrong:** the ledger's `src/**` block is **104** individual files, not the
+105 the entry below claims, and the generated-data globs are **five** (`src/assets/**`,
+`src/data/dex/**`, `src/data/frlg/**`, `src/data/anil/**`, `src/data/ui/**`), not four.
+**103** of the 104 genuinely rewrote; `src/data/shop.ts` was already Prettier-clean, so it
+stays byte-identical and the audited diff is **104 paths** (103 reformats plus
+`.prettierignore`), one path fewer than the exclusive list. `docs/agent-ci.md` — a tracked
+process doc the CI work added, which `prettier --check .` flagged and the ledger had never
+listed — **joins the prose/process block** instead of being reformatted, so `npm run lint`
+(`prettier --check .`) exits **0** with **no per-file escape hatch left under `src/**`**;
+the obsolete "157 tracked files" block is gone and each surviving block says what it holds
+and why. `.prettierignore` goes **132 → 29 entries** (51 lines). The reformat is provable
+without reading its 4 144/1 644 lines: every changed byte is Prettier 3.9.10's own output
+over the base revision (**103/103**), `tsc --noEmit` and the suite stay green, and the one
+test that reads these sources as text — `src/i18n/index.test.ts`'s call-site scanner — sees
+exactly what it saw before the reflow (170 files, 279 sites, same `(file, key, params)`
+multiset; 25 assertions green in isolation). One criterion was **amended by the
+Orchestrator before the pass**: the ledger check anchors at `^docs/agent-ci\.md$`, because
+the byte-frozen prose block names that file in its own comment. Its ID is retired: it keeps
+its place in the sequence and is never reused. What follows is the cut's own record.
 - **Task-29** Format the files `.prettierignore` still ledgers, and delete their lines.
 - **Hot files:** none of the serial resources — but the task claims **every `src/**`
   path the ledger names**, so no other task may run beside it.
@@ -2124,21 +2151,23 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
       *Dependencies:* none inside this repo — it waits on the upstream release.
       *Decision:* **Dormant and unscheduled.** The blocker is upstream: `typescript-eslint` peers `typescript <6.1` while the repo pins 7. Neither a second toolchain nor dropping the half.
       **Unscheduled** (no batch).
-- [ ] **[Task-29] The Prettier reformat pass.** Task-01 shipped the format gate over a
-      **ledger** rather than rewrite a file a batch-mate owned: `.prettierignore` is a
-      132-entry file, and its `src/**` block is **105 individual files** (plus the four
-      generated-data globs, which stay) that Prettier would rewrite — each verified
-      non-conforming, so the ledger hides no clean file. This task pays that off:
-      format every ledgered `src/**` file with the shipped `.prettierrc.json`
+- [x] **[Task-29] The Prettier reformat pass.** Task-01 shipped the format gate over a
+      **ledger** rather than rewrite a file a batch-mate owned: `.prettierignore` was a
+      132-entry file, and its `src/**` block is **104 individual files** (plus the five
+      generated-data globs, which stay — the numbers the cut first carried, 105 and four,
+      are corrected here) that Prettier would rewrite: 103 of them genuinely, since
+      `src/data/shop.ts` was already conforming and only lost its line. This task pays that
+      off: format every ledgered `src/**` file with the shipped `.prettierrc.json`
       (`npx prettier --write <file>`, never a retune of the options), confirm the file
       now passes `prettier --check`, and delete its ledger line. What stays is exactly
       what has a reason to stay: the generated/binary globs, the `scripts/**` packers
       and the prose files the ledger names (`AGENTS.md`, `CHANGELOG.md`, `TODO.md` and
       the `docs/*.md` it lists), which belong to the docs tasks and to the
-      Orchestrator, and get a clearer comment than today's. Owners: the ledgered `src/**` files and `.prettierignore`. Every task
+      Orchestrator, and get a clearer comment than today's; `docs/agent-ci.md`, which
+      the CI work added and the ledger never listed, joins that prose block. Owners: the ledgered `src/**` files and `.prettierignore`. Every task
       from here on keeps the ledger from growing — a new file conforms, and a task that
       edits a ledgered file never adds a line to hide it.
-      *Dependencies:* none. *(Batch 11)*
+      *Dependencies:* none. *(Batch 11 — shipped)*
 
 ## Phase 1 — Dex accessors & data contracts
 
