@@ -108,6 +108,7 @@ import {
   type MemberDetail,
 } from '../ui/partyDetail';
 import { MoveGrid, moveInfoContent, type MoveGridCell } from '../ui/moveGrid';
+import { battleInfoLines, battleInfoRows } from '../ui/battleInfo';
 import { fitPartyLabel, partyGridLayout } from '../ui/partyGrid';
 import {
   AbilityInfoButton,
@@ -247,7 +248,7 @@ function capitalize(text: string): string {
   return text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
 }
 
-type Mode = 'entry' | 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'over';
+type Mode = 'entry' | 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'over' | 'info';
 
 /** A sprite beat that owns the mon's position/scale until it completes. */
 type BeatKind = 'faint' | 'switch';
@@ -369,6 +370,12 @@ export class BattleScene extends Phaser.Scene {
   private gmaxZone!: Phaser.GameObjects.Zone;
   /** True while the keyboard cursor sits on the G-Max control instead of a move. */
   private gmaxSelected = false;
+  /** The INFO control at the right edge of the command window: its cell, label and hit zone. */
+  private infoCell!: Phaser.GameObjects.Rectangle;
+  private infoText!: Phaser.GameObjects.BitmapText;
+  private infoZone!: Phaser.GameObjects.Zone;
+  /** True while the keyboard cursor sits on the INFO control instead of a command cell. */
+  private infoSelected = false;
   private hpBars!: Record<SideId, { fill: Phaser.GameObjects.Rectangle; bar: Phaser.GameObjects.Image }>;
   private messageText!: Phaser.GameObjects.BitmapText;
   private nameText!: Record<SideId, Phaser.GameObjects.BitmapText>;
@@ -667,6 +674,22 @@ export class BattleScene extends Phaser.Scene {
     this.gmaxZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     this.gmaxZone.on('pointerover', () => this.onGmaxHover());
     this.gmaxZone.on('pointerdown', () => this.onGmaxClick());
+
+    // The INFO control at the right edge of the command window, in the column the
+    // moves menu reserves for MEGA. It is drawn only by the command menu, and a
+    // press on it opens the battle's own state.
+    this.infoCell = this.add
+      .rectangle(0, 0, 10, 10, 0xe6e3f2)
+      .setOrigin(0, 0)
+      .setStrokeStyle(2, 0x9a94b8)
+      .setVisible(false);
+    this.infoText = addFrlgText(this, 0, 0, t('battle.infoControl'), {
+      size: 16,
+      tint: FRLG_INK,
+      origin: 0.5,
+    }).setVisible(false);
+    this.infoZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    this.infoZone.on('pointerdown', () => this.openInfo());
 
     this.nameText = {
       enemy: addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
@@ -1019,6 +1042,10 @@ export class BattleScene extends Phaser.Scene {
       this.onConfirm();
       return;
     }
+    if (this.mode === 'info') {
+      this.openMenu();
+      return;
+    }
     if (this.mode === 'over') this.returnToRoute();
   }
 
@@ -1040,6 +1067,10 @@ export class BattleScene extends Phaser.Scene {
       this.returnToRoute();
       return;
     }
+    if (this.mode === 'info') {
+      this.openMenu();
+      return;
+    }
     this.confirmMenu();
   }
 
@@ -1050,6 +1081,10 @@ export class BattleScene extends Phaser.Scene {
     }
     if (this.mode === 'over') {
       this.returnToRoute();
+      return;
+    }
+    if (this.mode === 'info') {
+      this.openMenu();
       return;
     }
     if (this.mode === 'moves' || this.mode === 'bag' || this.mode === 'party') {
@@ -1578,6 +1613,7 @@ export class BattleScene extends Phaser.Scene {
     if (!canGigantamax(this.state, 'player')) this.gmaxIntent = false;
     this.megaSelected = false;
     this.gmaxSelected = false;
+    this.infoSelected = false;
     this.menuItems = [
       { label: t('battle.command.fight'), enabled: true, onSelect: () => this.openMoves() },
       {
@@ -1595,6 +1631,19 @@ export class BattleScene extends Phaser.Scene {
     this.menuIndex = 0;
     this.mode = 'menu';
     this.setMessage(t('battle.promptAction', { name: player.name }));
+    this.refreshHud();
+  }
+
+  /** Opens the battle-state window: the model's lines as the list's items, in `mode = 'info'`. */
+  private openInfo(): void {
+    this.menuItems = battleInfoLines(battleInfoRows(this.state)).map((line) => ({
+      label: line,
+      enabled: true,
+      onSelect: () => this.openMenu(),
+    }));
+    this.menuIndex = 0;
+    this.infoSelected = false;
+    this.mode = 'info';
     this.refreshHud();
   }
 
@@ -1806,6 +1855,18 @@ export class BattleScene extends Phaser.Scene {
     const rows = Math.max(1, Math.ceil(count / cols));
     const mega = this.mode === 'moves' && this.megaAvailable();
     const gmax = this.mode === 'moves' && this.gmaxAvailable();
+    const info = this.mode === 'menu';
+
+    // The INFO control sits to the right of the command grid, in the column the
+    // moves menu reserves for MEGA: `right` from the last column reaches it and
+    // `left` walks back out into the grid.
+    if (this.infoSelected) {
+      if (action === 'left') {
+        this.infoSelected = false;
+        this.refreshHud();
+      }
+      return;
+    }
 
     // The Mega and G-Max controls sit to the right of the grid, the G-Max one
     // innermost: `right` from the last column reaches them, and `left` walks back
@@ -1840,6 +1901,11 @@ export class BattleScene extends Phaser.Scene {
         this.refreshHud();
         return;
       }
+      if (action === 'right' && info && (col === cols - 1 || index === count - 1)) {
+        this.infoSelected = true;
+        this.refreshHud();
+        return;
+      }
       let nextRow = row;
       let nextCol = col;
       if (action === 'up') nextRow = (row - 1 + rows) % rows;
@@ -1855,6 +1921,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private confirmMenu(): void {
+    if (this.mode === 'menu' && this.infoSelected) {
+      this.openInfo();
+      return;
+    }
     if (this.mode === 'moves' && this.megaSelected && this.megaAvailable()) {
       this.toggleMega();
       return;
@@ -2034,6 +2104,7 @@ export class BattleScene extends Phaser.Scene {
       if (this.mode === 'bag') this.renderBagMenu(menu);
       else if (this.mode === 'moves') this.renderMoveMenu(menu);
       else if (this.mode === 'menu') this.renderCommandMenu(menu);
+      else if (this.mode === 'info') this.renderInfoWindow(menu);
       else this.renderPartyGrid(menu);
     } else {
       this.hideMenu();
@@ -2205,7 +2276,7 @@ export class BattleScene extends Phaser.Scene {
     const cols = MENU_GRID_COLS;
     const rows = Math.max(1, Math.ceil(count / cols));
     const left = menu.x + pad.x + MOVE_GRID_INSET;
-    const right = menu.x + menu.w - pad.x - MOVE_GRID_INSET;
+    const right = menu.x + menu.w - pad.x - MOVE_GRID_INSET - MOVE_MEGA_COL;
     const top = menu.y + pad.top + MOVE_GRID_INSET;
     const bottom = menu.y + menu.h - pad.bottom - MOVE_GRID_INSET;
     const cellW = (right - left - (cols - 1) * MENU_GRID_GAP) / cols;
@@ -2248,11 +2319,70 @@ export class BattleScene extends Phaser.Scene {
       if (zone.input) zone.input.enabled = Boolean(item);
       if (item) zone.setPosition(cellX(i), cellY(i)).setSize(cellW, cellH);
     });
+    this.layoutInfoControl(menu, top, bottom);
+    if (this.infoSelected) {
+      this.menuCursor
+        .setFlipX(true)
+        .setScale(1)
+        .setPosition(
+          this.infoCell.x + this.infoCell.width - 12,
+          this.infoCell.y + this.infoCell.height / 2,
+        )
+        .setVisible(true);
+      return;
+    }
     this.menuCursor
       .setFlipX(true)
       .setScale(1)
       .setPosition(cellX(this.menuIndex) + cellW - 48, cellY(this.menuIndex) + cellH / 2)
       .setVisible(count > 0);
+  }
+
+  /** A fifth control at the right edge of the command window, the column `MOVE_MEGA_COL` reserves in the moves menu. */
+  private layoutInfoControl(menu: Rect, top: number, bottom: number): void {
+    const x = menu.x + menu.w - FRLG_WINDOW_PADDING.x - MOVE_GRID_INSET - MOVE_MEGA_COL;
+    const h = bottom - top;
+    const selected = this.infoSelected;
+    this.infoCell
+      .setPosition(x, top)
+      .setSize(MOVE_MEGA_COL, h)
+      .setFillStyle(selected ? 0xf7e0a6 : 0xe6e3f2)
+      .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
+      .setVisible(true);
+    this.infoText
+      .setText(t('battle.infoControl'))
+      .setPosition(x + MOVE_MEGA_COL / 2, top + h / 2)
+      .setVisible(true);
+    this.infoZone.setPosition(x, top).setSize(MOVE_MEGA_COL, h);
+    if (this.infoZone.input) this.infoZone.input.enabled = true;
+  }
+
+  /** Hides the info control's cell, label and hit zone. */
+  private hideInfoControl(): void {
+    this.infoCell.setVisible(false);
+    this.infoText.setVisible(false);
+    if (this.infoZone.input) this.infoZone.input.enabled = false;
+  }
+
+  /**
+   * The battle-state window: the model's lines as the shipped list rows in the
+   * shipped window — the weather and the terrain, the field and side conditions
+   * with their counts and each active's stat stages and status.
+   */
+  private renderInfoWindow(menu: Rect): void {
+    this.menuPanel.setVisible(true);
+    this.hideBagTabs();
+    this.hideMoveChrome();
+    this.hidePartyGrid();
+    this.hideInfoControl();
+    this.layoutBackButton(menu, false);
+    this.layoutMenuRows(
+      menu,
+      this.menuItems,
+      menu.y + FRLG_WINDOW_PADDING.top + MOVE_GRID_INSET,
+      MENU_ROWS,
+      0,
+    );
   }
 
   /**
@@ -2266,6 +2396,7 @@ export class BattleScene extends Phaser.Scene {
     this.menuPanel.setVisible(true);
     this.hideBagTabs();
     this.hideMoveChrome();
+    this.hideInfoControl();
     const party = this.state.sides.player.party;
     const count = this.menuItems.length;
     const { rects, avatarScale, hpBarScale, labelMaxWidth } = partyGridLayout(menu, {
@@ -2598,6 +2729,7 @@ export class BattleScene extends Phaser.Scene {
     this.menuPanel.setVisible(true);
     this.hideBagTabs();
     this.hidePartyGrid();
+    this.hideInfoControl();
     for (const row of this.menuRows) row.setVisible(false);
     for (const cell of this.commandCells) cell.setVisible(false);
     const pad = FRLG_WINDOW_PADDING;
@@ -2765,6 +2897,7 @@ export class BattleScene extends Phaser.Scene {
     this.menuPanel.setVisible(true);
     this.hideMoveChrome();
     this.hidePartyGrid();
+    this.hideInfoControl();
     const pad = FRLG_WINDOW_PADDING;
     const tabY = menu.y + pad.top;
     this.bagTabs.forEach((tab, slot) => {
@@ -2867,6 +3000,7 @@ export class BattleScene extends Phaser.Scene {
     this.hideMoveChrome();
     this.hidePartyGrid();
     this.hideBagTabs();
+    this.hideInfoControl();
     this.backArrow.setVisible(false);
     if (this.backZone.input) this.backZone.input.enabled = false;
   }
@@ -2882,9 +3016,11 @@ export class BattleScene extends Phaser.Scene {
   private onMenuHover(zone: Phaser.GameObjects.Zone): void {
     const index = zone.getData('item');
     if (typeof index !== 'number' || index < 0) return;
-    const changed = this.megaSelected || this.gmaxSelected || index !== this.menuIndex;
+    const changed =
+      this.megaSelected || this.gmaxSelected || this.infoSelected || index !== this.menuIndex;
     this.megaSelected = false;
     this.gmaxSelected = false;
+    this.infoSelected = false;
     if (!changed) return;
     this.menuIndex = index;
     this.refreshHud();
