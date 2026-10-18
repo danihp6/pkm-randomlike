@@ -11,6 +11,7 @@ import {
   detectLocale,
   getLocale,
   isLocale,
+  onLocaleChange,
   setLocale,
   t,
   translationParams,
@@ -173,6 +174,19 @@ describe('t / setLocale / getLocale', () => {
     setLocale('fr' as unknown as 'en');
     expect(getLocale()).toBe('es');
     setLocale(42 as unknown as 'en');
+    expect(getLocale()).toBe('es');
+  });
+
+  it('announces a locale change once per real change, and stops when unsubscribed', () => {
+    const seen: string[] = [];
+    const off = onLocaleChange((next) => seen.push(next));
+    setLocale('es');
+    setLocale('es'); // the same locale again is not a change
+    setLocale('fr' as unknown as 'en'); // nor is one this build does not ship
+    setLocale('en');
+    off();
+    setLocale('es');
+    expect(seen).toEqual(['es', 'en']);
     expect(getLocale()).toBe('es');
   });
 

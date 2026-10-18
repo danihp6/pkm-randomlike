@@ -22,6 +22,20 @@ const TOKEN = /\{([A-Za-z0-9_]+)\}/g;
 
 let locale: Locale = DEFAULT_LOCALE;
 
+const localeListeners = new Set<(next: Locale) => void>();
+
+/**
+ * Registers a listener for locale changes and returns the unsubscribe. A change is
+ * an event because a few surfaces bake `t(...)` at build time — the dev overlay
+ * mounts its whole DOM once — so they have to remount rather than re-read.
+ */
+export function onLocaleChange(listener: (next: Locale) => void): () => void {
+  localeListeners.add(listener);
+  return () => {
+    localeListeners.delete(listener);
+  };
+}
+
 /** True for the locales this build ships; total over `unknown`. */
 export function isLocale(value: unknown): value is Locale {
   return LOCALES.includes(value as Locale);
@@ -42,7 +56,9 @@ export function getLocale(): Locale {
 
 /** Sets the locale when the value is one this build ships, else leaves it alone. */
 export function setLocale(next: Locale): void {
-  if (isLocale(next)) locale = next;
+  if (!isLocale(next) || next === locale) return;
+  locale = next;
+  for (const listener of [...localeListeners]) listener(locale);
 }
 
 /** The `{token}` names a value declares, deduped, in order of first appearance. */
