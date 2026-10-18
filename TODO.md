@@ -1897,6 +1897,39 @@ place in the sequence and is never reused. What follows is the cut's own record.
   keeps them conforming (no new ledger line), the way Batches 12–18 do.
 
 ### Batch 20 — the whole chrome goes dark glass (the debug panel's seed)
+**(shipped, archived)**: its one task merged alone behind the green gate (`task-58`;
+**1730** tests across **140** files, `npm test` + `npm run build` + `npm run lint` green
+on the merge commit `6d321ab9`) and the detail is in `CHANGELOG.md`'s `## Unreleased`.
+QA validated it in the single pass a one-task batch collapses to — the task's plan,
+both gates, the cross-task audit and the merge rehearsal on the integration commit
+`88947465` — with every `[unit]` criterion green, and the Orchestrator **re-measured
+every `[live]` criterion itself** on that commit with its own Vite dev server and the
+runner's headless Chromium over CDP (`renderer.snapshotArea` + `getImageData`). **What
+shipped.** **Task-58** replaced the drawn light chrome with one dark glass card: a
+`#10161f` surface at **0.72** (the battle's message box, the one `'textbox'` call site
+left, at **0.80**), a **1px hairline** `rgba(255,255,255,0.16)` with an inset top
+highlight and a 1px shadow ring, an **11px** corner on both skins, the accent `#7dd3fc`
+reserved for selection and controls, `#f8fafc` body ink and `#94a3b8` for the secondary
+tone, ordinary rows at `rgba(255,255,255,0.06)` over a `1px rgba(255,255,255,0.10)`
+border and a selected row, cell or tab at the accent's `0.16` fill **plus** its 1px
+outline. The packer writes the tokens into `src/data/ui/chrome.json`, `src/ui/frlg.ts`
+exports them and `FRLG_INK` is now the **light** ink, so every existing `tint: FRLG_INK`
+site flipped with one constant and the ad-hoc greys collapsed into the one muted tone.
+The notice strip, the release overlay and `RunOverScene` draw the card skin, the MEGA
+and G-MAX controls are icon-only, and **no real blur ships** (Phaser has no
+`backdrop-filter`): the glass reads from the alpha, the hairline and the highlight. The
+new `src/ui/frlg.test.ts` carries the contrast pass the task owes — `[Task-08]`'s audit
+is not re-run, per the entry's *Decision* — over the composite of the surface over the
+repo's own forest ground tones. One thing the cut's own wording left open is recorded
+rather than hidden: the spec's `composite` formula had a typo (`fg + alpha·(fg − bg)`),
+so the shipped test uses the standard `alpha·fg + (1 − alpha)·bg`, which reproduces
+every measured value the spec carried. It adds no run field and no new dependency, so
+**no `SAVE_VERSION` step** — the chain stays **14 → 15 → 16 → 17 → 18**. One
+`agent-review` issue carries the residual subjective judgement (the semantic red's
+4.23, the darkest canon type colours under the badge ink, and the one Mega glyph both
+controls share). Its ID is retired: it keeps its place in the sequence and is never
+reused. What follows is the cut's own record.
+
 - **Task-58** Every panel becomes a **dark glass card**: one `#10161f` surface at **0.72**
   alpha, a **1px hairline** frame with an inset top highlight and a soft drop shadow, an
   **11px** corner, `#f8fafc` ink with `#94a3b8` for the secondary lines and the accent
@@ -3709,7 +3742,7 @@ tests' fixture.
       (`Cmd_effectivenesssound`: `SE_EFFECTIVE`, `SE_SUPER_EFFECTIVE`,
       `SE_NOT_EFFECTIVE`) if that is wanted too.
       *Dependencies:* none. *(Batch 12)*
-- [ ] **[Task-58] Every panel becomes a dark glass card (the `t-glass` direction).** Reported in
+- [x] **[Task-58] Every panel becomes a dark glass card (the `t-glass` direction).** Reported in
       play, while Batch 5 was in flight: «los paneles que sean estilo visual como el de debug» —
       the dev overlay is where the report points, and the look it seeded has now been rendered and
       chosen: the game's windows become one **dark, translucent** `#10161f` surface behind a

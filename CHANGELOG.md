@@ -8,6 +8,69 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Every panel is one dark glass card: the `t-glass` direction the human picked, with
+      its own contrast pass.** The drawn chrome was light plates inked with deep black; it
+      is now one **dark, translucent** card — a `#10161f` surface at **0.72** alpha, a **1px
+      hairline** `rgba(255,255,255,0.16)` at the card's own edge with an inset top highlight
+      `rgba(255,255,255,0.14)` and a 1px shadow ring, an **11px** corner on both skins, the
+      accent `#7dd3fc` **only** where something is selected or is a control, `#f8fafc` body
+      ink and `#94a3b8` for every secondary line, ordinary rows at `rgba(255,255,255,0.06)`
+      over a `1px rgba(255,255,255,0.10)` border, a selected row, cell or tab at the accent's
+      `0.16` fill **plus** its 1px accent outline, and `rgba(255,255,255,0.12)` tracks with
+      the HP fill's green kept. **What shipped, and what the sweep had to get right.** The
+      packer (`scripts/ui/build-chrome.mjs`) now draws the tokens instead of sampling the
+      FRLG sheet's dominant tone, writes the whole **`tokens` block into
+      `src/data/ui/chrome.json`**, and moves `window.corner` **20 → 11** and `textbox.corner`
+      **24 → 11** — the packed corner *is* the runtime radius, because `addFrlgWindow` hands
+      it straight to `setSlices` and the atlas is drawn 1:1 — with `window.alpha` **0.88 →
+      0.72** and `textbox.alpha` **0.94 → 0.8**; the two content insets (20/16/8 and
+      36/28/28) stay **frozen**, so no panel rect, row or layout number moved. The font
+      atlas keeps its glyphs and metrics and its shadow pixels become black at alpha 128, the
+      half-alpha halo that makes light ink read over a busy route. `src/ui/frlg.ts` exports
+      the tokens (`FRLG_SURFACE`, `FRLG_ACCENT`, `FRLG_MUTED`, `FRLG_BADGE_INK`,
+      `FRLG_POSITIVE`, `FRLG_NEGATIVE`, `FRLG_HAIRLINE`, `FRLG_HIGHLIGHT`, `FRLG_SHADOW`,
+      `FRLG_ROW_FILL`, `FRLG_ROW_STROKE`, `FRLG_SELECTED_FILL`, `FRLG_SELECTED_STROKE`,
+      `FRLG_TRACK`) and `FRLG_INK` is now the **light** body ink read from the manifest, so
+      every existing `tint: FRLG_INK` draw site flipped with one constant and the ad-hoc
+      greys the scenes passed (`0x6b6887`, `0x3a3956`, `0x94a3b8`, `0x2f2c4d`, `0xe6e3f2`,
+      `0xcfcce2`, `0xb9b4d0` and the rest) collapsed into the one muted tone. The transient
+      notice strip, the release overlay and `RunOverScene` draw the **card** skin and the
+      battle's **message box is the only `'textbox'` call site left**, at the 0.80 the entry
+      froze for it; the moves window's MEGA and G-MAX controls are **icon-only** (both the
+      shipped Hard Stone frame — no atlas carries a Mega glyph, which the spec froze and
+      flagged); the type badges are full colour with the dark badge ink. **No real blur
+      ships**: Phaser has no `backdrop-filter`, the panels repaint every feed frame, and a
+      per-panel blur is a task of its own — the glass reads from the alpha, the hairline and
+      the highlight, and a shadow that reaches outside the panel's rect is out of scope
+      because a nine-slice cannot paint beyond its own rect. **The contrast pass, which this
+      task owes because `[Task-08]`'s audit is not re-run** (the entry's *Decision*): the new
+      `src/ui/frlg.test.ts` pins the tokens and computes WCAG relative-luminance ratios from
+      them over the composite of the surface at each skin's alpha over the repo's own forest
+      ground tones — body ink **11.17-14.31 ≥ 7**, the muted tone **4.56-5.84 ≥ 4.5**, the
+      muted tone over a row **3.80-4.88 ≥ 3**, ink at a dimmed 0.4 **3.18-3.53 ≥ 3**, the
+      accent over a selected cell **4.90-6.16 ≥ 4.5**, the selected fill's blue **19.20**
+      above an ordinary row's, the HP/XP track **+26/+23/+24** over the field it lies on, and
+      the semantic pair **5.88/4.90** and **4.23/3.52** — with `frlgFont.test.ts` gaining the
+      light ink and the packed halo. **Measured, not assumed:** the packer is byte-identical
+      across two runs and equal to the committed set, and the Orchestrator re-measured every
+      `[live]` criterion on the integration commit `88947465` with a Vite dev server and the
+      runner's headless Chromium over CDP (`renderer.snapshotArea` + `getImageData`): the HUD
+      panel's body is the surface at 0.72 over the ground behind it (Δ 0/0/0), the card's edge
+      ring is darker than its body by 5 and its hairline lighter by 45 per channel on the
+      sampled row, a panel title's glyph core reads **248,250,252** against the glass at a
+      ratio of **15.72**, a selected tab's edge is exactly `125,211,252`, and the battle
+      message box at 0.80 composites within 4/3/4 with its ink at **15.25**. One thing the
+      cut's own wording left open is recorded rather than hidden: the spec's `composite`
+      formula carried a typo (`fg + alpha·(fg − bg)`), so the shipped test uses the standard
+      `alpha·fg + (1 − alpha)·bg`, which reproduces every value the spec measured. It adds no
+      run field, changes no rule and adds no dependency, so **no `SAVE_VERSION` step** — the
+      chain stays **14 → 15 → 16 → 17 → 18** — and the residual subjective judgement (the
+      semantic red at 4.23, the darkest canon type colours under the badge ink at 2.75-3.20,
+      and the one glyph the two G-Max controls share) went to an `agent-review` issue instead
+      of blocking the merge. `docs/art-direction.md`'s palette paragraph and
+      `docs/design-spec.md` §3/§4 describe the glass tones, and `src/ui/README.md` plus
+      `src/assets/README.md` carry the new roles.
+
 - [x] **The autopilot's brake has a timed window: a range is armed from the workflows, and the loop turns
       itself off when the range ends.** `AUTOPILOT` was manual — two clicks in the settings, and the loop
       ran until somebody remembered to click them back — which is fine for an afternoon and wrong for an
