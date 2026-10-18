@@ -1082,6 +1082,25 @@ cut's own record.
   until Batch 11's reformat.
 
 ### Batch 9b — the battle's entry beat
+**(shipped and archived)**: its one task is closed — Task-40 merged alone behind the
+green gate (`task-40`; **1582** tests, `npm test` + `npm run build` green on the
+merge commit) and the detail is in `CHANGELOG.md`'s `## Unreleased`. QA validated it
+in the single pass a one-task batch collapses to — the task's plan, the two gates,
+the cross-task audit and the merge rehearsal on one tree — with every `[unit]`
+criterion green; the three `[live]` criteria cannot be measured on this browserless
+runner and one `agent-review` issue carries them. It shipped as the spec froze it —
+the beat's step order and timings as data in `src/ui/beats.ts` (`entryBeat` over the
+seven `ENTRY_*` constants: a 320 ms black-out fade, one 220 ms camera flash, then the
+foe's 300 ms drop or a trainer's 280 ms walk-in and a 260 ms send-out, the flash
+dropping under **Reduce flashing**), the scene playing it and leaving the first feed
+frame untouched — and the one deviation from the cut's own wording is recorded rather
+than hidden: `src/scenes/RouteScene.ts` came out **unclaimed**, because the hand-off
+already paints the cut black through the beat's own first step and a route-side
+fade-out would have been the second full-screen change the Decision forbids, so the
+batch's four paths are `src/ui/beats.ts`, `src/ui/beats.test.ts`,
+`src/scenes/BattleScene.ts` and one bullet in `docs/design-spec.md` §4. Its ID is
+retired: it keeps its place in the sequence and is never reused. What follows is the
+cut's own record.
 - **Task-40** A battle opens with an entry beat: one for a wild encounter, one for a
   trainer.
 - **Hot files:** `src/scenes/BattleScene.ts`, `src/scenes/RouteScene.ts`,
@@ -2488,7 +2507,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       to a visible pool row, not to a page index — but Task-38 lands in Batch 6b, three
       batches before this one, so the band is already a scroll window by the time this task
       reads it. *(Batch 9)*
-- [ ] **[Task-40] A battle opens with an entry beat: one for a wild encounter, one for a
+- [x] **[Task-40] A battle opens with an entry beat: one for a wild encounter, one for a
       trainer.** Reported in play as a wish rather than a defect — "parpadeos en negro o
       algo así" — for the original games' two encounter openings: the one when a wild
       Pokémon appears and the different one when a trainer spots you.

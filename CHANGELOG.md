@@ -8,6 +8,35 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Every battle opens with a skippable entry beat.** The route→battle cut was a single
+      frame; `BattleScene.create` now ends with `this.startEntry(trigger.kind)` instead of
+      `this.startFeed()`, and its `Mode` gains `'entry'` ahead of `'feed'`. The beat's step order
+      and timings live in `src/ui/beats.ts` as **data** — the pure `entryBeat(kind, reducedFlash)`
+      beside the shipped faint/switch beats, over the new `EntryKind`/`EntryStepKind`/`EntryStep`
+      types and seven `ENTRY_*` constants — so the scene plays the beat and does not own it: a
+      **black-out fade** (`cameras.main.fadeIn(320)`, the step that carries the cut and paints the
+      stage black on the first painted battle frame), then **one white camera flash** (220 ms, the
+      `playMega` shape and the beat's only full-screen blink) and then the appearing step — the
+      wild foe dropping onto its platform (300 ms, 26 px), or, in a trainer battle, the trainer
+      walking in first (280 ms, 22 px, **alpha only** so `refreshHud`'s layout read of
+      `foeTrainer.visible` is not disturbed) and its **send-out** bringing the partner out after
+      (260 ms). **Reduce flashing** (`D45`, already read once in `create`) drops the flash step
+      and keeps the fade and the appearances, so the beat adds no second knob. It is
+      **skippable** by a confirm or cancel press or a click through three guards that reuse the
+      scene's existing input funnel and register **no new listener**, and `finishEntry` is its
+      single re-entrancy-safe exit: it removes the step timer, kills the two sprite tweens,
+      `resetFX`es the camera, restores both sprites and hands over to the first feed frame,
+      still the engine's first log line. It draws no RNG, adds no run field, allocates nothing
+      per frame and touches no `src/engine/**`, `src/data/**`, `src/scenes/RouteScene.ts` or
+      audio path, so **no `SAVE_VERSION`** step and no fixed-seed re-pin. `docs/design-spec.md`
+      §4 gains the one bullet that says how a battle opens. The suite went **1577 → 1582**
+      tests (`entryBeat`'s five cases plus the six `levelUpBeats` ones, whose signature stays as
+      it is for Batch 19's Task-56), `npx prettier --check src/ui/beats.ts src/ui/beats.test.ts`
+      is clean, and `npm test` + `npm run build` are green on the merge commit. The three
+      `[live]` criteria — the two openings read frame by frame and the skip / reduce-flashing
+      pass — could not be measured on this browserless runner and are carried by an
+      `agent-review` issue.
+
 - [x] **The STATS tab lists every Mega and every G-Max forme as an information row.** A Mega is
       battle-only (`D34`), so the family graph had no trace of one; `src/ui/evolutionGraph.ts`
       now returns `kind` (`'species' | 'mega' | 'gmax'`) on **every** node and appends, at the
