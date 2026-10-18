@@ -1353,6 +1353,25 @@ reused. What follows is the cut's own record.
   `RunState.stats.catches`, is already saved.
 
 ### Batch 15 — the item pickup popup, and the battle panel's XP bar
+**(shipped, archived)**: its two tasks merged in ID order behind the green gate
+(`task-49`, `task-77`; **1661** tests across 137 files, `npm test` + `npm run build` green after each
+merge) and the detail is in `CHANGELOG.md`'s `## Unreleased`; QA validated each task in its own lane
+(on tips `5ad49728` and `a70ab2cf`) and then the combined tree at `d676dd5a`, and the Orchestrator
+**re-measured every `[live]` criterion itself** on that commit with its own dev server and a headless
+Chromium over CDP. **What shipped.** **Task-49** gives the run's transient notice a second string:
+`itemPickupNotice(name)` in the shipped `src/ui/notice.ts`, raised by the two otherwise-silent pickups
+(the ground item and the mini-boss reward) through the HUD's existing strip, with the Mart keeping its
+own in-window line and the new key `notice.itemObtained` authored in English and overlaid by Spanish.
+**Task-77** removes the battle player panel's XP row — the gauge, the `XP n` label, the two fields
+that existed only for them and the two imports — and drops `PLAYER_PANEL_H` **184 → 150** so the frame
+hugs its content like the foe's, with `BattleLaunch.xp`, `experienceFraction`, `drawGauge` and the
+route HUD's own bar (the one `D35` means) untouched. Neither added a run field, so **no
+`SAVE_VERSION`** step — the chain stays **14 → 15 → 16 → 17 → 18** — and the two share no path. Two
+things the cut's own wording left as questions were settled by their Decisions and are recorded in the
+entries above: the player's panel takes **150**, and only the two silent pickups raise the notice.
+Their two IDs are retired: they keep their place in the sequence and are never reused. What follows is
+the cut's own record.
+
 - **Task-49** Obtaining an item raises a temporary popup.
 - **Task-77** The battle's HP panel loses its XP bar (registered by the nineteenth round; it
   takes this batch's free `src/scenes/BattleScene.ts`).
@@ -2833,7 +2852,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       `[Task-53]`'s row and `[Task-57]`'s row already inside the panels it draws over. It adds no
       run field, so **no `SAVE_VERSION`** step — the chain stays 14 → 15 (Task-13) → 16
       (Task-31) → 17 (Task-44) → 18 (Task-52). *(Batch 17)*
-- [ ] **[Task-77] The battle's HP panel loses its XP bar.** Reported in play: «quita la barra de
+- [x] **[Task-77] The battle's HP panel loses its XP bar.** Reported in play: «quita la barra de
       xp del contenedor de combate» — the player's HP panel in a battle draws a **second, smaller
       bar** under the health bar that shows the squad's experience, and the human wants it gone.
       **Today that row is the player's panel's last band, and it is the only thing in it.**
@@ -2981,7 +3000,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       shipped state. Batch order covers the rest: every batch that reclaims
       `src/scenes/RouteScene.ts` (Batch 8, 8b, 9, 9b, 10, 12) or `src/engine/save.ts`
       (8b, 10) does so before Batch 13. *(Batch 13)*
-- [ ] **[Task-49] Obtaining an item raises a temporary popup.** Reported in play:
+- [x] **[Task-49] Obtaining an item raises a temporary popup.** Reported in play:
       «popup temporal cuando se obtiene un objeto» — the same shape as the notice Task-31
       adds: at the top of the screen, auto-dismissed, no key to press.
       **Today every pickup is silent, and two of the three paths say nothing at all.**

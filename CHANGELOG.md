@@ -8,6 +8,84 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle's player HP panel loses its XP bar.** Reported in play ("quita la barra de xp
+      del contenedor de combate"), and the row was exactly where the report pointed: the player
+      branch at the end of `drawSidePanel` drew a second, smaller bar 36 px under the HP bar
+      (`drawGauge(this.hud, barX, barY + 36, FRLG_HPBAR.width, 8, experienceFraction(this.xp,
+      fighter.level), 0x60a5fa)`) plus an `XP n` label 10 px under it, and everything it read was the
+      scene's own — `private xp`, assigned once from `launch.xp`, and `xpText`, built once in
+      `buildScene`. **The row and everything that existed only for it are gone:** the branch and the
+      foe branch's now-pointless `xpText.setVisible(false)`, both fields with their `init` and
+      `buildScene` lines, and the two imports that had this call site as their only consumer
+      (`experienceFraction` and `drawGauge`). `PLAYER_PANEL_H` goes **184 → 150**, so the frame hugs
+      its content exactly as the foe's `FOE_PANEL.h` does instead of holding a ~38 px empty band —
+      the Decision applied, "hugs the content as the foe's panel does; no clearance invariant moves".
+      **What deliberately did not move:** `BattleLaunch.xp` (its producer in `RouteScene` is
+      untouched), `experienceFraction`, `D35`'s rule and the bar it means, which is the **route HUD**'s
+      own, `PLAYER_PANEL_W`, `FOE_PANEL`, `FOE_PLATFORM_CLEAR`, the battler size caps, the type badge
+      row and the foe's ball row, and `drawGauge`/`GAUGE_TRACK` in `src/ui/panel.ts` (the shared
+      chrome-helper file; a dead-code sweep of it is not this task, so `src/ui/README.md` stays).
+      `docs/design-spec.md` §4's one-XP-bar bullet gained a single clause saying **where** that one bar
+      is drawn — the route HUD — with `D35` and the level-cap sentence byte-identical, and
+      `docs/battle-spec.md` §7 never claimed the battle draws it, so it does not move. **Two paths**
+      (`src/scenes/BattleScene.ts`, `docs/design-spec.md`), **no test added** — a scene's drawing, with
+      no engine rule, no RNG draw and no run field — and the suite stayed at **1658 tests across 137
+      files** with `tsc --noEmit` + `vite build` green on the merge commit, the green build being the
+      proof that no import was left stale. `battle.xp` stays in both locale tables: removing the label
+      leaves it without a runtime call site, and the key is not this task's to delete (the i18n files
+      are `[Task-49]`'s in the same batch), with `src/i18n/index.test.ts` still pinning it. No run
+      field, so **no `SAVE_VERSION`** step: the chain stays **14 → 15 → 16 → 17 → 18**. The two
+      `[live]` criteria were **measured** on the integration commit with a Vite dev server and a
+      headless Chromium over CDP, reading the live scene rather than a screenshot: on a 807×807
+      desktop stage (camera at x 237) and a 657×657 compact one (x 312), in a **wild** and a
+      **trainer** battle alike, `playerPanel.height === foePanel.height === 150` and a
+      `renderer.snapshotArea` + `getImageData` scan of the whole panel rect found **0 px** within
+      ±12 per channel of the gauge blue `0x60a5fa` and **0 px** of the label blue `0x3b82f6`, while
+      the HP bar's own green counted **2292 px** (the scan is neither empty nor misplaced); a
+      detector control painted a 60×8 gauge-blue bar inside that same rect and counted exactly
+      **480 px** (0 after destroying it), so the zeroes are real absences and not a broken reader.
+      The anchor did not shift: the compact rect's `y` is exactly `round(stage × 0.46)` (**302** at a
+      657 stage) and on the desktop the panel's **bottom** sits at **565**, the base revision's own
+      number (`381 + 184`), with only its top 34 px lower. Its ID is retired: it keeps its place in
+      the sequence and is never reused.
+
+- [x] **Obtaining an item raises the run's transient notice.** Reported in play ("popup temporal
+      cuando se obtiene un objeto"), and two of the three paths that put an item in the bag said
+      nothing at all: `collectItemAt` folded the ground item in silently and
+      `chooseMiniBossReward` closed the picker over the name of what was taken, while the Mart
+      already printed its own `Bought <name> for ¥<n>.` line. **The Decision applied:** the popup
+      fires on the two otherwise-silent pickups only, the Mart keeps its in-window line, and the
+      string names the item only. **One module, N strings, no second window:** `src/ui/notice.ts`
+      gains `itemPickupNotice(name)` beside `catchToPcNotice`, on the same `Notice` shape and the
+      same `NOTICE_HOLD_MS` (2600), and the route HUD's existing strip draws it through the same
+      `showNotice`/`hideNotice` pair — one notice at a time, a second pickup replacing the first,
+      no key, no input mode, no timer of its own. `RouteScene` raises it in `collectItemAt` (after
+      `markItemPicked(addItem(...))` and `persistRun()`, before the ground sprite is hidden, so the
+      pickup and the message are one beat) and in `chooseMiniBossReward` (inside its `if (itemId)`
+      branch, before the reward window closes); the name is resolved by the caller through the
+      shipped `getItem(id)?.name ?? id`, so the module reads no dex and stays a pure leaf. The new
+      key `notice.itemObtained` is authored in the English source table and overlaid by Spanish
+      (`Obtained {name}!` / `¡Has obtenido {name}!`), added *through* the shipped i18n module
+      because this task lands after the sweep; `src/ui/notice.test.ts` gains three cases (the exact
+      sentence, the shared hold and the name passed through untouched) and `src/i18n/index.test.ts`
+      pins the key **both** ways, the way it pins `notice.catchToPc`. `docs/routes-spec.md` §2's
+      ground-item paragraph now says the pickup is no longer silent. **Seven paths** — notice and
+      its test, `RouteScene`, the two locales, the i18n test and the one doc bullet — the suite
+      **1658 → 1661 tests across 137 files**, no run field and **no `SAVE_VERSION`** step (the chain
+      stays **14 → 15 → 16 → 17 → 18**). The two `[live]` criteria were **measured** on the
+      integration commit with a Vite dev server and a headless Chromium over CDP: the **real
+      interact key** (`E`, dispatched as a DOM key event) on the tile beside a real ground `potion`
+      of seed `orch-b15-live` put `noticeRoot.visible` at `true` with `noticeText.text === 'Obtained
+      Potion!'`, depth 440, `noticeTimer.delay` 2600, the bag 1 → 2 and `pickedItems` 0 → 1; the
+      strip's own 720×44 rect differed from the same rect captured with the notice down in **30 369
+      of 31 680 px (95.9 %)**, read with `renderer.snapshotArea` + `getImageData`; a page-side
+      sampler of the game's own state caught the player stepping (11,16) → (11,17) with the notice
+      still **visible**, so walking is unaffected; and it cleared itself with no input after **≈2 981
+      ms of the scene's own clock** against its declared 2600 (the surplus is one frame of a ~4 fps
+      software renderer — a bare `delayedCall(2600)` with no task code drifts the same way). The
+      mini-boss path raised `Obtained Antidote!` for the row that was taken, with the reward window
+      closed behind it. Its ID is retired: it keeps its place in the sequence and is never reused.
+
 - [x] **The run's first wild Pokémon is caught for certain.** Reported in play ("el primer
       pokemon salvaje debe ser mucho mas facil de atrapar ignorar su dificultad segun el poke
       solo para esta primera captura"), and the catch was species-based and nothing else:
