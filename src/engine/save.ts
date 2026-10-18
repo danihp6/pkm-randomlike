@@ -65,7 +65,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -146,7 +146,9 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * per-member `nickname` (a v14 run has none, so it shows species names); `15` moves
  * a v15 run onto the v16 schema, which replaced the floor-scoped `pcUnlocked` list
  * with the route-scoped `pcCatch` (an old run's list cannot be re-scoped — the room
- * it was caught in was never stored — so it starts with no pending catch).
+ * it was caught in was never stored — so it starts with no pending catch); `16` moves
+ * a v16 run onto the v17 schema, which added the `rip` list of the fallen (an old
+ * run's dead were never stored, so it starts empty).
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -243,6 +245,13 @@ export const SAVE_MIGRATIONS: Migrations = {
     ...document,
     version: 16,
     run: isRecord(document.run) ? withPcCatch(document.run) : document.run,
+  }),
+  // The RIP list: a v16 run lost members it never recorded, so the list starts
+  // empty - the dead of an old save are not reconstructed.
+  16: (document) => ({
+    ...document,
+    version: 17,
+    run: isRecord(document.run) ? { rip: [], ...document.run } : document.run,
   }),
 };
 
@@ -759,6 +768,7 @@ function parseRun(value: unknown): RunState | null {
     xp,
     party,
     box,
+    rip: parseMembers(value.rip),
     bag,
     money,
     defeatedTrainers,
