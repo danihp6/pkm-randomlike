@@ -72,13 +72,19 @@ task (or a `git revert -m 1 <merge>`), not a blocked merge.
 - `AUTOPILOT` (repository variable) is exactly `on`. **This is the brake**: anything
   else parks the loop, and it takes effect at a cycle boundary, so no merge is ever
   cut in half.
-- No `agent-cycle` run is in flight.
+- No `agent-cycle` run is in flight, other than the one that asked (a cycle hands the
+  baton at its end by dispatching this workflow with its own run id in `ignore_run`).
 - At least one `- [ ]` task remains. With none, the loop parks itself and says so in an
   issue.
 - Fewer than three red cycles today (a broken loop, not a busy one; re-run
   `agent / cycle` by hand to resume).
 - At most `AGENT_DAILY_CYCLES` cycles today, when that variable is set to a number.
   **Unset or `0` means no cap** — which is the current setting.
+
+Chaining matters, and it is measured rather than assumed: a `*/30` cron on this
+private repository fired **three times in six hours** overnight, so the schedule is a
+safety net and the chain is the loop. The cycle dispatches this driver at its end, and
+the driver decides.
 
 ## Budget
 

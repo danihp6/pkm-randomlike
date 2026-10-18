@@ -38,6 +38,9 @@ concurrency:
 permissions:
   contents: write
   issues: write
+  # To hand the baton to the driver when the cycle ends: the scheduled cron fires far
+  # less often than it asks to, so the loop cannot depend on it alone.
+  actions: write
 
 jobs:
   cycle:
@@ -192,3 +195,16 @@ jobs:
         run: |
           npm test
           npm run build
+
+      - name: Hand the baton to the next cycle
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Measured overnight: a `*/30` cron fired three times in six hours on this
+          # private repository, so the loop cannot depend on the schedule. The cycle
+          # asks the driver for the next one instead, and tells it to ignore this run —
+          # which is still in flight, and would otherwise read as "a cycle is already
+          # running". The driver keeps every decision: AUTOPILOT, the backlog, the red
+          # streak and the cap.
+          gh workflow run agent-autopilot.yml --ref main -f ignore_run=${{ github.run_id }} || true

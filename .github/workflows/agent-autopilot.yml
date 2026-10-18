@@ -26,6 +26,11 @@ on:
     # two cycles from overlapping.
     - cron: '*/30 * * * *'
   workflow_dispatch:
+    inputs:
+      ignore_run:
+        description: Cycle run handing the baton over (it is in flight, but it is the caller)
+        required: false
+        default: ''
 
 concurrency:
   group: agent-autopilot
@@ -48,6 +53,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AUTOPILOT: ${{ vars.AUTOPILOT }}
+          IGNORE_RUN: ${{ inputs.ignore_run }}
           # `0` or unset means no cap: the backlog's own finiteness is then the only
           # thing bounding the loop (30 tasks in whole batches is ~10 cycles, and the
           # loop parks itself when no `[ ]` is left). Set it to a number to bound a day.
@@ -73,8 +79,9 @@ jobs:
             exit 0
           fi
 
-          if [ -n "$(gh run list --workflow=agent-cycle.yml --status in_progress --json databaseId --jq '.[0].databaseId')" ]; then
-            go false "A cycle is already in flight."
+          inflight=$(gh run list --workflow=agent-cycle.yml --status in_progress --json databaseId --jq '.[0].databaseId' || true)
+          if [ -n "$inflight" ] && [ "$inflight" != "${IGNORE_RUN:-}" ]; then
+            go false "A cycle is already in flight ($inflight)."
             exit 0
           fi
 
