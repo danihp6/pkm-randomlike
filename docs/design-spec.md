@@ -80,16 +80,20 @@ carries over.
   control a move cell does, floating that ability's own one-line description over
   the panel on hover or a click. A branch the member's level already allows
   is green and a click evolves the member into it — Eevee's eight forms sit
-  side by side and the player picks the one they want — and **MOVES**, where the four slotted
-  moves can be dragged to reorder them (that order is what the battle menu lists)
+  side by side and the player picks the one they want — and **MOVES**, which
+  always draws its **four slots** — an empty one is an empty container, with no
+  name and no **ⓘ**, that only takes a dragged move. The slotted moves can be
+  dragged to reorder them (that order is what the battle menu lists)
   over a **learnset** band: a search field and a full-width grid the wheel, the
   `<` / `>` pair or a drag on the band's own background scrolls a row at a time,
   of every move the member may equip — the level-up moves it has learned so far
   (minus the ones already in its four slots) and the moves a **TM in the bag** can
   teach it — each tagged `Lv##` or `TM###`; an empty pool reads `no moves to
-  learn`. A cell is dragged onto a slot to
-  equip it (replacing what sits there); teaching is free and a TM is
-  **reusable** (D36). When the squad levels up a
+  learn`. A cell is dragged onto a slot to equip it: an occupied slot replaces what
+  sits there and an empty slot takes the move, so a three-move member can learn a
+  fourth; teaching is free and a TM is
+  **reusable** (D36). A member with **no** moves at all reads `no moves` and draws
+  no container. When the squad levels up a
   modal pops up announcing **"X learned Y!"** for every move a member crossed on
   the way, dismissed with any key or a click. Every level-up also says so in a
   **transient notice** at the top of the screen — `Charmander grew to Lv 6!`, naming
@@ -201,8 +205,9 @@ Full rules in `docs/battle-spec.md`. In short:
   **INFO** control at that grid's right edge — the same column the moves menu keeps
   for **MEGA**, so the 2x2 keeps its shape — and so is the **moves** menu
   (all four moves show at once, with no scrolling), which always reserves its full
-  2x2 so a shorter list keeps one cell size: each move cell is tinted by the
-  move's type and shows its name, the FRLG **type badge**, the official category
+  2x2 so a shorter list keeps one cell size and draws its spare slots as empty containers,
+  which take no press and float no **ⓘ**: each move cell is tinted by the move's
+  type and shows its name, the FRLG **type badge**, the official category
   **badge** (physical / special / status), its PP, its **effective power** (base
   power folded with STAB and the attacker's ability / item boosts) and its **hit
   chance** (the move's accuracy under the net accuracy / evasion stage and any

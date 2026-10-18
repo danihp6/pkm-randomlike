@@ -107,7 +107,7 @@ import {
   statLabel,
   type MemberDetail,
 } from '../ui/partyDetail';
-import { MoveGrid, moveInfoContent, type MoveGridCell } from '../ui/moveGrid';
+import { MoveGrid, moveInfoContent, padMoveGridCells, type MoveGridCell } from '../ui/moveGrid';
 import { battleInfoLines, battleInfoRows } from '../ui/battleInfo';
 import { fitPartyLabel, partyGridLayout } from '../ui/partyGrid';
 import {
@@ -2770,12 +2770,15 @@ export class BattleScene extends Phaser.Scene {
       status: item.move?.status ?? null,
       enabled: item.enabled,
     }));
+    // Four slots always: the member's moves, then an empty container each. The
+    // empty ones draw no zone of their own, so they stay unselectable.
+    const slots = cells.length > 0 ? padMoveGridCells(cells, MAX_MOVES) : [];
     this.moveGrid.layout({
       x: menu.x,
       y: menu.y,
       w: menu.w,
       h: menu.h,
-      cells,
+      cells: slots,
       selected: this.megaSelected || this.gmaxSelected ? -1 : this.menuIndex,
       info: this.megaSelected || this.gmaxSelected ? null : this.infoMove,
       leftReserve: MOVE_BACK_COL,

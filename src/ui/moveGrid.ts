@@ -43,13 +43,23 @@ export type MoveGridCell = Readonly<{
   enabled: boolean;
 }>;
 
-/** The window rect to fill and the cells to draw; the rest has sane defaults. */
+/** An empty slot: the grid draws its container and nothing inside it. */
+export type MoveGridEmptyCell = Readonly<{ empty: true }>;
+
+/** What the grid draws in one slot: a move cell, or the empty container. */
+export type MoveGridSlot = MoveGridCell | MoveGridEmptyCell;
+
+/** A laid-out slot rectangle, in the coordinates the last `layout` used. */
+export type MoveGridRect = Readonly<{ x: number; y: number; w: number; h: number }>;
+
+/** The window rect to fill and the slots to draw; the rest has sane defaults. */
 export type MoveGridOptions = Readonly<{
   x: number;
   y: number;
   w: number;
   h: number;
-  cells: readonly MoveGridCell[];
+  /** One entry per slot to draw (at most 4): a move cell or `{ empty: true }`. */
+  cells: readonly MoveGridSlot[];
   /** The cell drawn as selected (raised stroke), or -1 for none. */
   selected: number;
   /** The cell whose info popup floats, or null. */
@@ -66,8 +76,6 @@ export type MoveGridOptions = Readonly<{
    */
   popupAtCell?: boolean;
 }>;
-
-type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
 
 /** The grid always reserves a full 2x2, so a short list keeps one cell size. */
 const GRID_CELLS = 4;
@@ -91,6 +99,83 @@ const CATEGORY_ICON_SCALE = 1.5;
 /** Green when a stat line reads above its base, red when below, ink when level. */
 const STAT_UP = 0x1b7a3d;
 const STAT_DOWN = 0xb3261e;
+
+/** The one empty slot every padding answer shares: it carries no data at all. */
+const EMPTY_SLOT: MoveGridEmptyCell = { empty: true };
+
+/** True when there is no move at that slot: `{ empty: true }`, or no slot at all. */
+export function isEmptySlot(slot: MoveGridSlot | undefined): slot is MoveGridEmptyCell {
+  return slot === undefined || 'empty' in slot;
+}
+
+/**
+ * Exactly `slots` slots: the first `slots` of `cells`, then `{ empty: true }` until
+ * the count fits. `slots` is clamped to 0..4 (the grid's `GRID_CELLS`).
+ */
+export function padMoveGridCells(
+  cells: readonly MoveGridCell[],
+  slots: number,
+): readonly MoveGridSlot[] {
+  const wanted = Math.trunc(slots);
+  const total = Number.isFinite(wanted) ? Math.min(Math.max(0, wanted), GRID_CELLS) : 0;
+  const padded: MoveGridSlot[] = cells.slice(0, total);
+  while (padded.length < total) padded.push(EMPTY_SLOT);
+  return padded;
+}
+
+/**
+ * One rect per slot the grid will draw, row-major, in `Math.min(cells.length, 4)`
+ * entries — 0 for an empty list, 4 for a padded one. The grid always reserves its
+ * full 2x2, so a rect's geometry does not depend on how many cells there are.
+ */
+export function moveGridCellRects(options: MoveGridOptions): readonly MoveGridRect[] {
+  const cols = options.columns ?? GRID_COLS;
+  const gap = options.gap ?? GRID_GAP;
+  const inset = options.inset ?? GRID_INSET;
+  const leftReserve = options.leftReserve ?? 0;
+  const rightReserve = options.rightReserve ?? 0;
+  const pad = FRLG_WINDOW_PADDING;
+  const rows = Math.ceil(GRID_CELLS / cols);
+  const left = options.x + pad.x + leftReserve;
+  const right = options.x + options.w - pad.x - inset - rightReserve;
+  const top = options.y + pad.top + inset;
+  const bottom = options.y + options.h - pad.bottom - inset;
+  const cellW = (right - left - (cols - 1) * gap) / cols;
+  const cellH = (bottom - top - (rows - 1) * gap) / rows;
+  const count = Math.min(options.cells.length, GRID_CELLS);
+  const rects: MoveGridRect[] = [];
+  for (let i = 0; i < count; i++) {
+    rects.push({
+      x: left + (i % cols) * (cellW + gap),
+      y: top + Math.floor(i / cols) * (cellH + gap),
+      w: cellW,
+      h: cellH,
+    });
+  }
+  return rects;
+}
+
+/** The slot index under a grid-local point, or null outside every rect. */
+export function moveGridIndexAt(rects: readonly MoveGridRect[], x: number, y: number): number | null {
+  for (let i = 0; i < rects.length; i++) {
+    const rect = rects[i];
+    if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) return i;
+  }
+  return null;
+}
+
+/** True when the point is on that slot's ⓘ button; an empty slot has none. */
+export function moveGridInfoAt(
+  slot: MoveGridSlot | undefined,
+  rect: MoveGridRect | undefined,
+  localX: number,
+  localY: number,
+): boolean {
+  if (rect === undefined || isEmptySlot(slot)) return false;
+  const bx = rect.w - CELL_PAD - INFO_SIZE;
+  const by = CELL_TOP;
+  return localX >= bx && localX <= bx + INFO_SIZE && localY >= by && localY <= by + INFO_SIZE;
+}
 
 /** The power line's colour: green raised above its base, red lowered, else ink. */
 function powerTint(cell: MoveGridCell): number {
@@ -146,8 +231,10 @@ export class MoveGrid {
   private infoButtons: Phaser.GameObjects.Rectangle[] = [];
   private infoLabels: Phaser.GameObjects.BitmapText[] = [];
   private popup: InfoPopup;
-  /** The laid-out cell rects, for hit testing until the next layout. */
-  private cellRects: Rect[] = [];
+  /** The laid-out slot rects, for hit testing until the next layout. */
+  private cellRects: readonly MoveGridRect[] = [];
+  /** The slots the last layout drew, so `isEmpty` can answer for any index. */
+  private slots: readonly MoveGridSlot[] = [];
 
   constructor(scene: Phaser.Scene, container?: Phaser.GameObjects.Container) {
     this.cells = Array.from({ length: GRID_CELLS }, () =>
@@ -202,55 +289,54 @@ export class MoveGrid {
   }
 
   /**
-   * Lays out the grid inside the window rect, paints each cell and floats the info
-   * popup for the asked cell. Cells beyond the list, and every piece with no data,
-   * are hidden.
+   * Lays out the grid inside the window rect, paints each slot and floats the info
+   * popup for the asked cell. Slots beyond the list, and every piece with no data,
+   * are hidden; an empty slot draws its container alone.
    */
   layout(options: MoveGridOptions): void {
-    const cols = options.columns ?? GRID_COLS;
-    const gap = options.gap ?? GRID_GAP;
-    const inset = options.inset ?? GRID_INSET;
-    const leftReserve = options.leftReserve ?? 0;
-    const rightReserve = options.rightReserve ?? 0;
-    const pad = FRLG_WINDOW_PADDING;
-    const rows = Math.ceil(GRID_CELLS / cols);
-    const left = options.x + pad.x;
-    const right = options.x + options.w - pad.x - inset;
-    const top = options.y + pad.top + inset;
-    const bottom = options.y + options.h - pad.bottom - inset;
-    const gridLeft = left + leftReserve;
-    const gridRight = right - rightReserve;
-    const cellW = (gridRight - gridLeft - (cols - 1) * gap) / cols;
-    const cellH = (bottom - top - (rows - 1) * gap) / rows;
-    const narrow = cellW < CELL_NARROW;
-    const cellX = (i: number): number => gridLeft + (i % cols) * (cellW + gap);
-    const cellY = (i: number): number => top + Math.floor(i / cols) * (cellH + gap);
+    this.slots = options.cells;
+    // One rect per drawn slot: every piece below is positioned from its own rect,
+    // so a drawn slot and its hit rect can never diverge.
+    this.cellRects = moveGridCellRects(options);
+    const first = this.cellRects[0];
+    const narrow = first !== undefined && first.w < CELL_NARROW;
     // The type badge matches the category badge in size, so the two read as one
     // stacked column; the name starts past it.
     const iconScale = narrow ? 1.25 : CATEGORY_ICON_SCALE;
     const iconW = Math.round(TYPE_ICON_W * iconScale);
-    const count = options.cells.length;
-    this.cellRects = [];
+    const count = this.cellRects.length;
 
     for (let i = 0; i < GRID_CELLS; i++) {
-      const cell = i < count ? options.cells[i] : undefined;
-      const visible = cell !== undefined;
-      const alpha = cell && cell.enabled ? 1 : 0.4;
-      if (!cell) {
+      if (i >= count) {
         this.hidePiece(i);
         continue;
       }
-      this.cellRects.push({ x: cellX(i), y: cellY(i), w: cellW, h: cellH });
+      const cell = options.cells[i];
+      const rect = this.cellRects[i];
+      if (isEmptySlot(cell)) {
+        // An empty container is its rectangle and stroke, nothing else: it takes a
+        // dropped move, but it has no name, no badge and no ⓘ to float from.
+        const selected = i === options.selected;
+        this.cells[i]
+          .setPosition(rect.x, rect.y)
+          .setSize(rect.w, rect.h)
+          .setFillStyle(0xe6e3f2, selected ? 0.35 : 0.72)
+          .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
+          .setVisible(true);
+        this.hideCellPieces(i);
+        continue;
+      }
+      const alpha = cell.enabled ? 1 : 0.4;
 
-      const nameX = cellX(i) + CELL_PAD + iconW + (narrow ? 2 : 6);
-      const nameRight = cellX(i) + cellW - CELL_PAD - INFO_SIZE - 6 - (narrow ? 0 : STAT_COL);
+      const nameX = rect.x + CELL_PAD + iconW + (narrow ? 2 : 6);
+      const nameRight = rect.x + rect.w - CELL_PAD - INFO_SIZE - 6 - (narrow ? 0 : STAT_COL);
       this.names[i]
         .setText(cell.name)
         .setAlpha(alpha)
         .setFontSize(16)
         .setMaxWidth(Math.max(40, nameRight - nameX - 6))
         .setOrigin(0, 0)
-        .setPosition(nameX, cellY(i) + CELL_TOP)
+        .setPosition(nameX, rect.y + CELL_TOP)
         .setVisible(true);
 
       const typeFrame = typeIconFrame(cell.type);
@@ -258,7 +344,7 @@ export class MoveGrid {
         this.typeIcons[i]
           .setFrame(typeFrame)
           .setAlpha(alpha)
-          .setPosition(cellX(i) + CELL_PAD, cellY(i) + CELL_TOP + (narrow ? 1 : 0))
+          .setPosition(rect.x + CELL_PAD, rect.y + CELL_TOP + (narrow ? 1 : 0))
           .setScale(iconScale)
           .setVisible(true);
       } else {
@@ -271,7 +357,7 @@ export class MoveGrid {
           .setFrame(categoryFrame)
           .setAlpha(alpha)
           .setScale(iconScale)
-          .setPosition(cellX(i) + CELL_PAD, cellY(i) + CELL_TOP + (narrow ? 20 : 22))
+          .setPosition(rect.x + CELL_PAD, rect.y + CELL_TOP + (narrow ? 20 : 22))
           .setVisible(true);
       } else {
         this.categoryIcons[i].setVisible(false);
@@ -281,7 +367,7 @@ export class MoveGrid {
       this.ppTexts[i]
         .setText(t('move.pp', { pp: cell.pp, max: cell.maxPp }))
         .setAlpha(alpha)
-        .setPosition(cellX(i) + CELL_PAD + catW + 6, cellY(i) + CELL_TOP + (narrow ? 22 : 24))
+        .setPosition(rect.x + CELL_PAD + catW + 6, rect.y + CELL_TOP + (narrow ? 22 : 24))
         .setVisible(true);
 
       this.powerTexts[i]
@@ -290,8 +376,8 @@ export class MoveGrid {
         .setAlpha(alpha)
         .setOrigin(narrow ? 0 : 1, 0)
         .setPosition(
-          narrow ? cellX(i) + CELL_PAD : cellX(i) + cellW - CELL_PAD - INFO_SIZE - 6,
-          narrow ? cellY(i) + CELL_TOP + 44 : cellY(i) + CELL_TOP,
+          narrow ? rect.x + CELL_PAD : rect.x + rect.w - CELL_PAD - INFO_SIZE - 6,
+          narrow ? rect.y + CELL_TOP + 44 : rect.y + CELL_TOP,
         )
         .setVisible(true);
 
@@ -301,13 +387,13 @@ export class MoveGrid {
         .setAlpha(alpha)
         .setOrigin(1, 0)
         .setPosition(
-          narrow ? cellX(i) + cellW - CELL_PAD : cellX(i) + cellW - CELL_PAD - INFO_SIZE - 6,
-          narrow ? cellY(i) + CELL_TOP + 44 : cellY(i) + CELL_TOP + 22,
+          narrow ? rect.x + rect.w - CELL_PAD : rect.x + rect.w - CELL_PAD - INFO_SIZE - 6,
+          narrow ? rect.y + CELL_TOP + 44 : rect.y + CELL_TOP + 22,
         )
         .setVisible(true);
 
-      const buttonX = cellX(i) + cellW - CELL_PAD - INFO_SIZE / 2;
-      const buttonY = cellY(i) + CELL_TOP + INFO_SIZE / 2;
+      const buttonX = rect.x + rect.w - CELL_PAD - INFO_SIZE / 2;
+      const buttonY = rect.y + CELL_TOP + INFO_SIZE / 2;
       const active = options.info === i;
       this.infoButtons[i]
         .setPosition(buttonX, buttonY)
@@ -323,11 +409,11 @@ export class MoveGrid {
       // 3-px stroke the selection uses, so "cannot be picked" never rests on alpha.
       const marked = selected || !cell.enabled;
       this.cells[i]
-        .setPosition(cellX(i), cellY(i))
-        .setSize(cellW, cellH)
+        .setPosition(rect.x, rect.y)
+        .setSize(rect.w, rect.h)
         .setFillStyle(typeTint(cell.type, selected ? 0.35 : 0.72))
         .setStrokeStyle(marked ? 3 : 2, marked ? 0x2f2c4d : 0x9a94b8)
-        .setVisible(visible);
+        .setVisible(true);
     }
 
     this.drawPopup(options);
@@ -336,35 +422,36 @@ export class MoveGrid {
   /** Hides every piece: cells, badges, text, info buttons and the popup. */
   hide(): void {
     this.cellRects = [];
+    this.slots = [];
     for (let i = 0; i < GRID_CELLS; i++) this.hidePiece(i);
     this.popup.hide();
   }
 
-  /** The index of the cell under a window-local point, or null outside one. */
+  /**
+   * The index of the slot under a window-local point, or null outside one. An
+   * empty container answers too: it is a drop target like any other slot.
+   */
   indexAt(x: number, y: number): number | null {
-    for (let i = 0; i < this.cellRects.length; i++) {
-      const rect = this.cellRects[i];
-      if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) return i;
-    }
-    return null;
+    return moveGridIndexAt(this.cellRects, x, y);
   }
 
-  /** The laid-out rect of a cell, in the coordinates the last `layout` used. */
-  cellRect(index: number): Rect | null {
+  /** The laid-out rect of a slot, in the coordinates the last `layout` used. */
+  cellRect(index: number): MoveGridRect | null {
     return this.cellRects[index] ?? null;
   }
 
-  /** True when a cell-local point falls inside that cell's ⓘ button. */
+  /** True when a slot-local point falls inside that slot's ⓘ button. */
   infoAt(index: number, localX: number, localY: number): boolean {
-    const rect = this.cellRects[index];
-    if (!rect) return false;
-    const bx = rect.w - CELL_PAD - INFO_SIZE;
-    const by = CELL_TOP;
-    return localX >= bx && localX <= bx + INFO_SIZE && localY >= by && localY <= by + INFO_SIZE;
+    return moveGridInfoAt(this.slots[index], this.cellRects[index], localX, localY);
   }
 
-  private hidePiece(i: number): void {
-    this.cells[i].setVisible(false);
+  /** True when the last `layout` drew no move at `index`. */
+  isEmpty(index: number): boolean {
+    return isEmptySlot(this.slots[index]);
+  }
+
+  /** Hides everything a slot draws inside its rectangle, stroke excluded. */
+  private hideCellPieces(i: number): void {
     this.names[i].setVisible(false);
     this.typeIcons[i].setVisible(false);
     this.categoryIcons[i].setVisible(false);
@@ -375,15 +462,21 @@ export class MoveGrid {
     this.infoLabels[i].setVisible(false);
   }
 
+  private hidePiece(i: number): void {
+    this.cells[i].setVisible(false);
+    this.hideCellPieces(i);
+  }
+
   /**
    * Floats the info popup for the asked cell through the shared `InfoPopup`,
    * above the anchor when there is room and below it otherwise. The anchor is the
-   * hovered cell's top (HUD) or the whole window's (battle).
+   * hovered cell's top (HUD) or the whole window's (battle). An empty slot floats
+   * nothing: there is no description to show.
    */
   private drawPopup(options: MoveGridOptions): void {
     const index = options.info;
     const cell = index === null ? undefined : options.cells[index];
-    if (!cell || cell.desc.length === 0) {
+    if (isEmptySlot(cell) || !cell || cell.desc.length === 0) {
       this.popup.hide();
       return;
     }
