@@ -236,6 +236,16 @@ is the mechanic the mega-stone room's stones feed (`D34`, `docs/maps-spec.md`
   `src/data/dex/megas.json`, generated beside `species.json` (`D34`), each with
   its own stone in `src/data/items.ts`. Gigantamax is a **separate mechanic**
   (`D44`, §10): no stone and no item gate at all.
+- The STATS tab lists each Mega of the member's own species as an **information
+  row** under its family graph: the forme's sprite and name, dimmed and at the
+  same indent as an evolution, plus the stone it needs
+  (`Mega Charizard X · Mega Evolves with Charizardite X`). **One row per Mega**,
+  so Charizard shows X and Y side by side. It is drawn whether or not the stone
+  is held — it is information, not a readiness state — and it is **never
+  clickable**: it carries no `ready` node, so neither a click nor the pointer
+  cursor reaches it. The Gigantamax sibling row has the same shape and reads
+  `Gigantamax Charizard · Gigantamaxes with no stone`, because a Gigantamax has
+  no stone at all (`D44`, §10).
 
 ## 10. Gigantamax
 

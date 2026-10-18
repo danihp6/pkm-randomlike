@@ -1,12 +1,24 @@
-import { evolutionBranches, getSpecies } from '../data/dex';
+import {
+  evolutionBranches,
+  getSpecies,
+  gmaxFormForBase,
+  megaFormsForBase,
+  type GmaxForm,
+  type MegaForm,
+} from '../data/dex';
 
 /**
  * The evolution graph the STATS tab draws under the stats: the whole family from
- * its base form, in pre-order, with each edge's resolved level. It shows the
- * pre-evolutions as well as the branches still ahead, so a final form still
- * reads its line. Pure, like `mapView`: the route scene only places what this
- * returns (`docs/design-spec.md` §5).
+ * its base form, in pre-order, with each edge's resolved level, plus one
+ * **information row** per battle-only forme of every family species that owns
+ * one — a Mega and a Gigantamax (`D34`, `D44`). Those rows are inert: they are
+ * never `ready`, never `current` and never change a member, so the route scene
+ * draws them with the code it already has and only a species row is clickable.
+ * Pure, like `mapView`: the route scene only places what this returns
+ * (`docs/design-spec.md` §5).
  */
+export type FamilyNodeKind = 'species' | 'mega' | 'gmax';
+
 export type FamilyNode = Readonly<{
   id: string;
   name: string;
@@ -14,7 +26,7 @@ export type FamilyNode = Readonly<{
   depth: number;
   /** The row it draws at (pre-order, 0-based). */
   row: number;
-  /** The level its parent evolves into it; null for the base form. */
+  /** The level its parent evolves into it; null for the base form and every information row. */
   level: number | null;
   /** The row of its parent, or null for the base form. */
   parent: number | null;
@@ -22,12 +34,43 @@ export type FamilyNode = Readonly<{
   current: boolean;
   /** True when a click on this branch evolves the current member into it. */
   ready: boolean;
+  /** `species` for a family member; `mega` / `gmax` for a battle-only information row. */
+  kind: FamilyNodeKind;
 }>;
+
+/**
+ * The readable name a battle-only forme prints in its row, from its dex name:
+ * `Charizard-Mega-X` -> `Mega Charizard X`, `Venusaur-Mega` -> `Mega Venusaur`,
+ * `Charizard-Gmax` -> `Gigantamax Charizard`,
+ * `Toxtricity-Low-Key-Gmax` -> `Gigantamax Toxtricity Low Key`.
+ */
+export function formeDisplayName(dexName: string): string {
+  const [base, ...forme] = dexName.split('-');
+  const rest = forme.slice(0, -1);
+  const last = forme[forme.length - 1];
+  if (forme[0] === 'Mega') return ['Mega', base, ...forme.slice(1)].join(' ');
+  if (last === 'Gmax') return ['Gigantamax', base, ...rest].join(' ');
+  return [base, ...forme].join(' ');
+}
+
+/** The copy a Mega's row carries: the forme plus the stone it evolves with. */
+function megaRowName(mega: MegaForm): string {
+  return `${formeDisplayName(mega.name)} · Mega Evolves with ${mega.stoneName}`;
+}
+
+/** The copy a Gigantamax's row carries: a G-Max needs no stone at all (`D44`). */
+function gmaxRowName(gmax: GmaxForm): string {
+  return `${formeDisplayName(gmax.name)} · Gigantamaxes with no stone`;
+}
 
 /**
  * The family of `speciesId` as a node list rooted at its base form. A node is
  * `ready` when it is a direct child of the current species and the member's
- * level meets the edge, so the scene can make exactly those clickable.
+ * level meets the edge, so the scene can make exactly those clickable. Every
+ * visited species that owns battle-only formes grows them as its **last**
+ * children — after its whole evolution subtree — so a Charmander's panel lists
+ * Mega Charizard X/Y and G-Max Charizard under the Charizard node exactly as a
+ * Charizard's panel does.
  */
 export function evolutionGraph(speciesId: string, level: number): readonly FamilyNode[] {
   const start = getSpecies(speciesId);
@@ -59,10 +102,27 @@ export function evolutionGraph(speciesId: string, level: number): readonly Famil
       parent,
       current: species.id === start.id,
       ready: parentNode?.current === true && edgeLevel !== null && edgeLevel <= level,
+      kind: 'species',
     });
     for (const branch of evolutionBranches(species.id)) {
       visit(branch.into, depth + 1, branch.level, index);
     }
+    const pushForme = (kind: 'mega' | 'gmax', formeId: string, name: string): void => {
+      nodes.push({
+        id: formeId,
+        name,
+        depth: depth + 1,
+        row: nodes.length,
+        level: null,
+        parent: index,
+        current: false,
+        ready: false,
+        kind,
+      });
+    };
+    for (const mega of megaFormsForBase(species.id)) pushForme('mega', mega.id, megaRowName(mega));
+    const gmax = gmaxFormForBase(species.id);
+    if (gmax) pushForme('gmax', gmax.id, gmaxRowName(gmax));
   };
   visit(root.id, 0, null, null);
   return nodes;
