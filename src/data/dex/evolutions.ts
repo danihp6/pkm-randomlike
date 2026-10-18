@@ -1,4 +1,4 @@
-import { getSpecies, normalizeId, type Evolution, type Species } from './species';
+import { getSpecies, normalizeId, playableSpecies, type Evolution, type Species } from './species';
 
 export function isLevelEvolution(evolution: Evolution): boolean {
   return evolution.method === 'level' && evolution.level !== null;
@@ -187,6 +187,21 @@ export function evolutionFamily(speciesId: string): readonly string[] {
     for (const evolution of formEvolutions(species.id)) stack.push(evolution.into);
   }
   return family;
+}
+
+/**
+ * Every entry sharing `speciesId`'s national dex number, in `playableSpecies()` order:
+ * the alternate and cosmetic formes the build carries as species of their own (an entry
+ * that is nobody's `evos` child and has no `prevo` is reachable only this way). `[]` for
+ * an unknown id. Battle-only Mega / G-Max formes live in their own generated files and are
+ * not part of it.
+ */
+export function formeFamily(speciesId: string): readonly string[] {
+  const species = getSpecies(speciesId);
+  if (!species) return [];
+  return playableSpecies()
+    .filter((candidate) => candidate.num === species.num)
+    .map((candidate) => candidate.id);
 }
 
 /**

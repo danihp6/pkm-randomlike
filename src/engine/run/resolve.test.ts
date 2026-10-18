@@ -118,6 +118,25 @@ describe('resolveBattle', () => {
     expect(resolveBattle(run, returned(run, 'win'), wild).run.stats.catches).toBe(0);
   });
 
+  it('records the caught species, deduped, and counts every catch', () => {
+    const run = createRun({ seed: 's', starter });
+    const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
+    const once = resolveBattle(run, returned(run, 'capture', { captured: caught.fighter }), wild).run;
+    expect(once.caughtSpecies).toEqual(['sentret']);
+    expect(once.stats.catches).toBe(1);
+    const twice = resolveBattle(once, returned(once, 'capture', { captured: caught.fighter }), wild).run;
+    expect(twice.caughtSpecies).toEqual(['sentret']);
+    expect(twice.stats.catches).toBe(2);
+  });
+
+  it('records nothing when no battle ends in a catch', () => {
+    const run = createRun({ seed: 's', starter });
+    const trainer: BattleReward = { enemyLevels: [4], isTrainer: true, trainerId: 'trainer-1-0' };
+    expect(resolveBattle(run, returned(run, 'win'), wild).run.caughtSpecies).toEqual([]);
+    expect(resolveBattle(run, returned(run, 'lose'), wild).run.caughtSpecies).toEqual([]);
+    expect(resolveBattle(run, returned(run, 'win'), trainer).run.caughtSpecies).toEqual([]);
+  });
+
   it('folds a damaged catch at the share of health it had in the wild', () => {
     const run = createRun({ seed: 's', starter });
     const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 5 });

@@ -2,12 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { getSpecies, playableSpecies } from '../../data/dex/species';
 import { LEVEL_BANDS, bossBstWindow } from '../../data/run';
 import { encounterTableFor } from '../routes/encounters';
-import { WILD_BANNED_TAGS, speciesPool } from './pool';
+import { WILD_BANNED_TAGS, speciesPool, wildExclusions } from './pool';
+import { createRunPokemon } from './progression';
+import { createRun, type RunState } from './state';
 
 const wildIds = (): readonly string[] => LEVEL_BANDS.flatMap((band) => speciesPool(band, 'wild'));
 const trainerIds = (): readonly string[] => LEVEL_BANDS.flatMap((band) => speciesPool(band, 'trainer'));
 
 const spawnable = () => playableSpecies().filter((species) => species.battleOnly === undefined);
+
+const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 3 });
+
+/** A run whose caught record is set directly: `wildExclusions` reads only that field. */
+function runWithCaught(caughtSpecies: readonly string[]): RunState {
+  return { ...createRun({ seed: 'pool-a', starter }), caughtSpecies };
+}
 
 describe('speciesPool', () => {
   it('fills every band with both a wild and a trainer pool', () => {
@@ -109,5 +118,29 @@ describe('encounterTableFor', () => {
     expect(encounterTableFor(band).map((entry) => entry.speciesId)).toEqual([
       ...speciesPool(band, 'wild'),
     ]);
+  });
+});
+
+describe('wildExclusions', () => {
+  it('is empty for a run that has caught nothing', () => {
+    expect(wildExclusions(createRun({ seed: 'pool-a', starter })).size).toBe(0);
+  });
+
+  it('expands a caught species to its whole line and its formes', () => {
+    const excluded = wildExclusions(runWithCaught(['pikachu']));
+    for (const id of ['pichu', 'pikachu', 'raichu', 'raichualola']) {
+      expect(excluded.has(id), id).toBe(true);
+    }
+  });
+
+  it('reaches the hand-authored appliances of a caught rotom', () => {
+    const excluded = wildExclusions(runWithCaught(['rotom']));
+    for (const id of ['rotomheat', 'rotomwash', 'rotomfrost', 'rotomfan', 'rotommow']) {
+      expect(excluded.has(id), id).toBe(true);
+    }
+  });
+
+  it('contributes nothing for an unknown recorded id', () => {
+    expect(wildExclusions(runWithCaught(['not-a-species'])).size).toBe(0);
   });
 });

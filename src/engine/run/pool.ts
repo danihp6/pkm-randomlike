@@ -1,5 +1,7 @@
 import { playableSpecies, type Species } from '../../data/dex/species';
+import { evolutionFamily, formeFamily } from '../../data/dex/evolutions';
 import { bossBstWindow, type LevelBand } from '../../data/run';
+import type { RunState } from './state';
 
 /** Who is drawing: the wild excludes legendary/mythical species, a trainer does not (`D39`). */
 export type PoolRoster = 'wild' | 'trainer';
@@ -19,6 +21,20 @@ function inWindow(species: Species, window: Readonly<{ min: number; max: number 
 function isBanned(species: Species, roster: PoolRoster): boolean {
   if (roster === 'trainer') return false;
   return WILD_BANNED_TAGS.some((tag) => species.tags.includes(tag));
+}
+
+/**
+ * The ids the wild table must not offer: every recorded species expanded to its line
+ * (`evolutionFamily`) and its formes (`formeFamily`). Empty for a run that has caught
+ * nothing; an unknown recorded id contributes nothing. Pure — draws no RNG (D11).
+ */
+export function wildExclusions(run: RunState): ReadonlySet<string> {
+  const excluded = new Set<string>();
+  for (const speciesId of run.caughtSpecies) {
+    for (const id of evolutionFamily(speciesId)) excluded.add(id);
+    for (const id of formeFamily(speciesId)) excluded.add(id);
+  }
+  return excluded;
 }
 
 /**
