@@ -207,6 +207,7 @@ export const en = {
   // notice — the run's transient notices
   'notice.catchToPc':
     'Your party is full — {name} went to the PC. You can swap it in before you leave this route.',
+  'notice.itemObtained': 'Obtained {name}!',
 
   // seed — the seed / share-string prompt
   'seed.title': 'SEED / SHARE STRING',

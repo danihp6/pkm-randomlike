@@ -206,6 +206,7 @@ describe('t / setLocale / getLocale', () => {
     expect(t('notice.catchToPc', { name: 'Sentret' })).toBe(
       'Tu equipo está lleno: Sentret se ha ido al PC. Puedes cambiarlo antes de salir de esta ruta.',
     );
+    expect(t('notice.itemObtained', { name: 'Potion' })).toBe('¡Has obtenido Potion!');
     expect(t('runOver.headlineWin')).toBe('¡La ruta final ha caído. Has ganado!');
     expect(t('runOver.blurbLoss')).toBe('La partida ha terminado: no queda nada.');
   });
@@ -248,6 +249,7 @@ describe('the source table is the record', () => {
     expect(en['notice.catchToPc']).toBe(
       'Your party is full — {name} went to the PC. You can swap it in before you leave this route.',
     );
+    expect(en['notice.itemObtained']).toBe('Obtained {name}!');
     expect(en['party.rowLabel']).toBe('{name}  Lv{level}{status}');
     expect(en['common.level']).toBe('Lv{level}');
     expect(en['common.unknownPokemon']).toBe('A Pokemon');

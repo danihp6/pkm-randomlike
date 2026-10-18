@@ -25,3 +25,14 @@ export function catchToPcNotice(name: string): Notice {
     holdMs: NOTICE_HOLD_MS,
   };
 }
+
+/**
+ * The pickup notice: an item landed in the run's bag. `name` is the item's own
+ * display name, resolved by the caller, so this never reads the data tables.
+ */
+export function itemPickupNotice(name: string): Notice {
+  return {
+    text: t('notice.itemObtained', { name }),
+    holdMs: NOTICE_HOLD_MS,
+  };
+}
