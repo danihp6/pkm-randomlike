@@ -360,3 +360,13 @@ not be redistributed.
   the derived bitmap glyph set (`ui/font.png` through `addFrlgText`), so menus,
   HUD labels and battle messages are all bitmap text instead of a system font
   and the interface ships (`O4`).
+- **Sound is the same three tiers as art.** The whole vocabulary —
+  `src/assets/audio/<cue-id>.wav`, three music beds, the one-shot cues, the shared
+  `hit` and one cue per move sound and per cry — is imported FRLG audio
+  (local-only, gitignored at the source: `sprite-sources/frlg-audio/`), ripped by
+  `scripts/frlg/render-frlg-audio.mjs` and packed by `scripts/frlg/build-audio.mjs`
+  (`D22` addendum). No cue is hand-edited and no scene names a file: a CC0 set is
+  a re-run of the packer, and a cue no longer wanted is a row dropped from the
+  table, not an asset deleted from a `preload`. A generated procedural placeholder
+  exists only for a *hand row* whose rip is missing; a cue of a ripped family is
+  real audio or a hard error.

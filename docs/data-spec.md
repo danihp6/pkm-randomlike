@@ -47,7 +47,36 @@ that the Pokémon's own species has a G-Max forme. **`Eternatus-Eternamax` is no
 Gigantamax forme** — its name ends in `-Eternamax`, not `Gmax` — so it is in neither
 generated file and Eternatus cannot Gigantamax in this game.
 
-## 2. Authored
+## 2. Generated: `src/data/audio/`
+
+Written by `node scripts/frlg/render-frlg-audio.mjs` from the pret/pokefirered
+checkout, committed, never edited by hand — the same rule as the dex, and byte for
+byte reproducible from the same inputs. Two tables, both keyed by our own ids and
+both valued with a cue id of `src/audio/cues.ts` (`D22` addendum):
+
+- `cries.json` — **455** rows, one per species with a national number up to 386,
+  the range the decompilation carries a cry sample for: `"pikachu":
+  "cry-pikachu"`. A species resolves through its own name, or through its raw
+  `baseSpecies` for a forme (`Raichu-Alola` → `Cry_Raichu`), both normalized like
+  `normalizeId`; the decompilation's `cry_tables.inc` is **not** the index, since
+  its rows are ordered by the game's internal species number, which is not our
+  `num`. A species above 386 has no row and its cry is silent.
+- `moveSounds.json` — **295** rows, a move id → the cue of the sound that move's
+  own animation plays: `"tackle": "move-comet-punch"`. The rows come from
+  `data/battle_anim_scripts.s`: each `Move_<NAME>:` block's first `playse`-family
+  sound, mapped to our move id by lowercasing and dropping non-alphanumerics, plus
+  the cartridge's own renames (`VICE_GRIP` → `visegrip`, `FAINT_ATTACK` →
+  `feintattack`, `HI_JUMP_KICK` → `highjumpkick`). A block whose sound is outside
+  the `SE_M_*` family or whose id the dex does not carry is skipped and named by
+  the generator (`Move_CUT`, `Move_COUNT` today); every other move gets the shared
+  `hit` cue.
+
+`index.ts` is the typed accessor beside them (`cryCueFor`, `moveSoundCueFor`, both
+null when there is no row, plus `CRY_ROW_COUNT` / `MOVE_SOUND_ROW_COUNT`), and its
+type import from `src/audio/cues.ts` is type-only, so the folder has no runtime
+cycle with the cue table.
+
+## 3. Authored
 
 | File | What it holds | Phase |
 | --- | --- | --- |
@@ -72,7 +101,7 @@ generated file and Eternatus cannot Gigantamax in this game.
 | `src/data/frlg/status-icons.json` | generated frame map for the Añil status badge atlas | 7 |
 | `src/data/abilityText.ts` | the ability-text override table: the ids whose dex blurb is competitive-play boilerplate while the engine ports the ability (`docs/balance/effect-coverage.md`), read by `abilityDescription` | 6 |
 
-## 3. Typed accessors
+## 4. Typed accessors
 
 JSON is imported and immediately wrapped by a typed accessor module, so engine
 code never sees a `any`:
@@ -95,11 +124,13 @@ code never sees a `any`:
   `isLevelEvolution(evolution)`
 - `src/data/dex/items.ts` → `DexItem`, `getDexItem(id)`, `allDexItems()`
   (the catalogue's own text and a berry's `naturalGift`)
+- `src/data/audio/index.ts` → `cryCueFor(speciesId)`, `moveSoundCueFor(moveId)`,
+  `CRY_ROW_COUNT`, `MOVE_SOUND_ROW_COUNT`
 
 Accessors are pure and unit-tested; the JSON shape is checked by a test that
 asserts counts against `meta.json` so a bad regeneration fails loudly.
 
-## 4. Rules
+## 5. Rules
 
 - One source of truth per fact. `species.json` knows Pikachu's base stats; no
   other file repeats them.
