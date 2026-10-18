@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
+import { cryCueFor, moveSoundCueFor } from '../data/audio';
 import { applyVolume, loadSettings } from '../settings';
-import { AUDIO_CUES, audioCue, audioCueUrl, type AudioCue, type AudioCueId } from './cues';
+import { AUDIO_CUES, HIT_CUE_ID, audioCue, audioCueUrl, type AudioCue, type AudioCueId } from './cues';
 
 /**
  * The Phaser half of the cue table (D22 addendum): it preloads every cue, plays
@@ -38,6 +39,26 @@ export function playCue(scene: Phaser.Scene, cueId: AudioCueId): void {
   const cue = audioCue(cueId);
   if (cue.kind === 'music') return;
   startSound(scene, cue);
+}
+
+/**
+ * Plays the appearing species' cry. Answers false when it has none — the
+ * decompilation carries no sample for it, and a stand-in would be a lie about an
+ * id the rip never had, so that species stays silent. The autoplay gate is not
+ * an answer here either: a refused cue played nothing.
+ */
+export function playCry(scene: Phaser.Scene, speciesId: string): boolean {
+  const cueId = cryCueFor(speciesId);
+  return cueId !== null && startSound(scene, audioCue(cueId)) !== null;
+}
+
+/**
+ * Plays a move's own sound, or the shared `hit` when it has none — the cue is
+ * what the fallback is for. Answers whether a sound started.
+ */
+export function playMoveSound(scene: Phaser.Scene, moveId: string): boolean {
+  const cueId = moveSoundCueFor(moveId) ?? HIT_CUE_ID;
+  return startSound(scene, audioCue(cueId)) !== null;
 }
 
 /** Switches the single music channel to `cueId`; a no-op while it is already playing. */

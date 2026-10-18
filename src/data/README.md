@@ -53,6 +53,12 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   competitive-play boilerplate while the engine ports the ability
   (`docs/balance/effect-coverage.md`), read by `abilityDescription`
   (`src/ui/partyDetail.ts`) before the dex's own text.
+- `audio/` — **generated**, committed, do not edit by hand: `cries.json`
+  (species id → its cry cue, 455 rows) and `moveSounds.json` (move id → the
+  sound its own animation plays, 295 rows), written by
+  `node scripts/frlg/render-frlg-audio.mjs`. `index.ts` is the typed accessor
+  (`cryCueFor`, `moveSoundCueFor`, the two row counts) and every value is a cue
+  id from `src/audio/cues.ts` (`D22` addendum).
 - `moveCoverage.json` — **generated**, do not edit by hand: every shipped move as
   `port | no-op | excluded` with the seam it was derived from, written by
   `scripts/effect-coverage.mjs` beside the coverage table; regenerate it with

@@ -229,29 +229,44 @@ packer, not by editing code.
 samples, not as audio, so a cue is produced by `scripts/frlg/render-frlg-audio.mjs`
 — a sparse checkout of that decomp and the `huderlem/poryaaaa` m4a renderer, both
 fetched into `sprite-sources/` — and a looping bed is cut down to its loop body so
-the file Phaser loops is the song's own loop. The second renderer is the one
-external tool this pipeline needs; a CC0 set skips it entirely and just drops
-files in for the packer.
+the file Phaser loops is the song's own loop. A move sound takes its voicegroup
+and master volume (`-G`/`-V`) from the decomp's own `sound/songs/midi/midi.cfg`.
+The Pokémon cries need no renderer at all: they are already per-species samples
+(`sound/direct_sound_samples/cries/*.wav`, 8-bit PCM at 10512 Hz) and are copied
+in as they are. The renderer is the one external tool this pipeline needs; a CC0
+set skips it entirely and just drops files in for the packer.
 
-The seam is a **cue table** in `src/audio/cues.ts` (pure, no Phaser import): three
-music beds and three one-shot cues, each with a `gain` that is a share of the
-master volume. A cue id is the only name a scene uses — no scene names a file, a
-key or a volume — and `src/audio/audio.ts` is the Phaser half: it preloads every
-cue and owns the game's single music channel, switched by cue id (a scene on top
-takes the bed over, the scene underneath takes it back when it resumes). `D22`'s
-master volume stays the only audio knob; the per-cue `gain` is the only tunable
-beside it.
+The seam is a **cue table** in `src/audio/cues.ts` (pure, no Phaser import): the
+six hand-authored rows plus a shared `hit` and one cue per move sound and per cry
+the decompilation carries — **525 rows**, the committed asset set, resolved in one
+`import.meta.glob` because a computed asset path is not bundlable and 525 static
+imports are not a table. Each row carries a `gain` that is a share of the master
+volume. A cue id is the only name a scene uses — no scene names a file, a key or a
+volume — and `src/audio/audio.ts` is the Phaser half: it preloads every cue and
+owns the game's single music channel, switched by cue id (a scene on top takes the
+bed over, the scene underneath takes it back when it resumes). `D22`'s master
+volume stays the only audio knob; the per-cue `gain` is the only tunable beside it.
 
-Two moments deliberately have **no** cue: a hit and an encounter. The original
-varies both — a hit plays the move's own sound (`SE_M_*`, one per move) and an
-encounter is the appearing Pokémon's cry — so a single shared cue could only be
-an approximation of either. They are the backlog's job, not the table's.
+An **encounter plays the appearing Pokémon's cry** and a **hit plays the move's
+own sound**, from two generated tables that a later task extends instead of the
+table: `src/data/audio/cries.json` (species → cry cue, one row per species the
+decompilation carries a sample for — `num` 1..386, matched by name, never by
+`cry_tables.inc`'s internal species order) and `src/data/audio/moveSounds.json`
+(move → the `SE_M_*` its own animation script plays, 295 moves). A move with no
+sound of its own plays the shared `hit`, which is a second copy of
+`se_m_comet_punch` — the impact the cartridge gives TACKLE — so the fallback never
+moves when a move's mapping does. A species with no cry stays **silent**: a
+stand-in would be a lie about an id the rip never had. The original's
+`PokemonCrySong` replay, a cry's pitch/pan change and the effectiveness sounds are
+deliberately **not** ported: the bare sample and one sound per move, no variants.
 
-A cue whose rendered source is missing falls back to a **generated procedural
-placeholder** (a plain fading sine, 22050 Hz mono, ours and safe to
-redistribute) that the packer writes with a warning per missing file. A source
-that exists but is not a readable PCM WAV is a hard error instead: a file that is
-there is never silently replaced.
+The two ripped families are the only ones normalized in the **packer**: the 131
+MIDI-rendered move cues together and the 388 cries together, one gain each on the
+packed 16-bit mono PCM, so each family's loudest cue sits at 0.85 of full scale.
+The six hand rows keep the gain the render step applies over their own six files,
+so re-rendering never moves their bytes, and a cue of a ripped family is real
+audio or a hard error — the generated placeholder stays what it was, a stop-gap
+for a hand row.
 
 ## D23 — One shared keybind map, captured in the settings screen *(decided)*
 

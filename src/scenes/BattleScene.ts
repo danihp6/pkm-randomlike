@@ -86,7 +86,7 @@ import {
 } from '../ui/typewriter';
 import { loadSettings } from '../settings';
 import { actionKeys, subscribeKeybinds } from '../input/input';
-import { playCue, playMusic } from '../audio/audio';
+import { playCry, playCue, playMoveSound, playMusic } from '../audio/audio';
 import {
   addFrlgHpBar,
   addFrlgWindow,
@@ -306,6 +306,8 @@ export class BattleScene extends Phaser.Scene {
   /** The steps of the opening beat still to play, and which one is running. */
   private entrySteps: readonly EntryStep[] = [];
   private entryIndex = 0;
+  /** The appearing enemy's cry plays once, at the first step that shows it. */
+  private cryPlayed = false;
   private entryTimer: Phaser.Time.TimerEvent | null = null;
   private forcedSwitch = false;
   /** The player armed the Mega control for the move about to be chosen (D34). */
@@ -466,6 +468,7 @@ export class BattleScene extends Phaser.Scene {
     this.lastBallId = null;
     this.captured = false;
     this.beat = {};
+    this.cryPlayed = false;
     this.playerFighters = [];
     this.enemyFighters = [];
     this.loadedSheets = [];
@@ -1043,19 +1046,33 @@ export class BattleScene extends Phaser.Scene {
         this.cameras.main.flash(step.ms, 255, 255, 255);
         break;
       case 'foe-appear':
+      case 'sendout':
         this.appearSprite(this.foeSprite, step.ms, 0, -ENTRY_FOE_DROP);
+        this.playEntryCry();
         break;
       case 'trainer-appear':
         this.appearSprite(this.foeTrainer, step.ms, ENTRY_TRAINER_WALK, 0);
-        break;
-      case 'sendout':
-        this.appearSprite(this.foeSprite, step.ms, 0, -ENTRY_FOE_DROP);
         break;
     }
     this.entryTimer = this.time.delayedCall(step.ms, () => {
       this.entryIndex += 1;
       this.playEntryStep();
     });
+  }
+
+  /**
+   * The appearing enemy's cry, once per battle: the first of the beat's two
+   * appearance steps to run plays it (a wild opens with `foe-appear`, a trainer
+   * with `sendout`). The enemy's own species is the wild's rolled one, or the
+   * trainer's lead.
+   */
+  private playEntryCry(): void {
+    if (this.cryPlayed) return;
+    this.cryPlayed = true;
+    const trigger = this.launch?.trigger ?? null;
+    const speciesId =
+      trigger?.kind === 'wild' ? trigger.speciesId : activeFighter(this.state, 'enemy').speciesId;
+    playCry(this, speciesId);
   }
 
   /** The single exit from the beat, whether it ran out or a press cut it short. */
@@ -1183,6 +1200,7 @@ export class BattleScene extends Phaser.Scene {
           break;
         case 'move':
           this.playMoveFx(event.side, event.moveId);
+          playMoveSound(this, event.moveId);
           break;
         case 'mega':
           this.playMega(event.side);

@@ -1,10 +1,11 @@
 // Packs the imported FireRed/LeafGreen audio into src/assets/audio/.
 //
-// Source: one PCM WAV per cue under sprite-sources/frlg-audio/, **named after
-// the cue id** (`menu-music.wav`, `hit.wav`, ...) — the rip has to be renamed
-// before it is dropped in. That folder is gitignored; only the derived
-// src/assets/audio/<cue-id>.wav files are committed, exactly like the imported
-// art. See src/audio/README.md.
+// Source: one PCM WAV per cue under the rip directory — the intermediates
+// `render-frlg-audio.mjs` writes, **named after the cue id** (`menu-music.wav`,
+// `hit.wav`, `move-absorb.wav`, `cry-pikachu.wav`, ...): the cue set is that
+// directory's own file list plus the six hand rows' metadata. That folder is
+// gitignored; only the derived src/assets/audio/<cue-id>.wav files are
+// committed, exactly like the imported art. See src/audio/README.md.
 //
 // Every cue is written as 16-bit PCM WAV, mono, at the source's own sample rate
 // (stereo is downmixed by averaging the channels) and trimmed to the cue's cap
@@ -13,18 +14,35 @@
 // readable PCM WAV container is a hard error: a file that exists is never
 // silently replaced by a placeholder.
 //
+// The two new families (D22 addendum) are then normalized **together, once per
+// family**, on the packed 16-bit mono PCM: the 131 MIDI-rendered move cues
+// (`hit` included) to one gain, the 388 cries to another, so each family's
+// loudest cue sits at the same 0.85 of full scale. The six hand rows keep the
+// gain `render-frlg-audio.mjs` already applied over their own six files, so
+// their bytes never move.
+//
 // The rip itself is rendered by render-frlg-audio.mjs, which drives the m4a
 // emulator over the pret/pokefirered MIDI and instrument bank; a cue whose
 // source is missing falls back to its generated procedural placeholder: a plain
 // sine with a 10 ms fade at both ends, mono, 22050 Hz, 1.5 s for a music bed and
 // 0.2 s for an sfx. The placeholder is ours and safe to redistribute (the same
 // status as src/assets/tileset.png); rendering the cue in and re-running this
-// script replaces it without touching a call site.
+// script replaces it without touching a call site. That fallback is for the six
+// hand rows only: a missing cue of a ripped family is a hard error, because the
+// whole point of ripping it is that the file is real.
+//
+// The rip directory comes in as absolute argv/env (the Asset trees rule — a
+// packer never reads an asset tree inside a worktree):
+//
+//   --rendered <abs> / FRLG_AUDIO_OUT  the intermediate directory
 //
 // Run: node scripts/frlg/build-audio.mjs
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const OUTPUT = new URL('../../src/assets/audio/', import.meta.url);
+const DEFAULT_RENDERED = fileURLToPath(new URL('../../sprite-sources/frlg-audio/', import.meta.url));
 
 const MUSIC_PLACEHOLDER_SECONDS = 1.5;
 const SFX_PLACEHOLDER_SECONDS = 0.2;
@@ -34,21 +52,76 @@ const PLACEHOLDER_RATE = 22050;
 const PLACEHOLDER_PEAK = 0.25;
 const FADE_SECONDS = 0.01;
 
-// Mirrors the cue table in src/audio/cues.ts, in its order: what each cue is,
-// the source file the game must never know and the length its asset is capped
-// to. `source` is the rip, named after the cue id. A music bed is capped high
-// enough that a whole loop body fits, so the seam is never a cut.
-const CUES = [
-  { id: 'menu-music', kind: 'music', capSeconds: 120 },
-  { id: 'route-music', kind: 'music', capSeconds: 120 },
-  { id: 'battle-music', kind: 'music', capSeconds: 120 },
-  { id: 'faint', kind: 'sfx', capSeconds: 6 },
-  { id: 'level-up', kind: 'sfx', capSeconds: 8 },
-  { id: 'victory', kind: 'sfx', capSeconds: 20 },
-].map((cue) => ({
-  ...cue,
-  source: new URL(`../../sprite-sources/frlg-audio/${cue.id}.wav`, import.meta.url),
-}));
+const MUSIC_CAP_SECONDS = 120;
+const LEVEL_UP_CAP_SECONDS = 8;
+const VICTORY_CAP_SECONDS = 20;
+// Long enough for the longest rendered move sound (5.18 s) and for a cry, which
+// never runs near a second.
+const SFX_CAP_SECONDS = 6;
+// Peak each ripped family's loudest cue is normalized to: the same 0.85 of full
+// scale `render-frlg-audio.mjs` lifts the six hand rows to.
+const TARGET_PEAK = 0.85;
+
+const MOVE_CUE_PREFIX = 'move-';
+const CRY_CUE_PREFIX = 'cry-';
+const HIT_CUE_ID = 'hit';
+const AUDIO_EXTENSION = '.wav';
+
+// The six hand-authored rows, in their shipped order: what each cue is (which
+// decides its placeholder shape) and, with `capSeconds`, how long its asset may
+// be. Every other cue is a one-shot of a ripped family: `sfx`, capped by its id.
+const HAND_ROWS = [
+  { id: 'menu-music', kind: 'music' },
+  { id: 'route-music', kind: 'music' },
+  { id: 'battle-music', kind: 'music' },
+  { id: 'faint', kind: 'sfx' },
+  { id: 'level-up', kind: 'sfx' },
+  { id: 'victory', kind: 'sfx' },
+];
+
+/** `--flag <path>` or its env fallback, resolved against the working directory. */
+function optionValue(flag, env) {
+  const at = process.argv.indexOf(flag);
+  const value = at >= 0 ? process.argv[at + 1] : process.env[env];
+  return value ? resolve(value) : null;
+}
+
+/** The length a cue's asset is capped to, from its id. */
+function capSeconds(id) {
+  if (id.endsWith('-music')) return MUSIC_CAP_SECONDS;
+  if (id === 'level-up') return LEVEL_UP_CAP_SECONDS;
+  if (id === 'victory') return VICTORY_CAP_SECONDS;
+  return SFX_CAP_SECONDS;
+}
+
+/** Which single gain a cue shares with its family, or null for the six hand rows. */
+function familyOf(id) {
+  if (id.startsWith(CRY_CUE_PREFIX)) return 'cry';
+  if (id === HIT_CUE_ID || id.startsWith(MOVE_CUE_PREFIX)) return 'move';
+  return null;
+}
+
+/** The rip's cue ids: one `<cue-id>.wav` per cue, in id order. */
+function ripCueIds(rendered) {
+  return readdirSync(rendered)
+    .filter((name) => name.endsWith(AUDIO_EXTENSION))
+    .map((name) => name.slice(0, -AUDIO_EXTENSION.length))
+    .sort();
+}
+
+/**
+ * The packer's cue list: the rip directory's file list, with the six hand rows
+ * first so their placeholders keep the shape they shipped with.
+ */
+function cueList(rendered) {
+  const handIds = new Set(HAND_ROWS.map((row) => row.id));
+  return [
+    ...HAND_ROWS.map((row) => ({ ...row, capSeconds: capSeconds(row.id) })),
+    ...ripCueIds(rendered)
+      .filter((id) => !handIds.has(id))
+      .map((id) => ({ id, kind: 'sfx', capSeconds: capSeconds(id) })),
+  ];
+}
 
 /** A 44-byte canonical header followed by 16-bit mono PCM. */
 function wavFile(sampleRate, pcm) {
@@ -128,12 +201,41 @@ function transcode(buffer, path, capSeconds) {
     const value = Math.round(sum / source.channels);
     pcm.writeInt16LE(Math.max(-32768, Math.min(32767, value)), frame * 2);
   }
-  return wavFile(source.sampleRate, pcm);
+  return { sampleRate: source.sampleRate, pcm };
+}
+
+/** Peak sample magnitude of 16-bit mono PCM. */
+function peakOf(pcm) {
+  let peak = 0;
+  for (let at = 0; at + 1 < pcm.length; at += 2) {
+    peak = Math.max(peak, Math.abs(pcm.readInt16LE(at)));
+  }
+  return peak;
+}
+
+/**
+ * Lifts a family's cues by one gain so its loudest sits at `TARGET_PEAK`, the
+ * same rounding `render-frlg-audio.mjs`'s `normalizeCues` uses, so the two
+ * halves of the pipeline land on the same peak. A silent family is left alone.
+ */
+function normalizeFamily(entries) {
+  if (entries.length === 0) return 0;
+  let peak = 0;
+  for (const entry of entries) peak = Math.max(peak, peakOf(entry.pcm));
+  if (peak === 0) return 0;
+  const gain = (TARGET_PEAK * 32767) / peak;
+  for (const { pcm } of entries) {
+    for (let at = 0; at + 1 < pcm.length; at += 2) {
+      const value = Math.round(pcm.readInt16LE(at) * gain);
+      pcm.writeInt16LE(Math.max(-32768, Math.min(32767, value)), at);
+    }
+  }
+  return gain;
 }
 
 /**
  * The generated stand-in for a cue whose rip is missing: a plain sine, one
- * semitone per row down the table so the eight cues are not eight copies of one
+ * semitone per row down the table so the six hand rows are not six copies of one
  * file, eased in and out so it never clicks.
  */
 function placeholder(kind, index) {
@@ -154,20 +256,47 @@ function placeholder(kind, index) {
   return wavFile(PLACEHOLDER_RATE, pcm);
 }
 
+const rendered = optionValue('--rendered', 'FRLG_AUDIO_OUT') ?? DEFAULT_RENDERED;
+if (!existsSync(rendered)) {
+  throw new Error(`no rip directory at ${rendered}: run render-frlg-audio.mjs first`);
+}
+const cues = cueList(rendered);
+
 // Every cue is packed before anything is written, so a bad source cannot leave
 // half a build behind.
-const files = CUES.map((cue, index) => {
-  const path = `sprite-sources/frlg-audio/${cue.id}.wav`;
-  if (!existsSync(cue.source)) return { cue, path, audio: placeholder(cue.kind, index), missing: true };
-  return { cue, path, audio: transcode(readFileSync(cue.source), path, cue.capSeconds), missing: false };
+const files = cues.map((cue, index) => {
+  const path = join(rendered, `${cue.id}${AUDIO_EXTENSION}`);
+  if (!existsSync(path)) {
+    // A hand row keeps its generated placeholder; a ripped family may not.
+    if (familyOf(cue.id) !== null) {
+      throw new Error(`${cue.id}: no rip at ${path} (a ripped cue is never a placeholder)`);
+    }
+    return { cue, path, audio: placeholder(cue.kind, index), pcm: null, missing: true };
+  }
+  const { sampleRate, pcm } = transcode(readFileSync(path), path, cue.capSeconds);
+  return { cue, path, audio: null, pcm, sampleRate, missing: false };
 });
 
+const families = { move: [], cry: [] };
+for (const file of files) {
+  const family = familyOf(file.cue.id);
+  if (file.pcm && family) families[family].push(file);
+}
+const moveGain = normalizeFamily(families.move);
+const cryGain = normalizeFamily(families.cry);
+
 mkdirSync(OUTPUT, { recursive: true });
-for (const file of files) writeFileSync(new URL(`${file.cue.id}.wav`, OUTPUT), file.audio);
+for (const file of files) {
+  const audio = file.pcm ? wavFile(file.sampleRate, file.pcm) : file.audio;
+  writeFileSync(new URL(`${file.cue.id}${AUDIO_EXTENSION}`, OUTPUT), audio);
+}
 
 const missing = files.filter((file) => file.missing);
 console.log(
-  `wrote ${files.length} cues to src/assets/audio (${files.length - missing.length} ripped, ${missing.length} generated placeholders)`,
+  `wrote ${files.length} cues to src/assets/audio (${files.length - missing.length} packed, ${missing.length} generated placeholders)`,
+);
+console.log(
+  `normalized ${families.move.length} move cues at gain ${moveGain.toFixed(3)} and ${families.cry.length} cries at gain ${cryGain.toFixed(3)}`,
 );
 if (missing.length > 0) {
   console.warn(`missing sources, their cues are generated placeholders: ${missing.map((file) => file.path).join(', ')}`);
