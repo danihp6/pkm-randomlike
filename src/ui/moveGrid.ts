@@ -9,7 +9,7 @@ import {
   categoryIconFrame,
 } from '../data/moveCategoryIcons';
 import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../data/statusIcons';
-import { InfoPopup, type InfoPopupBadge, type InfoPopupChip } from './infoPopup';
+import { InfoPopup, type InfoPopupBadge, type InfoPopupChip, type InfoPopupContent } from './infoPopup';
 import { t } from '../i18n';
 
 /**
@@ -113,6 +113,26 @@ function accuracyTint(cell: MoveGridCell): number {
   if (cell.accuracy > cell.baseAccuracy) return STAT_UP;
   if (cell.accuracy < cell.baseAccuracy) return STAT_DOWN;
   return FRLG_INK;
+}
+
+/**
+ * The floating description window's content for a move cell: the type badge, the
+ * status badge and the move's own text, with the coloured chip standing in for a
+ * type the atlas lacks. Pure, so the grid and the battle's switch window float the
+ * same window from the same builder.
+ */
+export function moveInfoContent(cell: MoveGridCell): InfoPopupContent {
+  const typeFrame = typeIconFrame(cell.type);
+  const statusFrame = cell.status ? statusIconFrame(cell.status) : null;
+  const badges: InfoPopupBadge[] = [];
+  if (typeFrame !== null) badges.push({ textureKey: TYPE_ICON_TEXTURE_KEY, frame: typeFrame, y: 0 });
+  if (statusFrame !== null) {
+    badges.push({ textureKey: STATUS_ICON_TEXTURE_KEY, frame: statusFrame, y: 20 });
+  }
+  // A type the atlas lacks still falls back to the text chip.
+  const chip: InfoPopupChip | null =
+    typeFrame === null ? { label: cell.type.toUpperCase(), color: typeColor(cell.type), y: 0 } : null;
+  return { text: cell.desc, badges, chip };
 }
 
 export class MoveGrid {
@@ -367,16 +387,6 @@ export class MoveGrid {
       this.popup.hide();
       return;
     }
-    const typeFrame = typeIconFrame(cell.type);
-    const statusFrame = cell.status ? statusIconFrame(cell.status) : null;
-    const badges: InfoPopupBadge[] = [];
-    if (typeFrame !== null) badges.push({ textureKey: TYPE_ICON_TEXTURE_KEY, frame: typeFrame, y: 0 });
-    if (statusFrame !== null) {
-      badges.push({ textureKey: STATUS_ICON_TEXTURE_KEY, frame: statusFrame, y: 20 });
-    }
-    // A type the atlas lacks still falls back to the text chip.
-    const chip: InfoPopupChip | null =
-      typeFrame === null ? { label: cell.type.toUpperCase(), color: typeColor(cell.type), y: 0 } : null;
     const rect = options.popupAtCell === true && index !== null ? this.cellRects[index] : undefined;
     const anchorY = rect ? rect.y : options.y;
     const belowY = rect ? rect.y + rect.h + POPUP_GAP : options.y + options.h + POPUP_GAP;
@@ -387,7 +397,7 @@ export class MoveGrid {
         above: anchorY - POPUP_GAP,
         below: belowY,
       },
-      { text: cell.desc, badges, chip },
+      moveInfoContent(cell),
     );
   }
 }
