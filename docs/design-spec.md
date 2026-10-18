@@ -91,7 +91,12 @@ carries over.
   equip it (replacing what sits there); teaching is free and a TM is
   **reusable** (D36). When the squad levels up a
   modal pops up announcing **"X learned Y!"** for every move a member crossed on
-  the way, dismissed with any key or a click. The party is never left empty and
+  the way, dismissed with any key or a click. Every level-up also says so in a
+  **transient notice** at the top of the screen — `Charmander grew to Lv 6!`, naming
+  the member (its nickname when it has one, else its species) and the level it
+  reached — holding 2.6 s, dismissed by itself, taking no key and blocking no
+  movement, the way a boxed catch does (`docs/routes-spec.md` §6); the modal keeps
+  the move names. The party is never left empty and
   the box is never required to be full.
 - A member can be **named**: the name row on the STATS tab **is** an editable field
   (a bordered box with a `click to name` hint at its right end, drawn inside the

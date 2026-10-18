@@ -36,3 +36,15 @@ export function itemPickupNotice(name: string): Notice {
     holdMs: NOTICE_HOLD_MS,
   };
 }
+
+/**
+ * The level-up notice: `<name>` reached `level`. `name` is the member's nickname
+ * when it has one, else its species name, resolved by the caller; every level-up
+ * beat raises it, whether or not a move was crossed.
+ */
+export function levelUpNotice(name: string, level: number): Notice {
+  return {
+    text: t('notice.levelUp', { name, level }),
+    holdMs: NOTICE_HOLD_MS,
+  };
+}
