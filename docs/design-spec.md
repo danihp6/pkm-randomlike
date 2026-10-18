@@ -197,7 +197,9 @@ Full rules in `docs/battle-spec.md`. In short:
   and the appearance beats.
 - The command menu takes the **mouse** as well as the keyboard: hovering a row
   moves the ▶ cursor and a click picks it, and a click advances the battle text.
-  **FIGHT / BAG / SWITCH / RUN** is a 2x2 **grid**, and so is the **moves** menu
+  **FIGHT / BAG / SWITCH / RUN** is a 2x2 **grid**, which also reserves a fifth
+  **INFO** control at that grid's right edge — the same column the moves menu keeps
+  for **MEGA**, so the 2x2 keeps its shape — and so is the **moves** menu
   (all four moves show at once, with no scrolling), which always reserves its full
   2x2 so a shorter list keeps one cell size: each move cell is tinted by the
   move's type and shows its name, the FRLG **type badge**, the official category
@@ -221,6 +223,15 @@ Full rules in `docs/battle-spec.md`. In short:
   its own, sized to the button: hovering one floats that move's own description and
   a press on it **pins** the description open — the press is swallowed there, so
   the member the window describes is not switched.
+  The arrows reach the **INFO** control from the command grid's last column, and a
+  confirm or a press on it opens the battle's **own state** in a window of its own:
+  the weather and the terrain, each live field condition and each side's own
+  conditions with their counts, each active's stat stages and its non-volatile
+  status. Any confirm or back press or a click closes it and it spends no turn. The
+  engine models no **entry hazards** (Stealth Rock, Spikes, Toxic Spikes and Sticky
+  Web are absent from the whole engine — `Tidy Up`'s handler in
+  `src/engine/battle/effects/moves.ts` says so) and keeps the per-fighter
+  **volatiles** hidden, so the window lists neither.
 - The bag opens as pockets like the route HUD — **CONSUM** everywhere and
   **BALL** while a wild can still be caught; trainer battles offer only
   consumables.
@@ -231,9 +242,9 @@ Full rules in `docs/battle-spec.md`. In short:
   drawn 25% smaller so they sit clear of the stacked panels.
 - The battle's windows are the drawn chrome: the dark **textbox** behind the
   message text, the light **window** behind the HP panels, the command and moves
-  menus and the switch grid's detail window, each at its own degree of
-  translucency so the field stays readable through it, and the light windows ink
-  their text with the deep-black `FRLG_INK`.
+  menus, the battle-state window the **INFO** control opens and the switch grid's
+  detail window, each at its own degree of translucency so the field stays readable
+  through it, and the light windows ink their text with the deep-black `FRLG_INK`.
 
 ## 5. The route
 
