@@ -1245,6 +1245,33 @@ the sequence and is never reused. What follows is the cut's own record.
   the same ledgered files and carry the same obligation.
 
 ### Batch 13 — the PC's RIP tab, and the switch window's move ⓘ
+**(shipped, archived)**: its two tasks merged in ID order behind the green gate
+(`task-44`, `task-59`; **1650** tests across 137 files, `npm test` + `npm run build`
+green after each merge) and the detail is in `CHANGELOG.md`'s `## Unreleased`; QA
+validated each task in its own lane (Task QA) and then the combined tree (Integration
+QA), and the Orchestrator **re-measured every `[live]` criterion itself** on the
+combined commit with a dev server and a headless Chromium over CDP. **One spec defect
+was found and corrected rather than hidden:** task-44's `[live]` veil clause aimed its
+reference pixel at `hudBoxTabs[0]`, which with the spec's own seed is the *active* page
+tab (`0x2f2c4d`), so its "at least 40 darker" threshold was unsatisfiable; the
+corrected clause measures the declared composite `(108, 105, 128)` and proves it by
+toggling the veil (`(207, 204, 226)` hidden, back to `(108, 105, 128)` — 99/channel),
+and that task's QA re-ran the one clause green with its branch tip unmoved. **What
+shipped.** **Task-44** stops deleting the fallen: `RunState.rip` (party-then-box order,
+appended by `releaseFainted` beside `stats.casualties`), `SAVE_VERSION` **16 → 17** with
+the step that defaults an old run's list to empty, `PaneId` a third wide with
+`PANE_CYCLE`/`cyclePane`/`ripRows`, and the PC box's fixed **RIP** tab drawn at the
+strip's right end under the locked cell's own veil (`HUD_BOX_MAX_PAGES` 8 → 7 to make
+room) — the dead read-only everywhere (no grab, no deposit, no reorder, no revive, D5)
+and their detail panel showing stats and moves with the rename field, the evolution
+branches and the learnset pool hidden. **Task-59** gives each of the battle SWITCH
+window's four move rows the HUD's ⓘ on a hit zone of its own (hover floats, a press
+pins and is swallowed, so the member the window describes is never switched) and lifts
+`MoveGrid`'s popup body into the exported pure `moveInfoContent(cell: MoveGridCell)`, so
+the grid and the switch window cannot drift; the ability row's ⓘ keeps its hover-only
+rule. Task-44 took the chain's **16 → 17** step and Task-59 added none, so the version
+chain is **14 → 15 → 16 → 17 → 18**. Their two IDs are retired: they keep their place in
+the sequence and are never reused. What follows is the cut's own record.
 - **Task-44** The PC box gains a fixed RIP tab listing the dead.
 - **Task-59** Each of the switch window's move rows gets an ⓘ that floats the move's info,
   on hover or on click, as the route HUD's does.
@@ -2651,7 +2678,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       Batch order covers the rest: both scenes are free here and nowhere earlier, and this
       task runs before Batch 10's i18n sweep so its lines can be keyed with the rest.
       *(Batch 9b)*
-- [ ] **[Task-59] Each of the battle SWITCH window's move rows gets the HUD's ⓘ, on hover and
+- [x] **[Task-59] Each of the battle SWITCH window's move rows gets the HUD's ⓘ, on hover and
       on click.** Reported in play: «en combate panel de info en switch los moves deberian tener
       boton i que abre panel con info ataque al pulsar o ponsrse encima como el del hud» — in a
       battle, the SWITCH window's own info panel lists the member's moves with no control that
@@ -2881,7 +2908,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       stays, while the one it adds to the capture screen is deleted here with the
       modal it lives on, so this task's diff removes a Batch-3 feature on purpose.
       *(Batch 7)*
-- [ ] **[Task-44] The PC box gains a fixed RIP tab, listing the dead.** Reported in play:
+- [x] **[Task-44] The PC box gains a fixed RIP tab, listing the dead.** Reported in play:
       "en pc un tab fijo de rip donde aparecen los pokes muertos sin poder meterlos en el
       party ni dejar pokes en rip" — a fixed RIP tab in the PC, showing the dead, with the
       dead unable to move into the party and a living member unable to be deposited into RIP.

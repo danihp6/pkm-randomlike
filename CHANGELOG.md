@@ -8,6 +8,73 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The PC box gains a fixed RIP tab, listing the dead.** Reported in play ("en pc un
+      tab fijo de rip donde aparecen los pokes muertos sin poder meterlos en el party ni
+      dejar pokes en rip"), and the run had nowhere to keep them: `releaseFainted`
+      (`src/engine/run/perms.ts`) filtered every 0-HP member out of `party` and `box` and
+      bumped a count, `RunState` had no field that remembered them, and the panel was a
+      two-pane model (`PaneId = 'party' | 'box'`). **What ships:** `RunState.rip`, the run's
+      record of the fallen in **party-then-box order**, appended at the one place a member
+      is lost — beside `stats.casualties`, so the list and the count can never disagree —
+      and never cleared by `advanceRoute`/`advanceMap`, so it is a run-long fact like
+      nothing else the run keeps. `SAVE_VERSION` **16 → 17** with the `SAVE_MIGRATIONS[16]`
+      step that defaults an old run's list to empty (an old save's dead were never stored,
+      the `[Task-13]` shape) and `parseRun`'s `rip: parseMembers(value.rip)`, which drops a
+      malformed entry instead of failing the run. `PaneId` gains `'rip'` with the exported
+      `PANE_CYCLE` / `cyclePane(pane, delta)` / `ripRows(run)`, and the model refuses every
+      write on it: a grab in RIP is a no-op, a deposit into RIP is refused, a reorder inside
+      RIP returns the run unchanged, and `left`/`right` with nothing grabbed now walk three
+      panes. `RouteScene` draws the tab as a **fixed control** at the right end of the box's
+      page-tab strip, under the very veil a locked box cell wears (`HUD_BOX_LOCK_FILL` /
+      `HUD_BOX_LOCK_ALPHA`, now one source of truth for both) — `HUD_BOX_MAX_PAGES` 8 → 7
+      makes room for it, a strip change that only bites a box past 112 members, which a
+      finite run's one-catch-per-route can never reach — and a dead cell opens the usual
+      member detail **read-only**: the dead keep their stats and their moves, while the
+      rename field, the evolution branches, the move reorder and the learnset pool are
+      hidden, and `memberById` searches `rip` so that panel resolves. `docs/routes-spec.md`
+      §6 records the rule. Tests: 11 new cases across `perms.test.ts`, `state.test.ts`,
+      `partyScreen.test.ts` and `save.test.ts` (a fainted member recorded **once** in
+      party-then-box order with the healthy untouched and a second `releaseFainted`
+      returning the *same* run object; a floor change, a full vial and a level-up leaving
+      `rip` reference-identical; the three reducer refusals; the v16 → v17 round trip), and
+      the batch's live pass measured the tab's geometry (32×26 at `boxX + panelW - 20 - 32`,
+      14 px clear of the last page tab), its veil (`0xcfcce2` under `0x1b1830` at 0.55 =
+      **108/105/128**, and `207/204/226` with the veil hidden — 99/channel), the pane switch
+      and the read-only detail on a seeded run. It adds one run field, so it takes the
+      chain's **16 → 17** step; the chain is **14 → 15 → 16 → 17 → 18**, and the task drew
+      no RNG. Its ID is retired: it keeps its place in the sequence and is never reused.
+- [x] **Each of the battle SWITCH window's move rows gets the HUD's ⓘ, on hover and on
+      click.** The window listed a member's four moves as bare `name` / `PP n/m` cells with
+      no way to explain themselves, while the route HUD's detail panel had floated a move's
+      description from an ⓘ since Phase 6 — and the one ⓘ the window did have (the ability
+      row's) is **hover-only** on purpose, because the party cells under it own the presses.
+      **What ships:** the ⓘ on every move row, on **a hit zone of its own sized to the
+      button** — the tree's only hover that cannot miss, the shape the batch's decision
+      freezes — which floats the move's own description on `pointerover` and **pins** it on
+      a `pointerdown`; the press is swallowed by that zone, so the member the window
+      describes is never switched by it (a press anywhere else on the window keeps its
+      shipped meaning), a second press toggles the pin off, and a repaint for another member
+      drops it. The ability row's ⓘ keeps its hover-only rule unchanged, and the one
+      sentence `docs/design-spec.md` §4 gains says exactly where the new press goes. So the
+      grid and the window can never drift, `MoveGrid`'s private popup body is lifted into
+      the exported pure **`moveInfoContent(cell: MoveGridCell): InfoPopupContent`** (the
+      type badge, the status badge and the move's text through `InfoPopup`), and the switch
+      window builds one `MoveGridCell` per drawn row and calls it. No new file, no i18n key
+      (the popup carries the move's own text), no `src/ui/README.md` line, no engine or data
+      change, no new identifier classifier — `insideInfoButton`/`infoRect` stay deleted and
+      the MOVES window's own path is untouched. The four ⓘ sit at `cell.x + cell.width - 19`
+      / `cell.y + 17` with a 22×22 zone at `cell.x + cell.width - 30` / `cell.y + 6`, the
+      move name's `maxWidth` narrows to `cellW - 42` to clear the button, and the shared
+      popup rides above or below its own row so it never covers the ⓘ it came from. Its
+      `[live]` pass measured, on the combined tree: the four controls' offsets and zones
+      (`dx`/`dy` 0 against the frozen arithmetic, `getData('move') === i`), a hover floating
+      the exact `desc` with the active fill `247/224/166`, a press pinning that description
+      while `mode` stayed `'party'` and the described member (index, name) did not move, the
+      pin surviving the pointer leaving, the second press closing it, and the ability zone's
+      hover-only rule intact. It adds no run field and changes no rule, so **no
+      `SAVE_VERSION`** step — the chain stays **14 → 15 → 16 → 17 → 18**. Its ID is retired:
+      it keeps its place in the sequence and is never reused.
+
 - [x] **A hit plays the move's own sound, and an encounter plays the appearing
       Pokémon's cry.** The cue table had deliberately dropped both moments rather than
       fake them with one shared sound — the original varies a hit by the move (`SE_M_*`,
