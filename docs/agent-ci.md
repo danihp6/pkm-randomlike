@@ -13,6 +13,7 @@ half of it that runs unattended on GitHub Actions. The workflows themselves are 
 | `agent-role-smoke.yml` | dispatch | Proves a roled agent starts headless and loads its prompt, that `--auto` lets it use tools, that a job can push a branch, and that the private asset store is readable with the deploy key. |
 | `agent-cycle.yml` | dispatch (the driver dispatches it) | **One batch, end to end.** The only workflow allowed to write `main`. |
 | `agent-autopilot.yml` | `schedule` every 30 min, dispatch | The loop: decides whether a cycle may start and dispatches one. Spends no tokens. |
+| `agent-autopilot-window.yml` | dispatch, `schedule` hourly | The timed brake: arms `AUTOPILOT` for a range you pick (`hours`, and the range's UTC start) and turns it off on the range's edges. Needs the `AUTOPILOT_TOKEN` secret. |
 
 ## One cycle
 
@@ -89,11 +90,43 @@ task (or a `git revert -m 1 <merge>`), not a blocked merge.
   `agent / cycle` by hand to resume).
 - At most `AGENT_DAILY_CYCLES` cycles today, when that variable is set to a number.
   **Unset or `0` means no cap** — which is the current setting.
+- Inside the armed window, when there is one: `AUTOPILOT_FROM` / `AUTOPILOT_UNTIL` hold
+  the range as absolute UTC instants and the driver parks outside them even if the brake
+  still reads `on`, so a cron that fires late cannot start a cycle past the end.
 
 Chaining matters, and it is measured rather than assumed: a `*/30` cron on this
 private repository fired **three times in six hours** overnight, so the schedule is a
 safety net and the chain is the loop. The cycle dispatches this driver at its end, and
 the driver decides.
+
+## The timed window
+
+Setting `AUTOPILOT=on` by hand is the brake's manual mode and stays the default. The
+timed window is the other mode: **dispatch `agent / autopilot window`** with the number
+of hours you want (and, if you want the range to start later, its UTC `HH:MM`), and it
+writes the range into `AUTOPILOT_FROM` / `AUTOPILOT_UNTIL`, turns `AUTOPILOT` on, and
+asks the driver for a cycle right away — so the range starts when you dispatch it, not
+when the cron next feels like firing.
+
+Both edges of the range are then the workflow's own: an hourly pass arms the brake when
+the range opens (and starts the chain, because a range that opens with the loop parked
+has no cycle in flight to hand the baton) and, when the range closes, turns the brake off
+**and clears the range**. That pass is what keeps the off promise even when nothing has
+run for hours, and clearing it is what makes the manual brake reachable again — the
+driver parks whenever `AUTOPILOT_UNTIL` is set, so a range left behind in the past would
+keep a human's own `on` parked forever. One invariant covers it all: **with a range set,
+the brake mirrors the range.** So a manual `off` inside an open range lasts until the
+next pass — `hours: 0` is a stop: brake off, range cleared, and back to the settings.
+With no range set, the hourly pass is skipped entirely and the brake is manual again, as
+it was before the first window.
+
+Two costs, stated plainly: the range lives in repository variables, and **writing one is
+not in `GITHUB_TOKEN`'s permission set** (`actions/variables` answers 403, "Resource not
+accessible by integration"), so the workflow needs a PAT in the `AUTOPILOT_TOKEN` secret
+— classic with the `repo` scope, or fine-grained with `Variables: read and write` on this
+repository. Without the secret the window workflow fails with a message that says so, and
+the loop keeps behaving like the manual brake it already is. And the edges are hourly:
+the cycle boundary usually turns the brake off sooner, but the pass is the guarantee.
 
 ## Budget
 
@@ -103,7 +136,9 @@ account's, not the repository's: on the Free plan a private repository shares 2,
 minutes a month across the whole account, and running out **blocks** Actions (or bills
 it, when a payment method exists) rather than slowing down. The finite backlog is what
 bounds the loop in practice: ~30 tasks in whole batches is ~15 hours of runner, after
-which there is no `- [ ]` left and the loop parks.
+which there is no `- [ ]` left and the loop parks. The timed window adds a ~10-second
+hourly job while a range is armed (and none at all when it is not, since the job skips
+itself), which is cheap next to the cycle it is there to stop starting.
 
 ## Known holes
 
@@ -117,3 +152,13 @@ which there is no `- [ ]` left and the loop parks.
   repository is the injection risk worth watching.
 - A human push to `main` while a cycle is in flight can make its final push be
   rejected; the cycle is told to bring `origin/main` into its branch before pushing.
+- `AUTOPILOT_TOKEN` is the one long-lived credential the loop needs and the only one
+  kept for the brake's sake: a PAT that may write repository variables. It is handed to
+  `agent-autopilot-window.yml` alone, which runs no agent — the secret never reaches
+  `opencode run` — and a fine-grained token with `Variables: read and write` (rather than
+  a classic `repo` one) keeps the blast radius small. Rotating it is a human's job; when
+  it expires the window workflow fails loudly at its first `gh variable set`.
+- The window's edges are hourly, and GitHub's cron is a request rather than a promise
+  (the `*/30` schedule below fired three times in six hours overnight). The driver's gate
+  is what makes that harmless: a late edge cannot start a cycle outside the range, it can
+  only leave the recorded brake reading stale for up to an hour.

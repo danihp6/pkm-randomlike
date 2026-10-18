@@ -8,6 +8,39 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The autopilot's brake has a timed window: a range is armed from the workflows, and the loop turns
+      itself off when the range ends.** `AUTOPILOT` was manual — two clicks in the settings, and the loop
+      ran until somebody remembered to click them back — which is fine for an afternoon and wrong for an
+      unattended night. **What shipped.** `agent / autopilot window`
+      (`.github/workflows/agent-autopilot-window.yml`) is dispatched with `hours` and, if the range should
+      start later, its UTC `HH:MM`; it writes the range into the repository variables `AUTOPILOT_FROM` /
+      `AUTOPILOT_UNTIL` as **absolute UTC instants** rather than a recurring `HH:MM` — so a pass never has to
+      ask whether that `02:00` was today's or tomorrow's — turns `AUTOPILOT` on, and asks the driver for a
+      cycle right away, so a range starts when it is dispatched and not when the cron next feels like
+      firing. Its **hourly pass** is the other edge: it arms the brake when the range opens (and starts the
+      chain itself, because a range that opens with the loop parked has no cycle in flight to hand the
+      baton) and, when the range closes, turns it off **and clears the range** — the driver parks whenever
+      `AUTOPILOT_UNTIL` is set, so a range left behind in the past would have kept a human's own `on`
+      parked forever. One invariant covers it: **with a range set, the brake mirrors the range**, on either
+      edge — `hours: 0` is a stop (brake off, range cleared, and the settings own the brake again), and
+      with no range set the pass skips itself entirely and the brake is the manual one it always was. The
+      driver reads the same range as a **belt**: a late cron or a stale `on` cannot start a cycle outside
+      it (three new `go false` branches, so the summary now answers "why has nothing run?" with the window
+      in view and carries the range and the current UTC time as rows). It costs one new secret, because
+      **writing a repository variable is not in `GITHUB_TOKEN`'s permission set** (`actions/variables`
+      answers 403, "Resource not accessible by integration"): `AUTOPILOT_TOKEN`, a classic PAT with the
+      `repo` scope or a fine-grained one with `Variables: read and write`. It reaches this one workflow,
+      which runs no agent, and a missing secret fails with a step that names what to create instead of a
+      403 out of `gh`. `docs/agent-ci.md` gains the window's own section (the range, the invariant and
+      both costs, budget line included), `.github/workflows/README.md` the file's line, and
+      `agent-autopilot.yml`'s header the belt's paragraph. **What was measured, and what was not:** every
+      branch of both shell snippets — the arm's four states, the hourly pass's five, and the gate's five —
+      was driven against a stubbed `gh` in Git Bash over the strings pulled from the YAML itself, and two
+      real defects fell out of it: an arm that flipped the brake `off` for a pending range but never `on`
+      for an open one, and a spent range that was never cleared. Both were fixed before commit; no run has
+      happened on GitHub yet, so the first dispatch is the real proof. No game code, no data table and no
+      run field: the chain stays **14 → 15 → 16 → 17 → 18**.
+
 - [x] **A move crossed on a level-up waits in the learnset and is never equipped for you.** Reported in
       play ("al subir nivel y aprender ataque no se debe equipar en los 4 actuales debe quedarse en
       learnset y si quiere jugador se lo pone"): a level-up used to push the new move straight into the
