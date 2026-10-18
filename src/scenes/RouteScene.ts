@@ -228,6 +228,18 @@ import {
   type ReleaseBeat,
 } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
+import {
+  FRLG_ACCENT,
+  FRLG_BADGE_INK,
+  FRLG_MUTED,
+  FRLG_POSITIVE,
+  FRLG_ROW_FILL,
+  FRLG_ROW_STROKE,
+  FRLG_SELECTED_FILL,
+  FRLG_SELECTED_STROKE,
+  FRLG_SURFACE,
+  FRLG_TRACK,
+} from '../ui/frlg';
 import { clampScrollTop, maxScrollTop, scrollByRows, stepGridCursor, visibleRange } from '../ui/scroll';
 import { createTouchControls, type TouchControls } from '../ui/touchControls';
 import { t, type TranslationKey } from '../i18n';
@@ -336,8 +348,12 @@ const HUD_BOX_MAX_PAGES = 7;
 const HUD_BOX_RIP_TAB_W = 32;
 /** The cap the RIP tab carries: the abbreviation reads the same in both locales. */
 const HUD_BOX_RIP_LABEL = 'RIP';
+/** The minimap's current-room gold: a content marker, not a chrome tone. */
+const HUD_MAP_CURRENT_FILL = 0xf6d98a;
+const HUD_MAP_CURRENT_STROKE = 0x9a7a1f;
+
 /** The veil a locked box cell wears, shared by the cell and the RIP tab. */
-const HUD_BOX_LOCK_FILL = 0x1b1830;
+const HUD_BOX_LOCK_FILL = FRLG_SURFACE;
 const HUD_BOX_LOCK_ALPHA = 0.55;
 
 /** The frame band (px) of a HUD panel that grabs it instead of its content. */
@@ -353,14 +369,15 @@ const HUD_ICON_INSET = 0;
 const HUD_BG_TRANSPARENT_ALPHA = 0;
 /**
  * With the window hidden, each panel keeps a drawn outline so its edge still
- * reads, and its text turns white to stay legible over the map behind it. The
- * outline is the drawn chrome's keyline tone (`scripts/ui/build-chrome.mjs`),
- * so the Transparent HUD still matches the window it stands in for.
+ * reads, and its text turns to the card's ink to stay legible over the map
+ * behind it. The outline is the muted tone (`scripts/ui/build-chrome.mjs`), so
+ * the Transparent HUD still matches the card it stands in for.
  */
-const HUD_BG_BORDER = 0x3a3d52;
+const HUD_BG_BORDER = FRLG_MUTED;
 const HUD_BG_BORDER_WIDTH = 3;
 const HUD_BG_BORDER_RADIUS = 12;
-const HUD_BG_TEXT = 0xffffff;
+const HUD_BG_BORDER_ALPHA = 0.9;
+const HUD_BG_TEXT = FRLG_INK;
 /** Height of the key-hint band the button adds under the icon on a keyboard. */
 const HUD_KEY_H = 16;
 /** The key letter's text size, so it sits centred in that band. */
@@ -457,11 +474,9 @@ const HUD_DETAIL_EVO_MAX = 9;
 const HUD_DETAIL_EVO_ROW_H = 28;
 const HUD_DETAIL_EVO_INDENT = 34;
 const HUD_DETAIL_EVO_PORTRAIT_SCALE = 0.4;
-const HUD_DETAIL_EVO_LINE = 0x9a94b8;
-const HUD_DETAIL_EVO_READY_BG = 0xd7f0d0;
-const HUD_DETAIL_EVO_READY = 0x2f9e44;
-const HUD_DETAIL_EVO_CURRENT_BG = 0xf6e3a6;
-const HUD_DETAIL_EVO_CURRENT = 0x8a6d1f;
+const HUD_DETAIL_EVO_LINE = FRLG_MUTED;
+const HUD_DETAIL_EVO_READY = FRLG_POSITIVE;
+const HUD_DETAIL_EVO_CURRENT = FRLG_ACCENT;
 
 /**
  * The HUD's panel widths for the current window: the fixed design sizes, clamped
@@ -2034,7 +2049,7 @@ export class RouteScene extends Phaser.Scene {
       HUD_MAP_X + mapW / 2,
       HUD_MAP_Y + HUD_MAP_TITLE_H + 56,
       t('hud.noMap'),
-      { size: 16, tint: 0x6b6887, origin: [0.5, 0] },
+      { size: 16, tint: FRLG_MUTED, origin: [0.5, 0] },
     );
     headerChildren.push(this.hudTitle, this.hudMapGraphics, this.hudMapEmpty);
 
@@ -2052,13 +2067,15 @@ export class RouteScene extends Phaser.Scene {
     // name written inside. Clicking a charged bar rests the whole party and box.
     const vialX = x + (partyW - HUD_VIAL_W) / 2;
     const vialY = partyY + HUD_VIAL_Y;
-    this.hudVialBg = this.add.rectangle(vialX, vialY, HUD_VIAL_W, HUD_VIAL_H, 0x2f2c4d).setOrigin(0, 0);
+    this.hudVialBg = this.add
+      .rectangle(vialX, vialY, HUD_VIAL_W, HUD_VIAL_H, FRLG_TRACK.colour, FRLG_TRACK.alpha)
+      .setOrigin(0, 0);
     this.hudVialFill = this.add
       .rectangle(vialX, vialY, 0, HUD_VIAL_H, HUD_VIAL_FILL_COLORS[0])
       .setOrigin(0, 0);
     this.hudVialLabel = addFrlgText(this, vialX + HUD_VIAL_W / 2, vialY + 3, t('hud.vial'), {
       size: 16,
-      tint: 0xf8fafc,
+      tint: FRLG_INK,
       origin: [0.5, 0],
     });
     partyChildren.push(this.hudVialBg, this.hudVialFill, this.hudVialLabel);
@@ -2070,11 +2087,13 @@ export class RouteScene extends Phaser.Scene {
       size: 16,
       tint: FRLG_INK,
     });
-    const xpBg = this.add.rectangle(xpBarX, xpBarY, xpBarW, HUD_XP_BAR_H, 0x2f2c4d).setOrigin(0, 0);
+    const xpBg = this.add
+      .rectangle(xpBarX, xpBarY, xpBarW, HUD_XP_BAR_H, FRLG_TRACK.colour, FRLG_TRACK.alpha)
+      .setOrigin(0, 0);
     this.hudXpFill = this.add.rectangle(xpBarX, xpBarY, 0, HUD_XP_BAR_H, 0x60a5fa).setOrigin(0, 0);
     this.hudXpText = addFrlgText(this, partyRight - HUD_XP_BAR_INSET, partyY + HUD_PAD_TOP, '', {
       size: 16,
-      tint: 0x3a3956,
+      tint: FRLG_MUTED,
       origin: [1, 0],
     });
     partyChildren.push(this.hudLevelText, xpBg, this.hudXpFill, this.hudXpText);
@@ -2082,8 +2101,16 @@ export class RouteScene extends Phaser.Scene {
     for (let i = 0; i < MAX_PARTY_SIZE; i++) {
       const rowY = partyY + HUD_PARTY_HEADER + i * HUD_PARTY_ROW;
       const highlight = this.add
-        .rectangle(partyLeft, rowY, partyRight - partyLeft, HUD_PARTY_ROW - 4, 0xf2c14e, 0.32)
+        .rectangle(
+          partyLeft,
+          rowY,
+          partyRight - partyLeft,
+          HUD_PARTY_ROW - 4,
+          FRLG_SELECTED_FILL.colour,
+          FRLG_SELECTED_FILL.alpha,
+        )
         .setOrigin(0, 0)
+        .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
         .setVisible(false);
       const portraitX = partyLeft + 24;
       const portrait = this.add
@@ -2129,7 +2156,9 @@ export class RouteScene extends Phaser.Scene {
     BAG_CATEGORIES.forEach((category, i) => {
       const tabX = x + HUD_CONTENT_LEFT + i * (HUD_TAB_W + HUD_TAB_GAP);
       const tabY = bagY + HUD_PAD_TOP;
-      const bg = this.add.rectangle(tabX, tabY, HUD_TAB_W, HUD_TAB_H, 0xcfcce2).setOrigin(0, 0);
+      const bg = this.add
+        .rectangle(tabX, tabY, HUD_TAB_W, HUD_TAB_H, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
+        .setOrigin(0, 0);
       const label = addFrlgText(this, tabX + HUD_TAB_W / 2, tabY + 5, bagCategoryLabel(category), {
         size: 16,
         tint: FRLG_INK,
@@ -2144,8 +2173,16 @@ export class RouteScene extends Phaser.Scene {
       const rowY = bagY + HUD_BAG_HEADER + i * HUD_BAG_ROW;
       // The keyboard cursor rides the same gold highlight the party rows use.
       const highlight = this.add
-        .rectangle(left, rowY, right - left, HUD_BAG_ROW - 4, 0xf2c14e, 0.32)
+        .rectangle(
+          left,
+          rowY,
+          right - left,
+          HUD_BAG_ROW - 4,
+          FRLG_SELECTED_FILL.colour,
+          FRLG_SELECTED_FILL.alpha,
+        )
         .setOrigin(0, 0)
+        .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
         .setVisible(false);
       const icon = this.add
         .image(left + 10, rowY + 20, ITEM_ICON_TEXTURE_KEY, 0)
@@ -2154,7 +2191,7 @@ export class RouteScene extends Phaser.Scene {
       const name = addFrlgText(this, left + 28, rowY + 12, '', { size: 16, tint: FRLG_INK });
       const count = addFrlgText(this, right, rowY + 12, '', {
         size: 16,
-        tint: 0x3a3956,
+        tint: FRLG_INK,
         origin: [1, 0],
       });
       this.hudBagRows.push({ highlight, icon, name, count });
@@ -2163,7 +2200,7 @@ export class RouteScene extends Phaser.Scene {
 
     this.hudBagEmpty = addFrlgText(this, x + panelW / 2, bagY + HUD_BAG_HEADER + 36, t('hud.noItems'), {
       size: 16,
-      tint: 0x6b6887,
+      tint: FRLG_MUTED,
       origin: [0.5, 0],
     });
     bagChildren.push(this.hudBagEmpty);
@@ -2172,11 +2209,18 @@ export class RouteScene extends Phaser.Scene {
     // so the money sits with the bag it is spent from (`docs/maps-spec.md` §7).
     const footerY = bagY + HUD_BAG_HEADER + HUD_BAG_ROWS * HUD_BAG_ROW;
     const footerRule = this.add
-      .rectangle(x + HUD_PAD_X, footerY + 4, panelW - HUD_PAD_X * 2, 1, 0x9a97b5)
+      .rectangle(
+        x + HUD_PAD_X,
+        footerY + 4,
+        panelW - HUD_PAD_X * 2,
+        1,
+        FRLG_ROW_STROKE.colour,
+        FRLG_ROW_STROKE.alpha,
+      )
       .setOrigin(0, 0);
     const moneyLabel = addFrlgText(this, x + HUD_PAD_X, footerY + 12, t('hud.money'), {
       size: 16,
-      tint: 0x3a3956,
+      tint: FRLG_MUTED,
     });
     this.hudMoneyText = addFrlgText(this, x + panelW - HUD_PAD_X, footerY + 12, '', {
       size: 16,
@@ -2200,7 +2244,14 @@ export class RouteScene extends Phaser.Scene {
     for (let page = 0; page < HUD_BOX_MAX_PAGES; page++) {
       const tabX = boxX + HUD_CONTENT_LEFT + page * (HUD_BOX_TAB_W + HUD_BOX_TAB_GAP);
       const bg = this.add
-        .rectangle(tabX, boxY + HUD_PAD_TOP, HUD_BOX_TAB_W, HUD_TAB_H, 0xcfcce2)
+        .rectangle(
+          tabX,
+          boxY + HUD_PAD_TOP,
+          HUD_BOX_TAB_W,
+          HUD_TAB_H,
+          FRLG_ROW_FILL.colour,
+          FRLG_ROW_FILL.alpha,
+        )
         .setOrigin(0, 0)
         .setVisible(false);
       const label = addFrlgText(
@@ -2220,7 +2271,9 @@ export class RouteScene extends Phaser.Scene {
 
     const ripX = boxX + panelW - HUD_PAD_X - HUD_BOX_RIP_TAB_W;
     const ripY = boxY + HUD_PAD_TOP;
-    const ripBg = this.add.rectangle(ripX, ripY, HUD_BOX_RIP_TAB_W, HUD_TAB_H, 0xcfcce2).setOrigin(0, 0);
+    const ripBg = this.add
+      .rectangle(ripX, ripY, HUD_BOX_RIP_TAB_W, HUD_TAB_H, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
+      .setOrigin(0, 0);
     const ripVeil = this.add
       .rectangle(ripX, ripY, HUD_BOX_RIP_TAB_W, HUD_TAB_H, HUD_BOX_LOCK_FILL, HUD_BOX_LOCK_ALPHA)
       .setOrigin(0, 0);
@@ -2240,10 +2293,21 @@ export class RouteScene extends Phaser.Scene {
       const row = Math.floor(i / BOX_COLS);
       const cellX = gridLeft + col * (HUD_BOX_CELL + HUD_BOX_CELL_GAP);
       const cellY = boxY + HUD_BOX_TABS_H + row * (HUD_BOX_CELL + HUD_BOX_CELL_GAP);
-      const bg = this.add.rectangle(cellX, cellY, HUD_BOX_CELL, HUD_BOX_CELL, 0xe6e3f2).setOrigin(0, 0);
-      const highlight = this.add
-        .rectangle(cellX, cellY, HUD_BOX_CELL, HUD_BOX_CELL, 0xf2c14e, 0.45)
+      const bg = this.add
+        .rectangle(cellX, cellY, HUD_BOX_CELL, HUD_BOX_CELL, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
         .setOrigin(0, 0)
+        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha);
+      const highlight = this.add
+        .rectangle(
+          cellX,
+          cellY,
+          HUD_BOX_CELL,
+          HUD_BOX_CELL,
+          FRLG_SELECTED_FILL.colour,
+          FRLG_SELECTED_FILL.alpha,
+        )
+        .setOrigin(0, 0)
+        .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
         .setVisible(false);
       const portrait = this.add
         .image(cellX + HUD_BOX_CELL / 2, cellY + HUD_BOX_CELL / 2, PORTRAIT_TEXTURE_KEY, 0)
@@ -2370,7 +2434,7 @@ export class RouteScene extends Phaser.Scene {
     // The outline that stands in for the window while Transparent HUD is on. It
     // lives in the body, so collapsing the panel hides it with the content.
     const border = this.add.graphics().setVisible(false);
-    border.lineStyle(HUD_BG_BORDER_WIDTH, HUD_BG_BORDER, 0.9);
+    border.lineStyle(HUD_BG_BORDER_WIDTH, HUD_BG_BORDER, HUD_BG_BORDER_ALPHA);
     border.strokeRoundedRect(x, y, w, h, HUD_BG_BORDER_RADIUS);
     body.add(border);
     const container = this.add.container(0, 0, [body, icon]);
@@ -2414,7 +2478,9 @@ export class RouteScene extends Phaser.Scene {
   } {
     const showKey = key !== null && !prefersTouchControls();
     const h = HUD_ICON + (showKey ? HUD_KEY_H : 0);
-    const bg = this.add.rectangle(x, y, HUD_ICON, h, 0x2f2c4d).setOrigin(0, 0);
+    const bg = this.add
+      .rectangle(x, y, HUD_ICON, h, FRLG_TRACK.colour, FRLG_TRACK.alpha)
+      .setOrigin(0, 0);
     const image = this.add.image(x + HUD_ICON / 2, y + HUD_ICON / 2, textureKey);
     const children: Phaser.GameObjects.GameObject[] = [bg, image];
     let label: Phaser.GameObjects.BitmapText | null = null;
@@ -2424,7 +2490,7 @@ export class RouteScene extends Phaser.Scene {
         x + HUD_ICON / 2,
         y + HUD_ICON + (HUD_KEY_H - HUD_KEY_TEXT) / 2,
         keyLabel(this.settings.keybinds[key]),
-        { size: HUD_KEY_TEXT, tint: 0xf8fafc, origin: [0.5, 0] },
+        { size: HUD_KEY_TEXT, tint: FRLG_INK, origin: [0.5, 0] },
       );
       children.push(label);
     }
@@ -2460,9 +2526,9 @@ export class RouteScene extends Phaser.Scene {
     // The nickname field's box, in the header's name row. It is pushed first, so
     // it sits under the name text and rides the panel with everything else.
     this.hudNicknameBg = this.add
-      .rectangle(0, 0, 10, HUD_NICKNAME_FIELD_H, 0xffffff)
+      .rectangle(0, 0, 10, HUD_NICKNAME_FIELD_H, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
       .setOrigin(0, 0)
-      .setStrokeStyle(2, 0x9a94b8)
+      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
       .setVisible(false);
     children.push(this.hudNicknameBg);
 
@@ -2472,13 +2538,13 @@ export class RouteScene extends Phaser.Scene {
     });
     this.hudDetailLevel = addFrlgText(this, right, y + HUD_PAD_TOP, '', {
       size: 16,
-      tint: 0x3a3956,
+      tint: FRLG_MUTED,
       origin: [1, 0],
     });
     // The hint sits at the field's right end; `refreshNicknameField` places it.
     this.hudDetailNameHint = addFrlgText(this, right, y + HUD_PAD_TOP + 3, t('detail.clickToName'), {
       size: 16,
-      tint: 0x6b6887,
+      tint: FRLG_MUTED,
       origin: [1, 0],
     }).setVisible(false);
     this.hudDetailStatus = this.add
@@ -2493,12 +2559,12 @@ export class RouteScene extends Phaser.Scene {
     for (let i = 0; i < 2; i++) {
       const chipX = left + i * (HUD_DETAIL_TYPE_W + 6);
       const bg = this.add
-        .rectangle(chipX, chipY, HUD_DETAIL_TYPE_W, 20, 0x9aa0b4)
+        .rectangle(chipX, chipY, HUD_DETAIL_TYPE_W, 20, FRLG_MUTED)
         .setOrigin(0, 0)
         .setVisible(false);
       const label = addFrlgText(this, chipX + HUD_DETAIL_TYPE_W / 2, chipY + 2, '', {
         size: 16,
-        tint: 0xf8fafc,
+        tint: FRLG_BADGE_INK,
         origin: [0.5, 0],
       }).setVisible(false);
       this.hudDetailTypes.push({ bg, label });
@@ -2510,7 +2576,9 @@ export class RouteScene extends Phaser.Scene {
     this.hudDetailTabs = [];
     (['stats', 'moves'] as DetailTab[]).forEach((tab, i) => {
       const tabX = left + i * (tabW + HUD_TAB_GAP);
-      const bg = this.add.rectangle(tabX, tabY, tabW, HUD_DETAIL_TAB_H, 0xcfcce2).setOrigin(0, 0);
+      const bg = this.add
+        .rectangle(tabX, tabY, tabW, HUD_DETAIL_TAB_H, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
+        .setOrigin(0, 0);
       const label = addFrlgText(
         this,
         tabX + tabW / 2,
@@ -2539,7 +2607,7 @@ export class RouteScene extends Phaser.Scene {
       const colRight = colLeft + colW - 12;
       column.forEach((stat, ri) => {
         const rowY = contentTop + ri * HUD_DETAIL_STAT_ROW;
-        const label = addFrlgText(this, colLeft, rowY, statLabel(stat), { size: 16, tint: 0x3a3956 });
+        const label = addFrlgText(this, colLeft, rowY, statLabel(stat), { size: 16, tint: FRLG_MUTED });
         const value = addFrlgText(this, colRight, rowY, '', {
           size: 16,
           tint: FRLG_INK,
@@ -2552,15 +2620,15 @@ export class RouteScene extends Phaser.Scene {
     const infoTop = contentTop + HUD_DETAIL_STAT_ROWS * HUD_DETAIL_STAT_ROW + 8;
     // NATURE / ABILITY in the left column, HELD / CAUGHT in the right.
     const infoColW = innerW / 2;
-    const nature = addFrlgText(this, left, infoTop, '', { size: 16, tint: 0x3a3956 });
+    const nature = addFrlgText(this, left, infoTop, '', { size: 16, tint: FRLG_MUTED });
     const ability = addFrlgText(this, left, infoTop + HUD_DETAIL_INFO_ROW, '', {
       size: 16,
-      tint: 0x3a3956,
+      tint: FRLG_MUTED,
     });
-    const held = addFrlgText(this, left + infoColW, infoTop, '', { size: 16, tint: 0x3a3956 });
+    const held = addFrlgText(this, left + infoColW, infoTop, '', { size: 16, tint: FRLG_MUTED });
     const caught = addFrlgText(this, left + infoColW, infoTop + HUD_DETAIL_INFO_ROW, '', {
       size: 16,
-      tint: 0x3a3956,
+      tint: FRLG_MUTED,
     });
     children.push(nature, ability, held, caught);
     this.hudDetailStats = { rows, nature, ability, held, caught };
@@ -2575,7 +2643,7 @@ export class RouteScene extends Phaser.Scene {
       t('detail.evolution'),
       {
         size: 16,
-        tint: 0x3a3956,
+        tint: FRLG_INK,
       },
     );
     this.hudDetailEvoHint = addFrlgText(
@@ -2594,7 +2662,7 @@ export class RouteScene extends Phaser.Scene {
       x + detailW / 2,
       y + HUD_DETAIL_EVO_TOP + 24,
       t('detail.noEvolution'),
-      { size: 16, tint: 0x6b6887, origin: [0.5, 0] },
+      { size: 16, tint: FRLG_MUTED, origin: [0.5, 0] },
     );
     children.push(this.hudDetailEvoTitle, this.hudDetailEvoHint, this.hudDetailEvoEmpty);
     this.hudDetailEvoGraphics = this.add.graphics();
@@ -2603,7 +2671,14 @@ export class RouteScene extends Phaser.Scene {
     for (let i = 0; i < HUD_DETAIL_EVO_MAX; i++) {
       const rowY = y + HUD_DETAIL_EVO_TOP + i * HUD_DETAIL_EVO_ROW_H;
       const bg = this.add
-        .rectangle(left, rowY, innerW, HUD_DETAIL_EVO_ROW_H - 2, 0xffffff)
+        .rectangle(
+          left,
+          rowY,
+          innerW,
+          HUD_DETAIL_EVO_ROW_H - 2,
+          FRLG_ROW_FILL.colour,
+          FRLG_ROW_FILL.alpha,
+        )
         .setOrigin(0, 0)
         .setVisible(false);
       const portrait = this.add
@@ -2615,7 +2690,7 @@ export class RouteScene extends Phaser.Scene {
         .setVisible(false);
       const level = addFrlgText(this, right, rowY + 6, '', {
         size: 16,
-        tint: 0x3a3956,
+        tint: FRLG_MUTED,
         origin: [1, 0],
       }).setVisible(false);
       this.hudDetailEvoCells.push({
@@ -2631,7 +2706,7 @@ export class RouteScene extends Phaser.Scene {
 
     this.hudDetailEmpty = addFrlgText(this, x + detailW / 2, contentTop + 60, t('detail.noMoves'), {
       size: 16,
-      tint: 0x6b6887,
+      tint: FRLG_MUTED,
       origin: [0.5, 0],
     });
     children.push(this.hudDetailEmpty);
@@ -2640,9 +2715,9 @@ export class RouteScene extends Phaser.Scene {
     // TMs, scrolled one row of the 2x2 grid at a time. Its grid shares the moves
     // grid's look; the `<` / `>` pair rides the search row as a one-row scroll.
     this.hudSearchBg = this.add
-      .rectangle(0, 0, 10, HUD_DETAIL_SEARCH_H, 0xffffff)
+      .rectangle(0, 0, 10, HUD_DETAIL_SEARCH_H, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
       .setOrigin(0, 0)
-      .setStrokeStyle(2, 0x9a94b8)
+      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
       .setVisible(false);
     this.hudSearchText = addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK }).setVisible(false);
     this.hudLearnPrev = addFrlgText(this, 0, 0, '<', {
@@ -2657,7 +2732,7 @@ export class RouteScene extends Phaser.Scene {
     }).setVisible(false);
     this.hudLearnEmpty = addFrlgText(this, 0, 0, t('detail.noMovesToLearn'), {
       size: 16,
-      tint: 0x6b6887,
+      tint: FRLG_MUTED,
       origin: [0.5, 0],
     }).setVisible(false);
     children.push(
@@ -2760,8 +2835,8 @@ export class RouteScene extends Phaser.Scene {
     // Gold, like the row highlight: the vial's own fill is the dark panel colour.
     this.hudVialBg.setStrokeStyle(
       this.hudKeyboardPane === 'party' && this.hudPartyHeaderFocus ? 2 : 0,
-      0xf2c14e,
-      1,
+      FRLG_SELECTED_STROKE.colour,
+      FRLG_SELECTED_STROKE.alpha,
     );
 
     // An item taken from the bag is not in the bag while it is being dragged.
@@ -2769,8 +2844,8 @@ export class RouteScene extends Phaser.Scene {
     this.hudBagIndex = stepBagCursor(this.hudBagIndex, 0, bag.length);
     this.hudBagTabs.forEach((tab) => {
       const active = tab.category === this.hudBagCategory;
-      tab.bg.setFillStyle(active ? 0x2f2c4d : 0xcfcce2);
-      tab.label.setTint(active ? 0xf8fafc : FRLG_INK);
+      this.paintTab(tab.bg, active);
+      tab.label.setTint(active ? FRLG_ACCENT : FRLG_INK);
     });
     this.hudBagEmpty.setVisible(bag.length === 0);
     this.hudMoneyText.setText(String(this.run.money));
@@ -2801,12 +2876,12 @@ export class RouteScene extends Phaser.Scene {
       tab.bg.setVisible(visible);
       tab.label.setVisible(visible);
       const active = i === this.hudBoxPage;
-      tab.bg.setFillStyle(active ? 0x2f2c4d : 0xcfcce2);
-      tab.label.setTint(active ? 0xf8fafc : FRLG_INK);
+      this.paintTab(tab.bg, active);
+      tab.label.setTint(active ? FRLG_ACCENT : FRLG_INK);
     });
     const ripActive = this.hudUi.pane === 'rip';
-    this.hudBoxRip.bg.setFillStyle(ripActive ? 0x2f2c4d : 0xcfcce2);
-    this.hudBoxRip.label.setTint(ripActive ? 0xf8fafc : FRLG_INK);
+    this.paintTab(this.hudBoxRip.bg, ripActive);
+    this.hudBoxRip.label.setTint(ripActive ? FRLG_ACCENT : FRLG_INK);
     this.hudBoxCells.forEach((cell, i) => {
       const index = boxCellIndex(this.hudBoxPage, i % BOX_COLS, Math.floor(i / BOX_COLS));
       const member = rows[index];
@@ -2834,6 +2909,13 @@ export class RouteScene extends Phaser.Scene {
     });
 
     this.refreshDetail();
+  }
+
+  /** Paints a tab's own fill and 1px outline: the accent pair when it is active. */
+  private paintTab(bg: Phaser.GameObjects.Rectangle, active: boolean): void {
+    const fill = active ? FRLG_SELECTED_FILL : FRLG_ROW_FILL;
+    const stroke = active ? FRLG_SELECTED_STROKE : FRLG_ROW_STROKE;
+    bg.setFillStyle(fill.colour, fill.alpha).setStrokeStyle(1, stroke.colour, stroke.alpha);
   }
 
   /**
@@ -2876,7 +2958,7 @@ export class RouteScene extends Phaser.Scene {
     const py = (value: number): number => offsetY + value * scale;
 
     // Links first, so the room cells paint over the corridor seams.
-    graphics.lineStyle(3, 0x8b88a6, 1);
+    graphics.lineStyle(3, FRLG_MUTED, 1);
     for (const link of view.links) {
       graphics.lineBetween(px(link.x1), py(link.y1), px(link.x2), py(link.y2));
     }
@@ -2886,9 +2968,16 @@ export class RouteScene extends Phaser.Scene {
       const ry = py(room.y);
       const rw = room.w * scale;
       const rh = room.h * scale;
-      graphics.fillStyle(room.current ? 0xf6d98a : 0xe6e3f2, 1);
+      graphics.fillStyle(
+        room.current ? HUD_MAP_CURRENT_FILL : FRLG_ROW_FILL.colour,
+        room.current ? 1 : FRLG_ROW_FILL.alpha,
+      );
       graphics.fillRect(rx, ry, rw, rh);
-      graphics.lineStyle(2, room.current ? 0x9a7a1f : 0x3a3956, 1);
+      graphics.lineStyle(
+        2,
+        room.current ? HUD_MAP_CURRENT_STROKE : FRLG_ROW_STROKE.colour,
+        room.current ? 1 : FRLG_ROW_STROKE.alpha,
+      );
       graphics.strokeRect(rx, ry, rw, rh);
 
       const gap = Math.max(2.5, Math.min(rw, rh) * 0.18);
@@ -2897,7 +2986,7 @@ export class RouteScene extends Phaser.Scene {
         const oy = py(opening.y);
         graphics.lineStyle(
           4,
-          opening.kind === 'portal' ? 0x3fa9f5 : opening.kind === 'entry' ? 0x4ad15c : 0x2f2c4d,
+          opening.kind === 'portal' ? 0x3fa9f5 : opening.kind === 'entry' ? 0x4ad15c : FRLG_MUTED,
           1,
         );
         if (opening.edge === 'N' || opening.edge === 'S') {
@@ -2942,7 +3031,7 @@ export class RouteScene extends Phaser.Scene {
     } else if (room.boss) {
       graphics.fillStyle(0xb0304a, 1);
       graphics.fillCircle(cx, cy, radius);
-      graphics.fillStyle(0xf8fafc, 1);
+      graphics.fillStyle(FRLG_INK, 1);
       graphics.fillCircle(cx - radius * 0.4, cy - radius * 0.15, radius * 0.22);
       graphics.fillCircle(cx + radius * 0.4, cy - radius * 0.15, radius * 0.22);
     } else if (room.captureSpent) {
@@ -2962,19 +3051,19 @@ export class RouteScene extends Phaser.Scene {
     cy: number,
     radius: number,
   ): void {
-    graphics.fillStyle(0xffffff, 1);
+    graphics.fillStyle(FRLG_INK, 1);
     graphics.fillCircle(cx, cy, radius);
     graphics.fillStyle(0xe2554e, 1);
     graphics.beginPath();
     graphics.arc(cx, cy, radius, Math.PI, Math.PI * 2, false);
     graphics.closePath();
     graphics.fillPath();
-    graphics.lineStyle(1.5, 0x2f2c4d, 1);
+    graphics.lineStyle(1.5, FRLG_BADGE_INK, 1);
     graphics.strokeCircle(cx, cy, radius);
     graphics.lineBetween(cx - radius, cy, cx + radius, cy);
-    graphics.fillStyle(0x2f2c4d, 1);
+    graphics.fillStyle(FRLG_BADGE_INK, 1);
     graphics.fillCircle(cx, cy, radius * 0.36);
-    graphics.fillStyle(0xffffff, 1);
+    graphics.fillStyle(FRLG_INK, 1);
     graphics.fillCircle(cx, cy, radius * 0.2);
   }
 
@@ -3022,8 +3111,8 @@ export class RouteScene extends Phaser.Scene {
     });
     this.hudDetailTabs.forEach((tab) => {
       const active = tab.tab === this.hudDetailState.tab;
-      tab.bg.setFillStyle(active ? 0x2f2c4d : 0xcfcce2);
-      tab.label.setTint(active ? 0xf8fafc : FRLG_INK);
+      this.paintTab(tab.bg, active);
+      tab.label.setTint(active ? FRLG_ACCENT : FRLG_INK);
     });
 
     const stats = this.hudDetailState.tab === 'stats';
@@ -3253,7 +3342,10 @@ export class RouteScene extends Phaser.Scene {
     this.hudDetailEvoCells.forEach((cell, i) => {
       const node = nodes[i] ?? null;
       cell.node = node;
-      cell.bg.setVisible(false).setFillStyle(HUD_DETAIL_EVO_READY_BG);
+      cell.bg
+        .setVisible(false)
+        .setFillStyle(FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
+        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha);
       const visible = show && node !== null;
       cell.name.setVisible(visible);
       cell.level.setVisible(visible);
@@ -3272,16 +3364,19 @@ export class RouteScene extends Phaser.Scene {
       cell.level.setText(node.level === null ? '' : t('detail.evoLevel', { level: node.level }));
 
       if (node.ready) {
-        cell.bg.setVisible(true).setFillStyle(HUD_DETAIL_EVO_READY_BG);
+        cell.bg.setVisible(true).setFillStyle(FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha);
         cell.name.setTint(HUD_DETAIL_EVO_READY);
         cell.level.setTint(HUD_DETAIL_EVO_READY);
       } else if (node.current) {
-        cell.bg.setVisible(true).setFillStyle(HUD_DETAIL_EVO_CURRENT_BG);
+        cell.bg
+          .setVisible(true)
+          .setFillStyle(FRLG_SELECTED_FILL.colour, FRLG_SELECTED_FILL.alpha)
+          .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha);
         cell.name.setTint(HUD_DETAIL_EVO_CURRENT);
         cell.level.setTint(HUD_DETAIL_EVO_CURRENT);
       } else {
         cell.name.setTint(FRLG_INK);
-        cell.level.setTint(0x6b6887);
+        cell.level.setTint(FRLG_MUTED);
       }
     });
   }
@@ -3367,7 +3462,7 @@ export class RouteScene extends Phaser.Scene {
         : t('detail.searchMoves');
     this.hudSearchText
       .setText(`${this.hudSearchFocus ? '>' : ' '} ${placeholder}`)
-      .setTint(this.hudLearnQuery.length === 0 && !this.hudSearchFocus ? 0x6b6887 : FRLG_INK)
+      .setTint(this.hudLearnQuery.length === 0 && !this.hudSearchFocus ? FRLG_MUTED : FRLG_INK)
       .setPosition(searchX + 6, searchY + 4)
       .setMaxWidth(searchW - 78)
       .setVisible(moves);
@@ -4890,8 +4985,8 @@ export class RouteScene extends Phaser.Scene {
     this.tweens.killTweensOf(this.resetRing);
     this.resetScrim.setAlpha(progress).setVisible(true);
     this.resetRing.clear();
-    this.resetRing.fillStyle(0x10161f, 0.5).fillCircle(cx, cy, RESET_RADIUS);
-    this.resetRing.fillStyle(0xf2c14e, 0.9);
+    this.resetRing.fillStyle(FRLG_SURFACE, 0.5).fillCircle(cx, cy, RESET_RADIUS);
+    this.resetRing.fillStyle(FRLG_ACCENT, 0.9);
     this.resetRing.slice(
       cx,
       cy,
@@ -4901,7 +4996,7 @@ export class RouteScene extends Phaser.Scene {
       false,
     );
     this.resetRing.fillPath();
-    this.resetRing.lineStyle(2, 0xffffff, 0.5).strokeCircle(cx, cy, RESET_RADIUS);
+    this.resetRing.lineStyle(2, FRLG_INK, 0.5).strokeCircle(cx, cy, RESET_RADIUS);
     this.resetRing.setAlpha(1);
   }
 
@@ -5818,7 +5913,7 @@ export class RouteScene extends Phaser.Scene {
     }).setMaxWidth(panelW - 48);
     const hint = addFrlgText(this, x + panelW - 24, y + panelH - 30, t('hud.pressAnyKey'), {
       size: 16,
-      tint: 0x6b6887,
+      tint: FRLG_MUTED,
       origin: [1, 0],
     });
     const zone = this.add.zone(0, 0, width, height).setOrigin(0, 0);
@@ -5889,14 +5984,14 @@ export class RouteScene extends Phaser.Scene {
   private buildNotice(): void {
     const width = Math.min(NOTICE_W, this.scale.width - 32);
     const x = (this.scale.width - width) / 2;
-    // The dark `textbox` slice carries white glyphs: `FRLG_INK` would be black on
-    // black here, so the strip keeps the font's default tint (as the release
-    // overlay does on the same slice).
-    const strip = addFrlgWindow(this, x, NOTICE_TOP, width, NOTICE_H, 'textbox');
+    // The strip is the same card as every other panel, and its text is the
+    // card's own ink.
+    const strip = addFrlgWindow(this, x, NOTICE_TOP, width, NOTICE_H);
     this.noticeText = addFrlgText(this, this.scale.width / 2, NOTICE_TOP + NOTICE_H / 2, '', {
       align: 'center',
       origin: 0.5,
       size: 16,
+      tint: FRLG_INK,
     });
     this.noticeText.setMaxWidth(width - 32);
     this.noticeRoot = this.add.container(0, 0, [strip, this.noticeText]).setDepth(440).setVisible(false);
@@ -5945,8 +6040,16 @@ export class RouteScene extends Phaser.Scene {
     this.pauseMenuRows = PAUSE_MENU_ITEMS.map((_item, i) => {
       const rowY = y + 76 + i * PAUSE_MENU_ROW_H;
       const highlight = this.add
-        .rectangle(rowX, rowY, rowW, PAUSE_MENU_ROW_H - 8, 0xf2c14e, 0.32)
+        .rectangle(
+          rowX,
+          rowY,
+          rowW,
+          PAUSE_MENU_ROW_H - 8,
+          FRLG_SELECTED_FILL.colour,
+          FRLG_SELECTED_FILL.alpha,
+        )
         .setOrigin(0, 0)
+        .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
         .setVisible(false);
       const label = addFrlgText(this, rowX + 16, rowY + 12, t(PAUSE_MENU_LABELS[PAUSE_MENU_ITEMS[i]]), {
         size: 16,
@@ -6349,7 +6452,7 @@ export class RouteScene extends Phaser.Scene {
     ];
     this.shopMoneyText = addFrlgText(this, right, y + 24, '', {
       size: 16,
-      tint: 0x3a3956,
+      tint: FRLG_MUTED,
       origin: [1, 0],
     });
     children.push(this.shopMoneyText);
@@ -6359,7 +6462,9 @@ export class RouteScene extends Phaser.Scene {
     SHOP_MODES.forEach((mode, i) => {
       const tabX = left + i * (SHOP_TAB_W + SHOP_TAB_GAP);
       const tabY = y + 58;
-      const bg = this.add.rectangle(tabX, tabY, SHOP_TAB_W, SHOP_TAB_H, 0xcfcce2).setOrigin(0, 0);
+      const bg = this.add
+        .rectangle(tabX, tabY, SHOP_TAB_W, SHOP_TAB_H, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
+        .setOrigin(0, 0);
       const label = addFrlgText(this, tabX + SHOP_TAB_W / 2, tabY + 6, t(SHOP_MODE_LABELS[mode]), {
         size: 16,
         tint: FRLG_INK,
@@ -6385,8 +6490,16 @@ export class RouteScene extends Phaser.Scene {
     for (let i = 0; i < SHOP_ROWS; i++) {
       const rowY = listY + 6 + i * SHOP_ROW_H;
       const highlight = this.add
-        .rectangle(listX + 6, rowY, listW - 12, SHOP_ROW_H - 4, 0xf2c14e, 0.42)
+        .rectangle(
+          listX + 6,
+          rowY,
+          listW - 12,
+          SHOP_ROW_H - 4,
+          FRLG_SELECTED_FILL.colour,
+          FRLG_SELECTED_FILL.alpha,
+        )
         .setOrigin(0, 0)
+        .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
         .setVisible(false);
       const icon = this.add
         .image(listX + 26, rowY + SHOP_ROW_H / 2 - 2, ITEM_ICON_TEXTURE_KEY, 0)
@@ -6395,12 +6508,12 @@ export class RouteScene extends Phaser.Scene {
       const name = addFrlgText(this, listX + 52, rowY + 10, '', { size: 16, tint: FRLG_INK });
       const price = addFrlgText(this, listX + listW - 92, rowY + 10, '', {
         size: 16,
-        tint: 0x3a3956,
+        tint: FRLG_MUTED,
         origin: [1, 0],
       });
       const count = addFrlgText(this, listX + listW - 18, rowY + 10, '', {
         size: 16,
-        tint: 0x6b6887,
+        tint: FRLG_MUTED,
         origin: [1, 0],
       });
       const zone = this.add
@@ -6423,7 +6536,7 @@ export class RouteScene extends Phaser.Scene {
     }
     this.shopEmpty = addFrlgText(this, listX + listW / 2, listY + 20, '', {
       size: 16,
-      tint: 0x6b6887,
+      tint: FRLG_MUTED,
       origin: [0.5, 0],
     });
     children.push(this.shopEmpty);
@@ -6439,7 +6552,7 @@ export class RouteScene extends Phaser.Scene {
           confirm: keyLabel(this.settings.keybinds.confirm),
           cancel: keyLabel(this.settings.keybinds.cancel),
         }),
-        { size: 16, tint: 0x6b6887, origin: [1, 0] },
+        { size: 16, tint: FRLG_MUTED, origin: [1, 0] },
       ),
     );
 
@@ -6462,8 +6575,8 @@ export class RouteScene extends Phaser.Scene {
     this.shopMessageText.setText(this.shopMessage);
     this.shopTabs.forEach((tab) => {
       const active = tab.mode === this.shopMode;
-      tab.bg.setFillStyle(active ? 0x2f2c4d : 0xcfcce2);
-      tab.label.setTint(active ? 0xf8fafc : FRLG_INK);
+      this.paintTab(tab.bg, active);
+      tab.label.setTint(active ? FRLG_ACCENT : FRLG_INK);
     });
     this.shopEmpty.setText(
       total === 0 ? (this.shopMode === 'buy' ? t('mart.emptyStock') : t('mart.emptySell')) : '',
@@ -6487,7 +6600,7 @@ export class RouteScene extends Phaser.Scene {
       rowObject.icon.setFrame(itemIconFrame(row.itemId) ?? 0);
       rowObject.name.setText(row.name);
       rowObject.price.setText(`¥${row.price}`);
-      rowObject.price.setTint(this.shopMode === 'buy' && !row.affordable ? 0xb0304a : 0x3a3956);
+      rowObject.price.setTint(this.shopMode === 'buy' && !row.affordable ? 0xb0304a : FRLG_MUTED);
       rowObject.count.setText(row.owned > 0 ? `x${row.owned}` : '');
     });
   }
@@ -6619,20 +6732,28 @@ export class RouteScene extends Phaser.Scene {
       this.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0),
       addFrlgWindow(this, x, y, REWARD_W, REWARD_H),
       addFrlgText(this, left, y + 20, t('reward.title'), { size: 24, tint: FRLG_INK }),
-      addFrlgText(this, left, y + 54, t('reward.choose'), { size: 16, tint: 0x6b6887 }),
+      addFrlgText(this, left, y + 54, t('reward.choose'), { size: 16, tint: FRLG_MUTED }),
     ];
     this.miniBossRewardRows = [];
     this.miniBossRewardItems.forEach((_itemId, i) => {
       const rowY = y + 88 + i * REWARD_ROW_H;
       const highlight = this.add
-        .rectangle(left, rowY, right - left, REWARD_ROW_H - 8, 0xf2c14e, 0.4)
+        .rectangle(
+          left,
+          rowY,
+          right - left,
+          REWARD_ROW_H - 8,
+          FRLG_SELECTED_FILL.colour,
+          FRLG_SELECTED_FILL.alpha,
+        )
         .setOrigin(0, 0)
+        .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
         .setVisible(false);
       const icon = this.add.image(left + 26, rowY + 26, ITEM_ICON_TEXTURE_KEY, 0).setScale(1.1);
       const name = addFrlgText(this, left + 56, rowY + 8, '', { size: 20, tint: FRLG_INK });
       const desc = addFrlgText(this, left + 56, rowY + 38, '', {
         size: 16,
-        tint: 0x6b6887,
+        tint: FRLG_MUTED,
       }).setMaxWidth(right - left - 80);
       const zone = this.add
         .zone(left, rowY, right - left, REWARD_ROW_H - 8)
@@ -6660,7 +6781,7 @@ export class RouteScene extends Phaser.Scene {
           confirm: keyLabel(this.settings.keybinds.confirm),
           cancel: keyLabel(this.settings.keybinds.cancel),
         }),
-        { size: 16, tint: 0x6b6887 },
+        { size: 16, tint: FRLG_MUTED },
       ),
     );
     this.miniBossRewardRoot = this.add.container(0, 0, children).setDepth(520);
@@ -6745,9 +6866,13 @@ export class RouteScene extends Phaser.Scene {
     const x = (width - panelW) / 2;
     const y = (height - panelH) / 2 - 24;
     const scrim = this.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0);
-    const panel = addFrlgWindow(this, x, y, panelW, panelH, 'textbox');
+    const panel = addFrlgWindow(this, x, y, panelW, panelH);
     this.releasePortrait = this.add.image(width / 2, y + 96, PORTRAIT_TEXTURE_KEY, 0).setScale(2);
-    this.releaseText = addFrlgText(this, width / 2, y + 168, '', { align: 'center', origin: 0.5 });
+    this.releaseText = addFrlgText(this, width / 2, y + 168, '', {
+      align: 'center',
+      tint: FRLG_INK,
+      origin: 0.5,
+    });
     this.releaseText.setMaxWidth(panelW - 48);
     const hint = addFrlgText(
       this,
@@ -6756,7 +6881,7 @@ export class RouteScene extends Phaser.Scene {
       t('release.controls', { confirm: keyLabel(this.settings.keybinds.confirm) }),
       {
         size: 16,
-        tint: 0x94a3b8,
+        tint: FRLG_MUTED,
         origin: 0.5,
       },
     );
@@ -6818,7 +6943,7 @@ export class RouteScene extends Phaser.Scene {
     paint();
     for (const beat of beats) {
       const index = this.run.party.findIndex((member) => member.fighter.id === beat.id);
-      this.hudRows[index]?.portrait.setTint(0xf2c14e);
+      this.hudRows[index]?.portrait.setTint(FRLG_ACCENT);
     }
     this.tweens.add({
       targets: counter,
@@ -6982,11 +7107,12 @@ export class RouteScene extends Phaser.Scene {
     const label = `${tile.x},${tile.y}`;
     if (!this.hoverMarker) {
       this.hoverMarker = this.add
-        .rectangle(this.centerX(tile.x), this.centerY(tile.y), TILE_SIZE, TILE_SIZE, 0x7dd3fc, 0.3)
-        .setStrokeStyle(2, 0x7dd3fc, 0.9)
+        .rectangle(this.centerX(tile.x), this.centerY(tile.y), TILE_SIZE, TILE_SIZE, FRLG_ACCENT, 0.3)
+        .setStrokeStyle(2, FRLG_ACCENT, 0.9)
         .setDepth(30);
       this.hoverLabel = addFrlgText(this, this.centerX(tile.x), this.centerY(tile.y), label, {
         size: 16,
+        tint: FRLG_INK,
         origin: 0.5,
       })
         .setScale(0.5)

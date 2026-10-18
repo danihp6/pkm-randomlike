@@ -9,15 +9,19 @@ testable logic belongs in the computing half.
 
 ## Layout
 
-- `frlg.ts` — the drawn window and textbox nine-slices, their corner, padding and translucency
-  (`src/data/ui/chrome.json`), the FRLG HP bar and ▶ cursor, and the texture keys it loads.
-- `frlgFont.ts` — the bitmap font and its metrics, from `src/assets/ui/font.png`, and the deep-black ink.
-- `panel.ts` — the plain panel background and gauge, and the colours they use.
-- `moveGrid.ts` — the shared moves grid: a type-tinted cell with type and category badges, PP and
+- `frlg.ts` — the drawn glass-card skins (the menu card and the battle message box), their corner,
+  padding and translucency (`src/data/ui/chrome.json`), the chrome tokens every panel draws with
+  (the surface, the five inks, the hairlines and the row / selected / track tones), the FRLG HP bar
+  and ▶ cursor, and the texture keys it loads.
+- `frlg.test.ts` — the pinned `chrome.json` tokens and the card's own contrast pass over the
+  forest's ground tones, headless.
+- `frlgFont.ts` — the bitmap font and its metrics, from `src/assets/ui/font.png`, and the light body ink.
+- `panel.ts` — the plain glass-card panel background and gauge, and the tokens they read.
+- `moveGrid.ts` — the shared moves grid: a glass cell with type and category badges, PP and
   power, and a floating description window; the battle and the route HUD draw the same component.
 - `moveGrid.test.ts` — the slot geometry and hit-testing the grid draws from: the four slots of a
   short list, the empty container's own rect, and the ⓘ no empty container has.
-- `infoPopup.ts` — the floating description window: an FRLG window sized from its wrapped text,
+- `infoPopup.ts` — the floating description window: the glass card sized from its wrapped text,
   with an optional left column of badges or a colour chip; the move cells and the ability rows
   float the same one.
 - `notice.ts` — the run's transient notices: their copy and hold time, one at a time, with no
@@ -43,7 +47,7 @@ testable logic belongs in the computing half.
 - `beats.ts` — the faint, switch and level-up animation beats.
 - `feed.ts` — the battle events as the frames the feed draws, and a frame's message.
 - `metrics.ts` — HP fraction, colour and the low-HP danger cue, and the status abbreviations.
-- `typeColors.ts` — the canon type colours and tints.
+- `typeColors.ts` — the canon type colours.
 - `touchLayout.ts` — the pure geometry of the on-screen pad and A/B; `touchControls.ts` draws it.
 - `seedPrompt.ts` — the DOM seed/share prompt the starter screen opens.
 
@@ -52,6 +56,7 @@ testable logic belongs in the computing half.
 1. A module either draws or computes; it never does both.
 2. The computing half carries a co-located `*.test.ts`, and the drawing half stays thin enough to
    trust to a scene.
-3. Panels are built on `frlg.ts` and `frlgFont.ts`, not on ad-hoc graphics.
+3. Panels are built on `frlg.ts` and `frlgFont.ts`, not on ad-hoc graphics, and every chrome tone
+   they fill or ink with comes from the `chrome.json` tokens — never a literal in a scene.
 4. A colour, label or layout constant two panels share lives in the computing half, never
    duplicated.

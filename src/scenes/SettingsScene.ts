@@ -4,7 +4,15 @@ import type { Settings } from '../engine/save';
 import { t } from '../i18n';
 import { applyVolume, loadSettings, saveSettings } from '../settings';
 import { prefersTouchControls } from '../input/device';
-import { addFrlgWindow } from '../ui/frlg';
+import {
+  addFrlgWindow,
+  FRLG_ACCENT,
+  FRLG_MUTED,
+  FRLG_SELECTED_FILL,
+  FRLG_SELECTED_STROKE,
+  FRLG_SURFACE,
+  FRLG_TRACK,
+} from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import {
   changeSetting,
@@ -41,9 +49,9 @@ const SLIDER_MAX_W = 240;
 const SLIDER_MIN_W = 48;
 /** Room kept at the right of the volume row for the percentage readout. */
 const SLIDER_VALUE_W = 52;
-const SLIDER_TRACK = 0x2f2c4d;
-const SLIDER_FILL = 0x60a5fa;
-const SLIDER_KNOB_FILL = 0xf8fafc;
+const SLIDER_TRACK = FRLG_TRACK;
+const SLIDER_FILL = FRLG_ACCENT;
+const SLIDER_KNOB_FILL = FRLG_INK;
 
 type RowView = {
   highlight: Phaser.GameObjects.Rectangle;
@@ -130,7 +138,7 @@ export class SettingsScene extends Phaser.Scene {
     const textTop = Math.round((rowH - 16) / 2);
     this.layout = { x, y, panelW, panelH, rowH };
 
-    this.add.rectangle(0, 0, width, height, 0x10161f).setOrigin(0, 0);
+    this.add.rectangle(0, 0, width, height, FRLG_SURFACE).setOrigin(0, 0);
     addFrlgWindow(this, x, y, panelW, panelH);
     this.title = addFrlgText(this, x + 28, y + 22, t('settings.title'), { size: 32, tint: FRLG_INK });
 
@@ -138,15 +146,23 @@ export class SettingsScene extends Phaser.Scene {
     this.rows = this.rowList.map((row, i) => {
       const rowY = y + ROW_TOP + i * rowH;
       const highlight = this.add
-        .rectangle(x + 20, rowY, panelW - 40, rowH - 6, 0xf2c14e, 0.28)
-        .setOrigin(0, 0);
+        .rectangle(
+          x + 20,
+          rowY,
+          panelW - 40,
+          rowH - 6,
+          FRLG_SELECTED_FILL.colour,
+          FRLG_SELECTED_FILL.alpha,
+        )
+        .setOrigin(0, 0)
+        .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha);
       const label = addFrlgText(this, x + 40, rowY + textTop, settingsRowLabel(row), {
         size: 16,
         tint: FRLG_INK,
       });
       const value = addFrlgText(this, x + panelW - 40, rowY + textTop, '', {
         size: 16,
-        tint: 0x3a3956,
+        tint: FRLG_MUTED,
         origin: [1, 0],
       });
       if (row.id === 'volume') this.buildVolumeSlider(rowY, rowH);
@@ -155,12 +171,12 @@ export class SettingsScene extends Phaser.Scene {
 
     this.hint = addFrlgText(this, x + 40, y + ROW_TOP + rowCount * rowH + 6, '', {
       size: 16,
-      tint: 0x94a3b8,
+      tint: FRLG_MUTED,
     });
     this.hint.setMaxWidth(panelW - 80);
     this.controls = addFrlgText(this, x + 40, y + panelH - 36, '', {
       size: 16,
-      tint: 0xa8b3c7,
+      tint: FRLG_MUTED,
     });
     this.controls.setMaxWidth(panelW - 80);
 
@@ -177,7 +193,9 @@ export class SettingsScene extends Phaser.Scene {
     const w = Math.max(SLIDER_MIN_W, Math.min(SLIDER_MAX_W, available));
     const trackX = right - w;
     const trackY = rowY + rowH / 2 - SLIDER_H / 2;
-    this.add.rectangle(trackX, trackY, w, SLIDER_H, SLIDER_TRACK).setOrigin(0, 0);
+    this.add
+      .rectangle(trackX, trackY, w, SLIDER_H, SLIDER_TRACK.colour, SLIDER_TRACK.alpha)
+      .setOrigin(0, 0);
     this.volumeFill = this.add.rectangle(trackX, trackY, 0, SLIDER_H, SLIDER_FILL).setOrigin(0, 0);
     this.volumeKnob = this.add
       .rectangle(trackX, trackY + SLIDER_H / 2, SLIDER_KNOB, SLIDER_KNOB, SLIDER_KNOB_FILL)

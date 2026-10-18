@@ -21,6 +21,7 @@ import { getItem } from '../data/items';
 import { moveMoves, type CatchLocation, type RunPokemon, type RunState } from '../engine/run';
 import { statusAbbreviation } from './metrics';
 import { evolutionGraph, type FamilyNode } from './evolutionGraph';
+import { FRLG_NEGATIVE, FRLG_POSITIVE } from './frlg';
 
 /**
  * The party detail panel (Phase 6): a click on a party or PC-box member opens a
@@ -65,8 +66,8 @@ export function natureEffect(nature: string, stat: StatId): NatureEffect {
 }
 
 /** The tints the STATS tab paints a nature-boosted or nature-lowered stat. */
-export const NATURE_UP_TINT = 0x2f9e44;
-export const NATURE_DOWN_TINT = 0xd6453f;
+export const NATURE_UP_TINT = FRLG_POSITIVE;
+export const NATURE_DOWN_TINT = FRLG_NEGATIVE;
 
 /** Everything the panel shows for one member, in the shape the tabs draw. */
 export type MemberDetail = Readonly<{
@@ -117,7 +118,7 @@ export function statLabel(stat: StatId): string {
   return t(STAT_LABELS[stat]);
 }
 
-export { typeColor, typeTint } from './typeColors';
+export { typeColor } from './typeColors';
 
 // The first match is the only match: `nextMemberId` (src/engine/run/state.ts) keeps ids unique.
 function memberById(run: RunState, id: string): RunPokemon | undefined {

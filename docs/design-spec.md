@@ -150,11 +150,12 @@ carries over.
   collapse/expand click. The detail window opens beside the PC box the first time
   and can then be moved freely. The positions and collapsed states are a global
   preference saved with the settings (D22), so they survive a reload and the next
-  run; every panel's window is the drawn chrome at its own **translucency**, so
+  run; every panel's window is the same **dark glass card** at its own
+  translucency, so
   the map reads through it, and the **Transparent HUD** option (see the settings
   screen) drops that window altogether — only the panel's content shows over the
-  map behind it — keeping a drawn **outline** around each panel and turning its
-  **text white** so it stays legible. The HUD is
+  map behind it — keeping a drawn **outline** around each panel (the muted tone)
+  and turning its **text to the card's own ink** so it stays legible. The HUD is
   **always on screen** — a quick key opens one panel, it does not show or hide the
   HUD — and a fresh save opens **only PARTY**, every other panel collapsed to its
   icon.
@@ -203,11 +204,14 @@ Full rules in `docs/battle-spec.md`. In short:
   moves the ▶ cursor and a click picks it, and a click advances the battle text.
   **FIGHT / BAG / SWITCH / RUN** is a 2x2 **grid**, which also reserves a fifth
   **INFO** control at that grid's right edge — the same column the moves menu keeps
-  for **MEGA**, so the 2x2 keeps its shape — and so is the **moves** menu
+  for **MEGA** and **G-MAX** (each of those two controls draws the shipped Mega
+  Evolution glyph, the Hard Stone icon every Mega Stone borrows, never a word; an
+  armed one reads as the accent fill plus the accent outline), so the 2x2 keeps its
+  shape — and so is the **moves** menu
   (all four moves show at once, with no scrolling), which always reserves its full
   2x2 so a shorter list keeps one cell size and draws its spare slots as empty containers,
-  which take no press and float no **ⓘ**: each move cell is tinted by the move's
-  type and shows its name, the FRLG **type badge**, the official category
+  which take no press and float no **ⓘ**: each move cell is a glass row that shows
+  its name, the FRLG **type badge**, the official category
   **badge** (physical / special / status), its PP, its **effective power** (base
   power folded with STAB and the attacker's ability / item boosts) and its **hit
   chance** (the move's accuracy under the net accuracy / evasion stage and any
@@ -245,11 +249,13 @@ Full rules in `docs/battle-spec.md`. In short:
 - On a wide screen the battle is a centred **square** (at most 900 px a side);
   a tall phone screen keeps the stacked, full-height layout, with both battlers
   drawn 25% smaller so they sit clear of the stacked panels.
-- The battle's windows are the drawn chrome: the dark **textbox** behind the
-  message text, the light **window** behind the HP panels, the command and moves
+- The battle's windows are the drawn chrome: the **message box** behind the
+  message text is the shipped `textbox` card (the one stage that draws it), and
+  every other window — the HP panels, the command and moves
   menus, the battle-state window the **INFO** control opens and the switch grid's
-  detail window, each at its own degree of translucency so the field stays readable
-  through it, and the light windows ink their text with the deep-black `FRLG_INK`.
+  detail window — is the default card skin, each at its own degree of translucency
+  so the field stays readable
+  through it, and they ink their text with the light `FRLG_INK`.
 
 ## 5. The route
 

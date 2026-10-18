@@ -1,16 +1,17 @@
 import type Phaser from 'phaser';
 import fontAtlasUrl from '../assets/ui/font.png';
 import manifest from '../data/ui/font.json';
+import chrome from '../data/ui/chrome.json';
+import { frlgColour } from './frlg';
 
 /**
  * The game's bitmap font, the modernised twin of the FRLG face: the same glyph
  * shapes and metrics (`src/data/ui/font.json`, derived from the committed
  * `src/assets/frlg/font.png` + `src/data/frlg/font.json` by
- * `scripts/ui/build-chrome.mjs`, `npm run data:ui`), with the glyph shadow
- * half-alpha so a letter reads as a soft halo on a translucent panel instead of
- * a solid second tone. The atlas is white ink on purpose — one texture serves
- * both the dark battle box (left untinted) and the light windows (tinted
- * `FRLG_INK`), so a drawn chrome, not the rip, carries the public build's UI.
+ * `scripts/ui/build-chrome.mjs`, `npm run data:ui`), with the glyph shadow a
+ * half-alpha black halo so the light ink reads over a busy route. The atlas is
+ * white on purpose — one texture serves every string, tinted per site — so a
+ * drawn chrome, not the rip, carries the public build's UI.
  */
 export const FRLG_FONT_ATLAS_URL = fontAtlasUrl;
 export const FRLG_FONT_TEXTURE_KEY = 'frlg:font';
@@ -92,8 +93,11 @@ export type FrlgTextOptions = Readonly<{
   lineSpacing?: number;
 }>;
 
-/** Dark ink for text drawn on the light window: deep black, not the old navy. */
-export const FRLG_INK = 0x0b0b10;
+/**
+ * The light body ink every string on the glass is drawn with, read from the
+ * chrome set's `tokens.ink` so the tone has one home.
+ */
+export const FRLG_INK = frlgColour(chrome.tokens.ink);
 
 /** Adds the UI bitmap text with the shared defaults. */
 export function addFrlgText(

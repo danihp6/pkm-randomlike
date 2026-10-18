@@ -14,7 +14,7 @@ import {
 import { randomSeed, rngFromSeed } from '../engine/rng';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { subscribeKeybinds } from '../input/input';
-import { addFrlgWindow } from '../ui/frlg';
+import { addFrlgWindow, FRLG_ACCENT, FRLG_MUTED, FRLG_SURFACE } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { closeSeedPrompt, openSeedPrompt } from '../ui/seedPrompt';
 import { t } from '../i18n';
@@ -101,23 +101,23 @@ export class StarterScene extends Phaser.Scene {
     this.layout = this.computeLayout(width, height);
     const compact = this.layout.compact;
 
-    this.add.rectangle(0, 0, width, height, 0x10161f).setOrigin(0, 0);
+    this.add.rectangle(0, 0, width, height, FRLG_SURFACE).setOrigin(0, 0);
 
-    addFrlgText(this, width / 2, compact ? 34 : 44, t('starter.title'), { origin: 0.5 });
+    addFrlgText(this, width / 2, compact ? 34 : 44, t('starter.title'), { tint: FRLG_INK, origin: 0.5 });
     addFrlgText(
       this,
       width / 2,
       compact ? 76 : 88,
       compact ? t('starter.blurbCompact') : t('starter.blurb'),
-      { size: 16, tint: 0x94a3b8, origin: 0.5 },
+      { size: 16, tint: FRLG_MUTED, origin: 0.5 },
     );
 
     this.portraits = [];
     this.cards = this.pool.map((speciesId, i) => this.buildCard(speciesId, i));
-    this.cursor = addFrlgText(this, 0, 0, '▶', { origin: [0, 0.5] });
+    this.cursor = addFrlgText(this, 0, 0, '▶', { tint: FRLG_ACCENT, origin: [0, 0.5] });
     this.shareText = addFrlgText(this, width / 2, height - 104, '', {
       size: 16,
-      tint: 0x64748b,
+      tint: FRLG_MUTED,
       origin: 0.5,
     });
     const keys = loadSettings().keybinds;
@@ -137,7 +137,7 @@ export class StarterScene extends Phaser.Scene {
         });
     addFrlgText(this, width / 2, height - 56, controls, {
       size: 16,
-      tint: 0xcbd5f5,
+      tint: FRLG_MUTED,
       origin: 0.5,
     });
 
