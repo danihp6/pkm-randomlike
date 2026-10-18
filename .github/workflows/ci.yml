@@ -35,7 +35,40 @@ jobs:
         run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Test (Vitest, headless)
-        run: npm test
+        id: test
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee /tmp/test.log
 
       - name: Build (tsc --noEmit && vite build)
-        run: npm run build
+        id: build
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee /tmp/build.log
+
+      - name: Summary
+        if: always()
+        env:
+          TEST_OUTCOME: ${{ steps.test.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        run: |
+          # GitHub paints its own test panel from the log; this adds the one thing it
+          # cannot know here: which commit and which batch this gate is covering.
+          set -uo pipefail
+          out="$GITHUB_STEP_SUMMARY"
+          subject=$(git log -1 --format=%s)
+          tests=$(grep -aoE '[0-9]+ passed \([0-9]+\)' /tmp/test.log 2>/dev/null | tail -1 || true)
+          if [ "${TEST_OUTCOME:-unknown}" = success ] && [ "${BUILD_OUTCOME:-unknown}" = success ]; then
+            emoji='✅'
+          else
+            emoji='🛑'
+          fi
+          {
+            echo "# $emoji CI gate on \`$(git rev-parse --short HEAD)\`"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| Commit | $subject |"
+            echo "| Test | ${TEST_OUTCOME:-unknown}${tests:+ · $tests} |"
+            echo "| Build | ${BUILD_OUTCOME:-unknown} |"
+          } >> "$out"

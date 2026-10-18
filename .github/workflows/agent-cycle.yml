@@ -97,6 +97,7 @@ jobs:
           git config user.email opencode-bot@users.noreply.github.com
 
       - name: Run the cycle
+        id: agent
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -206,10 +207,12 @@ jobs:
           git status --short
 
       - name: The merged tree still passes the gate
+        id: gate
         if: always()
         run: |
-          npm test
-          npm run build
+          set -o pipefail
+          npm test 2>&1 | tee /tmp/test.log
+          npm run build 2>&1 | tee /tmp/build.log
 
       - name: A cycle that changes nothing is a red cycle
         if: always()
@@ -241,3 +244,94 @@ jobs:
           # running". The driver keeps every decision: AUTOPILOT, the backlog, the red
           # streak and the cap.
           gh workflow run agent-autopilot.yml --ref main -f ignore_run=${{ github.run_id }} || true
+
+      - name: Summary
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENT_OUTCOME: ${{ steps.agent.outcome }}
+          GATE_OUTCOME: ${{ steps.gate.outcome }}
+          MERGE_INPUT: ${{ inputs.merge }}
+        run: |
+          # The run's own summary. GitHub renders its own test panel from the log; this
+          # is the part it cannot know: which tasks the cycle took, what the gate did,
+          # and what a human still has to look at — with a symbol per line so the state
+          # reads at a glance from the runs list.
+          set -uo pipefail
+          out="$GITHUB_STEP_SUMMARY"
+          line() { printf '%s\n' "$1" >> "$out"; }
+
+          before=$(git rev-parse "$BEFORE_SHA")
+          moved=$(git rev-parse HEAD)
+          short=$(git rev-parse --short HEAD)
+          tasks=$(git log --format=%s "$BEFORE_SHA..HEAD" | grep -oE 'task-[0-9]+' | sort -u | tr '\n' ' ' || true)
+          [ -n "$tasks" ] || tasks='—'
+          diff=$(git diff --shortstat "$BEFORE_SHA..HEAD" || true)
+          [ -n "$diff" ] || diff='nothing'
+          tests=$(grep -aoE '[0-9]+ passed \([0-9]+\)' /tmp/test.log 2>/dev/null | tail -1 || true)
+          started=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --jq .run_started_at 2>/dev/null || echo '')
+          review=''
+          blocked=''
+          if [ -n "$started" ]; then
+            review=$(gh issue list --state open --label agent-review --limit 30 \
+              --json number,title,url,createdAt \
+              --jq ".[] | select(.createdAt >= \"$started\") | \"[#\(.number)](\(.url)) \(.title)\"" || true)
+            blocked=$(gh issue list --state open --label agent-blocked --limit 30 \
+              --json number,title,url,createdAt \
+              --jq ".[] | select(.createdAt >= \"$started\") | \"[#\(.number)](\(.url)) \(.title)\"" || true)
+          fi
+          open=$(grep -cE '^- \[ \] \*\*\[Task-' TODO.md || true)
+          marks=$(grep -cE '^- \[!\] \*\*\[Task-' TODO.md || true)
+
+          if [ "${AGENT_OUTCOME:-unknown}" != success ] || [ "${GATE_OUTCOME:-unknown}" != success ]; then
+            emoji='🛑'; title='The cycle failed'
+          elif [ "$MERGE_INPUT" != 'true' ]; then
+            emoji='⚠️'; title='Stopped after QA (merge disabled)'
+          elif [ "$moved" = "$before" ]; then
+            emoji='⚠️'; title='Nothing shipped this cycle'
+          else
+            emoji='✅'; title='Batch shipped'
+          fi
+
+          line "# $emoji $title"
+          line ""
+          line "| | |"
+          line "| --- | --- |"
+          line "| Tasks | $tasks |"
+          line "| main | \`${BEFORE_SHA:0:7}\` → \`$short\` |"
+          line "| Gate (post-merge) | ${GATE_OUTCOME:-unknown}${tests:+ · $tests} |"
+          line "| Diff | $diff |"
+          line "| Backlog | $open open · $marks blocked |"
+
+          if [ -n "$review" ]; then
+            line ""
+            line "### ⚠️ Parked for your eye"
+            line ""
+            line "Measured everything it could; these are the subjective residue."
+            line ""
+            printf '%s\n' "$review" | sed 's/^/- /' >> "$out"
+          fi
+          if [ -n "$blocked" ]; then
+            line ""
+            line "### 🛑 Blocked — needs a decision or a fix"
+            line ""
+            printf '%s\n' "$blocked" | sed 's/^/- /' >> "$out"
+          fi
+
+          if [ "${AGENT_OUTCOME:-unknown}" != success ] && [ -f /tmp/cycle.txt ]; then
+            line ""
+            line "### 🛑 What the cycle said at the end"
+            line ""
+            line '```'
+            tail -n 12 /tmp/cycle.txt | sed -e 's/\x1b\[[0-9;]*m//g' -e 's/`//g' >> "$out"
+            line '```'
+          fi
+
+          if [ "$moved" != "$before" ]; then
+            line ""
+            line "<details><summary>Commits</summary>"
+            line ""
+            git log --format='- `%h` %s' "$BEFORE_SHA..HEAD" >> "$out"
+            line ""
+            line "</details>"
+          fi
