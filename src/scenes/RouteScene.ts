@@ -215,7 +215,7 @@ import {
 import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
 import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
 import { InfoPopup } from '../ui/infoPopup';
-import { catchToPcNotice, type Notice } from '../ui/notice';
+import { catchToPcNotice, itemPickupNotice, type Notice } from '../ui/notice';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../data/statusIcons';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
@@ -5766,6 +5766,7 @@ export class RouteScene extends Phaser.Scene {
     if (!item) return false;
     this.run = markItemPicked(addItem(this.run, item.itemId), item.id);
     this.persistRun();
+    this.showNotice(itemPickupNotice(getItem(item.itemId)?.name ?? item.itemId));
     const sprite = this.itemSprites.find((entry) => entry.item.id === item.id);
     if (sprite) {
       this.tweens.killTweensOf(sprite.sprite);
@@ -6702,6 +6703,7 @@ export class RouteScene extends Phaser.Scene {
     if (itemId) {
       this.run = addItem(this.run, itemId);
       this.persistRun();
+      this.showNotice(itemPickupNotice(getItem(itemId)?.name ?? itemId));
       this.refreshHud();
     }
     this.closeMiniBossReward();

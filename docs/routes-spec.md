@@ -324,9 +324,11 @@ where the branch allows it). A visible item draws the FRLG field Poke Ball and
 **blocks its tile** while it is there; a hidden one draws a faint sparkle and
 does **not** block, so the player can walk over it and take it underfoot. Either
 way the **interact key** (`E` by default) takes it, adding it to the run's bag,
-marking it in `RunState.pickedItems` (so a reload does not respawn it) and showing
-a hint. Picked ids reset when the route advances. The route HUD still shows the
-run's bag as FRLG item icons.
+marking it in `RunState.pickedItems` (so a reload does not respawn it) and raising
+the route's **transient notice** — the run's own `Obtained <name>!` line, naming
+the item and dismissing itself, exactly the way a boxed catch does. Picked ids
+reset when the route advances. The route HUD still shows the run's bag as FRLG
+item icons.
 
 The **reset** key (`R` by default) is a run-level affordance: holding it fades
 the whole screen out under a small filling ring; releasing before it fills fades

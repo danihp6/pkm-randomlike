@@ -210,6 +210,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   // notice — the run's transient notices
   'notice.catchToPc':
     'Tu equipo está lleno: {name} se ha ido al PC. Puedes cambiarlo antes de salir de esta ruta.',
+  'notice.itemObtained': '¡Has obtenido {name}!',
 
   // seed — the seed / share-string prompt
   'seed.title': 'SEMILLA / CADENA DE PARTIDA',
