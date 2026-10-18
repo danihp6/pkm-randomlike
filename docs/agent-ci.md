@@ -25,6 +25,15 @@ combined tree for two or more tasks, merges in ID order with the gate after each
 merge, ticks `TODO.md`, archives each task in `CHANGELOG.md`, pushes, and deletes its
 worktrees.
 
+Every subagent is launched **in the foreground and waited for**. This is a single
+pass: when the orchestrator's turn ends the process ends, and a background subagent
+dies with the runner. That happened once, measured: a cycle "succeeded" in seven
+minutes having written a spec and launched a dev it never waited for.
+
+A cycle that moves nothing is a **red** cycle, not a quiet one: it must leave a trace
+— a merge, a `[!]` mark, or an issue — or the run fails, and the driver's red-streak
+guard then stops the loop instead of chaining the same no-op forever.
+
 Two facts the local flow took for granted, and that the runner has to be told:
 
 - **There is no human.** The `question` tool would hang the job: a blocking doubt

@@ -56,8 +56,16 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Remember where main was
-        run: echo "BEFORE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Remember where main and the issue list were
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          before=$(gh api "repos/$GITHUB_REPOSITORY/issues?state=open&per_page=100" --paginate | jq -s 'add | length')
+          {
+            echo "BEFORE_SHA=$(git rev-parse HEAD)"
+            echo "BEFORE_ISSUES=$before"
+          } >> "$GITHUB_ENV"
+          echo "main=$BEFORE_SHA  issues open=$before"
 
       - run: npm ci --prefer-offline --no-audit --no-fund
       - run: npm install -g @opencode/cli
@@ -141,15 +149,22 @@ jobs:
                 línea *Decision:*, y empuja ese cambio a main. El conteo del driver es solo
                 `- [ ]`, así que una tarea marcada sale de la cola sola y el siguiente ciclo
                 no la vuelve a elegir hasta que un humano la suelte.
-             5. Si no queda ninguna tarea elegible, escribe el informe final diciéndolo y
-                termina. No toques main.
+             5. Si no queda ninguna tarea elegible, **abre un issue `agent-blocked`
+                diciéndolo** (con el motivo: dependencias sin cerrar, todo bloqueado, lo que
+                sea), escribe el informe final y termina. No toques main. Un ciclo que no
+                mueve nada y no abre ningún issue se considera roto y **falla**: el sistema
+                vigila exactamente eso, así que no calles un bloqueo.
 
              CON EL LOTE ELEGIDO, haz el ritual y nada más:
              1. Una spec por tarea del lote en .agent_specs/task-<ID>.md siguiendo
                 docs/agent-spec-template.md, con criterios [unit] y, solo si de verdad
                 aplican aquí, [live] con su medida.
              2. Un worktree por tarea y un subagente dev por tarea, cada uno con SOLO la ruta
-                de su spec. Espera todos sus informes.
+                de su spec. **Lánzalos EN PRIMER PLANO y espera su informe dentro de este
+                run.** NUNCA en background: esto es una pasada única, el proceso termina
+                cuando tú terminas, y un subagente en background muere con el runner sin
+                haber hecho nada. Lo mismo vale para los de QA. Si un agente no puede
+                acabar, lo dices en el informe; no lo dejas corriendo.
              3. Valida como manda tu rol: **una Task QA por tarea, en paralelo**, cada una
                 desde su propio árbol de integración (su rama sobre la base del lote),
                 corriendo el plan de su spec verbatim, las dos gates (`npm test`,
@@ -195,6 +210,24 @@ jobs:
         run: |
           npm test
           npm run build
+
+      - name: A cycle that changes nothing is a red cycle
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Measured failure mode: the orchestrator launched a dev subagent in the
+          # background, finished its turn, and the runner took the subagent with it — so
+          # the cycle "succeeded" in seven minutes having moved nothing, and the baton
+          # handed the same no-op to the next cycle. A cycle may end with nothing merged
+          # only if it left a trace: a blocked mark, or an issue. Otherwise it failed.
+          after=$(gh api "repos/$GITHUB_REPOSITORY/issues?state=open&per_page=100" --paginate | jq -s 'add | length')
+          echo "main before=$BEFORE_SHA now=$(git rev-parse HEAD)"
+          echo "open issues before=${BEFORE_ISSUES:-?} now=$after"
+          if git diff --quiet "$BEFORE_SHA" HEAD && [ "$after" = "${BEFORE_ISSUES:-}" ]; then
+            echo "::error::The cycle moved nothing and opened no issue: the work it started did not finish inside this run."
+            exit 1
+          fi
 
       - name: Hand the baton to the next cycle
         if: always()
