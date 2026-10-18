@@ -144,7 +144,10 @@ holder; none of the six adds a run field, so the chain stays **14 → 15 → 16 
 leaves `Task-41` in **Batch 6**, where it was cut, so the queue runs 6 → 28 unbroken — the
 round's new art task, `[Task-76]`, opens its own single-task **Batch 5f** in front of Batch 6
 and claims no scene at all — and the per-entry lists written before that round still read
-`6 Task-41`, which is correct as they stand.
+`6 Task-41`, which is correct as they stand. The twenty-seventh round extends that same queue one
+task per batch to **Batch 50** and adds the plan's next five steps, and the twenty-eighth round
+below adds the queue's last link, **Batch 51**, so it now runs 19 → 51 and the `SAVE_VERSION` chain
+reads **14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23**; its own paragraph and table are below.
 
 The items registered since the first plan add one link each, and one batch that is not a
 link at all. `Task-35` (the enemy AI, Batch 8b) reads the reusable scripted-battle
@@ -702,6 +705,206 @@ forme-changing abilities are **deleted outright**, and Cherrim's and Castform's 
 stat boost. It claims `src/data/dex/**` (the `FORM_EVOLUTIONS` override), the ability registry,
 `randomAbility.ts`, the dex build and the docs, and no state, so the chain stays
 **14 → 15 → 16 → 17 → 18**. Nothing here re-plans `Task-38`–`Task-85`.
+
+A **twenty-fourth round** is **two instructions**, and neither adds a dependency edge nor a
+`SAVE_VERSION` step. `[Task-87]` — a consumable must be spendable on a member from the route HUD, and
+only when it does something («una pocion sobre alguien con toda la vida no o uno que quita estado
+quemado si no esta quemado no») — fixes a small existing defect on the way: a Potion dropped on a member
+is **equipped as if it were a held item**, because neither `equipHudItem` nor `equipHeldItem` reads the
+item's `kind`. `[Task-88]` — Gigantamax must be stone-gated, the stone named `<Base>ite G`
+(«venusorita g») — turns today's free G-MAX button into an item-gated one, minting one stone per G-Max
+forme beside `MEGA_STONES`. Both add no run field, so the chain stays **14 → 15 → 16 → 17 → 18**, and
+nothing here re-plans `Task-38`–`Task-86`.
+
+A **twenty-fifth round** is a **design pivot** that re-shapes `Task-78`, `Task-79` and `Task-80` in
+place: the per-floor **level ranges** go, and content keys off the squad's **own** level and the floor's
+**cap**. The human's words: «igual es mas simple si en vez de rangos por piso usamos solo el cap y el
+nivel actual del usuario? por ejemplo salvajes rango entre un 60 y 75% de nivel actual, entrenadores si
+tiene un poke nivel igual al del player si tiene mas a un porcentaje segun el numero, y boss al cap».
+Settled: **wilds `[0.60, 0.75] × squadLevel`**, **trainers `floor(squadLevel × 100/90/80/70 %)` for
+1/2/3/4 members**, **boss and mini-boss at the cap**, and the **species band follows the squad level**.
+It fits here because the squad already has **one** level (`squadLevel`, `D35`) and the game grows by
+**catching**, not levelling, so the rubber-banding costs nothing. The price is two amended decisions —
+`D11`'s "a fixed seed reproduces the chain" and `D17`'s "levels never draw from the player" — plus a
+fixed-`(seed, squadLevel)` regression test, and `[Task-83]` re-solves the XP curve against the new
+budgets. No run field, so the chain stays **14 → 15 → 16 → 17 → 18**, and nothing here re-plans
+`Task-38`–`Task-88`.
+
+A **twenty-sixth round** is **one instruction plus one frozen reading**, and it adds no dependency edge
+and no `SAVE_VERSION` step. `[Task-84]`'s reading is **frozen**: in the route scene the panels are
+**pointer-first** and the **only** keyboard surface left is the pause menu («solo teclas para pausa»).
+`[Task-89]` turns the Mart and the mini-boss reward into **floating panels** like the HUD's, where
+taking an item is a **drag onto the bag or a member**: a reward row disappears with its ground object
+and the panel (equipping it if it is equipable), and a shop row buys, spending money — with an
+unaffordable row simply **not draggable** («mart al soltar sobre mochila o poke restar monedas si no
+tiene monedas no puede arrastrar»). Both add no run field, so the chain stays
+**14 → 15 → 16 → 17 → 18**, and nothing here re-plans `Task-38`–`Task-88`.
+
+A **twenty-seventh round** is not a report but the **largest content wave** the backlog has
+taken, and it registers **nineteen tasks**, `[Task-90]`–`[Task-108]`, at the end of Phase 9. It
+also **schedules every ID the last rounds left unbatched** (`Task-78`–`Task-89`) and cuts
+**Batch 29 to Batch 50** (the round below extends that cut to **Batch 51**); nothing earlier is re-planned except the two empty slots the wave fills
+(`[Task-86]` into **Batch 21** and `[Task-88]` into **Batch 23**), and Batch 4b stays `cut`.
+
+**What the wave registers, and what it folds.** The special-NPC layer is six tasks: the FRLG
+sprite set (`[Task-90]`), the per-NPC roll inside the trainer rooms `[Task-82]` introduces
+(`[Task-91]`) and the NPC content grouped by what an NPC does — it replaces a room (`[Task-92]`,
+the merchant), edits a member (`[Task-93]`: the move tutor, the nature/ability/IV re-rolls, the
+species swap and the sacrifice's second ability), writes a run fact (`[Task-94]`: the exorcist,
+the weather man, the magician and the type gate) or hands out an item or a battle (`[Task-95]`:
+the medic, the chef, the berry tree and the Mega Stone on a win). The rooms and set-pieces are
+`[Task-96]` (the static-species room and its legendary variant), `[Task-97]` (the secret shop),
+`[Task-98]` (the floor missions), `[Task-99]` (the special trainers), `[Task-100]` (the boss
+room's forced opening, sealed door and free heal), `[Task-101]` (the banned most-used species)
+and `[Task-102]` (the puzzles). The rules are `[Task-103]` (the item wave, infinite held items
+included), `[Task-104]` (the damage-model abilities and the four team-type bonuses),
+`[Task-105]` (the out-of-battle passives) and `[Task-106]` (the room-effect table's second half,
+which **extends** `[Task-62]`'s table instead of duplicating it). The last two are the **2vs2
+boss fight**, cut as its engine (`[Task-107]`) and its screen (`[Task-108]`), because one task
+would carry the whole battle engine and the whole battle scene. The mini-boss reward, the
+casino, the trade room and the no-items room are **not** re-registered: they are `[Task-63]`,
+`[Task-64]`, `[Task-66]` and `[Task-67]`, and the wave's entries name them wherever an NPC row
+would otherwise duplicate one.
+
+**The shape: one scene per batch, 19 to 52.** `src/scenes/RouteScene.ts` is claimed by
+**every batch from 19 to 52**, one task each, because the wave adds fourteen more claims on it
+(`[Task-103]`, `[Task-104]`, `[Task-106]`, `[Task-107]` and `[Task-90]` alone do not) and the
+twenty-eighth round's `[Task-109]` adds the last link, **Batch 51**, with `[Task-110]` (the bag grid)
+right behind it in **Batch 52**. The new
+batches are therefore cut with one scene
+task and the **non-scene** tasks ride beside it, each on a path the scene task leaves free:
+`[Task-90]` with 84, `[Task-81]` with 87, `[Task-104]` with 89, `[Task-106]` with 85,
+`[Task-80]` with 82, `[Task-83]` with 98 and `[Task-103]` with 102. The two 2vs2 halves close
+the plan's scene queue, engine first, and two more follow them: the area-entry notice
+(`[Task-109]`, Batch 51) and the bag grid (`[Task-110]`, Batch 52).
+
+**Run fields.** Five new tasks add one, and they take the next `SAVE_VERSION` steps in batch
+order: `[Task-98]` (the mission record) **18 → 19**, `[Task-93]` (`taughtMoves` and
+`secondAbility`) **19 → 20**, `[Task-94]` (`RunState.modifiers`) **20 → 21**, `[Task-101]`
+(`battlesUsed`) **21 → 22** and `[Task-103]` (the candy's `statTreats`) **22 → 23** — so the
+chain reads **14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23**. The other fourteen add none,
+and `[Task-96]`'s legendary room deliberately derives "once per run" from the mission record
+rather than from a new field.
+
+**Collisions the cut settles.** The NPC tasks share `src/data/npcs.ts`,
+`src/engine/routes/npcs.ts` and `src/ui/npcPanel.ts`, so no two share a batch. `[Task-92]`,
+`[Task-96]` and `[Task-97]` share `src/engine/maps/plan.ts` and `src/ui/mapView.ts`, and
+`[Task-92]` must precede `[Task-97]` (the merchant deletes the shop room the secret shop
+replaces). `[Task-100]` and `[Task-106]` share `src/data/battlefields.ts` and
+`src/engine/routes/battlefield.ts`. `[Task-86]` and `[Task-88]` share `src/data/dex/**` and
+`scripts/build-dex.mjs`; `[Task-64]` and `[Task-90]` share the packed overworld atlas;
+`[Task-64]`, `[Task-87]`, `[Task-88]`, `[Task-95]` and `[Task-103]` share `src/data/items.ts`;
+`[Task-104]`, `[Task-106]` and `[Task-107]` share `src/engine/battle/damage.ts`, `state.ts` and
+`turn.ts`; `[Task-98]`, `[Task-93]`, `[Task-94]`, `[Task-101]` and `[Task-103]` share
+`src/engine/save.ts`. Each pair is one batch apart below.
+
+**Two stale records the wave repairs.** `[Task-80]`'s `*Dependencies:*` read "none", which
+contradicted its own diagnosis: the ranges only become dead weight once `[Task-78]` and
+`[Task-79]` stop reading them, and deleting them first would break the roster's read, so the
+edge is written in. And `[Task-62]`'s entry now names `[Task-106]` as its second half, so nobody
+re-registers the radiant zone, the auras, the type change, Endure and the +50 crit. `[Task-65]`'s
+`knowsMove` accessor is the seam `[Task-91]` extends (never a second accessor), and
+`[Task-89]`'s keyboard removal is the reading `[Task-84]` freezes.
+
+A **twenty-eighth round** is **one report plus a plan-wide review**, and it adds **no dependency edge**
+and **no `SAVE_VERSION` step**. The report — «añadir panel flotante temporal al entrar en una ruta
+como en los juegos originales» — registers **`[Task-109]`**, an **area-entry panel** raised from the
+room-change paths as a boxed banner, with its copy an i18n key, its builder a fourth string in
+`src/ui/notice.ts` (per that module's own convention) and its one open reading — every room, or only
+when the area changes — given the written default **every room**. It claims
+`src/scenes/RouteScene.ts`, so it opens the new **Batch 51**, one batch behind the 2vs2 pair, and the
+scene queue now runs **19 → 51** unbroken.
+
+The review then walked **every open item** (`Task-28`, `Task-56`, `Task-58`, `Task-61`–`Task-68`,
+`Task-78`–`Task-89` and `Task-90`–`Task-109`) against the graph, the batch labels and the hot files,
+and repaired **nine records** without moving a single batch label — eight bullets below, since the two
+stale batch sections share one:
+
+- **`[Task-89]` gained an edge to `[Task-63]`.** Its drag takes the three unidentifiable Pokémon rows
+  that task produces in `src/ui/rewards.ts` (Batch 23), which its own entry already assumed; the edge
+  was prose rather than graph.
+- **`[Task-99]` gained an edge to `[Task-98]`.** Its secret-battle row reads the mission record, a
+  file and a type that Batch 36 produces — the one genuinely missing edge of the plan.
+- **`[Task-103]` gained an edge to `[Task-106]`.** The Tera Crystal's holder override and the field's
+  all-types override are the same "wherever a fighter's types are read" reader, so the earlier task
+  freezes the seam the later one extends.
+- **`[Task-95]` lost an edge to `[Task-65]`.** None of its four rows is party-gated, so it never reads
+  the `knowsMove` module; the predicate family reaches it through `[Task-91]`'s `requires` gate. This
+  is the plan's only invented edge.
+- **`[Task-98]` grew the run-scoped `missionsCompleted` counter** that `[Task-96]`'s "once per run"
+  reads, and claims `src/ui/notice.ts` + test and the two i18n tables, which its own text already used;
+  nothing else in Batch 36 wants either file.
+- **`[Task-97]`'s gate is recorded as re-read**: the human's answer makes it a **blocked room opened by
+  a party of a named type** (a sibling of `[Task-96]`'s room rather than of `[Task-65]`'s move gate),
+  so its edges are `[Task-92]` + `[Task-91]` / `[Task-96]` — all three earlier batches, and its own
+  slot stays **Batch 44**.
+- **`[Task-65]` gained the `**Docs:**` line it never had** — the special-room table's gated row in
+  `docs/maps-spec.md` §7 and the `docs/route-generator.md` §7 **O-R5** row its own *Decision* already
+  closed — which is what makes `docs/maps-spec.md` §7's holder list below count sixteen, and it is the
+  only one of the three special rooms whose entry did not name its docs.
+- **Batches 21 and 23 gained their second member's hot files.** Both sections still read "one task,
+  alone" from their own cut, but `[Task-86]` joined 21 and `[Task-88]` joined 23 in the
+  twenty-seventh round; each section now names the second holder's set — `src/data/dex/**` +
+  `scripts/build-dex.mjs`, the ability registry, `src/scenes/BattleScene.ts` and the generated
+  `docs/balance/effect-coverage.md` in 21, and the generated `gmaxes.json`, `src/data/items.ts`,
+  `src/engine/battle/gmax.ts` and the STATS row's module in 23 — and says the batch is still an
+  antichain. Those two were the only batch sections whose record had gone stale against the labels.
+
+Everything else verified clean, and the review's measurements are these. **Antichains.** All 33
+batches (`19`–`51`) hold exactly one `src/scenes/RouteScene.ts` claim and no two tasks share any
+other path: the nine two-task batches (`21`, `23`, `29`, `30`, `31`, `32`, `35`, `36`, `47`) pair a
+scene task with an engine/data/doc set the scene task never touches, and the remaining
+twenty-four are single tasks. **Ordering.** Every edge points at a strictly earlier batch, so the
+graph is acyclic and no task is scheduled before anything it depends on. **Hot files.** `package.json`,
+`src/main.ts` and `vite.config.ts` are nobody's among the scheduled tasks (the one task that would
+touch the first, `[Task-28]`, is the plan's unscheduled ID);
+the generated and multi-claimed files each have one holder per batch — `src/data/dex/**` and
+`scripts/build-dex.mjs` (`[Task-86]` B21, `[Task-88]` B23), the packed FRLG atlases (`[Task-64]` the
+overworld and trainer sheets, `[Task-65]` the three tilesets, `[Task-90]` the overworld),
+`docs/balance/effect-coverage.md` (`[Task-86]` B21, `[Task-104]` B31), `src/data/items.ts`
+(`[Task-64]`, `[Task-87]`, `[Task-88]`, `[Task-95]`, `[Task-103]`), `src/engine/save.ts`
+(`[Task-98]`, `[Task-93]`, `[Task-94]`, `[Task-101]`, `[Task-103]`), `src/engine/battle/state.ts`
+(`[Task-62]`, `[Task-67]`, `[Task-104]`, `[Task-106]`, `[Task-107]`) with `damage.ts` and `turn.ts`
+shared by `[Task-104]`, `[Task-106]` and `[Task-107]`, `src/engine/maps/plan.ts` and
+`src/ui/mapView.ts` (`[Task-64]`, `[Task-65]`, `[Task-66]`, `[Task-67]`, `[Task-81]`, `[Task-82]`,
+`[Task-92]`, `[Task-96]`, `[Task-97]`, `[Task-102]`) and `src/data/battlefields.ts` +
+`src/engine/routes/battlefield.ts` (`[Task-62]`, `[Task-106]`, `[Task-100]`), as do the docs a wave
+rewrites (`docs/maps-spec.md` §7 above all, sixteen holders one batch apart). **The i18n key table**
+is the one hot file this wave adds, and it is claimed by one new task per batch (each scene task that
+introduces a player-facing string); no two share a batch.
+**The version chain** stays gapless and ordered: 14 → 15 → 16 → 17 → 18 (shipped) → **19**
+(`[Task-98]`, Batch 36) → **20** (`[Task-93]`, 39) → **21** (`[Task-94]`, 40) → **22**
+(`[Task-101]`, 46) → **23** (`[Task-103]`, 47); `[Task-109]` adds none, and the one ID in no batch is
+still `[Task-28]`, blocked upstream.
+
+The batches below carry one scene task each and name their hot-file holder; each entry's own
+`*Dependencies:*` line stays the per-task record.
+
+| Batch | Tasks | Hot files (the one holder each) |
+| --- | --- | --- |
+| 29 | 84, 90 | `src/scenes/RouteScene.ts` → 84; `src/assets/frlg/overworld.png` + `src/data/frlg/overworld.json` (generated) → 90 |
+| 30 | 87, 81 | `src/scenes/RouteScene.ts`, `src/data/items.ts`, `src/data/frlg/item-icons.json` (generated) → 87; `src/engine/maps/plan.ts`, `src/data/maps.ts` → 81 |
+| 31 | 89, 104 | `src/scenes/RouteScene.ts`, `src/ui/shop.ts`, `src/ui/rewards.ts` → 89; `docs/balance/effect-coverage.md` (generated) → 104 |
+| 32 | 85, 106 | `src/scenes/RouteScene.ts`, `src/scenes/BootScene.ts`, `src/engine/tileset.ts` → 85; `src/data/battlefields.ts`, `src/engine/routes/battlefield.ts` → 106 |
+| 33 | 78 | `src/scenes/RouteScene.ts`, `src/engine/run/roster.ts` → 78 |
+| 34 | 79 | `src/scenes/RouteScene.ts` → 79 |
+| 35 | 82, 80 | `src/scenes/RouteScene.ts`, `src/engine/maps/plan.ts`, `src/ui/mapView.ts`, `src/data/population.ts` → 82; `src/data/maps.ts`, `src/engine/run/floors.ts`, `docs/balance/route-curve.md` → 80 |
+| 36 | 98, 83 | `src/scenes/RouteScene.ts`, `src/engine/run/state.ts`, `src/engine/save.ts` → 98; `src/data/run.ts`, `src/engine/run/curve.test.ts` → 83 |
+| 37 | 91 | `src/scenes/RouteScene.ts`, `src/data/npcs.ts`, `src/engine/routes/npcs.ts`, `src/ui/npcPanel.ts` → 91 |
+| 38 | 92 | `src/scenes/RouteScene.ts`, `src/engine/maps/plan.ts`, `src/ui/mapView.ts` → 92 |
+| 39 | 93 | `src/scenes/RouteScene.ts`, `src/engine/save.ts`, `src/engine/run/progression.ts` → 93 |
+| 40 | 94 | `src/scenes/RouteScene.ts`, `src/engine/save.ts` → 94 |
+| 41 | 95 | `src/scenes/RouteScene.ts`, `src/data/items.ts`, `src/engine/battle/runAway.ts` → 95 |
+| 42 | 99 | `src/scenes/RouteScene.ts`, `src/data/trainers.ts` → 99 |
+| 43 | 96 | `src/scenes/RouteScene.ts`, `src/engine/maps/plan.ts`, `src/ui/mapView.ts` → 96 |
+| 44 | 97 | `src/scenes/RouteScene.ts`, `src/engine/maps/plan.ts`, `src/ui/mapView.ts`, `src/data/shop.ts` → 97 |
+| 45 | 100 | `src/scenes/RouteScene.ts`, `src/data/bosses.ts`, `src/engine/routes/battlefield.ts` → 100 |
+| 46 | 101 | `src/scenes/RouteScene.ts`, `src/engine/save.ts`, `src/engine/battle/commands.ts` → 101 |
+| 47 | 102, 103 | `src/scenes/RouteScene.ts` → 102; `src/data/items.ts`, `src/engine/save.ts` → 103 |
+| 48 | 105 | `src/scenes/RouteScene.ts`, `src/engine/run/passives.ts` → 105 |
+| 49 | 107 | `src/engine/battle/**` (state, order, turn, commands, ai, damage, fighter) → 107 |
+| 50 | 108 | `src/scenes/RouteScene.ts`, `src/scenes/BattleScene.ts`, `src/ui/partyGrid.ts`, `src/ui/beats.ts` → 108 |
+| 51 | 109 | `src/scenes/RouteScene.ts`, `src/ui/notice.ts` + `notice.test.ts`, `src/i18n/{en,es}.ts` → 109 |
 
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
@@ -1716,19 +1919,30 @@ never reused. What follows is the cut's own record.
 - **Task-61** Beating the map boss keeps the player where they stand instead of warping them
   to the room's door.
 - **Hot files:** `src/scenes/RouteScene.ts` (the boss-win branch of `applyBattleResult`,
-  5069-5108, and the `transitionTo` it calls, 4437-4454) → Task-61. Nothing else is in the
-  batch; it claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/**`,
-  `src/engine/**`, `src/engine/save.ts`, packed asset or `docs/` file.
-- **Shape:** one task, alone, and the first of the round because it is the only **defect** of
-  the six reports (the file's precedent: the bug batch was cut in front of Batch 4). It wants
+  5069-5108, and the `transitionTo` it calls, 4437-4454) → Task-61, which claims no
+  `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/**`, `src/engine/**`,
+  `src/engine/save.ts`, packed asset or `docs/` file. **`[Task-86]` joined this batch in the
+  twenty-seventh round**, so its set is the batch's second holder: `src/data/dex/**` (the
+  `FORM_EVOLUTIONS` override and the regenerated files) with `scripts/build-dex.mjs`, the ability
+  registry (`src/engine/battle/effects/abilities.ts` + its test) with
+  `src/engine/battle/randomAbility.ts`, `src/scenes/BattleScene.ts`, the generated
+  `docs/balance/effect-coverage.md` and the docs it records `D38`/`D16` in
+  (`docs/tech-decisions.md`, `docs/battle-spec.md` §9/§11, `docs/design-spec.md` §3), plus the
+  fixed-seed re-pins it owes — none of which Task-61 touches, so the batch is still an antichain.
+- **Shape:** two tasks since the twenty-seventh round, and the first batch of the round because
+  `[Task-61]` is the only **defect** of the six reports (the file's precedent: the bug batch was cut
+  in front of Batch 4). It wants
   `src/scenes/RouteScene.ts`, which every batch from 5 to 20 holds (5 Task-16, 5b Task-45, 6
   Task-41, 6b Task-38, 7 Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b
   Task-40, 10 Task-26, 11 Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48, 15 Task-49, 16
   Task-50, 17 Task-52, 18 Task-55, 19 Task-56, 20 Task-58), so this is the first batch that
-  leaves it free again — and the batch holds only one task because a batch is an antichain and
-  every other report of the two rounds wants the same file. It produces nothing another task
+  leaves it free again — and the batch holds one **scene** task only, because a batch is an
+  antichain and every other report of the two rounds wants that same file; `[Task-86]` is its second
+  member since the twenty-seventh round precisely because it wants no scene at all. Task-61
+  produces nothing another task
   reads, changes no rule (the portal still opens when the boss falls, D31), adds no run field,
-  so **no `SAVE_VERSION`** step and no fixed-seed re-pin — it is pure scene behaviour.
+  so **no `SAVE_VERSION`** step and no fixed-seed re-pin — it is pure scene behaviour, and its
+  batch-mate adds none either.
 
 ### Batch 22 — a room's battle begins under a weather, a terrain or a room condition
 - **Task-62** A trainer or boss room may begin its battles under a weather, a terrain or a
@@ -1767,20 +1981,29 @@ never reused. What follows is the cut's own record.
 - **Hot files:** `src/scenes/RouteScene.ts` (the reward window, `openMiniBossReward` 5715-5731
   through `chooseMiniBossReward` 5838-5848) → Task-63; `src/ui/rewards.ts` +
   `src/ui/rewards.test.ts` (the new pure Pokémon chooser beside `rewardChoices`, 10-32) →
-  Task-63; `docs/maps-spec.md` §7 (185) and `docs/design-spec.md` §7 (259-260) → Task-63. It
-  claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/**`, `src/data/dex/**`,
-  `src/engine/**`, `src/engine/save.ts` or packed asset — every primitive it composes is
-  shipped (`createFighter` + `randomAbility`/`defaultMoveset`, D17; `speciesPool`, D39;
-  `statAtLevel`; `addPokemon`).
-- **Shape:** one task, alone, because it wants `src/scenes/RouteScene.ts` (held by every batch
-  5-20, Batch 20 last) and `src/ui/rewards.ts`, and no other report of the round claims that
-  second file — so it could not ride beside Task-61 or Task-62 and opens the new **Batch 23**,
+  Task-63, which claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/**`,
+  `src/data/dex/**`, `src/engine/**`, `src/engine/save.ts` or packed asset — every primitive it
+  composes is shipped (`createFighter` + `randomAbility`/`defaultMoveset`, D17; `speciesPool`,
+  D39; `statAtLevel`; `addPokemon`); `docs/maps-spec.md` §7 (185) and
+  `docs/design-spec.md` §7 (259-260) → Task-63. **`[Task-88]` joined this batch in the
+  twenty-seventh round**, so its set is the second holder: the generated
+  `src/data/dex/gmaxes.json` with `scripts/build-dex.mjs`, `src/data/items.ts` (one stone per
+  G-Max forme beside `MEGA_STONES`), `src/engine/battle/gmax.ts`, the dex accessor
+  (`src/data/dex/megas.ts`) and the STATS row's own module, `docs/tech-decisions.md` `D44`,
+  `docs/battle-spec.md` §9 and `docs/data-spec.md` §1 — a disjoint set from Task-63's, so the
+  batch is still an antichain.
+- **Shape:** two tasks since the twenty-seventh round, because `[Task-63]` wants
+  `src/scenes/RouteScene.ts` (held by every batch 5-20, Batch 20 last) and `src/ui/rewards.ts`,
+  and no other report of the round claims that second file — so it could not ride beside Task-61
+  or Task-62 and opens the new **Batch 23**,
   one batch behind Task-62. It is a **presentation + placement** task with no new rule: the
   chooser draws from its own stream (a sibling of `:reward:${mapIndex}`, 5721), so the item
   rows a fixed seed already produces do not move and the fixed-seed regression is that the
   three (stat, nature) pairs are stable. The chosen Pokémon lands through `addPokemon` at the
   squad's level, exactly as a catch does — it is not a catch, so it spends no room capture and
-  bumps no `stats.catches` — and it adds no run field, so **no `SAVE_VERSION`** step.
+  bumps no `stats.catches` — and it adds no run field, so **no `SAVE_VERSION`** step. `[Task-88]`
+  is the batch's second member (its own set is named above): it moves the generated `gmaxes.json`
+  and the item catalogue, keeps the single chain intact, and adds no run field either.
 
 ### Batch 24 — the casino room
 - **Task-64** A casino room: a Team Rocket grunt, a slot machine the player pays to spin, items
@@ -1962,7 +2185,10 @@ raised is decided: the Añil art was materialised into the local clone, `Task-23
 (the three moves ship, `D42`), `Task-24` is retired, the audio comes from the original
 games' audio rips under `sprite-sources/frlg-audio/`, and the Plates are made obtainable
 by `Task-07`. A question lands here only when the repository genuinely cannot answer it.
-The one ID without a batch is not a question: `[Task-28]` waits on an upstream
+The **twenty-seventh round's three** were **answered after the cut** and are recorded in the
+"Resolved since this table was written" note at the end of this list, so their bullets are gone; the
+**twenty-eighth round adds one**, the area-entry panel's cadence, which is the last bullet above that
+note. The one ID without a batch is not a question: `[Task-28]` waits on an upstream
 `typescript-eslint` release.
 
 - **`[Task-40]` (the battle's entry beat, Batch 9b): how loud is the opening, and what
@@ -2369,6 +2595,23 @@ The one ID without a batch is not a question: `[Task-28]` waits on an upstream
   on the drop, which guards the mis-drop but introduces the HUD's first confirm window (the
   capture prompt `[Task-31]` deletes is the only one the tree ever had). Say which before Batch
   28's branch is cut. Nothing else in the plan changes either way.
+
+- **`[Task-109]` (the area-entry panel, Batch 51): does the banner fire on every room, or only when the
+  area changes?** The originals fire **once per area** — they have no per-room banner — while the
+  report's words are «al entrar en una ruta» and a route is a room. The written default is **every
+  room**: the panel is raised on each room change (`applyRoute` / `transitionTo`) and on the floor
+  advance (`advanceMap`, where the number in the header moves too), so the player reads the area name
+  as they read the header's. The alternative is the originals' own cadence — **only when the map
+  changes**, one comparison of the new room's `mapIndex` against the previous one on the same seam —
+  which is one beat fewer per room and never repeats itself inside a floor. Say which before Batch 51's
+  branch is cut; nothing else in the plan changes either way.
+
+- **Resolved since this table was written** (the human's answers): `[Task-97]`'s gate is a **blocked room
+  whose obstacle is passed by a party of a named type** (a sibling of `[Task-96]`, not of `[Task-65]`'s
+  move gate); `[Task-103]`'s candy **rolls its stat per run and reveals it only once a colour has been
+  tried**, so its `SAVE_VERSION` step carries a discovered-colour set as well as the treats; and
+  `[Task-101]` bans the **member**'s species, which is what the entry already reads. The three bullets
+  that used to sit here are gone.
 
 ---
 
@@ -3274,6 +3517,75 @@ Ports of Showdown handlers, in batches, on the hook names in
       through the shipped i18n module instead of beside it, and after Batch 11 so it edits
       reformat-cleared files and keeps them conforming. It adds no run field, so **no**
       `SAVE_VERSION` step. *(Batch 16)*
+- [ ] **[Task-87] A consumable is spent on a party member from the route HUD, and only when it actually
+      does something.** The human's rule: «objetos consumibles se deben poder gastar en menu de rutas
+      sobre un poke si es que hace efecto por ejemplo una pocion sobre alguien con toda la vida no o uno
+      que quita estado quemado si no esta quemado no». Two things are missing today, and one is a small
+      defect:
+      - **A non-held item dropped on a member is equipped as if it were held.** The drag's drop calls
+        `equipHudItem` (`src/scenes/RouteScene.ts` 4306) → `equipHeldItem` (`src/engine/run/state.ts`
+        598), and neither reads the item's `kind`, so a **Potion dropped on a member becomes that
+        member's held item**. The battle is the only place a consumable can be spent (`useBagItem`,
+        `src/engine/battle/commands.ts` 139-192, the `heal` / `status` / `boost` branches), and the route
+        HUD has no use path at all.
+      - **No effect gate exists** anywhere for a route use.
+      **Fix shape.** A `held` item keeps equipping; a `heal` / `status` item **uses** on the member
+      instead, and the use is a no-op unless it would change something. The gate is one pure predicate
+      beside the run state (e.g. `itemAppliesTo(member, item)` in a new `src/engine/run/items.ts`),
+      reusing the battle's own semantics: `heal` applies when HP is below max (`healAmount` /
+      `healFraction`) **or** a curable status is present (`cures`), and `status` applies only when the
+      member carries one the item cures. The **target is the party or the PC box** (the heal stop already
+      reaches both). `useItemOn(run, memberId, itemId)` is the predicate plus `consumeItem` (`state.ts`
+      573) plus the member's HP or status written back, and the scene routes the drop / confirm through it
+      (`RouteScene` 3807-3819, `confirmMemberStop` 1711-1721), raising the shipped notice so the player
+      sees what happened.
+      **The X-items go with it.** The human's answer is «eliminar x items», so the three `kind: 'boost'`
+      consumables — **X Attack, X Defense, X Speed** (`src/data/items.ts` 1113-1136) — are deleted from
+      the game: out of the catalogue, the four loot rows (`src/data/loot.ts` 70/115/166/210), the icon map
+      (`src/data/frlg/item-icons.json` 54-56), the `'boost'` member of `ItemKind` (`items.ts` 5) with the
+      `case 'boost'` branches (`src/engine/battle/commands.ts` 180-187, `src/ui/bag.ts` 48) and the
+      `items.test.ts` / `bag.test.ts` / `shop.test.ts` rows. The **battle's `boost` event**
+      (`src/engine/battle/state.ts` 82) is a different thing — the pinch berries and the stat-raising
+      moves keep using it, so the `ItemDef.boosts` field stays for them.
+      **Docs:** the route HUD and bag in `docs/design-spec.md`, the healing stops and Pokevial in
+      `docs/routes-spec.md` §6, the item catalogue in `docs/data-spec.md`, and the X-items' line in
+      `docs/battle-spec.md`.
+      *Dependencies:* none. No `SAVE_VERSION` step — the bag, the members and their statuses already
+      persist. It opens **Batch 30** with `[Task-81]`: it claims `src/scenes/RouteScene.ts`,
+      `src/data/items.ts` and the generated `src/data/frlg/item-icons.json`, none of which the
+      room-size table 81 writes touches. *(Batch 30)*
+- [ ] **[Task-89] The Mart and the mini-boss reward become floating panels, and taking an item is a drag
+      onto the bag or a member.** The human's rule: «pasar mart y recompensa a panel flotante como los
+      existentes, recompensa al arrastrarlo a mochila o poke si es objeto equipable desaparece objeto de
+      suelo y panel, mart al soltar sobre mochila o poke restar monedas si no tiene monedas no puede
+      arrastrar».
+      **Today** both are **modals**: the Mart (`RouteScene`'s shop counter) and the reward
+      (`openMiniBossReward`, ~6584) take the keyboard off whatever pane held it and answer to
+      `handleShopAction` / `handleMiniBossRewardAction` (arrows plus `confirm`). The shop panel exists only
+      while the run stands in the shop room (`docs/maps-spec.md` §7). The HUD's own panels
+      (party/bag/box/detail) already drag, and a bag stack is dropped onto a member by
+      `handleHudPointerUp` → `equipHudItem` / `useItemOn` (`RouteScene` 3807-3819; `[Task-87]` is the
+      consumable half).
+      **Fix shape.** Both surfaces become **floating panels** built on the shipped chrome, moved by their
+      header like any other (`HudLayout`) and **pointer-first**: their rows drag onto the bag panel or a
+      member. A **reward** row taken this way **disappears** — the reward's own ground object and the panel
+      go — and when the item is **equipable** it lands on the member it was dropped on. A **shop** row
+      dragged onto the bag or a member **buys**: one unit leaves the shop and `spendMoney` runs; a row the
+      run **cannot afford** is **not draggable** (no hand cursor, no ghost), so the drag itself is the
+      price gate. The two surfaces' keyboard paths go, per `[Task-84]`'s rule that only the pause menu
+      keeps keys in the route scene.
+      **Docs:** the shop panel and the economy in `docs/maps-spec.md` §7, the route HUD's panels in
+      `docs/design-spec.md` §3, and the mini-boss reward's row in `docs/maps-spec.md` §7.
+      **The reward's Pokémon rows take the same drag** (the human's answer): if `[Task-63]` lands first,
+      its three unidentifiable rows drag onto the party exactly like the item rows, and taking one removes
+      its ground object and the panel just the same.
+      *Dependencies:* `[Task-87]` — the drag's drop target is the `useItemOn` the consumable half
+      ships, so a reward or shop row dropped on a member lands the same way — and `[Task-63]`, whose
+      three unidentifiable Pokémon rows are the second row kind this drag must take (the reason the
+      entry's own "if `[Task-63]` lands first" is true: Batch 23). It is written against
+      `[Task-84]`'s pointer-first rule (Batch 29) and takes **Batch 31** as its first member, with
+      `[Task-104]` (the damage-model abilities) beside it — that task claims no scene, no
+      `src/ui/**` and no shop path. *(Batch 31)*
 
 ## Phase 7 — Persistence, meta & polish
 
@@ -3307,21 +3619,23 @@ Ports of Showdown handlers, in batches, on the hook names in
       `update()` (`7237-7238`) settles the walker while `hudKeyboardPane !== null`, which is *why* the
       arrows stop walking the moment a panel is opened. The pointer path is already the wanted one:
       clicking a panel's icon is a plain toggle with no focus (`1569-1571`).
-      **Fix shape (the reading to freeze).** Opening a HUD panel **no longer grabs the keyboard**: the
-      quick key opens/collapses the panel and the arrows keep reaching the walker, so `focusHudPane`
-      stops being called by `toggleHudPanel` (or `update()`'s gate stops reading `hudKeyboardPane`),
-      and the keyboard reach into the panes' *content* — party rows, reorder, Pokevial header, box,
-      bag, detail tabs, move slots, learnset band — moves to **pointer-first**. The alternative the
-      entry keeps open is to keep keyboard browsing but only while a **modal** (the pause menu, the
-      Mart, the reward) is up, never for the route HUD's own panes. The battle, the modals and
-      `src/data/keybinds.ts` are untouched either way.
+      **Fix shape (frozen).** Opening a HUD panel **never grabs the keyboard**: the quick key
+      opens/collapses the panel and the arrows keep reaching the walker, so `focusHudPane` stops being
+      called by `toggleHudPanel` (and `update()`'s gate stops reading `hudKeyboardPane`); the keyboard
+      reach into the panes' content — party rows, reorder, Pokevial header, box, bag, detail tabs, move
+      slots, learnset band — goes **pointer-first**. Across the route scene the **only** keyboard surface
+      left is the **pause menu** (the human's «solo teclas para pausa»: `cancel` opens it, the arrows and
+      `confirm` drive it). The Mart and the mini-boss reward follow this task's sibling `[Task-89]`, which
+      turns them into floating panels; until then they are the two remaining keyboard-driven route
+      surfaces and this task leaves them as they are.
       **Docs to move with it:** `docs/design-spec.md` §10.3's rule sentence and its table rows marked
       `keyboard (new)` for the route HUD panes, and the keyboard paragraph of the accessibility
       decision (`docs/tech-decisions.md`, referenced as `D45` in the scene).
-      Out of scope: the battle's own keyboard paths, the Mart / reward / pause modals (still keyboard),
-      the keybind vocabulary and the `P`/`I`/`M`/`O` quick keys themselves (which still open a panel).
-      *Dependencies:* none. Wants `src/scenes/RouteScene.ts`, the plan's most contended path.
-      *(unbatched — the next cut)*
+      Out of scope: the battle's own keyboard paths (a different scene), the keybind vocabulary, the
+      `P`/`I`/`M`/`O` quick keys themselves (which still open a panel) and the pause menu's own keys.
+      *Dependencies:* none. Wants `src/scenes/RouteScene.ts`, the plan's most contended path, so it
+      opens **Batch 29** as its first member; `[Task-90]` (the NPC overworld sprite packer) rides
+      beside it and claims no scene at all. *(Batch 29)*
 
 ## Phase 8 — Biomes & art assets
 
@@ -3450,6 +3764,23 @@ tests' fixture.
       ring on both skins and both layouts. Recorded so nobody mis-reads the direction: 11px is
       rounder than the card's own "today" preview (7px) but **less** round than what actually
       ships (20 / 24), and that is the card's look rather than an oversight.
+      **Frozen from the panel mock (`panel-mock.html` and `sprite-sources/panel-mock.png`, drawn
+      against the tokens above).** Five rules the sweep must keep:
+      - the **transient notice strip** stops being a second look: it draws the **card** skin like every
+        other panel (the `'textbox'` nine-slice the route floats today, `RouteScene.buildNotice`
+        5889-5915, no longer has a route surface of its own — the battle's **message box** keeps the
+        textbox skin, at the 0.80 value above if the contrast check asks for it);
+      - the moves window's **MEGA and G-MAX controls lose their words** and become **icon-only** in that
+        window's header, both drawn with the **Mega Evolution glyph** (a frame from a shipped atlas; if a
+        distinct G-Max glyph ever ships, the second control takes it — the human's words are that both
+        show the Mega icon). Today they are `MEGA` / `G-MAX +` `BitmapText` labels
+        (`BattleScene.layoutMegaControl` / `layoutGmaxControl`, ~2854-2895);
+      - the **type badges are full colour with dark ink**, never translucent;
+      - the **selected row or cell** is the accent fill **plus** a 1px accent outline (both, not either);
+      - the **area-entry panel** (`[Task-109]`) is the one card whose border is the **accent**.
+      Everything else the mock shows (PARTY, BAG, DETAIL, the STATS/MOVES grid, the command grid, the
+      switch rows, the HP bars) already reads the tokens above, which is why the mock is a check rather
+      than a second source of truth.
       **Fix shape:** one re-tuned chrome set, one ink flip and one sweep of the containers. The
       packer's palette constants and `chrome.json` carry the new tokens (Task-16's own rule: a
       chrome value lives in `src/data/ui/chrome.json` through the packer, and **no scene
@@ -3541,8 +3872,9 @@ tests' fixture.
       Out of scope: the item's visibility/blocking rules, the loot roll (`hiddenChance`) and the Poke
       Ball sprite a visible item draws.
       *Dependencies:* none. Wants `src/scenes/RouteScene.ts` and a one-time edit of
-      `FOREST_FLOOR_VARIANTS`. The frame is **41** — the human's pick from the preview above.
-      *(unbatched — the next cut)*
+      `FOREST_FLOOR_VARIANTS`. The frame is **41** — the human's pick from the preview above. It
+      opens **Batch 32** and `[Task-106]` (the room-effect table's second half) rides beside it:
+      that task claims no scene, no tileset and no `BootScene`. *(Batch 32)*
 
 ## Phase 9 — Maps (route groups), biomes & progression
 
@@ -3773,6 +4105,12 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the existing weather/terrain/gravity/trick-room rules and the moves that set
       them (they do not move), the info window `[Task-60]` (Batch 17) that lists the battle's own
       state, the encounter table, the room generator's geometry, and the trainer placement.
+      **The table's second half is `[Task-106]`'s, one task of its own in Batch 32.** The radiant
+      zone, the two auras, the all-types change, Endure and the +50 crit are new **engine rules**
+      rather than rows this task could carry, so the sibling extends the `ROOM_BATTLEFIELDS` table
+      and the `BattleSetup` seam this task freezes and never duplicates the five conditions named
+      here. `[Task-100]` (the boss room's own rules, Batch 45) is the third reader of the same
+      table; `[Task-94]`'s forced field (Batch 40) is the fourth.
       *Decision:* Fog is a **field condition** (it never enters `weatherModifier`/`weatherChip`), a never-miss move is **unaffected**, and the condition belongs to the **room**, so every battle there, wilds included, begins with it.
       *Dependencies:* none — every rule it reads is shipped and the roll composes shipped
       primitives. Batch order covers it: it wants `src/scenes/RouteScene.ts` **and**
@@ -3956,6 +4294,9 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the wild pool, the catch placement, the route generator's geometry beyond the
       room's own carve, the field moves' battle effects (Cut/Rock Smash/Surf as moves stay as they
       are), the party/PC panel, and the map filter `[Task-62]` draws.
+      **Docs:** the special-room table and its content bullet in `docs/maps-spec.md` §7 gain the
+      gated room, and `docs/route-generator.md` §7 loses its **O-R5** row (the key/flag gate this
+      task adopts), which is the one line of that file it writes.
       *Decision:* **Any** party member opens the obstacle (the lead included, no special case) and the opening is **permanent for the floor** (the `pickedItems`-with-a-stable-id shape, cleared by `advanceMap`). This adopts the key/flag gate that `docs/route-generator.md` section 7 kept out of scope as **O-R5**, so that line is now closed by this task.
       *Dependencies:* none. Batch order covers it: it wants `src/scenes/RouteScene.ts` (every
       batch 5-20, Batch 20 last), `src/engine/maps/plan.ts` and `src/ui/mapView.ts`, so it opens
@@ -4095,66 +4436,74 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       stop being an antichain. Nor can it join Task-64/65/66, whose special-room layer
       (`src/engine/maps/plan.ts`, `src/ui/mapView.ts`) it extends in the three batches before it.
       *(Batch 27)*
-- [ ] **[Task-78] A trainer's roster takes its level from the room it stands in, not the whole
-      floor band.** Reported in play: a floor's trainers roll uniformly across the map's
-      `minLevel..maxLevel` (`trainerRoster`, `src/engine/run/roster.ts` 55, `rng.int(band.minLevel,
-      band.maxLevel)`), so the room beside a floor's entry can field the floor's **top** level — map 1
-      a level-9 trainer on the level-5 starter, map 2 a level-16 on a squad entering at 9. The ramp
-      `docs/maps-spec.md` §5 promises ("the routes ramp from `minLevel` to `maxLevel`") is implemented
-      for **wild encounters** (`roomLevelForMap` / `runRoomLevel`, `src/engine/run/floors.ts`, read at
-      `RouteScene` 1294-1295) and **not** by the roster builder: that asymmetry is the defect.
-      **Fix shape.** The roster level becomes a function of the room's **working level**
-      (`roomLevelForMap(mapIndex, roomInMap, roomCount)`) minus a **party-size penalty** (a bigger team
-      is already harder, so each member past the first steps the level down — `2 × (size - 1)` as the
-      frozen default), clamped to the band. The **boss** keeps the floor's `maxLevel` (the existing
-      `rosterBand`, `RouteScene` 5701) and the **mini-boss** its band levels, so the top of the band is
-      reserved for a floor's finale. `trainerRoster` gains the level as an argument (or a `levelFor`
-      option) instead of reading `band.minLevel/maxLevel`; `RouteScene.startTrainerBattle` passes the
-      room's level, which it already holds through `this.room`.
-      **Fixed-seed re-pin:** `src/engine/run/roster.test.ts` and any expectation that pins a trainer
-      level, plus `docs/maps-spec.md` §5 (which already says the ramp exists) and the roster rule in
-      `docs/routes-spec.md` §5.
-      Out of scope: the species pool, the party size (`LEVEL_BANDS.trainerSize`, `bossPartySize`), the
-      wild table and the award rule (`experienceAward`, `D35`).
-      *Dependencies:* none — every primitive it reads is shipped. *(unbatched — the next cut)*
-- [ ] **[Task-79] A wild encounter never rolls a level above the party's own.** Reported in play:
-      «quiero que los salvajes no esten tan alto de nivel por ejemplo que salga un nivel 5 cuando tu
-      solo tienes uno al 5 o al subir de piso uno al 9 es injusto». The encounter level is the room's
-      working level (`runRoomLevel`, `RouteScene` 1294-1295), which ramps to the floor's `maxLevel`, so
-      map 1's deepest rooms field level 8-9 grass against a level-5 starter and map 2 opens at 9 with
-      grass that reaches 16.
-      **Fix shape.** The encounter level becomes `min(roomLevel, partyLevel)` clamped to the band,
-      where `partyLevel` is the party's level with a flat offset, so a floor's grass is never above what
-      the squad can actually fight. The cap is read at encounter time, so it needs the live party and
-      not the seed alone; `docs/routes-spec.md` §3/§5 and the "never from the player's level" note in
-      `docs/maps-spec.md` §5 gain the exception, and `D17`'s record gains a line if the cap is
-      relative.
-      **The round's open question lives here:** does `partyLevel` ride the **lead's** level or the
-      party's **highest**, and is the offset a flat `- 1` or the band's own `minLevel`?
-      Out of scope: the species pool, the BST windows, the catch rules and the room ramp's floor.
-      *Dependencies:* none. Shares `src/scenes/RouteScene.ts` with Task-78. *(unbatched — the next cut)*
-- [ ] **[Task-80] The finite level ranges are re-spaced, and map 1 starts at the starter's level.**
-      `MAP_TUNING` (`src/data/maps.ts`) and `LEVEL_BANDS` (`src/data/run.ts`) are re-solved so a floor
-      is beatable **at its entry level**: map 1's `minLevel` moves from 2 to the starter's
-      `START_LEVEL` (5, `src/scenes/StarterScene.ts` 28) so the run's first fights are not below the
-      starter, and the per-floor step is re-read so the boss's band top is not a wall on entry (map 2
-      must not open at 9 against a 16). The band boundaries still meet at their shared level
-      (`levelRangeForMap(m).minLevel === levelRangeForMap(m-1).maxLevel`) and the six bands still tile
-      `0..800` with no gap, so `bandForLevel`'s chain and the BST windows' tiling stay intact. The
-      infinite-run step (`MAP_TUNING_STEP`) and `FINITE_MAPS` are read against the new rows.
-      **Fixed-seed re-pin:** `src/data/maps.test.ts` (the first row, the last row and the boundary
-      assertions), `src/data/run.test.ts` (`bandForLevel` pins), `src/engine/run/floors.test.ts` and
-      `docs/balance/route-curve.md`'s cap table.
-      Out of scope: the room counts, the sizes, the boss and mini-boss party sizes, and the
-      multipliers (`trainerXp`, which Task-83 re-solves against the new ranges).
-      *Dependencies:* none. *(unbatched — the next cut)*
+- [ ] **[Task-78] A trainer's level is a percentage of the squad's own level, by its party size.** The
+      human's re-shape — the **player-relative model**, the twenty-fifth round below — replaces the floor
+      band with the squad level and the floor cap. The old rule rolled a trainer's level uniformly across
+      the map's `minLevel..maxLevel` (`trainerRoster`, `src/engine/run/roster.ts` 55,
+      `rng.int(band.minLevel, band.maxLevel)`), so the room beside a floor's entry could field the floor's
+      **top** level — map 1 a level-9 trainer on the level-5 starter, map 2 a level-16 on a squad entering
+      at 9.
+      **Fix shape.** `level = clamp(floor(squadLevel(run) × percent[size]), 1, cap)`, with
+      `percent = { 1: 1.00, 2: 0.90, 3: 0.80, 4: 0.70 }` and the **floor** the human asked for («redondeo
+      hacia bajo»); `size` is the roster's own count (`LEVEL_BANDS.trainerSize`, or `bossPartySize` for the
+      two hand-placed fights). `squadLevel` is the run's one shared level (`src/engine/run/state.ts` 249,
+      `D35`), so a trainer scales with the player by construction. The **boss** and the **mini-boss** stay
+      pinned to the floor's **cap** (the existing `rosterBand` `minLevel = band.maxLevel`, `RouteScene`
+      5701, and their fixed party sizes), so a floor's top is its finale. `trainerRoster` takes the
+      resolved level (a `levelFor` option) instead of reading `band.minLevel/maxLevel`, and
+      `RouteScene.startTrainerBattle` computes it from the live run.
+      **Docs/law:** `docs/maps-spec.md` §5, `docs/routes-spec.md` §5, and the `D11`/`D17` amendment the
+      twenty-fifth round records.
+      Out of scope: the species pool (Task-79 owns the band it draws), the party sizes, the wild table
+      and the award rule (`experienceAward`, `D35`).
+      *Dependencies:* none — every primitive it reads is shipped. It opens **Batch 33** as a single
+      task: the room queue is what costs the width, and nothing else in the backlog that is free here
+      wants `src/engine/run/roster.ts` or `docs/maps-spec.md` §5. *(Batch 33)*
+- [ ] **[Task-79] A wild encounter's level is a fraction of the squad's own level.** Reported in play:
+      «quiero que los salvajes no esten tan alto de nivel por ejemplo que salga un nivel 5 cuando tu solo
+      tienes uno al 5 o al subir de piso uno al 9 es injusto». The old rule drew the room's working level
+      (`runRoomLevel`, `RouteScene` 1294-1295), which ramps to the floor's `maxLevel`, so map 1's deepest
+      rooms fielded level 8-9 grass against a level-5 starter.
+      **Fix shape.** A seeded roll lands a **fraction in `[0.60, 0.75]`**, and the level is
+      `clamp(floor(squadLevel(run) × fraction), 1, cap)` — the human's «salvajes rango entre un 60 y 75%
+      de nivel actual». The **species pool follows the squad level too**: the table draws from
+      `bandForLevel(squadLevel)` (`src/data/run.ts`), so the BST window moves with the squad rather than
+      the floor. The roll stays on the route's own stream (`D11`: the seed fixes the *draw*), while the
+      level it yields is a function of the live `(seed, squadLevel)` — the `D17` amendment the
+      twenty-fifth round records.
+      Out of scope: the species bans (legendaries/mythicals), the BST windows themselves, the catch rules
+      and the per-floor cap.
+      *Dependencies:* none. Shares `src/scenes/RouteScene.ts` with Task-78, which is why it is one
+      batch behind it — **Batch 34** — rather than beside it. *(Batch 34)*
+- [ ] **[Task-80] `MAP_TUNING` drops the level range and keeps only the cap.** The player-relative model
+      (Tasks 78/79) makes a floor's `levels.minLevel`/`maxLevel` dead weight: the **cap** is the only
+      anchor left, so `MapTuning.levels` collapses to a single `cap` and the eight tuned values stay
+      **9 / 16 / 23 / 30 / 37 / 43 / 49 / 55** (`src/data/maps.ts`). `levelRangeForMap` and
+      `levelCapForMap` become the cap alone, and `MAP_TUNING_STEP.levelStep` still grows it past the last
+      row in infinite mode, saturating at `MAP_MAX_LEVEL` (100) — with one end gone, the step is one
+      number. Its callers move to the squad-level model: `runBand` / `roomLevelForMap`
+      (`src/engine/run/floors.ts`) and the encounter / roster paths (Tasks 78/79). `LEVEL_BANDS`
+      (`src/data/run.ts`) keeps its own level windows — they are still the `level → BST window /
+      trainerSize` map `bandForLevel` reads — and the six bands still tile `0..800` with no gap. Map 1's
+      cap of 9 already sits +4 over the level-5 starter, so the old "start map 1 at the starter's level"
+      concern is gone with the ranges.
+      **Fixed-seed re-pin:** `src/data/maps.test.ts` (the boundary assertions lose their subject),
+      `src/data/run.test.ts`'s `bandForLevel` pins and `docs/balance/route-curve.md`'s cap table.
+      Out of scope: the room counts, the sizes (Task-81), the boss and mini-boss party sizes, and the
+      multipliers (`trainerXp`, which Task-83 re-solves).
+      *Dependencies:* `[Task-78]` and `[Task-79]` — the player-relative model is what makes the
+      ranges dead weight, and deleting them first would leave the roster's `band.minLevel/maxLevel`
+      read (`src/engine/run/roster.ts` 55) pointing at a field that no longer exists. It rides
+      **Batch 35** beside `[Task-82]`, which wants `src/engine/maps/plan.ts` while this task wants
+      `src/data/maps.ts` and `src/engine/run/floors.ts`. *(Batch 35)*
 - [ ] **[Task-81] A room's size follows its shape.** Today `planMap` rolls every room's width and
       height independently inside the map's size range (`src/engine/maps/plan.ts` 388-391,
       `rng.int(tuning.size.min, tuning.size.max)` twice), so the rooms come out roughly square and a
       `cross` reads the same as a `corridor`. The human wants the **shape to pick the aspect**: a
-      `cross` a square (e.g. 40×40), a `corridor` a long room (52×30 east–west, 30×52 north–south), a
-      `tee`/`bend` in between, and a `dead-end` leaf at the floor's 30×30 (entry, boss and specials are
-      pinned there already, 453-455).
+      `cross` a square, a `corridor` a long room, a `tee`/`bend` in between, and a `dead-end` leaf at the
+      floor's 30×30 (entry, boss and specials are pinned there already, 453-455). **The table is frozen**:
+      `cross` 40×40, `tee` 40×48, `bend` 44×44, `corridor` 52×30 east–west and 30×52 north–south, a
+      `dead-end` 30×30.
       **Fix shape.** A `shape → { width, height }` table in `src/data/maps.ts` (or beside `SHAPES` in
       `src/engine/routes/layout.ts`), scaled by the map index instead of the free roll;
       `MAP_MAX_ROOM_SIZE` rises from 48 to **56** to admit the long corridor, while
@@ -4165,7 +4514,9 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       **Fixed-seed re-pin:** `src/engine/maps/plan.test.ts` (every room's size) and
       `docs/maps-spec.md` §1/§4.
       Out of scope: the room **count** (Task-82) and the `MAP_TUNING` level ranges (Task-80).
-      *Dependencies:* none. *(unbatched — the next cut)*
+      *Dependencies:* none. Its shape table, `src/engine/maps/plan.ts` and `src/data/mapSize.ts` are
+      nobody's here, so it rides beside `[Task-87]` in **Batch 30** — a task that owns
+      `src/scenes/RouteScene.ts` and the item catalogue and shares no path with it. *(Batch 30)*
 - [ ] **[Task-82] A floor holds a fixed number of trainer rooms.** Today the population pass puts a
       trainer on the main lane and one more per pocket, plus a map-size tier bonus
       (`docs/routes-spec.md` §2 step 4), so a floor fields 5-17 trainers and the band's `POPULATION`
@@ -4174,9 +4525,10 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       salas de entrenadores + inicial + boss + tienda e ir subiendo hasta 4 salas de entrenadore en
       pisos mas altos».
       **Fix shape.** The plan tags each regular room with a **role** (`trainers` or `wild`) on the map
-      stream, from a new data table (`TRAINER_ROOMS_PER_MAP`, e.g. `2,2,3,3,3,4,4,4`, growing with the
-      map index for infinite runs); the population pass places trainers **only** in a `trainers` room
-      (1-2 each) and never in a `wild` one, and `POPULATION` (the band thinning) is retired.
+      stream, from a new data table (`TRAINER_ROOMS_PER_MAP` = **`2,2,3,3,3,4,4,4`**, the human's pick,
+      growing with the map index for infinite runs); the population pass places trainers **only** in a
+      `trainers` room (1-2 each) and never in a `wild` one, and `POPULATION` (the band thinning) is
+      retired.
       `src/ui/mapView.ts` may mark a trainer room with its own icon the way a special room is marked,
       and the minimap's discovery rule is unchanged.
       **The topology floor is the limit, not the wish:** the guaranteed entry leaf plus the 2x2 core
@@ -4186,91 +4538,114 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `src/engine/routes/`, `src/ui/mapView.test.ts`, `docs/maps-spec.md` §2/§7 and
       `docs/routes-spec.md` §2/§5.
       Out of scope: the room sizes (Task-81) and the level ranges (Task-80).
-      *Dependencies:* none. *(unbatched — the next cut)*
-- [ ] **[Task-83] The XP curve is re-solved against the new floor budgets.** The rule that "75 % of a
-      floor's trainers pays its cap" is solved into `LEVEL_BANDS.trainerXp` and measured by
-      `src/engine/run/curve.test.ts` over three fixed seeds (`docs/balance/route-curve.md`). Tasks 78,
-      80 and 82 move **both** inputs of `A(m)` — a trainer's level and the number of trainers a floor
-      places — so the six multipliers must be **re-solved by measuring first**: run the walk, then read
-      the new `T̄(m)` and `A(m)` and set `trainerXp` so every floor's fill lands in the rule's
-      `1 – 1.5` window. The boss's award and the wild pool stay outside the budget, as today.
+      *Dependencies:* none. It opens **Batch 35** and `[Task-80]` rides beside it (that task is
+      written against 78/79 and claims `src/data/maps.ts`, `src/engine/run/floors.ts` and the
+      route-curve sheet instead of the plan). It
+      is also what unblocks the NPC layer: `[Task-91]`'s roll reads the room's `role`, and
+      `[Task-99]`'s trainer rows are placed by the same pass. *(Batch 35)*
+- [ ] **[Task-83] The XP curve is re-solved against the new floor budgets.** The rule that `75 %` of a
+      floor's **trainers** pays its cap is solved into `LEVEL_BANDS.trainerXp` and measured by
+      `src/engine/run/curve.test.ts` over three fixed seeds (`docs/balance/route-curve.md`). Under the
+      player-relative model (Tasks 78/79) `A(m)` is no longer a per-floor band — a trainer's level is
+      `squadLevel × percent(size)` and a wild's a fraction of it — so the budget the rule states becomes
+      "the trainers a floor places carry the squad from the level it **enters** at to that floor's
+      **cap**", and the six multipliers must be **re-solved by measuring first**: run the walk, then read
+      the new `T̄(m)` and `A(m)` and set `trainerXp` so every floor's fill lands in the rule's `1 – 1.5`
+      window. The boss's award and the wild pool stay outside the budget, as today.
       **Fixed-seed re-pin:** `src/engine/run/curve.test.ts`, `docs/balance/route-curve.md` (the band
       table, the cap table and the per-floor budget table) and any `trainerXp` pin in
       `src/data/run.test.ts` / `src/engine/run/progression.test.ts`.
-      *Dependencies:* Task-78 (the roster's room level), Task-80 (the ranges) and Task-82 (the trainer
-      rooms) — it measures what they change and cannot be written before them.
-      *(unbatched — the next cut)*
+      *Dependencies:* Task-78 (the trainer's level rule), Task-79 (the wild's), Task-80 (the cap-only
+      `MAP_TUNING`) and Task-82 (the trainer rooms) — it measures what they change and cannot be written
+      before them. It takes **Batch 36**, one batch after the last of the four, beside `[Task-98]`
+      (the floor-mission record), which claims `src/engine/run/state.ts`, `src/engine/save.ts` and the
+      mission table and shares no path with this task's `src/data/run.ts` and
+      `docs/balance/route-curve.md`. *(Batch 36)*
 
 - [ ] **[Task-86] The forme-changing abilities are removed; their formes become forms and evolution
       lines.** The human's instruction: «elimina las habilidades de transformación de formas para pasar
       estos pokes a Formas Independientes / Evoluciones (Directas o Ramificadas)», extended with
-      «Cramorant como formas, Terapagos linea evo, Ogerpon formas». Today each of these species changes
-      forme **inside a battle** through its ability, so its other formes are `battleOnly` (a few already
-      independent) and unreachable in a run; the goal is that every forme is reached the way the game
-      already reaches a Rotom appliance — a hand-authored `forme` branch (`FORM_EVOLUTIONS`,
-      `src/data/dex/evolutions.ts` 58-81, the template the shipped `[Task-20]` left) — and the
-      in-battle change is gone.
+      «Cramorant como formas, Terapagos linea evo, Ogerpon formas» and «elimina las habilidades que su
+      funcion sea cambiar forma a x poke». Today each of these species changes forme **inside a battle**
+      through its ability, so its other formes are `battleOnly` (a few already independent) and
+      unreachable in a run; the goal is that every forme is reached either as an **independent variant**
+      or as a hand-authored branch, the way the game already reaches a Rotom appliance
+      (`FORM_EVOLUTIONS`, `src/data/dex/evolutions.ts` 58-81, the template the shipped `[Task-20]`
+      left), and the in-battle change is gone.
       **Decisions already taken (the human's answers).** Nothing is **reversible** — no branch walks
-      back. **Eiscue, Meloetta, Morpeko and Minior are not evolutions but independent forms**: each
-      species stands alone and is caught apart. Every **branching** evolution fires at the species'
-      **BST-band level** (`20/30/40`, `evolutionLevelForBst`), Eevee-style, so its siblings offer
-      together and the player picks. **Mimikyu keeps only its standing form** (the busted one is not
-      added). **Greninja-Ash is created as a second Mega of Greninja, with its own stone**, beside the
-      `greninjamega` the tree already ships (`Greninjite`, 630), and `Battle Bond` is deleted.
-      **Cherrim and Castform get a `+60` BST boost** on their evolved formes.
+      back. **Eiscue, Morpeko and Minior are not evolutions**: each joins the pool as **one entry** and
+      the game picks its variant **internally at generation**, like Vivillon's patterns (the dex's own
+      `isCosmeticForme` rows), so the pool is never diluted. Every **branching** evolution fires at the
+      species' **BST-band level** (`20/30/40`, `evolutionLevelForBst`), Eevee-style, so its siblings
+      offer together and the player picks. **Mimikyu keeps only its standing form** (the busted one is
+      not added). **Greninja-Ash is a second Mega of Greninja**, beside the `greninjamega` the tree
+      already ships (`Greninjite`, 630), **with its own stone `Greninjite Ash`**, and `Battle Bond` is
+      deleted. **Cherrim and Castform get a `+60` BST boost** on their evolved formes: **Castform `+60`
+      Sp. Atk**, **Cherrim `+30` Sp. Atk and `+30` Sp. Def**. **Meloetta is left exactly as it is** (a
+      Mythical, banned from the wild, so Pirouette is out of the task — and its ability is Serene Grace,
+      never a forme ability). **Ice Face stays** (in this tree it is only a shield, never a forme change,
+      so it is not deleted). The dex's **ability slots are left exactly as they are** (the run rolls
+      every ability anyway, `D17`). A **three-stage line** steps **`+10` per stage** (`40 → 50 → 60`).
+      The **internal variant roll fires in every appearance** — wild, trainer and starter alike.
       **The inventory (engine model → target).**
 
       | Species | Today | Target |
       | --- | --- | --- |
-      | Eiscue | `Ice Face` sets a volatile only; `eiscuenoice` is never reached | **independent forms** (both species stand alone) |
+      | Eiscue | `Ice Face` sets a volatile only (**stays**: a shield here, not a forme change); `eiscuenoice` is never reached | **one pool entry**, variant rolled internally |
       | Palafin | `Zero to Hero` → `palafinhero` on switch-out | `Palafin-Hero` an evolution |
-      | Meloetta | no handler at all (Relic Song unported); `meloettapirouette` unreachable | **independent forms** |
+      | Meloetta | no handler at all (Relic Song unported); `meloettapirouette` unreachable | **left as it is** — out of the task |
       | Wishiwashi | `Schooling` → `wishiwashischool` above a quarter HP | `School` an evolution |
-      | Morpeko | `Hunger Switch` → `morpekohangry` every turn | **independent forms** |
-      | Cherrim | `Flower Gift` → `cherrimsunshine` in the sun | `Sunshine` an evolution, **+60 BST** |
-      | Minior | `Shields Down` → `miniormeteor` / `minior` | **independent forms** (Meteor + seven cores); the pool rule is the open question below |
-      | Castform | `Forecast` → sunny / rainy / snowy | Sun / Rain / Snow (branched, three), **+60 BST** |
+      | Morpeko | `Hunger Switch` → `morpekohangry` every turn | **one pool entry**, variant rolled internally |
+      | Cherrim | `Flower Gift` → `cherrimsunshine` in the sun | `Sunshine` an evolution, **+30 Sp. Atk / +30 Sp. Def** |
+      | Minior | `Shields Down` → `miniormeteor` / `minior` | **one pool entry** (Meteor + seven cores), colour rolled internally |
+      | Castform | `Forecast` → sunny / rainy / snowy | Sun / Rain / Snow (branched, three), **+60 Sp. Atk** |
       | Zygarde | `Power Construct` **excluded**; `zygardecomplete` battle-only, `zygarde10` independent | a three-stage line 10% → 50% → Complete |
       | Darumaka → Darmanitan | `Zen Mode` → `darmanitanzen` | the level-35 branch splits Standard / Zen |
       | Darumaka-Galar → Darmanitan-Galar | `Zen Mode (Galar)` → `darmanitangalarzen` | the same split |
       | Aegislash | `Stance Change` → `aegislashblade` | Shield / Blade: a one-way branch |
       | Mimikyu | `Disguise` → `mimikyubusted` | the busted form is **not added**; only `Disguise` goes |
-      | Greninja | `Battle Bond` → Ash-Greninja | **`Greninja-Ash` a second Mega** of Greninja, with its own stone |
+      | Greninja | `Battle Bond` → Ash-Greninja | **`Greninja-Ash` a second Mega**, stone **`Greninjite Ash`** |
       | Cramorant | `Gulp Missile` **excluded**; gulping / gorging battle-only | Gulping / Gorging as forms (the human's word) |
       | Terapagos | `Tera Shift` → `terapagosterastal`; `terapagostellar` battle-only | a three-stage line Terapagos → Terastal → Stellar (the human's word) |
       | Ogerpon | the three masks independent and item-gated, four `-Tera` battle-only | the masks as branches (the human's word); the `-Tera` formes **out of scope** (no Terastallization here) |
       | Rotom | shipped, `[Task-20]` — **the template** | no work |
 
       **The abilities go, not only their handlers.** `src/engine/battle/effects/abilities.ts`: the
-      handlers `iceFace` (1385), `disguise` (1040), `zeroToHero` (1967), `schooling` (2018), `zenMode`
-      (2023) with both its registry rows, `shieldsDown` (2028), `teraShift` (2037), `hungerSwitch`
-      (2046), `forecast` (2057), `flowerGift` (2074), `stanceChange` (2084) and `battleBond`, with their
-      registry rows (2663, 2734-2744) and the helpers only they use (`changeForm`, `revertForm`,
-      `formReady`, `thresholdForm`, `FORM_MIN_LEVEL`). The human's rule is that an ability **whose only
-      job is to change a Pokémon into forme X** is deleted outright — it leaves the registry, the
-      `randomAbility` pool and the dex's own ability slots (through `scripts/build-dex.mjs`; what the
-      species are left with is a decision below, and the run re-rolls the ability anyway, `D17`).
+      handlers `disguise` (1040), `zeroToHero` (1967), `schooling` (2018), `zenMode` (2023) with both
+      its registry rows, `shieldsDown` (2028), `teraShift` (2037), `hungerSwitch` (2046), `forecast`
+      (2057), `flowerGift` (2074), `stanceChange` (2084) and `battleBond`, with their registry rows
+      (2622, 2734-2744) and the helpers only they use (`changeForm`, `revertForm`, `formReady`,
+      `thresholdForm`, `FORM_MIN_LEVEL`). **`iceFace` (1385, registry 2663) stays**: the human's rule is
+      an ability that **changes the holder's forme**, and this tree's `iceFace` only sets a volatile that
+      blocks one physical hit — it never reaches `eiscuenoice` — so the shield is not a forme change, and
+      `iceface` stays in the `randomAbility` pool. Eiscue reaches `eiscuenoice` through its **pool
+      variant** instead. The human's rule is that an ability **whose only job is to change a Pokémon into
+      forme X** is deleted outright — it leaves the registry and the `randomAbility` pool (the dex's own
+      ability slot is left as it is: the run re-rolls the ability anyway, `D17`).
       `changeBattleForm` / `restoreBattleForm` **stay** — Mega Evolution (`D34`) and Gigantamax
-      (`src/engine/battle/gmax.ts` 39) still call them. `randomAbility.test.ts` loses the ids;
-      `docs/balance/effect-coverage.md` moves the rows to `removed` (Gulp Missile and Power Construct
-      were already `excluded`); `BattleScene`'s Zero-to-Hero sprite special case (1410) goes with them.
+      (`src/engine/battle/gmax.ts` 39) still call them. `randomAbility.test.ts` loses the ids (`iceface`
+      stays); `docs/balance/effect-coverage.md` moves the twelve rows to `removed` and keeps Ice Face
+      `port` (Gulp Missile and Power Construct were already `excluded`); `BattleScene`'s Zero-to-Hero
+      sprite special case (1410) goes with them.
       **Cherrim and Castform get a real upgrade.** Their promoted formes are **stat-identical** to the
       base today (Cherrim 450 = Cherrim-Sunshine 450; Castform 420 = Sunny = Rainy = Snowy), so evolving
-      into one would be a free forme flip. The human wants a **`+60` BST boost** on the evolved forme,
-      authored as a hand override in `scripts/build-dex.mjs` (the dex build already carries
-      hand-authored rows). The band consequence is accepted: Cherrim's 450 and Castform's 480 both land
-      in the `441-800` window, so Castform's branch fires at that band's level (`40`), not `30`; how the
-      60 points split across the six stats is still open.
-      **The formes become data.** An **independent form** (Eiscue, Meloetta, Morpeko, Minior) needs its
-      dex `battleOnly` cleared so `speciesPool` (`src/engine/run/pool.ts` 54 filters it out today) can
-      field it — then it is a species like any other, with no evolution link either way. A **branch**
-      joins `FORM_EVOLUTIONS` at the species' BST-band level, Eevee-style; Castform's three, Cherrim's
-      Sunshine, Palafin-Hero, Wishiwashi's School, Cramorant's two, Aegislash's Blade, Ogerpon's three
-      masks and Darumaka's Zen split are the branch set. A **sequential** line (Zygarde
-      10%→50%→Complete, Terapagos→Terastal→Stellar) cannot share that one level, so it needs an explicit
-      stage level (`EVOLUTION_MIN_GAP` apart) in the override. **Greninja-Ash is not a branch at all**:
+      into one would be a free forme flip. The human wants a **`+60` BST boost** (Castform `+60` Sp. Atk;
+      Cherrim `+30` Sp. Atk and `+30` Sp. Def), authored as a hand override in `scripts/build-dex.mjs`.
+      The band consequence is accepted: Castform's 480 lands in the `441-800` window, so its branch
+      fires at that band's level (`40`), not `30`.
+      **The formes become data.** An **independent variant** (Eiscue, Morpeko, Minior) is one pool entry
+      whose alternative formes roll per individual **in every appearance** (wild, trainer, starter) — the
+      dex's `isCosmeticForme` family is the shape
+      (`formeFamily`, `src/data/dex/evolutions.ts` 199), so the generator fields nothing new. One
+      caveat: these formes carry **different stats** (Eiscue-Noice trades Def for Speed; Minior's core
+      trades Def/SpD for Atk/SpA/Spe), so the roll is mechanical where Vivillon's is cosmetic. A
+      **branch** joins `FORM_EVOLUTIONS` at the species' BST-band level, Eevee-style; Castform's three,
+      Cherrim's Sunshine, Palafin-Hero, Wishiwashi's School, Cramorant's two, Aegislash's Blade,
+      Ogerpon's three masks and Darumaka's Zen split are the branch set. A **sequential** line (Zygarde
+      10%→50%→Complete, Terapagos→Terastal→Stellar) cannot share that one level, so it carries an
+      explicit stage level **`+10` a stage** (`40 → 50 → 60`) in the override. **Greninja-Ash is not a branch at all**:
       it joins the Mega table as a second Greninja Mega (a hand-authored row in `scripts/build-dex.mjs`'s
-      mega pass, with its own stone, beside `greninjamega`), so `mega.ts`, `MEGA_STONES`
+      mega pass, its stone `Greninjite Ash` beside `greninjamega`), so `mega.ts`, `MEGA_STONES`
       (`src/data/items.ts` 104) and the STATS graph take it with no new code.
       **Docs:** `docs/tech-decisions.md` (`D38`'s evolution rules and `D16`'s coverage),
       `docs/battle-spec.md` §9/§11, `docs/design-spec.md` §3 (the STATS graph draws any branch already)
@@ -4279,19 +4654,519 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       caught line's species leave the wild table — fixed-seed encounter and roster tests re-pin. Removing
       handlers spends no battle draw, so the battle streams do not move. **No `SAVE_VERSION` step**: a
       member's `speciesId` is already persisted and `evolveMember` is the existing path.
-      **Still open.** (1) **Minior's pool rule** — the human's caveat «cualquier forma independiente que
-      no se sume como tal al pool porque asi tiene mas posibilidades de aparecer» reads against «ambas
-      rodables y capturables» for Eiscue and Morpeko, so how an independent form enters the pool needs
-      one more answer. (2) How the `+60` splits across the six stats. (3) The name of Greninja-Ash's
-      stone (`Greninjite` is taken). (4) What each species is left with once its forme ability is
-      **deleted** (a replacement ability or an empty slot — the run re-rolls the ability anyway, `D17`).
-      (5) Whether the non-forme half of a deleted ability survives: the tree's `iceFace` **never changes
-      species** (it sets a volatile that blocks one physical hit), so Eiscue's `eiscuenoice` is merely
-      unreachable today and deleting the ability takes a shield with it — Disguise's spent hit is the
-      same shape. (6) The level each stage of the Zygarde and Terapagos lines resolves at.
+      **Nothing is left open**: every reading this entry raised — the ability slot, the shield half, the
+      stage levels and where the variant rolls — is answered in the decisions above.
       *Dependencies:* none. It claims `src/data/dex/**` (`FORM_EVOLUTIONS`), the ability registry,
       `randomAbility.ts`, `src/scenes/BattleScene.ts` and the docs — a batch of its own, and the
-      Architect may split it (data / engine / docs). *(unbatched — the next cut)*
+      Architect may split it (data / engine / docs). It takes **Batch 21** beside `[Task-61]`, which
+      claims `src/scenes/RouteScene.ts` alone and shares none of those paths. *(Batch 21)*
+- [ ] **[Task-88] Gigantamax needs a stone, named `<Base>ite G`.** The human's rule: «los gigamax
+      tambien necesitan piedra que se llamen por su nombre por ejemplo venusorita y se añade la letra g
+      venusorita g». Today G-Max is **free**: any species with a G-Max forme may Gigantamax from the
+      battle's G-MAX cell (`canGigantamax`, `src/engine/battle/gmax.ts` 15-19), and the STATS graph says
+      so (`detail.gmaxNoStone` = "{forme} · Gigantamaxes with no stone"). A Mega, by contrast, is gated by
+      a stone (`MEGA_STONES`, `src/data/items.ts` 104, built from `MEGA_FORMES`).
+      **Fix shape.** Mint one stone per G-Max forme, named by the same rule as a Mega's with a **` G`**
+      suffix — `megaStoneName` (`scripts/build-dex.mjs` 69-70) gives `Venusaurite`, so the G-Max stone is
+      **`Venusaurite G`** (`stoneId` `venusauriteg`). `gmaxes.json` rows gain `stoneId` / `stoneName` the
+      way `megas.json` rows carry them, the items catalogue gains the G-Max stone list beside
+      `MEGA_STONES` (`MEGA_STONE_IDS` 116), `canGigantamax` requires the **holder's item** to be that
+      forme's stone (`megaMatchesSpecies` is the matching shape, `src/data/dex/megas.ts`), and the STATS
+      graph's G-Max row swaps `detail.gmaxNoStone` for the stone's name, exactly as the Mega row reads. A
+      species with both a Mega and a G-Max (Charizard, and every other Mega that also has a G-Max forme)
+      simply carries two stones, one per forme — a holder holds one.
+      **Docs:** `docs/tech-decisions.md` `D44`, `docs/battle-spec.md` §9, `docs/data-spec.md` §1
+      (`gmaxes.json`) and the item catalogue sheet.
+      **Reach and cost, settled:** the stones turn up in the **loot pool and the shop**, like the Mega
+      Stones, and a stone is **not spent** on use (a Mega Stone is not either — the holder keeps it and
+      may Gigantamax again next battle).
+      *Dependencies:* none. Adds no run field, so **no `SAVE_VERSION` step**, but it moves the generated
+      `src/data/dex/gmaxes.json` and the item catalogue, which is why it shares no batch with
+      `[Task-86]` (`src/data/dex/**` and `scripts/build-dex.mjs`) or `[Task-87]`
+      (`src/data/items.ts`). It takes **Batch 23** beside `[Task-63]`, whose paths are the route scene,
+      `src/ui/rewards.ts` and two doc sections and none of these. *(Batch 23)*
+
+- [ ] **[Task-90] The FRLG NPC overworld sprite set.** The packed overworld atlas carries the ten
+      **trainer archetype** rows and nothing else — `src/data/frlg/overworld.json` maps
+      `youngster`…`ace` to a row of nine 16x32 poses, `scripts/frlg/build-overworld-sprites.mjs`
+      packs it from the FRLG rip and `src/data/overworldSprites.ts` resolves a `spriteKey` to a
+      frame — so the NPCs this round registers (merchant, chef, magician, exorcist, weather man,
+      sacrifice, medic, IV judge, berry tree, ninja) have no art at all.
+      **Fix shape.** Extend the packer's class list to the NPC classes the decomp's overworld sheet
+      carries, each a row of the same nine poses, and repack the committed
+      `src/assets/frlg/overworld.png` with its generated manifest
+      `src/data/frlg/overworld.json`. The source tree reaches the packer as an **absolute** path
+      through argv or the environment (the Legend's Asset trees rule), never a tree linked into a
+      worktree, and the keys the NPC table will use are frozen in this task's spec because
+      `[Task-91]` names them. A class the rip lacks takes a documented fallback row (today's
+      `blackbelt` or `psychic`) rather than a new drawing.
+      **Docs:** `src/assets/README.md` (provenance), `docs/art-direction.md`'s FRLG block.
+      Out of scope: the NPC behaviour and placement (`[Task-91]`), the casino's `rocket` grunt
+      (`[Task-64]`, an earlier batch, which repacks the same atlas plus `trainers.png`), and the
+      trainer battle sprites.
+      *Dependencies:* none. It claims the packed atlas and its manifest alone, so it rides beside
+      `[Task-84]` in **Batch 29** — a scene task that touches neither. It adds no run field.
+      *(Batch 29)*
+- [ ] **[Task-91] The special-NPC framework: one NPC per trainer room, rolled per NPC.** The human's
+      rule is that the special NPCs appear by a **per-NPC percentage inside the trainer rooms**
+      `[Task-82]` introduces, each with its own chance, and that the chance rises with the floor.
+      Nothing places an NPC in a regular room today: the only room-local fixture is the shop counter
+      (`RouteScene.buildRoom` 961-1003, `shopCounter`, `drawShopCounter` 4266-4274), and a special
+      room is a quiet leaf.
+      **Fix shape.** One roll, one table, one panel, one interact.
+      `src/engine/routes/npcs.ts` + test exports `roomNpc(seed, roomIndex, mapIndex)`: at most
+      **one** NPC per trainer room, one `rng.next()` for the presence roll and, on a hit, one
+      `rng.int` over the eligible rows, from its own stream
+      `Rng(hashSeed(`${seed}:npc:${roomIndex}`))`, so no `map`/`encounters`/roster stream moves
+      (D11) and a revisit shows the same NPC. `src/data/npcs.ts` + test holds the rows
+      `{ id, name, spriteKey, chance, floorStep, requires? }` with
+      `chance + floorStep × (mapIndex - 1)` clamped, and `requires` is the report's own "a certain
+      type or feature of a party member": the pure `partyHasType` / `partyHasMove` /
+      `partyHasAbility` predicates join the module `[Task-65]` creates (extending `knowsMove` —
+      never a second accessor). `src/ui/npcPanel.ts` + test is the panel shell every NPC fills
+      (title, one paragraph, a column of choices, the leave path) and owes its `src/ui/README.md`
+      line. `RouteScene` places the sprite on a free tile of the room, opens the panel on the
+      interact key, and records the use per floor through the shipped `pickedItems` stable-id shape
+      (`isItemPicked` and the pick beside it, 537-543), so no run field is added.
+      **Docs:** `docs/maps-spec.md` §7, `docs/routes-spec.md` §2, `docs/design-spec.md` §7.
+      Out of scope: every NPC's own effect (`[Task-92]`–`[Task-95]`), the trainer rooms' composition
+      (`[Task-82]`) and the special rooms.
+      *Dependencies:* `[Task-82]` (the room roles the roll reads), `[Task-90]` (the sprite rows) and
+      `[Task-65]` (the `knowsMove` module the party predicates join). *(Batch 37)*
+- [ ] **[Task-92] The merchant replaces the shop room.** The human's decision: the **merchant** is an
+      NPC and the shop **room** goes. Today the shop is a special leaf (`MapRoomSpecial` `'shop'`,
+      `hangsShop` / `SHOP_FROM_MAP = 2` in `src/engine/maps/plan.ts`), its counter (`shopCounter`)
+      opens the Mart, and the panel exists only while the player stands in that room
+      (`docs/maps-spec.md` §7).
+      **Fix shape.** Delete the `'shop'` kind: `planMap`'s special pass loses the guaranteed leaf
+      (and `hangsShop`), `src/ui/mapView.ts`'s `MapRoomMarker` loses its icon, and `buildRoom`
+      loses the counter branch. The merchant becomes an `[Task-91]` row in `src/data/npcs.ts`
+      whose chance rises with the floor, and its panel opens the **floating Mart** `[Task-89]`
+      ships — the same `src/ui/shop.ts` model, the same drag onto the bag or a member, the same
+      `spendMoney` gate. The stock (`buildShop`'s four rows plus the TM) and the sell path do not
+      move.
+      **Docs:** `docs/maps-spec.md` §7 (the table loses the shop row and gains the merchant),
+      `docs/design-spec.md` §7.
+      Out of scope: the stock, the prices, `[Task-89]`'s drag itself, and the money a trainer drops.
+      *Dependencies:* `[Task-89]` (the floating Mart panel this NPC opens) and `[Task-91]` (the NPC
+      layer and its panel). It adds no run field and draws no RNG. *(Batch 38)*
+- [ ] **[Task-93] The party-edit NPCs: the move tutor, the three re-rolls, the species swap and the
+      sacrifice's second ability.** Five of the report's NPCs edit **a member**, and the run has the
+      seams except the two facts they need to persist. A member is one `FighterSnapshot`
+      (`RunPokemon`, `src/engine/run/progression.ts` 30-37); the edits are
+      `editRunPokemon`/`updatePokemon`, `evolveMember` (`D38`), `equipMove` and the derived
+      `learnsetPool` (`src/engine/run/learnset.ts` 66-86). What does **not** exist: a tutored move
+      has nowhere to live — the pool is the level-up moves its species knows **at its level** plus
+      the bag's TMs, so a move a tutor taught would vanish the moment it was unequipped — and a
+      member carries one ability only.
+      **Fix shape.** One member-edit transaction behind `[Task-91]`'s panel, one row per NPC, each
+      drawing from the room's own `:npc:` stream and writing the snapshot:
+      - **the move tutor** («artes marciales: enseña cierto movimiento») teaches one move from a
+        data list, equipped into a free slot or replacing the chosen one.
+      - **the nature re-roll**, **the ability re-roll** and **the IV re-roll** («cambiar naturaleza
+        (random)», «cambiar habilidad (random)», «NPC de IVs») re-roll that field from the stream
+        and rebuild the member's stats.
+      - **the species swap** («mantiene habilidad y movimientos pero cambia de especie») keeps
+        level, moves, ability, IVs, EVs and held item and re-derives stats and types.
+      - **the sacrifice** — spawned by `[Task-98]`'s flawless mission — takes one random **bag
+        stack** and grants one random row of the four above, the second-ability row writing
+        `secondAbility` instead of re-rolling the first.
+      Two persisted words are the price: `taughtMoves: string[]` joins `learnsetPool`, and
+      `secondAbility: string | null` is read by the ability dispatcher beside `ability`. This is the
+      plan's **next `SAVE_VERSION` step, 19 → 20**, after `[Task-98]`'s 18 → 19: an older save
+      defaults to no taught moves and no second ability, the way every previous step does.
+      **Docs:** `docs/design-spec.md` §3 (the panel's operations), `docs/routes-spec.md` §6,
+      `docs/battle-spec.md` §7 (a tutored move and two abilities), `docs/tech-decisions.md`.
+      Out of scope: the equip drag (`equipMove`), the level-up rule (`[Task-56]`, shipped), the
+      evolution graph and the unequip (`[Task-68]`).
+      *Dependencies:* `[Task-91]` (the panel and the roll) and `[Task-98]` (the sacrifice's
+      flawless spawn). *(Batch 39)*
+- [ ] **[Task-94] The run-modifier NPCs: the exorcist, the weather man, the magician and the type
+      gate.** Four NPCs write a fact that outlives the room, and the run keeps no record that does:
+      the per-floor bookkeeping clears on `advanceMap` (`defeatedTrainers` / `pickedItems` /
+      `capturedRooms`, `src/engine/run/state.ts` 102-107, 199-201) and nothing carries a curse, a
+      forced field or a forced encounter type. `[Task-62]` ships the seam a battle-start condition
+      rides (`BattleLaunch` → `BattleSetup` → `createBattle`), which three of the four need.
+      **Fix shape.** One typed `RunState.modifiers` record:
+      - `curse` — the exorcist's «el próximo combate enemigo empieza con 1 desventaja»: one negative
+        stat stage on the enemy's lead, seeded through `BattleSetup`.
+      - `forcedField` — «el del clima»: a weather, a terrain or a field id plus the floors left,
+        seeded through the same setup; the id names a `ROOM_BATTLEFIELDS` row.
+      - `nextWildType` — the magician's «elige el tipo del siguiente salvaje»: a type id consumed
+        by the next wild roll, narrowing the band's table (`encounterTableFor`) **before** the
+        draw, so a fixed seed's draw count does not move.
+      The fourth row is the **type gate** («si tienes cierto tipo de Pokémon en party obtienes un
+      objeto»): a party of the row's type earns an item through `[Task-91]`'s `partyHasType` and
+      `addItem`, with no stored fact at all.
+      This is the plan's **next `SAVE_VERSION` step, 20 → 21**, after `[Task-93]`'s 19 → 20.
+      **Docs:** `docs/maps-spec.md` §7, `docs/battle-spec.md` §4, `docs/routes-spec.md` §3.
+      Out of scope: the conditions themselves (`[Task-62]`, `[Task-106]`), the wild exclusion
+      (`[Task-52]`), the level rule (`[Task-79]`) and the room a condition belongs to.
+      *Dependencies:* `[Task-91]` (the panel and the roll), `[Task-62]` (the setup seam and the
+      condition ids) and `[Task-79]` (the encounter resolution the type narrows). *(Batch 40)*
+- [ ] **[Task-95] The item-and-battle NPCs: the medic, the chef, the berry tree and the Mega Stone
+      on a win.** Four NPCs whose content is an item or a battle, each needing one rule the tree
+      does not have.
+      **Fix shape.**
+      - **the medic** («médico: cura 1 vez») heals party and box once through the shipped
+        `src/engine/run/heal.ts`, recorded per floor through the `pickedItems` stable-id shape — no
+        run field, and the record is what stops a second heal.
+      - **the chef** («cambia cierto número de bayas por bufos temporales») trades a data number of
+        berries for one **held** dish item in the new data row (`src/data/items.ts`) whose effect is
+        the floor's buff: it rides the member like any held item, so no run field is added.
+      - **the berry tree** («al sacudir da bayas hasta un límite random y aparece un salvaje con
+        bufos que no se puede huir») rolls a data cap of berries, then fields a buffed wild through
+        the normal encounter path with a `noFlee` flag on `BattleLaunch`/`BattleSetup` that
+        `src/engine/battle/runAway.ts` reads; the Run Away ability and one data flee item are the
+        two exceptions the report names.
+      - **the Mega Stone on a win** («ganar combate da una megapiedra aleatoria») fields its own
+        trainer and pays one stone from the shipped `MEGA_STONE_IDS` (`src/data/items.ts`) through
+        `addItem` — it reads that list, it does not mint one.
+      **Docs:** `docs/maps-spec.md` §7, `docs/battle-spec.md` §5 (the flight rule),
+      `docs/routes-spec.md` §3.
+      Out of scope: the item catalogue's own rows (`[Task-103]`), the Mart and the casino's egg.
+      *Dependencies:* `[Task-91]` — the panel and the roll; none of these four rows is gated, so the
+      party predicates never reach this task and it deliberately carries **no** edge to
+      `[Task-65]` (the type gate is `[Task-94]`'s and the blocked rooms are `[Task-96]`/`[Task-97]`'s).
+      *(Batch 41)*
+- [ ] **[Task-96] The static-species room, and the legendary room behind a flawless floor.**
+      `[Task-65]` carves a gated pocket behind a **field move**; the human wants a room whose gate is
+      a **party property** (a type or a feature) and whose prize is a **static species**, plus — on
+      the same flawless trigger — a low-chance **legendary room**, once per run, from floor 4.
+      **Fix shape.** One room kind built on `[Task-65]`'s carve/opening seam (`MapRoomSpecial` value,
+      `mapView` marker, the per-floor opening record) and `[Task-91]`'s `partyHasType` /
+      `partyHasAbility` for the gate; the far side holds one static species built at the squad's
+      level with a run-seeded ability and moveset (`createFighter({ learnsetSeed: run.seed })`, D17)
+      and fought through the normal wild path, so a catch spends the room's capture and `[Task-52]`'s
+      record applies. The legendary room is the same kind with a `legendary` flag: it rolls only on
+      a floor whose **flawless** mission completed (`[Task-98]`), only from map 4, and only while the
+      run's completed-flawless count is one — which keeps "once per run" derivable from the mission
+      record instead of a new field.
+      **Docs:** `docs/maps-spec.md` §7, `docs/routes-spec.md` §3/§6, `docs/design-spec.md` §7.
+      Out of scope: the catch's rules, the legendaries' ban (`WILD_BANNED_TAGS`), the obstacle art
+      (`[Task-65]`) and `[Task-52]`'s exclusion.
+      *Dependencies:* `[Task-65]` (the carve and opening seam), `[Task-91]` (the party predicates) and
+      `[Task-98]` (the flawless mission's record). It adds no run field: "once per run" is the mission
+      record's own completed count. *(Batch 43)*
+- [ ] **[Task-97] The secret shop: several held items and TMs behind a condition.** The human's row
+      is «tienda secreta con varios equipables y MTs (condición por decidir)» — the content is
+      settled, the gate is not.
+      **Fix shape.** A special leaf whose counter stocks a data list of several held items and TMs
+      (a `SECRET_SHOP` table beside `src/data/shop.ts`, prices from the catalogue), built on the
+      Mart panel `[Task-89]` ships and the special-room layer `[Task-92]` leaves behind. **The gate is a
+      blocked room, not a move gate** (the human's answer: «que sea una habitacion especial de las
+      bloqueadas con obstaculo que se pasa si tienes cierto tipo de poke segun el obstaculo»): the leaf is
+      carved with an obstacle whose **type** the row names, and it opens only while the party holds a
+      member of that type — the same party predicate family `[Task-91]` adds and `[Task-96]` reuses, so
+      the secret shop is a sibling of the static-species room rather than of `[Task-65]`'s
+      Cut/Rock Smash/Surf gate.
+      **Docs:** `docs/maps-spec.md` §7, `docs/design-spec.md` §7.
+      Out of scope: the Mart's four-row stock, the TM catalogue (`src/data/tms.ts`), and the
+      merchant (`[Task-92]`).
+      *Dependencies:* `[Task-92]` (the shop room it replaces is gone, so this task must be written
+      after it) and `[Task-91]` / `[Task-96]` (the type-gated obstacle seam). It adds no run field.
+      *(Batch 44)*
+- [ ] **[Task-98] The floor-mission framework.** The human wants floor missions whose completion
+      pays a **fixed** reward — «cumplirlas da recompensa (fija: no perder vida → aparece una sala
+      especial)» — and today a floor has no objective at all: the only per-floor facts are the
+      bookkeeping lists (`src/engine/run/state.ts` 102-107, 199-201) and `advanceMap` (185-204).
+      **Fix shape.** One pure `src/engine/run/missions.ts` + test and a `MISSION_TABLE` in
+      `src/data/missions.ts` + test (+ its `src/data/README.md` line). The first kind is `flawless`:
+      end the floor without losing HP, read from a per-floor HP-lost fact plus `stats.casualties`;
+      the mission is chosen per floor from the `map` stream, evaluated on `advanceMap`, and
+      `RunState.mission` (`{ id, progress, completed }`) plus the **run-scoped counter** of completed
+      missions (`missionsCompleted`, the field `[Task-96]` reads for its "once per run") is this
+      plan's **next `SAVE_VERSION` step, 18 → 19** — an older save starts with no mission and a zero
+      counter. The HUD shows it in one line, and completion raises a beat through the shipped
+      `src/ui/notice.ts` — a fourth string in that module, per its own one-module-N-strings
+      convention, with its own `notice.test.ts` case and an i18n key in `src/i18n/en.ts` / `es.ts` —
+      and the reward is a data row (`{ kind: 'room' | 'item' | 'money' }`) the room tasks read:
+      `[Task-96]`'s legendary roll and `[Task-93]`'s sacrifice both hang off a completed `flawless`.
+      **Docs:** `docs/routes-spec.md` §4/§6, `docs/design-spec.md` §7, `docs/maps-spec.md` §7.
+      Out of scope: the missions' own rewards beyond the data row, and the rooms that consume them.
+      *Dependencies:* none — the floor advance, the casualty counter and the notice module are shipped.
+      It owns `src/engine/run/state.ts` + test, `src/engine/save.ts` + test, `src/ui/notice.ts` + test
+      and the two i18n tables, none of which its Batch 36 mate `[Task-83]` touches. *(Batch 36)*
+- [ ] **[Task-99] The special trainers: invisible ninjas, the all-Impostor trainer and the
+      conditional secret battle.** Three wishes that are a **spawn rule** and an **archetype
+      override**, not new mechanics: trainers are placed by the population pass (`[Task-82]` makes
+      the rooms) and their abilities are **rolled** (D17, `randomAbility`), while the engine already
+      models Imposter/Transform (`transformInto`, `src/engine/battle/fighter.ts` 609-648; the
+      handler at `effects/abilities.ts` 2180).
+      **Fix shape.** `TrainerArchetype` (`src/data/trainers.ts` 31-56) gains the three fields the
+      rows need — a sight mode (`invisible` for the ninja), a forced ability (`Imposter` for the
+      training row, bypassing the roll) and a reward row — and `src/engine/routes/trainers.ts`
+      places them under a condition: the ninja's room hides its sprite until it is adjacent, the
+      Impostor trainer pays on defeat through `addItem`, and the **secret battle** is the third row
+      (it appears only when `[Task-98]`'s mission record says the floor's condition holds). The
+      Imposter battle reads today's transform path, so the task **adds no ability handler** and no
+      coverage row.
+      **Docs:** `docs/routes-spec.md` §2/§5, `docs/battle-spec.md` §9, `docs/design-spec.md` §7.
+      Out of scope: the trainer rooms' composition (`[Task-82]`), the roster's levels (`[Task-78]`)
+      and the ability registry.
+      *Dependencies:* `[Task-82]` (the rooms the spawn rule reads) and `[Task-98]` — the secret
+      battle's third row reads the mission record that task ships (Batch 36), so the edge is real
+      rather than a batch-order note. It adds no run field. *(Batch 42)*
+- [ ] **[Task-100] The boss room's own rules: a forced opening condition, a sealed door and a free
+      heal.** Three rows of the human's list are the boss room's: «el jefe siempre produce desventaja
+      o ventaja inicial», «al entrar al jefe ya no se puede salir» and «te cura gratis». Today the
+      boss room is a quiet leaf sealed at the portal (D31), the heal stop is the **map advance**
+      (`advanceMap`) and the battle starts clean unless a room condition rolled (`[Task-62]`).
+      **Fix shape.** A two-sided `BOSS_OPENINGS` row set in `src/data/bosses.ts` (one favouring the
+      run, one the boss), the boss's launch always taking one through
+      `src/engine/routes/battlefield.ts` (Task-62's file, extended) instead of rolling the ordinary
+      chance; the **seal** as a room rule read by `tryLeaveRoom` — no field, because the boss's own
+      `bossDefeated` flag is the key that reopens it; and **one** heal when the room is built,
+      through the shipped `src/engine/run/heal.ts` (HP/PP only, never a resurrection, D5).
+      **Docs:** `docs/maps-spec.md` §6/§7, `docs/battle-spec.md` §4.
+      Out of scope: the boss's roster and its size (`[Task-71]`, shipped), the portal's own rule,
+      and the conditions themselves (`[Task-62]`, `[Task-106]`).
+      *Dependencies:* `[Task-62]` (the launch seam) and `[Task-106]` (the table rows it draws from).
+      *(Batch 45)*
+- [ ] **[Task-101] The room that bans the squad's most-used species.** «Bloquea la especie más usada
+      en una habitación o combate» needs a fact the run does not keep: which member has fought most.
+      A member carries no counter (`RunPokemon` is `{ fighter, caughtAt? }`, `progression.ts` 30-37)
+      and `RunStats` is run-wide.
+      **Fix shape.** `battlesUsed` on the member, bumped by the battle fold (the same fold that
+      resolves XP, `src/engine/run/resolve.ts`), as this plan's **next `SAVE_VERSION` step,
+      21 → 22**, after `[Task-94]`'s 20 → 21; a special leaf whose `BattleLaunch` carries the ban
+      (the run's most-used member's species id) and whose `BattleSetup` carries it into the battle,
+      where the switch and send-out path refuses that species (`src/engine/battle/commands.ts`) while
+      the room's battle runs. The ban never touches the run's party outside the room.
+      **Docs:** `docs/battle-spec.md` §2, `docs/maps-spec.md` §7.
+      Out of scope: the roster, the wild table and the party/PC panel.
+      *Dependencies:* none — the fold, the launch and the special-room layer are shipped.
+      *(Batch 46)*
+- [ ] **[Task-102] The puzzle rooms: the boss room's puzzle and the rooms that pay an item.** The
+      human allows either («habitación de jefe con puzle, o habitaciones con puzles que dan
+      objetos»), and no room holds a puzzle today: the tile vocabulary is `FLOOR/WALL/EXIT/...`
+      (`src/engine/map.ts` 5-14) and the interact key walks entities.
+      **Fix shape.** One pure `src/engine/routes/puzzle.ts` + test (a switch/plate/rock sequence the
+      room is carved with, its solved predicate pure over the `RouteMap`) and a `PUZZLES` table in
+      `src/data/puzzles.ts` + test (one row per puzzle, its reward item). The scene builds the
+      room's puzzle on the special pass's shape (`MapRoomSpecial` value + `mapView` marker) or in
+      the boss room, pays through the shipped ground-item path, and records the solve per floor with
+      a stable room-scoped id through `pickedItems` — no run field. A wrong solve resets the
+      sequence (data), so a fixed seed's room is still reproducible.
+      **Docs:** `docs/maps-spec.md` §7, `docs/routes-spec.md` §2.
+      Out of scope: the boss's own roster and condition (`[Task-100]`), the gated room
+      (`[Task-65]`) and the obstacle art.
+      *Dependencies:* none — the tiles, the special-room layer and the ground-item path are shipped.
+      *(Batch 47)*
+- [ ] **[Task-103] The item catalogue's fourth wave: the Tera Crystal, infinite held items, the
+      coloured candy and the three one-route consumables.** Four item wishes on one seam.
+      **Fix shape.** Four rows.
+      - **The Tera Crystal** («objeto equipable cristal teratipo: cambia el tipo») is a `held` item
+        carrying a `teraType`; one handler in `src/engine/battle/effects/items.ts` replaces the
+        holder's types at battle start, and the party detail reads the same override so the panel
+        and the battle agree.
+      - **Infinite held items** («equipables con uso: hacerlos infinitos»): a consumed held item
+        must stop being destroyed by the fold. The battle's `spend` (`effects/items.ts` 228-269)
+        stays as today — a berry fires once per battle — but `resolve.ts` keeps the run member's
+        `heldItem` instead of taking the returned snapshot's `null`, so the item is back next
+        battle. One line plus its test.
+      - **The coloured candy** («caramelo de colores: da 1 stat random +1 o −1 permanente»): the
+        human's answer is that **each run rolls which stat each colour raises**, and the player does
+        **not** know it until they try that colour — once tried, the bag row's description names it
+        («al probarlo en la descripcion del objeto sale ya que lo sabes»). So the mapping is a **per-run
+        seeded table** (`Rng(seed : candy : <colour>)`) and the run keeps the set of colours
+        **discovered** so far; the effect is a permanent ±1 read by `statAtLevel` from a new
+        `FighterSnapshot.statTreats`. This is the plan's **next `SAVE_VERSION` step, 22 → 23**, after
+        `[Task-101]`'s 21 → 22, and the step carries **both** the treats and the discovered-colour set.
+      - **The three one-route consumables** («objeto que hace lo del exorcista / clima / médico como
+        consumible de 1 ruta») are the exorcist's, the weather man's and the medic's effect in a
+        bottle: they write `[Task-94]`'s modifiers or call `[Task-95]`'s heal, never a second
+        implementation.
+      **Docs:** `docs/data-spec.md` (the catalogue), `docs/battle-spec.md` §2/§5/§9.
+      Out of scope: the ability waves (`[Task-104]`), the held-item catalogue Task-07 shipped and
+      the shop's stock.
+      *Dependencies:* `[Task-87]` (the route use path and `src/engine/run/items.ts`), `[Task-94]`
+      (the modifiers the consumables write), `[Task-95]` (the heal they reuse) and `[Task-106]` — the
+      Tera Crystal's holder override is the same "wherever a fighter's types are read" reader that
+      task freezes (Batch 32), so the two cannot be written independently of each other. *(Batch 47)*
+- [ ] **[Task-104] The damage-model abilities: the type-chart-breaking pair, and the four team-type
+      bonuses.** Two rules the damage model cannot express. Nothing in `src/engine/battle/damage.ts`
+      can ignore the type chart, and the run's party composition never reaches a battle
+      (`BattleSetup` carries no team fact, `src/engine/battle/state.ts` 120-128).
+      **Fix shape.** The **two abilities** the human asks for («pokes oscuros: habilidad que ignora
+      la tabla de tipos (ni debilidades, ni resistencias, ni inmunidades) + otra»): the first reads
+      before `typeEffectiveness` in `damage.ts` and returns neutral, the second is named at cut
+      time from the same seam; both join `effects/abilities.ts` + the registry and regenerate
+      `docs/balance/effect-coverage.md`. The **four team rules** are one rule over a team-type count:
+      `BattleSetup.teamTypes` is filled by the launch from the party's **living** members, and two
+      living Fire members give a Fire move **+10 %** damage and **+20 %** burn chance, with Ice
+      (freeze), Electric (paralysis) and Poison (poison) the same. The status chance is one helper
+      `turn.ts` shares with the existing secondary roll, so the two can never disagree.
+      **Docs:** `docs/battle-spec.md` §10/§11, `docs/balance/effect-coverage.md` (regenerated).
+      Out of scope: the room conditions (`[Task-62]`, `[Task-106]`) and the type chart itself.
+      *Dependencies:* none — `damage.ts`, the registry and the coverage table are shipped. It adds no
+      run field. *(Batch 31)*
+- [ ] **[Task-105] The out-of-battle abilities.** «Adaptar habilidades al mapa fuera de combate (p.
+      ej. habilidades de conseguir objetos)»: abilities are battle-only today, and the route never
+      reads one — `BattleLaunch` carries the members' abilities (`src/engine/run/battleLink.ts` 45-57)
+      and nothing else does.
+      **Fix shape.** One pure `src/engine/run/passives.ts` + test with a `MAP_PASSIVES` table in
+      `src/data/` + test: rows `{ ability, trigger: 'room' | 'win', effect }` over the abilities the
+      report names at cut time (the item-gathering ones), run by the scene on room entry and on a
+      win through one seam, paying through `addItem` with the room's own stream so no existing
+      stream moves (D11). No run field: the pickup rides the `pickedItems` stable-id shape.
+      **Docs:** `docs/battle-spec.md` §11, `docs/routes-spec.md` §2, `docs/data-spec.md`.
+      Out of scope: the battle-side handlers, the held items and the NPCs that hand out items.
+      *Dependencies:* none — the ability table and the ground-item path are shipped.
+      *(Batch 48)*
+- [ ] **[Task-106] The room-effect table's second half: the radiant zone, the two auras, the
+      all-types change, Endure and +50 crit.** `[Task-62]` ships the room-condition seam and its five
+      rows (weather, terrain, fog, Gravity, Trick Room); the human's list carries six more, and every
+      one is a **new engine rule**: no field disables every ability, no aura modifies damage, no field
+      overrides every type, no field leaves a lethal hit at 1 HP and no field raises the crit stage.
+      **Fix shape.** The six rows join `[Task-62]`'s `ROOM_BATTLEFIELDS` table, its dedicated stream
+      and its launch/setup seam, each with the one term it needs:
+      - **radiant zone** («todas las habilidades desactivadas») — an `abilitiesOff` field flag read by
+        the ability dispatcher before any handler runs.
+      - **dark aura / fairy aura** — the two multipliers in `damage.ts` (Dark and Fairy moves ×1.33,
+        both sides, as the cartridges do).
+      - **all-types change** («cambia el tipo de todos a cierto tipo») — an `overrideTypes` field
+        record applied wherever a fighter's types are read, so STAB and effectiveness follow.
+      - **Endure** («no se puede matar de 1 golpe, se quedan a 1 PS») — a field flag read where a
+        lethal hit is applied, leaving 1 HP.
+      - **+50 crit** — the crit stage added in `turn.ts`'s crit roll.
+      The route's own overlay (`[Task-62]`) draws each row's tint, so no art and no scene line move;
+      the added terms draw no RNG, so a fixed seed reproduces every battle.
+      **Docs:** `docs/battle-spec.md` §4, `docs/maps-spec.md` §7.
+      Out of scope: the five conditions `[Task-62]` ships, the no-items/no-heal room (`[Task-67]`),
+      the boss's forced opening (`[Task-100]`) and the forced field an NPC buys (`[Task-94]`).
+      *Dependencies:* `[Task-62]` — the table, the seam and the overlay. It adds no run field.
+      *(Batch 32)*
+- [ ] **[Task-107] The 2vs2 boss battle, engine half: the double-battle rules.** The human's last
+      and largest wish — «Bosses 2vs2» — cannot ride on today's engine: every side is one active
+      (`activeFighter(state, side)`, `src/engine/battle/state.ts`), a command carries no target and
+      the order sorts two actives. It is cut as **two tasks**, this one pure and `[Task-108]` the
+      screen, because a single task would carry the whole battle engine and the whole battle scene.
+      **Fix shape (the subtasks, in order).**
+      1. **Two actives per side.** The active slot becomes an ordered pair (one live index per slot)
+        and the four accessors (`activeFighter`, `hasHealthy`, `switchIn`, `faint`) widen; every
+        caller in `src/engine/battle/**` moves with them.
+      2. **Targeting.** A `TargetRef = { side, slot }`, a `targets` field on `FightCommand`, and
+        `chooseTarget` validating adjacency (a single-target move hits the opposite slot, a spread
+        move both) from the dex's own `target`.
+      3. **Order.** `orderActions` sorts four actives (Speed, priority, Trick Room) and the turn
+        loop applies one command at a time.
+      4. **Partner AI.** `chooseAiCommand` per enemy slot, with the partner's own target choice (the
+        shipped scorer, D46, run once per slot).
+      5. **Faints and switches.** A side fights while either slot lives; a switch fills the empty
+        slot; a double faint ends the side; the run's permadeath fold stays as it is.
+      6. **Data.** `src/data/bosses.ts` gains the boss's `double` flag and the double roster's size,
+        so the rule is data and the single battles never move.
+      The single-battle path stays the **default** (`BattleSetup.double` false), so no existing
+      golden test or fixed seed changes; the double regressions are new fixed-seed battles.
+      **Docs:** `docs/battle-spec.md` (a new section for the double battle).
+      Out of scope: the screen (`[Task-108]`), the boss's roster (`[Task-71]`, shipped) and the
+      room's condition (`[Task-100]`).
+      *Dependencies:* none, but it is written **against** every battle rule shipped so far, so it
+      is cut last: **Batch 49**. It adds no run field. *(Batch 49)*
+- [ ] **[Task-108] The 2vs2 boss battle, the screen: two actives on each side.** The visible half of
+      the human's «Bosses 2vs2», written against `[Task-107]`'s shipped engine.
+      **Fix shape (the subtasks).**
+      1. the **second enemy battler** and its own HP panel, side by side on the foe's platform;
+      2. the **player's second panel** beside the first, with the same layout budget
+        (`PLAYER_PANEL_H` 150 after `[Task-77]`);
+      3. the **target choice** on the FIGHT menu — a second step after the move grid, drawn with the
+        shipped `src/ui/moveGrid.ts` helpers rather than a new grid;
+      4. the **partner's command row** on the player's side, so the second active is commanded;
+      5. the **switch window** (`src/ui/partyGrid.ts`) filling two slots;
+      6. the **bag, run and the entry beat** on a double battle (`src/ui/beats.ts` gains the second
+        send-out);
+      7. the run's **launch** marking the boss's battle double (`src/scenes/RouteScene.ts`'s
+        `startBattle`, from `[Task-107]`'s data flag).
+      **Docs:** `docs/design-spec.md` §4 (the battle's windows), `docs/battle-spec.md`'s double
+      section.
+      Out of scope: the engine rules (`[Task-107]`), the boss's own condition (`[Task-100]`) and the
+      battle's info window (`[Task-60]`, shipped).
+      *Dependencies:* `[Task-107]`. It adds no run field. *(Batch 50)*
+- [ ] **[Task-109] An area-entry panel: a temporary floating panel on entering a route.** Reported as
+      «añadir panel flotante temporal al entrar en una ruta como en los juegos originales» — the
+      originals greet an area with a **boxed banner** naming it, and this game already holds the
+      string with no banner to wear it: the run's transient notices are one-line entries in
+      `src/ui/notice.ts` (catch, pickup, level-up, `NOTICE_HOLD_MS`) drawn by
+      `RouteScene.buildNotice` / `showNotice` as an FRLG **textbox** strip
+      (`addFrlgWindow(..., 'textbox')` over `NOTICE_W` / `NOTICE_H` / `NOTICE_TOP`) on the pinned HUD
+      camera, while the HUD header already prints the area through
+      `t('route.mapTitle', { map, biome })` (`refreshHud`) with the biome's own name from
+      `getBiome(biomeId).name` (`src/data/biomes.ts`).
+      **Fix shape.** One **area panel**, raised from the room-change paths — `applyRoute`,
+      `transitionTo` and `advanceMap` — that draws a **boxed** panel (`addFrlgWindow` with the
+      `'window'` skin, *not* the notice strip's `'textbox'`) carrying the area's name in the
+      originals' banner style and wearing the **accent border** the panel mock froze — the one card
+      whose hairline is the accent rather than `rgba(255,255,255,0.16)` (`[Task-58]`, Batch 20) — and
+      that **dismisses itself** after a hold of its own (a constant
+      beside `NOTICE_HOLD_MS` in the same module) and takes no key, because the route scene's only
+      keyboard surface is the pause menu (`[Task-84]`'s frozen rule, Batch 29).
+      **The notice module gains the row.** Per its own convention — one module, N strings, "every
+      later notice is a string in this module rather than a second transient window" —
+      `src/ui/notice.ts` gains an `areaEntryNotice(...)` builder beside the three that ship (Batch 7,
+      extended in 15 and 16) with its own case in `notice.test.ts`, and the copy is an **i18n key**
+      authored in `src/i18n/en.ts` and overlaid by `src/i18n/es.ts`; the area's own name is the
+      biome string the header already reads (the dex's names stay English, D43).
+      **The one open reading, with its written default.** Does it fire on **every room** entered, or
+      only when the **area (map) changes**? The originals fire **once per area** (they have no
+      per-room banner), while the report's own words are «al entrar en una ruta» and a route is a
+      room. The written default is therefore **every room**, raised on each room change
+      (`applyRoute` / `transitionTo`) *and* on the floor advance (`advanceMap`, where the number in
+      the header moves too); the alternative is the originals' own reading — **only when the map
+      changes** — which is one comparison on the same seam (the room's `mapIndex` against the
+      previous one) and one fewer beat per room. Say which before its branch is cut; nothing else in
+      the plan changes either way.
+      **Docs:** `docs/routes-spec.md` §6 (the transient notices) and `docs/design-spec.md`'s route HUD
+      section.
+      Out of scope: the three notices that ship, the battle scene's own beats
+      (`src/ui/beats.ts`), the room's contents, and the HUD header's own area string.
+      *Dependencies:* none — the notice module, the chrome (Batch 20's re-tune included) and the i18n
+      table (Batch 10) are all shipped, and it is written **against** `[Task-84]`'s pointer-first rule
+      (Batch 29) and the `notice.ts` row `[Task-98]` adds (Batch 36). It claims
+      `src/scenes/RouteScene.ts`, so it opens the plan's new **Batch 51**, one batch behind the 2vs2
+      pair — and it adds no run field. *(Batch 51)*
+- [ ] **[Task-110] The item bag is an icon grid, in the route HUD and in battle.** The human's rule:
+      «la mochila de items y en combate pasen a ser grid». Both bag surfaces are **lists of rows** today:
+      the route HUD draws up to `HUD_BAG_ROWS` (6) name rows with a pocket tab strip and the money line
+      (`RouteScene`'s bag panel, `HUD_BAG_HEADER` / `HUD_BAG_ROW`), and the battle draws the active
+      pocket's stacks as a list inside the menu window (`BattleScene.openBag` ~1719 and its bag render
+      ~2898-2930), both over the same model (`src/ui/bag.ts`: `BAG_CATEGORIES`, `bagForCategory`,
+      `bagCategoryFor`, `stepBagCursor`).
+      **Fix shape.** One **grid renderer** both scenes draw: fixed-square cells holding the item's
+      **icon** (`itemIconFrame`, the Añil 24px atlas, `src/data/itemIcons.ts`) with a small **count
+      badge** in the corner, the pocket tabs above (the shipped `BagCategory` strip) and the money line
+      (route) or the selection detail (battle) below. A selected cell is the shipped accent fill plus
+      outline; an empty cell is a dim outline. The cursor steps by column and row (a pure
+      `stepBagGrid` beside `stepBagCursor`, tested), a **click** selects a cell, and the confirm /
+      interact applies it exactly as the row list does today (equip on a member, use on a member, throw
+      a ball in battle); the pocket tabs and the ball pocket's wild-only rule do not change. The grid is
+      **five fixed columns** (the human's pick) with cells that keep their aspect, sized from its panel.
+      **The selected cell describes itself in a floating panel** (the human's pick): a small card beside
+      the grid — the shared info-popup shape `src/ui/abilityInfo.ts` and the move ⓘ draw, never a line
+      inside the bag — so the grid itself stays icon-only, showing the item's name and its catalogue
+      description.
+      **The grid takes a filter field** (the human's rule: «añadir input texto para filtrar»): one text
+      input above the grid, the same look and height as the MOVES tab's shipped search field
+      (`RouteScene.hudSearchBg` / `hudSearchText` over `HUD_DETAIL_SEARCH_H`, `typeInDetailSearch`,
+      `detail.searchMoves`), filtering the visible cells by the item's **name** (a case-insensitive
+      substring) on both surfaces. The pure filter lives beside the bag model
+      (`src/ui/bag.ts`'s `filterBagStacks(stacks, query)`, tested) so the scene only draws; a new i18n
+      key (`hud.searchItems`) is authored in `src/i18n/en.ts` and overlaid by `es.ts`; and while the
+      field has focus it owns the keyboard exactly as the two shipped fields do (`textFieldFocused`), so
+      it adds no new input mode. **In battle the field is that scene's first text input**, so its own
+      `keydown` handler (`BattleScene` ~996) must route typing to it while focused and keep the command
+      shortcuts off — the one real cost the battle surface adds.
+      **It draws with `[Task-58]`'s tokens** (surface, hairline, selected fill + accent outline), so it
+      lands **after** the chrome re-tune, and it follows the fixed-cell precedent `[Task-34]` set for
+      the battle SWITCH grid rather than reading it.
+      **Docs:** `docs/design-spec.md` (the route HUD's bag and the battle's BAG) and `docs/data-spec.md`
+      (the item icons).
+      Out of scope: the bag's model and pockets (`src/ui/bag.ts`'s category rules), the item catalogue,
+      the Mart and the reward panels (`[Task-89]`, floating cards whose rows stay rows), and the
+      X-items' deletion (`[Task-87]`).
+      *Dependencies:* `[Task-58]` (the tokens it draws with). It claims `src/scenes/RouteScene.ts`
+      **and** `src/scenes/BattleScene.ts`, so it opens the plan's next batch after `[Task-109]` —
+      **Batch 52** — and it adds no run field. *(Batch 52)*
 
 ## Phase 10 - Learnset, TMs & move typing
 
@@ -4898,6 +5773,64 @@ to the base today: Cherrim 450 = Sunshine 450, Castform 420 for all four). It is
 seventeen-species sweep; its inventory, its engine removal, the data seam and the open readings are in
 its own entry above. It adds no run field, so the chain stays **14 → 15 → 16 → 17 → 18**, and nothing
 here re-plans `Task-38`–`Task-85`.
+
+A **twenty-fourth round** is **two instructions** and is triaged in the same pass, so nothing waits
+here. A consumable must be spendable on a member from the route HUD **only when it has an effect**
+(`[Task-87]`; it also fixes the existing defect that a Potion dropped on a member is equipped as if it
+were a held item, because neither `equipHudItem` nor `equipHeldItem` reads the item's `kind`), and
+Gigantamax must be **stone-gated**, its stone named `<Base>ite G` — `Venusaurite G` for Venusaur
+(`[Task-88]`), minted per G-Max forme beside `MEGA_STONES`. Neither adds a run field, so the chain stays
+**14 → 15 → 16 → 17 → 18**; their diagnoses are in their own entries above.
+
+A **twenty-fifth round** is a **design pivot** and is triaged in the same pass, so nothing waits here:
+the per-floor level ranges give way to a **player-relative** model — wilds at `60–75 %` of the squad's
+level, trainers at `100/90/80/70 %` by party size (rounded down), the boss and mini-boss at the floor's
+**cap**, and the species band following the squad level. It re-shapes `[Task-78]`, `[Task-79]` and
+`[Task-80]` in place, amends `D11`/`D17` and hands `[Task-83]` a new budget to measure. It adds no run
+field, so the chain stays **14 → 15 → 16 → 17 → 18**; the full reading is in the three entries above.
+
+A **twenty-seventh round** is a **content wave** and is triaged in the same pass, so **nothing waits
+here**: it registers **nineteen tasks**, `[Task-90]`–`[Task-108]`, and it schedules every ID the
+previous rounds left unbatched, cutting **Batch 29 to Batch 50**. Nothing in it is a defect — the
+list is the human's design session, and the only repair it carries is a **plan** one: `[Task-80]`'s
+`*Dependencies:*` read "none" while its own diagnosis needs `[Task-78]` and `[Task-79]` first, so
+the edge is written in, and `[Task-62]` now names `[Task-106]` as the second half of the room-effect
+table so the six new conditions (the radiant zone, the two auras, the all-types change, Endure and
+the +50 crit) are an **extension** of that table rather than a duplicate of it. The wave groups the
+NPC list into a framework (`[Task-91]`) plus four self-contained content rows (`[Task-92]`–`[Task-95]`),
+registers the rare rooms (`[Task-96]`, `[Task-97]`), the missions (`[Task-98]`), the special trainers
+(`[Task-99]`), the boss room's rules (`[Task-100]`), the two remaining room rules (`[Task-101]`,
+`[Task-102]`), the item and ability waves (`[Task-103]`–`[Task-105]`), the room-effect table's second
+half (`[Task-106]`) and the 2vs2 boss fight as its engine (`[Task-107]`) and its screen
+(`[Task-108]`). **Five of the nineteen add a run field**, and they take the next `SAVE_VERSION`
+steps in batch order — `[Task-98]` **18 → 19**, `[Task-93]` **19 → 20**, `[Task-94]` **20 → 21**,
+`[Task-101]` **21 → 22** and `[Task-103]` **22 → 23** — so the chain reads
+**14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23**; the other fourteen add none. The wave's three
+open readings were **answered after the cut** and are recorded with their entries — `[Task-97]`'s gate
+is a **blocked room opened by a party of a named type** (a sibling of `[Task-96]`'s room, not of
+`[Task-65]`'s move gate), `[Task-103]`'s candy **rolls each colour's stat per run and reveals it only
+once that colour has been tried** (so its `SAVE_VERSION` step carries the discovered-colour set as
+well as the treats) and `[Task-101]` bans the **member**'s species — and nothing here re-plans
+`Task-38`–`Task-89`: the two slots it fills are Batch 21's and Batch 23's, and Batch 4b stays `cut`.
+
+A **twenty-eighth round** is **one report plus a plan-wide review**, and it is triaged in the same
+pass, so nothing waits here. The report is a **wish** rather than a defect — «añadir panel flotante
+temporal al entrar en una ruta como en los juegos originales» (`[Task-109]`) — and it registers an
+**area-entry panel**: a boxed banner raised from the room-change paths, its copy an i18n key, its
+builder a fourth string in `src/ui/notice.ts`, dismissing itself, with its one open reading (every
+room or only when the area changes) defaulted to **every room**. It claims `src/scenes/RouteScene.ts`,
+so it opens **Batch 51**, one batch behind the 2vs2 pair, and adds **no** run field: the chain stays
+**14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23**. The review that came with it walked every open
+item against the graph, the batch labels and the hot files and repaired **nine records** — three
+missing edges written in (`[Task-89]` → `[Task-63]`, `[Task-99]` → `[Task-98]`, `[Task-103]` →
+`[Task-106]`), one invented edge removed (`[Task-95]` → `[Task-65]`), `[Task-98]`'s
+`missionsCompleted` counter and its `src/ui/notice.ts` + i18n claims written down, `[Task-97]`'s
+re-read gate recorded with its three earlier edges, `[Task-65]`'s missing `**Docs:**` line filled,
+and **Batches 21's and 23's own section records brought level** with the second member each gained in
+the twenty-seventh round (`[Task-86]`'s and `[Task-88]`'s hot files, both sections still reading "one
+task, alone") — with **no batch label moved**, no cycle found, no
+batch left outside the antichain rule and `[Task-28]` still the plan's only unscheduled ID. The full
+measurement (per-batch path sets, hot-file holders and the version chain) is in the batch plan above.
 
 ---
 
