@@ -8,6 +8,51 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A level-up raises a temporary popup.** Reported in play ("popup temporal subida de nivel"): a
+      level-up said nothing unless it crossed a move, because the only announcement was the
+      key-dismissed `LEVEL UP` modal and `showLearnPopup` returns hidden when nothing was learned, so
+      the counter tween in the party header was the whole feedback. **The Decision applied:** the
+      notice fires on **every** level-up beat — a level that crosses nothing is no longer silent — and
+      the modal **stays** for the move names. **One module, N strings, no third window:**
+      `src/ui/notice.ts` gains `levelUpNotice(name, level)` beside `catchToPcNotice` and
+      `itemPickupNotice`, on the same `Notice` shape and the same `NOTICE_HOLD_MS` (2600), and
+      `playLevelUp`'s `onComplete` raises one per beat — before `refreshHud()` resyncs the rows and
+      before `showLearnPopup(beats)` — through the route HUD's existing strip. The scene diff is two
+      hunks (the `../ui/notice` import and that loop); nothing else moves: no new container, timer,
+      input handler, key binding or camera, and the modal's copy, scrim, depth and 250 ms click guard
+      are untouched. The multi-beat rule follows `showNotice`'s shipped contract rather than adding
+      machinery: a second notice **replaces** the first and restarts its hold, so two members levelling
+      together leave the **last beat's** line up for a full hold (measured, below) and the first is
+      never shown — no queue, no stagger, no second strip, no `\n`-joined list. The string was created
+      **after** Batch 10's i18n sweep, so it goes through the shipped module as the new key
+      `notice.levelUp`, authored in English (`'{name} grew to Lv {level}!'`) and overlaid by Spanish
+      (`'¡{name} ha subido al nivel {level}!'`), with the parity/call-site test green **unedited**. The
+      docs edit landed where the sentence actually is: the plan's pointer to §5 was stale, so the
+      frozen clause went into §3's detail-panel bullet, beside the modal it qualifies. **Two files of
+      code, one module, one key** (`src/ui/notice.ts`, `src/scenes/RouteScene.ts`, `src/i18n/en.ts`,
+      `src/i18n/es.ts`, `src/ui/notice.test.ts`, `docs/design-spec.md`): the suite went **1661 → 1664
+      tests across 137 files** (three new cases in `notice.test.ts`), `npm run build` and `npm run lint`
+      green on the merge commit `1e87ee7c`, and the diff audit is exactly those six paths. No run field,
+      so **no `SAVE_VERSION`** step — the chain stays **14 → 15 → 16 → 17 → 18** — and no RNG is drawn.
+      **Every `[live]` criterion was measured** on the integration commit `52d041db` with a Vite dev
+      server (`:5199`) and a headless Chromium over CDP, reading the live scene and the live canvas
+      (`renderer.snapshotArea` + `getImageData`) rather than a screenshot, with the strip's own rect
+      `(280, 24, 720, 44)` on the 1280×800 desktop stage: the notice reads
+      `Charmander grew to Lv 6!`, equal to both `levelUpNotice('Charmander', 6).text` and
+      `t('notice.levelUp', …)`, on a no-move beat; the strip-up vs strip-down canvas diff is **31 052**
+      of the rect's 31 680 px (**98.0 %**), while both in-state controls (`up1`/`up2`, `down1`/`down2`)
+      are **0 px** apart; two beats leave the **same** container up (two children) reading the reserve's
+      line and never the first member's; a crossed move raises the notice **and** the `LEVEL UP` modal
+      in the same beat (`Charmander learned Ember!`); and the strip holds **0** interactive children,
+      with the scene active, unpaused and the player unmoved. The self-dismiss measured **2600 ms on
+      the game's own clock** (2633 ms observed, one frame at the headless ~11 fps) with no key or click
+      sent anywhere. One spec defect was found and corrected rather than hidden: that criterion's
+      wall-clock probe (`upAt + 3000`) was defeated by the headless frame rate — Phaser clamps the
+      frame delta, so the game clock ran at ~0.97 of wall clock and the strip was still up at
+      +3032 ms — so the Orchestrator re-measured it on `noticeTimer.delay === 2600` plus a `+4200` wall
+      margin (visible at **+2152**, hidden at **+4267**), which is the criterion's intent. The task's ID
+      is retired: it keeps its place in the sequence and is never reused.
+
 - [x] **The battle's player HP panel loses its XP bar.** Reported in play ("quita la barra de xp
       del contenedor de combate"), and the row was exactly where the report pointed: the player
       branch at the end of `drawSidePanel` drew a second, smaller bar 36 px under the HP bar

@@ -1413,6 +1413,27 @@ the cut's own record.
   "free batch" lists lose 15 as the nineteenth round records.
 
 ### Batch 16 — the level-up popup
+**(shipped, archived)**: its one task merged alone behind the green gate (`task-50`; **1664** tests
+across 137 files, `npm test` + `npm run build` + `npm run lint` green on the merge commit `1e87ee7c`)
+and the detail is in `CHANGELOG.md`'s `## Unreleased`. QA validated it in the single pass a one-task
+batch collapses to — the task's plan, both gates, the cross-task audit and the merge rehearsal on the
+integration commit `52d041db` — every `[unit]` criterion green, and the Orchestrator **measured every
+`[live]` criterion itself** on that commit with a dev server and a headless Chromium over CDP.
+**What shipped.** **Task-50** gives the run's transient notice a **third** string: `levelUpNotice(name,
+level)` in the shipped `src/ui/notice.ts`, raised **once per level-up beat** from `playLevelUp`'s
+`onComplete` — before `refreshHud()` and before `showLearnPopup(beats)` — so a level that crosses no
+move is no longer silent, through the HUD's existing strip and with the new key `notice.levelUp`
+authored in English and overlaid by Spanish. The key-dismissed `LEVEL UP` modal **stays** for the move
+names, as the *Decision* froze: a crossed move raises both, in the same beat. Two beats **replace each
+other** by `showNotice`'s shipped contract, so the last beat's line is the one that stays. The docs
+clause went to §3's detail-panel bullet, where the modal sentence actually is (the cut's §5 pointer was
+stale). It adds no run field and draws no RNG, so **no `SAVE_VERSION` step** — the chain stays
+**14 → 15 → 16 → 17 → 18**. One spec defect is recorded rather than hidden: the self-dismiss
+criterion's wall-clock probe was defeated by the headless frame rate (Phaser clamps the frame delta),
+so it was re-measured on the game clock (`noticeTimer.delay` 2600; 2633 ms observed) plus a
+`+4200` wall margin. Its ID is retired: it keeps its place in the sequence and is never reused. What
+follows is the cut's own record.
+
 - **Task-50** A level-up raises a temporary popup.
 - **Hot files:** `src/scenes/RouteScene.ts` → Task-50; `src/ui/notice.ts` +
   `notice.test.ts` → Task-50 (the module Task-31 creates in Batch 7 and Task-49 extends in
@@ -3061,7 +3082,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       its string goes through the shipped i18n module instead of beside it, and after
       Batch 11 so it edits reformat-cleared files and keeps them conforming. *(Batch 15)*
 
-- [ ] **[Task-50] A level-up raises a temporary popup.** Reported in play: «popup temporal
+- [x] **[Task-50] A level-up raises a temporary popup.** Reported in play: «popup temporal
       subida de nivel» — a temporary popup when a Pokémon levels up, the same shape as the
       catch notice Task-31 adds and the item pickup popup `[Task-49]` rather than the modal
       the route HUD opens today.
