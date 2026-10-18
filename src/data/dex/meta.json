@@ -1,1 +1,1 @@
-{"source":"@pkmn/dex","generation":9,"minLearnsetGen":8,"catchRateSource":"PokeAPI pokemon_species.csv","counts":{"species":1282,"megas":88,"gmaxes":34,"moves":835,"abilities":311,"items":249,"learnsets":1281,"natures":25,"types":19}}
+{"source":"@pkmn/dex","generation":9,"minLearnsetGen":8,"catchRateSource":"PokeAPI pokemon_species.csv","counts":{"species":1281,"megas":89,"gmaxes":34,"moves":835,"abilities":311,"items":249,"learnsets":1280,"natures":25,"types":19}}

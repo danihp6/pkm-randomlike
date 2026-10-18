@@ -33,9 +33,20 @@ const isBattleBossForm = (entry) =>
 const isUnflaggedMegaForme = (entry) =>
   entry.isNonstandard === 'Future' && /mega/i.test(entry.forme ?? '');
 
+// The Mega rows the generated pass cannot take, authored here beside it. Today
+// that is Greninja-Ash alone: `@pkmn/dex` leaves `isMega` unset on the entry and
+// marks it `battleOnly: "Greninja-Bond"` instead, so `isMega` never sees it and it
+// would otherwise enter the playable set — where a Mega may never live, since the
+// STATS graph and the run reach one only through a stone. Its stone is authored
+// for the same reason: `Greninjite Ash` is not a dex item. `main` builds the row.
+const HAND_MEGAS = [{ id: 'greninjaash', stoneName: 'Greninjite Ash' }];
+
+const HAND_MEGA_IDS = new Set(HAND_MEGAS.map((mega) => mega.id));
+
 const isPlayable = (entry) =>
   entry.num > 0 &&
   entry.isMega !== true &&
+  !HAND_MEGA_IDS.has(entry.id) &&
   !isUnflaggedMegaForme(entry) &&
   !isBattleBossForm(entry) &&
   entry.isNonstandard !== 'CAP' &&
@@ -99,6 +110,31 @@ const duplicates = (values) => {
   return [...repeated];
 };
 
+// The four formes the deleted form-change abilities promote into, authored as a
+// real upgrade (`D38`): they were stat-identical to their base species, so
+// evolving into one was a free forme flip. Castform's three gain 60 Sp. Atk (480)
+// and Cherrim's Sunshine 30 Sp. Atk and 30 Sp. Def (510) — both inside the
+// 441-800 band the evolution rule reads as level 40. `baseStats` and `bst` move
+// together, `bst` being the dex's own sum of `baseStats`.
+const FORM_STAT_BOOSTS = {
+  castformsunny: { spa: 60 },
+  castformrainy: { spa: 60 },
+  castformsnowy: { spa: 60 },
+  cherrimsunshine: { spa: 30, spd: 30 },
+};
+
+const withFormBoost = (entry) => {
+  const boost = FORM_STAT_BOOSTS[entry.id];
+  if (!boost) return entry;
+  const baseStats = { ...entry.baseStats };
+  let bst = entry.bst;
+  for (const [stat, delta] of Object.entries(boost)) {
+    baseStats[stat] += delta;
+    bst += delta;
+  }
+  return { ...entry, baseStats, bst };
+};
+
 const writeJson = async (name, data) => {
   const path = join(OUT_DIR, name);
   await writeFile(path, `${JSON.stringify(data)}\n`);
@@ -158,7 +194,7 @@ const main = async () => {
   const heights = JSON.parse(await readFile(HEIGHTS_PATH, 'utf8'));
 
   const species = Dex.species.all().filter(isPlayable).map((entry) => ({
-    ...entry,
+    ...withFormBoost(entry),
     catchRate: catchRateOf(entry.num),
     heightm: heights[entry.id] ?? 1,
     evolutions: evolutionOf(entry),
@@ -191,6 +227,30 @@ const main = async () => {
         evolutions: [],
       };
     });
+
+  // Greninja-Ash rides beside the generated rows as a hand-authored Mega
+  // (`HAND_MEGAS`): the dex cannot carry it as one — `isMega` is unset on the
+  // entry, which is marked `battleOnly: "Greninja-Bond"` instead — so the pass
+  // above never sees it and `isPlayable` keeps it out of `species.json`. It is a
+  // forme of Greninja entered from a stone like every generated row, with the
+  // entry's own stats, types, ability and `Past` tag, its HP passed through the
+  // same guard (Ash keeps Greninja's 72) and its stone authored here because
+  // `Greninjite Ash` is not a dex item.
+  for (const hand of HAND_MEGAS) {
+    const entry = Dex.species.get(hand.id);
+    const base = Dex.species.get(entry.baseSpecies);
+    const row = withBaseHp(entry, base);
+    if (row !== entry) normalisedHp++;
+    megaFormes.push({
+      ...row,
+      baseSpeciesId: base.id,
+      stoneId: normalizeId(hand.stoneName),
+      stoneName: hand.stoneName,
+      catchRate: catchRateOf(row.num),
+      heightm: heights[row.id] ?? heights[base.id] ?? 1,
+      evolutions: [],
+    });
+  }
 
   // A duplicate id or stone would silently drop a forme (both are map keys), so
   // the generator refuses to write a dex that has one.

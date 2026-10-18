@@ -16,9 +16,18 @@ merges a canonical `heightm` from `scripts/data/heights.json` (PokeAPI, via
 
 `megas.json` is generated beside `species.json`: every Mega forme whose base
 species is in the playable set, each with its `baseSpeciesId`, `stoneId` and
-`stoneName` — 88 today, `meta.json`'s `counts.megas` being the authority. It is
+`stoneName` — 89 today, `meta.json`'s `counts.megas` being the authority. It is
 battle-only content (`D34`) — never spawned, only reached through a held stone
-(`src/engine/battle/mega.ts`). A Mega may be tagged `Past` (the games already ran
+(`src/engine/battle/mega.ts`). Two rows are **hand-authored** in
+`scripts/build-dex.mjs` beside the generated pass. Greninja's **Ash** forme is a
+Mega the dex cannot carry as one: `isMega` is unset on the entry and it is marked
+`battleOnly: "Greninja-Bond"` instead, so `isPlayable` drops it from
+`species.json` by id (`HAND_MEGA_IDS`) and the generator builds the row itself,
+with its own authored stone `Greninjite Ash`. And four **stat boosts** are
+authored for the formes the deleted form-change abilities used to reach (`D38`),
+which were stat-identical to their base: Castform-Sunny/Rainy/Snowy gain 60 Sp.
+Atk (480) and Cherrim-Sunshine 30 Sp. Atk and 30 Sp. Def (510), `baseStats` and
+`bst` moving together. A Mega may be tagged `Past` (the games already ran
 it) or `Future`, the dex's own "announced, not released" tag for the formes
 Legends Z-A and Champions announced, and the filter takes both exactly alike. The
 nine `Future` formes whose dex entry leaves `isMega` unset — Absol Z, Garchomp Z

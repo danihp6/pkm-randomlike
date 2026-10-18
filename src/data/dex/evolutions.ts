@@ -56,24 +56,86 @@ export const EVOLUTION_BST_LEVELS: readonly Readonly<{ maxBst: number; level: nu
 export const EVOLUTION_MIN_GAP = 10;
 
 /**
- * The branches the generated dex cannot carry: canon Rotom has no evolution at
- * all — its appliances are a forme change from a key item — so the dex's own
- * `evos` is empty for every one of the six entries and this is a game rule
- * (`D38`) layered over the dex, not dex data. One key per species that evolves;
- * `into` is the appliance's own species id, so the member's `speciesId` becomes
- * it and nothing else about the member moves. One-way, Eevee-style: the base
- * form offers all five and an appliance offers none, so the table has no second
- * key and every appliance is absent from its values.
+ * A branch the game reaches as a forme change: no item, no move, no condition,
+ * so its level comes from the species' BST band plus the evolution gap.
+ */
+function formeBranch(into: string): Evolution {
+  return { into, method: 'forme', level: null, item: null, move: null, condition: null };
+}
+
+/**
+ * A branch carrying the level the game fires it at. The dex has no level for it
+ * (the canon method is a key item, a weather or an in-battle change), and the
+ * one band level a species shares cannot order a chain, so the level is authored.
+ */
+function levelledBranch(into: string, level: number): Evolution {
+  return { into, method: 'level', level, item: null, move: null, condition: null };
+}
+
+/**
+ * The hand-authored branches the generated dex cannot carry (`D38`) — the rotom
+ * appliances, whose canon trigger is a key item, and the formes the deleted
+ * form-change abilities used to reach, whose canon trigger is an in-battle
+ * change. The generated `species.json` is untouched: a rotom row still reads
+ * `evolutions: []`. One key per species that evolves, `into` being the forme's
+ * own species id, so the member's `speciesId` becomes it and nothing else about
+ * the member moves. All of a species' rows share its resolved level (the BST band
+ * + `EVOLUTION_MIN_GAP` over its pre-evolution) unless a row carries an authored
+ * one. One-way, Eevee-style: the base form offers the branches and a promoted
+ * forme never leads back, so a branch's `into` is never a key of the row it came
+ * from — the two sequential chains walk forward only (Zygarde-10% -> Zygarde ->
+ * Complete, Terapagos -> Terastal -> Stellar).
  */
 const FORM_EVOLUTIONS: Readonly<Record<string, readonly Evolution[]>> = {
   rotom: [
-    { into: 'rotomheat', method: 'forme', level: null, item: null, move: null, condition: null },
-    { into: 'rotomwash', method: 'forme', level: null, item: null, move: null, condition: null },
-    { into: 'rotomfrost', method: 'forme', level: null, item: null, move: null, condition: null },
-    { into: 'rotomfan', method: 'forme', level: null, item: null, move: null, condition: null },
-    { into: 'rotommow', method: 'forme', level: null, item: null, move: null, condition: null },
+    formeBranch('rotomheat'),
+    formeBranch('rotomwash'),
+    formeBranch('rotomfrost'),
+    formeBranch('rotomfan'),
+    formeBranch('rotommow'),
   ],
+  palafin: [formeBranch('palafinhero')],
+  wishiwashi: [formeBranch('wishiwashischool')],
+  cherrim: [formeBranch('cherrimsunshine')],
+  castform: [
+    levelledBranch('castformsunny', 40),
+    levelledBranch('castformrainy', 40),
+    levelledBranch('castformsnowy', 40),
+  ],
+  cramorant: [formeBranch('cramorantgulping'), formeBranch('cramorantgorging')],
+  aegislash: [formeBranch('aegislashblade')],
+  darumaka: [formeBranch('darmanitanzen')],
+  darumakagalar: [formeBranch('darmanitangalarzen')],
+  ogerpon: [
+    formeBranch('ogerponwellspring'),
+    formeBranch('ogerponhearthflame'),
+    formeBranch('ogerponcornerstone'),
+  ],
+  zygarde10: [levelledBranch('zygarde', 50)],
+  zygarde: [levelledBranch('zygardecomplete', 60)],
+  terapagos: [levelledBranch('terapagosterastal', 50)],
+  terapagosterastal: [levelledBranch('terapagosstellar', 60)],
 };
+
+/**
+ * The families an individual of a species is drawn from at generation, base
+ * first: the alternate forme of a species that has no evolution but a battle-time
+ * change over it (`D38`). The three families whose forme the deleted abilities
+ * used to reach — Eiscue, Morpeko and Minior — and nothing else; every other
+ * forme of the build arrives as an evolution branch above. The ids are plain
+ * species ids and the draw lives in `src/engine/run/pool.ts`, so this module stays
+ * data and draws nothing itself.
+ */
+const VARIANT_FORMES: Readonly<Record<string, readonly string[]>> = {
+  eiscue: ['eiscue', 'eiscuenoice'],
+  morpeko: ['morpeko', 'morpekohangry'],
+  minior: ['minior', 'miniormeteor'],
+};
+
+/** The family a species' individuals are drawn from, base first; `[]` when it has none. */
+export function variantFormes(speciesId: string): readonly string[] {
+  return VARIANT_FORMES[speciesId] ?? [];
+}
 
 /** The hand-authored branches of a species; empty for every other species. */
 function formEvolutions(speciesId: string): readonly Evolution[] {

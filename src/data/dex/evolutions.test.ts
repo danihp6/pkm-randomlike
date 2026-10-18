@@ -14,6 +14,7 @@ import {
   evolutionStage,
   formeFamily,
   isLevelEvolution,
+  variantFormes,
 } from './evolutions';
 import { getSpecies, playableSpecies, type Evolution, type Species } from './species';
 
@@ -344,6 +345,133 @@ describe('rotom appliance override', () => {
       expect(species.evolutions, id).toEqual([]);
       expect(species.evos, id).toEqual([]);
       expect(species.prevo, id).toBe('');
+    }
+  });
+});
+
+/** The other half of the override: the formes the deleted abilities used to reach (`D38`). */
+describe('hand-authored forme branches', () => {
+  const BRANCHED: readonly (readonly [string, readonly string[], number])[] = [
+    ['palafin', ['palafinhero'], 48],
+    ['wishiwashi', ['wishiwashischool'], 20],
+    ['cherrim', ['cherrimsunshine'], 40],
+    ['castform', ['castformsunny', 'castformrainy', 'castformsnowy'], 40],
+    ['cramorant', ['cramorantgulping', 'cramorantgorging'], 40],
+    ['aegislash', ['aegislashblade'], 55],
+    ['ogerpon', ['ogerponwellspring', 'ogerponhearthflame', 'ogerponcornerstone'], 40],
+    ['zygarde10', ['zygarde'], 50],
+    ['zygarde', ['zygardecomplete'], 60],
+    ['terapagos', ['terapagosterastal'], 50],
+    ['terapagosterastal', ['terapagosstellar'], 60],
+  ];
+
+  it('resolves every branch to the level the rule gives it', () => {
+    for (const [id, into, level] of BRANCHED) {
+      const branches = evolutionBranches(id);
+      expect(branches.map((branch) => branch.into), id).toEqual([...into]);
+      expect(new Set(branches.map((branch) => branch.level)), id).toEqual(new Set([level]));
+    }
+  });
+
+  it('shares its species own level with the dex branches it sits beside', () => {
+    expect(evolutionBranches('darumaka').map((branch) => branch.into)).toEqual([
+      'darmanitan',
+      'darmanitanzen',
+    ]);
+    expect(evolutionBranches('darumaka').map((branch) => branch.level)).toEqual([35, 35]);
+    expect(evolutionBranches('darumakagalar').map((branch) => branch.into)).toEqual([
+      'darmanitangalar',
+      'darmanitangalarzen',
+    ]);
+    expect(new Set(evolutionBranches('darumakagalar').map((branch) => branch.level))).toEqual(
+      new Set([20]),
+    );
+  });
+
+  it('carries an authored level only where a band level could not order the chain', () => {
+    for (const branch of evolutionBranches('castform')) expect(branch.method).toBe('level');
+    for (const id of ['zygarde10', 'zygarde', 'terapagos', 'terapagosterastal']) {
+      for (const branch of evolutionBranches(id)) expect(branch.method, id).toBe('level');
+    }
+    for (const id of ['palafin', 'wishiwashi', 'cherrim', 'cramorant', 'aegislash']) {
+      for (const branch of evolutionBranches(id)) expect(branch.method, id).toBe('forme');
+    }
+  });
+
+  it('is grey below the resolved level and the branches at it', () => {
+    for (const [id, into, level] of BRANCHED) {
+      expect(availableEvolutions(id, level - 1).map((branch) => branch.into), id).toEqual([]);
+      expect(availableEvolutions(id, level).map((branch) => branch.into), id).toEqual([...into]);
+    }
+  });
+
+  it('never walks back: a promoted forme offers no branch to the species it came from', () => {
+    for (const [id, into] of BRANCHED) {
+      for (const forme of into) {
+        const back = evolutionBranches(forme).map((branch) => branch.into);
+        expect(back, `${id} -> ${forme}`).not.toContain(id);
+      }
+    }
+    // The two chained stages keep a branch of their own, and both walk further
+    // forward: Zygarde-10% -> Zygarde -> Complete, Terapagos -> Terastal -> Stellar.
+    expect(evolutionBranches('zygarde').map((branch) => branch.into)).toEqual(['zygardecomplete']);
+    expect(evolutionBranches('terapagosterastal').map((branch) => branch.into)).toEqual([
+      'terapagosstellar',
+    ]);
+  });
+
+  it('leaves the three variant species and Mimikyu with no branch at all', () => {
+    for (const id of ['eiscue', 'morpeko', 'minior', 'mimikyu']) {
+      expect(evolutionBranches(id), id).toEqual([]);
+      expect(availableEvolutions(id, 100), id).toEqual([]);
+    }
+  });
+});
+
+describe('authored forme stat boosts', () => {
+  it("raises Castform's three promoted formes to 480 and Cherrim's Sunshine to 510", () => {
+    for (const id of ['castformsunny', 'castformrainy', 'castformsnowy']) {
+      const species = getSpecies(id)!;
+      expect(species.baseStats.spa, id).toBe(130);
+      expect(species.bst, id).toBe(480);
+    }
+    const sunshine = getSpecies('cherrimsunshine')!;
+    expect(sunshine.baseStats.spa).toBe(117);
+    expect(sunshine.baseStats.spd).toBe(108);
+    expect(sunshine.bst).toBe(510);
+  });
+});
+
+/** A variant family is data: one pool entry, the individual rolled at generation (`D38`). */
+describe('variant families', () => {
+  it('holds exactly the three families, base first', () => {
+    expect(variantFormes('eiscue')).toEqual(['eiscue', 'eiscuenoice']);
+    expect(variantFormes('morpeko')).toEqual(['morpeko', 'morpekohangry']);
+    expect(variantFormes('minior')).toEqual(['minior', 'miniormeteor']);
+  });
+
+  it('is empty for a species whose formes arrive as an evolution or not at all', () => {
+    for (const id of ['rotom', 'eevee', 'pikachu', 'castform', 'cherrim', 'not-a-species']) {
+      expect(variantFormes(id), id).toEqual([]);
+    }
+  });
+
+  it('names only battle-only formes after the base of each family', () => {
+    for (const base of ['eiscue', 'morpeko', 'minior']) {
+      const family = variantFormes(base);
+      expect(family[0], base).toBe(base);
+      expect(family.length, base).toBe(2);
+      for (const id of family.slice(1)) {
+        expect(getSpecies(id)!.battleOnly, id).toBeDefined();
+      }
+    }
+  });
+
+  it('is not an evolution: the three have no branch and no depth', () => {
+    for (const id of ['eiscue', 'morpeko', 'minior']) {
+      expect(evolutionBranches(id), id).toEqual([]);
+      expect(availableEvolutions(id, 100), id).toEqual([]);
+      expect(evolutionDepth(id), id).toBe(0);
     }
   });
 });

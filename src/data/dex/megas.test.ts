@@ -130,3 +130,32 @@ describe('generated Mega formes', () => {
     }
   });
 });
+
+/** Hand-authored in `scripts/build-dex.mjs`: the dex leaves `isMega` unset on it (`D38`). */
+describe('hand-authored Greninja-Ash Mega', () => {
+  const ash = MEGA_FORMES.find((mega) => mega.id === 'greninjaash');
+
+  it('is the 89th row the recorded count names', () => {
+    expect(MEGA_FORMES.length).toBe(counts.megas);
+    expect(MEGA_FORMES.length).toBe(89);
+    expect(ash, 'greninjaash').toBeDefined();
+  });
+
+  it('sits beside every other Greninja Mega, the generated one first', () => {
+    expect(megaFormsForBase('greninja').map((mega) => mega.id)).toEqual([
+      'greninjamega',
+      'greninjaash',
+    ]);
+  });
+
+  it('carries its own stone, which maps back to it', () => {
+    expect(megaFormForItem('greninjiteash')?.id).toBe('greninjaash');
+    expect(ash!.stoneName).toBe('Greninjite Ash');
+    expect(getItem('greninjiteash')?.mega).toEqual({ base: 'greninja', form: 'greninjaash' });
+  });
+
+  it('is a forme of Greninja that never changes HP', () => {
+    expect(ash!.baseSpeciesId).toBe('greninja');
+    expect(ash!.baseStats.hp).toBe(72);
+  });
+});
