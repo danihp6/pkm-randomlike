@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NOTICE_HOLD_MS, catchToPcNotice, itemPickupNotice } from './notice';
+import { NOTICE_HOLD_MS, catchToPcNotice, itemPickupNotice, levelUpNotice } from './notice';
 
 describe('catchToPcNotice', () => {
   it('writes the fixed sentence with the caught name and the shared hold', () => {
@@ -39,5 +39,23 @@ describe('itemPickupNotice', () => {
     expect(itemPickupNotice('Mr. Mime').text).toBe('Obtained Mr. Mime!');
     expect(itemPickupNotice("King's Rock").text).toBe("Obtained King's Rock!");
     expect(itemPickupNotice('TM 26').holdMs).toBe(NOTICE_HOLD_MS);
+  });
+});
+
+describe('levelUpNotice', () => {
+  it('writes the fixed sentence with the member name, its new level and the shared hold', () => {
+    expect(levelUpNotice('Growlithe', 21)).toEqual({
+      text: 'Growlithe grew to Lv 21!',
+      holdMs: NOTICE_HOLD_MS,
+    });
+  });
+
+  it('holds a notice for 2.6 seconds', () => {
+    expect(levelUpNotice('Charmander', 6).holdMs).toBe(2600);
+  });
+
+  it('passes the name and the level through untouched', () => {
+    expect(levelUpNotice("Farfetch'd 2", 5).text).toBe("Farfetch'd 2 grew to Lv 5!");
+    expect(levelUpNotice('Mr. Mime', 100).text).toBe('Mr. Mime grew to Lv 100!');
   });
 });

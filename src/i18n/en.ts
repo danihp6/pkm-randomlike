@@ -208,6 +208,7 @@ export const en = {
   'notice.catchToPc':
     'Your party is full — {name} went to the PC. You can swap it in before you leave this route.',
   'notice.itemObtained': 'Obtained {name}!',
+  'notice.levelUp': '{name} grew to Lv {level}!',
 
   // seed — the seed / share-string prompt
   'seed.title': 'SEED / SHARE STRING',

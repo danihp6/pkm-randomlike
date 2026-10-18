@@ -215,7 +215,7 @@ import {
 import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
 import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
 import { InfoPopup } from '../ui/infoPopup';
-import { catchToPcNotice, itemPickupNotice, type Notice } from '../ui/notice';
+import { catchToPcNotice, itemPickupNotice, levelUpNotice, type Notice } from '../ui/notice';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../data/statusIcons';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
@@ -6819,6 +6819,14 @@ export class RouteScene extends Phaser.Scene {
       onUpdate: paint,
       onComplete: () => {
         for (const row of this.hudRows) row.portrait.clearTint();
+        // Every level-up says so, not only the ones that crossed a move. One
+        // notice: a second beat replaces the first rather than stacking.
+        for (const beat of beats) {
+          const member = this.run.party.find((entry) => entry.fighter.id === beat.id);
+          this.showNotice(
+            levelUpNotice(member ? this.memberName(member) : t('common.unknownPokemon'), beat.toLevel),
+          );
+        }
         this.refreshHud();
         // Announce each move crossed on the way up, now that the counter landed.
         this.showLearnPopup(beats);
