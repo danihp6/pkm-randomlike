@@ -301,10 +301,17 @@ box types itself out), master volume, **always run** (walk at running speed
 without holding the run key; on by default), the **Transparent HUD** panels, the
 **Reduce flashing** option (drop the full-screen flashes a beat would play, stop
 the route's hidden-item glint from pulsing and release the hold-to-reset scrim at
-once; off by default, §10) and the **HUD layout** (where each panel of the route
-HUD sits and whether it is collapsed). They live in the same save document as the
-run (D22), are stored the moment they change and are edited from one screen
-(`Tab`, from the main menu, the starter pick or the route HUD).
+once; off by default, §10), the **HUD layout** (where each panel of the route
+HUD sits and whether it is collapsed) and the **language**. They live in the same
+save document as the run (D22), are stored the moment they change and are edited
+from one screen (`Tab`, from the main menu, the starter pick or the route HUD).
+
+The game ships English and Spanish (`src/i18n/`, D43). English is the **source
+table** and a locale overlays it by key, so the language defaults from the
+browser's tag the first time and is switched from this screen **without a
+restart** — the options screen re-resolves every string it draws from the new
+locale on the next frame. The dex's own names (Pokémon, moves, abilities, items,
+biomes) stay English in every locale: they are content, not chrome.
 
 ## 9. Out of scope (for now)
 

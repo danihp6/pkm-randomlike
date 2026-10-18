@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 /**
  * The run's transient notices (Phase 10): the one-line messages the route HUD
  * floats at the top of the screen and dismisses by itself. The copy and the hold
@@ -19,7 +21,7 @@ export const NOTICE_HOLD_MS = 2600;
  */
 export function catchToPcNotice(name: string): Notice {
   return {
-    text: `Your party is full — ${name} went to the PC. You can swap it in before you leave this route.`,
+    text: t('notice.catchToPc', { name }),
     holdMs: NOTICE_HOLD_MS,
   };
 }

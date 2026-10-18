@@ -2,6 +2,7 @@ import { STAT_IDS, getSpecies, type StatId, type Stats } from '../data/dex';
 import { defaultHudLayout, parseHudLayout, type HudLayout } from '../data/hudLayout';
 import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybinds';
 import { levelCapForMap } from '../data/maps';
+import { isLocale, type Locale } from '../i18n';
 import { MAP_EDGES, arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge, type MapPlan } from './maps/plan';
 import { floorForRoute } from './run/floors';
 import type { AiLevel } from './battle/ai';
@@ -34,6 +35,8 @@ export type Settings = Readonly<{
   reducedFlash: boolean;
   /** How well the enemies fight (`D46`). */
   aiLevel: AiLevel;
+  /** The language the game's text is drawn in (`D43`). */
+  language: Locale;
 }>;
 
 /**
@@ -74,6 +77,11 @@ export const DEFAULT_REDUCED_FLASH = false;
  * wild picks a random move and a trainer thinks with its archetype's own flags.
  */
 export const DEFAULT_AI_LEVEL: AiLevel = 'normal';
+/**
+ * The shipped language: the source table. The setting is defaulted from the
+ * browser once, in `src/settings.ts`, and stored from there (`D43`).
+ */
+export const DEFAULT_LANGUAGE: Locale = 'en';
 
 export function defaultSettings(): Settings {
   return {
@@ -85,6 +93,7 @@ export function defaultSettings(): Settings {
     keybinds: DEFAULT_KEYBINDS,
     reducedFlash: DEFAULT_REDUCED_FLASH,
     aiLevel: DEFAULT_AI_LEVEL,
+    language: DEFAULT_LANGUAGE,
   };
 }
 
@@ -228,6 +237,13 @@ export const SAVE_MIGRATIONS: Migrations = {
   }),
 };
 
+/**
+ * The `language` field added beside `alwaysRun` (`D43`) opens no step: it is read
+ * per field in `parseSettings` (`isLocale(value.language) ? … : base.language`),
+ * so a document written before it reads the source table. The schema version
+ * stays 16, the `D22`/`D45`/`D46` precedent.
+ */
+
 /** The highest XP any member of a v12 run carried, or a level-1 bar. */
 function highestMemberXp(run: Record<string, unknown>): number {
   let xp = 0;
@@ -360,7 +376,9 @@ export function decodeSave(
   };
 }
 
-/** Reads the save slot; storage failures are a fresh save, never a crash. */
+/**
+ * Reads the save slot; storage failures are a fresh save, never a crash.
+ */
 export function loadSave(
   storage: StorageLike | null,
   migrations: Migrations = SAVE_MIGRATIONS,
@@ -373,6 +391,33 @@ export function loadSave(
     return emptySave();
   }
   return decodeSave(raw, migrations);
+}
+
+/**
+ * The language the stored document carries, or null when the slot is empty, the
+ * JSON is unreadable or the field is absent — never throws, so a blocked store
+ * reads as "not chosen". It exists so the browser layer can tell "the player
+ * chose `en`" from "nothing was ever chosen", which the decoded settings cannot
+ * (`D43`).
+ */
+export function storedSettingsLanguage(storage: StorageLike | null): Locale | null {
+  if (!storage) return null;
+  let raw: string | null = null;
+  try {
+    raw = storage.getItem(SAVE_KEY);
+  } catch {
+    return null;
+  }
+  if (raw === null) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!isRecord(parsed) || !isRecord(parsed.settings)) return null;
+  const language = parsed.settings.language;
+  return isLocale(language) ? language : null;
 }
 
 /** Writes the save slot; a blocked or full store is silent, never fatal. */
@@ -445,7 +490,18 @@ function parseSettings(value: unknown): Settings {
   const reducedFlash =
     typeof value.reducedFlash === 'boolean' ? value.reducedFlash : base.reducedFlash;
   const aiLevel = value.aiLevel === 'hard' ? 'hard' : base.aiLevel;
-  return { textSpeed, volume, alwaysRun, hudTransparent, hudLayout, keybinds, reducedFlash, aiLevel };
+  const language = isLocale(value.language) ? value.language : base.language;
+  return {
+    textSpeed,
+    volume,
+    alwaysRun,
+    hudTransparent,
+    hudLayout,
+    keybinds,
+    reducedFlash,
+    aiLevel,
+    language,
+  };
 }
 
 function parseStats(value: unknown): Stats | null {

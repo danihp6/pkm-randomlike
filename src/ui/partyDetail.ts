@@ -9,6 +9,7 @@ import {
 } from '../data/dex';
 import { getBiome } from '../data/biomes';
 import { abilityText } from '../data/abilityText';
+import { t, type TranslationKey } from '../i18n';
 import { restoreFighter, type BattleFighter, type MoveSlot, type StatusId } from '../engine/battle/fighter';
 import { effectiveMoveType } from '../engine/battle/moveType';
 import { getItem } from '../data/items';
@@ -96,14 +97,20 @@ export type MemberDetail = Readonly<{
 /** The battle stats the STATS tab lists, in draw order (HP is the bar). */
 export const DETAIL_STATS: readonly StatId[] = ['atk', 'def', 'spa', 'spd', 'spe'];
 
-export const STAT_LABELS: Readonly<Record<StatId, string>> = {
-  hp: 'HP',
-  atk: 'ATTACK',
-  def: 'DEFENSE',
-  spa: 'SP. ATK',
-  spd: 'SP. DEF',
-  spe: 'SPEED',
+/** The stat rows' labels, keyed: the panel resolves them as it draws each row. */
+export const STAT_LABELS: Readonly<Record<StatId, TranslationKey>> = {
+  hp: 'detail.stat.hp',
+  atk: 'detail.stat.atk',
+  def: 'detail.stat.def',
+  spa: 'detail.stat.spa',
+  spd: 'detail.stat.spd',
+  spe: 'detail.stat.spe',
 };
+
+/** The stat label in the current locale, resolved as the row is drawn. */
+export function statLabel(stat: StatId): string {
+  return t(STAT_LABELS[stat]);
+}
 
 export { typeColor, typeTint } from './typeColors';
 
@@ -153,7 +160,11 @@ export function memberDetail(run: RunState, memberId: string): MemberDetail | nu
 /** "Deep Forest · Map 1 · Route 2" for a caught member, or null for the starter. */
 function catchLabel(caughtAt: CatchLocation | undefined): string | null {
   if (!caughtAt) return null;
-  return `${getBiome(caughtAt.biomeId).name} · Map ${caughtAt.mapIndex} · Route ${caughtAt.routeInMap + 1}`;
+  return t('detail.caught', {
+    biome: getBiome(caughtAt.biomeId).name,
+    map: caughtAt.mapIndex,
+    route: caughtAt.routeInMap + 1,
+  });
 }
 
 /**

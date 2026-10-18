@@ -14,6 +14,7 @@ import { ITEMS, type ItemDef } from '../data/items';
 import { RUN_CHAIN } from '../data/run';
 import { SHAPES, isRouteShape, type RouteShape } from '../engine/routes/layout';
 import { ROUTE_HEIGHT, ROUTE_WIDTH } from '../engine/routes/sketch';
+import { t } from '../i18n';
 import { DEBUG_MENU_TOGGLE_KEY, IS_DEVELOP } from './env';
 
 /**
@@ -191,7 +192,7 @@ export function matchNature(query: string, natures: readonly Nature[] = allNatur
 
 /** The display string a party member's autocomplete option shows and stores. */
 export function partyMemberLabel(member: DebugPartyMember): string {
-  return `${member.name} Lv${member.level}`;
+  return t('dev.partyMemberLabel', { name: member.name, level: member.level });
 }
 
 /**
@@ -212,7 +213,7 @@ export function partyMemberLabels(members: readonly DebugPartyMember[]): readonl
     if ((total.get(base) ?? 0) <= 1) return base;
     const n = (seen.get(base) ?? 0) + 1;
     seen.set(base, n);
-    return `${base} (${n})`;
+    return t('dev.partyMemberTwin', { label: base, n });
   });
 }
 
@@ -254,9 +255,13 @@ export function matchPartyMember(
 export function debugLocationLabel(
   context: Pick<DebugRouteContext, 'mapIndex' | 'roomInMap' | 'roomCount' | 'tile'>,
 ): string {
-  const clauses = [`map ${context.mapIndex}`];
-  if (context.roomCount > 0) clauses.push(`room ${context.roomInMap}/${context.roomCount}`);
-  if (context.tile) clauses.push(`(${context.tile.x},${context.tile.y})`);
+  const clauses = [t('dev.location.map', { map: context.mapIndex })];
+  if (context.roomCount > 0) {
+    clauses.push(t('dev.location.room', { room: context.roomInMap, count: context.roomCount }));
+  }
+  if (context.tile) {
+    clauses.push(t('dev.location.tile', { x: context.tile.x, y: context.tile.y }));
+  }
   return clauses.join(' · ');
 }
 
@@ -341,7 +346,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   const title = document.createElement('div');
   title.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700;color:#7dd3fc;';
   const titleText = document.createElement('span');
-  titleText.textContent = 'DEBUG · tools';
+  titleText.textContent = t('dev.title');
 
   const status = document.createElement('div');
   status.style.cssText = 'min-height:16px;color:#94a3b8;';
@@ -351,7 +356,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const speciesInput = document.createElement('input');
   speciesInput.type = 'text';
-  speciesInput.placeholder = 'species';
+  speciesInput.placeholder = t('dev.speciesPlaceholder');
   speciesInput.autocomplete = 'off';
   speciesInput.setAttribute('list', 'debug-species-list');
   speciesInput.style.cssText =
@@ -362,7 +367,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   for (const species of SPECIES) {
     const option = document.createElement('option');
     option.value = species.name;
-    option.label = `#${species.num} ${species.id}`;
+    option.label = t('dev.option.species', { num: species.num, id: species.id });
     list.append(option);
   }
 
@@ -371,33 +376,35 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   levelInput.min = String(DEBUG_MIN_LEVEL);
   levelInput.max = String(DEBUG_MAX_LEVEL);
   levelInput.value = String(DEBUG_DEFAULT_LEVEL);
-  levelInput.title = 'level';
+  levelInput.title = t('dev.levelTitle');
   levelInput.style.cssText = speciesInput.style.cssText;
 
   const speciesRow = document.createElement('label');
-  speciesRow.textContent = 'Species';
+  speciesRow.textContent = t('dev.species');
   speciesRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
   speciesRow.append(speciesInput);
 
   const levelRow = document.createElement('label');
-  levelRow.textContent = 'Level';
+  levelRow.textContent = t('dev.level');
   levelRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
   levelRow.append(levelInput);
 
   const launch = (): void => {
     const species = matchSpecies(speciesInput.value, SPECIES);
     if (!species) {
-      status.textContent = speciesInput.value.trim() ? 'unknown species' : 'type a species';
+      status.textContent = speciesInput.value.trim()
+        ? t('dev.status.unknownSpecies')
+        : t('dev.status.typeSpecies');
       return;
     }
     const level = clampLevel(Number(levelInput.value));
     levelInput.value = String(level);
-    status.textContent = `Lv${level} ${species.name}`;
+    status.textContent = t('dev.status.launch', { level, name: species.name });
     (document.activeElement as HTMLElement | null)?.blur();
     handlers.onWildBattle(species.id, level);
   };
 
-  const battleButton = button('Wild battle', launch);
+  const battleButton = button(t('dev.wildBattle'), launch);
   battleButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
 
   // Route section: regenerate the current route with selectable inputs. A blank
@@ -425,14 +432,14 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const seedInput = document.createElement('input');
   seedInput.type = 'text';
-  seedInput.placeholder = 'auto';
+  seedInput.placeholder = t('dev.auto');
   seedInput.autocomplete = 'off';
   seedInput.style.cssText = compact;
 
-  const routeIndexInput = numberField('route index', 'auto');
+  const routeIndexInput = numberField(t('dev.routeIndexTitle'), t('dev.auto'));
   routeIndexInput.min = '1';
 
-  const attemptInput = numberField('attempt (nonce; auto-increments per press)', '0');
+  const attemptInput = numberField(t('dev.attemptTitle'), '0');
   attemptInput.min = '0';
   attemptInput.value = '0';
 
@@ -440,7 +447,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   shapeSelect.style.cssText = compact;
   const autoShape = document.createElement('option');
   autoShape.value = '';
-  autoShape.textContent = 'auto';
+  autoShape.textContent = t('dev.auto');
   shapeSelect.append(autoShape);
   for (const shape of Object.keys(SHAPES)) {
     const option = document.createElement('option');
@@ -449,15 +456,15 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     shapeSelect.append(option);
   }
 
-  const widthInput = numberField('width', 'auto');
-  const heightInput = numberField('height', 'auto');
+  const widthInput = numberField(t('dev.widthTitle'), t('dev.auto'));
+  const heightInput = numberField(t('dev.heightTitle'), t('dev.auto'));
 
-  field('Seed', seedInput);
-  field('Index', routeIndexInput);
-  field('Attempt', attemptInput);
-  field('Shape', shapeSelect);
-  field('W', widthInput);
-  field('H', heightInput);
+  field(t('dev.seed'), seedInput);
+  field(t('dev.index'), routeIndexInput);
+  field(t('dev.attempt'), attemptInput);
+  field(t('dev.shape'), shapeSelect);
+  field(t('dev.w'), widthInput);
+  field(t('dev.h'), heightInput);
 
   const routeInfo = document.createElement('div');
   routeInfo.style.cssText = 'color:#94a3b8;';
@@ -485,15 +492,15 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     teleportGrid.append(label, control);
   };
 
-  const floorInput = numberField('floor', 'auto');
-  const roomInput = numberField('room', 'auto');
-  const tileXInput = numberField('tile x', 'auto');
-  const tileYInput = numberField('tile y', 'auto');
+  const floorInput = numberField(t('dev.floorTitle'), t('dev.auto'));
+  const roomInput = numberField(t('dev.roomTitle'), t('dev.auto'));
+  const tileXInput = numberField(t('dev.tileXTitle'), t('dev.auto'));
+  const tileYInput = numberField(t('dev.tileYTitle'), t('dev.auto'));
 
-  teleportField('Floor', floorInput);
-  teleportField('Room', roomInput);
-  teleportField('X', tileXInput);
-  teleportField('Y', tileYInput);
+  teleportField(t('dev.floor'), floorInput);
+  teleportField(t('dev.room'), roomInput);
+  teleportField(t('dev.x'), tileXInput);
+  teleportField(t('dev.y'), tileYInput);
 
   const teleportStatus = document.createElement('div');
   teleportStatus.id = 'debug-teleport-status';
@@ -502,29 +509,31 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   /** Rewrites the position readout; called on the tick and after every teleport. */
   const refreshLocation = (): void => {
     const ctx = handlers.readRouteContext();
-    locationInfo.textContent = ctx ? debugLocationLabel(ctx) : 'no active route';
+    locationInfo.textContent = ctx ? debugLocationLabel(ctx) : t('dev.error.noRoute');
   };
 
   const teleport = (run: (ctx: DebugRouteContext) => DebugTeleportResult): void => {
     const ctx = handlers.readRouteContext();
     if (!ctx) {
-      teleportStatus.textContent = 'no active route';
+      teleportStatus.textContent = t('dev.error.noRoute');
       return;
     }
     const result = run(ctx);
-    teleportStatus.textContent = result.ok ? 'teleported' : `teleport failed: ${result.error ?? 'unknown'}`;
+    teleportStatus.textContent = result.ok
+      ? t('dev.status.teleported')
+      : t('dev.status.teleportFailed', { error: result.error ?? t('dev.status.unknown') });
     refreshLocation();
   };
 
-  const floorGo = button('Go', () => {
+  const floorGo = button(t('dev.go'), () => {
     teleport((ctx) => handlers.onTeleportFloor(parseOptionalInt(floorInput.value) ?? ctx.mapIndex));
   });
-  floorGo.title = 'teleport to floor';
-  const roomGo = button('Go', () => {
+  floorGo.title = t('dev.teleportFloor');
+  const roomGo = button(t('dev.go'), () => {
     teleport((ctx) => handlers.onTeleportRoom(parseOptionalInt(roomInput.value) ?? ctx.roomInMap));
   });
-  roomGo.title = 'teleport to room';
-  const tileGo = button('Go', () => {
+  roomGo.title = t('dev.teleportRoom');
+  const tileGo = button(t('dev.go'), () => {
     teleport((ctx) =>
       handlers.onTeleportTile(
         parseOptionalInt(tileXInput.value) ?? ctx.tile?.x ?? 0,
@@ -532,7 +541,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
       ),
     );
   });
-  tileGo.title = 'teleport to tile';
+  tileGo.title = t('dev.teleportTile');
 
   const teleportButtons = document.createElement('div');
   teleportButtons.style.cssText = 'display:flex;gap:6px;';
@@ -543,7 +552,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   /** True while the fields hold the user's edits; pauses the live refresh. */
   let dirty = false;
 
-  const randomizeButton = button('Randomize', () => {
+  const randomizeButton = button(t('dev.randomize'), () => {
     const input = randomRouteInput();
     seedInput.value = input.seed;
     routeIndexInput.value = String(input.routeIndex);
@@ -551,14 +560,14 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     shapeSelect.value = input.shape;
     widthInput.value = String(input.width);
     heightInput.value = String(input.height);
-    routeStatus.textContent = 'randomized';
+    routeStatus.textContent = t('dev.status.randomized');
     dirty = true;
   });
 
-  const regenButton = button('Regenerate route', () => {
+  const regenButton = button(t('dev.regenerate'), () => {
     const ctx = handlers.readRouteContext();
     if (!ctx) {
-      routeStatus.textContent = 'no active route';
+      routeStatus.textContent = t('dev.error.noRoute');
       return;
     }
     const attempt = (parseOptionalInt(attemptInput.value) ?? 0) + 1;
@@ -572,7 +581,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
       width: parseOptionalInt(widthInput.value) ?? ctx.width,
       height: parseOptionalInt(heightInput.value) ?? ctx.height,
     });
-    routeStatus.textContent = `regenerated (attempt ${attempt})`;
+    routeStatus.textContent = t('dev.status.regenerated', { attempt });
     dirty = false;
   });
   regenButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
@@ -588,7 +597,9 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const refreshGeneratorStep = (): void => {
     const info = handlers.generatorStepInfo();
-    stepStatus.textContent = info ? `${info.label} ${info.index + 1}/${info.total}` : 'no route';
+    stepStatus.textContent = info
+      ? t('dev.stepInfo', { label: info.label, index: info.index + 1, total: info.total })
+      : t('dev.status.noRoute');
   };
 
   const advanceGeneratorStep = (delta: number): void => {
@@ -600,8 +611,8 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   stepRow.style.cssText = 'display:flex;gap:6px;align-items:center;';
   stepRow.append(
     button('◂', () => advanceGeneratorStep(-1)),
-    button('Step ▸', () => advanceGeneratorStep(1)),
-    button('Live', () => {
+    button(t('dev.step'), () => advanceGeneratorStep(1)),
+    button(t('dev.live'), () => {
       handlers.resetGeneratorStep();
       refreshGeneratorStep();
     }),
@@ -622,35 +633,35 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const passThroughInput = document.createElement('input');
   passThroughInput.type = 'checkbox';
-  passThroughInput.title = 'walk through walls, water and ledges';
+  passThroughInput.title = t('dev.passThroughTitle');
   passThroughInput.addEventListener('change', () => {
     handlers.onTogglePassThrough(passThroughInput.checked);
   });
-  const passThroughRow = toggleRow(passThroughInput, 'Pass through obstacles');
+  const passThroughRow = toggleRow(passThroughInput, t('dev.passThrough'));
 
   const hoverInspectInput = document.createElement('input');
   hoverInspectInput.type = 'checkbox';
-  hoverInspectInput.title = 'color the cell under the mouse and show its x,y';
+  hoverInspectInput.title = t('dev.hoverInspectTitle');
   hoverInspectInput.addEventListener('change', () => {
     handlers.onToggleHoverInspect(hoverInspectInput.checked);
   });
-  const hoverInspectRow = toggleRow(hoverInspectInput, 'Inspect hovered cell');
+  const hoverInspectRow = toggleRow(hoverInspectInput, t('dev.hoverInspect'));
 
   const ignoreEncountersInput = document.createElement('input');
   ignoreEncountersInput.type = 'checkbox';
-  ignoreEncountersInput.title = 'the tall grass rolls no wild encounter';
+  ignoreEncountersInput.title = t('dev.ignoreEncountersTitle');
   ignoreEncountersInput.addEventListener('change', () => {
     handlers.onToggleIgnoreEncounters(ignoreEncountersInput.checked);
   });
-  const ignoreEncountersRow = toggleRow(ignoreEncountersInput, 'Ignore wild encounters');
+  const ignoreEncountersRow = toggleRow(ignoreEncountersInput, t('dev.ignoreEncounters'));
 
   const ignoreTrainersInput = document.createElement('input');
   ignoreTrainersInput.type = 'checkbox';
-  ignoreTrainersInput.title = 'no trainer line of sight opens a battle';
+  ignoreTrainersInput.title = t('dev.ignoreTrainersTitle');
   ignoreTrainersInput.addEventListener('change', () => {
     handlers.onToggleIgnoreTrainers(ignoreTrainersInput.checked);
   });
-  const ignoreTrainersRow = toggleRow(ignoreTrainersInput, 'Ignore trainers');
+  const ignoreTrainersRow = toggleRow(ignoreTrainersInput, t('dev.ignoreTrainers'));
 
   generalSection.append(passThroughRow, hoverInspectRow, ignoreEncountersRow, ignoreTrainersRow);
 
@@ -660,7 +671,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     dirty = false;
     const ctx = handlers.readRouteContext();
     if (!ctx) {
-      routeInfo.textContent = 'no active route';
+      routeInfo.textContent = t('dev.error.noRoute');
       routeStatus.textContent = '';
       refreshLocation();
       refreshGeneratorStep();
@@ -676,7 +687,11 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     hoverInspectInput.checked = ctx.hoverInspect;
     ignoreEncountersInput.checked = ctx.ignoreEncounters;
     ignoreTrainersInput.checked = ctx.ignoreTrainers;
-    routeInfo.textContent = `${ctx.mode} · ${ctx.biomeName} · band ${ctx.bandName}`;
+    routeInfo.textContent = t('dev.routeInfo', {
+      mode: ctx.mode,
+      biome: ctx.biomeName,
+      band: ctx.bandName,
+    });
     routeStatus.textContent = '';
     refreshLocation();
     refreshGeneratorStep();
@@ -705,13 +720,13 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const partySpeciesInput = document.createElement('input');
   partySpeciesInput.type = 'text';
-  partySpeciesInput.placeholder = 'species';
+  partySpeciesInput.placeholder = t('dev.speciesPlaceholder');
   partySpeciesInput.autocomplete = 'off';
   partySpeciesInput.setAttribute('list', 'debug-species-list');
   partySpeciesInput.style.cssText = compact;
 
   const partySpeciesRow = document.createElement('label');
-  partySpeciesRow.textContent = 'Species';
+  partySpeciesRow.textContent = t('dev.species');
   partySpeciesRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
   partySpeciesRow.append(partySpeciesInput);
 
@@ -724,44 +739,50 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   squadLevelInput.type = 'number';
   squadLevelInput.min = String(DEBUG_MIN_LEVEL);
   squadLevelInput.max = String(DEBUG_MAX_LEVEL);
-  squadLevelInput.title = 'squad level (party and PC)';
-  squadLevelInput.placeholder = 'level';
+  squadLevelInput.title = t('dev.squadLevelTitle');
+  squadLevelInput.placeholder = t('dev.levelPlaceholder');
   squadLevelInput.style.cssText = compact;
 
   const setSquadLevel = (): void => {
     const level = clampLevel(parseOptionalInt(squadLevelInput.value) ?? DEBUG_DEFAULT_LEVEL);
     squadLevelInput.value = String(level);
     if (!handlers.onSetSquadLevel(level)) {
-      partyStatus.textContent = 'no active run';
+      partyStatus.textContent = t('dev.status.noRun');
       return;
     }
     refreshPartyOptions();
-    partyStatus.textContent = `party and PC set to Lv${level}`;
+    partyStatus.textContent = t('dev.status.squadLevel', { level });
   };
 
-  const squadLevelButton = button('Set level', setSquadLevel);
+  const squadLevelButton = button(t('dev.setLevel'), setSquadLevel);
   squadLevelButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
 
   const squadLevelRow = document.createElement('label');
-  squadLevelRow.textContent = 'Squad level';
+  squadLevelRow.textContent = t('dev.squadLevel');
   squadLevelRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
   squadLevelRow.append(squadLevelInput, squadLevelButton);
 
   const addPokemon = (): void => {
     const species = matchSpecies(partySpeciesInput.value, SPECIES);
     if (!species) {
-      partyStatus.textContent = partySpeciesInput.value.trim() ? 'unknown species' : 'type a species';
+      partyStatus.textContent = partySpeciesInput.value.trim()
+        ? t('dev.status.unknownSpecies')
+        : t('dev.status.typeSpecies');
       return;
     }
     const level = DEBUG_DEFAULT_LEVEL;
     const where = handlers.onAddPokemon(species.id, level);
     partyStatus.textContent = where
-      ? `added ${species.name} Lv${level} to ${where === 'party' ? 'party' : 'PC box'}`
-      : 'no active run';
+      ? t('dev.status.added', {
+          name: species.name,
+          level,
+          where: where === 'party' ? t('dev.where.party') : t('dev.where.box'),
+        })
+      : t('dev.status.noRun');
     if (where) refreshPartyOptions();
   };
 
-  const addPokemonButton = button('Add', addPokemon);
+  const addPokemonButton = button(t('dev.add'), addPokemon);
   addPokemonButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
   partySection.append(squadLevelRow, partySpeciesRow, addPokemonButton, partyStatus);
 
@@ -777,20 +798,20 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const partyMemberInput = document.createElement('input');
   partyMemberInput.type = 'text';
-  partyMemberInput.placeholder = 'party member';
+  partyMemberInput.placeholder = t('dev.memberPlaceholder');
   partyMemberInput.autocomplete = 'off';
   partyMemberInput.setAttribute('list', 'debug-party-list');
   partyMemberInput.style.cssText = compact;
 
   const partyMemberRow = document.createElement('label');
-  partyMemberRow.textContent = 'Member';
+  partyMemberRow.textContent = t('dev.member');
   partyMemberRow.style.cssText = partySpeciesRow.style.cssText;
   partyMemberRow.append(partyMemberInput);
 
   const moveInputs = [0, 1, 2, 3].map((index) => {
     const input = document.createElement('input');
     input.type = 'text';
-    input.placeholder = `move ${index + 1}`;
+    input.placeholder = t('dev.movePlaceholder', { n: index + 1 });
     input.autocomplete = 'off';
     input.setAttribute('list', 'debug-move-list');
     input.style.cssText = compact;
@@ -799,7 +820,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const moveRows = moveInputs.map((input, index) => {
     const row = document.createElement('label');
-    row.textContent = `Move ${index + 1}`;
+    row.textContent = t('dev.move', { n: index + 1 });
     row.style.cssText = partySpeciesRow.style.cssText;
     row.append(input);
     return row;
@@ -807,25 +828,25 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const abilityInput = document.createElement('input');
   abilityInput.type = 'text';
-  abilityInput.placeholder = 'ability';
+  abilityInput.placeholder = t('dev.abilityPlaceholder');
   abilityInput.autocomplete = 'off';
   abilityInput.setAttribute('list', 'debug-ability-list');
   abilityInput.style.cssText = compact;
 
   const abilityRow = document.createElement('label');
-  abilityRow.textContent = 'Ability';
+  abilityRow.textContent = t('dev.ability');
   abilityRow.style.cssText = partySpeciesRow.style.cssText;
   abilityRow.append(abilityInput);
 
   const natureInput = document.createElement('input');
   natureInput.type = 'text';
-  natureInput.placeholder = 'nature';
+  natureInput.placeholder = t('dev.naturePlaceholder');
   natureInput.autocomplete = 'off';
   natureInput.setAttribute('list', 'debug-nature-list');
   natureInput.style.cssText = compact;
 
   const natureRow = document.createElement('label');
-  natureRow.textContent = 'Nature';
+  natureRow.textContent = t('dev.nature');
   natureRow.style.cssText = partySpeciesRow.style.cssText;
   natureRow.append(natureInput);
 
@@ -858,7 +879,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     members.forEach((member, index) => {
       const option = document.createElement('option');
       option.value = labels[index] ?? partyMemberLabel(member);
-      option.label = `#${member.speciesId}`;
+      option.label = t('dev.option.member', { id: member.speciesId });
       partyList.append(option);
     });
     const selected = members.find((member) => member.id === selectedMemberId);
@@ -905,14 +926,18 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   const applyEdit = (): void => {
     const member = currentMember();
     if (!member) {
-      editStatus.textContent = partyMemberInput.value.trim() ? 'unknown member' : 'pick a member';
+      editStatus.textContent = partyMemberInput.value.trim()
+        ? t('dev.status.unknownMember')
+        : t('dev.status.pickMember');
       return;
     }
     const edit: { nature?: string; ability?: string; moves?: readonly string[] } = {};
     if (abilityInput.value.trim()) {
       const ability = matchAbility(abilityInput.value);
       if (!ability) {
-        editStatus.textContent = `unknown ability "${abilityInput.value.trim()}"`;
+        editStatus.textContent = t('dev.status.unknownAbility', {
+          name: abilityInput.value.trim(),
+        });
         return;
       }
       edit.ability = ability.name;
@@ -920,7 +945,9 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     if (natureInput.value.trim()) {
       const nature = matchNature(natureInput.value);
       if (!nature) {
-        editStatus.textContent = `unknown nature "${natureInput.value.trim()}"`;
+        editStatus.textContent = t('dev.status.unknownNature', {
+          name: natureInput.value.trim(),
+        });
         return;
       }
       edit.nature = nature.id;
@@ -931,40 +958,40 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
       if (!text) continue;
       const move = matchMove(text);
       if (!move) {
-        editStatus.textContent = `unknown move "${text}"`;
+        editStatus.textContent = t('dev.status.unknownMove', { name: text });
         return;
       }
       moveIds.push(move.id);
     }
     if (moveIds.length > 0) edit.moves = moveIds;
     if (!handlers.onEditPartyMember(member.id, edit)) {
-      editStatus.textContent = 'no active run';
+      editStatus.textContent = t('dev.status.noRun');
       return;
     }
     selectedMemberId = member.id;
     refreshPartyOptions();
-    editStatus.textContent = `edited ${member.name}`;
+    editStatus.textContent = t('dev.status.edited', { name: member.name });
   };
 
   const healSelected = (): void => {
     const member = currentMember();
     if (!member) {
-      editStatus.textContent = 'pick a member';
+      editStatus.textContent = t('dev.status.pickMember');
       return;
     }
     if (!handlers.onHealPartyMember(member.id)) {
-      editStatus.textContent = 'no active run';
+      editStatus.textContent = t('dev.status.noRun');
       return;
     }
     selectedMemberId = member.id;
     refreshPartyOptions();
-    editStatus.textContent = `healed ${member.name}`;
+    editStatus.textContent = t('dev.status.healed', { name: member.name });
   };
 
-  const applyButton = button('Apply', applyEdit);
+  const applyButton = button(t('dev.apply'), applyEdit);
   applyButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
 
-  const healButton = button('Heal', healSelected);
+  const healButton = button(t('dev.heal'), healSelected);
   healButton.style.cssText += 'background:#166534;color:#f8fafc;font-weight:700;';
 
   const editButtons = document.createElement('div');
@@ -998,7 +1025,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const bagItemInput = document.createElement('input');
   bagItemInput.type = 'text';
-  bagItemInput.placeholder = 'item';
+  bagItemInput.placeholder = t('dev.itemPlaceholder');
   bagItemInput.autocomplete = 'off';
   bagItemInput.setAttribute('list', 'debug-item-list');
   bagItemInput.style.cssText = compact;
@@ -1008,16 +1035,16 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   bagCountInput.min = '1';
   bagCountInput.max = String(DEBUG_MAX_ITEM_COUNT);
   bagCountInput.value = '1';
-  bagCountInput.title = 'count';
+  bagCountInput.title = t('dev.countTitle');
   bagCountInput.style.cssText = compact;
 
   const bagItemRow = document.createElement('label');
-  bagItemRow.textContent = 'Item';
+  bagItemRow.textContent = t('dev.item');
   bagItemRow.style.cssText = partySpeciesRow.style.cssText;
   bagItemRow.append(bagItemInput);
 
   const bagCountRow = document.createElement('label');
-  bagCountRow.textContent = 'Count';
+  bagCountRow.textContent = t('dev.count');
   bagCountRow.style.cssText = partySpeciesRow.style.cssText;
   bagCountRow.append(bagCountInput);
 
@@ -1027,16 +1054,18 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   const addBagItem = (): void => {
     const item = matchItem(bagItemInput.value, ITEMS);
     if (!item) {
-      bagStatus.textContent = bagItemInput.value.trim() ? 'unknown item' : 'type an item';
+      bagStatus.textContent = bagItemInput.value.trim()
+        ? t('dev.status.unknownItem')
+        : t('dev.status.typeItem');
       return;
     }
     const count = clampItemCount(Number(bagCountInput.value));
     bagCountInput.value = String(count);
     handlers.onAddItem(item.id, count);
-    bagStatus.textContent = `added ${item.name} x${count}`;
+    bagStatus.textContent = t('dev.status.addedItem', { name: item.name, count });
   };
 
-  const addBagButton = button('Add', addBagItem);
+  const addBagButton = button(t('dev.add'), addBagItem);
   addBagButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
   bagSection.append(bagItemRow, bagCountRow, addBagButton, bagStatus);
 
@@ -1045,7 +1074,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   for (const item of ITEMS) {
     const option = document.createElement('option');
     option.value = item.name;
-    option.label = `# ${item.id}`;
+    option.label = t('dev.option.item', { id: item.id });
     itemList.append(option);
   }
 
@@ -1054,7 +1083,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   for (const move of allMoves()) {
     const option = document.createElement('option');
     option.value = move.name;
-    option.label = `#${move.id} · ${move.type} ${move.category}`;
+    option.label = t('dev.option.move', { id: move.id, type: move.type, category: move.category });
     moveList.append(option);
   }
 
@@ -1063,7 +1092,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   for (const ability of allAbilities()) {
     const option = document.createElement('option');
     option.value = ability.name;
-    option.label = `#${ability.id}`;
+    option.label = t('dev.option.ability', { id: ability.id });
     abilityList.append(option);
   }
 
@@ -1072,7 +1101,9 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   for (const nature of allNatures()) {
     const option = document.createElement('option');
     option.value = nature.name;
-    option.label = nature.plus && nature.minus ? `+${nature.plus} / -${nature.minus}` : 'neutral';
+    option.label = nature.plus && nature.minus
+      ? t('dev.option.nature', { plus: nature.plus, minus: nature.minus })
+      : t('dev.option.natureNeutral');
     natureList.append(option);
   }
 
@@ -1100,7 +1131,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const mapArea = document.createElement('textarea');
   mapArea.spellcheck = false;
-  mapArea.placeholder = 'route + frame map JSON';
+  mapArea.placeholder = t('dev.mapPlaceholder');
   mapArea.style.cssText =
     'width:296px;height:150px;resize:vertical;padding:6px;border:1px solid #334155;border-radius:5px;' +
     'background:#0f172a;color:#e2e8f0;font:11px/1.35 monospace;';
@@ -1126,41 +1157,54 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     }
     const bitten = frameMap.trees.filter((tree) => !tree.solid);
     const lines = [
-      `${frameMap.width}x${frameMap.height} · ${frameMap.trees.length} trees · ${bitten.length} bitten`,
+      t('dev.summary.map', {
+        width: frameMap.width,
+        height: frameMap.height,
+        trees: frameMap.trees.length,
+        bitten: bitten.length,
+      }),
     ];
     for (const tree of bitten) {
-      lines.push(`tree ${tree.id} · band ${tree.band} · rows ${tree.top}-${tree.bottom} · ${tree.cells.length} cells`);
+      lines.push(t('dev.summary.tree', {
+        id: tree.id,
+        band: tree.band,
+        from: tree.top,
+        to: tree.bottom,
+        cells: tree.cells.length,
+      }));
     }
     mapSummary.textContent = lines.join('\n');
   };
 
-  const mapExportButton = button('Export', () => {
+  const mapExportButton = button(t('dev.export'), () => {
     const text = handlers.exportFrameMap();
     if (!text) {
-      mapStatus.textContent = 'no active route';
+      mapStatus.textContent = t('dev.error.noRoute');
       return;
     }
     mapArea.value = text;
-    mapStatus.textContent = `exported ${text.length} chars`;
+    mapStatus.textContent = t('dev.status.exported', { chars: text.length });
     summarize(text);
   });
-  const mapCopyButton = button('Copy', () => {
+  const mapCopyButton = button(t('dev.copy'), () => {
     if (!mapArea.value) {
-      mapStatus.textContent = 'nothing to copy';
+      mapStatus.textContent = t('dev.status.nothingToCopy');
       return;
     }
     void navigator.clipboard?.writeText(mapArea.value).then(
       () => {
-        mapStatus.textContent = 'copied';
+        mapStatus.textContent = t('dev.status.copied');
       },
       () => {
-        mapStatus.textContent = 'copy failed';
+        mapStatus.textContent = t('dev.status.copyFailed');
       },
     );
   });
-  const mapImportButton = button('Import', () => {
+  const mapImportButton = button(t('dev.import'), () => {
     const result = handlers.importFrameMap(mapArea.value);
-    mapStatus.textContent = result.ok ? 'imported' : `import failed: ${result.error}`;
+    mapStatus.textContent = result.ok
+      ? t('dev.status.imported')
+      : t('dev.status.importFailed', { error: result.error ?? t('dev.status.unknown') });
     if (result.ok) {
       try {
         summarize(mapArea.value);
@@ -1176,12 +1220,12 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
 
   const tabs = document.createElement('div');
   tabs.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
-  const generalTab = button('General', () => selectTab('general'));
-  const battleTab = button('Battle', () => selectTab('battle'));
-  const partyTab = button('Party', () => selectTab('party'));
-  const bagTab = button('Bag', () => selectTab('bag'));
-  const routeTab = button('Route', () => selectTab('route'));
-  const mapTab = button('Map', () => selectTab('map'));
+  const generalTab = button(t('dev.tab.general'), () => selectTab('general'));
+  const battleTab = button(t('dev.tab.battle'), () => selectTab('battle'));
+  const partyTab = button(t('dev.tab.party'), () => selectTab('party'));
+  const bagTab = button(t('dev.tab.bag'), () => selectTab('bag'));
+  const routeTab = button(t('dev.tab.route'), () => selectTab('route'));
+  const mapTab = button(t('dev.tab.map'), () => selectTab('map'));
   tabs.append(generalTab, battleTab, partyTab, bagTab, routeTab, mapTab);
 
   const setTabStyle = (element: HTMLButtonElement, active: boolean): void => {

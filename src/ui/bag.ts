@@ -1,3 +1,4 @@
+import { t, type TranslationKey } from '../i18n';
 import { getItem, type ItemKind } from '../data/items';
 import type { BagCounts } from '../engine/run';
 
@@ -17,13 +18,19 @@ export const BAG_CATEGORIES: readonly BagCategory[] = [
   'valuable',
 ];
 
-export const BAG_CATEGORY_LABELS: Readonly<Record<BagCategory, string>> = {
-  equipment: 'EQUIP',
-  consumable: 'CONSUM',
-  machine: 'MT/MO',
-  ball: 'BALL',
-  valuable: 'VALUE',
+/** The pocket's tab label, as a key: a table of translated strings would freeze the locale. */
+export const BAG_CATEGORY_LABELS: Readonly<Record<BagCategory, TranslationKey>> = {
+  equipment: 'bag.equipment',
+  consumable: 'bag.consumable',
+  machine: 'bag.machine',
+  ball: 'bag.ball',
+  valuable: 'bag.valuable',
 };
+
+/** The pocket's tab text in the current locale, resolved as the tab is drawn. */
+export function bagCategoryLabel(category: BagCategory): string {
+  return t(BAG_CATEGORY_LABELS[category]);
+}
 
 /** The pocket an item kind belongs to; a kind never lands in two pockets. */
 export function bagCategoryForKind(kind: ItemKind): BagCategory {

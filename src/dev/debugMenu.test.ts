@@ -3,6 +3,7 @@ import type { Species } from '../data/dex';
 import { ITEMS } from '../data/items';
 import { RUN_CHAIN } from '../data/run';
 import { ROUTE_SHAPES } from '../engine/routes/layout';
+import { setLocale } from '../i18n';
 import {
   clampItemCount,
   clampLevel,
@@ -194,6 +195,17 @@ describe('debugLocationLabel', () => {
   it('never pads a number', () => {
     expect(debugLocationLabel({ mapIndex: 1, roomInMap: 0, roomCount: 6, tile: { x: 4, y: 9 } })).toBe(
       'map 1 · room 0/6 · (4,9)',
+    );
+  });
+
+  it('draws the clauses in the current locale', () => {
+    setLocale('es');
+    expect(
+      debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: { x: 14, y: 9 } }),
+    ).toBe('mapa 3 · sala 2/7 · (14,9)');
+    setLocale('en');
+    expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: null })).toBe(
+      'map 3 · room 2/7',
     );
   });
 });

@@ -1,6 +1,7 @@
 import { getBiome } from '../data/biomes';
 import { biomeForMap } from '../engine/maps/plan';
 import { encodeRunShare, type RunState } from '../engine/run';
+import { t } from '../i18n';
 
 /**
  * The end-of-run score screen's model (Phase 7). It reports what the run did —
@@ -38,18 +39,16 @@ export function runSummary(run: RunState, won: boolean): RunSummary {
 
 /** The lines the score screen shows, in order: headline, blurb, then the stats. */
 export function runSummaryLines(summary: RunSummary): string[] {
-  const headline = summary.won ? 'The final route falls. You win!' : 'You have no more Pokémon!';
-  const blurb = summary.won
-    ? 'Every route cleared — the chain ends here.'
-    : 'The run is over — nothing carries over.';
+  const headline = summary.won ? t('runOver.headlineWin') : t('runOver.headlineLoss');
+  const blurb = summary.won ? t('runOver.blurbWin') : t('runOver.blurbLoss');
   return [
     headline,
     blurb,
-    `Routes cleared: ${summary.routesCleared}`,
-    `Pokémon caught: ${summary.catches}`,
-    `Pokémon lost: ${summary.casualties}`,
-    `Seed: ${summary.seed}`,
-    `Share: ${summary.share}`,
+    t('runOver.routes', { count: summary.routesCleared }),
+    t('runOver.caught', { count: summary.catches }),
+    t('runOver.lost', { count: summary.casualties }),
+    t('runOver.seed', { seed: summary.seed }),
+    t('runOver.share', { share: summary.share }),
   ];
 }
 
@@ -59,5 +58,8 @@ export function runSummaryLines(summary: RunSummary): string[] {
  * can never disagree.
  */
 export function runPositionLabel(run: RunState): string {
-  return `Map ${run.mapIndex} · ${getBiome(biomeForMap(run.seed, run.mapIndex)).name}`;
+  return t('route.mapTitle', {
+    map: run.mapIndex,
+    biome: getBiome(biomeForMap(run.seed, run.mapIndex)).name,
+  });
 }

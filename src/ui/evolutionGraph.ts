@@ -6,6 +6,7 @@ import {
   type GmaxForm,
   type MegaForm,
 } from '../data/dex';
+import { t } from '../i18n';
 
 /**
  * The evolution graph the STATS tab draws under the stats: the whole family from
@@ -55,12 +56,15 @@ export function formeDisplayName(dexName: string): string {
 
 /** The copy a Mega's row carries: the forme plus the stone it evolves with. */
 function megaRowName(mega: MegaForm): string {
-  return `${formeDisplayName(mega.name)} · Mega Evolves with ${mega.stoneName}`;
+  return t('detail.megaEvolvesWith', {
+    forme: formeDisplayName(mega.name),
+    stone: mega.stoneName,
+  });
 }
 
 /** The copy a Gigantamax's row carries: a G-Max needs no stone at all (`D44`). */
 function gmaxRowName(gmax: GmaxForm): string {
-  return `${formeDisplayName(gmax.name)} · Gigantamaxes with no stone`;
+  return t('detail.gmaxNoStone', { forme: formeDisplayName(gmax.name) });
 }
 
 /**

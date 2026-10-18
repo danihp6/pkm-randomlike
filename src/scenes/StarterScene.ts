@@ -17,6 +17,7 @@ import { subscribeKeybinds } from '../input/input';
 import { addFrlgWindow } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { closeSeedPrompt, openSeedPrompt } from '../ui/seedPrompt';
+import { t } from '../i18n';
 import { loadSettings } from '../settings';
 
 const CARD_WIDTH = 260;
@@ -102,14 +103,12 @@ export class StarterScene extends Phaser.Scene {
 
     this.add.rectangle(0, 0, width, height, 0x10161f).setOrigin(0, 0);
 
-    addFrlgText(this, width / 2, compact ? 34 : 44, 'Choose your starter', { origin: 0.5 });
+    addFrlgText(this, width / 2, compact ? 34 : 44, t('starter.title'), { origin: 0.5 });
     addFrlgText(
       this,
       width / 2,
       compact ? 76 : 88,
-      compact
-        ? 'Lose it and it is gone for good.'
-        : 'Your first Pokémon. Lose it and it is gone for good.',
+      compact ? t('starter.blurbCompact') : t('starter.blurb'),
       { size: 16, tint: 0x94a3b8, origin: 0.5 },
     );
 
@@ -123,8 +122,19 @@ export class StarterScene extends Phaser.Scene {
     });
     const keys = loadSettings().keybinds;
     const controls = compact
-      ? `${keyLabel(keys.left)} ${keyLabel(keys.right)} / tap  choose   ${keyLabel(keys.confirm)}  confirm   ${keyLabel(keys.cancel)}  back`
-      : `${keyLabel(keys.left)}  ${keyLabel(keys.right)}  choose      ${keyLabel(keys.confirm)}  confirm      S  seed      ${keyLabel(keys.settings)}  settings      ${keyLabel(keys.cancel)}  back`;
+      ? t('starter.controlsCompact', {
+          left: keyLabel(keys.left),
+          right: keyLabel(keys.right),
+          confirm: keyLabel(keys.confirm),
+          cancel: keyLabel(keys.cancel),
+        })
+      : t('starter.controls', {
+          left: keyLabel(keys.left),
+          right: keyLabel(keys.right),
+          confirm: keyLabel(keys.confirm),
+          settings: keyLabel(keys.settings),
+          cancel: keyLabel(keys.cancel),
+        });
     addFrlgText(this, width / 2, height - 56, controls, {
       size: 16,
       tint: 0xcbd5f5,
@@ -366,7 +376,9 @@ export class StarterScene extends Phaser.Scene {
 
   /** Shows the seed as the share string someone else could play (D21). */
   private renderSeed(): void {
-    this.shareText.setText(`Share: ${encodeRunShare({ seed: this.seed, mode: this.mode })}`);
+    this.shareText.setText(
+      t('starter.share', { share: encodeRunShare({ seed: this.seed, mode: this.mode }) }),
+    );
   }
 
   private promptForSeed(): void {

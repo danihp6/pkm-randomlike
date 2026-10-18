@@ -1,11 +1,11 @@
 import {
   KEYBIND_ACTIONS,
-  KEYBIND_LABELS,
   isKeybindAction,
   keyLabel,
   withBinding,
   type KeybindAction,
 } from '../data/keybinds';
+import { LOCALES, t, type Locale, type TranslationKey } from '../i18n';
 import type { AiLevel, Settings, TextSpeed } from '../engine/save';
 
 /**
@@ -26,6 +26,13 @@ export const TEXT_SPEED_ORDER: readonly TextSpeed[] = ['slow', 'normal', 'fast']
 /** The difficulty a click or a left/right key steps through (`D46`). */
 export const AI_LEVELS: readonly AiLevel[] = ['normal', 'hard'];
 
+/** The text speeds, in the order the row steps them. */
+const TEXT_SPEED_KEYS: Readonly<Record<TextSpeed, TranslationKey>> = {
+  slow: 'settings.speed.slow',
+  normal: 'settings.speed.normal',
+  fast: 'settings.speed.fast',
+};
+
 /** Volume moves in ten-point steps; the stored value is normalised to one. */
 export const VOLUME_STEPS = 10;
 
@@ -42,60 +49,93 @@ export type SettingsRowId =
   | 'hudTransparent'
   | 'reducedFlash'
   | 'aiLevel'
+  | 'language'
   | KeybindAction;
 
 export type SettingsRowKind = 'step' | 'keybind';
 
 export type SettingsRow = Readonly<{
   id: SettingsRowId;
-  label: string;
-  hint: string;
+  /** The row's label and hint are keys, resolved when the row is drawn. */
+  labelKey: TranslationKey;
+  hintKey: TranslationKey;
   kind: SettingsRowKind;
 }>;
+
+/** Each language named in its own language, so the picker reads from either one. */
+export const LANGUAGE_LABELS: Readonly<Record<Locale, string>> = {
+  en: 'English',
+  es: 'Español',
+};
+
+/** The keybind rows' labels, keyed (the English text stays in `src/data/keybinds.ts`). */
+export const KEYBIND_LABEL_KEYS: Readonly<Record<KeybindAction, TranslationKey>> = {
+  confirm: 'keybind.confirm',
+  cancel: 'keybind.cancel',
+  up: 'keybind.up',
+  down: 'keybind.down',
+  left: 'keybind.left',
+  right: 'keybind.right',
+  run: 'keybind.run',
+  interact: 'keybind.interact',
+  reset: 'keybind.reset',
+  party: 'keybind.party',
+  bag: 'keybind.bag',
+  map: 'keybind.map',
+  box: 'keybind.box',
+  settings: 'keybind.settings',
+};
 
 const STEP_ROWS: readonly SettingsRow[] = [
   {
     id: 'textSpeed',
-    label: 'Text speed',
-    hint: 'How fast the battle text types itself out.',
+    labelKey: 'settings.textSpeed',
+    hintKey: 'settings.textSpeed.hint',
     kind: 'step',
   },
   {
     id: 'volume',
-    label: 'Volume',
-    hint: 'Master volume for every sound the game plays.',
+    labelKey: 'settings.volume',
+    hintKey: 'settings.volume.hint',
     kind: 'step',
   },
   {
     id: 'alwaysRun',
-    label: 'Always run',
-    hint: 'Walk at running speed without holding the run key.',
+    labelKey: 'settings.alwaysRun',
+    hintKey: 'settings.alwaysRun.hint',
     kind: 'step',
   },
   {
     id: 'hudTransparent',
-    label: 'Transparent HUD',
-    hint: 'Hide the route panels’ window background, leaving only their content.',
+    labelKey: 'settings.hudTransparent',
+    hintKey: 'settings.hudTransparent.hint',
     kind: 'step',
   },
   {
     id: 'reducedFlash',
-    label: 'Reduce flashing',
-    hint: 'Use calmer transitions: no full-screen flashes.',
+    labelKey: 'settings.reducedFlash',
+    hintKey: 'settings.reducedFlash.hint',
     kind: 'step',
   },
   {
     id: 'aiLevel',
-    label: 'Difficulty',
-    hint: 'Hard: trainers also check their moves, go for the faint and heal.',
+    labelKey: 'settings.aiLevel',
+    hintKey: 'settings.aiLevel.hint',
+    kind: 'step',
+  },
+  // The language is the last step row, so every shipped index keeps its order (`D46`).
+  {
+    id: 'language',
+    labelKey: 'settings.language',
+    hintKey: 'settings.language.hint',
     kind: 'step',
   },
 ];
 
 const KEYBIND_ROWS: readonly SettingsRow[] = KEYBIND_ACTIONS.map((action) => ({
   id: action,
-  label: KEYBIND_LABELS[action],
-  hint: 'Press confirm to rebind this key.',
+  labelKey: KEYBIND_LABEL_KEYS[action],
+  hintKey: 'settings.keybind.hint',
   kind: 'keybind',
 }));
 
@@ -118,7 +158,16 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 export function textSpeedLabel(speed: TextSpeed): string {
-  return speed.charAt(0).toUpperCase() + speed.slice(1);
+  return t(TEXT_SPEED_KEYS[speed]);
+}
+
+/** The label and hint of a row, resolved from the current locale as it is drawn. */
+export function settingsRowLabel(row: SettingsRow): string {
+  return t(row.labelKey);
+}
+
+export function settingsRowHint(row: SettingsRow): string {
+  return t(row.hintKey);
 }
 
 /** Whether a row's value is set by stepping it (as opposed to pressing a key). */
@@ -134,13 +183,15 @@ export function settingValue(settings: Settings, row: SettingsRowId): string {
     case 'volume':
       return `${Math.round(settings.volume * 100)}%`;
     case 'alwaysRun':
-      return settings.alwaysRun ? 'On' : 'Off';
+      return settings.alwaysRun ? t('settings.toggle.on') : t('settings.toggle.off');
     case 'hudTransparent':
-      return settings.hudTransparent ? 'On' : 'Off';
+      return settings.hudTransparent ? t('settings.toggle.on') : t('settings.toggle.off');
     case 'reducedFlash':
-      return settings.reducedFlash ? 'On' : 'Off';
+      return settings.reducedFlash ? t('settings.toggle.on') : t('settings.toggle.off');
     case 'aiLevel':
-      return settings.aiLevel === 'hard' ? 'Hard' : 'Normal';
+      return settings.aiLevel === 'hard' ? t('settings.difficulty.hard') : t('settings.difficulty.normal');
+    case 'language':
+      return LANGUAGE_LABELS[settings.language];
     default:
       return isKeybindAction(row) ? keyLabel(settings.keybinds[row]) : '';
   }
@@ -168,6 +219,10 @@ export function changeSetting(settings: Settings, row: SettingsRowId, delta: num
       const index = clamp(AI_LEVELS.indexOf(settings.aiLevel) + delta, 0, AI_LEVELS.length - 1);
       return { ...settings, aiLevel: AI_LEVELS[index] };
     }
+    case 'language': {
+      const index = clamp(LOCALES.indexOf(settings.language) + delta, 0, LOCALES.length - 1);
+      return { ...settings, language: LOCALES[index] };
+    }
     default:
       return settings;
   }
@@ -185,6 +240,11 @@ export function cycleSetting(settings: Settings, row: SettingsRowId, delta: numb
       return { ...settings, textSpeed: TEXT_SPEED_ORDER[wrap(TEXT_SPEED_ORDER.indexOf(settings.textSpeed), TEXT_SPEED_ORDER.length)] };
     case 'aiLevel':
       return { ...settings, aiLevel: AI_LEVELS[wrap(AI_LEVELS.indexOf(settings.aiLevel), AI_LEVELS.length)] };
+    case 'language':
+      return {
+        ...settings,
+        language: LOCALES[wrap(LOCALES.indexOf(settings.language), LOCALES.length)],
+      };
     default:
       return changeSetting(settings, row, delta);
   }

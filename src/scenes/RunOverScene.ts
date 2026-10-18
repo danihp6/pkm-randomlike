@@ -5,6 +5,7 @@ import { clearRun } from '../engine/save';
 import { subscribeKeybinds } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
+import { t } from '../i18n';
 import { addFrlgWindow } from '../ui/frlg';
 import { addFrlgText } from '../ui/frlgFont';
 import { RUN_OVER_INPUT_DELAY_MS, runSummary, runSummaryLines } from '../ui/runSummary';
@@ -55,7 +56,7 @@ export class RunOverScene extends Phaser.Scene {
       this,
       width / 2,
       y + panelH + 28,
-      `${keyLabel(loadSettings().keybinds.confirm)} — return to the main menu`,
+      t('runOver.return', { key: keyLabel(loadSettings().keybinds.confirm) }),
       {
         size: 16,
         tint: 0x94a3b8,

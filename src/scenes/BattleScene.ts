@@ -46,7 +46,7 @@ import {
   type EntryStep,
 } from '../ui/beats';
 import { CAPTURE_SHAKE_SPEED, captureBeat } from '../ui/capture';
-import { BAG_CATEGORY_LABELS, bagCategoryForKind, type BagCategory } from '../ui/bag';
+import { bagCategoryLabel, bagCategoryForKind, type BagCategory } from '../ui/bag';
 import { battleFrames, type FeedFrame } from '../ui/feed';
 import { HP_CUE_GAP, hpColorInt, hpCueNotches, hpFraction, isLowHp, statusAbbreviation } from '../ui/metrics';
 import { drawGauge } from '../ui/panel';
@@ -71,9 +71,9 @@ import {
   DETAIL_STATS,
   NATURE_DOWN_TINT,
   NATURE_UP_TINT,
-  STAT_LABELS,
   fighterDetail,
   natureEffect,
+  statLabel,
   type MemberDetail,
 } from '../ui/partyDetail';
 import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
@@ -81,6 +81,7 @@ import { fitPartyLabel, partyGridLayout } from '../ui/partyGrid';
 import { AbilityInfoButton, ABILITY_INFO_SIZE, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
 import { InfoPopup } from '../ui/infoPopup';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
+import { t } from '../i18n';
 import type { RouteScene } from './RouteScene';
 
 const MESSAGE_HOLD_MS = 900;
@@ -587,7 +588,7 @@ export class BattleScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setStrokeStyle(2, 0x9a94b8)
       .setVisible(false);
-    this.megaText = addFrlgText(this, 0, 0, 'MEGA', { size: 16, tint: FRLG_INK, origin: 0.5 }).setVisible(
+    this.megaText = addFrlgText(this, 0, 0, t('battle.mega'), { size: 16, tint: FRLG_INK, origin: 0.5 }).setVisible(
       false,
     );
     this.megaZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
@@ -602,7 +603,7 @@ export class BattleScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setStrokeStyle(2, 0x9a94b8)
       .setVisible(false);
-    this.gmaxText = addFrlgText(this, 0, 0, 'G-MAX', { size: 16, tint: FRLG_INK, origin: 0.5 }).setVisible(
+    this.gmaxText = addFrlgText(this, 0, 0, t('battle.gmax'), { size: 16, tint: FRLG_INK, origin: 0.5 }).setVisible(
       false,
     );
     this.gmaxZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
@@ -782,7 +783,7 @@ export class BattleScene extends Phaser.Scene {
     const statsTop = contentTop + 30;
     const rows = DETAIL_STATS.map((stat, i) => {
       const rowY = statsTop + i * PARTY_DETAIL_STAT_ROW;
-      const label = addFrlgText(this, padX, rowY, STAT_LABELS[stat], { size: 16, tint: 0x3a3956 });
+      const label = addFrlgText(this, padX, rowY, statLabel(stat), { size: 16, tint: 0x3a3956 });
       const value = addFrlgText(this, leftRight, rowY, '', { size: 16, tint: FRLG_INK, origin: [1, 0] });
       children.push(label, value);
       return { label, value };
@@ -815,7 +816,7 @@ export class BattleScene extends Phaser.Scene {
       this.partyDetailMoves.push({ cell, name, pp });
       children.push(cell, name, pp);
     }
-    this.partyDetailEmpty = addFrlgText(this, movesX + colW / 2, contentTop + 20, 'no moves', {
+    this.partyDetailEmpty = addFrlgText(this, movesX + colW / 2, contentTop + 20, t('detail.noMoves'), {
       size: 16,
       tint: 0x6b6887,
       origin: [0.5, 0],
@@ -1413,13 +1414,15 @@ export class BattleScene extends Phaser.Scene {
 
   private outcomeMessage(outcome: BattleOutcome): string {
     const wild = this.state.sides.enemy.party[0];
-    if (outcome === 'capture') return `Gotcha! ${wild.name} was caught!`;
+    if (outcome === 'capture') return t('battle.outcomeCaught', { name: wild.name });
     if (outcome === 'win') {
       const trigger = this.launch?.trigger;
-      return trigger?.kind === 'trainer' ? `${trigger.trainerName} was defeated!` : `The wild ${wild.name} fainted!`;
+      return trigger?.kind === 'trainer'
+        ? t('battle.outcomeDefeated', { name: trigger.trainerName })
+        : t('battle.outcomeFainted', { name: wild.name });
     }
-    if (outcome === 'run') return 'Got away safely!';
-    return 'Your last Pokémon fainted...';
+    if (outcome === 'run') return t('battle.outcomeRan');
+    return t('battle.outcomeLost');
   }
 
   /** Hands the route the party and bag as they stand, then closes the battle. */
@@ -1455,14 +1458,18 @@ export class BattleScene extends Phaser.Scene {
     this.megaSelected = false;
     this.gmaxSelected = false;
     this.menuItems = [
-      { label: 'FIGHT', enabled: true, onSelect: () => this.openMoves() },
-      { label: 'BAG', enabled: this.usableBag().length > 0, onSelect: () => this.openBag() },
-      { label: 'SWITCH', enabled: this.hasBench(), onSelect: () => this.openParty() },
-      { label: 'RUN', enabled: canRun(this.state, 'player'), onSelect: () => this.submit({ type: 'run' }) },
+      { label: t('battle.command.fight'), enabled: true, onSelect: () => this.openMoves() },
+      { label: t('battle.command.bag'), enabled: this.usableBag().length > 0, onSelect: () => this.openBag() },
+      { label: t('battle.command.switch'), enabled: this.hasBench(), onSelect: () => this.openParty() },
+      {
+        label: t('battle.command.run'),
+        enabled: canRun(this.state, 'player'),
+        onSelect: () => this.submit({ type: 'run' }),
+      },
     ];
     this.menuIndex = 0;
     this.mode = 'menu';
-    this.setMessage(`What will ${player.name} do?`);
+    this.setMessage(t('battle.promptAction', { name: player.name }));
     this.refreshHud();
   }
 
@@ -1557,7 +1564,7 @@ export class BattleScene extends Phaser.Scene {
     );
     this.menuItems =
       stacks.length === 0
-        ? [{ label: 'No items', enabled: false, onSelect: () => {} }]
+        ? [{ label: t('battle.noItems'), enabled: false, onSelect: () => {} }]
         : stacks.map((slot) => ({
             label: `${slot.item.name} x${slot.count}`,
             enabled: true,
@@ -1589,7 +1596,7 @@ export class BattleScene extends Phaser.Scene {
       const status = statusAbbreviation(fighter.status);
       const statusText = status ? `  ${status}` : '';
       return {
-        label: `${fighter.name}  Lv${fighter.level}${statusText}`,
+        label: t('party.rowLabel', { name: fighter.name, level: fighter.level, status: statusText }),
         enabled: index !== side.activeIndex && fighter.hp > 0,
         onSelect: () => this.confirmParty(index),
       };
@@ -1919,7 +1926,9 @@ export class BattleScene extends Phaser.Scene {
     const typesY = nameY + PANEL_NAME_H;
     const barY = typesY + PANEL_TYPES_H + PANEL_NAME_GAP;
 
-    this.nameText[side].setText(`${fighter.name}  Lv${fighter.level}`).setPosition(barX, nameY);
+    this.nameText[side]
+      .setText(t('battle.panelName', { name: fighter.name, level: fighter.level }))
+      .setPosition(barX, nameY);
 
     // The row is the live fighter's own types, so a Mega Evolution or a form
     // change shows the forme's (`displayActive` follows both).
@@ -2011,7 +2020,7 @@ export class BattleScene extends Phaser.Scene {
         experienceFraction(this.xp, fighter.level),
         0x60a5fa,
       );
-      this.xpText.setText(`XP ${this.xp}`).setPosition(barX, barY + 46).setVisible(true);
+      this.xpText.setText(t('battle.xp', { xp: this.xp })).setPosition(barX, barY + 46).setVisible(true);
     } else {
       this.xpText.setVisible(false);
     }
@@ -2261,7 +2270,7 @@ export class BattleScene extends Phaser.Scene {
     this.partyDetail.setScale(scale).setPosition(x, y).setVisible(true);
 
     this.partyDetailName.setText(detail.name);
-    this.partyDetailLevel.setText(`Lv${detail.level}`);
+    this.partyDetailLevel.setText(t('common.level', { level: detail.level }));
     this.partyDetailTypes.forEach((chip, i) => {
       const type = detail.types[i];
       chip.bg.setVisible(type !== undefined);
@@ -2275,7 +2284,7 @@ export class BattleScene extends Phaser.Scene {
     });
 
     const { hpText, rows, nature, ability, held } = this.partyDetailStats;
-    hpText.setText(`HP  ${detail.hp}/${detail.maxHp}`);
+    hpText.setText(t('detail.hp', { hp: detail.hp, max: detail.maxHp }));
     rows.forEach((row, i) => {
       const stat = DETAIL_STATS[i];
       row.value.setText(String(detail.stats[stat]));
@@ -2285,9 +2294,9 @@ export class BattleScene extends Phaser.Scene {
       row.value.setTint(tint);
       if (effect !== 'neutral') row.label.setTint(tint);
     });
-    nature.setText(`NATURE  ${capitalize(detail.nature)}`);
-    ability.setText(`ABILITY  ${detail.ability}`);
-    held.setText(`HELD  ${detail.heldItemName ?? 'none'}`);
+    nature.setText(t('detail.nature', { nature: capitalize(detail.nature) }));
+    ability.setText(t('detail.ability', { ability: detail.ability }));
+    held.setText(t('detail.held', { held: detail.heldItemName ?? t('detail.none') }));
     this.renderPartyAbilityInfo(detail);
 
     this.partyDetailEmpty.setVisible(detail.moves.length === 0);
@@ -2304,7 +2313,7 @@ export class BattleScene extends Phaser.Scene {
       }
       row.cell.setFillStyle(typeTint(move.type, 0.72));
       row.name.setText(move.name);
-      row.pp.setText(`PP ${move.pp}/${move.maxPp}`);
+      row.pp.setText(t('move.pp', { pp: move.pp, max: move.maxPp }));
     });
   }
 
@@ -2481,7 +2490,7 @@ export class BattleScene extends Phaser.Scene {
       .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
       .setVisible(true);
     this.megaText
-      .setText(this.megaIntent ? 'MEGA +' : 'MEGA')
+      .setText(this.megaIntent ? t('battle.megaIntent') : t('battle.mega'))
       .setPosition(x + MOVE_MEGA_COL / 2, top + h / 2)
       .setVisible(true);
     this.megaZone.setPosition(x, top).setSize(MOVE_MEGA_COL, h);
@@ -2516,7 +2525,7 @@ export class BattleScene extends Phaser.Scene {
       .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
       .setVisible(true);
     this.gmaxText
-      .setText(this.gmaxIntent ? 'G-MAX +' : 'G-MAX')
+      .setText(this.gmaxIntent ? t('battle.gmaxIntent') : t('battle.gmax'))
       .setPosition(x + MOVE_GMAX_COL / 2, top + h / 2)
       .setVisible(true);
     this.gmaxZone.setPosition(x, top).setSize(MOVE_GMAX_COL, h);
@@ -2564,7 +2573,7 @@ export class BattleScene extends Phaser.Scene {
         this.marks.fillRect(x, tabY + MENU_TAB_H - 2, MENU_TAB_W, 2);
       }
       tab.label
-        .setText(BAG_CATEGORY_LABELS[category])
+        .setText(bagCategoryLabel(category))
         .setTint(active ? 0xf8fafc : FRLG_INK)
         .setPosition(x + MENU_TAB_W / 2, tabY + 5)
         .setVisible(true);

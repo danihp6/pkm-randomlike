@@ -20,10 +20,12 @@ import {
   DEFAULT_AI_LEVEL,
   DEFAULT_ALWAYS_RUN,
   DEFAULT_HUD_TRANSPARENT,
+  DEFAULT_LANGUAGE,
   DEFAULT_REDUCED_FLASH,
   DEFAULT_TEXT_SPEED,
   DEFAULT_VOLUME,
   SAVE_KEY,
+  SAVE_MIGRATIONS,
   SAVE_VERSION,
   clearRun,
   decodeSave,
@@ -35,6 +37,7 @@ import {
   storeRun,
   storeSave,
   storeSettings,
+  storedSettingsLanguage,
   type Migrations,
   type Settings,
   type StorageLike,
@@ -92,6 +95,7 @@ describe('defaults', () => {
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
       aiLevel: DEFAULT_AI_LEVEL,
+      language: DEFAULT_LANGUAGE,
     });
   });
 
@@ -114,6 +118,7 @@ describe('encodeSave', () => {
         keybinds: DEFAULT_KEYBINDS,
         reducedFlash: DEFAULT_REDUCED_FLASH,
         aiLevel: DEFAULT_AI_LEVEL,
+        language: DEFAULT_LANGUAGE,
       },
       run,
     });
@@ -129,6 +134,7 @@ describe('encodeSave', () => {
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
       aiLevel: DEFAULT_AI_LEVEL,
+      language: DEFAULT_LANGUAGE,
     });
     expect(decoded.run).toEqual(run);
   });
@@ -161,6 +167,7 @@ describe('decodeSave', () => {
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
       aiLevel: DEFAULT_AI_LEVEL,
+      language: DEFAULT_LANGUAGE,
     });
   });
 
@@ -184,6 +191,7 @@ describe('decodeSave', () => {
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
       aiLevel: DEFAULT_AI_LEVEL,
+      language: DEFAULT_LANGUAGE,
     });
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0 });
@@ -202,6 +210,7 @@ describe('decodeSave', () => {
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
       aiLevel: DEFAULT_AI_LEVEL,
+      language: DEFAULT_LANGUAGE,
     });
     expect(decoded.run?.party).toHaveLength(6);
   });
@@ -223,6 +232,7 @@ describe('decodeSave', () => {
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
       aiLevel: DEFAULT_AI_LEVEL,
+      language: DEFAULT_LANGUAGE,
     });
     expect(decoded.run?.party).toHaveLength(6);
   });
@@ -265,6 +275,7 @@ describe('settings validation', () => {
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
       aiLevel: DEFAULT_AI_LEVEL,
+      language: DEFAULT_LANGUAGE,
     });
   });
 
@@ -278,6 +289,7 @@ describe('settings validation', () => {
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
       aiLevel: DEFAULT_AI_LEVEL,
+      language: DEFAULT_LANGUAGE,
     });
     expect(document(JSON.stringify({ version: SAVE_VERSION, settings: {} })).settings).toEqual(defaultSettings());
   });
@@ -322,6 +334,55 @@ describe('settings validation', () => {
       document(JSON.stringify({ version: 16, settings: { aiLevel: 'nightmare' } })).settings.aiLevel,
     ).toBe('normal');
     expect(SAVE_VERSION).toBe(16);
+  });
+
+  it('starts on the source table', () => {
+    expect(defaultSettings().language).toBe('en');
+    expect(DEFAULT_LANGUAGE).toBe('en');
+  });
+
+  it('reads a document written before the language as English, run intact', () => {
+    const raw = JSON.stringify({ version: 16, settings: { textSpeed: 'fast' }, run: sampleRun() });
+    const decoded = decodeSave(raw);
+    expect(decoded.settings.language).toBe('en');
+    expect(decoded.run?.party).toHaveLength(6);
+  });
+
+  it('keeps the Spanish language through a round trip with the run', () => {
+    const settings: Settings = { ...defaultSettings(), language: 'es' };
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings, run: sampleRun() }));
+    expect(decoded.settings.language).toBe('es');
+    expect(decoded.run?.party).toHaveLength(6);
+  });
+
+  it('reads a junk or absent language as English, with no version step', () => {
+    expect(
+      document(JSON.stringify({ version: 16, settings: { textSpeed: 'fast' } })).settings.language,
+    ).toBe('en');
+    expect(
+      document(JSON.stringify({ version: 16, settings: { language: 'fr' } })).settings.language,
+    ).toBe('en');
+    expect(
+      document(JSON.stringify({ version: 16, settings: { language: 42 } })).settings.language,
+    ).toBe('en');
+    expect(SAVE_VERSION).toBe(16);
+    expect(Object.keys(SAVE_MIGRATIONS)).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '8',
+      '9',
+      '10',
+      '11',
+      '12',
+      '13',
+      '14',
+      '15',
+    ]);
   });
 
   it('keeps a saved HUD layout and repairs a junk offset', () => {
@@ -561,6 +622,7 @@ describe('migrateDocument', () => {
       keybinds: DEFAULT_KEYBINDS,
       reducedFlash: DEFAULT_REDUCED_FLASH,
       aiLevel: DEFAULT_AI_LEVEL,
+      language: DEFAULT_LANGUAGE,
     });
     expect(decoded.run).toEqual(run);
   });
@@ -741,5 +803,41 @@ describe('storage', () => {
     expect(loadSave(blocked)).toEqual(emptySave());
     expect(() => storeSave(blocked, emptySave())).not.toThrow();
     expect(() => storeSave(null, emptySave())).not.toThrow();
+  });
+});
+
+describe('storedSettingsLanguage', () => {
+  it('reads no language without a slot, storage or a settings object', () => {
+    expect(storedSettingsLanguage(null)).toBeNull();
+    expect(storedSettingsLanguage(new MemoryStorage())).toBeNull();
+
+    const truncated = new MemoryStorage();
+    truncated.setItem(SAVE_KEY, '{"version":16,"settings":');
+    expect(storedSettingsLanguage(truncated)).toBeNull();
+
+    const noSettings = new MemoryStorage();
+    noSettings.setItem(SAVE_KEY, JSON.stringify({ version: 16, run: null }));
+    expect(storedSettingsLanguage(noSettings)).toBeNull();
+
+    const junk = new MemoryStorage();
+    junk.setItem(SAVE_KEY, JSON.stringify({ version: 16, settings: { language: 'fr' } }));
+    expect(storedSettingsLanguage(junk)).toBeNull();
+
+    const blocked: StorageLike = {
+      getItem: () => {
+        throw new Error('blocked');
+      },
+      setItem: () => undefined,
+      removeItem: () => undefined,
+    };
+    expect(storedSettingsLanguage(blocked)).toBeNull();
+  });
+
+  it('reads the language a stored document carries', () => {
+    const storage = new MemoryStorage();
+    storeSettings(storage, { ...defaultSettings(), language: 'es' });
+    expect(storedSettingsLanguage(storage)).toBe('es');
+    storeSettings(storage, defaultSettings());
+    expect(storedSettingsLanguage(storage)).toBe('en');
   });
 });

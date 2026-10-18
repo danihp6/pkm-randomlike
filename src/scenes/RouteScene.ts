@@ -139,7 +139,7 @@ import {
 } from '../engine/frameMap';
 import {
   BAG_CATEGORIES,
-  BAG_CATEGORY_LABELS,
+  bagCategoryLabel,
   bagForCategory,
   cycleBagCategory,
   stepBagCursor,
@@ -179,7 +179,6 @@ import {
   CLOSED_DETAIL,
   NATURE_DOWN_TINT,
   NATURE_UP_TINT,
-  STAT_LABELS,
   closeDetail,
   detailStops,
   dropMove,
@@ -190,6 +189,7 @@ import {
   openDetail,
   reorderMoves,
   setDetailTab,
+  statLabel,
   stepStop,
   typeColor,
   type DetailState,
@@ -210,6 +210,7 @@ import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { clampScrollTop, maxScrollTop, scrollByRows, stepGridCursor, visibleRange } from '../ui/scroll';
 import { createTouchControls, type TouchControls } from '../ui/touchControls';
+import { t, type TranslationKey } from '../i18n';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { listenForBack } from '../input/backButton';
 import { prefersTouchControls } from '../input/device';
@@ -356,7 +357,10 @@ const PANEL_KEY_ACTIONS: Readonly<Partial<Record<HudPanelId, KeybindAction>>> = 
 const PAUSE_MENU_W = 360;
 const PAUSE_MENU_ROW_H = 56;
 const PAUSE_MENU_ITEMS = ['settings', 'reset'] as const;
-const PAUSE_MENU_LABELS = ['Settings', 'Reset run'] as const;
+const PAUSE_MENU_LABELS: Readonly<Record<(typeof PAUSE_MENU_ITEMS)[number], TranslationKey>> = {
+  settings: 'pause.settings',
+  reset: 'pause.reset',
+};
 
 /**
  * The member detail panel: a click on a party or PC-box member opens it to the
@@ -487,8 +491,11 @@ const SHOP_MODES = ['buy', 'sell'] as const;
 
 type ShopMode = (typeof SHOP_MODES)[number];
 
-/** The shop's two pockets; the label printed on each tab. */
-const SHOP_MODE_LABELS: Readonly<Record<ShopMode, string>> = { buy: 'BUY', sell: 'SELL' };
+/** The shop's two pockets; the key of the label printed on each tab. */
+const SHOP_MODE_LABELS: Readonly<Record<ShopMode, TranslationKey>> = {
+  buy: 'mart.buy',
+  sell: 'mart.sell',
+};
 
 /** The mini-boss reward choice (Phase 9): a window of items, one is taken. */
 const REWARD_W = 560;
@@ -1951,7 +1958,7 @@ export class RouteScene extends Phaser.Scene {
       this,
       HUD_MAP_X + mapW / 2,
       HUD_MAP_Y + HUD_MAP_TITLE_H + 56,
-      'no map',
+      t('hud.noMap'),
       { size: 16, tint: 0x6b6887, origin: [0.5, 0] },
     );
     headerChildren.push(this.hudTitle, this.hudMapGraphics, this.hudMapEmpty);
@@ -1974,7 +1981,7 @@ export class RouteScene extends Phaser.Scene {
     this.hudVialFill = this.add
       .rectangle(vialX, vialY, 0, HUD_VIAL_H, HUD_VIAL_FILL_COLORS[0])
       .setOrigin(0, 0);
-    this.hudVialLabel = addFrlgText(this, vialX + HUD_VIAL_W / 2, vialY + 3, 'POKEVIAL', {
+    this.hudVialLabel = addFrlgText(this, vialX + HUD_VIAL_W / 2, vialY + 3, t('hud.vial'), {
       size: 16,
       tint: 0xf8fafc,
       origin: [0.5, 0],
@@ -2048,7 +2055,7 @@ export class RouteScene extends Phaser.Scene {
       const tabX = x + HUD_CONTENT_LEFT + i * (HUD_TAB_W + HUD_TAB_GAP);
       const tabY = bagY + HUD_PAD_TOP;
       const bg = this.add.rectangle(tabX, tabY, HUD_TAB_W, HUD_TAB_H, 0xcfcce2).setOrigin(0, 0);
-      const label = addFrlgText(this, tabX + HUD_TAB_W / 2, tabY + 5, BAG_CATEGORY_LABELS[category], {
+      const label = addFrlgText(this, tabX + HUD_TAB_W / 2, tabY + 5, bagCategoryLabel(category), {
         size: 16,
         tint: FRLG_INK,
         origin: [0.5, 0],
@@ -2079,7 +2086,7 @@ export class RouteScene extends Phaser.Scene {
       bagChildren.push(highlight, icon, name, count);
     }
 
-    this.hudBagEmpty = addFrlgText(this, x + panelW / 2, bagY + HUD_BAG_HEADER + 36, 'no items', {
+    this.hudBagEmpty = addFrlgText(this, x + panelW / 2, bagY + HUD_BAG_HEADER + 36, t('hud.noItems'), {
       size: 16,
       tint: 0x6b6887,
       origin: [0.5, 0],
@@ -2092,7 +2099,7 @@ export class RouteScene extends Phaser.Scene {
     const footerRule = this.add
       .rectangle(x + HUD_PAD_X, footerY + 4, panelW - HUD_PAD_X * 2, 1, 0x9a97b5)
       .setOrigin(0, 0);
-    const moneyLabel = addFrlgText(this, x + HUD_PAD_X, footerY + 12, 'MONEY', {
+    const moneyLabel = addFrlgText(this, x + HUD_PAD_X, footerY + 12, t('hud.money'), {
       size: 16,
       tint: 0x3a3956,
     });
@@ -2367,7 +2374,7 @@ export class RouteScene extends Phaser.Scene {
       origin: [1, 0],
     });
     // The hint sits at the field's right end; `refreshNicknameField` places it.
-    this.hudDetailNameHint = addFrlgText(this, right, y + HUD_PAD_TOP + 3, 'click to name', {
+    this.hudDetailNameHint = addFrlgText(this, right, y + HUD_PAD_TOP + 3, t('detail.clickToName'), {
       size: 16,
       tint: 0x6b6887,
       origin: [1, 0],
@@ -2402,7 +2409,7 @@ export class RouteScene extends Phaser.Scene {
     (['stats', 'moves'] as DetailTab[]).forEach((tab, i) => {
       const tabX = left + i * (tabW + HUD_TAB_GAP);
       const bg = this.add.rectangle(tabX, tabY, tabW, HUD_DETAIL_TAB_H, 0xcfcce2).setOrigin(0, 0);
-      const label = addFrlgText(this, tabX + tabW / 2, tabY + 5, tab === 'stats' ? 'STATS' : 'MOVES', {
+      const label = addFrlgText(this, tabX + tabW / 2, tabY + 5, t(tab === 'stats' ? 'detail.tabStats' : 'detail.tabMoves'), {
         size: 16,
         tint: FRLG_INK,
         origin: [0.5, 0],
@@ -2424,7 +2431,7 @@ export class RouteScene extends Phaser.Scene {
       const colRight = colLeft + colW - 12;
       column.forEach((stat, ri) => {
         const rowY = contentTop + ri * HUD_DETAIL_STAT_ROW;
-        const label = addFrlgText(this, colLeft, rowY, STAT_LABELS[stat], { size: 16, tint: 0x3a3956 });
+        const label = addFrlgText(this, colLeft, rowY, statLabel(stat), { size: 16, tint: 0x3a3956 });
         const value = addFrlgText(this, colRight, rowY, '', {
           size: 16,
           tint: FRLG_INK,
@@ -2450,11 +2457,11 @@ export class RouteScene extends Phaser.Scene {
     // The evolution band: a title over a family graph. The nodes are a fixed row
     // pool the refresh repositions by depth; `refreshDetail` also redraws the
     // edges. A click on a ready branch evolves the member.
-    this.hudDetailEvoTitle = addFrlgText(this, left, y + HUD_DETAIL_EVO_TITLE_TOP, 'EVOLUTION', {
+    this.hudDetailEvoTitle = addFrlgText(this, left, y + HUD_DETAIL_EVO_TITLE_TOP, t('detail.evolution'), {
       size: 16,
       tint: 0x3a3956,
     });
-    this.hudDetailEvoHint = addFrlgText(this, right, y + HUD_DETAIL_EVO_TITLE_TOP, 'click to evolve', {
+    this.hudDetailEvoHint = addFrlgText(this, right, y + HUD_DETAIL_EVO_TITLE_TOP, t('detail.clickToEvolve'), {
       size: 16,
       tint: HUD_DETAIL_EVO_READY,
       origin: [1, 0],
@@ -2463,7 +2470,7 @@ export class RouteScene extends Phaser.Scene {
       this,
       x + detailW / 2,
       y + HUD_DETAIL_EVO_TOP + 24,
-      'no evolution',
+      t('detail.noEvolution'),
       { size: 16, tint: 0x6b6887, origin: [0.5, 0] },
     );
     children.push(this.hudDetailEvoTitle, this.hudDetailEvoHint, this.hudDetailEvoEmpty);
@@ -2499,7 +2506,7 @@ export class RouteScene extends Phaser.Scene {
       children.push(bg, portrait, name, level);
     }
 
-    this.hudDetailEmpty = addFrlgText(this, x + detailW / 2, contentTop + 60, 'no moves', {
+    this.hudDetailEmpty = addFrlgText(this, x + detailW / 2, contentTop + 60, t('detail.noMoves'), {
       size: 16,
       tint: 0x6b6887,
       origin: [0.5, 0],
@@ -2517,7 +2524,7 @@ export class RouteScene extends Phaser.Scene {
     this.hudSearchText = addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK }).setVisible(false);
     this.hudLearnPrev = addFrlgText(this, 0, 0, '<', { size: 16, tint: FRLG_INK, origin: [0.5, 0] }).setVisible(false);
     this.hudLearnNext = addFrlgText(this, 0, 0, '>', { size: 16, tint: FRLG_INK, origin: [0.5, 0] }).setVisible(false);
-    this.hudLearnEmpty = addFrlgText(this, 0, 0, 'no moves to learn', {
+    this.hudLearnEmpty = addFrlgText(this, 0, 0, t('detail.noMovesToLearn'), {
       size: 16,
       tint: 0x6b6887,
       origin: [0.5, 0],
@@ -2546,14 +2553,14 @@ export class RouteScene extends Phaser.Scene {
   private refreshHud(): void {
     if (!this.hudRoot) return;
     const biomeName = this.route ? getBiome(this.route.biomeId).name : '';
-    this.hudTitle.setText(`Map ${this.run.mapIndex} · ${biomeName}`);
+    this.hudTitle.setText(t('route.mapTitle', { map: this.run.mapIndex, biome: biomeName }));
     this.refreshMapView();
 
     // The shared bar: the level everyone sits at and the progress to the next.
     const level = squadLevel(this.run);
-    this.hudLevelText.setText(`Lv${level}`);
+    this.hudLevelText.setText(t('hud.level', { level }));
     this.hudXpFill.setSize(this.hud.xpBarW * experienceFraction(this.run.xp, level), HUD_XP_BAR_H);
-    this.hudXpText.setText(`XP ${this.run.xp}`);
+    this.hudXpText.setText(t('hud.xp', { xp: this.run.xp }));
 
     this.hudRows.forEach((row, i) => {
       const member = this.run.party[i];
@@ -2848,7 +2855,7 @@ export class RouteScene extends Phaser.Scene {
     this.hudDetail.setVisible(panel?.expanded ?? true);
     if (panel) panel.container.setVisible(true);
     this.hudDetailName.setText(detail.name);
-    this.hudDetailLevel.setText(`Lv${detail.level}`);
+    this.hudDetailLevel.setText(t('common.level', { level: detail.level }));
     const detailStatus = detail.status ? statusIconFrame(detail.status) : null;
     this.hudDetailStatus.setVisible(detailStatus !== null);
     if (detailStatus !== null) {
@@ -2888,10 +2895,10 @@ export class RouteScene extends Phaser.Scene {
       row.value.setTint(tint);
       if (effect !== 'neutral') row.label.setTint(tint);
     });
-    nature.setText(`NATURE  ${capitalize(detail.nature)}`);
-    ability.setText(`ABILITY  ${detail.ability}`);
-    held.setText(`HELD  ${detail.heldItemName ?? 'none'}`);
-    caught.setText(`CAUGHT  ${detail.caughtLabel ?? 'starter'}`);
+    nature.setText(t('detail.nature', { nature: capitalize(detail.nature) }));
+    ability.setText(t('detail.ability', { ability: detail.ability }));
+    held.setText(t('detail.held', { held: detail.heldItemName ?? t('detail.none') }));
+    caught.setText(t('detail.caughtLabel', { caught: detail.caughtLabel ?? t('detail.starter') }));
     nature.setVisible(stats);
     ability.setVisible(stats);
     held.setVisible(stats);
@@ -3113,7 +3120,7 @@ export class RouteScene extends Phaser.Scene {
       cell.portrait.setVisible(visible && portrait !== null);
       if (portrait) cell.portrait.setTexture(portrait.key, portrait.frame);
       cell.name.setPosition(nodeX + 30, y + 6).setText(node.name);
-      cell.level.setText(node.level === null ? '' : `Lv ${node.level}`);
+      cell.level.setText(node.level === null ? '' : t('detail.evoLevel', { level: node.level }));
 
       if (node.ready) {
         cell.bg.setVisible(true).setFillStyle(HUD_DETAIL_EVO_READY_BG);
@@ -3162,7 +3169,10 @@ export class RouteScene extends Phaser.Scene {
     const move = getMove(entry.moveId);
     const basePower = move?.basePower ?? 0;
     const accuracy = move && move.accuracy !== true ? move.accuracy : null;
-    const tag = entry.source === 'tm' ? `TM${tmNumber(entry.tmId ?? '') ?? '?'}` : `Lv${entry.level ?? '?'}`;
+    const tag =
+      entry.source === 'tm'
+        ? t('detail.learnTm', { tm: tmNumber(entry.tmId ?? '') ?? '?' })
+        : t('detail.learnLevel', { level: entry.level ?? '?' });
     return {
       name: `${move?.name ?? entry.moveId}  ${tag}`,
       type: move ? abilityMoveType(ability, move, ivs) : '',
@@ -3188,7 +3198,7 @@ export class RouteScene extends Phaser.Scene {
     const searchW = this.hud.detailW - pad.x * 2;
     this.hudSearchRect = { x: searchX, y: searchY, w: searchW, h: HUD_DETAIL_SEARCH_H };
     this.hudSearchBg.setPosition(searchX, searchY).setSize(searchW, HUD_DETAIL_SEARCH_H).setVisible(moves);
-    const placeholder = this.hudSearchFocus || this.hudLearnQuery.length > 0 ? this.hudLearnQuery : 'search moves...';
+    const placeholder = this.hudSearchFocus || this.hudLearnQuery.length > 0 ? this.hudLearnQuery : t('detail.searchMoves');
     this.hudSearchText
       .setText(`${this.hudSearchFocus ? '>' : ' '} ${placeholder}`)
       .setTint(this.hudLearnQuery.length === 0 && !this.hudSearchFocus ? 0x6b6887 : FRLG_INK)
@@ -5564,10 +5574,10 @@ export class RouteScene extends Phaser.Scene {
     const y = (height - panelH) / 2;
     const scrim = this.add.rectangle(0, 0, width, height, 0x05070c, 0.55).setOrigin(0, 0);
     const panel = addFrlgWindow(this, x, y, panelW, panelH);
-    this.learnPopupTitle = addFrlgText(this, x + 24, y + 18, 'LEVEL UP', { size: 32, tint: FRLG_INK });
+    this.learnPopupTitle = addFrlgText(this, x + 24, y + 18, t('hud.learnTitle'), { size: 32, tint: FRLG_INK });
     this.learnPopupBody = addFrlgText(this, x + 24, y + 76, '', { size: 16, tint: FRLG_INK, lineSpacing: 8 })
       .setMaxWidth(panelW - 48);
-    const hint = addFrlgText(this, x + panelW - 24, y + panelH - 30, 'press any key', {
+    const hint = addFrlgText(this, x + panelW - 24, y + panelH - 30, t('hud.pressAnyKey'), {
       size: 16,
       tint: 0x6b6887,
       origin: [1, 0],
@@ -5589,13 +5599,13 @@ export class RouteScene extends Phaser.Scene {
     for (const beat of beats) {
       const member = this.run.party.find((entry) => entry.fighter.id === beat.id);
       const species = getSpecies(member?.fighter.speciesId ?? '');
-      const name = member?.fighter.nickname ?? species?.name ?? 'A Pokemon';
+      const name = member?.fighter.nickname ?? species?.name ?? t('common.unknownPokemon');
       for (const moveId of beat.learned) {
-        lines.push(`${name} learned ${getMove(moveId)?.name ?? moveId}!`);
+        lines.push(t('route.learned', { name, move: getMove(moveId)?.name ?? moveId }));
       }
     }
     if (lines.length === 0) return;
-    this.learnPopupTitle.setText('LEVEL UP');
+    this.learnPopupTitle.setText(t('hud.learnTitle'));
     this.learnPopupBody.setText(lines.join('\n'));
     this.learnPopupOpen = true;
     this.learnPopupAt = this.time.now;
@@ -5608,8 +5618,8 @@ export class RouteScene extends Phaser.Scene {
    */
   private showEvoPopup(fromName: string, intoName: string): void {
     if (this.learnPopupOpen) return;
-    this.learnPopupTitle.setText('EVOLUTION');
-    this.learnPopupBody.setText(`${fromName} evolved into ${intoName}!`);
+    this.learnPopupTitle.setText(t('hud.evolveTitle'));
+    this.learnPopupBody.setText(t('route.evolved', { from: fromName, into: intoName }));
     this.learnPopupOpen = true;
     this.learnPopupAt = this.time.now;
     this.learnPopup.setVisible(true);
@@ -5688,7 +5698,7 @@ export class RouteScene extends Phaser.Scene {
 
     const scrim = this.add.rectangle(0, 0, width, height, 0x05070c, 0.55).setOrigin(0, 0);
     const panel = addFrlgWindow(this, x, y, PAUSE_MENU_W, panelH);
-    const title = addFrlgText(this, x + 24, y + 20, 'MENU', { size: 32, tint: FRLG_INK });
+    const title = addFrlgText(this, x + 24, y + 20, t('hud.menu'), { size: 32, tint: FRLG_INK });
 
     const children: Phaser.GameObjects.GameObject[] = [scrim, panel, title];
     this.pauseMenuRows = PAUSE_MENU_ITEMS.map((_item, i) => {
@@ -5697,7 +5707,7 @@ export class RouteScene extends Phaser.Scene {
         .rectangle(rowX, rowY, rowW, PAUSE_MENU_ROW_H - 8, 0xf2c14e, 0.32)
         .setOrigin(0, 0)
         .setVisible(false);
-      const label = addFrlgText(this, rowX + 16, rowY + 12, PAUSE_MENU_LABELS[i], {
+      const label = addFrlgText(this, rowX + 16, rowY + 12, t(PAUSE_MENU_LABELS[PAUSE_MENU_ITEMS[i]]), {
         size: 16,
         tint: FRLG_INK,
       });
@@ -5791,7 +5801,9 @@ export class RouteScene extends Phaser.Scene {
       row.highlight.setVisible(i === this.pauseMenuIndex);
       const reset = PAUSE_MENU_ITEMS[i] === 'reset';
       row.label.setText(
-        reset && this.pauseMenuArmed ? 'Reset run - press again' : PAUSE_MENU_LABELS[i],
+        reset && this.pauseMenuArmed
+          ? t('pause.resetArmed')
+          : t(PAUSE_MENU_LABELS[PAUSE_MENU_ITEMS[i]]),
       );
     });
   }
@@ -6059,7 +6071,7 @@ export class RouteScene extends Phaser.Scene {
     this.shopMode = 'buy';
     this.shopIndex = 0;
     this.shopScroll = 0;
-    this.shopMessage = 'What can I do for you?';
+    this.shopMessage = t('mart.greeting');
     this.buildShopPanel();
     this.refreshShop();
   }
@@ -6083,7 +6095,7 @@ export class RouteScene extends Phaser.Scene {
     const children: Phaser.GameObjects.GameObject[] = [
       this.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0),
       addFrlgWindow(this, x, y, SHOP_W, SHOP_H),
-      addFrlgText(this, left, y + 20, 'MART', { size: 24, tint: FRLG_INK }),
+      addFrlgText(this, left, y + 20, t('mart.title'), { size: 24, tint: FRLG_INK }),
     ];
     this.shopMoneyText = addFrlgText(this, right, y + 24, '', { size: 16, tint: 0x3a3956, origin: [1, 0] });
     children.push(this.shopMoneyText);
@@ -6094,7 +6106,7 @@ export class RouteScene extends Phaser.Scene {
       const tabX = left + i * (SHOP_TAB_W + SHOP_TAB_GAP);
       const tabY = y + 58;
       const bg = this.add.rectangle(tabX, tabY, SHOP_TAB_W, SHOP_TAB_H, 0xcfcce2).setOrigin(0, 0);
-      const label = addFrlgText(this, tabX + SHOP_TAB_W / 2, tabY + 6, SHOP_MODE_LABELS[mode], {
+      const label = addFrlgText(this, tabX + SHOP_TAB_W / 2, tabY + 6, t(SHOP_MODE_LABELS[mode]), {
         size: 16,
         tint: FRLG_INK,
         origin: [0.5, 0],
@@ -6169,7 +6181,10 @@ export class RouteScene extends Phaser.Scene {
         this,
         right,
         y + SHOP_H - 42,
-        `${keyLabel(this.settings.keybinds.confirm)}: buy / sell    ${keyLabel(this.settings.keybinds.cancel)}: leave`,
+        t('mart.controls', {
+          confirm: keyLabel(this.settings.keybinds.confirm),
+          cancel: keyLabel(this.settings.keybinds.cancel),
+        }),
         { size: 16, tint: 0x6b6887, origin: [1, 0] },
       ),
     );
@@ -6188,7 +6203,7 @@ export class RouteScene extends Phaser.Scene {
     if (this.shopIndex < this.shopScroll) this.shopScroll = this.shopIndex;
     else if (this.shopIndex >= this.shopScroll + SHOP_ROWS) this.shopScroll = this.shopIndex - SHOP_ROWS + 1;
 
-    this.shopMoneyText.setText(`MONEY  ¥${this.run.money}`);
+    this.shopMoneyText.setText(t('mart.money', { amount: this.run.money }));
     this.shopMessageText.setText(this.shopMessage);
     this.shopTabs.forEach((tab) => {
       const active = tab.mode === this.shopMode;
@@ -6196,7 +6211,11 @@ export class RouteScene extends Phaser.Scene {
       tab.label.setTint(active ? 0xf8fafc : FRLG_INK);
     });
     this.shopEmpty.setText(
-      total === 0 ? (this.shopMode === 'buy' ? 'Nothing in stock.' : 'Nothing to sell.') : '',
+      total === 0
+        ? this.shopMode === 'buy'
+          ? t('mart.emptyStock')
+          : t('mart.emptySell')
+        : '',
     );
 
     this.shopRows.forEach((rowObject, i) => {
@@ -6254,7 +6273,8 @@ export class RouteScene extends Phaser.Scene {
     this.shopMode = mode;
     this.shopIndex = 0;
     this.shopScroll = 0;
-    this.shopMessage = mode === 'buy' ? 'What can I do for you?' : 'What would you like to sell?';
+    this.shopMessage =
+      mode === 'buy' ? t('mart.greeting') : t('mart.greetingSell');
     this.refreshShop();
   }
 
@@ -6282,20 +6302,20 @@ export class RouteScene extends Phaser.Scene {
       if (!slot) return;
       const trade = buyItem(this.run, slot);
       if (!trade.ok) {
-        this.shopMessage = "You don't have enough money.";
+        this.shopMessage = t('mart.noMoney');
         this.refreshShop();
         return;
       }
       this.run = trade.run;
       const name = getItem(slot.itemId)?.name ?? slot.itemId;
-      this.shopMessage = `Bought ${name} for ¥${trade.amount}.`;
+      this.shopMessage = t('mart.bought', { name, amount: trade.amount });
     } else {
       const row = sellRows(this.run)[this.shopIndex];
       if (!row) return;
       const trade = sellItem(this.run, row.itemId);
       if (!trade.ok) return;
       this.run = trade.run;
-      this.shopMessage = `Sold ${row.name} for ¥${trade.amount}.`;
+      this.shopMessage = t('mart.sold', { name: row.name, amount: trade.amount });
     }
     this.persistRun();
     this.refreshHud();
@@ -6348,8 +6368,8 @@ export class RouteScene extends Phaser.Scene {
     const children: Phaser.GameObjects.GameObject[] = [
       this.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0),
       addFrlgWindow(this, x, y, REWARD_W, REWARD_H),
-      addFrlgText(this, left, y + 20, 'MINI-BOSS REWARD', { size: 24, tint: FRLG_INK }),
-      addFrlgText(this, left, y + 54, 'Choose one.', { size: 16, tint: 0x6b6887 }),
+      addFrlgText(this, left, y + 20, t('reward.title'), { size: 24, tint: FRLG_INK }),
+      addFrlgText(this, left, y + 54, t('reward.choose'), { size: 16, tint: 0x6b6887 }),
     ];
     this.miniBossRewardRows = [];
     this.miniBossRewardItems.forEach((_itemId, i) => {
@@ -6386,7 +6406,10 @@ export class RouteScene extends Phaser.Scene {
         this,
         left,
         y + REWARD_H - 40,
-        `${keyLabel(this.settings.keybinds.confirm)}: take    ${keyLabel(this.settings.keybinds.cancel)}: leave`,
+        t('reward.controls', {
+          confirm: keyLabel(this.settings.keybinds.confirm),
+          cancel: keyLabel(this.settings.keybinds.cancel),
+        }),
         { size: 16, tint: 0x6b6887 },
       ),
     );
@@ -6479,7 +6502,7 @@ export class RouteScene extends Phaser.Scene {
       this,
       width / 2,
       y + panelH + 28,
-      `${keyLabel(this.settings.keybinds.confirm)} — continue`,
+      t('release.controls', { confirm: keyLabel(this.settings.keybinds.confirm) }),
       {
         size: 16,
         tint: 0x94a3b8,
@@ -6503,7 +6526,7 @@ export class RouteScene extends Phaser.Scene {
     const portrait = portraitFor(beat.speciesId, beat.shiny);
     this.releasePortrait.setVisible(portrait !== null);
     if (portrait) this.releasePortrait.setTexture(portrait.key, portrait.frame);
-    this.releaseText.setText(`Lv${beat.level} ${beat.name}\nwas released.`);
+    this.releaseText.setText(t('route.released', { level: beat.level, name: beat.name }));
     this.releaseWait?.remove(false);
     this.releaseWait = this.time.delayedCall(RELEASE_HOLD_MS, () => this.advanceRelease());
   }
@@ -6539,7 +6562,7 @@ export class RouteScene extends Phaser.Scene {
     const to = Math.max(...beats.map((beat) => beat.toLevel));
     const counter = { level: from };
     const paint = (): void => {
-      this.hudLevelText.setText(`Lv${Math.round(counter.level)}`);
+      this.hudLevelText.setText(t('hud.level', { level: Math.round(counter.level) }));
     };
     paint();
     for (const beat of beats) {
@@ -6808,7 +6831,7 @@ export class RouteScene extends Phaser.Scene {
    */
   teleportToFloor(mapIndex: number): DebugTeleportResult {
     if (!IS_DEVELOP || !this.run || this.gameOver || !this.scene.isActive()) {
-      return { ok: false, error: 'no active route' };
+      return { ok: false, error: t('dev.error.noRoute') };
     }
     const requested = Number.isFinite(mapIndex) ? Math.floor(mapIndex) : this.run.mapIndex;
     const floor =
@@ -6842,10 +6865,10 @@ export class RouteScene extends Phaser.Scene {
    */
   teleportToRoom(roomInMap: number): DebugTeleportResult {
     if (!IS_DEVELOP || !this.run || this.gameOver || !this.scene.isActive()) {
-      return { ok: false, error: 'no active route' };
+      return { ok: false, error: t('dev.error.noRoute') };
     }
     const plan = this.plan;
-    if (!plan) return { ok: false, error: 'no floor plan' };
+    if (!plan) return { ok: false, error: t('dev.error.noFloorPlan') };
     const requested = Number.isFinite(roomInMap) ? Math.floor(roomInMap) : this.run.routeInMap;
     const room = Math.max(0, Math.min(plan.rooms.length - 1, requested));
     this.transitionTo(advanceRoute(this.run, room));
@@ -6860,7 +6883,7 @@ export class RouteScene extends Phaser.Scene {
    */
   teleportToTile(x: number, y: number): DebugTeleportResult {
     if (!IS_DEVELOP || !this.run || this.gameOver || !this.scene.isActive()) {
-      return { ok: false, error: 'no active route' };
+      return { ok: false, error: t('dev.error.noRoute') };
     }
     const size = mapSize(this.map);
     const tile = {
@@ -6869,7 +6892,7 @@ export class RouteScene extends Phaser.Scene {
     };
     tile.x = Math.max(0, Math.min(size.width - 1, tile.x));
     tile.y = Math.max(0, Math.min(size.height - 1, tile.y));
-    if (!isWalkable(this.moveMap, tile)) return { ok: false, error: 'solid tile' };
+    if (!isWalkable(this.moveMap, tile)) return { ok: false, error: t('dev.error.solidTile') };
     // The in-flight tween must not carry the sprite back to the old destination
     // and run `onTileEntered` there.
     this.stopWalking();
@@ -6895,12 +6918,12 @@ export class RouteScene extends Phaser.Scene {
    * params follow it so the panel keeps describing what is on screen.
    */
   importFrameMap(text: string): { ok: boolean; error?: string } {
-    if (!IS_DEVELOP || !this.scene.isActive()) return { ok: false, error: 'no active route' };
+    if (!IS_DEVELOP || !this.scene.isActive()) return { ok: false, error: t('dev.error.noRoute') };
     let exported;
     try {
       exported = parseFrameMapExport(text);
     } catch (error) {
-      return { ok: false, error: error instanceof Error ? error.message : 'invalid frame map' };
+      return { ok: false, error: error instanceof Error ? error.message : t('dev.error.invalidFrameMap') };
     }
     this.stopWalking();
     this.clearRouteSprites();
