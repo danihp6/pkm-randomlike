@@ -537,6 +537,13 @@ function paneForPanel(id: HudPanelId): HudPaneId | null {
   return id === 'header' ? null : id;
 }
 
+/** Which of the detail panel's two move grids a hit or the floating popup belongs to. */
+type DetailInfoGrid = 'moves' | 'learn';
+/** The ⓘ the panel's info state names: the grid and the cell index in that grid's window. */
+type DetailInfoTarget = { grid: DetailInfoGrid; index: number };
+/** The cell under the pointer plus whether the point sits on its ⓘ button. */
+type DetailInfoHit = DetailInfoTarget & { onInfo: boolean };
+
 /** How long one tile takes to cross on foot, and with the run key held. */
 const WALK_STEP_MS = 200;
 const RUN_STEP_MS = 110;
@@ -910,7 +917,7 @@ export class RouteScene extends Phaser.Scene {
   /** The shared moves grid drawn in the MOVES tab, with its floating info popup. */
   private hudMoveGrid!: MoveGrid;
   /** The move whose ⓘ floats its info popup, or null; `pinned` keeps it up. */
-  private hudDetailInfo: number | null = null;
+  private hudDetailInfo: DetailInfoTarget | null = null;
   private hudDetailInfoPinned = false;
   /** The ⓘ beside the STATS tab's ability row, and the window it floats. */
   private hudAbilityPopup!: InfoPopup;
@@ -1821,6 +1828,7 @@ export class RouteScene extends Phaser.Scene {
       this.hudLearnScrollTop,
     );
     this.hudLearnScrollTop = top;
+    this.dropLearnInfo();
   }
 
   /** `confirm` on the focused stop: the keyboard twin of every panel control. */
@@ -1881,7 +1889,7 @@ export class RouteScene extends Phaser.Scene {
   private toggleDetailStopInfo(): void {
     const stop = this.focusedDetailStop();
     if (!stop) return;
-    if (stop.kind === 'slot') this.toggleDetailInfo(stop.index);
+    if (stop.kind === 'slot') this.toggleDetailInfo({ grid: 'moves', index: stop.index });
     else if (stop.kind === 'ability') this.toggleAbilityInfo();
   }
 
@@ -2929,7 +2937,7 @@ export class RouteScene extends Phaser.Scene {
           }))
         : [],
       selected: moves ? this.detailSlotCursor() : -1,
-      info: moves ? this.hudDetailInfo : null,
+      info: moves && this.hudDetailInfo?.grid === 'moves' ? this.hudDetailInfo.index : null,
       popupAtCell: true,
     });
 
@@ -3211,7 +3219,7 @@ export class RouteScene extends Phaser.Scene {
       h: learnH,
       cells: this.hudLearnWindow.map((entry) => this.learnCell(entry, ability, memberIvs)),
       selected: moves ? this.learnWindowCursor(start) : -1,
-      info: null,
+      info: moves && this.hudDetailInfo?.grid === 'learn' ? this.hudDetailInfo.index : null,
       popupAtCell: true,
     });
 
@@ -3478,7 +3486,7 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     const overMember = this.hudTarget(pointer) !== null;
-    const cell = this.detailInfoAt(pointer);
+    const cell = this.detailInfoAt(pointer) ?? this.detailLearnInfoAt(pointer);
     const overMove = cell !== null;
     const overInfo = cell?.onInfo === true;
     this.updateDetailInfo(cell);
@@ -3750,6 +3758,11 @@ export class RouteScene extends Phaser.Scene {
       return false;
     }
     if (this.hudDetailState.tab !== 'moves') return false;
+    const learnCell = this.detailLearnInfoAt(pointer);
+    if (learnCell?.onInfo === true) {
+      this.toggleDetailInfo(learnCell);
+      return true;
+    }
     const poolIndex = this.hudLearnGrid.indexAt(point.x, point.y);
     if (poolIndex !== null) {
       const entry = this.hudLearnWindow[poolIndex];
@@ -3765,7 +3778,7 @@ export class RouteScene extends Phaser.Scene {
     const cell = this.detailInfoAt(pointer);
     if (!cell) return false;
     if (cell.onInfo) {
-      this.toggleDetailInfo(cell.index);
+      this.toggleDetailInfo(cell);
       return true;
     }
     this.hudDetailState = grabMove(this.hudDetailState, cell.index);
@@ -3795,6 +3808,7 @@ export class RouteScene extends Phaser.Scene {
     const next = scrollByRows(this.hudLearnScrollTop, deltaRows, this.maxLearnScrollTop());
     if (next === this.hudLearnScrollTop) return;
     this.hudLearnScrollTop = next;
+    this.dropLearnInfo();
     this.refreshDetail();
   }
 
@@ -3834,6 +3848,7 @@ export class RouteScene extends Phaser.Scene {
     const next = clampScrollTop(drag.startTop - deltaRows, this.maxLearnScrollTop());
     if (next === this.hudLearnScrollTop) return;
     this.hudLearnScrollTop = next;
+    this.dropLearnInfo();
     this.refreshDetail();
   }
 
@@ -3889,9 +3904,11 @@ export class RouteScene extends Phaser.Scene {
       if (this.hudLearnQuery.length === 0) return true;
       this.hudLearnQuery = this.hudLearnQuery.slice(0, -1);
       this.hudLearnScrollTop = 0;
+      this.dropLearnInfo();
     } else if (event.key.length === 1 && /[a-z0-9 '-]/i.test(event.key)) {
       this.hudLearnQuery += event.key;
       this.hudLearnScrollTop = 0;
+      this.dropLearnInfo();
     } else {
       return true;
     }
@@ -3901,22 +3918,34 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /** Floats or hides the info popup as the pointer moves over a cell's ⓘ button. */
-  private updateDetailInfo(cell: { index: number; onInfo: boolean } | null): void {
+  private updateDetailInfo(cell: DetailInfoHit | null): void {
     if (this.hudDetailInfoPinned) return;
-    const next = cell?.onInfo ? cell.index : null;
-    if (next === this.hudDetailInfo) return;
+    const next: DetailInfoTarget | null =
+      cell?.onInfo === true ? { grid: cell.grid, index: cell.index } : null;
+    const current = this.hudDetailInfo;
+    const same =
+      next === null || current === null
+        ? next === current
+        : next.grid === current.grid && next.index === current.index;
+    if (same) return;
     this.hudDetailInfo = next;
     this.refreshDetail();
   }
 
   /** Pins the popup of a move's ⓘ open, or closes it when it is already pinned. */
-  private toggleDetailInfo(index: number): void {
-    if (this.hudDetailInfoPinned && this.hudDetailInfo === index) {
+  private toggleDetailInfo(target: DetailInfoTarget): void {
+    const current = this.hudDetailInfo;
+    if (
+      this.hudDetailInfoPinned &&
+      current !== null &&
+      current.grid === target.grid &&
+      current.index === target.index
+    ) {
       this.hudDetailInfoPinned = false;
       this.hudDetailInfo = null;
     } else {
       this.hudDetailInfoPinned = true;
-      this.hudDetailInfo = index;
+      this.hudDetailInfo = target;
     }
     this.refreshDetail();
   }
@@ -3967,6 +3996,17 @@ export class RouteScene extends Phaser.Scene {
       this.hudAbilityInfo = false;
       this.refreshDetail();
     }
+  }
+
+  /**
+   * Drops the band's info state when the band's window is rebuilt with different
+   * entries: the target is an index into `hudLearnWindow`, so an index that
+   * survives a scroll would name another move. The caller redraws right after.
+   */
+  private dropLearnInfo(): void {
+    if (this.hudDetailInfo?.grid !== 'learn') return;
+    this.hudDetailInfo = null;
+    this.hudDetailInfoPinned = false;
   }
 
   /** True when the pointer is over the open detail panel. */
@@ -4033,13 +4073,25 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /** The move cell under the pointer and whether it lands on that cell's ⓘ button. */
-  private detailInfoAt(pointer: Phaser.Input.Pointer): { index: number; onInfo: boolean } | null {
+  private detailInfoAt(pointer: Phaser.Input.Pointer): DetailInfoHit | null {
     const index = this.detailMoveIndexAt(pointer);
     if (index === null) return null;
     const point = this.panelPoint(pointer, 'detail');
     const rect = this.hudMoveGrid.cellRect(index);
     const onInfo = rect !== null && this.hudMoveGrid.infoAt(index, point.x - rect.x, point.y - rect.y);
-    return { index, onInfo };
+    return { grid: 'moves', index, onInfo };
+  }
+
+  /** The band's cell under the pointer and whether it lands on that cell's ⓘ button. */
+  private detailLearnInfoAt(pointer: Phaser.Input.Pointer): DetailInfoHit | null {
+    if (!this.pointerInDetailPanel(pointer) || this.hudDetailState.tab !== 'moves') return null;
+    const point = this.panelPoint(pointer, 'detail');
+    const index = this.hudLearnGrid.indexAt(point.x, point.y);
+    if (index === null) return null;
+    const rect = this.hudLearnGrid.cellRect(index);
+    const onInfo =
+      rect !== null && this.hudLearnGrid.infoAt(index, point.x - rect.x, point.y - rect.y);
+    return { grid: 'learn', index, onInfo };
   }
 
   /**

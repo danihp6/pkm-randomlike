@@ -338,12 +338,6 @@ export class MoveGrid {
     return localX >= bx && localX <= bx + INFO_SIZE && localY >= by && localY <= by + INFO_SIZE;
   }
 
-  /** The ⓘ button rect of a cell, relative to the cell's top-left, or null. */
-  infoRect(index: number): Rect | null {
-    if (!this.cellRects[index]) return null;
-    return { x: this.cellRects[index].w - CELL_PAD - INFO_SIZE, y: CELL_TOP, w: INFO_SIZE, h: INFO_SIZE };
-  }
-
   private hidePiece(i: number): void {
     this.cells[i].setVisible(false);
     this.names[i].setVisible(false);

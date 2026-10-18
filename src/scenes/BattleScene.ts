@@ -366,6 +366,8 @@ export class BattleScene extends Phaser.Scene {
   /** The move whose info popup is up, or null; `infoPinned` keeps it up on click. */
   private infoMove: number | null = null;
   private infoPinned = false;
+  /** A reusable world point for the live-pointer hit test (no per-frame allocation). */
+  private readonly hitPoint = new Phaser.Math.Vector2();
 
   /** The no-tab party detail popup shown above the party grid. */
   private partyDetail!: Phaser.GameObjects.Container;
@@ -687,16 +689,13 @@ export class BattleScene extends Phaser.Scene {
     });
 
     // One invisible zone per row: hovering moves the cursor, clicking picks the
-    // row, so the menu answers the mouse exactly like the keyboard. In the moves
-    // grid the same zone also watches its ⓘ button for hover and click.
+    // row, so the menu answers the mouse exactly like the keyboard. The moves
+    // grid's own ⓘ button is classified from the live pointer, not from here.
     this.menuZones = Array.from({ length: MENU_ROWS }, () => {
       const zone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0);
       zone.setData('item', -1);
       zone.setInteractive({ useHandCursor: true });
       zone.on('pointerover', () => this.onMenuHover(zone));
-      zone.on('pointermove', (_pointer: Phaser.Input.Pointer, x: number, y: number) =>
-        this.onMenuPointerMove(zone, x, y),
-      );
       zone.on('pointerout', () => this.onMenuPointerOut(zone));
       zone.on('pointerdown', (_pointer: Phaser.Input.Pointer, x: number, y: number) =>
         this.onMenuClick(zone, x, y),
@@ -844,6 +843,11 @@ export class BattleScene extends Phaser.Scene {
       (_pointer: Phaser.Input.Pointer, objects: Phaser.GameObjects.GameObject[]) =>
         this.onPointerDown(objects),
     );
+    // The ⓘ hover is classified from the live pointer, so one scene-level listener
+    // replaces the per-row zone's own move event; leaving the canvas drops an
+    // unpinned popup.
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.onMoveInfoHover(pointer));
+    this.input.on('gameout', () => this.clearMoveInfo());
     // `[` / `]` cycle the bag's pockets, as in the route HUD.
     this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
       if (this.mode !== 'bag') return;
@@ -2329,9 +2333,8 @@ export class BattleScene extends Phaser.Scene {
       if (zone.input) zone.input.enabled = Boolean(item);
       if (!item) return;
       const rect = this.moveGrid.cellRect(i);
-      const infoRect = this.moveGrid.infoRect(i);
-      if (!rect || !infoRect) return;
-      zone.setPosition(rect.x, rect.y).setSize(rect.w, rect.h).setData('infoRect', infoRect);
+      if (!rect) return;
+      zone.setPosition(rect.x, rect.y).setSize(rect.w, rect.h);
     });
     // The moves grid marks its selection with the cell's highlight alone and a
     // dark ▶ cursor; the cursor jumps to whichever forme control is the target.
@@ -2566,7 +2569,12 @@ export class BattleScene extends Phaser.Scene {
   private onMenuClick(zone: Phaser.GameObjects.Zone, localX = -1, localY = -1): void {
     const index = zone.getData('item');
     if (typeof index !== 'number' || index < 0) return;
-    if (this.mode === 'moves' && this.insideInfoButton(zone, localX, localY)) {
+    if (
+      this.mode === 'moves' &&
+      localX >= 0 &&
+      localY >= 0 &&
+      this.moveInfoAt(zone.x + localX, zone.y + localY) === index
+    ) {
       this.onInfoClick(index);
       return;
     }
@@ -2576,20 +2584,33 @@ export class BattleScene extends Phaser.Scene {
     this.confirmMenu();
   }
 
-  /** True when a cell-local point falls inside that cell's ⓘ button. */
-  private insideInfoButton(zone: Phaser.GameObjects.Zone, localX: number, localY: number): boolean {
-    const rect = zone.getData('infoRect') as Rect | undefined;
-    if (!rect || localX < 0 || localY < 0) return false;
-    return localX >= rect.x && localX <= rect.x + rect.w && localY >= rect.y && localY <= rect.y + rect.h;
+  /**
+   * The index of the move cell whose ⓘ button holds a point in the grid's own space
+   * (the space `MoveGrid.layout` was given), or null when the point is not on one.
+   */
+  private moveInfoAt(x: number, y: number): number | null {
+    const index = this.moveGrid.indexAt(x, y);
+    if (index === null) return null;
+    const rect = this.moveGrid.cellRect(index);
+    if (rect === null) return null;
+    return this.moveGrid.infoAt(index, x - rect.x, y - rect.y) ? index : null;
   }
 
-  /** Moving over a moves cell watches its ⓘ button for hover. */
-  private onMenuPointerMove(zone: Phaser.GameObjects.Zone, localX: number, localY: number): void {
+  /** Floats the popup for the ⓘ under the live pointer, or drops an unpinned one. */
+  private onMoveInfoHover(pointer: Phaser.Input.Pointer): void {
     if (this.mode !== 'moves') return;
-    const index = zone.getData('item');
-    if (typeof index !== 'number' || index < 0) return;
-    if (this.insideInfoButton(zone, localX, localY)) this.onInfoHover(index);
-    else this.onInfoOut(index);
+    const point = this.cameras.main.getWorldPoint(pointer.x, pointer.y, this.hitPoint);
+    const index = this.moveInfoAt(point.x, point.y);
+    if (index !== null) {
+      this.onInfoHover(index);
+      return;
+    }
+    if (this.infoMove !== null) this.onInfoOut(this.infoMove);
+  }
+
+  /** Drops an unpinned popup when the pointer leaves the canvas. */
+  private clearMoveInfo(): void {
+    if (this.infoMove !== null) this.onInfoOut(this.infoMove);
   }
 
   /** Leaving a moves cell hides an unpinned info popup. */
