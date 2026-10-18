@@ -8,6 +8,65 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Every player-facing string is a key in one English table, and Spanish overlays it.**
+      The new pure module `src/i18n/` holds the source table (`en.ts`, 293 keys), the Spanish
+      overlay (`es.ts`, the same keys, `Readonly<Record<TranslationKey, string>>` so a missing
+      one is a type error) and the surface the whole tree now imports: `Locale`,
+      `TranslationKey`, `LOCALES`, `DEFAULT_LOCALE`, `isLocale`, `detectLocale`,
+      `getLocale`, `setLocale`, `translationParams` and `t(key, params?)`, which interpolates
+      `{token}`s from the caller's params and **throws** `i18n: missing param "{token}" for
+      key "{key}"` rather than drawing a brace. The module imports no Phaser, no DOM and no
+      storage — the browser's tag is an argument to the pure `detectLocale` (primary subtag,
+      exact: `es`/`es-*` is Spanish, everything else the source table) — so the tables are
+      testable headless. `Settings` gains `language` beside `alwaysRun`, read per field in
+      `parseSettings` (`isLocale(...) ? ... : 'en'`), so a document written before this task
+      reads the default: **`SAVE_VERSION` stays 16 and no migration step is added** (the
+      `D22`/`D45`/`D46` precedent). The one field defaulted from the browser lives in the
+      browser-facing shim: `src/settings.ts`'s new `browserLanguageTag()` (guarded so a
+      headless run has none) feeds `detectLocale` when the slot carries no language, and
+      `loadSettings` **stores** what it detected so the first run write cannot freeze the
+      source default; `loadSettings`/`saveSettings` apply the locale, which is why **no scene
+      needed a boot hook and `src/main.ts` is untouched**. `src/ui/settingsScreen.ts` gains the
+      `language` row as the last step row (index 6, after `aiLevel`, so no shipped index
+      moves), naming each locale in its own language (`English` / `Español`) and switchable in
+      place with no restart because the scene re-resolves its strings from `t(...)` in
+      `render()`. **The sweep** then moved every literal authored under `src/scenes/**`,
+      `src/ui/**` and `src/dev/**` behind a key — the six scenes, the HUD's party/bag/PC/
+      detail/pause/capture/Mart/reward panels, the battle's own chrome and prompts, the seed
+      prompt and the whole dev DOM panel — converting the module-level label tables
+      (`MENU_LABELS`, `PAUSE_MENU_LABELS`, `SHOP_MODE_LABELS`, `BAG_CATEGORY_LABELS`,
+      `STAT_LABELS`, `STATUS_ABBREVIATIONS`, the settings rows) to hold **keys** resolved by a
+      function, so nothing freezes the locale at import. The key table's widths are pinned to
+      the shipped geometry (`status.*` exactly 3 characters in both locales, `bag.*` ≤ 6,
+      `detail.stat.*` ≤ 7, `battle.command.*` ≤ 7) and every `es` character is checked against
+      the packed FRLG font's glyph set, which carries Latin-1, `·`, `…` and the arrows and
+      **no em dash** — so Spanish uses `·`/`:` and the shipped English keeps its own. The
+      task's scope call: the dex's own names (Pokémon, moves, abilities, items, biomes, trainer
+      classes) and `src/data/**` stay English in every locale, and so does the **battle
+      engine's message log** — its strings are what `golden.test.ts` pins byte for byte, so
+      only the battle scene's chrome is keyed (a battle therefore reads half Spanish after
+      this task, by design). `D43` records the decision in `docs/tech-decisions.md`, the knob
+      is written into `docs/design-spec.md` **§8 (Settings)** — the backlog says §7, but §7 is
+      "Special rooms & money" — `AGENTS.md`'s convention became "English is the source table, a
+      locale overlays by key, and the dex's own names stay English", and `src/i18n/README.md`
+      maps the new folder. QA's first pass was red on two call-site defects its own gates could
+      not see: `release.controls` was called with `{ key }` where the key declares `{ confirm }`
+      (a runtime throw the first time a party member fell) and `dev.move`'s English value had
+      no `{ n }` while the call passed the index (the panel lost its number). Both were fixed
+      and the class is now gated: `src/i18n/index.test.ts` scans every `t('<key>', { … })` in
+      `src/**` against `translationParams(en[key])` in both directions (279 sites, 0 findings)
+      and pins both interpolated results in both locales. The suite went **1582 → 1627** tests,
+      the three `[live]` criteria were **measured on this runner** (dev server + CDP over the
+      image's headless Chromium, object reads over `Runtime.evaluate` on the live scenes plus a
+      `Page.captureScreenshot` pixel diff: the main menu's drawn rows read
+      `['Nueva partida','Ajustes']` = the table's own values and the two renders differ by
+      2375 of 340 860 px; a real **ArrowLeft**/**ArrowRight** on the options screen turned the
+      title `AJUSTES`→`SETTINGS`→`AJUSTES`, every row label and the stored slot with it, on one
+      screen with no reload; a live run read `hudTitle === 'Mapa 1 · Deep Forest'`, the four
+      command labels `['LUCHAR','MOCHILA','CAMBIAR','HUIR']` and the prompt
+      `'¿Qué hará Spheal?'`; and the release overlay's own builder drew `'E · continuar'`
+      without throwing), and `npm test` + `npm run build` are green on the merge commit.
+
 - [x] **Every battle opens with a skippable entry beat.** The route→battle cut was a single
       frame; `BattleScene.create` now ends with `this.startEntry(trigger.kind)` instead of
       `this.startFeed()`, and its `Mode` gains `'entry'` ahead of `'feed'`. The beat's step order

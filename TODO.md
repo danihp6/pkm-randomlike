@@ -1121,6 +1121,29 @@ cut's own record.
   before the i18n sweep keys them.
 
 ### Batch 10 — localisation
+**(shipped and archived)**: its one task is closed — Task-26 merged alone behind the
+green gate (`task-26`; **1627** tests, `npm test` + `npm run build` green on the
+merge commit) and the detail is in `CHANGELOG.md`'s `## Unreleased`. QA validated it
+in the single pass a one-task batch collapses to — the task's plan, the two gates,
+the cross-task audit and the merge rehearsal on one tree — and it took **one
+correction round**, which is what the merge carries: the eight `[unit]` criteria and
+the three `[live]` criteria were green on the first tip, but QA's hunt for sweep
+leftovers found two defects the spec's own gates cannot see — the permadeath
+overlay's hint called `t('release.controls', { key })` where the key declares
+`{confirm}`, so `buildReleaseOverlay()` **threw** the first time a party member fell
+(`RouteScene` 6505, reached from `playReleaseBeats` with no `try`), and `dev.move` had
+lost its index because its `en` value carried no `{n}` while the call site passed one
+(`debugMenu` 823), so the dev panel rendered `Move` four times where `main` rendered
+`Move 1`…`Move 4`. Both are fixed at the call site / in the two tables, and the class
+of bug is now gated headlessly: `src/i18n/index.test.ts` gained a `describe('the call
+sites')` that scans every `t('<key>', { … })` in `src/**` against
+`translationParams(en[key])` in both directions (279 sites, 0 findings) and pins the
+two interpolated results in both locales. Its declared limit: a call site whose key is
+not a literal is skipped by the scan. The batch's one deviation from the cut's own
+wording is recorded rather than hidden: the backlog asks for the settings line in
+`docs/design-spec.md` §7, but §7 is "Special rooms & money", so the paragraph went to
+**§8 (Settings)**, where the shipped knobs already live. Its ID is retired: it keeps
+its place in the sequence and is never reused. What follows is the cut's own record.
 - **Task-26** i18n module and the Spanish locale.
 - **Hot files:** every `src/scenes/*.ts` → Task-26; `src/engine/save.ts` → Task-26.
 - **Shape:** last on purpose. It moves every player-facing literal behind a key, so it
@@ -4056,7 +4079,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
 No player-facing string is translated today: every one is a literal in a scene or
 a UI helper. The target is English plus Spanish.
 
-- [ ] **[Task-26] i18n module and the Spanish locale.** A pure, headless-tested
+- [x] **[Task-26] i18n module and the Spanish locale.** A pure, headless-tested
       locale layer (`src/i18n/`: a typed key table, `en` as the source, `es` as an
       overlay, and a `t(key, params)` with named interpolation, no Phaser import),
       plus the sweep that moves every literal behind a key: the main menu, the
