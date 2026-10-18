@@ -1851,6 +1851,29 @@ never reused. What follows is the cut's own record.
   step — and the one number it freezes (the four slots) is `MAX_MOVES`, not a new constant.
 
 ### Batch 19 — a move learned on a level-up is not equipped for you
+**(shipped, archived)**: its one task merged alone behind the green gate (`task-56`; **1716** tests
+across **139** files, `npm test` + `npm run build` green on the merge commit `bcd5a33`) and the detail
+is in `CHANGELOG.md`'s `## Unreleased`; QA validated it in the single pass a one-task batch collapses
+to — the task's plan, both gates, the cross-task audit and the merge rehearsal on the integration
+commit `9684136` — with every `[unit]` criterion green and both `[live]` ones **measured** there with a
+Vite dev server (`:5391`) reading the live scene and the live canvas. **What shipped.** **Task-56**
+stops a level-up from equipping anything: `levelUpPokemon` keeps its `level` event and one `learn`
+event per crossed move and no longer writes the four slots — no `moves.push`, no `moves.shift`, no
+`forget` event ever — so the member's `moves` is returned untouched; the `learn` variant of
+`ProgressionEvent` gains a required `memberId` (the one contract addition beyond the backlog's fix
+shape, because a flat event list cannot be attributed to a member otherwise) and the now-unused
+`moveSlot` helper is gone. The learnset band becomes the only equip path, so the OHKO/No Guard guard
+moves there: `learnsetPool` never offers an OHKO move to a No Guard holder (and `equipMove` refuses it
+for free through `poolEntry`, the defence in depth the spec froze). `levelUpBeats` takes the
+resolution's `ProgressionEvent[]` as a required third argument and reads `learned` from the `learn`
+events of the member that levelled instead of from a slot diff, so the modal and Task-50's transient
+notice keep announcing the move; `LevelUpBeat.forgotten` is kept in shape and is always empty, and
+`RouteScene.applyBattleResult` threads the fold's `events` (previously discarded) into the two
+`playLevelUp` call sites. `docs/battle-spec.md` §7 gains the paragraph that a crossed move waits in the
+band and that nothing is ever forgotten; `docs/design-spec.md` §5 already described the rule and stays
+untouched. It adds no run field, draws no RNG and adds no rule the save carries, so **no
+`SAVE_VERSION`** step — the chain stays **14 → 15 → 16 → 17 → 18**. Its ID is retired: it keeps its
+place in the sequence and is never reused. What follows is the cut's own record.
 - **Task-56** A move crossed on a level-up waits in the learnset; the player equips it.
 - **Hot files:** `src/scenes/RouteScene.ts` → Task-56; `src/engine/run/progression.ts` +
   `progression.test.ts` → Task-56; `src/engine/run/learnset.ts` + `learnset.test.ts` (the
@@ -5278,7 +5301,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (and all but 6b and 17 hold both), so it opens the plan's new **Batch 18**; its
       `docs/design-spec.md` §3 is Task-50's in Batch 16 and free here, and it is written against
       Task-38's scrolled band and Task-39's single ⓘ classifier. *(Batch 18)*
-- [ ] **[Task-56] A move learned on a level-up waits in the learnset; it is never equipped for
+- [x] **[Task-56] A move learned on a level-up waits in the learnset; it is never equipped for
       you.** Reported in play: «al subir nivel y aprender ataque no se debe equipar en los 4
       actuales debe quedarse en learnset y si quiere jugador se lo pone» — a move crossed on a
       level-up must **not** go into the four slots; it stays available in the learnset band and the

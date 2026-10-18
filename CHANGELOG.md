@@ -8,6 +8,46 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A move crossed on a level-up waits in the learnset and is never equipped for you.** Reported in
+      play ("al subir nivel y aprender ataque no se debe equipar en los 4 actuales debe quedarse en
+      learnset y si quiere jugador se lo pone"): a level-up used to push the new move straight into the
+      four slots and, when they were full, forget the oldest.
+      **What shipped.** `levelUpPokemon` keeps the `level` event and reports one `learn` event per
+      crossed move, and it no longer writes a member's `moves` at all — no `moves.push`, no
+      `moves.shift`, no `MAX_MOVES` comparison — so the four slots come back untouched and a `forget`
+      event can never be emitted again (the variant stays declared; the `moveSlot` helper is gone). The
+      learnset band is now the only way into a slot, so the **OHKO / No Guard** guard moves there:
+      `learnsetPool` never offers an OHKO move to a No Guard holder, which closes the pairing the engine
+      forbids to the drag as well as to the old level-up (and `equipMove` already refuses it for free
+      through `poolEntry`). The `learn` variant of `ProgressionEvent` gains a required `memberId`, the
+      one contract addition beyond the backlog's fix shape: a flat event list cannot be attributed to a
+      member otherwise, and `levelUpBeats` now needs that attribution. `levelUpBeats(before, after,
+      events)` takes the resolution's events as a required third argument and fills `learned` from the
+      `learn` events of the member that levelled, in event order, instead of diffing the slots — so the
+      key-dismissed `LEVEL UP` modal and `[Task-50]`'s transient notice keep announcing the move while
+      the slots stay as they were. `LevelUpBeat.forgotten` keeps its place in the frozen shape and is
+      always `[]` (an always-empty array pinned by a test states "a level-up never forgets" more
+      loudly than deleting the field would), and `RouteScene.applyBattleResult` threads the fold's
+      `events` (discarded until now) into its two `playLevelUp` call sites, the mini-boss branch
+      included. `docs/battle-spec.md` §7 gains the sentence that a crossed move waits in the band and
+      that nothing is ever forgotten; `docs/design-spec.md` §5 already described the band as the equip
+      path and is left alone. No engine RNG was touched (no stream is created, drawn or reordered, so
+      no seed re-pin), the dex and every data table are untouched, and no run field was added, so
+      **no `SAVE_VERSION`** step — the chain stays **14 → 15 → 16 → 17 → 18**; an existing save's
+      members keep the moves they hold and simply stop receiving new ones for free. The suite went
+      **1710 → 1716 tests across the same 139 files**, with `npm test` and `npm run build` green, and
+      the diff audit is exactly the task's eight paths (`RouteScene.ts`, `progression.ts` + test,
+      `learnset.ts` + test, `beats.ts` + test and `docs/battle-spec.md`); the OHKO test's premise
+      (`diglett` learns `fissure` at 44, `getMove('fissure').ohko`) is asserted inside the case so a
+      data move fails it loudly instead of passing vacuously, with a `Sand Veil` control that *is*
+      offered the move. **Both `[live]` criteria were measured** on the integration commit `9684136`
+      with a Vite dev server (`:5391`) driving the live scene and reading the live canvas over CDP: a
+      level-up raises the modal and the transient notice in the same beat, every modal line reads
+      `<Name> learned <Move>!`, the four slotted moves read the same four names in the same order
+      before and after, and each move the modal named appears in the learnset band below with its
+      `Lv##` tag; the modal still closes on one keypress. The task's ID is retired: it keeps its place
+      in the sequence and is never reused.
+
 - [x] **The MOVES panel always draws four slots, and a learnset cell dropped on an empty one teaches
       the move there.** Reported in play ("en moves añadir los 4 contenedores aunque no tenga 4 moves
       porque se debe poder aprender un move de mt teniendo 3 moves actualmente si arrastras al hueco lo
