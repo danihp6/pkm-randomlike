@@ -8,6 +8,54 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The run's first wild Pokémon is caught for certain.** Reported in play ("el primer
+      pokemon salvaje debe ser mucho mas facil de atrapar ignorar su dificultad segun el poke
+      solo para esta primera captura"), and the catch was species-based and nothing else:
+      `attemptCapture` (`src/engine/battle/capture.ts`) always read the target's own
+      `catchRateOf`, while the battle is pure and knows nothing about the run. **What ships:**
+      `BattleState.firstCatch` (required on the state, defaulted `false` by `createBattle` from
+      an optional `BattleSetup.firstCatch`, so every existing caller and test reads `false`
+      unchanged), the run fact carried on the launch seam that already moves run facts
+      (`BattleLaunch.firstCatch`, set by `RouteScene.startBattle` from
+      `this.run.stats.catches === 0` beside `canCapture`, forwarded by `BattleScene.create`),
+      and the new pure `catchValueFor(fighter, ballBonus, firstCatch)` with
+      `FIRST_CATCH_VALUE = 255`: while the flag is on, the roll's **catch value** is the flat 255
+      `attemptCapture` already treats as an outright success — whatever the species, the
+      target's HP, the ball and its status — and `attemptCapture` reads it off the state it
+      already receives, so its signature, its `!isWild` and `value <= 0` refusals, its
+      `value >= 255` early return, its shake loop and its one `rng.int(0, 65535)` per shake are
+      untouched and `src/engine/battle/commands.ts`'s ball branch does not change at all. With
+      the flag off the helper returns the shipped formula byte for byte. The boost is live while
+      the run has caught **nothing** — a failed throw and a party wipe do not spend it, because
+      `stats.catches === 0` is exactly that fact — and the very next wild after the first
+      successful catch is back to its species' own rate. **The decision's number, applied and
+      recorded:** the item asked for a "flat 255" and its own open question reads "`catchValue`
+      255 returns success outright, whatever the HP and the ball", so the spec froze the
+      **value** and not the rate, which is the one reading under which the item's own sentences
+      ("ignores the species", "cannot fail") both hold: a flat **rate** of 255 leaves a full-HP
+      target at `255 × 1 / 3 = 85`, under the 255 threshold, where the shake loop then fails
+      roughly two thirds of the time. One `agent-review` issue asks the human to confirm that
+      reading. **Evidence:** `src/engine/battle/capture.test.ts` gains six cases — the certain
+      255 at full HP with a plain ball (`ballBonus: 1`), the shipped formula identically on the
+      other branch (`charmander`, rate 45 → 15; and `sentret` at 1 HP with a ×2 ball), the
+      `createBattle` default and the carried flag, the fixed-seed regression AGENTS.md requires
+      (**seed 42**: caught with the flag on, and the identical battle with the same seed and the
+      flag off missing at `value: 15`), and the wild-only refusal kept with the flag on. The
+      suite is **1658 tests across 137 files** with `tsc --noEmit && vite build` green on the
+      merge commit. The `[live]` criterion was **measured twice**, by QA on its own dev server
+      and by the Orchestrator on the integration commit, both with a Vite dev server plus a
+      headless Chromium over CDP and `Runtime.evaluate` against the live scene state rather
+      than a screenshot: a fresh run (`stats.catches 0`) hands the battle
+      `launch.firstCatch true` / `state.firstCatch true`, and
+      `attemptCapture(liveState, 'enemy', 1)` on a **full-HP** wild `charmander` (30/30) returns
+      `{success: true, shakes: 4, value: 255}`; after one `recordCatch` the same battle reads
+      `false` and the same call returns `{success: false, value: 15}`. Eight paths moved — the
+      four engine/scene files named above, `docs/battle-spec.md` §6 and one bullet under
+      `docs/routes-spec.md` §3 — with no `package.json`, `src/main.ts`, `vite.config.ts`,
+      `src/data/**`, `src/engine/save.ts`, packed asset or `D##`, and no run field, so
+      **no `SAVE_VERSION`** step: the chain stays **14 → 15 → 16 → 17 → 18**. Its ID is retired:
+      it keeps its place in the sequence and is never reused.
+
 - [x] **The PC box gains a fixed RIP tab, listing the dead.** Reported in play ("en pc un
       tab fijo de rip donde aparecen los pokes muertos sin poder meterlos en el party ni
       dejar pokes en rip"), and the run had nowhere to keep them: `releaseFainted`

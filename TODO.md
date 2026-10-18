@@ -1306,6 +1306,29 @@ the sequence and are never reused. What follows is the cut's own record.
   `SAVE_VERSION` step.
 
 ### Batch 14 — the run's first wild catches easily
+**(shipped, archived)**: its one task merged alone behind the green gate (`task-48`; **1658**
+tests across 137 files, `npm test` + `npm run build` green on the merge commit) and the detail
+is in `CHANGELOG.md`'s `## Unreleased`. QA validated it in the single pass a one-task batch
+collapses to — the task's plan, both gates, the cross-task audit and the merge rehearsal on one
+tree — with every `[unit]` criterion green, and its one `[live]` criterion was **measured
+twice**, by QA on its own dev server and by the Orchestrator on the integration commit with a
+dev server and a headless Chromium over CDP reading the live state: a fresh run hands the battle
+`firstCatch true` and `attemptCapture` on a full-HP wild `charmander` with a plain ball returns
+`{success: true, shakes: 4, value: 255}`, while the same battle after one `recordCatch` reads
+`false` and returns `{success: false, value: 15}`. **What shipped.** **Task-48** carries the run
+fact `stats.catches === 0` on the existing launch seam (`BattleLaunch.firstCatch` →
+`BattleState.firstCatch`, defaulted `false` by `createBattle`) and resolves the roll through the
+new pure `catchValueFor(fighter, ballBonus, firstCatch)`: while the flag is on the catch **value**
+is the flat 255 `attemptCapture` already treats as an outright success, whatever the species, the
+HP, the ball and the status; with it off the helper is the shipped formula byte for byte, so the
+ball command, the shake loop and one draw per shake are untouched. One thing the cut's own
+wording got wrong is recorded rather than hidden: the item's "flat 255" is applied as the
+**value**, because a flat **rate** of 255 leaves a full-HP target at `255 × 1 / 3 = 85` — under
+the threshold, failing about two thirds of its throws — so the item's own words ("ignores the
+species", "cannot fail") only hold for the value. One `agent-review` issue carries that reading
+for a human's confirmation. It adds no run field, so **no `SAVE_VERSION` step** — the chain stays
+**14 → 15 → 16 → 17 → 18**. Its ID is retired: it keeps its place in the sequence and is never
+reused. What follows is the cut's own record.
 - **Task-48** The run's first wild Pokémon is much easier to catch.
 - **Hot files:** `src/engine/battle/capture.ts` + `capture.test.ts`,
   `src/engine/battle/state.ts`, `src/engine/run/battleLink.ts`,
@@ -2471,7 +2494,7 @@ The whole menu battle minus per-effect behaviour. Contract in
       regressions run. Batch order covers the rest: Mega Evolution is merged (D34),
       Gigantamax lands in Batch 7 and the item-driven retypes in Batch 8, so the AI weighs
       every option the rules have by the time it is written. *(Batch 8b)*
-- [ ] **[Task-48] The run's first wild Pokémon is much easier to catch.** Reported in
+- [x] **[Task-48] The run's first wild Pokémon is much easier to catch.** Reported in
       play: «el primer pokemon salvaje debe ser mucho mas facil de atrapar ignorar su
       dificultad segun el poke solo para esta primera captura» — for that first capture
       only, the species' own difficulty must not decide the throw.
