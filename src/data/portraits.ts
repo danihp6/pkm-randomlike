@@ -28,7 +28,8 @@ export type Portrait = Readonly<{ key: string; frame: number }>;
 export function portraitFor(speciesId: string, shiny = false): Portrait | null {
   const frame = (shiny ? SHINY : NORMAL)[speciesId] ?? NORMAL[speciesId];
   if (frame !== undefined) {
-    const key = shiny && SHINY[speciesId] !== undefined ? PORTRAIT_SHINY_TEXTURE_KEY : PORTRAIT_TEXTURE_KEY;
+    const key =
+      shiny && SHINY[speciesId] !== undefined ? PORTRAIT_SHINY_TEXTURE_KEY : PORTRAIT_TEXTURE_KEY;
     return { key, frame };
   }
   const base = megaFormOf(speciesId)?.baseSpeciesId;

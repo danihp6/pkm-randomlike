@@ -21,7 +21,12 @@ import {
   type PartyUiState,
 } from './partyScreen';
 
-const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch'] });
+const starter = createRunPokemon({
+  id: 'starter',
+  speciesId: 'charmander',
+  level: 5,
+  moves: ['scratch'],
+});
 
 function member(id: string, level = 3, speciesId = 'sentret'): RunPokemon {
   return createRunPokemon({ id, speciesId, level });
@@ -31,12 +36,18 @@ function runWith(partyIds: readonly string[], boxIds: readonly string[] = []): R
   const base = createRun({ seed: 'run-a', starter });
   return {
     ...base,
-    party: partyIds.map((id, index) => (index === 0 ? { ...starter, fighter: { ...starter.fighter, id } } : member(id))),
+    party: partyIds.map((id, index) =>
+      index === 0 ? { ...starter, fighter: { ...starter.fighter, id } } : member(id),
+    ),
     box: boxIds.map((id) => member(id)),
   };
 }
 
-function feed(run: RunState, ui: PartyUiState, inputs: readonly PartyInput[]): { run: RunState; ui: PartyUiState } {
+function feed(
+  run: RunState,
+  ui: PartyUiState,
+  inputs: readonly PartyInput[],
+): { run: RunState; ui: PartyUiState } {
   return inputs.reduce((state, input) => partyInput(state.run, state.ui, input), { run, ui });
 }
 
@@ -47,7 +58,13 @@ describe('rows', () => {
       fighter: { ...starter.fighter, hp: 7, status: 'par' as const },
     };
     const rows = partyRows({ ...runWith(['starter']), party: [hurt] });
-    expect(rows[0]).toMatchObject({ name: 'Charmander', level: 5, hp: 7, maxHp: 20, statusLabel: 'PAR' });
+    expect(rows[0]).toMatchObject({
+      name: 'Charmander',
+      level: 5,
+      hp: 7,
+      maxHp: 20,
+      statusLabel: 'PAR',
+    });
   });
 
   it('reads the box in order', () => {

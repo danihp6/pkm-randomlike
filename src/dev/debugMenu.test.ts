@@ -157,9 +157,33 @@ describe('matchPartyMember', () => {
 
   it('disambiguates identical labels and matches each twin', () => {
     const twins: readonly DebugPartyMember[] = [
-      { id: 'x', speciesId: 'eevee', name: 'Eevee', level: 20, nature: 'serious', ability: 'Run Away', moves: [] },
-      { id: 'y', speciesId: 'eevee', name: 'Eevee', level: 20, nature: 'adamant', ability: 'Run Away', moves: [] },
-      { id: 'z', speciesId: 'pikachu', name: 'Pikachu', level: 12, nature: 'serious', ability: 'Static', moves: [] },
+      {
+        id: 'x',
+        speciesId: 'eevee',
+        name: 'Eevee',
+        level: 20,
+        nature: 'serious',
+        ability: 'Run Away',
+        moves: [],
+      },
+      {
+        id: 'y',
+        speciesId: 'eevee',
+        name: 'Eevee',
+        level: 20,
+        nature: 'adamant',
+        ability: 'Run Away',
+        moves: [],
+      },
+      {
+        id: 'z',
+        speciesId: 'pikachu',
+        name: 'Pikachu',
+        level: 12,
+        nature: 'serious',
+        ability: 'Static',
+        moves: [],
+      },
     ];
     expect(partyMemberLabels(twins)).toEqual(['Eevee Lv20 (1)', 'Eevee Lv20 (2)', 'Pikachu Lv12']);
     expect(matchPartyMember('Eevee Lv20 (2)', twins)?.id).toBe('y');
@@ -171,15 +195,15 @@ describe('matchPartyMember', () => {
 
 describe('debugLocationLabel', () => {
   it('joins the floor, room and tile clauses with " · "', () => {
-    expect(
-      debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: { x: 14, y: 9 } }),
-    ).toBe('map 3 · room 2/7 · (14,9)');
+    expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: { x: 14, y: 9 } })).toBe(
+      'map 3 · room 2/7 · (14,9)',
+    );
   });
 
   it('drops the room clause when the floor has no plan', () => {
-    expect(
-      debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 0, tile: { x: 14, y: 9 } }),
-    ).toBe('map 3 · (14,9)');
+    expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 0, tile: { x: 14, y: 9 } })).toBe(
+      'map 3 · (14,9)',
+    );
   });
 
   it('drops the tile clause when there is no tile', () => {
@@ -200,9 +224,9 @@ describe('debugLocationLabel', () => {
 
   it('draws the clauses in the current locale', () => {
     setLocale('es');
-    expect(
-      debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: { x: 14, y: 9 } }),
-    ).toBe('mapa 3 · sala 2/7 · (14,9)');
+    expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: { x: 14, y: 9 } })).toBe(
+      'mapa 3 · sala 2/7 · (14,9)',
+    );
     setLocale('en');
     expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: null })).toBe(
       'map 3 · room 2/7',

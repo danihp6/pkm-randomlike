@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getItem } from '../../data/items';
 import { Rng } from '../rng';
-import {
-  legalMoveIndices,
-  selectedMove,
-  useBagItem,
-  validateCommand,
-  type Command,
-} from './commands';
+import { legalMoveIndices, selectedMove, useBagItem, validateCommand, type Command } from './commands';
 import { createFighter, type FighterInput } from './fighter';
 import { createBattle, type BattleState } from './state';
 
@@ -65,9 +59,7 @@ describe('validateCommand', () => {
     const state = build(['ember'], ['tackle']);
     state.sides.player.party[0].hp = 0;
     state.sides.player.awaitingReplacement = true;
-    expect(validateCommand(state, 'player', fight(0))).toBe(
-      'A replacement must be sent out first.',
-    );
+    expect(validateCommand(state, 'player', fight(0))).toBe('A replacement must be sent out first.');
   });
 });
 

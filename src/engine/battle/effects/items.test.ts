@@ -208,7 +208,9 @@ describe('damage items', () => {
     const state = battle('normalgem');
     expect(runModifyDamage(playerContext(state), getMove('ember')!, 100, 2)).toBe(130);
     expect(heldItem(state, 'player')).toBeNull();
-    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('used up'))).toBe(true);
+    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('used up'))).toBe(
+      true,
+    );
   });
 
   it('ignores a defender-held booster', () => {
@@ -272,7 +274,9 @@ describe('Focus Sash and Focus Band', () => {
   it('leaves a full-HP Focus Sash holder at 1 HP once', () => {
     const state = defenderHolds('focussash');
     const enemy = activeFighter(state, 'enemy');
-    expect(runModifyDamage(playerContext(state), getMove('ember')!, enemy.hp + 50, 2)).toBe(enemy.hp - 1);
+    expect(runModifyDamage(playerContext(state), getMove('ember')!, enemy.hp + 50, 2)).toBe(
+      enemy.hp - 1,
+    );
     expect(enemy.heldItem).toBeNull();
   });
 
@@ -280,7 +284,9 @@ describe('Focus Sash and Focus Band', () => {
     const state = defenderHolds('focussash');
     const enemy = activeFighter(state, 'enemy');
     enemy.hp = enemy.maxHp - 1;
-    expect(runModifyDamage(playerContext(state), getMove('ember')!, enemy.hp + 50, 2)).toBe(enemy.hp + 50);
+    expect(runModifyDamage(playerContext(state), getMove('ember')!, enemy.hp + 50, 2)).toBe(
+      enemy.hp + 50,
+    );
     expect(enemy.heldItem).toBe('focussash');
   });
 
@@ -397,11 +403,11 @@ describe('held items in the turn loop', () => {
     const player = activeFighter(state, 'player');
 
     expect(controlHp - player.hp).toBe(Math.floor(player.maxHp / 10));
-    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Life Orb'))).toBe(true);
+    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Life Orb'))).toBe(
+      true,
+    );
     expect(
-      state.log.some(
-        (event) => event.kind === 'damage' && event.side === 'player' && event.amount > 0,
-      ),
+      state.log.some((event) => event.kind === 'damage' && event.side === 'player' && event.amount > 0),
     ).toBe(true);
   });
 
@@ -423,9 +429,7 @@ describe('held items in the turn loop', () => {
   it('rejects a held item used from the Bag', () => {
     const state = battle('leftovers');
     state.bag.push({ item: held('leftovers'), count: 1 });
-    expect(() =>
-      takeTurn(state, { type: 'bag', itemId: 'leftovers' }, fight),
-    ).toThrow(/Held items/);
+    expect(() => takeTurn(state, { type: 'bag', itemId: 'leftovers' }, fight)).toThrow(/Held items/);
   });
 });
 
@@ -438,10 +442,23 @@ function itemBattle(
 ): BattleState {
   return createBattle({
     player: [
-      createFighter({ id: 'player', speciesId: holderSpecies, level: 20, ability, heldItem: itemId, moves: ['ember'] }),
+      createFighter({
+        id: 'player',
+        speciesId: holderSpecies,
+        level: 20,
+        ability,
+        heldItem: itemId,
+        moves: ['ember'],
+      }),
     ],
     enemy: [
-      createFighter({ id: 'enemy', speciesId: enemySpecies, level: 20, ability: enemyAbility, moves: ['tackle'] }),
+      createFighter({
+        id: 'enemy',
+        speciesId: enemySpecies,
+        level: 20,
+        ability: enemyAbility,
+        moves: ['tackle'],
+      }),
     ],
     rng: new Rng(99),
     isWild: true,
@@ -483,7 +500,9 @@ describe('berry abilities (batch 7)', () => {
 
     expect(player.hp).toBe(before);
     expect(player.heldItem).toBe('sitrusberry');
-    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Unnerve'))).toBe(true);
+    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Unnerve'))).toBe(
+      true,
+    );
   });
 });
 
@@ -555,8 +574,17 @@ describe('item-driven move retypes (D37)', () => {
 
   it('leaves the eleven unmodelled berries unregistered and Natural Gift alone', () => {
     for (const id of [
-      'custapberry', 'enigmaberry', 'jabocaberry', 'keeberry', 'lansatberry', 'leppaberry',
-      'marangaberry', 'persimberry', 'rowapberry', 'starfberry', 'tamatoberry',
+      'custapberry',
+      'enigmaberry',
+      'jabocaberry',
+      'keeberry',
+      'lansatberry',
+      'leppaberry',
+      'marangaberry',
+      'persimberry',
+      'rowapberry',
+      'starfberry',
+      'tamatoberry',
     ]) {
       expect(UNMODELLED_ITEMS, id).toContain(id);
       expect(getEffect(id), id).toBeUndefined();
@@ -566,7 +594,16 @@ describe('item-driven move retypes (D37)', () => {
 
   it('reads the retype through the registry, so Klutz and Magic Room suppress it', () => {
     const klutz = createBattle({
-      player: [createFighter({ id: 'player', speciesId: 'charmander', level: 20, ability: 'Klutz', heldItem: 'firememory', moves: ['ember'] })],
+      player: [
+        createFighter({
+          id: 'player',
+          speciesId: 'charmander',
+          level: 20,
+          ability: 'Klutz',
+          heldItem: 'firememory',
+          moves: ['ember'],
+        }),
+      ],
       enemy: [fighter('enemy', 'bulbasaur')],
       rng: new Rng(99),
       isWild: true,
@@ -600,7 +637,9 @@ describe('Natural Gift in a real turn', () => {
   }
 
   const usedUp = (state: BattleState): number =>
-    state.log.filter((event) => event.kind === 'text' && event.text.includes('used up its Sitrus Berry!')).length;
+    state.log.filter(
+      (event) => event.kind === 'text' && event.text.includes('used up its Sitrus Berry!'),
+    ).length;
 
   it('spends the berry once and deals the damage it powered', () => {
     const control = giftBattle();

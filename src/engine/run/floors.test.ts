@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { levelRangeForMap } from '../../data/maps';
 import { planMap } from '../maps/plan';
-import {
-  floorForRoute,
-  roomLevelForFloor,
-  routeIndexForRoom,
-  runBand,
-  runRoomLevel,
-} from './floors';
+import { floorForRoute, roomLevelForFloor, routeIndexForRoom, runBand, runRoomLevel } from './floors';
 import { capForRoute } from './levelCap';
 
 const SEEDS = ['floor-a', 'floor-b', 'floor-c'];

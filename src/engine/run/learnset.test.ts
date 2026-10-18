@@ -28,7 +28,10 @@ describe('learnsetPool', () => {
   });
 
   it('offers a TM move only while the run holds that machine', () => {
-    const member = { fighter: createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch'] }).fighter };
+    const member = {
+      fighter: createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch'] })
+        .fighter,
+    };
     const tmMove = learnableBy('charmander', 'tm')[0];
     const tmId = tmItemIdForMove(tmMove)!;
     const without = starterRun();

@@ -1,11 +1,7 @@
 import type { Move } from '../../../data/dex';
 import type { BattleFighter } from '../fighter';
 import { pushText, type BattleState, type WeatherId } from '../state';
-import {
-  normalizeEffectId,
-  registerEffects,
-  type EffectDefinition,
-} from './registry';
+import { normalizeEffectId, registerEffects, type EffectDefinition } from './registry';
 
 export const WEATHER_TURNS = 5;
 

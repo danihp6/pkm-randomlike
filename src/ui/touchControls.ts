@@ -48,10 +48,7 @@ export type TouchControlsConfig = Readonly<{
   onAction: (action: KeybindAction) => void;
 }>;
 
-export function createTouchControls(
-  scene: Phaser.Scene,
-  config: TouchControlsConfig,
-): TouchControls {
+export function createTouchControls(scene: Phaser.Scene, config: TouchControlsConfig): TouchControls {
   const enabled = prefersTouchControls();
   const root = scene.add.container(0, 0).setDepth(DEPTH).setVisible(enabled);
   if (!enabled) {

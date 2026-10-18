@@ -97,7 +97,9 @@ describe('route terrain passes', () => {
               const end = x - 1;
               const leftWall = start > 0 && route.tiles[y][start - 1] === WALL;
               const rightWall = end < route.width - 1 && route.tiles[y][end + 1] === WALL;
-              expect(leftWall || rightWall, `${shape} ${seed} ledge ${start}-${end} at y${y}`).toBe(true);
+              expect(leftWall || rightWall, `${shape} ${seed} ledge ${start}-${end} at y${y}`).toBe(
+                true,
+              );
               start = -1;
             }
           }
@@ -172,7 +174,9 @@ describe('route terrain passes', () => {
           expect(reached.has(tileKey(cell)), `${shape} ${seed} ${cell.x},${cell.y}`).toBe(true);
         }
         for (const pocket of route.pockets) {
-          expect(reached.has(tileKey(pocket)), `${shape} ${seed} pocket ${pocket.x},${pocket.y}`).toBe(true);
+          expect(reached.has(tileKey(pocket)), `${shape} ${seed} pocket ${pocket.x},${pocket.y}`).toBe(
+            true,
+          );
         }
       }
     }

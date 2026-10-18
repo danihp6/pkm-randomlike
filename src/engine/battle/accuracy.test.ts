@@ -40,8 +40,7 @@ describe('rollHit', () => {
   it('is a pure function of the rng stream', () => {
     const attacker = make('charmander');
     const defender = make('sentret');
-    const rolls = () =>
-      Array.from({ length: 20 }, () => rollHit(new Rng(4), 75, attacker, defender));
+    const rolls = () => Array.from({ length: 20 }, () => rollHit(new Rng(4), 75, attacker, defender));
     expect(rolls()).toEqual(rolls());
   });
 });

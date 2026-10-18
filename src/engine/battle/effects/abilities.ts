@@ -1,8 +1,27 @@
 import { effectiveness, getMove, isDamaging } from '../../../data/dex';
 import { getItem } from '../../../data/items';
-import { applyDamage, applyHeal, changeBattleForm, isGrounded, restoreBattleForm, stagedStat, transformInto, type BattleFighter, type BoostId, type StatusId } from '../fighter';
+import {
+  applyDamage,
+  applyHeal,
+  changeBattleForm,
+  isGrounded,
+  restoreBattleForm,
+  stagedStat,
+  transformInto,
+  type BattleFighter,
+  type BoostId,
+  type StatusId,
+} from '../fighter';
 import { cureStatus, statusName } from '../status';
-import { opponentOf, pushEvent, pushText, effectiveWeather, SIDE_IDS, activeFighter, type WeatherId } from '../state';
+import {
+  opponentOf,
+  pushEvent,
+  pushText,
+  effectiveWeather,
+  SIDE_IDS,
+  activeFighter,
+  type WeatherId,
+} from '../state';
 import { applyFlinch, applyConfusion, applyAttract, applyPerish } from '../volatile';
 import { abilityMoveType } from '../moveType';
 import { applyBoostEffect, applyStatusEffect, statLabel } from './apply';
@@ -37,20 +56,38 @@ function intimidate(): EffectHandlers {
         return;
       }
       if (foe.ability === 'Guard Dog') {
-        applyBoostEffect(ctx.state, opponentOf(ctx.side), foe, { atk: 1 }, {
-          self: true,
-          message: `${foe.name}'s Guard Dog raised its Attack!`,
-        });
+        applyBoostEffect(
+          ctx.state,
+          opponentOf(ctx.side),
+          foe,
+          { atk: 1 },
+          {
+            self: true,
+            message: `${foe.name}'s Guard Dog raised its Attack!`,
+          },
+        );
         return;
       }
-      applyBoostEffect(ctx.state, opponentOf(ctx.side), foe, { atk: -1 }, {
-        message: `${ctx.owner.name}'s Intimidate cut ${foe.name}'s Attack!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        opponentOf(ctx.side),
+        foe,
+        { atk: -1 },
+        {
+          message: `${ctx.owner.name}'s Intimidate cut ${foe.name}'s Attack!`,
+        },
+      );
       if (foe.ability === 'Rattled') {
-        applyBoostEffect(ctx.state, opponentOf(ctx.side), foe, { spe: 1 }, {
-          self: true,
-          message: `${foe.name}'s Rattled raised its Speed!`,
-        });
+        applyBoostEffect(
+          ctx.state,
+          opponentOf(ctx.side),
+          foe,
+          { spe: 1 },
+          {
+            self: true,
+            message: `${foe.name}'s Rattled raised its Speed!`,
+          },
+        );
       }
     },
   };
@@ -106,7 +143,13 @@ function contactStatus(ability: string, status: StatusId): EffectHandlers {
       if (ctx.owner.hp <= 0 || attacker.hp <= 0) return;
       if (ctx.owner.volatiles.substitute > 0) return;
       if (ctx.rng.int(1, 100) > 30) return;
-      applyStatusEffect(ctx.state, ctx.side, attacker, status, `${attacker.name} was hurt by ${ability}!`);
+      applyStatusEffect(
+        ctx.state,
+        ctx.side,
+        attacker,
+        status,
+        `${attacker.name} was hurt by ${ability}!`,
+      );
     },
   };
 }
@@ -323,10 +366,7 @@ function scaledDamage(damage: number, ...multipliers: number[]): number {
   return Math.max(1, Math.floor(multipliers.reduce((value, factor) => value * factor, damage)));
 }
 
-function accuracyModifier(
-  multiplier: number,
-  applies: (ctx: EffectContext) => boolean,
-): EffectHandlers {
+function accuracyModifier(multiplier: number, applies: (ctx: EffectContext) => boolean): EffectHandlers {
   return {
     onModifyAccuracy: (ctx, chance) => {
       if (!applies(ctx)) return;
@@ -380,8 +420,10 @@ function punkRock(): EffectHandlers {
 function waterBubble(): EffectHandlers {
   return {
     onModifyDamage: (ctx, payload) => {
-      if (ctx.owner === ctx.source && payload.move.type === 'Water') return scaledDamage(payload.damage, 2);
-      if (ctx.owner === ctx.target && payload.move.type === 'Fire') return scaledDamage(payload.damage, 0.5);
+      if (ctx.owner === ctx.source && payload.move.type === 'Water')
+        return scaledDamage(payload.damage, 2);
+      if (ctx.owner === ctx.target && payload.move.type === 'Fire')
+        return scaledDamage(payload.damage, 0.5);
     },
   };
 }
@@ -507,7 +549,13 @@ function effectSpore(): EffectHandlers {
     const roll = ctx.rng.int(1, 100);
     if (roll > 30) return;
     const status: StatusId = roll <= 11 ? 'slp' : roll <= 21 ? 'par' : 'psn';
-    applyStatusEffect(ctx.state, opponentOf(ctx.side), attacker, status, `${attacker.name} was afflicted by Effect Spore!`);
+    applyStatusEffect(
+      ctx.state,
+      opponentOf(ctx.side),
+      attacker,
+      status,
+      `${attacker.name} was afflicted by Effect Spore!`,
+    );
   });
 }
 
@@ -548,10 +596,16 @@ function rattled(): EffectHandlers {
       if (ctx.owner !== ctx.target) return;
       if (ctx.owner.hp <= 0) return;
       if (!['Bug', 'Dark', 'Ghost'].includes(payload.move.type)) return;
-      applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, { spe: 1 }, {
-        self: true,
-        message: `${ctx.owner.name}'s Rattled raised its Speed!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        opponentOf(ctx.side),
+        ctx.owner,
+        { spe: 1 },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Rattled raised its Speed!`,
+        },
+      );
     },
   };
 }
@@ -562,7 +616,13 @@ function regenerator(): EffectHandlers {
       if (ctx.owner.hp <= 0) return;
       const healed = applyHeal(ctx.owner, Math.max(1, Math.floor(ctx.owner.maxHp / 3)));
       if (healed <= 0) return;
-      pushEvent(ctx.state, { kind: 'heal', side: ctx.side, amount: healed, hp: ctx.owner.hp, maxHp: ctx.owner.maxHp });
+      pushEvent(ctx.state, {
+        kind: 'heal',
+        side: ctx.side,
+        amount: healed,
+        hp: ctx.owner.hp,
+        maxHp: ctx.owner.maxHp,
+      });
       pushText(ctx.state, `${ctx.owner.name} restored HP with Regenerator!`);
     },
   };
@@ -605,7 +665,10 @@ function frisk(): EffectHandlers {
     onSwitchIn: (ctx) => {
       const foe = ctx.target;
       if (!foe || !foe.heldItem) return;
-      pushText(ctx.state, `${ctx.owner.name} frisked ${foe.name} and found its ${getItem(foe.heldItem)?.name ?? foe.heldItem}!`);
+      pushText(
+        ctx.state,
+        `${ctx.owner.name} frisked ${foe.name} and found its ${getItem(foe.heldItem)?.name ?? foe.heldItem}!`,
+      );
     },
   };
 }
@@ -643,10 +706,16 @@ function defiant(): EffectHandlers {
   return {
     onBoost: (ctx, payload) => {
       if (ctx.owner !== ctx.source || payload.self || payload.stages >= 0) return;
-      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { atk: 2 }, {
-        self: true,
-        message: `${ctx.owner.name}'s Defiant raised its Attack!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        ctx.side,
+        ctx.owner,
+        { atk: 2 },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Defiant raised its Attack!`,
+        },
+      );
     },
   };
 }
@@ -655,10 +724,16 @@ function competitive(): EffectHandlers {
   return {
     onBoost: (ctx, payload) => {
       if (ctx.owner !== ctx.source || payload.self || payload.stages >= 0) return;
-      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { spa: 2 }, {
-        self: true,
-        message: `${ctx.owner.name}'s Competitive raised its Sp. Atk!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        ctx.side,
+        ctx.owner,
+        { spa: 2 },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Competitive raised its Sp. Atk!`,
+        },
+      );
     },
   };
 }
@@ -682,7 +757,13 @@ function poisonHeal(): EffectHandlers {
       if (holder.status !== 'psn' && holder.status !== 'tox') return;
       const healed = applyHeal(holder, Math.max(1, Math.floor(holder.maxHp / 8)));
       if (healed <= 0) return;
-      pushEvent(ctx.state, { kind: 'heal', side: ctx.side, amount: healed, hp: holder.hp, maxHp: holder.maxHp });
+      pushEvent(ctx.state, {
+        kind: 'heal',
+        side: ctx.side,
+        amount: healed,
+        hp: holder.hp,
+        maxHp: holder.maxHp,
+      });
       pushText(ctx.state, `${holder.name} restored HP with Poison Heal!`);
     },
   };
@@ -711,10 +792,16 @@ function angerPoint(): EffectHandlers {
   return {
     onModifyCrit: (ctx, willCrit) => {
       if (ctx.owner !== ctx.target || !willCrit || ctx.owner.hp <= 0) return;
-      applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, { atk: 12 }, {
-        self: true,
-        message: `${ctx.owner.name}'s Anger Point maxed its Attack!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        opponentOf(ctx.side),
+        ctx.owner,
+        { atk: 12 },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Anger Point maxed its Attack!`,
+        },
+      );
     },
   };
 }
@@ -776,16 +863,28 @@ function poisonTouch(): EffectHandlers {
       if (!payload.contact) return;
       if (ctx.owner.hp <= 0 || ctx.target.hp <= 0) return;
       if (ctx.rng.int(1, 100) > 30) return;
-      applyStatusEffect(ctx.state, opponentOf(ctx.side), ctx.target, 'psn', `${ctx.target.name} was poisoned by Poison Touch!`);
+      applyStatusEffect(
+        ctx.state,
+        opponentOf(ctx.side),
+        ctx.target,
+        'psn',
+        `${ctx.target.name} was poisoned by Poison Touch!`,
+      );
     },
   };
 }
 
 function gooey(): EffectHandlers {
   return contactReaction((ctx, attacker) => {
-    applyBoostEffect(ctx.state, opponentOf(ctx.side), attacker, { spe: -1 }, {
-      message: `${attacker.name}'s Speed was lowered by Gooey!`,
-    });
+    applyBoostEffect(
+      ctx.state,
+      opponentOf(ctx.side),
+      attacker,
+      { spe: -1 },
+      {
+        message: `${attacker.name}'s Speed was lowered by Gooey!`,
+      },
+    );
   });
 }
 
@@ -794,10 +893,16 @@ function justified(): EffectHandlers {
     onAfterMove: (ctx, payload) => {
       if (ctx.owner !== ctx.target || ctx.owner.hp <= 0) return;
       if (payload.move.type !== 'Dark') return;
-      applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, { atk: 1 }, {
-        self: true,
-        message: `${ctx.owner.name}'s Justified raised its Attack!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        opponentOf(ctx.side),
+        ctx.owner,
+        { atk: 1 },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Justified raised its Attack!`,
+        },
+      );
     },
   };
 }
@@ -826,10 +931,16 @@ function thermalExchange(): EffectHandlers {
   return {
     onTryHit: (ctx, payload) => {
       if (ctx.owner !== ctx.target || payload.move.type !== 'Fire') return;
-      applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, { atk: 1 }, {
-        self: true,
-        message: `${ctx.owner.name}'s Thermal Exchange raised its Attack!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        opponentOf(ctx.side),
+        ctx.owner,
+        { atk: 1 },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Thermal Exchange raised its Attack!`,
+        },
+      );
       pushText(ctx.state, `${ctx.owner.name}'s Thermal Exchange absorbed the heat!`);
       return false;
     },
@@ -865,7 +976,13 @@ function synchronize(): EffectHandlers {
       if (ctx.owner !== ctx.source || !ctx.target) return;
       if (!['brn', 'par', 'psn'].includes(status)) return;
       if (ctx.target.ability === 'Synchronize') return;
-      applyStatusEffect(ctx.state, opponentOf(ctx.side), ctx.target, status, `${ctx.target.name} was afflicted by ${statusName(status as StatusId)} too!`);
+      applyStatusEffect(
+        ctx.state,
+        opponentOf(ctx.side),
+        ctx.target,
+        status,
+        `${ctx.target.name} was afflicted by ${statusName(status as StatusId)} too!`,
+      );
     },
   };
 }
@@ -874,10 +991,16 @@ function steadfast(): EffectHandlers {
   return {
     onTryVolatile: (ctx, payload) => {
       if (ctx.owner !== ctx.source || payload.volatile !== 'flinch') return;
-      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { spe: 1 }, {
-        self: true,
-        message: `${ctx.owner.name}'s Steadfast raised its Speed!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        ctx.side,
+        ctx.owner,
+        { spe: 1 },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Steadfast raised its Speed!`,
+        },
+      );
     },
   };
 }
@@ -900,10 +1023,16 @@ function moody(): EffectHandlers {
       const raise = stats[ctx.rng.int(0, stats.length - 1)];
       let lower = stats[ctx.rng.int(0, stats.length - 1)];
       if (lower === raise) lower = stats[(stats.indexOf(lower) + 1) % stats.length];
-      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { [raise]: 2, [lower]: -1 }, {
-        self: true,
-        message: `${ctx.owner.name}'s Moody heightened one stat and lowered another!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        ctx.side,
+        ctx.owner,
+        { [raise]: 2, [lower]: -1 },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Moody heightened one stat and lowered another!`,
+        },
+      );
     },
   };
 }
@@ -1008,11 +1137,7 @@ function hitReaction(
   };
 }
 
-function selfBoost(
-  ctx: EffectContext,
-  boosts: Partial<Record<BoostId, number>>,
-  message: string,
-): void {
+function selfBoost(ctx: EffectContext, boosts: Partial<Record<BoostId, number>>, message: string): void {
   applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, boosts, { self: true, message });
 }
 
@@ -1028,9 +1153,12 @@ function windRider(): EffectHandlers {
 }
 
 function stamina(): EffectHandlers {
-  return hitReaction((_ctx, payload) => damagingMove(payload), (ctx) => {
-    selfBoost(ctx, { def: 1 }, `${ctx.owner.name}'s Stamina raised its Defense!`);
-  });
+  return hitReaction(
+    (_ctx, payload) => damagingMove(payload),
+    (ctx) => {
+      selfBoost(ctx, { def: 1 }, `${ctx.owner.name}'s Stamina raised its Defense!`);
+    },
+  );
 }
 
 function weakArmor(): EffectHandlers {
@@ -1191,10 +1319,7 @@ function surgeSurfer(): EffectHandlers {
 }
 
 function tangledFeet(): EffectHandlers {
-  return accuracyModifier(
-    0.5,
-    (ctx) => ctx.owner === ctx.target && ctx.owner.volatiles.confusion > 0,
-  );
+  return accuracyModifier(0.5, (ctx) => ctx.owner === ctx.target && ctx.owner.volatiles.confusion > 0);
 }
 
 function toxicChain(): EffectHandlers {
@@ -1234,17 +1359,23 @@ function stench(): EffectHandlers {
 }
 
 function sandSpit(): EffectHandlers {
-  return hitReaction((_ctx, payload) => damagingMove(payload), (ctx) => {
-    if (ctx.state.weather === 'sand') return;
-    setWeather(ctx.state, 'sand');
-  });
+  return hitReaction(
+    (_ctx, payload) => damagingMove(payload),
+    (ctx) => {
+      if (ctx.state.weather === 'sand') return;
+      setWeather(ctx.state, 'sand');
+    },
+  );
 }
 
 function seedSower(): EffectHandlers {
-  return hitReaction((_ctx, payload) => damagingMove(payload), (ctx) => {
-    if (ctx.state.terrain === 'grassy') return;
-    setTerrain(ctx.state, 'grassy');
-  });
+  return hitReaction(
+    (_ctx, payload) => damagingMove(payload),
+    (ctx) => {
+      if (ctx.state.terrain === 'grassy') return;
+      setTerrain(ctx.state, 'grassy');
+    },
+  );
 }
 
 function furCoat(): EffectHandlers {
@@ -1270,10 +1401,16 @@ function speedBoost(): EffectHandlers {
   return {
     onResidual: (ctx) => {
       if (ctx.owner !== ctx.source || ctx.owner.hp <= 0) return;
-      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { spe: 1 }, {
-        self: true,
-        message: `${ctx.owner.name}'s Speed Boost raised its Speed!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        ctx.side,
+        ctx.owner,
+        { spe: 1 },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Speed Boost raised its Speed!`,
+        },
+      );
     },
   };
 }
@@ -1336,9 +1473,15 @@ function supersweetSyrup(): EffectHandlers {
       const foe = ctx.target;
       if (!foe || foe.hp <= 0) return;
       ctx.owner.volatiles.supersweetSyrup = true;
-      applyBoostEffect(ctx.state, opponentOf(ctx.side), foe, { evasion: -1 }, {
-        message: `${ctx.owner.name}'s Supersweet Syrup lowered ${foe.name}'s evasiveness!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        opponentOf(ctx.side),
+        foe,
+        { evasion: -1 },
+        {
+          message: `${ctx.owner.name}'s Supersweet Syrup lowered ${foe.name}'s evasiveness!`,
+        },
+      );
     },
   };
 }
@@ -1472,7 +1615,9 @@ function mirrorArmor(): EffectHandlers {
       );
       reflectingDrop = true;
       try {
-        applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.target, { [payload.stat]: payload.stages });
+        applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.target, {
+          [payload.stat]: payload.stages,
+        });
       } finally {
         reflectingDrop = false;
       }
@@ -1487,10 +1632,16 @@ function opportunist(): EffectHandlers {
     onBoost: (ctx, payload) => {
       if (ctx.owner !== ctx.target || payload.stages <= 0) return;
       if (ctx.owner.hp <= 0) return;
-      applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.owner, { [payload.stat]: payload.stages }, {
-        self: true,
-        message: `${ctx.owner.name}'s Opportunist copied the stat boost!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        opponentOf(ctx.side),
+        ctx.owner,
+        { [payload.stat]: payload.stages },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Opportunist copied the stat boost!`,
+        },
+      );
     },
   };
 }
@@ -1498,9 +1649,15 @@ function opportunist(): EffectHandlers {
 /** Tangling Hair lowers the Speed of a contact attacker, like Gooey. */
 function tanglingHair(): EffectHandlers {
   return contactReaction((ctx, attacker) => {
-    applyBoostEffect(ctx.state, opponentOf(ctx.side), attacker, { spe: -1 }, {
-      message: `${attacker.name}'s Speed was lowered by Tangling Hair!`,
-    });
+    applyBoostEffect(
+      ctx.state,
+      opponentOf(ctx.side),
+      attacker,
+      { spe: -1 },
+      {
+        message: `${attacker.name}'s Speed was lowered by Tangling Hair!`,
+      },
+    );
   });
 }
 
@@ -1681,10 +1838,16 @@ function soulHeart(): EffectHandlers {
   return {
     onFaint: (ctx) => {
       if (ctx.owner !== ctx.source || ctx.owner.hp <= 0) return;
-      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { spa: 1 }, {
-        self: true,
-        message: `${ctx.owner.name}'s Soul-Heart raised its Sp. Atk!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        ctx.side,
+        ctx.owner,
+        { spa: 1 },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Soul-Heart raised its Sp. Atk!`,
+        },
+      );
     },
   };
 }
@@ -1765,10 +1928,16 @@ function battleBond(): EffectHandlers {
       if (ctx.target.hp > 0 || payload.move.basePower <= 0) return;
       if (ctx.owner.volatiles.battleBond) return;
       ctx.owner.volatiles.battleBond = true;
-      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { atk: 1, spa: 1, spe: 1 }, {
-        self: true,
-        message: `${ctx.owner.name}'s Battle Bond raised its stats!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        ctx.side,
+        ctx.owner,
+        { atk: 1, spa: 1, spe: 1 },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Battle Bond raised its stats!`,
+        },
+      );
     },
   };
 }
@@ -2074,10 +2243,16 @@ function beastBoost(): EffectHandlers {
       if (ctx.owner !== ctx.source || !ctx.target) return;
       if (ctx.target.hp > 0 || payload.move.basePower <= 0) return;
       const stat = highestStat(ctx.owner);
-      applyBoostEffect(ctx.state, ctx.side, ctx.owner, { [stat]: 1 }, {
-        self: true,
-        message: `${ctx.owner.name}'s Beast Boost raised its ${statLabel(stat)}!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        ctx.side,
+        ctx.owner,
+        { [stat]: 1 },
+        {
+          self: true,
+          message: `${ctx.owner.name}'s Beast Boost raised its ${statLabel(stat)}!`,
+        },
+      );
     },
   };
 }
@@ -2102,9 +2277,15 @@ function cottonDown(): EffectHandlers {
       if (ctx.owner !== ctx.target || ctx.owner.hp <= 0) return;
       if (!payload.hit || payload.move.category === 'Status' || payload.move.basePower <= 0) return;
       if (ctx.owner.volatiles.substitute > 0) return;
-      applyBoostEffect(ctx.state, opponentOf(ctx.side), ctx.source, { spe: -1 }, {
-        message: `${ctx.source.name}'s Speed was lowered by Cotton Down!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        opponentOf(ctx.side),
+        ctx.source,
+        { spe: -1 },
+        {
+          message: `${ctx.source.name}'s Speed was lowered by Cotton Down!`,
+        },
+      );
     },
   };
 }
@@ -2136,7 +2317,15 @@ function innardsOut(): EffectHandlers {
       const attacker = ctx.source;
       if (attacker.hp <= 0) return;
       const dealt = applyDamage(attacker, damage);
-      pushEvent(ctx.state, { kind: 'damage', side: opponentOf(ctx.side), amount: dealt, hp: attacker.hp, maxHp: attacker.maxHp, effectiveness: 1, crit: false });
+      pushEvent(ctx.state, {
+        kind: 'damage',
+        side: opponentOf(ctx.side),
+        amount: dealt,
+        hp: attacker.hp,
+        maxHp: attacker.maxHp,
+        effectiveness: 1,
+        crit: false,
+      });
       pushText(ctx.state, `${attacker.name} was hurt by ${ctx.owner.name}'s Innards Out!`);
     },
   };
@@ -2146,7 +2335,15 @@ function innardsOut(): EffectHandlers {
 function ironBarbs(): EffectHandlers {
   return contactReaction((ctx, attacker) => {
     const dealt = applyDamage(attacker, Math.max(1, Math.floor(attacker.maxHp / 8)));
-    pushEvent(ctx.state, { kind: 'damage', side: opponentOf(ctx.side), amount: dealt, hp: attacker.hp, maxHp: attacker.maxHp, effectiveness: 1, crit: false });
+    pushEvent(ctx.state, {
+      kind: 'damage',
+      side: opponentOf(ctx.side),
+      amount: dealt,
+      hp: attacker.hp,
+      maxHp: attacker.maxHp,
+      effectiveness: 1,
+      crit: false,
+    });
     pushText(ctx.state, `${attacker.name} was hurt by ${ctx.owner.name}'s Iron Barbs!`);
   });
 }
@@ -2226,7 +2423,8 @@ function screenCleaner(): EffectHandlers {
       let cleared = false;
       for (const side of SIDE_IDS) {
         const conditions = ctx.state.sides[side].sideConditions;
-        if (conditions.reflect > 0 || conditions.lightscreen > 0 || conditions.auroraveil > 0) cleared = true;
+        if (conditions.reflect > 0 || conditions.lightscreen > 0 || conditions.auroraveil > 0)
+          cleared = true;
         conditions.reflect = 0;
         conditions.lightscreen = 0;
         conditions.auroraveil = 0;
@@ -2243,7 +2441,10 @@ function wanderingSpirit(): EffectHandlers {
     const mine = ctx.owner.ability;
     ctx.owner.ability = attacker.ability;
     attacker.ability = mine;
-    pushText(ctx.state, `${ctx.owner.name} swapped Abilities with ${attacker.name} through Wandering Spirit!`);
+    pushText(
+      ctx.state,
+      `${ctx.owner.name} swapped Abilities with ${attacker.name} through Wandering Spirit!`,
+    );
   });
 }
 
@@ -2306,7 +2507,13 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['motordrive', typeImmunity('Motor Drive', 'Electric', { boost: { spe: 1 } })],
   ['dryskin', drySkin()],
 
-  ['thickfat', incomingMultiplier(0.5, (_ctx, payload) => payload.move.type === 'Fire' || payload.move.type === 'Ice')],
+  [
+    'thickfat',
+    incomingMultiplier(
+      0.5,
+      (_ctx, payload) => payload.move.type === 'Fire' || payload.move.type === 'Ice',
+    ),
+  ],
   ['heatproof', incomingMultiplier(0.5, (_ctx, payload) => payload.move.type === 'Fire')],
   ['icescales', incomingMultiplier(0.5, (_ctx, payload) => payload.move.category === 'Special')],
   ['multiscale', incomingMultiplier(0.5, (ctx) => ctx.owner.hp === ctx.owner.maxHp)],
@@ -2319,8 +2526,20 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['strongjaw', outgoingMultiplier(1.5, (payload) => Boolean(payload.move.flags.bite))],
   ['ironfist', outgoingMultiplier(1.2, (payload) => Boolean(payload.move.flags.punch))],
   ['sharpness', outgoingMultiplier(1.5, (payload) => Boolean(payload.move.flags.slicing))],
-  ['hugepower', outgoingMultiplier(2, (payload) => payload.move.category === 'Physical' && payload.move.basePower > 0)],
-  ['purepower', outgoingMultiplier(2, (payload) => payload.move.category === 'Physical' && payload.move.basePower > 0)],
+  [
+    'hugepower',
+    outgoingMultiplier(
+      2,
+      (payload) => payload.move.category === 'Physical' && payload.move.basePower > 0,
+    ),
+  ],
+  [
+    'purepower',
+    outgoingMultiplier(
+      2,
+      (payload) => payload.move.category === 'Physical' && payload.move.basePower > 0,
+    ),
+  ],
 
   ['intrepidsword', switchInBoost({ atk: 1 })],
   ['dauntlessshield', switchInBoost({ def: 1 })],
@@ -2333,8 +2552,14 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
 
   ['compoundeyes', accuracyModifier(1.3, (ctx) => ctx.owner === ctx.source)],
   ['hustle', hustle()],
-  ['sandveil', accuracyModifier(0.8, (ctx) => ctx.owner === ctx.target && effectiveWeather(ctx.state) === 'sand')],
-  ['snowcloak', accuracyModifier(0.8, (ctx) => ctx.owner === ctx.target && effectiveWeather(ctx.state) === 'snow')],
+  [
+    'sandveil',
+    accuracyModifier(0.8, (ctx) => ctx.owner === ctx.target && effectiveWeather(ctx.state) === 'sand'),
+  ],
+  [
+    'snowcloak',
+    accuracyModifier(0.8, (ctx) => ctx.owner === ctx.target && effectiveWeather(ctx.state) === 'snow'),
+  ],
 
   ['adaptability', adaptability()],
   ['tintedlens', outgoingMultiplier(2, (payload) => payload.effectiveness < 1)],

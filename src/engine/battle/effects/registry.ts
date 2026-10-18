@@ -305,12 +305,7 @@ export function runTryEscape(ctx: EffectContext): boolean {
   return false;
 }
 
-export function runBoost(
-  ctx: EffectContext,
-  stat: BoostId,
-  stages: number,
-  self = false,
-): boolean {
+export function runBoost(ctx: EffectContext, stat: BoostId, stages: number, self = false): boolean {
   const payload: BoostPayload = { stat, stages, self };
   for (const ref of contextEffects(ctx, true, null)) {
     if (ref.effect.handlers.onBoost?.(contextFor(ctx, ref), payload) === false) return false;
@@ -450,7 +445,11 @@ export function runModifyBoost(
 ): number {
   let value = stages;
   for (const ref of contextEffects(ctx, true, null)) {
-    const next = ref.effect.handlers.onModifyBoost?.(contextFor(ctx, ref), { stat, stages: value, self });
+    const next = ref.effect.handlers.onModifyBoost?.(contextFor(ctx, ref), {
+      stat,
+      stages: value,
+      self,
+    });
     if (typeof next === 'number') value = next;
   }
   return value;

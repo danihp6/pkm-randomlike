@@ -1,8 +1,4 @@
-import {
-  OVERWORLD_FACINGS,
-  overworldWalkFrames,
-  type OverworldFacing,
-} from '../data/overworldSprites';
+import { OVERWORLD_FACINGS, overworldWalkFrames, type OverworldFacing } from '../data/overworldSprites';
 import { TRAINER_ARCHETYPES } from '../data/trainers';
 import type { Facing } from '../engine/routes';
 
@@ -45,15 +41,11 @@ export type TrainerWalkAnim = Readonly<{
 }>;
 
 /** Every walk animation, for `BootScene` to register off the atlas. */
-export const TRAINER_WALK_ANIMS: readonly TrainerWalkAnim[] = TRAINER_ARCHETYPES.flatMap(
-  (archetype) => {
-    const spriteKey = archetype.spriteKey;
-    if (!spriteKey) return [];
-    return OVERWORLD_FACINGS.flatMap((facing) => {
-      const frames = overworldWalkFrames(spriteKey, facing);
-      return frames
-        ? [{ key: trainerWalkAnimKey(spriteKey, facing), spriteKey, facing, frames }]
-        : [];
-    });
-  },
-);
+export const TRAINER_WALK_ANIMS: readonly TrainerWalkAnim[] = TRAINER_ARCHETYPES.flatMap((archetype) => {
+  const spriteKey = archetype.spriteKey;
+  if (!spriteKey) return [];
+  return OVERWORLD_FACINGS.flatMap((facing) => {
+    const frames = overworldWalkFrames(spriteKey, facing);
+    return frames ? [{ key: trainerWalkAnimKey(spriteKey, facing), spriteKey, facing, frames }] : [];
+  });
+});

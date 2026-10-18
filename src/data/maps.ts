@@ -56,14 +56,54 @@ export const MAP_TUNING: readonly MapTuning[] = [
   // The level step narrows with the run (7 levels, then 6) so the last floors stay
   // affordable on the `level³` curve: a constant step to the engine ceiling would
   // want more XP on its top floor than a whole run (`docs/balance/route-curve.md`).
-  { mapIndex: 1, levels: { minLevel: 2, maxLevel: 9 }, routes: { min: 6, max: 6 }, size: { min: 30, max: 30 } },
-  { mapIndex: 2, levels: { minLevel: 9, maxLevel: 16 }, routes: { min: 6, max: 6 }, size: { min: 30, max: 30 } },
-  { mapIndex: 3, levels: { minLevel: 16, maxLevel: 23 }, routes: { min: 6, max: 6 }, size: { min: 30, max: 30 } },
-  { mapIndex: 4, levels: { minLevel: 23, maxLevel: 30 }, routes: { min: 6, max: 7 }, size: { min: 30, max: 32 } },
-  { mapIndex: 5, levels: { minLevel: 30, maxLevel: 37 }, routes: { min: 6, max: 7 }, size: { min: 30, max: 36 } },
-  { mapIndex: 6, levels: { minLevel: 37, maxLevel: 43 }, routes: { min: 6, max: 8 }, size: { min: 30, max: 40 } },
-  { mapIndex: 7, levels: { minLevel: 43, maxLevel: 49 }, routes: { min: 6, max: 8 }, size: { min: 30, max: 44 } },
-  { mapIndex: 8, levels: { minLevel: 49, maxLevel: 55 }, routes: { min: 6, max: 9 }, size: { min: 30, max: 48 } },
+  {
+    mapIndex: 1,
+    levels: { minLevel: 2, maxLevel: 9 },
+    routes: { min: 6, max: 6 },
+    size: { min: 30, max: 30 },
+  },
+  {
+    mapIndex: 2,
+    levels: { minLevel: 9, maxLevel: 16 },
+    routes: { min: 6, max: 6 },
+    size: { min: 30, max: 30 },
+  },
+  {
+    mapIndex: 3,
+    levels: { minLevel: 16, maxLevel: 23 },
+    routes: { min: 6, max: 6 },
+    size: { min: 30, max: 30 },
+  },
+  {
+    mapIndex: 4,
+    levels: { minLevel: 23, maxLevel: 30 },
+    routes: { min: 6, max: 7 },
+    size: { min: 30, max: 32 },
+  },
+  {
+    mapIndex: 5,
+    levels: { minLevel: 30, maxLevel: 37 },
+    routes: { min: 6, max: 7 },
+    size: { min: 30, max: 36 },
+  },
+  {
+    mapIndex: 6,
+    levels: { minLevel: 37, maxLevel: 43 },
+    routes: { min: 6, max: 8 },
+    size: { min: 30, max: 40 },
+  },
+  {
+    mapIndex: 7,
+    levels: { minLevel: 43, maxLevel: 49 },
+    routes: { min: 6, max: 8 },
+    size: { min: 30, max: 44 },
+  },
+  {
+    mapIndex: 8,
+    levels: { minLevel: 49, maxLevel: 55 },
+    routes: { min: 6, max: 9 },
+    size: { min: 30, max: 48 },
+  },
 ];
 
 /** How an out-of-table map steps past the last tuned row (infinite mode). */
@@ -83,7 +123,10 @@ export function mapTuning(mapIndex: number): MapTuning {
   // row's cap and each further one steps up by `levelStep`; the **floor** has to
   // climb too, not just the ceiling, or a deep floor only widens.
   const extra = index - MAP_TUNING.length;
-  const minLevel = Math.min(MAP_MAX_LEVEL, last.levels.maxLevel + (extra - 1) * MAP_TUNING_STEP.levelStep);
+  const minLevel = Math.min(
+    MAP_MAX_LEVEL,
+    last.levels.maxLevel + (extra - 1) * MAP_TUNING_STEP.levelStep,
+  );
   const routeMin = Math.min(MAP_MAX_ROUTES, last.routes.min + extra * MAP_TUNING_STEP.routeStep);
   const routeMax = Math.min(MAP_MAX_ROUTES, last.routes.max + extra * MAP_TUNING_STEP.routeStep);
   return {

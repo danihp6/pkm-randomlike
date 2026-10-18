@@ -115,11 +115,28 @@ export function protectBlocks(state: BattleState, side: SideId, move: Move): boo
     applyBoostEffect(state, side, attacker, punish.contactBoosts);
   }
   if (punish.contactStatus) {
-    applyStatusEffect(state, side, attacker, punish.contactStatus, `${attacker.name} was hurt by the protection!`);
+    applyStatusEffect(
+      state,
+      side,
+      attacker,
+      punish.contactStatus,
+      `${attacker.name} was hurt by the protection!`,
+    );
   }
   if (punish.contactDamageDenominator) {
-    const dealt = applyDamage(attacker, Math.max(1, Math.floor(attacker.maxHp / punish.contactDamageDenominator)));
-    pushEvent(state, { kind: 'damage', side, amount: dealt, hp: attacker.hp, maxHp: attacker.maxHp, effectiveness: 1, crit: false });
+    const dealt = applyDamage(
+      attacker,
+      Math.max(1, Math.floor(attacker.maxHp / punish.contactDamageDenominator)),
+    );
+    pushEvent(state, {
+      kind: 'damage',
+      side,
+      amount: dealt,
+      hp: attacker.hp,
+      maxHp: attacker.maxHp,
+      effectiveness: 1,
+      crit: false,
+    });
     pushText(state, `${attacker.name} was hurt by the protection!`);
   }
   return true;
@@ -242,7 +259,13 @@ function selfEffect(run: (ctx: EffectContext) => void): EffectHandlers {
 function healHolder(ctx: EffectContext, amount: number): number {
   const healed = applyHeal(ctx.owner, amount);
   if (healed > 0) {
-    pushEvent(ctx.state, { kind: 'heal', side: ctx.side, amount: healed, hp: ctx.owner.hp, maxHp: ctx.owner.maxHp });
+    pushEvent(ctx.state, {
+      kind: 'heal',
+      side: ctx.side,
+      amount: healed,
+      hp: ctx.owner.hp,
+      maxHp: ctx.owner.maxHp,
+    });
   }
   return healed;
 }
@@ -278,11 +301,25 @@ function bellyDrum(): EffectHandlers {
     }
     const cost = Math.floor(holder.maxHp / 2);
     applyDamage(holder, cost);
-    pushEvent(ctx.state, { kind: 'damage', side: ctx.side, amount: cost, hp: holder.hp, maxHp: holder.maxHp, effectiveness: 1, crit: false });
-    applyBoostEffect(ctx.state, ctx.side, holder, { atk: 12 }, {
-      self: true,
-      message: `${holder.name} cut its own HP and maximized its Attack!`,
+    pushEvent(ctx.state, {
+      kind: 'damage',
+      side: ctx.side,
+      amount: cost,
+      hp: holder.hp,
+      maxHp: holder.maxHp,
+      effectiveness: 1,
+      crit: false,
     });
+    applyBoostEffect(
+      ctx.state,
+      ctx.side,
+      holder,
+      { atk: 12 },
+      {
+        self: true,
+        message: `${holder.name} cut its own HP and maximized its Attack!`,
+      },
+    );
   });
 }
 
@@ -356,10 +393,16 @@ function curse(): EffectHandlers {
       return;
     }
     if (!user.types.includes('Ghost')) {
-      applyBoostEffect(ctx.state, ctx.side, user, { atk: 1, def: 1, spe: -1 }, {
-        self: true,
-        message: `${user.name} cursed itself and raised its Attack and Defense!`,
-      });
+      applyBoostEffect(
+        ctx.state,
+        ctx.side,
+        user,
+        { atk: 1, def: 1, spe: -1 },
+        {
+          self: true,
+          message: `${user.name} cursed itself and raised its Attack and Defense!`,
+        },
+      );
       return;
     }
     if (target.volatiles.curse) {
@@ -368,7 +411,15 @@ function curse(): EffectHandlers {
     }
     const cost = Math.max(1, Math.floor(user.maxHp / 2));
     applyDamage(user, cost);
-    pushEvent(ctx.state, { kind: 'damage', side: ctx.side, amount: cost, hp: user.hp, maxHp: user.maxHp, effectiveness: 1, crit: false });
+    pushEvent(ctx.state, {
+      kind: 'damage',
+      side: ctx.side,
+      amount: cost,
+      hp: user.hp,
+      maxHp: user.maxHp,
+      effectiveness: 1,
+      crit: false,
+    });
     target.volatiles.curse = true;
     pushText(ctx.state, `${user.name} cut its own HP and laid a curse on ${target.name}!`);
     if (user.hp <= 0) {
@@ -417,10 +468,16 @@ function stockpile(): EffectHandlers {
       return;
     }
     holder.volatiles.stockpile += 1;
-    applyBoostEffect(ctx.state, ctx.side, holder, { def: 1, spd: 1 }, {
-      self: true,
-      message: `${holder.name} stockpiled ${holder.volatiles.stockpile}!`,
-    });
+    applyBoostEffect(
+      ctx.state,
+      ctx.side,
+      holder,
+      { def: 1, spd: 1 },
+      {
+        self: true,
+        message: `${holder.name} stockpiled ${holder.volatiles.stockpile}!`,
+      },
+    );
   });
 }
 
@@ -450,7 +507,10 @@ function perishSong(): EffectHandlers {
       applyPerish(fighter);
       any = true;
     }
-    pushText(ctx.state, any ? 'All Pokémon hearing the song will faint in three turns!' : 'But it failed!');
+    pushText(
+      ctx.state,
+      any ? 'All Pokémon hearing the song will faint in three turns!' : 'But it failed!',
+    );
   });
 }
 
@@ -521,10 +581,16 @@ function stuffCheeks(): EffectHandlers {
     applyHeldItemEffect(ctx, item, true);
     holder.heldItem = null;
     holder.lastItemId = item.id;
-    applyBoostEffect(ctx.state, ctx.side, holder, { def: 2 }, {
-      self: true,
-      message: `${holder.name} ate its ${item.name} and raised its Defense!`,
-    });
+    applyBoostEffect(
+      ctx.state,
+      ctx.side,
+      holder,
+      { def: 2 },
+      {
+        self: true,
+        message: `${holder.name} ate its ${item.name} and raised its Defense!`,
+      },
+    );
   });
 }
 
@@ -567,10 +633,16 @@ function takeHeart(): EffectHandlers {
   return selfEffect((ctx) => {
     const status = cureStatus(ctx.owner);
     if (status) pushEvent(ctx.state, { kind: 'cure', side: ctx.side, status });
-    applyBoostEffect(ctx.state, ctx.side, ctx.owner, { spa: 1, spd: 1 }, {
-      self: true,
-      message: `${ctx.owner.name} took heart and raised its Sp. Atk and Sp. Def!`,
-    });
+    applyBoostEffect(
+      ctx.state,
+      ctx.side,
+      ctx.owner,
+      { spa: 1, spd: 1 },
+      {
+        self: true,
+        message: `${ctx.owner.name} took heart and raised its Sp. Atk and Sp. Def!`,
+      },
+    );
   });
 }
 
@@ -595,10 +667,16 @@ function teatime(): EffectHandlers {
 /** Tidy Up raises Attack and Speed; the entry hazards it would clear are not modelled. */
 function tidyUp(): EffectHandlers {
   return selfEffect((ctx) => {
-    applyBoostEffect(ctx.state, ctx.side, ctx.owner, { atk: 1, spe: 1 }, {
-      self: true,
-      message: `${ctx.owner.name} tidied up and raised its Attack and Speed!`,
-    });
+    applyBoostEffect(
+      ctx.state,
+      ctx.side,
+      ctx.owner,
+      { atk: 1, spe: 1 },
+      {
+        self: true,
+        message: `${ctx.owner.name} tidied up and raised its Attack and Speed!`,
+      },
+    );
   });
 }
 
@@ -613,7 +691,11 @@ const MOVE_EFFECTS: Readonly<Record<string, EffectHandlers>> = {
   conversion2: conversion2(),
   curse: curse(),
   doodle: doodle(),
-  flowershield: fieldBoosts({ def: 1 }, (fighter) => fighter.types.includes('Grass'), 'The Defense of Grass-type Pokémon rose!'),
+  flowershield: fieldBoosts(
+    { def: 1 },
+    (fighter) => fighter.types.includes('Grass'),
+    'The Defense of Grass-type Pokémon rose!',
+  ),
   haze: haze(),
   healbell: teamCure('A bell chimed and healed the team!'),
   junglehealing: healAndCure(1 / 4, 'The team was healed by the jungle!'),
@@ -626,7 +708,11 @@ const MOVE_EFFECTS: Readonly<Record<string, EffectHandlers>> = {
   refresh: refresh(),
   rest: rest(),
   roleplay: rolePlay(),
-  rototiller: fieldBoosts({ atk: 1, spa: 1 }, (fighter) => fighter.types.includes('Grass') && isGrounded(fighter), 'The Attack and Sp. Atk of grounded Grass-type Pokémon rose!'),
+  rototiller: fieldBoosts(
+    { atk: 1, spa: 1 },
+    (fighter) => fighter.types.includes('Grass') && isGrounded(fighter),
+    'The Attack and Sp. Atk of grounded Grass-type Pokémon rose!',
+  ),
   shoreup: shoreUp(),
   splash: textMove(() => 'But nothing happened!'),
   stockpile: stockpile(),

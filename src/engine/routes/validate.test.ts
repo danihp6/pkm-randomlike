@@ -52,15 +52,7 @@ function trainer(
 }
 
 /** A 7x7 open room: solid ring, plain floor, entry (1,1), exit (5,5). */
-const ROOM = [
-  '#######',
-  '#.....#',
-  '#.....#',
-  '#.....#',
-  '#.....#',
-  '#.....#',
-  '#######',
-];
+const ROOM = ['#######', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#######'];
 
 /** The lists `ok` gates (`unreachablePockets` is reported, never gated). */
 const GATED = [
@@ -81,8 +73,7 @@ type GatedField = (typeof GATED)[number];
 function expectOnly(validation: RouteValidation, red: readonly GatedField[]): void {
   for (const field of GATED) {
     const empty = validation[field].length === 0;
-    expect(empty, `${field} ${red.includes(field) ? 'reported' : 'empty'}`)
-      .toBe(!red.includes(field));
+    expect(empty, `${field} ${red.includes(field) ? 'reported' : 'empty'}`).toBe(!red.includes(field));
   }
   expect(validation.ok, `ok ${red.length === 0 ? 'true' : 'false'}`).toBe(red.length === 0);
 }
@@ -90,11 +81,7 @@ function expectOnly(validation: RouteValidation, red: readonly GatedField[]): vo
 describe('reachableTiles', () => {
   it('floods walkable tiles from the start', () => {
     const tiles = mapFromSketch(['#####', '#...#', '#####']);
-    expect([...reachableTiles(tiles, { x: 1, y: 1 })].sort()).toEqual([
-      '1,1',
-      '2,1',
-      '3,1',
-    ]);
+    expect([...reachableTiles(tiles, { x: 1, y: 1 })].sort()).toEqual(['1,1', '2,1', '3,1']);
   });
 
   it('stops at walls', () => {
@@ -117,30 +104,20 @@ describe('validateRoute', () => {
   });
 
   it('requires every exit to be reachable, not just the first', () => {
-    const tiles = mapFromSketch([
-      '#######',
-      '#...#.#',
-      '#.#.#.#',
-      '#...#.#',
-      '#######',
-    ]);
-    const validation = validateRoute(route(tiles, { x: 1, y: 1 }, [
-      { x: 3, y: 3 },
-      { x: 5, y: 1 },
-    ]));
+    const tiles = mapFromSketch(['#######', '#...#.#', '#.#.#.#', '#...#.#', '#######']);
+    const validation = validateRoute(
+      route(tiles, { x: 1, y: 1 }, [
+        { x: 3, y: 3 },
+        { x: 5, y: 1 },
+      ]),
+    );
     expect(validation.ok).toBe(false);
     expect(validation.unreachable).toEqual(['5,1']);
   });
 
   describe('stranded items', () => {
     it('reports the items a wall cuts off from the entry, in declaration order', () => {
-      const tiles = mapFromSketch([
-        '#######',
-        '#..#..#',
-        '#..#..#',
-        '#..#..#',
-        '#######',
-      ]);
+      const tiles = mapFromSketch(['#######', '#..#..#', '#..#..#', '#..#..#', '#######']);
       const validation = validateRoute(
         route(tiles, { x: 1, y: 1 }, [{ x: 2, y: 1 }], {
           items: [
@@ -200,52 +177,28 @@ describe('validateRoute', () => {
   describe('the border ring', () => {
     it('reports an open ring cell away from every opening', () => {
       // The entry and exit bands are opened so only the stray ring cell is a finding.
-      const tiles = mapFromSketch([
-        '###.####',
-        '#......#',
-        '........',
-        '........',
-        '########',
-      ]);
+      const tiles = mapFromSketch(['###.####', '#......#', '........', '........', '########']);
       const validation = validateRoute(route(tiles, { x: 0, y: 2 }, [{ x: 7, y: 2 }]));
       expectOnly(validation, ['borderBreaches']);
       expect(validation.borderBreaches).toEqual(['3,0']);
     });
 
     it('passes a border that opens only at the entry and the exit', () => {
-      const tiles = mapFromSketch([
-        '########',
-        '#......#',
-        '........',
-        '........',
-        '########',
-      ]);
+      const tiles = mapFromSketch(['########', '#......#', '........', '........', '########']);
       const validation = validateRoute(route(tiles, { x: 0, y: 2 }, [{ x: 7, y: 2 }]));
       expectOnly(validation, []);
       expect(validation.borderBreaches).toEqual([]);
     });
 
     it('passes an open ring cell beside an opening, which only widens it', () => {
-      const tiles = mapFromSketch([
-        '########',
-        '.......#',
-        '........',
-        '........',
-        '########',
-      ]);
+      const tiles = mapFromSketch(['########', '.......#', '........', '........', '########']);
       const validation = validateRoute(route(tiles, { x: 0, y: 2 }, [{ x: 7, y: 2 }]));
       expectOnly(validation, []);
       expect(validation.borderBreaches).toEqual([]);
     });
 
     it('reports the band cell a declared opening left a wall, in row-major order', () => {
-      const tiles = mapFromSketch([
-        '########',
-        '#......#',
-        '........',
-        '#......#',
-        '########',
-      ]);
+      const tiles = mapFromSketch(['########', '#......#', '........', '#......#', '########']);
       const validation = validateRoute(route(tiles, { x: 0, y: 2 }, [{ x: 7, y: 2 }]));
       expectOnly(validation, ['borderBandGaps']);
       expect(validation.borderBandGaps).toEqual(['0,3', '7,3']);
@@ -261,14 +214,7 @@ describe('validateRoute', () => {
 
   describe('unreachable pockets', () => {
     it('reports a sealed pocket without failing the route', () => {
-      const tiles = mapFromSketch([
-        '#######',
-        '#.....#',
-        '#.###.#',
-        '#.#.#.#',
-        '#.###.#',
-        '#######',
-      ]);
+      const tiles = mapFromSketch(['#######', '#.....#', '#.###.#', '#.#.#.#', '#.###.#', '#######']);
       const validation = validateRoute(
         route(tiles, { x: 1, y: 1 }, [{ x: 5, y: 1 }], { pockets: [{ x: 3, y: 3 }] }),
       );
@@ -295,9 +241,7 @@ describe('validateRoute', () => {
         }),
       );
       expectOnly(validation, ['trainerIssues']);
-      expect(validation.trainerIssues).toEqual([
-        { trainerId: 'trainer-1-0', reasons: ['off-floor'] },
-      ]);
+      expect(validation.trainerIssues).toEqual([{ trainerId: 'trainer-1-0', reasons: ['off-floor'] }]);
     });
 
     it('reports no-backing-wall for a trainer on open floor', () => {
@@ -322,9 +266,7 @@ describe('validateRoute', () => {
         }),
       );
       expectOnly(validation, ['trainerIssues']);
-      expect(validation.trainerIssues).toEqual([
-        { trainerId: 'trainer-1-0', reasons: ['on-entry'] },
-      ]);
+      expect(validation.trainerIssues).toEqual([{ trainerId: 'trainer-1-0', reasons: ['on-entry'] }]);
     });
 
     it('reports on-exit for a trainer standing on an exit', () => {
@@ -337,9 +279,7 @@ describe('validateRoute', () => {
       // trainer on an exit seals it), not a pose rule.
       expectOnly(validation, ['trainerIssues', 'blockedByTrainers']);
       expect(validation.blockedByTrainers).toEqual(['5,5']);
-      expect(validation.trainerIssues).toEqual([
-        { trainerId: 'trainer-1-0', reasons: ['on-exit'] },
-      ]);
+      expect(validation.trainerIssues).toEqual([{ trainerId: 'trainer-1-0', reasons: ['on-exit'] }]);
     });
 
     it('reports on-pocket for a trainer standing on a loot pocket', () => {
@@ -351,9 +291,7 @@ describe('validateRoute', () => {
       );
       expectOnly(validation, ['trainerIssues']);
       expect(validation.unreachablePockets).toEqual([]);
-      expect(validation.trainerIssues).toEqual([
-        { trainerId: 'trainer-1-0', reasons: ['on-pocket'] },
-      ]);
+      expect(validation.trainerIssues).toEqual([{ trainerId: 'trainer-1-0', reasons: ['on-pocket'] }]);
     });
 
     it('reports crowded for two trainers in neighbouring tiles', () => {
@@ -387,9 +325,7 @@ describe('validateRoute', () => {
         }),
       );
       expectOnly(validation, ['trainerIssues']);
-      expect(validation.trainerIssues).toEqual([
-        { trainerId: 'trainer-1-0', reasons: ['sees-entry'] },
-      ]);
+      expect(validation.trainerIssues).toEqual([{ trainerId: 'trainer-1-0', reasons: ['sees-entry'] }]);
     });
 
     it('reports sees-entry for a turn that watches the spawn, not only the held facing', () => {
@@ -399,9 +335,7 @@ describe('validateRoute', () => {
         }),
       );
       expectOnly(validation, ['trainerIssues']);
-      expect(validation.trainerIssues).toEqual([
-        { trainerId: 'trainer-1-0', reasons: ['sees-entry'] },
-      ]);
+      expect(validation.trainerIssues).toEqual([{ trainerId: 'trainer-1-0', reasons: ['sees-entry'] }]);
     });
 
     it('collects every reason a trainer fails, in the union order', () => {
@@ -426,10 +360,9 @@ describe('validateRoute', () => {
     });
 
     it('fails a trainer-free route the pass was asked to guard, naming no-trainers', () => {
-      const validation = validateRoute(
-        route(mapFromSketch(ROOM), { x: 1, y: 1 }, [{ x: 5, y: 5 }]),
-        { expectTrainers: true },
-      );
+      const validation = validateRoute(route(mapFromSketch(ROOM), { x: 1, y: 1 }, [{ x: 5, y: 5 }]), {
+        expectTrainers: true,
+      });
       expectOnly(validation, ['missingLaneGuard']);
       expect(validation.missingLaneGuard).toEqual(['no-trainers']);
     });

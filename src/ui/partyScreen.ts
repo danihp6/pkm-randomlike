@@ -168,7 +168,10 @@ export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): 
 
   if (input === 'left' || input === 'right') {
     const pane: PaneId = input === 'left' ? 'party' : 'box';
-    return { run, ui: { pane, index: Math.min(ui.index, Math.max(0, listOf(run, pane).length - 1)), grabbed: null } };
+    return {
+      run,
+      ui: { pane, index: Math.min(ui.index, Math.max(0, listOf(run, pane).length - 1)), grabbed: null },
+    };
   }
 
   if (input === 'confirm' && list.length > 0 && canGrab(run, ui.pane, ui.index)) {

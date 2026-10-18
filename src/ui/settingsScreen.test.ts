@@ -116,7 +116,10 @@ describe('settingValue', () => {
     expect(settingValue(defaultSettings(), 'cancel')).toBe('Q');
     expect(settingValue(defaultSettings(), 'up')).toBe('\u2191');
     expect(
-      settingValue({ ...defaultSettings(), keybinds: { ...DEFAULT_KEYBINDS, settings: 'Y' } }, 'settings'),
+      settingValue(
+        { ...defaultSettings(), keybinds: { ...DEFAULT_KEYBINDS, settings: 'Y' } },
+        'settings',
+      ),
     ).toBe('Y');
   });
 });

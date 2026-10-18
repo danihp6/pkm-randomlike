@@ -42,8 +42,9 @@ describe('item catalogue', () => {
   });
 
   it('prices balls by their catch bonus', () => {
-    const ballPrices = ITEMS.filter((entry) => entry.kind === 'ball' && entry.id !== 'masterball')
-      .map((entry) => entry.price);
+    const ballPrices = ITEMS.filter((entry) => entry.kind === 'ball' && entry.id !== 'masterball').map(
+      (entry) => entry.price,
+    );
     const sorted = [...ballPrices].sort((a, b) => a - b);
     expect(ballPrices).toEqual(sorted);
     for (const entry of ITEMS) {

@@ -43,9 +43,7 @@ export type DamageResult = Readonly<{
 }>;
 
 export function baseDamage(level: number, power: number, attack: number, defense: number): number {
-  return (
-    Math.floor((Math.floor((2 * level) / 5 + 2) * power * attack) / defense / 50) + 2
-  );
+  return Math.floor((Math.floor((2 * level) / 5 + 2) * power * attack) / defense / 50) + 2;
 }
 
 function weatherModifier(weather: WeatherId | null | undefined, moveType: string): number {
@@ -181,6 +179,11 @@ export function estimateDamage(
 
 /** Confusion self-hit: a typeless 40-power physical move against itself. */
 export function confusionDamage(fighter: BattleFighter, rng: Rng): number {
-  const raw = baseDamage(fighter.level, 40, effectiveStat(fighter, 'atk'), effectiveStat(fighter, 'def'));
+  const raw = baseDamage(
+    fighter.level,
+    40,
+    effectiveStat(fighter, 'atk'),
+    effectiveStat(fighter, 'def'),
+  );
   return Math.max(1, Math.floor((raw * rng.int(85, 100)) / 100));
 }

@@ -3,12 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { decodePng } from '../../scripts/legacy-art/png-codec.mjs';
 import manifest from './frlg/player.json';
-import {
-  PLAYER_FACINGS,
-  playerSpriteFrame,
-  playerWalkFrames,
-  type PlayerFacing,
-} from './playerSprite';
+import { PLAYER_FACINGS, playerSpriteFrame, playerWalkFrames, type PlayerFacing } from './playerSprite';
 
 // The atlas is a committed crop of the FRLG decomp player sheet
 // (`scripts/frlg/build-player-sprite.mjs`), so its shape and the fact every

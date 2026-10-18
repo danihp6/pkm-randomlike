@@ -32,13 +32,13 @@ const GLYPHS = manifest.glyphs as readonly Glyph[];
 
 // Phaser's public character typedef omits `xAdvance`, which the parser sets and
 // the renderer needs, so the generated data carries it explicitly.
-export type FrlgGlyphData =
-  Phaser.Types.GameObjects.BitmapText.BitmapFontCharacterData & { xAdvance: number };
+export type FrlgGlyphData = Phaser.Types.GameObjects.BitmapText.BitmapFontCharacterData & {
+  xAdvance: number;
+};
 
-export type FrlgFontData = Omit<
-  Phaser.Types.GameObjects.BitmapText.BitmapFontData,
-  'chars'
-> & { chars: Record<number, FrlgGlyphData> };
+export type FrlgFontData = Omit<Phaser.Types.GameObjects.BitmapText.BitmapFontData, 'chars'> & {
+  chars: Record<number, FrlgGlyphData>;
+};
 
 /** Turns the committed manifest into Phaser's `BitmapFontData` shape. */
 export function frlgFontData(): FrlgFontData {

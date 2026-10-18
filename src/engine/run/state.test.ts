@@ -45,7 +45,12 @@ import {
   withdrawToParty,
 } from './state';
 
-const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch'] });
+const starter = createRunPokemon({
+  id: 'starter',
+  speciesId: 'charmander',
+  level: 5,
+  moves: ['scratch'],
+});
 const starterMaxHp = restoreFighter(starter.fighter).maxHp;
 
 function member(id: string, speciesId = 'sentret', level = 3): ReturnType<typeof createRunPokemon> {
@@ -245,7 +250,9 @@ describe('pokemon moves', () => {
 describe('party/PC moves', () => {
   function withParty(ids: readonly string[]): ReturnType<typeof createRun> {
     const members = ids.map((id, index) =>
-      index === 0 ? { ...starter, fighter: { ...starter.fighter, id } } : createRunPokemon({ id, speciesId: 'sentret', level: 3 }),
+      index === 0
+        ? { ...starter, fighter: { ...starter.fighter, id } }
+        : createRunPokemon({ id, speciesId: 'sentret', level: 3 }),
     );
     return { ...createRun({ seed: 'run-a', starter }), party: members };
   }
@@ -258,7 +265,10 @@ describe('party/PC moves', () => {
     expect(moveInParty(run, 0, 5)).toBe(run);
     const boxed = {
       ...run,
-      box: [createRunPokemon({ id: 'x', speciesId: 'sentret', level: 3 }), createRunPokemon({ id: 'y', speciesId: 'sentret', level: 3 })],
+      box: [
+        createRunPokemon({ id: 'x', speciesId: 'sentret', level: 3 }),
+        createRunPokemon({ id: 'y', speciesId: 'sentret', level: 3 }),
+      ],
     };
     expect(moveInBox(boxed, 0, 1).box.map((m) => m.fighter.id)).toEqual(['y', 'x']);
   });
@@ -276,7 +286,10 @@ describe('party/PC moves', () => {
   });
 
   it('withdraws a boxed member while the party has room', () => {
-    const run = { ...withParty(['a']), box: [createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 3 })] };
+    const run = {
+      ...withParty(['a']),
+      box: [createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 3 })],
+    };
     const next = withdrawToParty(run, 0);
     expect(next.party.map((m) => m.fighter.id)).toEqual(['a', 'boxed']);
     expect(next.box).toEqual([]);
@@ -293,7 +306,10 @@ describe('party/PC moves', () => {
     const full = withParty(['a', 'b', 'c', 'd', 'e', 'f']);
     const run = {
       ...full,
-      box: [createRunPokemon({ id: 'x', speciesId: 'sentret', level: 3 }), createRunPokemon({ id: 'y', speciesId: 'sentret', level: 3 })],
+      box: [
+        createRunPokemon({ id: 'x', speciesId: 'sentret', level: 3 }),
+        createRunPokemon({ id: 'y', speciesId: 'sentret', level: 3 }),
+      ],
     };
     const next = swapPartyBox(run, 2, 0);
     expect(next.party.map((m) => m.fighter.id)).toEqual(['a', 'b', 'x', 'd', 'e', 'f']);
@@ -312,8 +328,13 @@ describe('move reorder', () => {
   const moves = (member: ReturnType<typeof createRunPokemon>): readonly string[] =>
     member.fighter.moves.map((slot) => slot.moveId);
 
-  it('reorders a member\'s moves in place', () => {
-    const mon = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['ember', 'scratch', 'growl'] });
+  it("reorders a member's moves in place", () => {
+    const mon = createRunPokemon({
+      id: 'starter',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['ember', 'scratch', 'growl'],
+    });
     const run = createRun({ seed: 'run-a', starter: mon });
     const next = moveMoves(run, 'starter', 0, 2);
     expect(moves(next.party[0])).toEqual(['scratch', 'growl', 'ember']);
@@ -325,9 +346,17 @@ describe('move reorder', () => {
   });
 
   it('reorders a boxed member and ignores a bad move or member', () => {
-    const boxed = createRunPokemon({ id: 'boxed', speciesId: 'charmander', level: 5, moves: ['ember', 'scratch'] });
+    const boxed = createRunPokemon({
+      id: 'boxed',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['ember', 'scratch'],
+    });
     const run = { ...createRun({ seed: 'run-a', starter }), box: [boxed] };
-    expect(moveMoves(run, 'boxed', 0, 1).box[0].fighter.moves.map((slot) => slot.moveId)).toEqual(['scratch', 'ember']);
+    expect(moveMoves(run, 'boxed', 0, 1).box[0].fighter.moves.map((slot) => slot.moveId)).toEqual([
+      'scratch',
+      'ember',
+    ]);
     expect(moveMoves(run, 'boxed', 0, 0)).toBe(run);
     expect(moveMoves(run, 'boxed', 0, 9)).toBe(run);
     expect(moveMoves(run, 'nobody', 0, 1)).toBe(run);
@@ -586,13 +615,19 @@ describe('PC lock and the route catch', () => {
 
 describe('evolveMember', () => {
   it('evolves a party member into a branch its level allows', () => {
-    const run = createRun({ seed: 'evo-a', starter: createRunPokemon({ id: 'c', speciesId: 'charmander', level: 16 }) });
+    const run = createRun({
+      seed: 'evo-a',
+      starter: createRunPokemon({ id: 'c', speciesId: 'charmander', level: 16 }),
+    });
     const next = evolveMember(run, 'c', 'charmeleon');
     expect(next.party[0].fighter.speciesId).toBe('charmeleon');
   });
 
   it('leaves the run untouched for an unknown member or an unready branch', () => {
-    const run = createRun({ seed: 'evo-b', starter: createRunPokemon({ id: 'c', speciesId: 'charmander', level: 10 }) });
+    const run = createRun({
+      seed: 'evo-b',
+      starter: createRunPokemon({ id: 'c', speciesId: 'charmander', level: 10 }),
+    });
     expect(evolveMember(run, 'c', 'charmeleon')).toBe(run);
     expect(evolveMember(run, 'nobody', 'charmeleon')).toBe(run);
   });

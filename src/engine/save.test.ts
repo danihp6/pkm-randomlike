@@ -66,7 +66,12 @@ class MemoryStorage implements StorageLike {
 function sampleRun(): RunState {
   let run = createRun({
     seed: 'seed-a',
-    starter: createRunPokemon({ id: 'p0', speciesId: 'charmander', level: 5, moves: ['scratch', 'ember'] }),
+    starter: createRunPokemon({
+      id: 'p0',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['scratch', 'ember'],
+    }),
   });
   for (let i = 1; i < 6; i++) {
     run = addPokemon(run, createRunPokemon({ id: `p${i}`, speciesId: 'sentret', level: 3 }));
@@ -179,7 +184,11 @@ describe('decodeSave', () => {
   it('migrates a v1 run onto the current schema, adding the summary counters', () => {
     const v1run: Record<string, unknown> = { ...sampleRun() };
     delete v1run.stats;
-    const raw = JSON.stringify({ version: 1, settings: { textSpeed: 'fast', volume: 0.25 }, run: v1run });
+    const raw = JSON.stringify({
+      version: 1,
+      settings: { textSpeed: 'fast', volume: 0.25 },
+      run: v1run,
+    });
     const decoded = decodeSave(raw);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.settings).toEqual({
@@ -198,7 +207,11 @@ describe('decodeSave', () => {
   });
 
   it('migrates a v2 settings onto the current schema', () => {
-    const raw = JSON.stringify({ version: 2, settings: { textSpeed: 'slow', volume: 0.5 }, run: sampleRun() });
+    const raw = JSON.stringify({
+      version: 2,
+      settings: { textSpeed: 'slow', volume: 0.5 },
+      run: sampleRun(),
+    });
     const decoded = decodeSave(raw);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.settings).toEqual({
@@ -265,7 +278,9 @@ describe('decodeSave', () => {
 
 describe('settings validation', () => {
   it('repairs an unknown speed and clamps the volume', () => {
-    const decoded = document(JSON.stringify({ version: SAVE_VERSION, settings: { textSpeed: 'hyper', volume: 5 } }));
+    const decoded = document(
+      JSON.stringify({ version: SAVE_VERSION, settings: { textSpeed: 'hyper', volume: 5 } }),
+    );
     expect(decoded.settings).toEqual({
       textSpeed: DEFAULT_TEXT_SPEED,
       volume: 1,
@@ -280,7 +295,9 @@ describe('settings validation', () => {
   });
 
   it('floors a negative volume and fills a missing one', () => {
-    expect(document(JSON.stringify({ version: SAVE_VERSION, settings: { volume: -3 } })).settings).toEqual({
+    expect(
+      document(JSON.stringify({ version: SAVE_VERSION, settings: { volume: -3 } })).settings,
+    ).toEqual({
       textSpeed: DEFAULT_TEXT_SPEED,
       volume: 0,
       alwaysRun: DEFAULT_ALWAYS_RUN,
@@ -291,7 +308,9 @@ describe('settings validation', () => {
       aiLevel: DEFAULT_AI_LEVEL,
       language: DEFAULT_LANGUAGE,
     });
-    expect(document(JSON.stringify({ version: SAVE_VERSION, settings: {} })).settings).toEqual(defaultSettings());
+    expect(document(JSON.stringify({ version: SAVE_VERSION, settings: {} })).settings).toEqual(
+      defaultSettings(),
+    );
   });
 
   it('keeps the keybinds it can read and fills the rest', () => {
@@ -362,9 +381,9 @@ describe('settings validation', () => {
     expect(
       document(JSON.stringify({ version: 16, settings: { language: 'fr' } })).settings.language,
     ).toBe('en');
-    expect(
-      document(JSON.stringify({ version: 16, settings: { language: 42 } })).settings.language,
-    ).toBe('en');
+    expect(document(JSON.stringify({ version: 16, settings: { language: 42 } })).settings.language).toBe(
+      'en',
+    );
     expect(SAVE_VERSION).toBe(16);
     expect(Object.keys(SAVE_MIGRATIONS)).toEqual([
       '1',
@@ -444,7 +463,9 @@ describe('run validation', () => {
 
   it('drops a run with a malformed bag', () => {
     const run = sampleRun();
-    const decoded = document(JSON.stringify({ version: SAVE_VERSION, run: { ...run, bag: [{ itemId: 'potion' }] } }));
+    const decoded = document(
+      JSON.stringify({ version: SAVE_VERSION, run: { ...run, bag: [{ itemId: 'potion' }] } }),
+    );
     expect(decoded.run).toBeNull();
   });
 
@@ -478,7 +499,10 @@ describe('run validation', () => {
   it('defaults counters that do not parse', () => {
     const run = sampleRun();
     const decoded = document(
-      JSON.stringify({ version: SAVE_VERSION, run: { ...run, stats: { catches: -2, casualties: 'x' } } }),
+      JSON.stringify({
+        version: SAVE_VERSION,
+        run: { ...run, stats: { catches: -2, casualties: 'x' } },
+      }),
     );
     expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0 });
   });
@@ -490,7 +514,9 @@ describe('run validation', () => {
     const withoutField = document(JSON.stringify({ version: SAVE_VERSION, run: missing }));
     expect(withoutField.run?.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
 
-    const over = document(JSON.stringify({ version: SAVE_VERSION, run: { ...run, pokevialCharges: 5 } }));
+    const over = document(
+      JSON.stringify({ version: SAVE_VERSION, run: { ...run, pokevialCharges: 5 } }),
+    );
     expect(over.run?.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
   });
 
@@ -550,7 +576,9 @@ describe('run validation', () => {
   it('round-trips a run whose ids are already unique', () => {
     const run = sampleRun();
     const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
-    expect(decoded.run?.party.map((member) => member.fighter.id)).toEqual(run.party.map((member) => member.fighter.id));
+    expect(decoded.run?.party.map((member) => member.fighter.id)).toEqual(
+      run.party.map((member) => member.fighter.id),
+    );
     expect(decoded.run?.box.map((member) => member.fighter.id)).toEqual(['boxed']);
     expect(decoded.run).toEqual(run);
   });
@@ -558,14 +586,18 @@ describe('run validation', () => {
   it('drops a member whose species the dex no longer knows', () => {
     const run = sampleRun();
     const stale = { ...run.party[0], fighter: { ...run.party[0].fighter, speciesId: 'missingno' } };
-    const decoded = document(JSON.stringify({ version: SAVE_VERSION, run: { ...run, party: [run.party[0], stale], box: [] } }));
+    const decoded = document(
+      JSON.stringify({ version: SAVE_VERSION, run: { ...run, party: [run.party[0], stale], box: [] } }),
+    );
     expect(decoded.run?.party).toHaveLength(1);
   });
 
   it('clamps a level past the ceiling', () => {
     const run = sampleRun();
     const deep = { ...run.party[0], fighter: { ...run.party[0].fighter, level: MAX_LEVEL + 50 } };
-    const decoded = document(JSON.stringify({ version: SAVE_VERSION, run: { ...run, party: [deep], box: [] } }));
+    const decoded = document(
+      JSON.stringify({ version: SAVE_VERSION, run: { ...run, party: [deep], box: [] } }),
+    );
     expect(decoded.run?.party[0].fighter.level).toBe(MAX_LEVEL);
   });
 });
@@ -577,7 +609,11 @@ describe('migrateDocument', () => {
   };
 
   it('runs every step between two versions, in order', () => {
-    expect(migrateDocument({ value: 1 }, 0, 2, steps)).toEqual({ value: 1, tapped: true, tappedAgain: true });
+    expect(migrateDocument({ value: 1 }, 0, 2, steps)).toEqual({
+      value: 1,
+      tapped: true,
+      tappedAgain: true,
+    });
   });
 
   it('stops at a missing step', () => {
@@ -598,7 +634,11 @@ describe('migrateDocument', () => {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
       2: (doc) => ({ ...doc, version: 3 }),
-      3: (doc) => ({ ...doc, version: 4, settings: { ...(doc.settings as object), keybinds: DEFAULT_KEYBINDS } }),
+      3: (doc) => ({
+        ...doc,
+        version: 4,
+        settings: { ...(doc.settings as object), keybinds: DEFAULT_KEYBINDS },
+      }),
       4: (doc) => ({ ...doc, version: 5 }),
       5: (doc) => ({ ...doc, version: 6 }),
       6: (doc) => ({ ...doc, version: 7 }),
@@ -725,7 +765,9 @@ describe('nickname migration', () => {
         index === 0 ? { ...member, fighter: { ...member.fighter, nickname: 'Sparky' } } : member,
       ),
     };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: named }));
+    const decoded = document(
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: named }),
+    );
     expect(decoded.run?.party[0].fighter.nickname).toBe('Sparky');
     expect(decoded.run?.party[1].fighter.nickname).toBeUndefined();
     expect('nickname' in (decoded.run?.party[1].fighter ?? {})).toBe(false);

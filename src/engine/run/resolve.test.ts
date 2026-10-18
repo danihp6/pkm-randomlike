@@ -6,13 +6,22 @@ import { createRunPokemon, xpForLevel, type RunPokemon } from './progression';
 import { resolveBattle, type BattleReward } from './resolve';
 import { createRun, type RunState } from './state';
 
-const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 3, moves: ['scratch'] });
+const starter = createRunPokemon({
+  id: 'starter',
+  speciesId: 'charmander',
+  level: 3,
+  moves: ['scratch'],
+});
 
 function hurt(pokemon: RunPokemon, hp: number): RunPokemon {
   return { ...pokemon, fighter: { ...pokemon.fighter, hp } };
 }
 
-function returned(run: RunState, outcome: BattleOutcome, extra: Partial<BattleReturn> = {}): BattleReturn {
+function returned(
+  run: RunState,
+  outcome: BattleOutcome,
+  extra: Partial<BattleReturn> = {},
+): BattleReturn {
   return {
     outcome,
     message: 'done',
@@ -28,7 +37,11 @@ const wild: BattleReward = { enemyLevels: [4], isTrainer: false };
 describe('resolveBattle', () => {
   it('awards XP to the squad on a win and adopts the bag', () => {
     const run = createRun({ seed: 's', starter, bag: [{ itemId: 'potion', count: 1 }] });
-    const result = resolveBattle(run, returned(run, 'win', { bag: [{ itemId: 'pokeball', count: 2 }] }), wild);
+    const result = resolveBattle(
+      run,
+      returned(run, 'win', { bag: [{ itemId: 'pokeball', count: 2 }] }),
+      wild,
+    );
     expect(result.run.bag).toEqual([{ itemId: 'pokeball', count: 2 }]);
     expect(result.run.xp).toBeGreaterThan(run.xp);
     expect(result.released).toEqual([]);
@@ -64,9 +77,14 @@ describe('resolveBattle', () => {
     expect(resolveBattle(run, returned(run, 'win'), wild).run.pokevialCharges).toBe(0);
   });
 
-  it('drops a trainer\'s money on a win, exactly once', () => {
+  it("drops a trainer's money on a win, exactly once", () => {
     const run = createRun({ seed: 's', starter });
-    const reward: BattleReward = { enemyLevels: [4], isTrainer: true, trainerId: 'trainer-1-0', money: 250 };
+    const reward: BattleReward = {
+      enemyLevels: [4],
+      isTrainer: true,
+      trainerId: 'trainer-1-0',
+      money: 250,
+    };
     const first = resolveBattle(run, returned(run, 'win'), reward);
     expect(first.run.money).toBe(250);
     const again = resolveBattle(first.run, returned(first.run, 'win'), reward);
@@ -76,7 +94,12 @@ describe('resolveBattle', () => {
   it('drops no money on a wild win or a trainer loss', () => {
     const run = createRun({ seed: 's', starter });
     expect(resolveBattle(run, returned(run, 'win'), wild).run.money).toBe(0);
-    const reward: BattleReward = { enemyLevels: [4], isTrainer: true, trainerId: 'trainer-1-0', money: 250 };
+    const reward: BattleReward = {
+      enemyLevels: [4],
+      isTrainer: true,
+      trainerId: 'trainer-1-0',
+      money: 250,
+    };
     expect(resolveBattle(run, returned(run, 'lose'), reward).run.money).toBe(0);
   });
 
@@ -140,7 +163,11 @@ describe('resolveBattle', () => {
     const run = createRun({ seed: 's', starter });
     const reserve = createRunPokemon({ id: 'reserve', speciesId: 'squirtle', level: 4 });
     const two = { ...run, party: [run.party[0], reserve] };
-    const result = resolveBattle(two, returned(two, 'lose', { player: [hurt(two.party[0], 0).fighter, hurt(reserve, 0).fighter] }), wild);
+    const result = resolveBattle(
+      two,
+      returned(two, 'lose', { player: [hurt(two.party[0], 0).fighter, hurt(reserve, 0).fighter] }),
+      wild,
+    );
     expect(result.run.stats.casualties).toBe(2);
   });
 
@@ -200,7 +227,10 @@ describe('resolveBattle', () => {
   });
 
   it('adopts the party the battle returned, releasing what it fainted', () => {
-    const run = createRun({ seed: 's', starter: createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5 }) });
+    const run = createRun({
+      seed: 's',
+      starter: createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5 }),
+    });
     const reserve = createRunPokemon({ id: 'reserve', speciesId: 'squirtle', level: 4 });
     const two = { ...run, party: [run.party[0], reserve] };
     const result = resolveBattle(

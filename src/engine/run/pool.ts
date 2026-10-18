@@ -10,11 +10,7 @@ export type PoolOptions = Readonly<{
 }>;
 
 /** Tags that keep a species out of the tall grass (`D39`). */
-export const WILD_BANNED_TAGS: readonly string[] = [
-  'Restricted Legendary',
-  'Sub-Legendary',
-  'Mythical',
-];
+export const WILD_BANNED_TAGS: readonly string[] = ['Restricted Legendary', 'Sub-Legendary', 'Mythical'];
 
 function inWindow(species: Species, window: Readonly<{ min: number; max: number }>): boolean {
   return species.bst >= window.min && species.bst <= window.max;

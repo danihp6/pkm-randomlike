@@ -162,7 +162,9 @@ function matchCatalog<T extends { id: string; name: string }>(
   if (exactName) return exactName;
   const prefix = entries.find((entry) => entry.name.toLowerCase().startsWith(text));
   if (prefix) return prefix;
-  return entries.find((entry) => entry.name.toLowerCase().includes(text) || entry.id.includes(id)) ?? null;
+  return (
+    entries.find((entry) => entry.name.toLowerCase().includes(text) || entry.id.includes(id)) ?? null
+  );
 }
 
 /** Resolves a typed species to one of the catalog (see `matchCatalog`). */
@@ -181,7 +183,10 @@ export function matchMove(query: string, moves: readonly Move[] = allMoves()): M
 }
 
 /** Resolves a typed ability to one of the dex (see `matchCatalog`). */
-export function matchAbility(query: string, abilities: readonly Ability[] = allAbilities()): Ability | null {
+export function matchAbility(
+  query: string,
+  abilities: readonly Ability[] = allAbilities(),
+): Ability | null {
   return matchCatalog(query, abilities);
 }
 
@@ -344,7 +349,8 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     'color:#e2e8f0;font:12px/1.4 monospace;';
 
   const title = document.createElement('div');
-  title.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700;color:#7dd3fc;';
+  title.style.cssText =
+    'display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700;color:#7dd3fc;';
   const titleText = document.createElement('span');
   titleText.textContent = t('dev.title');
 
@@ -413,7 +419,8 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   routeSection.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
 
   const routeGrid = document.createElement('div');
-  routeGrid.style.cssText = 'display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;';
+  routeGrid.style.cssText =
+    'display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;';
 
   const compact = `${speciesInput.style.cssText}min-width:0;width:100%;`;
   const field = (labelText: string, control: HTMLElement): void => {
@@ -593,7 +600,8 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   // Generator stepper: walk the build phases (walls → access → spine → branches →
   // clean → terrain → final) one at a time to debug the carver.
   const stepStatus = document.createElement('span');
-  stepStatus.style.cssText = 'flex:1;min-width:0;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+  stepStatus.style.cssText =
+    'flex:1;min-width:0;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
 
   const refreshGeneratorStep = (): void => {
     const info = handlers.generatorStepInfo();
@@ -697,7 +705,14 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     refreshGeneratorStep();
   };
 
-  for (const control of [seedInput, routeIndexInput, attemptInput, shapeSelect, widthInput, heightInput]) {
+  for (const control of [
+    seedInput,
+    routeIndexInput,
+    attemptInput,
+    shapeSelect,
+    widthInput,
+    heightInput,
+  ]) {
     control.addEventListener('input', () => {
       dirty = true;
     });
@@ -707,7 +722,15 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     if (!dirty && root.style.display !== 'none') refreshRouteFields();
   }, 500);
 
-  routeSection.append(routeGrid, stepRow, routeButtons, routeStatus, routeInfo, locationInfo, teleportSection);
+  routeSection.append(
+    routeGrid,
+    stepRow,
+    routeButtons,
+    routeStatus,
+    routeInfo,
+    locationInfo,
+    teleportSection,
+  );
 
   const battlePanel = document.createElement('div');
   battlePanel.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
@@ -860,7 +883,9 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     const members = handlers.readParty();
     const index = members.findIndex((entry) => entry.id === member.id);
     partyMemberInput.value =
-      index >= 0 ? (partyMemberLabels(members)[index] ?? partyMemberLabel(member)) : partyMemberLabel(member);
+      index >= 0
+        ? (partyMemberLabels(members)[index] ?? partyMemberLabel(member))
+        : partyMemberLabel(member);
     moveInputs.forEach((input, index) => {
       const moveId = member.moves[index];
       input.value = moveId ? (getMove(moveId)?.name ?? moveId) : '';
@@ -1008,14 +1033,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   };
   setEditorEnabled(false);
 
-  partyEditor.append(
-    partyMemberRow,
-    ...moveRows,
-    abilityRow,
-    natureRow,
-    editButtons,
-    editStatus,
-  );
+  partyEditor.append(partyMemberRow, ...moveRows, abilityRow, natureRow, editButtons, editStatus);
   partySection.append(partyEditor);
 
   // Bag section: add any run item to the bag in bulk, resolved by the same
@@ -1101,15 +1119,16 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   for (const nature of allNatures()) {
     const option = document.createElement('option');
     option.value = nature.name;
-    option.label = nature.plus && nature.minus
-      ? t('dev.option.nature', { plus: nature.plus, minus: nature.minus })
-      : t('dev.option.natureNeutral');
+    option.label =
+      nature.plus && nature.minus
+        ? t('dev.option.nature', { plus: nature.plus, minus: nature.minus })
+        : t('dev.option.natureNeutral');
     natureList.append(option);
   }
 
   for (const input of [partyMemberInput, squadLevelInput]) {
     input.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') (input === squadLevelInput ? setSquadLevel() : applyEdit());
+      if (event.key === 'Enter') input === squadLevelInput ? setSquadLevel() : applyEdit();
     });
   }
 
@@ -1147,7 +1166,15 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
       frameMap?: {
         width: number;
         height: number;
-        trees: { id: string; band: number; top: number; bottom: number; solid: boolean; whole: boolean; cells: unknown[] }[];
+        trees: {
+          id: string;
+          band: number;
+          top: number;
+          bottom: number;
+          solid: boolean;
+          whole: boolean;
+          cells: unknown[];
+        }[];
       };
     };
     const frameMap = parsed.frameMap;
@@ -1165,13 +1192,15 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
       }),
     ];
     for (const tree of bitten) {
-      lines.push(t('dev.summary.tree', {
-        id: tree.id,
-        band: tree.band,
-        from: tree.top,
-        to: tree.bottom,
-        cells: tree.cells.length,
-      }));
+      lines.push(
+        t('dev.summary.tree', {
+          id: tree.id,
+          band: tree.band,
+          from: tree.top,
+          to: tree.bottom,
+          cells: tree.cells.length,
+        }),
+      );
     }
     mapSummary.textContent = lines.join('\n');
   };

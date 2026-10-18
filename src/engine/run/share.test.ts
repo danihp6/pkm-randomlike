@@ -25,13 +25,20 @@ describe('encodeRunShare', () => {
   });
 
   it('escapes a hyphen in the seed so the fields stay separable', () => {
-    expect(encodeRunShare({ seed: 'daily-2026-09-30', mode: 'finite' })).toBe('PKRL-1-f-daily%2D2026%2D09%2D30');
+    expect(encodeRunShare({ seed: 'daily-2026-09-30', mode: 'finite' })).toBe(
+      'PKRL-1-f-daily%2D2026%2D09%2D30',
+    );
   });
 
   it('takes a whole run as well as a bare share', () => {
     const run = createRun({
       seed: 'abc',
-      starter: createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch'] }),
+      starter: createRunPokemon({
+        id: 'starter',
+        speciesId: 'charmander',
+        level: 5,
+        moves: ['scratch'],
+      }),
       mode: 'infinite',
     });
     expect(encodeRunShare(run)).toBe(encodeRunShare({ seed: run.seed, mode: run.mode }));

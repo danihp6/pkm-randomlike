@@ -1,14 +1,4 @@
-import {
-  CARPET,
-  CHEST,
-  FLOOR,
-  ITEM,
-  LEDGE,
-  TALL_GRASS,
-  TRAP,
-  WALL,
-  WATER,
-} from '../../engine/map';
+import { CARPET, CHEST, FLOOR, ITEM, LEDGE, TALL_GRASS, TRAP, WALL, WATER } from '../../engine/map';
 import {
   COMMON_FRAME_CARPET,
   FRAME_FLOOR,

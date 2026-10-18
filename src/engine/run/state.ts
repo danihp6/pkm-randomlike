@@ -169,7 +169,9 @@ export function createRun(init: RunInit): RunState {
 export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: MapEdge): RunState {
   const room = Math.max(0, Math.floor(roomInMap));
   const plan = planMap(run.seed, run.mapIndex);
-  const arrival = isArrivalEdge(plan, room, arrivalEdge) ? (arrivalEdge as MapEdge) : arrivalEdgeFor(plan, room);
+  const arrival = isArrivalEdge(plan, room, arrivalEdge)
+    ? (arrivalEdge as MapEdge)
+    : arrivalEdgeFor(plan, room);
   return {
     ...run,
     routeIndex: run.routeIndex + 1,
@@ -473,7 +475,9 @@ export function pcFullyEditable(run: RunState): boolean {
 export function pcMemberEditable(run: RunState, memberId: string): boolean {
   return (
     pcFullyEditable(run) ||
-    (run.pcCatch !== null && run.pcCatch.roomInMap === run.routeInMap && run.pcCatch.memberId === memberId)
+    (run.pcCatch !== null &&
+      run.pcCatch.roomInMap === run.routeInMap &&
+      run.pcCatch.memberId === memberId)
   );
 }
 
@@ -510,9 +514,7 @@ export function isItemPicked(run: RunState, itemId: string): boolean {
 
 /** Marks a route ground item as taken, so it cannot be picked twice. */
 export function markItemPicked(run: RunState, itemId: string): RunState {
-  return isItemPicked(run, itemId)
-    ? run
-    : { ...run, pickedItems: [...run.pickedItems, itemId] };
+  return isItemPicked(run, itemId) ? run : { ...run, pickedItems: [...run.pickedItems, itemId] };
 }
 
 export function itemCount(run: RunState, itemId: string): number {
@@ -555,7 +557,10 @@ export function consumeItem(run: RunState, itemId: string, count = 1): RunState 
 
 /** The party or box member with `id`, or undefined. */
 function memberById(run: RunState, id: string): RunPokemon | undefined {
-  return run.party.find((member) => member.fighter.id === id) ?? run.box.find((member) => member.fighter.id === id);
+  return (
+    run.party.find((member) => member.fighter.id === id) ??
+    run.box.find((member) => member.fighter.id === id)
+  );
 }
 
 /**
@@ -578,7 +583,10 @@ export function unequipHeldItem(run: RunState, memberId: string): RunState {
   const member = memberById(run, memberId);
   if (!member?.fighter.heldItem) return run;
   const held = member.fighter.heldItem;
-  return updatePokemon(addItem(run, held), { ...member, fighter: { ...member.fighter, heldItem: null } });
+  return updatePokemon(addItem(run, held), {
+    ...member,
+    fighter: { ...member.fighter, heldItem: null },
+  });
 }
 
 /**
@@ -591,5 +599,7 @@ export function moveMoves(run: RunState, memberId: string, from: number, to: num
   const member = memberById(run, memberId);
   if (!member) return run;
   const moves = moveWithin(member.fighter.moves, from, to);
-  return moves === member.fighter.moves ? run : updatePokemon(run, { ...member, fighter: { ...member.fighter, moves } });
+  return moves === member.fighter.moves
+    ? run
+    : updatePokemon(run, { ...member, fighter: { ...member.fighter, moves } });
 }

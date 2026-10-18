@@ -208,7 +208,9 @@ export function serializeFrameMap(route: RouteMap, tileset: TilesetConfig, pad =
 
 /** The tile grid a frame map describes, so an import can rebuild the route. */
 export function frameMapTiles(frameMap: FrameMap): number[][] {
-  const tiles = Array.from({ length: frameMap.height }, () => new Array<number>(frameMap.width).fill(WALL));
+  const tiles = Array.from({ length: frameMap.height }, () =>
+    new Array<number>(frameMap.width).fill(WALL),
+  );
   for (const cell of frameMap.cells) tiles[cell.y][cell.x] = cell.tile;
   return tiles;
 }
@@ -245,7 +247,12 @@ export function parseFrameMapExport(text: string): FrameMapExport {
     throw new Error('cell count does not match the size');
   }
   for (const cell of frameMap.cells) {
-    if (!cell || typeof cell.x !== 'number' || typeof cell.y !== 'number' || typeof cell.tile !== 'number') {
+    if (
+      !cell ||
+      typeof cell.x !== 'number' ||
+      typeof cell.y !== 'number' ||
+      typeof cell.tile !== 'number'
+    ) {
       throw new Error('malformed cell');
     }
   }

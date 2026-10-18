@@ -1,10 +1,4 @@
-import {
-  BOOST_IDS,
-  applyBoosts,
-  type BattleFighter,
-  type BoostChange,
-  type BoostId,
-} from '../fighter';
+import { BOOST_IDS, applyBoosts, type BattleFighter, type BoostChange, type BoostId } from '../fighter';
 import { applyStatus, canApplyStatus, isStatusId, statusName } from '../status';
 import { opponent, pushEvent, pushText, type BattleState, type SideId } from '../state';
 import { hasSubstitute } from '../volatile';

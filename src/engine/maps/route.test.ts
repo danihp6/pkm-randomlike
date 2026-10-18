@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FLOOR, WALL, mapPixelSize, padMap } from '../map';
-import {
-  MAP_MAX_ROOM_SIZE,
-  MAP_MIN_ROOM_SIZE,
-  mapTuning,
-  routeSizeRangeForMap,
-} from '../../data/maps';
+import { MAP_MAX_ROOM_SIZE, MAP_MIN_ROOM_SIZE, mapTuning, routeSizeRangeForMap } from '../../data/maps';
 import { mapSizeTier, terrainScaleForSize } from '../../data/mapSize';
 import { sketchRoute } from '../routes/sketch';
 import { validateRoute } from '../routes/validate';
@@ -87,7 +82,9 @@ describe('plan-driven route size', () => {
   });
 
   it('still carries the beyond-edge margin at any plan size', () => {
-    const large = Array.from({ length: MAP_MAX_ROOM_SIZE }, () => new Array<number>(MAP_MAX_ROOM_SIZE).fill(FLOOR));
+    const large = Array.from({ length: MAP_MAX_ROOM_SIZE }, () =>
+      new Array<number>(MAP_MAX_ROOM_SIZE).fill(FLOOR),
+    );
     const padded = padMap(large, 3, WALL);
     expect(padded).toHaveLength(MAP_MAX_ROOM_SIZE + 6);
     expect(padded[0]).toHaveLength(MAP_MAX_ROOM_SIZE + 6);

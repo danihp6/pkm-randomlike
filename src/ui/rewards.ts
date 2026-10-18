@@ -7,11 +7,7 @@ import type { Rng } from '../engine/rng';
  * strong trainer offers real options rather than a fixed prize. Deterministic for
  * a fixed `rng`; a pool smaller than `count` simply offers what it has.
  */
-export function rewardChoices(
-  pool: readonly LootEntry[],
-  count: number,
-  rng: Rng,
-): readonly string[] {
+export function rewardChoices(pool: readonly LootEntry[], count: number, rng: Rng): readonly string[] {
   const remaining = pool.filter((entry) => entry.weight > 0 && entry.itemId !== '');
   const picks: string[] = [];
   while (picks.length < count && remaining.length > 0) {

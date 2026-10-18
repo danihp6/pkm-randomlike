@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { getMove } from './dex';
 import { getItem } from './items';
-import { TM_COUNT, TM_MOVE_IDS, isTmItemId, moveIdForTm, tmItemId, tmItemIdForMove, tmNumber } from './tms';
+import {
+  TM_COUNT,
+  TM_MOVE_IDS,
+  isTmItemId,
+  moveIdForTm,
+  tmItemId,
+  tmItemIdForMove,
+  tmNumber,
+} from './tms';
 
 describe('tms', () => {
   it('holds the 171 base-Gen-9 machines, one distinct move each', () => {

@@ -70,13 +70,7 @@ describe('exitEdgeAt', () => {
 
   it('counts every passable cell of an opening, not just the seeded one', () => {
     // A west wall with a two-cell gap at y 2-3 and a wall cell at y 1.
-    const tiles = map([
-      '#####',
-      '#...#',
-      '.##.#',
-      '.##.#',
-      '#####',
-    ]);
+    const tiles = map(['#####', '#...#', '.##.#', '.##.#', '#####']);
     const edges: AccessEdge[] = ['W'];
     expect(exitEdgeAt(tiles, 5, 5, edges, { x: 0, y: 2 })).toBe('W');
     expect(exitEdgeAt(tiles, 5, 5, edges, { x: 0, y: 3 })).toBe('W');
@@ -131,10 +125,9 @@ describe('exitEdgeAt on real room openings', () => {
               const walkable = tileAt(route.tiles, { x, y }) === FLOOR;
               const label = `${where} ${x},${y}`;
               if (walkable && edges.includes(edge)) {
-                expect(
-                  exitEdgeAt(route.tiles, route.width, route.height, edges, { x, y }),
-                  label,
-                ).toBe(edge);
+                expect(exitEdgeAt(route.tiles, route.width, route.height, edges, { x, y }), label).toBe(
+                  edge,
+                );
               } else {
                 // A wall, a tip or an edge without an opening never exits.
                 expect(
@@ -153,10 +146,7 @@ describe('exitEdgeAt on real room openings', () => {
             for (const cell of band) {
               const label = `${where} band ${cell.x},${cell.y}`;
               expect(tileAt(route.tiles, cell), label).toBe(FLOOR);
-              expect(
-                exitEdgeAt(route.tiles, route.width, route.height, edges, cell),
-                label,
-              ).toBe(edge);
+              expect(exitEdgeAt(route.tiles, route.width, route.height, edges, cell), label).toBe(edge);
             }
           }
           const validation = validateRoute(route);

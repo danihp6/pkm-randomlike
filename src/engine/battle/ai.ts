@@ -94,7 +94,8 @@ function moveScore(
     if (estimate.effectiveness === 0) return 0;
     let score = estimate.damage * accuracy;
     if (flags.has('tryToFaint') && estimate.damage >= defender.hp) score += 1000;
-    if (flags.has('risky') && (move.selfdestruct !== undefined || move.recoil !== undefined)) score += 60;
+    if (flags.has('risky') && (move.selfdestruct !== undefined || move.recoil !== undefined))
+      score += 60;
     if (flags.has('preferBatonPass') && move.selfSwitch !== undefined && hasPositiveStage(attacker)) {
       score += 60;
     }

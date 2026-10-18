@@ -2,13 +2,7 @@ import type { Tile } from '../grid';
 import { FLOOR, LEDGE, TALL_GRASS, WALL, isWalkable, tileAt, type TileMap } from '../map';
 import { borderEdge, exitEdgeAt, openingBandCells } from './doors';
 import { SHAPES, type AccessEdge } from './layout';
-import {
-  sameTile,
-  tileKey,
-  type Facing,
-  type RouteMap,
-  type RouteTrainer,
-} from './routeMap';
+import { sameTile, tileKey, type Facing, type RouteMap, type RouteTrainer } from './routeMap';
 import { sightLine, trainerBlockers } from './trainers';
 
 const CARDINALS: readonly Tile[] = [
@@ -33,11 +27,7 @@ const EMPTY: ReadonlySet<string> = new Set();
  * prove a route still reaches its exits with the trainers treated as blockers,
  * so no placement can soft-lock the route behind an unwinnable fight.
  */
-export function reachableAvoiding(
-  map: TileMap,
-  from: Tile,
-  blocked: ReadonlySet<string>,
-): Set<string> {
+export function reachableAvoiding(map: TileMap, from: Tile, blocked: ReadonlySet<string>): Set<string> {
   const reached = new Set<string>();
   if (blocked.has(tileKey(from)) || !isWalkable(map, from)) return reached;
   const queue: Tile[] = [from];
@@ -57,13 +47,7 @@ export function reachableAvoiding(
 
 /** Why a trainer fails the pose rules (`docs/route-generator.md` §3.4/§4). */
 export type TrainerIssueReason =
-  | 'off-floor'
-  | 'no-backing-wall'
-  | 'on-entry'
-  | 'on-exit'
-  | 'on-pocket'
-  | 'crowded'
-  | 'sees-entry';
+  'off-floor' | 'no-backing-wall' | 'on-entry' | 'on-exit' | 'on-pocket' | 'crowded' | 'sees-entry';
 
 export type TrainerIssue = Readonly<{
   /** The trainer's own `id` (`trainer-<routeIndex>-<i>`). */
@@ -110,9 +94,7 @@ export type RouteValidation = Readonly<{
 
 /** True when one of the four cardinal neighbours of `tile` is a raw `WALL`. */
 function hasWallNeighbour(map: TileMap, tile: Tile): boolean {
-  return CARDINALS.some(
-    (step) => tileAt(map, { x: tile.x + step.x, y: tile.y + step.y }) === WALL,
-  );
+  return CARDINALS.some((step) => tileAt(map, { x: tile.x + step.x, y: tile.y + step.y }) === WALL);
 }
 
 /** Two trainers in one of the eight tiles around each other (`crowded`). */
@@ -239,14 +221,9 @@ function borderBreaches(route: RouteMap): string[] {
  * A pocket the entry cannot reach is **reported only**: `placeItems` may skip a
  * pocket a hazard sealed, so it is a finding, never a reason to reroll.
  */
-export function validateRoute(
-  route: RouteMap,
-  options?: RouteValidationOptions,
-): RouteValidation {
+export function validateRoute(route: RouteMap, options?: RouteValidationOptions): RouteValidation {
   const reached = reachableTiles(route.tiles, route.entry);
-  const unreachable = route.exits
-    .map((exit) => tileKey(exit))
-    .filter((key) => !reached.has(key));
+  const unreachable = route.exits.map((exit) => tileKey(exit)).filter((key) => !reached.has(key));
   const avoiding = reachableAvoiding(route.tiles, route.entry, trainerBlockers(route));
   const blockedByTrainers = route.exits
     .map((exit) => tileKey(exit))

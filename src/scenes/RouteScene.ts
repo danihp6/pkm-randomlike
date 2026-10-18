@@ -30,7 +30,13 @@ import { trainerFacingPose, trainerWalkAnimKey } from '../render/trainerAnim';
 import { getTrainerArchetype, TRAINER_ARCHETYPE_IDS } from '../data/trainers';
 import { IS_DEVELOP } from '../dev/env';
 import { nextDebugPokemonId } from '../dev/ids';
-import type { DebugPartyEdit, DebugPartyMember, DebugRouteContext, DebugRouteInput, DebugTeleportResult } from '../dev/debugMenu';
+import type {
+  DebugPartyEdit,
+  DebugPartyMember,
+  DebugRouteContext,
+  DebugRouteInput,
+  DebugTeleportResult,
+} from '../dev/debugMenu';
 import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
   BOSS_MONEY_MULTIPLIER,
@@ -81,14 +87,18 @@ import {
 import { equipMove, learnsetPool, type LearnEntry } from '../engine/run/learnset';
 import { NICKNAME_MAX_LENGTH, normalizeNickname, renameMember } from '../engine/run/nickname';
 import { abilityMoveType } from '../engine/battle/moveType';
-import {
-  COMMON_TEXTURE_KEY,
-  TILESETS,
-  type TilesetId,
-  tilesetTextureKey,
-} from '../data/tilesets';
+import { COMMON_TEXTURE_KEY, TILESETS, type TilesetId, tilesetTextureKey } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import { FLOOR, TALL_GRASS, WALL, isWalkable, mapPixelSize, mapSize, resolveMove, type TileMap } from '../engine/map';
+import {
+  FLOOR,
+  TALL_GRASS,
+  WALL,
+  isWalkable,
+  mapPixelSize,
+  mapSize,
+  resolveMove,
+  type TileMap,
+} from '../engine/map';
 import { hashSeed, randomSeed, Rng } from '../engine/rng';
 import { clearRun, storeRun, type Settings } from '../engine/save';
 import {
@@ -132,11 +142,7 @@ import {
   treeTipKeys,
   type TileFrame,
 } from '../engine/tileFrames';
-import {
-  parseFrameMapExport,
-  routeFromFrameMapExport,
-  serializeFrameMap,
-} from '../engine/frameMap';
+import { parseFrameMapExport, routeFromFrameMapExport, serializeFrameMap } from '../engine/frameMap';
 import {
   BAG_CATEGORIES,
   bagCategoryLabel,
@@ -198,7 +204,13 @@ import {
   type MemberDetail,
 } from '../ui/partyDetail';
 import { type FamilyNode } from '../ui/evolutionGraph';
-import { FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_WINDOW_ALPHA, FRLG_WINDOW_PADDING, addFrlgWindow } from '../ui/frlg';
+import {
+  FRLG_HPBAR,
+  FRLG_HPBAR_KEY,
+  FRLG_WINDOW_ALPHA,
+  FRLG_WINDOW_PADDING,
+  addFrlgWindow,
+} from '../ui/frlg';
 import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
 import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
 import { InfoPopup } from '../ui/infoPopup';
@@ -206,7 +218,12 @@ import { catchToPcNotice, type Notice } from '../ui/notice';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../data/statusIcons';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
-import { RELEASE_HOLD_MS, RELEASE_INPUT_DELAY_MS, releaseBeats, type ReleaseBeat } from '../ui/permadeath';
+import {
+  RELEASE_HOLD_MS,
+  RELEASE_INPUT_DELAY_MS,
+  releaseBeats,
+  type ReleaseBeat,
+} from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { clampScrollTop, maxScrollTop, scrollByRows, stepGridCursor, visibleRange } from '../ui/scroll';
 import { createTouchControls, type TouchControls } from '../ui/touchControls';
@@ -653,7 +670,9 @@ function pointInRect(
   point: { x: number; y: number },
   rect: { x: number; y: number; w: number; h: number },
 ): boolean {
-  return point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h;
+  return (
+    point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h
+  );
 }
 
 /** True when `tile` is inside the playable map (the border included). */
@@ -665,8 +684,18 @@ function inBounds(map: TileMap, tile: Tile): boolean {
 // and bag and walks its routes off one dev seed.
 const DEV_SEED = 'dev-seed';
 
-const DEMO_STARTER: FighterInput = { id: 'starter', speciesId: 'charmander', level: 5, moves: ['ember', 'scratch', 'growl'] };
-const DEMO_RESERVE: FighterInput = { id: 'reserve', speciesId: 'squirtle', level: 4, moves: ['watergun', 'tackle', 'tailwhip'] };
+const DEMO_STARTER: FighterInput = {
+  id: 'starter',
+  speciesId: 'charmander',
+  level: 5,
+  moves: ['ember', 'scratch', 'growl'],
+};
+const DEMO_RESERVE: FighterInput = {
+  id: 'reserve',
+  speciesId: 'squirtle',
+  level: 4,
+  moves: ['watergun', 'tackle', 'tailwhip'],
+};
 
 const DEMO_BAG: readonly BagCounts[] = [];
 
@@ -745,7 +774,10 @@ export class RouteScene extends Phaser.Scene {
   private pauseMenuIndex = 0;
   /** Reset is two-press: the first arms it, the second starts the new run. */
   private pauseMenuArmed = false;
-  private pauseMenuRows: { highlight: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.BitmapText }[] = [];
+  private pauseMenuRows: {
+    highlight: Phaser.GameObjects.Rectangle;
+    label: Phaser.GameObjects.BitmapText;
+  }[] = [];
   private resetHold = 0;
   private resetScrim!: Phaser.GameObjects.Rectangle;
   private resetRing!: Phaser.GameObjects.Graphics;
@@ -1006,7 +1038,11 @@ export class RouteScene extends Phaser.Scene {
     price: Phaser.GameObjects.BitmapText;
     count: Phaser.GameObjects.BitmapText;
   }[] = [];
-  private shopTabs: { mode: ShopMode; bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.BitmapText }[] = [];
+  private shopTabs: {
+    mode: ShopMode;
+    bg: Phaser.GameObjects.Rectangle;
+    label: Phaser.GameObjects.BitmapText;
+  }[] = [];
   private shopMoneyText!: Phaser.GameObjects.BitmapText;
   private shopMessageText!: Phaser.GameObjects.BitmapText;
   private shopEmpty!: Phaser.GameObjects.BitmapText;
@@ -1066,20 +1102,14 @@ export class RouteScene extends Phaser.Scene {
     }
     // A special room injects its own content, off stable ids, so a revisit rebuilds
     // it identically and a beaten mini-boss stays beaten (`docs/maps-spec.md` §7).
-    if (
-      view.special === 'mini-boss' &&
-      !isTrainerDefeated(this.run, miniBossTrainerId(view.mapIndex))
-    ) {
+    if (view.special === 'mini-boss' && !isTrainerDefeated(this.run, miniBossTrainerId(view.mapIndex))) {
       const miniBoss = this.miniBossTrainer(view);
       if (miniBoss) this.route = { ...this.route, trainers: [...this.route.trainers, miniBoss] };
     }
     // A shop room's counter: the interact key opens the Mart when the player faces
     // it. It is a fixture, so it sits at the room's farthest walkable tile.
     this.shopCounter = view.special === 'shop' ? this.farthestRoomTile() : null;
-    if (
-      view.special === 'mega-stone' &&
-      !isItemPicked(this.run, megaStoneItemId(view.mapIndex))
-    ) {
+    if (view.special === 'mega-stone' && !isItemPicked(this.run, megaStoneItemId(view.mapIndex))) {
       const stone = this.megaStoneItem(view);
       if (stone) this.route = { ...this.route, items: [...this.route.items, stone] };
     }
@@ -1145,7 +1175,8 @@ export class RouteScene extends Phaser.Scene {
   private farthestRoomTile(): Tile | null {
     const from = this.route.entry;
     const occupied = new Set<string>();
-    for (const trainer of this.route.trainers) occupied.add(`${trainer.position.x},${trainer.position.y}`);
+    for (const trainer of this.route.trainers)
+      occupied.add(`${trainer.position.x},${trainer.position.y}`);
     for (const item of this.route.items) occupied.add(`${item.position.x},${item.position.y}`);
     const startKey = `${from.x},${from.y}`;
     const seen = new Set<string>([startKey]);
@@ -1193,8 +1224,12 @@ export class RouteScene extends Phaser.Scene {
     const seed = attempt > 0 ? `${params.seed}#r${attempt}` : params.seed;
     this.routeParams = params;
     const pattern = TILESETS[biome.tilesetId].config.wallPattern;
-    const wall = pattern ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) } : undefined;
-    const band = params.room ? bandForMap(params.room.mapIndex) : runBand(this.run.seed, params.routeIndex);
+    const wall = pattern
+      ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) }
+      : undefined;
+    const band = params.room
+      ? bandForMap(params.room.mapIndex)
+      : runBand(this.run.seed, params.routeIndex);
     const loot = ROUTE_LOOT[band.id];
     const request: RouteRequest = {
       seed,
@@ -1342,7 +1377,8 @@ export class RouteScene extends Phaser.Scene {
       this.input.keyboard!.on('keydown-B', () => {
         // A typed `b` belongs to the nickname field, not to the debug battle.
         if (this.textFieldFocused()) return;
-        if (this.scene.isActive()) this.startBattle({ kind: 'wild', speciesId: 'scatterbug', level: 5, key: 'dev' });
+        if (this.scene.isActive())
+          this.startBattle({ kind: 'wild', speciesId: 'scatterbug', level: 5, key: 'dev' });
       });
       this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
         this.updateHoverInspect(pointer);
@@ -1542,7 +1578,11 @@ export class RouteScene extends Phaser.Scene {
     this.hudPartyHeaderFocus = false;
     if (pane === 'party' || pane === 'box') {
       const rows = this.paneRows(pane).length;
-      this.hudUi = { pane, index: Math.min(Math.max(0, this.hudUi.index), Math.max(0, rows - 1)), grabbed: null };
+      this.hudUi = {
+        pane,
+        index: Math.min(Math.max(0, this.hudUi.index), Math.max(0, rows - 1)),
+        grabbed: null,
+      };
       if (pane === 'box') this.hudBoxPage = boxPageForIndex(this.hudUi.index);
     } else if (pane === 'bag') {
       this.hudBagIndex = stepBagCursor(this.hudBagIndex, 0, this.hudBagStacks().length);
@@ -1798,7 +1838,10 @@ export class RouteScene extends Phaser.Scene {
 
   /** `left`/`right` in the detail panel cycle STATS / MOVES, as a tab click does. */
   private stepDetailTab(delta: number): void {
-    this.hudDetailState = setDetailTab(this.hudDetailState, nextDetailTab(this.hudDetailState.tab, delta));
+    this.hudDetailState = setDetailTab(
+      this.hudDetailState,
+      nextDetailTab(this.hudDetailState.tab, delta),
+    );
     this.resetLearnDrag();
     this.resetDetailInfo();
     this.hudDetailStop = 0;
@@ -2128,11 +2171,17 @@ export class RouteScene extends Phaser.Scene {
         .rectangle(tabX, boxY + HUD_PAD_TOP, HUD_BOX_TAB_W, HUD_TAB_H, 0xcfcce2)
         .setOrigin(0, 0)
         .setVisible(false);
-      const label = addFrlgText(this, tabX + HUD_BOX_TAB_W / 2, boxY + HUD_PAD_TOP + 5, String(page + 1), {
-        size: 16,
-        tint: FRLG_INK,
-        origin: [0.5, 0],
-      }).setVisible(false);
+      const label = addFrlgText(
+        this,
+        tabX + HUD_BOX_TAB_W / 2,
+        boxY + HUD_PAD_TOP + 5,
+        String(page + 1),
+        {
+          size: 16,
+          tint: FRLG_INK,
+          origin: [0.5, 0],
+        },
+      ).setVisible(false);
       this.hudBoxTabs.push({ page, bg, label });
       boxChildren.push(bg, label);
     }
@@ -2238,18 +2287,22 @@ export class RouteScene extends Phaser.Scene {
 
     // The avatar held in hand while dragging, drawn last so it rides over the
     // panels and follows the pointer anywhere on screen.
-    this.hudDragGhost = this.add
-      .image(0, 0, PORTRAIT_TEXTURE_KEY, 0)
-      .setScale(0.9)
-      .setVisible(false);
+    this.hudDragGhost = this.add.image(0, 0, PORTRAIT_TEXTURE_KEY, 0).setScale(0.9).setVisible(false);
 
     // The move held in hand while dragging a learnset entry onto a slot: a small
     // screen-space chip that follows the pointer over the HUD.
-    this.hudLearnGhost = addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [0.5, 0.5] })
-      .setVisible(false);
+    this.hudLearnGhost = addFrlgText(this, 0, 0, '', {
+      size: 16,
+      tint: FRLG_INK,
+      origin: [0.5, 0.5],
+    }).setVisible(false);
 
     this.hudRoot = this.add
-      .container(0, 0, [...this.hudPanels.map((panel) => panel.container), this.hudDragGhost, this.hudLearnGhost])
+      .container(0, 0, [
+        ...this.hudPanels.map((panel) => panel.container),
+        this.hudDragGhost,
+        this.hudLearnGhost,
+      ])
       .setDepth(150);
 
     this.applyStoredHudLayout();
@@ -2367,7 +2420,10 @@ export class RouteScene extends Phaser.Scene {
       .setVisible(false);
     children.push(this.hudNicknameBg);
 
-    this.hudDetailName = addFrlgText(this, x + HUD_CONTENT_LEFT, y + HUD_PAD_TOP, '', { size: 16, tint: FRLG_INK });
+    this.hudDetailName = addFrlgText(this, x + HUD_CONTENT_LEFT, y + HUD_PAD_TOP, '', {
+      size: 16,
+      tint: FRLG_INK,
+    });
     this.hudDetailLevel = addFrlgText(this, right, y + HUD_PAD_TOP, '', {
       size: 16,
       tint: 0x3a3956,
@@ -2409,11 +2465,17 @@ export class RouteScene extends Phaser.Scene {
     (['stats', 'moves'] as DetailTab[]).forEach((tab, i) => {
       const tabX = left + i * (tabW + HUD_TAB_GAP);
       const bg = this.add.rectangle(tabX, tabY, tabW, HUD_DETAIL_TAB_H, 0xcfcce2).setOrigin(0, 0);
-      const label = addFrlgText(this, tabX + tabW / 2, tabY + 5, t(tab === 'stats' ? 'detail.tabStats' : 'detail.tabMoves'), {
-        size: 16,
-        tint: FRLG_INK,
-        origin: [0.5, 0],
-      });
+      const label = addFrlgText(
+        this,
+        tabX + tabW / 2,
+        tabY + 5,
+        t(tab === 'stats' ? 'detail.tabStats' : 'detail.tabMoves'),
+        {
+          size: 16,
+          tint: FRLG_INK,
+          origin: [0.5, 0],
+        },
+      );
       this.hudDetailTabs.push({ tab, bg, label });
       children.push(bg, label);
     });
@@ -2445,7 +2507,10 @@ export class RouteScene extends Phaser.Scene {
     // NATURE / ABILITY in the left column, HELD / CAUGHT in the right.
     const infoColW = innerW / 2;
     const nature = addFrlgText(this, left, infoTop, '', { size: 16, tint: 0x3a3956 });
-    const ability = addFrlgText(this, left, infoTop + HUD_DETAIL_INFO_ROW, '', { size: 16, tint: 0x3a3956 });
+    const ability = addFrlgText(this, left, infoTop + HUD_DETAIL_INFO_ROW, '', {
+      size: 16,
+      tint: 0x3a3956,
+    });
     const held = addFrlgText(this, left + infoColW, infoTop, '', { size: 16, tint: 0x3a3956 });
     const caught = addFrlgText(this, left + infoColW, infoTop + HUD_DETAIL_INFO_ROW, '', {
       size: 16,
@@ -2457,15 +2522,27 @@ export class RouteScene extends Phaser.Scene {
     // The evolution band: a title over a family graph. The nodes are a fixed row
     // pool the refresh repositions by depth; `refreshDetail` also redraws the
     // edges. A click on a ready branch evolves the member.
-    this.hudDetailEvoTitle = addFrlgText(this, left, y + HUD_DETAIL_EVO_TITLE_TOP, t('detail.evolution'), {
-      size: 16,
-      tint: 0x3a3956,
-    });
-    this.hudDetailEvoHint = addFrlgText(this, right, y + HUD_DETAIL_EVO_TITLE_TOP, t('detail.clickToEvolve'), {
-      size: 16,
-      tint: HUD_DETAIL_EVO_READY,
-      origin: [1, 0],
-    }).setVisible(false);
+    this.hudDetailEvoTitle = addFrlgText(
+      this,
+      left,
+      y + HUD_DETAIL_EVO_TITLE_TOP,
+      t('detail.evolution'),
+      {
+        size: 16,
+        tint: 0x3a3956,
+      },
+    );
+    this.hudDetailEvoHint = addFrlgText(
+      this,
+      right,
+      y + HUD_DETAIL_EVO_TITLE_TOP,
+      t('detail.clickToEvolve'),
+      {
+        size: 16,
+        tint: HUD_DETAIL_EVO_READY,
+        origin: [1, 0],
+      },
+    ).setVisible(false);
     this.hudDetailEvoEmpty = addFrlgText(
       this,
       x + detailW / 2,
@@ -2522,8 +2599,16 @@ export class RouteScene extends Phaser.Scene {
       .setStrokeStyle(2, 0x9a94b8)
       .setVisible(false);
     this.hudSearchText = addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK }).setVisible(false);
-    this.hudLearnPrev = addFrlgText(this, 0, 0, '<', { size: 16, tint: FRLG_INK, origin: [0.5, 0] }).setVisible(false);
-    this.hudLearnNext = addFrlgText(this, 0, 0, '>', { size: 16, tint: FRLG_INK, origin: [0.5, 0] }).setVisible(false);
+    this.hudLearnPrev = addFrlgText(this, 0, 0, '<', {
+      size: 16,
+      tint: FRLG_INK,
+      origin: [0.5, 0],
+    }).setVisible(false);
+    this.hudLearnNext = addFrlgText(this, 0, 0, '>', {
+      size: 16,
+      tint: FRLG_INK,
+      origin: [0.5, 0],
+    }).setVisible(false);
     this.hudLearnEmpty = addFrlgText(this, 0, 0, t('detail.noMovesToLearn'), {
       size: 16,
       tint: 0x6b6887,
@@ -2592,7 +2677,11 @@ export class RouteScene extends Phaser.Scene {
       if (heldFrame !== null) row.held.setFrame(heldFrame);
       const maxHp = restoreFighter(member.fighter).maxHp;
       const hp = member.fighter.hp;
-      row.name.setText(member.fighter.nickname ?? getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId);
+      row.name.setText(
+        member.fighter.nickname ??
+          getSpecies(member.fighter.speciesId)?.name ??
+          member.fighter.speciesId,
+      );
       row.name.setMaxWidth(
         this.hudX +
           this.hud.partyW -
@@ -2603,10 +2692,7 @@ export class RouteScene extends Phaser.Scene {
       const fraction = hpFraction(hp, maxHp);
       const barScale = row.bar.scaleX;
       row.fill
-        .setPosition(
-          row.bar.x + FRLG_HPBAR.fill.x * barScale,
-          row.bar.y + FRLG_HPBAR.fill.y * barScale,
-        )
+        .setPosition(row.bar.x + FRLG_HPBAR.fill.x * barScale, row.bar.y + FRLG_HPBAR.fill.y * barScale)
         .setSize(
           Math.max(0, FRLG_HPBAR.fill.width * barScale * fraction),
           FRLG_HPBAR.fill.height * barScale,
@@ -2646,9 +2732,7 @@ export class RouteScene extends Phaser.Scene {
       const stack = bag[i];
       const frame = stack ? itemIconFrame(stack.itemId) : null;
       const visible = stack !== undefined && frame !== null;
-      row.highlight.setVisible(
-        visible && this.hudKeyboardPane === 'bag' && this.hudBagIndex === i,
-      );
+      row.highlight.setVisible(visible && this.hudKeyboardPane === 'bag' && this.hudBagIndex === i);
       row.icon.setVisible(visible);
       row.name.setVisible(visible);
       row.count.setVisible(visible);
@@ -2789,7 +2873,14 @@ export class RouteScene extends Phaser.Scene {
       graphics.strokeCircle(cx, cy, radius);
     } else if (room.marker === 'mini-boss') {
       graphics.fillStyle(0xd9534f, 1);
-      graphics.fillTriangle(cx, cy - radius, cx + radius, cy + radius * 0.8, cx - radius, cy + radius * 0.8);
+      graphics.fillTriangle(
+        cx,
+        cy - radius,
+        cx + radius,
+        cy + radius * 0.8,
+        cx - radius,
+        cy + radius * 0.8,
+      );
     } else if (room.marker === 'mega-stone') {
       graphics.fillStyle(0x9b6bff, 1);
       graphics.fillTriangle(cx, cy - radius, cx + radius, cy, cx, cy + radius);
@@ -3165,7 +3256,11 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /** One learnset cell: the move's reading plus a Lv/TM source tag in its name. */
-  private learnCell(entry: LearnEntry, ability: string, ivs: Partial<Stats> | null | undefined): MoveGridCell {
+  private learnCell(
+    entry: LearnEntry,
+    ability: string,
+    ivs: Partial<Stats> | null | undefined,
+  ): MoveGridCell {
     const move = getMove(entry.moveId);
     const basePower = move?.basePower ?? 0;
     const accuracy = move && move.accuracy !== true ? move.accuracy : null;
@@ -3197,8 +3292,14 @@ export class RouteScene extends Phaser.Scene {
     const searchY = gridTop + HUD_DETAIL_MOVE_GRID_H + HUD_DETAIL_LEARN_GAP;
     const searchW = this.hud.detailW - pad.x * 2;
     this.hudSearchRect = { x: searchX, y: searchY, w: searchW, h: HUD_DETAIL_SEARCH_H };
-    this.hudSearchBg.setPosition(searchX, searchY).setSize(searchW, HUD_DETAIL_SEARCH_H).setVisible(moves);
-    const placeholder = this.hudSearchFocus || this.hudLearnQuery.length > 0 ? this.hudLearnQuery : t('detail.searchMoves');
+    this.hudSearchBg
+      .setPosition(searchX, searchY)
+      .setSize(searchW, HUD_DETAIL_SEARCH_H)
+      .setVisible(moves);
+    const placeholder =
+      this.hudSearchFocus || this.hudLearnQuery.length > 0
+        ? this.hudLearnQuery
+        : t('detail.searchMoves');
     this.hudSearchText
       .setText(`${this.hudSearchFocus ? '>' : ' '} ${placeholder}`)
       .setTint(this.hudLearnQuery.length === 0 && !this.hudSearchFocus ? 0x6b6887 : FRLG_INK)
@@ -3381,7 +3482,13 @@ export class RouteScene extends Phaser.Scene {
     // panel, a move past the slop is a drag that reorders (see pointermove).
     const memberId = this.memberIdAt(target);
     if (memberId === null) return;
-    this.hudPress = { pane: target.pane, index: target.index, memberId, originX: pointer.x, originY: pointer.y };
+    this.hudPress = {
+      pane: target.pane,
+      index: target.index,
+      memberId,
+      originX: pointer.x,
+      originY: pointer.y,
+    };
     this.input.setDefaultCursor('pointer');
   }
 
@@ -3403,7 +3510,11 @@ export class RouteScene extends Phaser.Scene {
    * Picks an equipment stack up so it can be dropped on a member to equip it. The
    * keyboard path passes no pointer: the stack simply leaves the list while in hand.
    */
-  private startHudItemDrag(itemId: string, pointer: Phaser.Input.Pointer | null, from: string | null = null): void {
+  private startHudItemDrag(
+    itemId: string,
+    pointer: Phaser.Input.Pointer | null,
+    from: string | null = null,
+  ): void {
     const frame = itemIconFrame(itemId);
     if (frame === null) return;
     this.hudDragItem = itemId;
@@ -3516,14 +3627,19 @@ export class RouteScene extends Phaser.Scene {
       this.nicknameRowAt(pointer);
     // The Pokevial only reads as clickable with a full meter; a partial one does
     // nothing on click.
-    const overVial =
-      this.run.pokevialCharges >= POKEVIAL_MAX_CHARGES && this.vialButtonAt(pointer);
+    const overVial = this.run.pokevialCharges >= POKEVIAL_MAX_CHARGES && this.vialButtonAt(pointer);
     const overPanel =
       overMember || overMove || overItem || overEvolution || overVial
         ? false
         : this.hudPanelAt(pointer) !== null;
     this.input.setDefaultCursor(
-      overInfo || overAbilityInfo || overMember || overIcon || overEvolution || overDetailName || overVial
+      overInfo ||
+        overAbilityInfo ||
+        overMember ||
+        overIcon ||
+        overEvolution ||
+        overDetailName ||
+        overVial
         ? 'pointer'
         : overItem || overMove
           ? 'grab'
@@ -3661,7 +3777,8 @@ export class RouteScene extends Phaser.Scene {
     // boxed member); otherwise it just drops where it last pointed. There is no
     // cancel.
     if (!grabbed || !this.hudGrabMoved) return;
-    const across = grabbed.pane === 'party' ? this.pointerInBoxPanel(pointer) : this.pointerInPartyPanel(pointer);
+    const across =
+      grabbed.pane === 'party' ? this.pointerInBoxPanel(pointer) : this.pointerInPartyPanel(pointer);
     if (across) this.dropHudAcross(grabbed, this.hudTarget(pointer));
     else this.dropHudGrab();
   }
@@ -3800,9 +3917,7 @@ export class RouteScene extends Phaser.Scene {
   /** The pool scroll arrow under a panel-local point, or null. */
   private learnNavAt(point: { x: number; y: number }): 'prev' | 'next' | null {
     const hit = (text: Phaser.GameObjects.BitmapText): boolean =>
-      text.visible &&
-      Math.abs(point.x - text.x) <= 16 &&
-      Math.abs(point.y - (text.y + 8)) <= 16;
+      text.visible && Math.abs(point.x - text.x) <= 16 && Math.abs(point.y - (text.y + 8)) <= 16;
     if (hit(this.hudLearnPrev)) return 'prev';
     if (hit(this.hudLearnNext)) return 'next';
     return null;
@@ -4099,8 +4214,7 @@ export class RouteScene extends Phaser.Scene {
     const index = this.hudLearnGrid.indexAt(point.x, point.y);
     if (index === null) return null;
     const rect = this.hudLearnGrid.cellRect(index);
-    const onInfo =
-      rect !== null && this.hudLearnGrid.infoAt(index, point.x - rect.x, point.y - rect.y);
+    const onInfo = rect !== null && this.hudLearnGrid.infoAt(index, point.x - rect.x, point.y - rect.y);
     return { grid: 'learn', index, onInfo };
   }
 
@@ -4156,7 +4270,10 @@ export class RouteScene extends Phaser.Scene {
    * swaps the two (so a boxed member can join a full party); a drop on empty
    * space falls back to the plain deposit/withdraw.
    */
-  private dropHudAcross(grabbed: { pane: PaneId }, target: { pane: PaneId; index: number } | null): void {
+  private dropHudAcross(
+    grabbed: { pane: PaneId },
+    target: { pane: PaneId; index: number } | null,
+  ): void {
     if (target && target.pane !== grabbed.pane) {
       const next = swapAcross(this.run, this.hudUi, target.index);
       if (next.run !== this.run) {
@@ -4208,10 +4325,7 @@ export class RouteScene extends Phaser.Scene {
     const left = this.hudX + (this.hud.partyW - HUD_VIAL_W) / 2;
     const top = this.hudPartyY + HUD_VIAL_Y;
     return (
-      point.x >= left &&
-      point.x <= left + HUD_VIAL_W &&
-      point.y >= top &&
-      point.y <= top + HUD_VIAL_H
+      point.x >= left && point.x <= left + HUD_VIAL_W && point.y >= top && point.y <= top + HUD_VIAL_H
     );
   }
 
@@ -4756,7 +4870,11 @@ export class RouteScene extends Phaser.Scene {
     // A tree tip a grass patch shares draws the grass frame under its crown; the
     // tilesets that fall back to the procedural tuft draw it in `drawEntities`.
     const grassFrame = config.frames[TALL_GRASS];
-    if (grassFrame !== undefined && grassFrame !== config.frames[FLOOR] && this.grassTipKeys.has(`${x},${y}`)) {
+    if (
+      grassFrame !== undefined &&
+      grassFrame !== config.frames[FLOOR] &&
+      this.grassTipKeys.has(`${x},${y}`)
+    ) {
       frames.push({ source: 'atlas', frame: grassFrame });
     }
     const frame = resolveTileFrame(this.renderTiles, x, y, config, true);
@@ -4933,7 +5051,11 @@ export class RouteScene extends Phaser.Scene {
               .setScale(TILE_SIZE / OVERWORLD_SPRITE_WIDTH)
               .setDepth(actorDepth(footY))
           : this.add
-              .sprite(this.centerX(trainer.position.x), this.centerY(trainer.position.y), TRAINER_TEXTURE_KEY)
+              .sprite(
+                this.centerX(trainer.position.x),
+                this.centerY(trainer.position.y),
+                TRAINER_TEXTURE_KEY,
+              )
               .setTint(archetype?.colour ?? 0xffffff)
               .setDepth(actorDepth(footY));
       const entry: TrainerSpriteEntry = {
@@ -4957,7 +5079,11 @@ export class RouteScene extends Phaser.Scene {
   private drawShopCounter(): void {
     if (this.generatorStepIndex !== null || !this.shopCounter) return;
     const sprite = this.add
-      .image(this.centerX(this.shopCounter.x), this.centerY(this.shopCounter.y), SHOP_COUNTER_TEXTURE_KEY)
+      .image(
+        this.centerX(this.shopCounter.x),
+        this.centerY(this.shopCounter.y),
+        SHOP_COUNTER_TEXTURE_KEY,
+      )
       .setScale(TILE_SIZE / 22)
       .setDepth(5);
     this.entitySprites.push(sprite);
@@ -5114,8 +5240,7 @@ export class RouteScene extends Phaser.Scene {
    * costs none. Called from `refreshHud`, never per frame.
    */
   private refreshFollower(): void {
-    const leadId: string | null =
-      this.run.party.length > 0 ? this.run.party[0].fighter.speciesId : null;
+    const leadId: string | null = this.run.party.length > 0 ? this.run.party[0].fighter.speciesId : null;
     if (leadId === this.followerSpecies) return;
     // A load already in flight must finish first: returning here keeps the guard
     // unconsumed, so the next HUD repaint retries and a lead change is not lost.
@@ -5346,7 +5471,8 @@ export class RouteScene extends Phaser.Scene {
     if (this.ignoreTrainers) return null;
     for (const trainer of this.route.trainers) {
       if (isTrainerDefeated(this.run, trainer.id)) continue;
-      if (seesPlayer(this.route, this.effectiveTrainer(trainer), this.player, this.moveMap)) return trainer;
+      if (seesPlayer(this.route, this.effectiveTrainer(trainer), this.player, this.moveMap))
+        return trainer;
     }
     return null;
   }
@@ -5392,8 +5518,7 @@ export class RouteScene extends Phaser.Scene {
     const chase = this.chase;
     if (!chase) return;
     const here = chase.position;
-    const adjacent =
-      Math.abs(here.x - this.player.x) + Math.abs(here.y - this.player.y) <= 1;
+    const adjacent = Math.abs(here.x - this.player.x) + Math.abs(here.y - this.player.y) <= 1;
     if (adjacent || steps > chase.entry.trainer.sight + 2) {
       this.finishChase();
       return;
@@ -5422,8 +5547,14 @@ export class RouteScene extends Phaser.Scene {
     const dy = target.y - from.y;
     const order: Tile[] =
       Math.abs(dx) >= Math.abs(dy)
-        ? [{ x: Math.sign(dx), y: 0 }, { x: 0, y: Math.sign(dy) }]
-        : [{ x: 0, y: Math.sign(dy) }, { x: Math.sign(dx), y: 0 }];
+        ? [
+            { x: Math.sign(dx), y: 0 },
+            { x: 0, y: Math.sign(dy) },
+          ]
+        : [
+            { x: 0, y: Math.sign(dy) },
+            { x: Math.sign(dx), y: 0 },
+          ];
     for (const step of order) {
       if (step.x === 0 && step.y === 0) continue;
       const next = { x: from.x + step.x, y: from.y + step.y };
@@ -5462,7 +5593,9 @@ export class RouteScene extends Phaser.Scene {
     if (isTrainerDefeated(this.run, trainer.id)) return;
     const archetype = getTrainerArchetype(trainer.archetypeId);
     if (!archetype) return;
-    const band = this.room ? bandForMap(this.room.mapIndex) : runBand(this.run.seed, this.route.routeIndex);
+    const band = this.room
+      ? bandForMap(this.room.mapIndex)
+      : runBand(this.run.seed, this.route.routeIndex);
     const mapIndex = this.room ? this.room.mapIndex : null;
     const isBoss = mapIndex !== null && trainer.id === bossTrainerId(mapIndex);
     const isMiniBoss = mapIndex !== null && trainer.id === miniBossTrainerId(mapIndex);
@@ -5574,9 +5707,15 @@ export class RouteScene extends Phaser.Scene {
     const y = (height - panelH) / 2;
     const scrim = this.add.rectangle(0, 0, width, height, 0x05070c, 0.55).setOrigin(0, 0);
     const panel = addFrlgWindow(this, x, y, panelW, panelH);
-    this.learnPopupTitle = addFrlgText(this, x + 24, y + 18, t('hud.learnTitle'), { size: 32, tint: FRLG_INK });
-    this.learnPopupBody = addFrlgText(this, x + 24, y + 76, '', { size: 16, tint: FRLG_INK, lineSpacing: 8 })
-      .setMaxWidth(panelW - 48);
+    this.learnPopupTitle = addFrlgText(this, x + 24, y + 18, t('hud.learnTitle'), {
+      size: 32,
+      tint: FRLG_INK,
+    });
+    this.learnPopupBody = addFrlgText(this, x + 24, y + 76, '', {
+      size: 16,
+      tint: FRLG_INK,
+      lineSpacing: 8,
+    }).setMaxWidth(panelW - 48);
     const hint = addFrlgText(this, x + panelW - 24, y + panelH - 30, t('hud.pressAnyKey'), {
       size: 16,
       tint: 0x6b6887,
@@ -5685,7 +5824,9 @@ export class RouteScene extends Phaser.Scene {
 
   /** The display name a notice uses: nickname, else species, the way `partyRow` reads it. */
   private memberName(member: RunPokemon): string {
-    return member.fighter.nickname ?? getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId;
+    return (
+      member.fighter.nickname ?? getSpecies(member.fighter.speciesId)?.name ?? member.fighter.speciesId
+    );
   }
 
   private buildPauseMenu(): void {
@@ -5801,9 +5942,7 @@ export class RouteScene extends Phaser.Scene {
       row.highlight.setVisible(i === this.pauseMenuIndex);
       const reset = PAUSE_MENU_ITEMS[i] === 'reset';
       row.label.setText(
-        reset && this.pauseMenuArmed
-          ? t('pause.resetArmed')
-          : t(PAUSE_MENU_LABELS[PAUSE_MENU_ITEMS[i]]),
+        reset && this.pauseMenuArmed ? t('pause.resetArmed') : t(PAUSE_MENU_LABELS[PAUSE_MENU_ITEMS[i]]),
       );
     });
   }
@@ -5837,7 +5976,8 @@ export class RouteScene extends Phaser.Scene {
   private startBattle(trigger: BattleTrigger): void {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     this.battleCounter += 1;
-    const key = trigger.kind === 'wild' ? `${trigger.key}:${this.battleCounter}` : `trainer:${trigger.trainerId}`;
+    const key =
+      trigger.kind === 'wild' ? `${trigger.key}:${this.battleCounter}` : `trainer:${trigger.trainerId}`;
     // The room's capture is spent the moment its **first wild battle** starts,
     // whatever the outcome: catching, defeating or fleeing all close the window, so
     // only the first wild Pokémon that appears can be caught. The battle still
@@ -5872,7 +6012,8 @@ export class RouteScene extends Phaser.Scene {
    * Ignored while the route is paused behind another battle or the run is over.
    */
   startDebugWildBattle(speciesId: string, level: number): void {
-    if (!IS_DEVELOP || this.gameOver || this.pendingBattle || this.releaseRoot || !this.scene.isActive()) return;
+    if (!IS_DEVELOP || this.gameOver || this.pendingBattle || this.releaseRoot || !this.scene.isActive())
+      return;
     this.startBattle({ kind: 'wild', speciesId, level, key: `debug:${speciesId}` });
   }
 
@@ -6059,13 +6200,17 @@ export class RouteScene extends Phaser.Scene {
    * the Mart shows the same shelves. The panel owns the input until `Q`.
    */
   private openShop(): void {
-    if (this.shopRoot || this.gameOver || this.pendingBattle || this.releaseRoot || this.pauseMenuOpen) return;
+    if (this.shopRoot || this.gameOver || this.pendingBattle || this.releaseRoot || this.pauseMenuOpen)
+      return;
     if (this.room?.special !== 'shop' || !this.shopCounter) return;
     // The Mart is modal: it takes the keyboard off whatever HUD pane held it.
     this.releaseHudKeyboard();
     if (this.shopStockMap !== this.run.mapIndex) {
       const band = bandForMap(this.run.mapIndex);
-      this.shopStock = buildShop(band.id, new Rng(hashSeed(`${this.run.seed}:shop:${this.run.mapIndex}`)));
+      this.shopStock = buildShop(
+        band.id,
+        new Rng(hashSeed(`${this.run.seed}:shop:${this.run.mapIndex}`)),
+      );
       this.shopStockMap = this.run.mapIndex;
     }
     this.shopMode = 'buy';
@@ -6097,7 +6242,11 @@ export class RouteScene extends Phaser.Scene {
       addFrlgWindow(this, x, y, SHOP_W, SHOP_H),
       addFrlgText(this, left, y + 20, t('mart.title'), { size: 24, tint: FRLG_INK }),
     ];
-    this.shopMoneyText = addFrlgText(this, right, y + 24, '', { size: 16, tint: 0x3a3956, origin: [1, 0] });
+    this.shopMoneyText = addFrlgText(this, right, y + 24, '', {
+      size: 16,
+      tint: 0x3a3956,
+      origin: [1, 0],
+    });
     children.push(this.shopMoneyText);
 
     // BUY / SELL tabs, FRLG style: the active one reads dark-on-light.
@@ -6201,7 +6350,8 @@ export class RouteScene extends Phaser.Scene {
     this.shopIndex = total === 0 ? 0 : Math.max(0, Math.min(this.shopIndex, total - 1));
     this.shopScroll = Math.max(0, Math.min(this.shopScroll, Math.max(0, total - SHOP_ROWS)));
     if (this.shopIndex < this.shopScroll) this.shopScroll = this.shopIndex;
-    else if (this.shopIndex >= this.shopScroll + SHOP_ROWS) this.shopScroll = this.shopIndex - SHOP_ROWS + 1;
+    else if (this.shopIndex >= this.shopScroll + SHOP_ROWS)
+      this.shopScroll = this.shopIndex - SHOP_ROWS + 1;
 
     this.shopMoneyText.setText(t('mart.money', { amount: this.run.money }));
     this.shopMessageText.setText(this.shopMessage);
@@ -6211,11 +6361,7 @@ export class RouteScene extends Phaser.Scene {
       tab.label.setTint(active ? 0xf8fafc : FRLG_INK);
     });
     this.shopEmpty.setText(
-      total === 0
-        ? this.shopMode === 'buy'
-          ? t('mart.emptyStock')
-          : t('mart.emptySell')
-        : '',
+      total === 0 ? (this.shopMode === 'buy' ? t('mart.emptyStock') : t('mart.emptySell')) : '',
     );
 
     this.shopRows.forEach((rowObject, i) => {
@@ -6273,8 +6419,7 @@ export class RouteScene extends Phaser.Scene {
     this.shopMode = mode;
     this.shopIndex = 0;
     this.shopScroll = 0;
-    this.shopMessage =
-      mode === 'buy' ? t('mart.greeting') : t('mart.greetingSell');
+    this.shopMessage = mode === 'buy' ? t('mart.greeting') : t('mart.greetingSell');
     this.refreshShop();
   }
 
@@ -6424,7 +6569,7 @@ export class RouteScene extends Phaser.Scene {
       const itemId = this.miniBossRewardItems[i];
       const item = itemId ? getItem(itemId) : undefined;
       rowObject.highlight.setVisible(i === this.miniBossRewardIndex);
-      rowObject.icon.setFrame(itemId ? itemIconFrame(itemId) ?? 0 : 0);
+      rowObject.icon.setFrame(itemId ? (itemIconFrame(itemId) ?? 0) : 0);
       rowObject.name.setText(item?.name ?? itemId ?? '');
       rowObject.desc.setText(item?.shortDesc ?? '');
     });
@@ -6595,7 +6740,12 @@ export class RouteScene extends Phaser.Scene {
     if (archetype) {
       const isBoss = trigger.trainerId === bossTrainerId(this.run.mapIndex);
       const rng = new Rng(hashSeed(`${this.run.seed}:money:${this.run.mapIndex}:${trigger.trainerId}`));
-      money = trainerMoney(archetype, bandForMap(this.run.mapIndex), rng, isBoss ? BOSS_MONEY_MULTIPLIER : 1);
+      money = trainerMoney(
+        archetype,
+        bandForMap(this.run.mapIndex),
+        rng,
+        isBoss ? BOSS_MONEY_MULTIPLIER : 1,
+      );
     }
     return {
       enemyLevels: trigger.roster.map((entry) => entry.level),
@@ -6923,7 +7073,10 @@ export class RouteScene extends Phaser.Scene {
     try {
       exported = parseFrameMapExport(text);
     } catch (error) {
-      return { ok: false, error: error instanceof Error ? error.message : t('dev.error.invalidFrameMap') };
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : t('dev.error.invalidFrameMap'),
+      };
     }
     this.stopWalking();
     this.clearRouteSprites();
@@ -6996,7 +7149,12 @@ export class RouteScene extends Phaser.Scene {
     // A visible ground item or a live trainer blocks its tile, like an object in
     // the originals: the item is taken with the interact key and the trainer is
     // talked to. A hidden item can be walked over.
-    if (!result || this.itemBlocks(result.to) || this.liveTrainerAt(result.to) || this.shopCounterAt(result.to)) {
+    if (
+      !result ||
+      this.itemBlocks(result.to) ||
+      this.liveTrainerAt(result.to) ||
+      this.shopCounterAt(result.to)
+    ) {
       this.faceIdle(direction);
       return;
     }
@@ -7006,7 +7164,15 @@ export class RouteScene extends Phaser.Scene {
   /** Turns every "spinning" trainer to the next facing on the shared timer. */
   private updateTrainerSpins(time: number): void {
     if (this.generatorStepIndex !== null) return;
-    if (this.gameOver || this.pendingBattle || this.releaseRoot || this.shopRoot || this.miniBossRewardRoot || this.pauseMenuOpen || this.chase)
+    if (
+      this.gameOver ||
+      this.pendingBattle ||
+      this.releaseRoot ||
+      this.shopRoot ||
+      this.miniBossRewardRoot ||
+      this.pauseMenuOpen ||
+      this.chase
+    )
       return;
     for (const entry of this.trainerSprites) {
       if (isTrainerDefeated(this.run, entry.trainer.id)) continue;

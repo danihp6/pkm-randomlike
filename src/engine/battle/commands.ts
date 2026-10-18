@@ -19,7 +19,12 @@ import { cureStatus } from './status';
 import { canRun } from './runAway';
 import { isTaunted } from './volatile';
 
-export type FightCommand = Readonly<{ type: 'fight'; moveIndex: number; mega?: boolean; gmax?: boolean }>;
+export type FightCommand = Readonly<{
+  type: 'fight';
+  moveIndex: number;
+  mega?: boolean;
+  gmax?: boolean;
+}>;
 export type BagCommand = Readonly<{ type: 'bag'; itemId: string }>;
 export type SwitchCommand = Readonly<{ type: 'switch'; partyIndex: number }>;
 export type RunCommand = Readonly<{ type: 'run' }>;
@@ -87,11 +92,7 @@ function validateBag(state: BattleState, side: SideId, command: BagCommand): str
   return null;
 }
 
-export function validateCommand(
-  state: BattleState,
-  side: SideId,
-  command: Command,
-): string | null {
+export function validateCommand(state: BattleState, side: SideId, command: Command): string | null {
   if (state.winner !== null) return 'The battle is over.';
 
   if (state.sides[side].awaitingReplacement && command.type !== 'switch') {
@@ -109,7 +110,10 @@ export function validateCommand(
         return 'That move is disabled!';
       }
       if (legal.length > 0 && !legal.includes(command.moveIndex)) {
-        if (isTaunted(fighter) && getMove(fighter.moves[command.moveIndex]?.moveId ?? '')?.category === 'Status') {
+        if (
+          isTaunted(fighter) &&
+          getMove(fighter.moves[command.moveIndex]?.moveId ?? '')?.category === 'Status'
+        ) {
           return 'The Pokémon is taunted and cannot use status moves.';
         }
         return 'That move has no PP left.';

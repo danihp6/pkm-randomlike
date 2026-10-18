@@ -45,7 +45,9 @@ describe('protect', () => {
     takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
 
     expect(activeFighter(state, 'player').hp).toBe(before);
-    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('protected itself'))).toBe(true);
+    expect(
+      state.log.some((event) => event.kind === 'text' && event.text.includes('protected itself')),
+    ).toBe(true);
     expect(activeFighter(state, 'player').volatiles.protect).toBeNull();
   });
 
@@ -60,7 +62,9 @@ describe('protect', () => {
     const spikesAttacker = activeFighter(spikes, 'player');
     activeFighter(spikes, 'enemy').volatiles.protect = 'spikyshield';
     expect(protectBlocks(spikes, 'player', getMove('tackle')!)).toBe(true);
-    expect(spikesAttacker.hp).toBe(spikesAttacker.maxHp - Math.max(1, Math.floor(spikesAttacker.maxHp / 8)));
+    expect(spikesAttacker.hp).toBe(
+      spikesAttacker.maxHp - Math.max(1, Math.floor(spikesAttacker.maxHp / 8)),
+    );
 
     const bunker = battle(['tackle'], ['growl']);
     activeFighter(bunker, 'enemy').volatiles.protect = 'banefulbunker';
@@ -102,7 +106,9 @@ describe('Recycle', () => {
   it('fails when there is nothing to recycle', () => {
     const state = battle(['recycle', 'growl'], ['growl']);
     takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
-    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(true);
+    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(
+      true,
+    );
   });
 });
 
@@ -160,7 +166,9 @@ describe('damage counters', () => {
       isWild: true,
     });
     takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
-    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(true);
+    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(
+      true,
+    );
   });
 
   it('Mirror Coat answers special damage and is blocked by type immunity', () => {
@@ -180,7 +188,9 @@ describe('damage counters', () => {
       isWild: true,
     });
     takeTurn(ghost, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
-    expect(ghost.log.some((event) => event.kind === 'text' && event.text.includes("doesn't affect"))).toBe(true);
+    expect(
+      ghost.log.some((event) => event.kind === 'text' && event.text.includes("doesn't affect")),
+    ).toBe(true);
   });
 });
 
@@ -220,10 +230,7 @@ describe('Yawn and Wish', () => {
 describe('switch moves', () => {
   it('U-turn asks for a replacement after damaging', () => {
     const state = createBattle({
-      player: [
-        fighter('p1', 'charmander', ['uturn', 'growl']),
-        fighter('p2', 'squirtle', ['tackle']),
-      ],
+      player: [fighter('p1', 'charmander', ['uturn', 'growl']), fighter('p2', 'squirtle', ['tackle'])],
       enemy: [fighter('enemy', 'bulbasaur', ['growl'])],
       rng: new Rng(11),
       isWild: true,
@@ -355,11 +362,7 @@ describe('variable-type moves', () => {
 });
 
 describe('call-a-move seam', () => {
-  const run = (
-    playerMoves: readonly string[],
-    enemyMoves: readonly string[],
-    seed = 11,
-  ): BattleState =>
+  const run = (playerMoves: readonly string[], enemyMoves: readonly string[], seed = 11): BattleState =>
     createBattle({
       player: [fighter('player', 'charmander', playerMoves)],
       enemy: [fighter('enemy', 'bulbasaur', enemyMoves)],
@@ -553,4 +556,3 @@ describe('ported status moves', () => {
     expect(activeFighter(state, 'enemy').hp).toBe(0);
   });
 });
-

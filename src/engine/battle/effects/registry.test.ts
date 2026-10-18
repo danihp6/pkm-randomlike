@@ -19,7 +19,11 @@ import {
   type EffectHandlers,
 } from './registry';
 
-function effect(id: string, handlers: EffectHandlers, kind: EffectDefinition['kind'] = 'ability'): EffectDefinition {
+function effect(
+  id: string,
+  handlers: EffectHandlers,
+  kind: EffectDefinition['kind'] = 'ability',
+): EffectDefinition {
   return { id, kind, handlers };
 }
 

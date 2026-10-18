@@ -99,8 +99,7 @@ export function openSeedPrompt(options: SeedPromptOptions): void {
   buttons.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;';
   buttons.append(cancelButton, confirmButton);
 
-  const resolve = (): RunShare | null =>
-    decodeRunShare(input.value, modeSelect.value as RunMode);
+  const resolve = (): RunShare | null => decodeRunShare(input.value, modeSelect.value as RunMode);
 
   const refresh = (): void => {
     const share = resolve();

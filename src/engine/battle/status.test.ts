@@ -10,8 +10,7 @@ import {
   statusName,
 } from './status';
 
-const make = (speciesId: string, level = 20) =>
-  createFighter({ id: speciesId, speciesId, level });
+const make = (speciesId: string, level = 20) => createFighter({ id: speciesId, speciesId, level });
 
 describe('canApplyStatus', () => {
   it('respects type immunities', () => {
@@ -65,7 +64,12 @@ describe('sleep', () => {
 
 describe('Corrosion', () => {
   it('lets a Poison-type be poisoned', () => {
-    const salandit = createFighter({ id: 'salandit', speciesId: 'salandit', level: 20, ability: 'Corrosion' });
+    const salandit = createFighter({
+      id: 'salandit',
+      speciesId: 'salandit',
+      level: 20,
+      ability: 'Corrosion',
+    });
     expect(canApplyStatus(salandit, 'psn')).toBe(true);
     expect(canApplyStatus(salandit, 'tox')).toBe(true);
   });

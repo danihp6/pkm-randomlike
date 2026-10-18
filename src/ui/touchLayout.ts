@@ -39,9 +39,7 @@ function clamp(value: number, min: number, max: number): number {
 export function touchControlsLayout(width: number, height: number): TouchControlsLayout {
   const edge = Math.min(width, height);
   const size = Math.round(clamp(edge * PAD_SIZE_RATIO, PAD_SIZE_MIN, PAD_SIZE_MAX));
-  const buttonScale = Math.round(
-    clamp(edge * BUTTON_SCALE_RATIO, BUTTON_SCALE_MIN, BUTTON_SCALE_MAX),
-  );
+  const buttonScale = Math.round(clamp(edge * BUTTON_SCALE_RATIO, BUTTON_SCALE_MIN, BUTTON_SCALE_MAX));
   const padMargin = Math.round(size * MARGIN_RATIO);
   const buttonMargin = Math.round(buttonScale * MARGIN_RATIO);
   const radius = Math.round(buttonScale * BUTTON_RADIUS_RATIO);

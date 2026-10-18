@@ -36,8 +36,7 @@ describe('RouteEncounters', () => {
   it('is a pure function of table, levels and seed', () => {
     const first = new RouteEncounters(table, 2, 4, new Rng(99), 0.5);
     const second = new RouteEncounters(table, 2, 4, new Rng(99), 0.5);
-    const sequence = (roller: RouteEncounters) =>
-      Array.from({ length: 20 }, () => roller.step());
+    const sequence = (roller: RouteEncounters) => Array.from({ length: 20 }, () => roller.step());
     expect(sequence(first)).toEqual(sequence(second));
     expect(first.steps).toBe(20);
   });

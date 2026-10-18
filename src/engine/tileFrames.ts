@@ -22,7 +22,11 @@ export function autotileFrame(map: TileMap, x: number, y: number, rule: Autotile
     if (nx < 0 || nx >= width || ny < 0 || ny >= height) return false;
     return map[ny][nx] !== rule.value;
   };
-  const bits = (isOpen(x, y - 1) ? 1 : 0) | (isOpen(x + 1, y) ? 2 : 0) | (isOpen(x, y + 1) ? 4 : 0) | (isOpen(x - 1, y) ? 8 : 0);
+  const bits =
+    (isOpen(x, y - 1) ? 1 : 0) |
+    (isOpen(x + 1, y) ? 2 : 0) |
+    (isOpen(x, y + 1) ? 4 : 0) |
+    (isOpen(x - 1, y) ? 8 : 0);
   const { variants } = rule;
   switch (bits) {
     case 1:
@@ -100,7 +104,9 @@ export function variantFrame(x: number, y: number, options: VariantFrames): numb
     const frames = options as readonly number[];
     return frames[variantHash(x, y, frames.length)];
   }
-  const entries = options.map((option) => (typeof option === 'number' ? { frame: option, weight: 1 } : option));
+  const entries = options.map((option) =>
+    typeof option === 'number' ? { frame: option, weight: 1 } : option,
+  );
   const total = entries.reduce((sum, entry) => sum + Math.max(0, entry.weight), 0);
   if (total <= 0) return entries[entries.length - 1].frame;
   let roll = variantHash(x, y, total);
@@ -180,7 +186,18 @@ export function patternCell(
   // on the tree's own upper body (`2`) with the body row laid on the trunk of the
   // tree above (`3`), so the trunk stays hidden and only shows at the mass's foot.
   const aboveFoot = depth >= 2 && foot === 1;
-  const row = depth === 0 ? 0 : foot === 0 ? last : aboveFoot ? last - 1 : depth === 1 ? 1 : depth % 2 === 0 ? 2 : 3;
+  const row =
+    depth === 0
+      ? 0
+      : foot === 0
+        ? last
+        : aboveFoot
+          ? last - 1
+          : depth === 1
+            ? 1
+            : depth % 2 === 0
+              ? 2
+              : 3;
   // The pattern column stays anchored to the column's own first wall cell, so a
   // lane that bites the side below the top cannot slide the run's columns aside.
   let colTop = 0;
@@ -199,7 +216,13 @@ export function patternCell(
  * is the last one, and the rows in between cycle by depth so a tall wall reads
  * as stacked objects. The column repeats across x from the mass's left edge.
  */
-export function patternFrame(map: TileMap, x: number, y: number, pattern: WallPattern, border = false): number {
+export function patternFrame(
+  map: TileMap,
+  x: number,
+  y: number,
+  pattern: WallPattern,
+  border = false,
+): number {
   const { row, col } = patternCell(map, x, y, pattern, border);
   return pattern.rows[row][col];
 }
@@ -270,12 +293,7 @@ export function grassTipKeys(map: TileMap, tileset: TilesetConfig): Set<string> 
  * tip a grass patch shares (`grassTipKeys`). The same predicate the wild-encounter
  * roll uses, so the roll and the step beat can never disagree.
  */
-export function isGrassStepTile(
-  map: TileMap,
-  x: number,
-  y: number,
-  tips: ReadonlySet<string>,
-): boolean {
+export function isGrassStepTile(map: TileMap, x: number, y: number, tips: ReadonlySet<string>): boolean {
   return tileAt(map, { x, y }) === TALL_GRASS || tips.has(`${x},${y}`);
 }
 
@@ -342,7 +360,8 @@ export function resolveTileFrame(
   if (rule) return { source: 'atlas', frame: autotileFrame(map, x, y, rule) };
 
   const wallAdjacent = tileset.wallAdjacentVariants?.[value];
-  if (wallAdjacent && isNearWall(map, x, y)) return { source: 'atlas', frame: variantFrame(x, y, wallAdjacent) };
+  if (wallAdjacent && isNearWall(map, x, y))
+    return { source: 'atlas', frame: variantFrame(x, y, wallAdjacent) };
 
   const variants = tileset.variants?.[value];
   if (variants) return { source: 'atlas', frame: variantFrame(x, y, variants) };
@@ -356,9 +375,15 @@ export function resolveTileFrame(
  * every tile so a wall frame with a transparent ground (the FRLG tree) shows the
  * same floor — including its wall-edge variant — as the tiles beside it.
  */
-export function resolveGroundFrame(map: TileMap, x: number, y: number, tileset: TilesetConfig): TileFrame {
+export function resolveGroundFrame(
+  map: TileMap,
+  x: number,
+  y: number,
+  tileset: TilesetConfig,
+): TileFrame {
   const wallAdjacent = tileset.wallAdjacentVariants?.[FLOOR];
-  if (wallAdjacent && isNearWall(map, x, y)) return { source: 'atlas', frame: variantFrame(x, y, wallAdjacent) };
+  if (wallAdjacent && isNearWall(map, x, y))
+    return { source: 'atlas', frame: variantFrame(x, y, wallAdjacent) };
   const variants = tileset.variants?.[FLOOR];
   if (variants) return { source: 'atlas', frame: variantFrame(x, y, variants) };
   return { source: 'atlas', frame: tileset.frames[FLOOR] ?? 0 };

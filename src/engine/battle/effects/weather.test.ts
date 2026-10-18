@@ -6,7 +6,12 @@ import { activeFighter, createBattle, type BattleState } from '../state';
 import { takeTurn } from '../turn';
 import { WEATHER_TURNS, weatherChip, weatherFromMove, weatherImmune } from './weather';
 
-function fighter(id: string, speciesId: string, ability: string, moves?: readonly string[]): BattleFighter {
+function fighter(
+  id: string,
+  speciesId: string,
+  ability: string,
+  moves?: readonly string[],
+): BattleFighter {
   return createFighter({ id, speciesId, level: 20, ability, ...(moves ? { moves } : {}) });
 }
 
@@ -45,7 +50,9 @@ describe('weather', () => {
     expect(state.weather).toBe('rain');
 
     takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
-    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(true);
+    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(
+      true,
+    );
   });
 
   it('sand chips non-immune Pokémon and spares Rock/Ground/Steel', () => {
@@ -73,6 +80,8 @@ describe('weather', () => {
     for (let turn = 0; turn < WEATHER_TURNS; turn++) growlTurn(state);
 
     expect(state.weather).toBeNull();
-    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('returned to normal'))).toBe(true);
+    expect(
+      state.log.some((event) => event.kind === 'text' && event.text.includes('returned to normal')),
+    ).toBe(true);
   });
 });

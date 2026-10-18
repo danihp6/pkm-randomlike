@@ -4,9 +4,18 @@ import { biomeForMap } from '../engine/maps/plan';
 import { createRun, createRunPokemon, type RunState, type RunStats } from '../engine/run';
 import { runPositionLabel, runSummary, runSummaryLines } from './runSummary';
 
-const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch'] });
+const starter = createRunPokemon({
+  id: 'starter',
+  speciesId: 'charmander',
+  level: 5,
+  moves: ['scratch'],
+});
 
-function run(routeIndex: number, stats: RunStats = { catches: 0, casualties: 0 }, seed = 'seed-1'): RunState {
+function run(
+  routeIndex: number,
+  stats: RunStats = { catches: 0, casualties: 0 },
+  seed = 'seed-1',
+): RunState {
   return { ...createRun({ seed, starter }), routeIndex, stats };
 }
 

@@ -53,7 +53,9 @@ const FLOOR_FRAMES = [
 ];
 
 function atlas(name: (typeof ATLASES)[number]) {
-  return decodePng(readFileSync(fileURLToPath(new URL(`../../assets/frlg/${name}.png`, import.meta.url))));
+  return decodePng(
+    readFileSync(fileURLToPath(new URL(`../../assets/frlg/${name}.png`, import.meta.url))),
+  );
 }
 
 function tileIsBlank(png: { width: number; data: Uint8Array }, frame: number): boolean {
@@ -62,7 +64,8 @@ function tileIsBlank(png: { width: number; data: Uint8Array }, frame: number): b
   const row = Math.floor(frame / cols);
   for (let y = 0; y < FRLG_TILE_SIZE; y++) {
     for (let x = 0; x < FRLG_TILE_SIZE; x++) {
-      const alpha = png.data[(((row * FRLG_TILE_SIZE + y) * png.width) + col * FRLG_TILE_SIZE + x) * 4 + 3];
+      const alpha =
+        png.data[((row * FRLG_TILE_SIZE + y) * png.width + col * FRLG_TILE_SIZE + x) * 4 + 3];
       if (alpha > 0) return false;
     }
   }
@@ -157,7 +160,10 @@ describe('frlg tileset atlases', () => {
         expect(tileIsBlank(png, frame), `${name} wall frame ${frame}`).toBe(false);
       }
       for (const frames of [FRLG_WALL_TOP_FRAMES, FRLG_WALL_BASE_FRAMES]) {
-        expect(frames.some((frame) => !tileIsBlank(png, frame)), `${name} wall row`).toBe(true);
+        expect(
+          frames.some((frame) => !tileIsBlank(png, frame)),
+          `${name} wall row`,
+        ).toBe(true);
       }
       for (const frame of Object.values(WATER_SHAPES)) {
         expect(tileIsBlank(png, frame), `${name} water frame ${frame}`).toBe(false);
@@ -185,7 +191,10 @@ describe('frlg tileset atlases', () => {
 
   it('stamps the tall-grass ground tile', () => {
     for (const name of ATLASES) {
-      expect(tileIsBlank(atlas(name), FRLG_TALL_GRASS), `${name} tall grass frame ${FRLG_TALL_GRASS}`).toBe(false);
+      expect(
+        tileIsBlank(atlas(name), FRLG_TALL_GRASS),
+        `${name} tall grass frame ${FRLG_TALL_GRASS}`,
+      ).toBe(false);
     }
   });
 
@@ -209,9 +218,13 @@ describe('frlg tileset atlases', () => {
       // the blades-only frame the second cut parked on (its band started at row 10).
       expect(rest.rows.slice(0, 6), `${name} rest cell rows 0-5`).toEqual(new Array(6).fill(0));
       expect(rest.opaqueRows[0], `${name} rest cell first blade row`).toBe(6);
-      expect(rest.opaque, `${name} rest cell blade pixels`).toBeLessThan((FRLG_TILE_SIZE * FRLG_TILE_SIZE) / 2);
+      expect(rest.opaque, `${name} rest cell blade pixels`).toBeLessThan(
+        (FRLG_TILE_SIZE * FRLG_TILE_SIZE) / 2,
+      );
       expect(tileIsOpaque(png, restFrame), `${name} rest cell fully opaque`).toBe(false);
-      expect(tileBytes(png, restFrame), `${name} rest frame vs ground`).not.toEqual(tileBytes(png, FRLG_TALL_GRASS));
+      expect(tileBytes(png, restFrame), `${name} rest frame vs ground`).not.toEqual(
+        tileBytes(png, FRLG_TALL_GRASS),
+      );
       // The hit keeps the rip's alpha: its closing frame is the one allowed to cover
       // the cell, the three that flick and settle stay see-through.
       expect(tileIsOpaque(png, 45), `${name} closing frame 45 opaque`).toBe(true);
@@ -246,13 +259,22 @@ describe('frlg tileset atlases', () => {
       const tuft = tileMean(png, FRLG_TALL_GRASS).map(Math.round);
       const parked = tinted(FRLG_GRASS_RUSTLE_FRAMES[0]);
       for (let channel = 0; channel < 3; channel++) {
-        expect(parked[channel] - tuft[channel], `${name} parked cell channel ${channel}`).toBeLessThanOrEqual(LIGHTER);
-        expect(parked[channel] - tuft[channel], `${name} parked cell channel ${channel}`).toBeGreaterThanOrEqual(-DARKER);
+        expect(
+          parked[channel] - tuft[channel],
+          `${name} parked cell channel ${channel}`,
+        ).toBeLessThanOrEqual(LIGHTER);
+        expect(
+          parked[channel] - tuft[channel],
+          `${name} parked cell channel ${channel}`,
+        ).toBeGreaterThanOrEqual(-DARKER);
       }
       for (const frame of FRLG_GRASS_RUSTLE_FRAMES.slice(1)) {
         const hit = tinted(frame);
         for (let channel = 0; channel < 3; channel++) {
-          expect(Math.abs(hit[channel] - tuft[channel]), `${name} hit cell ${frame} channel ${channel}`).toBeLessThanOrEqual(DARKER);
+          expect(
+            Math.abs(hit[channel] - tuft[channel]),
+            `${name} hit cell ${frame} channel ${channel}`,
+          ).toBeLessThanOrEqual(DARKER);
         }
       }
       // The shipped numbers: the tint lands the parked cell on the dark tuft exactly.
@@ -280,9 +302,14 @@ describe('frlg tileset atlases', () => {
       const png = atlas(name);
       for (const frame of FRLG_GRASS_RUSTLE_FRAMES) {
         const alpha = cellAlpha(png, frame);
-        expect(alpha.opaqueRows[0], `${name} cell ${frame} first blade row`).toBe(FIRST_BLADE_ROW[frame]);
+        expect(alpha.opaqueRows[0], `${name} cell ${frame} first blade row`).toBe(
+          FIRST_BLADE_ROW[frame],
+        );
         // Every cell still draws inside the clipped band, so the clip never blanks a frame.
-        expect(alpha.rows.slice(6).some((row) => row > 0), `${name} cell ${frame} art below the clip`).toBe(true);
+        expect(
+          alpha.rows.slice(6).some((row) => row > 0),
+          `${name} cell ${frame} art below the clip`,
+        ).toBe(true);
       }
     }
   });
@@ -323,7 +350,9 @@ describe('frlg forest floor', () => {
 
   it('mixes the forest floor from weighted dark-ground frames', () => {
     const variants = FRLG_FOREST_TILESET.variants![FLOOR];
-    const weighted = variants.map((entry) => (typeof entry === 'number' ? { frame: entry, weight: 1 } : entry));
+    const weighted = variants.map((entry) =>
+      typeof entry === 'number' ? { frame: entry, weight: 1 } : entry,
+    );
     expect(weighted.map((entry) => entry.frame)).toEqual(FOREST_FRAMES);
     // Every tile carries its own positive weight, so the mix has a clear common
     // ground (the heaviest frame first) and a rare flowered ground (the lightest last).

@@ -203,9 +203,13 @@ describe('route trainer placement', () => {
     for (const shape of ROUTE_SHAPES) {
       for (const seed of ['tt-end-a', 'tt-end-b']) {
         const route = sketchRoute({ ...request(seed, 4, shape), width: 30, height: 30 });
-        const ends = new Set([route.entry, ...route.exits, ...route.pockets].map((t) => `${t.x},${t.y}`));
+        const ends = new Set(
+          [route.entry, ...route.exits, ...route.pockets].map((t) => `${t.x},${t.y}`),
+        );
         for (const trainer of route.trainers) {
-          expect(ends.has(`${trainer.position.x},${trainer.position.y}`), `${shape} ${seed}`).toBe(false);
+          expect(ends.has(`${trainer.position.x},${trainer.position.y}`), `${shape} ${seed}`).toBe(
+            false,
+          );
         }
       }
     }
@@ -252,7 +256,10 @@ describe('route trainer placement', () => {
         for (const trainer of route.trainers) {
           const vector = FACING_VECTORS[trainer.facing];
           const ahead = { x: trainer.position.x + vector.x, y: trainer.position.y + vector.y };
-          expect(isWalkable(route.tiles, ahead), `${shape} ${seed} ${trainer.id} faces ${trainer.facing}`).toBe(true);
+          expect(
+            isWalkable(route.tiles, ahead),
+            `${shape} ${seed} ${trainer.id} faces ${trainer.facing}`,
+          ).toBe(true);
         }
       }
     }
@@ -292,12 +299,17 @@ describe('route trainer placement', () => {
           const key = `${trainer.position.x},${trainer.position.y}`;
           if (spine.has(key) || !branch.has(key)) continue;
           const pocket = route.pockets
-            .map((p) => ({ p, d: Math.abs(p.x - trainer.position.x) + Math.abs(p.y - trainer.position.y) }))
+            .map((p) => ({
+              p,
+              d: Math.abs(p.x - trainer.position.x) + Math.abs(p.y - trainer.position.y),
+            }))
             .sort((a, b) => a.d - b.d)[0].p;
           const vertical =
             Math.abs(pocket.y - trainer.position.y) >= Math.abs(pocket.x - trainer.position.x);
           const expected = vertical ? ['E', 'W'] : ['N', 'S'];
-          expect(expected, `${shape} ${seed} ${trainer.id} faces ${trainer.facing}`).toContain(trainer.facing);
+          expect(expected, `${shape} ${seed} ${trainer.id} faces ${trainer.facing}`).toContain(
+            trainer.facing,
+          );
         }
       }
     }

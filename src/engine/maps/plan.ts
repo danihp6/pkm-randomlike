@@ -48,13 +48,7 @@ const PERPENDICULAR: Readonly<Record<MapEdge, readonly [MapEdge, MapEdge]>> = {
  * rather than by the opening count alone, so a plan only emits `corridor` for two
  * opposite openings.
  */
-export type MapRoomShape =
-  | 'dead-end'
-  | 'corridor'
-  | 'bend'
-  | 'tee'
-  | 'cross'
-  | 'straight';
+export type MapRoomShape = 'dead-end' | 'corridor' | 'bend' | 'tee' | 'cross' | 'straight';
 
 /** A `link` joins a grid neighbour; the single `entry` opens the map from outside. */
 export type MapOpeningKind = 'link' | 'entry';
@@ -155,11 +149,7 @@ function edgeBetween(from: Tile, to: Tile): MapEdge {
  * alternative (`docs/maps-spec.md` §1, D28). A single-biome pool (today's) cannot
  * avoid a repeat, so it falls back to the whole pool.
  */
-export function pickBiome<T extends string>(
-  rng: Rng,
-  previous: T | undefined,
-  pool: readonly T[],
-): T {
+export function pickBiome<T extends string>(rng: Rng, previous: T | undefined, pool: readonly T[]): T {
   if (pool.length === 0) throw new Error('biome pool is empty');
   const options = pool.filter((biome) => biome !== previous);
   const usable = options.length > 0 ? options : pool;
@@ -440,9 +430,7 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     const shopParents = freeParents();
     if (shopParents.length > 0) {
       const nearest = shopParents.reduce((best, id) =>
-        fromEntry[id] < fromEntry[best] || (fromEntry[id] === fromEntry[best] && id < best)
-          ? id
-          : best,
+        fromEntry[id] < fromEntry[best] || (fromEntry[id] === fromEntry[best] && id < best) ? id : best,
       );
       addSpecial('shop', nearest);
     }
@@ -563,11 +551,7 @@ export function arrivalEdgeFor(plan: MapPlan, roomId: number): MapEdge {
  * arrival edge a scene or a save hands to `roomView`, so a stale or hand-edited
  * value falls back to `arrivalEdgeFor` instead of opening a wall onto nothing.
  */
-export function isArrivalEdge(
-  plan: MapPlan,
-  roomId: number,
-  edge: MapEdge | undefined,
-): boolean {
+export function isArrivalEdge(plan: MapPlan, roomId: number, edge: MapEdge | undefined): boolean {
   if (edge === undefined) return false;
   if (roomId === plan.entryRoom && edge === plan.entryEdge) return true;
   return linkedNeighbour(plan, roomId, edge) !== undefined;

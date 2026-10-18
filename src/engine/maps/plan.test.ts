@@ -102,9 +102,7 @@ function assertPlan(plan: MapPlan): void {
 
     const edges = room.openings.map((opening) => opening.edge);
     expect(new Set(edges).size).toBe(edges.length);
-    expect(edges).toEqual(
-      [...edges].sort((a, b) => MAP_EDGES.indexOf(a) - MAP_EDGES.indexOf(b)),
-    );
+    expect(edges).toEqual([...edges].sort((a, b) => MAP_EDGES.indexOf(a) - MAP_EDGES.indexOf(b)));
     expect(room.shape).toBe(shapeFromEdges(edges));
   }
 
@@ -171,7 +169,8 @@ function assertPlan(plan: MapPlan): void {
   );
   expect(specials.filter((room) => room.special === 'mini-boss').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'mega-stone').length).toBeLessThanOrEqual(1);
-  if (plan.mapIndex < 3) expect(specials.filter((room) => room.special === 'mega-stone')).toHaveLength(0);
+  if (plan.mapIndex < 3)
+    expect(specials.filter((room) => room.special === 'mega-stone')).toHaveLength(0);
   for (const room of specials) {
     expect(room.shape).toBe('dead-end');
     expect(room.openings.filter((opening) => opening.kind === 'link')).toHaveLength(1);
@@ -242,10 +241,14 @@ describe('special rooms', () => {
   it('hangs no shop on map 1, whose floor reads six rooms or seven with its mini-boss', () => {
     for (const seed of SEEDS) {
       const plan = planMap(seed, 1);
-      expect(plan.rooms.some((room) => room.special === 'shop'), `${seed} map 1 room`).toBe(false);
-      expect(plan.specials.some((special) => special.kind === 'shop'), `${seed} map 1 special`).toBe(
-        false,
-      );
+      expect(
+        plan.rooms.some((room) => room.special === 'shop'),
+        `${seed} map 1 room`,
+      ).toBe(false);
+      expect(
+        plan.specials.some((special) => special.kind === 'shop'),
+        `${seed} map 1 special`,
+      ).toBe(false);
       const mini = specialRoom(plan, 'mini-boss') !== undefined ? 1 : 0;
       expect(plan.rooms.length, `${seed} map 1 rooms`).toBe(6 + mini);
     }
