@@ -200,6 +200,13 @@ populate them (steps 3-4). The `hedges` and `maze` carvers stay parked in
 - The table is the route's band **BST pool** (legendaries and mythicals banned,
   `D39`), weighted flat, so any species whose base-stat total falls in the band's
   window can appear.
+- The grass never offers a species the run has already **caught**: the run keeps a
+  run-long record of every species a successful catch brought in
+  (`RunState.caughtSpecies`; death does not clear it, `D5`) and the table drops
+  those species together with their whole evolution line and every forme sharing
+  their national dex number. A table the exclusions would empty falls back to the
+  unfiltered band, so the grass keeps rolling; the trainer pools are not narrowed,
+  so a trainer may still field a line the player owns.
 - The roll uses the route RNG, so walking the same grass in the same order
   produces the same encounters.
 - Only the species and level are rolled. Stats, types and evolutions come from

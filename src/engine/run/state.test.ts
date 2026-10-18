@@ -491,7 +491,33 @@ describe('capture and trainers', () => {
 
   it('counts a catch for the run summary', () => {
     const run = createRun({ seed: 'run-a', starter });
-    expect(recordCatch(run).stats).toEqual({ catches: 1, casualties: 0 });
+    expect(recordCatch(run, 'sentret').stats).toEqual({ catches: 1, casualties: 0 });
+  });
+});
+
+describe('caught species record', () => {
+  it('starts empty and survives a room and a floor change', () => {
+    const fresh = createRun({ seed: 'run-a', starter });
+    expect(fresh.caughtSpecies).toEqual([]);
+    const caught = recordCatch(fresh, 'pikachu');
+    expect(advanceRoute(caught, 1).caughtSpecies).toEqual(['pikachu']);
+    expect(advanceMap(caught).caughtSpecies).toEqual(['pikachu']);
+  });
+
+  it('records a species once while counting every catch', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    const twice = recordCatch(recordCatch(run, 'Pikachu'), 'pikachu');
+    expect(twice.caughtSpecies).toEqual(['pikachu']);
+    expect(twice.stats.catches).toBe(2);
+  });
+
+  it('keeps catch order across a repeat', () => {
+    let run = createRun({ seed: 'run-a', starter });
+    run = recordCatch(run, 'sentret');
+    run = recordCatch(run, 'pikachu');
+    run = recordCatch(run, 'sentret');
+    expect(run.caughtSpecies).toEqual(['sentret', 'pikachu']);
+    expect(run.stats.catches).toBe(3);
   });
 });
 

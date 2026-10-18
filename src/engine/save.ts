@@ -65,7 +65,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -148,7 +148,9 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * with the route-scoped `pcCatch` (an old run's list cannot be re-scoped — the room
  * it was caught in was never stored — so it starts with no pending catch); `16` moves
  * a v16 run onto the v17 schema, which added the `rip` list of the fallen (an old
- * run's dead were never stored, so it starts empty).
+ * run's dead were never stored, so it starts empty); `17` moves a v17 run onto the
+ * v18 schema, which added the `caughtSpecies` record of every successful catch (an
+ * old run's catches were never stored, so it starts empty).
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -252,6 +254,13 @@ export const SAVE_MIGRATIONS: Migrations = {
     ...document,
     version: 17,
     run: isRecord(document.run) ? { rip: [], ...document.run } : document.run,
+  }),
+  // The caught-species record: a v17 run never stored it, so an old run starts with
+  // an empty list - the lines it caught before are not reconstructed.
+  17: (document) => ({
+    ...document,
+    version: 18,
+    run: isRecord(document.run) ? { caughtSpecies: [], ...document.run } : document.run,
   }),
 };
 
@@ -680,6 +689,20 @@ function readArrivalEdge(value: unknown, plan: MapPlan, roomId: number): MapEdge
 }
 
 /**
+ * Keeps the non-empty species ids of the caught record, deduped, in the order the
+ * run caught them first.
+ */
+function parseCaughtSpecies(value: unknown): string[] {
+  const species: string[] = [];
+  if (Array.isArray(value)) {
+    for (const id of value) {
+      if (isString(id) && id !== '' && !species.includes(id)) species.push(id);
+    }
+  }
+  return species;
+}
+
+/**
  * Reads the floor's spent-capture rooms. A v8 document carried the single
  * `captureUsed` boolean instead, so a truthy one maps onto the room it stood in.
  */
@@ -723,6 +746,8 @@ function parseRun(value: unknown): RunState | null {
   const defeatedTrainers = Array.isArray(value.defeatedTrainers)
     ? value.defeatedTrainers.filter((id): id is string => isString(id))
     : [];
+
+  const caughtSpecies = parseCaughtSpecies(value.caughtSpecies);
 
   const pickedItems = Array.isArray(value.pickedItems)
     ? value.pickedItems.filter((id): id is string => isString(id))
@@ -772,6 +797,7 @@ function parseRun(value: unknown): RunState | null {
     bag,
     money,
     defeatedTrainers,
+    caughtSpecies,
     pickedItems,
     capturedRooms,
     stats: parseRunStats(value.stats),

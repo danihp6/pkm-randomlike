@@ -95,7 +95,7 @@ export function resolveBattle(
     };
     next = placed;
     next = useCapture(next);
-    next = recordCatch(next);
+    next = recordCatch(next, result.captured.speciesId);
   }
 
   if (reward.isTrainer && reward.trainerId !== undefined && result.outcome === 'win') {

@@ -10,12 +10,20 @@ export type EncounterEntry = Readonly<{
 export type EncounterTable = readonly EncounterEntry[];
 
 /**
- * The wild table for a band: its `wild` pool (legendaries and mythicals banned,
- * `D39`) with a flat weight, so every non-banned species of the band can appear.
+ * The wild table for a band: its `wild` pool (`D39`) with a flat weight. When
+ * `excluded` is given, those ids are dropped — and a set that would empty the band
+ * falls back to the unfiltered band, so the table is never empty and the chance draw
+ * of `rollEncounter` never short-circuits.
  */
-export function encounterTableFor(band: LevelBand): EncounterTable {
-  return speciesPool(band, 'wild').map((speciesId) => ({ speciesId, weight: 1 }));
+export function encounterTableFor(band: LevelBand, excluded?: ReadonlySet<string>): EncounterTable {
+  const table = speciesPool(band, 'wild').map((speciesId) => ({ speciesId, weight: 1 }));
+  if (excluded === undefined || excluded.size === 0) return table;
+  const filtered = table.filter((entry) => !excluded.has(entry.speciesId));
+  return filtered.length === 0 ? table : filtered;
 }
+
+/** The empty exclusion set, so a caller can pass "nothing caught" without allocating. */
+export const NO_EXCLUSIONS: ReadonlySet<string> = new Set<string>();
 
 export type Encounter = Readonly<{
   speciesId: string;
@@ -71,6 +79,8 @@ export function rollEncounter(
 export class RouteEncounters {
   steps = 0;
 
+  private exclusions: ReadonlySet<string>;
+
   constructor(
     private readonly table: EncounterTable,
     private readonly minLevel: number,
@@ -78,10 +88,35 @@ export class RouteEncounters {
     private readonly rng: Rng,
     private readonly chance: number = DEFAULT_ENCOUNTER_CHANCE,
     private readonly shinyRng?: Rng,
-  ) {}
+    exclusions: ReadonlySet<string> = NO_EXCLUSIONS,
+  ) {
+    this.exclusions = exclusions;
+  }
+
+  /**
+   * The table `step()` rolls against: the constructor's table minus the live
+   * exclusions, or the constructor's own table when the exclusions would empty it.
+   */
+  currentTable(): EncounterTable {
+    if (this.exclusions.size === 0) return this.table;
+    const filtered = this.table.filter((entry) => !this.exclusions.has(entry.speciesId));
+    return filtered.length === 0 ? this.table : filtered;
+  }
+
+  /** Replaces the live exclusion set: draws nothing, leaves `steps` and the Rng stream untouched. */
+  setExclusions(excluded: ReadonlySet<string>): void {
+    this.exclusions = excluded;
+  }
 
   step(): Encounter | undefined {
     this.steps++;
-    return rollEncounter(this.table, this.minLevel, this.maxLevel, this.rng, this.chance, this.shinyRng);
+    return rollEncounter(
+      this.currentTable(),
+      this.minLevel,
+      this.maxLevel,
+      this.rng,
+      this.chance,
+      this.shinyRng,
+    );
   }
 }

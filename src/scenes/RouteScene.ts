@@ -86,6 +86,7 @@ import {
 } from '../engine/run';
 import { equipMove, learnsetPool, type LearnEntry } from '../engine/run/learnset';
 import { NICKNAME_MAX_LENGTH, normalizeNickname, renameMember } from '../engine/run/nickname';
+import { wildExclusions } from '../engine/run/pool';
 import { abilityMoveType } from '../engine/battle/moveType';
 import { COMMON_TEXTURE_KEY, TILESETS, type TilesetId, tilesetTextureKey } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
@@ -1303,6 +1304,7 @@ export class RouteScene extends Phaser.Scene {
       // Shinies roll on their own stream, so they never shift the encounter
       // sequence a fixed seed already produced.
       new Rng(hashSeed(`${route.seed}:shiny:${route.routeIndex}`)),
+      wildExclusions(this.run),
     );
   }
 
@@ -6233,6 +6235,9 @@ export class RouteScene extends Phaser.Scene {
     // The room's capture was already spent when the wild battle started
     // (`startBattle`); this keeps it spent even if a path ever skips that.
     if (pending.trigger.kind === 'wild') this.run = useCapture(this.run);
+    // A catch narrows this room's table at once: the room is NOT rebuilt (`applyRoute`
+    // would restart its encounter stream), only the live exclusion is re-read.
+    this.encounters.setExclusions(wildExclusions(this.run));
 
     const bossId = this.room?.boss === true ? bossTrainerId(this.room.mapIndex) : null;
     const wonBoss =

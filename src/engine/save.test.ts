@@ -330,7 +330,7 @@ describe('settings validation', () => {
   it('reads a document with no reduce-flashing field as off', () => {
     const raw = JSON.stringify({ version: 16, settings: { textSpeed: 'fast', volume: 0.4 } });
     const decoded = document(raw);
-    expect(SAVE_VERSION).toBe(17);
+    expect(SAVE_VERSION).toBe(18);
     expect(decoded.settings.reducedFlash).toBe(false);
   });
 
@@ -352,7 +352,7 @@ describe('settings validation', () => {
     expect(
       document(JSON.stringify({ version: 16, settings: { aiLevel: 'nightmare' } })).settings.aiLevel,
     ).toBe('normal');
-    expect(SAVE_VERSION).toBe(17);
+    expect(SAVE_VERSION).toBe(18);
   });
 
   it('starts on the source table', () => {
@@ -384,7 +384,7 @@ describe('settings validation', () => {
     expect(document(JSON.stringify({ version: 16, settings: { language: 42 } })).settings.language).toBe(
       'en',
     );
-    expect(SAVE_VERSION).toBe(17);
+    expect(SAVE_VERSION).toBe(18);
     expect(Object.keys(SAVE_MIGRATIONS)).toEqual([
       '1',
       '2',
@@ -402,6 +402,7 @@ describe('settings validation', () => {
       '14',
       '15',
       '16',
+      '17',
     ]);
   });
 
@@ -630,7 +631,7 @@ describe('migrateDocument', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
     // One step per version boundary, because the test starts at v0 and the
-    // current schema is v17.
+    // current schema is v18.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
@@ -652,7 +653,8 @@ describe('migrateDocument', () => {
       13: (doc) => ({ ...doc, version: 14 }),
       14: (doc) => ({ ...doc, version: 15 }),
       15: (doc) => ({ ...doc, version: 16 }),
-      16: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      16: (doc) => ({ ...doc, version: 17 }),
+      17: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -739,7 +741,7 @@ describe('map-position migration', () => {
     delete run.pcCatch;
     const raw = JSON.stringify({ version: 15, run });
     const decoded = decodeSave(raw);
-    expect(emptySave().version).toBe(17);
+    expect(emptySave().version).toBe(18);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.pcCatch).toBeNull();
     expect('pcUnlocked' in (decoded.run ?? {})).toBe(false);
@@ -775,12 +777,37 @@ describe('the RIP list', () => {
   });
 });
 
+describe('the caught-species record', () => {
+  it('adds an empty record to a v17 run, party intact', () => {
+    const run: Record<string, unknown> = { ...sampleRun() };
+    delete run.caughtSpecies;
+    const raw = JSON.stringify({ version: 17, run });
+    const decoded = decodeSave(raw);
+    expect(decoded.version).toBe(SAVE_VERSION);
+    expect(decoded.run?.caughtSpecies).toEqual([]);
+    expect(decoded.run?.party).toHaveLength(6);
+  });
+
+  it('round-trips the record unchanged on the current schema', () => {
+    const run: RunState = { ...sampleRun(), caughtSpecies: ['sentret', 'raichualola'] };
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    expect(decoded.run?.caughtSpecies).toEqual(['sentret', 'raichualola']);
+    expect(decoded.run?.party).toHaveLength(6);
+  });
+
+  it('drops duplicate and empty ids while keeping catch order', () => {
+    const run = { ...sampleRun(), caughtSpecies: ['sentret', '', 'raichualola', 'sentret', 42] };
+    const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
+    expect(decoded.run?.caughtSpecies).toEqual(['sentret', 'raichualola']);
+  });
+});
+
 describe('nickname migration', () => {
   it('reads a v14 run as a current-schema run with its members intact and unnamed', () => {
     const raw = JSON.stringify({ version: 14, settings: defaultSettings(), run: sampleRun() });
     const decoded = decodeSave(raw);
-    expect(SAVE_VERSION).toBe(17);
-    expect(decoded.version).toBe(17);
+    expect(SAVE_VERSION).toBe(18);
+    expect(decoded.version).toBe(18);
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
     expect(decoded.run?.box[0].fighter.speciesId).toBe('greedent');

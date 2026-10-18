@@ -1,3 +1,4 @@
+import { normalizeId } from '../../data/dex';
 import { levelCapForMap } from '../../data/maps';
 import { arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge } from '../maps/plan';
 import type { BagCounts } from './battleLink';
@@ -109,6 +110,14 @@ export type RunState = Readonly<{
    * tab (`docs/routes-spec.md` §6).
    */
   rip: readonly RunPokemon[];
+  /**
+   * The species id of every **successful** catch, in catch order, deduped. A run-long
+   * fact: `advanceRoute` and `advanceMap` never clear it (unlike `defeatedTrainers`,
+   * `pickedItems`, `capturedRooms`, `pcCatch` and `bossDefeated`); only a fresh run
+   * starts it empty. A different fact from `rip` (the dead **members**) and from
+   * `stats.casualties`.
+   */
+  caughtSpecies: readonly string[];
   bag: readonly BagCounts[];
   /**
    * Poké Dollars, earned only by beating trainers and spent in the shop
@@ -156,6 +165,7 @@ export function createRun(init: RunInit): RunState {
     party: [init.starter],
     box: [],
     rip: [],
+    caughtSpecies: [],
     bag: [...(init.bag ?? [])],
     money: Math.max(0, Math.floor(init.money ?? 0)),
     defeatedTrainers: [],
@@ -503,9 +513,15 @@ export function addCaughtPokemon(run: RunState, pokemon: RunPokemon): RunState {
   return { ...placed, pcCatch: { roomInMap: run.routeInMap, memberId: pokemon.fighter.id } };
 }
 
-/** Counts a caught Pokémon for the run summary, beside the capture it spends. */
-export function recordCatch(run: RunState): RunState {
-  return { ...run, stats: { ...run.stats, catches: run.stats.catches + 1 } };
+/**
+ * Grows the record and the counter together, so they can never disagree: `stats.catches`
+ * counts every successful catch, while `caughtSpecies` keeps its deduped id once.
+ */
+export function recordCatch(run: RunState, speciesId: string): RunState {
+  const id = normalizeId(speciesId);
+  const caughtSpecies =
+    id !== '' && !run.caughtSpecies.includes(id) ? [...run.caughtSpecies, id] : run.caughtSpecies;
+  return { ...run, caughtSpecies, stats: { ...run.stats, catches: run.stats.catches + 1 } };
 }
 
 export function isTrainerDefeated(run: RunState, trainerId: string): boolean {

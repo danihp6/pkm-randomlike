@@ -12,6 +12,7 @@ import {
   evolutionLevel,
   evolutionLevelForBst,
   evolutionStage,
+  formeFamily,
   isLevelEvolution,
 } from './evolutions';
 import { getSpecies, playableSpecies, type Evolution, type Species } from './species';
@@ -73,6 +74,29 @@ describe('evolution family', () => {
   it('is a single member for a species that cannot evolve', () => {
     expect(evolutionFamily('tauros')).toEqual(['tauros']);
     expect(evolutionFamily('not-a-species')).toEqual([]);
+  });
+});
+
+describe('forme family', () => {
+  it('collects every entry sharing the species national dex number', () => {
+    expect(formeFamily('raichu')).toContain('raichu');
+    expect(formeFamily('raichu')).toContain('raichualola');
+    for (const id of formeFamily('raichu')) {
+      expect(getSpecies(id)!.num, id).toBe(26);
+    }
+  });
+
+  it('carries the alternate formes of the build, in playable order', () => {
+    expect(formeFamily('raichu')).toEqual(['raichu', 'raichualola']);
+    expect(formeFamily('rotom').slice(0, 2)).toEqual(['rotom', 'rotomheat']);
+  });
+
+  it('leaves out the battle-only Mega and G-Max formes', () => {
+    expect(formeFamily('charizard')).toEqual(['charizard']);
+  });
+
+  it('is empty for an unknown id', () => {
+    expect(formeFamily('not-a-species')).toEqual([]);
   });
 });
 
