@@ -8,6 +8,55 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The MOVES panel always draws four slots, and a learnset cell dropped on an empty one teaches
+      the move there.** Reported in play ("en moves añadir los 4 contenedores aunque no tenga 4 moves
+      porque se debe poder aprender un move de mt teniendo 3 moves actualmente si arrastras al hueco lo
+      debe aprender"): a member with three moves hid the fourth container, so the drop hit nothing even
+      though `equipMove` had already shipped its append past the end of a short moveset.
+      **The Decision applied:** both surfaces — the shared `MoveGrid` gains one empty-slot marker and
+      both scenes draw the four containers, the battle's empty ones disabled.
+      **What shipped.** `src/ui/moveGrid.ts` gains `MoveGridEmptyCell` (`{ empty: true }`),
+      `MoveGridSlot = MoveGridCell | MoveGridEmptyCell`, a `cells: readonly MoveGridSlot[]` option and a
+      public `MoveGridRect`, plus five exported pure helpers the new test pins without a Phaser scene
+      (`isEmptySlot`, `padMoveGridCells`, `moveGridCellRects`, `moveGridIndexAt`, `moveGridInfoAt`) and
+      `isEmpty(index)` on the class. `layout` now takes its `cellRects` from `moveGridCellRects`, so a
+      drawn cell and its hit rect can never diverge, and the module's private `Rect` type is gone (one
+      rect type, the exported one). The empty container is that slot's rectangle plus its stroke and
+      **nothing else** — fill `0xe6e3f2` (the grid's own untinted cell colour, so no new colour), the
+      existing selected/default stroke pair, and the name, type badge, category badge, PP/PWR/ACC, ⓘ and
+      index label all hidden — with `indexAt` and `cellRect` answering for it (it is a drop target) and
+      `infoAt` always `false` (a press there is never a ⓘ and no description floats). `RouteScene`'s
+      MOVES tab pads `detail.moves` with `padMoveGridCells(moveCells, MAX_MOVES)`, except that a member
+      with **zero** moves keeps the shipped `no moves` text and draws no containers at all; a press on
+      an empty container is swallowed before `grabMove`, `confirmDetailSlot` no-ops on it, and
+      `hudDetailStops` exposes `slots: MAX_MOVES` to the keyboard stops, so both the learnset drag and a
+      keyboard confirm land on slot 3 and reach the shipped `equipMove`, which appends there.
+      `BattleScene`'s `renderMoveMenu` pads its cells the same way while `count` stays the real move
+      count, so `menuZones` keeps one zone per **real** move: the battle's spare containers are drawn,
+      `item -1`, disabled, never under the ▶ cursor and never submit a turn. `docs/design-spec.md` §3's
+      MOVES bullet now reads that the panel always draws its four slots and that an **empty** slot takes
+      a dragged move (a member with no moves still reads `no moves`), and §4's moves-menu sentence gains
+      the empty-container clause; the backlog's own "§5" pointer for both was stale — the sentences live
+      in §3 — and `src/ui/README.md` gained the new test's one role line. No engine rule, no RNG draw,
+      no run field and no new constant (the four slots are the shipped `MAX_MOVES`), so **no
+      `SAVE_VERSION`** step — the chain stays **14 → 15 → 16 → 17 → 18**. The suite went **1700 → 1710
+      tests across 138 → 139 files** (+9 cases in the new `src/ui/moveGrid.test.ts`), with `npm test`,
+      `npm run build` and `npm run lint` green; the diff audit is exactly the task's six paths and
+      nothing under `src/engine/**`, `src/data/**`, `src/i18n/**` or the root config moved.
+      **Every `[live]` criterion was measured** on the combined commit `d1b44b9` with a Vite dev server
+      (`:5273`) driving the live scene and reading the live canvas: the HUD draws four 202×70 containers
+      at (128,188) (338,188) (128,266) (338,266) with the fourth's fill `0xe6e3f2` untinted, no name, no
+      badge, no PP/PWR/ACC and no ⓘ (hovering its corner leaves the popup hidden while a real move's
+      floats one); a dragged `TM012 Low Kick` fills it while the first three keep their own names and PP
+      and the bag's MT/MO pocket reads the same five rows with the same counts before and after; a
+      second pass with `TM005` repeats it and the persisted v18 save holds four moves; the battle draws
+      four 304×72 cells with zones `0, 1, -1, -1` (`input.enabled` true, true, false, false) where a
+      click on the third or fourth sends no turn and the arrows cycle only the two real moves; the
+      keyboard's fourth stop wears the 3 px `0x2f2c4d` stroke and confirms a band move into it (three
+      moves become four, the pool loses the move, the bag is untouched); and no padding leaked — a
+      one-entry learnset band draws **one** cell and the SWITCH window lists **two** move rows for a
+      two-move member. The task's ID is retired: it keeps its place in the sequence and is never reused.
+
 - [x] **The wild table never rolls a species the run has already caught, nor its evolutions nor its
       formes.** Reported in play ("para los pokemon salvaje no deberia aparecer un poke ya capturado
       aunque haya muerto, ninguna de sus evoluciones ni formas tampoco regionales"): the tall grass
