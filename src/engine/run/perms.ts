@@ -21,6 +21,7 @@ export function releaseFainted(run: RunState): ReleaseResult {
     run: {
       ...run,
       stats: { ...run.stats, casualties: run.stats.casualties + released.length },
+      rip: [...run.rip, ...released],
       party: run.party.filter((member) => member.fighter.hp > 0),
       box: run.box.filter((member) => member.fighter.hp > 0),
     },

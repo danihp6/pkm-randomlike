@@ -100,6 +100,15 @@ export type RunState = Readonly<{
   xp: number;
   party: readonly RunPokemon[];
   box: readonly RunPokemon[];
+  /**
+   * The fallen, in **party-then-box order**, appended only by `releaseFainted`
+   * (`src/engine/run/perms.ts`), at the same place `stats.casualties` is bumped, so
+   * the list and the count can never disagree. Permadeath is permanent (D5): the
+   * dead are read-only everywhere — never healed, never evolved, never renamed,
+   * never re-equipped, never moved back into the party — and shown by the PC's RIP
+   * tab (`docs/routes-spec.md` §6).
+   */
+  rip: readonly RunPokemon[];
   bag: readonly BagCounts[];
   /**
    * Poké Dollars, earned only by beating trainers and spent in the shop
@@ -146,6 +155,7 @@ export function createRun(init: RunInit): RunState {
     xp: init.xp ?? xpForLevel(init.starter.fighter.level),
     party: [init.starter],
     box: [],
+    rip: [],
     bag: [...(init.bag ?? [])],
     money: Math.max(0, Math.floor(init.money ?? 0)),
     defeatedTrainers: [],

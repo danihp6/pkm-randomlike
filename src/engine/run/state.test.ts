@@ -4,7 +4,7 @@ import { levelCapForMap } from '../../data/maps';
 import { evolutionBranches } from '../../data/dex/evolutions';
 import { MAP_EDGES, arrivalEdgeFor, linkedNeighbour, planMap } from '../maps/plan';
 import { capForRoute } from './levelCap';
-import { POKEVIAL_MAX_CHARGES } from './heal';
+import { POKEVIAL_MAX_CHARGES, fillPokevial, healParty, usePokevial } from './heal';
 import { createRunPokemon, runPokemonFromSnapshot } from './progression';
 import {
   MAX_PARTY_SIZE,
@@ -21,6 +21,7 @@ import {
   depositToBox,
   equipHeldItem,
   evolveMember,
+  gainExperience,
   hasLivingParty,
   isItemPicked,
   isRoomDiscovered,
@@ -73,6 +74,7 @@ describe('createRun', () => {
     expect(run.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
     expect(run.party).toEqual([starter]);
     expect(run.box).toEqual([]);
+    expect(run.rip).toEqual([]);
     expect(run.pickedItems).toEqual([]);
     expect(run.capturedRooms).toEqual([]);
     expect(run.money).toBe(0);
@@ -199,6 +201,25 @@ describe('advanceMap', () => {
   it('carries the Pokevial charges over the floor change', () => {
     const spent = { ...createRun({ seed: 'run-a', starter }), pokevialCharges: 1 };
     expect(advanceMap(spent).pokevialCharges).toBe(1);
+  });
+});
+
+describe('the fallen', () => {
+  const fallen = () => {
+    const base = createRunPokemon({ id: 'fallen', speciesId: 'sentret', level: 3 });
+    return { ...base, fighter: { ...base.fighter, hp: 0 } };
+  };
+
+  it('a floor change and a full vial never touch the fallen', () => {
+    const dead = fallen();
+    const run = createRun({ seed: 'run-a', starter });
+    const withFallen = { ...run, rip: [dead] };
+
+    expect(advanceMap(withFallen).rip).toBe(withFallen.rip);
+    expect(healParty(withFallen).rip).toBe(withFallen.rip);
+    expect(fillPokevial({ ...withFallen, pokevialCharges: 0 }).rip).toBe(withFallen.rip);
+    expect(usePokevial(withFallen).rip).toBe(withFallen.rip);
+    expect(gainExperience(withFallen, 50, 'run-a').run.rip).toBe(withFallen.rip);
   });
 });
 
