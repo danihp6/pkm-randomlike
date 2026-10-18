@@ -18,6 +18,12 @@ name: agent / autopilot
 # remain are the day's three red cycles (something is broken; carrying on would only
 # bill minutes for garbage — re-run `agent / cycle` by hand to resume) and the
 # in-flight check.
+#
+# The brake can also be a **timed window**: `agent / autopilot window` writes a range
+# into `AUTOPILOT_FROM` / `AUTOPILOT_UNTIL` (UTC ISO instants) and turns the brake on
+# and off on its own edges. This gate reads that range as a belt: a stale `on` or a
+# cron that fires late can never start a cycle outside it, and with no range set the
+# brake is manual, exactly as before.
 
 on:
   schedule:
@@ -53,6 +59,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AUTOPILOT: ${{ vars.AUTOPILOT }}
+          # The timed window's range, if one is armed. Both are absolute UTC instants,
+          # so the reading never depends on which day a recurring `HH:MM` meant.
+          WINDOW_FROM: ${{ vars.AUTOPILOT_FROM }}
+          WINDOW_UNTIL: ${{ vars.AUTOPILOT_UNTIL }}
           IGNORE_RUN: ${{ inputs.ignore_run }}
           # `0` or unset means no cap: the backlog's own finiteness is then the only
           # thing bounding the loop (30 tasks in whole batches is ~10 cycles, and the
@@ -67,6 +77,24 @@ jobs:
           if [ "${AUTOPILOT:-}" != "on" ]; then
             go false "AUTOPILOT is '${AUTOPILOT:-unset}': the loop stays parked."
             exit 0
+          fi
+
+          # The belt under the window: `agent / autopilot window` owns the brake, and it
+          # is turned off on the range's own edge, but a cron that fires late or a run
+          # that hand-shakes across the boundary must not start a cycle outside the
+          # range either. No range set means the brake is purely manual.
+          if [ -n "${WINDOW_UNTIL:-}" ]; then
+            now_epoch=$(date -u +%s)
+            until_epoch=$(date -u -d "$WINDOW_UNTIL" +%s 2>/dev/null || echo '')
+            if [ -n "$until_epoch" ] && [ "$now_epoch" -ge "$until_epoch" ]; then
+              go false "The window ended at $WINDOW_UNTIL: the loop stays parked until a range is armed again."
+              exit 0
+            fi
+            from_epoch=$(date -u -d "${WINDOW_FROM:-}" +%s 2>/dev/null || echo '')
+            if [ -n "$from_epoch" ] && [ "$now_epoch" -lt "$from_epoch" ]; then
+              go false "The window opens at $WINDOW_FROM: the loop is parked until then."
+              exit 0
+            fi
           fi
 
           open_tasks=$(grep -cE '^[[:space:]]*-[[:space:]]*\[ \][[:space:]]*\*\*\[Task-' TODO.md || true)
@@ -116,6 +144,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GO: ${{ steps.gate.outputs.go }}
           AUTOPILOT_STATE: ${{ vars.AUTOPILOT }}
+          WINDOW_FROM: ${{ vars.AUTOPILOT_FROM }}
+          WINDOW_UNTIL: ${{ vars.AUTOPILOT_UNTIL }}
         run: |
           # The driver's own summary, so the usual question — "why has nothing run?" —
           # is answered in the runs list instead of in a log.
@@ -129,6 +159,8 @@ jobs:
             echo "| | |"
             echo "| --- | --- |"
             echo "| AUTOPILOT | \`${AUTOPILOT_STATE:-unset}\` |"
+            echo "| Window | \`${WINDOW_FROM:-—}\` → \`${WINDOW_UNTIL:-—}\` UTC |"
+            echo "| Now | $(date -u '+%Y-%m-%d %H:%M') UTC |"
             echo "| Open tasks | $(grep -cE '^- \[ \] \*\*\[Task-' TODO.md || true) |"
             echo "| Blocked | $(grep -cE '^- \[!\] \*\*\[Task-' TODO.md || true) |"
             echo "| Cycles today | $(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/agent-cycle.yml/runs?created=$(date -u +%Y-%m-%d)&per_page=100" --jq '.workflow_runs | length' 2>/dev/null || echo '?') |"
