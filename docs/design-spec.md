@@ -70,11 +70,12 @@ carries over.
   ability, held item and the member's **evolution graph**: its whole family from
   the base form on down, one row per species indented by stage, each showing its
   sprite and the level it evolves at. Besides the species rows the graph lists one
-  **information row** per battle-only forme of the member's own species: a Mega —
-  dimmed and **never clickable**, the forme's sprite and name and the stone it
-  needs (`Mega Charizard X · Mega Evolves with Charizardite X`) — and a
-  Gigantamax (`Gigantamax Charizard · Gigantamaxes with no stone`, no item gate at
-  all), both **always shown**, whether or not the stone is held (`D34`, `D44`).
+  **information row** per battle-only forme of every species of the family that has
+  one, hanging off that species' own row: a Mega — dimmed and **never clickable**,
+  the forme's sprite and name and the stone it needs
+  (`Mega Charizard X · Mega Evolves with Charizardite X`) — and a Gigantamax
+  (`Gigantamax Charizard · Gigantamaxes with no stone`, no item gate at all), both
+  **always shown**, whether or not the stone is held (`D34`, `D44`).
   The **ABILITY** row carries the same **ⓘ**
   control a move cell does, floating that ability's own one-line description over
   the panel on hover or a click. A branch the member's level already allows
