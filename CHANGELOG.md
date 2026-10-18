@@ -8,6 +8,97 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The wild table never rolls a species the run has already caught, nor its evolutions nor its
+      formes.** Reported in play ("para los pokemon salvaje no deberia aparecer un poke ya capturado
+      aunque haya muerto, ninguna de sus evoluciones ni formas tampoco regionales"): the tall grass
+      could offer a line the run had already collected, including one whose member had since died.
+      **The Decision applied, all three defaults:** the **starter is not tracked** (the grass may still
+      roll its line), the rule binds the **wild table only** (`speciesPool(band, 'trainer')` and every
+      roster stay exactly as they are), and a table the exclusions would empty **falls back to the
+      unfiltered band**. **What shipped.** `RunState.caughtSpecies: readonly string[]` is a run-long
+      fact — catch order, deduped, never cleared by `advanceRoute` or `advanceMap`, unlike the four
+      per-floor lists — written by `recordCatch(run, speciesId)` (its second argument is new) at the
+      one place a catch is folded back into the run, the `result.captured` branch of `resolveBattle`,
+      so the record and `RunStats.catches` can never disagree and a failed ball, a run away or a lost
+      battle still record nothing. At pool-build time each recorded id expands deterministically to its
+      line through the shipped `evolutionFamily` **plus its formes** through the new hand-authored
+      `formeFamily(speciesId)` (`src/data/dex/evolutions.ts`, every entry sharing that national dex
+      number in `playableSpecies()` order — the alternate and cosmetic formes the build carries as
+      species of their own; Mega and G-Max formes live in their own generated files and are not part of
+      it; `evolutionFamily` itself does not change and nothing under `src/data/dex/*.json` is touched).
+      The round's own helper is `wildExclusions(run)` in `src/engine/run/pool.ts`, beside
+      `WILD_BANNED_TAGS`; `encounterTableFor(band, excluded?)` gains the optional set (a one-argument
+      call returns today's table byte for byte, so the shipped `pool.test.ts` case stays green
+      unmodified) together with `NO_EXCLUSIONS`, and `RouteEncounters` takes the live set as its
+      **7th** constructor argument and owns the narrowing (`currentTable()`, `setExclusions()`), so the
+      fallback is always "the unfiltered band". **The exclusion is applied before the roll and draws
+      nothing** (`pickWeighted` and `rollEncounter` are untouched: one draw for the chance, one for the
+      pick, one for the level, one on the shiny stream), which is why a fixed seed's walk is unchanged
+      for a run that has caught nothing and why the new 300-step fixed-seed regression (`4242`) holds
+      the property the task promises. `RouteScene` passes the **unfiltered** `encounterTableFor(band)`
+      plus `wildExclusions(this.run)` and refreshes the live set in `applyBattleResult` immediately
+      after `useCapture` **without rebuilding the room** (a rebuild through `applyRoute` would restart
+      the room's encounter stream), so the room the player stands in narrows the moment the catch
+      lands. The save takes the plan's next step, **`SAVE_VERSION` 17 → 18**, with the usual shape: the
+      `17` migration and `parseRun` default an older run's record to `[]` (the lines it caught before
+      are not reconstructed) and dedupe it on read; the chain is **14 → 15 → 16 → 17 → 18**. It adds one
+      docs clause to `docs/routes-spec.md` §3 and no i18n key, no `src/data/` table and no packed
+      asset; the diff audit is exactly its 14 paths and the suite went **1664 → 1687 tests across 137
+      files** (+23 cases in the five test files it extends; the only shipped expectations that moved
+      are the `SAVE_VERSION` / migration pins in `save.test.ts` and `recordCatch`'s call in
+      `state.test.ts`), with `npm run build` and `npm run lint` green. **Every `[live]` criterion was
+      measured** on the combined batch commit `3ca74bb3` with a Vite dev server (`:5180`) and a
+      headless Chromium over CDP reading the live scene: a capture folded through the live scene's own
+      `applyBattleResult` writes `caughtSpecies ['caterpie']` with `stats.catches === 1`, the persisted
+      run reads `version 18` with the same list, the room's roller is the **same object**
+      (`sameRoller: true` — not rebuilt), its table drops **206 → 204** and the caught species is gone
+      from it at once; and a planted v17 document is migrated by the browser's own decoder to `version
+      18` with `caughtSpecies []` and the party intact (3 = 3), the live scene writing the slot back as
+      v18 with the empty record. The task's ID is retired: it keeps its place in the sequence and is
+      never reused.
+
+- [x] **A battle ⓘ opens a window with the battle's own state.** Reported in play ("añade tarea añadir
+      un boton info en el combate que abre un panel de informacion con info del estado del combate
+      como climas, los cambios de estadisticas en pokemons activos, terrenos, cosas como reflejo,
+      pantalla luz y otros ataques que causan contextos"): the battle carried all of it — weather and
+      terrain with their turns, seven per-side conditions, seven whole-field conditions, each active's
+      stat stages and status — and drew none of it. **The Decision applied:** a **fifth control
+      reserved at the right edge of the command window** — the column `MOVE_MEGA_COL` already reserves
+      for MEGA, 62 px — labelled `INFO`, so the FIGHT / BAG / SWITCH / RUN **2x2 keeps its geometry**
+      and the arrows step onto the control from the grid's edge exactly as they reach MEGA and G-MAX in
+      the moves menu (with an empty bag, whose BAG cell is disabled and skipped, one `right` from FIGHT
+      lands on it); a confirm or a click opens the list as a `mode` of its own (`'info'`) drawn in the
+      shipped menu window, scrolled with the arrows, closed by any confirm or back press or a click,
+      and it **never spends a turn**. The list's every line comes from **one new pure module**,
+      `src/ui/battleInfo.ts` (`battleInfoRows(state)` / `battleInfoLines(groups)`, with
+      `FIELD_CONDITION_IDS` and `SIDE_CONDITION_IDS` as the frozen order): the **weather** and its
+      count, the **terrain** and its count, each live **field condition** with its count, each side's
+      live **side conditions** with their counts, each side's active **stat stages** in `BOOST_IDS`'
+      own order (non-zero only, `+6`/`-6` literal) and each active's **non-volatile status** — and
+      **not** the volatiles and **not** the entry hazards the engine does not model (Stealth Rock,
+      Spikes, Toxic Spikes, Sticky Web; `src/engine/battle/effects/moves.ts` says so in the tree), as
+      the *Decision* froze. Every label is a new player-facing literal created **after** Batch 10's i18n
+      sweep, so it arrives as **37 new keys** (`battle.infoControl`, `battle.info.*`, one per condition,
+      with the `{turns}` token) authored in English and overlaid by Spanish, held as keys and resolved
+      at render time (never at module scope), with the shipped parity/call-site gate green **unedited**.
+      It owes the `src/ui/README.md` role line for the new file and one clause plus the window list in
+      `docs/design-spec.md` §4, and it claims **no** `src/engine/**`, no `src/data/**`, no i18n key
+      table outside `en.ts`/`es.ts`, no `SAVE_VERSION` step (the chain stays 14 → 15 → 16 → 17 → 18) and
+      no RNG draw. Its diff audit is exactly its 7 paths, and the suite went **1687 → 1700 tests across
+      138 files** (13 new cases in `battleInfo.test.ts`), with `npm run build` and `npm run lint` green.
+      **Every `[live]` criterion was measured** on the combined batch commit `3ca74bb3` with a Vite dev
+      server (`:5180`) and a headless Chromium over CDP: the control is `62` px wide at `infoX 331`
+      against a grid whose right edge is `331`, so it sits **outside** the four cells (`twoByTwo: true`,
+      label `INFO`), and the live canvas read through `renderer.snapshotArea` + `getImageData` shows
+      **80 ink pixels of 784** sampled around its label over the cell's own `230,227,242` fill; and in
+      `'info'` the four lines the scene drew (`FIELD`, `WEATHER  Sun · 5`, `TERRAIN  Grassy · 3`,
+      `Trick Room · 2  2` for a live state carrying sun/5, grassy/3, Trick Room/2, Reflect/4 and a +2
+      Attack) are **deep-equal** to `battleInfoLines(battleInfoRows(state)).slice(0, 4)` of that same
+      `BattleState` — the repository function is the reference, so a hard-coded window fails — with
+      **2660 ink pixels of 14400** in the window's body, the control hidden while it is open, and
+      `turn` unchanged at `0` both inside the window and after closing (mode back to `menu`). The
+      task's ID is retired: it keeps its place in the sequence and is never reused.
+
 - [x] **A level-up raises a temporary popup.** Reported in play ("popup temporal subida de nivel"): a
       level-up said nothing unless it crossed a move, because the only announcement was the
       key-dismissed `LEVEL UP` modal and `showLearnPopup` returns hidden when nothing was learned, so

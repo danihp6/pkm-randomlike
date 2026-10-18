@@ -1457,6 +1457,37 @@ follows is the cut's own record.
   field, so no `SAVE_VERSION` step.
 
 ### Batch 17 — the wild pool remembers what the run caught, and the battle's info window
+**(shipped, archived)**: its two tasks merged in ID order behind the green gate
+(`task-52`, `task-60`; **1700** tests across **138** files, `npm test` + `npm run build` green after
+each merge — `29c13a24 → bdd74802 → 827ac729` — and `npm run lint` green with them) and the detail is
+in `CHANGELOG.md`'s `## Unreleased`; QA validated each task in its own lane (Task QA green on tips
+`e7d84fa9` and `27c8d9a4`) and then the combined tree at `3ca74bb3` (cross-task audit: 21 paths, no
+overlap, one holder per hot file, generated dex untouched; both ordered merges rehearsed clean and
+landing that same tree). The Orchestrator **re-measured every `[live]` criterion itself** on the
+combined commit with a Vite dev server (`:5180`) and the runner's headless Chromium over CDP, reading
+the live scene and the live canvas (`renderer.snapshotArea` + `getImageData`). **What shipped.**
+**Task-52** gives the run a run-long record of what it caught: `RunState.caughtSpecies` (catch order,
+deduped) written by `recordCatch(run, speciesId)` at the one catch fold in `resolveBattle`, so the list
+and `stats.catches` can never disagree; `formeFamily` beside `evolutionFamily` (hand-authored, no
+regeneration) and `wildExclusions(run)` beside `WILD_BANNED_TAGS` expand each id to its line and its
+formes, and `encounterTableFor(band, excluded?)` narrows the band's table — the exclusion is applied
+**before** the roll and draws nothing, so a fixed seed's draw count is unchanged; `RouteEncounters`
+holds the live set (7th constructor argument, `currentTable()`/`setExclusions()`), falls back to the
+unfiltered band when the exclusions would empty it, and the scene refreshes it in `applyBattleResult`
+right after `useCapture`, so the room is **not** rebuilt. The starter is not tracked and the trainer
+pools are untouched, as the *Decision* froze, and the save takes the plan's next step
+**`SAVE_VERSION` 17 → 18** (an older run defaults to an empty record; the chain stays
+14 → 15 → 16 → 17 → 18). **Task-60** gives the battle a fifth control reserved at the command window's
+right edge on the column `MOVE_MEGA_COL` already reserves (62 px), so the FIGHT / BAG / SWITCH / RUN
+2x2 keeps its geometry, and opens the battle's own state through it as a `mode` of its own: one new
+pure module, `src/ui/battleInfo.ts` (`battleInfoRows`/`battleInfoLines`), lists the weather, the
+terrain, every live field and side condition with its count, each side's active stat stages and each
+active's non-volatile status — not the volatiles and not the entry hazards the engine does not model,
+as the *Decision* froze — over 37 new i18n keys. Neither task adds a step beyond Task-52's, draws no
+RNG outside the shipped streams, and neither claims `package.json`, `src/main.ts` or `vite.config.ts`.
+Their two IDs are retired: they keep their place in the sequence and are never reused. What follows is
+the cut's own record.
+
 - **Task-52** The wild table never offers a species the run has already caught — nor any of
   its evolutions, nor any of its forms (regional forms included), dead members included.
   **This is the plan's next `SAVE_VERSION` step: 17 → 18.**
@@ -2314,7 +2345,7 @@ algorithm, its guarantees and its open questions are in
 most useful first. The art counterparts (a real tall-grass tile, the
 floor/path split, props) stay in Phase 8 "Route generation & FRLG fields".
 
-- [ ] **[Task-52] The wild table never rolls a species the run has already caught, nor its
+- [x] **[Task-52] The wild table never rolls a species the run has already caught, nor its
       evolutions, nor its forms.** Reported in play: «para los pokemon salvaje no deberia
       aparecer un poke ya capturado aunque haya muerto, ninguna de sus evoluciones ni formas
       tampoco regionales» — the tall grass must not offer a species the run already caught,
@@ -2807,7 +2838,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       three is **Batch 13** — whose Task-44 wants `src/scenes/RouteScene.ts`, the save and the
       party panel instead, so the two share no path and the batch stays an antichain. It adds no
       run field and changes no rule, so **no `SAVE_VERSION`** step. *(Batch 13)*
-- [ ] **[Task-60] A battle ⓘ opens a window with the battle's own state: the weather, the
+- [x] **[Task-60] A battle ⓘ opens a window with the battle's own state: the weather, the
       terrain, each side's screens and the active Pokémon's stat stages.** Reported in play:
       «añade tarea añadir un boton info en el combate que abre un panel de informacion con info
       del estado del combate como climas, los cambios de estadisticas en pokemons activos,
