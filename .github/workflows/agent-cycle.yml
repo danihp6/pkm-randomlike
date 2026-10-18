@@ -104,10 +104,17 @@ jobs:
                  impide, y qué decisión humana hace falta>"
                (tienes GH_TOKEN y permiso de escritura sobre issues). Un issue sin ese
                contenido no sirve de nada y cuenta como fallo tuyo.
-             - No hay navegador. Un criterio [live] NO se puede medir aquí: no lo reportes
-               NUNCA como pass. Ábrele un issue con la etiqueta `agent-review` diciendo qué
-               hay que mirar, y sigue: eso es el estado de revisión del diseño y no impide
-               el merge por sí solo, siempre que los criterios [unit] estén verdes.
+             - Un criterio [live] solo existe en el juego corriendo, así que **mídelo tú**:
+               arranca el servidor de desarrollo y léelo por CDP sobre un Chromium headless
+               (la imagen del runner lo trae), prefiriendo leer el canvas
+               (`renderer.snapshotArea` + `getImageData`) antes que una captura, y di en tu
+               informe con qué método obtuviste cada evidencia. **Un [live] con medida
+               objetiva (una igualdad con una función del repo, un conteo, una coordenada,
+               un color concreto, un rango) se mide y cuenta como PASS.** Solo el residuo
+               subjetivo —"se ve bien", si un tono lee como tal— va a un issue
+               `agent-review` con lo que hay que mirar, y ese issue no impide el merge
+               mientras los [unit] estén verdes. Lo que NUNCA se negocia: **nada se reporta
+               como pass sin haberlo medido.**
              - El árbol de assets ya está materializado FUERA del checkout: su raíz es
                $ASSETS_ROOT, y POKEANIL_POKEMON / POKEANIL_ITEMS ya apuntan dentro de él.
                Aplica la regla de AGENTS.md (Asset trees): pasa siempre la ruta absoluta a
@@ -147,8 +154,11 @@ jobs:
                 lote de UNA sola tarea colapsa a una única pasada que cubre también la
                 integración; con dos o más, añade la ola de integración sobre el árbol
                 combinado (auditoría cruzada y ensayo del merge).
-             4. Si QA aprueba: mergea las ramas en main con --no-ff EN ORDEN DE ID, corre las
-                dos gates después de CADA merge, tickea cada casilla en TODO.md, archívalas en
+             4. Si QA aprueba: **antes de empujar, ponte al día**: `git fetch origin` y
+                trae origin/main a tu rama (rebase o merge). Puede que un humano haya
+                empujado mientras trabajabas, y un push rechazado tiraría el ciclo entero.
+                Después mergea las ramas en main con --no-ff EN ORDEN DE ID, corre las dos
+                gates después de CADA merge, tickea cada casilla en TODO.md, archívalas en
                 CHANGELOG.md (una entrada por tarea, en inglés, al principio de
                 ## Unreleased), commit y push a origin main. Borra los worktrees.
              5. Si QA es roja: NO mergees. Marca la tarea `[!]` en TODO.md con
