@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import font from '../data/ui/font.json';
 import { en, type TranslationKey } from './en';
 import { es } from './es';
@@ -206,6 +209,14 @@ describe('t / setLocale / getLocale', () => {
     expect(t('runOver.headlineWin')).toBe('¡La ruta final ha caído. Has ganado!');
     expect(t('runOver.blurbLoss')).toBe('La partida ha terminado: no queda nada.');
   });
+
+  it('renders the keys the swept call sites interpolate, in both locales', () => {
+    expect(t('release.controls', { confirm: 'Z' })).toBe('Z — continue');
+    expect(t('dev.move', { n: 3 })).toBe('Move 3');
+    setLocale('es');
+    expect(t('release.controls', { confirm: 'Z' })).toBe('Z · continuar');
+    expect(t('dev.move', { n: 3 })).toBe('Movimiento 3');
+  });
 });
 
 describe('the source table is the record', () => {
@@ -257,5 +268,101 @@ describe('the source table is the record', () => {
     for (const key of KEYS) {
       expect(es[key], key).not.toContain('\u2014');
     }
+  });
+});
+
+/**
+ * The one mistake the tables cannot see: a call site whose param names do not
+ * match the tokens its own key declares. A missing one throws at runtime (the
+ * release overlay crashed that way) and an extra one is silently ignored (the
+ * dev panel's `Move` lost its number), so this walks every `t('<key>', { … })`
+ * call site in `src/` and compares the two sets.
+ */
+const SRC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
+const CALL_SITE = /(?<![\w.$])t\(\s*'([a-z][A-Za-z0-9.]*)'/g;
+
+function sourceFiles(dir: string): string[] {
+  const files: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...sourceFiles(path));
+    else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) files.push(path);
+  }
+  return files;
+}
+
+/** The top-level property names of a `{ … }` literal body; nested brackets skipped. */
+function propertyNames(body: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let current = '';
+  for (const char of body) {
+    if (char === ',' && depth === 0) {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+    current += char;
+    if (char === '{' || char === '(' || char === '[') depth++;
+    else if (char === '}' || char === ')' || char === ']') depth--;
+  }
+  parts.push(current);
+  return parts
+    .map((part) => part.split(':')[0].trim())
+    .filter((name) => /^[A-Za-z_$][\w$]*$/.test(name));
+}
+
+type CallSite = Readonly<{ file: string; line: number; key: TranslationKey; params: readonly string[] }>;
+
+function callSites(file: string, source: string): readonly CallSite[] {
+  const sites: CallSite[] = [];
+  CALL_SITE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = CALL_SITE.exec(source)) !== null) {
+    const key = match[1] as TranslationKey;
+    if (!(key in en)) continue;
+    let index = CALL_SITE.lastIndex;
+    while (/\s/.test(source[index])) index++;
+    let params: readonly string[] = [];
+    if (source[index] === ',') {
+      index++;
+      while (/\s/.test(source[index])) index++;
+      if (source[index] !== '{') continue;
+      let depth = 0;
+      let end = index;
+      for (; end < source.length; end++) {
+        if (source[end] === '{') depth++;
+        else if (source[end] === '}') {
+          depth--;
+          if (depth === 0) break;
+        }
+      }
+      params = propertyNames(source.slice(index + 1, end));
+    }
+    sites.push({ file, line: source.slice(0, match.index).split('\n').length, key, params });
+  }
+  return sites;
+}
+
+describe('the call sites', () => {
+  const sites = sourceFiles(SRC_DIR).flatMap((file) =>
+    callSites(relative(SRC_DIR, file), readFileSync(file, 'utf8')),
+  );
+
+  it('scans the whole source tree', () => {
+    expect(sites.length).toBeGreaterThan(250);
+  });
+
+  it('supplies exactly the tokens each key declares', () => {
+    const mismatches: string[] = [];
+    for (const site of sites) {
+      const declared = translationParams(en[site.key]);
+      const missing = declared.filter((name) => !site.params.includes(name));
+      const extra = site.params.filter((name) => !declared.includes(name));
+      if (missing.length > 0 || extra.length > 0) {
+        mismatches.push(`${site.file}:${site.line}: ${site.key} missing [${missing}] extra [${extra}]`);
+      }
+    }
+    expect(mismatches).toEqual([]);
   });
 });

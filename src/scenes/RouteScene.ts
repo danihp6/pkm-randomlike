@@ -6502,7 +6502,7 @@ export class RouteScene extends Phaser.Scene {
       this,
       width / 2,
       y + panelH + 28,
-      t('release.controls', { key: keyLabel(this.settings.keybinds.confirm) }),
+      t('release.controls', { confirm: keyLabel(this.settings.keybinds.confirm) }),
       {
         size: 16,
         tint: 0x94a3b8,

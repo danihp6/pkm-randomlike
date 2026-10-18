@@ -286,7 +286,7 @@ export const en = {
   'dev.where.box': 'PC box',
   'dev.member': 'Member',
   'dev.memberPlaceholder': 'party member',
-  'dev.move': 'Move',
+  'dev.move': 'Move {n}',
   'dev.movePlaceholder': 'move {n}',
   'dev.ability': 'Ability',
   'dev.abilityPlaceholder': 'ability',

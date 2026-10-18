@@ -290,7 +290,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'dev.where.box': 'la caja del PC',
   'dev.member': 'Miembro',
   'dev.memberPlaceholder': 'miembro del grupo',
-  'dev.move': 'Movimiento',
+  'dev.move': 'Movimiento {n}',
   'dev.movePlaceholder': 'movimiento {n}',
   'dev.ability': 'Habilidad',
   'dev.abilityPlaceholder': 'habilidad',
