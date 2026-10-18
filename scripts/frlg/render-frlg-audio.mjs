@@ -73,7 +73,8 @@ const CRY_CUE_PREFIX = 'cry-'
 // 1..386); a species above that has no sample and gets no row.
 const CRY_MAX_NUM = 386
 // The decompilation's own default for a move sound whose midi.cfg line carries
-// no -V; every other se_m_* line renders at exactly this too.
+// no -V; a line that names a volume (27 of the 130 se_m_* lines do) renders at
+// that value instead.
 const DEFAULT_SONG_VOLUME = 100
 
 // The release the committed cues were rendered with — a newer one changes the
@@ -118,7 +119,8 @@ const CUES = [
 // own loop, or nothing), plus a short ring-out so a one-shot does not end on a
 // hard cut.
 const TAIL_SECONDS = 0.4
-// Peak the loudest cue is lifted to; see normalizeCues.
+// Peak the six hand rows' own normalization lifts their loudest cue to; the two
+// ripped families are lifted by build-audio.mjs instead, see normalizeCues.
 const TARGET_PEAK = 0.85
 // The cartridge's own names for a move, where its block label is not our id:
 // `VICE_GRIP` is `visegrip` in the dex, `FAINT_ATTACK` is `feintattack` and
