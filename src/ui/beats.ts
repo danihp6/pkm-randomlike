@@ -55,3 +55,40 @@ export function levelUpBeats(
   }
   return beats;
 }
+
+/** Which opening to play: a wild encounter or a trainer's. */
+export type EntryKind = 'wild' | 'trainer';
+
+export type EntryStepKind = 'fade' | 'flash' | 'foe-appear' | 'trainer-appear' | 'sendout';
+
+/** One step of the opening beat. The scene plays it and waits `ms` before the next. */
+export type EntryStep = Readonly<{ kind: EntryStepKind; ms: number }>;
+
+export const ENTRY_FADE_MS = 320;
+export const ENTRY_FLASH_MS = 220;
+export const ENTRY_FOE_APPEAR_MS = 300;
+export const ENTRY_TRAINER_APPEAR_MS = 280;
+export const ENTRY_SENDOUT_MS = 260;
+/** How far above its resting y the incoming enemy sprite starts, in px. */
+export const ENTRY_FOE_DROP = 26;
+/** How far right of its resting x the trainer starts its walk, in px. */
+export const ENTRY_TRAINER_WALK = 22;
+
+/**
+ * The opening beat for a battle, with the flash dropped under reduce flashing
+ * (D45). The fade carries the route-to-battle cut and is always first; the rest
+ * of the beat differs only in who the encounter brings in.
+ */
+export function entryBeat(kind: EntryKind, reducedFlash: boolean): readonly EntryStep[] {
+  const steps: EntryStep[] = [{ kind: 'fade', ms: ENTRY_FADE_MS }];
+  if (!reducedFlash) steps.push({ kind: 'flash', ms: ENTRY_FLASH_MS });
+  if (kind === 'wild') {
+    steps.push({ kind: 'foe-appear', ms: ENTRY_FOE_APPEAR_MS });
+    return steps;
+  }
+  steps.push(
+    { kind: 'trainer-appear', ms: ENTRY_TRAINER_APPEAR_MS },
+    { kind: 'sendout', ms: ENTRY_SENDOUT_MS },
+  );
+  return steps;
+}
