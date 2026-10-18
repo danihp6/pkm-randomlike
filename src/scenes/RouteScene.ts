@@ -175,6 +175,7 @@ import {
   grabAt,
   initialPartyUi,
   partyInput,
+  ripRows,
   stepCursorWithHeader,
   swapAcross,
   type PartyInput,
@@ -329,7 +330,13 @@ const HUD_BOX_CELL = 76;
 const HUD_BOX_CELL_GAP = 4;
 const HUD_BOX_GRID_H = BOX_ROWS * HUD_BOX_CELL + (BOX_ROWS - 1) * HUD_BOX_CELL_GAP;
 const HUD_BOX_H = HUD_BOX_TABS_H + HUD_BOX_GRID_H + HUD_BOX_PAD;
-const HUD_BOX_MAX_PAGES = 8;
+const HUD_BOX_MAX_PAGES = 7;
+const HUD_BOX_RIP_TAB_W = 32;
+/** The cap the RIP tab carries: the abbreviation reads the same in both locales. */
+const HUD_BOX_RIP_LABEL = 'RIP';
+/** The veil a locked box cell wears, shared by the cell and the RIP tab. */
+const HUD_BOX_LOCK_FILL = 0x1b1830;
+const HUD_BOX_LOCK_ALPHA = 0.55;
 
 /** The frame band (px) of a HUD panel that grabs it instead of its content. */
 const HUD_PANEL_BORDER = 12;
@@ -554,7 +561,7 @@ type MoveKey = 'up' | 'down' | 'left' | 'right';
  * The HUD panes the keyboard can hold (D45). The header is never one: it is the
  * minimap and has no controls to walk.
  */
-type HudPaneId = 'party' | 'bag' | 'box' | 'detail';
+type HudPaneId = 'party' | 'bag' | 'box' | 'rip' | 'detail';
 
 /** The keyboard pane a HUD panel maps onto, or null when it has no controls. */
 function paneForPanel(id: HudPanelId): HudPaneId | null {
@@ -871,6 +878,11 @@ export class RouteScene extends Phaser.Scene {
     bg: Phaser.GameObjects.Rectangle;
     label: Phaser.GameObjects.BitmapText;
   }[] = [];
+  private hudBoxRip!: {
+    veil: Phaser.GameObjects.Rectangle;
+    bg: Phaser.GameObjects.Rectangle;
+    label: Phaser.GameObjects.BitmapText;
+  };
   private hudBoxCells: {
     highlight: Phaser.GameObjects.Rectangle;
     bg: Phaser.GameObjects.Rectangle;
@@ -1576,14 +1588,14 @@ export class RouteScene extends Phaser.Scene {
   private focusHudPane(pane: HudPaneId): void {
     this.hudKeyboardPane = pane;
     this.hudPartyHeaderFocus = false;
-    if (pane === 'party' || pane === 'box') {
+    if (pane === 'party' || pane === 'box' || pane === 'rip') {
       const rows = this.paneRows(pane).length;
       this.hudUi = {
         pane,
         index: Math.min(Math.max(0, this.hudUi.index), Math.max(0, rows - 1)),
         grabbed: null,
       };
-      if (pane === 'box') this.hudBoxPage = boxPageForIndex(this.hudUi.index);
+      if (pane === 'box' || pane === 'rip') this.hudBoxPage = boxPageForIndex(this.hudUi.index);
     } else if (pane === 'bag') {
       this.hudBagIndex = stepBagCursor(this.hudBagIndex, 0, this.hudBagStacks().length);
     } else {
@@ -1601,9 +1613,14 @@ export class RouteScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  /** The member list of a party/box pane. */
+  /** The members a pane shows: the party, the PC box, or the fallen. */
+  private paneMembers(pane: PaneId): readonly RunPokemon[] {
+    if (pane === 'party') return this.run.party;
+    return pane === 'rip' ? this.run.rip : this.run.box;
+  }
+
   private paneRows(pane: PaneId): readonly RunPokemon[] {
-    return pane === 'party' ? this.run.party : this.run.box;
+    return this.paneMembers(pane);
   }
 
   /**
@@ -1615,6 +1632,7 @@ export class RouteScene extends Phaser.Scene {
     switch (this.hudKeyboardPane) {
       case 'party':
       case 'box':
+      case 'rip':
         return this.handleMemberKeyboard(this.hudKeyboardPane, action);
       case 'bag':
         return this.handleBagKeyboard(action);
@@ -1714,11 +1732,15 @@ export class RouteScene extends Phaser.Scene {
     }
     this.hudUi = next.ui;
     // `left`/`right` may have crossed panes; the keyboard and the page follow it.
-    if (this.hudKeyboardPane === 'party' || this.hudKeyboardPane === 'box') {
+    if (
+      this.hudKeyboardPane === 'party' ||
+      this.hudKeyboardPane === 'box' ||
+      this.hudKeyboardPane === 'rip'
+    ) {
       this.hudKeyboardPane = this.hudUi.pane;
       this.hudPartyHeaderFocus = false;
     }
-    if (this.hudUi.pane === 'box') this.hudBoxPage = boxPageForIndex(this.hudUi.index);
+    if (this.hudUi.pane !== 'party') this.hudBoxPage = boxPageForIndex(this.hudUi.index);
     this.refreshHud();
   }
 
@@ -1817,6 +1839,11 @@ export class RouteScene extends Phaser.Scene {
     if (memberId === null || !member) return [];
     const detail = memberDetail(this.run, memberId);
     if (!detail) return [];
+    // The dead keep only their move rows: every stop that would mutate is gone, so
+    // a move's own ⓘ still reads.
+    if (this.deadDetail()) {
+      return member.fighter.moves.map((_slot, index) => ({ kind: 'slot' as const, index }));
+    }
     return detailStops(this.hudDetailState.tab, {
       evolutions: this.readyEvolutions().length,
       slots: member.fighter.moves.length,
@@ -1917,6 +1944,7 @@ export class RouteScene extends Phaser.Scene {
   private confirmDetailSlot(index: number): void {
     const memberId = this.hudDetailState.memberId;
     if (memberId === null) return;
+    if (this.deadDetail()) return;
     const poolMove = this.hudLearnDrag;
     if (poolMove !== null) {
       const next = equipMove(this.run, memberId, poolMove, index, this.run.seed);
@@ -2186,6 +2214,20 @@ export class RouteScene extends Phaser.Scene {
       boxChildren.push(bg, label);
     }
 
+    const ripX = boxX + panelW - HUD_PAD_X - HUD_BOX_RIP_TAB_W;
+    const ripY = boxY + HUD_PAD_TOP;
+    const ripBg = this.add.rectangle(ripX, ripY, HUD_BOX_RIP_TAB_W, HUD_TAB_H, 0xcfcce2).setOrigin(0, 0);
+    const ripVeil = this.add
+      .rectangle(ripX, ripY, HUD_BOX_RIP_TAB_W, HUD_TAB_H, HUD_BOX_LOCK_FILL, HUD_BOX_LOCK_ALPHA)
+      .setOrigin(0, 0);
+    const ripLabel = addFrlgText(this, ripX + HUD_BOX_RIP_TAB_W / 2, ripY + 5, HUD_BOX_RIP_LABEL, {
+      size: 16,
+      tint: FRLG_INK,
+      origin: [0.5, 0],
+    });
+    this.hudBoxRip = { veil: ripVeil, bg: ripBg, label: ripLabel };
+    boxChildren.push(ripBg, ripVeil, ripLabel);
+
     const gridW = BOX_COLS * HUD_BOX_CELL + (BOX_COLS - 1) * HUD_BOX_CELL_GAP;
     const gridLeft = boxX + HUD_BOX_PAD + (panelW - HUD_BOX_PAD * 2 - gridW) / 2;
     this.hudBoxCells = [];
@@ -2213,7 +2255,7 @@ export class RouteScene extends Phaser.Scene {
         .setScale(HUD_PARTY_STATUS_SCALE)
         .setVisible(false);
       const lock = this.add
-        .rectangle(cellX, cellY, HUD_BOX_CELL, HUD_BOX_CELL, 0x1b1830, 0.55)
+        .rectangle(cellX, cellY, HUD_BOX_CELL, HUD_BOX_CELL, HUD_BOX_LOCK_FILL, HUD_BOX_LOCK_ALPHA)
         .setOrigin(0, 0)
         .setVisible(false);
       this.hudBoxCells.push({ highlight, bg, portrait, held, status, lock });
@@ -2746,8 +2788,9 @@ export class RouteScene extends Phaser.Scene {
       row.count.setText(`x${stack.count}`);
     });
 
-    const box = boxRows(this.run);
-    const pageCount = boxPageCount(box.length);
+    const pane: 'box' | 'rip' = this.hudUi.pane === 'rip' ? 'rip' : 'box';
+    const rows = pane === 'rip' ? ripRows(this.run) : boxRows(this.run);
+    const pageCount = boxPageCount(rows.length);
     if (this.hudBoxPage >= pageCount) this.hudBoxPage = pageCount - 1;
     this.hudBoxTabs.forEach((tab, i) => {
       const visible = i < pageCount;
@@ -2757,25 +2800,32 @@ export class RouteScene extends Phaser.Scene {
       tab.bg.setFillStyle(active ? 0x2f2c4d : 0xcfcce2);
       tab.label.setTint(active ? 0xf8fafc : FRLG_INK);
     });
+    const ripActive = this.hudUi.pane === 'rip';
+    this.hudBoxRip.bg.setFillStyle(ripActive ? 0x2f2c4d : 0xcfcce2);
+    this.hudBoxRip.label.setTint(ripActive ? 0xf8fafc : FRLG_INK);
     this.hudBoxCells.forEach((cell, i) => {
       const index = boxCellIndex(this.hudBoxPage, i % BOX_COLS, Math.floor(i / BOX_COLS));
-      const member = box[index];
+      const member = rows[index];
       const portrait = member ? portraitFor(member.speciesId, member.shiny) : null;
       cell.portrait.setVisible(portrait !== null);
       if (portrait) cell.portrait.setTexture(portrait.key, portrait.frame);
-      const heldFrame = member?.heldItem ? itemIconFrame(member.heldItem) : null;
-      const inHand = member !== undefined && this.hudDragItemFrom === member.id;
+      const heldFrame = pane === 'box' && member?.heldItem ? itemIconFrame(member.heldItem) : null;
+      const inHand = pane === 'box' && member !== undefined && this.hudDragItemFrom === member.id;
       cell.held.setVisible(heldFrame !== null && !inHand);
       if (heldFrame !== null) cell.held.setFrame(heldFrame);
-      const statusFrame = member?.status ? statusIconFrame(member.status) : null;
+      const statusFrame = pane === 'box' && member?.status ? statusIconFrame(member.status) : null;
       cell.status.setVisible(statusFrame !== null);
       if (statusFrame !== null) cell.status.setFrame(statusFrame);
-      // A box member outside the PC's editable window (the entry room's first
-      // visit, or the floor's own catch) reads locked.
-      cell.lock.setVisible(member !== undefined && !pcMemberEditable(this.run, member.id));
+      // The dead wear the lock veil on every filled cell; a locked box cell keeps
+      // the shipped rule.
+      cell.lock.setVisible(
+        pane === 'rip'
+          ? member !== undefined
+          : member !== undefined && !pcMemberEditable(this.run, member.id),
+      );
       cell.highlight.setVisible(
-        (this.hudUi.grabbed?.pane === 'box' && this.hudUi.index === index) ||
-          (this.hudKeyboardPane === 'box' && this.hudUi.index === index),
+        (this.hudUi.grabbed?.pane === pane && this.hudUi.index === index) ||
+          (this.hudKeyboardPane === pane && this.hudUi.index === index),
       );
     });
 
@@ -2942,6 +2992,7 @@ export class RouteScene extends Phaser.Scene {
       this.refreshNicknameField(null);
       return;
     }
+    const dead = this.deadDetail();
     // The panel decides whether it is on screen; the body follows its state.
     this.hudDetail.setVisible(panel?.expanded ?? true);
     if (panel) panel.container.setVisible(true);
@@ -3005,7 +3056,7 @@ export class RouteScene extends Phaser.Scene {
     } else {
       this.hudAbilityInfoButton.hide();
     }
-    this.refreshDetailEvolutions(stats, detail);
+    this.refreshDetailEvolutions(stats && !dead, detail);
 
     const moves = this.hudDetailState.tab === 'moves';
     this.hudDetailEmpty.setVisible(moves && detail.moves.length === 0);
@@ -3039,8 +3090,8 @@ export class RouteScene extends Phaser.Scene {
       popupAtCell: true,
     });
 
-    this.refreshLearnset(detail.ability, moves);
-    this.refreshNicknameField(detail);
+    this.refreshLearnset(detail.ability, moves && !dead);
+    this.refreshNicknameField(detail, !dead);
   }
 
   /**
@@ -3050,7 +3101,7 @@ export class RouteScene extends Phaser.Scene {
    * `click to name` hint at the box's right end. Drawing never ends an edit: the
    * buffer and the focus flag are read here, never written.
    */
-  private refreshNicknameField(detail: MemberDetail | null): void {
+  private refreshNicknameField(detail: MemberDetail | null, editable = true): void {
     const x = this.hudDetailX + HUD_CONTENT_LEFT - 4;
     this.hudNicknameRect = {
       x,
@@ -3061,7 +3112,7 @@ export class RouteScene extends Phaser.Scene {
       ),
       h: HUD_NICKNAME_FIELD_H,
     };
-    const show = this.hudDetailState.tab === 'stats' && detail !== null;
+    const show = this.hudDetailState.tab === 'stats' && detail !== null && editable;
     this.hudNicknameBg
       .setPosition(this.hudNicknameRect.x, this.hudNicknameRect.y)
       .setSize(this.hudNicknameRect.w, this.hudNicknameRect.h)
@@ -3077,6 +3128,7 @@ export class RouteScene extends Phaser.Scene {
   /** True when the pointer is on the nickname field's rectangle (STATS tab only). */
   private nicknameRowAt(pointer: Phaser.Input.Pointer): boolean {
     if (this.hudDetailState.tab !== 'stats') return false;
+    if (this.deadDetail()) return false;
     return pointInRect(this.panelPoint(pointer, 'detail'), this.hudNicknameRect);
   }
 
@@ -3084,6 +3136,7 @@ export class RouteScene extends Phaser.Scene {
   private beginNicknameEdit(): void {
     const memberId = this.hudDetailState.memberId;
     if (memberId === null) return;
+    if (this.deadDetail()) return;
     const detail = memberDetail(this.run, memberId);
     if (!detail) return;
     this.unpinAbilityInfo();
@@ -3234,8 +3287,15 @@ export class RouteScene extends Phaser.Scene {
     if (memberId === null) return undefined;
     return (
       this.run.party.find((entry) => entry.fighter.id === memberId) ??
-      this.run.box.find((entry) => entry.fighter.id === memberId)
+      this.run.box.find((entry) => entry.fighter.id === memberId) ??
+      this.run.rip.find((entry) => entry.fighter.id === memberId)
     );
+  }
+
+  /** True while the open detail panel is showing a member of `run.rip`. */
+  private deadDetail(): boolean {
+    const memberId = this.hudDetailState.memberId;
+    return memberId !== null && this.run.rip.some((member) => member.fighter.id === memberId);
   }
 
   /** The filtered learnset pool for the open member, in draw order. */
@@ -3354,7 +3414,8 @@ export class RouteScene extends Phaser.Scene {
 
   /** Steps the PC BOX to another page and redraws. */
   private stepBoxPage(delta: number): void {
-    const pageCount = boxPageCount(this.run.box.length);
+    const length = this.hudUi.pane === 'rip' ? this.run.rip.length : this.run.box.length;
+    const pageCount = boxPageCount(length);
     this.hudBoxPage = Math.max(0, Math.min(pageCount - 1, this.hudBoxPage + delta));
     this.refreshHud();
   }
@@ -3432,6 +3493,7 @@ export class RouteScene extends Phaser.Scene {
       if (this.handleDetailPointerDown(pointer)) return;
     }
     if (this.selectBagTab(pointer)) return;
+    if (this.selectRipTab(pointer)) return;
     if (this.selectBoxTab(pointer)) return;
     if (!this.hudUi.grabbed) {
       const badge = this.hudHeldBadgeAt(pointer);
@@ -3494,7 +3556,7 @@ export class RouteScene extends Phaser.Scene {
 
   /** Shows the grabbed member's avatar in hand, following the pointer. */
   private showHudGhost(pane: PaneId, index: number, pointer: Phaser.Input.Pointer): void {
-    const member = pane === 'party' ? this.run.party[index] : this.run.box[index];
+    const member = this.paneMembers(pane)[index];
     const portrait = member ? portraitFor(member.fighter.speciesId, member.fighter.shiny) : null;
     if (!portrait) {
       this.hudDragGhost.setVisible(false);
@@ -3587,10 +3649,14 @@ export class RouteScene extends Phaser.Scene {
         return;
       }
       const next = grabAt(this.run, this.hudUi, press.pane, press.index);
+      this.hudPress = null;
+      if (!next.ui.grabbed) {
+        this.input.setDefaultCursor('default');
+        return;
+      }
       this.run = next.run;
       this.hudUi = next.ui;
       this.hudGrabMoved = true;
-      this.hudPress = null;
       this.showHudGhost(press.pane, press.index, pointer);
       this.refreshHud();
     }
@@ -3738,7 +3804,8 @@ export class RouteScene extends Phaser.Scene {
       const from = this.hudDragItemFrom;
       const target = this.hudTarget(pointer);
       const intoBag = this.pointerInBagPanel(pointer);
-      const targetId = target ? this.memberIdAt(target) : null;
+      // The dead are not a drop target: a badge released on RIP goes back on its member.
+      const targetId = target && target.pane !== 'rip' ? this.memberIdAt(target) : null;
       this.endHudItemDrag();
       if (targetId) {
         if (from === null) {
@@ -3908,6 +3975,7 @@ export class RouteScene extends Phaser.Scene {
       this.toggleDetailInfo(cell);
       return true;
     }
+    if (this.deadDetail()) return true;
     this.hudDetailState = grabMove(this.hudDetailState, cell.index);
     this.hudGrabMoved = false;
     this.refreshDetail();
@@ -4231,7 +4299,8 @@ export class RouteScene extends Phaser.Scene {
   /** Equips the dragged stack to the member under the drop, saving the swap. */
   private equipHudItem(itemId: string, target: { pane: PaneId; index: number } | null): void {
     if (!target) return;
-    const member = target.pane === 'party' ? this.run.party[target.index] : this.run.box[target.index];
+    if (target.pane === 'rip') return;
+    const member = this.paneMembers(target.pane)[target.index];
     if (!member) return;
     const next = equipHeldItem(this.run, member.fighter.id, itemId);
     if (next === this.run) return;
@@ -4242,7 +4311,7 @@ export class RouteScene extends Phaser.Scene {
 
   /** The id of the member at `target`, or null if that slot is empty. */
   private memberIdAt(target: { pane: PaneId; index: number }): string | null {
-    const member = target.pane === 'party' ? this.run.party[target.index] : this.run.box[target.index];
+    const member = this.paneMembers(target.pane)[target.index];
     return member?.fighter.id ?? null;
   }
 
@@ -4274,7 +4343,7 @@ export class RouteScene extends Phaser.Scene {
     grabbed: { pane: PaneId },
     target: { pane: PaneId; index: number } | null,
   ): void {
-    if (target && target.pane !== grabbed.pane) {
+    if (target && target.pane !== grabbed.pane && target.pane !== 'rip') {
       const next = swapAcross(this.run, this.hudUi, target.index);
       if (next.run !== this.run) {
         this.run = next.run;
@@ -4299,12 +4368,12 @@ export class RouteScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  /** The party row or box cell under the pointer, or null. */
+  /** The party row or box/rip cell under the pointer, or null. */
   private hudTarget(pointer: Phaser.Input.Pointer): { pane: PaneId; index: number } | null {
     const row = this.hudPartyRowAt(pointer);
     if (row !== null) return { pane: 'party', index: row };
     const cell = this.hudBoxCellAt(pointer);
-    if (cell !== null) return { pane: 'box', index: cell };
+    if (cell !== null) return { pane: this.hudUi.pane === 'rip' ? 'rip' : 'box', index: cell };
     return null;
   }
 
@@ -4339,7 +4408,8 @@ export class RouteScene extends Phaser.Scene {
     const row = Math.floor((point.y - (this.hudBoxY + HUD_BOX_TABS_H)) / stride);
     if (col < 0 || col >= BOX_COLS || row < 0 || row >= BOX_ROWS) return null;
     const index = boxCellIndex(this.hudBoxPage, col, row);
-    return index < this.run.box.length ? index : null;
+    const length = this.hudUi.pane === 'rip' ? this.run.rip.length : this.run.box.length;
+    return index < length ? index : null;
   }
 
   private pointerInPartyPanel(pointer: Phaser.Input.Pointer): boolean {
@@ -4388,8 +4458,8 @@ export class RouteScene extends Phaser.Scene {
    */
   private hudHeldBadgeAt(pointer: Phaser.Input.Pointer): { itemId: string; memberId: string } | null {
     const target = this.hudTarget(pointer);
-    if (!target) return null;
-    const member = target.pane === 'party' ? this.run.party[target.index] : this.run.box[target.index];
+    if (!target || target.pane === 'rip') return null;
+    const member = this.paneMembers(target.pane)[target.index];
     const itemId = member?.fighter.heldItem;
     if (!member || !itemId) return null;
     const badge =
@@ -4446,12 +4516,35 @@ export class RouteScene extends Phaser.Scene {
     if (!tab) return false;
     this.hudBoxPage = tab.page;
     // The cursor follows the page the pointer picked, so a page tab can never leave
-    // the cursor pointing past the box it just switched to.
+    // the cursor pointing past the list it just switched to.
     if (!this.hudUi.grabbed) {
-      this.hudUi = { ...this.hudUi, index: Math.min(this.hudUi.index, this.run.box.length - 1) };
+      const length = this.hudUi.pane === 'rip' ? this.run.rip.length : this.run.box.length;
+      this.hudUi = { ...this.hudUi, index: Math.min(this.hudUi.index, length - 1) };
     }
     this.refreshHud();
     return true;
+  }
+
+  /** A press on the RIP tab shows the dead (or returns to the box); true when it handled it. */
+  private selectRipTab(pointer: Phaser.Input.Pointer): boolean {
+    if (!this.panelExpanded('box')) return false;
+    const point = this.panelPoint(pointer, 'box');
+    const { bg } = this.hudBoxRip;
+    if (point.x < bg.x || point.x > bg.x + bg.width || point.y < bg.y || point.y > bg.y + bg.height) {
+      return false;
+    }
+    this.setHudBoxPane(this.hudUi.pane === 'rip' ? 'box' : 'rip');
+    return true;
+  }
+
+  /** Shows the box window's other list (`'rip'` or back to `'box'`). */
+  private setHudBoxPane(pane: 'box' | 'rip'): void {
+    if (this.hudKeyboardPane === 'box' || this.hudKeyboardPane === 'rip') {
+      this.hudKeyboardPane = pane;
+    }
+    if (this.hudUi.pane !== pane) this.hudUi = { pane, index: 0, grabbed: null };
+    this.hudBoxPage = 0;
+    this.refreshHud();
   }
 
   /**
