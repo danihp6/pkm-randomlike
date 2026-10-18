@@ -61,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           cap="${AGENT_DAILY_CYCLES:-0}"
-          go() { echo "go=$1" >> "$GITHUB_OUTPUT"; echo "$2"; }
+          go() { echo "go=$1" >> "$GITHUB_OUTPUT"; echo "REASON=$2" >> "$GITHUB_ENV"; echo "$2"; }
           red() { gh issue create --label agent-blocked --title "$1" --body "$2" || true; }
 
           if [ "${AUTOPILOT:-}" != "on" ]; then
@@ -109,3 +109,27 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run agent-cycle.yml --ref main
+
+      - name: Summary
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GO: ${{ steps.gate.outputs.go }}
+          AUTOPILOT_STATE: ${{ vars.AUTOPILOT }}
+        run: |
+          # The driver's own summary, so the usual question — "why has nothing run?" —
+          # is answered in the runs list instead of in a log.
+          set -uo pipefail
+          out="$GITHUB_STEP_SUMMARY"
+          if [ "${GO:-}" = 'true' ]; then emoji='🚀'; verb='dispatched a cycle'; else emoji='🅿️'; verb='stayed parked'; fi
+          {
+            echo "# $emoji The loop $verb"
+            echo
+            if [ -n "${REASON:-}" ]; then echo "**$REASON**"; echo; fi
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| AUTOPILOT | \`${AUTOPILOT_STATE:-unset}\` |"
+            echo "| Open tasks | $(grep -cE '^- \[ \] \*\*\[Task-' TODO.md || true) |"
+            echo "| Blocked | $(grep -cE '^- \[!\] \*\*\[Task-' TODO.md || true) |"
+            echo "| Cycles today | $(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/agent-cycle.yml/runs?created=$(date -u +%Y-%m-%d)&per_page=100" --jq '.workflow_runs | length' 2>/dev/null || echo '?') |"
+          } >> "$out"

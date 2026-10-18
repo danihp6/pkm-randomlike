@@ -264,7 +264,7 @@ jobs:
           before=$(git rev-parse "$BEFORE_SHA")
           moved=$(git rev-parse HEAD)
           short=$(git rev-parse --short HEAD)
-          tasks=$(git log --format=%s "$BEFORE_SHA..HEAD" | grep -oE 'task-[0-9]+' | sort -u | tr '\n' ' ' || true)
+          tasks=$(git log --format=%s "$BEFORE_SHA..HEAD" | grep -oE 'task-[0-9]+' | sort -u | sed 's/^task-/Task-/' | paste -sd' ' - || true)
           [ -n "$tasks" ] || tasks='—'
           diff=$(git diff --shortstat "$BEFORE_SHA..HEAD" || true)
           [ -n "$diff" ] || diff='nothing'
