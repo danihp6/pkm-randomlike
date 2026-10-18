@@ -62,13 +62,18 @@ function tmPool(speciesId: string): readonly string[] {
  * run's bag can teach it, minus the moves already in its four slots. A move that
  * is both (a TM it already learned) appears once, as the free level-up move.
  * Moves whose id the dex cannot resolve drop out.
+ *
+ * A No Guard holder is never offered an OHKO move (`D17`), so the pair can never
+ * be dragged onto a slot: `equipMove` only accepts what this offers.
  */
 export function learnsetPool(run: RunState, member: RunPokemon, learnsetSeed?: string): LearnEntry[] {
   const { speciesId, level, moves } = member.fighter;
   const equipped = new Set(moves.map((slot) => slot.moveId));
   const entries: LearnEntry[] = [];
   const seen = new Set<string>();
+  const forbidsOhko = member.fighter.ability === 'No Guard';
   const push = (entry: LearnEntry): void => {
+    if (forbidsOhko && getMove(entry.moveId)?.ohko === true) return;
     if (equipped.has(entry.moveId) || seen.has(entry.moveId) || !getMove(entry.moveId)) return;
     seen.add(entry.moveId);
     entries.push(entry);

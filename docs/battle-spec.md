@@ -118,6 +118,12 @@ theirs, `RunState.capturedRooms`, not a per-battle counter).
 - The **party and the PC share one level and one XP bar** (D35): the XP a battle
   awards fills the squad's single bar, and every member levels with it, learning
   the moves the learnset says at that level. Levelling never evolves a member.
+  A crossed move is **not equipped for you**: `levelUpPokemon` leaves the member's
+  four slots exactly as they were, never forgets a move, and reports each crossed
+  move as a `learn` event, so the move waits in the **learnset band** of the MOVES
+  tab (`docs/design-spec.md` §5) until the player drags it onto a slot — the band is
+  the only way into a slot. The level-up modal still announces it ("X learned Y!").
+  A No Guard holder is never offered an OHKO move by the band either (D17).
 - **Evolution is manual and level-only.** Every evolution in the dex — level-up,
   stone, trade, friendship, move — is resolved to a level (`evolutionBranches`,
   `src/data/dex/evolutions.ts`): a canon level evolution keeps its level, the

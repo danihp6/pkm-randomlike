@@ -1,4 +1,4 @@
-import type { RunPokemon } from '../engine/run';
+import type { ProgressionEvent, RunPokemon } from '../engine/run';
 
 /**
  * Battle presentation beats (Phase 5). The capture and move-FX beats already
@@ -23,7 +23,9 @@ export type LevelUpBeat = Readonly<{
   toLevel: number;
   /** The species it evolved into, or null when it kept its species. */
   evolvedInto: string | null;
+  /** The moves crossed on the way up, in event order. */
   learned: readonly string[];
+  /** Always empty: a level-up never forgets a move. */
   forgotten: readonly string[];
 }>;
 
@@ -31,26 +33,33 @@ export type LevelUpBeat = Readonly<{
  * The level-up beats for a party: what changed for each member between the run
  * before the battle and the run after `resolveBattle`. A member that gained
  * only XP, a released Pokémon and a fresh catch (a new id) produce nothing, so
- * the route HUD animates exactly the rows that levelled.
+ * the route HUD animates exactly the rows that levelled. `learned` is read from
+ * the resolution's own `learn` events, not from a slot diff, because a level-up
+ * never touches the four slots; `forgotten` is always empty.
  */
 export function levelUpBeats(
   before: readonly RunPokemon[],
   after: readonly RunPokemon[],
+  events: readonly ProgressionEvent[],
 ): LevelUpBeat[] {
   const previous = new Map(before.map((member) => [member.fighter.id, member]));
   const beats: LevelUpBeat[] = [];
   for (const member of after) {
     const old = previous.get(member.fighter.id);
     if (!old || member.fighter.level <= old.fighter.level) continue;
-    const moves = member.fighter.moves.map((slot) => slot.moveId);
-    const oldMoves = old.fighter.moves.map((slot) => slot.moveId);
+    const id = member.fighter.id;
+    const learned: string[] = [];
+    for (const event of events) {
+      if (event.kind !== 'learn' || event.memberId !== id) continue;
+      learned.push(event.moveId);
+    }
     beats.push({
-      id: member.fighter.id,
+      id,
       fromLevel: old.fighter.level,
       toLevel: member.fighter.level,
       evolvedInto: member.fighter.speciesId === old.fighter.speciesId ? null : member.fighter.speciesId,
-      learned: moves.filter((moveId) => !oldMoves.includes(moveId)),
-      forgotten: oldMoves.filter((moveId) => !moves.includes(moveId)),
+      learned,
+      forgotten: [],
     });
   }
   return beats;
