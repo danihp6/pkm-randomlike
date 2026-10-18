@@ -1,26 +1,71 @@
 {
   "size": 4,
+  "tokens": {
+    "surface": "#10161f",
+    "ink": "#f8fafc",
+    "muted": "#94a3b8",
+    "accent": "#7dd3fc",
+    "badgeInk": "#10161f",
+    "positive": "#4ad15c",
+    "negative": "#f87171",
+    "hairline": {
+      "colour": "#ffffff",
+      "alpha": 0.16
+    },
+    "highlight": {
+      "colour": "#ffffff",
+      "alpha": 0.14
+    },
+    "shadow": {
+      "colour": "#000000",
+      "alpha": 0.35
+    },
+    "row": {
+      "fill": {
+        "colour": "#ffffff",
+        "alpha": 0.06
+      },
+      "stroke": {
+        "colour": "#ffffff",
+        "alpha": 0.1
+      }
+    },
+    "selected": {
+      "fill": {
+        "colour": "#7dd3fc",
+        "alpha": 0.16
+      },
+      "stroke": {
+        "colour": "#7dd3fc",
+        "alpha": 1
+      }
+    },
+    "track": {
+      "colour": "#ffffff",
+      "alpha": 0.12
+    }
+  },
   "window": {
-    "corner": 20,
+    "corner": 11,
     "padding": {
       "x": 20,
       "top": 16,
       "bottom": 8
     },
-    "alpha": 0.88,
+    "alpha": 0.72,
     "texture": {
       "width": 96,
       "height": 96
     }
   },
   "textbox": {
-    "corner": 24,
+    "corner": 11,
     "padding": {
       "x": 36,
       "top": 28,
       "bottom": 28
     },
-    "alpha": 0.94,
+    "alpha": 0.8,
     "texture": {
       "width": 128,
       "height": 128

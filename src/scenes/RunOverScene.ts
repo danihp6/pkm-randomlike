@@ -6,8 +6,8 @@ import { subscribeKeybinds } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { t } from '../i18n';
-import { addFrlgWindow } from '../ui/frlg';
-import { addFrlgText } from '../ui/frlgFont';
+import { addFrlgWindow, FRLG_MUTED } from '../ui/frlg';
+import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { RUN_OVER_INPUT_DELAY_MS, runSummary, runSummaryLines } from '../ui/runSummary';
 
 /**
@@ -46,11 +46,11 @@ export class RunOverScene extends Phaser.Scene {
     const panelH = 356;
     const x = (width - panelW) / 2;
     const y = (height - panelH) / 2 - 16;
-    addFrlgWindow(this, x, y, panelW, panelH, 'textbox');
-    addFrlgText(this, width / 2, y + 44, lines[0], { size: 32, origin: 0.5 });
-    addFrlgText(this, width / 2, y + 88, lines[1], { size: 16, tint: 0x94a3b8, origin: 0.5 });
+    addFrlgWindow(this, x, y, panelW, panelH);
+    addFrlgText(this, width / 2, y + 44, lines[0], { size: 32, tint: FRLG_INK, origin: 0.5 });
+    addFrlgText(this, width / 2, y + 88, lines[1], { size: 16, tint: FRLG_MUTED, origin: 0.5 });
     lines.slice(2).forEach((line, i) => {
-      addFrlgText(this, x + 64, y + 140 + i * 44, line, { size: 16 });
+      addFrlgText(this, x + 64, y + 140 + i * 44, line, { size: 16, tint: FRLG_INK });
     });
     addFrlgText(
       this,
@@ -59,7 +59,7 @@ export class RunOverScene extends Phaser.Scene {
       t('runOver.return', { key: keyLabel(loadSettings().keybinds.confirm) }),
       {
         size: 16,
-        tint: 0x94a3b8,
+        tint: FRLG_MUTED,
         origin: 0.5,
       },
     );

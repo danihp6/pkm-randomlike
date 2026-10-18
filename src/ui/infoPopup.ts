@@ -1,11 +1,11 @@
 import type Phaser from 'phaser';
-import { addFrlgWindow, FRLG_WINDOW_PADDING } from './frlg';
+import { addFrlgWindow, FRLG_BADGE_INK, FRLG_MUTED, FRLG_WINDOW_PADDING } from './frlg';
 import { addFrlgText, FRLG_FONT_SIZE, FRLG_INK } from './frlgFont';
 import { TYPE_ICON_W } from '../data/typeIcons';
 
 /**
- * The floating description window the move cells and the ability rows share: an
- * FRLG window whose height comes from its wrapped text, an optional left column
+ * The floating description window the move cells and the ability rows share: the
+ * glass card whose height comes from its wrapped text, an optional left column
  * of stacked badges or one coloured chip, and a text that hides the whole thing
  * when it is empty. Extracted from `moveGrid.ts` so both read identically.
  *
@@ -65,12 +65,12 @@ export class InfoPopup {
       scene.add.image(0, 0, BLANK_TEXTURE_KEY).setOrigin(0, 0).setVisible(false),
     );
     this.chip = scene.add
-      .rectangle(0, 0, POPUP_CHIP_W, POPUP_CHIP_H, 0x9aa0b4)
+      .rectangle(0, 0, POPUP_CHIP_W, POPUP_CHIP_H, FRLG_MUTED)
       .setOrigin(0, 0)
       .setVisible(false);
     this.chipText = addFrlgText(scene, 0, 0, '', {
       size: 16,
-      tint: 0xf8fafc,
+      tint: FRLG_BADGE_INK,
       origin: [0.5, 0],
     }).setVisible(false);
     this.text = addFrlgText(scene, 0, 0, '', { tint: FRLG_INK, lineSpacing: 4 }).setVisible(false);

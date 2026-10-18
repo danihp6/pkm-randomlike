@@ -1,7 +1,17 @@
 import type Phaser from 'phaser';
 import { addFrlgText, FRLG_INK } from './frlgFont';
-import { FRLG_WINDOW_PADDING } from './frlg';
-import { typeColor, typeTint } from './typeColors';
+import {
+  FRLG_ACCENT,
+  FRLG_MUTED,
+  FRLG_NEGATIVE,
+  FRLG_POSITIVE,
+  FRLG_ROW_FILL,
+  FRLG_ROW_STROKE,
+  FRLG_SELECTED_FILL,
+  FRLG_SELECTED_STROKE,
+  FRLG_WINDOW_PADDING,
+} from './frlg';
+import { typeColor } from './typeColors';
 import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeIcons';
 import {
   MOVE_CATEGORY_ICON_W,
@@ -15,9 +25,9 @@ import { t } from '../i18n';
 /**
  * The shared moves grid + floating info popup. The battle's FIGHT menu and the
  * route HUD's detail panel both draw the same component, so a move cell looks and
- * reads identically in both: a type-tinted cell with the type badge, category
- * badge, PP and power/accuracy, an ⓘ button, and a description window that floats
- * over the scene while the button is asked for.
+ * reads identically in both: a glass cell with the type badge, category badge, PP
+ * and power/accuracy, an ⓘ button, and a description window that floats over the
+ * scene while the button is asked for.
  *
  * The component owns its visuals but not the input: each scene wires its own
  * pointer zones and asks `indexAt` / `infoAt` where a point landed, then passes
@@ -97,8 +107,37 @@ const POPUP_GAP = 8;
 const CATEGORY_ICON_SCALE = 1.5;
 
 /** Green when a stat line reads above its base, red when below, ink when level. */
-const STAT_UP = 0x1b7a3d;
-const STAT_DOWN = 0xb3261e;
+const STAT_UP = FRLG_POSITIVE;
+const STAT_DOWN = FRLG_NEGATIVE;
+
+/** An ordinary cell's fill and 1px outline, and the selected / disabled pair. */
+type CellTone = Readonly<{ fill: number; fillAlpha: number; stroke: number; strokeAlpha: number }>;
+
+const ROW_TONE: CellTone = {
+  fill: FRLG_ROW_FILL.colour,
+  fillAlpha: FRLG_ROW_FILL.alpha,
+  stroke: FRLG_ROW_STROKE.colour,
+  strokeAlpha: FRLG_ROW_STROKE.alpha,
+};
+const SELECTED_TONE: CellTone = {
+  fill: FRLG_SELECTED_FILL.colour,
+  fillAlpha: FRLG_SELECTED_FILL.alpha,
+  stroke: FRLG_SELECTED_STROKE.colour,
+  strokeAlpha: FRLG_SELECTED_STROKE.alpha,
+};
+/** A marked (disabled) cell keeps the ordinary fill and takes a muted outline. */
+const MARKED_TONE: CellTone = {
+  fill: FRLG_ROW_FILL.colour,
+  fillAlpha: FRLG_ROW_FILL.alpha,
+  stroke: FRLG_MUTED,
+  strokeAlpha: 0.5,
+};
+
+/** A cell's tone from its own state: selected, marked (disabled) or ordinary. */
+function cellTone(selected: boolean, marked: boolean): CellTone {
+  if (selected) return SELECTED_TONE;
+  return marked ? MARKED_TONE : ROW_TONE;
+}
 
 /** The one empty slot every padding answer shares: it carries no data at all. */
 const EMPTY_SLOT: MoveGridEmptyCell = { empty: true };
@@ -239,9 +278,9 @@ export class MoveGrid {
   constructor(scene: Phaser.Scene, container?: Phaser.GameObjects.Container) {
     this.cells = Array.from({ length: GRID_CELLS }, () =>
       scene.add
-        .rectangle(0, 0, 10, 10, 0xe6e3f2)
+        .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
         .setOrigin(0, 0)
-        .setStrokeStyle(2, 0xb9b4d0)
+        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
         .setVisible(false),
     );
     this.names = Array.from({ length: GRID_CELLS }, () =>
@@ -264,8 +303,8 @@ export class MoveGrid {
     );
     this.infoButtons = Array.from({ length: GRID_CELLS }, () =>
       scene.add
-        .rectangle(0, 0, INFO_SIZE, INFO_SIZE, 0xcfcce2)
-        .setStrokeStyle(2, 0x9a94b8)
+        .rectangle(0, 0, INFO_SIZE, INFO_SIZE, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
+        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
         .setVisible(false),
     );
     this.infoLabels = Array.from({ length: GRID_CELLS }, () =>
@@ -317,11 +356,12 @@ export class MoveGrid {
         // An empty container is its rectangle and stroke, nothing else: it takes a
         // dropped move, but it has no name, no badge and no ⓘ to float from.
         const selected = i === options.selected;
+        const tone = cellTone(selected, false);
         this.cells[i]
           .setPosition(rect.x, rect.y)
           .setSize(rect.w, rect.h)
-          .setFillStyle(0xe6e3f2, selected ? 0.35 : 0.72)
-          .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
+          .setFillStyle(tone.fill, tone.fillAlpha)
+          .setStrokeStyle(1, tone.stroke, tone.strokeAlpha)
           .setVisible(true);
         this.hideCellPieces(i);
         continue;
@@ -395,24 +435,27 @@ export class MoveGrid {
       const buttonX = rect.x + rect.w - CELL_PAD - INFO_SIZE / 2;
       const buttonY = rect.y + CELL_TOP + INFO_SIZE / 2;
       const active = options.info === i;
+      const buttonTone = cellTone(active, false);
       this.infoButtons[i]
         .setPosition(buttonX, buttonY)
         .setSize(INFO_SIZE, INFO_SIZE)
-        .setFillStyle(active ? 0xf7e0a6 : 0xcfcce2)
-        .setStrokeStyle(2, active ? 0x2f2c4d : 0x9a94b8)
+        .setFillStyle(buttonTone.fill, buttonTone.fillAlpha)
+        .setStrokeStyle(1, buttonTone.stroke, buttonTone.strokeAlpha)
         .setAlpha(alpha)
         .setVisible(true);
       this.infoLabels[i].setPosition(buttonX, buttonY).setAlpha(alpha).setVisible(true);
 
       const selected = i === options.selected;
-      // A disabled cell reads by shape as well as by luminance: it takes the dark
-      // 3-px stroke the selection uses, so "cannot be picked" never rests on alpha.
+      // A disabled cell reads by shape as well as by luminance: it takes the muted
+      // 1-px outline, so "cannot be picked" never rests on alpha alone.
       const marked = selected || !cell.enabled;
+      const tone = cellTone(selected, marked);
+      this.names[i].setTint(selected ? FRLG_ACCENT : FRLG_INK);
       this.cells[i]
         .setPosition(rect.x, rect.y)
         .setSize(rect.w, rect.h)
-        .setFillStyle(typeTint(cell.type, selected ? 0.35 : 0.72))
-        .setStrokeStyle(marked ? 3 : 2, marked ? 0x2f2c4d : 0x9a94b8)
+        .setFillStyle(tone.fill, tone.fillAlpha)
+        .setStrokeStyle(1, tone.stroke, tone.strokeAlpha)
         .setVisible(true);
     }
 

@@ -13,11 +13,12 @@ Tilesets carry their own palette, declared per biome in `src/data/tilesets/*.ts`
 and used as the fallback fill when an atlas has not loaded. Background
 `#10161f`, UI text `#f8fafc` on `#000000aa`.
 
-The drawn UI chrome carries its own: the deep-black tones that replaced the FRLG
-navy — bezel `#0b0b10`, a keyline `#3a3d52`, the light window's field `#f8f8f8`
-and the dark battle box's `#11121a`, over a `#000000` outer shadow — with the
-window's own translucency (0.88) and the battle box's (0.94) applied over them,
-and the ink that draws text on the light windows is `#0b0b10`.
+The drawn UI chrome carries its own: one **dark glass card**, the `#10161f`
+surface at 0.72 alpha (the battle's message box, and only it, at 0.80) under a
+1px `rgba(255,255,255,0.16)` hairline, a 1px `rgba(0,0,0,0.35)` shadow ring on
+the card's own edge, an inset top highlight `rgba(255,255,255,0.14)` and an 11px
+corner on both skins. Its ink is the light `#f8fafc` (`FRLG_INK`), its secondary
+tone `#94a3b8` and its one accent `#7dd3fc`, reserved for selection and controls.
 
 ## Provenance — read before adding art
 
@@ -205,27 +206,29 @@ the bar's overlay. The same builder still writes the light menu window
 set below supersedes and nothing reads.
 
 The **window chrome is drawn, not ripped**: `scripts/ui/build-chrome.mjs`
-(`npm run data:ui`) paints `src/assets/ui/window.png` (the light menu window,
-HP panels and menus) and `src/assets/ui/textbox.png` (the dark battle box) with
-the repo's own pixel codec, hard pixels and no antialiasing. Each keeps the FRLG
+(`npm run data:ui`) paints `src/assets/ui/window.png` (the menu card: panels,
+lists, menus) and `src/assets/ui/textbox.png` (the battle's message box) with the
+repo's own pixel codec, hard pixels and no antialiasing. Each keeps the FRLG
 frame's outer shape and baked content insets, so no scene's layout moved, and
-each is a nine-slice whose corner is the one it replaces (20 and 24) with its
-frame band drawn inside that corner — the window's 20/16/8 border fits its 20
-corner, and the battle box's band is clamped to its 24 corner, because a 128px
-texture is drawn at any panel size and a band wider than the corner would
-stretch with the panel — while the frozen 36/28/28 padding stays the content
-inset inside the battle box's field. The corner and the padding are exported as
-`FRLG_WINDOW_PADDING` / `FRLG_TEXTBOX_PADDING` and driven by
-`src/data/ui/chrome.json`. The palette is deep black where the rip is navy: the
-bezel `#0b0b10`, a 2px keyline `#3a3d52` at the bezel's inner edge, the light
-window's field `#f8f8f8` (with its 1px inset highlight along the interior's top
-edge, which is what tells the two shapes apart) and the battle box's `#11121a`,
-over a 1px `#000000` outer shadow. The set's own translucency — 0.88 for the
-window, 0.94 for the battle box, in `chrome.json` — is applied once by
-`addFrlgWindow`, so the route and the battle stay readable through the panels
-with every scene inheriting it; the PNGs stay opaque so a scene that fades a
-window multiplies cleanly instead of double-applying. The FRLG
-`window.png`/`textbox.png` stay in the tree as the source this derives from,
+each is a nine-slice whose corner is **11** — the packed corner *is* the runtime
+radius, since `addFrlgWindow` hands `chrome.window.corner` straight to
+`setSlices` and the atlas is drawn 1:1 — with its frame band drawn inside that
+corner, because a 128px texture is drawn at any panel size and a band wider than
+the corner would stretch with the panel, while the frozen 36/28/28 padding stays
+the content inset inside the battle box's field. The corner and the padding are
+exported as `FRLG_WINDOW_PADDING` / `FRLG_TEXTBOX_PADDING` and driven by
+`src/data/ui/chrome.json`. The two skins are the **same dark glass card**: the
+`#10161f` surface, a 1px hairline ring just inside the card's own edge, a 1px
+shadow ring on that edge, an inset highlight row at `y = 11` and the `tokens`
+block (the surface, the ink `#f8fafc`, the muted `#94a3b8`, the accent `#7dd3fc`,
+the badge ink, the semantic pair and the row / selected / track tones) written
+into `chrome.json`, which `src/ui/frlg.ts` exports typed. Every ring tone is
+written **pre-composited over the surface**, because the skin carries the surface
+as its field and `addFrlgWindow` applies the skin's own translucency once — 0.72
+for a menu card, 0.80 for the battle box — so the route and the battle stay
+readable through the panels with every scene inheriting it; the PNGs stay opaque
+so a scene that fades a window multiplies cleanly instead of double-applying. The
+FRLG `window.png`/`textbox.png` stay in the tree as the source this derives from,
 unused.
 
 The bitmap font is packed the same way: `scripts/frlg/build-font.mjs` reads
@@ -239,14 +242,15 @@ plus the four named arrows.
 
 The face the interface actually draws with is the **derived** one:
 `scripts/ui/build-chrome.mjs` rewrites the committed atlas' shadow pixels from
-opaque mid grey to half-alpha mid grey — a glyph reads as a soft halo on a
-translucent panel instead of a solid second tone — keeps the ink pure white so
-one texture still serves white-on-dark and dark-on-light, and copies every
-metric byte-for-byte into `src/assets/ui/font.png` + `src/data/ui/font.json`
-(`name` `UI`), read through `src/ui/frlgFont.ts`. Text on the light windows is
-the deep black `#0b0b10` (`FRLG_INK`), not the old navy. The glyph shapes are the
-rip's: a different typeface would need a licensed/open font asset plus a
-rasteriser, which is a task of its own.
+opaque mid grey to a **half-alpha black halo** — a glyph reads as a soft halo on
+the dark glass instead of a solid second tone — keeps the ink pure white so one
+texture serves every string the scenes tint, and copies every metric
+byte-for-byte into `src/assets/ui/font.png` + `src/data/ui/font.json` (`name`
+`UI`), read through `src/ui/frlgFont.ts`. Text on the card is the light
+`#f8fafc` (`FRLG_INK`, read from `chrome.json`'s `tokens.ink`), on a full-colour
+type badge or chip the dark `FRLG_BADGE_INK`. The glyph shapes are the rip's: a
+different typeface would need a licensed/open font asset plus a rasteriser, which
+is a task of its own.
 
 The **type badges** now come from Pokémon Añil rather than this FRLG sheet: the
 fangame's `Graphics/UI/types.png` is one column of 19 badges — the 18 types in dex

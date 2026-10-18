@@ -1,10 +1,11 @@
 import type Phaser from 'phaser';
+import { FRLG_HAIRLINE, FRLG_SURFACE, FRLG_TRACK } from './frlg';
 
-export const PANEL_FILL = 0x1b2740;
-export const PANEL_STROKE = 0xf8fafc;
-export const GAUGE_TRACK = 0x0b1220;
+export const PANEL_FILL = FRLG_SURFACE;
+export const PANEL_STROKE = FRLG_HAIRLINE.colour;
+export const GAUGE_TRACK = FRLG_TRACK.colour;
 
-/** A rounded panel, the shared chrome for the message box and the HP readouts. */
+/** A rounded glass card, the shared chrome for a message box or an HP readout. */
 export function drawPanel(
   graphics: Phaser.GameObjects.Graphics,
   x: number,
@@ -13,13 +14,13 @@ export function drawPanel(
   height: number,
   options: Readonly<{ fill?: number; stroke?: number; radius?: number }> = {},
 ): void {
-  graphics.fillStyle(options.fill ?? PANEL_FILL, 0.96);
-  graphics.fillRoundedRect(x, y, width, height, options.radius ?? 12);
-  graphics.lineStyle(3, options.stroke ?? PANEL_STROKE, 1);
-  graphics.strokeRoundedRect(x, y, width, height, options.radius ?? 12);
+  graphics.fillStyle(options.fill ?? PANEL_FILL, 1);
+  graphics.fillRoundedRect(x, y, width, height, options.radius ?? 11);
+  graphics.lineStyle(1, options.stroke ?? PANEL_STROKE, FRLG_HAIRLINE.alpha);
+  graphics.strokeRoundedRect(x, y, width, height, options.radius ?? 11);
 }
 
-/** An HP/XP gauge: a dark track with a coloured fill clamped to 0..1. */
+/** An HP/XP gauge: the glass track with a coloured fill clamped to 0..1. */
 export function drawGauge(
   graphics: Phaser.GameObjects.Graphics,
   x: number,
@@ -30,7 +31,7 @@ export function drawGauge(
   color: number,
 ): void {
   const clamped = Math.max(0, Math.min(1, fraction));
-  graphics.fillStyle(GAUGE_TRACK, 1);
+  graphics.fillStyle(GAUGE_TRACK, FRLG_TRACK.alpha);
   graphics.fillRoundedRect(x, y, width, height, height / 2);
   if (clamped <= 0) return;
   graphics.fillStyle(color, 1);

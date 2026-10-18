@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { KeybindAction } from '../data/keybinds';
 import { prefersTouchControls } from '../input/device';
+import { FRLG_HAIRLINE } from './frlg';
 import { addFrlgText } from './frlgFont';
 import { padDirection, touchControlsLayout, type TouchDirection } from './touchLayout';
 
@@ -15,7 +16,7 @@ import { padDirection, touchControlsLayout, type TouchDirection } from './touchL
  */
 
 /** The outline colour and its half-transparent alpha, per the control's look. */
-const OUTLINE_COLOR = 0xffffff;
+const OUTLINE_COLOR = FRLG_HAIRLINE.colour;
 const OUTLINE_ALPHA = 0.5;
 const OUTLINE_WIDTH = 3;
 const LABEL_ALPHA = 0.6;

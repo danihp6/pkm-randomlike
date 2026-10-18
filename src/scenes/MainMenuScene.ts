@@ -9,7 +9,13 @@ import { subscribeKeybinds } from '../input/input';
 import { t, type TranslationKey } from '../i18n';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
-import { addFrlgWindow } from '../ui/frlg';
+import {
+  addFrlgWindow,
+  FRLG_MUTED,
+  FRLG_SELECTED_FILL,
+  FRLG_SELECTED_STROKE,
+  FRLG_SURFACE,
+} from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { runPositionLabel } from '../ui/runSummary';
 
@@ -81,11 +87,11 @@ export class MainMenuScene extends Phaser.Scene {
     const x = (width - PANEL_W) / 2;
     const y = (height - panelH) / 2 + 24;
 
-    this.add.rectangle(0, 0, width, height, 0x10161f).setOrigin(0, 0);
-    addFrlgText(this, width / 2, y - 128, t('menu.title'), { size: 48, origin: 0.5 });
+    this.add.rectangle(0, 0, width, height, FRLG_SURFACE).setOrigin(0, 0);
+    addFrlgText(this, width / 2, y - 128, t('menu.title'), { size: 48, tint: FRLG_INK, origin: 0.5 });
     addFrlgText(this, width / 2, y - 76, t('menu.subtitle'), {
       size: 16,
-      tint: 0x94a3b8,
+      tint: FRLG_MUTED,
       origin: 0.5,
     });
 
@@ -95,8 +101,9 @@ export class MainMenuScene extends Phaser.Scene {
     this.rows = this.items.map((action, i) => {
       const rowY = y + ROW_TOP + i * (ROW_H + ROW_GAP);
       const highlight = this.add
-        .rectangle(rowX, rowY, rowW, ROW_H - 6, 0xf2c14e, 0.28)
+        .rectangle(rowX, rowY, rowW, ROW_H - 6, FRLG_SELECTED_FILL.colour, FRLG_SELECTED_FILL.alpha)
         .setOrigin(0, 0)
+        .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
         .setVisible(false);
       const label = addFrlgText(this, rowX + 20, rowY + 14, menuLabel(action), {
         size: 24,
@@ -104,7 +111,7 @@ export class MainMenuScene extends Phaser.Scene {
       });
       const value = addFrlgText(this, rowX + rowW - 20, rowY + 20, this.rowValue(action), {
         size: 16,
-        tint: 0x3a3956,
+        tint: FRLG_MUTED,
         origin: [1, 0],
       });
       // The party portraits ride between the label and the value, right-aligned
@@ -141,7 +148,7 @@ export class MainMenuScene extends Phaser.Scene {
 
     this.controls = addFrlgText(this, width / 2, y + panelH + 24, '', {
       size: 16,
-      tint: 0xa8b3c7,
+      tint: FRLG_MUTED,
       origin: 0.5,
     });
 

@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import { t } from '../i18n';
+import { FRLG_ROW_FILL, FRLG_ROW_STROKE, FRLG_SELECTED_FILL, FRLG_SELECTED_STROKE } from './frlg';
 import { addFrlgText, FRLG_INK } from './frlgFont';
 import type { InfoPopup, InfoPopupContent } from './infoPopup';
 
@@ -49,8 +50,8 @@ export class AbilityInfoButton {
   constructor(scene: Phaser.Scene, popup: InfoPopup, container?: Phaser.GameObjects.Container) {
     this.popup = popup;
     this.button = scene.add
-      .rectangle(0, 0, ABILITY_INFO_SIZE, ABILITY_INFO_SIZE, 0xcfcce2)
-      .setStrokeStyle(2, 0x9a94b8)
+      .rectangle(0, 0, ABILITY_INFO_SIZE, ABILITY_INFO_SIZE, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
+      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
       .setVisible(false);
     this.label = addFrlgText(scene, 0, 0, 'i', { size: 16, tint: FRLG_INK, origin: 0.5 }).setVisible(
       false,
@@ -78,8 +79,15 @@ export class AbilityInfoButton {
     this.button
       .setPosition(centerX, centerY)
       .setSize(spot.width, spot.height)
-      .setFillStyle(active ? 0xf7e0a6 : 0xcfcce2)
-      .setStrokeStyle(2, active ? 0x2f2c4d : 0x9a94b8)
+      .setFillStyle(
+        active ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
+        active ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
+      )
+      .setStrokeStyle(
+        1,
+        active ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
+        active ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
+      )
       .setVisible(true);
     this.label.setPosition(centerX, centerY).setVisible(true);
     if (!active) {

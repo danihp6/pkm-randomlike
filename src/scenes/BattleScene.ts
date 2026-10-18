@@ -94,8 +94,17 @@ import {
   FRLG_TEXTBOX_PADDING,
   FRLG_WINDOW_PADDING,
 } from '../ui/frlg';
+import {
+  FRLG_ACCENT,
+  FRLG_BADGE_INK,
+  FRLG_MUTED,
+  FRLG_ROW_FILL,
+  FRLG_ROW_STROKE,
+  FRLG_SELECTED_FILL,
+  FRLG_SELECTED_STROKE,
+} from '../ui/frlg';
 import { FRLG_INK, FRLG_FONT_SIZE, FRLG_LINE_HEIGHT, addFrlgText } from '../ui/frlgFont';
-import { typeColor, typeTint } from '../ui/typeColors';
+import { typeColor } from '../ui/typeColors';
 import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeIcons';
 import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../data/statusIcons';
 import {
@@ -158,6 +167,12 @@ const FOE_BALL_SPENT_ALPHA = 0.45;
 /** The engine's blank texture the badges start on, as `InfoPopup` does. */
 const BLANK_TEXTURE_KEY = '__DEFAULT';
 const ROW_H = 34;
+/**
+ * The Mega Evolution glyph both forme controls draw: the shipped Hard Stone frame
+ * every Mega Stone already borrows (`src/data/itemIcons.ts`), read through the
+ * atlas' own frame map so no new art is packed.
+ */
+const MEGA_CONTROL_FRAME = itemIconFrame('hardstone') ?? 0;
 /** The battle plays inside a centred square, at most this many pixels a side. */
 const MAX_BATTLE_SIZE = 900;
 /** Below this square side the stacked, full-width phone layout is used. */
@@ -360,13 +375,13 @@ export class BattleScene extends Phaser.Scene {
   private backZone!: Phaser.GameObjects.Zone;
   /** The MEGA control shown at the right of the moves menu when a stone can be spent. */
   private megaCell!: Phaser.GameObjects.Rectangle;
-  private megaText!: Phaser.GameObjects.BitmapText;
+  private megaGlyph!: Phaser.GameObjects.Image;
   private megaZone!: Phaser.GameObjects.Zone;
   /** True while the keyboard cursor sits on the Mega control instead of a move. */
   private megaSelected = false;
   /** The G-MAX control, in the slot immediately inside the Mega one (D44). */
   private gmaxCell!: Phaser.GameObjects.Rectangle;
-  private gmaxText!: Phaser.GameObjects.BitmapText;
+  private gmaxGlyph!: Phaser.GameObjects.Image;
   private gmaxZone!: Phaser.GameObjects.Zone;
   /** True while the keyboard cursor sits on the G-Max control instead of a move. */
   private gmaxSelected = false;
@@ -619,9 +634,9 @@ export class BattleScene extends Phaser.Scene {
     this.menuPanel = addFrlgWindow(this, 0, 0, MENU_W, 100);
     this.commandCells = Array.from({ length: MENU_ROWS }, () =>
       this.add
-        .rectangle(0, 0, 10, 10, 0xe6e3f2)
+        .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
         .setOrigin(0, 0)
-        .setStrokeStyle(2, 0xb9b4d0)
+        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
         .setVisible(false),
     );
 
@@ -642,35 +657,37 @@ export class BattleScene extends Phaser.Scene {
     this.backZone.setData('back', true);
     this.backZone.on('pointerdown', () => this.onBack());
 
-    // The MEGA control in the moves menu: a cell, its label and a hit zone. It is
-    // only laid out and shown while the active Pokémon can Mega Evolve (D34).
+    // The MEGA control in the moves menu: a cell, the Mega Evolution glyph and a
+    // hit zone. The glyph is the shipped Hard Stone frame — the icon every Mega
+    // Stone already borrows (`MEGA_STONE_FALLBACK`), read through the atlas map,
+    // so no new art is packed. It is only laid out and shown while the active
+    // Pokémon can Mega Evolve (D34).
     this.megaCell = this.add
-      .rectangle(0, 0, 10, 10, 0xe6e3f2)
+      .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
       .setOrigin(0, 0)
-      .setStrokeStyle(2, 0x9a94b8)
+      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
       .setVisible(false);
-    this.megaText = addFrlgText(this, 0, 0, t('battle.mega'), {
-      size: 16,
-      tint: FRLG_INK,
-      origin: 0.5,
-    }).setVisible(false);
+    this.megaGlyph = this.add
+      .image(0, 0, ITEM_ICON_TEXTURE_KEY, MEGA_CONTROL_FRAME)
+      .setOrigin(0.5)
+      .setVisible(false);
     this.megaZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     this.megaZone.on('pointerover', () => this.onMegaHover());
     this.megaZone.on('pointerdown', () => this.onMegaClick());
 
     // The G-MAX control, in the slot immediately inside the Mega one: the same
-    // cell, label and hit zone, shown while the active Pokémon's own species has
-    // a G-Max forme (D44).
+    // cell, glyph and hit zone, shown while the active Pokémon's own species has
+    // a G-Max forme (D44). Both controls draw the same Mega glyph; a distinct
+    // G-Max one would be a different frame on this very line.
     this.gmaxCell = this.add
-      .rectangle(0, 0, 10, 10, 0xe6e3f2)
+      .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
       .setOrigin(0, 0)
-      .setStrokeStyle(2, 0x9a94b8)
+      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
       .setVisible(false);
-    this.gmaxText = addFrlgText(this, 0, 0, t('battle.gmax'), {
-      size: 16,
-      tint: FRLG_INK,
-      origin: 0.5,
-    }).setVisible(false);
+    this.gmaxGlyph = this.add
+      .image(0, 0, ITEM_ICON_TEXTURE_KEY, MEGA_CONTROL_FRAME)
+      .setOrigin(0.5)
+      .setVisible(false);
     this.gmaxZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     this.gmaxZone.on('pointerover', () => this.onGmaxHover());
     this.gmaxZone.on('pointerdown', () => this.onGmaxClick());
@@ -679,9 +696,9 @@ export class BattleScene extends Phaser.Scene {
     // moves menu reserves for MEGA. It is drawn only by the command menu, and a
     // press on it opens the battle's own state.
     this.infoCell = this.add
-      .rectangle(0, 0, 10, 10, 0xe6e3f2)
+      .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
       .setOrigin(0, 0)
-      .setStrokeStyle(2, 0x9a94b8)
+      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
       .setVisible(false);
     this.infoText = addFrlgText(this, 0, 0, t('battle.infoControl'), {
       size: 16,
@@ -700,8 +717,8 @@ export class BattleScene extends Phaser.Scene {
       player: addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [1, 0] }),
     };
     this.statusText = {
-      enemy: addFrlgText(this, 0, 0, '', { size: 16, tint: 0xf8fafc, origin: 0.5 }),
-      player: addFrlgText(this, 0, 0, '', { size: 16, tint: 0xf8fafc, origin: 0.5 }),
+      enemy: addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: 0.5 }),
+      player: addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: 0.5 }),
     };
     // The FRLG condition badges; drawn at 1.5x to match the panel text size.
     this.statusBadges = {
@@ -736,11 +753,18 @@ export class BattleScene extends Phaser.Scene {
       );
     const typeChipBoxRow = (): Phaser.GameObjects.Rectangle[] =>
       Array.from({ length: PANEL_TYPE_SLOTS }, () =>
-        this.add.rectangle(0, 0, PANEL_CHIP_W, PANEL_CHIP_H, 0x9aa0b4).setOrigin(0, 0).setVisible(false),
+        this.add
+          .rectangle(0, 0, PANEL_CHIP_W, PANEL_CHIP_H, FRLG_MUTED)
+          .setOrigin(0, 0)
+          .setVisible(false),
       );
     const typeChipLabelRow = (): Phaser.GameObjects.BitmapText[] =>
       Array.from({ length: PANEL_TYPE_SLOTS }, () =>
-        addFrlgText(this, 0, 0, '', { size: PANEL_TYPE_LABEL_SIZE, tint: 0xf8fafc, origin: [0.5, 0] })
+        addFrlgText(this, 0, 0, '', {
+          size: PANEL_TYPE_LABEL_SIZE,
+          tint: FRLG_BADGE_INK,
+          origin: [0.5, 0],
+        })
           .setMaxWidth(PANEL_CHIP_W - 8)
           .setVisible(false),
       );
@@ -748,7 +772,7 @@ export class BattleScene extends Phaser.Scene {
     this.typeChipBgs = { enemy: typeChipBoxRow(), player: typeChipBoxRow() };
     this.typeChips = { enemy: typeChipLabelRow(), player: typeChipLabelRow() };
 
-    this.messageText = addFrlgText(this, 0, 0, '', { lineSpacing: 4 });
+    this.messageText = addFrlgText(this, 0, 0, '', { tint: FRLG_INK, lineSpacing: 4 });
 
     this.menuRows = Array.from({ length: MENU_ROWS }, () =>
       addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
@@ -756,9 +780,9 @@ export class BattleScene extends Phaser.Scene {
     // The party (switch) grid, built once and hidden until the party is open.
     this.partyCells = Array.from({ length: MAX_PARTY_SIZE }, () =>
       this.add
-        .rectangle(0, 0, 10, 10, 0xe6e3f2)
+        .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
         .setOrigin(0, 0)
-        .setStrokeStyle(2, 0x9a94b8)
+        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
         .setVisible(false),
     );
     this.partyAvatars = Array.from({ length: MAX_PARTY_SIZE }, () =>
@@ -807,7 +831,11 @@ export class BattleScene extends Phaser.Scene {
 
     // The bag's pocket tabs, drawn inside the menu window; at most two.
     this.bagTabs = Array.from({ length: 2 }, (_, slot) => {
-      const bg = this.add.rectangle(0, 0, 10, 10, 0xcfcce2).setOrigin(0, 0).setVisible(false);
+      const bg = this.add
+        .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
+        .setOrigin(0, 0)
+        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
+        .setVisible(false);
       const label = addFrlgText(this, 0, 0, '', {
         size: 16,
         tint: FRLG_INK,
@@ -846,7 +874,7 @@ export class BattleScene extends Phaser.Scene {
     this.partyDetailName = addFrlgText(this, padX, padTop, '', { size: 16, tint: FRLG_INK });
     this.partyDetailLevel = addFrlgText(this, PARTY_DETAIL_W - padX, padTop, '', {
       size: 16,
-      tint: 0x3a3956,
+      tint: FRLG_MUTED,
       origin: [1, 0],
     });
     children.push(this.partyDetailName, this.partyDetailLevel);
@@ -856,12 +884,12 @@ export class BattleScene extends Phaser.Scene {
     for (let i = 0; i < 2; i++) {
       const chipX = padX + i * (PARTY_DETAIL_TYPE_W + 6);
       const bg = this.add
-        .rectangle(chipX, chipY, PARTY_DETAIL_TYPE_W, 20, 0x9aa0b4)
+        .rectangle(chipX, chipY, PARTY_DETAIL_TYPE_W, 20, FRLG_MUTED)
         .setOrigin(0, 0)
         .setVisible(false);
       const label = addFrlgText(this, chipX + PARTY_DETAIL_TYPE_W / 2, chipY + 2, '', {
         size: 16,
-        tint: 0xf8fafc,
+        tint: FRLG_BADGE_INK,
         origin: [0.5, 0],
       }).setVisible(false);
       this.partyDetailTypes.push({ bg, label });
@@ -875,20 +903,20 @@ export class BattleScene extends Phaser.Scene {
     const statsTop = contentTop + 30;
     const rows = DETAIL_STATS.map((stat, i) => {
       const rowY = statsTop + i * PARTY_DETAIL_STAT_ROW;
-      const label = addFrlgText(this, padX, rowY, statLabel(stat), { size: 16, tint: 0x3a3956 });
+      const label = addFrlgText(this, padX, rowY, statLabel(stat), { size: 16, tint: FRLG_MUTED });
       const value = addFrlgText(this, leftRight, rowY, '', { size: 16, tint: FRLG_INK, origin: [1, 0] });
       children.push(label, value);
       return { label, value };
     });
     const infoTop = statsTop + DETAIL_STATS.length * PARTY_DETAIL_STAT_ROW + 6;
-    const nature = addFrlgText(this, padX, infoTop, '', { size: 16, tint: 0x3a3956 });
+    const nature = addFrlgText(this, padX, infoTop, '', { size: 16, tint: FRLG_MUTED });
     const ability = addFrlgText(this, padX, infoTop + PARTY_DETAIL_INFO_ROW, '', {
       size: 16,
-      tint: 0x3a3956,
+      tint: FRLG_MUTED,
     });
     const held = addFrlgText(this, padX, infoTop + PARTY_DETAIL_INFO_ROW * 2, '', {
       size: 16,
-      tint: 0x3a3956,
+      tint: FRLG_MUTED,
     });
     children.push(nature, ability, held);
     this.partyDetailStats = { hpText, rows, nature, ability, held };
@@ -902,23 +930,30 @@ export class BattleScene extends Phaser.Scene {
     this.partyDetailMoves = [];
     for (let i = 0; i < MAX_MOVES; i++) {
       const cell = this.add
-        .rectangle(moveCellX(i), moveCellY(i), cellW, PARTY_DETAIL_MOVE_ROW, 0xe6e3f2)
+        .rectangle(
+          moveCellX(i),
+          moveCellY(i),
+          cellW,
+          PARTY_DETAIL_MOVE_ROW,
+          FRLG_ROW_FILL.colour,
+          FRLG_ROW_FILL.alpha,
+        )
         .setOrigin(0, 0)
-        .setStrokeStyle(2, 0x9a94b8);
+        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha);
       const name = addFrlgText(this, moveCellX(i) + 8, moveCellY(i) + 4, '', {
         size: 16,
         tint: FRLG_INK,
       }).setMaxWidth(cellW - 8 - ABILITY_INFO_SIZE - 12);
       const pp = addFrlgText(this, moveCellX(i) + 8, moveCellY(i) + 18, '', {
         size: 16,
-        tint: 0x3a3956,
+        tint: FRLG_INK,
       });
       this.partyDetailMoves.push({ cell, name, pp });
       children.push(cell, name, pp);
     }
     this.partyDetailEmpty = addFrlgText(this, movesX + colW / 2, contentTop + 20, t('detail.noMoves'), {
       size: 16,
-      tint: 0x6b6887,
+      tint: FRLG_MUTED,
       origin: [0.5, 0],
     });
     children.push(this.partyDetailEmpty);
@@ -945,8 +980,15 @@ export class BattleScene extends Phaser.Scene {
       const centerX = moveInfoX(i) + ABILITY_INFO_SIZE / 2;
       const centerY = moveInfoY(i) + ABILITY_INFO_SIZE / 2;
       const button = this.add
-        .rectangle(centerX, centerY, ABILITY_INFO_SIZE, ABILITY_INFO_SIZE, 0xcfcce2)
-        .setStrokeStyle(2, 0x9a94b8)
+        .rectangle(
+          centerX,
+          centerY,
+          ABILITY_INFO_SIZE,
+          ABILITY_INFO_SIZE,
+          FRLG_ROW_FILL.colour,
+          FRLG_ROW_FILL.alpha,
+        )
+        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
         .setVisible(false);
       const label = addFrlgText(this, centerX, centerY, 'i', {
         size: 16,
@@ -2292,6 +2334,7 @@ export class BattleScene extends Phaser.Scene {
       }
       row
         .setText(item.label)
+        .setTint(i === this.menuIndex ? FRLG_ACCENT : FRLG_INK)
         .setAlpha(item.enabled ? 1 : 0.4)
         .setFontSize(FRLG_FONT_SIZE)
         .setMaxWidth(cellW - 32)
@@ -2309,8 +2352,15 @@ export class BattleScene extends Phaser.Scene {
       cell
         .setPosition(cellX(i), cellY(i))
         .setSize(cellW, cellH)
-        .setFillStyle(selected ? 0xf7e0a6 : 0xe6e3f2)
-        .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
+        .setFillStyle(
+          selected ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
+          selected ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
+        )
+        .setStrokeStyle(
+          1,
+          selected ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
+          selected ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
+        )
         .setVisible(true);
     });
     this.menuZones.forEach((zone, i) => {
@@ -2346,8 +2396,15 @@ export class BattleScene extends Phaser.Scene {
     this.infoCell
       .setPosition(x, top)
       .setSize(MOVE_MEGA_COL, h)
-      .setFillStyle(selected ? 0xf7e0a6 : 0xe6e3f2)
-      .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
+      .setFillStyle(
+        selected ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
+        selected ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
+      )
+      .setStrokeStyle(
+        1,
+        selected ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
+        selected ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
+      )
       .setVisible(true);
     this.infoText
       .setText(t('battle.infoControl'))
@@ -2441,8 +2498,15 @@ export class BattleScene extends Phaser.Scene {
       cell
         .setPosition(rect.x, rect.y)
         .setSize(rect.w, rect.h)
-        .setFillStyle(selected ? 0xf7e0a6 : 0xe6e3f2)
-        .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
+        .setFillStyle(
+          selected ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
+          selected ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
+        )
+        .setStrokeStyle(
+          1,
+          selected ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
+          selected ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
+        )
         .setVisible(true);
       const portrait = portraitFor(member.speciesId, member.shiny);
       this.partyAvatars[i]
@@ -2557,7 +2621,9 @@ export class BattleScene extends Phaser.Scene {
         row.pp.setText('');
         return;
       }
-      row.cell.setFillStyle(typeTint(move.type, 0.72));
+      row.cell
+        .setFillStyle(FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
+        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha);
       row.name.setText(move.name);
       row.pp.setText(t('move.pp', { pp: move.pp, max: move.maxPp }));
     });
@@ -2633,8 +2699,15 @@ export class BattleScene extends Phaser.Scene {
       if (!move) return;
       const active = i === this.partyMoveInfo;
       row.button
-        .setFillStyle(active ? 0xf7e0a6 : 0xcfcce2)
-        .setStrokeStyle(2, active ? 0x2f2c4d : 0x9a94b8);
+        .setFillStyle(
+          active ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
+          active ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
+        )
+        .setStrokeStyle(
+          1,
+          active ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
+          active ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
+        );
     });
     const index = this.partyMoveInfo;
     const anchor = index === null ? undefined : this.partyDetailMoves[index];
@@ -2819,37 +2892,44 @@ export class BattleScene extends Phaser.Scene {
 
   /**
    * Lays out the MEGA control at the right edge of the moves menu, or hides it
-   * when the active Pokémon cannot Mega Evolve (D34). The label shows a `+` while
-   * the evolution is armed.
+   * when the active Pokémon cannot Mega Evolve (D34). The cell paints as a
+   * selected control while it is the cursor's target and while the evolution is
+   * armed, and the glyph takes the accent then.
    */
   private layoutMegaControl(right: number, top: number, bottom: number, show: boolean): void {
     if (!show) {
       this.megaCell.setVisible(false);
-      this.megaText.setVisible(false);
+      this.megaGlyph.setVisible(false);
       if (this.megaZone.input) this.megaZone.input.enabled = false;
       return;
     }
     const x = right - MOVE_MEGA_COL;
     const h = bottom - top;
-    const selected = this.megaSelected;
+    const armed = this.megaSelected || this.megaIntent;
     this.megaCell
       .setPosition(x, top)
       .setSize(MOVE_MEGA_COL, h)
-      .setFillStyle(selected ? 0xf7e0a6 : this.megaIntent ? 0xc7d2fe : 0xe6e3f2)
-      .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
+      .setFillStyle(
+        armed ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
+        armed ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
+      )
+      .setStrokeStyle(
+        1,
+        armed ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
+        armed ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
+      )
       .setVisible(true);
-    this.megaText
-      .setText(this.megaIntent ? t('battle.megaIntent') : t('battle.mega'))
-      .setPosition(x + MOVE_MEGA_COL / 2, top + h / 2)
-      .setVisible(true);
+    if (this.megaIntent) this.megaGlyph.setTint(FRLG_ACCENT);
+    else this.megaGlyph.clearTint();
+    this.megaGlyph.setPosition(x + MOVE_MEGA_COL / 2, top + h / 2).setVisible(true);
     this.megaZone.setPosition(x, top).setSize(MOVE_MEGA_COL, h);
     if (this.megaZone.input) this.megaZone.input.enabled = true;
   }
 
   /**
    * Lays out the G-MAX control in the slot immediately inside the Mega one, or
-   * hides it when the active Pokémon's own species has no G-Max forme (D44). The
-   * label shows a `+` while the forme is armed, as the Mega control's does.
+   * hides it when the active Pokémon's own species has no G-Max forme (D44). It
+   * paints and arms exactly like the Mega control.
    */
   private layoutGmaxControl(
     right: number,
@@ -2860,23 +2940,29 @@ export class BattleScene extends Phaser.Scene {
   ): void {
     if (!show) {
       this.gmaxCell.setVisible(false);
-      this.gmaxText.setVisible(false);
+      this.gmaxGlyph.setVisible(false);
       if (this.gmaxZone.input) this.gmaxZone.input.enabled = false;
       return;
     }
     const x = right - (mega ? MOVE_MEGA_COL : 0) - MOVE_GMAX_COL;
     const h = bottom - top;
-    const selected = this.gmaxSelected;
+    const armed = this.gmaxSelected || this.gmaxIntent;
     this.gmaxCell
       .setPosition(x, top)
       .setSize(MOVE_GMAX_COL, h)
-      .setFillStyle(selected ? 0xf7e0a6 : this.gmaxIntent ? 0xc7d2fe : 0xe6e3f2)
-      .setStrokeStyle(selected ? 3 : 2, selected ? 0x2f2c4d : 0x9a94b8)
+      .setFillStyle(
+        armed ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
+        armed ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
+      )
+      .setStrokeStyle(
+        1,
+        armed ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
+        armed ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
+      )
       .setVisible(true);
-    this.gmaxText
-      .setText(this.gmaxIntent ? t('battle.gmaxIntent') : t('battle.gmax'))
-      .setPosition(x + MOVE_GMAX_COL / 2, top + h / 2)
-      .setVisible(true);
+    if (this.gmaxIntent) this.gmaxGlyph.setTint(FRLG_ACCENT);
+    else this.gmaxGlyph.clearTint();
+    this.gmaxGlyph.setPosition(x + MOVE_GMAX_COL / 2, top + h / 2).setVisible(true);
     this.gmaxZone.setPosition(x, top).setSize(MOVE_GMAX_COL, h);
     if (this.gmaxZone.input) this.gmaxZone.input.enabled = true;
   }
@@ -2886,10 +2972,10 @@ export class BattleScene extends Phaser.Scene {
     this.moveGrid.hide();
     for (const cell of this.commandCells) cell.setVisible(false);
     this.megaCell.setVisible(false);
-    this.megaText.setVisible(false);
+    this.megaGlyph.setVisible(false);
     if (this.megaZone.input) this.megaZone.input.enabled = false;
     this.gmaxCell.setVisible(false);
-    this.gmaxText.setVisible(false);
+    this.gmaxGlyph.setVisible(false);
     if (this.gmaxZone.input) this.gmaxZone.input.enabled = false;
     this.infoMove = null;
     this.infoPinned = false;
@@ -2915,16 +3001,24 @@ export class BattleScene extends Phaser.Scene {
       tab.bg
         .setPosition(x, tabY)
         .setSize(MENU_TAB_W, MENU_TAB_H)
-        .setFillStyle(active ? 0x2f2c4d : 0xcfcce2)
+        .setFillStyle(
+          active ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
+          active ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
+        )
+        .setStrokeStyle(
+          1,
+          active ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
+          active ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
+        )
         .setVisible(true);
       if (active) {
         // The active pocket carries a shape, not only a fill inversion (§10.1).
-        this.marks.fillStyle(FRLG_INK, 1);
+        this.marks.fillStyle(FRLG_SELECTED_STROKE.colour, 1);
         this.marks.fillRect(x, tabY + MENU_TAB_H - 2, MENU_TAB_W, 2);
       }
       tab.label
         .setText(bagCategoryLabel(category))
-        .setTint(active ? 0xf8fafc : FRLG_INK)
+        .setTint(active ? FRLG_ACCENT : FRLG_INK)
         .setPosition(x + MENU_TAB_W / 2, tabY + 5)
         .setVisible(true);
     });
@@ -2967,6 +3061,7 @@ export class BattleScene extends Phaser.Scene {
       }
       row
         .setText(item.label)
+        .setTint(FRLG_INK)
         .setAlpha(item.enabled ? 1 : 0.4)
         .setFontSize(FRLG_FONT_SIZE)
         .setMaxWidth(menu.w - 80 - leftInset)
