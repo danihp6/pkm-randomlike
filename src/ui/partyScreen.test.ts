@@ -2,18 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { createRunPokemon } from '../engine/run';
 import { createRun, type RunState } from '../engine/run/state';
 import type { RunPokemon } from '../engine/run/progression';
+import { memberDetail, reorderMoves } from './partyDetail';
 import {
   boxCellIndex,
   boxPageCount,
   boxPageForIndex,
   BOX_PAGE_SIZE,
   boxRows,
+  cyclePane,
   dragTo,
   dropGrabbed,
   grabAt,
   initialPartyUi,
   partyInput,
   partyRows,
+  ripRows,
   stepCursorWithHeader,
   swapAcross,
   windowStart,
@@ -32,7 +35,16 @@ function member(id: string, level = 3, speciesId = 'sentret'): RunPokemon {
   return createRunPokemon({ id, speciesId, level });
 }
 
-function runWith(partyIds: readonly string[], boxIds: readonly string[] = []): RunState {
+function fallen(id: string): RunPokemon {
+  const base = member(id);
+  return { ...base, fighter: { ...base.fighter, hp: 0 } };
+}
+
+function runWith(
+  partyIds: readonly string[],
+  boxIds: readonly string[] = [],
+  ripIds: readonly string[] = [],
+): RunState {
   const base = createRun({ seed: 'run-a', starter });
   return {
     ...base,
@@ -40,6 +52,7 @@ function runWith(partyIds: readonly string[], boxIds: readonly string[] = []): R
       index === 0 ? { ...starter, fighter: { ...starter.fighter, id } } : member(id),
     ),
     box: boxIds.map((id) => member(id)),
+    rip: ripIds.map(fallen),
   };
 }
 
@@ -70,6 +83,12 @@ describe('rows', () => {
   it('reads the box in order', () => {
     const rows = boxRows(runWith(['starter'], ['a', 'b']));
     expect(rows.map((row) => row.id)).toEqual(['a', 'b']);
+  });
+
+  it('reads the fallen in order', () => {
+    const rows = ripRows(runWith(['starter'], [], ['a', 'b']));
+    expect(rows.map((row) => row.id)).toEqual(['a', 'b']);
+    expect(rows.every((row) => row.hp === 0)).toBe(true);
   });
 
   it('shows the nickname when a member has one, in the party and in the box', () => {
@@ -232,6 +251,112 @@ describe('pointer drag', () => {
     const grabbed = grabAt(run, initialPartyUi(), 'party', 0);
     expect(swapAcross(grabbed.run, grabbed.ui, 9)).toEqual({ run, ui: grabbed.ui });
     expect(swapAcross(run, initialPartyUi(), 0)).toEqual({ run, ui: initialPartyUi() });
+  });
+});
+
+describe('RIP', () => {
+  it('cycles three panes with left and right', () => {
+    const run = runWith(['a'], ['x'], ['d']);
+    const toBox = partyInput(run, initialPartyUi(), 'right');
+    expect(toBox.ui.pane).toBe('box');
+    const toRip = partyInput(run, toBox.ui, 'right');
+    expect(toRip.ui.pane).toBe('rip');
+    expect(partyInput(run, toRip.ui, 'right').ui.pane).toBe('party');
+    const back = partyInput(run, initialPartyUi(), 'left');
+    expect(back.ui.pane).toBe('rip');
+    expect(partyInput(run, back.ui, 'left').ui.pane).toBe('box');
+    expect(cyclePane('party', 0)).toBe('party');
+    expect(cyclePane('rip', 0)).toBe('rip');
+    expect(cyclePane('box', 3)).toBe('box');
+  });
+
+  it('refuses a grab in RIP', () => {
+    const run = runWith(['a'], [], ['gone']);
+    const ui: PartyUiState = { pane: 'rip', index: 0, grabbed: null };
+    const grabbed = grabAt(run, ui, 'rip', 0);
+    expect(grabbed.run).toBe(run);
+    expect(grabbed.ui).toBe(ui);
+    const confirmed = partyInput(run, ui, 'confirm');
+    expect(confirmed.run).toBe(run);
+    expect(confirmed.ui).toBe(ui);
+  });
+
+  it('refuses a deposit into RIP and leaves the list alone', () => {
+    const run = runWith(['a', 'b'], [], ['gone']);
+    const picked = feed(run, initialPartyUi(), ['confirm']);
+    expect(picked.ui.grabbed).not.toBeNull();
+    const moved = partyInput(picked.run, picked.ui, 'right');
+    expect(moved.run.box.map((entry) => entry.fighter.id)).toEqual(['a']);
+    expect(moved.run.rip).toBe(run.rip);
+    expect(moved.run.rip.map((entry) => entry.fighter.id)).toEqual(['gone']);
+    expect(moved.ui.pane).toBe('box');
+    // A drop straight on a dead member's slot refuses the swap and moves nothing.
+    const onRip: PartyUiState = { pane: 'rip', index: 0, grabbed: { pane: 'party', origin: 1 } };
+    const swapped = swapAcross(run, onRip, 0);
+    expect(swapped.run).toBe(run);
+    expect(swapped.ui).toBe(onRip);
+  });
+
+  it('is a no-op when reordered inside RIP', () => {
+    const run = runWith(['a'], [], ['one', 'two']);
+    const ui: PartyUiState = { pane: 'rip', index: 0, grabbed: { pane: 'rip', origin: 0 } };
+    const moved = partyInput(run, ui, 'down');
+    expect(moved.run).toBe(run);
+    expect(moved.ui).toBe(ui);
+    const dragged = dragTo(run, ui, 1);
+    expect(dragged.run).toBe(run);
+    expect(dragged.ui).toBe(ui);
+  });
+
+  it('resolves a fallen member read-only, with both detail shapes unchanged', () => {
+    const run = runWith(['starter'], [], ['gone']);
+    const dead = memberDetail(run, 'gone');
+    expect(dead?.id).toBe('gone');
+    expect(dead?.hp).toBe(0);
+    const detailKeys = Object.keys(dead ?? {}).sort();
+    const moveKeys = Object.keys(dead?.moves[0] ?? {}).sort();
+    expect(detailKeys).toEqual([
+      'ability',
+      'abilityDesc',
+      'caughtLabel',
+      'evolutions',
+      'heldItemName',
+      'hp',
+      'id',
+      'level',
+      'maxHp',
+      'moves',
+      'name',
+      'nature',
+      'nickname',
+      'speciesId',
+      'stats',
+      'status',
+      'statusLabel',
+      'types',
+    ]);
+    expect(moveKeys).toEqual([
+      'accuracy',
+      'baseAccuracy',
+      'basePower',
+      'category',
+      'desc',
+      'maxPp',
+      'moveId',
+      'name',
+      'power',
+      'pp',
+      'status',
+      'type',
+    ]);
+    // The same member alive carries the same two shapes.
+    const live = memberDetail(runWith(['starter'], ['gone']), 'gone');
+    expect(live?.id).toBe('gone');
+    expect(Object.keys(live ?? {}).sort()).toEqual(detailKeys);
+    expect(Object.keys(live?.moves[0] ?? {}).sort()).toEqual(moveKeys);
+    // Reordering a dead member's moves is refused by the run itself.
+    const state = { memberId: 'gone', tab: 'moves' as const, grab: 0 };
+    expect(reorderMoves(run, state, 1)).toEqual({ run, state });
   });
 });
 

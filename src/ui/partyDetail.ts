@@ -123,7 +123,8 @@ export { typeColor, typeTint } from './typeColors';
 function memberById(run: RunState, id: string): RunPokemon | undefined {
   return (
     run.party.find((member) => member.fighter.id === id) ??
-    run.box.find((member) => member.fighter.id === id)
+    run.box.find((member) => member.fighter.id === id) ??
+    run.rip.find((member) => member.fighter.id === id)
   );
 }
 

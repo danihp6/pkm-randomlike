@@ -290,6 +290,19 @@ cell), and reordering the party within itself stays free. A catch that goes to
 the PC says so in a **transient notice** at the top of the screen — one line,
 dismissed by itself, taking no key and blocking no movement.
 
+The PC box also carries a **fixed RIP tab**, at the right end of its page-tab
+strip: a **third pane of the same window** (`RunState.rip`), listing the run's
+fallen, one avatar cell each, in the order they fell — the party's first, the
+box's after. A dead cell reads like a **locked** box cell (the same dim veil).
+The list is **read-only everywhere** and permadeath stays permanent (`D5`): the
+dead can never be moved into the party, a living member can never be deposited
+into RIP, the list never reorders and no revive reaches it. Clicking a dead cell
+opens the usual member detail with the dead member's stats and moves — the
+rename field, the evolution branches, the move reorder and the learnset pool are
+hidden — and the tab reads `RIP` in every locale, so it carries no key. A page
+tab, and the wheel over the window, page **whichever list the window is
+showing**; the keyboard's `left`/`right` cycle party → PC → RIP.
+
 Each floor also carries a **Pokevial**: a single bar in the party window's
 header (top-right), its fill climbing through three colour stages with
 **POKEVIAL** written inside (no charge count). Pressing it **only when the bar is

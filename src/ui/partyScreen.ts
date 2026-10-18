@@ -20,7 +20,18 @@ import { statusAbbreviation } from './metrics';
  * in `engine/run/state.ts`.
  */
 
-export type PaneId = 'party' | 'box';
+export type PaneId = 'party' | 'box' | 'rip';
+
+/** The panes `left`/`right` walk with nothing grabbed, in cycle order. */
+export const PANE_CYCLE: readonly PaneId[] = ['party', 'box', 'rip'];
+
+/** The pane `delta` steps away from `pane` in `PANE_CYCLE`, wrapping both ways. */
+export function cyclePane(pane: PaneId, delta: number): PaneId {
+  const found = PANE_CYCLE.indexOf(pane);
+  const index = found < 0 ? 0 : found;
+  const next = (((index + delta) % PANE_CYCLE.length) + PANE_CYCLE.length) % PANE_CYCLE.length;
+  return PANE_CYCLE[next];
+}
 
 /** One row: everything the party/PC list shows for a member. */
 export type PartyRow = Readonly<{
@@ -64,6 +75,11 @@ export function boxRows(run: RunState): PartyRow[] {
   return run.box.map(partyRow);
 }
 
+/** One row per fallen member, in `RunState.rip` order, in the party/box row shape. */
+export function ripRows(run: RunState): PartyRow[] {
+  return run.rip.map(partyRow);
+}
+
 /**
  * Where the cursor is: a pane, a slot in it and — while a member is picked up —
  * the slot it started in, so `cancel` can put it back exactly where it was.
@@ -83,7 +99,8 @@ export function initialPartyUi(): PartyUiState {
 export type PartyInputResult = Readonly<{ run: RunState; ui: PartyUiState }>;
 
 function listOf(run: RunState, pane: PaneId): readonly RunPokemon[] {
-  return pane === 'party' ? run.party : run.box;
+  if (pane === 'party') return run.party;
+  return pane === 'rip' ? run.rip : run.box;
 }
 
 /** The member at a pane slot, or undefined for an empty slot. */
@@ -97,19 +114,23 @@ function memberAt(run: RunState, pane: PaneId, index: number): RunPokemon | unde
  * locked PC cannot be rearranged. The box opens wholesale in the floor's entry
  * room on its first visit, and otherwise only for the route's own catch, while
  * the run still stands in the room it was caught in (`docs/routes-spec.md` §6).
+ * The **RIP** pane is never grabbed: the dead are read-only (D5).
  */
 function canGrab(run: RunState, pane: PaneId, index: number): boolean {
+  if (pane === 'rip') return false;
   const member = memberAt(run, pane, index);
   if (!member) return false;
   return pane === 'party' || pcMemberEditable(run, member.fighter.id);
 }
 
 /** True when a grabbed member may cross between the party and the PC. */
-function canSwapAcross(run: RunState, member: RunPokemon | undefined): boolean {
+function canSwapAcross(run: RunState, pane: PaneId, member: RunPokemon | undefined): boolean {
+  if (pane === 'rip') return false;
   return member !== undefined && pcMemberEditable(run, member.fighter.id);
 }
 
 function reorder(run: RunState, pane: PaneId, from: number, to: number): RunState {
+  if (pane === 'rip') return run;
   return pane === 'party' ? moveInParty(run, from, to) : moveInBox(run, from, to);
 }
 
@@ -125,7 +146,7 @@ export function windowStart(length: number, index: number, rows: number): number
  * member up (`confirm`) and moving it reorders its pane live; `left`/`right`
  * moves it to the other pane when the rules allow it (`deposit`/`withdraw`), and
  * `cancel` restores it to where the grab started. With nothing grabbed the
- * cursor wraps, `left`/`right` switch panes and `confirm` starts a grab.
+ * cursor wraps, `left`/`right` cycle party → box → RIP and `confirm` starts a grab.
  */
 export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): PartyInputResult {
   const list = listOf(run, ui.pane);
@@ -140,7 +161,7 @@ export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): 
     if (input === 'left' || input === 'right') {
       const toOther = pane === 'party' ? input === 'right' : input === 'left';
       if (!toOther) return { run, ui };
-      if (!canSwapAcross(run, memberAt(run, pane, ui.index))) return { run, ui };
+      if (!canSwapAcross(run, pane, memberAt(run, pane, ui.index))) return { run, ui };
       if (pane === 'party') {
         const next = depositToBox(run, ui.index);
         return next === run
@@ -167,7 +188,7 @@ export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): 
   }
 
   if (input === 'left' || input === 'right') {
-    const pane: PaneId = input === 'left' ? 'party' : 'box';
+    const pane = cyclePane(ui.pane, input === 'left' ? -1 : 1);
     return {
       run,
       ui: { pane, index: Math.min(ui.index, Math.max(0, listOf(run, pane).length - 1)), grabbed: null },
@@ -198,6 +219,8 @@ export function grabAt(run: RunState, ui: PartyUiState, pane: PaneId, index: num
 export function dragTo(run: RunState, ui: PartyUiState, to: number): PartyInputResult {
   if (!ui.grabbed) return { run, ui };
   const { pane } = ui.grabbed;
+  // The dead are never dragged: a rip grab cannot happen, and a stray one moves nothing.
+  if (pane === 'rip') return { run, ui };
   const list = listOf(run, pane);
   const target = Math.max(0, Math.min(list.length - 1, to));
   if (target === ui.index) return { run, ui };
@@ -219,7 +242,8 @@ export function dropGrabbed(ui: PartyUiState): PartyUiState {
 export function swapAcross(run: RunState, ui: PartyUiState, index: number): PartyInputResult {
   const grabbed = ui.grabbed;
   if (!grabbed) return { run, ui };
-  if (!canSwapAcross(run, memberAt(run, grabbed.pane, ui.index))) return { run, ui };
+  if (grabbed.pane === 'rip' || ui.pane === 'rip') return { run, ui };
+  if (!canSwapAcross(run, grabbed.pane, memberAt(run, grabbed.pane, ui.index))) return { run, ui };
   const toPane: PaneId = grabbed.pane === 'party' ? 'box' : 'party';
   if (!listOf(run, toPane)[index]) return { run, ui };
   const next =
