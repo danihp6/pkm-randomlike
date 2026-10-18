@@ -57,10 +57,7 @@ export function bagCategoryFor(itemId: string): BagCategory | null {
 }
 
 /** The bag stacks in `category`, preserving the bag's own order. */
-export function bagForCategory(
-  bag: readonly BagCounts[],
-  category: BagCategory,
-): readonly BagCounts[] {
+export function bagForCategory(bag: readonly BagCounts[], category: BagCategory): readonly BagCounts[] {
   return bag.filter((stack) => bagCategoryFor(stack.itemId) === category);
 }
 

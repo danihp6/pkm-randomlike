@@ -69,7 +69,12 @@ describe('experienceAward', () => {
 
 describe('levelUpPokemon', () => {
   it('levels up and learns the move it crossed', () => {
-    const pokemon = createRunPokemon({ id: 'ember', speciesId: 'charmander', level: 1, moves: ['scratch'] });
+    const pokemon = createRunPokemon({
+      id: 'ember',
+      speciesId: 'charmander',
+      level: 1,
+      moves: ['scratch'],
+    });
     const grown = levelUpPokemon(pokemon, 4);
     expect(grown.pokemon.fighter.level).toBe(4);
     expect(grown.events).toContainEqual({ kind: 'level', level: 4 });
@@ -108,10 +113,21 @@ describe('levelUpPokemon', () => {
 
 describe('adoptAtLevel', () => {
   it('rebuilds a catch at the squad level with fresh stats and moves', () => {
-    const caught = createRunPokemon({ id: 'wild', speciesId: 'charmander', level: 3, moves: ['scratch'] });
+    const caught = createRunPokemon({
+      id: 'wild',
+      speciesId: 'charmander',
+      level: 3,
+      moves: ['scratch'],
+    });
     const adopted = adoptAtLevel(caught, 10);
     expect(adopted.fighter.level).toBe(10);
-    const expected = statAtLevel(getSpecies('charmander')!, 10, caught.fighter.nature, caught.fighter.ivs, caught.fighter.evs);
+    const expected = statAtLevel(
+      getSpecies('charmander')!,
+      10,
+      caught.fighter.nature,
+      caught.fighter.ivs,
+      caught.fighter.evs,
+    );
     expect(adopted.fighter.hp).toBe(expected.hp);
     expect(adopted.fighter.moves.length).toBeGreaterThan(0);
   });
@@ -163,7 +179,12 @@ describe('adoptAtLevel', () => {
   });
 
   it('rebuilds every other field exactly as before and mutates nothing', () => {
-    const caught = createRunPokemon({ id: 'wild', speciesId: 'charmander', level: 5, moves: ['scratch'] });
+    const caught = createRunPokemon({
+      id: 'wild',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['scratch'],
+    });
     const damaged = { ...caught, fighter: { ...caught.fighter, hp: 4, heldItem: 'oran-berry' } };
     const before = JSON.stringify(damaged);
     const adopted = adoptAtLevel(damaged, 12, 'run-1');
@@ -185,7 +206,15 @@ describe('adoptAtLevel', () => {
       learnsetSeed: 'run-1',
     });
     expect(adopted.fighter).toEqual({ ...rebuilt.fighter, hp: adopted.fighter.hp });
-    expect(adopted.fighter.hp).toBe(Math.max(1, Math.round((4 / statAtLevel(getSpecies('charmander')!, 5, f.nature, f.ivs, f.evs).hp) * rebuilt.fighter.hp)));
+    expect(adopted.fighter.hp).toBe(
+      Math.max(
+        1,
+        Math.round(
+          (4 / statAtLevel(getSpecies('charmander')!, 5, f.nature, f.ivs, f.evs).hp) *
+            rebuilt.fighter.hp,
+        ),
+      ),
+    );
   });
 });
 
@@ -194,14 +223,22 @@ describe('evolvePokemon', () => {
     const ready = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 16, moves: ['ember'] });
     const evolved = evolvePokemon(ready, 'charmeleon');
     expect(evolved.fighter.speciesId).toBe('charmeleon');
-    const expected = statAtLevel(getSpecies('charmeleon')!, 16, 'serious', ready.fighter.ivs, ready.fighter.evs);
+    const expected = statAtLevel(
+      getSpecies('charmeleon')!,
+      16,
+      'serious',
+      ready.fighter.ivs,
+      ready.fighter.evs,
+    );
     expect(evolved.fighter.hp).toBe(expected.hp);
   });
 
   it('carries the missing HP across, so a full member stays full', () => {
     const ready = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 16, moves: ['ember'] });
     const evolved = evolvePokemon(ready, 'charmeleon');
-    expect(evolved.fighter.hp).toBe(statAtLevel(getSpecies('charmeleon')!, 16, 'serious', ready.fighter.ivs, ready.fighter.evs).hp);
+    expect(evolved.fighter.hp).toBe(
+      statAtLevel(getSpecies('charmeleon')!, 16, 'serious', ready.fighter.ivs, ready.fighter.evs).hp,
+    );
   });
 
   it('re-rolls the ability from the new species when given a seed', () => {
@@ -230,13 +267,7 @@ describe('evolvePokemon', () => {
 
 /** The hand-authored Rotom appliances behave as any other evolution branch (`D38`). */
 describe('evolvePokemon across a rotom appliance', () => {
-  const APPLIANCES: readonly string[] = [
-    'rotomheat',
-    'rotomwash',
-    'rotomfrost',
-    'rotomfan',
-    'rotommow',
-  ];
+  const APPLIANCES: readonly string[] = ['rotomheat', 'rotomwash', 'rotomfrost', 'rotomfan', 'rotommow'];
   const LEVEL = 30;
 
   function rotom(): RunPokemon {
@@ -288,9 +319,7 @@ describe('evolvePokemon across a rotom appliance', () => {
     const f = evolved.fighter;
     const applianceSpa = statAtLevel(getSpecies('rotomheat')!, LEVEL, f.nature, f.ivs, f.evs).spa;
     expect(restoreFighter(f).stats.spa).toBe(applianceSpa);
-    expect(applianceSpa).not.toBe(
-      statAtLevel(getSpecies('rotom')!, LEVEL, f.nature, f.ivs, f.evs).spa,
-    );
+    expect(applianceSpa).not.toBe(statAtLevel(getSpecies('rotom')!, LEVEL, f.nature, f.ivs, f.evs).spa);
   });
 
   it('carries the missing HP across and keeps the maximum, for all five appliances', () => {
@@ -366,7 +395,13 @@ describe('editRunPokemon', () => {
     const pokemon = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 5, moves: ['ember'] });
     const hurt = { ...pokemon, fighter: { ...pokemon.fighter, hp: 1 } };
     const bumped = editRunPokemon(hurt, { level: 20 });
-    const maxHp = statAtLevel(getSpecies('charmander')!, 20, hurt.fighter.nature, hurt.fighter.ivs, hurt.fighter.evs).hp;
+    const maxHp = statAtLevel(
+      getSpecies('charmander')!,
+      20,
+      hurt.fighter.nature,
+      hurt.fighter.ivs,
+      hurt.fighter.evs,
+    ).hp;
     expect(bumped.fighter.hp).toBe(maxHp);
     expect(editRunPokemon(hurt, { moves: ['growl'] }).fighter.hp).toBe(1);
   });

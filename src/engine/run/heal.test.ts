@@ -1,10 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { restoreFighter } from '../battle/fighter';
 import { createRunPokemon, type RunPokemon } from './progression';
-import { chargePokevial, fillPokevial, fullHealMember, healParty, usePokevial, POKEVIAL_MAX_CHARGES } from './heal';
+import {
+  chargePokevial,
+  fillPokevial,
+  fullHealMember,
+  healParty,
+  usePokevial,
+  POKEVIAL_MAX_CHARGES,
+} from './heal';
 import { addPokemon, createRun, type RunState } from './state';
 
-const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch', 'ember'] });
+const starter = createRunPokemon({
+  id: 'starter',
+  speciesId: 'charmander',
+  level: 5,
+  moves: ['scratch', 'ember'],
+});
 const starterMaxHp = restoreFighter(starter.fighter).maxHp;
 
 function damaged(pokemon: RunPokemon, hp: number, pp: number): RunPokemon {
@@ -56,7 +68,10 @@ describe('usePokevial', () => {
   });
 
   it('cures status across the party and the box', () => {
-    const sick = { ...starter, fighter: { ...starter.fighter, status: 'par' as const, statusCounter: 3 } };
+    const sick = {
+      ...starter,
+      fighter: { ...starter.fighter, status: 'par' as const, statusCounter: 3 },
+    };
     const boxed = {
       ...createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 4 }),
       fighter: {

@@ -189,7 +189,9 @@ export function settingValue(settings: Settings, row: SettingsRowId): string {
     case 'reducedFlash':
       return settings.reducedFlash ? t('settings.toggle.on') : t('settings.toggle.off');
     case 'aiLevel':
-      return settings.aiLevel === 'hard' ? t('settings.difficulty.hard') : t('settings.difficulty.normal');
+      return settings.aiLevel === 'hard'
+        ? t('settings.difficulty.hard')
+        : t('settings.difficulty.normal');
     case 'language':
       return LANGUAGE_LABELS[settings.language];
     default:
@@ -202,7 +204,11 @@ export function changeSetting(settings: Settings, row: SettingsRowId, delta: num
   if (delta === 0) return settings;
   switch (row) {
     case 'textSpeed': {
-      const index = clamp(TEXT_SPEED_ORDER.indexOf(settings.textSpeed) + delta, 0, TEXT_SPEED_ORDER.length - 1);
+      const index = clamp(
+        TEXT_SPEED_ORDER.indexOf(settings.textSpeed) + delta,
+        0,
+        TEXT_SPEED_ORDER.length - 1,
+      );
       return { ...settings, textSpeed: TEXT_SPEED_ORDER[index] };
     }
     case 'volume': {
@@ -234,12 +240,19 @@ export function changeSetting(settings: Settings, row: SettingsRowId, delta: num
  * toggle. Used by the pointer path, where there is no left/right key.
  */
 export function cycleSetting(settings: Settings, row: SettingsRowId, delta: number): Settings {
-  const wrap = (index: number, length: number): number => ((index + delta) % length + length) % length;
+  const wrap = (index: number, length: number): number => (((index + delta) % length) + length) % length;
   switch (row) {
     case 'textSpeed':
-      return { ...settings, textSpeed: TEXT_SPEED_ORDER[wrap(TEXT_SPEED_ORDER.indexOf(settings.textSpeed), TEXT_SPEED_ORDER.length)] };
+      return {
+        ...settings,
+        textSpeed:
+          TEXT_SPEED_ORDER[wrap(TEXT_SPEED_ORDER.indexOf(settings.textSpeed), TEXT_SPEED_ORDER.length)],
+      };
     case 'aiLevel':
-      return { ...settings, aiLevel: AI_LEVELS[wrap(AI_LEVELS.indexOf(settings.aiLevel), AI_LEVELS.length)] };
+      return {
+        ...settings,
+        aiLevel: AI_LEVELS[wrap(AI_LEVELS.indexOf(settings.aiLevel), AI_LEVELS.length)],
+      };
     case 'language':
       return {
         ...settings,
@@ -266,9 +279,6 @@ export function moveSettingIndex(
 }
 
 /** The row at an index, clamped so a stale index can never read past the list. */
-export function settingsRow(
-  index: number,
-  rows: readonly SettingsRow[] = SETTINGS_ROWS,
-): SettingsRow {
+export function settingsRow(index: number, rows: readonly SettingsRow[] = SETTINGS_ROWS): SettingsRow {
   return rows[clamp(index, 0, rows.length - 1)];
 }

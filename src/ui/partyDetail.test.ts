@@ -69,7 +69,12 @@ describe('memberDetail', () => {
   });
 
   it('prefers the nickname and exposes the raw field', () => {
-    const named = createRunPokemon({ id: 'named', speciesId: 'charmander', level: 5, nickname: 'Sparky' });
+    const named = createRunPokemon({
+      id: 'named',
+      speciesId: 'charmander',
+      level: 5,
+      nickname: 'Sparky',
+    });
     const detail = memberDetail({ ...runWith(), party: [named] }, 'named');
     expect(detail?.name).toBe('Sparky');
     expect(detail?.nickname).toBe('Sparky');
@@ -116,7 +121,7 @@ describe('memberDetail on two catches of the same species', () => {
     };
   }
 
-  it('resolves each member id to that member\'s own moves', () => {
+  it("resolves each member id to that member's own moves", () => {
     // Two wild fighters built the way `BattleScene` builds them: both called `wild`.
     const first = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 4 });
     const second = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 4 });
@@ -126,7 +131,11 @@ describe('memberDetail on two catches of the same species', () => {
     run = {
       ...run,
       party: run.party.map((member, index) =>
-        index === 1 ? withMoves(member, ['tackle']) : index === 2 ? withMoves(member, ['scratch']) : member,
+        index === 1
+          ? withMoves(member, ['tackle'])
+          : index === 2
+            ? withMoves(member, ['scratch'])
+            : member,
       ),
     };
 

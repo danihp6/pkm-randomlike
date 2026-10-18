@@ -120,7 +120,10 @@ export class SettingsScene extends Phaser.Scene {
     // fully visible instead of running off the side.
     const panelW = Math.min(PANEL_W, width - PANEL_MARGIN * 2);
     const rowCount = this.rowList.length;
-    const rowH = Math.max(18, Math.min(ROW_H, (height - PANEL_MARGIN * 2 - ROW_TOP - PANEL_FOOT) / rowCount));
+    const rowH = Math.max(
+      18,
+      Math.min(ROW_H, (height - PANEL_MARGIN * 2 - ROW_TOP - PANEL_FOOT) / rowCount),
+    );
     const panelH = ROW_TOP + rowCount * rowH + PANEL_FOOT;
     const x = (width - panelW) / 2;
     const y = Math.max(PANEL_MARGIN, (height - panelH) / 2);
@@ -222,12 +225,7 @@ export class SettingsScene extends Phaser.Scene {
     if (this.capturing) return;
     // A tap outside the panel closes it: on a touch screen there is no cancel key.
     const { x, y, panelW, panelH } = this.layout;
-    if (
-      pointer.x < x ||
-      pointer.x > x + panelW ||
-      pointer.y < y ||
-      pointer.y > y + panelH
-    ) {
+    if (pointer.x < x || pointer.x > x + panelW || pointer.y < y || pointer.y > y + panelH) {
       this.close();
       return;
     }
@@ -265,7 +263,9 @@ export class SettingsScene extends Phaser.Scene {
     }
     // A clickable row reads as such; the volume track reads as draggable.
     const overSlider = this.volumeSlider !== null && pointInRect(pointer, this.volumeSlider);
-    this.input.setDefaultCursor(overSlider ? 'grab' : this.rowIndexAt(pointer) >= 0 ? 'pointer' : 'default');
+    this.input.setDefaultCursor(
+      overSlider ? 'grab' : this.rowIndexAt(pointer) >= 0 ? 'pointer' : 'default',
+    );
   }
 
   /** Sets the volume from the pointer's position along the slider track. */

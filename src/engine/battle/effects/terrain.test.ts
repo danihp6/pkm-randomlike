@@ -8,7 +8,12 @@ import { takeTurn } from '../turn';
 import { applyStatusEffect } from './apply';
 import { TERRAIN_TURNS, terrainBlocksStatus, terrainFromMove, terrainHeal } from './terrain';
 
-function fighter(id: string, speciesId: string, ability: string, moves?: readonly string[]): BattleFighter {
+function fighter(
+  id: string,
+  speciesId: string,
+  ability: string,
+  moves?: readonly string[],
+): BattleFighter {
   return createFighter({ id, speciesId, level: 20, ability, ...(moves ? { moves } : {}) });
 }
 
@@ -98,16 +103,20 @@ describe('terrain', () => {
     const roll = () => new Rng(42);
 
     const electric = getMove('thunderbolt')!;
-    expect(computeDamage(attacker, defender, electric, roll(), { critical: false, terrain: 'electric' }).damage)
-      .toBeGreaterThan(computeDamage(attacker, defender, electric, roll(), { critical: false }).damage);
+    expect(
+      computeDamage(attacker, defender, electric, roll(), { critical: false, terrain: 'electric' })
+        .damage,
+    ).toBeGreaterThan(computeDamage(attacker, defender, electric, roll(), { critical: false }).damage);
 
     const dragon = getMove('dragonclaw')!;
-    expect(computeDamage(attacker, defender, dragon, roll(), { critical: false, terrain: 'misty' }).damage)
-      .toBeLessThan(computeDamage(attacker, defender, dragon, roll(), { critical: false }).damage);
+    expect(
+      computeDamage(attacker, defender, dragon, roll(), { critical: false, terrain: 'misty' }).damage,
+    ).toBeLessThan(computeDamage(attacker, defender, dragon, roll(), { critical: false }).damage);
 
     const quake = getMove('earthquake')!;
-    expect(computeDamage(attacker, defender, quake, roll(), { critical: false, terrain: 'grassy' }).damage)
-      .toBeLessThan(computeDamage(attacker, defender, quake, roll(), { critical: false }).damage);
+    expect(
+      computeDamage(attacker, defender, quake, roll(), { critical: false, terrain: 'grassy' }).damage,
+    ).toBeLessThan(computeDamage(attacker, defender, quake, roll(), { critical: false }).damage);
   });
 
   it('an ungrounded attacker gets no terrain boost', () => {
@@ -115,7 +124,9 @@ describe('terrain', () => {
     const defender = fighter('d', 'bulbasaur', 'Overgrow');
     const electric = getMove('thunderbolt')!;
 
-    expect(computeDamage(flyer, defender, electric, new Rng(7), { critical: false, terrain: 'electric' }).damage)
-      .toBe(computeDamage(flyer, defender, electric, new Rng(7), { critical: false }).damage);
+    expect(
+      computeDamage(flyer, defender, electric, new Rng(7), { critical: false, terrain: 'electric' })
+        .damage,
+    ).toBe(computeDamage(flyer, defender, electric, new Rng(7), { critical: false }).damage);
   });
 });

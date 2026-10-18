@@ -3,7 +3,11 @@ import { addFrlgText, FRLG_INK } from './frlgFont';
 import { FRLG_WINDOW_PADDING } from './frlg';
 import { typeColor, typeTint } from './typeColors';
 import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeIcons';
-import { MOVE_CATEGORY_ICON_W, MOVE_CATEGORY_TEXTURE_KEY, categoryIconFrame } from '../data/moveCategoryIcons';
+import {
+  MOVE_CATEGORY_ICON_W,
+  MOVE_CATEGORY_TEXTURE_KEY,
+  categoryIconFrame,
+} from '../data/moveCategoryIcons';
 import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../data/statusIcons';
 import { InfoPopup, type InfoPopupBadge, type InfoPopupChip } from './infoPopup';
 import { t } from '../i18n';
@@ -261,9 +265,7 @@ export class MoveGrid {
         .setVisible(true);
 
       this.powerTexts[i]
-        .setText(
-          cell.basePower > 0 ? t('move.pwr', { value: cell.power }) : t('move.pwrNone'),
-        )
+        .setText(cell.basePower > 0 ? t('move.pwr', { value: cell.power }) : t('move.pwrNone'))
         .setTint(powerTint(cell))
         .setAlpha(alpha)
         .setOrigin(narrow ? 0 : 1, 0)
@@ -374,11 +376,8 @@ export class MoveGrid {
     }
     // A type the atlas lacks still falls back to the text chip.
     const chip: InfoPopupChip | null =
-      typeFrame === null
-        ? { label: cell.type.toUpperCase(), color: typeColor(cell.type), y: 0 }
-        : null;
-    const rect =
-      options.popupAtCell === true && index !== null ? this.cellRects[index] : undefined;
+      typeFrame === null ? { label: cell.type.toUpperCase(), color: typeColor(cell.type), y: 0 } : null;
+    const rect = options.popupAtCell === true && index !== null ? this.cellRects[index] : undefined;
     const anchorY = rect ? rect.y : options.y;
     const belowY = rect ? rect.y + rect.h + POPUP_GAP : options.y + options.h + POPUP_GAP;
     this.popup.show(

@@ -10,7 +10,12 @@ import {
 import { getBiome } from '../data/biomes';
 import { abilityText } from '../data/abilityText';
 import { t, type TranslationKey } from '../i18n';
-import { restoreFighter, type BattleFighter, type MoveSlot, type StatusId } from '../engine/battle/fighter';
+import {
+  restoreFighter,
+  type BattleFighter,
+  type MoveSlot,
+  type StatusId,
+} from '../engine/battle/fighter';
 import { effectiveMoveType } from '../engine/battle/moveType';
 import { getItem } from '../data/items';
 import { moveMoves, type CatchLocation, type RunPokemon, type RunState } from '../engine/run';
@@ -116,7 +121,10 @@ export { typeColor, typeTint } from './typeColors';
 
 // The first match is the only match: `nextMemberId` (src/engine/run/state.ts) keeps ids unique.
 function memberById(run: RunState, id: string): RunPokemon | undefined {
-  return run.party.find((member) => member.fighter.id === id) ?? run.box.find((member) => member.fighter.id === id);
+  return (
+    run.party.find((member) => member.fighter.id === id) ??
+    run.box.find((member) => member.fighter.id === id)
+  );
 }
 
 function moveDetails(

@@ -89,7 +89,10 @@ export function resolveBattle(
     const caught = adoptAtLevel(keyed, squadLevel(next), next.seed);
     const placed = addCaughtPokemon(next, caught);
     // Read the placement back off the run, so it cannot disagree with `pcCatch`.
-    capture = { member: caught, toPc: placed.box.some((member) => member.fighter.id === caught.fighter.id) };
+    capture = {
+      member: caught,
+      toPc: placed.box.some((member) => member.fighter.id === caught.fighter.id),
+    };
     next = placed;
     next = useCapture(next);
     next = recordCatch(next);
@@ -117,10 +120,7 @@ export function resolveBattle(
  * snapshot, so it survives the swap; a member the battle did not report (or the
  * box, which never fights) is left untouched.
  */
-export function adoptBattleParty(
-  run: RunState,
-  player: readonly FighterSnapshot[],
-): RunState {
+export function adoptBattleParty(run: RunState, player: readonly FighterSnapshot[]): RunState {
   const returned = new Map(player.map((fighter) => [fighter.id, fighter]));
   return {
     ...run,

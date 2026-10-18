@@ -68,11 +68,7 @@ export function experienceFraction(xp: number, level: number): number {
  * across the participants and multiplied for trainers. No RNG, so a replay awards
  * the same XP.
  */
-export function experienceAward(
-  defeatedLevel: number,
-  participants = 1,
-  isTrainer = false,
-): number {
+export function experienceAward(defeatedLevel: number, participants = 1, isTrainer = false): number {
   const level = Math.max(1, Math.floor(defeatedLevel));
   const base = level * 5;
   const scale = isTrainer ? 1.5 * bandForLevel(level).trainerXp : 1;
@@ -157,7 +153,8 @@ export type RunPokemonEdit = Readonly<{
 export function editRunPokemon(pokemon: RunPokemon, edit: RunPokemonEdit): RunPokemon {
   const fighter = pokemon.fighter;
   const requested = edit.level;
-  const rawLevel = requested !== undefined && Number.isFinite(requested) ? Math.floor(requested) : fighter.level;
+  const rawLevel =
+    requested !== undefined && Number.isFinite(requested) ? Math.floor(requested) : fighter.level;
   const level = Math.max(1, Math.min(MAX_LEVEL, rawLevel));
   const nature = edit.nature ?? fighter.nature;
   const source = edit.moves ?? fighter.moves.map((slot) => slot.moveId);
@@ -225,11 +222,7 @@ function gainedMoves(
  * has it and the species' first one is used otherwise. Pure, like the rest of
  * the run (D11).
  */
-export function evolvePokemon(
-  pokemon: RunPokemon,
-  into: string,
-  abilitySeed?: string,
-): RunPokemon {
+export function evolvePokemon(pokemon: RunPokemon, into: string, abilitySeed?: string): RunPokemon {
   const fighter = pokemon.fighter;
   const target = getSpecies(into);
   if (!target) return pokemon;

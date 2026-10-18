@@ -3,7 +3,12 @@ import { createRunPokemon, type RunPokemon } from './progression';
 import { releaseFainted } from './perms';
 import { addPokemon, createRun } from './state';
 
-const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch'] });
+const starter = createRunPokemon({
+  id: 'starter',
+  speciesId: 'charmander',
+  level: 5,
+  moves: ['scratch'],
+});
 
 function hurt(pokemon: RunPokemon, hp: number): RunPokemon {
   return { ...pokemon, fighter: { ...pokemon.fighter, hp } };

@@ -38,7 +38,11 @@ describe('typewriter', () => {
   });
 
   it('reveals as many characters as the elapsed time buys, keeping the rest', () => {
-    const { typewriter, elapsed } = advanceTypewriter(beginTypewriter('abcdef'), 50, TEXT_SPEED_MS.normal);
+    const { typewriter, elapsed } = advanceTypewriter(
+      beginTypewriter('abcdef'),
+      50,
+      TEXT_SPEED_MS.normal,
+    );
     expect(visibleText(typewriter)).toBe('ab');
     expect(elapsed).toBe(10);
   });

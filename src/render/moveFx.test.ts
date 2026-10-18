@@ -82,7 +82,26 @@ describe('moveFxFor', () => {
   });
 
   it('never returns a missing row for any type', () => {
-    const types = ['Normal', 'Fire', 'Water', 'Grass', 'Electric', 'Ice', 'Fighting', 'Poison', 'Ground', 'Flying', 'Psychic', 'Bug', 'Rock', 'Ghost', 'Dragon', 'Dark', 'Steel', 'Fairy'];
+    const types = [
+      'Normal',
+      'Fire',
+      'Water',
+      'Grass',
+      'Electric',
+      'Ice',
+      'Fighting',
+      'Poison',
+      'Ground',
+      'Flying',
+      'Psychic',
+      'Bug',
+      'Rock',
+      'Ghost',
+      'Dragon',
+      'Dark',
+      'Steel',
+      'Fairy',
+    ];
     for (const type of types) expect(MOVE_FX_IDS).toContain(moveFxFor('tackle', type, {}));
   });
 });

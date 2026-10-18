@@ -22,7 +22,8 @@ function fillRect(tiles: number[][], x: number, y: number, w: number, h: number)
 function wallViolations(tiles: readonly (readonly number[])[], footprint: WallFootprint): string[] {
   const height = tiles.length;
   const width = height > 0 ? tiles[0].length : 0;
-  const ring = (x: number, y: number): boolean => x === 0 || x === width - 1 || y === 0 || y === height - 1;
+  const ring = (x: number, y: number): boolean =>
+    x === 0 || x === width - 1 || y === 0 || y === height - 1;
   const bad: string[] = [];
 
   for (let y = 1; y < height - 1; y++) {
@@ -216,7 +217,9 @@ describe('route wall cleanup (via sketchRoute)', () => {
               if (!isFloor(x, y)) continue;
               const across = (isFloor(x - 1, y) ? 1 : 0) + (isFloor(x + 1, y) ? 1 : 0);
               const down = (isFloor(x, y - 1) ? 1 : 0) + (isFloor(x, y + 1) ? 1 : 0);
-              expect(across > 0 && down > 0, `${shape} ${seed} #${index} thin lane at ${x},${y}`).toBe(true);
+              expect(across > 0 && down > 0, `${shape} ${seed} #${index} thin lane at ${x},${y}`).toBe(
+                true,
+              );
             }
           }
         }

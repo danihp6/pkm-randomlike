@@ -38,7 +38,13 @@ export const ROUTE_LOOT: Readonly<Record<BandId, BandLoot>> = {
   early: {
     hiddenChance: 0.35,
     itemChance: 0.5,
-    pool: [entry('potion', 4), entry('pokeball', 4), entry('antidote', 1), entry('stardust', 1), entry('tm032', 1)],
+    pool: [
+      entry('potion', 4),
+      entry('pokeball', 4),
+      entry('antidote', 1),
+      entry('stardust', 1),
+      entry('tm032', 1),
+    ],
   },
   low: {
     hiddenChance: 0.35,

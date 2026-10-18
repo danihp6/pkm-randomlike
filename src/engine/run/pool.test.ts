@@ -4,10 +4,8 @@ import { LEVEL_BANDS, bossBstWindow } from '../../data/run';
 import { encounterTableFor } from '../routes/encounters';
 import { WILD_BANNED_TAGS, speciesPool } from './pool';
 
-const wildIds = (): readonly string[] =>
-  LEVEL_BANDS.flatMap((band) => speciesPool(band, 'wild'));
-const trainerIds = (): readonly string[] =>
-  LEVEL_BANDS.flatMap((band) => speciesPool(band, 'trainer'));
+const wildIds = (): readonly string[] => LEVEL_BANDS.flatMap((band) => speciesPool(band, 'wild'));
+const trainerIds = (): readonly string[] => LEVEL_BANDS.flatMap((band) => speciesPool(band, 'trainer'));
 
 const spawnable = () => playableSpecies().filter((species) => species.battleOnly === undefined);
 

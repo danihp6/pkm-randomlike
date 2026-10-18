@@ -15,7 +15,10 @@ export function escapeOdds(playerSpeed: number, wildSpeed: number, attempts: num
 
 export function rollRun(state: BattleState, side: SideId, rng: Rng = state.rng): boolean {
   if (!canRun(state, side)) return false;
-  const ctx = makeContext(state, side, { source: activeFighter(state, side), target: opponent(state, side) });
+  const ctx = makeContext(state, side, {
+    source: activeFighter(state, side),
+    target: opponent(state, side),
+  });
   if (runTryEscape(ctx)) return true;
   const odds = escapeOdds(
     modifiedSpeed(state, side),

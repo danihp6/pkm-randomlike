@@ -135,7 +135,9 @@ describe('patternFrame', () => {
 
   it('alternates crown and body above the foot, capped by lower leaves and a trunk', () => {
     const tall: TileMap = Array.from({ length: 7 }, () => [WALL]);
-    expect([0, 1, 2, 3, 4, 5, 6].map((y) => patternFrame(tall, 0, y, pattern))).toEqual([8, 11, 14, 17, 14, 20, 23]);
+    expect([0, 1, 2, 3, 4, 5, 6].map((y) => patternFrame(tall, 0, y, pattern))).toEqual([
+      8, 11, 14, 17, 14, 20, 23,
+    ]);
   });
 
   it('centres a one-tile wall on the pattern middle column', () => {
@@ -379,7 +381,8 @@ describe('variantFrame', () => {
       { frame: 7, weight: 1 },
       { frame: 9, weight: 0 },
     ];
-    for (let y = 0; y < 20; y++) for (let x = 0; x < 20; x++) expect(variantFrame(x, y, options)).toBe(7);
+    for (let y = 0; y < 20; y++)
+      for (let x = 0; x < 20; x++) expect(variantFrame(x, y, options)).toBe(7);
   });
 });
 
@@ -416,7 +419,7 @@ describe('grassRustleFrames', () => {
     expect(grassRustleFrames(tileset)).toEqual([]);
   });
 
-  it('hands back the tileset\'s own list, unmutated by a caller', () => {
+  it("hands back the tileset's own list, unmutated by a caller", () => {
     const frames = grassRustleFrames(FRLG_TILESET);
     const declared = FRLG_TILESET.grassRustle!;
     expect(frames).toBe(declared);
@@ -469,7 +472,9 @@ describe('resolveTileFrame', () => {
       [FLOOR, FLOOR, FLOOR],
     ];
     expect(tileset.variants![FLOOR]).toContain(resolveTileFrame(open, 1, 0, tileset)?.frame);
-    expect(tileset.wallAdjacentVariants![FLOOR]).toContain(resolveTileFrame(corridor, 1, 1, tileset)?.frame);
+    expect(tileset.wallAdjacentVariants![FLOOR]).toContain(
+      resolveTileFrame(corridor, 1, 1, tileset)?.frame,
+    );
   });
 
   it('returns null outside the map', () => {
@@ -486,9 +491,13 @@ describe('resolveTileFrame', () => {
       [FLOOR, FLOOR, FLOOR],
       [FLOOR, FLOOR, FLOOR],
     ];
-    expect(resolveGroundFrame(open, 1, 1, tileset).frame).toBe(resolveTileFrame(open, 1, 1, tileset)?.frame);
+    expect(resolveGroundFrame(open, 1, 1, tileset).frame).toBe(
+      resolveTileFrame(open, 1, 1, tileset)?.frame,
+    );
     expect(tileset.variants![FLOOR]).toContain(resolveGroundFrame(open, 1, 1, tileset).frame);
-    expect(tileset.wallAdjacentVariants![FLOOR]).toContain(resolveGroundFrame(corridor, 1, 1, tileset).frame);
+    expect(tileset.wallAdjacentVariants![FLOOR]).toContain(
+      resolveGroundFrame(corridor, 1, 1, tileset).frame,
+    );
   });
 
   it('exposes FRAME_WALL_CORNER_NE through the shape set it belongs to', () => {

@@ -19,15 +19,7 @@ export type Gender = 'male' | 'female' | 'genderless';
 
 export type BoostId = 'atk' | 'def' | 'spa' | 'spd' | 'spe' | 'accuracy' | 'evasion';
 
-export const BOOST_IDS: readonly BoostId[] = [
-  'atk',
-  'def',
-  'spa',
-  'spd',
-  'spe',
-  'accuracy',
-  'evasion',
-];
+export const BOOST_IDS: readonly BoostId[] = ['atk', 'def', 'spa', 'spd', 'spe', 'accuracy', 'evasion'];
 
 export type Boosts = Record<BoostId, number>;
 
@@ -389,8 +381,7 @@ export function defaultMoveset(
     : levelUpMoves(speciesId, level);
   const ids = learned.map((entry) => entry.moveId);
   const known = ids.length === 0 ? [] : ids.slice(Math.max(0, ids.length - MOVESET_SIZE));
-  const moves =
-    level <= FULL_MOVESET_BY_LEVEL ? padMoveset(speciesId, known, learnsetSeed) : known;
+  const moves = level <= FULL_MOVESET_BY_LEVEL ? padMoveset(speciesId, known, learnsetSeed) : known;
   return moves.length > 0 ? moves : [FALLBACK_MOVE];
 }
 
@@ -433,11 +424,7 @@ function resolveAbility(species: Species, moves: readonly MoveSlot[], input: Fig
  * forme's own ability win. Returns false when the id is unknown or the fighter
  * already wears that forme.
  */
-export function changeBattleForm(
-  fighter: BattleFighter,
-  formId: string,
-  keepAbility = false,
-): boolean {
+export function changeBattleForm(fighter: BattleFighter, formId: string, keepAbility = false): boolean {
   const form = getSpecies(formId);
   if (!form || fighter.speciesId === form.id) return false;
   if (!fighter.megaBackup) {

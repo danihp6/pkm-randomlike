@@ -35,7 +35,12 @@ import {
 } from './effects/registry';
 import { rollHitWith } from './modifiers';
 import { applyBoostEffect, applyStatusEffect } from './effects/apply';
-import { FIELD_CONDITION_MOVES, SIDE_CONDITION_MOVES, isProtectMove, protectBlocks } from './effects/moves';
+import {
+  FIELD_CONDITION_MOVES,
+  SIDE_CONDITION_MOVES,
+  isProtectMove,
+  protectBlocks,
+} from './effects/moves';
 import { setFieldCondition, setSideCondition, tickConditions } from './effects/conditions';
 import { setTerrain, terrainFromMove, terrainHeal, tickTerrain } from './effects/terrain';
 import { setWeather, tickWeather, weatherChip, weatherFromMove, weatherLabel } from './effects/weather';
@@ -111,10 +116,7 @@ export function performSwitch(state: BattleState, side: SideId, partyIndex: numb
   }
 }
 
-function resolvePreMoveActions(
-  state: BattleState,
-  commands: Readonly<Record<SideId, Command>>,
-): void {
+function resolvePreMoveActions(state: BattleState, commands: Readonly<Record<SideId, Command>>): void {
   const entries = SIDE_IDS.filter((side) => commands[side].type !== 'fight').map((side) => ({
     side,
     priority: 6,
@@ -134,9 +136,7 @@ function resolvePreMoveActions(
         pushEvent(state, { kind: 'run', side: entry.side, success });
         pushText(
           state,
-          success
-            ? 'Got away safely!'
-            : `${state.sides[entry.side].name} couldn't get away!`,
+          success ? 'Got away safely!' : `${state.sides[entry.side].name} couldn't get away!`,
         );
         if (success) finishBattle(state, 'draw');
         break;
@@ -153,11 +153,7 @@ function blockedMessage(fighter: BattleFighter, reason: 'slp' | 'frz' | 'par'): 
   return `${fighter.name} is paralyzed! It can't move!`;
 }
 
-function damageMessage(
-  moveName: string,
-  result: DamageResult,
-  defender: BattleFighter,
-): string {
+function damageMessage(moveName: string, result: DamageResult, defender: BattleFighter): string {
   const parts: string[] = [];
   if (result.crit) parts.push('A critical hit!');
   if (result.effectiveness > 1) parts.push("It's super effective!");
@@ -342,10 +338,7 @@ function applyMoveEffects(
 
   // Snatch steals the move: the defender becomes its user.
   const snatches =
-    !reflects &&
-    move.category === 'Status' &&
-    Boolean(move.flags.snatch) &&
-    defender.volatiles.snatch;
+    !reflects && move.category === 'Status' && Boolean(move.flags.snatch) && defender.volatiles.snatch;
   if (snatches) {
     defender.volatiles.snatch = false;
     pushText(state, `${defender.name} snatched the move!`);
@@ -371,7 +364,13 @@ function applyMoveEffects(
   if (move.heal && move.heal.length === 2) {
     const healed = applyHeal(acting, Math.floor((acting.maxHp * move.heal[0]) / move.heal[1]));
     if (healed > 0) {
-      pushEvent(state, { kind: 'heal', side: actingSide, amount: healed, hp: acting.hp, maxHp: acting.maxHp });
+      pushEvent(state, {
+        kind: 'heal',
+        side: actingSide,
+        amount: healed,
+        hp: acting.hp,
+        maxHp: acting.maxHp,
+      });
       pushText(state, `${acting.name} regained health!`);
     }
   }
@@ -395,13 +394,27 @@ function applyMoveEffects(
     if (target.ability === 'Liquid Ooze') {
       if (takesIndirectDamage(acting)) {
         const dealt = applyDamage(acting, drained);
-        pushEvent(state, { kind: 'damage', side: actingSide, amount: dealt, hp: acting.hp, maxHp: acting.maxHp, effectiveness: 1, crit: false });
+        pushEvent(state, {
+          kind: 'damage',
+          side: actingSide,
+          amount: dealt,
+          hp: acting.hp,
+          maxHp: acting.maxHp,
+          effectiveness: 1,
+          crit: false,
+        });
         pushText(state, `${acting.name} sucked up the liquid ooze!`);
       }
     } else {
       const healed = applyHeal(acting, drained);
       if (healed > 0) {
-        pushEvent(state, { kind: 'heal', side: actingSide, amount: healed, hp: acting.hp, maxHp: acting.maxHp });
+        pushEvent(state, {
+          kind: 'heal',
+          side: actingSide,
+          amount: healed,
+          hp: acting.hp,
+          maxHp: acting.maxHp,
+        });
         pushText(state, `${acting.name} had its energy drained!`);
       }
     }
@@ -416,7 +429,15 @@ function applyMoveEffects(
     );
     if (recoil > 0) {
       const dealt = applyDamage(acting, recoil);
-      pushEvent(state, { kind: 'damage', side: actingSide, amount: dealt, hp: acting.hp, maxHp: acting.maxHp, effectiveness: 1, crit: false });
+      pushEvent(state, {
+        kind: 'damage',
+        side: actingSide,
+        amount: dealt,
+        hp: acting.hp,
+        maxHp: acting.maxHp,
+        effectiveness: 1,
+        crit: false,
+      });
       pushText(state, `${acting.name} is damaged by recoil!`);
     }
   }
@@ -424,7 +445,15 @@ function applyMoveEffects(
   if (move.struggleRecoil && acting.hp > 0 && takesIndirectDamage(acting)) {
     const recoil = Math.max(1, Math.floor(acting.maxHp / 4));
     const dealt = applyDamage(acting, recoil);
-    pushEvent(state, { kind: 'damage', side: actingSide, amount: dealt, hp: acting.hp, maxHp: acting.maxHp, effectiveness: 1, crit: false });
+    pushEvent(state, {
+      kind: 'damage',
+      side: actingSide,
+      amount: dealt,
+      hp: acting.hp,
+      maxHp: acting.maxHp,
+      effectiveness: 1,
+      crit: false,
+    });
     pushText(state, `${acting.name} is damaged by recoil!`);
   }
 
@@ -567,12 +596,7 @@ function useCounterMove(
 }
 
 /** U-turn and friends hand the turn over to the bench; Baton Pass carries boosts. */
-function maybeSelfSwitch(
-  state: BattleState,
-  side: SideId,
-  attacker: BattleFighter,
-  move: Move,
-): void {
+function maybeSelfSwitch(state: BattleState, side: SideId, attacker: BattleFighter, move: Move): void {
   if (!move.selfSwitch || state.winner !== null || attacker.hp <= 0) return;
   const battleSide = state.sides[side];
   const hasBench = battleSide.party.some(
@@ -706,7 +730,9 @@ function calledMoveId(
 ): string | null {
   switch (move.id) {
     case 'metronome': {
-      const pool = allMoves().filter((entry) => Boolean(entry.flags.metronome) && !CALLER_MOVES.has(entry.id));
+      const pool = allMoves().filter(
+        (entry) => Boolean(entry.flags.metronome) && !CALLER_MOVES.has(entry.id),
+      );
       if (pool.length === 0) return null;
       return pool[state.rng.int(0, pool.length - 1)].id;
     }
@@ -804,7 +830,15 @@ function resolveMove(
   if (volatileCheck && 'confusionDamage' in volatileCheck) {
     if (slot) slot.pp = Math.max(0, slot.pp - ppCost(state, side, move));
     attacker.lastMoveId = move.id;
-    pushEvent(state, { kind: 'damage', side, amount: volatileCheck.confusionDamage, hp: attacker.hp, maxHp: attacker.maxHp, effectiveness: 1, crit: false });
+    pushEvent(state, {
+      kind: 'damage',
+      side,
+      amount: volatileCheck.confusionDamage,
+      hp: attacker.hp,
+      maxHp: attacker.maxHp,
+      effectiveness: 1,
+      crit: false,
+    });
     pushText(state, `${attacker.name} is confused. It hurt itself in its confusion!`);
     if (attacker.hp <= 0) faint(state, side);
     return;
@@ -864,7 +898,10 @@ function resolveMove(
   if (!runTryHit(hitContext, activeMove)) return;
 
   // Protean and Libero change the user's type, once per switch-in in Gen 9.
-  if ((attacker.ability === 'Protean' || attacker.ability === 'Libero') && !attacker.volatiles.proteanUsed) {
+  if (
+    (attacker.ability === 'Protean' || attacker.ability === 'Libero') &&
+    !attacker.volatiles.proteanUsed
+  ) {
     attacker.volatiles.proteanUsed = true;
     attacker.types = [activeMove.type];
     pushText(state, `${attacker.name} transformed into the ${activeMove.type} type!`);
@@ -878,7 +915,11 @@ function resolveMove(
   let totalDamage = 0;
   if (activeMove.category !== 'Status' && activeMove.basePower > 0) {
     const rolled = multihitHits(activeMove, state.rng);
-    const hits = runModifyMultihit(makeContext(state, side, { source: attacker, target: defender, move: activeMove }), activeMove, rolled);
+    const hits = runModifyMultihit(
+      makeContext(state, side, { source: attacker, target: defender, move: activeMove }),
+      activeMove,
+      rolled,
+    );
     const statContext = damageStatContext(state, side, attacker, defender);
     for (let hit = 0; hit < hits; hit++) {
       const target = opponent(state, side);
@@ -945,7 +986,15 @@ function resolveMove(
       totalDamage += dealt;
       if (activeMove.category === 'Physical') target.volatiles.physicalDamageTaken += dealt;
       else if (activeMove.category === 'Special') target.volatiles.specialDamageTaken += dealt;
-      pushEvent(state, { kind: 'damage', side: opponentOf(side), amount: dealt, hp: target.hp, maxHp: target.maxHp, effectiveness: result.effectiveness, crit: result.crit });
+      pushEvent(state, {
+        kind: 'damage',
+        side: opponentOf(side),
+        amount: dealt,
+        hp: target.hp,
+        maxHp: target.maxHp,
+        effectiveness: result.effectiveness,
+        crit: result.crit,
+      });
       pushText(state, damageMessage(activeMove.name, result, target));
       if (target.hp <= 0) {
         const bonded = target.volatiles.destinyBond;
@@ -992,7 +1041,15 @@ function applyWeatherResidual(state: BattleState): void {
     const chip = weatherChip(fighter, weather);
     if (chip <= 0) continue;
     const dealt = applyDamage(fighter, chip);
-    pushEvent(state, { kind: 'damage', side, amount: dealt, hp: fighter.hp, maxHp: fighter.maxHp, effectiveness: 1, crit: false });
+    pushEvent(state, {
+      kind: 'damage',
+      side,
+      amount: dealt,
+      hp: fighter.hp,
+      maxHp: fighter.maxHp,
+      effectiveness: 1,
+      crit: false,
+    });
     pushText(state, `${fighter.name} is buffeted by the ${weatherLabel(weather)}!`);
     if (fighter.hp <= 0) faint(state, side);
   }
@@ -1021,10 +1078,20 @@ function resolveResiduals(state: BattleState): void {
     const fighter = activeFighter(state, side);
     if (fighter.hp <= 0) continue;
     const residual =
-      fighter.ability === 'Poison Heal' || !takesIndirectDamage(fighter) ? null : residualDamage(fighter);
+      fighter.ability === 'Poison Heal' || !takesIndirectDamage(fighter)
+        ? null
+        : residualDamage(fighter);
     if (!residual) continue;
     const dealt = applyDamage(fighter, residual.damage);
-    pushEvent(state, { kind: 'damage', side, amount: dealt, hp: fighter.hp, maxHp: fighter.maxHp, effectiveness: 1, crit: false });
+    pushEvent(state, {
+      kind: 'damage',
+      side,
+      amount: dealt,
+      hp: fighter.hp,
+      maxHp: fighter.maxHp,
+      effectiveness: 1,
+      crit: false,
+    });
     pushText(state, `${fighter.name} is hurt by its ${statusName(residual.status)}!`);
     if (fighter.hp <= 0) faint(state, side);
   }
@@ -1072,7 +1139,13 @@ function resolveResiduals(state: BattleState): void {
     const other = opponent(state, side);
     const healed = applyHeal(other, drain);
     if (healed > 0) {
-      pushEvent(state, { kind: 'heal', side: opponentOf(side), amount: healed, hp: other.hp, maxHp: other.maxHp });
+      pushEvent(state, {
+        kind: 'heal',
+        side: opponentOf(side),
+        amount: healed,
+        hp: other.hp,
+        maxHp: other.maxHp,
+      });
     }
     if (fighter.hp <= 0) faint(state, side);
   }
@@ -1094,12 +1167,23 @@ function resolveResiduals(state: BattleState): void {
       const healed = applyHeal(fighter, Math.max(1, Math.floor(fighter.maxHp / 16)));
       if (healed > 0) {
         pushEvent(state, { kind: 'heal', side, amount: healed, hp: fighter.hp, maxHp: fighter.maxHp });
-        pushText(state, `${fighter.name} restored a little HP with ${fighter.volatiles.aquaRing ? 'Aqua Ring' : 'Ingrain'}!`);
+        pushText(
+          state,
+          `${fighter.name} restored a little HP with ${fighter.volatiles.aquaRing ? 'Aqua Ring' : 'Ingrain'}!`,
+        );
       }
     }
     if (fighter.volatiles.curse && takesIndirectDamage(fighter)) {
       const dealt = applyDamage(fighter, Math.max(1, Math.floor(fighter.maxHp / 4)));
-      pushEvent(state, { kind: 'damage', side, amount: dealt, hp: fighter.hp, maxHp: fighter.maxHp, effectiveness: 1, crit: false });
+      pushEvent(state, {
+        kind: 'damage',
+        side,
+        amount: dealt,
+        hp: fighter.hp,
+        maxHp: fighter.maxHp,
+        effectiveness: 1,
+        crit: false,
+      });
       pushText(state, `${fighter.name} is afflicted by the curse!`);
       if (fighter.hp <= 0) faint(state, side);
     }
@@ -1174,7 +1258,11 @@ export function takeTurn(state: BattleState, playerCommand: Command, enemyComman
     const fighter = activeFighter(state, side);
     const selected = chosenMove(fighter, commands[side] as FightCommand);
     if (!selected) return { side, priority: 0, fractional: 0 };
-    const ctx = makeContext(state, side, { source: fighter, target: opponent(state, side), move: selected.move });
+    const ctx = makeContext(state, side, {
+      source: fighter,
+      target: opponent(state, side),
+      move: selected.move,
+    });
     return {
       side,
       priority: runModifyPriority(ctx, selected.move, selected.move.priority),

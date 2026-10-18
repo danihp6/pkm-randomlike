@@ -282,13 +282,4 @@ export const COMMON_FRAMES: Readonly<Record<number, number>> = {
 };
 
 export const GROUND_VALUES: readonly number[] = [FLOOR, TRAP, CHEST, ITEM];
-export const ALL_MAP_VALUES: readonly number[] = [
-  FLOOR,
-  WALL,
-  EXIT,
-  TRAP,
-  CHEST,
-  ITEM,
-  WATER,
-  CARPET,
-];
+export const ALL_MAP_VALUES: readonly number[] = [FLOOR, WALL, EXIT, TRAP, CHEST, ITEM, WATER, CARPET];

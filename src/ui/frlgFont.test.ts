@@ -13,7 +13,7 @@ describe('FRLG bitmap font', () => {
   });
 
   it('covers the Latin set the game text uses', () => {
-    const wanted = ' ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?:;\'-()/%×♂♀é';
+    const wanted = " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?:;'-()/%×♂♀é";
     for (const char of wanted) {
       const code = char.codePointAt(0)!;
       expect(data.chars[code], `U+${code.toString(16)}`).toBeDefined();

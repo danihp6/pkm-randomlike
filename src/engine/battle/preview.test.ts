@@ -6,11 +6,17 @@ import { movePreview } from './preview';
 // Importing the battle index registers every effect (abilities, items, moves).
 import './index';
 
-function player(moves: readonly string[], extra: Partial<Parameters<typeof createFighter>[0]> = {}): BattleFighter {
+function player(
+  moves: readonly string[],
+  extra: Partial<Parameters<typeof createFighter>[0]> = {},
+): BattleFighter {
   return createFighter({ id: 'player', speciesId: 'charmander', level: 20, moves, ...extra });
 }
 
-function battle(attacker: BattleFighter, defender = createFighter({ id: 'enemy', speciesId: 'bulbasaur', level: 18 })): BattleState {
+function battle(
+  attacker: BattleFighter,
+  defender = createFighter({ id: 'enemy', speciesId: 'bulbasaur', level: 18 }),
+): BattleState {
   return createBattle({ player: [attacker], enemy: [defender], rng: new Rng(1), isWild: true });
 }
 

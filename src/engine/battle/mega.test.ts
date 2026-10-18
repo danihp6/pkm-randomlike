@@ -2,22 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { Rng } from '../rng';
 import { chooseAiCommand } from './ai';
 import { validateCommand } from './commands';
-import {
-  activeFighter,
-  createBattle,
-  createFighter,
-  snapshotFighter,
-  type BattleState,
-} from './index';
+import { activeFighter, createBattle, createFighter, snapshotFighter, type BattleState } from './index';
 import { canMegaEvolve, megaEvolve } from './mega';
 import { resetBattleState } from './fighter';
 import { takeTurn } from './turn';
 
-function battle(
-  heldItem?: string,
-  enemySpeciesId = 'bulbasaur',
-  enemyHeldItem?: string,
-): BattleState {
+function battle(heldItem?: string, enemySpeciesId = 'bulbasaur', enemyHeldItem?: string): BattleState {
   return createBattle({
     player: [
       createFighter({
@@ -85,11 +75,7 @@ describe('megaEvolve', () => {
 
   it('resolves on the turn it is commanded, before the move', () => {
     const state = battle('gyaradosite');
-    takeTurn(
-      state,
-      { type: 'fight', moveIndex: 0, mega: true },
-      chooseAiCommand(state, 'enemy'),
-    );
+    takeTurn(state, { type: 'fight', moveIndex: 0, mega: true }, chooseAiCommand(state, 'enemy'));
     const fighter = activeFighter(state, 'player');
     expect(fighter.mega).toBe(true);
     expect(fighter.speciesId).toBe('gyaradosmega');
@@ -128,7 +114,13 @@ describe('megaEvolve', () => {
         }),
       ],
       enemy: [
-        createFighter({ id: 'enemy', speciesId: 'bulbasaur', level: 40, nature: 'serious', moves: ['tackle'] }),
+        createFighter({
+          id: 'enemy',
+          speciesId: 'bulbasaur',
+          level: 40,
+          nature: 'serious',
+          moves: ['tackle'],
+        }),
       ],
       rng: new Rng(2026),
       isWild: true,
@@ -146,11 +138,7 @@ describe('megaEvolve', () => {
   it('is deterministic for a fixed seed', () => {
     const run = (): BattleState => {
       const state = battle('gyaradosite');
-      takeTurn(
-        state,
-        { type: 'fight', moveIndex: 0, mega: true },
-        chooseAiCommand(state, 'enemy'),
-      );
+      takeTurn(state, { type: 'fight', moveIndex: 0, mega: true }, chooseAiCommand(state, 'enemy'));
       return state;
     };
     const a = run();

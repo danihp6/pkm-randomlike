@@ -8,7 +8,12 @@ import { addItem, addMoney, createRun, createRunPokemon, itemCount } from '../en
 import { Rng, hashSeed } from '../engine/rng';
 import { buildShop, buyItem, buyRows, sellItem, sellPriceOf, sellRows, sellableStacks } from './shop';
 
-const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5, moves: ['scratch'] });
+const starter = createRunPokemon({
+  id: 'starter',
+  speciesId: 'charmander',
+  level: 5,
+  moves: ['scratch'],
+});
 
 /** The seed the frozen-stock regression reads the shelves for. */
 const FROZEN_SEED = (bandId: BandId): Rng => new Rng(hashSeed(`task-54:${bandId}`));
@@ -47,7 +52,10 @@ describe('buildShop', () => {
         expect(held.length, `${band.id}:${seed}`).toBe(SHOP_HELD_ROWS);
         expect(new Set(held.map((slot) => slot.itemId)).size, `${band.id}:${seed}`).toBe(SHOP_HELD_ROWS);
         for (const slot of held) {
-          expect(SHOP_ROTATION[band.id].some((entry) => entry.itemId === slot.itemId), slot.itemId).toBe(true);
+          expect(
+            SHOP_ROTATION[band.id].some((entry) => entry.itemId === slot.itemId),
+            slot.itemId,
+          ).toBe(true);
           expect(slot.price, slot.itemId).toBe(buyPrice(getItem(slot.itemId)!));
           expect(slot.count, slot.itemId).toBe(1);
         }
@@ -82,7 +90,10 @@ describe('buildShop', () => {
     for (const band of LEVEL_BANDS) {
       const first = buildShop(band.id, FROZEN_SEED(band.id));
       expect(buildShop(band.id, FROZEN_SEED(band.id)), band.id).toEqual(first);
-      expect(first.map((slot) => slot.itemId), band.id).toEqual(FROZEN[band.id]);
+      expect(
+        first.map((slot) => slot.itemId),
+        band.id,
+      ).toEqual(FROZEN[band.id]);
       const pack = SHOP_BALL_PACK[band.id];
       expect(first[0], band.id).toEqual({ itemId: pack.itemId, price: pack.price, count: pack.count });
       expect(first[1], band.id).toEqual({
@@ -90,9 +101,10 @@ describe('buildShop', () => {
         price: buyPrice(getItem(SHOP_POTION[band.id])!),
         count: 1,
       });
-      expect(first.slice(2, 2 + SHOP_HELD_ROWS).map((slot) => slot.itemId), band.id).toEqual(
-        FROZEN[band.id].slice(2, 2 + SHOP_HELD_ROWS),
-      );
+      expect(
+        first.slice(2, 2 + SHOP_HELD_ROWS).map((slot) => slot.itemId),
+        band.id,
+      ).toEqual(FROZEN[band.id].slice(2, 2 + SHOP_HELD_ROWS));
     }
   });
 });
@@ -171,7 +183,13 @@ describe('shop trades', () => {
     const buy = buyRows(run, [{ itemId: 'potion', price: 300, count: 1 }]);
     expect(buy[0]).toMatchObject({ name: 'Potion', price: 300, count: 1, owned: 0, affordable: false });
     const sell = sellRows(run);
-    expect(sell[0]).toMatchObject({ itemId: 'nugget', price: 5000, count: 1, owned: 2, affordable: true });
+    expect(sell[0]).toMatchObject({
+      itemId: 'nugget',
+      price: 5000,
+      count: 1,
+      owned: 2,
+      affordable: true,
+    });
     run = sellItem(run, 'nugget').run;
     expect(sellableStacks(run)).toEqual([{ itemId: 'nugget', count: 1 }]);
     expect(sellPriceOf('masterball')).toBe(0);

@@ -19,7 +19,7 @@ function paint(
 ) {
   for (let py = y; py < y + h; py++) {
     for (let px = x; px < x + w; px++) {
-      rgba[((py * stripWidth + frame * size + px) * 4) + 3] = 255;
+      rgba[(py * stripWidth + frame * size + px) * 4 + 3] = 255;
     }
   }
 }

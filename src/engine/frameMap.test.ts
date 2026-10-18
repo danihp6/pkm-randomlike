@@ -147,6 +147,8 @@ describe('frame map export', () => {
       ...exported,
       frameMap: { ...exported.frameMap, cells: exported.frameMap.cells.slice(1) },
     };
-    expect(() => parseFrameMapExport(JSON.stringify(broken))).toThrow('cell count does not match the size');
+    expect(() => parseFrameMapExport(JSON.stringify(broken))).toThrow(
+      'cell count does not match the size',
+    );
   });
 });

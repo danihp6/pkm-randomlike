@@ -8,7 +8,8 @@
  * A move picks a row by animation archetype, never per move id: a burned body,
  * a poison cloud, contact sparks and a rock drop each cover a family of moves.
  */
-export type MoveFxId = 'ember' | 'cross_poison' | 'poison_gas' | 'fire_punch' | 'rock_slide' | 'ancient_power';
+export type MoveFxId =
+  'ember' | 'cross_poison' | 'poison_gas' | 'fire_punch' | 'rock_slide' | 'ancient_power';
 
 export const MOVE_FX_TEXTURE_KEY = 'fx:moves';
 export const MOVE_FX_FRAME_SIZE = 32;
@@ -36,7 +37,11 @@ export const MOVE_FX_FRAMES: Readonly<Record<MoveFxId, number>> = {
  * hits) and the Poison Gas cloud must beat the plain type beat, so they come
  * first in the chain; everything else falls back to its type.
  */
-export function moveFxFor(moveId: string, type: string, flags: Readonly<Record<string, number>>): MoveFxId {
+export function moveFxFor(
+  moveId: string,
+  type: string,
+  flags: Readonly<Record<string, number>>,
+): MoveFxId {
   if (moveId === 'ember') return 'ember';
   if (type === 'Fire') return flags['punch'] ? 'fire_punch' : 'ember';
   if (moveId === 'poisongas' || moveId === 'poisonpowder') return 'poison_gas';

@@ -52,7 +52,14 @@ describe('evolutionGraph', () => {
     expect(graph.map((node) => node.level)).toEqual([null, 16, 36, null, null, null]);
     expect(graph.map((node) => node.parent)).toEqual([null, 0, 1, 2, 2, 2]);
     expect(graph.map((node) => node.current)).toEqual([false, false, true, false, false, false]);
-    expect(graph.map((node) => node.kind)).toEqual(['species', 'species', 'species', 'mega', 'mega', 'gmax']);
+    expect(graph.map((node) => node.kind)).toEqual([
+      'species',
+      'species',
+      'species',
+      'mega',
+      'mega',
+      'gmax',
+    ]);
     expect(graph.every(NONE_READY)).toBe(true);
   });
 
@@ -94,10 +101,12 @@ describe('evolutionGraph', () => {
       'pikachugmax',
     ]);
     expect(graph.find((node) => node.id === 'pikachu')?.level).toBe(20);
-    expect(graph.filter((node) => node.ready).map((node) => node.id).sort()).toEqual([
-      'raichu',
-      'raichualola',
-    ]);
+    expect(
+      graph
+        .filter((node) => node.ready)
+        .map((node) => node.id)
+        .sort(),
+    ).toEqual(['raichu', 'raichualola']);
     expect(graph.find((node) => node.id === 'pikachugmax')).toMatchObject({
       kind: 'gmax',
       depth: 2,
@@ -209,9 +218,7 @@ describe('battle-only formes as information rows', () => {
       expect(base, gmax.id).toBeDefined();
       expect(row, gmax.id).toBeDefined();
       expect(row!.kind, gmax.id).toBe('gmax');
-      expect(row!.name, gmax.id).toBe(
-        `${formeDisplayName(gmax.name)} · Gigantamaxes with no stone`,
-      );
+      expect(row!.name, gmax.id).toBe(`${formeDisplayName(gmax.name)} · Gigantamaxes with no stone`);
       expect(row!.level, gmax.id).toBeNull();
       expect(row!.current, gmax.id).toBe(false);
       expect(row!.ready, gmax.id).toBe(false);
@@ -229,9 +236,9 @@ describe('battle-only formes as information rows', () => {
     expect(graph[3]!.name).toBe('Mega Charizard X · Mega Evolves with Charizardite X');
     expect(graph[4]!.name).toBe('Mega Charizard Y · Mega Evolves with Charizardite Y');
     expect(graph[5]!.name).toBe('Gigantamax Charizard · Gigantamaxes with no stone');
-    expect(
-      evolutionGraph('corviknight', 100).find((node) => node.id === 'corviknightgmax')?.name,
-    ).toBe('Gigantamax Corviknight · Gigantamaxes with no stone');
+    expect(evolutionGraph('corviknight', 100).find((node) => node.id === 'corviknightgmax')?.name).toBe(
+      'Gigantamax Corviknight · Gigantamaxes with no stone',
+    );
     expect(
       evolutionGraph('toxtricitylowkey', 100).find((node) => node.id === 'toxtricitylowkeygmax')?.name,
     ).toBe('Gigantamax Toxtricity Low Key · Gigantamaxes with no stone');

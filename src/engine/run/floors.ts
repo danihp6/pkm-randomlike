@@ -97,5 +97,11 @@ export function bandForMap(mapIndex: number): LevelBand {
 /** The working level of a room by its explicit map position, ramping to the boss. */
 export function roomLevelForMap(mapIndex: number, roomInMap: number, roomCount: number): number {
   const levels = levelRangeForMap(mapIndex);
-  return roomLevelForFloor({ mapIndex, roomInMap, roomCount, minLevel: levels.minLevel, maxLevel: levels.maxLevel });
+  return roomLevelForFloor({
+    mapIndex,
+    roomInMap,
+    roomCount,
+    minLevel: levels.minLevel,
+    maxLevel: levels.maxLevel,
+  });
 }

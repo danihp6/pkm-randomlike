@@ -1,19 +1,8 @@
 import type { LootEntry } from '../../data/loot';
-import {
-  branchCountForSize,
-  terrainScaleForSize,
-  trainerBonusForSize,
-} from '../../data/mapSize';
+import { branchCountForSize, terrainScaleForSize, trainerBonusForSize } from '../../data/mapSize';
 import type { BandPopulation } from '../../data/population';
 import type { Tile } from '../grid';
-import {
-  FLOOR,
-  LEDGE,
-  TALL_GRASS,
-  WALL,
-  isWalkable,
-  type TileMap,
-} from '../map';
+import { FLOOR, LEDGE, TALL_GRASS, WALL, isWalkable, type TileMap } from '../map';
 import { findPath } from '../pathfinding';
 import { Rng } from '../rng';
 import { borderEdge, openingBandCells } from './doors';
@@ -349,7 +338,10 @@ function carveGuaranteedPath(
   // relying on the jittered corridors happening to cross.
   const hub =
     shape.links.length > 1
-      ? { x: Math.max(low, Math.min(highX, Math.floor(width / 2))), y: Math.max(low, Math.min(highY, Math.floor(height / 2))) }
+      ? {
+          x: Math.max(low, Math.min(highX, Math.floor(width / 2))),
+          y: Math.max(low, Math.min(highY, Math.floor(height / 2))),
+        }
       : null;
   const hubIndex = Math.floor(SPINE_SEGMENTS / 2);
 
@@ -907,7 +899,12 @@ function carveGrass(
     // forbidden cell (the spine) inside it never splits off a wall-free piece.
     if (!placed) {
       for (const seed of floors) {
-        if (!isWall(seed.x, seed.y - 1) && !isWall(seed.x + 1, seed.y) && !isWall(seed.x, seed.y + 1) && !isWall(seed.x - 1, seed.y)) {
+        if (
+          !isWall(seed.x, seed.y - 1) &&
+          !isWall(seed.x + 1, seed.y) &&
+          !isWall(seed.x, seed.y + 1) &&
+          !isWall(seed.x - 1, seed.y)
+        ) {
           continue;
         }
         const width = rng.int(2, 4);
@@ -954,15 +951,12 @@ function carveLedges(
   entry: Tile,
   count: number,
 ): void {
-  const isFloor = (tile: Tile): boolean =>
-    inBounds(tiles, tile) && tiles[tile.y][tile.x] === FLOOR;
+  const isFloor = (tile: Tile): boolean => inBounds(tiles, tile) && tiles[tile.y][tile.x] === FLOOR;
   // Grass is walkable, so a ledge may still be jumped over with grass around it.
   const isGround = (tile: Tile): boolean =>
     inBounds(tiles, tile) && (tiles[tile.y][tile.x] === FLOOR || tiles[tile.y][tile.x] === TALL_GRASS);
   const canStand = (tile: Tile): boolean =>
-    isFloor(tile) &&
-    isGround({ x: tile.x, y: tile.y - 1 }) &&
-    isGround({ x: tile.x, y: tile.y + 1 });
+    isFloor(tile) && isGround({ x: tile.x, y: tile.y - 1 }) && isGround({ x: tile.x, y: tile.y + 1 });
   const isWall = (x: number, y: number): boolean =>
     x >= 0 && x < tiles[0].length && y >= 0 && y < tiles.length && tiles[y][x] === WALL;
 
@@ -1177,7 +1171,11 @@ function chooseFacing(
   let bestScore = [-1, -1, -Infinity];
   for (const facing of dirs) {
     const score = [backWall(facing), openRun(tiles, pos, facing, sight), towardEntry(facing)];
-    if (score[0] > bestScore[0] || (score[0] === bestScore[0] && (score[1] > bestScore[1] || (score[1] === bestScore[1] && score[2] > bestScore[2])))) {
+    if (
+      score[0] > bestScore[0] ||
+      (score[0] === bestScore[0] &&
+        (score[1] > bestScore[1] || (score[1] === bestScore[1] && score[2] > bestScore[2])))
+    ) {
       best = facing;
       bestScore = score;
     }
@@ -1246,8 +1244,7 @@ function placeTrainers(
   const entryDistance = (tile: Tile): number => Math.abs(tile.x - entry.x) + Math.abs(tile.y - entry.y);
   const fullReach = reachableTiles(tiles, entry);
 
-  const isFloor = (tile: Tile): boolean =>
-    inBounds(tiles, tile) && tiles[tile.y][tile.x] === FLOOR;
+  const isFloor = (tile: Tile): boolean => inBounds(tiles, tile) && tiles[tile.y][tile.x] === FLOOR;
 
   /** No other trainer may stand in the eight tiles around `tile`. */
   const crowded = (tile: Tile): boolean => {
@@ -1384,7 +1381,9 @@ function placeTrainers(
     if (guardChance < 1 && rng.next() >= guardChance) continue;
     const near = branchTiles
       .filter((tile) => !(tile.x === pocket.x && tile.y === pocket.y))
-      .filter((tile) => Math.abs(tile.x - pocket.x) + Math.abs(tile.y - pocket.y) <= TRAINER_POCKET_RANGE)
+      .filter(
+        (tile) => Math.abs(tile.x - pocket.x) + Math.abs(tile.y - pocket.y) <= TRAINER_POCKET_RANGE,
+      )
       .sort((a, b) => {
         const da = Math.abs(a.x - pocket.x) + Math.abs(a.y - pocket.y);
         const db = Math.abs(b.x - pocket.x) + Math.abs(b.y - pocket.y);
@@ -1475,7 +1474,16 @@ function attemptRoute(
       if (nearest) carveLine(tiles, spine, entry, nearest, shape.pathWidth, true);
     }
     snapshot('spine', 'carve spine');
-    const branched = carveBranches(tiles, streams.layout, shape, spine, [entry, ...exits], width, height, margin);
+    const branched = carveBranches(
+      tiles,
+      streams.layout,
+      shape,
+      spine,
+      [entry, ...exits],
+      width,
+      height,
+      margin,
+    );
     branches = branched.branches;
     carves = branched.carves;
     snapshot('branches', 'carve branches');
@@ -1521,8 +1529,21 @@ function attemptRoute(
   // room (the entry and the boss, `docs/maps-spec.md` §2/§6) stamps no terrain.
   const terrainScale = terrainScaleForSize(width, height);
   const quiet = request.quiet === true;
-  carveGrass(tiles, streams.terrain, pocketTiles, (quiet ? 0 : request.grassPatches ?? 0) * terrainScale, grassForbid);
-  carveLedges(tiles, streams.terrain, pocketTiles, ledgeForbid, entry, (quiet ? 0 : request.ledges ?? 0) * terrainScale);
+  carveGrass(
+    tiles,
+    streams.terrain,
+    pocketTiles,
+    (quiet ? 0 : (request.grassPatches ?? 0)) * terrainScale,
+    grassForbid,
+  );
+  carveLedges(
+    tiles,
+    streams.terrain,
+    pocketTiles,
+    ledgeForbid,
+    entry,
+    (quiet ? 0 : (request.ledges ?? 0)) * terrainScale,
+  );
 
   tiles[entry.y][entry.x] = FLOOR;
   snapshot('terrain', 'terrain pass');
@@ -1540,7 +1561,7 @@ function attemptRoute(
     branches,
     pockets,
     request.routeIndex,
-    quiet ? [] : request.trainerArchetypes ?? [],
+    quiet ? [] : (request.trainerArchetypes ?? []),
     request.trainerSight ?? DEFAULT_TRAINER_SIGHT,
     request.wall !== undefined,
     request.population,
@@ -1553,8 +1574,8 @@ function attemptRoute(
     reached,
     request.routeIndex,
     request.loot,
-    quiet ? 0 : request.hiddenChance ?? 0,
-    quiet ? 0 : request.itemChance ?? 1,
+    quiet ? 0 : (request.hiddenChance ?? 0),
+    quiet ? 0 : (request.itemChance ?? 1),
     streams.populate,
   );
   snapshot('items', 'populate items');

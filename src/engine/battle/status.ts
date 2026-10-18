@@ -54,9 +54,7 @@ export function cureStatus(fighter: BattleFighter): StatusId | null {
 }
 
 export type StatusMoveCheck =
-  | Readonly<{ blocked: 'slp' | 'frz' | 'par' }>
-  | Readonly<{ cured: StatusId }>
-  | null;
+  Readonly<{ blocked: 'slp' | 'frz' | 'par' }> | Readonly<{ cured: StatusId }> | null;
 
 /** Run before a move: sleep/freeze counters and the paralysis roll. */
 export function beforeMoveStatus(fighter: BattleFighter, rng: Rng): StatusMoveCheck {

@@ -82,12 +82,7 @@ function sortPower(move: Move): number {
 }
 
 /** Draws `count` distinct moves from `pool`, skipping every id already in `used`. */
-function drawDistinct(
-  rng: Rng,
-  pool: readonly Move[],
-  count: number,
-  used: Set<string>,
-): Move[] {
+function drawDistinct(rng: Rng, pool: readonly Move[], count: number, used: Set<string>): Move[] {
   if (count <= 0) return [];
   const available = pool.filter((move) => !used.has(move.id));
   const picked: Move[] = [];

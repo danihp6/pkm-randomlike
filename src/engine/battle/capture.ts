@@ -10,11 +10,7 @@ export function statusCatchBonus(status: StatusId | null): number {
 }
 
 /** Gen 9 catch value `a`: stronger balls, lower HP and status all raise it. */
-export function catchValue(
-  fighter: BattleFighter,
-  catchRate: number,
-  ballBonus: number,
-): number {
+export function catchValue(fighter: BattleFighter, catchRate: number, ballBonus: number): number {
   const raw = ((3 * fighter.maxHp - 2 * fighter.hp) * catchRate * ballBonus) / (3 * fighter.maxHp);
   return Math.floor(Math.floor(raw) * statusCatchBonus(fighter.status));
 }

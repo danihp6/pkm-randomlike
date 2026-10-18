@@ -3,7 +3,14 @@ import { defaultHudLayout, parseHudLayout, type HudLayout } from '../data/hudLay
 import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybinds';
 import { levelCapForMap } from '../data/maps';
 import { isLocale, type Locale } from '../i18n';
-import { MAP_EDGES, arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge, type MapPlan } from './maps/plan';
+import {
+  MAP_EDGES,
+  arrivalEdgeFor,
+  isArrivalEdge,
+  planMap,
+  type MapEdge,
+  type MapPlan,
+} from './maps/plan';
 import { floorForRoute } from './run/floors';
 import type { AiLevel } from './battle/ai';
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
@@ -190,7 +197,9 @@ export const SAVE_MIGRATIONS: Migrations = {
   9: (document) => ({
     ...document,
     version: 10,
-    run: isRecord(document.run) ? { ...document.run, pokevialCharges: POKEVIAL_MAX_CHARGES } : document.run,
+    run: isRecord(document.run)
+      ? { ...document.run, pokevialCharges: POKEVIAL_MAX_CHARGES }
+      : document.run,
   }),
   10: (document) => ({
     ...document,
@@ -340,10 +349,7 @@ export function encodeSave(document: SaveDocument): string {
  * is user-editable and may be truncated mid-write. A document from a *newer*
  * build keeps its settings but drops the run, since we cannot read it.
  */
-export function decodeSave(
-  raw: string | null,
-  migrations: Migrations = SAVE_MIGRATIONS,
-): SaveDocument {
+export function decodeSave(raw: string | null, migrations: Migrations = SAVE_MIGRATIONS): SaveDocument {
   if (raw === null) return emptySave();
 
   let parsed: unknown;
@@ -487,8 +493,7 @@ function parseSettings(value: unknown): Settings {
     typeof value.hudTransparent === 'boolean' ? value.hudTransparent : base.hudTransparent;
   const hudLayout = parseHudLayout(value.hudLayout);
   const keybinds = sanitizeKeybinds(value.keybinds);
-  const reducedFlash =
-    typeof value.reducedFlash === 'boolean' ? value.reducedFlash : base.reducedFlash;
+  const reducedFlash = typeof value.reducedFlash === 'boolean' ? value.reducedFlash : base.reducedFlash;
   const aiLevel = value.aiLevel === 'hard' ? 'hard' : base.aiLevel;
   const language = isLocale(value.language) ? value.language : base.language;
   return {
@@ -625,7 +630,8 @@ function parseMembers(value: unknown): RunPokemon[] {
   return members;
 }
 
-function parseBag(value: unknown): BagCounts[] | null {  if (!Array.isArray(value)) return null;
+function parseBag(value: unknown): BagCounts[] | null {
+  if (!Array.isArray(value)) return null;
   const bag: BagCounts[] = [];
   for (const entry of value) {
     if (!isRecord(entry) || !isString(entry.itemId) || entry.itemId === '') return null;
@@ -668,11 +674,7 @@ function readArrivalEdge(value: unknown, plan: MapPlan, roomId: number): MapEdge
  * Reads the floor's spent-capture rooms. A v8 document carried the single
  * `captureUsed` boolean instead, so a truthy one maps onto the room it stood in.
  */
-function parseCapturedRooms(
-  value: unknown,
-  legacyCaptureUsed: unknown,
-  currentRoom: number,
-): number[] {
+function parseCapturedRooms(value: unknown, legacyCaptureUsed: unknown, currentRoom: number): number[] {
   const rooms: number[] = [];
   if (Array.isArray(value)) {
     for (const id of value) {

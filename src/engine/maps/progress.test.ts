@@ -3,7 +3,14 @@ import { FINITE_MAPS } from '../../data/maps';
 import { TALL_GRASS } from '../map';
 import { sketchRoute } from '../routes/sketch';
 import { validateRoute } from '../routes/validate';
-import { MAP_EDGES, OPPOSITE_EDGE, arrivalEdgeFor, linkedNeighbour, planMap, type MapEdge } from './plan';
+import {
+  MAP_EDGES,
+  OPPOSITE_EDGE,
+  arrivalEdgeFor,
+  linkedNeighbour,
+  planMap,
+  type MapEdge,
+} from './plan';
 import {
   bossTrainerId,
   isFinalMap,
@@ -77,7 +84,7 @@ describe('arrivalEdgeFor / roomView', () => {
     }
   });
 
-  it('carries each room\'s special kind through to its view', () => {
+  it("carries each room's special kind through to its view", () => {
     for (const seed of SEEDS) {
       const plan = planMap(seed, 4);
       for (const room of plan.rooms) {
@@ -228,9 +235,9 @@ describe('portal', () => {
     expect(sealed.openings.map((opening) => opening.edge)).toEqual(
       open.openings.map((opening) => opening.edge),
     );
-    expect(sealed.openings.some((opening) => opening.edge === open.portalEdge && opening.role === 'exit')).toBe(
-      true,
-    );
+    expect(
+      sealed.openings.some((opening) => opening.edge === open.portalEdge && opening.role === 'exit'),
+    ).toBe(true);
     expect(sealed.portalOpen).toBe(false);
     expect(open.portalOpen).toBe(true);
   });

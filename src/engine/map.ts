@@ -146,4 +146,3 @@ export function mapFromSketch(rows: readonly string[]): TileMap {
     }),
   );
 }
-

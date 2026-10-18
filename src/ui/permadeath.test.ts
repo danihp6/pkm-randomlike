@@ -26,10 +26,7 @@ function member(id: string, level: number, speciesId = 'charmander', nickname?: 
 
 describe('releaseBeats', () => {
   it('resolves the display name and keeps the reported order', () => {
-    const beats = releaseBeats([
-      member('a', 7, 'charmander'),
-      member('b', 5, 'squirtle'),
-    ]);
+    const beats = releaseBeats([member('a', 7, 'charmander'), member('b', 5, 'squirtle')]);
     expect(beats).toEqual([
       { id: 'a', speciesId: 'charmander', name: 'Charmander', level: 7, shiny: false },
       { id: 'b', speciesId: 'squirtle', name: 'Squirtle', level: 5, shiny: false },

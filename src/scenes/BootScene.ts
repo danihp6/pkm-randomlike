@@ -1,9 +1,6 @@
 import Phaser from 'phaser';
 import moveFxUrl from '../assets/moves.png';
-import {
-  GROUND_ITEM_TEXTURE_KEY,
-  GROUND_ITEM_URL,
-} from '../data/groundItemSprite';
+import { GROUND_ITEM_TEXTURE_KEY, GROUND_ITEM_URL } from '../data/groundItemSprite';
 import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY } from '../data/itemIcons';
 import {
   OVERWORLD_SPRITE_ATLAS_URL,
@@ -49,23 +46,14 @@ import {
   FRLG_WINDOW_KEY,
   FRLG_WINDOW_URL,
 } from '../ui/frlg';
-import {
-  FRLG_FONT_ATLAS_URL,
-  FRLG_FONT_TEXTURE_KEY,
-  registerFrlgFont,
-} from '../ui/frlgFont';
+import { FRLG_FONT_ATLAS_URL, FRLG_FONT_TEXTURE_KEY, registerFrlgFont } from '../ui/frlgFont';
 import {
   MOVE_CATEGORY_ATLAS_URL,
   MOVE_CATEGORY_ICON_H,
   MOVE_CATEGORY_ICON_W,
   MOVE_CATEGORY_TEXTURE_KEY,
 } from '../data/moveCategoryIcons';
-import {
-  TYPE_ICON_ATLAS_URL,
-  TYPE_ICON_H,
-  TYPE_ICON_TEXTURE_KEY,
-  TYPE_ICON_W,
-} from '../data/typeIcons';
+import { TYPE_ICON_ATLAS_URL, TYPE_ICON_H, TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W } from '../data/typeIcons';
 import {
   STATUS_ICON_ATLAS_URL,
   STATUS_ICON_H,

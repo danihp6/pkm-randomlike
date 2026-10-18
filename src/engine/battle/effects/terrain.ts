@@ -1,11 +1,7 @@
 import type { Move } from '../../../data/dex';
 import { isGrounded, type BattleFighter, type StatusId } from '../fighter';
 import { pushText, type BattleState, type TerrainId } from '../state';
-import {
-  normalizeEffectId,
-  registerEffects,
-  type EffectDefinition,
-} from './registry';
+import { normalizeEffectId, registerEffects, type EffectDefinition } from './registry';
 
 export const TERRAIN_TURNS = 5;
 

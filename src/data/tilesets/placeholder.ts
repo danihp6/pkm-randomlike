@@ -1,14 +1,4 @@
-import {
-  CHEST,
-  CARPET,
-  FLOOR,
-  ITEM,
-  LEDGE,
-  TALL_GRASS,
-  TRAP,
-  WALL,
-  WATER,
-} from '../../engine/map';
+import { CHEST, CARPET, FLOOR, ITEM, LEDGE, TALL_GRASS, TRAP, WALL, WATER } from '../../engine/map';
 import {
   ATLAS_HEIGHT,
   ATLAS_WIDTH,

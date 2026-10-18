@@ -5,11 +5,22 @@ import { gmaxFormForBase } from '../data/dex/gmaxes';
 import { getItem } from '../data/items';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { type KeybindAction, type Keybinds } from '../data/keybinds';
-import { pokemonIdleAnimKey, pokemonSprite, type PokemonSpriteKind, type PokemonSpriteSheet } from '../data/pokemonSprites';
+import {
+  pokemonIdleAnimKey,
+  pokemonSprite,
+  type PokemonSpriteKind,
+  type PokemonSpriteSheet,
+} from '../data/pokemonSprites';
 import { getTrainerArchetype } from '../data/trainers';
 import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
 import { legalMoveIndices, type Command } from '../engine/battle/commands';
-import { createFighter, restoreFighter, snapshotFighter, type BattleFighter, type StatusId } from '../engine/battle/fighter';
+import {
+  createFighter,
+  restoreFighter,
+  snapshotFighter,
+  type BattleFighter,
+  type StatusId,
+} from '../engine/battle/fighter';
 import { canGigantamax, revertGigantamax } from '../engine/battle/gmax';
 import { movePreview } from '../engine/battle/preview';
 import { chooseAiCommand, type AiLevel } from '../engine/battle/ai';
@@ -28,7 +39,14 @@ import {
   type SideId,
 } from '../engine/battle';
 import { Rng } from '../engine/rng';
-import { MAX_MOVES, MAX_PARTY_SIZE, experienceFraction, type BattleLaunch, type BattleOutcome, type BattleReturn } from '../engine/run';
+import {
+  MAX_MOVES,
+  MAX_PARTY_SIZE,
+  experienceFraction,
+  type BattleLaunch,
+  type BattleOutcome,
+  type BattleReturn,
+} from '../engine/run';
 import { PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import { MOVE_FX_TEXTURE_KEY, moveFxAnimKey, moveFxFor, moveFxTrack } from '../render/moveFx';
 import { spriteContentBounds, type SpriteBounds } from '../render/spriteBounds';
@@ -48,7 +66,14 @@ import {
 import { CAPTURE_SHAKE_SPEED, captureBeat } from '../ui/capture';
 import { bagCategoryLabel, bagCategoryForKind, type BagCategory } from '../ui/bag';
 import { battleFrames, type FeedFrame } from '../ui/feed';
-import { HP_CUE_GAP, hpColorInt, hpCueNotches, hpFraction, isLowHp, statusAbbreviation } from '../ui/metrics';
+import {
+  HP_CUE_GAP,
+  hpColorInt,
+  hpCueNotches,
+  hpFraction,
+  isLowHp,
+  statusAbbreviation,
+} from '../ui/metrics';
 import { drawGauge } from '../ui/panel';
 import {
   advanceTypewriter,
@@ -62,7 +87,15 @@ import {
 import { loadSettings } from '../settings';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { playCue, playMusic } from '../audio/audio';
-import { addFrlgHpBar, addFrlgWindow, FRLG_CURSOR_KEY, FRLG_HPBAR, FRLG_HPBAR_KEY, FRLG_TEXTBOX_PADDING, FRLG_WINDOW_PADDING } from '../ui/frlg';
+import {
+  addFrlgHpBar,
+  addFrlgWindow,
+  FRLG_CURSOR_KEY,
+  FRLG_HPBAR,
+  FRLG_HPBAR_KEY,
+  FRLG_TEXTBOX_PADDING,
+  FRLG_WINDOW_PADDING,
+} from '../ui/frlg';
 import { FRLG_INK, FRLG_FONT_SIZE, FRLG_LINE_HEIGHT, addFrlgText } from '../ui/frlgFont';
 import { typeColor, typeTint } from '../ui/typeColors';
 import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeIcons';
@@ -78,7 +111,12 @@ import {
 } from '../ui/partyDetail';
 import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
 import { fitPartyLabel, partyGridLayout } from '../ui/partyGrid';
-import { AbilityInfoButton, ABILITY_INFO_SIZE, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
+import {
+  AbilityInfoButton,
+  ABILITY_INFO_SIZE,
+  abilityInfoContent,
+  abilityInfoSpot,
+} from '../ui/abilityInfo';
 import { InfoPopup } from '../ui/infoPopup';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import { t } from '../i18n';
@@ -201,8 +239,7 @@ const PARTY_DETAIL_LEFT_H =
   6 +
   3 * PARTY_DETAIL_INFO_ROW;
 const PARTY_DETAIL_MOVES_H =
-  PARTY_DETAIL_MOVE_ROWS * PARTY_DETAIL_MOVE_ROW +
-  (PARTY_DETAIL_MOVE_ROWS - 1) * PARTY_DETAIL_MOVE_GAP;
+  PARTY_DETAIL_MOVE_ROWS * PARTY_DETAIL_MOVE_ROW + (PARTY_DETAIL_MOVE_ROWS - 1) * PARTY_DETAIL_MOVE_GAP;
 const PARTY_DETAIL_H =
   Math.max(PARTY_DETAIL_LEFT_H, PARTY_DETAIL_CONTENT_TOP + PARTY_DETAIL_MOVES_H) +
   FRLG_WINDOW_PADDING.bottom;
@@ -383,7 +420,10 @@ export class BattleScene extends Phaser.Scene {
   private partyDetail!: Phaser.GameObjects.Container;
   private partyDetailName!: Phaser.GameObjects.BitmapText;
   private partyDetailLevel!: Phaser.GameObjects.BitmapText;
-  private partyDetailTypes: { bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.BitmapText }[] = [];
+  private partyDetailTypes: {
+    bg: Phaser.GameObjects.Rectangle;
+    label: Phaser.GameObjects.BitmapText;
+  }[] = [];
   private partyDetailStats!: {
     hpText: Phaser.GameObjects.BitmapText;
     rows: { label: Phaser.GameObjects.BitmapText; value: Phaser.GameObjects.BitmapText }[];
@@ -532,9 +572,7 @@ export class BattleScene extends Phaser.Scene {
     this.foePlatform = this.add.image(0, 0, BATTLE_PLATFORM_TEXTURE_KEY).setTint(0x6f8f5f);
     this.playerPlatform = this.add.image(0, 0, BATTLE_PLATFORM_TEXTURE_KEY).setTint(0x6f8f5f);
     this.foeSprite = this.add.sprite(0, 0, BATTLE_MON_TEXTURE_KEY).setScale(MON_SCALE);
-    this.playerSprite = this.add
-      .sprite(0, 0, BATTLE_MON_TEXTURE_KEY)
-      .setScale(MON_SCALE);
+    this.playerSprite = this.add.sprite(0, 0, BATTLE_MON_TEXTURE_KEY).setScale(MON_SCALE);
 
     this.foeTrainer = this.add
       .image(0, 0, TRAINER_SPRITE_TEXTURE_KEY, this.trainerFrame ?? 0)
@@ -588,9 +626,11 @@ export class BattleScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setStrokeStyle(2, 0x9a94b8)
       .setVisible(false);
-    this.megaText = addFrlgText(this, 0, 0, t('battle.mega'), { size: 16, tint: FRLG_INK, origin: 0.5 }).setVisible(
-      false,
-    );
+    this.megaText = addFrlgText(this, 0, 0, t('battle.mega'), {
+      size: 16,
+      tint: FRLG_INK,
+      origin: 0.5,
+    }).setVisible(false);
     this.megaZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     this.megaZone.on('pointerover', () => this.onMegaHover());
     this.megaZone.on('pointerdown', () => this.onMegaClick());
@@ -603,9 +643,11 @@ export class BattleScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setStrokeStyle(2, 0x9a94b8)
       .setVisible(false);
-    this.gmaxText = addFrlgText(this, 0, 0, t('battle.gmax'), { size: 16, tint: FRLG_INK, origin: 0.5 }).setVisible(
-      false,
-    );
+    this.gmaxText = addFrlgText(this, 0, 0, t('battle.gmax'), {
+      size: 16,
+      tint: FRLG_INK,
+      origin: 0.5,
+    }).setVisible(false);
     this.gmaxZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     this.gmaxZone.on('pointerover', () => this.onGmaxHover());
     this.gmaxZone.on('pointerdown', () => this.onGmaxClick());
@@ -624,8 +666,16 @@ export class BattleScene extends Phaser.Scene {
     };
     // The FRLG condition badges; drawn at 1.5x to match the panel text size.
     this.statusBadges = {
-      enemy: this.add.image(0, 0, STATUS_ICON_TEXTURE_KEY, 0).setOrigin(0, 0).setScale(1.5).setVisible(false),
-      player: this.add.image(0, 0, STATUS_ICON_TEXTURE_KEY, 0).setOrigin(0, 0).setScale(1.5).setVisible(false),
+      enemy: this.add
+        .image(0, 0, STATUS_ICON_TEXTURE_KEY, 0)
+        .setOrigin(0, 0)
+        .setScale(1.5)
+        .setVisible(false),
+      player: this.add
+        .image(0, 0, STATUS_ICON_TEXTURE_KEY, 0)
+        .setOrigin(0, 0)
+        .setScale(1.5)
+        .setVisible(false),
     };
     this.foeBallRow = Array.from({ length: MAX_PARTY_SIZE }, () =>
       this.add
@@ -639,7 +689,11 @@ export class BattleScene extends Phaser.Scene {
     // the fallback for a name the atlas lacks.
     const typeBadgeRow = (): Phaser.GameObjects.Image[] =>
       Array.from({ length: PANEL_TYPE_SLOTS }, () =>
-        this.add.image(0, 0, BLANK_TEXTURE_KEY).setOrigin(0, 0).setScale(PANEL_TYPE_SCALE).setVisible(false),
+        this.add
+          .image(0, 0, BLANK_TEXTURE_KEY)
+          .setOrigin(0, 0)
+          .setScale(PANEL_TYPE_SCALE)
+          .setVisible(false),
       );
     const typeChipBoxRow = (): Phaser.GameObjects.Rectangle[] =>
       Array.from({ length: PANEL_TYPE_SLOTS }, () =>
@@ -715,12 +769,12 @@ export class BattleScene extends Phaser.Scene {
 
     // The bag's pocket tabs, drawn inside the menu window; at most two.
     this.bagTabs = Array.from({ length: 2 }, (_, slot) => {
-      const bg = this.add
-        .rectangle(0, 0, 10, 10, 0xcfcce2)
-        .setOrigin(0, 0)
-        .setVisible(false);
-      const label = addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [0.5, 0] })
-        .setVisible(false);
+      const bg = this.add.rectangle(0, 0, 10, 10, 0xcfcce2).setOrigin(0, 0).setVisible(false);
+      const label = addFrlgText(this, 0, 0, '', {
+        size: 16,
+        tint: FRLG_INK,
+        origin: [0.5, 0],
+      }).setVisible(false);
       bg.setInteractive({ useHandCursor: true });
       bg.on('pointerdown', () => this.selectBagTab(slot));
       return { bg, label };
@@ -790,15 +844,23 @@ export class BattleScene extends Phaser.Scene {
     });
     const infoTop = statsTop + DETAIL_STATS.length * PARTY_DETAIL_STAT_ROW + 6;
     const nature = addFrlgText(this, padX, infoTop, '', { size: 16, tint: 0x3a3956 });
-    const ability = addFrlgText(this, padX, infoTop + PARTY_DETAIL_INFO_ROW, '', { size: 16, tint: 0x3a3956 });
-    const held = addFrlgText(this, padX, infoTop + PARTY_DETAIL_INFO_ROW * 2, '', { size: 16, tint: 0x3a3956 });
+    const ability = addFrlgText(this, padX, infoTop + PARTY_DETAIL_INFO_ROW, '', {
+      size: 16,
+      tint: 0x3a3956,
+    });
+    const held = addFrlgText(this, padX, infoTop + PARTY_DETAIL_INFO_ROW * 2, '', {
+      size: 16,
+      tint: 0x3a3956,
+    });
     children.push(nature, ability, held);
     this.partyDetailStats = { hpText, rows, nature, ability, held };
 
     const cellW = (colW - PARTY_DETAIL_MOVE_GAP) / 2;
-    const moveCellX = (i: number): number => movesX + (i % PARTY_DETAIL_MOVE_COLS) * (cellW + PARTY_DETAIL_MOVE_GAP);
+    const moveCellX = (i: number): number =>
+      movesX + (i % PARTY_DETAIL_MOVE_COLS) * (cellW + PARTY_DETAIL_MOVE_GAP);
     const moveCellY = (i: number): number =>
-      contentTop + Math.floor(i / PARTY_DETAIL_MOVE_COLS) * (PARTY_DETAIL_MOVE_ROW + PARTY_DETAIL_MOVE_GAP);
+      contentTop +
+      Math.floor(i / PARTY_DETAIL_MOVE_COLS) * (PARTY_DETAIL_MOVE_ROW + PARTY_DETAIL_MOVE_GAP);
     this.partyDetailMoves = [];
     for (let i = 0; i < MAX_MOVES; i++) {
       const cell = this.add
@@ -1230,12 +1292,7 @@ export class BattleScene extends Phaser.Scene {
   /** Every sheet this battle draws: the foe's front, the party's back. */
   private battleSheets(): PokemonSpriteSheet[] {
     const sheets = new Map<string, PokemonSpriteSheet>();
-    const add = (
-      speciesId: string,
-      shiny: boolean,
-      female: boolean,
-      kind: PokemonSpriteKind,
-    ): void => {
+    const add = (speciesId: string, shiny: boolean, female: boolean, kind: PokemonSpriteKind): void => {
       const sheet = pokemonSprite(speciesId, kind, { shiny, female });
       if (sheet) sheets.set(sheet.textureKey, sheet);
     };
@@ -1459,7 +1516,11 @@ export class BattleScene extends Phaser.Scene {
     this.gmaxSelected = false;
     this.menuItems = [
       { label: t('battle.command.fight'), enabled: true, onSelect: () => this.openMoves() },
-      { label: t('battle.command.bag'), enabled: this.usableBag().length > 0, onSelect: () => this.openBag() },
+      {
+        label: t('battle.command.bag'),
+        enabled: this.usableBag().length > 0,
+        onSelect: () => this.openBag(),
+      },
       { label: t('battle.command.switch'), enabled: this.hasBench(), onSelect: () => this.openParty() },
       {
         label: t('battle.command.run'),
@@ -1559,9 +1620,7 @@ export class BattleScene extends Phaser.Scene {
   /** Rebuilds the bag list for a pocket, as a menu the cursor and clicks drive. */
   private setBagItems(category: BagCategory): void {
     this.bagCategory = category;
-    const stacks = this.usableBag().filter(
-      (slot) => bagCategoryForKind(slot.item.kind) === category,
-    );
+    const stacks = this.usableBag().filter((slot) => bagCategoryForKind(slot.item.kind) === category);
     this.menuItems =
       stacks.length === 0
         ? [{ label: t('battle.noItems'), enabled: false, onSelect: () => {} }]
@@ -1884,8 +1943,12 @@ export class BattleScene extends Phaser.Scene {
       .setPosition(compact ? foeX : width * 0.72, foePlatformY);
     if (trainer) this.foeTrainer.setPosition((compact ? foeX : width * 0.72) - 70, foeY + 62);
     if (this.beat.player !== 'faint') this.playerSprite.setPosition(playerX, playerPlatformY);
-    this.playerPlatform.setScale(platformScale(this.monDrawHeight.player)).setPosition(playerX, playerPlatformY);
-    this.foeSprite.setVisible((this.displayHp.enemy > 0 && !this.captured) || this.beat.enemy === 'faint');
+    this.playerPlatform
+      .setScale(platformScale(this.monDrawHeight.player))
+      .setPosition(playerX, playerPlatformY);
+    this.foeSprite.setVisible(
+      (this.displayHp.enemy > 0 && !this.captured) || this.beat.enemy === 'faint',
+    );
     this.playerSprite.setVisible(this.displayHp.player > 0 || this.beat.player === 'faint');
 
     this.hud.clear();
@@ -1897,7 +1960,10 @@ export class BattleScene extends Phaser.Scene {
     this.messagePanel.setVisible(!menuOpen);
     this.messageText.setVisible(!menuOpen);
 
-    this.messageText.setPosition(message.x + FRLG_TEXTBOX_PADDING.x, message.y + FRLG_TEXTBOX_PADDING.top);
+    this.messageText.setPosition(
+      message.x + FRLG_TEXTBOX_PADDING.x,
+      message.y + FRLG_TEXTBOX_PADDING.top,
+    );
     this.messageText.setMaxWidth(message.w - FRLG_TEXTBOX_PADDING.x * 2);
 
     if (menuOpen) {
@@ -1941,7 +2007,10 @@ export class BattleScene extends Phaser.Scene {
       const chipBg = this.typeChipBgs[side][i];
       const chip = this.typeChips[side][i];
       if (frame !== null && type !== undefined) {
-        badge.setTexture(TYPE_ICON_TEXTURE_KEY, frame).setPosition(typeX, typesY + 3).setVisible(true);
+        badge
+          .setTexture(TYPE_ICON_TEXTURE_KEY, frame)
+          .setPosition(typeX, typesY + 3)
+          .setVisible(true);
         chipBg.setVisible(false);
         chip.setVisible(false);
         typeX += TYPE_ICON_W * PANEL_TYPE_SCALE + PANEL_TYPE_GAP;
@@ -1974,7 +2043,10 @@ export class BattleScene extends Phaser.Scene {
     const statusFrame = status && status !== 'tox' ? statusIconFrame(status) : null;
     if (statusFrame !== null) {
       // The FRLG badge carries its own colours, so no chip is painted behind it.
-      this.statusBadges[side].setFrame(statusFrame).setPosition(barX, barY - 22).setVisible(true);
+      this.statusBadges[side]
+        .setFrame(statusFrame)
+        .setPosition(barX, barY - 22)
+        .setVisible(true);
       this.statusText[side].setVisible(false);
     } else {
       this.statusBadges[side].setVisible(false);
@@ -2020,7 +2092,10 @@ export class BattleScene extends Phaser.Scene {
         experienceFraction(this.xp, fighter.level),
         0x60a5fa,
       );
-      this.xpText.setText(t('battle.xp', { xp: this.xp })).setPosition(barX, barY + 46).setVisible(true);
+      this.xpText
+        .setText(t('battle.xp', { xp: this.xp }))
+        .setPosition(barX, barY + 46)
+        .setVisible(true);
     } else {
       this.xpText.setVisible(false);
     }
@@ -2057,12 +2132,7 @@ export class BattleScene extends Phaser.Scene {
         // A spent ball reads as "out" without its tint too: a dark slash across
         // the icon's own box (§10.1). The dim tint stays as a second cue.
         this.marks.lineStyle(2, FRLG_INK, 1);
-        this.marks.lineBetween(
-          ball.x,
-          ball.y,
-          ball.x + ball.displayWidth,
-          ball.y + ball.displayHeight,
-        );
+        this.marks.lineBetween(ball.x, ball.y, ball.x + ball.displayWidth, ball.y + ball.displayHeight);
       } else {
         ball.clearTint();
       }
@@ -2219,10 +2289,7 @@ export class BattleScene extends Phaser.Scene {
       const barY = rect.y + (rect.h - hpBarH) / 2;
       const fraction = hpFraction(member.hp, member.maxHp);
       const alive = member.hp > 0;
-      this.partyHpBars[i]
-        .setVisible(alive)
-        .setScale(hpBarScale)
-        .setPosition(barX, barY);
+      this.partyHpBars[i].setVisible(alive).setScale(hpBarScale).setPosition(barX, barY);
       this.partyHpFills[i]
         .setVisible(alive)
         .setPosition(barX + FRLG_HPBAR.fill.x * hpBarScale, barY + FRLG_HPBAR.fill.y * hpBarScale)
@@ -2629,7 +2696,9 @@ export class BattleScene extends Phaser.Scene {
       zone.setData('item', item ? windowStart + i : -1);
       if (zone.input) zone.input.enabled = Boolean(item);
       if (item) {
-        zone.setPosition(menu.x + 10 + leftInset, top + i * ROW_H - 4).setSize(menu.w - 20 - leftInset, ROW_H);
+        zone
+          .setPosition(menu.x + 10 + leftInset, top + i * ROW_H - 4)
+          .setSize(menu.w - 20 - leftInset, ROW_H);
       }
     });
     this.menuCursor

@@ -37,7 +37,8 @@ describe('trainerRoster', () => {
   it('climbs the BST window with the band', () => {
     const earlyPool = speciesPool(early, 'trainer');
     const endPool = speciesPool(end, 'trainer');
-    for (const entry of trainerRoster(early, new Rng(3), 't1')) expect(earlyPool).toContain(entry.speciesId);
+    for (const entry of trainerRoster(early, new Rng(3), 't1'))
+      expect(earlyPool).toContain(entry.speciesId);
     for (const entry of trainerRoster(end, new Rng(3), 't1')) expect(endPool).toContain(entry.speciesId);
     expect(getSpecies(endPool[0])!.bst).toBeGreaterThan(getSpecies(earlyPool[0])!.bst);
   });

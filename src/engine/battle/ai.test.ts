@@ -114,9 +114,10 @@ describe('the AI flags', () => {
     ];
     for (const { lead, move } of boards) {
       const state = build([lead], [WEAK_FOE(['tackle', move])]);
-      expect(
-        chooseAiCommand(state, 'enemy', { flags: ['checkViability', 'checkBadMove'] }),
-      ).toEqual({ type: 'fight', moveIndex: 0 });
+      expect(chooseAiCommand(state, 'enemy', { flags: ['checkViability', 'checkBadMove'] })).toEqual({
+        type: 'fight',
+        moveIndex: 0,
+      });
       expect(chooseAiCommand(state, 'enemy', { flags: ['checkViability'] })).toEqual({
         type: 'fight',
         moveIndex: 0,
@@ -139,9 +140,10 @@ describe('the AI flags', () => {
       type: 'fight',
       moveIndex: 1,
     });
-    expect(
-      chooseAiCommand(board(), 'enemy', { flags: ['checkViability', 'tryToFaint'] }),
-    ).toEqual({ type: 'fight', moveIndex: 0 });
+    expect(chooseAiCommand(board(), 'enemy', { flags: ['checkViability', 'tryToFaint'] })).toEqual({
+      type: 'fight',
+      moveIndex: 0,
+    });
   });
 
   it('checkViability scores the status, boost, heal and volatile rungs', () => {
@@ -293,8 +295,7 @@ describe('the wild policy', () => {
   });
 
   it('spends no draw at all when only one move has PP left', () => {
-    const board = (): BattleState =>
-      build([PLAYER_LEAD], [WEAK_FOE(['ember'])], { isWild: true });
+    const board = (): BattleState => build([PLAYER_LEAD], [WEAK_FOE(['ember'])], { isWild: true });
     const state = board();
     const twin = board();
     expect(chooseAiCommand(state, 'enemy')).toEqual({ type: 'fight', moveIndex: 0 });

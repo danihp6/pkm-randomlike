@@ -116,9 +116,7 @@ function shapeEdges(shape: RouteShape): Readonly<{ entry: AccessEdge; exits: rea
   const spec = SHAPES[shape];
   return {
     entry: spec.openings.find((opening) => opening.role === 'entry')!.edge,
-    exits: spec.openings
-      .filter((opening) => opening.role === 'exit')
-      .map((opening) => opening.edge),
+    exits: spec.openings.filter((opening) => opening.role === 'exit').map((opening) => opening.edge),
   };
 }
 
@@ -163,8 +161,12 @@ describe('sketchRoute', () => {
             const onVertical = point.x === 0 || point.x === route.width - 1;
             const free = onVertical ? point.y : point.x;
             const span = onVertical ? route.height : route.width;
-            expect(free, `${shape} ${seed} #${index} ${point.x},${point.y}`).toBeGreaterThanOrEqual(corner);
-            expect(free, `${shape} ${seed} #${index} ${point.x},${point.y}`).toBeLessThanOrEqual(span - 1 - corner);
+            expect(free, `${shape} ${seed} #${index} ${point.x},${point.y}`).toBeGreaterThanOrEqual(
+              corner,
+            );
+            expect(free, `${shape} ${seed} #${index} ${point.x},${point.y}`).toBeLessThanOrEqual(
+              span - 1 - corner,
+            );
           }
         }
       }
@@ -184,7 +186,9 @@ describe('sketchRoute', () => {
           for (const exit of route.exits) {
             expect(isWalkable(route.tiles, exit), `${shape} ${seed} #${routeIndex} exit`).toBe(true);
           }
-          expect(borderIsSolidButForOpenings(route), `${shape} ${seed} #${routeIndex} border`).toBe(true);
+          expect(borderIsSolidButForOpenings(route), `${shape} ${seed} #${routeIndex} border`).toBe(
+            true,
+          );
         }
       }
     }
@@ -221,7 +225,9 @@ describe('sketchRoute', () => {
           expect(tile.y, `${shape} ${seed} ${tile.x},${tile.y} y`).toBeGreaterThan(0);
           expect(tile.y, `${shape} ${seed} ${tile.x},${tile.y} y`).toBeLessThan(route.height - 1);
         }
-        expect(spineReaches(route.spine, route.entry, route.exits), `${shape} ${seed} connected`).toBe(true);
+        expect(spineReaches(route.spine, route.entry, route.exits), `${shape} ${seed} connected`).toBe(
+          true,
+        );
       }
     }
   });
@@ -334,10 +340,9 @@ describe('sketchRoute', () => {
           expect(route.tiles[pocket.y][pocket.x], `${shape} ${seed} pocket grass`).not.toBe(TALL_GRASS);
         }
         for (const item of route.items) {
-          expect(
-            route.tiles[item.position.y][item.position.x],
-            `${shape} ${seed} item grass`,
-          ).not.toBe(TALL_GRASS);
+          expect(route.tiles[item.position.y][item.position.x], `${shape} ${seed} item grass`).not.toBe(
+            TALL_GRASS,
+          );
         }
       }
     }
@@ -447,7 +452,9 @@ describe('sketchRoute', () => {
         // two tiles wide, so the cross (two lanes meeting) is the most open shape.
         expect(blockedShare(route.tiles), `${shape} ${seed}`).toBeGreaterThan(0.35);
         for (const lane of [...route.spine, ...route.branches]) {
-          expect(route.tiles[lane.y][lane.x], `${shape} ${seed} lane ${lane.x},${lane.y}`).not.toBe(WALL);
+          expect(route.tiles[lane.y][lane.x], `${shape} ${seed} lane ${lane.x},${lane.y}`).not.toBe(
+            WALL,
+          );
         }
         expect(borderIsSolidButForOpenings(route), `${shape} ${seed} border`).toBe(true);
       }
@@ -531,7 +538,9 @@ describe('sketchRoute', () => {
   it('gates the lane guard on a non-quiet room that carries an archetype pool', () => {
     expect(wantsTrainers(request('wants', 1, 'cross'))).toBe(false);
     expect(wantsTrainers({ ...request('wants', 1, 'cross'), trainerArchetypes: [] })).toBe(false);
-    expect(wantsTrainers({ ...request('wants', 1, 'cross'), trainerArchetypes: ['youngster'] })).toBe(true);
+    expect(wantsTrainers({ ...request('wants', 1, 'cross'), trainerArchetypes: ['youngster'] })).toBe(
+      true,
+    );
     expect(
       wantsTrainers({ ...request('wants', 1, 'cross'), trainerArchetypes: ['youngster'], quiet: true }),
     ).toBe(false);
@@ -552,10 +561,9 @@ describe('sketchRoute', () => {
         };
         const route = sketchRoute(sized);
         expect(route.trainers.length, `${shape} guard-${i} trainers`).toBeGreaterThan(0);
-        expect(
-          validateRoute(route, { expectTrainers: true }).ok,
-          `${shape} guard-${i} guarded`,
-        ).toBe(true);
+        expect(validateRoute(route, { expectTrainers: true }).ok, `${shape} guard-${i} guarded`).toBe(
+          true,
+        );
       }
     }
   }, 120_000);
@@ -620,9 +628,7 @@ describe('sketchRoute', () => {
         };
         const bare = sketchRoute(base);
         const thinned = sketchRoute({ ...base, population: { trainerBonus: -1, guardChance: 1 } });
-        expect(thinned.trainers.length, `${shape} thin-${i}`).toBeLessThanOrEqual(
-          bare.trainers.length,
-        );
+        expect(thinned.trainers.length, `${shape} thin-${i}`).toBeLessThanOrEqual(bare.trainers.length);
       }
     }
   }, 120_000);

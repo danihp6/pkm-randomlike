@@ -37,11 +37,7 @@ export type MovePreview = Readonly<{
 }>;
 
 /** The move slot's preview, or null when the slot or its move is unknown. */
-export function movePreview(
-  state: BattleState,
-  side: SideId,
-  moveIndex: number,
-): MovePreview | null {
+export function movePreview(state: BattleState, side: SideId, moveIndex: number): MovePreview | null {
   const fighter = activeFighter(state, side);
   const slot = fighter.moves[moveIndex];
   if (!slot) return null;
@@ -59,13 +55,9 @@ export function movePreview(
   // each is a straight scale of the pending damage, so the result reads as the
   // move's effective power including abilities and items (but not STAB, which
   // the damage formula applies on its own).
-  const powerMultiplier = damaging
-    ? runModifyDamage(ctx, activeMove, 100, 1, false, false) / 100
-    : 1;
+  const powerMultiplier = damaging ? runModifyDamage(ctx, activeMove, 100, 1, false, false) / 100 : 1;
   const stab = damaging && fighter.types.includes(activeMove.type);
-  const power = damaging
-    ? Math.round(activeMove.basePower * powerMultiplier * (stab ? 1.5 : 1))
-    : 0;
+  const power = damaging ? Math.round(activeMove.basePower * powerMultiplier * (stab ? 1.5 : 1)) : 0;
 
   return {
     type: activeMove.type,
