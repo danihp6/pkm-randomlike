@@ -41,6 +41,7 @@ import { restoreFighter, type FighterInput } from '../engine/battle';
 import {
   BOSS_MONEY_MULTIPLIER,
   MAX_PARTY_SIZE,
+  MAX_MOVES,
   POKEVIAL_MAX_CHARGES,
   addItem,
   addPokemon,
@@ -213,7 +214,7 @@ import {
   FRLG_WINDOW_PADDING,
   addFrlgWindow,
 } from '../ui/frlg';
-import { MoveGrid, type MoveGridCell } from '../ui/moveGrid';
+import { MoveGrid, padMoveGridCells, type MoveGridCell } from '../ui/moveGrid';
 import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
 import { InfoPopup } from '../ui/infoPopup';
 import { catchToPcNotice, itemPickupNotice, levelUpNotice, type Notice } from '../ui/notice';
@@ -1848,7 +1849,7 @@ export class RouteScene extends Phaser.Scene {
     }
     return detailStops(this.hudDetailState.tab, {
       evolutions: this.readyEvolutions().length,
-      slots: member.fighter.moves.length,
+      slots: member.fighter.moves.length === 0 ? 0 : MAX_MOVES,
       pool: this.learnPool().length,
     });
   }
@@ -1960,6 +1961,7 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     const grabbed = this.hudDetailState.grab;
+    if (this.hudMoveGrid.isEmpty(index)) return;
     this.hudDetailState =
       grabbed === index ? dropMove(this.hudDetailState) : grabMove(this.hudDetailState, index);
     this.refreshDetail();
@@ -3066,27 +3068,28 @@ export class RouteScene extends Phaser.Scene {
     // container so it rides the panel when it is dragged. The info popup floats
     // over the grid for the hovered / pinned move.
     const gridTop = this.hudDetailY + HUD_DETAIL_CONTENT_TOP - HUD_PAD_TOP;
+    const moveCells: MoveGridCell[] = moves
+      ? detail.moves.map((move) => ({
+          name: move.name,
+          type: move.type,
+          category: move.category,
+          pp: move.pp,
+          maxPp: move.maxPp,
+          desc: move.desc,
+          power: move.power,
+          basePower: move.basePower,
+          accuracy: move.accuracy,
+          baseAccuracy: move.baseAccuracy,
+          status: move.status,
+          enabled: true,
+        }))
+      : [];
     this.hudMoveGrid.layout({
       x: this.hudDetailX,
       y: gridTop,
       w: this.hud.detailW,
       h: HUD_DETAIL_MOVE_GRID_H,
-      cells: moves
-        ? detail.moves.map((move) => ({
-            name: move.name,
-            type: move.type,
-            category: move.category,
-            pp: move.pp,
-            maxPp: move.maxPp,
-            desc: move.desc,
-            power: move.power,
-            basePower: move.basePower,
-            accuracy: move.accuracy,
-            baseAccuracy: move.baseAccuracy,
-            status: move.status,
-            enabled: true,
-          }))
-        : [],
+      cells: moves ? padMoveGridCells(moveCells, detail.moves.length === 0 ? 0 : MAX_MOVES) : [],
       selected: moves ? this.detailSlotCursor() : -1,
       info: moves && this.hudDetailInfo?.grid === 'moves' ? this.hudDetailInfo.index : null,
       popupAtCell: true,
@@ -3978,6 +3981,7 @@ export class RouteScene extends Phaser.Scene {
       return true;
     }
     if (this.deadDetail()) return true;
+    if (this.hudMoveGrid.isEmpty(cell.index)) return true;
     this.hudDetailState = grabMove(this.hudDetailState, cell.index);
     this.hudGrabMoved = false;
     this.refreshDetail();

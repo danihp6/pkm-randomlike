@@ -15,6 +15,8 @@ testable logic belongs in the computing half.
 - `panel.ts` — the plain panel background and gauge, and the colours they use.
 - `moveGrid.ts` — the shared moves grid: a type-tinted cell with type and category badges, PP and
   power, and a floating description window; the battle and the route HUD draw the same component.
+- `moveGrid.test.ts` — the slot geometry and hit-testing the grid draws from: the four slots of a
+  short list, the empty container's own rect, and the ⓘ no empty container has.
 - `infoPopup.ts` — the floating description window: an FRLG window sized from its wrapped text,
   with an optional left column of badges or a colour chip; the move cells and the ability rows
   float the same one.
