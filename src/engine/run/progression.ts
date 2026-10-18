@@ -78,7 +78,9 @@ export function experienceAward(defeatedLevel: number, participants = 1, isTrain
 export type ProgressionEvent =
   | Readonly<{ kind: 'xp'; amount: number; xp: number }>
   | Readonly<{ kind: 'level'; level: number }>
-  | Readonly<{ kind: 'learn'; moveId: string }>
+  /** A move the member crossed; `memberId` attributes it, since the list is flat. */
+  | Readonly<{ kind: 'learn'; moveId: string; memberId: string }>
+  /** Declared for the general channel; the level-up never emits it. */
   | Readonly<{ kind: 'forget'; moveId: string }>
   | Readonly<{ kind: 'capped'; level: number }>;
 
@@ -183,12 +185,6 @@ export function editRunPokemon(pokemon: RunPokemon, edit: RunPokemonEdit): RunPo
   };
 }
 
-function moveSlot(moveId: string): MoveSlot | undefined {
-  const move = getMove(moveId);
-  if (!move) return undefined;
-  return { moveId: move.id, pp: move.pp, maxPp: move.pp };
-}
-
 /** The moves learned between two levels, oldest first and deduplicated. */
 function gainedMoves(
   speciesId: string,
@@ -251,11 +247,13 @@ export function evolvePokemon(pokemon: RunPokemon, into: string, abilitySeed?: s
 }
 
 /**
- * Raises a member to `targetLevel` (already clamped to the map cap), learning
- * the level-up moves it crossed and forgetting the oldest when the fourth slot
- * is full. Evolution is **not** applied here: it waits for the player's click in
- * the STATS tab. A member already at or above the target is left alone. Pure and
- * deterministic: no RNG.
+ * Raises a member to `targetLevel` (already clamped to the map cap), reporting
+ * every level-up move it crossed as a `learn` event and **leaving its four slots
+ * exactly as they were**: nothing is equipped or forgotten for the player, the
+ * crossed move waits in the MOVES tab's learnset band until it is dragged onto a
+ * slot (`docs/design-spec.md` §5). Evolution is **not** applied here: it waits for
+ * the player's click in the STATS tab. A member already at or above the target is
+ * left alone. Pure and deterministic: no RNG.
  */
 export function levelUpPokemon(
   pokemon: RunPokemon,
@@ -267,21 +265,14 @@ export function levelUpPokemon(
   let fighter = pokemon.fighter;
   if (level > fighter.level) {
     events.push({ kind: 'level', level });
-    const moves = fighter.moves.map((slot) => ({ ...slot }));
     for (const moveId of gainedMoves(fighter.speciesId, fighter.level, level, learnsetSeed)) {
-      if (moves.some((slot) => slot.moveId === moveId)) continue;
+      if (fighter.moves.some((slot) => slot.moveId === moveId)) continue;
       // No Guard makes every move hit, so it must never pair with an OHKO move.
       if (fighter.ability === 'No Guard' && getMove(moveId)?.ohko) continue;
-      const slot = moveSlot(moveId);
-      if (!slot) continue;
-      if (moves.length >= MAX_MOVES) {
-        const forgotten = moves.shift();
-        if (forgotten) events.push({ kind: 'forget', moveId: forgotten.moveId });
-      }
-      moves.push(slot);
-      events.push({ kind: 'learn', moveId });
+      if (!getMove(moveId)) continue;
+      events.push({ kind: 'learn', moveId, memberId: fighter.id });
     }
-    fighter = { ...fighter, level, moves };
+    fighter = { ...fighter, level };
   }
   return { pokemon: fighter === pokemon.fighter ? pokemon : { ...pokemon, fighter }, events };
 }

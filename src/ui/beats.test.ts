@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { RunPokemon } from '../engine/run';
+import type { ProgressionEvent, RunPokemon } from '../engine/run';
 import {
   ENTRY_FADE_MS,
   ENTRY_FLASH_MS,
@@ -41,7 +41,7 @@ describe('levelUpBeats', () => {
   it('reports the level range of a member that grew', () => {
     const before = [member('a', 5)];
     const after = [member('a', 7)];
-    expect(levelUpBeats(before, after)).toEqual([
+    expect(levelUpBeats(before, after, [])).toEqual([
       {
         id: 'a',
         fromLevel: 5,
@@ -56,33 +56,58 @@ describe('levelUpBeats', () => {
   it('ignores members that did not change level', () => {
     const before = [member('a', 5)];
     const after = [{ ...member('a', 5), fighter: { ...member('a', 5).fighter, hp: 5 } }];
-    expect(levelUpBeats(before, after)).toEqual([]);
+    expect(levelUpBeats(before, after, [])).toEqual([]);
   });
 
   it('ignores a released member and a fresh catch', () => {
     const before = [member('a', 5), member('b', 4)];
     const after = [member('a', 6), member('caught', 4)];
-    expect(levelUpBeats(before, after).map((beat) => beat.id)).toEqual(['a']);
+    expect(levelUpBeats(before, after, []).map((beat) => beat.id)).toEqual(['a']);
   });
 
   it('flags the species it evolved into', () => {
     const before = [member('a', 15, { speciesId: 'charmander' })];
     const after = [member('a', 16, { speciesId: 'charmeleon' })];
-    expect(levelUpBeats(before, after)[0].evolvedInto).toBe('charmeleon');
+    expect(levelUpBeats(before, after, [])[0].evolvedInto).toBe('charmeleon');
   });
 
-  it('lists the moves learned and forgotten across the level-up', () => {
+  it('reads learned from the resolution events and never reports a forgotten move', () => {
+    // Identical slots on both sides: a level-up writes no slot, so a slot diff
+    // would report nothing.
     const before = [member('a', 5, { moves: ['scratch', 'growl', 'ember', 'smokescreen'] })];
-    const after = [member('a', 6, { moves: ['growl', 'ember', 'smokescreen', 'dragonbreath'] })];
-    const beat = levelUpBeats(before, after)[0];
+    const after = [member('a', 6, { moves: ['scratch', 'growl', 'ember', 'smokescreen'] })];
+    const events: readonly ProgressionEvent[] = [
+      { kind: 'xp', amount: 20, xp: 216 },
+      { kind: 'level', level: 6 },
+      { kind: 'learn', moveId: 'dragonbreath', memberId: 'a' },
+    ];
+    const beat = levelUpBeats(before, after, events)[0];
     expect(beat.learned).toEqual(['dragonbreath']);
-    expect(beat.forgotten).toEqual(['scratch']);
+    expect(beat.forgotten).toEqual([]);
+  });
+
+  it('reads an empty learned list for a level-up that crossed no move', () => {
+    const before = [member('a', 5)];
+    const after = [member('a', 6)];
+    const events: readonly ProgressionEvent[] = [{ kind: 'level', level: 6 }];
+    expect(levelUpBeats(before, after, events)[0].learned).toEqual([]);
+  });
+
+  it('ignores a learn event of a member that is not in the party', () => {
+    const before = [member('a', 5)];
+    const after = [member('a', 6)];
+    const events: readonly ProgressionEvent[] = [
+      { kind: 'level', level: 6 },
+      { kind: 'learn', moveId: 'dragonbreath', memberId: 'boxed' },
+      { kind: 'learn', moveId: 'ember', memberId: 'a' },
+    ];
+    expect(levelUpBeats(before, after, events)[0].learned).toEqual(['ember']);
   });
 
   it('keeps the party order of the survivors', () => {
     const before = [member('a', 5), member('b', 5), member('c', 5)];
     const after = [member('c', 6), member('a', 7), member('b', 5)];
-    expect(levelUpBeats(before, after).map((beat) => beat.id)).toEqual(['c', 'a']);
+    expect(levelUpBeats(before, after, []).map((beat) => beat.id)).toEqual(['c', 'a']);
   });
 });
 

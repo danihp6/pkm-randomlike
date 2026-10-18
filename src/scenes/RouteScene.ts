@@ -6228,7 +6228,7 @@ export class RouteScene extends Phaser.Scene {
 
     const reward = this.rewardFor(pending.trigger);
     const before = this.run.party;
-    const { run, released, capture } = resolveBattle(this.run, result, reward, {
+    const { run, released, capture, events } = resolveBattle(this.run, result, reward, {
       catchLocation: {
         biomeId: this.route.biomeId,
         mapIndex: this.run.mapIndex,
@@ -6285,10 +6285,10 @@ export class RouteScene extends Phaser.Scene {
         return;
       }
       if (wonMiniBoss) {
-        this.openMiniBossReward(() => this.playLevelUp(levelUpBeats(before, this.run.party)));
+        this.openMiniBossReward(() => this.playLevelUp(levelUpBeats(before, this.run.party, events)));
         return;
       }
-      this.playLevelUp(levelUpBeats(before, this.run.party));
+      this.playLevelUp(levelUpBeats(before, this.run.party, events));
     };
 
     this.playReleaseBeats(releaseBeats(released), () => {

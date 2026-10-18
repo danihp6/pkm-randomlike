@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getSpecies, statAtLevel } from '../../data/dex';
+import { getMove, getSpecies, levelUpMoves, statAtLevel } from '../../data/dex';
 import { LEVEL_BANDS, bandForLevel } from '../../data/run';
 import '../battle/effects/abilities';
 import { restoreFighter } from '../battle/fighter';
@@ -68,7 +68,7 @@ describe('experienceAward', () => {
 });
 
 describe('levelUpPokemon', () => {
-  it('levels up and learns the move it crossed', () => {
+  it('levels up, reports the move it crossed and leaves the four slots alone', () => {
     const pokemon = createRunPokemon({
       id: 'ember',
       speciesId: 'charmander',
@@ -78,7 +78,8 @@ describe('levelUpPokemon', () => {
     const grown = levelUpPokemon(pokemon, 4);
     expect(grown.pokemon.fighter.level).toBe(4);
     expect(grown.events).toContainEqual({ kind: 'level', level: 4 });
-    expect(grown.events).toContainEqual({ kind: 'learn', moveId: 'ember' });
+    expect(grown.events).toContainEqual({ kind: 'learn', moveId: 'ember', memberId: 'ember' });
+    expect(grown.pokemon.fighter.moves.map((slot) => slot.moveId)).toEqual(['scratch']);
   });
 
   it('leaves a member already at the target alone', () => {
@@ -95,7 +96,7 @@ describe('levelUpPokemon', () => {
     expect(grown.pokemon.fighter.speciesId).toBe('charmander');
   });
 
-  it('forgets the oldest move when the fourth slot is full', () => {
+  it('keeps the four slots when a level-up crosses a fifth move and never forgets', () => {
     const pokemon = createRunPokemon({
       id: 'four',
       speciesId: 'charmander',
@@ -103,11 +104,44 @@ describe('levelUpPokemon', () => {
       moves: ['scratch', 'growl', 'smokescreen', 'dragonbreath'],
     });
     const result = levelUpPokemon(pokemon, 4);
-    const moves = result.pokemon.fighter.moves.map((slot) => slot.moveId);
-    expect(moves).toContain('ember');
-    expect(moves).not.toContain('scratch');
-    expect(result.events).toContainEqual({ kind: 'learn', moveId: 'ember' });
-    expect(result.events).toContainEqual({ kind: 'forget', moveId: 'scratch' });
+    expect(result.pokemon.fighter.level).toBe(4);
+    expect(result.pokemon.fighter.moves.map((slot) => slot.moveId)).toEqual([
+      'scratch',
+      'growl',
+      'smokescreen',
+      'dragonbreath',
+    ]);
+    expect(result.events).toContainEqual({ kind: 'learn', moveId: 'ember', memberId: 'four' });
+    expect(result.events.some((event) => event.kind === 'forget')).toBe(false);
+  });
+
+  it('does not report a crossed move that already sits in a slot', () => {
+    const pokemon = createRunPokemon({
+      id: 'slotted',
+      speciesId: 'charmander',
+      level: 1,
+      moves: ['ember'],
+    });
+    const result = levelUpPokemon(pokemon, 4);
+    expect(result.events).toContainEqual({ kind: 'level', level: 4 });
+    expect(result.events.some((event) => event.kind === 'learn')).toBe(false);
+    expect(result.pokemon.fighter.moves.map((slot) => slot.moveId)).toEqual(['ember']);
+  });
+
+  it('reports no learn event for an OHKO move a No Guard holder cannot equip', () => {
+    // The premise first, so a data move fails loudly instead of passing vacuously.
+    expect(levelUpMoves('diglett', 44)).toContainEqual({ moveId: 'fissure', level: 44 });
+    expect(getMove('fissure')?.ohko).toBe(true);
+    const pokemon = createRunPokemon({
+      id: 'digger',
+      speciesId: 'diglett',
+      level: 43,
+      ability: 'No Guard',
+      moves: ['scratch'],
+    });
+    const result = levelUpPokemon(pokemon, 44);
+    expect(result.events).toEqual([{ kind: 'level', level: 44 }]);
+    expect(result.pokemon.fighter.moves.map((slot) => slot.moveId)).toEqual(['scratch']);
   });
 });
 

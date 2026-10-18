@@ -1,15 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { learnableBy } from '../../data/dex/learnsets';
+import { getMove, learnableBy, levelUpMoves } from '../../data/dex';
 import { tmItemIdForMove } from '../../data/tms';
 import { randomLevelUpMoves } from '../battle/randomLearnset';
 import { equipMove, learnsetPool } from './learnset';
-import { createRunPokemon } from './progression';
-import { addItem, createRun, type RunState } from './state';
+import { createRunPokemon, levelUpPokemon } from './progression';
+import { addItem, createRun, updatePokemon, type RunState } from './state';
 
 const SEED = 'learnset-test';
 
 function starterRun(moves: readonly string[] = ['scratch'], level = 5): RunState {
   const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level, moves });
+  return createRun({ seed: SEED, starter });
+}
+
+function diglettRun(ability: string): RunState {
+  const starter = createRunPokemon({
+    id: 'starter',
+    speciesId: 'diglett',
+    level: 44,
+    ability,
+    moves: ['scratch'],
+  });
   return createRun({ seed: SEED, starter });
 }
 
@@ -57,6 +68,33 @@ describe('learnsetPool', () => {
     const expected = new Set(randomLevelUpMoves('charmander', 5, SEED).map((entry) => entry.moveId));
     for (const slot of run.party[0].fighter.moves) expected.delete(slot.moveId);
     for (const entry of pool) expect(expected.has(entry.moveId), entry.moveId).toBe(true);
+  });
+
+  it('offers a move a level-up crossed and equips it only through equipMove', () => {
+    const run = starterRun(['scratch'], 1);
+    const grown = levelUpPokemon(run.party[0], 4);
+    expect(grown.events).toContainEqual({ kind: 'learn', moveId: 'ember', memberId: 'starter' });
+    // The level-up crossed 'ember' but equipped nothing.
+    expect(grown.pokemon.fighter.moves.map((slot) => slot.moveId)).toEqual(['scratch']);
+    const after = updatePokemon(run, grown.pokemon);
+    expect(learnsetPool(after, after.party[0]).map((entry) => entry.moveId)).toContain('ember');
+    const equipped = equipMove(after, 'starter', 'ember', 1);
+    expect(equipped).not.toBe(after);
+    expect(equipped.party[0].fighter.moves.map((slot) => slot.moveId)).toEqual(['scratch', 'ember']);
+  });
+
+  it('never offers an OHKO move to a No Guard holder, and does offer it to another holder', () => {
+    // The premise first, so a data move fails loudly instead of passing vacuously.
+    expect(levelUpMoves('diglett', 44)).toContainEqual({ moveId: 'fissure', level: 44 });
+    expect(getMove('fissure')?.ohko).toBe(true);
+    const noGuardRun = diglettRun('No Guard');
+    expect(noGuardRun.party[0].fighter.ability).toBe('No Guard');
+    expect(learnsetPool(noGuardRun, noGuardRun.party[0]).map((entry) => entry.moveId)).not.toContain(
+      'fissure',
+    );
+    expect(equipMove(noGuardRun, 'starter', 'fissure', 0)).toBe(noGuardRun);
+    const control = diglettRun('Sand Veil');
+    expect(learnsetPool(control, control.party[0]).map((entry) => entry.moveId)).toContain('fissure');
   });
 });
 
