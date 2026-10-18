@@ -405,6 +405,11 @@ function writeTable(file, rows) {
   return Object.keys(sorted).length
 }
 
+/** A summary line's list, or `none` when there is nothing to name. */
+function named(rows) {
+  return rows.length === 0 ? 'none' : `${rows.length}: ${rows.join(', ')}`
+}
+
 const sourceOption = optionValue('--source', 'FRLG_SOURCE')
 const outOption = optionValue('--out', 'FRLG_AUDIO_OUT')
 const rendererOption = optionValue('--renderer', 'PORYAAAA_RENDER')
@@ -499,12 +504,8 @@ const cryRows = writeTable(join(AUDIO_DATA, 'cries.json'), cries.rows)
 const moveRows = writeTable(join(AUDIO_DATA, 'moveSounds.json'), moves.rows)
 
 console.log(`wrote ${cryRows} cry rows and ${moveRows} move-sound rows to src/data/audio/`)
-if (cries.unresolved.length > 0) {
-  console.warn(`species with no cry sample: ${cries.unresolved.join(', ')}`)
-}
-if (moves.skipped.length > 0) {
-  console.warn(`move blocks skipped: ${moves.skipped.join(', ')}`)
-}
+console.log(`unresolved species (no cry sample): ${named(cries.unresolved)}`)
+console.log(`move blocks skipped: ${named(moves.skipped)}`)
 console.log(
   `wrote ${CUES.length + moveSongs.length + 1 + crySamples.length} cues to ${output}; now run: node scripts/frlg/build-audio.mjs`,
 )
