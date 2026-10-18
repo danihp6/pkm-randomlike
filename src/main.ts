@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { IS_DEVELOP } from './dev/env';
+import type { DebugMenuHandlers } from './dev/debugMenu';
+import { onLocaleChange } from './i18n';
 import { BattleScene } from './scenes/BattleScene';
 import { BootScene } from './scenes/BootScene';
 import { MainMenuScene } from './scenes/MainMenuScene';
@@ -38,7 +40,7 @@ export const game = new Phaser.Game(config);
 // out of the production entry chunk (see `src/dev/debugMenu.ts`).
 if (IS_DEVELOP) {
   void import('./dev/debugMenu').then(({ installDebugMenu }) => {
-    installDebugMenu({
+    const handlers: DebugMenuHandlers = {
       onWildBattle: (speciesId, level) => {
         const route = game.scene.getScene('Route') as RouteScene | null;
         route?.startDebugWildBattle(speciesId, level);
@@ -123,6 +125,15 @@ if (IS_DEVELOP) {
         const route = game.scene.getScene('Route') as RouteScene | null;
         route?.setIgnoreTrainers(enabled);
       },
+    };
+
+    // The panel bakes every label at mount, and the stored locale is applied later (a
+    // scene's `create`), so a browser booted in Spanish would keep an English panel.
+    // Remount it on a locale change; the module's own disposer does the cleanup.
+    let dispose = installDebugMenu(handlers);
+    onLocaleChange(() => {
+      dispose();
+      dispose = installDebugMenu(handlers);
     });
   });
 }
