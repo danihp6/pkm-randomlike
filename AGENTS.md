@@ -129,8 +129,11 @@ drives the rest.
 - Run `git init` before the first code task if the repo does not exist yet.
 
 ## Conventions
-- All writing (docs, commit messages, changelog, TODO, code identifiers, game
-  text) in **English** (D12).
+- Docs, commit messages, the changelog, `TODO.md` and code identifiers in
+  **English** (D12), and English is also the **game text's source table**: every
+  player-facing string is a key in `src/i18n/en.ts`, authored there first, and a
+  locale (`src/i18n/es.ts`) overlays it by key (`D43`). The dex's own names —
+  Pokémon, moves, abilities, items, biomes — stay English in every locale.
 - TypeScript style: 2-space indent, `camelCase` for functions/variables,
   `PascalCase` for types/classes, explicit types on exported APIs.
 - No code comments unless asked, except where a non-obvious balance or

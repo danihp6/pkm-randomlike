@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import type { Settings } from '../engine/save';
+import { t } from '../i18n';
 import { applyVolume, loadSettings, saveSettings } from '../settings';
 import { prefersTouchControls } from '../input/device';
 import { addFrlgWindow } from '../ui/frlg';
@@ -13,6 +14,8 @@ import {
   rebindSetting,
   settingValue,
   settingsRow,
+  settingsRowHint,
+  settingsRowLabel,
   settingsRows,
   volumeFromFraction,
   type SettingsRow,
@@ -92,6 +95,8 @@ export class SettingsScene extends Phaser.Scene {
   private draggingVolume = false;
   private hint!: Phaser.GameObjects.BitmapText;
   private controls!: Phaser.GameObjects.BitmapText;
+  /** The window title, re-resolved on every render so a language switch shows at once. */
+  private title!: Phaser.GameObjects.BitmapText;
 
   constructor() {
     super('Settings');
@@ -124,7 +129,7 @@ export class SettingsScene extends Phaser.Scene {
 
     this.add.rectangle(0, 0, width, height, 0x10161f).setOrigin(0, 0);
     addFrlgWindow(this, x, y, panelW, panelH);
-    addFrlgText(this, x + 28, y + 22, 'SETTINGS', { size: 32, tint: FRLG_INK });
+    this.title = addFrlgText(this, x + 28, y + 22, t('settings.title'), { size: 32, tint: FRLG_INK });
 
     this.volumeSlider = null;
     this.rows = this.rowList.map((row, i) => {
@@ -132,7 +137,10 @@ export class SettingsScene extends Phaser.Scene {
       const highlight = this.add
         .rectangle(x + 20, rowY, panelW - 40, rowH - 6, 0xf2c14e, 0.28)
         .setOrigin(0, 0);
-      const label = addFrlgText(this, x + 40, rowY + textTop, row.label, { size: 16, tint: FRLG_INK });
+      const label = addFrlgText(this, x + 40, rowY + textTop, settingsRowLabel(row), {
+        size: 16,
+        tint: FRLG_INK,
+      });
       const value = addFrlgText(this, x + panelW - 40, rowY + textTop, '', {
         size: 16,
         tint: 0x3a3956,
@@ -378,14 +386,17 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   private render(): void {
+    // The language row is changed on this very screen, so every string is resolved
+    // from the current locale here rather than once in `create`.
+    this.title.setText(t('settings.title'));
     this.rows.forEach((view, i) => {
       const selected = i === this.index;
       const row = this.rowList[i]!;
       const listening = selected && this.capturing !== null;
       view.highlight.setVisible(selected);
-      view.label.setAlpha(selected ? 1 : 0.85);
+      view.label.setText(settingsRowLabel(row)).setAlpha(selected ? 1 : 0.85);
       view.value
-        .setText(listening ? 'Press a key…' : settingValue(this.settings, row.id))
+        .setText(listening ? t('settings.pressKey') : settingValue(this.settings, row.id))
         .setAlpha(selected ? 1 : 0.85);
     });
     this.refreshVolumeSlider();
@@ -403,17 +414,26 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   private rowHint(row: SettingsRow, listening: boolean): string {
-    if (row.id === 'volume') return 'Click or drag the bar to set the volume.';
-    if (isStepRow(row)) return row.hint;
+    if (row.id === 'volume') return t('settings.hintVolume');
+    if (isStepRow(row)) return settingsRowHint(row);
     const { confirm, cancel } = this.settings.keybinds;
-    if (listening) return `Press any key to bind it, ${keyLabel(cancel)} to keep the old one.`;
-    return `Press ${keyLabel(confirm)} to rebind this key.`;
+    if (listening) {
+      return t('settings.hintPressKey', { cancel: keyLabel(cancel) });
+    }
+    return t('settings.hintRebind', { confirm: keyLabel(confirm) });
   }
 
   private controlsLine(): string {
-    if (prefersTouchControls()) return 'Tap a row to change it · tap outside to close';
+    if (prefersTouchControls()) return t('settings.controlsTouch');
     const { confirm, cancel, up, down, left, right } = this.settings.keybinds;
-    return `${keyLabel(up)} ${keyLabel(down)}  select      ${keyLabel(left)} ${keyLabel(right)}  change      ${keyLabel(confirm)}  confirm      ${keyLabel(cancel)}  close`;
+    return t('settings.controls', {
+      up: keyLabel(up),
+      down: keyLabel(down),
+      left: keyLabel(left),
+      right: keyLabel(right),
+      confirm: keyLabel(confirm),
+      cancel: keyLabel(cancel),
+    });
   }
 
   /** Hands the opener back its screen; the route re-reads what changed. */

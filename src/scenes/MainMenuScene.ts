@@ -6,6 +6,7 @@ import { hasLivingParty, type RunState } from '../engine/run';
 import { randomSeed } from '../engine/rng';
 import { loadSave, type Settings } from '../engine/save';
 import { subscribeKeybinds } from '../input/input';
+import { t, type TranslationKey } from '../i18n';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { addFrlgWindow } from '../ui/frlg';
@@ -15,11 +16,16 @@ import { runPositionLabel } from '../ui/runSummary';
 /** The three things the menu can do; `continue` only exists with a saved run. */
 type MenuAction = 'continue' | 'new' | 'options';
 
-const MENU_LABELS: Readonly<Record<MenuAction, string>> = {
-  continue: 'Continue',
-  new: 'New run',
-  options: 'Options',
+/** The row labels as keys: a table of translated strings would freeze the locale. */
+const MENU_LABELS: Readonly<Record<MenuAction, TranslationKey>> = {
+  continue: 'menu.continue',
+  new: 'menu.new',
+  options: 'menu.options',
 };
+
+function menuLabel(action: MenuAction): string {
+  return t(MENU_LABELS[action]);
+}
 
 const PANEL_W = 460;
 const ROW_H = 60;
@@ -76,8 +82,8 @@ export class MainMenuScene extends Phaser.Scene {
     const y = (height - panelH) / 2 + 24;
 
     this.add.rectangle(0, 0, width, height, 0x10161f).setOrigin(0, 0);
-    addFrlgText(this, width / 2, y - 128, 'PokeRandomLike', { size: 48, origin: 0.5 });
-    addFrlgText(this, width / 2, y - 76, 'A Pokémon roguelike', {
+    addFrlgText(this, width / 2, y - 128, t('menu.title'), { size: 48, origin: 0.5 });
+    addFrlgText(this, width / 2, y - 76, t('menu.subtitle'), {
       size: 16,
       tint: 0x94a3b8,
       origin: 0.5,
@@ -92,7 +98,7 @@ export class MainMenuScene extends Phaser.Scene {
         .rectangle(rowX, rowY, rowW, ROW_H - 6, 0xf2c14e, 0.28)
         .setOrigin(0, 0)
         .setVisible(false);
-      const label = addFrlgText(this, rowX + 20, rowY + 14, MENU_LABELS[action], {
+      const label = addFrlgText(this, rowX + 20, rowY + 14, menuLabel(action), {
         size: 24,
         tint: FRLG_INK,
       });
@@ -213,7 +219,12 @@ export class MainMenuScene extends Phaser.Scene {
     this.rows.forEach((row, i) => row.highlight.setVisible(i === this.index));
     const { up, down, confirm, settings } = this.settings.keybinds;
     this.controls.setText(
-      `${keyLabel(up)} ${keyLabel(down)}  select      ${keyLabel(confirm)}  confirm      ${keyLabel(settings)}  options`,
+      t('menu.controls', {
+        up: keyLabel(up),
+        down: keyLabel(down),
+        confirm: keyLabel(confirm),
+        settings: keyLabel(settings),
+      }),
     );
   }
 }

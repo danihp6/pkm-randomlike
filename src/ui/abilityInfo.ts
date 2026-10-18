@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import { t } from '../i18n';
 import { addFrlgText, FRLG_INK } from './frlgFont';
 import type { InfoPopup, InfoPopupContent } from './infoPopup';
 
@@ -35,7 +36,7 @@ export function abilityInfoSpot(textRight: number, rowY: number): AbilityInfoSpo
 
 /** What a row's ⓘ floats: the description, or a stand-in when there is none. */
 export function abilityInfoContent(name: string, desc: string | null): InfoPopupContent {
-  return { text: desc !== null && desc.length > 0 ? desc : `${name}: no description.` };
+  return { text: desc !== null && desc.length > 0 ? desc : t('ability.noDescription', { name }) };
 }
 
 export class AbilityInfoButton {

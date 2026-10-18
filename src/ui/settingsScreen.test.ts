@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_KEYBINDS } from '../data/keybinds';
+import { DEFAULT_KEYBINDS, KEYBIND_ACTIONS, KEYBIND_LABELS } from '../data/keybinds';
 import { defaultSettings } from '../engine/save';
+import { en } from '../i18n';
 import {
   AI_LEVELS,
   changeSetting,
   cycleSetting,
   isStepRow,
+  KEYBIND_LABEL_KEYS,
   moveSettingIndex,
   rebindSetting,
   settingValue,
   settingsRow,
+  settingsRowLabel,
   settingsRows,
   SETTINGS_ROWS,
   TEXT_SPEED_ORDER,
@@ -26,6 +29,7 @@ describe('rows', () => {
       'hudTransparent',
       'reducedFlash',
       'aiLevel',
+      'language',
       'confirm',
       'cancel',
       'up',
@@ -41,8 +45,24 @@ describe('rows', () => {
       'box',
       'settings',
     ]);
-    expect(SETTINGS_ROWS.slice(0, 6).every(isStepRow)).toBe(true);
-    expect(SETTINGS_ROWS.slice(6).every((row) => !isStepRow(row))).toBe(true);
+    expect(SETTINGS_ROWS.slice(0, 7).every(isStepRow)).toBe(true);
+    expect(SETTINGS_ROWS.slice(7).every((row) => !isStepRow(row))).toBe(true);
+  });
+
+  it('keeps the language the last step row', () => {
+    expect(SETTINGS_ROWS[6].id).toBe('language');
+    expect(SETTINGS_ROWS[5].id).toBe('aiLevel');
+    expect(settingsRows(true)[settingsRows(true).length - 1].id).toBe('language');
+  });
+
+  it('resolves a row label from the table as it is drawn', () => {
+    expect(settingsRowLabel(SETTINGS_ROWS[0])).toBe(en['settings.textSpeed']);
+  });
+
+  it('keeps the keybind labels in step with the shipped data table', () => {
+    for (const action of KEYBIND_ACTIONS) {
+      expect(en[KEYBIND_LABEL_KEYS[action]]).toBe(KEYBIND_LABELS[action]);
+    }
   });
 
   it('hides the keybind rows on a touch screen', () => {
@@ -57,8 +77,9 @@ describe('rows', () => {
       'hudTransparent',
       'reducedFlash',
       'aiLevel',
+      'language',
     ]);
-    expect(touch[touch.length - 1].id).toBe('aiLevel');
+    expect(touch[touch.length - 1].id).toBe('language');
   });
 
   it('clamps a selection to the list', () => {
@@ -83,6 +104,11 @@ describe('settingValue', () => {
     expect(settingValue({ ...defaultSettings(), reducedFlash: true }, 'reducedFlash')).toBe('On');
     expect(settingValue(defaultSettings(), 'aiLevel')).toBe('Normal');
     expect(settingValue({ ...defaultSettings(), aiLevel: 'hard' }, 'aiLevel')).toBe('Hard');
+  });
+
+  it('names each language in its own language', () => {
+    expect(settingValue(defaultSettings(), 'language')).toBe('English');
+    expect(settingValue({ ...defaultSettings(), language: 'es' }, 'language')).toBe('Español');
   });
 
   it('prints a keybind as its key, arrows and all', () => {
@@ -173,6 +199,15 @@ describe('changeSetting', () => {
     expect(AI_LEVELS).toEqual(['normal', 'hard']);
   });
 
+  it('steps the language and clamps at both ends', () => {
+    const settings = defaultSettings();
+    expect(settings.language).toBe('en');
+    expect(changeSetting(settings, 'language', 1).language).toBe('es');
+    expect(changeSetting({ ...settings, language: 'es' }, 'language', 1).language).toBe('es');
+    expect(changeSetting({ ...settings, language: 'es' }, 'language', -1).language).toBe('en');
+    expect(changeSetting(settings, 'language', -1).language).toBe('en');
+  });
+
   it('never mutates the settings it is given', () => {
     const settings = defaultSettings();
     changeSetting(settings, 'textSpeed', 1);
@@ -219,6 +254,14 @@ describe('cycleSetting', () => {
     expect(cycleSetting(hard, 'aiLevel', 1).aiLevel).toBe('normal');
     expect(cycleSetting(hard, 'aiLevel', -1).aiLevel).toBe('normal');
     expect(cycleSetting(defaultSettings(), 'aiLevel', -1).aiLevel).toBe('hard');
+  });
+
+  it('wraps the language so a click reaches both values from either one', () => {
+    const spanish = cycleSetting(defaultSettings(), 'language', 1);
+    expect(spanish.language).toBe('es');
+    expect(cycleSetting(spanish, 'language', 1).language).toBe('en');
+    expect(cycleSetting(spanish, 'language', -1).language).toBe('en');
+    expect(cycleSetting(defaultSettings(), 'language', -1).language).toBe('es');
   });
 });
 

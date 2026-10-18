@@ -646,6 +646,65 @@ ships, and its type is now derived from the holder's IVs at battle time. A move
 with no ported effect still resolves its base damage generically; an unported
 status move is a dev-warned no-op.
 
+## D43 — Game text is keyed: English is the source table, a locale overlays it *(decided)*
+
+No player-facing string is a literal any more. `src/i18n/` is a pure module:
+**`en.ts` is the source table** (the one place an English string is written, flat and
+dotted, grouped by the surface it is drawn on) and **`es.ts` overlays it by key**, typed
+as `Record<TranslationKey, string>` so a missing Spanish line is a compile error.
+`t(key, params)` resolves the current locale's entry (falling back to `en[key]`,
+unreachable while the parity test holds) and replaces every `{token}` with
+`String(params[token])`; **a token with no param throws** (`i18n: missing param "…" for
+key "…"`), because a silent `{name}` on screen is worse than a loud test failure. Extra
+params are ignored and a number param is stringified.
+
+The module is a **leaf**: no Phaser, no DOM, no `localStorage`, no `navigator`, no `Rng`,
+no clock, and no import from `src/engine/`, `src/data/` or `src/scenes/`, so the tables
+are testable headless. **The browser's language tag is an argument**: `detectLocale(tag)`
+lowercases it, takes the part before the first `-` or `_`, and returns `es` only when
+that primary subtag is exactly `es` — `es-ES`, `es` and `ES-mx` are Spanish; `en-GB`,
+`fr-FR` and `ca-ES` are the source table. The module's initial locale is `en`, so a test
+that never calls `setLocale` reads English. This **refines `D12`**: docs, code,
+identifiers, commit messages and the changelog stay English, and English is now also the
+game text's *source* table rather than its only language.
+
+**The setting: `Settings.language`**, beside `alwaysRun`. It is read per field in
+`parseSettings` (`isLocale(value.language) ? value.language : base.language`), so a
+document with no such key reads the default `en`: **no `SAVE_VERSION` bump and no
+migration step** (the `D22`/`D45`/`D46` precedent; the version stays **16**). It is the
+one setting defaulted from the browser, and only `src/settings.ts` — the browser-facing
+shim — reads `navigator.language` and feeds the pure `detectLocale`. When the save
+carries no language the shim **stores what it detected** (`storeSettings`), so the first
+`storeRun` of the run cannot freeze the source table into a Spanish player's save;
+`storedSettingsLanguage` (in `src/engine/save.ts`) is what tells "the player chose `en`"
+from "nothing was ever chosen", which the decoded settings cannot. `loadSettings` and
+`saveSettings` both apply the locale, so a switch needs **no restart and no scene-level
+boot hook**, and the row is the **last step row** of `src/ui/settingsScreen.ts` (after
+difficulty, so every shipped index keeps its order), naming each language in its own
+language (`English` / `Español`) so the picker reads from either side.
+
+**The boundary.** The dex's own names stay English in every locale: Pokémon, move,
+ability and item names, the biome names and the trainer classes come from `@pkmn/dex` and
+`src/data/**`, which ship English only — they are *content*, not chrome, and localising
+them is a separate and much larger job. So does the engine's battle log: its strings are
+the content `src/engine/battle/golden.test.ts` pins byte for byte, and localising them
+would change what a fixed seed logs. Only the battle **scene's** own chrome and prompts
+are keyed, so after this decision a battle reads half Spanish (its menu and prompts) and
+half English (the engine's `Charmander used Tackle!` lines) — the intended cut, not an
+oversight.
+
+**The font constraint.** A key's text may only use characters the FRLG bitmap font can
+draw (`src/data/ui/font.json`, `D19`): Latin-1 letters and accents (á/é/í/ó/ú/ü/ñ, `¿`,
+`¡`), `·` (U+00B7), `…`, the curly quotes, the arrows and `▶`, `¥`, `♀`/`♂`. The atlas
+carries **no em dash (U+2014)**, so Spanish copy never uses one — `·`, `:` or `,`
+instead, and the test enforces it over `es` (`index.test.ts`). The same test pins the
+width guards the geometry depends on: three-character status chips, six-character pocket
+tabs, seven-character stat labels and battle commands.
+
+**Considered:** an embedded locale library (a table plus one `t` is a few lines, and a
+dependency is not worth it) and a per-scene string map (it drifts: two scenes would spell
+the same sentence twice and nothing would notice).
+
 ## D44 — Gigantamax is a battle mechanic in the Mega mould *(decided)*
 
 Gigantamax exists with the shape Mega Evolution already has (`D34`,

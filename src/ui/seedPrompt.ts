@@ -1,4 +1,5 @@
 import { decodeRunShare, encodeRunShare, type RunMode, type RunShare } from '../engine/run';
+import { t } from '../i18n';
 
 /**
  * The seed / share-string prompt (Phase 7). A small DOM overlay, like the dev
@@ -55,12 +56,11 @@ export function openSeedPrompt(options: SeedPromptOptions): void {
     'border:2px solid #7dd3fc;border-radius:8px;color:#e2e8f0;font:13px/1.4 monospace;';
 
   const title = document.createElement('div');
-  title.textContent = 'SEED / SHARE STRING';
+  title.textContent = t('seed.title');
   title.style.cssText = 'font-weight:700;color:#7dd3fc;';
 
   const hint = document.createElement('div');
-  hint.textContent =
-    'Paste a share string (PKRL-…) or type a seed. The same seed always plays the same run.';
+  hint.textContent = t('seed.hint');
   hint.style.cssText = 'color:#94a3b8;';
 
   const input = document.createElement('input');
@@ -70,31 +70,31 @@ export function openSeedPrompt(options: SeedPromptOptions): void {
   input.value = encodeRunShare(options.initial);
   input.style.cssText = SHARED_INPUT_STYLE;
 
-  const seedRow = row('Share');
+  const seedRow = row(t('seed.shareRow'));
   seedRow.append(input);
 
   const modeSelect = document.createElement('select');
-  for (const [value, label] of [
-    ['finite', 'Finite (ends at the final boss)'],
-    ['infinite', 'Infinite (ends when the party falls)'],
+  for (const [value, labelKey] of [
+    ['finite', 'seed.modeFinite'],
+    ['infinite', 'seed.modeInfinite'],
   ] as const) {
     const option = document.createElement('option');
     option.value = value;
-    option.textContent = label;
+    option.textContent = t(labelKey);
     modeSelect.append(option);
   }
   modeSelect.value = options.initial.mode;
   modeSelect.style.cssText = SHARED_INPUT_STYLE;
 
-  const modeRow = row('Mode');
+  const modeRow = row(t('seed.modeRow'));
   modeRow.append(modeSelect);
 
   const status = document.createElement('div');
   status.style.cssText = 'min-height:18px;color:#94a3b8;';
 
-  const confirmButton = button('Start');
+  const confirmButton = button(t('seed.start'));
   confirmButton.style.cssText += 'background:#0e7490;color:#f8fafc;font-weight:700;';
-  const cancelButton = button('Cancel');
+  const cancelButton = button(t('seed.cancel'));
   const buttons = document.createElement('div');
   buttons.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;';
   buttons.append(cancelButton, confirmButton);
@@ -105,7 +105,7 @@ export function openSeedPrompt(options: SeedPromptOptions): void {
   const refresh = (): void => {
     const share = resolve();
     if (!share) {
-      status.textContent = 'not a valid share string';
+      status.textContent = t('seed.invalid');
       confirmButton.disabled = true;
       return;
     }

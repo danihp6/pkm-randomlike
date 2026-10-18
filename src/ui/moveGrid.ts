@@ -6,6 +6,7 @@ import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeI
 import { MOVE_CATEGORY_ICON_W, MOVE_CATEGORY_TEXTURE_KEY, categoryIconFrame } from '../data/moveCategoryIcons';
 import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../data/statusIcons';
 import { InfoPopup, type InfoPopupBadge, type InfoPopupChip } from './infoPopup';
+import { t } from '../i18n';
 
 /**
  * The shared moves grid + floating info popup. The battle's FIGHT menu and the
@@ -96,10 +97,10 @@ function powerTint(cell: MoveGridCell): number {
 
 /** `ACC 100`, with an ↑ / ↓ when stages or abilities moved the hit chance. */
 function accuracyLabel(cell: MoveGridCell): string {
-  if (cell.baseAccuracy === null || cell.accuracy === null) return 'ACC --';
+  if (cell.baseAccuracy === null || cell.accuracy === null) return t('move.accNone');
   const arrow =
     cell.accuracy > cell.baseAccuracy ? ' \u2191' : cell.accuracy < cell.baseAccuracy ? ' \u2193' : '';
-  return `ACC ${cell.accuracy}${arrow}`;
+  return t('move.acc', { value: `${cell.accuracy}${arrow}` });
 }
 
 /** Green for a raised hit chance, red for a lowered one, ink when unchanged. */
@@ -254,13 +255,15 @@ export class MoveGrid {
 
       const catW = MOVE_CATEGORY_ICON_W * iconScale;
       this.ppTexts[i]
-        .setText(`PP ${cell.pp}/${cell.maxPp}`)
+        .setText(t('move.pp', { pp: cell.pp, max: cell.maxPp }))
         .setAlpha(alpha)
         .setPosition(cellX(i) + CELL_PAD + catW + 6, cellY(i) + CELL_TOP + (narrow ? 22 : 24))
         .setVisible(true);
 
       this.powerTexts[i]
-        .setText(cell.basePower > 0 ? `PWR ${cell.power}` : 'PWR --')
+        .setText(
+          cell.basePower > 0 ? t('move.pwr', { value: cell.power }) : t('move.pwrNone'),
+        )
         .setTint(powerTint(cell))
         .setAlpha(alpha)
         .setOrigin(narrow ? 0 : 1, 0)

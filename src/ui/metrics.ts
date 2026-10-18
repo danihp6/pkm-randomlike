@@ -1,3 +1,4 @@
+import { t, type TranslationKey } from '../i18n';
 import type { StatusId } from '../engine/battle/fighter';
 
 export type Rgb = Readonly<{ r: number; g: number; b: number }>;
@@ -57,15 +58,15 @@ export function hpCueNotches(width: number): readonly number[] {
   return notches;
 }
 
-export const STATUS_ABBREVIATIONS: Readonly<Record<StatusId, string>> = {
-  brn: 'BRN',
-  psn: 'PSN',
-  tox: 'TOX',
-  par: 'PAR',
-  slp: 'SLP',
-  frz: 'FRZ',
+export const STATUS_ABBREVIATIONS: Readonly<Record<StatusId, TranslationKey>> = {
+  brn: 'status.brn',
+  psn: 'status.psn',
+  tox: 'status.tox',
+  par: 'status.par',
+  slp: 'status.slp',
+  frz: 'status.frz',
 };
 
 export function statusAbbreviation(status: StatusId | null): string | null {
-  return status ? STATUS_ABBREVIATIONS[status] : null;
+  return status ? t(STATUS_ABBREVIATIONS[status]) : null;
 }

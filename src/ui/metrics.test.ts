@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setLocale } from '../i18n';
 import {
   HP_CUE_BLOCKS,
   HP_CUE_GAP,
@@ -53,5 +54,14 @@ describe('status badges', () => {
     expect(statusAbbreviation('brn')).toBe('BRN');
     expect(statusAbbreviation('tox')).toBe('TOX');
     expect(statusAbbreviation(null)).toBeNull();
+  });
+
+  it('draws the chip from the table, three characters in either locale', () => {
+    setLocale('es');
+    expect(statusAbbreviation('brn')).toBe('QUE');
+    expect(statusAbbreviation('slp')).toBe('DOR');
+    expect(statusAbbreviation('frz')?.length).toBe(3);
+    setLocale('en');
+    expect(statusAbbreviation('brn')).toBe('BRN');
   });
 });
