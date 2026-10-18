@@ -55,6 +55,9 @@ describe('memberDetail', () => {
       'charmander',
       'charmeleon',
       'charizard',
+      'charizardmegax',
+      'charizardmegay',
+      'charizardgmax',
     ]);
     expect(detail?.evolutions[0]?.current).toBe(true);
     expect(detail?.evolutions.some((node) => node.ready)).toBe(false);
