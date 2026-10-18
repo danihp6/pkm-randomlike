@@ -42,7 +42,6 @@ import { Rng } from '../engine/rng';
 import {
   MAX_MOVES,
   MAX_PARTY_SIZE,
-  experienceFraction,
   type BattleLaunch,
   type BattleOutcome,
   type BattleReturn,
@@ -74,7 +73,6 @@ import {
   isLowHp,
   statusAbbreviation,
 } from '../ui/metrics';
-import { drawGauge } from '../ui/panel';
 import {
   advanceTypewriter,
   beginTypewriter,
@@ -131,8 +129,8 @@ const MENU_W = 540;
 const MESSAGE_H = 124;
 const PANEL_W = 320;
 const PLAYER_PANEL_W = 320;
-/** Tall enough for the padded name row, the types band, the bar and the XP row. */
-const PLAYER_PANEL_H = 184;
+/** Tall enough for the padded name row, the types band and the bar; the foe's height. */
+const PLAYER_PANEL_H = 150;
 const FOE_PANEL = { w: PANEL_W, h: 150 } as const;
 /** The name row's height inside an HP panel, above the types band. */
 const PANEL_NAME_H = 32;
@@ -318,8 +316,6 @@ export class BattleScene extends Phaser.Scene {
   private displayActive!: Record<SideId, BattleFighter>;
   private displayHp!: Record<SideId, number>;
   private displayStatus!: Record<SideId, StatusId | null>;
-  /** The squad's shared XP, drawn on the player's panel as the general bar. */
-  private xp = 0;
   /** Battle-sheet frame for the enemy trainer, or null for a wild battle. */
   private trainerFrame: number | null = null;
   /** The last ball thrown, so the capture beat can reuse its icon. */
@@ -390,7 +386,6 @@ export class BattleScene extends Phaser.Scene {
   private typeBadges!: Record<SideId, Phaser.GameObjects.Image[]>;
   private typeChipBgs!: Record<SideId, Phaser.GameObjects.Rectangle[]>;
   private typeChips!: Record<SideId, Phaser.GameObjects.BitmapText[]>;
-  private xpText!: Phaser.GameObjects.BitmapText;
   private playerSprite!: Phaser.GameObjects.Sprite;
   private foeSprite!: Phaser.GameObjects.Sprite;
   private foeTrainer!: Phaser.GameObjects.Image;
@@ -552,7 +547,6 @@ export class BattleScene extends Phaser.Scene {
       player: this.displayActive.player.status,
       enemy: this.displayActive.enemy.status,
     };
-    this.xp = launch.xp;
     this.typing = beginTypewriter('');
     const settings = loadSettings();
     this.charMs = TEXT_SPEED_MS[settings.textSpeed];
@@ -730,7 +724,6 @@ export class BattleScene extends Phaser.Scene {
     this.typeBadges = { enemy: typeBadgeRow(), player: typeBadgeRow() };
     this.typeChipBgs = { enemy: typeChipBoxRow(), player: typeChipBoxRow() };
     this.typeChips = { enemy: typeChipLabelRow(), player: typeChipLabelRow() };
-    this.xpText = addFrlgText(this, 0, 0, '', { size: 16, tint: 0x3b82f6 });
 
     this.messageText = addFrlgText(this, 0, 0, '', { lineSpacing: 4 });
 
@@ -2151,24 +2144,6 @@ export class BattleScene extends Phaser.Scene {
           FRLG_HPBAR.fill.height,
         );
       }
-    }
-
-    if (side === 'player') {
-      drawGauge(
-        this.hud,
-        barX,
-        barY + 36,
-        FRLG_HPBAR.width,
-        8,
-        experienceFraction(this.xp, fighter.level),
-        0x60a5fa,
-      );
-      this.xpText
-        .setText(t('battle.xp', { xp: this.xp }))
-        .setPosition(barX, barY + 46)
-        .setVisible(true);
-    } else {
-      this.xpText.setVisible(false);
     }
 
     if (side === 'enemy') {
