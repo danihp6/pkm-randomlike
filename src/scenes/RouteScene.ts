@@ -679,6 +679,9 @@ type RouteParams = Readonly<{
   room?: RoomView;
 }>;
 
+/** How `transitionTo` places the player after the rebuild. */
+type TransitionOptions = Readonly<{ keepPosition?: boolean }>;
+
 function clampInt(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
   return Math.max(min, Math.min(max, Math.floor(value)));
@@ -5625,7 +5628,8 @@ export class RouteScene extends Phaser.Scene {
    * redraw its tiles, items and trainers and spawn the player on its entry tile.
    * The run's state already carries the new map position.
    */
-  private transitionTo(run: RunState): void {
+  private transitionTo(run: RunState, options?: TransitionOptions): void {
+    const tile = { x: this.player.x, y: this.player.y };
     this.run = run;
     this.persistRun();
     this.stopWalking();
@@ -5637,7 +5641,7 @@ export class RouteScene extends Phaser.Scene {
     this.drawItems();
     this.drawTrainers();
     this.drawShopCounter();
-    this.player = { ...this.route.entry };
+    this.player = options?.keepPosition === true ? tile : { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     const bounds = mapPixelSize(this.map, TILE_SIZE);
     this.cameras.main.setBounds(0, 0, bounds.width, bounds.height);
@@ -6384,7 +6388,7 @@ export class RouteScene extends Phaser.Scene {
           this.scene.start('RunOver', { run: this.run, won: true });
           return;
         }
-        this.transitionTo(this.run);
+        this.transitionTo(this.run, { keepPosition: true });
         return;
       }
       if (wonMiniBoss) {
