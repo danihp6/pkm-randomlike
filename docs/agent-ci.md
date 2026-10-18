@@ -124,9 +124,13 @@ Two costs, stated plainly: the range lives in repository variables, and **writin
 not in `GITHUB_TOKEN`'s permission set** (`actions/variables` answers 403, "Resource not
 accessible by integration"), so the workflow needs a PAT in the `AUTOPILOT_TOKEN` secret
 — classic with the `repo` scope, or fine-grained with `Variables: read and write` on this
-repository. Without the secret the window workflow fails with a message that says so, and
-the loop keeps behaving like the manual brake it already is. And the edges are hourly:
-the cycle boundary usually turns the brake off sooner, but the pass is the guarantee.
+repository. The PAT is exported only to the two steps that touch a variable; asking the
+driver for a cycle uses the workflow's own `GITHUB_TOKEN`, which carries `actions: write`
+(a PAT there answers 403 "Resource not accessible by personal access token", which the
+first live run measured). Without the secret the window workflow fails with a message
+that says so, and the loop keeps behaving like the manual brake it already is. And the
+edges are hourly: the cycle boundary usually turns the brake off sooner, but the pass is
+the guarantee.
 
 ## Budget
 
@@ -153,11 +157,12 @@ itself), which is cheap next to the cycle it is there to stop starting.
 - A human push to `main` while a cycle is in flight can make its final push be
   rejected; the cycle is told to bring `origin/main` into its branch before pushing.
 - `AUTOPILOT_TOKEN` is the one long-lived credential the loop needs and the only one
-  kept for the brake's sake: a PAT that may write repository variables. It is handed to
-  `agent-autopilot-window.yml` alone, which runs no agent — the secret never reaches
-  `opencode run` — and a fine-grained token with `Variables: read and write` (rather than
-  a classic `repo` one) keeps the blast radius small. Rotating it is a human's job; when
-  it expires the window workflow fails loudly at its first `gh variable set`.
+  kept for the brake's sake: a PAT that may write repository variables. It is exported
+  to the two `agent-autopilot-window.yml` steps that touch a variable and to nothing
+  else — the driver dispatch uses the workflow's own token — and a fine-grained token
+  with `Variables: read and write` (rather than a classic `repo` one) keeps the blast
+  radius small. Rotating it is a human's job; when it expires the window workflow fails
+  loudly at its first `gh variable set`.
 - The window's edges are hourly, and GitHub's cron is a request rather than a promise
   (the `*/30` schedule below fired three times in six hours overnight). The driver's gate
   is what makes that harmless: a late edge cannot start a cycle outside the range, it can
