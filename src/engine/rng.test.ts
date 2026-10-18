@@ -38,6 +38,45 @@ describe('Rng', () => {
   });
 });
 
+describe('Rng.split', () => {
+  it('gives the same sequence for the same position and salt', () => {
+    const parent = new Rng(11);
+    parent.next();
+    const first = parent.split('variant');
+    const second = parent.split('variant');
+    expect([first.next(), first.next(), first.next()]).toEqual([
+      second.next(),
+      second.next(),
+      second.next(),
+    ]);
+  });
+
+  it('gives a different sequence for a different salt', () => {
+    const parent = new Rng(11);
+    const variant = parent.split('variant');
+    const other = parent.split('other');
+    expect([variant.next(), variant.next()]).not.toEqual([other.next(), other.next()]);
+  });
+
+  it('never moves the parent: draining a sibling leaves its next draw alone', () => {
+    const parent = new Rng(7);
+    const expected = new Rng(7).next();
+    const sibling = parent.split('variant');
+    for (let i = 0; i < 100; i++) sibling.next();
+    expect(parent.next()).toBe(expected);
+  });
+
+  it('reads the position: splitting after a draw is not splitting before it', () => {
+    const before = new Rng(7).split('variant').next();
+    const after = (() => {
+      const parent = new Rng(7);
+      parent.next();
+      return parent.split('variant').next();
+    })();
+    expect(before).not.toBe(after);
+  });
+});
+
 describe('seeds', () => {
   it('derives an rng from a text seed', () => {
     const a = rngFromSeed('aula-baja');

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { getSpecies, playableSpecies } from '../../data/dex/species';
-import { LEVEL_BANDS, bossBstWindow } from '../../data/run';
+import { LEVEL_BANDS, bossBstWindow, starterCandidates } from '../../data/run';
 import { encounterTableFor } from '../routes/encounters';
-import { WILD_BANNED_TAGS, speciesPool, wildExclusions } from './pool';
+import { WILD_BANNED_TAGS, speciesPool, variantSpecies, wildExclusions } from './pool';
 import { createRunPokemon } from './progression';
 import { createRun, type RunState } from './state';
+import { Rng } from '../rng';
 
 const wildIds = (): readonly string[] => LEVEL_BANDS.flatMap((band) => speciesPool(band, 'wild'));
 const trainerIds = (): readonly string[] => LEVEL_BANDS.flatMap((band) => speciesPool(band, 'trainer'));
@@ -142,5 +143,93 @@ describe('wildExclusions', () => {
 
   it('contributes nothing for an unknown recorded id', () => {
     expect(wildExclusions(runWithCaught(['not-a-species'])).size).toBe(0);
+  });
+});
+
+/** One pool entry, the individual drawn from its family at generation (`D38`). */
+describe('variant families', () => {
+  const FAMILIES: Readonly<Record<string, readonly string[]>> = {
+    eiscue: ['eiscue', 'eiscuenoice'],
+    morpeko: ['morpeko', 'morpekohangry'],
+    minior: ['minior', 'miniormeteor'],
+  };
+  const BASES: readonly string[] = Object.keys(FAMILIES);
+  const FORMES: readonly string[] = BASES.flatMap((base) => FAMILIES[base].slice(1));
+
+  const bandFor = (bst: number) =>
+    LEVEL_BANDS.find((band) => bst >= band.bst.min && bst <= band.bst.max)!;
+
+  it('keeps each base one entry of exactly the band its bst falls in', () => {
+    for (const id of BASES) {
+      const band = bandFor(getSpecies(id)!.bst);
+      expect(speciesPool(band, 'wild'), `${id} wild`).toContain(id);
+      expect(speciesPool(band, 'trainer'), `${id} trainer`).toContain(id);
+      const rows = encounterTableFor(band).filter((entry) => entry.speciesId === id);
+      expect(rows, `${id} rows`).toHaveLength(1);
+    }
+    expect(bandFor(getSpecies('eiscue')!.bst).id).toBe('high');
+    expect(bandFor(getSpecies('morpeko')!.bst).id).toBe('mid');
+    expect(bandFor(getSpecies('minior')!.bst).id).toBe('late');
+  });
+
+  it('never lists a variant forme in any band pool', () => {
+    for (const id of FORMES) {
+      expect(wildIds(), id).not.toContain(id);
+      expect(trainerIds(), id).not.toContain(id);
+    }
+  });
+
+  it('expands a caught forme to the same family a caught base narrows', () => {
+    const excluded = wildExclusions(runWithCaught(['eiscuenoice']));
+    expect(excluded.has('eiscue')).toBe(true);
+    expect(excluded.has('eiscuenoice')).toBe(true);
+  });
+
+  it('can never be offered as a starter', () => {
+    const candidates = starterCandidates();
+    for (const id of [...BASES, ...FORMES]) expect(candidates, id).not.toContain(id);
+  });
+});
+
+describe('variantSpecies', () => {
+  const FAMILIES: Readonly<Record<string, readonly string[]>> = {
+    eiscue: ['eiscue', 'eiscuenoice'],
+    morpeko: ['morpeko', 'morpekohangry'],
+    minior: ['minior', 'miniormeteor'],
+  };
+
+  it('draws one of the species own variant formes, and only those', () => {
+    for (const [id, family] of Object.entries(FAMILIES)) {
+      const rng = new Rng(5);
+      for (let i = 0; i < 50; i++) {
+        expect(family, id).toContain(variantSpecies(id, rng));
+      }
+    }
+    const rng = new Rng(5);
+    const seen = new Set<string>();
+    for (let i = 0; i < 50; i++) seen.add(variantSpecies('eiscue', rng));
+    expect(seen).toEqual(new Set(['eiscue', 'eiscuenoice']));
+  });
+
+  it('is a pure function of the species and the stream position', () => {
+    const draw = (): readonly string[] => {
+      const rng = new Rng(99);
+      return Array.from({ length: 20 }, () => variantSpecies('eiscue', rng));
+    };
+    expect(draw()).toEqual(draw());
+  });
+
+  it('consumes exactly one draw for a variant species', () => {
+    const rng = new Rng(5);
+    variantSpecies('eiscue', rng);
+    const control = new Rng(5);
+    control.next();
+    expect(rng.next()).toBe(control.next());
+  });
+
+  it('consumes none for any other species', () => {
+    const rng = new Rng(5);
+    expect(variantSpecies('pikachu', rng)).toBe('pikachu');
+    expect(rng.next()).toBe(new Rng(5).next());
   });
 });

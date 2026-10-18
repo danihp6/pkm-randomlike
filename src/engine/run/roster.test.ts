@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { megaFormsForBase } from '../../data/dex/megas';
-import { getSpecies } from '../../data/dex/species';
+import { getSpecies, normalizeId } from '../../data/dex/species';
 import { LEVEL_BANDS } from '../../data/run';
 import { Rng } from '../rng';
 import { speciesPool } from './pool';
@@ -115,6 +115,55 @@ describe('trainerRoster Mega Stones', () => {
     const held = pick();
     expect(held).toEqual(pick());
     expect(held.length).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('trainerRoster variant roll (fixed seed)', () => {
+  const band = LEVEL_BANDS[2];
+  const FAMILIES: Readonly<Record<string, readonly string[]>> = {
+    eiscue: ['eiscue', 'eiscuenoice'],
+    morpeko: ['morpeko', 'morpekohangry'],
+    minior: ['minior', 'miniormeteor'],
+  };
+
+  it('draws the band exactly as before, its individuals being variant formes', () => {
+    const roster = trainerRoster(band, new Rng(6), 't1', { count: 10 });
+    expect(roster).toEqual(trainerRoster(band, new Rng(6), 't1', { count: 10 }));
+
+    const pool = speciesPool(band, 'trainer');
+    const control = new Rng(6);
+    const remaining = [...pool];
+    let flipped = 0;
+    for (const entry of roster) {
+      const picked = remaining.splice(control.int(0, remaining.length - 1), 1)[0];
+      expect(entry.level, entry.id).toBe(control.int(band.minLevel, band.maxLevel));
+      const family = FAMILIES[picked];
+      if (family === undefined) {
+        expect(entry.speciesId, entry.id).toBe(picked);
+      } else {
+        expect(family, entry.id).toContain(entry.speciesId);
+        if (entry.speciesId !== picked) flipped += 1;
+      }
+    }
+    expect(flipped).toBeGreaterThan(0);
+    expect(roster.map((entry) => entry.speciesId)).toContain('morpekohangry');
+  });
+
+  it('leaves every entry a member of the band pool or the forme of one', () => {
+    const pool = speciesPool(band, 'trainer');
+    const roster = trainerRoster(band, new Rng(6), 't1', { count: 10 });
+    for (const entry of roster) {
+      const base = getSpecies(entry.speciesId)!.battleOnly;
+      const inPool = typeof base === 'string' ? normalizeId(base) : entry.speciesId;
+      expect(pool, entry.id).toContain(inPool);
+    }
+  });
+
+  it('still hands out at most one Mega Stone with the roll in place', () => {
+    const roster = trainerRoster(band, new Rng(6), 'boss', { count: 10, allowMega: true });
+    const held = roster.filter((entry) => entry.heldItem !== undefined);
+    expect(held.length).toBeLessThanOrEqual(1);
+    expect(roster).toEqual(trainerRoster(band, new Rng(6), 'boss', { count: 10, allowMega: true }));
   });
 });
 
