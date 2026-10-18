@@ -8,9 +8,9 @@ import { normalizeEffectId, registeredEffects } from './effects/registry';
  * engine does not model — they are absent from the effect registry today, so
  * this list is a guard for the day one is ported. Downside abilities (Truant,
  * Slow Start, Stall, Klutz, Moody, Normalize...) are deliberately **kept**: a
- * worse ability is part of the random run, and the ones that would be dead on an
- * arbitrary species are implemented generically instead (Zero to Hero, Schooling,
- * Zen Mode, Wonder Guard — see `effects/abilities.ts`).
+ * worse ability is part of the random run, and the one that would be dead on an
+ * arbitrary species is implemented generically instead (Wonder Guard — see
+ * `effects/abilities.ts`).
  */
 const BANNED: ReadonlySet<string> = new Set([
   'powerconstruct',

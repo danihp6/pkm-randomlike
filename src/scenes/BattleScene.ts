@@ -1447,9 +1447,6 @@ export class BattleScene extends Phaser.Scene {
       // A G-Max forme the species may take needs its sheet up front the same way.
       const gmax = gmaxFormForBase(fighter.speciesId);
       if (gmax) add(gmax.id, fighter.shiny, female, kind);
-      // Zero to Hero swaps to Palafin-Hero when it leaves the field, so that
-      // sheet must be loaded before the switch-in draws it.
-      if (fighter.ability === 'Zero to Hero') add('palafinhero', fighter.shiny, female, kind);
     };
     for (const fighter of this.playerFighters) addFighter(fighter, 'back');
     for (const fighter of this.enemyFighters) addFighter(fighter, 'front');

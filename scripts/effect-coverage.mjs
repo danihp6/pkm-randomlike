@@ -27,14 +27,21 @@ const abilitySources = [
 ];
 const itemsSrc = text('src/data/items.ts');
 
-const portedAbilities = new Set(
-  abilitySources.flatMap((path) =>
-    [...text(path).matchAll(/^  \['([a-z0-9]+)',/gm)].map((match) => match[1]),
-  ),
-);
+// A registry row reads either `['id', handler],` on one line or — the shape the
+// ledger reformat left five rows in — as a multi-line entry whose id sits alone
+// on the next line, so both shapes count as ported.
+const registeredIds = (source) => [
+  ...[...source.matchAll(/^  \['([a-z0-9]+)',/gm)].map((match) => match[1]),
+  ...[...source.matchAll(/^  \[\n    '([a-z0-9]+)',$/gm)].map((match) => match[1]),
+];
 
+const portedAbilities = new Set(abilitySources.flatMap((path) => registeredIds(text(path))));
+
+// The run's own catalogue, read as text. A name carrying an apostrophe is written
+// with double quotes (`King's Rock`), so both quote styles count — otherwise the
+// row reads "not in the run catalogue" while it is one.
 const catalogue = new Map();
-for (const match of itemsSrc.matchAll(/item\(\{\s*id:\s*'([^']+)',\s*name:\s*'([^']+)'/g)) {
+for (const match of itemsSrc.matchAll(/item\(\{\s*id:\s*'([^']+)',\s*name:\s*['"]([^'"]+)['"]/g)) {
   catalogue.set(norm(match[1]), match[2]);
 }
 
@@ -81,10 +88,33 @@ EXCLUDED_ABILITIES.set('toxicdebris', 'entry hazards are not modelled');
 // single battle can never honour it.
 EXCLUDED_ABILITIES.set('ballfetch', 'out of battle only');
 
+// Deleted from the engine because the mechanic became **data** (`D38`): the forme
+// each of these used to reach is now a hand-authored evolution branch, a variant
+// family drawn at generation or a hand-authored Mega. A future deletion records
+// itself here; the classification below reads this list after `portedAbilities`,
+// so a registry row that lingered would still read `port` rather than hide.
+const REMOVED_ABILITIES = new Set([
+  'battlebond',
+  'disguise',
+  'flowergift',
+  'forecast',
+  'hungerswitch',
+  'schooling',
+  'shieldsdown',
+  'stancechange',
+  'terashift',
+  'zerotohero',
+  'zenmode',
+  'zenmodegalar',
+]);
+
 const abilityRows = [...abilities]
   .sort((a, b) => a.name.localeCompare(b.name))
   .map((ability) => {
     if (portedAbilities.has(ability.id)) return [ability.name, 'port', 'ported in `effects/abilities.ts`'];
+    if (REMOVED_ABILITIES.has(ability.id)) {
+      return [ability.name, 'removed', 'forme-changing ability removed (D38)'];
+    }
     if (EXCLUDED_ABILITIES.has(ability.id)) return [ability.name, 'excluded', EXCLUDED_ABILITIES.get(ability.id)];
     return [ability.name, 'no-op', 'reachable, not ported yet'];
   });
@@ -288,6 +318,12 @@ hide during playtests.
   change), or it needs a mechanic the engine does not model (weight, entry
   hazards, forced switching, out-of-battle effects). Excluded effects are never
   a coverage gap.
+- \`removed\` — the engine no longer carries it because its mechanic became
+  **data** (\`D38\`): the forme-changing abilities whose forme is now an evolution
+  branch, a variant drawn at generation or a hand-authored Mega. The deletion is
+  the change; the row records it so the table never claims a port for code that
+  is gone. Removals are listed in \`REMOVED_ABILITIES\` in
+  \`scripts/effect-coverage.mjs\`.
 - For a move, \`port\` means a registered handler, an id the turn loop
   special-cases, or a data-driven field the engine reads; \`no-op\` means a run
   can meet the move and nothing happens.
@@ -299,7 +335,7 @@ The run only ever hands out the items in \`src/data/items.ts\`, so a dex item th
 is not in that catalogue is \`excluded\` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — ${abilityRows.length} total (${count(abilityRows, 'port')} port, ${count(abilityRows, 'no-op')} no-op, ${count(abilityRows, 'excluded')} excluded)
+## Abilities — ${abilityRows.length} total (${count(abilityRows, 'port')} port, ${count(abilityRows, 'no-op')} no-op, ${count(abilityRows, 'excluded')} excluded, ${count(abilityRows, 'removed')} removed)
 
 ${table(abilityRows)}
 

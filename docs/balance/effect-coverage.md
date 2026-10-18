@@ -20,6 +20,12 @@ hide during playtests.
   change), or it needs a mechanic the engine does not model (weight, entry
   hazards, forced switching, out-of-battle effects). Excluded effects are never
   a coverage gap.
+- `removed` — the engine no longer carries it because its mechanic became
+  **data** (`D38`): the forme-changing abilities whose forme is now an evolution
+  branch, a variant drawn at generation or a hand-authored Mega. The deletion is
+  the change; the row records it so the table never claims a port for code that
+  is gone. Removals are listed in `REMOVED_ABILITIES` in
+  `scripts/effect-coverage.mjs`.
 - For a move, `port` means a registered handler, an id the turn loop
   special-cases, or a data-driven field the engine reads; `no-op` means a run
   can meet the move and nothing happens.
@@ -31,7 +37,7 @@ The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — 311 total (273 port, 0 no-op, 38 excluded)
+## Abilities — 311 total (261 port, 0 no-op, 38 excluded, 12 removed)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -53,7 +59,7 @@ catalogue row, not engine code.
 | Ball Fetch | `excluded` | out of battle only |
 | Battery | `excluded` | doubles/ally only |
 | Battle Armor | `port` | ported in `effects/abilities.ts` |
-| Battle Bond | `port` | ported in `effects/abilities.ts` |
+| Battle Bond | `removed` | forme-changing ability removed (D38) |
 | Beads of Ruin | `port` | ported in `effects/abilities.ts` |
 | Beast Boost | `port` | ported in `effects/abilities.ts` |
 | Berserk | `port` | ported in `effects/abilities.ts` |
@@ -87,7 +93,7 @@ catalogue row, not engine code.
 | Defiant | `port` | ported in `effects/abilities.ts` |
 | Delta Stream | `excluded` | no playable species has it |
 | Desolate Land | `port` | ported in `effects/abilities.ts` |
-| Disguise | `port` | ported in `effects/abilities.ts` |
+| Disguise | `removed` | forme-changing ability removed (D38) |
 | Download | `port` | ported in `effects/abilities.ts` |
 | Dragon's Maw | `port` | ported in `effects/abilities.ts` |
 | Drizzle | `port` | ported in `effects/abilities.ts` |
@@ -108,10 +114,10 @@ catalogue row, not engine code.
 | Flame Body | `port` | ported in `effects/abilities.ts` |
 | Flare Boost | `port` | ported in `effects/abilities.ts` |
 | Flash Fire | `port` | ported in `effects/abilities.ts` |
-| Flower Gift | `port` | ported in `effects/abilities.ts` |
+| Flower Gift | `removed` | forme-changing ability removed (D38) |
 | Flower Veil | `excluded` | doubles/ally only |
 | Fluffy | `port` | ported in `effects/abilities.ts` |
-| Forecast | `port` | ported in `effects/abilities.ts` |
+| Forecast | `removed` | forme-changing ability removed (D38) |
 | Forewarn | `port` | ported in `effects/abilities.ts` |
 | Friend Guard | `excluded` | doubles/ally only |
 | Frisk | `port` | ported in `effects/abilities.ts` |
@@ -137,7 +143,7 @@ catalogue row, not engine code.
 | Honey Gather | `excluded` | out of battle only |
 | Hospitality | `excluded` | doubles/ally only |
 | Huge Power | `port` | ported in `effects/abilities.ts` |
-| Hunger Switch | `port` | ported in `effects/abilities.ts` |
+| Hunger Switch | `removed` | forme-changing ability removed (D38) |
 | Hustle | `port` | ported in `effects/abilities.ts` |
 | Hydration | `port` | ported in `effects/abilities.ts` |
 | Hyper Cutter | `port` | ported in `effects/abilities.ts` |
@@ -249,7 +255,7 @@ catalogue row, not engine code.
 | Sand Stream | `port` | ported in `effects/abilities.ts` |
 | Sand Veil | `port` | ported in `effects/abilities.ts` |
 | Sap Sipper | `port` | ported in `effects/abilities.ts` |
-| Schooling | `port` | ported in `effects/abilities.ts` |
+| Schooling | `removed` | forme-changing ability removed (D38) |
 | Scrappy | `port` | ported in `effects/abilities.ts` |
 | Screen Cleaner | `port` | ported in `effects/abilities.ts` |
 | Seed Sower | `port` | ported in `effects/abilities.ts` |
@@ -261,7 +267,7 @@ catalogue row, not engine code.
 | Sheer Force | `port` | ported in `effects/abilities.ts` |
 | Shell Armor | `port` | ported in `effects/abilities.ts` |
 | Shield Dust | `port` | ported in `effects/abilities.ts` |
-| Shields Down | `port` | ported in `effects/abilities.ts` |
+| Shields Down | `removed` | forme-changing ability removed (D38) |
 | Simple | `port` | ported in `effects/abilities.ts` |
 | Skill Link | `port` | ported in `effects/abilities.ts` |
 | Slow Start | `port` | ported in `effects/abilities.ts` |
@@ -278,7 +284,7 @@ catalogue row, not engine code.
 | Stall | `port` | ported in `effects/abilities.ts` |
 | Stalwart | `excluded` | doubles/ally only |
 | Stamina | `port` | ported in `effects/abilities.ts` |
-| Stance Change | `port` | ported in `effects/abilities.ts` |
+| Stance Change | `removed` | forme-changing ability removed (D38) |
 | Static | `port` | ported in `effects/abilities.ts` |
 | Steadfast | `port` | ported in `effects/abilities.ts` |
 | Steam Engine | `port` | ported in `effects/abilities.ts` |
@@ -306,7 +312,7 @@ catalogue row, not engine code.
 | Technician | `port` | ported in `effects/abilities.ts` |
 | Telepathy | `excluded` | doubles/ally only |
 | Tera Shell | `excluded` | Terastal mechanic (cut) |
-| Tera Shift | `port` | ported in `effects/abilities.ts` |
+| Tera Shift | `removed` | forme-changing ability removed (D38) |
 | Teraform Zero | `excluded` | Terastal mechanic (cut) |
 | Teravolt | `port` | ported in `effects/abilities.ts` |
 | Thermal Exchange | `port` | ported in `effects/abilities.ts` |
@@ -343,9 +349,9 @@ catalogue row, not engine code.
 | Wind Rider | `port` | ported in `effects/abilities.ts` |
 | Wonder Guard | `port` | ported in `effects/abilities.ts` |
 | Wonder Skin | `port` | ported in `effects/abilities.ts` |
-| Zen Mode | `port` | ported in `effects/abilities.ts` |
-| Zen Mode (Galar) | `port` | ported in `effects/abilities.ts` |
-| Zero to Hero | `port` | ported in `effects/abilities.ts` |
+| Zen Mode | `removed` | forme-changing ability removed (D38) |
+| Zen Mode (Galar) | `removed` | forme-changing ability removed (D38) |
+| Zero to Hero | `removed` | forme-changing ability removed (D38) |
 
 ## Moves — 835 total (786 port, 0 no-op, 49 excluded)
 
