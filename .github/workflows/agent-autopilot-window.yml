@@ -24,7 +24,10 @@ name: agent / autopilot window
 # repository variable is *not* in `GITHUB_TOKEN`'s permission set (`actions/variables`
 # answers 403 "Resource not accessible by integration"), so it takes a PAT in the
 # `AUTOPILOT_TOKEN` secret: classic with the `repo` scope, or fine-grained with
-# `Variables: read and write` on this repository.
+# `Variables: read and write` on this repository. The PAT is exported only to the steps
+# that touch a variable — asking the driver for a cycle uses the workflow's own
+# `GITHUB_TOKEN`, which is the one carrying `actions: write` (measured: a PAT there
+# answers 403 "Resource not accessible by personal access token").
 
 on:
   workflow_dispatch:
@@ -61,7 +64,6 @@ jobs:
     timeout-minutes: 10
     if: github.event_name != 'schedule' || vars.AUTOPILOT_UNTIL != ''
     env:
-      GH_TOKEN: ${{ secrets.AUTOPILOT_TOKEN }}
       BRAKE: ${{ vars.AUTOPILOT }}
       WINDOW_FROM: ${{ vars.AUTOPILOT_FROM }}
       WINDOW_UNTIL: ${{ vars.AUTOPILOT_UNTIL }}
@@ -69,6 +71,8 @@ jobs:
       FROM_INPUT: ${{ inputs.from }}
     steps:
       - name: Is the token there?
+        env:
+          GH_TOKEN: ${{ secrets.AUTOPILOT_TOKEN }}
         run: |
           # The one failure a human has to fix, so it names the fix instead of leaking
           # a 403 out of `gh`.
@@ -80,6 +84,11 @@ jobs:
       - name: Arm the range
         id: arm
         if: github.event_name == 'workflow_dispatch'
+        env:
+          # The PAT is scoped to the steps that touch a variable, and to nothing else:
+          # the driver dispatch below uses the workflow's own token, which is the one
+          # that carries `actions: write`.
+          GH_TOKEN: ${{ secrets.AUTOPILOT_TOKEN }}
         run: |
           # The range is written first and the brake second: a pass that dies in between
           # leaves a range whose brake the hourly pass then agrees with, never a brake
@@ -159,10 +168,15 @@ jobs:
 
       - name: Dispatch a driver for the range that is already open
         if: github.event_name == 'workflow_dispatch' && steps.arm.outputs.armed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run agent-autopilot.yml --ref main
 
       - name: The hourly edge
+        id: edge
         if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.AUTOPILOT_TOKEN }}
         run: |
           set -euo pipefail
           put() {
@@ -208,10 +222,9 @@ jobs:
 
           # A range that opens with the loop parked has no cycle in flight to hand the
           # baton, and the driver's schedule fires far less often than it asks to, so
-          # the pass that arms the brake starts the chain itself.
-          if [ "$opened" = true ]; then
-            gh workflow run agent-autopilot.yml --ref main
-          fi
+          # the pass that arms the brake asks for a driver itself (the next step, with
+          # the workflow's own token).
+          echo "opened=$opened" >> "$GITHUB_OUTPUT"
 
           {
             echo "# 🕒 The hourly window pass"
@@ -223,3 +236,9 @@ jobs:
             echo "| Range | \`${WINDOW_FROM:-—}\` → \`${WINDOW_UNTIL:-—}\` |"
             echo "| Brake | \`${BRAKE:-unset}\` → \`$(gh api "repos/$GH_REPO/actions/variables/AUTOPILOT" --jq .value 2>/dev/null || echo '?')\` |"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Dispatch a driver when the range has just opened
+        if: github.event_name == 'schedule' && steps.edge.outputs.opened == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run agent-autopilot.yml --ref main

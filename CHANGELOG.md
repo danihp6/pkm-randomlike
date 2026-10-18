@@ -37,9 +37,12 @@ file is the human-readable summary.
       branch of both shell snippets — the arm's four states, the hourly pass's five, and the gate's five —
       was driven against a stubbed `gh` in Git Bash over the strings pulled from the YAML itself, and two
       real defects fell out of it: an arm that flipped the brake `off` for a pending range but never `on`
-      for an open one, and a spent range that was never cleared. Both were fixed before commit; no run has
-      happened on GitHub yet, so the first dispatch is the real proof. No game code, no data table and no
-      run field: the chain stays **14 → 15 → 16 → 17 → 18**.
+      for an open one, and a spent range that was never cleared. Both were fixed before commit. The first
+      live run then caught a third: the PAT sat in the `GH_TOKEN` of every step, so the driver dispatch
+      went out as the PAT and came back **403 "Resource not accessible by personal access token"** — the
+      PAT now reaches only the two steps that touch a variable, and the dispatch carries the workflow's own
+      `GITHUB_TOKEN` with `actions: write`. No game code, no data table and no run field: the chain stays
+      **14 → 15 → 16 → 17 → 18**.
 
 - [x] **A move crossed on a level-up waits in the learnset and is never equipped for you.** Reported in
       play ("al subir nivel y aprender ataque no se debe equipar en los 4 actuales debe quedarse en
