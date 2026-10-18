@@ -1193,7 +1193,44 @@ its place in the sequence and is never reused. What follows is the cut's own rec
   keeps the ledger from growing in the meantime, so nothing after it can un-format
   what it cleared or re-add a line. Re-planned from the ledger as it stands then.
 
-### Batch 12 — a hit's sound, a cry (added after the audio pass)
+### Batch 12 — a hit's sound, a cry *(shipped, archived)*
+Task-30 merged alone behind the green gate (`task-30`; **1639** tests across 137 files,
+`npm test` + `npm run build` green on the merge commit `0c2f5248`) and the detail is in
+`CHANGELOG.md`'s `## Unreleased`; QA validated it in the single pass a one-task batch
+collapses to — the task's plan, both gates, the cross-task audit and the merge rehearsal on
+one tree — with every `[unit]` criterion green and both measurable `[live]` criteria
+**measured** on a dev server over CDP (the vocabulary boots whole: 525 loaded keys against
+525 table ids, 0 failed files; a wild encounter plays `cry-pikachu` exactly once; a turn
+plays the move's own cue or `hit`); the third `[live]` criterion is a **listening**
+judgement this runner cannot make, so it went to an `agent-review` issue and did not block
+the merge. **What shipped, and the counts the cut got wrong.** The vocabulary grows from six
+cues to **525** — the six that ship (byte-identical), the shared `hit`, **130** `move-*`
+(one per `SE_M_*` MIDI) and **388** `cry-*` (one per cry sample) — committed as **519 new**
+`src/assets/audio/*.wav` (13.1 MiB; the audio tree is 20.1 MiB) through the two existing
+scripts, which now take their source, renderer and intermediate directories as **absolute**
+paths through argv/env. Two **generated** tables drive it: `cries.json` **455** rows (every
+species with `num ≤ 386`, resolved **by name**, not by `cry_tables.inc`'s row order — that
+table is indexed by the game's *internal* species number, so a row-index mapping would be
+wrong for every Gen 3 species) and `moveSounds.json` **295** rows (parsed from
+`data/battle_anim_scripts.s`, whose per-move animation block names the cartridge's own
+sound; the three cartridge renames — `VICE_GRIP`, `FAINT_ATTACK`, `HI_JUMP_KICK` — are a
+hand-written alias table). **Two things the cut's own wording got wrong, measured and
+corrected in the spec before the pass:** the block's sound is its first `playse`-family
+command at the start of a line, `waitplaysewithpan` **included** (the numbers 297 blocks /
+295 rows only fall out that way, and `HORN_DRILL`/`SKULL_BASH` are *not* skipped), and 27
+of the 130 `se_m_*` lines **do** carry a `-V` in `midi.cfg`. The family gain moved to the
+**packer**: the cry intermediates are the decompilation's verbatim 8-bit samples and the
+move ones are stereo, so only a gain over packed mono PCM lands each family's loudest cue
+on `0.85 × 32767`. One shipped cue is digital silence — `move-dizzy-punch`, whose own MIDI
+mixes to zero at the voicegroup `midi.cfg` declares for it and which no table row
+references — and `cues.test.ts` names it in a one-entry exception list rather than
+loosening the check for the other 524. The cry plays in `BattleScene`'s entry beat, once
+per battle, at whichever appearance step runs (a wild's `foe-appear`, a trainer's
+`sendout`), so `src/scenes/RouteScene.ts` came out **unclaimed** — a cry at the hand-off
+would have been doubled by the beat over the frame the fade is already cutting to black.
+It adds no run field, so **no `SAVE_VERSION`** step — the chain stays
+**14 → 15 → 16 → 17 → 18** — and it drew no RNG. Its ID is retired: it keeps its place in
+the sequence and is never reused. What follows is the cut's own record.
 - **Task-30** Per-move hit sounds and per-species cries.
 - **Hot files:** `src/scenes/BattleScene.ts` and `RouteScene.ts` → Task-30; the packed
   `src/assets/audio/*.wav` and the two `scripts/frlg/` audio scripts → Task-30.
@@ -3076,7 +3113,7 @@ tests' fixture.
       `D10` recipe against the now-single-entry registry, and owes the fixed-seed
       regression the original text asked for.
       *Dependencies:* none. *(Batch 8)*
-- [ ] **[Task-30] A hit plays the move's sound, and an encounter the Pokémon's
+- [x] **[Task-30] A hit plays the move's sound, and an encounter the Pokémon's
       cry.** Both moments were dropped from the cue table rather than faked with one
       shared sound, because the original varies them. The material is in
       `pret/pokefirered`: `sound/songs/midi/se_m_*.mid` carries one `SE_M_*` sound per

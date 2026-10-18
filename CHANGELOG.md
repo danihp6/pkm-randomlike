@@ -8,6 +8,82 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A hit plays the move's own sound, and an encounter plays the appearing
+      Pokémon's cry.** The cue table had deliberately dropped both moments rather than
+      fake them with one shared sound — the original varies a hit by the move (`SE_M_*`,
+      one per move, in `sound/songs/midi/se_m_*.mid`) and an encounter is the species'
+      own cry — so this task grows the vocabulary from **six cues to 525** and wires the
+      two seams, exactly as the item's frozen decision says (raw `cries/<species>.wav`
+      samples, one `SE_M_*` per move, one cue id per species/move, **one** shared hit
+      cue, no `PokemonCrySong` replay and no effectiveness variants). **What ships:**
+      **519 new** `src/assets/audio/*.wav` — 13.1 MiB, taking the committed audio tree to
+      20.1 MiB — one file per cue: the six cues that already shipped (byte-identical,
+      SHA-256 pinned by a test), the shared **`hit`** (sourced from
+      `se_m_comet_punch.mid`, the impact the cartridge itself gives `TACKLE` and `SLAM`),
+      **130** `move-*` cues (one per `SE_M_*` MIDI in the decompilation, `se_m_absorb_2`
+      → `move-absorb-2`) and **388** `cry-*` cues (one per cry sample). All 130 ship even
+      though a move id currently maps to only 100 of them: the vocabulary is the family
+      and the table is a view over it. **Two generated, committed tables** drive the
+      runtime, produced by the rip step and never hand-edited: `src/data/audio/cries.json`
+      (**455** rows — every dex species with `num ≤ 386`, all of which resolve) and
+      `src/data/audio/moveSounds.json` (**295** rows), with `src/data/audio/index.ts` as
+      the typed accessor (`cryCueFor`, `moveSoundCueFor`, the two row counts). The cry
+      lookup is **by name** (`Mr. Mime` → `Cry_MrMime` → `cry-mr-mime`, a forme through
+      its `baseSpecies`, so `Raichu-Alola` gets `cry-raichu`), **not** through
+      `cry_tables.inc`'s row order: that table is indexed by the game's *internal* species
+      number (Jirachi `409`, Deoxys `410`, Chimecho `411`), which is not our national
+      `num`, so a row-index mapping would be wrong for every Gen 3 species. The move
+      lookup parses `data/battle_anim_scripts.s`, whose per-move animation block names the
+      cartridge's own sound; 297 blocks name one, and the cartridge's three renames
+      (`VICE_GRIP` → `visegrip`, `FAINT_ATTACK` → `feintattack`, `HI_JUMP_KICK` →
+      `highjumpkick`) are a hand-written alias table in the script. A move with no row
+      falls back to `hit`; a species with no cry (Gen 4 and on) is **silent** — a stand-in
+      would be a lie about an id the decompilation never carried. `src/audio/cues.ts`
+      becomes a 525-row table whose non-hand rows come from `import.meta.glob` over the
+      committed asset folder (Vite's own mechanism for "every file here"; 519 written
+      imports are not a table), with `AudioCueId` keeping its literal union via the
+      `move-${string}` / `cry-${string}` template types plus the exported `hit` id, the
+      six hand rows first and unchanged (`0.5/0.5/0.5/0.8/0.8/0.9`), `hit` and the move
+      family at **0.85** and the cries at **0.8**. The two helpers are
+      `playCry(scene, speciesId)` and `playMoveSound(scene, moveId)` in
+      `src/audio/audio.ts`, both through the shipped `audioCue` + `startSound` path so no
+      second route to `Phaser.Sound` exists, and **the scene has two call sites**:
+      `BattleScene`'s turn feed plays the move sound on every `move` event (`moveId` is on
+      the event, either side), and its entry beat plays the enemy's cry **once** per
+      battle, at whichever appearance step runs — a wild's `foe-appear`, a trainer's
+      `sendout` — for the wild's rolled species or the trainer's lead. **The batch's own
+      cut was wrong twice and the spec was corrected before the pass, with measurements:**
+      the block's sound is its first `playse`-family command at the start of a line,
+      `waitplaysewithpan` **included** (only then do 297 blocks and 295 rows fall out;
+      `HORN_DRILL` and `SKULL_BASH` are *not* skipped, their first such command is
+      `SE_M_HEADBUTT`/`SE_M_TAKE_DOWN`), and **27 of the 130** `se_m_*` lines *do* carry a
+      `-V` in `midi.cfg`, so those render at it while the other 103 use 100. The per-family
+      gain lives in the **packer**, not the renderer: the cry intermediates are the
+      decompilation's verbatim 8-bit samples and the move ones are 22050 Hz stereo, so only
+      a gain over packed mono PCM lands each family's loudest cue on `0.85 × 32767`
+      (measured: both families peak at 27852). One shipped cue is digital silence —
+      `move-dizzy-punch`, whose own MIDI mixes to zero at the voicegroup `midi.cfg`
+      declares for it, audible under 127/129 — and `cues.test.ts` names it in a one-entry
+      exception list instead of loosening the check for the other 524, since no table row
+      references it. The render script and the packer now take their source, renderer and
+      intermediate directories as **absolute** paths through argv/env (the Asset-trees
+      rule; the defaults still work locally), a missing intermediate is a hard error for
+      the new families (never a silent placeholder) and both steps are byte-reproducible —
+      re-running them leaves the tree clean. **Validated:** QA ran the task's whole plan on
+      its own integration tree and the merge rehearsal on a second one — 137 test files /
+      **1639** tests green and `npm run build` green on both, `519 A / 0 M / 0 D` under
+      `src/assets/audio`, the six pre-existing cues byte-identical, the two scripts
+      re-run byte-identical (525/525 intermediates and assets), and all three `[live]`
+      criteria attempted on a dev server over CDP with the live module read from the page:
+      the boot preloads **525** distinct keys against 525 table ids with **0** failed files
+      (9.2-9.6 s on this cold headless container — the cost of the new set, recorded
+      rather than hidden), a debug wild encounter records `cry-pikachu` **exactly once**,
+      and a resolved turn records the move's own cue or `hit` as the table says. The third
+      `[live]` criterion — whether the cry and the hit *sound* right, a listening
+      judgement — is an `agent-review` issue and did not block the merge. It adds no run
+      field, changes no rule and draws no RNG, so **no `SAVE_VERSION`** step: the chain
+      stays **14 → 15 → 16 → 17 → 18**.
+
 - [x] **`npm run lint` is `prettier --check .` with no per-file escape hatch left under
       `src/**`.** Task-01 shipped the format gate over a ledger instead of reformatting a file
       a batch-mate owned, so `.prettierignore` carried an `src/**` block of **104 individual
