@@ -23,7 +23,7 @@ named `engine/`.
 ## D3 — Dex data generated at build time from `@pkmn/dex` *(decided)*
 
 `npm run data:dex` writes `src/data/dex/*.json` (the full National Dex since
-`D40`; 1282 entries).
+`D40`; 1281 entries).
 The package is a devDependency; the game reads committed JSON. Considered:
 copies of the donor's `pokedex.json` (only 649, Gen 1–5, and its `moves.json`
 carries Mystery Dungeon numbers, not turn-based ones), and PokeAPI at runtime
@@ -114,9 +114,13 @@ Phaser imports" rule is easy to enforce and to test.
 ## D16 — Effect coverage is tracked, never implied *(decided)*
 
 Porting ~300 abilities and ~250 items is the bulk of "Gen 9 complete". Every
-effect is `port`, `no-op` or `excluded` in `docs/balance/effect-coverage.md`, and
-a dev build warns when a battle meets an unported effect. "Complete" means the
-table says so, not that the list was copied.
+effect is `port`, `no-op`, `excluded` or `removed` in
+`docs/balance/effect-coverage.md`, and a dev build warns when a battle meets an
+unported effect. `removed` records an effect the engine **deleted** because its
+mechanic became data — the forme-changing abilities (`D41`) whose formes are now
+evolution branches, variants at generation or hand-authored Megas — so a row never
+claims a port for code that is gone. "Complete" means the table says so, not that
+the list was copied.
 
 ## D17 — What randomness may touch *(decided)*
 
@@ -129,9 +133,9 @@ The random ability (`src/engine/battle/randomAbility.ts`, `randomAbility`) draws
 only from the abilities the effect registry implements (`D16`: an unported
 ability would be a dead no-op) and drops the formes it cannot model. Downside
 abilities are kept on purpose — a worse ability is part of the random run — and
-the ones that would be dead on an arbitrary species are implemented generically
-instead of excluded (Zero to Hero, Wonder Guard). **No Guard is never paired with
-an OHKO move.** An evolution **re-rolls** the ability from the new species' pool
+the one that would be dead on an arbitrary species is implemented generically
+instead of excluded (Wonder Guard). **No Guard is never paired with an
+OHKO move.** An evolution **re-rolls** the ability from the new species' pool
 under the same run seed.
 
 ## D18 — Tile size is a property of the tileset *(decided)*
@@ -584,6 +588,23 @@ member never evolves on level-up (`levelUpPokemon`) or on a catch
 status and held item and carrying the missing HP across. The graph shows the
 pre-evolutions too, so a final form still reads its line.
 
+The formes the deleted form-change abilities used to reach arrive this way too
+(`D41`, reversed), as **branches instead of a battle-time change**: one row of the
+override keyed by the species that promotes, `into` the promoted forme's own
+species id, and all of a species' rows sharing its resolved level unless a row
+carries an **authored** one — the sequential Zygarde and Terapagos stages and
+Castform's three, whose promoted forme would otherwise read the wrong band. A
+promoted forme that is stat-identical to its base is not an upgrade, so the four
+of them are authored up in `scripts/build-dex.mjs`: Castform's Sun, Rain and Snow
+forms gain 60 Sp. Atk (480) and Cherrim's Sunshine 30 Sp. Atk and 30 Sp. Def
+(510), both inside the 441-800 band. The three species whose alternate forme is no
+other species at all — **Eiscue, Morpeko and Minior** — stay **one pool entry**
+whose individual is rolled from a hand-authored **variant family**
+(`VARIANT_FORMES`) at generation, on its own sibling stream (`Rng.split`) at the
+two sites that can meet them: the wild table (`rollEncounter`) and every trainer
+roster (`trainerRoster`). One entry in the band, one forme per individual, and no
+stream that already existed moves.
+
 ## D39 — Encounter and roster pools are BST windows per floor *(decided)*
 
 The wild table and every trainer roster are **derived from the dex at runtime**,
@@ -600,7 +621,10 @@ lands in exactly one band and the union covers the whole dex.
 - **Trainers** ban nothing, so a high-BST legendary or mythical appears in the
   bands its BST falls in, whichever archetype fields it.
 - **Battle-only formes** (Gulp Missile, Hunger Switch, the Crowned/Terastal
-  formes) never appear in either pool; they only exist inside a fight.
+  formes) never appear in either pool; they only exist inside a fight. A species
+  whose alternate forme is a hand-authored **variant family** is one pool entry
+  all the same, and the roll picks which forme the individual is generated as
+  (`D38`) — the forme is reached by the roll, never by a second pool row.
 - A **boss** (map boss and mini-boss) fields the **upper half** of its band's
   window (`bossBstWindow`), one step above the floor's regular trainers.
 - Coverage is a test (`src/engine/run/pool.test.ts`): the wild union is every
@@ -612,43 +636,50 @@ lands in exactly one band and the union covers the whole dex.
 
 `build-dex.mjs` no longer keeps only the Gen 9 standard set: the playable
 `species.json` is the **whole National Dex** — every numbered species, the
-`Past` Dexit entries included — 1282 entries across all 1025 dex numbers, with
-88 Megas generated beside it. Only non-species are dropped at generation time:
+`Past` Dexit entries included — 1281 entries across all 1025 dex numbers, with
+89 Megas generated beside it. Only non-species are dropped at generation time:
 CAP/fan entries, `Custom` (MissingNo, Pokéstar), LGPE's partner starters (no
 art), the battle-only Gigantamax/Eternamax formes, and the nine `Future` formes
 whose entry names a Mega (`Mega-Z`, `M-Mega`, `F-Mega`, `Original-Mega` and the
 three Tatsugiri): a stone's target, never a grass spawn, and no fit for
 `megas.json` because three of them share a stone its one-stone guard rejects.
+**Greninja-Ash** is the one hand-authored row of `megas.json` (89th): the dex
+leaves `isMega` unset on it and marks it `battleOnly: "Greninja-Bond"` instead, so
+`isPlayable` keeps it out of `species.json` by id and the generator builds the row
+itself, stone and all.
 
 Two learnset rules keep a Dexit species playable: a species with no gen-8
 source falls back to its own newest learnset, and a forme without one inherits
 its base species'. A species that somehow ends up with no move at all falls back
 to Tackle in `defaultMoveset` (Unown keeps Hidden Power, which ships as of
-`D42`). This is what gives the generalised form-change abilities a real target:
+`D42`). This is what gives the hand-authored branches a real target (`D38`):
 forms like Wishiwashi-School, Darmanitan-Zen, Aegislash-Blade and Castform-Sunny
 now exist in the dex. It changes what the wild, the trainers, the starters and
 the battle art (`npm run data:anil`) can meet.
 
-## D41 — Form-change abilities are generalised like Zero to Hero *(decided)*
+## D41 — Form-change abilities are gone; their formes became data *(decided, reversed)*
 
-Every forme- or species-change ability a run can meet is one generic rule: **any**
-holder changes forme when the ability's own condition holds, from level 20 on,
-through `changeBattleForm`/`restoreBattleForm` (`D34`'s battle-only backup, which
-keeps the run snapshot on the base species). The set: Zero to Hero (Palafin-Hero
-on switch-out), Schooling (Wishiwashi-School above 1/4 HP), Zen Mode and **Zen
-Mode (Galar)** (Darmanitan-Zen / Galar-Zen at 1/2 HP — a synthetic dex ability,
-since `@pkmn/dex` has one entry for two formes), Shields Down (Minior's
-Meteor/Core), Tera Shift (Terastal Form on entry), Hunger Switch (the Hangry
-forme alternating every turn), Forecast (Castform follows the weather), Flower
-Gift (Cherrim's Sunshine Form in the sun), Stance Change (Blade Forme on a
-damaging move) and Disguise (the first damaging hit is absorbed and leaves the
-holder Busted).
+The twelve abilities whose whole job was to change their holder into another forme
+— **Battle Bond, Disguise, Flower Gift, Forecast, Hunger Switch, Schooling,
+Shields Down, Stance Change, Tera Shift, Zen Mode, Zen Mode (Galar)** and **Zero
+to Hero** — were **deleted** from `src/engine/battle/effects/abilities.ts` and
+from the registry, and the formes they used to reach are content now: a
+hand-authored evolution branch (`FORM_EVOLUTIONS`, `D38`), a variant family rolled
+at generation (Eiscue, Morpeko, Minior) or the hand-authored second Greninja Mega
+in `megas.json` (Greninja-Ash). Their rows in
+`docs/balance/effect-coverage.md` read **`removed`** (`D16`), so the table never
+claims a port for code that is gone, and `randomAbility`'s pool — derived from the
+registry — loses them with no code change.
 
-`changeBattleForm` **keeps the holder's ability** so the rule keeps firing (a
-Mega is the exception — its forme's ability wins). All of them are off
-`randomAbility`'s ban list, so any species may roll them. Stance Change's Shield
-revert needs King's Shield, which ships with the full move set (`D42`); Commander
-stays excluded — it is a doubles mechanic with no single-battle forme to reach.
+This **reverses** the rule as it was written: any holder used to change forme
+mid-battle from level 20 on through `changeBattleForm`/`restoreBattleForm`. A
+forme is now something a member **is**, decided when the individual is generated,
+so nothing changes shape inside a fight. `changeBattleForm` /
+`restoreBattleForm` stay — **Mega Evolution** (`D34`) and **Gigantamax** (`D44`)
+still call them — and **Ice Face** stays ported: in this tree it is a one-hit
+shield volatile, not a forme change. `TRACE_BANNED` keeps naming the twelve (a
+no-op ability is inert) and the dex's own ability slots are untouched (`D17`: a
+run re-rolls the ability anyway).
 
 ## D42 — The game ships the full move set *(decided)*
 

@@ -243,9 +243,14 @@ is the mechanic the mega-stone room's stones feed (`D34`, `docs/maps-spec.md`
   snapshot after the battle stores the base species again.
 - Evolution is not Mega Evolution: a run member's level evolution still happens
   outside battle (`docs/routes-spec.md` §5) and is unrelated to this.
-- The set is **every** dex Mega, nonstandard formes included: **88** formes in
+- The set is **every** dex Mega, nonstandard formes included: **89** formes in
   `src/data/dex/megas.json`, generated beside `species.json` (`D34`), each with
-  its own stone in `src/data/items.ts`. Gigantamax is a **separate mechanic**
+  its own stone in `src/data/items.ts`; the 89th is **hand-authored** — Greninja's
+  **Ash** forme, which `@pkmn/dex` marks `battleOnly: "Greninja-Bond"` with
+  `isMega` unset, so `scripts/build-dex.mjs` writes the row (and the
+  `Greninjite Ash` stone it needs) itself, and `isPlayable` keeps the id out of
+  `species.json`. **`Battle Bond`** was deleted (`D41`), so Ash is entered the way
+  every other forme is: from its stone. Gigantamax is a **separate mechanic**
   (`D44`, §10): no stone and no item gate at all.
 - The STATS tab lists each Mega of a species of the member's family that has one
   as an **information row** under its family graph, hanging off that species' own
