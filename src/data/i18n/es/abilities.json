@@ -95,7 +95,7 @@
     "shortDescription": "Al derrotar a un rival, los vínculos con su Entrenador se refuerzan y se convierte en Greninja Ash. Su Shuriken de Agua también se ve potenciado."
   },
   "beadsofruin": {
-    "name": "Caldero Debacle",
+    "name": "Abalorio Debacle",
     "description": "",
     "shortDescription": ""
   },
@@ -315,7 +315,7 @@
     "shortDescription": ""
   },
   "embodyaspectcornerstone": {
-    "name": "Teracambio",
+    "name": "Evocarrecuerdos",
     "description": "",
     "shortDescription": ""
   },
@@ -325,12 +325,12 @@
     "shortDescription": ""
   },
   "embodyaspectteal": {
-    "name": "Hospitalidad",
+    "name": "Evocarrecuerdos",
     "description": "",
     "shortDescription": ""
   },
   "embodyaspectwellspring": {
-    "name": "Cadena Tóxica",
+    "name": "Evocarrecuerdos",
     "description": "",
     "shortDescription": ""
   },
@@ -500,7 +500,7 @@
     "shortDescription": "Puede que encuentre Miel una vez concluido el combate."
   },
   "hospitality": {
-    "name": "Ojo Mental",
+    "name": "Hospitalidad",
     "description": "",
     "shortDescription": ""
   },
@@ -715,7 +715,7 @@
     "shortDescription": "Cambia su tipo según el campo que haya en el terreno de combate."
   },
   "mindseye": {
-    "name": "Néctar Dulce",
+    "name": "Ojo Mental",
     "description": "",
     "shortDescription": ""
   },
@@ -875,7 +875,7 @@
     "shortDescription": "Puede envenenar al mínimo contacto."
   },
   "poisonpuppeteer": {
-    "name": "Megasolar",
+    "name": "Títere Tóxico",
     "description": "",
     "shortDescription": ""
   },
@@ -1280,7 +1280,7 @@
     "shortDescription": "Su buena suerte aumenta la probabilidad de asestar golpes críticos."
   },
   "supersweetsyrup": {
-    "name": "Teraformación 0",
+    "name": "Néctar Dulce",
     "description": "",
     "shortDescription": ""
   },
@@ -1325,7 +1325,7 @@
     "shortDescription": "Contagia el envenenamiento, las quemaduras o la parálisis al Pokémon que le cause ese estado."
   },
   "tabletsofruin": {
-    "name": "Caldero Debacle",
+    "name": "Tablilla Debacle",
     "description": "",
     "shortDescription": ""
   },
@@ -1350,17 +1350,17 @@
     "shortDescription": "Elude los ataques de los aliados durante el combate."
   },
   "teraformzero": {
-    "name": "Piel Dragontina",
+    "name": "Teraformación 0",
     "description": "",
     "shortDescription": ""
   },
   "terashell": {
-    "name": "Turbotaladro",
+    "name": "Teracaparazón",
     "description": "",
     "shortDescription": ""
   },
   "terashift": {
-    "name": "Títere Tóxico",
+    "name": "Teracambio",
     "description": "",
     "shortDescription": ""
   },
@@ -1400,7 +1400,7 @@
     "shortDescription": "Aumenta la potencia de sus ataques físicos cuando está envenenado."
   },
   "toxicchain": {
-    "name": "Teracaparazón",
+    "name": "Cadena Tóxica",
     "description": "",
     "shortDescription": ""
   },
@@ -1548,5 +1548,10 @@
     "name": "Cambio Heroico",
     "description": "",
     "shortDescription": ""
+  },
+  "zenmodegalar": {
+    "name": "Modo Daruma",
+    "description": "Cambia de forma si sus PS se ven reducidos a la mitad.",
+    "shortDescription": "Cambia de forma si sus PS se ven reducidos a la mitad."
   }
 }

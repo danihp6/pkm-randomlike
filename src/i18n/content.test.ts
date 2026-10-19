@@ -16,14 +16,15 @@ import { DEFAULT_LOCALE, setLocale } from './index';
 afterEach(() => setLocale(DEFAULT_LOCALE));
 
 describe('the Spanish content table', () => {
-  it('covers every move and all but one ability', () => {
+  it('covers every move and ability', () => {
     expect(meta.moves.named).toBe(allMoves().length);
     expect(meta.moves.named).toBe(835);
-    expect(meta.abilities.named).toBe(310);
+    expect(meta.abilities.named).toBe(311);
     expect(meta.abilities.total).toBe(allAbilities().length);
-    expect(meta.moves.described).toBeGreaterThanOrEqual(748);
-    expect(meta.abilities.described).toBeGreaterThanOrEqual(267);
+    expect(meta.moves.described).toBeGreaterThanOrEqual(817);
+    expect(meta.abilities.described).toBeGreaterThanOrEqual(268);
     expect(meta.moves.missingNames).toEqual([]);
+    expect(meta.abilities.missingNames).toEqual([]);
     expect(MISSING_ES).toContain('alluringvoice');
     expect(new Set(MISSING_ES).size).toBe(MISSING_ES.length);
   });

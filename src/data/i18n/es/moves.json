@@ -96,8 +96,8 @@
   },
   "aquacutter": {
     "name": "Tajo Acuático",
-    "description": "",
-    "shortDescription": ""
+    "description": "Expele agua a presión con la que corta al objetivo como si de una hoja se tratara. Suele asestar un golpe crítico.",
+    "shortDescription": "Expele agua a presión con la que corta al objetivo como si de una hoja se tratara. Suele asestar un golpe crítico."
   },
   "aquajet": {
     "name": "Acua Jet",
@@ -111,8 +111,8 @@
   },
   "aquastep": {
     "name": "Danza Acuática",
-    "description": "",
-    "shortDescription": ""
+    "description": "Juguetea con el objetivo mientras ejecuta una elegante y fluida danza y le inflige daño. Aumenta la Velocidad del usuario.",
+    "shortDescription": "Juguetea con el objetivo mientras ejecuta una elegante y fluida danza y le inflige daño. Aumenta la Velocidad del usuario."
   },
   "aquatail": {
     "name": "Acua Cola",
@@ -121,8 +121,8 @@
   },
   "armorcannon": {
     "name": "Cañón Armadura",
-    "description": "",
-    "shortDescription": ""
+    "description": "Se deshace de su armadura y arroja las partes al objetivo cuales proyectiles ardientes. Reduce la Defensa y la Defensa Especial del usuario.",
+    "shortDescription": "Se deshace de su armadura y arroja las partes al objetivo cuales proyectiles ardientes. Reduce la Defensa y la Defensa Especial del usuario."
   },
   "armthrust": {
     "name": "Empujón",
@@ -201,8 +201,8 @@
   },
   "axekick": {
     "name": "Patada Hacha",
-    "description": "",
-    "shortDescription": ""
+    "description": "Lanza una patada al aire para, acto seguido, golpear con el talón. Si falla, se hiere a sí mismo. Puede confundir al objetivo.",
+    "shortDescription": "Lanza una patada al aire para, acto seguido, golpear con el talón. Si falla, se hiere a sí mismo. Puede confundir al objetivo."
   },
   "babydolleyes": {
     "name": "Ojitos Tiernos",
@@ -221,8 +221,8 @@
   },
   "barbbarrage": {
     "name": "Mil Púas Tóxicas",
-    "description": "",
-    "shortDescription": ""
+    "description": "Dispara un sinfín de púas tóxicas que pueden envenenar al objetivo. La potencia del movimiento se duplica si este ya está envenenado.",
+    "shortDescription": "Dispara un sinfín de púas tóxicas que pueden envenenar al objetivo. La potencia del movimiento se duplica si este ya está envenenado."
   },
   "barrage": {
     "name": "Bombardeo",
@@ -291,13 +291,13 @@
   },
   "bitterblade": {
     "name": "Espada Lamento",
-    "description": "",
-    "shortDescription": ""
+    "description": "Imbuye la punta de su espada con su desazón por el mundo y asesta una estocada llena de rencor. El usuario recupera la mitad de los PS del daño que produce.",
+    "shortDescription": "Imbuye la punta de su espada con su desazón por el mundo y asesta una estocada llena de rencor. El usuario recupera la mitad de los PS del daño que produce."
   },
   "bittermalice": {
     "name": "Rencor Reprimido",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca al objetivo sometiéndolo a su frío rencor y reduce su Ataque.",
+    "shortDescription": "Ataca al objetivo sometiéndolo a su frío rencor y reduce su Ataque."
   },
   "blastburn": {
     "name": "Anillo Ígneo",
@@ -311,8 +311,8 @@
   },
   "bleakwindstorm": {
     "name": "Vendaval Gélido",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca con un viento muy frío que estremece el cuerpo y la mente y que, además, puede reducir la Velocidad del objetivo.",
+    "shortDescription": "Ataca con un viento muy frío que estremece el cuerpo y la mente y que, además, puede reducir la Velocidad del objetivo."
   },
   "blizzard": {
     "name": "Ventisca",
@@ -326,8 +326,8 @@
   },
   "bloodmoon": {
     "name": "Luna Roja",
-    "description": "",
-    "shortDescription": ""
+    "description": "~~~~~~~~~~~~~~~",
+    "shortDescription": "~~~~~~~~~~~~~~~"
   },
   "blueflare": {
     "name": "Llama Azul",
@@ -486,8 +486,8 @@
   },
   "ceaselessedge": {
     "name": "Tajo Metralla",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca con una espada de conchas con la intención de asestar un golpe crítico y, al hacerlo, se esparcen fragmentos a modo de metralla a los pies del objetivo.",
+    "shortDescription": "Ataca con una espada de conchas con la intención de asestar un golpe crítico y, al hacerlo, se esparcen fragmentos a modo de metralla a los pies del objetivo."
   },
   "celebrate": {
     "name": "Celebración",
@@ -516,13 +516,13 @@
   },
   "chillingwater": {
     "name": "Agua Fría",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca al objetivo rociándolo con un agua gélida y desalentadora que reduce su Ataque.",
+    "shortDescription": "Ataca al objetivo rociándolo con un agua gélida y desalentadora que reduce su Ataque."
   },
   "chillyreception": {
     "name": "Fría Acogida",
-    "description": "",
-    "shortDescription": ""
+    "description": "El usuario se cambia por otro Pokémon del equipo, pero antes cuenta un chiste que tiene una acogida tan fría que hace que nieve durante cinco turnos.",
+    "shortDescription": "El usuario se cambia por otro Pokémon del equipo, pero antes cuenta un chiste que tiene una acogida tan fría que hace que nieve durante cinco turnos."
   },
   "chipaway": {
     "name": "Guardia Baja",
@@ -531,8 +531,8 @@
   },
   "chloroblast": {
     "name": "Clorofiláser",
-    "description": "",
-    "shortDescription": ""
+    "description": "El usuario concentra clorofila y la dispara en forma de rayo, pero también se hiere a sí mismo.",
+    "shortDescription": "El usuario concentra clorofila y la dispara en forma de rayo, pero también se hiere a sí mismo."
   },
   "circlethrow": {
     "name": "Llave Giro",
@@ -576,8 +576,8 @@
   },
   "collisioncourse": {
     "name": "Nitrochoque",
-    "description": "",
-    "shortDescription": ""
+    "description": "El usuario choca contra el suelo mientras se transforma y provoca una explosión primigenia. La potencia del movimiento aumenta si el ataque es supereficaz.",
+    "shortDescription": "El usuario choca contra el suelo mientras se transforma y provoca una explosión primigenia. La potencia del movimiento aumenta si el ataque es supereficaz."
   },
   "cometpunch": {
     "name": "Puño Cometa",
@@ -586,8 +586,8 @@
   },
   "comeuppance": {
     "name": "Resarcimiento",
-    "description": "",
-    "shortDescription": ""
+    "description": "Devuelve al rival el último ataque recibido, pero con mucha más fuerza.",
+    "shortDescription": "Devuelve al rival el último ataque recibido, pero con mucha más fuerza."
   },
   "confide": {
     "name": "Confidencia",
@@ -761,8 +761,8 @@
   },
   "direclaw": {
     "name": "Garra Nociva",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca al punto débil del objetivo con unas garras letales que pueden envenenarlo, paralizarlo o dormirlo.",
+    "shortDescription": "Ataca al punto débil del objetivo con unas garras letales que pueden envenenarlo, paralizarlo o dormirlo."
   },
   "disable": {
     "name": "Anulación",
@@ -791,8 +791,8 @@
   },
   "doodle": {
     "name": "Decalcomanía",
-    "description": "",
-    "shortDescription": ""
+    "description": "Calca la esencia misma del objetivo para atribuir su habilidad a sí mismo y a sus aliados.",
+    "shortDescription": "Calca la esencia misma del objetivo para atribuir su habilidad a sí mismo y a sus aliados."
   },
   "doomdesire": {
     "name": "Deseo Oculto",
@@ -821,8 +821,8 @@
   },
   "doubleshock": {
     "name": "Electropalmas",
-    "description": "",
-    "shortDescription": ""
+    "description": "Libera toda la electricidad de su cuerpo para lanzar un ataque devastador. Tras ejecutar el movimiento, el usuario deja de ser de tipo Eléctrico.",
+    "shortDescription": "Libera toda la electricidad de su cuerpo para lanzar un ataque devastador. Tras ejecutar el movimiento, el usuario deja de ser de tipo Eléctrico."
   },
   "doubleslap": {
     "name": "Doble Bofetón",
@@ -996,8 +996,8 @@
   },
   "electrodrift": {
     "name": "Electroderrape",
-    "description": "",
-    "shortDescription": ""
+    "description": "Se abalanza sobre el objetivo mientras se transforma y lo atraviesa con electricidad futurista. La potencia del movimiento aumenta si el ataque es supereficaz.",
+    "shortDescription": "Se abalanza sobre el objetivo mientras se transforma y lo atraviesa con electricidad futurista. La potencia del movimiento aumenta si el ataque es supereficaz."
   },
   "electroshot": {
     "name": "Electrorrayo",
@@ -1051,8 +1051,8 @@
   },
   "esperwing": {
     "name": "Ala Aural",
-    "description": "",
-    "shortDescription": ""
+    "description": "Corta con unas alas imbuidas de aura. Suele asestar un golpe crítico y aumenta la Velocidad del usuario.",
+    "shortDescription": "Corta con unas alas imbuidas de aura. Suele asestar un golpe crítico y aumenta la Velocidad del usuario."
   },
   "eternabeam": {
     "name": "Rayo Infinito",
@@ -1151,8 +1151,8 @@
   },
   "filletaway": {
     "name": "Deslome",
-    "description": "",
-    "shortDescription": ""
+    "description": "Aumenta mucho el Ataque, el Ataque Especial y la Velocidad del usuario a costa de parte de sus PS.",
+    "shortDescription": "Aumenta mucho el Ataque, el Ataque Especial y la Velocidad del usuario a costa de parte de sus PS."
   },
   "finalgambit": {
     "name": "Sacrificio",
@@ -1281,8 +1281,8 @@
   },
   "flowertrick": {
     "name": "Truco Floral",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca al objetivo lanzándole un ramo de flores trucado. No falla nunca y siempre asesta un golpe crítico.",
+    "shortDescription": "Ataca al objetivo lanzándole un ramo de flores trucado. No falla nunca y siempre asesta un golpe crítico."
   },
   "fly": {
     "name": "Vuelo",
@@ -1431,8 +1431,8 @@
   },
   "gigatonhammer": {
     "name": "Martillo Colosal",
-    "description": "",
-    "shortDescription": ""
+    "description": "El usuario se ayuda de su propio peso corporal para propinar un golpe con un enorme martillo. Este movimiento no puede usarse dos veces seguidas.",
+    "shortDescription": "El usuario se ayuda de su propio peso corporal para propinar un golpe con un enorme martillo. Este movimiento no puede usarse dos veces seguidas."
   },
   "glaciallance": {
     "name": "Lanza Glacial",
@@ -1446,8 +1446,8 @@
   },
   "glaiverush": {
     "name": "Asalto Espadón",
-    "description": "",
-    "shortDescription": ""
+    "description": "Embiste de forma temeraria con todo el cuerpo. En el turno siguiente, los ataques que lance el rival no fallarán y causarán el doble de daño.",
+    "shortDescription": "Embiste de forma temeraria con todo el cuerpo. En el turno siguiente, los ataques que lance el rival no fallarán y causarán el doble de daño."
   },
   "glare": {
     "name": "Deslumbrar",
@@ -1581,8 +1581,8 @@
   },
   "headlongrush": {
     "name": "Arremetida",
-    "description": "",
-    "shortDescription": ""
+    "description": "El usuario arremete con todas sus fuerzas, pero se reducen su Defensa y su Defensa Especial.",
+    "shortDescription": "El usuario arremete con todas sus fuerzas, pero se reducen su Defensa y su Defensa Especial."
   },
   "headsmash": {
     "name": "Testarazo",
@@ -1706,8 +1706,8 @@
   },
   "hydrosteam": {
     "name": "Hidrovapor",
-    "description": "",
-    "shortDescription": ""
+    "description": "Golpea al objetivo con las extremidades, la cola o similares.",
+    "shortDescription": "Golpea al objetivo con las extremidades, la cola o similares."
   },
   "hyperbeam": {
     "name": "Hiperrayo",
@@ -1716,8 +1716,8 @@
   },
   "hyperdrill": {
     "name": "Hipertaladro",
-    "description": "",
-    "shortDescription": ""
+    "description": "El usuario hace rotar la parte puntiaguda de su cuerpo a gran velocidad para atacar al objetivo. Pasa por alto los efectos de movimientos como Protección o Detección.",
+    "shortDescription": "El usuario hace rotar la parte puntiaguda de su cuerpo a gran velocidad para atacar al objetivo. Pasa por alto los efectos de movimientos como Protección o Detección."
   },
   "hyperfang": {
     "name": "Hipercolmillo",
@@ -1781,8 +1781,8 @@
   },
   "icespinner": {
     "name": "Pirueta Helada",
-    "description": "",
-    "shortDescription": ""
+    "description": "Se recubre las extremidades con una fina capa de hielo y se abalanza sobre el objetivo girando sobre sí. Destruye el campo activo en el terreno de combate.",
+    "shortDescription": "Se recubre las extremidades con una fina capa de hielo y se abalanza sobre el objetivo girando sobre sí. Destruye el campo activo en el terreno de combate."
   },
   "iciclecrash": {
     "name": "Chuzos",
@@ -1811,8 +1811,8 @@
   },
   "infernalparade": {
     "name": "Marcha Espectral",
-    "description": "",
-    "shortDescription": ""
+    "description": "Lanza innumerables bolas de fuego al objetivo que pueden causar quemaduras. La potencia del movimiento se duplica si este ya sufre un problema de estado.",
+    "shortDescription": "Lanza innumerables bolas de fuego al objetivo que pueden causar quemaduras. La potencia del movimiento se duplica si este ya sufre un problema de estado."
   },
   "inferno": {
     "name": "Infierno",
@@ -1866,8 +1866,8 @@
   },
   "jetpunch": {
     "name": "Puño Jet",
-    "description": "",
-    "shortDescription": ""
+    "description": "Se envuelve el puño con un torrente y propina un golpe a tal velocidad que resulta casi imperceptible. Este movimiento tiene prioridad alta.",
+    "shortDescription": "Se envuelve el puño con un torrente y propina un golpe a tal velocidad que resulta casi imperceptible. Este movimiento tiene prioridad alta."
   },
   "judgment": {
     "name": "Sentencia",
@@ -1906,8 +1906,8 @@
   },
   "kowtowcleave": {
     "name": "Genufendiente",
-    "description": "",
-    "shortDescription": ""
+    "description": "Se postra en ademán de reverencia para hacer que el objetivo baje la guardia y aprovecha el descuido para atacar. No falla nunca.",
+    "shortDescription": "Se postra en ademán de reverencia para hacer que el objetivo baje la guardia y aprovecha el descuido para atacar. No falla nunca."
   },
   "landswrath": {
     "name": "Fuerza Telúrica",
@@ -1931,8 +1931,8 @@
   },
   "lastrespects": {
     "name": "Homenaje Póstumo",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca para vengar a sus compañeros caídos y aplacar su desazón. Cuantos más miembros del equipo se hayan debilitado, mayor será la potencia del movimiento.",
+    "shortDescription": "Ataca para vengar a sus compañeros caídos y aplacar su desazón. Cuantos más miembros del equipo se hayan debilitado, mayor será la potencia del movimiento."
   },
   "lavaplume": {
     "name": "Humareda",
@@ -2026,13 +2026,13 @@
   },
   "luminacrash": {
     "name": "Fotocolisión",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca proyectando una extraña luz que afecta a la mente. Reduce mucho la Defensa Especial del objetivo.",
+    "shortDescription": "Ataca proyectando una extraña luz que afecta a la mente. Reduce mucho la Defensa Especial del objetivo."
   },
   "lunarblessing": {
     "name": "Plegaria Lunar",
-    "description": "",
-    "shortDescription": ""
+    "description": "Dedica una oración a la luna creciente que restaura los PS y cura los problemas de estado del bando del usuario.",
+    "shortDescription": "Dedica una oración a la luna creciente que restaura los PS y cura los problemas de estado del bando del usuario."
   },
   "lunardance": {
     "name": "Danza Lunar",
@@ -2101,8 +2101,8 @@
   },
   "makeitrain": {
     "name": "Fiebre Dorada",
-    "description": "",
-    "shortDescription": ""
+    "description": "El usuario ataca arrojando una generosa cantidad de monedas, pero su Ataque Especial se ve reducido. Al finalizar el combate, las recupera en forma de ganancias.",
+    "shortDescription": "El usuario ataca arrojando una generosa cantidad de monedas, pero su Ataque Especial se ve reducido. Al finalizar el combate, las recupera en forma de ganancias."
   },
   "malignantchain": {
     "name": "Cadena Virulenta",
@@ -2286,13 +2286,13 @@
   },
   "mortalspin": {
     "name": "Giro Mortífero",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataque giratorio que envenena al objetivo y anula los efectos de movimientos como Atadura, Constricción y Drenadoras.",
+    "shortDescription": "Ataque giratorio que envenena al objetivo y anula los efectos de movimientos como Atadura, Constricción y Drenadoras."
   },
   "mountaingale": {
     "name": "Viento Carámbano",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca con unos carámbanos grandes como icebergs que pueden amedrentar al objetivo.",
+    "shortDescription": "Ataca con unos carámbanos grandes como icebergs que pueden amedrentar al objetivo."
   },
   "mudbomb": {
     "name": "Bomba Fango",
@@ -2331,8 +2331,8 @@
   },
   "mysticalpower": {
     "name": "Poder Místico",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca desatando un misterioso poder, que también aumenta su Ataque Especial.",
+    "shortDescription": "Ataca desatando un misterioso poder, que también aumenta su Ataque Especial."
   },
   "nastyplot": {
     "name": "Maquinación",
@@ -2426,8 +2426,8 @@
   },
   "orderup": {
     "name": "Oído Cocina",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca con porte gallardo. Si lleva un Tatsugiri en la boca, aumenta una de sus características en función de la forma de este último.",
+    "shortDescription": "Ataca con porte gallardo. Si lleva un Tatsugiri en la boca, aumenta una de sus características en función de la forma de este último."
   },
   "originpulse": {
     "name": "Pulso Primigenio",
@@ -2576,13 +2576,13 @@
   },
   "populationbomb": {
     "name": "Proliferación",
-    "description": "",
-    "shortDescription": ""
+    "description": "Los congéneres del usuario se agrupan y ejecutan un ataque conjunto que golpea al objetivo de una a diez veces seguidas.",
+    "shortDescription": "Los congéneres del usuario se agrupan y ejecutan un ataque conjunto que golpea al objetivo de una a diez veces seguidas."
   },
   "pounce": {
     "name": "Brinco",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca abalanzándose sobre el objetivo y le reduce la Velocidad.",
+    "shortDescription": "Ataca abalanzándose sobre el objetivo y le reduce la Velocidad."
   },
   "pound": {
     "name": "Destructor",
@@ -2661,8 +2661,8 @@
   },
   "psyblade": {
     "name": "Psicohojas",
-    "description": "",
-    "shortDescription": ""
+    "description": "Golpea al objetivo con las extremidades, la cola o similares.",
+    "shortDescription": "Golpea al objetivo con las extremidades, la cola o similares."
   },
   "psychic": {
     "name": "Psíquico",
@@ -2706,8 +2706,8 @@
   },
   "psyshieldbash": {
     "name": "Asalto Barrera",
-    "description": "",
-    "shortDescription": ""
+    "description": "El usuario ataca envuelto en una energía psíquica que además aumenta su Defensa.",
+    "shortDescription": "El usuario ataca envuelto en una energía psíquica que además aumenta su Defensa."
   },
   "psyshock": {
     "name": "Psicocarga",
@@ -2771,8 +2771,8 @@
   },
   "ragefist": {
     "name": "Puño Furia",
-    "description": "",
-    "shortDescription": ""
+    "description": "Convierte su rabia en energía para atacar. Cuantos más golpes haya recibido el usuario, mayor será la potencia del movimiento.",
+    "shortDescription": "Convierte su rabia en energía para atacar. Cuantos más golpes haya recibido el usuario, mayor será la potencia del movimiento."
   },
   "ragepowder": {
     "name": "Polvo Ira",
@@ -2781,13 +2781,13 @@
   },
   "ragingbull": {
     "name": "Furia Taurina",
-    "description": "",
-    "shortDescription": ""
+    "description": "Embiste con tremenda fiereza. Este movimiento cambia de tipo en función de la variedad del usuario y es capaz de destruir barreras como Pantalla de Luz y Reflejo.",
+    "shortDescription": "Embiste con tremenda fiereza. Este movimiento cambia de tipo en función de la variedad del usuario y es capaz de destruir barreras como Pantalla de Luz y Reflejo."
   },
   "ragingfury": {
     "name": "Erupción de Ira",
-    "description": "",
-    "shortDescription": ""
+    "description": "El usuario ataca con unas violentas llamas de dos a tres turnos seguidos y, después, se queda confuso.",
+    "shortDescription": "El usuario ataca con unas violentas llamas de dos a tres turnos seguidos y, después, se queda confuso."
   },
   "raindance": {
     "name": "Danza Lluvia",
@@ -2876,8 +2876,8 @@
   },
   "revivalblessing": {
     "name": "Plegaria Vital",
-    "description": "",
-    "shortDescription": ""
+    "description": "Pronuncia una benévola oración que revive a un Pokémon del equipo que se haya debilitado y restaura la mitad de sus PS máximos.",
+    "shortDescription": "Pronuncia una benévola oración que revive a un Pokémon del equipo que se haya debilitado y restaura la mitad de sus PS máximos."
   },
   "risingvoltage": {
     "name": "Alto Voltaje",
@@ -2966,8 +2966,8 @@
   },
   "ruination": {
     "name": "Calamidad",
-    "description": "",
-    "shortDescription": ""
+    "description": "Provoca una catástrofe devastadora que reduce a la mitad los PS del objetivo.",
+    "shortDescription": "Provoca una catástrofe devastadora que reduce a la mitad los PS del objetivo."
   },
   "sacredfire": {
     "name": "Fuego Sagrado",
@@ -2986,8 +2986,8 @@
   },
   "saltcure": {
     "name": "Salazón",
-    "description": "",
-    "shortDescription": ""
+    "description": "Deja en salazón al objetivo, que pierde PS cada turno. Afecta especialmente a Pokémon de tipo Acero y tipo Agua.",
+    "shortDescription": "Deja en salazón al objetivo, que pierde PS cada turno. Afecta especialmente a Pokémon de tipo Acero y tipo Agua."
   },
   "sandattack": {
     "name": "Ataque Arena",
@@ -2996,8 +2996,8 @@
   },
   "sandsearstorm": {
     "name": "Simún de Arena",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca al objetivo envolviéndolo en unas arenas tórridas y un fuerte vendaval que pueden causar quemaduras.",
+    "shortDescription": "Ataca al objetivo envolviéndolo en unas arenas tórridas y un fuerte vendaval que pueden causar quemaduras."
   },
   "sandstorm": {
     "name": "Tormenta de Arena",
@@ -3116,8 +3116,8 @@
   },
   "shedtail": {
     "name": "Autotomía",
-    "description": "",
-    "shortDescription": ""
+    "description": "El usuario se cambia por otro Pokémon del equipo, pero antes utiliza parte de los PS propios para crear un sustituto para su relevo.",
+    "shortDescription": "El usuario se cambia por otro Pokémon del equipo, pero antes utiliza parte de los PS propios para crear un sustituto para su relevo."
   },
   "sheercold": {
     "name": "Frío Polar",
@@ -3141,8 +3141,8 @@
   },
   "shelter": {
     "name": "Retracción",
-    "description": "",
-    "shortDescription": ""
+    "description": "La piel del usuario se vuelve dura como un escudo de acero, lo que aumenta mucho su Defensa.",
+    "shortDescription": "La piel del usuario se vuelve dura como un escudo de acero, lo que aumenta mucho su Defensa."
   },
   "shiftgear": {
     "name": "Cambio de Marcha",
@@ -3166,8 +3166,8 @@
   },
   "silktrap": {
     "name": "Telatrampa",
-    "description": "",
-    "shortDescription": ""
+    "description": "Tiende una trampa sedosa que protege al usuario de los ataques al tiempo que reduce la Velocidad de cualquier Pokémon con el que entre en contacto.",
+    "shortDescription": "Tiende una trampa sedosa que protege al usuario de los ataques al tiempo que reduce la Velocidad de cualquier Pokémon con el que entre en contacto."
   },
   "silverwind": {
     "name": "Viento Plata",
@@ -3316,8 +3316,8 @@
   },
   "snowscape": {
     "name": "Paisaje Nevado",
-    "description": "",
-    "shortDescription": ""
+    "description": "Desata una nevada que dura cinco turnos y aumenta la Defensa de los Pokémon de tipo Hielo.",
+    "shortDescription": "Desata una nevada que dura cinco turnos y aumenta la Defensa de los Pokémon de tipo Hielo."
   },
   "soak": {
     "name": "Empapar",
@@ -3376,8 +3376,8 @@
   },
   "spicyextract": {
     "name": "Extracto Picante",
-    "description": "",
-    "shortDescription": ""
+    "description": "Libera un extracto extraordinariamente picante que aumenta mucho el Ataque del objetivo, pero también reduce mucho su Defensa.",
+    "shortDescription": "Libera un extracto extraordinariamente picante que aumenta mucho el Ataque del objetivo, pero también reduce mucho su Defensa."
   },
   "spiderweb": {
     "name": "Telaraña",
@@ -3401,8 +3401,8 @@
   },
   "spinout": {
     "name": "Quemarrueda",
-    "description": "",
-    "shortDescription": ""
+    "description": "Inflige daño al objetivo ejerciendo presión sobre sus extremidades y girando violentamente sobre sí. Reduce mucho la Velocidad del usuario.",
+    "shortDescription": "Inflige daño al objetivo ejerciendo presión sobre sus extremidades y girando violentamente sobre sí. Reduce mucho la Velocidad del usuario."
   },
   "spiritbreak": {
     "name": "Choque Anímico",
@@ -3446,8 +3446,8 @@
   },
   "springtidestorm": {
     "name": "Ciclón Primavera",
-    "description": "",
-    "shortDescription": ""
+    "description": "Desata una tormenta de amor y odio con la que envuelve y ataca al objetivo. También puede reducir su Ataque.",
+    "shortDescription": "Desata una tormenta de amor y odio con la que envuelve y ataca al objetivo. También puede reducir su Ataque."
   },
   "stealthrock": {
     "name": "Trampa Rocas",
@@ -3501,8 +3501,8 @@
   },
   "stoneaxe": {
     "name": "Hachazo Pétreo",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca con un hacha de piedra con la intención de asestar un golpe crítico y, al hacerlo, se deprenden fragmentos que rodean al objetivo.",
+    "shortDescription": "Ataca con un hacha de piedra con la intención de asestar un golpe crítico y, al hacerlo, se deprenden fragmentos que rodean al objetivo."
   },
   "stoneedge": {
     "name": "Roca Afilada",
@@ -3701,8 +3701,8 @@
   },
   "takeheart": {
     "name": "Bálsamo Osado",
-    "description": "",
-    "shortDescription": ""
+    "description": "El usuario se envalentona y se cura de los problemas de estado. Además, aumenta su Ataque Especial y su Defensa Especial.",
+    "shortDescription": "El usuario se envalentona y se cura de los problemas de estado. Además, aumenta su Ataque Especial y su Defensa Especial."
   },
   "tarshot": {
     "name": "Alquitranazo",
@@ -3751,8 +3751,8 @@
   },
   "terablast": {
     "name": "Teraexplosión",
-    "description": "",
-    "shortDescription": ""
+    "description": "Si el usuario se ha teracristalizado, ataca con la energía de su teratipo. Compara sus valores de Ataque y Ataque Especial para infligir daño con el más alto de los dos.",
+    "shortDescription": "Si el usuario se ha teracristalizado, ataca con la energía de su teratipo. Compara sus valores de Ataque y Ataque Especial para infligir daño con el más alto de los dos."
   },
   "terastarstorm": {
     "name": "Teraclúster",
@@ -3841,8 +3841,8 @@
   },
   "tidyup": {
     "name": "Limpieza General",
-    "description": "",
-    "shortDescription": ""
+    "description": "Efectúa una limpieza a fondo que anula los efectos de Púas, Trampa Rocas, Red Viscosa, Púas Tóxicas y Sustituto. Aumenta el Ataque y la Velocidad del usuario.",
+    "shortDescription": "Efectúa una limpieza a fondo que anula los efectos de Púas, Trampa Rocas, Red Viscosa, Púas Tóxicas y Sustituto. Aumenta el Ataque y la Velocidad del usuario."
   },
   "topsyturvy": {
     "name": "Reversión",
@@ -3851,8 +3851,8 @@
   },
   "torchsong": {
     "name": "Canto Ardiente",
-    "description": "",
-    "shortDescription": ""
+    "description": "Expele tórridas llamaradas como si entonara una canción y abrasa al objetivo con ellas. Aumenta el Ataque Especial del usuario.",
+    "shortDescription": "Expele tórridas llamaradas como si entonara una canción y abrasa al objetivo con ellas. Aumenta el Ataque Especial del usuario."
   },
   "torment": {
     "name": "Tormento",
@@ -3876,8 +3876,8 @@
   },
   "trailblaze": {
     "name": "Abrecaminos",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca de pronto como si saltara desde la hierba alta. El usuario se mueve con gran agilidad y aumenta su Velocidad.",
+    "shortDescription": "Ataca de pronto como si saltara desde la hierba alta. El usuario se mueve con gran agilidad y aumenta su Velocidad."
   },
   "transform": {
     "name": "Transformación",
@@ -3906,8 +3906,8 @@
   },
   "triplearrows": {
     "name": "Triple Flecha",
-    "description": "",
-    "shortDescription": ""
+    "description": "Propina un talonazo y lanza tres flechas. Suele asestar un golpe crítico y puede reducir la Defensa del objetivo o amedrentarlo.",
+    "shortDescription": "Propina un talonazo y lanza tres flechas. Suele asestar un golpe crítico y puede reducir la Defensa del objetivo o amedrentarlo."
   },
   "tripleaxel": {
     "name": "Triple Axel",
@@ -3916,8 +3916,8 @@
   },
   "tripledive": {
     "name": "Triple Inmersión",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ejecuta una inmersión triple en perfecta sincronía que golpea al objetivo con salpicaduras de agua tres veces seguidas.",
+    "shortDescription": "Ejecuta una inmersión triple en perfecta sincronía que golpea al objetivo con salpicaduras de agua tres veces seguidas."
   },
   "triplekick": {
     "name": "Triple Patada",
@@ -3936,8 +3936,8 @@
   },
   "twinbeam": {
     "name": "Láser Doble",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ataca emitiendo dos misteriosos haces lumínicos por los ojos que infligen daño dos veces seguidas.",
+    "shortDescription": "Ataca emitiendo dos misteriosos haces lumínicos por los ojos que infligen daño dos veces seguidas."
   },
   "twineedle": {
     "name": "Doble Ataque",
@@ -3986,8 +3986,8 @@
   },
   "victorydance": {
     "name": "Danza Triunfal",
-    "description": "",
-    "shortDescription": ""
+    "description": "Ejecuta una danza frenética que invoca la victoria y aumenta el Ataque, la Defensa y la Velocidad.",
+    "shortDescription": "Ejecuta una danza frenética que invoca la victoria y aumenta el Ataque, la Defensa y la Velocidad."
   },
   "vinewhip": {
     "name": "Látigo Cepa",
@@ -4056,8 +4056,8 @@
   },
   "wavecrash": {
     "name": "Envite Acuático",
-    "description": "",
-    "shortDescription": ""
+    "description": "El usuario se envuelve en agua y embiste contra el objetivo, pero también se hiere seriamente a sí mismo.",
+    "shortDescription": "El usuario se envuelve en agua y embiste contra el objetivo, pero también se hiere seriamente a sí mismo."
   },
   "weatherball": {
     "name": "Meteorobola",
@@ -4086,8 +4086,8 @@
   },
   "wildboltstorm": {
     "name": "Electormenta",
-    "description": "",
-    "shortDescription": ""
+    "description": "Invoca una tormenta eléctrica que ataca al objetivo con fuertes vientos y relámpagos y puede paralizarlo.",
+    "shortDescription": "Invoca una tormenta eléctrica que ataca al objetivo con fuertes vientos y relámpagos y puede paralizarlo."
   },
   "wildcharge": {
     "name": "Voltio Cruel",

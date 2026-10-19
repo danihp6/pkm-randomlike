@@ -2194,18 +2194,18 @@ atlas frame. What follows is the cut's own record.
   run field, so **no `SAVE_VERSION`** step. `D43` is amended for moves and abilities only:
   Pokémon species, items and biomes stay English.
 
-### Batch 23a2 - the 131 descriptions the dump does not carry
-- **Task-113** `Task-112` left 87 moves and 44 abilities with an English description because
-  PokeAPI's dump has no Spanish text for those Gen 9 rows; fill them from the game's own
-  Spanish text, never a machine translation, and empty `MISSING_ES`.
+### Batch 23a2 - the 61 descriptions the base-game dump does not carry
+- **Task-113** `Task-112` left 18 moves and 43 abilities with an English description because
+  PokeAPI's dump and the base Scarlet/Violet text have no Spanish for those DLC rows; fill them
+  from the game's own Spanish text, never a machine translation, and empty `MISSING_ES`.
 - **Hot files:** `src/data/i18n/es/moves.json`, `abilities.json` and `meta.json` →
   Task-113; `src/i18n/content.test.ts` → Task-113. It claims no scene, no UI, no
   `src/engine/**` and no packed asset.
 - **Shape:** one task, **one batch behind Task-112** and before Batch 23b. The accessors,
   the UI wiring and the English fallback already ship; this is the content half only. The
-  source is the official Spanish in-game text (the `sv-text` dump `common_esp.txt` where it
-  carries a row, else the official Spanish Pokédex copy), and the acceptance is that the four
-  `meta.json` missing lists shrink to zero and `MISSING_ES` becomes empty. No rule, RNG draw
+  source is the official Spanish in-game text (the DLC text dump where it carries a row, else
+  the official Spanish Pokédex copy), and the acceptance is that the two `meta.json`
+  `missingDescriptions` lists shrink to zero and `MISSING_ES` becomes empty. No rule, RNG draw
   or run field moves, so **no `SAVE_VERSION`** step.
 
 ### Batch 23b - the special-room layer leaves the route scene
@@ -4453,20 +4453,20 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `docs/tech-decisions.md` `D43` and `docs/data-spec.md` §1; it is **the first batch after
       Batch 23**, in **Batch 23a**, before Batch 24, because it holds the two scenes the room wave
       needs. *(Batch 23a)*
-- [ ] **[Task-113] The 131 descriptions the PokeAPI dump does not carry.**
-      **The gap.** `[Task-112]` shipped the official Spanish name of all 835 moves and 310
-      abilities and the official description of 748 moves and 267 abilities. The remaining
-      **87 moves** and **44 abilities** are Gen 9 rows whose `move_flavor_text` /
-      `ability_flavor_text` has no `es` entry in the dump, so `MISSING_ES` falls back to
-      English. Their names are already Spanish; only the descriptions are missing.
+- [ ] **[Task-113] The 61 descriptions the base-game dump does not carry.**
+      **The gap.** `[Task-112]` shipped the official Spanish name of all 835 moves and 311
+      abilities and the official description of 817 moves and 268 abilities. The remaining
+      **18 moves** and **43 abilities** are DLC rows whose `move_flavor_text` /
+      `ability_flavor_text` and base-game text dump have no `es` entry, so `MISSING_ES` falls
+      back to English. Their names are already Spanish; only the descriptions are missing.
       **Fix shape:** fill `description` and `shortDescription` in
       `src/data/i18n/es/moves.json` / `abilities.json` for exactly the ids in `MISSING_ES`,
-      from the game's own Spanish text (the `sv-text` dump's `common_esp.txt` where it carries
-      the row, else the official Spanish Pokédex copy) - **never a machine translation** -
-      regenerate `meta.json` so the four missing lists shrink to zero, and add the Gen 9
+      from the game's own Spanish text (the DLC text dump where it carries the row, else the
+      official Spanish Pokédex copy) - **never a machine translation** - regenerate
+      `meta.json` so the two `missingDescriptions` lists shrink to zero, and add the DLC
       spot-checks to `src/i18n/content.test.ts` (e.g. `alluringvoice` = `Canto Encantador`,
-      `axekick` = `Patada Hacha`, `aquacutter` = `Tajo Acuático`, `opportunist` =
-      `Oportunista`). No UI change: the accessors already read the table.
+      `dragoncheer` = `Bendición Dragón`, `malignantchain` = `Cadena Maligna`). No UI change:
+      the accessors already read the table.
       *Dependencies:* `[Task-112]` (the tables and the accessors). It claims
       `src/data/i18n/es/**` and `src/i18n/content.test.ts`; it runs **one batch behind
       Task-112**, in **Batch 23a2**, before `[Task-111]`. *(Batch 23a2)*
