@@ -221,6 +221,7 @@ import {
   FRLG_WINDOW_ALPHA,
   FRLG_WINDOW_PADDING,
   addFrlgWindow,
+  badgeInkFor,
 } from '../ui/frlg';
 import { MoveGrid, padMoveGridCells, type MoveGridCell } from '../ui/moveGrid';
 import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
@@ -3119,6 +3120,8 @@ export class RouteScene extends Phaser.Scene {
     graphics.arc(cx, cy, radius, Math.PI, Math.PI * 2, false);
     graphics.closePath();
     graphics.fillPath();
+    graphics.lineStyle(1.5, FRLG_INK, 1);
+    graphics.strokeCircle(cx, cy, radius + 1);
     graphics.lineStyle(1.5, FRLG_BADGE_INK, 1);
     graphics.strokeCircle(cx, cy, radius);
     graphics.lineBetween(cx - radius, cy, cx + radius, cy);
@@ -3167,7 +3170,9 @@ export class RouteScene extends Phaser.Scene {
         chip.label.setText('');
         return;
       }
-      chip.bg.setFillStyle(typeColor(type));
+      const colour = typeColor(type);
+      chip.bg.setFillStyle(colour);
+      chip.label.setTint(badgeInkFor(colour));
       chip.label.setText(type.toUpperCase());
     });
     this.hudDetailTabs.forEach((tab) => {

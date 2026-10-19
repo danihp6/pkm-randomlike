@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { addFrlgWindow, FRLG_BADGE_INK, FRLG_MUTED, FRLG_WINDOW_PADDING } from './frlg';
+import { addFrlgWindow, badgeInkFor, FRLG_BADGE_INK, FRLG_MUTED, FRLG_WINDOW_PADDING } from './frlg';
 import { addFrlgText, FRLG_FONT_SIZE, FRLG_INK } from './frlgFont';
 import { TYPE_ICON_W } from '../data/typeIcons';
 
@@ -125,6 +125,7 @@ export class InfoPopup {
         .setVisible(true);
       this.chipText
         .setText(chip.label)
+        .setTint(badgeInkFor(chip.color))
         .setPosition(x + pad.x + POPUP_CHIP_W / 2, iconY + chip.y + 2)
         .setVisible(true);
     } else {

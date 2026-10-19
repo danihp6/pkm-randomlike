@@ -78,6 +78,36 @@ export const FRLG_POSITIVE: number = frlgColour(TOKENS.positive);
 /** A lowered value (power, accuracy, a nature's minus). */
 export const FRLG_NEGATIVE: number = frlgColour(TOKENS.negative);
 
+const INK = frlgColour(TOKENS.ink);
+
+function channelLuminance(value: number, shift: number): number {
+  const channel = ((value >> shift) & 0xff) / 255;
+  return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+}
+
+function luminance(colour: number): number {
+  return (
+    0.2126 * channelLuminance(colour, 16) +
+    0.7152 * channelLuminance(colour, 8) +
+    0.0722 * channelLuminance(colour, 0)
+  );
+}
+
+function contrast(a: number, b: number): number {
+  const first = luminance(a);
+  const second = luminance(b);
+  const [high, low] = first >= second ? [first, second] : [second, first];
+  return (high + 0.05) / (low + 0.05);
+}
+
+/**
+ * The ink a full-colour type badge draws: the darker badge ink on the light
+ * types, the light ink on the five whose canonical colour is too dark for it.
+ */
+export function badgeInkFor(colour: number): number {
+  return contrast(INK, colour) >= contrast(FRLG_BADGE_INK, colour) ? INK : FRLG_BADGE_INK;
+}
+
 function tone(value: Readonly<{ colour: string; alpha: number }>): FrlgTone {
   return { colour: frlgColour(value.colour), alpha: value.alpha };
 }

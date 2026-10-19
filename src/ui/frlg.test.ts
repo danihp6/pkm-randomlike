@@ -4,6 +4,7 @@ import { FRLG_FOREST_PALETTE } from '../data/tilesets/palettes';
 import { FLOOR, WALL } from '../engine/map';
 import {
   FRLG_ACCENT,
+  FRLG_BADGE_INK,
   FRLG_HAIRLINE,
   FRLG_HIGHLIGHT,
   FRLG_MUTED,
@@ -20,9 +21,11 @@ import {
   FRLG_TRACK,
   FRLG_WINDOW_ALPHA,
   FRLG_WINDOW_CORNER,
+  badgeInkFor,
   frlgColour,
 } from './frlg';
 import { FRLG_INK } from './frlgFont';
+import { typeColor } from './typeColors';
 
 type Rgb = readonly [number, number, number];
 
@@ -105,7 +108,7 @@ describe('the glass card tokens', () => {
       accent: '#7dd3fc',
       badgeInk: '#10161f',
       positive: '#4ad15c',
-      negative: '#f87171',
+      negative: '#fca5a5',
       hairline: { colour: '#ffffff', alpha: 0.16 },
       highlight: { colour: '#ffffff', alpha: 0.14 },
       shadow: { colour: '#000000', alpha: 0.35 },
@@ -141,6 +144,31 @@ describe('the glass card tokens', () => {
     expect(FRLG_SELECTED_STROKE).toEqual({ colour: frlgColour(chrome.tokens.accent), alpha: 1 });
     expect(FRLG_TRACK).toEqual({ colour: WHITE, alpha: 0.12 });
     expect(frlgColour('#10161f')).toBe(0x10161f);
+  });
+});
+
+describe('the badge ink', () => {
+  it('uses the light ink on the dark canonical types and the badge ink on the rest', () => {
+    for (const type of ['fighting', 'poison', 'ghost', 'dragon', 'dark']) {
+      expect(badgeInkFor(typeColor(type)), type).toBe(FRLG_INK);
+    }
+    for (const type of [
+      'normal',
+      'fire',
+      'water',
+      'electric',
+      'grass',
+      'ice',
+      'ground',
+      'flying',
+      'psychic',
+      'bug',
+      'rock',
+      'steel',
+      'fairy',
+    ]) {
+      expect(badgeInkFor(typeColor(type)), type).toBe(FRLG_BADGE_INK);
+    }
   });
 });
 
@@ -204,8 +232,8 @@ describe('the glass card contrast pass', () => {
       const row = over(FRLG_ROW_FILL, composite);
       expect(ratio(POSITIVE, composite), `${name} @ ${alpha}`).toBeGreaterThanOrEqual(4.5);
       expect(ratio(POSITIVE, row), `${name} @ ${alpha}`).toBeGreaterThanOrEqual(4.5);
-      expect(ratio(NEGATIVE, composite), `${name} @ ${alpha}`).toBeGreaterThanOrEqual(3);
-      expect(ratio(NEGATIVE, row), `${name} @ ${alpha}`).toBeGreaterThanOrEqual(3);
+      expect(ratio(NEGATIVE, composite), `${name} @ ${alpha}`).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(NEGATIVE, row), `${name} @ ${alpha}`).toBeGreaterThanOrEqual(4.5);
     }
   });
 
