@@ -1972,6 +1972,50 @@ reused. What follows is the cut's own record.
   light-panel alternative is rejected and the task ships the `t-glass` card).
 
 ### Batch 21 — the boss win no longer moves the player
+**(shipped, archived)**: its two tasks merged in ID order behind the green gate
+(`task-61`, `task-86`; **1751** tests across **140** files, `npm test` + `npm run build`
+green after each merge — 1730 then 1751) and the detail is in `CHANGELOG.md`'s
+`## Unreleased`. QA validated each task in its own lane (both green, on tips `cee35fba`
+and `f26f5b15`) and then the combined tree at `390818e8`: the two batch gates green there,
+no path shared by the two tasks, one holder per hot file (`src/scenes/RouteScene.ts` →
+Task-61, `src/scenes/BattleScene.ts` and `src/data/dex/**` → Task-86), `src/engine/`
+still Phaser- and DOM-free, both generators idempotent, and the merge rehearsal
+**sequence-independent** (either order yields the same tree, no conflict). The
+Orchestrator **re-measured every `[live]` criterion itself** on that commit with its own
+Vite dev server and the runner's headless Chromium over CDP, reading the live scene state.
+**What shipped.** **Task-61** gives `transitionTo` an optional
+`TransitionOptions { keepPosition?: boolean }` and passes it from the boss-win branch of
+`applyBattleResult` alone — the **only** one of the five call sites that asks for it — so
+the room is still rebuilt with its portal open and the tile the fight was triggered from
+is restored instead of the door, while doors, portal steps and both dev teleports keep
+today's respawn. It reads no RNG, adds no run field and changes no rule, so no
+`SAVE_VERSION` step. **Task-86** deletes the twelve forme-changing abilities (registry,
+handlers, helpers and `randomAbility` pool — `Ice Face` stays), turns their formes into
+**data**: eighteen authored `FORM_EVOLUTIONS` rows (Palafin-Hero 48, Wishiwashi's School
+20, Cherrim's Sunshine 40, Castform's Sun/Rain/Snow 40 branched, Cramorant's two 40,
+Aegislash's Blade 55, Darumaka's and Darumaka-Galar's Zen splits 35/20, Ogerpon's three
+masks 40, Zygarde 10% → 50% → Complete 50/60 and Terapagos → Terastal → Stellar 50/60),
+an authored `+60` Sp. Atk on Castform's three promoted formes (BST 480) and `+30`/`+30` on
+Cherrim's Sunshine (BST 510), and Greninja-Ash as Greninja's **second Mega** with the
+stone `Greninjite Ash` (megas 88 → 89) — plus the seam the variant half of the decision
+needed: `VARIANT_FORMES`, `variantSpecies(speciesId, rng)` and `Rng.split(salt)`, a
+sibling stream drawn at the wild and trainer generation sites, so Eiscue, Morpeko and
+Minior stay one pool entry each and their alternate forme rolls per individual without
+moving a single existing stream. It adds no run field either, so the version chain stays
+**14 → 15 → 16 → 17 → 18**. Records the cut's own claims got wrong, written here so the
+next planning pass does not inherit them: the two-task batch's exclusive-path lists were
+incomplete — `src/data/dex/learnsets.json` is forced because `build-dex.mjs` iterates the
+**playable** set, and `src/assets/pokemon/index.json` because `index.test.ts` pins
+`files ∪ missing === playableSpecies()`; both are their generator's own output, not hand
+edits. The third Terapagos stage's real id is `terapagosstellar`, not the `terapagostellar`
+this section's own round wrote. `scripts/effect-coverage.mjs` had drifted (two regexes made
+five real multi-line ability rows read `no-op` and `King's Rock` read `excluded`) and was
+repaired inside the task's paths, with both classifications reconstructed by QA to prove no
+row moved silently. And Terapagos now **enters `starterCandidates()`** (the authored
+two-stage line gives it `evolutionDepth` 2), a real player-facing consequence the spec did
+not mention. No `agent-review` issue was needed: Task-61's `[live]` criteria are objective
+and were measured, and Task-86's are all `[unit]`, so it owes no browser pass. What follows
+is the cut's own record.
 - **Task-61** Beating the map boss keeps the player where they stand instead of warping them
   to the room's door.
 - **Hot files:** `src/scenes/RouteScene.ts` (the boss-win branch of `applyBattleResult`,
@@ -4036,7 +4080,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* none. Task-20 (The Rotom appliances as evolutions) rewrites
       `src/ui/evolutionGraph.ts` first, and Task-18 (Gigantamax) adds a row of the
       same kind in Batch 7. *(Batch 9)*
-- [ ] **[Task-61] Beating the map boss no longer teleports the player to the room's door.**
+- [x] **[Task-61] Beating the map boss no longer teleports the player to the room's door.**
       Reported in play: «al derrotar boss esta teletransportando a puerta cuando no deberia» —
       when the map boss falls the player is warped back to the boss room's entry door.
       **Reproduced, and the defect is the boss-win rebuild.** `applyBattleResult`
@@ -4618,7 +4662,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       mission table and shares no path with this task's `src/data/run.ts` and
       `docs/balance/route-curve.md`. *(Batch 36)*
 
-- [ ] **[Task-86] The forme-changing abilities are removed; their formes become forms and evolution
+- [x] **[Task-86] The forme-changing abilities are removed; their formes become forms and evolution
       lines.** The human's instruction: «elimina las habilidades de transformación de formas para pasar
       estos pokes a Formas Independientes / Evoluciones (Directas o Ramificadas)», extended with
       «Cramorant como formas, Terapagos linea evo, Ogerpon formas» and «elimina las habilidades que su

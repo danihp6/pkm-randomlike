@@ -8,6 +8,81 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A map boss's fall no longer warps the player to the room's door.** Beating the boss
+      rebuilt the room through the **room-change** path (`transitionTo`), which ends by
+      respawning the player on the room's entry tile — right for a door or a portal step,
+      wrong for a boss the player met at the room's farthest tile. `transitionTo` now takes
+      an optional `TransitionOptions { keepPosition?: boolean }` and the boss-win branch of
+      `applyBattleResult` is the **only** one of its five call sites that passes it, so the
+      room is still rebuilt — the portal's art changes, which is why the rebuild exists — and
+      the tile the fight was triggered from is restored instead of the door, while doors,
+      portal steps and both dev teleports keep today's respawn byte for byte. It reads no
+      RNG, adds no run field and changes no rule (the portal still opens when the boss falls,
+      D31), so **no `SAVE_VERSION` step** — the chain stays **14 → 15 → 16 → 17 → 18**.
+      **Measured, not assumed:** on the combined commit `390818e8` the Orchestrator drove a
+      Vite dev server and the runner's headless Chromium over CDP and read the **live scene
+      state** — the player stood on tile (15, 4) with the room's entry at (0, 10) before the
+      fatal blow and on (15, 4) after the rebuild (`sameTile` true), `bossDefeated` and
+      `portalOpen` true, the sprite re-placed exactly at `(372, 120)` = (15·24 + 12, 4·24 +
+      24), and both `teleportToRoom` and `teleportToFloor` still landing the player on the
+      new room's entry tile. Task QA reproduced the same readings independently and added the
+      two controls the recipe needs: the rebuild is real and not a no-op — six tiles on the
+      portal edge flip from wall to walkable and not one more — and the sprite is on screen
+      after it (a canvas differential of 755 changed pixels against a 737-pixel control, with
+      the camera at zoom 1.5).
+- [x] **The twelve forme-changing abilities are deleted; their formes arrive as data.**
+      `Battle Bond`, `Disguise`, `Flower Gift`, `Forecast`, `Hunger Switch`, `Schooling`,
+      `Shields Down`, `Stance Change`, `Tera Shift`, `Zen Mode`, `Zen Mode (Galar)` and
+      `Zero to Hero` leave the engine registry — handlers, registry rows and the helpers only
+      they used (`changeForm`, `revertForm`, `formReady`, `thresholdForm`, `FORM_MIN_LEVEL`)
+      with them, and the `randomAbility` pool loses exactly those twelve. **`Ice Face` stays**
+      (in this tree it only sets a shield volatile and never reaches Eiscue-Noice), and so do
+      `changeBattleForm`/`restoreBattleForm`, which Mega Evolution and Gigantamax still call;
+      `BattleScene`'s Zero-to-Hero sprite special case goes. Every forme they used to reach is
+      reachable in a run instead: the hand-authored `FORM_EVOLUTIONS` override gains
+      **eighteen rows** — Palafin-Hero (48), Wishiwashi's School (20), Cherrim's Sunshine (40),
+      Castform's Sun/Rain/Snow (40, branched, Eevee-style), Cramorant's Gulping/Gorging (40),
+      Aegislash's Blade (55), Darumaka's and Darumaka-Galar's Zen splits (35 and 20),
+      Ogerpon's three masks (40), and the two sequential lines Zygarde 10% → 50% → Complete
+      (50, 60) and Terapagos → Terastal → Stellar (50, 60), each stage `+10` and each one-way.
+      Mimikyu keeps only its standing form; Meloetta and the Ogerpon `-Tera` formes are out of
+      scope by the decision. **Castform's and Cherrim's promoted formes were stat-identical to
+      their base**, so the build now authors a real upgrade — Castform **`+60`** Sp. Atk
+      (BST 480), Cherrim **`+30`/`+30`** (BST 510) — and Greninja-Ash is not a branch at all:
+      it joins the Mega table as Greninja's **second** Mega with its own stone
+      `Greninjite Ash`, so `MEGA_STONES` and the STATS graph take it with no new code
+      (megas 88 → **89**). The Eiscue/Morpeko/Minior half of the decision needed a seam that
+      did not exist — nothing read `isCosmeticForme` — so this task adds one: the
+      hand-authored `VARIANT_FORMES` table, `variantSpecies(speciesId, rng)` (one draw per
+      appearance for a variant species, none otherwise) and `Rng.split(salt)`, a **sibling**
+      stream that reads the parent's position and never advances it, drawn at the two real
+      generation sites (`rollEncounter`'s wild table and `trainerRoster`). The three species
+      stay **one pool entry** each with their alternate forme rolled per individual; the
+      starter half of "every appearance" is vacuous by construction, because
+      `starterCandidates()` cannot offer them. **No existing stream moves:** the fixed-seed
+      regressions drive a hand-built `Rng` in today's draw order — the chance `next()`, the
+      `pickWeighted` `next()`, the level `int()`, and the roster's shrinking-pool pick plus
+      its level — and reproduce every level and species exactly. The dex regenerates to
+      `species 1281`, `megas 89`, `learnsets 1280`, the coverage table gains a fourth status
+      and reads `## Abilities — 311 total (261 port, 0 no-op, 38 excluded, 12 removed)`, and
+      **`D41` is reversed** in `docs/tech-decisions.md`. Every criterion of this task is
+      `[unit]`, so it owes no browser pass: `npm test` (140 files, **1751** tests) and
+      `npm run build` are green on the merge commit, and Task QA and Integration QA proved the
+      generators idempotent (`npm run data:dex`, `npm run docs:coverage` and the art index,
+      each run twice, leave the tree clean with byte-identical output). It adds no run field,
+      so the version chain stays **14 → 15 → 16 → 17 → 18**. Four things the cut's own wording
+      got wrong are recorded rather than hidden: the spec's exclusive-path list was incomplete
+      (`src/data/dex/learnsets.json` is forced because `build-dex.mjs` iterates the
+      **playable** set, and `src/assets/pokemon/index.json` because `index.test.ts` pins
+      `files ∪ missing === playableSpecies()` — both are their own generator's output, both
+      reproduced byte for byte); the third Terapagos stage's real id is `terapagosstellar`,
+      not the `terapagostellar` the entry froze; `scripts/effect-coverage.mjs` had drifted
+      (two regexes made five real multi-line ability rows read `no-op` and `King's Rock` read
+      `excluded`, against a committed table that read them correctly) and was repaired inside
+      the task's paths, with QA reconstructing both classifications to prove no row moved
+      silently; and Terapagos now **enters `starterCandidates()`**, because the authored
+      two-stage line gives it `evolutionDepth` 2 — a real player-facing consequence the spec
+      did not name.
 - [x] **Every panel is one dark glass card: the `t-glass` direction the human picked, with
       its own contrast pass.** The drawn chrome was light plates inked with deep black; it
       is now one **dark, translucent** card — a `#10161f` surface at **0.72** alpha, a **1px
