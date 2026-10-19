@@ -21,10 +21,7 @@ const ABILITIES: Readonly<Record<string, ContentRow>> = abilitiesEs;
 
 const ABILITY_BY_NAME = new Map(allAbilities().map((ability) => [ability.name, ability] as const));
 
-const MISSING_NAMES = new Set<string>([
-  ...meta.moves.missingNames,
-  ...meta.abilities.missingNames,
-]);
+const MISSING_NAMES = new Set<string>([...meta.moves.missingNames, ...meta.abilities.missingNames]);
 
 /** Every id the source could not translate, for the audit and the tests. */
 export const MISSING_ES: readonly string[] = [

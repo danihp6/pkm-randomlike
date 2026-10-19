@@ -218,9 +218,7 @@ describe('battle-only formes as information rows', () => {
       expect(base, gmax.id).toBeDefined();
       expect(row, gmax.id).toBeDefined();
       expect(row!.kind, gmax.id).toBe('gmax');
-      expect(row!.name, gmax.id).toBe(
-        `${formeDisplayName(gmax.name)} · ${gmax.stoneName}`,
-      );
+      expect(row!.name, gmax.id).toBe(`${formeDisplayName(gmax.name)} · ${gmax.stoneName}`);
       expect(row!.level, gmax.id).toBeNull();
       expect(row!.current, gmax.id).toBe(false);
       expect(row!.ready, gmax.id).toBe(false);

@@ -1,11 +1,4 @@
-import {
-  getMove,
-  getNature,
-  getSpecies,
-  type MoveCategory,
-  type StatId,
-  type Stats,
-} from '../data/dex';
+import { getMove, getNature, getSpecies, type MoveCategory, type StatId, type Stats } from '../data/dex';
 import { getBiome } from '../data/biomes';
 import { abilityText } from '../data/abilityText';
 import {
