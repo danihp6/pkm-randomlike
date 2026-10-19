@@ -76,14 +76,9 @@ const isMega = (entry) =>
 const isGmax = (entry) => /Gmax$/i.test(entry.name);
 
 // Rayquaza is the one Mega without a stone (it needs Dragon Ascent); the run's
-// stone mechanic still needs one, so derive a name from the base species. The
-// **trailing vowel run** is what comes off, so `Eevee` -> `Eevite` and
-// `Blastoise` -> `Blastoisite`: that is the derivation `D44` pins its G-Max
-// Stones to (`Venusaurite G`, `Pikachite G`). No Mega row but Rayquaza takes
-// this branch, and `Rayquaza` ends in a single vowel, so `megas.json` is
-// unaffected by the run.
+// stone mechanic still needs one, so derive a name from the base species.
 const megaStoneName = (entry, base) =>
-  entry.requiredItem ?? `${base.name.replace(/[aeiou]+$/i, '')}ite`;
+  entry.requiredItem ?? `${base.name.replace(/[aeiou]$/i, '')}ite`;
 
 // A Mega never changes HP: the battle keeps the holder's HP (`mega.ts` rewrites
 // the stats but restores `hp`), so a row whose HP disagrees with its base

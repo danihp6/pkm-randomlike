@@ -112,14 +112,16 @@ describe('the generated G-Max Stones (D44)', () => {
     }
   });
 
-  it('pins the worked names the trailing-vowel rule derives', () => {
+  it('pins the worked names the shipped single-vowel rule derives', () => {
     const worked: readonly (readonly [string, string, string])[] = [
       ['venusaur', 'Venusaurite G', 'venusauriteg'],
       ['charizard', 'Charizardite G', 'charizarditeg'],
-      ['blastoise', 'Blastoisite G', 'blastoisiteg'],
       ['gengar', 'Gengarite G', 'gengariteg'],
       ['pikachu', 'Pikachite G', 'pikachiteg'],
-      ['eevee', 'Eevite G', 'eeviteg'],
+      ['blastoise', 'Blastoisite G', 'blastoisiteg'],
+      ['eevee', 'Eeveite G', 'eeveiteg'],
+      ['butterfree', 'Butterfreite G', 'butterfreiteg'],
+      ['alcremie', 'Alcremiite G', 'alcremiiteg'],
     ];
     for (const [baseId, stoneName, stoneId] of worked) {
       const form = gmaxFormForBase(baseId);

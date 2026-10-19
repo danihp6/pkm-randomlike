@@ -73,7 +73,7 @@ describe('evolutionGraph', () => {
     expect(ready.every((node) => node.parent === 0 && node.level === 20)).toBe(true);
     expect(graph[9]).toMatchObject({
       id: 'eeveegmax',
-      name: 'Gigantamax Eevee · Gigantamaxes with Eevite G',
+      name: 'Gigantamax Eevee · Gigantamaxes with Eeveite G',
       kind: 'gmax',
       depth: 1,
       row: 9,
@@ -304,7 +304,7 @@ describe('battle-only formes as information rows', () => {
 });
 
 /**
- * The four G-Max rows whose `D44` copy is wider than the row the band draws, with
+ * The five G-Max rows whose `D44` copy is wider than the row the band draws, with
  * their measured width. The stone name lengthens the copy past the depth-adjusted
  * box, and for the two forme-of-a-forme rows past the scene's own 324-px
  * `setMaxWidth` as well. They are **recorded** rather than asserted away: a new
@@ -313,6 +313,7 @@ describe('battle-only formes as information rows', () => {
  * this file may make.
  */
 const OVERRUN_GMAX_ROWS: Readonly<Record<string, number>> = {
+  butterfreegmax: 291,
   corviknightgmax: 301,
   grimmsnarlgmax: 291,
   toxtricitylowkeygmax: 383,
@@ -327,7 +328,7 @@ describe('information row widths', () => {
     expect(drawnWidth('Gigantamax Corviknight · Gigantamaxes with Corviknightite G')).toBe(301);
     expect(drawnWidth('Gigantamax Charizard · Gigantamaxes with Charizardite G')).toBe(287);
     expect(drawnWidth('Gigantamax Pikachu · Gigantamaxes with Pikachite G')).toBe(258);
-    expect(drawnWidth('Gigantamax Eevee · Gigantamaxes with Eevite G')).toBe(237);
+    expect(drawnWidth('Gigantamax Eevee · Gigantamaxes with Eeveite G')).toBe(243);
   });
 
   it('rejects the longer clause: while holding overruns the depth-3 box', () => {
@@ -337,7 +338,7 @@ describe('information row widths', () => {
     expect(longer).toBeLessThan(HUD_DETAIL_EVO_MAX_WIDTH);
   });
 
-  it('fits every information row inside its own row, and records the four that cannot', () => {
+  it('fits every information row inside its own row, and records the five that cannot', () => {
     const copies = new Set<string>();
     const overruns: Record<string, number> = {};
     for (const forme of [...MEGA_FORMES, ...GMAX_FORMES]) {
