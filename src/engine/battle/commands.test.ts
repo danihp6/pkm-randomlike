@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { BARRED_HEALING_MOVES } from '../../data/noHeal';
 import { getItem } from '../../data/items';
 import { Rng } from '../rng';
-import { legalMoveIndices, selectedMove, useBagItem, validateCommand, type Command } from './commands';
+import {
+  barredMovesFor,
+  findMoveIndex,
+  legalMoveIndices,
+  selectedMove,
+  useBagItem,
+  validateCommand,
+  type Command,
+} from './commands';
 import { createFighter, type FighterInput } from './fighter';
-import { createBattle, type BattleState } from './state';
+import { activeFighter, createBattle, type BattleState } from './state';
 
 const make = (input: FighterInput) => createFighter(input);
 
@@ -79,5 +88,164 @@ describe('useBagItem', () => {
     expect(state.winner).toBe('player');
     expect(state.bag.length).toBe(0);
     expect(state.log.some((event) => event.kind === 'capture' && event.success)).toBe(true);
+  });
+});
+
+/** A battle with the room rule on or off, and an optional bag. */
+const buildRoom = (
+  playerMoves: readonly string[],
+  enemyMoves: readonly string[],
+  bag: readonly { itemId: string; count: number }[] = [],
+  noHeal = true,
+): BattleState =>
+  createBattle({
+    player: [make({ id: 'player', speciesId: 'charmander', level: 20, moves: playerMoves })],
+    enemy: [make({ id: 'enemy', speciesId: 'bulbasaur', level: 20, moves: enemyMoves })],
+    rng: new Rng(1),
+    isWild: true,
+    ...(noHeal ? { noHeal: true } : {}),
+    bag: bag.map((slot) => ({ item: getItem(slot.itemId)!, count: slot.count })),
+  });
+
+describe('move selection with a barred set', () => {
+  it('leaves every move legal when nothing is barred', () => {
+    const state = build(['synthesis', 'tackle'], ['tackle']);
+    const fighter = state.sides.player.party[0];
+    expect(legalMoveIndices(fighter)).toEqual([0, 1]);
+    expect(legalMoveIndices(fighter, new Set())).toEqual([0, 1]);
+  });
+
+  it('drops the barred moves from the legal indices', () => {
+    const state = build(['synthesis', 'tackle'], ['tackle']);
+    const fighter = state.sides.player.party[0];
+    expect(legalMoveIndices(fighter, new Set(['synthesis']))).toEqual([1]);
+  });
+
+  it('falls back to Struggle when every legal move is barred', () => {
+    const state = build(['synthesis'], ['tackle']);
+    const fighter = state.sides.player.party[0];
+    const barred = new Set(BARRED_HEALING_MOVES);
+    expect(legalMoveIndices(fighter, barred)).toEqual([]);
+    expect(selectedMove(fighter, { type: 'fight', moveIndex: 0 }, barred)?.move.id).toBe('struggle');
+  });
+
+  it('never picks a barred move, even when its slot is the one asked for', () => {
+    const state = build(['synthesis', 'tackle'], ['tackle']);
+    const fighter = state.sides.player.party[0];
+    const selected = selectedMove(fighter, { type: 'fight', moveIndex: 0 }, new Set(['synthesis']));
+    expect(selected?.move.id).not.toBe('synthesis');
+    expect(selected).toBeNull();
+  });
+});
+
+describe('a no-heal battle', () => {
+  const fight = (moveIndex = 0) => ({ type: 'fight', moveIndex }) as const;
+
+  it('starts with the room rule as its first log line', () => {
+    const state = buildRoom(['synthesis', 'tackle'], ['tackle']);
+    expect(state.noHeal).toBe(true);
+    expect(state.log[0]).toEqual({
+      kind: 'text',
+      text: 'No items or healing moves can be used in this room!',
+    });
+  });
+
+  it('leaves the flag off, and the log clear, outside the room', () => {
+    const state = buildRoom(['synthesis', 'tackle'], ['tackle'], [], false);
+    expect(state.noHeal).toBe(false);
+    expect(state.log.some((event) => event.kind === 'text')).toBe(false);
+  });
+
+  it('refuses the Bag for the player', () => {
+    const state = buildRoom(['tackle'], ['tackle'], [{ itemId: 'potion', count: 1 }]);
+    expect(validateCommand(state, 'player', { type: 'bag', itemId: 'potion' })).toBe(
+      'No items can be used in this room.',
+    );
+    // The gate is `validateCommand`, so the bag stack is never spent.
+    expect(state.bag).toHaveLength(1);
+  });
+
+  it('still refuses the enemy a Bag, unchanged', () => {
+    const state = buildRoom(['tackle'], ['tackle']);
+    expect(validateCommand(state, 'enemy', { type: 'bag', itemId: 'potion' })).toBe(
+      'Only the player has a Bag.',
+    );
+  });
+
+  it('refuses a barred move while another one is legal', () => {
+    const state = buildRoom(['synthesis', 'tackle'], ['tackle']);
+    expect(validateCommand(state, 'player', fight(0))).toBe('That move cannot be used in this room.');
+    expect(validateCommand(state, 'player', fight(1))).toBeNull();
+  });
+
+  it('refuses a barred move anywhere in the list, not just the first', () => {
+    const state = buildRoom(['recover', 'tackle'], ['tackle']);
+    expect(validateCommand(state, 'player', fight(0))).toBe('That move cannot be used in this room.');
+    state.sides.player.party[0].moves[0].moveId = 'drainpunch';
+    expect(validateCommand(state, 'player', fight(0))).toBe('That move cannot be used in this room.');
+  });
+
+  it('lets the barred move through when it is the only one left, and resolves Struggle', () => {
+    const state = buildRoom(['synthesis'], ['tackle']);
+    expect(validateCommand(state, 'player', fight(0))).toBeNull();
+    const fighter = activeFighter(state, 'player');
+    const selected = selectedMove(fighter, { type: 'fight', moveIndex: 0 }, new Set(['synthesis']));
+    expect(selected?.move.id).toBe('struggle');
+    expect(selected?.slot).toBeNull();
+  });
+
+  it('lets the barred move through when every other move is spent', () => {
+    const state = buildRoom(['synthesis', 'tackle'], ['tackle']);
+    const fighter = activeFighter(state, 'player');
+    fighter.moves[1].pp = 0;
+    expect(validateCommand(state, 'player', fight(0))).toBeNull();
+    // Nothing is legal, so the room's convention is the same as "No PP": Struggle.
+    expect(selectedMove(fighter, { type: 'fight', moveIndex: 0 }, new Set(['synthesis']))?.move.id).toBe(
+      'struggle',
+    );
+  });
+
+  it('leaves the enemy’s own healing move legal', () => {
+    const state = buildRoom(['tackle'], ['synthesis']);
+    expect(validateCommand(state, 'enemy', fight(0))).toBeNull();
+    const enemy = activeFighter(state, 'enemy');
+    expect(legalMoveIndices(enemy, barredMovesFor(state, 'enemy'))).toEqual([0]);
+    expect(
+      selectedMove(enemy, { type: 'fight', moveIndex: 0 }, barredMovesFor(state, 'enemy'))?.move.id,
+    ).toBe('synthesis');
+  });
+
+  it('bars nothing for the enemy, and nothing for the player outside the room', () => {
+    const room = buildRoom(['synthesis', 'tackle'], ['synthesis']);
+    expect(barredMovesFor(room, 'enemy').size).toBe(0);
+    expect([...barredMovesFor(room, 'player')]).toEqual([...BARRED_HEALING_MOVES]);
+
+    const open = buildRoom(['synthesis'], ['synthesis'], [], false);
+    expect(barredMovesFor(open, 'player').size).toBe(0);
+    expect(selectedMove(activeFighter(open, 'player'), fight())?.move.id).toBe('synthesis');
+  });
+
+  it('still spends a potion outside the room', () => {
+    const outside = buildRoom(['tackle'], ['tackle'], [{ itemId: 'potion', count: 1 }], false);
+    outside.sides.player.party[0].hp -= 5;
+    expect(useBagItem(outside, 'player', 'potion')).toBe(true);
+    expect(outside.bag).toHaveLength(0);
+  });
+
+  it('finds the indices a scene uses to disable the barred rows', () => {
+    const state = buildRoom(['synthesis', 'tackle'], ['tackle']);
+    const fighter = activeFighter(state, 'player');
+    const barred = barredMovesFor(state, 'player');
+    expect(findMoveIndex(fighter, 'synthesis')).toBe(0);
+    expect(legalMoveIndices(fighter, barred)).toEqual([1]);
+    expect(
+      fighter.moves.map((slot, index) => ({
+        id: slot.moveId,
+        enabled: legalMoveIndices(fighter, barred).includes(index),
+      })),
+    ).toEqual([
+      { id: 'synthesis', enabled: false },
+      { id: 'tackle', enabled: true },
+    ]);
   });
 });

@@ -1,5 +1,6 @@
 import { BIOME_ORDER, type BiomeId } from '../../data/biomes';
 import { MAP_MIN_ROOM_SIZE, mapTuning } from '../../data/maps';
+import { NO_HEAL_ROOM } from '../../data/noHeal';
 import type { Tile } from '../grid';
 import type { Rng } from '../rng';
 import { mapStreams } from './streams';
@@ -60,12 +61,15 @@ export type MapOpening = Readonly<{ edge: MapEdge; kind: MapOpeningKind }>;
  * carries only its own content, never the regular room's. One **shop** per floor,
  * a **mini-boss** leaf on a roll, a **mega-stone** leaf from map 3 on, a **casino**
  * leaf from map 2 on, a **gated** leaf (a vault sealed behind a type-gated
- * obstacle) from map 3 on and a **trade** leaf from map 3 on; the last five may
- * coincide on one floor. Every one is hung off a regular room that is neither the
- * entry nor the boss, and never farther from the entry than the boss. The trade
- * leaf rolls **last** of all, after every shipped draw.
+ * obstacle) from map 3 on, a **trade** leaf from map 3 on and a **no-heal** leaf
+ * (battles in it refuse the player's Bag and healing moves) from map 3 on; the
+ * last six may coincide on one floor. Every one is hung off a regular room that is
+ * neither the entry nor the boss, and never farther from the entry than the boss.
+ * The trade leaf rolls after every shipped draw and the no-heal leaf after it, so
+ * neither can move a floor's shop, mini-boss, mega-stone, casino or gated leaf.
  */
-export type MapRoomSpecial = 'shop' | 'mini-boss' | 'mega-stone' | 'casino' | 'gated' | 'trade';
+export type MapRoomSpecial =
+  'shop' | 'mini-boss' | 'mega-stone' | 'casino' | 'gated' | 'trade' | 'no-heal';
 
 export type MapRoom = Readonly<{
   id: number;
@@ -482,14 +486,23 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     const parents = freeParents();
     if (parents.length > 0) addSpecial('gated', parents[rng.int(0, parents.length - 1)]);
   }
-  // The trade leaf rolls last, after every shipped draw, so no floor's shop,
-  // mini-boss, mega-stone, casino, gated leaf, room id or room size moves because of
-  // it. Map 3 is the first floor whose party plausibly holds a member to spare; the
-  // room is refused on a single-member party, so earlier floors would hand the player
-  // a counter that can never answer.
+  // The trade leaf rolls after every shipped draw, so no floor's shop, mini-boss,
+  // mega-stone, casino, gated leaf, room id or room size moves because of it. Map 3
+  // is the first floor whose party plausibly holds a member to spare; the room is
+  // refused on a single-member party, so earlier floors would hand the player a
+  // counter that can never answer.
   if (index >= TRADE_FROM_MAP && rng.next() < TRADE_CHANCE) {
     const parents = freeParents();
     if (parents.length > 0) addSpecial('trade', parents[rng.int(0, parents.length - 1)]);
+  }
+  // The no-heal leaf rolls last of all, after the trade draw, so no floor's shop,
+  // mini-boss, mega-stone, casino, gated or trade leaf, room id or room size moves
+  // because of it (`docs/maps-spec.md` §7). Map 3 is the first floor whose party is
+  // expected to hold healing moves the room can refuse; 20 % keeps the floor's
+  // trainer budget green.
+  if (index >= NO_HEAL_ROOM.fromMap && rng.next() < NO_HEAL_ROOM.chance) {
+    const parents = freeParents();
+    if (parents.length > 0) addSpecial('no-heal', parents[rng.int(0, parents.length - 1)]);
   }
 
   // The entry and boss rooms are the floor's quiet leaves; both are pinned to the

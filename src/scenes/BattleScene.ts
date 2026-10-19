@@ -13,7 +13,7 @@ import {
 } from '../data/pokemonSprites';
 import { getTrainerArchetype } from '../data/trainers';
 import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
-import { legalMoveIndices, type Command } from '../engine/battle/commands';
+import { barredMovesFor, legalMoveIndices, type Command } from '../engine/battle/commands';
 import {
   createFighter,
   restoreFighter,
@@ -25,7 +25,7 @@ import { canGigantamax, revertGigantamax } from '../engine/battle/gmax';
 import { movePreview } from '../engine/battle/preview';
 import { chooseAiCommand, type AiLevel } from '../engine/battle/ai';
 import { canRun } from '../engine/battle/runAway';
-import type { BattleEvent } from '../engine/battle/state';
+import type { BagSlot, BattleEvent } from '../engine/battle/state';
 import {
   SIDE_IDS,
   activeFighter,
@@ -563,6 +563,7 @@ export class BattleScene extends Phaser.Scene {
         return item && slot.count > 0 ? [{ item, count: slot.count }] : [];
       }),
       ...(battlefield ? battlefieldSeeds(battlefield) : {}),
+      noHeal: launch.noHeal === true,
     });
 
     this.displayActive = {
@@ -1719,7 +1720,8 @@ export class BattleScene extends Phaser.Scene {
 
   private openMoves(): void {
     const player = activeFighter(this.state, 'player');
-    const legal = legalMoveIndices(player);
+    const barred = barredMovesFor(this.state, 'player');
+    const legal = legalMoveIndices(player, barred);
     this.menuItems = player.moves.map((slot, index) => {
       const move = getMove(slot.moveId);
       const name = moveName(slot.moveId);
@@ -1855,7 +1857,9 @@ export class BattleScene extends Phaser.Scene {
     this.startFeed();
   }
 
-  private usableBag() {
+  private usableBag(): BagSlot[] {
+    // The no-heal room refuses the Bag outright, so the BAG row draws disabled.
+    if (this.state.noHeal) return [];
     return this.state.bag.filter(
       (slot) =>
         slot.count > 0 &&

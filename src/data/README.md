@@ -38,6 +38,8 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   `rocket` grunt), kept outside `TRAINER_ARCHETYPES` so the route never rolls them.
 - `casino.ts` — the casino room's balance table: one spin's price per band, the
   chance a spin turns into the grunt fight and each band's weighted prize rows.
+- `noHeal.ts` — the no-heal room's table: the first floor that may hang it, the
+  chance, its trainer's archetype and the move ids the room bars for the player.
 - `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
   each band's `hiddenChance` (`docs/routes-spec.md` §2 step 4).
 - `population.ts` — the per-band **population thinning** the route generator reads

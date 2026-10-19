@@ -15,6 +15,7 @@ import {
   bossTrainerId,
   isFinalMap,
   miniBossTrainerId,
+  noHealTrainerId,
   portalEdgeFor,
   roomAcross,
   roomView,
@@ -324,5 +325,15 @@ describe('bossTrainerId', () => {
     expect(miniBossTrainerId(3)).toBe('miniboss-3');
     expect(miniBossTrainerId(3)).toBe(miniBossTrainerId(3));
     expect(miniBossTrainerId(3)).not.toBe(bossTrainerId(3));
+  });
+});
+
+describe('noHealTrainerId', () => {
+  it('is stable per map, and never the boss’s or the mini-boss’s', () => {
+    expect(noHealTrainerId(3)).toBe('noheal-3');
+    expect(noHealTrainerId(3)).toBe(noHealTrainerId(3));
+    expect(noHealTrainerId(3)).not.toBe(bossTrainerId(3));
+    expect(noHealTrainerId(3)).not.toBe(miniBossTrainerId(3));
+    expect(noHealTrainerId(4)).not.toBe(noHealTrainerId(3));
   });
 });

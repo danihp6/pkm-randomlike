@@ -73,3 +73,12 @@ export function gateLockedNotice(kind: GateKind): Notice {
 export function gateOpenedNotice(): Notice {
   return { text: t('gate.opened'), holdMs: NOTICE_HOLD_MS };
 }
+
+/**
+ * The no-heal room's own notice (`docs/maps-spec.md` §7): entering the leaf says
+ * that this room's battles refuse the player's Bag and healing moves. The rule
+ * itself lives in the battle state; this is only the line the HUD floats.
+ */
+export function noHealRoomNotice(): Notice {
+  return { text: t('notice.noHealRoom'), holdMs: NOTICE_HOLD_MS };
+}

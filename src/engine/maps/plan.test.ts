@@ -530,7 +530,10 @@ describe('special rooms', () => {
         const shipped = plan.specials
           .filter(
             (special) =>
-              special.kind !== 'casino' && special.kind !== 'gated' && special.kind !== 'trade',
+              special.kind !== 'casino' &&
+              special.kind !== 'gated' &&
+              special.kind !== 'trade' &&
+              special.kind !== 'no-heal',
           )
           .map((special) => `${special.roomId}:${special.kind}`)
           .join(',');
@@ -695,6 +698,76 @@ describe('special rooms', () => {
     'hotel:7': '-',
     'hotel:8': '-',
   };
+
+  it('hangs a no-heal leaf at most once, only from map 3 on, always below the boss', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const noHeal = plan.rooms.filter((room) => room.special === 'no-heal');
+        expect(noHeal.length, `${seed} map ${mapIndex}`).toBeLessThanOrEqual(1);
+        if (mapIndex < 3) expect(noHeal, `${seed} map ${mapIndex}`).toHaveLength(0);
+        for (const room of noHeal) {
+          expect(room.shape, `${seed} map ${mapIndex}`).toBe('dead-end');
+          expect(room.id).not.toBe(plan.entryRoom);
+          expect(room.id).not.toBe(plan.bossRoom);
+          const dist = distances(plan);
+          expect(dist[room.id], `${seed} map ${mapIndex}`).toBeLessThanOrEqual(dist[plan.bossRoom]);
+          // Its parent is a regular room that is neither the entry nor the boss.
+          const neighbours = plan.links
+            .filter(([a, b]) => a === room.id || b === room.id)
+            .map(([a, b]) => (a === room.id ? b : a));
+          expect(neighbours).toHaveLength(1);
+          expect(neighbours[0]).not.toBe(plan.entryRoom);
+          expect(neighbours[0]).not.toBe(plan.bossRoom);
+          // The plan's own list agrees with the room's field.
+          expect(plan.specials.find((special) => special.roomId === room.id)?.kind).toBe('no-heal');
+        }
+      }
+    }
+  });
+
+  it('hangs a no-heal leaf about a fifth of the time from map 3 on', () => {
+    let noHeal = 0;
+    const total = 400;
+    for (let i = 0; i < total; i++) {
+      if (specialRoom(planMap(`noheal-odds-${i}`, 5), 'no-heal') !== undefined) noHeal++;
+    }
+    expect(noHeal).toBeGreaterThan(total * 0.1);
+    expect(noHeal).toBeLessThan(total * 0.3);
+    // Maps 1-2 never hang one, whatever the seed.
+    for (let i = 0; i < 100; i++) {
+      expect(specialRoom(planMap(`noheal-odds-${i}`, 1), 'no-heal')).toBeUndefined();
+      expect(specialRoom(planMap(`noheal-odds-${i}`, 2), 'no-heal')).toBeUndefined();
+    }
+  });
+
+  /**
+   * The no-heal leaf's own per-floor slot (`'-'` or the room id), one line per seed
+   * and map 1-8, pinned verbatim from the delivered build. The leaf rolls **after**
+   * the trade leaf, so a moved `map` stream fails this test while every shipped draw
+   * stays where the other pins put it.
+   */
+  const NO_HEAL_LEAVES = [
+    '-,-,7,-,-,-,-,-',
+    '-,-,-,-,-,-,-,-',
+    '-,-,8,-,-,-,-,-',
+    '-,-,-,-,-,-,-,-',
+    '-,-,-,-,-,-,10,-',
+    '-,-,-,-,-,-,-,-',
+    '-,-,-,-,-,-,-,-',
+    '-,-,-,-,-,-,-,-',
+  ];
+
+  it('pins where the no-heal leaf hangs, seed by seed', () => {
+    for (const [index, seed] of SEEDS.entries()) {
+      const leaves: string[] = [];
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const room = specialRoom(planMap(seed, mapIndex), 'no-heal');
+        leaves.push(room === undefined ? '-' : String(room));
+      }
+      expect(leaves.join(','), seed).toBe(NO_HEAL_LEAVES[index]);
+    }
+  });
 
   it('pins where the trade leaf hangs, seed by seed', () => {
     for (const seed of SEEDS) {
