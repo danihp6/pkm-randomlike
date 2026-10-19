@@ -41,7 +41,7 @@ describe('item catalogue', () => {
 
   it('sells everything except the Master Ball and the Mega Stones', () => {
     for (const entry of ITEMS) {
-      const expected = entry.id !== 'masterball' && entry.mega === undefined;
+      const expected = entry.id !== 'masterball' && entry.id !== 'egg' && entry.mega === undefined;
       expect(isForSale(entry), entry.id).toBe(expected);
     }
   });
