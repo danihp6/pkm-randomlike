@@ -21,6 +21,33 @@ export type FieldConditionId =
 export type SideConditions = Record<SideConditionId, number>;
 export type FieldConditions = Record<FieldConditionId, number>;
 
+/** The whole-field rules a room condition seeds (Task-106). */
+export type RoomFieldEffects = Readonly<{
+  /** The radiant zone: no ability handler runs for either side. */
+  abilitiesOff: boolean;
+  /** Dark moves deal 1.33× on both sides. */
+  darkAura: boolean;
+  /** Fairy moves deal 1.33× on both sides. */
+  fairyAura: boolean;
+  /** Every fighter's types are this one type (STAB and effectiveness follow). */
+  overrideType: string | null;
+  /** A lethal hit leaves the target at exactly 1 HP. */
+  endure: boolean;
+  /** Added to every move's crit ratio before the roll. */
+  critStage: number;
+}>;
+
+export function emptyRoomField(): RoomFieldEffects {
+  return {
+    abilitiesOff: false,
+    darkAura: false,
+    fairyAura: false,
+    overrideType: null,
+    endure: false,
+    critStage: 0,
+  };
+}
+
 export function emptySideConditions(): SideConditions {
   return {
     reflect: 0,
@@ -107,6 +134,12 @@ export type BattleState = {
    * miss is unaffected. No move sets it and it carries no turn count.
    */
   fog: boolean;
+  /**
+   * The room's whole-field rules (Task-106): no abilities, the two auras, one
+   * all-types override, Endure and the crit-stage bonus. They last the whole
+   * battle, carry no turn count and draw no RNG.
+   */
+  roomField: RoomFieldEffects;
   rng: Rng;
   log: BattleEvent[];
   bag: BagSlot[];
@@ -150,6 +183,8 @@ export type BattleSetup = Readonly<{
   field?: Partial<FieldConditions>;
   /** A room condition: dense fog over the field. */
   fog?: boolean;
+  /** A room condition: the whole-field rules the room seeds (Task-106). */
+  roomField?: Partial<RoomFieldEffects>;
   /** The room bars the player's Bag and healing moves (the no-heal leaf). */
   noHeal?: boolean;
 }>;
@@ -189,6 +224,7 @@ export function createBattle(setup: BattleSetup): BattleState {
     terrainTurns: setup.terrain?.turns ?? 0,
     field: { ...emptyFieldConditions(), ...(setup.field ?? {}) },
     fog: setup.fog ?? false,
+    roomField: { ...emptyRoomField(), ...(setup.roomField ?? {}) },
     rng: setup.rng,
     log: [],
     bag: (setup.bag ?? []).map((slot) => ({ item: slot.item, count: slot.count })),

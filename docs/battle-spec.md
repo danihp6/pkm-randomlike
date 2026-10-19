@@ -87,6 +87,28 @@ accuracy/evasion stage multiplier, clamped at 0 — so a move printed at 20 or l
 cannot hit at all — and a move that **cannot miss** is unaffected. No move sets it
 and it carries no turn count.
 
+The room table's other six whole-field conditions seed `state.roomField` through
+`createBattle`'s setup, last the **whole battle**, carry no turn count and draw
+**no** RNG:
+
+- **Radiant zone**: no ability handler runs for either side — the dispatcher
+  (`abilityActive` in `src/engine/battle/effects/registry.ts`) answers false before
+  the Neutralizing Gas check — while held items, moves and the weather/terrain
+  handlers keep working.
+- **Dark Aura** / **Fairy Aura**: Dark / Fairy moves deal **×1.33** on both sides,
+  applied after the weather and terrain multipliers.
+- **All-types change**: every fighter's types become one type
+  (`ALL_TYPES_OVERRIDE`, today `Normal`); STAB and the type chart both read the
+  override, and the run's member keeps its species types after the battle.
+- **Endure**: a lethal hit leaves the target at exactly **1 HP**, for the whole
+  battle, on both sides.
+- **+1 crit stage** (`ROOM_CRIT_STAGE`): added to every move's crit ratio before
+  the roll, so the base 1/24 step becomes 1/8.
+
+The room rules are deliberately outside `estimateDamage`, whose preview ignores
+weather and terrain for the same reason: it is the AI's deterministic comparison,
+never a roll.
+
 Special move shapes:
 
 - **Two-turn charge moves** (Solar Beam, Fly, Dig...) lock the user for one

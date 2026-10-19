@@ -929,10 +929,14 @@ function resolveMove(
     for (let hit = 0; hit < hits; hit++) {
       const target = opponent(state, side);
       if (target.hp <= 0) break;
+      const defenderTypes = state.roomField.overrideType
+        ? [state.roomField.overrideType]
+        : target.types;
       const critRatio =
         activeMove.critRatio +
         (attacker.volatiles.focusEnergy ? 2 : 0) +
-        (attacker.volatiles.dragonCheer ? 1 : 0);
+        (attacker.volatiles.dragonCheer ? 1 : 0) +
+        state.roomField.critStage;
       const crit = runModifyCrit(
         makeContext(state, side, { source: attacker, target, move: activeMove }),
         activeMove,
@@ -954,11 +958,14 @@ function resolveMove(
         lightScreen: state.sides[opponentOf(side)].sideConditions.lightscreen > 0,
         auroraVeil: state.sides[opponentOf(side)].sideConditions.auroraveil > 0,
         wonderRoom: state.field.wonderroom > 0,
+        overrideType: state.roomField.overrideType,
+        darkAura: state.roomField.darkAura,
+        fairyAura: state.roomField.fairyAura,
         ...statContext,
         effectiveness: runModifyEffectiveness(
           makeContext(state, side, { source: attacker, target, move: activeMove }),
           activeMove,
-          effectiveness(activeMove.type, target.types),
+          effectiveness(activeMove.type, defenderTypes),
         ),
       });
       if (result.effectiveness === 0) {
@@ -972,7 +979,7 @@ function resolveMove(
         result.effectiveness,
         result.crit,
       );
-      if (target.volatiles.endure && damage >= target.hp) {
+      if ((target.volatiles.endure || state.roomField.endure) && damage >= target.hp) {
         damage = Math.max(0, target.hp - 1);
         pushText(state, `${target.name} endured the hit!`);
       }

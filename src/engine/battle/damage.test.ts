@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getMove, type Move } from '../../data/dex';
+import { effectiveness, getMove, type Move } from '../../data/dex';
 import { Rng } from '../rng';
 import { computeDamage, estimateDamage } from './damage';
 import { createFighter, type BattleFighter } from './fighter';
@@ -67,5 +67,85 @@ describe('estimateDamage', () => {
     const second = estimateDamage(attacker, defender, move('ember'));
     expect(first).toEqual(second);
     expect(first.crit).toBe(false);
+  });
+});
+
+describe('the room’s whole-field damage rules', () => {
+  // Seed 24's first draw (0.332) is no crit and its 85-100 roll is exactly 100,
+  // so the control hit is the raw base damage and the ×1.33 term is exact.
+  const AURA_SEED = 24;
+
+  const hitWith = (
+    attacker: BattleFighter,
+    defender: BattleFighter,
+    moveId: string,
+    context: Parameters<typeof computeDamage>[4] = {},
+  ) => computeDamage(attacker, defender, move(moveId), new Rng(AURA_SEED), context);
+
+  it('boosts a Dark move by the ×1.33 floor under Dark Aura only', () => {
+    const attacker = fighter('charmander');
+    const defender = fighter('sentret');
+    const control = hitWith(attacker, defender, 'bite');
+    const dark = hitWith(attacker, defender, 'bite', { darkAura: true });
+
+    expect(control.crit).toBe(false);
+    expect(control.stab).toBe(false);
+    expect(control.effectiveness).toBe(1);
+    expect(dark.damage).toBe(Math.floor(control.damage * 1.33));
+    expect(hitWith(attacker, defender, 'bite', { fairyAura: true }).damage).toBe(control.damage);
+  });
+
+  it('boosts a Fairy move by the ×1.33 floor under Fairy Aura only', () => {
+    const attacker = fighter('charmander');
+    const defender = fighter('sentret');
+    const control = hitWith(attacker, defender, 'moonblast');
+    const fairy = hitWith(attacker, defender, 'moonblast', { fairyAura: true });
+
+    expect(control.crit).toBe(false);
+    expect(control.stab).toBe(false);
+    expect(control.effectiveness).toBe(1);
+    expect(fairy.damage).toBe(Math.floor(control.damage * 1.33));
+    expect(hitWith(attacker, defender, 'moonblast', { darkAura: true }).damage).toBe(control.damage);
+  });
+});
+
+describe('the room’s all-types change', () => {
+  it('gives a Normal-type attacker STAB on a Fire move', () => {
+    const attacker = fighter('sentret');
+    const defender = fighter('bulbasaur');
+    const plain = hit(attacker, defender, 'ember', 3);
+    const overridden = computeDamage(attacker, defender, move('ember'), new Rng(3), {
+      critical: false,
+      overrideType: 'Fire',
+    });
+
+    expect(plain.stab).toBe(false);
+    expect(overridden.stab).toBe(true);
+  });
+
+  it('reads both fighters as the one type for the chart', () => {
+    const attacker = fighter('sentret');
+    const defender = fighter('bulbasaur');
+    const plain = hit(attacker, defender, 'ember', 3);
+    const overridden = computeDamage(attacker, defender, move('ember'), new Rng(3), {
+      critical: false,
+      overrideType: 'Fire',
+    });
+
+    expect(plain.effectiveness).toBe(2);
+    expect(overridden.effectiveness).toBe(effectiveness('Fire', ['Fire']));
+    expect(overridden.effectiveness).toBe(0.5);
+  });
+
+  it('lets a caller pass the chart read against the overridden types', () => {
+    const attacker = fighter('charmander');
+    const defender = fighter('bulbasaur');
+    const result = computeDamage(attacker, defender, move('ember'), new Rng(3), {
+      critical: false,
+      overrideType: 'Fire',
+      effectiveness: effectiveness('Fire', ['Fire']),
+    });
+    expect(result.stab).toBe(true);
+    expect(result.effectiveness).toBe(0.5);
   });
 });
