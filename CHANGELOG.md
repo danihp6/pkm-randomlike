@@ -8,6 +8,48 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A room's size follows its shape.** `planMap` no longer rolls every regular room's width and
+      height independently: the frozen `ROOM_SHAPE_SIZES` table (`src/data/maps.ts`) gives a `cross`
+      and a `straight` 40×40, a `tee` 40×48, a `bend` 44×44, a `corridor` 52×30 — 30×52 when its two
+      opposite openings are north/south — and a `dead-end` 30×30, and `roomSizeForShape(shape,
+      mapIndex, longAxis)` scales that map-8 table by the map's own `size.max / MAP_MAX_ROOM_SIZE`,
+      rounds and clamps it to `[30, 56]`. `MAP_MAX_ROOM_SIZE` and the map-8 `size.max` rise from 48
+      to **56**, the entry, boss and every special leaf stay pinned at 30×30, and the plan's size
+      invariant (`min ≤ side ≤ the map's size.max`) still holds. The size is derived after the
+      opening set is known, so a corridor follows its axis; the old two-draw size roll stays in place
+      (its values now feed nothing) so a seed's rooms, cells, links, specials and boss do not move,
+      and the floor curve is unchanged: every fill stays inside `[1, 1.5]` and maps 1–2 inside
+      `[1.2, 1.35]` (`m1 1.249, m2 1.250, m3 1.155, m4 1.439, m5 1.357, m6 1.058, m7 1.109, m8
+      1.316`). `docs/maps-spec.md` §1/§3/§4 rewrite the generator's size step and
+      `docs/balance/route-curve.md` records the rule and the re-measured table. A fixed-seed `bend`
+      room's band pin moved with its new 30×30 size (`doors.test.ts`). No scene, no packed asset, no
+      run field, no `SAVE_VERSION` step and no RNG draw changed. **QA:** `npm test` (158 files /
+      **2079** tests), `npm run build`, the seven-path diff audit, the pinned table and scale numbers,
+      the plan's shape→size invariant, and the cross-task integration gate on the combined batch
+      (159 files / **2099** tests); this task's criteria are all `[unit]` and owed no browser pass.
+
+- [x] **A consumable is spent on a party member from the route HUD, and only when it does
+      something.** `src/engine/run/items.ts` adds the pure gate — `itemAppliesTo(member, item)` is
+      true for a `heal` item below `maxHp` or with a status it cures, and for a `status` item only
+      with a matching status; a fainted member never applies — and `useItemOn(run, memberId,
+      itemId)` consumes one stack and writes the HP and/or status back, returning the same run
+      reference (no consumption) for every no-op. A bag stack dragged onto a party or PC-box member
+      now spends a `heal`/`status` item through it and raises the new `itemUsedNotice` (`notice.itemUsed`,
+      both locales), while `equipHeldItem` refuses every item whose `kind` is not `held` — fixing the
+      defect where a Potion dropped on a member was equipped as its held item. The three X-items are
+      removed from the game: the catalogue rows, the four loot rows, the `'boost'` member of
+      `ItemKind`, the bag's case and the battle Bag's `case 'boost'`, and the icon map; the FRLG
+      packer now takes its source directory through argv or the environment (`AGENTS.md`'s Asset-trees
+      rule) and was rerun from `$ASSETS_ROOT`, leaving `src/assets/frlg/item-icons.png` +
+      `src/data/frlg/item-icons.json` byte-identical on a second run (192×96, 31 icons / 37 items).
+      The battle's own `boost` **event** and `ItemDef.boosts` stay for the pinch berries. No run field
+      and no `SAVE_VERSION` step. **QA:** `npm test` (159 files / **2091** tests), `npm run build`,
+      the 26-path diff audit and the packer-twice check, plus the `[live]` criterion measured over
+      CDP with real pointer events by Task QA and again by the Orchestrator: a Potion dragged onto a
+      10/21-HP lead took it to 21 (gain 11 = `min(20, 21 − 10)`), the stack went 1 → 0 and
+      `Used Potion.` showed; on a full-HP lead the same drag changed nothing, kept the Potion and
+      raised no notice.
+
 - [x] **The movement keys never browse a HUD pane.** Opening a route HUD panel no longer takes
       the keyboard: the `party` / `bag` / `map` / `box` quick keys are plain toggles again (a press
       opens or collapses the panel exactly as its icon click does) and the arrows keep moving the

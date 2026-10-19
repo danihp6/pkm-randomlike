@@ -2748,6 +2748,58 @@ with its map-index scaling still unfrozen; `[Task-80]`, `[Task-83]` and
 therefore left empty, and the plan's cut is unchanged: **Batch 30 is `[Task-87]` +
 `[Task-81]`**.
 
+### Batch 30 — a consumable is spent from the route HUD, and a room's size follows its shape *(shipped, archived)*
+
+Task-81 and Task-87 merged with `--no-ff` in ID order — **158 files / 2079 tests**
+and build clean after Task-81, **159 files / 2099 tests** and build clean after
+Task-87 (`2026-10-19`) — and the detail is in `CHANGELOG.md`'s `## Unreleased`.
+Both Task QAs ran **in parallel**, each from its own integration worktree
+(`qa-81` = `main` + `task-81`, `qa-87` = `main` + `task-87`), and both were green;
+Integration QA ran one pass on the combined tree (`qa-batch30`, `task-81` then
+`task-87` merged): the same two gates, no path shared by the two tasks, one holder
+per hot file, `src/data/dex/**` untouched, each branch tip identical to the one its
+own QA validated, and the merge rehearsal (`git merge-tree` in ID order) reproduced
+the combined tree exactly. Task-87's `[live]` criterion was measured over CDP with
+real pointer events by its Task QA and **again by the Orchestrator** on its own
+server and browser: a `Potion` dragged from the bag onto a 10/21-HP `Bulbasaur`
+took it to **21** (gain `11 = min(20, 21 − 10)`), the stack went `1 → 0` and the
+`Used Potion.` notice showed; on a full-HP lead the same drag changed nothing, kept
+the Potion and raised no notice.
+
+**What shipped.** `src/engine/run/items.ts` is the pure use gate: `itemAppliesTo`
+(heal applies only below `maxHp` or with a curable status; a status cure only with a
+matching status; a fainted member never applies) and `useItemOn` (consumes one stack
+and writes HP/status back, returning the same run reference for every no-op). The
+route HUD spends a dropped `heal`/`status` item through it, raises the new
+`itemUsedNotice`, and `equipHeldItem` now refuses everything whose `kind` is not
+`held` — so a Potion can no longer become a member's held item. The three X-items
+are gone from the game (catalogue, four loot rows, `'boost'` item kind, the Bag's
+case and the icon map), the FRLG packer now takes its source directory through argv
+or the environment and was rerun from `$ASSETS_ROOT` (atlas + manifest regenerated
+byte-identically), and `docs/{design,routes,data,battle}-spec.md` carry the rule.
+Task-81 replaced the free size roll with the frozen `ROOM_SHAPE_SIZES` table
+(`cross`/`straight` 40×40, `tee` 40×48, `bend` 44×44, `corridor` 52×30 and the
+north–south 30×52, `dead-end` 30×30) scaled by `mapTuning(n).size.max /
+MAP_MAX_ROOM_SIZE`, with `MAP_MAX_ROOM_SIZE` and map 8's ceiling at **56**, every
+entry/boss/special leaf pinned 30×30, and the old size draws kept in place so a
+seed's topology and the on-ramp's balance windows did not move; `docs/maps-spec.md`
+§1/§3/§4 and `docs/balance/route-curve.md` record it.
+
+**Cut and corrective records.** Task-81's entry demanded its map-index scaling be
+frozen before it ran, and it was, at cut: the frozen table is map 8 and every earlier
+map scales it by its own `size.max / 56`, clamped to `[30, 56]`. Its entry's
+"claim is incomplete" note was also completed at cut with the tests the change
+re-pins, and one path was still missing — `src/engine/routes/doors.test.ts` — which
+the first gate caught (`expected 30 to be 31` on a fixed-seed `bend` room); the spec
+was amended, that pin and `docs/maps-spec.md` §3 went to the author, and the task
+QA validated `1bd24de6` green. The batch could not be filled beyond its two planned
+tasks: `[Task-104]` is still content-blocked (its two "dark" abilities have no dex
+row and the second is unnamed — an invented id would be a dead id), `[Task-107]`
+shares `src/engine/battle/{damage,state,turn}.ts` with it and is cut last, `[Task-80]`,
+`[Task-83]` and `[Task-93]`–`[Task-100]` depend on unmerged tasks, and every other
+later task holds `src/scenes/RouteScene.ts`, which Task-87 owns here. No run field,
+no `SAVE_VERSION` step and no dex regeneration.
+
 ### Open questions for the human
 
 Batch 4b's three reports added two more (the learnset band's is **answered** — the
@@ -3997,7 +4049,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       through the shipped i18n module instead of beside it, and after Batch 11 so it edits
       reformat-cleared files and keeps them conforming. It adds no run field, so **no**
       `SAVE_VERSION` step. *(Batch 16)*
-- [ ] **[Task-87] A consumable is spent on a party member from the route HUD, and only when it actually
+- [x] **[Task-87] A consumable is spent on a party member from the route HUD, and only when it actually
       does something.** The human's rule: «objetos consumibles se deben poder gastar en menu de rutas
       sobre un poke si es que hace efecto por ejemplo una pocion sobre alguien con toda la vida no o uno
       que quita estado quemado si no esta quemado no». Two things are missing today, and one is a small
@@ -4988,7 +5040,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       read (`src/engine/run/roster.ts` 55) pointing at a field that no longer exists. It rides
       **Batch 35** beside `[Task-82]`, which wants `src/engine/maps/plan.ts` while this task wants
       `src/data/maps.ts` and `src/engine/run/floors.ts`. *(Batch 35)*
-- [ ] **[Task-81] A room's size follows its shape.** Today `planMap` rolls every room's width and
+- [x] **[Task-81] A room's size follows its shape.** Today `planMap` rolls every room's width and
       height independently inside the map's size range (`src/engine/maps/plan.ts` 388-391,
       `rng.int(tuning.size.min, tuning.size.max)` twice), so the rooms come out roughly square and a
       `cross` reads the same as a `corridor`. The human wants the **shape to pick the aspect**: a
