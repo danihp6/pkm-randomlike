@@ -2254,6 +2254,33 @@ atlas frame. What follows is the cut's own record.
   no cleaner filler: `[Task-84]` B29, `[Task-87]` B30 and `[Task-89]` B31 all claim
   `src/scenes/RouteScene.ts`, i.e. this batch's own hot file, and `[Task-88]`/`[Task-104]` are a
   behaviour change to waves whose siblings merge ten batches later.)
+- **Shipped (Task-111, `2026-10-19`).** Every special room kind is now its own descriptor module
+  under `src/scenes/rooms/` — `types.ts` (the `RoomDescriptor`/`RoomHost`/`RoomPanel` contract),
+  `registry.ts` (the pure collector, keyed by kind and by marker, a duplicate kind throwing with
+  both module paths), `shop.ts`, `miniBoss.ts` and `megaStone.ts` — and `RouteScene.ts` keeps
+  **one** auto-discovered registry built with
+  `import.meta.glob(['./rooms/*.ts', '!./rooms/*.test.ts'], { eager: true })`, so a new room is a
+  new file. The scene still owns *who holds the keyboard* (`roomPanel`) and *where the counter is*
+  (`shopCounter`); the room owns what its panel looks like. The layer is recorded as **D47** and the
+  route HUD's bullet in `docs/design-spec.md` §3 gained one line. It is a pure refactor: no tile,
+  marker, price, key, RNG draw or run field moved, so **no `SAVE_VERSION`** step and no fixed-seed
+  re-pin. **QA**: the batch is one task, so a single pass covered both scopes on the combined tree
+  (`main` + `task-111`, merged with `--no-ff` and conflict-free) — 145 files / **1829 tests** and
+  `npm run build` green, the diff's **12/12** paths inside the exclusive list, `src/engine/` and
+  `src/data/` untouched, and the folded tests (`registry.test.ts` 7, `fixtures.test.ts` 11) green
+  with the seed-`pkm-111` mega-stone literal pinned off the pre-change build. **Measured, not
+  assumed:** QA drove its own server and browser, and the minimap rect and the open Mart rect are
+  **0 differing pixels** between `main` and `task-111` at 1280x800 on the same seed and map (the
+  minimap `8,8,216,250`, sha `0f37b968…`; the Mart `(320,130,640,540)`, sha `f56f0ca5…`), the ten
+  rooms of map 5 dumping identical fixtures (shop counter `(14,24)`, `miniboss-5` at `(23,27)`
+  facing `W` with `sight 5` and `ace`, `mega-5` → `dragoninite` at `(6,16)`), and the Mart still
+  answering `E`/`Q`, `←`/`→`, `↑`/`↓` with the buy and sell deltas exact. Two honest notes:
+  the pixel run used **map 5** rather than the spec's map 3, because seed `pkm-111`'s map 3 hangs
+  only shop and mini-boss (mega-stone lands on 5 and 8), and `npm run lint` is **red on `main`
+  already** — three files outside this task's diff (`src/i18n/content.ts`, `src/ui/partyDetail.ts`,
+  `src/ui/evolutionGraph.test.ts`), four before this merge, because this task leaves
+  `RouteScene.ts`'s Task-112 hunk prettier-clean; it is `main`'s own debt, not this batch's, and it
+  owes a one-line chore.
 
 ### Batch 24 - the casino room
 - **Task-64** A casino room: a Team Rocket grunt, a slot machine the player pays to spin, items
@@ -4426,7 +4453,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       wants `src/scenes/RouteScene.ts` and `src/ui/rewards.ts`, and the route scene is held by
       every batch from 5 to 20 — so it opens the plan's new **Batch 23**, one batch behind
       Task-62. *(Batch 23)*
-- [ ] **[Task-111] The special-room layer leaves `RouteScene.ts`, and a new room is a new file.**
+- [x] **[Task-111] The special-room layer leaves `RouteScene.ts`, and a new room is a new file.**
       **The bottleneck, measured.** `[Task-64]`-`[Task-67]` each claim
       `src/scenes/RouteScene.ts` (13 open tasks name it), so the batch rule serializes them:
       Batches 24-27 are four single-task batches. The room layer is the reason: `buildRoom`
