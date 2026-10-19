@@ -139,7 +139,10 @@ drives the rest.
   **English** (D12), and English is also the **game text's source table**: every
   player-facing string is a key in `src/i18n/en.ts`, authored there first, and a
   locale (`src/i18n/es.ts`) overlays it by key (`D43`). The dex's own names —
-  Pokémon, moves, abilities, items, biomes — stay English in every locale.
+  Pokémon species, items and biomes — stay English in every locale; move and
+  ability names and descriptions are content-localised with the **official
+  Spanish strings** through `src/i18n/content.ts` (`Task-112`, `D43` amended for
+  those two kinds only).
 - TypeScript style: 2-space indent, `camelCase` for functions/variables,
   `PascalCase` for types/classes, explicit types on exported APIs.
 - No code comments unless asked, except where a non-obvious balance or

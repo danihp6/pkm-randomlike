@@ -2176,24 +2176,42 @@ atlas frame. What follows is the cut's own record.
   is the batch's second member (its own set is named above): it moves the generated `gmaxes.json`
   and the item catalogue, keeps the single chain intact, and adds no run field either.
 
+### Batch 23a - the moves and the abilities speak Spanish
+- **Task-112** The Spanish locale stops printing English move and ability copy: every move and
+  ability the dex ships gets its **official Spanish name** and description, read from a generated
+  content table with an English fallback.
+- **Hot files:** new `src/data/i18n/es/*.json`, `src/i18n/content.ts` + test and
+  `scripts/build-i18n-content.mjs` → Task-112; `src/ui/moveGrid.ts`, `src/ui/partyDetail.ts`,
+  `src/ui/infoPopup.ts`, `src/scenes/BattleScene.ts` and `src/scenes/RouteScene.ts` (every site
+  that prints a move's or an ability's name or description) → Task-112; `docs/tech-decisions.md`
+  (`D43`) and `docs/data-spec.md` §1 → Task-112. It claims no `package.json`, `src/main.ts`,
+  `vite.config.ts`, `src/data/dex/**` or packed asset.
+- **Shape:** one task, **the first batch after Batch 23** (the human's priority), because it holds
+  `RouteScene.ts` and `BattleScene.ts`, the two scenes the room wave wants. It is a content +
+  presentation task: the dex keeps its English strings and stays pure; the Spanish table is
+  generated once from PokeAPI's official `es` names and flavour text (the same strings the games
+  ship), committed, and read through four accessors. It changes no rule, draws no RNG and adds no
+  run field, so **no `SAVE_VERSION`** step. `D43` is amended for moves and abilities only:
+  Pokémon species, items and biomes stay English.
+
 ### Batch 23b - the special-room layer leaves the route scene
 - **Task-111** `src/scenes/RouteScene.ts` stops owning every special room: each room kind becomes
   a descriptor module under `src/scenes/rooms/`, the scene keeps one auto-discovered registry and
   the shipped shop, mini-boss and Mega-stone rooms keep their exact behaviour.
 - **Hot files:** `src/scenes/RouteScene.ts` (the registry's single call site and the hooks the
-  descriptors use)  Task-111; the new `src/scenes/rooms/**` with its README and tests 
-  Task-111; `src/ui/mapView.ts` + test (the marker comes from the descriptor)  Task-111;
-  `docs/design-spec.md` �3 and `docs/tech-decisions.md` (the layering decision)  Task-111. It
+  descriptors use) → Task-111; the new `src/scenes/rooms/**` with its README and tests →
+  Task-111; `src/ui/mapView.ts` + test (the marker comes from the descriptor) → Task-111;
+  `docs/design-spec.md` §3 and `docs/tech-decisions.md` (the layering decision) → Task-111. It
   claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/**`, `src/data/dex/**`,
   `src/engine/**`, `src/scenes/BattleScene.ts` or packed asset - and no docs file another open
-  batch holds (`docs/design-spec.md` �3 is free after Batch 20's Task-58).
-- **Shape:** one task, **before Batch 24**, and the reason is the queue: 13 open tasks name
-  `src/scenes/RouteScene.ts`, including every special room in Batches 24-27, so the batch rule
-  turns them into four single-task batches. The extraction gives each room its own file (the
-  registry is built with `import.meta.glob('./rooms/*.ts', { eager: true })`), so a new room no
-  longer edits the scene; the only shared seams left are the one-line `plan.ts` kind and
-  `mapView.ts` marker, which **batch filling** can pair with an unrelated later task. It is a
-  pure refactor: no tile, marker, price, key, RNG draw or run field moves, so **no
+  batch holds (`docs/design-spec.md` §3 is free after Batch 20's Task-58).
+- **Shape:** one task, **one batch behind Task-112** and **before Batch 24**, and the reason is
+  the queue: 13 open tasks name `src/scenes/RouteScene.ts`, including every special room in
+  Batches 24-27, so the batch rule turns them into four single-task batches. The extraction gives
+  each room its own file (the registry is built with `import.meta.glob('./rooms/*.ts', { eager:
+  true })`), so a new room no longer edits the scene; the only shared seams left are the one-line
+  `plan.ts` kind and `mapView.ts` marker, which **batch filling** can pair with an unrelated later
+  task. It is a pure refactor: no tile, marker, price, key, RNG draw or run field moves, so **no
   `SAVE_VERSION`** step and no fixed-seed re-pin. It edits files Batch 11's reformat cleared, so
   it keeps them conforming (no new ledger line).
 
@@ -4387,8 +4405,40 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       same keys, the registry test proves a new module is discovered without a `RouteScene.ts`
       edit, and `npm test` + `npm run build` are green.
       *Dependencies:* none. It claims `src/scenes/RouteScene.ts`, `src/ui/mapView.ts` and the new
-      `src/scenes/rooms/**`; it runs **before** `[Task-64]` so the room wave stops serializing.
-      *(Batch 23b)*
+      `src/scenes/rooms/**`; it runs **one batch behind `[Task-112]`** and **before `[Task-64]`**,
+      so the room wave stops serializing. *(Batch 23b)*
+- [ ] **[Task-112] The moves and the abilities speak Spanish (the official copy).**
+      **The gap.** `src/i18n/es.ts` overlays the UI chrome only; `D43` froze every dex name in
+      English, so a Spanish run prints `Tackle`, `Blaze` and their English `desc`/`shortDesc` in
+      the MOVES grid, the floating description, the ability popup, the learnset band and the
+      level-up notice. The official games localize move and ability names and their
+      descriptions, and those are the strings this task uses - never a literal translation.
+      **Fix shape:** a new generated content table, `src/data/i18n/es/moves.json` and
+      `abilities.json`, keyed by the dex id (normalised the way `getMove`/`getAbility` normalise),
+      holding `name`, `description` and `shortDescription`; `scripts/build-i18n-content.mjs`
+      fetches PokeAPI's `es` `names` and `flavor_text_entries` (the official strings, cleaned of
+      form feeds and line breaks, latest version group first), matches by normalised id and
+      writes the JSON; a pure `src/i18n/content.ts` exposes `moveName(id)`, `moveDescription(id)`,
+      `abilityName(id)` and `abilityDescription(id)` with the English dex string as fallback and a
+      `MISSING_ES` list for the rows PokeAPI does not carry. Every UI site that prints content
+      reads those accessors: `src/ui/moveGrid.ts`, `src/ui/partyDetail.ts`,
+      `src/ui/infoPopup.ts`, `src/scenes/BattleScene.ts` and `src/scenes/RouteScene.ts` (MOVES
+      grid, INFO popup, learnset band, level-up notice and TM row).
+      **The rule, frozen:** official Spanish names, not translations - `Tackle` -> `Placaje`,
+      `Ember` -> `Ascuas`, `Growl` -> `Gruñido`, `Blaze` -> `Mar Llamas`, `Torrent` ->
+      `Torrente`, `Overgrow` -> `Espesura`. Pokémon species, items and biomes stay English
+      (`D43` amended for moves and abilities only); `en` keeps the dex's own strings.
+      **Acceptance:** every move and ability in the dex has a Spanish row or is listed in
+      `MISSING_ES` with its reason; the six spot-checks above are pinned; the live MOVES grid and
+      the ability popup print the Spanish name and description under `language: es` and the
+      English under `en`; no battle rule, RNG draw or run field changes, so **no `SAVE_VERSION`**
+      step.
+      *Dependencies:* none. It claims `src/data/i18n/**`, `scripts/build-i18n-content.mjs`,
+      `src/i18n/content.ts` + test, `src/ui/moveGrid.ts`, `src/ui/partyDetail.ts`,
+      `src/ui/infoPopup.ts`, `src/scenes/BattleScene.ts`, `src/scenes/RouteScene.ts`,
+      `docs/tech-decisions.md` `D43` and `docs/data-spec.md` §1; it is **the first batch after
+      Batch 23**, in **Batch 23a**, before Batch 24, because it holds the two scenes the room wave
+      needs. *(Batch 23a)*
 - [ ] **[Task-64] A casino room: a Team Rocket grunt, a slot machine the player pays to spin, and
       its prizes.** Reported in play: «añade tarea para añadir habitacion casino, aparece un sprite
       de un recluta team rocket, aparece una tragaperras y pagas por tiradas con posibilidad de
