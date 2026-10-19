@@ -36,6 +36,7 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   that picks an individual's forme at generation, `D38`/`D39`), plus
   `run/chain.ts`, `run/floors.ts`, `run/levelCap.ts`, `run/heal.ts`, `run/learnset.ts`,
   `run/nickname.ts` (the member names the player types), `run/reward.ts`, `run/perms.ts`,
+  `run/items.ts` (the route's consumable rule: whether an item applies and the use that spends it),
   `run/starters.ts`, `run/share.ts`, `run/party.ts` (the party predicates a room asks: what
   types the party holds), `run/trade.ts` (the deliberate trade: one member out, one
   rolled member in at the squad's level) and `run/passives.ts` (the map passives a

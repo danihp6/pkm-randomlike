@@ -69,7 +69,7 @@ describe('shop tables', () => {
     }
   });
 
-  it('sells a heal rung at the catalogue price, and never an X-item or a cure', () => {
+  it('sells a heal rung at the catalogue price, and never a cure', () => {
     for (const band of LEVEL_BANDS) {
       const potion = getItem(SHOP_POTION[band.id])!;
       expect(SHOP_POTION[band.id], band.id).toBe(POTIONS[band.id]);
@@ -79,7 +79,6 @@ describe('shop tables', () => {
         const item = getItem(entry.itemId)!;
         expect(item.kind, entry.itemId).toBe('held');
         expect(item.kind, entry.itemId).not.toBe('status');
-        expect(item.kind, entry.itemId).not.toBe('boost');
       }
     }
   });

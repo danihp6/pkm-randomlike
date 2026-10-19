@@ -23,7 +23,7 @@ Phaser scene only renders state and forwards choices.
 | Command | Rule |
 | --- | --- |
 | **Fight** | Pick one of the active Pokémon's moves. PP is spent. No PP = Struggle. |
-| **Bag** | Use an item on the active Pokémon (or, where legal, a chosen one). Consumes the item. Trainer battles allow items. |
+| **Bag** | Use an item on the active Pokémon (or, where legal, a chosen one). Consumes the item. Trainer battles allow items. The Bag carries balls, heals and status cures; there is no X-item and no `'boost'` item kind (the four commands and the route's drag path in `src/engine/run/items.ts` are the only ways an item is spent). |
 | **Pokémon** | Swap the active Pokémon for another in the party; costs the turn. |
 | **Run** | Wild battles only. Seeded roll against the classic odds; trainer battles refuse. |
 

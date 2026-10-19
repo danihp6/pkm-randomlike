@@ -46,8 +46,8 @@ export const SHOP_POTION: Readonly<Record<BandId, string>> = {
  * are what the player sells here), a Mega Stone, a **G-Max Stone** (the stone is
  * its own fixed row from `late` on, exactly like the machine, so the held pool
  * holds neither), an item the engine does not model
- * (`UNMODELLED_ITEMS`), a cure (`kind: 'status'`) or an X-item (`kind: 'boost'`):
- * the Mart sells no cure and no booster, so those reach a run from ground loot and
+ * (`UNMODELLED_ITEMS`), a cure (`kind: 'status'`) or a heal (`kind: 'heal'`):
+ * the Mart sells no cure and no consumable, so those reach a run from ground loot and
  * the mini-boss reward alone (`src/data/loot.ts`). Every band lists at least
  * `SHOP_HELD_ROWS` distinct rows, or its shelf could not fill.
  *

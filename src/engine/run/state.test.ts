@@ -560,6 +560,25 @@ describe('held items', () => {
     expect(itemCount(next, 'charcoal')).toBe(1);
   });
 
+  it('refuses a heal, a status cure, a ball, a TM or a valuable', () => {
+    const run = createRun({
+      seed: 'run-a',
+      starter,
+      bag: [
+        { itemId: 'potion', count: 1 },
+        { itemId: 'antidote', count: 1 },
+        { itemId: 'pokeball', count: 1 },
+        { itemId: 'tm001', count: 1 },
+        { itemId: 'nugget', count: 1 },
+      ],
+    });
+    for (const itemId of ['potion', 'antidote', 'pokeball', 'tm001', 'nugget']) {
+      expect(equipHeldItem(run, 'starter', itemId), itemId).toBe(run);
+    }
+    expect(run.party[0].fighter.heldItem).toBeNull();
+    expect(itemCount(run, 'potion')).toBe(1);
+  });
+
   it('returns whatever the member already held to the bag', () => {
     const run = equipHeldItem(runWithBag(), 'starter', 'charcoal');
     const swapped = equipHeldItem(addItem(run, 'leftovers'), 'starter', 'leftovers');

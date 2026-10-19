@@ -325,6 +325,12 @@ cell), and reordering the party within itself stays free. A catch that goes to
 the PC says so in a **transient notice** at the top of the screen — one line,
 dismissed by itself, taking no key and blocking no movement.
 
+A **consumable** rides the same drag: a heal or a status cure dropped from the bag
+onto a party or box member is spent on it only when it would change something — HP
+below max, or a primary status the item cures — and is a silent no-op otherwise (no
+consumption, no notice, never an equipped item). The rule is pure run state in
+`src/engine/run/items.ts`; the HUD only calls it.
+
 A member can also leave the run **on purpose**, in the **trade** room
 (`docs/maps-spec.md` §7) — the one place outside a battle where a member is
 removed. It is the player's choice, the room asks once, the given member is gone

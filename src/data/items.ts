@@ -3,7 +3,7 @@ import { GMAX_FORMES, MEGA_FORMES, getDexItem, getMove, getSpecies, type MoveCat
 import type { BandId } from './run';
 import { TM_MOVE_IDS, tmItemId } from './tms';
 
-export type ItemKind = 'ball' | 'heal' | 'status' | 'boost' | 'held' | 'valuable' | 'tm';
+export type ItemKind = 'ball' | 'heal' | 'status' | 'held' | 'valuable' | 'tm';
 
 export type ItemDef = Readonly<{
   id: string;
@@ -23,9 +23,8 @@ export type ItemDef = Readonly<{
   /** Primary statuses this cures; `'all'` clears whatever is there. */
   cures?: readonly StatusId[] | 'all';
   /**
-   * Stat stages granted to the active Pokémon: the X-items read it from the Bag
-   * (`commands.ts`), the **pinch berries** through the held-item residual branch
-   * (`effects/items.ts`).
+   * Stat stages granted to the active Pokémon: the **pinch berries** read it
+   * through the held-item residual branch (`effects/items.ts`).
    */
   boosts?: Partial<Record<BoostId, number>>;
   /** Held items: fire at the end of the turn only when HP is at or below this fraction. */
@@ -1022,7 +1021,7 @@ export const COMPETITIVE_HELD_IDS: readonly string[] = COMPETITIVE_HELD.map((row
 export const MEMORY_DRIVE_IDS: readonly string[] = MEMORY_DRIVE_ITEMS.map((row) => row.id);
 
 /**
- * The run's item catalogue: balls, heal/status/boost consumables, `held` items
+ * The run's item catalogue: balls, heal/status consumables, `held` items
  * (Leftovers, berries, the 1.2x type items, the competitive held set, registered
  * by `effects/items.ts`) and `valuable` treasure, each with the price the shop
  * spends. There is no Revive anywhere (D5).
@@ -1150,31 +1149,6 @@ export const ITEMS: readonly ItemDef[] = [
     price: 600,
     cures: 'all',
     shortDesc: 'Clears any status condition.',
-  }),
-
-  item({
-    id: 'xattack',
-    name: 'X Attack',
-    kind: 'boost',
-    price: 500,
-    boosts: { atk: 2 },
-    shortDesc: 'Raises Attack by 2 stages.',
-  }),
-  item({
-    id: 'xdefense',
-    name: 'X Defense',
-    kind: 'boost',
-    price: 550,
-    boosts: { def: 2 },
-    shortDesc: 'Raises Defense by 2 stages.',
-  }),
-  item({
-    id: 'xspeed',
-    name: 'X Speed',
-    kind: 'boost',
-    price: 350,
-    boosts: { spe: 2 },
-    shortDesc: 'Raises Speed by 2 stages.',
   }),
 
   item({
