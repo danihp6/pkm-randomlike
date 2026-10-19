@@ -249,3 +249,61 @@ describe('a no-heal battle', () => {
     ]);
   });
 });
+
+describe('the double-battle slots', () => {
+  const buildDouble = (double: boolean): BattleState =>
+    createBattle({
+      player: [
+        make({ id: 'player', speciesId: 'charmander', level: 20, moves: ['tackle', 'dazzlinggleam'] }),
+        make({ id: 'partner', speciesId: 'squirtle', level: 20, moves: ['tackle'] }),
+      ],
+      enemy: [
+        make({ id: 'enemy', speciesId: 'bulbasaur', level: 20, moves: ['tackle'] }),
+        make({ id: 'foe2', speciesId: 'geodude', level: 20, moves: ['tackle'] }),
+      ],
+      rng: new Rng(1),
+      isWild: false,
+      double,
+    });
+
+  it('refuses a slot 1 command when the battle does not field it', () => {
+    const state = buildDouble(false);
+    const command: Command = { type: 'fight', moveIndex: 0, slot: 1 };
+    expect(validateCommand(state, 'player', command)).toBe('There is no second active Pokémon.');
+    expect(
+      validateCommand(state, 'player', { type: 'switch', partyIndex: 1, slot: 1 }),
+    ).toBe('There is no second active Pokémon.');
+  });
+
+  it('accepts both slots in a double battle and refuses an already active switch', () => {
+    const state = buildDouble(true);
+    expect(validateCommand(state, 'player', { type: 'fight', moveIndex: 0, slot: 1 })).toBeNull();
+    expect(
+      validateCommand(state, 'player', { type: 'switch', partyIndex: 1, slot: 0 }),
+    ).toBe('That Pokémon is already out.');
+  });
+
+  it('accepts only a live opposing slot as a single-target target', () => {
+    const state = buildDouble(true);
+    const aimed = (target: { side: 'player' | 'enemy'; slot: 0 | 1 }): Command => ({
+      type: 'fight',
+      moveIndex: 0,
+      target,
+    });
+    expect(validateCommand(state, 'player', aimed({ side: 'enemy', slot: 1 }))).toBeNull();
+    expect(validateCommand(state, 'player', aimed({ side: 'player', slot: 1 }))).toBe(
+      'That is not an opposing Pokémon.',
+    );
+    expect(validateCommand(state, 'player', aimed({ side: 'enemy', slot: 0 }))).toBeNull();
+  });
+
+  it('ignores the target of a spread move', () => {
+    const state = buildDouble(false);
+    const command: Command = {
+      type: 'fight',
+      moveIndex: 1,
+      target: { side: 'enemy', slot: 1 },
+    };
+    expect(validateCommand(state, 'player', command)).toBeNull();
+  });
+});

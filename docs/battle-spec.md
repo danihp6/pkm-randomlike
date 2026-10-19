@@ -463,9 +463,10 @@ at once (`DOUBLE_ACTIVES = 2`, `src/data/bosses.ts`). The engine half is the
   target from `command.target` (the foe's slot 0 by default), and threads it
   through the hit roll, damage, status, boosts, volatiles, recoil, messages, the
   faint side and the Substitute/Endure/contact hooks. A move whose dex `target` is
-  `allAdjacentFoes` or `allAdjacent` applies once to every live opposing slot
-  (slot 0 then slot 1) and `all` to every other live fighter on both sides,
-  spending PP **once** per use. Places that mean "the foe's side as a whole"
+  `allAdjacentFoes` applies once to every live opposing slot (slot 0 then slot 1),
+  `allAdjacent` adds the user's own live partner, and `all` covers every other live
+  fighter on both sides — spending PP **once** per use. Places that mean "the foe's
+  side as a whole"
   (screens, Tailwind, field conditions) stay side-level, and ability contexts may
   keep the slot-0 foe.
 - **Faints and switches.** `performSwitch(state, side, partyIndex, slot = 0)` writes

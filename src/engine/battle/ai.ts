@@ -193,7 +193,13 @@ export function chooseAiCommand(
     slot === 1 ? ({ ...command, slot } as Command) : command;
 
   if (battleSide.awaitingReplacement || activeFighter(state, side, slot).hp <= 0) {
-    return tag({ type: 'switch', partyIndex: Math.max(0, bestReserve(state, side)) });
+    // Replacement: the emptied slot asks, whoever the caller spoke for.
+    const emptied = liveSlots(state, side).find(
+      (s) => activeFighter(state, side, s).hp <= 0,
+    );
+    const replaceSlot = activeFighter(state, side, slot).hp <= 0 ? slot : (emptied ?? slot);
+    const replacement: Command = { type: 'switch', partyIndex: Math.max(0, bestReserve(state, side)) };
+    return replaceSlot === 1 ? { ...replacement, slot: 1 } : replacement;
   }
 
   const attacker = activeFighter(state, side, slot);
