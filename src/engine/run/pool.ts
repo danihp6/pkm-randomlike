@@ -1,6 +1,7 @@
 import { playableSpecies, type Species } from '../../data/dex/species';
-import { evolutionFamily, formeFamily } from '../../data/dex/evolutions';
+import { evolutionFamily, formeFamily, variantFormes } from '../../data/dex/evolutions';
 import { bossBstWindow, type LevelBand } from '../../data/run';
+import type { Rng } from '../rng';
 import type { RunState } from './state';
 
 /** Who is drawing: the wild excludes legendary/mythical species, a trainer does not (`D39`). */
@@ -55,4 +56,17 @@ export function speciesPool(
     .filter((species) => inWindow(species, window))
     .filter((species) => !isBanned(species, roster))
     .map((species) => species.id);
+}
+
+/**
+ * The species an individual of `speciesId` is generated as: one of its variant
+ * formes drawn on `rng`, or `speciesId` itself when it has none (`D38`). A pool
+ * entry whose species has a variant family is one row of the band's table, and
+ * the forme the individual carries is chosen here, at generation. Exactly one
+ * `rng.int` per call for a variant species, and none for any other species.
+ */
+export function variantSpecies(speciesId: string, rng: Rng): string {
+  const formes = variantFormes(speciesId);
+  if (formes.length === 0) return speciesId;
+  return formes[rng.int(0, formes.length - 1)];
 }

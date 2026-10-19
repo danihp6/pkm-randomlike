@@ -12,19 +12,27 @@ describe('randomAbilityPool', () => {
     const ids = randomAbilityPool().map((ability) => ability.id);
     expect(ids).toContain('blaze');
     expect(ids).toContain('levitate');
-    // Now implemented generically, so they are fair game.
+    // Implemented generically, so it is fair game.
     expect(ids).toContain('wonderguard');
-    expect(ids).toContain('zerotohero');
-    expect(ids).toContain('schooling');
-    expect(ids).toContain('zenmode');
-    expect(ids).toContain('zenmodegalar');
-    expect(ids).toContain('stancechange');
-    expect(ids).toContain('shieldsdown');
-    expect(ids).toContain('terashift');
-    expect(ids).toContain('forecast');
-    expect(ids).toContain('flowergift');
-    expect(ids).toContain('hungerswitch');
-    expect(ids).toContain('disguise');
+    // The Ice Face shield stays; every forme-changing ability was deleted and
+    // its formes became data (`D38`).
+    expect(ids).toContain('iceface');
+    for (const id of [
+      'battlebond',
+      'disguise',
+      'flowergift',
+      'forecast',
+      'hungerswitch',
+      'schooling',
+      'shieldsdown',
+      'stancechange',
+      'terashift',
+      'zerotohero',
+      'zenmode',
+      'zenmodegalar',
+    ]) {
+      expect(ids, id).not.toContain(id);
+    }
     // Still forme-locked: never handed out.
     expect(ids).not.toContain('powerconstruct');
     expect(ids).not.toContain('multitype');

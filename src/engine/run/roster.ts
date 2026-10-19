@@ -1,7 +1,7 @@
 import { megaFormsForBase } from '../../data/dex/megas';
 import type { LevelBand } from '../../data/run';
 import type { Rng } from '../rng';
-import { speciesPool } from './pool';
+import { speciesPool, variantSpecies } from './pool';
 
 export type RosterEntry = Readonly<{
   id: string;
@@ -34,7 +34,10 @@ export type RosterOptions = Readonly<{
  * every archetype — it varies only by the floor's BST window and the bans
  * (`D39`), and a trainer (unlike the wild) may field a legendary or mythical —
  * and a boss raises the window to its upper half. The run's battle seed feeds the
- * `rng`, so a replay rebuilds the same team.
+ * `rng`, so a replay rebuilds the same team. The forme each entry is generated as
+ * comes from the `variant` sibling stream split off that same seed before the
+ * first draw, so the picks, the levels and the Mega Stone stay where they were
+ * (`D38`).
  */
 export function trainerRoster(
   band: LevelBand,
@@ -42,6 +45,7 @@ export function trainerRoster(
   idPrefix: string,
   options: RosterOptions = {},
 ): readonly RosterEntry[] {
+  const variantRng = rng.split('variant');
   const source = speciesPool(band, 'trainer', { boss: options.boss === true });
   const pool = source.length > 0 ? [...source] : ['sentret'];
   const size = Math.max(1, options.count ?? band.trainerSize);
@@ -51,7 +55,7 @@ export function trainerRoster(
       pool.length > 0 ? pool.splice(rng.int(0, pool.length - 1), 1)[0] : source[i % source.length];
     roster.push({
       id: `${idPrefix}:${i}`,
-      speciesId,
+      speciesId: variantSpecies(speciesId, variantRng),
       level: rng.int(band.minLevel, band.maxLevel),
     });
   }

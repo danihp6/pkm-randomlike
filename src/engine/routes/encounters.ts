@@ -1,5 +1,5 @@
 import type { LevelBand } from '../../data/run';
-import { speciesPool } from '../run/pool';
+import { speciesPool, variantSpecies } from '../run/pool';
 import type { Rng } from '../rng';
 
 export type EncounterEntry = Readonly<{
@@ -59,11 +59,12 @@ export function rollEncounter(
   rng: Rng,
   chance: number = DEFAULT_ENCOUNTER_CHANCE,
   shinyRng?: Rng,
+  variantRng?: Rng,
 ): Encounter | undefined {
   if (table.length === 0 || rng.next() >= chance) return undefined;
   const entry = pickWeighted(table, rng);
   return {
-    speciesId: entry.speciesId,
+    speciesId: variantRng ? variantSpecies(entry.speciesId, variantRng) : entry.speciesId,
     level: rng.int(minLevel, maxLevel),
     shiny: shinyRng ? shinyRng.next() < SHINY_CHANCE : false,
   };
@@ -73,13 +74,16 @@ export function rollEncounter(
  * Rolls wild encounters for one route. Call `step()` once per tall-grass step:
  * the same table and Rng seeded the same way always yields the same sequence,
  * so walking the same grass in the same order is reproducible (D11). The shiny
- * roll draws from its own stream, so it can never shift the encounter sequence
- * a fixed seed already produced.
+ * roll and the variant roll each draw from their own stream, split off the
+ * encounters stream in the constructor, so neither can shift the encounter
+ * sequence a fixed seed already produced.
  */
 export class RouteEncounters {
   steps = 0;
 
   private exclusions: ReadonlySet<string>;
+
+  private readonly variantRng: Rng;
 
   constructor(
     private readonly table: EncounterTable,
@@ -91,6 +95,7 @@ export class RouteEncounters {
     exclusions: ReadonlySet<string> = NO_EXCLUSIONS,
   ) {
     this.exclusions = exclusions;
+    this.variantRng = rng.split('variant');
   }
 
   /**
@@ -117,6 +122,7 @@ export class RouteEncounters {
       this.rng,
       this.chance,
       this.shinyRng,
+      this.variantRng,
     );
   }
 }

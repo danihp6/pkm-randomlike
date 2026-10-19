@@ -76,6 +76,11 @@ carries over.
   (`Mega Charizard X · Mega Evolves with Charizardite X`) — and a Gigantamax
   (`Gigantamax Charizard · Gigantamaxes with no stone`, no item gate at all), both
   **always shown**, whether or not the stone is held (`D34`, `D44`).
+  A forme a deleted form-change ability used to reach (`D41`) arrives the same way
+  every other one does: as an ordinary **branch** of the graph — a clickable
+  evolution row keyed by the species that promotes (`D38`) — or, for Greninja's Ash
+  forme, as a **second Mega information row** beside `Mega Greninja`, so "one
+  information row per battle-only forme" still holds.
   The **ABILITY** row carries the same **ⓘ**
   control a move cell does, floating that ability's own one-line description over
   the panel on hover or a click. A branch the member's level already allows

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getSpecies } from '../../data/dex/species';
 import { LEVEL_BANDS } from '../../data/run';
 import { Rng } from '../rng';
 import { speciesPool, wildExclusions } from '../run/pool';
@@ -144,5 +145,49 @@ describe('wild encounter filtering (fixed seed)', () => {
     for (const id of first) expect(excluded.has(id), id).toBe(false);
     expect(new Set(first).size).toBeGreaterThan(1);
     expect(walk()).toEqual(first);
+  });
+});
+
+/** One table entry, the individual drawn from its variant family (`D38`). */
+describe('wild variant roll (fixed seed)', () => {
+  const VARIANT_TABLE: EncounterTable = [{ speciesId: 'eiscue', weight: 1 }];
+
+  it('rolls the table entry and generates the individual as one of its formes', () => {
+    const walk = (): readonly string[] => {
+      const roller = new RouteEncounters(VARIANT_TABLE, 10, 10, new Rng(24), 1);
+      return Array.from({ length: 40 }, () => roller.step()!.speciesId);
+    };
+    const first = walk();
+    for (const id of first) expect(['eiscue', 'eiscuenoice']).toContain(id);
+    expect(new Set(first).size).toBeGreaterThan(1);
+    expect(walk()).toEqual(first);
+  });
+
+  it('adds no draw: the level comes off the encounters stream in today\u2019s order', () => {
+    const roller = new RouteEncounters(VARIANT_TABLE, 12, 20, new Rng(4321), 1);
+    const levels = Array.from({ length: 10 }, () => roller.step()!.level);
+    const control = new Rng(4321);
+    const expected = Array.from({ length: 10 }, () => {
+      control.next();
+      control.next();
+      return control.int(12, 20);
+    });
+    expect(levels).toEqual(expected);
+  });
+
+  it('returns the table entry itself without a variant stream', () => {
+    expect(rollEncounter(VARIANT_TABLE, 3, 5, new Rng(7), 1)!.speciesId).toBe('eiscue');
+  });
+
+  it('keeps the whole band table at one entry per variant species', () => {
+    const band = LEVEL_BANDS[3];
+    const table = encounterTableFor(band);
+    const ids = table.map((entry) => entry.speciesId);
+    expect(ids).toContain('eiscue');
+    expect(ids).not.toContain('eiscuenoice');
+    const roller = new RouteEncounters(table, band.minLevel, band.maxLevel, new Rng(13), 1);
+    const walk = Array.from({ length: 2000 }, () => roller.step()!).map((entry) => entry.speciesId);
+    expect(walk).toContain('eiscuenoice');
+    for (const id of walk) expect(getSpecies(id), id).toBeDefined();
   });
 });

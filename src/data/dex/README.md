@@ -34,13 +34,26 @@ asserts the counts still match, so a bad regeneration fails loudly.
 - Typed accessors live next to the JSON (`species.ts`, `megas.ts`, `gmaxes.ts`, `moves.ts`,
   `items.ts`, `learnsets.ts`, `types.ts`, `natures.ts`, `evolutions.ts`,
   re-exported from `index.ts`). Only they read the JSON.
-- `evolutions.ts` also owns one **hand-authored override** beside the dex: Rotom's
-  five appliances (`rotomheat`, `rotomwash`, `rotomfrost`, `rotomfan`, `rotommow`)
-  are one level from the BST band (30), **one-way** — an appliance offers none and
-  never leads back — and keyed by the evolving species' id. The generated
-  `species.json` is untouched: the `rotom` row still reads `evolutions: []`,
-  `evos: []`, `prevo: ""`, because this is a game rule (`D38`) layered over the
-  dex, not dex data.
+- `evolutions.ts` also owns two **hand-authored tables** beside the dex, because
+  a canon trigger the game resolves as a level is not dex data (`D38`). The first
+  is `FORM_EVOLUTIONS`: the branches the generated `species.json` cannot carry,
+  keyed by the evolving species' id, one-way, and reached as ordinary evolution
+  rows in the STATS graph. It holds **Rotom's five appliances** (a key-item forme
+  change, one level from the BST band, an appliance offering none and never
+  leading back) and the **formes the deleted form-change abilities used to reach**
+  (`D41`): Palafin-Hero, Wishiwashi-School, Cherrim-Sunshine, Castform's three
+  (Sunny/Rainy/Snowy), Cramorant's Gulping/Gorging, Aegislash-Blade, the two Zen
+  formes, Ogerpon's three masks, and the sequential Zygarde and Terapagos stages —
+  the sequences carrying an authored level, since a chain cannot share the single
+  level a species' band resolves. Four of those rows land on a forme the generator
+  also raises by 60 stat points (`FORM_STAT_BOOSTS` in `scripts/build-dex.mjs`),
+  because each was stat-identical to its base species. The second table is
+  `VARIANT_FORMES`: the three families (Eiscue, Morpeko, Minior) whose only other
+  forme is not an evolution at all, so each stays **one pool entry** and the
+  engine rolls which forme an individual is generated as (`variantSpecies` on a
+  `Rng.split('variant')` sibling stream in `src/engine/run/pool.ts`). Both tables
+  leave the generated `species.json` untouched: a `rotom` row still reads
+  `evolutions: []`, `evos: []`, `prevo: ""`.
 - The playable set is the **full National Dex** (`D40`): every species with a
   number, `Past` Dexit entries included. Only non-species are dropped at
   generation time — CAP/fan entries, `Custom` (MissingNo, Pokéstar), LGPE's

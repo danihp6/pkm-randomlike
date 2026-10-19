@@ -30,7 +30,8 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   `routes/trainers.ts`, `routes/doors.ts`, `routes/walls.ts` and `routes/streams.ts`.
 - `run/` — the run state and its books: `run/state.ts` (party, box, bag and money),
   `run/progression.ts` (XP and levels), `run/battleLink.ts` + `run/resolve.ts` (the post-battle
-  resolve), `run/roster.ts` + `run/pool.ts` (rosters and the species pool, `D39`), plus
+  resolve), `run/roster.ts` + `run/pool.ts` (rosters, the species pool and the variant roll
+  that picks an individual's forme at generation, `D38`/`D39`), plus
   `run/chain.ts`, `run/floors.ts`, `run/levelCap.ts`, `run/heal.ts`, `run/learnset.ts`,
   `run/nickname.ts` (the member names the player types), `run/reward.ts`, `run/perms.ts`,
   `run/starters.ts` and `run/share.ts`.

@@ -19,6 +19,15 @@ export class Rng {
   int(min: number, max: number): number {
     return min >= max ? min : Math.floor(this.next() * (max - min + 1)) + min;
   }
+
+  /**
+   * A stream derived from this one's current position under `salt`: a roll that
+   * must not shift the parent's sequence gets its own (`D11`). Never advances
+   * this stream, and the same position and salt give the same sequence.
+   */
+  split(salt: string): Rng {
+    return new Rng(hashSeed(`${this.state >>> 0}:${salt}`));
+  }
 }
 
 export function hashSeed(input: string): number {

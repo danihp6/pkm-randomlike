@@ -302,7 +302,8 @@ names its answer and the Phase 9 step (or the later batch) that landed it.
 - **O-M6 — Mega Stones.** Resolved by Phase 9 step 9 and the mega-stone room: a
   stone is a `held` item, one per Mega forme, and holding it allows a Mega
   Evolution once per battle (`D34`); every dex Mega is in
-  (`src/data/dex/megas.json`, 88 formes).
+  (`src/data/dex/megas.json`, 89 formes, the hand-authored Greninja-Ash among
+  them).
 - **O-M7 — Finite campaign length.** Resolved by Phase 9 step 1 and Batch 5c
   (`Task-69`): a finite run walks **eight** maps (`FINITE_MAPS` in
   `src/data/maps.ts`), capping the squad at 9 → 55, one tuned row per map — a

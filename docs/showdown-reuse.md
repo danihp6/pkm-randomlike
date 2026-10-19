@@ -24,12 +24,12 @@ an adaptor over its event loop.
 
 | File | Contents | Count |
 | --- | --- | --- |
-| `species.json` | stats, types, abilities, forms, evolutions, gender ratio, weight, catch rate | 1282 (full National Dex) |
-| `megas.json` | every Mega forme of a played species: stats, types, ability, `baseSpeciesId`, `stoneId`, `stoneName` | 88 |
+| `species.json` | stats, types, abilities, forms, evolutions, gender ratio, weight, catch rate | 1281 (full National Dex) |
+| `megas.json` | every Mega forme of a played species: stats, types, ability, `baseSpeciesId`, `stoneId`, `stoneName` | 89 |
 | `moves.json` | type, category, power, accuracy, PP, priority, target, flags, secondaries | 835 |
 | `abilities.json` | name, description, flags | 311 |
 | `items.json` | name, description, battle flags | 249 |
-| `learnsets.json` | per species, move sources (`9L24`, `9M`, `9E`, `8L1`, ...) | 1281 |
+| `learnsets.json` | per species, move sources (`9L24`, `9M`, `9E`, `8L1`, ...) | 1280 |
 | `natures.json` | 25 natures with stat deltas | 25 |
 | `types.json` | the 18x18 effectiveness chart | 19 |
 
