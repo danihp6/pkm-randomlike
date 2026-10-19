@@ -47,6 +47,7 @@ import { setWeather, tickWeather, weatherChip, weatherFromMove, weatherLabel } f
 import { computeDamage, rollCrit, type DamageContext, type DamageResult } from './damage';
 import { orderActions } from './order';
 import {
+  barredMovesFor,
   selectedMove,
   useBagItem,
   validateCommand,
@@ -528,9 +529,13 @@ function lockedMove(attacker: BattleFighter, moveId: string): SelectedMove | nul
 }
 
 /** The selected move, honouring a charge-move lock before the command. */
-function chosenMove(fighter: BattleFighter, command: FightCommand): SelectedMove | null {
+function chosenMove(
+  fighter: BattleFighter,
+  command: FightCommand,
+  barred: ReadonlySet<string>,
+): SelectedMove | null {
   const charging = fighter.volatiles.charging;
-  return charging ? lockedMove(fighter, charging) : selectedMove(fighter, command);
+  return charging ? lockedMove(fighter, charging) : selectedMove(fighter, command, barred);
 }
 
 const PRESSURED_TARGETS = new Set([
@@ -615,7 +620,7 @@ function maybeSelfSwitch(state: BattleState, side: SideId, attacker: BattleFight
 
 export function useMove(state: BattleState, side: SideId, command: FightCommand): void {
   const attacker = activeFighter(state, side);
-  const selected = chosenMove(attacker, command);
+  const selected = chosenMove(attacker, command, barredMovesFor(state, side));
   if (!selected) return;
   const { move, slot } = selected;
   state.abilityPierce = piercesTargetAbility(state, side, attacker, move) ? attacker : null;
@@ -1256,7 +1261,7 @@ export function takeTurn(state: BattleState, playerCommand: Command, enemyComman
 
   const moveEntries = SIDE_IDS.filter((side) => commands[side].type === 'fight').map((side) => {
     const fighter = activeFighter(state, side);
-    const selected = chosenMove(fighter, commands[side] as FightCommand);
+    const selected = chosenMove(fighter, commands[side] as FightCommand, barredMovesFor(state, side));
     if (!selected) return { side, priority: 0, fractional: 0 };
     const ctx = makeContext(state, side, {
       source: fighter,

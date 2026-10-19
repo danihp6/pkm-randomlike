@@ -35,6 +35,11 @@ export function miniBossTrainerId(mapIndex: number): string {
   return `miniboss-${mapIndex}`;
 }
 
+/** The no-heal room's stable trainer id, distinct from a regular one. */
+export function noHealTrainerId(mapIndex: number): string {
+  return `noheal-${mapIndex}`;
+}
+
 /**
  * The edge the boss room's portal opens onto, or null when `roomId` is not the
  * boss room (or has no free wall, which the floor graph never produces). The pick

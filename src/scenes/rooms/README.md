@@ -28,6 +28,10 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
   a random one.
 - `trade.test.ts` — the room's own surface: the counter, the rows, the refusal paths,
   the commit and the marker.
+- `noHeal.ts` — the no-heal room: its notice, its `psychic` trainer on the room's
+  farthest tile and the marker of the room whose battles refuse the Bag and heals.
+- `noHeal.test.ts` — the room's own surface: the trainer's id, tile and archetype,
+  the defeated and no-free-tile cases, the notice and the marker.
 - `fixtures.test.ts` — the shipped rooms' fixtures, pinned by id, tile and (for the stone)
   the exact item the fixed seed rolls.
 

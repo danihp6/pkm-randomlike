@@ -23,6 +23,8 @@ export type RoomFixture = Readonly<{
   items?: readonly RouteItem[];
   /** The room's interactable counter tile, or null when the room has none. */
   counter?: Tile | null;
+  /** A transient notice the scene floats once the fixture is applied. */
+  notice?: Notice;
 }>;
 
 /** The route scene's own modal panel, owned by the room that opened it. */

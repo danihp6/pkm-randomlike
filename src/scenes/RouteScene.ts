@@ -1148,6 +1148,9 @@ export class RouteScene extends Phaser.Scene {
       this.route = { ...this.route, items: [...this.route.items, ...fixture.items] };
     }
     if (fixture && 'counter' in fixture) this.shopCounter = fixture.counter ?? null;
+    // A room's own line rides the strip once its fixture is in place (the no-heal
+    // leaf announces its rule this way).
+    if (fixture?.notice) this.showNotice(fixture.notice);
     // Last: the filter needs `this.map`, which `buildRoute` → `applyRoute` sets.
     this.buildBattlefieldOverlay();
   }
@@ -6311,6 +6314,9 @@ export class RouteScene extends Phaser.Scene {
       // The room's own condition, so every battle that starts here — trainers,
       // the boss and wilds alike — begins under it (`docs/maps-spec.md` §7).
       battlefield: this.battlefield,
+      // The no-heal leaf's rule rides the launch too, so its trainer's battle and
+      // any dev wild opened in the room both carry it.
+      noHeal: this.room?.special === 'no-heal',
     };
     this.pendingBattle = launch;
     this.scene.pause();

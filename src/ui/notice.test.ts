@@ -7,6 +7,7 @@ import {
   gateOpenedNotice,
   itemPickupNotice,
   levelUpNotice,
+  noHealRoomNotice,
 } from './notice';
 
 describe('catchToPcNotice', () => {
@@ -111,5 +112,30 @@ describe('gateOpenedNotice', () => {
 
   it('holds a notice for 2.6 seconds', () => {
     expect(gateOpenedNotice().holdMs).toBe(2600);
+  });
+});
+
+describe('noHealRoomNotice', () => {
+  it('announces the room rule with the shared hold', () => {
+    expect(noHealRoomNotice()).toEqual({
+      text: 'No items or healing moves in this room!',
+      holdMs: NOTICE_HOLD_MS,
+    });
+  });
+
+  it('holds a notice for 2.6 seconds', () => {
+    expect(noHealRoomNotice().holdMs).toBe(2600);
+  });
+
+  it('says something no other notice says', () => {
+    const others = [
+      catchToPcNotice('Sentret'),
+      itemPickupNotice('Potion'),
+      levelUpNotice('Growlithe', 21),
+      eggHatchNotice('Sentret'),
+      gateLockedNotice('bush'),
+      gateOpenedNotice(),
+    ].map((notice) => notice.text);
+    expect(others).not.toContain(noHealRoomNotice().text);
   });
 });

@@ -271,6 +271,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'notice.itemObtained': '¡Has obtenido {name}!',
   'notice.levelUp': '¡{name} ha subido al nivel {level}!',
   'notice.eggHatch': '¡El Huevo eclosionó en {name}!',
+  'notice.noHealRoom': '¡En esta sala no se pueden usar objetos ni movimientos de curación!',
   'gate.locked.bush': 'Unos arbustos espesos. Un Pokémon de tipo Bicho o Planta podría abrirlos.',
   'gate.locked.rock': 'Una roca. Un Pokémon de tipo Roca o Lucha podría romperla.',
   'gate.locked.water': 'Agua profunda. Un Pokémon de tipo Agua podría cruzarla.',

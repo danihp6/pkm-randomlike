@@ -62,6 +62,8 @@ export type BattleLaunch = Readonly<{
   aiLevel: AiLevel;
   /** The condition the battle's room rolled, or null/absent when the room rolled none. */
   battlefield?: RoomBattlefield | null;
+  /** The room bars the player's Bag and healing moves (the no-heal leaf, `docs/maps-spec.md` §7). */
+  noHeal?: boolean;
 }>;
 
 export type BattleOutcome = 'win' | 'lose' | 'run' | 'capture';

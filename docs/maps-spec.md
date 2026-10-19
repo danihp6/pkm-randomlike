@@ -199,6 +199,7 @@ no tall grass, no regular trainers, no ground items:
 | **casino** | 30 % chance, **from map 2 onward** | a leaf anywhere | a **slot machine** counter with a Team Rocket grunt beside it; the interact key (`E`) opens the machine's own window, where one **spin** costs the floor band's price (`CASINO.price`, `src/data/casino.ts`) and pays an item, an **Egg** or the fight against the grunt |
 | **gated** | 20 % chance, **from map 3 onward** | a leaf anywhere | one **vault** sealed by a **bush**, a **rock** or a **pond**; the interact key opens it when a party member has the obstacle's **type** — Bug or Grass / Rock or Fighting / Water — and the reward inside is one ground item |
 | **trade** | 20 % chance, **from map 3 onward** | a leaf anywhere | a counter; the interact key (`E`) opens the room's own window, which lists the **party** and one `LEAVE` row. Giving a member away rolls **one random Pokémon on acceptance** (never previewed) and places it in the party at the **squad's level**; one trade per room, and refused on a single-member party |
+| **no-heal** | 20 % chance, **from map 3 onward** | a leaf anywhere | one `psychic` trainer; **every battle that starts in the room** refuses the **player's** Bag and healing moves (`docs/battle-spec.md` §2) |
 
 Specials count **outside** K (`K` regular rooms + the specials), are rolled on
 the same `map` stream, and are discovered like any room: they appear on the
@@ -207,12 +208,13 @@ map 2 on** — map 1 is the run's on-ramp, with no money for a counter and alrea
 10-ball pack, so its floor hangs no shop leaf at all; the **mini-boss** leaf rolls
 with a **50%** chance, the **mega-stone** leaf with **15%** (only **from map 3
 onward**), the **casino** leaf with **30%** (only **from map 2 onward**), the
-**gated** leaf with **20%** (only **from map 3 onward**) and the **trade** leaf with
-**20%** (only **from map 3 onward**), and any of them may coincide on the same
-floor. The casino's draw, then the **gated** leaf's and then the **trade** leaf's
-are the **last** statements of the special pass, in that order, so no floor's shop,
-mini-boss, mega-stone, casino, gated leaf, room id or room size moved when any of
-them shipped.
+**gated** leaf with **20%** (only **from map 3 onward**), the **trade** leaf with
+**20%** (only **from map 3 onward**) and the **no-heal** leaf with **20%** (only
+**from map 3 onward**), and any of them may coincide on the same floor. The
+casino's draw, then the **gated** leaf's, then the **trade** leaf's and then the
+**no-heal** leaf's are the **last** statements of the special pass, in that order,
+so no floor's shop, mini-boss, mega-stone, casino, gated leaf, trade leaf, room id
+or room size moved when any of them shipped.
 
 The **gated** leaf is the type-gated vault (`src/data/gates.ts`,
 `src/engine/routes/gate.ts`, `D47`'s room descriptor `src/scenes/rooms/gate.ts`).
@@ -267,6 +269,38 @@ The **shop panel** is a HUD window like the party/bag panels: a Pokémon
 Mart-style list with prices that **only appears while the player is in the shop
 room** (it is opened at the counter with `E` and is unavailable anywhere else), so
 buying is tied to the room rather than to a menu key.
+
+### The no-heal room
+
+The **no-heal** leaf (`src/data/noHeal.ts`, `D47`'s room descriptor
+`src/scenes/rooms/noHeal.ts`) is the one room whose **battles** impose a rule of
+their own. It hangs off a regular room from **map 3 onward** with a **20%** chance,
+as the **last** draw of the special pass (after the trade leaf), so no earlier
+leaf moves because of it. Its content:
+
+- one trainer of the `psychic` archetype at the room's **farthest walkable tile**,
+  under the floor's own stable id `noheal-<mapIndex>` in `defeatedTrainers`, so a
+  beaten room stays beaten on a revisit and a reload finds nothing to fight;
+- entering the room floats the room's **notice** through the route HUD's strip
+  (`noHealRoomNotice`, `src/ui/notice.ts`, the `notice.noHealRoom` line). The room
+  has **no window**: the rule surfaces through the notice and the battle menus;
+- **every battle that starts in the room** — its trainer's, and a dev-opened wild —
+  carries `BattleLaunch.noHeal`, which `createBattle` copies onto
+  `BattleState.noHeal` and announces as the battle feed's first line.
+
+The rule itself:
+
+- the **player's** Bag is refused: `No items can be used in this room.` The BAG row
+  is drawn disabled and the cursor skips it;
+- the **player's** moves listed in `BARRED_HEALING_MOVES` (`src/data/noHeal.ts`: the
+  self-heals, the effect-handled heals and the draining attacks) are refused with
+  `That move cannot be used in this room.`, and drawn disabled; when a barred move
+  is the fighter's **only** PP-legal move the command validates and resolves as
+  **Struggle**, the same fallback as "No PP" (`docs/battle-spec.md` §2);
+- **nothing else** moves: the enemy's side and its own healing moves, the AI, the
+  abilities, the held items, the residual heals (Leftovers, berries, terrain, Leech
+  Seed, Aqua Ring, Ingrain), the Pokevial, the PC and the map heal stop are
+  untouched, and a loss in the room is a **normal loss** (`D5`).
 
 ### The casino (the slot machine)
 

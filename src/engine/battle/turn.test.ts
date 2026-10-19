@@ -167,3 +167,61 @@ describe('ability interactions in the turn loop', () => {
     expect(player.hp).toBeLessThan(before);
   });
 });
+
+describe('the no-heal room in the turn loop', () => {
+  /** A battle launched from the no-heal leaf (`BattleLaunch.noHeal`). */
+  const buildRoom = (
+    player: readonly FighterInput[],
+    enemy: readonly FighterInput[],
+    seed = 42,
+  ): BattleState =>
+    createBattle({
+      player: player.map((input) => createFighter(input)),
+      enemy: enemy.map((input) => createFighter(input)),
+      rng: new Rng(seed),
+      isWild: false,
+      noHeal: true,
+    });
+
+  it('resolves an all-barred moveset as Struggle and restores no HP', () => {
+    const state = buildRoom(
+      [{ id: 'p', speciesId: 'bulbasaur', level: 20, moves: ['synthesis'] }],
+      [{ id: 'e', speciesId: 'charmander', level: 20, moves: ['tackle'] }],
+    );
+    const player = state.sides.player.party[0];
+    player.hp = Math.floor(player.maxHp / 2);
+    const before = player.hp;
+    const pp = player.moves[0].pp;
+    takeTurn(state, fight(), fight());
+    // The barred move was never used: no PP spent, no heal, Struggle instead.
+    expect(state.log.some((event) => event.kind === 'move' && event.moveId === 'synthesis')).toBe(false);
+    expect(state.log.some((event) => event.kind === 'move' && event.moveId === 'struggle')).toBe(true);
+    expect(state.log.some((event) => event.kind === 'heal' && event.side === 'player')).toBe(false);
+    expect(player.moves[0].pp).toBe(pp);
+    expect(player.hp).toBeLessThan(before);
+  });
+
+  it('refuses a barred move while another one is legal, before any roll', () => {
+    const state = buildRoom(
+      [{ id: 'p', speciesId: 'charmander', level: 20, moves: ['synthesis', 'ember'] }],
+      [{ id: 'e', speciesId: 'bulbasaur', level: 20, moves: ['tackle'] }],
+    );
+    expect(() => takeTurn(state, fight(0), fight())).toThrow('That move cannot be used in this room.');
+    expect(state.turn).toBe(0);
+    expect(state.sides.player.party[0].hp).toBe(state.sides.player.party[0].maxHp);
+  });
+
+  it('leaves the enemy’s own healing move working', () => {
+    const state = buildRoom(
+      [{ id: 'p', speciesId: 'charmander', level: 20, moves: ['growl'] }],
+      [{ id: 'e', speciesId: 'bulbasaur', level: 20, moves: ['synthesis'] }],
+    );
+    const enemy = state.sides.enemy.party[0];
+    enemy.hp = Math.floor(enemy.maxHp / 3);
+    const before = enemy.hp;
+    takeTurn(state, fight(), fight());
+    expect(state.log.some((event) => event.kind === 'move' && event.moveId === 'synthesis')).toBe(true);
+    expect(state.log.some((event) => event.kind === 'heal' && event.side === 'enemy')).toBe(true);
+    expect(enemy.hp).toBeGreaterThan(before);
+  });
+});

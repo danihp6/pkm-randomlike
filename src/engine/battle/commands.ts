@@ -1,5 +1,6 @@
 import { getMove, type Move } from '../../data/dex';
 import type { ItemDef } from '../../data/items';
+import { BARRED_HEALING_MOVES } from '../../data/noHeal';
 import { attemptCapture } from './capture';
 import { canGigantamax } from './gmax';
 import { canMegaEvolve } from './mega';
@@ -34,11 +35,34 @@ export function findMoveIndex(fighter: BattleFighter, moveId: string): number {
   return fighter.moves.findIndex((slot) => slot.moveId === moveId);
 }
 
-/** Indices the active Pokémon may actually pick, honouring PP, Encore and disable. */
-export function legalMoveIndices(fighter: BattleFighter): readonly number[] {
+export type SelectedMove = Readonly<{ move: Move; slot: MoveSlot | null }>;
+
+const BARRED_HEALING: ReadonlySet<string> = new Set(BARRED_HEALING_MOVES);
+const NOTHING_BARRED: ReadonlySet<string> = new Set();
+
+/**
+ * The moves the room bars for `side`: the no-heal room's list for the **player**
+ * only, empty for the enemy (its AI, its own healing moves and everything else
+ * stay untouched).
+ */
+export function barredMovesFor(state: BattleState, side: SideId): ReadonlySet<string> {
+  if (side !== 'player' || !state.noHeal) return NOTHING_BARRED;
+  return BARRED_HEALING;
+}
+
+/** The indices the active Pokémon may actually pick, `barred` moves excluded. */
+export function legalMoveIndices(
+  fighter: BattleFighter,
+  barred?: ReadonlySet<string>,
+): readonly number[] {
   const usable = fighter.moves
     .map((slot, index) => ({ slot, index }))
-    .filter((entry) => entry.slot.pp > 0 && entry.slot.moveId !== fighter.volatiles.disabledMove);
+    .filter(
+      (entry) =>
+        entry.slot.pp > 0 &&
+        entry.slot.moveId !== fighter.volatiles.disabledMove &&
+        !(barred?.has(entry.slot.moveId) ?? false),
+    );
 
   if (fighter.volatiles.encoreMove !== null) {
     const locked = usable.filter((entry) => entry.slot.moveId === fighter.volatiles.encoreMove);
@@ -52,17 +76,27 @@ export function legalMoveIndices(fighter: BattleFighter): readonly number[] {
   return usable.map((entry) => entry.index);
 }
 
-export type SelectedMove = Readonly<{ move: Move; slot: MoveSlot | null }>;
-
-/** The chosen move, or Struggle when no move is usable. */
-export function selectedMove(fighter: BattleFighter, command: FightCommand): SelectedMove | null {
+/** The chosen move, or Struggle when no move is usable (spent PP or a barred move). */
+export function selectedMove(
+  fighter: BattleFighter,
+  command: FightCommand,
+  barred?: ReadonlySet<string>,
+): SelectedMove | null {
   const slot = fighter.moves[command.moveIndex];
-  if (slot && slot.pp > 0 && slot.moveId !== fighter.volatiles.disabledMove) {
+  if (
+    slot &&
+    slot.pp > 0 &&
+    slot.moveId !== fighter.volatiles.disabledMove &&
+    !(barred?.has(slot.moveId) ?? false)
+  ) {
     const move = getMove(slot.moveId);
     if (move) return { move, slot };
   }
   const anyUsable = fighter.moves.some(
-    (entry) => entry.pp > 0 && entry.moveId !== fighter.volatiles.disabledMove,
+    (entry) =>
+      entry.pp > 0 &&
+      entry.moveId !== fighter.volatiles.disabledMove &&
+      !(barred?.has(entry.moveId) ?? false),
   );
   if (!anyUsable) {
     const struggle = getMove('struggle');
@@ -85,6 +119,7 @@ function validateSwitch(state: BattleState, side: SideId, command: SwitchCommand
 
 function validateBag(state: BattleState, side: SideId, command: BagCommand): string | null {
   if (side !== 'player') return 'Only the player has a Bag.';
+  if (side === 'player' && state.noHeal) return 'No items can be used in this room.';
   const slot = state.bag.find((entry) => entry.item.id === command.itemId);
   if (!slot || slot.count <= 0) return 'That item is not in the Bag.';
   if (slot.item.kind === 'ball' && !state.isWild) return 'Ball: cannot be used in a trainer battle.';
@@ -105,11 +140,17 @@ export function validateCommand(state: BattleState, side: SideId, command: Comma
       if (command.moveIndex < 0 || command.moveIndex >= fighter.moves.length) {
         return 'There is no such move.';
       }
-      const legal = legalMoveIndices(fighter);
+      const barred = barredMovesFor(state, side);
+      const legal = legalMoveIndices(fighter, barred);
       if (fighter.moves[command.moveIndex]?.moveId === fighter.volatiles.disabledMove) {
         return 'That move is disabled!';
       }
       if (legal.length > 0 && !legal.includes(command.moveIndex)) {
+        // The room's rule only refuses a barred move while another one is left:
+        // a fighter whose whole moveset is barred falls through to Struggle.
+        if (barred.has(fighter.moves[command.moveIndex].moveId)) {
+          return 'That move cannot be used in this room.';
+        }
         if (
           isTaunted(fighter) &&
           getMove(fighter.moves[command.moveIndex]?.moveId ?? '')?.category === 'Status'

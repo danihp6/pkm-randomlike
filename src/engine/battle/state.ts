@@ -124,6 +124,12 @@ export type BattleState = {
   abilityPierce: BattleFighter | null;
   /** The last move id used this battle, for Copycat. */
   lastMove: string | null;
+  /**
+   * The no-heal room's rule (`docs/maps-spec.md` §7): the player's Bag and the
+   * moves of `BARRED_HEALING_MOVES` are refused. The enemy's side, abilities,
+   * held items and residual heals are untouched.
+   */
+  noHeal: boolean;
 };
 
 export type BattleSetup = Readonly<{
@@ -144,6 +150,8 @@ export type BattleSetup = Readonly<{
   field?: Partial<FieldConditions>;
   /** A room condition: dense fog over the field. */
   fog?: boolean;
+  /** The room bars the player's Bag and healing moves (the no-heal leaf). */
+  noHeal?: boolean;
 }>;
 
 export function createBattle(setup: BattleSetup): BattleState {
@@ -192,7 +200,11 @@ export function createBattle(setup: BattleSetup): BattleState {
     switchedSides: [],
     abilityPierce: null,
     lastMove: null,
+    noHeal: setup.noHeal ?? false,
   };
+
+  // The room's rule is the battle feed's first line, ahead of any start hook.
+  if (state.noHeal) pushText(state, 'No items or healing moves can be used in this room!');
 
   for (const side of SIDE_IDS) {
     const fighter = activeFighter(state, side);

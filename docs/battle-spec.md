@@ -27,6 +27,16 @@ Phaser scene only renders state and forwards choices.
 | **Pokémon** | Swap the active Pokémon for another in the party; costs the turn. |
 | **Run** | Wild battles only. Seeded roll against the classic odds; trainer battles refuse. |
 
+The **no-heal room** (`docs/maps-spec.md` §7) narrows the first two rows **for the
+player only**: the **Bag** is refused (`No items can be used in this room.`, its row
+drawn disabled) and the moves in `BARRED_HEALING_MOVES` (`src/data/noHeal.ts`) are
+refused with `That move cannot be used in this room.` while at least one other move
+is legal; when a barred move is the fighter's only PP-legal move the command
+validates and resolves as **Struggle**, exactly the "No PP" fallback above. The
+enemy's side, its AI, its own healing moves, the abilities, the held items, the
+residual heals and every other command are untouched, and the gate rejects before
+any roll, so the battle RNG does not move.
+
 ## 3. Damage and stats
 
 - Stats at level with natures, IVs and EVs computed exactly once per Pokémon
