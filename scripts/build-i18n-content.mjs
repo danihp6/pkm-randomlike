@@ -10,6 +10,8 @@ const FILES = [
   'move_flavor_text.csv',
   'ability_names.csv',
   'ability_flavor_text.csv',
+  'moves.csv',
+  'abilities.csv',
 ];
 const ES_LANGUAGES = new Set([7, 14]);
 const LATEST_VERSION_GROUP = 25;
@@ -118,24 +120,68 @@ function descriptionsById(rows, maxVersion) {
   return new Map([...best].map(([id, value]) => [id, value.text]));
 }
 
-function build(dexRows, names, descriptions, missingNames, missingDescriptions) {
+function build(
+  dexRows,
+  names,
+  descriptions,
+  missingNames,
+  missingDescriptions,
+  fallback,
+  pokeIdOf,
+) {
   const out = {};
   for (const row of dexRows) {
-    const num = Number(row.num);
-    if (!Number.isFinite(num) || num <= 0) {
+    const pokeId = pokeIdOf(row);
+    if (!pokeId) {
       missingNames.push(row.id);
       continue;
     }
-    const name = names.get(num);
-    const description = descriptions.get(num);
+    const name = names.get(pokeId);
     if (!name) {
       missingNames.push(row.id);
       continue;
     }
-    out[row.id] = { name, description: description ?? '', shortDescription: description ?? '' };
+    const description = descriptions.get(pokeId) ?? fallback?.(pokeId) ?? '';
+    out[row.id] = { name, description, shortDescription: description };
     if (!description) missingDescriptions.push(row.id);
   }
   return out;
+}
+
+const normalise = (id) => id.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+function identifierIndex(rows) {
+  return new Map(rows.map((row) => [normalise(row.identifier), Number(row.id)]));
+}
+
+function svTextFallback(file) {
+  if (!file) return null;
+  const lines = fs.readFileSync(path.resolve(file), 'utf8').split(/\r?\n/);
+  const anchor = (needle) => {
+    const index = lines.findIndex((line) => line.includes(needle));
+    if (index < 0) throw new Error(`SV text dump: anchor not found: ${needle}`);
+    return index;
+  };
+  const moveAnchor = anchor('Embestida con todo el cuerpo.');
+  const abilityAnchor = anchor('Potencia sus movimientos de tipo Fuego cuando le');
+  const moveNamesStart = anchor('Text File : wazaname.dat');
+  const abilityNamesStart = anchor('Text File : tokuseiinfo.dat');
+  const clean = (line) =>
+    (line ?? '')
+      .replace(/\\n/g, ' ')
+      .replace(/\r/g, ' ')
+      .replace(/\f/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  const read = (index, stop) => {
+    if (index >= stop) return '';
+    const text = clean(lines[index]);
+    return /^[-\u2014\s]+$/.test(text) ? '' : text;
+  };
+  return {
+    move: (num) => read(moveAnchor - 33 + num, moveNamesStart),
+    ability: (num) => read(abilityAnchor - 66 + num, abilityNamesStart),
+  };
 }
 
 const dir = await sourceDir();
@@ -152,17 +198,32 @@ const abilityDescriptions = descriptionsById(
   table(read('ability_flavor_text.csv')),
   LATEST_VERSION_GROUP,
 );
+const moveIds = identifierIndex(table(read('moves.csv')));
+const abilityIds = identifierIndex(table(read('abilities.csv')));
+const ID_ALIASES = {
+  visegrip: 11,
+  embodyaspectcornerstone: 303,
+  embodyaspecthearthflame: 303,
+  embodyaspectteal: 303,
+  embodyaspectwellspring: 303,
+  zenmodegalar: 161,
+};
+const movePokeId = (row) => moveIds.get(row.id) ?? ID_ALIASES[row.id] ?? 0;
+const abilityPokeId = (row) => abilityIds.get(row.id) ?? ID_ALIASES[row.id] ?? 0;
 
 const missingMoveNames = [];
 const missingMoveDescriptions = [];
 const missingAbilityNames = [];
 const missingAbilityDescriptions = [];
+const sv = svTextFallback(arg('--sv-text', process.env.SV_TEXT_DUMP));
 const moves = build(
   dexMoves,
   moveNames,
   moveDescriptions,
   missingMoveNames,
   missingMoveDescriptions,
+  sv?.move,
+  movePokeId,
 );
 const abilities = build(
   dexAbilities,
@@ -170,6 +231,8 @@ const abilities = build(
   abilityDescriptions,
   missingAbilityNames,
   missingAbilityDescriptions,
+  sv?.ability,
+  abilityPokeId,
 );
 
 const outDir = path.join(ROOT, 'src/data/i18n/es');
