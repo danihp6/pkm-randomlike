@@ -118,6 +118,8 @@ function stubHost(options: StubOptions = {}): RoomHost {
       open?.close();
     },
     panelOpen: () => panel !== null,
+    startTrainerBattle: () => undefined,
+    showNotice: () => undefined,
   };
 }
 

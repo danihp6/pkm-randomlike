@@ -180,8 +180,29 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
   },
 ];
 
+/**
+ * The **set-piece** archetypes the rooms place themselves: a trainer the route's
+ * population pass must never roll, so they live outside `TRAINER_ARCHETYPES` and are
+ * reachable by id through `getTrainerArchetype` alone. Their `spriteKey` /
+ * `battleSprite` name the frames they will draw once the FRLG atlas carries the row;
+ * until then `overworldSpriteFrame` / `trainerSpriteFrame` resolve to null and the
+ * route and the battle draw their own placeholder.
+ */
+export const SPECIAL_ARCHETYPES: readonly TrainerArchetype[] = [
+  {
+    id: 'rocket',
+    name: 'Team Rocket',
+    className: 'Team Rocket',
+    spriteKey: 'rocket',
+    colour: 0xc0392b,
+    battleSprite: 'rocket',
+    money: { base: 120, jitter: 50 },
+    aiFlags: ['checkBadMove', 'checkViability', 'tryToFaint'],
+  },
+];
+
 const BY_ID = new Map<string, TrainerArchetype>(
-  TRAINER_ARCHETYPES.map((archetype) => [archetype.id, archetype]),
+  [...TRAINER_ARCHETYPES, ...SPECIAL_ARCHETYPES].map((archetype) => [archetype.id, archetype]),
 );
 
 export const TRAINER_ARCHETYPE_IDS: readonly string[] = TRAINER_ARCHETYPES.map(

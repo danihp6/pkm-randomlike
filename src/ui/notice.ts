@@ -48,3 +48,11 @@ export function levelUpNotice(name: string, level: number): Notice {
     holdMs: NOTICE_HOLD_MS,
   };
 }
+
+/** The Egg's hatch notice: `<name>` is the hatched member's display name. */
+export function eggHatchNotice(name: string): Notice {
+  return {
+    text: t('notice.eggHatch', { name }),
+    holdMs: NOTICE_HOLD_MS,
+  };
+}

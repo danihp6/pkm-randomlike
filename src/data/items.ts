@@ -1426,6 +1426,13 @@ export const ITEMS: readonly ItemDef[] = [
     price: 12000,
     shortDesc: 'A shard of a comet. Sell it for money.',
   }),
+  item({
+    id: 'egg',
+    name: 'Egg',
+    kind: 'valuable',
+    price: 0,
+    shortDesc: 'A mystery Egg from the slot machine. It hatches on the next floor.',
+  }),
 
   ...PLATE_ITEMS,
   ...MEMORY_DRIVE_ITEMS,

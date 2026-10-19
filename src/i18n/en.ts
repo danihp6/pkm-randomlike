@@ -119,6 +119,15 @@ export const en = {
   'mart.sold': 'Sold {name} for ¥{amount}.',
   'mart.controls': '{confirm}: buy / sell    {cancel}: leave',
 
+  // casino — the slot machine's window
+  'casino.title': 'SLOT MACHINE',
+  'casino.money': 'MONEY  ¥{amount}',
+  'casino.spin': 'SPIN  ¥{price}',
+  'casino.leave': 'LEAVE',
+  'casino.noMoney': "You don't have enough money.",
+  'casino.locked': 'The machine is out of order.',
+  'casino.controls': '{confirm}: spin    {cancel}: leave',
+
   // reward — the mini-boss reward window
   'reward.title': 'MINI-BOSS REWARD',
   'reward.choose': 'Choose one.',
@@ -248,6 +257,7 @@ export const en = {
     'Your party is full — {name} went to the PC. You can swap it in before you leave this route.',
   'notice.itemObtained': 'Obtained {name}!',
   'notice.levelUp': '{name} grew to Lv {level}!',
+  'notice.eggHatch': 'The Egg hatched into {name}!',
 
   // seed — the seed / share-string prompt
   'seed.title': 'SEED / SHARE STRING',

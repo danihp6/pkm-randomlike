@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { TRAINER_ARCHETYPES, TRAINER_ARCHETYPE_IDS, getTrainerArchetype, type AiFlag } from './trainers';
+import {
+  SPECIAL_ARCHETYPES,
+  TRAINER_ARCHETYPES,
+  TRAINER_ARCHETYPE_IDS,
+  getTrainerArchetype,
+  type AiFlag,
+} from './trainers';
 import trainerSpriteManifest from './frlg/trainers.json';
 
 /** Every flag the union carries, so a typo in the table cannot ship. */
@@ -76,5 +82,37 @@ describe('trainer archetypes', () => {
   it('hands the ace — the boss and mini-boss archetype — all six flags', () => {
     expect(getTrainerArchetype('ace')?.aiFlags).toEqual(KNOWN_FLAGS);
     expect(getTrainerArchetype('ace')?.aiFlags).toHaveLength(6);
+  });
+});
+
+describe('the set-piece archetypes', () => {
+  it('keeps the rocket grunt out of the route’s own pool, reachable by id', () => {
+    expect(SPECIAL_ARCHETYPES.map((archetype) => archetype.id)).toEqual(['rocket']);
+    for (const archetype of SPECIAL_ARCHETYPES) {
+      expect(TRAINER_ARCHETYPE_IDS, archetype.id).not.toContain(archetype.id);
+    }
+    const rocket = getTrainerArchetype('rocket');
+    expect(rocket).toBe(SPECIAL_ARCHETYPES[0]);
+    expect(rocket!.name).toBe('Team Rocket');
+    expect(rocket!.id).toBe('rocket');
+  });
+
+  it('reuses the psychic tier’s money and AI flags, so no new balance tier appears', () => {
+    const rocket = SPECIAL_ARCHETYPES[0];
+    const psychic = getTrainerArchetype('psychic')!;
+    expect(rocket.money).toEqual(psychic.money);
+    expect(rocket.money).toEqual({ base: 120, jitter: 50 });
+    expect(rocket.aiFlags).toEqual(psychic.aiFlags);
+    expect(rocket.aiFlags).toEqual(['checkBadMove', 'checkViability', 'tryToFaint']);
+    for (const flag of rocket.aiFlags!) expect(KNOWN_FLAGS).toContain(flag);
+  });
+
+  it('declares the two art keys it will draw once the FRLG atlas carries the row', () => {
+    const rocket = SPECIAL_ARCHETYPES[0];
+    expect(rocket.spriteKey).toBe('rocket');
+    expect(rocket.battleSprite).toBe('rocket');
+    expect(rocket.colour).toBe(0xc0392b);
+    // No catalogue tier carries it: the row is a set-piece, never a route roll.
+    expect(rocket.carriesMega).toBeUndefined();
   });
 });

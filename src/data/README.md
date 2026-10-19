@@ -31,7 +31,11 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   §6/§7).
 - `trainers.ts` — trainer archetypes: identity, sprites, reward and the AI script
   flags their trainers think with (`aiFlags`, `docs/battle-spec.md` §11); their
-  roster is the floor's BST pool (`src/engine/run/pool.ts`, `D39`).
+  roster is the floor's BST pool (`src/engine/run/pool.ts`, `D39`). Its
+  `SPECIAL_ARCHETYPES` are the **set-piece** rows a room places itself (the casino's
+  `rocket` grunt), kept outside `TRAINER_ARCHETYPES` so the route never rolls them.
+- `casino.ts` — the casino room's balance table: one spin's price per band, the
+  chance a spin turns into the grunt fight and each band's weighted prize rows.
 - `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
   each band's `hiddenChance` (`docs/routes-spec.md` §2 step 4).
 - `population.ts` — the per-band **population thinning** the route generator reads

@@ -26,6 +26,8 @@ testable logic belongs in the computing half.
   float the same one.
 - `notice.ts` — the run's transient notices: their copy and hold time, one at a time, with no
   key and no input taken.
+- `casino.ts` — the casino's slot machine as a pure model: one spin against the run (price,
+  lock, weighted prize or the grunt fight) and the Egg's hatch on the floor advance.
 - `abilityInfo.ts` — the ability row's info control and the text it floats, so the route HUD and
   the battle's switch window read the same way.
 - `battleInfo.ts` — the battle-state window's rows: the weather, the terrain, the field and side

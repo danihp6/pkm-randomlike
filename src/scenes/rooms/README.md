@@ -16,7 +16,11 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
 - `shop.ts` — the Mart room: its counter, its stock, its BUY / SELL window and its keys.
 - `miniBoss.ts` — the mini-boss room: its `ace` trainer on the room's farthest tile.
 - `megaStone.ts` — the mega-stone room: its one Mega Stone on the room's farthest tile.
-- `fixtures.test.ts` — the three shipped rooms' fixtures, pinned by id, tile and (for the stone)
+- `casino.ts` — the casino room: its slot machine, the grunt beside it, the spin
+  window and the `rocket` fight a spin may roll.
+- `casino.test.ts` — the casino's own surface: the counter, the window's rows and
+  spin path (including the grunt call after the panel closes) and the marker.
+- `fixtures.test.ts` — the shipped rooms' fixtures, pinned by id, tile and (for the stone)
   the exact item the fixed seed rolls.
 
 ## Rules

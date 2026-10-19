@@ -325,7 +325,13 @@ leaves with only their own content (`docs/maps-spec.md` §7):
   rows**: three **items** and three **Pokémon presented only by their highest stat
   and their nature**, so the choice is a real gamble;
 - a **mega-stone** room (15% chance, only from map 3 on): a random **Mega Stone**
-  item, which lets its holder **Mega Evolve once per battle**.
+  item, which lets its holder **Mega Evolve once per battle**;
+- a **casino** room (30% chance, only from map 2 on): a **slot machine** the Team
+  Rocket grunt beside it runs. One spin costs the floor band's price and pays an
+  item, an **Egg** (an ordinary bag item that hatches into a new party member at
+  the squad's level when the run takes the portal) or the **battle against the
+  grunt** — which locks the machine for the rest of the floor. It is the run's one
+  money-for-anything gamble.
 
 **Money** is Poké Dollars, earned **only** by defeating trainers — a **fixed base
 plus a random jitter** each, from its archetype/band — and the run starts with

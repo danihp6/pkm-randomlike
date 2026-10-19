@@ -25,6 +25,10 @@ const FRAMES: Readonly<Record<string, number>> = manifest.frames;
 // or type frame is missing still lands on the Normal machine.
 const MEGA_STONE_FALLBACK = 'hardstone';
 const TM_FALLBACK = 'machinenormal';
+// The Egg has no `EGG.png` in the Añil atlas — `LUCKYEGG.png` is the Egg's own art
+// and has no catalogue row of its own, so the run's Egg resolves through it. The
+// lookup is by **id**, so any other `egg`-shaped id inherits nothing.
+const EGG_FALLBACK = 'luckyegg';
 
 /** The atlas frame for a run item, or null when the atlas has no icon for it. */
 export function itemIconFrame(itemId: string): number | null {
@@ -36,6 +40,7 @@ export function itemIconFrame(itemId: string): number | null {
     const type = normalizeId(getMove(item.teaches ?? '')?.type ?? '');
     return FRAMES[`machine${type}`] ?? FRAMES[TM_FALLBACK] ?? null;
   }
+  if (normalizeId(itemId) === 'egg') return FRAMES[EGG_FALLBACK] ?? null;
   return null;
 }
 

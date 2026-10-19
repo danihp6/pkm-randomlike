@@ -169,13 +169,18 @@ function assertPlan(plan: MapPlan): void {
   );
   expect(specials.filter((room) => room.special === 'mini-boss').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'mega-stone').length).toBeLessThanOrEqual(1);
+  expect(specials.filter((room) => room.special === 'casino').length).toBeLessThanOrEqual(1);
   if (plan.mapIndex < 3)
     expect(specials.filter((room) => room.special === 'mega-stone')).toHaveLength(0);
+  // The casino leaf only hangs from map 2 on (`docs/maps-spec.md` §7).
+  if (plan.mapIndex < 2) expect(specials.filter((room) => room.special === 'casino')).toHaveLength(0);
   for (const room of specials) {
     expect(room.shape).toBe('dead-end');
     expect(room.openings.filter((opening) => opening.kind === 'link')).toHaveLength(1);
     expect(room.id).not.toBe(plan.entryRoom);
     expect(room.id).not.toBe(plan.bossRoom);
+    // A special leaf never outranks the boss as the farthest room.
+    expect(dist[room.id]).toBeLessThanOrEqual(dist[plan.bossRoom]);
     expect(plan.specials.find((special) => special.roomId === room.id)?.kind).toBe(room.special);
   }
 
@@ -315,6 +320,131 @@ describe('special rooms', () => {
 
   it('is deterministic: the same seed and map give the same specials', () => {
     expect(planMap('special-seed', 5).specials).toEqual(planMap('special-seed', 5).specials);
+  });
+
+  it('hangs at most one casino, only from map 2 on, always a leaf below the boss', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const casino = plan.rooms.filter((room) => room.special === 'casino');
+        expect(casino.length, `${seed} map ${mapIndex}`).toBeLessThanOrEqual(1);
+        if (mapIndex < 2) expect(casino, `${seed} map ${mapIndex}`).toHaveLength(0);
+        for (const room of casino) {
+          expect(room.shape, `${seed} map ${mapIndex}`).toBe('dead-end');
+          expect(room.id).not.toBe(plan.entryRoom);
+          expect(room.id).not.toBe(plan.bossRoom);
+          const dist = distances(plan);
+          expect(dist[room.id], `${seed} map ${mapIndex}`).toBeLessThanOrEqual(dist[plan.bossRoom]);
+          // Its parent is a regular room that is neither the entry nor the boss.
+          const neighbours = plan.links
+            .filter(([a, b]) => a === room.id || b === room.id)
+            .map(([a, b]) => (a === room.id ? b : a));
+          expect(neighbours).toHaveLength(1);
+          expect(neighbours[0]).not.toBe(plan.entryRoom);
+          expect(neighbours[0]).not.toBe(plan.bossRoom);
+        }
+      }
+    }
+  });
+
+  it('hangs a casino about a third of the time from map 2 on', () => {
+    let casino = 0;
+    const total = 400;
+    for (let i = 0; i < total; i++) {
+      const plan = planMap(`casino-odds-${i}`, 5);
+      if (specialRoom(plan, 'casino') !== undefined) casino++;
+    }
+    expect(casino).toBeGreaterThan(total * 0.15);
+    expect(casino).toBeLessThan(total * 0.45);
+    // Map 1 never hangs one, whatever the seed.
+    for (let i = 0; i < 100; i++) {
+      expect(specialRoom(planMap(`casino-odds-${i}`, 1), 'casino')).toBeUndefined();
+    }
+  });
+
+  /**
+   * The shipped specials, read off the **pre-change** build for the sweep above
+   * (one dump per seed and map, `roomId:kind` joined by `,`). The casino draw is
+   * the special pass's **last** statement, so this array must never move.
+   */
+  const SHIPPED_SPECIALS: Readonly<Record<string, string>> = {
+    'alpha:1': '6:mini-boss',
+    'alpha:2': '6:shop,7:mini-boss',
+    'alpha:3': '6:shop',
+    'alpha:4': '6:shop,7:mini-boss,8:mega-stone',
+    'alpha:5': '6:shop,7:mega-stone',
+    'alpha:6': '7:shop,8:mega-stone',
+    'alpha:7': '8:shop',
+    'alpha:8': '9:shop,10:mini-boss',
+    'bravo:1': '6:mini-boss',
+    'bravo:2': '6:shop,7:mini-boss',
+    'bravo:3': '6:shop,7:mini-boss,8:mega-stone',
+    'bravo:4': '6:shop,7:mini-boss',
+    'bravo:5': '7:shop',
+    'bravo:6': '6:shop',
+    'bravo:7': '8:shop,9:mini-boss',
+    'bravo:8': '6:shop',
+    'charlie:1': '',
+    'charlie:2': '6:shop',
+    'charlie:3': '6:shop',
+    'charlie:4': '6:shop,7:mini-boss,8:mega-stone',
+    'charlie:5': '7:shop,8:mini-boss',
+    'charlie:6': '8:shop,9:mini-boss',
+    'charlie:7': '7:shop',
+    'charlie:8': '9:shop,10:mini-boss,11:mega-stone',
+    'delta:1': '',
+    'delta:2': '6:shop,7:mini-boss',
+    'delta:3': '6:shop',
+    'delta:4': '6:shop,7:mini-boss',
+    'delta:5': '6:shop,7:mega-stone',
+    'delta:6': '6:shop',
+    'delta:7': '6:shop',
+    'delta:8': '9:shop',
+    'echo:1': '',
+    'echo:2': '6:shop',
+    'echo:3': '6:shop',
+    'echo:4': '6:shop,7:mini-boss',
+    'echo:5': '6:shop,7:mini-boss',
+    'echo:6': '7:shop',
+    'echo:7': '8:shop,9:mini-boss',
+    'echo:8': '7:shop,8:mini-boss',
+    'foxtrot:1': '6:mini-boss',
+    'foxtrot:2': '6:shop,7:mini-boss',
+    'foxtrot:3': '6:shop,7:mini-boss,8:mega-stone',
+    'foxtrot:4': '6:shop,7:mini-boss',
+    'foxtrot:5': '6:shop',
+    'foxtrot:6': '8:shop,9:mini-boss',
+    'foxtrot:7': '6:shop,7:mini-boss',
+    'foxtrot:8': '9:shop,10:mini-boss',
+    'golf:1': '6:mini-boss',
+    'golf:2': '6:shop,7:mini-boss',
+    'golf:3': '6:shop',
+    'golf:4': '7:shop',
+    'golf:5': '7:shop',
+    'golf:6': '7:shop',
+    'golf:7': '8:shop,9:mini-boss',
+    'golf:8': '8:shop',
+    'hotel:1': '',
+    'hotel:2': '6:shop,7:mini-boss',
+    'hotel:3': '6:shop',
+    'hotel:4': '7:shop,8:mini-boss,9:mega-stone',
+    'hotel:5': '6:shop',
+    'hotel:6': '8:shop,9:mini-boss',
+    'hotel:7': '6:shop,7:mini-boss',
+    'hotel:8': '9:shop,10:mini-boss',
+  };
+
+  it('never moves a shipped special leaf (the casino draw rolls last)', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const shipped = plan.specials
+          .filter((special) => special.kind !== 'casino')
+          .map((special) => `${special.roomId}:${special.kind}`)
+          .join(',');
+        expect(shipped, `${seed} map ${mapIndex}`).toBe(SHIPPED_SPECIALS[`${seed}:${mapIndex}`]);
+      }
+    }
   });
 });
 

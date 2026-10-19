@@ -58,10 +58,10 @@ export type MapOpening = Readonly<{ edge: MapEdge; kind: MapOpeningKind }>;
 /**
  * A **special** room (`docs/maps-spec.md` §7, D33): an extra dead-end leaf that
  * carries only its own content, never the regular room's. One **shop** per floor,
- * a **mini-boss** leaf on a roll, and a **mega-stone** leaf from map 3 on; the
- * last two may both appear on the same floor.
+ * a **mini-boss** leaf on a roll, a **mega-stone** leaf from map 3 on and a
+ * **casino** leaf from map 2 on; the last three may coincide on one floor.
  */
-export type MapRoomSpecial = 'shop' | 'mini-boss' | 'mega-stone';
+export type MapRoomSpecial = 'shop' | 'mini-boss' | 'mega-stone' | 'casino';
 
 export type MapRoom = Readonly<{
   id: number;
@@ -109,6 +109,12 @@ const MEGA_STONE_CHANCE = 0.15;
 
 /** The first map whose floor may hold a mega-stone leaf (`docs/maps-spec.md` §7). */
 const MEGA_STONE_FROM_MAP = 3;
+
+/** Chance a floor hangs a **casino** leaf (`docs/maps-spec.md` §7). Module-private. */
+const CASINO_CHANCE = 0.3;
+
+/** The first map whose floor may hang a casino leaf (`docs/maps-spec.md` §7). */
+const CASINO_FROM_MAP = 2;
 
 /** The first map whose floor hangs its guaranteed **shop** leaf (`docs/maps-spec.md` §7). */
 export const SHOP_FROM_MAP = 2;
@@ -445,6 +451,12 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
   if (index >= MEGA_STONE_FROM_MAP && rng.next() < MEGA_STONE_CHANCE) {
     const parents = freeParents();
     if (parents.length > 0) addSpecial('mega-stone', parents[rng.int(0, parents.length - 1)]);
+  }
+  // The casino rolls last on the same stream, so no floor's shop, mini-boss,
+  // mega-stone or room size moves because of it (`docs/maps-spec.md` §7).
+  if (index >= CASINO_FROM_MAP && rng.next() < CASINO_CHANCE) {
+    const parents = freeParents();
+    if (parents.length > 0) addSpecial('casino', parents[rng.int(0, parents.length - 1)]);
   }
 
   // The entry and boss rooms are the floor's quiet leaves; both are pinned to the

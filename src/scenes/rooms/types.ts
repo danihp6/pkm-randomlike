@@ -5,6 +5,7 @@ import type { Facing, RouteItem, RouteTrainer } from '../../engine/routes/routeM
 import type { RunState } from '../../engine/run/state';
 import type { KeybindAction } from '../../data/keybinds';
 import type { MapRoomMarker } from '../../ui/mapView';
+import type { Notice } from '../../ui/notice';
 
 /**
  * The special-room layer (`D47`): one descriptor module per `MapRoomSpecial` kind,
@@ -64,6 +65,15 @@ export type RoomHost = Readonly<{
   closePanel(): void;
   /** True while a room's own panel owns the screen. */
   panelOpen(): boolean;
+  /**
+   * Opens the menu battle against `trainer` through the scene's own trainer path
+   * (`startTrainerBattle`): the roster is seeded for that id, the band is the room's
+   * map and a win marks the id beaten. Called by a set-piece that rolls a fight
+   * instead of a prize.
+   */
+  startTrainerBattle(trainer: RouteTrainer): void;
+  /** Floats one transient notice through the route HUD's own strip (`src/ui/notice.ts`). */
+  showNotice(notice: Notice): void;
 }>;
 
 /** One special room kind: what it is, what it places and how it reads. */

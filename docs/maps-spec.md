@@ -196,19 +196,57 @@ no tall grass, no regular trainers, no ground items:
 | **shop** | exactly one, **from map 2 on** (map 1 has none) | a leaf near the entry | a counter; the interact key (`E`) opens a Pokémon-style **shop panel in the HUD** that exists only in this room |
 | **mini-boss** | medium chance | a leaf anywhere | one strong trainer fielding a **fixed party of three** (**two** on map 1, `bossPartySize('miniboss', mapIndex)`); beating it offers **one window of six rows** — three **items** from the map's reward pool and three **Pokémon it presents only by their highest stat and their nature** (`ATTACK · Adamant`), never by name, sprite, types or moves |
 | **mega-stone** | low chance, **from map 3 onward** | a leaf anywhere | one random **Mega Stone** item |
+| **casino** | 30 % chance, **from map 2 onward** | a leaf anywhere | a **slot machine** counter with a Team Rocket grunt beside it; the interact key (`E`) opens the machine's own window, where one **spin** costs the floor band's price (`CASINO.price`, `src/data/casino.ts`) and pays an item, an **Egg** or the fight against the grunt |
 
 Specials count **outside** K (`K` regular rooms + the specials), are rolled on
 the same `map` stream, and are discovered like any room: they appear on the
 minimap only once **entered**, with their own icon. The shop is guaranteed **from
 map 2 on** — map 1 is the run's on-ramp, with no money for a counter and already a
 10-ball pack, so its floor hangs no shop leaf at all; the **mini-boss** leaf rolls
-with a **50%** chance and the **mega-stone** leaf with **15%**, the mega-stone only
-**from map 3 onward**, and the two may coincide on the same floor.
+with a **50%** chance, the **mega-stone** leaf with **15%** (only **from map 3
+onward**) and the **casino** leaf with **30%** (only **from map 2 onward**), and
+any of them may coincide on the same floor. The casino's draw is the **last**
+statement of the special pass, so no floor's shop, mini-boss, mega-stone or room
+size moved when it shipped.
 
 The **shop panel** is a HUD window like the party/bag panels: a Pokémon
 Mart-style list with prices that **only appears while the player is in the shop
 room** (it is opened at the counter with `E` and is unavailable anywhere else), so
 buying is tied to the room rather than to a menu key.
+
+### The casino (the slot machine)
+
+The casino's counter is a **slot machine** with a **Team Rocket grunt** standing
+beside it. Facing the machine with the interact key (`E`) opens the machine's own
+window — a title, the run's money, two rows (`SPIN ¥<price>` and `LEAVE`) and one
+message line. One **spin**:
+
+- costs the floor band's **price**: `CASINO.price` in `src/data/casino.ts` is
+  300 / 700 / 1000 / 1500 / 2000 / 2500 from the `early` to the `end` band;
+- is a **battle against the grunt** with `CASINO.battleChance` (**15 %**, one rate
+  for every band) **before** any prize is drawn — and that fight **locks the
+  machine for the rest of the floor** (`casino-lock-<map>` in `pickedItems`), so
+  the window answers "The machine is out of order." on every later attempt,
+  however the battle ends;
+- otherwise pays **one weighted row** of the band's prize table: a catalogue item
+  (the band's potion rung, its ball, an Oran Berry, a held item, a **Nugget**) or
+  the **Egg**, which carries one weight of each band's total (≈ 9 % of paying spins
+  early, ≈ 12 % late).
+
+A spin is a **pure function of the run** (`casinoSpin`, `src/ui/casino.ts`): its
+stream is `Rng(hashSeed(`${seed}:casino:${mapIndex}:${n}`))`, where `n` is the
+number of `casino-spin-<map>-*` marks the run already holds, so a reloaded run
+continues the same sequence and no other stream in the game moves. A spin the run
+cannot afford is refused **without spending anything** and without drawing.
+
+The **Egg** is an ordinary bag item (`kind: 'valuable'` and `price: 0`, so the Mart
+neither sells nor buys it and it never appears in a sell list). It hatches on the
+**floor advance**: crossing the boss room's portal runs `hatchEgg` on the advanced
+run, which removes **one** Egg and places **one** member of the new floor's
+`speciesPool(band, 'wild')` at the squad's level through the shipped reward path
+(`addPokemon`, so a full party sends it to the box, `D7`). It is **not a catch** —
+no `stats.catches`, no `caughtSpecies`, no `capturedRooms`, no `pcCatch` — and a
+band whose pool resolves to nothing leaves the Egg in the bag for the next floor.
 
 ### A room's battle condition
 
@@ -221,7 +259,8 @@ there, a wild encounter included, begins under it.
 - Which room rolls, and how often: a room that fields **regular trainers** rolls one
   with `ROOM_BATTLEFIELD_CHANCE` (**15%**), the **boss room** with its own
   `BOSS_BATTLEFIELD_CHANCE` (**30%**, §6), and the map's **entry room** and every
-  **special leaf** (shop, mini-boss, mega-stone) are **quiet** — they roll none.
+  **special leaf** (shop, mini-boss, mega-stone, casino) are **quiet** — they roll
+  none.
 - One roll per room, off the run seed and the room's **stable** index
   (`routeIndexForRoom`, §9): `Rng(hashSeed(\`${seed}:battlefield:${roomIndex}\`))`,
   one draw for the chance and one for the row. It is the roll's **own** stream, so
