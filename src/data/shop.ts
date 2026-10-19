@@ -43,7 +43,9 @@ export const SHOP_POTION: Readonly<Record<BandId, string>> = {
 /**
  * The weighted pool the shelf's **two held rows** are drawn from: the held items
  * and berries that turn a floor's stock around. It never holds a valuable (those
- * are what the player sells here), a Mega Stone, an item the engine does not model
+ * are what the player sells here), a Mega Stone, a **G-Max Stone** (the stone is
+ * its own fixed row from `late` on, exactly like the machine, so the held pool
+ * holds neither), an item the engine does not model
  * (`UNMODELLED_ITEMS`), a cure (`kind: 'status'`) or an X-item (`kind: 'boost'`):
  * the Mart sells no cure and no booster, so those reach a run from ground loot and
  * the mini-boss reward alone (`src/data/loot.ts`). Every band lists at least
@@ -223,3 +225,11 @@ export const SHOP_TM: Readonly<Record<BandId, readonly string[]>> = {
     tmItemId(170),
   ],
 };
+
+/**
+ * The bands whose Mart shows the **G-Max Stone** row (`D44`): the same late/end
+ * cadence the ground shelf follows. The row draws one stone from the whole
+ * catalogue (`GMAX_STONE_IDS`) at `GMAX_STONE_PRICE`, exactly as the machine row
+ * draws one TM from `SHOP_TM`.
+ */
+export const SHOP_GMAX_STONE_BANDS: readonly BandId[] = ['late', 'end'];

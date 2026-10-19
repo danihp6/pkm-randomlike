@@ -424,10 +424,11 @@ export function itemEffects(): readonly EffectDefinition[] {
     const handlers = handlersFor(item);
     // An unregistered id is what `ownedEffects` (registry.ts) warns about, so an
     // item nothing models must stay out of the registry rather than register an
-    // empty handler set (D16). A **Mega Stone** is the exception: its effect is
-    // the Mega command (`mega.ts` via `commands.ts`), not a registry hook, so it
-    // is registered with no handlers rather than paged as an unported item.
-    if (Object.keys(handlers).length === 0 && !item.mega) continue;
+    // empty handler set (D16). A **Mega Stone** or a **G-Max Stone** is the
+    // exception: its effect is the Mega or the Gigantamax command (`mega.ts` /
+    // `gmax.ts` via `commands.ts`), not a registry hook, so it is registered with
+    // no handlers rather than paged as an unported item.
+    if (Object.keys(handlers).length === 0 && !item.mega && !item.gmax) continue;
     defs.push({ id: item.id, kind: 'item', handlers });
   }
   return defs;

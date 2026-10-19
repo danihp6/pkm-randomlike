@@ -1,4 +1,4 @@
-import { gmaxFormForBase } from '../../data/dex/gmaxes';
+import { gmaxFormForItem, gmaxMatchesSpecies } from '../../data/dex/gmaxes';
 import { changeBattleForm, restoreBattleForm, type BattleFighter } from './fighter';
 import { activeFighter, pushEvent, pushText, type BattleState, type SideId } from './state';
 
@@ -10,12 +10,13 @@ export const GMAX_HP_MULTIPLIER = 2;
 
 /**
  * True while `side`'s active Pokémon may Gigantamax: alive, not Mega Evolved and
- * not already Gigantamaxed this battle, and its own species has a G-Max forme.
+ * not already Gigantamaxed this battle, and **holding the G-Max Stone of its own
+ * species** (`D44`) — the stone-gated shape a Mega already has (`D34`).
  */
 export function canGigantamax(state: BattleState, side: SideId): boolean {
   const fighter = activeFighter(state, side);
-  if (fighter.hp <= 0 || fighter.mega || fighter.gmax) return false;
-  return gmaxFormForBase(fighter.speciesId) !== undefined;
+  if (fighter.hp <= 0 || fighter.mega || fighter.gmax || !fighter.heldItem) return false;
+  return gmaxMatchesSpecies(fighter.heldItem, fighter.speciesId);
 }
 
 /**
@@ -30,7 +31,7 @@ export function canGigantamax(state: BattleState, side: SideId): boolean {
 export function gigantamax(state: BattleState, side: SideId): boolean {
   if (!canGigantamax(state, side)) return false;
   const fighter = activeFighter(state, side);
-  const form = gmaxFormForBase(fighter.speciesId);
+  const form = fighter.heldItem ? gmaxFormForItem(fighter.heldItem) : undefined;
   if (!form) return false;
 
   const baseName = fighter.name;

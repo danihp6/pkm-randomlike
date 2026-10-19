@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { UNMODELLED_ITEMS } from '../engine/battle/effects/items';
-import { COMPETITIVE_HELD_IDS, ITEMS, MEMORY_DRIVE_IDS } from './items';
+import { COMPETITIVE_HELD_IDS, GMAX_STONE_IDS, GMAX_STONE_LOOT, ITEMS, MEMORY_DRIVE_IDS } from './items';
 import { ROUTE_LOOT } from './loot';
 import { LEVEL_BANDS } from './run';
 import { SHOP_ROTATION } from './shop';
@@ -115,5 +115,147 @@ describe('ROUTE_LOOT', () => {
       if (band.id === 'late' || band.id === 'end') expect(plateIds.length, band.id).toBe(17);
       else expect(plateIds.length, band.id).toBe(0);
     }
+  });
+
+  it('leaves the four earlier shelves byte-identical and stone-free', () => {
+    expect(ROUTE_LOOT.mid.pool.map((entry) => entry.itemId)).toEqual([
+      'greatball',
+      'superpotion',
+      'potion',
+      'fullheal',
+      'xattack',
+      'pearl',
+      'nugget',
+      'starpiece',
+      'tm058',
+      'tm085',
+      'custapberry',
+      'enigmaberry',
+      'jabocaberry',
+      'keeberry',
+      'lansatberry',
+      'leppaberry',
+      'marangaberry',
+      'persimberry',
+      'rowapberry',
+      'starfberry',
+      'tamatoberry',
+      'absorbbulb',
+      'airballoon',
+      'bindingband',
+      'brightpowder',
+      'cellbattery',
+      'gripclaw',
+      'kingsrock',
+      'loadeddice',
+      'luminousmoss',
+      'mentalherb',
+      'metronome',
+      'powerherb',
+      'quickclaw',
+      'razorfang',
+      'roomservice',
+      'snowball',
+      'whiteherb',
+      'mirrorherb',
+    ]);
+    expect(ROUTE_LOOT.high.pool.map((entry) => entry.itemId)).toEqual([
+      'greatball',
+      'superpotion',
+      'hyperpotion',
+      'fullheal',
+      'xdefense',
+      'sitrusberry',
+      'nugget',
+      'starpiece',
+      'bigpearl',
+      'tm114',
+      'tm065',
+      'abilityshield',
+      'assaultvest',
+      'bigroot',
+      'blacksludge',
+      'blunderpolicy',
+      'boosterenergy',
+      'clearamulet',
+      'covertcloak',
+      'damprock',
+      'ejectbutton',
+      'ejectpack',
+      'electricseed',
+      'eviolite',
+      'floatstone',
+      'grassyseed',
+      'heavydutyboots',
+      'heatrock',
+      'icyrock',
+      'lightclay',
+      'mistyseed',
+      'protectivepads',
+      'psychicseed',
+      'punchingglove',
+      'redcard',
+      'ringtarget',
+      'rockyhelmet',
+      'safetygoggles',
+      'shedshell',
+      'shellbell',
+      'stickybarb',
+      'terrainextender',
+      'throatspray',
+      'utilityumbrella',
+      'weaknesspolicy',
+    ]);
+    for (const bandId of ['early', 'low', 'mid', 'high'] as const) {
+      expect(GMAX_STONE_LOOT[bandId], bandId).toEqual([]);
+      const ids = ROUTE_LOOT[bandId].pool.map((entry) => entry.itemId);
+      for (const stone of GMAX_STONE_IDS) {
+        expect(ids, `${bandId} ${stone}`).not.toContain(stone);
+      }
+    }
+  });
+
+  it('drops the G-Max Stones as late/end ground treasure at weight 1 (D44)', () => {
+    expect(ROUTE_LOOT.late.pool).toHaveLength(40);
+    expect(ROUTE_LOOT.end.pool).toHaveLength(57);
+
+    const late = ROUTE_LOOT.late.pool;
+    const end = ROUTE_LOOT.end.pool;
+    for (const id of GMAX_STONE_LOOT.late) {
+      expect(
+        late.filter((entry) => entry.itemId === id),
+        id,
+      ).toEqual([{ itemId: id, weight: 1 }]);
+      expect(
+        end.some((entry) => entry.itemId === id),
+        id,
+      ).toBe(false);
+    }
+    for (const id of GMAX_STONE_LOOT.end) {
+      expect(
+        end.filter((entry) => entry.itemId === id),
+        id,
+      ).toEqual([{ itemId: id, weight: 1 }]);
+      expect(
+        late.some((entry) => entry.itemId === id),
+        id,
+      ).toBe(false);
+    }
+
+    // The two shelves are disjoint, are subsets of the catalogue and are the
+    // *only* stones the ground hands out: every other G-Max Stone is Mart-only.
+    const shelved = [...GMAX_STONE_LOOT.late, ...GMAX_STONE_LOOT.end];
+    expect(new Set(shelved).size).toBe(10);
+    for (const id of shelved) expect(GMAX_STONE_IDS, id).toContain(id);
+    const onGround = [...late, ...end].map((entry) => entry.itemId);
+    for (const id of GMAX_STONE_IDS) {
+      expect(onGround.includes(id), id).toBe(shelved.includes(id));
+    }
+    // The G-Max rows are the only addition: each band's last row is the tail of
+    // its own shelf and the row before it is still the last Plates row.
+    expect(late[late.length - 1]!.itemId).toBe(GMAX_STONE_LOOT.late[3]);
+    expect(late[late.length - 5]!.itemId).toBe('pixieplate');
+    expect(end[end.length - 1]!.itemId).toBe(GMAX_STONE_LOOT.end[5]);
+    expect(end[end.length - 7]!.itemId).toBe('pixieplate');
   });
 });

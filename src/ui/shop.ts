@@ -1,7 +1,8 @@
-import { buyPrice, getItem, isForSale, sellPrice } from '../data/items';
+import { GMAX_STONE_IDS, buyPrice, getItem, isForSale, sellPrice } from '../data/items';
 import type { BandId } from '../data/run';
 import {
   SHOP_BALL_PACK,
+  SHOP_GMAX_STONE_BANDS,
   SHOP_HELD_ROWS,
   SHOP_POTION,
   SHOP_ROTATION,
@@ -40,14 +41,16 @@ const priceOf = (itemId: string): number => {
 
 /**
  * The shelf a shop shows: the band's **four fixed stock rows** — its ball pack,
- * its potion rung and `SHOP_HELD_ROWS` distinct held items — and then the band's
- * one machine off `SHOP_TM`, appended last when it is not already on the shelf.
+ * its potion rung and `SHOP_HELD_ROWS` distinct held items — then the band's
+ * one machine off `SHOP_TM` and, from `late` on, its **G-Max Stone** row (`D44`),
+ * each appended last when it is not already on the shelf.
  * Deterministic for a fixed `rng`.
  *
  * The draw order is frozen: one `weightedIndex` per held row over that band's held
- * pool, **without replacement**, then one `rng.int` for the machine. Every row but
- * the pack takes the catalogue price; the pack carries its own discounted `price`
- * of ten units at half the catalogue sum.
+ * pool, **without replacement**, then one `rng.int` for the machine, then one for
+ * the stone at the bands `SHOP_GMAX_STONE_BANDS` names. Every row but the pack
+ * takes the catalogue price; the pack carries its own discounted `price` of ten
+ * units at half the catalogue sum.
  */
 export function buildShop(bandId: BandId, rng: Rng): readonly ShopSlot[] {
   const pack = SHOP_BALL_PACK[bandId];
@@ -68,6 +71,12 @@ export function buildShop(bandId: BandId, rng: Rng): readonly ShopSlot[] {
     const machine = machines[rng.int(0, machines.length - 1)];
     if (!stock.some((slot) => slot.itemId === machine)) {
       stock.push({ itemId: machine, price: priceOf(machine), count: 1 });
+    }
+  }
+  if (SHOP_GMAX_STONE_BANDS.includes(bandId) && GMAX_STONE_IDS.length > 0) {
+    const stone = GMAX_STONE_IDS[rng.int(0, GMAX_STONE_IDS.length - 1)];
+    if (!stock.some((slot) => slot.itemId === stone)) {
+      stock.push({ itemId: stone, price: priceOf(stone), count: 1 });
     }
   }
   return stock.filter((slot) => getItem(slot.itemId) !== undefined);

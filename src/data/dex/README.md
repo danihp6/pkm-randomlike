@@ -70,6 +70,8 @@ asserts the counts still match, so a bad regeneration fails loudly.
   generator's one-stone guard rejects.
 - `gmaxes.json` rides beside `megas.json` as the battle-only **Gigantamax** set
   (`D44`): one row per dex `…-Gmax` entry whose base species is playable, keyed by
-  its exact `changesFrom` (`baseSpeciesId`), so `gmaxFormForBase(id)` resolves one
-  G-Max forme per species. It is reached through
-  `src/engine/battle/gmax.ts`; no item and no stone gates it.
+  its exact `changesFrom` (`baseSpeciesId`) so `gmaxFormForBase(id)` resolves one
+  G-Max forme per species, and carrying the **G-Max Stone** that formes it
+  (`stoneId` / `stoneName`, one per forme) so `gmaxFormForItem(id)` resolves its
+  stone. It is reached through `src/engine/battle/gmax.ts`, and the holder's own
+  stone is what gates it (`canGigantamax`).

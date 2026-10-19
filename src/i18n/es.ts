@@ -168,7 +168,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'detail.learnLevel': 'Nv{level}',
   'detail.learnTm': 'MT{tm}',
   'detail.megaEvolvesWith': '{forme} · Megaevoluciona con {stone}',
-  'detail.gmaxNoStone': '{forme} · Gigamaxiza sin piedra',
+  'detail.gmaxEvolvesWith': '{forme} · Gigamaxiza con {stone}',
 
   // move — the shared move grid
   'move.acc': 'PRE {value}',

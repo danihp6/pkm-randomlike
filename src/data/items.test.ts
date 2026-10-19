@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { MEGA_FORMES, TYPE_NAMES, getDexItem } from './dex';
+import { GMAX_FORMES, MEGA_FORMES, TYPE_NAMES, getDexItem } from './dex';
 import {
   COMPETITIVE_HELD,
   COMPETITIVE_HELD_IDS,
+  GMAX_STONE_IDS,
+  GMAX_STONE_LOOT,
+  GMAX_STONE_PRICE,
   ITEMS,
   MEMORY_DRIVE_IDS,
   MEMORY_DRIVE_ITEMS,
@@ -13,6 +16,8 @@ import {
   sellPrice,
   type ItemKind,
 } from './items';
+import type { BandId } from './run';
+import { LEVEL_BANDS } from './run';
 
 const KINDS: readonly ItemKind[] = ['ball', 'heal', 'status', 'boost', 'held', 'valuable', 'tm'];
 
@@ -195,5 +200,51 @@ describe('Mega Stones', () => {
     expect(getItem('gyaradosite')!.mega).toEqual({ base: 'gyarados', form: 'gyaradosmega' });
     expect(getItem('charizarditex')!.mega).toEqual({ base: 'charizard', form: 'charizardmegax' });
     expect(getItem('charizarditey')!.mega).toEqual({ base: 'charizard', form: 'charizardmegay' });
+  });
+});
+
+describe('G-Max Stones (D44)', () => {
+  it('has one held, 8000-priced stone per G-Max forme, all distinct', () => {
+    const stones = ITEMS.filter((entry) => entry.gmax !== undefined);
+    expect(stones.length).toBe(GMAX_FORMES.length);
+    expect(GMAX_STONE_IDS.length).toBe(34);
+    expect(GMAX_STONE_IDS).toEqual(stones.map((stone) => stone.id));
+    expect(new Set(GMAX_STONE_IDS).size).toBe(GMAX_STONE_IDS.length);
+    for (const stone of stones) {
+      expect(stone.kind, stone.id).toBe('held');
+      expect(stone.price, stone.id).toBe(GMAX_STONE_PRICE);
+      expect(buyPrice(stone), stone.id).toBe(8000);
+      expect(sellPrice(stone), stone.id).toBe(4000);
+      expect(isForSale(stone), stone.id).toBe(true);
+      expect(stone.gmax!.base, stone.id).not.toBe(stone.gmax!.form);
+      expect(stone.shortDesc, stone.id).toContain('Gigantamax');
+    }
+    expect(getItem('gengariteg')!.gmax).toEqual({ base: 'gengar', form: 'gengargmax' });
+    expect(getItem('venusauriteg')!.gmax).toEqual({ base: 'venusaur', form: 'venusaurgmax' });
+  });
+
+  it('keeps the two stone families disjoint', () => {
+    expect(MEGA_STONE_IDS.length).toBe(MEGA_FORMES.length);
+    expect(GMAX_STONE_IDS.filter((id) => MEGA_STONE_IDS.includes(id))).toEqual([]);
+    for (const id of GMAX_STONE_IDS) {
+      const stone = getItem(id)!;
+      expect(stone.mega, id).toBeUndefined();
+    }
+    for (const id of MEGA_STONE_IDS) {
+      expect(getItem(id)!.gmax, id).toBeUndefined();
+    }
+  });
+
+  it('shelves four stones at late and six at end, and nothing earlier (D44)', () => {
+    const empty: readonly BandId[] = ['early', 'low', 'mid', 'high'];
+    for (const band of empty) expect(GMAX_STONE_LOOT[band], band).toEqual([]);
+    expect(GMAX_STONE_LOOT.late).toEqual(GMAX_STONE_IDS.slice(0, 4));
+    expect(GMAX_STONE_LOOT.end).toEqual(GMAX_STONE_IDS.slice(4, 10));
+    expect(GMAX_STONE_LOOT.late.length).toBe(4);
+    expect(GMAX_STONE_LOOT.end.length).toBe(6);
+    const shelved = [...GMAX_STONE_LOOT.late, ...GMAX_STONE_LOOT.end];
+    expect(new Set(shelved).size).toBe(10);
+    for (const id of shelved) expect(GMAX_STONE_IDS, id).toContain(id);
+    expect(LEVEL_BANDS.map((band) => band.id)).toEqual([...empty, 'late', 'end']);
   });
 });

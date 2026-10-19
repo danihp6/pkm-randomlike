@@ -1,5 +1,6 @@
 import type { BoostId, StatusId } from '../engine/battle/fighter';
-import { MEGA_FORMES, getDexItem, getMove, getSpecies, type MoveCategory } from './dex';
+import { GMAX_FORMES, MEGA_FORMES, getDexItem, getMove, getSpecies, type MoveCategory } from './dex';
+import type { BandId } from './run';
 import { TM_MOVE_IDS, tmItemId } from './tms';
 
 export type ItemKind = 'ball' | 'heal' | 'status' | 'boost' | 'held' | 'valuable' | 'tm';
@@ -70,6 +71,11 @@ export type ItemDef = Readonly<{
    */
   mega?: Readonly<{ base: string; form: string }>;
   /**
+   * A G-Max Stone (`D44`): `base` is the species the holder must be, `form` the
+   * G-Max id it becomes once per battle (`src/engine/battle/gmax.ts`).
+   */
+  gmax?: Readonly<{ base: string; form: string }>;
+  /**
    * A TM's move id. A TM is **reusable**: it never leaves the bag, it only gates
    * the move in the learnset panel (`src/data/tms.ts`).
    */
@@ -114,6 +120,42 @@ const MEGA_STONES: readonly ItemDef[] = MEGA_FORMES.map((mega) =>
 
 /** Every Mega Stone id, for the mega-stone room's random draw (`docs/maps-spec.md` §7). */
 export const MEGA_STONE_IDS: readonly string[] = MEGA_STONES.map((stone) => stone.id);
+
+/** The Poké Dollars a G-Max Stone costs at the Mart. */
+export const GMAX_STONE_PRICE = 8000;
+
+/**
+ * Every G-Max Stone, one per generated G-Max forme (`D44`). A stone is **minted
+ * beside the Mega Stones and sold at the Mart** (unlike them): it is the only way
+ * to Gigantamax, and it is never spent on use, so one stone covers a whole run.
+ */
+const GMAX_STONES: readonly ItemDef[] = GMAX_FORMES.map((gmax) =>
+  item({
+    id: gmax.stoneId,
+    name: gmax.stoneName,
+    kind: 'held',
+    price: GMAX_STONE_PRICE,
+    gmax: { base: gmax.baseSpeciesId, form: gmax.id },
+    shortDesc: `Holder (${getSpecies(gmax.baseSpeciesId)?.name ?? gmax.baseSpeciesId}) can Gigantamax once per battle.`,
+  }),
+);
+
+/** Every G-Max Stone id, in dex order: the Mart's stone row draws from this. */
+export const GMAX_STONE_IDS: readonly string[] = GMAX_STONES.map((stone) => stone.id);
+
+/**
+ * The G-Max Stones the **ground** can hand out, banded at the `D37`
+ * Memories/Drives cadence: nothing before `late`, four ids at `late`, six at
+ * `end`, sliced off the dex-ordered `GMAX_STONE_IDS`.
+ */
+export const GMAX_STONE_LOOT: Readonly<Record<BandId, readonly string[]>> = {
+  early: [],
+  low: [],
+  mid: [],
+  high: [],
+  late: GMAX_STONE_IDS.slice(0, 4),
+  end: GMAX_STONE_IDS.slice(4, 10),
+};
 
 /**
  * Every base-Gen-9 Technical Machine (TM001 … TM171), one item per numbered
@@ -1389,6 +1431,7 @@ export const ITEMS: readonly ItemDef[] = [
   ...MEMORY_DRIVE_ITEMS,
   ...COMPETITIVE_HELD,
   ...MEGA_STONES,
+  ...GMAX_STONES,
   ...TM_ITEMS,
 ];
 

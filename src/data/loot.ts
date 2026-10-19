@@ -1,3 +1,4 @@
+import { GMAX_STONE_LOOT } from './items';
 import type { BandId } from './run';
 
 export type LootEntry = Readonly<{ itemId: string; weight: number }>;
@@ -26,7 +27,10 @@ const entry = (itemId: string, weight: number): LootEntry => ({ itemId, weight }
  * Poke Balls, the later bands bring Hyper Potions, Ultra Balls, the held items
  * the battle engine already supports, the **valuables** worth real money at the
  * shop (`docs/maps-spec.md` §7) and the odd **TM** for the learnset panel
- * (`src/data/tms.ts`). No Revive anywhere (D5).
+ * (`src/data/tms.ts`). The **G-Max Stones** (`D44`) ride the same shelf from
+ * `late` on — four ids at `late`, six at `end`, weight 1 each (`GMAX_STONE_LOOT`) —
+ * so a Gigantamax is luck of the ground exactly as a Mega Stone is luck of the
+ * mega-stone room. No Revive anywhere (D5).
  *
  * The competitive held set (`COMPETITIVE_HELD`, `src/data/items.ts`) splits the
  * same way: the **Plates** are boss-tier treasure and only turn up in `late` and
@@ -195,6 +199,7 @@ export const ROUTE_LOOT: Readonly<Record<BandId, BandLoot>> = {
       entry('dreadplate', 1),
       entry('ironplate', 1),
       entry('pixieplate', 1),
+      ...GMAX_STONE_LOOT.late.map((id) => entry(id, 1)),
     ],
   },
   end: {
@@ -252,6 +257,7 @@ export const ROUTE_LOOT: Readonly<Record<BandId, BandLoot>> = {
       entry('dreadplate', 1),
       entry('ironplate', 1),
       entry('pixieplate', 1),
+      ...GMAX_STONE_LOOT.end.map((id) => entry(id, 1)),
     ],
   },
 };

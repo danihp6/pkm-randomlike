@@ -280,9 +280,12 @@ const main = async () => {
     .filter((row) => playableById.has(row.baseId))
     .map(({ entry, baseId }) => {
       const base = playableById.get(baseId);
+      const stoneName = `${megaStoneName(entry, base)} G`;
       return {
         ...entry,
         baseSpeciesId: baseId,
+        stoneId: normalizeId(stoneName),
+        stoneName,
         catchRate: catchRateOf(entry.num),
         heightm: heights[entry.id] ?? heights[baseId] ?? 1,
         weightkg: base.weightkg,
@@ -300,6 +303,18 @@ const main = async () => {
   const duplicateGmaxBases = duplicates(gmaxFormes.map((entry) => entry.baseSpeciesId));
   if (duplicateGmaxBases.length > 0) {
     throw new Error(`two G-Max formes share a base species: ${duplicateGmaxBases.join(', ')}`);
+  }
+  // `stoneId` is a map key in `gmaxes.ts` exactly as the Mega pass's is, and a
+  // G-Max Stone may never collide with a Mega Stone: both reach `items.ts` as
+  // catalogue ids, and a collision would silently drop one from `BY_ID` there.
+  const duplicateGmaxStones = duplicates(gmaxFormes.map((entry) => entry.stoneId));
+  if (duplicateGmaxStones.length > 0) {
+    throw new Error(`two G-Max formes share a G-Max Stone: ${duplicateGmaxStones.join(', ')}`);
+  }
+  const megaStoneIds = new Set(megaFormes.map((entry) => entry.stoneId));
+  const collidingGmaxStone = gmaxFormes.find((entry) => megaStoneIds.has(entry.stoneId));
+  if (collidingGmaxStone) {
+    throw new Error(`a G-Max Stone collides with a Mega Stone: ${collidingGmaxStone.stoneId}`);
   }
 
   // The whole move set (`D42`): every real move, the `Past` ones included, so a
@@ -394,7 +409,8 @@ const main = async () => {
   );
   // The G-Max summary, beside the Mega one: `gmaxes.json` is battle-only too
   // (`D44`), and none of its rows is a second tag — the dex marks them by name.
-  console.log(`gmaxes           ${String(gmaxFormes.length).padStart(4)}`);
+  // Every row also mints the G-Max Stone of its own species (`D44`).
+  console.log(`gmaxes           ${String(gmaxFormes.length).padStart(4)} (one G-Max Stone each)`);
 };
 
 main().catch((error) => {

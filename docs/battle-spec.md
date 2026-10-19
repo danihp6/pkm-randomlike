@@ -267,7 +267,8 @@ is the mechanic the mega-stone room's stones feed (`D34`, `docs/maps-spec.md`
   `Greninjite Ash` stone it needs) itself, and `isPlayable` keeps the id out of
   `species.json`. **`Battle Bond`** was deleted (`D41`), so Ash is entered the way
   every other forme is: from its stone. Gigantamax is a **separate mechanic**
-  (`D44`, §10): no stone and no item gate at all.
+  (`D44`, §10): its formes have a **stone of their own**, one per forme, and no
+  Mega Stone ever arms one.
 - The STATS tab lists each Mega of a species of the member's family that has one
   as an **information row** under its family graph, hanging off that species' own
   row: the forme's sprite and name, dimmed and at the same indent as an evolution,
@@ -276,29 +277,34 @@ is the mechanic the mega-stone room's stones feed (`D34`, `docs/maps-spec.md`
   whether or not the stone is held — it is information, not a readiness state —
   and it is **never clickable**: it carries no `ready` node, so neither a click
   nor the pointer cursor reaches it. The Gigantamax sibling row has the same shape
-  and reads `Gigantamax Charizard · Gigantamaxes with no stone`, because a
-  Gigantamax has no stone at all (`D44`, §10).
+  and reads `Gigantamax Charizard · Gigantamaxes with Charizardite G`, because a
+  Gigantamax needs its own stone, one per forme (`D44`, §10).
 
 ## 10. Gigantamax
 
-A Pokémon **whose own species has a G-Max forme** may Gigantamax **once per
-battle** (`D44`); no item, no stone and no archetype flag is involved.
+A Pokémon **that holds the G-Max Stone of its own species** may Gigantamax **once
+per battle** (`D44`); no archetype flag is involved, and the **stone is never
+spent** on use, so the holder keeps it and may Gigantamax again next battle.
 
 - The control is a **G-MAX** button in the moves window, in the slot immediately
-  inside the MEGA one, offered only while the active Pokémon's own species has a
-  G-Max forme and it has not Gigantamaxed yet. Confirming it **arms** the forme and
+  inside the MEGA one, offered only while the active Pokémon **holds the G-Max
+  Stone of its own species** (`gmaxMatchesSpecies`, `src/engine/battle/gmax.ts`) and
+  it has not Gigantamaxed yet. Confirming it **arms** the forme and
   the next FIGHT spends it (the Pokémon still attacks that turn); arming one forme
   disarms the other, and picking BAG, SWITCH or RUN drops the armed forme. The
   engine half is `src/engine/battle/gmax.ts`; the command carries a `gmax` flag on
   `FightCommand`.
+- The held item is the **whole gate**: a G-Max Stone is a `held` catalogue row, so
+  the Pokémon must keep it, and one item cannot arm both a Mega and a Gigantamax —
+  the stone that forms a Mega is not the stone that forms the G-Max.
 - It resolves **at the top of the turn, before any move**, beside the Mega loop, so
   the turn's order and damage read the Gigantamaxed fighter.
 - The forme takes the G-Max **name and sprite** and keeps the fighter's **stats,
-  types, ability, moves and held item**; the **HP pool doubles** (`× 2`, the current
-  HP included, so the HP fraction holds). The ability never changes, so unlike a
-  Mega no on-switch-in effect fires.
-- Both the player and the AI can Gigantamax. The AI spends it on the first fight
-  command it can, exactly as it spends a Mega Stone.
+  types, ability, moves and held item** (the stone included); the **HP pool doubles**
+  (`× 2`, the current HP included, so the HP fraction holds). The ability never
+  changes, so unlike a Mega no on-switch-in effect fires.
+- Both the player and the AI can Gigantamax. The AI spends its stone on the first
+  fight command it can, exactly as it spends a Mega Stone.
 - It lasts the whole battle (a **switch-out does not end it**) and **reverts at the
   battle's end**, before the run snapshot: the route HUD, the PC box and a captured
   wild keep the **base** species and the normal, undoubled HP maximum.
@@ -306,10 +312,12 @@ battle** (`D44`); no item, no stone and no archetype flag is involved.
   a fighter that Gigantamaxed cannot Mega Evolve, and vice versa.
 - The formes come from `src/data/dex/gmaxes.json` (generated beside `megas.json`,
   `D44`) — **34** today, `meta.json`'s `counts.gmaxes` being the authority, and one
-  per species (`gmaxFormForBase(id)`). **Max / G-Max moves are not modelled**
-  (`D42`): a Gigantamaxed Pokémon uses its normal moves, with no damage bonus and no
-  Dynamax timer. `Eternatus-Eternamax` is **not** a Gigantamax forme, so Eternatus
-  cannot Gigantamax.
+  per species (`gmaxFormForBase(id)`); each row carries the `stoneId`/`stoneName` of
+  its own stone, minted into the catalogue at 8 000 and reachable from the Mart
+  (`late`/`end`) and the ground (`late` 4 / `end` 6). **Max / G-Max moves are not
+  modelled** (`D42`): a Gigantamaxed Pokémon uses its normal moves, with no damage
+  bonus and no Dynamax timer. `Eternatus-Eternamax` is **not** a Gigantamax forme, so
+  Eternatus cannot Gigantamax.
 
 ## 11. The enemy AI
 
@@ -350,9 +358,9 @@ expected value. The engine half is `src/engine/battle/ai.ts`
   matching status, X items on turn one) is **not** built and never becomes a `bag`
   command. The items the engine does model on an enemy are **held** items
   (Leftovers, the berries, the resist berries), which the engine's own hooks apply
-  with no decision. The one item the AI spends is the **Mega Stone**, through the
-  shipped `canMegaEvolve` arming (§9): the first fight command the AI can send
-  carries the `mega` flag, else the `gmax` one (§10), else neither.
+  with no decision. The one item the AI spends is a **stone**, through the shipped
+  `canMegaEvolve` / `canGigantamax` arming (§9, §10): the first fight command the AI
+  can send carries the `mega` flag, else the `gmax` one, else neither.
 - **Switching** is the cartridge's four rules and no more: a fainted active is
   replaced by the best reserve (alive, non-active, highest `bestOffense + hp`); a
   Perish Song about to claim the active leaves while it can; an active that cannot

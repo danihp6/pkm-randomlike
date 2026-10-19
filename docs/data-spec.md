@@ -40,7 +40,9 @@ three would share one of `meowsticite`/`magearnite`/`tatsugirinite`, which its
 one-stone-per-forme guard rejects.
 
 `gmaxes.json` is generated beside it too: every Gigantamax forme whose base species
-is in the playable set, each with its `baseSpeciesId` — **34** today, `meta.json`'s
+is in the playable set, each with its `baseSpeciesId` and the **G-Max Stone** that
+formes it — `stoneId` / `stoneName`, one per forme, named `<the base's Mega-style
+name> G` (`Venusaurite G`, `venusauriteg`) — **34** today, `meta.json`'s
 `counts.gmaxes` being the authority. The filter is the dex entry's **name**
 (`/Gmax$/i`, the same test `isBattleBossForm` uses), so the G-Max formes stay out of
 `species.json` exactly as they are kept out of the wild tables, the rosters and the
@@ -49,12 +51,14 @@ starter offers (`D39`), and `baseSpeciesId` is `normalizeId(changesFrom)` — th
 `toxtricitylowkey` and `Urshifu-Rapid-Strike-Gmax` to `urshifurapidstrike`. A row
 takes its base species' `weightkg` (the dex's G-Max entries carry the placeholder
 `weightkg: 0`), plus a `catchRate` and a `heightm`, and **no evolutions**; a G-Max
-whose base is out of the set is skipped, and a duplicate id or base species stops the
-build. Both are map keys in `gmaxes.ts`, so the generator refuses either. The mechanic
-is `D44` (`src/engine/battle/gmax.ts`), and it is item-free: the only condition is
-that the Pokémon's own species has a G-Max forme. **`Eternatus-Eternamax` is not a
-Gigantamax forme** — its name ends in `-Eternamax`, not `Gmax` — so it is in neither
-generated file and Eternatus cannot Gigantamax in this game.
+whose base is out of the set is skipped, and a duplicate id, base species or stone
+(the latter also against the Mega pass's own stone ids) stops the build. All three
+are map keys in `gmaxes.ts`, so the generator refuses them. The mechanic
+is `D44` (`src/engine/battle/gmax.ts`), and it is stone-gated: the only condition is
+that the Pokémon's own species has a G-Max forme **and it holds that forme's stone**.
+**`Eternatus-Eternamax` is not a Gigantamax forme** — its name ends in `-Eternamax`,
+not `Gmax` — so it is in neither generated file and Eternatus cannot Gigantamax in
+this game.
 
 ## 2. Generated: `src/data/audio/`
 
@@ -95,9 +99,9 @@ cycle with the cue table.
 | `src/data/maps.ts` | per-map tuning: level range, room-count range and room width/height range, plus the infinite-run step | 9 |
 | `src/data/bosses.ts` | the fixed party sizes a floor's boss and mini-boss field (six and three, three and two on map 1), read by the route scene's roster build (`docs/maps-spec.md` §6/§7) | 9 |
 | `src/data/trainers.ts` | trainer archetypes: name, class, sprite, money base/jitter (D33), `carriesMega` (bosses/`ace`) and the **AI script flags** its trainers think with (`aiFlags`, D46); the roster is the floor's BST pool (`D39`), not a species list here | 2/9 |
-| `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), plus the **competitive held set** (`COMPETITIVE_HELD`: the damage/Speed/accuracy/crit/last/survive items, the resist and pinch berries and the self-status orbs whose effect `effects/items.ts` models, and the items it does not model yet, which `UNMODELLED_ITEMS` records by name, D16), **valuables** (sellable), **Mega Stones**, the **Plates** (`plate` + 1.2x `typeBoost`, D37), the **Memories** and **Drives** (`memory`/`drive`, D37, ground-only treasure that retypes Multi-Attack and Techno Blast) and the **TMs** (`machine` pocket), each with a Poké Dollar price | 3/6/10 |
+| `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, X-items, held items and berries (no Revive), plus the **competitive held set** (`COMPETITIVE_HELD`: the damage/Speed/accuracy/crit/last/survive items, the resist and pinch berries and the self-status orbs whose effect `effects/items.ts` models, and the items it does not model yet, which `UNMODELLED_ITEMS` records by name, D16), **valuables** (sellable), **Mega Stones**, the **G-Max Stones** (`gmax`, 8 000, one per G-Max forme, D44), the **Plates** (`plate` + 1.2x `typeBoost`, D37), the **Memories** and **Drives** (`memory`/`drive`, D37, ground-only treasure that retypes Multi-Attack and Techno Blast) and the **TMs** (`machine` pocket), each with a Poké Dollar price | 3/6/10 |
 | `src/data/tms.ts` | the base-Gen-9 TM table: TM number → move id (TM001 … TM171), hand-authored from the dex's `9M` flags, with the id/number/move helpers `items.ts` turns into reusable machines (D36) | 10 |
-| `src/data/shop.ts` | the shop's per-band core (Balls/Potions) and the weighted pool its one or two rotating items are drawn from (D33) | 9 |
+| `src/data/shop.ts` | the shop's per-band core (Balls/Potions) and the weighted pool its one or two rotating items are drawn from (D33), plus the bands whose counter shows the **G-Max Stone** row (`SHOP_GMAX_STONE_BANDS`, `late`/`end`, D44) | 9 |
 | `src/data/spriteSize.ts` | the battle sprite size curve: canonical height (m) → drawn height (px), the power and clamps | 5 |
 | `src/data/run.ts` | chain length, boss cadence, level bands (level range, party size and BST window, D39), starter pool, starting bag | 2 |
 | `src/data/portraits.ts` | portrait atlas URL and frame mapping (dex number − 1) | 6 |
@@ -120,8 +124,9 @@ code never sees a `any`:
 - `src/data/dex/megas.ts` → `MegaForm`, `MEGA_FORMES`, `megaFormForItem(id)`,
   `megaFormOf(id)`, `megaFormsForBase(id)`, `isMegaSpecies(id)`,
   `megaMatchesSpecies(stoneId, speciesId)`
-- `src/data/dex/gmaxes.ts` → `GmaxForm`, `GMAX_FORMES`, `gmaxFormOf(id)`,
-  `gmaxFormForBase(id)`, `isGmaxSpecies(id)`
+- `src/data/dex/gmaxes.ts` → `GmaxForm`, `GMAX_FORMES`, `gmaxFormForItem(id)`,
+  `gmaxFormOf(id)`, `gmaxFormForBase(id)`, `isGmaxSpecies(id)`,
+  `gmaxMatchesSpecies(stoneId, speciesId)`
 - `src/data/dex/moves.ts` → `Move`, `getMove(id)`, `moveByType(type)`,
   `isDamaging(move)`
 - `src/data/dex/learnsets.ts` → `learnsetOf(speciesId)`, `levelUpMoves(id, level)`,

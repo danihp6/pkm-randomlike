@@ -754,26 +754,40 @@ the same sentence twice and nothing would notice).
 ## D44 — Gigantamax is a battle mechanic in the Mega mould *(decided)*
 
 Gigantamax exists with the shape Mega Evolution already has (`D34`,
-`src/engine/battle/gmax.ts`). A Pokémon **whose own species has a G-Max forme** may
-**Gigantamax once per battle** from a control in the battle's MOVES window (both the
-player and the AI can), before any move; there is **no held item and no
-"Gigantamax factor" gate**, unlike a Mega Stone. Taking its G-Max forme changes its
-**name and species/sprite** while **keeping its stats, types, ability, moves and held
-item**, and the **HP pool doubles** (`× 2`, the current HP included, so the HP
-fraction holds). It lasts the whole battle — a switch-out does not end it — and
-everything reverts when the battle ends, before the run snapshot, so no doubled pool
-(a captured wild included) ever reaches the run. Gigantamax and Mega Evolution are
-**mutually exclusive per Pokémon per battle**, and the mechanic draws **no RNG at
-all**: it is deterministic, so a fixed seed's battle log is unchanged.
+`src/engine/battle/gmax.ts`). A Pokémon **that holds the G-Max Stone of its own
+species** may **Gigantamax once per battle** from a control in the battle's MOVES
+window (both the player and the AI can), before any move; the stone is the gate
+`canGigantamax` reads, exactly as a Mega Stone is for a Mega (`D34`), and it is
+**never spent on use** — the holder keeps it and may Gigantamax again next battle.
+Taking its G-Max forme changes its **name and species/sprite** while **keeping its
+stats, types, ability, moves and held item**, and the **HP pool doubles** (`× 2`,
+the current HP included, so the HP fraction holds). It lasts the whole battle — a
+switch-out does not end it — and everything reverts when the battle ends, before
+the run snapshot, so no doubled pool (a captured wild included) ever reaches the
+run. Gigantamax and Mega Evolution are **mutually exclusive per Pokémon per
+battle**, and the mechanic draws **no RNG at all**: it is deterministic, so a fixed
+seed's battle log is unchanged.
 
 The formes are generated into `src/data/dex/gmaxes.json` beside `megas.json`: one row
 per dex `…-Gmax` entry (the name filter `isBattleBossForm` already uses) whose base
-species is playable, each carrying the exact `changesFrom` as `baseSpeciesId`, so
-`gmaxFormForBase(id)` resolves one forme per species. **Max / G-Max moves are not
-modelled** (`D42`): a G-Max forme keeps its normal moves, with no damage bonus and
-no Dynamax timer. `Eternatus-Eternamax` is **not** a Gigantamax forme — its name ends
-in `-Eternamax`, not `Gmax` — so it is in neither generated file and Eternatus cannot
-Gigantamax in this game.
+species is playable, each carrying the exact `changesFrom` as `baseSpeciesId` and,
+beside it, the **G-Max Stone** that formes it — `stoneId` and `stoneName`, one per
+forme, named `<the base's Mega-style name> G` (`Venusaurite G`, `venusauriteg`). So
+`gmaxFormForBase(id)` resolves one forme per species, and `gmaxFormForItem(id)` /
+`gmaxMatchesSpecies(stoneId, speciesId)` resolve a held stone to its forme. **Max /
+G-Max moves are not modelled** (`D42`): a G-Max forme keeps its normal moves, with no
+damage bonus and no Dynamax timer. `Eternatus-Eternamax` is **not** a Gigantamax
+forme — its name ends in `-Eternamax`, not `Gmax` — so it is in neither generated
+file and Eternatus cannot Gigantamax in this game.
+
+Each stone is a catalogue row minted beside `MEGA_STONES` (`src/data/items.ts`):
+**34 `held` rows at 8 000** Poké Dollars (resale 4 000, half like every held good),
+which makes a stone the counter's single biggest purchase and a real sink. A stone is
+**obtainable twice over**, at the same two bands: one on the Mart's shelf at `late`
+and `end` (`SHOP_GMAX_STONE_BANDS`, drawn from all 34, `GMAX_STONE_PRICE`) and four
+ids at `late` / six at `end` on the ground (`GMAX_STONE_LOOT`, weight 1 each). It
+takes the Hard Stone icon, exactly as a Mega Stone whose Añil spelling does not match
+does.
 
 ## D45 — Accessibility: hue is never the only carrier, and one reduced-flash knob *(decided)*
 
