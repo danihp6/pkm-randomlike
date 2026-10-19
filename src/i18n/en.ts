@@ -133,6 +133,16 @@ export const en = {
   'reward.choose': 'Choose one.',
   'reward.controls': '{confirm}: take    {cancel}: leave',
 
+  // trade — the trade room's window
+  'trade.title': 'TRADE',
+  'trade.greeting': 'Pick the Pokémon you will give away.',
+  'trade.leave': 'LEAVE',
+  'trade.controls': '{confirm}: trade    {cancel}: leave',
+  'trade.used': 'The trade in this room is done.',
+  'trade.refused': 'You need another Pokémon to trade.',
+  'trade.missing': 'That Pokémon is not in your party.',
+  'trade.done': 'Received {name}!',
+
   // release — the permadeath overlay
   'release.controls': '{confirm} — continue',
 

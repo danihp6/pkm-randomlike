@@ -59,12 +59,13 @@ export type MapOpening = Readonly<{ edge: MapEdge; kind: MapOpeningKind }>;
  * A **special** room (`docs/maps-spec.md` §7, D33): an extra dead-end leaf that
  * carries only its own content, never the regular room's. One **shop** per floor,
  * a **mini-boss** leaf on a roll, a **mega-stone** leaf from map 3 on, a **casino**
- * leaf from map 2 on and a **gated** leaf (a vault sealed behind a type-gated
- * obstacle) from map 3 on; the last four may coincide on one floor. Every one is
- * hung off a regular room that is neither the entry nor the boss, and never farther
- * from the entry than the boss.
+ * leaf from map 2 on, a **gated** leaf (a vault sealed behind a type-gated
+ * obstacle) from map 3 on and a **trade** leaf from map 3 on; the last five may
+ * coincide on one floor. Every one is hung off a regular room that is neither the
+ * entry nor the boss, and never farther from the entry than the boss. The trade
+ * leaf rolls **last** of all, after every shipped draw.
  */
-export type MapRoomSpecial = 'shop' | 'mini-boss' | 'mega-stone' | 'casino' | 'gated';
+export type MapRoomSpecial = 'shop' | 'mini-boss' | 'mega-stone' | 'casino' | 'gated' | 'trade';
 
 export type MapRoom = Readonly<{
   id: number;
@@ -124,6 +125,12 @@ const GATED_CHANCE = 0.2;
 
 /** The first map whose floor may hang a gated leaf (`docs/maps-spec.md` §7). */
 const GATED_FROM_MAP = 3;
+
+/** Chance a floor hangs a **trade** leaf (`docs/maps-spec.md` §7). Module-private. */
+const TRADE_CHANCE = 0.2;
+
+/** The first map whose floor may hang a trade leaf (`docs/maps-spec.md` §7). */
+const TRADE_FROM_MAP = 3;
 
 /** The first map whose floor hangs its guaranteed **shop** leaf (`docs/maps-spec.md` §7). */
 export const SHOP_FROM_MAP = 2;
@@ -474,6 +481,15 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
   if (index >= GATED_FROM_MAP && rng.next() < GATED_CHANCE) {
     const parents = freeParents();
     if (parents.length > 0) addSpecial('gated', parents[rng.int(0, parents.length - 1)]);
+  }
+  // The trade leaf rolls last, after every shipped draw, so no floor's shop,
+  // mini-boss, mega-stone, casino, gated leaf, room id or room size moves because of
+  // it. Map 3 is the first floor whose party plausibly holds a member to spare; the
+  // room is refused on a single-member party, so earlier floors would hand the player
+  // a counter that can never answer.
+  if (index >= TRADE_FROM_MAP && rng.next() < TRADE_CHANCE) {
+    const parents = freeParents();
+    if (parents.length > 0) addSpecial('trade', parents[rng.int(0, parents.length - 1)]);
   }
 
   // The entry and boss rooms are the floor's quiet leaves; both are pinned to the

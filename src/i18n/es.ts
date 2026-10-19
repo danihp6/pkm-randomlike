@@ -136,6 +136,16 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'reward.choose': 'Elige una.',
   'reward.controls': '{confirm}: coger    {cancel}: salir',
 
+  // trade — the trade room's window
+  'trade.title': 'INTERCAMBIO',
+  'trade.greeting': 'Elige el Pokémon que vas a entregar.',
+  'trade.leave': 'SALIR',
+  'trade.controls': '{confirm}: intercambiar    {cancel}: salir',
+  'trade.used': 'El intercambio de esta planta ya está hecho.',
+  'trade.refused': 'Necesitas otro Pokémon para intercambiar.',
+  'trade.missing': 'Ese Pokémon no está en tu equipo.',
+  'trade.done': '¡Has recibido a {name}!',
+
   // release — the permadeath overlay
   'release.controls': '{confirm} · continuar',
 

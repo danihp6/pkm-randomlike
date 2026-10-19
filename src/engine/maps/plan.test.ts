@@ -171,11 +171,13 @@ function assertPlan(plan: MapPlan): void {
   expect(specials.filter((room) => room.special === 'mega-stone').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'casino').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'gated').length).toBeLessThanOrEqual(1);
-  // The casino hangs from map 2 on and the gated leaf from map 3 on
+  expect(specials.filter((room) => room.special === 'trade').length).toBeLessThanOrEqual(1);
+  // The casino hangs from map 2 on and the gated and trade leaves from map 3 on
   // (`docs/maps-spec.md` §7).
   if (plan.mapIndex < 3) {
     expect(specials.filter((room) => room.special === 'mega-stone')).toHaveLength(0);
     expect(specials.filter((room) => room.special === 'gated')).toHaveLength(0);
+    expect(specials.filter((room) => room.special === 'trade')).toHaveLength(0);
   }
   if (plan.mapIndex < 2) expect(specials.filter((room) => room.special === 'casino')).toHaveLength(0);
   for (const room of specials) {
@@ -322,6 +324,48 @@ describe('special rooms', () => {
     expect(seen.has('true|true')).toBe(true);
   });
 
+  it('hangs at most one trade leaf, only from map 3 on, always below the boss', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const trade = plan.rooms.filter((room) => room.special === 'trade');
+        expect(trade.length, `${seed} map ${mapIndex}`).toBeLessThanOrEqual(1);
+        if (mapIndex < 3) expect(trade, `${seed} map ${mapIndex}`).toHaveLength(0);
+        for (const room of trade) {
+          expect(room.shape, `${seed} map ${mapIndex}`).toBe('dead-end');
+          expect(room.id).not.toBe(plan.entryRoom);
+          expect(room.id).not.toBe(plan.bossRoom);
+          const dist = distances(plan);
+          expect(dist[room.id], `${seed} map ${mapIndex}`).toBeLessThanOrEqual(dist[plan.bossRoom]);
+          // Its parent is a regular room that is neither the entry nor the boss.
+          const neighbours = plan.links
+            .filter(([a, b]) => a === room.id || b === room.id)
+            .map(([a, b]) => (a === room.id ? b : a));
+          expect(neighbours).toHaveLength(1);
+          expect(neighbours[0]).not.toBe(plan.entryRoom);
+          expect(neighbours[0]).not.toBe(plan.bossRoom);
+          // The plan's own list agrees with the room's field.
+          expect(plan.specials.find((special) => special.roomId === room.id)?.kind).toBe('trade');
+        }
+      }
+    }
+  });
+
+  it('hangs a trade leaf between 3 % and 30 % of the time from map 3 on', () => {
+    let trade = 0;
+    const total = 400;
+    for (let i = 0; i < total; i++) {
+      if (specialRoom(planMap(`trade-odds-${i}`, 5), 'trade') !== undefined) trade++;
+    }
+    expect(trade).toBeGreaterThan(total * 0.03);
+    expect(trade).toBeLessThan(total * 0.3);
+    // Maps 1-2 never hang one, whatever the seed.
+    for (let i = 0; i < 100; i++) {
+      expect(specialRoom(planMap(`trade-odds-${i}`, 1), 'trade')).toBeUndefined();
+      expect(specialRoom(planMap(`trade-odds-${i}`, 2), 'trade')).toBeUndefined();
+    }
+  });
+
   it('is deterministic: the same seed and map give the same specials', () => {
     expect(planMap('special-seed', 5).specials).toEqual(planMap('special-seed', 5).specials);
   });
@@ -409,8 +453,8 @@ describe('special rooms', () => {
   /**
    * The shipped specials, read off the **pre-change** build for the sweep above
    * (one dump per seed and map, `roomId:kind` joined by `,`). The casino draw is
-   * the special pass's **last** shipped statement and the gated one rolls after it,
-   * so this array must never move.
+   * the special pass's **last** shipped statement, the gated one rolls after it and
+   * the trade one after that, so this array must never move.
    */
   const SHIPPED_SPECIALS: Readonly<Record<string, string>> = {
     'alpha:1': '6:mini-boss',
@@ -484,12 +528,185 @@ describe('special rooms', () => {
       for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
         const plan = planMap(seed, mapIndex);
         const shipped = plan.specials
-          .filter((special) => special.kind !== 'casino' && special.kind !== 'gated')
+          .filter(
+            (special) =>
+              special.kind !== 'casino' && special.kind !== 'gated' && special.kind !== 'trade',
+          )
           .map((special) => `${special.roomId}:${special.kind}`)
           .join(',');
         expect(shipped, `${seed} map ${mapIndex}`).toBe(SHIPPED_SPECIALS[`${seed}:${mapIndex}`]);
       }
     }
+  });
+
+  /**
+   * The floor anchors (`biomeId|entryRoom|entryEdge|bossRoom`), dumped **before** the
+   * trade draw was added and pinned verbatim. The trade leaf rolls after the entry,
+   * the boss and every shipped special, so it can never move one.
+   */
+  const PLAN_PINS: Readonly<Record<string, string>> = {
+    'alpha:1': 'forest|0|E|5',
+    'alpha:2': 'forest|0|W|5',
+    'alpha:3': 'forest|0|E|5',
+    'alpha:4': 'forest|0|W|5',
+    'alpha:5': 'forest|0|W|5',
+    'alpha:6': 'forest|0|W|6',
+    'alpha:7': 'forest|0|N|7',
+    'alpha:8': 'forest|0|S|8',
+    'bravo:1': 'forest|0|W|5',
+    'bravo:2': 'forest|0|S|5',
+    'bravo:3': 'forest|0|S|5',
+    'bravo:4': 'forest|0|S|5',
+    'bravo:5': 'forest|0|S|6',
+    'bravo:6': 'forest|0|N|5',
+    'bravo:7': 'forest|0|N|7',
+    'bravo:8': 'forest|0|S|5',
+    'charlie:1': 'forest|0|S|5',
+    'charlie:2': 'forest|0|E|5',
+    'charlie:3': 'forest|0|W|5',
+    'charlie:4': 'forest|0|E|5',
+    'charlie:5': 'forest|0|W|6',
+    'charlie:6': 'forest|0|E|7',
+    'charlie:7': 'forest|0|W|6',
+    'charlie:8': 'forest|0|E|8',
+    'delta:1': 'forest|0|N|5',
+    'delta:2': 'forest|0|E|5',
+    'delta:3': 'forest|0|W|5',
+    'delta:4': 'forest|0|W|5',
+    'delta:5': 'forest|0|E|5',
+    'delta:6': 'forest|0|N|5',
+    'delta:7': 'forest|0|W|5',
+    'delta:8': 'forest|0|S|8',
+    'echo:1': 'forest|0|E|5',
+    'echo:2': 'forest|0|E|5',
+    'echo:3': 'forest|0|E|5',
+    'echo:4': 'forest|0|E|5',
+    'echo:5': 'forest|0|W|5',
+    'echo:6': 'forest|0|N|6',
+    'echo:7': 'forest|0|W|7',
+    'echo:8': 'forest|0|W|6',
+    'foxtrot:1': 'forest|0|W|5',
+    'foxtrot:2': 'forest|0|W|5',
+    'foxtrot:3': 'forest|0|E|5',
+    'foxtrot:4': 'forest|0|S|5',
+    'foxtrot:5': 'forest|0|E|5',
+    'foxtrot:6': 'forest|0|S|7',
+    'foxtrot:7': 'forest|0|N|5',
+    'foxtrot:8': 'forest|0|S|8',
+    'golf:1': 'forest|0|E|5',
+    'golf:2': 'forest|0|S|5',
+    'golf:3': 'forest|0|S|5',
+    'golf:4': 'forest|0|S|6',
+    'golf:5': 'forest|0|E|6',
+    'golf:6': 'forest|0|E|6',
+    'golf:7': 'forest|0|S|7',
+    'golf:8': 'forest|0|E|7',
+    'hotel:1': 'forest|0|S|5',
+    'hotel:2': 'forest|0|N|5',
+    'hotel:3': 'forest|0|W|5',
+    'hotel:4': 'forest|0|N|6',
+    'hotel:5': 'forest|0|S|5',
+    'hotel:6': 'forest|0|W|7',
+    'hotel:7': 'forest|0|W|5',
+    'hotel:8': 'forest|0|E|8',
+  };
+
+  /**
+   * The floor anchors the trade draw must leave where they were: one entry per seed
+   * and map, read off the pre-change build and pinned verbatim.
+   */
+  it('never moves a floor anchor (the trade leaf rolls last)', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const anchor = `${plan.biomeId}|${plan.entryRoom}|${plan.entryEdge}|${plan.bossRoom}`;
+        expect(anchor, `${seed} map ${mapIndex}`).toBe(PLAN_PINS[`${seed}:${mapIndex}`]);
+      }
+    }
+  });
+
+  /**
+   * The trade leaf's own per-map slot (`'-'` or the room id), computed once from the
+   * delivered build and pinned verbatim, so a moved `map` stream fails this test.
+   */
+  const TRADE_LEAVES: Readonly<Record<string, string>> = {
+    'alpha:1': '-',
+    'alpha:2': '-',
+    'alpha:3': '-',
+    'alpha:4': '-',
+    'alpha:5': '-',
+    'alpha:6': '-',
+    'alpha:7': '10',
+    'alpha:8': '-',
+    'bravo:1': '-',
+    'bravo:2': '-',
+    'bravo:3': '-',
+    'bravo:4': '8',
+    'bravo:5': '-',
+    'bravo:6': '8',
+    'bravo:7': '-',
+    'bravo:8': '7',
+    'charlie:1': '-',
+    'charlie:2': '-',
+    'charlie:3': '-',
+    'charlie:4': '-',
+    'charlie:5': '-',
+    'charlie:6': '-',
+    'charlie:7': '-',
+    'charlie:8': '-',
+    'delta:1': '-',
+    'delta:2': '-',
+    'delta:3': '-',
+    'delta:4': '8',
+    'delta:5': '-',
+    'delta:6': '-',
+    'delta:7': '-',
+    'delta:8': '-',
+    'echo:1': '-',
+    'echo:2': '-',
+    'echo:3': '-',
+    'echo:4': '-',
+    'echo:5': '-',
+    'echo:6': '9',
+    'echo:7': '-',
+    'echo:8': '-',
+    'foxtrot:1': '-',
+    'foxtrot:2': '-',
+    'foxtrot:3': '-',
+    'foxtrot:4': '-',
+    'foxtrot:5': '-',
+    'foxtrot:6': '-',
+    'foxtrot:7': '-',
+    'foxtrot:8': '-',
+    'golf:1': '-',
+    'golf:2': '-',
+    'golf:3': '-',
+    'golf:4': '-',
+    'golf:5': '-',
+    'golf:6': '-',
+    'golf:7': '-',
+    'golf:8': '-',
+    'hotel:1': '-',
+    'hotel:2': '-',
+    'hotel:3': '-',
+    'hotel:4': '-',
+    'hotel:5': '-',
+    'hotel:6': '-',
+    'hotel:7': '-',
+    'hotel:8': '-',
+  };
+
+  it('pins where the trade leaf hangs, seed by seed', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const room = specialRoom(planMap(seed, mapIndex), 'trade');
+        expect(room === undefined ? '-' : String(room), `${seed} map ${mapIndex}`).toBe(
+          TRADE_LEAVES[`${seed}:${mapIndex}`],
+        );
+      }
+    }
+    // Reproducible twice over: the same call is the same plan.
+    expect(planMap('alpha', 7)).toEqual(planMap('alpha', 7));
   });
 });
 
