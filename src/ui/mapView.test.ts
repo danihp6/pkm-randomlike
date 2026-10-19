@@ -235,6 +235,20 @@ describe('buildMapView boss, portal and specials', () => {
     }
   });
 
+  it('surfaces a trade marker only on the room it belongs to', () => {
+    const plan = planMap('markers-seed', 3);
+    const tradeRoom = plan.rooms[plan.rooms.length - 2].id;
+    const view = buildMapView(plan, {
+      discovered: allRooms(plan),
+      currentRoom: plan.entryRoom,
+      markers: { [tradeRoom]: 'trade' },
+    });
+    expect(view.rooms.find((room) => room.id === tradeRoom)!.marker).toBe('trade');
+    for (const room of view.rooms) {
+      if (room.id !== tradeRoom) expect(room.marker).toBeNull();
+    }
+  });
+
   it('reports the floor hidden before any room is discovered', () => {
     const plan = planMap('empty-seed', 1);
     const view = buildMapView(plan, { discovered: [], currentRoom: plan.entryRoom });

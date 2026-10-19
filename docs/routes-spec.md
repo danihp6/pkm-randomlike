@@ -304,6 +304,13 @@ cell), and reordering the party within itself stays free. A catch that goes to
 the PC says so in a **transient notice** at the top of the screen — one line,
 dismissed by itself, taking no key and blocking no movement.
 
+A member can also leave the run **on purpose**, in the **trade** room
+(`docs/maps-spec.md` §7) — the one place outside a battle where a member is
+removed. It is the player's choice, the room asks once, the given member is gone
+for good and is not counted as a casualty (no RIP entry, no release beat), and the
+return joins at the squad's level exactly as a catch does. A single-member party is
+refused, because a run cannot hold no party.
+
 The PC box also carries a **fixed RIP tab**, at the right end of its page-tab
 strip: a **third pane of the same window** (`RunState.rip`), listing the run's
 fallen, one avatar cell each, in the order they fell — the party's first, the

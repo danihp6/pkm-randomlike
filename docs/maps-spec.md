@@ -198,6 +198,7 @@ no tall grass, no regular trainers, no ground items:
 | **mega-stone** | low chance, **from map 3 onward** | a leaf anywhere | one random **Mega Stone** item |
 | **casino** | 30 % chance, **from map 2 onward** | a leaf anywhere | a **slot machine** counter with a Team Rocket grunt beside it; the interact key (`E`) opens the machine's own window, where one **spin** costs the floor band's price (`CASINO.price`, `src/data/casino.ts`) and pays an item, an **Egg** or the fight against the grunt |
 | **gated** | 20 % chance, **from map 3 onward** | a leaf anywhere | one **vault** sealed by a **bush**, a **rock** or a **pond**; the interact key opens it when a party member has the obstacle's **type** — Bug or Grass / Rock or Fighting / Water — and the reward inside is one ground item |
+| **trade** | 20 % chance, **from map 3 onward** | a leaf anywhere | a counter; the interact key (`E`) opens the room's own window, which lists the **party** and one `LEAVE` row. Giving a member away rolls **one random Pokémon on acceptance** (never previewed) and places it in the party at the **squad's level**; one trade per room, and refused on a single-member party |
 
 Specials count **outside** K (`K` regular rooms + the specials), are rolled on
 the same `map` stream, and are discovered like any room: they appear on the
@@ -205,11 +206,13 @@ minimap only once **entered**, with their own icon. The shop is guaranteed **fro
 map 2 on** — map 1 is the run's on-ramp, with no money for a counter and already a
 10-ball pack, so its floor hangs no shop leaf at all; the **mini-boss** leaf rolls
 with a **50%** chance, the **mega-stone** leaf with **15%** (only **from map 3
-onward**), the **casino** leaf with **30%** (only **from map 2 onward**) and the
-**gated** leaf with **20%** (only **from map 3 onward**), and any of them may
-coincide on the same floor. The casino's draw and then the **gated** leaf's draw
+onward**), the **casino** leaf with **30%** (only **from map 2 onward**), the
+**gated** leaf with **20%** (only **from map 3 onward**) and the **trade** leaf with
+**20%** (only **from map 3 onward**), and any of them may coincide on the same
+floor. The casino's draw, then the **gated** leaf's and then the **trade** leaf's
 are the **last** statements of the special pass, in that order, so no floor's shop,
-mini-boss, mega-stone, casino, room id or room size moved when either shipped.
+mini-boss, mega-stone, casino, gated leaf, room id or room size moved when any of
+them shipped.
 
 The **gated** leaf is the type-gated vault (`src/data/gates.ts`,
 `src/engine/routes/gate.ts`, `D47`'s room descriptor `src/scenes/rooms/gate.ts`).
@@ -235,6 +238,30 @@ Its content:
   `gate-loot-<mapIndex>-<roomId>`, so a moved loot table cannot move a shipped
   vault's reward. It is a **visible** item, so it blocks its own tile and is
   collected from the corridor.
+
+The **trade** leaf (`src/engine/run/trade.ts`, `D47`'s room descriptor
+`src/scenes/rooms/trade.ts`) is the one place outside a battle where a member
+leaves the run **on purpose** (`docs/routes-spec.md` §6). Its content:
+
+- the room holds a **counter**; the interact key (`E`) opens the room's own window,
+  which lists the **party** in order and one `LEAVE` row. Leaving grants nothing and
+  trades nothing (`LEAVE`, or `Q`/cancel, closes the window).
+- the trade is **optional** and **one per room**: it is recorded as
+  `trade-<mapIndex>-<roomId>` in `pickedItems`, which `advanceMap` clears, so a
+  revisit and a reload answer "the trade in this room is done" and the next floor's
+  room is open again.
+- it is **refused while the party holds a single member**, because a trade would
+  leave the run with an empty party, which `RunState` cannot represent.
+- the given member leaves **at once** and is **not a loss**: no RIP entry, no
+  release beat and `stats.casualties` untouched. Its level, HP and moves leave with
+  it, and the squad's shared XP bar does not move.
+- the received one is rolled **on acceptance** — never previewed — from
+  `speciesPool(band, 'wild')` off its own stream
+  (`${seed}:trade:${mapIndex}:${roomId}`), and joins at `squadLevel` through
+  `adoptAtLevel` with **full HP/PP**: the catch rule it copies is the **level**, not
+  the damage share. It is **not a catch** (`stats.catches`, `caughtSpecies`, `pcCatch`
+  and the room's capture untouched) and lands in the party (the box would only take
+  it on a full party, which the trade's own removal makes impossible).
 
 The **shop panel** is a HUD window like the party/bag panels: a Pokémon
 Mart-style list with prices that **only appears while the player is in the shop

@@ -24,6 +24,10 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
   permanent opening for the floor) and the reward the scene draws inside.
 - `gate.test.ts` — the gate's own surface: its reward id and stream, the seal's
   refusal and opening (with the run and the rebuild it asks for) and the marker.
+- `trade.ts` — the trade room: its counter and the window that gives a member away for
+  a random one.
+- `trade.test.ts` — the room's own surface: the counter, the rows, the refusal paths,
+  the commit and the marker.
 - `fixtures.test.ts` — the shipped rooms' fixtures, pinned by id, tile and (for the stone)
   the exact item the fixed seed rolls.
 
