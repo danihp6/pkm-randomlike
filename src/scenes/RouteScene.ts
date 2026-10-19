@@ -112,6 +112,7 @@ import {
   borderEdge,
   encounterTableFor,
   exitEdgeAt,
+  gateId,
   seesPlayer,
   sketchRoute,
   sketchRouteSteps,
@@ -1177,6 +1178,8 @@ export class RouteScene extends Phaser.Scene {
       get view(): RoomView {
         return scene.view;
       },
+      route: () => scene.route,
+      rebuildRoom: () => scene.rebuildRoom(),
       entryTile: () => scene.route.entry,
       counterTile: () => scene.shopCounter,
       farthestRoomTile: () => scene.farthestRoomTile(),
@@ -1342,6 +1345,15 @@ export class RouteScene extends Phaser.Scene {
       // (`docs/maps-spec.md` §2/§6) and a special carries only its own content
       // (§7).
       quiet: params.room ? params.room.entry || params.room.boss || params.room.special !== null : false,
+      // The gated room's vault is sealed until the floor's own mark says otherwise, so a
+      // revisit and a reload draw exactly what the run has (`docs/maps-spec.md` §7).
+      ...(params.room?.special === 'gated'
+        ? {
+            gate: isItemPicked(this.run, gateId(params.room.mapIndex, params.room.roomId))
+              ? 'open'
+              : 'sealed',
+          }
+        : {}),
       ...(wall ? { wall } : {}),
     };
     const route = sketchRoute(request);
@@ -5687,6 +5699,29 @@ export class RouteScene extends Phaser.Scene {
     this.movePlayerTo(this.player.x, this.player.y);
     const bounds = mapPixelSize(this.map, TILE_SIZE);
     this.cameras.main.setBounds(0, 0, bounds.width, bounds.height);
+    this.refreshHud();
+  }
+
+  /**
+   * Redraws the room it is standing in after the run changed something the build reads
+   * (the gate's opening): the room's build re-reads the `gate` flag, the player keeps
+   * their tile and the room's **live** encounter sequence is carried over, so reopening
+   * a seal can never restart the room's grass rolls.
+   */
+  private rebuildRoom(): void {
+    if (!this.room) return;
+    const tile = { x: this.player.x, y: this.player.y };
+    const encounters = this.encounters;
+    this.clearRouteSprites();
+    this.buildRoom();
+    this.encounters = encounters;
+    this.drawTiles();
+    this.drawEntities();
+    this.drawItems();
+    this.drawTrainers();
+    this.drawRoomFixture();
+    this.player = tile;
+    this.movePlayerTo(tile.x, tile.y);
     this.refreshHud();
   }
 

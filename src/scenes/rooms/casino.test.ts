@@ -4,7 +4,7 @@ import { planMap, roomView } from '../../engine/maps';
 import { levelCapForMap } from '../../data/maps';
 import type { Tile } from '../../engine/grid';
 import type { RouteTrainer } from '../../engine/routes';
-import { DEFAULT_TRAINER_SIGHT } from '../../engine/routes';
+import { DEFAULT_TRAINER_SIGHT, sketchRoute } from '../../engine/routes';
 import { addMoney, createRun, createRunPokemon, type RunState } from '../../engine/run';
 import { casinoGruntTrainerId, casinoLockId, casinoSpinId } from '../../ui/casino';
 import { descriptor as casino } from './casino';
@@ -113,6 +113,9 @@ function harness(options: HostOptions = {}) {
       return run;
     },
     view: roomView(planMap(SEED, MAP_INDEX), 0, false),
+    // The widened port (`D47`): the casino reads neither, so it needs a stand-in.
+    route: () => sketchRoute({ seed: SEED, routeIndex: MAP_INDEX, biomeId: 'forest' }),
+    rebuildRoom: () => undefined,
     entryTile: () => ENTRY,
     counterTile: () => ('counter' in options ? (options.counter ?? null) : FARTHEST),
     farthestRoomTile: () => ('farthest' in options ? (options.farthest ?? null) : FARTHEST),

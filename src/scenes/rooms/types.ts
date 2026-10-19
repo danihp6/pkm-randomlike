@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import type { Tile } from '../../engine/grid';
 import type { MapRoomSpecial, RoomView } from '../../engine/maps';
-import type { Facing, RouteItem, RouteTrainer } from '../../engine/routes/routeMap';
+import type { Facing, RouteItem, RouteMap, RouteTrainer } from '../../engine/routes/routeMap';
 import type { RunState } from '../../engine/run/state';
 import type { KeybindAction } from '../../data/keybinds';
 import type { MapRoomMarker } from '../../ui/mapView';
@@ -45,6 +45,15 @@ export type RoomHost = Readonly<{
   run: RunState;
   /** The room being built (`roomView`). */
   view: RoomView;
+  /** The room's route as `buildRoom` built it, so a room can read its own tiles. */
+  route(): RouteMap;
+  /**
+   * Redraws the current room from its run **without leaving it**: re-runs the room's
+   * build (so a `RouteRequest.gate` input that reads the run is re-read), keeps the
+   * player on their tile and keeps the room's live encounter sequence. Called after a
+   * change the build reads.
+   */
+  rebuildRoom(): void;
   /** The room's route entry tile. */
   entryTile(): Tile;
   /** The counter tile this room's fixture placed, or null. */

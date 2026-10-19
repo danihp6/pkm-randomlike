@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type Phaser from 'phaser';
 import type { Tile } from '../../engine/grid';
 import { miniBossTrainerId, planMap, roomView } from '../../engine/maps';
-import { DEFAULT_TRAINER_SIGHT } from '../../engine/routes';
+import { DEFAULT_TRAINER_SIGHT, sketchRoute } from '../../engine/routes';
 import { createRun, createRunPokemon, type RunState } from '../../engine/run';
 import { descriptor as megaStone } from './megaStone';
 import { descriptor as miniBoss } from './miniBoss';
@@ -34,6 +34,9 @@ const RUN: RunState = {
 
 /** The plan room the stub hands over; only its `mapIndex` is a fixture input. */
 const VIEW = roomView(planMap(SEED, MAP_INDEX), 0, false);
+
+/** The route the stub hands over: a real build the four shipped rooms never read. */
+const ROUTE = sketchRoute({ seed: SEED, routeIndex: MAP_INDEX, biomeId: 'forest' });
 
 type FakeObject = Record<string, unknown>;
 /** One call the fake scene was asked to make, in order. */
@@ -96,6 +99,8 @@ function stubHost(options: StubOptions = {}): RoomHost {
     scene: fakeScene(),
     run: options.run ?? RUN,
     view: VIEW,
+    route: () => ROUTE,
+    rebuildRoom: () => undefined,
     entryTile: () => ENTRY,
     counterTile: () => ('counter' in options ? (options.counter ?? null) : FARTHEST),
     farthestRoomTile: () => ('farthest' in options ? (options.farthest ?? null) : FARTHEST),

@@ -197,6 +197,7 @@ no tall grass, no regular trainers, no ground items:
 | **mini-boss** | medium chance | a leaf anywhere | one strong trainer fielding a **fixed party of three** (**two** on map 1, `bossPartySize('miniboss', mapIndex)`); beating it offers **one window of six rows** — three **items** from the map's reward pool and three **Pokémon it presents only by their highest stat and their nature** (`ATTACK · Adamant`), never by name, sprite, types or moves |
 | **mega-stone** | low chance, **from map 3 onward** | a leaf anywhere | one random **Mega Stone** item |
 | **casino** | 30 % chance, **from map 2 onward** | a leaf anywhere | a **slot machine** counter with a Team Rocket grunt beside it; the interact key (`E`) opens the machine's own window, where one **spin** costs the floor band's price (`CASINO.price`, `src/data/casino.ts`) and pays an item, an **Egg** or the fight against the grunt |
+| **gated** | 20 % chance, **from map 3 onward** | a leaf anywhere | one **vault** sealed by a **bush**, a **rock** or a **pond**; the interact key opens it when a party member has the obstacle's **type** — Bug or Grass / Rock or Fighting / Water — and the reward inside is one ground item |
 
 Specials count **outside** K (`K` regular rooms + the specials), are rolled on
 the same `map` stream, and are discovered like any room: they appear on the
@@ -204,10 +205,36 @@ minimap only once **entered**, with their own icon. The shop is guaranteed **fro
 map 2 on** — map 1 is the run's on-ramp, with no money for a counter and already a
 10-ball pack, so its floor hangs no shop leaf at all; the **mini-boss** leaf rolls
 with a **50%** chance, the **mega-stone** leaf with **15%** (only **from map 3
-onward**) and the **casino** leaf with **30%** (only **from map 2 onward**), and
-any of them may coincide on the same floor. The casino's draw is the **last**
-statement of the special pass, so no floor's shop, mini-boss, mega-stone or room
-size moved when it shipped.
+onward**), the **casino** leaf with **30%** (only **from map 2 onward**) and the
+**gated** leaf with **20%** (only **from map 3 onward**), and any of them may
+coincide on the same floor. The casino's draw and then the **gated** leaf's draw
+are the **last** statements of the special pass, in that order, so no floor's shop,
+mini-boss, mega-stone, casino, room id or room size moved when either shipped.
+
+The **gated** leaf is the type-gated vault (`src/data/gates.ts`,
+`src/engine/routes/gate.ts`, `D47`'s room descriptor `src/scenes/rooms/gate.ts`).
+Its content:
+
+- the room holds a **one-tile vault** behind a single obstacle: a **bush**
+  (Bug or Grass), a **rock** (Rock or Fighting) or a **pond** (Water). The three
+  kinds are a data table; each row names the party **types** that open it, the map
+  value the seal is stamped as (`BUSH`/`ROCK`/`WATER`, `src/engine/map.ts`) and the
+  FRLG cell it draws. The generator carves the vault as its own pass off two minted
+  streams (`${seed}:gate:${routeIndex}` for the kind, `…:site` for the site), so no
+  route the floor already built moves (`docs/route-generator.md` §3.7).
+- **any party member** of any one of the row's types opens it; the box is never
+  asked, and a member at 0 HP counts (`partyHasType`,
+  `src/engine/run/party.ts`). With none of them, the interact key prints the
+  obstacle's own line and **nothing** changes.
+- the opening is **permanent for the floor**: it rides `pickedItems` as
+  `gate-<mapIndex>-<roomId>`, which `advanceMap` clears, so a revisit and a reload
+  draw the vault the run opened and the next floor's room is sealed again.
+- the reward inside is **one ordinary ground item** from the floor band's pool
+  (`ROUTE_LOOT`), off its own stream
+  (`${seed}:gate:${mapIndex}:${roomId}:reward`) and booked as
+  `gate-loot-<mapIndex>-<roomId>`, so a moved loot table cannot move a shipped
+  vault's reward. It is a **visible** item, so it blocks its own tile and is
+  collected from the corridor.
 
 The **shop panel** is a HUD window like the party/bag panels: a Pokémon
 Mart-style list with prices that **only appears while the player is in the shop

@@ -689,4 +689,159 @@ describe('sketchRoute', () => {
     }
     expect(sketchRoute(rerolledRequest).trainers.length).toBeGreaterThan(0);
   }, 60_000);
+
+  /**
+   * The shipped no-gate builds, pinned by a digest of a route's whole shape: its size,
+   * its tiles, the entry, the exits, the spine, the branches, the pockets, the items,
+   * the trainers and the fact that it carries **no** `gate` key. Read off the
+   * **pre-change** engine for this sweep, so any moved route is a defect, never a
+   * re-pin: the gate pass runs only when a request asks for one.
+   */
+  const NO_GATE_DIGESTS: Readonly<Record<string, string>> = {
+    'alpha:1': '10f84de1',
+    'alpha:2': 'f30a1126',
+    'alpha:3': '194eb8f3',
+    'alpha:4': '46dd4706',
+    'alpha:5': 'ef4ec5cb',
+    'alpha:6': '9b36c328',
+    'alpha:7': 'bec88732',
+    'alpha:8': 'a2560aff',
+    'bravo:1': 'c16202dd',
+    'bravo:2': '3364628b',
+    'bravo:3': '9383c6ff',
+    'bravo:4': '2fbd0b71',
+    'bravo:5': 'ddc73bfe',
+    'bravo:6': 'e3a0b08e',
+    'bravo:7': '4406d589',
+    'bravo:8': 'b13952e8',
+    'charlie:1': 'cbef7ec8',
+    'charlie:2': 'f398367e',
+    'charlie:3': '26e54eba',
+    'charlie:4': 'cd8bd57e',
+    'charlie:5': '3fb7eba4',
+    'charlie:6': '0bf99283',
+    'charlie:7': '5a8717ed',
+    'charlie:8': 'aa556c39',
+    'delta:1': '9ff21212',
+    'delta:2': '8f7aba9c',
+    'delta:3': '7d99f602',
+    'delta:4': 'd2ff48f9',
+    'delta:5': 'b2d66d66',
+    'delta:6': '45197946',
+    'delta:7': '509865f1',
+    'delta:8': 'cfb1f527',
+    'echo:1': 'd70ab146',
+    'echo:2': 'e7f4c002',
+    'echo:3': '5b938447',
+    'echo:4': '6fe94657',
+    'echo:5': 'e0a2177f',
+    'echo:6': '95b4d36f',
+    'echo:7': '3c0f29d3',
+    'echo:8': 'd5c34d1f',
+    'foxtrot:1': '25c1a620',
+    'foxtrot:2': 'f450d33b',
+    'foxtrot:3': 'a178cace',
+    'foxtrot:4': '63ea4f71',
+    'foxtrot:5': '6ce299ff',
+    'foxtrot:6': 'fc7e824f',
+    'foxtrot:7': '03d0f9ac',
+    'foxtrot:8': '6092ac1b',
+    'golf:1': '3be72ebd',
+    'golf:2': 'afd0bf5c',
+    'golf:3': '465eedb4',
+    'golf:4': 'de91acfb',
+    'golf:5': '10aadc24',
+    'golf:6': 'fd51207c',
+    'golf:7': 'f4d6de12',
+    'golf:8': 'b834ffa3',
+    'hotel:1': '190edd67',
+    'hotel:2': 'ecd97ca2',
+    'hotel:3': 'acdaec14',
+    'hotel:4': '81304b3b',
+    'hotel:5': '7c9a205f',
+    'hotel:6': 'df6dfaad',
+    'hotel:7': 'a0c05ac0',
+    'hotel:8': '00a0f05b',
+  };
+
+  /** A census request at room size, the shape every plan room is built at. */
+  function census(seed: string, routeIndex: number): RouteRequest {
+    return {
+      ...request(seed, routeIndex),
+      width: 30,
+      height: 30,
+      grassPatches: 12,
+      ledges: 6,
+      loot: [{ itemId: 'potion', weight: 1 }],
+      hiddenChance: 0.5,
+      trainerArchetypes: ['youngster', 'lass'],
+    };
+  }
+
+  /** A cheap fold over a route's whole shape, for the pin above. */
+  function digest(route: RouteMap): string {
+    const text = JSON.stringify({
+      seed: route.seed,
+      routeIndex: route.routeIndex,
+      biomeId: route.biomeId,
+      shape: route.shape,
+      width: route.width,
+      height: route.height,
+      tiles: route.tiles,
+      entry: route.entry,
+      exits: route.exits,
+      spine: route.spine,
+      branches: route.branches,
+      pockets: route.pockets,
+      items: route.items,
+      trainers: route.trainers,
+      hasGate: 'gate' in route,
+    });
+    let h = 2166136261;
+    for (let i = 0; i < text.length; i++) {
+      h ^= text.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0).toString(16).padStart(8, '0');
+  }
+
+  it('leaves every shipped build exactly where it was, and adds no gate key', () => {
+    for (const seed of ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel']) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const route = sketchRoute(census(seed, mapIndex));
+        expect(digest(route), `${seed}:${mapIndex}`).toBe(NO_GATE_DIGESTS[`${seed}:${mapIndex}`]);
+        expect('gate' in route, `${seed}:${mapIndex} gate key`).toBe(false);
+      }
+    }
+  }, 60_000);
+
+  it('moves two cells and nothing else when the room is asked for a gated vault', () => {
+    for (const seed of ['alpha', 'delta', 'hotel']) {
+      const plain = sketchRoute(census(seed, 5));
+      const gated = sketchRoute({ ...census(seed, 5), gate: 'sealed' });
+      const gate = gated.gate!;
+      expect('gate' in plain, `${seed} plain`).toBe(false);
+      expect(gate, `${seed} vault`).toBeDefined();
+
+      const moved: string[] = [];
+      for (let y = 0; y < gated.height; y++) {
+        for (let x = 0; x < gated.width; x++) {
+          if (plain.tiles[y][x] !== gated.tiles[y][x]) moved.push(`${x},${y}`);
+        }
+      }
+      // The seal replaces a wall and the chamber behind it becomes floor: the route's
+      // geometry, its lanes, its pockets, its items and its trainers do not move.
+      expect(moved.sort(), `${seed} moved cells`).toEqual(
+        [`${gate.tile.x},${gate.tile.y}`, `${gate.pocket.x},${gate.pocket.y}`].sort(),
+      );
+      expect(gated.entry, `${seed} entry`).toEqual(plain.entry);
+      expect(gated.exits, `${seed} exits`).toEqual(plain.exits);
+      expect(gated.spine, `${seed} spine`).toEqual(plain.spine);
+      expect(gated.branches, `${seed} branches`).toEqual(plain.branches);
+      expect(gated.pockets, `${seed} pockets`).toEqual(plain.pockets);
+      expect(gated.items, `${seed} items`).toEqual(plain.items);
+      // The population pass reads the tiles, so a trainer beside the vault may shift
+      // with it; only the **no-gate** builds above are pinned, as the pass promises.
+    }
+  }, 60_000);
 });

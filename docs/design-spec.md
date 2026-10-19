@@ -331,7 +331,12 @@ leaves with only their own content (`docs/maps-spec.md` §7):
   item, an **Egg** (an ordinary bag item that hatches into a new party member at
   the squad's level when the run takes the portal) or the **battle against the
   grunt** — which locks the machine for the rest of the floor. It is the run's one
-  money-for-anything gamble.
+  money-for-anything gamble;
+- a **gated** room (20% chance, only from map 3 on): a one-tile **vault** behind a
+  bush, a rock or a pond, holding one ordinary ground item. The interact key opens
+  it when **any party member has the obstacle's type** — Bug or Grass / Rock or
+  Fighting / Water — so the party the run built is the key, and the opening lasts
+  the rest of the floor.
 
 **Money** is Poké Dollars, earned **only** by defeating trainers — a **fixed base
 plus a random jitter** each, from its archetype/band — and the run starts with

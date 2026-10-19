@@ -15,6 +15,9 @@ const CARDINALS: readonly Tile[] = [
 /** The one `missingLaneGuard` marker today: the lane guard the route lacks. */
 const NO_TRAINERS = 'no-trainers';
 
+/** The one `missingGate` marker today: the gated vault the build did not carve. */
+const NO_GATE = 'no-gate';
+
 /** Cardinal flood-fill over walkable tiles, from `from` (inclusive). */
 export function reachableTiles(map: TileMap, from: Tile): Set<string> {
   return reachableAvoiding(map, from, EMPTY);
@@ -63,6 +66,8 @@ export type TrainerIssue = Readonly<{
  */
 export type RouteValidationOptions = Readonly<{
   expectTrainers?: boolean;
+  /** The caller asked for a gated vault, so the route must hold one. */
+  expectGate?: boolean;
 }>;
 
 export type RouteValidation = Readonly<{
@@ -86,6 +91,8 @@ export type RouteValidation = Readonly<{
   borderBandGaps: readonly string[];
   /** §3.4's lane guard the route was asked for and does not have. Gated by `ok`. */
   missingLaneGuard: readonly string[];
+  /** The request asked for a gated vault and the build produced none. Gated by `ok`. */
+  missingGate: readonly string[];
   /** Pockets the entry cannot reach (tile keys). Reported, never gated. */
   unreachablePockets: readonly string[];
   /** Trainers that fail a pose rule, one entry each, in `route.trainers` order. */
@@ -250,6 +257,9 @@ export function validateRoute(route: RouteMap, options?: RouteValidationOptions)
   // route holds none. A list so `ok` stays "every gated list is empty".
   const missingLaneGuard: string[] =
     options?.expectTrainers === true && route.trainers.length === 0 ? [NO_TRAINERS] : [];
+  // §7's gated room: the build was asked to carve a vault and carved none.
+  const missingGate: string[] =
+    options?.expectGate === true && route.gate === undefined ? [NO_GATE] : [];
   return {
     ok:
       unreachable.length === 0 &&
@@ -260,6 +270,7 @@ export function validateRoute(route: RouteMap, options?: RouteValidationOptions)
       breaches.length === 0 &&
       bandGaps.length === 0 &&
       missingLaneGuard.length === 0 &&
+      missingGate.length === 0 &&
       trainerIssues.length === 0,
     unreachable,
     blockedByTrainers,
@@ -269,6 +280,7 @@ export function validateRoute(route: RouteMap, options?: RouteValidationOptions)
     borderBreaches: breaches,
     borderBandGaps: bandGaps,
     missingLaneGuard,
+    missingGate,
     unreachablePockets,
     trainerIssues,
   };

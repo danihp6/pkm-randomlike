@@ -1,4 +1,16 @@
-import { CARPET, CHEST, FLOOR, ITEM, LEDGE, TALL_GRASS, TRAP, WALL, WATER } from '../../engine/map';
+import {
+  BUSH,
+  CARPET,
+  CHEST,
+  FLOOR,
+  ITEM,
+  LEDGE,
+  ROCK,
+  TALL_GRASS,
+  TRAP,
+  WALL,
+  WATER,
+} from '../../engine/map';
 import {
   COMMON_FRAME_CARPET,
   FRAME_FLOOR,
@@ -64,6 +76,14 @@ export const FRLG_LEDGE_RIGHT = 4;
  * `scripts/frlg/build-tilesets.mjs`.
  */
 export const FRLG_TALL_GRASS = 5;
+
+/**
+ * The two obstacle seals, stamped into the sheet's last two free cells (frames 49 and
+ * 50, the wall-shape slots `wallPattern` makes dead). Must stay in step with
+ * `scripts/frlg/build-tilesets.mjs`.
+ */
+export const FRLG_OBSTACLE_BUSH = 49;
+export const FRLG_OBSTACLE_ROCK = 50;
 
 /**
  * The tall grass's own rustle, in rip order: cell 6 is the parked frame — the rip's
@@ -142,6 +162,8 @@ export const FRLG_TILESET: TilesetConfig = {
     // field effect the route cycles on the player's own cell.
     [TALL_GRASS]: FRLG_TALL_GRASS,
     [LEDGE]: FRAME_LEDGE,
+    [BUSH]: FRLG_OBSTACLE_BUSH,
+    [ROCK]: FRLG_OBSTACLE_ROCK,
   },
   grassRustle: FRLG_GRASS_RUSTLE_FRAMES,
   grassRustleTint: 0xffffff,

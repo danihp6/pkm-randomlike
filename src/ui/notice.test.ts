@@ -3,6 +3,8 @@ import {
   NOTICE_HOLD_MS,
   catchToPcNotice,
   eggHatchNotice,
+  gateLockedNotice,
+  gateOpenedNotice,
   itemPickupNotice,
   levelUpNotice,
 } from './notice';
@@ -81,5 +83,33 @@ describe('eggHatchNotice', () => {
   it('passes the name through untouched', () => {
     expect(eggHatchNotice("Farfetch'd 2").text).toBe("The Egg hatched into Farfetch'd 2!");
     expect(eggHatchNotice('Mr. Mime').text).toBe('The Egg hatched into Mr. Mime!');
+  });
+});
+
+describe('gateLockedNotice', () => {
+  it('prints one line per obstacle kind, three different ones', () => {
+    const notices = (['bush', 'rock', 'water'] as const).map((kind) => gateLockedNotice(kind));
+    expect(notices).toEqual([
+      { text: 'Thick bushes. A Bug or Grass Pokémon could clear them.', holdMs: NOTICE_HOLD_MS },
+      { text: 'A boulder. A Rock or Fighting Pokémon could break it.', holdMs: NOTICE_HOLD_MS },
+      { text: 'Deep water. A Water Pokémon could cross it.', holdMs: NOTICE_HOLD_MS },
+    ]);
+    expect(new Set(notices.map((notice) => notice.text)).size).toBe(3);
+  });
+
+  it('holds a notice for 2.6 seconds', () => {
+    expect(gateLockedNotice('bush').holdMs).toBe(2600);
+  });
+});
+
+describe('gateOpenedNotice', () => {
+  it('prints the opened line, the fourth of the family', () => {
+    expect(gateOpenedNotice()).toEqual({ text: 'The way is open.', holdMs: NOTICE_HOLD_MS });
+    const locked = (['bush', 'rock', 'water'] as const).map((kind) => gateLockedNotice(kind).text);
+    expect(locked).not.toContain(gateOpenedNotice().text);
+  });
+
+  it('holds a notice for 2.6 seconds', () => {
+    expect(gateOpenedNotice().holdMs).toBe(2600);
   });
 });

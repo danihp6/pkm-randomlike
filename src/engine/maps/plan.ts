@@ -58,10 +58,13 @@ export type MapOpening = Readonly<{ edge: MapEdge; kind: MapOpeningKind }>;
 /**
  * A **special** room (`docs/maps-spec.md` §7, D33): an extra dead-end leaf that
  * carries only its own content, never the regular room's. One **shop** per floor,
- * a **mini-boss** leaf on a roll, a **mega-stone** leaf from map 3 on and a
- * **casino** leaf from map 2 on; the last three may coincide on one floor.
+ * a **mini-boss** leaf on a roll, a **mega-stone** leaf from map 3 on, a **casino**
+ * leaf from map 2 on and a **gated** leaf (a vault sealed behind a type-gated
+ * obstacle) from map 3 on; the last four may coincide on one floor. Every one is
+ * hung off a regular room that is neither the entry nor the boss, and never farther
+ * from the entry than the boss.
  */
-export type MapRoomSpecial = 'shop' | 'mini-boss' | 'mega-stone' | 'casino';
+export type MapRoomSpecial = 'shop' | 'mini-boss' | 'mega-stone' | 'casino' | 'gated';
 
 export type MapRoom = Readonly<{
   id: number;
@@ -115,6 +118,12 @@ const CASINO_CHANCE = 0.3;
 
 /** The first map whose floor may hang a casino leaf (`docs/maps-spec.md` §7). */
 const CASINO_FROM_MAP = 2;
+
+/** Chance a floor hangs a **gated** leaf (`docs/maps-spec.md` §7). Module-private. */
+const GATED_CHANCE = 0.2;
+
+/** The first map whose floor may hang a gated leaf (`docs/maps-spec.md` §7). */
+const GATED_FROM_MAP = 3;
 
 /** The first map whose floor hangs its guaranteed **shop** leaf (`docs/maps-spec.md` §7). */
 export const SHOP_FROM_MAP = 2;
@@ -457,6 +466,14 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
   if (index >= CASINO_FROM_MAP && rng.next() < CASINO_CHANCE) {
     const parents = freeParents();
     if (parents.length > 0) addSpecial('casino', parents[rng.int(0, parents.length - 1)]);
+  }
+  // The gated leaf rolls last, after every shipped draw, so no floor's shop,
+  // mini-boss, mega-stone, casino, room id or size moves because of it. Map 3 is the
+  // first floor whose party can plausibly hold the asked type, and it is where the
+  // mega-stone leaf already starts; 20 % keeps every floor's trainer budget green.
+  if (index >= GATED_FROM_MAP && rng.next() < GATED_CHANCE) {
+    const parents = freeParents();
+    if (parents.length > 0) addSpecial('gated', parents[rng.int(0, parents.length - 1)]);
   }
 
   // The entry and boss rooms are the floor's quiet leaves; both are pinned to the

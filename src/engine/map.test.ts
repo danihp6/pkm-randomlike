@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BUSH,
+  CARPET,
+  CHEST,
   EXIT,
   FLOOR,
+  ITEM,
   LEDGE,
+  ROCK,
   TALL_GRASS,
+  TRAP,
   WALL,
   WATER,
   cutsCorner,
@@ -42,6 +48,45 @@ describe('isWalkable', () => {
   it('blocks out of bounds tiles', () => {
     expect(isWalkable(map, { x: -1, y: 1 })).toBe(false);
     expect(isWalkable(map, { x: 1, y: 9 })).toBe(false);
+  });
+});
+
+describe('the obstacle seals', () => {
+  /** Every map value, in declaration order, with the walkability it shipped with. */
+  const VALUES: readonly (readonly [number, boolean])[] = [
+    [FLOOR, true],
+    [WALL, false],
+    [EXIT, true],
+    [TRAP, true],
+    [CHEST, true],
+    [ITEM, true],
+    [WATER, false],
+    [CARPET, true],
+    [TALL_GRASS, true],
+    [LEDGE, false],
+    [BUSH, false],
+    [ROCK, false],
+  ];
+
+  it('numbers the two obstacle seals 10 and 11', () => {
+    expect(BUSH).toBe(10);
+    expect(ROCK).toBe(11);
+  });
+
+  it('blocks a bush and a rock, and every other solid', () => {
+    for (const value of [WALL, WATER, LEDGE, BUSH, ROCK]) {
+      expect(isWalkable([[value]], { x: 0, y: 0 }), `value ${value}`).toBe(false);
+    }
+  });
+
+  it('keeps every other map value walkable exactly as it was', () => {
+    for (const [value, walkable] of VALUES) {
+      expect(isWalkable([[value]], { x: 0, y: 0 }), `value ${value}`).toBe(walkable);
+    }
+  });
+
+  it('round-trips both seals through the sketch legend', () => {
+    expect(mapFromSketch(['BR'])).toEqual([[BUSH, ROCK]]);
   });
 });
 
