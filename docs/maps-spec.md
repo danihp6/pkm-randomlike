@@ -339,10 +339,13 @@ band whose pool resolves to nothing leaves the Egg in the bag for the next floor
 ### A room's battle condition
 
 A room's battles can begin under a **weather**, a **terrain** or a **field
-condition** — dense **fog**, **Gravity**, **Trick Room** — the `ROOM_BATTLEFIELDS`
-table of `src/data/battlefields.ts` (eleven rows, each with the overlay's `tint` and
-`alpha`). The condition belongs to the **room**, so **every** battle that starts
-there, a wild encounter included, begins under it.
+condition** — dense **fog**, **Gravity**, **Trick Room**, the **radiant zone**
+(every ability disabled), **Dark Aura** and **Fairy Aura** (Dark / Fairy moves
+×1.33 on both sides), the **all-types change** (every fighter becomes one type),
+**Endure** (a lethal hit leaves 1 HP) and **+1 crit stage** — the
+`ROOM_BATTLEFIELDS` table of `src/data/battlefields.ts` (seventeen rows, each with
+the overlay's `tint` and `alpha`). The condition belongs to the **room**, so
+**every** battle that starts there, a wild encounter included, begins under it.
 
 - Which room rolls, and how often: a room that fields **regular trainers** rolls one
   with `ROOM_BATTLEFIELD_CHANCE` (**15%**), the **boss room** with its own
@@ -356,6 +359,9 @@ there, a wild encounter included, begins under it.
 - A seeded weather/terrain/field condition lasts its own rule's canonical duration
   (`WEATHER_TURNS`, `TERRAIN_TURNS`, `FIELD_CONDITION_TURNS`); dense fog carries no
   turn count and is a field condition, never a weather (`docs/battle-spec.md` §4).
+- The six whole-field rows (radiant, Dark Aura, Fairy Aura, all-types, Endure and
+  the crit stage) last the **whole battle**, carry no turn count and draw **no**
+  RNG; their exact rules are `docs/battle-spec.md` §4.
 - The route draws it as one **tinted filter** over the whole room, at the row's
   `tint` and `alpha`, so a conditioned room reads as such before any battle starts.
   It brings no player-facing text and no minimap marker.

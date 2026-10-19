@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { Rng } from '../rng';
 import { createFighter, type FighterInput } from './fighter';
-import { activeFighter, createBattle, hasHealthy, type BattleState } from './state';
+import {
+  activeFighter,
+  createBattle,
+  emptyRoomField,
+  hasHealthy,
+  type BattleState,
+  type RoomFieldEffects,
+} from './state';
 import { autoReplace, needsReplacement, takeTurn } from './turn';
 
 const build = (
@@ -9,12 +16,14 @@ const build = (
   enemy: readonly FighterInput[],
   seed = 42,
   isWild = true,
+  roomField?: Partial<RoomFieldEffects>,
 ): BattleState =>
   createBattle({
     player: player.map((input) => createFighter(input)),
     enemy: enemy.map((input) => createFighter(input)),
     rng: new Rng(seed),
     isWild,
+    ...(roomField ? { roomField } : {}),
   });
 
 const fight = (moveIndex = 0) => ({ type: 'fight', moveIndex }) as const;
@@ -223,5 +232,145 @@ describe('the no-heal room in the turn loop', () => {
     expect(state.log.some((event) => event.kind === 'move' && event.moveId === 'synthesis')).toBe(true);
     expect(state.log.some((event) => event.kind === 'heal' && event.side === 'enemy')).toBe(true);
     expect(enemy.hp).toBeGreaterThan(before);
+  });
+});
+
+class CountingRng extends Rng {
+  draws = 0;
+
+  override next(): number {
+    this.draws += 1;
+    return super.next();
+  }
+}
+
+describe('the room’s whole-field rules in the turn loop', () => {
+  it('defaults roomField to the empty field and merges a partial over it', () => {
+    const plain = build(
+      [{ id: 'p', speciesId: 'charmander', level: 20, moves: ['ember'] }],
+      [{ id: 'e', speciesId: 'bulbasaur', level: 20, moves: ['tackle'] }],
+    );
+    expect(plain.roomField).toEqual(emptyRoomField());
+
+    const partial = build(
+      [{ id: 'p', speciesId: 'charmander', level: 20, moves: ['ember'] }],
+      [{ id: 'e', speciesId: 'bulbasaur', level: 20, moves: ['tackle'] }],
+      42,
+      true,
+      { endure: true },
+    );
+    expect(partial.roomField).toEqual({ ...emptyRoomField(), endure: true });
+  });
+
+  it('passes the all-types override into STAB and the chart', () => {
+    const damageEvent = (roomField?: Partial<RoomFieldEffects>) => {
+      const state = build(
+        [{ id: 'p', speciesId: 'sentret', level: 30, moves: ['ember'] }],
+        [{ id: 'e', speciesId: 'bulbasaur', level: 20, moves: ['growl'] }],
+        11,
+        false,
+        roomField,
+      );
+      const enemy = state.sides.enemy.party[0];
+      enemy.maxHp = 100000;
+      enemy.hp = 100000;
+      takeTurn(state, fight(), fight());
+      const event = state.log.find((entry) => entry.kind === 'damage' && entry.side === 'enemy');
+      if (event?.kind !== 'damage') throw new Error('the hit never landed');
+      return event;
+    };
+
+    const plain = damageEvent();
+    const overridden = damageEvent({ overrideType: 'Fire' });
+
+    expect(plain.effectiveness).toBe(2);
+    expect(overridden.effectiveness).toBe(0.5);
+    expect(overridden.amount).toBeGreaterThan(0);
+    expect(overridden.amount).toBeLessThan(plain.amount);
+  });
+
+  it('leaves the target at exactly 1 HP under the Endure room', () => {
+    const run = (roomField?: Partial<RoomFieldEffects>) => {
+      const state = build(
+        [{ id: 'p', speciesId: 'charmander', level: 40, moves: ['ember'] }],
+        [{ id: 'e', speciesId: 'bulbasaur', level: 20, moves: ['growl'] }],
+        5,
+        false,
+        roomField,
+      );
+      state.sides.enemy.party[0].hp = 5;
+      takeTurn(state, fight(), fight());
+      return state;
+    };
+
+    const endured = run({ endure: true });
+    expect(activeFighter(endured, 'enemy').hp).toBe(1);
+    expect(endured.winner).toBeNull();
+    expect(
+      endured.log.some((event) => event.kind === 'text' && event.text.includes('endured the hit!')),
+    ).toBe(true);
+
+    const fainted = run();
+    expect(activeFighter(fainted, 'enemy').hp).toBe(0);
+    expect(fainted.winner).toBe('player');
+  });
+
+  it('crits with a +1 room stage whose roll the control misses', () => {
+    // Seed 19's first draw (0.0585) sits between the 1/24 base rate and the 1/8
+    // +1-stage rate, and Tackle is the first move, so the crit roll is that draw.
+    const run = (roomField?: Partial<RoomFieldEffects>) => {
+      const state = build(
+        [{ id: 'p', speciesId: 'sentret', level: 40, moves: ['tackle'] }],
+        [{ id: 'e', speciesId: 'bulbasaur', level: 5, moves: ['tackle'] }],
+        19,
+        false,
+        roomField,
+      );
+      const enemy = state.sides.enemy.party[0];
+      enemy.maxHp = 100000;
+      enemy.hp = 100000;
+      takeTurn(state, fight(), fight());
+      const event = state.log.find((entry) => entry.kind === 'damage' && entry.side === 'enemy');
+      if (event?.kind !== 'damage') throw new Error('the hit never landed');
+      return event;
+    };
+
+    const plain = run();
+    const crit = run({ critStage: 1 });
+
+    expect(plain.crit).toBe(false);
+    expect(crit.crit).toBe(true);
+    expect(Math.abs(crit.amount * 2 - plain.amount * 3)).toBeLessThanOrEqual(3);
+  });
+
+  it('adds no RNG draw for any of the six rules', () => {
+    const draws = (roomField?: Partial<RoomFieldEffects>) => {
+      const rng = new CountingRng(9);
+      const state = createBattle({
+        player: [createFighter({ id: 'p', speciesId: 'sentret', level: 30, moves: ['bite'] })],
+        enemy: [createFighter({ id: 'e', speciesId: 'bulbasaur', level: 20, moves: ['growl'] })],
+        rng,
+        isWild: false,
+        ...(roomField ? { roomField } : {}),
+      });
+      const enemy = state.sides.enemy.party[0];
+      enemy.maxHp = 100000;
+      enemy.hp = 100000;
+      takeTurn(state, fight(), fight());
+      return rng.draws;
+    };
+
+    const control = draws();
+    expect(control).toBeGreaterThan(0);
+    expect(
+      draws({
+        abilitiesOff: true,
+        darkAura: true,
+        fairyAura: true,
+        overrideType: 'Normal',
+        endure: true,
+        critStage: 1,
+      }),
+    ).toBe(control);
   });
 });

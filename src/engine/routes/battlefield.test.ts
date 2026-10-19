@@ -1,17 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ALL_TYPES_OVERRIDE,
   BOSS_BATTLEFIELD_CHANCE,
   ROOM_BATTLEFIELDS,
   ROOM_BATTLEFIELD_CHANCE,
+  ROOM_CRIT_STAGE,
 } from '../../data/battlefields';
 import { FIELD_CONDITION_TURNS } from '../battle/effects/conditions';
 import { TERRAIN_TURNS } from '../battle/effects/terrain';
 import { WEATHER_TURNS } from '../battle/effects/weather';
 import { createFighter } from '../battle/fighter';
-import { createBattle, emptyFieldConditions, type BattleSetup } from '../battle/state';
+import { createBattle, emptyFieldConditions, emptyRoomField, type BattleSetup } from '../battle/state';
 import { planMap } from '../maps/plan';
 import { roomView } from '../maps/progress';
-import { Rng } from '../rng';
+import { Rng, hashSeed } from '../rng';
 import {
   battlefieldSeeds,
   roomBattlefield,
@@ -58,6 +60,24 @@ describe('roomBattlefield', () => {
       for (const result of [...roll(seed, 'trainer'), ...roll(seed, 'boss')]) {
         if (result === null) continue;
         expect(ROOM_BATTLEFIELDS).toContainEqual(result);
+      }
+    }
+  });
+
+  it('draws exactly one chance roll and one row roll from its own stream', () => {
+    const replay = (seed: string, index: number, kind: RoomKind) => {
+      const rng = new Rng(hashSeed(`${seed}:battlefield:${index}`));
+      const chance = kind === 'boss' ? BOSS_BATTLEFIELD_CHANCE : ROOM_BATTLEFIELD_CHANCE;
+      if (rng.next() >= chance) return null;
+      return ROOM_BATTLEFIELDS[rng.int(0, ROOM_BATTLEFIELDS.length - 1)];
+    };
+    for (const seed of SEEDS) {
+      for (const kind of ['trainer', 'boss'] as const) {
+        for (let index = 1; index <= 200; index++) {
+          expect(roomBattlefield(seed, index, kind), `${seed} ${kind} ${index}`).toEqual(
+            replay(seed, index, kind),
+          );
+        }
       }
     }
   });
@@ -121,45 +141,70 @@ describe('roomKindOf', () => {
   });
 });
 
+const SHIPPED_SEEDS: Readonly<Record<string, BattlefieldSeeds>> = {
+  sun: { weather: { id: 'sun', turns: WEATHER_TURNS } },
+  rain: { weather: { id: 'rain', turns: WEATHER_TURNS } },
+  sand: { weather: { id: 'sand', turns: WEATHER_TURNS } },
+  snow: { weather: { id: 'snow', turns: WEATHER_TURNS } },
+  electric: { terrain: { id: 'electric', turns: TERRAIN_TURNS } },
+  grassy: { terrain: { id: 'grassy', turns: TERRAIN_TURNS } },
+  misty: { terrain: { id: 'misty', turns: TERRAIN_TURNS } },
+  psychic: { terrain: { id: 'psychic', turns: TERRAIN_TURNS } },
+  fog: { fog: true },
+  gravity: { field: { gravity: FIELD_CONDITION_TURNS.gravity } },
+  trickroom: { field: { trickroom: FIELD_CONDITION_TURNS.trickroom } },
+};
+
+const ROOM_FIELD_SEEDS: Readonly<Record<string, BattlefieldSeeds>> = {
+  radiant: { roomField: { abilitiesOff: true } },
+  darkaura: { roomField: { darkAura: true } },
+  fairyaura: { roomField: { fairyAura: true } },
+  alltypes: { roomField: { overrideType: ALL_TYPES_OVERRIDE } },
+  endure: { roomField: { endure: true } },
+  crit: { roomField: { critStage: ROOM_CRIT_STAGE } },
+};
+
+const ROOM_FIELD_IDS = new Set(Object.keys(ROOM_FIELD_SEEDS));
+
 describe('battlefieldSeeds', () => {
-  it('seeds each row at its own rule’s canonical duration', () => {
-    expect(ROOM_BATTLEFIELDS).toHaveLength(11);
-    for (const row of ROOM_BATTLEFIELDS) {
-      const seeds = battlefieldSeeds(row);
-      switch (row.kind) {
-        case 'weather':
-          expect(seeds).toEqual({ weather: { id: row.id, turns: WEATHER_TURNS } });
-          break;
-        case 'terrain':
-          expect(seeds).toEqual({ terrain: { id: row.id, turns: TERRAIN_TURNS } });
-          break;
-        case 'field': {
-          const expected: BattlefieldSeeds =
-            row.id === 'fog'
-              ? { fog: true }
-              : row.id === 'gravity'
-                ? { field: { gravity: FIELD_CONDITION_TURNS.gravity } }
-                : { field: { trickroom: FIELD_CONDITION_TURNS.trickroom } };
-          expect(seeds).toEqual(expected);
-          break;
-        }
-      }
+  it('covers the seventeen rows of the table', () => {
+    expect(ROOM_BATTLEFIELDS).toHaveLength(17);
+    expect(Object.keys(SHIPPED_SEEDS)).toHaveLength(11);
+    expect(Object.keys(ROOM_FIELD_SEEDS)).toHaveLength(6);
+    expect(new Set([...Object.keys(SHIPPED_SEEDS), ...ROOM_FIELD_IDS]).size).toBe(17);
+  });
+
+  it('leaves the eleven shipped rows on their exact seeds', () => {
+    for (const [id, expected] of Object.entries(SHIPPED_SEEDS)) {
+      const row = ROOM_BATTLEFIELDS.find((entry) => entry.id === id)!;
+      expect(battlefieldSeeds(row), id).toEqual(expected);
     }
   });
 
-  it('names the two field conditions with the table’s own turns', () => {
-    expect(battlefieldSeeds(ROOM_BATTLEFIELDS[9])).toEqual({
-      field: { gravity: FIELD_CONDITION_TURNS.gravity },
-    });
-    expect(battlefieldSeeds(ROOM_BATTLEFIELDS[10])).toEqual({
-      field: { trickroom: FIELD_CONDITION_TURNS.trickroom },
-    });
+  it('seeds each of the six new rows with its exact roomField object', () => {
+    for (const [id, expected] of Object.entries(ROOM_FIELD_SEEDS)) {
+      const row = ROOM_BATTLEFIELDS.find((entry) => entry.id === id)!;
+      expect(row.kind, id).toBe('field');
+      expect(battlefieldSeeds(row), id).toEqual(expected);
+      expect(Object.keys(battlefieldSeeds(row)), id).toEqual(['roomField']);
+    }
   });
 
   it('carries no key of another kind', () => {
     for (const row of ROOM_BATTLEFIELDS) {
       const keys = Object.keys(battlefieldSeeds(row)).sort();
-      expect(keys).toEqual([row.kind === 'field' ? (row.id === 'fog' ? 'fog' : 'field') : row.kind]);
+      const expected = ROOM_FIELD_IDS.has(row.id)
+        ? ['roomField']
+        : [
+            row.kind === 'weather'
+              ? 'weather'
+              : row.kind === 'terrain'
+                ? 'terrain'
+                : row.id === 'fog'
+                  ? 'fog'
+                  : 'field',
+          ];
+      expect(keys, row.id).toEqual(expected);
     }
   });
 });
@@ -205,11 +250,18 @@ describe('createBattle seeding', () => {
     expect(state.terrainTurns).toBe(0);
     expect(state.field).toEqual(emptyFieldConditions());
     expect(state.fog).toBe(false);
+    expect(state.roomField).toEqual(emptyRoomField());
   });
 
   it('fills the state from a rolled row', () => {
     const state = battle(battlefieldSeeds(ROOM_BATTLEFIELDS[0]));
     expect(state.weather).toBe('sun');
     expect(state.weatherTurns).toBe(WEATHER_TURNS);
+  });
+
+  it('fills the room field from a rolled row and merges it over the defaults', () => {
+    const row = ROOM_BATTLEFIELDS.find((entry) => entry.id === 'radiant')!;
+    const state = battle(battlefieldSeeds(row));
+    expect(state.roomField).toEqual({ ...emptyRoomField(), abilitiesOff: true });
   });
 });

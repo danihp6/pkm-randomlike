@@ -33,6 +33,12 @@ export type DamageContext = Readonly<{
   auroraVeil?: boolean;
   /** Wonder Room swaps the defensive stats a hit reads. */
   wonderRoom?: boolean;
+  /** The room's all-types change: every fighter's types are this one type. */
+  overrideType?: string | null;
+  /** Dark Aura: Dark moves deal 1.33× on both sides. */
+  darkAura?: boolean;
+  /** Fairy Aura: Fairy moves deal 1.33× on both sides. */
+  fairyAura?: boolean;
 }>;
 
 export type DamageResult = Readonly<{
@@ -129,15 +135,19 @@ export function computeDamage(
 
   damage = Math.floor(damage * weatherModifier(context.weather, move.type));
   damage = Math.floor(damage * terrainModifier(attacker, defender, move, context.terrain));
+  if (context.darkAura && move.type === 'Dark') damage = Math.floor(damage * 1.33);
+  if (context.fairyAura && move.type === 'Fairy') damage = Math.floor(damage * 1.33);
   if (crit) damage = Math.floor(damage * 1.5);
   if (physical && (context.reflect || context.auroraVeil)) damage = Math.floor(damage * 0.5);
   if (!physical && (context.lightScreen || context.auroraVeil)) damage = Math.floor(damage * 0.5);
   damage = Math.floor((damage * rng.int(85, 100)) / 100);
 
-  const stab = attacker.types.includes(move.type);
+  const attackerTypes = context.overrideType ? [context.overrideType] : attacker.types;
+  const defenderTypes = context.overrideType ? [context.overrideType] : defender.types;
+  const stab = attackerTypes.includes(move.type);
   if (stab) damage = Math.floor(damage * 1.5);
 
-  const typeEffectiveness = context.effectiveness ?? effectiveness(move.type, defender.types);
+  const typeEffectiveness = context.effectiveness ?? effectiveness(move.type, defenderTypes);
   damage = Math.floor(damage * typeEffectiveness);
 
   if (physical && attacker.status === 'brn') damage = Math.floor(damage * 0.5);

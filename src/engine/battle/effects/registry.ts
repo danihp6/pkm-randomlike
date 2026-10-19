@@ -149,6 +149,7 @@ function gasSuppresses(state: BattleState, side: SideId): boolean {
 }
 
 function abilityActive(state: BattleState, fighter: BattleFighter, side: SideId): boolean {
+  if (state.roomField.abilitiesOff) return false;
   if (fighter.ability === 'Neutralizing Gas') return true;
   return !gasSuppresses(state, side);
 }

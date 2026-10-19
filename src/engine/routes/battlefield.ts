@@ -1,7 +1,9 @@
 import {
+  ALL_TYPES_OVERRIDE,
   BOSS_BATTLEFIELD_CHANCE,
   ROOM_BATTLEFIELDS,
   ROOM_BATTLEFIELD_CHANCE,
+  ROOM_CRIT_STAGE,
   type RoomBattlefield,
 } from '../../data/battlefields';
 import { FIELD_CONDITION_TURNS } from '../battle/effects/conditions';
@@ -14,7 +16,10 @@ import { hashSeed, Rng } from '../rng';
 export type RoomKind = 'trainer' | 'boss' | 'quiet';
 
 /** The `BattleSetup` fields a rolled condition fills. */
-export type BattlefieldSeeds = Pick<BattleSetup, 'weather' | 'terrain' | 'field' | 'fog'>;
+export type BattlefieldSeeds = Pick<
+  BattleSetup,
+  'weather' | 'terrain' | 'field' | 'fog' | 'roomField'
+>;
 
 /**
  * The kind of roll a room earns: the boss room, a room that fields regular trainers,
@@ -64,5 +69,17 @@ export function battlefieldSeeds(battlefield: RoomBattlefield): BattlefieldSeeds
       return { field: { gravity: FIELD_CONDITION_TURNS.gravity } };
     case 'trickroom':
       return { field: { trickroom: FIELD_CONDITION_TURNS.trickroom } };
+    case 'radiant':
+      return { roomField: { abilitiesOff: true } };
+    case 'darkaura':
+      return { roomField: { darkAura: true } };
+    case 'fairyaura':
+      return { roomField: { fairyAura: true } };
+    case 'alltypes':
+      return { roomField: { overrideType: ALL_TYPES_OVERRIDE } };
+    case 'endure':
+      return { roomField: { endure: true } };
+    case 'crit':
+      return { roomField: { critStage: ROOM_CRIT_STAGE } };
   }
 }
