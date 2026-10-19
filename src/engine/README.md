@@ -37,7 +37,7 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   `run/chain.ts`, `run/floors.ts`, `run/levelCap.ts`, `run/heal.ts`, `run/learnset.ts`,
   `run/nickname.ts` (the member names the player types), `run/reward.ts`, `run/perms.ts`,
   `run/starters.ts`, `run/share.ts` and `run/party.ts` (the party predicates a room asks: what
-  types the party holds).
+  types the party holds), `run/passives.ts` (the map passives a room's abilities pay).
 
 ## Rules
 

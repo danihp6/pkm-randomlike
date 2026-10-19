@@ -21,6 +21,7 @@ import { followerAnimKey, followerAnims } from '../render/pokemonFollower';
 import { ROUTE_LOOT } from '../data/loot';
 import { POPULATION } from '../data/population';
 import type { RoomBattlefield, RoomConditionId, RoomConditionKind } from '../data/battlefields';
+import type { MapPassiveTrigger } from '../data/passives';
 import { bossPartySize, type BossPartyKind } from '../data/bosses';
 import {
   OVERWORLD_SPRITE_TEXTURE_KEY,
@@ -90,6 +91,7 @@ import {
 import { equipMove, learnsetPool, type LearnEntry } from '../engine/run/learnset';
 import { NICKNAME_MAX_LENGTH, normalizeNickname, renameMember } from '../engine/run/nickname';
 import { speciesPool, wildExclusions } from '../engine/run/pool';
+import { runPassives, type PassivePickup } from '../engine/run/passives';
 import { abilityMoveType } from '../engine/battle/moveType';
 import { COMMON_TEXTURE_KEY, TILESETS, type TilesetId, tilesetTextureKey } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
@@ -1200,6 +1202,26 @@ export class RouteScene extends Phaser.Scene {
     this.run = run;
     this.persistRun();
     this.refreshHud();
+  }
+
+  /**
+   * Folds the room's map passives for `trigger` into the run
+   * (`src/engine/run/passives.ts`, `docs/routes-spec.md` §2). Silent — no save, no
+   * repaint — when nothing paid, which the rule reports by returning the same run.
+   */
+  private applyMapPassives(trigger: MapPassiveTrigger): readonly PassivePickup[] {
+    const { run, picks } = runPassives(this.run, trigger);
+    if (picks.length === 0) return picks;
+    this.run = run;
+    this.persistRun();
+    return picks;
+  }
+
+  /** Floats the pickup notice for each payment, in the rule's own order. */
+  private showPassivePickups(picks: readonly PassivePickup[]): void {
+    for (const pick of picks) {
+      this.showNotice(itemPickupNotice(getItem(pick.itemId)?.name ?? pick.itemId));
+    }
   }
 
   /** Gives the keyboard to `panel` until `closePanel()`; the scene owns the slot. */
@@ -5699,6 +5721,8 @@ export class RouteScene extends Phaser.Scene {
     this.movePlayerTo(this.player.x, this.player.y);
     const bounds = mapPixelSize(this.map, TILE_SIZE);
     this.cameras.main.setBounds(0, 0, bounds.width, bounds.height);
+    const picks = this.applyMapPassives('room');
+    this.showPassivePickups(picks);
     this.refreshHud();
   }
 
@@ -6463,6 +6487,8 @@ export class RouteScene extends Phaser.Scene {
       pending.trigger.kind === 'trainer' &&
       pending.trigger.trainerId === miniBossId &&
       isTrainerDefeated(this.run, miniBossId);
+    const won = result.outcome === 'win' || result.outcome === 'capture';
+    const picks = won ? this.applyMapPassives('win') : [];
     this.persistRun();
     this.refreshHud();
 
@@ -6500,6 +6526,7 @@ export class RouteScene extends Phaser.Scene {
     this.playReleaseBeats(releaseBeats(released), () => {
       // Raised inside the callback, so a permadeath overlay and the notice never
       // share the screen, and it never delays `finish()`.
+      this.showPassivePickups(picks);
       if (capture?.toPc) this.showNotice(catchToPcNotice(this.memberName(capture.member)));
       finish();
     });

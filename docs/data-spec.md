@@ -113,6 +113,7 @@ cycle with the cue table.
 | `src/data/statusIcons.ts` | typed view over the generated `frlg/status-icons.json` (Añil status badge frames, repacked in place) | 7 |
 | `src/data/frlg/status-icons.json` | generated frame map for the Añil status badge atlas | 7 |
 | `src/data/abilityText.ts` | the ability-text override table: the ids whose dex blurb is competitive-play boilerplate while the engine ports the ability (`docs/balance/effect-coverage.md`), read by `abilityDescription` | 6 |
+| `src/data/passives.ts` | the map-passive table (`MAP_PASSIVES`): the **out-of-battle** abilities a route rewards, each row's trigger (`'room'` on entry, `'win'` on a won battle), its chance and the catalogue ids it pays, read by `src/engine/run/passives.ts` (`docs/routes-spec.md` §2) | 10 |
 
 ## 4. Typed accessors
 

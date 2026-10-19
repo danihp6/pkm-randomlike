@@ -191,6 +191,27 @@ the visible lanes; the terrain pass and the population pass keep them clear and
 populate them (steps 3-4). The `hedges` and `maze` carvers stay parked in
 `src/engine/routes/sketch.ts` for later biomes (`D6`).
 
+**Map passives (room entry and a win).** A party member's **ability** also acts
+outside battle. `src/data/passives.ts` holds `MAP_PASSIVES`: one row per
+`{ ability, trigger, effect }`, where `trigger` is `'room'` (the room is entered) or
+`'win'` (a battle in the room was won) and `effect` is that row's chance plus the
+catalogue ids it pays. `src/engine/run/passives.ts` is the whole rule: it reads the
+**party's** abilities (the box never counts) and, for every row whose trigger matches
+and whose ability the party holds, mints its own stream
+`${seed}:passive:${mapIndex}:${roomId}:${ability}`, rolls the row's chance and, on a
+hit, one item from the row's list, adds it with `addItem` and records
+`passive-<ability>-<trigger>-<mapIndex>-<roomId>` in `pickedItems`, which
+`advanceMap` clears. A room therefore pays each row **at most once per floor**: a
+revisit and a reload pay nothing, the next floor pays again, and no stream the route,
+the plan or the encounter tables already read moves (`D11`). The route scene calls it
+once per trigger — at the end of a room transition (`transitionTo`, after the room is
+rebuilt and before the HUD refresh) and after a won battle's folds
+(`applyBattleResult`, before the save) — and floats the shipped
+`Obtained <item>!` notice for each payment. The two shipped rows are **Pickup** (a
+room entry) and **Honey Gather** (a win), the dex's out-of-battle item abilities
+(`docs/battle-spec.md` §11.1). The run's first room is not a room entry: the run
+begins standing in it.
+
 ## 3. Wild encounters
 
 - Walking onto a `TALL_GRASS` tile rolls an encounter with the route's table.

@@ -381,3 +381,20 @@ expected value. The engine half is `src/engine/battle/ai.ts`
   wild's pick, and an exact tie at `hard`. Those draws advance the battle's stream,
   which is why the fixed-seed battle logs move with this rule. Nothing else in the
   AI allocates per frame: it is one call per turn.
+
+### 11.1 The out-of-battle abilities
+
+Two abilities have **no battle effect at all** in the cartridge: **Pickup** and
+**Honey Gather** find items outside a fight. `scripts/effect-coverage.mjs` used to
+mark both `excluded`/`out of battle only`, which also kept them out of the random
+ability pool — `randomAbilityPool` is derived from the **registered** effect set
+(D16), so an unregistered ability is one a run can never hold. Both now carry an
+**empty** registry row in `effects/abilities.ts` (`['pickup', {}]`,
+`['honeygather', {}]`): the port is the empty handler, because nothing happens in
+battle, and the row is what makes the ability reachable at all. A battle that meets
+either fights exactly as if the fighter had no ability, and the develop coverage
+warning stays silent for both. What they do is on the **map**
+(`src/engine/run/passives.ts`, `docs/routes-spec.md` §2): a room entry pays Pickup and
+a won battle pays Honey Gather, once per room per floor. Registering the two rows
+widens `randomAbilityPool` by two ids, so the abilities a seed rolls are re-rolled
+**once**; a run that already stored one keeps it, and no battle rule changes.

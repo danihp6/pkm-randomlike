@@ -47,6 +47,10 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   condition a room's battles can begin under, each row's overlay tint/alpha and the
   two roll chances (regular rooms and the boss room, `docs/maps-spec.md` §6/§7),
   read by `src/engine/routes/battlefield.ts` and painted by the route.
+- `passives.ts` — the map-passive table (`MAP_PASSIVES`): the **out-of-battle**
+  abilities a route rewards, each row's trigger (`'room'` on entry, `'win'` on a won
+  battle), its chance and the item ids it pays, read by
+  `src/engine/run/passives.ts` (`docs/routes-spec.md` §2).
 - `run.ts` — level bands (level range, party size and the BST window, `D39`) and
   the run chain cadence.
 - `keybinds.ts` — the confirm/cancel/move/run/interact/reset/hud/settings actions,

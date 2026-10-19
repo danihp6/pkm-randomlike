@@ -2598,6 +2598,11 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['unnerve', {}],
 
   // Ported in the "reachable but unported" pass.
+  // No battle effect exists in the cartridge: both act outside battle only. The run
+  // reads them on the map (`src/engine/run/passives.ts`); the row is what puts them
+  // in the ability pool a run draws from (`randomAbilityPool`, D16).
+  ['honeygather', {}],
+  ['pickup', {}],
   ['aurabreak', {}],
   ['beastboost', beastBoost()],
   ['colorchange', colorChange()],
