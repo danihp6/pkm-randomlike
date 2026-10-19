@@ -134,6 +134,12 @@ carries over.
   a badge on the avatar's lower-right corner; dragging **that badge** takes the
   item off the member (onto another member to pass it along, or onto the bag to
   unequip it). An item in hand is not listed in the bag until it is dropped.
+- A **consumable** — a heal or a status cure — is spent the same way: drag its bag
+  stack onto a party or PC member, and it applies **only when it would change
+  something**. A Potion on a full-HP member, a Burn Heal on an unburnt one or any
+  item on a fainted member does nothing (no stack is spent, no notice, and the item
+  never becomes a held item); when it does apply the stack leaves the bag and the
+  HUD flashes `Used Potion.` for 2.6 s.
 - The **Pokevial** is a charged button in the party window's header (top-right),
   drawn as a **single bar** whose fill climbs through three colour stages with
   **POKEVIAL** written inside (no charge count): clicking it **only when the bar

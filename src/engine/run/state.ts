@@ -1,4 +1,5 @@
 import { normalizeId } from '../../data/dex';
+import { getItem } from '../../data/items';
 import { levelCapForMap } from '../../data/maps';
 import { arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge } from '../maps/plan';
 import type { BagCounts } from './battleLink';
@@ -582,7 +583,7 @@ export function consumeItem(run: RunState, itemId: string, count = 1): RunState 
 }
 
 /** The party or box member with `id`, or undefined. */
-function memberById(run: RunState, id: string): RunPokemon | undefined {
+export function memberById(run: RunState, id: string): RunPokemon | undefined {
   return (
     run.party.find((member) => member.fighter.id === id) ??
     run.box.find((member) => member.fighter.id === id)
@@ -596,6 +597,7 @@ function memberById(run: RunState, id: string): RunPokemon | undefined {
  * no-op. Pure, like the rest of the run state (D11).
  */
 export function equipHeldItem(run: RunState, memberId: string, itemId: string): RunState {
+  if (getItem(itemId)?.kind !== 'held') return run;
   const member = memberById(run, memberId);
   if (!member || member.fighter.heldItem === itemId || itemCount(run, itemId) <= 0) return run;
   const previous = member.fighter.heldItem;

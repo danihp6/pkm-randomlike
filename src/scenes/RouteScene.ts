@@ -89,6 +89,7 @@ import {
   type RunState,
 } from '../engine/run';
 import { equipMove, learnsetPool, unequipMove, type LearnEntry } from '../engine/run/learnset';
+import { useItemOn } from '../engine/run/items';
 import { NICKNAME_MAX_LENGTH, normalizeNickname, renameMember } from '../engine/run/nickname';
 import { speciesPool, wildExclusions } from '../engine/run/pool';
 import { runPassives, type PassivePickup } from '../engine/run/passives';
@@ -210,6 +211,7 @@ import {
   catchToPcNotice,
   eggHatchNotice,
   itemPickupNotice,
+  itemUsedNotice,
   levelUpNotice,
   type Notice,
 } from '../ui/notice';
@@ -3204,7 +3206,7 @@ export class RouteScene extends Phaser.Scene {
         this.startHudItemDrag(badge.itemId, pointer, badge.memberId);
         return;
       }
-      const itemId = this.hudHeldStackAt(pointer);
+      const itemId = this.hudDraggableStackAt(pointer);
       if (itemId !== null) {
         this.startHudItemDrag(itemId, pointer);
         return;
@@ -3381,7 +3383,7 @@ export class RouteScene extends Phaser.Scene {
     this.updateDetailInfo(cell);
     const overAbilityInfo = this.abilityInfoAt(pointer);
     this.updateAbilityInfo(overAbilityInfo);
-    const overItem = this.hudHeldStackAt(pointer) !== null;
+    const overItem = this.hudDraggableStackAt(pointer) !== null;
     const overIcon = this.hudPanelIconAt(pointer) !== null;
     // A ready evolution branch in the STATS tab reads as a click target too.
     const overEvolution =
@@ -3511,7 +3513,18 @@ export class RouteScene extends Phaser.Scene {
       this.endHudItemDrag();
       if (targetId) {
         if (from === null) {
-          this.equipHudItem(itemId, target);
+          const item = getItem(itemId);
+          if (item && (item.kind === 'heal' || item.kind === 'status')) {
+            const next = useItemOn(this.run, targetId, itemId);
+            if (next !== this.run) {
+              this.run = next;
+              this.persistRun();
+              this.refreshHud();
+              this.showNotice(itemUsedNotice(item.name));
+            }
+          } else {
+            this.equipHudItem(itemId, target);
+          }
         } else if (targetId !== from) {
           this.run = equipHeldItem(unequipHeldItem(this.run, from), targetId, itemId);
           this.persistRun();
@@ -4144,10 +4157,11 @@ export class RouteScene extends Phaser.Scene {
     return bag[slot]?.itemId ?? null;
   }
 
-  /** The equippable (held) bag stack under the pointer, or null. */
-  private hudHeldStackAt(pointer: Phaser.Input.Pointer): string | null {
+  /** The bag stack under the pointer that can be dragged: a held item or a heal/status consumable. */
+  private hudDraggableStackAt(pointer: Phaser.Input.Pointer): string | null {
     const itemId = this.hudBagStackAt(pointer);
-    return itemId !== null && getItem(itemId)?.kind === 'held' ? itemId : null;
+    const kind = itemId === null ? null : (getItem(itemId)?.kind ?? null);
+    return kind === 'held' || kind === 'heal' || kind === 'status' ? itemId : null;
   }
 
   /**

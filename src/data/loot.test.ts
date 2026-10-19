@@ -76,6 +76,16 @@ describe('ROUTE_LOOT', () => {
     }
   });
 
+  it('names none of the deleted X-items', () => {
+    for (const band of LEVEL_BANDS) {
+      for (const entry of ROUTE_LOOT[band.id].pool) {
+        expect(['xattack', 'xdefense', 'xspeed'], `${band.id} ${entry.itemId}`).not.toContain(
+          entry.itemId,
+        );
+      }
+    }
+  });
+
   it('makes every competitive held item reachable from the ground or the Mart', () => {
     const reachable = new Set<string>();
     for (const band of LEVEL_BANDS) {
@@ -123,7 +133,6 @@ describe('ROUTE_LOOT', () => {
       'superpotion',
       'potion',
       'fullheal',
-      'xattack',
       'pearl',
       'nugget',
       'starpiece',
@@ -164,7 +173,6 @@ describe('ROUTE_LOOT', () => {
       'superpotion',
       'hyperpotion',
       'fullheal',
-      'xdefense',
       'sitrusberry',
       'nugget',
       'starpiece',
@@ -216,8 +224,8 @@ describe('ROUTE_LOOT', () => {
   });
 
   it('drops the G-Max Stones as late/end ground treasure at weight 1 (D44)', () => {
-    expect(ROUTE_LOOT.late.pool).toHaveLength(40);
-    expect(ROUTE_LOOT.end.pool).toHaveLength(57);
+    expect(ROUTE_LOOT.late.pool).toHaveLength(39);
+    expect(ROUTE_LOOT.end.pool).toHaveLength(56);
 
     const late = ROUTE_LOOT.late.pool;
     const end = ROUTE_LOOT.end.pool;

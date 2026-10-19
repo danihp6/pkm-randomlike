@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import frlgIcons from './frlg/item-icons.json';
 import { GMAX_FORMES, MEGA_FORMES, TYPE_NAMES, getDexItem } from './dex';
 import {
   COMPETITIVE_HELD,
@@ -19,7 +20,7 @@ import {
 import type { BandId } from './run';
 import { LEVEL_BANDS } from './run';
 
-const KINDS: readonly ItemKind[] = ['ball', 'heal', 'status', 'boost', 'held', 'valuable', 'tm'];
+const KINDS: readonly ItemKind[] = ['ball', 'heal', 'status', 'held', 'valuable', 'tm'];
 
 describe('item catalogue', () => {
   it('has unique ids and a known kind for every row', () => {
@@ -62,6 +63,22 @@ describe('item catalogue', () => {
 
   it('never registers a Revive (D5)', () => {
     expect(ITEMS.some((entry) => /revive/i.test(entry.id) || /revive/i.test(entry.name))).toBe(false);
+  });
+
+  it('drops the X-items and the whole boost kind', () => {
+    for (const id of ['xattack', 'xdefense', 'xspeed']) expect(getItem(id), id).toBeUndefined();
+    expect(ITEMS.some((entry) => (entry.kind as string) === 'boost')).toBe(false);
+  });
+
+  it('packs no X-item into the FRLG icon atlas', () => {
+    const manifest = frlgIcons as {
+      frames: readonly string[];
+      items: Readonly<Record<string, number>>;
+    };
+    expect(manifest.frames).not.toContain('battle_stat_item');
+    for (const id of ['xattack', 'xdefense', 'xspeed']) {
+      expect(manifest.items[id], id).toBeUndefined();
+    }
   });
 });
 

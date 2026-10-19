@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setLocale } from '../i18n';
 import {
   NOTICE_HOLD_MS,
   catchToPcNotice,
@@ -6,6 +7,7 @@ import {
   gateLockedNotice,
   gateOpenedNotice,
   itemPickupNotice,
+  itemUsedNotice,
   levelUpNotice,
   noHealRoomNotice,
 } from './notice';
@@ -48,6 +50,28 @@ describe('itemPickupNotice', () => {
     expect(itemPickupNotice('Mr. Mime').text).toBe('Obtained Mr. Mime!');
     expect(itemPickupNotice("King's Rock").text).toBe("Obtained King's Rock!");
     expect(itemPickupNotice('TM 26').holdMs).toBe(NOTICE_HOLD_MS);
+  });
+});
+
+describe('itemUsedNotice', () => {
+  it('writes the fixed sentence with the item name and the shared hold', () => {
+    expect(itemUsedNotice('Potion')).toEqual({ text: 'Used Potion.', holdMs: NOTICE_HOLD_MS });
+  });
+
+  it('holds a notice for 2.6 seconds', () => {
+    expect(itemUsedNotice('Potion').holdMs).toBe(2600);
+  });
+
+  it('overlays the Spanish line on the same key', () => {
+    setLocale('es');
+    expect(itemUsedNotice('Potion').text).toBe('Has usado Potion.');
+    setLocale('en');
+    expect(itemUsedNotice('Potion').text).toBe('Used Potion.');
+  });
+
+  it('passes the name through untouched', () => {
+    expect(itemUsedNotice('Mr. Mime').text).toBe('Used Mr. Mime.');
+    expect(itemUsedNotice("King's Rock").text).toBe("Used King's Rock.");
   });
 });
 

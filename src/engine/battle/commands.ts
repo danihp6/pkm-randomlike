@@ -4,7 +4,7 @@ import { BARRED_HEALING_MOVES } from '../../data/noHeal';
 import { attemptCapture } from './capture';
 import { canGigantamax } from './gmax';
 import { canMegaEvolve } from './mega';
-import { applyBoosts, applyHeal, type BattleFighter, type MoveSlot } from './fighter';
+import { applyHeal, type BattleFighter, type MoveSlot } from './fighter';
 import {
   activeFighter,
   finishBattle,
@@ -218,14 +218,6 @@ export function useBagItem(state: BattleState, side: SideId, itemId: string): bo
     case 'status':
       cureWithItem(state, side, target, item);
       break;
-    case 'boost': {
-      const changes = applyBoosts(target, item.boosts ?? {});
-      for (const change of changes) {
-        pushEvent(state, { kind: 'boost', side, stat: change.stat, stages: change.stages });
-      }
-      if (changes.length > 0) pushText(state, `${target.name}'s stats rose!`);
-      break;
-    }
     case 'held':
       break;
   }

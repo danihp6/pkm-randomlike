@@ -7,7 +7,7 @@ describe('bagCategoryFor', () => {
     expect(bagCategoryFor('greatball')).toBe('ball');
     expect(bagCategoryFor('potion')).toBe('consumable');
     expect(bagCategoryFor('paralyzeheal')).toBe('consumable');
-    expect(bagCategoryFor('xattack')).toBe('consumable');
+    expect(bagCategoryFor('burnheal')).toBe('consumable');
     expect(bagCategoryFor('leftovers')).toBe('equipment');
     expect(bagCategoryFor('charcoal')).toBe('equipment');
     expect(bagCategoryFor('sitrusberry')).toBe('equipment');

@@ -39,6 +39,18 @@ export function itemPickupNotice(name: string): Notice {
 }
 
 /**
+ * The use notice: a consumable was spent on a party or box member. `name` is the
+ * item's own display name, resolved by the caller, so this never reads the data
+ * tables.
+ */
+export function itemUsedNotice(name: string): Notice {
+  return {
+    text: t('notice.itemUsed', { name }),
+    holdMs: NOTICE_HOLD_MS,
+  };
+}
+
+/**
  * The level-up notice: `<name>` reached `level`. `name` is the member's nickname
  * when it has one, else its species name, resolved by the caller; every level-up
  * beat raises it, whether or not a move was crossed.

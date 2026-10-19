@@ -1,18 +1,29 @@
 // Packs the FireRed/LeafGreen item icons into src/assets/frlg/item-icons.png.
 //
-// Source: the raw 24x24 icons under sprite-sources/frlg-ui/item-icons/ (the
-// FRLG item icon art, named per the pret/pokefirered decomp so the id mapping
-// is authoritative; see src/data/itemIcons.ts). The sprite-sources folder is
-// gitignored — only the processed atlas and its manifest are committed.
+// Source: the raw 24x24 icons under the FRLG item icon art tree, named per the
+// pret/pokefirered decomp so the id mapping is authoritative; see
+// src/data/itemIcons.ts. The tree is gitignored — only the processed atlas and
+// its manifest are committed — and its directory arrives through argv[2] or
+// ITEM_ICON_SOURCE (AGENTS.md's Asset trees rule), never a path inside the
+// worktree.
 //
 // The manifest (src/data/frlg/item-icons.json) maps each run item id in
 // src/data/items.ts to its atlas frame; several items share one icon (Super and
-// Hyper Potion, the status heals, the X items), so only unique icons are packed.
+// Hyper Potion, the status heals), so only unique icons are packed.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
 const ICON_SIZE = 24
 const COLS = 8
+
+const sourceArg = process.argv[2] ?? process.env.ITEM_ICON_SOURCE
+if (!sourceArg) {
+  console.error(
+    'usage: node scripts/frlg/build-item-icons.mjs <source-dir>  (or set ITEM_ICON_SOURCE)',
+  )
+  process.exit(1)
+}
 
 // src/data/items.ts id -> FRLG icon file. Icon file per item from the decomp's
 // item icon table (src/data/item_icon_table.h).
@@ -33,9 +44,6 @@ const ITEM_ICONS = {
   burnheal: 'status_heal',
   iceheal: 'status_heal',
   fullheal: 'full_heal',
-  xattack: 'battle_stat_item',
-  xdefense: 'battle_stat_item',
-  xspeed: 'battle_stat_item',
   leftovers: 'leftovers',
   sitrusberry: 'sitrus_berry',
   oranberry: 'oran_berry',
@@ -61,13 +69,13 @@ const ITEM_ICONS = {
   fairyfeather: 'question_mark',
 }
 
-const SOURCES = new URL('../../sprite-sources/frlg-ui/item-icons/', import.meta.url)
+const SOURCES = resolve(sourceArg)
 const ATLAS = new URL('../../src/assets/frlg/item-icons.png', import.meta.url)
 const MANIFEST = new URL('../../src/data/frlg/item-icons.json', import.meta.url)
 
 const files = [...new Set(Object.values(ITEM_ICONS))]
 const frames = files.map((file) => {
-  const img = decodePng(readFileSync(new URL(`${file}.png`, SOURCES)))
+  const img = decodePng(readFileSync(join(SOURCES, `${file}.png`)))
   if (img.width !== ICON_SIZE || img.height !== ICON_SIZE) {
     throw new Error(`expected ${file}.png to be ${ICON_SIZE}x${ICON_SIZE}, got ${img.width}x${img.height}`)
   }
