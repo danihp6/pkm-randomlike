@@ -96,6 +96,13 @@ tasks it integrates.
   are serial resources: `package.json`, `src/main.ts`, `vite.config.ts`, each
   `src/scenes/*.ts` a batch touches, `src/data/dex/**` and any generated data file —
   at most one task per batch claims each, and the plan names who holds it.
+- **Docs are claimed by section.** The one-owner-per-path rule holds for code, data,
+  generated files and assets, but a `docs/*.md` file may be held by **more than one
+  task in the same batch** when the Architect assigns each one a **disjoint section,
+  table or block** and names it in the plan. No two tasks in a batch edit the same
+  section, and Integration QA reviews the combined document for lost lines. This is
+  what lets a batch reach four tasks when several of them touch the same spec; it
+  never relaxes a code, data or asset path.
 - **Batch filling.** A one-task batch never wastes the other dev slots: a cycle
   takes the lowest pending batch whole and **must attempt to fill** it with tasks
   from later batches up to four, adding one only when its paths are disjoint from

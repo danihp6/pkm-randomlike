@@ -69,8 +69,10 @@ Legend:
   generated asset or data table another task produces. Phase order is *not* a
   dependency.
 - **Batches.** A batch is an antichain: no task in it depends on another task in it,
-  and no two tasks in it create or modify the same path. A batch is a label on the
-  open items, not a rewrite of the backlog. Batches run in order: a task's branch is
+  and no two tasks in it create or modify the same path — **except a `docs/*.md`
+  file, which two tasks may share when the Architect gives each a disjoint section**
+  (`AGENTS.md`'s **Docs are claimed by section**). A batch is a label on the open
+  items, not a rewrite of the backlog. Batches run in order: a task's branch is
   cut from `main` once every earlier batch is merged, and the Orchestrator merges one
   task at a time, in ID order. A cycle takes the lowest pending batch **whole** and
   **must attempt to fill** it with tasks from later batches under the same antichain
@@ -2575,16 +2577,26 @@ atlas frame. What follows is the cut's own record.
   `[Task-91]` will name. It is dependency-free and claims no path Task-66 touches, so
   it rides here instead of waiting for Batch 29; its packed atlas and manifest are
   its own hot files.
-- **Hot files:** `src/scenes/RouteScene.ts` (the room's fixture and its panel) → Task-66;
-  `src/engine/maps/plan.ts` + `plan.test.ts` (the new `MapRoomSpecial` value and its placement)
-  and `src/ui/mapView.ts` + `mapView.test.ts` (its marker) → Task-66; the deliberate-removal
-  helper and its test under `src/engine/run/` (beside `perms.ts`, whose `releaseFainted` it
-  must **not** change) and the received member's build → Task-66; `docs/maps-spec.md` §7 and
-  `docs/routes-spec.md` §6's party/PC rule → Task-66; `scripts/frlg/build-overworld-sprites.mjs`,
+- **Task-105 (filled)** The out-of-battle abilities: the passives table, the pure
+  `run/passives.ts`, and the one scene seam that runs it on room entry and on a win.
+  It is dependency-free and claims `RouteScene` (which Task-66's spec leaves
+  byte-identical) plus code, a data table and doc sections Task-66 does not touch, so
+  it rides here instead of waiting for Batch 48.
+- **Hot files:** `src/scenes/RouteScene.ts` (the passives' room-entry and win seam)
+  → Task-105 — Task-66's expected diff on it is **none**; `src/engine/maps/plan.ts` +
+  `plan.test.ts` (the new `MapRoomSpecial` value and its placement) and
+  `src/ui/mapView.ts` + `mapView.test.ts` (its marker) → Task-66; the
+  deliberate-removal helper and its test under `src/engine/run/` (beside `perms.ts`,
+  whose `releaseFainted` it must **not** change) and the received member's build →
+  Task-66; `docs/maps-spec.md` §7 and `docs/routes-spec.md` §6's party/PC rule →
+  Task-66; `scripts/frlg/build-overworld-sprites.mjs`,
   `src/assets/frlg/overworld.png`, `src/data/frlg/overworld.json` and
-  `src/data/overworldSprites.ts` + test → Task-90. Neither task claims a `package.json`,
-  `src/main.ts`, `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts` or another
-  packed asset.
+  `src/data/overworldSprites.ts` + test → Task-90; `src/engine/run/passives.ts` + test,
+  its `src/data/` table + test, `src/engine/run/battleLink.ts`,
+  `docs/battle-spec.md` §11, `docs/routes-spec.md` §2 and `docs/data-spec.md` →
+  Task-105. No task claims a `package.json`, `src/main.ts`, `vite.config.ts`,
+  `src/data/dex/**`, `src/engine/save.ts` or another packed asset; the two doc files
+  Task-66 and Task-105 share are claimed by disjoint sections.
 - **Shape:** the cut is Task-66, alone, and last of the round: it wants
   `src/scenes/RouteScene.ts` (every batch 5-20, Batch 20 last) and the special-room layer
   its two batch-mates extend one and two batches earlier, so it opens the new **Batch 26**.
@@ -2595,9 +2607,11 @@ atlas frame. What follows is the cut's own record.
   `createFighter({ learnsetSeed: run.seed })`, D17, at the squad's level through
   `adoptAtLevel`, then `addPokemon`), the trade is one per room and refused on a
   single-member party, and the per-room used flag rides the run's existing per-floor
-  bookkeeping — so **no `SAVE_VERSION`** step. **Filled** with Task-90: dependency-free,
-  disjoint paths, and the gitignored `sprite-sources/frlg` tree is present at the runner,
-  so the batch runs two devs and two Task QAs in parallel.
+  bookkeeping — so **no `SAVE_VERSION`** step. **Filled** with Task-90 and Task-105:
+  both are dependency-free and disjoint in code from Task-66, the gitignored
+  `sprite-sources/frlg` tree is present at the runner, and Task-66's zero-diff seam
+  frees `RouteScene` for Task-105 — so the batch runs three devs and three Task QAs
+  in parallel.
 
 ### Batch 27 — the room that bars items and healing moves
 - **Task-67** A special room whose battles bar the player's BAG items and healing moves.
@@ -5677,7 +5691,9 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       **Docs:** `docs/battle-spec.md` §11, `docs/routes-spec.md` §2, `docs/data-spec.md`.
       Out of scope: the battle-side handlers, the held items and the NPCs that hand out items.
       *Dependencies:* none — the ability table and the ground-item path are shipped.
-      *(Batch 48)*
+      It was **filled into Batch 26** beside `[Task-66]` and `[Task-90]`: its code and data
+      are disjoint from both, and Task-66's zero-diff seam leaves `RouteScene` to it.
+      *(Batch 26, filled; originally Batch 48)*
 - [ ] **[Task-106] The room-effect table's second half: the radiant zone, the two auras, the
       all-types change, Endure and +50 crit.** `[Task-62]` ships the room-condition seam and its five
       rows (weather, terrain, fog, Gravity, Trick Room); the human's list carries six more, and every
