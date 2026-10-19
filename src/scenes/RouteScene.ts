@@ -5,7 +5,7 @@ import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { type HudPanelId } from '../data/hudLayout';
 import { FINITE_MAPS, levelCapForMap } from '../data/maps';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
-import { getItem, MEGA_STONE_IDS } from '../data/items';
+import { getItem } from '../data/items';
 import { tmNumber } from '../data/tms';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
@@ -157,15 +157,6 @@ import {
   type BagCategory,
 } from '../ui/bag';
 import {
-  buildShop,
-  buyItem,
-  buyRows,
-  sellItem,
-  sellRows,
-  sellableStacks,
-  type ShopSlot,
-} from '../ui/shop';
-import {
   pokemonRewardChoices,
   pokemonRewardRowLabel,
   rewardChoices,
@@ -263,10 +254,18 @@ import {
   GRASS_TEXTURE_KEY,
   PANEL_ICON_KEYS,
   PANEL_ICON_SIZE,
-  SHOP_COUNTER_TEXTURE_KEY,
   SPARKLE_TEXTURE_KEY,
   TRAINER_TEXTURE_KEY,
 } from './BootScene';
+import { collectDescriptors, type RoomRegistry } from './rooms/registry';
+import type { RoomDescriptor, RoomHost, RoomPanel } from './rooms/types';
+
+/**
+ * Every special room kind's descriptor module (`D47`), discovered from the folder
+ * itself: a new room is a new file here and the scene is not edited. The negative
+ * pattern keeps the folder's own tests out of the browser bundle.
+ */
+const ROOM_MODULES = import.meta.glob(['./rooms/*.ts', '!./rooms/*.test.ts'], { eager: true });
 
 /**
  * The world camera's zoom while walking a route: tiles read at 2x on a desktop
@@ -529,25 +528,6 @@ const NOTICE_W = 720;
 const NOTICE_H = 44;
 const NOTICE_TOP = 24;
 
-/** The shop window (Phase 9): Mart-style BUY / SELL tabs over a list of rows. */
-const SHOP_W = 640;
-const SHOP_H = 540;
-const SHOP_PAD = 24;
-const SHOP_ROW_H = 44;
-const SHOP_ROWS = 7;
-const SHOP_TAB_W = 108;
-const SHOP_TAB_H = 30;
-const SHOP_TAB_GAP = 6;
-const SHOP_MODES = ['buy', 'sell'] as const;
-
-type ShopMode = (typeof SHOP_MODES)[number];
-
-/** The shop's two pockets; the key of the label printed on each tab. */
-const SHOP_MODE_LABELS: Readonly<Record<ShopMode, TranslationKey>> = {
-  buy: 'mart.buy',
-  sell: 'mart.sell',
-};
-
 /** The mini-boss reward choice (Phase 9): one window of item and Pokémon rows. */
 const REWARD_W = 560;
 const REWARD_H = 660;
@@ -573,11 +553,6 @@ type MiniBossRewardRow = {
   /** The item's short description; `null` on a Pokémon row. */
   desc: Phaser.GameObjects.BitmapText | null;
 };
-
-/** The stable ground-item id of a floor's mega-stone room (`docs/maps-spec.md` §7). */
-function megaStoneItemId(mapIndex: number): string {
-  return `mega-${mapIndex}`;
-}
 
 /**
  * Render depth of a wall cell's walkable tip: above the actors so the character
@@ -1093,29 +1068,10 @@ export class RouteScene extends Phaser.Scene {
   private noticeTimer: Phaser.Time.TimerEvent | null = null;
   /** The shop room's counter tile, or null off a shop room. */
   private shopCounter: Tile | null = null;
-  /** The Mart panel: its root, stock, tab and the row objects it repaints. */
-  private shopRoot: Phaser.GameObjects.Container | null = null;
-  private shopMode: ShopMode = 'buy';
-  private shopIndex = 0;
-  private shopScroll = 0;
-  private shopStock: readonly ShopSlot[] = [];
-  private shopStockMap = -1;
-  private shopMessage = '';
-  private shopRows: {
-    highlight: Phaser.GameObjects.Rectangle;
-    icon: Phaser.GameObjects.Image;
-    name: Phaser.GameObjects.BitmapText;
-    price: Phaser.GameObjects.BitmapText;
-    count: Phaser.GameObjects.BitmapText;
-  }[] = [];
-  private shopTabs: {
-    mode: ShopMode;
-    bg: Phaser.GameObjects.Rectangle;
-    label: Phaser.GameObjects.BitmapText;
-  }[] = [];
-  private shopMoneyText!: Phaser.GameObjects.BitmapText;
-  private shopMessageText!: Phaser.GameObjects.BitmapText;
-  private shopEmpty!: Phaser.GameObjects.BitmapText;
+  /** Every special room kind's descriptor, indexed once per scene (`D47`). */
+  private roomRegistry: RoomRegistry = collectDescriptors(ROOM_MODULES);
+  /** The room's own panel while it owns the keyboard, or null; the scene owns the slot. */
+  private roomPanel: RoomPanel | null = null;
   /** The mini-boss reward window: its root, options, cursor and callback. */
   private miniBossRewardRoot: Phaser.GameObjects.Container | null = null;
   private miniBossRewardItems: readonly string[] = [];
@@ -1171,19 +1127,84 @@ export class RouteScene extends Phaser.Scene {
     }
     // A special room injects its own content, off stable ids, so a revisit rebuilds
     // it identically and a beaten mini-boss stays beaten (`docs/maps-spec.md` §7).
-    if (view.special === 'mini-boss' && !isTrainerDefeated(this.run, miniBossTrainerId(view.mapIndex))) {
-      const miniBoss = this.miniBossTrainer(view);
-      if (miniBoss) this.route = { ...this.route, trainers: [...this.route.trainers, miniBoss] };
+    // The room's own descriptor places it; the counter is cleared first, so a room
+    // without one leaves nothing of the last room's behind (`D47`).
+    this.shopCounter = null;
+    const fixture = this.specialDescriptor()?.fixture?.(this.roomHost());
+    if (fixture?.trainers) {
+      this.route = { ...this.route, trainers: [...this.route.trainers, ...fixture.trainers] };
     }
-    // A shop room's counter: the interact key opens the Mart when the player faces
-    // it. It is a fixture, so it sits at the room's farthest walkable tile.
-    this.shopCounter = view.special === 'shop' ? this.farthestRoomTile() : null;
-    if (view.special === 'mega-stone' && !isItemPicked(this.run, megaStoneItemId(view.mapIndex))) {
-      const stone = this.megaStoneItem(view);
-      if (stone) this.route = { ...this.route, items: [...this.route.items, stone] };
+    if (fixture?.items) {
+      this.route = { ...this.route, items: [...this.route.items, ...fixture.items] };
     }
+    if (fixture && 'counter' in fixture) this.shopCounter = fixture.counter ?? null;
     // Last: the filter needs `this.map`, which `buildRoute` → `applyRoute` sets.
     this.buildBattlefieldOverlay();
+  }
+
+  /** The descriptor for the room on screen, or null when it has none (`D47`). */
+  private specialDescriptor(): RoomDescriptor | null {
+    const kind = this.room?.special;
+    return kind ? (this.roomRegistry.byKind.get(kind) ?? null) : null;
+  }
+
+  /** The plan room on screen; `buildRoom` sets it before any descriptor runs. */
+  private get view(): RoomView {
+    const room = this.room;
+    if (!room) throw new Error('route scene has no plan room');
+    return room;
+  }
+
+  /**
+   * The port a room descriptor draws through (`D47`): the scene's own surface, with
+   * `run` and `view` read live so a trade the panel commits is visible to its next
+   * call. The room mutates the scene only through these methods.
+   */
+  private roomHost(): RoomHost {
+    const scene = this;
+    return {
+      scene,
+      get run(): RunState {
+        return scene.run;
+      },
+      get view(): RoomView {
+        return scene.view;
+      },
+      entryTile: () => scene.route.entry,
+      counterTile: () => scene.shopCounter,
+      farthestRoomTile: () => scene.farthestRoomTile(),
+      facingFromTo: (from, to) => scene.facingFromTo(from, to),
+      generatorStepActive: () => scene.generatorStepIndex !== null,
+      commitRun: (run) => scene.commitRun(run),
+      releaseHudKeyboard: () => scene.releaseHudKeyboard(),
+      openPanel: (panel) => scene.openPanel(panel),
+      closePanel: () => scene.closePanel(),
+      panelOpen: () => scene.roomPanel !== null,
+    };
+  }
+
+  /** Sets the scene's run, persists it and repaints the HUD (a Mart trade). */
+  private commitRun(run: RunState): void {
+    this.run = run;
+    this.persistRun();
+    this.refreshHud();
+  }
+
+  /** Gives the keyboard to `panel` until `closePanel()`; the scene owns the slot. */
+  private openPanel(panel: RoomPanel): void {
+    this.roomPanel = panel;
+  }
+
+  /** Tears the open panel down (room change, battle, run over). */
+  private closePanel(): void {
+    const panel = this.roomPanel;
+    this.roomPanel = null;
+    panel?.close();
+  }
+
+  /** True while a room's own panel owns the screen. */
+  private panelOpen(): boolean {
+    return this.roomPanel !== null;
   }
 
   /**
@@ -1227,36 +1248,6 @@ export class RouteScene extends Phaser.Scene {
       sight: DEFAULT_TRAINER_SIGHT,
       archetypeId: 'ace',
     };
-  }
-
-  /**
-   * The mini-boss: a strong `ace` trainer at the special room's farthest tile,
-   * fielding a fixed three-member party (two on map 1) at band levels and allowed a
-   * Mega Stone. It stands only while unbeaten, like the boss.
-   */
-  private miniBossTrainer(view: RoomView): RouteTrainer | null {
-    const position = this.farthestRoomTile();
-    if (!position) return null;
-    return {
-      id: miniBossTrainerId(view.mapIndex),
-      position,
-      facing: this.facingFromTo(position, this.route.entry),
-      sight: DEFAULT_TRAINER_SIGHT,
-      archetypeId: 'ace',
-    };
-  }
-
-  /**
-   * The mega-stone room's single treasure: a random Mega Stone (one per floor, off
-   * a dedicated stream) on the room's farthest tile, taken with the interact key
-   * like any ground item (`docs/maps-spec.md` §7, D33).
-   */
-  private megaStoneItem(view: RoomView): RouteItem | null {
-    const position = this.farthestRoomTile();
-    if (!position) return null;
-    const rng = new Rng(hashSeed(`${this.run.seed}:mega:${view.mapIndex}`));
-    const itemId = MEGA_STONE_IDS[rng.int(0, MEGA_STONE_IDS.length - 1)];
-    return { id: megaStoneItemId(view.mapIndex), position, itemId, hidden: false };
   }
 
   /**
@@ -1416,12 +1407,8 @@ export class RouteScene extends Phaser.Scene {
     this.releaseOnDone = null;
     this.releaseWait = null;
     this.releaseArmed = false;
-    this.shopRoot = null;
+    this.roomPanel = null;
     this.shopCounter = null;
-    this.shopStock = [];
-    this.shopStockMap = -1;
-    this.shopRows = [];
-    this.shopTabs = [];
     this.miniBossRewardRoot = null;
     this.miniBossRewardItems = [];
     this.miniBossRewardPokemon = [];
@@ -1443,7 +1430,7 @@ export class RouteScene extends Phaser.Scene {
     this.drawEntities();
     this.drawItems();
     this.drawTrainers();
-    this.drawShopCounter();
+    this.drawRoomFixture();
     this.player = { ...this.route.entry };
     this.playerSprite = this.add
       .sprite(0, 0, PLAYER_SPRITE_TEXTURE_KEY, playerSpriteFrame('down'))
@@ -1576,9 +1563,9 @@ export class RouteScene extends Phaser.Scene {
       this.closeLearnPopup();
       return;
     }
-    // The Mart panel owns the input while it is open.
-    if (this.shopRoot) {
-      this.handleShopAction(action);
+    // A room's own panel owns the input while it is open.
+    if (this.roomPanel) {
+      this.roomPanel.handle(action);
       return;
     }
     // The mini-boss reward owns the input while it is open.
@@ -3072,25 +3059,9 @@ export class RouteScene extends Phaser.Scene {
     size: number,
   ): void {
     const radius = Math.max(3, size * 0.18);
-    if (room.marker === 'shop') {
-      graphics.fillStyle(0xf2c14e, 1);
-      graphics.fillCircle(cx, cy, radius);
-      graphics.lineStyle(2, 0x8a6d1f, 1);
-      graphics.strokeCircle(cx, cy, radius);
-    } else if (room.marker === 'mini-boss') {
-      graphics.fillStyle(0xd9534f, 1);
-      graphics.fillTriangle(
-        cx,
-        cy - radius,
-        cx + radius,
-        cy + radius * 0.8,
-        cx - radius,
-        cy + radius * 0.8,
-      );
-    } else if (room.marker === 'mega-stone') {
-      graphics.fillStyle(0x9b6bff, 1);
-      graphics.fillTriangle(cx, cy - radius, cx + radius, cy, cx, cy + radius);
-      graphics.fillTriangle(cx, cy - radius, cx - radius, cy, cx, cy + radius);
+    if (room.marker) {
+      // The room's own descriptor draws its glyph (`D47`).
+      this.roomRegistry.byMarker.get(room.marker)?.drawMarker?.(graphics, cx, cy, radius);
     } else if (room.boss) {
       graphics.fillStyle(0xb0304a, 1);
       graphics.fillCircle(cx, cy, radius);
@@ -3620,7 +3591,7 @@ export class RouteScene extends Phaser.Scene {
   private handleHudPointerDown(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive()) return;
     // The Mart panel is modal: its own zones own the pointer while it is up.
-    if (this.shopRoot || this.miniBossRewardRoot) return;
+    if (this.panelOpen() || this.miniBossRewardRoot) return;
     // The level-up popup is modal: a click just dismisses it.
     if (this.learnPopupOpen) {
       this.closeLearnPopup();
@@ -3761,7 +3732,7 @@ export class RouteScene extends Phaser.Scene {
 
   private handleHudPointerMove(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive()) return;
-    if (this.shopRoot || this.miniBossRewardRoot || this.learnPopupOpen) return;
+    if (this.panelOpen() || this.miniBossRewardRoot || this.learnPopupOpen) return;
     // A button released off-screen never fired `pointerup`; let go on the next move.
     if (!pointer.isDown) this.cancelHudDrags();
     // A press on a collapse icon becomes a panel drag once it passes the slop.
@@ -3929,7 +3900,7 @@ export class RouteScene extends Phaser.Scene {
       this.dismissLearnPopup();
       return;
     }
-    if (this.shopRoot || this.miniBossRewardRoot) {
+    if (this.panelOpen() || this.miniBossRewardRoot) {
       this.cancelHudDrags();
       return;
     }
@@ -4229,10 +4200,7 @@ export class RouteScene extends Phaser.Scene {
     this.hudLearnDrag = moveId;
     this.hudGrabMoved = false;
     if (pointer) {
-      this.hudLearnGhost
-        .setText(moveName(moveId))
-        .setPosition(pointer.x, pointer.y)
-        .setVisible(true);
+      this.hudLearnGhost.setText(moveName(moveId)).setPosition(pointer.x, pointer.y).setVisible(true);
       this.input.setDefaultCursor('grabbing');
     }
     this.refreshDetail();
@@ -5025,7 +4993,7 @@ export class RouteScene extends Phaser.Scene {
       !this.gameOver &&
       !this.pendingBattle &&
       !this.releaseRoot &&
-      !this.shopRoot &&
+      !this.panelOpen() &&
       !this.miniBossRewardRoot &&
       !this.pauseMenuOpen &&
       // A held `R` while typing a name must not fill the ring and restart the run.
@@ -5334,21 +5302,19 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * Draws the shop room's counter at its tile. Only a live shop room has one, and
-   * the dev generator phases draw none.
+   * Draws the room's own fixture, whatever kind it is (`D47`): the room's
+   * descriptor creates the objects, and the scene books them into the route's
+   * teardown list and keeps the pinned HUD camera off them.
    */
-  private drawShopCounter(): void {
-    if (this.generatorStepIndex !== null || !this.shopCounter) return;
-    const sprite = this.add
-      .image(
-        this.centerX(this.shopCounter.x),
-        this.centerY(this.shopCounter.y),
-        SHOP_COUNTER_TEXTURE_KEY,
-      )
-      .setScale(TILE_SIZE / 22)
-      .setDepth(5);
-    this.entitySprites.push(sprite);
-    this.hudCamera?.ignore([sprite]);
+  private drawRoomFixture(): void {
+    const descriptor = this.specialDescriptor();
+    if (!descriptor?.drawFixture) return;
+    const before = this.children.list.length;
+    descriptor.drawFixture(this.roomHost());
+    const created = this.children.list.slice(before);
+    if (created.length === 0) return;
+    for (const sprite of created) this.entitySprites.push(sprite);
+    this.hudCamera?.ignore(created);
   }
 
   /** Poses a resting trainer: the facing's idle frame, flipped for the right side. */
@@ -5697,14 +5663,14 @@ export class RouteScene extends Phaser.Scene {
     this.run = run;
     this.persistRun();
     this.stopWalking();
-    this.closeShop();
+    this.closePanel();
     this.clearRouteSprites();
     this.buildRoom();
     this.drawTiles();
     this.drawEntities();
     this.drawItems();
     this.drawTrainers();
-    this.drawShopCounter();
+    this.drawRoomFixture();
     this.player = options?.keepPosition === true ? tile : { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     const bounds = mapPixelSize(this.map, TILE_SIZE);
@@ -5895,11 +5861,8 @@ export class RouteScene extends Phaser.Scene {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     const step = MOVE_STEP[this.facingDir];
     const ahead = { x: this.player.x + step.x, y: this.player.y + step.y };
-    // Facing the shop counter opens the Mart (only the shop room has one).
-    if (this.shopCounterAt(ahead)) {
-      this.openShop();
-      return;
-    }
+    // A room that answers the interact key (the Mart's counter) consumes it first.
+    if (this.specialDescriptor()?.interact?.(this.roomHost(), ahead) === true) return;
     // Talking to a trainer it is facing also opens the battle, like the originals.
     const trainer = this.liveTrainerAt(ahead);
     if (trainer) {
@@ -6496,289 +6459,6 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * Opens the Mart (`docs/maps-spec.md` §7, D33): only in a shop room, at the
-   * counter. The stock is rolled once per map on a dedicated stream, so reopening
-   * the Mart shows the same shelves. The panel owns the input until `Q`.
-   */
-  private openShop(): void {
-    if (this.shopRoot || this.gameOver || this.pendingBattle || this.releaseRoot || this.pauseMenuOpen)
-      return;
-    if (this.room?.special !== 'shop' || !this.shopCounter) return;
-    // The Mart is modal: it takes the keyboard off whatever HUD pane held it.
-    this.releaseHudKeyboard();
-    if (this.shopStockMap !== this.run.mapIndex) {
-      const band = bandForMap(this.run.mapIndex);
-      this.shopStock = buildShop(
-        band.id,
-        new Rng(hashSeed(`${this.run.seed}:shop:${this.run.mapIndex}`)),
-      );
-      this.shopStockMap = this.run.mapIndex;
-    }
-    this.shopMode = 'buy';
-    this.shopIndex = 0;
-    this.shopScroll = 0;
-    this.shopMessage = t('mart.greeting');
-    this.buildShopPanel();
-    this.refreshShop();
-  }
-
-  /** Tears down the Mart panel (also called when the room changes). */
-  private closeShop(): void {
-    if (!this.shopRoot) return;
-    this.shopRoot.destroy(true);
-    this.shopRoot = null;
-    this.shopRows = [];
-    this.shopTabs = [];
-  }
-
-  /** Builds the Mart's static frame and its row/tab objects once per open. */
-  private buildShopPanel(): void {
-    const { width, height } = this.scale;
-    const x = (width - SHOP_W) / 2;
-    const y = (height - SHOP_H) / 2;
-    const left = x + SHOP_PAD;
-    const right = x + SHOP_W - SHOP_PAD;
-    const children: Phaser.GameObjects.GameObject[] = [
-      this.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0),
-      addFrlgWindow(this, x, y, SHOP_W, SHOP_H),
-      addFrlgText(this, left, y + 20, t('mart.title'), { size: 24, tint: FRLG_INK }),
-    ];
-    this.shopMoneyText = addFrlgText(this, right, y + 24, '', {
-      size: 16,
-      tint: FRLG_MUTED,
-      origin: [1, 0],
-    });
-    children.push(this.shopMoneyText);
-
-    // BUY / SELL tabs, FRLG style: the active one reads dark-on-light.
-    this.shopTabs = [];
-    SHOP_MODES.forEach((mode, i) => {
-      const tabX = left + i * (SHOP_TAB_W + SHOP_TAB_GAP);
-      const tabY = y + 58;
-      const bg = this.add
-        .rectangle(tabX, tabY, SHOP_TAB_W, SHOP_TAB_H, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
-        .setOrigin(0, 0);
-      const label = addFrlgText(this, tabX + SHOP_TAB_W / 2, tabY + 6, t(SHOP_MODE_LABELS[mode]), {
-        size: 16,
-        tint: FRLG_INK,
-        origin: [0.5, 0],
-      });
-      const zone = this.add
-        .zone(tabX, tabY, SHOP_TAB_W, SHOP_TAB_H)
-        .setOrigin(0, 0)
-        .setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => this.switchShopMode(mode));
-      this.shopTabs.push({ mode, bg, label });
-      children.push(bg, label, zone);
-    });
-
-    // The list window: a fixed set of rows the pointer and the cursor drive.
-    const listX = left;
-    const listY = y + 100;
-    const listW = SHOP_W - SHOP_PAD * 2;
-    const listH = SHOP_ROWS * SHOP_ROW_H + 12;
-    children.push(addFrlgWindow(this, listX, listY, listW, listH));
-
-    this.shopRows = [];
-    for (let i = 0; i < SHOP_ROWS; i++) {
-      const rowY = listY + 6 + i * SHOP_ROW_H;
-      const highlight = this.add
-        .rectangle(
-          listX + 6,
-          rowY,
-          listW - 12,
-          SHOP_ROW_H - 4,
-          FRLG_SELECTED_FILL.colour,
-          FRLG_SELECTED_FILL.alpha,
-        )
-        .setOrigin(0, 0)
-        .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
-        .setVisible(false);
-      const icon = this.add
-        .image(listX + 26, rowY + SHOP_ROW_H / 2 - 2, ITEM_ICON_TEXTURE_KEY, 0)
-        .setScale(0.9)
-        .setVisible(false);
-      const name = addFrlgText(this, listX + 52, rowY + 10, '', { size: 16, tint: FRLG_INK });
-      const price = addFrlgText(this, listX + listW - 92, rowY + 10, '', {
-        size: 16,
-        tint: FRLG_MUTED,
-        origin: [1, 0],
-      });
-      const count = addFrlgText(this, listX + listW - 18, rowY + 10, '', {
-        size: 16,
-        tint: FRLG_MUTED,
-        origin: [1, 0],
-      });
-      const zone = this.add
-        .zone(listX + 6, rowY, listW - 12, SHOP_ROW_H)
-        .setOrigin(0, 0)
-        .setInteractive({ useHandCursor: true });
-      zone.on('pointerover', () => {
-        const index = this.shopScroll + i;
-        if (index === this.shopIndex || index >= this.shopTotal()) return;
-        this.shopIndex = index;
-        this.refreshShop();
-      });
-      zone.on('pointerdown', () => {
-        this.shopIndex = this.shopScroll + i;
-        this.refreshShop();
-        this.activateShop();
-      });
-      this.shopRows.push({ highlight, icon, name, price, count });
-      children.push(highlight, icon, name, price, count, zone);
-    }
-    this.shopEmpty = addFrlgText(this, listX + listW / 2, listY + 20, '', {
-      size: 16,
-      tint: FRLG_MUTED,
-      origin: [0.5, 0],
-    });
-    children.push(this.shopEmpty);
-
-    this.shopMessageText = addFrlgText(this, left, y + SHOP_H - 74, '', { size: 16, tint: FRLG_INK });
-    children.push(
-      this.shopMessageText,
-      addFrlgText(
-        this,
-        right,
-        y + SHOP_H - 42,
-        t('mart.controls', {
-          confirm: keyLabel(this.settings.keybinds.confirm),
-          cancel: keyLabel(this.settings.keybinds.cancel),
-        }),
-        { size: 16, tint: FRLG_MUTED, origin: [1, 0] },
-      ),
-    );
-
-    this.shopRoot = this.add.container(0, 0, children).setDepth(500);
-    this.cameras.main.ignore(this.shopRoot);
-  }
-
-  /** Repaints the Mart for the current tab, cursor and the run's money and bag. */
-  private refreshShop(): void {
-    if (!this.shopRoot) return;
-    const rows = this.shopMode === 'buy' ? buyRows(this.run, this.shopStock) : sellRows(this.run);
-    const total = rows.length;
-    this.shopIndex = total === 0 ? 0 : Math.max(0, Math.min(this.shopIndex, total - 1));
-    this.shopScroll = Math.max(0, Math.min(this.shopScroll, Math.max(0, total - SHOP_ROWS)));
-    if (this.shopIndex < this.shopScroll) this.shopScroll = this.shopIndex;
-    else if (this.shopIndex >= this.shopScroll + SHOP_ROWS)
-      this.shopScroll = this.shopIndex - SHOP_ROWS + 1;
-
-    this.shopMoneyText.setText(t('mart.money', { amount: this.run.money }));
-    this.shopMessageText.setText(this.shopMessage);
-    this.shopTabs.forEach((tab) => {
-      const active = tab.mode === this.shopMode;
-      this.paintTab(tab.bg, active);
-      tab.label.setTint(active ? FRLG_ACCENT : FRLG_INK);
-    });
-    this.shopEmpty.setText(
-      total === 0 ? (this.shopMode === 'buy' ? t('mart.emptyStock') : t('mart.emptySell')) : '',
-    );
-
-    this.shopRows.forEach((rowObject, i) => {
-      const index = this.shopScroll + i;
-      const row = rows[index];
-      const visible = row !== undefined;
-      rowObject.highlight.setVisible(visible && index === this.shopIndex);
-      rowObject.icon.setVisible(visible);
-      rowObject.name.setVisible(visible);
-      rowObject.price.setVisible(visible);
-      rowObject.count.setVisible(visible);
-      if (!row) {
-        rowObject.name.setText('');
-        rowObject.price.setText('');
-        rowObject.count.setText('');
-        return;
-      }
-      rowObject.icon.setFrame(itemIconFrame(row.itemId) ?? 0);
-      rowObject.name.setText(row.name);
-      rowObject.price.setText(`¥${row.price}`);
-      rowObject.price.setTint(this.shopMode === 'buy' && !row.affordable ? 0xb0304a : FRLG_MUTED);
-      rowObject.count.setText(row.owned > 0 ? `x${row.owned}` : '');
-    });
-  }
-
-  /** The Mart's keys: move, switch tab, trade on `E`, leave on `Q`. */
-  private handleShopAction(action: KeybindAction): void {
-    switch (action) {
-      case 'up':
-        this.moveShop(-1);
-        return;
-      case 'down':
-        this.moveShop(1);
-        return;
-      case 'left':
-        this.cycleShopMode(-1);
-        return;
-      case 'right':
-        this.cycleShopMode(1);
-        return;
-      case 'confirm':
-      case 'interact':
-        this.activateShop();
-        return;
-      case 'cancel':
-        this.closeShop();
-        return;
-      default:
-        return;
-    }
-  }
-
-  private switchShopMode(mode: ShopMode): void {
-    if (this.shopMode === mode) return;
-    this.shopMode = mode;
-    this.shopIndex = 0;
-    this.shopScroll = 0;
-    this.shopMessage = mode === 'buy' ? t('mart.greeting') : t('mart.greetingSell');
-    this.refreshShop();
-  }
-
-  private cycleShopMode(delta: number): void {
-    const index = SHOP_MODES.indexOf(this.shopMode);
-    this.switchShopMode(SHOP_MODES[(index + delta + SHOP_MODES.length) % SHOP_MODES.length]);
-  }
-
-  private moveShop(delta: number): void {
-    const total = this.shopTotal();
-    if (total === 0) return;
-    this.shopIndex = (this.shopIndex + delta + total) % total;
-    this.refreshShop();
-  }
-
-  /** How many rows the current tab holds: the stock, or the sellable stacks. */
-  private shopTotal(): number {
-    return this.shopMode === 'buy' ? this.shopStock.length : sellableStacks(this.run).length;
-  }
-
-  /** Buys or sells the highlighted row, then repaints the Mart and the bag HUD. */
-  private activateShop(): void {
-    if (this.shopMode === 'buy') {
-      const slot = this.shopStock[this.shopIndex];
-      if (!slot) return;
-      const trade = buyItem(this.run, slot);
-      if (!trade.ok) {
-        this.shopMessage = t('mart.noMoney');
-        this.refreshShop();
-        return;
-      }
-      this.run = trade.run;
-      const name = getItem(slot.itemId)?.name ?? slot.itemId;
-      this.shopMessage = t('mart.bought', { name, amount: trade.amount });
-    } else {
-      const row = sellRows(this.run)[this.shopIndex];
-      if (!row) return;
-      const trade = sellItem(this.run, row.itemId);
-      if (!trade.ok) return;
-      this.run = trade.run;
-      this.shopMessage = t('mart.sold', { name: row.name, amount: trade.amount });
-    }
-    this.persistRun();
-    this.refreshHud();
-    this.refreshShop();
-  }
-
-  /**
    * The mini-boss reward (`docs/maps-spec.md` §7, D33): a beaten strong trainer
    * opens one window of **six rows** — three items from the map's reward pool and
    * three Pokémon it presents only by their highest stat and their nature. `E`
@@ -7363,7 +7043,7 @@ export class RouteScene extends Phaser.Scene {
     this.drawEntities();
     this.drawItems();
     this.drawTrainers();
-    this.drawShopCounter();
+    this.drawRoomFixture();
     this.player = { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     const cameraBounds = mapPixelSize(this.map, TILE_SIZE);
@@ -7497,7 +7177,7 @@ export class RouteScene extends Phaser.Scene {
     this.drawEntities();
     this.drawItems();
     this.drawTrainers();
-    this.drawShopCounter();
+    this.drawRoomFixture();
     this.player = { ...route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     const cameraBounds = mapPixelSize(this.map, TILE_SIZE);
@@ -7518,7 +7198,7 @@ export class RouteScene extends Phaser.Scene {
       this.gameOver ||
       this.pendingBattle ||
       this.releaseRoot ||
-      this.shopRoot ||
+      this.panelOpen() ||
       this.miniBossRewardRoot ||
       this.pauseMenuOpen ||
       // A HUD pane holding the keyboard takes the arrows off the walker (D45).
@@ -7565,7 +7245,7 @@ export class RouteScene extends Phaser.Scene {
       this.gameOver ||
       this.pendingBattle ||
       this.releaseRoot ||
-      this.shopRoot ||
+      this.panelOpen() ||
       this.miniBossRewardRoot ||
       this.pauseMenuOpen ||
       this.chase
