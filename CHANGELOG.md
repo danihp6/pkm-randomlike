@@ -8,6 +8,51 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The casino room: a Team Rocket grunt, a slot machine and the Egg.** The room layer's first
+      new kind since `D47` is a **descriptor module**, `src/scenes/rooms/casino.ts`, so the scene
+      gained only what the port was missing — `RoomHost.startTrainerBattle` (the hook `D47` itself
+      names) and `RoomHost.showNotice` — and the registry did not change. `MapRoomSpecial` gained
+      `'casino'`, hung **last** in `planMap`'s special pass (`CASINO_CHANCE = 0.3`, from map 2, at
+      `dead-end` only), so every already-shipped special keeps its id, tile and size, and the
+      minimap glyph comes from the descriptor's own `drawMarker` (`src/ui/mapView.ts` needed no
+      edit, because `MapRoomMarker` **is** `MapRoomSpecial`). The machine is a texture drawn in
+      `BootScene.ts` beside the grunt, and the grunt is a **set-piece archetype**: a new
+      `SPECIAL_ARCHETYPES` table (`rocket`, `Team Rocket`, the `psychic` money and AI flags) merged
+      only into `getTrainerArchetype`'s index, so `TRAINER_ARCHETYPES`,
+      `TRAINER_ARCHETYPE_IDS`, `TRAINER_WALK_ANIMS` and the four shipped atlas/animation invariants
+      did not move and **no packer ran**. The machine's model is the pure `casinoSpin(run)`
+      (`src/ui/casino.ts` + test) over its own stream `${seed}:casino:${mapIndex}:${spins}`, where
+      `spins` is read off the run's own per-floor `pickedItems` marks (`casino-spin-<map>-<n>`) so
+      a reload continues the sequence; the battle prize locks the machine (`casino-lock-<map>`),
+      the price steps per band (300 / 700 / 1000 / 1500 / 2000 / 2500) and the prize weights live
+      in the new `src/data/casino.ts`. The **Egg** is an ordinary bag item (`valuable`, `price: 0`,
+      never sellable — the catalogue's never-sold sweep learned its id — and it borrows the
+      `luckyegg` icon frame), and `hatchEgg(run)` turns it into a member of the **new** floor's
+      `speciesPool(band, 'wild')` at `squadLevel` through the shipped `createRunPokemon` →
+      `adoptAtLevel` → `addPokemon` path, fired by the portal step (`advanceMap`) and announced by
+      the new `eggHatchNotice`. Eight i18n keys in `en` and `es`, the
+      `docs/maps-spec.md` §7 and `docs/design-spec.md` §7 rows, and both folder READMEs. The room adds **no run field**
+      (the lock and the spin counter ride `pickedItems`, the Egg is a bag item), so **no
+      `SAVE_VERSION`** step. **QA** was a single pass (one-task batch): the gates green on `main` +
+      `task-64` (148 files / **1869 tests** twice, `npm run build`), the diff's 27/27 paths inside
+      the spec's exclusive list, the folder's tests green, and the pure model replayable from the
+      marks. **Measured, not assumed:** a 12-seed × 8-map sweep found at most one casino per floor,
+      never on map 1, always a `dead-end`, never entry or boss, and never farther than the boss; a
+      diff against a **pre-change** `planMap` module (8 seeds × 8 maps) shows the three older
+      specials' `specials`, `links`, `entryRoom`/`bossRoom` and every `size` **identical**; and a
+      live CDP run at 1280×800 on seed `pkm-111` measured the room (cabinet `#4c2a6b` 1215 px,
+      reels `#f2c14e` 126, lever `#e11d48` 91, window `#111827` 384, grunt placeholder `#c0392b`
+      273), the panel in both locales (`SLOT MACHINE`/`TRAGAPERRAS`, `SPIN ¥2000`/`GIRAR ¥2000`),
+      three paid spins (30000 → 24000, `Obtained Ultra Ball!` / `Full Restore!` / `Egg!`), a battle
+      spin (window closed, `casino-grunt-5` = Team Rocket, Dhelmise 35 / Mr. Mime 32 / Roserade 32),
+      the lock (`The machine is out of order.`, money still 28000) and the next floor spinning
+      again, and the Egg hatching into `Tangrowth L5` on the portal with `stats.catches`,
+      `caughtSpecies`, `capturedRooms` and `pcCatch` untouched. Two things it carries rather than
+      hides: the **`rocket` sprite row has no art** — no Rocket strip exists in the checked sources,
+      so both surfaces use the shipped placeholder and the repack belongs to `[Task-90]`'s cut —
+      and the panel is keyboard-only, unlike the Mart's clickable rows (a later task's parity, not
+      this one's).
+
 - [x] **The special-room layer leaves `RouteScene.ts`, and a new room is a new file.** Every special
       room kind is now a descriptor module under `src/scenes/rooms/`: `types.ts` freezes the
       `RoomDescriptor` contract (`kind`, `marker`, `fixture`, `interact`, `drawFixture`, `drawMarker`)

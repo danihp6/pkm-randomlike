@@ -2351,6 +2351,48 @@ atlas frame. What follows is the cut's own record.
   `src/scenes/BootScene.ts`, and `[Task-80]`, `[Task-83]`, `[Task-93]`–`[Task-101]` and
   `[Task-106]`–`[Task-108]` each depend on something that has not merged. Batch 24 stays
   **Task-64 alone**, and its spec is written (`.agent_specs/task-64.md`, `2026-10-19`).
+- **Shipped (Task-64, `2026-10-19`).** The casino is the room layer's **first new kind since
+  `D47`**: `src/scenes/rooms/casino.ts` exports `descriptor` and neither `RouteScene.ts`'s
+  registry nor another room changed — the scene gained only the two port hooks the spec froze
+  (`startTrainerBattle`, `showNotice`) and the egg's beat on the portal step. `MapRoomSpecial`
+  gained `'casino'`, hung **last** in the special pass (`CASINO_CHANCE = 0.3`, from map 2), so the
+  shop, the mini-boss and the mega-stone keep their ids, sizes and tiles; the minimap glyph comes
+  from the descriptor (no `mapView.ts` edit); the machine's art is a drawn texture in
+  `BootScene.ts`; the grunt is a `SPECIAL_ARCHETYPES` row (`rocket`) merged only into
+  `getTrainerArchetype`'s index, so `TRAINER_ARCHETYPES`/`TRAINER_ARCHETYPE_IDS`/
+  `TRAINER_WALK_ANIMS` and the four atlas/animation invariants did not move and **no packer ran**.
+  The spin is the pure `casinoSpin(run)` in `src/ui/casino.ts` over
+  `${seed}:casino:${mapIndex}:${spins}` — the counter read off the run's own per-floor
+  `pickedItems` marks (`casino-spin-<map>-<n>`), so a reload continues the sequence — the lock
+  is `casino-lock-<map>`, and the Egg is an ordinary bag item (`price: 0`, never sellable, the
+  `luckyegg` icon frame) that `hatchEgg` turns into a member of the **new floor's** band at
+  `squadLevel` on the portal step. **No run field**, so **no `SAVE_VERSION`** step, and the casino
+  is hung **last** in the pass, so a fixed seed's three older specials do not move. **QA**
+  was a single pass (one-task batch): the gates green on `main` + `task-64` (148 files / **1869
+  tests**, twice, and `npm run build`), the diff's **27/27** paths inside the spec's list
+  (`src/data/items.test.ts` included — the catalogue's never-sold sweep learned the Egg's id),
+  `src/engine/` still free of Phaser/DOM and of new `Math.random`/`Date.now`, and
+  `src/data/dex/**` untouched. **Measured, not assumed:** QA swept **12 seeds × maps 1–8** —
+  at most one casino per floor, never on map 1, always a `dead-end`, never the entry or the boss,
+  never farther than the boss — and diffed the plan against a **pre-change** module: across
+  8 seeds × 8 maps the three older specials' `specials`, `links`, `entryRoom`/`bossRoom` and every
+  `size` are **identical** (the only change on the 19 floors that gain a casino is the new parent's
+  door). Live, over its own CDP tab at 1280×800 on seed `pkm-111`, map 5: the room's 96×96 box
+  carries the cabinet `#4c2a6b` (1215 px), the roller window `#111827` (384), the lever `#e11d48`
+  (91), the three reels `#f2c14e` (126) and the grunt placeholder `#c0392b` (273), the minimap
+  draws its own glyph, the panel reads `SLOT MACHINE`/`MONEY ¥30000`/`SPIN ¥2000` in `en` and
+  `TRAGAPERRAS`/`GIRAR ¥2000` in `es`, three paid spins take 30000 → 24000 with `Obtained Ultra
+  Ball!`, `Obtained Full Restore!`, `Obtained Egg!`, a battle spin closes the window and launches
+  `casino-grunt-5` (Team Rocket, Dhelmise 35 / Mr. Mime 32 / Roserade 32), the machine then answers
+  `The machine is out of order.` with no money moved, and the next floor spins again; and walking
+  the portal hatched the Egg into `Tangrowth L5` with `stats.catches`, `caughtSpecies`,
+  `capturedRooms` and `pcCatch` all untouched. Three notes it carries rather than hides: the
+  **`rocket` row still has no art** (no Rocket strip exists in the checked sources, so both
+  surfaces use the shipped placeholder and the repack is handed to `[Task-90]`, whose entry
+  currently excludes it — it must be widened when Batch 29 is cut); the `[live]` casino run used
+  **map 5** because seed `pkm-111`'s first casino floor is 3 but only map 5 carries the pinned
+  room; and the panel is keyboard-only, unlike the Mart's clickable rows (out of scope, not a
+  defect).
 
 ### Batch 25 — the gated reward room
 - **Task-65** A special room whose reward sits behind bushes, rocks or water that only a party
@@ -4562,7 +4604,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       empties and the DLC spot-checks are added. Nothing else blocks it: the accessors, the UI
       wiring and the English fallback already ship, and no rule, RNG draw or run field moves,
       so there is still **no `SAVE_VERSION`** step.
-- [ ] **[Task-64] A casino room: a Team Rocket grunt, a slot machine the player pays to spin, and
+- [x] **[Task-64] A casino room: a Team Rocket grunt, a slot machine the player pays to spin, and
       its prizes.** Reported in play: «añade tarea para añadir habitacion casino, aparece un sprite
       de un recluta team rocket, aparece una tragaperras y pagas por tiradas con posibilidad de
       huevo da un poke random se abre al pasar de piso, objetos, posibilidad de combate contra el
