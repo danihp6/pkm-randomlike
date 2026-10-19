@@ -8,6 +8,74 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A beaten mini-boss also offers three unidentifiable Pokémon beside its item rows.**
+      The mini-boss reward is now **one window with two row kinds**: the three item rows it
+      shipped (`rewardChoices`, untouched, off its own `${seed}:reward:${mapIndex}` stream) and
+      **three Pokémon rows** drawn by a new pure chooser, `pokemonRewardChoices`, off a **sibling**
+      stream `${seed}:reward:${mapIndex}:pokemon`, so a fixed seed's item rows do not move (a
+      regression pins it). Each option is `{ speciesId, level, nature, topStat, ability, moves }`,
+      built from the shipped primitives — `speciesPool(band, 'wild')`, one `rng.int` per species
+      (distinct) plus one per nature and **no other draw**, and one `createFighter({ level,
+      nature, learnsetSeed: run.seed })` so the revealed ability and moveset are the member's own
+      (D17) — and the row prints **only** its highest stat and its nature (`DEFENSE · Lonely`),
+      composed from the existing `detail.stat.*` keys and the dex's English nature names, so the
+      window adds **no** i18n key. `topStat` is the argmax of `atk/def/spa/spd/spe` in that fixed
+      order and **never HP** (HP's flat `+level+10` would win every level and the reveal would
+      carry no information); the level is clamped exactly as `adoptAtLevel` clamps it. Taking a
+      row lands the member through the shipped placement — `createRunPokemon` → `adoptAtLevel` at
+      the **squad's** level → `addPokemon`, so a full party sends it to the box — and it is **not
+      a catch**: no room capture is spent, `stats.catches` does not move, no `pcCatch` is
+      recorded. The cursor, the `E`/`Q` keys and the leave path stay one control across both
+      kinds, and the window is six rows tall (`REWARD_H` 420 → 660). `src/ui/rewards.ts` +
+      `rewards.test.ts` (14 cases), `src/scenes/RouteScene.ts`, `docs/maps-spec.md` §7 and
+      `docs/design-spec.md` §7. Adds no run field, so **no `SAVE_VERSION` step**. **Measured,
+      not assumed:** Task QA and the Orchestrator each drove their own headless Chromium over CDP
+      on a clean tree (`renderer.snapshotArea` + `getImageData`, 1280×800, `run.seed ===
+      'dev-seed'`): six rows of kinds `item,item,item,pokemon,pokemon,pokemon`, the three Pokémon
+      rows **deep-equal** to a live recomputation of `pokemonRewardChoices(...)` on the same
+      stream with **no** icon and **no** description, their labels equal to
+      `pokemonRewardRowLabel(option)` (`DEFENSE · Lonely`, `SP. ATK · Modest`, `SP. ATK · Hardy`)
+      and free of every species name, ability id and move id, the item rows unchanged
+      (`potion`/`antidote`/`pokeball` = a live `rewardChoices` recomputation), the label band of
+      each Pokémon row carrying **374 / 306 / 281** pixels of the exact `FRLG_INK` (248, 250, 252)
+      against **0** in the band where an item row prints its name (and 130 on item row 0), and the
+      key path placing one member whose species, level, nature and ability match the option while
+      `stats.catches`, `caughtSpecies` and `pcCatch` stay put and `onDone` fires once.
+
+- [x] **Gigantamax needs a stone, named `<Base>ite G`.** Gigantamax is now **stone-gated** the
+      way Mega Evolution is (D44 rewritten): `scripts/build-dex.mjs` mints one stone per G-Max
+      forme into the regenerated `src/data/dex/gmaxes.json` (`stoneId` / `stoneName` beside
+      `baseSpeciesId`, 34 rows, `meta.json` unchanged and `megas.json` byte-identical — the
+      shipped `megaStoneName` is untouched, so only Eevee, Butterfree and Alcremie, the three
+      bases ending in a vowel run, read the derived `Eeveite G`, `Butterfreite G` and
+      `Alcremiite G`, with the entry's own `Venusaurite G` as the worked example), the catalogue
+      gains `GMAX_STONES` / `GMAX_STONE_IDS` beside `MEGA_STONES` (`kind: 'held'`, price 8000,
+      resale 4000, never spent on use), `src/data/dex/gmaxes.ts` gains the `gmaxFormForItem` /
+      `gmaxMatchesSpecies` pair mirroring `megas.ts`, and `canGigantamax` now requires the
+      **holder's own stone** — so the battle's G-MAX cell, the AI that arms `gmax` and
+      `validateCommand`'s refusal all move together with no scene edit. The STATS graph's row
+      prints the stone (`detail.gmaxEvolvesWith`, both tables, `detail.gmaxNoStone` gone) and the
+      stones are **reachable** by the shipped precedents: a fixed **sixth Mart row** at `late`
+      and `end` drawn like the machine row, and ground treasure at `late` (4 ids) and `end`
+      (6 ids) at weight 1, leaving the four early bands byte-identical. 29 paths including the
+      item-icon and item-effect seams (a stone takes the Hard Stone icon and registers with no
+      handlers, like a Mega Stone), `src/engine/battle/harness.ts` (`HarnessFighterSpec.heldItem`
+      for the fixed-seed regression), the two i18n tables and `docs/tech-decisions.md`,
+      `docs/battle-spec.md` §9/§10, `docs/data-spec.md` §1 and `docs/balance/economy.md`. The
+      golden logs do not move and it adds no run field, so **no `SAVE_VERSION` step** — the chain
+      stays **14 → 15 → 16 → 17 → 18**. **Measured, not assumed:** QA extracted `megaStoneName`
+      from both trees (963 identical bytes), regenerated the dex twice (byte-identical, only
+      `gmaxes.json` moved), pinned the stone matrix (with the right stone true; without, with the
+      Mega stone, with another forme's stone, fainted, already Mega'd and already Gigantamaxed
+      false), and both Task QA and the Orchestrator read the **live** battle over CDP: a Gengar
+      lead with **no** stone reports `gmaxAvailable() === false` with the cell, its glyph and its
+      zone hidden and a click leaving the intent false, while the same lead holding `gengariteg`
+      reports `true` with the cell painted at `FRLG_ROW_FILL` and, after the click, the intent and
+      the selection set with the fill at `FRLG_SELECTED_FILL` — a `snapshotArea` + `getImageData`
+      diff of the cell's own 62×152 rect changing **9424 of 9424** pixels. **One follow-up is
+      open** (an `agent-review` issue, not this batch): the longer row copy overruns the STATS
+      band's row box on five of the 34 rows.
+
 - [x] **A room's battles begin under a weather, a terrain or a room condition, and the route
       paints it.** A plan room can now own a battle-start condition — `sun`, `rain`, `sand`,
       `snow`, `electric`, `grassy`, `misty`, `psychic`, `fog`, `gravity` or `trickroom` —

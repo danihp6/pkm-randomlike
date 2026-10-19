@@ -2111,6 +2111,39 @@ record.
   placed here because the report is a wish against shipped rules and nothing blocks it.
 
 ### Batch 23 — the mini-boss reward offers three unidentifiable Pokémon
+**(shipped and archived)**: its two tasks merged in ID order behind the green gate (`task-63`,
+`task-88`; **1792** tests across **142** files after the first merge and **1807** across the
+same **142** after the second, `npm test` + `npm run build` green after **each** merge) and the
+detail is in `CHANGELOG.md`'s `## Unreleased`. It stayed the two-task batch the cut made it and
+it is an antichain in fact, not only on paper: the two diffs share no path, `task-63` holds
+`src/scenes/RouteScene.ts` and nothing else in `src/` moves twice. **Three things the cut's own
+wording got wrong are recorded rather than hidden.** (a) `src/ui/rewards.test.ts` pinned its
+stream-isolation case against `ROUTE_LOOT.late.pool`, and this batch's sibling grows that table
+(36 → 40 rows), so Integration QA found `npm test` **red on the combined tree** — a cross-task
+interaction the per-task waves cannot see by construction; `task-63` re-pinned the case against
+the test file's own hand-written pool (`04008975`, one test-only file) and Task QA re-ran, green.
+(b) `src/data/itemIcons.test.ts` and `src/data/dex/README.md` were missing from `task-88`'s
+exclusive list: the first's "own icon for everything but the TMs and the Mega Stones" guard sees
+the 34 new rows, and the second's folder map still said a G-Max forme is item-free; neither path
+is a batch-mate's, so the batch stayed an antichain. (c) The spec pinned the stone's name as
+`megaStoneName` **plus ` G`** and then listed derived examples that only stripping the whole
+trailing vowel *run* produces; the dev followed the examples, and the corrective round restored
+the **shipped** rule instead — so Eevee, Butterfree and Alcremie read `Eeveite G`,
+`Butterfreite G` and `Alcremiite G`, the other 31 are unchanged, and `megas.json` is
+byte-identical because no Mega ends in a vowel run. **QA**: two Task QAs in parallel, each from
+its own integration worktree (tips `04008975` and `044a8d2c`, both green and both measured live
+over CDP), then one Integration QA on the combined tree — red once on the item-chooser pin,
+green on the second pass (`ce10ece1`: gates green, no shared path, one holder per hot file,
+`src/engine/` pure, the generated dex reproducing byte for byte, and both merge orders
+conflict-free and identical). The Orchestrator measured both `[live]` criteria itself on the
+combined tree. **One follow-up is open**, carried by an `agent-review` issue rather than by this
+batch: the longer G-Max row copy overruns the STATS band's row box on **five** of the 34 rows
+(`butterfreegmax` 291, `corviknightgmax` 301, `grimmsnarlgmax` 291, `toxtricitylowkeygmax` 383,
+`urshifurapidstrikegmax` 387 against a 288/322 px box), which needs a scene-side width or a
+shorter clause and no new catalogue. `task-88`'s reach took the shipped precedents: a fixed
+sixth Mart row at `late`/`end` (the `SHOP_TM` shape) and ground treasure at `late` 4 / `end` 6
+(the `D37` Memories/Drives cadence), so no weighted rotation was diluted and no stone needs a new
+atlas frame. What follows is the cut's own record.
 - **Task-63** A beaten mini-boss offers, beside its item rows, three Pokémon the player cannot
   identify — no name, no sprite — each presented by its highest stat and its nature.
 - **Hot files:** `src/scenes/RouteScene.ts` (the reward window, `openMiniBossReward` 5715-5731
@@ -4252,7 +4285,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `src/scenes/BattleScene.ts` together, and every batch from 5 to 20 holds the route scene
       while the battle scene is held by 5, 5b, 6, 6b, 7, 8, 8b, 9, 9b, 10, 11, 12, 14, 17, 18 and
       20 — so it opens the plan's new **Batch 22**, one batch behind Task-61. *(Batch 22)*
-- [ ] **[Task-63] A beaten mini-boss also offers three unidentifiable Pokémon beside its item
+- [x] **[Task-63] A beaten mini-boss also offers three unidentifiable Pokémon beside its item
       rows.** Reported in play: «para que miniboss su recompensa a parte de opciones de objeto
       tambien esta la posibilidad de darte 3 opciones de pokemon pero sin saber su nombre o sprite,
       dado su estadistica más alta y su naturaleza o simplemente da 3 habilidades y eligues a
@@ -4795,7 +4828,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `randomAbility.ts`, `src/scenes/BattleScene.ts` and the docs — a batch of its own, and the
       Architect may split it (data / engine / docs). It takes **Batch 21** beside `[Task-61]`, which
       claims `src/scenes/RouteScene.ts` alone and shares none of those paths. *(Batch 21)*
-- [ ] **[Task-88] Gigantamax needs a stone, named `<Base>ite G`.** The human's rule: «los gigamax
+- [x] **[Task-88] Gigantamax needs a stone, named `<Base>ite G`.** The human's rule: «los gigamax
       tambien necesitan piedra que se llamen por su nombre por ejemplo venusorita y se añade la letra g
       venusorita g». Today G-Max is **free**: any species with a G-Max forme may Gigantamax from the
       battle's G-MAX cell (`canGigantamax`, `src/engine/battle/gmax.ts` 15-19), and the STATS graph says
