@@ -27,7 +27,8 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   `maps/progress.ts` (boss and portal edges), `maps/route.ts` and `maps/streams.ts`.
 - `routes/` — the route generator and its validation: `routes/sketch.ts`, the shapes and access
   edges in `routes/layout.ts`, `routes/routeMap.ts`, `routes/validate.ts`, `routes/encounters.ts`,
-  `routes/trainers.ts`, `routes/doors.ts`, `routes/walls.ts` and `routes/streams.ts`.
+  `routes/trainers.ts`, `routes/doors.ts`, `routes/walls.ts`, `routes/streams.ts` and
+  `routes/battlefield.ts` (the weather, terrain or field condition a room's battles begin under).
 - `run/` — the run state and its books: `run/state.ts` (party, box, bag and money),
   `run/progression.ts` (XP and levels), `run/battleLink.ts` + `run/resolve.ts` (the post-battle
   resolve), `run/roster.ts` + `run/pool.ts` (rosters, the species pool and the variant roll

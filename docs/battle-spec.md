@@ -61,6 +61,22 @@ Room**, **Wonder Room**, **Fairy Lock**, **Mud Sport** and **Water Sport** on th
 field. Each carries a turn count ticked in the residual pass
 (`src/engine/battle/effects/conditions.ts`).
 
+A battle can also **begin** under a condition the room it started in carries
+(`docs/maps-spec.md` §6/§7, `ROOM_BATTLEFIELDS` in `src/data/battlefields.ts`).
+`createBattle` seeds the weather, the terrain and the
+field conditions (and fog, below) from its own setup, at each rule's canonical
+duration — `WEATHER_TURNS`, `TERRAIN_TURNS`, `FIELD_CONDITION_TURNS` — so the
+battle's own counters are the only writers afterwards. A setup that names **none**
+of them produces exactly the pre-seeding state, so every other launch is untouched.
+
+**Dense fog** is one such condition, and a **field condition, never a weather**: it
+never enters `weatherModifier` (`src/engine/battle/damage.ts`) or `weatherChip`
+(`src/engine/battle/effects/weather.ts`). While `state.fog` is set, every move loses
+**20** (`FOG_ACCURACY_PENALTY`) of its **own** accuracy, before the net
+accuracy/evasion stage multiplier, clamped at 0 — so a move printed at 20 or less
+cannot hit at all — and a move that **cannot miss** is unaffected. No move sets it
+and it carries no turn count.
+
 Special move shapes:
 
 - **Two-turn charge moves** (Solar Beam, Fly, Dig...) lock the user for one

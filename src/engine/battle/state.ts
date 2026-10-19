@@ -101,6 +101,12 @@ export type BattleState = {
   terrainTurns: number;
   /** Whole-field conditions (Trick Room, Gravity...), with turns left. */
   field: FieldConditions;
+  /**
+   * Dense fog over the field (a room condition, never a weather): every move loses
+   * `FOG_ACCURACY_PENALTY` of its own accuracy, clamped at 0, and a move that cannot
+   * miss is unaffected. No move sets it and it carries no turn count.
+   */
+  fog: boolean;
   rng: Rng;
   log: BattleEvent[];
   bag: BagSlot[];
@@ -130,6 +136,14 @@ export type BattleSetup = Readonly<{
   bag?: readonly Readonly<{ item: ItemDef; count: number }>[];
   playerName?: string;
   enemyName?: string;
+  /** A room condition: the weather the battle starts under and the turns it has left. */
+  weather?: Readonly<{ id: WeatherId; turns: number }> | null;
+  /** A room condition: the terrain the battle starts under and the turns it has left. */
+  terrain?: Readonly<{ id: TerrainId; turns: number }> | null;
+  /** A room condition: field conditions to seed, with their turns left. */
+  field?: Partial<FieldConditions>;
+  /** A room condition: dense fog over the field. */
+  fog?: boolean;
 }>;
 
 export function createBattle(setup: BattleSetup): BattleState {
@@ -161,11 +175,12 @@ export function createBattle(setup: BattleSetup): BattleState {
       },
     },
     turn: 0,
-    weather: null,
-    weatherTurns: 0,
-    terrain: null,
-    terrainTurns: 0,
-    field: emptyFieldConditions(),
+    weather: setup.weather?.id ?? null,
+    weatherTurns: setup.weather?.turns ?? 0,
+    terrain: setup.terrain?.id ?? null,
+    terrainTurns: setup.terrain?.turns ?? 0,
+    field: { ...emptyFieldConditions(), ...(setup.field ?? {}) },
+    fog: setup.fog ?? false,
     rng: setup.rng,
     log: [],
     bag: (setup.bag ?? []).map((slot) => ({ item: slot.item, count: slot.count })),

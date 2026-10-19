@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getMove } from '../../data/dex';
 import { Rng } from '../rng';
 import { createFighter, type BattleFighter } from './fighter';
 import { createBattle, type BattleState } from './state';
@@ -68,6 +69,21 @@ describe('movePreview', () => {
     const preview = movePreview(battle(player(['swift'])), 'player', 0);
     expect(preview?.baseAccuracy).toBeNull();
     expect(preview?.accuracy).toBeNull();
+  });
+
+  it('shows the fogged odds the engine rolls', () => {
+    const move = getMove('tackle');
+    expect(move?.accuracy).toBe(100);
+    const state = createBattle({
+      player: [player(['tackle'])],
+      enemy: [createFighter({ id: 'enemy', speciesId: 'bulbasaur', level: 18 })],
+      rng: new Rng(1),
+      isWild: true,
+      fog: true,
+    });
+    expect(movePreview(state, 'player', 0)?.accuracy).toBe(80);
+    state.fog = false;
+    expect(movePreview(state, 'player', 0)?.accuracy).toBe(100);
   });
 
   it('returns null for an empty slot', () => {

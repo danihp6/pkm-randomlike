@@ -20,6 +20,7 @@ import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
 import { followerAnimKey, followerAnims } from '../render/pokemonFollower';
 import { ROUTE_LOOT } from '../data/loot';
 import { POPULATION } from '../data/population';
+import type { RoomBattlefield, RoomConditionId, RoomConditionKind } from '../data/battlefields';
 import { bossPartySize, type BossPartyKind } from '../data/bosses';
 import {
   OVERWORLD_SPRITE_TEXTURE_KEY,
@@ -122,6 +123,7 @@ import {
   type RouteStep,
   type RouteTrainer,
 } from '../engine/routes';
+import { roomBattlefield, roomKindOf } from '../engine/routes/battlefield';
 import {
   OPPOSITE_EDGE,
   bossTrainerId,
@@ -558,6 +560,12 @@ function megaStoneItemId(mapIndex: number): string {
 const TREE_TIP_DEPTH = 20;
 
 /**
+ * Render depth of a room's condition filter: over the tiles, the actors and the tree
+ * tips, under the dev hover marker (30) and the HUD (150).
+ */
+const BATTLEFIELD_DEPTH = 25;
+
+/**
  * Ground actors (the player and the trainers) sort by their foot position, so a
  * lower tile draws in front: a player standing north of a trainer passes behind
  * it. The whole band stays between the ground items (`5`) and the tree tips
@@ -766,6 +774,10 @@ export class RouteScene extends Phaser.Scene {
   /** The floor plan and the room it is playing, for map navigation and the portal. */
   private plan: MapPlan | null = null;
   private room: RoomView | null = null;
+  /** The condition the room on screen rolled, or null when it rolled none. */
+  private battlefield: RoomBattlefield | null = null;
+  /** The room's condition filter (one tinted rectangle over the room), or null. */
+  private battlefieldOverlay: Phaser.GameObjects.Rectangle | null = null;
   private settings!: Settings;
   /** The saved reduce-flashing preference, re-read with the settings (D45). */
   private reducedFlash = false;
@@ -1115,12 +1127,15 @@ export class RouteScene extends Phaser.Scene {
     this.plan = plan;
     this.room = view;
     const biome = getBiome(view.biomeId);
+    // The room's geometry, trainers and loot seed off a **stable** per-room
+    // index, not the run's moving counter, so walking back into a room shows the
+    // same room (`docs/maps-spec.md` §9). The room's battle condition reads the
+    // same index, so it too is the same on every visit.
+    const roomIndex = routeIndexForRoom(plan, view.roomId);
+    this.battlefield = roomBattlefield(this.run.seed, roomIndex, roomKindOf(view));
     this.buildRoute({
       seed: this.run.seed,
-      // The room's geometry, trainers and loot seed off a **stable** per-room
-      // index, not the run's moving counter, so walking back into a room shows the
-      // same room (`docs/maps-spec.md` §9).
-      routeIndex: routeIndexForRoom(plan, view.roomId),
+      routeIndex: roomIndex,
       shape: DEFAULT_SHAPE,
       width: view.width,
       height: view.height,
@@ -1145,6 +1160,28 @@ export class RouteScene extends Phaser.Scene {
       const stone = this.megaStoneItem(view);
       if (stone) this.route = { ...this.route, items: [...this.route.items, stone] };
     }
+    // Last: the filter needs `this.map`, which `buildRoute` → `applyRoute` sets.
+    this.buildBattlefieldOverlay();
+  }
+
+  /**
+   * Paints the room's battle condition as one tinted rectangle over the whole room.
+   * The filter is static — the roll and the paint happen once per room build — and
+   * the world camera keeps it while the pinned HUD camera ignores it.
+   */
+  private buildBattlefieldOverlay(): void {
+    if (this.battlefieldOverlay) {
+      this.battlefieldOverlay.destroy();
+      this.battlefieldOverlay = null;
+    }
+    if (!this.battlefield || !this.map) return;
+    const size = mapPixelSize(this.map, TILE_SIZE);
+    const overlay = this.add
+      .rectangle(0, 0, size.width, size.height, this.battlefield.tint, this.battlefield.alpha)
+      .setOrigin(0, 0)
+      .setDepth(BATTLEFIELD_DEPTH);
+    this.battlefieldOverlay = overlay;
+    this.hudCamera?.ignore([overlay]);
   }
 
   /** The portal is open once the map's boss has fallen, except on the final map (D31). */
@@ -6210,6 +6247,9 @@ export class RouteScene extends Phaser.Scene {
       // are re-read whenever the options screen closes, so a change reaches the
       // next battle.
       aiLevel: this.settings.aiLevel,
+      // The room's own condition, so every battle that starts here — trainers,
+      // the boss and wilds alike — begins under it (`docs/maps-spec.md` §7).
+      battlefield: this.battlefield,
     };
     this.pendingBattle = launch;
     this.scene.pause();
@@ -6224,6 +6264,28 @@ export class RouteScene extends Phaser.Scene {
     if (!IS_DEVELOP || this.gameOver || this.pendingBattle || this.releaseRoot || !this.scene.isActive())
       return;
     this.startBattle({ kind: 'wild', speciesId, level, key: `debug:${speciesId}` });
+  }
+
+  /**
+   * Dev only: the condition filter the route is drawing for the room on screen — the
+   * row it was rolled from and the tint/alpha the live overlay itself was painted
+   * with — or null when the room rolled no condition.
+   */
+  debugBattlefieldOverlay(): Readonly<{
+    id: RoomConditionId;
+    kind: RoomConditionKind;
+    tint: number;
+    alpha: number;
+    visible: boolean;
+  }> | null {
+    if (!IS_DEVELOP || !this.battlefield || !this.battlefieldOverlay) return null;
+    return {
+      id: this.battlefield.id,
+      kind: this.battlefield.kind,
+      tint: this.battlefieldOverlay.fillColor,
+      alpha: this.battlefieldOverlay.fillAlpha,
+      visible: this.battlefieldOverlay.visible,
+    };
   }
 
   /**
@@ -7027,6 +7089,11 @@ export class RouteScene extends Phaser.Scene {
     this.trainerSpinIndex.clear();
     this.trainerFacing.clear();
     this.chase = null;
+    if (this.battlefieldOverlay) {
+      this.battlefieldOverlay.destroy();
+      this.battlefieldOverlay = null;
+    }
+    this.battlefield = null;
     this.clearHoverInspect();
   }
 

@@ -180,6 +180,10 @@ becomes a huge maze. Retuning is a data edit, never a generator edit
   next map (heal stop intact: HP/PP only, never a resurrection).
 - The last map of a finite run holds the **final boss**: there is no portal, and
   beating it wins the run. Infinite mode reopens the portal forever.
+- The boss room rolls its **own** battle-start condition (`BOSS_BATTLEFIELD_CHANCE`,
+  `src/data/battlefields.ts`): **30%**, twice a regular room's 15% (§7). It is the
+  floor's headline fight, so it is likelier to begin under a weather, a terrain or a
+  field condition.
 
 ## 7. Special rooms & the economy (D33)
 
@@ -205,6 +209,29 @@ The **shop panel** is a HUD window like the party/bag panels: a Pokémon
 Mart-style list with prices that **only appears while the player is in the shop
 room** (it is opened at the counter with `E` and is unavailable anywhere else), so
 buying is tied to the room rather than to a menu key.
+
+### A room's battle condition
+
+A room's battles can begin under a **weather**, a **terrain** or a **field
+condition** — dense **fog**, **Gravity**, **Trick Room** — the `ROOM_BATTLEFIELDS`
+table of `src/data/battlefields.ts` (eleven rows, each with the overlay's `tint` and
+`alpha`). The condition belongs to the **room**, so **every** battle that starts
+there, a wild encounter included, begins under it.
+
+- Which room rolls, and how often: a room that fields **regular trainers** rolls one
+  with `ROOM_BATTLEFIELD_CHANCE` (**15%**), the **boss room** with its own
+  `BOSS_BATTLEFIELD_CHANCE` (**30%**, §6), and the map's **entry room** and every
+  **special leaf** (shop, mini-boss, mega-stone) are **quiet** — they roll none.
+- One roll per room, off the run seed and the room's **stable** index
+  (`routeIndexForRoom`, §9): `Rng(hashSeed(\`${seed}:battlefield:${roomIndex}\`))`,
+  one draw for the chance and one for the row. It is the roll's **own** stream, so
+  no other stream moves and a revisit shows the same condition.
+- A seeded weather/terrain/field condition lasts its own rule's canonical duration
+  (`WEATHER_TURNS`, `TERRAIN_TURNS`, `FIELD_CONDITION_TURNS`); dense fog carries no
+  turn count and is a field condition, never a weather (`docs/battle-spec.md` §4).
+- The route draws it as one **tinted filter** over the whole room, at the row's
+  `tint` and `alpha`, so a conditioned room reads as such before any battle starts.
+  It brings no player-facing text and no minimap marker.
 
 ### The economy (Poké Dollars)
 

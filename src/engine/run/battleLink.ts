@@ -1,3 +1,4 @@
+import type { RoomBattlefield } from '../../data/battlefields';
 import type { AiLevel } from '../battle/ai';
 import type { FighterSnapshot } from '../battle/fighter';
 import { hashSeed } from '../rng';
@@ -59,6 +60,8 @@ export type BattleLaunch = Readonly<{
   firstCatch: boolean;
   /** The difficulty the battle's AI thinks at, read from the settings at launch (D46). */
   aiLevel: AiLevel;
+  /** The condition the battle's room rolled, or null/absent when the room rolled none. */
+  battlefield?: RoomBattlefield | null;
 }>;
 
 export type BattleOutcome = 'win' | 'lose' | 'run' | 'capture';
