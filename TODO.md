@@ -2194,6 +2194,20 @@ atlas frame. What follows is the cut's own record.
   run field, so **no `SAVE_VERSION`** step. `D43` is amended for moves and abilities only:
   Pokémon species, items and biomes stay English.
 
+### Batch 23a2 - the 131 descriptions the dump does not carry
+- **Task-113** `Task-112` left 87 moves and 44 abilities with an English description because
+  PokeAPI's dump has no Spanish text for those Gen 9 rows; fill them from the game's own
+  Spanish text, never a machine translation, and empty `MISSING_ES`.
+- **Hot files:** `src/data/i18n/es/moves.json`, `abilities.json` and `meta.json` →
+  Task-113; `src/i18n/content.test.ts` → Task-113. It claims no scene, no UI, no
+  `src/engine/**` and no packed asset.
+- **Shape:** one task, **one batch behind Task-112** and before Batch 23b. The accessors,
+  the UI wiring and the English fallback already ship; this is the content half only. The
+  source is the official Spanish in-game text (the `sv-text` dump `common_esp.txt` where it
+  carries a row, else the official Spanish Pokédex copy), and the acceptance is that the four
+  `meta.json` missing lists shrink to zero and `MISSING_ES` becomes empty. No rule, RNG draw
+  or run field moves, so **no `SAVE_VERSION`** step.
+
 ### Batch 23b - the special-room layer leaves the route scene
 - **Task-111** `src/scenes/RouteScene.ts` stops owning every special room: each room kind becomes
   a descriptor module under `src/scenes/rooms/`, the scene keeps one auto-discovered registry and
@@ -4407,7 +4421,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* none. It claims `src/scenes/RouteScene.ts`, `src/ui/mapView.ts` and the new
       `src/scenes/rooms/**`; it runs **one batch behind `[Task-112]`** and **before `[Task-64]`**,
       so the room wave stops serializing. *(Batch 23b)*
-- [ ] **[Task-112] The moves and the abilities speak Spanish (the official copy).**
+- [x] **[Task-112] The moves and the abilities speak Spanish (the official copy).**
       **The gap.** `src/i18n/es.ts` overlays the UI chrome only; `D43` froze every dex name in
       English, so a Spanish run prints `Tackle`, `Blaze` and their English `desc`/`shortDesc` in
       the MOVES grid, the floating description, the ability popup, the learnset band and the
@@ -4439,6 +4453,23 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `docs/tech-decisions.md` `D43` and `docs/data-spec.md` §1; it is **the first batch after
       Batch 23**, in **Batch 23a**, before Batch 24, because it holds the two scenes the room wave
       needs. *(Batch 23a)*
+- [ ] **[Task-113] The 131 descriptions the PokeAPI dump does not carry.**
+      **The gap.** `[Task-112]` shipped the official Spanish name of all 835 moves and 310
+      abilities and the official description of 748 moves and 267 abilities. The remaining
+      **87 moves** and **44 abilities** are Gen 9 rows whose `move_flavor_text` /
+      `ability_flavor_text` has no `es` entry in the dump, so `MISSING_ES` falls back to
+      English. Their names are already Spanish; only the descriptions are missing.
+      **Fix shape:** fill `description` and `shortDescription` in
+      `src/data/i18n/es/moves.json` / `abilities.json` for exactly the ids in `MISSING_ES`,
+      from the game's own Spanish text (the `sv-text` dump's `common_esp.txt` where it carries
+      the row, else the official Spanish Pokédex copy) - **never a machine translation** -
+      regenerate `meta.json` so the four missing lists shrink to zero, and add the Gen 9
+      spot-checks to `src/i18n/content.test.ts` (e.g. `alluringvoice` = `Canto Encantador`,
+      `axekick` = `Patada Hacha`, `aquacutter` = `Tajo Acuático`, `opportunist` =
+      `Oportunista`). No UI change: the accessors already read the table.
+      *Dependencies:* `[Task-112]` (the tables and the accessors). It claims
+      `src/data/i18n/es/**` and `src/i18n/content.test.ts`; it runs **one batch behind
+      Task-112**, in **Batch 23a2**, before `[Task-111]`. *(Batch 23a2)*
 - [ ] **[Task-64] A casino room: a Team Rocket grunt, a slot machine the player pays to spin, and
       its prizes.** Reported in play: «añade tarea para añadir habitacion casino, aparece un sprite
       de un recluta team rocket, aparece una tragaperras y pagas por tiradas con posibilidad de

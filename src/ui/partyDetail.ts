@@ -1,5 +1,4 @@
 import {
-  getAbility,
   getMove,
   getNature,
   getSpecies,
@@ -9,6 +8,12 @@ import {
 } from '../data/dex';
 import { getBiome } from '../data/biomes';
 import { abilityText } from '../data/abilityText';
+import {
+  abilityDescriptionFromEnglish,
+  abilityNameFromEnglish,
+  moveName,
+  moveShortDescription,
+} from '../i18n/content';
 import { t, type TranslationKey } from '../i18n';
 import {
   restoreFighter,
@@ -141,12 +146,12 @@ function moveDetails(
     const basePower = move?.basePower ?? 0;
     return {
       moveId: slot.moveId,
-      name: move?.name ?? slot.moveId,
+      name: moveName(slot.moveId),
       type: move ? effectiveMoveType(ability, heldItem, move, ivs) : '',
       category: move?.category ?? 'Status',
       pp: slot.pp,
       maxPp: slot.maxPp,
-      desc: move?.shortDesc ?? move?.desc ?? '',
+      desc: moveShortDescription(slot.moveId),
       power: basePower,
       basePower,
       accuracy,
@@ -181,12 +186,10 @@ function catchLabel(caughtAt: CatchLocation | undefined): string | null {
  * The ability's one-line text: the hand-authored override first, then the dex,
  * or null when the id is unknown or both dex halves are blank.
  */
-function abilityDescription(id: string): string | null {
-  const override = abilityText(id);
+function abilityDescription(name: string): string | null {
+  const override = abilityText(name);
   if (override) return override;
-  const ability = getAbility(id);
-  if (!ability) return null;
-  return ability.shortDesc || ability.desc || null;
+  return abilityDescriptionFromEnglish(name) || null;
 }
 
 /**
@@ -205,7 +208,7 @@ export function fighterDetail(fighter: BattleFighter): MemberDetail {
     level: fighter.level,
     types: species?.types ?? fighter.types,
     nature: fighter.nature,
-    ability: fighter.ability,
+    ability: abilityNameFromEnglish(fighter.ability),
     abilityDesc: abilityDescription(fighter.ability),
     hp: fighter.hp,
     maxHp: fighter.maxHp,

@@ -130,6 +130,7 @@ import {
 import { InfoPopup } from '../ui/infoPopup';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import { t } from '../i18n';
+import { moveName, moveShortDescription } from '../i18n/content';
 import type { RouteScene } from './RouteScene';
 
 const MESSAGE_HOLD_MS = 900;
@@ -1721,7 +1722,7 @@ export class BattleScene extends Phaser.Scene {
     const legal = legalMoveIndices(player);
     this.menuItems = player.moves.map((slot, index) => {
       const move = getMove(slot.moveId);
-      const name = move?.name ?? slot.moveId;
+      const name = moveName(slot.moveId);
       const enabled = legal.length === 0 ? index === 0 : legal.includes(index);
       const preview = movePreview(this.state, 'player', index);
       return {
@@ -1739,7 +1740,7 @@ export class BattleScene extends Phaser.Scene {
           category: move?.category ?? 'Status',
           pp: slot.pp,
           maxPp: slot.maxPp,
-          desc: move?.shortDesc ?? move?.desc ?? '',
+          desc: moveShortDescription(slot.moveId),
           power: preview?.power ?? 0,
           basePower: preview?.basePower ?? 0,
           stab: preview?.stab ?? false,

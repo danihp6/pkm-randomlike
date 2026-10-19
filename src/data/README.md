@@ -9,6 +9,11 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   accessors live beside it (`species.ts`, `megas.ts`, `gmaxes.ts`, `moves.ts`,
   `abilities.ts`, `items.ts`, `learnsets.ts`, `types.ts`, `natures.ts`,
   `evolutions.ts`).
+- `i18n/es/` — **generated**, committed: the official Spanish move and ability
+  names and descriptions (`moves.json`, `abilities.json`, `meta.json`), produced
+  by `node scripts/build-i18n-content.mjs --source <PokeAPI csv dir>` from
+  PokeAPI's `es` names and flavour text and read by `src/i18n/content.ts`. The
+  English strings stay in the dex (`D43` amended for these two kinds).
 - `tilesets/` — one file per biome tileset — the forest's row in `frlg.ts`, wired
   by the `index.ts` registry — plus the shared `palettes.ts` and `placeholder.ts`,
   the procedural sheet kept as a **test fixture**. Contract in

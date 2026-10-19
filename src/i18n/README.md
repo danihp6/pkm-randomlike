@@ -1,6 +1,8 @@
 # `src/i18n/` — the keyed text tables and the resolver
 
-Every player-facing string is a key, not a literal (`D43`). The English table is the **source
+Every player-facing string is a key, not a literal (`D43`) — except the dex's move and ability
+names and descriptions, which are **content** and live in the generated tables under
+`src/data/i18n/es/`, read through `content.ts` (`D43` amended by `Task-112`). The English table is the **source
 table**: the one place an English string is written, flat and dotted, grouped by the surface it
 is drawn on. The Spanish table overlays it by key, so a missing Spanish line is a type error and
 the parity test fails the build. The resolver reads the current locale, replaces the value's
@@ -27,5 +29,7 @@ Two rules a new string must follow:
 
 - `en.ts` — the source table: every key with its English text, grouped by the surface it is drawn on.
 - `es.ts` — the Spanish overlay: the same keys, one line each, glyph- and width-checked.
-- `index.ts` — the locale state and the resolver: the shipped locales, the browser-tag rule, the token scanner and the interpolating lookup the whole game calls.
-- `index.test.ts` — the gate: key parity both ways, no unresolved placeholder, no Spanish param the English entry lacks, glyph coverage, the width guards, the detector and the resolver.
+- `index.ts` - the locale state and the resolver: the shipped locales, the browser-tag rule, the token scanner and the interpolating lookup the whole game calls.
+- `content.ts` - the content-localisation layer (`D43`, amended): the official Spanish move and ability names and descriptions, read from the generated tables under `src/data/i18n/es/` with the dex's English strings as fallback. Unlike `index.ts` it **is** allowed to read `src/data/`, because it resolves content, not a key.
+- `index.test.ts` - the gate: key parity both ways, no unresolved placeholder, no Spanish param the English entry lacks, glyph coverage, the width guards, the detector and the resolver.
+- `content.test.ts` - the content gate: the official names and descriptions, the English fallback, and the `MISSING_ES` list.

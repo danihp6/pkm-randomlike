@@ -252,6 +252,7 @@ import {
 import { clampScrollTop, maxScrollTop, scrollByRows, stepGridCursor, visibleRange } from '../ui/scroll';
 import { createTouchControls, type TouchControls } from '../ui/touchControls';
 import { t, type TranslationKey } from '../i18n';
+import { moveName, moveShortDescription } from '../i18n/content';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { listenForBack } from '../input/backButton';
 import { prefersTouchControls } from '../input/device';
@@ -3475,7 +3476,7 @@ export class RouteScene extends Phaser.Scene {
       const move = getMove(entry.moveId);
       return (
         entry.moveId.includes(query) ||
-        (move?.name ?? '').toLowerCase().includes(query) ||
+        moveName(entry.moveId).toLowerCase().includes(query) ||
         (move?.type ?? '').toLowerCase().includes(query)
       );
     });
@@ -3495,12 +3496,12 @@ export class RouteScene extends Phaser.Scene {
         ? t('detail.learnTm', { tm: tmNumber(entry.tmId ?? '') ?? '?' })
         : t('detail.learnLevel', { level: entry.level ?? '?' });
     return {
-      name: `${move?.name ?? entry.moveId}  ${tag}`,
+      name: `${moveName(entry.moveId)}  ${tag}`,
       type: move ? abilityMoveType(ability, move, ivs) : '',
       category: move?.category ?? 'Status',
       pp: move?.pp ?? 0,
       maxPp: move?.pp ?? 0,
-      desc: move?.shortDesc ?? '',
+      desc: moveShortDescription(entry.moveId),
       power: basePower,
       basePower,
       accuracy,
@@ -4229,7 +4230,7 @@ export class RouteScene extends Phaser.Scene {
     this.hudGrabMoved = false;
     if (pointer) {
       this.hudLearnGhost
-        .setText(getMove(moveId)?.name ?? moveId)
+        .setText(moveName(moveId))
         .setPosition(pointer.x, pointer.y)
         .setVisible(true);
       this.input.setDefaultCursor('grabbing');
@@ -6002,7 +6003,7 @@ export class RouteScene extends Phaser.Scene {
       const species = getSpecies(member?.fighter.speciesId ?? '');
       const name = member?.fighter.nickname ?? species?.name ?? t('common.unknownPokemon');
       for (const moveId of beat.learned) {
-        lines.push(t('route.learned', { name, move: getMove(moveId)?.name ?? moveId }));
+        lines.push(t('route.learned', { name, move: moveName(moveId) }));
       }
     }
     if (lines.length === 0) return;
