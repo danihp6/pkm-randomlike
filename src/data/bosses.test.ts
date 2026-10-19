@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOSS_PARTY, bossPartySize } from './bosses';
+import { BOSS_PARTY, DOUBLE_ACTIVES, bossIsDouble, bossPartySize } from './bosses';
 
 describe('BOSS_PARTY', () => {
   it('pins the four numbers', () => {
@@ -18,6 +18,27 @@ describe('BOSS_PARTY', () => {
       expect(row.size).toBeGreaterThanOrEqual(row.firstMap);
     }
     expect(BOSS_PARTY.boss.size).toBeGreaterThan(BOSS_PARTY.miniboss.size);
+  });
+
+  it('fields at least a full double battle on every row', () => {
+    for (const row of Object.values(BOSS_PARTY)) {
+      expect(row.size).toBeGreaterThanOrEqual(DOUBLE_ACTIVES);
+      expect(row.firstMap).toBeGreaterThanOrEqual(DOUBLE_ACTIVES);
+    }
+  });
+});
+
+describe('bossIsDouble', () => {
+  it('makes the map boss a double battle and leaves the mini-boss single', () => {
+    expect(bossIsDouble('boss')).toBe(true);
+    expect(bossIsDouble('miniboss')).toBe(false);
+    expect(DOUBLE_ACTIVES).toBe(2);
+  });
+
+  it('agrees with the row flag', () => {
+    for (const kind of ['boss', 'miniboss'] as const) {
+      expect(bossIsDouble(kind)).toBe(BOSS_PARTY[kind].double);
+    }
   });
 });
 

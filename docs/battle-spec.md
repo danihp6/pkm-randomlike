@@ -430,3 +430,64 @@ warning stays silent for both. What they do is on the **map**
 a won battle pays Honey Gather, once per room per floor. Registering the two rows
 widens `randomAbilityPool` by two ids, so the abilities a seed rolls are re-rolled
 **once**; a run that already stored one keeps it, and no battle rule changes.
+
+## 12. Double battles
+
+The map boss's fight is a **double battle**: each side fields **two active slots**
+at once (`DOUBLE_ACTIVES = 2`, `src/data/bosses.ts`). The engine half is the
+`double` flag on `BattleSetup` (`src/engine/battle/state.ts`); it defaults to
+`false`, so every single battle keeps slot 0 and its exact log.
+
+- **Slots.** A side carries `activeIndex` (slot 0, unchanged) and
+  `secondActiveIndex` (slot 1, `-1` when the battle is single or the slot is
+  empty). `createBattle({ ..., double: true })` fields slot 1 when the party has a
+  second member; a party of one still yields `-1`. `slotActiveIndex`,
+  `activeFighter` (slot 0 by default), `activeFighters`, `liveSlots`, `opponent`
+  (slot 0 by default) and `opposingSlots` are the accessors; reading slot 1 on a
+  battle that does not field it throws. A fainted fighter stays its slot's
+  occupant until it is replaced, and "live slot" means "the slot exists", not
+  "its occupant is alive".
+- **Commands and targets.** `FightCommand` and `SwitchCommand` carry a `slot`
+  (`0` by default). A slot 1 command is refused with
+  `There is no second active Pokémon.` when `double` is false or the slot is
+  empty. A single-target move names its foe slot through
+  `target: { side, slot }`; the target must be the opposing side and one of its
+  live slots, and a spread move ignores it. A self-target move ignores it too.
+  `takeDoubleTurn(state, playerCommands, enemyCommands)` is the two-active entry
+  point and `takeTurn` is exactly `takeDoubleTurn(state, { 0: player }, { 0: enemy })`.
+- **Order.** One entry per fighting slot (up to four) is sorted by priority, then
+  the per-bracket fractional tie-break, then `modifiedSpeed(state, side, slot)`,
+  Trick Room inverting the Speed comparison, with the seeded `rng.next()`
+  tie-break last — so four entries sort the same way twice for one seed.
+- **Moves and spread.** `useMove` resolves the attacker from `command.slot` and the
+  target from `command.target` (the foe's slot 0 by default), and threads it
+  through the hit roll, damage, status, boosts, volatiles, recoil, messages, the
+  faint side and the Substitute/Endure/contact hooks. A move whose dex `target` is
+  `allAdjacentFoes` or `allAdjacent` applies once to every live opposing slot
+  (slot 0 then slot 1) and `all` to every other live fighter on both sides,
+  spending PP **once** per use. Places that mean "the foe's side as a whole"
+  (screens, Tailwind, field conditions) stay side-level, and ability contexts may
+  keep the slot-0 foe.
+- **Faints and switches.** `performSwitch(state, side, partyIndex, slot = 0)` writes
+  the slot it is commanded for and clears `awaitingReplacement` only when no live
+  slot is left without a usable occupant. `resolveFaints` raises
+  `awaitingReplacement` for a side **iff** a live slot holds a fainted fighter and
+  a healthy reserve that is not already active exists; a side with one live slot
+  and no reserve keeps fighting. `autoReplace` fills each emptied live slot with
+  the first such reserve, slot 0 first. A side is defeated only when it has no
+  healthy Pokémon left (`hasHealthy`), and two faints on one turn on both sides is
+  a `draw`.
+- **Partner AI.** `chooseAiCommand(state, side, { slot })` commands the slot that
+  chose. In a double battle it scores **(move, target)** pairs over the live
+  opposing slots and picks the best expected value; a spread move is scored once
+  with no target, and it never aims at a dead slot. A wild's random policy and the
+  shipped flags/scoring, and the number of RNG draws a single battle makes, do not
+  change; an emptied or fainted slot asks for a `switch` when a reserve exists.
+  Mega Evolution and Gigantamax stay once per battle across both slots.
+- **Data.** `BOSS_PARTY[kind]` carries `double`: the **boss** row is `true`
+  (`3/6` members) and the **mini-boss** stays single (`2/3`), through
+  `bossIsDouble(kind)`; `bossPartySize` is unchanged. The battle screen that reads
+  the flag is the screen task's, not this rule's.
+- **Out of scope.** Full Showdown doubles: friend guard, Helping Hand, redirection,
+  spread damage reduction, per-slot side conditions and two Megas or two
+  Gigantamaxes.
