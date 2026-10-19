@@ -184,6 +184,13 @@ carries over.
   marker the minimap draws for it — comes from that room's **descriptor module**
   (`src/scenes/rooms/`); the route keeps **one auto-discovered registry** of them, so a
   new room kind is a new file and not a scene edit (`D47`).
+- The **Mart** and the **mini-boss reward** are **floating cards** drawn above the
+  HUD, not modal windows: each is moved by its own header and closed from its own
+  drawn ✕, neither takes a key (the quick keys, the pause menu and the arrows keep
+  working while it is up), neither is persisted and neither pauses the walker. They
+  are **pointer-only** and **drag-driven** — a row is taken by dragging it onto the
+  bag or a living member, and the reward's Pokémon rows onto the party — so the
+  route HUD's pointer-first rule holds for them too.
 - You start a run by picking one of three starters drawn from the base forms of
   every evolution line with two consecutive evolutions ahead (itself plus two
   more in a chain), so every starter has room to grow; a branching line whose
@@ -449,12 +456,13 @@ collapses it again, exactly as a click on its collapse icon does, and a pane nev
 answers to a key. Every route-HUD operation is reached with the **pointer**, and
 each pane draws its own highlight for the member, stack or move in hand. **The
 pause menu is the one keyboard surface the route keeps** (`cancel`, arrows,
-`confirm`); the Mart and the mini-boss reward keep their own arrow/confirm paths,
-and a focused text field — the nickname and the learnset search field — receives
-typed characters and swallows the arrows while it is being typed into, which is
-text editing, not pane browsing. The release overlay and the level-up popup keep
-`confirm`. The battle, the menus, the settings and the run-over screen stay fully
-keyboard playable, as the table's rows below say; only the route HUD changed.
+`confirm`); the Mart and the mini-boss reward are **pointer-only floating cards**
+that take no key at all, and a focused text field — the nickname and the learnset
+search field — receives typed characters and swallows the arrows while it is
+being typed into, which is text editing, not pane browsing. The release overlay
+and the level-up popup keep `confirm`. The battle, the menus, the settings and the
+run-over screen stay fully keyboard playable, as the table's rows below say; only
+the route HUD changed.
 
 | Surface | File | Keyboard / pointer path | Verdict |
 | --- | --- | --- | --- |
@@ -474,8 +482,8 @@ keyboard playable, as the table's rows below say; only the route HUD changed.
 | Learnset pool + scroll | `RouteScene.scrollLearnset` | pointer: the wheel, the `<` / `>` arrows or a drag on the band; drop a pool move on a slot | pointer |
 | Panel drag | `RouteScene.startPanelDrag` | none: a layout affordance, persisted in `HudLayout` | pointer-only by intent |
 | Reset hold ring | `RouteScene.updateReset` | `reset` held | keyboard |
-| Mart panel | `RouteScene.handleShopAction` | arrows/confirm/cancel, `left`/`right` tabs | keyboard |
-| Mini-boss reward | `RouteScene.handleMiniBossRewardAction` | arrows/confirm | keyboard |
+| Mart panel | `RouteScene.beginRowDrag` | pointer: drag a BUY row onto the bag or a member; a SELL row is a click; move the card by its header, close it from its ✕ | pointer |
+| Mini-boss reward | `RouteScene.takeMiniBossReward` | pointer: drag an item row onto the bag or a member and a Pokémon row onto the party; close the card from its ✕ | pointer |
 | Pause menu | `RouteScene.handlePauseMenuAction` | `cancel`, arrows, `confirm` | keyboard |
 | Release overlay / level-up popup | `RouteScene.playReleaseBeats` | `confirm` advances, any input dismisses | keyboard |
 | Battle feed / result screen | `BattleScene.onConfirm` | `confirm` (click only advances) | keyboard |

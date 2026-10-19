@@ -120,7 +120,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'mart.noMoney': 'No tienes suficiente dinero.',
   'mart.bought': 'Has comprado {name} por ¥{amount}.',
   'mart.sold': 'Has vendido {name} por ¥{amount}.',
-  'mart.controls': '{confirm}: comprar / vender    {cancel}: salir',
+  'mart.controls': 'Arrastra una fila a la mochila o a un Pokémon.',
 
   // casino — the slot machine's window
   'casino.title': 'TRAGAPERRAS',
@@ -134,7 +134,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   // reward — the mini-boss reward window
   'reward.title': 'RECOMPENSA DE MINIJEFE',
   'reward.choose': 'Elige una.',
-  'reward.controls': '{confirm}: coger    {cancel}: salir',
+  'reward.controls': 'Arrastra una recompensa a la mochila o al equipo.',
 
   // trade — the trade room's window
   'trade.title': 'INTERCAMBIO',

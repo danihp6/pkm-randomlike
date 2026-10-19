@@ -1,12 +1,12 @@
 import type Phaser from 'phaser';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../../data/itemIcons';
 import { getItem } from '../../data/items';
-import { keyLabel, type KeybindAction } from '../../data/keybinds';
-import { bandForMap } from '../../engine/run';
+import { bandForMap, equipHeldItem } from '../../engine/run';
+import { useItemOn } from '../../engine/run/items';
 import { hashSeed, Rng } from '../../engine/rng';
 import { TILE_SIZE } from '../../engine/tileset';
 import { t, type TranslationKey } from '../../i18n';
-import { loadSettings } from '../../settings';
+import { addFloatingPanel, type FloatingPanel } from '../../ui/floatingPanel';
 import {
   FRLG_ACCENT,
   FRLG_MUTED,
@@ -27,26 +27,27 @@ import {
   type ShopSlot,
 } from '../../ui/shop';
 import { SHOP_COUNTER_TEXTURE_KEY } from '../BootScene';
-import type { RoomDescriptor, RoomHost, RoomPanel } from './types';
+import type { RoomDescriptor, RoomDrop, RoomHost, RoomPanel } from './types';
 
 /**
  * The **shop** room (`docs/maps-spec.md` §7, D33, D47): its counter fixture and the
- * whole Mart window. The panel's shapes, prices and keys are exactly the ones the
- * scene drew before it became a descriptor module; only the objects' owner changed.
- * The scene keeps the keyboard slot it hands over through `RoomHost.openPanel` and
- * the counter tile it blocks movement on.
+ * whole Mart window. The Mart is a **floating panel** now: it draws no scrim, takes
+ * no key and the route keeps walking behind it. A BUY row is taken by dragging it
+ * onto the bag or a member; a SELL row still sells with one click.
  */
 
 /** The Mart window: BUY / SELL tabs over the floor's own stock. */
 const SHOP_W = 640;
 const SHOP_H = 540;
-const SHOP_PAD = 24;
 const SHOP_ROW_H = 44;
 const SHOP_ROWS = 7;
 const SHOP_TAB_W = 108;
 const SHOP_TAB_H = 30;
 const SHOP_TAB_GAP = 6;
 const SHOP_MODES = ['buy', 'sell'] as const;
+
+/** The content offset of the list window: below the money line and the tabs. */
+const SHOP_LIST_TOP = 68;
 
 type ShopMode = (typeof SHOP_MODES)[number];
 
@@ -66,6 +67,7 @@ type ShopRowObjects = {
   name: Phaser.GameObjects.BitmapText;
   price: Phaser.GameObjects.BitmapText;
   count: Phaser.GameObjects.BitmapText;
+  zone: Phaser.GameObjects.Zone;
 };
 
 type ShopTabObjects = {
@@ -76,9 +78,11 @@ type ShopTabObjects = {
 
 /** The host the open Mart belongs to, or null while no Mart is open. */
 let panelHost: RoomHost | null = null;
-/** The Mart panel: its root, stock, tab and the row objects it repaints. */
-let shopRoot: Phaser.GameObjects.Container | null = null;
+/** The floating card the Mart draws on, or null while it is closed. */
+let shopPanel: FloatingPanel | null = null;
+let shopScene: Phaser.Scene | null = null;
 let shopMode: ShopMode = 'buy';
+/** The row under the pointer, painted as the hover highlight; `-1` for none. */
 let shopIndex = 0;
 let shopScroll = 0;
 let shopStock: readonly ShopSlot[] = [];
@@ -108,14 +112,11 @@ function paintTab(bg: Phaser.GameObjects.Rectangle, active: boolean): void {
 /**
  * Opens the Mart (`docs/maps-spec.md` §7, D33): only in a shop room, at the counter.
  * The stock is rolled once per map on a dedicated stream, so reopening the Mart
- * shows the same shelves. The panel owns the input until `Q`. The caller has
- * already refused the interact while a battle, a beat, the pause menu or the run
- * over owns the screen.
+ * shows the same shelves. The panel is floating (`D45`): it never takes the
+ * keyboard and the walker keeps running behind it.
  */
 function openShop(host: RoomHost): void {
   if (host.panelOpen()) return;
-  // The Mart is modal: it takes the keyboard off whatever HUD pane held it.
-  host.releaseHudKeyboard();
   const key = `${host.run.seed}:${host.run.mapIndex}`;
   if (shopStockKey !== key) {
     const band = bandForMap(host.run.mapIndex);
@@ -134,28 +135,35 @@ function openShop(host: RoomHost): void {
 
 /** Tears down the Mart panel (the scene calls it when the room changes). */
 function closeShop(): void {
-  if (!shopRoot) return;
-  shopRoot.destroy(true);
-  shopRoot = null;
+  if (!shopPanel) return;
+  shopScene?.input.off('wheel', handleShopWheel);
+  shopPanel.destroy();
+  shopPanel = null;
+  shopScene = null;
   shopRows = [];
   shopTabs = [];
   panelHost = null;
+  shopIndex = 0;
+  shopScroll = 0;
 }
 
-/** Builds the Mart's static frame and its row/tab objects once per open. */
+/** Builds the Mart's floating card and its row/tab objects once per open. */
 function buildShopPanel(host: RoomHost): void {
   const scene = host.scene;
-  const { width, height } = scene.scale;
-  const x = (width - SHOP_W) / 2;
-  const y = (height - SHOP_H) / 2;
-  const left = x + SHOP_PAD;
-  const right = x + SHOP_W - SHOP_PAD;
-  const children: Phaser.GameObjects.GameObject[] = [
-    scene.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0),
-    addFrlgWindow(scene, x, y, SHOP_W, SHOP_H),
-    addFrlgText(scene, left, y + 20, t('mart.title'), { size: 24, tint: FRLG_INK }),
-  ];
-  shopMoneyText = addFrlgText(scene, right, y + 24, '', {
+  shopScene = scene;
+  const panel = addFloatingPanel(scene, {
+    width: SHOP_W,
+    height: SHOP_H,
+    title: t('mart.title'),
+    onClose: () => host.closePanel(),
+  });
+  shopPanel = panel;
+  const content = panel.content;
+  const left = content.x;
+  const right = content.x + content.w;
+  const children: Phaser.GameObjects.GameObject[] = [];
+
+  shopMoneyText = addFrlgText(scene, right, content.y, '', {
     size: 16,
     tint: FRLG_MUTED,
     origin: [1, 0],
@@ -166,7 +174,7 @@ function buildShopPanel(host: RoomHost): void {
   shopTabs = [];
   SHOP_MODES.forEach((mode, i) => {
     const tabX = left + i * (SHOP_TAB_W + SHOP_TAB_GAP);
-    const tabY = y + 58;
+    const tabY = content.y + 26;
     const bg = scene.add
       .rectangle(tabX, tabY, SHOP_TAB_W, SHOP_TAB_H, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
       .setOrigin(0, 0);
@@ -184,10 +192,10 @@ function buildShopPanel(host: RoomHost): void {
     children.push(bg, label, zone);
   });
 
-  // The list window: a fixed set of rows the pointer and the cursor drive.
+  // The list window: a fixed set of rows the pointer drives and the wheel scrolls.
   const listX = left;
-  const listY = y + 100;
-  const listW = SHOP_W - SHOP_PAD * 2;
+  const listY = content.y + SHOP_LIST_TOP;
+  const listW = content.w;
   const listH = SHOP_ROWS * SHOP_ROW_H + 12;
   children.push(addFrlgWindow(scene, listX, listY, listW, listH));
 
@@ -231,50 +239,58 @@ function buildShopPanel(host: RoomHost): void {
       shopIndex = index;
       refreshShop();
     });
-    zone.on('pointerdown', () => {
-      shopIndex = shopScroll + i;
+    zone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      const index = shopScroll + i;
+      if (index >= shopTotal()) return;
+      shopIndex = index;
       refreshShop();
-      activateShop();
+      if (shopMode === 'sell') {
+        activateShop();
+        return;
+      }
+      const slot = shopStock[index];
+      const row = buyRows(host.run, shopStock)[index];
+      if (!slot || !row?.draggable) return;
+      host.beginRowDrag?.({
+        itemId: slot.itemId,
+        label: row.name,
+        pointer: { x: pointer.x, y: pointer.y },
+        onDrop: (drop) => dropBuyRow(host, slot, drop),
+      });
     });
-    shopRows.push({ highlight, icon, name, price, count });
+    shopRows.push({ highlight, icon, name, price, count, zone });
     children.push(highlight, icon, name, price, count, zone);
   }
+
+  const messageY = listY + listH + 12;
   shopEmpty = addFrlgText(scene, listX + listW / 2, listY + 20, '', {
     size: 16,
     tint: FRLG_MUTED,
     origin: [0.5, 0],
   });
-  children.push(shopEmpty);
-
-  shopMessageText = addFrlgText(scene, left, y + SHOP_H - 74, '', { size: 16, tint: FRLG_INK });
+  shopMessageText = addFrlgText(scene, left, messageY, '', { size: 16, tint: FRLG_INK });
   children.push(
+    shopEmpty,
     shopMessageText,
-    addFrlgText(
-      scene,
-      right,
-      y + SHOP_H - 42,
-      t('mart.controls', {
-        confirm: keyLabel(loadSettings().keybinds.confirm),
-        cancel: keyLabel(loadSettings().keybinds.cancel),
-      }),
-      { size: 16, tint: FRLG_MUTED, origin: [1, 0] },
-    ),
+    addFrlgText(scene, right, messageY + 24, t('mart.controls'), {
+      size: 16,
+      tint: FRLG_MUTED,
+      origin: [1, 0],
+    }),
   );
 
-  shopRoot = scene.add.container(0, 0, children).setDepth(500);
-  scene.cameras.main.ignore(shopRoot);
+  panel.root.add(children);
+  scene.input.on('wheel', handleShopWheel);
 }
 
-/** Repaints the Mart for the current tab, cursor and the run's money and bag. */
+/** Repaints the Mart for the current tab, hover and the run's money and bag. */
 function refreshShop(): void {
   const host = panelHost;
-  if (!shopRoot || !host) return;
+  if (!shopPanel || !host) return;
   const rows = shopMode === 'buy' ? buyRows(host.run, shopStock) : sellRows(host.run);
   const total = rows.length;
-  shopIndex = total === 0 ? 0 : Math.max(0, Math.min(shopIndex, total - 1));
+  shopIndex = total === 0 ? -1 : Math.min(shopIndex, total - 1);
   shopScroll = Math.max(0, Math.min(shopScroll, Math.max(0, total - SHOP_ROWS)));
-  if (shopIndex < shopScroll) shopScroll = shopIndex;
-  else if (shopIndex >= shopScroll + SHOP_ROWS) shopScroll = shopIndex - SHOP_ROWS + 1;
 
   shopMoneyText.setText(t('mart.money', { amount: host.run.money }));
   shopMessageText.setText(shopMessage);
@@ -291,7 +307,8 @@ function refreshShop(): void {
     const index = shopScroll + i;
     const row = rows[index];
     const visible = row !== undefined;
-    rowObject.highlight.setVisible(visible && index === shopIndex);
+    const draggable = row?.draggable === true;
+    rowObject.highlight.setVisible(visible && index === shopIndex && (shopMode === 'sell' || draggable));
     rowObject.icon.setVisible(visible);
     rowObject.name.setVisible(visible);
     rowObject.price.setVisible(visible);
@@ -300,6 +317,7 @@ function refreshShop(): void {
       rowObject.name.setText('');
       rowObject.price.setText('');
       rowObject.count.setText('');
+      rowObject.zone.disableInteractive();
       return;
     }
     rowObject.icon.setFrame(itemIconFrame(row.itemId) ?? 0);
@@ -307,34 +325,39 @@ function refreshShop(): void {
     rowObject.price.setText(`¥${row.price}`);
     rowObject.price.setTint(shopMode === 'buy' && !row.affordable ? 0xb0304a : FRLG_MUTED);
     rowObject.count.setText(row.owned > 0 ? `x${row.owned}` : '');
+    // An unaffordable BUY row is not a drag source, so it takes no hand cursor.
+    if (shopMode === 'buy' && !draggable) rowObject.zone.disableInteractive();
+    else rowObject.zone.setInteractive({ useHandCursor: true });
   });
 }
 
-/** The Mart's keys: move, switch tab, trade on `E`, leave on `Q`. */
-function handleShopAction(host: RoomHost, action: KeybindAction): void {
-  switch (action) {
-    case 'up':
-      moveShop(-1);
-      return;
-    case 'down':
-      moveShop(1);
-      return;
-    case 'left':
-      cycleShopMode(-1);
-      return;
-    case 'right':
-      cycleShopMode(1);
-      return;
-    case 'confirm':
-    case 'interact':
-      activateShop();
-      return;
-    case 'cancel':
-      host.closePanel();
-      return;
-    default:
-      return;
+/** The wheel scrolls the row list, one row at a time, clamped to the rows. */
+function handleShopWheel(
+  pointer: Phaser.Input.Pointer,
+  _objects: unknown,
+  _dx: number,
+  dy: number,
+): void {
+  const panel = shopPanel;
+  const host = panelHost;
+  if (!panel || !host) return;
+  const rect = panel.rect();
+  const pointX = pointer.x - rect.x;
+  const pointY = pointer.y - rect.y;
+  const listX = panel.content.x;
+  const listY = panel.content.y + SHOP_LIST_TOP;
+  const listW = panel.content.w;
+  const listH = SHOP_ROWS * SHOP_ROW_H + 12;
+  if (pointX < listX || pointX > listX + listW || pointY < listY || pointY > listY + listH) {
+    return;
   }
+  const total = shopMode === 'buy' ? shopStock.length : sellableStacks(host.run).length;
+  if (total <= SHOP_ROWS) return;
+  const next = Math.max(0, Math.min(total - SHOP_ROWS, shopScroll + (dy > 0 ? 1 : -1)));
+  if (next === shopScroll) return;
+  shopScroll = next;
+  shopIndex = -1;
+  refreshShop();
 }
 
 function switchShopMode(mode: ShopMode): void {
@@ -346,18 +369,6 @@ function switchShopMode(mode: ShopMode): void {
   refreshShop();
 }
 
-function cycleShopMode(delta: number): void {
-  const index = SHOP_MODES.indexOf(shopMode);
-  switchShopMode(SHOP_MODES[(index + delta + SHOP_MODES.length) % SHOP_MODES.length]);
-}
-
-function moveShop(delta: number): void {
-  const total = shopTotal();
-  if (total === 0) return;
-  shopIndex = (shopIndex + delta + total) % total;
-  refreshShop();
-}
-
 /** How many rows the current tab holds: the stock, or the sellable stacks. */
 function shopTotal(): number {
   const host = panelHost;
@@ -365,40 +376,47 @@ function shopTotal(): number {
   return shopMode === 'buy' ? shopStock.length : sellableStacks(host.run).length;
 }
 
-/** Buys or sells the highlighted row, then repaints the Mart and the bag HUD. */
+/** Sells the hovered row (the SELL tab's shipped click), then repaints the Mart. */
 function activateShop(): void {
   const host = panelHost;
-  if (!host) return;
-  if (shopMode === 'buy') {
-    const slot = shopStock[shopIndex];
-    if (!slot) return;
-    const trade = buyItem(host.run, slot);
-    if (!trade.ok) {
-      shopMessage = t('mart.noMoney');
-      refreshShop();
-      return;
-    }
-    host.commitRun(trade.run);
-    const name = getItem(slot.itemId)?.name ?? slot.itemId;
-    shopMessage = t('mart.bought', { name, amount: trade.amount });
-  } else {
-    const row = sellRows(host.run)[shopIndex];
-    if (!row) return;
-    const trade = sellItem(host.run, row.itemId);
-    if (!trade.ok) return;
-    host.commitRun(trade.run);
-    shopMessage = t('mart.sold', { name: row.name, amount: trade.amount });
-  }
+  if (!host || shopMode !== 'sell') return;
+  const row = sellRows(host.run)[shopIndex];
+  if (!row) return;
+  const trade = sellItem(host.run, row.itemId);
+  if (!trade.ok) return;
+  host.commitRun(trade.run);
+  shopMessage = t('mart.sold', { name: row.name, amount: trade.amount });
   refreshShop();
 }
 
-/** The Mart as the scene holds it: one panel, keyed while it owns the keyboard. */
+/**
+ * The BUY row's drop (`D45`): the units are bought once and the bag owns them. A
+ * drop on a member then spends or equips one as the HUD would; an item that does
+ * not apply stays in the bag, never lost and never re-charged.
+ */
+function dropBuyRow(host: RoomHost, slot: ShopSlot, drop: RoomDrop): void {
+  if (drop.onto !== 'bag' && drop.onto !== 'member') return;
+  const trade = buyItem(host.run, slot);
+  if (!trade.ok) {
+    shopMessage = t('mart.noMoney');
+    refreshShop();
+    return;
+  }
+  let run = trade.run;
+  if (drop.onto === 'member') {
+    const kind = getItem(slot.itemId)?.kind;
+    if (kind === 'heal' || kind === 'status') run = useItemOn(run, drop.memberId, slot.itemId);
+    else if (kind === 'held') run = equipHeldItem(run, drop.memberId, slot.itemId);
+  }
+  host.commitRun(run);
+  const name = getItem(slot.itemId)?.name ?? slot.itemId;
+  shopMessage = t('mart.bought', { name, amount: trade.amount });
+  refreshShop();
+}
+
+/** The Mart as the scene holds it: one floating panel, keyed by its own ✕. */
 const PANEL: RoomPanel = {
-  handle(action) {
-    const host = panelHost;
-    if (!host) return;
-    handleShopAction(host, action);
-  },
+  modal: false,
   close() {
     closeShop();
   },

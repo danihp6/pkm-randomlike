@@ -132,6 +132,8 @@ export type ShopRow = Readonly<{
   owned: number;
   /** True when a **buy** row is affordable; always true for a sell row. */
   affordable: boolean;
+  /** True only for a BUY row the run can afford; a sell row is never draggable. */
+  draggable: boolean;
 }>;
 
 /** A row's label: a multi-unit row says how many units one purchase adds. */
@@ -139,13 +141,15 @@ const rowName = (name: string, count: number): string => (count > 1 ? `${count}x
 
 const toRow = (run: RunState, slot: ShopSlot): ShopRow => {
   const item = getItem(slot.itemId);
+  const affordable = run.money >= slot.price;
   return {
     itemId: slot.itemId,
     name: item ? rowName(item.name, slot.count) : slot.itemId,
     price: slot.price,
     count: slot.count,
     owned: itemCount(run, slot.itemId),
-    affordable: run.money >= slot.price,
+    affordable,
+    draggable: affordable,
   };
 };
 
@@ -160,6 +164,8 @@ export function sellRows(run: RunState): readonly ShopRow[] {
     ...toRow(run, { itemId: stack.itemId, price: sellPriceOf(stack.itemId), count: 1 }),
     // A sale is always available: the price is what the shop pays, not a cost.
     affordable: true,
+    // Selling stays a click: a row is only a drag source on the BUY tab.
+    draggable: false,
   }));
 }
 

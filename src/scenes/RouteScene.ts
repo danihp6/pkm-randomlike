@@ -155,9 +155,9 @@ import { parseFrameMapExport, routeFromFrameMapExport, serializeFrameMap } from 
 import { BAG_CATEGORIES, bagCategoryLabel, bagForCategory, type BagCategory } from '../ui/bag';
 import {
   pokemonRewardChoices,
-  pokemonRewardRowLabel,
   rewardChoices,
-  type PokemonRewardOption,
+  rewardRows,
+  type RewardRow,
 } from '../ui/rewards';
 import { buildMapView, type MapRoomMarker, type MapViewRoom } from '../ui/mapView';
 import {
@@ -226,6 +226,7 @@ import {
   type ReleaseBeat,
 } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
+import { addFloatingPanel, type FloatingPanel } from '../ui/floatingPanel';
 import {
   FRLG_ACCENT,
   FRLG_BADGE_INK,
@@ -256,7 +257,7 @@ import {
   TRAINER_TEXTURE_KEY,
 } from './BootScene';
 import { collectDescriptors, type RoomRegistry } from './rooms/registry';
-import type { RoomDescriptor, RoomHost, RoomPanel } from './rooms/types';
+import type { RoomDescriptor, RoomDrop, RoomHost, RoomPanel, RoomRowDrag } from './rooms/types';
 
 /**
  * Every special room kind's descriptor module (`D47`), discovered from the folder
@@ -529,28 +530,14 @@ const NOTICE_TOP = 24;
 /** The mini-boss reward choice (Phase 9): one window of item and Pokémon rows. */
 const REWARD_W = 560;
 const REWARD_H = 660;
-const REWARD_PAD = 24;
 const REWARD_ROW_H = 84;
 /** How many items a beaten mini-boss offers (`docs/maps-spec.md` §7). */
 const MINI_BOSS_REWARD_CHOICES = 3;
 /** How many unidentified Pokémon the same window offers. */
 const MINI_BOSS_REWARD_POKEMON_CHOICES = 3;
 
-type MiniBossRewardRowKind = 'item' | 'pokemon';
-
-/**
- * One drawn reward row: the two kinds share the highlight and the label slot,
- * while the icon and the description exist only on an item row.
- */
-type MiniBossRewardRow = {
-  kind: MiniBossRewardRowKind;
-  highlight: Phaser.GameObjects.Rectangle;
-  /** The item's atlas icon; `null` on a Pokémon row (nothing is drawn there). */
-  icon: Phaser.GameObjects.Image | null;
-  name: Phaser.GameObjects.BitmapText;
-  /** The item's short description; `null` on a Pokémon row. */
-  desc: Phaser.GameObjects.BitmapText | null;
-};
+/** The drag ghost a room row draws: above every panel, below nothing. */
+const ROW_DRAG_DEPTH = 640;
 
 /**
  * Render depth of a wall cell's walkable tip: above the actors so the character
@@ -1046,13 +1033,14 @@ export class RouteScene extends Phaser.Scene {
   private roomRegistry: RoomRegistry = collectDescriptors(ROOM_MODULES);
   /** The room's own panel while it owns the keyboard, or null; the scene owns the slot. */
   private roomPanel: RoomPanel | null = null;
-  /** The mini-boss reward window: its root, options, cursor and callback. */
+  /** The mini-boss reward window: its floating card, root and callback. */
+  private miniBossRewardPanel: FloatingPanel | null = null;
   private miniBossRewardRoot: Phaser.GameObjects.Container | null = null;
-  private miniBossRewardItems: readonly string[] = [];
-  private miniBossRewardPokemon: readonly PokemonRewardOption[] = [];
-  private miniBossRewardIndex = 0;
   private miniBossRewardOnDone: (() => void) | null = null;
-  private miniBossRewardRows: MiniBossRewardRow[] = [];
+  /** The room row in hand: the scene owns its ghost and resolves its drop. */
+  private roomRowDrag: RoomRowDrag | null = null;
+  private roomRowGhostIcon: Phaser.GameObjects.Image | null = null;
+  private roomRowGhostLabel: Phaser.GameObjects.BitmapText | null = null;
 
   constructor() {
     super('Route');
@@ -1160,9 +1148,10 @@ export class RouteScene extends Phaser.Scene {
       releaseHudKeyboard: () => undefined,
       openPanel: (panel) => scene.openPanel(panel),
       closePanel: () => scene.closePanel(),
-      panelOpen: () => scene.roomPanel !== null,
+      panelOpen: () => scene.panelOpen(),
       startTrainerBattle: (trainer) => scene.startTrainerBattle(trainer),
       showNotice: (notice) => scene.showNotice(notice),
+      beginRowDrag: (drag) => scene.beginRowDrag(drag),
     };
   }
 
@@ -1208,6 +1197,11 @@ export class RouteScene extends Phaser.Scene {
   /** True while a room's own panel owns the screen. */
   private panelOpen(): boolean {
     return this.roomPanel !== null;
+  }
+
+  /** True while a room panel is **modal**: a floating one never gates the route. */
+  private modalPanelOpen(): boolean {
+    return this.roomPanel !== null && this.roomPanel.modal !== false;
   }
 
   /**
@@ -1421,11 +1415,12 @@ export class RouteScene extends Phaser.Scene {
     this.releaseArmed = false;
     this.roomPanel = null;
     this.shopCounter = null;
+    this.miniBossRewardPanel = null;
     this.miniBossRewardRoot = null;
-    this.miniBossRewardItems = [];
-    this.miniBossRewardPokemon = [];
     this.miniBossRewardOnDone = null;
-    this.miniBossRewardRows = [];
+    this.roomRowDrag = null;
+    this.roomRowGhostIcon = null;
+    this.roomRowGhostLabel = null;
     this.facing = 'down';
     this.walkTween = null;
     this.followerSprite = null;
@@ -1569,14 +1564,10 @@ export class RouteScene extends Phaser.Scene {
       this.closeLearnPopup();
       return;
     }
-    // A room's own panel owns the input while it is open.
-    if (this.roomPanel) {
-      this.roomPanel.handle(action);
-      return;
-    }
-    // The mini-boss reward owns the input while it is open.
-    if (this.miniBossRewardRoot) {
-      this.handleMiniBossRewardAction(action);
+    // A room's own **modal** panel owns the input while it is open; the floating
+    // Mart and the reward take no key, so the route's quick keys keep working.
+    if (this.roomPanel && this.roomPanel.modal !== false) {
+      this.roomPanel.handle?.(action);
       return;
     }
     if (this.pauseMenuOpen) {
@@ -3157,8 +3148,10 @@ export class RouteScene extends Phaser.Scene {
    */
   private handleHudPointerDown(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive()) return;
-    // The Mart panel is modal: its own zones own the pointer while it is up.
-    if (this.panelOpen() || this.miniBossRewardRoot) return;
+    // A room row's own press starts its drag; nothing under it sees the press.
+    if (this.roomRowDrag) return;
+    // A modal room panel's own zones own the pointer while it is up.
+    if (this.modalPanelOpen()) return;
     // The level-up popup is modal: a click just dismisses it.
     if (this.learnPopupOpen) {
       this.closeLearnPopup();
@@ -3295,9 +3288,94 @@ export class RouteScene extends Phaser.Scene {
     this.refreshHud();
   }
 
+  /**
+   * Starts a room row's drag (`D45`): the item icon or the row's own printed label
+   * follows the pointer and the scene resolves the drop. A row never buys on press.
+   */
+  private beginRowDrag(drag: RoomRowDrag): void {
+    this.endRowDrag();
+    this.roomRowDrag = drag;
+    this.ensureRowDragGhost();
+    const frame = drag.itemId === null ? null : itemIconFrame(drag.itemId);
+    if (frame !== null && this.roomRowGhostIcon) {
+      this.roomRowGhostIcon
+        .setFrame(frame)
+        .setPosition(drag.pointer.x, drag.pointer.y)
+        .setVisible(true);
+      this.roomRowGhostLabel?.setVisible(false);
+    } else {
+      this.roomRowGhostIcon?.setVisible(false);
+      this.roomRowGhostLabel
+        ?.setPosition(drag.pointer.x, drag.pointer.y)
+        .setText(drag.label)
+        .setVisible(true);
+    }
+    this.input.setDefaultCursor('grabbing');
+  }
+
+  /** The two ghost objects, built once and reused by every room row drag. */
+  private ensureRowDragGhost(): void {
+    if (!this.roomRowGhostIcon) {
+      this.roomRowGhostIcon = this.add
+        .image(0, 0, ITEM_ICON_TEXTURE_KEY, 0)
+        .setDepth(ROW_DRAG_DEPTH)
+        .setVisible(false);
+      this.cameras.main.ignore(this.roomRowGhostIcon);
+    }
+    if (!this.roomRowGhostLabel) {
+      this.roomRowGhostLabel = addFrlgText(this, 0, 0, '', {
+        size: 16,
+        tint: FRLG_INK,
+        origin: [0.5, 0.5],
+      })
+        .setDepth(ROW_DRAG_DEPTH)
+        .setVisible(false);
+      this.cameras.main.ignore(this.roomRowGhostLabel);
+    }
+  }
+
+  /** Puts the ghost away and restores the cursor; says nothing about the drop. */
+  private endRowDrag(): void {
+    if (!this.roomRowDrag) return;
+    this.roomRowDrag = null;
+    this.roomRowGhostIcon?.setVisible(false);
+    this.roomRowGhostLabel?.setVisible(false);
+    this.input.setDefaultCursor('default');
+  }
+
+  /** Resolves a released row and calls its `onDrop` exactly once. */
+  private dropRowDrag(pointer: Phaser.Input.Pointer): void {
+    const drag = this.roomRowDrag;
+    if (!drag) return;
+    const drop = this.roomDropAt(pointer, drag);
+    this.endRowDrag();
+    drag.onDrop(drop);
+  }
+
+  /** The bag, a living party/box member, the party panel for a Pokémon row, or none. */
+  private roomDropAt(pointer: Phaser.Input.Pointer, drag: RoomRowDrag): RoomDrop {
+    if (this.pointerInBagPanel(pointer)) return { onto: 'bag' };
+    const target = this.hudTarget(pointer);
+    const memberId = target && target.pane !== 'rip' ? this.memberIdAt(target) : null;
+    if (memberId) return { onto: 'member', memberId };
+    if (drag.itemId === null && this.pointerInPartyPanel(pointer)) return { onto: 'party' };
+    return { onto: 'none' };
+  }
+
   private handleHudPointerMove(pointer: Phaser.Input.Pointer): void {
     if (!this.scene.isActive()) return;
-    if (this.panelOpen() || this.miniBossRewardRoot || this.learnPopupOpen) return;
+    // A room row in hand follows the pointer; the release decides its drop.
+    if (this.roomRowDrag) {
+      if (!pointer.isDown) {
+        this.endRowDrag();
+        return;
+      }
+      this.roomRowGhostIcon?.setPosition(pointer.x, pointer.y);
+      this.roomRowGhostLabel?.setPosition(pointer.x, pointer.y);
+      this.input.setDefaultCursor('grabbing');
+      return;
+    }
+    if (this.modalPanelOpen() || this.learnPopupOpen) return;
     // A button released off-screen never fired `pointerup`; let go on the next move.
     if (!pointer.isDown) this.cancelHudDrags();
     // A press on a collapse icon becomes a panel drag once it passes the slop.
@@ -3425,6 +3503,10 @@ export class RouteScene extends Phaser.Scene {
    * panel keeps the position it reached; a member or an item simply goes back.
    */
   private cancelHudDrags(): void {
+    if (this.roomRowDrag) {
+      this.endRowDrag();
+      return;
+    }
     if (this.hudPanelDrag) {
       this.endPanelDrag();
       return;
@@ -3462,11 +3544,17 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private handleHudPointerUp(pointer: Phaser.Input.Pointer): void {
+    // A room row's release resolves its drop before any panel gate: the Mart and
+    // the reward are floating, so their rows work while they are open.
+    if (this.roomRowDrag) {
+      this.dropRowDrag(pointer);
+      return;
+    }
     if (this.learnPopupOpen) {
       this.dismissLearnPopup();
       return;
     }
-    if (this.panelOpen() || this.miniBossRewardRoot) {
+    if (this.modalPanelOpen()) {
       this.cancelHudDrags();
       return;
     }
@@ -4567,8 +4655,7 @@ export class RouteScene extends Phaser.Scene {
       !this.gameOver &&
       !this.pendingBattle &&
       !this.releaseRoot &&
-      !this.panelOpen() &&
-      !this.miniBossRewardRoot &&
+      !this.modalPanelOpen() &&
       !this.pauseMenuOpen &&
       // A held `R` while typing a name must not fill the ring and restart the run.
       !this.textFieldFocused() &&
@@ -5241,6 +5328,9 @@ export class RouteScene extends Phaser.Scene {
     this.persistRun();
     this.stopWalking();
     this.closePanel();
+    // The reward card is floating, so a player who walks out with it up must not
+    // carry it into the next room; closing runs its stored callback exactly once.
+    this.closeMiniBossReward();
     this.clearRouteSprites();
     this.buildRoom();
     this.drawTiles();
@@ -6065,81 +6155,72 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * The mini-boss reward (`docs/maps-spec.md` §7, D33): a beaten strong trainer
-   * opens one window of **six rows** — three items from the map's reward pool and
-   * three Pokémon it presents only by their highest stat and their nature. `E`
-   * takes the highlighted row, `Q` leaves it; either way the stored callback (the
-   * level-up beat) runs. The two lists ride **sibling streams**, so the item rows
-   * a fixed seed already produced do not move.
+   * The mini-boss reward (`docs/maps-spec.md` §7, D33, D45): a beaten strong
+   * trainer opens one **floating** card of six rows — three items from the map's
+   * reward pool and three Pokémon it presents only by their highest stat and their
+   * nature. A row is taken by dragging it onto the bag or the party; the ✕ leaves
+   * it, and either way the stored callback (the level-up beat) runs. The two lists
+   * ride **sibling streams**, so the item rows a fixed seed already produced do
+   * not move.
    */
   private openMiniBossReward(onDone: () => void): void {
-    if (this.miniBossRewardRoot) {
+    if (this.miniBossRewardPanel) {
       onDone();
       return;
     }
     const band = bandForMap(this.run.mapIndex);
     const rng = new Rng(hashSeed(`${this.run.seed}:reward:${this.run.mapIndex}`));
-    this.miniBossRewardItems = rewardChoices(ROUTE_LOOT[band.id].pool, MINI_BOSS_REWARD_CHOICES, rng);
-    this.miniBossRewardPokemon = pokemonRewardChoices({
+    const items = rewardChoices(ROUTE_LOOT[band.id].pool, MINI_BOSS_REWARD_CHOICES, rng);
+    const pokemon = pokemonRewardChoices({
       pool: speciesPool(band, 'wild'),
       count: MINI_BOSS_REWARD_POKEMON_CHOICES,
       level: squadLevel(this.run),
       learnsetSeed: this.run.seed,
       rng: new Rng(hashSeed(`${this.run.seed}:reward:${this.run.mapIndex}:pokemon`)),
     });
-    if (this.miniBossRewardItems.length === 0 && this.miniBossRewardPokemon.length === 0) {
+    const rows = rewardRows(items, pokemon);
+    if (rows.length === 0) {
       onDone();
       return;
     }
-    this.miniBossRewardIndex = 0;
     this.miniBossRewardOnDone = onDone;
-    this.buildMiniBossReward();
-    this.refreshMiniBossReward();
+    this.buildMiniBossReward(rows);
   }
 
-  /**
-   * The Pokémon option behind a combined row index: item rows come first, so
-   * everything past them maps onto `miniBossRewardPokemon` from zero. One home
-   * for the index arithmetic.
-   */
-  private rewardPokemonAt(index: number): PokemonRewardOption | undefined {
-    return this.miniBossRewardPokemon[index - this.miniBossRewardItems.length];
-  }
-
-  /** Tears down the reward window and runs its callback (the level-up beat). */
+  /** Tears down the reward card and runs its callback (the level-up beat). */
   private closeMiniBossReward(): void {
     const onDone = this.miniBossRewardOnDone;
     this.miniBossRewardOnDone = null;
-    this.miniBossRewardRoot?.destroy(true);
+    this.miniBossRewardPanel?.destroy();
+    this.miniBossRewardPanel = null;
     this.miniBossRewardRoot = null;
-    this.miniBossRewardRows = [];
-    this.miniBossRewardItems = [];
-    this.miniBossRewardPokemon = [];
     onDone?.();
   }
 
-  /** Builds the reward window: the item rows first, then the anonymous Pokémon rows. */
-  private buildMiniBossReward(): void {
-    const { width, height } = this.scale;
-    const x = (width - REWARD_W) / 2;
-    const y = (height - REWARD_H) / 2;
-    const left = x + REWARD_PAD;
-    const right = x + REWARD_W - REWARD_PAD;
+  /** Builds the reward card: the item rows first, then the anonymous Pokémon rows. */
+  private buildMiniBossReward(rows: readonly RewardRow[]): void {
+    const panel = addFloatingPanel(this, {
+      width: REWARD_W,
+      height: REWARD_H,
+      title: t('reward.title'),
+      onClose: () => this.closeMiniBossReward(),
+    });
+    this.miniBossRewardPanel = panel;
+    this.miniBossRewardRoot = panel.root;
+    const content = panel.content;
+    const left = content.x;
+    const width = content.w;
     const children: Phaser.GameObjects.GameObject[] = [
-      this.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0),
-      addFrlgWindow(this, x, y, REWARD_W, REWARD_H),
-      addFrlgText(this, left, y + 20, t('reward.title'), { size: 24, tint: FRLG_INK }),
-      addFrlgText(this, left, y + 54, t('reward.choose'), { size: 16, tint: FRLG_MUTED }),
+      addFrlgText(this, left, content.y, t('reward.choose'), { size: 16, tint: FRLG_MUTED }),
     ];
-    this.miniBossRewardRows = [];
-    const rowCount = this.miniBossRewardItems.length + this.miniBossRewardPokemon.length;
-    for (let i = 0; i < rowCount; i++) {
-      const rowY = y + 88 + i * REWARD_ROW_H;
+    const rowsTop = content.y + 34;
+    rows.forEach((row, i) => {
+      const rowY = rowsTop + i * REWARD_ROW_H;
       const highlight = this.add
         .rectangle(
           left,
           rowY,
-          right - left,
+          width,
           REWARD_ROW_H - 8,
           FRLG_SELECTED_FILL.colour,
           FRLG_SELECTED_FILL.alpha,
@@ -6148,106 +6229,65 @@ export class RouteScene extends Phaser.Scene {
         .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
         .setVisible(false);
       const zone = this.add
-        .zone(left, rowY, right - left, REWARD_ROW_H - 8)
+        .zone(left, rowY, width, REWARD_ROW_H - 8)
         .setOrigin(0, 0)
         .setInteractive({ useHandCursor: true });
-      zone.on('pointerover', () => {
-        if (i === this.miniBossRewardIndex) return;
-        this.miniBossRewardIndex = i;
-        this.refreshMiniBossReward();
-      });
-      zone.on('pointerdown', () => {
-        this.miniBossRewardIndex = i;
-        this.refreshMiniBossReward();
-        this.chooseMiniBossReward();
+      zone.on('pointerover', () => highlight.setVisible(true));
+      zone.on('pointerout', () => highlight.setVisible(false));
+      zone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        this.beginRowDrag({
+          itemId: row.kind === 'item' ? row.itemId : null,
+          label: row.kind === 'item' ? row.name : row.label,
+          pointer: { x: pointer.x, y: pointer.y },
+          onDrop: (drop) => this.takeMiniBossReward(row, drop),
+        });
       });
       // A Pokémon row prints its label on the row's own line and nothing above it,
       // so an unidentified option can never leak a name, an icon or a description.
-      if (i < this.miniBossRewardItems.length) {
-        const icon = this.add.image(left + 26, rowY + 26, ITEM_ICON_TEXTURE_KEY, 0).setScale(1.1);
-        const name = addFrlgText(this, left + 56, rowY + 8, '', { size: 20, tint: FRLG_INK });
-        const desc = addFrlgText(this, left + 56, rowY + 38, '', {
+      if (row.kind === 'item') {
+        const icon = this.add
+          .image(left + 26, rowY + 26, ITEM_ICON_TEXTURE_KEY, itemIconFrame(row.itemId) ?? 0)
+          .setScale(1.1);
+        const name = addFrlgText(this, left + 56, rowY + 8, row.name, {
+          size: 20,
+          tint: FRLG_INK,
+        });
+        const desc = addFrlgText(this, left + 56, rowY + 38, row.description, {
           size: 16,
           tint: FRLG_MUTED,
-        }).setMaxWidth(right - left - 80);
-        this.miniBossRewardRows.push({ kind: 'item', highlight, icon, name, desc });
+        }).setMaxWidth(width - 80);
         children.push(highlight, icon, name, desc, zone);
-        continue;
+        return;
       }
-      const name = addFrlgText(this, left + 16, rowY + 30, '', { size: 20, tint: FRLG_INK });
-      this.miniBossRewardRows.push({ kind: 'pokemon', highlight, icon: null, name, desc: null });
+      const name = addFrlgText(this, left + 16, rowY + 30, row.label, {
+        size: 20,
+        tint: FRLG_INK,
+      });
       children.push(highlight, name, zone);
-    }
-    children.push(
-      addFrlgText(
-        this,
-        left,
-        y + REWARD_H - 40,
-        t('reward.controls', {
-          confirm: keyLabel(this.settings.keybinds.confirm),
-          cancel: keyLabel(this.settings.keybinds.cancel),
-        }),
-        { size: 16, tint: FRLG_MUTED },
-      ),
-    );
-    this.miniBossRewardRoot = this.add.container(0, 0, children).setDepth(520);
-    this.cameras.main.ignore(this.miniBossRewardRoot);
-  }
-
-  /** Paints the offered items, the anonymous Pokémon rows and the cursor. */
-  private refreshMiniBossReward(): void {
-    if (!this.miniBossRewardRoot) return;
-    this.miniBossRewardRows.forEach((rowObject, i) => {
-      rowObject.highlight.setVisible(i === this.miniBossRewardIndex);
-      if (rowObject.kind === 'pokemon') {
-        const option = this.rewardPokemonAt(i);
-        rowObject.name.setText(option ? pokemonRewardRowLabel(option) : '');
-        return;
-      }
-      const itemId = this.miniBossRewardItems[i];
-      const item = itemId ? getItem(itemId) : undefined;
-      rowObject.icon?.setFrame(itemId ? (itemIconFrame(itemId) ?? 0) : 0);
-      rowObject.name.setText(item?.name ?? itemId ?? '');
-      rowObject.desc?.setText(item?.shortDesc ?? '');
     });
-  }
-
-  /** The reward window's keys: move the cursor, take on `E`, leave on `Q`. */
-  private handleMiniBossRewardAction(action: KeybindAction): void {
-    const total = this.miniBossRewardRows.length;
-    if (total === 0) return;
-    switch (action) {
-      case 'up':
-        this.miniBossRewardIndex = (this.miniBossRewardIndex - 1 + total) % total;
-        this.refreshMiniBossReward();
-        return;
-      case 'down':
-        this.miniBossRewardIndex = (this.miniBossRewardIndex + 1) % total;
-        this.refreshMiniBossReward();
-        return;
-      case 'confirm':
-      case 'interact':
-        this.chooseMiniBossReward();
-        return;
-      case 'cancel':
-        this.closeMiniBossReward();
-        return;
-      default:
-        return;
-    }
+    children.push(
+      addFrlgText(this, left, content.y + content.h - 20, t('reward.controls'), {
+        size: 16,
+        tint: FRLG_MUTED,
+      }),
+    );
+    panel.root.add(children);
   }
 
   /**
-   * Takes the highlighted row and closes (a leave grants nothing). A Pokémon row
-   * lands through the **shipped placement** — `createRunPokemon` adopted at the
-   * squad's level into `addPokemon` (a full party sends it to the box) — and is
-   * **not a catch**: no room capture is spent, no `stats.catches` moves and no
-   * `pcCatch` is recorded. The row itself is the feedback, so there is no notice.
+   * Takes one reward row on its drop and closes: an item joins the bag first and
+   * only then spends or equips itself on the member (an item that does not apply
+   * stays in the bag); a Pokémon lands through the **shipped placement** —
+   * `createRunPokemon` adopted at the squad's level into `addPokemon` (a full
+   * party sends it to the box) — and is **not a catch**: no room capture is spent,
+   * no `stats.catches` moves and no `pcCatch` is recorded. Any other drop leaves
+   * the card up and changes nothing.
    */
-  private chooseMiniBossReward(): void {
+  private takeMiniBossReward(row: RewardRow, drop: RoomDrop): void {
     if (!this.miniBossRewardRoot) return;
-    const option = this.rewardPokemonAt(this.miniBossRewardIndex);
-    if (option) {
+    if (row.kind === 'pokemon') {
+      if (drop.onto !== 'party') return;
+      const option = row.option;
       const member = adoptAtLevel(
         createRunPokemon({
           id: nextMemberId(this.run),
@@ -6265,13 +6305,17 @@ export class RouteScene extends Phaser.Scene {
       this.closeMiniBossReward();
       return;
     }
-    const itemId = this.miniBossRewardItems[this.miniBossRewardIndex];
-    if (itemId) {
-      this.run = addItem(this.run, itemId);
-      this.persistRun();
-      this.showNotice(itemPickupNotice(getItem(itemId)?.name ?? itemId));
-      this.refreshHud();
+    if (drop.onto !== 'bag' && drop.onto !== 'member') return;
+    let run = addItem(this.run, row.itemId);
+    if (drop.onto === 'member') {
+      const kind = getItem(row.itemId)?.kind;
+      if (kind === 'heal' || kind === 'status') run = useItemOn(run, drop.memberId, row.itemId);
+      else if (kind === 'held') run = equipHeldItem(run, drop.memberId, row.itemId);
     }
+    this.run = run;
+    this.persistRun();
+    this.showNotice(itemPickupNotice(getItem(row.itemId)?.name ?? row.itemId));
+    this.refreshHud();
     this.closeMiniBossReward();
   }
 
@@ -6802,8 +6846,7 @@ export class RouteScene extends Phaser.Scene {
       this.gameOver ||
       this.pendingBattle ||
       this.releaseRoot ||
-      this.panelOpen() ||
-      this.miniBossRewardRoot ||
+      this.modalPanelOpen() ||
       this.pauseMenuOpen ||
       this.chase
     ) {
@@ -6847,8 +6890,7 @@ export class RouteScene extends Phaser.Scene {
       this.gameOver ||
       this.pendingBattle ||
       this.releaseRoot ||
-      this.panelOpen() ||
-      this.miniBossRewardRoot ||
+      this.modalPanelOpen() ||
       this.pauseMenuOpen ||
       this.chase
     )

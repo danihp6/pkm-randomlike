@@ -13,7 +13,7 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
   duplicate-kind error and the marker index the minimap reads.
 - `registry.test.ts` — the collection rules: discovery, a kind the folder never had, the duplicate
   error's message and the modules without a descriptor export.
-- `shop.ts` — the Mart room: its counter, its stock, its BUY / SELL window and its keys.
+- `shop.ts` — the Mart room: its counter, its stock, its floating BUY / SELL card and the drag a BUY row starts.
 - `miniBoss.ts` — the mini-boss room: its `ace` trainer on the room's farthest tile.
 - `megaStone.ts` — the mega-stone room: its one Mega Stone on the room's farthest tile.
 - `casino.ts` — the casino room: its slot machine, the grunt beside it, the spin

@@ -221,8 +221,8 @@ no tall grass, no regular trainers, no ground items:
 
 | Room | Per floor | Placement | Content |
 | --- | --- | --- | --- |
-| **shop** | exactly one, **from map 2 on** (map 1 has none) | a leaf near the entry | a counter; the interact key (`E`) opens a Pokémon-style **shop panel in the HUD** that exists only in this room |
-| **mini-boss** | medium chance | a leaf anywhere | one strong trainer fielding a **fixed party of three** (**two** on map 1, `bossPartySize('miniboss', mapIndex)`); beating it offers **one window of six rows** — three **items** from the map's reward pool and three **Pokémon it presents only by their highest stat and their nature** (`ATTACK · Adamant`), never by name, sprite, types or moves |
+| **shop** | exactly one, **from map 2 on** (map 1 has none) | a leaf near the entry | a counter; the interact key (`E`) opens a Pokémon-style **floating Mart card** over the route that exists only in this room; a BUY row is taken by dragging it onto the bag or a living member, a SELL row by a click |
+| **mini-boss** | medium chance | a leaf anywhere | one strong trainer fielding a **fixed party of three** (**two** on map 1, `bossPartySize('miniboss', mapIndex)`); beating it offers **one floating window of six rows** — three **items** from the map's reward pool and three **Pokémon it presents only by their highest stat and their nature** (`ATTACK · Adamant`), never by name, sprite, types or moves — each row taken by dragging it onto the bag or the party, with no keyboard path |
 | **mega-stone** | low chance, **from map 3 onward** | a leaf anywhere | one random **Mega Stone** item |
 | **casino** | 30 % chance, **from map 2 onward** | a leaf anywhere | a **slot machine** counter with a Team Rocket grunt beside it; the interact key (`E`) opens the machine's own window, where one **spin** costs the floor band's price (`CASINO.price`, `src/data/casino.ts`) and pays an item, an **Egg** or the fight against the grunt |
 | **gated** | 20 % chance, **from map 3 onward** | a leaf anywhere | one **vault** sealed by a **bush**, a **rock** or a **pond**; the interact key opens it when a party member has the obstacle's **type** — Bug or Grass / Rock or Fighting / Water — and the reward inside is one ground item |
@@ -293,10 +293,19 @@ leaves the run **on purpose** (`docs/routes-spec.md` §6). Its content:
   and the room's capture untouched) and lands in the party (the box would only take
   it on a full party, which the trade's own removal makes impossible).
 
-The **shop panel** is a HUD window like the party/bag panels: a Pokémon
-Mart-style list with prices that **only appears while the player is in the shop
-room** (it is opened at the counter with `E` and is unavailable anywhere else), so
-buying is tied to the room rather than to a menu key.
+The **shop panel** and the **mini-boss reward** are both **floating glass cards**
+over the route HUD (`D45`), not modal windows: each is moved by its own header,
+each closes from its own drawn ✕, and neither takes a key, a scrim or a saved
+position, so the route keeps walking behind them. They are **pointer-only**:
+every row is a **drag source** and a release resolves it against the shipped drop
+targets — the bag panel, a living party or box member, and (for the reward's
+anonymous Pokémon rows) the party panel. A row released anywhere else changes
+nothing. The Mart's BUY row buys on that drop (the units land in the bag, then a
+member drop spends or equips one), a BUY row the run cannot afford is not a drag
+source, and a SELL row still sells one unit on a click. It exists only while the
+player is in the shop room (it is opened at the counter with `E` and is
+unavailable anywhere else), so buying is tied to the room rather than to a menu
+key.
 
 ### The no-heal room
 

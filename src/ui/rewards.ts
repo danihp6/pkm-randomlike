@@ -1,6 +1,7 @@
 import type { LootEntry } from '../data/loot';
 import { allNatures, getNature, statAtLevel } from '../data/dex/natures';
 import { getSpecies, type Species, type StatId } from '../data/dex/species';
+import { getItem } from '../data/items';
 import { createFighter } from '../engine/battle/fighter';
 import type { Rng } from '../engine/rng';
 import { MAX_LEVEL } from '../engine/run/progression';
@@ -134,4 +135,30 @@ export function pokemonRewardChoices(request: PokemonRewardRequest): readonly Po
 /** The row's own copy: the highest stat's label, a ` · `, then the nature's name. */
 export function pokemonRewardRowLabel(option: PokemonRewardOption): string {
   return `${t(`detail.stat.${option.topStat}`)} · ${getNature(option.nature)?.name ?? option.nature}`;
+}
+
+/** One row the reward window draws: an item, or one anonymous Pokémon option. */
+export type RewardRow =
+  | Readonly<{ kind: 'item'; itemId: string; name: string; description: string }>
+  | Readonly<{ kind: 'pokemon'; option: PokemonRewardOption; label: string }>;
+
+/** Items first, then the Pokémon options, in the order they are offered. */
+export function rewardRows(
+  items: readonly string[],
+  pokemon: readonly PokemonRewardOption[],
+): readonly RewardRow[] {
+  return [
+    ...items.map((itemId): RewardRow => {
+      const item = getItem(itemId);
+      return {
+        kind: 'item',
+        itemId,
+        name: item?.name ?? itemId,
+        description: item?.shortDesc ?? '',
+      };
+    }),
+    ...pokemon.map(
+      (option): RewardRow => ({ kind: 'pokemon', option, label: pokemonRewardRowLabel(option) }),
+    ),
+  ];
 }
