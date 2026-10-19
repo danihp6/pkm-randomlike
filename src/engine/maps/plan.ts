@@ -1,5 +1,5 @@
 import { BIOME_ORDER, type BiomeId } from '../../data/biomes';
-import { MAP_MIN_ROOM_SIZE, mapTuning } from '../../data/maps';
+import { MAP_MIN_ROOM_SIZE, mapTuning, roomSizeForShape } from '../../data/maps';
 import { NO_HEAL_ROOM } from '../../data/noHeal';
 import type { Tile } from '../grid';
 import type { Rng } from '../rng';
@@ -394,11 +394,11 @@ function appendBoss(
 }
 
 /**
- * Rolls a floor's full plan: biome, room count, each room's width/height, the grid
- * topology (connected, closed into at least one cycle, no dangling opening), every
- * room's openings and shape, and the boss room. The boss is an extra dead-end leaf
- * so it always has a single exit. A pure function of `(seed, mapIndex)`
- * (`docs/maps-spec.md` §3, D29).
+ * Rolls a floor's full plan: biome, room count, the grid topology (connected,
+ * closed into at least one cycle, no dangling opening), every room's openings and
+ * shape-derived size, and the boss room. The boss is an extra dead-end leaf so it
+ * always has a single exit. A pure function of `(seed, mapIndex)`
+ * (`docs/maps-spec.md` §1/§3, D29).
  */
 export function planMap(seed: string, mapIndex: number): MapPlan {
   const index = Math.max(1, Math.floor(mapIndex));
@@ -411,6 +411,10 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
   // the four-room core that closes the floor's cycle. The boss is an extra leaf on
   // top of it, so the floor holds `roomCount` rooms in total.
   const regularCount = Math.max(5, roomCount - 1);
+  // A room's size follows from its shape now, but these two draws per regular room
+  // (and the two per special leaf, in `addSpecial`) stay exactly where they are, and
+  // their values feed nothing: deleting them would shift the whole `map` stream and
+  // move a seed's topology, specials and trainer density (`docs/maps-spec.md` §1).
   const sizes = Array.from({ length: regularCount + 1 }, () => ({
     width: rng.int(tuning.size.min, tuning.size.max),
     height: rng.int(tuning.size.min, tuning.size.max),
@@ -505,21 +509,32 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     if (parents.length > 0) addSpecial('no-heal', parents[rng.int(0, parents.length - 1)]);
   }
 
-  // The entry and boss rooms are the floor's quiet leaves; both are pinned to the
-  // minimum size so they read the same whatever range the map rolls
-  // (`docs/maps-spec.md` §1/§6).
-  for (const leaf of [0, bossRoom]) {
-    sizes[leaf] = { width: MAP_MIN_ROOM_SIZE, height: MAP_MIN_ROOM_SIZE };
-  }
-
-  const rooms: MapRoom[] = cells.map((cell, id) => {
+  const edgesByRoom = cells.map((_, id) => {
     const edges: MapEdge[] = [];
     for (const [a, b] of links) {
       if (a === id) edges.push(edgeBetween(cells[a], cells[b]));
       else if (b === id) edges.push(edgeBetween(cells[b], cells[a]));
     }
     if (id === 0) edges.push(entryEdge);
-    edges.sort((a, b) => MAP_EDGES.indexOf(a) - MAP_EDGES.indexOf(b));
+    return edges.sort((a, b) => MAP_EDGES.indexOf(a) - MAP_EDGES.indexOf(b));
+  });
+
+  // The entry, the boss and every special leaf are the floor's quiet leaves: all
+  // pinned to the minimum size so they read the same whatever range the map rolls
+  // (`docs/maps-spec.md` §1/§6/§7). Every regular room takes its shape's frozen
+  // size scaled by the map's ceiling, with a corridor's long side on its axis.
+  for (let id = 0; id < cells.length; id++) {
+    if (id === 0 || id === bossRoom || specialKinds.has(id)) {
+      sizes[id] = { width: MAP_MIN_ROOM_SIZE, height: MAP_MIN_ROOM_SIZE };
+      continue;
+    }
+    const shape = shapeFor(edgesByRoom[id]);
+    const longAxis = shape === 'corridor' && edgesByRoom[id].includes('N') ? 'ns' : 'ew';
+    sizes[id] = roomSizeForShape(shape, index, longAxis);
+  }
+
+  const rooms: MapRoom[] = cells.map((cell, id) => {
+    const edges = edgesByRoom[id];
     const openings: MapOpening[] = edges.map((edge) => ({
       edge,
       kind: id === 0 && edge === entryEdge ? 'entry' : 'link',

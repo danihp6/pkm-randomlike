@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { BIOME_ORDER } from '../../data/biomes';
-import { MAP_MIN_ROOM_SIZE, MAP_TUNING, mapTuning } from '../../data/maps';
+import {
+  MAP_MAX_ROOM_SIZE,
+  MAP_MIN_ROOM_SIZE,
+  MAP_TUNING,
+  mapTuning,
+  roomSizeForShape,
+} from '../../data/maps';
 import type { Access } from '../routes/layout';
 import { sketchRoute } from '../routes/sketch';
 import { validateRoute } from '../routes/validate';
@@ -88,12 +94,18 @@ function assertPlan(plan: MapPlan): void {
     expect(seen.has(cell)).toBe(false);
     seen.add(cell);
 
-    // The entry and boss rooms are the quiet leaves, pinned to the minimum size
-    // whatever range the map rolls; every other room stays inside that range.
-    if (room.id === plan.entryRoom || room.id === plan.bossRoom) {
-      expect(room.width).toBe(MAP_MIN_ROOM_SIZE);
-      expect(room.height).toBe(MAP_MIN_ROOM_SIZE);
+    // The entry, the boss and every special leaf are the quiet leaves, pinned to
+    // the minimum size whatever shape or map; every regular room takes the size its
+    // shape predicts and stays inside the map's range (`docs/maps-spec.md` §1).
+    if (room.id === plan.entryRoom || room.id === plan.bossRoom || room.special !== null) {
+      expect(room.width, `${room.shape} room ${room.id}`).toBe(MAP_MIN_ROOM_SIZE);
+      expect(room.height, `${room.shape} room ${room.id}`).toBe(MAP_MIN_ROOM_SIZE);
     } else {
+      const edges = room.openings.map((opening) => opening.edge);
+      const longAxis = room.shape === 'corridor' && edges.includes('N') ? 'ns' : 'ew';
+      expect({ width: room.width, height: room.height }, `room ${room.id}`).toEqual(
+        roomSizeForShape(room.shape, plan.mapIndex, longAxis),
+      );
       expect(room.width).toBeGreaterThanOrEqual(tuning.size.min);
       expect(room.width).toBeLessThanOrEqual(tuning.size.max);
       expect(room.height).toBeGreaterThanOrEqual(tuning.size.min);
@@ -234,6 +246,67 @@ describe('planMap', () => {
         }
       }
     }
+  });
+
+  it('sizes every regular room by its shape, and every quiet leaf at 30x30', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        for (const room of plan.rooms) {
+          const label = `${seed} map ${mapIndex} room ${room.id} (${room.shape})`;
+          if (room.special !== null || room.id === plan.entryRoom || room.id === plan.bossRoom) {
+            expect({ width: room.width, height: room.height }, label).toEqual({
+              width: MAP_MIN_ROOM_SIZE,
+              height: MAP_MIN_ROOM_SIZE,
+            });
+            continue;
+          }
+          const edges = room.openings.map((opening) => opening.edge);
+          const longAxis = room.shape === 'corridor' && edges.includes('N') ? 'ns' : 'ew';
+          expect({ width: room.width, height: room.height }, label).toEqual(
+            roomSizeForShape(room.shape, mapIndex, longAxis),
+          );
+          const range = mapTuning(mapIndex).size;
+          for (const side of [room.width, room.height]) {
+            expect(side, label).toBeGreaterThanOrEqual(range.min);
+            expect(side, label).toBeLessThanOrEqual(range.max);
+            expect(side, label).toBeLessThanOrEqual(MAP_MAX_ROOM_SIZE);
+          }
+        }
+      }
+    }
+  });
+
+  /**
+   * The pre-task structure of one floor, pinned verbatim: the room ids, cells,
+   * shapes, specials and links `planMap('alpha', 8)` produced before a room's size
+   * followed its shape. Only `width`/`height` may move after this task, so a
+   * shifted `map` stream (a deleted or reordered draw) fails here.
+   */
+  const ALPHA_MAP_8 = {
+    entryEdge: 'S',
+    bossRoom: 8,
+    rooms:
+      '0:0,0:corridor:-|1:0,-1:cross:-|2:1,-1:cross:-|3:0,-2:bend:-|4:1,-2:cross:-|5:1,-3:bend:-|6:2,-3:tee:-|7:2,-2:bend:-|8:2,-4:dead-end:-|9:-1,-1:dead-end:shop|10:2,-1:dead-end:mini-boss|11:1,0:dead-end:casino',
+    links: '0-1|1-2|1-3|1-9|2-4|2-10|2-11|3-4|4-5|4-7|5-6|6-7|6-8',
+    specials: '9:shop|10:mini-boss|11:casino',
+  } as const;
+
+  it('keeps the pre-task floor shape and topology for a pinned seed', () => {
+    const plan = planMap('alpha', 8);
+    expect(plan.entryEdge).toBe(ALPHA_MAP_8.entryEdge);
+    expect(plan.bossRoom).toBe(ALPHA_MAP_8.bossRoom);
+    expect(
+      plan.rooms
+        .map((room) => `${room.id}:${room.col},${room.row}:${room.shape}:${room.special ?? '-'}`)
+        .join('|'),
+    ).toBe(ALPHA_MAP_8.rooms);
+    expect(plan.links.map(([a, b]) => `${a}-${b}`).join('|')).toBe(ALPHA_MAP_8.links);
+    expect(plan.specials.map((special) => `${special.roomId}:${special.kind}`).join('|')).toBe(
+      ALPHA_MAP_8.specials,
+    );
+    // And it reproduces twice over.
+    expect(planMap('alpha', 8)).toEqual(plan);
   });
 
   it('keeps the entry room at the origin with a free outward edge', () => {
