@@ -194,7 +194,7 @@ no tall grass, no regular trainers, no ground items:
 | Room | Per floor | Placement | Content |
 | --- | --- | --- | --- |
 | **shop** | exactly one, **from map 2 on** (map 1 has none) | a leaf near the entry | a counter; the interact key (`E`) opens a Pokémon-style **shop panel in the HUD** that exists only in this room |
-| **mini-boss** | medium chance | a leaf anywhere | one strong trainer fielding a **fixed party of three** (**two** on map 1, `bossPartySize('miniboss', mapIndex)`); beating it offers a **choice of items** |
+| **mini-boss** | medium chance | a leaf anywhere | one strong trainer fielding a **fixed party of three** (**two** on map 1, `bossPartySize('miniboss', mapIndex)`); beating it offers **one window of six rows** — three **items** from the map's reward pool and three **Pokémon it presents only by their highest stat and their nature** (`ATTACK · Adamant`), never by name, sprite, types or moves |
 | **mega-stone** | low chance, **from map 3 onward** | a leaf anywhere | one random **Mega Stone** item |
 
 Specials count **outside** K (`K` regular rooms + the specials), are rolled on
@@ -262,7 +262,11 @@ there, a wild encounter included, begins under it.
 - **Mega Stones** are new `held` items, one per Mega-capable species. Holding one
   lets the Pokémon **Mega Evolve once per battle** (the Mega Evolution mechanic is
   a prerequisite step, `D34`); the mega-stone room hands out one at random. The
-  mini-boss's item choice draws from the map's reward pool.
+  mini-boss's item choice draws from the map's reward pool. Its three **Pokémon
+  rows** draw from the band's own wild pool (`speciesPool(band, 'wild')`) on the
+  sibling stream `${seed}:reward:${mapIndex}:pokemon`, land at the squad's level
+  through `addPokemon` (a full party sends them to the box) and are **not a
+  catch**: no room capture is spent and `stats.catches` does not move.
 - The run's **money** lives in `RunState` and shows in the route HUD's **bag
   panel**.
 
