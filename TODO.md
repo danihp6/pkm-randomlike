@@ -2528,6 +2528,43 @@ atlas frame. What follows is the cut's own record.
   needs neither, so **no dex, TM, `TM_COUNT`, shop or battle file is touched** and the room is
   openable by any party that carries the type. `docs/route-generator.md` §7's **O-R5** stays open:
   it is about Cut/Rock Smash **field-move** gates, which this is not.
+- **Shipped (Task-65, `2026-10-19`).** The gated room is the room layer's **second descriptor**
+  (`src/scenes/rooms/gate.ts`): the scene gained only the port's two new hooks — `route()` (the seal
+  and its pocket) and `rebuildRoom()` (the in-place redraw that keeps the live `RouteEncounters`) —
+  plus `buildRoom`'s gate flag, the reward's placement and the interact route. The **generator**
+  carries the vault: `carveGatedVault` in the new `src/engine/routes/gate.ts` runs inside
+  `attemptRoute` and returns the `RouteGate` (`kind`, `tile`, `pocket`); the vault is **not** pushed
+  into `route.pockets`, and a request that asks for a gate but cannot carve one fails
+  `validateRoute`'s new `missingGate` (gated on the request), so the room can never ship without its
+  seal. `RouteRequest.gate` is `'sealed' | 'open'`, read in `buildRoom` from
+  `isItemPicked(run, gateId(mapIndex, roomId))`, so a revisit and a reload draw the same room and the
+  scene keeps no state. `BUSH = 10` and `ROCK = 11` join `SOLID`; the water seal reuses the shipped
+  `WATER`; frames **49** and **50** are packed into all three FRLG atlases by `build-tilesets.mjs`
+  (the only free cells; the `frlg.test.ts` blank case flipped) and tree tips cannot walk either
+  value. `partyHasType` / `memberTypes` (`src/engine/run/party.ts`) read the party's **species** types
+  (the box never counts) and `src/data/gates.ts` holds the three type rows — bush Bug/Grass, rock
+  Rock/Fighting, water Water. The reward is one ordinary ground item off
+  `gate-loot-<map>-<room>`; the opening is `gate-<map>-<room>` in `pickedItems` (cleared by
+  `advanceMap`), so **no run field** and **no `SAVE_VERSION`** step. The kind hangs **20 % from map 3
+  on**, drawn last in the special pass off two minted streams (`:gate:` and `:gate:site:`); four
+  i18n keys, the room folder's README line, and the four docs rows (`maps-spec` §7, `tileset-spec`
+  §1/§2/§6, `design-spec` §7, `route-generator` §3/§4/§7 with **O-R5 reworded, not closed**);
+  `docs/balance/route-curve.md`'s measured rows for maps 3-8 were re-read with the harness and no
+  tuning number moved. **QA** was a single pass (one-task batch): `npm test` green twice (**152 files
+  / 1936 tests**), `npm run build` green, the diff's **40/41** paths inside the amended exclusive
+  list — the one extra, `src/scenes/rooms/casino.test.ts`, is the casino stub's two `RoomHost`
+  members (the widened port does not typecheck without them; QA judged it a gap in the spec's list,
+  not a scope breach) — `src/engine/` pure, `src/data/dex/**` untouched, and the balance facts
+  re-measured independently: the eight fills **1.2490 / 1.2503 / 1.1552 / 1.3631 / 1.3567 / 1.3290 /
+  1.0382 / 1.1693**, the shipped route maps byte-identical across 10 seeds × 8 maps, and the three
+  atlases re-packed byte-identically. **The five `[live]` criteria are not run**: this QA session
+  had no browser (no browser MCP is configured and the role's toolset carries none), so the seal's
+  canvas measurement, the locked/opened notices on screen, the keeps-open-and-only-for-the-floor
+  walk and the minimap glyph are **degraded / unverified**, while their mechanics are covered
+  headlessly on seed `pkm-111` (map 6 room 9 `rock`, map 7 room 9 `bush`: frame, reachability,
+  notice text, `commitRun` + `rebuildRoom`, `pickedItems`, second interact refused). Whoever runs
+  the live pass must compare the opened cell against the **drawn** ground frame, not the literal
+  `FLOOR` frame 0 — the forest mix varies it.
 
 ### Batch 26 — the trade room
 - **Task-66** A trade room: give one Pokémon, receive a random one.
@@ -4815,7 +4852,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       special-room layer `[Task-65]` and `[Task-66]` also extend, which is why the three cannot
       share a batch — so it opens the plan's new **Batch 24**, one batch behind Task-63.
       *(Batch 24)*
-- [ ] **[Task-65] A gated reward room: a reward behind a blocked path only a party of the right type opens.**
+- [x] **[Task-65] A gated reward room: a reward behind a blocked path only a party of the right type opens.**
       Reported in play: «añade tarea habitacion especial que da recompensa pero el camino esta
       bloqueado y solo se puede entrar si algun poke del party conoce cierto movimiento por ejemplo
       corte y aparecen arbustos o rocas y necesitas golpe roca o agua y necesitas surf». The human's

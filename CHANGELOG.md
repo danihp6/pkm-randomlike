@@ -8,6 +8,40 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The gated reward room: a vault behind a bush, a rock or a pond that only a party type
+      opens.** The room layer's second descriptor, `src/scenes/rooms/gate.ts`, so the scene gained
+      only the port's two new hooks — `RoomHost.route()` reads the seal and its pocket,
+      `RoomHost.rebuildRoom()` redraws the room in place while keeping the live `RouteEncounters` —
+      plus `buildRoom`'s gate flag, the reward's placement and the interact route. The **generator**
+      owns the vault: `carveGatedVault` (`src/engine/routes/gate.ts`) runs inside `attemptRoute` and
+      returns the route's `RouteGate` (`kind`, `tile`, `pocket`); the vault is deliberately not in
+      `route.pockets`, and a build that asks for a gate and cannot carve one fails
+      `validateRoute`'s new `missingGate`, so the room never ships without its seal. The opening is
+      an **input to the build**, `RouteRequest.gate: 'sealed' | 'open'` read from
+      `isItemPicked(run, gateId(...))`, so a revisit and a reload draw the same room and the scene
+      keeps no state. `BUSH = 10` and `ROCK = 11` join `SOLID` (the water seal reuses the shipped
+      `WATER`), and frames **49** and **50** are the only free atlas cells: `build-tilesets.mjs`
+      stamps them into all three FRLG atlases and the test that pinned them blank now pins them
+      drawn. `partyHasType` / `memberTypes` (`src/engine/run/party.ts`) read the party's **species**
+      types and no HP/status filter — any member counts, the box does not — over the three rows of
+      `src/data/gates.ts`: bush Bug/Grass, rock Rock/Fighting, water Water. The reward is an
+      ordinary ground item off `gate-loot-<map>-<room>` and the opening is `gate-<map>-<room>` in
+      `pickedItems`, cleared by `advanceMap`: **no run field**, **no `SAVE_VERSION`** step. The kind
+      hangs **20 % from map 3 on**, drawn last in `planMap`'s special pass off two minted streams, so
+      every shipped floor's specials, links and sizes stay identical. `docs/route-generator.md`
+      §7's **O-R5** is **reworded, not closed** — a type gate is not a Cut/Rock Smash field-move
+      gate — and `docs/balance/route-curve.md`'s rows for maps 3-8 were re-measured (no tuning number
+      moved) because the leaf's extra door shifts trainers ±15-20 % on its floor. **QA** was a
+      single pass (one-task batch): `npm test` green twice (**152 files / 1936 tests**), `npm run
+      build` green, 40/41 paths inside the amended exclusive list (the one extra is the casino
+      stub's two `RoomHost` members, a gap in the spec's list rather than a scope breach),
+      `src/engine/` pure, `src/data/dex/**` untouched, the eight floor fills in their windows
+      (1.2490 / 1.2503 / 1.1552 / 1.3631 / 1.3567 / 1.3290 / 1.0382 / 1.1693), the shipped routes
+      byte-identical across 10 seeds × 8 maps and the three atlases byte-identical after a
+      re-pack. **The five `[live]` criteria are unverified**: the QA session had no browser, so the
+      canvas measurement, the two notices, the keeps-open walk and the minimap glyph are recorded as
+      **not run**, with their mechanics covered headlessly on seed `pkm-111`.
+
 - [x] **The casino room: a Team Rocket grunt, a slot machine and the Egg.** The room layer's first
       new kind since `D47` is a **descriptor module**, `src/scenes/rooms/casino.ts`, so the scene
       gained only what the port was missing — `RoomHost.startTrainerBattle` (the hook `D47` itself
