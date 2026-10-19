@@ -74,7 +74,7 @@ carries over.
   one, hanging off that species' own row: a Mega — dimmed and **never clickable**,
   the forme's sprite and name and the stone it needs
   (`Mega Charizard X · Mega Evolves with Charizardite X`) — and a Gigantamax
-  (`Gigantamax Charizard · Gigantamaxes with no stone`, no item gate at all), both
+  (`Gigantamax Charizard · Gigantamaxes with Charizardite G`), both
   **always shown**, whether or not the stone is held (`D34`, `D44`).
   A forme a deleted form-change ability used to reach (`D41`) arrives the same way
   every other one does: as an ordinary **branch** of the graph — a clickable
@@ -317,7 +317,9 @@ leaves with only their own content (`docs/maps-spec.md` §7):
   counter whose interact key (`E`) opens a **Pokémon Mart-style shop panel in the
   HUD that only exists in that room**;
 - a **mini-boss** room (50% chance): one strong trainer fielding a fixed party of
-  **three** (**two** on map 1) that, when beaten, offers a **choice of items**;
+  **three** (**two** on map 1) that, when beaten, offers **one window of six
+  rows**: three **items** and three **Pokémon presented only by their highest stat
+  and their nature**, so the choice is a real gamble;
 - a **mega-stone** room (15% chance, only from map 3 on): a random **Mega Stone**
   item, which lets its holder **Mega Evolve once per battle**.
 
@@ -327,7 +329,8 @@ none, so the economy stays tight (Binding of Isaac-style). The shop always stock
 the same **four rows** — a **10× pack** of the band's own ball at half the
 catalogue price, the band's **potion rung**, and **two** held items from the
 band's weighted pool at their catalogue price — with the band's **one TM**
-appended after them, and buys any item at `sellPrice`, but only the **valuables**
+— and, at `late` and `end` only, its **one G-Max Stone** — appended after them,
+and buys any item at `sellPrice`, but only the **valuables**
 (Nugget, Pearl, …) that turn up in the ground-item loot are worth real money. The
 run's money shows in the HUD's **bag panel**.
 
