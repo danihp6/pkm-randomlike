@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ROUTE_LOOT, type LootEntry } from '../data/loot';
+import type { LootEntry } from '../data/loot';
 import { allNatures, getNature, statAtLevel } from '../data/dex/natures';
 import { getSpecies, playableSpecies, type StatId } from '../data/dex/species';
 import { createFighter } from '../engine/battle/fighter';
@@ -229,13 +229,12 @@ describe('pokemonRewardRowLabel', () => {
 
 describe('the two reward streams', () => {
   it('leaves the shipped item chooser untouched', () => {
-    const pinned = ['insectplate', 'zapplate', 'splashplate'];
-    expect(rewardChoices(ROUTE_LOOT.late.pool, 3, new Rng(hashSeed('task-63:reward:4')))).toEqual(
-      pinned,
-    );
+    // A pool of this file's own: the band tables belong to other tasks and grow,
+    // and a literal derived from one would go stale. The property here is the
+    // stream isolation, which a local pool measures just as well.
+    const pinned = ['pokeball', 'potion', 'antidote'];
+    expect(rewardChoices(pool, 3, new Rng(hashSeed('task-63:reward:4')))).toEqual(pinned);
     pokemonRewardChoices(request({ level: 30, rng: new Rng(hashSeed('task-63:reward:4:pokemon')) }));
-    expect(rewardChoices(ROUTE_LOOT.late.pool, 3, new Rng(hashSeed('task-63:reward:4')))).toEqual(
-      pinned,
-    );
+    expect(rewardChoices(pool, 3, new Rng(hashSeed('task-63:reward:4')))).toEqual(pinned);
   });
 });
