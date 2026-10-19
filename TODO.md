@@ -430,13 +430,15 @@ mould (a dead-end leaf with only its own content, `docs/maps-spec.md` §7): a **
 with a Team Rocket grunt, a pay-per-spin slot machine whose prizes are items and an **egg**
 that yields a random Pokémon when the run advances a floor, and a chance of a battle that locks
 the machine (`[Task-64]`); a **gated reward room** whose reward sits behind bushes, rocks or
-water that only a party move opens — Cut, Rock Smash, Surf (`[Task-65]`); and a **trade room**
-where a Pokémon is given for a random one (`[Task-66]`). Because they share the route scene
+water that only a party **of the right type** opens — Bug or Grass, Rock or Fighting, Water
+(`[Task-65]`); and a **trade room** where a Pokémon is given for a random one (`[Task-66]`).
+Because they share the route scene
 **and** both halves of the special-room layer, no two can sit in a batch: they open **Batch
 24**, **Batch 25** and **Batch 26**, one task each, one batch apart. `Task-64` is the one of the
 round that may repack the FRLG overworld/trainer atlases (a new `rocket` archetype's two
 sprites), `Task-65` may add obstacle frames to the FRLG tileset atlases and the run's first
-`knowsMove`-style accessor, and `Task-66` the run's first deliberate member **removal** beside
+**party-predicate** module (`partyHasType`, which `[Task-91]`'s NPC gate extends), and `Task-66`
+the run's first deliberate member **removal** beside
 permadeath's — none of the three touches `src/engine/save.ts`, and the recommended reading of
 the casino's per-floor lock and its egg is a bag item, so the chain stays **14 → 15 → 16 → 17 →
 18**. Nothing here re-plans `Task-38`–`Task-63`, and Batch 4b is untouched: it is `cut`, so it
@@ -808,7 +810,8 @@ contradicted its own diagnosis: the ranges only become dead weight once `[Task-7
 `[Task-79]` stop reading them, and deleting them first would break the roster's read, so the
 edge is written in. And `[Task-62]`'s entry now names `[Task-106]` as its second half, so nobody
 re-registers the radiant zone, the auras, the type change, Endure and the +50 crit. `[Task-65]`'s
-`knowsMove` accessor is the seam `[Task-91]` extends (never a second accessor), and
+`partyHasType` module is the seam `[Task-91]` extends (`partyHasType`, plus the
+`partyHasMove`/`partyHasAbility` predicates that join it — never a second module), and
 `[Task-89]`'s keyboard removal is the reading `[Task-84]` freezes.
 
 A **twenty-eighth round** is **one report plus a plan-wide review**, and it adds **no dependency edge**
@@ -834,8 +837,8 @@ stale batch sections share one:
   all-types override are the same "wherever a fighter's types are read" reader, so the earlier task
   freezes the seam the later one extends.
 - **`[Task-95]` lost an edge to `[Task-65]`.** None of its four rows is party-gated, so it never reads
-  the `knowsMove` module; the predicate family reaches it through `[Task-91]`'s `requires` gate. This
-  is the plan's only invented edge.
+  the party-predicate module (`partyHasType`); the predicate family reaches it through `[Task-91]`'s
+  `requires` gate. This is the plan's only invented edge.
 - **`[Task-98]` grew the run-scoped `missionsCompleted` counter** that `[Task-96]`'s "once per run"
   reads, and claims `src/ui/notice.ts` + test and the two i18n tables, which its own text already used;
   nothing else in Batch 36 wants either file.
@@ -844,9 +847,12 @@ stale batch sections share one:
   so its edges are `[Task-92]` + `[Task-91]` / `[Task-96]` — all three earlier batches, and its own
   slot stays **Batch 44**.
 - **`[Task-65]` gained the `**Docs:**` line it never had** — the special-room table's gated row in
-  `docs/maps-spec.md` §7 and the `docs/route-generator.md` §7 **O-R5** row its own *Decision* already
-  closed — which is what makes `docs/maps-spec.md` §7's holder list below count sixteen, and it is the
-  only one of the three special rooms whose entry did not name its docs.
+  `docs/maps-spec.md` §7, the two obstacle cells in `docs/tileset-spec.md` §2/§6 and the
+  `docs/design-spec.md` §7 bullet — which is what makes `docs/maps-spec.md` §7's holder list below
+  count sixteen, and it is the only one of the three special rooms whose entry did not name its docs.
+  Its *Decision* no longer closes `docs/route-generator.md` §7's **O-R5**: the human's answer turned
+  the gate into a **type** gate, which is not the Cut/Rock Smash field-move key/flag gate that row kept
+  out of scope, so that row stays open and the entry says so.
 - **Batches 21 and 23 gained their second member's hot files.** Both sections still read "one task,
   alone" from their own cut, but `[Task-86]` joined 21 and `[Task-88]` joined 23 in the
   twenty-seventh round; each section now names the second holder's set — `src/data/dex/**` +
@@ -2396,26 +2402,113 @@ atlas frame. What follows is the cut's own record.
 
 ### Batch 25 — the gated reward room
 - **Task-65** A special room whose reward sits behind bushes, rocks or water that only a party
-  Pokémon's move opens — Cut, Rock Smash, Surf.
-- **Hot files:** `src/scenes/RouteScene.ts` (the room's obstacle, the reward pocket and the
-  interact gate) → Task-65; `src/engine/maps/plan.ts` + `plan.test.ts` (the new
-  `MapRoomSpecial` value and its placement) and `src/ui/mapView.ts` + `mapView.test.ts` (its
-  marker) → Task-65; the new `knowsMove`-style accessor beside its test under `src/engine/run/`
-  and the obstacle→move mapping in `src/data/` → Task-65; the packed
-  `src/assets/frlg/{outdoor,forest,cave}.png` (the new bush/rock frames, via
-  `scripts/frlg/build-tilesets.mjs`) and `docs/maps-spec.md` §7 → Task-65. It claims no
-  `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts`,
-  `src/engine/run/pool.ts` or `src/engine/run/state.ts`.
-- **Shape:** one task, alone: it wants `src/scenes/RouteScene.ts` (every batch 5-20, Batch 20
-  last) **and** the special-room layer Task-64 extends one batch earlier and Task-66 one batch
-  later, so it opens the new **Batch 25**. It deliberately claims **neither** `[Task-52]`'s
+  Pokémon's **type** opens — Bug or Grass, Rock or Fighting, Water. The report asked for a move
+  (Cut / Rock Smash / Surf); the human's answer (`2026-10-19`) made it a **type** gate, so no
+  dex/TM data is touched and `cut` (absent from the build) is never needed. The room's spec is
+  `.agent_specs/task-65.md`.
+- **The seam it extends is the descriptor layer, and the casino is the descriptor precedent.**
+  `[Task-111]` (Batch 23b, `D47`) shipped `RoomDescriptor` / `RoomHost` / `RoomPanel` in
+  `src/scenes/rooms/types.ts`, the `import.meta.glob` registry (`registry.ts`) and four
+  descriptors, so this room is **`src/scenes/rooms/gate.ts` exporting `descriptor`** — its `kind`,
+  its `marker`, and a `fixture` / `interact` / `drawMarker` — and **not** a `buildRoom` branch.
+  `[Task-64]` (Batch 24, shipped) is the module it copies: one new `MapRoomSpecial` value, a
+  fixture that places its content off a **stable** id, `host.commitRun` for the run, and no scene
+  state of its own.
+- **Hot files:** `src/scenes/rooms/gate.ts` + `gate.test.ts`, `src/scenes/rooms/types.ts` (the two
+  hooks the port gains), `src/scenes/rooms/fixtures.test.ts` (the shared stub) and
+  `src/scenes/rooms/README.md` → Task-65; `src/scenes/RouteScene.ts` (the room's build flag, the
+  reward's placement and the in-room rebuild after the gate opens) → Task-65; `src/engine/maps/plan.ts`
+  + `plan.test.ts` (the new `MapRoomSpecial` value, line 64, and its placement) → Task-65; the new
+  pure carve `src/engine/routes/gate.ts` + test, `src/engine/routes/routeMap.ts` (the `RouteGate`
+  shape and the route's optional `gate`), `src/engine/routes/sketch.ts` + `sketch.test.ts` (the pass
+  and the `expectGate` gate) and `src/engine/routes/validate.ts` + `validate.test.ts` (the
+  `missingGate` finding), plus `src/engine/routes/index.ts` → Task-65; `src/engine/map.ts` +
+  `map.test.ts` (the two obstacle tile values) and `src/data/tilesets/frlg.ts` + `frlg.test.ts`
+  (their frames) → Task-65; the new predicate module `src/engine/run/party.ts` + test
+  (`partyHasType`, the seam `[Task-91]` extends) and the obstacle→type table `src/data/gates.ts` +
+  test → Task-65, with their lines in `src/engine/README.md` and `src/data/README.md` and the two
+  barrels (`src/engine/routes/index.ts`, `src/engine/run/index.ts`); the packed
+  `src/assets/frlg/{outdoor,forest,cave}.png` through `scripts/frlg/build-tilesets.mjs` (cells 49
+  and 50, the only free ones) → Task-65; `src/ui/notice.ts` + `notice.test.ts` (the gate's two
+  builders) and `src/i18n/{en,es}.ts` (its copy) → Task-65; `docs/maps-spec.md` §7,
+  `docs/tileset-spec.md` §1/§2/§6, `docs/design-spec.md` §7 and `docs/route-generator.md` §7
+  (**O-R5 is reworded, not closed**) → Task-65. It claims no `package.json`,
+  `src/main.ts`, `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts`, `src/ui/mapView.ts`
+  (the marker **is** `MapRoomSpecial`, the casino's own finding), `src/engine/run/{pool,state}.ts`,
+  the move/TM data (`src/data/dex/moves.json`, `src/data/tms.ts`), `src/engine/battle/**` or any
+  other packer.
+- **Shape:** one task, alone: it wants `src/scenes/RouteScene.ts` (every batch 5-24, Batch 24's
+  Task-64 last) **and** the special-room layer Task-64 extends one batch earlier and Task-66 one
+  batch later, so it opens the new **Batch 25**. It deliberately claims **neither** `[Task-52]`'s
   pool file (`src/engine/run/pool.ts`) **nor** `[Task-31]`'s placement seam
-  (`addCaughtPokemon`/`pcCatch`), so it cannot silently duplicate either: the reward it gates is
-  an ordinary ground item placed off a stable room id (the `megaStoneItem` shape, 1049-1055),
-  not a catch. Surf's gate needs no new tile (the map already carries `WATER` and treats it as
-  solid, `src/engine/map.ts` 11/16), so only the bush and the rock owe art; the opening is
+  (`addCaughtPokemon`/`pcCatch`), so it cannot silently duplicate either: the reward it gates is an
+  ordinary ground item placed off a stable room id (the `megaStoneItem` shape, `rooms/megaStone.ts`
+  20-28), not a catch. The water seal reuses the shipped `WATER` value (already solid,
+  `src/engine/map.ts` 11/16), so only the bush and the rock owe art and tile values; the opening is
   recorded per-floor, so a fixed seed's route geometry is unchanged and **no `SAVE_VERSION`**
   step is owed.
+- **Planned against the shipped code (`2026-10-19`), and the cut changed seven ways.** (a) **The room
+  is a descriptor module**, not a `buildRoom` branch — the casino's own finding — so
+  **`src/ui/mapView.ts` needs no edit** and leaves the hot-file list (the earlier paragraph claimed
+  it; the shipped `MapRoomMarker = MapRoomSpecial`, `mapView.ts` 26, made that unnecessary). (b)
+  **The carve is a route-generator pass, not a fixture:** `RoomFixture` (`rooms/types.ts` 19-26)
+  can only append trainers, items and a counter and cannot write tiles, and `validateRoute` gates
+  on `strandedItems` (`routes/validate.ts` 231-233), so the seal must exist **inside** the build; it
+  is a new `routes/gate.ts` pass wired into `attemptRoute` (after the branches, `cleanWalls` and the
+  terrain pass), and its vault is **not** pushed into `route.pockets` (that list feeds `placeItems`
+  1100-1120 and the `unreachablePockets` report 245-247); a gated build that finds no site is a
+  **failed attempt** (`validateRoute`'s new `missingGate`, gated on the request), so the room can
+  never ship without its gate. (c) **The opening is an input to the build**, not a scene flag:
+  `RouteRequest.gate?: 'sealed' | 'open'`, read in `buildRoom` (1109-1150) from
+  `isItemPicked(run, gateId(mapIndex, roomId))`, so a revisit and a reload both draw it open and the
+  scene keeps no state. (d) **The seal is its own tile value** (`BUSH`/`ROCK`, with the shipped
+  `WATER` reused for the third), so `isWalkable` refuses it through `SOLID` (`map.ts` 16) and
+  `movementMap`'s tree-tip rule (`treeTipKeys`, `tileFrames.ts` 241-256) can never turn it walkable
+  the way a plain `WALL` gate could. (e) **The kind rolls last** in the special pass, after the
+  casino's block (`plan.ts` 455-460), so no shipped floor's specials move; the kind and the site
+  come off two minted, module-local streams (`:gate:` and `:gate:site:`), so no shipped stream moves
+  and a reroll keeps the kind. (f) **The only free frames are 49 and 50**
+  (`build-tilesets.mjs` 76-77), and `frlg.test.ts` 317-323 currently pins them blank, so that case
+  flips to "stamps the two obstacle cells". (g) **The gate reads the party's types, not a move**
+  (the human's answer): `src/engine/run/party.ts` holds `partyHasType`, the first of the party
+  predicates `[Task-91]` extends, and `src/data/gates.ts` holds the three type rows — so the port
+  needs **two** hooks (`route()` to read the seal and `rebuildRoom()` to redraw the room in place),
+  the reward is placed by the descriptor off `route().gate.pocket`, and `rebuildRoom` keeps the live
+  `RouteEncounters` instance so reopening the seal cannot restart the room's encounter sequence.
+- **Batch filling: checked, no member added (`2026-10-19`).** Three later tasks pass the letter of
+  the rule and are refused on the **wave rule** — the rule Batch 24 and Batch 23b applied to the
+  Phase-9 wave: **`[Task-104]`** (B31, the damage-model abilities: `src/engine/battle/{damage,state,
+  turn}.ts`, the ability registry, `docs/balance/effect-coverage.md` and `docs/battle-spec.md`
+  §10/§11; deps merged, no batch-mate file needed), **`[Task-107]`** (B49, the double battle's
+  engine half: `src/engine/battle/**`, `src/data/bosses.ts` and `docs/battle-spec.md`; deps merged,
+  written "against every battle rule shipped so far") and **`[Task-90]`** (B29, the FRLG NPC
+  overworld set: `src/assets/frlg/overworld.png`, `src/data/frlg/overworld.json`,
+  `scripts/frlg/build-overworld-sprites.mjs`, `src/assets/README.md` and `docs/art-direction.md` —
+  disjoint from this task's `forest.png` + `build-tilesets.mjs`; deps none). Each shares a serial
+  resource with its own wave one batch apart — `[Task-104]` with `[Task-106]` (B32) and
+  `[Task-107]` over `damage.ts`/`state.ts`/`turn.ts`, `[Task-107]` with `[Task-108]` (B50), and
+  `[Task-90]` is the wave's **atlas owner**, whose manifest `[Task-89]`/`[Task-91]` read and which
+  already owes `[Task-64]`'s deferred `rocket` row — so shipping any of them here pulls a serial
+  resource of that wave **four, six and twenty-four** batches ahead of its own cut. Every other
+  later task is disqualified outright: `[Task-66]`/`[Task-67]`/`[Task-68]` (B26-B28) hold
+  `src/scenes/RouteScene.ts` and two of them `src/engine/maps/plan.ts`; `[Task-78]`, `[Task-79]`,
+  `[Task-84]`, `[Task-87]`, `[Task-89]`, `[Task-91]`-`[Task-93]`, `[Task-95]`-`[Task-102]`,
+  `[Task-105]`, `[Task-109]` and `[Task-110]` claim the route scene, the route carve or the
+  special-room layer; `[Task-81]`/`[Task-82]` claim `plan.ts`; `[Task-106]` claims
+  `docs/maps-spec.md` §7; `[Task-103]`/`[Task-87]` claim `src/data/items.ts`; `[Task-85]` claims
+  `src/scenes/BootScene.ts` (and is **not** shipped); and `[Task-103]` and `[Task-108]` depend on
+  something that has not merged. Batch 25 stays **Task-65 alone**, and its spec is written
+  (`.agent_specs/task-65.md`, `2026-10-19`) on the type reading.
+- **The move gate is answered and removed (`2026-10-19`).** The entry's report asked for Cut / Rock
+  Smash / Surf and the shipped build cannot supply them: `cut` has no `"num":15` row in
+  `src/data/dex/moves.json` (835 moves, so `getMove('cut')` is `undefined`) and a member's moves are
+  the **randomized** learnset's (`D17`, `src/engine/battle/randomLearnset.ts` 51-64/154-177), drawn
+  from `allMoves()`, so a move the dex lacks can never fill a slot. The human's answer replaced the
+  move with a **type**: bush → Bug or Grass, rock → Rock or Fighting, water → Water. Rock Smash and
+  Surf would have been reachable (both are in the damage pool, Surf also a TM), but the type reading
+  needs neither, so **no dex, TM, `TM_COUNT`, shop or battle file is touched** and the room is
+  openable by any party that carries the type. `docs/route-generator.md` §7's **O-R5** stays open:
+  it is about Cut/Rock Smash **field-move** gates, which this is not.
 
 ### Batch 26 — the trade room
 - **Task-66** A trade room: give one Pokémon, receive a random one.
@@ -2523,10 +2616,11 @@ behind the battle's info
 window) — and Batch 5's own one (Task-42's catch HP: the number or the fraction) was
 **answered with the fraction** and shipped, so its bullet is gone — and the ninth round's three
 reports add six (one behind the boss win, three behind the room battle condition and two
-behind the mini-boss reward) and the tenth round's three add eight (four behind the casino,
-two behind the gated reward room and two behind the trade room) and the eleventh round's single
-report adds six (all behind the no-items/no-heal room) and the twelfth round's single report
-adds four (the surface, the last move, the gesture and the confirm, all behind the MOVES tab's
+behind the mini-boss reward) and the tenth round's three add eight (four behind the casino, two
+behind the gated reward room — **answered and removed**, `2026-10-19`, including the key the round
+never asked, below — and two behind the trade room) and the eleventh
+round's single report adds six (all behind the no-items/no-heal room) and the twelfth round's single
+report adds four (the surface, the last move, the gesture and the confirm, all behind the MOVES tab's
 delete) — and the **third round's Task-47 question is answered** (the human settled it when
 Batch 7 was cut: the Continue row reads the route HUD's own string, `` `Map <n> · <biome>` ``,
 with **no** third clause, frozen in `### Batch 7` above and in `.agent_specs/task-47.md`, so
@@ -2793,22 +2887,20 @@ note. The one ID without a batch is not a question: `[Task-28]` waits on an upst
   (Batch 29's `[Task-90]`) packs both rows; or keep the stand-in. Nothing else in the plan
   changes either way, and Batch 24 is cut and its spec written on the placeholder reading.
 
-- **`[Task-65]` (the gated reward room, Batch 25): may any party member open it, or only the
-  lead?** The report says «algun poke del party conoce cierto movimiento» — **some** Pokémon of
-  the party — so the written default is **any** member, the lead included, with no
-  lead special-case; the alternative is that only the lead's moveset is asked (the follower
-  Pokémon the route already draws is the lead, `[Task-41]`), which reads as a visible
-  requirement but silently ignores a move the rest of the party knows. Say which before Batch
-  25's branch is cut. Nothing else in the plan changes either way.
-
-- **`[Task-65]` (the gated reward room, Batch 25): does an opened obstacle stay open for the
-  floor?** The written default is **permanent for the floor**: the opening is recorded like a
-  taken ground item (`pickedItems` with a stable room-scoped id, `state.ts` 104-107), so a
-  revisit finds it open and `advanceMap` clears it (199-201) — no run field and no
-  `SAVE_VERSION` step. The alternative is that the obstacle closes again when the player leaves
-  the room, which makes the reward a one-shot visit and needs no bookkeeping at all, but also
-  lets a player who walked in, opened it and walked out re-open it for free. Say which before
-  Batch 25's branch is cut. Nothing else in the plan changes either way.
+- **`[Task-65]`'s three gated-reward questions are answered and were removed (`2026-10-19`), and the
+  same answer rewrote the entry.** The first two the entry's `*Decision:*` line had already frozen:
+  **any** party member opens the obstacle (the lead included, no special case, HP irrelevant — the
+  report's «algun poke del party») and the opening is **permanent for the floor** (a stable
+  room-scoped mark in `pickedItems`, `state.ts` 130-131, cleared by `advanceMap` at 217-235, so a
+  revisit finds it open and a reload does too), so there is no run field and **no `SAVE_VERSION`**
+  step. The third the round never asked, and the cut turned it up: **the key could not be a move.**
+  `cut` has no row in the generated dex (835 moves; `getMove('cut')` is `undefined`) and a member's
+  moves are the randomized learnset's (`D17`), drawn from `allMoves()`, so a bush keyed to Cut would
+  be unopenable on every run. The human's answer (`2026-10-19`): **the obstacle is opened by a party
+  Pokémon's TYPE** — bush → **Bug or Grass**, rock → **Rock or Fighting**, water → **Water** — so no
+  dex/TM row changes, `src/engine/run/party.ts` ships `partyHasType` instead of a move accessor,
+  and `docs/route-generator.md` §7's **O-R5** (Cut/Rock Smash field-move gates) stays **open**.
+  Batch 25's spec carries all three verbatim.
 
 - **`[Task-66]` (the trade room, Batch 26): is the trade optional, and can the player decline
   after seeing what is offered?** The report says «das un poke y te da otro random» and does not
@@ -4704,56 +4796,80 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       special-room layer `[Task-65]` and `[Task-66]` also extend, which is why the three cannot
       share a batch — so it opens the plan's new **Batch 24**, one batch behind Task-63.
       *(Batch 24)*
-- [ ] **[Task-65] A gated reward room: a reward behind a blocked path only a party move opens.**
+- [ ] **[Task-65] A gated reward room: a reward behind a blocked path only a party of the right type opens.**
       Reported in play: «añade tarea habitacion especial que da recompensa pero el camino esta
       bloqueado y solo se puede entrar si algun poke del party conoce cierto movimiento por ejemplo
-      corte y aparecen arbustos o rocas y necesitas golpe roca o agua y necesitas surf».
+      corte y aparecen arbustos o rocas y necesitas golpe roca o agua y necesitas surf». The human's
+      later answer (`2026-10-19`) replaced the move with a **type**: the obstacle is opened by a
+      party Pokémon of the right **type** — a bush by Bug or Grass, a rock by Rock or Fighting,
+      water by Water — so nothing is required to be known and no dex/TM row changes.
       **What the generator can already place.** A room's tiles are the route builder's
       (`sketchRoute`, `src/engine/routes/`), whose terrain pass carves tall grass and ledges and
       whose `WATER` is decoration only (`docs/route-generator.md`, 167; D18). The tile vocabulary
       is `FLOOR/WALL/EXIT/TRAP/CHEST/ITEM/WATER/CARPET/TALL_GRASS/LEDGE` (`src/engine/map.ts`,
       5-14), `isWalkable` refuses `WALL/WATER/LEDGE` (16-27) and `resolveMove`/`tileAt` are the
-      step rules (57-77). A **reward pocket** is an item placed on a flood-fill-reachable pocket
-      (the ground-item pass, `docs/route-generator.md` §"Items", 381), and a room's content is
-      injected in `buildRoom` (`RouteScene`, 986-1002) off stable ids — the mega-stone's
-      `megaStoneItem` (1049-1055) is the model for a room-scoped item. A special room kind is
-      `MapRoomSpecial` (`plan.ts`, 70) with its minimap marker (`mapView.ts`, 26).
-      **What "the party knows this move" can read.** Every member carries its four slots:
-      `member.fighter.moves` (`MoveSlot[]`, `src/engine/battle/fighter.ts`, 144) — a test is
-      `member.fighter.moves.some((slot) => slot.moveId === moveId)`, the shape the engine's own
-      OHKO guard already uses (`fighter.ts`, 419) — and the party and box are `run.party`/
-      `run.box` (`state.ts`, 93-94). There is **no** `knowsMove` accessor today, so this task adds
-      one (a pure helper under `src/engine/run/`, with a test).
+      step rules (57-77); this task adds `BUSH` (10) and `ROCK` (11) to both the vocabulary and
+      `SOLID`, and reuses `WATER` for the third seal. A **ground item** is placed on a
+      flood-fill-reachable pocket (the ground-item pass, `docs/route-generator.md` §"Items", 381) —
+      which is exactly why the gated reward is placed by the room's **fixture after the build**
+      instead: `validateRoute` fails a stranded item, and a sealed vault is stranded by design. A
+      room's content is injected in `buildRoom` (`RouteScene`, 1109-1150) off stable ids — the
+      mega-stone's `megaStoneItem` (`rooms/megaStone.ts`, 20-28) is the model for a room-scoped
+      item. A special room kind is `MapRoomSpecial` (`plan.ts`, 64) with its minimap marker
+      (`mapView.ts`, 26).
+      **What "the party's type" can read.** A member's types are its **species'** types:
+      `FighterSnapshot` (`src/engine/battle/fighter.ts`, 673-693) carries no `types` field, and
+      `createFighter` stamps `types: species.types` (506) from `getSpecies(speciesId).types`
+      (`src/data/dex/species.ts`, 26/76-78) — a battle-only forme (Mega, Transform, the room
+      condition's all-types field) is reverted or never snapshotted, so the run's member always shows
+      its base species' types. The party is `run.party` (`state.ts`, 102) and the box is separate.
+      There is **no** party predicate today, so this task adds the first one: a `partyHasType`
+      under `src/engine/run/` (its own module, general enough for `[Task-91]`'s
+      `partyHasMove`/`partyHasAbility` to join it).
       **Fix shape:** one room kind, one obstacle kind, one gate rule. `MapRoomSpecial` gains a
-      gated-reward kind; `buildRoom` carves the room's obstacle across the only path to a reward
-      pocket and places the reward on the far side — the room's tiles come from `buildRoute`'s
-      request, so the spec freezes whether that is an `obstacle` field on the route params or a
-      post-carve pass on the built `RouteMap`, with the pocket's reachability proven by the same
-      flood-fill the generator already uses. The obstacle maps to the report's own moves — a
-      **bush** for Cut, a **rock** for Rock Smash, **water** for Surf (the `WATER` tile already
-      ships and is already solid, so Surf's gate needs no new tile) — and the interact key, facing
-      the obstacle, opens it only when a party member knows the move, with the opening recorded
-      per-floor (the `pickedItems`-with-a-stable-id shape, so it stays open on a revisit and
-      clears on `advanceMap`, `state.ts`, 104-107, 199-201). New bush/rock frames go into the
-      packed FRLG tileset atlases (`scripts/frlg/build-tilesets.mjs`, `src/assets/frlg/*.png`), so
-      this task holds that packed file.
+      gated-reward kind; the room's own **route build** carves a one-tile corridor to a sealed
+      vault and places the reward on its far side — the cut settled that this is a **generator
+      pass** (`src/engine/routes/gate.ts`, wired into `attemptRoute`), not a `buildRoom` tweak and
+      not a fixture, because `RoomFixture` cannot write tiles and `validateRoute` gates on
+      `strandedItems` — with the vault's reachability proven by the same flood-fill the generator
+      already uses, and the seal passed in as `RouteRequest.gate: 'sealed' | 'open'` from the room's
+      stable id (`gate-<map>-<roomId>` in `pickedItems`). The obstacle is opened by the party's
+      **types** — a **bush** by Bug or Grass, a **rock** by Rock or Fighting, **water** by Water
+      (the `WATER` tile already ships and is already solid, so the water seal needs no new tile) —
+      and the interact key, facing the obstacle, opens it only when `partyHasType(run, row.types)`
+      is true for any member, with the opening recorded per-floor (the `pickedItems`-with-a-stable-id
+      shape, so it stays open on a revisit and clears on `advanceMap`, `state.ts` 130-131 and
+      217-235).
+      **The human's answer (`2026-10-19`) superseded the report's move gate:** the obstacle is not
+      opened by Cut/Rock Smash/Surf but by a **party type**, so no dex/TM change is made, `cut`
+      (absent from the build) is never needed, and the run gains a type predicate instead of a move
+      accessor. **`docs/route-generator.md` §7's O-R5 is therefore *not* closed** — that row is about
+      Cut/Rock Smash field-move key/flag gates, and a type gate is a different rule; the task
+      rewords the row to say so and does not adopt it.
+      New bush/rock frames go into the packed FRLG tileset atlas
+      (`scripts/frlg/build-tilesets.mjs`, `src/assets/frlg/{outdoor,forest,cave}.png`, cells 49 and
+      50, the only free ones), so this task holds the three packed sheets and the packer.
       **The gating call the entry freezes:** **any** party member may open it (the report says
-      «algun poke del party») with no lead special-case; the alternative (the lead alone) is the
-      open question below. The task must not duplicate `[Task-52]`'s pool rule (a different rule
-      on the encounter table) or `[Task-31]`'s placement seam (a catch's placement): it claims
+      «algun poke del party») with no lead special-case and no consideration of HP — the lead alone
+      was the alternative this cut answered (`2026-10-19`, below). The task must not duplicate
+      `[Task-52]`'s pool rule (a different rule on the encounter table) or `[Task-31]`'s placement
+      seam (a catch's placement): it claims
       neither `src/engine/run/pool.ts` nor `addCaughtPokemon`/`pcCatch`, and the reward it gates
       is an ordinary ground item off a stable room id, not a catch.
       Out of scope: the wild pool, the catch placement, the route generator's geometry beyond the
-      room's own carve, the field moves' battle effects (Cut/Rock Smash/Surf as moves stay as they
-      are), the party/PC panel, and the map filter `[Task-62]` draws.
+      room's own carve, type changes and abilities (the party's types are the species' own), the
+      party/PC panel, and the map filter `[Task-62]` draws.
       **Docs:** the special-room table and its content bullet in `docs/maps-spec.md` §7 gain the
-      gated room, and `docs/route-generator.md` §7 loses its **O-R5** row (the key/flag gate this
-      task adopts), which is the one line of that file it writes.
-      *Decision:* **Any** party member opens the obstacle (the lead included, no special case) and the opening is **permanent for the floor** (the `pickedItems`-with-a-stable-id shape, cleared by `advanceMap`). This adopts the key/flag gate that `docs/route-generator.md` section 7 kept out of scope as **O-R5**, so that line is now closed by this task.
+      gated room and its type gate, `docs/tileset-spec.md` §1/§2/§6 gain the two new map values and
+      their cells, and `docs/design-spec.md` §7's special-rooms bullet names it.
+      `docs/route-generator.md` §7's **O-R5** row is **reworded, not closed**: it keeps saying
+      field-move gates are out of scope and adds that the gated room's **type** gate is not one.
+      *Decision:* The obstacle is opened by a party **type** — bush: Bug or Grass, rock: Rock or Fighting, water: Water — **any** party member opens it (the lead included, no special case) and the opening is **permanent for the floor** (the `pickedItems`-with-a-stable-id shape, cleared by `advanceMap`). No move is required and no dex/TM data changes; `docs/route-generator.md` §7's **O-R5** (Cut/Rock Smash field-move gates) stays **open**, because a type gate is not that gate.
       *Dependencies:* none. Batch order covers it: it wants `src/scenes/RouteScene.ts` (every
-      batch 5-20, Batch 20 last), `src/engine/maps/plan.ts` and `src/ui/mapView.ts`, so it opens
-      the plan's new **Batch 25**, one batch behind Task-64, and it can share neither of the
-      special-room files with Task-64 or Task-66. *(Batch 25)*
+      batch 5-24, Batch 24's Task-64 last) and `src/engine/maps/plan.ts` — and **not**
+      `src/ui/mapView.ts`, because the shipped marker type is `MapRoomSpecial` itself (Batch 24's
+      own finding) — so it opens the plan's new **Batch 25**, one batch behind Task-64, and it can
+      share neither of the special-room files with Task-64 or Task-66. *(Batch 25)*
 - [ ] **[Task-66] A trade room: give a Pokémon, receive a random one.** Reported in play:
       «añade tarea habitacion intercambio pokemon donde das un poke y te da otro random».
       **What a member removal and addition may use.** A member is removed today only by
@@ -5187,9 +5303,9 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (D11) and a revisit shows the same NPC. `src/data/npcs.ts` + test holds the rows
       `{ id, name, spriteKey, chance, floorStep, requires? }` with
       `chance + floorStep × (mapIndex - 1)` clamped, and `requires` is the report's own "a certain
-      type or feature of a party member": the pure `partyHasType` / `partyHasMove` /
-      `partyHasAbility` predicates join the module `[Task-65]` creates (extending `knowsMove` —
-      never a second accessor). `src/ui/npcPanel.ts` + test is the panel shell every NPC fills
+      type or feature of a party member": `partyHasMove` / `partyHasAbility` join the module
+      `[Task-65]` creates, whose first predicate is `partyHasType` — never a second module.
+      `src/ui/npcPanel.ts` + test is the panel shell every NPC fills
       (title, one paragraph, a column of choices, the leave path) and owes its `src/ui/README.md`
       line. `RouteScene` places the sprite on a free tile of the room, opens the panel on the
       interact key, and records the use per floor through the shipped `pickedItems` stable-id shape
@@ -5198,7 +5314,8 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: every NPC's own effect (`[Task-92]`–`[Task-95]`), the trainer rooms' composition
       (`[Task-82]`) and the special rooms.
       *Dependencies:* `[Task-82]` (the room roles the roll reads), `[Task-90]` (the sprite rows) and
-      `[Task-65]` (the `knowsMove` module the party predicates join). *(Batch 37)*
+      `[Task-65]` (the party-predicate module — `partyHasType` — the other predicates join).
+      *(Batch 37)*
 - [ ] **[Task-92] The merchant replaces the shop room.** The human's decision: the **merchant** is an
       NPC and the shop **room** goes. Today the shop is a special leaf (`MapRoomSpecial` `'shop'`,
       `hangsShop` / `SHOP_FROM_MAP = 2` in `src/engine/maps/plan.ts`), its counter (`shopCounter`)
@@ -5324,8 +5441,8 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       bloqueadas con obstaculo que se pasa si tienes cierto tipo de poke segun el obstaculo»): the leaf is
       carved with an obstacle whose **type** the row names, and it opens only while the party holds a
       member of that type — the same party predicate family `[Task-91]` adds and `[Task-96]` reuses, so
-      the secret shop is a sibling of the static-species room rather than of `[Task-65]`'s
-      Cut/Rock Smash/Surf gate.
+      the secret shop is a sibling of the static-species room rather than of `[Task-65]`'s own
+      bush/rock/water leaf (which is also a type gate, one obstacle per room and one reward).
       **Docs:** `docs/maps-spec.md` §7, `docs/design-spec.md` §7.
       Out of scope: the Mart's four-row stock, the TM catalogue (`src/data/tms.ts`), and the
       merchant (`[Task-92]`).
@@ -6155,12 +6272,14 @@ rooms in the shop/mini-boss mould (a dead-end leaf with only its own content,
 `docs/maps-spec.md` §7): a **casino** room with a Team Rocket grunt, a pay-per-spin slot machine
 whose prizes are items and an **egg** that yields a random Pokémon when the run advances a
 floor, and a chance of a battle that locks the machine (`[Task-64]`; the special-room layer is
-`MapRoomSpecial`, `src/engine/maps/plan.ts` 70, placed by `planMap` 402-445, and the room-local
-fixture's model is the shop counter, `RouteScene` 995 / `openShop` 5456-5470); a **gated reward
-room** whose reward sits behind bushes, rocks or water that only a party move opens — Cut, Rock
-Smash, Surf (`[Task-65]`; the tile vocabulary is `src/engine/map.ts` 5-14 and `WATER` already
-ships and is already solid, 11/16, while a "party knows this move" test is
-`member.fighter.moves.some(...)`, `fighter.ts` 144/419, with no accessor today); and a **trade
+`MapRoomSpecial`, `src/engine/maps/plan.ts` 64, placed by the special pass `planMap` 406-460, and
+each room's content is its own descriptor module under `src/scenes/rooms/`, `D47`, with
+`rooms/shop.ts` the fixture model); a **gated reward
+room** whose reward sits behind bushes, rocks or water that only a party of the right **type**
+opens — Bug or Grass, Rock or Fighting, Water (`[Task-65]`; the tile vocabulary is
+`src/engine/map.ts` 5-14, gains `BUSH`/`ROCK` and reuses the already-solid `WATER` 11/16, and the
+predicate is the new `partyHasType(run, types)` over `getSpecies(member.fighter.speciesId).types`,
+since a `FighterSnapshot` carries no types); and a **trade
 room** where a Pokémon is given for a random one (`[Task-66]`; a member is removed only by
 `releaseFainted`, `perms.ts` 17-29, which counts a casualty, and a random one is
 `speciesPool` + `createFighter({ learnsetSeed: run.seed })` placed as a catch is,
