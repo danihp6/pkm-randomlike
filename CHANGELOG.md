@@ -8,6 +8,77 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The trade room: give one Pokémon, receive a random one.** The special-room layer's
+      sixth kind, `trade`, hangs a `dead-end` leaf at **20 % from map 3 on**, drawn **last** in
+      `planMap`'s special pass so every shipped floor's specials, links and sizes stay identical.
+      The room is a descriptor module (`src/scenes/rooms/trade.ts`) with the Mart's counter and a
+      640×540 window listing the **party** plus `LEAVE`; `RouteScene.ts` needed **no edit** (the
+      `D47` port already carries `fixture`, `interact`, `counterTile`, `commitRun` and
+      `releaseHudKeyboard`). The rule is pure (`src/engine/run/trade.ts`): `tradeId(map, room)` is
+      the per-floor mark `trade-<map>-<room>` in `pickedItems`, `canTrade` refuses a single-member
+      party, `removeMember` drops exactly one member without touching
+      `stats.casualties`/`rip`/`caughtSpecies` (the deliberate removal beside `releaseFainted`),
+      and `tradePokemon` rolls **on acceptance** from a minted
+      `${seed}:trade:${mapIndex}:${roomId}` stream — two draws, species from
+      `speciesPool(band, 'wild')` and a nature — then places the received member at `squadLevel`
+      through `adoptAtLevel`/`addPokemon`, with **no catch** counted. One trade per room, optional
+      (`Q`/cancel grants nothing), **no run field** and **no `SAVE_VERSION`** step; eight
+      `trade.*` keys in both locales and the `docs/maps-spec.md` §7 / `docs/routes-spec.md` §6
+      rows. **QA:** `npm test` twice (**154 files / 1985 tests**), `npm run build`, 14/14 paths,
+      `RouteScene.ts` and `mapView.ts` byte-identical, the eight floor fills in their windows
+      (1.2490 / 1.2503 / 1.1552 / 1.3631 / 1.3567 / 1.3020 / 1.2740 / 1.2110) with
+      `TRADE_CHANCE = 0.2`, 78/400 trade leaves at map 5 and 0/200 on maps 1-2, and the five
+      `[live]` criteria measured on canvas (counter sprite 0/380 differing pixels, the refusal,
+      one rolled trade at `squadLevel` with full HP, the floor-scoped mark and the minimap glyph).
+      The plan's seed `pkm-111` hangs no trade leaf; the live pass used `qa-trade-5` (map 3,
+      room 8) and recorded the deviation.
+
+- [x] **The FRLG NPC overworld sprite set: ten special-NPC rows and the Rocket grunt.**
+      `scripts/frlg/build-overworld-sprites.mjs` now packs the decomp's NPC classes as rows of
+      the same nine 16×32 poses, taking its source directory only as an **absolute argv/env**
+      path (`PKM_FRLG_OVERWORLD_DIR`) and refusing a relative path, a path inside the worktree or
+      a missing directory (the Asset-trees rule). The atlas grows from 144×320 to **144×672**
+      (21 rows × 9 poses = 189 frames, every frame with art), the manifest
+      `src/data/frlg/overworld.json` gains `sprites` (trainer rows at 0…81, `rocket` 90, the ten
+      NPC keys 99…180), `sources` and six documented `fallbacks`, and
+      `src/data/overworldSprites.ts` exports `OVERWORLD_SPRITE_KEYS`, `NPC_SPRITE_KEYS`,
+      `OVERWORLD_SPRITE_FALLBACKS` and `overworldHasSprite`. The ten keys are `merchant`,
+      `chef`, `magician`, `exorcist`, `weather-man`, `sacrifice`, `medic`, `iv-judge`,
+      `berry-tree` and `ninja`; `rocket` is the casino's real grunt art and its placeholder is
+      gone. The ten trainer rows are **pixel-identical** to the shipped atlas.
+      `src/assets/README.md`, `docs/art-direction.md` and the `D24` addendum in
+      `docs/tech-decisions.md` carry the provenance. **QA:** 14/14 criteria, `npm test`
+      (**1939 tests**) and `npm run build`, ten paths, a byte-stable double repack, the four
+      Asset-trees refusals, and both `[live]` criteria on canvas (casino grunt `frame 92`,
+      `cutY = 320`, tint white; a trainer row `frame 65`, `cutY = 224 = floor(65/9)*32`).
+
+- [x] **The out-of-battle abilities: a room's ability pays an item.** The pure
+      `src/engine/run/passives.ts` reads the party's abilities on room entry and on a win against
+      the new `MAP_PASSIVES` table (`src/data/passives.ts`): `pickup` (room) and `honeygather`
+      (win), each a chance and an item list, on the minted
+      `${seed}:passive:${mapIndex}:${roomId}:${ability}` stream (at most two draws, no shipped
+      stream moves). A payout marks `passive-<ability>-<trigger>-<map>-<room>` in `pickedItems`,
+      so it is **once per floor**, and a room that does not pay returns the same run reference:
+      **no run field** and **no `SAVE_VERSION`** step. The scene seam is **+27 lines** in
+      `RouteScene.ts` (`applyMapPassives`/`showPassivePickups` on `transitionTo`, and the win
+      pair before `persistRun`), reusing the shipped `itemPickupNotice` with **no new i18n key**.
+      The two abilities were unreachable — the random-ability pool is derived from the effect
+      registry — so the task registers their empty battle handlers, removes their coverage
+      exclusion and regenerates `docs/balance/effect-coverage.md` (263 port / 36 excluded); new
+      members' random abilities re-roll once. **QA:** `npm test` twice (**154 files / 1955
+      tests**), `npm run build`, 14/14 paths, the `PASSIVE_PINS` fixed-seed regression and all
+      three `[live]` criteria (Pickup on room entry, Honey Gather on a win once per room, and the
+      trigger being the live ability), with the pre-existing Windows CRLF drift in
+      `scripts/effect-coverage.mjs` recorded rather than hand-fixed.
+
+- [x] **Batch 26 integration.** The three tasks merge in ID order onto `main` with the batch
+      gates after each merge (**1985 → 1988 → 2007 tests**, `npm run build` green). The combined
+      tree has 36 paths, two of them shared docs: `src/engine/README.md` (the only merge
+      conflict, resolved keeping both `run/trade.ts` and `run/passives.ts`) and
+      `docs/routes-spec.md` (§6 trade + §2 passives, 28 insertions, 0 deletions). No code, data
+      or asset path overlaps; `src/scenes/RouteScene.ts` is byte-identical for Task-66 and
+      carries only Task-105's +27-line seam.
+
 - [x] **The gated reward room: a vault behind a bush, a rock or a pond that only a party type
       opens.** The room layer's second descriptor, `src/scenes/rooms/gate.ts`, so the scene gained
       only the port's two new hooks — `RoomHost.route()` reads the seal and its pocket,

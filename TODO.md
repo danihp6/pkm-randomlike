@@ -437,8 +437,10 @@ the machine (`[Task-64]`); a **gated reward room** whose reward sits behind bush
 water that only a party **of the right type** opens — Bug or Grass, Rock or Fighting, Water
 (`[Task-65]`); and a **trade room** where a Pokémon is given for a random one (`[Task-66]`).
 Because they share the route scene
-**and** both halves of the special-room layer, no two can sit in a batch: they open **Batch
-24**, **Batch 25** and **Batch 26**, one task each, one batch apart. `Task-64` is the one of the
+**and** both halves of the special-room layer, no two can sit in a batch: they opened **Batch
+24**, **Batch 25** and **Batch 26**, one batch apart. Batch 24 and 25 ran one task each; Batch
+26 was **filled** with the NPC sprite packer and the out-of-battle abilities, so it shipped three
+tasks wide. `Task-64` is the one of the
 round that may repack the FRLG overworld/trainer atlases (a new `rocket` archetype's two
 sprites), `Task-65` may add obstacle frames to the FRLG tileset atlases and the run's first
 **party-predicate** module (`partyHasType`, which `[Task-91]`'s NPC gate extends), and `Task-66`
@@ -2570,7 +2572,7 @@ atlas frame. What follows is the cut's own record.
   the live pass must compare the opened cell against the **drawn** ground frame, not the literal
   `FLOOR` frame 0 — the forest mix varies it.
 
-### Batch 26 — the trade room
+### Batch 26 — the trade room, the NPC sprite set and the map passives *(shipped, archived)*
 - **Task-66** A trade room: give one Pokémon, receive a random one.
 - **Task-90 (filled)** The FRLG NPC overworld sprite set: the packer, the repacked
   `src/assets/frlg/overworld.png`, its generated manifest and the frozen sprite keys
@@ -4964,44 +4966,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `src/ui/mapView.ts`, because the shipped marker type is `MapRoomSpecial` itself (Batch 24's
       own finding) — so it opens the plan's new **Batch 25**, one batch behind Task-64, and it can
       share neither of the special-room files with Task-64 or Task-66. *(Batch 25)*
-- [ ] **[Task-66] A trade room: give a Pokémon, receive a random one.** Reported in play:
-      «añade tarea habitacion intercambio pokemon donde das un poke y te da otro random».
-      **What a member removal and addition may use.** A member is removed today only by
-      permadeath: `releaseFainted` (`src/engine/run/perms.ts`, 17-29) filters every 0-HP member
-      out of `party` and `box` and **bumps `stats.casualties`** — the wrong counter for a
-      deliberate trade, so this task adds a removal helper that drops exactly one member and
-      leaves `casualties` alone. A member is added by `addPokemon` (`state.ts`, 257-…, party then
-      box) and a catch is placed by `addCaughtPokemon` (480-482, which also unlocks the box
-      member); the PC box is `run.box` and the party/PC panel is `src/ui/partyScreen.ts`. A random
-      member is `speciesPool(band, 'wild')` + `createFighter({ learnsetSeed: run.seed })` (D17) +
-      `runPokemonFromSnapshot`, at the squad's level through `adoptAtLevel` (`progression.ts`,
-      114-140) — exactly the catch's own fold (`resolve.ts`, 92-101).
-      **Fix shape:** one room kind, one panel, one pure trade. `MapRoomSpecial` gains a trade kind
-      (`plan.ts`, 70) with its marker (`mapView.ts`, 26); `buildRoom` places the room's fixture
-      (the shop-counter model, `RouteScene` 995 / `drawShopCounter` 4266-4274); the interact key
-      opens a room-local panel (the Mart's shape, `openShop` 5456-5470) that lists the party and
-      takes one pick; choosing removes that member and adds a random one **at the squad's level**
-      (the catch rule, `docs/battle-spec.md` §7). The trade is **optional** (leaving grants
-      nothing, the reward window's `Q` path) and **one per room**, recorded per-floor like the
-      gated room's opening, so a revisit finds it used and `advanceMap` clears it (`state.ts`,
-      104-107, 199-201) — no new run field and **no `SAVE_VERSION`** step.
-      **The calls the entry freezes:** optional (the report says "das un poke", not "you must"),
-      one per room, and **refused when the party holds a single member** — a trade would leave the
-      run with an empty party, which the run cannot represent (`hasLivingParty`, `RouteScene`
-      5093); the received member joins the party, or the box when the party is full (it never is
-      here, since one left). The received Pokémon's level is the squad's (the catch rule); the
-      alternative (the room's band level) is the open question below.
-      **Docs:** the special-room table in `docs/maps-spec.md` §7 and the party/PC rule in
-      `docs/routes-spec.md` §6 (the one place a member is removed outside a battle) gain the
-      trade.
-      Out of scope: the catch's placement and its capture window, the permadeath rule and its
-      release beat (`releaseFainted` is read, never changed), the party/PC panel's own layout and
-      swap rules, the wild pool, and the other two new special rooms.
-      *Decision:* Optional, one per room, refused on a single-member party; the received Pokemon is **rolled on acceptance** (never previewed) and joins at the **squad's level**, the rule a catch already follows.
-      *Dependencies:* none. Batch order covers it: it wants `src/scenes/RouteScene.ts` (every
-      batch 5-20, Batch 20 last), `src/engine/maps/plan.ts` and `src/ui/mapView.ts` — the layer
-      Task-64 and Task-65 also extend — so it opens the plan's new **Batch 26**, the last of the
-      round. *(Batch 26)*
 - [ ] **[Task-67] A room whose battles bar the player's items and healing moves.** Reported in
       play: «añadir habitacion con efecto no se pueden usar objetos ni movimientos de cura» — a
       room whose effect is that the player cannot use items and cannot use healing moves.
@@ -5362,28 +5326,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (`src/data/items.ts`). It takes **Batch 23** beside `[Task-63]`, whose paths are the route scene,
       `src/ui/rewards.ts` and two doc sections and none of these. *(Batch 23)*
 
-- [ ] **[Task-90] The FRLG NPC overworld sprite set.** The packed overworld atlas carries the ten
-      **trainer archetype** rows and nothing else — `src/data/frlg/overworld.json` maps
-      `youngster`…`ace` to a row of nine 16x32 poses, `scripts/frlg/build-overworld-sprites.mjs`
-      packs it from the FRLG rip and `src/data/overworldSprites.ts` resolves a `spriteKey` to a
-      frame — so the NPCs this round registers (merchant, chef, magician, exorcist, weather man,
-      sacrifice, medic, IV judge, berry tree, ninja) have no art at all.
-      **Fix shape.** Extend the packer's class list to the NPC classes the decomp's overworld sheet
-      carries, each a row of the same nine poses, and repack the committed
-      `src/assets/frlg/overworld.png` with its generated manifest
-      `src/data/frlg/overworld.json`. The source tree reaches the packer as an **absolute** path
-      through argv or the environment (the Legend's Asset trees rule), never a tree linked into a
-      worktree, and the keys the NPC table will use are frozen in this task's spec because
-      `[Task-91]` names them. A class the rip lacks takes a documented fallback row (today's
-      `blackbelt` or `psychic`) rather than a new drawing.
-      **Docs:** `src/assets/README.md` (provenance), `docs/art-direction.md`'s FRLG block.
-      Out of scope: the NPC behaviour and placement (`[Task-91]`), the casino's `rocket` grunt
-      (`[Task-64]`, an earlier batch, which repacks the same atlas plus `trainers.png`), and the
-      trainer battle sprites.
-      *Dependencies:* none. It claims the packed atlas and its manifest alone, so it
-      was **filled into Batch 26** beside `[Task-66]`, a scene task that touches
-      neither, once Batch 25 shipped. It adds no run field. *(Batch 26, filled;
-      originally Batch 29)*
 - [ ] **[Task-91] The special-NPC framework: one NPC per trainer room, rolled per NPC.** The human's
       rule is that the special NPCs appear by a **per-NPC percentage inside the trainer rooms**
       `[Task-82]` introduces, each with its own chance, and that the chance rises with the floor.
@@ -5679,21 +5621,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the room conditions (`[Task-62]`, `[Task-106]`) and the type chart itself.
       *Dependencies:* none — `damage.ts`, the registry and the coverage table are shipped. It adds no
       run field. *(Batch 31)*
-- [ ] **[Task-105] The out-of-battle abilities.** «Adaptar habilidades al mapa fuera de combate (p.
-      ej. habilidades de conseguir objetos)»: abilities are battle-only today, and the route never
-      reads one — `BattleLaunch` carries the members' abilities (`src/engine/run/battleLink.ts` 45-57)
-      and nothing else does.
-      **Fix shape.** One pure `src/engine/run/passives.ts` + test with a `MAP_PASSIVES` table in
-      `src/data/` + test: rows `{ ability, trigger: 'room' | 'win', effect }` over the abilities the
-      report names at cut time (the item-gathering ones), run by the scene on room entry and on a
-      win through one seam, paying through `addItem` with the room's own stream so no existing
-      stream moves (D11). No run field: the pickup rides the `pickedItems` stable-id shape.
-      **Docs:** `docs/battle-spec.md` §11, `docs/routes-spec.md` §2, `docs/data-spec.md`.
-      Out of scope: the battle-side handlers, the held items and the NPCs that hand out items.
-      *Dependencies:* none — the ability table and the ground-item path are shipped.
-      It was **filled into Batch 26** beside `[Task-66]` and `[Task-90]`: its code and data
-      are disjoint from both, and Task-66's zero-diff seam leaves `RouteScene` to it.
-      *(Batch 26, filled; originally Batch 48)*
 - [ ] **[Task-106] The room-effect table's second half: the radiant zone, the two auras, the
       all-types change, Endure and +50 crit.** `[Task-62]` ships the room-condition seam and its five
       rows (weather, terrain, fog, Gravity, Trick Room); the human's list carries six more, and every
