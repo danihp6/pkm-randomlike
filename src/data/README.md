@@ -32,6 +32,10 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `population.ts` — the per-band **population thinning** the route generator reads
   (`trainerBonus` added to the map-size tier's own, and the chance a pocket's guard
   exists at all, `O-M5`; `docs/route-generator.md` §3.4).
+- `battlefields.ts` — the `ROOM_BATTLEFIELDS` table: the weather, terrain or field
+  condition a room's battles can begin under, each row's overlay tint/alpha and the
+  two roll chances (regular rooms and the boss room, `docs/maps-spec.md` §6/§7),
+  read by `src/engine/routes/battlefield.ts` and painted by the route.
 - `run.ts` — level bands (level range, party size and the BST window, `D39`) and
   the run chain cadence.
 - `keybinds.ts` — the confirm/cancel/move/run/interact/reset/hud/settings actions,

@@ -39,6 +39,7 @@ import {
   type SideId,
 } from '../engine/battle';
 import { Rng } from '../engine/rng';
+import { battlefieldSeeds } from '../engine/routes/battlefield';
 import {
   MAX_MOVES,
   MAX_PARTY_SIZE,
@@ -547,6 +548,7 @@ export class BattleScene extends Phaser.Scene {
     if (!launch) throw new Error('BattleScene requires a BattleLaunch from the route');
 
     const trigger = launch.trigger;
+    const battlefield = launch.battlefield ?? null;
     this.state = createBattle({
       player: this.playerFighters,
       enemy: this.enemyFighters,
@@ -558,6 +560,7 @@ export class BattleScene extends Phaser.Scene {
         const item = getItem(slot.itemId);
         return item && slot.count > 0 ? [{ item, count: slot.count }] : [];
       }),
+      ...(battlefield ? battlefieldSeeds(battlefield) : {}),
     });
 
     this.displayActive = {

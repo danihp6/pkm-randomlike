@@ -18,7 +18,10 @@ export function hitChance(state: BattleState, side: SideId, move: Move): number 
   const attacker = activeFighter(state, side);
   const defender = opponent(state, side);
   const ctx = makeContext(state, side, { source: attacker, target: defender, move });
-  const base = accuracyChance(move.accuracy, attacker, defender, state.field.gravity > 0);
+  const base = accuracyChance(move.accuracy, attacker, defender, {
+    gravity: state.field.gravity > 0,
+    fog: state.fog,
+  });
   return Math.min(1, runModifyAccuracy(ctx, base));
 }
 

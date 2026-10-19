@@ -82,7 +82,10 @@ function accuracyPreview(
   }
   const chance = runModifyAccuracy(
     ctx,
-    accuracyChance(moveAccuracy, attacker, defender, ctx.state.field.gravity > 0),
+    accuracyChance(moveAccuracy, attacker, defender, {
+      gravity: ctx.state.field.gravity > 0,
+      fog: ctx.state.fog,
+    }),
   );
   return {
     baseAccuracy: moveAccuracy,
