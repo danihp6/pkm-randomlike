@@ -73,7 +73,7 @@ describe('evolutionGraph', () => {
     expect(ready.every((node) => node.parent === 0 && node.level === 20)).toBe(true);
     expect(graph[9]).toMatchObject({
       id: 'eeveegmax',
-      name: 'Gigantamax Eevee · Gigantamaxes with Eeveite G',
+      name: 'Gigantamax Eevee · Eeveite G',
       kind: 'gmax',
       depth: 1,
       row: 9,
@@ -219,7 +219,7 @@ describe('battle-only formes as information rows', () => {
       expect(row, gmax.id).toBeDefined();
       expect(row!.kind, gmax.id).toBe('gmax');
       expect(row!.name, gmax.id).toBe(
-        `${formeDisplayName(gmax.name)} · Gigantamaxes with ${gmax.stoneName}`,
+        `${formeDisplayName(gmax.name)} · ${gmax.stoneName}`,
       );
       expect(row!.level, gmax.id).toBeNull();
       expect(row!.current, gmax.id).toBe(false);
@@ -237,13 +237,13 @@ describe('battle-only formes as information rows', () => {
     expect(graph[4]!.name).toBe(`Mega Charizard Y · Mega Evolves with ${y!.stoneName}`);
     expect(graph[3]!.name).toBe('Mega Charizard X · Mega Evolves with Charizardite X');
     expect(graph[4]!.name).toBe('Mega Charizard Y · Mega Evolves with Charizardite Y');
-    expect(graph[5]!.name).toBe('Gigantamax Charizard · Gigantamaxes with Charizardite G');
+    expect(graph[5]!.name).toBe('Gigantamax Charizard · Charizardite G');
     expect(evolutionGraph('corviknight', 100).find((node) => node.id === 'corviknightgmax')?.name).toBe(
-      'Gigantamax Corviknight · Gigantamaxes with Corviknightite G',
+      'Gigantamax Corviknight · Corviknightite G',
     );
     expect(
       evolutionGraph('toxtricitylowkey', 100).find((node) => node.id === 'toxtricitylowkeygmax')?.name,
-    ).toBe('Gigantamax Toxtricity Low Key · Gigantamaxes with Toxtricity-Low-Keyite G');
+    ).toBe('Gigantamax Toxtricity Low Key · Toxtricity-Low-Keyite G');
   });
 
   it('is the same graph from one stage behind, anchored on the owner species', () => {
@@ -304,31 +304,23 @@ describe('battle-only formes as information rows', () => {
 });
 
 /**
- * The five G-Max rows whose `D44` copy is wider than the row the band draws, with
- * their measured width. The stone name lengthens the copy past the depth-adjusted
- * box, and for the two forme-of-a-forme rows past the scene's own 324-px
- * `setMaxWidth` as well. They are **recorded** rather than asserted away: a new
- * overrun (or any change to one of these) still fails the walk below, and the
- * follow-up — a wider row, a shorter copy or a scene-side fit — is not a change
- * this file may make.
+ * The G-Max row's copy is `{forme} · {stone}` (`D44`): the stone's own name is the
+ * whole clause, because "Gigantamaxes with" pushed the two forme-of-a-forme rows
+ * past the depth-2 box. No information row may leave its own background, so any
+ * new copy that does fails the walk below.
  */
-const OVERRUN_GMAX_ROWS: Readonly<Record<string, number>> = {
-  butterfreegmax: 291,
-  corviknightgmax: 301,
-  grimmsnarlgmax: 291,
-  toxtricitylowkeygmax: 383,
-  urshifurapidstrikegmax: 387,
-};
 
 describe('information row widths', () => {
   it('measures the pinned copies against the band\x27s depth-3 box', () => {
     expect(evoBoxWidth(3)).toBe(288);
     expect(HUD_DETAIL_EVO_MAX_WIDTH).toBe(324);
     expect(drawnWidth('Mega Charizard X · Mega Evolves with Charizardite X')).toBe(267);
-    expect(drawnWidth('Gigantamax Corviknight · Gigantamaxes with Corviknightite G')).toBe(301);
-    expect(drawnWidth('Gigantamax Charizard · Gigantamaxes with Charizardite G')).toBe(287);
-    expect(drawnWidth('Gigantamax Pikachu · Gigantamaxes with Pikachite G')).toBe(258);
-    expect(drawnWidth('Gigantamax Eevee · Gigantamaxes with Eeveite G')).toBe(243);
+    expect(drawnWidth('Gigantamax Corviknight · Corviknightite G')).toBe(207);
+    expect(drawnWidth('Gigantamax Charizard · Charizardite G')).toBe(193);
+    expect(drawnWidth('Gigantamax Pikachu · Pikachite G')).toBe(164);
+    expect(drawnWidth('Gigantamax Eevee · Eeveite G')).toBe(149);
+    expect(drawnWidth('Gigantamax Urshifu Rapid Strike · Urshifu-Rapid-Strikite G')).toBe(293);
+    expect(evoBoxWidth(2)).toBe(322);
   });
 
   it('rejects the longer clause: while holding overruns the depth-3 box', () => {
@@ -338,7 +330,7 @@ describe('information row widths', () => {
     expect(longer).toBeLessThan(HUD_DETAIL_EVO_MAX_WIDTH);
   });
 
-  it('fits every information row inside its own row, and records the five that cannot', () => {
+  it('fits every information row inside its own row', () => {
     const copies = new Set<string>();
     const overruns: Record<string, number> = {};
     for (const forme of [...MEGA_FORMES, ...GMAX_FORMES]) {
@@ -350,6 +342,6 @@ describe('information row widths', () => {
       copies.add(row!.name);
     }
     expect(copies.size).toBe(MEGA_FORMES.length + GMAX_FORMES.length);
-    expect(overruns).toEqual(OVERRUN_GMAX_ROWS);
+    expect(overruns).toEqual({});
   });
 });

@@ -74,7 +74,7 @@ carries over.
   one, hanging off that species' own row: a Mega — dimmed and **never clickable**,
   the forme's sprite and name and the stone it needs
   (`Mega Charizard X · Mega Evolves with Charizardite X`) — and a Gigantamax
-  (`Gigantamax Charizard · Gigantamaxes with Charizardite G`), both
+  (`Gigantamax Charizard · Charizardite G`), both
   **always shown**, whether or not the stone is held (`D34`, `D44`).
   A forme a deleted form-change ability used to reach (`D41`) arrives the same way
   every other one does: as an ordinary **branch** of the graph — a clickable
