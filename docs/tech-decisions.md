@@ -839,10 +839,26 @@ read per field in `parseSettings`, so a save with no such key simply reads `fals
 **no `SAVE_VERSION` bump and no migration step** (the `D22` precedent). It draws
 **no RNG** and touches no generator, so every fixed seed still reproduces. A second
 knob (per-beat speed, a full motion-reduction mode, colour-blind palettes,
-subtitles, i18n of the new strings) is deliberately **not** built here; the
-keyboard model adds no keybind action either — the shipped `up` / `down` / `left` /
-`right` / `confirm` / `cancel` / `run` and the four panel keys carry the whole
-route HUD, and `src/data/keybinds.ts` is byte-identical.
+subtitles, i18n of the new strings) is deliberately **not** built here.
+
+**The route HUD is pointer-first** (the human's inversion: *the movement keys never
+browse a pane*). The keyboard model adds no keybind action — `src/data/keybinds.ts`
+is byte-identical — and the four panel quick keys (`party` / `bag` / `map` / `box`)
+are plain toggles that expand or collapse their panel exactly as a click on its
+collapse icon does; they never hand a pane the keyboard, so the arrows keep walking
+the character from the first frame and a second press on an open panel hides it
+instead of "leaving" a cursor. Every route-HUD operation is reached with the
+pointer: the party and box rows (click opens the detail, drag reorders, a drag
+across the two panes deposits or withdraws), the party header's Pokevial, the PC
+box cells and page tabs, the bag's stacks and pocket tabs, the detail's STATS/MOVES
+tabs, nickname field, ability ⓘ, evolution branches, search field and move slots,
+and the learnset pool's scroll and drag-onto-a-slot equip. The **pause menu is the
+one keyboard surface the route keeps** (`cancel`, arrows, `confirm`); the Mart, the
+mini-boss reward and a focused text field (nickname, search) keep their own keys
+until a later task moves those two windows to pointer-first floating panels, and
+the release overlay / level-up popup keep `confirm`. Every other screen — the
+battle, the main and starter menus, the settings and the run-over screen — stays
+fully keyboard playable, and the hue / flashing rules above are untouched.
 
 ## D46 — Enemy AI: the cartridge's script flags, and one difficulty knob *(decided)*
 

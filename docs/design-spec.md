@@ -434,32 +434,38 @@ state. It applies to the two big panels only; the battle's switch-window HP bars
 
 ### 10.3 Keyboard play
 
-**The rule:** every panel, menu, prompt and modal is operable from the keyboard
-alone, through the shipped keybind vocabulary (`src/data/keybinds.ts`, unchanged).
-No new action was added; the four panel quick keys **enter** a pane (one press
-expands and focuses it, a second press on the focused pane hides it and gives the
-keyboard back), the arrows browse the focused pane instead of walking — the walk
-stays settled while a pane holds the keyboard — and `cancel` leaves, from the
-innermost thing outwards (a pool move, then the detail, then the pane, then the
-pause menu). Only two things stay pointer-first by design: moving a panel and the
-hold-to-reset ring's own gesture.
+**The rule:** the route is walked on the keyboard and its **HUD is pointer-first**.
+The four movement keys always walk, whatever panel is open, so no pane ever takes
+the arrows and the character moves from the first frame after a panel opens. The
+four panel quick keys (`party` / `bag` / `map` / `box`, the shipped vocabulary in
+`src/data/keybinds.ts`, unchanged) are plain toggles: one press expands a panel or
+collapses it again, exactly as a click on its collapse icon does, and a pane never
+answers to a key. Every route-HUD operation is reached with the **pointer**, and
+each pane draws its own highlight for the member, stack or move in hand. **The
+pause menu is the one keyboard surface the route keeps** (`cancel`, arrows,
+`confirm`); the Mart and the mini-boss reward keep their own arrow/confirm paths,
+and a focused text field — the nickname and the learnset search field — receives
+typed characters and swallows the arrows while it is being typed into, which is
+text editing, not pane browsing. The release overlay and the level-up popup keep
+`confirm`. The battle, the menus, the settings and the run-over screen stay fully
+keyboard playable, as the table's rows below say; only the route HUD changed.
 
-| Surface | File | Keyboard path | Verdict |
+| Surface | File | Keyboard / pointer path | Verdict |
 | --- | --- | --- | --- |
-| Route HUD panel enter / leave / hide | `RouteScene.toggleHudPanel` | `party`/`bag`/`box` quick keys: one press enters, a second press on the focused pane hides it, `cancel` leaves | keyboard (new) |
-| Party rows | `RouteScene.handleHudKeyboard` | `up`/`down` cursor, `confirm` opens the detail | keyboard (new) |
-| Party row reorder / deposit / withdraw | `RouteScene.handleHudKeyboard` | `run` grabs, `up`/`down` reorders, `left`/`right` crosses panes, `cancel` puts back | keyboard (new) |
-| Party header / Pokevial | `RouteScene.drinkPokevial` | `up` from row 0 is the header stop, `confirm` drinks | keyboard (new) |
-| PC box cells and pages | `RouteScene.handleHudKeyboard` | `up`/`down` cursor, page follows the cursor | keyboard (new) |
-| Bag stacks | `RouteScene.handleHudKeyboard` | `up`/`down` cursor, `confirm` picks up, `confirm` on a member equips | keyboard (new) |
-| Bag pockets | `RouteScene.stepBagCategory` | `left`/`right` (`[` / `]` alias) | keyboard |
-| Detail tabs STATS/MOVES | `RouteScene.handleHudKeyboard` | `left`/`right` | keyboard (new) |
-| Detail nickname field | `RouteScene.beginNicknameEdit` | `confirm` on the `name` stop, then typing | keyboard (new) |
-| Detail ability info | `RouteScene.toggleAbilityInfo` | `confirm`/`run` on the `ability` stop | keyboard (new) |
-| Detail evolution rows | `RouteScene.evolveOpenMember` | `confirm` on an `evolution` stop | keyboard (new) |
-| Detail search field | `RouteScene.hudSearchFocus` | `confirm` on the `search` stop, then typing | keyboard (new) |
-| Detail move slots / ⓘ | `RouteScene.handleHudKeyboard` | `confirm` grab/drop, `run` toggles the ⓘ | keyboard (new) |
-| Learnset pool + scroll | `RouteScene.stepGridCursor` | `up`/`down` cursor, window follows | keyboard (new) |
+| Route HUD panel enter / leave / hide | `RouteScene.togglePanel` | pointer: click the panel's collapse icon (`hudPanelIconAt` / `handleHudPointerUp`); the quick keys mirror that click and never focus the pane | pointer |
+| Party rows | `RouteScene.openMemberDetail` | pointer: click a row (`hudPress`, released without a drag) | pointer |
+| Party row reorder / deposit / withdraw | `RouteScene.dropHudAcross` | pointer: drag a row onto another (reorder) or onto the PC box / party (deposit / withdraw) | pointer |
+| Party header / Pokevial | `RouteScene.drinkPokevial` | pointer: click the vial with a full meter (`vialButtonAt`) | pointer |
+| PC box cells and pages | `RouteScene.stepBoxPage` | pointer: click a cell or a page tab, wheel over the window | pointer |
+| Bag stacks | `RouteScene.hudHeldStackAt` | pointer: press a held stack and drop it on a member (`equipHudItem`) | pointer |
+| Bag pockets | `RouteScene.selectBagTab` | pointer: click a pocket tab | pointer |
+| Detail tabs STATS/MOVES | `RouteScene.detailTabAt` | pointer: click a tab | pointer |
+| Detail nickname field | `RouteScene.beginNicknameEdit` | pointer: click the name row, then type | pointer |
+| Detail ability info | `RouteScene.abilityInfoAt` | pointer: hover or click the ⓘ | pointer |
+| Detail evolution rows | `RouteScene.evolutionAt` | pointer: click a ready branch | pointer |
+| Detail search field | `RouteScene.handleDetailPointerDown` | pointer: click the field, then type | pointer |
+| Detail move slots / ⓘ | `RouteScene.detailInfoAt` | pointer: drag a slot onto another to reorder, click the ⓘ | pointer |
+| Learnset pool + scroll | `RouteScene.scrollLearnset` | pointer: the wheel, the `<` / `>` arrows or a drag on the band; drop a pool move on a slot | pointer |
 | Panel drag | `RouteScene.startPanelDrag` | none: a layout affordance, persisted in `HudLayout` | pointer-only by intent |
 | Reset hold ring | `RouteScene.updateReset` | `reset` held | keyboard |
 | Mart panel | `RouteScene.handleShopAction` | arrows/confirm/cancel, `left`/`right` tabs | keyboard |
