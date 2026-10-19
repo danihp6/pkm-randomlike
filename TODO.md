@@ -2045,6 +2045,41 @@ is the cut's own record.
   batch-mate adds none either.
 
 ### Batch 22 — a room's battle begins under a weather, a terrain or a room condition
+**(shipped, archived)**: its single task merged behind the green gate (`task-62`; **1781**
+tests across **142** files, `npm test` + `npm run build` green after the merge) and the detail
+is in `CHANGELOG.md`'s `## Unreleased`. It stayed the one-task batch the cut made it, and it
+holds: a plan room rolls a battle-start condition on its own stream keyed to the room's
+**stable** index (15 % for a room that fields regular trainers, 30 % for the boss, nothing for
+the entry or a special leaf), `src/engine/routes/battlefield.ts` is the pure roll and
+`src/data/battlefields.ts` the eleven-row table with each row's filter tint and alpha, the
+route paints one static tinted rectangle over the room, and `BattleLaunch.battlefield` →
+`battlefieldSeeds` → `createBattle`'s new optional `weather`/`terrain`/`field`/`fog` seeds it
+into **every** battle there, wilds included. Dense fog is the one new rule — a
+`BattleState.fog` flag, not a weather, giving every move's own accuracy −20 before the stage
+multiplier, clamped at 0, with a never-miss move unaffected. It adds no run field, so the chain
+stays **14 → 15 → 16 → 17 → 18**. Three things the cut's own wording got wrong are recorded
+rather than hidden, because the next planning pass must not inherit them. Its exclusive-path
+list was one file pair short: `src/engine/battle/preview.ts` + `preview.test.ts` had to move
+with `modifiers.ts`, or the MOVES menu would show the pre-fog odds while the engine rolls the
+post-fog ones. The entry's *recommended* reading — `'fog'` joining `FieldConditionId` — is
+**refused**: `FieldConditions` is a `Record<FieldConditionId, number>` and five unclaimed files
+(`effects/conditions.ts`, `ui/battleInfo.ts` + its test, both i18n tables) would have to move,
+and it would hand fog a turn counter the decision forbids, so fog ships as the boolean the
+decision's own sentence describes. And the entry's claim that a fog battle "rolls the same turn
+order and the same hit sequence as before the fog existed" is false by construction — a lower
+chance turns some hits into misses — so only the part that holds was pinned: the fog term draws
+no RNG. Two line-number sets in the entry were stale (`startBattle` is `RouteScene.ts:6183`,
+not 4904; `BattleScene.create` is 545, not 390; `weatherChip` is `effects/weather.ts:70`, not
+`turn.ts`), which the spec cites correctly. Everything objective was measured: the table, the
+roll's purity, stream keying and both chance bounds, the eleven seed mappings, `createBattle`'s
+seeding and its exact defaults, the fog arithmetic (95 → 0.75, 10/20 → 0, `true` → 1,
+`60 + fog` → **0.53333** = `accuracyChance(40, …)`, fog + Gravity → 0.6667), `hitChance` and
+`movePreview` each exactly 0.2 lower under fog, and all three `[live]` criteria on the combined
+commit `aac7adb3` (the filter's own tint/alpha, a canvas differential of **14.47** at the
+player's tile against a restore of **0**, a `null` control room and the identical revisit, and
+a battle there opening with `field.gravity === 5`). No `agent-review` issue was needed: every
+`[live]` criterion is a number or an equality, not a taste. What follows is the cut's own
+record.
 - **Task-62** A trainer or boss room may begin its battles under a weather, a terrain or a
   room condition (dense fog, Gravity, Trick Room), and the route draws an animation or filter
   for it.
@@ -4116,7 +4151,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48, 15 Task-49, 16 Task-50, 17 Task-52,
       18 Task-55, 19 Task-56, 20 Task-58), so it opens the plan's new **Batch 21** — and it is
       the round's only defect, so it runs first. *(Batch 21)*
-- [ ] **[Task-62] A trainer or boss room's battle may begin under a weather, a terrain or a room
+- [x] **[Task-62] A trainer or boss room's battle may begin under a weather, a terrain or a room
       condition, and the route draws it.** Reported in play: «en habitaciones de entrenadores y
       boss añadir una baja probabilidad de que la habitacion los combates empiezan con un clima o
       terreno, en el mapa debe aparecer animacion o filtro que representa el clima terreno», and

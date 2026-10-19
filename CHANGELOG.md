@@ -8,6 +8,50 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A room's battles begin under a weather, a terrain or a room condition, and the route
+      paints it.** A plan room can now own a battle-start condition — `sun`, `rain`, `sand`,
+      `snow`, `electric`, `grassy`, `misty`, `psychic`, `fog`, `gravity` or `trickroom` —
+      rolled once from the run seed on the room's **stable** index (`routeIndexForRoom`, the
+      key the room's geometry, its trainers and its loot already use) and on a stream of its
+      own, `Rng(hashSeed(`${seed}:battlefield:${roomIndex}`))`, drawing exactly one
+      `rng.next()` for the chance plus one `rng.int` over the table — so no existing
+      `layout`/`map`/`encounters`/roster stream moves, a fresh seed's run is unchanged and a
+      revisited room shows the same condition. A room that fields regular trainers rolls at
+      **15 %** and the boss room at its own **30 %** (`src/data/battlefields.ts`); the entry
+      room and every special leaf are quiet and roll nothing (`roomKindOf`). The roll, the
+      seed mapper and the room kind are pure engine (`src/engine/routes/battlefield.ts`) and
+      the row shape is data, never code: each row carries the filter's `tint` and `alpha`, so
+      a rebalance is a table edit. The route paints one static tinted rectangle over the room
+      (`BATTLEFIELD_DEPTH = 25`, above the tiles and the actors and below the dev marker and
+      the HUD, allocating nothing per frame), rebuilt and destroyed with the room. The
+      condition reaches the battle through the launch seam the scene already had —
+      `BattleLaunch.battlefield` → `battlefieldSeeds` → `createBattle`'s new optional
+      `weather`/`terrain`/`field`/`fog`, all defaulting to today's `null`/`0`/`0`/
+      `emptyFieldConditions()`/`false`, so every existing call site and the whole existing
+      suite are unchanged — and it seeds **every** battle that starts in that room, wilds
+      included. **Dense fog is the one new rule**, added exactly as the decision requires: a
+      **field condition** (`BattleState.fog`, never a `WeatherId`, never entering
+      `weatherModifier`/`weatherChip`), it drops every move's own accuracy by
+      `FOG_ACCURACY_PENALTY = 20` **before** the stage multiplier with the result clamped at
+      **0**, and a move that cannot miss is **unaffected**; `hitChance` and `movePreview` pass
+      the flag, so the moves menu and the engine read one rule. It adds no run field, so **no
+      `SAVE_VERSION` step** — the chain stays **14 → 15 → 16 → 17 → 18**. **Measured, not
+      assumed:** on the combined commit `aac7adb3` QA drove its own headless Chromium over CDP
+      (`renderer.snapshotArea` + `getImageData`, on the Canvas renderer — the container
+      exposes no GL driver) against `npm run dev`, and on the demo run's `dev-seed` floor 1 the
+      roll puts `gravity` in room 3: the live overlay's own `fillColor`/`fillAlpha` equal the
+      table's `0x5a4a8a`/`0.24`, and toggling its visibility moves the mean RGB of a 24×24
+      snapshot at the player's tile by **14.47** (bound ≥ 5) while restoring it returns the
+      sample to **0** apart (bound ≤ 2); room 0 reads
+      `debugBattlefieldOverlay() === null`, a revisit reproduces the identical row, and a
+      battle started there (`startDebugWildBattle`) opens with `state.field.gravity === 5`,
+      `field.trickroom === 0`, `weather`/`terrain` null and `fog` false; independently, 1000
+      room indices at `dev-seed` count **145** trainer rolls (bound `[120, 180]`) and **302**
+      boss rolls (bound `[260, 340]`). One spec number was corrected on the way, and QA
+      re-measured both sides of the corrected equality: the fog criterion's "≈ 0.6" under a
+      `+1` accuracy stage contradicted the Contract's own body, because
+      `accuracyStageMultiplier(1)` is **4/3** and not 3/2, so 60-with-fog is **0.53333** =
+      `accuracyChance(40, …)` at the same stage.
 - [x] **A map boss's fall no longer warps the player to the room's door.** Beating the boss
       rebuilt the room through the **room-change** path (`transitionTo`), which ends by
       respawning the player on the room's entry tile — right for a door or a portal step,
