@@ -1,8 +1,13 @@
 import type { Rng } from '../rng';
-import type { BattleState, SideId } from './state';
+import type { BattleState, SideId, Slot } from './state';
 import { modifiedSpeed } from './modifiers';
 
-export type ActionEntry = Readonly<{ side: SideId; priority: number; fractional?: number }>;
+export type ActionEntry = Readonly<{
+  side: SideId;
+  slot?: Slot;
+  priority: number;
+  fractional?: number;
+}>;
 
 /**
  * Priority first, then the per-bracket fractional tie-break (Quick Draw, Stall),
@@ -21,8 +26,8 @@ export function orderActions(
     const fracA = a.fractional ?? 0;
     const fracB = b.fractional ?? 0;
     if (fracA !== fracB) return fracB - fracA;
-    const speedA = modifiedSpeed(state, a.side);
-    const speedB = modifiedSpeed(state, b.side);
+    const speedA = modifiedSpeed(state, a.side, a.slot ?? 0);
+    const speedB = modifiedSpeed(state, b.side, b.slot ?? 0);
     if (speedA !== speedB) {
       const aFirst = trickRoom ? speedA < speedB : speedA > speedB;
       return aFirst ? -1 : 1;
