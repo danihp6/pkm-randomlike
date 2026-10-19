@@ -4,13 +4,17 @@ import {
   MAP_MAX_LEVEL,
   MAP_MAX_ROOM_SIZE,
   MAP_MAX_ROUTES,
+  MAP_MIN_ROOM_SIZE,
   MAP_TUNING,
   MAP_TUNING_STEP,
+  ROOM_SHAPE_SIZES,
   levelCapForMap,
   levelRangeForMap,
   mapTuning,
+  roomSizeForShape,
   routeCountRangeForMap,
   routeSizeRangeForMap,
+  type MapShapeSizeId,
 } from './maps';
 
 describe('map tuning tables', () => {
@@ -26,7 +30,7 @@ describe('map tuning tables', () => {
     expect(levelRangeForMap(FINITE_MAPS)).toEqual({ minLevel: 49, maxLevel: 55 });
     expect(levelCapForMap(FINITE_MAPS)).toBe(55);
     expect(routeCountRangeForMap(FINITE_MAPS)).toEqual({ min: 6, max: 9 });
-    expect(routeSizeRangeForMap(FINITE_MAPS)).toEqual({ min: 30, max: 48 });
+    expect(routeSizeRangeForMap(FINITE_MAPS)).toEqual({ min: 30, max: 56 });
   });
 
   it('returns the configured row for every tuned map', () => {
@@ -132,5 +136,81 @@ describe('map tuning tables', () => {
       expect(count.max).toBeGreaterThanOrEqual(count.min);
       expect(count.min).toBeGreaterThanOrEqual(1);
     }
+  });
+});
+
+const SHAPE_IDS: readonly MapShapeSizeId[] = [
+  'cross',
+  'straight',
+  'tee',
+  'bend',
+  'corridor',
+  'dead-end',
+];
+
+describe('room sizes follow the room shape', () => {
+  it('pins the frozen map-8 table verbatim', () => {
+    expect(ROOM_SHAPE_SIZES).toEqual({
+      cross: { width: 40, height: 40 },
+      straight: { width: 40, height: 40 },
+      tee: { width: 40, height: 48 },
+      bend: { width: 44, height: 44 },
+      corridor: { width: 52, height: 30 },
+      'dead-end': { width: 30, height: 30 },
+    });
+    expect(MAP_MAX_ROOM_SIZE).toBe(56);
+    expect(MAP_MIN_ROOM_SIZE).toBe(30);
+  });
+
+  it('returns the frozen table verbatim on map 8', () => {
+    for (const shape of SHAPE_IDS) {
+      expect(roomSizeForShape(shape, FINITE_MAPS), shape).toEqual(ROOM_SHAPE_SIZES[shape]);
+    }
+  });
+
+  it('keeps every shape at the minimum on map 1', () => {
+    for (const shape of SHAPE_IDS) {
+      expect(roomSizeForShape(shape, 1), shape).toEqual({
+        width: MAP_MIN_ROOM_SIZE,
+        height: MAP_MIN_ROOM_SIZE,
+      });
+    }
+  });
+
+  it('scales both sides by the map ceiling, rounded', () => {
+    expect(roomSizeForShape('corridor', 6)).toEqual({ width: 37, height: 30 });
+    expect(roomSizeForShape('bend', 7)).toEqual({ width: 35, height: 35 });
+    expect(roomSizeForShape('corridor', 7)).toEqual({ width: 41, height: 30 });
+    expect(roomSizeForShape('tee', 6)).toEqual({ width: 30, height: 34 });
+    expect(roomSizeForShape('cross', 7)).toEqual({ width: 31, height: 31 });
+  });
+
+  it('swaps only a north-south corridor', () => {
+    expect(roomSizeForShape('corridor', FINITE_MAPS, 'ns')).toEqual({ width: 30, height: 52 });
+    expect(roomSizeForShape('corridor', FINITE_MAPS, 'ew')).toEqual({ width: 52, height: 30 });
+    expect(roomSizeForShape('bend', FINITE_MAPS, 'ns')).toEqual({ width: 44, height: 44 });
+    expect(roomSizeForShape('corridor', 6, 'ns')).toEqual({ width: 30, height: 37 });
+  });
+
+  it('never lets a side leave [30, 56], and never shrinks as maps advance', () => {
+    let previous = SHAPE_IDS.map((shape) => roomSizeForShape(shape, 1));
+    for (const shape of SHAPE_IDS) {
+      expect(roomSizeForShape(shape, 1).width).toBe(MAP_MIN_ROOM_SIZE);
+      expect(roomSizeForShape(shape, 1).height).toBe(MAP_MIN_ROOM_SIZE);
+    }
+    for (let mapIndex = 1; mapIndex <= 40; mapIndex++) {
+      const sizes = SHAPE_IDS.map((shape) => roomSizeForShape(shape, mapIndex));
+      for (const [index, size] of sizes.entries()) {
+        const label = `${SHAPE_IDS[index]} map ${mapIndex}`;
+        for (const side of [size.width, size.height]) {
+          expect(side, label).toBeGreaterThanOrEqual(MAP_MIN_ROOM_SIZE);
+          expect(side, label).toBeLessThanOrEqual(MAP_MAX_ROOM_SIZE);
+        }
+        expect(size.width, label).toBeGreaterThanOrEqual(previous[index].width);
+        expect(size.height, label).toBeGreaterThanOrEqual(previous[index].height);
+      }
+      previous = sizes;
+    }
+    expect(roomSizeForShape('corridor', 10_000)).toEqual(ROOM_SHAPE_SIZES.corridor);
   });
 });

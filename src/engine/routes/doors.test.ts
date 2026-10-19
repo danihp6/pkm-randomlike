@@ -159,14 +159,16 @@ describe('exitEdgeAt on real room openings', () => {
 });
 
 describe('the border band of a fixed-seed room', () => {
-  it('opens the E band of doors-c map 4 room 3, whose (30,20) was a wall', () => {
-    // Frozen on `main` (e4604c0): this room's E opening is seeded at (30,19) and the
-    // generator left its band cell (30,20) a WALL, so the two-cell door was one cell
-    // wide. The band cell (30,20) is the exact coordinate the fix had to open.
+  it('opens the E band of doors-c map 4 room 3, whose (29,20) was a wall', () => {
+    // Frozen on `main` (e4604c0) at the pre-task 31x30 room: its E opening sat at
+    // (30,19) and the generator left the band cell (30,20) a WALL, so the two-cell
+    // door was one cell wide. Room 3 now takes its shape-derived 30x30 size
+    // ([Task-81]), which moves the same E band to (29,19)/(29,20); the second cell
+    // is still the coordinate the fix had to open.
     const seed = 'doors-c';
     const mapIndex = 4;
     const roomId = 3;
-    const anchor = { x: 30, y: 19 };
+    const anchor = { x: 29, y: 19 };
     const plan = planMap(seed, mapIndex);
     const view = roomView(plan, roomId, false);
     const route = sketchRoute({
@@ -178,15 +180,15 @@ describe('the border band of a fixed-seed room', () => {
       height: view.height,
     });
     const edges = view.openings.map((opening) => opening.edge);
-    expect(route.width).toBe(31);
+    expect(route.width).toBe(30);
     expect(route.height).toBe(30);
     expect(route.shape).toBe('bend');
     expect(borderEdge(anchor, route.width, route.height)).toBe('E');
     expect(route.exits.some((exit) => exit.x === anchor.x && exit.y === anchor.y)).toBe(true);
     const band = openingBandCells('E', anchor, route.width, route.height, SHAPES[route.shape].pathWidth);
     expect(band).toEqual([
-      { x: 30, y: 19 },
-      { x: 30, y: 20 },
+      { x: 29, y: 19 },
+      { x: 29, y: 20 },
     ]);
     for (const cell of band) {
       const label = `${cell.x},${cell.y}`;

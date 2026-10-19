@@ -38,10 +38,26 @@ map  = a grid of K rooms joined by openings      (K random, from the map's range
   the routes ramp from `minLevel` to `maxLevel`.
 - The **room farthest from the entry** (graph distance) holds the **boss** at the
   map's `maxLevel`. Its onward opening is the **portal** to the next map (D31).
-- Room **sizes** grow as the run advances: the map index widens the range a room
-  rolls its width and height from, and each room picks both inside it. No room is
-  ever smaller than **30x30**, and the floor's **entry room** and **boss room** are
-  always exactly **30x30** — the quiet leaves read the same on every map.
+- Room **sizes** follow from a room's **shape**, scaled by the map's ceiling. The
+  frozen table is the size on the **last tuned map** (map 8):
+
+  | Shape | Width x height | Reads as |
+  | --- | --- | --- |
+  | `cross` | 40x40 | a square crossing |
+  | `straight` | 40x40 | the older wide route, no branches |
+  | `tee` | 40x48 | a T junction, slightly tall |
+  | `bend` | 44x44 | an L, the widest square |
+  | `corridor` | 52x30 | east-west by default |
+  | `dead-end` | 30x30 | a leaf |
+
+  A `corridor`'s long side follows its opening axis: a north-south corridor reads
+  **30x52**. Every earlier map scales both sides by its own
+  `size.max / MAP_MAX_ROOM_SIZE` (`56`), rounded and clamped to `[30, 56]`, so a
+  map's own tuned ceiling decides how far the aspect has grown. The **entry room**,
+  the **boss room** and **every special leaf** are always exactly **30x30** — the
+  quiet leaves read the same on every map. Infinite maps past map 8 saturate
+  `size.max` at 56 and use the frozen table unchanged. No room is ever smaller than
+  **30x30** or larger than **56x56**.
 
 ## 2. Topology: a closed room graph on a grid (D30)
 
@@ -110,7 +126,9 @@ planMap(seed, mapIndex): MapPlan
     rng     = Rng(seed : "map" : mapIndex)
     biome   = Pick(BIOME_ORDER \ { previousBiome }, rng)
     K       = RollRange(tuning.routes, rng)
-    size[i] = { w: RollRange(tuning.size, rng), h: RollRange(tuning.size, rng) }  per room
+    draw[i] = { w: RollRange(tuning.size, rng), h: RollRange(tuning.size, rng) }  per room
+              # frozen stream: these two draws still run for every room, special
+              # leaves included, but a room's size no longer comes from them
 
     # 1. grow the floor: the entry sits at the grid origin with a **single** door
     #    (its outward edge stays free) into a 2x2 core of four rooms, then expand
@@ -120,7 +138,11 @@ planMap(seed, mapIndex): MapPlan
     # 2. close cycles: add a random number of extra doors (at least one) between
     #    adjacent rooms past the entry that are not already joined, so the floor
     #    closes one or more loops. No door ever touches the entry room.
-    # 3. shapes: derive each room's shape from its opening set (table above).
+    # 3. shapes: derive each room's shape from its opening set (table above) and
+    #    size it from ROOM_SHAPE_SIZES scaled by the map's own ceiling:
+    #    side = clamp(round(side(map 8) * tuning.size.max / MAP_MAX_ROOM_SIZE),
+    #    MAP_MIN_ROOM_SIZE, MAP_MAX_ROOM_SIZE), a corridor's long side following
+    #    its opening axis. The entry, boss and special leaves stay 30x30.
     # 4. boss: the farthest regular room; hang the boss room off it as an extra
     #    dead-end leaf, so the boss has a single door and the floor keeps its cycle.
     #    Both the entry and the boss are single-door leaves.
@@ -141,7 +163,7 @@ deterministically.
 | --- | --- |
 | `levels.minLevel` / `maxLevel` | the map's Pokémon band; the player cap is `maxLevel` |
 | `routes.min` / `max` | how many rooms the map's graph holds |
-| `size.min` / `max` | the range each room rolls its **width and height** from, independently; `min` never drops below 30 and the entry/boss leaves are pinned to 30x30 |
+| `size.min` / `max` | the map's room-size ceiling: each room's shape size (`ROOM_SHAPE_SIZES`) is scaled by `max / MAP_MAX_ROOM_SIZE`, rounded and clamped to `[30, 56]`; `min` stays 30 and the entry/boss/special leaves are pinned to 30x30 |
 
 `MAP_TUNING` is a table per map (1..8 today) and `MAP_TUNING_STEP` grows a map
 past the last row, so an infinite run keeps climbing: the level range steps up by
@@ -150,6 +172,12 @@ that only widens, and both ends saturate at `MAP_MAX_LEVEL`. The room count grow
 with the map as well but is capped at `MAP_MAX_ROUTES`, so a deep floor never
 becomes a huge maze. Retuning is a data edit, never a generator edit
 (`docs/route-generator.md` §2).
+
+The room-size ceiling rises from 30 on maps 1-3 to **56** on map 8, and
+`MAP_TUNING_STEP.sizeStep` keeps climbing `size.min` past the last row while
+`size.max` saturates at `MAP_MAX_ROOM_SIZE` (56). Maps 1-4 therefore read regular
+rooms at 30x30, map 6's corridor at 37x30 and map 8's corridor at 52x30
+(`ROOM_SHAPE_SIZES`, `roomSizeForShape` in `src/data/maps.ts`).
 
 ## 5. Levels & the player's cap (D29)
 

@@ -4,12 +4,13 @@
  * is the unit of biome, level range and size (`docs/maps-spec.md`, D28/D29).
  *
  * The numbers live here so retuning a run never touches the generator: balancing
- * is data. Ranges are **inclusive** and every room rolls its own width and height
- * inside its map's range, so the floor stays inside the map's band while still
- * varying room to room. Past the last tuned map an **infinite** run keeps
- * stepping upward by `MAP_TUNING_STEP` so the difficulty never plateaus (D29),
- * but the room count stops at `MAP_MAX_ROUTES` so a deep floor never becomes a
- * huge maze.
+ * is data. Ranges are **inclusive**, and a room's width and height follow from its
+ * **shape**: the frozen `ROOM_SHAPE_SIZES` table is scaled by the map's own
+ * `size.max / MAP_MAX_ROOM_SIZE`, so a later map gives a `corridor` its long side
+ * while the quiet leaves stay 30x30 (`docs/maps-spec.md` §1/§4). Past the last
+ * tuned map an **infinite** run keeps stepping upward by `MAP_TUNING_STEP` so the
+ * difficulty never plateaus (D29), but the room count stops at `MAP_MAX_ROUTES`
+ * so a deep floor never becomes a huge maze.
  */
 export type MapLevelRange = Readonly<{ minLevel: number; maxLevel: number }>;
 
@@ -22,9 +23,29 @@ export type MapTuning = Readonly<{
   levels: MapLevelRange;
   /** How many rooms the map's graph holds (a random count inside the range). */
   routes: MapRange;
-  /** The width and height (tiles) each room rolls inside the range, independently. */
+  /** The ceiling a room's shape-derived width and height stay inside. */
   size: MapRange;
 }>;
+
+/** The shapes a floor plan draws, as the size table names them. */
+export type MapShapeSizeId = 'cross' | 'straight' | 'tee' | 'bend' | 'corridor' | 'dead-end';
+
+/**
+ * The frozen map-8 size of each shape, before the map-index scale: a `cross` is
+ * square, a `corridor` long on its opening axis and a leaf the minimum 30x30
+ * (`docs/maps-spec.md` §1). Every earlier map scales both sides by its own
+ * `size.max / MAP_MAX_ROOM_SIZE`.
+ */
+export const ROOM_SHAPE_SIZES: Readonly<
+  Record<MapShapeSizeId, Readonly<{ width: number; height: number }>>
+> = {
+  cross: { width: 40, height: 40 },
+  straight: { width: 40, height: 40 },
+  tee: { width: 40, height: 48 },
+  bend: { width: 44, height: 44 },
+  corridor: { width: 52, height: 30 },
+  'dead-end': { width: 30, height: 30 },
+};
 
 /** The mirror of the level ceiling in `src/engine/run/progression.ts` (data is engine-free). */
 export const MAP_MAX_LEVEL = 100;
@@ -33,7 +54,7 @@ export const MAP_MAX_LEVEL = 100;
 export const MAP_MAX_ROUTES = 12;
 
 /** A room never grows past this many tiles a side (a whole screen, not a field). */
-export const MAP_MAX_ROOM_SIZE = 48;
+export const MAP_MAX_ROOM_SIZE = 56;
 
 /**
  * No room is ever smaller than this many tiles a side. The entry room and the
@@ -102,7 +123,7 @@ export const MAP_TUNING: readonly MapTuning[] = [
     mapIndex: 8,
     levels: { minLevel: 49, maxLevel: 55 },
     routes: { min: 6, max: 9 },
-    size: { min: 30, max: 48 },
+    size: { min: 30, max: 56 },
   },
 ];
 
@@ -161,7 +182,28 @@ export function routeCountRangeForMap(mapIndex: number): MapRange {
   return mapTuning(mapIndex).routes;
 }
 
-/** The inclusive range each room of the map rolls its width and height from. */
+/** The inclusive range each room's shape-derived width and height stay inside. */
 export function routeSizeRangeForMap(mapIndex: number): MapRange {
   return mapTuning(mapIndex).size;
+}
+
+/**
+ * A room's size on `mapIndex`: the frozen table scaled by the map's own
+ * `size.max / MAP_MAX_ROOM_SIZE`, rounded and clamped to
+ * [MAP_MIN_ROOM_SIZE, MAP_MAX_ROOM_SIZE]. `longAxis: 'ns'` swaps the two sides
+ * of a `corridor` (the only shape that reads differently by axis).
+ */
+export function roomSizeForShape(
+  shape: MapShapeSizeId,
+  mapIndex: number,
+  longAxis: 'ew' | 'ns' = 'ew',
+): Readonly<{ width: number; height: number }> {
+  const frozen = ROOM_SHAPE_SIZES[shape];
+  const ratio = mapTuning(mapIndex).size.max / MAP_MAX_ROOM_SIZE;
+  const scale = (side: number): number =>
+    Math.min(MAP_MAX_ROOM_SIZE, Math.max(MAP_MIN_ROOM_SIZE, Math.round(side * ratio)));
+  const width = scale(frozen.width);
+  const height = scale(frozen.height);
+  if (shape === 'corridor' && longAxis === 'ns') return { width: height, height: width };
+  return { width, height };
 }

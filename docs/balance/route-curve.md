@@ -42,7 +42,7 @@ fields (`T̄(m)` × `trainerSize`) and how far its cap jumps (`needed(m)`) again
 levels those members stand at. `Low` is therefore the peak — map 2's cap leaps
 9 → 16 while its roster is still one Pokémon per trainer, so six-odd defeats have
 to carry 3367 XP — and `End` is the lowest — its floors field four members each,
-over fourteen or more trainers, so map 6 alone beats 65 Pokémon. `High` sits over
+over thirteen trainers, so map 6 alone beats 52 Pokémon. `High` sits over
 `Mid` for a related reason: map 4's step (23 → 30) is the same seven levels as
 map 3's, but it is taken higher up the curve, where a defeat is worth more while
 the floor places only about one trainer more, so each defeat still carries more.
@@ -91,16 +91,24 @@ the budget), averaged over the three seeds. `A(m)` is what one of those trainers
 awards on average: `trainerSize` roster members drawn uniformly across the map's
 level range, each worth `experienceAward(level, 1, true)`.
 
+Room size is **shape-derived**, not rolled (`docs/maps-spec.md` §1/§4):
+`ROOM_SHAPE_SIZES` pins each shape's aspect on map 8 and `roomSizeForShape` scales
+it by the map's own `size.max / 56`, so a `corridor` now reaches 37x30 on map 6 and
+52x30 on map 8. The walk below was **re-measured on that rule** (`[Task-81]`):
+maps 1-3 read exactly as before (their rooms stay 30x30), while maps 4-8 moved with
+their new room areas — no balance table in `src/data/` was touched, and every fill
+still lands inside `1 – 1.5`.
+
 | Map | Band  | Trainers per seed (rooms) | `T̄(m)` |  `A(m)` | `0.75 × T̄(m) × A(m)` | Window          | Fill |
 | --: | ----- | ------------------------- | -----: | ------: | -------------------: | --------------- | ---: |
 |   1 | Early | 7 (7), 5 (6), 5 (7)       |   5.67 |  177.50 |               754.38 | 604 – 906       | 1.25 |
 |   2 | Low   | 5 (8), 8 (7), 6 (8)       |   6.33 |  886.25 |              4209.69 | 3367 – 5050.5   | 1.25 |
 |   3 | Mid   | 11 (8), 12 (8), 14 (7)    |  12.33 | 1008.00 |              9324.00 | 8071 – 12106.5  | 1.16 |
-|   4 | High  | 15 (9), 8 (10), 13 (10)   |  12.00 | 2246.50 |             20218.50 | 14833 – 22249.5 | 1.36 |
-|   5 | Late  | 16 (8), 12 (9), 11 (8)    |  13.00 | 3291.38 |             32090.91 | 23653 – 35479.5 | 1.36 |
-|   6 | End   | 14 (8), 13 (7), 22 (11)   |  16.33 | 3130.29 |             38346.00 | 28854 – 43281   | 1.33 |
-|   7 | End   | 13 (8), 13 (9), 18 (10)   |  14.67 | 3600.00 |             39600.00 | 38142 – 57213   | 1.04 |
-|   8 | End   | 24 (12), 15 (8), 17 (10)  |  18.67 | 4069.71 |             56976.00 | 48726 – 73089   | 1.17 |
+|   4 | High  | 14 (9), 13 (10), 11 (10)  |  12.67 | 2246.50 |             21341.75 | 14833 – 22249.5 | 1.44 |
+|   5 | Late  | 16 (8), 10 (9), 13 (9)    |  13.00 | 3291.38 |             32090.91 | 23653 – 35479.5 | 1.36 |
+|   6 | End   | 11 (8), 12 (7), 16 (12)   |  13.00 | 3130.29 |             30520.29 | 28854 – 43281   | 1.06 |
+|   7 | End   | 13 (8), 19 (10), 15 (11)  |  15.67 | 3600.00 |             42300.00 | 38142 – 57213   | 1.11 |
+|   8 | End   | 28 (12), 19 (8), 16 (11)  |  21.00 | 4069.71 |             64098.00 | 48726 – 73089   | 1.32 |
 
 "Fill" is `0.75 × T̄(m) × A(m) / needed(m)`; the rule wants it inside `1 – 1.5`, and
 every floor lands there. Maps 1-2 sit in the **middle** of the window (1.25 and
