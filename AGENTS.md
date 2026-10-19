@@ -77,6 +77,17 @@ Roles live in `.agent_roles/`, are wired in `opencode.json`, and are described i
 full in that folder. The human talks only to the **Orchestrator**; the Orchestrator
 drives the rest.
 
+**Parallelism is the default and it is a hard rule.** A cycle must always try to run
+**as many tasks as the plan legally allows — up to four devs, each verified by its
+own QA in parallel** — before it settles for a narrower batch. A one-task batch is a
+last resort, never a starting point: the Orchestrator and the Architect must search
+the later batches for dependency-free tasks whose paths are disjoint from the
+current batch's union and fill it with them. Every slot left empty is recorded in
+the batch's plan with the constraint that blocked it (a hot file, a path collision
+or an unmerged dependency). Verification follows the same rule: **Task QAs are
+launched together, never serialised**, and the integration pass waits only for the
+tasks it integrates.
+
 - **Roles.** `orchestrator` (primary), `architect` (read-only on the codebase),
   `dev` (TypeScript, launched once per task), `qa`. There is no artist role: art is
   either procedural or imported and both are ordinary `dev` tasks.
@@ -85,12 +96,14 @@ drives the rest.
   are serial resources: `package.json`, `src/main.ts`, `vite.config.ts`, each
   `src/scenes/*.ts` a batch touches, `src/data/dex/**` and any generated data file —
   at most one task per batch claims each, and the plan names who holds it.
-- **Batch filling.** A one-task batch does not waste the other dev slots: a cycle
-  takes the lowest pending batch whole and may **fill** it with tasks from later
-  batches up to four, adding one only when its paths are disjoint from the batch's
-  union, it needs no file a batch-mate produces, and its own dependencies are
-  already merged. Hot files still have one owner per batch. The plan's cut is the
-  floor, not the ceiling; the filled batch runs as one dev wave and one QA wave.
+- **Batch filling.** A one-task batch never wastes the other dev slots: a cycle
+  takes the lowest pending batch whole and **must attempt to fill** it with tasks
+  from later batches up to four, adding one only when its paths are disjoint from
+  the batch's union, it needs no file a batch-mate produces, and its own
+  dependencies are already merged. The Orchestrator **actively searches** the later
+  batches for such tasks before launching a dev wave; a slot it cannot fill is
+  justified in the plan. Hot files still have one owner per batch. The plan's cut is
+  the floor, not the ceiling; the filled batch runs as one dev wave and one QA wave.
 - **Worktrees.** One per task, outside the repo as siblings:
   `git worktree add ../wt-pkm-<ID> -b task-<ID>` (note `wt-pkm-`, `wt-task-` belongs
   to a sibling project). Agents work only inside their own worktree.
@@ -99,15 +112,16 @@ drives the rest.
   the Orchestrator copies the spec into the worktree before launching its agent. A
   subagent receives **only** its spec path plus `AGENTS.md` — never the parent
   conversation. The spec must be enough for someone who has read nothing else.
-- **QA runs in two waves.** **Task QA** — one QA subagent **per task**, in
-  **parallel**, each from its own **integration worktree** (that task's branch
-  merged onto the batch base), running that task's plan and auditing that task's
-  diff — and **Integration QA** — one short pass on the **combined** tree for the
-  batch gates, the **cross-task** audit and the merge rehearsal. The criterion rule
-  lives in `docs/agent-spec-template.md` (every acceptance criterion tagged
-  `[unit]` or `[live]`, each `[live]` one stating its measurement); for the batch
-  loop it means **a task's plan is run per task; the batch gates are run once on
-  the combined tree**.
+- **QA runs in two waves.** **Task QA** — one QA subagent **per task**, launched
+  **together in one wave** (never one after another), each from its own
+  **integration worktree** (that task's branch merged onto the batch base), running
+  that task's plan and auditing that task's diff — and **Integration QA** — one
+  short pass on the **combined** tree for the batch gates, the **cross-task** audit
+  and the merge rehearsal. The criterion rule lives in
+  `docs/agent-spec-template.md` (every acceptance criterion tagged `[unit]` or
+  `[live]`, each `[live]` one stating its measurement); for the batch loop it means
+  **a task's plan is run per task; the batch gates are run once on the combined
+  tree**.
 - **Task IDs** are bound to tasks only in `TODO.md`. Everywhere else a task is
   referenced by name.
 

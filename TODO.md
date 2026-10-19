@@ -73,9 +73,11 @@ Legend:
   open items, not a rewrite of the backlog. Batches run in order: a task's branch is
   cut from `main` once every earlier batch is merged, and the Orchestrator merges one
   task at a time, in ID order. A cycle takes the lowest pending batch **whole** and
-  may **fill** it with tasks from later batches under the same antichain rules
-  (`AGENTS.md`'s **Batch filling**), up to four: the cut is the floor, not the
-  ceiling, so a one-task batch does not waste the other dev slots.
+  **must attempt to fill** it with tasks from later batches under the same antichain
+  rules (`AGENTS.md`'s **Parallelism is the default** and **Batch filling**), up to
+  four: the cut is the floor, not the ceiling, so a one-task batch does not waste the
+  other dev slots — and a slot that cannot be filled names the constraint that
+  blocked it.
 - **Hot files.** At most one task per batch claims `package.json`, `src/main.ts`,
   `vite.config.ts`, a given `src/scenes/*.ts`, `src/data/dex/**` or any other
   generated file (the packed atlases under `src/assets/`, `src/data/frlg/*.json`,
@@ -2568,24 +2570,34 @@ atlas frame. What follows is the cut's own record.
 
 ### Batch 26 — the trade room
 - **Task-66** A trade room: give one Pokémon, receive a random one.
+- **Task-90 (filled)** The FRLG NPC overworld sprite set: the packer, the repacked
+  `src/assets/frlg/overworld.png`, its generated manifest and the frozen sprite keys
+  `[Task-91]` will name. It is dependency-free and claims no path Task-66 touches, so
+  it rides here instead of waiting for Batch 29; its packed atlas and manifest are
+  its own hot files.
 - **Hot files:** `src/scenes/RouteScene.ts` (the room's fixture and its panel) → Task-66;
   `src/engine/maps/plan.ts` + `plan.test.ts` (the new `MapRoomSpecial` value and its placement)
   and `src/ui/mapView.ts` + `mapView.test.ts` (its marker) → Task-66; the deliberate-removal
   helper and its test under `src/engine/run/` (beside `perms.ts`, whose `releaseFainted` it
   must **not** change) and the received member's build → Task-66; `docs/maps-spec.md` §7 and
-  `docs/routes-spec.md` §6's party/PC rule → Task-66. It claims no `package.json`,
-  `src/main.ts`, `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts`, packed asset or
-  `src/engine/run/pool.ts`.
-- **Shape:** one task, alone, and last of the round: it wants `src/scenes/RouteScene.ts` (every
-  batch 5-20, Batch 20 last) and the special-room layer its two batch-mates extend one and two
-  batches earlier, so it opens the new **Batch 26**. It is the round's only task that removes a
-  **living** member on purpose, so it adds a helper that drops exactly one member and leaves
-  `stats.casualties` alone — the permadeath path (`releaseFainted`, 17-29) counts a loss and is
-  not the right seam. The received member is built and placed exactly as a catch is
-  (`speciesPool` + `createFighter({ learnsetSeed: run.seed })`, D17, at the squad's level
-  through `adoptAtLevel`, then `addPokemon`), the trade is one per room and refused on a
+  `docs/routes-spec.md` §6's party/PC rule → Task-66; `scripts/frlg/build-overworld-sprites.mjs`,
+  `src/assets/frlg/overworld.png`, `src/data/frlg/overworld.json` and
+  `src/data/overworldSprites.ts` + test → Task-90. Neither task claims a `package.json`,
+  `src/main.ts`, `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts` or another
+  packed asset.
+- **Shape:** the cut is Task-66, alone, and last of the round: it wants
+  `src/scenes/RouteScene.ts` (every batch 5-20, Batch 20 last) and the special-room layer
+  its two batch-mates extend one and two batches earlier, so it opens the new **Batch 26**.
+  It is the round's only task that removes a **living** member on purpose, so it adds a
+  helper that drops exactly one member and leaves `stats.casualties` alone — the
+  permadeath path (`releaseFainted`, 17-29) counts a loss and is not the right seam. The
+  received member is built and placed exactly as a catch is (`speciesPool` +
+  `createFighter({ learnsetSeed: run.seed })`, D17, at the squad's level through
+  `adoptAtLevel`, then `addPokemon`), the trade is one per room and refused on a
   single-member party, and the per-room used flag rides the run's existing per-floor
-  bookkeeping — so **no `SAVE_VERSION`** step.
+  bookkeeping — so **no `SAVE_VERSION`** step. **Filled** with Task-90: dependency-free,
+  disjoint paths, and the gitignored `sprite-sources/frlg` tree is present at the runner,
+  so the batch runs two devs and two Task QAs in parallel.
 
 ### Batch 27 — the room that bars items and healing moves
 - **Task-67** A special room whose battles bar the player's BAG items and healing moves.
@@ -4126,8 +4138,8 @@ Ports of Showdown handlers, in batches, on the hook names in
       Out of scope: the battle's own keyboard paths (a different scene), the keybind vocabulary, the
       `P`/`I`/`M`/`O` quick keys themselves (which still open a panel) and the pause menu's own keys.
       *Dependencies:* none. Wants `src/scenes/RouteScene.ts`, the plan's most contended path, so it
-      opens **Batch 29** as its first member; `[Task-90]` (the NPC overworld sprite packer) rides
-      beside it and claims no scene at all. *(Batch 29)*
+      opens **Batch 29**; its planned mate `[Task-90]` was filled into Batch 26, so Batch 29 is
+      re-filled when it is cut. *(Batch 29)*
 
 ## Phase 8 — Biomes & art assets
 
@@ -5354,9 +5366,10 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the NPC behaviour and placement (`[Task-91]`), the casino's `rocket` grunt
       (`[Task-64]`, an earlier batch, which repacks the same atlas plus `trainers.png`), and the
       trainer battle sprites.
-      *Dependencies:* none. It claims the packed atlas and its manifest alone, so it rides beside
-      `[Task-84]` in **Batch 29** — a scene task that touches neither. It adds no run field.
-      *(Batch 29)*
+      *Dependencies:* none. It claims the packed atlas and its manifest alone, so it
+      was **filled into Batch 26** beside `[Task-66]`, a scene task that touches
+      neither, once Batch 25 shipped. It adds no run field. *(Batch 26, filled;
+      originally Batch 29)*
 - [ ] **[Task-91] The special-NPC framework: one NPC per trainer room, rolled per NPC.** The human's
       rule is that the special NPCs appear by a **per-NPC percentage inside the trainer rooms**
       `[Task-82]` introduces, each with its own chance, and that the chance rises with the floor.
