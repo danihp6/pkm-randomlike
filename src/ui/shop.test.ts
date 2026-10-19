@@ -195,6 +195,7 @@ describe('shop trades', () => {
       count: 10,
       owned: 0,
       affordable: true,
+      draggable: true,
     });
     run = buyItem(run, pack).run;
     expect(buyRows(run, [pack])[0].owned).toBe(10);
@@ -225,7 +226,14 @@ describe('shop trades', () => {
     let run = addMoney(createRun({ seed: 's', starter }), 100);
     run = addItem(run, 'nugget', 2);
     const buy = buyRows(run, [{ itemId: 'potion', price: 300, count: 1 }]);
-    expect(buy[0]).toMatchObject({ name: 'Potion', price: 300, count: 1, owned: 0, affordable: false });
+    expect(buy[0]).toMatchObject({
+      name: 'Potion',
+      price: 300,
+      count: 1,
+      owned: 0,
+      affordable: false,
+      draggable: false,
+    });
     const sell = sellRows(run);
     expect(sell[0]).toMatchObject({
       itemId: 'nugget',
@@ -233,10 +241,22 @@ describe('shop trades', () => {
       count: 1,
       owned: 2,
       affordable: true,
+      draggable: false,
     });
     run = sellItem(run, 'nugget').run;
     expect(sellableStacks(run)).toEqual([{ itemId: 'nugget', count: 1 }]);
     expect(sellPriceOf('masterball')).toBe(0);
     expect(sellPriceOf('nugget')).toBe(5000);
+  });
+
+  it('makes an affordable BUY row draggable and a SELL row never', () => {
+    let run = addMoney(createRun({ seed: 's', starter }), 1200);
+    run = addItem(run, 'nugget', 1);
+    const stock = [{ itemId: 'pokeball', price: 1000, count: 10 }];
+    expect(buyRows(run, stock)[0].draggable).toBe(true);
+    expect(sellRows(run)[0]).toMatchObject({ itemId: 'nugget', draggable: false });
+
+    const poor = createRun({ seed: 's', starter });
+    expect(buyRows(poor, stock)[0]).toMatchObject({ affordable: false, draggable: false });
   });
 });

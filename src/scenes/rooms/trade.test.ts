@@ -260,11 +260,11 @@ describe('the trade window’s rows', () => {
   it('keeps the cursor on the single row when the list holds only LEAVE', () => {
     const test = harness({ run: baseRun(SEED, 1) });
     trade.interact?.(test.host, FARTHEST);
-    test.panel()?.handle('down');
-    test.panel()?.handle('up');
+    test.panel()?.handle?.('down');
+    test.panel()?.handle?.('up');
     // Still open: the cursor wrapped over one row and never left it.
     expect(test.host.panelOpen()).toBe(true);
-    test.panel()?.handle('confirm');
+    test.panel()?.handle?.('confirm');
     expect(test.host.panelOpen()).toBe(false);
     expect(test.committed()).toBeNull();
   });
@@ -275,7 +275,7 @@ describe('the trade window’s actions', () => {
     const test = harness();
     const before = test.run();
     trade.interact?.(test.host, FARTHEST);
-    test.panel()?.handle('cancel');
+    test.panel()?.handle?.('cancel');
     expect(test.host.panelOpen()).toBe(false);
     expect(test.calls).not.toContain('commitRun');
     expect(test.committed()).toBeNull();
@@ -285,9 +285,9 @@ describe('the trade window’s actions', () => {
   it('closes on the LEAVE row without committing', () => {
     const test = harness();
     trade.interact?.(test.host, FARTHEST);
-    test.panel()?.handle('down');
-    test.panel()?.handle('down');
-    test.panel()?.handle('confirm');
+    test.panel()?.handle?.('down');
+    test.panel()?.handle?.('down');
+    test.panel()?.handle?.('confirm');
     expect(test.host.panelOpen()).toBe(false);
     expect(test.calls).not.toContain('commitRun');
   });
@@ -297,7 +297,7 @@ describe('the trade window’s actions', () => {
     const test = harness();
     const before = test.run();
     trade.interact?.(test.host, FARTHEST);
-    test.panel()?.handle('confirm');
+    test.panel()?.handle?.('confirm');
 
     expect(test.calls.filter((call) => call === 'commitRun')).toHaveLength(1);
     const committed = test.committed();
@@ -321,7 +321,7 @@ describe('the trade window’s actions', () => {
     const test = harness();
     const before = test.run();
     trade.interact?.(test.host, FARTHEST);
-    test.panel()?.handle('confirm');
+    test.panel()?.handle?.('confirm');
     const committed = test.committed()!;
     expect(committed.party[1].fighter.level).toBe(10);
     expect(committed.xp).toBe(before.xp);

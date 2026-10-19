@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { LootEntry } from '../data/loot';
 import { allNatures, getNature, statAtLevel } from '../data/dex/natures';
 import { getSpecies, playableSpecies, type StatId } from '../data/dex/species';
+import { getItem } from '../data/items';
 import { createFighter } from '../engine/battle/fighter';
 import { hashSeed, Rng } from '../engine/rng';
 import { t } from '../i18n';
@@ -9,6 +10,7 @@ import {
   pokemonRewardChoices,
   pokemonRewardRowLabel,
   rewardChoices,
+  rewardRows,
   type PokemonRewardOption,
 } from './rewards';
 
@@ -227,8 +229,55 @@ describe('pokemonRewardRowLabel', () => {
   });
 });
 
-describe('the two reward streams', () => {
-  it('leaves the shipped item chooser untouched', () => {
+describe('rewardRows', () => {
+  const option: PokemonRewardOption = {
+    speciesId: 'charmander',
+    level: 20,
+    nature: 'adamant',
+    topStat: 'atk',
+    ability: 'Blaze',
+    moves: ['scratch'],
+  };
+
+  it('lists the items first, then the Pokémon, in the order offered', () => {
+    const rows = rewardRows(['potion', 'pokeball'], [option]);
+    expect(rows.map((row) => row.kind)).toEqual(['item', 'item', 'pokemon']);
+    expect(rows.slice(0, 2).map((row) => (row.kind === 'item' ? row.itemId : ''))).toEqual([
+      'potion',
+      'pokeball',
+    ]);
+    expect(rows[2]).toMatchObject({ kind: 'pokemon', option });
+  });
+
+  it('resolves an item row’s name and its one-line description', () => {
+    const [row] = rewardRows(['potion'], []);
+    expect(row).toEqual({
+      kind: 'item',
+      itemId: 'potion',
+      name: 'Potion',
+      description: getItem('potion')!.shortDesc,
+    });
+    expect(row.kind === 'item' && row.description.length > 0).toBe(true);
+  });
+
+  it('keeps the shipped label for a Pokémon row and never prints its species', () => {
+    const [, pokemonRow] = rewardRows(['potion'], [option]);
+    expect(pokemonRow).toEqual({
+      kind: 'pokemon',
+      option,
+      label: pokemonRewardRowLabel(option),
+    });
+    expect(pokemonRow.kind === 'pokemon' && pokemonRow.label).toBe('ATTACK · Adamant');
+  });
+
+  it('keeps an unknown item id as its own label rather than dropping the row', () => {
+    expect(rewardRows(['not-an-item'], [])).toEqual([
+      { kind: 'item', itemId: 'not-an-item', name: 'not-an-item', description: '' },
+    ]);
+  });
+});
+
+describe('the two reward streams', () => {  it('leaves the shipped item chooser untouched', () => {
     // A pool of this file's own: the band tables belong to other tasks and grow,
     // and a literal derived from one would go stale. The property here is the
     // stream isolation, which a local pool measures just as well.

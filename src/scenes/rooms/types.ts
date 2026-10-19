@@ -27,10 +27,31 @@ export type RoomFixture = Readonly<{
   notice?: Notice;
 }>;
 
-/** The route scene's own modal panel, owned by the room that opened it. */
+/** What the pointer was over when a room row was released. */
+export type RoomDrop =
+  | Readonly<{ onto: 'bag' }>
+  | Readonly<{ onto: 'member'; memberId: string }>
+  | Readonly<{ onto: 'party' }>
+  | Readonly<{ onto: 'none' }>;
+
+/** One row the scene drags: the room starts it, the scene owns ghost and drop. */
+export type RoomRowDrag = Readonly<{
+  /** The item the row offers, or `null` for a mini-boss Pokémon row. */
+  itemId: string | null;
+  /** The row's own printed label; the Pokémon ghost draws this, never a sprite. */
+  label: string;
+  /** Screen-space pointer at the press. */
+  pointer: Readonly<{ x: number; y: number }>;
+  /** Called exactly once, on release, with the resolved target. */
+  onDrop: (drop: RoomDrop) => void;
+}>;
+
+/** The route scene's own panel, owned by the room that opened it. */
 export type RoomPanel = Readonly<{
-  /** Every keybind action, while this panel owns the keyboard. */
-  handle(action: KeybindAction): void;
+  /** Every keybind action, while this panel is modal. Absent for a floating panel. */
+  handle?: (action: KeybindAction) => void;
+  /** `false` for a floating, non-modal panel. Omitted means modal (`true`). */
+  modal?: boolean;
   /** Destroys the panel's own objects. Called by the scene, never by the panel. */
   close(): void;
 }>;
@@ -85,6 +106,8 @@ export type RoomHost = Readonly<{
   startTrainerBattle(trainer: RouteTrainer): void;
   /** Floats one transient notice through the route HUD's own strip (`src/ui/notice.ts`). */
   showNotice(notice: Notice): void;
+  /** Starts a row drag the scene owns. Optional so headless stubs need not fake it. */
+  beginRowDrag?: (drag: RoomRowDrag) => void;
 }>;
 
 /** One special room kind: what it is, what it places and how it reads. */

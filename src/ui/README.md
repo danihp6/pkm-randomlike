@@ -16,6 +16,8 @@ testable logic belongs in the computing half.
 - `frlg.test.ts` — the pinned `chrome.json` tokens and the card's own contrast pass over the
   forest's ground tones, headless.
 - `frlgFont.ts` — the bitmap font and its metrics, from `src/assets/ui/font.png`, and the light body ink.
+- `floatingPanel.ts` — the floating glass card a non-modal window draws on: its header drag handle, its drawn ✕ and the pure clamp that keeps it on screen.
+- `floatingPanel.test.ts` — the panel clamp: inside the viewport, each edge and a viewport smaller than the card, headless.
 - `panel.ts` — the plain glass-card panel background and gauge, and the tokens they read.
 - `moveGrid.ts` — the shared moves grid: a glass cell with type and category badges, PP and
   power, and a floating description window; the battle and the route HUD draw the same component.
@@ -38,8 +40,8 @@ testable logic belongs in the computing half.
 - `scroll.ts` — the pure row-window arithmetic a scrolling grid shares: the clamped row offset, the one-row step and the visible item range.
 - `bag.ts` — the bag pockets, their labels and the pure categorisation of an item.
 - `capture.ts` — the capture sequence's beats: the shakes, the holds and the click.
-- `shop.ts` — the Mart and the sell list: stock, prices and the pure trades against the run.
-- `rewards.ts` — the item choices a trainer or boss win offers.
+- `shop.ts` — the Mart and the sell list: stock, prices and the pure trades against the run, and the row's own `draggable` flag.
+- `rewards.ts` — the item and anonymous-Pokémon choices a trainer or boss win offers, and the row model the floating reward card draws.
 - `runSummary.ts` — the run-over summary model and its lines.
 - `permadeath.ts` — the release beats for the Pokémon the run lost.
 - `evolutionGraph.ts` — a species' family graph and the levels between its members.

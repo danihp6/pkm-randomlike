@@ -229,7 +229,7 @@ describe('the casino window', () => {
     TEXTS.length = 0;
     const test = harness();
     casino.interact?.(test.host, FARTHEST);
-    test.panel()?.handle('confirm');
+    test.panel()?.handle?.('confirm');
     const committed = test.committed();
     expect(committed).not.toBeNull();
     expect(committed!.money).toBe(98_000);
@@ -245,7 +245,7 @@ describe('the casino window', () => {
   it('closes the window and calls the grunt fight after the spin that lands it', () => {
     const test = harness({ run: baseRun(BATTLE_SEED) });
     casino.interact?.(test.host, FARTHEST);
-    test.panel()?.handle('interact');
+    test.panel()?.handle?.('interact');
     const committed = test.committed();
     expect(committed).not.toBeNull();
     expect(committed!.pickedItems).toEqual([casinoSpinId(MAP_INDEX, 0), casinoLockId(MAP_INDEX)]);
@@ -272,7 +272,7 @@ describe('the casino window', () => {
     TEXTS.length = 0;
     const test = harness({ run: baseRun(SEED, 100) });
     casino.interact?.(test.host, FARTHEST);
-    test.panel()?.handle('confirm');
+    test.panel()?.handle?.('confirm');
     expect(test.committed()).toBeNull();
     expect(test.host.panelOpen()).toBe(true);
     expect(TEXTS).toContain("You don't have enough money.");
@@ -282,16 +282,16 @@ describe('the casino window', () => {
   it('closes on cancel and on the leave row, and moves the cursor between the two', () => {
     const test = harness();
     casino.interact?.(test.host, FARTHEST);
-    test.panel()?.handle('down');
-    test.panel()?.handle('up');
-    test.panel()?.handle('cancel');
+    test.panel()?.handle?.('down');
+    test.panel()?.handle?.('up');
+    test.panel()?.handle?.('cancel');
     expect(test.host.panelOpen()).toBe(false);
     expect(test.committed()).toBeNull();
 
     const second = harness();
     casino.interact?.(second.host, FARTHEST);
-    second.panel()?.handle('down');
-    second.panel()?.handle('confirm');
+    second.panel()?.handle?.('down');
+    second.panel()?.handle?.('confirm');
     expect(second.host.panelOpen()).toBe(false);
     expect(second.committed()).toBeNull();
   });

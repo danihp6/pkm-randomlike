@@ -117,7 +117,7 @@ export const en = {
   'mart.noMoney': "You don't have enough money.",
   'mart.bought': 'Bought {name} for ¥{amount}.',
   'mart.sold': 'Sold {name} for ¥{amount}.',
-  'mart.controls': '{confirm}: buy / sell    {cancel}: leave',
+  'mart.controls': 'Drag a row onto the bag or a Pokémon.',
 
   // casino — the slot machine's window
   'casino.title': 'SLOT MACHINE',
@@ -131,7 +131,7 @@ export const en = {
   // reward — the mini-boss reward window
   'reward.title': 'MINI-BOSS REWARD',
   'reward.choose': 'Choose one.',
-  'reward.controls': '{confirm}: take    {cancel}: leave',
+  'reward.controls': 'Drag a reward onto the bag or the party.',
 
   // trade — the trade room's window
   'trade.title': 'TRADE',

@@ -77,6 +77,7 @@ function fakeScene(): Phaser.Scene {
     scale: { width: 1280, height: 800 },
     add,
     cameras: { main: { ignore: (): void => undefined } },
+    input: { on: (): void => undefined, off: (): void => undefined },
   };
   return scene as unknown as Phaser.Scene;
 }
