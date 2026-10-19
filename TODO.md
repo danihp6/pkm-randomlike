@@ -2290,7 +2290,10 @@ atlas frame. What follows is the cut's own record.
   the new descriptor `src/scenes/rooms/casino.ts` + test, with `src/scenes/rooms/types.ts`
   and the stub in `fixtures.test.ts` → Task-64; `src/engine/maps/plan.ts` + `plan.test.ts`
   (the new `MapRoomSpecial` value and its placement) → Task-64; the new casino table
-  (`src/data/casino.ts` + test) and the new `egg` entry in `src/data/items.ts` → Task-64;
+  (`src/data/casino.ts` + test) and the new `egg` entry in `src/data/items.ts` + its guard
+  `src/data/items.test.ts` → Task-64 — the catalogue gains a `price: 0` row that is never
+  sellable, so the "sells everything except the Master Ball and the Mega Stones" sweep has
+  to learn its id (line 42);
   `src/data/trainers.ts` + test (the new `rocket` set-piece row) and
   `src/data/itemIcons.ts` + test (the Egg's icon fallback) → Task-64; the new pure model
   `src/ui/casino.ts` + test and the `eggHatchNotice` builder in `src/ui/notice.ts` + test →
