@@ -8,6 +8,49 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The route HUD's MOVES tab deletes an equipped move.** A slotted move released over the
+      learnset band is unequipped: `unequipMove(run, memberId, slot)` sits beside `equipMove` in
+      `src/engine/run/learnset.ts` and drops the slot, returning the run **by reference** for an
+      unknown member, an out-of-range or non-integer slot, or a member holding a single move — so a
+      one-move member is refused and the save decoder, `validateCommand` and the FIGHT menu keep
+      their non-empty invariant. The freed slot stays a drawn empty container (Task-55) and the move
+      returns to the derived band by itself — `Lv##` when it is a level-up move, `TM###` while the
+      machine is in the bag — and dragging it back re-equips it with fresh PP. The gesture is the
+      inverse of the equip drag: `handleHudPointerMove` stops reordering while the held move is over
+      the band and `handleHudPointerUp` folds the release through `unequipMove`, with no
+      confirmation because teaching is free and the delete is reversible. `docs/design-spec.md` §3
+      and `docs/tech-decisions.md` **D36** gained the inverse sentence; `src/scenes/BattleScene.ts`,
+      `src/ui/moveGrid.ts` and `src/engine/save.ts` were not touched, and there is no run field, no
+      `SAVE_VERSION` step and no RNG draw. **QA:** `npm test` (158 files / **2053** tests),
+      `npm run build`, the five-path diff audit, and both `[live]` criteria measured over CDP with
+      real pointer events: a three-move member (`punishment, nuzzle, ember`) drops `ember` onto the
+      band (`[false,false,false,true]` → `[false,false,true,true]`, the emptied cell's canvas pixel
+      changes from `[18,29,22]` to `[37,59,44]`, the band offers `ember` again as `Lv`), dragging it
+      back restores `pp = maxPp = 25`, and the battle's FIGHT menu then lists exactly `Punishment`
+      and `Nuzzle`. The batch's combined gate measured **158 files / 2071 tests**.
+
+- [x] **The room-effect table's second half: the radiant zone, the two auras, the all-types
+      change, Endure and +50 crit.** `ROOM_BATTLEFIELDS` grows from eleven rows to **seventeen**,
+      the six new rows appended after `trickroom` so the shipped eleven keep their index space, and
+      each seeds the new `BattleState.roomField` (`RoomFieldEffects`, defaulted by
+      `emptyRoomField()`, merged by `createBattle`, produced by `battlefieldSeeds`): `abilitiesOff`
+      makes the dispatcher skip every ability (`abilityActive`), `darkAura`/`fairyAura` multiply
+      Dark/Fairy damage by **1.33×** on both sides in `computeDamage`, `overrideType` replaces both
+      fighters' types for STAB and the chart (`turn.ts` reads it for the effect and the damage), a
+      lethal hit under `endure` is clamped to exactly **1 HP**, and `critStage` (**+1**) lifts the
+      crit ratio before the roll. The all-types row's one type is frozen as data
+      (`ALL_TYPES_OVERRIDE = 'Normal'`) and the crit row as `ROOM_CRIT_STAGE = 1`; the AI's
+      `estimateDamage` preview keeps ignoring room conditions, as it already ignores weather. The
+      route's existing overlay paints each row's tint generically, so no scene, art or i18n line
+      moved, the six rules draw no RNG, and `docs/maps-spec.md` §7 and `docs/battle-spec.md` §4
+      record them. **QA:** `npm test` (158 files / **2065** tests), `npm run build`, the thirteen-path
+      diff audit, and the live criterion measured for all six rows: one seed/room per id,
+      `debugBattlefieldOverlay()` equal to its table row in all six, the overlay's visible-vs-hidden
+      canvas pixel equal to the tint composite with **0** per-channel error (tolerance 3), and the
+      radiant/all-types battles' live `roomField` deep-equal to the merged seed
+      (`abilitiesOff: true`, `overrideType: 'Normal'`). The combined batch gate measured **158 files
+      / 2071 tests**.
+
 - [x] **The no-heal room: a leaf whose battles refuse the player's Bag and healing moves.**
       The special-room layer's seventh kind, `no-heal`, hangs a `dead-end` leaf with a **20 %**
       chance **from map 3 on**, drawn **last** in `planMap`'s special pass (after the trade leaf),

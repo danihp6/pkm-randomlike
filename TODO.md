@@ -786,8 +786,9 @@ twenty-eighth round's `[Task-109]` adds the last link, **Batch 51**, with `[Task
 right behind it in **Batch 52**. The new
 batches are therefore cut with one scene
 task and the **non-scene** tasks ride beside it, each on a path the scene task leaves free:
-`[Task-90]` with 84, `[Task-81]` with 87, `[Task-104]` with 89, `[Task-106]` with 85,
-`[Task-80]` with 82, `[Task-83]` with 98 and `[Task-103]` with 102. The two 2vs2 halves close
+`[Task-90]` with 84, `[Task-81]` with 87, `[Task-104]` with 89, `[Task-80]` with 82,
+`[Task-83]` with 98 and `[Task-103]` with 102 — and `[Task-106]` was **filled into Batch 28**,
+which leaves Batch 32 as `[Task-85]` alone (the fill is recorded in that batch's section). The two 2vs2 halves close
 the plan's scene queue, engine first, and two more follow them: the area-entry notice
 (`[Task-109]`, Batch 51) and the bag grid (`[Task-110]`, Batch 52).
 
@@ -902,7 +903,7 @@ The batches below carry one scene task each and name their hot-file holder; each
 | 29 | 84, 90 | `src/scenes/RouteScene.ts` → 84; `src/assets/frlg/overworld.png` + `src/data/frlg/overworld.json` (generated) → 90 |
 | 30 | 87, 81 | `src/scenes/RouteScene.ts`, `src/data/items.ts`, `src/data/frlg/item-icons.json` (generated) → 87; `src/engine/maps/plan.ts`, `src/data/maps.ts` → 81 |
 | 31 | 89, 104 | `src/scenes/RouteScene.ts`, `src/ui/shop.ts`, `src/ui/rewards.ts` → 89; `docs/balance/effect-coverage.md` (generated) → 104 |
-| 32 | 85, 106 | `src/scenes/RouteScene.ts`, `src/scenes/BootScene.ts`, `src/engine/tileset.ts` → 85; `src/data/battlefields.ts`, `src/engine/routes/battlefield.ts` → 106 |
+| 32 | 85 | `src/scenes/RouteScene.ts`, `src/scenes/BootScene.ts`, `src/engine/tileset.ts` → 85 |
 | 33 | 78 | `src/scenes/RouteScene.ts`, `src/engine/run/roster.ts` → 78 |
 | 34 | 79 | `src/scenes/RouteScene.ts` → 79 |
 | 35 | 82, 80 | `src/scenes/RouteScene.ts`, `src/engine/maps/plan.ts`, `src/ui/mapView.ts`, `src/data/population.ts` → 82; `src/data/maps.ts`, `src/engine/run/floors.ts`, `docs/balance/route-curve.md` → 80 |
@@ -2657,37 +2658,48 @@ is the cut's own record.
   together, and the route scene is held by every batch from 5 to 26. It runs after
   Batch 11's reformat and edits files it cleared, so it keeps them conforming.
 
-### Batch 28 — the MOVES tab deletes an equipped move
-- **Task-68** The route HUD's MOVES tab can delete an equipped move: the slot is dropped onto
-  the learnset band, the slot becomes empty and the move waits in the band to be re-equipped.
-- **Hot files:** `src/scenes/RouteScene.ts` (the MOVES tab's slot press, the live reorder and
-  the release; `handleHudPointerMove` 2899-2943, `handleHudPointerUp` 3047-3115,
-  `handleDetailPointerDown` 3223-3238, the band's own hit test beside `pointerInBagPanel`
-  3638-3645) → Task-68; `src/engine/run/learnset.ts` + `learnset.test.ts` (the new pure
-  inverse of `equipMove`, 115-136) → Task-68; `docs/design-spec.md` §3's MOVES paragraph
-  (71-78) and `docs/tech-decisions.md` **D36** (520-530, the panel's own operation list) →
-  Task-68. It claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/**`,
-  `src/data/dex/**`, `src/engine/save.ts`, `src/scenes/BattleScene.ts`, `src/ui/moveGrid.ts`
-  or packed asset — and no `docs/` file another batch holds: `docs/design-spec.md` §3 is
-  Task-58's in Batch 20 and free here (Task-63 takes §7, not §3), and `docs/tech-decisions.md`
-  is nobody's.
-- **Shape:** one task, alone, and it is the first batch that leaves the route scene free at
-  all: `src/scenes/RouteScene.ts` is held by **every** batch from 5 to 27 (5 Task-16, 5b
-  Task-45, 6 Task-41, 6b Task-38, 7 Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9
-  Task-39, 9b Task-40, 10 Task-26, 11 Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48,
-  15 Task-49, 16 Task-50, 17 Task-52, 18 Task-55, 19 Task-56, 20 Task-58, 21 Task-61, 22
-  Task-62, 23 Task-63, 24 Task-64, 25 Task-65, 26 Task-66, 27 Task-67), so no batch before
-  this one can host it, and the second path it wants — `src/engine/run/learnset.ts` with its
-  test — is Task-56's in Batch 19 and free from Batch 20 on. It is written **against** Task-56's
-  shipped state: with the learnset the only equip path, a deleted move stays learned and the
-  slot it frees stays empty until the player drags something back, which is the rule this task
-  completes rather than fights. The three other paths the report could reach are free in this
-  batch too, so the open questions below can be answered either way without re-cutting it:
-  `src/scenes/BattleScene.ts` (held by Task-67 in Batch 27), `src/ui/moveGrid.ts` (Task-58's
-  in Batch 20) and `src/engine/run/progression.ts` (Task-56's in Batch 19) are all nobody's
-  here — and the default reading touches none of them. It edits files Batch 11's reformat
-  cleared, so it keeps them conforming (no new ledger line), the way Batches 12–27 do. It adds
-  no run field and draws no RNG, so **no `SAVE_VERSION`** step and no fixed-seed re-pin.
+### Batch 28 — the MOVES tab deletes an equipped move, and the room-effect table's second half *(shipped, archived)*
+
+Task-68 and Task-106 merged in ID order behind the green gate — **2053** tests after the first
+merge (`2026-10-19`), and the combined tree measured **158 files / 2071 tests** with
+`npm test` + `npm run build` green in Integration QA — and the detail is in `CHANGELOG.md`'s
+`## Unreleased`. QA ran one Task QA per task, **in parallel**, each from its own integration
+worktree (task branch merged onto `main`), and then one Integration QA on the combined tree; every
+`[unit]` and `[live]` criterion was green and the live ones were measured on a dev server over CDP.
+Task-68's four written defaults were taken as its *Decision* froze them — the route HUD's MOVES tab
+alone, a one-move member refused, the drag onto the learnset band, no confirm — and Task-106's one
+cut-time call was frozen in its spec (`ALL_TYPES_OVERRIDE = 'Normal'`, `ROOM_CRIT_STAGE = 1`).
+
+**What shipped.** Task-68 adds `unequipMove(run, memberId, slot)` beside `equipMove`, the exact
+inverse: the slot is dropped, the run comes back by reference for an unknown member, an
+out-of-range/non-integer slot or a member holding a single move, and the freed slot stays an empty
+container while the move returns to the derived band (`Lv##` / `TM###`) and can be dragged back
+with fresh PP. The route scene stops reordering while the held move is over the band and folds the
+release through the new helper, with no prompt; `docs/design-spec.md` §3 and `docs/tech-decisions.md`
+D36 record the inverse. Task-106 appends the six room conditions — radiant zone, dark aura, fairy
+aura, all-types change, Endure and +50 crit — to `ROOM_BATTLEFIELDS` (**seventeen** rows, the
+shipped eleven untouched) and gives them `BattleState.roomField` (`RoomFieldEffects`, defaulted by
+`emptyRoomField()` and seeded by `battlefieldSeeds`): the ability dispatcher skips abilities under
+`abilitiesOff`, the damage model applies the two 1.33× auras and reads STAB/effectiveness against
+`overrideType`, the turn loop clamps a lethal hit to 1 HP under `endure` and adds `critStage` to the
+crit ratio. The route's existing overlay paints the new rows' tints, so no scene, art, i18n or
+`SAVE_VERSION` line moved; `docs/maps-spec.md` §7 and `docs/battle-spec.md` §4 record the rules.
+
+**Fill record.** Batch 28 was cut as Task-68 alone; it was filled with **Task-106** from Batch 32,
+whose paths (`src/data/battlefields.ts`, `src/engine/routes/battlefield.ts`,
+`src/engine/battle/{state,damage,turn}.ts`, the effects registry and its docs) are disjoint from
+Task-68's and whose dependency (Task-62) is merged. Every other later task was disqualified:
+`[Task-84]`, `[Task-87]`, `[Task-89]`, `[Task-78]`, `[Task-79]`, `[Task-80]`, `[Task-82]`,
+`[Task-91]`–`[Task-103]`, `[Task-109]` and `[Task-110]` hold `src/scenes/RouteScene.ts`, the plan's
+one-scene-per-batch queue; `[Task-104]` and `[Task-107]` share
+`src/engine/battle/{damage,state,turn}.ts` with Task-106, so at most one of the three fits a batch;
+`[Task-81]`'s claim is explicitly incomplete and its map-index scaling is still unfrozen; and
+`[Task-80]`/`[Task-83]` depend on unmerged tasks. **Batch 32 is therefore `[Task-85]` alone.** Hot
+files: `src/scenes/RouteScene.ts`, `src/engine/run/learnset.ts` + test and the two docs → Task-68;
+`src/data/battlefields.ts` + test, `src/engine/routes/battlefield.ts` + test,
+`src/engine/battle/{state,damage,turn}.ts` + their tests, the effects registry + test,
+`docs/battle-spec.md` §4 and `docs/maps-spec.md` §7 → Task-106. No path is shared by the two and no
+hot file has two holders.
 
 ### Open questions for the human
 
@@ -2715,9 +2727,9 @@ behind the gated reward room — **answered and removed**, `2026-10-19`, includi
 never asked, below — and two behind the trade room) and the eleventh
 round's single report adds six (all behind the no-items/no-heal room), **answered** by
 Task-67's *Decision* — the six written defaults — and shipped with it, so their bullets are
-gone, and the twelfth round's single
-report adds four (the surface, the last move, the gesture and the confirm, all behind the MOVES tab's
-delete) — and the **third round's Task-47 question is answered** (the human settled it when
+gone, and the twelfth round's four (the surface, the last move, the gesture and the confirm, all
+behind the MOVES tab's delete) were **answered by `[Task-68]`'s *Decision*** and shipped with it,
+so their bullets are gone — and the **third round's Task-47 question is answered** (the human settled it when
 Batch 7 was cut: the Continue row reads the route HUD's own string, `` `Map <n> · <biome>` ``,
 with **no** third clause, frozen in `### Batch 7` above and in `.agent_specs/task-47.md`, so
 its bullet is gone) — and the **eighteenth round's two decisions add no question at all**: they *answer* two
@@ -3016,57 +3028,6 @@ note. The one ID without a batch is not a question: `[Task-28]` waits on an upst
   (`bandForMap(run.mapIndex)`, the roster's source), which makes a trade on a deep floor hand
   back a stronger Pokémon than the squad and on an early floor a weaker one. Say which before
   Batch 26's branch is cut. Nothing else in the plan changes either way.
-
-- **`[Task-68]` (the MOVES tab's delete, Batch 28): which surface does "menu moves" mean?**
-  The report names "menu moves" and the tree has three: the route HUD's **MOVES** tab (the
-  detail panel's `'moves'` mode, the only place a move is ever equipped), the battle's **moves**
-  menu (the per-turn FIGHT command menu, `docs/design-spec.md` §4 175-176) and the battle's
-  SWITCH detail window (read-only rows). The written default is the **route HUD's MOVES tab
-  alone** — "equipado" is a fact about the run's member, and the battle has no equip seam, no
-  drag and only a restored snapshot of the member — which leaves `src/scenes/BattleScene.ts` and
-  `src/ui/moveGrid.ts` untouched; the alternative is **both** surfaces, which adds a battle-time
-  delete whose result would have to travel back through `BattleReturn` to reach the run and
-  which puts `src/scenes/BattleScene.ts` in this task (free in Batch 28, so the batch would not
-  have to be re-cut). Say which before Batch 28's branch is cut. Nothing else in the plan
-  changes either way.
-
-- **`[Task-68]` (the MOVES tab's delete, Batch 28): may the last remaining move be deleted?**
-  The tree forbids a zero-move member in three places — the save decoder **drops** such a
-  member (`parseFighter`, `src/engine/save.ts` 442-449), the fight branch of `validateCommand`
-  refuses every index once the list is empty (`commands.ts` 103-105) and the FIGHT menu would
-  draw nothing (`openMoves`, `BattleScene` 1235) — while the engine's Struggle fallback covers
-  only a moveset whose moves are all **spent** (`selectedMove`, 52-66). The written default is
-  that a **one-move member is refused**, so the invariant those three places already assume
-  survives and the save decoder stays out of the task; the alternative is that the last move may
-  go, which needs the decoder's guard relaxed (`parseFighter` 449) **and** a fight path for a
-  move-less member — the battle's menu would have to offer Struggle, a rule `[Task-35]`'s AI
-  also weighs — and takes `src/engine/save.ts` + `save.test.ts` and
-  `src/engine/battle/commands.ts` into this task. Neither reading adds a run field, so **no
-  `SAVE_VERSION`** step either way: relaxing a decoder's tolerance is a decode-time
-  normalisation, the `[Task-33]` precedent. Say which before Batch 28's branch is cut. Nothing
-  else in the plan changes either way.
-
-- **`[Task-68]` (the MOVES tab's delete, Batch 28): how does the player delete — a drag back
-  onto the band, or a control in the slot?** The report names no gesture. The written default is
-  the **drag onto the learnset band**, the exact inverse of `[Task-55]`'s equip drag and the
-  shape the tree already uses for the other equipped thing (a held-item badge dropped on the
-  bag, `RouteScene` 3089-3105), which keeps the diff in `RouteScene` and the one engine helper;
-  the alternative is a small **✕ control** drawn in each slot cell, which is more discoverable
-  but adds a per-cell piece and a hit test to `src/ui/moveGrid.ts` (and the test `[Task-55]`
-  creates) and would be drawn by the battle's grid too — free in Batch 28, so that reading costs
-  no re-cut. A third reading, a key on a selected slot, needs a persistent cursor the MOVES tab
-  does not have. Say which before Batch 28's branch is cut. Nothing else in the plan changes
-  either way.
-
-- **`[Task-68]` (the MOVES tab's delete, Batch 28): is the delete confirmed?** The report says
-  nothing, and the action is **free and reversible** — the move stays in the band and teaching is
-  free (D36), so a delete costs the player nothing but a drag back — while the gesture itself is
-  a drag that ends on the band, which is also where a reorder drag may end by accident. The
-  written default is **no prompt**: the delete lands on release and a mis-drop is undone by
-  dragging the move back, the way a mis-dropped held item is; the alternative is a yes/no prompt
-  on the drop, which guards the mis-drop but introduces the HUD's first confirm window (the
-  capture prompt `[Task-31]` deletes is the only one the tree ever had). Say which before Batch
-  28's branch is cut. Nothing else in the plan changes either way.
 
 - **`[Task-109]` (the area-entry panel, Batch 51): does the banner fire on every room, or only when the
   area changes?** The originals fire **once per area** — they have no per-room banner — while the
@@ -4345,8 +4306,9 @@ tests' fixture.
       Ball sprite a visible item draws.
       *Dependencies:* none. Wants `src/scenes/RouteScene.ts` and a one-time edit of
       `FOREST_FLOOR_VARIANTS`. The frame is **41** — the human's pick from the preview above. It
-      opens **Batch 32** and `[Task-106]` (the room-effect table's second half) rides beside it:
-      that task claims no scene, no tileset and no `BootScene`. *(Batch 32)*
+      opens **Batch 32**, which is now `[Task-85]` alone: `[Task-106]` (the room-effect table's
+      second half) was filled into Batch 28 and shipped there, and it claimed no scene, no tileset
+      and no `BootScene`. *(Batch 32)*
 
 ## Phase 9 — Maps (route groups), biomes & progression
 
@@ -4577,7 +4539,8 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the existing weather/terrain/gravity/trick-room rules and the moves that set
       them (they do not move), the info window `[Task-60]` (Batch 17) that lists the battle's own
       state, the encounter table, the room generator's geometry, and the trainer placement.
-      **The table's second half is `[Task-106]`'s, one task of its own in Batch 32.** The radiant
+      **The table's second half is `[Task-106]`'s, one task of its own, filled into Batch 28 and
+      shipped there.** The radiant
       zone, the two auras, the all-types change, Endure and the +50 crit are new **engine rules**
       rather than rows this task could carry, so the sibling extends the `ROOM_BATTLEFIELDS` table
       and the `BattleSetup` seam this task freezes and never duplicates the five conditions named
@@ -5477,29 +5440,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the room conditions (`[Task-62]`, `[Task-106]`) and the type chart itself.
       *Dependencies:* none — `damage.ts`, the registry and the coverage table are shipped. It adds no
       run field. *(Batch 31)*
-- [ ] **[Task-106] The room-effect table's second half: the radiant zone, the two auras, the
-      all-types change, Endure and +50 crit.** `[Task-62]` ships the room-condition seam and its five
-      rows (weather, terrain, fog, Gravity, Trick Room); the human's list carries six more, and every
-      one is a **new engine rule**: no field disables every ability, no aura modifies damage, no field
-      overrides every type, no field leaves a lethal hit at 1 HP and no field raises the crit stage.
-      **Fix shape.** The six rows join `[Task-62]`'s `ROOM_BATTLEFIELDS` table, its dedicated stream
-      and its launch/setup seam, each with the one term it needs:
-      - **radiant zone** («todas las habilidades desactivadas») — an `abilitiesOff` field flag read by
-        the ability dispatcher before any handler runs.
-      - **dark aura / fairy aura** — the two multipliers in `damage.ts` (Dark and Fairy moves ×1.33,
-        both sides, as the cartridges do).
-      - **all-types change** («cambia el tipo de todos a cierto tipo») — an `overrideTypes` field
-        record applied wherever a fighter's types are read, so STAB and effectiveness follow.
-      - **Endure** («no se puede matar de 1 golpe, se quedan a 1 PS») — a field flag read where a
-        lethal hit is applied, leaving 1 HP.
-      - **+50 crit** — the crit stage added in `turn.ts`'s crit roll.
-      The route's own overlay (`[Task-62]`) draws each row's tint, so no art and no scene line move;
-      the added terms draw no RNG, so a fixed seed reproduces every battle.
-      **Docs:** `docs/battle-spec.md` §4, `docs/maps-spec.md` §7.
-      Out of scope: the five conditions `[Task-62]` ships, the no-items/no-heal room (`[Task-67]`),
-      the boss's forced opening (`[Task-100]`) and the forced field an NPC buys (`[Task-94]`).
-      *Dependencies:* `[Task-62]` — the table, the seam and the overlay. It adds no run field.
-      *(Batch 32)*
 - [ ] **[Task-107] The 2vs2 boss battle, engine half: the double-battle rules.** The human's last
       and largest wish — «Bosses 2vs2» — cannot ride on today's engine: every side is one active
       (`activeFighter(state, side)`, `src/engine/battle/state.ts`), a command carries no target and
@@ -5813,130 +5753,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       **against** Task-40's beat and Task-50's notice rather than beside them, and it adds no run
       field — an older save's members keep the moves they hold — so **no** `SAVE_VERSION` step.
       *(Batch 19)*
-
-- [ ] **[Task-68] The MOVES tab can delete an equipped move.** Reported in play: «añade tarea
-      en menu moves permitir borrar un movimiento equipado» — the MOVES menu should let the
-      player delete a move the member has equipped.
-      **What "the MOVES menu" is today, in each of its three homes.** The **route HUD's MOVES
-      tab** is the detail panel's `'moves'` mode (`DetailTab = 'stats' | 'moves'`,
-      `src/ui/partyDetail.ts` 26; the tab's own label is `MOVES`, `RouteScene` 1911) and it
-      stacks the three bands this report is about (the grid's height and the pool's page size,
-      369-373): the four slotted moves drawn by the shared `MoveGrid` (`hudMoveGrid.layout`,
-      2411-2435), a search field and the learnset band (`refreshLearnset`, 2676-2734, the pool
-      sliced to one page at 2696-2699) — and it is the **only** one of the three with an equip
-      seam: a press on a band cell picks that move up (`startLearnDrag`, 3262-3271, reached at
-      3223-3227), the release asks `detailMoveIndexAt` (3437-3441) and folds the drop through
-      `equipMove` (3069-3083). The **battle's moves menu** (`Mode` includes `'moves'`,
-      `BattleScene` 174; `openMoves`, 1232-1271; `renderMoveMenu`, 1967-2038) draws the same
-      grid, but it is the per-turn **command** menu: a cell spends the turn, there is no drag,
-      and the fighter it lists is a **restored snapshot** built in `init` (364-375) from the
-      launch — not the run's member, which only comes back through `applyBattleResult`. The
-      third home is the battle's SWITCH detail window, whose 2x2 move rows are read-only
-      (`partyDetailMoves`, 678-698, filled at 1886-1901) and are `[Task-59]`'s to give an ⓘ.
-      **The report means the route HUD's MOVES tab**, and the reason is in the code: "equipado"
-      is a fact about the run's member — `RunPokemon.fighter.moves` — and the tab is the only
-      place a move is ever equipped; the battle has no equip, no drag and no persistent member,
-      so a delete there would have to travel back through `BattleReturn` to mean anything. The
-      consequence for each is written down rather than implied: the battle's menu needs **no**
-      change (it lists whatever slots remain, in slot order, and a member keeps at least one
-      move — the rule below — so its grid is never empty), and the SWITCH window's rows keep
-      their read-only shape.
-      **What a delete must do to a member.** A member's equipped moves are exactly
-      `fighter.moves` (`MoveSlot[]`, `src/engine/battle/fighter.ts` 144) capped at
-      `MAX_MOVES = 4` (`src/engine/run/progression.ts` 40), and the learnset is **derived**, not
-      stored: `learnsetPool` (`src/engine/run/learnset.ts` 66-86) is the level-up moves the
-      species knows at its level minus the equipped ones, plus the moves a TM **in the bag** can
-      teach — so a move that leaves the slots reappears in the band **by itself**, as a `Lv##`
-      entry when it is a level-up move and as a `TM###` one while the machine is still in the
-      bag (TMs are reusable, `docs/tech-decisions.md` 513-518), and `equipMove` (115-136) is the
-      only way back in. A delete therefore needs **one** new pure rule — the inverse of
-      `equipMove`, an `unequipMove(run, memberId, slot)` beside it that drops slot `slot`
-      and returns the run **untouched** (same reference) when the member is unknown, the slot is
-      out of range or the member holds a single move, re-saving the member through
-      `updatePokemon` (`src/engine/run/state.ts` 343-352) otherwise — with its cases in
-      `learnset.test.ts` beside the `equipMove` ones (60-90, the tail-append at 79-82). Nothing
-      else about the member moves: no XP, no PP, no ability and no stats.
-      **What forbids an empty moveset today, and why the last move stays.** The tree holds a
-      member to at least one move in three places, and this task does not open that door:
-      `parseFighter` **drops** a member whose `moves` parse to an empty list
-      (`if (moves.length === 0) return null;`, `src/engine/save.ts` 442-449, consumed by
-      `parseMembers` 506-514), so a saved zero-move member would silently vanish on the next
-      load; the fight branch of `validateCommand` refuses every index once `fighter.moves.length`
-      is 0 (`src/engine/battle/commands.ts` 103-105) and `legalMoveIndices` (32-47) returns
-      `[]`, so no move can be submitted at all; and `openMoves` builds one menu item per move
-      (`BattleScene` 1235), so the FIGHT menu would draw nothing (`menuOpen`,
-      `this.menuItems.length > 0`, 1506). The engine's Struggle fallback (`selectedMove`, 52-66,
-      pinned by `commands.test.ts` 39-44) covers only a moveset whose moves are all **spent**,
-      not an absent one, and `editRunPokemon` refuses to build an empty set too
-      (`progression.ts` 170). The reading this entry freezes is therefore that **the last
-      remaining move cannot be deleted** — a one-move member is refused — so the invariant the
-      save, the validator and the battle menu all already assume survives and
-      `src/engine/save.ts` stays out of this task entirely; the alternative (allow it, and give
-      the empty member Struggle everywhere) is the open question below, and it is the only
-      reading that would put the save decoder and `commands.ts` here.
-      **The gesture, and the freed slot.** The delete is the **inverse of the equip drag**, and
-      the tree already has that shape for the other equipped thing: a held item is taken off by
-      dragging its badge onto the bag (`pointerInBagPanel`, `RouteScene` 3089-3105, over
-      `unequipHeldItem`, `src/engine/run/state.ts` 581-586). So a slot cell released over the
-      **learnset band** deletes that move: `handleHudPointerMove` (2899-2943) stops reordering
-      while the pointer is over the band, and `handleHudPointerUp` (3047-3115) folds the release
-      through `unequipMove` where it today folds a band drag through `equipMove` (3069-3083).
-      The freed slot is **empty**: the four containers `[Task-55]` draws (Batch 18) already
-      answer for a slot with no move, and `[Task-56]` (Batch 19) makes a short moveset the
-      ordinary case, so nothing is refilled for the player — a slot that emptied by itself would
-      also make the delete a swap rather than a delete. The deleted move stays in the band and
-      comes back for free (teaching is free, D36), which is what makes the delete reversible
-      rather than destructive, and why it needs **no** confirmation prompt. The spec freezes the
-      band's own hit test (a `pointerInLearnBand`-style sibling of `pointerInDetailPanel` and
-      `pointerInBagPanel`, 3381-3390 / 3638-3645) and the exact signature of the new helper.
-      **The two tasks that own the seam.** `[Task-56]` (Batch 19) owns **learned vs equipped**:
-      it stops a level-up from writing the slots, so the band becomes the only equip path and
-      the OHKO / No Guard guard moves there. This task owns the **inverse of that path** — the
-      unequip — and must not touch `levelUpPokemon`, `learnsetPool` or the guard. It runs one
-      batch after it because pre-`Task-56` a level-up that crossed a move would refill the slot
-      the player had just emptied (`moves.push`, `progression.ts` 284-289), which would make the
-      delete read as broken.
-      **No `SAVE_VERSION` step:** a member's moves are **already persisted** — `encodeSave`
-      writes the run verbatim (`src/engine/save.ts` 272-278) and `parseFighter` reads the slots
-      back (442-449) — so a delete edits an existing field and adds no run field. The chain
-      stays **14 → 15** (Task-13, shipped) → **15 → 16** (Task-31, Batch 7) → **16 → 17**
-      (Task-44, Batch 13) → **17 → 18** (Task-52, Batch 17). The only reading that would move it
-      is the "last move may go" one below, and even that is a decode-time tolerance rather than
-      a schema step (the `[Task-33]` precedent), so it would still add **no** version.
-      **Files:** `src/scenes/RouteScene.ts` (the slot press, the live reorder's band guard and
-      the release), `src/engine/run/learnset.ts` + `learnset.test.ts` (the new pure inverse),
-      and the two records of the panel's own operations — `docs/design-spec.md` §3 (71-78, the
-      paragraph that says "A cell is dragged onto a slot to equip it") and
-      `docs/tech-decisions.md` **D36** (520-530, whose "A pool cell is dragged onto a slot to
-      equip it, replacing what sat there" gains the inverse). No `D##` is owed beyond that
-      amendment: the rule is the equip rule's inverse and no new decision is taken.
-      **Tests.** `src/engine/run/learnset.test.ts`: the deleted move leaves the slots, the slot
-      is empty and the pool offers the move again (a level-up move as `Lv##`, a bag TM as
-      `TM###`); a one-move member is refused and the run comes back by reference; an unknown
-      member and an out-of-range slot are no-ops; and a delete-then-re-equip round-trip restores
-      the moveset with fresh PP. No RNG is involved, so no fixed-seed re-pin. QA reproduces the
-      report in `npm run dev`: a member with three moves, drag a slot onto the learnset band →
-      the tab draws three moves and one empty container, the deleted move is in the band,
-      dragging it back restores it, and the battle's FIGHT menu lists the remaining moves.
-      Out of scope: the equip rule itself and the band's pool (`learnsetPool`, `equipMove`,
-      `[Task-56]`'s level-up rule), the four containers (`[Task-55]`), the ⓘ classifier
-      (`[Task-39]`), the SWITCH window's move rows and their ⓘ (`[Task-59]`), the battle's
-      FIGHT menu and its Struggle fallback, the party reorder, the nickname field, the dev
-      menu's `editRunPokemon`, and the deleted move's own PP, which `equipMove` rebuilds fresh
-      when it returns.
-      *Decision:* All four written defaults: the **route HUD's MOVES tab alone**, a **one-move member is refused**, the **drag onto the learnset band**, and **no confirm**.
-      *Dependencies:* none — the member's slots, the derived pool, the equip helper and the
-      badge-onto-bag unequip are all shipped, and the two questions below are calls, not edges.
-      Batch order covers it: it wants `src/scenes/RouteScene.ts`, which **every** batch from 5 to
-      27 holds (5 Task-16, 5b Task-45, 6 Task-41, 6b Task-38, 7 Task-31, 8 Task-08's every-scene
-      sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26, 11 Task-29's ledger, 12 Task-30, 13
-      Task-44, 14 Task-48, 15 Task-49, 16 Task-50, 17 Task-52, 18 Task-55, 19 Task-56, 20
-      Task-58, 21 Task-61, 22 Task-62, 23 Task-63, 24 Task-64, 25 Task-65, 26 Task-66, 27
-      Task-67), and `src/engine/run/learnset.ts` with its test (Task-56's in Batch 19) — so it
-      opens the plan's new **Batch 28**, the first batch that leaves the route scene free at all.
-      It is written **against** `[Task-56]`'s shipped state and `[Task-55]`'s four containers,
-      nine and ten batches earlier, so the slot it frees is a drawn, empty container rather than
-      a missing cell. *(Batch 28)*
 
 ## Phase 11 — Localisation (i18n)
 
