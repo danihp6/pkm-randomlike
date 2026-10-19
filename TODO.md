@@ -2402,10 +2402,11 @@ atlas frame. What follows is the cut's own record.
 
 ### Batch 25 — the gated reward room
 - **Task-65** A special room whose reward sits behind bushes, rocks or water that only a party
-  Pokémon's **type** opens — Bug or Grass, Rock or Fighting, Water. The report asked for a move
-  (Cut / Rock Smash / Surf); the human's answer (`2026-10-19`) made it a **type** gate, so no
-  dex/TM data is touched and `cut` (absent from the build) is never needed. The room's spec is
-  `.agent_specs/task-65.md`.
+  Pokémon's **type** opens — Bug or Grass, Rock or Fighting, Water. It hangs a `dead-end` leaf at
+  **20 % from map 3 on** (the measured placement; see the balance bullet below), and the report
+  asked for a move (Cut / Rock Smash / Surf) while the human's answer (`2026-10-19`) made it a
+  **type** gate, so no dex/TM data is touched and `cut` (absent from the build) is never needed.
+  The room's spec is `.agent_specs/task-65.md`.
 - **The seam it extends is the descriptor layer, and the casino is the descriptor precedent.**
   `[Task-111]` (Batch 23b, `D47`) shipped `RoomDescriptor` / `RoomHost` / `RoomPanel` in
   `src/scenes/rooms/types.ts`, the `import.meta.glob` registry (`registry.ts`) and four
@@ -2431,8 +2432,10 @@ atlas frame. What follows is the cut's own record.
   `src/assets/frlg/{outdoor,forest,cave}.png` through `scripts/frlg/build-tilesets.mjs` (cells 49
   and 50, the only free ones) → Task-65; `src/ui/notice.ts` + `notice.test.ts` (the gate's two
   builders) and `src/i18n/{en,es}.ts` (its copy) → Task-65; `docs/maps-spec.md` §7,
-  `docs/tileset-spec.md` §1/§2/§6, `docs/design-spec.md` §7 and `docs/route-generator.md` §7
-  (**O-R5 is reworded, not closed**) → Task-65. It claims no `package.json`,
+  `docs/tileset-spec.md` §1/§2/§6, `docs/design-spec.md` §7,
+  `docs/balance/route-curve.md` (the measured rows for maps 3-8, no re-base) and
+  `docs/route-generator.md` §7 (**O-R5 is reworded, not closed**) → Task-65. It claims no
+  `package.json`,
   `src/main.ts`, `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts`, `src/ui/mapView.ts`
   (the marker **is** `MapRoomSpecial`, the casino's own finding), `src/engine/run/{pool,state}.ts`,
   the move/TM data (`src/data/dex/moves.json`, `src/data/tms.ts`), `src/engine/battle/**` or any
@@ -2467,7 +2470,8 @@ atlas frame. What follows is the cut's own record.
   the way a plain `WALL` gate could. (e) **The kind rolls last** in the special pass, after the
   casino's block (`plan.ts` 455-460), so no shipped floor's specials move; the kind and the site
   come off two minted, module-local streams (`:gate:` and `:gate:site:`), so no shipped stream moves
-  and a reroll keeps the kind. (f) **The only free frames are 49 and 50**
+  and a reroll keeps the kind. Its **placement is 20 % from map 3 on**, not the casino's 30 % from
+  map 2 — the balance bullet below carries the measurement. (f) **The only free frames are 49 and 50**
   (`build-tilesets.mjs` 76-77), and `frlg.test.ts` 317-323 currently pins them blank, so that case
   flips to "stamps the two obstacle cells". (g) **The gate reads the party's types, not a move**
   (the human's answer): `src/engine/run/party.ts` holds `partyHasType`, the first of the party
@@ -2475,6 +2479,21 @@ atlas frame. What follows is the cut's own record.
   needs **two** hooks (`route()` to read the seal and `rebuildRoom()` to redraw the room in place),
   the reward is placed by the descriptor off `route().gate.pocket`, and `rebuildRoom` keeps the live
   `RouteEncounters` instance so reopening the seal cannot restart the room's encounter sequence.
+- **Balance: the leaf hangs at 20 % from map 3 on (`2026-10-19`), because the shipped `0.3` from
+  map 2 is red.** The dev measured the real `curve.test.ts` seeds (`curve-a/b/c`) with `award`/
+  `needed` fixed per band: **`0.3` from map 2** puts map 2 at **1.5135** (outside both `[1, 1.5]`
+  and the on-ramp `[1.2, 1.35]`), map 4 at **1.5145** and map 7 at **0.9910** (below 1) — three
+  floors red; **`0.2` from map 2** is green but lands map 2 at **1.3161**, 0.034 under the on-ramp
+  ceiling; **`0.2` from map 3** is green with map 2 **untouched at 1.2503** (the leaf never rolls
+  there), map 4 at **1.3631** and map 7 at **1.0382**, and `0.3` from map 3 still fails (map 4
+  **1.5903**). The cause is the leaf's extra door shifting the `routeIndexForRoom` prefix from its
+  start map on, which moves trainers ±15-20 % per floor. Map 3 also suits the room: by then the
+  party can plausibly field the asked type, and map 3 is where the mega-stone leaf already starts.
+  **`docs/balance/route-curve.md` is re-measured, not re-based:** the eight-floor budget table's
+  rows for maps 3-8 move with the measurement (maps 1-2 do not), and **no tuning number changes** —
+  `LEVEL_BANDS.trainerXp`, `MAP_TUNING` and `needed(m)` stay put. The spec freezes the numbers and
+  the QA criterion: `curve.test.ts` 2/2, all eight fills inside their windows, map 7 the one to
+  watch.
 - **Batch filling: checked, no member added (`2026-10-19`).** Three later tasks pass the letter of
   the rule and are refused on the **wave rule** — the rule Batch 24 and Batch 23b applied to the
   Phase-9 wave: **`[Task-104]`** (B31, the damage-model abilities: `src/engine/battle/{damage,state,
@@ -4827,7 +4846,8 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       under `src/engine/run/` (its own module, general enough for `[Task-91]`'s
       `partyHasMove`/`partyHasAbility` to join it).
       **Fix shape:** one room kind, one obstacle kind, one gate rule. `MapRoomSpecial` gains a
-      gated-reward kind; the room's own **route build** carves a one-tile corridor to a sealed
+      gated-reward kind, a **dead-end leaf at 20 % from map 3 on** (the measured placement in the
+      paragraph below); the room's own **route build** carves a one-tile corridor to a sealed
       vault and places the reward on its far side — the cut settled that this is a **generator
       pass** (`src/engine/routes/gate.ts`, wired into `attemptRoute`), not a `buildRoom` tweak and
       not a fixture, because `RoomFixture` cannot write tiles and `validateRoute` gates on
@@ -4849,6 +4869,16 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       New bush/rock frames go into the packed FRLG tileset atlas
       (`scripts/frlg/build-tilesets.mjs`, `src/assets/frlg/{outdoor,forest,cave}.png`, cells 49 and
       50, the only free ones), so this task holds the three packed sheets and the packer.
+      **Placement, measured (`2026-10-19`).** The leaf's extra door shifts `routeIndexForRoom`'s
+      prefix from its start map on, moving trainers ±15-20 % per floor, so the shipped `0.3` from
+      map 2 is red on the real `curve.test.ts` seeds: map 2 **1.5135** (outside `[1, 1.5]` and the
+      on-ramp `[1.2, 1.35]`), map 4 **1.5145**, map 7 **0.9910**. `0.2` from map 2 is green but
+      leaves map 2 at **1.3161**, 0.034 under its ceiling; **`0.2` from map 3** is green with map 2
+      **untouched (1.2503)**, map 4 **1.3631** and map 7 **1.0382**, which is the frozen reading
+      (`0.3` from map 3 still fails: map 4 **1.5903**). By map 3 the party can field the asked type,
+      and the mega-stone leaf already starts there. **No re-base:** `trainerXp`, `MAP_TUNING` and
+      `needed(m)` do not move; `docs/balance/route-curve.md` is **re-measured** for maps 3-8 (1-2 do
+      not change), and `curve.test.ts` must stay 2/2 with every floor inside its window.
       **The gating call the entry freezes:** **any** party member may open it (the report says
       «algun poke del party») with no lead special-case and no consideration of HP — the lead alone
       was the alternative this cut answered (`2026-10-19`, below). The task must not duplicate
@@ -4861,7 +4891,8 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       party/PC panel, and the map filter `[Task-62]` draws.
       **Docs:** the special-room table and its content bullet in `docs/maps-spec.md` §7 gain the
       gated room and its type gate, `docs/tileset-spec.md` §1/§2/§6 gain the two new map values and
-      their cells, and `docs/design-spec.md` §7's special-rooms bullet names it.
+      their cells, `docs/design-spec.md` §7's special-rooms bullet names it, and
+      `docs/balance/route-curve.md` re-measures its budget rows for maps 3-8 (no re-base).
       `docs/route-generator.md` §7's **O-R5** row is **reworded, not closed**: it keeps saying
       field-move gates are out of scope and adds that the gated room's **type** gate is not one.
       *Decision:* The obstacle is opened by a party **type** — bush: Bug or Grass, rock: Rock or Fighting, water: Water — **any** party member opens it (the lead included, no special case) and the opening is **permanent for the floor** (the `pickedItems`-with-a-stable-id shape, cleared by `advanceMap`). No move is required and no dex/TM data changes; `docs/route-generator.md` §7's **O-R5** (Cut/Rock Smash field-move gates) stays **open**, because a type gate is not that gate.
