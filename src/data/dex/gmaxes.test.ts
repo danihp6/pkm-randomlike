@@ -4,12 +4,14 @@ import { portraitFor } from '../portraits';
 import {
   GMAX_FORMES,
   gmaxFormForBase,
+  gmaxFormForItem,
   gmaxFormOf,
+  gmaxMatchesSpecies,
   isGmaxSpecies,
   type GmaxForm,
 } from './gmaxes';
 import meta from './meta.json';
-import { getSpecies, playableSpecies, type Species } from './species';
+import { getSpecies, normalizeId, playableSpecies, type Species } from './species';
 
 const counts = (meta as { counts: Readonly<Record<string, number>> }).counts;
 
@@ -94,5 +96,52 @@ describe('generated G-Max formes', () => {
     expect(portraitFor('charizardgmax')).not.toBeNull();
     expect(portraitFor('gengargmax')).not.toBeNull();
     expect(portraitFor('gengargmax', true)).not.toBeNull();
+  });
+});
+
+describe('the generated G-Max Stones (D44)', () => {
+  it('mints one distinct stone per forme, named <the base Mega name> G', () => {
+    const ids = GMAX_FORMES.map((gmax) => gmax.stoneId);
+    const names = GMAX_FORMES.map((gmax) => gmax.stoneName);
+    expect(new Set(ids).size, 'stoneId must be unique').toBe(ids.length);
+    expect(new Set(names).size, 'stoneName must be unique').toBe(names.length);
+    for (const gmax of GMAX_FORMES) {
+      expect(gmax.stoneId, gmax.id).toMatch(/^[a-z0-9]+$/);
+      expect(gmax.stoneName.slice(-2), gmax.id).toBe(' G');
+      expect(gmax.stoneId, gmax.id).toBe(normalizeId(gmax.stoneName));
+    }
+  });
+
+  it('pins the worked names the trailing-vowel rule derives', () => {
+    const worked: readonly (readonly [string, string, string])[] = [
+      ['venusaur', 'Venusaurite G', 'venusauriteg'],
+      ['charizard', 'Charizardite G', 'charizarditeg'],
+      ['blastoise', 'Blastoisite G', 'blastoisiteg'],
+      ['gengar', 'Gengarite G', 'gengariteg'],
+      ['pikachu', 'Pikachite G', 'pikachiteg'],
+      ['eevee', 'Eevite G', 'eeviteg'],
+    ];
+    for (const [baseId, stoneName, stoneId] of worked) {
+      const form = gmaxFormForBase(baseId);
+      expect(form, baseId).toBeDefined();
+      expect(form!.stoneName, baseId).toBe(stoneName);
+      expect(form!.stoneId, baseId).toBe(stoneId);
+    }
+  });
+
+  it('resolves a held stone to its forme, and guards the base species', () => {
+    expect(gmaxFormForItem('gengariteg')?.id).toBe('gengargmax');
+    expect(gmaxFormForItem('Gengarite G')?.id).toBe('gengargmax');
+    expect(gmaxFormForItem('not-a-stone')).toBeUndefined();
+
+    expect(gmaxMatchesSpecies('gengariteg', 'gengar')).toBe(true);
+    expect(gmaxMatchesSpecies('gengariteg', 'charizard')).toBe(false);
+    expect(gmaxMatchesSpecies('gengarite', 'gengar')).toBe(false);
+    expect(gmaxMatchesSpecies('not-a-stone', 'gengar')).toBe(false);
+
+    for (const gmax of GMAX_FORMES) {
+      expect(gmaxFormForItem(gmax.stoneId)?.id, gmax.id).toBe(gmax.id);
+      expect(gmaxMatchesSpecies(gmax.stoneId, gmax.baseSpeciesId), gmax.id).toBe(true);
+    }
   });
 });

@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { buyPrice, getItem } from '../data/items';
+import { GMAX_STONE_IDS, buyPrice, getItem } from '../data/items';
 import type { BandId } from '../data/run';
 import { LEVEL_BANDS } from '../data/run';
-import { SHOP_BALL_PACK, SHOP_HELD_ROWS, SHOP_POTION, SHOP_ROTATION, SHOP_TM } from '../data/shop';
+import {
+  SHOP_BALL_PACK,
+  SHOP_GMAX_STONE_BANDS,
+  SHOP_HELD_ROWS,
+  SHOP_POTION,
+  SHOP_ROTATION,
+  SHOP_TM,
+} from '../data/shop';
 import { isTmItemId } from '../data/tms';
 import { addItem, addMoney, createRun, createRunPokemon, itemCount } from '../engine/run';
 import { Rng, hashSeed } from '../engine/rng';
@@ -20,16 +27,17 @@ const FROZEN_SEED = (bandId: BandId): Rng => new Rng(hashSeed(`task-54:${bandId}
 
 /**
  * The shelves a fixed seed has to keep opening: the pack, the potion rung, two
- * distinct held rows of that band's pool, and the machine the session's frozen
- * draw order lands on. Re-pinning these is a deliberate balance act.
+ * distinct held rows of that band's pool, the machine the session's frozen draw
+ * order lands on and — at `late`/`end` — the sixth row's G-Max Stone (`D44`).
+ * Re-pinning these is a deliberate balance act.
  */
 const FROZEN: Readonly<Record<BandId, readonly string[]>> = {
   early: ['pokeball', 'potion', 'chestoberry', 'cheriberry', 'tm001'],
   low: ['pokeball', 'superpotion', 'rawstberry', 'oranberry', 'tm044'],
   mid: ['greatball', 'superpotion', 'normalgem', 'ironball', 'tm067'],
   high: ['greatball', 'hyperpotion', 'petayaberry', 'expertbelt', 'tm110'],
-  late: ['ultraball', 'hyperpotion', 'colburberry', 'tangaberry', 'tm126'],
-  end: ['ultraball', 'fullrestore', 'focusband', 'lifeorb', 'tm156'],
+  late: ['ultraball', 'hyperpotion', 'colburberry', 'tangaberry', 'tm126', 'duraludoniteg'],
+  end: ['ultraball', 'fullrestore', 'focusband', 'lifeorb', 'tm156', 'meowthiteg'],
 };
 
 describe('buildShop', () => {
@@ -63,30 +71,60 @@ describe('buildShop', () => {
     }
   });
 
-  it('stocks four stock rows plus the machine, with no repeated id', () => {
+  it('stocks the stock rows plus the machine, and the stone row where it belongs', () => {
     for (const band of LEVEL_BANDS) {
+      const extra = SHOP_GMAX_STONE_BANDS.includes(band.id) ? 1 : 0;
       for (let seed = 0; seed < 100; seed++) {
         const ids = buildShop(band.id, new Rng(seed)).map((slot) => slot.itemId);
-        expect(ids.length, `${band.id}:${seed}`).toBe(1 + 1 + SHOP_HELD_ROWS + 1);
+        expect(ids.length, `${band.id}:${seed}`).toBe(1 + 1 + SHOP_HELD_ROWS + 1 + extra);
         expect(new Set(ids).size, `${band.id}:${seed}`).toBe(ids.length);
       }
     }
   });
 
-  it('appends one machine off the band list last, at the catalogue price', () => {
+  it('appends one machine off the band list at index 4, at the catalogue price', () => {
     for (const band of LEVEL_BANDS) {
       for (let seed = 0; seed < 100; seed++) {
         const stock = buildShop(band.id, new Rng(seed));
-        const last = stock[stock.length - 1];
-        expect(SHOP_TM[band.id].includes(last.itemId), `${band.id}:${seed} ${last.itemId}`).toBe(true);
+        const machine = stock[1 + 1 + SHOP_HELD_ROWS]!;
+        expect(SHOP_TM[band.id].includes(machine.itemId), `${band.id}:${seed} ${machine.itemId}`).toBe(
+          true,
+        );
         expect(stock.filter((slot) => isTmItemId(slot.itemId)).length).toBe(1);
-        expect(last.price).toBe(buyPrice(getItem(last.itemId)!));
+        expect(machine.price).toBe(buyPrice(getItem(machine.itemId)!));
+        expect(new Set(stock.map((slot) => slot.itemId)).size).toBe(stock.length);
+        if (!SHOP_GMAX_STONE_BANDS.includes(band.id)) {
+          expect(stock, band.id).toHaveLength(1 + 1 + SHOP_HELD_ROWS + 1);
+          expect(stock[stock.length - 1], band.id).toBe(machine);
+        }
+      }
+    }
+  });
+
+  it('shelves one G-Max Stone last, at late and end alone (D44)', () => {
+    for (const band of LEVEL_BANDS) {
+      const shelves = SHOP_GMAX_STONE_BANDS.includes(band.id);
+      for (let seed = 0; seed < 100; seed++) {
+        const stock = buildShop(band.id, new Rng(seed));
+        const stones = stock.filter((slot) => GMAX_STONE_IDS.includes(slot.itemId));
+        if (!shelves) {
+          expect(stones, `${band.id}:${seed}`).toEqual([]);
+          continue;
+        }
+        expect(stones, `${band.id}:${seed}`).toHaveLength(1);
+        const stone = stock[stock.length - 1]!;
+        expect(stones[0], `${band.id}:${seed}`).toBe(stone);
+        expect(GMAX_STONE_IDS, stone.itemId).toContain(stone.itemId);
+        expect(stone.price, stone.itemId).toBe(8000);
+        expect(stone.count, stone.itemId).toBe(1);
+        expect(getItem(stone.itemId)!.gmax, stone.itemId).toBeDefined();
+        expect(isTmItemId(stock[4]!.itemId), `${band.id}:${seed}`).toBe(true);
         expect(new Set(stock.map((slot) => slot.itemId)).size).toBe(stock.length);
       }
     }
   });
 
-  it('freezes a fixed seed: the same four rows and machine, twice', () => {
+  it('freezes a fixed seed: the same rows, twice', () => {
     for (const band of LEVEL_BANDS) {
       const first = buildShop(band.id, FROZEN_SEED(band.id));
       expect(buildShop(band.id, FROZEN_SEED(band.id)), band.id).toEqual(first);
@@ -105,6 +143,12 @@ describe('buildShop', () => {
         first.slice(2, 2 + SHOP_HELD_ROWS).map((slot) => slot.itemId),
         band.id,
       ).toEqual(FROZEN[band.id].slice(2, 2 + SHOP_HELD_ROWS));
+      expect(isTmItemId(first[1 + 1 + SHOP_HELD_ROWS]!.itemId), band.id).toBe(true);
+      if (SHOP_GMAX_STONE_BANDS.includes(band.id)) {
+        expect(GMAX_STONE_IDS, `${band.id} ${FROZEN[band.id][first.length - 1]}`).toContain(
+          FROZEN[band.id][first.length - 1],
+        );
+      }
     }
   });
 });

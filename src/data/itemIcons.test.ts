@@ -17,17 +17,19 @@ describe('Añil item icons', () => {
     for (const item of ITEMS) expect(itemIconFrame(item.id), item.id).not.toBeNull();
   });
 
-  it("carries the item's own icon for everything but the TMs and the Mega Stones", () => {
+  it("carries the item's own icon for everything but the TMs and the stones", () => {
     for (const item of ITEMS) {
-      if (item.kind === 'tm' || item.mega !== undefined) continue;
+      if (item.kind === 'tm' || item.mega !== undefined || item.gmax !== undefined) continue;
       expect(hasItemIcon(item.id), item.id).toBe(true);
     }
   });
 
-  it('falls back inside the same atlas for a Mega Stone and a TM', () => {
+  it('falls back inside the same atlas for a Mega Stone, a G-Max Stone and a TM', () => {
     expect(itemIconFrame('venusaurite')).toBe(itemIconFrame(MEGA_FALLBACK));
+    expect(itemIconFrame('gengariteg')).toBe(itemIconFrame(MEGA_FALLBACK));
     expect(itemIconFrame('tm001')).toBe(itemIconFrame(TM_FALLBACK));
     expect(hasItemIcon('venusaurite')).toBe(false);
+    expect(hasItemIcon('gengariteg')).toBe(false);
     expect(hasItemIcon('tm001')).toBe(false);
   });
 

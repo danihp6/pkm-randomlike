@@ -1,9 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { UNMODELLED_ITEMS } from '../engine/battle/effects/items';
-import { COMPETITIVE_HELD_IDS, MEMORY_DRIVE_IDS, buyPrice, getItem, sellPrice } from './items';
+import {
+  COMPETITIVE_HELD_IDS,
+  GMAX_STONE_IDS,
+  MEMORY_DRIVE_IDS,
+  buyPrice,
+  getItem,
+  sellPrice,
+} from './items';
 import type { BandId } from './run';
 import { LEVEL_BANDS } from './run';
-import { SHOP_BALL_PACK, SHOP_HELD_ROWS, SHOP_POTION, SHOP_ROTATION, SHOP_TM } from './shop';
+import {
+  SHOP_BALL_PACK,
+  SHOP_GMAX_STONE_BANDS,
+  SHOP_HELD_ROWS,
+  SHOP_POTION,
+  SHOP_ROTATION,
+  SHOP_TM,
+} from './shop';
 import { TM_MOVE_IDS, isTmItemId } from './tms';
 
 /** Every competitive held item the engine models, so the Mart is the way to buy it. */
@@ -114,6 +128,24 @@ describe('shop tables', () => {
       const pack = SHOP_BALL_PACK[band.id];
       const unit = sellPrice(getItem(pack.itemId)!);
       expect(pack.price, band.id).toBeLessThanOrEqual(unit * pack.count);
+    }
+  });
+
+  it('shows the G-Max Stone row at late and end only, and never rotates a stone', () => {
+    expect(SHOP_GMAX_STONE_BANDS).toEqual(['late', 'end']);
+    for (const band of LEVEL_BANDS) {
+      for (const entry of SHOP_ROTATION[band.id]) {
+        const item = getItem(entry.itemId)!;
+        expect(item.mega, `${band.id} ${entry.itemId}`).toBeUndefined();
+        expect(item.gmax, `${band.id} ${entry.itemId}`).toBeUndefined();
+        expect(GMAX_STONE_IDS, `${band.id} ${entry.itemId}`).not.toContain(item.id);
+      }
+    }
+    // The stone is sold at its catalogue price, with no buy-and-sell loop.
+    for (const id of GMAX_STONE_IDS) {
+      const stone = getItem(id)!;
+      expect(buyPrice(stone), id).toBe(8000);
+      expect(sellPrice(stone), id).toBeLessThan(buyPrice(stone));
     }
   });
 });

@@ -62,9 +62,12 @@ function megaRowName(mega: MegaForm): string {
   });
 }
 
-/** The copy a Gigantamax's row carries: a G-Max needs no stone at all (`D44`). */
+/** The copy a Gigantamax's row carries: the forme plus the stone it needs (D44). */
 function gmaxRowName(gmax: GmaxForm): string {
-  return t('detail.gmaxNoStone', { forme: formeDisplayName(gmax.name) });
+  return t('detail.gmaxEvolvesWith', {
+    forme: formeDisplayName(gmax.name),
+    stone: gmax.stoneName,
+  });
 }
 
 /**

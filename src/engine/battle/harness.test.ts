@@ -119,6 +119,16 @@ describe('scriptedBattle', () => {
       { kind: 'move', side: 'enemy', moveId: 'vinewhip' },
     ]);
   });
+
+  it('carries a spec held item onto the built fighter, and nothing when it is omitted', () => {
+    const state = scriptedBattle({
+      player: [{ ...PLAYER[0]!, heldItem: 'leftovers' }],
+      enemy: ENEMY,
+      turnCap: 1,
+    });
+    expect(state.sides.player.party[0]!.heldItem).toBe('leftovers');
+    expect(state.sides.enemy.party[0]!.heldItem).toBeNull();
+  });
 });
 
 describe('formatBattleLog', () => {

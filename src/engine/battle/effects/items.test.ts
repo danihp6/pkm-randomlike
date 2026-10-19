@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getDexItem, getMove } from '../../../data/dex';
+import { itemIconFrame } from '../../../data/itemIcons';
 import { ITEMS, getItem, type ItemDef } from '../../../data/items';
 import { Rng } from '../../rng';
 import { createFighter, type BattleFighter } from '../fighter';
@@ -90,6 +91,19 @@ describe('held item effects', () => {
     expect(stone).toBeDefined();
     expect(getEffect(stone!.id)?.kind).toBe('item');
     expect(getEffect(stone!.id)?.handlers).toEqual({});
+  });
+
+  it('keeps every G-Max Stone registered without handlers, on the Hard Stone icon', () => {
+    const stones = ITEMS.filter((item) => item.gmax !== undefined);
+    expect(stones.length).toBe(34);
+    const fallback = itemIconFrame('hardstone');
+    expect(fallback, 'the atlas carries the Hard Stone fallback').not.toBeNull();
+    for (const stone of stones) {
+      expect(UNMODELLED_ITEMS, stone.id).not.toContain(stone.id);
+      expect(getEffect(stone.id)?.kind, stone.id).toBe('item');
+      expect(getEffect(stone.id)?.handlers, stone.id).toEqual({});
+      expect(itemIconFrame(stone.id), stone.id).toBe(fallback);
+    }
   });
 
   it('never pairs a type boost with a damage boost', () => {

@@ -22,6 +22,8 @@ export interface HarnessFighterSpec {
   readonly nature?: string;
   /** Explicit slots; omitted means `createFighter`'s own default moveset. */
   readonly moves?: readonly string[];
+  /** A held item id; omitted means the fighter holds nothing. */
+  readonly heldItem?: string;
 }
 
 export interface ScriptedBattleOptions {
@@ -53,6 +55,7 @@ function buildFighter(spec: HarnessFighterSpec): BattleFighter {
     level: spec.level,
     nature: spec.nature ?? 'serious',
     ...(spec.moves ? { moves: spec.moves } : {}),
+    ...(spec.heldItem ? { heldItem: spec.heldItem } : {}),
   });
 }
 
