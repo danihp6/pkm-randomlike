@@ -57,6 +57,7 @@ The catalogue as it stands. A row's price is what `buyPrice` charges and what
 | Plates (17x)                    |               4000 | held, boss-tier treasure; retypes Judgment (D37)                   |
 | Memories and Drives (21x)       |               3000 | held, ground-only treasure; retypes Multi-Attack / Techno Blast (D37) |
 | Mega Stones                     |                  0 | never sold; held by a boss, a mini-boss or an `ace` (D34)          |
+| G-Max Stones (34x)              |               8000 | held, late/end only: one on the counter and four/six on the ground |
 | TMs (TM001–TM171)               |               3000 | reusable: it gates a move in the learnset panel, never spent       |
 | Valuables (9x)                  |      1000 … 12000 | treasure: sells for its whole price, usable for nothing else       |
 
@@ -68,21 +69,22 @@ otherwise, while a Memory or a Drive is its own ground-only `3000` row.
 
 ## The Mart's stock
 
-Four stock rows in a **fixed order**, then the band's one machine: `buildShop`
+Four stock rows in a **fixed order**, then the band's one machine — five rows —
+and, from `late` on, one **G-Max Stone** (`D44`), for six: `buildShop`
 (`src/ui/shop.ts`) reads the tables in `src/data/shop.ts`. Rows 3 and 4 are the
 two held rows the band's own weighted pool fills, drawn **without replacement**
 from the seeded `Rng`, so which two a shelf shows is a property of the run's seed.
 
-| Band  | Row 1 — ball pack      | Row 2 — potion rung  | Rows 3–4 — held pool                          | Row 5 — machine       |
-| ----- | ---------------------- | -------------------- | --------------------------------------------- | --------------------- |
-| early | 10x Poke Ball — 1000   | Potion — 300         | 3 rows, all 100–200 (the cheap berries)        | one of 8 TMs — 3000   |
-| low   | 10x Poke Ball — 1000   | Super Potion — 700   | 7 rows, all 100–200                            | one of 8 TMs — 3000   |
-| mid   | 10x Great Ball — 3000  | Super Potion — 700   | 14 rows: 200 berries, 1000 type items, 4000 boosters | one of 8 TMs — 3000 |
-| high  | 10x Great Ball — 3000  | Hyper Potion — 1200  | 13 rows: 200 berries, 1000 type items, 4000 boosters | one of 8 TMs — 3000 |
-| late  | 10x Ultra Ball — 6000  | Hyper Potion — 1200  | 31 rows: 200 berries, 1000 type items, 4000 premium  | one of 8 TMs — 3000 |
-| end   | 10x Ultra Ball — 6000  | Full Restore — 3000  | 13 rows: 200 berries, 1000 type items, 4000 premium  | one of 8 TMs — 3000 |
+| Band  | Row 1 — ball pack      | Row 2 — potion rung  | Rows 3–4 — held pool                          | Row 5 — machine       | Row 6 — G-Max Stone   |
+| ----- | ---------------------- | -------------------- | --------------------------------------------- | --------------------- | --------------------- |
+| early | 10x Poke Ball — 1000   | Potion — 300         | 3 rows, all 100–200 (the cheap berries)        | one of 8 TMs — 3000   | —                     |
+| low   | 10x Poke Ball — 1000   | Super Potion — 700   | 7 rows, all 100–200                            | one of 8 TMs — 3000   | —                     |
+| mid   | 10x Great Ball — 3000  | Super Potion — 700   | 14 rows: 200 berries, 1000 type items, 4000 boosters | one of 8 TMs — 3000 | —                 |
+| high  | 10x Great Ball — 3000  | Hyper Potion — 1200  | 13 rows: 200 berries, 1000 type items, 4000 boosters | one of 8 TMs — 3000 | —                 |
+| late  | 10x Ultra Ball — 6000  | Hyper Potion — 1200  | 31 rows: 200 berries, 1000 type items, 4000 premium  | one of 8 TMs — 3000 | one of 34 — 8000 |
+| end   | 10x Ultra Ball — 6000  | Full Restore — 3000  | 13 rows: 200 berries, 1000 type items, 4000 premium  | one of 8 TMs — 3000 | one of 34 — 8000 |
 
-The five rows one fixed seed opens with, per band — the shelves
+The rows one fixed seed opens with, per band — the shelves
 `src/ui/shop.test.ts` freezes under the seed `task-54:<band>`, at the catalogue
 prices above:
 
@@ -92,8 +94,8 @@ prices above:
 | low   | 10x Poke Ball — 1000, Super Potion — 700, Rawst Berry — 200, Oran Berry — 100, TM044 Dragon Tail — 3000 |
 | mid   | 10x Great Ball — 3000, Super Potion — 700, Normal Gem — 4000, Iron Ball — 4000, TM067 Fire Punch — 3000 |
 | high  | 10x Great Ball — 3000, Hyper Potion — 1200, Petaya Berry — 200, Expert Belt — 4000, TM110 Liquidation — 3000 |
-| late  | 10x Ultra Ball — 6000, Hyper Potion — 1200, Colbur Berry — 200, Tanga Berry — 200, TM126 Thunderbolt — 3000 |
-| end   | 10x Ultra Ball — 6000, Full Restore — 3000, Focus Band — 4000, Life Orb — 4000, TM156 Outrage — 3000 |
+| late  | 10x Ultra Ball — 6000, Hyper Potion — 1200, Colbur Berry — 200, Tanga Berry — 200, TM126 Thunderbolt — 3000, Duraludonite G — 8000 |
+| end   | 10x Ultra Ball — 6000, Full Restore — 3000, Focus Band — 4000, Life Orb — 4000, TM156 Outrage — 3000, Meowthite G — 8000 |
 
 - **The pack** is the band's own ball **in tens** at **half** the ten-unit
   catalogue sum (`buyPrice × 10 / 2`), snapped to a round hundred: Poke 1000, Great
@@ -125,6 +127,14 @@ prices above:
 - **The machine** (Task-22) is appended last: the band's one TM off `SHOP_TM` at the
   catalogue 3000, undiscounted, because a slot priced below `sellPrice` would be a
   money loop. It is the reason the counter shows five rows and not four.
+- **The G-Max Stone row** (`D44`) comes after the machine, and only at `late` and
+  `end` (`SHOP_GMAX_STONE_BANDS`): one of the 34 stones at the catalogue 8 000,
+  `count: 1`, drawn from `GMAX_STONE_IDS` on the same seeded `Rng`. It is a real
+  sink — a `late` floor's whole money (≈ 5 148) does not buy it and an `end` floor's
+  (≈ 8 747 … 10 333) buys one — so a stone is saved for across floors. It is never a
+  duplicate of a row already on the shelf: the held pool holds no stone, exactly as
+  it holds no Mega Stone. `sellPrice` halves it to 4 000, so buying and reselling a
+  stone loses 4 000 and opens no money loop.
 - The stock is rolled **once per map** from the run seed
   (`${seed}:shop:${mapIndex}`) and never saved, so a Mart always reopens the same.
 
@@ -194,12 +204,15 @@ The pools, re-measured (the hidden and item chances are pinned by
 | low   |           0.35 |          0.6 |    7 | 1 ball, 2 heal, 1 cure, 2 valuable, 1 TM                                   |
 | mid   |            0.4 |         0.75 |   39 | 1 ball, 2 heal, 1 cure, 1 X-item, 3 valuable, 2 TM, 29 held (74 %)        |
 | high  |            0.4 |         0.75 |   45 | 1 ball, 2 heal, 1 cure, 1 X-item, 3 valuable, 2 TM, 35 held (78 %)        |
-| late  |           0.45 |         0.75 |   36 | 1 ball, 2 heal, 1 cure, 1 X-item, 3 valuable, 2 TM, 26 held (72 %)        |
-| end   |           0.45 |         0.75 |   51 | 1 ball, 2 heal, 1 cure, 1 X-item, 3 valuable, 2 TM, 41 held (80 %)        |
+| late  |           0.45 |         0.75 |   40 | 1 ball, 2 heal, 1 cure, 1 X-item, 3 valuable, 2 TM, 26 held, 4 G-Max Stones (75 %) |
+| end   |           0.45 |         0.75 |   57 | 1 ball, 2 heal, 1 cure, 1 X-item, 3 valuable, 2 TM, 41 held, 6 G-Max Stones (82 %) |
 
 The hidden chance rises with the band and never falls (0.35 → 0.45), the two
 on-ramp floors keep the thinned `itemChance` (0.5 and 0.6) the population pass
 shipped (`O-M5`), and the held share climbs from **none** on the two on-ramp bands
-to 72–80 % from `mid` on: the Plates are `late`/`end` treasure only, every
+to 72–82 % from `mid` on: the Plates are `late`/`end` treasure only, every
 unmodelled id reaches a run from the ground alone and never from the Mart (`D16`),
-and every competitive held row is reachable from the ground or the counter.
+every competitive held row is reachable from the ground or the counter, and the
+**G-Max Stones** (`D44`) are ground treasure at `late`/`end` alone — four ids at
+`late`, six at `end`, weight 1 each (`GMAX_STONE_LOOT`) — with the other 24 stones
+reachable from the Mart's one-stone row at those two bands and nowhere else.
