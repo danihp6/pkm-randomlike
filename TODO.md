@@ -2285,27 +2285,69 @@ atlas frame. What follows is the cut's own record.
 ### Batch 24 - the casino room
 - **Task-64** A casino room: a Team Rocket grunt, a slot machine the player pays to spin, items
   and an egg among its prizes, and a chance of a battle that locks the machine.
-- **Hot files:** `src/scenes/RouteScene.ts` (the room's fixtures, the spin and the egg's hatch
-  beat on `advanceMap`) → Task-64; `src/engine/maps/plan.ts` + `plan.test.ts` (the new
-  `MapRoomSpecial` value and its placement) and `src/ui/mapView.ts` + `mapView.test.ts` (its
-  marker) → Task-64; the new casino table (price, prize weights, the battle chance) in
-  `src/data/` beside its test, and the new `egg` entry in `src/data/items.ts` → Task-64;
-  `src/data/trainers.ts` (the new `rocket`/`grunt` archetype) and the packed
-  `src/assets/frlg/overworld.png`/`trainers.png` with `src/data/frlg/overworld.json`/
-  `trainers.json` (the repack) → Task-64; `docs/maps-spec.md` §7 and `docs/design-spec.md` §7 →
-  Task-64. It claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**` or
-  `src/engine/save.ts`.
+- **Hot files:** `src/scenes/RouteScene.ts` (the two `RoomHost` hooks and the egg's hatch
+  beat on `advanceMap`'s portal step) → Task-64;
+  the new descriptor `src/scenes/rooms/casino.ts` + test, with `src/scenes/rooms/types.ts`
+  and the stub in `fixtures.test.ts` → Task-64; `src/engine/maps/plan.ts` + `plan.test.ts`
+  (the new `MapRoomSpecial` value and its placement) → Task-64; the new casino table
+  (`src/data/casino.ts` + test) and the new `egg` entry in `src/data/items.ts` → Task-64;
+  `src/data/trainers.ts` + test (the new `rocket` set-piece row) and
+  `src/data/itemIcons.ts` + test (the Egg's icon fallback) → Task-64; the new pure model
+  `src/ui/casino.ts` + test and the `eggHatchNotice` builder in `src/ui/notice.ts` + test →
+  Task-64; `src/scenes/BootScene.ts` (the machine's drawn texture) → Task-64;
+  `src/i18n/{en,es}.ts` (its eight keys) → Task-64; `docs/maps-spec.md` §7 and
+  `docs/design-spec.md` §7 → Task-64. It claims no `package.json`, `src/main.ts`,
+  `vite.config.ts`, `src/data/dex/**`, `src/engine/save.ts`, `src/ui/mapView.ts`, packed
+  asset or packer.
 - **Shape:** one task, alone, and it opens the new **Batch 24** for two independent reasons:
-  `src/scenes/RouteScene.ts` is held by every batch 5-20 (Batch 20's Task-58 last), and the
-  special-room layer it extends (`src/engine/maps/plan.ts` 70, `src/ui/mapView.ts` 26) is
-  claimed by Task-65 and Task-66 in the two batches after it — so no two of the three can share
-  a batch. It is also the one task of the two rounds that repacks a generated asset (the FRLG
-  overworld/trainer atlases), which alone would keep it from sharing a batch. Its money and
-  prize tables live in `src/data/` (balance), the spin draws its own stream
-  (`${seed}:casino:${mapIndex}`), so a fixed seed's shop stock, reward picks and rosters do not
-  move; the recommended reading adds **no** run field (the machine's per-floor lock rides the
-  run's existing per-floor bookkeeping and the egg is an ordinary bag item whose species rolls
-  at hatch time), so **no `SAVE_VERSION`** step — the alternative is the open question below.
+  `src/scenes/RouteScene.ts` is claimed by every batch from 5 to 23a (20's Task-58, 21's
+  Task-61, 22's Task-62, 23's Task-63, 23a's Task-112), so the first batch that leaves it free is
+  this one, and the special-room layer it extends (`MapRoomSpecial`,
+  `src/engine/maps/plan.ts` 64) is claimed by Task-65 and Task-66 in the two batches after it —
+  so no two of the three can share a batch.
+- **Planned against the shipped code (`2026-10-19`), and the plan changed four ways.** (a) **The
+  room is a descriptor module**, not a `buildRoom` branch: Task-111's `D47` shipped the layer,
+  so the casino is `src/scenes/rooms/casino.ts` exporting `descriptor`, the kind rides
+  `MapRoomSpecial` and the glyph comes from the descriptor's own `drawMarker` — so
+  **`src/ui/mapView.ts` needs no edit** and leaves this batch's hot-file list. (b) **The port
+  gains exactly two hooks**: the "starting a battle" edit `D47` itself names
+  (`RoomHost.startTrainerBattle`) plus `RoomHost.showNotice`; money and items ride
+  `host.commitRun` with the engine's own `spendMoney`/`addItem`, and the egg's beat on
+  `advanceMap` is the scene's own portal step, so no third hook. (c) **The grunt is a
+  set-piece archetype**: a new `SPECIAL_ARCHETYPES` table beside `TRAINER_ARCHETYPES`, merged
+  only into `getTrainerArchetype`'s index — so the route's pool, its rolls and the four shipped
+  atlas/animation invariants (`trainerSprites.test.ts`, `overworldSprites.test.ts`,
+  `trainers.test.ts`, `trainerAnim.test.ts`) do not move and **no repack is forced**. (d) **The
+  FRLG repack leaves this task**: the checked sources carry no Rocket
+  grunt (`sprite-sources/frlg/overworld/` holds twelve files and none is one, the decomp clone
+  has no `graphics/`, and only the battle sheet's Regular Trainers block is measured), so the
+  archetype declares the keys `spriteKey`/`battleSprite: 'rocket'` and both surfaces fall back
+  to the shipped placeholder; the batch loses the packed `overworld.png`/`trainers.png` claim
+  and whoever cuts Batch 29 hands the `rocket` row to Task-90, whose entry currently excludes
+  it. Its price and prize tables live in `src/data/casino.ts` (balance) and the spin draws its
+  own stream — `${seed}:casino:${mapIndex}:${spins}`, minted from the run's own per-floor spin
+  marks in `pickedItems`, so a reload continues the sequence — so a fixed seed's shop stock,
+  reward picks and rosters do not move; the room adds **no** run field (the per-floor lock and
+  the spin counter ride `pickedItems`, the egg is an ordinary bag item whose species rolls at
+  hatch time), so **no `SAVE_VERSION`** step.
+- **Batch filling: checked, no member added (`2026-10-19`).** The candidate was **`[Task-104]`**
+  (Batch 31, the damage-model abilities and the four team-type bonuses). Its paths *are* disjoint
+  from this batch's set — it claims `src/engine/battle/{damage,state,turn}.ts`, the ability
+  registry, `docs/balance/effect-coverage.md` and `docs/battle-spec.md` §10/§11, none of which
+  Task-64 touches, and the launch seam it reads is `battleLink`/`BattleSetup` rather than the
+  route scene — its dependencies are merged and it needs no file a batch-mate produces, so the
+  letter of the **filling** rule admits it. It was **refused on the wave rule**: it is one of the
+  nineteen Phase-9 tasks (`[Task-90]`–`[Task-108]`) whose siblings share
+  `src/engine/battle/damage.ts`, `state.ts` and `turn.ts` one batch apart (`[Task-106]` B32,
+  `[Task-107]` B49), and shipping it here pulls a serial resource of that wave seven batches
+  ahead of its own cut — Batch 23b refused the very same candidate on the same ground. Every
+  other later task is disqualified outright: `[Task-65]`/`[Task-66]`/`[Task-67]` hold this same
+  room layer, `[Task-84]`, `[Task-87]`, `[Task-89]`, `[Task-78]` and `[Task-79]` claim
+  `src/scenes/RouteScene.ts`, `[Task-103]` and `[Task-87]` claim `src/data/items.ts`,
+  `[Task-81]` and `[Task-82]` claim `src/engine/maps/plan.ts`, `[Task-85]` claims
+  `src/scenes/BootScene.ts`, and `[Task-80]`, `[Task-83]`, `[Task-93]`–`[Task-101]` and
+  `[Task-106]`–`[Task-108]` each depend on something that has not merged. Batch 24 stays
+  **Task-64 alone**, and its spec is written (`.agent_specs/task-64.md`, `2026-10-19`).
 
 ### Batch 25 — the gated reward room
 - **Task-65** A special room whose reward sits behind bushes, rocks or water that only a party
@@ -2691,40 +2733,20 @@ note. The one ID without a batch is not a question: `[Task-28]` waits on an upst
   and a second cursor. Say which before Batch 23's branch is cut. Nothing else in the plan
   changes either way.
 
-- **`[Task-64]` (the casino, Batch 24): when does the machine lock — on the battle's trigger, or
-  on a win?** The report's words are «posibilidad de combate contra el recluta y ya no se puede
-  tirar de la tragaperras», which can be read either way. The written default is that the
-  machine locks the moment the grunt battle **triggers** (the grunt stops the game whatever the
-  outcome, and a loss ends or costs the run anyway); the alternative is that it locks only once
-  the grunt is **beaten** (`isTrainerDefeated`, `state.ts` 501-503), which lets a player who
-  flees or loses come back and spin again. Say which before Batch 24's branch is cut. Nothing
-  else in the plan changes either way.
-
-- **`[Task-64]` (the casino, Batch 24): does the egg open on a floor advance or on a room
-  change?** «se abre al pasar de piso» names a **floor**, and the run has two advances: the map
-  advance (`advanceMap`, `state.ts` 185-204, the portal step at `RouteScene` 4398) and the room
-  change (`advanceRoute`, 161-175). The written default is the **map advance** — a floor is a
-  map (`docs/maps-spec.md` §1) — so the egg hatches at the heal stop, at the same beat the run
-  steps onto the next biome; the alternative is the room change, which hatches it almost
-  immediately and makes the egg a delayed pickup rather than a floor promise. Say which before
-  Batch 24's branch is cut. Nothing else in the plan changes either way.
-
-- **`[Task-64]` (the casino, Batch 24): is the egg a bag item or a run field?** The recommended
-  reading is a **bag item** (a new `egg` entry in `src/data/items.ts`) whose species rolls at
-  hatch time from the new floor's band, so the egg is a plain stack the save already carries and
-  the task adds **no** run field and **no** `SAVE_VERSION` step; the alternative is a run field
-  that remembers the species (or the whole prize) at **spin** time, which fixes what the egg
-  will be the moment it is won but takes the next `SAVE_VERSION` step (**18 → 19**, after
-  Task-52's 17 → 18) and a migration. Say which before Batch 24's branch is cut. Nothing else in
-  the plan changes either way.
-
-- **`[Task-64]` (the casino, Batch 24): is the grunt battle a spin outcome, or the room's own
-  entrance beat?** The report lists the battle among what the machine does. The written default
-  is that it is a **spin outcome** — the prize table (or the machine's own chance) rolls it, so
-  the player can spend a spin and get a fight instead of a prize — and the machine then locks
-  (the question above); the alternative is that entering the room always opens the battle first,
-  with the machine available only after it, which makes the grunt a gate rather than a gamble.
-  Say which before Batch 24's branch is cut. Nothing else in the plan changes either way.
+- **`[Task-64]`'s four casino questions are answered and were removed (`2026-10-19`).** The
+  machine locks the moment the grunt battle **triggers**, the egg hatches on the **map advance**,
+  the egg is a **bag item** whose species rolls at hatch time (no run field, no `SAVE_VERSION`
+  step) and the grunt battle is a **spin outcome** — the answers its own entry's `*Decision:*`
+  line already carried, and the ones `Batch 24`'s spec freezes with exact names, streams and
+  numbers. The one question the round did **not** ask, and which the cut turned up, is the
+  grunt's **art**: no Rocket grunt exists in the local rip (the overworld source directory holds
+  twelve strips and none is one, the `pokefirered` clone is partial and has no `graphics/`, and
+  only the battle sheet's measured Regular Trainers block is documented), so
+  `[Task-64]` ships the `rocket` keys over the **shipped placeholder** and the repack is left to
+  the human's answer — drop the strips (`sprite-sources/frlg/overworld/rocket.png`, a 160x32
+  nine-pose sheet) and name the grunt's cell on `trainers.png`, and whoever owns the atlas next
+  (Batch 29's `[Task-90]`) packs both rows; or keep the stand-in. Nothing else in the plan
+  changes either way, and Batch 24 is cut and its spec written on the placeholder reading.
 
 - **`[Task-65]` (the gated reward room, Batch 25): may any party member open it, or only the
   lead?** The report says «algun poke del party conoce cierto movimiento» — **some** Pokémon of
@@ -4542,20 +4564,22 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       de un recluta team rocket, aparece una tragaperras y pagas por tiradas con posibilidad de
       huevo da un poke random se abre al pasar de piso, objetos, posibilidad de combate contra el
       recluta y ya no se puede tirar de la tragaperras».
-      **What a special room is today.** `MapRoomSpecial` is `'shop' | 'mini-boss' | 'mega-stone'`
-      (`src/engine/maps/plan.ts`, 70), placed as **dead-end leaves** by `planMap`'s special pass
-      (402-445): the guaranteed shop near the entry, the mini-boss at `MINI_BOSS_CHANCE = 0.5`
-      (111) and the mega-stone at 0.15 from map 3 (114, 442-445), each hung off a regular room
-      that is neither the entry nor the boss (404-413), listed in `plan.specials` (479-481) and
-      found by `specialRoom(plan, kind)` (502-504). The route builds a special's content in
-      `buildRoom` (`src/scenes/RouteScene.ts`, 986-1002): the mini-boss's trainer (987-992), the
-      mega-stone's item (996-1002) and the shop's counter (`this.shopCounter = view.special ===
-      'shop' ? this.farthestRoomTile() : null`, 995). That counter is the **model for a room-local
-      fixture**: it is drawn by `drawShopCounter` (4266-4274), its interact key is `tryInteract`'s
-      first branch (4630-4634 → `openShop`, 5456-5470), and its panel is the Mart
-      (`buildShopPanel` 5482-…, `refreshShop` 5587-…, `activateShop` 5684-…), a HUD window that
-      exists only in that room. `mapView` draws each special's own minimap icon (`MapRoomMarker`,
-      `src/ui/mapView.ts`, 26) through `RouteScene.drawMapMarker` (2263-2297).
+      **What a special room is today (`D47`, after `[Task-111]`).** `MapRoomSpecial` is
+      `'shop' | 'mini-boss' | 'mega-stone'` (`src/engine/maps/plan.ts`, 64), placed as **dead-end
+      leaves** by `planMap`'s special pass (400-448): the guaranteed shop near the entry, the
+      mini-boss at `MINI_BOSS_CHANCE = 0.5` (105) and the mega-stone at 0.15 from map 3 (108/111,
+      445-448), each hung off a regular room that is neither the entry nor the boss (`freeParents`,
+      406-415), listed in `plan.specials` (482-484) and found by `specialRoom(plan, kind)` (505-507).
+      A room's content is now a **descriptor module** under `src/scenes/rooms/` — `types.ts` holds
+      `RoomDescriptor` / `RoomHost` / `RoomPanel` / `RoomFixture`, `registry.ts` collects one
+      `descriptor` per kind out of the folder and `RouteScene.buildRoom` calls
+      `this.specialDescriptor()?.fixture?.(this.roomHost())` once per build (1133-1140), keeping the
+      room's one interactable tile in `this.shopCounter` (the port's `counterTile()`), whose
+      interact is `tryInteract`'s first branch (5865) and whose sprite the descriptor draws through
+      `drawFixture` (5309-5318). The minimap glyph comes from the same descriptor's `drawMarker`
+      (3064) and the marker type is the plan's own union (`MapRoomMarker = MapRoomSpecial`,
+      `src/ui/mapView.ts`, 26), so **a new kind needs no `mapView.ts` edit**. `shop.ts` is the
+      model for a room that owns a window (its module state, its keys and its `RoomPanel`).
       **What already exists for the machine's content.** Items are granted by `addItem`
       (`src/engine/run/state.ts`, 526-533) and drawn as rows from an item id (`itemIconFrame`,
       `getItem`, the reward window's own row shape, 5764-5769); money is spent by `spendMoney`
@@ -4568,51 +4592,73 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       list the boss and mini-boss use. **No egg exists**, and a floor advance is `advanceMap`
       (`state.ts`, 185-204), the portal step `tryLeaveRoom` calls at 4398; a room change is
       `advanceRoute` (161-175).
-      **Fix shape, as the recommended reading (the spec freezes the names):**
-      1. `MapRoomSpecial` gains `'casino'` (`plan.ts`, 70) and the special pass hangs it like the
-         mini-boss, on a chance constant beside `MINI_BOSS_CHANCE`/`MEGA_STONE_CHANCE` drawn on
-         the same `map` stream; `mapView`'s marker and `drawMapMarker` gain its own icon.
-      2. `buildRoom` places the room's **two fixtures** — the slot machine and the grunt's
-         overworld sprite — at the room's farthest free tiles (the `farthestRoomTile` helper,
-         1061-1090, is the model). The grunt is a new `rocket`/`grunt` **archetype**
-         (`src/data/trainers.ts`, the `TrainerArchetype` shape at 31-56), so its overworld frame
-         and battle sprite come from the packed FRLG atlases (`src/data/frlg/overworld.json`,
-         `src/data/frlg/trainers.json`, packed by `scripts/frlg/build-overworld-sprites.mjs` and
-         `build-trainer-sprites.mjs`) — a repack, so this task holds those packed files.
-      3. The machine's **price, prize table and odds** live in `src/data/` (a new table beside the
-         shop's — `{ price, prizes: [{ kind: 'item' | 'egg', itemId?, weight }] }` plus the battle
-         chance) and the roll is one pure chooser beside `rewardChoices` (`src/ui/rewards.ts`) or
-         a sibling, on its **own stream** `Rng(hashSeed(`${seed}:casino:${mapIndex}`))`, so the
-         floor's shop stock, reward picks and rosters do not move (D11).
-      4. A spin costs `spendMoney` and rolls the prize table: an **item** lands through `addItem`;
-         an **egg** lands as an ordinary bag item (a new `egg` entry in `src/data/items.ts`) and
-         **hatches on a floor advance** — the beat is `advanceMap`'s, where the run steps onto the
-         next floor, not `advanceRoute`'s — turning into a random Pokémon of the new floor's band
-         (a pure `hatchEgg(...)` the scene calls after `transitionTo(advanceMap(...))`, placed by
-         `addPokemon` so a full party sends it to the box). Rolling the species **at hatch time**
-         rather than storing it keeps the egg a plain bag stack: **no new run field and no
-         `SAVE_VERSION` step**.
-      5. The **grunt battle** is a spin outcome; when it triggers the machine **locks**. The lock
-         is per-floor, so it rides the run's existing per-floor bookkeeping rather than a new
-         field: the spec freezes whether it reuses `pickedItems` with a stable room-scoped id
-         (the `megaStoneItemId(view.mapIndex)` shape, 1049-1055) or adds a dedicated per-floor
-         list; either way it clears on `advanceMap` like `defeatedTrainers`/`pickedItems`/
-         `capturedRooms` (`state.ts`, 102-107, 199-201).
-      **`SAVE_VERSION` verdict:** the recommended reading adds **no** run field (the lock is a
-      per-floor id and the egg is a bag item), so the chain stays 14 → … → 18; the alternative
-      (an egg that remembers its species, or a dedicated per-floor list) takes the next step,
-      which is the open question below.
+      **Fix shape, as the spec freezes it (`.agent_specs/task-64.md`, `2026-10-19`):**
+      1. `MapRoomSpecial` gains `'casino'` (`plan.ts`, 64) and the special pass hangs it **last**,
+         after the mega-stone, on `CASINO_CHANCE = 0.3` from map 2 on (`CASINO_FROM_MAP = 2`) —
+         both module-private constants beside `MINI_BOSS_CHANCE`/`MEGA_STONE_CHANCE` — so no
+         shipped leaf, room id or size moves. The room is a new descriptor module,
+         `src/scenes/rooms/casino.ts` exporting `descriptor` with `kind`/`marker` `'casino'`, its
+         own `drawMarker` glyph and its own window (the `shop.ts` pattern); `mapView.ts` is not
+         edited and the scene's registry needs no change.
+      2. Its `fixture` places **one** counter tile (`host.farthestRoomTile()`, the shop's rule) and
+         `drawFixture` draws the machine's cabinet and the grunt's sprite **on that one tile** (the
+         grunt `-14` px off its x, depth 6), so no second tile and no `RoomFixture` change is
+         needed. The grunt is a new `rocket` row in a **new `SPECIAL_ARCHETYPES` table** beside
+         `TRAINER_ARCHETYPES` (`src/data/trainers.ts`), merged only into `getTrainerArchetype`'s
+         index: the route's own pool (`TRAINER_ARCHETYPE_IDS`) and its rolls are untouched, and so
+         are the four shipped invariants that pin the two packed atlases and the walk-animation
+         table to `TRAINER_ARCHETYPES.length` (`src/data/trainerSprites.test.ts`,
+         `src/data/overworldSprites.test.ts`, `src/data/trainers.test.ts`,
+         `src/render/trainerAnim.test.ts`) — which is what lets the row exist without the repack its
+         art would otherwise force.
+      3. The machine's **price, prize table and battle chance** live in the new
+         `src/data/casino.ts` (`{ price: Record<BandId, number>, battleChance: number,
+         prizes: Record<BandId, readonly { kind: 'item' | 'egg', itemId?, weight }[]> }`), and the
+         roll is the new pure `casinoSpin(run)` in `src/ui/casino.ts` beside `rewardChoices`,
+         which mints its **own stream** — `Rng(hashSeed(`${seed}:casino:${mapIndex}:${spins}`))`,
+         `spins` read off the run's own per-floor spin marks — so the floor's shop stock, reward
+         picks and rosters do not move (D11) and a reload continues the sequence.
+      4. A spin spends `spendMoney`, marks `casino-spin-<map>-<n>` in the run's existing
+         `pickedItems` and pays one outcome: an **item** lands through `addItem`; an **egg** lands
+         as an ordinary bag item (a new `egg` row in `src/data/items.ts`, kind `valuable`, price 0,
+         with the `luckyegg` icon fallback in `src/data/itemIcons.ts`) and **hatches on the map
+         advance** — a new pure `hatchEgg(run)` the scene calls on the portal step
+         (`tryLeaveRoom`, 5621-5624), not on `advanceRoute` — becoming a random Pokémon of the new
+         floor's band (`speciesPool(band, 'wild')`, level = `squadLevel(run)`, the
+         `createRunPokemon` → `adoptAtLevel` → `addPokemon` path `[Task-63]` shipped, so a full
+         party sends it to the box). Rolling the species **at hatch time** keeps the egg a plain
+         bag stack: **no new run field, no `SAVE_VERSION` step**.
+      5. The **grunt battle** is a spin outcome and the machine **locks** the moment it triggers:
+         `casinoSpin` marks `casino-lock-<map>` in the same per-floor `pickedItems` list (cleared by
+         `advanceMap`, `state.ts` 199-201) and the descriptor then closes its window and calls a
+         **new `RoomHost` hook**, `startTrainerBattle(trainer: RouteTrainer)`, with
+         `id: 'casino-grunt-<map>'` and `archetypeId: 'rocket'`; the port gains one more hook,
+         `showNotice(notice: Notice)`. Money and items need no hook (`host.commitRun` over the
+         engine's own `spendMoney`/`addItem`), and the egg's beat on `advanceMap` is the scene's,
+         not a room call.
+      **The grunt's art is deferred, not invented.** No Rocket grunt source exists in the rip
+      today — `sprite-sources/frlg/overworld/` holds twelve strips and none is one, the
+      `pokefirered` clone is partial (no `graphics/`), and only `trainers.png`'s Regular Trainers
+      block is measured — so the archetype declares `spriteKey`/`battleSprite: 'rocket'` and both
+      surfaces draw the shipped placeholder until the human supplies the rip; the repack and the
+      two atlas rows are **not** this task's paths (the open question below carries the choice).
+      **`SAVE_VERSION` verdict:** the frozen reading adds **no** run field (the lock and the spin
+      counter are per-floor ids and the egg is a bag item), so the chain stays 14 → … → 18; the
+      alternative (an egg that remembers its species, or a dedicated per-floor list) is
+      **rejected** — it would have taken the next step after Task-52's 17 → 18 and a migration.
       **Docs:** the special-room table and its content bullets in `docs/maps-spec.md` §7 and the
       special-rooms bullet in `docs/design-spec.md` §7 (251-262) gain the casino.
       Out of scope: the Mart and its stock, the mini-boss reward, the mega-stone, the loot pools,
       the money a trainer drops, and the battle rules themselves — the grunt fights through the
       existing trainer path.
       *Decision:* The machine locks the moment the battle **triggers**, the egg hatches on the **map advance**, the egg is a **bag item** whose species rolls at hatch time (no run field, no `SAVE_VERSION`), and the battle is a **spin outcome**.
-      *Dependencies:* none. Batch order covers it: it wants `src/scenes/RouteScene.ts` (held by
-      every batch 5-20, Batch 20's Task-58 last), `src/engine/maps/plan.ts` and
-      `src/ui/mapView.ts` — the special-room layer `[Task-65]` and `[Task-66]` also extend, which
-      is why the three cannot share a batch — so it opens the plan's new **Batch 24**, one batch
-      behind Task-63. *(Batch 24)*
+      *Dependencies:* `[Task-111]` (the `RoomDescriptor`/`RoomHost` layer and the three shipped
+      descriptors this room copies) and `[Task-63]` (the member-build path the Egg reuses,
+      `chooseMiniBossReward`). Batch order covers the rest: it wants `src/scenes/RouteScene.ts`
+      (claimed by every batch from 5 to 23a, 20's Task-58 and 23a's Task-112 among them) and the
+      special-room layer `[Task-65]` and `[Task-66]` also extend, which is why the three cannot
+      share a batch — so it opens the plan's new **Batch 24**, one batch behind Task-63.
+      *(Batch 24)*
 - [ ] **[Task-65] A gated reward room: a reward behind a blocked path only a party move opens.**
       Reported in play: «añade tarea habitacion especial que da recompensa pero el camino esta
       bloqueado y solo se puede entrar si algun poke del party conoce cierto movimiento por ejemplo
