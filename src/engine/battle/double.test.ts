@@ -126,8 +126,19 @@ describe('the double battle', () => {
     expect(state.sides.player.party[0].moves[0].pp).toBe(pp - 1);
   });
 
-  it('replaces only the emptied slot, and only when a reserve is left', () => {
-    const withReserve = board({
+  it('switches the slot the command names, leaving the other one alone', () => {
+    const state = board({
+      player: [fighter('p1', 'charmander'), fighter('p2', 'squirtle'), fighter('p3', 'geodude')],
+      enemy: [fighter('e1', 'bulbasaur'), fighter('e2', 'eevee')],
+    });
+    takeDoubleTurn(state, { 1: { type: 'switch', partyIndex: 2 } }, {});
+    expect(slotActiveIndex(state, 'player', 1)).toBe(2);
+    expect(slotActiveIndex(state, 'player', 0)).toBe(0);
+    expect(activeFighter(state, 'player', 1).id).toBe('p3');
+    expect(state.sides.player.awaitingReplacement).toBe(false);
+  });
+
+  it('replaces only the emptied slot, and only when a reserve is left', () => {    const withReserve = board({
       player: [
         fighter('p1', 'charmander'),
         fighter('p2', 'squirtle'),
