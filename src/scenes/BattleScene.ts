@@ -103,6 +103,7 @@ import {
   FRLG_ROW_STROKE,
   FRLG_SELECTED_FILL,
   FRLG_SELECTED_STROKE,
+  badgeInkFor,
 } from '../ui/frlg';
 import { FRLG_INK, FRLG_FONT_SIZE, FRLG_LINE_HEIGHT, addFrlgText } from '../ui/frlgFont';
 import { typeColor } from '../ui/typeColors';
@@ -2193,13 +2194,15 @@ export class BattleScene extends Phaser.Scene {
         typeX += TYPE_ICON_W * PANEL_TYPE_SCALE + PANEL_TYPE_GAP;
       } else if (type !== undefined) {
         badge.setVisible(false);
+        const colour = typeColor(type);
         chipBg
           .setPosition(typeX, typesY)
           .setSize(PANEL_CHIP_W, PANEL_CHIP_H)
-          .setFillStyle(typeColor(type))
+          .setFillStyle(colour)
           .setVisible(true);
         chip
           .setText(type.toUpperCase())
+          .setTint(badgeInkFor(colour))
           .setPosition(typeX + PANEL_CHIP_W / 2, typesY + 2)
           .setVisible(true);
         typeX += PANEL_CHIP_W + PANEL_TYPE_GAP;
@@ -2589,7 +2592,9 @@ export class BattleScene extends Phaser.Scene {
         chip.label.setText('');
         return;
       }
-      chip.bg.setFillStyle(typeColor(type));
+      const colour = typeColor(type);
+      chip.bg.setFillStyle(colour);
+      chip.label.setTint(badgeInkFor(colour));
       chip.label.setText(type.toUpperCase());
     });
 

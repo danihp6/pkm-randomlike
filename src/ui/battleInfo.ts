@@ -106,7 +106,7 @@ function fieldRows(state: BattleState): readonly BattleInfoRow[] {
   }
   for (const id of FIELD_CONDITION_IDS) {
     const turns = state.field[id];
-    if (turns > 0) rows.push({ label: t(FIELD_KEYS[id], { turns }), value: String(turns) });
+    if (turns > 0) rows.push({ label: t(FIELD_KEYS[id], { turns }), value: '' });
   }
   return rows;
 }
@@ -116,7 +116,7 @@ function sideRows(state: BattleState, side: SideId): readonly BattleInfoRow[] {
   const conditions = state.sides[side].sideConditions;
   for (const id of SIDE_CONDITION_IDS) {
     const turns = conditions[id];
-    if (turns > 0) rows.push({ label: t(SIDE_KEYS[id], { turns }), value: String(turns) });
+    if (turns > 0) rows.push({ label: t(SIDE_KEYS[id], { turns }), value: '' });
   }
   const fighter = activeFighter(state, side);
   for (const id of BOOST_IDS) {

@@ -60,7 +60,7 @@ describe('battleInfoRows', () => {
     expect(groupOf(state, FIELD).rows).toEqual([
       { label: 'WEATHER', value: 'Sun · 5' },
       { label: 'TERRAIN', value: 'Grassy · 3' },
-      { label: 'Trick Room · 2', value: '2' },
+      { label: 'Trick Room · 2', value: '' },
     ]);
     expect(groupOf(state, YOU).rows).toEqual([]);
   });
@@ -74,7 +74,7 @@ describe('battleInfoRows', () => {
     player.boosts.spe = -1;
     player.status = 'brn';
     expect(groupOf(state, YOU).rows).toEqual([
-      { label: 'Reflect · 4', value: '4' },
+      { label: 'Reflect · 4', value: '' },
       { label: 'ATTACK', value: '+2' },
       { label: 'SPEED', value: '-1' },
       { label: 'STATUS', value: 'BRN' },
@@ -121,7 +121,7 @@ describe('battleInfoRows', () => {
     state.sides.enemy.party[0].boosts.def = 1;
     state.sides.enemy.party[0].status = 'par';
     expect(groupOf(state, FOE).rows).toEqual([
-      { label: 'Aurora Veil · 3', value: '3' },
+      { label: 'Aurora Veil · 3', value: '' },
       { label: 'DEFENSE', value: '+1' },
       { label: 'STATUS', value: 'PAR' },
     ]);
@@ -167,7 +167,7 @@ describe('battleInfoLines', () => {
       'FIELD',
       'WEATHER  Rain · 2',
       'YOUR SIDE',
-      'Tailwind · 1  1',
+      'Tailwind · 1',
     ]);
   });
 
