@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { NOTICE_HOLD_MS, catchToPcNotice, itemPickupNotice, levelUpNotice } from './notice';
+import {
+  NOTICE_HOLD_MS,
+  catchToPcNotice,
+  eggHatchNotice,
+  itemPickupNotice,
+  levelUpNotice,
+} from './notice';
 
 describe('catchToPcNotice', () => {
   it('writes the fixed sentence with the caught name and the shared hold', () => {
@@ -57,5 +63,23 @@ describe('levelUpNotice', () => {
   it('passes the name and the level through untouched', () => {
     expect(levelUpNotice("Farfetch'd 2", 5).text).toBe("Farfetch'd 2 grew to Lv 5!");
     expect(levelUpNotice('Mr. Mime', 100).text).toBe('Mr. Mime grew to Lv 100!');
+  });
+});
+
+describe('eggHatchNotice', () => {
+  it('writes the fixed sentence with the hatched name and the shared hold', () => {
+    expect(eggHatchNotice('Sentret')).toEqual({
+      text: 'The Egg hatched into Sentret!',
+      holdMs: NOTICE_HOLD_MS,
+    });
+  });
+
+  it('holds a notice for 2.6 seconds', () => {
+    expect(eggHatchNotice('Sentret').holdMs).toBe(2600);
+  });
+
+  it('passes the name through untouched', () => {
+    expect(eggHatchNotice("Farfetch'd 2").text).toBe("The Egg hatched into Farfetch'd 2!");
+    expect(eggHatchNotice('Mr. Mime').text).toBe('The Egg hatched into Mr. Mime!');
   });
 });

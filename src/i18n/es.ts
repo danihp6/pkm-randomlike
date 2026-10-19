@@ -122,6 +122,15 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'mart.sold': 'Has vendido {name} por ¥{amount}.',
   'mart.controls': '{confirm}: comprar / vender    {cancel}: salir',
 
+  // casino — the slot machine's window
+  'casino.title': 'TRAGAPERRAS',
+  'casino.money': 'DINERO  ¥{amount}',
+  'casino.spin': 'GIRAR  ¥{price}',
+  'casino.leave': 'SALIR',
+  'casino.noMoney': 'No tienes suficiente dinero.',
+  'casino.locked': 'La máquina no funciona.',
+  'casino.controls': '{confirm}: girar    {cancel}: salir',
+
   // reward — the mini-boss reward window
   'reward.title': 'RECOMPENSA DE MINIJEFE',
   'reward.choose': 'Elige una.',
@@ -251,6 +260,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
     'Tu equipo está lleno: {name} se ha ido al PC. Puedes cambiarlo antes de salir de esta ruta.',
   'notice.itemObtained': '¡Has obtenido {name}!',
   'notice.levelUp': '¡{name} ha subido al nivel {level}!',
+  'notice.eggHatch': '¡El Huevo eclosionó en {name}!',
 
   // seed — the seed / share-string prompt
   'seed.title': 'SEMILLA / CADENA DE PARTIDA',

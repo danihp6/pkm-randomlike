@@ -4,9 +4,10 @@ import { ITEMS, TM_ITEM_IDS, getItem } from './items';
 import { ITEM_ICON_SIZE, hasItemIcon, itemIconFrame } from './itemIcons';
 import { tmItemIdForMove } from './tms';
 
-/** The two fallback keys `itemIcons.ts` resolves through. */
+/** The three fallback keys `itemIcons.ts` resolves through. */
 const MEGA_FALLBACK = 'hardstone';
 const TM_FALLBACK = 'machinenormal';
+const EGG_FALLBACK = 'luckyegg';
 
 describe('Añil item icons', () => {
   it('keeps a 24px frame, so every draw site keeps its geometry', () => {
@@ -17,20 +18,24 @@ describe('Añil item icons', () => {
     for (const item of ITEMS) expect(itemIconFrame(item.id), item.id).not.toBeNull();
   });
 
-  it("carries the item's own icon for everything but the TMs and the stones", () => {
+  it("carries the item's own icon for everything but the TMs, the stones and the Egg", () => {
     for (const item of ITEMS) {
       if (item.kind === 'tm' || item.mega !== undefined || item.gmax !== undefined) continue;
+      // The Añil atlas carries no `EGG.png`: the Egg resolves through `LUCKYEGG.png`.
+      if (item.id === 'egg') continue;
       expect(hasItemIcon(item.id), item.id).toBe(true);
     }
   });
 
-  it('falls back inside the same atlas for a Mega Stone, a G-Max Stone and a TM', () => {
+  it('falls back inside the same atlas for a Mega Stone, a G-Max Stone, a TM and the Egg', () => {
     expect(itemIconFrame('venusaurite')).toBe(itemIconFrame(MEGA_FALLBACK));
     expect(itemIconFrame('gengariteg')).toBe(itemIconFrame(MEGA_FALLBACK));
     expect(itemIconFrame('tm001')).toBe(itemIconFrame(TM_FALLBACK));
+    expect(itemIconFrame('egg')).toBe(itemIconFrame(EGG_FALLBACK));
     expect(hasItemIcon('venusaurite')).toBe(false);
     expect(hasItemIcon('gengariteg')).toBe(false);
     expect(hasItemIcon('tm001')).toBe(false);
+    expect(hasItemIcon('egg')).toBe(false);
   });
 
   it('resolves every TM to the machine of the move it teaches', () => {

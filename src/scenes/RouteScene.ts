@@ -217,7 +217,14 @@ import {
 import { MoveGrid, padMoveGridCells, type MoveGridCell } from '../ui/moveGrid';
 import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
 import { InfoPopup } from '../ui/infoPopup';
-import { catchToPcNotice, itemPickupNotice, levelUpNotice, type Notice } from '../ui/notice';
+import {
+  catchToPcNotice,
+  eggHatchNotice,
+  itemPickupNotice,
+  levelUpNotice,
+  type Notice,
+} from '../ui/notice';
+import { hatchEgg } from '../ui/casino';
 import { hpColorInt, hpFraction } from '../ui/metrics';
 import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../data/statusIcons';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
@@ -1180,6 +1187,8 @@ export class RouteScene extends Phaser.Scene {
       openPanel: (panel) => scene.openPanel(panel),
       closePanel: () => scene.closePanel(),
       panelOpen: () => scene.roomPanel !== null,
+      startTrainerBattle: (trainer) => scene.startTrainerBattle(trainer),
+      showNotice: (notice) => scene.showNotice(notice),
     };
   }
 
@@ -5619,7 +5628,10 @@ export class RouteScene extends Phaser.Scene {
     const edge = this.doorEdgeAt(this.player, direction);
     if (!edge) return false;
     if (room.portalEdge !== null && room.portalOpen && edge === room.portalEdge) {
-      this.transitionTo(advanceMap(this.run));
+      const advanced = advanceMap(this.run);
+      const hatch = hatchEgg(advanced);
+      this.transitionTo(hatch ? hatch.run : advanced);
+      if (hatch) this.showNotice(eggHatchNotice(this.memberName(hatch.member)));
       return true;
     }
     const next = roomAcross(plan, room.roomId, edge);
