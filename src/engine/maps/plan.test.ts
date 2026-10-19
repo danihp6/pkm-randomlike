@@ -170,9 +170,13 @@ function assertPlan(plan: MapPlan): void {
   expect(specials.filter((room) => room.special === 'mini-boss').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'mega-stone').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'casino').length).toBeLessThanOrEqual(1);
-  if (plan.mapIndex < 3)
+  expect(specials.filter((room) => room.special === 'gated').length).toBeLessThanOrEqual(1);
+  // The casino hangs from map 2 on and the gated leaf from map 3 on
+  // (`docs/maps-spec.md` §7).
+  if (plan.mapIndex < 3) {
     expect(specials.filter((room) => room.special === 'mega-stone')).toHaveLength(0);
-  // The casino leaf only hangs from map 2 on (`docs/maps-spec.md` §7).
+    expect(specials.filter((room) => room.special === 'gated')).toHaveLength(0);
+  }
   if (plan.mapIndex < 2) expect(specials.filter((room) => room.special === 'casino')).toHaveLength(0);
   for (const room of specials) {
     expect(room.shape).toBe('dead-end');
@@ -347,6 +351,46 @@ describe('special rooms', () => {
     }
   });
 
+  it('hangs at most one gated leaf, only from map 3 on, always below the boss', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const gated = plan.rooms.filter((room) => room.special === 'gated');
+        expect(gated.length, `${seed} map ${mapIndex}`).toBeLessThanOrEqual(1);
+        if (mapIndex < 3) expect(gated, `${seed} map ${mapIndex}`).toHaveLength(0);
+        for (const room of gated) {
+          expect(room.shape, `${seed} map ${mapIndex}`).toBe('dead-end');
+          expect(room.id).not.toBe(plan.entryRoom);
+          expect(room.id).not.toBe(plan.bossRoom);
+          const dist = distances(plan);
+          expect(dist[room.id], `${seed} map ${mapIndex}`).toBeLessThanOrEqual(dist[plan.bossRoom]);
+          // Its parent is a regular room that is neither the entry nor the boss.
+          const neighbours = plan.links
+            .filter(([a, b]) => a === room.id || b === room.id)
+            .map(([a, b]) => (a === room.id ? b : a));
+          expect(neighbours).toHaveLength(1);
+          expect(neighbours[0]).not.toBe(plan.entryRoom);
+          expect(neighbours[0]).not.toBe(plan.bossRoom);
+        }
+      }
+    }
+  });
+
+  it('hangs a gated leaf about a fifth of the time from map 3 on', () => {
+    let gated = 0;
+    const total = 400;
+    for (let i = 0; i < total; i++) {
+      if (specialRoom(planMap(`gated-odds-${i}`, 5), 'gated') !== undefined) gated++;
+    }
+    expect(gated).toBeGreaterThan(total * 0.1);
+    expect(gated).toBeLessThan(total * 0.3);
+    // Maps 1-2 never hang one, whatever the seed.
+    for (let i = 0; i < 100; i++) {
+      expect(specialRoom(planMap(`gated-odds-${i}`, 1), 'gated')).toBeUndefined();
+      expect(specialRoom(planMap(`gated-odds-${i}`, 2), 'gated')).toBeUndefined();
+    }
+  });
+
   it('hangs a casino about a third of the time from map 2 on', () => {
     let casino = 0;
     const total = 400;
@@ -365,7 +409,8 @@ describe('special rooms', () => {
   /**
    * The shipped specials, read off the **pre-change** build for the sweep above
    * (one dump per seed and map, `roomId:kind` joined by `,`). The casino draw is
-   * the special pass's **last** statement, so this array must never move.
+   * the special pass's **last** shipped statement and the gated one rolls after it,
+   * so this array must never move.
    */
   const SHIPPED_SPECIALS: Readonly<Record<string, string>> = {
     'alpha:1': '6:mini-boss',
@@ -439,7 +484,7 @@ describe('special rooms', () => {
       for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
         const plan = planMap(seed, mapIndex);
         const shipped = plan.specials
-          .filter((special) => special.kind !== 'casino')
+          .filter((special) => special.kind !== 'casino' && special.kind !== 'gated')
           .map((special) => `${special.roomId}:${special.kind}`)
           .join(',');
         expect(shipped, `${seed} map ${mapIndex}`).toBe(SHIPPED_SPECIALS[`${seed}:${mapIndex}`]);

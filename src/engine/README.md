@@ -27,15 +27,17 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   `maps/progress.ts` (boss and portal edges), `maps/route.ts` and `maps/streams.ts`.
 - `routes/` — the route generator and its validation: `routes/sketch.ts`, the shapes and access
   edges in `routes/layout.ts`, `routes/routeMap.ts`, `routes/validate.ts`, `routes/encounters.ts`,
-  `routes/trainers.ts`, `routes/doors.ts`, `routes/walls.ts`, `routes/streams.ts` and
-  `routes/battlefield.ts` (the weather, terrain or field condition a room's battles begin under).
+  `routes/trainers.ts`, `routes/doors.ts`, `routes/walls.ts`, `routes/streams.ts`,
+  `routes/battlefield.ts` (the weather, terrain or field condition a room's battles begin under)
+  and `routes/gate.ts` (the gated reward room's vault carve and its two per-floor ids).
 - `run/` — the run state and its books: `run/state.ts` (party, box, bag and money),
   `run/progression.ts` (XP and levels), `run/battleLink.ts` + `run/resolve.ts` (the post-battle
   resolve), `run/roster.ts` + `run/pool.ts` (rosters, the species pool and the variant roll
   that picks an individual's forme at generation, `D38`/`D39`), plus
   `run/chain.ts`, `run/floors.ts`, `run/levelCap.ts`, `run/heal.ts`, `run/learnset.ts`,
   `run/nickname.ts` (the member names the player types), `run/reward.ts`, `run/perms.ts`,
-  `run/starters.ts` and `run/share.ts`.
+  `run/starters.ts`, `run/share.ts` and `run/party.ts` (the party predicates a room asks: what
+  types the party holds).
 
 ## Rules
 

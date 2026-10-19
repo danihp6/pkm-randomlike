@@ -1,3 +1,4 @@
+import type { GateKind } from '../../data/gates';
 import type { Tile } from '../grid';
 import type { TileMap } from '../map';
 import type { RouteShape } from './layout';
@@ -44,6 +45,19 @@ export type RouteTrainer = Readonly<{
 }>;
 
 /**
+ * The room's gated vault: a one-tile chamber (`pocket`) sealed by one obstacle tile
+ * (`tile`). `tile`'s map value is `GATES[kind].tile`, and when the floor's gate is
+ * already open the corridor is floor and only `tile`'s position is remembered.
+ */
+export type RouteGate = Readonly<{
+  kind: GateKind;
+  /** The single seal tile: the corridor's mouth. */
+  tile: Tile;
+  /** The vault's own tile: the reward sits here. */
+  pocket: Tile;
+}>;
+
+/**
  * A generated route, complete enough that the scene never re-derives it: the
  * tiles, the entry, every exit and the ground items.
  */
@@ -70,6 +84,8 @@ export type RouteMap = Readonly<{
   items: readonly RouteItem[];
   /** The trainers on the route, off the entry so they never ambush the spawn. */
   trainers: readonly RouteTrainer[];
+  /** The room's gated vault, present only when the build was asked for one. */
+  gate?: RouteGate;
 }>;
 
 export function tileKey(tile: Tile): string {

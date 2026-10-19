@@ -64,6 +64,7 @@ const GATED = [
   'borderBreaches',
   'borderBandGaps',
   'missingLaneGuard',
+  'missingGate',
   'trainerIssues',
 ] as const;
 
@@ -382,6 +383,39 @@ describe('validateRoute', () => {
       );
       expectOnly(validation, []);
       expect(validation.missingLaneGuard).toEqual([]);
+    });
+  });
+
+  describe('the gated vault', () => {
+    it('passes a gateless route when no options ask for a vault', () => {
+      const validation = validateRoute(route(mapFromSketch(ROOM), { x: 1, y: 1 }, [{ x: 5, y: 5 }]));
+      expectOnly(validation, []);
+      expect(validation.missingGate).toEqual([]);
+    });
+
+    it('fails a gateless route the caller asked for a vault, naming no-gate', () => {
+      const validation = validateRoute(route(mapFromSketch(ROOM), { x: 1, y: 1 }, [{ x: 5, y: 5 }]), {
+        expectGate: true,
+      });
+      expectOnly(validation, ['missingGate']);
+      expect(validation.missingGate).toEqual(['no-gate']);
+    });
+
+    it('keeps the default options a no-op, so no pre-existing caller changes', () => {
+      const base = route(mapFromSketch(ROOM), { x: 1, y: 1 }, [{ x: 5, y: 5 }]);
+      expect(validateRoute(base, {})).toEqual(validateRoute(base));
+      expect(validateRoute(base, { expectGate: false })).toEqual(validateRoute(base));
+    });
+
+    it('never reports the gate on a route that holds one', () => {
+      const validation = validateRoute(
+        route(mapFromSketch(ROOM), { x: 1, y: 1 }, [{ x: 5, y: 5 }], {
+          gate: { kind: 'bush', tile: { x: 2, y: 2 }, pocket: { x: 2, y: 3 } },
+        }),
+        { expectGate: true },
+      );
+      expectOnly(validation, []);
+      expect(validation.missingGate).toEqual([]);
     });
   });
 

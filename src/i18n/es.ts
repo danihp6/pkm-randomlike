@@ -261,6 +261,10 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'notice.itemObtained': '¡Has obtenido {name}!',
   'notice.levelUp': '¡{name} ha subido al nivel {level}!',
   'notice.eggHatch': '¡El Huevo eclosionó en {name}!',
+  'gate.locked.bush': 'Unos arbustos espesos. Un Pokémon de tipo Bicho o Planta podría abrirlos.',
+  'gate.locked.rock': 'Una roca. Un Pokémon de tipo Roca o Lucha podría romperla.',
+  'gate.locked.water': 'Agua profunda. Un Pokémon de tipo Agua podría cruzarla.',
+  'gate.opened': 'El camino está abierto.',
 
   // seed — the seed / share-string prompt
   'seed.title': 'SEMILLA / CADENA DE PARTIDA',

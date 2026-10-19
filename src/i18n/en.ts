@@ -258,6 +258,10 @@ export const en = {
   'notice.itemObtained': 'Obtained {name}!',
   'notice.levelUp': '{name} grew to Lv {level}!',
   'notice.eggHatch': 'The Egg hatched into {name}!',
+  'gate.locked.bush': 'Thick bushes. A Bug or Grass Pokémon could clear them.',
+  'gate.locked.rock': 'A boulder. A Rock or Fighting Pokémon could break it.',
+  'gate.locked.water': 'Deep water. A Water Pokémon could cross it.',
+  'gate.opened': 'The way is open.',
 
   // seed — the seed / share-string prompt
   'seed.title': 'SEED / SHARE STRING',

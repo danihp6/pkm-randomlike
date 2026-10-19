@@ -78,6 +78,19 @@ const FRAME_TALL_GRASS = 5
 // in src/data/tilesets/frlg.ts.
 const FRAME_GRASS_REST = 6
 const FRAME_GRASS_HIT = [45, 46, 47, 48]
+// The two obstacle seals, into the sheet's last two free cells (49 and 50). 45-48 are
+// the rustle's hit frames and 49-50 were the dead wall-shape slots; `wallPattern` wins
+// every wall, so the autotiler never draws them. Must stay in step with
+// `src/data/tilesets/frlg.ts`'s FRLG_OBSTACLE_*.
+const FRAME_OBSTACLE_BUSH = 49
+const FRAME_OBSTACLE_ROCK = 50
+// The bush is the tree bank's centre lower-leaves cell (3x4 block, bottom left of the
+// sheet); the rock is the cave bank's boulder body. The bush's ground is the tree bank's
+// own teal, which `overFill` already keys against the field's floor; the boulder is drawn
+// on CAVE rock, so its ground is keyed against that cell's own colour, not the field's.
+const OBSTACLE_BUSH = [4, 36]
+const OBSTACLE_ROCK = [1, 44]
+const CAVE_FLOOR = [2, 24]
 // The last cell of the 4x13 sheet, the rocky ledge lip the route walks off.
 const FRAME_LEDGE = 51
 // The ledge run's end caps: the sheet leaves the stair/trap slots (3 and 4)
@@ -318,6 +331,17 @@ function fieldFrames(atlas, { floor, floorAlts, wall, ledge, tallGrass, water = 
   stampTile(atlas, FRAME_LEDGE_LEFT, overFill(ledge.left, floor))
   stampTile(atlas, FRAME_LEDGE, overFill(ledge.center, floor))
   stampTile(atlas, FRAME_LEDGE_RIGHT, overFill(ledge.right, floor))
+  // The two obstacle seals the gated reward room's vault is shut with. The bush is the
+  // tree bank's own lower-leaves cell re-grounded onto the field's floor; the boulder is
+  // the cave bank's rock body, keyed against the cave floor it is drawn on.
+  const caveGround = sourceTile(CAVE_FLOOR[0], CAVE_FLOOR[1])
+  const rockBg = [caveGround[0], caveGround[1], caveGround[2]]
+  stampTile(atlas, FRAME_OBSTACLE_BUSH, overFill(OBSTACLE_BUSH, floor))
+  stampTile(
+    atlas,
+    FRAME_OBSTACLE_ROCK,
+    compositeOver(keyBackground(sourceTile(OBSTACLE_ROCK[0], OBSTACLE_ROCK[1]), floorTile, rockBg), floorTile),
+  )
 }
 
 /**

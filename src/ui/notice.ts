@@ -1,3 +1,4 @@
+import type { GateKind } from '../data/gates';
 import { t } from '../i18n';
 
 /**
@@ -55,4 +56,20 @@ export function eggHatchNotice(name: string): Notice {
     text: t('notice.eggHatch', { name }),
     holdMs: NOTICE_HOLD_MS,
   };
+}
+
+/** The gate's refusal: the obstacle's own line, by kind. */
+export function gateLockedNotice(kind: GateKind): Notice {
+  const text =
+    kind === 'bush'
+      ? t('gate.locked.bush')
+      : kind === 'rock'
+        ? t('gate.locked.rock')
+        : t('gate.locked.water');
+  return { text, holdMs: NOTICE_HOLD_MS };
+}
+
+/** The gate's opening: the seal is gone for the rest of the floor. */
+export function gateOpenedNotice(): Notice {
+  return { text: t('gate.opened'), holdMs: NOTICE_HOLD_MS };
 }

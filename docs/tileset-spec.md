@@ -22,6 +22,8 @@ value, never by art:
 | 7 | `CARPET` | yes | interior floor |
 | 8 | `TALL_GRASS` | yes | rolls a wild encounter |
 | 9 | `LEDGE` | no | jump down only (movement rule, later) |
+| 10 | `BUSH` | no | a field-gate obstacle; opened by a party type, not a move |
+| 11 | `ROCK` | no | same, the rock seal |
 
 ## 2. Atlas contract
 
@@ -43,7 +45,14 @@ Every biome ships two images:
   one tuft per ground palette (the outdoor `7,0` on the light ground, the forest
   `2,33` on the dark one), so each field picks the tuft drawn on its own floor; the
   ledge lip has no dark-ground variant, so it is re-grounded onto the field's floor
-  (`overFill` keys its light sheet background and fills it with the floor). The
+  (`overFill` keys its light sheet background and fills it with the floor). Frames
+  `49`/`50` — the two dead wall-shape slots (`wallPattern` wins every wall, so the
+  autotiler never draws them) — now carry the **bush** and **rock** seals of the
+  gated reward room (`FRLG_OBSTACLE_BUSH`/`FRLG_OBSTACLE_ROCK`), re-grounded the way
+  the ledge lip is: the bush is the tree bank's lower-leaves cell keyed against the
+  field's floor, the boulder is the cave bank's rock body keyed against the **cave**
+  floor it is drawn on. The third seal, the pond, draws through the shipped `WATER`
+  autotile rule. The
   **forest is the only field wired to a biome**: it picks the darker `0,34`
   (`rgb(88,160,128)`, the tone the tree bank is drawn on), while the outdoor light
   floor `6,1` (`rgb(112,200,160)`) and the cave rock `2,24` stay in their atlases,
@@ -220,5 +229,15 @@ Swapping is `config = TILESETS[nextId].config` plus loading
   `src/engine/tileset.ts`); the FRLG fields stamp all three (`D26`), and the PMD
   sheets leave them transparent so a ledge falls back to plain ground. A dedicated
   PMD ledge tile is still open.
+- **Obstacle seals** (`BUSH`, `ROCK`) draw real FRLG cells now, in the sheet's last
+  two free slots: `FRLG_OBSTACLE_BUSH` (frame 49) from the tree bank's centre
+  lower-leaves cell, source `4,36`, re-grounded onto the field's own floor; and
+  `FRLG_OBSTACLE_ROCK` (frame 50) from the cave bank's boulder body, source `1,44`,
+  keyed against the **cave** floor it is drawn on (source `2,24`) and composited over
+  the field's floor. Both are whole cells, so a sealed vault reads as a solid object.
+  The third obstacle kind, the pond, needs no cell of its own: a one-tile `WATER`
+  cell's neighbours are all open, so the shipped `WATER` autotile rule resolves it to
+  the interior frame 24 (`WATER_SHAPES.interior`). A tileset that ships its own
+  obstacle art maps its own frames through `frames[BUSH]`/`frames[ROCK]`.
 - **Trainer sprites** do not exist yet in any imported set; they need their own
   sheet (walk cycles + overworld facing).

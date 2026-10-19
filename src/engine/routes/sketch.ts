@@ -7,6 +7,7 @@ import { findPath } from '../pathfinding';
 import { Rng } from '../rng';
 import { borderEdge, openingBandCells } from './doors';
 import { pickWeighted } from './encounters';
+import { carveGatedVault } from './gate';
 import {
   FACINGS,
   FACING_VECTORS,
@@ -121,6 +122,12 @@ export type RouteRequest = Readonly<{
    * geometry (lanes, pockets) is still carved; only its content is emptied.
    */
   quiet?: boolean;
+  /**
+   * The room is a **gated-reward** room: carve a one-tile vault behind one obstacle
+   * seal. `'open'` carves the same vault with the seal gone, so a revisit and a reload
+   * draw the floor the run already opened. Absent for every other room.
+   */
+  gate?: 'sealed' | 'open';
 }>;
 
 type MutableMap = number[][];
@@ -1548,6 +1555,20 @@ function attemptRoute(
   tiles[entry.y][entry.x] = FLOOR;
   snapshot('terrain', 'terrain pass');
 
+  // The gated-reward room's vault (`docs/maps-spec.md` §7): its own pass, off its own
+  // streams, so no lane, pocket, trainer or item the route already drew moves. It runs
+  // **before** the population pass, so nothing can ever stand in the vault.
+  const gate =
+    request.gate === undefined
+      ? null
+      : carveGatedVault(tiles, {
+          seed: request.seed,
+          routeIndex: request.routeIndex,
+          entry,
+          reserved: new Set([entry, ...exits, ...pockets].map(tileKey)),
+          sealed: request.gate === 'sealed',
+        });
+
   // The population pass (docs/route-generator.md §3.4-3.5): first the trainers
   // (one guarding the main lane, one per optional pocket and the map-size bonus),
   // then one ground item at each reachable optional-path end. Both draw from the
@@ -1595,6 +1616,7 @@ function attemptRoute(
     pockets,
     items,
     trainers,
+    ...(gate ? { gate } : {}),
   };
   snapshot('final', 'final map');
   return route;
@@ -1611,7 +1633,7 @@ function attemptRoute(
 export function sketchRoute(request: RouteRequest): RouteMap {
   const width = request.width ?? ROUTE_WIDTH;
   const height = request.height ?? ROUTE_HEIGHT;
-  const options = { expectTrainers: wantsTrainers(request) };
+  const options = { expectTrainers: wantsTrainers(request), expectGate: request.gate !== undefined };
   let last: RouteMap | undefined;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const streams = routeStreams(request.seed, request.routeIndex, attempt);
@@ -1641,7 +1663,7 @@ export function wantsTrainers(request: RouteRequest): boolean {
 export function sketchRouteSteps(request: RouteRequest): readonly RouteStep[] {
   const width = request.width ?? ROUTE_WIDTH;
   const height = request.height ?? ROUTE_HEIGHT;
-  const options = { expectTrainers: wantsTrainers(request) };
+  const options = { expectTrainers: wantsTrainers(request), expectGate: request.gate !== undefined };
   let steps: RouteStep[] = [];
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     steps = [];

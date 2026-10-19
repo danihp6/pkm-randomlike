@@ -12,8 +12,10 @@ export const WATER = 6;
 export const CARPET = 7;
 export const TALL_GRASS = 8;
 export const LEDGE = 9;
+export const BUSH = 10;
+export const ROCK = 11;
 
-const SOLID: ReadonlySet<number> = new Set([WALL, WATER, LEDGE]);
+const SOLID: ReadonlySet<number> = new Set([WALL, WATER, LEDGE, BUSH, ROCK]);
 
 /**
  * A ledge blocks entry from every direction; walking off one downward is a
@@ -133,6 +135,8 @@ export const SKETCH_LEGEND: Readonly<Record<string, number>> = {
   ',': CARPET,
   '"': TALL_GRASS,
   '^': LEDGE,
+  B: BUSH,
+  R: ROCK,
 };
 
 export function mapFromSketch(rows: readonly string[]): TileMap {

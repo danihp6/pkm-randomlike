@@ -416,6 +416,47 @@ variant(x, y) = Hash(seed, routeIndex, x, y) mod VARIANT_COUNT
 No collision, no per-cell allocation; `RouteScene`/`tileFrames` map the variant
 to a prop frame (`D18`). The generator owns placement, not pixels.
 
+### 3.7 Gated vault
+
+A room the caller asked for a **gated** vault (`RouteRequest.gate === 'sealed' |
+'open'`, `docs/maps-spec.md` §7) gets one extra pass, after the terrain pass and
+**before** the population pass, so no trainer and no ground item can ever stand in
+the vault. It is a pure carve (`carveGatedVault`, `src/engine/routes/gate.ts`) with
+no side effect beyond the two cells it returns:
+
+```
+CarveGatedVault(tiles, { seed, routeIndex, entry, reserved, sealed }):
+    reached = FloodFill(tiles, entry)
+    for y, x row-major, and for dir in N, E, S, W:
+        N = (x, y); M = N + dir; C = N + 2*dir
+        a site needs: N is FLOOR and reached, N is not reserved and not the entry,
+                      M and C are WALL, M and C sit `GATE_INSET` (1) cell inside the
+                      fence, M's two neighbours perpendicular to `dir` are WALL,
+                      and C's other three neighbours are WALL (one way in)
+    kind = GATE_KINDS[Rng(Hash(`${seed}:gate:${routeIndex}`)).int(0, 2)]
+    if no site: return null, writing nothing
+    (M, C) = sites[Rng(Hash(`${seed}:gate:${routeIndex}:site`)).int(0, sites.length - 1)]
+    tiles[M] = sealed ? GATES[kind].tile : FLOOR     # BUSH / ROCK / WATER, never WALL
+    tiles[C] = FLOOR
+    return { kind, tile: M, pocket: C }
+```
+
+The whole rule is inside `RouteMap.gate`, present only when the build was asked for
+one; a route built without the flag carries no `gate` key at all. Two minted,
+module-local streams (**kind** and **site**, `D11`) mean the pass draws **no value**
+from `streams.layout` / `streams.terrain` / `streams.populate`, so **no shipped
+route of any seed moves** (pinned in `sketch.test.ts`); `sealed: false` carves the
+same site with the seal gone, which is how a revisit and a reload draw the floor the
+run already opened. The vault's chamber is never a `pocket` and never on the spine,
+because it is a wall until this pass and the entry, the exits and every pocket are
+`reserved`.
+
+`validateRoute`'s `expectGate` (`RouteValidationOptions`) makes the vault a
+condition of acceptance: with it true and no `gate` on the route, the attempt
+reports `missingGate: ['no-gate']` and `sketchRoute` re-rolls, so a gated room that
+the room's geometry cannot fit retries on fresh streams rather than shipping
+gateless.
+
 ## 4. Validation
 
 The shipped checklist is `validateRoute` (`src/engine/routes/validate.ts`). It
@@ -432,18 +473,20 @@ export type RouteValidation = Readonly<{
   borderBreaches: readonly string[];     // open ring tiles no opening justifies
   borderBandGaps: readonly string[];     // an opening band cell that is not a door
   missingLaneGuard: readonly string[];   // §3.4's lane guard, gated on `expectTrainers`
+  missingGate: readonly string[];        // §3.7's vault, gated on `expectGate`
   unreachablePockets: readonly string[]; // REPORTED, never gated
   trainerIssues: readonly TrainerIssue[]; // pose rule failures
 }>;
 ```
 
 `validateRoute(route, options?)` takes the caller's `RouteValidationOptions`
-(`expectTrainers?: boolean`, default `false`). `ok` is true exactly when the
-**nine** gated lists are empty: `unreachable`, `blockedByTrainers`,
-`strandedItems`, `itemsOnTerrain`, `spineBlocked`, `borderBreaches`,
-`borderBandGaps`, `missingLaneGuard` and `trainerIssues`. **`unreachablePockets`
-is not in that test**: a pocket the entry cannot reach is a finding, not a
-failure, because `placeItems` may skip a pocket a hazard sealed.
+(`expectTrainers?: boolean` and `expectGate?: boolean`, both default `false`). `ok`
+is true exactly when the **ten** gated lists are empty: `unreachable`,
+`blockedByTrainers`, `strandedItems`, `itemsOnTerrain`, `spineBlocked`,
+`borderBreaches`, `borderBandGaps`, `missingLaneGuard`, `missingGate` and
+`trainerIssues`. **`unreachablePockets` is not in that test**: a pocket the entry
+cannot reach is a finding, not a failure, because `placeItems` may skip a pocket a
+hazard sealed.
 
 - `unreachable` / `blockedByTrainers`: the entry must reach every exit, and reach
   them again with the trainers treated as blockers, so no placement soft-locks the
@@ -463,6 +506,10 @@ failure, because `placeItems` may skip a pocket a hazard sealed.
   otherwise — including the quiet entry/boss rooms and the callers that pass no
   archetype pool. It is a marker, not a `TrainerIssue`: a reason there needs a
   `trainerId` to attribute it to, and a trainer-free route has none.
+- `missingGate`: §3.7's vault, reported as `['no-gate']` only when
+  `options.expectGate` is true **and** the route carries no `gate`, and `[]`
+  otherwise. Same marker rationale as `missingLaneGuard`, and `sketchRoute` passes
+  it whenever the request asked for a vault.
 - `unreachablePockets`: reported, never gated (see above).
 - `trainerIssues`: one `TrainerIssue` per trainer that fails a pose rule, in
   `route.trainers` order, each carrying every reason it fails.
@@ -475,11 +522,13 @@ on every turning facing**.
 
 The reroll is `sketchRoute` (`src/engine/routes/sketch.ts`): it builds an attempt
 on fresh streams and retries while
-`!validateRoute(route, { expectTrainers: wantsTrainers(request) }).ok`, up to
-**`MAX_ATTEMPTS = 8`** (declared at the top of `sketch.ts`), then throws rather
-than return a bad map. The gate is **conditional**: `expectTrainers` is true only
-for a non-quiet room the caller passed an archetype pool for, so a quiet
-entry/boss room or a pool-free build is never failed for shipping no trainer. The
+`!validateRoute(route, { expectTrainers: wantsTrainers(request), expectGate:
+request.gate !== undefined }).ok`, up to **`MAX_ATTEMPTS = 8`** (declared at the
+top of `sketch.ts`), then throws rather than return a bad map. The gate is
+**conditional**: `expectTrainers` is true only for a non-quiet room the caller
+passed an archetype pool for, so a quiet entry/boss room or a pool-free build is
+never failed for shipping no trainer, and `expectGate` is true only for a room the
+caller asked for a vault. The
 attempt index is part of every stream key, so a reroll is a new deterministic map,
 never a mutation of the previous one.
 
@@ -537,5 +586,7 @@ lane, a branch or a pocket either, and ledges and water count as impassable.
   A map's first room enters from a **random edge** and rooms join by **opposite**
   openings, so the floor reads as one connected path; the previous chain rule no
   longer applies.
-- **O-R5 - Field gates.** Cut/Rock Smash-style gates stay out of scope unless the
-  design adopts a key/flag gate instead of an HM.
+- **O-R5 - Field gates.** Cut/Rock Smash-style **field-move** gates stay out of
+  scope unless the design adopts a key/flag gate instead of an HM. A **type** gate
+  (the gated reward room, `docs/maps-spec.md` §7) is not one of these: it asks the
+  party's types, not a move, so it neither adopts nor closes this row.

@@ -42,7 +42,7 @@ fields (`T̄(m)` × `trainerSize`) and how far its cap jumps (`needed(m)`) again
 levels those members stand at. `Low` is therefore the peak — map 2's cap leaps
 9 → 16 while its roster is still one Pokémon per trainer, so six-odd defeats have
 to carry 3367 XP — and `End` is the lowest — its floors field four members each,
-over fourteen or more trainers, so map 6 alone beats 58 Pokémon. `High` sits over
+over fourteen or more trainers, so map 6 alone beats 65 Pokémon. `High` sits over
 `Mid` for a related reason: map 4's step (23 → 30) is the same seven levels as
 map 3's, but it is taken higher up the curve, where a defeat is worth more while
 the floor places only about one trainer more, so each defeat still carries more.
@@ -94,13 +94,13 @@ level range, each worth `experienceAward(level, 1, true)`.
 | Map | Band  | Trainers per seed (rooms) | `T̄(m)` |  `A(m)` | `0.75 × T̄(m) × A(m)` | Window          | Fill |
 | --: | ----- | ------------------------- | -----: | ------: | -------------------: | --------------- | ---: |
 |   1 | Early | 7 (7), 5 (6), 5 (7)       |   5.67 |  177.50 |               754.38 | 604 – 906       | 1.25 |
-|   2 | Low   | 5 (8), 8 (7), 6 (7)       |   6.33 |  886.25 |              4209.69 | 3367 – 5050.5   | 1.25 |
-|   3 | Mid   | 11 (8), 13 (7), 12 (7)    |  12.00 | 1008.00 |              9072.00 | 8071 – 12106.5  | 1.12 |
-|   4 | High  | 15 (9), 12 (9), 12 (9)    |  13.00 | 2246.50 |             21903.38 | 14833 – 22249.5 | 1.48 |
-|   5 | Late  | 16 (8), 12 (8), 9 (8)     |  12.33 | 3291.38 |             30445.22 | 23653 – 35479.5 | 1.29 |
-|   6 | End   | 14 (8), 15 (7), 15 (9)    |  14.67 | 3130.29 |             34433.14 | 28854 – 43281   | 1.19 |
-|   7 | End   | 13 (8), 12 (9), 19 (10)   |  14.67 | 3600.00 |             39600.00 | 38142 – 57213   | 1.04 |
-|   8 | End   | 23 (11), 15 (7), 14 (8)   |  17.33 | 4069.71 |             52906.29 | 48726 – 73089   | 1.09 |
+|   2 | Low   | 5 (8), 8 (7), 6 (8)       |   6.33 |  886.25 |              4209.69 | 3367 – 5050.5   | 1.25 |
+|   3 | Mid   | 11 (8), 12 (8), 14 (7)    |  12.33 | 1008.00 |              9324.00 | 8071 – 12106.5  | 1.16 |
+|   4 | High  | 15 (9), 8 (10), 13 (10)   |  12.00 | 2246.50 |             20218.50 | 14833 – 22249.5 | 1.36 |
+|   5 | Late  | 16 (8), 12 (9), 11 (8)    |  13.00 | 3291.38 |             32090.91 | 23653 – 35479.5 | 1.36 |
+|   6 | End   | 14 (8), 13 (7), 22 (11)   |  16.33 | 3130.29 |             38346.00 | 28854 – 43281   | 1.33 |
+|   7 | End   | 13 (8), 13 (9), 18 (10)   |  14.67 | 3600.00 |             39600.00 | 38142 – 57213   | 1.04 |
+|   8 | End   | 24 (12), 15 (8), 17 (10)  |  18.67 | 4069.71 |             56976.00 | 48726 – 73089   | 1.17 |
 
 "Fill" is `0.75 × T̄(m) × A(m) / needed(m)`; the rule wants it inside `1 – 1.5`, and
 every floor lands there. Maps 1-2 sit in the **middle** of the window (1.25 and
@@ -169,11 +169,11 @@ the one call site, `resolveBattle` in `src/engine/run/resolve.ts`).
   either would be a change to the award rule (`experienceAward`, a battle rule),
   not an edit to balance data. The surplus the finale pays is clamped by the
   floor's cap (`levelCapForMap`) like any other gain.
-- The floor's **entry, boss and special leaves** (the shop, the mini-boss room and
-  the mega-stone room) are quiet: they place no route trainers at all, and the shop
-  holds a counter rather than a trainer. **Map 1 hangs no shop leaf** at all
-  (`docs/maps-spec.md` §7, `hangsShop`): the leaf it would hold is quiet either way,
-  so not one trainer moves for it — its floor simply reads one room fewer.
+- The floor's **entry, boss and every special leaf** (the shop, the mini-boss, the
+  mega-stone, the casino and the gated room) are quiet: they place no route trainers
+  at all, and the shop holds a counter rather than a trainer. **Map 1 hangs no shop
+  leaf** at all (`docs/maps-spec.md` §7, `hangsShop`): the leaf it would hold is quiet
+  either way, so not one trainer moves for it — its floor simply reads one room fewer.
 - **Wild encounters** are outside the budget entirely; they are how a floor is
   walked, not how it is paid for.
 - **Infinite mode** reuses the `End` band past map 8 while the cap keeps climbing
@@ -249,3 +249,9 @@ re-read the walk: `src/engine/run/curve.test.ts` rebuilds every room of every fi
 map the way `RouteScene` does, over the three seeds above, measures `T̄(m)` and
 `A(m)`, and asserts the window per map. When this sheet and that test disagree, the
 test is right.
+
+Since `[Task-65]`'s **gated** leaf the walk counts that leaf too: it rolls with a
+**20 %** chance **from map 3 on** (`src/engine/maps/plan.ts`, `docs/maps-spec.md`
+§7), so the rows for maps 3-8 above are that pass's re-measurement — the leaf adds a
+door to the room it hangs from and shifts the floors after it — while **maps 1-2 are
+untouched**: it never rolls there.

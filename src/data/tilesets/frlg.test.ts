@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { decodePng } from '../../../scripts/legacy-art/png-codec.mjs';
-import { FLOOR, WALL, type TileMap } from '../../engine/map';
-import { resolveGroundFrame } from '../../engine/tileFrames';
+import { BUSH, FLOOR, ROCK, WALL, WATER, type TileMap } from '../../engine/map';
+import { resolveGroundFrame, resolveTileFrame } from '../../engine/tileFrames';
 import {
   FRAME_FLOOR,
   FRAME_FLOOR_ALT_1,
@@ -12,6 +12,7 @@ import {
   FRAME_FLOOR_ALT_4,
   FRAME_FLOOR_ALT_5,
   FRAME_LEDGE,
+  FRAME_WATER_INTERIOR,
   TILE_SIZE,
   WATER_SHAPES,
 } from '../../engine/tileset';
@@ -23,6 +24,8 @@ import {
   FRLG_GRASS_RUSTLE_TINT_FOREST,
   FRLG_LEDGE_LEFT,
   FRLG_LEDGE_RIGHT,
+  FRLG_OBSTACLE_BUSH,
+  FRLG_OBSTACLE_ROCK,
   FRLG_TALL_GRASS,
   FRLG_TILE_SIZE,
   FRLG_TILESET,
@@ -314,11 +317,23 @@ describe('frlg tileset atlases', () => {
     }
   });
 
-  it('leaves the two unused wall-shape cells blank', () => {
+  it('stamps the two obstacle seals into the dead wall-shape cells', () => {
+    expect([FRLG_OBSTACLE_BUSH, FRLG_OBSTACLE_ROCK]).toEqual([49, 50]);
     for (const name of ATLASES) {
-      for (const frame of [49, 50]) {
-        expect(tileIsBlank(atlas(name), frame), `${name} cell ${frame}`).toBe(true);
+      const png = atlas(name);
+      for (const frame of [FRLG_OBSTACLE_BUSH, FRLG_OBSTACLE_ROCK]) {
+        expect(tileIsBlank(png, frame), `${name} seal cell ${frame}`).toBe(false);
+        // A seal covers its whole cell: it is a solid obstacle, not a decal over it.
+        expect(tileIsOpaque(png, frame), `${name} seal cell ${frame} opaque`).toBe(true);
       }
+      expect(tileBytes(png, FRLG_OBSTACLE_BUSH), `${name} bush vs rock`).not.toEqual(
+        tileBytes(png, FRLG_OBSTACLE_ROCK),
+      );
+      // The bush is the tree bank's lower leaves re-grounded onto the field's floor,
+      // so its ground is keyed away and the floor it is stamped over shows through.
+      expect(tileBytes(png, FRLG_OBSTACLE_BUSH), `${name} bush vs floor`).not.toEqual(
+        tileBytes(png, FRAME_FLOOR),
+      );
     }
   });
 });
@@ -327,6 +342,32 @@ describe('frlg tileset geometry', () => {
   it('scales its 16px cells back up to the 24px world tile by exactly 1.5 (D18)', () => {
     expect(TILE_SIZE).not.toBe(FRLG_TILE_SIZE);
     expect(TILE_SIZE / FRLG_TILE_SIZE).toBe(1.5);
+  });
+
+  it('wires both obstacle seals, and the forest field inherits them', () => {
+    expect(FRLG_TILESET.frames[BUSH]).toBe(FRLG_OBSTACLE_BUSH);
+    expect(FRLG_TILESET.frames[ROCK]).toBe(FRLG_OBSTACLE_ROCK);
+    expect(FRLG_FOREST_TILESET.frames[BUSH]).toBe(FRLG_OBSTACLE_BUSH);
+    expect(FRLG_FOREST_TILESET.frames[ROCK]).toBe(FRLG_OBSTACLE_ROCK);
+
+    const seals: TileMap = [
+      [FLOOR, FLOOR, FLOOR],
+      [FLOOR, BUSH, ROCK],
+      [FLOOR, FLOOR, FLOOR],
+    ];
+    expect(resolveTileFrame(seals, 1, 1, FRLG_TILESET)?.frame).toBe(FRLG_OBSTACLE_BUSH);
+    expect(resolveTileFrame(seals, 2, 1, FRLG_TILESET)?.frame).toBe(FRLG_OBSTACLE_ROCK);
+  });
+
+  it('draws a one-tile pond through the water rule, as its interior cell', () => {
+    const pond: TileMap = [
+      [FLOOR, FLOOR, FLOOR],
+      [FLOOR, WATER, FLOOR],
+      [FLOOR, FLOOR, FLOOR],
+    ];
+    expect(FRLG_TILESET.frames[WATER]).toBe(WATER_SHAPES.interior);
+    expect(resolveTileFrame(pond, 1, 1, FRLG_TILESET)?.frame).toBe(FRAME_WATER_INTERIOR);
+    expect(FRLG_TILESET.frames[WATER]).toBe(FRAME_WATER_INTERIOR);
   });
 
   it('keeps the field ground uniform next to a wall (no lighter path decal)', () => {
