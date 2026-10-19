@@ -2701,6 +2701,53 @@ files: `src/scenes/RouteScene.ts`, `src/engine/run/learnset.ts` + test and the t
 `docs/battle-spec.md` §4 and `docs/maps-spec.md` §7 → Task-106. No path is shared by the two and no
 hot file has two holders.
 
+### Batch 29 — the movement keys never browse a HUD pane *(shipped, archived)*
+
+Task-84 merged with `--no-ff` behind the green gate — **158 files / 2071 tests** and
+`npm run build` clean after the merge (`2026-10-19`) — and the detail is in
+`CHANGELOG.md`'s `## Unreleased`. The batch has one task, so QA ran **one** pass
+covering both scopes: the task's plan verbatim on its integration worktree
+(`qa-84`, `task-84` merged onto `main`), both gates, the diff audit and the merge
+rehearsal (`git merge-tree` reproduced the integration tree exactly). The `[live]`
+criterion was measured over CDP twice — by QA and again by the Orchestrator on its
+own server and browser: with the party panel **expanded**, a held `ArrowRight`
+walked the player from `(15, 15)` to `(17, 15)` (**+2 tiles**) and `ArrowDown` ×3
+reached `(17, 18)` (**+3**), while `hudUi.index` stayed `0` and `hudKeyboardPane`
+no longer exists on the scene.
+
+**What shipped.** `toggleHudPanel` is a plain toggle again — the quick key opens or
+collapses its panel exactly like the icon click — and the whole pane-keyboard layer
+is gone (`focusHudPane`, `handleHudKeyboard` and its member/bag/detail reducers,
+`stepMemberCursor`, `releaseHudKeyboard`'s focus path, `hudKeyboardPane`,
+`hudPartyHeaderFocus`, the cursor highlights and the raw `[`/`]` pocket keys): about
+**560 lines deleted** from `src/scenes/RouteScene.ts`, with the walker's `update()`
+gate no longer settling on a pane. Every route-HUD operation the keyboard used to
+reach stays reachable by pointer (the shipped pointer zones; the task added none
+that already existed). The Mart, the mini-boss reward, the pause menu, the release
+beats and the two text fields keep their own paths unchanged — the Mart's lives in
+`src/scenes/rooms/shop.ts` and was not touched. `docs/design-spec.md` §10.3 rewrites
+the rule (route HUD pointer-first, arrows always walk, the pause menu the one kept
+keyboard surface, the exceptions in one sentence) and `docs/tech-decisions.md`
+`D45` carries the same amendment; the battle half of both is untouched. No run
+field, no `SAVE_VERSION` step, no RNG draw, no new file.
+
+**Fill record.** Batch 29 was cut as Task-84 alone (its planned mate `[Task-90]` was
+filled into Batch 26 and shipped there). The fill search found no legal partner and
+the constraint is the plan's own one-scene-per-batch queue: every remaining open task
+holds `src/scenes/RouteScene.ts` — `[Task-78]` (whose `startTrainerBattle` computes
+the level), `[Task-79]`, `[Task-85]`, `[Task-87]`, `[Task-89]`, `[Task-91]`–`[Task-103]`,
+`[Task-109]` and `[Task-110]` — so the scene is the single hot file this batch's task
+owns. `[Task-104]` is dependency-free and path-disjoint, but its two "dark" abilities
+have no dex row: `randomAbilityPool` (`src/engine/battle/randomAbility.ts`) drops any
+registry id `getAbility` cannot resolve, so an invented id would be a dead id a run
+can never draw, and which ability it is (the plan leaves the second "named at cut
+time") is content, not a path. `[Task-107]` is cut last by its own entry and shares
+the battle files with `[Task-104]`; `[Task-81]`'s claim its entry marks **incomplete**
+with its map-index scaling still unfrozen; `[Task-80]`, `[Task-83]` and
+`[Task-93]`–`[Task-100]` depend on unmerged tasks. One dev slot and one QA slot were
+therefore left empty, and the plan's cut is unchanged: **Batch 30 is `[Task-87]` +
+`[Task-81]`**.
+
 ### Open questions for the human
 
 Batch 4b's three reports added two more (the learnset band's is **answered** — the
@@ -4039,7 +4086,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       from 5 to 6b) are free together, so it lands in **Batch 7**; it is also three batches
       before Batch 10's i18n sweep, which therefore keys its string with the rest.
       *(Batch 7)*
-- [ ] **[Task-84] The movement keys never browse a HUD pane.** Reported in play: «al abrir panel
+- [x] **[Task-84] The movement keys never browse a HUD pane.** Reported in play: «al abrir panel
       pokemons las teclas de moverse mueven en el panel de party no quiero eso que siga solo sirviendo
       para mover personaje». This is the shipped keyboard-play rule of `docs/design-spec.md` §10.3 —
       "the arrows browse the focused pane instead of walking — the walk stays settled while a pane

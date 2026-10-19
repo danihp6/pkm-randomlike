@@ -8,6 +8,30 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The movement keys never browse a HUD pane.** Opening a route HUD panel no longer takes
+      the keyboard: the `party` / `bag` / `map` / `box` quick keys are plain toggles again (a press
+      opens or collapses the panel exactly as its icon click does) and the arrows keep moving the
+      character from the first frame, even with the party, box, bag or detail panel expanded. The
+      whole pane-keyboard layer is deleted from `src/scenes/RouteScene.ts` — `focusHudPane`,
+      `handleHudKeyboard` with its member / bag / detail reducers, `stepMemberCursor`,
+      `releaseHudKeyboard`'s focus half, the `hudKeyboardPane` and `hudPartyHeaderFocus` fields, the
+      cursor highlights keyed on them and the raw `[` / `]` pocket keys, about **560 lines** — with
+      the walker's `update()` gate no longer settling on a pane; every operation the panes offered
+      from the keyboard stays reachable by pointer (row → detail, grab / reorder / deposit / withdraw,
+      the Pokevial header, box cells and pages, bag stacks and pockets, the detail tabs, nickname,
+      ability ⓘ, evolution rows, search, move slots' ⓘ and the learnset band's drag). The Mart, the
+      mini-boss reward, the pause menu, the release beats and the nickname / search text fields keep
+      their own paths unchanged. `docs/design-spec.md` §10.3 rewrites the rule (route HUD
+      pointer-first, the pause menu the one keyboard surface kept, the exceptions named) and
+      `docs/tech-decisions.md` **`D45`** carries the same amendment; their battle halves are
+      untouched. No new file, no keybind change, no run field, no `SAVE_VERSION` step and no RNG
+      draw. **QA:** `npm test` (158 files / **2071** tests), `npm run build`, the three-path diff
+      audit and a single pass covering both QA scopes (one-task batch), with the merge rehearsal
+      reproducing the integration tree exactly. The `[live]` criterion was measured over CDP with
+      real key events, twice: with the party panel **expanded**, a held `ArrowRight` walked the
+      player from `(15, 15)` to `(17, 15)` (+2 tiles) and `ArrowDown` ×3 reached `(17, 18)` (+3),
+      `hudUi.index` stayed `0` throughout and `hudKeyboardPane` no longer exists on the scene.
+
 - [x] **The route HUD's MOVES tab deletes an equipped move.** A slotted move released over the
       learnset band is unequipped: `unequipMove(run, memberId, slot)` sits beside `equipMove` in
       `src/engine/run/learnset.ts` and drops the slot, returning the run **by reference** for an
