@@ -8,6 +8,37 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The Mart and the mini-boss reward are floating, pointer-driven cards.** Both modal,
+      keyboard-driven windows are gone: `src/ui/floatingPanel.ts` draws one glass card with a
+      44 px header that is its own drag handle, a drawn ✕ close control and the pure
+      `clampPanelOrigin` that keeps it on screen; it takes no key, pauses nothing, persists no
+      position and draws no scrim, so the route keeps walking behind it (`D45`). The Mart
+      (`src/scenes/rooms/shop.ts`) drops its `handleShopAction`, keeps its BUY/SELL tabs and the
+      shipped `seed:map` stock, sells a SELL row with one click, and buys a BUY row only by
+      dragging it onto the bag panel or a living party/box member: the units enter the bag once,
+      then a member drop spends a `heal`/`status` item through `useItemOn` or equips a `held`
+      one, and an item that does not apply stays in the bag; a row the run cannot afford is not a
+      drag source (no hand cursor, no ghost), so the drag itself is the price gate. The reward
+      (`src/scenes/RouteScene.ts` + `src/ui/rewards.ts`) builds its six rows from the new
+      `rewardRows`, drops item rows on the bag or a member and its anonymous Pokémon rows on the
+      party (a full party goes to the box), closes with the same `onDone` exactly once, and also
+      closes on a room change. **QA:** one pass (a one-task batch) on `main + task-89` —
+      `npm test` (160 files / **2108** tests) and `npm run build` green, the 18-path diff inside
+      the spec's exclusive list, the merge rehearsal reproducing the tree, and every `[unit]` and
+      `[live]` criterion green (Task QA measured the live ones, and the Orchestrator re-measured
+      them on its own server and browser). The live measurements: a 10× Poké Ball row at ¥1000
+      took money 3000 → 2000 → 1000 and the bag 10 → 20; an unaffordable row left the canvas
+      cursor `default`, started no drag and bought nothing; an item row and an anonymous Pokémon
+      row landed (the bag grew, the party 2 → 3 and `stats.catches` unchanged); with either card
+      open `ArrowRight` still walked the player while `E` and the arrows bought nothing; and a
+      header drag by `(+120,+80)` moved the card exactly (the ✕ answered at the new origin and
+      not at the old one). No run field, no `SAVE_VERSION` step and no new RNG draw;
+      `docs/maps-spec.md` §7 and `docs/design-spec.md` §3/§10.3 record the rule. Two residual
+      readings are parked in an `agent-review` issue: the HUD's hit test still sees a panel that
+      a floating card covers where they overlap, and a Pokémon reward row dropped on a filled
+      member row resolves as a member target rather than the party panel (empty party space and
+      the panel's own background take it).
+
 - [x] **A room's size follows its shape.** `planMap` no longer rolls every regular room's width and
       height independently: the frozen `ROOM_SHAPE_SIZES` table (`src/data/maps.ts`) gives a `cross`
       and a `straight` 40×40, a `tee` 40×48, a `bend` 44×44, a `corridor` 52×30 — 30×52 when its two

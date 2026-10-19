@@ -4086,7 +4086,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       persist. It opens **Batch 30** with `[Task-81]`: it claims `src/scenes/RouteScene.ts`,
       `src/data/items.ts` and the generated `src/data/frlg/item-icons.json`, none of which the
       room-size table 81 writes touches. *(Batch 30)*
-- [ ] **[Task-89] The Mart and the mini-boss reward become floating panels, and taking an item is a drag
+- [x] **[Task-89] The Mart and the mini-boss reward become floating panels, and taking an item is a drag
       onto the bag or a member.** The human's rule: «pasar mart y recompensa a panel flotante como los
       existentes, recompensa al arrastrarlo a mochila o poke si es objeto equipable desaparece objeto de
       suelo y panel, mart al soltar sobre mochila o poke restar monedas si no tiene monedas no puede
@@ -5522,7 +5522,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (the modifiers the consumables write), `[Task-95]` (the heal they reuse) and `[Task-106]` — the
       Tera Crystal's holder override is the same "wherever a fighter's types are read" reader that
       task freezes (Batch 32), so the two cannot be written independently of each other. *(Batch 47)*
-- [ ] **[Task-104] The damage-model abilities: the type-chart-breaking pair, and the four team-type
+- [!] **[Task-104] The damage-model abilities: the type-chart-breaking pair, and the four team-type
       bonuses.** Two rules the damage model cannot express. Nothing in `src/engine/battle/damage.ts`
       can ignore the type chart, and the run's party composition never reaches a battle
       (`BattleSetup` carries no team fact, `src/engine/battle/state.ts` 120-128).
@@ -5539,6 +5539,17 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the room conditions (`[Task-62]`, `[Task-106]`) and the type chart itself.
       *Dependencies:* none — `damage.ts`, the registry and the coverage table are shipped. It adds no
       run field. *(Batch 31)*
+      **BLOCKED (`2026-10-19`, on the plan's own content check): the two "dark" abilities have no
+      dex row and the second has no name.** `randomAbilityPool`
+      (`src/engine/battle/randomAbility.ts`, 31-40) only keeps a registry id that `getAbility`
+      resolves, and `src/data/dex/abilities.json` is generated from `@pkmn/dex` by
+      `npm run data:dex` — no Gen 9 row ignores the type chart, and this entry leaves the second
+      ability "named at cut time". An invented id is therefore a dead id no run can ever draw,
+      and which ability it is — plus where its row lives — is content, not a path: a human
+      decision (the two names/ids/descriptions and the data seam: a hand-authored custom-ability
+      table the generated dex accepts, or two existing ids with exact semantics). The same
+      blocker is recorded in Batch 29's and Batch 30's fill records. The task stays out of the
+      queue (`[!]`) until it is answered; its Batch 31 mate `[Task-89]` shipped alone.
 - [ ] **[Task-107] The 2vs2 boss battle, engine half: the double-battle rules.** The human's last
       and largest wish — «Bosses 2vs2» — cannot ride on today's engine: every side is one active
       (`activeFighter(state, side)`, `src/engine/battle/state.ts`), a command carries no target and
