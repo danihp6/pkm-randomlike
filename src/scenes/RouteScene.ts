@@ -88,7 +88,7 @@ import {
   type RunPokemon,
   type RunState,
 } from '../engine/run';
-import { equipMove, learnsetPool, type LearnEntry } from '../engine/run/learnset';
+import { equipMove, learnsetPool, unequipMove, type LearnEntry } from '../engine/run/learnset';
 import { NICKNAME_MAX_LENGTH, normalizeNickname, renameMember } from '../engine/run/nickname';
 import { speciesPool, wildExclusions } from '../engine/run/pool';
 import { runPassives, type PassivePickup } from '../engine/run/passives';
@@ -3810,9 +3810,10 @@ export class RouteScene extends Phaser.Scene {
       this.input.setDefaultCursor('grabbing');
       return;
     }
-    // A held move reorders live as the pointer crosses another cell.
+    // A held move reorders live as the pointer crosses another cell; over the
+    // learnset band it leaves the grid so the release can unequip it.
     if (this.hudDetailState.grab !== null) {
-      const row = this.detailMoveIndexAt(pointer);
+      const row = this.pointerInLearnBand(pointer) ? null : this.detailMoveIndexAt(pointer);
       if (row !== null) {
         const next = reorderMoves(this.run, this.hudDetailState, row);
         if (next.run !== this.run || next.state !== this.hudDetailState) {
@@ -4008,8 +4009,21 @@ export class RouteScene extends Phaser.Scene {
       // A badge dropped anywhere else just goes back on its member (nothing to do).
       return;
     }
-    // A released move just drops where it last landed.
+    // A held move released on the learnset band is unequipped; anywhere else it
+    // just drops where it last landed.
     if (this.hudDetailState.grab !== null) {
+      const memberId = this.hudDetailState.memberId;
+      if (memberId !== null && this.pointerInLearnBand(pointer)) {
+        const next = unequipMove(this.run, memberId, this.hudDetailState.grab);
+        if (next !== this.run) {
+          this.run = next;
+          this.persistRun();
+        }
+        this.hudDetailState = dropMove(this.hudDetailState);
+        this.refreshDetail();
+        this.refreshHud();
+        return;
+      }
       this.hudDetailState = dropMove(this.hudDetailState);
       this.persistRun();
       this.refreshDetail();
