@@ -4,7 +4,9 @@ Browser Pokémon roguelike: procedural routes, classic menu battles, permanent
 death. Backlog source of truth. One branch per task off `main` (`feature/...` or
 `task-<ID>` for an agent batch).
 
-Legend: `[ ]` open, `[~]` in progress. Only open work lives here; completed items
+Legend: `[ ]` open, `[~]` in progress, `[!]` **blocked** (the mark carries its
+`BLOCKED: <reason>` in the item, and the cycle skips it — `docs/agent-ci.md` §Task states).
+Only open work lives here; completed items
 are archived in `CHANGELOG.md`, grouped by phase. Phases are ordered; a phase is
 "playable" when every box in it is ticked.
 
@@ -2194,8 +2196,8 @@ atlas frame. What follows is the cut's own record.
   run field, so **no `SAVE_VERSION`** step. `D43` is amended for moves and abilities only:
   Pokémon species, items and biomes stay English.
 
-### Batch 23a2 - the 61 descriptions the base-game dump does not carry
-- **Task-113** `Task-112` left 18 moves and 43 abilities with an English description because
+### Batch 23a2 - the 61 descriptions the base-game dump does not carry *(blocked)*
+- [!] **[Task-113]** `Task-112` left 18 moves and 43 abilities with an English description because
   PokeAPI's dump and the base Scarlet/Violet text have no Spanish for those DLC rows; fill them
   from the game's own Spanish text, never a machine translation, and empty `MISSING_ES`.
 - **Hot files:** `src/data/i18n/es/moves.json`, `abilities.json` and `meta.json` →
@@ -2206,7 +2208,9 @@ atlas frame. What follows is the cut's own record.
   source is the official Spanish in-game text (the DLC text dump where it carries a row, else
   the official Spanish Pokédex copy), and the acceptance is that the two `meta.json`
   `missingDescriptions` lists shrink to zero and `MISSING_ES` becomes empty. No rule, RNG draw
-  or run field moves, so **no `SAVE_VERSION`** step.
+  or run field moves, so **no `SAVE_VERSION`** step. It is **blocked** (see the item's own
+  `BLOCKED` note), and nothing behind it waits on it: `[Task-111]`, in the batch after this
+  one, reads only `[Task-112]`'s merged tables and accessors.
 
 ### Batch 23b - the special-room layer leaves the route scene
 - **Task-111** `src/scenes/RouteScene.ts` stops owning every special room: each room kind becomes
@@ -2228,6 +2232,28 @@ atlas frame. What follows is the cut's own record.
   task. It is a pure refactor: no tile, marker, price, key, RNG draw or run field moves, so **no
   `SAVE_VERSION`** step and no fixed-seed re-pin. It edits files Batch 11's reformat cleared, so
   it keeps them conforming (no new ledger line).
+- **Batch filling: checked, no member added (`2026-10-19`).** The candidate was **`[Task-81]`**
+  (Batch 30, "a room's size follows its shape"), and its paths *are* disjoint from this batch's
+  set — it claims `src/engine/maps/plan.ts` + `plan.test.ts`, `src/data/maps.ts`, `src/data/mapSize.ts`
+  and `docs/maps-spec.md` §1/§4, none of which Task-111 touches, and it has no dependency. It was
+  **refused on the second half of the rule** ("its re-pins cannot be bounded"): the frozen shape
+  table (a `cross` 40×40, a `corridor` 52×30, and so on) changes every room's **area**, and a room's
+  area is what `src/data/mapSize.ts`'s tiers key on — so `trainerBonusForSize`/`terrainScaleForSize`
+  move for map 1's rooms and the trainer density of every floor moves with them. That lands on
+  `src/engine/run/curve.test.ts`, whose shipped windows are numeric and tight (each floor's fill
+  inside `1 – 1.5`, maps 1-2 inside `1.20 – 1.35`, and the on-ramp strictly below the recorded
+  pre-thinning totals), on `docs/balance/route-curve.md`'s measurement, and — if the fill leaves
+  its window — on `src/data/population.ts` (Task-82's) or `src/data/run.ts` (Task-83's), which are
+  balance decisions and not re-pins. `src/data/maps.test.ts` (`routeSizeRangeForMap(FINITE_MAPS)`
+  pinned to `{ min: 30, max: 48 }`, and the monotone-size walk) and `src/engine/maps/route.test.ts`
+  (the two `mapTuning(n).size.max` tier pins) pin today's `size` range too, and the entry's
+  `src/data/maps.ts` claim did not carry their tests. The entry's own wording — "scaled by the map
+  index instead of the free roll" — also leaves the scale itself undefined, which is a decision and
+  not something an Architect may invent. The set is therefore not writable from this batch, and
+  Batch 23b stays **Task-111 alone**. (A second pass over the immediately following batches found
+  no cleaner filler: `[Task-84]` B29, `[Task-87]` B30 and `[Task-89]` B31 all claim
+  `src/scenes/RouteScene.ts`, i.e. this batch's own hot file, and `[Task-88]`/`[Task-104]` are a
+  behaviour change to waves whose siblings merge ten batches later.)
 
 ### Batch 24 - the casino room
 - **Task-64** A casino room: a Team Rocket grunt, a slot machine the player pays to spin, items
@@ -4453,7 +4479,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `docs/tech-decisions.md` `D43` and `docs/data-spec.md` §1; it is **the first batch after
       Batch 23**, in **Batch 23a**, before Batch 24, because it holds the two scenes the room wave
       needs. *(Batch 23a)*
-- [ ] **[Task-113] The 61 descriptions the base-game dump does not carry.**
+- [!] **[Task-113] The 61 descriptions the base-game dump does not carry.**
       **The gap.** `[Task-112]` shipped the official Spanish name of all 835 moves and 311
       abilities and the official description of 817 moves and 268 abilities. The remaining
       **18 moves** and **43 abilities** are DLC rows whose `move_flavor_text` /
@@ -4470,6 +4496,20 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* `[Task-112]` (the tables and the accessors). It claims
       `src/data/i18n/es/**` and `src/i18n/content.test.ts`; it runs **one batch behind
       Task-112**, in **Batch 23a2**, before `[Task-111]`. *(Batch 23a2)*
+      **BLOCKED (`2026-10-19`, on the run's own source check): the text does not exist in
+      this repository or in any dump it can reach.** The 18 moves and 43 abilities the two
+      `meta.json`
+      `missingDescriptions` lists name are Scarlet/Violet **DLC** rows, and the rule above
+      forbids a machine translation, so the task needs their official Spanish text:
+      PokeAPI carries no `es` entry for them (`move_flavor_text` / `ability_flavor_text`, and
+      `effect_entries` with no `es` row either), and the public `sv-text` dump the tables were
+      built from is **v1.0.1 — base game, no DLC** — so it has no row to carry. There is no
+      `sprite-sources/` tree with the DLC text and no other dump in the repo. It stays out of
+      the backlog (`[!]`, the CI's blocked mark, `docs/agent-ci.md` §Task states) until a
+      **DLC Spanish text dump** is available; then the two lists shrink to zero, `MISSING_ES`
+      empties and the DLC spot-checks are added. Nothing else blocks it: the accessors, the UI
+      wiring and the English fallback already ship, and no rule, RNG draw or run field moves,
+      so there is still **no `SAVE_VERSION`** step.
 - [ ] **[Task-64] A casino room: a Team Rocket grunt, a slot machine the player pays to spin, and
       its prizes.** Reported in play: «añade tarea para añadir habitacion casino, aparece un sprite
       de un recluta team rocket, aparece una tragaperras y pagas por tiradas con posibilidad de
@@ -4811,6 +4851,20 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* none. Its shape table, `src/engine/maps/plan.ts` and `src/data/mapSize.ts` are
       nobody's here, so it rides beside `[Task-87]` in **Batch 30** — a task that owns
       `src/scenes/RouteScene.ts` and the item catalogue and shares no path with it. *(Batch 30)*
+      **Claim is incomplete — re-cut before it runs (`2026-10-19`, found while filling Batch 23b).**
+      Changing every room's size changes its **area**, and `src/data/mapSize.ts`'s tiers are keyed
+      by area, so `trainerBonusForSize`/`terrainScaleForSize` move for the same rooms and every
+      floor's trainer density moves with them. The claim must therefore gain, at least:
+      `src/data/maps.test.ts` (today it pins `routeSizeRangeForMap(FINITE_MAPS)` to `{ min: 30,
+      max: 48 }` and walks the range upward) and `src/engine/maps/route.test.ts` (the two
+      `mapTuning(n).size.max` tier pins), and the balance half the entry does not name:
+      `src/engine/run/curve.test.ts` (its shipped windows are `1 – 1.5` per floor, `1.20 – 1.35`
+      on maps 1-2 and strictly below the recorded pre-thinning totals) and
+      `docs/balance/route-curve.md`. If the re-measured fill leaves its window, the fix is a
+      balance change in `src/data/population.ts` (Task-82's) or `src/data/run.ts` (Task-83's) —
+      which is why this entry also **freezes the map-index scaling** before it is cut: the table
+      above is absolute, and "scaled by the map index" is a decision (a scale factor, or a
+      per-map row) that must be written here, not invented by the dev.
 - [ ] **[Task-82] A floor holds a fixed number of trainer rooms.** Today the population pass puts a
       trainer on the main lane and one more per pocket, plus a map-size tier bonus
       (`docs/routes-spec.md` §2 step 4), so a floor fields 5-17 trainers and the band's `POPULATION`
