@@ -97,7 +97,11 @@ carries over.
   learn`. A cell is dragged onto a slot to equip it: an occupied slot replaces what
   sits there and an empty slot takes the move, so a three-move member can learn a
   fourth; teaching is free and a TM is
-  **reusable** (D36). A member with **no** moves at all reads `no moves` and draws
+  **reusable** (D36). A slotted move dragged back onto the band is **unequipped**:
+  the slot stays an empty container and the move returns to the band, tagged
+  `Lv##` or `TM###` as it was; a member's **last remaining move cannot be removed**,
+  and no confirmation is asked because the delete is free and reversible.
+  A member with **no** moves at all reads `no moves` and draws
   no container. When the squad levels up a
   modal pops up announcing **"X learned Y!"** for every move a member crossed on
   the way, dismissed with any key or a click. Every level-up also says so in a

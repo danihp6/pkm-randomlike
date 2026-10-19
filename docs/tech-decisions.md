@@ -555,7 +555,12 @@ randomized learnset, D17) that
 are not already in one of its four slots, and the moves a TM **in the bag** can
 teach it. A pool cell is dragged onto a slot to equip it, replacing what sat
 there; this goes through the pure `equipMove`, so a move the member already holds
-is never offered and the slots never duplicate. TM compatibility reads the
+is never offered and the slots never duplicate. A slotted move dragged back onto
+the band is **unequipped** — the exact inverse, through the pure `unequipMove`:
+the slot stays an empty container and the move returns to the band with its
+`Lv##` / `TM###` tag. A member's **last remaining move cannot be removed**: the
+save decoder, `validateCommand` and the FIGHT menu all assume a member holds at
+least one. TM compatibility reads the
 **canonical**
 learnset, not the randomized one: D17's random TM slots name moves no machine
 sells, so only the real machines gate the panel. TMs drop from route loot and

@@ -139,3 +139,20 @@ export function equipMove(
   else moves.push(fresh);
   return updatePokemon(run, { ...member, fighter: { ...member.fighter, moves } });
 }
+
+/**
+ * Unequips slot `slot`: the inverse of `equipMove`. The member's last remaining
+ * move cannot be removed (the save decoder, `validateCommand` and the FIGHT
+ * menu all assume a member holds at least one move), and an unknown member or
+ * an out-of-range slot is a no-op, so the run comes back by reference. Pure.
+ */
+export function unequipMove(run: RunState, memberId: string, slot: number): RunState {
+  const member =
+    run.party.find((entry) => entry.fighter.id === memberId) ??
+    run.box.find((entry) => entry.fighter.id === memberId);
+  if (!member || !Number.isInteger(slot) || slot < 0) return run;
+  const moves = member.fighter.moves;
+  if (slot >= moves.length || moves.length <= 1) return run;
+  const survivors = moves.filter((_, index) => index !== slot).map((entry) => ({ ...entry }));
+  return updatePokemon(run, { ...member, fighter: { ...member.fighter, moves: survivors } });
+}

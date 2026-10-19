@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getMove, learnableBy, levelUpMoves } from '../../data/dex';
 import { tmItemIdForMove } from '../../data/tms';
 import { randomLevelUpMoves } from '../battle/randomLearnset';
-import { equipMove, learnsetPool } from './learnset';
+import { equipMove, learnsetPool, unequipMove } from './learnset';
 import { createRunPokemon, levelUpPokemon } from './progression';
 import { addItem, createRun, updatePokemon, type RunState } from './state';
 
@@ -128,5 +128,69 @@ describe('equipMove', () => {
     expect(equipMove(run, 'starter', 'hydropump', 0, SEED)).toBe(run);
     expect(equipMove(run, 'nobody', 'scratch', 0, SEED)).toBe(run);
     expect(equipMove(run, 'starter', 'scratch', 9, SEED)).toBe(run);
+  });
+});
+
+describe('unequipMove', () => {
+  const tmMove = learnableBy('charmander', 'tm')[0];
+  const tmId = tmItemIdForMove(tmMove)!;
+
+  it('removes exactly the chosen slot and keeps the rest in order, on a new run', () => {
+    const run = starterRun(['scratch', 'growl', 'ember']);
+    const next = unequipMove(run, 'starter', 1);
+    expect(next).not.toBe(run);
+    expect(next.party[0].fighter.moves.map((slot) => slot.moveId)).toEqual(['scratch', 'ember']);
+    expect(run.party[0].fighter.moves.map((slot) => slot.moveId)).toEqual([
+      'scratch',
+      'growl',
+      'ember',
+    ]);
+  });
+
+  it('returns a removed level-up move to the learnset pool', () => {
+    const run = starterRun(['scratch', 'growl', 'ember']);
+    expect(learnsetPool(run, run.party[0]).map((entry) => entry.moveId)).not.toContain('growl');
+    const next = unequipMove(run, 'starter', 1);
+    const entry = learnsetPool(next, next.party[0]).find((candidate) => candidate.moveId === 'growl');
+    expect(entry?.source).toBe('level');
+  });
+
+  it('returns a removed TM move to the pool with its machine while the bag holds it', () => {
+    const run = addItem(starterRun([tmMove, 'scratch']), tmId);
+    const next = unequipMove(run, 'starter', 0);
+    expect(next.party[0].fighter.moves.map((slot) => slot.moveId)).toEqual(['scratch']);
+    const entry = learnsetPool(next, next.party[0]).find((candidate) => candidate.moveId === tmMove);
+    expect(entry?.moveId).toBe(tmMove);
+    expect(entry?.source).toBe('tm');
+    expect(entry?.tmId).toBe(tmId);
+  });
+
+  it('refuses to leave a member with no moves at all', () => {
+    const run = starterRun(['scratch']);
+    expect(unequipMove(run, 'starter', 0)).toBe(run);
+  });
+
+  it('returns the run by reference for an unknown member or an out-of-range slot', () => {
+    const run = starterRun(['scratch', 'growl', 'ember']);
+    expect(unequipMove(run, 'nobody', 0)).toBe(run);
+    expect(unequipMove(run, 'starter', -1)).toBe(run);
+    expect(unequipMove(run, 'starter', 3)).toBe(run);
+    expect(unequipMove(run, 'starter', 1.5)).toBe(run);
+  });
+
+  it('re-equips a deleted move into the same slot with fresh PP', () => {
+    const run = starterRun(['scratch', 'growl', 'ember']);
+    const deleted = unequipMove(run, 'starter', 2);
+    expect(deleted.party[0].fighter.moves.map((slot) => slot.moveId)).toEqual(['scratch', 'growl']);
+    const restored = equipMove(deleted, 'starter', 'ember', 2);
+    expect(restored).not.toBe(deleted);
+    expect(restored.party[0].fighter.moves.map((slot) => slot.moveId)).toEqual([
+      'scratch',
+      'growl',
+      'ember',
+    ]);
+    const slot = restored.party[0].fighter.moves[2];
+    expect(slot.pp).toBe(getMove('ember')!.pp);
+    expect(slot.maxPp).toBe(getMove('ember')!.pp);
   });
 });
