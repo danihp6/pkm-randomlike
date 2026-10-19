@@ -880,6 +880,57 @@ opposing **bench** and never the opposing side's unrevealed moves. A second knob
 per-archetype difficulty, a per-beat row, adaptive or rubber-band difficulty,
 telegraphing the enemy's choice — is deliberately **not** built here.
 
+## D47 — A special room kind is a descriptor module; the route keeps one auto-discovered registry *(decided)*
+
+Every **special room kind** (`MapRoomSpecial`: `shop`, `mini-boss`, `mega-stone`, and every
+kind a later task adds) used to be code inside `RouteScene.ts`. It is now one **descriptor
+module** under `src/scenes/rooms/`, and the scene keeps **one registry** of them, built from
+the folder itself with `import.meta.glob(['./rooms/*.ts', '!./rooms/*.test.ts'], { eager: true })`
+— the negative pattern keeps the folder's tests out of the bundle. `collectDescriptors` takes
+that module map and collects every module that exports a named `descriptor` whose `kind` is a
+string; any other module (`types.ts`, `registry.ts`, a helper) is skipped silently, so the
+folder may hold non-descriptor files. Two descriptors that claim one kind **throw**, naming both
+module paths in module-map key order, so a duplicated room kind fails loudly at scene start
+rather than silently dropping one. Both indexes (`byKind` and `byMarker`) are built once and
+never mutated.
+
+A `RoomDescriptor` is data plus four optional hooks: `fixture(host)` is the room's content
+(trainers appended after the map boss's own entry, ground items, and the counter tile the
+movement block and the interact key read), `interact(host, tile)` is the interact key while the
+player faces a tile — `true` means the room consumed it — `drawFixture(host)` draws the room's
+own fixture sprite where the scene draws entities, and `drawMarker(graphics, cx, cy, radius)`
+draws the room's minimap glyph. A room reaches the scene only through **`RoomHost`**, a
+read-only port whose members are the room's `view`, the live `run`, the entry/counter/farthest
+tiles, the facing helper, the dev-generator flag, `commitRun`, `releaseHudKeyboard`,
+`openPanel` / `closePanel` / `panelOpen` and the scene's own `add`/`scale`/`cameras`.
+`RouteScene` satisfies it; nothing else does, and the descriptor modules never import a scene.
+`Phaser` is a **type-only** import in `types.ts`, and `registry.ts` imports Phaser not at all,
+so the whole layer is unit-tested headless — including the Mart window, which drives a stub
+scene.
+
+**The plan's data stays the plan's.** `MapRoomSpecial` is still what `src/engine/maps/plan.ts`
+rolls and what the run's rooms carry; the **marker the minimap draws** comes from the
+descriptor (`byMarker`), so the map's glyph vocabulary lives beside the room that draws it.
+`src/ui/mapView.ts` keeps `MapRoomMarker = MapRoomSpecial` untouched, and its geometry — the
+bands, the centring, the door midpoints and the fog — is unchanged.
+
+**The scene owns the keyboard slot, not the panel.** `RouteScene.roomPanel` holds the open
+`RoomPanel` (or nothing); the scene's action handler gives it every key first, the pointer
+guards read `panelOpen()`, and the panel's `close()` — called by the scene, never by the panel
+— destroys the objects the room built. The shop room's own state (its stock, tab, cursor and
+the row objects it repaints) lives in its module, as does the counter tile it declares; the
+scene keeps the tile so movement can still block on it. No room's behaviour, price, key, tile,
+marker or RNG draw moved with the code: the mini-boss and the mega-stone place no roll of their
+own (their ids are `miniBossTrainerId(mapIndex)` / `megaStoneItemId(mapIndex)`), the stone
+still draws off `${run.seed}:mega:${mapIndex}` and the shop's shelves still off
+`${run.seed}:shop:${run.mapIndex}` through `buildShop`.
+
+**A new room is a new file** in `src/scenes/rooms/` exporting `descriptor`, plus its own
+`MapRoomSpecial` value in `src/engine/maps/plan.ts` and its `docs/maps-spec.md` §7 row — the
+scene and the registry need no edit. Hooks a later room needs and does not have yet (starting a
+battle, adding an item, spending money, hooking `advanceMap`) are `RouteScene` edits that task
+must claim.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

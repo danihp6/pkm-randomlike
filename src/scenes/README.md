@@ -14,6 +14,8 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
 - `StarterScene.ts` — picks the starter pool and opens the seed prompt.
 - `RouteScene.ts` — the route itself: the player, tall grass, trainers, items, the HUD, the
   party/bag/box/detail panels, the Mart, the minimap and the touch controls.
+- `rooms/` — the special-room descriptors: one module per room kind, discovered by `RouteScene`'s
+  registry, so a new room is a new file.
 - `BattleScene.ts` — the menu battle: fight / bag / switch / run, the message box, the HP
   bars and the capture sequence.
 - `RunOverScene.ts` — the run summary when the last Pokémon falls.
