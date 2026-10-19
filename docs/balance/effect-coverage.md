@@ -37,7 +37,7 @@ The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — 311 total (261 port, 0 no-op, 38 excluded, 12 removed)
+## Abilities — 311 total (263 port, 0 no-op, 36 excluded, 12 removed)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -140,7 +140,7 @@ catalogue row, not engine code.
 | Healer | `excluded` | doubles/ally only |
 | Heatproof | `port` | ported in `effects/abilities.ts` |
 | Heavy Metal | `excluded` | weight is not modelled |
-| Honey Gather | `excluded` | out of battle only |
+| Honey Gather | `port` | ported in `effects/abilities.ts` |
 | Hospitality | `excluded` | doubles/ally only |
 | Huge Power | `port` | ported in `effects/abilities.ts` |
 | Hunger Switch | `removed` | forme-changing ability removed (D38) |
@@ -211,7 +211,7 @@ catalogue row, not engine code.
 | Pastel Veil | `port` | ported in `effects/abilities.ts` |
 | Perish Body | `port` | ported in `effects/abilities.ts` |
 | Pickpocket | `port` | ported in `effects/abilities.ts` |
-| Pickup | `excluded` | out of battle only |
+| Pickup | `port` | ported in `effects/abilities.ts` |
 | Pixilate | `port` | ported in `effects/abilities.ts` |
 | Plus | `excluded` | doubles/ally only |
 | Poison Heal | `port` | ported in `effects/abilities.ts` |
@@ -1193,7 +1193,7 @@ catalogue row, not engine code.
 | Zing Zap | `port` | data: secondaries |
 | Zippy Zap | `excluded` | no playable species has it |
 
-## Items — 290 total (138 port, 71 no-op, 81 excluded)
+## Items — 291 total (139 port, 71 no-op, 81 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -1264,6 +1264,7 @@ catalogue row, not engine code.
 | Dusk Ball | `excluded` | not in the run catalogue |
 | Dusk Stone | `excluded` | not in the run catalogue |
 | Earth Plate | `port` | in the run catalogue (`src/data/items.ts`) |
+| Egg | `port` | in the run catalogue (`src/data/items.ts`) |
 | Eject Button | `no-op` | reachable, not modelled yet |
 | Eject Pack | `no-op` | reachable, not modelled yet |
 | Electirizer | `excluded` | not in the run catalogue |

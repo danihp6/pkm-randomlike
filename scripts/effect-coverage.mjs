@@ -76,9 +76,6 @@ for (const id of ['asoneglastrier', 'asonespectrier']) {
 for (const id of ['gulpmissile', 'multitype', 'powerconstruct', 'rkssystem']) {
   EXCLUDED_ABILITIES.set(id, 'forme change (cut)');
 }
-for (const id of ['honeygather', 'pickup']) {
-  EXCLUDED_ABILITIES.set(id, 'out of battle only');
-}
 for (const id of ['heavymetal', 'lightmetal']) {
   EXCLUDED_ABILITIES.set(id, 'weight is not modelled');
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getAbility } from '../../data/dex/abilities';
 import { getSpecies } from '../../data/dex/species';
 import { createFighter } from './fighter';
@@ -7,6 +7,12 @@ import { randomAbility, randomAbilityPool } from './randomAbility';
 // running game draws from (the battle index does this at boot).
 import './effects/abilities';
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
+  vi.resetModules();
+});
+
 describe('randomAbilityPool', () => {
   it('holds the implemented set and drops the forme-locked ids', () => {
     const ids = randomAbilityPool().map((ability) => ability.id);
@@ -14,6 +20,10 @@ describe('randomAbilityPool', () => {
     expect(ids).toContain('levitate');
     // Implemented generically, so it is fair game.
     expect(ids).toContain('wonderguard');
+    // Both out-of-battle item abilities are registered as empty ports, so a run can
+    // hold them and `src/engine/run/passives.ts` can read them on the map.
+    expect(ids).toContain('pickup');
+    expect(ids).toContain('honeygather');
     // The Ice Face shield stays; every forme-changing ability was deleted and
     // its formes became data (`D38`).
     expect(ids).toContain('iceface');
@@ -94,5 +104,43 @@ describe('createFighter ability resolution', () => {
       expect(fighter.moves.some((slot) => slot.moveId === 'fissure')).toBe(true);
       expect(fighter.ability).not.toBe('No Guard');
     }
+  });
+
+  it('keeps a provided out-of-battle ability as-is', () => {
+    for (const ability of ['Pickup', 'Honey Gather']) {
+      const fighter = createFighter({ id: ability, speciesId: 'charmander', level: 20, ability });
+      expect(fighter.ability).toBe(ability);
+    }
+  });
+});
+
+describe('the out-of-battle abilities in a battle', () => {
+  it('never pages the coverage warning for a fighter that holds one', async () => {
+    vi.resetModules();
+    vi.stubEnv('ENVIRONMENT', 'develop');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { IS_DEVELOP } = await import('../../dev/env');
+    expect(IS_DEVELOP).toBe(true);
+    const registry = await import('./effects/registry');
+    const { createBattle } = await import('./state');
+    const { createFighter: build } = await import('./fighter');
+    const { Rng } = await import('../rng');
+    await import('./effects/abilities');
+
+    const switchIn = (ability: string): void => {
+      const player = build({ id: 'p', speciesId: 'charmander', level: 20, ability });
+      const enemy = build({ id: 'e', speciesId: 'squirtle', level: 20 });
+      const state = createBattle({ player: [player], enemy: [enemy], rng: new Rng(1), isWild: true });
+      registry.runSwitchIn(registry.makeContext(state, 'player', { source: player }));
+    };
+
+    switchIn('Pickup');
+    switchIn('Honey Gather');
+    expect(warn).not.toHaveBeenCalled();
+
+    // The control: an ability with no registry row still warns, so the assertion
+    // above proves the two rows and not a silent gate.
+    switchIn('Ball Fetch');
+    expect(warn).toHaveBeenCalledWith('[coverage] ability "Ball Fetch" has no ported effect (D16).');
   });
 });
