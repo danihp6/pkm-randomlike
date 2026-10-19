@@ -170,6 +170,10 @@ carries over.
   its ends are known. The current room, the boss, the open portal and any special
   room carry their own mark; a room stays hidden until it is entered
   (`docs/maps-spec.md` §8).
+- A **special room's** own content — the fixture it places, the window it opens and the
+  marker the minimap draws for it — comes from that room's **descriptor module**
+  (`src/scenes/rooms/`); the route keeps **one auto-discovered registry** of them, so a
+  new room kind is a new file and not a scene edit (`D47`).
 - You start a run by picking one of three starters drawn from the base forms of
   every evolution line with two consecutive evolutions ahead (itself plus two
   more in a chain), so every starter has room to grow; a branching line whose
