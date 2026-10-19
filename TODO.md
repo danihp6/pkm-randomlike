@@ -70,7 +70,10 @@ Legend:
   and no two tasks in it create or modify the same path. A batch is a label on the
   open items, not a rewrite of the backlog. Batches run in order: a task's branch is
   cut from `main` once every earlier batch is merged, and the Orchestrator merges one
-  task at a time, in ID order.
+  task at a time, in ID order. A cycle takes the lowest pending batch **whole** and
+  may **fill** it with tasks from later batches under the same antichain rules
+  (`AGENTS.md`'s **Batch filling**), up to four: the cut is the floor, not the
+  ceiling, so a one-task batch does not waste the other dev slots.
 - **Hot files.** At most one task per batch claims `package.json`, `src/main.ts`,
   `vite.config.ts`, a given `src/scenes/*.ts`, `src/data/dex/**` or any other
   generated file (the packed atlases under `src/assets/`, `src/data/frlg/*.json`,
@@ -2173,7 +2176,28 @@ atlas frame. What follows is the cut's own record.
   is the batch's second member (its own set is named above): it moves the generated `gmaxes.json`
   and the item catalogue, keeps the single chain intact, and adds no run field either.
 
-### Batch 24 — the casino room
+### Batch 23b - the special-room layer leaves the route scene
+- **Task-111** `src/scenes/RouteScene.ts` stops owning every special room: each room kind becomes
+  a descriptor module under `src/scenes/rooms/`, the scene keeps one auto-discovered registry and
+  the shipped shop, mini-boss and Mega-stone rooms keep their exact behaviour.
+- **Hot files:** `src/scenes/RouteScene.ts` (the registry's single call site and the hooks the
+  descriptors use)  Task-111; the new `src/scenes/rooms/**` with its README and tests 
+  Task-111; `src/ui/mapView.ts` + test (the marker comes from the descriptor)  Task-111;
+  `docs/design-spec.md` �3 and `docs/tech-decisions.md` (the layering decision)  Task-111. It
+  claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/**`, `src/data/dex/**`,
+  `src/engine/**`, `src/scenes/BattleScene.ts` or packed asset - and no docs file another open
+  batch holds (`docs/design-spec.md` �3 is free after Batch 20's Task-58).
+- **Shape:** one task, **before Batch 24**, and the reason is the queue: 13 open tasks name
+  `src/scenes/RouteScene.ts`, including every special room in Batches 24-27, so the batch rule
+  turns them into four single-task batches. The extraction gives each room its own file (the
+  registry is built with `import.meta.glob('./rooms/*.ts', { eager: true })`), so a new room no
+  longer edits the scene; the only shared seams left are the one-line `plan.ts` kind and
+  `mapView.ts` marker, which **batch filling** can pair with an unrelated later task. It is a
+  pure refactor: no tile, marker, price, key, RNG draw or run field moves, so **no
+  `SAVE_VERSION`** step and no fixed-seed re-pin. It edits files Batch 11's reformat cleared, so
+  it keeps them conforming (no new ledger line).
+
+### Batch 24 - the casino room
 - **Task-64** A casino room: a Team Rocket grunt, a slot machine the player pays to spin, items
   and an egg among its prizes, and a chance of a battle that locks the machine.
 - **Hot files:** `src/scenes/RouteScene.ts` (the room's fixtures, the spin and the egg's hatch
@@ -4344,6 +4368,27 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       wants `src/scenes/RouteScene.ts` and `src/ui/rewards.ts`, and the route scene is held by
       every batch from 5 to 20 — so it opens the plan's new **Batch 23**, one batch behind
       Task-62. *(Batch 23)*
+- [ ] **[Task-111] The special-room layer leaves `RouteScene.ts`, and a new room is a new file.**
+      **The bottleneck, measured.** `[Task-64]`-`[Task-67]` each claim
+      `src/scenes/RouteScene.ts` (13 open tasks name it), so the batch rule serializes them:
+      Batches 24-27 are four single-task batches. The room layer is the reason: `buildRoom`
+      (1144), `drawShopCounter` (5334), `drawMapMarker` (3065) and the Mart's
+      `openShop`/`buildShopPanel`/`refreshShop`/`activateShop` (6497-6772) live in the scene.
+      **Fix shape:** one descriptor per special kind in `src/scenes/rooms/` (`shop.ts`,
+      `miniBoss.ts`, `megaStone.ts` first) with `{ kind, marker, fixture, interact }`; the scene
+      holds one registry built with `import.meta.glob('./rooms/*.ts', { eager: true })`, so a
+      new room is a **new file** plus nothing else. `MapRoomSpecial` stays the plan's data; the
+      marker the map draws comes from the descriptor. The shop's panel is the shared panel its
+      descriptor opens, with the same rows and keys. **No behaviour change:** the same tiles,
+      markers, prices, keys and interactions; no RNG draw added or reordered; no run field; no
+      `SAVE_VERSION` step.
+      **Acceptance:** the three shipped rooms are pixel-identical in the live game
+      (`renderer.snapshotArea` before/after on the same seed), the shop opens and closes on the
+      same keys, the registry test proves a new module is discovered without a `RouteScene.ts`
+      edit, and `npm test` + `npm run build` are green.
+      *Dependencies:* none. It claims `src/scenes/RouteScene.ts`, `src/ui/mapView.ts` and the new
+      `src/scenes/rooms/**`; it runs **before** `[Task-64]` so the room wave stops serializing.
+      *(Batch 23b)*
 - [ ] **[Task-64] A casino room: a Team Rocket grunt, a slot machine the player pays to spin, and
       its prizes.** Reported in play: «añade tarea para añadir habitacion casino, aparece un sprite
       de un recluta team rocket, aparece una tragaperras y pagas por tiradas con posibilidad de

@@ -85,6 +85,12 @@ drives the rest.
   are serial resources: `package.json`, `src/main.ts`, `vite.config.ts`, each
   `src/scenes/*.ts` a batch touches, `src/data/dex/**` and any generated data file —
   at most one task per batch claims each, and the plan names who holds it.
+- **Batch filling.** A one-task batch does not waste the other dev slots: a cycle
+  takes the lowest pending batch whole and may **fill** it with tasks from later
+  batches up to four, adding one only when its paths are disjoint from the batch's
+  union, it needs no file a batch-mate produces, and its own dependencies are
+  already merged. Hot files still have one owner per batch. The plan's cut is the
+  floor, not the ceiling; the filled batch runs as one dev wave and one QA wave.
 - **Worktrees.** One per task, outside the repo as siblings:
   `git worktree add ../wt-pkm-<ID> -b task-<ID>` (note `wt-pkm-`, `wt-task-` belongs
   to a sibling project). Agents work only inside their own worktree.

@@ -138,6 +138,13 @@ jobs:
              1. Mira el plan de TODO.md y los *Dependencies:* de cada item abierto, y toma el
                 lote pendiente MÁS BAJO, COMPLETO tal y como está cortado en el plan (2-4
                 tareas: dentro de un lote nadie comparte paths, así que caben juntas).
+             1b. **Rellena el lote.** Un lote de una sola tarea no gasta los demás slots:
+                añade tareas de lotes POSTERIORES hasta cuatro, y solo si (a) sus paths son
+                disjuntos de la unión de los ya elegidos, (b) no necesita ningún fichero que
+                un compañero de lote produzca, y (c) sus propias dependencias ya están
+                mergeadas. Los ficheros calientes siguen con un único dueño por lote. El
+                corte del plan es el suelo, no el techo: el lote rellenado va en la misma ola
+                de devs y de QA.
              2. Cada item que trae una línea *Decision:* lleva la decisión humana YA tomada,
                 y ESA DECISIÓN ES LEY: aplícala tal cual. **Que un item NO traiga
                 *Decision:* significa que no necesita ninguna** (la auditoría lo determinó):
