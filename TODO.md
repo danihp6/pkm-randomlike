@@ -2615,37 +2615,47 @@ atlas frame. What follows is the cut's own record.
   frees `RouteScene` for Task-105 — so the batch runs three devs and three Task QAs
   in parallel.
 
-### Batch 27 — the room that bars items and healing moves
+### Batch 27 — the room that bars items and healing moves *(shipped, archived)*
+
+Task-67 merged alone behind the green gate (**2047** tests across **158** files,
+`npm test` + `npm run build` green on the merge commit `2e51e315`) and the detail
+is in `CHANGELOG.md`'s `## Unreleased`; QA validated it in the single pass a
+one-task batch collapses to — the task's plan, both gates, the cross-task audit
+and the merge rehearsal on one tree — with every `[unit]` criterion green and
+both `[live]` criteria **measured** on a dev server over CDP. **The six written
+defaults were taken as the *Decision* froze them**: a special leaf with its own
+trainer, the **player's** BAG and the 24 named healing moves only, a normal loss,
+and the rule surfaced both in the battle menus and through the entrance notice.
+**What shipped.** The seventh `MapRoomSpecial` kind, `no-heal`, hangs a dead-end
+leaf with a **20 %** chance **from map 3 on**, as the **last** draw of the special
+pass (after the trade leaf), so no shipped floor's rooms, sizes or specials moved —
+the plan's existing `SHIPPED_SPECIALS`/`PLAN_PINS`/`TRADE_LEAVES` pins stayed
+untouched and a new per-seed pin freezes where the new leaf hangs. The room's
+**`psychic`** trainer stands on its farthest tile under the stable id
+`noheal-<mapIndex>`, so a beaten room stays beaten; entering the leaf floats
+`notice.noHealRoom` through `src/ui/notice.ts` (a new optional `RoomFixture.notice`
+the scene shows once the fixture is applied). Every battle started there carries
+`BattleLaunch.noHeal` → `BattleState.noHeal`: the feed's first line announces the
+rule, the BAG row draws disabled, `src/data/noHeal.ts`'s 24 ids (six self-heals,
+eight effect-handled heals, ten drains) are disabled in the MOVES grid and refused
+by `validateCommand`, and a fighter whose only PP-legal move is barred resolves as
+**Struggle**. The enemy's side, abilities, held items, residual heals, the Pokevial
+and the PC are untouched, and no run field or `SAVE_VERSION` step was added. Its
+ID is retired: it keeps its place in the sequence and is never reused. What follows
+is the cut's own record.
 - **Task-67** A special room whose battles bar the player's BAG items and healing moves.
-- **Hot files:** `src/scenes/RouteScene.ts` (the room's own trainer and the launch flag;
-  `buildRoom` 961-1003, `startBattle` 4904-4931) and `src/scenes/BattleScene.ts` (the greyed BAG
-  row and healing rows; `openMenu` 1204-1218, `openBag` 1273-1285, `openMoves` 1232-1271) →
-  Task-67; `src/engine/maps/plan.ts` + `plan.test.ts` (the new `MapRoomSpecial` kind and its
-  placement) and `src/ui/mapView.ts` + `mapView.test.ts` (its marker) → Task-67;
-  `src/engine/battle/commands.ts` + `commands.test.ts` (the gate) → Task-67;
-  `src/engine/battle/state.ts` (`BattleSetup`/`createBattle`) and `src/engine/run/battleLink.ts`
-  (`BattleLaunch`) → Task-67; `src/ui/notice.ts` + `notice.test.ts` (the room's entrance beat,
-  the module Task-31 ships in Batch 7) → Task-67; the new room/barred-move table in `src/data/`
-  beside its test → Task-67; `docs/maps-spec.md` §7 and `docs/battle-spec.md` §2 → Task-67. It
-  claims no `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**`,
-  `src/engine/save.ts` or packed asset.
-- **Shape:** one task, alone, and the batch is the only one that leaves its paths free. It is the
-  round's one report and it wants `src/scenes/RouteScene.ts` **and** `src/scenes/BattleScene.ts`
-  together: the route scene is held by **every** batch from 5 to 26 (5 Task-16, 5b Task-45, 6
-  Task-41, 6b Task-38, 7 Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b
-  Task-40, 10 Task-26, 11 Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48, 15 Task-49, 16
-  Task-50, 17 Task-52, 18 Task-55, 19 Task-56, 20 Task-58, 21 Task-61, 22 Task-62, 23 Task-63, 24
-  Task-64, 25 Task-65, 26 Task-66), so no batch before this one leaves it free at all. It could
-  not ride beside Task-62 in **Batch 22**, the batch that would otherwise fit: they share both
-  scenes, the battle-start seam (`src/engine/battle/state.ts`, `src/engine/run/battleLink.ts`) and
-  `docs/battle-spec.md` §4, and `docs/maps-spec.md` §7 is Task-62's there — so the batch would stop
-  being an antichain. Nor can it join Task-64/65/66, whose special-room layer
-  (`src/engine/maps/plan.ts`, `src/ui/mapView.ts`) it extends in the three batches before it. It
-  therefore opens **Batch 27**, one batch behind Task-66, alone. It produces nothing another task
-  reads, adds no run field and takes **no** `SAVE_VERSION` step — the room is a plan fact and the
-  gate draws no RNG — so the chain stays **14 → 15 → 16 → 17 → 18**. It runs after Batch 11's
-  reformat and edits files it cleared, so it keeps them conforming (no new ledger line), the way
-  Batches 12–26 do.
+- **Hot files:** `src/scenes/RouteScene.ts` (the launch flag and the fixture notice),
+  `src/scenes/BattleScene.ts` (the disabled BAG and healing rows), the new
+  `src/scenes/rooms/noHeal.ts` + test, `src/engine/maps/plan.ts` + test,
+  `src/engine/maps/progress.ts` + test, `src/engine/battle/commands.ts` + test,
+  `src/engine/battle/state.ts`, `src/engine/battle/turn.ts` + test,
+  `src/engine/run/battleLink.ts`, `src/ui/notice.ts` + test, `src/data/noHeal.ts` +
+  test, `src/i18n/en.ts` + `es.ts`, `docs/maps-spec.md` §7 and
+  `docs/battle-spec.md` §2 → Task-67.
+- **Shape:** one task, alone, and the batch is the only one that leaves its paths
+  free: it wants `src/scenes/RouteScene.ts` **and** `src/scenes/BattleScene.ts`
+  together, and the route scene is held by every batch from 5 to 26. It runs after
+  Batch 11's reformat and edits files it cleared, so it keeps them conforming.
 
 ### Batch 28 — the MOVES tab deletes an equipped move
 - **Task-68** The route HUD's MOVES tab can delete an equipped move: the slot is dropped onto
@@ -2703,7 +2713,9 @@ reports add six (one behind the boss win, three behind the room battle condition
 behind the mini-boss reward) and the tenth round's three add eight (four behind the casino, two
 behind the gated reward room — **answered and removed**, `2026-10-19`, including the key the round
 never asked, below — and two behind the trade room) and the eleventh
-round's single report adds six (all behind the no-items/no-heal room) and the twelfth round's single
+round's single report adds six (all behind the no-items/no-heal room), **answered** by
+Task-67's *Decision* — the six written defaults — and shipped with it, so their bullets are
+gone, and the twelfth round's single
 report adds four (the surface, the last move, the gesture and the confirm, all behind the MOVES tab's
 delete) — and the **third round's Task-47 question is answered** (the human settled it when
 Batch 7 was cut: the Continue row reads the route HUD's own string, `` `Map <n> · <biome>` ``,
@@ -3004,66 +3016,6 @@ note. The one ID without a batch is not a question: `[Task-28]` waits on an upst
   (`bandForMap(run.mapIndex)`, the roster's source), which makes a trade on a deep floor hand
   back a stronger Pokémon than the squad and on an early floor a weaker one. Say which before
   Batch 26's branch is cut. Nothing else in the plan changes either way.
-
-- **`[Task-67]` (the no-items/no-heal room, Batch 27): is the room a special leaf, or a condition
-  on a regular room?** The report says «habitacion con efecto», and the mould the casino, the
-  gated reward room and the trade room all use is the special leaf (`MapRoomSpecial`,
-  `src/engine/maps/plan.ts` 70). The written default is the **special leaf** — a new kind placed
-  like the mini-boss, quiet, with its own trainer — because it is the same shape the three rooms
-  just planned take and the special pass already exists. The alternative is a **condition on a
-  regular room** (the `[Task-62]` shape), which lets any trainer or wild battle in that room begin
-  barred and needs no new room kind, but makes the effect a property rather than a room the player
-  recognises. Say which before Batch 27's branch is cut. Nothing else in the plan changes either
-  way.
-
-- **`[Task-67]` (the no-items/no-heal room, Batch 27): does the rule bind the player alone, or
-  both sides?** The report's words are the player's («no se pueden usar objetos» is the player's
-  bag, and `validateBag` already refuses every other side, `commands.ts` 81). The written default
-  is the **player alone** — the room is a challenge for the player, and the enemy's own heals stay
-  part of the fight. The alternative is **both sides**, which the enemy AI would also have to obey
-  (Task-35's scorer weighs healing, so a barred heal must not be chosen) and which makes the room
-  a clean no-heal duel. Say which before Batch 27's branch is cut. Nothing else in the plan
-  changes either way.
-
-- **`[Task-67]` (the no-items/no-heal room, Batch 27): does it bar the passive heals too —
-  abilities, held items and the residual heals?** The engine models healing abilities
-  (Regenerator, Water Absorb / Volt Absorb / Dry Skin, Ice Body / Rain Dish, Poison Heal;
-  `src/engine/battle/effects/abilities.ts` 178 / 215 / 429 / 563 / 683), held-item heals
-  (Leftovers, Black Sludge, the Berries; `effects/items.ts` 152 / 207) and the residual heals
-  (Wish, Leech Seed, Aqua Ring / Ingrain, Grassy Terrain; `turn.ts` 1049-1097). The written
-  default is **no** — the rule bars the BAG action and the named healing moves only, because those
-  are the two things the report names and a full suppression is a Heal Block-sized rule the engine
-  does not have (`healblock` is `excluded`, moveCoverage 1919-1923). The alternative is the **full
-  Heal-Block reading**, which suppresses every HP restoration on the barred side and needs a term
-  in each heal path. Say which before Batch 27's branch is cut. Nothing else in the plan changes
-  either way.
-
-- **`[Task-67]` (the no-items/no-heal room, Batch 27): does the room also bar healing outside the
-  battle — the Pokevial and the PC?** The report names items and moves, both battle things, but
-  the run heals outside battle too: `usePokevial` rests the party and the box
-  (`src/engine/run/heal.ts` 62) and the map advance is the heal stop (`advanceMap`, `state.ts`
-  185-204). The written default is **no** — the rule is a battle rule and the room only
-  bars what the report names, so a Pokevial drunk in that room still works and the heal stop is
-  untouched. The alternative is that the room **also refuses the Pokevial** (and the PC) while the
-  player stands in it, which makes the effect a room-wide one. Say which before Batch 27's branch
-  is cut. Nothing else in the plan changes either way.
-
-- **`[Task-67]` (the no-items/no-heal room, Batch 27): what happens when the player's last Pokémon
-  faints in a barred battle?** The report removes the ability to heal but says nothing about
-  losing. The written default is the **normal rule**: the battle is lost, a wipe ends the run and
-  permadeath applies (D5, `docs/battle-spec.md` §5), because the room changes what the player may
-  do, not what a loss costs. The alternative is that the room's battle **cannot end the run** (a
-  loss only retreats the player), which reads as a mercy the roguelike's own promise argues
-  against. Say which before Batch 27's branch is cut. Nothing else in the plan changes either way.
-
-- **`[Task-67]` (the no-items/no-heal room, Batch 27): how is the rule surfaced to the player?**
-  The written default is **both**: the battle's own feed announces the room's effect when the
-  battle opens, the BAG row and the healing rows are drawn disabled (`openMenu` 1210,
-  `openMoves` 1235-1238), and the route raises a temporary notice on entering the room through the
-  existing `src/ui/notice.ts` module Task-31 ships (Batch 7) — one module, N strings, the way
-  Task-49 and Task-50 extend it. The alternatives are the battle-side controls alone (no entrance
-  beat) or the entrance beat alone (the battle just refuses the command). Say which before Batch
-  27's branch is cut. Nothing else in the plan changes either way.
 
 - **`[Task-68]` (the MOVES tab's delete, Batch 28): which surface does "menu moves" mean?**
   The report names "menu moves" and the tree has three: the route HUD's **MOVES** tab (the
@@ -4966,102 +4918,6 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `src/ui/mapView.ts`, because the shipped marker type is `MapRoomSpecial` itself (Batch 24's
       own finding) — so it opens the plan's new **Batch 25**, one batch behind Task-64, and it can
       share neither of the special-room files with Task-64 or Task-66. *(Batch 25)*
-- [ ] **[Task-67] A room whose battles bar the player's items and healing moves.** Reported in
-      play: «añadir habitacion con efecto no se pueden usar objetos ni movimientos de cura» — a
-      room whose effect is that the player cannot use items and cannot use healing moves.
-      **What "using an item" is today, verified.** The BAG is the **player's alone**:
-      `validateBag` (`src/engine/battle/commands.ts`, 80-87) refuses any other side ("Only the
-      player has a Bag.", 81) and `useBagItem` (131-184) is the single place a stack is spent —
-      the heal branch at 157-168 (`healFraction`/`healAmount`, the Potion shape), the cures at
-      169-171, the boosts at 172-179 and the ball at 144-155. The command is `BagCommand` (22),
-      validated in `validateCommand`'s `case 'bag'` (121-122) and applied in
-      `resolvePreMoveActions` (`turn.ts`, 127-128), both reached from `takeTurn` (1136-1138).
-      The run's bag is `RunState.bag: readonly BagCounts[]` (`src/engine/run/state.ts`, 95),
-      carried on `BattleLaunch.bag` (`src/engine/run/battleLink.ts`, 48), mapped into
-      `BattleSetup.bag`/`BattleState.bag` (`BattleScene.create`, 401-404; `state.ts`, 105,
-      120-128) and handed back on `BattleReturn.bag` (66). The scene side is `openMenu`'s BAG row
-      (`enabled: this.usableBag().length > 0`, `BattleScene` 1210), `openBag` (1273-1285) and
-      `usableBag` (1362-1370).
-      **A "healing move" is frozen by id, split by the path that applies the heal** (the spec
-      names them; nothing else is a healing move):
-      - the **fraction self-heals** through the move's own `heal` field (`turn.ts`, 369-375):
-        `recover`, `softboiled`, `slackoff`, `milkdrink`, `roost` and `lifedew` (each `port`,
-        `data: heal` — `src/data/moveCoverage.json`, 3383 / 3995 / 3875 / 2645 / 3545 / 2381);
-      - the **effect-handled heals** in `src/engine/battle/effects/moves.ts` (`MOVE_EFFECTS`,
-        604-638): `synthesis` / `moonlight` / `morningsun` (`sunHeal`, 546-553, 621-622 / 634),
-        `shoreup` (`shoreUp`, 556-563, 629), `rest` (626), `junglehealing` / `lunarblessing`
-        (`healAndCure`, 618-619) and `swallow` (633);
-      - the **drain moves** through `move.drain` (`turn.ts`, 391-406), which restore half the
-        damage dealt or less: `absorb`, `megadrain`, `gigadrain`, `drainpunch`, `drainingkiss`,
-        `dreameater`, `hornleech`, `leechlife`, `oblivionwing` and `paraboliccharge` (all `port`,
-        `data: drain` — moveCoverage 5 / 2567 / 1709 / 1085 / 1091 / 1097 / 2021 / 2357 / 2879 /
-        2951).
-      **Excluded, and why.** `healpulse`, `floralhealing` and `healingwish` are `port` only
-      through `data: flags.protect` (moveCoverage 1931-1935, 1529-1533, 1937-1941): the protect
-      flag is data, but **no handler restores HP**, so they heal nothing today and the rule must
-      not name them; `healorder` and `healblock` are `excluded` ("no playable species has it",
-      1925-1929), so there is no Heal Block to reuse. `wish` (a delayed self-heal, `turn.ts`,
-      1049-1061) and the **passive** heals — `leechseed` (1063-1076), `aquaring` / `ingrain`
-      (1088-1097), `grassyterrain` (999-1011), the healing abilities (`effects/abilities.ts`,
-      178 / 215 / 429 / 563 / 683) and the held-item heals (`effects/items.ts`, 152 / 207) — are
-      not "moves the player uses", so the default rule leaves them alone (the open question below
-      offers the full Heal-Block reading).
-      **The room layer the other rooms use.** `MapRoomSpecial` is `'shop' | 'mini-boss' |
-      'mega-stone'` (`src/engine/maps/plan.ts`, 70), placed as dead-end leaves by the special pass
-      (402-445) and found by `specialRoom` (502-504); `mapView` draws each kind's own marker
-      (`MapRoomMarker`, `src/ui/mapView.ts`, 26); `RouteScene.buildRoom` injects a special's
-      content (961-1003) and `buildRoute` marks a special room **quiet** — no grass, no regular
-      trainers, no ground items (1129-1133) — so a special that must hold a battle owes its own
-      trainer the way the mini-boss does (986-992).
-      **Fix shape, as the recommended reading (the spec freezes the names).**
-      1. `MapRoomSpecial` gains a kind (e.g. `'no-heal'`) placed like the mini-boss, on its own
-         chance constant beside `MINI_BOSS_CHANCE` / `MEGA_STONE_CHANCE` (111 / 114), with its
-         marker in `mapView`.
-      2. `buildRoom` fields the room's own trainer (the mini-boss's shape, 986-992), because a
-         special room is quiet.
-      3. `BattleLaunch` (`battleLink.ts`, 45-57) gains the room's flag, set by
-         `RouteScene.startBattle` (4918-4927); `BattleSetup` / `createBattle` (`state.ts`,
-         120-128, 130-174) carry it; `commands.ts` gates the BAG (`validateBag`, 80-87) and the
-         healing moves (the fight branch of `validateCommand`, 101-120, reads the barred set);
-         and `BattleScene`'s `openMenu` / `openBag` / `openMoves` (1204-1271) grey the BAG row and
-         the healing rows while the feed announces the room's effect.
-      4. The barred-move set and the room's own parameters live in `src/data/` (a new table beside
-         the shop's and the loot's), never in the engine.
-      **The reading the entry freezes:** the rule is the **player's** alone (the report's "no se
-      pueden usar objetos" is the player's bag, and `validateBag` already refuses every other
-      side) and it bars the **BAG action and the healing moves only** — not abilities, not held
-      items and not the passive heals. Both halves are the open question below.
-      **RNG (AGENTS.md's fixed-seed rule):** the recommended reading rolls the room on the
-      existing `map` stream (the special pass's shape), so a fixed seed's floor plan **re-pins** —
-      `src/engine/maps/plan.test.ts` and any fixed-seed expectation that reads the plan — and the
-      draw is appended **after** the mega-stone chance, so only floors whose stream reaches it
-      change. The alternative (a regular-room condition on its own stream keyed to
-      `routeIndexForRoom`, the `[Task-62]` shape) moves nothing. The gate itself draws **no RNG**:
-      a barred move or item is rejected before any roll, so no existing `battle` stream moves.
-      **`SAVE_VERSION` verdict: no step.** The room is a plan fact (no run field) and its trainer's
-      defeat rides the existing per-floor `defeatedTrainers` (`state.ts`, 102-103), so nothing new
-      is persisted and the chain stays **14 → 15** (Task-13, shipped) → **15 → 16** (Task-31,
-      Batch 7) → **16 → 17** (Task-44, Batch 13) → **17 → 18** (Task-52, Batch 17).
-      **Docs:** the special-room table in `docs/maps-spec.md` §7 (182-193) gains the room, and the
-      bag rule in `docs/battle-spec.md` §2 (26, "Trainer battles allow items") gains the room's
-      exception.
-      Out of scope: the Mart and the Pokevial, the PC, the catch and the ball branch, the enemy's
-      own items (it carries none — `validateBag` refuses every other side), the healing abilities
-      and the held items, and the field/weather conditions `[Task-62]` seeds.
-      *Decision:* All six written defaults: a **special leaf** with its own trainer, the **player's** BAG and the named healing moves only (no abilities, no held items, no residual heals, no Pokevial and no PC), a loss being a **normal loss** (D5), surfaced **both** ways (the battle feed plus the disabled rows, and the entrance notice through `src/ui/notice.ts`).
-      *Dependencies:* none — every primitive it reads is shipped. Batch order covers the rest: it
-      wants `src/scenes/RouteScene.ts` **and** `src/scenes/BattleScene.ts` together, and every
-      batch from 5 to 26 holds the route scene (5 Task-16, 5b Task-45, 6 Task-41, 6b Task-38, 7
-      Task-31, 8 Task-08's every-scene sweep, 8b Task-35, 9 Task-39, 9b Task-40, 10 Task-26, 11
-      Task-29's ledger, 12 Task-30, 13 Task-44, 14 Task-48, 15 Task-49, 16 Task-50, 17 Task-52,
-      18 Task-55, 19 Task-56, 20 Task-58, 21 Task-61, 22 Task-62, 23 Task-63, 24 Task-64, 25
-      Task-65, 26 Task-66) — so it opens the plan's new **Batch 27**, one batch behind Task-66.
-      It could not ride beside Task-62 in **Batch 22**: they share both scenes, the battle-start
-      seam (`src/engine/battle/state.ts`, `src/engine/run/battleLink.ts`) and
-      `docs/battle-spec.md` §4, and `docs/maps-spec.md` §7 is Task-62's there — so the batch would
-      stop being an antichain. Nor can it join Task-64/65/66, whose special-room layer
-      (`src/engine/maps/plan.ts`, `src/ui/mapView.ts`) it extends in the three batches before it.
-      *(Batch 27)*
 - [ ] **[Task-78] A trainer's level is a percentage of the squad's own level, by its party size.** The
       human's re-shape — the **player-relative model**, the twenty-fifth round below — replaces the floor
       band with the squad level and the floor cap. The old rule rolled a trainer's level uniformly across

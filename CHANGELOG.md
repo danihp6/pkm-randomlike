@@ -8,6 +8,32 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The no-heal room: a leaf whose battles refuse the player's Bag and healing moves.**
+      The special-room layer's seventh kind, `no-heal`, hangs a `dead-end` leaf with a **20 %**
+      chance **from map 3 on**, drawn **last** in `planMap`'s special pass (after the trade leaf),
+      so every shipped floor's rooms, sizes and specials stayed identical — the existing
+      `SHIPPED_SPECIALS`/`PLAN_PINS`/`TRADE_LEAVES` pins were untouched and a new per-seed pin
+      freezes where the leaf hangs. Its **`psychic`** trainer stands on the room's farthest tile
+      under the stable id `noheal-<mapIndex>`, so a beaten room stays beaten on a revisit; entering
+      the leaf floats `notice.noHealRoom` through `src/ui/notice.ts` (the new optional
+      `RoomFixture.notice`, shown by `RouteScene` once the fixture is applied). Every battle started
+      there carries `BattleLaunch.noHeal` → `BattleState.noHeal`: the battle feed's first line
+      announces the rule, the BAG row is drawn disabled, and the **24** ids of
+      `src/data/noHeal.ts` (six self-heals, eight effect-handled heals, ten draining attacks) are
+      drawn disabled in the MOVES grid and refused by `validateCommand`; a fighter whose only
+      PP-legal move is barred resolves as **Struggle**, the "No PP" fallback. The rule is the
+      **player's alone** — the enemy's side, abilities, held items, residual heals, the Pokevial and
+      the PC are untouched — and a loss in the room is a normal loss (D5). `docs/maps-spec.md` §7
+      and `docs/battle-spec.md` §2 record it, `src/data/README.md` and `src/scenes/rooms/README.md`
+      carry their lines, and it adds no run field and **no `SAVE_VERSION`** step (the chain stays
+      14 → 15 → 16 → 17 → 18). **QA:** `npm test` (**158 files / 2047 tests**), `npm run build`,
+      all 25 paths, and both `[live]` criteria measured on a dev server over CDP (QA and then the
+      Orchestrator independently): seed `live-0`, map 8, room 12 — the HUD strip's text equals
+      `t('notice.noHealRoom')` and a 720×44 `renderer.snapshotArea` before/after differs in
+      **21 537** pixels (QA: 31 475/31 680), the BAG row reads `enabled: false`, the battle log's
+      first line is the room's, and in the live MOVES grid `Synthesis` reads `enabled: false` while
+      `Tackle` reads `true`.
+
 - [x] **The trade room: give one Pokémon, receive a random one.** The special-room layer's
       sixth kind, `trade`, hangs a `dead-end` leaf at **20 % from map 3 on**, drawn **last** in
       `planMap`'s special pass so every shipped floor's specials, links and sizes stay identical.
