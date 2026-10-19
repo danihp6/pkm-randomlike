@@ -200,8 +200,8 @@ describe('the casino room', () => {
     expect(DRAWN).toEqual([
       { name: 'image', args: [180, 180, 'route:casino-machine'] },
       // The grunt stands `-14` px off the cabinet's own x, its feet on the tile's
-      // bottom edge (the shipped placeholder: the atlas carries no `rocket` row).
-      { name: 'sprite', args: [166, 192, 'route:trainer'] },
+      // bottom edge, drawn from the FRLG overworld atlas' `rocket` row (base 90).
+      { name: 'sprite', args: [166, 192, 'frlg:overworld', 90] },
     ]);
   });
 

@@ -88,14 +88,25 @@ pitch, and `scripts/frlg/build-trainer-sprites.mjs` crops the ten the archetypes
 use (keying the orange to transparent) into `src/assets/frlg/trainers.png` plus
 `src/data/frlg/trainers.json`, read through `src/data/trainerSprites.ts` (D20).
 
-The overworld trainer sprites come from the pret/pokefirered decomp rather than
+The overworld sprites come from the pret/pokefirered decomp rather than
 the compilation sheet, because each class is its own named file there. The ten
-classes' `graphics/object_events/pics/people/*.png` (160x32, ten 16x32 frames —
-nine walk frames plus a field-move pose the route ignores) are packed by
-`scripts/frlg/build-overworld-sprites.mjs` into `src/assets/frlg/overworld.png`
-(one row of nine poses per class) plus `src/data/frlg/overworld.json`, read
-through `src/data/overworldSprites.ts` (D24), so a trainer stands on the resting
-pose of its facing and walks toward a player it spots. The player comes from the same decomp:
+trainer classes' `graphics/object_events/pics/people/*.png` (mostly 160x32, ten
+16x32 frames — nine walk frames plus a field-move pose the route ignores) are
+packed by `scripts/frlg/build-overworld-sprites.mjs` into
+`src/assets/frlg/overworld.png` (one row of nine poses per sprite key) plus
+`src/data/frlg/overworld.json`, read through `src/data/overworldSprites.ts` (D24),
+so a trainer stands on the resting pose of its facing and walks toward a player it
+spots. The same atlas carries the casino's `rocket` grunt and the ten special NPCs
+the rooms place — `merchant`, `chef`, `magician`, `exorcist`, `weather-man`,
+`sacrifice`, `medic`, `iv-judge`, `berry-tree`, `ninja` — for 21 rows in all. Six
+of those borrow a shipped class because the decomp has no class by that name
+(`magician` → gentleman, `exorcist` → channeler, `weather-man` → scientist,
+`sacrifice` → old man, `iv-judge` → gym guide, `berry-tree` → hiker), and the
+manifest's `fallbacks` records which; `medic` and `ninja` instead read the
+decomp's own shorter strips (`nurse.png` 64x32, `koga.png` 48x32) through the
+repetition map of its pose table. The packer resolves its source directory only
+from argv or `PKM_FRLG_OVERWORLD_DIR`, as an absolute path outside the worktree,
+per the asset-tree rule. The player comes from the same decomp:
 `red_normal.png` (144x32, nine 16x32 walk frames) is packed by
 `scripts/frlg/build-player-sprite.mjs` into `src/assets/frlg/player.png` plus
 `src/data/frlg/player.json`, read through `src/data/playerSprite.ts`, so the

@@ -319,6 +319,16 @@ a spotted one plays its walk cycle as it steps toward the player. The player's
 own overworld sprite (`red_normal.png`) ships from the same
 decomp via `scripts/frlg/build-player-sprite.mjs` — see `D25`.
 
+**Task-90 addendum.** The atlas is no longer trainer-only: after the ten archetype
+rows it carries `rocket` (the casino's grunt) and the ten special-NPC keys
+(`merchant`, `chef`, `magician`, `exorcist`, `weather-man`, `sacrifice`, `medic`,
+`iv-judge`, `berry-tree`, `ninja`), so 21 rows of nine poses. A key the decomp has
+no class for borrows the closest shipped sheet and the generated manifest's
+`fallbacks` says which; `medic` and `ninja` read the decomp's own shorter strips
+with its repetition map. The packer resolves its source directory from argv or
+`PKM_FRLG_OVERWORLD_DIR` only — an absolute path outside the worktree — so no
+repack can read a path inside the tree.
+
 ## D25 — Player movement is hold-to-walk, with a run key *(decided)*
 
 The route's player is the FireRed/LeafGreen protagonist, packed from the
