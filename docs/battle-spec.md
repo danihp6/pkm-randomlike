@@ -277,7 +277,7 @@ is the mechanic the mega-stone room's stones feed (`D34`, `docs/maps-spec.md`
   whether or not the stone is held — it is information, not a readiness state —
   and it is **never clickable**: it carries no `ready` node, so neither a click
   nor the pointer cursor reaches it. The Gigantamax sibling row has the same shape
-  and reads `Gigantamax Charizard · Gigantamaxes with Charizardite G`, because a
+  and reads `Gigantamax Charizard · Charizardite G`, because a
   Gigantamax needs its own stone, one per forme (`D44`, §10).
 
 ## 10. Gigantamax

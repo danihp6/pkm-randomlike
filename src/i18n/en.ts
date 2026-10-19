@@ -165,7 +165,7 @@ export const en = {
   'detail.learnLevel': 'Lv{level}',
   'detail.learnTm': 'TM{tm}',
   'detail.megaEvolvesWith': '{forme} · Mega Evolves with {stone}',
-  'detail.gmaxEvolvesWith': '{forme} · Gigantamaxes with {stone}',
+  'detail.gmaxEvolvesWith': '{forme} · {stone}',
 
   // move — the shared move grid
   'move.acc': 'ACC {value}',
