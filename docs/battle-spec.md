@@ -307,6 +307,13 @@ is the mechanic the mega-stone room's stones feed (`D34`, `docs/maps-spec.md`
   first fight command it can. Rival stones are data on the archetypes that may
   carry them — **bosses, mini-bosses and the `ace` archetype** (`carriesMega` and
   `RosterOptions.allowMega`); a stone is assigned to one Mega-capable member.
+- An archetype's **`forcedAbility`** is the **starting** ability of every member
+  of its roster and is decided **before** the run's `randomAbility` roll, which is
+  then skipped: no draw moves anywhere else, because that roll is a per-species
+  hash (`D17`), not a sequential stream. A Mega Evolution still replaces it,
+  because `changeBattleForm` swaps the forme's own ability. None of the three
+  set-piece trainers carries a Mega Stone (`carriesMega` stays absent), so
+  `allowMega` remains with the bosses, the mini-bosses and the `ace` archetype.
 - The Mega forme swaps the fighter's **stats, types and ability** for the rest of
   the battle and never changes the held item, the moves, the HP fraction or the
   **nickname** (which lives beside `name`, §7). The

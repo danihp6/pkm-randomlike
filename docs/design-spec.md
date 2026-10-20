@@ -380,6 +380,15 @@ leaves with only their own content (`docs/maps-spec.md` §7):
   merchant is the floor's one **guaranteed** NPC (from map 2 on, in the floor's
   first trainer room, never rolled) and its `TRADE` row opens the Mart instead of
   recording a use.
+- a **special trainer** in a regular trainer room, at most one per room and
+  replacing that room's first trainer rather than standing beside it, with three
+  faces: the **ninja** (its sprite is hidden until the player stands adjacent, but
+  it watches its lane and opens the battle all the same), the **Impostor** trainer
+  (its whole team starts with the Imposter ability, and beating it pays an
+  **Ability Shield**) and the **secret battle** (it only joins the draw once the
+  run has met a floor mission, `missionsCompleted >= 1`). The three chances are
+  `ninja` 0.1, `impostor` 0.08 and `secret` 0.2: 18 % of trainer rooms field one
+  before the run's first met mission, 38 % afterwards.
 
 Every floor is also given one **mission**, shown in one line of the HUD. The one
 kind that ships is `flawless`: leave the floor having lost **no HP** and without a

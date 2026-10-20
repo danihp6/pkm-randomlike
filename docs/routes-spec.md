@@ -98,7 +98,9 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    decides the trainers: a `wild` room places **none** and spends no draw on them,
    while a `trainers` room places **1-2** (`TRAINERS_PER_ROOM`), always including
    **one on the main lane** and a second one by an optional pocket when one takes
-   it. The count no longer follows the route's size; a trainer stands on floor
+   it — and its first trainer may instead wear the room's **special** archetype
+   (the paragraph after the special NPC's, below). The count no longer follows the
+   route's size; a trainer stands on floor
    hugging a **solid** wall (never a walkable tree tip). On the **main lane** it
    looks down the lane; on an **optional path** it looks **across** it, wall to wall
    (a vertical path is watched horizontally and vice versa), so the sight closes
@@ -226,6 +228,33 @@ the five edit rows and the sacrifice, the four run-modifier rows and the four
 item-and-battle rows (the medic, the chef, the berry tree and the Mega Stone
 keeper).
 
+**The special trainer is an archetype override, not a pass.** A regular `trainers`
+room may hold **at most one** special trainer, never in the map's entry room, its
+boss room or a special room: its **first** trainer may instead wear a set-piece
+archetype (`SPECIAL_ARCHETYPES` and the `SPECIAL_TRAINER_ROWS` spawn table in
+`src/data/trainers.ts`). It is placed **when the room is built**: one presence
+roll and then the weighted row pick, in that order, on the room's own
+`Rng(hashSeed(`${seed}:special-trainer:<roomIndex>`))` stream, where `roomIndex`
+is the same stable per-room index (`routeIndexForRoom(plan, roomId)`) the room's
+route is generated from. The drawn row **replaces the room's first trainer's
+archetype**, keeping its `id`, tile, facing, sight and spin, so the population
+count, its pose rules and the reachability guard are untouched and the body is
+never added twice: a `trainers` room still fields 1-2 trainers. Three rows ship —
+the **ninja** (0.1), the **Impostor** trainer (0.08) and the **secret battle**
+(0.2, gated on `RunState.missionsCompleted >= 1`, so it only joins the draw once
+the run has met a floor mission) — so a `trainers` room has an **18 %** chance of a
+special trainer before that first mission and **38 %** after it. The ninja's
+`sightMode: 'invisible'` hides **only its sprite** while the player is more than
+one tile away; its line of sight is unchanged, so it still spots the player and
+opens the battle, and the sprite is re-painted after every step, every room
+rebuild and the debug teleport (and forced on screen the moment it starts its
+chase). The Impostor's `forcedAbility: 'Imposter'` is stamped on **every member of
+its roster** and bypasses the run's ability roll, and its `reward` pays one
+**Ability Shield** with the first win, through `addItem` and only on the win that
+marks the trainer beaten. The roll reads its own stream, so no layout, terrain,
+populate, item, validation or encounter stream moves and a fixed seed keeps every
+route it already generated.
+
 ## 3. Wild encounters
 
 - Walking onto a `TALL_GRASS` tile rolls an encounter with the route's table.
@@ -326,7 +355,14 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
   **squad's own** band (`bandForLevel(squadLevel(run))`); the party size grows with
   the band (`band`'s `trainerSize`). A wild's level is a fraction of the live squad
   level (60-75 %), floored and clamped to the floor's cap, and is never drawn from
-  the map's range.
+  the map's range. The three **set-piece** rows (`ninja`, `impostor`, `secret`)
+  live in `SPECIAL_ARCHETYPES`, so the route never rolls them; an archetype's
+  `sightMode` is its route **sprite's** draw mode, not its `sight`, and its
+  `forcedAbility` is the ability **name** its whole roster starts with, bypassing
+  `D17`'s roll for that roster only; its `reward` is a bag item paid with a first
+  win through `addItem`, on top of the money the band still scales. The secret
+  row's gate reads the mission record's run-scoped counter,
+  `RunState.missionsCompleted`.
 - The wild table bans legendary and mythical species; a trainer roster may field
   them in the bands their BST lands in. A **boss** (map boss and mini-boss) fields
   the **upper half** of its band's BST window, one step above the floor's regular
