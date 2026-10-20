@@ -5664,7 +5664,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* `[Task-82]` (the room roles the roll reads), `[Task-90]` (the sprite rows) and
       `[Task-65]` (the party-predicate module — `partyHasType` — the other predicates join).
       *(Batch 37)*
-- [ ] **[Task-92] The merchant replaces the shop room.** The human's decision: the **merchant** is an
+- [x] **[Task-92] The merchant replaces the shop room.** The human's decision: the **merchant** is an
       NPC and the shop **room** goes. Today the shop is a special leaf (`MapRoomSpecial` `'shop'`,
       `hangsShop` / `SHOP_FROM_MAP = 2` in `src/engine/maps/plan.ts`), its counter (`shopCounter`)
       opens the Mart, and the panel exists only while the player stands in that room

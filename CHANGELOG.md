@@ -8,6 +8,31 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The merchant replaces the shop room, and the Mart survives behind its `TRADE` row.**
+      The `'shop'` leaf is gone: `MapRoomSpecial` no longer carries it, `planMap` drops the
+      guaranteed leaf (`SHOP_FROM_MAP` / `hangsShop` retire), the minimap marker set loses
+      the glyph and `src/scenes/rooms/shop.ts` stops being a descriptor — it keeps the
+      whole floating Mart and exports `openMart(host)` instead. The run still gets exactly
+      **one merchant per floor from map 2 on**: `NpcRow.guaranteedFromMap` (the row is
+      `chance: 0`, so the roll can never pick it), `firstTrainerRoom(plan)` in
+      `src/engine/maps/plan.ts` and `guaranteedNpc(plan, roomIndex, mapIndex)` in
+      `src/engine/routes/npcs.ts` place it in the floor's lowest-id `trainers` room, and the
+      per-NPC roll (now skipping zero-chance rows) serves only the rooms after it. Choosing
+      its `TRADE` row opens the Mart and writes no use mark, so the merchant is revisitable
+      for the rest of the floor; map 1 stays merchant-free. `NPC_ROWS` carries its first row
+      and `src/i18n/{en,es}.ts` its three keys. The shop leaf's two size draws moving the
+      special stream re-pinned `plan.test.ts`'s `SHIPPED_FLOORS` / `ALPHA_MAP_8` /
+      `SHIPPED_SPECIALS` / `TRADE_LEAVES` / `NO_HEAL_LEAVES` and, because the trainer rooms
+      a seed draws move with it, re-solved `TRAINER_XP_PER_MAP` by the curve sheet's own
+      `1.25 / fill` recipe and re-pinned `curve.test.ts`'s measured column — the 1.05-1.5
+      window is untouched. No run field, no `SAVE_VERSION` step. **QA:** Task QA `qa-92`
+      (`main@773624e` + `task-92@02d13f9`, integration `2d2d6e2`): 9/9 criteria green,
+      `npm test` **2213** passed / 67 skipped and `npm run build` clean; the `[live]`
+      criterion was measured over CDP — map 2's first `trainers` room is room 2, it holds
+      the merchant at (9,8) on a walkable, blocking tile, the registry has no `'shop'` kind,
+      and E opens the `MERCHANT` card, E again the `MART` with its five `¥` rows and
+      `pickedItems` still empty.
+
 - [x] **A trainer room can hold one special NPC, rolled per room on its own stream.**
       The framework the special-NPC wave writes against: `src/engine/routes/npcs.ts`
       decides **at most one** NPC per room (`roomNpc(seed, roomIndex, mapIndex)`), with

@@ -150,8 +150,11 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'trade.missing': 'Ese Pokémon no está en tu equipo.',
   'trade.done': '¡Has recibido a {name}!',
 
-  // npc — the special-NPC card's own last row
+  // npc — the special-NPC card's own last row, then the merchant's
   'npc.leave': 'SALIR',
+  'npc.merchant.name': 'MERCADER',
+  'npc.merchant.greeting': 'Un mercader con la mochila llena. Elige que te llevas.',
+  'npc.merchant.trade': 'COMERCIAR',
 
   // release — the permadeath overlay
   'release.controls': '{confirm} · continuar',

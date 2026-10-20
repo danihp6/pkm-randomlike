@@ -30,6 +30,12 @@ export type NpcRow = Readonly<{
   chance: number;
   /** Added to `chance` for every floor after the first. */
   floorStep: number;
+  /**
+   * When present, the floor places this row **itself** (no roll) in its first
+   * `trainers` room as soon as `mapIndex >= guaranteedFromMap`. The row's
+   * `chance` is `0` beside it, so the roll never picks it.
+   */
+  guaranteedFromMap?: number;
   /** When present, a party member must satisfy it before the row is eligible. */
   requires?: NpcRequirement;
   /** The rows the panel prints, in order; `LEAVE` is the shell's own last row. */
@@ -37,11 +43,23 @@ export type NpcRow = Readonly<{
 }>;
 
 /**
- * Every special NPC. **Empty on purpose**: `[Task-92]`–`[Task-95]` add their own
- * rows with their own effect, so the framework ships no content and the game is
- * unchanged until the first row lands (`docs/maps-spec.md` §7).
+ * Every special NPC. The **merchant** is the floor's one guaranteed row: from map 2
+ * on it stands in the floor's first trainer room and opens the Mart, so the shop
+ * room could retire and the run still has its counter (`docs/maps-spec.md` §7).
+ * Later content tasks add their own rolled rows beside it.
  */
-export const NPC_ROWS: readonly NpcRow[] = [];
+export const NPC_ROWS: readonly NpcRow[] = [
+  {
+    id: 'merchant',
+    nameKey: 'npc.merchant.name',
+    greetingKey: 'npc.merchant.greeting',
+    spriteKey: 'merchant',
+    chance: 0,
+    floorStep: 0,
+    guaranteedFromMap: 2,
+    choices: [{ id: 'mart', label: 'npc.merchant.trade' }],
+  },
+];
 
 export function getNpcRow(id: string): NpcRow | undefined {
   return NPC_ROWS.find((row) => row.id === id);

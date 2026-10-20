@@ -1,6 +1,7 @@
 import { NPC_ROWS, type NpcRequirement, type NpcRow } from '../../data/npcs';
 import type { Tile } from '../grid';
 import { isWalkable } from '../map';
+import { firstTrainerRoom, type MapPlan } from '../maps/plan';
 import { Rng, hashSeed } from '../rng';
 import { partyHasAbility, partyHasMove, partyHasType } from '../run/party';
 import type { RunState } from '../run/state';
@@ -53,7 +54,8 @@ export function npcRequirementMet(run: RunState, requirement: NpcRequirement | u
  * At most one NPC for `roomIndex`, or null. One `Rng.next()` for presence and, on a
  * hit, one `Rng.int` for the weighted row pick, on
  * `Rng(hashSeed(`${seed}:npc:${roomIndex}`))` — its own stream, so no map,
- * encounter, roster or battle draw moves (`D11`).
+ * encounter, roster or battle draw moves (`D11`). Rows whose effective chance is 0
+ * are left out of both the total and the pick, so a guaranteed row is never rolled.
  */
 export function roomNpc(
   seed: string,
@@ -61,10 +63,13 @@ export function roomNpc(
   mapIndex: number,
   rows: readonly NpcRow[] = NPC_ROWS,
 ): NpcPlacement | null {
-  if (rows.length === 0) return null;
-  const weights = rows.map((row) => Math.round(effectiveNpcChance(row, mapIndex) * CHANCE_SCALE));
+  const usable: { row: NpcRow; weight: number }[] = [];
+  for (const row of rows) {
+    const weight = Math.round(effectiveNpcChance(row, mapIndex) * CHANCE_SCALE);
+    if (weight > 0) usable.push({ row, weight });
+  }
   let total = 0;
-  for (const weight of weights) total += weight;
+  for (const entry of usable) total += entry.weight;
 
   const rng = new Rng(hashSeed(`${seed}:npc:${roomIndex}`));
   const roll = rng.next() * CHANCE_SCALE;
@@ -72,9 +77,29 @@ export function roomNpc(
 
   const ticket = rng.int(0, total - 1);
   let cumulative = 0;
-  for (let i = 0; i < rows.length; i++) {
-    cumulative += weights[i];
-    if (cumulative > ticket) return { row: rows[i], roomIndex };
+  for (const entry of usable) {
+    cumulative += entry.weight;
+    if (cumulative > ticket) return { row: entry.row, roomIndex };
+  }
+  return null;
+}
+
+/**
+ * The floor's guaranteed NPC for `roomIndex`, or null: the first row, in table
+ * order, whose `guaranteedFromMap` is defined and `<= mapIndex`, when
+ * `roomIndex === firstTrainerRoom(plan)`. Reads **no RNG** and no run state, so
+ * the placement cannot move any other stream (`docs/maps-spec.md` §7).
+ */
+export function guaranteedNpc(
+  plan: MapPlan,
+  roomIndex: number,
+  mapIndex: number,
+  rows: readonly NpcRow[] = NPC_ROWS,
+): NpcRow | null {
+  if (roomIndex !== firstTrainerRoom(plan)) return null;
+  for (const row of rows) {
+    if (row.guaranteedFromMap === undefined) continue;
+    if (row.guaranteedFromMap <= mapIndex) return row;
   }
   return null;
 }

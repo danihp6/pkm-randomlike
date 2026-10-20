@@ -11,9 +11,9 @@ it in `docs/tech-decisions.md` (D28–D33).
 > (`planMap`), the plan-driven route shapes and size, the per-map levels, the run's
 > floor tracking, the boss/portal, the route HUD **minimap** (`src/ui/mapView.ts`),
 > the **Poké Dollar economy** (trainer drops, the valuables and the bag's money
-> readout), the **special rooms in the plan** (the guaranteed shop, the mini-boss
-> and the mega-stone leaves) and their **own content** (the Mart panel at the shop
-> counter, the mini-boss's reward choice and the mega-stone treasure) have all
+> readout), the **special rooms in the plan** (the mini-boss, mega-stone, casino,
+> gated, trade and no-heal leaves) and their **own content** (the Mart panel the
+> merchant opens, the mini-boss's reward choice and the mega-stone treasure) have all
 > shipped, and the Phase 9 docs/migration pass closed the phase: the algorithm
 > below is what the tree runs, and every number in it is the tree's. The `D##`
 > decisions behind it are D28–D33.
@@ -256,7 +256,6 @@ regular trainer to one. Their content:
 
 | Room | Per floor | Placement | Content |
 | --- | --- | --- | --- |
-| **shop** | exactly one, **from map 2 on** (map 1 has none) | a leaf near the entry | a counter; the interact key (`E`) opens a Pokémon-style **floating Mart card** over the route that exists only in this room; a BUY row is taken by dragging it onto the bag or a living member, a SELL row by a click |
 | **mini-boss** | medium chance | a leaf anywhere | one strong trainer fielding a **fixed party of three** (**two** on map 1, `bossPartySize('miniboss', mapIndex)`); beating it offers **one floating window of six rows** — three **items** from the map's reward pool and three **Pokémon it presents only by their highest stat and their nature** (`ATTACK · Adamant`), never by name, sprite, types or moves — each row taken by dragging it onto the bag or the party, with no keyboard path |
 | **mega-stone** | low chance, **from map 3 onward** | a leaf anywhere | one random **Mega Stone** item |
 | **casino** | 30 % chance, **from map 2 onward** | a leaf anywhere | a **slot machine** counter with a Team Rocket grunt beside it; the interact key (`E`) opens the machine's own window, where one **spin** costs the floor band's price (`CASINO.price`, `src/data/casino.ts`) and pays an item, an **Egg** or the fight against the grunt |
@@ -266,18 +265,18 @@ regular trainer to one. Their content:
 
 Specials count **outside** K (`K` regular rooms + the specials), are rolled on
 the same `map` stream, and are discovered like any room: they appear on the
-minimap only once **entered**, with their own icon. The shop is guaranteed **from
-map 2 on** — map 1 is the run's on-ramp, with no money for a counter and already a
-10-ball pack, so its floor hangs no shop leaf at all; the **mini-boss** leaf rolls
-with a **50%** chance, the **mega-stone** leaf with **15%** (only **from map 3
-onward**), the **casino** leaf with **30%** (only **from map 2 onward**), the
-**gated** leaf with **20%** (only **from map 3 onward**), the **trade** leaf with
-**20%** (only **from map 3 onward**) and the **no-heal** leaf with **20%** (only
-**from map 3 onward**), and any of them may coincide on the same floor. The
-casino's draw, then the **gated** leaf's, then the **trade** leaf's and then the
-**no-heal** leaf's are the **last** statements of the special pass, in that order,
-so no floor's shop, mini-boss, mega-stone, casino, gated leaf, trade leaf, room id
-or room size moved when any of them shipped.
+minimap only once **entered**, with their own icon. There is no shop room: the
+Mart is the floor's guaranteed **merchant** special NPC's window (§ *The special
+NPC*), one per floor from map 2 on. The **mini-boss** leaf rolls with a **50%**
+chance, the **mega-stone** leaf with **15%** (only **from map 3 onward**), the
+**casino** leaf with **30%** (only **from map 2 onward**), the **gated** leaf with
+**20%** (only **from map 3 onward**), the **trade** leaf with **20%** (only **from
+map 3 onward**) and the **no-heal** leaf with **20%** (only **from map 3
+onward**), and any of them may coincide on the same floor. The casino's draw, then
+the **gated** leaf's, then the **trade** leaf's and then the **no-heal** leaf's are
+the **last** statements of the special pass, in that order, so no floor's
+mini-boss, mega-stone, casino, gated leaf, trade leaf, room id or room size moves
+when any of them shipped.
 
 Every floor is also given one **mission** (`src/data/missions.ts`,
 `src/engine/run/missions.ts`), drawn from the run seed on its own
@@ -355,12 +354,22 @@ key.
 
 ### The special NPC
 
-A **regular `trainers` room** may hold **one special NPC** — a merchant, a medic, an
-exorcist, a berry tree — beside the run's own rooms (`src/data/npcs.ts`,
+A **regular `trainers` room** may hold **one special NPC** — a medic, an exorcist,
+a berry tree — beside the run's own rooms (`src/data/npcs.ts`,
 `src/engine/routes/npcs.ts`, the card in `src/ui/npcPanel.ts`). It is a
 **build-time fixture**, not part of the generated route: the entry, the boss and
 every special leaf are `wild` and never carry one.
 
+- **The guarantee** is a placement, not a roll: a row may carry
+  `guaranteedFromMap`, and from that map on the floor puts the row **itself**, once,
+  in its **first `trainers` room** — the lowest room id with `role: 'trainers'`
+  (`firstTrainerRoom`) — whenever the scene asks about that room
+  (`guaranteedNpc`). It reads no RNG and no run state, so it cannot move any other
+  stream, and it is never rolled twice. The **merchant** is that row:
+  `guaranteedFromMap: 2`, so map 1 is merchant-free (the run's on-ramp has no money
+  for a counter and already a 10-ball pack) and every floor from map 2 on holds
+  exactly one merchant. Its one `TRADE` row opens the **Mart** (§7's shop panel)
+  without spending the card, so the merchant answers again for the rest of the floor.
 - **The roll** runs once per room build, on the room's own stream
   (`${seed}:npc:<roomId>`), so no map, route, encounter, roster or battle draw
   moves (`D11`). One draw decides presence and, on a hit, one draw picks the row:
@@ -392,9 +401,11 @@ every special leaf are `wild` and never carry one.
   and no save field or `SAVE_VERSION` step was added. A revisit and a reload read
   the same record.
 
-`NPC_ROWS` ships **empty**: this is the framework, and each NPC's own row, copy and
-effect lands with its content task, so the game is unchanged until the first row
-does.
+`NPC_ROWS` ships **one** row, the **merchant**, with two kinds of entry: a rolled
+row (its `chance`/`floorStep` and its optional party gate) and a **guaranteed** row
+(`guaranteedFromMap`, `chance: 0`). Each later NPC task adds its own row, copy and
+effect beside it, and `roomNpc` never picks a zero-chance row, so a guaranteed row
+is only ever placed.
 
 ### The no-heal room
 
@@ -476,7 +487,7 @@ the overlay's `tint` and `alpha`). The condition belongs to the **room**, so
 - Which room rolls, and how often: a room that fields **regular trainers** rolls one
   with `ROOM_BATTLEFIELD_CHANCE` (**15%**), the **boss room** with its own
   `BOSS_BATTLEFIELD_CHANCE` (**30%**, §6), and the map's **entry room** and every
-  **special leaf** (shop, mini-boss, mega-stone, casino) are **quiet** — they roll
+  **special leaf** (mini-boss, mega-stone, casino) are **quiet** — they roll
   none.
 - One roll per room, off the run seed and the room's **stable** index
   (`routeIndexForRoom`, §9): `Rng(hashSeed(\`${seed}:battlefield:${roomIndex}\`))`,
@@ -580,11 +591,12 @@ names its answer and the Phase 9 step (or the later batch) that landed it.
   stands, so the room looks identical before and after; once the boss falls it
   opens, and stepping through it advances the run to the next map.
 - **O-M4 — Special probabilities.** Resolved by the plan's special pass and the
-  rooms' own content (archived in `CHANGELOG.md`), with the shop-from-map-2 rule
-  landed by Batch 5d (`Task-70`): the shop is guaranteed **from map 2 on** (map 1
-  hangs none), the mini-boss leaf rolls at **50%** and the mega-stone leaf at
-  **15%** — the mega-stone only **from map 3 on** — and the two may coincide on one
-  floor.
+  rooms' own content (archived in `CHANGELOG.md`): the mini-boss leaf rolls at
+  **50%** and the mega-stone leaf at **15%** — the mega-stone only **from map 3
+  on** — and the two may coincide on one floor. The guaranteed shop leaf the
+  shop-from-map-2 rule once hung (Batch 5d, `Task-70`) is **retired**: the Mart is
+  the floor's guaranteed **merchant** NPC from map 2 on, so no floor hangs a shop
+  room and map 1 stays without one.
 - **O-M5 — Money numbers.** Resolved as balance, not design: the trainer
   base/jitter, the shop's per-band core and the valuables list/prices are defaults
   in data (the economy pass, `src/data/shop.ts` / `src/data/loot.ts`) that the

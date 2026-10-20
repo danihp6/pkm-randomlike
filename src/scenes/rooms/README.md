@@ -13,7 +13,9 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
   duplicate-kind error and the marker index the minimap reads.
 - `registry.test.ts` — the collection rules: discovery, a kind the folder never had, the duplicate
   error's message and the modules without a descriptor export.
-- `shop.ts` — the Mart room: its counter, its stock, its floating BUY / SELL card and the drag a BUY row starts.
+- `shop.ts` — the Mart window alone, opened by the merchant NPC (`openMart`): its stock, its
+  floating BUY / SELL card and the drag a BUY row starts. It exports no `descriptor`, so the
+  registry skips it and the folder still holds the file.
 - `miniBoss.ts` — the mini-boss room: its `ace` trainer on the room's farthest tile.
 - `megaStone.ts` — the mega-stone room: its one Mega Stone on the room's farthest tile.
 - `casino.ts` — the casino room: its slot machine, the grunt beside it, the spin
@@ -32,14 +34,16 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
   farthest tile and the marker of the room whose battles refuse the Bag and heals.
 - `noHeal.test.ts` — the room's own surface: the trainer's id, tile and archetype,
   the defeated and no-free-tile cases, the notice and the marker.
-- `fixtures.test.ts` — the shipped rooms' fixtures, pinned by id, tile and (for the stone)
-  the exact item the fixed seed rolls.
+- `fixtures.test.ts` — the shipped rooms' fixtures, pinned by id and tile, and for the
+  stone the exact item the fixed seed rolls.
 
 ## Rules
 
 1. A new room kind is a new file here that exports `descriptor`; the scene is not edited. It also
    needs its `MapRoomSpecial` value and its `docs/maps-spec.md` §7 row.
-2. A descriptor never touches the scene's internals: it draws through `host.scene` and mutates the
+2. A module that owns no room kind (the Mart's `shop.ts`) exports no `descriptor`: the registry
+   collects only modules whose `descriptor.kind` is a string, and the file stays where it is.
+3. A descriptor never touches the scene's internals: it draws through `host.scene` and mutates the
    run only through `host.commitRun`, so the folder stays testable headless.
-3. A room's ids are stable per floor (`miniBossTrainerId`, `megaStoneItemId`), so a revisit finds
+4. A room's ids are stable per floor (`miniBossTrainerId`, `megaStoneItemId`), so a revisit finds
    the room it left behind and a beaten trainer stays beaten.
