@@ -15,6 +15,8 @@ import {
   pushText,
   type BattleState,
   type SideId,
+  type Slot,
+  type TargetRef,
 } from './state';
 import { cureStatus } from './status';
 import { canRun } from './runAway';
@@ -23,11 +25,20 @@ import { isTaunted } from './volatile';
 export type FightCommand = Readonly<{
   type: 'fight';
   moveIndex: number;
+  /** Which active acts. Default 0. */
+  slot?: Slot;
+  /** The chosen foe slot (single-target moves). Default: the foe's slot 0. */
+  target?: TargetRef;
   mega?: boolean;
   gmax?: boolean;
 }>;
 export type BagCommand = Readonly<{ type: 'bag'; itemId: string }>;
-export type SwitchCommand = Readonly<{ type: 'switch'; partyIndex: number }>;
+export type SwitchCommand = Readonly<{
+  type: 'switch';
+  partyIndex: number;
+  /** Which slot receives the switch. Default 0. */
+  slot?: Slot;
+}>;
 export type RunCommand = Readonly<{ type: 'run' }>;
 export type Command = FightCommand | BagCommand | SwitchCommand | RunCommand;
 
@@ -105,11 +116,70 @@ export function selectedMove(
   return null;
 }
 
+const SPREAD_TARGETS: ReadonlySet<string> = new Set(['allAdjacentFoes', 'allAdjacent', 'all']);
+const SELF_TARGETS: ReadonlySet<string> = new Set(['self']);
+
+function commandSlot(command: Command): Slot {
+  if (command.type === 'fight' || command.type === 'switch') return command.slot ?? 0;
+  return 0;
+}
+
+/** The slot a command acts through; a slot 1 command needs a double battle that fields it. */
+function validateSlot(state: BattleState, side: SideId, slot: Slot): string | null {
+  if (slot === 0) return null;
+  if (!state.double || state.sides[side].secondActiveIndex < 0) {
+    return 'There is no second active Pokémon.';
+  }
+  return null;
+}
+
+/** A single-target command must name one of the foe's live slots; a spread move ignores it. */
+function validateTarget(
+  state: BattleState,
+  side: SideId,
+  fighter: BattleFighter,
+  command: FightCommand,
+): string | null {
+  const target = command.target;
+  if (!target) return null;
+  const move = getMove(fighter.moves[command.moveIndex]?.moveId ?? '');
+  if (!move) return null;
+  if (SPREAD_TARGETS.has(move.target)) return null;
+  if (SELF_TARGETS.has(move.target) || move.target === 'ally') return null;
+  if (target.side !== opponentOf(side)) return 'That is not an opposing Pokémon.';
+  if (target.slot !== 0 && (!state.double || state.sides[opponentOf(side)].secondActiveIndex < 0)) {
+    return 'There is no such Pokémon on the field.';
+  }
+  return null;
+}
+
+/**
+ * Runs `read` with `side`'s slot lead-relative, so a shipped per-side helper
+ * (`canMegaEvolve`, `canGigantamax` and the two that apply them) reads the slot
+ * the command names instead of slot 0.
+ */
+export function withLeadSlot<T>(state: BattleState, side: SideId, slot: Slot, read: () => T): T {
+  if (slot === 0) return read();
+  const battleSide = state.sides[side];
+  const lead = battleSide.activeIndex;
+  battleSide.activeIndex = battleSide.secondActiveIndex;
+  try {
+    return read();
+  } finally {
+    battleSide.activeIndex = lead;
+  }
+}
+
 function validateSwitch(state: BattleState, side: SideId, command: SwitchCommand): string | null {
   const battleSide = state.sides[side];
   const target = battleSide.party[command.partyIndex];
   if (!target) return 'That Pokémon is not in the party.';
-  if (command.partyIndex === battleSide.activeIndex) return 'That Pokémon is already out.';
+  if (
+    command.partyIndex === battleSide.activeIndex ||
+    command.partyIndex === battleSide.secondActiveIndex
+  ) {
+    return 'That Pokémon is already out.';
+  }
   if (target.hp <= 0) return 'That Pokémon has no energy left.';
   if (!battleSide.awaitingReplacement && isTrapped(state, side)) {
     return 'The Pokémon cannot be switched out.';
@@ -130,13 +200,17 @@ function validateBag(state: BattleState, side: SideId, command: BagCommand): str
 export function validateCommand(state: BattleState, side: SideId, command: Command): string | null {
   if (state.winner !== null) return 'The battle is over.';
 
+  const slot = commandSlot(command);
+  const slotError = validateSlot(state, side, slot);
+  if (slotError) return slotError;
+
   if (state.sides[side].awaitingReplacement && command.type !== 'switch') {
     return 'A replacement must be sent out first.';
   }
 
   switch (command.type) {
     case 'fight': {
-      const fighter = activeFighter(state, side);
+      const fighter = activeFighter(state, side, slot);
       if (command.moveIndex < 0 || command.moveIndex >= fighter.moves.length) {
         return 'There is no such move.';
       }
@@ -159,13 +233,13 @@ export function validateCommand(state: BattleState, side: SideId, command: Comma
         }
         return 'That move has no PP left.';
       }
-      if (command.mega && !canMegaEvolve(state, side)) {
+      if (command.mega && !withLeadSlot(state, side, slot, () => canMegaEvolve(state, side))) {
         return 'That Pokémon cannot Mega Evolve.';
       }
-      if (command.gmax && !canGigantamax(state, side)) {
+      if (command.gmax && !withLeadSlot(state, side, slot, () => canGigantamax(state, side))) {
         return 'That Pokémon cannot Gigantamax.';
       }
-      return null;
+      return validateTarget(state, side, fighter, command);
     }
     case 'bag':
       return validateBag(state, side, command);

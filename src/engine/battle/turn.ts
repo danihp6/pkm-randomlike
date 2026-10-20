@@ -51,6 +51,7 @@ import {
   selectedMove,
   useBagItem,
   validateCommand,
+  withLeadSlot,
   type Command,
   type FightCommand,
   type SelectedMove,
@@ -59,16 +60,20 @@ import { megaEvolve } from './mega';
 import { gigantamax } from './gmax';
 import {
   SIDE_IDS,
+  SLOTS,
   activeFighter,
   effectiveWeather,
   finishBattle,
   hasHealthy,
+  liveSlots,
   opponent,
   opponentOf,
   pushEvent,
   pushText,
+  slotActiveIndex,
   type BattleState,
   type SideId,
+  type Slot,
 } from './state';
 import { beforeMoveStatus, residualDamage, statusName } from './status';
 import {
@@ -90,15 +95,43 @@ import {
 } from './volatile';
 import { rollRun } from './runAway';
 
-export function performSwitch(state: BattleState, side: SideId, partyIndex: number): void {
+/** The party indices a side currently has on the field. */
+function activeIndices(state: BattleState, side: SideId): readonly number[] {
+  return liveSlots(state, side).map((slot) => slotActiveIndex(state, side, slot));
+}
+
+/** The first healthy party member that is not already on the field, or -1. */
+function reserveIndex(state: BattleState, side: SideId): number {
   const battleSide = state.sides[side];
-  const outgoing = activeFighter(state, side);
+  const active = activeIndices(state, side);
+  return battleSide.party.findIndex((fighter, index) => fighter.hp > 0 && !active.includes(index));
+}
+
+/**
+ * True when a slot holds a fainted fighter that a reserve could still replace.
+ * A side with one live slot and no reserve keeps fighting: it never waits on a
+ * replacement that does not exist.
+ */
+function sideNeedsReplacement(state: BattleState, side: SideId): boolean {
+  if (reserveIndex(state, side) < 0) return false;
+  return liveSlots(state, side).some((slot) => activeFighter(state, side, slot).hp <= 0);
+}
+
+export function performSwitch(
+  state: BattleState,
+  side: SideId,
+  partyIndex: number,
+  slot: Slot = 0,
+): void {
+  const battleSide = state.sides[side];
+  const outgoing = activeFighter(state, side, slot);
   runSwitchOut(makeContext(state, side, { source: outgoing, target: opponent(state, side) }));
-  battleSide.activeIndex = partyIndex;
-  battleSide.awaitingReplacement = false;
+  if (slot === 0) battleSide.activeIndex = partyIndex;
+  else battleSide.secondActiveIndex = partyIndex;
+  battleSide.awaitingReplacement = sideNeedsReplacement(state, side);
   resetBattleState(outgoing);
 
-  const incoming = activeFighter(state, side);
+  const incoming = activeFighter(state, side, slot);
   if (!state.switchedSides.includes(side)) state.switchedSides.push(side);
   pushEvent(state, { kind: 'switch', side, fighterId: incoming.id });
   pushText(state, `${state.sides[side].name} sent out ${incoming.name}!`);
@@ -117,17 +150,43 @@ export function performSwitch(state: BattleState, side: SideId, partyIndex: numb
   }
 }
 
-function resolvePreMoveActions(state: BattleState, commands: Readonly<Record<SideId, Command>>): void {
-  const entries = SIDE_IDS.filter((side) => commands[side].type !== 'fight').map((side) => ({
-    side,
-    priority: 6,
-  }));
+export type SlotCommands = Readonly<Partial<Record<Slot, Command>>>;
+
+/** The command as the slot that issued it, so a keyed record and the field agree. */
+function slotCommand(command: Command | undefined, slot: Slot): Command | undefined {
+  if (!command) return undefined;
+  if (command.type !== 'fight' && command.type !== 'switch') return command;
+  return command.slot === slot ? command : { ...command, slot };
+}
+
+function slotCommands(commands: SlotCommands): SlotCommands {
+  const out: Partial<Record<Slot, Command>> = {};
+  for (const slot of SLOTS) {
+    const command = slotCommand(commands[slot], slot);
+    if (command) out[slot] = command;
+  }
+  return out;
+}
+
+function resolvePreMoveActions(
+  state: BattleState,
+  commands: Readonly<Record<SideId, SlotCommands>>,
+): void {
+  const entries: { side: SideId; slot: Slot; priority: number }[] = [];
+  for (const side of SIDE_IDS) {
+    for (const slot of SLOTS) {
+      const command = commands[side][slot];
+      if (!command || command.type === 'fight') continue;
+      entries.push({ side, slot, priority: 6 });
+    }
+  }
   for (const entry of orderActions(state, entries, state.rng)) {
     if (state.winner !== null) return;
-    const command = commands[entry.side];
+    const command = commands[entry.side][entry.slot ?? 0];
+    if (!command) continue;
     switch (command.type) {
       case 'switch':
-        performSwitch(state, entry.side, command.partyIndex);
+        performSwitch(state, entry.side, command.partyIndex, entry.slot ?? 0);
         break;
       case 'bag':
         useBagItem(state, entry.side, command.itemId);
@@ -314,9 +373,10 @@ function applyMoveEffects(
   move: Move,
   totalDamage: number,
   defenderDamaged: boolean,
+  aimedAt?: BattleFighter,
 ): void {
   const attacker = activeFighter(state, side);
-  const defender = opponent(state, side);
+  const defender = aimedAt ?? opponent(state, side);
   const selfTarget = move.target === 'self';
 
   // Magic Bounce and Magic Coat send a reflectable status move back at its user.
@@ -348,9 +408,10 @@ function applyMoveEffects(
   const actingSide = snatches ? opponentOf(side) : side;
   const acting = snatches ? defender : attacker;
   const targetSide = reflects ? side : opponentOf(actingSide);
-  const target = reflects ? attacker : opponent(state, actingSide);
+  // A reflected or snatched move turns on its user, whatever slot it was aimed at.
+  const effectTargetOfMove = reflects || snatches ? attacker : defender;
   const effectSide = selfTarget ? actingSide : targetSide;
-  const effectTarget = selfTarget ? acting : target;
+  const effectTarget = selfTarget ? acting : effectTargetOfMove;
 
   if (move.status) applyStatusEffect(state, effectSide, effectTarget, move.status);
 
@@ -387,12 +448,14 @@ function applyMoveEffects(
   if (move.secondaries) secondaries.push(...move.secondaries);
   const sheerForce = acting.ability === 'Sheer Force' && move.basePower > 0;
   if (defenderDamaged && !sheerForce) {
-    for (const secondary of secondaries) applySecondary(state, actingSide, secondary, acting, target);
+    for (const secondary of secondaries) {
+      applySecondary(state, actingSide, secondary, acting, effectTargetOfMove);
+    }
   }
 
   if (move.drain && move.drain.length === 2 && totalDamage > 0) {
     const drained = Math.max(1, Math.floor((totalDamage * move.drain[0]) / move.drain[1]));
-    if (target.ability === 'Liquid Ooze') {
+    if (effectTargetOfMove.ability === 'Liquid Ooze') {
       if (takesIndirectDamage(acting)) {
         const dealt = applyDamage(acting, drained);
         pushEvent(state, {
@@ -424,7 +487,7 @@ function applyMoveEffects(
   if (move.recoil && move.recoil.length === 2 && totalDamage > 0 && takesIndirectDamage(acting)) {
     const raw = Math.max(1, Math.floor((totalDamage * move.recoil[0]) / move.recoil[1]));
     const recoil = runModifyRecoil(
-      makeContext(state, actingSide, { source: acting, target: opponent(state, actingSide), move }),
+      makeContext(state, actingSide, { source: acting, target: effectTargetOfMove, move }),
       move,
       raw,
     );
@@ -566,6 +629,7 @@ function useCounterMove(
   attacker: BattleFighter,
   defender: BattleFighter,
   move: Move,
+  targetSlot: Slot = 0,
 ): void {
   const physical = attacker.volatiles.physicalDamageTaken;
   const special = attacker.volatiles.specialDamageTaken;
@@ -597,15 +661,16 @@ function useCounterMove(
     crit: false,
   });
   pushText(state, `${defender.name} was hit by the countered attack!`);
-  if (defender.hp <= 0) faint(state, opponentOf(side));
+  if (defender.hp <= 0) faint(state, opponentOf(side), targetSlot);
 }
 
 /** U-turn and friends hand the turn over to the bench; Baton Pass carries boosts. */
 function maybeSelfSwitch(state: BattleState, side: SideId, attacker: BattleFighter, move: Move): void {
   if (!move.selfSwitch || state.winner !== null || attacker.hp <= 0) return;
   const battleSide = state.sides[side];
+  const active = activeIndices(state, side);
   const hasBench = battleSide.party.some(
-    (fighter, index) => index !== battleSide.activeIndex && fighter.hp > 0,
+    (fighter, index) => !active.includes(index) && fighter.hp > 0,
   );
   if (!hasBench) return;
   if (move.selfSwitch === 'copyvolatile') {
@@ -619,17 +684,408 @@ function maybeSelfSwitch(state: BattleState, side: SideId, attacker: BattleFight
 }
 
 export function useMove(state: BattleState, side: SideId, command: FightCommand): void {
-  const attacker = activeFighter(state, side);
+  const attacker = activeFighter(state, side, command.slot ?? 0);
   const selected = chosenMove(attacker, command, barredMovesFor(state, side));
   if (!selected) return;
   const { move, slot } = selected;
   state.abilityPierce = piercesTargetAbility(state, side, attacker, move) ? attacker : null;
   try {
-    resolveMove(state, side, attacker, move, slot);
+    resolveMove(state, side, attacker, move, slot, commandedTarget(state, side, command));
   } finally {
     state.abilityPierce = null;
   }
   dancerFollowUp(state, side, move);
+}
+
+/** The fighter a fight command names, or undefined for the default (the foe's slot 0). */
+function commandedTarget(
+  state: BattleState,
+  side: SideId,
+  command: FightCommand,
+): BattleFighter | undefined {
+  const ref = command.target;
+  if (!ref || ref.side !== opponentOf(side)) return undefined;
+  return activeFighter(state, ref.side, ref.slot);
+}
+
+/** The slot a fighter fills on its side. */
+function slotOf(state: BattleState, side: SideId, fighter: BattleFighter): Slot {
+  const battleSide = state.sides[side];
+  return battleSide.secondActiveIndex >= 0 &&
+    fighter === battleSide.party[battleSide.secondActiveIndex]
+    ? 1
+    : 0;
+}
+
+type MoveAim = Readonly<{ side: SideId; slot: Slot }>;
+
+/** The slots a spread move hits, or null when the move is single-target. */
+function spreadAims(
+  state: BattleState,
+  side: SideId,
+  attacker: BattleFighter,
+  move: Move,
+): readonly MoveAim[] | null {
+  if (move.target !== 'allAdjacentFoes' && move.target !== 'allAdjacent' && move.target !== 'all') {
+    return null;
+  }
+  const foeSide = opponentOf(side);
+  const aims: MoveAim[] = [];
+  for (const slot of liveSlots(state, foeSide)) {
+    if (activeFighter(state, foeSide, slot).hp > 0) aims.push({ side: foeSide, slot });
+  }
+  if (move.target !== 'allAdjacentFoes') {
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      if (fighter !== attacker && fighter.hp > 0) aims.push({ side, slot });
+    }
+  }
+  return aims;
+}
+
+/** Every (side, slot) the move applies to, foes first and ascending by slot. */
+function moveAims(
+  state: BattleState,
+  side: SideId,
+  attacker: BattleFighter,
+  move: Move,
+  primary: BattleFighter,
+): readonly MoveAim[] {
+  if (move.target === 'self') return [{ side, slot: slotOf(state, side, attacker) }];
+  const spread = spreadAims(state, side, attacker, move);
+  if (spread !== null) return spread;
+  const foeSide = opponentOf(side);
+  return [{ side: foeSide, slot: slotOf(state, foeSide, primary) }];
+}
+
+/**
+ * True when the aimed fighter's protection stops `move`. The shipped helper reads
+ * the foe's lead, so a partner's own protection is checked here with the same rule.
+ */
+function protectStops(
+  state: BattleState,
+  side: SideId,
+  move: Move,
+  defender: BattleFighter,
+): boolean {
+  if (defender === opponent(state, side)) return protectBlocks(state, side, move);
+  if (!defender.volatiles.protect || !move.flags.protect) return false;
+  if (!FOE_TARGETS.has(move.target)) return false;
+  pushText(state, `${defender.name} protected itself!`);
+  return true;
+}
+
+const FOE_TARGETS: ReadonlySet<string> = new Set(['normal', 'any', 'adjacentFoe']);
+
+function resolveMove(
+  state: BattleState,
+  side: SideId,
+  attacker: BattleFighter,
+  move: Move,
+  moveSlot: MoveSlot | null,
+  target?: BattleFighter,
+): void {
+  // Truant alternates: after a turn in which it acts, the next one is lost.
+  if (attacker.ability === 'Truant') {
+    if (attacker.volatiles.truant) {
+      attacker.volatiles.truant = false;
+      pushText(state, `${attacker.name} is loafing around!`);
+      return;
+    }
+    attacker.volatiles.truant = true;
+  }
+
+  const previousMove = state.lastMove;
+  pushEvent(state, { kind: 'move', side, moveId: move.id });
+  pushText(state, `${attacker.name} used ${move.name}!`);
+  state.lastMove = move.id;
+  if (!isProtectMove(move.id)) attacker.volatiles.protectStreak = 0;
+
+  if (move.category === 'Status' && isTaunted(attacker)) {
+    pushText(state, `${attacker.name} can't use status moves while taunted!`);
+    return;
+  }
+
+  const statusCheck = beforeMoveStatus(attacker, state.rng);
+  if (statusCheck && 'blocked' in statusCheck) {
+    // Sleep Talk and Snore are the two moves usable while asleep.
+    const usableWhileAsleep =
+      statusCheck.blocked === 'slp' && (move.id === 'sleeptalk' || move.id === 'snore');
+    if (!usableWhileAsleep) {
+      pushText(state, blockedMessage(attacker, statusCheck.blocked));
+      return;
+    }
+  }
+  if (statusCheck && 'cured' in statusCheck) {
+    pushText(
+      state,
+      statusCheck.cured === 'slp' ? `${attacker.name} woke up!` : `${attacker.name} thawed out!`,
+    );
+  }
+
+  const volatileCheck = beforeMoveVolatile(attacker, state.rng);
+  if (volatileCheck && 'flinched' in volatileCheck) {
+    pushText(state, `${attacker.name} flinched and couldn't move!`);
+    return;
+  }
+  if (volatileCheck && 'attracted' in volatileCheck) {
+    pushText(state, `${attacker.name} is infatuated and can't bring itself to attack!`);
+    return;
+  }
+  if (volatileCheck && 'confusionDamage' in volatileCheck) {
+    if (moveSlot) moveSlot.pp = Math.max(0, moveSlot.pp - ppCost(state, side, move));
+    attacker.lastMoveId = move.id;
+    pushEvent(state, {
+      kind: 'damage',
+      side,
+      amount: volatileCheck.confusionDamage,
+      hp: attacker.hp,
+      maxHp: attacker.maxHp,
+      effectiveness: 1,
+      crit: false,
+    });
+    pushText(state, `${attacker.name} is confused. It hurt itself in its confusion!`);
+    if (attacker.hp <= 0) faint(state, side, slotOf(state, side, attacker));
+    return;
+  }
+  if (volatileCheck && 'confusionEnded' in volatileCheck) {
+    pushText(state, `${attacker.name} snapped out of its confusion!`);
+  }
+
+  if (move.flags.charge) {
+    if (attacker.volatiles.charging !== move.id && !chargesInstantly(state, move)) {
+      attacker.volatiles.charging = move.id;
+      pushText(state, `${attacker.name} ${chargeVerb(move.id)}`);
+      return;
+    }
+    attacker.volatiles.charging = null;
+  }
+
+  if (moveSlot) moveSlot.pp = Math.max(0, moveSlot.pp - ppCost(state, side, move));
+  attacker.lastMoveId = move.id;
+
+  // Imprison seals any move the foe knows. The whole foe side is read, so a
+  // partner's Imprison counts even when the move is aimed at the lead.
+  const imprisoners = liveSlots(state, opponentOf(side)).map((slot) =>
+    activeFighter(state, opponentOf(side), slot),
+  );
+  if (imprisoners.some((foe) => foe.volatiles.imprison && foe.moves.some((e) => e.moveId === move.id))) {
+    pushText(state, `${attacker.name} can't use the sealed ${move.name}!`);
+    return;
+  }
+
+  const calledId = calledMoveId(state, side, attacker, move, previousMove);
+  if (calledId !== null) {
+    const called = getMove(calledId);
+    if (called && called.id !== move.id) {
+      pushText(state, `${attacker.name} used ${called.name}!`);
+      resolveMove(state, side, attacker, called, null, target);
+    } else {
+      pushText(state, 'But it failed!');
+    }
+    return;
+  }
+
+  const aims = moveAims(state, side, attacker, move, target ?? opponent(state, side));
+  if (aims.length === 0) return;
+
+  const attackerSlot = slotOf(state, side, attacker);
+  let totalDamage = 0;
+  let damaged = false;
+  let countered = false;
+  let effectMove: Move | null = null;
+  let effectTarget: BattleFighter | null = null;
+  let lastHitContext: ReturnType<typeof makeContext> | null = null;
+
+  for (const aim of aims) {
+    const defender = activeFighter(state, aim.side, aim.slot);
+    if (protectStops(state, side, move, defender)) continue;
+
+    if (move.category !== 'Status' && !rollHitWith(state, side, move, attacker, defender)) {
+      pushText(state, `${attacker.name}'s attack missed!`);
+      continue;
+    }
+
+    // Type-changing abilities (Galvanize, Pixilate, Liquid Voice) and item-driven
+    // rewrites (a berry's Natural Gift) apply before any immunity check, so the
+    // move is treated as its new type throughout.
+    const moveContext = makeContext(state, side, { source: attacker, target: defender, move });
+    const modified = runModifyMove(moveContext, move);
+    const moveType = runModifyMoveType(moveContext, modified);
+    const activeMove: Move = moveType === modified.type ? modified : { ...modified, type: moveType };
+
+    const hitContext = makeContext(state, side, {
+      source: attacker,
+      target: defender,
+      move: activeMove,
+    });
+    if (!runTryHit(hitContext, activeMove)) continue;
+
+    // Protean and Libero change the user's type, once per switch-in in Gen 9.
+    if (
+      (attacker.ability === 'Protean' || attacker.ability === 'Libero') &&
+      !attacker.volatiles.proteanUsed
+    ) {
+      attacker.volatiles.proteanUsed = true;
+      attacker.types = [activeMove.type];
+      pushText(state, `${attacker.name} transformed into the ${activeMove.type} type!`);
+    }
+
+    if (COUNTER_MOVES.has(move.id)) {
+      useCounterMove(state, side, attacker, defender, activeMove, aim.slot);
+      countered = true;
+      break;
+    }
+
+    effectMove = activeMove;
+    effectTarget = defender;
+    lastHitContext = hitContext;
+
+    if (activeMove.category !== 'Status' && activeMove.basePower > 0) {
+      const rolled = multihitHits(activeMove, state.rng);
+      const hits = runModifyMultihit(
+        makeContext(state, side, { source: attacker, target: defender, move: activeMove }),
+        activeMove,
+        rolled,
+      );
+      const statContext = damageStatContext(state, side, attacker, defender);
+      for (let hit = 0; hit < hits; hit++) {
+        const hitTarget = defender;
+        if (hitTarget.hp <= 0) break;
+        const defenderTypes = state.roomField.overrideType
+          ? [state.roomField.overrideType]
+          : hitTarget.types;
+        const critRatio =
+          activeMove.critRatio +
+          (attacker.volatiles.focusEnergy ? 2 : 0) +
+          (attacker.volatiles.dragonCheer ? 1 : 0) +
+          state.roomField.critStage;
+        const crit = runModifyCrit(
+          makeContext(state, side, { source: attacker, target: hitTarget, move: activeMove }),
+          activeMove,
+          attacker.volatiles.laserFocus ||
+            rollCrit(
+              state.rng,
+              runModifyCritRatio(
+                makeContext(state, side, {
+                  source: attacker,
+                  target: hitTarget,
+                  move: activeMove,
+                }),
+                activeMove,
+                critRatio,
+              ),
+            ),
+        );
+        const result = computeDamage(attacker, hitTarget, activeMove, state.rng, {
+          weather: effectiveWeather(state),
+          terrain: state.terrain,
+          critical: crit,
+          reflect: state.sides[opponentOf(side)].sideConditions.reflect > 0,
+          lightScreen: state.sides[opponentOf(side)].sideConditions.lightscreen > 0,
+          auroraVeil: state.sides[opponentOf(side)].sideConditions.auroraveil > 0,
+          wonderRoom: state.field.wonderroom > 0,
+          overrideType: state.roomField.overrideType,
+          darkAura: state.roomField.darkAura,
+          fairyAura: state.roomField.fairyAura,
+          ...statContext,
+          effectiveness: runModifyEffectiveness(
+            makeContext(state, side, { source: attacker, target: hitTarget, move: activeMove }),
+            activeMove,
+            effectiveness(activeMove.type, defenderTypes),
+          ),
+        });
+        if (result.effectiveness === 0) {
+          if (hit === 0) pushText(state, `It doesn't affect ${hitTarget.name}...`);
+          break;
+        }
+        let damage = runModifyDamage(
+          makeContext(state, side, { source: attacker, target: hitTarget, move: activeMove }),
+          activeMove,
+          result.damage,
+          result.effectiveness,
+          result.crit,
+        );
+        if ((hitTarget.volatiles.endure || state.roomField.endure) && damage >= hitTarget.hp) {
+          damage = Math.max(0, hitTarget.hp - 1);
+          pushText(state, `${hitTarget.name} endured the hit!`);
+        }
+        const bypassSubstitute = runTrySubstitute(
+          makeContext(state, side, { source: attacker, target: hitTarget, move: activeMove }),
+          activeMove,
+        );
+        if (!bypassSubstitute && hasSubstitute(hitTarget)) {
+          absorbWithSubstitute(hitTarget, damage);
+          pushText(state, `It hit ${hitTarget.name}'s substitute!`);
+          if (hitTarget.volatiles.substitute === 0) {
+            pushText(state, `${hitTarget.name}'s substitute faded!`);
+          }
+          continue;
+        }
+        const dealt = applyDamage(hitTarget, damage);
+        hitTarget.volatiles.lastDamageTaken = dealt;
+        totalDamage += dealt;
+        if (activeMove.category === 'Physical') hitTarget.volatiles.physicalDamageTaken += dealt;
+        else if (activeMove.category === 'Special') hitTarget.volatiles.specialDamageTaken += dealt;
+        pushEvent(state, {
+          kind: 'damage',
+          side: aim.side,
+          amount: dealt,
+          hp: hitTarget.hp,
+          maxHp: hitTarget.maxHp,
+          effectiveness: result.effectiveness,
+          crit: result.crit,
+        });
+        pushText(state, damageMessage(activeMove.name, result, hitTarget));
+        if (hitTarget.hp <= 0) {
+          const bonded = hitTarget.volatiles.destinyBond;
+          const grudged = hitTarget.volatiles.grudge;
+          faint(state, aim.side, aim.slot);
+          if (bonded && attacker.hp > 0) {
+            pushText(state, `${hitTarget.name} took its attacker down with it!`);
+            applyDamage(attacker, attacker.hp);
+            faint(state, side, attackerSlot);
+          }
+          if (grudged && moveSlot) {
+            moveSlot.pp = 0;
+            pushText(
+              state,
+              `${attacker.name}'s ${activeMove.name} lost all its PP due to the grudge!`,
+            );
+          }
+          break;
+        }
+      }
+    }
+    damaged = damaged || totalDamage > 0;
+  }
+
+  if (countered) return;
+  if (!effectMove) return;
+
+  if (effectMove.category !== 'Status') attacker.volatiles.laserFocus = false;
+
+  applyMoveEffects(state, side, effectMove, totalDamage, damaged, effectTarget ?? undefined);
+  // Contact reactions are not "the move's effect", so Mold Breaker stops piercing here.
+  state.abilityPierce = null;
+  if (lastHitContext) runAfterMove(lastHitContext, effectMove, damaged);
+  maybeSelfSwitch(state, side, attacker, effectMove);
+}
+
+function faint(state: BattleState, side: SideId, slot: Slot = 0): void {
+  const fighter = activeFighter(state, side, slot);
+  pushEvent(state, { kind: 'faint', side, fighterId: fighter.id });
+  pushText(state, `${fighter.name} fainted!`);
+  // Survivors react to the faint (Soul-Heart); the fainted side cannot.
+  const other = opponentOf(side);
+  for (const otherSlot of liveSlots(state, other)) {
+    runFaint(
+      makeContext(state, other, {
+        source: activeFighter(state, other, otherSlot),
+        target: fighter,
+      }),
+    );
+  }
 }
 
 let dancerCopyActive = false;
@@ -778,352 +1234,103 @@ function calledMoveId(
   }
 }
 
-function resolveMove(
-  state: BattleState,
-  side: SideId,
-  attacker: BattleFighter,
-  move: Move,
-  slot: MoveSlot | null,
-): void {
-  // Truant alternates: after a turn in which it acts, the next one is lost.
-  if (attacker.ability === 'Truant') {
-    if (attacker.volatiles.truant) {
-      attacker.volatiles.truant = false;
-      pushText(state, `${attacker.name} is loafing around!`);
-      return;
-    }
-    attacker.volatiles.truant = true;
-  }
-
-  const previousMove = state.lastMove;
-  pushEvent(state, { kind: 'move', side, moveId: move.id });
-  pushText(state, `${attacker.name} used ${move.name}!`);
-  state.lastMove = move.id;
-  if (!isProtectMove(move.id)) attacker.volatiles.protectStreak = 0;
-
-  if (move.category === 'Status' && isTaunted(attacker)) {
-    pushText(state, `${attacker.name} can't use status moves while taunted!`);
-    return;
-  }
-
-  const statusCheck = beforeMoveStatus(attacker, state.rng);
-  if (statusCheck && 'blocked' in statusCheck) {
-    // Sleep Talk and Snore are the two moves usable while asleep.
-    const usableWhileAsleep =
-      statusCheck.blocked === 'slp' && (move.id === 'sleeptalk' || move.id === 'snore');
-    if (!usableWhileAsleep) {
-      pushText(state, blockedMessage(attacker, statusCheck.blocked));
-      return;
-    }
-  }
-  if (statusCheck && 'cured' in statusCheck) {
-    pushText(
-      state,
-      statusCheck.cured === 'slp' ? `${attacker.name} woke up!` : `${attacker.name} thawed out!`,
-    );
-  }
-
-  const volatileCheck = beforeMoveVolatile(attacker, state.rng);
-  if (volatileCheck && 'flinched' in volatileCheck) {
-    pushText(state, `${attacker.name} flinched and couldn't move!`);
-    return;
-  }
-  if (volatileCheck && 'attracted' in volatileCheck) {
-    pushText(state, `${attacker.name} is infatuated and can't bring itself to attack!`);
-    return;
-  }
-  if (volatileCheck && 'confusionDamage' in volatileCheck) {
-    if (slot) slot.pp = Math.max(0, slot.pp - ppCost(state, side, move));
-    attacker.lastMoveId = move.id;
-    pushEvent(state, {
-      kind: 'damage',
-      side,
-      amount: volatileCheck.confusionDamage,
-      hp: attacker.hp,
-      maxHp: attacker.maxHp,
-      effectiveness: 1,
-      crit: false,
-    });
-    pushText(state, `${attacker.name} is confused. It hurt itself in its confusion!`);
-    if (attacker.hp <= 0) faint(state, side);
-    return;
-  }
-  if (volatileCheck && 'confusionEnded' in volatileCheck) {
-    pushText(state, `${attacker.name} snapped out of its confusion!`);
-  }
-
-  if (move.flags.charge) {
-    if (attacker.volatiles.charging !== move.id && !chargesInstantly(state, move)) {
-      attacker.volatiles.charging = move.id;
-      pushText(state, `${attacker.name} ${chargeVerb(move.id)}`);
-      return;
-    }
-    attacker.volatiles.charging = null;
-  }
-
-  if (slot) slot.pp = Math.max(0, slot.pp - ppCost(state, side, move));
-  attacker.lastMoveId = move.id;
-
-  // Imprison seals any move the foe knows.
-  const foe = opponent(state, side);
-  if (foe.volatiles.imprison && foe.moves.some((entry) => entry.moveId === move.id)) {
-    pushText(state, `${attacker.name} can't use the sealed ${move.name}!`);
-    return;
-  }
-
-  const calledId = calledMoveId(state, side, attacker, move, previousMove);
-  if (calledId !== null) {
-    const called = getMove(calledId);
-    if (called && called.id !== move.id) {
-      pushText(state, `${attacker.name} used ${called.name}!`);
-      resolveMove(state, side, attacker, called, null);
-    } else {
-      pushText(state, 'But it failed!');
-    }
-    return;
-  }
-
-  if (protectBlocks(state, side, move)) return;
-
-  const defender = opponent(state, side);
-  if (move.category !== 'Status' && !rollHitWith(state, side, move)) {
-    pushText(state, `${attacker.name}'s attack missed!`);
-    return;
-  }
-
-  // Type-changing abilities (Galvanize, Pixilate, Liquid Voice) and item-driven
-  // rewrites (a berry's Natural Gift) apply before any immunity check, so the
-  // move is treated as its new type throughout.
-  const moveContext = makeContext(state, side, { source: attacker, target: defender, move });
-  const modified = runModifyMove(moveContext, move);
-  const moveType = runModifyMoveType(moveContext, modified);
-  const activeMove: Move = moveType === modified.type ? modified : { ...modified, type: moveType };
-
-  const hitContext = makeContext(state, side, { source: attacker, target: defender, move: activeMove });
-  if (!runTryHit(hitContext, activeMove)) return;
-
-  // Protean and Libero change the user's type, once per switch-in in Gen 9.
-  if (
-    (attacker.ability === 'Protean' || attacker.ability === 'Libero') &&
-    !attacker.volatiles.proteanUsed
-  ) {
-    attacker.volatiles.proteanUsed = true;
-    attacker.types = [activeMove.type];
-    pushText(state, `${attacker.name} transformed into the ${activeMove.type} type!`);
-  }
-
-  if (COUNTER_MOVES.has(move.id)) {
-    useCounterMove(state, side, attacker, defender, activeMove);
-    return;
-  }
-
-  let totalDamage = 0;
-  if (activeMove.category !== 'Status' && activeMove.basePower > 0) {
-    const rolled = multihitHits(activeMove, state.rng);
-    const hits = runModifyMultihit(
-      makeContext(state, side, { source: attacker, target: defender, move: activeMove }),
-      activeMove,
-      rolled,
-    );
-    const statContext = damageStatContext(state, side, attacker, defender);
-    for (let hit = 0; hit < hits; hit++) {
-      const target = opponent(state, side);
-      if (target.hp <= 0) break;
-      const defenderTypes = state.roomField.overrideType
-        ? [state.roomField.overrideType]
-        : target.types;
-      const critRatio =
-        activeMove.critRatio +
-        (attacker.volatiles.focusEnergy ? 2 : 0) +
-        (attacker.volatiles.dragonCheer ? 1 : 0) +
-        state.roomField.critStage;
-      const crit = runModifyCrit(
-        makeContext(state, side, { source: attacker, target, move: activeMove }),
-        activeMove,
-        attacker.volatiles.laserFocus ||
-          rollCrit(
-            state.rng,
-            runModifyCritRatio(
-              makeContext(state, side, { source: attacker, target, move: activeMove }),
-              activeMove,
-              critRatio,
-            ),
-          ),
-      );
-      const result = computeDamage(attacker, target, activeMove, state.rng, {
-        weather: effectiveWeather(state),
-        terrain: state.terrain,
-        critical: crit,
-        reflect: state.sides[opponentOf(side)].sideConditions.reflect > 0,
-        lightScreen: state.sides[opponentOf(side)].sideConditions.lightscreen > 0,
-        auroraVeil: state.sides[opponentOf(side)].sideConditions.auroraveil > 0,
-        wonderRoom: state.field.wonderroom > 0,
-        overrideType: state.roomField.overrideType,
-        darkAura: state.roomField.darkAura,
-        fairyAura: state.roomField.fairyAura,
-        ...statContext,
-        effectiveness: runModifyEffectiveness(
-          makeContext(state, side, { source: attacker, target, move: activeMove }),
-          activeMove,
-          effectiveness(activeMove.type, defenderTypes),
-        ),
-      });
-      if (result.effectiveness === 0) {
-        if (hit === 0) pushText(state, `It doesn't affect ${target.name}...`);
-        break;
-      }
-      let damage = runModifyDamage(
-        makeContext(state, side, { source: attacker, target, move: activeMove }),
-        activeMove,
-        result.damage,
-        result.effectiveness,
-        result.crit,
-      );
-      if ((target.volatiles.endure || state.roomField.endure) && damage >= target.hp) {
-        damage = Math.max(0, target.hp - 1);
-        pushText(state, `${target.name} endured the hit!`);
-      }
-      const bypassSubstitute = runTrySubstitute(
-        makeContext(state, side, { source: attacker, target, move: activeMove }),
-        activeMove,
-      );
-      if (!bypassSubstitute && hasSubstitute(target)) {
-        absorbWithSubstitute(target, damage);
-        pushText(state, `It hit ${target.name}'s substitute!`);
-        if (target.volatiles.substitute === 0) pushText(state, `${target.name}'s substitute faded!`);
-        continue;
-      }
-      const dealt = applyDamage(target, damage);
-      target.volatiles.lastDamageTaken = dealt;
-      totalDamage += dealt;
-      if (activeMove.category === 'Physical') target.volatiles.physicalDamageTaken += dealt;
-      else if (activeMove.category === 'Special') target.volatiles.specialDamageTaken += dealt;
-      pushEvent(state, {
-        kind: 'damage',
-        side: opponentOf(side),
-        amount: dealt,
-        hp: target.hp,
-        maxHp: target.maxHp,
-        effectiveness: result.effectiveness,
-        crit: result.crit,
-      });
-      pushText(state, damageMessage(activeMove.name, result, target));
-      if (target.hp <= 0) {
-        const bonded = target.volatiles.destinyBond;
-        const grudged = target.volatiles.grudge;
-        faint(state, opponentOf(side));
-        if (bonded && attacker.hp > 0) {
-          pushText(state, `${target.name} took its attacker down with it!`);
-          applyDamage(attacker, attacker.hp);
-          faint(state, side);
-        }
-        if (grudged && slot) {
-          slot.pp = 0;
-          pushText(state, `${attacker.name}'s ${activeMove.name} lost all its PP due to the grudge!`);
-        }
-        break;
-      }
-    }
-  }
-
-  if (activeMove.category !== 'Status') attacker.volatiles.laserFocus = false;
-
-  applyMoveEffects(state, side, activeMove, totalDamage, totalDamage > 0);
-  // Contact reactions are not "the move's effect", so Mold Breaker stops piercing here.
-  state.abilityPierce = null;
-  runAfterMove(hitContext, activeMove, totalDamage > 0);
-  maybeSelfSwitch(state, side, attacker, activeMove);
-}
-
-function faint(state: BattleState, side: SideId): void {
-  const fighter = activeFighter(state, side);
-  pushEvent(state, { kind: 'faint', side, fighterId: fighter.id });
-  pushText(state, `${fighter.name} fainted!`);
-  // Survivors react to the faint (Soul-Heart); the fainted side cannot.
-  const other = opponentOf(side);
-  runFaint(makeContext(state, other, { source: activeFighter(state, other), target: fighter }));
-}
-
 function applyWeatherResidual(state: BattleState): void {
   const weather = effectiveWeather(state);
   if (!weather) return;
   for (const side of SIDE_IDS) {
-    const fighter = activeFighter(state, side);
-    if (!takesIndirectDamage(fighter)) continue;
-    const chip = weatherChip(fighter, weather);
-    if (chip <= 0) continue;
-    const dealt = applyDamage(fighter, chip);
-    pushEvent(state, {
-      kind: 'damage',
-      side,
-      amount: dealt,
-      hp: fighter.hp,
-      maxHp: fighter.maxHp,
-      effectiveness: 1,
-      crit: false,
-    });
-    pushText(state, `${fighter.name} is buffeted by the ${weatherLabel(weather)}!`);
-    if (fighter.hp <= 0) faint(state, side);
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      if (!takesIndirectDamage(fighter)) continue;
+      const chip = weatherChip(fighter, weather);
+      if (chip <= 0) continue;
+      const dealt = applyDamage(fighter, chip);
+      pushEvent(state, {
+        kind: 'damage',
+        side,
+        amount: dealt,
+        hp: fighter.hp,
+        maxHp: fighter.maxHp,
+        effectiveness: 1,
+        crit: false,
+      });
+      pushText(state, `${fighter.name} is buffeted by the ${weatherLabel(weather)}!`);
+      if (fighter.hp <= 0) faint(state, side, slot);
+    }
   }
 }
 
 function applyTerrainResidual(state: BattleState): void {
   if (!state.terrain) return;
   for (const side of SIDE_IDS) {
-    const fighter = activeFighter(state, side);
-    const amount = terrainHeal(fighter, state.terrain);
-    if (amount <= 0) continue;
-    const healed = applyHeal(fighter, amount);
-    if (healed > 0) {
-      pushEvent(state, { kind: 'heal', side, amount: healed, hp: fighter.hp, maxHp: fighter.maxHp });
-      pushText(state, `${fighter.name} is restored by the grassy terrain!`);
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      const amount = terrainHeal(fighter, state.terrain);
+      if (amount <= 0) continue;
+      const healed = applyHeal(fighter, amount);
+      if (healed > 0) {
+        pushEvent(state, {
+          kind: 'heal',
+          side,
+          amount: healed,
+          hp: fighter.hp,
+          maxHp: fighter.maxHp,
+        });
+        pushText(state, `${fighter.name} is restored by the grassy terrain!`);
+      }
     }
   }
 }
 
 /**
  * End-of-turn order: primary status, weather, terrain, ability/item residuals,
- * Leech Seed, perish count, then volatile decay and field counters.
+ * Leech Seed, perish count, then volatile decay and field counters. Every loop
+ * runs the side's live slots in ascending order.
  */
 function resolveResiduals(state: BattleState): void {
   for (const side of SIDE_IDS) {
-    const fighter = activeFighter(state, side);
-    if (fighter.hp <= 0) continue;
-    const residual =
-      fighter.ability === 'Poison Heal' || !takesIndirectDamage(fighter)
-        ? null
-        : residualDamage(fighter);
-    if (!residual) continue;
-    const dealt = applyDamage(fighter, residual.damage);
-    pushEvent(state, {
-      kind: 'damage',
-      side,
-      amount: dealt,
-      hp: fighter.hp,
-      maxHp: fighter.maxHp,
-      effectiveness: 1,
-      crit: false,
-    });
-    pushText(state, `${fighter.name} is hurt by its ${statusName(residual.status)}!`);
-    if (fighter.hp <= 0) faint(state, side);
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      if (fighter.hp <= 0) continue;
+      const residual =
+        fighter.ability === 'Poison Heal' || !takesIndirectDamage(fighter)
+          ? null
+          : residualDamage(fighter);
+      if (!residual) continue;
+      const dealt = applyDamage(fighter, residual.damage);
+      pushEvent(state, {
+        kind: 'damage',
+        side,
+        amount: dealt,
+        hp: fighter.hp,
+        maxHp: fighter.maxHp,
+        effectiveness: 1,
+        crit: false,
+      });
+      pushText(state, `${fighter.name} is hurt by its ${statusName(residual.status)}!`);
+      if (fighter.hp <= 0) faint(state, side, slot);
+    }
   }
 
   applyWeatherResidual(state);
   applyTerrainResidual(state);
 
   for (const side of SIDE_IDS) {
-    const fighter = activeFighter(state, side);
-    if (fighter.hp <= 0) continue;
-    runResidual(makeContext(state, side, { source: fighter, target: opponent(state, side) }));
-    if (fighter.hp <= 0) faint(state, side);
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      if (fighter.hp <= 0) continue;
+      runResidual(makeContext(state, side, { source: fighter, target: opponent(state, side) }));
+      if (fighter.hp <= 0) faint(state, side, slot);
+    }
   }
 
   for (const side of SIDE_IDS) {
-    const fighter = activeFighter(state, side);
-    if (fighter.hp <= 0 || fighter.volatiles.yawn <= 0) continue;
-    fighter.volatiles.yawn -= 1;
-    if (fighter.volatiles.yawn === 0) {
-      applyStatusEffect(state, side, fighter, 'slp', `${fighter.name} fell asleep!`);
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      if (fighter.hp <= 0 || fighter.volatiles.yawn <= 0) continue;
+      fighter.volatiles.yawn -= 1;
+      if (fighter.volatiles.yawn === 0) {
+        applyStatusEffect(state, side, fighter, 'slp', `${fighter.name} fell asleep!`);
+      }
     }
   }
 
@@ -1142,74 +1349,93 @@ function resolveResiduals(state: BattleState): void {
   }
 
   for (const side of SIDE_IDS) {
-    const fighter = activeFighter(state, side);
-    if (fighter.hp <= 0 || !takesIndirectDamage(fighter)) continue;
-    const drain = leechSeedDamage(fighter);
-    if (drain <= 0) continue;
-    applyDamage(fighter, drain);
-    pushText(state, `${fighter.name}'s health is sapped by Leech Seed!`);
-    const other = opponent(state, side);
-    const healed = applyHeal(other, drain);
-    if (healed > 0) {
-      pushEvent(state, {
-        kind: 'heal',
-        side: opponentOf(side),
-        amount: healed,
-        hp: other.hp,
-        maxHp: other.maxHp,
-      });
-    }
-    if (fighter.hp <= 0) faint(state, side);
-  }
-
-  for (const side of SIDE_IDS) {
-    const fighter = activeFighter(state, side);
-    if (fighter.hp <= 0) continue;
-    if (tickPerish(fighter)) {
-      applyDamage(fighter, fighter.hp);
-      pushText(state, `${fighter.name} fainted from the perish count!`);
-      faint(state, side);
-    }
-  }
-
-  for (const side of SIDE_IDS) {
-    const fighter = activeFighter(state, side);
-    if (fighter.hp <= 0) continue;
-    if (fighter.volatiles.aquaRing || fighter.volatiles.ingrain) {
-      const healed = applyHeal(fighter, Math.max(1, Math.floor(fighter.maxHp / 16)));
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      if (fighter.hp <= 0 || !takesIndirectDamage(fighter)) continue;
+      const drain = leechSeedDamage(fighter);
+      if (drain <= 0) continue;
+      applyDamage(fighter, drain);
+      pushText(state, `${fighter.name}'s health is sapped by Leech Seed!`);
+      const other = opponent(state, side);
+      const healed = applyHeal(other, drain);
       if (healed > 0) {
-        pushEvent(state, { kind: 'heal', side, amount: healed, hp: fighter.hp, maxHp: fighter.maxHp });
-        pushText(
-          state,
-          `${fighter.name} restored a little HP with ${fighter.volatiles.aquaRing ? 'Aqua Ring' : 'Ingrain'}!`,
-        );
+        pushEvent(state, {
+          kind: 'heal',
+          side: opponentOf(side),
+          amount: healed,
+          hp: other.hp,
+          maxHp: other.maxHp,
+        });
+      }
+      if (fighter.hp <= 0) faint(state, side, slot);
+    }
+  }
+
+  for (const side of SIDE_IDS) {
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      if (fighter.hp <= 0) continue;
+      if (tickPerish(fighter)) {
+        applyDamage(fighter, fighter.hp);
+        pushText(state, `${fighter.name} fainted from the perish count!`);
+        faint(state, side, slot);
       }
     }
-    if (fighter.volatiles.curse && takesIndirectDamage(fighter)) {
-      const dealt = applyDamage(fighter, Math.max(1, Math.floor(fighter.maxHp / 4)));
-      pushEvent(state, {
-        kind: 'damage',
-        side,
-        amount: dealt,
-        hp: fighter.hp,
-        maxHp: fighter.maxHp,
-        effectiveness: 1,
-        crit: false,
-      });
-      pushText(state, `${fighter.name} is afflicted by the curse!`);
-      if (fighter.hp <= 0) faint(state, side);
+  }
+
+  for (const side of SIDE_IDS) {
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      if (fighter.hp <= 0) continue;
+      if (fighter.volatiles.aquaRing || fighter.volatiles.ingrain) {
+        const healed = applyHeal(fighter, Math.max(1, Math.floor(fighter.maxHp / 16)));
+        if (healed > 0) {
+          pushEvent(state, {
+            kind: 'heal',
+            side,
+            amount: healed,
+            hp: fighter.hp,
+            maxHp: fighter.maxHp,
+          });
+          pushText(
+            state,
+            `${fighter.name} restored a little HP with ${fighter.volatiles.aquaRing ? 'Aqua Ring' : 'Ingrain'}!`,
+          );
+        }
+      }
+      if (fighter.volatiles.curse && takesIndirectDamage(fighter)) {
+        const dealt = applyDamage(fighter, Math.max(1, Math.floor(fighter.maxHp / 4)));
+        pushEvent(state, {
+          kind: 'damage',
+          side,
+          amount: dealt,
+          hp: fighter.hp,
+          maxHp: fighter.maxHp,
+          effectiveness: 1,
+          crit: false,
+        });
+        pushText(state, `${fighter.name} is afflicted by the curse!`);
+        if (fighter.hp <= 0) faint(state, side, slot);
+      }
     }
   }
 
   for (const side of SIDE_IDS) {
-    const fighter = activeFighter(state, side);
-    if (fighter.hp > 0) endOfTurnVolatile(fighter);
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      if (fighter.hp > 0) endOfTurnVolatile(fighter);
+    }
   }
   tickWeather(state);
   tickTerrain(state);
   tickConditions(state);
 }
 
+/**
+ * The battle ends when a side has no healthy Pokémon left. Otherwise a side owes
+ * a replacement only when a live slot holds a fainted fighter and a reserve is
+ * left to send; one live slot with no reserve keeps fighting.
+ */
 function resolveFaints(state: BattleState): void {
   const playerAlive = hasHealthy(state, 'player');
   const enemyAlive = hasHealthy(state, 'enemy');
@@ -1218,75 +1444,138 @@ function resolveFaints(state: BattleState): void {
   else if (!enemyAlive) finishBattle(state, 'player');
   else {
     for (const side of SIDE_IDS) {
-      if (activeFighter(state, side).hp <= 0) state.sides[side].awaitingReplacement = true;
+      if (sideNeedsReplacement(state, side)) state.sides[side].awaitingReplacement = true;
     }
   }
 }
 
+/** True once `side` has spent its one Mega Evolution of the battle. */
+function megaUsed(state: BattleState, side: SideId): boolean {
+  return state.sides[side].party.some((fighter) => fighter.mega);
+}
+
+/** True once `side` has spent its one Gigantamax of the battle. */
+function gmaxUsed(state: BattleState, side: SideId): boolean {
+  return state.sides[side].party.some((fighter) => fighter.gmax);
+}
+
+/** The first foe slot a command can still hit, or the command's own target when it lives. */
+function aimedCommand(state: BattleState, side: SideId, command: FightCommand): FightCommand | null {
+  const foeSide = opponentOf(side);
+  const live = liveSlots(state, foeSide).filter(
+    (slot) => activeFighter(state, foeSide, slot).hp > 0,
+  );
+  if (live.length === 0) return null;
+  const target = command.target;
+  if (target && target.side === foeSide && live.includes(target.slot)) return command;
+  const wanted = target && target.side === foeSide ? target.slot : 0;
+  const slot = live.includes(wanted) ? wanted : live[0];
+  return { ...command, target: { side: foeSide, slot } };
+}
+
 /**
- * Resolves one turn from both sides' commands. Switches, items and runs act
- * before moves; moves run on priority then Speed; residuals tick last. The
- * caller must resolve any pending replacement before the next turn.
+ * Resolves one turn with up to two commands per side: every provided slot is
+ * validated, switches/items/runs act before moves in slot order, the commanded
+ * slots' Mega and Gigantamax resolve, and the fighting slots act on priority then
+ * Speed. The caller must resolve any pending replacement before the next turn.
  */
-export function takeTurn(state: BattleState, playerCommand: Command, enemyCommand: Command): void {
+export function takeDoubleTurn(
+  state: BattleState,
+  playerCommands: SlotCommands,
+  enemyCommands: SlotCommands,
+): void {
   if (state.winner !== null) return;
 
-  const playerError = validateCommand(state, 'player', playerCommand);
-  if (playerError) throw new Error(playerError);
-  const enemyError = validateCommand(state, 'enemy', enemyCommand);
-  if (enemyError) throw new Error(enemyError);
+  const commands: Record<SideId, SlotCommands> = {
+    player: slotCommands(playerCommands),
+    enemy: slotCommands(enemyCommands),
+  };
+
+  for (const side of SIDE_IDS) {
+    for (const slot of SLOTS) {
+      const command = commands[side][slot];
+      if (!command) continue;
+      const error = validateCommand(state, side, command);
+      if (error) throw new Error(error);
+    }
+  }
 
   state.turn += 1;
   pushEvent(state, { kind: 'turn', turn: state.turn });
   state.movedSides = [];
   state.switchedSides = [];
   for (const side of SIDE_IDS) {
-    const fighter = activeFighter(state, side);
-    fighter.volatiles.physicalDamageTaken = 0;
-    fighter.volatiles.specialDamageTaken = 0;
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      fighter.volatiles.physicalDamageTaken = 0;
+      fighter.volatiles.specialDamageTaken = 0;
+    }
   }
 
-  const commands: Record<SideId, Command> = { player: playerCommand, enemy: enemyCommand };
   resolvePreMoveActions(state, commands);
   if (state.winner !== null) return;
 
   // Mega Evolution resolves before any move, so the turn's order and damage read
-  // the Mega's stats, type and ability (D34).
+  // the Mega's stats, type and ability (D34). One per side per battle, whatever
+  // the slot: a partner can never spend a second stone.
   for (const side of SIDE_IDS) {
-    const command = commands[side];
-    if (command.type === 'fight' && command.mega) megaEvolve(state, side);
+    if (megaUsed(state, side)) continue;
+    for (const slot of SLOTS) {
+      const command = commands[side][slot];
+      if (command?.type !== 'fight' || !command.mega) continue;
+      withLeadSlot(state, side, slot, () => megaEvolve(state, side));
+      break;
+    }
   }
   if (state.winner !== null) return;
 
   // Gigantamax resolves at the same point (D44): the doubled pool and the forme's
   // name are in place before the turn's first move.
   for (const side of SIDE_IDS) {
-    const command = commands[side];
-    if (command.type === 'fight' && command.gmax) gigantamax(state, side);
+    if (gmaxUsed(state, side)) continue;
+    for (const slot of SLOTS) {
+      const command = commands[side][slot];
+      if (command?.type !== 'fight' || !command.gmax) continue;
+      withLeadSlot(state, side, slot, () => gigantamax(state, side));
+      break;
+    }
   }
   if (state.winner !== null) return;
 
-  const moveEntries = SIDE_IDS.filter((side) => commands[side].type === 'fight').map((side) => {
-    const fighter = activeFighter(state, side);
-    const selected = chosenMove(fighter, commands[side] as FightCommand, barredMovesFor(state, side));
-    if (!selected) return { side, priority: 0, fractional: 0 };
-    const ctx = makeContext(state, side, {
-      source: fighter,
-      target: opponent(state, side),
-      move: selected.move,
-    });
-    return {
-      side,
-      priority: runModifyPriority(ctx, selected.move, selected.move.priority),
-      fractional: runFractionalPriority(ctx),
-    };
-  });
+  const moveEntries: { side: SideId; slot: Slot; priority: number; fractional: number }[] = [];
+  for (const side of SIDE_IDS) {
+    for (const slot of liveSlots(state, side)) {
+      const command = commands[side][slot];
+      if (command?.type !== 'fight') continue;
+      const fighter = activeFighter(state, side, slot);
+      const selected = chosenMove(fighter, command, barredMovesFor(state, side));
+      if (!selected) {
+        moveEntries.push({ side, slot, priority: 0, fractional: 0 });
+        continue;
+      }
+      const ctx = makeContext(state, side, {
+        source: fighter,
+        target: commandedTarget(state, side, command) ?? opponent(state, side),
+        move: selected.move,
+      });
+      moveEntries.push({
+        side,
+        slot,
+        priority: runModifyPriority(ctx, selected.move, selected.move.priority),
+        fractional: runFractionalPriority(ctx),
+      });
+    }
+  }
 
   for (const entry of orderActions(state, moveEntries, state.rng)) {
     if (state.winner !== null) break;
-    if (activeFighter(state, entry.side).hp <= 0) continue;
-    if (opponent(state, entry.side).hp <= 0) continue;
-    useMove(state, entry.side, commands[entry.side] as FightCommand);
+    const slot = entry.slot ?? 0;
+    if (activeFighter(state, entry.side, slot).hp <= 0) continue;
+    const command = commands[entry.side][slot];
+    if (!command || command.type !== 'fight') continue;
+    const aimed = aimedCommand(state, entry.side, command);
+    if (!aimed) continue;
+    useMove(state, entry.side, aimed);
     if (!state.movedSides.includes(entry.side)) state.movedSides.push(entry.side);
   }
 
@@ -1296,19 +1585,31 @@ export function takeTurn(state: BattleState, playerCommand: Command, enemyComman
   resolveFaints(state);
 }
 
+/**
+ * Resolves one turn with one command per side — the single-battle entry point.
+ * It is exactly `takeDoubleTurn(state, { 0: player }, { 0: enemy })`.
+ */
+export function takeTurn(state: BattleState, playerCommand: Command, enemyCommand: Command): void {
+  takeDoubleTurn(state, { 0: playerCommand }, { 0: enemyCommand });
+}
+
 /** True while either side still owes a replacement before the next turn. */
 export function needsReplacement(state: BattleState): readonly SideId[] {
   return SIDE_IDS.filter((side) => state.sides[side].awaitingReplacement);
 }
 
+/**
+ * Fills every emptied live slot with the first healthy reserve that is not
+ * already active, slot 0 first. A self-switch (U-turn, Baton Pass) leaves its
+ * active healthy: then the lead is the slot that hands over, as it always has.
+ */
 export function autoReplace(state: BattleState): void {
   for (const side of needsReplacement(state)) {
-    const battleSide = state.sides[side];
-    // A self-switch (U-turn, Baton Pass) leaves the active healthy: never pick it
-    // again, or the incoming never changes.
-    const index = battleSide.party.findIndex(
-      (fighter, i) => i !== battleSide.activeIndex && fighter.hp > 0,
-    );
-    if (index >= 0) performSwitch(state, side, index);
+    const slots = liveSlots(state, side);
+    const emptied = slots.filter((slot) => activeFighter(state, side, slot).hp <= 0);
+    for (const slot of emptied.length > 0 ? emptied : [0 as Slot]) {
+      const index = reserveIndex(state, side);
+      if (index >= 0) performSwitch(state, side, index, slot);
+    }
   }
 }

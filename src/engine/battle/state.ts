@@ -7,6 +7,15 @@ export type SideId = 'player' | 'enemy';
 
 export const SIDE_IDS: readonly SideId[] = ['player', 'enemy'];
 
+/** An active slot on one side: 0 is the lead, 1 the partner of a double battle. */
+export type Slot = 0 | 1;
+
+/** The two slots a double battle fields per side, in acting order. */
+export const SLOTS: readonly Slot[] = [0, 1];
+
+/** One active on one side: the unit a single-target command names. */
+export type TargetRef = Readonly<{ side: SideId; slot: Slot }>;
+
 export type WeatherId = 'sun' | 'rain' | 'sand' | 'snow';
 export type TerrainId = 'electric' | 'grassy' | 'misty' | 'psychic';
 
@@ -81,8 +90,11 @@ export type BattleSide = {
   id: SideId;
   name: string;
   party: BattleFighter[];
+  /** The lead's party index (slot 0). */
   activeIndex: number;
-  /** The active Pokémon fainted; a replacement is required before the next turn. */
+  /** Slot 1's party index; `-1` when the battle is single or the slot is empty. */
+  secondActiveIndex: number;
+  /** A live slot holds a fainted fighter and a healthy reserve is left to send. */
   awaitingReplacement: boolean;
   /** Turns left before Wish heals the active Pokémon (0 = none). */
   wishTurns: number;
@@ -121,6 +133,8 @@ export type BattleEvent =
 
 export type BattleState = {
   sides: Record<SideId, BattleSide>;
+  /** True when both sides field two active slots (the map boss's fight). */
+  double: boolean;
   turn: number;
   weather: WeatherId | null;
   weatherTurns: number;
@@ -187,6 +201,8 @@ export type BattleSetup = Readonly<{
   roomField?: Partial<RoomFieldEffects>;
   /** The room bars the player's Bag and healing moves (the no-heal leaf). */
   noHeal?: boolean;
+  /** A double battle: two active slots per side. Default `false`. */
+  double?: boolean;
 }>;
 
 export function createBattle(setup: BattleSetup): BattleState {
@@ -194,6 +210,7 @@ export function createBattle(setup: BattleSetup): BattleState {
     throw new Error('A battle needs at least one Pokémon per side');
   }
 
+  const double = setup.double ?? false;
   const state: BattleState = {
     sides: {
       player: {
@@ -201,6 +218,7 @@ export function createBattle(setup: BattleSetup): BattleState {
         name: setup.playerName ?? 'Player',
         party: [...setup.player],
         activeIndex: 0,
+        secondActiveIndex: double && setup.player.length > 1 ? 1 : -1,
         awaitingReplacement: false,
         wishTurns: 0,
         batonPassBoosts: null,
@@ -211,12 +229,14 @@ export function createBattle(setup: BattleSetup): BattleState {
         name: setup.enemyName ?? 'Foe',
         party: [...setup.enemy],
         activeIndex: 0,
+        secondActiveIndex: double && setup.enemy.length > 1 ? 1 : -1,
         awaitingReplacement: false,
         wishTurns: 0,
         batonPassBoosts: null,
         sideConditions: emptySideConditions(),
       },
     },
+    double,
     turn: 0,
     weather: setup.weather?.id ?? null,
     weatherTurns: setup.weather?.turns ?? 0,
@@ -243,10 +263,12 @@ export function createBattle(setup: BattleSetup): BattleState {
   if (state.noHeal) pushText(state, 'No items or healing moves can be used in this room!');
 
   for (const side of SIDE_IDS) {
-    const fighter = activeFighter(state, side);
-    const ctx = makeContext(state, side, { source: fighter, target: opponent(state, side) });
-    runStart(ctx);
-    runSwitchIn(ctx);
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      const ctx = makeContext(state, side, { source: fighter, target: opponent(state, side) });
+      runStart(ctx);
+      runSwitchIn(ctx);
+    }
   }
 
   return state;
@@ -256,12 +278,35 @@ export function opponentOf(side: SideId): SideId {
   return side === 'player' ? 'enemy' : 'player';
 }
 
-export function activeFighter(state: BattleState, side: SideId): BattleFighter {
-  return state.sides[side].party[state.sides[side].activeIndex];
+/** The party index a slot holds; slot 1 throws when the battle has no second active. */
+export function slotActiveIndex(state: BattleState, side: SideId, slot: Slot): number {
+  const battleSide = state.sides[side];
+  const index = slot === 0 ? battleSide.activeIndex : battleSide.secondActiveIndex;
+  if (index < 0) throw new Error('There is no second active Pokémon.');
+  return index;
 }
 
-export function opponent(state: BattleState, side: SideId): BattleFighter {
-  return activeFighter(state, opponentOf(side));
+export function activeFighter(state: BattleState, side: SideId, slot: Slot = 0): BattleFighter {
+  return state.sides[side].party[slotActiveIndex(state, side, slot)];
+}
+
+/** The slots a side fields, ascending: `[0]` in a single battle, `[0, 1]` in a double one. */
+export function liveSlots(state: BattleState, side: SideId): readonly Slot[] {
+  return state.sides[side].secondActiveIndex >= 0 ? SLOTS : [0];
+}
+
+/** Every active of a side, ascending by slot; a fainted occupant still fills its slot. */
+export function activeFighters(state: BattleState, side: SideId): readonly BattleFighter[] {
+  return liveSlots(state, side).map((slot) => activeFighter(state, side, slot));
+}
+
+export function opponent(state: BattleState, side: SideId, slot: Slot = 0): BattleFighter {
+  return activeFighter(state, opponentOf(side), slot);
+}
+
+/** The slots of the other side, ascending. */
+export function opposingSlots(state: BattleState, side: SideId): readonly Slot[] {
+  return liveSlots(state, opponentOf(side));
 }
 
 export function isOver(state: BattleState): boolean {

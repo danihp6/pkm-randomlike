@@ -1,10 +1,20 @@
 import { getMove, type Move } from '../../data/dex';
 import type { AiFlag } from '../../data/trainers';
 import { estimateDamage } from './damage';
-import { legalMoveIndices, selectedMove, type Command } from './commands';
+import { legalMoveIndices, selectedMove, withLeadSlot, type Command, type FightCommand } from './commands';
 import { canGigantamax } from './gmax';
 import { canMegaEvolve } from './mega';
-import { activeFighter, isTrapped, opponent, type BattleState, type SideId } from './state';
+import {
+  activeFighter,
+  isTrapped,
+  liveSlots,
+  opponent,
+  opponentOf,
+  slotActiveIndex,
+  type BattleState,
+  type SideId,
+  type Slot,
+} from './state';
 import { STATUS_IDS, canApplyStatus } from './status';
 import { BOOST_IDS, type BattleFighter, type StatusId } from './fighter';
 
@@ -16,6 +26,8 @@ export interface AiOptions {
   readonly level?: AiLevel;
   /** The archetype's own flags (`TrainerArchetype.aiFlags`). Default `[]`. */
   readonly flags?: readonly AiFlag[];
+  /** Which enemy active is choosing. Default 0. */
+  readonly slot?: Slot;
 }
 
 /** What the cartridge's Hard Mode is, exactly: the trio added at `hard`. */
@@ -127,13 +139,15 @@ function moveScore(
   return score;
 }
 
+/** The first healthy party member that is not already on the field, or -1. */
 function bestReserve(state: BattleState, side: SideId): number {
   const battleSide = state.sides[side];
+  const active = liveSlots(state, side).map((slot) => slotActiveIndex(state, side, slot));
   const foe = opponent(state, side);
   let bestIndex = -1;
   let bestScore = -1;
   battleSide.party.forEach((fighter, index) => {
-    if (index === battleSide.activeIndex || fighter.hp <= 0) return;
+    if (active.includes(index) || fighter.hp <= 0) return;
     const score = bestOffense(fighter, foe) + fighter.hp;
     if (score > bestScore) {
       bestScore = score;
@@ -143,59 +157,124 @@ function bestReserve(state: BattleState, side: SideId): number {
   return bestIndex;
 }
 
+const SPREAD_TARGETS: ReadonlySet<string> = new Set(['allAdjacentFoes', 'allAdjacent', 'all']);
+
 /**
  * Enemy AI: the cartridge's script flags, read as data off the archetype, scored
  * as expected value over the legal moves. A wild Pokémon at the default level
  * picks a random move that has PP left instead, exactly as the games do, so a
  * wild never out-thinks an Ace. The highest score wins; at `hard` an exact tie is
- * drawn from the battle's own `Rng`, at `normal` the lowest index wins it. It
- * reads nothing but legal state, so it never sees hidden information.
+ * drawn from the battle's own `Rng`, at `normal` the lowest index wins it. In a
+ * double battle every legal `(move, target)` pair is scored over the live foe
+ * slots and a spread move is scored once, with no target. It reads nothing but
+ * legal state, so it never sees hidden information.
  */
-export function chooseAiCommand(state: BattleState, side: SideId, options: AiOptions = {}): Command {
+export function chooseAiCommand(
+  state: BattleState,
+  side: SideId,
+  options: AiOptions = {},
+): Command {
   const level = options.level ?? 'normal';
   const flags = new Set<AiFlag>(options.flags ?? []);
   if (level === 'hard') for (const flag of HARD_MODE_FLAGS) flags.add(flag);
   const wildPolicy = level === 'normal' && state.isWild && side === 'enemy';
 
-  if (state.sides[side].awaitingReplacement) {
-    return { type: 'switch', partyIndex: Math.max(0, bestReserve(state, side)) };
+  const battleSide = state.sides[side];
+  // A slot the battle does not field falls back to the lead: the caller asked for
+  // a partner in a single battle.
+  const slot: Slot =
+    options.slot === 1 && battleSide.secondActiveIndex >= 0 ? 1 : 0;
+  const foeSide = opponentOf(side);
+  const foeSlots = liveSlots(state, foeSide).filter(
+    (s) => activeFighter(state, foeSide, s).hp > 0,
+  );
+
+  const tag = <T extends Command>(command: T): Command =>
+    slot === 1 ? ({ ...command, slot } as Command) : command;
+
+  if (battleSide.awaitingReplacement || activeFighter(state, side, slot).hp <= 0) {
+    // Replacement: the emptied slot asks, whoever the caller spoke for.
+    const emptied = liveSlots(state, side).find(
+      (s) => activeFighter(state, side, s).hp <= 0,
+    );
+    const replaceSlot = activeFighter(state, side, slot).hp <= 0 ? slot : (emptied ?? slot);
+    const replacement: Command = { type: 'switch', partyIndex: Math.max(0, bestReserve(state, side)) };
+    return replaceSlot === 1 ? { ...replacement, slot: 1 } : replacement;
   }
 
-  const attacker = activeFighter(state, side);
+  const attacker = activeFighter(state, side, slot);
   const defender = opponent(state, side);
   // The AI spends its Mega Stone and its Gigantamax at the first opportunity it
-  // can act, exactly as it spends the stone (D34, D44). A holder can have both
-  // available; a Mega resolves first (`turn.ts`), so it is the only one the
-  // command arms.
-  const mega = canMegaEvolve(state, side);
-  const gmax = canGigantamax(state, side);
-  const fight = (moveIndex: number): Command => {
-    if (mega) return { type: 'fight', moveIndex, mega: true };
-    if (gmax) return { type: 'fight', moveIndex, gmax: true };
-    return { type: 'fight', moveIndex };
+  // can act, exactly as it spends the stone (D34, D44). Both are global: a battle
+  // holds one of each, so the partner slot never arms them.
+  const mega = withLeadSlot(state, side, slot, () => canMegaEvolve(state, side));
+  const gmax = mega ? false : withLeadSlot(state, side, slot, () => canGigantamax(state, side));
+  const arm = (command: FightCommand): Command => {
+    if (mega) return { ...command, mega: true };
+    if (gmax) return { ...command, gmax: true };
+    return command;
   };
+  const commanded = (moveIndex: number, target?: Slot): Command =>
+    arm({
+      type: 'fight',
+      moveIndex,
+      ...(slot === 1 ? { slot } : {}),
+      ...(state.double && target !== undefined ? { target: { side: foeSide, slot: target } } : {}),
+    });
 
   if (wildPolicy) {
     const legal = legalMoveIndices(attacker);
-    if (legal.length === 0) return fight(0);
-    return fight(legal[state.rng.int(0, legal.length - 1)]);
+    if (legal.length === 0) return commanded(0);
+    const pick = legal[state.rng.int(0, legal.length - 1)];
+    return commanded(pick, foeSlots[0]);
   }
 
   // Perish Song is about to kill the active Pokémon: leave while it still can.
   if (attacker.volatiles.perish === 1) {
     const reserve = bestReserve(state, side);
-    if (reserve >= 0 && !isTrapped(state, side)) return { type: 'switch', partyIndex: reserve };
+    if (reserve >= 0 && !isTrapped(state, side)) {
+      return tag({ type: 'switch', partyIndex: reserve });
+    }
   }
 
   const legal = legalMoveIndices(attacker);
-  if (legal.length === 0) return fight(0);
+  if (legal.length === 0) return commanded(0);
 
-  const scores = new Map<number, number>();
   let best = Number.NEGATIVE_INFINITY;
-  for (const index of legal) {
-    const score = moveScore(state, attacker, defender, index, flags);
-    scores.set(index, score);
-    if (score > best) best = score;
+  let tied: { index: number; target?: Slot }[] = [];
+
+  if (state.double) {
+    const pairs: { index: number; target?: Slot; score: number }[] = [];
+    for (const index of legal) {
+      const selected = selectedMove(attacker, { type: 'fight', moveIndex: index });
+      if (!selected) continue;
+      if (SPREAD_TARGETS.has(selected.move.target)) {
+        const first = foeSlots[0];
+        const foe = first === undefined ? defender : activeFighter(state, foeSide, first);
+        pairs.push({ index, score: moveScore(state, attacker, foe, index, flags) });
+        continue;
+      }
+      for (const foeSlot of foeSlots) {
+        pairs.push({
+          index,
+          target: foeSlot,
+          score: moveScore(state, attacker, activeFighter(state, foeSide, foeSlot), index, flags),
+        });
+      }
+    }
+    for (const pair of pairs) {
+      if (pair.score > best) best = pair.score;
+    }
+    tied = pairs.filter((pair) => pair.score === best);
+    if (tied.length === 0) return commanded(0);
+  } else {
+    const scores = new Map<number, number>();
+    for (const index of legal) {
+      const score = moveScore(state, attacker, defender, index, flags);
+      scores.set(index, score);
+      if (score > best) best = score;
+    }
+    tied = legal.filter((index) => scores.get(index) === best).map((index) => ({ index }));
   }
 
   if (best <= 0) {
@@ -205,11 +284,10 @@ export function chooseAiCommand(state: BattleState, side: SideId, options: AiOpt
       !isTrapped(state, side) &&
       bestOffense(state.sides[side].party[reserve], defender) > 0
     ) {
-      return { type: 'switch', partyIndex: reserve };
+      return tag({ type: 'switch', partyIndex: reserve });
     }
   }
 
-  const tied = legal.filter((index) => scores.get(index) === best);
   const chosen = level === 'hard' ? tied[state.rng.int(0, tied.length - 1)] : tied[0];
-  return fight(chosen);
+  return commanded(chosen.index, chosen.target);
 }
