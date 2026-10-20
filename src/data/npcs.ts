@@ -1,18 +1,25 @@
 import type { TranslationKey } from '../i18n';
+import type { SacrificeReward } from '../engine/run/memberEdits';
 
 /**
  * The special-NPC table (`docs/maps-spec.md` §7): every special NPC a trainer room
- * can hold, its art, its per-floor chance and the party gate that makes it
- * eligible. Pure data — the roll lives in `src/engine/routes/npcs.ts` and the card
- * the interact key opens in `src/ui/npcPanel.ts`, so this file carries no function
- * that reads a run and no Phaser.
+ * can hold, its art, its per-floor chance and the gate that makes it eligible.
+ * Pure data — the roll lives in `src/engine/routes/npcs.ts`, the member edits in
+ * `src/engine/run/memberEdits.ts` and the card the interact key opens in
+ * `src/ui/npcPanel.ts`, so this file carries no function that reads a run and no
+ * Phaser.
  */
 
-/** What a party must carry for an NPC row to be eligible (never the box). */
+/**
+ * What a run must carry for an NPC row to be eligible (never the box). The first
+ * three are **party** properties; `missionsCompleted` is the run's own count, so a
+ * row may open on progress rather than on a Pokémon.
+ */
 export type NpcRequirement =
   | Readonly<{ kind: 'type'; types: readonly string[] }>
   | Readonly<{ kind: 'move'; moves: readonly string[] }>
-  | Readonly<{ kind: 'ability'; abilities: readonly string[] }>;
+  | Readonly<{ kind: 'ability'; abilities: readonly string[] }>
+  | Readonly<{ kind: 'missionsCompleted'; min: number }>;
 
 /** One choice the panel shell prints; `label` is an i18n key. */
 export type NpcChoice = Readonly<{ id: string; label: TranslationKey }>;
@@ -24,7 +31,7 @@ export type NpcRow = Readonly<{
   nameKey: TranslationKey;
   /** The i18n key of the one paragraph the panel opens with. */
   greetingKey: TranslationKey;
-  /** A key of `NPC_SPRITE_KEYS` (`src/data/overworldSprites.ts`). */
+  /** A key of `OVERWORLD_SPRITE_KEYS` (`src/data/overworldSprites.ts`). */
   spriteKey: string;
   /** Base chance, 0..1, on map 1. */
   chance: number;
@@ -36,8 +43,13 @@ export type NpcRow = Readonly<{
    * `chance` is `0` beside it, so the roll never picks it.
    */
   guaranteedFromMap?: number;
-  /** When present, a party member must satisfy it before the row is eligible. */
+  /** When present, a run must satisfy it before the row is eligible. */
   requires?: NpcRequirement;
+  /**
+   * When `true`, a chosen row writes no `npcUseId` mark, so the card answers again
+   * on the same floor (the merchant). Absent means one-shot.
+   */
+  repeatable?: boolean;
   /** The rows the panel prints, in order; `LEAVE` is the shell's own last row. */
   choices?: readonly NpcChoice[];
 }>;
@@ -46,7 +58,7 @@ export type NpcRow = Readonly<{
  * Every special NPC. The **merchant** is the floor's one guaranteed row: from map 2
  * on it stands in the floor's first trainer room and opens the Mart, so the shop
  * room could retire and the run still has its counter (`docs/maps-spec.md` §7).
- * Later content tasks add their own rolled rows beside it.
+ * The five member-edit rows and the sacrifice share the roll after it.
  */
 export const NPC_ROWS: readonly NpcRow[] = [
   {
@@ -57,8 +69,85 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0,
     floorStep: 0,
     guaranteedFromMap: 2,
+    repeatable: true,
     choices: [{ id: 'mart', label: 'npc.merchant.trade' }],
   },
+  {
+    id: 'tutor',
+    nameKey: 'npc.tutor.name',
+    greetingKey: 'npc.tutor.greeting',
+    spriteKey: 'blackbelt',
+    chance: 0.02,
+    floorStep: 0.005,
+    choices: [{ id: 'teach', label: 'npc.tutor.teach' }],
+  },
+  {
+    id: 'nature',
+    nameKey: 'npc.nature.name',
+    greetingKey: 'npc.nature.greeting',
+    spriteKey: 'psychic',
+    chance: 0.02,
+    floorStep: 0.005,
+    choices: [{ id: 'reroll', label: 'npc.nature.reroll' }],
+  },
+  {
+    id: 'ability',
+    nameKey: 'npc.ability.name',
+    greetingKey: 'npc.ability.greeting',
+    spriteKey: 'ace',
+    chance: 0.02,
+    floorStep: 0.005,
+    choices: [{ id: 'reroll', label: 'npc.ability.reroll' }],
+  },
+  {
+    id: 'iv-judge',
+    nameKey: 'npc.iv.name',
+    greetingKey: 'npc.iv.greeting',
+    spriteKey: 'iv-judge',
+    chance: 0.02,
+    floorStep: 0.005,
+    choices: [{ id: 'reroll', label: 'npc.iv.reroll' }],
+  },
+  {
+    id: 'species',
+    nameKey: 'npc.species.name',
+    greetingKey: 'npc.species.greeting',
+    spriteKey: 'camper',
+    chance: 0.02,
+    floorStep: 0.005,
+    choices: [{ id: 'swap', label: 'npc.species.swap' }],
+  },
+  {
+    id: 'sacrifice',
+    nameKey: 'npc.sacrifice.name',
+    greetingKey: 'npc.sacrifice.greeting',
+    spriteKey: 'sacrifice',
+    chance: 0.04,
+    floorStep: 0.005,
+    requires: { kind: 'missionsCompleted', min: 1 },
+    choices: [{ id: 'offer', label: 'npc.sacrifice.offer' }],
+  },
+];
+
+/**
+ * The moves the tutor may teach, in the order its card prints them. The array is
+ * the whole gate: a move outside it is never taught, whatever the dex knows.
+ */
+export const TUTOR_MOVES: readonly string[] = [
+  'swordsdance',
+  'earthquake',
+  'icebeam',
+  'thunderbolt',
+  'shadowball',
+  'roost',
+];
+
+/** What one member row of the sacrifice pays, in table order (the roll's tie-break). */
+export const SACRIFICE_REWARDS: readonly SacrificeReward[] = [
+  'nature',
+  'second-ability',
+  'ivs',
+  'species',
 ];
 
 export function getNpcRow(id: string): NpcRow | undefined {

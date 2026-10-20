@@ -382,6 +382,12 @@ for good and is not counted as a casualty (no RIP entry, no release beat), and t
 return joins at the squad's level exactly as a catch does. A single-member party is
 refused, because a run cannot hold no party.
 
+A member can be **edited** by a special NPC (`docs/maps-spec.md` §7): the tutor, the
+nature, ability and IV readers and the species swapper each edit one **party**
+member the card asks for, and a row without `repeatable` answers **once per floor**.
+A tutored move lives in the MOVES tab's band, tagged `Tutor`, until it is equipped
+again, so an unequip never loses it.
+
 The PC box also carries a **fixed RIP tab**, at the right end of its page-tab
 strip: a **third pane of the same window** (`RunState.rip`), listing the run's
 fallen, one avatar cell each, in the order they fell — the party's first, the

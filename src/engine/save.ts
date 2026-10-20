@@ -1,4 +1,4 @@
-import { STAT_IDS, getSpecies, type StatId, type Stats } from '../data/dex';
+import { STAT_IDS, getMove, getSpecies, type StatId, type Stats } from '../data/dex';
 import { defaultHudLayout, parseHudLayout, type HudLayout } from '../data/hudLayout';
 import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybinds';
 import { levelCapForMap } from '../data/maps';
@@ -67,7 +67,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 19;
+export const SAVE_VERSION = 20;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -154,7 +154,10 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * v18 schema, which added the `caughtSpecies` record of every successful catch (an
  * old run's catches were never stored, so it starts empty); `18` moves a v18 run
  * onto the v19 schema, which added the floor mission and its three counters (an old
- * run starts with none and a clean floor).
+ * run starts with none and a clean floor); `19` moves a v19 run onto the v20 schema,
+ * which added the two optional member words a special NPC writes (`taughtMoves`,
+ * `secondAbility`), an old run starting with neither because the decoder leaves an
+ * absent optional field out (the `14` nickname precedent).
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -274,6 +277,13 @@ export const SAVE_MIGRATIONS: Migrations = {
     run: isRecord(document.run)
       ? { mission: null, missionsCompleted: 0, hpLost: 0, floorCasualties: 0, ...document.run }
       : document.run,
+  }),
+  // The NPC member edits: both new member words are optional and the decoder defaults
+  // an absent one to none, so a v19 run needs no field written here (the `14`
+  // nickname precedent).
+  19: (document) => ({
+    ...document,
+    version: 20,
   }),
 };
 
@@ -621,12 +631,39 @@ function parseFighter(value: unknown): FighterSnapshot | null {
   };
 }
 
+/**
+ * Reads the moves a tutor taught a member: the ids `getMove` resolves, deduped, in
+ * order. An absent or malformed value reads as none, so an old run and a
+ * hand-edited document both start with an empty band.
+ */
+function parseTaughtMoves(value: unknown): string[] {
+  const moves: string[] = [];
+  if (!Array.isArray(value)) return moves;
+  for (const id of value) {
+    if (!isString(id) || id === '') continue;
+    const move = getMove(id);
+    if (!move || moves.includes(move.id)) continue;
+    moves.push(move.id);
+  }
+  return moves;
+}
+
 function parsePokemon(value: unknown): RunPokemon | null {
   if (!isRecord(value)) return null;
   const fighter = parseFighter(value.fighter);
   if (!fighter) return null;
   const caughtAt = parseCatchLocation(value.caughtAt);
-  return caughtAt ? { fighter, caughtAt } : { fighter };
+  const taughtMoves = parseTaughtMoves(value.taughtMoves);
+  const secondAbility =
+    isString(value.secondAbility) && value.secondAbility !== '' ? value.secondAbility : null;
+  // Each optional word is written only when it carries something, so a v20 round trip
+  // stays byte-stable and a v19 document decodes to none.
+  return {
+    fighter,
+    ...(caughtAt ? { caughtAt } : {}),
+    ...(taughtMoves.length > 0 ? { taughtMoves } : {}),
+    ...(secondAbility !== null ? { secondAbility } : {}),
+  };
 }
 
 /**

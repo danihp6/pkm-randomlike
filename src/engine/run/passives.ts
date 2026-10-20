@@ -1,6 +1,7 @@
 import { getAbility } from '../../data/dex/abilities';
 import { mapPassivesFor, type MapPassiveTrigger } from '../../data/passives';
 import { hashSeed, Rng } from '../rng';
+import { memberAbilities } from './progression';
 import { addItem, isItemPicked, markItemPicked, type RunState } from './state';
 
 /**
@@ -54,8 +55,10 @@ export function passiveMark(
 export function runPassives(run: RunState, trigger: MapPassiveTrigger): PassiveResult {
   const held = new Set<string>();
   for (const member of run.party) {
-    const id = getAbility(member.fighter.ability)?.id;
-    if (id) held.add(id);
+    for (const ability of memberAbilities(member)) {
+      const id = getAbility(ability)?.id;
+      if (id) held.add(id);
+    }
   }
   const picks: PassivePickup[] = [];
   let next = run;

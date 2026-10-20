@@ -1,14 +1,22 @@
 import { describe, expect, it } from 'vitest';
+import { getMove } from './dex/moves';
 import { en, es, setLocale, t } from '../i18n';
-import { NPC_SPRITE_KEYS } from './overworldSprites';
-import { NPC_ROWS, getNpcRow } from './npcs';
+import { OVERWORLD_SPRITE_KEYS } from './overworldSprites';
+import { NPC_ROWS, SACRIFICE_REWARDS, TUTOR_MOVES, getNpcRow, type NpcRow } from './npcs';
 
-/** The one row the table ships today (`docs/maps-spec.md` §7). */
+/** The rows this table ships, in the order the roll breaks its ties (`docs/maps-spec.md` §7). */
+const ROW_IDS = ['merchant', 'tutor', 'nature', 'ability', 'iv-judge', 'species', 'sacrifice'];
+
 const MERCHANT = NPC_ROWS[0];
+
+function rowOf(id: string): NpcRow {
+  const row = getNpcRow(id);
+  expect(row, id).toBeDefined();
+  return row!;
+}
 
 describe('the special-NPC table', () => {
   it('ships the merchant, the floor guarantee that carries the Mart', () => {
-    expect(NPC_ROWS).toHaveLength(1);
     expect(MERCHANT.id).toBe('merchant');
     expect(MERCHANT.nameKey).toBe('npc.merchant.name');
     expect(MERCHANT.greetingKey).toBe('npc.merchant.greeting');
@@ -21,8 +29,87 @@ describe('the special-NPC table', () => {
     expect(MERCHANT.choices).toEqual([{ id: 'mart', label: 'npc.merchant.trade' }]);
   });
 
-  it('answers the merchant by id and nothing else', () => {
+  it('ships the five member-edit rows and the sacrifice after the merchant, in table order', () => {
+    expect(NPC_ROWS.map((row) => row.id)).toEqual(ROW_IDS);
+  });
+
+  it('gives every rolled member-edit row the shipped fields', () => {
+    const rows: Readonly<Record<string, Omit<NpcRow, 'id' | 'nameKey' | 'greetingKey' | 'requires'>>> = {
+      tutor: {
+        spriteKey: 'blackbelt',
+        chance: 0.02,
+        floorStep: 0.005,
+        choices: [{ id: 'teach', label: 'npc.tutor.teach' }],
+      },
+      nature: {
+        spriteKey: 'psychic',
+        chance: 0.02,
+        floorStep: 0.005,
+        choices: [{ id: 'reroll', label: 'npc.nature.reroll' }],
+      },
+      ability: {
+        spriteKey: 'ace',
+        chance: 0.02,
+        floorStep: 0.005,
+        choices: [{ id: 'reroll', label: 'npc.ability.reroll' }],
+      },
+      'iv-judge': {
+        spriteKey: 'iv-judge',
+        chance: 0.02,
+        floorStep: 0.005,
+        choices: [{ id: 'reroll', label: 'npc.iv.reroll' }],
+      },
+      species: {
+        spriteKey: 'camper',
+        chance: 0.02,
+        floorStep: 0.005,
+        choices: [{ id: 'swap', label: 'npc.species.swap' }],
+      },
+    };
+    for (const [id, fields] of Object.entries(rows)) {
+      const row = rowOf(id);
+      expect(row.spriteKey, id).toBe(fields.spriteKey);
+      expect(row.chance, id).toBe(fields.chance);
+      expect(row.floorStep, id).toBe(fields.floorStep);
+      expect(row.choices, id).toEqual(fields.choices);
+      expect(row.requires, id).toBeUndefined();
+      expect(row.repeatable, id).toBeUndefined();
+      expect(row.guaranteedFromMap, id).toBeUndefined();
+    }
+    const groups: Readonly<Record<string, string>> = {
+      tutor: 'npc.tutor',
+      nature: 'npc.nature',
+      ability: 'npc.ability',
+      'iv-judge': 'npc.iv',
+      species: 'npc.species',
+    };
+    for (const [id, group] of Object.entries(groups)) {
+      expect(rowOf(id).nameKey, id).toBe(`${group}.name`);
+      expect(rowOf(id).greetingKey, id).toBe(`${group}.greeting`);
+    }
+  });
+
+  it('gates the sacrifice on a completed floor mission', () => {
+    const row = rowOf('sacrifice');
+    expect(row.nameKey).toBe('npc.sacrifice.name');
+    expect(row.greetingKey).toBe('npc.sacrifice.greeting');
+    expect(row.spriteKey).toBe('sacrifice');
+    expect(row.chance).toBe(0.04);
+    expect(row.floorStep).toBe(0.005);
+    expect(row.requires).toEqual({ kind: 'missionsCompleted', min: 1 });
+    expect(row.choices).toEqual([{ id: 'offer', label: 'npc.sacrifice.offer' }]);
+    expect(row.repeatable).toBeUndefined();
+  });
+
+  it('marks the merchant as the only repeatable row', () => {
+    expect(MERCHANT.repeatable).toBe(true);
+    const repeatable = NPC_ROWS.filter((row) => row.repeatable === true).map((row) => row.id);
+    expect(repeatable).toEqual(['merchant']);
+  });
+
+  it('answers a row by id and nothing else', () => {
     expect(getNpcRow('merchant')).toBe(MERCHANT);
+    expect(getNpcRow('tutor')?.id).toBe('tutor');
     expect(getNpcRow('')).toBeUndefined();
     expect(getNpcRow('medic')).toBeUndefined();
   });
@@ -33,9 +120,9 @@ describe('the special-NPC table', () => {
     for (const id of ids) expect(getNpcRow(id)?.id).toBe(id);
   });
 
-  it('draws every row through a key of the packed NPC sheets', () => {
+  it('draws every row through a key of the packed overworld atlas', () => {
     for (const row of NPC_ROWS) {
-      expect(NPC_SPRITE_KEYS, row.id).toContain(row.spriteKey);
+      expect(OVERWORLD_SPRITE_KEYS, row.id).toContain(row.spriteKey);
     }
   });
 
@@ -81,5 +168,27 @@ describe('the special-NPC table', () => {
       const ids = (row.choices ?? []).map((choice) => choice.id);
       expect(new Set(ids).size, row.id).toBe(ids.length);
     }
+  });
+});
+
+describe('the tutor and the sacrifice tables', () => {
+  it('ships the six tutor moves, in the order the card prints them, all dex-resolvable', () => {
+    expect(TUTOR_MOVES).toEqual([
+      'swordsdance',
+      'earthquake',
+      'icebeam',
+      'thunderbolt',
+      'shadowball',
+      'roost',
+    ]);
+    for (const moveId of TUTOR_MOVES) {
+      const move = getMove(moveId);
+      expect(move, moveId).toBeDefined();
+      expect(move?.id, moveId).toBe(moveId);
+    }
+  });
+
+  it('ships the four sacrifice rewards in their table order', () => {
+    expect(SACRIFICE_REWARDS).toEqual(['nature', 'second-ability', 'ivs', 'species']);
   });
 });

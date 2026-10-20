@@ -14,6 +14,7 @@ import {
   experienceFraction,
   levelForXp,
   levelUpPokemon,
+  memberAbilities,
   xpForLevel,
   type RunPokemon,
 } from './progression';
@@ -456,5 +457,57 @@ describe('editRunPokemon', () => {
     ).hp;
     expect(bumped.fighter.hp).toBe(maxHp);
     expect(editRunPokemon(hurt, { moves: ['growl'] }).fighter.hp).toBe(1);
+  });
+
+  it('writes re-rolled IVs on top of the member own and keeps every other stat input', () => {
+    const pokemon = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 20, moves: ['ember'] });
+    const hurt = { ...pokemon, fighter: { ...pokemon.fighter, hp: 5 } };
+    const ivs = { hp: 3, atk: 7, def: 11, spa: 19, spd: 23, spe: 29 };
+    const edited = editRunPokemon(hurt, { ivs });
+    expect(edited.fighter.ivs).toEqual(ivs);
+    // Every other stat input is untouched.
+    expect(edited.fighter.evs).toEqual(pokemon.fighter.evs);
+    expect(edited.fighter.level).toBe(20);
+    expect(edited.fighter.nature).toBe(pokemon.fighter.nature);
+    expect(edited.fighter.ability).toBe(pokemon.fighter.ability);
+    expect(edited.fighter.moves.map((slot) => slot.moveId)).toEqual(['ember']);
+    // The HP clamp comes from the new IVs.
+    const maxHp = statAtLevel(
+      getSpecies('charmander')!,
+      20,
+      pokemon.fighter.nature,
+      ivs,
+      pokemon.fighter.evs,
+    ).hp;
+    expect(edited.fighter.hp).toBe(Math.min(maxHp, 5));
+  });
+
+  it('keeps a stat the partial edit does not name', () => {
+    const pokemon = createRunPokemon({ id: 'c', speciesId: 'charmander', level: 5 });
+    const edited = editRunPokemon(pokemon, { ivs: { spe: 0 } });
+    expect(edited.fighter.ivs).toEqual({ ...pokemon.fighter.ivs, spe: 0 });
+  });
+});
+
+describe('memberAbilities', () => {
+  it('answers the primary ability alone when no second one was granted', () => {
+    const pokemon = createRunPokemon({ id: 'c', speciesId: 'caterpie', level: 5 });
+    expect(memberAbilities(pokemon)).toEqual([pokemon.fighter.ability]);
+  });
+
+  it('answers the primary first, then the second ability', () => {
+    const pokemon = createRunPokemon({ id: 'c', speciesId: 'caterpie', level: 5 });
+    const withSecond = { ...pokemon, secondAbility: 'Pickup' };
+    expect(memberAbilities(withSecond)).toEqual([pokemon.fighter.ability, 'Pickup']);
+  });
+
+  it('never duplicates the primary, whatever its case, and never answers an empty list', () => {
+    const pokemon = createRunPokemon({ id: 'c', speciesId: 'caterpie', level: 5 });
+    const primary = pokemon.fighter.ability;
+    expect(memberAbilities({ ...pokemon, secondAbility: primary })).toEqual([primary]);
+    expect(memberAbilities({ ...pokemon, secondAbility: primary.toUpperCase() })).toEqual([primary]);
+    expect(memberAbilities({ ...pokemon, secondAbility: '' })).toEqual([primary]);
+    expect(memberAbilities({ ...pokemon, secondAbility: null })).toEqual([primary]);
+    expect(memberAbilities(pokemon)).toHaveLength(1);
   });
 });

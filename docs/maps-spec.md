@@ -401,11 +401,28 @@ every special leaf are `wild` and never carry one.
   and no save field or `SAVE_VERSION` step was added. A revisit and a reload read
   the same record.
 
-`NPC_ROWS` ships **one** row, the **merchant**, with two kinds of entry: a rolled
-row (its `chance`/`floorStep` and its optional party gate) and a **guaranteed** row
-(`guaranteedFromMap`, `chance: 0`). Each later NPC task adds its own row, copy and
-effect beside it, and `roomNpc` never picks a zero-chance row, so a guaranteed row
-is only ever placed.
+`NPC_ROWS` ships **seven** rows: the **merchant**, and the **six** rolled rows the
+party edits need — the **tutor** (one move of `TUTOR_MOVES`), the **nature**,
+**ability** and **IV** re-rolls, the **species** swap and the **sacrifice**, which
+takes one whole bag stack for one of `SACRIFICE_REWARDS`. A row is a rolled row (its
+`chance`/`floorStep` and its optional gate) or a **guaranteed** one
+(`guaranteedFromMap`, `chance: 0`); `roomNpc` never picks a zero-chance row, so a
+guaranteed row is only ever placed. The five edit rows carry 2 % on map 1 and the
+sacrifice 4 %, each growing 0.5 points per floor, so an eligible floor puts an NPC in
+a trainer room roughly one time in seven early and close to one in three by map 8
+(without the sacrifice: one in ten, then one in four). Each later NPC task adds its
+own row, copy and effect beside them.
+
+Two things the table now has beyond the party gate:
+
+- **An eligibility kind that is not a party property.** `requires` may be
+  `{ kind: 'missionsCompleted', min }`, which `npcRequirementMet` answers from the
+  run's own `missionsCompleted` (`src/engine/routes/npcs.ts`) and never from a
+  member: the sacrifice's `min: 1` only holds on a floor the run reached after
+  completing one, so a fresh run never meets it.
+- **`repeatable`.** A row marked `repeatable: true` writes **no** `npcUseId` mark, so
+  its card answers again on the same floor; a row without it is one-shot and carries
+  its mark after the first successful use. Only the merchant is repeatable.
 
 ### The no-heal room
 

@@ -172,6 +172,12 @@ theirs, `RunState.capturedRooms`, not a per-battle counter).
   tab (`docs/design-spec.md` §5) until the player drags it onto a slot — the band is
   the only way into a slot. The level-up modal still announces it ("X learned Y!").
   A No Guard holder is never offered an OHKO move by the band either (D17).
+- A **tutored** move is a pool entry like a level-up one: it sits in the band tagged
+  `Tutor`, is equipped through the same drop, and an unequip puts it back. A member's
+  **second ability** — the one a sacrifice grants — is what the run's ability readers
+  see: `partyHasAbility`, `runPassives` and the band's No Guard guard all ask
+  `memberAbilities`, which answers the primary first and the second one after it,
+  while the battle's own dispatch keeps fighting with `fighter.ability` alone (D48).
 - **Evolution is manual and level-only.** Every evolution in the dex — level-up,
   stone, trade, friendship, move — is resolved to a level (`evolutionBranches`,
   `src/data/dex/evolutions.ts`): a canon level evolution keeps its level, the

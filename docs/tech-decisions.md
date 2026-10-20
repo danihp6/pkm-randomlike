@@ -1041,6 +1041,37 @@ scene and the registry need no edit. Hooks a later room needs and does not have 
 battle, adding an item, spending money, hooking `advanceMap`) are `RouteScene` edits that task
 must claim.
 
+## D48 — An NPC member edit is one pure run transaction, and its two member words are optional *(decided)*
+
+The five member-edit NPCs and the sacrifice (`docs/maps-spec.md` §7) all live in **one** engine
+module, `src/engine/run/memberEdits.ts`, and each is a single pure transaction on the run: it
+takes the `RunState` plus the member (or, for the sacrifice, the run alone), draws only from its
+own `:npc:` stream and answers either the new run with a `MemberEditLine` or the **same run
+reference** with a refusal reason. The scene owns no rule: it opens the shipped card, passes the
+chosen member and commits `ok.run` with the floor's use mark in one write.
+
+**Per-operation substreams, minted inside the function.** Every draw is
+`Rng(hashSeed(`${seed}:npc:${roomIndex}:${npcId}:<op>`))`, the family `npcSpot` already uses:
+`nature`, `ability`, `second-ability`, `ivs`, `species`, and the sacrifice's three-draw stream
+`sacrifice` (the stack, the member, the reward row) followed by `sacrifice:<op>` for the reward it
+drew, so a reward that cannot resolve costs nothing. No map, layout, encounter, roster, passive,
+casino or battle draw moves, and the same `(seed, mapIndex, roomIndex, npcId)` always yields the
+same edit — a reload can neither re-roll one nor lose one.
+
+**The two new member words are optional-on-the-wire.** `RunPokemon.taughtMoves` and
+`RunPokemon.secondAbility` are written **only when they carry something** (`SAVE_VERSION` 19 → 20,
+the migration-14 precedent: the migration bumps the version and writes no field, and the decoder
+drops an absent or malformed one to none). A v19 save therefore reads as "no tutored moves, no
+second ability", and a v20 round trip is stable. `taughtMoves` is the band's `Tutor` source, which
+is why a tutored move survives an unequip for free.
+
+**The second ability is run-level until a precedence rule exists.** `memberAbilities` is the run's
+one answer to "which abilities does this member carry": `partyHasAbility`, `runPassives` and the
+learnset's No Guard guard ask it, so a granted ability opens a gate, pays a `MAP_PASSIVES` row and
+bans the OHKO pair. The **battle** keeps fighting with `fighter.ability` alone: firing two
+abilities at once needs a rule for which one wins a contested hook and no spec decides it, so that
+stays a later task rather than a silent choice here.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

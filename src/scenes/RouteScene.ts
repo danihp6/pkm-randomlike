@@ -8,7 +8,7 @@ import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { getItem } from '../data/items';
 import { tmNumber } from '../data/tms';
 import { getMission } from '../data/missions';
-import { NPC_ROWS, type NpcRow } from '../data/npcs';
+import { NPC_ROWS, TUTOR_MOVES, type NpcRow } from '../data/npcs';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import {
@@ -90,6 +90,17 @@ import {
   type RunState,
 } from '../engine/run';
 import { equipMove, learnsetPool, unequipMove, type LearnEntry } from '../engine/run/learnset';
+import {
+  rerollAbility,
+  rerollIvs,
+  rerollNature,
+  sacrifice,
+  swapSpecies,
+  teachMove,
+  type MemberEdit,
+  type MemberEditLine,
+  type MemberEditRefusal,
+} from '../engine/run/memberEdits';
 import { useItemOn } from '../engine/run/items';
 import { battleHpLoss, missionCompletedBy, missionForMap, recordHpLost } from '../engine/run/missions';
 import { NICKNAME_MAX_LENGTH, normalizeNickname, renameMember } from '../engine/run/nickname';
@@ -232,7 +243,7 @@ import {
 } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { addFloatingPanel, type FloatingPanel } from '../ui/floatingPanel';
-import { openNpcPanel } from '../ui/npcPanel';
+import { openNpcPanel, NPC_MAX_CHOICES, type NpcPanelView } from '../ui/npcPanel';
 import {
   FRLG_ACCENT,
   FRLG_BADGE_INK,
@@ -683,6 +694,16 @@ function clampInt(value: number, min: number, max: number): number {
 function capitalize(text: string): string {
   return text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
 }
+
+/** The line an NPC card prints when a member edit refuses, by reason. */
+const NPC_REFUSALS: Readonly<Record<MemberEditRefusal, TranslationKey>> = {
+  'no-member': 'npc.refused.noMember',
+  'no-slots': 'npc.refused.noSlots',
+  'no-bag': 'npc.refused.noBag',
+  'no-species': 'npc.refused.noSpecies',
+  'no-ability': 'npc.refused.noAbility',
+  'not-a-tutor-move': 'npc.refused.notTutorMove',
+};
 
 /** True when a point falls inside a rect, for the detail panel's hit tests. */
 function pointInRect(
@@ -3064,7 +3085,7 @@ export class RouteScene extends Phaser.Scene {
     });
   }
 
-  /** One learnset cell: the move's reading plus a Lv/TM source tag in its name. */
+  /** One learnset cell: the move's reading plus a Lv/Tutor/TM source tag in its name. */
   private learnCell(
     entry: LearnEntry,
     ability: string,
@@ -3076,7 +3097,9 @@ export class RouteScene extends Phaser.Scene {
     const tag =
       entry.source === 'tm'
         ? t('detail.learnTm', { tm: tmNumber(entry.tmId ?? '') ?? '?' })
-        : t('detail.learnLevel', { level: entry.level ?? '?' });
+        : entry.source === 'tutor'
+          ? t('detail.learnTutor')
+          : t('detail.learnLevel', { level: entry.level ?? '?' });
     return {
       name: `${moveName(entry.moveId)}  ${tag}`,
       type: move ? abilityMoveType(ability, move, ivs) : '',
@@ -3345,10 +3368,7 @@ export class RouteScene extends Phaser.Scene {
     this.ensureRowDragGhost();
     const frame = drag.itemId === null ? null : itemIconFrame(drag.itemId);
     if (frame !== null && this.roomRowGhostIcon) {
-      this.roomRowGhostIcon
-        .setFrame(frame)
-        .setPosition(drag.pointer.x, drag.pointer.y)
-        .setVisible(true);
+      this.roomRowGhostIcon.setFrame(frame).setPosition(drag.pointer.x, drag.pointer.y).setVisible(true);
       this.roomRowGhostLabel?.setVisible(false);
     } else {
       this.roomRowGhostIcon?.setVisible(false);
@@ -5659,32 +5679,62 @@ export class RouteScene extends Phaser.Scene {
     return true;
   }
 
-  /** Opens one NPC's card: its name, its greeting and its own rows plus `LEAVE`. */
+  /**
+   * Opens one NPC's card: its name, its greeting and its own rows plus `LEAVE`.
+   * A one-shot row already used on this floor prints `npc.used` instead and offers
+   * no choices, so only `LEAVE` remains; a `repeatable` row (the merchant) always
+   * answers again.
+   */
   private openNpcCard(npc: RoomNpc): void {
     const room = this.room;
     if (!room) return;
-    const choices = (npc.row.choices ?? []).map((choice) => ({
-      id: choice.id,
-      label: t(choice.label),
-    }));
-    const view = {
-      title: t(npc.row.nameKey),
-      paragraph: t(npc.row.greetingKey),
-      choices,
-    };
-    this.openPanel(
-      openNpcPanel(this, view, (choiceId) =>
-        this.chooseNpc(npc.row, room.mapIndex, room.roomId, choiceId),
-      ),
+    const used =
+      npc.row.repeatable !== true &&
+      isItemPicked(this.run, npcUseId(room.mapIndex, room.roomId, npc.row.id));
+    const choices = used
+      ? []
+      : (npc.row.choices ?? []).map((choice) => ({ id: choice.id, label: t(choice.label) }));
+    this.openNpcCardView(
+      {
+        title: t(npc.row.nameKey),
+        paragraph: used ? t('npc.used') : t(npc.row.greetingKey),
+        choices,
+      },
+      (choiceId) => this.chooseNpc(npc.row, room.mapIndex, room.roomId, choiceId),
     );
+  }
+
+  /**
+   * Opens one `npcPanel` card and keeps the scene's keyboard slot coherent: the
+   * shell closes itself after firing a choice, and on `LEAVE` or `cancel` it closes
+   * without one, so the slot is cleared on those too (`close()` is idempotent).
+   */
+  private openNpcCardView(view: NpcPanelView, onChoose?: (id: string) => void): void {
+    let chosen = false;
+    const panel = openNpcPanel(this, view, (id) => {
+      chosen = true;
+      onChoose?.(id);
+    });
+    this.openPanel({
+      handle: (action) => {
+        chosen = false;
+        panel.handle(action);
+        if (!chosen && (action === 'confirm' || action === 'interact' || action === 'cancel')) {
+          this.closePanel();
+        }
+      },
+      close: () => panel.close(),
+    });
   }
 
   /**
    * Resolves the row the card accepted (`docs/maps-spec.md` §7). The **merchant**
    * opens the Mart and marks no use, so the merchant is there for the rest of the
-   * floor; every other row records `npc-<mapIndex>-<roomId>-<id>` in `pickedItems`,
-   * which `advanceMap` clears, so a revisit and a reload know the card was taken. A
-   * later NPC task adds its own branch here.
+   * floor; the tutor opens its move card, the four re-rolls open the member card and
+   * the sacrifice draws its own member. Every other row records
+   * `npc-<mapIndex>-<roomId>-<id>` in `pickedItems`, which `advanceMap` clears, so a
+   * revisit and a reload know the card was taken. A later NPC task adds its own
+   * branch here.
    */
   private chooseNpc(row: NpcRow, mapIndex: number, roomId: number, _choiceId: string): void {
     switch (row.id) {
@@ -5692,9 +5742,205 @@ export class RouteScene extends Phaser.Scene {
         this.closePanel();
         openMart(this.roomHost());
         return;
+      case 'tutor':
+        this.closePanel();
+        this.openTutorMoves(row, mapIndex, roomId);
+        return;
+      case 'nature':
+      case 'ability':
+      case 'iv-judge':
+      case 'species':
+        this.closePanel();
+        this.openMemberCard(row, mapIndex, roomId, null);
+        return;
+      case 'sacrifice':
+        this.closePanel();
+        this.applyMemberEdit(row, mapIndex, roomId, sacrifice(this.run, this.npcContext(row, roomId)));
+        return;
       default:
         this.commitRun(markItemPicked(this.run, npcUseId(mapIndex, roomId, row.id)));
         this.closePanel();
+    }
+  }
+
+  /** The room's own stream context, shared by every member-edit operation. */
+  private npcContext(row: NpcRow, roomId: number): Readonly<{ roomIndex: number; npcId: string }> {
+    return { roomIndex: roomId, npcId: row.id };
+  }
+
+  /** The tutor's move card: `TUTOR_MOVES` in table order, each name from the dex. */
+  private openTutorMoves(row: NpcRow, mapIndex: number, roomId: number): void {
+    this.openNpcCardView(
+      {
+        title: t(row.nameKey),
+        paragraph: t(row.greetingKey),
+        choices: TUTOR_MOVES.map((moveId) => ({
+          id: moveId,
+          label: getMove(moveId)?.name ?? moveId,
+        })),
+      },
+      (moveId) => {
+        this.closePanel();
+        this.openMemberCard(row, mapIndex, roomId, moveId);
+      },
+    );
+  }
+
+  /**
+   * The member card: the party only (never the box), one row per member. `moveId`
+   * is the tutored move the tutor carried here; the other rows ignore it.
+   */
+  private openMemberCard(row: NpcRow, mapIndex: number, roomId: number, moveId: string | null): void {
+    const members = this.run.party.slice(0, NPC_MAX_CHOICES);
+    this.openNpcCardView(
+      {
+        title: t(row.nameKey),
+        paragraph: t('npc.pickMember'),
+        choices: members.map((member) => ({
+          id: member.fighter.id,
+          label: t('party.rowLabel', {
+            name: this.memberName(member),
+            level: member.fighter.level,
+            status: '',
+          }),
+        })),
+      },
+      (memberId) => {
+        this.closePanel();
+        this.chooseMember(row, mapIndex, roomId, memberId, moveId);
+      },
+    );
+  }
+
+  /**
+   * Applies the row's edit to the picked member, or opens the tutor's slot card
+   * first when the member already holds four moves.
+   */
+  private chooseMember(
+    row: NpcRow,
+    mapIndex: number,
+    roomId: number,
+    memberId: string,
+    moveId: string | null,
+  ): void {
+    const ctx = this.npcContext(row, roomId);
+    const member = this.run.party.find((entry) => entry.fighter.id === memberId);
+    if (!member) return;
+    switch (row.id) {
+      case 'tutor': {
+        const move = moveId ?? '';
+        if (member.fighter.moves.length >= MAX_MOVES) {
+          this.openSlotCard(row, mapIndex, roomId, memberId, move);
+          return;
+        }
+        this.applyMemberEdit(row, mapIndex, roomId, teachMove(this.run, memberId, move, null));
+        return;
+      }
+      case 'nature':
+        this.applyMemberEdit(row, mapIndex, roomId, rerollNature(this.run, memberId, ctx));
+        return;
+      case 'ability':
+        this.applyMemberEdit(row, mapIndex, roomId, rerollAbility(this.run, memberId, ctx));
+        return;
+      case 'iv-judge':
+        this.applyMemberEdit(row, mapIndex, roomId, rerollIvs(this.run, memberId, ctx));
+        return;
+      case 'species':
+        this.applyMemberEdit(row, mapIndex, roomId, swapSpecies(this.run, memberId, ctx));
+        return;
+      default:
+        return;
+    }
+  }
+
+  /** The tutor's four rows, when the member must forget one to hold the new move. */
+  private openSlotCard(
+    row: NpcRow,
+    mapIndex: number,
+    roomId: number,
+    memberId: string,
+    moveId: string,
+  ): void {
+    const member = this.run.party.find((entry) => entry.fighter.id === memberId);
+    if (!member) return;
+    const slots = member.fighter.moves.slice(0, MAX_MOVES);
+    this.openNpcCardView(
+      {
+        title: t(row.nameKey),
+        paragraph: t('npc.pickSlot'),
+        choices: slots.map((slot, index) => ({
+          id: String(index),
+          label: getMove(slot.moveId)?.name ?? slot.moveId,
+        })),
+      },
+      (choiceId) => {
+        this.closePanel();
+        const slot = Number.parseInt(choiceId, 10);
+        this.applyMemberEdit(
+          row,
+          mapIndex,
+          roomId,
+          teachMove(this.run, memberId, moveId, Number.isInteger(slot) ? slot : null),
+        );
+      },
+    );
+  }
+
+  /**
+   * Commits a successful edit **plus** its use mark in one write, marks nothing on a
+   * refusal, and prints the result or the refusal on the row's card.
+   */
+  private applyMemberEdit(row: NpcRow, mapIndex: number, roomId: number, edit: MemberEdit): void {
+    if (!edit.ok) {
+      this.showNpcResult(row, t(NPC_REFUSALS[edit.reason]));
+      return;
+    }
+    const edited = this.memberById(edit.memberId);
+    const name = edited ? this.memberName(edited) : t('common.unknownPokemon');
+    this.commitRun(markItemPicked(edit.run, npcUseId(mapIndex, roomId, row.id)));
+    this.showNpcResult(row, this.memberEditParagraph(edit.line, name));
+  }
+
+  /** The result card: the row's name as its title and one line, no choices. */
+  private showNpcResult(row: NpcRow, paragraph: string): void {
+    this.openNpcCardView({ title: t(row.nameKey), paragraph, choices: [] });
+  }
+
+  /** The party or box member `memberId` names, in the run **before** the edit. */
+  private memberById(memberId: string): RunPokemon | undefined {
+    return (
+      this.run.party.find((entry) => entry.fighter.id === memberId) ??
+      this.run.box.find((entry) => entry.fighter.id === memberId)
+    );
+  }
+
+  /** One `MemberEditLine` as the sentence the result card prints; names come from the dex. */
+  private memberEditParagraph(line: MemberEditLine, name: string): string {
+    switch (line.kind) {
+      case 'tutor':
+        return t('npc.result.tutor', {
+          name,
+          move: getMove(line.moveId)?.name ?? line.moveId,
+        });
+      case 'nature':
+        return t('npc.result.nature', { name, nature: capitalize(line.nature) });
+      case 'ability':
+        return t('npc.result.ability', { name, ability: line.ability });
+      case 'secondAbility':
+        return t('npc.result.secondAbility', { name, ability: line.ability });
+      case 'ivs':
+        return t('npc.result.ivs', { name });
+      case 'species':
+        return t('npc.result.species', {
+          name,
+          species: getSpecies(line.speciesId)?.name ?? line.speciesId,
+        });
+      case 'sacrifice':
+        return t('npc.result.sacrifice', {
+          name,
+          item: getItem(line.itemId)?.name ?? line.itemId,
+          result: this.memberEditParagraph(line.reward, name),
+        });
     }
   }
 
