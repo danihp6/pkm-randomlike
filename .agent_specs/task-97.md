@@ -44,11 +44,15 @@ populates is always allowed.
 - `src/scenes/rooms/shop.ts`
 - `src/scenes/rooms/registry.test.ts`
 - `src/scenes/RouteScene.ts`
+- `src/engine/run/curve.test.ts`
+- `src/data/run.ts` — **the `TRAINER_XP_PER_MAP` row of a floor that leaves the fill
+  window, and nothing else**
 - `src/i18n/en.ts`
 - `src/i18n/es.ts`
 - `src/engine/README.md`
 - `src/data/README.md`
 - `src/scenes/rooms/README.md`
+- `docs/balance/route-curve.md` — **the new re-walk paragraph only**
 - `docs/maps-spec.md` — **§7 only** (the special-rooms table, the roll-order paragraph
   and one new subsection)
 - `docs/design-spec.md` — **§7 only** (one new bullet in the special-rooms list)
@@ -244,6 +248,27 @@ stream) and its site the carve's `…:site` stream; the stock reads no stream at
 No shipped draw moves. A pinned seed that **gains** the leaf is a deliberate re-pin:
 change the expectation and say so in the test's comment.
 
+### The curve's own re-walk (the leaf's room-count fallout)
+
+A floor that hangs the leaf holds **one room more**, and `routeIndexForRoom` sums the
+previous floors' room counts, so every later floor's rooms build from a shifted route
+index and place a trainer more or less. `src/engine/run/curve.test.ts` measures that
+walk (`MEASURED_FILL`) and holds two rules: every floor's fill stays inside
+`[1.05, 1.5]`, and it reads the pinned column to two decimals.
+
+- Re-measure the column with the harness the test already has. Re-pin `MEASURED_FILL`
+  to the new column and add the "re-pinned by Task-97 with the secret-shop leaf"
+  paragraph to its doc comment and to `docs/balance/route-curve.md`, in the shipped
+  tone (`Task-92`'s and `Task-96`'s paragraphs are the model).
+- If — and only if — a floor's new fill lands **outside** `[1.05, 1.5]`, re-solve **that
+  floor's** row of `TRAINER_XP_PER_MAP` with the documented recipe
+  `factor' = round2(factor × 1.25 / fill)`, re-measure, and let the column and the doc
+  show the result. Any floor already inside the window keeps its factor: a broad
+  re-solve is a balance task, not this room's.
+- `docs/balance/route-curve.md`'s per-map `fill` column is **not** rewritten (it is
+  `0.75 × T̄(m) × A(m) / needed(m)` and reads no route index); the new paragraph states
+  which factor moved, from what to what, and that the rest are untouched.
+
 ## 🧪 Test and Validation Plan (for QA)
 
 QA runs this verbatim. A criterion that cannot be executed by someone who has not read
@@ -279,8 +304,9 @@ the rest of the spec is not a criterion.
         cannot rot.
   - [ ] `[unit]` `src/data/shop.test.ts` covers `SECRET_SHOP`: `fromMap === 3`,
         `0 < chance < 1`, every id in the catalogue, no id twice in the table, every
-        `held` row `kind === 'held'` and not `consumed`, every `tm` row `isTmItemId`,
-        and none of them a Mega Stone, a G-Max Stone or a `valuable`.
+        `held` row `kind === 'held'` (a consumed held item such as the Focus Sash is
+        allowed: the Mart sells it too), every `tm` row `isTmItemId`, and none of them
+        a Mega Stone, a G-Max Stone or a `valuable`.
   - [ ] `[unit]` `src/engine/maps/plan.test.ts` covers: no `secret-shop` leaf on map 1
         or 2 for 100 seeds; the leaf's frequency over 100 seeds on map 5 lies in
         `[0.10, 0.35]`; a floor never holds two (the existing
@@ -301,19 +327,28 @@ the rest of the spec is not a criterion.
   - [ ] `[unit]` `src/scenes/rooms/registry.test.ts` lists `'secret-shop'` in
         `SHIPPED_KINDS` (so the folder has eight descriptors and each kind owns its
         marker).
+  - [ ] `[unit]` `src/engine/run/curve.test.ts` is green: every floor's fill lies in
+        `[1.05, 1.5]`, every floor reads its re-pinned `MEASURED_FILL` to two decimals,
+        and each `TRAINER_XP_PER_MAP` row is a positive two-decimal factor. Read the
+        test's own new paragraph: it must name Task-97, the new column and the factor —
+        if any — that moved, and `docs/balance/route-curve.md` must carry the same
+        paragraph. A factor moved for a floor whose fill already sat inside the window
+        is a defect.
   - [ ] `[live]` **The seal holds until the party qualifies, then opens for good.**
         Protocol steps 1-6 below. Measurement, all from the dev overlay's
         `#debug-location` text (`map <m> · room <r>/<n> · (x,y)`): with no party member
         of the obstacle's type, stepping into the seal leaves the player's tile
-        **equal** to the pinned `mouth`; after adding one member of the pinned
+        **equal** to the pinned `mouth`, twice; after adding one member of the pinned
         `obstacle`'s type and pressing `E` while facing it, one step moves the player
-        onto the seal tile and a second onto the pinned `pocket` (tile text equality
-        with `pocket`).
+        onto the seal tile — the text equals `(mouth + direction)` — and a second step
+        onto the tile beyond it. The pocket itself is **not** walked onto: the counter
+        fixture blocks its tile exactly as the trade room's does.
   - [ ] `[live]` **The counter opens the Mart card with the secret stock.** Protocol
-        step 7. Measurement: with the panel closed, read the canvas patch
-        `(620..660, 132..142)` (the card's header field: the card is the shipped
-        640×540 `addFloatingPanel`, centred in the 1280×800 viewport, so its top edge
-        is y=130). Press `E` at the pinned `pocket`. Re-read the same patch: its mean
+        step 7: from the tile in front of the counter (the opacity-free case is the
+        seal tile, `mouth + direction`), facing the pocket. Measurement: with the panel
+        closed, read the canvas patch `(620..660, 132..142)` (the card's header field:
+        the card is the shipped 640×540 `addFloatingPanel`, centred in the 1280×800
+        viewport, so its top edge is y=130). Press `E`. Re-read the same patch: its mean
         R, G and B each rise by **at least +40** over the closed-panel reading (the
         window field is light, alpha 0.72, over the route). State the two triples in the
         report. Prefer `renderer.snapshotArea` + `getImageData`; if the CDP build
@@ -352,12 +387,14 @@ the rest of the spec is not a criterion.
   6. In the overlay's add-Pokémon row, add one species of the pinned `obstacle`'s type
      (`bush` → `caterpie`, `rock` → `geodude`, `water` → `magikarp`) and confirm it
      landed in the party list. Repeat the direction key (sets the facing, still
-     blocked), dispatch `E`, then the direction key twice: `#debug-location` must read
-     `(pocket.x,pocket.y)`.
-  7. Capture the closed-panel patch, dispatch `E` (now at the counter) and capture the
-     open-panel patch; run the two measurements of the last two criteria. Then close
-     the card with its ✕ and confirm the route answers a direction key again (the card
-     is floating, so this only proves the ✕ tears it down).
+     blocked), dispatch `E`, then the direction key twice: `#debug-location` must walk
+     `mouth` → the seal tile (`mouth + direction`) → the tile one step past it. The
+     counter sits on the **pocket** and blocks it, so the player never stands there.
+  7. Now stand on the seal tile (one step in from `mouth`) facing `direction`, so the
+     pocket — the counter — is the faced tile. Capture the closed-panel patch, dispatch
+     `E` and capture the open-panel patch; run the two measurements of the last two
+     criteria. Then close the card with its ✕ and confirm the route answers a direction
+     key again (the card is floating, so this only proves the ✕ tears it down).
 
 ## 📣 Coordination
 
@@ -382,14 +419,20 @@ the rest of the spec is not a criterion.
   room's route exactly as `RouteScene.buildRoute` does and reading `route.gate`
   (`kind`, `tile`, `pocket`); `mouth` is the walkable tile the seal faces, `direction`
   the cardinal from `mouth` to the seal. Pin the literals and keep the test that
-  re-derives them.
+  re-derives them. The QA protocol walks `mouth` → the seal tile; the pocket is the
+  counter and blocks its own tile, so no step lands on it.
 - **For the next batch:** `MapRoomSpecial` now has eight kinds; the plan's special pass
   ends with two minted rolls (static, then secret shop). The Mart card's
   `openMart(host, stock?)` is the seam a second counter should reuse; no other task
-  may edit `src/scenes/rooms/shop.ts` without reading that signature.
+  may edit `src/scenes/rooms/shop.ts` without reading that signature. The formula floor
+  curve was re-walked: `src/engine/run/curve.test.ts`'s `MEASURED_FILL` and
+  `docs/balance/route-curve.md` carry the new column, so a later room leaf must re-walk
+  it again rather than trust the old one.
 - **For the Architect:** the leaf ships at **20 %** from map 3, stock fixed at six
   rows (four held + two TMs) from the catalogue; the run-field chain and `SAVE_VERSION`
-  are untouched.
+  are untouched. The leaf's extra room shifts `routeIndexForRoom` on the floors after
+  it, so this task also re-walks the floor curve (`curve.test.ts` + `route-curve.md`)
+  and re-solves only a factor that left the `[1.05, 1.5]` window.
 
 ## ⛔ Out of scope
 
