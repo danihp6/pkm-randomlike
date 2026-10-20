@@ -242,3 +242,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run agent-autopilot.yml --ref main
+# Re-registered after the repository was recreated (2026-10-20).

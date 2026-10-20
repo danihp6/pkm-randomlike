@@ -165,3 +165,4 @@ jobs:
             echo "| Blocked | $(grep -cE '^- \[!\] \*\*\[Task-' TODO.md || true) |"
             echo "| Cycles today | $(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/agent-cycle.yml/runs?created=$(date -u +%Y-%m-%d)&per_page=100" --jq '.workflow_runs | length' 2>/dev/null || echo '?') |"
           } >> "$out"
+# Re-registered after the repository was recreated (2026-10-20).
