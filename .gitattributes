@@ -1,0 +1,4 @@
+# The VM host runs the autopilot on Linux; a CRLF checkout of these would fail with
+# "bad interpreter" or a syntax error nobody can see.
+*.sh text eol=lf
+*.mjs text eol=lf

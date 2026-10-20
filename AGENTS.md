@@ -122,6 +122,10 @@ tasks it integrates.
   the Orchestrator copies the spec into the worktree before launching its agent. A
   subagent receives **only** its spec path plus `AGENTS.md` — never the parent
   conversation. The spec must be enough for someone who has read nothing else.
+- **Host.** The loop that drives the batches runs on an always-on VM
+  (`docs/agent-vm.md`): `scripts/agent/vm/` holds the cycle, the driver, the brake and
+  the Orchestrator's prompt. The `agent-*.yml` workflows stay as the manual fallback and
+  read the same prompt, so the two hosts cannot drift apart.
 - **QA runs in two waves.** **Task QA** — one QA subagent **per task**, launched
   **together in one wave** (never one after another), each from its own
   **integration worktree** (that task's branch merged onto the batch base), running
