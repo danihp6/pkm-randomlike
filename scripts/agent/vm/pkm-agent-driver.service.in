@@ -1,0 +1,21 @@
+[Unit]
+Description=PokeRandomLike autopilot driver (one batch per cycle)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+Environment=HOME=@HOME@
+Environment=PKM_REPO=@REPO@
+Environment=PKM_AGENT_STATE=@STATE@
+WorkingDirectory=@REPO@
+ExecStart=@REPO@/scripts/agent/vm/run-driver.sh
+Restart=always
+RestartSec=60
+# The cycle writes `main`; it never needs a tty, and it must not outlive a stop.
+KillMode=mixed
+TimeoutStopSec=5400
+
+[Install]
+WantedBy=multi-user.target

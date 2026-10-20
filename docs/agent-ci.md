@@ -1,8 +1,13 @@
 # The CI autopilot
 
 `AGENTS.md` describes the batch lifecycle and the git rules; this file describes the
-half of it that runs unattended on GitHub Actions. The workflows themselves are in
-`.github/workflows/` and carry the same policy in their headers, but this is the map.
+half of it that runs unattended. The workflows themselves are in `.github/workflows/`
+and carry the same policy in their headers, but this is the map.
+
+**Host:** the loop now runs on the Oracle Always Free VM (`docs/agent-vm.md`), which
+executes the same cycle as a script. Everything below still holds — the protocol, the
+markers, the verdict, the guards — and the workflows remain as the manual fallback
+(`gh workflow run agent-cycle.yml`, or `agent / autopilot` for the Actions loop).
 
 ## The pieces
 

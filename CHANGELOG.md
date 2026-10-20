@@ -258,6 +258,22 @@ file is the human-readable summary.
       exclusive ones plus the spec commit); and an independent re-walk, built outside the
       pinned test, reproduced every cell of the sheet plus the boss and mini-boss award
       figures.
+- [x] **The autopilot moved off the runner and onto an always-on VM.** GitHub's cron
+      fired three times in six hours, a job dies at six hours, the runner is 2 cores and
+      7 GB for a batch that wants four devs plus a headless Chromium, and a private
+      repository is back to 2,000 shared minutes a month — none of which a $0 Ampere
+      instance has. The cycle is now a script, not a workflow: `run-cycle.sh` does the
+      same ritual (fetch, reset, assets, recon, `opencode run --agent orchestrator
+      --auto`, post-merge gate, verdict), `run-driver.sh` is the loop the systemd unit
+      starts, and the brake is a file (`brake.sh on|off|window <h>|status|reset`) instead
+      of a repository variable. Two decisions came out of the port and are pure,
+      unit-tested functions: `gate.mjs` (brake, then window, then backlog, then the red
+      streak, then the cap — the order is load-bearing) and `verdict.mjs` (a red gate
+      fails, a moved `main` or an opened issue is green even when the stream died). The
+      Orchestrator's prompt moved to `scripts/agent/vm/prompt.md` and `agent-cycle.yml`
+      now reads it, so the manual fallback cannot drift from the loop that runs nightly.
+      **QA:** `npm test` **2186** (13 new cases in `gate.test.mjs` + `verdict.test.mjs`),
+      `npm run build` and `bash -n` over the five scripts, all green.
 
 - [x] **The ripped art left the tree, and a clone without the private store still builds.**
       `src/assets/**` and `public/anil/` carried 213 MB of Nintendo/GameFreak/Chunsoft rips
