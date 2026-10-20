@@ -8,6 +8,34 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A trainer room can hold one special NPC, rolled per room on its own stream.**
+      The framework the special-NPC wave writes against: `src/engine/routes/npcs.ts`
+      decides **at most one** NPC per room (`roomNpc(seed, roomIndex, mapIndex)`), with
+      one `Rng.next()` for presence against the rows' summed chance and, on a hit, one
+      `Rng.int` for the weighted pick, both on `Rng(hashSeed('${seed}:npc:<room>'))` — its
+      own stream, so no map, encounter, roster or battle draw moves and a revisit shows
+      the same NPC. `effectiveNpcChance` is `clamp01(chance + floorStep × (map - 1))`, so
+      a row's chance is data and rises with the floor; `npcRequirementMet` gates a row on
+      the party through `partyHasType` and the two predicates that join it
+      (`partyHasMove`, `partyHasAbility`, never a second module, the box never asked);
+      `npcSpot` picks the free tile (never the entry or its neighbours, an exit, a wall, a
+      trainer or a visible item) on its own `:spot` stream; and `npcUseId` is the
+      per-floor `pickedItems` record, `npc-<map>-<room>-<id>`, the shape the gate and
+      trade rooms already use. `src/ui/npcPanel.ts` is the one modal card every NPC fills
+      (title, paragraph, a column of up to six choices, `LEAVE`), drawn with the shipped
+      chrome, its layout a pure `npcPanelLayout` under the viewport clamp; the scene draws
+      the row's `NPC_SPRITE_KEYS` sprite like a trainer's, blocks its tile and opens the
+      card from the interact key. **`NPC_ROWS` ships empty on purpose**: each content task
+      adds its own row with its own effect, so the framework is dormant and the game is
+      unchanged until the merchant lands. No run field, no `SAVE_VERSION` step (the chain
+      stays **14 → 19**). **QA:** one single-task pass from `qa-91` (`main@c9a19db` +
+      `task-91@c6f7860`, integration `1c5ea5d`): 10/10 criteria green, `npm test` **2207**
+      passed / 67 skipped and `npm run build` clean over 18 diff paths (the 17 exclusive
+      ones + the spec), `src/engine/` pure; the one `[live]` criterion was **measured**
+      over CDP on both trees at seed `pkm-91`, map 1, room 1 — **1** `frlg:overworld`
+      sprite on each (equal to the live trainers), and **278** interact presses with **0**
+      panels and **0** differing pixels in the 520×360 centre rect.
+
 - [x] **A floor has an objective: its mission, and `flawless` is the first one.**
       The human wants floor missions whose completion pays a **fixed** reward («cumplirlas
       da recompensa (fija: no perder vida → aparece una sala especial)»), and a floor had no

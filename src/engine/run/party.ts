@@ -4,9 +4,9 @@ import type { RunState } from './state';
 
 /**
  * The party predicates the run rules ask of a member's **shape** (`D47`'s seam
- * family): what types the party holds, so a gated room can ask the party instead of
- * a field move (`docs/maps-spec.md` §7). Pure: no Phaser, no DOM, no RNG and no
- * mutation. `[Task-91]`'s `partyHasMove` / `partyHasAbility` join these two here.
+ * family): what types, moves and abilities the party holds, so a gated room or a
+ * special NPC can ask the party instead of a field move (`docs/maps-spec.md` §7).
+ * Pure: no Phaser, no DOM, no RNG and no mutation.
  */
 
 /**
@@ -32,4 +32,26 @@ export function partyHasType(run: RunState, types: readonly string[]): boolean {
   if (types.length === 0) return false;
   const wanted = new Set(types.map((type) => type.toLowerCase()));
   return run.party.some((member) => memberTypes(member).some((type) => wanted.has(type.toLowerCase())));
+}
+
+/**
+ * True when a **party** member has any of `moveIds` equipped. Case-insensitive. The
+ * box is not asked, an empty list is `false`, and a member at 0 HP still counts.
+ */
+export function partyHasMove(run: RunState, moveIds: readonly string[]): boolean {
+  if (moveIds.length === 0) return false;
+  const wanted = new Set(moveIds.map((moveId) => moveId.toLowerCase()));
+  return run.party.some((member) =>
+    member.fighter.moves.some((slot) => wanted.has(slot.moveId.toLowerCase())),
+  );
+}
+
+/**
+ * True when a **party** member has any of `abilityIds` as its ability. The box is
+ * not asked, an empty list is `false`, and a member at 0 HP still counts.
+ */
+export function partyHasAbility(run: RunState, abilityIds: readonly string[]): boolean {
+  if (abilityIds.length === 0) return false;
+  const wanted = new Set(abilityIds.map((abilityId) => abilityId.toLowerCase()));
+  return run.party.some((member) => wanted.has(member.fighter.ability.toLowerCase()));
 }

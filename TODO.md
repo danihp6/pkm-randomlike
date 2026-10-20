@@ -5637,7 +5637,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (`src/data/items.ts`). It takes **Batch 23** beside `[Task-63]`, whose paths are the route scene,
       `src/ui/rewards.ts` and two doc sections and none of these. *(Batch 23)*
 
-- [ ] **[Task-91] The special-NPC framework: one NPC per trainer room, rolled per NPC.** The human's
+- [x] **[Task-91] The special-NPC framework: one NPC per trainer room, rolled per NPC.** The human's
       rule is that the special NPCs appear by a **per-NPC percentage inside the trainer rooms**
       `[Task-82]` introduces, each with its own chance, and that the chance rises with the floor.
       Nothing places an NPC in a regular room today: the only room-local fixture is the shop counter

@@ -8,6 +8,7 @@ import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { getItem } from '../data/items';
 import { tmNumber } from '../data/tms';
 import { getMission } from '../data/missions';
+import { NPC_ROWS, type NpcRow } from '../data/npcs';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import {
@@ -117,7 +118,11 @@ import {
   encounterTableFor,
   exitEdgeAt,
   gateId,
+  npcRequirementMet,
+  npcSpot,
+  npcUseId,
   rollWildLevel,
+  roomNpc,
   seesPlayer,
   sketchRoute,
   sketchRouteSteps,
@@ -231,6 +236,7 @@ import {
 } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { addFloatingPanel, type FloatingPanel } from '../ui/floatingPanel';
+import { openNpcPanel } from '../ui/npcPanel';
 import {
   FRLG_ACCENT,
   FRLG_BADGE_INK,
@@ -618,6 +624,9 @@ type TrainerSpriteEntry = {
   sprite: Phaser.GameObjects.Sprite;
   spriteKey: string | null;
 };
+
+/** The room's special NPC (`docs/maps-spec.md` §7): the row it rolled and its tile. */
+type RoomNpc = Readonly<{ row: NpcRow; tile: Tile }>;
 
 /**
  * One draggable HUD panel. Its window chrome and content live in `body` and its
@@ -1037,6 +1046,8 @@ export class RouteScene extends Phaser.Scene {
   private hudMissionText: Phaser.GameObjects.BitmapText | null = null;
   /** The shop room's counter tile, or null off a shop room. */
   private shopCounter: Tile | null = null;
+  /** The special NPC this room rolled and its tile, or null off a room that rolled none. */
+  private npc: RoomNpc | null = null;
   /** Every special room kind's descriptor, indexed once per scene (`D47`). */
   private roomRegistry: RoomRegistry = collectDescriptors(ROOM_MODULES);
   /** The room's own panel while it owns the keyboard, or null; the scene owns the slot. */
@@ -1111,8 +1122,30 @@ export class RouteScene extends Phaser.Scene {
     // A room's own line rides the strip once its fixture is in place (the no-heal
     // leaf announces its rule this way).
     if (fixture?.notice) this.showNotice(fixture.notice);
+    this.rollRoomNpc();
     // Last: the filter needs `this.map`, which `buildRoute` → `applyRoute` sets.
     this.buildBattlefieldOverlay();
+  }
+
+  /**
+   * Rolls the room's special NPC (`docs/maps-spec.md` §7): at most one, only in a
+   * regular `trainers` room and once per build — never in `update`. The roll reads
+   * the run's party and its own stream, so no route, trainer, item or battle draw
+   * moves. A row whose art the packed sheet lacks is dropped whole: no sprite, no
+   * block and no interact.
+   */
+  private rollRoomNpc(): void {
+    this.npc = null;
+    const room = this.room;
+    if (!room || room.special !== null || room.role !== 'trainers') return;
+    if (this.generatorStepIndex !== null) return;
+    const eligible = NPC_ROWS.filter((row) => npcRequirementMet(this.run, row.requires));
+    const placement = roomNpc(this.run.seed, room.roomId, room.mapIndex, eligible);
+    if (!placement) return;
+    const tile = npcSpot(this.route, room.roomId, this.run.seed, placement.row.id);
+    if (!tile) return;
+    if (overworldSpriteFrame(placement.row.spriteKey) === null) return;
+    this.npc = { row: placement.row, tile };
   }
 
   /** The descriptor for the room on screen, or null when it has none (`D47`). */
@@ -1420,6 +1453,7 @@ export class RouteScene extends Phaser.Scene {
     this.releaseArmed = false;
     this.roomPanel = null;
     this.shopCounter = null;
+    this.npc = null;
     this.miniBossRewardPanel = null;
     this.miniBossRewardRoot = null;
     this.miniBossRewardOnDone = null;
@@ -4967,7 +5001,28 @@ export class RouteScene extends Phaser.Scene {
       this.entitySprites.push(sprite);
       created.push(sprite);
     }
+    this.drawRoomNpc(created);
     this.hudCamera?.ignore(created);
+  }
+
+  /**
+   * Draws the room's special NPC on its own free tile, off the packed overworld
+   * atlas exactly as a trainer sprite is drawn. It never joins `trainerSprites`: it
+   * has no sight, no spin, no chase and no roster.
+   */
+  private drawRoomNpc(created: Phaser.GameObjects.GameObject[]): void {
+    const npc = this.npc;
+    if (!npc) return;
+    const frame = overworldSpriteFrame(npc.row.spriteKey);
+    if (frame === null) return;
+    const footY = this.centerY(npc.tile.y) + TILE_SIZE / 2;
+    const sprite = this.add
+      .sprite(this.centerX(npc.tile.x), footY, OVERWORLD_SPRITE_TEXTURE_KEY, frame)
+      .setOrigin(0.5, 1)
+      .setScale(TILE_SIZE / OVERWORLD_SPRITE_WIDTH)
+      .setDepth(actorDepth(footY));
+    this.entitySprites.push(sprite);
+    created.push(sprite);
   }
 
   /**
@@ -5427,6 +5482,11 @@ export class RouteScene extends Phaser.Scene {
     return this.shopCounter !== null && tile.x === this.shopCounter.x && tile.y === this.shopCounter.y;
   }
 
+  /** True when the room's live special NPC stands on `tile`, so it blocks like an object. */
+  private npcBlocks(tile: Tile): boolean {
+    return this.npc !== null && tile.x === this.npc.tile.x && tile.y === this.npc.tile.y;
+  }
+
   /**
    * Starts the classic "spotted you" beat: the trainer faces the player and
    * walks toward them tile by tile, then the battle opens. The player's input is
@@ -5574,6 +5634,8 @@ export class RouteScene extends Phaser.Scene {
     const ahead = { x: this.player.x + step.x, y: this.player.y + step.y };
     // A room that answers the interact key (the Mart's counter) consumes it first.
     if (this.specialDescriptor()?.interact?.(this.roomHost(), ahead) === true) return;
+    // The room's own special NPC answers next, before any trainer's sight.
+    if (this.talkToNpc(ahead)) return;
     // Talking to a trainer it is facing also opens the battle, like the originals.
     const trainer = this.liveTrainerAt(ahead);
     if (trainer) {
@@ -5581,6 +5643,44 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     if (!this.collectItemAt(ahead)) this.collectItemAt(this.player);
+  }
+
+  /**
+   * Opens the special NPC's card when the player faces it, consuming the key.
+   * False when no NPC stands there, so the key falls through to the trainer and
+   * the ground-item checks unchanged.
+   */
+  private talkToNpc(tile: Tile): boolean {
+    const npc = this.npc;
+    if (!npc || npc.tile.x !== tile.x || npc.tile.y !== tile.y) return false;
+    if (!this.panelOpen()) this.openNpcCard(npc);
+    return true;
+  }
+
+  /** Opens one NPC's card: its name, its greeting and its own rows plus `LEAVE`. */
+  private openNpcCard(npc: RoomNpc): void {
+    const room = this.room;
+    if (!room) return;
+    const choices = (npc.row.choices ?? []).map((choice) => ({
+      id: choice.id,
+      label: t(choice.label),
+    }));
+    const view = {
+      title: t(npc.row.nameKey),
+      paragraph: t(npc.row.greetingKey),
+      choices,
+    };
+    this.openPanel(openNpcPanel(this, view, () => this.chooseNpc(npc.row, room.mapIndex, room.roomId)));
+  }
+
+  /**
+   * Records that this floor's room answered its NPC: the use id rides
+   * `pickedItems`, which `advanceMap` clears, so a revisit and a reload know the
+   * card was taken. The card itself closes on choose; the scene frees its slot.
+   */
+  private chooseNpc(row: NpcRow, mapIndex: number, roomId: number): void {
+    this.commitRun(markItemPicked(this.run, npcUseId(mapIndex, roomId, row.id)));
+    this.closePanel();
   }
 
   /**
@@ -6557,6 +6657,7 @@ export class RouteScene extends Phaser.Scene {
     this.entitySprites = [];
     this.itemSprites = [];
     this.trainerSprites = [];
+    this.npc = null;
     this.trainerSpinIndex.clear();
     this.trainerFacing.clear();
     this.chase = null;
@@ -6741,6 +6842,7 @@ export class RouteScene extends Phaser.Scene {
     this.room = null;
     this.plan = null;
     this.shopCounter = null;
+    this.npc = null;
     this.stopWalking();
     this.clearRouteSprites();
     this.buildRoute(params, attempt);
@@ -6868,6 +6970,7 @@ export class RouteScene extends Phaser.Scene {
     this.room = null;
     this.plan = null;
     this.shopCounter = null;
+    this.npc = null;
     const route = routeFromFrameMapExport(exported);
     this.generatorSteps = [];
     this.applyRoute(route);
@@ -6928,14 +7031,15 @@ export class RouteScene extends Phaser.Scene {
       return;
     }
     const result = resolveMove(this.moveMap, this.player, step);
-    // A visible ground item or a live trainer blocks its tile, like an object in
-    // the originals: the item is taken with the interact key and the trainer is
-    // talked to. A hidden item can be walked over.
+    // A visible ground item, a live trainer or the room's special NPC blocks its
+    // tile, like an object in the originals: the item is taken with the interact
+    // key and the trainer is talked to. A hidden item can be walked over.
     if (
       !result ||
       this.itemBlocks(result.to) ||
       this.liveTrainerAt(result.to) ||
-      this.shopCounterAt(result.to)
+      this.shopCounterAt(result.to) ||
+      this.npcBlocks(result.to)
     ) {
       this.faceIdle(direction);
       return;
