@@ -217,6 +217,11 @@ export type TilesetConfig = Readonly<{
    * stamped.
    */
   grassRustleTint?: number;
+  /**
+   * The biome's own floor frame that a hidden ground item draws
+   * (`docs/tileset-spec.md` §2/§6). Absent: the tileset's floor frame.
+   */
+  hiddenItemFrame?: number;
 }>;
 
 export const WALL_SHAPES: AutotileShapeSet = {

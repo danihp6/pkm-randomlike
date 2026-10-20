@@ -76,8 +76,6 @@ import { browserStorage } from '../storage';
 export const GRASS_TEXTURE_KEY = 'route:grass';
 export const TRAINER_TEXTURE_KEY = 'route:trainer';
 export const ARROW_TEXTURE_KEY = 'route:arrow';
-/** The faint star a hidden ground item shows instead of a Poke Ball. */
-export const SPARKLE_TEXTURE_KEY = 'route:sparkle';
 /** The shop counter the player interacts with in a shop room (Phase 9). */
 export const SHOP_COUNTER_TEXTURE_KEY = 'route:shop-counter';
 /** The slot machine the casino room's grunt runs (`docs/maps-spec.md` §7). */
@@ -265,18 +263,6 @@ export class BootScene extends Phaser.Scene {
     arrow.fillTriangle(5, 0, 10, 9, 0, 9);
     arrow.generateTexture(ARROW_TEXTURE_KEY, 10, 9);
     arrow.destroy();
-
-    // The hidden-item sparkle: a small four-point star, white so the scene can
-    // tint and dim it (it must read as a faint glint, not a marker).
-    const sparkle = this.make.graphics({ x: 0, y: 0 });
-    sparkle.fillStyle(0xffffff, 1);
-    sparkle.fillTriangle(6, 0, 5, 6, 7, 6);
-    sparkle.fillTriangle(6, 12, 5, 6, 7, 6);
-    sparkle.fillTriangle(0, 6, 6, 5, 6, 7);
-    sparkle.fillTriangle(12, 6, 6, 5, 6, 7);
-    sparkle.fillCircle(6, 6, 1.6);
-    sparkle.generateTexture(SPARKLE_TEXTURE_KEY, 12, 12);
-    sparkle.destroy();
 
     // The shop counter: a tintable stand-in for the Mart counter until the FRLG
     // prop art lands (Phase 8). A pale top over a darker body reads as a fixture.

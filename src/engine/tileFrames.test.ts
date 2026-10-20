@@ -4,6 +4,7 @@ import {
   FRAME_FLOOR,
   FRAME_FLOOR_ALT_1,
   FRAME_FLOOR_ALT_2,
+  FRAME_FLOOR_ALT_3,
   FRAME_WALL_CORNER_NE,
   FRAME_WALL_EDGE_N,
   FRAME_WALL_EDGE_W,
@@ -18,6 +19,7 @@ import {
   autotileFrame,
   grassRustleFrames,
   grassTipKeys,
+  hiddenItemFrame,
   isGrassStepTile,
   isNearWall,
   ledgeFrame,
@@ -503,5 +505,39 @@ describe('resolveTileFrame', () => {
   it('exposes FRAME_WALL_CORNER_NE through the shape set it belongs to', () => {
     expect(WALL_SHAPES.cornerNE).toBe(FRAME_WALL_CORNER_NE);
     expect(WALL_SHAPES.edgeW).toBe(FRAME_WALL_EDGE_W);
+  });
+});
+
+describe('hiddenItemFrame', () => {
+  const minimal: TilesetConfig = {
+    atlas: { tileSize: 16, cols: 4, rows: 13, width: 64, height: 208 },
+    frames: { [FLOOR]: FRAME_FLOOR_ALT_2 },
+  };
+
+  it('reads the forest hidden-item patch the forest tile declares', () => {
+    expect(FRLG_FOREST_TILESET.hiddenItemFrame).toBe(FRAME_FLOOR_ALT_3);
+    expect(hiddenItemFrame(FRLG_FOREST_TILESET)).toBe(41);
+  });
+
+  it('returns the configured frame of a minimal tileset', () => {
+    expect(hiddenItemFrame({ ...minimal, hiddenItemFrame: 21 })).toBe(21);
+  });
+
+  it("falls back to the tileset's floor frame when no hidden-item frame is declared", () => {
+    expect(hiddenItemFrame(minimal)).toBe(FRAME_FLOOR_ALT_2);
+    expect(hiddenItemFrame(PLACEHOLDER_TILESET)).toBe(PLACEHOLDER_TILESET.frames[FLOOR]);
+  });
+
+  it('reads 0 when neither the hidden-item frame nor the floor frame exists', () => {
+    expect(
+      hiddenItemFrame({
+        atlas: { tileSize: 16, cols: 4, rows: 13, width: 64, height: 208 },
+        frames: {},
+      }),
+    ).toBe(0);
+  });
+
+  it('treats a non-finite frame as absent', () => {
+    expect(hiddenItemFrame({ ...minimal, hiddenItemFrame: Number.NaN })).toBe(FRAME_FLOOR_ALT_2);
   });
 });

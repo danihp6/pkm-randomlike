@@ -57,8 +57,12 @@ Every biome ships two images:
   (`rgb(88,160,128)`, the tone the tree bank is drawn on), while the outdoor light
   floor `6,1` (`rgb(112,200,160)`) and the cave rock `2,24` stay in their atlases,
   unwired. The forest floor is a **weighted mix** of its dark-ground tiles (`0,34`
-  base, `2,34`, `3,34`, `5,34` and the rare flowered `0,38`; §3,
+  base, `2,34`, `3,34` and the rare flowered `0,38`; §3,
   `FRLG_FOREST_TILESET`), so the ground reads varied instead of one repeated tile.
+  The fifth dark-ground cell, `5,34` (frame `41`, `FRAME_FLOOR_ALT_3`), is **not**
+  in that mix: it is the forest's `hiddenItemFrame` (§6), the patch a hidden ground
+  item draws, so the ground never draws it naturally and only a hidden item can
+  show it.
 - **common sheet** (`src/assets/common.png`): 5 cells of 24x24, shared by every
   biome, for the tiles that mean the same thing everywhere: trap, chest, item,
   carpet (and a stair slot that no map value maps to while the route `EXIT` art
@@ -78,6 +82,7 @@ type TilesetConfig = {
   wallAdjacentVariants?: Record<number, VariantFrames>
   commonFrames?: Record<number, number>    // map values drawn from the common sheet
   grassRustle?: number[]                   // tall grass' own rustle; rest frame first
+  hiddenItemFrame?: number                 // hidden ground item's floor frame; absent = frames[FLOOR]
 }
 ```
 
@@ -239,5 +244,17 @@ Swapping is `config = TILESETS[nextId].config` plus loading
   cell's neighbours are all open, so the shipped `WATER` autotile rule resolves it to
   the interior frame 24 (`WATER_SHAPES.interior`). A tileset that ships its own
   obstacle art maps its own frames through `frames[BUSH]`/`frames[ROCK]`.
+- **Hidden ground items** draw a concrete floor frame of the route's biome now,
+  not a procedural glint: `TilesetConfig.hiddenItemFrame` names the patch a hidden
+  item draws (the forest's is frame `41`, `FRAME_FLOOR_ALT_3`, the dark `5,34`
+  ground), drawn at the atlas's own cell size and the same 24px world scale as the
+  ground, at depth `5` over the floor and under the player. The item is still
+  walkable and still picked up underfoot; only the ground frame tells it apart. The
+  forest keeps that frame **out of** its natural ground mix (§2), so a hidden patch
+  is ground that no other tile draws. A tileset that declares no `hiddenItemFrame`
+  draws its plain floor frame (`hiddenItemFrame()` falls back to `frames[FLOOR]`,
+  then `0`) and its hidden items are indistinguishable at rest: a biome opts in by
+  stamping a patch. The procedural `route:sparkle` texture and its builder are
+  gone, and Reduce flashing keeps only its battle and reset-scrim surfaces (`D45`).
 - **Trainer sprites** do not exist yet in any imported set; they need their own
   sheet (walk cycles + overworld facing).

@@ -388,3 +388,12 @@ export function resolveGroundFrame(
   if (variants) return { source: 'atlas', frame: variantFrame(x, y, variants) };
   return { source: 'atlas', frame: tileset.frames[FLOOR] ?? 0 };
 }
+
+/**
+ * The frame a hidden ground item draws: the biome's own floor patch when it declares
+ * one (`hiddenItemFrame`), and its plain floor frame otherwise. No map, no RNG, no DOM.
+ */
+export function hiddenItemFrame(tileset: TilesetConfig): number {
+  const frame = tileset.hiddenItemFrame;
+  return frame !== undefined && Number.isFinite(frame) ? frame : (tileset.frames[FLOOR] ?? 0);
+}

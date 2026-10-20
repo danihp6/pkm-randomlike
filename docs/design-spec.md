@@ -287,8 +287,9 @@ Full rules in `docs/battle-spec.md`. In short:
 
 - Classic overworld movement on a tile grid, 24x24 tiles, camera follows.
 - **Ground items** sit on the pockets against a wall (a corner where they can);
-  a visible one is a Poke Ball that blocks its tile, a hidden one is a faint
-  sparkle you can walk over and pick up underfoot (`E`).
+  a visible one is a Poke Ball that blocks its tile, a hidden one is a patch of the
+  biome's own ground — a real floor frame of the route's tileset, not a sprite —
+  that you can walk over and pick up underfoot (`E`).
 - **Tall grass** is the only tile that rolls a wild encounter.
 - **Trainers** have a line of sight: step into their line (a straight cardinal
   beam of 5 tiles, stopped by anything impassable — a wall, a ledge or water — and
@@ -396,7 +397,10 @@ biomes) stay English in every locale: they are content, not chrome.
 
 The game is playable on a keyboard alone, from the first menu to the run-over
 screen, and no rule it teaches ever rides on colour only. One preference guards
-the flashing: **Reduce flashing** (`settings.reducedFlash`, off by default, `D45`).
+the flashing: **Reduce flashing** (`settings.reducedFlash`, off by default, `D45`),
+which drops the battle's full-screen flash and releases the hold-to-reset scrim at
+once. A hidden ground item is a floor frame, not a glint, so it has no flashing
+surface left to reduce.
 
 ### 10.1 Colour is never the only carrier
 
