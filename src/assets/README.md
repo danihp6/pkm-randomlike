@@ -55,7 +55,11 @@ npm run assets:pack -- C:\path\to\store    # an explicit store root
 
 `scripts/assets/pack.mjs` runs every packer in dependency order and passes each
 one an absolute path inside the store (never a junction: `AGENTS.md`, "Asset
-trees"). The overworld PMDCollab pairs (`pokemons/`) are the one optional tree.
+trees"). The overworld PMDCollab pairs (`pokemons/`) are the one optional tree:
+they are public, so the store does not carry them, and a machine that needs them
+re-downloads the set into it with
+`node scripts/legacy-art/fetch-pmdcollab.mjs --table --missing --dest=<store>/pokemons`
+before packing (the suites that measure them skip until it is there).
 Eight atlases whose source sheets were never kept (`moves.png`, `items.png`,
 `hud.png`, the five biome sheets) travel in the store's `prebuilt/` as the only
 copy and are copied into place last. The outputs are the gitignored paths in the
