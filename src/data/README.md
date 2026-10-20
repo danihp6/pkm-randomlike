@@ -52,8 +52,12 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   chance, its trainer's archetype and the move ids the room bars for the player.
 - `npcs.ts` — the special-NPC table (`docs/maps-spec.md` §7): one row per NPC with
   its name and greeting keys, the overworld sprite key it draws with, the chance it
-  is rolled on map 1 and the step every floor after adds, plus the optional party
-  gate its row is filtered by. Ships **empty** until the NPC content tasks land.
+  is rolled on map 1 and the step every floor after adds, the optional gate its row
+  is filtered by, its choices and whether it is `repeatable`. Ships the guaranteed
+  **merchant** plus the five member-edit rows and the sacrifice, the `TUTOR_MOVES`
+  gate and the `SACRIFICE_REWARDS` rows. The tutor, nature, ability and species rows
+  **borrow** the packed atlas's `blackbelt`/`psychic`/`ace`/`camper` archetype rows;
+  `iv-judge` and `sacrifice` draw their own.
 - `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
   each band's `hiddenChance` (`docs/routes-spec.md` §2 step 4).
 - `population.ts` — the floor's trainer-room composition the plan and the route

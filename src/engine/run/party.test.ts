@@ -186,4 +186,16 @@ describe('partyHasAbility', () => {
     expect(partyHasAbility(runWith([able('caterpie', 'shield-dust')]), ['SHIELD-DUST'])).toBe(true);
     expect(partyHasAbility(runWith([able('caterpie', 'shield-dust')]), ['overgrow'])).toBe(false);
   });
+
+  it('counts the second ability a sacrifice granted', () => {
+    const granted = { ...able('caterpie', 'shield-dust'), secondAbility: 'Pickup' };
+    expect(partyHasAbility(runWith([granted]), ['pickup'])).toBe(true);
+    expect(partyHasAbility(runWith([granted]), ['Pickup'])).toBe(true);
+    expect(partyHasAbility(runWith([granted]), ['shield-dust'])).toBe(true);
+    // The box is still never asked, even with a second ability.
+    expect(partyHasAbility(runWith([BUG], [granted]), ['pickup'])).toBe(false);
+    // A duplicate of the primary never satisfies a gate the primary misses.
+    const duplicate = { ...able('caterpie', 'shield-dust'), secondAbility: 'Shield Dust' };
+    expect(partyHasAbility(runWith([duplicate]), ['pickup'])).toBe(false);
+  });
 });

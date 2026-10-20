@@ -199,17 +199,22 @@ describe('guaranteedNpc', () => {
 });
 
 describe('roomNpc and the guaranteed rows', () => {
-  it('never returns the merchant, whose chance is 0', () => {
+  it('never returns a zero-chance row, the merchant included', () => {
+    const ids = new Set(NPC_ROWS.filter((row) => row.chance > 0).map((row) => row.id));
     for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
       for (let roomIndex = 0; roomIndex < 40; roomIndex++) {
-        expect(roomNpc(SEED, roomIndex, mapIndex), `map ${mapIndex} room ${roomIndex}`).toBeNull();
+        const placement = roomNpc(SEED, roomIndex, mapIndex);
+        if (!placement) continue;
+        expect(placement.row.id, `map ${mapIndex} room ${roomIndex}`).not.toBe('merchant');
+        expect(ids.has(placement.row.id), `map ${mapIndex} room ${roomIndex}`).toBe(true);
       }
     }
   });
 
   it('never picks a zero-chance guaranteed row beside a rolled one', () => {
+    const guaranteed = row('merchant', 0, 0, { guaranteedFromMap: 2 });
     const rolled = row('chef', 1, 0);
-    const table = [...NPC_ROWS, rolled];
+    const table = [guaranteed, rolled];
     for (let roomIndex = 0; roomIndex < 60; roomIndex++) {
       const placement = roomNpc(SEED, roomIndex, 3, table);
       expect(placement?.row.id, `room ${roomIndex}`).toBe('chef');
@@ -281,6 +286,60 @@ describe('npcRequirementMet', () => {
     expect(npcRequirementMet(runWith([fainted]), { kind: 'ability', abilities: ['overgrow'] })).toBe(
       true,
     );
+  });
+
+  it('asks the run for its completed floors, not the party', () => {
+    const base = runWith([BUG, GRASS]);
+    expect(npcRequirementMet(base, { kind: 'missionsCompleted', min: 1 })).toBe(false);
+    expect(
+      npcRequirementMet({ ...base, missionsCompleted: 0 }, { kind: 'missionsCompleted', min: 1 }),
+    ).toBe(false);
+    expect(
+      npcRequirementMet({ ...base, missionsCompleted: 1 }, { kind: 'missionsCompleted', min: 1 }),
+    ).toBe(true);
+    expect(
+      npcRequirementMet({ ...base, missionsCompleted: 1 }, { kind: 'missionsCompleted', min: 2 }),
+    ).toBe(false);
+    expect(
+      npcRequirementMet({ ...base, missionsCompleted: 3 }, { kind: 'missionsCompleted', min: 2 }),
+    ).toBe(true);
+    // The box and the party carry no vote here: an empty party is still a run.
+    expect(
+      npcRequirementMet({ ...runWith([]), missionsCompleted: 1 }, { kind: 'missionsCompleted', min: 1 }),
+    ).toBe(true);
+  });
+});
+
+describe('the sacrifice gate', () => {
+  const MEMBER_EDIT_ROWS = ['tutor', 'nature', 'ability', 'iv-judge', 'species'];
+  const SACRIFICE = getNpcRow('sacrifice');
+
+  /** The filter `RouteScene.rollRoomNpc` applies before the roll. */
+  function eligible(run: RunState): readonly NpcRow[] {
+    return NPC_ROWS.filter((row) => npcRequirementMet(run, row.requires));
+  }
+
+  function rolledIds(run: RunState, mapIndex = 5): ReadonlySet<string> {
+    const rows = eligible(run);
+    const ids = new Set<string>();
+    for (let roomIndex = 0; roomIndex < 600; roomIndex++) {
+      const placement = roomNpc(SEED, roomIndex, mapIndex, rows);
+      if (placement) ids.add(placement.row.id);
+    }
+    return ids;
+  }
+
+  it('keeps the sacrifice out of the roll until a floor has been completed', () => {
+    expect(SACRIFICE?.requires).toEqual({ kind: 'missionsCompleted', min: 1 });
+    const ids = rolledIds(runWith([BUG]));
+    expect(ids.has('sacrifice')).toBe(false);
+    for (const id of MEMBER_EDIT_ROWS) expect(ids.has(id), id).toBe(true);
+  });
+
+  it('rolls the sacrifice once the run has completed a floor', () => {
+    const ids = rolledIds({ ...runWith([BUG]), missionsCompleted: 1 });
+    expect(ids.has('sacrifice')).toBe(true);
+    for (const id of MEMBER_EDIT_ROWS) expect(ids.has(id), id).toBe(true);
   });
 });
 

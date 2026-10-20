@@ -2,31 +2,35 @@ import { learnableBy, levelUpMoves } from '../../data/dex/learnsets';
 import { getMove } from '../../data/dex/moves';
 import { tmItemIdForMove } from '../../data/tms';
 import { randomLevelUpMoves } from '../battle/randomLearnset';
-import { MAX_MOVES, type RunPokemon } from './progression';
+import { MAX_MOVES, memberAbilities, type RunPokemon } from './progression';
 import { itemCount, updatePokemon, type RunState } from './state';
 
 /**
  * The learnset panel's pure model (`docs/design-spec.md` §5). It answers what a
  * run member may equip right now: every level-up move it has already learned but
- * is **not** holding in one of its four slots, plus every move a TM **in the bag**
- * teaches it. The route HUD only draws what this returns; a drop onto a move slot
- * goes through `equipMove`, so learning is a pure, testable edit.
+ * is **not** holding in one of its four slots, every move a tutor taught it, plus
+ * every move a TM **in the bag** teaches it. The route HUD only draws what this
+ * returns; a drop onto a move slot goes through `equipMove`, so learning is a
+ * pure, testable edit.
  *
  * The available moves follow the run's randomized learnset (`D17`), so the moves
  * a species can be taught stay fixed for the whole run, like its level-up moves.
  */
 
-export type LearnSourceKind = 'level' | 'tm';
+export type LearnSourceKind = 'level' | 'tutor' | 'tm';
 
 /** One move the panel offers and where it comes from. */
 export type LearnEntry = Readonly<{
   moveId: string;
   source: LearnSourceKind;
-  /** The level a level-up move was learned at; null for a TM move. */
+  /** The level a level-up move was learned at; null for a tutor or a TM move. */
   level: number | null;
-  /** The bag machine that teaches a TM move; null for a level-up move. */
+  /** The bag machine that teaches a TM move; null for a level-up or tutor move. */
   tmId: string | null;
 }>;
+
+/** The draw order of the panel's band: level-up, then tutor, then TM. */
+const SOURCE_RANK: Readonly<Record<LearnSourceKind, number>> = { level: 0, tutor: 1, tm: 2 };
 
 /** The level-up moves a species knows at `level`, oldest first and deduplicated. */
 function levelPool(
@@ -58,20 +62,23 @@ function tmPool(speciesId: string): readonly string[] {
 }
 
 /**
- * Everything `member` may equip: its learned level-up moves and the TM moves the
- * run's bag can teach it, minus the moves already in its four slots. A move that
- * is both (a TM it already learned) appears once, as the free level-up move.
- * Moves whose id the dex cannot resolve drop out.
+ * Everything `member` may equip: its learned level-up moves, the moves a tutor
+ * taught it (`member.taughtMoves`) and the TM moves the run's bag can teach it,
+ * minus the moves already in its four slots. A move that arrives by two sources
+ * appears once, as the earliest one (level, then tutor, then TM). Moves whose id
+ * the dex cannot resolve drop out.
  *
  * A No Guard holder is never offered an OHKO move (`D17`), so the pair can never
- * be dragged onto a slot: `equipMove` only accepts what this offers.
+ * be dragged onto a slot: `equipMove` only accepts what this offers. The guard
+ * reads every ability the member carries (`memberAbilities`), so a second
+ * ability counts.
  */
 export function learnsetPool(run: RunState, member: RunPokemon, learnsetSeed?: string): LearnEntry[] {
   const { speciesId, level, moves } = member.fighter;
   const equipped = new Set(moves.map((slot) => slot.moveId));
   const entries: LearnEntry[] = [];
   const seen = new Set<string>();
-  const forbidsOhko = member.fighter.ability === 'No Guard';
+  const forbidsOhko = memberAbilities(member).some((ability) => ability.toLowerCase() === 'no guard');
   const push = (entry: LearnEntry): void => {
     if (forbidsOhko && getMove(entry.moveId)?.ohko === true) return;
     if (equipped.has(entry.moveId) || seen.has(entry.moveId) || !getMove(entry.moveId)) return;
@@ -80,6 +87,9 @@ export function learnsetPool(run: RunState, member: RunPokemon, learnsetSeed?: s
   };
   for (const learned of levelPool(speciesId, level, learnsetSeed)) {
     push({ moveId: learned.moveId, source: 'level', level: learned.level, tmId: null });
+  }
+  for (const moveId of member.taughtMoves ?? []) {
+    push({ moveId, source: 'tutor', level: null, tmId: null });
   }
   for (const moveId of tmPool(speciesId)) {
     const tmId = tmItemIdForMove(moveId);
@@ -90,9 +100,9 @@ export function learnsetPool(run: RunState, member: RunPokemon, learnsetSeed?: s
   return entries;
 }
 
-/** Level-up moves first (oldest first), then TM moves; ties broken by name. */
+/** Level-up moves first (oldest first), then tutor moves, then TM moves; ties by name. */
 function compareEntries(a: LearnEntry, b: LearnEntry): number {
-  if (a.source !== b.source) return a.source === 'level' ? -1 : 1;
+  if (a.source !== b.source) return SOURCE_RANK[a.source] - SOURCE_RANK[b.source];
   if (a.source === 'level' && b.source === 'level' && a.level !== b.level) {
     return (a.level ?? 0) - (b.level ?? 0);
   }

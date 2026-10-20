@@ -163,6 +163,26 @@ describe('runPassives', () => {
     expect(itemCount(paid, picks[0].itemId)).toBe(itemCount(before, picks[0].itemId) + 1);
   });
 
+  it('pays a row held as a member second ability, on the same stream', () => {
+    const plain = runWith('pkm-111', ['Blaze']);
+    const granted: RunState = {
+      ...plain,
+      party: plain.party.map((entry) => ({ ...entry, secondAbility: 'Pickup' })),
+    };
+    expect(plain.party[0].fighter.ability).toBe('Blaze');
+    const room = payingRoom(granted, 'room');
+    expect(room).not.toBeNull();
+    const before = at(granted, 1, room!);
+    const { run: paid, picks } = runPassives(before, 'room');
+    expect(picks).toHaveLength(1);
+    expect(picks[0].ability).toBe('pickup');
+    expect(picks[0].mark).toBe(`passive-pickup-room-1-${room}`);
+    expect(itemCount(paid, picks[0].itemId)).toBe(itemCount(before, picks[0].itemId) + 1);
+    // The draw is the row's own, so the same room pays the same item as a primary holder.
+    const primary = runPassives(at(runWith('pkm-111', ['Pickup']), 1, room!), 'room');
+    expect(primary.picks[0].itemId).toBe(picks[0].itemId);
+  });
+
   it('skips a blank or unknown ability without throwing', () => {
     const run = runWith('pkm-111', ['', 'Not An Ability']);
     for (const trigger of ['room', 'win'] as const) {

@@ -38,9 +38,11 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   `run/nickname.ts` (the member names the player types), `run/reward.ts`, `run/perms.ts`,
   `run/items.ts` (the route's consumable rule: whether an item applies and the use that spends it),
   `run/starters.ts`, `run/share.ts`, `run/party.ts` (the party predicates a room asks: what
-  types the party holds), `run/trade.ts` (the deliberate trade: one member out, one
-  rolled member in at the squad's level) and `run/passives.ts` (the map passives a
-  room's abilities pay), and `run/missions.ts` (the floor's mission and its progress).
+  types, moves and abilities the party holds), `run/memberEdits.ts` (the member-edit NPC
+  transactions: the tutor, the four re-rolls and the sacrifice), `run/trade.ts` (the deliberate
+  trade: one member out, one rolled member in at the squad's level) and `run/passives.ts` (the
+  map passives a room's abilities pay), and `run/missions.ts` (the floor's mission and its
+  progress).
 
 ## Rules
 

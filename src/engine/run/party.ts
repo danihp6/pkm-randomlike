@@ -1,5 +1,5 @@
 import { getSpecies } from '../../data/dex/species';
-import type { RunPokemon } from './progression';
+import { memberAbilities, type RunPokemon } from './progression';
 import type { RunState } from './state';
 
 /**
@@ -47,11 +47,14 @@ export function partyHasMove(run: RunState, moveIds: readonly string[]): boolean
 }
 
 /**
- * True when a **party** member has any of `abilityIds` as its ability. The box is
+ * True when a **party** member has any of `abilityIds`, either as its primary
+ * ability or as the second one a sacrifice granted (`memberAbilities`). The box is
  * not asked, an empty list is `false`, and a member at 0 HP still counts.
  */
 export function partyHasAbility(run: RunState, abilityIds: readonly string[]): boolean {
   if (abilityIds.length === 0) return false;
   const wanted = new Set(abilityIds.map((abilityId) => abilityId.toLowerCase()));
-  return run.party.some((member) => wanted.has(member.fighter.ability.toLowerCase()));
+  return run.party.some((member) =>
+    memberAbilities(member).some((ability) => wanted.has(ability.toLowerCase())),
+  );
 }

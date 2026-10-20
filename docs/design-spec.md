@@ -112,6 +112,16 @@ carries over.
   movement, the way a boxed catch does (`docs/routes-spec.md` §6); the modal keeps
   the move names. The party is never left empty and
   the box is never required to be full.
+- A member can also be **edited by a special NPC** (`docs/maps-spec.md` §7): a
+  **tutor** teaches one move of its six, and the move waits in the MOVES tab's band
+  tagged `Tutor` — equipped the same way as a level-up one, and back in the band
+  after an unequip; a **nature**, **ability** or **IV** reader re-rolls that one
+  fact; and a **species swapper** trades the body for another of the floor's wild
+  pool, keeping level, moves, abilities, IVs/EVs, held item, status and nickname.
+  The sacrifice pays one whole bag stack for one of four of those rows. Every row is
+  one use per floor unless it is `repeatable`, and two member words persist in the
+  save: `taughtMoves` and `secondAbility`, both written only when they carry
+  something.
 - A member can be **named**: the name row on the STATS tab **is** an editable field
   (a bordered box with a `click to name` hint at its right end, drawn inside the
   detail panel's own window — there is no separate window). A click focuses it and it

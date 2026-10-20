@@ -47,6 +47,8 @@ export function npcRequirementMet(run: RunState, requirement: NpcRequirement | u
       return partyHasMove(run, requirement.moves);
     case 'ability':
       return partyHasAbility(run, requirement.abilities);
+    case 'missionsCompleted':
+      return run.missionsCompleted >= requirement.min;
   }
 }
 

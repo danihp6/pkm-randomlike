@@ -13,11 +13,11 @@ function starterRun(moves: readonly string[] = ['scratch'], level = 5): RunState
   return createRun({ seed: SEED, starter });
 }
 
-function diglettRun(ability: string): RunState {
+function diglettRun(ability: string, level = 44): RunState {
   const starter = createRunPokemon({
     id: 'starter',
     speciesId: 'diglett',
-    level: 44,
+    level,
     ability,
     moves: ['scratch'],
   });
@@ -98,6 +98,78 @@ describe('learnsetPool', () => {
   });
 });
 
+describe('the tutor band', () => {
+  /** A run whose only member carries `taughtMoves`. */
+  function tutoredRun(taughtMoves: readonly string[], ability = 'Sand Veil'): RunState {
+    const run = diglettRun(ability, 5);
+    return updatePokemon(run, { ...run.party[0], taughtMoves });
+  }
+
+  it('offers a tutored move as a tutor entry and keeps it after an unequip', () => {
+    const run = tutoredRun(['earthquake']);
+    const entry = learnsetPool(run, run.party[0]).find((candidate) => candidate.moveId === 'earthquake');
+    expect(entry).toEqual({ moveId: 'earthquake', source: 'tutor', level: null, tmId: null });
+
+    const equipped = equipMove(run, 'starter', 'earthquake', 1);
+    expect(equipped.party[0].fighter.moves.map((slot) => slot.moveId)).toEqual([
+      'scratch',
+      'earthquake',
+    ]);
+    // The band no longer offers the move it holds...
+    expect(learnsetPool(equipped, equipped.party[0]).some((e) => e.moveId === 'earthquake')).toBe(false);
+    // ...and an unequip returns it as a tutor entry, not as a level one.
+    const removed = unequipMove(equipped, 'starter', 1);
+    const back = learnsetPool(removed, removed.party[0]).find((e) => e.moveId === 'earthquake');
+    expect(back?.source).toBe('tutor');
+    expect(back?.level).toBeNull();
+    expect(back?.tmId).toBeNull();
+  });
+
+  it('draws level entries, then tutor entries, then TM entries', () => {
+    const levelIds = new Set(levelUpMoves('diglett', 5).map((entry) => entry.moveId));
+    const tmMove = learnableBy('diglett', 'tm').find(
+      (moveId) => !levelIds.has(moveId) && tmItemIdForMove(moveId),
+    )!;
+    const tmId = tmItemIdForMove(tmMove)!;
+    const base = addItem(tutoredRun(['earthquake']), tmId);
+    const pool = learnsetPool(base, base.party[0]);
+    const rank: Readonly<Record<string, number>> = { level: 0, tutor: 1, tm: 2 };
+    for (let index = 1; index < pool.length; index++) {
+      expect(rank[pool[index].source], pool[index].moveId).toBeGreaterThanOrEqual(
+        rank[pool[index - 1].source],
+      );
+    }
+    const tutorIndex = pool.findIndex((entry) => entry.source === 'tutor');
+    const tmIndex = pool.findIndex((entry) => entry.source === 'tm');
+    expect(tutorIndex).toBeGreaterThan(0);
+    expect(tmIndex).toBeGreaterThan(tutorIndex);
+  });
+
+  it('drops a taught id the dex cannot resolve and one already in a slot', () => {
+    const run = tutoredRun(['not-a-move', 'scratch', 'earthquake']);
+    const ids = learnsetPool(run, run.party[0]).map((entry) => entry.moveId);
+    expect(ids).toContain('earthquake');
+    expect(ids.filter((id) => id === 'scratch')).toEqual([]);
+    expect(ids).not.toContain('not-a-move');
+  });
+
+  it('never offers an OHKO tutored move under No Guard, primary or second ability', () => {
+    const sand = tutoredRun(['fissure'], 'Sand Veil');
+    expect(getMove('fissure')?.ohko).toBe(true);
+    expect(learnsetPool(sand, sand.party[0]).map((entry) => entry.moveId)).toContain('fissure');
+
+    const withSecond = updatePokemon(sand, { ...sand.party[0], secondAbility: 'No Guard' });
+    expect(learnsetPool(withSecond, withSecond.party[0]).map((entry) => entry.moveId)).not.toContain(
+      'fissure',
+    );
+
+    const noGuard = tutoredRun(['fissure'], 'No Guard');
+    expect(learnsetPool(noGuard, noGuard.party[0]).map((entry) => entry.moveId)).not.toContain(
+      'fissure',
+    );
+  });
+});
+
 describe('equipMove', () => {
   const tmMove = learnableBy('charmander', 'tm')[0];
   const tmId = tmItemIdForMove(tmMove)!;
@@ -140,11 +212,7 @@ describe('unequipMove', () => {
     const next = unequipMove(run, 'starter', 1);
     expect(next).not.toBe(run);
     expect(next.party[0].fighter.moves.map((slot) => slot.moveId)).toEqual(['scratch', 'ember']);
-    expect(run.party[0].fighter.moves.map((slot) => slot.moveId)).toEqual([
-      'scratch',
-      'growl',
-      'ember',
-    ]);
+    expect(run.party[0].fighter.moves.map((slot) => slot.moveId)).toEqual(['scratch', 'growl', 'ember']);
   });
 
   it('returns a removed level-up move to the learnset pool', () => {

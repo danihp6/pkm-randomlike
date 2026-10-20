@@ -1049,6 +1049,16 @@ stays the per-task record.
 | 56 | 117 | `src/scenes/rooms/casino.ts` + test (deleted), `src/engine/maps/plan.ts` + test, `src/data/npcs.ts` + test, `src/scenes/BootScene.ts`, `src/ui/rocketPanel.ts` + test → 117 |
 | 57 | 118 | `src/ui/capture.ts` + test, `src/scenes/BattleScene.ts`, `src/i18n/{en,es}.ts` → 118 |
 
+**Batch 39 was filled with `[Task-116]` (Batch 55) in this cycle.** The cut was
+`[Task-93]` alone; the fill search pulled `[Task-116]` because `[Task-115]` is merged
+and its paths — `src/scenes/rooms/casino.ts`, the new pure `src/ui/casinoReels.ts`,
+the two folder READMEs and §7's casino window paragraph — are disjoint from Task-93's.
+The two empty slots name their blockers: `[Task-94]` (Batch 40) shares
+`src/engine/save.ts` with 93, and every other open task claims
+`src/scenes/RouteScene.ts`, which 93 holds (`[Task-95]`, 96, 97, 99, 100, 101, 102,
+108, 109, 110), or depends on an unmerged task (`[Task-114]` on 101, `[Task-117]` on
+116, `[Task-118]` on 114); `[Task-103]` (Batch 47) also shares `save.ts` with 93.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
@@ -5704,7 +5714,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       layer, its panel and the roll the guarantee bypasses) and `[Task-82]` (the room roles and
       `TRAINER_ROOMS_PER_MAP` the guarantee reads). It adds no run field and draws no RNG.
       *(Batch 38)*
-- [ ] **[Task-93] The party-edit NPCs: the move tutor, the three re-rolls, the species swap and the
+- [x] **[Task-93] The party-edit NPCs: the move tutor, the three re-rolls, the species swap and the
       sacrifice's second ability.** Five of the report's NPCs edit **a member**, and the run has the
       seams except the two facts they need to persist. A member is one `FighterSnapshot`
       (`RunPokemon`, `src/engine/run/progression.ts` 30-37); the edits are

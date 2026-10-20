@@ -8,6 +8,25 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The party-edit NPCs edit one member through one pure transaction.**
+      `src/engine/run/memberEdits.ts` joins the special-NPC panel with five rows — the
+      move tutor (`TUTOR_MOVES`, a free slot or the chosen one), the nature, ability and
+      IV re-rolls and the species swap — plus the sacrifice a completed `flawless`
+      floor unlocks (one whole bag stack for one random row, its second-ability row
+      writing `secondAbility` instead of re-rolling the first). A tutored move is a
+      `taughtMoves` pool entry (`source: 'tutor'`, ranked level → tutor → TM), so it
+      survives an unequip; every draw is minted inside the function on the room's own
+      `:npc:` substreams, and `NpcRow.repeatable` plus the
+      `{ kind: 'missionsCompleted' }` requirement keep the merchant revisitable and the
+      sacrifice gated. `SAVE_VERSION` goes **19 → 20**, both member words optional on
+      the wire. The second ability feeds the run's ability readers (`memberAbilities`,
+      `partyHasAbility`, `runPassives`, the No Guard guard); the battle's own dispatch
+      keeps the primary, recorded as `D48` and parked for review as its own decision.
+      **QA:** Task QA `qa-93` (`main@98bd905` + `task-93@4f5480e`, integration
+      `b7e2cbb`): every `[unit]` criterion green, `npm test` **2269** passed / 67
+      skipped, `npm run build` clean over 26 diff paths, `memberEdits.test.ts`'s 21
+      cases including the `pkm-93` fixed-seed pins.
+
 - [x] **The slot machine's equipable prize is one grouped row off the Mart's own shelf.**
       `CasinoPrize` gains `kind: 'held'` (a row that names no `itemId`, like the Egg) and
       every band's fixed equipable becomes that one row at weight 1, so a newly banded
