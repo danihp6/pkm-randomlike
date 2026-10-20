@@ -147,6 +147,7 @@ import {
   resolveGroundFrame,
   grassRustleFrames,
   grassTipKeys,
+  hiddenItemFrame,
   isGrassStepTile,
   treeTipKeys,
   type TileFrame,
@@ -249,13 +250,7 @@ import { prefersTouchControls } from '../input/device';
 import { playCue, playMusic } from '../audio/audio';
 import { loadSettings, saveSettings } from '../settings';
 import { browserStorage } from '../storage';
-import {
-  GRASS_TEXTURE_KEY,
-  PANEL_ICON_KEYS,
-  PANEL_ICON_SIZE,
-  SPARKLE_TEXTURE_KEY,
-  TRAINER_TEXTURE_KEY,
-} from './BootScene';
+import { GRASS_TEXTURE_KEY, PANEL_ICON_KEYS, PANEL_ICON_SIZE, TRAINER_TEXTURE_KEY } from './BootScene';
 import { collectDescriptors, type RoomRegistry } from './rooms/registry';
 import type { RoomDescriptor, RoomDrop, RoomHost, RoomPanel, RoomRowDrag } from './rooms/types';
 
@@ -4878,38 +4873,34 @@ export class RouteScene extends Phaser.Scene {
 
   /**
    * Draws the ground items on the route's pockets. A visible item is the FRLG
-   * Poke Ball, like the originals; a hidden one is a faint sparkle that only
-   * gives itself away up close. Items already taken stay hidden. Only the live
-   * route has items, so a dev generator phase draws none.
+   * Poke Ball, like the originals; a hidden one is the biome's own floor patch
+   * (`hiddenItemFrame`), drawn exactly as the ground under it — same texture,
+   * same cell, same scale — so only its frame gives it away up close. Items
+   * already taken stay hidden. Only the live route has items, so a dev generator
+   * phase draws none.
    */
   private drawItems(): void {
     if (this.generatorStepIndex !== null) return;
+    const config = TILESETS[this.tilesetId].config;
     const created: Phaser.GameObjects.GameObject[] = [];
     for (const item of this.route.items) {
       const taken = isItemPicked(this.run, item.id);
       const sprite = item.hidden
         ? this.add
-            .image(this.centerX(item.position.x), this.centerY(item.position.y), SPARKLE_TEXTURE_KEY)
-            .setScale(1.1)
-            .setAlpha(taken ? 0 : 0.55)
-            .setTint(0xfff3b0)
+            .image(
+              this.centerX(item.position.x),
+              this.centerY(item.position.y),
+              tilesetTextureKey(this.tilesetId),
+              hiddenItemFrame(config),
+            )
+            .setScale(TILE_SIZE / config.atlas.tileSize)
+            .setVisible(!taken)
             .setDepth(5)
         : this.add
             .image(this.centerX(item.position.x), this.centerY(item.position.y), GROUND_ITEM_TEXTURE_KEY)
             .setScale(1.5)
             .setVisible(!taken)
             .setDepth(5);
-      if (item.hidden && !taken && !this.reducedFlash) {
-        // A slow, shallow shimmer so it reads as a glint, not a beacon. The
-        // reduce-flashing preference leaves it at the fixed 0.55 it was built with.
-        this.tweens.add({
-          targets: sprite,
-          alpha: { from: 0.3, to: 0.7 },
-          duration: 900,
-          yoyo: true,
-          repeat: -1,
-        });
-      }
       this.itemSprites.push({ item, sprite });
       this.entitySprites.push(sprite);
       created.push(sprite);
@@ -5877,7 +5868,6 @@ export class RouteScene extends Phaser.Scene {
    * Transparent HUD option redraws the panels).
    */
   applySettings(): void {
-    const wasReducedFlash = this.reducedFlash;
     this.settings = loadSettings();
     this.reducedFlash = this.settings.reducedFlash;
     // A rebind happened behind this screen; re-resolve the movement keys so the
@@ -5886,14 +5876,6 @@ export class RouteScene extends Phaser.Scene {
     this.refreshPanelKeyLabels();
     // The Transparent HUD option may have changed.
     this.applyHudBackground();
-    // Turning Reduce flashing on also stops the glints already running.
-    if (this.reducedFlash && !wasReducedFlash) {
-      for (const entry of this.itemSprites) {
-        if (!entry.item.hidden) continue;
-        this.tweens.killTweensOf(entry.sprite);
-        entry.sprite.setAlpha(isItemPicked(this.run, entry.item.id) ? 0 : 0.55);
-      }
-    }
   }
 
   /** Pauses the route and rolls the battle on top of it (Phase 5 transition). */

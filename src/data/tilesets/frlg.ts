@@ -121,16 +121,17 @@ const FLOOR_CLEAN = [FRAME_FLOOR];
 
 /**
  * The forest floor is a weighted mix of its own dark ground tiles (all `rgb(88,160,128)`):
- * the base ground dominates, three sibling grounds add variety and the flowered
- * ground is rare. The weights are relative, so adding a rare tile does not
- * meaningfully change how often the others show. The build script stamps each
- * frame from the matching source cell (`build-tilesets.mjs`).
+ * the base ground dominates, two sibling grounds add variety and the flowered ground is
+ * rare. Frame 41 is **not** in the mix: it is the hidden-item patch
+ * (`hiddenItemFrame`), so it never occurs naturally and a hidden item reads as a
+ * patch of ground that no ground tile happens to draw. The weights are relative, so a
+ * rare tile does not meaningfully change how often the others show. The build script
+ * stamps each frame from the matching source cell (`build-tilesets.mjs`).
  */
 const FOREST_FLOOR_VARIANTS: VariantFrames = [
   { frame: FRAME_FLOOR, weight: 8 },
   { frame: FRAME_FLOOR_ALT_1, weight: 5 },
   { frame: FRAME_FLOOR_ALT_2, weight: 4 },
-  { frame: FRAME_FLOOR_ALT_3, weight: 3 },
   { frame: FRAME_FLOOR_ALT_4, weight: 1 },
 ];
 
@@ -167,6 +168,7 @@ export const FRLG_TILESET: TilesetConfig = {
   },
   grassRustle: FRLG_GRASS_RUSTLE_FRAMES,
   grassRustleTint: 0xffffff,
+  hiddenItemFrame: FRAME_FLOOR_ALT_3,
   autotile: [{ value: WATER, openValue: FLOOR, variants: WATER_SHAPES }],
   wallPattern: WALL_PATTERN,
   ledgeFrames: { left: FRLG_LEDGE_LEFT, center: FRAME_LEDGE, right: FRLG_LEDGE_RIGHT },

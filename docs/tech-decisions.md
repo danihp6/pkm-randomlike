@@ -831,10 +831,12 @@ state.
 
 **One knob, and only one: `settings.reducedFlash`** (`DEFAULT_REDUCED_FLASH`,
 off). It drops the full-screen camera flash a Mega Evolution / Gigantamax beat
-would play (`BattleScene.playMega` / `playGmax` keep their sprite fade-in), stops
-the route's hidden-item glint from pulsing (`RouteScene.drawItems` builds it at a
-fixed `0.55` alpha) and releases the hold-to-reset scrim at once instead of
-`RESET_FADE_IN_MS` (`RouteScene.fadeResetOverlayIn`). It is a `Settings` boolean
+would play (`BattleScene.playMega` / `playGmax` keep their sprite fade-in) and
+releases the hold-to-reset scrim at once instead of `RESET_FADE_IN_MS`
+(`RouteScene.fadeResetOverlayIn`). It no longer owns a route surface: a hidden
+ground item used to be a pulsing sprite, and it is now the biome's own floor
+frame (`hiddenItemFrame`, `docs/tileset-spec.md` §6), with nothing to flash. It
+is a `Settings` boolean
 read per field in `parseSettings`, so a save with no such key simply reads `false`:
 **no `SAVE_VERSION` bump and no migration step** (the `D22` precedent). It draws
 **no RNG** and touches no generator, so every fixed seed still reproduces. A second

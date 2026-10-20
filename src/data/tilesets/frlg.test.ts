@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { decodePng } from '../../../scripts/legacy-art/png-codec.mjs';
 import { BUSH, FLOOR, ROCK, WALL, WATER, type TileMap } from '../../engine/map';
-import { resolveGroundFrame, resolveTileFrame } from '../../engine/tileFrames';
+import { resolveGroundFrame, resolveTileFrame, hiddenItemFrame } from '../../engine/tileFrames';
 import {
   FRAME_FLOOR,
   FRAME_FLOOR_ALT_1,
@@ -381,13 +381,7 @@ describe('frlg tileset geometry', () => {
 });
 
 describe('frlg forest floor', () => {
-  const FOREST_FRAMES = [
-    FRAME_FLOOR,
-    FRAME_FLOOR_ALT_1,
-    FRAME_FLOOR_ALT_2,
-    FRAME_FLOOR_ALT_3,
-    FRAME_FLOOR_ALT_4,
-  ];
+  const FOREST_FRAMES = [FRAME_FLOOR, FRAME_FLOOR_ALT_1, FRAME_FLOOR_ALT_2, FRAME_FLOOR_ALT_4];
 
   it('mixes the forest floor from weighted dark-ground frames', () => {
     const variants = FRLG_FOREST_TILESET.variants![FLOOR];
@@ -395,6 +389,7 @@ describe('frlg forest floor', () => {
       typeof entry === 'number' ? { frame: entry, weight: 1 } : entry,
     );
     expect(weighted.map((entry) => entry.frame)).toEqual(FOREST_FRAMES);
+    expect(weighted.map((entry) => entry.weight)).toEqual([8, 5, 4, 1]);
     // Every tile carries its own positive weight, so the mix has a clear common
     // ground (the heaviest frame first) and a rare flowered ground (the lightest last).
     const weights = weighted.map((entry) => entry.weight);
@@ -402,6 +397,19 @@ describe('frlg forest floor', () => {
     expect(new Set(weights).size).toBe(weights.length);
     expect(weights[0]).toBe(Math.max(...weights));
     expect(weights[weights.length - 1]).toBe(Math.min(...weights));
+  });
+
+  it('keeps the hidden-item patch out of the natural mix, as its own floor frame', () => {
+    // Frame 41 is what a hidden item draws, so the ground never draws it itself:
+    // the hidden patch can only come from an item.
+    expect(FRLG_FOREST_TILESET.hiddenItemFrame).toBe(FRAME_FLOOR_ALT_3);
+    expect(FRAME_FLOOR_ALT_3).toBe(41);
+    expect(FRLG_TILESET.hiddenItemFrame).toBe(FRAME_FLOOR_ALT_3);
+    expect(hiddenItemFrame(FRLG_FOREST_TILESET)).toBe(41);
+    expect(FOREST_FRAMES).not.toContain(FRAME_FLOOR_ALT_3);
+    for (const name of ATLASES) {
+      expect(tileIsBlank(atlas(name), FRAME_FLOOR_ALT_3), `${name} hidden-item frame`).toBe(false);
+    }
   });
 
   it('resolves every forest ground cell to a frame in the weighted mix', () => {
