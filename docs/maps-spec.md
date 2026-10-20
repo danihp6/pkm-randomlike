@@ -34,8 +34,11 @@ map  = a grid of K rooms joined by openings      (K random, from the map's range
 - One **biome** is rolled for the whole map (never the previous map's), so every
   room in it shares the tileset and the encounter table (D28). `BIOME_ORDER` is
   the pool; only `forest` exists for now, so the no-repeat rule is inert.
-- One **level range** (`minLevel..maxLevel`) belongs to the map. Within the map
-  the routes ramp from `minLevel` to `maxLevel`.
+- One **level cap** (`cap`, `levelCapForMap`) belongs to the map: it is the player's
+  ceiling and the top of the floor's band. The floor's level **window** is
+  **derived** from the adjacent caps — it opens at the previous floor's cap and
+  closes at this one (`levelWindowForMap`, `src/engine/run/floors.ts`, D29), so no
+  per-map range is stored.
 - The **room farthest from the entry** (graph distance) holds the **boss** at the
   map's `maxLevel`. Its onward opening is the **portal** to the next map (D31).
 - Room **sizes** follow from a room's **shape**, scaled by the map's ceiling. The
@@ -161,17 +164,18 @@ deterministically.
 
 | Knob | Drives |
 | --- | --- |
-| `levels.minLevel` / `maxLevel` | the map's Pokémon band; the player cap is `maxLevel` |
+| `cap` | the map's level cap: the player's XP/level ceiling and the top of the floor's level window |
 | `routes.min` / `max` | how many rooms the map's graph holds |
 | `size.min` / `max` | the map's room-size ceiling: each room's shape size (`ROOM_SHAPE_SIZES`) is scaled by `max / MAP_MAX_ROOM_SIZE`, rounded and clamped to `[30, 56]`; `min` stays 30 and the entry/boss/special leaves are pinned to 30x30 |
 
 `MAP_TUNING` is a table per map (1..8 today) and `MAP_TUNING_STEP` grows a map
-past the last row, so an infinite run keeps climbing: the level range steps up by
-`levelStep` at **both** ends, so a deep floor is a narrow ramp rather than a floor
-that only widens, and both ends saturate at `MAP_MAX_LEVEL`. The room count grows
-with the map as well but is capped at `MAP_MAX_ROUTES`, so a deep floor never
-becomes a huge maze. Retuning is a data edit, never a generator edit
-(`docs/route-generator.md` §2).
+past the last row, so an infinite run keeps climbing: the **cap** steps up by
+`levelStep` a map, 8 levels at a time, until it saturates at `MAP_MAX_LEVEL`. The
+floor's level window is derived from the caps (`levelWindowForMap`) rather than
+stored, so a row holds one level number and the window climbs with it instead of
+widening on its own. The room count grows with the map as well but is capped at
+`MAP_MAX_ROUTES`, so a deep floor never becomes a huge maze. Retuning is a data
+edit, never a generator edit (`docs/route-generator.md` §2).
 
 The room-size ceiling rises from 30 on maps 1-3 to **56** on map 8, and
 `MAP_TUNING_STEP.sizeStep` keeps climbing `size.min` past the last row while
@@ -181,28 +185,29 @@ rooms at 30x30, map 6's corridor at 37x30 and map 8's corridor at 52x30
 
 ## 5. Levels & the player's cap (D29)
 
-- `levelRangeForMap(mapIndex)` is the band. Wild encounters draw their **species
-  window** from the band the squad's own level falls in
+- `levelWindowForMap(mapIndex)` is the floor's **window**: it opens at the
+  **previous floor's cap** and closes at this floor's cap, and map 1 opens at the
+  run's first band floor (`LEVEL_BANDS[0].minLevel`) because it has no previous cap.
+  `bandForMap` reads the archetype pool from that window (`bandForLevel(window.minLevel)`)
+  while the band's `minLevel`/`maxLevel` stay the window's own ends. Wild encounters
+  draw their **species window** from the band the squad's own level falls in
   (`bandForLevel(squadLevel(run))`) and their **level** as a fraction of that squad
-  level — `clamp(floor(squadLevel(run) × fraction), 1, maxLevel)`, with
+  level — `clamp(floor(squadLevel(run) × fraction), 1, cap)`, with
   `fraction ∈ [0.60, 0.75)` (`WILD_LEVEL_FRACTION`, `wildLevel`,
-  `src/data/wildLevels.ts`, D11/D17 amended). The map's range is still the trainer
-  band and the player's cap. A **regular trainer's** level is no longer drawn from
-  the range: it is `clamp(floor(squadLevel(run) × percent[size]), 1, maxLevel)`,
-  with `percent` **1.00 / 0.90 / 0.80 / 0.70** for a party of **1 / 2 / 3 / 4**
-  members (`TRAINER_LEVEL_PERCENT`, `trainerLevel`,
-  `src/data/trainerLevels.ts`; the size is the floor's `trainerSize`), so a trainer
-  scales with the live squad (D35) and the floor's cap is still its hard ceiling
-  (D11/D17 amended). The **boss** and the **mini-boss** are hand-placed and keep
-  the level draw they shipped with (the boss pinned to the floor's cap), because
-  the scene passes no `levelFor` for those two fights.
-- Within the map, room `i` of `K` fields `minLevel + (i-1) / (K-1) *
-  (maxLevel - minLevel)` as its working level, so the map ramps and the boss sits
-  at the top.
-- The **player's own cap** for the map is `levelCapForMap(mapIndex)`
-  (`= maxLevel`), 9 on the first floor up to 55 on the eighth
-  (`docs/balance/route-curve.md`): XP gain clamps there, exactly as the per-route
-  cap did (D9), and an evolution the cap blocked waits until the next map.
+  `src/data/wildLevels.ts`, D11/D17 amended).
+- There is no per-room **working level**: the window only picks the band, and the
+  level of every route member follows the live squad (D35). A **regular trainer's**
+  level is `clamp(floor(squadLevel(run) × percent[size]), 1, cap)`, with `percent`
+  **1.00 / 0.90 / 0.80 / 0.70** for a party of **1 / 2 / 3 / 4** members
+  (`TRAINER_LEVEL_PERCENT`, `trainerLevel`, `src/data/trainerLevels.ts`; the size is
+  the floor's `trainerSize`), so a trainer scales with the live squad and the floor's
+  cap is still its hard ceiling (D11/D17 amended). The **boss** is pinned to the cap
+  and the **mini-boss** keeps the level draw it shipped with, because the scene
+  passes no `levelFor` for those two fights.
+- The **player's own cap** for the map is `levelCapForMap(mapIndex)`, 9 on the first
+  floor up to 55 on the eighth (`docs/balance/route-curve.md`): XP gain clamps there,
+  exactly as the per-route cap did (D9), and an evolution the cap blocked waits until
+  the next map.
 
 ## 6. Boss & portal (D31)
 

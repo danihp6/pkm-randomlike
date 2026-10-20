@@ -1,10 +1,15 @@
 /**
- * How a **map** — a group of routes of one biome — is tuned: the Pokémon level
- * range it fields, how many routes it holds and how big each route may be. A map
- * is the unit of biome, level range and size (`docs/maps-spec.md`, D28/D29).
+ * How a **map** — a group of routes of one biome — is tuned: the level cap it
+ * enforces, how many routes it holds and how big each route may be. A map is the
+ * unit of biome, level cap and size (`docs/maps-spec.md`, D28/D29).
  *
  * The numbers live here so retuning a run never touches the generator: balancing
- * is data. Ranges are **inclusive**, and a room's width and height follow from its
+ * is data. The **cap** is a floor's only level anchor (D29): wild levels and a
+ * regular trainer's level are player-relative (`wildLevel`, `trainerLevel`), and
+ * the floor's level *window* is derived from the adjacent caps by
+ * `levelWindowForMap` in `src/engine/run/floors.ts`, so no range is stored here.
+ *
+ * Ranges are **inclusive**, and a room's width and height follow from its
  * **shape**: the frozen `ROOM_SHAPE_SIZES` table is scaled by the map's own
  * `size.max / MAP_MAX_ROOM_SIZE`, so a later map gives a `corridor` its long side
  * while the quiet leaves stay 30x30 (`docs/maps-spec.md` §1/§4). Past the last
@@ -12,7 +17,6 @@
  * difficulty never plateaus (D29), but the room count stops at `MAP_MAX_ROUTES`
  * so a deep floor never becomes a huge maze.
  */
-export type MapLevelRange = Readonly<{ minLevel: number; maxLevel: number }>;
 
 /** An inclusive `min..max` range, for a room count or a tile width/height. */
 export type MapRange = Readonly<{ min: number; max: number }>;
@@ -20,7 +24,8 @@ export type MapRange = Readonly<{ min: number; max: number }>;
 export type MapTuning = Readonly<{
   /** 1-based map this row applies from. */
   mapIndex: number;
-  levels: MapLevelRange;
+  /** The player's XP/level ceiling on this map (D9 moved to the map, D29). */
+  cap: number;
   /** How many rooms the map's graph holds (a random count inside the range). */
   routes: MapRange;
   /** The ceiling a room's shape-derived width and height stay inside. */
@@ -79,49 +84,49 @@ export const MAP_TUNING: readonly MapTuning[] = [
   // want more XP on its top floor than a whole run (`docs/balance/route-curve.md`).
   {
     mapIndex: 1,
-    levels: { minLevel: 2, maxLevel: 9 },
+    cap: 9,
     routes: { min: 6, max: 6 },
     size: { min: 30, max: 30 },
   },
   {
     mapIndex: 2,
-    levels: { minLevel: 9, maxLevel: 16 },
+    cap: 16,
     routes: { min: 6, max: 6 },
     size: { min: 30, max: 30 },
   },
   {
     mapIndex: 3,
-    levels: { minLevel: 16, maxLevel: 23 },
+    cap: 23,
     routes: { min: 6, max: 6 },
     size: { min: 30, max: 30 },
   },
   {
     mapIndex: 4,
-    levels: { minLevel: 23, maxLevel: 30 },
+    cap: 30,
     routes: { min: 6, max: 7 },
     size: { min: 30, max: 32 },
   },
   {
     mapIndex: 5,
-    levels: { minLevel: 30, maxLevel: 37 },
+    cap: 37,
     routes: { min: 6, max: 7 },
     size: { min: 30, max: 36 },
   },
   {
     mapIndex: 6,
-    levels: { minLevel: 37, maxLevel: 43 },
+    cap: 43,
     routes: { min: 6, max: 8 },
     size: { min: 30, max: 40 },
   },
   {
     mapIndex: 7,
-    levels: { minLevel: 43, maxLevel: 49 },
+    cap: 49,
     routes: { min: 6, max: 8 },
     size: { min: 30, max: 44 },
   },
   {
     mapIndex: 8,
-    levels: { minLevel: 49, maxLevel: 55 },
+    cap: 55,
     routes: { min: 6, max: 9 },
     size: { min: 30, max: 56 },
   },
@@ -140,22 +145,17 @@ export function mapTuning(mapIndex: number): MapTuning {
   const row = MAP_TUNING[index - 1];
   if (row) return row;
   const last = MAP_TUNING[MAP_TUNING.length - 1];
-  // `extra` counts from 1, so the first out-of-table map continues at the last
-  // row's cap and each further one steps up by `levelStep`; the **floor** has to
-  // climb too, not just the ceiling, or a deep floor only widens.
+  // `extra` counts from 1, so an out-of-table map continues one step past the last
+  // row's cap and each further one steps up by `levelStep`, saturating at the
+  // engine ceiling. The window that follows is the previous map's cap, so it climbs
+  // with the cap rather than widening on its own (D29).
   const extra = index - MAP_TUNING.length;
-  const minLevel = Math.min(
-    MAP_MAX_LEVEL,
-    last.levels.maxLevel + (extra - 1) * MAP_TUNING_STEP.levelStep,
-  );
+  const cap = Math.min(MAP_MAX_LEVEL, last.cap + extra * MAP_TUNING_STEP.levelStep);
   const routeMin = Math.min(MAP_MAX_ROUTES, last.routes.min + extra * MAP_TUNING_STEP.routeStep);
   const routeMax = Math.min(MAP_MAX_ROUTES, last.routes.max + extra * MAP_TUNING_STEP.routeStep);
   return {
     mapIndex: index,
-    levels: {
-      minLevel,
-      maxLevel: Math.min(MAP_MAX_LEVEL, minLevel + MAP_TUNING_STEP.levelStep),
-    },
+    cap,
     routes: { min: Math.min(routeMin, routeMax), max: routeMax },
     size: {
       min: Math.min(MAP_MAX_ROOM_SIZE, last.size.min + extra * MAP_TUNING_STEP.sizeStep),
@@ -164,17 +164,9 @@ export function mapTuning(mapIndex: number): MapTuning {
   };
 }
 
-/**
- * The Pokémon level range a map fields. Wild encounters and trainer rosters read
- * it; within the map the routes ramp from `minLevel` to `maxLevel`.
- */
-export function levelRangeForMap(mapIndex: number): MapLevelRange {
-  return mapTuning(mapIndex).levels;
-}
-
-/** The player's XP/level ceiling on a map (D9 moved to a per-map cap): its `maxLevel`. */
+/** The player's XP/level ceiling on a map: its one level anchor (D9 moved to the map, D29). */
 export function levelCapForMap(mapIndex: number): number {
-  return mapTuning(mapIndex).levels.maxLevel;
+  return mapTuning(mapIndex).cap;
 }
 
 /** The inclusive route-count range a map rolls its number of routes from. */

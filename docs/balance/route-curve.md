@@ -59,12 +59,16 @@ the window.
 
 ## Level caps per map
 
-The cap is the map's own `maxLevel` (`levelCapForMap`), and a fresh run's starter
-begins at level 5 (`START_LEVEL`, `src/scenes/StarterScene.ts`). `needed(m)` is the
-XP the squad still needs on floor `m` if it capped out on floor `m - 1`: the `level³`
-curve at the new cap minus the curve at the old one.
+The **cap** is the map's only level anchor and the map's own `cap` in
+`src/data/maps.ts` (`levelCapForMap`); a fresh run's starter begins at level 5
+(`START_LEVEL`, `src/scenes/StarterScene.ts`). The floor's level window is not
+stored: it opens at the previous floor's cap and closes at this one
+(`levelWindowForMap`, `src/engine/run/floors.ts`), which is what the `Window` column
+below reads. `needed(m)` is the XP the squad still needs on floor `m` if it capped
+out on floor `m - 1`: the `level³` curve at the new cap minus the curve at the old
+one.
 
-| Map | Levels | Cap | `needed(m)` |
+| Map | Window | Cap | `needed(m)` |
 | --: | ------ | --: | ----------: |
 |   1 | 2–9    |   9 |         604 |
 |   2 | 9–16   |  16 |        3367 |
