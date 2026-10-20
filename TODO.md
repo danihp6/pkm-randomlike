@@ -925,8 +925,97 @@ draws no RNG (the keys are literals; the battle, its seed and its draws do not m
 stays **14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23**. Nothing here re-plans
 `Task-38`–`Task-113`, and Batch 4b stays `cut`.
 
-The batches below carry one scene task each and name their hot-file holder; each entry's own
-`*Dependencies:*` line stays the per-task record.
+A **thirtieth round** is **four decisions plus one report** — one **amendment written in place**
+and four new tasks, `[Task-115]`–`[Task-118]` — and it adds **no `SAVE_VERSION` step**: none of
+the four adds a run field, so the chain stays
+**14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23**. None of them claims
+`src/scenes/RouteScene.ts`, so that scene's queue still ends at **52** (`[Task-110]`,
+Batch 52): `[Task-116]` and `[Task-117]` hold `src/scenes/rooms/casino.ts` instead,
+`[Task-118]` holds `src/scenes/BattleScene.ts`, and `[Task-115]` holds no scene at all.
+
+**The shop's guarantee survives the merchant (`[Task-92]`, amended).** The human keeps the
+guarantee the shop room carries even as the room dies: **one merchant per floor from map 2
+on**. The decision is a **placement, not a roll** — the floor's first `trainers` room always
+carries the merchant, and `roomNpc` is only asked for the trainer rooms after it, so
+`roomNpc` keeps its `(seed, roomIndex, mapIndex)` signature and stays pure. One optional row
+field (`guaranteedFromMap`) carries the floor gate, and the merchant's own row is `chance: 0`,
+so it is never rolled and no floor holds two; the rejected alternative was a floor-scoped
+`pickedItems` marker. A floor cannot lack a `trainers` room: `TRAINER_ROOMS_PER_MAP` is
+**2,2,3,3,3,4,4,4** (`[Task-82]`).
+
+**The machine's equipable row follows the Mart (`[Task-115]`, Batch 54).** The fixed held row
+(`mid` Charcoal, `high` Expert Belt, `late` Life Orb, `end` Leftovers) becomes **one grouped
+row** drawn from `SHOP_ROTATION[band]` filtered to non-consumed, modelled ids, so a new
+equipable reaches the machine the day the Mart bands it — never a second balance table. The
+group's extra `rng.int` lives **inside the spin's own stream**, so nothing else moves
+(`D11`); `early` and `low` fall back to `mid`'s shelf, which is what keeps a Life Orb off map
+1; and the measured recovery (early 63 %, low 108 %, mid 105 %, high 75 %, late 88 %, end
+71 %) forces a **dilution** of `low` and `mid` back under break-even before shipping.
+
+**The machine spins in its window (`[Task-116]`, Batch 55).** The 460×220 card becomes the
+slot machine's own view — three **item** reels in the `src/ui/frlg.ts` style, with the Team
+Rocket icon as the battle's face and never a prize; `SPIN` and `LEAVE` still the
+two actions and the money readout kept; and the animation **only reveals a result the model has
+already booked**: `casinoSpin` spends, marks and (on a battle) locks **before** the first
+frame, so a reload or a room change mid-spin can neither re-roll nor refund, and the reels
+land on the paid item, the Egg or the Rocket icon, never on a decorative face. It claims
+`src/scenes/rooms/casino.ts` and a new pure `src/ui/casinoReels.ts`, and **no** setting: a
+click or the interact key skips the 1.12 s reveal, so there is no reduced-motion switch to add.
+
+**Team Rocket becomes an NPC (`[Task-117]`, Batch 56).** The human's words: «rocket no es
+sala especial es npc especial» and «es npc que pagas para tirar de ruleta». The `'casino'`
+kind leaves `MapRoomSpecial`, `planMap` loses its 30 % draw, and the room module and its
+minimap glyph leave the registry; the rocket becomes an `[Task-91]` row found by the per-NPC
+roll in a trainer room, its panel the **same slot machine** (115's table, 116's reels) behind the
+grunt's sprite and `SPECIAL_ARCHETYPES`' `rocket` row. `casinoSpin`, its three mark families,
+the floor lock, the Egg's hatch on `advanceMap`, the price table and the grunt battle do not
+move.
+
+**The capture beat keeps one clock (`[Task-118]`, Batch 57).** The human's report: «que mensaje
+de captura y animación se sincronicen, la pokeball se agite según más cerca de capturar y el
+mensaje vaya añadiendo puntos suspensivos según se agita y al final mostrar el mensaje de si se
+ha capturado». The ball wobbles the **engine's** `shakes` (0-3, four on a catch) instead of the
+clamped 1-3, and one pure `captureTimeline` gives the tween chain and the message the same
+ticks: a `{name}…` line that gains a dot per wobble (capped at three), the break that opens the
+ball, and the final line at `settle`, with the frame's dwell set to the beat. The count is the
+proximity — nothing re-derives it in the scene — and no draw moves. It depends on
+`[Task-114]` (the lines are keys by then), so it lands **after Batch 53** and opens **Batch
+57**; it claims `src/ui/capture.ts` + test, `src/scenes/BattleScene.ts` and
+`src/i18n/{en,es}.ts`, none of which 115-117 hold.
+
+**Why four one-task batches.** `[Task-115]` shares no path with Batch 53's `[Task-114]` and
+needs nothing it produces, so the Orchestrator's fill search may pull it into the 53 cycle;
+as a cut it is **Batch 54**. `[Task-116]` is written against 115's grouped row, and
+`[Task-117]` needs both and deletes the room 116 rewrote, so the tail is the chain
+**115 → 116 → 117** and every empty slot names its blocker. They also share two code-folder
+READMEs no two of them may hold in one batch — `src/ui/README.md` (all three: a code-folder
+README, not a `docs/*.md`, so it cannot be split by section) and
+`src/scenes/rooms/README.md` (116 and 117) — plus `docs/maps-spec.md` §7 (all three, split by
+block in each entry).
+
+**Hot files.** `[Task-115]` holds `src/data/casino.ts` + test and `src/ui/casino.ts` + test;
+`[Task-116]` holds `src/scenes/rooms/casino.ts` + test and the new `src/ui/casinoReels.ts` +
+test; `[Task-117]` holds `src/engine/maps/plan.ts` + test, `src/data/npcs.ts` + test,
+`src/scenes/rooms/casino.ts` + test (deleted), `src/scenes/BootScene.ts` (the cabinet texture
+retires with the room) and the new `src/ui/rocketPanel.ts` + test; `[Task-118]` holds
+`src/ui/capture.ts` + test, `src/scenes/BattleScene.ts` and `src/i18n/{en,es}.ts`. No
+`package.json`,
+`src/main.ts`, `vite.config.ts` or `src/data/dex/**` is claimed by any of them, and none
+claims `src/scenes/RouteScene.ts`.
+
+**Fixed-seed re-pins.** `[Task-115]` re-reads `src/ui/casino.test.ts`'s `pkm-64` map 5 pins
+(spin 3 was the fixed Life Orb and is now the grouped draw) and `src/data/casino.test.ts`'s
+per-band counts, and records that a re-banding of `SHOP_ROTATION` now moves a fixed seed's
+spin — a deliberate re-pin, not a defect. `[Task-117]` re-pins `plan.test.ts`'s specials from map
+3 on (the gated, trade and no-heal draws shift by the chance roll the casino took on every map
+from 2, plus its parent and two size draws where it hung a leaf, while the shop, mini-boss,
+mega-stone and every regular room stay put) and the seeds that hung a casino leaf; `[Task-116]`
+moves no draw at all, and `[Task-118]` moves none either (it reads the shakes the capture
+already rolled). Nothing here re-plans `Task-38`–`Task-114`, and Batch 4b stays `cut`.
+
+The batches below carry at most one `src/scenes/RouteScene.ts` task each (the tail batches
+54–57 carry none) and name their hot-file holder; each entry's own `*Dependencies:*` line
+stays the per-task record.
 
 | Batch | Tasks | Hot files (the one holder each) |
 | --- | --- | --- |
@@ -953,6 +1042,12 @@ The batches below carry one scene task each and name their hot-file holder; each
 | 49 | 107 | `src/engine/battle/**` (state, order, turn, commands, ai, damage, fighter) → 107 |
 | 50 | 108 | `src/scenes/RouteScene.ts`, `src/scenes/BattleScene.ts`, `src/ui/partyGrid.ts`, `src/ui/beats.ts` → 108 |
 | 51 | 109 | `src/scenes/RouteScene.ts`, `src/ui/notice.ts` + `notice.test.ts`, `src/i18n/{en,es}.ts` → 109 |
+| 52 | 110 | `src/scenes/RouteScene.ts`, `src/scenes/BattleScene.ts`, `src/ui/bag.ts` + test, `src/i18n/{en,es}.ts` → 110 |
+| 53 | 114 | `src/engine/battle/**`, `src/ui/feed.ts` + test, `src/i18n/{en,es}.ts` → 114 |
+| 54 | 115 | `src/data/casino.ts` + test, `src/ui/casino.ts` + test → 115 |
+| 55 | 116 | `src/scenes/rooms/casino.ts` + test, `src/ui/casinoReels.ts` + test → 116 |
+| 56 | 117 | `src/scenes/rooms/casino.ts` + test (deleted), `src/engine/maps/plan.ts` + test, `src/data/npcs.ts` + test, `src/scenes/BootScene.ts`, `src/ui/rocketPanel.ts` + test → 117 |
+| 57 | 118 | `src/ui/capture.ts` + test, `src/scenes/BattleScene.ts`, `src/i18n/{en,es}.ts` → 118 |
 
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
@@ -5499,15 +5594,38 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       **Fix shape.** Delete the `'shop'` kind: `planMap`'s special pass loses the guaranteed leaf
       (and `hangsShop`), `src/ui/mapView.ts`'s `MapRoomMarker` loses its icon, and `buildRoom`
       loses the counter branch. The merchant becomes an `[Task-91]` row in `src/data/npcs.ts`
-      whose chance rises with the floor, and its panel opens the **floating Mart** `[Task-89]`
-      ships — the same `src/ui/shop.ts` model, the same drag onto the bag or a member, the same
-      `spendMoney` gate. The stock (`buildShop`'s four rows plus the TM) and the sell path do not
-      move.
-      **Docs:** `docs/maps-spec.md` §7 (the table loses the shop row and gains the merchant),
-      `docs/design-spec.md` §7.
+      placed by the guarantee below rather than by the per-NPC roll, and its panel opens the
+      **floating Mart** `[Task-89]` ships — the same `src/ui/shop.ts` model, the same drag onto
+      the bag or a member, the same `spendMoney` gate. The stock (`buildShop`'s four rows plus
+      the TM) and the sell path do not move.
+      **The guarantee stays (the human's reading, and the decision).** The shop room dies, but
+      the run must still get **one merchant per floor from map 2 on**. The cheapest shape — and
+      the decision — is a **placement, not a roll**: `src/data/npcs.ts` gains one optional field,
+      **`guaranteedFromMap?: number`**, and the merchant row is
+      `{ chance: 0, floorStep: 0, guaranteedFromMap: 2 }`. The scene, which already holds the plan
+      and its `role`s, computes the floor's **first `trainers` room** — the lowest room id with
+      `role: 'trainers'`, a pure `firstTrainerRoom(plan)` in `src/engine/maps/plan.ts` + test — and
+      places the merchant there whenever `mapIndex >= guaranteedFromMap`; the per-NPC roll is then
+      asked only for the trainer rooms **after** that one, so `roomNpc` keeps its
+      `(seed, roomIndex, mapIndex)` signature and stays pure. A row whose effective chance is `0`
+      is never picked by the roll — the eligible set `[Task-91]` defines is `chance > 0`, the same
+      filter `[Task-117]`'s zero-chance rocket row relies on — so the merchant is never rolled and
+      a floor never holds two. The rejected alternative was a **floor-scoped `pickedItems` marker**
+      (say `merchant-<map>`) recording the placement and letting the roll guarantee "at least
+      one": it adds a run fact for something the plan already decides. A floor cannot lack a
+      `trainers` room — `TRAINER_ROOMS_PER_MAP` is **2,2,3,3,3,4,4,4** (`[Task-82]`) and the
+      topology floor is six rooms — and **map 1 stays merchant-free**, exactly as it hangs no shop
+      leaf today (`SHOP_FROM_MAP = 2`). The guarantee itself draws **no RNG**: the fixed-seed
+      movement the shop leaf's removal causes (the specials drawn after it, and their sizes) is
+      this task's own re-pin, not the guarantee's.
+      **Docs:** `docs/maps-spec.md` §7 (the special-room table loses the shop row and the §7 NPC
+      table gains the merchant, with the guarantee: one per floor from map 2 on, in the floor's
+      first `trainers` room), `docs/design-spec.md` §7.
       Out of scope: the stock, the prices, `[Task-89]`'s drag itself, and the money a trainer drops.
-      *Dependencies:* `[Task-89]` (the floating Mart panel this NPC opens) and `[Task-91]` (the NPC
-      layer and its panel). It adds no run field and draws no RNG. *(Batch 38)*
+      *Dependencies:* `[Task-89]` (the floating Mart panel this NPC opens), `[Task-91]` (the NPC
+      layer, its panel and the roll the guarantee bypasses) and `[Task-82]` (the room roles and
+      `TRAINER_ROOMS_PER_MAP` the guarantee reads). It adds no run field and draws no RNG.
+      *(Batch 38)*
 - [ ] **[Task-93] The party-edit NPCs: the move tutor, the three re-rolls, the species swap and the
       sacrifice's second ability.** Five of the report's NPCs edit **a member**, and the run has the
       seams except the two facts they need to persist. A member is one `FighterSnapshot`
@@ -5900,6 +6018,262 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* `[Task-58]` (the tokens it draws with). It claims `src/scenes/RouteScene.ts`
       **and** `src/scenes/BattleScene.ts`, so it opens the plan's next batch after `[Task-109]` —
       **Batch 52** — and it adds no run field. *(Batch 52)*
+
+- [ ] **[Task-115] The casino's equipable row is one grouped row, and it follows the Mart's banded pool.**
+      The human's rule: the machine's **fixed held item** becomes a **random one of that
+      band**, so a newly shipped equipable reaches the machine the same way it reaches the
+      Mart — by being banded in `SHOP_ROTATION` — with no second balance table and no edit to
+      `CASINO`. The band's own shelf is the only ranking that exists: almost every competitive
+      held row is a flat 4 000 (`src/data/items.ts`), so a price window could not separate a
+      Wide Lens from a Life Orb. Today every band names its equipable outright (`mid` charcoal,
+      `high` Expert Belt, `late` Life Orb, `end` Leftovers, `src/data/casino.ts`) — the table
+      `[Task-64]` shipped — so a new equipable is invisible to the machine until someone edits the
+      casino table, and `early` and `low` carry no equipable row at all.
+      **Fix shape.** `CasinoPrize` gains a third kind, **`'held'`** — a row that names **no
+      `itemId`**, exactly as `'egg'` does — and each band's fixed equipable row becomes that one
+      grouped row at weight 1 (`early` and `low`, which have none, gain the row instead). The
+      pick is made **inside the spin's own stream**: when the grouped row lands, `casinoSpin`
+      takes **one extra `rng.int(0, pool.length - 1)`**, and nothing else moves, because the
+      stream is `Rng(hashSeed(`${seed}:casino:${mapIndex}:${index}`))` — one per spin — and that
+      draw is the spin's last. `casinoHeldPool(band)` (new, exported from `src/ui/casino.ts` +
+      test) is `SHOP_ROTATION[band]` filtered to `getItem(id)?.consumed !== true` and to ids
+      `UNMODELLED_ITEMS` (`src/engine/battle/effects/items.ts`) does not list, **in table
+      order**; every listed equipable carries weight 1, so the pick is uniform over the pool in
+      table order and the shelf's own weight column is not read. `early` and `low` have no
+      non-consumable row, so the grouped row falls back to the **first band above with one** —
+      `mid` today (charcoal, mysticwater, widelens, muscleband, wiseglasses, ironball,
+      laggingtail) — which is what makes an equipable "possible but rare" on the on-ramp instead
+      of exposing a Life Orb on map 1. `CasinoOutcome` does not change: a grouped row resolves to
+      `{ kind: 'item', itemId }` before the spin returns, so every existing reader — and
+      `[Task-116]`'s window — sees one paid item id.
+      **The table, measured.** A row's absolute probability is `0.85 × weight / total`. With the
+      fixed row replaced at weight 1 and every other row keeping its weight, the grouped row is
+      **7.1 %** of spins at `early` (11 → 12 total), **8.5 %** at `low` (9 → 10), **12.1 %** at
+      `mid` and `high`, **10.6 %** at `late` and `end`, and each equipable is ≈ 1.0–2.4 % of
+      spins. Only those two totals move, so the other rows of `early` and `low` lose a little
+      share (11 → 12 and 9 → 10) while every other band's rows keep theirs. One spin's expected
+      recovery (expected resale plus the grunt's 15 % purse, over the price) becomes early
+      **63 %**, low **108 %**, mid **105 %**, high **75 %**, late **88 %**,
+      end **71 %** — the Nugget alone is 61 % of the price at `low` and `mid` (8.5 % / 12.1 % ×
+      5 000). The two bands over break-even are therefore **diluted before shipping**: `low`
+      becomes superpotion 4, greatball 4, oranberry 2, nugget 1, held 1, egg 1 (13 rows, grouped
+      6.5 %, recovery ≈ 90 %) and `mid` hyperpotion 3, greatball 3, held 1, nugget 1, egg 1
+      (9 rows, grouped 9.4 %, recovery ≈ 91 %); `early`, `high`, `late` and `end` ship the first
+      table as measured. The removed fixed ids (charcoal, expertbelt, lifeorb, leftovers) still
+      reach the machine through the pool.
+      **Fixed-seed re-pin.** `src/ui/casino.test.ts` re-reads its `pkm-64` map 5 pins: spin 3
+      was the fixed Life Orb and is now the grouped draw, so the test's comment records the new
+      id the way the file already pins `nugget → ultraball → …`. The fourth spin (the Egg) and
+      the reload rule do **not** move — each spin mints its own stream, so the extra draw cannot
+      reach another spin — and the file records that a **re-banding of `SHOP_ROTATION` now moves
+      a fixed seed's spin** — a deliberate re-pin, not a defect. `src/data/casino.test.ts`
+      re-pins its counts (one Egg, one grouped row and the named items per band), and
+      `src/ui/casino.test.ts` pins `casinoHeldPool` per band: the exact filtered list, non-empty
+      for every band through the fallback, and every id modelled and non-consumed — so a new
+      banded equipable changes the pool with no code edit.
+      **Docs:** `docs/maps-spec.md` §7 — the room table's **casino row**, and the
+      `### The casino (the slot machine)` **prize bullets** and **probability sentence** (a row's
+      absolute chance, the grouped row's share, the Nugget's); `docs/balance/economy.md`'s new
+      **The casino's spin** section after **Between-route rewards** (price, rows, grouped share
+      and recovery per band); `src/data/README.md` (`casino.ts`'s row: the grouped kind) and
+      `src/ui/README.md` (`casino.ts`'s model line: the pool and the extra draw).
+      Out of scope: the animation (`[Task-116]`), the rocket's placement (`[Task-117]`), the
+      Mart's own stock and `SHOP_ROTATION` itself (this task reads it), the price table
+      (`CASINO.price` does not move) and the grunt battle.
+      *Dependencies:* none — the model, the table, the shop rotation and the item catalogue are
+      shipped. It adds no run field and no `SAVE_VERSION` step, and it claims no scene, so it
+      extends no queue. *(Batch 54)*
+- [ ] **[Task-116] The casino window is the slot machine, and its three item reels spin.**
+      The human's correction is explicit: the visual is a **slot machine whose reels show three
+      drawn items** («mejor reescribe en vez de ruleta que el visual sea una maquina tragaperras
+      con dibujo de tres items»), and **the Team Rocket icon is the battle's face** («icono team
+      rocket es para el combate»). Today the window is a 460×220 `RoomPanel` with a title, the
+      money line, two 44 px rows (`SPIN ¥<price>`, `LEAVE`) and one message line
+      (`src/scenes/rooms/casino.ts`, `[Task-64]`'s window in the `D47` descriptor `[Task-111]`
+      shipped); the minimap glyph already draws three reels, and that glyph's cabinet is the
+      machine's face.
+      **Fix shape.** The card becomes the machine's own view: a cabinet and **three reels** in the
+      `src/ui/frlg.ts` style — **no wheel**: every face is a **drawn item** (`itemIconFrame`,
+      `src/data/itemIcons.ts`), the paid item repeated on all three reels when the spin pays an
+      item, the Egg's icon when it pays an Egg, and the **Team Rocket icon** on all three reels
+      when the outcome is the grunt fight — the face comes from the `rocket` row of the packed
+      overworld atlas (`overworldSpriteFrame('rocket')`, the same frame the room's own grunt
+      sprite draws, its red tint fallback included), clipped to the reel window. `SPIN` and
+      `LEAVE` stay the two actions and the money readout is kept; the two rows become
+      **clickable** (the window's keys stay as they are — up/down, the interact key confirms,
+      `Q`/cancel leaves), in line with `[Task-84]`'s pointer-first rule.
+      One new **pure** module, `src/ui/casinoReels.ts` + test, holds the geometry and the
+      schedule — `REEL_COUNT = 3`, `REEL_SPIN_MS = 800`, `REEL_STOP_STAGGER_MS = 160` (the last
+      reel stops at **1 120 ms**), `reelFace(outcome)`, `reelStrips(band, outcome)` and
+      `reelStopAt(reel)` — and the scene only draws it, so the reels are headless-testable and
+      the scene keeps no arithmetic. The decoy faces are the band's own rows (the named prize
+      ids and `casinoHeldPool(band)`), so every face has an icon and the strip never invents a
+      face the machine cannot pay.
+      **The rule that must not move.** `casinoSpin` resolves the outcome **before** any
+      animation: it spends the price, writes the floor's spin mark and, on a battle, writes the
+      floor lock, all in the run it returns. `host.commitRun(spin.run)` is therefore called
+      **before the first frame**, and the animation is a **reveal of a result already booked** —
+      it never calls `casinoSpin` again, so a reload or a room change mid-spin can neither
+      re-roll nor refund. A reloaded run finds the spin marked and, on a battle, the machine
+      locked, exactly as a reload after the battle starts does today; the grunt fight is not
+      re-offered, and that is the accepted cost of the reveal, not a new fact to store. The final
+      faces are the **outcome** — the paid item's icon, the Egg's icon, or the Team Rocket icon
+      for the grunt fight — and the strip's passing faces are the band's own item icons,
+      decorative only and never deciding a payout, so the reels cannot show a Potion and pay a
+      Nugget, and the Rocket icon can only land on a fight.
+      **Presentation pinned.** Input is **locked while spinning** (the rows, `LEAVE` and cancel
+      are ignored; `SPIN` cannot be pressed twice); a **skip** — a click or the interact key —
+      reveals the result instantly; the base spin is 800 ms and the reels stop **left to right**
+      at 160 ms intervals, so the whole reveal is 1 120 ms (inside the 600–1 200 ms range); the
+      result line reuses `notice.itemObtained` with the item's icon (`itemIconFrame`,
+      `src/data/itemIcons.ts`) and name, so the panel speaks one string path; and the **battle**
+      outcome closes the window at the end of the reveal and calls `startTrainerBattle` with the
+      same `gruntFor(host)` as today, so the fight, its id and its lock do not move.
+      **No setting.** `src/settings.ts` has no reduced-motion switch and this task adds none: the
+      skip is the accessibility path, and a motion preference is out of scope.
+      **Docs:** `docs/maps-spec.md` §7's `### The casino (the slot machine)` **window
+      paragraph** (the title, the money, the two rows and the message line become the cabinet,
+      the reels and the reveal); `docs/design-spec.md` §7's **casino bullet**;
+      `src/scenes/rooms/README.md` (`casino.ts`'s line: the window is the reels and the reveal);
+      `src/ui/README.md` (the new `casinoReels.ts` line).
+      Out of scope: the table, the grouped row and the economy (`[Task-115]`), the rocket's
+      placement and the room's retirement (`[Task-117]`), a reduced-motion setting, and any new
+      player-facing string (`casino.*` and `notice.itemObtained` already carry the window's copy,
+      so `src/i18n/` is untouched).
+      *Dependencies:* `[Task-115]` — the grouped row is one of the faces the reels can land on,
+      and the window is written against the table's final rows. It adds no run field, draws no
+      new RNG (the reveal reads the booked outcome) and claims no
+      `src/scenes/RouteScene.ts`. *(Batch 55)*
+- [ ] **[Task-117] Team Rocket is a special NPC who carries the slot machine, and the casino room retires.**
+      The human's words: «rocket no es sala especial es npc especial» and «es npc que pagas para
+      tirar de ruleta». Today the casino is a **special room**: `'casino'` in `MapRoomSpecial`
+      (`src/engine/maps/plan.ts`), a 30 % leaf from map 2 drawn between the mega-stone and the
+      gated leaves, a descriptor module that places the cabinet and the grunt and opens the
+      window, and a minimap glyph. The move mirrors `[Task-92]`'s for the merchant: the **room**
+      goes, the **NPC** stays; the descriptor layer is `[Task-111]`'s (`D47`), and every other
+      leaf it carries — `[Task-97]`'s secret shop included — is untouched.
+      **Fix shape.** The `'casino'` kind leaves `MapRoomSpecial`; `planMap` loses `CASINO_CHANCE`,
+      `CASINO_FROM_MAP` and the `addSpecial('casino', …)` call, so the special pass runs shop →
+      mini-boss → mega-stone → gated → trade → no-heal. Everything drawn **before** the casino's
+      slot — the shop, the mini-boss, the mega-stone, every regular room, room id and size —
+      stays put; the three leaves drawn **after** it (gated, trade, no-heal) consume the values
+      the casino used to take, so their presence and parents move for a fixed seed and are
+      **re-pinned**. The room module and its test leave `src/scenes/rooms/` — the
+      window is **moved**, not rewritten: `src/scenes/rooms/casino.ts` becomes
+      `src/ui/rocketPanel.ts` through a `git mv`, keeping `[Task-116]`'s machine, its reels and
+      its reveal and dropping only the descriptor (`fixture`, `interact`, `drawFixture`,
+      `drawMarker`), and `registry.test.ts` loses its casino fixture. `src/ui/mapView.ts` needs
+      **no edit**: `MapRoomMarker` is `MapRoomSpecial`, and `RouteScene` draws a marker through
+      the registry's `byMarker` lookup, never a per-kind switch, so the glyph and the type leave
+      with the union member. The cabinet texture leaves with the room
+      (`CASINO_MACHINE_TEXTURE_KEY` and its boot block), because the rocket is placed by the NPC
+      layer and no room fixture draws the machine any more. The model's doc comment stops calling
+      the machine a room (`src/ui/casino.ts`, comment only — no behaviour change).
+      **The rocket.** One row in `src/data/npcs.ts` + test, found by `[Task-91]`'s per-NPC roll in
+      a **trainer room**: id `rocket`, `spriteKey: 'rocket'` (the overworld atlas row Task-90
+      ships), and the grunt battle is `SPECIAL_ARCHETYPES`' `rocket` row by id
+      (`getTrainerArchetype('rocket')`), never a second archetype. Its row is `chance: 0`,
+      `floorStep: 0.03` (read through the framework's clamp): the effective chance is **0 on map
+      1** — a zero-chance row is not eligible, the same filter `[Task-92]`'s merchant relies on —
+      then 3 % a trainer room at map 2 and 21 % at map 8, which with
+      `TRAINER_ROOMS_PER_MAP` (**2,2,3,3,3,4,4,4**) is ≈ 6 % of floors at map 2 rising to ≈ 61 %
+      at map 8 — **≈ 2.3 spins a run** against the 30 % leaf's 2.1. That number is read
+      through `[Task-91]`'s presence roll, so it is a **re-read default**: re-measure it when 91
+      is on main. The row is **repeatable**: its panel writes no per-NPC use mark, because the
+      machine's own `casino-spin-*` and `casino-lock-*` marks are the record, so a revisit can
+      spin again until the floor's lock. Its panel is the **same slot machine** — `[Task-115]`'s
+      table and `[Task-116]`'s reels — with the same `SPIN`/`LEAVE`, money line, price, Egg and
+      lock, built through the NPC panel's host (`commitRun`, `closePanel`, and the battle starter
+      `[Task-95]`'s Mega Stone row already uses), and the grunt's `RouteTrainer` is built where
+      the NPC stands, with `casinoGruntTrainerId(mapIndex)`, `DEFAULT_TRAINER_SIGHT` and
+      `archetypeId: 'rocket'`.
+      **What must survive untouched.** `casinoSpin` and its three mark families
+      (`casino-spin-<map>-<n>`, `casino-lock-<map>`, `casino-grunt-<map>`), the floor-scoped
+      lock, the Egg's hatch on `advanceMap` (`hatchEgg`), the price table (`CASINO.price`) and
+      the grunt battle. The `casino.*` i18n keys stay too: the NPC panel reuses them, so
+      `src/i18n/` is untouched.
+      **Fixed-seed re-pin.** `src/engine/maps/plan.test.ts` re-pins the specials from map 3 on —
+      the gated, trade and no-heal draws shift by the draws the casino used to take (its chance
+      roll on every map from 2, plus its parent and two size draws whenever it hung a leaf), so
+      their presence and parents are **re-read**, while the shop, mini-boss and mega-stone draws
+      and every regular room, id and size do not move — plus the seeds that hung a casino leaf
+      (one fewer leaf). `src/scenes/rooms/registry.test.ts` loses the fixture, and
+      `src/data/npcs.test.ts` pins the row's fields. The spin streams do not move: `casinoSpin`,
+      its seed formula and its marks are untouched.
+      **Docs:** `docs/maps-spec.md` §7 — the **special-room table** (the casino row out), the
+      **§7 NPC table** `[Task-91]` adds (the rocket row in, with its chance/floor rate), the
+      **special-pass chance paragraph** (the 30 %/from-map-2 clause out and the pass's order
+      re-worded), the `### The casino (the slot machine)` **subsection retitled** as the rocket
+      NPC's panel, and the **battle-condition quiet list** (the casino leaves its parenthetical);
+      `docs/design-spec.md` §7's **casino bullet** (the room becomes the NPC);
+      `docs/routes-spec.md` §2's **NPC paragraph**; `src/ui/README.md` (`casino.ts`'s wording and
+      the new `rocketPanel.ts` line); `src/scenes/rooms/README.md` (the two casino lines leave).
+      Three one-line repairs ride along, because the room's removal makes them false:
+      `docs/tech-decisions.md`'s `Task-90` addendum («the casino's grunt» → the rocket NPC),
+      `docs/art-direction.md`'s atlas line, and `docs/balance/route-curve.md`'s quiet-room list.
+      Out of scope: the table and the economy (`[Task-115]`), the window and its animation
+      (`[Task-116]`), the NPC framework (`[Task-91]`), the trainer rooms (`[Task-82]`) and the
+      merchant (`[Task-92]`).
+      *Dependencies:* `[Task-91]` (the row, the roll, the panel shell and the battle host),
+      `[Task-115]` (the table the machine reads) and `[Task-116]` (the view it re-homes). It
+      adds no run field, so **no `SAVE_VERSION` step**, and it claims no
+      `src/scenes/RouteScene.ts`. *(Batch 56)*
+- [ ] **[Task-118] The capture beat and its message tick together.** The human's report: «que
+      mensaje de captura y animación se sincronicen, la pokeball se agite según más cerca de
+      capturar y el mensaje vaya añadiendo puntos suspensivos según se agita y al final mostrar
+      el mensaje de si se ha capturado». Today two unrelated clocks run the same beat. The
+      engine already measures the proximity: `attemptCapture` (`src/engine/battle/capture.ts`
+      36-52) returns `shakes` 0-4 and `success` exactly when it reaches four, and
+      `captureMessage` (`src/engine/battle/commands.ts` 311-317) already grades the five cases.
+      But `captureBeat` (`src/ui/capture.ts` 21-24) **clamps** a failed attempt to 1-3 wobbles,
+      so a break on the first check still wobbles once and the count stops meaning what the
+      engine measured; and the wobble chain (`BattleScene.playCapture` 1399-1432: throw 260 ms,
+      drop 150 ms, then three 139 ms tweens per shake) runs on its own clock while the line is
+      typed by the message box and held for `MESSAGE_HOLD_MS = 900` (`BattleScene.ts` 136), so a
+      three-shake break lasts ≈ 1.66 s and the next line can print while the ball still rocks.
+      **Fix shape.** `captureBeat` stops clamping: a failure keeps the engine's count (0-3) and a
+      success keeps `CAPTURE_HELD_SHAKES`, so a 0-shake attempt is throw, drop and the ball
+      opening with **no** wobble. `src/ui/capture.ts` grows the beat's **single clock**:
+      `captureTimeline(shakes, success)` returns `{ throwMs, dropMs, stepMs, beats, totalMs }`,
+      where `stepMs` still derives from `CAPTURE_SHAKE_SPEED`, `beats` lists one `shake` tick
+      per wobble, a `break` tick after the last one on a failure and a `settle` tick at
+      `totalMs`; the scene's tween chain and the text both read that schedule, so the scene
+      keeps no arithmetic and the clock is headless-testable. The text follows the ticks: the
+      in-progress line is a **new key** in the family `[Task-114]` creates — `battle.log.captureWait`,
+      `{name}…` with **one dot per completed wobble, capped at three** — **set**, not typed, at
+      each `shake` tick, and at `settle` the final line is the one 114 ships for that count
+      (`broke free`, `appeared to be caught`, `almost had it`, `so close`, `caught`), so the
+      message can never run ahead of the ball.
+      **The frame dwell is the beat.** The `capture` frame holds for `timeline.totalMs` plus the
+      shipped hold instead of `MESSAGE_HOLD_MS`, and its line bypasses the typewriter (it is
+      punctuation, not prose) while every other frame keeps typing; input during the beat jumps
+      the whole reveal to its final state — ball at rest, final line printed — never a partial
+      one, and the frame then completes the way it does today. On a failed capture the ball
+      **opens** at the `break` tick: a two-frame icon swap if the icon atlas carries an open
+      ball, the shipped hide plus a short flash if it does not. On a success it stays on the
+      field with the foe hidden (`this.captured`), exactly as today.
+      **Proximity stays the engine's.** The wobble count is the number `attemptCapture` rolled,
+      never re-derived from the catch value in the scene, and the amplitude is constant: the
+      **count** is the signal. No RNG draw moves (`D11`), so a fixed seed plays the same number
+      of wobbles it always paid for — this task makes them visible and legible.
+      **Acceptance.** `[unit]` `captureTimeline` for 0-4 shakes: one `shake` tick per wobble,
+      one `break` tick on a failure and none on a success, `settle` last, and `totalMs` equal to
+      the sum of its phases; `[unit]` the dot line stops at three dots and the settle line is
+      the count's own; `[unit]` `captureBeat(0, false)` plays zero wobbles; `[live]` with the
+      dev build on a fixed seed, a 0-shake break shows no wobble (the ball drops and opens), a
+      3-shake break wobbles three times while the dots grow to `…` and then prints the `so
+      close` line as the ball opens, and a catch ends on the caught line with the ball resting
+      on the field — measured by watching the ball's angle reach ±22 three times and reading the
+      line at each stop.
+      **Docs:** `docs/battle-spec.md` §6 gains the **beat paragraph** (the clock, the per-wobble
+      line and the break); `src/i18n/en.ts` + `es.ts` (the one waiting key and its overlay);
+      `src/ui/README.md` (`capture.ts`'s line becomes the beat clock).
+      Out of scope: the catch formula and the five final lines (`[Task-114]`), the capture
+      screen and the release beat (`docs/battle-spec.md` §6), the player's text-speed setting
+      (it governs prose elsewhere and this line is not prose) and any sound cue.
+      *Dependencies:* `[Task-114]` — the capture lines are keys by then and the waiting key is
+      authored beside them. It adds no run field, so **no `SAVE_VERSION` step**, draws no RNG
+      and claims no `src/scenes/RouteScene.ts`. *(Batch 57)*
 
 ## Phase 10 - Learnset, TMs & move typing
 
