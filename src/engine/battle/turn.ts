@@ -1449,14 +1449,14 @@ function resolveFaints(state: BattleState): void {
   }
 }
 
-/** True while either side has already spent the battle's one Mega Evolution. */
-function megaUsed(state: BattleState): boolean {
-  return SIDE_IDS.some((side) => state.sides[side].party.some((fighter) => fighter.mega));
+/** True once `side` has spent its one Mega Evolution of the battle. */
+function megaUsed(state: BattleState, side: SideId): boolean {
+  return state.sides[side].party.some((fighter) => fighter.mega);
 }
 
-/** True while either side has already spent the battle's one Gigantamax. */
-function gmaxUsed(state: BattleState): boolean {
-  return SIDE_IDS.some((side) => state.sides[side].party.some((fighter) => fighter.gmax));
+/** True once `side` has spent its one Gigantamax of the battle. */
+function gmaxUsed(state: BattleState, side: SideId): boolean {
+  return state.sides[side].party.some((fighter) => fighter.gmax);
 }
 
 /** The first foe slot a command can still hit, or the command's own target when it lives. */
@@ -1516,31 +1516,28 @@ export function takeDoubleTurn(
   if (state.winner !== null) return;
 
   // Mega Evolution resolves before any move, so the turn's order and damage read
-  // the Mega's stats, type and ability (D34). One per battle, whatever the slot.
-  if (!megaUsed(state)) {
-    for (const side of SIDE_IDS) {
-      for (const slot of SLOTS) {
-        const command = commands[side][slot];
-        if (command?.type !== 'fight' || !command.mega) continue;
-        withLeadSlot(state, side, slot, () => megaEvolve(state, side));
-        break;
-      }
-      if (megaUsed(state)) break;
+  // the Mega's stats, type and ability (D34). One per side per battle, whatever
+  // the slot: a partner can never spend a second stone.
+  for (const side of SIDE_IDS) {
+    if (megaUsed(state, side)) continue;
+    for (const slot of SLOTS) {
+      const command = commands[side][slot];
+      if (command?.type !== 'fight' || !command.mega) continue;
+      withLeadSlot(state, side, slot, () => megaEvolve(state, side));
+      break;
     }
   }
   if (state.winner !== null) return;
 
   // Gigantamax resolves at the same point (D44): the doubled pool and the forme's
   // name are in place before the turn's first move.
-  if (!gmaxUsed(state)) {
-    for (const side of SIDE_IDS) {
-      for (const slot of SLOTS) {
-        const command = commands[side][slot];
-        if (command?.type !== 'fight' || !command.gmax) continue;
-        withLeadSlot(state, side, slot, () => gigantamax(state, side));
-        break;
-      }
-      if (gmaxUsed(state)) break;
+  for (const side of SIDE_IDS) {
+    if (gmaxUsed(state, side)) continue;
+    for (const slot of SLOTS) {
+      const command = commands[side][slot];
+      if (command?.type !== 'fight' || !command.gmax) continue;
+      withLeadSlot(state, side, slot, () => gigantamax(state, side));
+      break;
     }
   }
   if (state.winner !== null) return;

@@ -484,7 +484,8 @@ at once (`DOUBLE_ACTIVES = 2`, `src/data/bosses.ts`). The engine half is the
   with no target, and it never aims at a dead slot. A wild's random policy and the
   shipped flags/scoring, and the number of RNG draws a single battle makes, do not
   change; an emptied or fainted slot asks for a `switch` when a reserve exists.
-  Mega Evolution and Gigantamax stay once per battle across both slots.
+  Mega Evolution and Gigantamax stay once per side per battle across both slots,
+  never once per slot.
 - **Data.** `BOSS_PARTY[kind]` carries `double`: the **boss** row is `true`
   (`3/6` members) and the **mini-boss** stays single (`2/3`), through
   `bossIsDouble(kind)`; `bossPartySize` is unchanged. The battle screen that reads

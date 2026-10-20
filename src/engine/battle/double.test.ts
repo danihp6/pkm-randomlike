@@ -206,6 +206,33 @@ describe('the double battle', () => {
     }
   });
 
+  it('spends at most one Mega per side, whatever the slot', () => {
+    const stone = (id: string): BattleFighter =>
+      createFighter({
+        id,
+        speciesId: 'gyarados',
+        level: 40,
+        nature: 'serious',
+        moves: ['waterfall'],
+        heldItem: 'gyaradosite',
+      });
+    const state = board({
+      player: [stone('p1'), stone('p2')],
+      enemy: [fighter('e1', 'bulbasaur'), fighter('e2', 'eevee')],
+    });
+    takeDoubleTurn(
+      state,
+      {
+        0: { type: 'fight', moveIndex: 0, mega: true, target: { side: 'enemy', slot: 0 } },
+        1: { type: 'fight', moveIndex: 0, slot: 1, mega: true, target: { side: 'enemy', slot: 1 } },
+      },
+      {},
+    );
+    expect(state.sides.player.party.filter((member) => member.mega)).toHaveLength(1);
+    expect(state.sides.player.party[0].mega).toBe(true);
+    expect(state.sides.player.party[1].mega).toBe(false);
+  });
+
   it('reproduces the same double battle from the same seed and commands', () => {
     const run = (): BattleState => {
       const state = board({
