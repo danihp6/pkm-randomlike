@@ -25,8 +25,12 @@ file is the human-readable summary.
       criterion measured over CDP on a forest route (seed `qa85-a`, regular room 4): the hidden
       item's sprite is `tiles:forest` frame 41 at scale 1.5, alpha 1, no tween,
       `textures.exists('route:sparkle') === false`, and the 24×24 canvas tile (camera zoom 1,
-      `renderer.snapshotArea`) is **576/576 pixels identical** to the engine's own ground render
-      of frame 41 with **no transparent pixel**. No run field, no `SAVE_VERSION` step, no RNG draw.
+      `renderer.snapshotArea`) has **no transparent pixel** and **all 576 pixels in frame 41's own
+      three-colour palette** (`88,160,128` ×503, `48,136,104` ×46, `104,168,144` ×27 — the atlas
+      cell's 492/57/27 with the nearest-neighbour sampling phase), the same art the engine's ground
+      pass draws; a naive PNG upscale differs on 15.1 % of the pixels only at the 1.5× texel
+      boundaries, and QA's same-phase ground reference matched 576/576. No run field, no
+      `SAVE_VERSION` step, no RNG draw.
 
 - [x] **The double battle's engine rules: two active slots per side, targets and a partner AI.**
       `BattleState` gains `double` (default `false`), `Slot` 0/1 and `secondActiveIndex`, and the
