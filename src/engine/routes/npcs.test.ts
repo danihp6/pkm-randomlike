@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { NPC_ROWS, getNpcRow, type NpcRequirement, type NpcRow } from '../../data/npcs';
+import { MAGICIAN_TYPES, NPC_ROWS, getNpcRow, type NpcRequirement, type NpcRow } from '../../data/npcs';
+import { ROOM_BATTLEFIELDS } from '../../data/battlefields';
 import type { Tile } from '../grid';
 import { isWalkable, mapFromSketch } from '../map';
 import { firstTrainerRoom, planMap } from '../maps';
@@ -8,9 +9,11 @@ import { sketchRoute } from './sketch';
 import {
   effectiveNpcChance,
   guaranteedNpc,
+  npcForcedField,
   npcRequirementMet,
   npcSpot,
   npcUseId,
+  npcWildType,
   roomNpc,
 } from './npcs';
 import { createRunPokemon, type RunPokemon } from '../run/progression';
@@ -416,5 +419,77 @@ describe('npcSpot', () => {
       trainers: [],
     };
     expect(npcSpot(route, 1, 'tiny', 'merchant')).toBeNull();
+  });
+});
+
+describe('npcForcedField', () => {
+  it('is a pure function of the seed, the room and the npc', () => {
+    const first = npcForcedField(SEED, 3, 'weather-man');
+    expect(npcForcedField(SEED, 3, 'weather-man')).toEqual(first);
+    expect(npcForcedField(SEED, 3, 'weather-man')).not.toEqual(npcForcedField(SEED, 4, 'weather-man'));
+    expect(npcForcedField(SEED, 3, 'weather-man')).not.toEqual(
+      npcForcedField('other', 3, 'weather-man'),
+    );
+  });
+
+  it('resolves into the room battlefield table', () => {
+    for (let roomIndex = 0; roomIndex < 30; roomIndex++) {
+      const field = npcForcedField(SEED, roomIndex, 'weather-man');
+      expect(ROOM_BATTLEFIELDS).toContain(field);
+    }
+  });
+
+  it('reaches more than one row over the rooms', () => {
+    const ids = new Set(
+      Array.from({ length: 60 }, (_, roomIndex) => npcForcedField(SEED, roomIndex, 'weather-man').id),
+    );
+    expect(ids.size).toBeGreaterThan(1);
+  });
+
+  it('draws on its own stream, so the room roll is untouched', () => {
+    const before = roomNpc(SEED, 3, 1);
+    npcForcedField(SEED, 3, 'weather-man');
+    expect(roomNpc(SEED, 3, 1)).toEqual(before);
+  });
+});
+
+describe('npcWildType', () => {
+  it('is a pure function of the seed, the room and the npc', () => {
+    const first = npcWildType(SEED, 5, 'magician');
+    expect(npcWildType(SEED, 5, 'magician')).toBe(first);
+    expect(npcWildType(SEED, 5, 'magician')).not.toBe(npcWildType(SEED, 6, 'magician'));
+    expect(npcWildType(SEED, 5, 'magician')).not.toBe(npcWildType('other', 5, 'magician'));
+  });
+
+  it('gives two npc ids of the same room their own streams', () => {
+    const magician = Array.from({ length: 20 }, (_, roomIndex) =>
+      npcWildType(SEED, roomIndex, 'magician'),
+    );
+    const exorcist = Array.from({ length: 20 }, (_, roomIndex) =>
+      npcWildType(SEED, roomIndex, 'exorcist'),
+    );
+    expect(magician).not.toEqual(exorcist);
+  });
+
+  it('resolves into the magician type table', () => {
+    for (let roomIndex = 0; roomIndex < 30; roomIndex++) {
+      expect(MAGICIAN_TYPES).toContain(npcWildType(SEED, roomIndex, 'magician'));
+    }
+  });
+
+  it('reaches more than one type over the rooms', () => {
+    const types = new Set(
+      Array.from({ length: 60 }, (_, roomIndex) => npcWildType(SEED, roomIndex, 'magician')),
+    );
+    expect(types.size).toBeGreaterThan(1);
+  });
+
+  it('pins a fixed seed (regression, D11)', () => {
+    const fields = [0, 1, 2, 3, 4, 5].map(
+      (roomIndex) => npcForcedField('pkm-91', roomIndex, 'weather-man').id,
+    );
+    const types = [0, 1, 2, 3, 4, 5].map((roomIndex) => npcWildType('pkm-91', roomIndex, 'magician'));
+    expect(fields).toEqual(['gravity', 'grassy', 'fairyaura', 'darkaura', 'crit', 'alltypes']);
+    expect(types).toEqual(['normal', 'water', 'fighting', 'poison', 'rock', 'ice']);
   });
 });

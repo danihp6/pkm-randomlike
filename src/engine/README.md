@@ -41,8 +41,9 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   types, moves and abilities the party holds), `run/memberEdits.ts` (the member-edit NPC
   transactions: the tutor, the four re-rolls and the sacrifice), `run/trade.ts` (the deliberate
   trade: one member out, one rolled member in at the squad's level) and `run/passives.ts` (the
-  map passives a room's abilities pay), and `run/missions.ts` (the floor's mission and its
-  progress).
+  map passives a room's abilities pay), `run/missions.ts` (the floor's mission and its
+  progress) and `run/modifiers.ts` (the facts the special NPCs leave behind: the exorcist's
+  curse, the weather man's forced sky and the magician's narrowed wild type).
 
 ## Rules
 

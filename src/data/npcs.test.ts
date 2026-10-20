@@ -1,11 +1,34 @@
 import { describe, expect, it } from 'vitest';
 import { getMove } from './dex/moves';
+import { TYPE_NAMES } from './dex/types';
 import { en, es, setLocale, t } from '../i18n';
+import { normalizeId } from './dex/species';
+import { getItem } from './items';
 import { OVERWORLD_SPRITE_KEYS } from './overworldSprites';
-import { NPC_ROWS, SACRIFICE_REWARDS, TUTOR_MOVES, getNpcRow, type NpcRow } from './npcs';
+import {
+  CURSE_ENEMY_BOOST,
+  MAGICIAN_TYPES,
+  NPC_ROWS,
+  SACRIFICE_REWARDS,
+  TUTOR_MOVES,
+  getNpcRow,
+  type NpcRow,
+} from './npcs';
 
 /** The rows this table ships, in the order the roll breaks its ties (`docs/maps-spec.md` §7). */
-const ROW_IDS = ['merchant', 'tutor', 'nature', 'ability', 'iv-judge', 'species', 'sacrifice'];
+const ROW_IDS = [
+  'merchant',
+  'tutor',
+  'nature',
+  'ability',
+  'iv-judge',
+  'species',
+  'sacrifice',
+  'exorcist',
+  'weather-man',
+  'magician',
+  'type-gate',
+];
 
 const MERCHANT = NPC_ROWS[0];
 
@@ -105,6 +128,86 @@ describe('the special-NPC table', () => {
     expect(MERCHANT.repeatable).toBe(true);
     const repeatable = NPC_ROWS.filter((row) => row.repeatable === true).map((row) => row.id);
     expect(repeatable).toEqual(['merchant']);
+  });
+
+  it('ships the four run-modifier rows after the sacrifice, in table order', () => {
+    const rows: Readonly<Record<string, Omit<NpcRow, 'id' | 'nameKey' | 'greetingKey' | 'requires'>>> = {
+      exorcist: {
+        spriteKey: 'exorcist',
+        chance: 0.02,
+        floorStep: 0.005,
+        choices: [{ id: 'hex', label: 'npc.exorcist.cast' }],
+      },
+      'weather-man': {
+        spriteKey: 'weather-man',
+        chance: 0.02,
+        floorStep: 0.005,
+        choices: [{ id: 'sky', label: 'npc.weather.cast' }],
+      },
+      magician: {
+        spriteKey: 'magician',
+        chance: 0.02,
+        floorStep: 0.005,
+        choices: [{ id: 'type', label: 'npc.magician.cast' }],
+      },
+      'type-gate': {
+        spriteKey: 'bugcatcher',
+        chance: 0.02,
+        floorStep: 0.005,
+        choices: [{ id: 'claim', label: 'npc.gate.claim' }],
+        grant: { types: ['bug'], itemId: 'silverpowder' },
+      },
+    };
+    const ids = Object.keys(rows);
+    expect(NPC_ROWS.slice(-ids.length).map((row) => row.id)).toEqual(ids);
+    const groups: Readonly<Record<string, string>> = {
+      exorcist: 'npc.exorcist',
+      'weather-man': 'npc.weather',
+      magician: 'npc.magician',
+      'type-gate': 'npc.gate',
+    };
+    for (const [id, fields] of Object.entries(rows)) {
+      const row = rowOf(id);
+      expect(row.nameKey, id).toBe(`${groups[id]}.name`);
+      expect(row.greetingKey, id).toBe(`${groups[id]}.greeting`);
+      expect(row.spriteKey, id).toBe(fields.spriteKey);
+      expect(row.chance, id).toBe(fields.chance);
+      expect(row.floorStep, id).toBe(fields.floorStep);
+      expect(row.choices, id).toEqual(fields.choices);
+      expect(row.requires, id).toBeUndefined();
+      expect(row.repeatable, id).toBeUndefined();
+      expect(row.guaranteedFromMap, id).toBeUndefined();
+      expect(row.grant, id).toEqual(fields.grant);
+    }
+    for (const id of ['exorcist', 'weather-man', 'magician']) {
+      expect(rowOf(id).grant, id).toBeUndefined();
+    }
+  });
+
+  it('pays the type gate only to a party holding a Bug', () => {
+    const grant = rowOf('type-gate').grant;
+    expect(grant).toEqual({ types: ['bug'], itemId: 'silverpowder' });
+    const item = getItem('silverpowder');
+    expect(item, 'silverpowder').toBeDefined();
+    expect(item?.kind).toBe('held');
+    expect(item?.consumed).not.toBe(true);
+  });
+
+  it('draws the magician from the 18 battle type ids, in the dex order', () => {
+    expect(MAGICIAN_TYPES).toEqual(TYPE_NAMES.map((name) => normalizeId(name)));
+    expect(MAGICIAN_TYPES).toHaveLength(18);
+    expect(new Set(MAGICIAN_TYPES).size).toBe(18);
+    for (const id of MAGICIAN_TYPES) {
+      expect(id, id).not.toBe('');
+      expect(id).toBe(id.toLowerCase());
+    }
+    expect(MAGICIAN_TYPES[0]).toBe(normalizeId(TYPE_NAMES[0]));
+    expect(MAGICIAN_TYPES).toContain('bug');
+    expect(MAGICIAN_TYPES).toContain('normal');
+  });
+
+  it('keeps the curse a data row: one Attack stage down', () => {
+    expect(CURSE_ENEMY_BOOST).toEqual({ atk: -1 });
   });
 
   it('answers a row by id and nothing else', () => {

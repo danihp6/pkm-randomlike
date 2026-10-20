@@ -3,6 +3,7 @@ import { defaultHudLayout, parseHudLayout, type HudLayout } from '../data/hudLay
 import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybinds';
 import { levelCapForMap } from '../data/maps';
 import { getMission } from '../data/missions';
+import { ROOM_BATTLEFIELDS } from '../data/battlefields';
 import { isLocale, type Locale } from '../i18n';
 import {
   MAP_EDGES,
@@ -18,6 +19,7 @@ import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fight
 import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
 import type { MissionProgress } from './run/missions';
+import { emptyModifiers, type RunModifiers } from './run/modifiers';
 import { normalizeNickname } from './run/nickname';
 import { MAX_LEVEL, xpForLevel, type CatchLocation, type RunPokemon } from './run/progression';
 import { dedupeMemberIds, emptyRunStats, type PcCatch, type RunState, type RunStats } from './run/state';
@@ -67,7 +69,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 20;
+export const SAVE_VERSION = 21;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -157,7 +159,10 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * run starts with none and a clean floor); `19` moves a v19 run onto the v20 schema,
  * which added the two optional member words a special NPC writes (`taughtMoves`,
  * `secondAbility`), an old run starting with neither because the decoder leaves an
- * absent optional field out (the `14` nickname precedent).
+ * absent optional field out (the `14` nickname precedent); `20` moves a v20 run onto
+ * the v21 schema, which added the run's `modifiers` record (the exorcist's curse, the
+ * weather man's forced sky and the magician's narrowed wild type), an old run
+ * starting with the empty record because it never carried one.
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -284,6 +289,13 @@ export const SAVE_MIGRATIONS: Migrations = {
   19: (document) => ({
     ...document,
     version: 20,
+  }),
+  // The NPC modifiers: a v20 run never carried one, so the record starts empty and
+  // the next exorcist, weather man or magician writes it.
+  20: (document) => ({
+    ...document,
+    version: 21,
+    run: isRecord(document.run) ? { ...document.run, modifiers: emptyModifiers() } : document.run,
   }),
 };
 
@@ -691,6 +703,31 @@ function parseMission(value: unknown): MissionProgress | null {
   return { id: value.id, progress: value.progress, completed: value.completed };
 }
 
+/**
+ * Reads the run's NPC modifiers. `curse` only when it is exactly `true`; `nextWildType`
+ * only when it is a non-empty string; a `forcedField` only when its `id` names a
+ * `ROOM_BATTLEFIELDS` row and its `floorsLeft` is an integer of at least one (the
+ * `parseMission` precedent: a row the table no longer carries is dropped). Anything
+ * else reads as the empty record, so a hand-edited document cannot start a battle
+ * under a condition the table does not know.
+ */
+function parseModifiers(value: unknown): RunModifiers {
+  if (!isRecord(value)) return emptyModifiers();
+  const curse = value.curse === true;
+  const forcedField = parseForcedField(value.forcedField);
+  const nextWildType =
+    isString(value.nextWildType) && value.nextWildType !== '' ? value.nextWildType : null;
+  return { curse, forcedField, nextWildType };
+}
+
+function parseForcedField(value: unknown): RunModifiers['forcedField'] {
+  if (!isRecord(value)) return null;
+  if (!isString(value.id) || value.id === '') return null;
+  if (!isInteger(value.floorsLeft) || value.floorsLeft < 1) return null;
+  if (!ROOM_BATTLEFIELDS.some((row) => row.id === value.id)) return null;
+  return { id: value.id, floorsLeft: value.floorsLeft };
+}
+
 /** Reads a caught member's location; anything malformed drops the field, not the member. */
 function parseCatchLocation(value: unknown): CatchLocation | null {
   if (!isRecord(value)) return null;
@@ -878,6 +915,7 @@ function parseRun(value: unknown): RunState | null {
     missionsCompleted,
     hpLost,
     floorCasualties,
+    modifiers: parseModifiers(value.modifiers),
     stats,
   });
 }

@@ -6,6 +6,7 @@ import type { BagCounts } from './battleLink';
 import { POKEVIAL_MAX_CHARGES, fillPokevial, healParty } from './heal';
 import { clampToCap } from './levelCap';
 import { missionForMap, missionMet, type MissionProgress } from './missions';
+import { decayModifiers, emptyModifiers, type RunModifiers } from './modifiers';
 import {
   evolvePokemon,
   levelForXp,
@@ -141,6 +142,12 @@ export type RunState = Readonly<{
   hpLost: number;
   /** `stats.casualties` when `mapIndex` was entered, so a death on this floor is visible. Resets per floor. */
   floorCasualties: number;
+  /**
+   * The facts the special NPCs leave behind (`docs/maps-spec.md` §7): the curse,
+   * the forced sky and the narrowed wild type. A run-long record: `advanceRoute`
+   * carries it and only `advanceMap` spends a floor of the forced sky.
+   */
+  modifiers: RunModifiers;
   stats: RunStats;
 }>;
 
@@ -185,6 +192,7 @@ export function createRun(init: RunInit): RunState {
     missionsCompleted: 0,
     hpLost: 0,
     floorCasualties: 0,
+    modifiers: emptyModifiers(),
     stats: emptyRunStats(),
   };
 }
@@ -228,6 +236,8 @@ export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: Map
  * charges **carry over** instead: only a boss or a beaten trainer tops the meter
  * up (`docs/routes-spec.md` §6). The floor being left is judged against its own
  * mission first, and the next floor is drawn its own (`docs/routes-spec.md` §4).
+ * The NPC modifiers travel too, and the floor being left spends one of the forced
+ * sky's floors (`decayModifiers`).
  */
 export function advanceMap(run: RunState): RunState {
   const mapIndex = run.mapIndex + 1;
@@ -253,6 +263,7 @@ export function advanceMap(run: RunState): RunState {
     missionsCompleted: run.missionsCompleted + (met ? 1 : 0),
     hpLost: 0,
     floorCasualties: run.stats.casualties,
+    modifiers: decayModifiers(run.modifiers),
   };
   return healParty(advanced);
 }

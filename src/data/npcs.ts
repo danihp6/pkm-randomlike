@@ -1,5 +1,7 @@
 import type { TranslationKey } from '../i18n';
 import type { SacrificeReward } from '../engine/run/memberEdits';
+import { normalizeId } from './dex/species';
+import { TYPE_NAMES } from './dex/types';
 
 /**
  * The special-NPC table (`docs/maps-spec.md` §7): every special NPC a trainer room
@@ -23,6 +25,9 @@ export type NpcRequirement =
 
 /** One choice the panel shell prints; `label` is an i18n key. */
 export type NpcChoice = Readonly<{ id: string; label: TranslationKey }>;
+
+/** What the type gate pays, and the party types that open it. */
+export type NpcGrant = Readonly<{ types: readonly string[]; itemId: string }>;
 
 /** One special NPC: identity, its art, its per-floor chance and its gate. */
 export type NpcRow = Readonly<{
@@ -52,13 +57,16 @@ export type NpcRow = Readonly<{
   repeatable?: boolean;
   /** The rows the panel prints, in order; `LEAVE` is the shell's own last row. */
   choices?: readonly NpcChoice[];
+  /** A row that pays an item to a party holding one of these types (the type gate). */
+  grant?: NpcGrant;
 }>;
 
 /**
  * Every special NPC. The **merchant** is the floor's one guaranteed row: from map 2
  * on it stands in the floor's first trainer room and opens the Mart, so the shop
  * room could retire and the run still has its counter (`docs/maps-spec.md` §7).
- * The five member-edit rows and the sacrifice share the roll after it.
+ * The five member-edit rows and the sacrifice share the roll after it, then the four
+ * run-modifier rows: the exorcist, the weather man, the magician and the type gate.
  */
 export const NPC_ROWS: readonly NpcRow[] = [
   {
@@ -127,7 +135,50 @@ export const NPC_ROWS: readonly NpcRow[] = [
     requires: { kind: 'missionsCompleted', min: 1 },
     choices: [{ id: 'offer', label: 'npc.sacrifice.offer' }],
   },
+  {
+    id: 'exorcist',
+    nameKey: 'npc.exorcist.name',
+    greetingKey: 'npc.exorcist.greeting',
+    spriteKey: 'exorcist',
+    chance: 0.02,
+    floorStep: 0.005,
+    choices: [{ id: 'hex', label: 'npc.exorcist.cast' }],
+  },
+  {
+    id: 'weather-man',
+    nameKey: 'npc.weather.name',
+    greetingKey: 'npc.weather.greeting',
+    spriteKey: 'weather-man',
+    chance: 0.02,
+    floorStep: 0.005,
+    choices: [{ id: 'sky', label: 'npc.weather.cast' }],
+  },
+  {
+    id: 'magician',
+    nameKey: 'npc.magician.name',
+    greetingKey: 'npc.magician.greeting',
+    spriteKey: 'magician',
+    chance: 0.02,
+    floorStep: 0.005,
+    choices: [{ id: 'type', label: 'npc.magician.cast' }],
+  },
+  {
+    id: 'type-gate',
+    nameKey: 'npc.gate.name',
+    greetingKey: 'npc.gate.greeting',
+    spriteKey: 'bugcatcher',
+    chance: 0.02,
+    floorStep: 0.005,
+    choices: [{ id: 'claim', label: 'npc.gate.claim' }],
+    grant: { types: ['bug'], itemId: 'silverpowder' },
+  },
 ];
+
+/** The 18 battle type ids the magician draws from, in the dex's own order. */
+export const MAGICIAN_TYPES: readonly string[] = TYPE_NAMES.map(normalizeId);
+
+/** What the curse does to the enemy's lead (data, not code). */
+export const CURSE_ENEMY_BOOST: Readonly<{ atk: number }> = { atk: -1 };
 
 /**
  * The moves the tutor may teach, in the order its card prints them. The array is

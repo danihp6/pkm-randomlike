@@ -246,6 +246,10 @@ yet.
   so a trainer may still field a line the player owns.
 - The roll uses the route RNG, so walking the same grass in the same order
   produces the same encounters.
+- The **magician's type** (`RunState.modifiers.nextWildType`, `docs/maps-spec.md` §7)
+  narrows the band's table before the draw and is consumed by the next wild encounter
+  that actually rolls: a step that rolls nothing keeps it. A type no species of the
+  band carries falls back to the whole band, so a narrowed table is never empty.
 - A wild encounter's **level** is `clamp(floor(squadLevel(run) × fraction), 1, cap)`
   — `fraction` is one draw on the encounter stream in `[0.60, 0.75)` and `cap` is
   the floor's `maxLevel` (`WILD_LEVEL_FRACTION`, `wildLevel`, `rollWildLevel`;

@@ -53,11 +53,16 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `npcs.ts` — the special-NPC table (`docs/maps-spec.md` §7): one row per NPC with
   its name and greeting keys, the overworld sprite key it draws with, the chance it
   is rolled on map 1 and the step every floor after adds, the optional gate its row
-  is filtered by, its choices and whether it is `repeatable`. Ships the guaranteed
-  **merchant** plus the five member-edit rows and the sacrifice, the `TUTOR_MOVES`
-  gate and the `SACRIFICE_REWARDS` rows. The tutor, nature, ability and species rows
-  **borrow** the packed atlas's `blackbelt`/`psychic`/`ace`/`camper` archetype rows;
-  `iv-judge` and `sacrifice` draw their own.
+  is filtered by, its choices, whether it is `repeatable` and the optional `grant`
+  (the type gate pays an item to a party holding one of its types). Ships the
+  guaranteed **merchant** plus the five member-edit rows, the sacrifice and the four
+  run-modifier rows (the exorcist, the weather man, the magician and the type gate),
+  the `TUTOR_MOVES` gate, the `SACRIFICE_REWARDS` rows, the `MAGICIAN_TYPES` the
+  magician draws from and the `CURSE_ENEMY_BOOST` its hex applies. The tutor, nature,
+  ability and species rows **borrow** the packed atlas's
+  `blackbelt`/`psychic`/`ace`/`camper` archetype rows; `iv-judge` and `sacrifice` draw
+  their own, the type gate borrows `bugcatcher`, and the exorcist, weather man and
+  magician have their own.
 - `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
   each band's `hiddenChance` (`docs/routes-spec.md` §2 step 4).
 - `population.ts` — the floor's trainer-room composition the plan and the route

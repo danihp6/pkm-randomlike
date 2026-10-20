@@ -8,6 +8,34 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Four NPCs write a fact the run keeps: a curse, a forced sky, the next wild's type and
+      a type gate's item.** The run gains one typed `modifiers` record — `curse`,
+      `forcedField` (a `ROOM_BATTLEFIELDS` id plus the floors it still covers, **3** when set)
+      and `nextWildType` — owned by the new pure `src/engine/run/modifiers.ts`, carried by
+      `RunState`, decayed one floor by `advanceMap`, and saved by `SAVE_VERSION` **20 → 21**
+      (an older run starts with an empty record, and a document with an unknown field id, a
+      zero `floorsLeft` or a non-string type reads as empty). The **exorcist** sets the curse,
+      which `startBattle` turns into one **Attack stage down** on the enemy's lead through a
+      new `BattleSetup.enemyBoosts` (data: `CURSE_ENEMY_BOOST`) and spends in the run it
+      persists for that battle; the **weather man** draws one `ROOM_BATTLEFIELDS` row on its
+      own `:npc:` stream and pins it over the room's rolled condition and every battle of the
+      next three floors; the **magician** draws one of `MAGICIAN_TYPES` (the 18 dex type ids)
+      and narrows the band's encounter table to it before the draw — the live
+      `RouteEncounters` filter changes with no draw spent, and the first wild that actually
+      rolls consumes it; the **type gate** (`bugcatcher`) hands one `silverpowder` to a party
+      holding a **Bug** through `partyHasType` + `addItem`, refuses without one and marks
+      nothing. All four ride the shipped `npcPanel` card, are one-shot per floor through
+      `npcUseId`, and add 17 keys to both locale tables. No new generated file, no RNG stream
+      moved, no atlas repacked.
+      **QA:** one pass for a one-task batch — `qa-94` (`main@6f08530` + `task-94@683d862`,
+      integration `f03e10d`) — 9/9 criteria green, `npm test` **2338** passed / 67 skipped,
+      `npm run build` clean, 24 diff paths (the 23 exclusive ones + the spec commit, dropped at
+      the merge); its `[live]` criterion was measured over CDP on the live `Battle` scene
+      (`weather === 'rain'`, the enemy lead at `boosts.atk === -1`, one enemy fielded) and on
+      the route after it (`curse === false`, `forcedField.floorsLeft === 3`,
+      `nextWildType === 'bug'`), with the battle's top strip read by
+      `renderer.snapshotArea` + `getImageData` (**68.5 %** of it the battle's own `#203048`).
+
 - [x] **The casino window is a slot machine with three item reels.**
       `src/ui/casinoReels.ts` (pure) owns the geometry and the schedule —
       `REEL_COUNT = 3`, `REEL_SPIN_MS = 800`, `REEL_STOP_STAGGER_MS = 160` (the last

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { normalizeId } from '../../data/dex';
 import { getSpecies } from '../../data/dex/species';
 import { LEVEL_BANDS, bandForLevel } from '../../data/run';
 import { Rng } from '../rng';
@@ -304,5 +305,101 @@ describe('wild variant roll (fixed seed)', () => {
     const walk = Array.from({ length: 2000 }, () => roller.step()!).map((entry) => entry.speciesId);
     expect(walk).toContain('eiscuenoice');
     for (const id of walk) expect(getSpecies(id), id).toBeDefined();
+  });
+});
+
+/** True when `speciesId` is any of `typeId`'s species, the engine's own comparison. */
+function carries(speciesId: string, typeId: string): boolean {
+  const species = getSpecies(speciesId);
+  return (species?.types ?? []).some((type) => normalizeId(type) === typeId);
+}
+
+describe('encounterTableFor: the type filter', () => {
+  it('keeps only the species that carry the type', () => {
+    const narrowed = encounterTableFor(LEVEL_BANDS[0], NO_EXCLUSIONS, 'bug');
+    expect(narrowed.length).toBeGreaterThan(0);
+    for (const entry of narrowed) expect(carries(entry.speciesId, 'bug'), entry.speciesId).toBe(true);
+    expect(narrowed.length).toBeLessThan(encounterTableFor(LEVEL_BANDS[0]).length);
+  });
+
+  it('applies the exclusions first, then the type', () => {
+    const excluded = new Set(['pichu']);
+    const narrowed = encounterTableFor(LEVEL_BANDS[0], excluded, 'bug');
+    for (const entry of narrowed) {
+      expect(excluded.has(entry.speciesId), entry.speciesId).toBe(false);
+      expect(carries(entry.speciesId, 'bug'), entry.speciesId).toBe(true);
+    }
+    expect(narrowed.length).toBeGreaterThan(0);
+  });
+
+  it('falls back to the unfiltered table when no species of the band carries the type', () => {
+    for (const band of LEVEL_BANDS) {
+      expect(encounterTableFor(band, NO_EXCLUSIONS, 'no-such-type'), band.id).toEqual(
+        encounterTableFor(band),
+      );
+      expect(encounterTableFor(band, undefined, 'no-such-type'), band.id).toEqual(
+        encounterTableFor(band),
+      );
+    }
+  });
+
+  it('treats an absent or empty type as no filter', () => {
+    const plain = encounterTableFor(LEVEL_BANDS[1]);
+    expect(encounterTableFor(LEVEL_BANDS[1], undefined, null)).toEqual(plain);
+    expect(encounterTableFor(LEVEL_BANDS[1], undefined, '')).toEqual(plain);
+  });
+});
+
+describe('RouteEncounters: the live type filter', () => {
+  it('rolls only the narrowing species, and the setter draws nothing', () => {
+    const table = encounterTableFor(LEVEL_BANDS[0]);
+    const roller = new RouteEncounters(table, new Rng(808), fixedLevel(1), 1);
+    roller.setTypeFilter('bug');
+    expect(roller.steps).toBe(0);
+    const rolls = Array.from({ length: 40 }, () => roller.step()!.speciesId);
+    for (const id of rolls) expect(carries(id, 'bug'), id).toBe(true);
+    expect(roller.steps).toBe(40);
+    expect(roller.currentTable()).toEqual(encounterTableFor(LEVEL_BANDS[0], NO_EXCLUSIONS, 'bug'));
+  });
+
+  it('leaves the first roll of a fixed seed where it was', () => {
+    const table = encounterTableFor(LEVEL_BANDS[1]);
+    const plain = new RouteEncounters(table, new Rng(2024), fixedLevel(1), 0.35);
+    const narrowed = new RouteEncounters(table, new Rng(2024), fixedLevel(1), 0.35);
+    narrowed.setTypeFilter('bug');
+    const hit = (roller: RouteEncounters): readonly boolean[] =>
+      Array.from({ length: 60 }, () => roller.step() !== undefined);
+    expect(hit(narrowed)).toEqual(hit(plain));
+  });
+
+  it('takes the filter in its last constructor argument, beside the exclusions', () => {
+    const table = encounterTableFor(LEVEL_BANDS[0]);
+    const excluded = new Set(['pichu']);
+    const roller = new RouteEncounters(table, new Rng(15), fixedLevel(1), 1, undefined, excluded, 'bug');
+    for (const entry of roller.currentTable()) {
+      expect(excluded.has(entry.speciesId), entry.speciesId).toBe(false);
+      expect(carries(entry.speciesId, 'bug'), entry.speciesId).toBe(true);
+    }
+  });
+
+  it('falls back to the table it was handed when the type would empty it', () => {
+    const roller = new RouteEncounters(table, new Rng(3), fixedLevel(1), 1);
+    roller.setTypeFilter('no-such-type');
+    expect(roller.currentTable()).toEqual(table);
+    roller.setTypeFilter(null);
+    expect(roller.currentTable()).toEqual(table);
+  });
+
+  it('keeps the exclusions and the type live together', () => {
+    const three: EncounterTable = [
+      { speciesId: 'caterpie', weight: 1 },
+      { speciesId: 'pichu', weight: 1 },
+      { speciesId: 'charmander', weight: 1 },
+    ];
+    const roller = new RouteEncounters(three, new Rng(5), fixedLevel(1), 1);
+    roller.setTypeFilter('bug');
+    expect(roller.currentTable().map((entry) => entry.speciesId)).toEqual(['caterpie']);
+    roller.setExclusions(new Set(['caterpie']));
+    expect(roller.currentTable().map((entry) => entry.speciesId)).toEqual(['pichu', 'charmander']);
   });
 });

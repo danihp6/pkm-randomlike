@@ -3189,6 +3189,26 @@ in it, and its one `[live]` criterion **measured** over CDP on the live canvas
 card's rect differed from `origin/main` in **11 420 of 11 520** pixels while the minimap
 control rect differed in **0**.
 
+### Batch 40 — the run-modifier NPCs *(shipped, archived)*
+
+Task-94 merged alone behind the green gate (`2026-10-20`; **2338** tests, `npm test` +
+`npm run build`) and the detail is in `CHANGELOG.md`'s `## Unreleased`. Because the batch
+was **one** task, its QA was a single pass that covered both scopes (`qa-94` =
+`main@6f08530` + `task-94@683d862`, integration `f03e10d`): 9/9 criteria green, the
+`[live]` one measured over CDP on the live battle and on the route after it, and the
+merge rehearsal confirming the spec commit is the only difference between the validated
+tree and the merged one.
+
+**Fill record.** The batch was cut as `[Task-94]` alone and the fill search examined every
+later open task: `[Task-95]`, `[Task-96]`, `[Task-97]`, `[Task-99]`, `[Task-100]`,
+`[Task-101]`, `[Task-102]` and `[Task-108]`-`[Task-110]` all claim
+`src/scenes/RouteScene.ts`, held here by 94; `[Task-103]` shares `src/engine/save.ts` with
+it and depends on the unmerged 94, 95 and 106; `[Task-114]` claims `src/i18n/{en,es}.ts`,
+which the four new NPC rows need for their seventeen keys; `[Task-117]` shares
+`src/data/npcs.ts` and §7's NPC table; `[Task-118]` depends on the unmerged 114;
+`[Task-104]` is `[!]` and `[Task-28]` is unscheduled. One dev slot and one QA slot are
+used, and the other three of each stay empty with those constraints named.
+
 ### Open questions for the human
 
 Batch 4b's three reports added two more (the learnset band's is **answered** — the
@@ -5745,7 +5765,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       evolution graph and the unequip (`[Task-68]`).
       *Dependencies:* `[Task-91]` (the panel and the roll) and `[Task-98]` (the sacrifice's
       flawless spawn). *(Batch 39)*
-- [ ] **[Task-94] The run-modifier NPCs: the exorcist, the weather man, the magician and the type
+- [x] **[Task-94] The run-modifier NPCs: the exorcist, the weather man, the magician and the type
       gate.** Four NPCs write a fact that outlives the room, and the run keeps no record that does:
       the per-floor bookkeeping clears on `advanceMap` (`defeatedTrainers` / `pickedItems` /
       `capturedRooms`, `src/engine/run/state.ts` 102-107, 199-201) and nothing carries a curse, a

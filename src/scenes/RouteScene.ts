@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { biomeForRoute, getBiome } from '../data/biomes';
-import { getMove, getSpecies, type StatId, type Stats } from '../data/dex';
+import { getMove, getSpecies, normalizeId, TYPE_NAMES, type StatId, type Stats } from '../data/dex';
 import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { type HudPanelId } from '../data/hudLayout';
 import { FINITE_MAPS, levelCapForMap } from '../data/maps';
@@ -8,7 +8,7 @@ import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { getItem } from '../data/items';
 import { tmNumber } from '../data/tms';
 import { getMission } from '../data/missions';
-import { NPC_ROWS, TUTOR_MOVES, type NpcRow } from '../data/npcs';
+import { NPC_ROWS, TUTOR_MOVES, CURSE_ENEMY_BOOST, type NpcRow } from '../data/npcs';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import {
@@ -21,7 +21,12 @@ import { pokemonOverworldSheet, type PokemonOverworldSheet } from '../data/pokem
 import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
 import { followerAnimKey, followerAnims } from '../render/pokemonFollower';
 import { ROUTE_LOOT } from '../data/loot';
-import type { RoomBattlefield, RoomConditionId, RoomConditionKind } from '../data/battlefields';
+import {
+  ROOM_BATTLEFIELDS,
+  type RoomBattlefield,
+  type RoomConditionId,
+  type RoomConditionKind,
+} from '../data/battlefields';
 import type { MapPassiveTrigger } from '../data/passives';
 import { bossPartySize, type BossPartyKind } from '../data/bosses';
 import {
@@ -103,6 +108,17 @@ import {
 } from '../engine/run/memberEdits';
 import { useItemOn } from '../engine/run/items';
 import { battleHpLoss, missionCompletedBy, missionForMap, recordHpLost } from '../engine/run/missions';
+import {
+  FORCED_FIELD_FLOORS,
+  forcedFieldId,
+  withCurse,
+  withForcedField,
+  withNextWildType,
+  withoutCurse,
+  withoutNextWildType,
+  type RunModifiers,
+} from '../engine/run/modifiers';
+import { partyHasType } from '../engine/run/party';
 import { NICKNAME_MAX_LENGTH, normalizeNickname, renameMember } from '../engine/run/nickname';
 import { speciesPool, wildExclusions } from '../engine/run/pool';
 import { runPassives, type PassivePickup } from '../engine/run/passives';
@@ -130,9 +146,11 @@ import {
   exitEdgeAt,
   gateId,
   guaranteedNpc,
+  npcForcedField,
   npcRequirementMet,
   npcSpot,
   npcUseId,
+  npcWildType,
   rollWildLevel,
   roomNpc,
   seesPlayer,
@@ -1440,6 +1458,8 @@ export class RouteScene extends Phaser.Scene {
       // sequence a fixed seed already produced.
       new Rng(hashSeed(`${route.seed}:shiny:${route.routeIndex}`)),
       wildExclusions(this.run),
+      // The magician's type, so a room rebuilt from a save still obeys it.
+      this.run.modifiers.nextWildType,
     );
   }
 
@@ -5332,6 +5352,13 @@ export class RouteScene extends Phaser.Scene {
       this.playGrassRustle();
       const encounter = this.encounters.step();
       if (encounter) {
+        // A wild roll that actually happened spends the magician's type, so the
+        // next grass step rolls the whole band again (`docs/routes-spec.md` §3).
+        if (this.run.modifiers.nextWildType !== null) {
+          this.run = { ...this.run, modifiers: withoutNextWildType(this.run.modifiers) };
+          this.encounters.setTypeFilter(null);
+          this.persistRun();
+        }
         this.startBattle({
           kind: 'wild',
           speciesId: encounter.speciesId,
@@ -5731,10 +5758,11 @@ export class RouteScene extends Phaser.Scene {
    * Resolves the row the card accepted (`docs/maps-spec.md` §7). The **merchant**
    * opens the Mart and marks no use, so the merchant is there for the rest of the
    * floor; the tutor opens its move card, the four re-rolls open the member card and
-   * the sacrifice draws its own member. Every other row records
+   * the sacrifice draws its own member. The four run-modifier rows each commit one
+   * fact — the curse, the forced sky, the narrowed wild type or the gate's item —
+   * beside their use mark. Every other row records
    * `npc-<mapIndex>-<roomId>-<id>` in `pickedItems`, which `advanceMap` clears, so a
-   * revisit and a reload know the card was taken. A later NPC task adds its own
-   * branch here.
+   * revisit and a reload know the card was taken.
    */
   private chooseNpc(row: NpcRow, mapIndex: number, roomId: number, _choiceId: string): void {
     switch (row.id) {
@@ -5757,6 +5785,56 @@ export class RouteScene extends Phaser.Scene {
         this.closePanel();
         this.applyMemberEdit(row, mapIndex, roomId, sacrifice(this.run, this.npcContext(row, roomId)));
         return;
+      case 'exorcist':
+        this.commitNpcModifiers(
+          row,
+          mapIndex,
+          roomId,
+          withCurse(this.run.modifiers),
+          t('npc.exorcist.done'),
+        );
+        return;
+      case 'weather-man': {
+        const field = npcForcedField(this.run.seed, roomId, row.id);
+        this.commitNpcModifiers(
+          row,
+          mapIndex,
+          roomId,
+          withForcedField(this.run.modifiers, field.id),
+          t('npc.weather.done', { floors: FORCED_FIELD_FLOORS }),
+        );
+        return;
+      }
+      case 'magician': {
+        const typeId = npcWildType(this.run.seed, roomId, row.id);
+        // The room on screen obeys the new type at once, so the card's promise is
+        // true before the next room rebuild reads the saved modifier.
+        this.encounters.setTypeFilter(typeId);
+        this.commitNpcModifiers(
+          row,
+          mapIndex,
+          roomId,
+          withNextWildType(this.run.modifiers, typeId),
+          t('npc.magician.done', { type: this.typeName(typeId) }),
+        );
+        return;
+      }
+      case 'type-gate': {
+        const grant = row.grant;
+        if (!grant) return;
+        if (!partyHasType(this.run, grant.types)) {
+          this.showNpcResult(row, t('npc.gate.refused'));
+          return;
+        }
+        this.commitNpcResult(
+          row,
+          mapIndex,
+          roomId,
+          addItem(this.run, grant.itemId, 1),
+          t('npc.gate.granted', { item: getItem(grant.itemId)?.name ?? grant.itemId }),
+        );
+        return;
+      }
       default:
         this.commitRun(markItemPicked(this.run, npcUseId(mapIndex, roomId, row.id)));
         this.closePanel();
@@ -5904,6 +5982,37 @@ export class RouteScene extends Phaser.Scene {
   /** The result card: the row's name as its title and one line, no choices. */
   private showNpcResult(row: NpcRow, paragraph: string): void {
     this.openNpcCardView({ title: t(row.nameKey), paragraph, choices: [] });
+  }
+
+  /**
+   * Commits one run fact **plus** its use mark in one write and prints the row's
+   * result card, so a modifier row leaves exactly one run write behind on its floor.
+   */
+  private commitNpcResult(
+    row: NpcRow,
+    mapIndex: number,
+    roomId: number,
+    run: RunState,
+    paragraph: string,
+  ): void {
+    this.commitRun(markItemPicked(run, npcUseId(mapIndex, roomId, row.id)));
+    this.showNpcResult(row, paragraph);
+  }
+
+  /** The same commit, for a row whose one fact is the run's `modifiers` record. */
+  private commitNpcModifiers(
+    row: NpcRow,
+    mapIndex: number,
+    roomId: number,
+    modifiers: RunModifiers,
+    paragraph: string,
+  ): void {
+    this.commitNpcResult(row, mapIndex, roomId, { ...this.run, modifiers }, paragraph);
+  }
+
+  /** The dex's own English name for a normalized type id, or the id itself. */
+  private typeName(typeId: string): string {
+    return TYPE_NAMES.find((name) => normalizeId(name) === typeId) ?? typeId;
   }
 
   /** The party or box member `memberId` names, in the run **before** the edit. */
@@ -6321,15 +6430,34 @@ export class RouteScene extends Phaser.Scene {
       // next battle.
       aiLevel: this.settings.aiLevel,
       // The room's own condition, so every battle that starts here — trainers,
-      // the boss and wilds alike — begins under it (`docs/maps-spec.md` §7).
-      battlefield: this.battlefield,
+      // the boss and wilds alike — begins under it (`docs/maps-spec.md` §7). A sky
+      // the weather man pinned replaces it for the floors it still covers.
+      battlefield: this.forcedBattlefield() ?? this.battlefield,
       // The no-heal leaf's rule rides the launch too, so its trainer's battle and
       // any dev wild opened in the room both carry it.
       noHeal: this.room?.special === 'no-heal',
+      // The exorcist's hex: the enemy's lead starts a stage down, and the battle it
+      // starts is what spends the curse (`docs/battle-spec.md` §4).
+      ...(this.run.modifiers.curse ? { enemyBoosts: CURSE_ENEMY_BOOST } : {}),
     };
+    if (this.run.modifiers.curse) {
+      this.run = { ...this.run, modifiers: withoutCurse(this.run.modifiers) };
+      this.persistRun();
+    }
     this.pendingBattle = launch;
     this.scene.pause();
     this.scene.launch('Battle', launch);
+  }
+
+  /**
+   * The condition a battle starts under when the run carries a forced sky: the
+   * modifier's id resolved through `ROOM_BATTLEFIELDS`, or null for no sky and for
+   * an id the table does not know.
+   */
+  private forcedBattlefield(): RoomBattlefield | null {
+    const id = forcedFieldId(this.run.modifiers);
+    if (id === null) return null;
+    return ROOM_BATTLEFIELDS.find((row) => row.id === id) ?? null;
   }
 
   /**

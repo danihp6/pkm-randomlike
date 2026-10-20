@@ -45,6 +45,7 @@ import {
   updatePokemon,
   useCapture,
   withdrawToParty,
+  type RunState,
 } from './state';
 
 const starter = createRunPokemon({
@@ -253,6 +254,43 @@ describe('the floor mission', () => {
     expect(next.missionsCompleted).toBe(run.missionsCompleted);
     expect(next.hpLost).toBe(2);
     expect(next.floorCasualties).toBe(run.floorCasualties);
+  });
+});
+
+describe('the run modifiers', () => {
+  it('starts a fresh run with the empty record', () => {
+    expect(createRun({ seed: 'run-a', starter }).modifiers).toEqual({
+      curse: false,
+      forcedField: null,
+      nextWildType: null,
+    });
+  });
+
+  it('carries the record untouched through a room change', () => {
+    const run: RunState = {
+      ...createRun({ seed: 'run-a', starter }),
+      modifiers: { curse: true, forcedField: { id: 'rain', floorsLeft: 2 }, nextWildType: 'bug' },
+    };
+    const next = advanceRoute(run, 1);
+    expect(next.modifiers).toBe(run.modifiers);
+  });
+
+  it('spends one floor of the forced sky on a floor change and keeps the rest', () => {
+    const run: RunState = {
+      ...createRun({ seed: 'run-a', starter }),
+      modifiers: { curse: true, forcedField: { id: 'rain', floorsLeft: 2 }, nextWildType: 'bug' },
+    };
+    const next = advanceMap(run);
+    expect(next.modifiers).toEqual({
+      curse: true,
+      forcedField: { id: 'rain', floorsLeft: 1 },
+      nextWildType: 'bug',
+    });
+    expect(advanceMap(next).modifiers).toEqual({
+      curse: true,
+      forcedField: null,
+      nextWildType: 'bug',
+    });
   });
 });
 
