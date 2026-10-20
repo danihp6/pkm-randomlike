@@ -8,6 +8,23 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The casino window is a slot machine with three item reels.**
+      `src/ui/casinoReels.ts` (pure) owns the geometry and the schedule —
+      `REEL_COUNT = 3`, `REEL_SPIN_MS = 800`, `REEL_STOP_STAGGER_MS = 160` (the last
+      reel stops at **1 120 ms**), `reelFace` / `reelStrips` / `reelFaceIndex` — and
+      `src/scenes/rooms/casino.ts` only draws it: three 48 px windows at
+      556/616/676, the paid item (or the Egg, or the Team Rocket icon on all three
+      reels for the grunt) as the final face, the band's own rows as decoys, `SPIN` and
+      `LEAVE` clickable while idle, input locked during the reveal and a click or `E`
+      skipping it. `casinoSpin` still books the outcome before the first frame, so a
+      reload cannot re-roll or refund. No new string, no setting, no RNG draw.
+      **QA:** Task QA `qa-116` (`main@98bd905` + `task-116@c1fae70`, integration
+      `73db413`): 10 of 11 criteria green, `npm test` **2246** passed / 67 skipped, and
+      the three-reel `[live]` re-measured on the combined tree `7e250be` with the
+      spec's corrected reference (band row `y = 2`, gap at local `x = 114`): three ink
+      runs of **48/49/49 px** with **11/11 px** gaps; the click `[live]` changed **671**
+      message-band pixels, the money band byte-identical and the run's money still 0.
+
 - [x] **The party-edit NPCs edit one member through one pure transaction.**
       `src/engine/run/memberEdits.ts` joins the special-NPC panel with five rows — the
       move tutor (`TUTOR_MOVES`, a free slot or the chosen one), the nature, ability and

@@ -6171,7 +6171,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* none — the model, the table, the shop rotation and the item catalogue are
       shipped. It adds no run field and no `SAVE_VERSION` step, and it claims no scene, so it
       extends no queue. *(Batch 54)*
-- [ ] **[Task-116] The casino window is the slot machine, and its three item reels spin.**
+- [x] **[Task-116] The casino window is the slot machine, and its three item reels spin.**
       The human's correction is explicit: the visual is a **slot machine whose reels show three
       drawn items** («mejor reescribe en vez de ruleta que el visual sea una maquina tragaperras
       con dibujo de tres items»), and **the Team Rocket icon is the battle's face** («icono team

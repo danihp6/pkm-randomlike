@@ -460,8 +460,13 @@ The rule itself:
 
 The casino's counter is a **slot machine** with a **Team Rocket grunt** standing
 beside it. Facing the machine with the interact key (`E`) opens the machine's own
-window — a title, the run's money, two rows (`SPIN ¥<price>` and `LEAVE`) and one
-message line. One **spin**:
+window: a cabinet with **three reels**, every face a drawn item of the band's table
+or, on the fight, the grunt's Rocket icon. The two rows (`SPIN ¥<price>` and
+`LEAVE`) answer the pointer as well as the keys, the run's money sits in the
+corner and one message line reports the reveal. A spin **books** its outcome
+before the first frame and then reveals it — an 800 ms spin, the reels stopping
+160 ms apart — and a second press, or any pointer press on the card, skips to the
+booked faces, so a reload mid-spin neither re-rolls nor refunds. One **spin**:
 
 - costs the floor band's **price**: `CASINO.price` in `src/data/casino.ts` is
   300 / 700 / 1000 / 1500 / 2000 / 2500 from the `early` to the `end` band;
