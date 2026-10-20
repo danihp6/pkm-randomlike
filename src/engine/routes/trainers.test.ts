@@ -1,14 +1,27 @@
 import { describe, expect, it } from 'vitest';
+import { getTrainerArchetype } from '../../data/trainers';
 import { TILESETS } from '../../data/tilesets';
+import { createFighter, randomAbility } from '../battle';
 import { FLOOR, WALL, isWalkable, mapFromSketch } from '../map';
 import type { Tile } from '../grid';
+import type { TrainerRosterEntry } from '../run/battleLink';
 import type { RouteMap, RouteTrainer } from './routeMap';
 import { FACING_VECTORS } from './routeMap';
 import { treeTipKeys } from '../tileFrames';
 import { ROUTE_SHAPES } from './layout';
 import { sketchRoute, type RouteRequest } from './sketch';
 import { reachableAvoiding, reachableTiles, validateRoute } from './validate';
-import { sightLine, seesPlayer, trainerAt, trainerBlockers } from './trainers';
+import {
+  INVISIBLE_REVEAL_DISTANCE,
+  sightLine,
+  seesPlayer,
+  specialTrainerFor,
+  trainerAt,
+  trainerBlockers,
+  trainerHidden,
+  withForcedAbility,
+  type SpecialTrainerOptions,
+} from './trainers';
 
 const ARCHETYPES = ['youngster', 'lass', 'bugcatcher', 'hiker'];
 
@@ -238,9 +251,7 @@ describe('route trainer placement', () => {
       });
       expect(trainers.trainers.length, `${size}x${size} trainers`).toBeGreaterThanOrEqual(1);
       expect(trainers.trainers.length, `${size}x${size} trainers`).toBeLessThanOrEqual(2);
-      expect(validateRoute(trainers, { expectTrainers: true }).ok, `${size}x${size} guarded`).toBe(
-        true,
-      );
+      expect(validateRoute(trainers, { expectTrainers: true }).ok, `${size}x${size} guarded`).toBe(true);
 
       const wild = sketchRoute({
         ...request('tt-role', 3, 'cross'),
@@ -361,6 +372,148 @@ describe('route trainer placement', () => {
     const reached = reachableTiles(route.tiles, route.entry);
     for (const item of route.items) {
       expect(reached.has(`${item.position.x},${item.position.y}`)).toBe(true);
+    }
+  });
+});
+
+/** The fixture route with a second trainer, the shape a special trainer overrides. */
+function twoTrainers(): RouteMap {
+  const route = fixture('S', { x: 3, y: 1 });
+  const second: RouteTrainer = {
+    id: 'trainer-1-1',
+    position: { x: 1, y: 3 },
+    facing: 'E',
+    sight: 3,
+    archetypeId: 'lass',
+  };
+  return { ...route, trainers: [route.trainers[0], second] };
+}
+
+/** The options a `trainers` room hands `specialTrainerFor`, over the fixture route. */
+function specialOptions(overrides: Partial<SpecialTrainerOptions> = {}): SpecialTrainerOptions {
+  const base = {
+    route: twoTrainers(),
+    seed: 'tt-special',
+    roomIndex: 1,
+    role: 'trainers',
+    quiet: false,
+    missionsCompleted: 0,
+  } as const;
+  return { ...base, ...overrides };
+}
+
+describe('trainer sprite visibility', () => {
+  const ninja = getTrainerArchetype('ninja');
+  const visible = getTrainerArchetype('psychic');
+  const at = (x: number, y: number): Tile => ({ x, y });
+
+  it('hides an invisible archetype only past the reveal distance', () => {
+    expect(INVISIBLE_REVEAL_DISTANCE).toBe(1);
+    const trainer = at(3, 3);
+    expect(trainerHidden(ninja, trainer, at(3, 3))).toBe(false);
+    expect(trainerHidden(ninja, trainer, at(3, 2))).toBe(false);
+    expect(trainerHidden(ninja, trainer, at(1, 3))).toBe(true);
+    expect(trainerHidden(ninja, trainer, at(3, 1))).toBe(true);
+  });
+
+  it('never hides a visible or an unknown archetype', () => {
+    for (const archetype of [visible, undefined]) {
+      for (const player of [at(3, 3), at(3, 2), at(1, 3), at(8, 9)]) {
+        expect(trainerHidden(archetype, at(3, 3), player)).toBe(false);
+      }
+    }
+  });
+});
+
+describe('the special trainer', () => {
+  it('is deterministic and leaves the route it reads untouched', () => {
+    const options = specialOptions();
+    const before = options.route.trainers[0].archetypeId;
+    const a = specialTrainerFor(options);
+    const b = specialTrainerFor(options);
+    expect(a).toEqual(b);
+    expect(options.route.trainers[0].archetypeId).toBe(before);
+  });
+
+  it('fixed-seed pin: the presence draw at `tt-special`/room 1 misses, so the room keeps its own first trainer', () => {
+    expect(specialTrainerFor(specialOptions())).toBeNull();
+  });
+
+  it('fixed-seed pin: `tt-special-14`/room 1 draws the ninja and swaps only the archetype', () => {
+    const route = twoTrainers();
+    const first = route.trainers[0];
+    const drawn = specialTrainerFor({ ...specialOptions({ route }), seed: 'tt-special-14' });
+    expect(drawn).toEqual({ ...first, archetypeId: 'ninja' });
+    expect(drawn!.id).toBe(first.id);
+    expect(drawn!.position).toEqual(first.position);
+    expect(drawn!.facing).toBe(first.facing);
+    expect(drawn!.sight).toBe(first.sight);
+    expect(drawn!.turns).toBe(first.turns);
+    expect(drawn!.archetypeId).toBe('ninja');
+    // The body is an override, never a second body.
+    expect(route.trainers).toHaveLength(2);
+  });
+
+  it('refuses a quiet room, a non-trainers role and a trainer-free route', () => {
+    expect(specialTrainerFor(specialOptions({ quiet: true }))).toBeNull();
+    expect(specialTrainerFor(specialOptions({ role: 'wild' }))).toBeNull();
+    expect(specialTrainerFor(specialOptions({ route: { ...twoTrainers(), trainers: [] } }))).toBeNull();
+  });
+
+  it('keeps a gated row out of the draw until the run has met its mission', () => {
+    const rows = [{ archetypeId: 'secret', chance: 1, minMissionsCompleted: 1 }];
+    expect(specialTrainerFor(specialOptions({ rows, missionsCompleted: 0 }))).toBeNull();
+    const met = specialTrainerFor(specialOptions({ rows, missionsCompleted: 1 }));
+    expect(met?.archetypeId).toBe('secret');
+  });
+
+  it('never rolls a zero-chance row or one naming an unknown archetype', () => {
+    expect(
+      specialTrainerFor(specialOptions({ rows: [{ archetypeId: 'ninja', chance: 0 }] })),
+    ).toBeNull();
+    expect(
+      specialTrainerFor(specialOptions({ rows: [{ archetypeId: 'not-a-class', chance: 1 }] })),
+    ).toBeNull();
+  });
+
+  it('leaves a room whose roll misses to its own trainer', () => {
+    const route = twoTrainers();
+    const drawn = specialTrainerFor({ ...specialOptions({ route }), seed: 'tt-special-2' });
+    expect(drawn).toBeNull();
+    expect(route.trainers[0].archetypeId).toBe('youngster');
+  });
+});
+
+describe('the forced ability', () => {
+  const roster: readonly TrainerRosterEntry[] = [
+    { id: 'trainer-1-0:0', speciesId: 'sentret', level: 5 },
+    { id: 'trainer-1-0:1', speciesId: 'pidgey', level: 6 },
+  ];
+
+  it('stamps the archetype’s ability on every entry without touching the input', () => {
+    const impostor = getTrainerArchetype('impostor');
+    const stamped = withForcedAbility(roster, impostor);
+    expect(stamped).not.toBe(roster);
+    expect(stamped.map((entry) => entry.ability)).toEqual(['Imposter', 'Imposter']);
+    expect(stamped.map((entry) => entry.id)).toEqual(roster.map((entry) => entry.id));
+    expect(roster.every((entry) => entry.ability === undefined)).toBe(true);
+  });
+
+  it('hands an archetype without one back by the same reference', () => {
+    expect(withForcedAbility(roster, getTrainerArchetype('ninja'))).toBe(roster);
+    expect(withForcedAbility(roster, undefined)).toBe(roster);
+  });
+
+  it('skips the run’s ability roll for a stamped roster and keeps it otherwise', () => {
+    const stamped = withForcedAbility(roster, getTrainerArchetype('impostor'));
+    for (let index = 0; index < stamped.length; index++) {
+      const entry = stamped[index];
+      const fighter = createFighter({ ...entry, learnsetSeed: 'run-1' });
+      expect(fighter.ability, entry.id).toBe('Imposter');
+      const plain = createFighter({ ...roster[index], learnsetSeed: 'run-1' });
+      expect(plain.ability, roster[index].id).toBe(
+        randomAbility(roster[index].speciesId, 'run-1')?.name,
+      );
     }
   });
 });
