@@ -46,7 +46,8 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   floors it and clamps it to the floor's cap, read by the route's encounter stream
   (`docs/routes-spec.md` §3/§5, D11/D17 amended).
 - `casino.ts` — the casino room's balance table: one spin's price per band, the
-  chance a spin turns into the grunt fight and each band's weighted prize rows.
+  chance a spin turns into the grunt fight and each band's weighted prize rows, one
+  of them the grouped equipable whose id the band's Mart shelf supplies.
 - `noHeal.ts` — the no-heal room's table: the first floor that may hang it, the
   chance, its trainer's archetype and the move ids the room bars for the player.
 - `npcs.ts` — the special-NPC table (`docs/maps-spec.md` §7): one row per NPC with

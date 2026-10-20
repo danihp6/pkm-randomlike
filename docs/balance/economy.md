@@ -216,3 +216,35 @@ every competitive held row is reachable from the ground or the counter, and the
 **G-Max Stones** (`D44`) are ground treasure at `late`/`end` alone — four ids at
 `late`, six at `end`, weight 1 each (`GMAX_STONE_LOOT`) — with the other 24 stones
 reachable from the Mart's one-stone row at those two bands and nowhere else.
+
+## The casino's spin
+
+The slot machine (`docs/maps-spec.md` §7, `src/data/casino.ts`, `src/ui/casino.ts`)
+takes one price per band and pays a prize on 85 % of the spins; the other 15 % are
+the grunt fight (`CASINO.battleChance`). One row of every band is the **grouped
+equipable**, weight 1, whose id is drawn from the band's own `SHOP_ROTATION` shelf
+(`casinoHeldPool`) instead of naming an item, so there is no second held table to
+keep in step with the Mart.
+
+| Band  | Price | Rows | Total | Grouped share | Recovery |
+| ----- | ----: | ---: | ----: | ------------: | -------: |
+| early |   300 |    5 |    12 |          7.1 % |     63 % |
+| low   |   700 |    6 |    13 |          6.5 % |  ≈ 90 %  |
+| mid   |  1000 |    5 |     9 |          9.4 % |  ≈ 91 %  |
+| high  |  1500 |    5 |     7 |         12.1 % |     75 % |
+| late  |  2000 |    5 |     8 |         10.6 % |     88 % |
+| end   |  2500 |    5 |     8 |         10.6 % |     71 % |
+
+The **grouped share** is the absolute chance of an equipable on a pressed spin:
+`(1 − battleChance) × weight / total`, the same shape as every other row's share, so
+the Egg (one weight of each band's total too) keeps the same absolute chance. The
+equipable's id is the spin stream's **last** draw over that band's shelf, so no other
+outcome's numbers move.
+
+**Recovery** is the share of the price a spin returns on average: the resale value of
+the prize it pays, plus the grunt's purse on the 15 % of spins that become the fight.
+The two bands that sat over break-even with the grouped row folded in — `low` and
+`mid` — ship **diluted**: their heal and ball rungs carry four and three weights (13
+and 9 total), so the machine stays a currency sink. `early`, `high`, `late` and `end`
+keep the weights the row measured first. The two on-ramp bands draw `mid`'s shelf
+because their own shelf is berry-only, which the recovery column already counts.
