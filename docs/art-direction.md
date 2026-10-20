@@ -31,15 +31,15 @@ Three tiers, in order of preference:
    (`npm run data:ui`) from the committed tree, so the interface — panels, the
    battle message box, the HUD and the type — ships even though the FRLG rips it
    derives its shape from do not (`O4`).
-2. **Imported game rips (local only)** — `wood.png`, `desert.png`,
-   `apple-woods.png`, `lush-prairie.png`, `beach-cave.png`, `items.png`,
-   `moves.png`, `hud.png`, `pokemon/*.png`, the FRLG UI art
+2. **Imported game rips (gitignored, never committed)** — `wood.png`,
+   `desert.png`, `apple-woods.png`, `lush-prairie.png`, `beach-cave.png`,
+   `items.png`, `moves.png`, `hud.png`, `pokemon/*.png`, the FRLG UI art
    (`frlg/item-icons.png`, `frlg/window.png`, `frlg/textbox.png` and
    `frlg/font.png` — the window chrome and the font are superseded by the drawn
    `ui/**` set, see the UI section below — `frlg/hpbar.png`, `frlg/cursor.png`,
    `frlg/trainers.png`,
-   `frlg/overworld.png`, `frlg/player.png`) and the battle sprites in
-   `public/anil/`. The PMD ones
+   `frlg/overworld.png`, `frlg/player.png`), the packed `audio/*.wav` and the
+   battle sprites in `public/anil/`. The PMD ones
    come from Pokémon Mystery Dungeon rips (PMDCollab and spriters-resource) via the
    sibling project `pkm-mystery-dungeon-like`; the overworld set is now packed
    straight from **PMDCollab's SpriteCollab** project (see the PMD Collab section
@@ -47,7 +47,11 @@ Three tiers, in order of preference:
    spriters-resource and the pret/pokefirered decomp (see the FRLG sections below);
    the battle sprites come from the fangame Pokémon Añil (see the Añil section
    below). All are Nintendo/GameFreak/Chunsoft art, as the user asked. **Never
-   redistribute**: `sprite-sources/` is gitignored and these crops must not ship.
+   redistribute**: the source trees live in `sprite-sources/` (or the private
+   `pkrl-assets` repository), every packed output is listed in `.gitignore`, and
+   no crop or cue enters the repository or its history. A clone without the store
+   builds and boots against the committed blanks in
+   `src/assets/placeholders/` (`npm run assets:pack` restores the real art).
    Tileset rips are credited upstream to SilverDeoxys563 (spriters-resource).
 3. **Third-party CC0** — if a pack is added, record its licence and author in
    this file and keep the source pack in `sprite-sources/` (gitignored).
@@ -157,7 +161,7 @@ Item icons come from Añil as well: `sprite-sources/anil/Graphics/Items/` holds
 893 icons (48x48, except 44 at 50-60 px) whose file names are the `[ID]` headers
 of `PBS/items.txt`. `scripts/anil/build-item-icons.mjs` (`npm run data:anil:items`)
 packs each of them into a 24px frame — the 48x48 sources sampled 2:1, the 50-60 px
-ones scaled per axis — into the committed
+ones scaled per axis — into the gitignored
 `src/assets/anil/item-icons.png` (8 columns, nearest-neighbour) plus
 `src/data/anil/item-icons.json`, read through `src/data/itemIcons.ts`. The
 manifest is keyed by the **normalised** file name, so a catalogue id that matches
@@ -201,7 +205,7 @@ spriters-resource [`game_boy_advance/pokemonfireredleafgreen`](https://www.sprit
 The route's **ground-item** sprite is the standalone Poke Ball that sits above the
 right corner of the Pokemon Center on the Hoeloo compilation
 (`sprite-sources/frlg/tileset.png`); `scripts/frlg/build-field-items.mjs` crops it
-to 16x16 and keys the flat background into the committed
+to 16x16 and keys the flat background into the gitignored
 `src/assets/frlg/ground-item.png`, read through `src/data/groundItemSprite.ts`.
 Hidden items draw the procedural sparkle (`BootScene`) instead.
 
@@ -302,7 +306,7 @@ its **work list is derived from our dex**, never hand-written:
 | Step | Tool | What it does |
 | --- | --- | --- |
 | 1 | `fetch-pmdcollab.mjs` | downloads a pack (or `--table`, every row of `pmdcollab-species.mjs`; `--missing` only the rows with no local pack) into `<dest>/<slug>-pmdcollab/` |
-| 2 | `extract-real-sprites.mjs` | crops, trims, scales and repacks the frames into the committed `src/assets/pokemon/<fileId>.png` + `.json` pair (`--only-missing` skips a pair that is already packed) |
+| 2 | `extract-real-sprites.mjs` | crops, trims, scales and repacks the frames into the gitignored `src/assets/pokemon/<fileId>.png` + committed `.json` pair (`--only-missing` skips a pair that is already packed) |
 | 3 | `build-pokemon-index.mjs` | writes the committed coverage manifest `src/assets/pokemon/index.json` from those pairs and `src/data/dex/species.json` |
 
 `--dest` and `--source` are **absolute** paths, required, with `PMDCOLLAB_SOURCES`

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { hasArt } from '../assets/art';
 import indexManifest from '../assets/pokemon/index.json';
 import {
   POKEMON_OVERWORLD_DIR_ROWS,
@@ -11,7 +12,7 @@ import {
 
 const sheet = pokemonOverworldSheet('bulbasaur');
 
-describe('pokemon overworld sheet', () => {
+describe.skipIf(!hasArt('pokemon/1.png'))('pokemon overworld sheet', () => {
   it('resolves a committed pair to its manifest facts', () => {
     expect(sheet).not.toBeNull();
     expect(sheet!.speciesId).toBe('bulbasaur');

@@ -1,5 +1,12 @@
-import overworldUrl from '../assets/frlg/overworld.png';
+import placeholderUrl from '../assets/placeholders/frlg/overworld.png';
+import { packedAtlasUrl } from '../assets/optional';
 import manifest from './frlg/overworld.json';
+
+const OVERWORLD_ATLASES = import.meta.glob('../assets/frlg/overworld.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Readonly<Record<string, string>>;
 
 /**
  * The FireRed/LeafGreen overworld atlas (`src/assets/frlg/overworld.png`), packed
@@ -14,7 +21,11 @@ import manifest from './frlg/overworld.json';
  * layout; the right-facing side is the left-facing frame flipped by
  * `RouteScene`. Local-only art — see `docs/art-direction.md`.
  */
-export const OVERWORLD_SPRITE_ATLAS_URL = overworldUrl;
+export const OVERWORLD_SPRITE_ATLAS_URL = packedAtlasUrl(
+  OVERWORLD_ATLASES,
+  '../assets/frlg/overworld.png',
+  placeholderUrl,
+);
 export const OVERWORLD_SPRITE_TEXTURE_KEY = 'frlg:overworld';
 export const OVERWORLD_SPRITE_WIDTH = manifest.size;
 export const OVERWORLD_SPRITE_HEIGHT = manifest.height;

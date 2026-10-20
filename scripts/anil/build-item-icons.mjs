@@ -16,6 +16,7 @@
 // packer unable to run at all. Alpha is copied as it is (no keying).
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { assetPath } from '../assets/root.mjs'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
 const FRAME_SIZE = 24
@@ -24,7 +25,7 @@ const COLS = 8
 const norm = (text) => text.toLowerCase().replace(/[^a-z0-9]/g, '')
 
 const sourceDir =
-  process.argv[2] ?? process.env.POKEANIL_ITEMS ?? 'sprite-sources/anil/Graphics/Items'
+  process.argv[2] ?? process.env.POKEANIL_ITEMS ?? assetPath('anil/Graphics/Items')
 if (!existsSync(sourceDir)) {
   throw new Error(
     `usage: node scripts/anil/build-item-icons.mjs <anil>/Graphics/Items (missing ${sourceDir})`,

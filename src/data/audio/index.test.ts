@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { hasArt } from '../../assets/art';
 import { AUDIO_CUE_IDS } from '../../audio/cues';
 import { allMoves, getSpecies, playableSpecies } from '../dex';
 import { CRY_ROW_COUNT, MOVE_SOUND_ROW_COUNT, cryCueFor, moveSoundCueFor } from './index';
@@ -16,7 +17,7 @@ const CUES = new Set<string>(AUDIO_CUE_IDS);
 const CRY_CUES = criesData as Readonly<Record<string, string>>;
 const MOVE_SOUND_CUES = moveSoundsData as Readonly<Record<string, string>>;
 
-describe('the cry table', () => {
+describe.skipIf(!hasArt('audio'))('the cry table', () => {
   it('carries one row per species the decompilation has a cry for', () => {
     expect(CRY_ROW_COUNT).toBe(455);
     const expected = playableSpecies()
@@ -55,7 +56,7 @@ describe('the cry table', () => {
   });
 });
 
-describe('the move-sound table', () => {
+describe.skipIf(!hasArt('audio'))('the move-sound table', () => {
   it('carries one row per move whose own animation plays a sound', () => {
     expect(MOVE_SOUND_ROW_COUNT).toBe(295);
     const moveIds = new Set(allMoves().map((move) => move.id));

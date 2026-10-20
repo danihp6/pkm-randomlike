@@ -1,5 +1,12 @@
-import trainerSpritesUrl from '../assets/frlg/trainers.png';
+import placeholderUrl from '../assets/placeholders/frlg/trainers.png';
+import { packedAtlasUrl } from '../assets/optional';
 import manifest from './frlg/trainers.json';
+
+const TRAINER_ATLASES = import.meta.glob('../assets/frlg/trainers.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Readonly<Record<string, string>>;
 
 /**
  * The FireRed/LeafGreen battle trainer atlas (`src/assets/frlg/trainers.png`),
@@ -9,7 +16,11 @@ import manifest from './frlg/trainers.json';
  * enemy platform without knowing the sheet layout. Local-only art — see
  * `docs/art-direction.md`.
  */
-export const TRAINER_SPRITE_ATLAS_URL = trainerSpritesUrl;
+export const TRAINER_SPRITE_ATLAS_URL = packedAtlasUrl(
+  TRAINER_ATLASES,
+  '../assets/frlg/trainers.png',
+  placeholderUrl,
+);
 export const TRAINER_SPRITE_TEXTURE_KEY = 'frlg:trainers';
 export const TRAINER_SPRITE_SIZE = manifest.size;
 

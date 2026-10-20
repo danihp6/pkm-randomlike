@@ -21,6 +21,7 @@
 // offers a player gender.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { assetPath } from '../assets/root.mjs'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
 const FRAME = 16
@@ -38,8 +39,7 @@ const FRAMES = {
   'walk-side-a': 7,
   'walk-side-b': 8,
 }
-
-const DEFAULT_SOURCE = fileURLToPath(new URL('../../sprite-sources/frlg/overworld/red_normal.png', import.meta.url))
+const DEFAULT_SOURCE = assetPath('frlg/overworld/red_normal.png')
 const source = process.argv[2] ?? DEFAULT_SOURCE
 const ATLAS = new URL('../../src/assets/frlg/player.png', import.meta.url)
 const MANIFEST = new URL('../../src/data/frlg/player.json', import.meta.url)

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import moveFxUrl from '../assets/moves.png';
+import placeholderMoveFxUrl from '../assets/placeholders/moves.png';
+import { packedAtlasUrl } from '../assets/optional';
 import { GROUND_ITEM_TEXTURE_KEY, GROUND_ITEM_URL } from '../data/groundItemSprite';
 import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY } from '../data/itemIcons';
 import {
@@ -72,6 +73,13 @@ import {
   tilesetTextureKey,
 } from '../data/tilesets';
 import { browserStorage } from '../storage';
+
+const MOVE_FX_ATLASES = import.meta.glob('../assets/moves.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Readonly<Record<string, string>>;
+const moveFxUrl = packedAtlasUrl(MOVE_FX_ATLASES, '../assets/moves.png', placeholderMoveFxUrl);
 
 export const GRASS_TEXTURE_KEY = 'route:grass';
 export const TRAINER_TEXTURE_KEY = 'route:trainer';

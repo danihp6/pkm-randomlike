@@ -19,9 +19,10 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
+import { assetPath } from '../assets/root.mjs'
 
-const DEFAULT_TERRAIN = fileURLToPath(new URL('../../sprite-sources/frlg/tileset-2.png', import.meta.url))
-const DEFAULT_EFFECTS = fileURLToPath(new URL('../../sprite-sources/frlg/tall_grass.png', import.meta.url))
+const DEFAULT_TERRAIN = assetPath('frlg/tileset-2.png')
+const DEFAULT_EFFECTS = assetPath('frlg/tall_grass.png')
 const terrainSource = process.argv[2] ?? DEFAULT_TERRAIN
 const effectsSource = process.argv[3] ?? DEFAULT_EFFECTS
 const OUT_DIR = new URL('../../src/assets/frlg/', import.meta.url)

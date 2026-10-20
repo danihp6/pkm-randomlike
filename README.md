@@ -46,6 +46,7 @@ npm run dev        # http://localhost:5175
 npm test           # pure-logic tests (Vitest)
 npm run lint       # Prettier format check
 npm run build      # tsc --noEmit && vite build
+npm run assets:pack  # optional: real art, from a local pkrl-assets/sprite-sources store
 npm run data:dex   # regenerate src/data/dex from @pkmn/dex (rarely needed)
 ```
 
@@ -72,8 +73,12 @@ a placeholder (Phase 3).
 Phases 0-2 (scaffold, dex accessors, route generation & exploration) are done
 and archived in `CHANGELOG.md`. Next: Phase 3, the battle engine core (`TODO.md`).
 
-## Licence note
+## Art and licences
 
-Biome tilesets and Pokémon sprites under `src/assets/` are Pokémon game rips kept
-for local development only and are **not redistributable**. The procedural
-placeholder sheet is generated and safe. Details in `docs/art-direction.md`.
+This repository ships **no ripped artwork**. The Pokémon sprites, tilesets and
+audio cues the private build plays are Nintendo/GameFreak/Chunsoft art: their
+source trees live in a private store, every packed output is listed in
+`.gitignore`, and a clone without that store builds and runs against the
+generated blanks in `src/assets/placeholders/` (`npm run assets:pack` restores
+the real art). The procedural and drawn art that does ship is listed in
+`src/assets/README.md`; details in `docs/art-direction.md`.

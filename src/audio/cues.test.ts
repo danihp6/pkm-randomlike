@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { hasArt } from '../assets/art';
 import {
   AUDIO_CUES,
   AUDIO_CUE_IDS,
@@ -138,7 +139,7 @@ function moveFamilyIds(): readonly AudioCueId[] {
   return [HIT_CUE_ID, ...familyIds('move-')];
 }
 
-describe('audio cue table', () => {
+describe.skipIf(!hasArt('audio'))('audio cue table', () => {
   it('names every cue once: the hand rows, then hit, then the move and cry families', () => {
     expect(AUDIO_CUE_IDS.slice(0, HAND_CUE_IDS.length)).toEqual(HAND_CUE_IDS);
     expect(AUDIO_CUE_IDS[HAND_CUE_IDS.length]).toBe(HIT_CUE_ID);
@@ -201,7 +202,7 @@ describe('audio cue table', () => {
   });
 });
 
-describe('audio cue assets', () => {
+describe.skipIf(!hasArt('audio'))('audio cue assets', () => {
   it('ships a mono 16-bit PCM WAV with frames and audio in it, per cue', () => {
     for (const cue of AUDIO_CUES) {
       const wav = readCue(cue.id);

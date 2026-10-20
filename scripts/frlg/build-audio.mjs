@@ -38,11 +38,12 @@
 //
 // Run: node scripts/frlg/build-audio.mjs
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { assetPath } from '../assets/root.mjs'
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const OUTPUT = new URL('../../src/assets/audio/', import.meta.url);
-const DEFAULT_RENDERED = fileURLToPath(new URL('../../sprite-sources/frlg-audio/', import.meta.url));
+const DEFAULT_RENDERED = assetPath('frlg-audio');
 
 const MUSIC_PLACEHOLDER_SECONDS = 1.5;
 const SFX_PLACEHOLDER_SECONDS = 0.2;

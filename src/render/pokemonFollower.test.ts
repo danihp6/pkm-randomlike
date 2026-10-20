@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { hasArt } from '../assets/art';
 import { OVERWORLD_FACINGS } from '../data/overworldSprites';
 import { pokemonOverworldSheet, type PokemonOverworldSheet } from '../data/pokemonOverworld';
 import {
@@ -14,7 +15,7 @@ import {
 
 const sheet = pokemonOverworldSheet('bulbasaur')!;
 
-describe('follower direction rows', () => {
+describe.skipIf(!hasArt('pokemon/1.png'))('follower direction rows', () => {
   it('draws down, up and left, in the sheet order the route walks', () => {
     expect(OVERWORLD_FACINGS).toEqual(['down', 'up', 'side']);
     expect(followerDirRow(sheet, 'down')).toBe(0);
@@ -35,7 +36,7 @@ describe('follower direction rows', () => {
   });
 });
 
-describe('follower animations', () => {
+describe.skipIf(!hasArt('pokemon/1.png'))('follower animations', () => {
   it('registers idle and walk per facing, in sheet order', () => {
     const anims = followerAnims(sheet);
     expect(anims.length).toBe(6);

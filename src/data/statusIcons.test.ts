@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { hasArt } from '../assets/art';
 import { decodePng } from '../../scripts/legacy-art/png-codec.mjs';
 import manifest from './frlg/status-icons.json';
 import { STATUS_ICON_H, STATUS_ICON_W, statusIconFrame } from './statusIcons';
@@ -16,6 +17,7 @@ const ROWS = manifest.rows;
 const STATUS_IDS = ['brn', 'psn', 'tox', 'par', 'slp', 'frz'] as const;
 
 function atlas() {
+  if (!hasArt('frlg/status-icons.png')) return { width: 0, height: 0, data: new Uint8Array() };
   const url = new URL('../assets/frlg/status-icons.png', import.meta.url);
   return decodePng(readFileSync(fileURLToPath(url)));
 }
@@ -32,7 +34,7 @@ function frameHasArt(png: { width: number; data: Uint8Array }, frame: number): b
   return false;
 }
 
-describe('Añil status badges', () => {
+describe.skipIf(!hasArt('frlg/status-icons.png'))('Añil status badges', () => {
   const png = atlas();
 
   it('keeps the 32x8 frames and 4-column atlas, so every draw site keeps its geometry', () => {

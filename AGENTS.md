@@ -176,12 +176,15 @@ tasks it integrates.
 - Art: respect licences. Preference order is procedural/CC0, then the imported
   game rips for local development only. `sprite-sources/` is gitignored and must
   never be redistributed. Audio follows the same rule: the rip lives in the
-  gitignored `sprite-sources/frlg-audio/`, only `src/assets/audio/*.wav` is
-  committed, and every cue is named in `src/audio/cues.ts`, so a CC0 set can
+  gitignored `sprite-sources/frlg-audio/`, the packed `src/assets/audio/*.wav` is
+  gitignored too, and every cue is named in `src/audio/cues.ts`, so a CC0 set can
   replace the assets without touching a call site. Since the decomp only ships
   MIDI and instrument samples, the rip is rendered with
   `node scripts/frlg/render-frlg-audio.mjs` and then packed with
-  `node scripts/frlg/build-audio.mjs`.
+  `npm run assets:pack` (or `node scripts/frlg/build-audio.mjs`).
+  **No ripped output is committed:** every packed atlas and cue is listed in
+  `.gitignore` and rebuilt by `npm run assets:pack` from the store (`ASSETS_ROOT`,
+  or `sprite-sources/`); `src/assets/placeholders/` keeps a clean clone building.
   **Asset trees:** a gitignored asset tree (`sprite-sources/**`) is **never**
   junctioned or symlinked into a worktree — Windows' `git worktree remove`
   follows the link and empties the link's **target** (Batch 3 lost the Añil clone

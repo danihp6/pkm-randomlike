@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { hasArt } from '../assets/art';
 import { decodePng } from '../../scripts/legacy-art/png-codec.mjs';
 import { TYPE_NAMES } from './dex/types';
 import manifest from './frlg/type-icons.json';
@@ -14,6 +15,7 @@ const COLS = manifest.cols;
 const ROWS = manifest.rows;
 
 function atlas() {
+  if (!hasArt('frlg/type-icons.png')) return { width: 0, height: 0, data: new Uint8Array() };
   const url = new URL('../assets/frlg/type-icons.png', import.meta.url);
   return decodePng(readFileSync(fileURLToPath(url)));
 }
@@ -30,7 +32,7 @@ function frameHasArt(png: { width: number; data: Uint8Array }, frame: number): b
   return false;
 }
 
-describe('Añil type badges', () => {
+describe.skipIf(!hasArt('frlg/type-icons.png'))('Añil type badges', () => {
   const png = atlas();
 
   it('keeps the 32x14 frames and 4-column atlas, so every draw site keeps its geometry', () => {

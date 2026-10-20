@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { hasArt } from '../assets/art';
 import { decodePng } from '../../scripts/legacy-art/png-codec.mjs';
 import { TRAINER_ARCHETYPES } from './trainers';
 import {
@@ -49,6 +50,7 @@ const NPC_KEYS = [
 const ALL_KEYS = [...TRAINER_KEYS, 'rocket', ...NPC_KEYS];
 
 function atlas() {
+  if (!hasArt('frlg/overworld.png')) return { width: 0, height: 0, data: new Uint8Array() };
   const url = new URL('../assets/frlg/overworld.png', import.meta.url);
   return decodePng(readFileSync(fileURLToPath(url)));
 }
@@ -65,7 +67,7 @@ function frameHasArt(png: { width: number; height: number; data: Uint8Array }, f
   return false;
 }
 
-describe('overworld sprite atlas', () => {
+describe.skipIf(!hasArt('frlg/overworld.png'))('overworld sprite atlas', () => {
   const png = atlas();
 
   it('is a grid of 16x32 frames, one row per key', () => {

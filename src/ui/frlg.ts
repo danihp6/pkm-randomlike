@@ -1,10 +1,17 @@
 import type Phaser from 'phaser';
+import placeholderCursorUrl from '../assets/placeholders/frlg/cursor.png';
+import placeholderHpbarUrl from '../assets/placeholders/frlg/hpbar.png';
 import textboxUrl from '../assets/ui/textbox.png';
 import windowUrl from '../assets/ui/window.png';
-import hpbarUrl from '../assets/frlg/hpbar.png';
-import cursorUrl from '../assets/frlg/cursor.png';
+import { packedAtlasUrl } from '../assets/optional';
 import battleUi from '../data/frlg/battle-ui.json';
 import chrome from '../data/ui/chrome.json';
+
+const BATTLE_ATLASES = import.meta.glob('../assets/frlg/{hpbar,cursor}.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Readonly<Record<string, string>>;
 
 /**
  * The game's window chrome: one dark translucent glass card, drawn twice. The
@@ -24,8 +31,16 @@ import chrome from '../data/ui/chrome.json';
  */
 export const FRLG_WINDOW_URL = windowUrl;
 export const FRLG_TEXTBOX_URL = textboxUrl;
-export const FRLG_HPBAR_URL = hpbarUrl;
-export const FRLG_CURSOR_URL = cursorUrl;
+export const FRLG_HPBAR_URL = packedAtlasUrl(
+  BATTLE_ATLASES,
+  '../assets/frlg/hpbar.png',
+  placeholderHpbarUrl,
+);
+export const FRLG_CURSOR_URL = packedAtlasUrl(
+  BATTLE_ATLASES,
+  '../assets/frlg/cursor.png',
+  placeholderCursorUrl,
+);
 export const FRLG_WINDOW_KEY = 'frlg:window';
 export const FRLG_TEXTBOX_KEY = 'frlg:textbox';
 export const FRLG_HPBAR_KEY = 'frlg:hpbar';

@@ -27,6 +27,7 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync,
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
+import { assetPath } from '../assets/root.mjs'
 
 /** Source folder -> output folder under `public/anil/`. */
 const FOLDERS = [
@@ -151,7 +152,8 @@ function sheetInfo(path) {
 
 const norm = (text) => text.toLowerCase().replace(/[^a-z0-9]/g, '')
 
-const sourceDir = process.argv[2] ?? process.env.POKEANIL_POKEMON ?? 'sprite-sources/anil/Graphics/Pokemon'
+const sourceDir =
+  process.argv[2] ?? process.env.POKEANIL_POKEMON ?? assetPath('anil/Graphics/Pokemon')
 if (!existsSync(sourceDir)) {
   throw new Error(`usage: node scripts/anil/build-pokemon-sprites.mjs <anil>/Graphics/Pokemon (missing ${sourceDir})`)
 }
