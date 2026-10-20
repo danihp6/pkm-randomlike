@@ -4,7 +4,6 @@ import { getItem } from '../../data/items';
 import { bandForMap, equipHeldItem } from '../../engine/run';
 import { useItemOn } from '../../engine/run/items';
 import { hashSeed, Rng } from '../../engine/rng';
-import { TILE_SIZE } from '../../engine/tileset';
 import { t, type TranslationKey } from '../../i18n';
 import { addFloatingPanel, type FloatingPanel } from '../../ui/floatingPanel';
 import {
@@ -26,14 +25,15 @@ import {
   sellableStacks,
   type ShopSlot,
 } from '../../ui/shop';
-import { SHOP_COUNTER_TEXTURE_KEY } from '../BootScene';
-import type { RoomDescriptor, RoomDrop, RoomHost, RoomPanel } from './types';
+import type { RoomDrop, RoomHost, RoomPanel } from './types';
 
 /**
- * The **shop** room (`docs/maps-spec.md` §7, D33, D47): its counter fixture and the
- * whole Mart window. The Mart is a **floating panel** now: it draws no scrim, takes
- * no key and the route keeps walking behind it. A BUY row is taken by dragging it
- * onto the bag or a member; a SELL row still sells with one click.
+ * The **Mart** window (`docs/maps-spec.md` §7, D33, D45): the floor's stock and the
+ * whole floating shop card. The **merchant** special NPC opens it from its own card
+ * (`openMart`), so no room descriptor lives here: the registry collects only modules
+ * that export a `descriptor`, and this file exports none. The card draws no scrim,
+ * takes no key and the route keeps walking behind it. A BUY row is taken by dragging
+ * it onto the bag or a member; a SELL row still sells with one click.
  */
 
 /** The Mart window: BUY / SELL tabs over the floor's own stock. */
@@ -56,10 +56,6 @@ const SHOP_MODE_LABELS: Readonly<Record<ShopMode, TranslationKey>> = {
   buy: 'mart.buy',
   sell: 'mart.sell',
 };
-
-/** The counter sprite's texture pixel size and the depth the ground items use. */
-const SHOP_COUNTER_TEXTURE_SIZE = 22;
-const SHOP_COUNTER_DEPTH = 5;
 
 type ShopRowObjects = {
   highlight: Phaser.GameObjects.Rectangle;
@@ -98,10 +94,6 @@ let shopMoneyText!: Phaser.GameObjects.BitmapText;
 let shopMessageText!: Phaser.GameObjects.BitmapText;
 let shopEmpty!: Phaser.GameObjects.BitmapText;
 
-/** A route tile's centre in world pixels, the placement the scene draws entities at. */
-const centerX = (tileX: number): number => tileX * TILE_SIZE + TILE_SIZE / 2;
-const centerY = (tileY: number): number => tileY * TILE_SIZE + TILE_SIZE / 2;
-
 /** Paints a tab's own fill and 1px outline: the accent pair when it is active. */
 function paintTab(bg: Phaser.GameObjects.Rectangle, active: boolean): void {
   const fill = active ? FRLG_SELECTED_FILL : FRLG_ROW_FILL;
@@ -110,12 +102,12 @@ function paintTab(bg: Phaser.GameObjects.Rectangle, active: boolean): void {
 }
 
 /**
- * Opens the Mart (`docs/maps-spec.md` §7, D33): only in a shop room, at the counter.
- * The stock is rolled once per map on a dedicated stream, so reopening the Mart
- * shows the same shelves. The panel is floating (`D45`): it never takes the
- * keyboard and the walker keeps running behind it.
+ * Opens the floating Mart for `host`, at the floor's band and stock
+ * (`docs/maps-spec.md` §7, D33). The stock is rolled once per map on a dedicated
+ * stream, so reopening the Mart shows the same shelves. The panel is floating
+ * (`D45`): it never takes the keyboard and the walker keeps running behind it.
  */
-function openShop(host: RoomHost): void {
+export function openMart(host: RoomHost): void {
   if (host.panelOpen()) return;
   const key = `${host.run.seed}:${host.run.mapIndex}`;
   if (shopStockKey !== key) {
@@ -419,34 +411,5 @@ const PANEL: RoomPanel = {
   modal: false,
   close() {
     closeShop();
-  },
-};
-
-export const descriptor: RoomDescriptor = {
-  kind: 'shop',
-  marker: 'shop',
-  // A shop room's counter: the interact key opens the Mart when the player faces
-  // it. It is a fixture, so it sits at the room's farthest walkable tile.
-  fixture: (host) => ({ counter: host.farthestRoomTile() }),
-  interact: (host, tile) => {
-    const counter = host.counterTile();
-    if (!counter || tile.x !== counter.x || tile.y !== counter.y) return false;
-    openShop(host);
-    return true;
-  },
-  drawFixture: (host) => {
-    if (host.generatorStepActive()) return;
-    const counter = host.counterTile();
-    if (!counter) return;
-    host.scene.add
-      .image(centerX(counter.x), centerY(counter.y), SHOP_COUNTER_TEXTURE_KEY)
-      .setScale(TILE_SIZE / SHOP_COUNTER_TEXTURE_SIZE)
-      .setDepth(SHOP_COUNTER_DEPTH);
-  },
-  drawMarker: (graphics, cx, cy, radius) => {
-    graphics.fillStyle(0xf2c14e, 1);
-    graphics.fillCircle(cx, cy, radius);
-    graphics.lineStyle(2, 0x8a6d1f, 1);
-    graphics.strokeCircle(cx, cy, radius);
   },
 };

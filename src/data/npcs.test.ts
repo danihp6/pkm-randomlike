@@ -1,16 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { en } from '../i18n';
+import { en, es, setLocale, t } from '../i18n';
 import { NPC_SPRITE_KEYS } from './overworldSprites';
 import { NPC_ROWS, getNpcRow } from './npcs';
 
+/** The one row the table ships today (`docs/maps-spec.md` §7). */
+const MERCHANT = NPC_ROWS[0];
+
 describe('the special-NPC table', () => {
-  it('ships empty on purpose: the framework carries no content', () => {
-    expect(NPC_ROWS).toEqual([]);
+  it('ships the merchant, the floor guarantee that carries the Mart', () => {
+    expect(NPC_ROWS).toHaveLength(1);
+    expect(MERCHANT.id).toBe('merchant');
+    expect(MERCHANT.nameKey).toBe('npc.merchant.name');
+    expect(MERCHANT.greetingKey).toBe('npc.merchant.greeting');
+    expect(MERCHANT.spriteKey).toBe('merchant');
+    // A guaranteed row is placed, never rolled, so its chance stays 0.
+    expect(MERCHANT.chance).toBe(0);
+    expect(MERCHANT.floorStep).toBe(0);
+    expect(MERCHANT.guaranteedFromMap).toBe(2);
+    expect(MERCHANT.requires).toBeUndefined();
+    expect(MERCHANT.choices).toEqual([{ id: 'mart', label: 'npc.merchant.trade' }]);
   });
 
-  it('answers no row for any id while the table is empty', () => {
-    expect(getNpcRow('merchant')).toBeUndefined();
+  it('answers the merchant by id and nothing else', () => {
+    expect(getNpcRow('merchant')).toBe(MERCHANT);
     expect(getNpcRow('')).toBeUndefined();
+    expect(getNpcRow('medic')).toBeUndefined();
   });
 
   it('hands every row a unique stable id', () => {
@@ -25,16 +39,31 @@ describe('the special-NPC table', () => {
     }
   });
 
-  it('keys every row name and greeting in the source table', () => {
+  it('keys every row name, greeting and choice in both locales', () => {
     for (const row of NPC_ROWS) {
-      expect(Object.prototype.hasOwnProperty.call(en, row.nameKey), row.id).toBe(true);
-      expect(Object.prototype.hasOwnProperty.call(en, row.greetingKey), row.id).toBe(true);
-      for (const choice of row.choices ?? []) {
-        expect(Object.prototype.hasOwnProperty.call(en, choice.label), `${row.id}/${choice.id}`).toBe(
-          true,
-        );
+      for (const locale of [en, es]) {
+        expect(Object.prototype.hasOwnProperty.call(locale, row.nameKey), row.id).toBe(true);
+        expect(Object.prototype.hasOwnProperty.call(locale, row.greetingKey), row.id).toBe(true);
+        for (const choice of row.choices ?? []) {
+          expect(
+            Object.prototype.hasOwnProperty.call(locale, choice.label),
+            `${row.id}/${choice.id}`,
+          ).toBe(true);
+        }
       }
     }
+  });
+
+  it('renders the merchant copy through t() in both locales', () => {
+    setLocale('en');
+    expect(t('npc.merchant.name')).toBe('MERCHANT');
+    expect(t('npc.merchant.greeting')).toBe('A merchant with a full pack. Pick what you carry.');
+    expect(t('npc.merchant.trade')).toBe('TRADE');
+    setLocale('es');
+    expect(t('npc.merchant.name')).toBe('MERCADER');
+    expect(t('npc.merchant.greeting')).toBe('Un mercader con la mochila llena. Elige que te llevas.');
+    expect(t('npc.merchant.trade')).toBe('COMERCIAR');
+    setLocale('en');
   });
 
   it('keeps every chance a probability and every step a per-floor increment', () => {
@@ -43,6 +72,7 @@ describe('the special-NPC table', () => {
       expect(row.chance, row.id).toBeLessThanOrEqual(1);
       expect(row.floorStep, row.id).toBeGreaterThanOrEqual(-1);
       expect(row.floorStep, row.id).toBeLessThanOrEqual(1);
+      if (row.guaranteedFromMap !== undefined) expect(row.chance, row.id).toBe(0);
     }
   });
 

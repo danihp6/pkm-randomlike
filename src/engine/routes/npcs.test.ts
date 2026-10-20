@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import type { NpcRequirement, NpcRow } from '../../data/npcs';
+import { NPC_ROWS, getNpcRow, type NpcRequirement, type NpcRow } from '../../data/npcs';
 import type { Tile } from '../grid';
 import { isWalkable, mapFromSketch } from '../map';
+import { firstTrainerRoom, planMap } from '../maps';
 import type { RouteMap } from './routeMap';
 import { sketchRoute } from './sketch';
-import { effectiveNpcChance, npcRequirementMet, npcSpot, npcUseId, roomNpc } from './npcs';
+import {
+  effectiveNpcChance,
+  guaranteedNpc,
+  npcRequirementMet,
+  npcSpot,
+  npcUseId,
+  roomNpc,
+} from './npcs';
 import { createRunPokemon, type RunPokemon } from '../run/progression';
 import { createRun, type RunState } from '../run/state';
 
@@ -74,7 +82,7 @@ describe('roomNpc', () => {
     }
   });
 
-  it('never picks a zero-weight row, though the row still counts as present', () => {
+  it('never picks a zero-weight row, and leaves it out of the population', () => {
     const never = row('ghost', 0, 0);
     const always = row('merchant', 1, 0);
     for (let roomIndex = 0; roomIndex < 60; roomIndex++) {
@@ -130,6 +138,83 @@ describe('roomNpc', () => {
     const alone = roomNpc(SEED, 9, 2, PAIR);
     for (let roomIndex = 0; roomIndex < 9; roomIndex++) roomNpc(SEED, roomIndex, 2, PAIR);
     expect(roomNpc(SEED, 9, 2, PAIR)).toEqual(alone);
+  });
+});
+
+describe('guaranteedNpc', () => {
+  const MAP_SEEDS = ['npc-a', 'npc-b', 'npc-c', 'npc-d', 'npc-e', 'npc-f'];
+  const MERCHANT = getNpcRow('merchant');
+
+  it('places the merchant in the floor’s first trainer room from map 2 on', () => {
+    expect(MERCHANT).toBeDefined();
+    for (const seed of MAP_SEEDS) {
+      for (let mapIndex = 2; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const room = firstTrainerRoom(plan);
+        expect(room, `${seed} map ${mapIndex}`).toBeGreaterThanOrEqual(0);
+        expect(guaranteedNpc(plan, room, mapIndex), `${seed} map ${mapIndex}`).toBe(MERCHANT);
+        expect(plan.rooms[room].role, `${seed} map ${mapIndex} role`).toBe('trainers');
+      }
+    }
+  });
+
+  it('leaves map 1 merchant-free', () => {
+    for (const seed of MAP_SEEDS) {
+      const plan = planMap(seed, 1);
+      expect(guaranteedNpc(plan, firstTrainerRoom(plan), 1), seed).toBeNull();
+    }
+  });
+
+  it('answers null on every room but the first trainer room', () => {
+    const plan = planMap(MAP_SEEDS[0], 3);
+    const first = firstTrainerRoom(plan);
+    for (const room of plan.rooms) {
+      if (room.id === first) continue;
+      expect(guaranteedNpc(plan, room.id, 3), `room ${room.id}`).toBeNull();
+    }
+    expect(guaranteedNpc(plan, -1, 3)).toBeNull();
+    expect(guaranteedNpc(plan, plan.rooms.length, 3)).toBeNull();
+  });
+
+  it('reads no RNG and no run state: two calls answer the same row', () => {
+    const plan = planMap(MAP_SEEDS[1], 5);
+    const first = firstTrainerRoom(plan);
+    expect(guaranteedNpc(plan, first, 5)).toBe(guaranteedNpc(plan, first, 5));
+    expect(guaranteedNpc(planMap(MAP_SEEDS[1], 5), first, 5)).toBe(MERCHANT);
+  });
+
+  it('takes the first guaranteed row of the table, in table order', () => {
+    const later = row('medic', 0, 0, { guaranteedFromMap: 3 });
+    const sooner = row('merchant', 0, 0, { guaranteedFromMap: 2 });
+    const plan = planMap(MAP_SEEDS[2], 4);
+    const first = firstTrainerRoom(plan);
+    // Table order decides, not the smallest threshold: from map 3 on `medic` is the
+    // first eligible row of this table.
+    expect(guaranteedNpc(plan, first, 4, [later, sooner])?.id).toBe('medic');
+    expect(guaranteedNpc(plan, first, 2, [later, sooner])?.id).toBe('merchant');
+    expect(guaranteedNpc(plan, first, 3, [sooner, later])?.id).toBe('merchant');
+    expect(guaranteedNpc(plan, first, 1, [later, sooner])).toBeNull();
+    expect(guaranteedNpc(plan, first, 4, [])).toBeNull();
+  });
+});
+
+describe('roomNpc and the guaranteed rows', () => {
+  it('never returns the merchant, whose chance is 0', () => {
+    for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+      for (let roomIndex = 0; roomIndex < 40; roomIndex++) {
+        expect(roomNpc(SEED, roomIndex, mapIndex), `map ${mapIndex} room ${roomIndex}`).toBeNull();
+      }
+    }
+  });
+
+  it('never picks a zero-chance guaranteed row beside a rolled one', () => {
+    const rolled = row('chef', 1, 0);
+    const table = [...NPC_ROWS, rolled];
+    for (let roomIndex = 0; roomIndex < 60; roomIndex++) {
+      const placement = roomNpc(SEED, roomIndex, 3, table);
+      expect(placement?.row.id, `room ${roomIndex}`).toBe('chef');
+    }
+    expect(roomNpc(SEED, 7, 3, table)).toEqual(roomNpc(SEED, 7, 3, table));
   });
 });
 

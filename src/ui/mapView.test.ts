@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MAP_EDGES, OPPOSITE_EDGE, planMap, type MapPlan } from '../engine/maps';
-import { MAP_VIEW_GAP, buildMapView, type MapViewRoom } from './mapView';
+import { MAP_VIEW_GAP, buildMapView, type MapRoomMarker, type MapViewRoom } from './mapView';
 
 const SEEDS = ['map-view-a', 'map-view-b', 'map-view-c', 'map-view-d', 'map-view-e'];
 
@@ -222,16 +222,16 @@ describe('buildMapView boss, portal and specials', () => {
 
   it('surfaces a special room marker only on the room it belongs to', () => {
     const plan = planMap('markers-seed', 3);
-    const [shopRoom, miniBoss] = plan.rooms.map((room) => room.id);
+    const [casinoRoom, miniBoss] = plan.rooms.map((room) => room.id);
     const view = buildMapView(plan, {
       discovered: allRooms(plan),
       currentRoom: plan.entryRoom,
-      markers: { [shopRoom]: 'shop', [miniBoss]: 'mini-boss' },
+      markers: { [casinoRoom]: 'casino', [miniBoss]: 'mini-boss' },
     });
-    expect(view.rooms.find((room) => room.id === shopRoom)!.marker).toBe('shop');
+    expect(view.rooms.find((room) => room.id === casinoRoom)!.marker).toBe('casino');
     expect(view.rooms.find((room) => room.id === miniBoss)!.marker).toBe('mini-boss');
     for (const room of view.rooms) {
-      if (room.id !== shopRoom && room.id !== miniBoss) expect(room.marker).toBeNull();
+      if (room.id !== casinoRoom && room.id !== miniBoss) expect(room.marker).toBeNull();
     }
   });
 
@@ -246,6 +246,27 @@ describe('buildMapView boss, portal and specials', () => {
     expect(view.rooms.find((room) => room.id === tradeRoom)!.marker).toBe('trade');
     for (const room of view.rooms) {
       if (room.id !== tradeRoom) expect(room.marker).toBeNull();
+    }
+  });
+
+  it('carries no shop marker: the Mart lives behind the merchant NPC', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 4; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const markers = plan.specials.reduce<Record<number, MapRoomMarker>>((all, special) => {
+          all[special.roomId] = special.kind;
+          return all;
+        }, {});
+        const view = buildMapView(plan, {
+          discovered: allRooms(plan),
+          currentRoom: plan.entryRoom,
+          markers,
+        });
+        expect(
+          view.rooms.map((room) => String(room.marker)),
+          `${seed} map ${mapIndex}`,
+        ).not.toContain('shop');
+      }
     }
   });
 

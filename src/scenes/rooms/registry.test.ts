@@ -24,8 +24,8 @@ const ROOM_PATHS = Object.keys(SOURCES).filter((path) => !path.endsWith('.test.t
 /** The folder's own shared modules: the port and the registry, neither a room. */
 const SHARED_PATHS = ['./registry.ts', './types.ts'];
 
-/** The kinds the three shipped descriptors claim (`docs/maps-spec.md` §7). */
-const SHIPPED_KINDS = ['shop', 'mini-boss', 'mega-stone'] as const;
+/** The kinds the shipped descriptors claim (`docs/maps-spec.md` §7). */
+const SHIPPED_KINDS = ['mini-boss', 'mega-stone', 'casino', 'gated', 'trade', 'no-heal'] as const;
 
 /** A synthetic module holding one descriptor, for a kind the folder never had. */
 const moduleWith = (kind: string): unknown => ({ descriptor: { kind, marker: kind } });
@@ -41,6 +41,14 @@ describe('collectDescriptors', () => {
     }
   });
 
+  it('finds no shop descriptor: the Mart is the merchant NPC', () => {
+    const registry = collectDescriptors(MODULES);
+    const kinds: readonly string[] = [...registry.byKind.keys()];
+    expect(kinds).not.toContain('shop');
+    expect(Object.keys(MODULES), './shop.ts is still a module').toContain('./shop.ts');
+    expect(registry.byKind.size).toBe(SHIPPED_KINDS.length);
+  });
+
   it('discovers every room module of the folder it is handed', () => {
     const declared = ROOM_PATHS.filter((path) => /export const descriptor\b/.test(SOURCES[path]));
     expect(declared.length).toBeGreaterThanOrEqual(SHIPPED_KINDS.length);
@@ -51,7 +59,7 @@ describe('collectDescriptors', () => {
   });
 
   it('leaves the folder’s shared, descriptor-less modules out', () => {
-    for (const path of SHARED_PATHS) {
+    for (const path of [...SHARED_PATHS, './shop.ts']) {
       expect(SOURCES[path], path).toBeDefined();
       expect(SOURCES[path], path).not.toMatch(/export const descriptor\b/);
     }
@@ -59,7 +67,7 @@ describe('collectDescriptors', () => {
 
   it('collects a module with a kind the registry has never seen', () => {
     const registry = collectDescriptors({
-      './rooms/shop.ts': moduleWith('shop'),
+      './rooms/mystery.ts': moduleWith('mystery'),
       './rooms/casino.ts': moduleWith('casino'),
     });
     expect(registry.byKind.get('casino' as MapRoomSpecial)).toMatchObject({ kind: 'casino' });
@@ -74,11 +82,11 @@ describe('collectDescriptors', () => {
 
   it('throws when two descriptors claim one kind, in module-map key order', () => {
     const modules: RoomModules = {
-      './rooms/first.ts': moduleWith('shop'),
-      './rooms/second.ts': moduleWith('shop'),
+      './rooms/first.ts': moduleWith('trade'),
+      './rooms/second.ts': moduleWith('trade'),
     };
     expect(() => collectDescriptors(modules)).toThrow(
-      'two room descriptors claim the kind shop: ./rooms/first.ts, ./rooms/second.ts',
+      'two room descriptors claim the kind trade: ./rooms/first.ts, ./rooms/second.ts',
     );
   });
 
@@ -87,8 +95,8 @@ describe('collectDescriptors', () => {
       './rooms/types.ts': { RoomHost: {} },
       './rooms/helper.ts': {},
       './rooms/nothing.ts': null,
-      './rooms/text.ts': "export const descriptor = { kind: 'shop' }",
-      './rooms/loose.ts': { descriptor: 'shop' },
+      './rooms/text.ts': "export const descriptor = { kind: 'mystery' }",
+      './rooms/loose.ts': { descriptor: 'mystery' },
     });
     expect(registry.byKind.size).toBe(0);
     expect(registry.byMarker.size).toBe(0);

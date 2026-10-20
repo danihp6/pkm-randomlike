@@ -31,6 +31,12 @@ const START_LEVEL = 5;
  *
  * Every floor is solved to 1.25 with its own factor, so no map needs the shared
  * band's exception: maps 6-8 read the `end` band but no longer share a rate.
+ *
+ * **Re-pinned by Task-92 with the shop room's retirement.** No floor hangs a shop
+ * leaf any more, so every floor from map 2 on tags a different set of trainer rooms
+ * and places a trainer more or less; the eight factors were re-solved with
+ * `factor = 1.25 / fill` (`docs/balance/route-curve.md`) and maps 6 and 7 land as
+ * close to 1.25 as a two-decimal factor allows.
  */
 const MEASURED_FILL: Readonly<Record<number, number>> = {
   1: 1.25,
@@ -38,8 +44,8 @@ const MEASURED_FILL: Readonly<Record<number, number>> = {
   3: 1.25,
   4: 1.25,
   5: 1.25,
-  6: 1.25,
-  7: 1.25,
+  6: 1.26,
+  7: 1.24,
   8: 1.25,
 };
 

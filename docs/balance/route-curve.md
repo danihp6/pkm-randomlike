@@ -19,8 +19,13 @@ the shipped tree: the band table, the per-floor factors and the caps are read fr
 the per-map figures `src/engine/run/curve.test.ts` computes over its three fixed
 seeds (`curve-a`, `curve-b`, `curve-c`). The `trainerXp` column was **corrected** to
 the values `LEVEL_BANDS` ships today (the sheet had drifted from them), and the
-eight fills below are the walk's own: all of them read **1.25**, with no exception
-left for the shared `end` band.
+eight fills below are the walk's own.
+
+**Re-walked again (Task-92).** The shop room is retired, so no floor hangs that leaf
+any more: every floor from map 2 on tags a different set of trainer rooms and
+places a trainer more or less. The eight per-floor factors were re-solved with the
+recipe below (`factor = 1.25 / fill`), and the columns below are the new walk's
+own: every floor lands within a hundredth of **1.25**, the middle of the window.
 
 ## Level bands
 
@@ -117,25 +122,27 @@ trainer or two and never by a room full.
 | Map | Band  | Trainers per seed (rooms) | `T̄(m)` |   `A(m)` | `0.75 × T̄(m) × A(m)` | Window          | Factor | Fill |
 | --: | ----- | ------------------------- | -----: | -------: | -------------------: | --------------- | -----: | ---: |
 |   1 | Early | 4 (7), 2 (6), 3 (7)       |   3.00 |   335.38 |               754.59 | 604 – 906       |   1.00 | 1.25 |
-|   2 | Low   | 4 (8), 4 (7), 4 (8)       |   4.00 |  1402.50 |              4207.50 | 3367 – 5050.5   |   1.00 | 1.25 |
-|   3 | Mid   | 5 (8), 5 (8), 5 (7)       |   5.00 |  2688.75 |             10082.81 | 8071 – 12106.5  |   1.00 | 1.25 |
-|   4 | High  | 5 (9), 4 (10), 6 (10)     |   5.00 |  4944.00 |             18540.00 | 14833 – 22249.5 |   1.00 | 1.25 |
-|   5 | Late  | 5 (8), 5 (9), 5 (9)       |   5.00 |  7882.13 |             29557.97 | 23653 – 35479.5 |   1.00 | 1.25 |
-|   6 | End   | 6 (8), 4 (7), 8 (12)      |   6.00 |  8021.71 |             36097.71 | 28854 – 43281   |   0.84 | 1.25 |
-|   7 | End   | 6 (8), 7 (10), 7 (11)     |   6.67 |  9556.00 |             47780.00 | 38142 – 57213   |   0.87 | 1.25 |
-|   8 | End   | 4 (12), 5 (8), 6 (11)     |   5.00 | 16265.14 |             60994.29 | 48726 – 73089   |   1.31 | 1.25 |
+|   2 | Low   | 3 (7), 4 (6), 4 (7)       |   3.67 |  1528.75 |              4204.06 | 3367 – 5050.5   |   1.09 | 1.25 |
+|   3 | Mid   | 5 (7), 4 (7), 5 (6)       |   4.67 |  2876.75 |             10068.63 | 8071 – 12106.5  |   1.07 | 1.25 |
+|   4 | High  | 5 (8), 5 (9), 5 (9)       |   5.00 |  4944.00 |             18540.00 | 14833 – 22249.5 |   1.00 | 1.25 |
+|   5 | Late  | 5 (7), 4 (8), 3 (7)       |   4.00 |  9853.50 |             29560.50 | 23653 – 35479.5 |   1.25 | 1.25 |
+|   6 | End   | 5 (7), 7 (8), 7 (8)       |   6.33 |  7639.43 |             36287.29 | 28854 – 43281   |   0.80 | 1.26 |
+|   7 | End   | 6 (7), 7 (10), 6 (11)     |   6.33 |  9994.86 |             47475.57 | 38142 – 57213   |   0.91 | 1.24 |
+|   8 | End   | 4 (10), 7 (8), 7 (9)      |   6.00 | 13532.57 |             60896.57 | 48726 – 73089   |   1.09 | 1.25 |
 
 "Fill" is `0.75 × T̄(m) × A(m) / needed(m)`; the rule wants it inside `1.05 – 1.5`,
-and every floor lands at **1.25**, the middle of the window, because the eight
-factors were solved for exactly that.
+and every floor lands at about **1.25**, the middle of the window, because the eight
+factors were solved for exactly that (maps 6 and 7 read 1.26 and 1.24, the closest a
+two-decimal factor reaches on those trainer counts).
 
 Maps 6, 7 and 8 read the same `end` band, and one shared rate cannot pay three
 different caps from three different trainer counts: measured with every factor at
-`1`, the three floors read **1.49, 1.44 and 0.96** — a 1.56x spread that left map 8
-below the window's floor. The shipped rule is therefore a **per-floor** factor:
-maps 6 and 7 pay 0.84 and 0.87 of the band's rate and map 8 pays 1.31, so each of
-the three fills at 1.25 (`0.75 × 5.00 × 16265.14 / 48726 = 1.25` on map 8). The
-other five floors pay 1.00, so the lever is inert where the band rate already fits.
+`1`, the three floors read **1.57, 1.37 and 1.15** — a 1.37x spread that would leave
+map 8 far below the window's floor. The shipped rule is therefore a **per-floor**
+factor: maps 6 and 7 pay 0.80 and 0.91 of the band's rate and map 8 pays 1.09, so
+each of the three fills at about 1.25 (`0.75 × 6.00 × 13532.57 / 48726 = 1.25` on
+map 8). The other five floors pay their own solved rates (1.00, 1.09, 1.07, 1.00
+and 1.25), so every floor where the band rate alone does not fit gets its own lever.
 A **seventh band** was rejected because `TRAINER_XP_PER_MAP` keys off the **floor**,
 not a `BandId`: a band column would reach the tables that key off those six ids
 (`ROUTE_LOOT`, the shop, the casino and the trainer-money tables), and the three
@@ -151,8 +158,8 @@ Re-solve by measuring first: `A(m)` is fixed by the floor's level range, party s
 and factor, so the sheet's numbers follow the walk in
 `src/engine/run/curve.test.ts`, never the other way round. The fill is linear in the
 factor, so a fill measured with every factor at `1` gives `factor = 1.25 / fill`, and
-two decimals are enough: 0.84, 0.87 and 1.31 each land the re-run within 0.003 of
-1.25.
+two decimals are enough: 0.80, 0.91 and 1.09 land the re-run within 0.008 of 1.25,
+and the five other floors within 0.003.
 
 Worked once, so the column can be checked by hand: map 1's band spans levels 2-9, so
 `A(1)` is `(91 + 136 + 182 + 227 + 273 + 318 + 364 + 1092) / 8 = 335.375` — levels
@@ -161,9 +168,9 @@ Worked once, so the column can be checked by hand: map 1's band spans levels 2-9
 way: its band spans levels 9-16, so `A(2)` is
 `(1092 + 1213 + 1334 + 1456 + 1577 + 1698 + 1820 + 1030) / 8 = 1402.50`, seven
 levels at `low`'s 16.18 and the eighth at `mid`'s 8.59. The `end` floors show the
-factor at work: map 6 spans levels 37-43, so its seven awards run 1855 … 2156 at
-factor 0.84 for `A(6) = 4 × 2005.43 = 8021.71`, and map 8's levels 49-55 run 3832 …
-4301 at factor 1.31 for `A(8) = 4 × 4065.29 = 16265.14`.
+factor at work: map 6 spans levels 37-43, so its seven awards run 1767 … 2053 at
+factor 0.80 for `A(6) = 4 × 1909.86 = 7639.43`, and map 8's levels 49-55 run 3188 …
+3579 at factor 1.09 for `A(8) = 4 × 3383.14 = 13532.57`.
 
 ## The rule
 
@@ -194,12 +201,12 @@ floor the battle was fought on — `next.mapIndex`, before `advanceMap` runs).
   (`src/data/bosses.ts`); both are injected by the scene on top of the route, so
   they award beyond the 75 % budget. **Verdict, re-measured in this pass: the
   award stays uncapped and outside the budget.** A boss roster pays
-  `experienceAward(cap, 1, true, factor)` once per member — 3276, 6180, 13140,
-  14658, 13248, 12936, 15270 and 25806 XP on maps 1-8, which is 5.42x, 1.84x, 1.63x,
-  0.99x, 0.56x, 0.45x, 0.40x and 0.53x of that floor's own `needed(m)`. Folding it
+  `experienceAward(cap, 1, true, factor)` once per member — 3276, 6738, 14064,
+  14658, 16566, 12318, 15972 and 21474 XP on maps 1-8, which is 5.42x, 2.00x, 1.74x,
+  0.99x, 0.70x, 0.43x, 0.42x and 0.44x of that floor's own `needed(m)`. Folding it
   into the budget would put **every** floor past the rule's `1.5` ceiling
-  (fill 6.67, 3.09, 2.88, 2.24, 1.81, 1.70, 1.65 and 1.78), because the eight
-  floors are solved at 1.25 and even the smallest boss surplus (0.40x, map 7) is more
+  (fill 6.67, 3.25, 2.99, 2.24, 1.95, 1.68, 1.66 and 1.69), because the eight
+  floors are solved at 1.25 and even the smallest boss surplus (0.42x, map 7) is more
   than the 0.25 the window leaves above that fill — so a boss folded into the rule
   would make the rule meaningless on every floor. The window measures
   whether 75 % of a floor's **regular** trainers pays its cap; the boss is the
@@ -209,17 +216,18 @@ floor the battle was fought on — `next.mapIndex`, before `advanceMap` runs).
   either would be a change to the award rule (`experienceAward`, a battle rule), not
   an edit to balance data. The surplus the finale pays is clamped by the floor's cap
   (`levelCapForMap`) like any other gain.
-- The floor's **entry, boss and every special leaf** (the shop, the mini-boss, the
-  mega-stone, the casino and the gated room) are quiet: they place no route trainers
-  at all, and the shop holds a counter rather than a trainer. **Map 1 hangs no shop
-  leaf** at all (`docs/maps-spec.md` §7, `hangsShop`): the leaf it would hold is quiet
-  either way, so not one trainer moves for it — its floor simply reads one room fewer.
+- The floor's **entry, boss and every special leaf** (the mini-boss, the mega-stone,
+  the casino, the gated room, the trade room and the no-heal room) are quiet: they
+  place no route trainers at all. There is no shop room any more: the **merchant**
+  special NPC stands in the floor's first trainer room and only adds its own sprite,
+  so the Mart a floor carries no longer moves a trainer count
+  (`docs/maps-spec.md` §7).
 - **Wild encounters** are outside the budget entirely; they are how a floor is
   walked, not how it is paid for.
 - **Infinite mode** reuses the `End` band past map 8 while the cap keeps climbing
   (`MAP_TUNING_STEP.levelStep` a map, both ends of the range, until it saturates at
   `MAP_MAX_LEVEL`), and `trainerXpMultiplierForMap` repeats its last row, so every
-  floor past map 8 pays map 8's 1.31: no single factor can hold the window against a
+  floor past map 8 pays map 8's 1.09: no single factor can hold the window against a
   cap that keeps stepping, so the 75 % rule is stated for the **eight finite maps**
   only.
 - A single capture per route is untouched by any of this: the XP curve never gates a

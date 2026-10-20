@@ -335,10 +335,12 @@ clears its route; a loss does not, and nothing carries over (D5).
 Besides its regular rooms, a floor can hold **special rooms** — extra dead-end
 leaves with only their own content (`docs/maps-spec.md` §7):
 
-- a **shop**, one per floor **from map 2 on** (map 1 is the run's on-ramp and hangs
-  none: no money for a counter and already a 10-ball pack), near the entry: a
-  counter whose interact key (`E`) opens a **Pokémon Mart-style shop panel in the
-  HUD that only exists in that room**;
+- the **Mart**, carried by the floor's **merchant** special NPC (one per floor
+  **from map 2 on**; map 1 is the run's on-ramp and holds none: no money for a
+  counter and already a 10-ball pack): the merchant stands in the floor's first
+  trainer room and its `TRADE` row opens a **Pokémon Mart-style shop panel in the
+  HUD**, which closes back onto the route and can be opened again on the same
+  floor;
 - a **mini-boss** room (50% chance): one strong trainer fielding a fixed party of
   **three** (**two** on map 1) that, when beaten, offers **one window of six
   rows**: three **items** and three **Pokémon presented only by their highest stat
@@ -356,13 +358,15 @@ leaves with only their own content (`docs/maps-spec.md` §7):
   it when **any party member has the obstacle's type** — Bug or Grass / Rock or
   Fighting / Water — so the party the run built is the key, and the opening lasts
   the rest of the floor.
-- a **special NPC** in a regular trainer room, at most one: a merchant, a medic, an
-  exorcist, a berry tree. It stands on a free tile as an ordinary overworld sprite
-  and blocks it; the interact key opens **one modal card** — the NPC's name as its
-  title, one paragraph, a column of at most six choices and a `LEAVE` row — the
-  same shell every NPC uses. A chosen row is recorded for the rest of the floor, so
-  a revisit knows it was taken. The table ships empty, so no room holds one until
-  an NPC's own row lands.
+- a **special NPC** in a regular trainer room, at most one: the **merchant** (the
+  row that ships) and, later, a medic, an exorcist, a berry tree. It stands on a
+  free tile as an ordinary overworld sprite and blocks it; the interact key opens
+  **one modal card** — the NPC's name as its title, one paragraph, a column of at
+  most six choices and a `LEAVE` row — the same shell every NPC uses. A chosen row
+  is recorded for the rest of the floor, so a revisit knows it was taken; the
+  merchant is the floor's one **guaranteed** NPC (from map 2 on, in the floor's
+  first trainer room, never rolled) and its `TRADE` row opens the Mart instead of
+  recording a use.
 
 Every floor is also given one **mission**, shown in one line of the HUD. The one
 kind that ships is `flawless`: leave the floor having lost **no HP** and without a

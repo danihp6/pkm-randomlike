@@ -147,8 +147,11 @@ export const en = {
   'trade.missing': 'That Pokémon is not in your party.',
   'trade.done': 'Received {name}!',
 
-  // npc — the special-NPC card's own last row
+  // npc — the special-NPC card's own last row, then the merchant's
   'npc.leave': 'LEAVE',
+  'npc.merchant.name': 'MERCHANT',
+  'npc.merchant.greeting': 'A merchant with a full pack. Pick what you carry.',
+  'npc.merchant.trade': 'TRADE',
 
   // release — the permadeath overlay
   'release.controls': '{confirm} — continue',

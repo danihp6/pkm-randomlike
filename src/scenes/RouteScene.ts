@@ -118,6 +118,7 @@ import {
   encounterTableFor,
   exitEdgeAt,
   gateId,
+  guaranteedNpc,
   npcRequirementMet,
   npcSpot,
   npcUseId,
@@ -161,12 +162,7 @@ import {
 } from '../engine/tileFrames';
 import { parseFrameMapExport, routeFromFrameMapExport, serializeFrameMap } from '../engine/frameMap';
 import { BAG_CATEGORIES, bagCategoryLabel, bagForCategory, type BagCategory } from '../ui/bag';
-import {
-  pokemonRewardChoices,
-  rewardChoices,
-  rewardRows,
-  type RewardRow,
-} from '../ui/rewards';
+import { pokemonRewardChoices, rewardChoices, rewardRows, type RewardRow } from '../ui/rewards';
 import { buildMapView, type MapRoomMarker, type MapViewRoom } from '../ui/mapView';
 import {
   BOX_COLS,
@@ -261,6 +257,7 @@ import { loadSettings, saveSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { GRASS_TEXTURE_KEY, PANEL_ICON_KEYS, PANEL_ICON_SIZE, TRAINER_TEXTURE_KEY } from './BootScene';
 import { collectDescriptors, type RoomRegistry } from './rooms/registry';
+import { openMart } from './rooms/shop';
 import type { RoomDescriptor, RoomDrop, RoomHost, RoomPanel, RoomRowDrag } from './rooms/types';
 
 /**
@@ -1044,7 +1041,7 @@ export class RouteScene extends Phaser.Scene {
   private noticeTimer: Phaser.Time.TimerEvent | null = null;
   private missionRoot: Phaser.GameObjects.Container | null = null;
   private hudMissionText: Phaser.GameObjects.BitmapText | null = null;
-  /** The shop room's counter tile, or null off a shop room. */
+  /** The counter tile the room's own fixture placed, or null in a room without one. */
   private shopCounter: Tile | null = null;
   /** The special NPC this room rolled and its tile, or null off a room that rolled none. */
   private npc: RoomNpc | null = null;
@@ -1128,11 +1125,12 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * Rolls the room's special NPC (`docs/maps-spec.md` §7): at most one, only in a
-   * regular `trainers` room and once per build — never in `update`. The roll reads
-   * the run's party and its own stream, so no route, trainer, item or battle draw
-   * moves. A row whose art the packed sheet lacks is dropped whole: no sprite, no
-   * block and no interact.
+   * Places the room's special NPC (`docs/maps-spec.md` §7): at most one, only in a
+   * regular `trainers` room and once per build — never in `update`. The floor's
+   * **guaranteed** row is tried first (a placement, not a roll: it reads the plan and
+   * no RNG), then the rolled rows on the room's own stream, so no route, trainer,
+   * item or battle draw moves. A row whose art the packed sheet lacks is dropped
+   * whole: no sprite, no block and no interact, and no second room is tried.
    */
   private rollRoomNpc(): void {
     this.npc = null;
@@ -1140,7 +1138,10 @@ export class RouteScene extends Phaser.Scene {
     if (!room || room.special !== null || room.role !== 'trainers') return;
     if (this.generatorStepIndex !== null) return;
     const eligible = NPC_ROWS.filter((row) => npcRequirementMet(this.run, row.requires));
-    const placement = roomNpc(this.run.seed, room.roomId, room.mapIndex, eligible);
+    const guaranteed = guaranteedNpc(this.plan!, room.roomId, room.mapIndex);
+    const placement = guaranteed
+      ? { row: guaranteed, roomIndex: room.roomId }
+      : roomNpc(this.run.seed, room.roomId, room.mapIndex, eligible);
     if (!placement) return;
     const tile = npcSpot(this.route, room.roomId, this.run.seed, placement.row.id);
     if (!tile) return;
@@ -5477,7 +5478,7 @@ export class RouteScene extends Phaser.Scene {
     return trainer && !isTrainerDefeated(this.run, trainer.id) ? trainer : undefined;
   }
 
-  /** True when `tile` is the shop room's counter (a blocking fixture). */
+  /** True when `tile` is the counter a room's fixture placed (a blocking fixture). */
   private shopCounterAt(tile: Tile): boolean {
     return this.shopCounter !== null && tile.x === this.shopCounter.x && tile.y === this.shopCounter.y;
   }
@@ -5632,7 +5633,8 @@ export class RouteScene extends Phaser.Scene {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     const step = MOVE_STEP[this.facingDir];
     const ahead = { x: this.player.x + step.x, y: this.player.y + step.y };
-    // A room that answers the interact key (the Mart's counter) consumes it first.
+    // A room that answers the interact key (a casino machine, a trade counter)
+    // consumes it first.
     if (this.specialDescriptor()?.interact?.(this.roomHost(), ahead) === true) return;
     // The room's own special NPC answers next, before any trainer's sight.
     if (this.talkToNpc(ahead)) return;
@@ -5670,17 +5672,30 @@ export class RouteScene extends Phaser.Scene {
       paragraph: t(npc.row.greetingKey),
       choices,
     };
-    this.openPanel(openNpcPanel(this, view, () => this.chooseNpc(npc.row, room.mapIndex, room.roomId)));
+    this.openPanel(
+      openNpcPanel(this, view, (choiceId) =>
+        this.chooseNpc(npc.row, room.mapIndex, room.roomId, choiceId),
+      ),
+    );
   }
 
   /**
-   * Records that this floor's room answered its NPC: the use id rides
-   * `pickedItems`, which `advanceMap` clears, so a revisit and a reload know the
-   * card was taken. The card itself closes on choose; the scene frees its slot.
+   * Resolves the row the card accepted (`docs/maps-spec.md` §7). The **merchant**
+   * opens the Mart and marks no use, so the merchant is there for the rest of the
+   * floor; every other row records `npc-<mapIndex>-<roomId>-<id>` in `pickedItems`,
+   * which `advanceMap` clears, so a revisit and a reload know the card was taken. A
+   * later NPC task adds its own branch here.
    */
-  private chooseNpc(row: NpcRow, mapIndex: number, roomId: number): void {
-    this.commitRun(markItemPicked(this.run, npcUseId(mapIndex, roomId, row.id)));
-    this.closePanel();
+  private chooseNpc(row: NpcRow, mapIndex: number, roomId: number, _choiceId: string): void {
+    switch (row.id) {
+      case 'merchant':
+        this.closePanel();
+        openMart(this.roomHost());
+        return;
+      default:
+        this.commitRun(markItemPicked(this.run, npcUseId(mapIndex, roomId, row.id)));
+        this.closePanel();
+    }
   }
 
   /**

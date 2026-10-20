@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { BIOME_ORDER } from '../../data/biomes';
-import { trainerRoomsForMap } from '../../data/population';
+import { TRAINER_ROOMS_PER_MAP, trainerRoomsForMap } from '../../data/population';
 import {
   MAP_MAX_ROOM_SIZE,
   MAP_MIN_ROOM_SIZE,
@@ -15,8 +15,8 @@ import { Rng } from '../rng';
 import {
   MAP_EDGES,
   OPPOSITE_EDGE,
-  SHOP_FROM_MAP,
   biomeForMap,
+  firstTrainerRoom,
   linkedNeighbour,
   pickBiome,
   planMap,
@@ -173,13 +173,12 @@ function assertPlan(plan: MapPlan): void {
   expect(entry.openings.filter((opening) => opening.kind === 'entry')).toHaveLength(1);
 
   // Special rooms (`docs/maps-spec.md` §7): extra dead-end leaves, never the entry
-  // or the boss, exactly one shop from map 2 on (map 1 hangs none) and at most one
-  // mini-boss / mega-stone each.
+  // or the boss, no shop room at all (the Mart is the merchant NPC) and at most one
+  // mini-boss / mega-stone / casino / gated / trade / no-heal each.
   const specials = plan.rooms.filter((room) => room.special !== null);
   expect(specials.length).toBe(plan.specials.length);
-  expect(specials.filter((room) => room.special === 'shop')).toHaveLength(
-    plan.mapIndex >= SHOP_FROM_MAP ? 1 : 0,
-  );
+  expect(specials.map((room) => String(room.special))).not.toContain('shop');
+  expect(plan.specials.map((special) => String(special.kind))).not.toContain('shop');
   expect(specials.filter((room) => room.special === 'mini-boss').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'mega-stone').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'casino').length).toBeLessThanOrEqual(1);
@@ -279,18 +278,19 @@ describe('planMap', () => {
   });
 
   /**
-   * The pre-task structure of one floor, pinned verbatim: the room ids, cells,
-   * shapes, specials and links `planMap('alpha', 8)` produced before a room's size
-   * followed its shape. Only `width`/`height` may move after this task, so a
-   * shifted `map` stream (a deleted or reordered draw) fails here.
+   * The structure of one floor, pinned verbatim: the room ids, cells, shapes,
+   * specials and links `planMap('alpha', 8)` produces with the shop room retired
+   * (Task-92). The shop leaf's two size draws are gone, so the specials and the
+   * cells and shapes their links give their parents are re-pinned here; a `map`
+   * stream that shifts again fails this test.
    */
   const ALPHA_MAP_8 = {
     entryEdge: 'S',
     bossRoom: 8,
     rooms:
-      '0:0,0:corridor:-|1:0,-1:cross:-|2:1,-1:cross:-|3:0,-2:bend:-|4:1,-2:cross:-|5:1,-3:bend:-|6:2,-3:tee:-|7:2,-2:bend:-|8:2,-4:dead-end:-|9:-1,-1:dead-end:shop|10:2,-1:dead-end:mini-boss|11:1,0:dead-end:casino',
-    links: '0-1|1-2|1-3|1-9|2-4|2-10|2-11|3-4|4-5|4-7|5-6|6-7|6-8',
-    specials: '9:shop|10:mini-boss|11:casino',
+      '0:0,0:corridor:-|1:0,-1:cross:-|2:1,-1:bend:-|3:0,-2:tee:-|4:1,-2:cross:-|5:1,-3:bend:-|6:2,-3:tee:-|7:2,-2:bend:-|8:2,-4:dead-end:-|9:0,-3:dead-end:mega-stone|10:-1,-1:dead-end:trade',
+    links: '0-1|1-2|1-3|1-10|2-4|3-4|3-9|4-5|4-7|5-6|6-7|6-8',
+    specials: '9:mega-stone|10:trade',
   } as const;
 
   it('keeps the pre-task floor shape and topology for a pinned seed', () => {
@@ -326,8 +326,7 @@ describe('room roles', () => {
   /** The rooms the role pass may tag: the regular rooms that are neither entry nor boss. */
   function candidatesOf(plan: MapPlan): MapRoom[] {
     return plan.rooms.filter(
-      (room) =>
-        room.id !== plan.entryRoom && room.id !== plan.bossRoom && room.special === null,
+      (room) => room.id !== plan.entryRoom && room.id !== plan.bossRoom && room.special === null,
     );
   }
 
@@ -369,7 +368,7 @@ describe('room roles', () => {
     }
   });
 
-  it("spends one shuffle draw per candidate beyond the first, after every shipped draw", () => {
+  it('spends one shuffle draw per candidate beyond the first, after every shipped draw', () => {
     for (const seed of SEEDS) {
       for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
         const plan = planMap(seed, mapIndex);
@@ -380,23 +379,23 @@ describe('room roles', () => {
         const originalInt = Rng.prototype.int;
         const originalNext = Rng.prototype.next;
         let insideInt = 0;
-        const intSpy = vi
-          .spyOn(Rng.prototype, 'int')
-          .mockImplementation(function (this: Rng, min: number, max: number): number {
-            log.push({ rng: this, method: 'int', min, max });
-            insideInt += 1;
-            try {
-              return originalInt.call(this, min, max);
-            } finally {
-              insideInt -= 1;
-            }
-          });
-        const nextSpy = vi
-          .spyOn(Rng.prototype, 'next')
-          .mockImplementation(function (this: Rng): number {
-            if (insideInt === 0) log.push({ rng: this, method: 'next' });
-            return originalNext.call(this);
-          });
+        const intSpy = vi.spyOn(Rng.prototype, 'int').mockImplementation(function (
+          this: Rng,
+          min: number,
+          max: number,
+        ): number {
+          log.push({ rng: this, method: 'int', min, max });
+          insideInt += 1;
+          try {
+            return originalInt.call(this, min, max);
+          } finally {
+            insideInt -= 1;
+          }
+        });
+        const nextSpy = vi.spyOn(Rng.prototype, 'next').mockImplementation(function (this: Rng): number {
+          if (insideInt === 0) log.push({ rng: this, method: 'next' });
+          return originalNext.call(this);
+        });
         try {
           planMap(seed, mapIndex);
         } finally {
@@ -429,17 +428,19 @@ describe('room roles', () => {
   }, 30_000);
 
   /**
-   * The shipped floor of three fixed seeds, read off the **pre-change** build and
-   * pinned verbatim. The role draws are appended after every shipped one, so no
-   * floor's biome, count, topology, id, size or special moves.
+   * The shipped floor of three fixed seeds, pinned verbatim. **Re-pinned by
+   * Task-92**: retiring the guaranteed shop leaf removed its two `rng.int` size
+   * draws, so every floor from map 2 on draws its specials two positions earlier and
+   * the leaves' cells (and the shapes their links give their parents) move. Map 1
+   * never hung a shop leaf, so `alpha:1` is unchanged.
    */
   const SHIPPED_FLOORS: Readonly<Record<string, string>> = {
     'alpha:1':
       '0:0,0:30x30:corridor:-|1:-1,0:30x30:cross:-|2:-1,-1:30x30:bend:-|3:-2,0:30x30:bend:-|4:-2,-1:30x30:tee:-|5:-2,-2:30x30:dead-end:-|6:-1,1:30x30:dead-end:mini-boss',
     'alpha:8':
-      '0:0,0:30x30:corridor:-|1:0,-1:40x40:cross:-|2:1,-1:40x40:cross:-|3:0,-2:44x44:bend:-|4:1,-2:40x40:cross:-|5:1,-3:44x44:bend:-|6:2,-3:40x48:tee:-|7:2,-2:44x44:bend:-|8:2,-4:30x30:dead-end:-|9:-1,-1:30x30:dead-end:shop|10:2,-1:30x30:dead-end:mini-boss|11:1,0:30x30:dead-end:casino',
+      '0:0,0:30x30:corridor:-|1:0,-1:40x40:cross:-|2:1,-1:44x44:bend:-|3:0,-2:40x48:tee:-|4:1,-2:40x40:cross:-|5:1,-3:44x44:bend:-|6:2,-3:40x48:tee:-|7:2,-2:44x44:bend:-|8:2,-4:30x30:dead-end:-|9:0,-3:30x30:dead-end:mega-stone|10:-1,-1:30x30:dead-end:trade',
     'role-seed:5':
-      '0:0,0:30x30:corridor:-|1:0,1:30x30:cross:-|2:-1,1:30x30:bend:-|3:0,2:30x30:bend:-|4:-1,2:30x31:tee:-|5:-1,3:30x30:dead-end:-|6:1,1:30x30:dead-end:shop',
+      '0:0,0:30x30:corridor:-|1:0,1:30x31:tee:-|2:-1,1:30x30:bend:-|3:0,2:30x30:bend:-|4:-1,2:30x31:tee:-|5:-1,3:30x30:dead-end:-',
   };
 
   it('the role pass does not move a shipped floor', () => {
@@ -459,41 +460,74 @@ describe('room roles', () => {
   });
 });
 
-describe('special rooms', () => {
-  it('hangs no shop on map 1, whose floor reads six rooms or seven with its mini-boss', () => {
+describe('firstTrainerRoom', () => {
+  it('names the lowest trainer room of every fixed-seed floor', () => {
     for (const seed of SEEDS) {
-      const plan = planMap(seed, 1);
-      expect(
-        plan.rooms.some((room) => room.special === 'shop'),
-        `${seed} map 1 room`,
-      ).toBe(false);
-      expect(
-        plan.specials.some((special) => special.kind === 'shop'),
-        `${seed} map 1 special`,
-      ).toBe(false);
-      const mini = specialRoom(plan, 'mini-boss') !== undefined ? 1 : 0;
-      expect(plan.rooms.length, `${seed} map 1 rooms`).toBe(6 + mini);
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const label = `${seed} map ${mapIndex}`;
+        const trainers = plan.rooms.filter((room) => room.role === 'trainers');
+        expect(trainers.length, `${label} trainer rooms`).toBe(TRAINER_ROOMS_PER_MAP[mapIndex - 1]);
+        const lowest = trainers.reduce((low, room) => Math.min(low, room.id), Number.MAX_SAFE_INTEGER);
+        expect(firstTrainerRoom(plan), label).toBe(lowest);
+        expect(plan.rooms[firstTrainerRoom(plan)].role, `${label} room`).toBe('trainers');
+      }
     }
   });
 
-  it('gives every floor from map 2 on exactly one shop, hung near the entry', () => {
+  it('answers -1 for a plan whose rooms are all wild', () => {
+    const tiny: MapPlan = {
+      seed: 'tiny',
+      mapIndex: 1,
+      biomeId: BIOME_ORDER[0],
+      rooms: [0, 1, 2].map((id) => ({
+        id,
+        col: id,
+        row: 0,
+        width: MAP_MIN_ROOM_SIZE,
+        height: MAP_MIN_ROOM_SIZE,
+        shape: 'dead-end' as const,
+        openings: [],
+        special: null,
+        role: 'wild' as const,
+      })),
+      links: [],
+      entryRoom: 0,
+      entryEdge: 'S',
+      bossRoom: 2,
+      specials: [],
+    };
+    expect(firstTrainerRoom(tiny)).toBe(-1);
+    const oneTrainer: MapPlan = {
+      ...tiny,
+      rooms: tiny.rooms.map((room) => (room.id === 2 ? { ...room, role: 'trainers' } : room)),
+    };
+    expect(firstTrainerRoom(oneTrainer)).toBe(2);
+  });
+});
+
+describe('special rooms', () => {
+  it('hangs no shop leaf on any floor: the Mart lives behind the merchant NPC', () => {
     for (const seed of SEEDS) {
-      for (let mapIndex = SHOP_FROM_MAP; mapIndex <= 8; mapIndex++) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
         const plan = planMap(seed, mapIndex);
-        const shop = specialRoom(plan, 'shop');
-        expect(shop, `${seed} map ${mapIndex}`).toBeDefined();
-        expect(plan.rooms[shop!].shape).toBe('dead-end');
-        // A single door, to a regular room that is neither the entry nor the boss.
-        const neighbours = plan.links
-          .filter(([a, b]) => a === shop || b === shop)
-          .map(([a, b]) => (a === shop ? b : a));
-        expect(neighbours).toHaveLength(1);
-        expect(neighbours[0]).not.toBe(plan.entryRoom);
-        expect(neighbours[0]).not.toBe(plan.bossRoom);
-        // The shop sits nearer the entry than the boss does.
-        const dist = distances(plan);
-        expect(dist[shop!]).toBeLessThan(dist[plan.bossRoom]);
+        expect(
+          plan.rooms.some((room) => String(room.special) === 'shop'),
+          `${seed} map ${mapIndex} room`,
+        ).toBe(false);
+        expect(
+          plan.specials.some((special) => String(special.kind) === 'shop'),
+          `${seed} map ${mapIndex} special`,
+        ).toBe(false);
       }
+    }
+  });
+
+  it("reads map 1's floor as six rooms, or seven with its mini-boss", () => {
+    for (const seed of SEEDS) {
+      const plan = planMap(seed, 1);
+      const mini = specialRoom(plan, 'mini-boss') !== undefined ? 1 : 0;
+      expect(plan.rooms.length, `${seed} map 1 rooms`).toBe(6 + mini);
     }
   });
 
@@ -662,76 +696,77 @@ describe('special rooms', () => {
   });
 
   /**
-   * The shipped specials, read off the **pre-change** build for the sweep above
-   * (one dump per seed and map, `roomId:kind` joined by `,`). The casino draw is
-   * the special pass's **last** shipped statement, the gated one rolls after it and
-   * the trade one after that, so this array must never move.
+   * The shipped specials, **re-pinned by Task-92** with the shop room's retirement:
+   * the guaranteed shop leaf's two size draws are gone, so the mini-boss and
+   * mega-stone rolls read the `map` stream two positions earlier from map 2 on. The
+   * casino draw is the special pass's **last** shipped statement, the gated one rolls
+   * after it and the trade one after that, so this array must not move again.
    */
   const SHIPPED_SPECIALS: Readonly<Record<string, string>> = {
     'alpha:1': '6:mini-boss',
-    'alpha:2': '6:shop,7:mini-boss',
-    'alpha:3': '6:shop',
-    'alpha:4': '6:shop,7:mini-boss,8:mega-stone',
-    'alpha:5': '6:shop,7:mega-stone',
-    'alpha:6': '7:shop,8:mega-stone',
-    'alpha:7': '8:shop',
-    'alpha:8': '9:shop,10:mini-boss',
+    'alpha:2': '6:mini-boss',
+    'alpha:3': '',
+    'alpha:4': '6:mega-stone',
+    'alpha:5': '6:mini-boss',
+    'alpha:6': '7:mini-boss',
+    'alpha:7': '8:mini-boss',
+    'alpha:8': '9:mega-stone',
     'bravo:1': '6:mini-boss',
-    'bravo:2': '6:shop,7:mini-boss',
-    'bravo:3': '6:shop,7:mini-boss,8:mega-stone',
-    'bravo:4': '6:shop,7:mini-boss',
-    'bravo:5': '7:shop',
-    'bravo:6': '6:shop',
-    'bravo:7': '8:shop,9:mini-boss',
-    'bravo:8': '6:shop',
+    'bravo:2': '6:mini-boss',
+    'bravo:3': '6:mini-boss,7:mega-stone',
+    'bravo:4': '6:mini-boss',
+    'bravo:5': '7:mini-boss',
+    'bravo:6': '',
+    'bravo:7': '',
+    'bravo:8': '',
     'charlie:1': '',
-    'charlie:2': '6:shop',
-    'charlie:3': '6:shop',
-    'charlie:4': '6:shop,7:mini-boss,8:mega-stone',
-    'charlie:5': '7:shop,8:mini-boss',
-    'charlie:6': '8:shop,9:mini-boss',
-    'charlie:7': '7:shop',
-    'charlie:8': '9:shop,10:mini-boss,11:mega-stone',
+    'charlie:2': '',
+    'charlie:3': '',
+    'charlie:4': '6:mini-boss',
+    'charlie:5': '7:mini-boss',
+    'charlie:6': '8:mini-boss',
+    'charlie:7': '',
+    'charlie:8': '9:mini-boss',
     'delta:1': '',
-    'delta:2': '6:shop,7:mini-boss',
-    'delta:3': '6:shop',
-    'delta:4': '6:shop,7:mini-boss',
-    'delta:5': '6:shop,7:mega-stone',
-    'delta:6': '6:shop',
-    'delta:7': '6:shop',
-    'delta:8': '9:shop',
+    'delta:2': '6:mini-boss',
+    'delta:3': '',
+    'delta:4': '6:mega-stone',
+    'delta:5': '6:mini-boss',
+    'delta:6': '6:mini-boss',
+    'delta:7': '6:mini-boss',
+    'delta:8': '9:mini-boss',
     'echo:1': '',
-    'echo:2': '6:shop',
-    'echo:3': '6:shop',
-    'echo:4': '6:shop,7:mini-boss',
-    'echo:5': '6:shop,7:mini-boss',
-    'echo:6': '7:shop',
-    'echo:7': '8:shop,9:mini-boss',
-    'echo:8': '7:shop,8:mini-boss',
+    'echo:2': '',
+    'echo:3': '',
+    'echo:4': '',
+    'echo:5': '6:mega-stone',
+    'echo:6': '7:mini-boss',
+    'echo:7': '8:mini-boss',
+    'echo:8': '7:mini-boss',
     'foxtrot:1': '6:mini-boss',
-    'foxtrot:2': '6:shop,7:mini-boss',
-    'foxtrot:3': '6:shop,7:mini-boss,8:mega-stone',
-    'foxtrot:4': '6:shop,7:mini-boss',
-    'foxtrot:5': '6:shop',
-    'foxtrot:6': '8:shop,9:mini-boss',
-    'foxtrot:7': '6:shop,7:mini-boss',
-    'foxtrot:8': '9:shop,10:mini-boss',
+    'foxtrot:2': '6:mini-boss',
+    'foxtrot:3': '6:mini-boss,7:mega-stone',
+    'foxtrot:4': '6:mini-boss',
+    'foxtrot:5': '',
+    'foxtrot:6': '8:mini-boss',
+    'foxtrot:7': '6:mini-boss',
+    'foxtrot:8': '',
     'golf:1': '6:mini-boss',
-    'golf:2': '6:shop,7:mini-boss',
-    'golf:3': '6:shop',
-    'golf:4': '7:shop',
-    'golf:5': '7:shop',
-    'golf:6': '7:shop',
-    'golf:7': '8:shop,9:mini-boss',
-    'golf:8': '8:shop',
+    'golf:2': '6:mini-boss',
+    'golf:3': '',
+    'golf:4': '7:mini-boss',
+    'golf:5': '7:mini-boss',
+    'golf:6': '',
+    'golf:7': '8:mini-boss',
+    'golf:8': '8:mini-boss',
     'hotel:1': '',
-    'hotel:2': '6:shop,7:mini-boss',
-    'hotel:3': '6:shop',
-    'hotel:4': '7:shop,8:mini-boss,9:mega-stone',
-    'hotel:5': '6:shop',
-    'hotel:6': '8:shop,9:mini-boss',
-    'hotel:7': '6:shop,7:mini-boss',
-    'hotel:8': '9:shop,10:mini-boss',
+    'hotel:2': '6:mini-boss',
+    'hotel:3': '',
+    'hotel:4': '',
+    'hotel:5': '',
+    'hotel:6': '8:mini-boss',
+    'hotel:7': '6:mini-boss',
+    'hotel:8': '9:mini-boss',
   };
 
   it('never moves a shipped special leaf (the casino draw rolls last)', () => {
@@ -840,8 +875,9 @@ describe('special rooms', () => {
   });
 
   /**
-   * The trade leaf's own per-map slot (`'-'` or the room id), computed once from the
-   * delivered build and pinned verbatim, so a moved `map` stream fails this test.
+   * The trade leaf's own per-map slot (`'-'` or the room id), **re-pinned by
+   * Task-92** with the shop room's retirement, so a moved `map` stream fails this
+   * test while every shipped draw stays where the other pins put it.
    */
   const TRADE_LEAVES: Readonly<Record<string, string>> = {
     'alpha:1': '-',
@@ -850,28 +886,28 @@ describe('special rooms', () => {
     'alpha:4': '-',
     'alpha:5': '-',
     'alpha:6': '-',
-    'alpha:7': '10',
-    'alpha:8': '-',
+    'alpha:7': '-',
+    'alpha:8': '10',
     'bravo:1': '-',
     'bravo:2': '-',
     'bravo:3': '-',
-    'bravo:4': '8',
+    'bravo:4': '-',
     'bravo:5': '-',
-    'bravo:6': '8',
+    'bravo:6': '-',
     'bravo:7': '-',
-    'bravo:8': '7',
+    'bravo:8': '-',
     'charlie:1': '-',
     'charlie:2': '-',
     'charlie:3': '-',
     'charlie:4': '-',
-    'charlie:5': '-',
-    'charlie:6': '-',
+    'charlie:5': '9',
+    'charlie:6': '9',
     'charlie:7': '-',
-    'charlie:8': '-',
+    'charlie:8': '11',
     'delta:1': '-',
     'delta:2': '-',
     'delta:3': '-',
-    'delta:4': '8',
+    'delta:4': '-',
     'delta:5': '-',
     'delta:6': '-',
     'delta:7': '-',
@@ -881,13 +917,13 @@ describe('special rooms', () => {
     'echo:3': '-',
     'echo:4': '-',
     'echo:5': '-',
-    'echo:6': '9',
+    'echo:6': '-',
     'echo:7': '-',
     'echo:8': '-',
     'foxtrot:1': '-',
     'foxtrot:2': '-',
     'foxtrot:3': '-',
-    'foxtrot:4': '-',
+    'foxtrot:4': '7',
     'foxtrot:5': '-',
     'foxtrot:6': '-',
     'foxtrot:7': '-',
@@ -897,7 +933,7 @@ describe('special rooms', () => {
     'golf:3': '-',
     'golf:4': '-',
     'golf:5': '-',
-    'golf:6': '-',
+    'golf:6': '7',
     'golf:7': '-',
     'golf:8': '-',
     'hotel:1': '-',
@@ -906,8 +942,8 @@ describe('special rooms', () => {
     'hotel:4': '-',
     'hotel:5': '-',
     'hotel:6': '-',
-    'hotel:7': '-',
-    'hotel:8': '-',
+    'hotel:7': '8',
+    'hotel:8': '11',
   };
 
   it('hangs a no-heal leaf at most once, only from map 3 on, always below the boss', () => {
@@ -954,19 +990,19 @@ describe('special rooms', () => {
 
   /**
    * The no-heal leaf's own per-floor slot (`'-'` or the room id), one line per seed
-   * and map 1-8, pinned verbatim from the delivered build. The leaf rolls **after**
-   * the trade leaf, so a moved `map` stream fails this test while every shipped draw
-   * stays where the other pins put it.
+   * and map 1-8, **re-pinned by Task-92** with the shop room's retirement. The leaf
+   * rolls **after** the trade leaf, so a moved `map` stream fails this test while
+   * every shipped draw stays where the other pins put it.
    */
   const NO_HEAL_LEAVES = [
+    '-,-,6,-,7,-,-,-',
+    '-,-,-,-,8,6,-,-',
     '-,-,7,-,-,-,-,-',
-    '-,-,-,-,-,-,-,-',
-    '-,-,8,-,-,-,-,-',
-    '-,-,-,-,-,-,-,-',
-    '-,-,-,-,-,-,10,-',
+    '-,-,-,-,-,-,-,10',
+    '-,-,-,-,7,-,-,-',
     '-,-,-,-,-,-,-,-',
     '-,-,-,-,-,-,-,-',
-    '-,-,-,-,-,-,-,-',
+    '-,-,-,-,-,-,-,12',
   ];
 
   it('pins where the no-heal leaf hangs, seed by seed', () => {
