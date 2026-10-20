@@ -40,6 +40,21 @@ never a route index. The Task-92 paragraph's "within a hundredth of **1.25**" cl
 describes the walk **before** this task; maps 4, 5, 6 and 7 now read off that target
 on their shipped factors.
 
+**Re-walked again (Task-97).** The secret-shop leaf hangs off a floor's regular graph
+from map 3 on, on a **20 %** chance of its own stream, and is one more room on the floor
+that draws it — so the same `routeIndexForRoom` shift that Task-96 recorded moves the
+trainers once more. `src/engine/run/curve.test.ts`'s `MEASURED_FILL` now reads **1.25,
+1.25, 1.25, 1.25, 1.25, 1.13, 1.24 and 1.32** on maps 1-8. One floor left the
+`1.05 – 1.5` window: map 5 measured **1.67** against its shipped 1.25 factor, so that
+single row of `TRAINER_XP_PER_MAP` was re-solved with the recipe below,
+`factor' = round2(factor × 1.25 / fill)` → **1.25 → 0.94**, and the re-walk puts map 5
+back at 1.25. The other seven factors are **untouched** — a floor that still sits
+inside the window keeps its row, and a broad re-solve is a balance task, not a room
+task. The per-map table and the rate sentence below it are unchanged: the `fill`
+column is `0.75 × T̄(m) × A(m) / needed(m)` over the pinned trainer counts, read with
+the **pre-Task-97** factors, so both record the solved baseline (map 5 at 1.25) and
+not this walk — `src/data/run.ts` is where the moved factor lives.
+
 ## Level bands
 
 Every floor reads one band (`bandForLevel(minLevel)` in `src/data/run.ts`): a level
