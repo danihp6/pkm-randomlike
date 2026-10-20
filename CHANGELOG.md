@@ -8,6 +8,28 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A cycle is resumable per task, and a bad socket no longer counts as a red cycle.**
+      The runner is ephemeral and the model stream drops — measured on 2026-10-19: two
+      transport drops in nine cycles (`Transport: The socket connection was closed
+      unexpectedly` and `OpenAI Chat stream ended without finish_reason`); one lost a spec
+      and a dev worktree, the other shipped batch 23 and was marked red anyway. The unit of
+      durability is now the task: `agent-cycle.yml` commits the spec as the `task-<ID>`
+      branch's first commit and pushes it, the dev ends with an empty `dev: done task-<ID>`
+      commit, and QA's verdict is an empty `qa: pass task-<ID>` commit carrying
+      `Verified-At`, `Tip`, `Gates` and `Report`. The branch tip is a turnstile, so a
+      partial branch is deleted and redone, never trusted. A deterministic
+      `scripts/agent/recon.mjs` reads the refs and writes `.agent_specs/resume.md` (9 unit
+      cases in `recon.test.mjs`), and the Orchestrator adopts those tasks instead of cutting
+      the batch again. Each task ships atomically — merge `--no-ff`, the spec dropped from
+      the index, the `TODO.md` tick and the `CHANGELOG.md` entry in the same commit, one
+      `git push` — so `main` is consistent at every boundary. The run's conclusion is the
+      outcome, not `opencode`'s exit code: a green gate plus a moved `main` (or a new issue)
+      is green, and a transport drop that shipped nothing is retried once inside the job
+      after a fresh Recon. `AGENTS.md`, the three role files and `docs/agent-ci.md` carry
+      the protocol. **QA:** `npm test` **2173** (from 2164) and `npm run build` green; the
+      kill-and-resume measurement is the first live cycle after this merge, not a claim
+      made here.
+
 - [x] **`MAP_TUNING` keeps only the cap, and a floor's level window is derived from adjacent
       caps.** The player-relative level model left a floor with one anchor: `MapTuning` is now
       `{ mapIndex, cap, routes, size }` with the eight caps **9 / 16 / 23 / 30 / 37 / 43 / 49 / 55**

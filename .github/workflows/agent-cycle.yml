@@ -5,6 +5,15 @@ name: agent / cycle
 # dev, QA, merge --no-ff, bookkeeping, push. Nested subagents were measured working
 # headlessly in `agent-role-smoke.yml`, so the roles are used exactly as written.
 #
+# The unit of durability is the **task**, not the batch: every `task-<ID>` branch is
+# pushed (spec first, then `dev: done` and `qa: pass` markers on its tip) and each
+# task's merge travels with its tick and its CHANGELOG entry in **one push**. A dead
+# runner therefore loses at most the task in flight, and the next cycle adopts the
+# live branches from `.agent_specs/resume.md` instead of cutting the batch again. The
+# run's conclusion is the outcome (`main` moved or an issue opened, gate green), not
+# the agent's exit code; a transport drop that shipped nothing is retried once inside
+# the job. `docs/agent-ci.md` owns the whole protocol.
+#
 # The batch is NOT named here. The role reads `TODO.md`'s plan and picks the lowest
 # pending batch whose dependencies are closed, applying the `*Decision:*` line each
 # item carries. A decision that is not written is never invented: the task is
@@ -96,8 +105,15 @@ jobs:
           git config user.name opencode-bot
           git config user.email opencode-bot@users.noreply.github.com
 
+      - name: Recon the cycle's durable state
+        run: |
+          set -euo pipefail
+          git fetch --prune --quiet origin
+          node scripts/agent/recon.mjs --todo TODO.md --base origin/main --out .agent_specs/resume.md
+
       - name: Run the cycle
         id: agent
+        continue-on-error: true
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -134,10 +150,35 @@ jobs:
              - `origin` es alcanzable y tienes permiso de escritura: los push funcionan.
              - El runner es Linux y efímero. No hay nada más en la máquina.
 
+             ESTADO DURABLE — LEE ESTO ANTES DE CORTAR NADA:
+             - `.agent_specs/resume.md` lo acaba de escribir un paso determinista (no un
+               agente) y lista las ramas `task-<ID>` vivas en origin. **Una rama viva es una
+               tarea que un run anterior ya empezó: se adopta, no se recorta un lote nuevo.**
+             - El asunto del último commit de la rama dice de quién es el turno:
+                 `dev: done task-<ID>`  -> el dev terminó y le toca QA.
+                 `qa: pass task-<ID>`   -> QA pasó y le toca merge.
+                 cualquier otro asunto -> el dev murió a medias: borra la rama y rehaz la
+                 tarea.
+               Una rama ya contenida en `origin/main` está enviada: bórrala.
+             - Si no hay ninguna rama viva, corta el lote más bajo del plan como siempre.
+             - El lote que completas es el de esas ramas: no mezcles tareas de lotes
+               distintos mientras existan. Si su lote original tenía más tareas sin empezar,
+               no las añadas ahora; las cortará el ciclo siguiente.
+
+             CÓMO ADOPTAR CADA ESTADO:
+             - ship: salta dev y QA; haz el envío atómico de esa tarea y sigue.
+             - qa: recupera la spec con el comando que imprime resume.md, monta el árbol de
+               integración desde `origin/task-<ID>` y lanza SOLO la Task QA.
+             - partial: `git push origin --delete task-<ID>`, borra el worktree y rehaz la
+               tarea desde cero (spec + dev).
+             - blocked / merged: `git push origin --delete task-<ID>` y sigue.
+             - orphan: abre un issue `agent-blocked` diciendo qué rama sobra y por qué.
+
              ELIGE TÚ EL LOTE:
-             1. Mira el plan de TODO.md y los *Dependencies:* de cada item abierto, y toma el
-                lote pendiente MÁS BAJO, COMPLETO tal y como está cortado en el plan (2-4
-                tareas: dentro de un lote nadie comparte paths, así que caben juntas).
+             1. Si resume.md no lista ramas vivas, mira el plan de TODO.md y los
+                *Dependencies:* de cada item abierto, y toma el lote pendiente MÁS BAJO,
+                COMPLETO tal y como está cortado en el plan (2-4 tareas: dentro de un lote
+                nadie comparte paths, así que caben juntas).
              1b. **Rellena el lote.** Un lote de una sola tarea no gasta los demás slots:
                 añade tareas de lotes POSTERIORES hasta cuatro, y solo si (a) sus paths son
                 disjuntos de la unión de los ya elegidos, (b) no necesita ningún fichero que
@@ -163,43 +204,90 @@ jobs:
                 mueve nada y no abre ningún issue se considera roto y **falla**: el sistema
                 vigila exactamente eso, así que no calles un bloqueo.
 
-             CON EL LOTE ELEGIDO, haz el ritual y nada más:
+             CON EL LOTE ELEGIDO, haz el ritual y nada más. Las tareas que vienen de una
+             rama viva NO repiten los pasos 1-3: se adoptan según su estado.
              1. Una spec por tarea del lote en .agent_specs/task-<ID>.md siguiendo
                 docs/agent-spec-template.md, con criterios [unit] y, solo si de verdad
                 aplican aquí, [live] con su medida.
-             2. Un worktree por tarea y un subagente dev por tarea, cada uno con SOLO la ruta
-                de su spec. **Lánzalos EN PRIMER PLANO y espera su informe dentro de este
-                run.** NUNCA en background: esto es una pasada única, el proceso termina
-                cuando tú terminas, y un subagente en background muere con el runner sin
-                haber hecho nada. Lo mismo vale para los de QA. Si un agente no puede
-                acabar, lo dices en el informe; no lo dejas corriendo.
-             3. Valida como manda tu rol: **una Task QA por tarea, en paralelo**, cada una
+             2. **La rama es la unidad durable.** Por cada tarea del lote, crea el worktree
+                `git worktree add ../wt-pkm-<ID> -b task-<ID>`, copia la spec dentro,
+                `git add -f .agent_specs/task-<ID>.md`, commit `spec: task-<ID>` y
+                `git push -u origin task-<ID>`. La spec viaja en la rama y se cae del merge
+                (paso 5); main no la recibe nunca.
+             3. Un subagente dev por tarea, EN PRIMER PLANO, cada uno con SOLO la ruta de su
+                spec. Al acabar, con su gate verde, el dev deja un commit vacío
+                `dev: done task-<ID>` en la punta y empuja. Comprueba tú que
+                `git ls-remote origin task-<ID>` la ve; si el dev no empujó, no lo des por
+                bueno. NUNCA lances agentes en background: mueren con el runner sin haber
+                hecho nada. Lo mismo vale para QA. Si un agente no puede acabar, lo dices en
+                el informe; no lo dejas corriendo.
+             4. Valida como manda tu rol: **una Task QA por tarea, en paralelo**, cada una
                 desde su propio árbol de integración (su rama sobre la base del lote),
                 corriendo el plan de su spec verbatim, las dos gates (`npm test`,
                 `npm run build`) y la auditoría de su diff contra sus exclusive paths. Un
                 lote de UNA sola tarea colapsa a una única pasada que cubre también la
                 integración; con dos o más, añade la ola de integración sobre el árbol
                 combinado (auditoría cruzada y ensayo del merge).
-             4. Si QA aprueba: **antes de empujar, ponte al día**: `git fetch origin` y
-                trae origin/main a tu rama (rebase o merge). Puede que un humano haya
-                empujado mientras trabajabas, y un push rechazado tiraría el ciclo entero.
-                Después mergea las ramas en main con --no-ff EN ORDEN DE ID, corre las dos
-                gates después de CADA merge, tickea cada casilla en TODO.md, archívalas en
-                CHANGELOG.md (una entrada por tarea, en inglés, al principio de
-                ## Unreleased), commit y push a origin main. Borra los worktrees.
-             5. Si QA es roja: NO mergees. Marca la tarea `[!]` en TODO.md con
-                `BLOCKED: QA red, issue #<n>`, abre un issue `agent-blocked` con el
-                diagnóstico, empuja el cambio de TODO.md a main y termina el informe.
+                Si QA pasa, escribe el veredicto EN LA RAMA y empújalo, sin tocar su
+                contenido:
+                  git worktree add --detach ../wt-mark-<ID> origin/task-<ID>
+                  cd ../wt-mark-<ID>
+                  git commit --allow-empty -m "qa: pass task-<ID>" \
+                    -m "Verified-At: <sha del árbol de integración>" \
+                    -m "Tip: <sha de la rama que QA vio>" \
+                    -m "Gates: npm test (<n> tests), npm run build" \
+                    -m "Report: <una frase con la evidencia>"
+                  git push origin HEAD:refs/heads/task-<ID>
+                  cd -
+                  git worktree remove ../wt-mark-<ID>
+                Si falla, devuélvelo al autor (máximo 2 rondas) y, si no hay arreglo, marca
+                la tarea `[!]`, abre issue y borra la rama.
+             5. **Envío atómico por tarea, en orden de ID.** Antes de empujar, `git fetch
+                origin` y ponte al día con origin/main. Luego, por cada rama con
+                `qa: pass`:
+                  git merge --no-ff --no-commit origin/task-<ID>
+                  git rm -r --cached --ignore-unmatch .agent_specs
+                  # tick de la casilla en TODO.md + entrada en CHANGELOG.md
+                  git add TODO.md CHANGELOG.md
+                  npm test && npm run build
+                  git commit -m "merge task-<ID>: <asunto>" && git push origin main
+                  git push origin --delete task-<ID>
+                El merge, el tick y el CHANGELOG viajan en el MISMO push o no viajan: main
+                nunca queda con código sin libro ni libro sin código. Si el merge o la gate
+                fallan, NO empujes main: deja esa rama en `qa: pass`, borra el worktree y
+                termina el informe; el ciclo siguiente la recoge.
+             6. Si QA es roja y no hay arreglo: NO mergees. Marca la tarea `[!]` en TODO.md
+                con `BLOCKED: QA red, issue #<n>`, abre un issue `agent-blocked` con el
+                diagnóstico, empuja el cambio de TODO.md a main, borra la rama y termina el
+                informe.
 
              Merge autorizado en esta ejecución: ${{ inputs.merge }}.
-             Si es false, para después de QA y no toques main.
+             Si es false, para después de QA: las ramas quedan en `qa: pass` y el siguiente
+             ciclo las envía.
 
              Termina con el informe corto y en español del rol: qué tarea tomaste y por qué,
              qué se verificó y cómo, qué issues abriste, qué está bloqueado, y el commit
              final de main si lo hubo.
           PROMPT_EOF
           )
-          opencode run --agent orchestrator --auto --model '${{ inputs.model }}' "$PROMPT" 2>&1 | tee /tmp/cycle.txt
+          # A transport drop is not a broken loop: retry once when it shipped nothing. With
+          # the durable branches the second attempt adopts whatever the first one pushed,
+          # so the retry is cheap; after a task shipped, the next cycle resumes instead.
+          run_cycle() {
+            opencode run --agent orchestrator --auto --model '${{ inputs.model }}' "$PROMPT" 2>&1 | tee -a /tmp/cycle.txt
+            return "${PIPESTATUS[0]}"
+          }
+          run_cycle
+          status=$?
+          if [ "$status" -eq 0 ]; then exit 0; fi
+          after=$(gh api "repos/$GITHUB_REPOSITORY/issues?state=open&per_page=100" --paginate | jq -s 'add | length' || echo '?')
+          if [ "$(git rev-parse HEAD)" = "$BEFORE_SHA" ] && [ "$after" = "${BEFORE_ISSUES:-}" ] && grep -qE 'Transport:|finish_reason' /tmp/cycle.txt; then
+            echo "::warning::The model stream dropped with nothing shipped; retrying the cycle once."
+            node scripts/agent/recon.mjs --todo TODO.md --base origin/main --out .agent_specs/resume.md
+            run_cycle
+            exit $?
+          fi
+          exit "$status"
 
       - name: What the cycle changed
         if: always()
@@ -216,28 +304,47 @@ jobs:
       - name: The merged tree still passes the gate
         id: gate
         if: always()
+        continue-on-error: true
         run: |
           set -o pipefail
           npm test 2>&1 | tee /tmp/test.log
           npm run build 2>&1 | tee /tmp/build.log
 
-      - name: A cycle that changes nothing is a red cycle
+      - name: The cycle's verdict
+        id: verdict
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENT_OUTCOME: ${{ steps.agent.outcome }}
+          GATE_OUTCOME: ${{ steps.gate.outcome }}
+          MERGE_INPUT: ${{ inputs.merge }}
         run: |
-          # Measured failure mode: the orchestrator launched a dev subagent in the
-          # background, finished its turn, and the runner took the subagent with it — so
-          # the cycle "succeeded" in seven minutes having moved nothing, and the baton
-          # handed the same no-op to the next cycle. A cycle may end with nothing merged
-          # only if it left a trace: a blocked mark, or an issue. Otherwise it failed.
+          # The run's conclusion is the outcome, not the agent's exit code. A transport
+          # drop after a task shipped is a warning, not a broken loop: with one push per
+          # task, `main` and `TODO.md` are consistent at every boundary and the next cycle
+          # resumes from the branches. A red streak must mean a loop that moves nothing.
           after=$(gh api "repos/$GITHUB_REPOSITORY/issues?state=open&per_page=100" --paginate | jq -s 'add | length')
-          echo "main before=$BEFORE_SHA now=$(git rev-parse HEAD)"
-          echo "open issues before=${BEFORE_ISSUES:-?} now=$after"
-          if git diff --quiet "$BEFORE_SHA" HEAD && [ "$after" = "${BEFORE_ISSUES:-}" ]; then
-            echo "::error::The cycle moved nothing and opened no issue: the work it started did not finish inside this run."
+          head=$(git rev-parse HEAD)
+          moved=no; [ "$head" = "$BEFORE_SHA" ] || moved=yes
+          issued=no; [ "$after" = "${BEFORE_ISSUES:-}" ] || issued=yes
+          echo "main $BEFORE_SHA -> $head (moved: $moved), issues ${BEFORE_ISSUES:-?} -> $after, agent: ${AGENT_OUTCOME:-unknown}, gate: ${GATE_OUTCOME:-unknown}, merge: ${MERGE_INPUT:-true}"
+
+          if [ "${GATE_OUTCOME:-unknown}" != success ]; then
+            echo "::error::The merged tree does not pass the gate: nothing is trusted until it does."
             exit 1
           fi
+          if [ "$moved" = yes ] || [ "$issued" = yes ]; then
+            if [ "${AGENT_OUTCOME:-unknown}" != success ]; then
+              echo "::warning::The cycle exited ${AGENT_OUTCOME}, but it left a trace (main moved and/or an issue opened); the next cycle resumes from it."
+            fi
+            exit 0
+          fi
+          if [ "$MERGE_INPUT" != true ] && [ "${AGENT_OUTCOME:-unknown}" = success ]; then
+            echo "::warning::Stopped after QA on purpose (merge disabled); the branches stay in qa: pass for the next cycle."
+            exit 0
+          fi
+          echo "::error::The cycle moved nothing and opened no issue: the work it started did not finish inside this run."
+          exit 1
 
       - name: Hand the baton to the next cycle
         if: always()
@@ -258,6 +365,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AGENT_OUTCOME: ${{ steps.agent.outcome }}
           GATE_OUTCOME: ${{ steps.gate.outcome }}
+          VERDICT_OUTCOME: ${{ steps.verdict.outcome }}
           MERGE_INPUT: ${{ inputs.merge }}
         run: |
           # The run's own summary. GitHub renders its own test panel from the log; this
@@ -289,13 +397,17 @@ jobs:
           fi
           open=$(grep -cE '^- \[ \] \*\*\[Task-' TODO.md || true)
           marks=$(grep -cE '^- \[!\] \*\*\[Task-' TODO.md || true)
+          inflight=$(grep -oE 'branches alive: [0-9]+' .agent_specs/resume.md 2>/dev/null | grep -oE '[0-9]+' || true)
+          [ -n "$inflight" ] || inflight='?'
 
-          if [ "${AGENT_OUTCOME:-unknown}" != success ] || [ "${GATE_OUTCOME:-unknown}" != success ]; then
+          if [ "${VERDICT_OUTCOME:-unknown}" != success ]; then
             emoji='🛑'; title='The cycle failed'
           elif [ "$MERGE_INPUT" != 'true' ]; then
             emoji='⚠️'; title='Stopped after QA (merge disabled)'
           elif [ "$moved" = "$before" ]; then
             emoji='⚠️'; title='Nothing shipped this cycle'
+          elif [ "${AGENT_OUTCOME:-unknown}" != success ]; then
+            emoji='♻️'; title='Interrupted, resumable'
           else
             emoji='✅'; title='Batch shipped'
           fi
@@ -309,6 +421,14 @@ jobs:
           line "| Gate (post-merge) | ${GATE_OUTCOME:-unknown}${tests:+ · $tests} |"
           line "| Diff | $diff |"
           line "| Backlog | $open open · $marks blocked |"
+          line "| In flight | $inflight task branch(es) |"
+
+          if [ "${VERDICT_OUTCOME:-unknown}" = success ] && [ "${AGENT_OUTCOME:-unknown}" != success ]; then
+            line ""
+            line "### ♻️ Interrupted, not lost"
+            line ""
+            line "The process ended with \`${AGENT_OUTCOME}\`; every task it finished is already on \`main\` (one push per task, tick and CHANGELOG included) and any task in flight travels in its \`task-*\` branch. The next cycle adopts it."
+          fi
 
           if [ -n "$review" ]; then
             line ""

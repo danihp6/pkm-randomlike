@@ -18,13 +18,15 @@ half of it that runs unattended on GitHub Actions. The workflows themselves are 
 ## One cycle
 
 The Orchestrator role drives it (`opencode run --agent orchestrator --auto`), because
-nested subagents were measured working headlessly. It reads `TODO.md`, takes **the
-lowest pending batch whole** (2-4 tasks; nobody inside a batch shares a path), writes
-one spec per task, gives each dev a worktree and its own spec, runs one Task QA per
-task in parallel from its own integration tree, adds the integration wave on the
-combined tree for two or more tasks, merges in ID order with the gate after each
-merge, ticks `TODO.md`, archives each task in `CHANGELOG.md`, pushes, and deletes its
-worktrees.
+nested subagents were measured working headlessly. It first reads the resume table
+(`.agent_specs/resume.md`, written from the refs by `scripts/agent/recon.mjs`), adopts
+any task already in flight, and only then takes **the lowest pending batch whole**
+(2-4 tasks; nobody inside a batch shares a path). It writes one spec per task, pushes
+each `task-<ID>` branch with that spec as its first commit, gives each dev a worktree
+and its own spec, runs one Task QA per task in parallel from its own integration tree,
+adds the integration wave on the combined tree for two or more tasks, and then ships
+**one task per push** in ID order: merge `--no-ff`, drop the spec, tick `TODO.md`,
+archive the task in `CHANGELOG.md`, gate, push, delete the branch and the worktree.
 
 Every subagent is launched **in the foreground and waited for**. This is a single
 pass: when the orchestrator's turn ends the process ends, and a background subagent
@@ -44,6 +46,66 @@ Two facts the local flow took for granted, and that the runner has to be told:
   checkout by the cycle itself (deploy key, pinned `ASSETS_COMMIT`) and handed over as
   `$ASSETS_ROOT` / `POKEANIL_*`. The `AGENTS.md` asset rule still applies: absolute
   paths, never a junction.
+
+## The durable unit is the task
+
+A runner is ephemeral and the model stream is not reliable — measured: two transport
+drops in nine cycles on 2026-10-19, one of them losing a spec and a dev's worktree. So
+the batch is not what survives; the **task** is. Two refs and one convention carry the
+whole state, and a fresh run reads them instead of guessing:
+
+| Ref | Means |
+| --- | --- |
+| `origin/main` | shipped, with each task's tick and CHANGELOG entry |
+| `origin/task-<ID>` | a task in flight, spec committed as its first commit |
+| the branch tip's subject | whose turn it is |
+
+The tip is a turnstile:
+
+- `dev: done task-<ID>` — the dev finished and its own gate was green; QA is next.
+- `qa: pass task-<ID>` — QA validated that exact tip; the merge is next.
+- anything else — the dev died mid-task. A partial branch is **not** resumed: it is
+  deleted and the task is redone, because trusting half a task costs more than paying
+  for the dev again.
+
+`scripts/agent/recon.mjs` is the only reader: it fetches, lists the live branches,
+checks which are already in `main`, reads the marker and the spec, and writes the
+table the Orchestrator adopts. Its pure parts are unit-tested (`recon.test.mjs`), so
+the state a cycle acts on is a tested function of the refs, not a model's memory.
+
+A QA verdict is a commit, not a message: the Orchestrator writes `qa: pass` on the
+branch with the integration sha, the tip it validated, the gates and the evidence, and
+pushes it. A later commit moves the tip and the verdict stops applying — the same rule
+QA already had ("results stay valid as long as the tip did not move").
+
+## One push per task
+
+The merge, the tick in `TODO.md` and the `CHANGELOG.md` entry are committed together
+and pushed once. `main` is therefore consistent at every boundary: no cycle can leave
+code shipped but unticked, or a tick without the code. The spec travels in the branch
+(force-added, since `.agent_specs/` is ignored) and is removed from the index before
+the merge commit, so it never reaches `main`.
+
+The cost is history: each task adds its dev commits, two empty markers and one merge
+commit. The benefit is that a kill at any instant loses at most the task in flight, and
+the next cycle adopts the rest.
+
+## The verdict
+
+The job's conclusion is the outcome, not the agent's exit code. `Run the cycle` and the
+gate are `continue-on-error`, and `The cycle's verdict` decides:
+
+- gate red → red, whatever else happened;
+- `main` moved or an issue was opened → green, with a warning when the agent exited
+  non-zero (`♻️ Interrupted, resumable` in the summary);
+- `merge: false` and a clean exit → green with "stopped after QA";
+- nothing moved and no issue → red. That is the measured failure mode the guard exists
+  for: an agent that launches work in the background and ends its turn.
+
+A transport drop that shipped nothing is retried **once inside the job**, after a fresh
+Recon: the second attempt adopts whatever the first one pushed. A drop that already
+shipped a task is not retried — the next cycle resumes and the run is green, so a bad
+socket cannot consume one of the day's three red slots.
 
 ## Task states
 
@@ -87,7 +149,8 @@ task (or a `git revert -m 1 <merge>`), not a blocked merge.
 - At least one `- [ ]` task remains. With none, the loop parks itself and says so in an
   issue.
 - Fewer than three red cycles today (a broken loop, not a busy one; re-run
-  `agent / cycle` by hand to resume).
+  `agent / cycle` by hand to resume). **Red means the verdict above**, not any
+  non-zero exit: a run that shipped and then lost its socket is green.
 - At most `AGENT_DAILY_CYCLES` cycles today, when that variable is set to a number.
   **Unset or `0` means no cap** — which is the current setting.
 - Inside the armed window, when there is one: `AUTOPILOT_FROM` / `AUTOPILOT_UNTIL` hold
@@ -135,17 +198,23 @@ the guarantee.
 ## Budget
 
 A cycle is not cheap in runner minutes: one whole-batch cycle (three tasks) measured
-**1h32m**, so roughly half an hour per task. Runner minutes are per job and are the
-account's, not the repository's: on the Free plan a private repository shares 2,000
-minutes a month across the whole account, and running out **blocks** Actions (or bills
-it, when a payment method exists) rather than slowing down. The finite backlog is what
-bounds the loop in practice: ~30 tasks in whole batches is ~15 hours of runner, after
-which there is no `- [ ]` left and the loop parks. The timed window adds a ~10-second
-hourly job while a range is armed (and none at all when it is not, since the job skips
-itself), which is cheap next to the cycle it is there to stop starting.
+**1h32m**, so roughly half an hour per task. The per-task push is what bounds a killed
+run: it loses at most the task in flight, not the batch. Runner minutes are per job and
+are the account's, not the repository's: on the Free plan a private repository shares
+2,000 minutes a month across the whole account, and running out **blocks** Actions (or
+bills it, when a payment method exists) rather than slowing down. The finite backlog is
+what bounds the loop in practice: ~30 tasks in whole batches is ~15 hours of runner,
+after which there is no `- [ ]` left and the loop parks. The timed window adds a
+~10-second hourly job while a range is armed (and none at all when it is not, since the
+job skips itself), which is cheap next to the cycle it is there to stop starting.
 
 ## Known holes
 
+- A branch whose dev died mid-task is redone, not resumed: the spec and the partial
+  commits are dropped. That is deliberate, and it costs one dev per interrupted task.
+- The markers are the state, so a human committing on a `task-*` branch can make a
+  verdict stale (the tip no longer reads `qa: pass`, and the next cycle re-runs QA).
+  Only the Orchestrator owns those branches.
 - `main` has no protection: rulesets and classic branch protection need a paid plan or
   a public repository. The only thing standing between the agent and `main` is the
   cycle's own gate plus the job permissions, where only `agent-cycle` gets
