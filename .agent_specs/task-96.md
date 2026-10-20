@@ -57,6 +57,22 @@ Modify:
 - `src/scenes/RouteScene.ts` — the `static` seal record and the wild-battle host hook.
 - `src/ui/notice.ts` — two notice builders.
 - `src/ui/notice.test.ts` — their cases.
+- `src/engine/run/curve.test.ts` — **the deliberate re-pin** `MEASURED_FILL` a floor
+  gaining a room forces: `routeIndexForRoom` (`src/engine/run/floors.ts` 65-70) sums
+  the **previous floors' room counts**, so the floor that hangs the new leaf makes every
+  later floor's rooms build from a shifted route index and place a trainer more or less.
+  Precedent: the commit that retired the shop room re-pinned this same table. Record the
+  walk as it stands; **do not** re-solve the eight factors (that is a balance task, and
+  `src/data/run.ts` is not in this task's paths).
+- `docs/balance/route-curve.md` — **one new paragraph only**, headed
+  `**Re-walked again (Task-96).**`, appended after the Task-92 paragraph: the walk moved
+  because a floor gained a room, the eight measured fills now read the values
+  `curve.test.ts`'s `MEASURED_FILL` pins, every one still sits inside the rule's
+  `1.05 – 1.5` window, the analytic table's `fill` column is unchanged (it is
+  `0.75 × T̄ × A / needed`, which the shift does not touch) and the sheet's older
+  "within a hundredth of 1.25" claim describes the **walk before** this task. The band
+  table, the per-map analytic table and the eight factors are **not** edited, and no
+  balancing value is re-solved.
 - `src/i18n/en.ts` — two keys (source table).
 - `src/i18n/es.ts` — the same two keys.
 - `src/engine/README.md` — the new module's line.
@@ -222,9 +238,8 @@ Frozen behaviour:
 - `fixture(host)` returns `null` when `host.route().gate` is `undefined` or when
   `isItemPicked(host.run, staticSpeciesId(host.view.mapIndex, host.view.roomId))` is
   true (the species has been fought). Otherwise it returns
-  `{ counter: gate.pocket, notice? }`, where `notice` is `staticLegendaryNotice(name)`
-  only when the content's variant is `'legendary'`:
-  `name` is `getSpecies(content.speciesId)?.name ?? content.speciesId`.
+  `{ counter: gate.pocket, notice? }`, where `notice` is `staticLegendaryNotice()`
+  only when the content's variant is `'legendary'`.
 - `interact(host, tile)` answers `true` (consumed) only for two tiles, in this order:
   1. the **seal** (`gate.tile`) while `isItemPicked(host.run, staticGateId(...))` is
      false: if `staticGateOpen(host.run, content.gate)` is false it calls
@@ -264,13 +279,15 @@ Frozen behaviour:
 /** The static leaf's refusal: a type obstacle keeps the shipped line, the feature seal its own. */
 export function staticSealLockedNotice(kind: GateKind): Notice;
 
-/** The static leaf holds the legendary variant: `<name>` is the species' dex name. */
-export function staticLegendaryNotice(name: string): Notice;
+/** The static leaf holds the legendary variant: a hint, never the species' name. */
+export function staticLegendaryNotice(): Notice;
 ```
 
 - `staticSealLockedNotice('bush')` → `t('gate.locked.bush')` (reuse),
   `('rock')` → `t('gate.locked.rock')` (reuse), `('water')` → `t('static.locked.water')`.
-- `staticLegendaryNotice(name)` → `t('notice.staticLegendary', { name })`.
+- `staticLegendaryNotice()` → `t('notice.staticLegendary')`. It takes **no parameter**:
+  the line names no species on purpose (a hint, not a spoiler) and a key cannot print a
+  token it does not declare (`src/i18n/index.test.ts` enforces the token set).
 - Both return `{ text, holdMs: NOTICE_HOLD_MS }`, like every builder there.
 
 ### Data
@@ -368,6 +385,14 @@ there would move every floor's trainer composition from map 3 on. Minting the le
 stream keeps every shipped draw byte-identical — the plan's own stream-field comment
 (`src/engine/maps/streams.ts`) already anticipates a later pass joining without moving
 an existing draw.
+
+**The room count does move one thing, and the spec owns it.** A floor that hangs the
+leaf holds one room more, and `routeIndexForRoom` sums the previous floors' room counts,
+so every **later** floor's rooms build from a shifted route index and place a trainer
+more or less: `src/engine/run/curve.test.ts`'s `MEASURED_FILL` is re-pinned to the walk
+as it now stands, and `docs/balance/route-curve.md` gains the one `Re-walked again
+(Task-96).` paragraph that records it. Every fill must still sit inside the rule's
+`1.05 – 1.5` window and the eight factors are **not** re-solved here.
 
 `src/scenes/RouteScene.ts` (modify, exactly two changes):
 
@@ -480,7 +505,7 @@ Tests the dev owes (all in files already listed above):
   fixture's `counter`/`notice` and its `null` after the record, and the marker.
 - `src/scenes/rooms/registry.test.ts`: `SHIPPED_KINDS` gains `'static'`.
 - `src/ui/notice.test.ts`: one case per builder (the three kinds' lines, the legendary
-  line with the name interpolated, Spanish overlay, the shared hold).
+  line with no interpolation, Spanish overlay, the shared hold).
 
 - **Acceptance criteria:**
 
@@ -493,6 +518,7 @@ Tests the dev owes (all in files already listed above):
   - [ ] `[unit]` The wild pool did not widen: `git diff main...task-96 -- src/engine/run/pool.ts` prints nothing, `npx vitest run src/engine/run/pool.test.ts` is green, and the new data test asserts every `LEGENDARY_SPECIES` id is absent from `speciesPool(band, 'wild')` for every band.
   - [ ] `[unit]` No shipped floor moved: `git diff main...task-96 -- src/engine/maps/plan.test.ts` changes only (a) the shipped-kind filters that now list `'static'`, (b) `SHIPPED_FLOORS` entries whose floor now hangs a `static` leaf, and (c) added `static` tests; the pinned tables `SHIPPED_SPECIALS` (its per-key values), `PLAN_PINS`, `TRADE_LEAVES` and `NO_HEAL_LEAVES` are byte-identical to `main`. Check with `git diff main...task-96 -- src/engine/maps/plan.test.ts`.
   - [ ] `[unit]` The capture and permadeath rules are untouched: `git diff main...task-96 -- src/engine/battle/capture.ts src/engine/run/resolve.ts src/engine/run/perms.ts src/ui/permadeath.ts` prints nothing and `npx vitest run src/engine/battle/capture.test.ts src/engine/run/resolve.test.ts` is green.
+  - [ ] `[unit]` The curve walk is recorded, not invented: `npx vitest run src/engine/run/curve.test.ts` is green with `MEASURED_FILL` pinned to the walk this plan change produces, every floor's fill is inside `1.05 – 1.5`, `src/data/run.ts` and `src/data/maps.ts` are **byte-identical** to `main` (`git diff main...task-96 -- src/data/run.ts src/data/maps.ts` prints nothing), and `docs/balance/route-curve.md`'s new `Re-walked again (Task-96).` paragraph names those same eight fills verbatim while the band table, the analytic table and the eight factors are unchanged.
   - [ ] `[live]` **The leaf, its seal and its prize exist in the running game.** With `npm run dev` and a live run (start any run from the menu, so `game.scene.getScene('Route')` is not null), run this in the page:
 
     ```js
