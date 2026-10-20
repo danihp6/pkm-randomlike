@@ -9,6 +9,7 @@
 // Outputs are gitignored; a clone without the store runs against the committed
 // blanks in `src/assets/placeholders/`.
 import { existsSync } from 'node:fs'
+import { copyFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -121,6 +122,18 @@ const STEPS = [
 
 const path = (relative) => resolve(STORE, relative)
 const missing = (step) => step.needs.paths.filter((relative) => !existsSync(path(relative)))
+/** Atlases whose source sheets were never kept: the store carries the packed copy. */
+const PREBUILT = [
+  'moves.png',
+  'items.png',
+  'hud.png',
+  'wood.png',
+  'desert.png',
+  'apple-woods.png',
+  'lush-prairie.png',
+  'beach-cave.png',
+]
+
 const failures = []
 
 for (const [index, step] of STEPS.entries()) {
@@ -151,4 +164,15 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`  - ${failure}`)
   process.exit(1)
 }
+
+const prebuilt = PREBUILT.filter((name) => existsSync(path(`prebuilt/${name}`)))
+if (prebuilt.length > 0) {
+  for (const name of prebuilt) {
+    copyFileSync(path(`prebuilt/${name}`), resolve(REPO, 'src/assets', name))
+  }
+  console.log(`[${STEPS.length + 1}/${STEPS.length + 1}] prebuilt atlases: done (${prebuilt.length})`)
+} else {
+  console.warn(`[${STEPS.length + 1}/${STEPS.length + 1}] prebuilt atlases: skipped (the store has no prebuilt/)`)
+}
+
 console.log(`\npacked from ${STORE}`)
