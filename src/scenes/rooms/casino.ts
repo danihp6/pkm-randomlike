@@ -1,8 +1,10 @@
 import type Phaser from 'phaser';
 import { CASINO, EGG_ITEM_ID } from '../../data/casino';
+import { ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../../data/itemIcons';
 import { getItem } from '../../data/items';
 import { keyLabel, type KeybindAction } from '../../data/keybinds';
 import {
+  OVERWORLD_SPRITE_HEIGHT,
   OVERWORLD_SPRITE_TEXTURE_KEY,
   OVERWORLD_SPRITE_WIDTH,
   overworldSpriteFrame,
@@ -15,33 +17,54 @@ import { TILE_SIZE } from '../../engine/tileset';
 import { t } from '../../i18n';
 import { trainerFacingPose } from '../../render/trainerAnim';
 import { loadSettings } from '../../settings';
+import { casinoGruntTrainerId, casinoSpin, type CasinoOutcome } from '../../ui/casino';
+import {
+  CASINO_CARD_H,
+  CASINO_CARD_W,
+  REEL_BAND_LEFT,
+  REEL_BAND_TOP,
+  REEL_COUNT,
+  REEL_GAP,
+  REEL_H,
+  REEL_TICK_MS,
+  REEL_W,
+  reelFace,
+  reelFaceIndex,
+  reelRects,
+  reelRestFace,
+  reelStopAt,
+  reelStrips,
+  type ReelFace,
+} from '../../ui/casinoReels';
 import {
   FRLG_ACCENT,
   FRLG_MUTED,
+  FRLG_ROW_FILL,
+  FRLG_ROW_STROKE,
   FRLG_SELECTED_FILL,
   FRLG_SELECTED_STROKE,
+  FRLG_TRACK,
   addFrlgWindow,
 } from '../../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../../ui/frlgFont';
-import { casinoGruntTrainerId, casinoSpin } from '../../ui/casino';
 import { CASINO_MACHINE_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from '../BootScene';
 import type { RoomDescriptor, RoomHost, RoomPanel } from './types';
 
 /**
  * The **casino** room (`docs/maps-spec.md` §7, D33, D47): the Team Rocket grunt's
- * slot machine. Paying a spin spends the floor band's price and pays an item, an
- * Egg or the fight against the grunt — which locks the machine for the floor. The
- * counter fixture is the room's own tile, the window is this module's own
- * `RoomPanel` (the Mart's pattern) and the whole model is `src/ui/casino.ts`, so
- * the scene is not edited beyond the two `RoomHost` hooks the port gains.
+ * slot machine. The window is the machine itself — a cabinet with three reels
+ * whose faces are the band's drawn prizes, or the grunt's Rocket icon when the
+ * booked outcome is the fight. `SPIN` and `LEAVE` answer the keys and the pointer.
+ * The whole model is `src/ui/casino.ts` (the spin) and `src/ui/casinoReels.ts` (the
+ * geometry, the faces and the schedule), so this module only draws the reveal of an
+ * outcome that is already committed: no reload can re-roll or refund it.
  */
 
-/** The window's own geometry: two rows of 44 px inside a 460x220 card. */
-const CASINO_W = 460;
-const CASINO_H = 220;
+/** The window's chrome: 24 px padding, two 44 px rows under the reel band. */
 const CASINO_PAD = 24;
 const CASINO_ROW_H = 44;
 const CASINO_ROWS = 2;
+const CASINO_ROW_TOP = REEL_BAND_TOP + REEL_H + 16;
 
 /** The machine texture's own pixel size, and the depth the two sprites draw at. */
 const CASINO_MACHINE_SIZE = 22;
@@ -72,6 +95,21 @@ let casinoRows: CasinoRowObjects[] = [];
 let casinoMoneyText!: Phaser.GameObjects.BitmapText;
 let casinoMessageText!: Phaser.GameObjects.BitmapText;
 
+/** The three face images, the masks that clip them and the graphics those hold. */
+let casinoReels: Phaser.GameObjects.Image[] = [];
+let casinoMasks: Phaser.Display.Masks.GeometryMask[] = [];
+let casinoMaskGraphics: Phaser.GameObjects.Graphics[] = [];
+
+/** The booked outcome being revealed, its strips and where each reel has got to. */
+let spinOutcome: CasinoOutcome | null = null;
+let spinStrips: readonly (readonly ReelFace[])[] = [];
+let spinShown: number[] = [];
+let spinStopped: boolean[] = [];
+let spinStartedAt = 0;
+let spinning = false;
+/** Every timer the reveal owns, removed on its end, a skip or the window's close. */
+let spinTimers: Phaser.Time.TimerEvent[] = [];
+
 /** A route tile's centre in world pixels, the placement the scene draws entities at. */
 const centerX = (tileX: number): number => tileX * TILE_SIZE + TILE_SIZE / 2;
 const centerY = (tileY: number): number => tileY * TILE_SIZE + TILE_SIZE / 2;
@@ -89,6 +127,9 @@ function machineOf(host: RoomHost): Tile | null {
  */
 function openCasino(host: RoomHost): void {
   if (host.panelOpen()) return;
+  clearSpinTimers();
+  spinning = false;
+  spinOutcome = null;
   host.releaseHudKeyboard();
   casinoIndex = 0;
   casinoMessage = '';
@@ -98,62 +139,164 @@ function openCasino(host: RoomHost): void {
   host.openPanel(PANEL);
 }
 
-/** Tears the window down (the scene calls it when the room changes or a battle opens). */
+/** Tears the window down: every timer, mask and the root, then the module state. */
 function closeCasino(): void {
+  clearSpinTimers();
+  spinning = false;
+  spinOutcome = null;
+  spinStrips = [];
+  spinShown = [];
+  spinStopped = [];
+  spinStartedAt = 0;
+  for (const mask of casinoMasks) mask.destroy();
+  for (const graphics of casinoMaskGraphics) graphics.destroy();
+  casinoMasks = [];
+  casinoMaskGraphics = [];
+  casinoReels = [];
+  casinoRows = [];
+  panelHost = null;
   if (!casinoRoot) return;
   casinoRoot.destroy(true);
   casinoRoot = null;
-  casinoRows = [];
-  panelHost = null;
 }
 
-/** Builds the window's static frame and its two rows once per open. */
+/** Removes every timer the reveal scheduled, so a late callback paints nothing. */
+function clearSpinTimers(): void {
+  for (const timer of spinTimers) timer.remove();
+  spinTimers = [];
+}
+
+/** Paints one reel's face: an item icon filling its window, or the Rocket sprite. */
+function paintFace(reel: number, face: ReelFace): void {
+  const image = casinoReels[reel];
+  if (!image) return;
+  if (face.kind === 'rocket') {
+    const frame = overworldSpriteFrame('rocket');
+    if (frame !== null) {
+      image
+        .setTexture(OVERWORLD_SPRITE_TEXTURE_KEY, frame)
+        .setScale(REEL_H / OVERWORLD_SPRITE_HEIGHT)
+        .clearTint();
+    } else {
+      image
+        .setTexture(TRAINER_TEXTURE_KEY)
+        .setScale(REEL_H / OVERWORLD_SPRITE_HEIGHT)
+        .setTint(CASINO_GRUNT_COLOUR);
+    }
+    return;
+  }
+  const frame = itemIconFrame(face.itemId);
+  if (frame !== null) image.setTexture(ITEM_ICON_TEXTURE_KEY, frame);
+  else image.setTexture(ITEM_ICON_TEXTURE_KEY);
+  image.setScale(REEL_W / ITEM_ICON_SIZE).clearTint();
+}
+
+/** Builds the window's static frame: the cabinet, its three clipped reels and the rows. */
 function buildCasinoPanel(host: RoomHost): void {
   const scene = host.scene;
   const { width, height } = scene.scale;
-  const x = (width - CASINO_W) / 2;
-  const y = (height - CASINO_H) / 2;
-  const left = x + CASINO_PAD;
-  const right = x + CASINO_W - CASINO_PAD;
+  const cardX = (width - CASINO_CARD_W) / 2;
+  const cardY = (height - CASINO_CARD_H) / 2;
+  const left = cardX + CASINO_PAD;
+  const right = cardX + CASINO_CARD_W - CASINO_PAD;
+  const band = bandForMap(host.run.mapIndex).id;
   const children: Phaser.GameObjects.GameObject[] = [
     scene.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0),
-    addFrlgWindow(scene, x, y, CASINO_W, CASINO_H),
-    addFrlgText(scene, left, y + 16, t('casino.title'), { size: 24, tint: FRLG_INK }),
+    addFrlgWindow(scene, cardX, cardY, CASINO_CARD_W, CASINO_CARD_H),
+    addFrlgText(scene, cardX + CASINO_PAD, cardY + 16, t('casino.title'), {
+      size: 24,
+      tint: FRLG_INK,
+    }),
   ];
-  casinoMoneyText = addFrlgText(scene, right, y + 20, '', {
+
+  casinoMoneyText = addFrlgText(scene, right, cardY + 20, '', {
     size: 16,
     tint: FRLG_MUTED,
     origin: [1, 0],
   });
   children.push(casinoMoneyText);
 
+  // The cabinet: one recessed field behind the three windows, then the windows
+  // themselves. Only chrome tones fill or stroke them (`src/ui/README.md` rule 3).
+  const bandX = cardX + REEL_BAND_LEFT;
+  const bandY = cardY + REEL_BAND_TOP;
+  const fieldW = REEL_COUNT * REEL_W + (REEL_COUNT - 1) * REEL_GAP + 16;
+  children.push(
+    scene.add
+      .rectangle(bandX - 8, bandY - 8, fieldW, REEL_H + 16, FRLG_TRACK.colour, FRLG_TRACK.alpha)
+      .setOrigin(0, 0)
+      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha),
+  );
+
+  casinoReels = [];
+  casinoMasks = [];
+  casinoMaskGraphics = [];
+  const rects = reelRects(cardX, cardY);
+  for (let reel = 0; reel < REEL_COUNT; reel++) {
+    const rect = rects[reel];
+    children.push(
+      scene.add
+        .rectangle(rect.x, rect.y, rect.w, rect.h, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
+        .setOrigin(0, 0)
+        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha),
+    );
+    const image = scene.add.image(rect.x, rect.y, ITEM_ICON_TEXTURE_KEY).setOrigin(0, 0);
+    const maskGraphics = scene.make.graphics();
+    maskGraphics.fillRect(rect.x, rect.y, rect.w, rect.h);
+    const mask = maskGraphics.createGeometryMask();
+    image.setMask(mask);
+    casinoMaskGraphics.push(maskGraphics);
+    casinoMasks.push(mask);
+    casinoReels.push(image);
+    children.push(image);
+    paintFace(reel, reelRestFace(band, reel));
+  }
+
+  // A press anywhere on the card skips a running reveal; the two row zones below
+  // sit over it, so an idle press still lands on its own row.
+  const cardZone = scene.add
+    .zone(cardX, cardY, CASINO_CARD_W, CASINO_CARD_H)
+    .setOrigin(0, 0)
+    .setInteractive({ useHandCursor: true });
+  cardZone.on('pointerdown', () => {
+    if (spinning) skipReveal(host);
+  });
+  children.push(cardZone);
+
   casinoRows = [];
+  const rowW = CASINO_CARD_W - CASINO_PAD * 2;
   for (let i = 0; i < CASINO_ROWS; i++) {
-    const rowY = y + 60 + i * CASINO_ROW_H;
+    const rowY = cardY + CASINO_ROW_TOP + i * CASINO_ROW_H;
     const highlight = scene.add
-      .rectangle(
-        left,
-        rowY,
-        CASINO_W - CASINO_PAD * 2,
-        CASINO_ROW_H - 6,
-        FRLG_SELECTED_FILL.colour,
-        FRLG_SELECTED_FILL.alpha,
-      )
+      .rectangle(left, rowY, rowW, CASINO_ROW_H - 6, FRLG_SELECTED_FILL.colour, FRLG_SELECTED_FILL.alpha)
       .setOrigin(0, 0)
       .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
       .setVisible(false);
     const label = addFrlgText(scene, left + 16, rowY + 10, '', { size: 16, tint: FRLG_INK });
+    const zone = scene.add
+      .zone(left, rowY, rowW, CASINO_ROW_H)
+      .setOrigin(0, 0)
+      .setInteractive({ useHandCursor: true });
+    zone.on('pointerover', () => {
+      if (spinning || casinoIndex === i) return;
+      casinoIndex = i;
+      refreshCasino();
+    });
+    zone.on('pointerdown', () => pressRow(host, i));
     casinoRows.push({ highlight, label });
-    children.push(highlight, label);
+    children.push(highlight, label, zone);
   }
 
-  casinoMessageText = addFrlgText(scene, left, y + CASINO_H - 62, '', { size: 16, tint: FRLG_INK });
+  casinoMessageText = addFrlgText(scene, left, cardY + CASINO_CARD_H - 68, '', {
+    size: 16,
+    tint: FRLG_INK,
+  });
   children.push(
     casinoMessageText,
     addFrlgText(
       scene,
       right,
-      y + CASINO_H - 34,
+      cardY + CASINO_CARD_H - 38,
       t('casino.controls', {
         confirm: keyLabel(loadSettings().keybinds.confirm),
         cancel: keyLabel(loadSettings().keybinds.cancel),
@@ -173,16 +316,20 @@ function refreshCasino(): void {
   const price = CASINO.price[bandForMap(host.run.mapIndex).id];
   casinoMoneyText.setText(t('casino.money', { amount: host.run.money }));
   casinoRows.forEach((row, i) => {
-    const selected = i === casinoIndex;
+    const selected = !spinning && i === casinoIndex;
     row.highlight.setVisible(selected);
     row.label.setText(i === 0 ? t('casino.spin', { price }) : t('casino.leave'));
-    row.label.setTint(selected ? FRLG_ACCENT : FRLG_INK);
+    row.label.setTint(spinning ? FRLG_MUTED : selected ? FRLG_ACCENT : FRLG_INK);
   });
   casinoMessageText.setText(casinoMessage);
 }
 
 /** The window's keys: move the cursor, spin/leave on `E`, close on `Q`. */
 function handleCasinoAction(host: RoomHost, action: KeybindAction): void {
+  if (spinning) {
+    if (action === 'confirm' || action === 'interact') skipReveal(host);
+    return;
+  }
   switch (action) {
     case 'up':
       moveCasino(-1);
@@ -207,6 +354,17 @@ function moveCasino(delta: number): void {
   refreshCasino();
 }
 
+/** A row's own press: while a reveal runs it is the skip, otherwise it takes the row. */
+function pressRow(host: RoomHost, index: number): void {
+  if (spinning) {
+    skipReveal(host);
+    return;
+  }
+  casinoIndex = index;
+  refreshCasino();
+  activateCasinoRow(host);
+}
+
 /** Takes the highlighted row: the spin pays, the leave row closes. */
 function activateCasinoRow(host: RoomHost): void {
   if (casinoIndex !== 0) {
@@ -217,21 +375,105 @@ function activateCasinoRow(host: RoomHost): void {
 }
 
 /**
- * One spin: the model decides, the window only reports. A refusal sets the reason
- * and repaints. A paying spin commits the run, and the outcome names the prize —
- * or, for the fight, closes the window **before** the battle opens, so no window
- * survives into it.
+ * One spin, in the order that makes a reload harmless: the model decides, the run
+ * is **committed before the first frame**, then the three strips and their timers
+ * are laid over the freshly booked run. A refusal paints its reason and leaves no
+ * timer and no committed run behind.
  */
 function spinCasino(host: RoomHost): void {
+  if (spinning) return;
   const spin = casinoSpin(host.run);
-  if (!spin.ok) {
+  if (!spin.ok || !spin.outcome) {
     casinoMessage = spin.reason === 'locked' ? t('casino.locked') : t('casino.noMoney');
     refreshCasino();
     return;
   }
   host.commitRun(spin.run);
+  const scene = host.scene;
   const outcome = spin.outcome;
-  if (outcome?.kind === 'battle') {
+  casinoMessage = '';
+  casinoIndex = 0;
+  spinOutcome = outcome;
+  spinStrips = reelStrips(bandForMap(host.run.mapIndex).id, outcome);
+  spinShown = new Array<number>(REEL_COUNT).fill(0);
+  spinStopped = new Array<boolean>(REEL_COUNT).fill(false);
+  spinStartedAt = scene.time.now;
+  spinning = true;
+  refreshCasino();
+
+  for (let reel = 0; reel < REEL_COUNT; reel++) {
+    paintFace(reel, spinStrips[reel][0]);
+  }
+  for (let reel = 0; reel < REEL_COUNT; reel++) {
+    spinTimers.push(scene.time.delayedCall(reelStopAt(reel), () => stopReel(host, reel)));
+  }
+  spinTimers.push(
+    scene.time.addEvent({
+      delay: REEL_TICK_MS,
+      loop: true,
+      callback: () => tickReveal(host),
+    }),
+  );
+}
+
+/** One tick of the reveal: each unstoppered reel steps only when its face changes. */
+function tickReveal(host: RoomHost): void {
+  if (!spinning || !casinoRoot) return;
+  const elapsed = host.scene.time.now - spinStartedAt;
+  for (let reel = 0; reel < REEL_COUNT; reel++) {
+    if (spinStopped[reel]) continue;
+    const index = reelFaceIndex(reel, elapsed);
+    if (index === spinShown[reel]) continue;
+    spinShown[reel] = index;
+    paintFace(reel, spinStrips[reel][index]);
+  }
+}
+
+/** One reel's stop: it freezes on the outcome, and the last stop ends the reveal. */
+function stopReel(host: RoomHost, reel: number): void {
+  if (!spinning || !casinoRoot) return;
+  const strip = spinStrips[reel];
+  if (!strip) return;
+  spinStopped[reel] = true;
+  const index = strip.length - 1;
+  spinShown[reel] = index;
+  paintFace(reel, strip[index]);
+  if (reel === REEL_COUNT - 1) finishReveal(host);
+}
+
+/** The skip: every reel freezes on the booked face and the reveal ends at once. */
+function skipReveal(host: RoomHost): void {
+  if (!spinning) return;
+  clearSpinTimers();
+  if (spinOutcome) {
+    const face = reelFace(spinOutcome);
+    for (let reel = 0; reel < REEL_COUNT; reel++) {
+      spinStopped[reel] = true;
+      spinShown[reel] = spinStrips[reel].length - 1;
+      paintFace(reel, face);
+    }
+  }
+  finishReveal(host);
+}
+
+/**
+ * Ends the reveal: an item or the Egg names what the bag just gained, the fight
+ * closes the window **before** the battle opens, exactly the shipped grunt path.
+ */
+function finishReveal(host: RoomHost): void {
+  if (!spinning) return;
+  spinning = false;
+  clearSpinTimers();
+  const outcome = spinOutcome;
+  spinOutcome = null;
+  spinStrips = [];
+  spinShown = [];
+  spinStopped = [];
+  if (!outcome) {
+    refreshCasino();
+    return;
+  }
+  if (outcome.kind === 'battle') {
     // The machine is out of order from here on, which is the line the reopened
     // window would print; the window goes first so the battle takes the screen.
     casinoMessage = t('casino.locked');
@@ -240,7 +482,7 @@ function spinCasino(host: RoomHost): void {
     if (machine) host.startTrainerBattle(gruntFor(host, machine));
     return;
   }
-  const itemId = outcome?.kind === 'item' ? outcome.itemId : EGG_ITEM_ID;
+  const itemId = outcome.kind === 'item' ? outcome.itemId : EGG_ITEM_ID;
   casinoMessage = t('notice.itemObtained', { name: getItem(itemId)?.name ?? itemId });
   refreshCasino();
 }
