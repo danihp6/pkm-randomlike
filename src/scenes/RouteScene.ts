@@ -168,7 +168,10 @@ import {
   seesPlayer,
   sketchRoute,
   sketchRouteSteps,
+  specialTrainerFor,
   trainerAt,
+  trainerHidden,
+  withForcedAbility,
   type ChefTradeRefusal,
   type Facing,
   type RouteItem,
@@ -1186,9 +1189,34 @@ export class RouteScene extends Phaser.Scene {
     // A room's own line rides the strip once its fixture is in place (the no-heal
     // leaf announces its rule this way).
     if (fixture?.notice) this.showNotice(fixture.notice);
+    this.placeSpecialTrainer(roomIndex);
     this.rollRoomNpc();
     // Last: the filter needs `this.map`, which `buildRoute` → `applyRoute` sets.
     this.buildBattlefieldOverlay();
+  }
+
+  /**
+   * Overrides the room's first trainer with a special trainer when this room's own roll
+   * draws one (`docs/routes-spec.md` §2). Once per build, from `buildRoom`, **before**
+   * `rollRoomNpc()`; reads its own stream, so the room's route, trainers, items and the
+   * floor's NPC do not move.
+   */
+  private placeSpecialTrainer(roomIndex: number): void {
+    const room = this.room;
+    if (!room) return;
+    const trainer = specialTrainerFor({
+      route: this.route,
+      seed: this.run.seed,
+      roomIndex,
+      role: room.role,
+      quiet: room.entry || room.boss || room.special !== null,
+      missionsCompleted: this.run.missionsCompleted,
+    });
+    if (!trainer) return;
+    this.route = {
+      ...this.route,
+      trainers: this.route.trainers.map((entry) => (entry.id === trainer.id ? trainer : entry)),
+    };
   }
 
   /**
@@ -1554,6 +1582,7 @@ export class RouteScene extends Phaser.Scene {
       .setScale(TILE_SIZE / PLAYER_SPRITE_WIDTH)
       .setDepth(actorDepth(0));
     this.movePlayerTo(this.player.x, this.player.y);
+    this.refreshTrainerVisibility();
 
     const cameraBounds = mapPixelSize(this.map, TILE_SIZE);
     this.cameras.main.setBounds(0, 0, cameraBounds.width, cameraBounds.height);
@@ -5038,40 +5067,56 @@ export class RouteScene extends Phaser.Scene {
   private drawTrainers(): void {
     if (this.generatorStepIndex !== null) return;
     const created: Phaser.GameObjects.GameObject[] = [];
-    for (const trainer of this.route.trainers) {
-      if (isTrainerDefeated(this.run, trainer.id)) continue;
-      const archetype = getTrainerArchetype(trainer.archetypeId);
-      const spriteKey = archetype?.spriteKey ?? null;
-      const frame = spriteKey ? overworldSpriteFrame(spriteKey) : null;
-      const footY = this.centerY(trainer.position.y) + TILE_SIZE / 2;
-      const sprite =
-        frame !== null
-          ? this.add
-              .sprite(this.centerX(trainer.position.x), footY, OVERWORLD_SPRITE_TEXTURE_KEY, frame)
-              .setOrigin(0.5, 1)
-              .setScale(TILE_SIZE / OVERWORLD_SPRITE_WIDTH)
-              .setDepth(actorDepth(footY))
-          : this.add
-              .sprite(
-                this.centerX(trainer.position.x),
-                this.centerY(trainer.position.y),
-                TRAINER_TEXTURE_KEY,
-              )
-              .setTint(archetype?.colour ?? 0xffffff)
-              .setDepth(actorDepth(footY));
-      const entry: TrainerSpriteEntry = {
-        trainer,
-        sprite,
-        spriteKey: frame !== null ? spriteKey : null,
-      };
-      this.faceTrainerSprite(entry, trainer.facing);
-      this.trainerFacing.set(trainer.id, trainer.facing);
-      this.trainerSprites.push(entry);
-      this.entitySprites.push(sprite);
-      created.push(sprite);
-    }
+    for (const trainer of this.route.trainers) this.drawTrainer(trainer, created);
     this.drawRoomNpc(created);
     this.hudCamera?.ignore(created);
+  }
+
+  /** Draws one trainer's sprite (the body of `drawTrainers`' loop), booking it into `created`. */
+  private drawTrainer(trainer: RouteTrainer, created: Phaser.GameObjects.GameObject[]): void {
+    if (isTrainerDefeated(this.run, trainer.id)) return;
+    const archetype = getTrainerArchetype(trainer.archetypeId);
+    const spriteKey = archetype?.spriteKey ?? null;
+    const frame = spriteKey ? overworldSpriteFrame(spriteKey) : null;
+    const footY = this.centerY(trainer.position.y) + TILE_SIZE / 2;
+    const sprite =
+      frame !== null
+        ? this.add
+            .sprite(this.centerX(trainer.position.x), footY, OVERWORLD_SPRITE_TEXTURE_KEY, frame)
+            .setOrigin(0.5, 1)
+            .setScale(TILE_SIZE / OVERWORLD_SPRITE_WIDTH)
+            .setDepth(actorDepth(footY))
+        : this.add
+            .sprite(
+              this.centerX(trainer.position.x),
+              this.centerY(trainer.position.y),
+              TRAINER_TEXTURE_KEY,
+            )
+            .setTint(archetype?.colour ?? 0xffffff)
+            .setDepth(actorDepth(footY));
+    const entry: TrainerSpriteEntry = {
+      trainer,
+      sprite,
+      spriteKey: frame !== null ? spriteKey : null,
+    };
+    this.faceTrainerSprite(entry, trainer.facing);
+    this.trainerFacing.set(trainer.id, trainer.facing);
+    this.trainerSprites.push(entry);
+    this.entitySprites.push(sprite);
+    created.push(sprite);
+  }
+
+  /** Shows or hides every drawn trainer's sprite through the pure `trainerHidden` rule. */
+  private refreshTrainerVisibility(): void {
+    for (const entry of this.trainerSprites) {
+      entry.sprite.setVisible(
+        !trainerHidden(
+          getTrainerArchetype(entry.trainer.archetypeId),
+          entry.trainer.position,
+          this.player,
+        ),
+      );
+    }
   }
 
   /**
@@ -5372,6 +5417,9 @@ export class RouteScene extends Phaser.Scene {
   }
 
   private onTileEntered(direction: MoveKey): void {
+    // A step re-paints the hidden archetypes' sprites before anything else: a
+    // battle this step opens must not leave them drawn.
+    this.refreshTrainerVisibility();
     // A door on the border changes room (or steps through the open portal).
     if (this.tryLeaveRoom(direction)) return;
     const grassy = isGrassStepTile(this.map, this.player.x, this.player.y, this.grassTipKeys);
@@ -5484,6 +5532,7 @@ export class RouteScene extends Phaser.Scene {
     this.drawRoomFixture();
     this.player = options?.keepPosition === true ? tile : { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
+    this.refreshTrainerVisibility();
     const bounds = mapPixelSize(this.map, TILE_SIZE);
     this.cameras.main.setBounds(0, 0, bounds.width, bounds.height);
     const picks = this.applyMapPassives('room');
@@ -5511,6 +5560,7 @@ export class RouteScene extends Phaser.Scene {
     this.drawRoomFixture();
     this.player = tile;
     this.movePlayerTo(tile.x, tile.y);
+    this.refreshTrainerVisibility();
     this.refreshHud();
   }
 
@@ -5576,6 +5626,10 @@ export class RouteScene extends Phaser.Scene {
       this.startTrainerBattle(trainer);
       return;
     }
+    // Re-paint the sprites for the player's tile, then force the chased one on
+    // screen: a ninja must be visible while it dashes in.
+    this.refreshTrainerVisibility();
+    entry.sprite.setVisible(true);
     this.stopWalking();
     this.touch?.release();
     this.chase = { entry, position: { ...trainer.position } };
@@ -5694,7 +5748,7 @@ export class RouteScene extends Phaser.Scene {
       kind: 'trainer',
       trainerId: trainer.id,
       trainerName: archetype.name,
-      roster,
+      roster: withForcedAbility(roster, archetype),
       archetypeId: archetype.id,
     });
   }
@@ -7148,6 +7202,7 @@ export class RouteScene extends Phaser.Scene {
       isTrainer: true,
       trainerId: trigger.trainerId,
       ...(money !== undefined ? { money } : {}),
+      ...(archetype?.reward !== undefined ? { item: archetype.reward } : {}),
     };
   }
 
@@ -7217,6 +7272,54 @@ export class RouteScene extends Phaser.Scene {
       ignoreEncounters: this.ignoreEncounters,
       ignoreTrainers: this.ignoreTrainers,
     };
+  }
+
+  /** Dev only: the trainers drawn on the route and whether each sprite is showing. */
+  debugTrainerSprites(): readonly Readonly<{
+    id: string;
+    archetypeId: string;
+    x: number;
+    y: number;
+    facing: Facing;
+    /** Manhattan distance from the player's tile to the trainer's. */
+    distance: number;
+    visible: boolean;
+  }>[] {
+    if (!IS_DEVELOP) return [];
+    return this.trainerSprites.map((entry) => ({
+      id: entry.trainer.id,
+      archetypeId: entry.trainer.archetypeId,
+      x: entry.trainer.position.x,
+      y: entry.trainer.position.y,
+      facing: entry.trainer.facing,
+      distance:
+        Math.abs(entry.trainer.position.x - this.player.x) +
+        Math.abs(entry.trainer.position.y - this.player.y),
+      visible: entry.sprite.visible,
+    }));
+  }
+
+  /**
+   * Dev only: swaps the room's first undefeated trainer's archetype and redraws just that
+   * sprite (`IS_DEVELOP` only). False with no trainer or an unknown id.
+   */
+  debugOverrideTrainer(archetypeId: string): boolean {
+    if (!IS_DEVELOP) return false;
+    const archetype = getTrainerArchetype(archetypeId);
+    if (!archetype) return false;
+    const trainer = this.route.trainers.find((entry) => !isTrainerDefeated(this.run, entry.id));
+    if (!trainer) return false;
+    const swapped: RouteTrainer = { ...trainer, archetypeId: archetype.id };
+    this.route = {
+      ...this.route,
+      trainers: this.route.trainers.map((entry) => (entry.id === trainer.id ? swapped : entry)),
+    };
+    this.removeTrainerSprite(trainer.id);
+    const created: Phaser.GameObjects.GameObject[] = [];
+    this.drawTrainer(swapped, created);
+    this.hudCamera?.ignore(created);
+    this.refreshTrainerVisibility();
+    return true;
   }
 
   /** Debug only: toggles walking through solid tiles (walls, water, ledges). */
@@ -7454,6 +7557,8 @@ export class RouteScene extends Phaser.Scene {
     // and run `onTileEntered` there.
     this.stopWalking();
     this.movePlayerTo(tile.x, tile.y);
+    // A teleport runs no sight check; it only re-paints the sprites' visibility.
+    this.refreshTrainerVisibility();
     this.refreshHud();
     return { ok: true };
   }
