@@ -8,6 +8,59 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **`MAP_TUNING` keeps only the cap, and a floor's level window is derived from adjacent
+      caps.** The player-relative level model left a floor with one anchor: `MapTuning` is now
+      `{ mapIndex, cap, routes, size }` with the eight caps **9 / 16 / 23 / 30 / 37 / 43 / 49 / 55**
+      (`MAP_TUNING_STEP.levelStep` still grows an out-of-table map, saturating at
+      `MAP_MAX_LEVEL`: map 9 reads 63, map 10 71, maps 14+ 100); `levelRangeForMap` and the type
+      `MapLevelRange` are gone. `src/engine/run/floors.ts` gains
+      `levelWindowForMap(m) = { minLevel: m <= 1 ? LEVEL_BANDS[0].minLevel : levelCapForMap(m-1),
+      maxLevel: levelCapForMap(m) }`, so `floorForRoute`, `bandForMap` and `runBand` return
+      **byte-identical** windows and bands for every index (`{2,9} … {49,55}`, deep maps included)
+      and `src/scenes/RouteScene.ts` — which reads the trainer cap and the boss pin off
+      `band.maxLevel` — needed no edit. The three dead per-room "working level" helpers
+      (`roomLevelForFloor`, `runRoomLevel`, `roomLevelForMap`) are deleted; `levelCap.ts`,
+      `save.ts` and the roster keep working untouched. `docs/maps-spec.md` §1/§4/§5,
+      `docs/routes-spec.md` §5's first bullet, `docs/balance/route-curve.md`'s cap section and a
+      `D29` addendum record it. No run field and **no `SAVE_VERSION`** step. **QA:** Task QA on
+      `qa-80` (`main@363d3f21` + `task-80@cfcf63dd`): `npm test` **2158** tests (from 2156) and
+      `npm run build` green, the 9-path diff inside the spec's exclusive list, and
+      `curve.test.ts`, `levelCap.test.ts`, `roster.test.ts`, `progression.test.ts`,
+      `src/engine/maps/*.test.ts`, `mapView.test.ts` and `save.test.ts` passing **undiffed** — the
+      proof the game reads the same numbers; Integration QA re-ran both gates on the combined tree
+      and the cross-task audit clean. All criteria `[unit]`; no browser pass owed.
+
+- [x] **A floor holds a fixed number of trainer rooms, and each regular room carries a population
+      role.** `MapRoom`/`RoomView` gain `role: 'trainers' | 'wild'`, tagged by `planMap` from the
+      new `TRAINER_ROOMS_PER_MAP` = **2, 2, 3, 3, 3, 4, 4, 4** (plus `TRAINER_ROOMS_MAX` 6 for
+      infinite mode) in `src/data/population.ts`; the role draws are **appended after the last
+      special draw**, so no fixed seed's biome, room count, topology, ids, sizes or specials move
+      (pinned by a three-literal plan digest in `plan.test.ts`). `RouteRequest.population` is
+      replaced by `role?: MapRoomRole` (absent = `'trainers'`, the compatibility default) and the
+      pass now places the spine guard, then **1-2 trainers** (`TRAINERS_PER_ROOM`) in a
+      `'trainers'` room and **none** in a `'wild'` one; `POPULATION`, its thinning table, the
+      map-size trainer bonus and `guardChance` leave the pass, while `wantsTrainers` gates §3.4's
+      lane guard on `role !== 'wild'`. The room's own fixed shape/size no longer changes its
+      trainer count. `src/scenes/RouteScene.ts` makes exactly two edits (drop the `POPULATION`
+      import; pass `params.room.role`). Because the floor budget collapses, `LEVEL_BANDS[*].trainerXp`
+      is **re-solved by measurement** (`early 6.07, low 16.18, mid 8.59, high 12.70, late 10.86,
+      end 7.96`) to keep the curve gate green: the measured fill column is
+      1.25/1.25/1.25/1.25/1.25/1.49/1.44/**0.96**, and maps 6-8 sharing the single `end` band make
+      the last floor's 0.96 the arithmetic limit (`needed(8)/needed(6) = 1.6887`; the legal band is
+      `[0.95, 0.9623]`). The test states that arithmetic instead of hiding it, and `[Task-83]` owns
+      the per-floor-factor fix. Docs: `docs/maps-spec.md` §2/§3/§7, `docs/routes-spec.md` §2 step 4
+      and §5 bullets 4/6, `docs/route-generator.md` §2/§3.4, `docs/design-spec.md`'s on-ramp
+      sentence, a `D30` addendum and `src/data/README.md`; `docs/balance/route-curve.md` is
+      deliberately left to Task-83. No run field and **no `SAVE_VERSION`** step. **QA:** Task QA on
+      `qa-82` (`main@363d3f21` + `task-82@771168e4`): `npm test` **2162** tests and build green, the
+      18-path diff inside the exclusive list (no `mapView.ts`, `validate.ts`, `src/data/maps.ts`,
+      `floors.ts` or the balance sheet), hot file `RouteScene.ts` its alone; the `[live]` criterion
+      was measured **twice independently** over CDP `Runtime.evaluate` (QA seed `1cdmbj`, Orchestrator
+      seed `69vldj`): floors 1/4/8 read **2 / 3 / 4** `role === 'trainers'` rooms, every such room
+      fielded **1-2** `trainer-…` trainers and every `'wild'` room **0**. Integration QA re-ran the
+      gates (**2164** tests on the combined tree) and cleared the cross-task audit and the merge
+      rehearsal.
+
 - [x] **A wild encounter's level is a fraction of the live squad level, and its species table
       follows the squad's own band.** `src/data/wildLevels.ts` holds `WILD_LEVEL_FRACTION`
       (`{ min: 0.6, max: 0.75 }`) and the pure `wildLevel(fraction, squadLevel, cap)` =

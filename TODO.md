@@ -906,8 +906,8 @@ The batches below carry one scene task each and name their hot-file holder; each
 | 32 | 85 | `src/scenes/RouteScene.ts`, `src/scenes/BootScene.ts`, `src/engine/tileset.ts` → 85 |
 | 33 | 78 | `src/scenes/RouteScene.ts`, `src/engine/run/roster.ts` → 78 |
 | 34 | 79 | `src/scenes/RouteScene.ts` → 79 |
-| 35 | 82, 80 | `src/scenes/RouteScene.ts`, `src/engine/maps/plan.ts`, `src/ui/mapView.ts`, `src/data/population.ts` → 82; `src/data/maps.ts`, `src/engine/run/floors.ts`, `docs/balance/route-curve.md` → 80 |
-| 36 | 98, 83 | `src/scenes/RouteScene.ts`, `src/engine/run/state.ts`, `src/engine/save.ts` → 98; `src/data/run.ts`, `src/engine/run/curve.test.ts` → 83 |
+| 35 | 82, 80 | `src/scenes/RouteScene.ts`, `src/engine/maps/plan.ts`, `src/data/population.ts` → 82; `src/data/maps.ts`, `src/engine/run/floors.ts`, `docs/balance/route-curve.md` → 80 |
+| 36 | 98, 83 | `src/scenes/RouteScene.ts`, `src/engine/run/state.ts`, `src/engine/save.ts` → 98; `src/data/run.ts`, `src/engine/run/progression.ts`, `src/engine/run/resolve.ts`, `src/engine/run/curve.test.ts`, `docs/balance/route-curve.md` → 83 |
 | 37 | 91 | `src/scenes/RouteScene.ts`, `src/data/npcs.ts`, `src/engine/routes/npcs.ts`, `src/ui/npcPanel.ts` → 91 |
 | 38 | 92 | `src/scenes/RouteScene.ts`, `src/engine/maps/plan.ts`, `src/ui/mapView.ts` → 92 |
 | 39 | 93 | `src/scenes/RouteScene.ts`, `src/engine/save.ts`, `src/engine/run/progression.ts` → 93 |
@@ -2928,6 +2928,53 @@ one-owner-per-batch queue as their constraint. **For the next cut:** Task-82 is
 legal only in a batch where nobody else holds `src/scenes/RouteScene.ts` — alone, or
 beside an engine/data task that never touches the scene — so it cannot ride with
 Task-80 until Task-79 has merged.
+
+### Batch 35 — the cap-only floor and the trainer-room composition *(shipped, archived)*
+
+Task-80 and Task-82 merged with `--no-ff` in ID order (`2026-10-20`) behind the green
+gate — **163 files / 2158 tests** after Task-80, **2164** after Task-82, build clean
+after each — and the detail is in `CHANGELOG.md`'s `## Unreleased`. Two Task QAs ran
+together, one per task, each from its own integration tree (`qa-80` =
+`main@363d3f21` + `task-80@cfcf63dd`, `qa-82` = `main@363d3f21` + `task-82@771168e4`),
+and the integration pass ran on `qa-batch-35` = both merges (`d76ce6c5`). Task-80 is
+**invisible by construction**: it removes `MapTuning.levels` and derives the floor
+window from adjacent caps (`{ m <= 1 ? LEVEL_BANDS[0].minLevel : cap(m-1), cap(m) }`),
+so `bandForMap`/`runBand` return byte-identical `LevelBand`s and
+`src/scenes/RouteScene.ts` is untouched; every test that reads the curve, the roster,
+progression, the level cap, the plan or the minimap stayed undiffed. Task-82 tags each
+regular room `role: 'trainers' | 'wild'` from `TRAINER_ROOMS_PER_MAP` = 2,2,3,3,3,4,4,4,
+appends the role draws after the last special draw, replaces `POPULATION` with
+`TRAINERS_PER_ROOM` 1-2 and retires the map-size trainer bonus from the pass;
+`wantsTrainers` gates the lane guard on `role !== 'wild'`. The scene holds the batch's
+one `RouteScene.ts` claim and the one hot file; `package.json`, `src/main.ts`,
+`vite.config.ts`, `src/data/dex/**` and every generated asset are nobody's. Docs shared
+by section: `docs/maps-spec.md` (80 §1/§4/§5; 82 §2/§3/§7), `docs/routes-spec.md` (80
+§5 bullet 1; 82 §2 step 4 and §5 bullets 4/6) and `docs/tech-decisions.md` (80 D29
+addendum; 82 D30 addendum); Integration QA verified no lost line in the combined
+files. The optional minimap trainer marker the entry allowed was dropped (it would
+need a second, non-`D47` glyph path), so `src/ui/mapView.ts` is no longer row 35's.
+
+**The XP re-solve and its one recorded deficit.** A floor's trainer budget collapses to
+2-4 rooms × 1-2 trainers, so Task-82 re-solved `LEVEL_BANDS[*].trainerXp` by measurement
+(`early 6.07, low 16.18, mid 8.59, high 12.70, late 10.86, end 7.96`) to keep
+`curve.test.ts` green. Maps 6-8 share the single `end` band, and their caps demand
+`needed` = 28854 / 38142 / 48726 (`needed(8)/needed(6) = 1.6887`), so one multiplier
+cannot put all three inside `[1.05, 1.5]`: the measured column is
+1.25/1.25/1.25/1.25/1.25/1.49/1.44/**0.96**, and floor 8 is pinned at 0.96 (its legal
+band is `[0.95, 0.9623]`). The test states the arithmetic instead of hiding it, and
+`[Task-83]` (Batch 36) owns the root-cause fix the cut froze: a per-floor factor
+`TRAINER_XP_PER_MAP` / `trainerXpMultiplierForMap` threaded through `experienceAward`
+(a fourth, defaulted parameter) and `resolveBattle`, deleting `SHARED_BAND_MIN_FILL`.
+`docs/balance/route-curve.md`'s band and budget tables are knowingly one batch stale;
+Task-83 re-pins them.
+
+**Fill record.** Batch 35 was cut as Task-82 + Task-80 and the fill search examined
+every later open task: `[Task-83]` depends on both members, `[Task-103]` on the
+unmerged `[Task-94]`/`[Task-95]`, and every other candidate (`[Task-91]`–`[Task-102]`,
+`[Task-108]`–`[Task-110]`) claims `src/scenes/RouteScene.ts`, held here by Task-82;
+`[Task-104]` is `[!]` and `[Task-28]` unscheduled. Two dev slots and two QA slots are
+used; the other two of each stay empty with the route scene's one-owner-per-batch queue
+as their constraint. No task moved batch.
 
 ### Open questions for the human
 
@@ -5148,7 +5195,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       and the per-floor cap.
       *Dependencies:* none. Shares `src/scenes/RouteScene.ts` with Task-78, which is why it is one
       batch behind it — **Batch 34** — rather than beside it. *(Batch 34)*
-- [ ] **[Task-80] `MAP_TUNING` drops the level range and keeps only the cap.** The player-relative model
+- [x] **[Task-80] `MAP_TUNING` drops the level range and keeps only the cap.** The player-relative model
       (Tasks 78/79) makes a floor's `levels.minLevel`/`maxLevel` dead weight: the **cap** is the only
       anchor left, so `MapTuning.levels` collapses to a single `cap` and the eight tuned values stay
       **9 / 16 / 23 / 30 / 37 / 43 / 49 / 55** (`src/data/maps.ts`). `levelRangeForMap` and
@@ -5204,7 +5251,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       which is why this entry also **freezes the map-index scaling** before it is cut: the table
       above is absolute, and "scaled by the map index" is a decision (a scale factor, or a
       per-map row) that must be written here, not invented by the dev.
-- [ ] **[Task-82] A floor holds a fixed number of trainer rooms.** Today the population pass puts a
+- [x] **[Task-82] A floor holds a fixed number of trainer rooms.** Today the population pass puts a
       trainer on the main lane and one more per pocket, plus a map-size tier bonus
       (`docs/routes-spec.md` §2 step 4), so a floor fields 5-17 trainers and the band's `POPULATION`
       table (`src/data/population.ts`) is the only throttle. The human wants a **designed
@@ -5242,6 +5289,20 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       **Fixed-seed re-pin:** `src/engine/run/curve.test.ts`, `docs/balance/route-curve.md` (the band
       table, the cap table and the per-floor budget table) and any `trainerXp` pin in
       `src/data/run.test.ts` / `src/engine/run/progression.test.ts`.
+      **Cut note (`2026-10-20`, recorded when Batch 35 shipped):** the six band multipliers
+      cannot pay maps 6-8 at once — they share `end`, and their caps demand
+      `needed(8)/needed(6) = 1.6887`, so Task-82 pinned floor 8 at `0.96` with a documented
+      `SHARED_BAND_MIN_FILL`. The root-cause fix is this task's: a **per-floor factor**, not a
+      seventh band. `src/data/run.ts` gains `TRAINER_XP_PER_MAP` (eight two-decimal factors, the
+      last row repeating past the end) and `trainerXpMultiplierForMap(mapIndex)`;
+      `experienceAward` gains a fourth, defaulted `floorMultiplier = 1`, so every existing call
+      site and test is inert; `resolveBattle` passes
+      `trainerXpMultiplierForMap(next.mapIndex)`; `curve.test.ts` deletes
+      `SHARED_BAND_MIN_FILL` and returns floor 8 to `MIN_FILL = 1.05`, re-pinning
+      `MEASURED_FILL` mid-window. `docs/battle-spec.md` §7's `experienceAward` bullet gains the
+      clause. A seventh band is rejected: it still leaves floors 7-8 sharing one multiplier
+      (ratio 1.507) and `BandId` is the key of `ROUTE_LOOT`, the shop, the casino and the
+      trainer-money tables.
       *Dependencies:* Task-78 (the trainer's level rule), Task-79 (the wild's), Task-80 (the cap-only
       `MAP_TUNING`) and Task-82 (the trainer rooms) — it measures what they change and cannot be written
       before them. It takes **Batch 36**, one batch after the last of the four, beside `[Task-98]`
