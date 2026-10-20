@@ -348,11 +348,14 @@ leaves with only their own content (`docs/maps-spec.md` §7):
 - a **mega-stone** room (15% chance, only from map 3 on): a random **Mega Stone**
   item, which lets its holder **Mega Evolve once per battle**;
 - a **casino** room (30% chance, only from map 2 on): a **slot machine** the Team
-  Rocket grunt beside it runs. One spin costs the floor band's price and pays an
-  item, an **Egg** (an ordinary bag item that hatches into a new party member at
-  the squad's level when the run takes the portal) or the **battle against the
-  grunt** — which locks the machine for the rest of the floor. It is the run's one
-  money-for-anything gamble;
+  Rocket grunt beside it runs — a cabinet with **three reels** whose faces are the
+  band's own prizes and, on the fight, the grunt's Rocket icon. One spin costs the
+  floor band's price and pays an item, an **Egg** (an ordinary bag item that
+  hatches into a new party member at the squad's level when the run takes the
+  portal) or the **battle against the grunt** — which locks the machine for the
+  rest of the floor. The outcome is **booked before the reels turn**, so the spin
+  is a reveal, never a re-roll, and `SPIN` / `LEAVE` answer the pointer as well as
+  the keys. It is the run's one money-for-anything gamble;
 - a **gated** room (20% chance, only from map 3 on): a one-tile **vault** behind a
   bush, a rock or a pond, holding one ordinary ground item. The interact key opens
   it when **any party member has the obstacle's type** — Bug or Grass / Rock or

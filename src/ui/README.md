@@ -31,6 +31,10 @@ testable logic belongs in the computing half.
 - `casino.ts` — the casino's slot machine as a pure model: one spin against the run (price,
   lock, weighted prize or the grunt fight), the band's equipable pool the grouped row draws
   from, and the Egg's hatch on the floor advance.
+- `casinoReels.ts` — the casino window's reels: the card and three-window geometry, the item and
+  Rocket faces, the three strips a spin turns and the stop/tick schedule its reveal follows.
+- `casinoReels.test.ts` — the pinned reel geometry and stops, every band's payable faces in table
+  order, the strips and the face index over time, headless.
 - `npcPanel.ts` — the modal card every special NPC fills: the title, the wrapped paragraph, the
   column of choices with `LEAVE` last, and the pure row layout the card draws from.
 - `abilityInfo.ts` — the ability row's info control and the text it floats, so the route HUD and
