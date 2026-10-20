@@ -2,6 +2,7 @@ import { BIOME_ORDER, type BiomeId } from '../../data/biomes';
 import { MAP_MIN_ROOM_SIZE, mapTuning, roomSizeForShape } from '../../data/maps';
 import { NO_HEAL_ROOM } from '../../data/noHeal';
 import { trainerRoomsForMap } from '../../data/population';
+import { SECRET_SHOP } from '../../data/shop';
 import { STATIC_ROOM } from '../../data/staticSpecies';
 import type { Tile } from '../grid';
 import { hashSeed, Rng } from '../rng';
@@ -64,17 +65,20 @@ export type MapOpening = Readonly<{ edge: MapEdge; kind: MapOpeningKind }>;
  * roll, a **mega-stone** leaf from map 3 on, a **casino** leaf from map 2 on, a
  * **gated** leaf (a vault sealed behind a type-gated obstacle) from map 3 on, a
  * **trade** leaf from map 3 on, a **no-heal** leaf (battles in it refuse the
- * player's Bag and healing moves) from map 3 on and a **static** leaf behind a
- * party gate from map 3 on; they may coincide on one floor.
+ * player's Bag and healing moves) from map 3 on, a **static** leaf behind a
+ * party gate from map 3 on and a **secret-shop** leaf (a counter with the late-band
+ * gear behind the same type-gated vault) from map 3 on; they may coincide on one
+ * floor.
  * Every one is hung off a regular room that is neither the entry nor the boss, and
  * never farther from the entry than the boss. The trade leaf rolls after every
- * shipped draw, the no-heal leaf after it and the static leaf last of all, on its
- * own minted stream, so none can move a floor's mini-boss, mega-stone, casino,
- * gated or trade leaf. The Mart is **not** a room any more: the floor's merchant NPC
- * opens it in a regular trainer room (`docs/maps-spec.md` §7).
+ * shipped draw, the no-heal leaf after it, the static leaf after that and the
+ * secret-shop leaf last of all, on its own minted stream, so none can move a
+ * floor's mini-boss, mega-stone, casino, gated, trade or static leaf. The Mart is
+ * **not** a room any more: the floor's merchant NPC opens it in a regular trainer
+ * room (`docs/maps-spec.md` §7).
  */
 export type MapRoomSpecial =
-  'mini-boss' | 'mega-stone' | 'casino' | 'gated' | 'trade' | 'no-heal' | 'static';
+  'mini-boss' | 'mega-stone' | 'casino' | 'gated' | 'trade' | 'no-heal' | 'static' | 'secret-shop';
 
 /** A regular room's population role (`docs/maps-spec.md` §2). */
 export type MapRoomRole = 'trainers' | 'wild';
@@ -506,6 +510,16 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     const parents = freeParents();
     if (parents.length > 0) {
       addSpecial('static', parents[staticRng.int(0, parents.length - 1)], staticRng);
+    }
+  }
+  // The secret-shop leaf rolls on its own minted stream, after the static leaf and
+  // every shipped draw, so no floor's topology, specials, room ids, sizes, roles or
+  // static leaf move (`docs/maps-spec.md` §7).
+  const secretShopRng = new Rng(hashSeed(`${seed}:map:${index}:secret-shop-room`));
+  if (index >= SECRET_SHOP.fromMap && secretShopRng.next() < SECRET_SHOP.chance) {
+    const parents = freeParents();
+    if (parents.length > 0) {
+      addSpecial('secret-shop', parents[secretShopRng.int(0, parents.length - 1)], secretShopRng);
     }
   }
 

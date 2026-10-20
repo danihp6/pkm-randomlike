@@ -165,6 +165,7 @@ import {
   npcWildType,
   rollWildLevel,
   roomNpc,
+  secretShopSealId,
   seesPlayer,
   sketchRoute,
   sketchRouteSteps,
@@ -1478,14 +1479,18 @@ export class RouteScene extends Phaser.Scene {
       quiet: params.room ? params.room.entry || params.room.boss || params.room.special !== null : false,
       // The gated room's vault is sealed until the floor's own mark says otherwise, so a
       // revisit and a reload draw exactly what the run has (`docs/maps-spec.md` §7). The
-      // static leaf carves the same vault and reads its own record.
-      ...(params.room?.special === 'gated' || params.room?.special === 'static'
+      // static and secret-shop leaves carve the same vault and read their own records.
+      ...(params.room?.special === 'gated' ||
+      params.room?.special === 'static' ||
+      params.room?.special === 'secret-shop'
         ? {
             gate: isItemPicked(
               this.run,
               params.room.special === 'gated'
                 ? gateId(params.room.mapIndex, params.room.roomId)
-                : staticGateId(params.room.mapIndex, params.room.roomId),
+                : params.room.special === 'static'
+                  ? staticGateId(params.room.mapIndex, params.room.roomId)
+                  : secretShopSealId(params.room.mapIndex, params.room.roomId),
             )
               ? 'open'
               : 'sealed',

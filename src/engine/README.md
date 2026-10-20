@@ -29,9 +29,10 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   edges in `routes/layout.ts`, `routes/routeMap.ts`, `routes/validate.ts`, `routes/encounters.ts`,
   `routes/trainers.ts`, `routes/doors.ts`, `routes/walls.ts`, `routes/streams.ts`,
   `routes/battlefield.ts` (the weather, terrain or field condition a room's battles begin under),
-  `routes/gate.ts` (the gated reward room's vault carve and its two per-floor ids) and
+  `routes/gate.ts` (the gated reward room's vault carve and its two per-floor ids),
   `routes/staticSpecies.ts` (the static-species room's content: its housing records, its two
-  gate kinds and the legendary variant's conditional roll).
+  gate kinds and the legendary variant's conditional roll) and `routes/secretShop.ts`
+  (the secret shop's seal mark, its party-type predicate and its fixed six-row shelf).
 - `run/` — the run state and its books: `run/state.ts` (party, box, bag and money),
   `run/progression.ts` (XP and levels), `run/battleLink.ts` + `run/resolve.ts` (the post-battle
   resolve), `run/roster.ts` + `run/pool.ts` (rosters, the species pool and the variant roll

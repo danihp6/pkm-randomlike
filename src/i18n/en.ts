@@ -111,6 +111,7 @@ export const en = {
 
   // mart — the Mart panel
   'mart.title': 'MART',
+  'mart.secretTitle': 'SECRET SHOP',
   'mart.buy': 'BUY',
   'mart.sell': 'SELL',
   'mart.money': 'MONEY  ¥{amount}',

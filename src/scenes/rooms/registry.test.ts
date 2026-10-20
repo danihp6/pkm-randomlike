@@ -33,6 +33,7 @@ const SHIPPED_KINDS = [
   'trade',
   'no-heal',
   'static',
+  'secret-shop',
 ] as const;
 
 /** A synthetic module holding one descriptor, for a kind the folder never had. */
