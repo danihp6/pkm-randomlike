@@ -13,11 +13,16 @@ workflow and the git rules; if it conflicts with this file, `AGENTS.md` wins.
 3. **Early doubt control.** If the Architect returns blocking open questions, put
    them to the human with the `question` tool **before** creating any worktree. Do
    not guess an answer to a blocking question.
-4. Read the batch plan the Architect left in `TODO.md`.
+4. Read the batch plan the Architect left in `TODO.md`, and `.agent_specs/resume.md`
+   when it exists. A live `task-<ID>` branch is a task already in flight: adopt it
+   (`ship` → merge; `qa` → validate; `partial` → delete and redo; `blocked` or
+   `merged` → delete) and do not cut a new batch while a live branch remains.
 5. Per cut batch, create one worktree per task, in parallel:
    `git worktree add ../wt-pkm-<ID> -b task-<ID>`.
-6. **Copy** `.agent_specs/task-<ID>.md` into that worktree at the same relative
-   path (never symlink, never `git add`) and launch one `dev` subagent per task,
+6. **Copy** `.agent_specs/task-<ID>.md` into that worktree at the same relative path
+   (never symlink), commit it with `git add -f` as `spec: task-<ID>`, and push
+   `-u origin task-<ID>`. The spec travels in the branch and is dropped from the
+   merge, so `main` never receives it. Then launch one `dev` subagent per task,
    handing each **only** that worktree-relative spec path. Subagents start with
    fresh context: give them no history. The devs run in parallel.
 7. **When every dev in the batch has reported**, validate in two waves, both of which
@@ -41,17 +46,32 @@ workflow and the git rules; if it conflicts with this file, `AGENTS.md` wins.
    failure log; when it is fixed, re-run **that task's** QA only — the other tasks'
    results stay valid as long as their branch tips did not move (a commit id is a
    content hash). Maximum 2 corrective rounds, then stop and escalate to the human with
-   everything you know.
-9. On QA approval: merge each `task-<ID>` branch into `main` in task-ID order with
-   `git merge --no-ff`, run the full gate (`npm test`, `npm run build`) after each
-   merge, remove the worktrees, tick the tasks in `TODO.md`, append the batch to
-   `CHANGELOG.md`, then re-plan the next batch with the Architect.
+   everything you know. When a task's QA is green, write the verdict **on the branch**:
+   an empty commit `qa: pass task-<ID>` whose body carries `Verified-At`, `Tip`,
+   `Gates` and `Report`, pushed to `origin/task-<ID>`. Write it only after the last
+   code commit; a later commit moves the tip and the verdict no longer applies.
+9. On QA approval: **one push per task, in task-ID order.** Before pushing, run
+   `git fetch origin` and bring `origin/main` in. For each branch whose tip is
+   `qa: pass`:
+   - `git merge --no-ff --no-commit origin/task-<ID>`
+   - `git rm -r --cached --ignore-unmatch .agent_specs`
+   - tick the task in `TODO.md` and append its `CHANGELOG.md` entry
+   - `git add TODO.md CHANGELOG.md`
+   - run the full gate (`npm test`, `npm run build`)
+   - commit `merge task-<ID>: <subject>` and `git push origin main`
+   - delete the branch and the worktree
+
+   The merge, the tick and the CHANGELOG travel in that one push or not at all. If
+   the merge or the gate fails, do not push: leave the branch at `qa: pass` for the
+   next run.
 
 ## Hard rules
 
 - `main` moves only through your batch merges, after QA approval. Authoring roles
   (Architect, Dev, QA) never commit to `main`, and you never merge a batch that
   has a red `[PENDING FIXES]`.
+- **Never merge a branch whose tip is not `qa: pass`**, and never ship two tasks in
+  one push: each task's merge, tick and CHANGELOG entry are atomic.
 - Never let two tasks in a batch claim the same path, and never let an agent
   touch a hot file another batch-mate holds (`package.json`, `src/main.ts`, the
   scenes a batch-mate owns, a generated data file).

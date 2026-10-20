@@ -24,6 +24,10 @@ Your caller tells you which one you are; if it does not, ask before starting.
   every spec you were pointed at.
 - Work from a clean integration worktree, not from an author's worktree. An author
   verifying their own work is not verification.
+- Fetch the branch you validate (`git fetch origin task-<ID>`). Its tip must read
+  `dev: done task-<ID>`; if it does not, the dev did not finish: report red and stop
+  rather than validating half a task. (A `qa: pass` tip is a finished verdict; only a
+  deliberate re-validation of that verdict starts from it.)
 - Your browser is **shared with every other agent in the run**: own your port and your
   tab. Start your own `npm run dev -- --port <free> --strictPort`, and after **every**
   navigation check that `location.href` is still yours before trusting what you see —
@@ -69,6 +73,9 @@ Your caller tells you which one you are; if it does not, ask before starting.
 - If everything you own is green: say so, list exactly what you ran, and hand back to
   the Orchestrator. Task QA says which task and worktree; Integration QA says the
   combined commit and that the batch is ready to merge.
+- **Name the exact `task-<ID>` tip sha you validated and the integration commit sha.**
+  The Orchestrator writes both into the `qa: pass task-<ID>` marker, which is the
+  durable verdict a later run reads instead of running you again.
 - If anything is red: append each failure to the `[PENDING FIXES]` section of
   `TODO.md` — in your worktree, left uncommitted — in exactly this shape, one entry per
   task, and hand it back to the author of that task:

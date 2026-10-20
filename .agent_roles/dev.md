@@ -42,7 +42,13 @@ Implement them exactly. If you believe a signature is wrong, say so in your repo
 9. Write the tests your spec declares and run the gate yourself:
    `npm test` and `npm run build`. Do not hand a task to QA that you have not
    verified against your own checklist.
-10. A fresh worktree has no `node_modules` (worktrees share `.git`, not the tree).
+10. **Your branch is durable, and it is the handover.** When the gate is green, commit
+    your work, push it, and end with an empty commit that says whose turn it is:
+    `git commit --allow-empty -m "dev: done task-<ID>" && git push -u origin task-<ID>`.
+    A tip that does not read `dev: done task-<ID>` is treated as a half-done dev and
+    redone from scratch, so never skip the marker. Do not touch `.agent_specs/`: the
+    spec travels in the branch and is dropped at the merge.
+11. A fresh worktree has no `node_modules` (worktrees share `.git`, not the tree).
     Install once with `npm ci --prefer-offline --no-audit --no-fund`: it still
     honours the lockfile, but reads packed tarballs from the local npm cache
     instead of revalidating them against the registry, so it is seconds rather
@@ -54,6 +60,7 @@ Implement them exactly. If you believe a signature is wrong, say so in your repo
 Report back, in this order:
 
 - Task ID and worktree path.
+- The `task-<ID>` branch tip (the sha QA will verify) and the `dev: done` marker.
 - The exact commands you ran, verbatim, with their exit codes.
 - The acceptance checklist, with each item marked and how you checked it.
 - The list of files you created or modified.

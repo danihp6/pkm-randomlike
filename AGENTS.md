@@ -63,7 +63,8 @@ workflow uses.
   each phase needs them.
 - `src/assets/` – atlas sheets, sprites and manifests. Contract in
   `src/assets/README.md`.
-- `scripts/` – `build-dex.mjs` and `legacy-art/` (the imported art pipeline).
+- `scripts/` – `build-dex.mjs`, `agent/` (the cycle's deterministic Recon over the
+  git refs) and `legacy-art/` (the imported art pipeline).
 - `docs/` – the specs above, `balance/` for spreadsheets.
 - `TODO.md`, `CHANGELOG.md`.
 - Every code folder carries a `README.md` that maps it: **a task that adds,
@@ -113,7 +114,9 @@ tasks it integrates.
   the floor, not the ceiling; the filled batch runs as one dev wave and one QA wave.
 - **Worktrees.** One per task, outside the repo as siblings:
   `git worktree add ../wt-pkm-<ID> -b task-<ID>` (note `wt-pkm-`, `wt-task-` belongs
-  to a sibling project). Agents work only inside their own worktree.
+  to a sibling project). Agents work only inside their own worktree. The branch is
+  pushed before QA (the spec first, `dev: done` on its tip), so a dead runner loses at
+  most the task in flight; `docs/agent-ci.md` owns the protocol.
 - **Specs.** The Architect writes `.agent_specs/task-<ID>.md` following
   `docs/agent-spec-template.md`. `.agent_specs/` is gitignored and local to the run;
   the Orchestrator copies the spec into the worktree before launching its agent. A
@@ -151,7 +154,8 @@ tasks it integrates.
   unless the user explicitly says otherwise.
 - `main` moves only through the Orchestrator's batch merges, after QA approves the
   batch: one `git merge --no-ff task-<ID>` per task in ID order, with the full gate
-  `npm test` + `npm run build` green after each merge. An authoring role (Architect,
+  `npm test` + `npm run build` green after each merge. The merge, the `TODO.md` tick and
+  the `CHANGELOG.md` entry are **one push per task**. An authoring role (Architect,
   Dev, QA) never merges its own work and never commits to `main`.
 - Run `git init` before the first code task if the repo does not exist yet.
 
