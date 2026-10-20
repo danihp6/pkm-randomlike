@@ -8,6 +8,34 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A floor has an objective: its mission, and `flawless` is the first one.**
+      The human wants floor missions whose completion pays a **fixed** reward («cumplirlas
+      da recompensa (fija: no perder vida → aparece una sala especial)»), and a floor had no
+      objective at all. `src/engine/run/missions.ts` chooses one mission per floor from the
+      seed alone (`missionForMap`, one draw from `Rng(hashSeed('${seed}:map:${mapIndex}:mission'))`
+      — its own stream, so no layout, encounter, roster or battle draw moves and a revisit or
+      a reload picks the same row), `src/data/missions.ts` holds `MISSION_TABLE` with the one
+      row that ships, **`flawless`** (end the floor without losing HP and without a casualty),
+      and its fixed reward — `{ kind: 'room' }`, the row the special-room tasks will read.
+      The run carries `mission`, `missionsCompleted` (run-long),
+      `hpLost` and `floorCasualties` (both per floor), so the schema steps **18 → 19**; an old
+      save starts with no mission and a zero counter. `advanceMap` evaluates the floor being
+      left **before** it heals, bumps the counter and hands the next floor its mission; the HP
+      a battle spent is a **pure helper in `missions.ts`** (`battleHpLoss`, matched by member
+      id, a faint counting its whole remaining bar) that the scene calls before the fold — the
+      rule is not in `resolve.ts`, which a batch-mate owned. The route HUD shows the mission
+      as one line on its own card under the transient-notice strip and meeting one raises
+      `missionCompleteNotice` through `src/ui/notice.ts`, with `hud.mission`,
+      `mission.flawless` and `notice.missionComplete` in both locales. **QA:** one Task QA
+      from its own integration tree (`main@4b28f8a` + `task-98@07aae73`, integration
+      `eee6d2e`): 10/10 `[unit]` criteria, `npm test` **2148** passed / 67 skipped and `npm
+      run build` green, 19 diff paths (18 exclusive + the spec), with `src/engine/run/resolve.ts`
+      and `docs/battle-spec.md` correctly absent; the one `[live]` criterion was **measured**
+      over CDP on the live canvas (`renderer.snapshotArea` + `getImageData` at 1280×800, seed
+      `pkm-111`, map 1, room 0) — the mission card's rect `(460, 76, 360, 32)` differed from
+      `origin/main` in **11 420 of 11 520** pixels while the minimap control rect `(8, 8, 216,
+      250)` differed in **0**.
+
 - [x] **The trainer XP award is solved per floor, and no floor pays outside the rule's window.**
       The rule is that **75 % of a floor's trainers pays that floor's cap**, and one
       multiplier per level band could not hold it: maps 6-8 share the `end` band and their

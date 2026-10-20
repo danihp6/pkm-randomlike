@@ -280,6 +280,12 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
 - Finite mode: the chain has a fixed length and the final boss ends it.
 - Infinite mode: same generator, no final boss; the maps keep climbing and the
   run ends only when the party is wiped.
+- Every floor carries **one mission**: chosen deterministically from the run seed
+  when the floor is built (its own stream, so no route, roster or encounter draw
+  moves), it is evaluated when the run takes the portal. Meeting it bumps a
+  **run-long counter** and pays a **fixed reward row** (`{ kind: 'room' }` today,
+  read by the special-room tasks); the first kind is `flawless` — leave the floor
+  having lost **no HP** and without a casualty.
 - The older mini-boss/boss cadence (`RUN_CHAIN` in `src/data/run.ts`) is folded
   into the map boss; the route kinds are re-derived from the map plan
   (`docs/maps-spec.md` §3).
@@ -348,6 +354,10 @@ A boxed member the player cannot swap reads as **locked** (a dim veil on its
 cell), and reordering the party within itself stays free. A catch that goes to
 the PC says so in a **transient notice** at the top of the screen — one line,
 dismissed by itself, taking no key and blocking no movement.
+
+- The HUD carries the floor's own **mission** in one line under the
+  transient-notice strip, and meeting it raises one transient notice through the
+  same module (one message at a time, no key, no block).
 
 A **consumable** rides the same drag: a heal or a status cure dropped from the bag
 onto a party or box member is spent on it only when it would change something — HP

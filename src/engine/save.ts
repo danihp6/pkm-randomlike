@@ -2,6 +2,7 @@ import { STAT_IDS, getSpecies, type StatId, type Stats } from '../data/dex';
 import { defaultHudLayout, parseHudLayout, type HudLayout } from '../data/hudLayout';
 import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybinds';
 import { levelCapForMap } from '../data/maps';
+import { getMission } from '../data/missions';
 import { isLocale, type Locale } from '../i18n';
 import {
   MAP_EDGES,
@@ -16,6 +17,7 @@ import type { AiLevel } from './battle/ai';
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
+import type { MissionProgress } from './run/missions';
 import { normalizeNickname } from './run/nickname';
 import { MAX_LEVEL, xpForLevel, type CatchLocation, type RunPokemon } from './run/progression';
 import { dedupeMemberIds, emptyRunStats, type PcCatch, type RunState, type RunStats } from './run/state';
@@ -65,7 +67,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 19;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -150,7 +152,9 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * a v16 run onto the v17 schema, which added the `rip` list of the fallen (an old
  * run's dead were never stored, so it starts empty); `17` moves a v17 run onto the
  * v18 schema, which added the `caughtSpecies` record of every successful catch (an
- * old run's catches were never stored, so it starts empty).
+ * old run's catches were never stored, so it starts empty); `18` moves a v18 run
+ * onto the v19 schema, which added the floor mission and its three counters (an old
+ * run starts with none and a clean floor).
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -261,6 +265,15 @@ export const SAVE_MIGRATIONS: Migrations = {
     ...document,
     version: 18,
     run: isRecord(document.run) ? { caughtSpecies: [], ...document.run } : document.run,
+  }),
+  // The floor mission: a v18 run never carried one, so it starts with none, a zero
+  // counter and a clean floor; `advanceMap` gives it a mission on the next floor.
+  18: (document) => ({
+    ...document,
+    version: 19,
+    run: isRecord(document.run)
+      ? { mission: null, missionsCompleted: 0, hpLost: 0, floorCasualties: 0, ...document.run }
+      : document.run,
   }),
 };
 
@@ -628,6 +641,19 @@ function parsePcCatch(value: unknown): PcCatch | null {
   return { roomInMap: value.roomInMap, memberId: value.memberId };
 }
 
+/**
+ * Reads the floor's mission: a row id the table still carries, a non-negative
+ * integer progress and a boolean completed. Anything else reads as no mission, so a
+ * hand-edited document cannot hang the HUD on a row that does not exist.
+ */
+function parseMission(value: unknown): MissionProgress | null {
+  if (!isRecord(value)) return null;
+  if (!isString(value.id) || getMission(value.id) === undefined) return null;
+  if (!isInteger(value.progress) || value.progress < 0) return null;
+  if (typeof value.completed !== 'boolean') return null;
+  return { id: value.id, progress: value.progress, completed: value.completed };
+}
+
 /** Reads a caught member's location; anything malformed drops the field, not the member. */
 function parseCatchLocation(value: unknown): CatchLocation | null {
   if (!isRecord(value)) return null;
@@ -774,6 +800,17 @@ function parseRun(value: unknown): RunState | null {
 
   const money = isInteger(value.money) && value.money >= 0 ? value.money : 0;
 
+  const stats = parseRunStats(value.stats);
+  const missionsCompleted =
+    isInteger(value.missionsCompleted) && value.missionsCompleted >= 0 ? value.missionsCompleted : 0;
+  const hpLost = isInteger(value.hpLost) && value.hpLost >= 0 ? value.hpLost : 0;
+  // Clamped to the run's own casualty count, so a hand-edited document cannot make a
+  // floor look casualty-free.
+  const floorCasualties = Math.min(
+    isInteger(value.floorCasualties) && value.floorCasualties >= 0 ? value.floorCasualties : 0,
+    stats.casualties,
+  );
+
   // A save written while member ids could collide (`grass:x,y` encounters all
   // entered the run as `wild`) is repaired here, so every later by-id lookup has
   // one member to find.
@@ -800,6 +837,10 @@ function parseRun(value: unknown): RunState | null {
     caughtSpecies,
     pickedItems,
     capturedRooms,
-    stats: parseRunStats(value.stats),
+    mission: parseMission(value.mission),
+    missionsCompleted,
+    hpLost,
+    floorCasualties,
+    stats,
   });
 }

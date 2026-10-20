@@ -3153,6 +3153,32 @@ tests, build clean, 10 diff paths (the 9 exclusive ones + the spec commit), and 
 independent re-walk outside the pinned test reproduced **every cell** of the sheet and
 the boss/mini-boss award figures; `docs/battle-spec.md`'s diff is one hunk inside §7.
 
+**Shipped (Task-98, `2026-10-20`).** A floor now carries **one mission**, chosen from the
+seed alone when the floor is built (`missionForMap`: one draw from
+`Rng(hashSeed('${seed}:map:${mapIndex}:mission'))`, its own stream, so no layout,
+encounter, roster or battle draw moves and a revisit or reload picks the same row), and
+the run records whether it was met when the portal advances. The one kind that ships is
+**`flawless`** — leave the floor with no HP lost and no casualty — and `MISSION_TABLE`
+gives it the **fixed reward row** `{ kind: 'room' }` the later room tasks read. `RunState`
+gains `mission`, `missionsCompleted` (run-long), `hpLost` and `floorCasualties` (both per
+floor, both reset by `advanceMap`, which evaluates the floor being left before it heals),
+so the schema steps **18 → 19** with its migration (an old run starts with no mission and
+a zero counter). The HP the squad spent is a **pure helper in `missions.ts`**
+(`battleHpLoss`) called by the scene before the fold — `src/engine/run/resolve.ts` stays
+its batch-mate's — so a faint's whole remaining bar is counted and a casualty always fails
+the mission. The route HUD draws the floor's mission as one line on its own card under the
+transient-notice strip (360×32 at `(460, 76)`, depth 439 under the strip's 440), hidden
+when a save carries no mission, and meeting one raises `missionCompleteNotice` through
+`src/ui/notice.ts` with its `hud.mission`, `mission.flawless` and
+`notice.missionComplete` keys in both locales. **QA:** one Task QA from
+`qa-98` (`main@4b28f8a` + `task-98@07aae73`; integration commit `eee6d2e`) — 10/10
+`[unit]` criteria green, **2148** tests, build clean, 19 diff paths (the 18 exclusive ones
+plus the spec commit) with neither `src/engine/run/resolve.ts` nor `docs/battle-spec.md`
+in it, and its one `[live]` criterion **measured** over CDP on the live canvas
+(`renderer.snapshotArea` + `getImageData`, 1280×800, seed `pkm-111`, map 1, room 0): the
+card's rect differed from `origin/main` in **11 420 of 11 520** pixels while the minimap
+control rect differed in **0**.
+
 ### Open questions for the human
 
 Batch 4b's three reports added two more (the learnset band's is **answered** — the
@@ -5794,7 +5820,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* `[Task-92]` (the shop room it replaces is gone, so this task must be written
       after it) and `[Task-91]` / `[Task-96]` (the type-gated obstacle seam). It adds no run field.
       *(Batch 44)*
-- [ ] **[Task-98] The floor-mission framework.** The human wants floor missions whose completion
+- [x] **[Task-98] The floor-mission framework.** The human wants floor missions whose completion
       pays a **fixed** reward — «cumplirlas da recompensa (fija: no perder vida → aparece una sala
       especial)» — and today a floor has no objective at all: the only per-floor facts are the
       bookkeeping lists (`src/engine/run/state.ts` 102-107, 199-201) and `advanceMap` (185-204).

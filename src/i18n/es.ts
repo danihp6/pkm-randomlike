@@ -96,6 +96,10 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'hud.learnTitle': 'SUBE DE NIVEL',
   'hud.evolveTitle': 'EVOLUCIÓN',
   'hud.pressAnyKey': 'pulsa una tecla',
+  'hud.mission': 'Misión: {mission}',
+
+  // mission — the floor's own objective (`src/data/missions.ts`)
+  'mission.flawless': 'Planta sin daño',
 
   // route — RouteScene prose
   'route.mapTitle': 'Mapa {map} · {biome}',
@@ -273,6 +277,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'notice.levelUp': '¡{name} ha subido al nivel {level}!',
   'notice.eggHatch': '¡El Huevo eclosionó en {name}!',
   'notice.noHealRoom': '¡En esta sala no se pueden usar objetos ni movimientos de curación!',
+  'notice.missionComplete': 'Misión completada: {mission}',
   'gate.locked.bush': 'Unos arbustos espesos. Un Pokémon de tipo Bicho o Planta podría abrirlos.',
   'gate.locked.rock': 'Una roca. Un Pokémon de tipo Roca o Lucha podría romperla.',
   'gate.locked.water': 'Agua profunda. Un Pokémon de tipo Agua podría cruzarla.',

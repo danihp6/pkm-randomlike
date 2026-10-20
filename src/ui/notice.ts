@@ -94,3 +94,8 @@ export function gateOpenedNotice(): Notice {
 export function noHealRoomNotice(): Notice {
   return { text: t('notice.noHealRoom'), holdMs: NOTICE_HOLD_MS };
 }
+
+/** The floor's mission was met on the advance: `<mission>` is its display name. */
+export function missionCompleteNotice(mission: string): Notice {
+  return { text: t('notice.missionComplete', { mission }), holdMs: NOTICE_HOLD_MS };
+}
