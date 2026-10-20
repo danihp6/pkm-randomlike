@@ -1,6 +1,7 @@
 import { BIOME_ORDER, type BiomeId } from '../../data/biomes';
 import { MAP_MIN_ROOM_SIZE, mapTuning, roomSizeForShape } from '../../data/maps';
 import { NO_HEAL_ROOM } from '../../data/noHeal';
+import { trainerRoomsForMap } from '../../data/population';
 import type { Tile } from '../grid';
 import type { Rng } from '../rng';
 import { mapStreams } from './streams';
@@ -71,6 +72,9 @@ export type MapOpening = Readonly<{ edge: MapEdge; kind: MapOpeningKind }>;
 export type MapRoomSpecial =
   'shop' | 'mini-boss' | 'mega-stone' | 'casino' | 'gated' | 'trade' | 'no-heal';
 
+/** A regular room's population role (`docs/maps-spec.md` §2). */
+export type MapRoomRole = 'trainers' | 'wild';
+
 export type MapRoom = Readonly<{
   id: number;
   /** Grid cell the room occupies; the entry sits at the origin, so these may be negative. */
@@ -83,6 +87,11 @@ export type MapRoom = Readonly<{
   openings: readonly MapOpening[];
   /** The special this room holds, or null for a regular room (`docs/maps-spec.md` §7). */
   special: MapRoomSpecial | null;
+  /**
+   * What the room's population pass places. The entry, the boss and every special
+   * leaf are always `'wild'` (they are quiet leaves).
+   */
+  role: MapRoomRole;
 }>;
 
 /** An unordered pair of `MapRoom` ids (smaller first) that share a door. */
@@ -509,6 +518,23 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     if (parents.length > 0) addSpecial('no-heal', parents[rng.int(0, parents.length - 1)]);
   }
 
+  // A floor's trainer composition (`docs/maps-spec.md` §2): exactly
+  // `trainerRoomsForMap(index)` of its regular rooms hold trainers. These draws are
+  // appended after every shipped one, so no floor's biome, count, topology, id,
+  // size or special moves for a fixed seed.
+  const roleOf = new Map<number, MapRoomRole>();
+  const candidates: number[] = [];
+  for (let id = 1; id < regularCount; id++) {
+    if (id === bossRoom || specialKinds.has(id)) continue;
+    candidates.push(id);
+  }
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = rng.int(0, i);
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+  const trainerRooms = Math.min(trainerRoomsForMap(index), candidates.length);
+  for (let i = 0; i < trainerRooms; i++) roleOf.set(candidates[i], 'trainers');
+
   const edgesByRoom = cells.map((_, id) => {
     const edges: MapEdge[] = [];
     for (const [a, b] of links) {
@@ -548,6 +574,7 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
       shape: shapeFor(edges),
       openings,
       special: specialKinds.get(id) ?? null,
+      role: roleOf.get(id) ?? 'wild',
     };
   });
 

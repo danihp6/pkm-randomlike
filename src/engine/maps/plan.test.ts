@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { BIOME_ORDER } from '../../data/biomes';
+import { trainerRoomsForMap } from '../../data/population';
 import {
   MAP_MAX_ROOM_SIZE,
   MAP_MIN_ROOM_SIZE,
@@ -317,6 +318,143 @@ describe('planMap', () => {
       expect(entry.row).toBe(0);
       const outside = neighbourCell(entry, plan.entryEdge);
       expect(roomAt(plan, outside.x, outside.y)).toBeUndefined();
+    }
+  });
+});
+
+describe('room roles', () => {
+  /** The rooms the role pass may tag: the regular rooms that are neither entry nor boss. */
+  function candidatesOf(plan: MapPlan): MapRoom[] {
+    return plan.rooms.filter(
+      (room) =>
+        room.id !== plan.entryRoom && room.id !== plan.bossRoom && room.special === null,
+    );
+  }
+
+  it("tags exactly the floor's trainer budget as trainer rooms", () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const label = `${seed} map ${mapIndex}`;
+        const candidates = candidatesOf(plan);
+        const trainerRooms = plan.rooms.filter((room) => room.role === 'trainers');
+        expect(trainerRooms.length, `${label} trainer rooms`).toBe(trainerRoomsForMap(mapIndex));
+        expect(candidates.length, `${label} candidates`).toBeGreaterThanOrEqual(
+          trainerRoomsForMap(mapIndex),
+        );
+        for (const room of trainerRooms) {
+          expect(candidates.includes(room), `${label} room ${room.id} is a candidate`).toBe(true);
+        }
+        for (const room of plan.rooms) {
+          expect(['trainers', 'wild'], `${label} room ${room.id} role`).toContain(room.role);
+        }
+        // Still a pure function of `(seed, mapIndex)`: the role pass replays too.
+        expect(planMap(seed, mapIndex), `${label} deterministic`).toEqual(plan);
+      }
+    }
+  });
+
+  it('keeps the entry, the boss and every special leaf wild', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const label = `${seed} map ${mapIndex}`;
+        expect(plan.rooms[plan.entryRoom].role, `${label} entry`).toBe('wild');
+        expect(plan.rooms[plan.bossRoom].role, `${label} boss`).toBe('wild');
+        for (const room of plan.rooms) {
+          if (room.special === null) continue;
+          expect(room.role, `${label} ${room.special} leaf`).toBe('wild');
+        }
+      }
+    }
+  });
+
+  it("spends one shuffle draw per candidate beyond the first, after every shipped draw", () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const candidates = candidatesOf(plan);
+        const expected = Math.max(0, candidates.length - 1);
+
+        const log: { rng: Rng; method: 'int' | 'next'; min?: number; max?: number }[] = [];
+        const originalInt = Rng.prototype.int;
+        const originalNext = Rng.prototype.next;
+        let insideInt = 0;
+        const intSpy = vi
+          .spyOn(Rng.prototype, 'int')
+          .mockImplementation(function (this: Rng, min: number, max: number): number {
+            log.push({ rng: this, method: 'int', min, max });
+            insideInt += 1;
+            try {
+              return originalInt.call(this, min, max);
+            } finally {
+              insideInt -= 1;
+            }
+          });
+        const nextSpy = vi
+          .spyOn(Rng.prototype, 'next')
+          .mockImplementation(function (this: Rng): number {
+            if (insideInt === 0) log.push({ rng: this, method: 'next' });
+            return originalNext.call(this);
+          });
+        try {
+          planMap(seed, mapIndex);
+        } finally {
+          intSpy.mockRestore();
+          nextSpy.mockRestore();
+        }
+
+        // The floor's own `map` stream is the busiest one; the earlier maps'
+        // streams only roll their biome.
+        const perStream = new Map<Rng, typeof log>();
+        for (const entry of log) {
+          const bucket = perStream.get(entry.rng) ?? [];
+          bucket.push(entry);
+          perStream.set(entry.rng, bucket);
+        }
+        const busiest = [...perStream.entries()].sort((a, b) => b[1].length - a[1].length)[0];
+        const floorCalls = busiest[1];
+        const tail = floorCalls.slice(floorCalls.length - expected);
+        const expectedTail = Array.from({ length: expected }, (_, k) => ({
+          method: 'int' as const,
+          min: 0,
+          max: candidates.length - 1 - k,
+        }));
+        expect(
+          tail.map((call) => ({ method: call.method, min: call.min, max: call.max })),
+          `${seed} map ${mapIndex} role draws`,
+        ).toEqual(expectedTail);
+      }
+    }
+  }, 30_000);
+
+  /**
+   * The shipped floor of three fixed seeds, read off the **pre-change** build and
+   * pinned verbatim. The role draws are appended after every shipped one, so no
+   * floor's biome, count, topology, id, size or special moves.
+   */
+  const SHIPPED_FLOORS: Readonly<Record<string, string>> = {
+    'alpha:1':
+      '0:0,0:30x30:corridor:-|1:-1,0:30x30:cross:-|2:-1,-1:30x30:bend:-|3:-2,0:30x30:bend:-|4:-2,-1:30x30:tee:-|5:-2,-2:30x30:dead-end:-|6:-1,1:30x30:dead-end:mini-boss',
+    'alpha:8':
+      '0:0,0:30x30:corridor:-|1:0,-1:40x40:cross:-|2:1,-1:40x40:cross:-|3:0,-2:44x44:bend:-|4:1,-2:40x40:cross:-|5:1,-3:44x44:bend:-|6:2,-3:40x48:tee:-|7:2,-2:44x44:bend:-|8:2,-4:30x30:dead-end:-|9:-1,-1:30x30:dead-end:shop|10:2,-1:30x30:dead-end:mini-boss|11:1,0:30x30:dead-end:casino',
+    'role-seed:5':
+      '0:0,0:30x30:corridor:-|1:0,1:30x30:cross:-|2:-1,1:30x30:bend:-|3:0,2:30x30:bend:-|4:-1,2:30x31:tee:-|5:-1,3:30x30:dead-end:-|6:1,1:30x30:dead-end:shop',
+  };
+
+  it('the role pass does not move a shipped floor', () => {
+    const digest = (seed: string, mapIndex: number): string =>
+      planMap(seed, mapIndex)
+        .rooms.map(
+          (room) =>
+            `${room.id}:${room.col},${room.row}:${room.width}x${room.height}:${room.shape}:${
+              room.special ?? '-'
+            }`,
+        )
+        .join('|');
+    for (const key of ['alpha:1', 'alpha:8', 'role-seed:5']) {
+      const [seed, mapIndex] = key.split(':');
+      expect(digest(seed, Number(mapIndex)), key).toBe(SHIPPED_FLOORS[key]);
     }
   });
 });

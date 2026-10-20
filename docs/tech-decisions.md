@@ -522,6 +522,22 @@ adjacent), `tee` (3), `cross` (4) and the older branchy `straight`. The plan fix
 the openings; the route builder no longer rolls a shape on its own
 (`docs/maps-spec.md` §2–§3).
 
+### D30 — addendum: a floor tags each regular room's population role
+
+A route's trainer count used to be emergent — one guard on the main lane, one per
+filled pocket and the map-size tier's bonus, thinned per band — so a floor fielded
+5-21 trainers and no floor had a designed composition. A floor now **tags each of
+its regular rooms with a role**, `'trainers'` or `'wild'`: exactly
+`trainerRoomsForMap(mapIndex)` of them are `'trainers'` (2 on map 1 rising to 4 on
+maps 6-8, one more every two maps past the table up to 6) and every other room is
+`'wild'`, while the entry, the boss and every special leaf are always `'wild'`. The
+population pass places **1-2 trainers in a `trainers` room and none in a `wild`
+one** (`TRAINERS_PER_ROOM`, `src/data/population.ts`), so the room's size no longer
+changes the count. The role draws are **appended after the last special draw** of
+the `map` stream, so a fixed seed's floor — biome, count, topology, ids, sizes and
+specials — does not move; the pass reads `MapRoom.role` / `RoomView.role` and never
+re-derives it (`docs/maps-spec.md` §2–§3, `docs/route-generator.md` §3.4).
+
 ## D31 — The map boss seals the exit and opens the portal *(decided)*
 
 The **room farthest from the entry** (graph distance) fields the map's **boss**, a

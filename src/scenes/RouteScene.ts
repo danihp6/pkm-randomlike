@@ -19,7 +19,6 @@ import { pokemonOverworldSheet, type PokemonOverworldSheet } from '../data/pokem
 import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
 import { followerAnimKey, followerAnims } from '../render/pokemonFollower';
 import { ROUTE_LOOT } from '../data/loot';
-import { POPULATION } from '../data/population';
 import type { RoomBattlefield, RoomConditionId, RoomConditionKind } from '../data/battlefields';
 import type { MapPassiveTrigger } from '../data/passives';
 import { bossPartySize, type BossPartyKind } from '../data/bosses';
@@ -1322,7 +1321,7 @@ export class RouteScene extends Phaser.Scene {
       loot: loot.pool,
       hiddenChance: loot.hiddenChance,
       itemChance: loot.itemChance,
-      population: POPULATION[band.id],
+      ...(params.room ? { role: params.room.role } : {}),
       trainerArchetypes: TRAINER_ARCHETYPE_IDS,
       // The map's entry, boss and special rooms are **quiet**: no tall grass, no
       // ledges, no ground items and no trainers. The entry and boss are quiet

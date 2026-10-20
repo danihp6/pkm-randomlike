@@ -49,9 +49,10 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   chance, its trainer's archetype and the move ids the room bars for the player.
 - `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
   each band's `hiddenChance` (`docs/routes-spec.md` §2 step 4).
-- `population.ts` — the per-band **population thinning** the route generator reads
-  (`trainerBonus` added to the map-size tier's own, and the chance a pocket's guard
-  exists at all, `O-M5`; `docs/route-generator.md` §3.4).
+- `population.ts` — the floor's trainer-room composition the plan and the route
+  generator read (`TRAINER_ROOMS_PER_MAP`, `TRAINER_ROOMS_MAX`, `TRAINERS_PER_ROOM`,
+  `trainerRoomsForMap`): how many of a floor's regular rooms hold trainers and how
+  many trainers each holds (`docs/maps-spec.md` §2, `docs/route-generator.md` §3.4).
 - `battlefields.ts` — the `ROOM_BATTLEFIELDS` table: the weather, terrain or field
   condition a room's battles can begin under, each row's overlay tint/alpha and the
   two roll chances (regular rooms and the boss room, `docs/maps-spec.md` §6/§7),
