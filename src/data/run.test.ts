@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { getSpecies } from './dex';
 import { evolutionDepth } from './dex/evolutions';
+import { FINITE_MAPS } from './maps';
 import {
   LEVEL_BANDS,
   RUN_CHAIN,
   STARTER_POOL_SIZE,
   STARTING_BAG,
+  TRAINER_XP_PER_MAP,
   bandForLevel,
   starterCandidates,
+  trainerXpMultiplierForMap,
 } from './run';
 
 describe('level bands', () => {
@@ -37,6 +40,29 @@ describe('level bands', () => {
       expect(band.trainerXp, band.id).toBeGreaterThan(0);
       expect(band.trainerXp, band.id).toBe(Math.round(band.trainerXp * 100) / 100);
     }
+  });
+});
+
+describe('trainer XP per floor', () => {
+  it('carries one finite two-decimal factor per finite map', () => {
+    expect(TRAINER_XP_PER_MAP.length).toBe(FINITE_MAPS);
+    for (const [index, factor] of TRAINER_XP_PER_MAP.entries()) {
+      expect(Number.isFinite(factor), `map ${index + 1}`).toBe(true);
+      expect(factor, `map ${index + 1}`).toBeGreaterThan(0);
+      expect(factor, `map ${index + 1}`).toBe(Math.round(factor * 100) / 100);
+    }
+  });
+
+  it('reads the row of the floor and clamps at both ends', () => {
+    for (const mapIndex of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      expect(trainerXpMultiplierForMap(mapIndex), `map ${mapIndex}`).toBe(
+        TRAINER_XP_PER_MAP[mapIndex - 1],
+      );
+    }
+    expect(trainerXpMultiplierForMap(0)).toBe(TRAINER_XP_PER_MAP[0]);
+    expect(trainerXpMultiplierForMap(-3)).toBe(TRAINER_XP_PER_MAP[0]);
+    expect(trainerXpMultiplierForMap(FINITE_MAPS)).toBe(TRAINER_XP_PER_MAP[FINITE_MAPS - 1]);
+    expect(trainerXpMultiplierForMap(FINITE_MAPS + 5)).toBe(TRAINER_XP_PER_MAP[FINITE_MAPS - 1]);
   });
 });
 

@@ -67,12 +67,26 @@ export function experienceFraction(xp: number, level: number): number {
  * XP for defeating a level-`defeatedLevel` Pokémon: a band-scaled base, split
  * across the participants and multiplied for trainers. No RNG, so a replay awards
  * the same XP.
+ *
+ * A **trainer** award is also multiplied by the floor's own
+ * `trainerXpMultiplierForMap` (`src/data/run.ts`), so 75 % of a floor's trainers
+ * pays that floor's cap; a wild award never reads the factor
+ * (`docs/balance/route-curve.md`).
  */
-export function experienceAward(defeatedLevel: number, participants = 1, isTrainer = false): number {
+export function experienceAward(
+  defeatedLevel: number,
+  participants = 1,
+  isTrainer = false,
+  floorMultiplier = 1,
+): number {
   const level = Math.max(1, Math.floor(defeatedLevel));
-  const base = level * 5;
-  const scale = isTrainer ? 1.5 * bandForLevel(level).trainerXp : 1;
-  return Math.max(1, Math.floor((base * scale) / Math.max(1, Math.floor(participants))));
+  // Multiplied left to right so the three-argument form reads exactly the sheet's
+  // `floor(level × 5 × 1.5 × trainerXp)`: `(level × 5) × (1.5 × trainerXp)` rounds
+  // one XP lower on two High-band levels (24 and 28).
+  const amount = isTrainer
+    ? level * 5 * 1.5 * bandForLevel(level).trainerXp * floorMultiplier
+    : level * 5;
+  return Math.max(1, Math.floor(amount / Math.max(1, Math.floor(participants))));
 }
 
 export type ProgressionEvent =

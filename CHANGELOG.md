@@ -8,6 +8,32 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The trainer XP award is solved per floor, and no floor pays outside the rule's window.**
+      The rule is that **75 % of a floor's trainers pays that floor's cap**, and one
+      multiplier per level band could not hold it: maps 6-8 share the `end` band and their
+      caps demand `needed(8)/needed(6) = 1.6887`, so Batch 35 pinned floor 8 at a 0.96 fill
+      with a documented exception. `src/data/run.ts` now carries
+      **`TRAINER_XP_PER_MAP`** — eight two-decimal factors, `1, 1, 1, 1, 1, 0.84, 0.87, 1.31`
+      — and `trainerXpMultiplierForMap(mapIndex)`, which clamps at both ends and repeats its
+      last row past the last finite map (infinite mode walks the `end` band upwards). The
+      factor rides `experienceAward` as a **fourth, defaulted** parameter, so every existing
+      call site is inert and a **wild** award ignores it entirely, and `resolveBattle`
+      passes the floor the battle was fought on. A seventh band was rejected: it still leaves
+      floors 7-8 sharing one multiplier and `BandId` is the key of the loot, shop, casino and
+      trainer-money tables. `curve.test.ts` deletes `SHARED_BAND_MIN_FILL`, returns floor 8
+      to `MIN_FILL = 1.05`, and re-pins `MEASURED_FILL` mid-window: the three fixed seeds
+      measure **1.2493 / 1.2496 / 1.2493 / 1.2499 / 1.2496 / 1.2510 / 1.2527 / 1.2518**.
+      `docs/balance/route-curve.md` was **one batch stale against the code** — its band
+      table still carried the pre-Task-82 multipliers — so the sheet was re-written from the
+      walk: the shipped `trainerXp` column (6.07/16.18/8.59/12.70/10.86/7.96), the new
+      `Factor` column, `A(m)`, the budget product and the fill column, and `docs/battle-spec.md`
+      §7's rule now names the floor factor. **QA:** one Task QA from its own integration tree
+      (`main@4b28f8a` + `task-83@8a19872`, integration `68230b4`): 8/8 `[unit]` criteria, `npm
+      test` **2112** passed / 67 skipped and `npm run build` green; 10 diff paths (the nine
+      exclusive ones plus the spec commit); and an independent re-walk, built outside the
+      pinned test, reproduced every cell of the sheet plus the boss and mini-boss award
+      figures.
+
 - [x] **The ripped art left the tree, and a clone without the private store still builds.**
       `src/assets/**` and `public/anil/` carried 213 MB of Nintendo/GameFreak/Chunsoft rips
       that `docs/art-direction.md` says must never be redistributed. Every packed atlas and

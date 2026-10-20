@@ -1,22 +1,26 @@
 # Route curve
 
-Phase 6 notes. **The numbers live in `src/data/run.ts`** (`LEVEL_BANDS.trainerXp`)
-and in `src/data/maps.ts` (the per-map level ranges); this sheet records where they
-come from, not the values themselves.
+Phase 6 notes. **The numbers live in `src/data/run.ts`** (`LEVEL_BANDS.trainerXp` and
+the per-floor `TRAINER_XP_PER_MAP`) and in `src/data/maps.ts` (the per-map level
+ranges); this sheet records where they come from, not the values themselves.
 
 A floor is one **map** (`docs/maps-spec.md`): a grid of routes of one biome with its
 own level range, closed into a loop, whose farthest room fields the boss. A finite
 run walks eight of them. The rule below is what makes a squad keep pace with the band
 by fighting **trainers** instead of grinding the tall grass: beating 75 % of a
-floor's trainers is enough to reach that floor's level cap.
+floor's trainers is enough to reach that floor's level cap. Two numbers pay that
+budget: the defeated Pokémon's **band rate** (`LEVEL_BANDS.trainerXp`) and the
+**floor's own factor** (`TRAINER_XP_PER_MAP`), so a band shared by several floors no
+longer forces one rate on all of them.
 
-**Re-measured (Task-09).** Every number on this sheet was re-walked against the
-shipped tree: the band table and the caps are read from `src/data/run.ts` and
-`src/data/maps.ts`, and `T̄(m)`, `A(m)` and the fill column are the per-map figures
-`src/engine/run/curve.test.ts` computes over its three fixed seeds (`curve-a`,
-`curve-b`, `curve-c`). The walk reproduced the tables below **unchanged**, so no
-number on this sheet moved in that pass; the one decision it took is the boss's
-award, recorded under Exceptions.
+**Re-measured (Task-83).** Every measured number on this sheet was re-walked against
+the shipped tree: the band table, the per-floor factors and the caps are read from
+`src/data/run.ts` and `src/data/maps.ts`, and `T̄(m)`, `A(m)` and the fill column are
+the per-map figures `src/engine/run/curve.test.ts` computes over its three fixed
+seeds (`curve-a`, `curve-b`, `curve-c`). The `trainerXp` column was **corrected** to
+the values `LEVEL_BANDS` ships today (the sheet had drifted from them), and the
+eight fills below are the walk's own: all of them read **1.25**, with no exception
+left for the shared `end` band.
 
 ## Level bands
 
@@ -28,34 +32,37 @@ with no gap.
 
 | Band  | Levels | Trainer party | `trainerXp` | BST window |
 | ----- | -----: | ------------: | ----------: | ---------- |
-| Early |    2–9 |             1 |        2.67 | 0–305      |
-| Low   |   9–16 |             1 |       10.68 | 306–355    |
-| Mid   |  16–23 |             2 |        3.04 | 356–440    |
-| High  |  23–30 |             2 |        5.82 | 441–490    |
-| Late  |  30–37 |             3 |        4.65 | 491–520    |
-| End   |  37–55 |             4 |        2.61 | 521–800    |
+| Early |    2–9 |             1 |        6.07 | 0–305      |
+| Low   |   9–16 |             1 |       16.18 | 306–355    |
+| Mid   |  16–23 |             2 |        8.59 | 356–440    |
+| High  |  23–30 |             2 |       12.70 | 441–490    |
+| Late  |  30–37 |             3 |       10.86 | 491–520    |
+| End   |  37–55 |             4 |        7.96 | 521–800    |
 
-`trainerXp` is **not** a difficulty ramp and is not monotonic: a floor's trainer
-party already carries its own levels and party size, so the multiplier is only what
-is left to reach the floor's cap. It tracks two things: how many Pokémon the floor
-fields (`T̄(m)` × `trainerSize`) and how far its cap jumps (`needed(m)`) against the
-levels those members stand at. `Low` is therefore the peak — map 2's cap leaps
-9 → 16 while its roster is still one Pokémon per trainer, so six-odd defeats have
-to carry 3367 XP — and `End` is the lowest — its floors field four members each,
-over thirteen trainers, so map 6 alone beats 52 Pokémon. `High` sits over
-`Mid` for a related reason: map 4's step (23 → 30) is the same seven levels as
-map 3's, but it is taken higher up the curve, where a defeat is worth more while
-the floor places only about one trainer more, so each defeat still carries more.
+`trainerXp` is the **band's** rate, not a difficulty ramp, and is not monotonic: a
+floor's trainer party already carries its own levels and party size, so the rate is
+only what the band contributes to reaching a floor's cap — the per-floor factor
+below is the remaining lever. `Low` is the peak — map 2's cap leaps 9 → 16 while its
+trainers still field one Pokémon each and the floor places four of them, so each
+defeat carries 1402 XP of the 3367 the floor needs. `Early` is the lowest — map 1
+asks for only 604 XP and places three trainers over levels 2–9, so each defeat
+carries 335. `End` is modest (7.96)
+although its floors field four members each: the per-floor factors trim maps 6-7 and
+lift map 8 instead, which is what keeps a shared band's three floors inside the
+window. `High` sits over `Mid` for a related reason: map 4's step (23 → 30) is the
+same seven levels as map 3's, but it is taken higher up the curve, where a defeat is
+worth more (`A(4)` 4944 against `A(3)` 2689) while the floor places the same five
+trainers.
 
-The **BST windows** were re-checked against the shipped dex in the same pass and
+The **BST windows** were re-checked against the shipped dex in the Task-09 pass and
 **did not move**: they tile `0..800` with no gap and no overlap (the tiling
 `src/engine/run/pool.test.ts` asserts), no band straddles an `EVOLUTION_BST_LEVELS`
 mirror (0–355 / 356–440 / 441–800, the table under _Evolution levels_), and the
 six bands hold 208 / 171 / 202 / 223 / 158 / 290 spawnable species for a trainer
 and 206 / 171 / 200 / 220 / 157 / 137 for the wild, which drops the legendary and
 mythical tags. The `trainerSize` column is `LEVEL_BANDS`' own and did not move
-either: it is solved into `A(m)`, and every floor's fill below already sits inside
-the window.
+either: it is solved into `A(m)`, and every floor's fill below sits inside the
+window.
 
 ## Level caps per map
 
@@ -93,72 +100,92 @@ trainers a floor places (**summed over its rooms**, quiet leaves counting zero; 
 hand-placed boss and mini-boss are injected on top by the scene and are not part of
 the budget), averaged over the three seeds. `A(m)` is what one of those trainers
 awards on average: `trainerSize` roster members drawn uniformly across the map's
-level range, each worth `experienceAward(level, 1, true)`.
+level range, each worth
+`experienceAward(level, 1, true, trainerXpMultiplierForMap(m))` — **the floor's own
+factor is part of every award in the column**, which is why `A(m)` follows the
+`Factor` column and not the band alone.
 
 Room size is **shape-derived**, not rolled (`docs/maps-spec.md` §1/§4):
 `ROOM_SHAPE_SIZES` pins each shape's aspect on map 8 and `roomSizeForShape` scales
-it by the map's own `size.max / 56`, so a `corridor` now reaches 37x30 on map 6 and
-52x30 on map 8. The walk below was **re-measured on that rule** (`[Task-81]`):
-maps 1-3 read exactly as before (their rooms stay 30x30), while maps 4-8 moved with
-their new room areas — no balance table in `src/data/` was touched, and every fill
-still lands inside `1 – 1.5`.
+it by the map's own `size.max / 56`, so a `corridor` reaches 52x30 on map 8 while the
+quiet leaves stay 30x30. A floor also holds a **fixed** number of trainer rooms
+(`TRAINER_ROOMS_PER_MAP`, `src/data/population.ts`): two on maps 1-2, three on maps
+3-5 and four on maps 6-8, each holding one or two trainers. That table — not the
+room size — is what bounds the trainer counts below, so a seed moves them by a
+trainer or two and never by a room full.
 
-| Map | Band  | Trainers per seed (rooms) | `T̄(m)` |  `A(m)` | `0.75 × T̄(m) × A(m)` | Window          | Fill |
-| --: | ----- | ------------------------- | -----: | ------: | -------------------: | --------------- | ---: |
-|   1 | Early | 7 (7), 5 (6), 5 (7)       |   5.67 |  177.50 |               754.38 | 604 – 906       | 1.25 |
-|   2 | Low   | 5 (8), 8 (7), 6 (8)       |   6.33 |  886.25 |              4209.69 | 3367 – 5050.5   | 1.25 |
-|   3 | Mid   | 11 (8), 12 (8), 14 (7)    |  12.33 | 1008.00 |              9324.00 | 8071 – 12106.5  | 1.16 |
-|   4 | High  | 14 (9), 13 (10), 11 (10)  |  12.67 | 2246.50 |             21341.75 | 14833 – 22249.5 | 1.44 |
-|   5 | Late  | 16 (8), 10 (9), 13 (9)    |  13.00 | 3291.38 |             32090.91 | 23653 – 35479.5 | 1.36 |
-|   6 | End   | 11 (8), 12 (7), 16 (12)   |  13.00 | 3130.29 |             30520.29 | 28854 – 43281   | 1.06 |
-|   7 | End   | 13 (8), 19 (10), 15 (11)  |  15.67 | 3600.00 |             42300.00 | 38142 – 57213   | 1.11 |
-|   8 | End   | 28 (12), 19 (8), 16 (11)  |  21.00 | 4069.71 |             64098.00 | 48726 – 73089   | 1.32 |
+| Map | Band  | Trainers per seed (rooms) | `T̄(m)` |   `A(m)` | `0.75 × T̄(m) × A(m)` | Window          | Factor | Fill |
+| --: | ----- | ------------------------- | -----: | -------: | -------------------: | --------------- | -----: | ---: |
+|   1 | Early | 4 (7), 2 (6), 3 (7)       |   3.00 |   335.38 |               754.59 | 604 – 906       |   1.00 | 1.25 |
+|   2 | Low   | 4 (8), 4 (7), 4 (8)       |   4.00 |  1402.50 |              4207.50 | 3367 – 5050.5   |   1.00 | 1.25 |
+|   3 | Mid   | 5 (8), 5 (8), 5 (7)       |   5.00 |  2688.75 |             10082.81 | 8071 – 12106.5  |   1.00 | 1.25 |
+|   4 | High  | 5 (9), 4 (10), 6 (10)     |   5.00 |  4944.00 |             18540.00 | 14833 – 22249.5 |   1.00 | 1.25 |
+|   5 | Late  | 5 (8), 5 (9), 5 (9)       |   5.00 |  7882.13 |             29557.97 | 23653 – 35479.5 |   1.00 | 1.25 |
+|   6 | End   | 6 (8), 4 (7), 8 (12)      |   6.00 |  8021.71 |             36097.71 | 28854 – 43281   |   0.84 | 1.25 |
+|   7 | End   | 6 (8), 7 (10), 7 (11)     |   6.67 |  9556.00 |             47780.00 | 38142 – 57213   |   0.87 | 1.25 |
+|   8 | End   | 4 (12), 5 (8), 6 (11)     |   5.00 | 16265.14 |             60994.29 | 48726 – 73089   |   1.31 | 1.25 |
 
-"Fill" is `0.75 × T̄(m) × A(m) / needed(m)`; the rule wants it inside `1 – 1.5`, and
-every floor lands there. Maps 1-2 sit in the **middle** of the window (1.25 and
-1.25): they are the run's on-ramp, and the population pass that thins them
-(`POPULATION`, `O-M5`) cancels the map-size tier's `+1` and hangs each pocket's
-guard only a chance of the time. Map 1 hangs no shop leaf either, so its floor
-reads **six rooms, seven with its mini-boss**. That thinner density is what the
-`early` and `low` `trainerXp` numbers above are solved against: before the pass the
-two floors placed 12.00 and 12.33 trainers and read 1.42 and 1.44 — the upper half
-of the window, held open on purpose for exactly this re-solve.
+"Fill" is `0.75 × T̄(m) × A(m) / needed(m)`; the rule wants it inside `1.05 – 1.5`,
+and every floor lands at **1.25**, the middle of the window, because the eight
+factors were solved for exactly that.
 
-A floor's level range **straddles two bands**, and the multiplier comes from the
+Maps 6, 7 and 8 read the same `end` band, and one shared rate cannot pay three
+different caps from three different trainer counts: measured with every factor at
+`1`, the three floors read **1.49, 1.44 and 0.96** — a 1.56x spread that left map 8
+below the window's floor. The shipped rule is therefore a **per-floor** factor:
+maps 6 and 7 pay 0.84 and 0.87 of the band's rate and map 8 pays 1.31, so each of
+the three fills at 1.25 (`0.75 × 5.00 × 16265.14 / 48726 = 1.25` on map 8). The
+other five floors pay 1.00, so the lever is inert where the band rate already fits.
+A **seventh band** was rejected because `TRAINER_XP_PER_MAP` keys off the **floor**,
+not a `BandId`: a band column would reach the tables that key off those six ids
+(`ROUTE_LOOT`, the shop, the casino and the trainer-money tables), and the three
+`end` floors do not split along a level boundary the way a band must.
+
+A floor's level range **straddles two bands**, and the rate comes from the
 _defeated_ Pokémon's band, so `A(m)` mixes its own band's rate with the next band's:
-map 1's roster spans levels 2–9, so its 2–8 roster members are paid Early's 2.67 and
-its level-9 member Low's 10.68. That is why the six multipliers are solved as a chain —
-each floor's window constrains its own band _and_ the one above it — rather than one
-band at a time. Re-solve by measuring first: `A(m)` is fixed by the floor's own level
-range and party size, so the sheet's numbers follow the walk in
-`src/engine/run/curve.test.ts`, never the other way round. Solvable from the bottom:
-`low` from map 2, then `early` from map 1 (whose level-9 rosters are paid `low`'s
-multiplier), then the four later bands the same way.
+map 1's roster spans levels 2–9, so its 2–8 roster members are paid Early's 6.07 and
+its level-9 member Low's 16.18. That is why the six band rates are solved as a chain
+— each floor's window constrains its own band _and_ the one above it — rather than
+one band at a time; the per-floor factor is then solved on top of that chain.
+Re-solve by measuring first: `A(m)` is fixed by the floor's level range, party size
+and factor, so the sheet's numbers follow the walk in
+`src/engine/run/curve.test.ts`, never the other way round. The fill is linear in the
+factor, so a fill measured with every factor at `1` gives `factor = 1.25 / fill`, and
+two decimals are enough: 0.84, 0.87 and 1.31 each land the re-run within 0.003 of
+1.25.
 
-Worked once, so the column can be checked by hand: map 1's band spans levels 2-9,
-so `A(1)` is `(40 + 60 + 80 + 100 + 120 + 140 + 160 + 720) / 8 = 177.50` — levels
-2-8 paid `early`'s 2.67 (`floor(level × 5 × 1.5 × trainerXp)`) and level 9 paid
-`low`'s 10.68, which is the straddle above in one figure. Map 2 straddles the
-other way: its band spans levels 9-16, so `A(2)` is
-`(720 + 801 + 881 + 961 + 1041 + 1121 + 1201 + 364) / 8 = 886.25`, seven levels at
-`low`'s 10.68 and the eighth at `mid`'s 3.04. Every later row is the same sum over
-that floor's own band.
+Worked once, so the column can be checked by hand: map 1's band spans levels 2-9, so
+`A(1)` is `(91 + 136 + 182 + 227 + 273 + 318 + 364 + 1092) / 8 = 335.375` — levels
+2-8 paid Early's 6.07 (`floor(level × 5 × 1.5 × trainerXp)`) and level 9 paid
+`low`'s 16.18, which is the straddle above in one figure. Map 2 straddles the other
+way: its band spans levels 9-16, so `A(2)` is
+`(1092 + 1213 + 1334 + 1456 + 1577 + 1698 + 1820 + 1030) / 8 = 1402.50`, seven
+levels at `low`'s 16.18 and the eighth at `mid`'s 8.59. The `end` floors show the
+factor at work: map 6 spans levels 37-43, so its seven awards run 1855 … 2156 at
+factor 0.84 for `A(6) = 4 × 2005.43 = 8021.71`, and map 8's levels 49-55 run 3832 …
+4301 at factor 1.31 for `A(8) = 4 × 4065.29 = 16265.14`.
 
 ## The rule
 
-A Pokémon defeated in a **trainer** battle is worth `experienceAward(level, 1, true)`
-= `floor(level × 5 × 1.5 × trainerXp)`, where `trainerXp` is the multiplier of the
-**defeated** Pokémon's level band (`bandForLevel`, `src/data/run.ts`). A wild
-encounter is worth the same without the 1.5 × `trainerXp` factor.
+A Pokémon defeated in a **trainer** battle is worth
+`experienceAward(level, 1, true, floorMultiplier)` =
+`floor(level × 5 × 1.5 × trainerXp × floorMultiplier)`, where `trainerXp` is the
+multiplier of the **defeated** Pokémon's level band (`bandForLevel`, `src/data/run.ts`)
+and `floorMultiplier` is the factor of the floor the battle was fought on
+(`trainerXpMultiplierForMap`, row `mapIndex - 1`, clamped at both ends, so it repeats
+its last row past map 8). A wild encounter is worth `floor(level × 5)` and reads
+neither the band rate nor the floor factor.
 
-Every multiplier is **above** 1: a trainer's Pokémon is always worth more than the
-wild one of the same level. The floors still pay their cap because the squad shares
-the bar, and the multipliers are re-solved whenever a level range or a floor's
-density moves — a floor that places more trainers needs less per defeat.
+Every band rate is **above** 1: a trainer's Pokémon is always worth more than the
+wild one of the same level, before the floor factor. The floors still pay their cap
+because the squad shares the bar, and the numbers are re-solved whenever a level
+range, the trainer-room table or a floor's density moves — a floor that places more
+trainers needs less per defeat, and the per-floor factor is the last lever.
 
 The squad shares **one XP bar** (`D35`), so the budget is a floor total, not a
 per-member figure, and nothing is split across participants (`participants` is 1 at
-the one call site, `resolveBattle` in `src/engine/run/resolve.ts`).
+the one call site, `resolveBattle` in `src/engine/run/resolve.ts`, which passes the
+floor the battle was fought on — `next.mapIndex`, before `advanceMap` runs).
 
 ## Exceptions
 
@@ -167,20 +194,21 @@ the one call site, `resolveBattle` in `src/engine/run/resolve.ts`).
   (`src/data/bosses.ts`); both are injected by the scene on top of the route, so
   they award beyond the 75 % budget. **Verdict, re-measured in this pass: the
   award stays uncapped and outside the budget.** A boss roster pays
-  `experienceAward(cap, 1, true)` once per member — 2160, 2184, 6018, 6276, 4344,
-  5046, 5754 and 6456 XP on maps 1-8, which is 3.58x, 0.65x, 0.75x, 0.42x, 0.18x,
-  0.17x, 0.15x and 0.13x of that floor's own `needed(m)`. Folding it into the
-  budget would put maps 1-4 past the rule's `1.5` ceiling (fill 4.83, 1.90, 1.87
-  and 1.90) while maps 5-8 would still land inside it (1.47, 1.37, 1.19, 1.22), so
-  a boss folded into the rule would make the rule meaningless exactly where the
-  run is an on-ramp. The window measures whether 75 % of a floor's **regular**
-  trainers pays its cap; the boss is the floor's finale, injected on top of the
-  route like the mini-boss — whose own three members pay 240, 3123, 1368, 3534,
-  3555, 2349, 2700 and 3051 XP, the map 2 fight alone reading 93 % of that floor's
-  `needed(m)` because `low` carries the chain's peak multiplier — and capping
-  either would be a change to the award rule (`experienceAward`, a battle rule),
-  not an edit to balance data. The surplus the finale pays is clamped by the
-  floor's cap (`levelCapForMap`) like any other gain.
+  `experienceAward(cap, 1, true, factor)` once per member — 3276, 6180, 13140,
+  14658, 13248, 12936, 15270 and 25806 XP on maps 1-8, which is 5.42x, 1.84x, 1.63x,
+  0.99x, 0.56x, 0.45x, 0.40x and 0.53x of that floor's own `needed(m)`. Folding it
+  into the budget would put **every** floor past the rule's `1.5` ceiling
+  (fill 6.67, 3.09, 2.88, 2.24, 1.81, 1.70, 1.65 and 1.78), because the eight
+  floors are solved at 1.25 and even the smallest boss surplus (0.40x, map 7) is more
+  than the 0.25 the window leaves above that fill — so a boss folded into the rule
+  would make the rule meaningless on every floor. The window measures
+  whether 75 % of a floor's **regular** trainers pays its cap; the boss is the
+  floor's finale, injected on top of the route like the mini-boss — whose
+  band-level roster is drawn under the run seed (`<seed>:miniboss:<map>`,
+  `src/scenes/RouteScene.ts`), so its own sum is not quoted per floor — and capping
+  either would be a change to the award rule (`experienceAward`, a battle rule), not
+  an edit to balance data. The surplus the finale pays is clamped by the floor's cap
+  (`levelCapForMap`) like any other gain.
 - The floor's **entry, boss and every special leaf** (the shop, the mini-boss, the
   mega-stone, the casino and the gated room) are quiet: they place no route trainers
   at all, and the shop holds a counter rather than a trainer. **Map 1 hangs no shop
@@ -190,8 +218,10 @@ the one call site, `resolveBattle` in `src/engine/run/resolve.ts`).
   walked, not how it is paid for.
 - **Infinite mode** reuses the `End` band past map 8 while the cap keeps climbing
   (`MAP_TUNING_STEP.levelStep` a map, both ends of the range, until it saturates at
-  `MAP_MAX_LEVEL`), so no single multiplier can hold the window there: the 75 % rule
-  is stated for the **eight finite maps** only.
+  `MAP_MAX_LEVEL`), and `trainerXpMultiplierForMap` repeats its last row, so every
+  floor past map 8 pays map 8's 1.31: no single factor can hold the window against a
+  cap that keeps stepping, so the 75 % rule is stated for the **eight finite maps**
+  only.
 - A single capture per route is untouched by any of this: the XP curve never gates a
   catch.
 
@@ -256,14 +286,15 @@ table; the rule above does not move with it.
 
 ## Re-reading this sheet
 
-Change `trainerXp` (or a map's level range) in `src/data/`, run `npm test`, and
-re-read the walk: `src/engine/run/curve.test.ts` rebuilds every room of every finite
-map the way `RouteScene` does, over the three seeds above, measures `T̄(m)` and
-`A(m)`, and asserts the window per map. When this sheet and that test disagree, the
-test is right.
+Change `LEVEL_BANDS[*].trainerXp`, `TRAINER_XP_PER_MAP` (or a map's level range) in
+`src/data/`, run `npm test`, and re-read the walk: `src/engine/run/curve.test.ts`
+rebuilds every room of every finite map the way `RouteScene` does, over the three
+seeds above, measures `T̄(m)` and `A(m)`, and asserts the window per map. When this
+sheet and that test disagree, the test is right.
 
 Since `[Task-65]`'s **gated** leaf the walk counts that leaf too: it rolls with a
 **20 %** chance **from map 3 on** (`src/engine/maps/plan.ts`, `docs/maps-spec.md`
-§7), so the rows for maps 3-8 above are that pass's re-measurement — the leaf adds a
-door to the room it hangs from and shifts the floors after it — while **maps 1-2 are
-untouched**: it never rolls there.
+§7), so it adds a door to the room it hangs from and shifts the floors after it, and
+the counts above include it. The trainer counts themselves are bounded by
+`TRAINER_ROOMS_PER_MAP` (`[Task-82]`), which is why a later map's count no longer
+follows its room count.

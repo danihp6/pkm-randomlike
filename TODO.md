@@ -3101,6 +3101,58 @@ unmerged `[Task-94]`/`[Task-95]`, and every other candidate (`[Task-91]`–`[Tas
 used; the other two of each stay empty with the route scene's one-owner-per-batch queue
 as their constraint. No task moved batch.
 
+### Batch 36 — the per-floor trainer XP factor, and the floor's mission
+
+**Cut (`2026-10-20`).** The batch's floor is the lowest pending cut of the plan:
+`[Task-83]` (the XP curve re-solved against the new floor budgets) and `[Task-98]` (the
+floor-mission framework). They share no path: 83 owns `src/data/run.ts` + its test,
+`src/engine/run/progression.ts` + test, `src/engine/run/resolve.ts` + test,
+`src/engine/run/curve.test.ts`, `docs/balance/route-curve.md` and one bullet of
+`docs/battle-spec.md` §7; 98 owns the new `src/engine/run/missions.ts` and
+`src/data/missions.ts` (each with its test and its folder README line),
+`src/engine/run/state.ts` + test, `src/engine/save.ts` + test, `src/ui/notice.ts` + test,
+`src/i18n/{en,es}.ts`, `src/scenes/RouteScene.ts` and `docs/routes-spec.md` §4/§6,
+`docs/design-spec.md` §7 and `docs/maps-spec.md` §7. The batch holds the one
+`src/scenes/RouteScene.ts` claim (98), and `package.json`, `src/main.ts`,
+`vite.config.ts`, `src/data/dex/**` and every generated asset are nobody's. One correction
+is recorded rather than hidden: the plan's own `[Task-98]` text put the floor's HP-loss
+fact in the battle fold, but `src/engine/run/resolve.ts` is 83's — so the rule lives as a
+pure helper in 98's `missions.ts` (`battleHpLoss`) and the scene only wires it; the batch
+stays an antichain and the rule is unchanged.
+
+**Fill record.** The fill search examined every later open task against the union above.
+`[Task-91]`–`[Task-97]` all claim the NPC layer (`src/data/npcs.ts`,
+`src/engine/routes/npcs.ts`, `src/ui/npcPanel.ts`) and the route scene, and every one of
+them but 91 depends on an unmerged task (92 on 91; 93 on 91 and 98; 94 on 91; 95 on 91;
+96 on 91 and 98; 97 on 92, 91 and 96). `[Task-99]` and `[Task-109]` depend on 98 itself
+(the mission record and the `notice.ts` row this very batch adds) and 109 also claims
+`src/ui/notice.ts` and `src/i18n/**`, which 98 holds. `[Task-100]` and `[Task-102]` claim
+`docs/maps-spec.md` §7 (and 102 the route scene), which 98 holds. `[Task-101]` depends on
+`[Task-94]`; `[Task-104]` is `[!]`; `[Task-108]` and `[Task-110]` claim the route scene;
+`[Task-114]` depends on `[Task-101]`; `[Task-115]` claims `src/data/README.md` and
+`docs/maps-spec.md` §7 with a model 98 does not, and `[Task-116]`/`[Task-117]`/`[Task-118]`
+depend on the unmerged 115/91/114. `[Task-28]` is unscheduled. So two dev slots and two
+QA slots are used and the other two of each stay empty with those constraints named; no
+task moved batch.
+
+**Shipped (Task-83, `2026-10-20`).** The award is now per floor: `TRAINER_XP_PER_MAP` =
+`1, 1, 1, 1, 1, 0.84, 0.87, 1.31` (eight two-decimal factors) and
+`trainerXpMultiplierForMap(mapIndex)` clamps at both ends and repeats its last row past
+the last finite map; `experienceAward` takes the factor as a **fourth, defaulted**
+argument, so the three-argument form every other call site uses is unchanged and a wild
+award ignores it; `resolveBattle` passes `trainerXpMultiplierForMap(next.mapIndex)`.
+`curve.test.ts` deletes `SHARED_BAND_MIN_FILL` and returns floor 8 to `MIN_FILL`, and the
+walk measures **1.2493 / 1.2496 / 1.2493 / 1.2499 / 1.2496 / 1.2510 / 1.2527 / 1.2518**
+over `curve-a`/`curve-b`/`curve-c` — every floor at 1.25, inside `1.05 – 1.5`.
+`docs/balance/route-curve.md`'s band table was **stale against the code** (it still
+carried the pre-Task-82 multipliers, 2.67/10.68/3.04/5.82/4.65/2.61); it now carries the
+shipped 6.07/16.18/8.59/12.70/10.86/7.96, the new `Factor` column, and the measured
+`A(m)`, budget and fill columns. **QA:** one Task QA from `qa-83` (`main@4b28f8a` +
+`task-83@8a19872`; integration commit `68230b4`) — 8/8 `[unit]` criteria green, **2112**
+tests, build clean, 10 diff paths (the 9 exclusive ones + the spec commit), and an
+independent re-walk outside the pinned test reproduced **every cell** of the sheet and
+the boss/mini-boss award figures; `docs/battle-spec.md`'s diff is one hunk inside §7.
+
 ### Open questions for the human
 
 Batch 4b's three reports added two more (the learnset band's is **answered** — the
@@ -5402,7 +5454,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       route-curve sheet instead of the plan). It
       is also what unblocks the NPC layer: `[Task-91]`'s roll reads the room's `role`, and
       `[Task-99]`'s trainer rows are placed by the same pass. *(Batch 35)*
-- [ ] **[Task-83] The XP curve is re-solved against the new floor budgets.** The rule that `75 %` of a
+- [x] **[Task-83] The XP curve is re-solved against the new floor budgets.** The rule that `75 %` of a
       floor's **trainers** pays its cap is solved into `LEVEL_BANDS.trainerXp` and measured by
       `src/engine/run/curve.test.ts` over three fixed seeds (`docs/balance/route-curve.md`). Under the
       player-relative model (Tasks 78/79) `A(m)` is no longer a per-floor band — a trainer's level is

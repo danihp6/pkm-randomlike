@@ -1,3 +1,4 @@
+import { trainerXpMultiplierForMap } from '../../data/run';
 import type { FighterSnapshot } from '../battle/fighter';
 import type { BattleReturn } from './battleLink';
 import { chargePokevial } from './heal';
@@ -74,7 +75,8 @@ export function resolveBattle(
   if (won && next.party.length > 0 && reward.enemyLevels.length > 0) {
     // The squad shares one bar, so the award is not split by party size.
     const amount = reward.enemyLevels.reduce(
-      (total, level) => total + experienceAward(level, 1, reward.isTrainer),
+      (total, level) =>
+        total + experienceAward(level, 1, reward.isTrainer, trainerXpMultiplierForMap(next.mapIndex)),
       0,
     );
     const grown = gainExperience(next, amount, next.seed);

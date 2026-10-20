@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { getBiome } from '../../data/biomes';
 import { ROUTE_LOOT } from '../../data/loot';
 import { FINITE_MAPS, levelCapForMap } from '../../data/maps';
-import { LEVEL_BANDS, type LevelBand } from '../../data/run';
+import {
+  LEVEL_BANDS,
+  TRAINER_XP_PER_MAP,
+  trainerXpMultiplierForMap,
+  type LevelBand,
+} from '../../data/run';
 import { TILESETS } from '../../data/tilesets';
 import { TRAINER_ARCHETYPE_IDS } from '../../data/trainers';
 import { planMap } from '../maps/plan';
@@ -21,14 +26,11 @@ const SEEDS = ['curve-a', 'curve-b', 'curve-c'];
 const START_LEVEL = 5;
 
 /**
- * The fill each floor measured when `LEVEL_BANDS[*].trainerXp` was last solved, two
- * decimals per floor. A re-pin records the new column; an unmotivated move fails
- * here.
+ * The fill each floor measured with the shipped per-floor factors, two decimals
+ * per floor. A re-pin records the new column; an unmotivated move fails here.
  *
- * Maps 6-8 share the `end` band, and their caps demand a 1.56x spread that one
- * multiplier cannot express: map 8 pays 96 % of its cap where the window asks for
- * at least 105 %. The exception is pinned, not hidden — closing it needs a data
- * change outside this task (a narrower top band or a per-map multiplier).
+ * Every floor is solved to 1.25 with its own factor, so no map needs the shared
+ * band's exception: maps 6-8 read the `end` band but no longer share a rate.
  */
 const MEASURED_FILL: Readonly<Record<number, number>> = {
   1: 1.25,
@@ -36,16 +38,13 @@ const MEASURED_FILL: Readonly<Record<number, number>> = {
   3: 1.25,
   4: 1.25,
   5: 1.25,
-  6: 1.49,
-  7: 1.44,
-  8: 0.96,
+  6: 1.25,
+  7: 1.25,
+  8: 1.25,
 };
 
-/** The lowest share a floor may pay: the window's floor for every single-band floor. */
+/** The lowest share a floor may pay: the window's floor. */
 const MIN_FILL = 1.05;
-
-/** The lowest share the last floor may pay while it shares the `end` band. */
-const SHARED_BAND_MIN_FILL = 0.95;
 
 /**
  * One room of one floor, built exactly as `RouteScene.buildRoute` builds it: the
@@ -101,6 +100,7 @@ function measureFloors(): readonly FloorCurve[] {
   return Array.from({ length: FINITE_MAPS }, (_, index) => {
     const mapIndex = index + 1;
     const band = bandForMap(mapIndex);
+    const factor = trainerXpMultiplierForMap(mapIndex);
     const perSeed = SEEDS.map((seed) => {
       const plan = planMap(seed, mapIndex);
       let trainers = 0;
@@ -115,7 +115,7 @@ function measureFloors(): readonly FloorCurve[] {
     let awards = 0;
     for (let level = band.minLevel; level <= band.maxLevel; level++) {
       levels += 1;
-      awards += experienceAward(level, 1, true);
+      awards += experienceAward(level, 1, true, factor);
     }
     return {
       mapIndex,
@@ -144,6 +144,19 @@ describe('floor trainer curve', () => {
     }
   });
 
+  it('gives every finite floor one two-decimal factor, repeating the last row past the end', () => {
+    expect(TRAINER_XP_PER_MAP.length).toBe(FINITE_MAPS);
+    for (const [index, factor] of TRAINER_XP_PER_MAP.entries()) {
+      expect(Number.isFinite(factor), `map ${index + 1}`).toBe(true);
+      expect(factor, `map ${index + 1}`).toBeGreaterThan(0);
+      expect(factor, `map ${index + 1}`).toBe(Math.round(factor * 100) / 100);
+    }
+    expect(trainerXpMultiplierForMap(0)).toBe(TRAINER_XP_PER_MAP[0]);
+    expect(trainerXpMultiplierForMap(1)).toBe(TRAINER_XP_PER_MAP[0]);
+    expect(trainerXpMultiplierForMap(FINITE_MAPS)).toBe(TRAINER_XP_PER_MAP[FINITE_MAPS - 1]);
+    expect(trainerXpMultiplierForMap(FINITE_MAPS + 5)).toBe(TRAINER_XP_PER_MAP[FINITE_MAPS - 1]);
+  });
+
   it("pays for each floor's level cap with 75 % of that floor's trainers", () => {
     for (const floor of floors()) {
       const label = `map ${floor.mapIndex} (${floor.band.id})`;
@@ -154,8 +167,7 @@ describe('floor trainer curve', () => {
       }
       const budget = 0.75 * floor.meanTrainers * floor.award;
       const fill = budget / floor.needed;
-      const minimum = floor.mapIndex === FINITE_MAPS ? SHARED_BAND_MIN_FILL : MIN_FILL;
-      expect(fill, `${label} fill`).toBeGreaterThanOrEqual(minimum);
+      expect(fill, `${label} fill`).toBeGreaterThanOrEqual(MIN_FILL);
       expect(fill, `${label} fill`).toBeLessThanOrEqual(1.5);
       expect(fill, `${label} fill`).toBeCloseTo(MEASURED_FILL[floor.mapIndex], 2);
     }

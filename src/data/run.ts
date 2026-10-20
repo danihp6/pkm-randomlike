@@ -81,6 +81,24 @@ export const LEVEL_BANDS: readonly LevelBand[] = [
 ];
 
 /**
+ * Per-floor trainer-XP factors, one per finite map (`FINITE_MAPS` = 8), two
+ * decimals each. The award is `LEVEL_BANDS[*].trainerXp` × this floor's factor,
+ * so a multiplier shared by several floors can no longer starve the last ones
+ * (`docs/balance/route-curve.md`). The last row repeats past the last finite map
+ * (infinite mode walks the `end` band upwards).
+ */
+export const TRAINER_XP_PER_MAP: readonly number[] = [1, 1, 1, 1, 1, 0.84, 0.87, 1.31];
+
+/**
+ * The factor floor `mapIndex` pays: row `mapIndex - 1`, clamped at both ends, so
+ * map 0 and a negative index read the first row and map 9+ reads the last.
+ */
+export function trainerXpMultiplierForMap(mapIndex: number): number {
+  const row = Number.isFinite(mapIndex) ? Math.floor(mapIndex) - 1 : 0;
+  return TRAINER_XP_PER_MAP[Math.max(0, Math.min(TRAINER_XP_PER_MAP.length - 1, row))];
+}
+
+/**
  * The **upper half** of a band's BST window, for a boss roster (`D39`): a boss
  * fields the strongest species the floor's band can hold, one step above the
  * regular trainers sharing the band.
