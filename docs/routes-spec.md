@@ -214,6 +214,16 @@ room entry) and **Honey Gather** (a win), the dex's out-of-battle item abilities
 (`docs/battle-spec.md` §11.1). The run's first room is not a room entry: the run
 begins standing in it.
 
+**The special NPC is a per-room fixture, not a pass.** A regular `trainers` room may
+hold one special NPC (`docs/maps-spec.md` §7). It is placed **when the room is
+built**: the presence and row roll on the room's own `${seed}:npc:<roomId>` stream
+and the standing tile on `${seed}:npc:<roomId>:<npcId>:spot`, so no layout, terrain,
+population, validation or encounter stream moves and a fixed seed keeps every route
+it already generated. The scene rolls it once per room build (never in `update`),
+draws it as an ordinary overworld actor and blocks its tile; the interact key opens
+the one NPC card. `NPC_ROWS` ships empty (`src/data/npcs.ts`), so no room holds one
+yet.
+
 ## 3. Wild encounters
 
 - Walking onto a `TALL_GRASS` tile rolls an encounter with the route's table.

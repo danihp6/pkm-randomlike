@@ -49,6 +49,10 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   chance a spin turns into the grunt fight and each band's weighted prize rows.
 - `noHeal.ts` — the no-heal room's table: the first floor that may hang it, the
   chance, its trainer's archetype and the move ids the room bars for the player.
+- `npcs.ts` — the special-NPC table (`docs/maps-spec.md` §7): one row per NPC with
+  its name and greeting keys, the overworld sprite key it draws with, the chance it
+  is rolled on map 1 and the step every floor after adds, plus the optional party
+  gate its row is filtered by. Ships **empty** until the NPC content tasks land.
 - `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
   each band's `hiddenChance` (`docs/routes-spec.md` §2 step 4).
 - `population.ts` — the floor's trainer-room composition the plan and the route

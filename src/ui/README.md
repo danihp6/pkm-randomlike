@@ -30,6 +30,8 @@ testable logic belongs in the computing half.
   key and no input taken.
 - `casino.ts` — the casino's slot machine as a pure model: one spin against the run (price,
   lock, weighted prize or the grunt fight) and the Egg's hatch on the floor advance.
+- `npcPanel.ts` — the modal card every special NPC fills: the title, the wrapped paragraph, the
+  column of choices with `LEAVE` last, and the pure row layout the card draws from.
 - `abilityInfo.ts` — the ability row's info control and the text it floats, so the route HUD and
   the battle's switch window read the same way.
 - `battleInfo.ts` — the battle-state window's rows: the weather, the terrain, the field and side

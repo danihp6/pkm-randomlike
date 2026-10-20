@@ -150,6 +150,9 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'trade.missing': 'Ese Pokémon no está en tu equipo.',
   'trade.done': '¡Has recibido a {name}!',
 
+  // npc — the special-NPC card's own last row
+  'npc.leave': 'SALIR',
+
   // release — the permadeath overlay
   'release.controls': '{confirm} · continuar',
 

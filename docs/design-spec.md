@@ -356,6 +356,13 @@ leaves with only their own content (`docs/maps-spec.md` §7):
   it when **any party member has the obstacle's type** — Bug or Grass / Rock or
   Fighting / Water — so the party the run built is the key, and the opening lasts
   the rest of the floor.
+- a **special NPC** in a regular trainer room, at most one: a merchant, a medic, an
+  exorcist, a berry tree. It stands on a free tile as an ordinary overworld sprite
+  and blocks it; the interact key opens **one modal card** — the NPC's name as its
+  title, one paragraph, a column of at most six choices and a `LEAVE` row — the
+  same shell every NPC uses. A chosen row is recorded for the rest of the floor, so
+  a revisit knows it was taken. The table ships empty, so no room holds one until
+  an NPC's own row lands.
 
 Every floor is also given one **mission**, shown in one line of the HUD. The one
 kind that ships is `flawless`: leave the floor having lost **no HP** and without a

@@ -353,6 +353,49 @@ player is in the shop room (it is opened at the counter with `E` and is
 unavailable anywhere else), so buying is tied to the room rather than to a menu
 key.
 
+### The special NPC
+
+A **regular `trainers` room** may hold **one special NPC** — a merchant, a medic, an
+exorcist, a berry tree — beside the run's own rooms (`src/data/npcs.ts`,
+`src/engine/routes/npcs.ts`, the card in `src/ui/npcPanel.ts`). It is a
+**build-time fixture**, not part of the generated route: the entry, the boss and
+every special leaf are `wild` and never carry one.
+
+- **The roll** runs once per room build, on the room's own stream
+  (`${seed}:npc:<roomId>`), so no map, route, encounter, roster or battle draw
+  moves (`D11`). One draw decides presence and, on a hit, one draw picks the row:
+  each row's weight is its chance × 10 000, a row whose weight is 0 is never picked,
+  and the walk is the table's own order, so a higher chance is likelier and the
+  table breaks ties. Two rooms never share a stream: adding a room cannot move
+  another room's NPC.
+- **The chance** is `clamp01(chance + floorStep × (floor − 1))`: `chance` is the
+  map-1 value and `floorStep` what every later floor adds, so a row's balance lives
+  in one line of the table and nowhere in the engine.
+- **Eligibility** is the **party's** shape: a row may require a type, a move or an
+  ability that any party member holds — a member at 0 HP counts, the box is never
+  asked, and the comparison is case-insensitive (`npcRequirementMet`,
+  `src/engine/run/party.ts`). A row whose gate the run fails is filtered out before
+  the roll.
+- **The spot** is one free tile on its own stream
+  (`${seed}:npc:<roomId>:<npcId>:spot`): never the entry or its four neighbours,
+  never an exit, a wall, a trainer or a visible ground item. A live NPC **blocks its
+  tile** like a trainer or a visible item; it has no line of sight and never spins.
+  A row whose sprite key the packed overworld atlas lacks is dropped whole — no art,
+  no block and no interact.
+- **The card** the interact key opens is **one modal shell** for every NPC
+  (`src/ui/npcPanel.ts`): the row's name as its title, its greeting as one wrapped
+  paragraph, its own choices in order and the shell's `LEAVE` row last (six choices
+  at most; `LEAVE` and cancel both close it). The caller resolves the strings and
+  wires the chosen row's effect, so the shell owns no rule and no run state.
+- **The use record** is `npc-<mapIndex>-<roomId>-<id>` in `pickedItems`, which
+  `advanceMap` clears: a greeting records nothing, only a chosen choice marks it,
+  and no save field or `SAVE_VERSION` step was added. A revisit and a reload read
+  the same record.
+
+`NPC_ROWS` ships **empty**: this is the framework, and each NPC's own row, copy and
+effect lands with its content task, so the game is unchanged until the first row
+does.
+
 ### The no-heal room
 
 The **no-heal** leaf (`src/data/noHeal.ts`, `D47`'s room descriptor
