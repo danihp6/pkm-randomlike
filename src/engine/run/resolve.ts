@@ -1,4 +1,5 @@
 import { trainerXpMultiplierForMap } from '../../data/run';
+import type { TrainerItemReward } from '../../data/trainers';
 import type { FighterSnapshot } from '../battle/fighter';
 import type { BattleReturn } from './battleLink';
 import { chargePokevial } from './heal';
@@ -13,6 +14,7 @@ import {
 } from './progression';
 import {
   addCaughtPokemon,
+  addItem,
   addMoney,
   gainExperience,
   isTrainerDefeated,
@@ -32,6 +34,8 @@ export type BattleReward = Readonly<{
   trainerId?: string;
   /** Poké Dollars a trainer win drops, already rolled from its archetype/band (D33). */
   money?: number;
+  /** The archetype's item row: one bag stack, paid with the first win (Task-99). */
+  item?: TrainerItemReward;
 }>;
 
 export type BattleResolution = Readonly<{
@@ -108,6 +112,7 @@ export function resolveBattle(
     if (firstWin) {
       next = chargePokevial(next);
       if (reward.money !== undefined) next = addMoney(next, reward.money);
+      if (reward.item !== undefined) next = addItem(next, reward.item.itemId, reward.item.count);
     }
     next = markTrainerDefeated(next, reward.trainerId);
   }

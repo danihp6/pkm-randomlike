@@ -18,17 +18,25 @@ export type WildTrigger = Readonly<{
   tile?: Readonly<{ x: number; y: number }>;
 }>;
 
+/** One member of a trainer's roster as the battle builds it. */
+export type TrainerRosterEntry = Readonly<{
+  id: string;
+  speciesId: string;
+  level: number;
+  /** A held item the member starts with (a Mega Stone, D34). */
+  heldItem?: string;
+  /**
+   * The ability name the member starts with, bypassing the run's `randomAbility` roll
+   * (`createFighter` trusts a provided `ability`). Absent means the roll applies.
+   */
+  ability?: string;
+}>;
+
 export type TrainerTrigger = Readonly<{
   kind: 'trainer';
   trainerId: string;
   trainerName: string;
-  roster: readonly Readonly<{
-    id: string;
-    speciesId: string;
-    level: number;
-    /** A held item the member starts with (a Mega Stone, D34). */
-    heldItem?: string;
-  }>[];
+  roster: readonly TrainerRosterEntry[];
   /** The archetype whose overworld colour frames the battle, when known. */
   archetypeId?: string;
 }>;

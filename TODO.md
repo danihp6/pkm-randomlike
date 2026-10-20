@@ -1078,6 +1078,27 @@ depends on `[Task-114]`; `[Task-28]` stays unscheduled by its own decision line.
 three empty slots name those constraints, so the batch runs as one dev wave and one
 QA wave.
 
+**Batch 42 is `[Task-99]` alone: the fill search found no legal mate.** Its cut holds
+`src/scenes/RouteScene.ts`, `src/data/trainers.ts` + test,
+`src/engine/routes/trainers.ts` + test, `src/engine/run/battleLink.ts` (the roster
+entry's `ability`), `src/engine/run/resolve.ts` + test (the reward row pays inside the
+fold's own `firstWin`) and the three docs' sections — `docs/routes-spec.md` §2/§5,
+`docs/battle-spec.md` §9 and `docs/design-spec.md` §7 — so the one-line record above
+for 42, which names only `RouteScene.ts` and `src/data/trainers.ts`, is narrower than
+the spec's list (the way Batch 41's record predated its four extra paths), and the spec
+carries the rest. Eight open tasks claim `RouteScene.ts`, which 99 holds: `[Task-96]`,
+97, 100, 101, 102, 108, 109 and 110. The rest are named one by one: `[Task-114]`
+(Batch 53) needs `[Task-101]`'s `commands.ts`, and `[Task-118]` (Batch 57) is written
+against 114; `[Task-103]` (Batch 47) shares `docs/battle-spec.md` §9 — the bullet naming
+the archetypes that may carry a stone — **and** the first-win block of
+`src/engine/run/resolve.ts` 99 edits, so it collides twice; `[Task-117]` (Batch 56)
+shares `docs/design-spec.md` §7's special-room list **and** `docs/routes-spec.md` §2,
+where 99 writes the special-trainer paragraph beside the NPC paragraph 117 rewrites, and
+neither a code path nor a section can be split between two tasks; `[Task-28]` stays
+unscheduled by its own decision line. No `package.json`, `src/main.ts`,
+`vite.config.ts` or `src/data/dex/**` is claimed by 99. The three empty slots name
+those constraints, so the batch runs as one dev wave and one QA wave.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
@@ -5890,7 +5911,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* none — the floor advance, the casualty counter and the notice module are shipped.
       It owns `src/engine/run/state.ts` + test, `src/engine/save.ts` + test, `src/ui/notice.ts` + test
       and the two i18n tables, none of which its Batch 36 mate `[Task-83]` touches. *(Batch 36)*
-- [ ] **[Task-99] The special trainers: invisible ninjas, the all-Impostor trainer and the
+- [x] **[Task-99] The special trainers: invisible ninjas, the all-Impostor trainer and the
       conditional secret battle.** Three wishes that are a **spawn rule** and an **archetype
       override**, not new mechanics: trainers are placed by the population pass (`[Task-82]` makes
       the rooms) and their abilities are **rolled** (D17, `randomAbility`), while the engine already

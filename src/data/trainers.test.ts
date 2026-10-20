@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { getAbility } from './dex/abilities';
+import { getItem } from './items';
 import {
   SPECIAL_ARCHETYPES,
+  SPECIAL_TRAINER_ROWS,
   TRAINER_ARCHETYPES,
   TRAINER_ARCHETYPE_IDS,
   getTrainerArchetype,
@@ -86,8 +89,13 @@ describe('trainer archetypes', () => {
 });
 
 describe('the set-piece archetypes', () => {
-  it('keeps the rocket grunt out of the route’s own pool, reachable by id', () => {
-    expect(SPECIAL_ARCHETYPES.map((archetype) => archetype.id)).toEqual(['rocket']);
+  it('keeps the set-piece rows out of the route’s own pool, reachable by id', () => {
+    expect(SPECIAL_ARCHETYPES.map((archetype) => archetype.id)).toEqual([
+      'rocket',
+      'ninja',
+      'impostor',
+      'secret',
+    ]);
     for (const archetype of SPECIAL_ARCHETYPES) {
       expect(TRAINER_ARCHETYPE_IDS, archetype.id).not.toContain(archetype.id);
     }
@@ -114,5 +122,88 @@ describe('the set-piece archetypes', () => {
     expect(rocket.colour).toBe(0xc0392b);
     // No catalogue tier carries it: the row is a set-piece, never a route roll.
     expect(rocket.carriesMega).toBeUndefined();
+  });
+});
+
+describe('the set-piece trainers', () => {
+  it('ships the ninja, the impostor and the secret trainer as data rows', () => {
+    for (const id of ['ninja', 'impostor', 'secret']) {
+      const archetype = getTrainerArchetype(id);
+      expect(archetype, id).toBe(SPECIAL_ARCHETYPES.find((entry) => entry.id === id));
+      expect(TRAINER_ARCHETYPE_IDS, id).not.toContain(id);
+    }
+  });
+
+  it('keeps the ten regular classes as the only route pool', () => {
+    expect(TRAINER_ARCHETYPE_IDS).toEqual([
+      'youngster',
+      'lass',
+      'bugcatcher',
+      'hiker',
+      'camper',
+      'picnicker',
+      'fisher',
+      'psychic',
+      'blackbelt',
+      'ace',
+    ]);
+    for (const id of ['rocket', 'ninja', 'impostor', 'secret']) {
+      expect(TRAINER_ARCHETYPE_IDS, id).not.toContain(id);
+    }
+  });
+
+  it('hides the ninja’s route sprite without touching its sight', () => {
+    const ninja = getTrainerArchetype('ninja')!;
+    expect(ninja.sightMode).toBe('invisible');
+    expect(ninja.spriteKey).toBe('ninja');
+    expect(ninja.battleSprite).toBe('ninja');
+    expect(ninja.forcedAbility).toBeUndefined();
+    expect(ninja.reward).toBeUndefined();
+    expect(ninja.aiFlags).toEqual(['checkBadMove', 'tryToFaint', 'risky']);
+  });
+
+  it('gives the impostor a forced Imposter roster and one Ability Shield', () => {
+    const impostor = getTrainerArchetype('impostor')!;
+    expect(impostor.forcedAbility).toBe('Imposter');
+    expect(impostor.reward).toEqual({ itemId: 'abilityshield', count: 1 });
+    expect(getItem('abilityshield')).toBeDefined();
+    expect(impostor.forcedAbility).toBe(getAbility('imposter')?.name);
+    expect(impostor.sightMode).toBeUndefined();
+  });
+
+  it('fields the secret trainer as the purest set piece', () => {
+    const secret = getTrainerArchetype('secret')!;
+    expect(secret.name).toBe('Secret Trainer');
+    expect(secret.className).toBe('Secret Trainer');
+    expect(secret.money).toEqual({ base: 300, jitter: 120 });
+    expect(secret.sightMode).toBeUndefined();
+    expect(secret.forcedAbility).toBeUndefined();
+    expect(secret.reward).toBeUndefined();
+    expect(secret.aiFlags).toHaveLength(6);
+  });
+
+  it('lets no set-piece trainer carry a Mega Stone', () => {
+    for (const id of ['ninja', 'impostor', 'secret']) {
+      expect(getTrainerArchetype(id)!.carriesMega, id).toBeUndefined();
+    }
+  });
+});
+
+describe('the special trainer spawn table', () => {
+  it('reads three rows in pick order, the secret one gated on a mission', () => {
+    expect(SPECIAL_TRAINER_ROWS).toEqual([
+      { archetypeId: 'ninja', chance: 0.1 },
+      { archetypeId: 'impostor', chance: 0.08 },
+      { archetypeId: 'secret', chance: 0.2, minMissionsCompleted: 1 },
+    ]);
+  });
+
+  it('names a set-piece archetype the route pool never rolls', () => {
+    for (const row of SPECIAL_TRAINER_ROWS) {
+      expect(getTrainerArchetype(row.archetypeId), row.archetypeId).toBeDefined();
+      expect(TRAINER_ARCHETYPE_IDS, row.archetypeId).not.toContain(row.archetypeId);
+      expect(row.chance, row.archetypeId).toBeGreaterThanOrEqual(0);
+      expect(row.chance, row.archetypeId).toBeLessThanOrEqual(1);
+    }
   });
 });

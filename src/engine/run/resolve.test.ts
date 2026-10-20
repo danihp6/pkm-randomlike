@@ -305,3 +305,38 @@ describe('resolveBattle', () => {
     expect(result.events).toEqual([]);
   });
 });
+
+describe('the first-win item row', () => {
+  const reward: BattleReward = {
+    enemyLevels: [4],
+    isTrainer: true,
+    trainerId: 'trainer-1-0',
+    item: { itemId: 'abilityshield', count: 1 },
+  };
+
+  it('stacks the archetype item on the first win', () => {
+    const run = createRun({ seed: 's', starter, bag: [{ itemId: 'abilityshield', count: 2 }] });
+    const result = resolveBattle(run, returned(run, 'win'), reward);
+    expect(result.run.bag).toEqual([{ itemId: 'abilityshield', count: 3 }]);
+  });
+
+  it('adds the item to a bag that does not hold it yet', () => {
+    const run = createRun({ seed: 's', starter });
+    const result = resolveBattle(run, returned(run, 'win'), reward);
+    expect(result.run.bag).toEqual([{ itemId: 'abilityshield', count: 1 }]);
+  });
+
+  it('pays it exactly once, even when the replay carries the first bag back', () => {
+    const run = createRun({ seed: 's', starter });
+    const first = resolveBattle(run, returned(run, 'win'), reward);
+    const again = resolveBattle(first.run, returned(first.run, 'win', { bag: first.run.bag }), reward);
+    expect(again.run.bag).toEqual([{ itemId: 'abilityshield', count: 1 }]);
+  });
+
+  it('pays nothing on a loss, a flee or a wild battle', () => {
+    const run = createRun({ seed: 's', starter });
+    expect(resolveBattle(run, returned(run, 'lose'), reward).run.bag).toEqual([]);
+    expect(resolveBattle(run, returned(run, 'run'), reward).run.bag).toEqual([]);
+    expect(resolveBattle(run, returned(run, 'win'), wild).run.bag).toEqual([]);
+  });
+});

@@ -8,6 +8,35 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The special trainers: an invisible ninja, an all-Impostor trainer and a gated secret battle.**
+      A `trainers` room's **first** trainer can now wear a special archetype instead of an
+      ordinary class — an archetype override, never an extra body (`id`, tile, facing, `sight`
+      and spin are kept, so the population's pose and reachability rules are untouched). Three
+      rows join `SPECIAL_ARCHETYPES` and the new `SPECIAL_TRAINER_ROWS` prices them: **ninja**
+      0.1, **impostor** 0.08, **secret** 0.2 gated on `RunState.missionsCompleted >= 1`. The
+      roll is pure in `src/engine/routes/trainers.ts` — `specialTrainerFor` (presence then a
+      weighted pick on its own `Rng(hashSeed(seed:special-trainer:roomIndex))`, unknown rows
+      dropped), `trainerHidden` (`invisible` hides the route sprite only beyond one Manhattan
+      tile; `INVISIBLE_REVEAL_DISTANCE = 1`; sight untouched) and `withForcedAbility` — with
+      `TrainerArchetype.sightMode / forcedAbility / reward`, `TrainerRosterEntry.ability` and
+      `BattleReward.item`; the Impostor's roster starts on `Imposter` (bypassing the
+      `randomAbility` roll, which is a per-species hash, so nothing else shifts) and its first
+      win pays one Ability Shield through the fold's own `firstWin`, and the scene re-paints
+      trainer sprites after every step, room rebuild and teleport. No layout, terrain,
+      populate, item, validation, encounter or roster draw moved, so no fixed-seed re-pin; no
+      run field and no `SAVE_VERSION` step (**21**). Docs: `docs/routes-spec.md` §2/§5,
+      `docs/battle-spec.md` §9, `docs/design-spec.md` §7.
+      **QA:** one pass for a one-task batch — `qa-99` (`main@38552c1` + `task-99@bf5c797`,
+      integration `dd226ff`) — gates green (`npm test` **2395** passed / 67 skipped in 163
+      files, `npm run build` clean), the diff exactly the spec's 11 paths (the spec commit
+      dropped at the merge), forbidden paths (`save.ts`, `main.ts`, `package.json`,
+      `data/dex`, `i18n`, `BattleScene.ts`) empty and `SAVE_VERSION` still 21. The three
+      `[live]` criteria were measured over CDP, twice and independently: on map 1's first
+      trainer room the ninja at Manhattan distance **43** reports `visible === false`, the
+      control `psychic` at the same distance **43** reports `true`, and after
+      `teleportToTile` onto its facing tile the same trainer reports distance **1**,
+      `visible === true` with `Battle` inactive.
+
 - [x] **The item-and-battle NPCs: a medic, a chef, a berry tree and a Mega Stone keeper.**
       Four rows are appended to `NPC_ROWS` (1 % a floor, +0.25 pt, so an eligible floor puts
       an NPC in a trainer room ≈26 % early and ≈68 % by map 8) on the shipped special-NPC
