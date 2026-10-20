@@ -387,6 +387,14 @@ function naturalGiftHandlers(item: ItemDef): EffectHandlers | null {
   };
 }
 
+/** A `flee` held item: the holder always escapes a wild battle (Smoke Ball). */
+function fleeHandler(): NonNullable<EffectHandlers['onTryEscape']> {
+  return (ctx) => {
+    if (ctx.owner !== ctx.source) return;
+    return true;
+  };
+}
+
 function handlersFor(item: ItemDef): EffectHandlers {
   const hasResidual = Boolean(
     item.cures || item.healAmount || item.healFraction || (item.boosts && item.below),
@@ -412,6 +420,7 @@ function handlersFor(item: ItemDef): EffectHandlers {
   if (item.accuracyBoost) handlers = { ...handlers, onModifyAccuracy: accuracyBoostHandler(item) };
   if (item.critStages) handlers = { ...handlers, onModifyCritRatio: critStagesHandler(item) };
   if (item.alwaysLast) handlers = { ...handlers, onFractionalPriority: () => -1 };
+  if (item.flee) handlers = { ...handlers, onTryEscape: fleeHandler() };
   if (item.recoil) handlers = { ...handlers, onAfterMove: recoilHandler(item) };
   return handlers;
 }

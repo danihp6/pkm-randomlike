@@ -8,7 +8,13 @@ import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { getItem } from '../data/items';
 import { tmNumber } from '../data/tms';
 import { getMission } from '../data/missions';
-import { NPC_ROWS, TUTOR_MOVES, CURSE_ENEMY_BOOST, type NpcRow } from '../data/npcs';
+import {
+  BERRY_TREE_ENEMY_BOOSTS,
+  CURSE_ENEMY_BOOST,
+  NPC_ROWS,
+  TUTOR_MOVES,
+  type NpcRow,
+} from '../data/npcs';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import {
@@ -47,7 +53,7 @@ import type {
   DebugRouteInput,
   DebugTeleportResult,
 } from '../dev/debugMenu';
-import { restoreFighter, type FighterInput } from '../engine/battle';
+import { restoreFighter, type BoostId, type FighterInput } from '../engine/battle';
 import {
   BOSS_MONEY_MULTIPLIER,
   MAX_PARTY_SIZE,
@@ -142,13 +148,19 @@ import {
   DEFAULT_TRAINER_SIGHT,
   RouteEncounters,
   borderEdge,
+  chefTrade,
   encounterTableFor,
   exitEdgeAt,
   gateId,
   guaranteedNpc,
+  medicHeal,
+  npcBerryHarvest,
   npcForcedField,
+  npcPrize,
   npcRequirementMet,
   npcSpot,
+  npcTrainerId,
+  npcTreeWild,
   npcUseId,
   npcWildType,
   rollWildLevel,
@@ -157,6 +169,7 @@ import {
   sketchRoute,
   sketchRouteSteps,
   trainerAt,
+  type ChefTradeRefusal,
   type Facing,
   type RouteItem,
   type RouteMap,
@@ -654,6 +667,12 @@ type TrainerSpriteEntry = {
 /** The room's special NPC (`docs/maps-spec.md` §7): the row it rolled and its tile. */
 type RoomNpc = Readonly<{ row: NpcRow; tile: Tile }>;
 
+/** What one battle launch adds beyond the trigger: the guardian's boosts and its no-flee rule. */
+type BattleExtras = Readonly<{
+  noFlee?: boolean;
+  enemyBoosts?: Partial<Record<BoostId, number>>;
+}>;
+
 /**
  * One draggable HUD panel. Its window chrome and content live in `body` and its
  * collapse button in `icon`; both are children of `container`. `x`/`y`/`w`/`h`
@@ -721,6 +740,13 @@ const NPC_REFUSALS: Readonly<Record<MemberEditRefusal, TranslationKey>> = {
   'no-species': 'npc.refused.noSpecies',
   'no-ability': 'npc.refused.noAbility',
   'not-a-tutor-move': 'npc.refused.notTutorMove',
+};
+
+/** The line the chef's card prints when its trade refuses, by reason. */
+const CHEF_REFUSALS: Readonly<Record<ChefTradeRefusal, TranslationKey>> = {
+  'no-member': 'npc.refused.noMember',
+  'already-held': 'npc.chef.alreadyHeld',
+  'no-berries': 'npc.chef.noBerries',
 };
 
 /** True when a point falls inside a rect, for the detail panel's hit tests. */
@@ -1084,6 +1110,8 @@ export class RouteScene extends Phaser.Scene {
   private shopCounter: Tile | null = null;
   /** The special NPC this room rolled and its tile, or null off a room that rolled none. */
   private npc: RoomNpc | null = null;
+  /** The NPC battle in flight, so its win can pay the row's prize. Cleared on the return. */
+  private npcBattle: Readonly<{ row: NpcRow; mapIndex: number; roomId: number }> | null = null;
   /** Every special room kind's descriptor, indexed once per scene (`D47`). */
   private roomRegistry: RoomRegistry = collectDescriptors(ROOM_MODULES);
   /** The room's own panel while it owns the keyboard, or null; the scene owns the slot. */
@@ -5671,6 +5699,22 @@ export class RouteScene extends Phaser.Scene {
     });
   }
 
+  /** Fields the row's own trainer where the NPC stands (the Mega Stone keeper). */
+  private startNpcBattle(row: NpcRow, mapIndex: number, roomId: number): void {
+    const battle = row.battle;
+    const tile = this.npc?.tile;
+    if (!battle || !tile) return;
+    this.npcBattle = { row, mapIndex, roomId };
+    this.startTrainerBattle({
+      id: npcTrainerId(mapIndex, roomId, row.id),
+      position: tile,
+      facing: 'S',
+      sight: DEFAULT_TRAINER_SIGHT,
+      archetypeId: battle.archetypeId,
+    });
+    if (!this.pendingBattle) this.npcBattle = null;
+  }
+
   /**
    * The interact key (`E` by default): take the ground item the player faces, or
    * the one underfoot. Hidden items show only a faint sparkle, so this is how
@@ -5835,6 +5879,46 @@ export class RouteScene extends Phaser.Scene {
         );
         return;
       }
+      case 'medic': {
+        const healed = medicHeal(this.run, mapIndex, roomId);
+        this.closePanel();
+        this.commitRun(healed);
+        this.showNpcResult(row, t('npc.medic.done'));
+        return;
+      }
+      case 'chef':
+        this.closePanel();
+        this.openMemberCard(row, mapIndex, roomId, null);
+        return;
+      case 'berry-tree': {
+        const berries = npcBerryHarvest(this.run.seed, roomId, row.id);
+        let run = this.run;
+        for (const berry of berries) run = addItem(run, berry);
+        run = markItemPicked(run, npcUseId(mapIndex, roomId, row.id));
+        this.closePanel();
+        this.commitRun(run);
+        const band = bandForMap(mapIndex);
+        const wild = npcTreeWild(run.seed, roomId, row.id, this.encounters.currentTable(), (rng) =>
+          rollWildLevel(rng, squadLevel(run), band.maxLevel),
+        );
+        if (wild) {
+          this.startBattle(
+            {
+              kind: 'wild',
+              speciesId: wild.speciesId,
+              level: wild.level,
+              shiny: wild.shiny,
+              key: `npc:${roomId}:${row.id}`,
+            },
+            { noFlee: true, enemyBoosts: BERRY_TREE_ENEMY_BOOSTS },
+          );
+        }
+        return;
+      }
+      case 'mega-stone':
+        this.closePanel();
+        this.startNpcBattle(row, mapIndex, roomId);
+        return;
       default:
         this.commitRun(markItemPicked(this.run, npcUseId(mapIndex, roomId, row.id)));
         this.closePanel();
@@ -5926,6 +6010,21 @@ export class RouteScene extends Phaser.Scene {
       case 'species':
         this.applyMemberEdit(row, mapIndex, roomId, swapSpecies(this.run, memberId, ctx));
         return;
+      case 'chef': {
+        const trade = chefTrade(this.run, memberId);
+        if (!trade.ok) {
+          this.showNpcResult(row, t(CHEF_REFUSALS[trade.reason]));
+          return;
+        }
+        const holder = this.memberById(trade.memberId);
+        const name = holder ? this.memberName(holder) : t('common.unknownPokemon');
+        this.commitRun(markItemPicked(trade.run, npcUseId(mapIndex, roomId, row.id)));
+        this.showNpcResult(
+          row,
+          t('npc.chef.done', { name, item: getItem(trade.dishId)?.name ?? trade.dishId }),
+        );
+        return;
+      }
       default:
         return;
     }
@@ -6399,7 +6498,7 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /** Pauses the route and rolls the battle on top of it (Phase 5 transition). */
-  private startBattle(trigger: BattleTrigger): void {
+  private startBattle(trigger: BattleTrigger, extras: BattleExtras = {}): void {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     this.battleCounter += 1;
     const key =
@@ -6436,9 +6535,19 @@ export class RouteScene extends Phaser.Scene {
       // The no-heal leaf's rule rides the launch too, so its trainer's battle and
       // any dev wild opened in the room both carry it.
       noHeal: this.room?.special === 'no-heal',
-      // The exorcist's hex: the enemy's lead starts a stage down, and the battle it
-      // starts is what spends the curse (`docs/battle-spec.md` §4).
-      ...(this.run.modifiers.curse ? { enemyBoosts: CURSE_ENEMY_BOOST } : {}),
+      // The berry tree's guardian forbids the flight (`runAway.ts`), unless an
+      // escape effect (Run Away, the Smoke Ball) grants it.
+      ...(extras.noFlee ? { noFlee: true } : {}),
+      // The exorcist's hex and the guardian's own boost are separate data rows on
+      // purpose: their keys never collide, so the spread needs no arithmetic.
+      ...(extras.enemyBoosts || this.run.modifiers.curse
+        ? {
+            enemyBoosts: {
+              ...(extras.enemyBoosts ?? {}),
+              ...(this.run.modifiers.curse ? CURSE_ENEMY_BOOST : {}),
+            },
+          }
+        : {}),
     };
     if (this.run.modifiers.curse) {
       this.run = { ...this.run, modifiers: withoutCurse(this.run.modifiers) };
@@ -6641,6 +6750,27 @@ export class RouteScene extends Phaser.Scene {
     // would restart its encounter stream), only the live exclusion is re-read.
     this.encounters.setExclusions(wildExclusions(this.run));
 
+    // The keeper's stone is paid **here**, never at battle start, so a lost or
+    // reloaded battle pays nothing and a later talk finds the card spent.
+    const npc = this.npcBattle;
+    this.npcBattle = null;
+    let npcPrizeId: string | null = null;
+    if (
+      npc &&
+      pending.trigger.kind === 'trainer' &&
+      pending.trigger.trainerId === npcTrainerId(npc.mapIndex, npc.roomId, npc.row.id) &&
+      result.outcome === 'win'
+    ) {
+      const prize = npcPrize(this.run.seed, npc.roomId, npc.row.id, npc.row.battle?.prizeIds ?? []);
+      if (prize) {
+        this.run = markItemPicked(
+          addItem(this.run, prize),
+          npcUseId(npc.mapIndex, npc.roomId, npc.row.id),
+        );
+        npcPrizeId = prize;
+      }
+    }
+
     const bossId = this.room?.boss === true ? bossTrainerId(this.room.mapIndex) : null;
     const wonBoss =
       bossId !== null &&
@@ -6695,6 +6825,7 @@ export class RouteScene extends Phaser.Scene {
       // Raised inside the callback, so a permadeath overlay and the notice never
       // share the screen, and it never delays `finish()`.
       this.showPassivePickups(picks);
+      if (npcPrizeId) this.showNotice(itemPickupNotice(getItem(npcPrizeId)?.name ?? npcPrizeId));
       if (capture?.toPc) this.showNotice(catchToPcNotice(this.memberName(capture.member)));
       finish();
     });

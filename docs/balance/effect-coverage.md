@@ -1193,7 +1193,7 @@ catalogue row, not engine code.
 | Zing Zap | `port` | data: secondaries |
 | Zippy Zap | `excluded` | no playable species has it |
 
-## Items — 291 total (139 port, 71 no-op, 81 excluded)
+## Items — 290 total (138 port, 71 no-op, 81 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -1439,11 +1439,13 @@ catalogue row, not engine code.
 | Silver Powder | `port` | in the run catalogue (`src/data/items.ts`) |
 | Sitrus Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Sky Plate | `port` | in the run catalogue (`src/data/items.ts`) |
+| Smoke Ball | `port` | in the run catalogue (`src/data/items.ts`) |
 | Smooth Rock | `excluded` | not in the run catalogue |
 | Snowball | `no-op` | reachable, not modelled yet |
 | Soft Sand | `port` | in the run catalogue (`src/data/items.ts`) |
 | Soul Dew | `no-op` | reachable, not modelled yet |
 | Spell Tag | `port` | in the run catalogue (`src/data/items.ts`) |
+| Spiced Stew | `port` | in the run catalogue (`src/data/items.ts`) |
 | Splash Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Spooky Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Sport Ball | `excluded` | not in the run catalogue |
@@ -1482,9 +1484,6 @@ catalogue row, not engine code.
 | Wide Lens | `port` | in the run catalogue (`src/data/items.ts`) |
 | Wiki Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Wise Glasses | `port` | in the run catalogue (`src/data/items.ts`) |
-| X Attack | `port` | in the run catalogue (`src/data/items.ts`) |
-| X Defense | `port` | in the run catalogue (`src/data/items.ts`) |
-| X Speed | `port` | in the run catalogue (`src/data/items.ts`) |
 | Yache Berry | `port` | in the run catalogue (`src/data/items.ts`) |
 | Zap Plate | `port` | in the run catalogue (`src/data/items.ts`) |
 | Zoom Lens | `excluded` | not in the run catalogue |

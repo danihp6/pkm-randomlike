@@ -56,6 +56,12 @@ export type ItemDef = Readonly<{
   critStages?: number;
   /** Held items: the holder acts last inside its priority bracket (Lagging Tail). */
   alwaysLast?: boolean;
+  /**
+   * A held escape item: the holder always escapes a wild battle, even one whose
+   * launch carries `noFlee`. Read through `onTryEscape` (`effects/items.ts`) and
+   * therefore by `canRun`/`rollRun` (`battle/runAway.ts`).
+   */
+  flee?: boolean;
   /** Held items: halves a hit of `type` and is then spent (the resist berries). */
   resistBerry?: string;
   /** Held items: the holder's own damaging move costs this fraction of its max HP (Life Orb). */
@@ -90,6 +96,11 @@ export type ItemDef = Readonly<{
   memory?: string;
   /** A Drive's type: while held, it gives Techno Blast its type (`moveType.ts`, D37). */
   drive?: string;
+  /**
+   * A hand-authored row with no Añil icon of its own: the id whose atlas frame it
+   * borrows (`src/data/itemIcons.ts`). Absent means the atlas must carry its own.
+   */
+  iconFallback?: string;
   shortDesc: string;
 }>;
 
@@ -1410,6 +1421,25 @@ export const ITEMS: readonly ItemDef[] = [
 
   ...PLATE_ITEMS,
   ...MEMORY_DRIVE_ITEMS,
+  item({
+    id: 'chefstew',
+    name: 'Spiced Stew',
+    kind: 'held',
+    price: 1200,
+    boosts: { atk: 1, spa: 1 },
+    below: [1, 1],
+    consumed: true,
+    iconFallback: 'lavacookie',
+    shortDesc: "The holder's Attack and Sp. Atk each rise one stage at the end of its first turn.",
+  }),
+  item({
+    id: 'smokeball',
+    name: 'Smoke Ball',
+    kind: 'held',
+    price: 4000,
+    flee: true,
+    shortDesc: 'The holder always escapes a wild battle, even one that forbids fleeing.',
+  }),
   ...COMPETITIVE_HELD,
   ...MEGA_STONES,
   ...GMAX_STONES,

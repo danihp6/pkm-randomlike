@@ -64,6 +64,8 @@ export type BattleLaunch = Readonly<{
   battlefield?: RoomBattlefield | null;
   /** The room bars the player's Bag and healing moves (the no-heal leaf, `docs/maps-spec.md` §7). */
   noHeal?: boolean;
+  /** The wild cannot be fled (the berry tree's guardian), unless an escape effect grants it. */
+  noFlee?: boolean;
   /** The exorcist's curse: the enemy lead starts one Attack stage down. */
   enemyBoosts?: Partial<Record<BoostId, number>>;
 }>;

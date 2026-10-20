@@ -1,7 +1,9 @@
 import type { TranslationKey } from '../i18n';
+import type { BoostId } from '../engine/battle/fighter';
 import type { SacrificeReward } from '../engine/run/memberEdits';
 import { normalizeId } from './dex/species';
 import { TYPE_NAMES } from './dex/types';
+import { MEGA_STONE_IDS } from './items';
 
 /**
  * The special-NPC table (`docs/maps-spec.md` §7): every special NPC a trainer room
@@ -9,7 +11,8 @@ import { TYPE_NAMES } from './dex/types';
  * Pure data — the roll lives in `src/engine/routes/npcs.ts`, the member edits in
  * `src/engine/run/memberEdits.ts` and the card the interact key opens in
  * `src/ui/npcPanel.ts`, so this file carries no function that reads a run and no
- * Phaser.
+ * Phaser. Its last four rows pay in items or in a battle: the **medic**, the
+ * **chef**, the **berry tree** and the **Mega Stone keeper**.
  */
 
 /**
@@ -28,6 +31,14 @@ export type NpcChoice = Readonly<{ id: string; label: TranslationKey }>;
 
 /** What the type gate pays, and the party types that open it. */
 export type NpcGrant = Readonly<{ types: readonly string[]; itemId: string }>;
+
+/** The one trainer a row fields, and the ids a win pays one of. */
+export type NpcBattle = Readonly<{
+  /** A `TrainerArchetype` id (`src/data/trainers.ts`). */
+  archetypeId: string;
+  /** The ids a win pays one of, drawn on the row's own stream; `[]` pays nothing. */
+  prizeIds: readonly string[];
+}>;
 
 /** One special NPC: identity, its art, its per-floor chance and its gate. */
 export type NpcRow = Readonly<{
@@ -59,6 +70,8 @@ export type NpcRow = Readonly<{
   choices?: readonly NpcChoice[];
   /** A row that pays an item to a party holding one of these types (the type gate). */
   grant?: NpcGrant;
+  /** When present, the row's choice starts this trainer battle instead of a card. */
+  battle?: NpcBattle;
 }>;
 
 /**
@@ -67,6 +80,8 @@ export type NpcRow = Readonly<{
  * room could retire and the run still has its counter (`docs/maps-spec.md` §7).
  * The five member-edit rows and the sacrifice share the roll after it, then the four
  * run-modifier rows: the exorcist, the weather man, the magician and the type gate.
+ * The last four rows pay in items or in a battle: the **medic**, the **chef**, the
+ * **berry tree** and the **Mega Stone keeper**.
  */
 export const NPC_ROWS: readonly NpcRow[] = [
   {
@@ -172,7 +187,78 @@ export const NPC_ROWS: readonly NpcRow[] = [
     choices: [{ id: 'claim', label: 'npc.gate.claim' }],
     grant: { types: ['bug'], itemId: 'silverpowder' },
   },
+  {
+    id: 'medic',
+    nameKey: 'npc.medic.name',
+    greetingKey: 'npc.medic.greeting',
+    spriteKey: 'medic',
+    chance: 0.01,
+    floorStep: 0.0025,
+    choices: [{ id: 'heal', label: 'npc.medic.heal' }],
+  },
+  {
+    id: 'chef',
+    nameKey: 'npc.chef.name',
+    greetingKey: 'npc.chef.greeting',
+    spriteKey: 'chef',
+    chance: 0.01,
+    floorStep: 0.0025,
+    choices: [{ id: 'trade', label: 'npc.chef.trade' }],
+  },
+  {
+    id: 'berry-tree',
+    nameKey: 'npc.berry-tree.name',
+    greetingKey: 'npc.berry-tree.greeting',
+    spriteKey: 'berry-tree',
+    chance: 0.01,
+    floorStep: 0.0025,
+    choices: [{ id: 'shake', label: 'npc.berry-tree.shake' }],
+  },
+  {
+    id: 'mega-stone',
+    nameKey: 'npc.mega-stone.name',
+    greetingKey: 'npc.mega-stone.greeting',
+    spriteKey: 'ace',
+    chance: 0.01,
+    floorStep: 0.0025,
+    choices: [{ id: 'battle', label: 'npc.mega-stone.battle' }],
+    battle: { archetypeId: 'ace', prizeIds: MEGA_STONE_IDS },
+  },
 ];
+
+/** The berries the chef takes and the berry tree gives, in table order. */
+export const BERRY_IDS: readonly string[] = [
+  'cheriberry',
+  'chestoberry',
+  'pechaberry',
+  'rawstberry',
+  'aspearberry',
+  'oranberry',
+  'sitrusberry',
+  'lumberry',
+  'figyberry',
+  'wikiberry',
+  'magoberry',
+  'aguavberry',
+  'iapapaberry',
+  'leppaberry',
+];
+
+/** How many berries the chef's trade costs. */
+export const CHEF_BERRY_COUNT = 3;
+
+/** The held dish the chef's trade pays. */
+export const CHEF_DISH_ITEM_ID = 'chefstew';
+
+/** The fewest/most berries one shake gives. */
+export const BERRY_TREE_MIN = 1;
+export const BERRY_TREE_CAP = 4;
+
+/** What the berry tree's guardian starts with (the mirror of CURSE_ENEMY_BOOST). */
+export const BERRY_TREE_ENEMY_BOOSTS: Readonly<Partial<Record<BoostId, number>>> = {
+  def: 1,
+  spd: 1,
+};
 
 /** The 18 battle type ids the magician draws from, in the dex's own order. */
 export const MAGICIAN_TYPES: readonly string[] = TYPE_NAMES.map(normalizeId);

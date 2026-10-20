@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { MAGICIAN_TYPES, NPC_ROWS, getNpcRow, type NpcRequirement, type NpcRow } from '../../data/npcs';
+import {
+  BERRY_IDS,
+  BERRY_TREE_CAP,
+  BERRY_TREE_MIN,
+  CHEF_BERRY_COUNT,
+  CHEF_DISH_ITEM_ID,
+  MAGICIAN_TYPES,
+  NPC_ROWS,
+  getNpcRow,
+  type NpcRequirement,
+  type NpcRow,
+} from '../../data/npcs';
 import { ROOM_BATTLEFIELDS } from '../../data/battlefields';
 import type { Tile } from '../grid';
 import { isWalkable, mapFromSketch } from '../map';
@@ -7,17 +18,24 @@ import { firstTrainerRoom, planMap } from '../maps';
 import type { RouteMap } from './routeMap';
 import { sketchRoute } from './sketch';
 import {
+  chefTrade,
   effectiveNpcChance,
   guaranteedNpc,
+  medicHeal,
+  npcBerryHarvest,
   npcForcedField,
+  npcPrize,
   npcRequirementMet,
   npcSpot,
+  npcTrainerId,
+  npcTreeWild,
   npcUseId,
   npcWildType,
   roomNpc,
 } from './npcs';
+import type { EncounterTable } from './encounters';
 import { createRunPokemon, type RunPokemon } from '../run/progression';
-import { createRun, type RunState } from '../run/state';
+import { createRun, itemCount, type RunState } from '../run/state';
 
 const SEED = 'pkm-91';
 
@@ -491,5 +509,198 @@ describe('npcWildType', () => {
     const types = [0, 1, 2, 3, 4, 5].map((roomIndex) => npcWildType('pkm-91', roomIndex, 'magician'));
     expect(fields).toEqual(['gravity', 'grassy', 'fairyaura', 'darkaura', 'crit', 'alltypes']);
     expect(types).toEqual(['normal', 'water', 'fighting', 'poison', 'rock', 'ice']);
+  });
+});
+
+function hurt(member: RunPokemon, hp: number, pp = 0): RunPokemon {
+  return {
+    ...member,
+    fighter: {
+      ...member.fighter,
+      hp,
+      moves: member.fighter.moves.map((slot) => ({ ...slot, pp })),
+    },
+  };
+}
+
+function runMember(id: string, heldItem?: string): RunPokemon {
+  return createRunPokemon({
+    id,
+    speciesId: 'caterpie',
+    level: 10,
+    moves: ['tackle'],
+    ...(heldItem ? { heldItem } : {}),
+  });
+}
+
+describe('medicHeal', () => {
+  it('rests the party and the box and writes its one-floor mark', () => {
+    const fresh = runMember('a');
+    const run = runWith([hurt(fresh, 1, 0)], [hurt(runMember('b'), 2, 0)]);
+    const healed = medicHeal(run, 4, 6);
+
+    expect(healed.party[0].fighter.hp).toBe(fresh.fighter.hp);
+    expect(healed.box[0].fighter.hp).toBe(runMember('b').fighter.hp);
+    for (const slot of healed.party[0].fighter.moves) expect(slot.pp).toBe(slot.maxPp);
+    for (const slot of healed.box[0].fighter.moves) expect(slot.pp).toBe(slot.maxPp);
+    expect(healed.pickedItems).toContain(npcUseId(4, 6, 'medic'));
+  });
+
+  it('leaves a 0-HP member at 0, never resurrecting', () => {
+    const healed = medicHeal(runWith([hurt(runMember('a'), 0)]), 1, 2);
+    expect(healed.party[0].fighter.hp).toBe(0);
+  });
+
+  it('is spent once per floor: a second talk returns the same run', () => {
+    const healed = medicHeal(runWith([hurt(runMember('a'), 1)]), 2, 3);
+    const later = { ...healed, party: [hurt(healed.party[0], 1, 0)] };
+    const again = medicHeal(later, 2, 3);
+    expect(again).toBe(later);
+    expect(again.party[0].fighter.hp).toBe(1);
+    expect(again.party[0].fighter.moves[0].pp).toBe(0);
+    expect(again.pickedItems).toEqual(healed.pickedItems);
+  });
+});
+
+describe('chefTrade', () => {
+  const BERRIES: RunState['bag'] = [
+    { itemId: 'cheriberry', count: 1 },
+    { itemId: 'chestoberry', count: 2 },
+    { itemId: 'pechaberry', count: 5 },
+  ];
+
+  function chefRun(heldItem = 'leftovers'): RunState {
+    return { ...runWith([runMember('a', heldItem)]), bag: BERRIES };
+  }
+
+  it('takes the berries in table order and equips the dish', () => {
+    const run = chefRun();
+    const trade = chefTrade(run, 'a');
+    expect(trade.ok).toBe(true);
+    if (!trade.ok) return;
+    expect(trade.memberId).toBe('a');
+    expect(trade.dishId).toBe(CHEF_DISH_ITEM_ID);
+    expect(trade.berries).toEqual(['cheriberry', 'chestoberry', 'chestoberry']);
+    expect(trade.berries).toHaveLength(CHEF_BERRY_COUNT);
+    for (const id of trade.berries) expect(BERRY_IDS).toContain(id);
+    expect(trade.run.party[0].fighter.heldItem).toBe(CHEF_DISH_ITEM_ID);
+    expect(itemCount(trade.run, CHEF_DISH_ITEM_ID)).toBe(0);
+    expect(itemCount(trade.run, 'cheriberry')).toBe(0);
+    expect(itemCount(trade.run, 'chestoberry')).toBe(0);
+    expect(itemCount(trade.run, 'pechaberry')).toBe(5);
+    expect(itemCount(trade.run, 'leftovers')).toBe(1);
+  });
+
+  it('refuses without enough berries, an unknown member or a member already holding the dish', () => {
+    const short = { ...runWith([runMember('a')]), bag: [{ itemId: 'cheriberry', count: 2 }] };
+    expect(chefTrade(short, 'a')).toEqual({ ok: false, reason: 'no-berries' });
+    expect(chefTrade(chefRun(), 'nobody')).toEqual({ ok: false, reason: 'no-member' });
+    expect(chefTrade(chefRun(CHEF_DISH_ITEM_ID), 'a')).toEqual({
+      ok: false,
+      reason: 'already-held',
+    });
+  });
+
+  it('reads no RNG: two equal runs trade to the same result', () => {
+    const run = chefRun();
+    expect(chefTrade(structuredClone(run), 'a')).toEqual(chefTrade(run, 'a'));
+  });
+});
+
+describe('npcBerryHarvest', () => {
+  it('gives between the table minimum and cap berries, all in the table', () => {
+    for (let roomIndex = 0; roomIndex < 40; roomIndex++) {
+      const berries = npcBerryHarvest(SEED, roomIndex, 'berry-tree');
+      expect(berries.length, `room ${roomIndex}`).toBeGreaterThanOrEqual(BERRY_TREE_MIN);
+      expect(berries.length, `room ${roomIndex}`).toBeLessThanOrEqual(BERRY_TREE_CAP);
+      for (const id of berries) expect(BERRY_IDS, `room ${roomIndex}`).toContain(id);
+    }
+  });
+
+  it('is a pure function of the seed, the room and the npc', () => {
+    expect(npcBerryHarvest(SEED, 2, 'berry-tree')).toEqual(npcBerryHarvest(SEED, 2, 'berry-tree'));
+    expect(npcBerryHarvest(SEED, 2, 'berry-tree')).not.toEqual(npcBerryHarvest(SEED, 3, 'berry-tree'));
+    expect(npcBerryHarvest(SEED, 2, 'berry-tree')).not.toEqual(npcBerryHarvest(SEED, 2, 'chef'));
+  });
+
+  it('pins a fixed seed (regression, D11)', () => {
+    const rooms = [0, 1, 2, 3].map((roomIndex) => npcBerryHarvest('pkm-95', roomIndex, 'berry-tree'));
+    expect(rooms).toEqual([
+      ['rawstberry', 'figyberry'],
+      ['lumberry'],
+      ['lumberry', 'lumberry', 'aguavberry'],
+      ['magoberry', 'aguavberry', 'magoberry', 'aspearberry'],
+    ]);
+  });
+});
+
+describe('npcTreeWild', () => {
+  const TABLE: EncounterTable = [
+    { speciesId: 'pidgey', weight: 1 },
+    { speciesId: 'rattata', weight: 1 },
+    { speciesId: 'caterpie', weight: 1 },
+  ];
+
+  it('always wakes a species of the table it was handed', () => {
+    const single: EncounterTable = [{ speciesId: 'pidgey', weight: 1 }];
+    for (let roomIndex = 0; roomIndex < 20; roomIndex++) {
+      const wild = npcTreeWild(SEED, roomIndex, 'berry-tree', single, () => 12);
+      expect(wild?.speciesId, `room ${roomIndex}`).toBe('pidgey');
+    }
+    const ids = new Set(TABLE.map((entry) => entry.speciesId));
+    for (let roomIndex = 0; roomIndex < 40; roomIndex++) {
+      const wild = npcTreeWild(SEED, roomIndex, 'berry-tree', TABLE, () => 12);
+      expect(wild, `room ${roomIndex}`).toBeDefined();
+      expect(ids.has(wild!.speciesId), `room ${roomIndex}`).toBe(true);
+    }
+  });
+
+  it('applies the caller level roll and is deterministic', () => {
+    const flat = npcTreeWild(SEED, 1, 'berry-tree', TABLE, () => 42);
+    expect(flat?.level).toBe(42);
+    expect(npcTreeWild(SEED, 4, 'berry-tree', TABLE, () => 42)).toEqual(
+      npcTreeWild(SEED, 4, 'berry-tree', TABLE, () => 42),
+    );
+  });
+
+  it('answers undefined only for an empty table', () => {
+    expect(npcTreeWild(SEED, 1, 'berry-tree', [], () => 12)).toBeUndefined();
+  });
+
+  it('pins a fixed seed (regression, D11)', () => {
+    const wild = npcTreeWild('pkm-95', 0, 'berry-tree', TABLE, (rng) => rng.int(5, 10));
+    expect(wild).toEqual({ speciesId: 'rattata', level: 6, shiny: false });
+  });
+});
+
+describe('npcPrize', () => {
+  const PRIZES = ['venusaurite', 'charizarditex', 'charizarditey', 'blastoisinite'];
+
+  it('draws one id of the list and null for an empty one', () => {
+    for (let roomIndex = 0; roomIndex < 40; roomIndex++) {
+      expect(PRIZES, `room ${roomIndex}`).toContain(npcPrize(SEED, roomIndex, 'mega-stone', PRIZES));
+    }
+    expect(npcPrize(SEED, 1, 'mega-stone', [])).toBeNull();
+  });
+
+  it('is deterministic and reads its own stream beside roomNpc', () => {
+    const before = roomNpc(SEED, 4, 3);
+    expect(npcPrize(SEED, 4, 'mega-stone', PRIZES)).toBe(npcPrize(SEED, 4, 'mega-stone', PRIZES));
+    expect(roomNpc(SEED, 4, 3)).toEqual(before);
+  });
+
+  it('pins a fixed seed (regression, D11)', () => {
+    expect(npcPrize('pkm-95', 2, 'mega-stone', PRIZES)).toBe('blastoisinite');
+    expect(npcPrize('pkm-95', 5, 'mega-stone', PRIZES)).toBe('venusaurite');
+    expect(npcPrize('pkm-95', 2, 'mega-stone', PRIZES)).not.toBe(
+      npcPrize('pkm-95', 3, 'mega-stone', PRIZES),
+    );
+  });
+});
+
+describe('npcTrainerId', () => {
+  it('names the keeper battle apart from its use mark', () => {
+    expect(npcTrainerId(2, 5, 'mega-stone')).toBe('npc-trainer-2-5-mega-stone');
+    expect(npcTrainerId(2, 5, 'mega-stone')).not.toBe(npcUseId(2, 5, 'mega-stone'));
   });
 });

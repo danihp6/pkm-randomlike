@@ -177,6 +177,8 @@ export type BattleState = {
    * held items and residual heals are untouched.
    */
   noHeal: boolean;
+  /** The wild cannot be fled: `canRun` refuses unless an `onTryEscape` effect grants it. */
+  noFlee: boolean;
 };
 
 export type BattleSetup = Readonly<{
@@ -201,6 +203,8 @@ export type BattleSetup = Readonly<{
   roomField?: Partial<RoomFieldEffects>;
   /** The room bars the player's Bag and healing moves (the no-heal leaf). */
   noHeal?: boolean;
+  /** The wild cannot be fled (default `false`). */
+  noFlee?: boolean;
   /** A double battle: two active slots per side. Default `false`. */
   double?: boolean;
   /** Stat stages the enemy's lead starts with (the exorcist's curse). */
@@ -259,6 +263,7 @@ export function createBattle(setup: BattleSetup): BattleState {
     abilityPierce: null,
     lastMove: null,
     noHeal: setup.noHeal ?? false,
+    noFlee: setup.noFlee ?? false,
   };
 
   // The exorcist's curse: the enemy's lead starts a stage down, applied once its
