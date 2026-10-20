@@ -137,8 +137,9 @@ two-decimal factor reaches on those trainer counts).
 
 Maps 6, 7 and 8 read the same `end` band, and one shared rate cannot pay three
 different caps from three different trainer counts: measured with every factor at
-`1`, the three floors read **1.57, 1.37 and 1.15** — a 1.37x spread that would leave
-map 8 far below the window's floor. The shipped rule is therefore a **per-floor**
+`1`, the three floors read **1.57, 1.37 and 1.15** — a 1.37x spread, so one shared
+rate would leave map 6 a quarter over the target while map 8 sat barely above the
+window's floor. The shipped rule is therefore a **per-floor**
 factor: maps 6 and 7 pay 0.80 and 0.91 of the band's rate and map 8 pays 1.09, so
 each of the three fills at about 1.25 (`0.75 × 6.00 × 13532.57 / 48726 = 1.25` on
 map 8). The other five floors pay their own solved rates (1.00, 1.09, 1.07, 1.00
@@ -169,8 +170,8 @@ way: its band spans levels 9-16, so `A(2)` is
 `(1092 + 1213 + 1334 + 1456 + 1577 + 1698 + 1820 + 1030) / 8 = 1402.50`, seven
 levels at `low`'s 16.18 and the eighth at `mid`'s 8.59. The `end` floors show the
 factor at work: map 6 spans levels 37-43, so its seven awards run 1767 … 2053 at
-factor 0.80 for `A(6) = 4 × 1909.86 = 7639.43`, and map 8's levels 49-55 run 3188 …
-3579 at factor 1.09 for `A(8) = 4 × 3383.14 = 13532.57`.
+factor 0.80 for `A(6) = 4 × 1909.857 = 7639.43`, and map 8's levels 49-55 run 3188 …
+3579 at factor 1.09 for `A(8) = 4 × 3383.143 = 13532.57`.
 
 ## The rule
 
