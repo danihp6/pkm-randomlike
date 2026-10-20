@@ -895,6 +895,36 @@ introduces a player-facing string); no two share a batch.
 (`[Task-101]`, 46) → **23** (`[Task-103]`, 47); `[Task-109]` adds none, and the one ID in no batch is
 still `[Task-28]`, blocked upstream.
 
+A **twenty-ninth round** of **one report** arrived after that one, and it adds **no dependency edge**
+and **no `SAVE_VERSION` step**: «falta traducir mensajes de accion durante la batalla». The message
+box still speaks English in the Spanish locale because the battle's action lines are not keys but
+**sentences the engine composes** — `pushText` (`src/engine/battle/state.ts` 348-350) stores
+`{ kind: 'text', text }` (107-110) and `battleFrames` (`src/ui/feed.ts` 19-31) prints that string as
+it stands — **194** call sites in **twelve** files (`effects/abilities.ts` 68, `turn.ts` 55,
+`effects/moves.ts` 41, `effects/items.ts` 10, `effects/apply.ts` and `effects/conditions.ts` and
+`commands.ts` 4 each, `effects/terrain.ts` and `effects/weather.ts` and `state.ts` 2 each, `mega.ts`
+and `gmax.ts` 1 each). The tables already carry **54** `battle.*` keys and every one of them is
+chrome — the four command labels, the prompt, the five outcome lines, the panel name and the INFO
+window — so this is a **named seam** rather than a missed sweep: `[Task-26]` (Batch 10, shipped)
+moved literals and the engine's log is data, and `[Task-112]` (Batch 23a, shipped) localised the move
+and ability copy without touching the sentence that embeds it. `D43` itself froze that cut — «a battle
+reads half Spanish (its menu and prompts) and half English (the engine's `Charmander used Tackle!`
+lines) — the intended cut, not an oversight» — so the report **reverses a recorded decision** rather
+than repairing a defect, and `[Task-114]` turns the log into a **key plus params** and resolves it in
+`src/ui/feed.ts` with `t()`: the engine keeps no locale and the golden log stays a headless artifact.
+It claims no scene and no state.
+
+**Why Batch 53.** Its two serial resources are the battle engine and the i18n key table, and neither
+is free before the plan's tail: `src/engine/battle/commands.ts` is `[Task-101]`'s in **Batch 46**
+(open), and `src/i18n/{en,es}.ts` is held by **Batch 36**'s `[Task-98]`, **Batch 51**'s `[Task-109]`
+and **Batch 52**'s `[Task-110]` — Batch 25's shipped Task-65 is the last claimant merged — so the
+engine alone would allow **Batch 47** and the key table pushes it six batches further. It therefore
+opens the plan's new **Batch 53**, one batch behind `[Task-110]`, and it takes no
+`src/scenes/RouteScene.ts` claim, so that scene's queue still ends at 52. It adds no run field and
+draws no RNG (the keys are literals; the battle, its seed and its draws do not move), so the chain
+stays **14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23**. Nothing here re-plans
+`Task-38`–`Task-113`, and Batch 4b stays `cut`.
+
 The batches below carry one scene task each and name their hot-file holder; each entry's own
 `*Dependencies:*` line stays the per-task record.
 
@@ -6058,8 +6088,9 @@ into these floors and adds the Poké Dollar economy. Source of truth:
 
 > English is the source table; a locale overlays it by key. New decision `D43`.
 
-No player-facing string is translated today: every one is a literal in a scene or
-a UI helper. The target is English plus Spanish.
+The chrome speaks both locales since `[Task-26]`, and the dex's move and ability copy
+since `[Task-112]`. The battle's own **action log** is the one player-facing surface
+still English, and `[Task-114]` below closes it.
 
 - [x] **[Task-26] i18n module and the Spanish locale.** A pure, headless-tested
       locale layer (`src/i18n/`: a typed key table, `en` as the source, `es` as an
@@ -6080,6 +6111,87 @@ a UI helper. The target is English plus Spanish.
       *Dependencies:* none. Scheduled last: it moves every player-facing literal
       behind a key, so it must see the panels Task-12, Task-13 and Task-16 add.
       *(Batch 10)*
+
+- [ ] **[Task-114] The battle's action log speaks the locale.** The human's report:
+      «falta traducir mensajes de accion durante la batalla». Every line the message box
+      prints while a turn resolves — `Charmander used Ember!`, `Ember hit Bulbasaur! It's
+      super effective!`, `A critical hit!`, `Bulbasaur fainted!`, the stat-stage lines, the
+      ability and item triggers, the weather and terrain starts, the capture shakes and
+      `Got away safely!` — is an English **sentence the engine composes**, never a key, so
+      the Spanish locale draws its chrome in Spanish and the battle itself in English.
+      **The gap, measured.** `pushText` (`src/engine/battle/state.ts` 348-350) pushes
+      `{ kind: 'text', text }` (107-110) and `battleFrames` (`src/ui/feed.ts` 19-31) copies
+      `text` straight into the frame the scene prints. There are **194** call sites in
+      **twelve** files: `effects/abilities.ts` 68, `turn.ts` 55, `effects/moves.ts` 41,
+      `effects/items.ts` 10, `effects/apply.ts` / `effects/conditions.ts` / `commands.ts` 4
+      each, `effects/terrain.ts` / `effects/weather.ts` / `state.ts` 2 each, `mega.ts` and
+      `gmax.ts` 1 each. The tables carry **54** `battle.*` keys and all 54 are chrome, so
+      `[Task-26]` (Batch 10) was not wrong to stop there — it moved literals, and this log is
+      data — and `[Task-112]` (Batch 23a) localised the move and ability **copy** without
+      touching the sentence that embeds it. That is why the fix is a seam, not a sweep.
+      **Fix shape.** The text event carries a **key and its params** instead of a rendered
+      sentence: `Readonly<{ kind: 'text'; key: BattleTextKey; params?: BattleTextParams }>`,
+      with `BattleTextKey = Extract<TranslationKey, \`battle.log.${string}\`>` and
+      `BattleTextParams = Readonly<Record<string, string | number>>` beside `BattleEvent` in
+      `state.ts` (no new module, so no README line, and the key type is a **type-only**
+      import from `src/i18n/en.ts`, so the engine gains no runtime dependency and stays
+      headless); `pushText(state, key, params?)` types every one of the 194 sites, and
+      `src/ui/feed.ts` resolves the key with `t()` as it builds the frame. The engine
+      therefore keeps no locale, no `t` and no `src/i18n` import, and the byte-pinned golden
+      log stays a headless artifact. Keys are authored in `src/i18n/en.ts` under
+      `battle.log.*` and overlaid by `es.ts` (`D43`'s source table), named for the rule they
+      state rather than for one sentence: the damage line is **six whole keys** — `hit`,
+      `hitCrit`, `hitSuper`, `hitCritSuper`, `hitWeak` and `hitCritWeak` — chosen from
+      `DamageResult` (`turn.ts` 216-223), rather than one sentence with optional halves that
+      each locale would have to reorder and the engine would have to re-derive. Params carry
+      **ids** wherever the locale owns a table — a move's id, an ability's id, an item's id —
+      and the feed resolves the
+      official Spanish copy through `[Task-112]`'s accessors (`moveName`, `abilityName`,
+      `src/i18n/content.ts` 52 / 76), so the log finally names a move the way the MOVES menu
+      does; Pokémon and item names stay English, as `D43` ships them.
+      **The tests that move with it.** **Nineteen** assertions read `event.text`
+      (`effects/abilities.test.ts` 5, `effects/moves.test.ts` 5, `effects/items.test.ts` 4,
+      `effects/weather.test.ts` 2, `commands.test.ts` / `turn.test.ts` /
+      `effects/conditions.test.ts` 1 each) and re-pin to key plus params, which is a
+      **stricter** assertion than the sentence was. `golden.test.ts`'s inline snapshot,
+      `harness.test.ts`'s one-event-of-every-kind fixture (pushed at 138) and `feed.test.ts`'s
+      two hand-built logs re-pin to the key form, and `formatBattleLog` (`harness.ts` 95-130)
+      learns to render `key(param=value)` once, so both snapshots re-pin against the same
+      seed and the same turn sequence (`D46`): no RNG draw moves, so the battle itself is
+      unchanged. `src/i18n/index.test.ts`'s call-site scanner declares its own limit — a key
+      that is not a literal is skipped — so the new coverage is a **render** test instead:
+      the golden battle and the ability/item fixtures are walked through `battleFrames` in
+      both locales, asserting no throw and no `{token}` left behind (only 27 of the 194 sites
+      pass a literal string inline; the other 167 pass a template or a table entry, so a source
+      scan cannot replace that test).
+      **Acceptance.** `[unit]` the golden battle's **keys** match the re-pinned snapshot
+      exactly; `[unit]` its frames render in `en` and in `es` with no unresolved `{token}`
+      and no throw, the way `index.test.ts` renders the 279 swept sites today; `[unit]` the
+      new Spanish lines clear the two shipped guards — every character is in the FRLG font
+      and no line uses the em dash it cannot draw (`index.test.ts` 66 / 283); `[live]` in
+      **es** a wild battle reads `Charmander`/species in English but the action in Spanish —
+      a used move, a super-effective hit, a stat drop, an ability trigger and a faint, with
+      the move named `Lanzallamas` rather than `Ember` — and in **en** the same five lines in
+      English.
+      **Docs:** `docs/battle-spec.md` §1 (the log is key plus params and the engine composes
+      no language) and `docs/design-spec.md` §4 (one line: the message box speaks the locale,
+      and the move and ability names inside it follow the content table);
+      `docs/tech-decisions.md` `D43`'s **The boundary** paragraph is **amended, not
+      extended**: the dex's names stay English, but the engine's log is keyed too, so the cut
+      it froze («a battle reads half Spanish ... half English ... the intended cut, not an
+      oversight») is retired, and its "the strings `golden.test.ts` pins byte for byte" reads
+      "the keys it pins". No new `D` number.
+      Out of scope: `validateCommand`'s refusals (`src/engine/battle/commands.ts` 192-226),
+      which are **thrown** and never drawn (`turn.ts` 1494-1501 is the only reader, and it
+      throws), the species and item names `D43` keeps English, and the 54 `battle.*` chrome
+      keys, which already ship.
+      *Dependencies:* none. It claims `src/engine/battle/**` (the twelve files plus their
+      tests and `harness.ts`), `src/ui/feed.ts` + test, `src/i18n/{en,es}.ts` and the three
+      doc lines, and it is **Batch 53** — the first batch that leaves the engine and the key
+      table free at once, since `commands.ts` is `[Task-101]`'s in **Batch 46** and the table
+      is held by **Batch 36**'s `[Task-98]`, **Batch 51**'s `[Task-109]` and **Batch 52**'s
+      `[Task-110]`. It claims no scene, so it extends no queue. No run field and no RNG draw,
+      so **no `SAVE_VERSION`** step. *(Batch 53)*
 
 ---
 
