@@ -218,12 +218,13 @@ begins standing in it.
 - Tall grass is stamped from `terrain.grassPatches` on the off-spine floor, never
   on the spine or an opening, so a clean encounter-free lane always exists. A tree
   tip a patch shares (`grassTipKeys`) rolls the same encounter.
-- The table is the route's band **BST pool** (legendaries and mythicals banned,
-  `D39`), weighted flat, so any species whose base-stat total falls in the band's
-  window can appear. A species with a hand-authored **variant family** (Eiscue,
-  Morpeko, Minior) keeps its single row: the roll picks which forme the individual
-  is generated as, on its own stream, so the band's table and its weights do not
-  move (`D38`).
+- The table is the **BST pool** of the band the **squad's level** falls in
+  (`bandForLevel(squadLevel(run))`, resolved when the room's encounter stream is
+  built), with legendaries and mythicals banned (`D39`) and a flat weight, so any
+  species whose base-stat total falls in that band's window can appear. A species
+  with a hand-authored **variant family** (Eiscue, Morpeko, Minior) keeps its
+  single row: the roll picks which forme the individual is generated as, on its own
+  stream, so the band's table and its weights do not move (`D38`).
 - The grass never offers a species the run has already **caught**: the run keeps a
   run-long record of every species a successful catch brought in
   (`RunState.caughtSpecies`; death does not clear it, `D5`) and the table drops
@@ -233,6 +234,14 @@ begins standing in it.
   so a trainer may still field a line the player owns.
 - The roll uses the route RNG, so walking the same grass in the same order
   produces the same encounters.
+- A wild encounter's **level** is `clamp(floor(squadLevel(run) × fraction), 1, cap)`
+  — `fraction` is one draw on the encounter stream in `[0.60, 0.75)` and `cap` is
+  the floor's `maxLevel` (`WILD_LEVEL_FRACTION`, `wildLevel`, `rollWildLevel`;
+  `src/data/wildLevels.ts`, `src/engine/routes/encounters.ts`). The seed fixes the
+  draw, not the level, so the same grass on a stronger squad fields a stronger wild
+  (D11/D17 amended). The table is the band the **squad's level** falls in
+  (`bandForLevel(squadLevel(run))`), resolved when the room's encounter stream is
+  built.
 - Only the species and level are rolled. Stats, types and evolutions come from
   the species; the moveset and ability are rolled separately when the Pokémon is
   built (`D17`).
@@ -281,11 +290,13 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
   §7). The per-route band is gone: the map's range **is** the band
   (`levelRangeForMap`, `bandForLevel`).
 - Each trainer archetype is presentation and reward only (identity, sprites,
-  money); it no longer carries a species list. Both the wild table and every
-  roster draw from the floor's **BST pool** (`speciesPool`,
-  `src/engine/run/pool.ts`, `D39`), which varies only by the band's BST window and
-  the roster's bans, and the party size grows with the band (`band`'s
-  `trainerSize`).
+  money); it no longer carries a species list. Every roster draws from the floor's
+  **BST pool** (`speciesPool`, `src/engine/run/pool.ts`, `D39`), which varies only
+  by the band's BST window and the roster's bans, and the wild table from the
+  **squad's own** band (`bandForLevel(squadLevel(run))`); the party size grows with
+  the band (`band`'s `trainerSize`). A wild's level is a fraction of the live squad
+  level (60-75 %), floored and clamped to the floor's cap, and is never drawn from
+  the map's range.
 - The wild table bans legendary and mythical species; a trainer roster may field
   them in the bands their BST lands in. A **boss** (map boss and mini-boss) fields
   the **upper half** of its band's BST window, one step above the floor's regular

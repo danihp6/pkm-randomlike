@@ -40,6 +40,9 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   size's percentage of the live squad level, and the rule that floors it and clamps
   it to the floor's cap, read by the route's roster build (`docs/maps-spec.md` §5,
   D35, D11/D17 amended).
+- `wildLevels.ts` — the wild-level share of the live squad level and the rule that
+  floors it and clamps it to the floor's cap, read by the route's encounter stream
+  (`docs/routes-spec.md` §3/§5, D11/D17 amended).
 - `casino.ts` — the casino room's balance table: one spin's price per band, the
   chance a spin turns into the grunt fight and each band's weighted prize rows.
 - `noHeal.ts` — the no-heal room's table: the first floor that may hang it, the

@@ -1,4 +1,5 @@
 import type { LevelBand } from '../../data/run';
+import { WILD_LEVEL_FRACTION, wildLevel } from '../../data/wildLevels';
 import { speciesPool, variantSpecies } from '../run/pool';
 import type { Rng } from '../rng';
 
@@ -37,6 +38,15 @@ export const DEFAULT_ENCOUNTER_CHANCE = 0.15;
 /** The classic 1-in-4096 shiny odds, rolled on its own stream. */
 export const SHINY_CHANCE = 1 / 4096;
 
+/** The level a wild encounter gets: one draw on the encounter stream. */
+export type EncounterLevelRoll = (rng: Rng) => number;
+
+/** The shipped wild-level roll: `fraction ∈ [0.60, 0.75)`, floored and clamped. */
+export function rollWildLevel(rng: Rng, squadLevel: number, cap: number): number {
+  const span = WILD_LEVEL_FRACTION.max - WILD_LEVEL_FRACTION.min;
+  return wildLevel(WILD_LEVEL_FRACTION.min + rng.next() * span, squadLevel, cap);
+}
+
 export function totalWeight(table: EncounterTable): number {
   return table.reduce((sum, item) => sum + item.weight, 0);
 }
@@ -54,9 +64,8 @@ export function pickWeighted<T extends { weight: number }>(table: readonly T[], 
 
 export function rollEncounter(
   table: EncounterTable,
-  minLevel: number,
-  maxLevel: number,
   rng: Rng,
+  levelFor: EncounterLevelRoll,
   chance: number = DEFAULT_ENCOUNTER_CHANCE,
   shinyRng?: Rng,
   variantRng?: Rng,
@@ -65,7 +74,7 @@ export function rollEncounter(
   const entry = pickWeighted(table, rng);
   return {
     speciesId: variantRng ? variantSpecies(entry.speciesId, variantRng) : entry.speciesId,
-    level: rng.int(minLevel, maxLevel),
+    level: levelFor(rng),
     shiny: shinyRng ? shinyRng.next() < SHINY_CHANCE : false,
   };
 }
@@ -77,6 +86,10 @@ export function rollEncounter(
  * roll and the variant roll each draw from their own stream, split off the
  * encounters stream in the constructor, so neither can shift the encounter
  * sequence a fixed seed already produced.
+ *
+ * `levelFor` is called **live on every step**, so a squad that levels up inside
+ * the room rolls the new level without rebuilding the room (`docs/routes-spec.md`
+ * §3/§5, D11/D17 amended).
  */
 export class RouteEncounters {
   steps = 0;
@@ -87,9 +100,8 @@ export class RouteEncounters {
 
   constructor(
     private readonly table: EncounterTable,
-    private readonly minLevel: number,
-    private readonly maxLevel: number,
     private readonly rng: Rng,
+    private readonly levelFor: EncounterLevelRoll,
     private readonly chance: number = DEFAULT_ENCOUNTER_CHANCE,
     private readonly shinyRng?: Rng,
     exclusions: ReadonlySet<string> = NO_EXCLUSIONS,
@@ -117,9 +129,8 @@ export class RouteEncounters {
     this.steps++;
     return rollEncounter(
       this.currentTable(),
-      this.minLevel,
-      this.maxLevel,
       this.rng,
+      this.levelFor,
       this.chance,
       this.shinyRng,
       this.variantRng,
