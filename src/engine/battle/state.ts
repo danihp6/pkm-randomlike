@@ -1,7 +1,7 @@
 import type { ItemDef } from '../../data/items';
 import type { Rng } from '../rng';
 import { makeContext, runStart, runSwitchIn } from './effects/registry';
-import { trappedBy, type BattleFighter, type BoostId, type StatusId } from './fighter';
+import { applyBoosts, trappedBy, type BattleFighter, type BoostId, type StatusId } from './fighter';
 
 export type SideId = 'player' | 'enemy';
 
@@ -203,6 +203,8 @@ export type BattleSetup = Readonly<{
   noHeal?: boolean;
   /** A double battle: two active slots per side. Default `false`. */
   double?: boolean;
+  /** Stat stages the enemy's lead starts with (the exorcist's curse). */
+  enemyBoosts?: Partial<Record<BoostId, number>>;
 }>;
 
 export function createBattle(setup: BattleSetup): BattleState {
@@ -258,6 +260,11 @@ export function createBattle(setup: BattleSetup): BattleState {
     lastMove: null,
     noHeal: setup.noHeal ?? false,
   };
+
+  // The exorcist's curse: the enemy's lead starts a stage down, applied once its
+  // fighter exists and before any start hook reads its stages. No event is logged:
+  // the card the NPC opened already announced it.
+  if (setup.enemyBoosts) applyBoosts(state.sides.enemy.party[0], setup.enemyBoosts);
 
   // The room's rule is the battle feed's first line, ahead of any start hook.
   if (state.noHeal) pushText(state, 'No items or healing moves can be used in this room!');

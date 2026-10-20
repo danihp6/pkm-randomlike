@@ -564,6 +564,7 @@ export class BattleScene extends Phaser.Scene {
       }),
       ...(battlefield ? battlefieldSeeds(battlefield) : {}),
       noHeal: launch.noHeal === true,
+      ...(launch.enemyBoosts ? { enemyBoosts: launch.enemyBoosts } : {}),
     });
 
     this.displayActive = {

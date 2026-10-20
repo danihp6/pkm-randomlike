@@ -109,6 +109,13 @@ The room rules are deliberately outside `estimateDamage`, whose preview ignores
 weather and terrain for the same reason: it is the AI's deterministic comparison,
 never a roll.
 
+Two facts a **special NPC** can leave on the run ride into the battle start
+(`docs/maps-spec.md` §7). A **forced field** the run carries (`RunState.modifiers`)
+replaces the room's rolled condition and spends one floor per `advanceMap`, so the
+same sky covers the floors it still has. The **curse** is one Attack stage down on
+the enemy's lead (`BattleSetup.enemyBoosts`, applied once after the fighters exist
+and with no event logged) and is spent by the battle it starts.
+
 Special move shapes:
 
 - **Two-turn charge moves** (Solar Beam, Fly, Dig...) lock the user for one

@@ -1,6 +1,6 @@
 import type { RoomBattlefield } from '../../data/battlefields';
 import type { AiLevel } from '../battle/ai';
-import type { FighterSnapshot } from '../battle/fighter';
+import type { BoostId, FighterSnapshot } from '../battle/fighter';
 import { hashSeed } from '../rng';
 
 /** A bag stack in run terms: the scene resolves the item id through `getItem`. */
@@ -64,6 +64,8 @@ export type BattleLaunch = Readonly<{
   battlefield?: RoomBattlefield | null;
   /** The room bars the player's Bag and healing moves (the no-heal leaf, `docs/maps-spec.md` §7). */
   noHeal?: boolean;
+  /** The exorcist's curse: the enemy lead starts one Attack stage down. */
+  enemyBoosts?: Partial<Record<BoostId, number>>;
 }>;
 
 export type BattleOutcome = 'win' | 'lose' | 'run' | 'capture';

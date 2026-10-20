@@ -1,4 +1,5 @@
-import { NPC_ROWS, type NpcRequirement, type NpcRow } from '../../data/npcs';
+import { ROOM_BATTLEFIELDS, type RoomBattlefield } from '../../data/battlefields';
+import { MAGICIAN_TYPES, NPC_ROWS, type NpcRequirement, type NpcRow } from '../../data/npcs';
 import type { Tile } from '../grid';
 import { isWalkable } from '../map';
 import { firstTrainerRoom, type MapPlan } from '../maps/plan';
@@ -109,6 +110,26 @@ export function guaranteedNpc(
 /** `npc-<mapIndex>-<roomIndex>-<id>`, the per-floor `pickedItems` use record. */
 export function npcUseId(mapIndex: number, roomIndex: number, npcId: string): string {
   return `npc-${mapIndex}-${roomIndex}-${npcId}`;
+}
+
+/**
+ * The sky the weather man pins: one `Rng.int` on
+ * `Rng(hashSeed(`${seed}:npc:${roomIndex}:${npcId}:field`))`, in table order. Its own
+ * stream, so no map, encounter, roster or battle draw moves (`D11`).
+ */
+export function npcForcedField(seed: string, roomIndex: number, npcId: string): RoomBattlefield {
+  const rng = new Rng(hashSeed(`${seed}:npc:${roomIndex}:${npcId}:field`));
+  return ROOM_BATTLEFIELDS[rng.int(0, ROOM_BATTLEFIELDS.length - 1)];
+}
+
+/**
+ * The type the magician narrows the grass to: one `Rng.int` on
+ * `Rng(hashSeed(`${seed}:npc:${roomIndex}:${npcId}:type`))`, in `MAGICIAN_TYPES`
+ * order, on its own stream beside `npcForcedField`'s (`D11`).
+ */
+export function npcWildType(seed: string, roomIndex: number, npcId: string): string {
+  const rng = new Rng(hashSeed(`${seed}:npc:${roomIndex}:${npcId}:type`));
+  return MAGICIAN_TYPES[rng.int(0, MAGICIAN_TYPES.length - 1)];
 }
 
 /**

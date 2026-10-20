@@ -330,7 +330,7 @@ describe('settings validation', () => {
   it('reads a document with no reduce-flashing field as off', () => {
     const raw = JSON.stringify({ version: 16, settings: { textSpeed: 'fast', volume: 0.4 } });
     const decoded = document(raw);
-    expect(SAVE_VERSION).toBe(20);
+    expect(SAVE_VERSION).toBe(21);
     expect(decoded.settings.reducedFlash).toBe(false);
   });
 
@@ -352,7 +352,7 @@ describe('settings validation', () => {
     expect(
       document(JSON.stringify({ version: 16, settings: { aiLevel: 'nightmare' } })).settings.aiLevel,
     ).toBe('normal');
-    expect(SAVE_VERSION).toBe(20);
+    expect(SAVE_VERSION).toBe(21);
   });
 
   it('starts on the source table', () => {
@@ -384,7 +384,7 @@ describe('settings validation', () => {
     expect(document(JSON.stringify({ version: 16, settings: { language: 42 } })).settings.language).toBe(
       'en',
     );
-    expect(SAVE_VERSION).toBe(20);
+    expect(SAVE_VERSION).toBe(21);
     expect(Object.keys(SAVE_MIGRATIONS)).toEqual([
       '1',
       '2',
@@ -405,6 +405,7 @@ describe('settings validation', () => {
       '17',
       '18',
       '19',
+      '20',
     ]);
   });
 
@@ -633,7 +634,7 @@ describe('migrateDocument', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
     // One step per version boundary, because the test starts at v0 and the
-    // current schema is v20.
+    // current schema is v21.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
@@ -658,7 +659,8 @@ describe('migrateDocument', () => {
       16: (doc) => ({ ...doc, version: 17 }),
       17: (doc) => ({ ...doc, version: 18 }),
       18: (doc) => ({ ...doc, version: 19 }),
-      19: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      19: (doc) => ({ ...doc, version: 20 }),
+      20: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -745,7 +747,7 @@ describe('map-position migration', () => {
     delete run.pcCatch;
     const raw = JSON.stringify({ version: 15, run });
     const decoded = decodeSave(raw);
-    expect(emptySave().version).toBe(20);
+    expect(emptySave().version).toBe(21);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.pcCatch).toBeNull();
     expect('pcUnlocked' in (decoded.run ?? {})).toBe(false);
@@ -873,8 +875,8 @@ describe('nickname migration', () => {
   it('reads a v14 run as a current-schema run with its members intact and unnamed', () => {
     const raw = JSON.stringify({ version: 14, settings: defaultSettings(), run: sampleRun() });
     const decoded = decodeSave(raw);
-    expect(SAVE_VERSION).toBe(20);
-    expect(decoded.version).toBe(20);
+    expect(SAVE_VERSION).toBe(21);
+    expect(decoded.version).toBe(21);
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
     expect(decoded.run?.box[0].fighter.speciesId).toBe('greedent');
@@ -964,11 +966,11 @@ describe('the NPC member words', () => {
     expect(Object.keys(stored.run.party[1])).toEqual(['fighter']);
   });
 
-  it('migrates a v19 run to v20 with no taught moves and no second ability', () => {
+  it('migrates a v19 run to v21 with no taught moves and no second ability', () => {
     const run: Record<string, unknown> = { ...sampleRun() };
     const legacy = JSON.stringify({ version: 19, settings: defaultSettings(), run });
     const decoded = decodeSave(legacy);
-    expect(decoded.version).toBe(20);
+    expect(decoded.version).toBe(21);
     expect(decoded.run?.party).toHaveLength(6);
     for (const member of decoded.run?.party ?? []) {
       expect('taughtMoves' in member).toBe(false);
@@ -1086,5 +1088,105 @@ describe('storedSettingsLanguage', () => {
     expect(storedSettingsLanguage(storage)).toBe('es');
     storeSettings(storage, defaultSettings());
     expect(storedSettingsLanguage(storage)).toBe('en');
+  });
+});
+
+describe('the run modifiers', () => {
+  const MODIFIERS = { curse: true, forcedField: { id: 'rain', floorsLeft: 2 }, nextWildType: 'bug' };
+
+  /** A document at the current version whose run carries `modifiers` as given. */
+  function raw(modifiers: unknown): string {
+    const run: Record<string, unknown> = { ...sampleRun() };
+    if (modifiers === undefined) delete run.modifiers;
+    else run.modifiers = modifiers;
+    return JSON.stringify({ version: SAVE_VERSION, run });
+  }
+
+  it('stamps version 21', () => {
+    expect(SAVE_VERSION).toBe(21);
+    expect(emptySave().version).toBe(21);
+    expect(SAVE_MIGRATIONS[20]).toBeDefined();
+  });
+
+  it('round-trips a run carrying all three facts', () => {
+    const run: RunState = { ...sampleRun(), modifiers: MODIFIERS };
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    expect(decoded.run?.modifiers).toEqual(MODIFIERS);
+    // Byte-stable: the record the decoder reads re-encodes to the same document.
+    const canonical = encodeSave({
+      version: SAVE_VERSION,
+      settings: defaultSettings(),
+      run: decoded.run!,
+    });
+    expect(
+      encodeSave({
+        version: SAVE_VERSION,
+        settings: defaultSettings(),
+        run: decodeSave(canonical).run!,
+      }),
+    ).toBe(canonical);
+  });
+
+  it('reads a run with no modifiers record as the empty one', () => {
+    expect(document(raw(undefined)).run?.modifiers).toEqual({
+      curse: false,
+      forcedField: null,
+      nextWildType: null,
+    });
+    expect(document(raw('rain')).run?.modifiers).toEqual({
+      curse: false,
+      forcedField: null,
+      nextWildType: null,
+    });
+  });
+
+  it('keeps the curse only when it is exactly true, and the type only when it is a string', () => {
+    expect(document(raw({ curse: 'yes' })).run?.modifiers.curse).toBe(false);
+    expect(document(raw({ curse: true })).run?.modifiers.curse).toBe(true);
+    expect(document(raw({ nextWildType: 7 })).run?.modifiers.nextWildType).toBeNull();
+    expect(document(raw({ nextWildType: '' })).run?.modifiers.nextWildType).toBeNull();
+    expect(document(raw({ nextWildType: 'bug' })).run?.modifiers.nextWildType).toBe('bug');
+  });
+
+  it('drops a forced field with an unknown id, a zero count or a non-integer count', () => {
+    const empty = { curse: false, forcedField: null, nextWildType: null };
+    expect(
+      document(raw({ forcedField: { id: 'no-such-field', floorsLeft: 2 } })).run?.modifiers,
+    ).toEqual(empty);
+    expect(document(raw({ forcedField: { id: 'rain', floorsLeft: 0 } })).run?.modifiers).toEqual(empty);
+    expect(document(raw({ forcedField: { id: 'rain', floorsLeft: 1.5 } })).run?.modifiers).toEqual(
+      empty,
+    );
+    expect(document(raw({ forcedField: { id: '', floorsLeft: 2 } })).run?.modifiers).toEqual(empty);
+    expect(document(raw({ forcedField: 'rain' })).run?.modifiers).toEqual(empty);
+    expect(document(raw({ forcedField: { id: 'sun', floorsLeft: 1 } })).run?.modifiers).toEqual({
+      curse: false,
+      forcedField: { id: 'sun', floorsLeft: 1 },
+      nextWildType: null,
+    });
+  });
+
+  it('migrates a v20 run to an empty record', () => {
+    const run: Record<string, unknown> = { ...sampleRun() };
+    delete run.modifiers;
+    const legacy = JSON.stringify({ version: 20, settings: defaultSettings(), run });
+    const decoded = decodeSave(legacy);
+    expect(decoded.version).toBe(21);
+    expect(decoded.run?.modifiers).toEqual({ curse: false, forcedField: null, nextWildType: null });
+    expect(decoded.run?.party).toHaveLength(6);
+  });
+
+  it('migrates a v19 run through both steps', () => {
+    const run: Record<string, unknown> = { ...sampleRun() };
+    delete run.modifiers;
+    const legacy = JSON.stringify({ version: 19, settings: defaultSettings(), run });
+    const decoded = decodeSave(legacy);
+    expect(decoded.version).toBe(21);
+    expect(decoded.run?.modifiers).toEqual({ curse: false, forcedField: null, nextWildType: null });
+    expect(decoded.run?.party).toHaveLength(6);
+    for (const member of decoded.run?.party ?? []) {
+      expect('taughtMoves' in member).toBe(false);
+      expect('secondAbility' in member).toBe(false);
+    }
   });
 });

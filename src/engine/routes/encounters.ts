@@ -1,5 +1,7 @@
 import type { LevelBand } from '../../data/run';
 import { WILD_LEVEL_FRACTION, wildLevel } from '../../data/wildLevels';
+import { normalizeId } from '../../data/dex';
+import { getSpecies } from '../../data/dex/species';
 import { speciesPool, variantSpecies } from '../run/pool';
 import type { Rng } from '../rng';
 
@@ -10,17 +12,54 @@ export type EncounterEntry = Readonly<{
 
 export type EncounterTable = readonly EncounterEntry[];
 
+/** True when `speciesId`'s dex types carry `typeId` (both normalized ids). */
+function carriesType(speciesId: string, typeId: string): boolean {
+  const types = getSpecies(speciesId)?.types ?? [];
+  return types.some((type) => normalizeId(type) === typeId);
+}
+
 /**
- * The wild table for a band: its `wild` pool (`D39`) with a flat weight. When
- * `excluded` is given, those ids are dropped — and a set that would empty the band
- * falls back to the unfiltered band, so the table is never empty and the chance draw
- * of `rollEncounter` never short-circuits.
+ * Drops the excluded species, and falls back to `table` when that would empty it, so
+ * the table is never empty and `rollEncounter`'s chance draw never short-circuits.
  */
-export function encounterTableFor(band: LevelBand, excluded?: ReadonlySet<string>): EncounterTable {
-  const table = speciesPool(band, 'wild').map((speciesId) => ({ speciesId, weight: 1 }));
+function withoutExcluded(
+  table: EncounterTable,
+  excluded: ReadonlySet<string> | undefined,
+): EncounterTable {
   if (excluded === undefined || excluded.size === 0) return table;
   const filtered = table.filter((entry) => !excluded.has(entry.speciesId));
   return filtered.length === 0 ? table : filtered;
+}
+
+/**
+ * Narrows a table to one type (an empty id is no filter) and falls back to `table`
+ * when no entry carries it, so a type the band lacks never empties the grass.
+ */
+function narrowToType(table: EncounterTable, typeId: string | null): EncounterTable {
+  if (typeId === null) return table;
+  const filtered = table.filter((entry) => carriesType(entry.speciesId, typeId));
+  return filtered.length === 0 ? table : filtered;
+}
+
+/** `null` for an absent or empty type id, so the two filters compare one way. */
+function typeFilterOf(typeId: string | null | undefined): string | null {
+  return typeId === undefined || typeId === null || typeId === '' ? null : typeId;
+}
+
+/**
+ * The wild table for a band: its `wild` pool (`D39`) with a flat weight. When
+ * `excluded` is given those ids are dropped, and when `typeId` is given only the
+ * species whose dex types carry it survive — exclusions first, then the type. Either
+ * filter that would empty the band falls back to the table before it, so the table is
+ * never empty and the chance draw of `rollEncounter` never short-circuits.
+ */
+export function encounterTableFor(
+  band: LevelBand,
+  excluded?: ReadonlySet<string>,
+  typeId?: string | null,
+): EncounterTable {
+  const table = speciesPool(band, 'wild').map((speciesId) => ({ speciesId, weight: 1 }));
+  return narrowToType(withoutExcluded(table, excluded), typeFilterOf(typeId));
 }
 
 /** The empty exclusion set, so a caller can pass "nothing caught" without allocating. */
@@ -96,6 +135,8 @@ export class RouteEncounters {
 
   private exclusions: ReadonlySet<string>;
 
+  private typeFilter: string | null;
+
   private readonly variantRng: Rng;
 
   constructor(
@@ -105,24 +146,30 @@ export class RouteEncounters {
     private readonly chance: number = DEFAULT_ENCOUNTER_CHANCE,
     private readonly shinyRng?: Rng,
     exclusions: ReadonlySet<string> = NO_EXCLUSIONS,
+    typeId: string | null = null,
   ) {
     this.exclusions = exclusions;
+    this.typeFilter = typeFilterOf(typeId);
     this.variantRng = rng.split('variant');
   }
 
   /**
    * The table `step()` rolls against: the constructor's table minus the live
-   * exclusions, or the constructor's own table when the exclusions would empty it.
+   * exclusions and narrowed to the live type, each falling back to the table before it
+   * when it would empty the band — so the constructor's own table is the floor.
    */
   currentTable(): EncounterTable {
-    if (this.exclusions.size === 0) return this.table;
-    const filtered = this.table.filter((entry) => !this.exclusions.has(entry.speciesId));
-    return filtered.length === 0 ? this.table : filtered;
+    return narrowToType(withoutExcluded(this.table, this.exclusions), this.typeFilter);
   }
 
   /** Replaces the live exclusion set: draws nothing, leaves `steps` and the Rng stream untouched. */
   setExclusions(excluded: ReadonlySet<string>): void {
     this.exclusions = excluded;
+  }
+
+  /** Replaces the live type filter: draws nothing, leaves `steps` and the stream. */
+  setTypeFilter(typeId: string | null): void {
+    this.typeFilter = typeFilterOf(typeId);
   }
 
   step(): Encounter | undefined {

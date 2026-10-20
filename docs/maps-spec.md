@@ -401,17 +401,35 @@ every special leaf are `wild` and never carry one.
   and no save field or `SAVE_VERSION` step was added. A revisit and a reload read
   the same record.
 
-`NPC_ROWS` ships **seven** rows: the **merchant**, and the **six** rolled rows the
+`NPC_ROWS` ships **eleven** rows: the **merchant**, and the **six** rolled rows the
 party edits need — the **tutor** (one move of `TUTOR_MOVES`), the **nature**,
 **ability** and **IV** re-rolls, the **species** swap and the **sacrifice**, which
-takes one whole bag stack for one of `SACRIFICE_REWARDS`. A row is a rolled row (its
+takes one whole bag stack for one of `SACRIFICE_REWARDS` — then the **four
+run-modifier** rows below. A row is a rolled row (its
 `chance`/`floorStep` and its optional gate) or a **guaranteed** one
 (`guaranteedFromMap`, `chance: 0`); `roomNpc` never picks a zero-chance row, so a
-guaranteed row is only ever placed. The five edit rows carry 2 % on map 1 and the
-sacrifice 4 %, each growing 0.5 points per floor, so an eligible floor puts an NPC in
-a trainer room roughly one time in seven early and close to one in three by map 8
-(without the sacrifice: one in ten, then one in four). Each later NPC task adds its
-own row, copy and effect beside them.
+guaranteed row is only ever placed. The five edit rows and the four run-modifier
+rows carry 2 % on map 1 and the sacrifice 4 %, each growing 0.5 points per floor, so
+an eligible floor puts an NPC in a trainer room roughly one time in five early and
+close to one time in two by map 8 (without the sacrifice: one in six, then one in
+two). Each later NPC task adds its own row, copy and effect beside them.
+
+The **run-modifier** rows each write one fact that outlives the room, into the run's
+own `RunState.modifiers` record (three of the four; the gate pays an item), and each
+is one-shot per floor like the rolled member rows — its `npcUseId` mark in
+`pickedItems` and `advanceMap`'s clear are what forget it:
+
+| id | chance / step | what its one choice writes |
+| --- | --- | --- |
+| `exorcist` | 2 %, +0.5 pt | `modifiers.curse = true`: the **next** enemy battle starts with its lead one Attack stage down (`CURSE_ENEMY_BOOST`), and that battle spends the curse. |
+| `weather-man` | 2 %, +0.5 pt | `modifiers.forcedField = { id, floorsLeft: FORCED_FIELD_FLOORS }` with a `ROOM_BATTLEFIELDS` row drawn on its own stream; it overrides the room's own rolled condition and `advanceMap` spends one floor of it. |
+| `magician` | 2 %, +0.5 pt | `modifiers.nextWildType`, one id of `MAGICIAN_TYPES` drawn on its own stream; it narrows the grass to that type and the next wild encounter that actually rolls spends it. |
+| `type-gate` | 2 %, +0.5 pt | `grant: { types: ['bug'], itemId: 'silverpowder' }`: a party holding a **Bug** gets one Silver Powder (a `held`, never-consumed item); without one it refuses and marks nothing. |
+
+Their copies are `npc.exorcist.*`, `npc.weather.*`, `npc.magician.*` and
+`npc.gate.*`; the three modifier draws (`${seed}:npc:<roomId>:<npcId>:field` and
+`…:type`, plus `npcSpot`'s) are their own streams, so no map, encounter, roster or
+battle draw moves (`D11`).
 
 Two things the table now has beyond the party gate:
 
