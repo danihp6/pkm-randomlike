@@ -1,0 +1,38 @@
+# NOTICE
+
+PokeRandomLike — Copyright (c) 2026 danihp6.
+
+The source code is licensed under the MIT License (see `LICENSE`). This file
+records the third-party code, the game data and the trademarks the project
+uses, and what the licence does **not** cover.
+
+## Third-party code
+
+- **Pokémon Showdown** — <https://github.com/smogon/pokemon-showdown>, MIT.
+  The battle engine under `src/engine/battle/` ports behaviour handlers and
+  keeps Showdown's hook names; `docs/showdown-reuse.md` records what is ported
+  and what is ours. The ported handlers remain under Showdown's MIT licence.
+- **@pkmn/dex** — <https://github.com/pkmn/ps>, MIT. `src/data/dex/*.json` is
+  generated at build time from the package by `scripts/build-dex.mjs`; the
+  package itself is a devDependency and is never shipped.
+
+## Game data and trademarks
+
+Pokémon and Pokémon character names are trademarks of Nintendo, Creatures Inc.
+and GAME FREAK inc. This is a non-commercial fan project, not affiliated with,
+sponsored or endorsed by them. Species, move, ability and item names are used
+descriptively to identify the game data they belong to.
+
+## Artwork and audio
+
+**No artwork or audio ripped from a Pokémon game is distributed in this
+repository.** The sprites, tilesets and sound cues the private build plays are
+Nintendo/GameFreak/Chunsoft art: the sources live in a private store, every
+packed output is listed in `.gitignore`, and a clone without that store builds
+and runs against the generated blanks in `src/assets/placeholders/`
+(`npm run assets:pack` restores the real art locally). The procedural and drawn
+art that does ship is described in `src/assets/README.md` and
+`docs/art-direction.md`, and the licence above applies to it.
+
+This exclusion also means the MIT licence grants no rights over the Pokémon
+franchise, its names or its artwork, and the project claims none.
