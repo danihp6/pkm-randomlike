@@ -1059,6 +1059,25 @@ The two empty slots name their blockers: `[Task-94]` (Batch 40) shares
 108, 109, 110), or depends on an unmerged task (`[Task-114]` on 101, `[Task-117]` on
 116, `[Task-118]` on 114); `[Task-103]` (Batch 47) also shares `save.ts` with 93.
 
+**Batch 41 is `[Task-95]` alone: the fill search found no legal mate.** Its cut holds
+`src/scenes/RouteScene.ts`, `src/data/npcs.ts` + test, `src/data/items.ts` + test,
+`src/engine/routes/npcs.ts` + test, `src/engine/battle/runAway.ts` + test,
+`src/engine/battle/state.ts`, `src/engine/battle/effects/items.ts` + test,
+`src/engine/run/battleLink.ts`, `src/scenes/BattleScene.ts` (one line in its
+`createBattle` call) and `src/i18n/{en,es}.ts` — the `noFlee` flag its entry requires
+lives on `BattleSetup`/`BattleState` and on the launch, so the one-line record above
+for 41 predates those four extra paths and the spec carries them. Nine open tasks
+claim `RouteScene.ts`, which 95 holds: `[Task-96]`, 97, 99, 100, 101, 102, 108, 109
+and 110. The rest are named one by one: `[Task-103]` (Batch 47) needs
+`src/data/items.ts` **and** `[Task-95]`'s heal; `[Task-114]` (Batch 53) holds
+`src/engine/battle/**` and `src/i18n/{en,es}.ts`, both paths 95 edits, and its own
+record already puts it behind `[Task-101]`'s `commands.ts`; `[Task-117]` (Batch 56)
+claims `src/data/npcs.ts` + test and edits the same §7 NPC table, and it is written
+against the battle starter `[Task-95]`'s Mega Stone row ships; `[Task-118]` (Batch 57)
+depends on `[Task-114]`; `[Task-28]` stays unscheduled by its own decision line. The
+three empty slots name those constraints, so the batch runs as one dev wave and one
+QA wave.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
