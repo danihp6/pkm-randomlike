@@ -68,3 +68,4 @@ jobs:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         run: |
           opencode models | grep '^opencode-go/' | head -30 || true
+# Re-registered after the repository was recreated (2026-10-20).
