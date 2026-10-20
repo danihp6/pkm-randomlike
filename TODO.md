@@ -2841,6 +2841,47 @@ four-entry `orderActions`, per-slot partner AI, slot-scoped switches/faints and 
 golden log are byte-identical. No run field, no `SAVE_VERSION` step, no RNG change and
 no dex regeneration.
 
+### Batch 33 — a regular trainer's level is a percentage of the live squad level *(shipped, archived)*
+
+Task-78 merged with `--no-ff` — **162 files / 2144 tests** and build clean after the
+merge (`2026-10-20`) — and the detail is in `CHANGELOG.md`'s `## Unreleased`. The batch
+is a **one-task** batch, so its QA was **one single pass** on its own integration
+worktree (`qa-78` = `main@69ffceeb` + `task-78@5be1429c`, merge `c16b6b82`): the task's
+plan verbatim (both `[unit]` and `[live]`), the two batch gates, the path and purity
+audit, and the merge rehearsal, green; the branch tip it validated is `5be1429c`, the
+one `eec146dd` merges into `main`. The `[live]` measurement was executed twice
+independently (the author's and QA's own dev servers), reading
+`game.scene.getScene('Battle').launch.trigger.roster` after `teleportToFloor(4)` and
+`setDebugSquadLevel(20)`: `[18, 18]` = `trainerLevel(20, 2, 30)`, with map 4's boss
+still at `[30,30,30,30,30,30]`.
+
+**Fill record.** Batch 33 was cut as Task-78 alone, and the fill search added no member:
+`[Task-79]` (Batch 34) shares `src/scenes/RouteScene.ts` with it, which is the batch's
+hot file; `[Task-80]` depends on the unmerged 78/79 and `[Task-83]` on 78/79/80/82;
+`[Task-82]`, `[Task-98]`–`[Task-103]`, `[Task-108]`, `[Task-109]` and `[Task-110]` all
+hold the route scene too; `[Task-91]`–`[Task-97]` depend on `[Task-82]` (and `[Task-99]`
+on `[Task-98]`); `[Task-104]` is marked `[!]` and content-blocked, and `[Task-28]` is
+unscheduled. One dev slot and one QA slot were used.
+
+**What shipped.** The player-relative trainer level: a new
+`src/data/trainerLevels.ts` (`TRAINER_LEVEL_PERCENT` `1 → 1`, `2 → 0.9`, `3 → 0.8`,
+`4 → 0.7`, `trainerLevelPercent` clamping a size outside 1..4 to the nearest row, and
+the pure `trainerLevel(squadLevel, size, cap)` = `clamp(floor(squadLevel × percent), 1,
+cap)`), one optional `RosterOptions.levelFor?: (size: number) => number` in
+`src/engine/run/roster.ts` (given, it replaces the band's level draw; absent, the shipped
+draw is byte-identical), and one call site in `RouteScene.startTrainerBattle` that passes
+it for a **regular** trainer only, capping at `band.maxLevel`. The **boss** and the
+**mini-boss** keep the draws they shipped with: the boss's band is pinned to the floor's
+cap, while the mini-boss draws across the whole map band — the cut's own wording said
+both sat at the cap and only the boss ever did, so the spec froze the behaviour that is
+true and left the mini-boss alone. `src/data/README.md` gains the file's role line, and
+`docs/maps-spec.md` §5, `docs/routes-spec.md` §5 and the two `docs/tech-decisions.md`
+addenda (`D11` "the seed fixes the draw, not the level", `D17` "the squad level may set a
+level") record it. Removing the level draw shifts the draws after it in the same stream
+(the Mega Stone pick), which `roster.test.ts` pins in both directions — a literal
+`levelFor` roster beside the untouched control replay. No run field, no RNG added and
+**no `SAVE_VERSION`** step.
+
 ### Open questions for the human
 
 Batch 4b's three reports added two more (the learnset band's is **answered** — the
@@ -5021,7 +5062,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `src/ui/mapView.ts`, because the shipped marker type is `MapRoomSpecial` itself (Batch 24's
       own finding) — so it opens the plan's new **Batch 25**, one batch behind Task-64, and it can
       share neither of the special-room files with Task-64 or Task-66. *(Batch 25)*
-- [ ] **[Task-78] A trainer's level is a percentage of the squad's own level, by its party size.** The
+- [x] **[Task-78] A trainer's level is a percentage of the squad's own level, by its party size.** The
       human's re-shape — the **player-relative model**, the twenty-fifth round below — replaces the floor
       band with the squad level and the floor cap. The old rule rolled a trainer's level uniformly across
       the map's `minLevel..maxLevel` (`trainerRoster`, `src/engine/run/roster.ts` 55,

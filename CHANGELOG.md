@@ -8,6 +8,34 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A regular trainer's level is a percentage of the live squad level, by its party size.**
+      `src/data/trainerLevels.ts` holds `TRAINER_LEVEL_PERCENT` (`1 → 1`, `2 → 0.9`, `3 → 0.8`,
+      `4 → 0.7`), `trainerLevelPercent(size)` (a size outside 1..4 clamps to the nearest row) and
+      the pure `trainerLevel(squadLevel, size, cap)` =
+      `clamp(floor(squadLevel × percent[size]), 1, cap)`; `RosterOptions` gains one optional
+      `levelFor?: (size: number) => number`, which replaces the band's
+      `rng.int(band.minLevel, band.maxLevel)` level draw when a caller resolves the level from the
+      live run, and `RouteScene.startTrainerBattle` passes it for a **regular** trainer only, with
+      `cap = band.maxLevel`. The **boss** and the **mini-boss** pass nothing and keep the draws they
+      shipped with (the boss's band is pinned to the floor's cap; the mini-boss keeps its band draw —
+      the plan's line said both sat at the cap, and only the boss ever did). A catch is still
+      rebuilt at the squad level, and a `levelFor` roster spends one draw fewer per member, so the
+      following draws of that stream (the Mega Stone pick) move while the species picks before them
+      stay put; `roster.test.ts` pins both directions (a literal `levelFor` roster, and the shipped
+      control replay untouched). `docs/maps-spec.md` §5, `docs/routes-spec.md` §5,
+      `src/data/README.md` and the two addenda in `docs/tech-decisions.md` (`D11` "the seed fixes
+      the draw, not the level", `D17` "the squad level may set a level") record the
+      player-relative model. No run field and **no `SAVE_VERSION`** step — the level is computed at
+      battle start from the live run. **QA:** one single pass (a one-task batch) on `qa-78` =
+      `main@69ffceeb` + `task-78@5be1429c` (`c16b6b82`): `npm test` (162 files / **2144** tests,
+      from 2131) and `npm run build` green, the 9-path diff inside the spec's exclusive list, and
+      the `[live]` criterion measured over CDP on that tree's own dev server (`:5201`, headless
+      Chromium `:9341`), twice independently: after `teleportToFloor(4)` and `setDebugSquadLevel(20)`
+      the first regular trainer's roster on map 4 reads `[18, 18]` from
+      `game.scene.getScene('Battle').launch.trigger.roster`, i.e. exactly
+      `trainerLevel(20, 2, 30) = 18`, while map 4's boss still fields `[30,30,30,30,30,30]` — the
+      pinned cap draw the change leaves alone.
+
 - [x] **A hidden ground item is the biome's own floor frame, not a floating sparkle.** `TilesetConfig`
       gains `hiddenItemFrame?: number` and `src/engine/tileFrames.ts` a pure
       `hiddenItemFrame(tileset)` fallback (`hiddenItemFrame ?? frames[FLOOR] ?? 0`); the FRLG
