@@ -326,9 +326,11 @@ Name/greeting keys: `npc.exorcist.{name,greeting}`, `npc.weather.{name,greeting}
         (`localStorage['pokerandomlike.save']`) whose `modifiers` is
         `{ curse: true, forcedField: { id: 'rain', floorsLeft: 3 }, nextWildType: 'bug' }`
         starts a wild battle through the debug overlay's *Wild battle* row, and the live
-        `Battle` scene's state reads **`weather === 'rain'`**,
-        **`sides.enemy.party[0].boosts.atk === -1`** and
-        **`sides.enemy.party[1]?.boosts.atk === 0`**; back on the route,
+        `Battle` scene's state reads **`weather === 'rain'`** and
+        **`sides.enemy.party[0].boosts.atk === -1`** while
+        **`sides.enemy.party.length === 1`** (a wild card fields one enemy, so no other
+        member exists to be boosted; the second member's untouched stages are pinned in
+        `modifiers.test.ts`); back on the route,
         `game.scene.getScene('Route').run.modifiers` reads
         **`curse === false`**, **`forcedField.floorsLeft === 3`** and
         **`nextWildType === 'bug'`** (a battle is not a wild roll); measured by reading
