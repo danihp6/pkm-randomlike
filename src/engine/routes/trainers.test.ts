@@ -418,7 +418,7 @@ describe('trainer sprite visibility', () => {
 
   it('never hides a visible or an unknown archetype', () => {
     for (const archetype of [visible, undefined]) {
-      for (const player of [at(3, 3), at(3, 2), at(1, 3), at(8, 9)]) {
+      for (const player of [at(3, 3), at(3, 2), at(1, 3), at(3, 8)]) {
         expect(trainerHidden(archetype, at(3, 3), player)).toBe(false);
       }
     }
