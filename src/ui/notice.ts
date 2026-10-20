@@ -86,6 +86,27 @@ export function gateOpenedNotice(): Notice {
   return { text: t('gate.opened'), holdMs: NOTICE_HOLD_MS };
 }
 
+/** The static leaf's refusal: a type obstacle keeps the shipped line, the feature seal its own. */
+export function staticSealLockedNotice(kind: GateKind): Notice {
+  const text =
+    kind === 'bush'
+      ? t('gate.locked.bush')
+      : kind === 'rock'
+        ? t('gate.locked.rock')
+        : t('static.locked.water');
+  return { text, holdMs: NOTICE_HOLD_MS };
+}
+
+/**
+ * The static leaf holds the legendary variant: `<name>` is the species' dex name.
+ * The line names no species on purpose — the room is a hint, never a spoiler — so the
+ * name is accepted for the caller's symmetry and printed nowhere.
+ */
+export function staticLegendaryNotice(name: string): Notice {
+  void name;
+  return { text: t('notice.staticLegendary'), holdMs: NOTICE_HOLD_MS };
+}
+
 /**
  * The no-heal room's own notice (`docs/maps-spec.md` §7): entering the leaf says
  * that this room's battles refuse the player's Bag and healing moves. The rule

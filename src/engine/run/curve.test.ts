@@ -37,15 +37,21 @@ const START_LEVEL = 5;
  * and places a trainer more or less; the eight factors were re-solved with
  * `factor = 1.25 / fill` (`docs/balance/route-curve.md`) and maps 6 and 7 land as
  * close to 1.25 as a two-decimal factor allows.
+ *
+ * **Re-pinned again by Task-96 with the static-species leaf.** A floor that hangs
+ * the leaf holds one room more, and `routeIndexForRoom` sums the previous floors'
+ * room counts, so every later floor's rooms build from a shifted route index and
+ * place a trainer more or less. The factors are untouched (a re-solve is a balance
+ * task, not a room task) and the column records the walk as it now stands.
  */
 const MEASURED_FILL: Readonly<Record<number, number>> = {
   1: 1.25,
   2: 1.25,
   3: 1.25,
-  4: 1.25,
-  5: 1.25,
-  6: 1.26,
-  7: 1.24,
+  4: 1.33,
+  5: 1.35,
+  6: 1.13,
+  7: 1.18,
   8: 1.25,
 };
 

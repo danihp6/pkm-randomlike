@@ -371,6 +371,15 @@ leaves with only their own content (`docs/maps-spec.md` §7):
   it when **any party member has the obstacle's type** — Bug or Grass / Rock or
   Fighting / Water — so the party the run built is the key, and the opening lasts
   the rest of the floor.
+- a **static-species** room (25% chance, only from map 3 on): a one-tile **vault**
+  behind a bush, a rock or a pond, just like the gated room, but the party property
+  that opens it is either a **type** (Bug or Grass, Rock or Fighting) or an
+  **ability** (the pond yields to Water Absorb, Swift Swim or Storm Drain), and the
+  far side holds **one Pokémon** — the first stage of a pseudo-legendary line, at
+  the squad's level — fought and caught as a normal wild, so the room's single
+  capture is spent. While the run has completed **exactly one** floor mission and the
+  floor it stands on is map 4 or later and flawless, the same room may hold a
+  **legendary** instead (25%), so a run gets at most one floor of them.
 - a **special NPC** in a regular trainer room, at most one: the **merchant** (the
   row that ships) and, later, a medic, an exorcist, a berry tree. It stands on a
   free tile as an ordinary overworld sprite and blocks it; the interact key opens

@@ -50,6 +50,9 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   of them the grouped equipable whose id the band's Mart shelf supplies.
 - `noHeal.ts` — the no-heal room's table: the first floor that may hang it, the
   chance, its trainer's archetype and the move ids the room bars for the player.
+- `staticSpecies.ts` — the static-species room's table: the leaf's and its legendary
+  variant's first floor and chance, the property row that opens each seal kind and the
+  two species lists (`docs/maps-spec.md` §7).
 - `npcs.ts` — the special-NPC table (`docs/maps-spec.md` §7): one row per NPC with
   its name and greeting keys, the overworld sprite key it draws with, the chance it
   is rolled on map 1 and the step every floor after adds, the optional gate its row

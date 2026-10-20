@@ -262,6 +262,7 @@ regular trainer to one. Their content:
 | **gated** | 20 % chance, **from map 3 onward** | a leaf anywhere | one **vault** sealed by a **bush**, a **rock** or a **pond**; the interact key opens it when a party member has the obstacle's **type** — Bug or Grass / Rock or Fighting / Water — and the reward inside is one ground item |
 | **trade** | 20 % chance, **from map 3 onward** | a leaf anywhere | a counter; the interact key (`E`) opens the room's own window, which lists the **party** and one `LEAVE` row. Giving a member away rolls **one random Pokémon on acceptance** (never previewed) and places it in the party at the **squad's level**; one trade per room, and refused on a single-member party |
 | **no-heal** | 20 % chance, **from map 3 onward** | a leaf anywhere | one `psychic` trainer; **every battle that starts in the room** refuses the **player's** Bag and healing moves (`docs/battle-spec.md` §2) |
+| **static** | 25 % chance, **from map 3 onward** | a leaf anywhere | one **vault** behind a bush, a rock or a pond, opened when a party member holds the seal's property (Bug or Grass, Rock or Fighting, or the pond's ability) and holding **one static species** at the squad's level, fought and caught like a wild |
 
 Specials count **outside** K (`K` regular rooms + the specials), are rolled on
 the same `map` stream, and are discovered like any room: they appear on the
@@ -271,12 +272,15 @@ NPC*), one per floor from map 2 on. The **mini-boss** leaf rolls with a **50%**
 chance, the **mega-stone** leaf with **15%** (only **from map 3 onward**), the
 **casino** leaf with **30%** (only **from map 2 onward**), the **gated** leaf with
 **20%** (only **from map 3 onward**), the **trade** leaf with **20%** (only **from
-map 3 onward**) and the **no-heal** leaf with **20%** (only **from map 3
-onward**), and any of them may coincide on the same floor. The casino's draw, then
-the **gated** leaf's, then the **trade** leaf's and then the **no-heal** leaf's are
-the **last** statements of the special pass, in that order, so no floor's
-mini-boss, mega-stone, casino, gated leaf, trade leaf, room id or room size moves
-when any of them shipped.
+map 3 onward**), the **no-heal** leaf with **20%** (only **from map 3 onward**) and
+the **static** leaf with **25%** (only **from map 3 onward**), and any of them may
+coincide on the same floor. The casino's draw, then the **gated** leaf's, then the
+**trade** leaf's and then the **no-heal** leaf's run on the `map` stream and are the
+**last** statements of its special pass, in that order, so no floor's mini-boss,
+mega-stone, casino, gated leaf, trade leaf, room id or room size moves when any of
+them shipped; the static leaf's `…:static-room` stream is **the last** draw of the
+pass, after the no-heal leaf's, and it is **minted** rather than taken from the `map`
+stream, so it can never move a floor's trainer roles either.
 
 Every floor is also given one **mission** (`src/data/missions.ts`,
 `src/engine/run/missions.ts`), drawn from the run seed on its own
@@ -351,6 +355,49 @@ source, and a SELL row still sells one unit on a click. It exists only while the
 player is in the shop room (it is opened at the counter with `E` and is
 unavailable anywhere else), so buying is tied to the room rather than to a menu
 key.
+
+### The static-species leaf
+
+The **static** leaf (`src/data/staticSpecies.ts`, `src/engine/routes/staticSpecies.ts`,
+`D47`'s room descriptor `src/scenes/rooms/staticSpecies.ts`) is the one special room
+whose prize is a **Pokémon** rather than an item. It hangs off a regular room from
+**map 3 onward** with a **25%** chance, on its own
+`${seed}:map:<floor>:static-room` stream, as the **last** draw of the special pass.
+Its content:
+
+- the room carves the **shipped gated vault** unchanged (`carveGatedVault`,
+  `RouteRequest.gate`): one one-tile pocket behind a **bush**, a **rock** or a **pond**,
+  chosen by `gateKindFor` on the same two minted streams the gated leaf uses, so no
+  route or terrain the floor already built moves.
+- the seal opens for a **party property**, never a field move, and the two kinds are
+  data (`STATIC_GATES`, keyed by the obstacle the carve picked): a **type** row
+  (Bug or Grass for the bush, Rock or Fighting for the rock) is asked through
+  `partyHasType`, and the **pond** is a **feature** row asked through
+  `partyHasAbility` — Water Absorb, Swift Swim or Storm Drain. The box is never asked
+  and a member at 0 HP counts, exactly like the gated leaf.
+- **two** records ride `pickedItems`, both cleared by `advanceMap`:
+  `static-<mapIndex>-<roomId>` means the vault stays open for the floor, and
+  `static-mon-<mapIndex>-<roomId>` means the species is gone for the floor. They are
+  written **before** the change they describe — the opening before the rebuild, the
+  species before its battle starts — so a revisit and a reload agree.
+- the far side holds **one species** from `STATIC_SPECIES` (the first stage of each
+  pseudo-legendary line) at `squadLevel(run)`, drawn on its own
+  `…:static-species:<roomId>` stream. Its interact starts a **normal wild battle**
+  through the scene's own wild path (`RoomHost.startWildBattle` → `startBattle`), so
+  it spends the room's single capture exactly like a tall grass step and inherits the
+  catch rule, the level cap and the moveset/ability roll. It is **not** drawn from the
+  wild table, so `WILD_BANNED_TAGS` and `speciesPool` are untouched.
+
+The same leaf may hold a **legendary** instead, and that variant is a **conditional
+roll** on its own `…:static-variant:<roomId>` stream: it is read only when the floor
+is **map 4 or later**, the run's `missionsCompleted` reads **exactly `1`** and the
+floor's own mission is `flawless`, and then it is legendary with a **25%** chance. Both
+facts are written by `advanceMap` alone — never `missionMet`, `hpLost` or a casualty
+count — so a mid-floor HP loss, a death or a `rebuildRoom()` cannot flip a room the
+run has already seen. It reads as **once per run with no new field**: the first met
+mission lifts the counter to 1 and the branch closes again the moment the next floor
+is cleared, so at most one floor of a run ever offers legendaries, and the species
+list is `LEGENDARY_SPECIES` (an explicit data list, never `speciesPool`).
 
 ### The special NPC
 

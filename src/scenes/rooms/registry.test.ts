@@ -25,7 +25,15 @@ const ROOM_PATHS = Object.keys(SOURCES).filter((path) => !path.endsWith('.test.t
 const SHARED_PATHS = ['./registry.ts', './types.ts'];
 
 /** The kinds the shipped descriptors claim (`docs/maps-spec.md` §7). */
-const SHIPPED_KINDS = ['mini-boss', 'mega-stone', 'casino', 'gated', 'trade', 'no-heal'] as const;
+const SHIPPED_KINDS = [
+  'mini-boss',
+  'mega-stone',
+  'casino',
+  'gated',
+  'trade',
+  'no-heal',
+  'static',
+] as const;
 
 /** A synthetic module holding one descriptor, for a kind the folder never had. */
 const moduleWith = (kind: string): unknown => ({ descriptor: { kind, marker: kind } });

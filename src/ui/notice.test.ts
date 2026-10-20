@@ -11,6 +11,8 @@ import {
   levelUpNotice,
   missionCompleteNotice,
   noHealRoomNotice,
+  staticLegendaryNotice,
+  staticSealLockedNotice,
 } from './notice';
 
 describe('catchToPcNotice', () => {
@@ -137,6 +139,73 @@ describe('gateOpenedNotice', () => {
 
   it('holds a notice for 2.6 seconds', () => {
     expect(gateOpenedNotice().holdMs).toBe(2600);
+  });
+});
+
+describe('staticSealLockedNotice', () => {
+  it('keeps the shipped line for the two type obstacles and its own for the pond', () => {
+    expect(staticSealLockedNotice('bush')).toEqual(gateLockedNotice('bush'));
+    expect(staticSealLockedNotice('rock')).toEqual(gateLockedNotice('rock'));
+    expect(staticSealLockedNotice('water')).toEqual({
+      text: 'Deep water. Only the right ability could part it.',
+      holdMs: NOTICE_HOLD_MS,
+    });
+    expect(staticSealLockedNotice('water').text).not.toBe(gateLockedNotice('water').text);
+  });
+
+  it('holds a notice for 2.6 seconds', () => {
+    expect(staticSealLockedNotice('water').holdMs).toBe(2600);
+  });
+
+  it('reads in the Spanish overlay once the locale switches back', () => {
+    setLocale('es');
+    try {
+      expect(staticSealLockedNotice('water').text).toBe(
+        'Agua profunda. Solo la habilidad adecuada podría abrirla.',
+      );
+    } finally {
+      setLocale('en');
+    }
+  });
+});
+
+describe('staticLegendaryNotice', () => {
+  it('hints at the legendary behind the seal with the shared hold', () => {
+    expect(staticLegendaryNotice('Moltres')).toEqual({
+      text: 'A legendary presence waits behind the seal.',
+      holdMs: NOTICE_HOLD_MS,
+    });
+  });
+
+  it('holds a notice for 2.6 seconds', () => {
+    expect(staticLegendaryNotice('Articuno').holdMs).toBe(2600);
+  });
+
+  it('says something no other notice says', () => {
+    const others = [
+      catchToPcNotice('Sentret'),
+      itemPickupNotice('Potion'),
+      itemUsedNotice('Potion'),
+      levelUpNotice('Growlithe', 21),
+      eggHatchNotice('Sentret'),
+      gateLockedNotice('bush'),
+      gateOpenedNotice(),
+      noHealRoomNotice(),
+      missionCompleteNotice('Flawless floor'),
+      staticSealLockedNotice('water'),
+    ].map((notice) => notice.text);
+    expect(others).not.toContain(staticLegendaryNotice('Mewtwo').text);
+  });
+
+  it('reads in the Spanish overlay once the locale switches back', () => {
+    setLocale('es');
+    try {
+      expect(staticLegendaryNotice('Zapdos').text).toBe(
+        'Una presencia legendaria aguarda tras el sello.',
+      );
+    } finally {
+      setLocale('en');
+    }
   });
 });
 

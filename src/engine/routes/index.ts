@@ -7,4 +7,5 @@ export * from './streams';
 export * from './sketch';
 export * from './trainers';
 export * from './gate';
+export * from './staticSpecies';
 export * from './npcs';
