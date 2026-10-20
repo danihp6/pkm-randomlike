@@ -8,6 +8,47 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A hidden ground item is the biome's own floor frame, not a floating sparkle.** `TilesetConfig`
+      gains `hiddenItemFrame?: number` and `src/engine/tileFrames.ts` a pure
+      `hiddenItemFrame(tileset)` fallback (`hiddenItemFrame ?? frames[FLOOR] ?? 0`); the FRLG
+      fields declare frame **41** (`FRAME_FLOOR_ALT_3`, atlas cell `5,34`) and the forest's
+      natural mix loses it, so `FOREST_FLOOR_VARIANTS` is now `0:8, 1:5, 2:4, 42:1` and every
+      `resolveGroundFrame` on a floor stays inside those four frames. `RouteScene.drawItems`
+      draws a hidden item as that frame of the route's biome atlas, at the ground's own scale,
+      origin and depth (no tint, no alpha, no tween) and keeps `setVisible(!taken)`, walkability
+      and the interaction path untouched; the procedural `SPARKLE_TEXTURE_KEY` texture and its
+      `BootScene` builder are deleted, and the reduce-flashing preference keeps only its battle
+      flash and reset-scrim surfaces (`D45`, `docs/tileset-spec.md` §2/§6,
+      `docs/design-spec.md` §5/§10). **QA:** Task QA on `main + task-85` and the shared batch
+      integration tree — `npm test` (160 files / **2114** tests, from 2108 on `main`) and
+      `npm run build` green, the 10-path diff inside the spec's exclusive list, and the `[live]`
+      criterion measured over CDP on a forest route (seed `qa85-a`, regular room 4): the hidden
+      item's sprite is `tiles:forest` frame 41 at scale 1.5, alpha 1, no tween,
+      `textures.exists('route:sparkle') === false`, and the 24×24 canvas tile (camera zoom 1,
+      `renderer.snapshotArea`) is **576/576 pixels identical** to the engine's own ground render
+      of frame 41 with **no transparent pixel**. No run field, no `SAVE_VERSION` step, no RNG draw.
+
+- [x] **The double battle's engine rules: two active slots per side, targets and a partner AI.**
+      `BattleState` gains `double` (default `false`), `Slot` 0/1 and `secondActiveIndex`, and the
+      accessors widen without moving the single path (`activeFighter(state, side, slot?)`,
+      `liveSlots`, `opposingSlots`, `performSwitch(..., slot?)`); `FightCommand` carries a `slot`
+      and a `target: { side, slot }`, spread moves (`allAdjacentFoes`/`allAdjacent`) hit every
+      live foe slot once per use while spending PP once, `orderActions` sorts four entries by
+      priority, fractional and per-slot Speed, and `takeDoubleTurn` is the two-active entry point
+      (`takeTurn` delegates to it with slot 0, so every existing test and the golden log are
+      byte-identical). A faint flags `awaitingReplacement` only when a reserve exists and
+      `autoReplace` fills only the emptied slot; a side fights while either slot lives.
+      `chooseAiCommand(..., { slot })` scores (move, target) pairs for the partner slot and never
+      aims at a dead slot. `src/data/bosses.ts` adds `BOSS_PARTY.<kind>.double` (`boss` true,
+      `miniboss` false) and `DOUBLE_ACTIVES = 2`, with no scene wiring; `docs/battle-spec.md`
+      gains §12. **QA:** Task QA on `main + task-107` and the shared batch integration tree —
+      `npm test` (**2131** tests) and `npm run build` green, the 11-path diff inside the exclusive
+      list, `golden.test.ts`/`harness.ts` untouched, the new fixed-seed `double.test.ts`
+      (two actives, four-way order, targeted vs. default damage, spread PP, slot-only replacement,
+      double faint, partner targeting, seeded log equality), the `bosses` pins and the engine
+      purity grep. No `[live]` criterion (pure engine) and no browser pass owed. No run field,
+      no `SAVE_VERSION` step and no RNG draw change.
+
 - [x] **The Mart and the mini-boss reward are floating, pointer-driven cards.** Both modal,
       keyboard-driven windows are gone: `src/ui/floatingPanel.ts` draws one glass card with a
       44 px header that is its own drag handle, a drawn ✕ close control and the pure

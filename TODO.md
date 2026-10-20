@@ -2800,6 +2800,47 @@ shares `src/engine/battle/{damage,state,turn}.ts` with it and is cut last, `[Tas
 later task holds `src/scenes/RouteScene.ts`, which Task-87 owns here. No run field,
 no `SAVE_VERSION` step and no dex regeneration.
 
+### Batch 32 — a hidden item is the biome's ground, and the double battle's engine rules *(shipped, archived)*
+
+Task-85 and Task-107 merged with `--no-ff` in ID order — **160 files / 2114 tests** and
+build clean after Task-85, **161 files / 2131 tests** and build clean after Task-107
+(`2026-10-20`) — and the detail is in `CHANGELOG.md`'s `## Unreleased`. Both Task QAs
+ran **in parallel**, each from its own integration worktree (`qa-85` = `main` +
+`task-85`, `qa-107` = `main` + `task-107`), and both were green; Integration QA ran one
+pass on the combined tree (`qa-batch32`, `task-85` then `task-107` merged): the same
+two gates, no path shared by the two tasks, one holder per hot file
+(`src/scenes/RouteScene.ts` and `src/scenes/BootScene.ts` → Task-85 only), `src/data/dex/**`
+untouched, each branch tip identical to the one its own QA validated
+(`task-85 = 3daa2dd4`, `task-107 = 4388619b`), and the merge rehearsal reproduced the
+combined tree exactly.
+
+**Fill record.** Batch 32 was cut as Task-85 alone (its planned mate Task-106 had been
+filled into Batch 28 and shipped there). The fill search pulled **Task-107** forward from
+Batch 49: its dependency line is `none` (Task-62 and Task-106, the battle seams it is
+written against, are merged), and its paths (`src/engine/battle/{state,commands,order,turn,ai,modifiers}.ts`,
+`src/data/bosses.ts`, `docs/battle-spec.md`) are disjoint from Task-85's
+(`src/engine/tileset.ts`, `src/engine/tileFrames.ts`, `src/data/tilesets/frlg.ts`,
+`src/scenes/{RouteScene,BootScene}.ts` and the three docs). Every other later task holds
+`src/scenes/RouteScene.ts` — `[Task-78]`, `[Task-79]`, `[Task-82]` (it still passes
+`POPULATION` from the scene), `[Task-91]`–`[Task-103]`, `[Task-109]` and `[Task-110]` —
+so the scene's one-owner-per-batch queue is what blocks them here; `[Task-80]` and
+`[Task-83]` depend on unmerged tasks, `[Task-81]`'s claim is still flagged incomplete,
+`[Task-104]` is content-blocked, `[Task-108]` depends on Task-107 and needs
+`BattleScene`, and `[Task-28]` is upstream-blocked and unscheduled. Two dev slots and
+two QA slots were used.
+
+**What shipped.** `TilesetConfig.hiddenItemFrame` plus the pure `hiddenItemFrame(tileset)`
+resolver; the forest declares frame **41** and drops it from `FOREST_FLOOR_VARIANTS`
+(the mix is now `0:8, 1:5, 2:4, 42:1`), `RouteScene.drawItems` draws a hidden item as
+that atlas frame at the ground's own scale (no tint, no alpha, no tween), `BootScene`
+loses `SPARKLE_TEXTURE_KEY` and its builder, and the reduce-flashing knob keeps only the
+battle flash and the reset scrim. The battle engine gains `Slot` 0/1, `secondActiveIndex`,
+targeted `FightCommand`s, `takeDoubleTurn` (with `takeTurn` delegating to it), a
+four-entry `orderActions`, per-slot partner AI, slot-scoped switches/faints and the
+`BOSS_PARTY` `double` flag with `DOUBLE_ACTIVES = 2`; the single-battle path and the
+golden log are byte-identical. No run field, no `SAVE_VERSION` step, no RNG change and
+no dex regeneration.
+
 ### Open questions for the human
 
 Batch 4b's three reports added two more (the learnset band's is **answered** — the
@@ -4380,7 +4421,7 @@ tests' fixture.
       the new **Batch 20** on its own, the way the reformat opens Batch 11, and why it runs
       **after** Batch 11 so it edits reformat-cleared files and keeps them conforming. *(Batch 20)*
 
-- [ ] **[Task-85] A hidden item is a floor tile of its biome, not a floating sparkle.** Reported in
+- [x] **[Task-85] A hidden item is a floor tile of its biome, not a floating sparkle.** Reported in
       play: the hidden item's faint sparkle should instead be a **concrete floor tile**, one per
       biome, so the tell is a patch of ground rather than a glint. For the **forest**, the human has
       picked **frame 41** (source cell `5,34`) from the preview
@@ -5550,7 +5591,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       table the generated dex accepts, or two existing ids with exact semantics). The same
       blocker is recorded in Batch 29's and Batch 30's fill records. The task stays out of the
       queue (`[!]`) until it is answered; its Batch 31 mate `[Task-89]` shipped alone.
-- [ ] **[Task-107] The 2vs2 boss battle, engine half: the double-battle rules.** The human's last
+- [x] **[Task-107] The 2vs2 boss battle, engine half: the double-battle rules.** The human's last
       and largest wish — «Bosses 2vs2» — cannot ride on today's engine: every side is one active
       (`activeFighter(state, side)`, `src/engine/battle/state.ts`), a command carries no target and
       the order sorts two actives. It is cut as **two tasks**, this one pure and `[Task-108]` the
