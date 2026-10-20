@@ -2882,6 +2882,53 @@ level") record it. Removing the level draw shifts the draws after it in the same
 `levelFor` roster beside the untouched control replay. No run field, no RNG added and
 **no `SAVE_VERSION`** step.
 
+### Batch 34 — a wild encounter's level is a fraction of the live squad level *(shipped, archived)*
+
+Task-79 merged with `--no-ff` (`5b35eaf0`, `2026-10-20`) behind the green gate —
+**163 files / 2156 tests** and build clean after the merge — and the detail is in
+`CHANGELOG.md`'s `## Unreleased`. The batch is a **one-task** batch, so its QA was
+**one single pass** on its own integration worktree (`qa-79` = `main@fcc82121` +
+`task-79@62adc349`, merge `243b57c7`): the task's plan verbatim (the nine `[unit]`
+and the three `[live]` criteria), the two batch gates, the path and purity audit,
+and the merge rehearsal, 12/12 green on the tip it validated (`62adc349`, the one
+`5b35eaf0` merges into `main`). The `[live]` criteria were measured twice
+independently (the Orchestrator's and QA's own dev servers, both over CDP
+`Runtime.evaluate`): on floor 4, `a` (squad 20) rolled levels `12..14` and `b`
+(same room, squad clamped to 30) `18..22`, `min(b) > max(a)`; the squad-5 window
+(species `early`) and the squad-30 window (species `late`) shared **no** species;
+and the forced wild battle's trigger read `kind: 'wild'` with the same level the
+roll produced. The batch holds the plan's **one** `src/scenes/RouteScene.ts` claim
+(Task-79) and no other hot file; `package.json`, `src/main.ts`, `vite.config.ts`
+and `src/data/dex/**` are nobody's. The docs sections Task-79 owns are
+`docs/routes-spec.md` §3/§5, the wild-level clause of `docs/maps-spec.md` §5 and
+two new `docs/tech-decisions.md` addendum blocks (`D11`, `D17`);
+`docs/routes-spec.md` §2/§4 and `docs/maps-spec.md` §2/§7 stay free for a later
+batch.
+
+**Fill record.** Batch 34 was cut as Task-79 alone, and the fill search examined
+**Task-82** (Batch 35, `*Dependencies:* none`, the obvious candidate) and did **not**
+add it. Its own fix shape needs `src/scenes/RouteScene.ts`: the scene is what still
+passes `POPULATION[band.id]` (`RouteScene` 1322) into the `RouteRequest` it builds
+inline (`1309-1339`) and what hands the population pass its archetype pool, so
+retiring `POPULATION` and gating trainers on a room's role both land on that file —
+the batch's hot file, held by Task-79. The plan already knows this: row 35 binds the
+route scene to Task-82, and Batch 32's own fill record says 82 "still passes
+`POPULATION` from the scene". Filling it here would have put two writers on one
+scene, so the batch stayed one task. The rest of the later backlog was examined and
+rejected on its own line: `[Task-80]` depends on the unmerged Tasks 78/79 and
+`[Task-83]` on 78/79/80/82; `[Task-91]`–`[Task-97]` depend on the unmerged Task-82
+(and `[Task-99]` on 82 and 98) **and** hold `src/scenes/RouteScene.ts`;
+`[Task-98]`–`[Task-102]` and `[Task-108]`–`[Task-110]` hold the scene too (Task-98
+and Task-103 also want `src/engine/save.ts`, and Task-103 `src/data/items.ts` and
+the i18n tables);
+`[Task-104]` is marked `[!]` and content-blocked; `[Task-28]` is unscheduled
+upstream. One dev slot
+and one QA slot are used; the other three of each stay empty with the route scene's
+one-owner-per-batch queue as their constraint. **For the next cut:** Task-82 is
+legal only in a batch where nobody else holds `src/scenes/RouteScene.ts` — alone, or
+beside an engine/data task that never touches the scene — so it cannot ride with
+Task-80 until Task-79 has merged.
+
 ### Open questions for the human
 
 Batch 4b's three reports added two more (the learnset band's is **answered** — the
@@ -5085,7 +5132,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* none — every primitive it reads is shipped. It opens **Batch 33** as a single
       task: the room queue is what costs the width, and nothing else in the backlog that is free here
       wants `src/engine/run/roster.ts` or `docs/maps-spec.md` §5. *(Batch 33)*
-- [ ] **[Task-79] A wild encounter's level is a fraction of the squad's own level.** Reported in play:
+- [x] **[Task-79] A wild encounter's level is a fraction of the squad's own level.** Reported in play:
       «quiero que los salvajes no esten tan alto de nivel por ejemplo que salga un nivel 5 cuando tu solo
       tienes uno al 5 o al subir de piso uno al 9 es injusto». The old rule drew the room's working level
       (`runRoomLevel`, `RouteScene` 1294-1295), which ramps to the floor's `maxLevel`, so map 1's deepest

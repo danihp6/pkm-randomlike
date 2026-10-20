@@ -8,6 +8,37 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A wild encounter's level is a fraction of the live squad level, and its species table
+      follows the squad's own band.** `src/data/wildLevels.ts` holds `WILD_LEVEL_FRACTION`
+      (`{ min: 0.6, max: 0.75 }`) and the pure `wildLevel(fraction, squadLevel, cap)` =
+      `clamp(floor(squadLevel × fraction), 1, cap)`; `src/engine/routes/encounters.ts` gains
+      `EncounterLevelRoll` and `rollWildLevel(rng, squadLevel, cap)` (one draw on the room's
+      `encounters` stream, in the slot the old `rng.int(minLevel, maxLevel)` occupied), and
+      `rollEncounter` / `RouteEncounters` take that `levelFor` closure instead of a level pair,
+      calling it **live on every `step()`** so a level-up inside a room moves the next wild
+      without rebuilding the room. `RouteScene.applyRoute` builds the stream with
+      `encounterTableFor(bandForLevel(squadLevel(run)))` — resolved once per room build — and the
+      closure over the live run, and a dev-only `debugRollWildEncounters(count = 1)` exposes the
+      rolls to the measurement harness (not wired into `src/dev/debugMenu.ts`). `docs/routes-spec.md`
+      §3/§5, the wild-level clause of `docs/maps-spec.md` §5 and two new
+      `docs/tech-decisions.md` addenda (`D11` "the seed fixes the wild level's draw, not the
+      level", `D17` "a wild level is a fraction of the squad level") record it, and
+      `src/data/README.md` gains the file's role line. Removing the level draw's no-op slot means
+      a successful encounter now spends **one extra draw**, so a fixed seed's drawn **species**
+      sequence moves from the first encounter on — deliberate, and `encounters.test.ts` re-pins it
+      by measurement (rolling control replays), never by hand-editing a number. No run field, no
+      i18n key, **no `SAVE_VERSION`** step and no dex regeneration. **QA:** one single pass (a
+      one-task batch) on `qa-79` = `main@fcc82121` + `task-79@62adc349` (`243b57c7`): `npm test`
+      (163 files / **2156** tests, from 2144) and `npm run build` green, the 9-path diff inside the
+      spec's exclusive list, purity and hot-file audit clean, and the merge rehearsal producing
+      the integration tree exactly; the three `[live]` criteria were measured twice independently
+      over CDP `Runtime.evaluate` on two dev servers (`:5181` and `:5239`, headless Chromium
+      `:9331`/`:93xx`): on floor 4 the squad-20 rolls read levels `12..14` while the same room's
+      squad-30 rolls read `18..22` (`min(b) > max(a)`), the squad-5 (`early`) and squad-30
+      (`late`) species windows shared **zero** ids, and the forced wild battle's
+      `Battle.launch.trigger` read `kind: 'wild'` with the exact level the roll produced
+      (`servine`, level 14 in QA's run; `wormadamtrash`, level 13 in the Orchestrator's).
+
 - [x] **A regular trainer's level is a percentage of the live squad level, by its party size.**
       `src/data/trainerLevels.ts` holds `TRAINER_LEVEL_PERCENT` (`1 → 1`, `2 → 0.9`, `3 → 0.8`,
       `4 → 0.7`), `trainerLevelPercent(size)` (a size outside 1..4 clamps to the nearest row) and
