@@ -27,6 +27,19 @@ places a trainer more or less. The eight per-floor factors were re-solved with t
 recipe below (`factor = 1.25 / fill`), and the columns below are the new walk's
 own: every floor lands within a hundredth of **1.25**, the middle of the window.
 
+**Re-walked again (Task-96).** The static-species leaf hangs on some floors from map
+3 on, so a floor can hold one room more, and `routeIndexForRoom` sums the previous
+floors' room counts: every later floor's rooms build from a shifted route index and
+place a trainer more or less. `src/engine/run/curve.test.ts`'s `MEASURED_FILL`
+records that walk as it now stands — **1.25, 1.25, 1.25, 1.33, 1.35, 1.13, 1.18 and
+1.25** on maps 1-8 — and every one still sits inside the rule's `1.05 – 1.5` window.
+The eight factors are **not** re-solved (that is a balance task, not a room task), so
+the per-map table's `fill` column is unchanged: it is
+`0.75 × T̄(m) × A(m) / needed(m)`, which reads the pinned trainer counts and the cap,
+never a route index. The Task-92 paragraph's "within a hundredth of **1.25**" claim
+describes the walk **before** this task; maps 4, 5, 6 and 7 now read off that target
+on their shipped factors.
+
 ## Level bands
 
 Every floor reads one band (`bandForLevel(minLevel)` in `src/data/run.ts`): a level

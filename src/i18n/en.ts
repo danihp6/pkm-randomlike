@@ -350,10 +350,12 @@ export const en = {
   'notice.eggHatch': 'The Egg hatched into {name}!',
   'notice.noHealRoom': 'No items or healing moves in this room!',
   'notice.missionComplete': 'Mission complete: {mission}',
+  'notice.staticLegendary': 'A legendary presence waits behind the seal.',
   'gate.locked.bush': 'Thick bushes. A Bug or Grass Pokémon could clear them.',
   'gate.locked.rock': 'A boulder. A Rock or Fighting Pokémon could break it.',
   'gate.locked.water': 'Deep water. A Water Pokémon could cross it.',
   'gate.opened': 'The way is open.',
+  'static.locked.water': 'Deep water. Only the right ability could part it.',
 
   // seed — the seed / share-string prompt
   'seed.title': 'SEED / SHARE STRING',

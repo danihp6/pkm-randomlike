@@ -35,6 +35,13 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
   farthest tile and the marker of the room whose battles refuse the Bag and heals.
 - `noHeal.test.ts` — the room's own surface: the trainer's id, tile and archetype,
   the defeated and no-free-tile cases, the notice and the marker.
+- `staticSpecies.ts` — the static-species room: the seal that opens its vault (a
+  party type, or an ability for the pond), the blocking species behind it and the
+  wild battle it starts, plus its legendary variant's entry line and its gold-ring
+  marker.
+- `staticSpecies.test.ts` — the room's own surface: the fixture's counter and
+  legendary line, the seal's refusal and opening, the species' record and wild
+  battle, the false paths, the drawn silhouette and the marker.
 - `fixtures.test.ts` — the shipped rooms' fixtures, pinned by id and tile, and for the
   stone the exact item the fixed seed rolls.
 

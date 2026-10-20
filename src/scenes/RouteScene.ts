@@ -169,6 +169,7 @@ import {
   sketchRoute,
   sketchRouteSteps,
   specialTrainerFor,
+  staticGateId,
   trainerAt,
   trainerHidden,
   withForcedAbility,
@@ -303,7 +304,14 @@ import { browserStorage } from '../storage';
 import { GRASS_TEXTURE_KEY, PANEL_ICON_KEYS, PANEL_ICON_SIZE, TRAINER_TEXTURE_KEY } from './BootScene';
 import { collectDescriptors, type RoomRegistry } from './rooms/registry';
 import { openMart } from './rooms/shop';
-import type { RoomDescriptor, RoomDrop, RoomHost, RoomPanel, RoomRowDrag } from './rooms/types';
+import type {
+  RoomDescriptor,
+  RoomDrop,
+  RoomHost,
+  RoomPanel,
+  RoomRowDrag,
+  RoomWildBattle,
+} from './rooms/types';
 
 /**
  * Every special room kind's descriptor module (`D47`), discovered from the folder
@@ -1287,6 +1295,7 @@ export class RouteScene extends Phaser.Scene {
       closePanel: () => scene.closePanel(),
       panelOpen: () => scene.panelOpen(),
       startTrainerBattle: (trainer) => scene.startTrainerBattle(trainer),
+      startWildBattle: (encounter) => scene.startRoomWildBattle(encounter),
       showNotice: (notice) => scene.showNotice(notice),
       beginRowDrag: (drag) => scene.beginRowDrag(drag),
     };
@@ -1468,10 +1477,16 @@ export class RouteScene extends Phaser.Scene {
       // (§7).
       quiet: params.room ? params.room.entry || params.room.boss || params.room.special !== null : false,
       // The gated room's vault is sealed until the floor's own mark says otherwise, so a
-      // revisit and a reload draw exactly what the run has (`docs/maps-spec.md` §7).
-      ...(params.room?.special === 'gated'
+      // revisit and a reload draw exactly what the run has (`docs/maps-spec.md` §7). The
+      // static leaf carves the same vault and reads its own record.
+      ...(params.room?.special === 'gated' || params.room?.special === 'static'
         ? {
-            gate: isItemPicked(this.run, gateId(params.room.mapIndex, params.room.roomId))
+            gate: isItemPicked(
+              this.run,
+              params.room.special === 'gated'
+                ? gateId(params.room.mapIndex, params.room.roomId)
+                : staticGateId(params.room.mapIndex, params.room.roomId),
+            )
               ? 'open'
               : 'sealed',
           }
@@ -5750,6 +5765,16 @@ export class RouteScene extends Phaser.Scene {
       trainerName: archetype.name,
       roster: withForcedAbility(roster, archetype),
       archetypeId: archetype.id,
+    });
+  }
+
+  /** Opens a room's own wild battle through the shipped wild path (`startBattle`). */
+  private startRoomWildBattle(encounter: RoomWildBattle): void {
+    this.startBattle({
+      kind: 'wild',
+      speciesId: encounter.speciesId,
+      level: encounter.level,
+      key: encounter.key,
     });
   }
 

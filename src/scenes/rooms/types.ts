@@ -56,6 +56,14 @@ export type RoomPanel = Readonly<{
   close(): void;
 }>;
 
+/** One wild battle a room starts through the scene's own wild path. */
+export type RoomWildBattle = Readonly<{
+  speciesId: string;
+  level: number;
+  /** The battle's own entity key; the scene appends its own counter. */
+  key: string;
+}>;
+
 /**
  * The hooks a room descriptor may use from the scene. `RouteScene` satisfies it;
  * nothing else does. It is read-only: a room mutates the scene only through these
@@ -104,6 +112,8 @@ export type RoomHost = Readonly<{
    * instead of a prize.
    */
   startTrainerBattle(trainer: RouteTrainer): void;
+  /** Opens a menu battle against one wild Pokémon through the scene's wild path. */
+  startWildBattle?: (encounter: RoomWildBattle) => void;
   /** Floats one transient notice through the route HUD's own strip (`src/ui/notice.ts`). */
   showNotice(notice: Notice): void;
   /** Starts a row drag the scene owns. Optional so headless stubs need not fake it. */

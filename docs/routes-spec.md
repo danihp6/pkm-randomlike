@@ -313,6 +313,11 @@ route it already generated.
   to the PC**. The floor's catch stays swappable out of the PC for the rest of the
   floor (`docs/routes-spec.md` §6), and its STATS tab shows the biome and route it
   was caught in.
+- The **static species** of a static leaf (`docs/maps-spec.md` §7) is fought through
+  the same wild path but is **not** drawn from the wild table — its species comes
+  from `STATIC_SPECIES` (or `LEGENDARY_SPECIES` on the legendary variant), so
+  `WILD_BANNED_TAGS` and `speciesPool` are unchanged and the room's capture rule is
+  the shipped one: the battle that starts spends it.
 
 ## 4. Run structure
 
@@ -414,7 +419,9 @@ dismissed by itself, taking no key and blocking no movement.
 
 - The HUD carries the floor's own **mission** in one line under the
   transient-notice strip, and meeting it raises one transient notice through the
-  same module (one message at a time, no key, no block).
+  same module (one message at a time, no key, no block). The static leaf floats its
+  refusal line when its seal does not yield to the party (`docs/maps-spec.md` §7),
+  and a legendary leaf floats one more line on entry.
 
 A **consumable** rides the same drag: a heal or a status cure dropped from the bag
 onto a party or box member is spent on it only when it would change something — HP

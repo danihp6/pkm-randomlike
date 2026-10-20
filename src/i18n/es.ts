@@ -353,10 +353,12 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'notice.eggHatch': '¡El Huevo eclosionó en {name}!',
   'notice.noHealRoom': '¡En esta sala no se pueden usar objetos ni movimientos de curación!',
   'notice.missionComplete': 'Misión completada: {mission}',
+  'notice.staticLegendary': 'Una presencia legendaria aguarda tras el sello.',
   'gate.locked.bush': 'Unos arbustos espesos. Un Pokémon de tipo Bicho o Planta podría abrirlos.',
   'gate.locked.rock': 'Una roca. Un Pokémon de tipo Roca o Lucha podría romperla.',
   'gate.locked.water': 'Agua profunda. Un Pokémon de tipo Agua podría cruzarla.',
   'gate.opened': 'El camino está abierto.',
+  'static.locked.water': 'Agua profunda. Solo la habilidad adecuada podría abrirla.',
 
   // seed — the seed / share-string prompt
   'seed.title': 'SEMILLA / CADENA DE PARTIDA',

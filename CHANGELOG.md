@@ -8,6 +8,49 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The static-species room, and the legendary variant behind a flawless floor.**
+      A new **`static`** special leaf (25 % from map 3 on, drawn from its own
+      `${seed}:map:<n>:static-room` stream as the **last** statement of the special
+      pass, so no shipped floor's topology, ids, sizes or trainer roles moved) carves
+      the shipped one-tile vault and holds **one static species** at `squadLevel`,
+      fought through the ordinary wild path — the room's capture, the catch rules and
+      permadeath are the shipped ones. Its seal reads the obstacle's own row in
+      `src/data/staticSpecies.ts`: a **type** gate through `partyHasType` (bush:
+      Bug/Grass, rock: Rock/Fighting) or a **feature** gate through
+      `partyHasAbility` (pond: Water Absorb, Swift Swim, Storm Drain), with two
+      `pickedItems` records (`static-<map>-<room>` for the opening,
+      `static-mon-<map>-<room>` for the species) and
+      `src/scenes/rooms/staticSpecies.ts` as the room descriptor. The **legendary**
+      variant is that same leaf: from map 4 on, 25 % on its own
+      `${seed}:map:<n>:static-variant:<room>` stream, only while `missionsCompleted`
+      reads **1** and the floor's mission is `flawless`, and its species come from the
+      explicit `LEGENDARY_SPECIES` list — never `speciesPool` — so `WILD_BANNED_TAGS`
+      is untouched and the ordinary pool is not widened by one species.
+      `MapRoomSpecial` gains `'static'` (the minimap marker follows through the
+      existing `MapRoomMarker` alias), the room layer gains an optional
+      `RoomHost.startWildBattle` (optional so every headless stub still compiles) and
+      two i18n keys (`static.locked.water`, `notice.staticLegendary`) ship in both
+      locales. No run field and no `SAVE_VERSION` step (**21**). A floor that hangs
+      the leaf holds one room more and `routeIndexForRoom` sums the previous floors'
+      room counts, so `curve.test.ts`'s walk was re-pinned — fills **1.25, 1.25, 1.25,
+      1.33, 1.35, 1.13, 1.18 and 1.25**, every one inside the rule's `1.05 – 1.5`
+      window — and `docs/balance/route-curve.md` records that walk; the eight factors
+      are **not** re-solved. Docs: `docs/maps-spec.md` §7, `docs/routes-spec.md` §3/§6,
+      `docs/design-spec.md` §7.
+      **QA:** one pass for a one-task batch — `qa-96` (`main@bd9ab7a` +
+      `task-96@9cb766e`, integration `38d0b61`) — gates green (`npm test` **2520**
+      passed / 13 skipped in 177 files, `npm run build` clean), the diff exactly the
+      spec's 24 paths plus the spec commit that the merge drops,
+      `src/engine/save.ts`, `src/engine/run/state.ts` and `src/engine/run/pool.ts`
+      untouched and `SAVE_VERSION` still 21. The four `[live]` criteria were measured
+      over CDP: on seed `static-96-1`, map 4 room 8, the room reads `static`, its rock
+      seal carries the shipped `GATES.rock` tile and the counter **is** the vault
+      pocket; the seal refuses a party with no Rock/Fighting member and opens after
+      `addDebugPokemon('geodude', 5)` (`static-4-8` written, the seal walkable); the
+      battle fields **frigibax** at level **5** with its ability and moves and spends
+      the room's capture; and with `missionsCompleted: 1` the same floor fields
+      **moltres**, where the `0` control fields `goomy`.
+
 - [x] **The special trainers: an invisible ninja, an all-Impostor trainer and a gated secret battle.**
       A `trainers` room's **first** trainer can now wear a special archetype instead of an
       ordinary class — an archetype override, never an extra body (`id`, tile, facing, `sight`

@@ -5876,7 +5876,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       party predicates never reach this task and it deliberately carries **no** edge to
       `[Task-65]` (the type gate is `[Task-94]`'s and the blocked rooms are `[Task-96]`/`[Task-97]`'s).
       *(Batch 41)*
-- [ ] **[Task-96] The static-species room, and the legendary room behind a flawless floor.**
+- [x] **[Task-96] The static-species room, and the legendary room behind a flawless floor.**
       `[Task-65]` carves a gated pocket behind a **field move**; the human wants a room whose gate is
       a **party property** (a type or a feature) and whose prize is a **static species**, plus — on
       the same flawless trigger — a low-chance **legendary room**, once per run, from floor 4.
