@@ -696,3 +696,34 @@ describe('Natural Gift in a real turn', () => {
     expect(plain.basePower).toBe(0);
   });
 });
+
+describe('the NPC items', () => {
+  it('registers the Smoke Ball on the escape hook', () => {
+    const effect = getEffect('smokeball');
+    expect(effect?.kind).toBe('item');
+    expect(typeof effect?.handlers.onTryEscape).toBe('function');
+  });
+
+  it('lets the Smoke Ball holder escape a no-flee wild', () => {
+    const state = battle('smokeball');
+    const ctx = playerContext(state);
+    expect(getEffect('smokeball')?.handlers.onTryEscape?.(ctx)).toBe(true);
+  });
+
+  it('raises Attack and Sp. Atk once with the Spiced Stew, then spends it', () => {
+    const state = battle('chefstew');
+    const player = activeFighter(state, 'player');
+    expect(player.hp).toBe(player.maxHp);
+
+    runResidual(playerContext(state));
+
+    expect(player.boosts.atk).toBe(1);
+    expect(player.boosts.spa).toBe(1);
+    expect(player.heldItem).toBeNull();
+    expect(player.lastItemId).toBe('chefstew');
+
+    runResidual(playerContext(state));
+    expect(player.boosts.atk).toBe(1);
+    expect(player.boosts.spa).toBe(1);
+  });
+});

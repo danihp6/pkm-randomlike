@@ -401,18 +401,20 @@ every special leaf are `wild` and never carry one.
   and no save field or `SAVE_VERSION` step was added. A revisit and a reload read
   the same record.
 
-`NPC_ROWS` ships **eleven** rows: the **merchant**, and the **six** rolled rows the
+`NPC_ROWS` ships **fifteen** rows: the **merchant**, and the **six** rolled rows the
 party edits need — the **tutor** (one move of `TUTOR_MOVES`), the **nature**,
 **ability** and **IV** re-rolls, the **species** swap and the **sacrifice**, which
 takes one whole bag stack for one of `SACRIFICE_REWARDS` — then the **four
-run-modifier** rows below. A row is a rolled row (its
-`chance`/`floorStep` and its optional gate) or a **guaranteed** one
+run-modifier** rows below, then the **four item-and-battle** rows: the **medic**,
+the **chef**, the **berry tree** and the **Mega Stone keeper**. A row is a rolled
+row (its `chance`/`floorStep` and its optional gate) or a **guaranteed** one
 (`guaranteedFromMap`, `chance: 0`); `roomNpc` never picks a zero-chance row, so a
 guaranteed row is only ever placed. The five edit rows and the four run-modifier
-rows carry 2 % on map 1 and the sacrifice 4 %, each growing 0.5 points per floor, so
-an eligible floor puts an NPC in a trainer room roughly one time in five early and
-close to one time in two by map 8 (without the sacrifice: one in six, then one in
-two). Each later NPC task adds its own row, copy and effect beside them.
+rows carry 2 % on map 1 and the sacrifice 4 %, each growing 0.5 points per floor,
+and the four new rows carry 1 % growing 0.25 points, so an eligible floor puts an
+NPC in a trainer room **≈26 % early and ≈68 % by map 8** (without the sacrifice:
+≈22 %, then ≈61 %). Each later NPC task adds its own row, copy and effect beside
+them.
 
 The **run-modifier** rows each write one fact that outlives the room, into the run's
 own `RunState.modifiers` record (three of the four; the gate pays an item), and each
@@ -430,6 +432,16 @@ Their copies are `npc.exorcist.*`, `npc.weather.*`, `npc.magician.*` and
 `npc.gate.*`; the three modifier draws (`${seed}:npc:<roomId>:<npcId>:field` and
 `…:type`, plus `npcSpot`'s) are their own streams, so no map, encounter, roster or
 battle draw moves (`D11`).
+
+The **item-and-battle** rows pay in items or in a battle, and none of them
+stores anything beyond its use mark:
+
+| id | chance / step | what its one choice does |
+| --- | --- | --- |
+| `medic` | 1 %, +0.25 pt | `healParty` over the party **and** the box (HP and PP, never a resurrection and no status cure) plus the `npc-<mapIndex>-<roomId>-medic` mark in `pickedItems`: the mark is the whole record, so a second talk heals nothing, and `advanceMap`'s clear is what makes it once per floor. |
+| `chef` | 1 %, +0.25 pt | `CHEF_BERRY_COUNT` (**3**) berries of `BERRY_IDS`, taken in table order, for one `chefstew` equipped on the chosen party member; the dish is a `held` row whose `boosts`/`below`/`consumed` make it one turn's buff, so it rides the member like any held item and adds no run field. |
+| `berry-tree` | 1 %, +0.25 pt | `npcBerryHarvest` gives `BERRY_TREE_MIN`-`BERRY_TREE_CAP` (**1-4**) berries off `${seed}:npc:<roomId>:<npcId>:berries`; `npcTreeWild` then fields the room's own wild table off `…:wild`, buffed by `BERRY_TREE_ENEMY_BOOSTS` and carrying `noFlee`. It is a **normal wild battle**: it spends the room's capture like grass. |
+| `mega-stone` | 1 %, +0.25 pt | a normal trainer battle under `npc-trainer-<mapIndex>-<roomId>-mega-stone` (the `ace` archetype, so `resolveBattle` marks `defeatedTrainers` and pays its XP and money); a **win** pays one id of `MEGA_STONE_IDS` through `addItem`, drawn on `…:prize`. It reads the list; it never mints a stone. |
 
 Two things the table now has beyond the party gate:
 

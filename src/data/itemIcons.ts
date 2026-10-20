@@ -52,6 +52,9 @@ export function itemIconFrame(itemId: string): number | null {
     return FRAMES[`machine${type}`] ?? FRAMES[TM_FALLBACK] ?? null;
   }
   if (normalizeId(itemId) === 'egg') return FRAMES[EGG_FALLBACK] ?? null;
+  // A hand-authored row names the frame it borrows, so a dish the atlas never drew
+  // still shows a food icon instead of nothing.
+  if (item?.iconFallback) return FRAMES[normalizeId(item.iconFallback)] ?? null;
   return null;
 }
 

@@ -23,19 +23,23 @@ describe('Añil item icons', () => {
       if (item.kind === 'tm' || item.mega !== undefined || item.gmax !== undefined) continue;
       // The Añil atlas carries no `EGG.png`: the Egg resolves through `LUCKYEGG.png`.
       if (item.id === 'egg') continue;
+      // A hand-authored row states the frame it borrows; it has no art of its own.
+      if (item.iconFallback !== undefined) continue;
       expect(hasItemIcon(item.id), item.id).toBe(true);
     }
   });
 
-  it('falls back inside the same atlas for a Mega Stone, a G-Max Stone, a TM and the Egg', () => {
+  it('fell back inside the atlas for a Mega Stone, a G-Max Stone, a TM, the Egg and the dish', () => {
     expect(itemIconFrame('venusaurite')).toBe(itemIconFrame(MEGA_FALLBACK));
     expect(itemIconFrame('gengariteg')).toBe(itemIconFrame(MEGA_FALLBACK));
     expect(itemIconFrame('tm001')).toBe(itemIconFrame(TM_FALLBACK));
     expect(itemIconFrame('egg')).toBe(itemIconFrame(EGG_FALLBACK));
+    expect(itemIconFrame('chefstew')).toBe(itemIconFrame('lavacookie'));
     expect(hasItemIcon('venusaurite')).toBe(false);
     expect(hasItemIcon('gengariteg')).toBe(false);
     expect(hasItemIcon('tm001')).toBe(false);
     expect(hasItemIcon('egg')).toBe(false);
+    expect(hasItemIcon('chefstew')).toBe(false);
   });
 
   it('resolves every TM to the machine of the move it teaches', () => {

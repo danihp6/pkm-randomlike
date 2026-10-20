@@ -6,6 +6,12 @@ import { normalizeId } from './dex/species';
 import { getItem } from './items';
 import { OVERWORLD_SPRITE_KEYS } from './overworldSprites';
 import {
+  BERRY_IDS,
+  BERRY_TREE_CAP,
+  BERRY_TREE_ENEMY_BOOSTS,
+  BERRY_TREE_MIN,
+  CHEF_BERRY_COUNT,
+  CHEF_DISH_ITEM_ID,
   CURSE_ENEMY_BOOST,
   MAGICIAN_TYPES,
   NPC_ROWS,
@@ -14,6 +20,7 @@ import {
   getNpcRow,
   type NpcRow,
 } from './npcs';
+import { MEGA_STONE_IDS } from './items';
 
 /** The rows this table ships, in the order the roll breaks its ties (`docs/maps-spec.md` §7). */
 const ROW_IDS = [
@@ -28,6 +35,10 @@ const ROW_IDS = [
   'weather-man',
   'magician',
   'type-gate',
+  'medic',
+  'chef',
+  'berry-tree',
+  'mega-stone',
 ];
 
 const MERCHANT = NPC_ROWS[0];
@@ -159,7 +170,7 @@ describe('the special-NPC table', () => {
       },
     };
     const ids = Object.keys(rows);
-    expect(NPC_ROWS.slice(-ids.length).map((row) => row.id)).toEqual(ids);
+    expect(NPC_ROWS.slice(7, 11).map((row) => row.id)).toEqual(ids);
     const groups: Readonly<Record<string, string>> = {
       exorcist: 'npc.exorcist',
       'weather-man': 'npc.weather',
@@ -214,7 +225,7 @@ describe('the special-NPC table', () => {
     expect(getNpcRow('merchant')).toBe(MERCHANT);
     expect(getNpcRow('tutor')?.id).toBe('tutor');
     expect(getNpcRow('')).toBeUndefined();
-    expect(getNpcRow('medic')).toBeUndefined();
+    expect(getNpcRow('nurse')).toBeUndefined();
   });
 
   it('hands every row a unique stable id', () => {
@@ -271,6 +282,108 @@ describe('the special-NPC table', () => {
       const ids = (row.choices ?? []).map((choice) => choice.id);
       expect(new Set(ids).size, row.id).toBe(ids.length);
     }
+  });
+});
+
+describe('the item-and-battle rows', () => {
+  const ROWS: Readonly<Record<string, Omit<NpcRow, 'id' | 'nameKey' | 'greetingKey'>>> = {
+    medic: {
+      spriteKey: 'medic',
+      chance: 0.01,
+      floorStep: 0.0025,
+      choices: [{ id: 'heal', label: 'npc.medic.heal' }],
+    },
+    chef: {
+      spriteKey: 'chef',
+      chance: 0.01,
+      floorStep: 0.0025,
+      choices: [{ id: 'trade', label: 'npc.chef.trade' }],
+    },
+    'berry-tree': {
+      spriteKey: 'berry-tree',
+      chance: 0.01,
+      floorStep: 0.0025,
+      choices: [{ id: 'shake', label: 'npc.berry-tree.shake' }],
+    },
+    'mega-stone': {
+      spriteKey: 'ace',
+      chance: 0.01,
+      floorStep: 0.0025,
+      choices: [{ id: 'battle', label: 'npc.mega-stone.battle' }],
+      battle: { archetypeId: 'ace', prizeIds: MEGA_STONE_IDS },
+    },
+  };
+  const GROUPS: Readonly<Record<string, string>> = {
+    medic: 'npc.medic',
+    chef: 'npc.chef',
+    'berry-tree': 'npc.berry-tree',
+    'mega-stone': 'npc.mega-stone',
+  };
+
+  it('appends the four rows after the type gate, in table order', () => {
+    expect(NPC_ROWS.slice(-4).map((row) => row.id)).toEqual(Object.keys(ROWS));
+  });
+
+  it('gives each one the shipped chance, step, sprite and single choice', () => {
+    for (const [id, fields] of Object.entries(ROWS)) {
+      const row = rowOf(id);
+      expect(row.nameKey, id).toBe(`${GROUPS[id]}.name`);
+      expect(row.greetingKey, id).toBe(`${GROUPS[id]}.greeting`);
+      expect(row.spriteKey, id).toBe(fields.spriteKey);
+      expect(row.chance, id).toBe(0.01);
+      expect(row.floorStep, id).toBe(0.0025);
+      expect(row.choices, id).toEqual(fields.choices);
+      expect(row.requires, id).toBeUndefined();
+      expect(row.repeatable, id).toBeUndefined();
+      expect(row.guaranteedFromMap, id).toBeUndefined();
+      expect(row.grant, id).toBeUndefined();
+    }
+  });
+
+  it('keeps the battle a data row only on the Mega Stone keeper', () => {
+    expect(rowOf('mega-stone').battle).toEqual({ archetypeId: 'ace', prizeIds: MEGA_STONE_IDS });
+    const fighters = NPC_ROWS.filter((row) => row.battle !== undefined).map((row) => row.id);
+    expect(fighters).toEqual(['mega-stone']);
+    expect(MEGA_STONE_IDS.length).toBeGreaterThan(0);
+    for (const id of MEGA_STONE_IDS) {
+      const stone = getItem(id);
+      expect(stone, id).toBeDefined();
+      expect(stone?.kind, id).toBe('held');
+      expect(stone?.mega, id).toBeDefined();
+    }
+  });
+
+  it('ships the berry table in its own order, every id a held row', () => {
+    expect(BERRY_IDS).toEqual([
+      'cheriberry',
+      'chestoberry',
+      'pechaberry',
+      'rawstberry',
+      'aspearberry',
+      'oranberry',
+      'sitrusberry',
+      'lumberry',
+      'figyberry',
+      'wikiberry',
+      'magoberry',
+      'aguavberry',
+      'iapapaberry',
+      'leppaberry',
+    ]);
+    for (const id of BERRY_IDS) expect(getItem(id)?.kind, id).toBe('held');
+  });
+
+  it('keeps the chef trade and the shake in data', () => {
+    expect(CHEF_BERRY_COUNT).toBe(3);
+    expect(BERRY_TREE_MIN).toBeLessThanOrEqual(BERRY_TREE_CAP);
+    const dish = getItem(CHEF_DISH_ITEM_ID);
+    expect(dish, CHEF_DISH_ITEM_ID).toBeDefined();
+    expect(dish?.kind).toBe('held');
+    expect(dish?.boosts).toBeDefined();
+    expect(dish?.below).toBeDefined();
+    expect(dish?.consumed).toBe(true);
+    expect(BERRY_TREE_ENEMY_BOOSTS).toEqual({ def: 1, spd: 1 });
+    expect(Object.keys(BERRY_TREE_ENEMY_BOOSTS)).not.toContain(Object.keys(CURSE_ENEMY_BOOST)[0]);
   });
 });
 

@@ -160,6 +160,31 @@ describe('competitive held set', () => {
   });
 });
 
+describe('the medic and chef items', () => {
+  it('ships the chef dish as a one-turn held buff', () => {
+    const dish = getItem('chefstew')!;
+    expect(dish.name).toBe('Spiced Stew');
+    expect(dish.kind).toBe('held');
+    expect(dish.price).toBe(1200);
+    expect(dish.boosts).toEqual({ atk: 1, spa: 1 });
+    expect(dish.below).toEqual([1, 1]);
+    expect(dish.consumed).toBe(true);
+    expect(dish.shortDesc).toContain('Attack');
+    expect(dish.shortDesc).toContain('Sp. Atk');
+  });
+
+  it('ships the Smoke Ball as the one flee held item', () => {
+    const ball = getItem('smokeball')!;
+    expect(ball.name).toBe('Smoke Ball');
+    expect(ball.kind).toBe('held');
+    expect(ball.price).toBe(4000);
+    expect(ball.flee).toBe(true);
+    expect(ball.shortDesc).toContain('escape');
+    const flee = ITEMS.filter((entry) => entry.flee === true).map((entry) => entry.id);
+    expect(flee).toEqual(['smokeball']);
+  });
+});
+
 describe('Memories and Drives', () => {
   it('is 21 held, 3000-priced rows, each with exactly one Memory or Drive type', () => {
     expect(MEMORY_DRIVE_ITEMS.length).toBe(21);

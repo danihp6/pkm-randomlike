@@ -8,6 +8,35 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The item-and-battle NPCs: a medic, a chef, a berry tree and a Mega Stone keeper.**
+      Four rows are appended to `NPC_ROWS` (1 % a floor, +0.25 pt, so an eligible floor puts
+      an NPC in a trainer room ≈26 % early and ≈68 % by map 8) on the shipped special-NPC
+      framework. The **medic** runs `healParty` over the party *and* the box once per floor,
+      its `npc-<map>-<room>-medic` mark in `pickedItems` the whole record; the **chef** trades
+      `CHEF_BERRY_COUNT` (**3**) berries of `BERRY_IDS` (14, table order) for one `chefstew`
+      equipped on the chosen member; the **berry tree** draws `BERRY_TREE_MIN`-`BERRY_TREE_CAP`
+      (**1-4**) berries off `${seed}:npc:<room>:<id>:berries` and fields the room's own wild
+      table off `…:wild`, buffed by `BERRY_TREE_ENEMY_BOOSTS` and carrying a new `noFlee`
+      (`BattleLaunch` → `BattleSetup` → `BattleState`) that `canRun`/`rollRun` honour, whose
+      only two grants are the shipped `onTryEscape` hooks — the Run Away ability and a new
+      `flee` held item, the **Smoke Ball**; the **stone keeper** fields an `ace` trainer under
+      `npc-trainer-<map>-<room>-mega-stone` and pays one id of `MEGA_STONE_IDS` through
+      `addItem` on a win, drawn on `…:prize`. No new run field, no new battle module and no
+      `SAVE_VERSION` step (**21**); the generated `docs/balance/effect-coverage.md` is
+      regenerated, which also deletes the three X-item rows `main` still listed after
+      `72e06a7` removed them (Items **290** total, **138** port).
+      **QA:** one pass for a one-task batch — `qa-95` (`main@d0fffb8` + `task-95@ff0f937`,
+      integration `a5b43af`) — gates green (`npm test` **2371** passed / 67 skipped in 163
+      files, `npm run build` clean), 24 diff paths (the spec's 22 plus the two authorised
+      `src/data/itemIcons.*` paths its `iconFallback` needed; the spec commit dropped at the
+      merge), `SAVE_VERSION` 21, the three new streams pinned by fixed seed and the shipped
+      `:field`/`:type` pins unmoved. The spec's coverage literal (**293**/**141**) was the
+      one red criterion: `main`'s committed table was stale — regenerating `main` yields
+      **288**/**136**, so the two new rows make **290**/**138** — and the expectation was
+      amended on the measurement rather than hand-editing the generated table. No `[live]`
+      criterion was owed: every rule is pure and the dev overlay cannot force an NPC
+      placement, so the scene wiring is covered by the typecheck and the grep audit.
+
 - [x] **Four NPCs write a fact the run keeps: a curse, a forced sky, the next wild's type and
       a type gate's item.** The run gains one typed `modifiers` record — `curse`,
       `forcedField` (a `ROOM_BATTLEFIELDS` id plus the floors it still covers, **3** when set)

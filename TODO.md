@@ -5807,7 +5807,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (`[Task-52]`), the level rule (`[Task-79]`) and the room a condition belongs to.
       *Dependencies:* `[Task-91]` (the panel and the roll), `[Task-62]` (the setup seam and the
       condition ids) and `[Task-79]` (the encounter resolution the type narrows). *(Batch 40)*
-- [ ] **[Task-95] The item-and-battle NPCs: the medic, the chef, the berry tree and the Mega Stone
+- [x] **[Task-95] The item-and-battle NPCs: the medic, the chef, the berry tree and the Mega Stone
       on a win.** Four NPCs whose content is an item or a battle, each needing one rule the tree
       does not have.
       **Fix shape.**

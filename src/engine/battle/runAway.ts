@@ -3,8 +3,17 @@ import { activeFighter, isTrapped, opponent, opponentOf, type BattleState, type 
 import { modifiedSpeed } from './modifiers';
 import { makeContext, runTryEscape } from './effects/registry';
 
+/** True when an owned effect of `side`'s active grants the escape (Run Away, a `flee` item). */
+function escapeGranted(state: BattleState, side: SideId): boolean {
+  const ctx = makeContext(state, side, {
+    source: activeFighter(state, side),
+    target: opponent(state, side),
+  });
+  return runTryEscape(ctx);
+}
+
 export function canRun(state: BattleState, side: SideId): boolean {
-  return state.isWild && !isTrapped(state, side);
+  return state.isWild && !isTrapped(state, side) && (!state.noFlee || escapeGranted(state, side));
 }
 
 /** Classic Gen V+ escape odds: speed ratio plus 30 per failed attempt. */

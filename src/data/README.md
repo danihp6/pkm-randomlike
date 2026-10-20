@@ -53,16 +53,21 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `npcs.ts` — the special-NPC table (`docs/maps-spec.md` §7): one row per NPC with
   its name and greeting keys, the overworld sprite key it draws with, the chance it
   is rolled on map 1 and the step every floor after adds, the optional gate its row
-  is filtered by, its choices, whether it is `repeatable` and the optional `grant`
-  (the type gate pays an item to a party holding one of its types). Ships the
+  is filtered by, its choices, whether it is `repeatable`, the optional `grant`
+  (the type gate pays an item to a party holding one of its types) and the optional
+  `battle` (the trainer a row fields and the prize ids a win draws from). Ships the
   guaranteed **merchant** plus the five member-edit rows, the sacrifice and the four
   run-modifier rows (the exorcist, the weather man, the magician and the type gate),
-  the `TUTOR_MOVES` gate, the `SACRIFICE_REWARDS` rows, the `MAGICIAN_TYPES` the
-  magician draws from and the `CURSE_ENEMY_BOOST` its hex applies. The tutor, nature,
+  then the four item-and-battle rows: the **medic**, the **chef**, the **berry tree**
+  and the **Mega Stone keeper**. Also ships the `TUTOR_MOVES` gate, the
+  `SACRIFICE_REWARDS` rows, the `MAGICIAN_TYPES` the magician draws from, the
+  `CURSE_ENEMY_BOOST` its hex applies and the six berry-and-dish constants —
+  `BERRY_IDS`, `CHEF_BERRY_COUNT`, `CHEF_DISH_ITEM_ID`, `BERRY_TREE_MIN`,
+  `BERRY_TREE_CAP` and `BERRY_TREE_ENEMY_BOOSTS`. The tutor, nature,
   ability and species rows **borrow** the packed atlas's
   `blackbelt`/`psychic`/`ace`/`camper` archetype rows; `iv-judge` and `sacrifice` draw
-  their own, the type gate borrows `bugcatcher`, and the exorcist, weather man and
-  magician have their own.
+  their own, the type gate borrows `bugcatcher`, the keeper borrows `ace`, and the
+  medic, chef, exorcist, weather man, magician and berry tree have their own.
 - `loot.ts` — the per-band ground-item pools a route's pockets draw from, plus
   each band's `hiddenChance` (`docs/routes-spec.md` §2 step 4).
 - `population.ts` — the floor's trainer-room composition the plan and the route
@@ -88,9 +93,13 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   accuracy, crit, last and survive items, the resist and pinch berries and the
   self-status orbs). A row's `shortDesc` comes from `dex/items.ts` unless the row
   states one; the effect fields (`damageBoost`, `speedBoost`, `accuracyBoost`,
-  `critStages`, `alwaysLast`, `resistBerry`, `recoil`, `selfStatus`, `survive`)
-  are read by `engine/battle/effects/items.ts`, and the ids nothing models yet are
-  named in that file's `UNMODELLED_ITEMS` (`D16`). Also builds one
+  `critStages`, `alwaysLast`, `flee`, `resistBerry`, `recoil`, `selfStatus`,
+  `survive`) are read by `engine/battle/effects/items.ts`, and the ids nothing models
+  yet are named in that file's `UNMODELLED_ITEMS` (`D16`). Two rows are
+  hand-authored: the chef's dish `chefstew` (a one-turn `boosts`/`below`/`consumed`
+  buff, borrowing the Lavacookie frame through `iconFallback`) and the escape held
+  item `smokeball` (`flee`, read by `battle/runAway.ts` through its `onTryEscape`).
+  It builds one
   unsold **Mega Stone** per Mega forme from `dex/megas.ts` (`D34`); holding the
   matching stone lets a Pokémon Mega Evolve once per battle. It builds **no**
   G-Max item and no "Gigantamax factor": Gigantamax needs neither (`D44`).

@@ -221,8 +221,10 @@ and the standing tile on `${seed}:npc:<roomId>:<npcId>:spot`, so no layout, terr
 population, validation or encounter stream moves and a fixed seed keeps every route
 it already generated. The scene rolls it once per room build (never in `update`),
 draws it as an ordinary overworld actor and blocks its tile; the interact key opens
-the one NPC card. `NPC_ROWS` ships empty (`src/data/npcs.ts`), so no room holds one
-yet.
+the one NPC card. `NPC_ROWS` ships fifteen rows (`src/data/npcs.ts`): the merchant,
+the five edit rows and the sacrifice, the four run-modifier rows and the four
+item-and-battle rows (the medic, the chef, the berry tree and the Mega Stone
+keeper).
 
 ## 3. Wild encounters
 
@@ -250,6 +252,11 @@ yet.
   narrows the band's table before the draw and is consumed by the next wild encounter
   that actually rolls: a step that rolls nothing keeps it. A type no species of the
   band carries falls back to the whole band, so a narrowed table is never empty.
+- The **berry tree's** wild is a **second wild source**, not grass: its own
+  `${seed}:npc:<roomId>:<npcId>:wild` stream, the room's live table (so the
+  magician's type and the caught-species exclusions still apply), the same
+  `rollWildLevel` and floor cap, `BERRY_TREE_ENEMY_BOOSTS` on the enemy lead and
+  `noFlee`; it spends the room's single capture exactly like a grass step.
 - A wild encounter's **level** is `clamp(floor(squadLevel(run) × fraction), 1, cap)`
   — `fraction` is one draw on the encounter stream in `[0.60, 0.75)` and `cap` is
   the floor's `maxLevel` (`WILD_LEVEL_FRACTION`, `wildLevel`, `rollWildLevel`;
