@@ -31,6 +31,16 @@ export type AiFlag =
   'checkBadMove' | 'tryToFaint' | 'checkViability' | 'setupFirstTurn' | 'risky' | 'preferBatonPass';
 
 /**
+ * How a trainer's **route sprite** is drawn (`docs/routes-spec.md` §2). It never
+ * changes `sight` or the line-of-sight rule: an `invisible` trainer still watches its
+ * lane and still opens the battle. Absent means `visible`.
+ */
+export type SightMode = 'visible' | 'invisible';
+
+/** What a beaten trainer of an archetype pays besides money: one bag item and a count. */
+export type TrainerItemReward = Readonly<{ itemId: string; count: number }>;
+
+/**
  * A trainer archetype is presentation, reward and AI policy: identity, sprites,
  * money and the script flags its trainers think with. Its roster comes from the
  * floor's BST pool (`speciesPool`, `D39`), so the archetype carries no themed
@@ -67,6 +77,17 @@ export type TrainerArchetype = Readonly<{
    * literal keeps working.
    */
   aiFlags?: readonly AiFlag[];
+  /** The sprite's draw mode on the route; absent means `visible`. */
+  sightMode?: SightMode;
+  /**
+   * The ability **name** the dex spells (`getAbility('imposter').name` → `'Imposter'`)
+   * that every member of this archetype's roster starts with, **bypassing**
+   * `randomAbility`'s roll (`src/engine/battle/fighter.ts`'s `resolveAbility` trusts a
+   * provided `ability`). Absent means the run's roll applies.
+   */
+  forcedAbility?: string;
+  /** The item a first win over this archetype pays through `addItem`; absent means money only. */
+  reward?: TrainerItemReward;
 }>;
 
 export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
@@ -185,7 +206,8 @@ export const TRAINER_ARCHETYPES: readonly TrainerArchetype[] = [
  * population pass must never roll, so they live outside `TRAINER_ARCHETYPES` and are
  * reachable by id through `getTrainerArchetype` alone. Their `spriteKey` /
  * `battleSprite` name the frames they draw: the overworld atlas carries the `rocket`
- * row, while the battle sheet falls back to the placeholder until it does.
+ * and `ninja` rows, the battle sheet falls back to the placeholder when it lacks the
+ * row, and a set piece may borrow an ordinary class's art (`psychic`, `ace`).
  */
 export const SPECIAL_ARCHETYPES: readonly TrainerArchetype[] = [
   {
@@ -198,6 +220,68 @@ export const SPECIAL_ARCHETYPES: readonly TrainerArchetype[] = [
     money: { base: 120, jitter: 50 },
     aiFlags: ['checkBadMove', 'checkViability', 'tryToFaint'],
   },
+  {
+    id: 'ninja',
+    name: 'Ninja',
+    className: 'Ninja',
+    spriteKey: 'ninja',
+    colour: 0x475569,
+    battleSprite: 'ninja',
+    money: { base: 150, jitter: 60 },
+    sightMode: 'invisible',
+    aiFlags: ['checkBadMove', 'tryToFaint', 'risky'],
+  },
+  {
+    id: 'impostor',
+    name: 'Impostor',
+    className: 'Impostor',
+    spriteKey: 'psychic',
+    colour: 0xa78bfa,
+    battleSprite: 'psychic',
+    money: { base: 160, jitter: 70 },
+    forcedAbility: 'Imposter',
+    reward: { itemId: 'abilityshield', count: 1 },
+    aiFlags: ['checkBadMove', 'checkViability', 'tryToFaint'],
+  },
+  {
+    id: 'secret',
+    name: 'Secret Trainer',
+    className: 'Secret Trainer',
+    spriteKey: 'ace',
+    colour: 0x334155,
+    battleSprite: 'ace',
+    money: { base: 300, jitter: 120 },
+    aiFlags: [
+      'checkBadMove',
+      'tryToFaint',
+      'checkViability',
+      'setupFirstTurn',
+      'risky',
+      'preferBatonPass',
+    ],
+  },
+];
+
+/**
+ * The set-piece trainers a `trainers` room may hold instead of its first ordinary one
+ * (`docs/routes-spec.md` §2). One presence roll per room; `chance` is 0..1 and is
+ * rounded to `1/10_000` exactly like `src/engine/routes/npcs.ts`'s rows. A row whose
+ * `minMissionsCompleted` the run has not reached is out of both the total and the pick,
+ * so a gated row is never rolled.
+ */
+export type SpecialTrainerRow = Readonly<{
+  /** The `SPECIAL_ARCHETYPES` id the room's first trainer wears. */
+  archetypeId: string;
+  /** Chance that a `trainers` room fields it, 0..1. */
+  chance: number;
+  /** The run's completed-mission count the row needs; absent means none. */
+  minMissionsCompleted?: number;
+}>;
+
+export const SPECIAL_TRAINER_ROWS: readonly SpecialTrainerRow[] = [
+  { archetypeId: 'ninja', chance: 0.1 },
+  { archetypeId: 'impostor', chance: 0.08 },
+  { archetypeId: 'secret', chance: 0.2, minMissionsCompleted: 1 },
 ];
 
 const BY_ID = new Map<string, TrainerArchetype>(
