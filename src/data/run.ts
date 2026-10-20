@@ -30,7 +30,7 @@ export const LEVEL_BANDS: readonly LevelBand[] = [
     minLevel: 2,
     maxLevel: 9,
     trainerSize: 1,
-    trainerXp: 2.67,
+    trainerXp: 6.07,
     bst: { min: 0, max: 305 },
   },
   {
@@ -39,7 +39,7 @@ export const LEVEL_BANDS: readonly LevelBand[] = [
     minLevel: 9,
     maxLevel: 16,
     trainerSize: 1,
-    trainerXp: 10.68,
+    trainerXp: 16.18,
     bst: { min: 306, max: 355 },
   },
   {
@@ -48,7 +48,7 @@ export const LEVEL_BANDS: readonly LevelBand[] = [
     minLevel: 16,
     maxLevel: 23,
     trainerSize: 2,
-    trainerXp: 3.04,
+    trainerXp: 8.59,
     bst: { min: 356, max: 440 },
   },
   {
@@ -57,7 +57,7 @@ export const LEVEL_BANDS: readonly LevelBand[] = [
     minLevel: 23,
     maxLevel: 30,
     trainerSize: 2,
-    trainerXp: 5.82,
+    trainerXp: 12.70,
     bst: { min: 441, max: 490 },
   },
   {
@@ -66,7 +66,7 @@ export const LEVEL_BANDS: readonly LevelBand[] = [
     minLevel: 30,
     maxLevel: 37,
     trainerSize: 3,
-    trainerXp: 4.65,
+    trainerXp: 10.86,
     bst: { min: 491, max: 520 },
   },
   {
@@ -75,7 +75,7 @@ export const LEVEL_BANDS: readonly LevelBand[] = [
     minLevel: 37,
     maxLevel: 55,
     trainerSize: 4,
-    trainerXp: 2.61,
+    trainerXp: 7.96,
     bst: { min: 521, max: 800 },
   },
 ];

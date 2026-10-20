@@ -1,29 +1,28 @@
-import type { BandId } from './run';
+/**
+ * How many of a floor's regular rooms hold trainers, by map index
+ * (`docs/maps-spec.md` §2). The human's pick: two on map 1, four on the late
+ * floors.
+ */
+export const TRAINER_ROOMS_PER_MAP: readonly number[] = [2, 2, 3, 3, 3, 4, 4, 4];
+
+/** The most trainer rooms any floor may hold, the deep maps included. */
+export const TRAINER_ROOMS_MAX = 6;
+
+/** How many trainers one `trainers` room fields, inclusive. */
+export const TRAINERS_PER_ROOM: Readonly<{ min: number; max: number }> = { min: 1, max: 2 };
+
+/** The last map the per-map table tunes; past it the count grows one every two maps. */
+const LAST_TUNED_MAP = TRAINER_ROOMS_PER_MAP.length;
 
 /**
- * How a band thins the population pass of its floors (`docs/route-generator.md`
- * §3.4, O-M5): a `trainerBonus` added to the map-size tier's own bonus, and the
- * chance a pocket's guard exists at all. A neutral row is `{ trainerBonus: 0,
- * guardChance: 1 }` and is *exactly* the behaviour of a request that passes no
- * population at all — it spends no extra draw.
+ * The trainer rooms a floor holds: the table row, or, past the last row, one more
+ * every two maps up to `TRAINER_ROOMS_MAX`. Never below `TRAINER_ROOMS_PER_MAP[0]`.
  */
-export type BandPopulation = Readonly<{ trainerBonus: number; guardChance: number }>;
-
-/**
- * The per-band population table (balance data, `O-M5`). The two on-ramp bands
- * thin: they cancel the map-size tier's `+1` and hang each pocket's guard only a
- * chance of the time, so maps 1-2 read as a walkable start instead of a wall of
- * trainers. The spine guard, the lane-guard promise and the four later bands are
- * untouched.
- */
-export const POPULATION: Readonly<Record<BandId, BandPopulation>> = {
-  // Map 1, the run's on-ramp: the tier's +1 is cancelled and a pocket's guard
-  // exists half the time.
-  early: { trainerBonus: -1, guardChance: 0.5 },
-  // Map 2: the same cancelled tier bonus with a gentler guard gate.
-  low: { trainerBonus: -1, guardChance: 0.75 },
-  mid: { trainerBonus: 0, guardChance: 1 },
-  high: { trainerBonus: 0, guardChance: 1 },
-  late: { trainerBonus: 0, guardChance: 1 },
-  end: { trainerBonus: 0, guardChance: 1 },
-};
+export function trainerRoomsForMap(mapIndex: number): number {
+  const index = Math.max(1, Math.floor(mapIndex));
+  if (index <= LAST_TUNED_MAP) return TRAINER_ROOMS_PER_MAP[index - 1];
+  return Math.min(
+    TRAINER_ROOMS_MAX,
+    TRAINER_ROOMS_PER_MAP[LAST_TUNED_MAP - 1] + Math.floor((index - LAST_TUNED_MAP) / 2),
+  );
+}

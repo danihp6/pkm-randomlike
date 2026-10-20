@@ -103,9 +103,17 @@ trainers, ground items and tall grass (`docs/routes-spec.md` §2).
 
 Content is seeded per room and it **persists while the run is on the floor**: a
 beaten trainer, a taken ground item and a spent capture stay spent when the room
-is walked back into, and only the map advance clears them. Each room grants **one
-capture attempt**, spent by the room's **first wild battle** whatever its outcome
-(`docs/routes-spec.md` §3); the run tracks the rooms that spent theirs.
+is walked back into, and only the map advance clears them. A floor tags each of its
+**regular** rooms with a population **role** (`MapRoom.role`): exactly
+`trainerRoomsForMap(map)` of them are `trainers` — **2 on maps 1-2**, **3 on maps
+3-5**, **4 on maps 6-8**, one more every two maps past the last row up to
+`TRAINER_ROOMS_MAX = 6` (`src/data/population.ts`) — and every other room is
+`wild`. A `trainers` room fields **1-2 trainers**; a `wild` room, the entry, the
+boss and every special leaf field **none**. So a floor fields 1-2 trainers per
+trainer room and never a wall of them, and its count no longer follows the room
+size. Each room grants **one capture attempt**, spent by the room's **first wild
+battle** whatever its outcome (`docs/routes-spec.md` §3); the run tracks the rooms
+that spent theirs.
 
 The **shape** of a room follows from its opening set (its count and edges):
 
@@ -153,12 +161,19 @@ planMap(seed, mapIndex): MapPlan
     #    sealed until the boss falls. A fresh arrival spawns the player at the entry
     #    room's centre; walking back in through its link spawns at that door.
     # 6. specials: hang the special rooms off the tree (see §7).
+    # 7. roles: shuffle the regular rooms that are neither the entry nor the boss
+    #    (one draw per candidate beyond the first, on the same stream) and tag the
+    #    first `trainerRoomsForMap(map)` of them `'trainers'`; everything else is
+    #    `'wild'`. Appended after every shipped draw, so no floor moves.
 ```
 
 A room never exceeds four openings (its four grid neighbours); `K` stays inside
 the map's range so expansion never runs out of free cells. Draws happen in a fixed
 order, so a fixed-seed test is stable; an unavailable cell retries
-deterministically.
+deterministically. The role pass (step 7) is the **last** thing the stream does:
+its draws sit after the no-heal leaf's, so a seed's biome, room count, topology,
+ids, sizes and specials are exactly what they shipped, and only each room's
+`role` is new.
 
 ## 4. Tuning tables (`src/data/maps.ts`)
 
@@ -235,7 +250,9 @@ rooms at 30x30, map 6's corridor at 37x30 and map 8's corridor at 52x30
 
 Beyond its K regular rooms, a floor can hold **special rooms**. They are extra
 **leaves** (one door, the `dead-end` shape) and carry **only their own content** —
-no tall grass, no regular trainers, no ground items:
+no tall grass, no regular trainers, no ground items. Every special leaf is tagged
+`wild` by the floor's role pass (§3 step 7), so the population pass never adds a
+regular trainer to one. Their content:
 
 | Room | Per floor | Placement | Content |
 | --- | --- | --- | --- |

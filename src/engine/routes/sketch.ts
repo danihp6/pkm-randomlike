@@ -1,6 +1,7 @@
 import type { LootEntry } from '../../data/loot';
-import { branchCountForSize, terrainScaleForSize, trainerBonusForSize } from '../../data/mapSize';
-import type { BandPopulation } from '../../data/population';
+import { branchCountForSize, terrainScaleForSize } from '../../data/mapSize';
+import { TRAINERS_PER_ROOM } from '../../data/population';
+import type { MapRoomRole } from '../maps/plan';
 import type { Tile } from '../grid';
 import { FLOOR, LEDGE, TALL_GRASS, WALL, isWalkable, type TileMap } from '../map';
 import { findPath } from '../pathfinding';
@@ -111,11 +112,12 @@ export type RouteRequest = Readonly<{
   /** How far a trainer sees down its facing. Defaults to `DEFAULT_TRAINER_SIGHT`. */
   trainerSight?: number;
   /**
-   * The band's population thinning (`POPULATION`). Absent — or a neutral row —
-   * is exactly the request that passes none: `trainerBonus 0`, `guardChance 1`
-   * and **no extra draw**.
+   * The room's population role (`MapRoom.role`). `'wild'` places no trainers;
+   * `'trainers'` places `TRAINERS_PER_ROOM.min..max` of them. **Absent means
+   * `'trainers'`**, so a request that names no role — the dev generator, the frame
+   * importer, an engine test — keeps the shipped pass.
    */
-  population?: BandPopulation;
+  role?: MapRoomRole;
   /**
    * A **quiet** room: no tall grass, no ledges, no ground items and no trainers —
    * the map's entry room and its boss room (`docs/maps-spec.md` §2/§6). The
@@ -1217,17 +1219,18 @@ function chooseCrossFacing(
 }
 
 /**
- * Places the route's trainers. A route always guards its main lane with at least
- * one trainer and puts one more by every optional pocket it fills, plus the
- * map-size tier's bonus, so the count follows the route's size. A trainer stands
- * on floor hugging a wall and looks down the open lane, and some cycle their
- * facing on a timer (a "spinning" trainer). Placement never plugs a passage: a
- * candidate is kept only while every tile the player could reach before is still
- * reachable with the chosen trainers treated as blockers (ledges and water count
- * as impassable), and no two trainers stand in neighbouring tiles, so a trainer
- * is never forced on the player and never crowds another
- * (`docs/route-generator.md` §3.4). The `populate` stream drives the picks, so
- * `(seed, routeIndex)` fixes the trainers (D11).
+ * Places the route's trainers: one or two of them in a `trainers` room and none in
+ * a `wild` one (`docs/maps-spec.md` §2, `MapRoom.role`). The room always guards its
+ * main lane with one trainer; a second one stands by an optional pocket or, when no
+ * pocket takes it, anywhere the network still has room. A trainer stands on floor
+ * hugging a wall and looks down the open lane, and some cycle their facing on a
+ * timer (a "spinning" trainer). Placement never plugs a passage: a candidate is
+ * kept only while every tile the player could reach before is still reachable with
+ * the chosen trainers treated as blockers (ledges and water count as impassable),
+ * and no two trainers stand in neighbouring tiles, so a trainer is never forced on
+ * the player and never crowds another (`docs/route-generator.md` §3.4). The
+ * `populate` stream drives the picks, so `(seed, routeIndex)` fixes the trainers
+ * (D11).
  */
 function placeTrainers(
   tiles: TileMap,
@@ -1240,10 +1243,12 @@ function placeTrainers(
   archetypes: readonly string[],
   sight: number,
   walkableTips: boolean,
-  population: BandPopulation | undefined,
+  role: MapRoomRole,
   rng: Rng,
 ): RouteTrainer[] {
-  if (archetypes.length === 0) return [];
+  // A wild room spends no `populate` draw at all, so its items keep the shipped
+  // draw order.
+  if (archetypes.length === 0 || role !== 'trainers') return [];
 
   const trainers: RouteTrainer[] = [];
   const blocked = new Set<string>();
@@ -1373,19 +1378,19 @@ function placeTrainers(
 
   // A minimum on the main lane: one trainer on the spine (the fallback pool lets
   // it land on a branch when the spine has no room, so a route still gets one).
-  // The spine guard is never thinned, whatever the population says: the lane-guard
-  // promise holds for every band (`docs/route-generator.md` §3.4).
+  // The spine guard is never rolled away: the lane-guard promise holds for every
+  // room the pass was asked to fill (`docs/route-generator.md` §3.4).
   if (!tryFrom(spineTiles)) tryFrom([...spineTiles, ...branchTiles]);
 
-  // One more guarding each optional path, standing as close to the loot pocket as
-  // its branch allows and looking across the path (wall to wall). The band's
-  // `guardChance` gates each pocket's guard: zero skips it outright, a fraction
-  // spends exactly one draw on the `populate` stream, and `1` keeps today's
-  // behaviour with no draw at all (so a neutral row is bit-identical).
-  const guardChance = population?.guardChance ?? 1;
+  // One draw decides the room's count, **after** the guard, so the guard's own
+  // draws do not move for a fixed seed (`docs/maps-spec.md` §2).
+  const wanted = rng.int(TRAINERS_PER_ROOM.min, TRAINERS_PER_ROOM.max);
+
+  // The second trainer guards an optional path, standing as close to the loot
+  // pocket as its branch allows and looking across the path (wall to wall); when
+  // no pocket takes it, it stands anywhere the network still has room.
   for (const pocket of pockets) {
-    if (guardChance <= 0) continue;
-    if (guardChance < 1 && rng.next() >= guardChance) continue;
+    if (trainers.length >= wanted) break;
     const near = branchTiles
       .filter((tile) => !(tile.x === pocket.x && tile.y === pocket.y))
       .filter(
@@ -1398,13 +1403,7 @@ function placeTrainers(
       });
     tryFrom(near);
   }
-
-  // Then the map-size tier's bonus, anywhere the network still has room, offset by
-  // the band's own `trainerBonus`. The clamp is part of the contract: a negative
-  // bonus can never invert the loop bound and *add* a pass.
-  const tier = trainerBonusForSize(tiles[0].length, tiles.length);
-  const bonus = Math.max(0, tier + (population?.trainerBonus ?? 0));
-  for (let i = 0; i < bonus; i++) {
+  while (trainers.length < wanted) {
     if (!tryFrom([...spineTiles, ...branchTiles])) break;
   }
 
@@ -1570,9 +1569,9 @@ function attemptRoute(
         });
 
   // The population pass (docs/route-generator.md §3.4-3.5): first the trainers
-  // (one guarding the main lane, one per optional pocket and the map-size bonus),
-  // then one ground item at each reachable optional-path end. Both draw from the
-  // `populate` stream, so `(seed, routeIndex)` fixes the whole population (D11).
+  // (1-2 in a `trainers` room, none in a `wild` one), then one ground item at each
+  // reachable optional-path end. Both draw from the `populate` stream, so
+  // `(seed, routeIndex)` fixes the whole population (D11).
   const reached = reachableTiles(tiles, entry);
   const trainers = placeTrainers(
     tiles,
@@ -1585,7 +1584,7 @@ function attemptRoute(
     quiet ? [] : (request.trainerArchetypes ?? []),
     request.trainerSight ?? DEFAULT_TRAINER_SIGHT,
     request.wall !== undefined,
-    request.population,
+    request.role ?? 'trainers',
     streams.populate,
   );
   snapshot('trainers', 'place trainers');
@@ -1644,12 +1643,17 @@ export function sketchRoute(request: RouteRequest): RouteMap {
 }
 
 /**
- * The population pass was asked for trainers: an archetype pool is present and the
- * room is not `quiet` (the map's entry and boss rooms). The single definition of
- * the condition the lane guard (`validateRoute`'s `missingLaneGuard`) is gated on.
+ * The population pass was asked for trainers: an archetype pool is present, the
+ * room is not `quiet` (the map's entry, boss and special rooms) and its role is
+ * not `'wild'`. The single definition of the condition the lane guard
+ * (`validateRoute`'s `missingLaneGuard`) is gated on.
  */
 export function wantsTrainers(request: RouteRequest): boolean {
-  return request.quiet !== true && (request.trainerArchetypes?.length ?? 0) > 0;
+  return (
+    request.quiet !== true &&
+    (request.trainerArchetypes?.length ?? 0) > 0 &&
+    (request.role ?? 'trainers') !== 'wild'
+  );
 }
 
 /**

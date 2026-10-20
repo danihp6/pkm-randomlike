@@ -94,6 +94,23 @@ describe('arrivalEdgeFor / roomView', () => {
     }
   });
 
+  it("carries each room's population role through to its view", () => {
+    for (const seed of ['role-a', 'role-b']) {
+      for (let mapIndex = 1; mapIndex <= 3; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        for (const room of plan.rooms) {
+          for (const portalOpen of [false, true]) {
+            const view = roomView(plan, room.id, portalOpen);
+            expect(view.role, `${seed} map ${mapIndex} room ${room.id}`).toBe(plan.rooms[room.id].role);
+            expect(['trainers', 'wild'], `${seed} map ${mapIndex} room ${room.id}`).toContain(
+              view.role,
+            );
+          }
+        }
+      }
+    }
+  });
+
   it('spawns at the door it is told arrived through, and falls back on a wall', () => {
     for (const seed of SEEDS) {
       const plan = planMap(seed, 1);

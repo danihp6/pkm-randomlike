@@ -544,6 +544,64 @@ describe('sketchRoute', () => {
     expect(
       wantsTrainers({ ...request('wants', 1, 'cross'), trainerArchetypes: ['youngster'], quiet: true }),
     ).toBe(false);
+    expect(
+      wantsTrainers({
+        ...request('wants', 1, 'cross'),
+        trainerArchetypes: ['youngster'],
+        role: 'wild',
+      }),
+    ).toBe(false);
+  });
+
+  it('ships no trainers in a wild room, and owes no lane guard there', () => {
+    const wild: RouteRequest = {
+      ...request('wild-room', 2, 'cross'),
+      width: 30,
+      height: 30,
+      trainerArchetypes: ['youngster', 'lass'],
+      role: 'wild',
+    };
+    const route = sketchRoute(wild);
+    expect(wantsTrainers(wild)).toBe(false);
+    expect(route.trainers).toEqual([]);
+    expect(validateRoute(route, { expectTrainers: false }).ok).toBe(true);
+    // The guard is conditional: the same room, had it been a `trainers` room, has none.
+    expect(validateRoute(route, { expectTrainers: true }).missingLaneGuard).not.toEqual([]);
+  });
+
+  it('ships one or two trainers in a trainers room, whatever the shape', () => {
+    for (const shape of ROUTE_SHAPES) {
+      for (let i = 0; i < 32; i++) {
+        const sized: RouteRequest = {
+          seed: `role-${i}`,
+          routeIndex: 3,
+          biomeId: 'forest',
+          shape,
+          width: 30,
+          height: 30,
+          trainerArchetypes: ['youngster', 'lass'],
+          role: 'trainers',
+        };
+        const route = sketchRoute(sized);
+        expect(route.trainers.length, `${shape} role-${i} trainers`).toBeGreaterThanOrEqual(1);
+        expect(route.trainers.length, `${shape} role-${i} trainers`).toBeLessThanOrEqual(2);
+        expect(validateRoute(route, { expectTrainers: true }).ok, `${shape} role-${i}`).toBe(true);
+      }
+    }
+  }, 120_000);
+
+  it('keeps the shipped pass for a request that names no role', () => {
+    const sized: RouteRequest = {
+      ...request('no-role', 3, 'cross'),
+      width: 30,
+      height: 30,
+      trainerArchetypes: ['youngster', 'lass'],
+    };
+    const route = sketchRoute(sized);
+    expect(wantsTrainers(sized)).toBe(true);
+    expect(route.trainers.length).toBeGreaterThanOrEqual(1);
+    expect(route.trainers.length).toBeLessThanOrEqual(2);
+    expect(validateRoute(route, { expectTrainers: true }).ok).toBe(true);
   });
 
   it('always ships a guarding trainer the pass was asked for, across a bounded seed sweep', () => {
@@ -578,60 +636,6 @@ describe('sketchRoute', () => {
     expect(sketchRoute(sized)).toEqual(sketchRoute(sized));
     expect(sketchRoute(sized).trainers.length).toBeGreaterThan(0);
   });
-
-  it('treats a neutral population row exactly like no population at all', () => {
-    const loot = [
-      { itemId: 'potion', weight: 1 },
-      { itemId: 'pokeball', weight: 1 },
-    ];
-    const base: RouteRequest = {
-      ...request('pop-neutral', 3, 'cross'),
-      width: 30,
-      height: 30,
-      grassPatches: 8,
-      loot,
-      hiddenChance: 0.35,
-      itemChance: 0.75,
-      trainerArchetypes: ['youngster', 'lass'],
-    };
-    const bare = sketchRoute(base);
-    const neutral = sketchRoute({ ...base, population: { trainerBonus: 0, guardChance: 1 } });
-    expect(neutral).toEqual(bare);
-    expect(bare.trainers.length).toBeGreaterThan(0);
-    expect(bare.items.length).toBeGreaterThan(0);
-  });
-
-  it('keeps only the spine guard when the band cancels the tier bonus and gates every pocket', () => {
-    const sized: RouteRequest = {
-      ...request('thin-guard', 2, 'cross'),
-      width: 30,
-      height: 30,
-      trainerArchetypes: ['youngster', 'lass'],
-    };
-    const thinned = sketchRoute({ ...sized, population: { trainerBonus: -1, guardChance: 0 } });
-    expect(wantsTrainers(sized)).toBe(true);
-    expect(thinned.trainers).toHaveLength(1);
-    expect(validateRoute(thinned, { expectTrainers: true }).ok).toBe(true);
-  });
-
-  it('never places more trainers with a negative trainer bonus than without a population', () => {
-    for (const shape of ROUTE_SHAPES) {
-      for (let i = 0; i < 16; i++) {
-        const base: RouteRequest = {
-          seed: `thin-${i}`,
-          routeIndex: 2,
-          biomeId: 'forest',
-          shape,
-          width: 30,
-          height: 30,
-          trainerArchetypes: ['youngster', 'lass'],
-        };
-        const bare = sketchRoute(base);
-        const thinned = sketchRoute({ ...base, population: { trainerBonus: -1, guardChance: 1 } });
-        expect(thinned.trainers.length, `${shape} thin-${i}`).toBeLessThanOrEqual(bare.trainers.length);
-      }
-    }
-  }, 120_000);
 
   it('ships no trainers for an empty pool or a quiet room, and still validates', () => {
     const empty: RouteRequest = {
@@ -691,77 +695,80 @@ describe('sketchRoute', () => {
   }, 60_000);
 
   /**
-   * The shipped no-gate builds, pinned by a digest of a route's whole shape: its size,
-   * its tiles, the entry, the exits, the spine, the branches, the pockets, the items,
-   * the trainers and the fact that it carries **no** `gate` key. Read off the
-   * **pre-change** engine for this sweep, so any moved route is a defect, never a
-   * re-pin: the gate pass runs only when a request asks for one.
+   * The shipped floors' **geometry**, pinned by a digest of a route's whole shape
+   * minus its population: its size, its tiles, the entry, the exits, the spine, the
+   * branches, the pockets and the fact that it carries **no** `gate` key. Read off
+   * the **pre-change** engine for this sweep, so any moved lane is a defect, never a
+   * re-pin: the gate pass runs only when a request asks for one. The population
+   * (trainers, then the items their draws shift) is deliberately outside the digest,
+   * because a floor's trainer composition is what its plan room decides now
+   * (`docs/maps-spec.md` §2).
    */
   const NO_GATE_DIGESTS: Readonly<Record<string, string>> = {
-    'alpha:1': '10f84de1',
-    'alpha:2': 'f30a1126',
-    'alpha:3': '194eb8f3',
-    'alpha:4': '46dd4706',
-    'alpha:5': 'ef4ec5cb',
-    'alpha:6': '9b36c328',
-    'alpha:7': 'bec88732',
-    'alpha:8': 'a2560aff',
-    'bravo:1': 'c16202dd',
-    'bravo:2': '3364628b',
-    'bravo:3': '9383c6ff',
-    'bravo:4': '2fbd0b71',
-    'bravo:5': 'ddc73bfe',
-    'bravo:6': 'e3a0b08e',
-    'bravo:7': '4406d589',
-    'bravo:8': 'b13952e8',
-    'charlie:1': 'cbef7ec8',
-    'charlie:2': 'f398367e',
-    'charlie:3': '26e54eba',
-    'charlie:4': 'cd8bd57e',
-    'charlie:5': '3fb7eba4',
-    'charlie:6': '0bf99283',
-    'charlie:7': '5a8717ed',
-    'charlie:8': 'aa556c39',
-    'delta:1': '9ff21212',
-    'delta:2': '8f7aba9c',
-    'delta:3': '7d99f602',
-    'delta:4': 'd2ff48f9',
-    'delta:5': 'b2d66d66',
-    'delta:6': '45197946',
-    'delta:7': '509865f1',
-    'delta:8': 'cfb1f527',
-    'echo:1': 'd70ab146',
-    'echo:2': 'e7f4c002',
-    'echo:3': '5b938447',
-    'echo:4': '6fe94657',
-    'echo:5': 'e0a2177f',
-    'echo:6': '95b4d36f',
-    'echo:7': '3c0f29d3',
-    'echo:8': 'd5c34d1f',
-    'foxtrot:1': '25c1a620',
-    'foxtrot:2': 'f450d33b',
-    'foxtrot:3': 'a178cace',
-    'foxtrot:4': '63ea4f71',
-    'foxtrot:5': '6ce299ff',
-    'foxtrot:6': 'fc7e824f',
-    'foxtrot:7': '03d0f9ac',
-    'foxtrot:8': '6092ac1b',
-    'golf:1': '3be72ebd',
-    'golf:2': 'afd0bf5c',
-    'golf:3': '465eedb4',
-    'golf:4': 'de91acfb',
-    'golf:5': '10aadc24',
-    'golf:6': 'fd51207c',
-    'golf:7': 'f4d6de12',
-    'golf:8': 'b834ffa3',
-    'hotel:1': '190edd67',
-    'hotel:2': 'ecd97ca2',
-    'hotel:3': 'acdaec14',
-    'hotel:4': '81304b3b',
-    'hotel:5': '7c9a205f',
-    'hotel:6': 'df6dfaad',
-    'hotel:7': 'a0c05ac0',
-    'hotel:8': '00a0f05b',
+    'alpha:1': '74341a58',
+    'alpha:2': 'd00cc239',
+    'alpha:3': 'e25318b3',
+    'alpha:4': '21c87156',
+    'alpha:5': '267d5829',
+    'alpha:6': '61c2b082',
+    'alpha:7': 'dd13863d',
+    'alpha:8': 'e5f24a86',
+    'bravo:1': '8bfa49c6',
+    'bravo:2': 'c3c14af0',
+    'bravo:3': 'adeaf82d',
+    'bravo:4': '7e7ae508',
+    'bravo:5': '6502c91c',
+    'bravo:6': '6005d06b',
+    'bravo:7': '19632112',
+    'bravo:8': 'c9a939b8',
+    'charlie:1': '1319923d',
+    'charlie:2': '1c17b5d6',
+    'charlie:3': '70895189',
+    'charlie:4': 'f072f15e',
+    'charlie:5': 'c037e816',
+    'charlie:6': 'ce332bc0',
+    'charlie:7': 'a4add1f8',
+    'charlie:8': 'a132105a',
+    'delta:1': '6bbdda61',
+    'delta:2': '01c1d023',
+    'delta:3': 'de97c558',
+    'delta:4': '77253023',
+    'delta:5': '4dc6cad7',
+    'delta:6': 'faf6d57c',
+    'delta:7': 'cc340756',
+    'delta:8': '799cb659',
+    'echo:1': '094e6ed9',
+    'echo:2': '8253cc6a',
+    'echo:3': '9eb240d2',
+    'echo:4': '6499fb7d',
+    'echo:5': '485f31d9',
+    'echo:6': '01a429ad',
+    'echo:7': '0042853f',
+    'echo:8': '476f1c9a',
+    'foxtrot:1': '10ade222',
+    'foxtrot:2': 'c84c9619',
+    'foxtrot:3': '803fe54f',
+    'foxtrot:4': '5f396465',
+    'foxtrot:5': 'cb553988',
+    'foxtrot:6': '83c3c4f2',
+    'foxtrot:7': 'a4c0c9a4',
+    'foxtrot:8': 'e23b00d5',
+    'golf:1': '92e657d7',
+    'golf:2': '51169a5c',
+    'golf:3': '0bea98f2',
+    'golf:4': '78894c02',
+    'golf:5': '6ec9b3e5',
+    'golf:6': 'c66d1981',
+    'golf:7': '578b7e12',
+    'golf:8': 'a9cde700',
+    'hotel:1': 'b87790d6',
+    'hotel:2': '3237d237',
+    'hotel:3': 'f32cd614',
+    'hotel:4': '233d7031',
+    'hotel:5': '9db6aa9e',
+    'hotel:6': '972bcec0',
+    'hotel:7': '72df4e94',
+    'hotel:8': 'bcc0b869',
   };
 
   /** A census request at room size, the shape every plan room is built at. */
@@ -778,7 +785,7 @@ describe('sketchRoute', () => {
     };
   }
 
-  /** A cheap fold over a route's whole shape, for the pin above. */
+  /** A cheap fold over a route's geometry, for the pin above. */
   function digest(route: RouteMap): string {
     const text = JSON.stringify({
       seed: route.seed,
@@ -793,8 +800,6 @@ describe('sketchRoute', () => {
       spine: route.spine,
       branches: route.branches,
       pockets: route.pockets,
-      items: route.items,
-      trainers: route.trainers,
       hasGate: 'gate' in route,
     });
     let h = 2166136261;
@@ -805,14 +810,16 @@ describe('sketchRoute', () => {
     return (h >>> 0).toString(16).padStart(8, '0');
   }
 
-  it('leaves every shipped build exactly where it was, and adds no gate key', () => {
+  it("leaves every shipped floor's geometry where it was, and adds no gate key", () => {
+    const actual: Record<string, string> = {};
     for (const seed of ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel']) {
       for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
         const route = sketchRoute(census(seed, mapIndex));
-        expect(digest(route), `${seed}:${mapIndex}`).toBe(NO_GATE_DIGESTS[`${seed}:${mapIndex}`]);
+        actual[`${seed}:${mapIndex}`] = digest(route);
         expect('gate' in route, `${seed}:${mapIndex} gate key`).toBe(false);
       }
     }
+    expect(actual).toEqual(NO_GATE_DIGESTS);
   }, 60_000);
 
   it('moves two cells and nothing else when the room is asked for a gated vault', () => {

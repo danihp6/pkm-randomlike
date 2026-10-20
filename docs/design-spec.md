@@ -42,8 +42,9 @@ carries over.
   tall grass.
 - The chain is fixed-length by default: a finite run walks **eight maps**
   (`FINITE_MAPS`), and the levels climb **2 → 55** — the first floor is **2–9**,
-  the cap a level-5 starter lives under. Maps 1-2 are the on-ramp: they thin
-  their trainers and loot (`src/data/population.ts`) and map 1 hangs no shop
+  the cap a level-5 starter lives under. Maps 1-2 are the on-ramp: they field
+  **two trainer rooms** where the late floors field four
+  (`src/data/population.ts`) and map 1 hangs no shop
   leaf. Each map's boss closes it and opens the **portal** to the next, and the
   **last map's final boss** wins the run. An **infinite mode** reuses the same
   generator without the finish line.

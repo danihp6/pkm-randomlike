@@ -94,13 +94,15 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
 4. **Population (trainers + ground items)**: a route places **trainers** and
    **one item at the far end of each optional path** (a `pocket`), drawn from the
    level band's weighted loot pool (`ROUTE_LOOT` in `src/data/loot.ts`) on the
-   `populate` stream. The trainers always include **one on the main lane** and one
-   more by every filled pocket, plus the map-size tier's bonus, so their count
-   follows the route's size (`MAP_SIZE_TIERS`); a trainer stands on floor hugging
-   a **solid** wall (never a walkable tree tip). On the **main lane** it looks
-   down the lane; on an **optional path** it looks **across** it, wall to wall (a
-   vertical path is watched horizontally and vice versa), so the sight closes the
-   branch. Either way it looks down a **passable** line with a `sight` of 5 (a
+   `populate` stream. The room's **role** (`MapRoom.role`, `docs/maps-spec.md` §2)
+   decides the trainers: a `wild` room places **none** and spends no draw on them,
+   while a `trainers` room places **1-2** (`TRAINERS_PER_ROOM`), always including
+   **one on the main lane** and a second one by an optional pocket when one takes
+   it. The count no longer follows the route's size; a trainer stands on floor
+   hugging a **solid** wall (never a walkable tree tip). On the **main lane** it
+   looks down the lane; on an **optional path** it looks **across** it, wall to wall
+   (a vertical path is watched horizontally and vice versa), so the sight closes
+   the branch. Either way it looks down a **passable** line with a `sight` of 5 (a
    straight cardinal line that stops at a wall, a ledge,
    water or another trainer, though a walkable tree tip is open), and some cycle
    their facing on a timer like a
@@ -310,15 +312,18 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
   `src/data/trainerLevels.ts`, `docs/maps-spec.md` §5) — so the seed fixes the
   species picks while the level follows the player (D11/D17 amended). The **boss**
   and the **mini-boss** keep the level draw they shipped with (the boss at the
-  map's cap). Trainers are placed by the population pass (step 4): one guards the
-  main lane, the rest hold the optional paths by the pocket items, and their count
-  scales with the map size.
+  map's cap). Trainers are placed by the population pass (step 4): the floor's plan
+  tags each regular room `trainers` or `wild`, and a `trainers` room fields 1-2 of
+  them — one on the main lane and a second by a pocket — while a `wild` room holds
+  none, so the count follows the floor's composition, not the room's size
+  (`docs/maps-spec.md` §2).
 - The map's **farthest room from the entry** fields the boss at the map's
   `maxLevel`, a fixed party of **six** (**three** on map 1, `src/data/bosses.ts`).
-- The floor's **population** thins on the on-ramp: maps 1-2 cancel the map-size
-  tier's trainer bonus and gate each pocket's guard (`POPULATION`,
-  `src/data/population.ts`), so the first two floors read as a walkable start
-  while the later maps are untouched.
+- The floor's **population** comes from its composition: exactly
+  `trainerRoomsForMap(mapIndex)` of its regular rooms are `trainers` rooms (2 on
+  maps 1-2, 3 on maps 3-5, 4 on maps 6-8, up to 6 past the table) and each fields
+  1-2 trainers, so maps 1-2 read as a walkable start without thinning the count by
+  band (`TRAINER_ROOMS_PER_MAP`, `src/data/population.ts`).
 
 ## 6. Healing stops
 

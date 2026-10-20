@@ -228,11 +228,29 @@ describe('route trainer placement', () => {
     }
   }, 30_000);
 
-  it('scales the count with the map size', () => {
-    const small = sketchRoute({ ...request('tt-size', 3, 'cross'), width: 20, height: 20 });
-    const big = sketchRoute({ ...request('tt-size', 3, 'cross'), width: 64, height: 64 });
-    expect(small.trainers.length).toBeGreaterThanOrEqual(1);
-    expect(big.trainers.length).toBeGreaterThan(small.trainers.length);
+  it('follows the room role, not the map size', () => {
+    for (const size of [20, 64]) {
+      const trainers = sketchRoute({
+        ...request('tt-role', 3, 'cross'),
+        width: size,
+        height: size,
+        role: 'trainers',
+      });
+      expect(trainers.trainers.length, `${size}x${size} trainers`).toBeGreaterThanOrEqual(1);
+      expect(trainers.trainers.length, `${size}x${size} trainers`).toBeLessThanOrEqual(2);
+      expect(validateRoute(trainers, { expectTrainers: true }).ok, `${size}x${size} guarded`).toBe(
+        true,
+      );
+
+      const wild = sketchRoute({
+        ...request('tt-role', 3, 'cross'),
+        width: size,
+        height: size,
+        role: 'wild',
+      });
+      expect(wild.trainers, `${size}x${size} wild`).toEqual([]);
+      expect(validateRoute(wild, { expectTrainers: false }).ok, `${size}x${size} wild`).toBe(true);
+    }
   }, 30_000);
 
   it('gives some trainers a facing cycle (spinners) and keeps fixed ones still', () => {

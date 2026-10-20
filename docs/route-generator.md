@@ -129,7 +129,7 @@ reachable: Set<Point>               # FloodFill(tiles, entry), computed after te
 | `grassPatches`, `ledges` | `src/data/biomes.ts` | terrain flavour (base counts) |
 | map-size tiers (`small`/`medium`/`large`: terrain scale, branch bonus) | `src/data/mapSize.ts` | terrain multiplier and extra optional paths as the map grows |
 | `trainerSize`, `minLevel`, `maxLevel` | `src/data/run.ts` | population and levels |
-| band population (`trainerBonus`, `guardChance`) | `src/data/population.ts` | how a band thins its floors' trainers (`O-M5`) |
+| trainer rooms per floor (`TRAINER_ROOMS_PER_MAP`, `TRAINER_ROOMS_MAX`, `TRAINERS_PER_ROOM`) | `src/data/population.ts` | how many of a floor's regular rooms hold trainers, and how many each holds |
 | loot `pool` / `hiddenChance` | `src/data/loot.ts` | item contents and how often one hides |
 | wild species | `src/engine/run/pool.ts` (`speciesPool`, D39) | the band's BST pool, legendaries/mythicals banned |
 
@@ -308,42 +308,37 @@ reachable. A cell on the one-tile border ring is only dropped to widen an openin
 size a run needs comes from the tileset's motif, a different biome or wall art just
 passes its own `WallFootprint`.
 
-### 3.4 PlaceTrainers — optional, never required
+### 3.4 PlaceTrainers — the room's role decides the count
 
 Trainers block movement like the originals: they stand on floor hugging a **solid
 wall** (never the walkable tip of a tree). A trainer on the **main lane** looks
 down the lane, back to a wall; a trainer on an **optional path** looks **across**
 it, wall to wall, so the sight closes the branch — a vertical path is watched
 horizontally and a horizontal one vertically — and it never stares down its own
-axis. One of them always guards the main lane while the rest cluster on the
-optional paths by the pocket items. The count
-follows the route's **size**: one on the spine, one per optional path (a pocket)
-and the map-size tier's `trainerBonus`. Placement never plugs a passage: a
-candidate is kept only while the entry still reaches **every** tile it could
-before, with ledges and water counting as impassable, so no lane, branch or pocket
-is cut off. Two trainers never stand in neighbouring tiles, and no trainer spawns
-already watching — or able to spin and watch — the tile the player arrives on.
-Some trainers cycle their facing on a timer (a "spinning" trainer) so their line
-turns with them.
+axis. One of them always guards the main lane and the second stands by an optional
+path's pocket when one takes it.
 
-A **band** may thin that count (`POPULATION[band]`, balance data, `O-M5`): its
-`trainerBonus` is added to the map-size tier's own bonus — the loop runs
-`max(0, tier + trainerBonus)` times, so a negative value can never *add* a pass —
-and each pocket's guard exists only with its `guardChance` probability. A
-`guardChance` of `0` skips the pocket outright, a fraction between `0` and `1`
-spends exactly one draw on the `populate` stream per pocket before the attempt, and
-`1` keeps the full behaviour with **no draw at all**. A neutral row
-(`{ trainerBonus: 0, guardChance: 1 }`) is therefore bit-identical to a request
-that passes no population — the same draws, the same routes. The **spine guard is
-never thinned**: the first `tryFrom(spineTiles)` runs whatever the band says, so
-the lane-guard promise below holds for every band, and only the tier bonus and the
-pocket guards move. The two on-ramp bands (`early`, `low`) thin their floors this
-way; the four later bands ship the neutral row.
+The count comes from the room's **role** (`MapRoom.role`, `docs/maps-spec.md` §2):
+the floor's plan tags exactly `trainerRoomsForMap(mapIndex)` of its regular rooms
+`trainers` (`TRAINER_ROOMS_PER_MAP`: 2 on maps 1-2, 3 on maps 3-5, 4 on maps 6-8,
+one more every two maps past the table up to `TRAINER_ROOMS_MAX = 6`) and every
+other room `wild`. A `wild` room places **no trainer and spends no draw** on them;
+a `trainers` room places **1-2** (`TRAINERS_PER_ROOM`), drawn **after** the spine
+guard, so the guard's own draws never move for a fixed seed and the count no longer
+follows the room's size. A request that names no role is treated as `'trainers'`,
+which keeps the dev generator, the frame importer and the engine tests on the
+shipped pass. Placement never plugs a passage: a candidate is kept only while the
+entry still reaches **every** tile it could before, with ledges and water counting
+as impassable, so no lane, branch or pocket is cut off. Two trainers never stand in
+neighbouring tiles, and no trainer spawns already watching — or able to spin and
+watch — the tile the player arrives on. Some trainers cycle their facing on a timer
+(a "spinning" trainer) so their line turns with them.
 
 The lane guard holds **when the population pass was asked for trainers**: the
-request carries a non-empty archetype pool and the room is not `quiet` (the map's
-entry and boss rooms, `docs/maps-spec.md` §2/§6, ship no trainer legitimately).
-A route the pass was asked to guard that holds no trainer is
+request carries a non-empty archetype pool, the room is not `quiet` (the map's
+entry, boss and special rooms, `docs/maps-spec.md` §2/§6/§7, ship no trainer
+legitimately) and its role is not `'wild'`. A route the pass was asked to guard
+that holds no trainer is
 reported by `validateRoute`'s `missingLaneGuard` (`'no-trainers'`) and re-rolled
 by `sketchRoute` inside `MAX_ATTEMPTS = 8` (`wantsTrainers` is the single
 definition of the condition), so the promise below never ships a bare lane. The
@@ -351,29 +346,35 @@ guard is checked on the finished `RouteMap`; it draws no `Rng` value and adds no
 stream.
 
 ```
-PlaceTrainers(tiles, entry, exits, spine, branches, pockets, band, rng):
+PlaceTrainers(tiles, entry, exits, spine, branches, pockets, role, rng):
+    if len(archetypes) == 0 or role != "trainers": return []   # a wild room draws nothing
     chosen = Set()
     reach  = ReachableTiles(tiles, entry)      # ledges/water impassable
     candidates = floor tiles hugging a solid wall, off the entry/exits/pockets,
                  not next to a chosen trainer, at least 3 from the entry,
                  with a passable facing
-    # 1 on the main lane (never thinned), 1 per pocket on its branch gated by the
-    # band's guardChance, + max(0, tier.trainerBonus + band.trainerBonus)
-    for i in 0 .. 1 + len(pockets) + max(0, trainerBonusForSize(size) + band.trainerBonus):
-        pos   = PopRandom(candidates without a spot)
-        if pos is null: break
-        if not KeepsEverythingReachable(tiles, entry, reach, chosen + {pos}): continue
-        dirs   = OpenFacings(tiles, pos)         # cardinals onto a passable tile
-        if pos on a branch:                      # cross the path, wall to wall
-            facing = ChooseCrossFacing(tiles, pos, NearestPocket(pos), dirs)
-        else:                                    # main lane: down it, back to wall
-            facing = ChooseFacing(tiles, pos, entry, dirs)
-        turns  = rng.next() < SPIN_CHANCE && len(dirs) >= 2 ? dirs : null
+    TryFrom(spine)                              # the spine guard is never rolled away
+    wanted = rng.int(TRAINERS_PER_ROOM.min, TRAINERS_PER_ROOM.max)   # one draw
+    for pocket in pockets:                      # at most one more, by a pocket
+        if len(chosen) >= wanted: break
+        TryFrom(branch tiles within TRAINER_POCKET_RANGE of the pocket)
+    while len(chosen) < wanted:                 # then anywhere the network has room
+        if not TryFrom(spine + branches): break
+    return chosen
+```
+
+Each `TryFrom` shuffles its pool on the `populate` stream and commits the first
+candidate that keeps everything reachable: `pos = PopRandom(candidates)`,
+`KeepsEverythingReachable`, then the facing — a branch tile crosses to its nearest
+pocket (`ChooseCrossFacing`), a spine tile looks down the lane (`ChooseFacing`) —
+plus `turns = rng.next() < SPIN_CHANCE && len(dirs) >= 2 ? dirs : null`, the entry
+check and the archetype draw:
+
+```
         if SeesEntry(pos, facing) or any(SeesEntry(pos, t) for t in turns): continue
         chosen += { pos, facing, sight, turns,
                     archetype = RandomArchetype(rng),
                     id = "trainer-<routeIndex>-<i>" }
-    return chosen
 ```
 
 Net effect: the player can always walk entry → every exit, and reach every pocket,
