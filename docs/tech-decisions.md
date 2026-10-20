@@ -508,6 +508,21 @@ row for infinite mode. Retuning a run is a data edit, never a generator edit. Th
 player's cap is the map's `maxLevel` (`levelCapForMap`), generalising the
 per-route cap of D9.
 
+### D29 — addendum: the cap is the only level anchor *(decided)*
+
+Once a wild's level and a regular trainer's level both follow the **live squad**
+(D11/D17 amended), a floor has exactly one level anchor left: its **cap**.
+`MapTuning` therefore carries `cap` and no level range, and `levelCapForMap` reads
+it. The floor's level **window** is **derived**, never stored:
+`levelWindowForMap(m)` opens at the **previous floor's cap** and closes at this
+floor's cap, and map 1 opens at the run's first band floor
+(`LEVEL_BANDS[0].minLevel`) because it has no previous cap. `bandForMap`/`runBand`
+keep their signature and their values — the band id still comes from
+`bandForLevel(window.minLevel)` and `maxLevel` is still the cap — so a scene that
+reads a band does not move. The per-room "working level" is deleted with no
+replacement: the ramp it described exists only as the window, and the boss is
+pinned to the cap by its caller.
+
 ## D30 — The map is a closed room graph on a grid *(decided)*
 
 A map is a Binding of Isaac-style floor: rooms sit on a coarse **grid of cells**

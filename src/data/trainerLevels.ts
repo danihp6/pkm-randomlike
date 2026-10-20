@@ -25,7 +25,7 @@ export function trainerLevelPercent(size: number): number {
 /**
  * A regular trainer member's level: the live squad level times its party size's
  * percentage, **floored** (never rounded up) and clamped into `1..cap`, where `cap`
- * is the floor's ceiling (`MAP_TUNING.levels.maxLevel`, `levelCapForMap`).
+ * is the floor's ceiling (`MAP_TUNING.cap`, `levelCapForMap`).
  */
 export function trainerLevel(squadLevel: number, size: number, cap: number): number {
   const base = Number.isFinite(squadLevel) ? Math.max(0, squadLevel) : 0;

@@ -9,7 +9,6 @@ import {
   MAP_TUNING_STEP,
   ROOM_SHAPE_SIZES,
   levelCapForMap,
-  levelRangeForMap,
   mapTuning,
   roomSizeForShape,
   routeCountRangeForMap,
@@ -19,7 +18,6 @@ import {
 
 describe('map tuning tables', () => {
   it('exposes the first map and its cap', () => {
-    expect(levelRangeForMap(1)).toEqual({ minLevel: 2, maxLevel: 9 });
     expect(levelCapForMap(1)).toBe(9);
     expect(routeCountRangeForMap(1)).toEqual({ min: 6, max: 6 });
     expect(routeSizeRangeForMap(1)).toEqual({ min: 30, max: 30 });
@@ -27,10 +25,17 @@ describe('map tuning tables', () => {
 
   it('exposes the last finite map and the campaign length', () => {
     expect(MAP_TUNING).toHaveLength(FINITE_MAPS);
-    expect(levelRangeForMap(FINITE_MAPS)).toEqual({ minLevel: 49, maxLevel: 55 });
     expect(levelCapForMap(FINITE_MAPS)).toBe(55);
     expect(routeCountRangeForMap(FINITE_MAPS)).toEqual({ min: 6, max: 9 });
     expect(routeSizeRangeForMap(FINITE_MAPS)).toEqual({ min: 30, max: 56 });
+  });
+
+  it('pins the cap of every tuned row, and the cap as the only level anchor', () => {
+    expect(MAP_TUNING.map((row) => row.cap)).toEqual([9, 16, 23, 30, 37, 43, 49, 55]);
+    for (const row of MAP_TUNING) {
+      expect(Object.keys(row).sort()).toEqual(['cap', 'mapIndex', 'routes', 'size']);
+      expect(levelCapForMap(row.mapIndex)).toBe(row.cap);
+    }
   });
 
   it('returns the configured row for every tuned map', () => {
@@ -45,66 +50,51 @@ describe('map tuning tables', () => {
     expect(mapTuning(1.9)).toBe(MAP_TUNING[0]);
   });
 
-  it('never lowers the level floor, cap or size as maps advance', () => {
-    let previous = levelRangeForMap(1);
+  it('never lowers the cap or the size as maps advance, and saturates at the ceiling', () => {
+    let previousCap = levelCapForMap(1);
     let previousSize = routeSizeRangeForMap(1);
-    for (let mapIndex = 2; mapIndex <= 12; mapIndex++) {
-      const levels = levelRangeForMap(mapIndex);
+    for (let mapIndex = 2; mapIndex <= 30; mapIndex++) {
+      const cap = levelCapForMap(mapIndex);
       const size = routeSizeRangeForMap(mapIndex);
-      expect(levels.minLevel).toBeGreaterThanOrEqual(previous.minLevel);
-      expect(levels.maxLevel).toBeGreaterThanOrEqual(previous.maxLevel);
+      expect(cap).toBeGreaterThanOrEqual(previousCap);
+      expect(cap).toBeLessThanOrEqual(MAP_MAX_LEVEL);
       expect(size.min).toBeGreaterThanOrEqual(previousSize.min);
       expect(size.max).toBeGreaterThanOrEqual(previousSize.max);
-      previous = levels;
+      previousCap = cap;
       previousSize = size;
     }
-  });
-
-  it('keeps each map range contiguous with the one before', () => {
-    for (let mapIndex = 2; mapIndex <= FINITE_MAPS; mapIndex++) {
-      expect(levelRangeForMap(mapIndex).minLevel).toBe(levelRangeForMap(mapIndex - 1).maxLevel);
-    }
+    expect(levelCapForMap(30)).toBe(MAP_MAX_LEVEL);
+    expect(levelCapForMap(10_000)).toBe(MAP_MAX_LEVEL);
   });
 
   it('climbs past the last tuned map for infinite mode', () => {
     const last = MAP_TUNING[MAP_TUNING.length - 1];
     const first = mapTuning(FINITE_MAPS + 1);
-    expect(first.levels.minLevel).toBe(last.levels.maxLevel);
-    expect(first.levels.maxLevel).toBe(last.levels.maxLevel + MAP_TUNING_STEP.levelStep);
+    expect(first.cap).toBe(last.cap + MAP_TUNING_STEP.levelStep);
     expect(first.size.min).toBe(last.size.min + MAP_TUNING_STEP.sizeStep);
     expect(first.size.max).toBe(Math.min(MAP_MAX_ROOM_SIZE, last.size.max + MAP_TUNING_STEP.sizeStep));
     expect(first.routes.min).toBe(last.routes.min + MAP_TUNING_STEP.routeStep);
     expect(first.routes.max).toBe(last.routes.max + MAP_TUNING_STEP.routeStep);
   });
 
-  it('keeps both ends of an out-of-table map climbing, then saturates at the ceiling', () => {
+  it('keeps the out-of-table cap climbing, then saturates at the ceiling', () => {
     const last = MAP_TUNING[MAP_TUNING.length - 1];
     expect(last.mapIndex).toBe(FINITE_MAPS);
-    expect(mapTuning(FINITE_MAPS + 1).levels).toEqual({
-      minLevel: last.levels.maxLevel,
-      maxLevel: last.levels.maxLevel + MAP_TUNING_STEP.levelStep,
-    });
-    expect(mapTuning(FINITE_MAPS + 2).levels).toEqual({
-      minLevel: last.levels.maxLevel + MAP_TUNING_STEP.levelStep,
-      maxLevel: last.levels.maxLevel + 2 * MAP_TUNING_STEP.levelStep,
-    });
-    // The floor climbs instead of only widening, so a deep map is a narrow ramp.
+    expect(mapTuning(9).cap).toBe(63);
+    expect(mapTuning(10).cap).toBe(71);
+    expect(mapTuning(14).cap).toBe(100);
+    expect(mapTuning(15).cap).toBe(100);
     for (
       let mapIndex = FINITE_MAPS + 2;
-      mapTuning(mapIndex).levels.maxLevel < MAP_MAX_LEVEL;
+      mapTuning(mapIndex).cap < MAP_MAX_LEVEL;
       mapIndex++
     ) {
-      const levels = levelRangeForMap(mapIndex);
-      expect(levels.minLevel).toBeGreaterThan(levelRangeForMap(mapIndex - 1).minLevel);
-      expect(levels.maxLevel - levels.minLevel).toBe(MAP_TUNING_STEP.levelStep);
+      expect(mapTuning(mapIndex).cap).toBeGreaterThan(mapTuning(mapIndex - 1).cap);
+      expect(mapTuning(mapIndex).cap - mapTuning(mapIndex - 1).cap).toBe(
+        MAP_TUNING_STEP.levelStep,
+      );
     }
-    expect(mapTuning(10_000).levels).toEqual({ minLevel: MAP_MAX_LEVEL, maxLevel: MAP_MAX_LEVEL });
-  });
-
-  it('caps the level ceiling for a very deep map', () => {
-    const deep = mapTuning(10_000);
-    expect(deep.levels.maxLevel).toBe(MAP_MAX_LEVEL);
-    expect(deep.levels.minLevel).toBeLessThanOrEqual(MAP_MAX_LEVEL);
+    expect(mapTuning(10_000).cap).toBe(MAP_MAX_LEVEL);
   });
 
   it('caps the room size for a very deep map', () => {

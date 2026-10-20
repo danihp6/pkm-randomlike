@@ -1,21 +1,38 @@
-import { levelRangeForMap } from '../../data/maps';
-import { bandForLevel, type LevelBand } from '../../data/run';
+import { levelCapForMap } from '../../data/maps';
+import { LEVEL_BANDS, bandForLevel, type LevelBand } from '../../data/run';
 import { planMap, type MapPlan } from '../maps/plan';
 
 /**
  * Where a global route index falls in the run's **map chain** (`docs/maps-spec.md`
- * §1/§5). A route is a room of a map; the map owns the biome and the level range,
- * and the rooms ramp across it. The chain is derived from the seed through the
- * plan, so a fixed seed always resolves a route to the same floor (D11/D29).
+ * §1/§5). A route is a room of a map; the map owns the biome and the level cap,
+ * and the floor reads the window derived from the adjacent caps. The chain is
+ * derived from the seed through the plan, so a fixed seed always resolves a route
+ * to the same floor (D11/D29).
  */
 export type FloorPosition = Readonly<{
   mapIndex: number;
   /** 0-based room inside the map, in discovery order. */
   roomInMap: number;
   roomCount: number;
+  /** The window this floor's cap is reached from: the previous floor's cap. */
   minLevel: number;
+  /** The floor's cap (`levelCapForMap`). */
   maxLevel: number;
 }>;
+
+/**
+ * The level window a floor reads: it opens at the **previous floor's cap** and
+ * closes at this floor's cap. Map 1 opens at the run's first band floor
+ * (`LEVEL_BANDS[0].minLevel`), because there is no previous cap. The cap is a
+ * floor's only level anchor, so the window is derived, never stored (D29).
+ */
+export function levelWindowForMap(
+  mapIndex: number,
+): Readonly<{ minLevel: number; maxLevel: number }> {
+  const index = Math.max(1, Math.floor(mapIndex));
+  const minLevel = index <= 1 ? LEVEL_BANDS[0].minLevel : levelCapForMap(index - 1);
+  return { minLevel, maxLevel: levelCapForMap(index) };
+}
 
 /**
  * The floor a route index lands on: walks the plan maps from 1, subtracting each
@@ -26,13 +43,13 @@ export function floorForRoute(seed: string, routeIndex: number): FloorPosition {
   for (let mapIndex = 1; ; mapIndex++) {
     const plan = planMap(seed, mapIndex);
     if (remaining < plan.rooms.length) {
-      const levels = levelRangeForMap(mapIndex);
+      const window = levelWindowForMap(mapIndex);
       return {
         mapIndex,
         roomInMap: remaining,
         roomCount: plan.rooms.length,
-        minLevel: levels.minLevel,
-        maxLevel: levels.maxLevel,
+        minLevel: window.minLevel,
+        maxLevel: window.maxLevel,
       };
     }
     remaining -= plan.rooms.length;
@@ -53,24 +70,8 @@ export function routeIndexForRoom(plan: MapPlan, roomId: number): number {
 }
 
 /**
- * The working level of a room: the map's `minLevel` at the entry ramping to its
- * `maxLevel` at the boss (`docs/maps-spec.md` §5). A single-room floor sits at the
- * top.
- */
-export function roomLevelForFloor(position: FloorPosition): number {
-  if (position.roomCount <= 1) return position.maxLevel;
-  const t = position.roomInMap / (position.roomCount - 1);
-  return Math.round(position.minLevel + t * (position.maxLevel - position.minLevel));
-}
-
-/** The working level of a route's room, for the wild encounters it rolls. */
-export function runRoomLevel(seed: string, routeIndex: number): number {
-  return roomLevelForFloor(floorForRoute(seed, routeIndex));
-}
-
-/**
- * The **band** a route reads for its species pool and roster size: the map's level
- * range (`docs/maps-spec.md` §5) with the archetype pool the range falls in.
+ * The **band** a route reads for its species pool and roster size: the floor's
+ * level window (`docs/maps-spec.md` §5) with the archetype pool its floor falls in.
  */
 export function runBand(seed: string, routeIndex: number): LevelBand {
   const position = floorForRoute(seed, routeIndex);
@@ -86,22 +87,10 @@ export function runBand(seed: string, routeIndex: number): LevelBand {
  * position (`RunState.mapIndex`) instead of a global route index.
  */
 export function bandForMap(mapIndex: number): LevelBand {
-  const levels = levelRangeForMap(mapIndex);
+  const window = levelWindowForMap(mapIndex);
   return {
-    ...bandForLevel(levels.minLevel),
-    minLevel: levels.minLevel,
-    maxLevel: levels.maxLevel,
+    ...bandForLevel(window.minLevel),
+    minLevel: window.minLevel,
+    maxLevel: window.maxLevel,
   };
-}
-
-/** The working level of a room by its explicit map position, ramping to the boss. */
-export function roomLevelForMap(mapIndex: number, roomInMap: number, roomCount: number): number {
-  const levels = levelRangeForMap(mapIndex);
-  return roomLevelForFloor({
-    mapIndex,
-    roomInMap,
-    roomCount,
-    minLevel: levels.minLevel,
-    maxLevel: levels.maxLevel,
-  });
 }

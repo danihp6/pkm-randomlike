@@ -284,11 +284,12 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
 
 ## 5. Difficulty bands
 
-- Each **map** has a level range (`docs/maps-spec.md` §5, `levelRangeForMap`); the
-  routes inside ramp from its `minLevel` to its `maxLevel` and the map's
-  `maxLevel` is the **player's cap** that clamps XP gain (`docs/battle-spec.md`
-  §7). The per-route band is gone: the map's range **is** the band
-  (`levelRangeForMap`, `bandForLevel`).
+- Each **map** has one level anchor: its **cap** (`levelCapForMap`). The floor's
+  band is the **window derived from the caps** — it opens at the previous floor's
+  cap and closes at this one (`levelWindowForMap`, `docs/maps-spec.md` §5) — so the
+  band's `maxLevel` **is** the map's cap and clamps XP gain (`docs/battle-spec.md`
+  §7). The per-route band is gone, and no room has a working level: the map's window
+  **is** the band (`bandForMap`, `bandForLevel`).
 - Each trainer archetype is presentation and reward only (identity, sprites,
   money); it no longer carries a species list. Every roster draws from the floor's
   **BST pool** (`speciesPool`, `src/engine/run/pool.ts`, `D39`), which varies only
