@@ -218,12 +218,13 @@ begins standing in it.
 - Tall grass is stamped from `terrain.grassPatches` on the off-spine floor, never
   on the spine or an opening, so a clean encounter-free lane always exists. A tree
   tip a patch shares (`grassTipKeys`) rolls the same encounter.
-- The table is the route's band **BST pool** (legendaries and mythicals banned,
-  `D39`), weighted flat, so any species whose base-stat total falls in the band's
-  window can appear. A species with a hand-authored **variant family** (Eiscue,
-  Morpeko, Minior) keeps its single row: the roll picks which forme the individual
-  is generated as, on its own stream, so the band's table and its weights do not
-  move (`D38`).
+- The table is the **BST pool** of the band the **squad's level** falls in
+  (`bandForLevel(squadLevel(run))`, resolved when the room's encounter stream is
+  built), with legendaries and mythicals banned (`D39`) and a flat weight, so any
+  species whose base-stat total falls in that band's window can appear. A species
+  with a hand-authored **variant family** (Eiscue, Morpeko, Minior) keeps its
+  single row: the roll picks which forme the individual is generated as, on its own
+  stream, so the band's table and its weights do not move (`D38`).
 - The grass never offers a species the run has already **caught**: the run keeps a
   run-long record of every species a successful catch brought in
   (`RunState.caughtSpecies`; death does not clear it, `D5`) and the table drops
