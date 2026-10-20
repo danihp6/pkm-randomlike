@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { getSpecies, statAtLevel } from '../../data/dex';
+import { levelCapForMap } from '../../data/maps';
+import { bandForLevel, trainerXpMultiplierForMap } from '../../data/run';
 import { memberDetail } from '../../ui/partyDetail';
 import type { BattleReturn, BattleOutcome } from './battleLink';
-import { createRunPokemon, xpForLevel, type RunPokemon } from './progression';
+import { createRunPokemon, experienceAward, xpForLevel, type RunPokemon } from './progression';
 import { resolveBattle, type BattleReward } from './resolve';
 import { createRun, type RunState } from './state';
 
@@ -54,6 +56,32 @@ describe('resolveBattle', () => {
     expect(result.run.party[0].fighter.level).toBe(cap);
     expect(result.run.xp).toBe(xpForLevel(cap));
     expect(result.events).toContainEqual({ kind: 'capped', level: cap });
+  });
+
+  it("pays a trainer win the floor's own factor and a wild win none of it", () => {
+    for (const floor of [6, 8]) {
+      const factor = trainerXpMultiplierForMap(floor);
+      expect(factor, `map ${floor}`).not.toBe(1);
+      const run = {
+        ...createRun({ seed: 's', starter }),
+        mapIndex: floor,
+        levelCap: levelCapForMap(floor),
+      };
+      const level = 10;
+      const trained = resolveBattle(run, returned(run, 'win'), {
+        enemyLevels: [level],
+        isTrainer: true,
+      });
+      expect(trained.run.xp - run.xp, `map ${floor}`).toBe(
+        Math.floor(level * 5 * 1.5 * bandForLevel(level).trainerXp * factor),
+      );
+      const wilded = resolveBattle(run, returned(run, 'win'), {
+        enemyLevels: [level],
+        isTrainer: false,
+      });
+      expect(wilded.run.xp - run.xp, `map ${floor}`).toBe(experienceAward(level, 1, false, factor));
+      expect(wilded.run.xp - run.xp, `map ${floor}`).toBe(level * 5);
+    }
   });
 
   it('marks the trainer beaten on a trainer win', () => {

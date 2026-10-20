@@ -65,6 +65,24 @@ describe('experienceAward', () => {
     expect(bandForLevel(10).id).toBe('low');
     expect(experienceAward(10, 1, true)).toBeGreaterThan(experienceAward(10));
   });
+
+  it('leaves the three-argument trainer award on the band rate for every level', () => {
+    for (let level = 1; level <= 100; level++) {
+      expect(experienceAward(level, 1, true), `level ${level}`).toBe(
+        Math.floor(level * 5 * 1.5 * bandForLevel(level).trainerXp),
+      );
+    }
+  });
+
+  it("multiplies a trainer award by the floor's factor and never touches a wild one", () => {
+    for (let level = 1; level <= 100; level++) {
+      expect(experienceAward(level, 1, true, 1), `level ${level}`).toBe(experienceAward(level, 1, true));
+      expect(experienceAward(level, 1, true, 1.31), `level ${level}`).toBe(
+        Math.floor(level * 5 * 1.5 * bandForLevel(level).trainerXp * 1.31),
+      );
+      expect(experienceAward(level, 1, false, 3), `level ${level}`).toBe(experienceAward(level));
+    }
+  });
 });
 
 describe('levelUpPokemon', () => {

@@ -212,7 +212,10 @@ theirs, `RunState.capturedRooms`, not a per-battle counter).
   its branch (the member's level never exceeds the cap).
 - The curve is medium-fast (`level^3`): the generated dex carries no
   base-experience yield, so `experienceAward` scales with the defeated Pokémon's
-  level instead. The bar lives on the run (`RunState.xp`), not on a member, and
+  level instead. A **trainer** award is also multiplied by the floor's own
+  `trainerXpMultiplierForMap` (`src/data/run.ts`), so 75 % of a floor's trainers
+  pays that floor's cap (`docs/balance/route-curve.md`); a wild award is not. The
+  bar lives on the run (`RunState.xp`), not on a member, and
   the award is not split by party size (the squad is one unit). The whole
   progression is RNG-free (D11).
 - Trainer rosters are generated at the route's level band, never above the cap,
