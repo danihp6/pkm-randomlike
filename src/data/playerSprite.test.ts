@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { hasArt } from '../assets/art';
 import { decodePng } from '../../scripts/legacy-art/png-codec.mjs';
 import manifest from './frlg/player.json';
 import { PLAYER_FACINGS, playerSpriteFrame, playerWalkFrames, type PlayerFacing } from './playerSprite';
@@ -15,6 +16,7 @@ const FRAME_NAMES: readonly string[] = manifest.frames;
 const FACINGS: readonly PlayerFacing[] = PLAYER_FACINGS;
 
 function atlas() {
+  if (!hasArt('frlg/player.png')) return { width: 0, height: 0, data: new Uint8Array() };
   const url = new URL('../assets/frlg/player.png', import.meta.url);
   return decodePng(readFileSync(fileURLToPath(url)));
 }
@@ -29,7 +31,7 @@ function frameHasArt(png: { width: number; height: number; data: Uint8Array }, f
   return false;
 }
 
-describe('player overworld sprite atlas', () => {
+describe.skipIf(!hasArt('frlg/player.png'))('player overworld sprite atlas', () => {
   const png = atlas();
 
   it('is a one-row strip of 16x32 frames, one per named frame', () => {

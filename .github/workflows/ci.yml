@@ -34,6 +34,33 @@ jobs:
       - name: Install
         run: npm ci --prefer-offline --no-audit --no-fund
 
+      - name: Pack the art (private store; skipped where the key is absent)
+        env:
+          ASSETS_KEY: ${{ secrets.ASSETS_DEPLOY_KEY }}
+          ASSETS_REPO: ${{ vars.ASSETS_REPO }}
+          ASSETS_COMMIT: ${{ vars.ASSETS_COMMIT }}
+        run: |
+          # The ripped atlases and cues are gitignored (`AGENTS.md`, Art): a
+          # same-repo run packs them from the private store so the art tests are
+          # measured for real. A fork PR gets no secret, so it runs against the
+          # committed blanks and the suites that measure art skip themselves.
+          if [ -z "${ASSETS_KEY:-}" ]; then
+            echo "no ASSETS_DEPLOY_KEY: building against src/assets/placeholders"
+            exit 0
+          fi
+          set -euo pipefail
+          repo="${ASSETS_REPO:-danihp6/pkrl-assets}"
+          root="$RUNNER_TEMP/assets"
+          mkdir -p "$root" && chmod 700 "$root"
+          printf '%s\n' "$ASSETS_KEY" > "$root/key" && chmod 600 "$root/key"
+          export GIT_SSH_COMMAND="ssh -i $root/key -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes"
+          git clone --quiet --depth 1 "git@github.com:${repo}.git" "$root/store"
+          if [ -n "${ASSETS_COMMIT:-}" ]; then
+            git -C "$root/store" fetch --quiet --depth 1 origin "$ASSETS_COMMIT"
+            git -C "$root/store" checkout --quiet "$ASSETS_COMMIT"
+          fi
+          npm run assets:pack -- "$root/store"
+
       - name: Test (Vitest, headless)
         id: test
         run: |

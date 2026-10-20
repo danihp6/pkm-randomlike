@@ -17,6 +17,7 @@
 // redistributed - see docs/art-direction.md.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { assetPath } from '../assets/root.mjs'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
 const ICON_W = 32
@@ -29,7 +30,7 @@ const CELL_H = 16
 /** The badges in atlas order (row-major). A name the sheet lacks pads the row. */
 const FRAMES = ['slp', 'psn', 'brn', 'par', 'frz', 'fnt', 'pkrs', '']
 
-const sourcePath = process.argv[2] ?? 'sprite-sources/anil/Graphics/UI/statuses.png'
+const sourcePath = process.argv[2] ?? assetPath('anil/Graphics/UI/statuses.png')
 if (!existsSync(sourcePath)) {
   throw new Error(
     `usage: node scripts/frlg/build-status-icons.mjs <anil>/Graphics/UI/statuses.png (missing ${sourcePath})`,

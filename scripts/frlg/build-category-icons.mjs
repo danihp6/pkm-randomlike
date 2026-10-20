@@ -6,18 +6,20 @@
 // only the processed atlas and its manifest are committed. Local-only art, see
 // docs/art-direction.md.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { assetPath } from '../assets/root.mjs'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
 const ICON_W = 32
 const ICON_H = 14
 const ORDER = ['Physical', 'Special', 'Status']
 
-const SOURCES = new URL('../../sprite-sources/frlg-ui/category/', import.meta.url)
+const SOURCES = assetPath('frlg-ui/category')
 const ATLAS = new URL('../../src/assets/frlg/move-categories.png', import.meta.url)
 const MANIFEST = new URL('../../src/data/frlg/move-categories.json', import.meta.url)
 
 const frames = ORDER.map((name) => {
-  const img = decodePng(readFileSync(new URL(`${name}.png`, SOURCES)))
+  const img = decodePng(readFileSync(join(SOURCES, `${name}.png`)))
   if (img.width !== ICON_W || img.height !== ICON_H) {
     throw new Error(`expected ${name}.png to be ${ICON_W}x${ICON_H}, got ${img.width}x${img.height}`)
   }

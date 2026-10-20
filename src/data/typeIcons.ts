@@ -1,5 +1,12 @@
-import atlasUrl from '../assets/frlg/type-icons.png';
+import placeholderUrl from '../assets/placeholders/frlg/type-icons.png';
+import { packedAtlasUrl } from '../assets/optional';
 import manifest from './frlg/type-icons.json';
+
+const TYPE_ATLASES = import.meta.glob('../assets/frlg/type-icons.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Readonly<Record<string, string>>;
 
 /**
  * The Añil type badges (the 18 types in dex order, the "???" slot and Fairy),
@@ -10,7 +17,11 @@ import manifest from './frlg/type-icons.json';
  * atlas lacks returns null and the UI falls back to a text chip. Local-only art —
  * see `docs/art-direction.md`.
  */
-export const TYPE_ICON_ATLAS_URL = atlasUrl;
+export const TYPE_ICON_ATLAS_URL = packedAtlasUrl(
+  TYPE_ATLASES,
+  '../assets/frlg/type-icons.png',
+  placeholderUrl,
+);
 export const TYPE_ICON_TEXTURE_KEY = 'frlg:type-icons';
 export const TYPE_ICON_W = manifest.width;
 export const TYPE_ICON_H = manifest.height;

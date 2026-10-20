@@ -13,6 +13,7 @@
 // (glyph metrics + atlas size), read at runtime by src/ui/frlgFont.ts.
 // Local-only art — see docs/art-direction.md.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { assetPath } from '../assets/root.mjs'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
 const SCALE = 2
@@ -27,8 +28,8 @@ const WHITE = [255, 255, 255]
 const GREY = [216, 216, 216]
 const DARK = [56, 56, 56]
 
-const SOURCE = new URL('../../sprite-sources/frlg-ui/fonts/latin_normal.png', import.meta.url)
-const CHARMAP = new URL('../../sprite-sources/frlg-ui/fonts/charmap.txt', import.meta.url)
+const SOURCE = assetPath('frlg-ui/fonts/latin_normal.png')
+const CHARMAP = assetPath('frlg-ui/fonts/charmap.txt')
 const ATLAS = new URL('../../src/assets/frlg/font.png', import.meta.url)
 const MANIFEST = new URL('../../src/data/frlg/font.json', import.meta.url)
 

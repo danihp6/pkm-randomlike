@@ -23,4 +23,23 @@ playwright-report/
 test-results/
 .playwright-mcp/
 .vitest/
+# Raw fan-ripped sheets, audio and tools (Nintendo/GameFreak/Chunsoft copyright)
+# used as a local source for the packers. Never redistributed: the packed output
+# below is derived from them, and it is not committed either.
 sprite-sources/
+# Derived art, packed locally from the private `pkrl-assets` store with
+# `npm run assets:pack` (see `src/assets/README.md`). A clone without that store
+# builds and boots against the committed blanks in `src/assets/placeholders/`.
+/public/anil/
+/src/assets/audio/
+/src/assets/frlg/
+/src/assets/anil/
+/src/assets/pokemon/*.png
+/src/assets/moves.png
+/src/assets/items.png
+/src/assets/hud.png
+/src/assets/wood.png
+/src/assets/desert.png
+/src/assets/apple-woods.png
+/src/assets/lush-prairie.png
+/src/assets/beach-cave.png

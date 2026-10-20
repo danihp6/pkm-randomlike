@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { hasArt } from '../../assets/art';
 import { decodePng } from '../../../scripts/legacy-art/png-codec.mjs';
 import { BUSH, FLOOR, ROCK, WALL, WATER, type TileMap } from '../../engine/map';
 import { resolveGroundFrame, resolveTileFrame, hiddenItemFrame } from '../../engine/tileFrames';
@@ -56,6 +57,7 @@ const FLOOR_FRAMES = [
 ];
 
 function atlas(name: (typeof ATLASES)[number]) {
+  if (!hasArt(`frlg/${name}.png`)) return { width: 0, height: 0, data: new Uint8Array() };
   return decodePng(
     readFileSync(fileURLToPath(new URL(`../../assets/frlg/${name}.png`, import.meta.url))),
   );
@@ -134,7 +136,7 @@ function tileMean(png: { width: number; data: Uint8Array }, frame: number): numb
   return sum.map((channel) => channel / opaque);
 }
 
-describe('frlg tileset atlases', () => {
+describe.skipIf(!hasArt('frlg/forest.png'))('frlg tileset atlases', () => {
   it('is a 4x13 grid of 16px cells', () => {
     expect(FRLG_TILE_SIZE).toBe(16);
     expect(FRLG_TILESET.atlas.tileSize).toBe(FRLG_TILE_SIZE);
@@ -380,7 +382,7 @@ describe('frlg tileset geometry', () => {
   });
 });
 
-describe('frlg forest floor', () => {
+describe.skipIf(!hasArt('frlg/forest.png'))('frlg forest floor', () => {
   const FOREST_FRAMES = [FRAME_FLOOR, FRAME_FLOOR_ALT_1, FRAME_FLOOR_ALT_2, FRAME_FLOOR_ALT_4];
 
   it('mixes the forest floor from weighted dark-ground frames', () => {

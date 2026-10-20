@@ -1,5 +1,12 @@
-import playerSpriteUrl from '../assets/frlg/player.png';
+import placeholderUrl from '../assets/placeholders/frlg/player.png';
+import { packedAtlasUrl } from '../assets/optional';
 import manifest from './frlg/player.json';
+
+const PLAYER_ATLASES = import.meta.glob('../assets/frlg/player.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Readonly<Record<string, string>>;
 
 /**
  * The FireRed/LeafGreen player overworld atlas
@@ -11,7 +18,11 @@ import manifest from './frlg/player.json';
  * longer the PMD placeholder sprite. Local-only art — see
  * `docs/art-direction.md`.
  */
-export const PLAYER_SPRITE_ATLAS_URL = playerSpriteUrl;
+export const PLAYER_SPRITE_ATLAS_URL = packedAtlasUrl(
+  PLAYER_ATLASES,
+  '../assets/frlg/player.png',
+  placeholderUrl,
+);
 export const PLAYER_SPRITE_TEXTURE_KEY = 'frlg:player';
 export const PLAYER_SPRITE_WIDTH = manifest.size;
 export const PLAYER_SPRITE_HEIGHT = manifest.height;

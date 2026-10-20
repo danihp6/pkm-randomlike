@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { hasArt } from '../assets/art';
 import { decodePng } from '../../scripts/legacy-art/png-codec.mjs';
 import { TRAINER_ARCHETYPES } from './trainers';
 import manifest from './frlg/trainers.json';
@@ -12,6 +13,7 @@ import manifest from './frlg/trainers.json';
 const FRAME = manifest.size;
 
 function atlas() {
+  if (!hasArt('frlg/trainers.png')) return { width: 0, height: 0, data: new Uint8Array() };
   const url = new URL('../assets/frlg/trainers.png', import.meta.url);
   return decodePng(readFileSync(fileURLToPath(url)));
 }
@@ -26,7 +28,7 @@ function frameHasArt(png: { width: number; height: number; data: Uint8Array }, f
   return false;
 }
 
-describe('trainer battle sprite atlas', () => {
+describe.skipIf(!hasArt('frlg/trainers.png'))('trainer battle sprite atlas', () => {
   const png = atlas();
 
   it('is a one-row strip of 64px frames, one per archetype', () => {

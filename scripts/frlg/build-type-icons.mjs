@@ -15,6 +15,7 @@
 // redistributed - see docs/art-direction.md.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { assetPath } from '../assets/root.mjs'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
 const ICON_W = 32
@@ -35,7 +36,7 @@ const FRAMES = [
   'dragon', 'dark', 'fairy', '',
 ]
 
-const sourcePath = process.argv[2] ?? 'sprite-sources/anil/Graphics/UI/types.png'
+const sourcePath = process.argv[2] ?? assetPath('anil/Graphics/UI/types.png')
 if (!existsSync(sourcePath)) {
   throw new Error(
     `usage: node scripts/frlg/build-type-icons.mjs <anil>/Graphics/UI/types.png (missing ${sourcePath})`,

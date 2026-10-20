@@ -10,9 +10,10 @@
 // read through src/data/groundItemSprite.ts. Local-only art: never
 // redistribute (docs/art-direction.md).
 import { readFileSync, writeFileSync } from 'node:fs'
+import { assetPath } from '../assets/root.mjs'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
-const SRC = new URL('../../sprite-sources/frlg/tileset.png', import.meta.url)
+const SRC = assetPath('frlg/tileset.png')
 const OUT = new URL('../../src/assets/frlg/ground-item.png', import.meta.url)
 
 const SIZE = 16

@@ -10,6 +10,7 @@
 // guessed from the decomp's TRAINER_PIC order, which this fan compilation does
 // not follow.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { assetPath } from '../assets/root.mjs'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
 const FRAME = 64
@@ -35,7 +36,7 @@ const SPRITES = {
   ace: [5, 4],
 }
 
-const SOURCE = new URL('../../sprite-sources/frlg/trainers.png', import.meta.url)
+const SOURCE = assetPath('frlg/trainers.png')
 const ATLAS = new URL('../../src/assets/frlg/trainers.png', import.meta.url)
 const MANIFEST = new URL('../../src/data/frlg/trainers.json', import.meta.url)
 

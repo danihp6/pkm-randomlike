@@ -10,6 +10,7 @@
 // src/data/frlg/battle-ui.json records the measured geometry (the atlas scale
 // and the HP track's fill rectangle) so the scene never hardcodes pixel maths.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { assetPath } from '../assets/root.mjs'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
 
 const SCALE = 4
@@ -22,7 +23,7 @@ const REGIONS = {
   cursor: [269, 4, 8, 11],
 }
 
-const SOURCE = new URL('../../sprite-sources/frlg-ui/hpbars-menu.png', import.meta.url)
+const SOURCE = assetPath('frlg-ui/hpbars-menu.png')
 const ASSETS = new URL('../../src/assets/frlg/', import.meta.url)
 const MANIFEST = new URL('../../src/data/frlg/battle-ui.json', import.meta.url)
 

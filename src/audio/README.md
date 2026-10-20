@@ -22,9 +22,11 @@ swapping the whole set for CC0 audio never touches a call site.
 | cries       | `cry-<file>`, from `cries/<file>.wav`                                       | 388  | 0.8                               |
 
 The table's **order is the shipped order**: the six hand rows, then `hit`, then
-the move cues and the cry cues in id order. The rows come from the committed asset
+the move cues and the cry cues in id order. The rows come from the packed asset
 folder in one `import.meta.glob`: a cue whose file was never packed cannot be
-played, and `audioCue(id)` throws `unknown audio cue: <id>` for a typo.
+played, and `audioCue(id)` throws `unknown audio cue: <id>` for a typo. The
+folder is gitignored (`npm run assets:pack`), so a clone without the private
+store simply has no cues.
 
 ## The Phaser half
 

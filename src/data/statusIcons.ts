@@ -1,5 +1,12 @@
-import atlasUrl from '../assets/frlg/status-icons.png';
+import placeholderUrl from '../assets/placeholders/frlg/status-icons.png';
+import { packedAtlasUrl } from '../assets/optional';
 import manifest from './frlg/status-icons.json';
+
+const STATUS_ATLASES = import.meta.glob('../assets/frlg/status-icons.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Readonly<Record<string, string>>;
 
 /**
  * The Añil status badges (SLP / PSN / BRN / PAR / FRZ, plus the FNT and PKRS
@@ -9,7 +16,11 @@ import manifest from './frlg/status-icons.json';
  * badly-poisoned badge, so `tox` keeps sharing the poison frame. Local-only art —
  * see `docs/art-direction.md`.
  */
-export const STATUS_ICON_ATLAS_URL = atlasUrl;
+export const STATUS_ICON_ATLAS_URL = packedAtlasUrl(
+  STATUS_ATLASES,
+  '../assets/frlg/status-icons.png',
+  placeholderUrl,
+);
 export const STATUS_ICON_TEXTURE_KEY = 'frlg:status-icons';
 export const STATUS_ICON_W = manifest.width;
 export const STATUS_ICON_H = manifest.height;

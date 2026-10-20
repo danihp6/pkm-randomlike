@@ -1,7 +1,14 @@
-import itemIconsUrl from '../assets/anil/item-icons.png';
+import placeholderUrl from '../assets/placeholders/anil/item-icons.png';
+import { packedAtlasUrl } from '../assets/optional';
 import manifest from './anil/item-icons.json';
 import { getMove, normalizeId } from './dex';
 import { getItem } from './items';
+
+const ITEM_ICON_ATLASES = import.meta.glob('../assets/anil/item-icons.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Readonly<Record<string, string>>;
 
 /**
  * The Añil item icon atlas (`src/assets/anil/item-icons.png`), packed by
@@ -11,7 +18,11 @@ import { getItem } from './items';
  * so a catalogue id that matches a file gets its own art with no table to keep.
  * Local-only art — see `docs/art-direction.md`.
  */
-export const ITEM_ICON_ATLAS_URL = itemIconsUrl;
+export const ITEM_ICON_ATLAS_URL = packedAtlasUrl(
+  ITEM_ICON_ATLASES,
+  '../assets/anil/item-icons.png',
+  placeholderUrl,
+);
 export const ITEM_ICON_TEXTURE_KEY = 'anil:item-icons';
 export const ITEM_ICON_SIZE = manifest.size;
 

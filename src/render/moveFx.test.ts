@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { hasArt } from '../assets/art';
 import { decodePng } from '../../scripts/legacy-art/png-codec.mjs';
 import {
   MOVE_FX_COLUMNS,
@@ -18,6 +19,7 @@ import {
 // trusted: a re-extract that shifts a strip fails this test rather than
 // rendering the wrong animation.
 function atlas() {
+  if (!hasArt('moves.png')) return { width: 0, height: 0, data: new Uint8Array() };
   const url = new URL('../assets/moves.png', import.meta.url);
   return decodePng(readFileSync(fileURLToPath(url)));
 }
@@ -36,7 +38,7 @@ function stripFrames(png: { width: number; height: number; data: Uint8Array }, r
   return last;
 }
 
-describe('move fx atlas', () => {
+describe.skipIf(!hasArt('moves.png'))('move fx atlas', () => {
   const png = atlas();
 
   it('holds one strip per registered fx, in registry order', () => {

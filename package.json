@@ -11,6 +11,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "prettier --check .",
+    "assets:pack": "node scripts/assets/pack.mjs",
+    "assets:placeholders": "node scripts/assets/build-placeholders.mjs",
     "data:dex": "node scripts/build-dex.mjs",
     "data:anil": "node scripts/anil/build-pokemon-sprites.mjs",
     "data:anil:items": "node scripts/anil/build-item-icons.mjs",

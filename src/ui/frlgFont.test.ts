@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { hasArt } from '../assets/art';
 import { decodePng } from '../../scripts/legacy-art/png-codec.mjs';
 import chrome from '../data/ui/chrome.json';
 import manifest from '../data/ui/font.json';
@@ -59,45 +60,48 @@ describe('FRLG bitmap font', () => {
     expect(FRLG_INK).toBe(0xf8fafc);
   });
 
-  it('keeps the glyph shapes and metrics while turning the shadow into a half-alpha halo', () => {
-    const source = atlas('../assets/frlg/font.png');
-    const packed = atlas('../assets/ui/font.png');
-    expect(packed.width).toBe(source.width);
-    expect(packed.height).toBe(source.height);
-    expect(packed.width).toBe(manifest.atlas.width);
-    expect(packed.height).toBe(manifest.atlas.height);
-    const wrongHalo: number[] = [];
-    const drifted: number[] = [];
-    let halos = 0;
-    for (let i = 0; i < source.data.length; i += 4) {
-      const shadow =
-        source.data[i + 3] === 255 &&
-        source.data[i] === FONT_SHADOW[0] &&
-        source.data[i + 1] === FONT_SHADOW[1] &&
-        source.data[i + 2] === FONT_SHADOW[2];
-      if (shadow) {
-        halos++;
-        if (
-          packed.data[i] !== 0 ||
-          packed.data[i + 1] !== 0 ||
-          packed.data[i + 2] !== 0 ||
-          packed.data[i + 3] !== FONT_HALO_ALPHA
-        ) {
-          wrongHalo.push(i);
+  it.skipIf(!hasArt('frlg/font.png'))(
+    'keeps the glyph shapes and metrics while turning the shadow into a half-alpha halo',
+    () => {
+      const source = atlas('../assets/frlg/font.png');
+      const packed = atlas('../assets/ui/font.png');
+      expect(packed.width).toBe(source.width);
+      expect(packed.height).toBe(source.height);
+      expect(packed.width).toBe(manifest.atlas.width);
+      expect(packed.height).toBe(manifest.atlas.height);
+      const wrongHalo: number[] = [];
+      const drifted: number[] = [];
+      let halos = 0;
+      for (let i = 0; i < source.data.length; i += 4) {
+        const shadow =
+          source.data[i + 3] === 255 &&
+          source.data[i] === FONT_SHADOW[0] &&
+          source.data[i + 1] === FONT_SHADOW[1] &&
+          source.data[i + 2] === FONT_SHADOW[2];
+        if (shadow) {
+          halos++;
+          if (
+            packed.data[i] !== 0 ||
+            packed.data[i + 1] !== 0 ||
+            packed.data[i + 2] !== 0 ||
+            packed.data[i + 3] !== FONT_HALO_ALPHA
+          ) {
+            wrongHalo.push(i);
+          }
+          continue;
         }
-        continue;
+        if (
+          packed.data[i] !== source.data[i] ||
+          packed.data[i + 1] !== source.data[i + 1] ||
+          packed.data[i + 2] !== source.data[i + 2] ||
+          packed.data[i + 3] !== source.data[i + 3]
+        ) {
+          drifted.push(i);
+        }
       }
-      if (
-        packed.data[i] !== source.data[i] ||
-        packed.data[i + 1] !== source.data[i + 1] ||
-        packed.data[i + 2] !== source.data[i + 2] ||
-        packed.data[i + 3] !== source.data[i + 3]
-      ) {
-        drifted.push(i);
-      }
-    }
-    expect(wrongHalo).toEqual([]);
-    expect(drifted).toEqual([]);
-    expect(halos).toBeGreaterThan(0);
-  });
+      expect(wrongHalo).toEqual([]);
+      expect(drifted).toEqual([]);
+      expect(halos).toBeGreaterThan(0);
+    },
+  );
 });
