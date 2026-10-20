@@ -37,8 +37,7 @@ export const descriptor: RoomDescriptor = {
     if (isItemPicked(host.run, staticSpeciesId(view.mapIndex, view.roomId))) return null;
     const content = staticRoomContent(host.run, view.mapIndex, view.roomId, gate.kind);
     if (content.variant !== 'legendary') return { counter: gate.pocket };
-    const name = getSpecies(content.speciesId)?.name ?? content.speciesId;
-    return { counter: gate.pocket, notice: staticLegendaryNotice(name) };
+    return { counter: gate.pocket, notice: staticLegendaryNotice() };
   },
   interact: (host, tile) => {
     const gate = host.route().gate;

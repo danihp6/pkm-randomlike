@@ -98,12 +98,11 @@ export function staticSealLockedNotice(kind: GateKind): Notice {
 }
 
 /**
- * The static leaf holds the legendary variant: `<name>` is the species' dex name.
- * The line names no species on purpose — the room is a hint, never a spoiler — so the
- * name is accepted for the caller's symmetry and printed nowhere.
+ * The static leaf holds the legendary variant: a hint, never the species' name. The
+ * line names no species on purpose, so it takes no argument and the key declares no
+ * `{name}` token (`src/i18n/index.test.ts` enforces the token set).
  */
-export function staticLegendaryNotice(name: string): Notice {
-  void name;
+export function staticLegendaryNotice(): Notice {
   return { text: t('notice.staticLegendary'), holdMs: NOTICE_HOLD_MS };
 }
 

@@ -171,14 +171,14 @@ describe('staticSealLockedNotice', () => {
 
 describe('staticLegendaryNotice', () => {
   it('hints at the legendary behind the seal with the shared hold', () => {
-    expect(staticLegendaryNotice('Moltres')).toEqual({
+    expect(staticLegendaryNotice()).toEqual({
       text: 'A legendary presence waits behind the seal.',
       holdMs: NOTICE_HOLD_MS,
     });
   });
 
   it('holds a notice for 2.6 seconds', () => {
-    expect(staticLegendaryNotice('Articuno').holdMs).toBe(2600);
+    expect(staticLegendaryNotice().holdMs).toBe(2600);
   });
 
   it('says something no other notice says', () => {
@@ -194,15 +194,13 @@ describe('staticLegendaryNotice', () => {
       missionCompleteNotice('Flawless floor'),
       staticSealLockedNotice('water'),
     ].map((notice) => notice.text);
-    expect(others).not.toContain(staticLegendaryNotice('Mewtwo').text);
+    expect(others).not.toContain(staticLegendaryNotice().text);
   });
 
   it('reads in the Spanish overlay once the locale switches back', () => {
     setLocale('es');
     try {
-      expect(staticLegendaryNotice('Zapdos').text).toBe(
-        'Una presencia legendaria aguarda tras el sello.',
-      );
+      expect(staticLegendaryNotice().text).toBe('Una presencia legendaria aguarda tras el sello.');
     } finally {
       setLocale('en');
     }

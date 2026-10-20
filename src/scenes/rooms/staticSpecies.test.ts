@@ -165,7 +165,7 @@ describe('the static room fixture', () => {
     expect(fixture).toEqual({ counter: POCKET });
   });
 
-  it('floats the legendary line, named from the dex, on the legendary variant', () => {
+  it('floats the legendary line on the legendary variant', () => {
     const legendary = harness({
       run: runWith(['caterpie'], [], {
         seed: 'static-96-0',
@@ -177,7 +177,7 @@ describe('the static room fixture', () => {
     const host = { ...legendary.host, view: roomView(planMap('static-96-0', 4), 5, false) };
     expect(descriptor.fixture?.(host)).toEqual({
       counter: POCKET,
-      notice: staticLegendaryNotice('Moltres'),
+      notice: staticLegendaryNotice(),
     });
   });
 });
