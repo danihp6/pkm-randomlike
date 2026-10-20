@@ -73,6 +73,11 @@ a placeholder (Phase 3).
 Phases 0-2 (scaffold, dex accessors, route generation & exploration) are done
 and archived in `CHANGELOG.md`. Next: Phase 3, the battle engine core (`TODO.md`).
 
+## Licence
+
+The source code is **MIT** (see `LICENSE`). `NOTICE` lists the third-party code
+(Showdown, `@pkmn/dex`), the trademarks and the art exception.
+
 ## Art and licences
 
 This repository ships **no ripped artwork**. The Pokémon sprites, tilesets and
