@@ -8,6 +8,28 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The slot machine's equipable prize is one grouped row off the Mart's own shelf.**
+      `CasinoPrize` gains `kind: 'held'` (a row that names no `itemId`, like the Egg) and
+      every band's fixed equipable becomes that one row at weight 1, so a newly banded
+      equipable reaches the machine the day `SHOP_ROTATION` bands it — no second balance
+      table and no edit to `CASINO`. `casinoHeldPool(band)` (new, `src/ui/casino.ts`) is
+      that band's `SHOP_ROTATION` filtered to non-consumed, modelled ids in table order,
+      with `early` and `low` falling back to the first band above that has one (`mid`), so
+      a Life Orb never surfaces on map 1; the pick is the spin stream's **last**
+      `rng.int`, taken only when the weighted pick lands on the grouped row, and the row
+      resolves to `{ kind: 'item', itemId }` before the spin returns, so every reader sees
+      one paid id. The table keeps its measured shape — the grouped row is 7.1 % of spins
+      at `early`, 6.5 % at `low`, 9.4 % at `mid`, 12.1 % at `high`, 10.6 % at `late` and
+      `end`, and `low` / `mid` are diluted (13 and 9 weight) back under break-even (≈ 90 %,
+      ≈ 91 % recovery). `src/ui/casino.test.ts` re-pins `pkm-64` map 5's fourth spin from
+      the fixed Life Orb to the grouped draw (spins 1-3, the Egg and the reload rule do not
+      move) and `src/data/casino.test.ts` re-pins the per-band counts. No run field, no
+      `SAVE_VERSION` step, no RNG draw outside the spin's own stream. **QA:** Task QA
+      `qa-115` (`main@773624e` + `task-115@bef584f`, integration `25174a7`): 7/7 `[unit]`
+      criteria green, `npm test` **2219** passed / 67 skipped and `npm run build` clean
+      over 8 diff paths, `src/ui/casino.ts` still Phaser-free; the batch's Integration QA
+      re-ran both gates on the combined tree (`4dafdee`): **2225** passed / 67 skipped.
+
 - [x] **The merchant replaces the shop room, and the Mart survives behind its `TRADE` row.**
       The `'shop'` leaf is gone: `MapRoomSpecial` no longer carries it, `planMap` drops the
       guaranteed leaf (`SHOP_FROM_MAP` / `hangsShop` retire), the minimap marker set loses

@@ -6097,7 +6097,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       **and** `src/scenes/BattleScene.ts`, so it opens the plan's next batch after `[Task-109]` —
       **Batch 52** — and it adds no run field. *(Batch 52)*
 
-- [ ] **[Task-115] The casino's equipable row is one grouped row, and it follows the Mart's banded pool.**
+- [x] **[Task-115] The casino's equipable row is one grouped row, and it follows the Mart's banded pool.**
       The human's rule: the machine's **fixed held item** becomes a **random one of that
       band**, so a newly shipped equipable reaches the machine the same way it reaches the
       Mart — by being banded in `SHOP_ROTATION` — with no second balance table and no edit to

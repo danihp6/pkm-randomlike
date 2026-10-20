@@ -1,4 +1,8 @@
 import { CASINO, EGG_ITEM_ID, type CasinoPrize } from '../data/casino';
+import { getItem } from '../data/items';
+import { LEVEL_BANDS, type BandId } from '../data/run';
+import { SHOP_ROTATION } from '../data/shop';
+import { UNMODELLED_ITEMS } from '../engine/battle/effects/items';
 import { hashSeed, Rng } from '../engine/rng';
 import { bandForMap } from '../engine/run/floors';
 import { speciesPool } from '../engine/run/pool';
@@ -57,6 +61,38 @@ export type CasinoSpin = Readonly<{
 /** The prefix every spin mark of a floor shares, so the count is a plain filter. */
 const SPIN_PREFIX = 'casino-spin-';
 
+/**
+ * One band's Mart shelf as the machine sees it: `SHOP_ROTATION[band]` in table
+ * order, without an id the catalogue does not hold, a consumable (`consumed`) and
+ * an id the battle engine does not model (`UNMODELLED_ITEMS`), deduplicated.
+ */
+function shelfPool(band: BandId): readonly string[] {
+  const pool: string[] = [];
+  for (const entry of SHOP_ROTATION[band]) {
+    const item = getItem(entry.itemId);
+    if (!item || item.consumed === true) continue;
+    if (UNMODELLED_ITEMS.includes(entry.itemId)) continue;
+    if (pool.includes(entry.itemId)) continue;
+    pool.push(entry.itemId);
+  }
+  return pool;
+}
+
+/**
+ * The band's equipable pool: `SHOP_ROTATION[band]` filtered by `shelfPool`. A band
+ * with no equipable of its own (the two berry-only on-ramp shelves) falls back to
+ * the **first band above** it that has one in `LEVEL_BANDS` order, so `early` and
+ * `low` both draw `mid`'s shelf; `[]` only when no band above has one either.
+ */
+export function casinoHeldPool(band: BandId): readonly string[] {
+  const bands = LEVEL_BANDS.map((row) => row.id);
+  for (let i = Math.max(0, bands.indexOf(band)); i < bands.length; i++) {
+    const pool = shelfPool(bands[i]);
+    if (pool.length > 0) return pool;
+  }
+  return [];
+}
+
 /** How many spins this floor has already paid for: the id the next stream reads. */
 function spinCount(run: RunState, mapIndex: number): number {
   const prefix = `${SPIN_PREFIX}${mapIndex}-`;
@@ -66,12 +102,13 @@ function spinCount(run: RunState, mapIndex: number): number {
 /**
  * The row a weighted pick lands: **one** draw over the usable rows' cumulative
  * weights, the same shape `rewardChoices` uses (`src/ui/rewards.ts`). A row whose
- * weight is `<= 0` is skipped, and a band with no usable row pays nothing (the
- * shipped table always has one).
+ * weight is `<= 0` is skipped, a `'held'` row is usable without an id (its id is
+ * drawn later), and a band with no usable row pays nothing (the shipped table
+ * always has one).
  */
 function drawPrize(rows: readonly CasinoPrize[], rng: Rng): CasinoPrize | null {
   const usable = rows.filter(
-    (row) => row.weight > 0 && (row.kind === 'egg' || (row.itemId ?? '') !== ''),
+    (row) => row.weight > 0 && (row.kind !== 'item' || (row.itemId ?? '') !== ''),
   );
   if (usable.length === 0) return null;
   const total = usable.reduce((sum, row) => sum + row.weight, 0);
@@ -85,6 +122,19 @@ function drawPrize(rows: readonly CasinoPrize[], rng: Rng): CasinoPrize | null {
     }
   }
   return usable[index];
+}
+
+/**
+ * The catalogue id a drawn row pays. A grouped `'held'` row resolves here, with the
+ * spin stream's **last** draw over the band's own pool, so every reader past
+ * `casinoSpin` still sees one paid item id; a band with no pool, and the Egg row,
+ * pay no id (the Egg).
+ */
+function prizeItemId(row: CasinoPrize, band: BandId, rng: Rng): string | null {
+  if (row.kind === 'item') return row.itemId ?? null;
+  if (row.kind !== 'held') return null;
+  const pool = casinoHeldPool(band);
+  return pool.length > 0 ? pool[rng.int(0, pool.length - 1)] : null;
 }
 
 /**
@@ -115,11 +165,12 @@ export function casinoSpin(run: RunState): CasinoSpin {
     };
   }
   const prize = drawPrize(CASINO.prizes[band.id], rng);
-  if (prize && prize.kind === 'item' && prize.itemId !== undefined) {
+  const itemId = prize ? prizeItemId(prize, band.id, rng) : null;
+  if (itemId !== null) {
     return {
-      run: addItem(spun, prize.itemId),
+      run: addItem(spun, itemId),
       ok: true,
-      outcome: { kind: 'item', itemId: prize.itemId },
+      outcome: { kind: 'item', itemId },
     };
   }
   return { run: addItem(spun, EGG_ITEM_ID), ok: true, outcome: { kind: 'egg' } };

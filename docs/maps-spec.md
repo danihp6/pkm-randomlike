@@ -258,7 +258,7 @@ regular trainer to one. Their content:
 | --- | --- | --- | --- |
 | **mini-boss** | medium chance | a leaf anywhere | one strong trainer fielding a **fixed party of three** (**two** on map 1, `bossPartySize('miniboss', mapIndex)`); beating it offers **one floating window of six rows** — three **items** from the map's reward pool and three **Pokémon it presents only by their highest stat and their nature** (`ATTACK · Adamant`), never by name, sprite, types or moves — each row taken by dragging it onto the bag or the party, with no keyboard path |
 | **mega-stone** | low chance, **from map 3 onward** | a leaf anywhere | one random **Mega Stone** item |
-| **casino** | 30 % chance, **from map 2 onward** | a leaf anywhere | a **slot machine** counter with a Team Rocket grunt beside it; the interact key (`E`) opens the machine's own window, where one **spin** costs the floor band's price (`CASINO.price`, `src/data/casino.ts`) and pays an item, an **Egg** or the fight against the grunt |
+| **casino** | 30 % chance, **from map 2 onward** | a leaf anywhere | a **slot machine** counter with a Team Rocket grunt beside it; the interact key (`E`) opens the machine's own window, where one **spin** costs the floor band's price (`CASINO.price`, `src/data/casino.ts`) and pays an item, one of the band's **grouped equipables** (`casinoHeldPool`), an **Egg** or the fight against the grunt |
 | **gated** | 20 % chance, **from map 3 onward** | a leaf anywhere | one **vault** sealed by a **bush**, a **rock** or a **pond**; the interact key opens it when a party member has the obstacle's **type** — Bug or Grass / Rock or Fighting / Water — and the reward inside is one ground item |
 | **trade** | 20 % chance, **from map 3 onward** | a leaf anywhere | a counter; the interact key (`E`) opens the room's own window, which lists the **party** and one `LEAVE` row. Giving a member away rolls **one random Pokémon on acceptance** (never previewed) and places it in the party at the **squad's level**; one trade per room, and refused on a single-member party |
 | **no-heal** | 20 % chance, **from map 3 onward** | a leaf anywhere | one `psychic` trainer; **every battle that starts in the room** refuses the **player's** Bag and healing moves (`docs/battle-spec.md` §2) |
@@ -454,14 +454,24 @@ message line. One **spin**:
   the window answers "The machine is out of order." on every later attempt,
   however the battle ends;
 - otherwise pays **one weighted row** of the band's prize table: a catalogue item
-  (the band's potion rung, its ball, an Oran Berry, a held item, a **Nugget**) or
-  the **Egg**, which carries one weight of each band's total (≈ 9 % of paying spins
-  early, ≈ 12 % late).
+  (the band's potion rung, its ball, an Oran Berry, a **Nugget**) or the **Egg**,
+  which carries one weight of each band's total (≈ 8 % of paying spins early,
+  ≈ 12 % late). One row of every band — weight 1 — is the **grouped equipable**: it
+  names no id and pays one member of `casinoHeldPool(band)` (`src/ui/casino.ts`),
+  the band's own `SHOP_ROTATION` shelf in table order, without the consumables and
+  the ids the engine does not model, so a newly banded held item reaches the machine
+  the day the Mart bands it. `early` and `low`, whose shelves are berry-only, draw
+  `mid`'s seven equipables. The grouped row's absolute chance is `0.85 × 1 / total`
+  — ≈ 7.1 % / 6.5 % / 9.4 % / 12.1 % / 10.6 % / 10.6 % from `early` to `end` — and
+  the `low` and `mid` rows ship **diluted** (`docs/balance/economy.md`, `## The
+  casino's spin`).
 
 A spin is a **pure function of the run** (`casinoSpin`, `src/ui/casino.ts`): its
 stream is `Rng(hashSeed(`${seed}:casino:${mapIndex}:${n}`))`, where `n` is the
 number of `casino-spin-<map>-*` marks the run already holds, so a reloaded run
-continues the same sequence and no other stream in the game moves. A spin the run
+continues the same sequence and no other stream in the game moves. The grouped
+row's extra draw is the **last** `rng.int` of that stream, taken only when the pick
+landed on it, so every other outcome draws exactly what it drew before. A spin the run
 cannot afford is refused **without spending anything** and without drawing.
 
 The **Egg** is an ordinary bag item (`kind: 'valuable'` and `price: 0`, so the Mart

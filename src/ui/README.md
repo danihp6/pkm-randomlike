@@ -29,7 +29,8 @@ testable logic belongs in the computing half.
 - `notice.ts` — the run's transient notices: their copy and hold time, one at a time, with no
   key and no input taken.
 - `casino.ts` — the casino's slot machine as a pure model: one spin against the run (price,
-  lock, weighted prize or the grunt fight) and the Egg's hatch on the floor advance.
+  lock, weighted prize or the grunt fight), the band's equipable pool the grouped row draws
+  from, and the Egg's hatch on the floor advance.
 - `npcPanel.ts` — the modal card every special NPC fills: the title, the wrapped paragraph, the
   column of choices with `LEAVE` last, and the pure row layout the card draws from.
 - `abilityInfo.ts` — the ability row's info control and the text it floats, so the route HUD and
