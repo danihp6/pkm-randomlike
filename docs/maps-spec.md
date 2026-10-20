@@ -181,8 +181,17 @@ rooms at 30x30, map 6's corridor at 37x30 and map 8's corridor at 52x30
 
 ## 5. Levels & the player's cap (D29)
 
-- `levelRangeForMap(mapIndex)` is the band. Wild encounters and trainer rosters
-  draw species and levels from it, never from the player's level (D17).
+- `levelRangeForMap(mapIndex)` is the band. Wild encounters draw species and
+  levels from it, never from the player's level (D17). A **regular trainer's**
+  level is no longer drawn from the range: it is
+  `clamp(floor(squadLevel(run) × percent[size]), 1, maxLevel)`, with `percent`
+  **1.00 / 0.90 / 0.80 / 0.70** for a party of **1 / 2 / 3 / 4** members
+  (`TRAINER_LEVEL_PERCENT`, `trainerLevel`, `src/data/trainerLevels.ts`; the size
+  is the floor's `trainerSize`), so a trainer scales with the live squad (D35) and
+  the floor's cap is still its hard ceiling (D11/D17 amended). The **boss** and
+  the **mini-boss** are hand-placed and keep the level draw they shipped with (the
+  boss pinned to the floor's cap), because the scene passes no `levelFor` for
+  those two fights.
 - Within the map, room `i` of `K` fields `minLevel + (i-1) / (K-1) *
   (maxLevel - minLevel)` as its working level, so the map ramps and the boss sits
   at the top.

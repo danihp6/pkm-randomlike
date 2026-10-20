@@ -25,19 +25,36 @@ export type RosterOptions = Readonly<{
    * keeps `band.trainerSize`, which is what every existing caller reads.
    */
   count?: number;
+  /**
+   * The level every member carries, by the roster's own size
+   * (`Math.max(1, options.count ?? band.trainerSize)`). A regular trainer passes
+   * `trainerLevel(squadLevel(run), size, cap)` so the fight scales with the live
+   * squad (D35, `docs/maps-spec.md` §5); a boss and a mini-boss pass nothing and
+   * keep the band draw.
+   *
+   * When given, the band's `rng.int(band.minLevel, band.maxLevel)` level draw is
+   * **not taken**, so the level is no longer a function of the seed (D11 amended):
+   * the seed still fixes the draws, but deleting one shifts the ones after it, and
+   * only the first member's species is guaranteed to stay put. When absent the
+   * shipped draw is kept byte for byte.
+   */
+  levelFor?: (size: number) => number;
 }>;
 
 /**
  * A deterministic trainer roster: `options.count ?? band.trainerSize` species
  * drawn without replacement from the band's BST pool (repeats only if the pool is
- * smaller than the party), each level inside the band. The pool is shared by
+ * smaller than the party), each level inside the band, or `options.levelFor(size)`
+ * when the caller resolves it from the live squad level. The pool is shared by
  * every archetype — it varies only by the floor's BST window and the bans
  * (`D39`), and a trainer (unlike the wild) may field a legendary or mythical —
  * and a boss raises the window to its upper half. The run's battle seed feeds the
  * `rng`, so a replay rebuilds the same team. The forme each entry is generated as
  * comes from the `variant` sibling stream split off that same seed before the
  * first draw, so the picks, the levels and the Mega Stone stay where they were
- * (`D38`).
+ * (`D38`). A roster built with `levelFor` takes no level draw, so the draws after
+ * it in the same stream shift — the Mega Stone pick moves with them — while the
+ * seed still fixes every draw (`D11`/`D17` amended).
  */
 export function trainerRoster(
   band: LevelBand,
@@ -56,7 +73,7 @@ export function trainerRoster(
     roster.push({
       id: `${idPrefix}:${i}`,
       speciesId: variantSpecies(speciesId, variantRng),
-      level: rng.int(band.minLevel, band.maxLevel),
+      level: options.levelFor ? options.levelFor(size) : rng.int(band.minLevel, band.maxLevel),
     });
   }
   if (options.allowMega) assignMegaStone(roster, rng);

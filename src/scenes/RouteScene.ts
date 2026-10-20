@@ -30,6 +30,7 @@ import {
 } from '../data/overworldSprites';
 import { trainerFacingPose, trainerWalkAnimKey } from '../render/trainerAnim';
 import { getTrainerArchetype, TRAINER_ARCHETYPE_IDS } from '../data/trainers';
+import { trainerLevel } from '../data/trainerLevels';
 import { IS_DEVELOP } from '../dev/env';
 import { nextDebugPokemonId } from '../dev/ids';
 import type {
@@ -5525,6 +5526,12 @@ export class RouteScene extends Phaser.Scene {
       allowMega: isBoss || isMiniBoss || archetype.carriesMega === true,
       boss: isBoss || isMiniBoss,
       ...(kind !== null && mapIndex !== null ? { count: bossPartySize(kind, mapIndex) } : {}),
+      // A regular trainer's level is a percentage of the live squad level by its own
+      // party size, capped at the floor's ceiling (`docs/maps-spec.md` §5, D35); the
+      // boss and the mini-boss keep the band draw they shipped with.
+      ...(kind === null
+        ? { levelFor: (size: number) => trainerLevel(squadLevel(this.run), size, band.maxLevel) }
+        : {}),
     });
     this.startBattle({
       kind: 'trainer',

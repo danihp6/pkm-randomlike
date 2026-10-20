@@ -36,6 +36,10 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   roster is the floor's BST pool (`src/engine/run/pool.ts`, `D39`). Its
   `SPECIAL_ARCHETYPES` are the **set-piece** rows a room places itself (the casino's
   `rocket` grunt), kept outside `TRAINER_ARCHETYPES` so the route never rolls them.
+- `trainerLevels.ts` — the player-relative trainer level table: each regular party
+  size's percentage of the live squad level, and the rule that floors it and clamps
+  it to the floor's cap, read by the route's roster build (`docs/maps-spec.md` §5,
+  D35, D11/D17 amended).
 - `casino.ts` — the casino room's balance table: one spin's price per band, the
   chance a spin turns into the grunt fight and each band's weighted prize rows.
 - `noHeal.ts` — the no-heal room's table: the first floor that may hang it, the

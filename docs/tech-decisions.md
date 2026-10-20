@@ -86,6 +86,20 @@ One seed per run. Map layout, encounter rolls, trainer rosters, loot and battle
 randomness all come from `Rng` streams derived from it. Same seed + same inputs =
 same run; there is a regression test whenever the RNG or a generator changes.
 
+### D11 — addendum: the seed fixes the draw, not the level *(decided)*
+
+A **regular trainer's** level is no longer a value the seed fixes: it is a
+function of the live squad level and the floor's cap (`trainerLevel`,
+`src/data/trainerLevels.ts`, `docs/maps-spec.md` §5). The seed still fixes the
+**draws** — the species picks, the variant rolls and the Mega Stone — so a
+replay from the same save rebuilds the same team at the levels the squad has at
+that moment. Two consequences are deliberate: replaying at a higher squad level
+fields a stronger trainer, and a roster built with `levelFor` skips the level
+draw, which shifts the draws after it in the same stream (a fixed seed's Mega
+Stone pick changes, and only the first member's species is guaranteed to stay
+put), while the shipped band draw — no `levelFor` — is untouched. The
+twenty-fifth round's player-relative model.
+
 ## D12 — UI language: English *(decided)*
 
 Game text, docs, code and commit messages in English. (The donor's convention of
@@ -137,6 +151,17 @@ the one that would be dead on an arbitrary species is implemented generically
 instead of excluded (Wonder Guard). **No Guard is never paired with an
 OHKO move.** An evolution **re-rolls** the ability from the new species' pool
 under the same run seed.
+
+### D17 — addendum: the squad level may set a level *(decided)*
+
+"A trainer's team" still covers what is rolled — species, variant forme, Mega
+Stone — but the **level** of a regular trainer's roster leaves the list of things
+randomness touches: each member is `floor(squadLevel × percent[size])` clamped to
+the floor's cap, with 100 / 90 / 80 / 70 % for 1 / 2 / 3 / 4 members
+(`trainerLevel`, `src/data/trainerLevels.ts`), so a trainer scales with the
+player by construction instead of rolling across the map's range. The **boss**
+and the **mini-boss** keep their hand-placed levels. Wild levels are a separate
+decision. The twenty-fifth round.
 
 ## D18 — Tile size is a property of the tileset *(decided)*
 
