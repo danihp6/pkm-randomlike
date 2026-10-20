@@ -167,6 +167,53 @@ describe('trainerRoster variant roll (fixed seed)', () => {
   });
 });
 
+describe('trainerRoster levelFor', () => {
+  it('carries the callback level on every member, once per member', () => {
+    const sizes: number[] = [];
+    const roster = trainerRoster(end, new Rng(7), 't1', {
+      levelFor: (size) => {
+        sizes.push(size);
+        return 12;
+      },
+    });
+    expect(roster).toHaveLength(4);
+    expect(roster.map((entry) => entry.level)).toEqual([12, 12, 12, 12]);
+    expect(roster.map((entry) => entry.id)).toEqual(['t1:0', 't1:1', 't1:2', 't1:3']);
+    expect(sizes).toEqual([4, 4, 4, 4]);
+  });
+
+  it('passes the overridden count as the size', () => {
+    const sizes: number[] = [];
+    const roster = trainerRoster(end, new Rng(7), 't1', {
+      count: 2,
+      levelFor: (size) => {
+        sizes.push(size);
+        return 30;
+      },
+    });
+    expect(roster).toHaveLength(2);
+    expect(sizes).toEqual([2, 2]);
+  });
+
+  it('builds the identical roster twice from the same seed', () => {
+    const build = (): readonly RosterEntry[] =>
+      trainerRoster(LEVEL_BANDS[5], new Rng(7), 't1', { levelFor: () => 12 });
+    expect(build()).toEqual(build());
+  });
+
+  it('pins the fixed-seed roster it builds (LEVEL_BANDS[5], Rng(7), levelFor 12)', () => {
+    // Read off this build: without the level draw the species stream runs ahead,
+    // so the picks differ from the no-`levelFor` roster from the second member on.
+    const roster = trainerRoster(LEVEL_BANDS[5], new Rng(7), 't1', { levelFor: () => 12 });
+    expect(roster.map(({ id, speciesId, level }) => ({ id, speciesId, level }))).toEqual([
+      { id: 't1:0', speciesId: 'arcanine', level: 12 },
+      { id: 't1:1', speciesId: 'moltres', level: 12 },
+      { id: 't1:2', speciesId: 'archaludon', level: 12 },
+      { id: 't1:3', speciesId: 'celesteela', level: 12 },
+    ]);
+  });
+});
+
 describe('assignMegaStone', () => {
   it('gives a lone Mega species its stone', () => {
     const roster: RosterEntry[] = [{ id: 't:0', speciesId: 'garchomp', level: 40 }];

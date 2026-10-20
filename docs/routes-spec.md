@@ -291,9 +291,16 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
   the **upper half** of its band's BST window, one step above the floor's regular
   trainers.
 - A trainer roster is generated deterministically from the route seed and the
-  map's band, and never exceeds the map's level cap. Trainers are placed by the
-  population pass (step 4): one guards the main lane, the rest hold the optional
-  paths by the pocket items, and their count scales with the map size.
+  map's band, and never exceeds the map's level cap. A **regular** trainer's level
+  is a percentage of the **live squad level** (`squadLevel`, D35) by its own party
+  size — 100 / 90 / 80 / 70 % for 1 / 2 / 3 / 4 members, floored and clamped to the
+  floor's cap (`TRAINER_LEVEL_PERCENT` and `trainerLevel`,
+  `src/data/trainerLevels.ts`, `docs/maps-spec.md` §5) — so the seed fixes the
+  species picks while the level follows the player (D11/D17 amended). The **boss**
+  and the **mini-boss** keep the level draw they shipped with (the boss at the
+  map's cap). Trainers are placed by the population pass (step 4): one guards the
+  main lane, the rest hold the optional paths by the pocket items, and their count
+  scales with the map size.
 - The map's **farthest room from the entry** fields the boss at the map's
   `maxLevel`, a fixed party of **six** (**three** on map 1, `src/data/bosses.ts`).
 - The floor's **population** thins on the on-ramp: maps 1-2 cancel the map-size
