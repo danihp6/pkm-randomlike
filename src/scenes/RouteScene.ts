@@ -31,6 +31,7 @@ import {
 import { trainerFacingPose, trainerWalkAnimKey } from '../render/trainerAnim';
 import { getTrainerArchetype, TRAINER_ARCHETYPE_IDS } from '../data/trainers';
 import { trainerLevel } from '../data/trainerLevels';
+import { bandForLevel } from '../data/run';
 import { IS_DEVELOP } from '../dev/env';
 import { nextDebugPokemonId } from '../dev/ids';
 import type {
@@ -69,10 +70,8 @@ import {
   nextMemberId,
   pcMemberEditable,
   resolveBattle,
-  roomLevelForMap,
   routeIndexForRoom,
   runBand,
-  runRoomLevel,
   squadLevel,
   trainerMoney,
   trainerRoster,
@@ -117,6 +116,7 @@ import {
   encounterTableFor,
   exitEdgeAt,
   gateId,
+  rollWildLevel,
   seesPlayer,
   sketchRoute,
   sketchRouteSteps,
@@ -704,6 +704,9 @@ const DEMO_RESERVE: FighterInput = {
 };
 
 const DEMO_BAG: readonly BagCounts[] = [];
+
+/** One dev wild roll: what the room's live stream handed out on a step. */
+export type DebugWildRoll = Readonly<{ speciesId: string; level: number; shiny: boolean }>;
 
 export class RouteScene extends Phaser.Scene {
   private route!: RouteMap;
@@ -1347,7 +1350,7 @@ export class RouteScene extends Phaser.Scene {
    * render maps, and the tileset and encounter stream follow the route's biome.
    * Both `buildRoute` and the debug frame-map import go through here so they
    * cannot drift. `view` is the plan room on screen (null for an imported map or
-   * the dev generator), which carries the map band and the room's ramp level.
+   * the dev generator), which carries the map band and the floor's level cap.
    */
   private applyRoute(route: RouteMap, view: RoomView | null = null): void {
     // The boss room's portal is carved from the start but sealed until the boss
@@ -1361,16 +1364,13 @@ export class RouteScene extends Phaser.Scene {
     this.generatorStepIndex = null;
     const biome = getBiome(route.biomeId);
     const band = view ? bandForMap(view.mapIndex) : runBand(this.run.seed, route.routeIndex);
-    const roomLevel = view
-      ? roomLevelForMap(view.mapIndex, view.roomId, view.roomCount)
-      : runRoomLevel(this.run.seed, route.routeIndex);
+    const cap = band.maxLevel;
     this.tilesetId = biome.tilesetId;
     this.moveMap = this.movementMap(this.map);
     this.encounters = new RouteEncounters(
-      encounterTableFor(band),
-      roomLevel,
-      roomLevel,
+      encounterTableFor(bandForLevel(squadLevel(this.run))),
       new Rng(hashSeed(`${route.seed}:encounters:${route.routeIndex}`)),
+      (rng) => rollWildLevel(rng, squadLevel(this.run), cap),
       undefined,
       // Shinies roll on their own stream, so they never shift the encounter
       // sequence a fixed seed already produced.
@@ -6010,6 +6010,27 @@ export class RouteScene extends Phaser.Scene {
       ability: member.fighter.ability,
       moves: member.fighter.moves.map((slot) => slot.moveId),
     }));
+  }
+
+  /**
+   * Dev only: rolls `count` wild encounters off the room's live stream, skipping
+   * the chance misses and advancing that stream. Returns them in roll order, or
+   * nothing with no live run, a finished run or no room on screen.
+   */
+  debugRollWildEncounters(count = 1): readonly DebugWildRoll[] {
+    if (!IS_DEVELOP || !this.run || this.gameOver || !this.encounters) return [];
+    const rolls = Math.max(1, Math.min(500, Math.floor(Number.isFinite(count) ? count : 1)));
+    const result: DebugWildRoll[] = [];
+    for (let tries = 0; tries < rolls * 64 && result.length < rolls; tries++) {
+      const encounter = this.encounters.step();
+      if (!encounter) continue;
+      result.push({
+        speciesId: encounter.speciesId,
+        level: encounter.level,
+        shiny: encounter.shiny,
+      });
+    }
+    return result;
   }
 
   /**

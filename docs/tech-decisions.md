@@ -100,6 +100,16 @@ Stone pick changes, and only the first member's species is guaranteed to stay
 put), while the shipped band draw — no `levelFor` — is untouched. The
 twenty-fifth round's player-relative model.
 
+### D11 — addendum: the seed fixes the wild level's draw, not the level *(decided)*
+
+The route's encounter stream keeps **one level draw per encounter**: the draw
+sequence and the species picks stay the seed's, and the level that draw yields is
+`fraction × squadLevel` (`rollWildLevel`, `src/data/wildLevels.ts`), so a replay on
+a stronger squad fields stronger wilds (`docs/routes-spec.md` §3/§5). The scene used
+to pass `minLevel === maxLevel`, and `Rng.int` spent **no** draw there, so a fixed
+seed's encounter sequence moves **once**, here: the fraction now takes the slot the
+level draw would have occupied, and every later draw of that stream shifts with it.
+
 ## D12 — UI language: English *(decided)*
 
 Game text, docs, code and commit messages in English. (The donor's convention of
@@ -160,8 +170,19 @@ randomness touches: each member is `floor(squadLevel × percent[size])` clamped 
 the floor's cap, with 100 / 90 / 80 / 70 % for 1 / 2 / 3 / 4 members
 (`trainerLevel`, `src/data/trainerLevels.ts`), so a trainer scales with the
 player by construction instead of rolling across the map's range. The **boss**
-and the **mini-boss** keep their hand-placed levels. Wild levels are a separate
-decision. The twenty-fifth round.
+and the **mini-boss** keep their hand-placed levels. Wild levels are the
+addendum below. The twenty-fifth round.
+
+### D17 — addendum: a wild level is a fraction of the squad level *(decided)*
+
+A wild encounter's **level** leaves the list of things randomness touches: it is
+`clamp(floor(squadLevel(run) × fraction), 1, cap)`, with `fraction ∈ [0.60, 0.75)`
+drawn on the encounter stream (`WILD_LEVEL_FRACTION`, `wildLevel`,
+`src/data/wildLevels.ts`) and `cap` the floor's `maxLevel`, so the seed fixes the
+draw while the level follows the live squad (`docs/routes-spec.md` §3/§5,
+`docs/maps-spec.md` §5). The **species** and **variant** draws stay rolled, and the
+wild table's species window follows the band the squad's own level falls in
+(`bandForLevel(squadLevel(run))`), not the floor's.
 
 ## D18 — Tile size is a property of the tileset *(decided)*
 
