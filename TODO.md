@@ -1099,6 +1099,29 @@ unscheduled by its own decision line. No `package.json`, `src/main.ts`,
 `vite.config.ts` or `src/data/dex/**` is claimed by 99. The three empty slots name
 those constraints, so the batch runs as one dev wave and one QA wave.
 
+**Batch 43 is `[Task-96]` alone: the fill search found no legal mate.** Its cut holds
+`src/scenes/RouteScene.ts`, `src/engine/maps/plan.ts` + `plan.test.ts` and — by type,
+the record above predating it — no `src/ui/mapView.ts` at all (`MapRoomMarker` is an
+alias of `MapRoomSpecial`, so the new plan value reaches the minimap without an edit),
+plus the room layer's own paths (`src/scenes/rooms/types.ts`, `registry.test.ts`, the
+new descriptor + test), the new pure module and table with their tests
+(`src/engine/routes/staticSpecies.ts` + test, `src/data/staticSpecies.ts` + test),
+`src/engine/routes/index.ts`, `src/ui/notice.ts` + test, `src/i18n/{en,es}.ts`, three
+folder READMEs and the three docs' §7/§3/§6 blocks. Every other open task is blocked by
+name: `[Task-97]` (Batch 44) shares `src/engine/maps/plan.ts` and the room layer **and**
+depends on 96; `[Task-100]`, 101, 102, 108, 109 and 110 each claim
+`src/scenes/RouteScene.ts`, which 96 holds; `[Task-103]` (Batch 47) claims no scene and
+its own dependencies are merged (`[Task-87]`, 94, 95 and 106 all shipped), but its
+`SAVE_VERSION` step is frozen at **22 → 23** by the plan's batch order after
+`[Task-101]`'s 21 → 22 — the file reads **21** on `main` — so pulling it into 43 would
+invert the chain and stale 101's own entry; `[Task-114]` (Batch 53) needs
+`[Task-101]`'s `src/engine/battle/commands.ts` and `[Task-118]` (Batch 57) is written
+against 114, so both wait on an unmerged dependency; `[Task-117]` (Batch 56) shares
+`src/engine/maps/plan.ts` with 96; and `[Task-28]` stays unscheduled by its own decision
+line. The three empty slots name those constraints, so the batch runs as one dev wave
+and one QA wave — and, being one task, as a single QA pass that covers the integration
+scope too.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
