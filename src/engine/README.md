@@ -40,7 +40,7 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   `run/starters.ts`, `run/share.ts`, `run/party.ts` (the party predicates a room asks: what
   types the party holds), `run/trade.ts` (the deliberate trade: one member out, one
   rolled member in at the squad's level) and `run/passives.ts` (the map passives a
-  room's abilities pay).
+  room's abilities pay), and `run/missions.ts` (the floor's mission and its progress).
 
 ## Rules
 

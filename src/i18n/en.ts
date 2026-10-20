@@ -93,6 +93,10 @@ export const en = {
   'hud.learnTitle': 'LEVEL UP',
   'hud.evolveTitle': 'EVOLUTION',
   'hud.pressAnyKey': 'press any key',
+  'hud.mission': 'Mission: {mission}',
+
+  // mission — the floor's own objective (`src/data/missions.ts`)
+  'mission.flawless': 'Flawless floor',
 
   // route — RouteScene prose
   'route.mapTitle': 'Map {map} · {biome}',
@@ -270,6 +274,7 @@ export const en = {
   'notice.levelUp': '{name} grew to Lv {level}!',
   'notice.eggHatch': 'The Egg hatched into {name}!',
   'notice.noHealRoom': 'No items or healing moves in this room!',
+  'notice.missionComplete': 'Mission complete: {mission}',
   'gate.locked.bush': 'Thick bushes. A Bug or Grass Pokémon could clear them.',
   'gate.locked.rock': 'A boulder. A Rock or Fighting Pokémon could break it.',
   'gate.locked.water': 'Deep water. A Water Pokémon could cross it.',

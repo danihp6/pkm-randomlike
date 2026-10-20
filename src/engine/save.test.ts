@@ -330,7 +330,7 @@ describe('settings validation', () => {
   it('reads a document with no reduce-flashing field as off', () => {
     const raw = JSON.stringify({ version: 16, settings: { textSpeed: 'fast', volume: 0.4 } });
     const decoded = document(raw);
-    expect(SAVE_VERSION).toBe(18);
+    expect(SAVE_VERSION).toBe(19);
     expect(decoded.settings.reducedFlash).toBe(false);
   });
 
@@ -352,7 +352,7 @@ describe('settings validation', () => {
     expect(
       document(JSON.stringify({ version: 16, settings: { aiLevel: 'nightmare' } })).settings.aiLevel,
     ).toBe('normal');
-    expect(SAVE_VERSION).toBe(18);
+    expect(SAVE_VERSION).toBe(19);
   });
 
   it('starts on the source table', () => {
@@ -384,7 +384,7 @@ describe('settings validation', () => {
     expect(document(JSON.stringify({ version: 16, settings: { language: 42 } })).settings.language).toBe(
       'en',
     );
-    expect(SAVE_VERSION).toBe(18);
+    expect(SAVE_VERSION).toBe(19);
     expect(Object.keys(SAVE_MIGRATIONS)).toEqual([
       '1',
       '2',
@@ -403,6 +403,7 @@ describe('settings validation', () => {
       '15',
       '16',
       '17',
+      '18',
     ]);
   });
 
@@ -631,7 +632,7 @@ describe('migrateDocument', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
     // One step per version boundary, because the test starts at v0 and the
-    // current schema is v18.
+    // current schema is v19.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
@@ -654,7 +655,8 @@ describe('migrateDocument', () => {
       14: (doc) => ({ ...doc, version: 15 }),
       15: (doc) => ({ ...doc, version: 16 }),
       16: (doc) => ({ ...doc, version: 17 }),
-      17: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      17: (doc) => ({ ...doc, version: 18 }),
+      18: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -741,7 +743,7 @@ describe('map-position migration', () => {
     delete run.pcCatch;
     const raw = JSON.stringify({ version: 15, run });
     const decoded = decodeSave(raw);
-    expect(emptySave().version).toBe(18);
+    expect(emptySave().version).toBe(19);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.pcCatch).toBeNull();
     expect('pcUnlocked' in (decoded.run ?? {})).toBe(false);
@@ -802,12 +804,75 @@ describe('the caught-species record', () => {
   });
 });
 
+describe('the floor mission', () => {
+  it('round-trips the mission and its three counters', () => {
+    const run: RunState = {
+      ...sampleRun(),
+      mission: { id: 'flawless', progress: 2, completed: true },
+      missionsCompleted: 3,
+      hpLost: 4,
+      floorCasualties: 1,
+    };
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    expect(decoded.run?.mission).toEqual({ id: 'flawless', progress: 2, completed: true });
+    expect(decoded.run?.missionsCompleted).toBe(3);
+    expect(decoded.run?.hpLost).toBe(4);
+    expect(decoded.run?.floorCasualties).toBe(1);
+  });
+
+  it('adds a mission-less, clean floor to a v18 run', () => {
+    const run: Record<string, unknown> = { ...sampleRun() };
+    delete run.mission;
+    delete run.missionsCompleted;
+    delete run.hpLost;
+    delete run.floorCasualties;
+    const decoded = decodeSave(JSON.stringify({ version: 18, run }));
+    expect(decoded.version).toBe(SAVE_VERSION);
+    expect(decoded.run?.mission).toBeNull();
+    expect(decoded.run?.missionsCompleted).toBe(0);
+    expect(decoded.run?.hpLost).toBe(0);
+    expect(decoded.run?.floorCasualties).toBe(0);
+    expect(decoded.run?.party).toHaveLength(6);
+  });
+
+  it('clamps a floor casualty baseline the run never reached', () => {
+    // The sample run carries one casualty, so a floor cannot claim a clean one.
+    const run = sampleRun();
+    const raw = (floorCasualties: unknown): string =>
+      JSON.stringify({ version: SAVE_VERSION, run: { ...run, floorCasualties } });
+    expect(document(raw(4)).run?.floorCasualties).toBe(1);
+    expect(document(raw(1)).run?.floorCasualties).toBe(1);
+    expect(document(raw(-2)).run?.floorCasualties).toBe(0);
+    expect(document(raw('x')).run?.floorCasualties).toBe(0);
+  });
+
+  it('defaults a junk counter and drops a mission the table does not carry', () => {
+    const run = sampleRun();
+    const raw = (patch: Record<string, unknown>): string =>
+      JSON.stringify({ version: SAVE_VERSION, run: { ...run, ...patch } });
+    expect(document(raw({ missionsCompleted: -1 })).run?.missionsCompleted).toBe(0);
+    expect(document(raw({ missionsCompleted: 2.5 })).run?.missionsCompleted).toBe(0);
+    expect(document(raw({ hpLost: 1.5 })).run?.hpLost).toBe(0);
+    expect(document(raw({ hpLost: -3 })).run?.hpLost).toBe(0);
+    expect(
+      document(raw({ mission: { id: 'no-such-mission', progress: 0, completed: false } })).run?.mission,
+    ).toBeNull();
+    expect(
+      document(raw({ mission: { id: 'flawless', progress: -1, completed: false } })).run?.mission,
+    ).toBeNull();
+    expect(
+      document(raw({ mission: { id: 'flawless', progress: 0, completed: 'yes' } })).run?.mission,
+    ).toBeNull();
+    expect(document(raw({ mission: 'flawless' })).run?.mission).toBeNull();
+  });
+});
+
 describe('nickname migration', () => {
   it('reads a v14 run as a current-schema run with its members intact and unnamed', () => {
     const raw = JSON.stringify({ version: 14, settings: defaultSettings(), run: sampleRun() });
     const decoded = decodeSave(raw);
-    expect(SAVE_VERSION).toBe(18);
-    expect(decoded.version).toBe(18);
+    expect(SAVE_VERSION).toBe(19);
+    expect(decoded.version).toBe(19);
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
     expect(decoded.run?.box[0].fighter.speciesId).toBe('greedent');

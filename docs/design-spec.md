@@ -357,6 +357,13 @@ leaves with only their own content (`docs/maps-spec.md` §7):
   Fighting / Water — so the party the run built is the key, and the opening lasts
   the rest of the floor.
 
+Every floor is also given one **mission**, shown in one line of the HUD. The one
+kind that ships is `flawless`: leave the floor having lost **no HP** and without a
+casualty. Meeting it bumps a **run-long counter**, and its reward is a **special
+room** — a reward row the room tasks hang off a completed mission — so a floor the
+run leaves untouched pays, and the mission is judged when the run takes the portal
+(`docs/routes-spec.md` §4).
+
 **Money** is Poké Dollars, earned **only** by defeating trainers — a **fixed base
 plus a random jitter** each, from its archetype/band — and the run starts with
 none, so the economy stays tight (Binding of Isaac-style). The shop always stocks

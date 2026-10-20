@@ -5,6 +5,7 @@ import { arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge } from '../maps/pl
 import type { BagCounts } from './battleLink';
 import { POKEVIAL_MAX_CHARGES, fillPokevial, healParty } from './heal';
 import { clampToCap } from './levelCap';
+import { missionForMap, missionMet, type MissionProgress } from './missions';
 import {
   evolvePokemon,
   levelForXp,
@@ -132,6 +133,14 @@ export type RunState = Readonly<{
   pickedItems: readonly string[];
   /** Room ids of `mapIndex` whose single capture has been spent. Resets per map. */
   capturedRooms: readonly number[];
+  /** The floor's mission and whether the run has met it, or null on an old save. */
+  mission: MissionProgress | null;
+  /** How many missions this run has completed. Run-long: `advanceMap` never clears it. */
+  missionsCompleted: number;
+  /** HP the party lost on `mapIndex` — the `flawless` mission's progress. Resets per floor. */
+  hpLost: number;
+  /** `stats.casualties` when `mapIndex` was entered, so a death on this floor is visible. Resets per floor. */
+  floorCasualties: number;
   stats: RunStats;
 }>;
 
@@ -172,6 +181,10 @@ export function createRun(init: RunInit): RunState {
     defeatedTrainers: [],
     pickedItems: [],
     capturedRooms: [],
+    mission: missionForMap(init.seed, FIRST_MAP),
+    missionsCompleted: 0,
+    hpLost: 0,
+    floorCasualties: 0,
     stats: emptyRunStats(),
   };
 }
@@ -213,10 +226,14 @@ export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: Map
  * also the **heal stop** — HP/PP restored across the party and the box, never a
  * resurrection (D5) — while the old floor's marks go with it. The Pokevial's
  * charges **carry over** instead: only a boss or a beaten trainer tops the meter
- * up (`docs/routes-spec.md` §6).
+ * up (`docs/routes-spec.md` §6). The floor being left is judged against its own
+ * mission first, and the next floor is drawn its own (`docs/routes-spec.md` §4).
  */
 export function advanceMap(run: RunState): RunState {
   const mapIndex = run.mapIndex + 1;
+  // The floor being left is judged before anything else, so a clean floor bumps the
+  // run-long counter and the new floor starts from its own draw.
+  const met = missionMet(run);
   const plan = planMap(run.seed, mapIndex);
   const advanced: RunState = {
     ...run,
@@ -232,6 +249,10 @@ export function advanceMap(run: RunState): RunState {
     defeatedTrainers: [],
     pickedItems: [],
     capturedRooms: [],
+    mission: missionForMap(run.seed, mapIndex),
+    missionsCompleted: run.missionsCompleted + (met ? 1 : 0),
+    hpLost: 0,
+    floorCasualties: run.stats.casualties,
   };
   return healParty(advanced);
 }

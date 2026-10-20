@@ -6,6 +6,7 @@ import { MAP_EDGES, arrivalEdgeFor, linkedNeighbour, planMap } from '../maps/pla
 import { capForRoute } from './levelCap';
 import { POKEVIAL_MAX_CHARGES, fillPokevial, healParty, usePokevial } from './heal';
 import { createRunPokemon, runPokemonFromSnapshot } from './progression';
+import { missionForMap, recordHpLost } from './missions';
 import {
   MAX_PARTY_SIZE,
   addCaughtPokemon,
@@ -201,6 +202,57 @@ describe('advanceMap', () => {
   it('carries the Pokevial charges over the floor change', () => {
     const spent = { ...createRun({ seed: 'run-a', starter }), pokevialCharges: 1 };
     expect(advanceMap(spent).pokevialCharges).toBe(1);
+  });
+});
+
+describe('the floor mission', () => {
+  it('gives a fresh run map 1 its own mission and a clean floor', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    expect(run.mission).toEqual(missionForMap('run-a', 1));
+    expect(run.missionsCompleted).toBe(0);
+    expect(run.hpLost).toBe(0);
+    expect(run.floorCasualties).toBe(0);
+  });
+
+  it('meets a clean floor and draws the next floor its own mission', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    const next = advanceMap(run);
+    expect(next.missionsCompleted).toBe(1);
+    expect(next.mission).toEqual(missionForMap('run-a', 2));
+    expect(next.hpLost).toBe(0);
+    expect(next.floorCasualties).toBe(next.stats.casualties);
+  });
+
+  it('does not meet a floor that spent HP', () => {
+    const run = recordHpLost(createRun({ seed: 'run-a', starter }), 4);
+    const next = advanceMap(run);
+    expect(next.missionsCompleted).toBe(0);
+    expect(next.hpLost).toBe(0);
+  });
+
+  it('does not meet a floor that lost a member, and carries the new baseline', () => {
+    const base = createRun({ seed: 'run-a', starter });
+    const run = { ...base, stats: { ...base.stats, casualties: base.floorCasualties + 1 } };
+    const next = advanceMap(run);
+    expect(next.missionsCompleted).toBe(0);
+    expect(next.floorCasualties).toBe(run.stats.casualties);
+  });
+
+  it('carries the run-long counter across floors and never clears it', () => {
+    let run = createRun({ seed: 'run-a', starter });
+    run = advanceMap(run);
+    run = advanceMap(run);
+    expect(run.missionsCompleted).toBe(2);
+    expect(run.mission).toEqual(missionForMap('run-a', 3));
+  });
+
+  it('leaves all four fields alone on a room change', () => {
+    const run = recordHpLost(advanceMap(createRun({ seed: 'run-a', starter })), 2);
+    const next = advanceRoute(run, 2);
+    expect(next.mission).toBe(run.mission);
+    expect(next.missionsCompleted).toBe(run.missionsCompleted);
+    expect(next.hpLost).toBe(2);
+    expect(next.floorCasualties).toBe(run.floorCasualties);
   });
 });
 

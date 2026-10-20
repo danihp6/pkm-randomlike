@@ -7,6 +7,7 @@ import { FINITE_MAPS, levelCapForMap } from '../data/maps';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { getItem } from '../data/items';
 import { tmNumber } from '../data/tms';
+import { getMission } from '../data/missions';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import {
@@ -89,6 +90,7 @@ import {
 } from '../engine/run';
 import { equipMove, learnsetPool, unequipMove, type LearnEntry } from '../engine/run/learnset';
 import { useItemOn } from '../engine/run/items';
+import { battleHpLoss, missionCompletedBy, missionForMap, recordHpLost } from '../engine/run/missions';
 import { NICKNAME_MAX_LENGTH, normalizeNickname, renameMember } from '../engine/run/nickname';
 import { speciesPool, wildExclusions } from '../engine/run/pool';
 import { runPassives, type PassivePickup } from '../engine/run/passives';
@@ -214,6 +216,7 @@ import {
   itemPickupNotice,
   itemUsedNotice,
   levelUpNotice,
+  missionCompleteNotice,
   type Notice,
 } from '../ui/notice';
 import { hatchEgg } from '../ui/casino';
@@ -521,6 +524,11 @@ function hudMetrics(width: number): HudMetrics {
 const NOTICE_W = 720;
 const NOTICE_H = 44;
 const NOTICE_TOP = 24;
+
+/** The floor's mission line (`docs/routes-spec.md` §6): one slim card under the notice strip. */
+const MISSION_W = 360;
+const MISSION_H = 32;
+const MISSION_TOP = NOTICE_TOP + NOTICE_H + 8;
 
 /** The mini-boss reward choice (Phase 9): one window of item and Pokémon rows. */
 const REWARD_W = 560;
@@ -1025,6 +1033,8 @@ export class RouteScene extends Phaser.Scene {
   private noticeRoot: Phaser.GameObjects.Container | null = null;
   private noticeText: Phaser.GameObjects.BitmapText | null = null;
   private noticeTimer: Phaser.Time.TimerEvent | null = null;
+  private missionRoot: Phaser.GameObjects.Container | null = null;
+  private hudMissionText: Phaser.GameObjects.BitmapText | null = null;
   /** The shop room's counter tile, or null off a shop room. */
   private shopCounter: Tile | null = null;
   /** Every special room kind's descriptor, indexed once per scene (`D47`). */
@@ -1540,6 +1550,7 @@ export class RouteScene extends Phaser.Scene {
     this.buildPauseMenu();
     this.buildLearnPopup();
     this.buildNotice();
+    this.buildMissionLine();
     this.refreshHud();
     this.refreshDetail();
     playMusic(this, 'route-music');
@@ -2518,6 +2529,12 @@ export class RouteScene extends Phaser.Scene {
     });
 
     this.refreshDetail();
+
+    // The floor's own objective: one line under the notice strip, and nothing at
+    // all when the run carries no mission row (an old save's `null`).
+    const mission = this.run.mission ? getMission(this.run.mission.id) : undefined;
+    this.missionRoot?.setVisible(mission !== undefined);
+    if (mission) this.hudMissionText?.setText(t('hud.mission', { mission: t(mission.nameKey) }));
   }
 
   /** Paints a tab's own fill and 1px outline: the accent pair when it is active. */
@@ -5271,10 +5288,15 @@ export class RouteScene extends Phaser.Scene {
     const edge = this.doorEdgeAt(this.player, direction);
     if (!edge) return false;
     if (room.portalEdge !== null && room.portalOpen && edge === room.portalEdge) {
-      const advanced = advanceMap(this.run);
+      const before = this.run;
+      const advanced = advanceMap(before);
       const hatch = hatchEgg(advanced);
-      this.transitionTo(hatch ? hatch.run : advanced);
+      const afterAdvance = hatch ? hatch.run : advanced;
+      this.transitionTo(afterAdvance);
+      const met = missionCompletedBy(before, afterAdvance);
+      // One notice at a time, and the hatch is the rarer beat.
       if (hatch) this.showNotice(eggHatchNotice(this.memberName(hatch.member)));
+      else if (met) this.showNotice(missionCompleteNotice(t(met.nameKey)));
       return true;
     }
     const next = roomAcross(plan, room.roomId, edge);
@@ -5737,6 +5759,28 @@ export class RouteScene extends Phaser.Scene {
     this.noticeRoot?.setVisible(false);
   }
 
+  /**
+   * The floor's mission line (`docs/routes-spec.md` §6): one card pinned under the
+   * notice strip, screen-space on the HUD camera like the strip itself, hidden while
+   * the run carries no mission row (an old save).
+   */
+  private buildMissionLine(): void {
+    const x = (this.scale.width - MISSION_W) / 2;
+    const card = addFrlgWindow(this, x, MISSION_TOP, MISSION_W, MISSION_H);
+    this.hudMissionText = addFrlgText(this, this.scale.width / 2, MISSION_TOP + MISSION_H / 2, '', {
+      align: 'center',
+      origin: 0.5,
+      size: 16,
+      tint: FRLG_INK,
+    });
+    this.hudMissionText.setMaxWidth(MISSION_W - 32);
+    this.missionRoot = this.add
+      .container(0, 0, [card, this.hudMissionText])
+      .setDepth(439)
+      .setVisible(false);
+    this.cameras.main.ignore(this.missionRoot);
+  }
+
   /** The display name a notice uses: nickname, else species, the way `partyRow` reads it. */
   private memberName(member: RunPokemon): string {
     return (
@@ -6089,6 +6133,9 @@ export class RouteScene extends Phaser.Scene {
 
     const reward = this.rewardFor(pending.trigger);
     const before = this.run.party;
+    // What the battle took out of the party is the floor mission's progress; read
+    // before the fold, because the fold swaps the snapshots.
+    const hpLoss = battleHpLoss(this.run, result.player);
     const { run, released, capture, events } = resolveBattle(this.run, result, reward, {
       catchLocation: {
         biomeId: this.route.biomeId,
@@ -6097,6 +6144,7 @@ export class RouteScene extends Phaser.Scene {
       },
     });
     this.run = run;
+    this.run = recordHpLost(this.run, hpLoss);
     // The room's capture was already spent when the wild battle started
     // (`startBattle`); this keeps it spent even if a path ever skips that.
     if (pending.trigger.kind === 'wild') this.run = useCapture(this.run);
@@ -6737,6 +6785,9 @@ export class RouteScene extends Phaser.Scene {
       defeatedTrainers: [],
       pickedItems: [],
       capturedRooms: [],
+      mission: missionForMap(this.run.seed, floor),
+      hpLost: 0,
+      floorCasualties: this.run.stats.casualties,
     };
     this.transitionTo(run);
     return { ok: true };

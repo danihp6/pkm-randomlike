@@ -25,6 +25,8 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   (`docs/routes-spec.md` §2).
 - `gates.ts` — the gated reward room's obstacle table: each kind's party types, the map
   value it is stamped as and the atlas cell it draws (`docs/maps-spec.md` §7).
+- `missions.ts` — the floor-mission table (`MISSION_TABLE`): what a floor can ask and
+  what a met mission pays, read by `src/engine/run/missions.ts` (`docs/maps-spec.md` §7).
 - `maps.ts` — the per-map tuning: level range, room-count range and the room
   width/height range, plus the infinite-run step past the last map
   (`docs/maps-spec.md` §4).

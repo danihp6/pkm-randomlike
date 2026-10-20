@@ -279,6 +279,17 @@ casino's draw, then the **gated** leaf's, then the **trade** leaf's and then the
 so no floor's shop, mini-boss, mega-stone, casino, gated leaf, trade leaf, room id
 or room size moved when any of them shipped.
 
+Every floor is also given one **mission** (`src/data/missions.ts`,
+`src/engine/run/missions.ts`), drawn from the run seed on its own
+`${seed}:map:<floor>:mission` stream when the floor is built, so no route, roster or
+encounter the floor already rolled moves. It is judged **when the run takes the
+portal**, across the whole floor: the one kind that ships, `flawless`, is met when
+the floor took **no HP** out of the party and lost no member, and a casualty the
+floor was entered with does not count against it. A met mission bumps the run's
+`missionsCompleted` and its row pays a **fixed reward** — a `{ kind: 'room' }` row
+today, consumed by the special-room tasks — so this table is where a new kind or a
+new payout is written, never a branch in the scene.
+
 The **gated** leaf is the type-gated vault (`src/data/gates.ts`,
 `src/engine/routes/gate.ts`, `D47`'s room descriptor `src/scenes/rooms/gate.ts`).
 Its content:

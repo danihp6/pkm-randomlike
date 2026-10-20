@@ -9,6 +9,7 @@ import {
   itemPickupNotice,
   itemUsedNotice,
   levelUpNotice,
+  missionCompleteNotice,
   noHealRoomNotice,
 } from './notice';
 
@@ -161,5 +162,46 @@ describe('noHealRoomNotice', () => {
       gateOpenedNotice(),
     ].map((notice) => notice.text);
     expect(others).not.toContain(noHealRoomNotice().text);
+  });
+});
+
+describe('missionCompleteNotice', () => {
+  it('announces the met mission with its display name and the shared hold', () => {
+    expect(missionCompleteNotice('Flawless floor')).toEqual({
+      text: 'Mission complete: Flawless floor',
+      holdMs: NOTICE_HOLD_MS,
+    });
+  });
+
+  it('holds a notice for 2.6 seconds', () => {
+    expect(missionCompleteNotice('Flawless floor').holdMs).toBe(2600);
+  });
+
+  it('passes the name through untouched', () => {
+    expect(missionCompleteNotice("Farfetch'd 2").text).toBe("Mission complete: Farfetch'd 2");
+    expect(missionCompleteNotice('Mr. Mime').text).toBe('Mission complete: Mr. Mime');
+  });
+
+  it('says something no other notice says', () => {
+    const others = [
+      catchToPcNotice('Sentret'),
+      itemPickupNotice('Potion'),
+      itemUsedNotice('Potion'),
+      levelUpNotice('Growlithe', 21),
+      eggHatchNotice('Sentret'),
+      gateLockedNotice('bush'),
+      gateOpenedNotice(),
+      noHealRoomNotice(),
+    ].map((notice) => notice.text);
+    expect(others).not.toContain(missionCompleteNotice('Flawless floor').text);
+  });
+
+  it('reads in the Spanish overlay once the locale switches back', () => {
+    setLocale('es');
+    try {
+      expect(missionCompleteNotice('Planta sin daño').text).toBe('Misión completada: Planta sin daño');
+    } finally {
+      setLocale('en');
+    }
   });
 });
