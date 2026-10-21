@@ -6537,7 +6537,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       room's condition (`[Task-100]`).
       *Dependencies:* none, but it is written **against** every battle rule shipped so far, so it
       is cut last: **Batch 49**. It adds no run field. *(Batch 49)*
-- [ ] **[Task-108] The 2vs2 boss battle, the screen: two actives on each side.** The visible half of
+- [x] **[Task-108] The 2vs2 boss battle, the screen: two actives on each side.** The visible half of
       the human's «Bosses 2vs2», written against `[Task-107]`'s shipped engine.
       **Fix shape (the subtasks).**
       1. the **second enemy battler** and its own HP panel, side by side on the foe's platform;

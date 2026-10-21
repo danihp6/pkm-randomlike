@@ -87,6 +87,22 @@ function textWidth(text: string, size: number): number {
 }
 
 /**
+ * The party rows a battle marks as **on the field**, in slot order: slot 0's party
+ * index first and slot 1's second, skipping `-1` and duplicates. A single battle
+ * answers `[activeIndex]`; an empty side answers `[]`. Those rows are exactly the
+ * ones `switchablePartyIndices` already refuses, so the scene marks the party
+ * members the player cannot switch to.
+ */
+export function partyGridFieldRows(activeIndex: number, secondActiveIndex: number): readonly number[] {
+  const rows: number[] = [];
+  for (const index of [activeIndex, secondActiveIndex]) {
+    if (index < 0 || rows.includes(index)) continue;
+    rows.push(index);
+  }
+  return rows;
+}
+
+/**
  * The row rects of the SWITCH grid for the window `menu`. The grid is always
  * `rows` rows of one column at a fixed cell size — never sized from a member
  * count — so the caller draws only the members it has and leaves the rest empty.

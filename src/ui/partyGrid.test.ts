@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FRLG_WINDOW_PADDING } from './frlg';
 import { FRLG_FONT_SIZE, frlgFontData } from './frlgFont';
-import { fitPartyLabel, partyGridLayout, type PartyGridRect } from './partyGrid';
+import { fitPartyLabel, partyGridFieldRows, partyGridLayout, type PartyGridRect } from './partyGrid';
 
 const FONT = frlgFontData();
 
@@ -22,6 +22,26 @@ const ROW_GAP = 8;
 function layout(menu: PartyGridRect) {
   return partyGridLayout(menu, { padding: FRLG_WINDOW_PADDING });
 }
+
+describe('partyGridFieldRows', () => {
+  it('answers the single active alone when there is no second slot', () => {
+    expect(partyGridFieldRows(0, -1)).toEqual([0]);
+    expect(partyGridFieldRows(3, -1)).toEqual([3]);
+  });
+
+  it('answers both slots in slot order', () => {
+    expect(partyGridFieldRows(2, 4)).toEqual([2, 4]);
+    expect(partyGridFieldRows(5, 1)).toEqual([5, 1]);
+  });
+
+  it('answers nothing for an empty side', () => {
+    expect(partyGridFieldRows(-1, -1)).toEqual([]);
+  });
+
+  it('lists a repeated index once', () => {
+    expect(partyGridFieldRows(1, 1)).toEqual([1]);
+  });
+});
 
 describe('partyGridLayout', () => {
   it('lays out one fixed-size row per party slot, top to bottom', () => {

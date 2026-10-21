@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The 2vs2 boss battle, the screen: two actives on each side.** The engine half
+      (`[Task-107]`) now has a face. `BattleLaunch.double` rides the launch (set only for the boss
+      room through `bossIsDouble('boss')`), `BattleScene` draws a second foe sprite, a second foe
+      window and a second player window, and the command flow gains two modes: a **partner** prompt
+      that runs slot 1 first with FIGHT and SWITCH only (no bag, no run) and a **target** step where
+      a single-target move marks one foe with a cursor and a spread move skips it. `takeDoubleTurn`
+      resolves both commands in one turn, the entry beat drops a second send-out
+      (`entryBeat(kind, reduced, double)` appends one `sendout`), the party window marks the two
+      actives with `partyGridFieldRows`, and HP/status events are attributed per slot. A one-member
+      party keeps the single layout, and no single battle changes. No engine rule, no i18n key, no
+      new file; the only engine file is `battleLink.ts`. Docs: `docs/battle-spec.md` §12,
+      `docs/design-spec.md` §4.
+      **QA:** unit pass green — 2564 tests / 67 skipped in 2631, `npm run build` clean, the engine
+      diff limited to `battleLink.ts`, no key or README touched. The four `[live]` criteria were
+      **not run** (degraded, same browser-session failure as Tasks 102 and 103): the on-screen double
+      layout, the partner/target steps, the two-ball beat and the single-battle regression are
+      unverified.
+
 - [x] **The item catalogue's fourth wave: the Tera Crystal, infinite held items, the coloured candy
       and the three route bottles.** Four wishes on one seam. The **Tera Crystal** is a `held` row
       carrying a `teraType` (18 of them); one `onStart` handler in `effects/items.ts` replaces the

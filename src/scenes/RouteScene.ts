@@ -34,7 +34,7 @@ import {
   type RoomConditionKind,
 } from '../data/battlefields';
 import type { MapPassiveTrigger } from '../data/passives';
-import { bossPartySize, type BossPartyKind } from '../data/bosses';
+import { bossIsDouble, bossPartySize, type BossPartyKind } from '../data/bosses';
 import {
   OVERWORLD_SPRITE_TEXTURE_KEY,
   OVERWORLD_SPRITE_WIDTH,
@@ -6649,6 +6649,9 @@ export class RouteScene extends Phaser.Scene {
       // The no-heal leaf's rule rides the launch too, so its trainer's battle and
       // any dev wild opened in the room both carry it.
       noHeal: this.room?.special === 'no-heal',
+      // The boss room's battle is the map boss's own — a double battle on every
+      // floor (`docs/maps-spec.md` §6); every other room's battles stay single.
+      ...(this.room?.boss === true ? { double: bossIsDouble('boss') } : {}),
       // The banned-species leaf's rule rides the launch the same way: every battle
       // the room opens bars the party's most-used species from being sent out.
       bannedSpecies: this.room?.special === 'banned' ? bannedSpeciesOf(this.run) : null,

@@ -87,17 +87,22 @@ export const ENTRY_TRAINER_WALK = 22;
  * The opening beat for a battle, with the flash dropped under reduce flashing
  * (D45). The fade carries the route-to-battle cut and is always first; the rest
  * of the beat differs only in who the encounter brings in.
+ *
+ * A double battle (`double`, default `false`) adds **one** `sendout` step at the
+ * end — the second active's ball — so the two leads appear one after the other,
+ * each for `ENTRY_SENDOUT_MS`; a single battle's list is exactly today's.
  */
-export function entryBeat(kind: EntryKind, reducedFlash: boolean): readonly EntryStep[] {
+export function entryBeat(kind: EntryKind, reducedFlash: boolean, double = false): readonly EntryStep[] {
   const steps: EntryStep[] = [{ kind: 'fade', ms: ENTRY_FADE_MS }];
   if (!reducedFlash) steps.push({ kind: 'flash', ms: ENTRY_FLASH_MS });
   if (kind === 'wild') {
     steps.push({ kind: 'foe-appear', ms: ENTRY_FOE_APPEAR_MS });
-    return steps;
+  } else {
+    steps.push(
+      { kind: 'trainer-appear', ms: ENTRY_TRAINER_APPEAR_MS },
+      { kind: 'sendout', ms: ENTRY_SENDOUT_MS },
+    );
   }
-  steps.push(
-    { kind: 'trainer-appear', ms: ENTRY_TRAINER_APPEAR_MS },
-    { kind: 'sendout', ms: ENTRY_SENDOUT_MS },
-  );
+  if (double) steps.push({ kind: 'sendout', ms: ENTRY_SENDOUT_MS });
   return steps;
 }
