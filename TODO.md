@@ -1154,6 +1154,45 @@ stays unscheduled by its own decision line and `[Task-104]`/`[Task-113]` are `[!
 three empty slots name those constraints, so the batch runs as one dev wave and one QA
 wave — and, being one task, as a single QA pass that covers the integration scope too.
 
+**Batch 46 is `[Task-101]` alone: the fill search found no legal mate.** Its cut holds
+`src/scenes/RouteScene.ts` (one property on the launch in `startBattle`),
+`src/scenes/BattleScene.ts` (the setup, the party rows' `enabled` and the returned
+`used`), `src/engine/save.ts` (the 21 → 22 step), `src/engine/run/{battleLink,progression,resolve}.ts`
++ `resolve.test.ts`, `src/engine/battle/{state,commands,turn}.ts` + the new
+`banned.test.ts`, `src/engine/maps/plan.ts` + `plan.test.ts` (the ninth special kind,
+on its own `${seed}:map:<floor>:banned-room` stream, last of the pass),
+`src/engine/maps/progress.ts` + `progress.test.ts` (its stable trainer id), the new
+`src/engine/routes/bannedRoom.ts` + test and the barrel line, the new
+`src/data/bannedRoom.ts` + test, the new `src/scenes/rooms/banned.ts` + test and
+`registry.test.ts`'s shipped-kind list, `src/ui/notice.ts` + test,
+`src/i18n/{en,es}.ts`, the three folder READMEs, `docs/battle-spec.md` §2 and
+`docs/maps-spec.md` §7's own new row and own new subsection — plus the two mechanical
+re-pins a new leaf forces (`src/engine/run/curve.test.ts`'s `MEASURED_FILL`, and
+`src/data/run.ts` + `docs/balance/route-curve.md` only if a floor leaves the window;
+`src/engine/routes/battlefield.test.ts`'s `BOSS_PINS` on maps 4+), because a floor that
+hangs a leaf holds one room more and `routeIndexForRoom` sums the floors before it.
+So the one-line record above for 46, which names only its three headline files, is
+narrower than the spec's list (the way Batch 41's, 42's, 43's and 45's records predate
+theirs), and the spec carries the rest. No later task is a legal mate. `[Task-102]`
+(Batch 47) claims `src/scenes/RouteScene.ts` **and** `src/engine/maps/plan.ts`, both 101's;
+`[Task-103]` (Batch 47) claims no scene and its own dependencies are merged, but it
+shares `src/engine/save.ts` and its `SAVE_VERSION` step is frozen at **22 → 23** after
+101's 21 → 22 — the file reads **21** on `main` — so pulling it into 46 would invert the
+chain and stale 101's own entry; `[Task-108]` (Batch 50) claims `RouteScene.ts` and
+`BattleScene.ts`, both 101's; `[Task-109]` (Batch 51) claims `RouteScene.ts`,
+`src/ui/notice.ts` and `src/i18n/{en,es}.ts`, all three 101's; `[Task-110]` (Batch 52)
+claims `RouteScene.ts` and `BattleScene.ts`; `[Task-114]` (Batch 53) needs 101's
+`src/engine/battle/commands.ts` (and shares `state.ts`, `turn.ts` and the i18n tables)
+and `[Task-118]` (Batch 57) is written against 114, so both wait on an unmerged
+dependency; `[Task-117]` (Batch 56) shares `src/engine/maps/plan.ts` with 101 and edits
+the §7 table its row joins; `[Task-28]` stays unscheduled by its own decision line and
+`[Task-104]`/`[Task-113]` are `[!]`. **The docs are single-writer by section here:**
+`[Task-101]` writes only its own §7 table row and its own `###` subsection, so the
+special-room table's casino row, the rates paragraph, the NPC table and the casino
+subsection stay `[Task-117]`'s. The three empty slots name those constraints, so the
+batch runs as one dev wave and one QA wave — and, being one task, as a single QA pass
+that covers the integration scope too.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
