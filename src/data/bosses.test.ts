@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { BOSS_PARTY, DOUBLE_ACTIVES, bossIsDouble, bossPartySize } from './bosses';
+import {
+  BOSS_OPENINGS,
+  BOSS_PARTY,
+  DOUBLE_ACTIVES,
+  bossIsDouble,
+  bossPartySize,
+  type BossOpening,
+} from './bosses';
+import { ROOM_BATTLEFIELDS } from './battlefields';
+import { BOOST_IDS } from '../engine/battle/fighter';
 
 describe('BOSS_PARTY', () => {
   it('pins the four numbers', () => {
@@ -66,5 +75,53 @@ describe('bossPartySize', () => {
       expect(bossPartySize('boss', mapIndex)).toBe(BOSS_PARTY.boss.firstMap);
       expect(bossPartySize('miniboss', mapIndex)).toBe(BOSS_PARTY.miniboss.firstMap);
     }
+  });
+});
+
+describe('BOSS_OPENINGS', () => {
+  function stagesOf(row: BossOpening): number[] {
+    const stages: number[] = [];
+    for (const stat of BOOST_IDS) {
+      const stage = row.boosts[stat];
+      if (stage !== undefined) stages.push(stage);
+    }
+    return stages;
+  }
+  it('is exactly two rows, one per side, in the order the boss roll draws from', () => {
+    expect(BOSS_OPENINGS).toHaveLength(2);
+    expect(BOSS_OPENINGS.map((row) => row.side)).toEqual(['run', 'boss']);
+  });
+
+  it('pins the two shipped rows', () => {
+    expect(BOSS_OPENINGS).toEqual([
+      { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
+      { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+    ]);
+  });
+
+  it('names a battlefield row the room table holds', () => {
+    const ids = ROOM_BATTLEFIELDS.map((row) => row.id);
+    for (const row of BOSS_OPENINGS) {
+      expect(ids, row.side).toContain(row.battlefield);
+    }
+  });
+
+  it('sinks every run stage by at least one and lifts every boss stage by at least one', () => {
+    for (const row of BOSS_OPENINGS) {
+      const stages = stagesOf(row);
+      expect(stages, row.side).not.toHaveLength(0);
+      for (const stage of stages) {
+        expect(Number.isInteger(stage), row.side).toBe(true);
+        expect(stage).not.toBe(0);
+        if (row.side === 'run') expect(stage).toBeLessThanOrEqual(-1);
+        else expect(stage).toBeGreaterThanOrEqual(1);
+      }
+    }
+  });
+
+  it('never lets the two openings share a stat, so the launch merge needs no arithmetic', () => {
+    const run = Object.keys(BOSS_OPENINGS[0].boosts);
+    const boss = Object.keys(BOSS_OPENINGS[1].boosts);
+    expect(run.filter((stat) => boss.includes(stat))).toEqual([]);
   });
 });

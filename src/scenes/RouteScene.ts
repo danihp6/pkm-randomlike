@@ -183,7 +183,13 @@ import {
   type RouteStep,
   type RouteTrainer,
 } from '../engine/routes';
-import { roomBattlefield, roomKindOf } from '../engine/routes/battlefield';
+import {
+  bossOpeningRoll,
+  roomBattlefield,
+  roomKindOf,
+  type BossOpeningRoll,
+} from '../engine/routes/battlefield';
+import { bossRoomHeal, bossRoomSealed } from '../engine/routes/bossRoom';
 import {
   OPPOSITE_EDGE,
   bossTrainerId,
@@ -840,6 +846,8 @@ export class RouteScene extends Phaser.Scene {
   private room: RoomView | null = null;
   /** The condition the room on screen rolled, or null when it rolled none. */
   private battlefield: RoomBattlefield | null = null;
+  /** The boss room's opening (arena and the boss lead's stages), or null outside it. */
+  private bossOpening: BossOpeningRoll | null = null;
   /** The room's condition filter (one tinted rectangle over the room), or null. */
   private battlefieldOverlay: Phaser.GameObjects.Rectangle | null = null;
   private settings!: Settings;
@@ -1167,7 +1175,24 @@ export class RouteScene extends Phaser.Scene {
     // same room (`docs/maps-spec.md` §9). The room's battle condition reads the
     // same index, so it too is the same on every visit.
     const roomIndex = routeIndexForRoom(plan, view.roomId);
-    this.battlefield = roomBattlefield(this.run.seed, roomIndex, roomKindOf(view));
+    // The boss room always takes one of its two openings (`BOSS_OPENINGS`) and heals
+    // the party and the box once per floor; every other room rolls at
+    // `ROOM_BATTLEFIELD_CHANCE` or not at all. Both branches assign the opening, so no
+    // stale boss stage survives a room change.
+    const kind = roomKindOf(view);
+    if (kind === 'boss') {
+      const opening = bossOpeningRoll(this.run.seed, roomIndex);
+      this.battlefield = opening.battlefield;
+      this.bossOpening = opening;
+      const healed = bossRoomHeal(this.run, view.mapIndex);
+      if (healed !== this.run) {
+        this.run = healed;
+        this.persistRun();
+      }
+    } else {
+      this.battlefield = roomBattlefield(this.run.seed, roomIndex, kind);
+      this.bossOpening = null;
+    }
     this.buildRoute({
       seed: this.run.seed,
       routeIndex: roomIndex,
@@ -5486,6 +5511,10 @@ export class RouteScene extends Phaser.Scene {
     if (!room || !plan) return false;
     const edge = this.doorEdgeAt(this.player, direction);
     if (!edge) return false;
+    // The boss room's only door is the way in, and it stays barred while the boss
+    // stands (`docs/maps-spec.md` §6): the step is not a room change, so nothing is
+    // committed, persisted or re-rolled.
+    if (bossRoomSealed(room.boss, this.run.bossDefeated)) return false;
     if (room.portalEdge !== null && room.portalOpen && edge === room.portalEdge) {
       const before = this.run;
       const advanced = advanceMap(before);
@@ -6622,12 +6651,14 @@ export class RouteScene extends Phaser.Scene {
       // The berry tree's guardian forbids the flight (`runAway.ts`), unless an
       // escape effect (Run Away, the Smoke Ball) grants it.
       ...(extras.noFlee ? { noFlee: true } : {}),
-      // The exorcist's hex and the guardian's own boost are separate data rows on
-      // purpose: their keys never collide, so the spread needs no arithmetic.
-      ...(extras.enemyBoosts || this.run.modifiers.curse
+      // The exorcist's hex, the boss room's opening and the guardian's own boost are
+      // separate data rows on purpose: their keys never collide (atk, spe and def),
+      // so the spread needs no arithmetic.
+      ...(extras.enemyBoosts || this.bossOpening || this.run.modifiers.curse
         ? {
             enemyBoosts: {
               ...(extras.enemyBoosts ?? {}),
+              ...(this.bossOpening?.boosts ?? {}),
               ...(this.run.modifiers.curse ? CURSE_ENEMY_BOOST : {}),
             },
           }
