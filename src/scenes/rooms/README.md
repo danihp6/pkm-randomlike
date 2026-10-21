@@ -13,9 +13,10 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
   duplicate-kind error and the marker index the minimap reads.
 - `registry.test.ts` — the collection rules: discovery, a kind the folder never had, the duplicate
   error's message and the modules without a descriptor export.
-- `shop.ts` — the Mart window alone, opened by the merchant NPC (`openMart`): its stock, its
-  floating BUY / SELL card and the drag a BUY row starts. It exports no `descriptor`, so the
-  registry skips it and the folder still holds the file.
+- `shop.ts` — the Mart window alone, opened by the merchant NPC (`openMart`), or by a
+  room that owns its own counter and hands it a `MartStock` (the secret shop): its
+  stock, its floating BUY / SELL card and the drag a BUY row starts. It exports no
+  `descriptor`, so the registry skips it and the folder still holds the file.
 - `miniBoss.ts` — the mini-boss room: its `ace` trainer on the room's farthest tile.
 - `megaStone.ts` — the mega-stone room: its one Mega Stone on the room's farthest tile.
 - `casino.ts` — the casino room: its slot machine cabinet, the grunt beside it, the
@@ -42,6 +43,12 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
 - `staticSpecies.test.ts` — the room's own surface: the fixture's counter and
   legendary line, the seal's refusal and opening, the species' record and wild
   battle, the false paths, the drawn silhouette and the marker.
+- `secretShop.ts` — the secret-shop room: the vault's seal (a party type opens it for
+  the floor), the counter on its pocket and the Mart card it opens on the room's own
+  six-row shelf, plus its teal-ring marker.
+- `secretShop.test.ts` — the room's own surface: the fixture's counter, the seal's
+  refusal and opening, the card it opens (six rows, `mart.secretTitle`), the second
+  press while the card is up, the drawn counter and the marker.
 - `fixtures.test.ts` — the shipped rooms' fixtures, pinned by id and tile, and for the
   stone the exact item the fixed seed rolls.
 

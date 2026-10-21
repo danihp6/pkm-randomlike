@@ -43,16 +43,24 @@ const START_LEVEL = 5;
  * room counts, so every later floor's rooms build from a shifted route index and
  * place a trainer more or less. The factors are untouched (a re-solve is a balance
  * task, not a room task) and the column records the walk as it now stands.
+ *
+ * **Re-pinned by Task-97 with the secret-shop leaf.** The leaf rolls a 20 % chance
+ * from map 3 on and is one more room on a floor that hangs it, so the same shifted
+ * route index moves trainers again: the column now reads 1.25 on maps 1-5, 1.13 on
+ * map 6, 1.24 on map 7 and 1.32 on map 8. One floor left the window: map 5 measured
+ * 1.67 against the shipped 1.25 factor, so that single row was re-solved with
+ * `factor' = round2(factor × 1.25 / fill)` — 1.25 → 0.94 — and map 5 is back to
+ * 1.25. The other seven factors are untouched.
  */
 const MEASURED_FILL: Readonly<Record<number, number>> = {
   1: 1.25,
   2: 1.25,
   3: 1.25,
-  4: 1.33,
-  5: 1.35,
+  4: 1.25,
+  5: 1.25,
   6: 1.13,
-  7: 1.18,
-  8: 1.25,
+  7: 1.24,
+  8: 1.32,
 };
 
 /** The lowest share a floor may pay: the window's floor. */

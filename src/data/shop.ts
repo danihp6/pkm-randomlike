@@ -233,3 +233,27 @@ export const SHOP_TM: Readonly<Record<BandId, readonly string[]>> = {
  * draws one TM from `SHOP_TM`.
  */
 export const SHOP_GMAX_STONE_BANDS: readonly BandId[] = ['late', 'end'];
+
+/**
+ * The secret shop's own table (`docs/maps-spec.md` §7): the first floor that may hang
+ * the leaf, the chance it does (on `${seed}:map:<floor>:secret-shop-room`), the held
+ * items on its counter and the machines beside them. Balance, never engine code.
+ */
+export type SecretShopConfig = Readonly<{
+  fromMap: number;
+  chance: number;
+  held: readonly string[];
+  tm: readonly string[];
+}>;
+
+/**
+ * The secret shop's fixed shelf: the late-band gear the Mart withholds, sold from
+ * map 3 on behind the leaf's own type-gated seal. Four held items and two machines,
+ * at their catalogue prices, one unit each; nothing about it is rolled.
+ */
+export const SECRET_SHOP: SecretShopConfig = {
+  fromMap: 3,
+  chance: 0.2,
+  held: ['leftovers', 'lifeorb', 'choiceband', 'focussash'],
+  tm: [tmItemId(88), tmItemId(114)],
+};

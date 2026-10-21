@@ -3,6 +3,7 @@ import { UNMODELLED_ITEMS } from '../engine/battle/effects/items';
 import {
   COMPETITIVE_HELD_IDS,
   GMAX_STONE_IDS,
+  MEGA_STONE_IDS,
   MEMORY_DRIVE_IDS,
   buyPrice,
   getItem,
@@ -17,6 +18,7 @@ import {
   SHOP_POTION,
   SHOP_ROTATION,
   SHOP_TM,
+  SECRET_SHOP,
 } from './shop';
 import { TM_MOVE_IDS, isTmItemId } from './tms';
 
@@ -187,6 +189,49 @@ describe('shop TM table', () => {
         expect(buyPrice(item), id).toBe(3000);
         expect(sellPrice(item), id).toBeLessThan(buyPrice(item));
       }
+    }
+  });
+});
+
+describe('SECRET_SHOP', () => {
+  it('hangs the leaf from map 3 with a chance strictly inside (0, 1)', () => {
+    expect(SECRET_SHOP.fromMap).toBe(3);
+    expect(SECRET_SHOP.chance).toBeGreaterThan(0);
+    expect(SECRET_SHOP.chance).toBeLessThan(1);
+  });
+
+  it('names only catalogue ids, none twice', () => {
+    const ids = [...SECRET_SHOP.held, ...SECRET_SHOP.tm];
+    for (const id of ids) expect(getItem(id), id).toBeDefined();
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toHaveLength(6);
+  });
+
+  it('sells four held items the Mart withholds from the early bands', () => {
+    expect(SECRET_SHOP.held).toEqual(['leftovers', 'lifeorb', 'choiceband', 'focussash']);
+    for (const id of SECRET_SHOP.held) {
+      const item = getItem(id)!;
+      // `consumed` alone is not the rule: Focus Sash is spent once it fires and the
+      // Mart's own late shelf sells it, so the counter's test is the item's kind.
+      expect(item.kind, id).toBe('held');
+      expect(item.price, id).toBe(4000);
+    }
+  });
+
+  it('sells two machines, one catalogue TM each', () => {
+    expect(SECRET_SHOP.tm).toHaveLength(2);
+    for (const id of SECRET_SHOP.tm) {
+      expect(isTmItemId(id), id).toBe(true);
+      expect(getItem(id)!.kind, id).toBe('tm');
+      expect(getItem(id)!.price, id).toBe(3000);
+    }
+  });
+
+  it('never stocks a Mega Stone, a G-Max Stone or a valuable', () => {
+    for (const id of [...SECRET_SHOP.held, ...SECRET_SHOP.tm]) {
+      expect(MEGA_STONE_IDS, id).not.toContain(id);
+      expect(GMAX_STONE_IDS, id).not.toContain(id);
+      expect(getItem(id)!.kind, id).not.toBe('valuable');
     }
   });
 });

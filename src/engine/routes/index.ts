@@ -8,4 +8,5 @@ export * from './sketch';
 export * from './trainers';
 export * from './gate';
 export * from './staticSpecies';
+export * from './secretShop';
 export * from './npcs';

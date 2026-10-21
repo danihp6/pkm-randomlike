@@ -30,10 +30,11 @@ import type { RoomDrop, RoomHost, RoomPanel } from './types';
 /**
  * The **Mart** window (`docs/maps-spec.md` §7, D33, D45): the floor's stock and the
  * whole floating shop card. The **merchant** special NPC opens it from its own card
- * (`openMart`), so no room descriptor lives here: the registry collects only modules
- * that export a `descriptor`, and this file exports none. The card draws no scrim,
- * takes no key and the route keeps walking behind it. A BUY row is taken by dragging
- * it onto the bag or a member; a SELL row still sells with one click.
+ * (`openMart`), and a room that owns its own counter may hand `openMart` that shelf
+ * instead (the secret shop), so no room descriptor lives here: the registry collects
+ * only modules that export a `descriptor`, and this file exports none. The card draws
+ * no scrim, takes no key and the route keeps walking behind it. A BUY row is taken by
+ * dragging it onto the bag or a member; a SELL row still sells with one click.
  */
 
 /** The Mart window: BUY / SELL tabs over the floor's own stock. */
@@ -102,25 +103,49 @@ function paintTab(bg: Phaser.GameObjects.Rectangle, active: boolean): void {
 }
 
 /**
+ * A shelf the Mart shows instead of the floor's own stock: the secret shop's fixed
+ * counter reuses this card through `openMart(host, stock)`. The key names the cache
+ * the rows belong to, so two counters on one floor never trade rows.
+ */
+export type MartStock = Readonly<{
+  /** The cache key the shelf belongs to; a different key re-rolls the rows. */
+  key: string;
+  /** The BUY tab's rows, in order. */
+  slots: readonly ShopSlot[];
+  /** The card's title key; undefined reads `mart.title`. */
+  title?: TranslationKey;
+}>;
+
+/**
  * Opens the floating Mart for `host`, at the floor's band and stock
  * (`docs/maps-spec.md` §7, D33). The stock is rolled once per map on a dedicated
  * stream, so reopening the Mart shows the same shelves. The panel is floating
  * (`D45`): it never takes the keyboard and the walker keeps running behind it.
+ *
+ * A caller that owns its own counter passes `stock`: the card then shows those rows
+ * under that cache key and title, and draws no stream at all (the secret shop).
  */
-export function openMart(host: RoomHost): void {
+export function openMart(host: RoomHost, stock?: MartStock): void {
   if (host.panelOpen()) return;
-  const key = `${host.run.seed}:${host.run.mapIndex}`;
-  if (shopStockKey !== key) {
-    const band = bandForMap(host.run.mapIndex);
-    shopStock = buildShop(band.id, new Rng(hashSeed(`${host.run.seed}:shop:${host.run.mapIndex}`)));
-    shopStockKey = key;
+  let title: TranslationKey = 'mart.title';
+  if (stock) {
+    shopStockKey = stock.key;
+    shopStock = stock.slots;
+    title = stock.title ?? 'mart.title';
+  } else {
+    const key = `${host.run.seed}:${host.run.mapIndex}`;
+    if (shopStockKey !== key) {
+      const band = bandForMap(host.run.mapIndex);
+      shopStock = buildShop(band.id, new Rng(hashSeed(`${host.run.seed}:shop:${host.run.mapIndex}`)));
+      shopStockKey = key;
+    }
   }
   shopMode = 'buy';
   shopIndex = 0;
   shopScroll = 0;
   shopMessage = t('mart.greeting');
   panelHost = host;
-  buildShopPanel(host);
+  buildShopPanel(host, t(title));
   refreshShop();
   host.openPanel(PANEL);
 }
@@ -140,13 +165,13 @@ function closeShop(): void {
 }
 
 /** Builds the Mart's floating card and its row/tab objects once per open. */
-function buildShopPanel(host: RoomHost): void {
+function buildShopPanel(host: RoomHost, title: string): void {
   const scene = host.scene;
   shopScene = scene;
   const panel = addFloatingPanel(scene, {
     width: SHOP_W,
     height: SHOP_H,
-    title: t('mart.title'),
+    title,
     onClose: () => host.closePanel(),
   });
   shopPanel = panel;

@@ -380,6 +380,12 @@ leaves with only their own content (`docs/maps-spec.md` §7):
   capture is spent. While the run has completed **exactly one** floor mission and the
   floor it stands on is map 4 or later and flawless, the same room may hold a
   **legendary** instead (25%), so a run gets at most one floor of them.
+- a **secret-shop** room (20% chance, only from map 3 on): the same one-tile
+  **vault** behind a bush, a rock or a pond, opened by a party member of the
+  obstacle's **type**; behind it a **counter** whose interact key opens the Mart card
+  on the room's **own fixed shelf** — four held items (Leftovers, Life Orb, Choice
+  Band, Focus Sash) and two TMs (Swords Dance, Shadow Ball) at catalogue price, the
+  late-band gear the Mart withholds, so a run that finds the leaf can buy it early.
 - a **special NPC** in a regular trainer room, at most one: the **merchant** (the
   row that ships) and, later, a medic, an exorcist, a berry tree. It stands on a
   free tile as an ordinary overworld sprite and blocks it; the interact key opens

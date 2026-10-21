@@ -8,6 +8,53 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The secret shop: four held items and two TMs behind a type-gated vault.**
+      A new **`secret-shop`** special leaf (20 % from map 3 on, on its own minted
+      `${seed}:map:<n>:secret-shop-room` stream, as the **last** statement of the
+      special pass and after the static leaf, so no shipped floor's topology, specs,
+      room ids, sizes, trainer roles or static leaf moved) is a quiet dead-end whose
+      route carves the shipped one-tile vault behind a bush, a rock or a pond. The
+      seal opens when **any party member holds one of the obstacle's own types**
+      (`partyHasType` over `GATES[kind].types`: Bug or Grass / Rock or Fighting /
+      Water), recorded as `secret-shop-<map>-<room>` in `pickedItems`, so the opening
+      lasts the floor and a revisit or a reload draws what the run opened. Behind it
+      stands a counter — the vault's own pocket — whose interact key opens the shipped
+      Mart card (`src/scenes/rooms/shop.ts`'s `openMart`, extended with an optional
+      `MartStock` so a second counter reuses the same card, its SELL tab, its drag and
+      its ✕) stocked from the new `SECRET_SHOP` table in `src/data/shop.ts`:
+      `leftovers`, `lifeorb`, `choiceband`, `focussash` and TMs 88 and 114, all at
+      catalogue price (4000 and 3000), drawn from no RNG at all. `MapRoomSpecial`
+      gains `'secret-shop'` (the minimap marker follows through the existing
+      `MapRoomMarker` alias and paints its own teal ring), the room descriptor is
+      `src/scenes/rooms/secretShop.ts`, the pure rules and the seal's id are
+      `src/engine/routes/secretShop.ts`, and one i18n key (`mart.secretTitle`) ships in
+      both locales. No run field and no `SAVE_VERSION` step (**21**). A floor that
+      hangs the leaf holds one room more and `routeIndexForRoom` sums the previous
+      floors' room counts, so `curve.test.ts`'s walk was re-walked — fills **1.25, 1.25,
+      1.25, 1.25, 1.25, 1.13, 1.24 and 1.32**, every one inside the rule's `1.05 – 1.5`
+      window — and map 5, the only floor the shift pushed out of it (1.67), had its
+      `TRAINER_XP_PER_MAP` row re-solved with the documented recipe
+      (`1.25 → 0.94`); the other seven factors are untouched and
+      `docs/balance/route-curve.md` records the walk. Docs: `docs/maps-spec.md` §7 and
+      `docs/design-spec.md` §7.
+      **QA:** one pass for a one-task batch — `qa-97` (`main@0828cb6` +
+      `task-97@ea081b4`, integration `52bf135`) — gates green (`npm test` **2499**
+      passed / 67 skipped in 179 files, `npm run build` clean), the diff exactly the
+      spec's 23 paths plus the spec commit the merge drops, and `src/data/dex/`
+      untouched. The three `[live]` criteria were measured over CDP on seed
+      `secret-shop-qa-3`, map 3 room 10, mouth `(10,13)`, rock seal `(10,14)`, pocket
+      `(10,15)`: the seal holds (the tile text stays `(10,13)`) through two steps and
+      an `E` with no qualifying member, and after `addDebugPokemon('geodude', 5)` the
+      same `E` opens it for the rest of the floor (one step lands on `(10,14)`, and
+      leaving the room and coming back keeps it open); the counter then opens the card
+      and its header patch `(620..660, 132..142)` reads **`(31.25, 37.4, 48.4)`**
+      against the blend the shipped chrome predicts — `0.72×(16,22,31) +
+      0.28×(61.1,69.5,85.9) = (28.63, 35.30, 46.37)`, error ≤ 2.7 per channel, the ✕
+      restoring the closed reading exactly; and the BUY tab paints its **six** rows
+      (4000/4000/4000/4000/3000/3000) with the seventh row's band left as the list's
+      own field. The card's open-patch bound was corrected from an earlier "+40 rise"
+      wording, whose "light field" premise the shipped `window.png` (#10161f at
+      `FRLG_WINDOW_ALPHA` 0.72) contradicts.
 - [x] **The static-species room, and the legendary variant behind a flawless floor.**
       A new **`static`** special leaf (25 % from map 3 on, drawn from its own
       `${seed}:map:<n>:static-room` stream as the **last** statement of the special

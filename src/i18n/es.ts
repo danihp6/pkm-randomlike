@@ -114,6 +114,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
 
   // mart — the Mart panel
   'mart.title': 'TIENDA',
+  'mart.secretTitle': 'TIENDA SECRETA',
   'mart.buy': 'COMPRAR',
   'mart.sell': 'VENDER',
   'mart.money': 'DINERO  ¥{amount}',

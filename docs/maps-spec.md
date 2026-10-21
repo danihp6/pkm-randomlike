@@ -263,6 +263,7 @@ regular trainer to one. Their content:
 | **trade** | 20 % chance, **from map 3 onward** | a leaf anywhere | a counter; the interact key (`E`) opens the room's own window, which lists the **party** and one `LEAVE` row. Giving a member away rolls **one random Pokémon on acceptance** (never previewed) and places it in the party at the **squad's level**; one trade per room, and refused on a single-member party |
 | **no-heal** | 20 % chance, **from map 3 onward** | a leaf anywhere | one `psychic` trainer; **every battle that starts in the room** refuses the **player's** Bag and healing moves (`docs/battle-spec.md` §2) |
 | **static** | 25 % chance, **from map 3 onward** | a leaf anywhere | one **vault** behind a bush, a rock or a pond, opened when a party member holds the seal's property (Bug or Grass, Rock or Fighting, or the pond's ability) and holding **one static species** at the squad's level, fought and caught like a wild |
+| **secret-shop** | 20 % chance, **from map 3 onward** | a leaf anywhere | one **vault** behind a bush, a rock or a pond, opened when a party member has the obstacle's **type** (Bug or Grass / Rock or Fighting / Water); behind it a **counter** whose interact key opens the Mart card on the room's **own fixed stock** — four held items and two TMs at catalogue price |
 
 Specials count **outside** K (`K` regular rooms + the specials), are rolled on
 the same `map` stream, and are discovered like any room: they appear on the
@@ -272,15 +273,17 @@ NPC*), one per floor from map 2 on. The **mini-boss** leaf rolls with a **50%**
 chance, the **mega-stone** leaf with **15%** (only **from map 3 onward**), the
 **casino** leaf with **30%** (only **from map 2 onward**), the **gated** leaf with
 **20%** (only **from map 3 onward**), the **trade** leaf with **20%** (only **from
-map 3 onward**), the **no-heal** leaf with **20%** (only **from map 3 onward**) and
-the **static** leaf with **25%** (only **from map 3 onward**), and any of them may
-coincide on the same floor. The casino's draw, then the **gated** leaf's, then the
-**trade** leaf's and then the **no-heal** leaf's run on the `map` stream and are the
-**last** statements of its special pass, in that order, so no floor's mini-boss,
+map 3 onward**), the **no-heal** leaf with **20%** (only **from map 3 onward**), the
+**static** leaf with **25%** (only **from map 3 onward**) and the **secret-shop**
+leaf with **20%** (only **from map 3 onward**), and any of them may coincide on the
+same floor. The casino's draw, then the **gated** leaf's, then the **trade** leaf's
+and then the **no-heal** leaf's run on the `map` stream and are the **last**
+statements of its special pass, in that order, so no floor's mini-boss,
 mega-stone, casino, gated leaf, trade leaf, room id or room size moves when any of
-them shipped; the static leaf's `…:static-room` stream is **the last** draw of the
-pass, after the no-heal leaf's, and it is **minted** rather than taken from the `map`
-stream, so it can never move a floor's trainer roles either.
+them shipped; the static leaf's `…:static-room` stream and then the secret-shop
+leaf's `…:secret-shop-room` stream are the **last** draws of the pass, each
+**minted** rather than taken from the `map` stream, so neither can move a floor's
+trainer roles either.
 
 Every floor is also given one **mission** (`src/data/missions.ts`,
 `src/engine/run/missions.ts`), drawn from the run seed on its own
@@ -398,6 +401,41 @@ run has already seen. It reads as **once per run with no new field**: the first 
 mission lifts the counter to 1 and the branch closes again the moment the next floor
 is cleared, so at most one floor of a run ever offers legendaries, and the species
 list is `LEGENDARY_SPECIES` (an explicit data list, never `speciesPool`).
+
+### The secret-shop leaf
+
+The **secret-shop** leaf (`src/data/shop.ts`'s `SECRET_SHOP`,
+`src/engine/routes/secretShop.ts`, `D47`'s room descriptor
+`src/scenes/rooms/secretShop.ts`) is the Mart's late shelf behind the gated leaf's
+own seal. It hangs off a regular room from **map 3 onward** with a **20%** chance, on
+its own `${seed}:map:<floor>:secret-shop-room` stream, as the **last** draw of the
+special pass. Its content:
+
+- the room carves the **shipped gated vault** unchanged (`carveGatedVault`,
+  `RouteRequest.gate`): one one-tile pocket behind a **bush**, a **rock** or a
+  **pond**, chosen by `gateKindFor` on the same two minted streams the gated leaf
+  uses, so no route or terrain the floor already built moves.
+- the seal opens for a **party type**, never a field move: `secretShopGateOpen` is
+  `partyHasType` over the obstacle's own row of `GATES` — Bug or Grass for the bush,
+  Rock or Fighting for the rock, Water for the pond — so the seal's art and its rule
+  can never disagree. The box is never asked and a member at 0 HP counts, exactly
+  like the gated leaf. With none of them the interact key prints the obstacle's own
+  `gate.locked.*` line and **nothing** changes.
+- **one** record rides `pickedItems`, cleared by `advanceMap`:
+  `secret-shop-<mapIndex>-<roomId>` means the vault stays open for the floor. It is
+  written **before** the rebuild it describes, so a revisit and a reload draw the
+  vault the run opened.
+- the far side holds a **counter** on the vault's own pocket tile; its interact key
+  opens the shipped **Mart card** (`openMart(host, stock)` in
+  `src/scenes/rooms/shop.ts`) on the room's **own fixed shelf**: `SECRET_SHOP.held`
+  then `SECRET_SHOP.tm`, one unit each at their catalogue price — four held items
+  (Leftovers, Life Orb, Choice Band, Focus Sash) and two machines (TM088 Swords
+  Dance, TM114 Shadow Ball). That is the late-band gear the Mart withholds, and from
+  map 3 on it is the run's chance to buy it early.
+- the shelf reads **no stream at all**: a run opens the same six rows on every
+  floor. The card keeps the merchant's SELL tab, money line, drag, ✕ and floating
+  (non-modal) behaviour, and it is keyed on the `secret-shop` cache key so a floor's
+  merchant shelf and the secret one never trade rows.
 
 ### The special NPC
 

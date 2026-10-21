@@ -5895,7 +5895,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* `[Task-65]` (the carve and opening seam), `[Task-91]` (the party predicates) and
       `[Task-98]` (the flawless mission's record). It adds no run field: "once per run" is the mission
       record's own completed count. *(Batch 43)*
-- [ ] **[Task-97] The secret shop: several held items and TMs behind a condition.** The human's row
+- [x] **[Task-97] The secret shop: several held items and TMs behind a condition.** The human's row
       is «tienda secreta con varios equipables y MTs (condición por decidir)» — the content is
       settled, the gate is not.
       **Fix shape.** A special leaf whose counter stocks a data list of several held items and TMs

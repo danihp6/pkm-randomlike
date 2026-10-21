@@ -53,6 +53,11 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `staticSpecies.ts` — the static-species room's table: the leaf's and its legendary
   variant's first floor and chance, the property row that opens each seal kind and the
   two species lists (`docs/maps-spec.md` §7).
+- `shop.ts` — the Mart's stock tables: each band's ball pack, potion rung, weighted
+  held-item pool, machine list and G-Max Stone bands, plus the **secret shop**'s own
+  `SECRET_SHOP` row (the leaf's first floor and chance, its four held items and its two
+  machines), read by `src/ui/shop.ts` and `src/engine/routes/secretShop.ts`
+  (`docs/maps-spec.md` §7).
 - `npcs.ts` — the special-NPC table (`docs/maps-spec.md` §7): one row per NPC with
   its name and greeting keys, the overworld sprite key it draws with, the chance it
   is rolled on map 1 and the step every floor after adds, the optional gate its row
