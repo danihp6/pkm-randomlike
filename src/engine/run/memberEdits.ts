@@ -139,7 +139,8 @@ function resolveSpecies(run: RunState, member: RunPokemon, rng: Rng): Resolved {
   const target = getSpecies(pool[rng.int(0, pool.length - 1)]);
   if (!target) return { ok: false, reason: 'no-species' };
   const fighter = member.fighter;
-  const maxHp = statAtLevel(target, fighter.level, fighter.nature, fighter.ivs, fighter.evs).hp;
+  const maxHp = statAtLevel(target, fighter.level, fighter.nature, fighter.ivs, fighter.evs, fighter.statTreats)
+    .hp;
   return {
     ok: true,
     member: {

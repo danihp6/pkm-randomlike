@@ -8,6 +8,28 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The item catalogue's fourth wave: the Tera Crystal, infinite held items, the coloured candy
+      and the three route bottles.** Four wishes on one seam. The **Tera Crystal** is a `held` row
+      carrying a `teraType` (18 of them); one `onStart` handler in `effects/items.ts` replaces the
+      holder's types at battle start and again on switch-in, and the party detail reads the same
+      override, so panel and battle agree. **Infinite held items**: the battle's `spend` still fires
+      a berry once per battle, but `resolve.ts` keeps the run member's `heldItem` instead of taking
+      the snapshot's `null`, so it is back next battle. The **coloured candy** rolls which stat each
+      colour raises from a per-run seeded table (`Rng(seed:candy:<colour>)`) and the run keeps the
+      colours **discovered**; the effect is a permanent ±1 read by `statAtLevel` from the new
+      `statTreats` on the fighter and its snapshot, kept through level-ups, adoption, evolution, the
+      nature re-roll, a Mega and the debug editor. The three **one-route consumables** are the
+      exorcist's curse, the weather man's field and the medic's heal in a bottle: they write
+      `[Task-94]`'s modifiers and call `[Task-95]`'s heal, never a second implementation, and the
+      battle's bag refuses them. `SAVE_VERSION` steps **22 → 23** carrying the treats and the
+      discovered set (an old run migrates with no treats and an empty set). Docs: `docs/data-spec.md`
+      §3, `docs/battle-spec.md` §2/§3/§5/§9, and the regenerated `docs/balance/effect-coverage.md`.
+      **QA:** unit pass green — 2612 tests / 67 skipped in 2679, `npm run build` clean, the coverage
+      pair idempotent, the diff inside the spec's exclusive paths. The `[live]` criteria were **not
+      run** (degraded, same browser-session failure as Task-102): the crystal's badge and battle
+      types, the candy across a reload, the returning berry and the three bottles are unverified on
+      screen.
+
 - [x] **The puzzle room: a switch sequence that pays an item.** A new `puzzle` special leaf
       (20 % from map 2 on, on its own `${seed}:map:<n>:puzzle-room` stream, last statement of the
       special pass) carves a switch sequence into a dead-end wild room, and the **room itself**

@@ -127,6 +127,10 @@ export function resolveBattle(
  * (and permadeath sees a 0-HP member). XP lives on the run member, not the
  * snapshot, so it survives the swap; a member the battle did not report (or the
  * box, which never fights) is left untouched.
+ *
+ * A held item the battle **spent** comes back with the run member (`Task-103`): the
+ * battle's own `heldItem` wins when it still names one, and the run member's is the
+ * fallback, so a berry fires once per battle yet is never lost between them.
  */
 export function adoptBattleParty(run: RunState, player: readonly FighterSnapshot[]): RunState {
   const returned = new Map(player.map((fighter) => [fighter.id, fighter]));
@@ -134,7 +138,11 @@ export function adoptBattleParty(run: RunState, player: readonly FighterSnapshot
     ...run,
     party: run.party.map((member) => {
       const fighter = returned.get(member.fighter.id);
-      return fighter ? { ...member, fighter } : member;
+      if (!fighter) return member;
+      return {
+        ...member,
+        fighter: { ...fighter, heldItem: fighter.heldItem ?? member.fighter.heldItem },
+      };
     }),
   };
 }

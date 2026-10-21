@@ -226,6 +226,10 @@ function validateBag(state: BattleState, side: SideId, command: BagCommand): str
   if (!slot || slot.count <= 0) return 'That item is not in the Bag.';
   if (slot.item.kind === 'ball' && !state.isWild) return 'Ball: cannot be used in a trainer battle.';
   if (slot.item.kind === 'held') return 'Held items can only be used while held.';
+  // A candy and a route consumable are spent from the route bag, never in a battle.
+  if (slot.item.candy !== undefined || slot.item.routeEffect !== undefined) {
+    return 'Only usable on the route.';
+  }
   return null;
 }
 

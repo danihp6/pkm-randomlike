@@ -395,6 +395,22 @@ function fleeHandler(): NonNullable<EffectHandlers['onTryEscape']> {
   };
 }
 
+/**
+ * A Tera Crystal (`Task-103`): from the moment the holder takes the field, it
+ * fights as the crystal's single type. `onStart` runs for every live active at
+ * battle start and on each switch-in, and a Mega (or a G-Max) re-runs it after the
+ * forme change, so the crystal's type stands over the forme's own. Draws no RNG
+ * and writes no log line.
+ */
+function teraCrystalHandler(item: ItemDef): NonNullable<EffectHandlers['onStart']> {
+  const type = item.teraType!;
+  return (ctx) => {
+    if (ctx.owner !== ctx.source || ctx.owner.hp <= 0) return;
+    if (ctx.owner.types.length === 1 && ctx.owner.types[0] === type) return;
+    ctx.owner.types = [type];
+  };
+}
+
 function handlersFor(item: ItemDef): EffectHandlers {
   const hasResidual = Boolean(
     item.cures || item.healAmount || item.healFraction || (item.boosts && item.below),
@@ -421,6 +437,7 @@ function handlersFor(item: ItemDef): EffectHandlers {
   if (item.critStages) handlers = { ...handlers, onModifyCritRatio: critStagesHandler(item) };
   if (item.alwaysLast) handlers = { ...handlers, onFractionalPriority: () => -1 };
   if (item.flee) handlers = { ...handlers, onTryEscape: fleeHandler() };
+  if (item.teraType) handlers = { ...handlers, onStart: teraCrystalHandler(item) };
   if (item.recoil) handlers = { ...handlers, onAfterMove: recoilHandler(item) };
   return handlers;
 }

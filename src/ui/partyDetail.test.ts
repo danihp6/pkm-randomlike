@@ -351,3 +351,32 @@ describe('reorderMoves', () => {
     expect(reorderMoves(run, idle.state, 2)).toEqual(idle);
   });
 });
+
+describe('the Tera Crystal on the STATS tab (Task-103)', () => {
+  const plain = createRunPokemon({ id: 'plain', speciesId: 'bulbasaur', level: 5 });
+  const crystal = createRunPokemon({ id: 'crystal', speciesId: 'bulbasaur', level: 5 });
+  const holding = { ...crystal, fighter: { ...crystal.fighter, heldItem: 'teracrystalfire' } };
+
+  it('shows the crystal’s single type instead of the species’ pair', () => {
+    const run = { ...createRun({ seed: 'run-a', starter: plain }), party: [holding] };
+    expect(memberDetail(run, 'crystal')?.types).toEqual(['Fire']);
+    expect(memberDetail(run, 'crystal')?.heldItemName).toBe('Fire Tera Crystal');
+  });
+
+  it('leaves a plain member on its species types', () => {
+    const run = createRun({ seed: 'run-a', starter: plain });
+    expect(memberDetail(run, 'plain')?.types).toEqual(['Grass', 'Poison']);
+  });
+
+  it('shows a live Mega its forme’s types when no crystal is held', () => {
+    const mega = createFighter({ id: 'mega', speciesId: 'charizardmegax', level: 40 });
+    expect(fighterDetail(mega).types).toEqual(['Fire', 'Dragon']);
+    const battleHeld = createFighter({
+      id: 'lead',
+      speciesId: 'bulbasaur',
+      level: 40,
+      heldItem: 'teracrystalwater',
+    });
+    expect(fighterDetail(battleHeld).types).toEqual(['Water']);
+  });
+});

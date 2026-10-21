@@ -70,6 +70,28 @@ describe('validateCommand', () => {
     state.sides.player.awaitingReplacement = true;
     expect(validateCommand(state, 'player', fight(0))).toBe('A replacement must be sent out first.');
   });
+
+  it('refuses a route-only item, keeping the shipped verdicts (Task-103)', () => {
+    const bag = [
+      { itemId: 'candyred', count: 1 },
+      { itemId: 'exorcistbottle', count: 1 },
+      { itemId: 'weatherbottle', count: 1 },
+      { itemId: 'medicbottle', count: 1 },
+      { itemId: 'potion', count: 1 },
+      { itemId: 'leftovers', count: 1 },
+    ];
+    const state = build(['ember'], ['tackle'], true, bag);
+    state.sides.player.party[0].hp = 1;
+    for (const id of ['candyred', 'exorcistbottle', 'weatherbottle', 'medicbottle']) {
+      expect(validateCommand(state, 'player', { type: 'bag', itemId: id }), id).toBe(
+        'Only usable on the route.',
+      );
+    }
+    expect(validateCommand(state, 'player', { type: 'bag', itemId: 'potion' })).toBeNull();
+    expect(validateCommand(state, 'player', { type: 'bag', itemId: 'leftovers' })).toBe(
+      'Held items can only be used while held.',
+    );
+  });
 });
 
 describe('useBagItem', () => {

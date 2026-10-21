@@ -20,6 +20,7 @@ import {
   createRun,
   dedupeMemberIds,
   depositToBox,
+  discoverCandy,
   equipHeldItem,
   evolveMember,
   gainExperience,
@@ -822,5 +823,31 @@ describe('evolveMember rotom appliance', () => {
     const twice = evolveMember(run, 'r', 'rotomheat');
     expect(twice).toEqual(once);
     expect(twice.party).toEqual(once.party);
+  });
+});
+
+describe('the discovered candy colours (Task-103)', () => {
+  it('starts a fresh run with an empty set', () => {
+    expect(createRun({ seed: 'run-a', starter }).discoveredCandy).toEqual([]);
+  });
+
+  it('adds a colour in order, once, and answers the same run for a repeat', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    const red = discoverCandy(run, 'red');
+    expect(red.discoveredCandy).toEqual(['red']);
+    expect(red).not.toBe(run);
+    const blue = discoverCandy(red, 'blue');
+    expect(blue.discoveredCandy).toEqual(['red', 'blue']);
+    expect(discoverCandy(blue, 'red')).toBe(blue);
+    expect(discoverCandy(blue, '')).toBe(blue);
+  });
+
+  it('survives a room change and a floor change, unlike the floor marks', () => {
+    const discovered = discoverCandy(createRun({ seed: 'run-a', starter }), 'pink');
+    expect(advanceRoute(discovered, 1).discoveredCandy).toEqual(['pink']);
+    const nextFloor = advanceMap(discovered);
+    expect(nextFloor.mapIndex).toBe(2);
+    expect(nextFloor.discoveredCandy).toEqual(['pink']);
+    expect(nextFloor.caughtSpecies).toEqual(discovered.caughtSpecies);
   });
 });

@@ -6451,7 +6451,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (`[Task-65]`) and the obstacle art.
       *Dependencies:* none — the tiles, the special-room layer and the ground-item path are shipped.
       *(Batch 47)*
-- [ ] **[Task-103] The item catalogue's fourth wave: the Tera Crystal, infinite held items, the
+- [x] **[Task-103] The item catalogue's fourth wave: the Tera Crystal, infinite held items, the
       coloured candy and the three one-route consumables.** Four item wishes on one seam.
       **Fix shape.** Four rows.
       - **The Tera Crystal** («objeto equipable cristal teratipo: cambia el tipo») is a `held` item

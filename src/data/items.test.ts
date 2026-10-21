@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import frlgIcons from './frlg/item-icons.json';
 import { GMAX_FORMES, MEGA_FORMES, TYPE_NAMES, getDexItem } from './dex';
 import {
+  CANDY_COLOURS,
+  CANDY_ITEMS,
+  CANDY_ITEM_IDS,
+  CANDY_POSITIVE_CHANCE,
+  CANDY_STATS,
   COMPETITIVE_HELD,
   COMPETITIVE_HELD_IDS,
   GMAX_STONE_IDS,
@@ -11,12 +16,19 @@ import {
   MEMORY_DRIVE_IDS,
   MEMORY_DRIVE_ITEMS,
   MEGA_STONE_IDS,
+  ROUTE_CONSUMABLE_IDS,
+  ROUTE_CONSUMABLE_ITEMS,
+  TERA_CRYSTALS,
+  TERA_CRYSTAL_IDS,
   buyPrice,
+  candyItemId,
   getItem,
   isForSale,
   sellPrice,
+  teraTypeOf,
   type ItemKind,
 } from './items';
+import { ROOM_BATTLEFIELDS } from './battlefields';
 import type { BandId } from './run';
 import { LEVEL_BANDS } from './run';
 
@@ -216,6 +228,89 @@ describe('Memories and Drives', () => {
       const moveName = row.memory ? 'Multi-Attack' : 'Techno Blast';
       expect(row.shortDesc, row.id).toContain(moveName);
       expect(row.shortDesc, row.id).not.toContain("holder's type");
+    }
+  });
+});
+
+describe('the fourth catalogue wave (Task-103)', () => {
+  it('ships one held, 4000-priced Tera Crystal per battle type, in TYPE_NAMES order', () => {
+    expect(TERA_CRYSTALS.length).toBe(18);
+    expect(TERA_CRYSTALS.length).toBe(TYPE_NAMES.length);
+    expect(TERA_CRYSTALS.map((row) => row.teraType)).toEqual([...TYPE_NAMES]);
+    expect(TERA_CRYSTAL_IDS).toEqual(TERA_CRYSTALS.map((row) => row.id));
+    expect(new Set(TERA_CRYSTAL_IDS).size).toBe(18);
+    for (const row of TERA_CRYSTALS) {
+      expect(row.id, row.id).toBe(`teracrystal${row.teraType!.toLowerCase()}`);
+      expect(TYPE_NAMES, row.id).toContain(row.teraType);
+      expect(row.kind, row.id).toBe('held');
+      expect(row.price, row.id).toBe(4000);
+      expect(isForSale(row), row.id).toBe(true);
+      expect(row.shortDesc, row.id).toContain(row.teraType!);
+      expect(getItem(row.id), row.id).toBe(row);
+    }
+  });
+
+  it('ships the five candy colours, one 2400-priced row each', () => {
+    expect(CANDY_COLOURS).toEqual(['red', 'blue', 'green', 'yellow', 'pink']);
+    expect(CANDY_STATS).toEqual(['atk', 'def', 'spa', 'spd', 'spe']);
+    expect(CANDY_POSITIVE_CHANCE).toBe(0.75);
+    expect(CANDY_ITEMS.length).toBe(CANDY_COLOURS.length);
+    expect(CANDY_ITEM_IDS).toEqual(CANDY_ITEMS.map((row) => row.id));
+    for (const colour of CANDY_COLOURS) {
+      const rows = ITEMS.filter((entry) => entry.candy === colour);
+      expect(rows.length, colour).toBe(1);
+      expect(rows[0].id, colour).toBe(candyItemId(colour));
+      expect(rows[0].kind, colour).toBe('heal');
+      expect(rows[0].price, colour).toBe(2400);
+      expect(rows[0].name, colour).toBe(`${colour[0].toUpperCase()}${colour.slice(1)} Candy`);
+      expect(getItem(candyItemId(colour)), colour).toBe(rows[0]);
+    }
+    expect(candyItemId('Red')).toBe('candyred');
+    expect(new Set(CANDY_ITEM_IDS).size).toBe(5);
+  });
+
+  it('ships the three route consumables on the shipped writers', () => {
+    expect(ROUTE_CONSUMABLE_IDS).toEqual(ROUTE_CONSUMABLE_ITEMS.map((row) => row.id));
+    const hex = getItem('exorcistbottle')!;
+    const sun = getItem('weatherbottle')!;
+    const medic = getItem('medicbottle')!;
+    expect(hex.name).toBe('Hex Bottle');
+    expect(sun.name).toBe('Sun Bottle');
+    expect(medic.name).toBe('Medic Bottle');
+    expect(hex.routeEffect).toEqual({ kind: 'curse' });
+    expect(sun.routeEffect).toEqual({ kind: 'sky', field: 'sun' });
+    expect(medic.routeEffect).toEqual({ kind: 'heal' });
+    // The gesture kind the route bag routes, not what the row does.
+    for (const row of ROUTE_CONSUMABLE_ITEMS) {
+      expect(row.kind, row.id).toBe('heal');
+      expect(row.price, row.id).toBe(2000);
+      expect(row.iconFallback, row.id).toBe('fullrestore');
+      expect(row.shortDesc.length, row.id).toBeGreaterThan(0);
+    }
+    const field = (sun.routeEffect as { field: string }).field;
+    expect(ROOM_BATTLEFIELDS.some((entry) => entry.id === field)).toBe(true);
+  });
+
+  it('reads the crystal type through teraTypeOf and nothing else', () => {
+    expect(teraTypeOf(null)).toBeNull();
+    expect(teraTypeOf('teracrystalfire')).toBe('Fire');
+    expect(teraTypeOf('potion')).toBeNull();
+    expect(teraTypeOf('gyaradosite')).toBeNull();
+    for (const row of TERA_CRYSTALS) expect(teraTypeOf(row.id), row.id).toBe(row.teraType);
+  });
+
+  it('leaves the three new fields absent from every shipped row', () => {
+    const crystals = ITEMS.filter((entry) => entry.teraType !== undefined);
+    const candies = ITEMS.filter((entry) => entry.candy !== undefined);
+    const route = ITEMS.filter((entry) => entry.routeEffect !== undefined);
+    expect(crystals.length).toBe(18);
+    expect(candies.length).toBe(5);
+    expect(route.length).toBe(3);
+    for (const row of [...crystals, ...candies, ...route]) expect(row.iconFallback, row.id).toBeDefined();
+    for (const row of COMPETITIVE_HELD) {
+      expect(row.teraType, row.id).toBeUndefined();
+      expect(row.candy, row.id).toBeUndefined();
+      expect(row.routeEffect, row.id).toBeUndefined();
     }
   });
 });

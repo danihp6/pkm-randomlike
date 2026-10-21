@@ -15,7 +15,7 @@ import {
   type StatusId,
 } from '../engine/battle/fighter';
 import { effectiveMoveType } from '../engine/battle/moveType';
-import { getItem } from '../data/items';
+import { getItem, teraTypeOf } from '../data/items';
 import { moveMoves, type CatchLocation, type RunPokemon, type RunState } from '../engine/run';
 import { statusAbbreviation } from './metrics';
 import { evolutionGraph, type FamilyNode } from './evolutionGraph';
@@ -193,13 +193,16 @@ function abilityDescription(name: string): string | null {
 export function fighterDetail(fighter: BattleFighter): MemberDetail {
   const species = getSpecies(fighter.speciesId);
   const held = fighter.heldItem ? getItem(fighter.heldItem) : undefined;
+  // A held Tera Crystal replaces the holder's types, so the panel reads the same
+  // item rule the battle does instead of the species' own pair (`Task-103`).
+  const crystal = teraTypeOf(fighter.heldItem);
   return {
     id: fighter.id,
     speciesId: fighter.speciesId,
     name: fighter.nickname ?? species?.name ?? fighter.speciesId,
     nickname: fighter.nickname,
     level: fighter.level,
-    types: species?.types ?? fighter.types,
+    types: crystal ? [crystal] : (species?.types ?? fighter.types),
     nature: fighter.nature,
     ability: abilityNameFromEnglish(fighter.ability),
     abilityDesc: abilityDescription(fighter.ability),

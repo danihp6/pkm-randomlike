@@ -162,6 +162,7 @@ export function adoptAtLevel(pokemon: RunPokemon, level: number, learnsetSeed?: 
     shiny: f.shiny,
     ivs: f.ivs,
     evs: f.evs,
+    ...(f.statTreats ? { treats: f.statTreats } : {}),
     ...(f.heldItem ? { heldItem: f.heldItem } : {}),
     ...(learnsetSeed ? { learnsetSeed } : {}),
   });
@@ -171,7 +172,9 @@ export function adoptAtLevel(pokemon: RunPokemon, level: number, learnsetSeed?: 
   // `evolvePokemon` does, since `FighterSnapshot` carries no maximum of its own.
   const rebuilt = snapshotFighter(fighter);
   const source = getSpecies(f.speciesId);
-  const oldMaxHp = source ? statAtLevel(source, f.level, f.nature, f.ivs, f.evs).hp : f.hp;
+  const oldMaxHp = source
+    ? statAtLevel(source, f.level, f.nature, f.ivs, f.evs, f.statTreats).hp
+    : f.hp;
   const share = oldMaxHp > 0 ? Math.max(0, Math.min(1, f.hp / oldMaxHp)) : 1;
   const hp = Math.max(1, Math.min(rebuilt.hp, Math.round(share * rebuilt.hp)));
   return { ...pokemon, fighter: { ...rebuilt, hp } };
@@ -212,7 +215,9 @@ export function editRunPokemon(pokemon: RunPokemon, edit: RunPokemonEdit): RunPo
   }
   if (moves.length === 0) moves.push(...fighter.moves.map((slot) => ({ ...slot })));
   const species = getSpecies(fighter.speciesId);
-  const maxHp = species ? statAtLevel(species, level, nature, ivs, fighter.evs).hp : fighter.hp;
+  const maxHp = species
+    ? statAtLevel(species, level, nature, ivs, fighter.evs, fighter.statTreats).hp
+    : fighter.hp;
   // A level change heals to the new maximum (a debug bump is meant to be
   // usable); any other edit keeps the current HP, clamped to the new maximum.
   const hp = level !== fighter.level ? maxHp : Math.max(0, Math.min(maxHp, fighter.hp));
@@ -273,9 +278,11 @@ export function evolvePokemon(pokemon: RunPokemon, into: string, abilitySeed?: s
   if (!ready) return pokemon;
   const source = getSpecies(fighter.speciesId);
   const oldMaxHp = source
-    ? statAtLevel(source, fighter.level, fighter.nature, fighter.ivs, fighter.evs).hp
+    ? statAtLevel(source, fighter.level, fighter.nature, fighter.ivs, fighter.evs, fighter.statTreats)
+        .hp
     : fighter.hp;
-  const maxHp = statAtLevel(target, fighter.level, fighter.nature, fighter.ivs, fighter.evs).hp;
+  const maxHp = statAtLevel(target, fighter.level, fighter.nature, fighter.ivs, fighter.evs, fighter.statTreats)
+    .hp;
   const missing = Math.max(0, oldMaxHp - fighter.hp);
   const abilities = Object.values(target.abilities);
   const kept = abilities.includes(fighter.ability) ? fighter.ability : (abilities[0] ?? fighter.ability);

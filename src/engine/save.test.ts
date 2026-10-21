@@ -330,7 +330,7 @@ describe('settings validation', () => {
   it('reads a document with no reduce-flashing field as off', () => {
     const raw = JSON.stringify({ version: 16, settings: { textSpeed: 'fast', volume: 0.4 } });
     const decoded = document(raw);
-    expect(SAVE_VERSION).toBe(22);
+    expect(SAVE_VERSION).toBe(23);
     expect(decoded.settings.reducedFlash).toBe(false);
   });
 
@@ -352,7 +352,7 @@ describe('settings validation', () => {
     expect(
       document(JSON.stringify({ version: 16, settings: { aiLevel: 'nightmare' } })).settings.aiLevel,
     ).toBe('normal');
-    expect(SAVE_VERSION).toBe(22);
+    expect(SAVE_VERSION).toBe(23);
   });
 
   it('starts on the source table', () => {
@@ -384,7 +384,7 @@ describe('settings validation', () => {
     expect(document(JSON.stringify({ version: 16, settings: { language: 42 } })).settings.language).toBe(
       'en',
     );
-    expect(SAVE_VERSION).toBe(22);
+    expect(SAVE_VERSION).toBe(23);
     expect(Object.keys(SAVE_MIGRATIONS)).toEqual([
       '1',
       '2',
@@ -407,6 +407,7 @@ describe('settings validation', () => {
       '19',
       '20',
       '21',
+      '22',
     ]);
   });
 
@@ -635,7 +636,7 @@ describe('migrateDocument', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
     // One step per version boundary, because the test starts at v0 and the
-    // current schema is v22.
+    // current schema is v23.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
@@ -662,7 +663,8 @@ describe('migrateDocument', () => {
       18: (doc) => ({ ...doc, version: 19 }),
       19: (doc) => ({ ...doc, version: 20 }),
       20: (doc) => ({ ...doc, version: 21 }),
-      21: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      21: (doc) => ({ ...doc, version: 22 }),
+      22: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -749,7 +751,7 @@ describe('map-position migration', () => {
     delete run.pcCatch;
     const raw = JSON.stringify({ version: 15, run });
     const decoded = decodeSave(raw);
-    expect(emptySave().version).toBe(22);
+    expect(emptySave().version).toBe(23);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.pcCatch).toBeNull();
     expect('pcUnlocked' in (decoded.run ?? {})).toBe(false);
@@ -877,8 +879,8 @@ describe('nickname migration', () => {
   it('reads a v14 run as a current-schema run with its members intact and unnamed', () => {
     const raw = JSON.stringify({ version: 14, settings: defaultSettings(), run: sampleRun() });
     const decoded = decodeSave(raw);
-    expect(SAVE_VERSION).toBe(22);
-    expect(decoded.version).toBe(22);
+    expect(SAVE_VERSION).toBe(23);
+    expect(decoded.version).toBe(23);
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
     expect(decoded.run?.box[0].fighter.speciesId).toBe('greedent');
@@ -968,11 +970,11 @@ describe('the NPC member words', () => {
     expect(Object.keys(stored.run.party[1])).toEqual(['fighter']);
   });
 
-  it('migrates a v19 run to v22 with no taught moves and no second ability', () => {
+  it('migrates a v19 run to v23 with no taught moves and no second ability', () => {
     const run: Record<string, unknown> = { ...sampleRun() };
     const legacy = JSON.stringify({ version: 19, settings: defaultSettings(), run });
     const decoded = decodeSave(legacy);
-    expect(decoded.version).toBe(22);
+    expect(decoded.version).toBe(23);
     expect(decoded.run?.party).toHaveLength(6);
     for (const member of decoded.run?.party ?? []) {
       expect('taughtMoves' in member).toBe(false);
@@ -1104,9 +1106,9 @@ describe('the run modifiers', () => {
     return JSON.stringify({ version: SAVE_VERSION, run });
   }
 
-  it('stamps version 22', () => {
-    expect(SAVE_VERSION).toBe(22);
-    expect(emptySave().version).toBe(22);
+  it('stamps version 23', () => {
+    expect(SAVE_VERSION).toBe(23);
+    expect(emptySave().version).toBe(23);
     expect(SAVE_MIGRATIONS[20]).toBeDefined();
   });
 
@@ -1173,7 +1175,7 @@ describe('the run modifiers', () => {
     delete run.modifiers;
     const legacy = JSON.stringify({ version: 20, settings: defaultSettings(), run });
     const decoded = decodeSave(legacy);
-    expect(decoded.version).toBe(22);
+    expect(decoded.version).toBe(23);
     expect(decoded.run?.modifiers).toEqual({ curse: false, forcedField: null, nextWildType: null });
     expect(decoded.run?.party).toHaveLength(6);
   });
@@ -1183,7 +1185,7 @@ describe('the run modifiers', () => {
     delete run.modifiers;
     const legacy = JSON.stringify({ version: 19, settings: defaultSettings(), run });
     const decoded = decodeSave(legacy);
-    expect(decoded.version).toBe(22);
+    expect(decoded.version).toBe(23);
     expect(decoded.run?.modifiers).toEqual({ curse: false, forcedField: null, nextWildType: null });
     expect(decoded.run?.party).toHaveLength(6);
     for (const member of decoded.run?.party ?? []) {
@@ -1194,8 +1196,8 @@ describe('the run modifiers', () => {
 });
 
 describe('the per-member usage counter', () => {
-  it('stamps version 22 and carries the 21 step', () => {
-    expect(SAVE_VERSION).toBe(22);
+  it('stamps version 23 and carries the 21 step', () => {
+    expect(SAVE_VERSION).toBe(23);
     expect(SAVE_MIGRATIONS[21]).toBeDefined();
   });
 
@@ -1208,7 +1210,7 @@ describe('the per-member usage counter', () => {
     };
     const encoded = encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run });
     const decoded = document(encoded);
-    expect(decoded.version).toBe(22);
+    expect(decoded.version).toBe(23);
     expect(decoded.run?.party[0].battlesUsed).toBe(3);
     const canonical = encodeSave({
       version: SAVE_VERSION,
@@ -1241,10 +1243,112 @@ describe('the per-member usage counter', () => {
   it('migrates a v21 run with no counter and no field written', () => {
     const legacy = JSON.stringify({ version: 21, settings: defaultSettings(), run: sampleRun() });
     const decoded = decodeSave(legacy);
-    expect(decoded.version).toBe(22);
+    expect(decoded.version).toBe(23);
     expect(decoded.run?.party).toHaveLength(6);
     for (const member of decoded.run?.party ?? []) {
       expect('battlesUsed' in member).toBe(false);
+    }
+  });
+});
+
+describe('the coloured candy and the stat treats (Task-103)', () => {
+  const atkAndSpe = { atk: 1, spe: -1 };
+
+  /** The sample run with the lead's fighter carrying `statTreats` as given. */
+  function runWithTreats(statTreats: unknown): Record<string, unknown> {
+    const run: Record<string, unknown> = { ...sampleRun() };
+    const party = run.party as Record<string, unknown>[];
+    const [first, ...rest] = party;
+    const fighter = { ...(first.fighter as Record<string, unknown>), statTreats };
+    return { ...run, party: [{ ...first, fighter }, ...rest] };
+  }
+
+  it('stamps version 23 and carries the 22 step', () => {
+    expect(SAVE_VERSION).toBe(23);
+    expect(SAVE_MIGRATIONS[22]).toBeDefined();
+  });
+
+  it('round-trips a member carrying treats byte-stably', () => {
+    const run: RunState = {
+      ...sampleRun(),
+      party: sampleRun().party.map((member, index) =>
+        index === 0 ? { ...member, fighter: { ...member.fighter, statTreats: atkAndSpe } } : member,
+      ),
+    };
+    const encoded = encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run });
+    const decoded = document(encoded);
+    expect(decoded.run?.party[0].fighter.statTreats).toEqual(atkAndSpe);
+    const canonical = encodeSave({
+      version: SAVE_VERSION,
+      settings: defaultSettings(),
+      run: decoded.run!,
+    });
+    expect(
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: document(canonical).run! }),
+    ).toBe(canonical);
+    expect(canonical).toContain('"statTreats":{"atk":1,"spe":-1}');
+  });
+
+  it('writes no key for a member that carries none', () => {
+    const encoded = encodeSave({
+      version: SAVE_VERSION,
+      settings: defaultSettings(),
+      run: sampleRun(),
+    });
+    expect(encoded).not.toContain('statTreats');
+    for (const member of document(encoded).run?.party ?? []) {
+      expect('statTreats' in member.fighter).toBe(false);
+    }
+  });
+
+  it('drops a zero, a non-integer and an unknown stat from the treats', () => {
+    const treatsOf = (statTreats: unknown) =>
+      document(
+        JSON.stringify({ version: SAVE_VERSION, settings: defaultSettings(), run: runWithTreats(statTreats) }),
+      ).run?.party[0].fighter.statTreats;
+    expect(treatsOf({ atk: 2, def: 0 })).toEqual({ atk: 2 });
+    expect(treatsOf({ atk: 1.5, def: 2 })).toEqual({ def: 2 });
+    expect(treatsOf({ hp: 2, accuracy: 3 })).toEqual({ hp: 2 });
+    expect(treatsOf({ atk: 0 })).toBeUndefined();
+    expect(treatsOf('junk')).toBeUndefined();
+    expect(treatsOf({})).toBeUndefined();
+  });
+
+  it('round-trips the discovered candy set in order', () => {
+    const run: RunState = { ...sampleRun(), discoveredCandy: ['red', 'blue'] };
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    expect(decoded.run?.discoveredCandy).toEqual(['red', 'blue']);
+    const canonical = encodeSave({
+      version: SAVE_VERSION,
+      settings: defaultSettings(),
+      run: decoded.run!,
+    });
+    expect(
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: document(canonical).run! }),
+    ).toBe(canonical);
+  });
+
+  it('keeps every non-empty colour once and defaults a missing or malformed set to empty', () => {
+    const coloursOf = (discoveredCandy: unknown) => {
+      const run: Record<string, unknown> = { ...sampleRun(), discoveredCandy };
+      return document(JSON.stringify({ version: SAVE_VERSION, run })).run?.discoveredCandy;
+    };
+    expect(coloursOf(['red', 'red', '', 7, 'blue'])).toEqual(['red', 'blue']);
+    expect(coloursOf('red')).toEqual([]);
+    expect(coloursOf(undefined)).toEqual([]);
+    expect(document(JSON.stringify({ version: SAVE_VERSION, run: sampleRun() })).run?.discoveredCandy).toEqual(
+      [],
+    );
+  });
+
+  it('migrates a v22 run to v23 with no treats and an empty discovered set', () => {
+    const legacy = JSON.stringify({ version: 22, settings: defaultSettings(), run: sampleRun() });
+    const decoded = decodeSave(legacy);
+    expect(decoded.version).toBe(23);
+    expect(decoded.run?.discoveredCandy).toEqual([]);
+    expect(decoded.run?.party).toHaveLength(6);
+    for (const member of [...(decoded.run?.party ?? []), ...(decoded.run?.box ?? [])]) {
+      expect('statTreats' in member.fighter).toBe(false);
     }
   });
 });

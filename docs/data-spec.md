@@ -99,7 +99,7 @@ cycle with the cue table.
 | `src/data/maps.ts` | per-map tuning: level range, room-count range and room width/height range, plus the infinite-run step | 9 |
 | `src/data/bosses.ts` | the fixed party sizes a floor's boss and mini-boss field (six and three, three and two on map 1), read by the route scene's roster build (`docs/maps-spec.md` §6/§7) | 9 |
 | `src/data/trainers.ts` | trainer archetypes: name, class, sprite, money base/jitter (D33), `carriesMega` (bosses/`ace`) and the **AI script flags** its trainers think with (`aiFlags`, D46); the roster is the floor's BST pool (`D39`), not a species list here | 2/9 |
-| `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, held items and berries (no Revive), plus the **competitive held set** (`COMPETITIVE_HELD`: the damage/Speed/accuracy/crit/last/survive items, the resist and pinch berries and the self-status orbs whose effect `effects/items.ts` models, and the items it does not model yet, which `UNMODELLED_ITEMS` records by name, D16), **valuables** (sellable), **Mega Stones**, the **G-Max Stones** (`gmax`, 8 000, one per G-Max forme, D44), the **Plates** (`plate` + 1.2x `typeBoost`, D37), the **Memories** and **Drives** (`memory`/`drive`, D37, ground-only treasure that retypes Multi-Attack and Techno Blast) and the **TMs** (`machine` pocket), the chef's dish (`chefstew`, a one-turn `boosts`/`below`/`consumed` buff) and the escape held item (`smokeball`, `flee`, read by `battle/runAway.ts` through its `onTryEscape`), each with a Poké Dollar price | 3/6/10 |
+| `src/data/items.ts` | the run's item catalogue: balls, potions, status cures, held items and berries (no Revive), plus the **competitive held set** (`COMPETITIVE_HELD`: the damage/Speed/accuracy/crit/last/survive items, the resist and pinch berries and the self-status orbs whose effect `effects/items.ts` models, and the items it does not model yet, which `UNMODELLED_ITEMS` records by name, D16), **valuables** (sellable), **Mega Stones**, the **G-Max Stones** (`gmax`, 8 000, one per G-Max forme, D44), the **Plates** (`plate` + 1.2x `typeBoost`, D37), the **Memories** and **Drives** (`memory`/`drive`, D37, ground-only treasure that retypes Multi-Attack and Techno Blast) and the **TMs** (`machine` pocket), the chef's dish (`chefstew`, a one-turn `boosts`/`below`/`consumed` buff) and the escape held item (`smokeball`, `flee`, read by `battle/runAway.ts` through its `onTryEscape`), the **Tera Crystals** (`teraType`, one held row per battle type, 4 000 — the holder fights as that single type from the moment it takes the field), the five **coloured candies** (`candy`, 2 400 — one permanent ±1 stat treat whose stat and sign the run draws per colour from its own seed), and the three **route consumables** (`routeEffect`, 2 000 — the exorcist's, the weather man's and the medic's work in a bottle, riding the `'heal'` gesture kind and refused in battle), each with a Poké Dollar price | 3/6/10 |
 | `src/data/tms.ts` | the base-Gen-9 TM table: TM number → move id (TM001 … TM171), hand-authored from the dex's `9M` flags, with the id/number/move helpers `items.ts` turns into reusable machines (D36) | 10 |
 | `src/data/shop.ts` | the shop's per-band core (Balls/Potions) and the weighted pool its one or two rotating items are drawn from (D33), plus the bands whose counter shows the **G-Max Stone** row (`SHOP_GMAX_STONE_BANDS`, `late`/`end`, D44) | 9 |
 | `src/data/spriteSize.ts` | the battle sprite size curve: canonical height (m) → drawn height (px), the power and clamps | 5 |
@@ -114,6 +114,14 @@ cycle with the cue table.
 | `src/data/frlg/status-icons.json` | generated frame map for the Añil status badge atlas | 7 |
 | `src/data/abilityText.ts` | the ability-text override table: the ids whose dex blurb is competitive-play boilerplate while the engine ports the ability (`docs/balance/effect-coverage.md`), read by `abilityDescription` | 6 |
 | `src/data/passives.ts` | the map-passive table (`MAP_PASSIVES`): the **out-of-battle** abilities a route rewards, each row's trigger (`'room'` on entry, `'win'` on a won battle), its chance and the catalogue ids it pays, read by `src/engine/run/passives.ts` (`docs/routes-spec.md` §2) | 10 |
+
+- A **coloured candy**'s rule is per **run**, not per catalogue row: the colour →
+  stat/sign mapping is drawn on `Rng(hashSeed('<seed>:candy:<colour>'))`, so red
+  moves Speed in one run and Attack in another, and every candy of a colour moves the
+  same stat in the same run. The run stores only the colours it has **discovered**
+  (`RunState.discoveredCandy`, run-long); the catalogue never carries the mapping, so
+  a banded candy row needs no data change to work (`src/engine/run/items.ts`,
+  `candyTreat`).
 
 ## 4. Typed accessors
 

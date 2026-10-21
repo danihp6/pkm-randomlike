@@ -121,6 +121,13 @@ export type RunState = Readonly<{
    * `stats.casualties`.
    */
   caughtSpecies: readonly string[];
+  /**
+   * The candy colours this run has **tried**, in the order it tried them
+   * (`Task-103`). Run-long: `advanceRoute` and `advanceMap` never clear it; only a
+   * fresh run starts empty. A colour's own stat mapping is never stored — it is
+   * derived from the seed by `candyTreat`.
+   */
+  discoveredCandy: readonly string[];
   bag: readonly BagCounts[];
   /**
    * Poké Dollars, earned only by beating trainers and spent in the shop
@@ -183,6 +190,7 @@ export function createRun(init: RunInit): RunState {
     box: [],
     rip: [],
     caughtSpecies: [],
+    discoveredCandy: [],
     bag: [...(init.bag ?? [])],
     money: Math.max(0, Math.floor(init.money ?? 0)),
     defeatedTrainers: [],
@@ -555,6 +563,16 @@ export function recordCatch(run: RunState, speciesId: string): RunState {
   const caughtSpecies =
     id !== '' && !run.caughtSpecies.includes(id) ? [...run.caughtSpecies, id] : run.caughtSpecies;
   return { ...run, caughtSpecies, stats: { ...run.stats, catches: run.stats.catches + 1 } };
+}
+
+/**
+ * Adds a colour to the run's discovered set, in order, deduped (`Task-103`). A
+ * colour the run already tried leaves the run as the same object.
+ */
+export function discoverCandy(run: RunState, colour: string): RunState {
+  const name = colour.trim();
+  if (name === '' || run.discoveredCandy.includes(name)) return run;
+  return { ...run, discoveredCandy: [...run.discoveredCandy, name] };
 }
 
 export function isTrainerDefeated(run: RunState, trainerId: string): boolean {

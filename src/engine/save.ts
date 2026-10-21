@@ -69,7 +69,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 22;
+export const SAVE_VERSION = 23;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -165,7 +165,11 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * starting with the empty record because it never carried one; `21` moves a v21 run
  * onto the v22 schema, which added the optional per-member `battlesUsed` counter, an
  * old run and an old member starting with none because the decoder leaves the absent
- * field out (the `14` nickname precedent).
+ * field out (the `14` nickname precedent); `22` moves a v22 run onto the v23 schema,
+ * which added the coloured candy (`Task-103`) — the run's `discoveredCandy` list
+ * starts **empty** and the members' optional `statTreats` need no write at all,
+ * because the decoder leaves an absent one out, so an old run gets **no treats on
+ * any member and an empty discovered set**.
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -305,6 +309,13 @@ export const SAVE_MIGRATIONS: Migrations = {
   21: (document) => ({
     ...document,
     version: 22,
+  }),
+  // The coloured candy: the run's discovered set starts empty, and the members'
+  // optional treats need no write (the `14` nickname precedent).
+  22: (document) => ({
+    ...document,
+    version: 23,
+    run: isRecord(document.run) ? { ...document.run, discoveredCandy: [] } : document.run,
   }),
 };
 
@@ -632,6 +643,7 @@ function parseFighter(value: unknown): FighterSnapshot | null {
   // A malformed nickname (a number, or text the sanitiser empties) drops the field,
   // never the member; a v14 document simply has none.
   const nickname = typeof value.nickname === 'string' ? normalizeNickname(value.nickname) : null;
+  const statTreats = parseStatTreats(value.statTreats);
 
   return {
     id: value.id,
@@ -649,7 +661,41 @@ function parseFighter(value: unknown): FighterSnapshot | null {
     hp: value.hp,
     status,
     statusCounter: value.statusCounter,
+    ...(statTreats ? { statTreats } : {}),
   };
+}
+
+/**
+ * Reads a member's permanent stat treats (`Task-103`): only a known `StatId` key
+ * with a non-zero integer value survives, a key that reaches 0 is dropped, and an
+ * empty or malformed record reads as none — so a pre-Task-103 document and a
+ * hand-edited one both decode to no treats.
+ */
+function parseStatTreats(value: unknown): Readonly<Partial<Record<StatId, number>>> | null {
+  if (!isRecord(value)) return null;
+  const treats: Partial<Record<StatId, number>> = {};
+  let treated = false;
+  for (const stat of STAT_IDS) {
+    const raw = value[stat];
+    if (!isInteger(raw) || raw === 0) continue;
+    treats[stat] = raw;
+    treated = true;
+  }
+  return treated ? treats : null;
+}
+
+/**
+ * Reads the candy colours the run has tried (`Task-103`): every non-empty string,
+ * deduped, in the order the run tried them. A colour the catalogue no longer
+ * carries is harmless: only a catalogue row can start a use.
+ */
+function parseCandyColours(value: unknown): string[] {
+  const colours: string[] = [];
+  if (!Array.isArray(value)) return colours;
+  for (const colour of value) {
+    if (isString(colour) && colour !== '' && !colours.includes(colour)) colours.push(colour);
+  }
+  return colours;
 }
 
 /**
@@ -862,6 +908,7 @@ function parseRun(value: unknown): RunState | null {
     : [];
 
   const caughtSpecies = parseCaughtSpecies(value.caughtSpecies);
+  const discoveredCandy = parseCandyColours(value.discoveredCandy);
 
   const pickedItems = Array.isArray(value.pickedItems)
     ? value.pickedItems.filter((id): id is string => isString(id))
@@ -923,6 +970,7 @@ function parseRun(value: unknown): RunState | null {
     money,
     defeatedTrainers,
     caughtSpecies,
+    discoveredCandy,
     pickedItems,
     capturedRooms,
     mission: parseMission(value.mission),
