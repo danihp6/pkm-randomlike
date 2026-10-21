@@ -1013,9 +1013,131 @@ mega-stone and every regular room stay put) and the seeds that hung a casino lea
 moves no draw at all, and `[Task-118]` moves none either (it reads the shakes the capture
 already rolled). Nothing here re-plans `Task-38`–`Task-114`, and Batch 4b stays `cut`.
 
+A **thirty-first round** is **one report** — «añade en todo lo antes posible tarea para revisar
+logica de todos los ataques, ahora los de estado o daño relativo parecen no hacer nada la
+mayoria o no funcionan exactamente igual» — registered as **three tasks, `[Task-119]`–`[Task-121]`**.
+It adds **no dependency edge to the tail below it** and **no `SAVE_VERSION` step**: the three
+touch the effect layer and its ledger, add no run field and move no draw of their own, so the chain
+stays **14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23** and none of the three claims
+`src/scenes/RouteScene.ts` — that scene's queue still ends at **52** (`[Task-110]`). Batch 47
+is **cut and in QA** and gains nobody, so the work opens the plan's next batch as a **lettered
+defect batch, `Batch 47b`**, the way 5cb answered 5c and 23a answered 22: `47b` is the first
+batch a later cycle cuts **after 47** and therefore sits **in front of Batch 51**. Because all
+three tasks hold `src/engine/battle/**` and **a batch cannot hold two tasks over that path**,
+they run as **three consecutive one-task batches, 47b → 47c → 47d**, not as one batch and not as
+three parallel devs.
+
+**The defect, measured in the shipped code.** The ledger claims **835 moves — 786 `port`,
+0 `no-op`, 49 `excluded`** (`docs/balance/effect-coverage.md` 356), and the claim is produced by
+`portedMoveNote` (`scripts/effect-coverage.mjs` 188-210), whose last two fallbacks are
+`move.basePower > 0` (207) and **`move.flags.protect` (208)**. `flags.protect` sits on nearly
+every targeted move, so **76 rows are `port` for no reason but that flag**: the ledger's own note
+says `data: flags.protect` and no line of `src/engine/battle/**` reads it. Those 76 carry the
+report's «no hacen nada» half — `Attract`, `Disable`, `Trick`, `Soak`, `Seismic Toss`, `Super
+Fang`, `Psywave`, the four OHKO moves and their neighbours — while the power-relative family it
+also means (`Body Press`, `Foul Play`, `Eruption`) sits in the other column, `port` through a
+`basePower` the engine never adjusts. `applyMoveEffects` (`src/engine/battle/turn.ts` 373-…) applies
+`move.status` (419), `move.volatileStatus` (421 — and only through the 24-name `switch` of
+`applyVolatileEffect`, 250-344, whose `default` returns false at 329-330), `move.boosts` (425),
+`move.heal` (429), `wish` (443) and `move.self.boosts` (448); nothing else. Damage is gated
+`if (activeMove.category !== 'Status' && activeMove.basePower > 0)` (947) and `computeDamage`
+(`damage.ts` 95-161) reads `move.basePower` (134) alone, so a **`basePower 0` move never enters
+the damage loop** and a **power-relative move deals its flat dex number** (`Eruption` 150 at 1 HP,
+`Foul Play` 95 with the user's own Attack, `Body Press` 80 off `def`). The engine already knows
+it cannot express them: `move.damage` and `move.ohko` are read **only** by
+`randomLearnset.ts` — `FIXED_DAMAGE_IDS` (27-34), `isFixedDamage` (36-38), the `move.ohko` skip
+(57), the fixed-damage pool (59), the `FIXED_DAMAGE_MIN_LEVEL = 20` gate (21) and `sortPower`
+(79-82) — which **avoids** them instead of modelling them, and `fighter.ts` 412 (`hasOhko`) is
+the AI's No-Guard guard (D17), not a damage path. The status side has the same shape: the
+**readers and the fields exist and no move writes them** — `volatiles.attract` (`fighter.ts` 82)
+is read by `beforeMoveVolatile` (`turn.ts` 834-837) and written only by Cute Charm,
+`volatiles.disabledMove`/`disableTurns` (78-80) is read by `commands.ts` 74/100/251 and written
+only by Cursed Body (`effects/abilities.ts` 1882-1891), so `Attract` and `Disable` — both on the
+`flags.protect` list — print one line and change nothing. `move.forceSwitch` is read **nowhere**
+in `src/` (only declared, `src/data/dex/moves.ts` 51) and `move.sideCondition` / `pseudoWeather`
+reach the state only through the two hand tables `SIDE_CONDITION_MOVES` / `FIELD_CONDITION_MOVES`
+(`effects/moves.ts` 61-80).
+
+**The measurement, frozen (`[Task-119]`).** One new headless module and one test, on the seams
+that already ship: `src/engine/battle/moveAudit.ts` exports `probeMove(moveId, setup?)`, which
+builds a `createBattle` state from two `createFighter` dittos at level 50 (`ability: 'Run Away'`,
+no held item, the player's only slot the probed move and the enemy's `splash`), runs **one**
+`useMove(state, 'player', { type: 'fight', moveIndex: 0 })` (`turn.ts` 689-701) and returns a
+`MoveProbe` snapshot — both HP, both primary status, both boost vectors in `BOOST_IDS` order,
+both volatile key sets, both `SIDE_CONDITION_IDS` vectors, the `FIELD_CONDITION_IDS` vector and
+the `state.log`'s non-text event kinds in order. `MOVE_AUDIT_ROWS` records, **per move id**, the
+`expected` partial snapshot (the reference's delta: status, stat stage, volatile, screen, field,
+heal, protect; and for the relative families the exact HP arithmetic, the OHKO's KO and the
+counter's mirrored number) plus an optional `knownGap: true`, and `moveAudit.test.ts` runs
+**one `it` per row** (`it.fails` for a `knownGap` row, so a gap is **green and visible** and the
+fix task must delete the flag to keep it green) and two gates: **no row claims nothing**
+(`expected` is never `{}`) and **the rows equal the ledger** — every move `moveCoverage` marks
+`port` with a note other than `data: basePower` has a row, and no row names a move the ledger
+calls `excluded`/`no-op`; the `data: basePower` verse is covered by a generated sweep (one
+assertion each that the move deals ≥1 damage), so the harness owns **all 835** and a new handler
+without a row fails. The same task repairs the classifier: `portedMoveNote` drops the
+`flags.protect` fallback, treats `move.damage`, `move.ohko`, `sideCondition`, `pseudoWeather` and
+`forceSwitch` as **not** ported unless a handler names them, and regenerates
+`docs/balance/effect-coverage.md` + `src/data/moveCoverage.json` — so the ledger goes from
+**0 `no-op`** to the honest count and the develop build's `[coverage]` warning (D16) finally
+fires on a move that goes off and does nothing. Multi-turn families (Leech Seed, Yawn, perish,
+Encore/Taunt decay, protection) are pinned through `scriptedBattle` (`harness.ts` 76-92) on seed
+**2026**, and `golden.test.ts`'s inline log must stay **byte-identical** through all three tasks.
+**Hazards are not a family here:** `Spikes`, `Toxic Spikes`, `Stealth Rock` and `Sticky Web` are
+`excluded` by the ledger's own policy (254) and stay out.
+
+**The split, and why not one task.** `[Task-119]` is the instrument and the honest ledger;
+`[Task-120]` is the **status** half — the `flags.protect` moves that write a status, a stage, a
+volatile, a screen, a field, a heal, a protection or a type/ability/stat swap, on the handlers,
+fields and machinery that already exist; `[Task-121]` is the **relative-damage** half — fixed
+damage (`Seismic Toss`, `Night Shade`, `Dragon Rage`, `Sonic Boom`), level-based (`Psywave`),
+half-HP (`Super Fang`, `Nature's Madness`, `Ruination`), OHKO (`Fissure`, `Guillotine`,
+`Horn Drill`, `Sheer Cold`), `Endeavor`, `Pain Split`, `Final Gambit`, `Present`, `Spit Up`,
+`Crush Grip`, `Wring Out`, the counter family (verified, not assumed: `COUNTER_MOVES` `turn.ts`
+623 and `useCounterMove` 629-668) and the **power-relative** family (`Body Press`, `Foul Play`,
+`Eruption`, `Water Spout`, `Dragon Energy`, `Stored Power`, `Power Trip`, `Rage Fist`,
+`Last Respects`, `Hex`, `Venoshock`, `Facade`, `Bolt Beak`, `Fishious Rend`, `Brine`, `Payback`,
+`Avalanche`, `Revenge`, `Retaliate`, `Round`, `Echoed Voice`, `Expanding Force`,
+`Rising Voltage`, `Grassy Glide`, `Psyblade`, `Flail`, `Reversal`, `Electro Ball`, `Gyro Ball`,
+`Hard Press`, `Heat Crash`, `Heavy Slam`, `Low Kick`, `Grass Knot`). One task would carry the
+instrument, ~50 handlers, both damage families and the ledger — the same reason `[Task-107]` and
+`[Task-108]` were cut in two.
+
+**Arbitration with `[Task-114]` (Batch 53).** The audit and the action-log task both hold
+`src/engine/battle/**`, so they can never share a batch, and the audit is **ahead** of 114 by
+construction (47b, 47c and 47d all precede 51): **the audit goes first and `[Task-114]` keeps its
+label and slips nothing** — it was already later. What does go stale is 114's *measurement*:
+its 194 call sites in twelve files, its nineteen assertions reading `event.text` and its golden
+snapshot were counted against a tree without the audit's new handlers, so 114's record now says
+they are **re-read at cut time**, and 114 stays the only task that ever writes
+`src/ui/feed.ts`, `src/i18n/{en,es}.ts` and `src/engine/battle/commands.ts`. The audit claims
+none of the three.
+
+**The slots beside them.** Each of the three batches is one task because the audit holds
+`src/engine/battle/**` whole, so **no** task claiming any part of that path can ride: `[Task-114]`
+(Batch 53) and `[Task-118]` (Batch 57, written against 114) are out, and the same constraint
+blocks any later battle task. What *can* ride is anything whose paths miss the engine:
+`[Task-109]` (Batch 51 — `src/scenes/RouteScene.ts`, `src/ui/notice.ts` + test and the i18n
+tables, `*Dependencies:*` none) and `[Task-117]` (Batch 56, its only dependency `[Task-116]`
+shipped) are both legal already, so the Orchestrator's fill search may take either into 47b, 47c
+or 47d — and the batch it empties then retires. The rest are named one by one so no slot is left
+silently empty: `[Task-102]`, `[Task-103]` and `[Task-108]` are Batch 47's own and unmerged when
+this was cut, `[Task-110]` is written against Batch 47's entry beat, `[Task-104]` and `[Task-113]`
+are `[!]`, and `[Task-28]` is unscheduled by its own decision line. Every one of the three names
+its holder of the **generated** coverage pair, because all three regenerate it: `[Task-119]` owns
+`scripts/effect-coverage.mjs` and the generator's own rules, and 120 and 121 own the regeneration
+their handlers force.
+
+**Fixed-seed ledger.** `[Task-119]` moves no draw (a probe is a test, the classifier reads source
+text) and `[Task-120]`'s handlers take the draws their reference takes, if any, from the battle's
+one `Rng`; `[Task-121]` names each roll it adds — `Psywave`'s `0.5–1.5` multiplier, `Present`'s
+heal-or-damage pick, the OHKO's accuracy-independent success roll — in the order it spends them,
+and re-pins the new fixed-seed audit rows rather than the golden battle, which contains none of
+those moves. Nothing here re-plans `Task-38`–`Task-118`, and Batch 4b stays `cut`.
+
 The batches below carry at most one `src/scenes/RouteScene.ts` task each (the tail batches
-54–57 carry none) and name their hot-file holder; each entry's own `*Dependencies:*` line
-stays the per-task record.
+47b–47d and 54–57 carry none) and name their hot-file holder; each entry's own
+`*Dependencies:*` line stays the per-task record.
 
 | Batch | Tasks | Hot files (the one holder each) |
 | --- | --- | --- |
@@ -1038,6 +1160,9 @@ stays the per-task record.
 | 45 | 100 | `src/scenes/RouteScene.ts`, `src/data/bosses.ts`, `src/engine/routes/battlefield.ts` → 100 |
 | 46 | 101 | `src/scenes/RouteScene.ts`, `src/engine/save.ts`, `src/engine/battle/commands.ts` → 101 |
 | 47 | 102, 103, 108 | `src/engine/maps/plan.ts` (+ 102's new modules, its notices and the i18n tables) → 102; `src/data/items.ts`, `src/data/dex/natures.ts`, `src/engine/save.ts`, the run/battle rules it edits and the generated coverage pair → 103; `src/scenes/RouteScene.ts`, `src/scenes/BattleScene.ts`, `src/engine/run/battleLink.ts`, `src/ui/partyGrid.ts`, `src/ui/beats.ts` → 108 |
+| 47b | 119 | the new `src/engine/battle/moveAudit.ts` + `moveAudit.test.ts`, `scripts/effect-coverage.mjs`, the generated `docs/balance/effect-coverage.md` + `src/data/moveCoverage.json`, `src/engine/README.md` → 119 |
+| 47c | 120 | `src/engine/battle/{turn,volatile,fighter}.ts`, `src/engine/battle/effects/moves.ts` + their tests, the generated coverage pair (regenerated here) → 120 |
+| 47d | 121 | `src/engine/battle/{damage,turn,preview}.ts`, `src/engine/battle/effects/moves.ts` + their tests, the generated coverage pair (regenerated here) → 121 |
 | 51 | 109 | `src/scenes/RouteScene.ts`, `src/ui/notice.ts` + `notice.test.ts`, `src/i18n/{en,es}.ts` → 109 |
 | 52 | 110 | `src/scenes/RouteScene.ts`, `src/scenes/BattleScene.ts`, `src/ui/bag.ts` + test, `src/i18n/{en,es}.ts` → 110 |
 | 53 | 114 | `src/engine/battle/**`, `src/ui/feed.ts` + test, `src/i18n/{en,es}.ts` → 114 |
@@ -4106,6 +4231,202 @@ The whole menu battle minus per-effect behaviour. Contract in
 Ports of Showdown handlers, in batches, on the hook names in
 `docs/showdown-reuse.md` §3.
 
+- [ ] **[Task-119] The move audit, and a coverage ledger that counts evidence instead of a flag.** The
+      human's report: «añade en todo lo antes posible tarea para revisar logica de todos los ataques, ahora
+      los de estado o daño relativo parecen no hacer nada la mayoria o no funcionan exactamente igual».
+      This is the **first** of the three tasks that answer it and it **changes no rule**: it builds the
+      instrument the other two are judged by and repairs the table that hid the defect.
+      **Why the table could not see it.** `docs/balance/effect-coverage.md` reads **835 moves — 786
+      `port`, 0 `no-op`, 49 `excluded`** (356), and every row's note comes from `portedMoveNote`
+      (`scripts/effect-coverage.mjs` 188-210), whose last two fallbacks are `move.basePower > 0` (207)
+      and **`move.flags.protect` (208)**. `flags.protect` is set on nearly every targeted move, so
+      **76 rows are `port` for that flag and nothing else** — the ledger prints `data: flags.protect`
+      and no line of `src/engine/battle/**` reads it. They are the moves the report names: `Attract`,
+      `Disable`, `Torment`, `Spite`, `Trick`, `Switcheroo`, `Skill Swap`, `Heart Swap`, `Power Swap`,
+      `Guard Swap`, `Power Split`, `Guard Split`, `Speed Swap`, `Soak`, `Reflect Type`, `Mimic`,
+      `Simple Beam`, `Worry Seed`, `Gastro Acid`, `Entrainment`, `Topsy-Turvy`, `Nightmare`,
+      `Octolock`, `Spider Web`, `Telekinesis`, `Lock-On`, `Mind Reader`, `Foresight`, `Odor Sleuth`,
+      `Defog`, `Heal Pulse`, `Floral Healing`, `Purify`, `Instruct`, `Quash`, `Electrify`, `Embargo`,
+      `Spotlight`, `Psycho Shift`, `Magic Powder`, `Forest's Curse`, `Trick-or-Treat`, `Venom Drench`,
+      `Bide`, `Beat Up`, `Seismic Toss`, `Night Shade`, `Dragon Rage`, `Sonic Boom`, `Psywave`,
+      `Super Fang`, `Endeavor`, `Pain Split`, `Present`, `Spit Up`, `Wring Out`, `Crush Grip`,
+      `Electro Ball`, `Flail`, `Reversal`, `Gyro Ball`, `Hard Press`, `Heat Crash`, `Heavy Slam`,
+      `Low Kick`, `Grass Knot`, `Fissure`, `Guillotine`, `Horn Drill`, `Sheer Cold`,
+      `Nature's Madness`, `Ruination`, `Strength Sap` and their neighbours. The other **232** rows ride
+      `data: basePower`, which is true for `Tackle` and false for `Body Press`, `Foul Play`, `Eruption`,
+      `Water Spout`, `Stored Power` and the rest of `[Task-121]`'s family, whose note cannot say so.
+      **Fix shape (subtasks, in order).**
+      1. **The probe.** New `src/engine/battle/moveAudit.ts` exports
+        `probeMove(moveId: string, setup?: Partial<MoveAuditSetup>): MoveProbe`. It builds a
+        `createBattle` state (`new Rng(2026)`, `isWild: true`) from two `createFighter` dittos at
+        level 50 (`ability: 'Run Away'`, no
+        held item, the player's only slot is the probed move, the enemy's is `splash`), runs **one**
+        `useMove(state, 'player', { type: 'fight', moveIndex: 0 })` (`turn.ts` 689-701) and snapshots
+        `MoveProbe`: `playerHp`, `enemyHp`, both primary statuses, both boost vectors in `BOOST_IDS`
+        order (`fighter.ts` 22), both sorted volatile key sets that are truthy, both
+        `SIDE_CONDITION_IDS` and the `FIELD_CONDITION_IDS` vectors (`effects/conditions.ts` 15/25) and
+        `events`, the `state.log`'s non-text `BattleEvent['kind']` list in order (`state.ts` 108-133).
+        `MoveAuditSetup` is `{ level?, playerSpecies?, enemySpecies?, playerHp?, enemyHp?,
+        playerBoosts?, playerStatus?, weather?, terrain?, heldItem? }`, every field optional, and its
+        defaults are the clean state above (`ditto` on both sides, level 50, `ability: 'Run Away'`,
+        full HP, no status, no boosts, no weather or terrain, nothing held) — the species fields exist
+        because a type- or immunity-sensitive row must be able to say who it stands opposite.
+      2. **The table.** `MOVE_AUDIT_ROWS: readonly MoveAuditRow[]`, each
+        `{ moveId, expected: Partial<MoveProbe>, setup?: Partial<MoveAuditSetup>, knownGap?: true }`,
+        recording the reference's delta per move id: the primary status, the stat stage, the volatile,
+        the screen, the field, the heal, the protection, and for `[Task-121]`'s families the exact HP
+        arithmetic. `knownGap` marks a row the engine does not satisfy **today**.
+      3. **The test.** New `src/engine/battle/moveAudit.test.ts` runs **one `it` per row**
+        (`expect(probeMove(row)).toMatchObject(row.expected)`; a `knownGap` row runs as `it.fails`, so
+        a gap is **green and visible** and the task that fixes it must delete the flag), plus three
+        gates: no row claims nothing (`expected` is never `{}`), **the rows equal the ledger** — every
+        move `moveCoverage(id)` marks `port` with a note other than `data: basePower` has a row and no
+        row names an `excluded`/`no-op` move — and the `data: basePower` verse is swept with one
+        generated assertion per move that it deals at least one point of damage. The suite therefore
+        owns all **835** and a new handler without a row fails.
+      4. **The classifier.** `portedMoveNote` loses the `flags.protect` fallback and stops calling
+        `move.damage`, `move.ohko`, `sideCondition`, `pseudoWeather` and `forceSwitch` ported unless a
+        handler names them; `MOVE_VOLATILES` is read off `applyVolatileEffect`'s cases rather than
+        hand-copied. Regenerate the pair — the row count moves from **0 `no-op`** to the honest total,
+        and D16's develop-build warning finally fires on a move that goes off and does nothing.
+      5. **The multi-turn families** (Leech Seed, Yawn, perish, Encore/Taunt decay, protection) are
+        pinned through `scriptedBattle` (`harness.ts` 76-92) on seed **2026**, one row each, in the
+        same file.
+      **Acceptance.** `[unit]` `npx vitest run src/engine/battle/moveAudit.test.ts` is green and its
+      row count equals the ledger's non-`data: basePower` `port` rows; `[unit]` `npm run docs:coverage`
+      leaves a **clean** `git diff` after the commit (the table is current) and the regenerated header
+      reports a **non-zero** move `no-op` count; `[unit]` `npx vitest run src/engine/battle/golden.test.ts`
+      still matches its inline snapshot byte for byte; `[unit]` `npm test` and `npm run build` are green.
+      **Docs:** `docs/balance/effect-coverage.md` + `src/data/moveCoverage.json` (regenerated),
+      `docs/showdown-reuse.md` §3 (a `port` row names a handler or a field the turn loop reads, and the
+      audit proves it), `docs/tech-decisions.md` **`D16` amended**, not extended: "complete" now also
+      means every modelled move has an audit row, and a flag is not evidence. No new `D` number.
+      **Out of scope:** any rule change (every handler is `[Task-120]`'s and `[Task-121]`'s); the 311
+      abilities and the 290 items; the UI, the scenes and the log's text (`[Task-114]`); the
+      `excluded` families the ledger already refuses (entry hazards, doubles-only, forced switching).
+      *Dependencies:* none — `createBattle`/`useMove`/`harness.ts` and the coverage script all ship. It
+      adds no run field and draws no RNG. *(Batch 47b)*
+- [ ] **[Task-120] The status half of the audit: the moves that write a status, a stage, a volatile, a
+      screen, a field, a heal or a protection.** The **76-row** set `[Task-119]`'s ledger exposes is two
+      halves; this is the status one, and its defects have one shape: **the machinery and the readers
+      ship, and the move never writes them.**
+      **Measured.** `applyVolatileEffect` (`turn.ts` 250-344) is a `switch` over 24 names and
+      `default: return false` (329-330), so a move whose `volatileStatus` is outside that list changes
+      nothing; `applyMoveEffects` (373-448) reads `status`, `volatileStatus`, `boosts`, `heal`,
+      `wish` and `self.boosts` and nothing else — no `sideCondition` field, no ability or type write, no
+      PP or item touch. The fields already exist and only an ability writes them: `volatiles.attract`
+      (`fighter.ts` 82) is read by `beforeMoveVolatile` (`turn.ts` 834-837) and set only by Cute Charm;
+      `volatiles.disabledMove`/`disableTurns` (`fighter.ts` 78-80) is read by `commands.ts` 74/100/251
+      and set only by Cursed Body (`effects/abilities.ts` 1882-1891). So `Attract` and `Disable` print
+      `X used Attract!` and nothing happens — the report's «parecen no hacer nada».
+      **Fix shape.** One handler per move in `src/engine/battle/effects/moves.ts`'s `MOVE_EFFECTS`
+      table (683-725), on the hooks and fields that already ship, plus the volatile cases each needs in
+      `applyVolatileEffect` and the fields in `fighter.ts`; where the reference is a plain data write,
+      extend what `applyMoveEffects` reads rather than adding a handler. The families and their rules,
+      each re-derived from its Showdown handler at cut time: **infatuation and move-locking**
+      (`Attract`, `Disable`, `Torment`, `Encore`'s shape, `Imprison`'s), **residual volatiles**
+      (`Nightmare`, `Curse`'s shape, `Octolock`, `Aqua Ring`'s shape), **trapping and grounding**
+      (`Spider Web`, `Telekinesis`, and `Smack Down`'s missing grounded write on its own damage row),
+      **accuracy locks** (`Lock-On`, `Mind Reader`), **type and identity writes** (`Soak`,
+      `Reflect Type`, `Magic Powder`, `Forest's
+      Curse`, `Trick-or-Treat`, `Camouflage`'s shape), **ability writes** (`Simple Beam`, `Worry Seed`,
+      `Gastro Acid`, `Entrainment`, `Skill Swap`, `Role Play`'s shape), **stat and speed exchanges**
+      (`Heart Swap`, `Power Swap`, `Guard Swap`, `Speed Swap`, `Power Split`, `Guard Split`, `Psych
+      Up`'s shape), **heals aimed at the foe** (`Heal Pulse`, `Floral Healing`, `Purify`, `Strength
+      Sap`), **status transfer** (`Psycho Shift`), **turn and priority control** (`Instruct`,
+      `Quash`, `Electrify`), **items** (`Trick`, `Switcheroo`, `Embargo`, `Recycle`'s shape), **move
+      copies** (`Mimic`, `Sketch` stays excluded), **PP** (`Spite`), **screens and fields** already
+      tabled (`SIDE_CONDITION_MOVES` 61-69, `FIELD_CONDITION_MOVES` 72-80 — verified, not re-opened)
+      and **protection** (`PROTECT_MOVES` 45-54 and `protectEffect`, verified). A member a **single**
+      battle cannot honour — `Spotlight`'s redirect, and any row whose Showdown handler only matters
+      with an ally — is **not** implemented: it moves to `excluded` with its reason in the ledger
+      (`scripts/effect-coverage.mjs` 243-248's own policy), because a dead handler is worse than an
+      honest exclusion.
+      **Acceptance.** `[unit]` every row of this family in `src/engine/battle/moveAudit.test.ts` loses
+      its `knownGap` and stays green (`npx vitest run src/engine/battle/moveAudit.test.ts`), and the
+      file's remaining `knownGap` count equals `[Task-121]`'s family alone; `[unit]` `npm run
+      docs:coverage` then a clean `git diff` (each fixed move's row now names its handler);
+      `[unit]` `npx vitest run src/engine/battle/effects/moves.test.ts` and `npm test` are green;
+      `[unit]` `npx vitest run src/engine/battle/golden.test.ts` is byte-identical.
+      `[live]` in a wild battle a `Disable` bars the named move's row (the `MOVES` window draws it
+      disabled and `validateCommand` refuses it) and an `Attract` makes the infatuated side lose a
+      turn — measured by the drawn row and by the log's `can't bring itself to attack` line.
+      **Docs:** `docs/battle-spec.md` **§4** (the volatiles and the two-way writes: which move writes
+      what the engine already reads), `docs/balance/effect-coverage.md` + `src/data/moveCoverage.json`
+      (regenerated).
+      **Out of scope:** the damage families (`[Task-121]`); `Sketch` and the doubles-only redirects,
+      which stay `excluded`; entry hazards; any rebalance of a move's numbers; the log's text
+      (`[Task-114]`); `src/ui/**`.
+      *Dependencies:* `[Task-119]` (the audit rows and the honest ledger) and `[Task-101]` (the shape
+      of `turn.ts`/`commands.ts`/`state.ts` it edits; Batch 46 merges first). It adds no run field.
+      *(Batch 47c)*
+- [ ] **[Task-121] The relative-damage half of the audit: the number the formula multiplies.** The
+      second half of the report — «daño relativo … no funcionan exactamente igual» — is one missing
+      concept in the damage model: **every damaging move in the engine is `move.basePower` through
+      `baseDamage`** (`damage.ts` 51-53, 134), and the branch that runs it is gated
+      `activeMove.basePower > 0` (`turn.ts` 947), so a `basePower 0` move **never deals damage** and a
+      power-relative move **deals its flat dex number**.
+      **The families, named so nobody shrinks them.** **Fixed damage** (`Seismic Toss`, `Night Shade`
+      = the user's level; `Dragon Rage` = 40; `Sonic Boom` = 20); **level-based with a roll**
+      (`Psywave` = level × 0.5–1.5); **half the target's current HP** (`Super Fang`,
+      `Nature's Madness`, `Ruination`); **OHKO** (`Fissure`, `Guillotine`, `Horn Drill`, `Sheer Cold`
+      — `move.ohko`, an accuracy-independent success roll and a straight KO when it lands);
+      **HP-difference** (`Endeavor`, `Pain Split`, `Final Gambit`); **the counter family**
+      (`Counter`, `Mirror Coat`, `Metal Burst`, `Comeuppance` — **verify, do not assume**:
+      `COUNTER_MOVES` `turn.ts` 623 and `useCounterMove` 629-668 already ship); **stockpile and
+      body-relative power** (`Spit Up`, `Crush Grip`, `Wring Out`, `Present`, `Flail`, `Reversal`,
+      `Electro Ball`, `Gyro Ball`, `Hard Press`, `Heat Crash`, `Heavy Slam`, `Low Kick`,
+      `Grass Knot`); **Bide**'s accumulation and **Beat Up**'s party-based power; and **the
+      power-relative verse that rides `data: basePower` today** — `Body Press` (reads `def`),
+      `Foul Play` (reads the target's `atk`), `Eruption`, `Water Spout`,
+      `Dragon Energy` (scale with the user's HP), `Stored Power`, `Power Trip`, `Rage Fist`,
+      `Last Respects` (scale with a counter), `Hex`, `Venoshock`, `Facade`, `Brine`, `Bolt Beak`,
+      `Fishious Rend` (scale with the target's state), `Payback`, `Avalanche`, `Revenge`,
+      `Retaliate`, `Round`, `Echoed Voice`, `Expanding Force`, `Rising Voltage`, `Grassy Glide`,
+      `Psyblade` (scale with the field or the last turn).
+      **Fix shape.** Two pure resolvers in `src/engine/battle/damage.ts` —
+      `resolveBasePower(attacker, defender, move, context): number` and
+      `fixedDamage(attacker, defender, move, rng): number | null` — read by `computeDamage` **and**
+      `estimateDamage` (164-188), so the AI, the FIGHT preview (`preview.ts` 52-64, today `power =
+      0` for a fixed-damage move) and the battle never disagree; `turn.ts` 947 widens from
+      `basePower > 0` to "the move resolves to a damaging one" and applies the fixed amount without
+      the 85–100 roll, the crit, STAB or the type multiplier, while still honouring Endure,
+      Substitute, `applyDamage` and the faint path. `move.ohko` and `move.damage` stop being read
+      only by `randomLearnset.ts`. The weight the weight-based members read (`Low Kick`,
+      `Grass Knot`, `Heavy Slam`, `Heat Crash`, `Hard Press`) is **already in the data** —
+      `Species.weightkg` (`src/data/dex/species.ts` 38, written by `scripts/build-dex.mjs` 291) read
+      through `getSpecies(speciesId)` — so the ledger's generic "weight is not modelled" line (its
+      legend, 21) stops applying to them and needs one corrected sentence, not a dex regeneration.
+      **The reference is Showdown's**, not a cartridge quirk (`D4`/`D16`): where the two differ the
+      Showdown handler wins, and where Showdown itself needs a mechanic the engine lacks the row
+      becomes `excluded` with that reason rather than invented.
+      **The draws, in order.** `Psywave` one `rng.int`, `Present` one `rng.int` (and the reference's
+      heal-or-damage split), an OHKO its accuracy roll plus its success roll; no other member draws.
+      The golden battle (`golden.test.ts`) contains none of them and must stay byte-identical; the
+      new rows are pinned per family with seed **2026**.
+      **Acceptance.** `[unit]` every row of this family loses its `knownGap` and the file reports
+      **zero** `knownGap` rows (`npx vitest run src/engine/battle/moveAudit.test.ts`), with the exact
+      HP arithmetic in the row: `Seismic Toss` at level 50 removes 50, `Super Fang` removes half the
+      target's current HP, `Endeavor` leaves both sides equal, an OHKO removes the target's whole HP
+      and `Counter` mirrors twice the physical damage taken; `[unit]` `npx vitest run
+      src/engine/battle/golden.test.ts` and `npm test` are green and `npm run build` is clean;
+      `[unit]` `npx vitest run src/engine/battle/damage.test.ts` pins `resolveBasePower` for the
+      verse's named members against hand-computed values; `[unit]` `npm run docs:coverage` then a
+      clean `git diff` with **no** move row left `no-op`.
+      **Docs:** `docs/battle-spec.md` **§3** (the damage families: which moves bypass the formula,
+      which resolve their own power, and that a fixed amount takes no roll), the legend's "weight"
+      line in `docs/balance/effect-coverage.md` (21) and the regenerated coverage pair.
+      **Out of scope:** `src/engine/battle/randomLearnset.ts` — `FIXED_DAMAGE_IDS`,
+      `FIXED_DAMAGE_MIN_LEVEL = 20` and the `move.ohko` skip **keep** excluding these moves from
+      randomized learnsets, because widening those pools re-rolls every randomized learnset in the
+      game and would re-pin the whole roster family; lifting them is a balance task of its own, not
+      this defect. Also out: `forceSwitch` (`Circle Throw`, `Dragon Tail`, `Roar`, `Whirlwind`, the
+      ledger's `excluded` line 249-251), entry hazards, the status half (`[Task-120]`), the log's text
+      (`[Task-114]`) and any rebalance of a move's numbers.
+      *Dependencies:* `[Task-119]` (the audit rows) and `[Task-120]` (it edits the same `turn.ts` and
+      `effects/moves.ts`, so it must land in the next batch), plus `[Task-101]` (their shape). It adds
+      no run field. *(Batch 47d)*
+
 
 ## Phase 5 — Battle UI & presentation
 
@@ -6868,8 +7189,13 @@ still English, and `[Task-114]` below closes it.
       doc lines, and it is **Batch 53** — the first batch that leaves the engine and the key
       table free at once, since `commands.ts` is `[Task-101]`'s in **Batch 46** and the table
       is held by **Batch 36**'s `[Task-98]`, **Batch 51**'s `[Task-109]` and **Batch 52**'s
-      `[Task-110]`. It claims no scene, so it extends no queue. No run field and no RNG draw,
-      so **no `SAVE_VERSION`** step. *(Batch 53)*
+      `[Task-110]`. It claims no scene, so it extends no queue. **Its measured baseline is re-read at
+      cut time:** the 194 call sites in twelve files, the nineteen `event.text` assertions and the
+      golden snapshot were counted on a tree without the audit's Batches **47b–47d** (`[Task-119]`–
+      `[Task-121]`), which land **ahead** of this batch and add handlers, volatiles and log lines —
+      this task's label does not move, and it stays the only writer of `src/ui/feed.ts`,
+      `src/i18n/{en,es}.ts` and `commands.ts`, none of which the audit touches. No run field and no
+      RNG draw, so **no `SAVE_VERSION`** step. *(Batch 53)*
 
 ---
 
@@ -6879,6 +7205,14 @@ Reported in play, awaiting triage. A bug becomes a task in the batch plan, and t
 fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what a
 finished **task** still owes its Task QA — and a batch, its one Integration QA pass on
 the combined tree.
+
+**The audit of every move is a defect, and it is in the plan.** The report — «añade en todo lo
+antes posible tarea para revisar logica de todos los ataques, ahora los de estado o daño relativo
+parecen no hacer nada la mayoria o no funcionan exactamente igual» — is the thirty-first round's,
+and it registered `[Task-119]`–`[Task-121]` in **Batches 47b–47d** (right after Batch 47's merge
+and ahead of Batch 51), with the measurement it is judged by, the 76 moves the ledger calls
+`port` for a flag nobody reads, and the families it must not shrink all written into their own
+entries above. Nothing waits in this inbox.
 
 **The level curve is re-planned, and it is not a report.** After a design discussion the human
 chose the campaign's new shape — **eight maps, levels 2 → 55**, a 2–9 first floor, with the
