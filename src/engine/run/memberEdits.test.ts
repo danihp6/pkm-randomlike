@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { MAX_IV, allNatures } from '../../data/dex/natures';
+import { MAX_IV, allNatures, statAtLevel } from '../../data/dex/natures';
+import { getSpecies } from '../../data/dex/species';
 import { getMove } from '../../data/dex/moves';
 import { STAT_IDS } from '../../data/dex/species';
 import { SACRIFICE_REWARDS, TUTOR_MOVES } from '../../data/npcs';
 import '../battle/effects/abilities';
+import { restoreFighter } from '../battle/fighter';
 import { learnsetPool, unequipMove } from './learnset';
 import {
   grantSecondAbility,
@@ -191,6 +193,28 @@ describe('the member re-rolls', () => {
       const edit = ok(rerollAbility(run, 'a', { roomIndex, npcId: 'ability' }));
       expect(edit.run.party[0].fighter.ability).not.toBe('No Guard');
     }
+  });
+
+  it('keeps a member’s permanent treats through the nature re-roll (Task-103)', () => {
+    const treats = { atk: 1, hp: 2 };
+    const plain = member('a');
+    const run = runWith([{ ...plain, fighter: { ...plain.fighter, statTreats: treats } }]);
+    const edit = ok(rerollNature(run, 'a', { roomIndex: 3, npcId: 'nature' }));
+    const after = edit.run.party[0];
+    const nature = (edit.line as Extract<MemberEditLine, { kind: 'nature' }>).nature;
+    expect(after.fighter.statTreats).toEqual(treats);
+    const restored = restoreFighter(after.fighter);
+    expect(restored.stats).toEqual(
+      statAtLevel(
+        getSpecies(after.fighter.speciesId)!,
+        after.fighter.level,
+        nature,
+        after.fighter.ivs,
+        after.fighter.evs,
+        treats,
+      ),
+    );
+    expect(restored.maxHp).toBe(restored.stats.hp);
   });
 
   it('grants a second ability without touching the primary one', () => {

@@ -212,3 +212,42 @@ describe('fighter snapshots', () => {
     expect(restored.name).toBe('Charmander');
   });
 });
+
+describe('the permanent treats (Task-103)', () => {
+  const species = getSpecies('charmander')!;
+
+  it('stamps the input treats on the fighter and its stats', () => {
+    const fighter = createFighter({
+      id: 'c',
+      speciesId: 'charmander',
+      level,
+      nature: 'serious',
+      treats: { atk: 2, spe: -1 },
+    });
+    expect(fighter.treats).toEqual({ atk: 2, spe: -1 });
+    expect(fighter.stats).toEqual(statAtLevel(species, level, 'serious', undefined, undefined, { atk: 2, spe: -1 }));
+  });
+
+  it('starts a fighter with no treats on the shipped formula and an empty record', () => {
+    const fighter = createFighter({ id: 'c', speciesId: 'charmander', level, nature: 'serious' });
+    expect(fighter.treats).toEqual({});
+    expect(fighter.stats).toEqual(statAtLevel(species, level, 'serious'));
+    expect('statTreats' in snapshotFighter(fighter)).toBe(false);
+  });
+
+  it('round-trips the treats through the snapshot, and keeps the treated stat', () => {
+    const fighter = createFighter({
+      id: 'c',
+      speciesId: 'charmander',
+      level,
+      nature: 'serious',
+      treats: { atk: 1, spe: -1 },
+    });
+    const snapshot = snapshotFighter(fighter);
+    expect(snapshot.statTreats).toEqual({ atk: 1, spe: -1 });
+    const restored = restoreFighter(snapshot);
+    expect(restored.treats).toEqual({ atk: 1, spe: -1 });
+    expect(restored.stats.atk).toBe(statAtLevel(species, level, 'serious').atk + 1);
+    expect(restored.stats.spe).toBe(statAtLevel(species, level, 'serious').spe - 1);
+  });
+});

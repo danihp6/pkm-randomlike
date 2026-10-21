@@ -511,3 +511,77 @@ describe('memberAbilities', () => {
     expect(memberAbilities(pokemon)).toHaveLength(1);
   });
 });
+
+describe('the permanent treats survive every re-derivation (Task-103)', () => {
+  const treats = { atk: 1, spe: -1 } as const;
+
+  function treatedTackler(speciesId: string, level: number): RunPokemon {
+    const base = createRunPokemon({ id: 't', speciesId, level, moves: ['scratch'] });
+    return { ...base, fighter: { ...base.fighter, statTreats: { ...treats } } };
+  }
+
+  const statsOf = (pokemon: RunPokemon) => restoreFighter(pokemon.fighter).stats;
+
+  it('keeps the treat at its base + treat through a level-up', () => {
+    const pokemon = treatedTackler('charmander', 5);
+    const grown = levelUpPokemon(pokemon, 20).pokemon;
+    expect(grown.fighter.statTreats).toEqual(treats);
+    const expected = statAtLevel(
+      getSpecies('charmander')!,
+      20,
+      pokemon.fighter.nature,
+      pokemon.fighter.ivs,
+      pokemon.fighter.evs,
+      treats,
+    );
+    expect(statsOf(grown)).toEqual(expected);
+  });
+
+  it('keeps the treat through an adoption at the squad level', () => {
+    const pokemon = treatedTackler('charmander', 5);
+    const adopted = adoptAtLevel(pokemon, 12);
+    expect(adopted.fighter.statTreats).toEqual(treats);
+    const expected = statAtLevel(
+      getSpecies('charmander')!,
+      12,
+      pokemon.fighter.nature,
+      pokemon.fighter.ivs,
+      pokemon.fighter.evs,
+      treats,
+    );
+    expect(statsOf(adopted)).toEqual(expected);
+  });
+
+  it('keeps the treat through an evolution’s HP recompute', () => {
+    const pokemon = treatedTackler('charmander', 20);
+    const evolved = evolvePokemon(pokemon, 'charmeleon');
+    expect(evolved.fighter.speciesId).toBe('charmeleon');
+    expect(evolved.fighter.statTreats).toEqual(treats);
+    const expected = statAtLevel(
+      getSpecies('charmeleon')!,
+      20,
+      pokemon.fighter.nature,
+      pokemon.fighter.ivs,
+      pokemon.fighter.evs,
+      treats,
+    );
+    expect(statsOf(evolved)).toEqual(expected);
+    // A full member stays full on the treated maximum.
+    expect(evolved.fighter.hp).toBe(expected.hp);
+  });
+
+  it('keeps the treat through the debug editor’s own recompute', () => {
+    const pokemon = treatedTackler('charmander', 5);
+    const edited = editRunPokemon(pokemon, { level: 20 });
+    expect(edited.fighter.statTreats).toEqual(treats);
+    const expected = statAtLevel(
+      getSpecies('charmander')!,
+      20,
+      pokemon.fighter.nature,
+      pokemon.fighter.ivs,
+      pokemon.fighter.evs,
+      treats,
+    );
+    expect(edited.fighter.hp).toBe(expected.hp);
+  });
+});

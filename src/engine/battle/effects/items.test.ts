@@ -5,7 +5,7 @@ import { ITEMS, getItem, type ItemDef } from '../../../data/items';
 import { Rng } from '../../rng';
 import { createFighter, type BattleFighter } from '../fighter';
 import { activeFighter, createBattle, type BattleState } from '../state';
-import { takeTurn } from '../turn';
+import { takeTurn, performSwitch } from '../turn';
 import { movePreview } from '../preview';
 import {
   getEffect,
@@ -725,5 +725,103 @@ describe('the NPC items', () => {
     runResidual(playerContext(state));
     expect(player.boosts.atk).toBe(1);
     expect(player.boosts.spa).toBe(1);
+  });
+});
+
+describe('the Tera Crystals (Task-103)', () => {
+  const crystals = ITEMS.filter((item) => item.teraType !== undefined);
+
+  /** A battle whose lead and bench both hold `held`. */
+  function twoMemberBattle(held: string): BattleState {
+    return createBattle({
+      player: [
+        createFighter({
+          id: 'lead',
+          speciesId: 'bulbasaur',
+          level: 20,
+          moves: ['tackle'],
+          heldItem: held,
+        }),
+        createFighter({
+          id: 'reserve',
+          speciesId: 'squirtle',
+          level: 20,
+          moves: ['tackle'],
+          heldItem: held,
+        }),
+      ],
+      enemy: [createFighter({ id: 'enemy', speciesId: 'charmander', level: 18, moves: ['ember'] })],
+      rng: new Rng(7),
+      isWild: true,
+    });
+  }
+
+  it('registers an onStart handler for all 18 crystals', () => {
+    expect(crystals.length).toBe(18);
+    for (const crystal of crystals) {
+      const effect = getEffect(crystal.id);
+      expect(effect?.kind, crystal.id).toBe('item');
+      expect(typeof effect?.handlers.onStart, crystal.id).toBe('function');
+    }
+  });
+
+  it('replaces the holder’s types on the start hook, pushing no log line', () => {
+    const state = twoMemberBattle('teracrystalfire');
+    const lead = activeFighter(state, 'player');
+    // The start hooks already ran, so the lead is Fire the moment it takes the field.
+    expect(lead.types).toEqual(['Fire']);
+
+    lead.types = ['Grass', 'Poison'];
+    const before = state.log.length;
+    getEffect('teracrystalfire')?.handlers.onStart?.(playerContext(state));
+    expect(lead.types).toEqual(['Fire']);
+    expect(state.log.length).toBe(before);
+  });
+
+  it('applies again on a switch-in', () => {
+    const state = twoMemberBattle('teracrystalfire');
+    expect(state.sides.player.party[1].types).toEqual(['Water']);
+    performSwitch(state, 'player', 1);
+    expect(state.sides.player.party[1].types).toEqual(['Fire']);
+  });
+
+  it('leaves a holder already of that single type alone', () => {
+    const state = createBattle({
+      player: [
+        createFighter({
+          id: 'lead',
+          speciesId: 'charmander',
+          level: 20,
+          moves: ['tackle'],
+          heldItem: 'teracrystalfire',
+        }),
+      ],
+      enemy: [createFighter({ id: 'enemy', speciesId: 'bulbasaur', level: 18, moves: ['tackle'] })],
+      rng: new Rng(7),
+      isWild: true,
+    });
+    const lead = activeFighter(state, 'player');
+    expect(lead.types).toEqual(['Fire']);
+    expect(getEffect('teracrystalfire')?.handlers.onStart?.(playerContext(state))).toBeUndefined();
+    expect(lead.types).toEqual(['Fire']);
+  });
+
+  it('leaves a fainted holder untouched', () => {
+    const state = twoMemberBattle('teracrystalfire');
+    const lead = activeFighter(state, 'player');
+    lead.types = ['Grass', 'Poison'];
+    lead.hp = 0;
+    getEffect('teracrystalfire')?.handlers.onStart?.(playerContext(state));
+    expect(lead.types).toEqual(['Grass', 'Poison']);
+  });
+
+  it('never retypes a fighter that is not the holder', () => {
+    const state = twoMemberBattle('teracrystalfire');
+    const lead = activeFighter(state, 'player');
+    lead.types = ['Grass', 'Poison'];
+    // The bench holder's crystal, run with the lead as the effect's source.
+    const ctx = { ...playerContext(state), owner: state.sides.player.party[1] };
+    getEffect('teracrystalfire')?.handlers.onStart?.(ctx);
+    expect(lead.types).toEqual(['Grass', 'Poison']);
   });
 });

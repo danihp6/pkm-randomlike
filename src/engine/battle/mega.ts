@@ -42,7 +42,7 @@ export function megaEvolve(state: BattleState, side: SideId): boolean {
   fighter.types = form.types;
   // Every Mega keeps its base HP, but a Mega Stone never changes the HP in play.
   fighter.stats = {
-    ...statAtLevel(form, fighter.level, fighter.nature, fighter.ivs, fighter.evs),
+    ...statAtLevel(form, fighter.level, fighter.nature, fighter.ivs, fighter.evs, fighter.treats),
     hp: fighter.stats.hp,
   };
   fighter.ability = Object.values(form.abilities)[0] ?? fighter.ability;

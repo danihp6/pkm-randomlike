@@ -179,6 +179,8 @@ export type BattleFighter = {
   stats: Stats;
   ivs: Stats;
   evs: Stats;
+  /** The permanent stat treats the member carries (`Task-103`); empty when none. */
+  treats: Readonly<Partial<Record<StatId, number>>>;
   hp: number;
   maxHp: number;
   status: StatusId | null;
@@ -201,6 +203,11 @@ export type FighterInput = Readonly<{
   shiny?: boolean;
   ivs?: Partial<Stats>;
   evs?: Partial<Stats>;
+  /**
+   * The member's permanent stat treats (`Task-103`), added to the formula's
+   * result per stat and floored at 1; omitted means none.
+   */
+  treats?: Readonly<Partial<Record<StatId, number>>>;
   moves?: readonly string[];
   nickname?: string;
   /**
@@ -440,7 +447,7 @@ export function changeBattleForm(fighter: BattleFighter, formId: string, keepAbi
   fighter.name = form.name;
   fighter.types = form.types;
   fighter.stats = {
-    ...statAtLevel(form, fighter.level, fighter.nature, fighter.ivs, fighter.evs),
+    ...statAtLevel(form, fighter.level, fighter.nature, fighter.ivs, fighter.evs, fighter.treats),
     hp: fighter.stats.hp,
   };
   if (!keepAbility) fighter.ability = Object.values(form.abilities)[0] ?? fighter.ability;
@@ -474,7 +481,8 @@ export function createFighter(input: FighterInput): BattleFighter {
   const nature = input.nature ?? 'serious';
   const ivs = fullStats(input.ivs, MAX_IV);
   const evs = fullStats(input.evs, 0);
-  const stats = statAtLevel(species, level, nature, ivs, evs);
+  const treats: Readonly<Partial<Record<StatId, number>>> = input.treats ?? {};
+  const stats = statAtLevel(species, level, nature, ivs, evs, treats);
 
   const moveIds = input.moves ?? defaultMoveset(species.id, level, input.learnsetSeed);
   const moves: MoveSlot[] = [];
@@ -507,6 +515,7 @@ export function createFighter(input: FighterInput): BattleFighter {
     stats,
     ivs,
     evs,
+    treats,
     hp: stats.hp,
     maxHp: stats.hp,
     status: null,
@@ -690,12 +699,19 @@ export type FighterSnapshot = Readonly<{
   hp: number;
   status: StatusId | null;
   statusCounter: number;
+  /**
+   * The member's permanent stat treats (`Task-103`): a stat → a non-zero integer.
+   * Written only when at least one stat is treated, so a save round trip stays
+   * byte-stable and every pre-Task-103 document decodes to none.
+   */
+  statTreats?: Readonly<Partial<Record<StatId, number>>>;
 }>;
 
 export function snapshotFighter(fighter: BattleFighter): FighterSnapshot {
   // A Mega Evolution lasts only for the battle; the run keeps the base species,
   // so the snapshot reads the pre-Mega shape the battle stored.
   const mega = fighter.megaBackup;
+  const treats = fighter.treats;
   return {
     id: fighter.id,
     speciesId: mega?.speciesId ?? fighter.speciesId,
@@ -714,6 +730,7 @@ export function snapshotFighter(fighter: BattleFighter): FighterSnapshot {
     hp: fighter.hp,
     status: fighter.status,
     statusCounter: fighter.statusCounter,
+    ...(Object.keys(treats).length > 0 ? { statTreats: treats } : {}),
   };
 }
 
@@ -735,6 +752,7 @@ export function restoreFighter(snapshot: FighterSnapshot): BattleFighter {
     ivs: snapshot.ivs,
     evs: snapshot.evs,
     moves: snapshot.moves.map((slot) => slot.moveId),
+    ...(snapshot.statTreats ? { treats: snapshot.statTreats } : {}),
   };
   const fighter = createFighter(snapshot.heldItem ? { ...base, heldItem: snapshot.heldItem } : base);
 

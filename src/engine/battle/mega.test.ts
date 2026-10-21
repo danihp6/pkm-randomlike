@@ -6,8 +6,14 @@ import { activeFighter, createBattle, createFighter, snapshotFighter, type Battl
 import { canMegaEvolve, megaEvolve } from './mega';
 import { resetBattleState } from './fighter';
 import { takeTurn } from './turn';
+import { getSpecies, statAtLevel, type StatId } from '../../data/dex';
 
-function battle(heldItem?: string, enemySpeciesId = 'bulbasaur', enemyHeldItem?: string): BattleState {
+function battle(
+  heldItem?: string,
+  enemySpeciesId = 'bulbasaur',
+  enemyHeldItem?: string,
+  treats?: Readonly<Partial<Record<StatId, number>>>,
+): BattleState {
   return createBattle({
     player: [
       createFighter({
@@ -17,6 +23,7 @@ function battle(heldItem?: string, enemySpeciesId = 'bulbasaur', enemyHeldItem?:
         nature: 'serious',
         moves: ['waterfall'],
         ...(heldItem ? { heldItem } : {}),
+        ...(treats ? { treats } : {}),
       }),
     ],
     enemy: [
@@ -144,6 +151,27 @@ describe('megaEvolve', () => {
     const a = run();
     const b = run();
     expect(a.log).toEqual(b.log);
+  });
+
+  it('keeps the member’s permanent treats on the forme’s stats (Task-103)', () => {
+    const state = battle('gyaradosite', 'bulbasaur', undefined, { atk: 3, spe: -1 });
+    const fighter = activeFighter(state, 'player');
+    const treats = { atk: 3, spe: -1 };
+    const choice = statAtLevel(getSpecies('gyarados')!, 40, 'serious', fighter.ivs, fighter.evs, treats);
+    expect(fighter.stats.atk).toBe(choice.atk);
+
+    expect(megaEvolve(state, 'player')).toBe(true);
+    const mega = statAtLevel(
+      getSpecies('gyaradosmega')!,
+      40,
+      'serious',
+      fighter.ivs,
+      fighter.evs,
+      treats,
+    );
+    expect(fighter.stats.atk).toBe(mega.atk);
+    expect(fighter.stats.spe).toBe(mega.spe);
+    expect(fighter.treats).toEqual(treats);
   });
 });
 

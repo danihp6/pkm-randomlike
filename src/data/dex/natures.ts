@@ -1,5 +1,5 @@
 import naturesData from './natures.json';
-import { type Species, type StatId, type Stats, normalizeId } from './species';
+import { STAT_IDS, type Species, type StatId, type Stats, normalizeId } from './species';
 
 export type Nature = Readonly<{
   id: string;
@@ -56,12 +56,19 @@ function statAt(
   return Math.floor((core + 5) * natureMultiplier_);
 }
 
+/**
+ * Stats at `level` with natures, IVs, EVs and — the sixth parameter — the
+ * member's permanent treats (`Task-103`): each stat adds `treats[stat]` after the
+ * formula and is floored at 1. An absent or empty record is exactly the shipped
+ * formula.
+ */
 export function statAtLevel(
   species: Species,
   level: number,
   nature: string,
   ivs: Partial<Stats> = {},
   evs: Partial<Stats> = {},
+  treats?: Readonly<Partial<Record<StatId, number>>>,
 ): Stats {
   const ivOf = (stat: StatId): number => ivs[stat] ?? MAX_IV;
   const evOf = (stat: StatId): number => evs[stat] ?? 0;
@@ -72,7 +79,7 @@ export function statAtLevel(
     level +
     10;
 
-  return {
+  const stats: Stats = {
     hp,
     atk: statAt(base.atk, level, natureMultiplier(nature, 'atk'), ivOf('atk'), evOf('atk')),
     def: statAt(base.def, level, natureMultiplier(nature, 'def'), ivOf('def'), evOf('def')),
@@ -80,4 +87,9 @@ export function statAtLevel(
     spd: statAt(base.spd, level, natureMultiplier(nature, 'spd'), ivOf('spd'), evOf('spd')),
     spe: statAt(base.spe, level, natureMultiplier(nature, 'spe'), ivOf('spe'), evOf('spe')),
   };
+  if (!treats) return stats;
+
+  const treated = {} as Record<StatId, number>;
+  for (const stat of STAT_IDS) treated[stat] = Math.max(1, stats[stat] + (treats[stat] ?? 0));
+  return treated;
 }

@@ -1,5 +1,14 @@
 import type { BoostId, StatusId } from '../engine/battle/fighter';
-import { GMAX_FORMES, MEGA_FORMES, getDexItem, getMove, getSpecies, type MoveCategory } from './dex';
+import {
+  GMAX_FORMES,
+  MEGA_FORMES,
+  getDexItem,
+  getMove,
+  getSpecies,
+  normalizeId,
+  type MoveCategory,
+  type StatId,
+} from './dex';
 import type { BandId } from './run';
 import { TM_MOVE_IDS, tmItemId } from './tms';
 
@@ -101,6 +110,25 @@ export type ItemDef = Readonly<{
    * borrows (`src/data/itemIcons.ts`). Absent means the atlas must carry its own.
    */
   iconFallback?: string;
+  /**
+   * A Tera Crystal's type (`Task-103`): while **held**, the holder fights as this
+   * single type from the moment it takes the field. Read only through
+   * `teraTypeOf`, never off the item at a call site.
+   */
+  teraType?: string;
+  /** A coloured candy (`Task-103`): the colour id the run's own table maps. */
+  candy?: string;
+  /**
+   * A route consumable (`Task-103`): its effect, spent from the route bag on any
+   * party member and refused in battle. Written through the shipped writers. Its
+   * **kind** is the gesture the route bag routes (`'heal'`), not what it does;
+   * `routeEffect` is what actually happens.
+   */
+  routeEffect?: Readonly<
+    | { kind: 'curse' }
+    | { kind: 'sky'; field: string }
+    | { kind: 'heal' }
+  >;
   shortDesc: string;
 }>;
 
@@ -1000,6 +1028,302 @@ export const MEMORY_DRIVE_ITEMS: readonly ItemDef[] = [
 ];
 
 /**
+ * A route consumable's three effects (`Task-103`), each written through the
+ * writer the matching NPC's card already calls.
+ */
+export type RouteEffect = NonNullable<ItemDef['routeEffect']>;
+
+/** The five candy colours, in catalogue order. */
+export const CANDY_COLOURS: readonly string[] = ['red', 'blue', 'green', 'yellow', 'pink'];
+
+/** The stats a candy can move, in the order the per-run draw reads them. */
+export const CANDY_STATS: readonly Exclude<StatId, 'hp'>[] = ['atk', 'def', 'spa', 'spd', 'spe'];
+
+/** Chance a candy's treat is +1; the rest are −1. */
+export const CANDY_POSITIVE_CHANCE = 0.75;
+
+/** The catalogue id of a colour's candy: `candy<colour>`. */
+export function candyItemId(colour: string): string {
+  return `candy${normalizeId(colour)}`;
+}
+
+/** The five coloured candies: one catalogue row per colour, its treat drawn per run. */
+export const CANDY_ITEMS: readonly ItemDef[] = [
+  item({
+    id: 'candyred',
+    name: 'Red Candy',
+    kind: 'heal',
+    price: 2400,
+    candy: 'red',
+    iconFallback: 'berrysweet',
+    shortDesc: 'One stat goes up or down for good. Which one is this run’s secret.',
+  }),
+  item({
+    id: 'candyblue',
+    name: 'Blue Candy',
+    kind: 'heal',
+    price: 2400,
+    candy: 'blue',
+    iconFallback: 'berrysweet',
+    shortDesc: 'One stat goes up or down for good. Which one is this run’s secret.',
+  }),
+  item({
+    id: 'candygreen',
+    name: 'Green Candy',
+    kind: 'heal',
+    price: 2400,
+    candy: 'green',
+    iconFallback: 'berrysweet',
+    shortDesc: 'One stat goes up or down for good. Which one is this run’s secret.',
+  }),
+  item({
+    id: 'candyyellow',
+    name: 'Yellow Candy',
+    kind: 'heal',
+    price: 2400,
+    candy: 'yellow',
+    iconFallback: 'berrysweet',
+    shortDesc: 'One stat goes up or down for good. Which one is this run’s secret.',
+  }),
+  item({
+    id: 'candypink',
+    name: 'Pink Candy',
+    kind: 'heal',
+    price: 2400,
+    candy: 'pink',
+    iconFallback: 'berrysweet',
+    shortDesc: 'One stat goes up or down for good. Which one is this run’s secret.',
+  }),
+];
+
+/** Every candy id, for a shop band or a debug grant that hands one out. */
+export const CANDY_ITEM_IDS: readonly string[] = CANDY_ITEMS.map((row) => row.id);
+
+/**
+ * The three route consumables (`Task-103`): the exorcist's, the weather man's and
+ * the medic's work in a bottle. `kind: 'heal'` is the **gesture** the route bag
+ * routes (a drop on a party member reaches `useItemOn`); `routeEffect` is what
+ * actually happens, written by `run/items.ts` through the shipped writers.
+ */
+export const ROUTE_CONSUMABLE_ITEMS: readonly ItemDef[] = [
+  item({
+    id: 'exorcistbottle',
+    name: 'Hex Bottle',
+    kind: 'heal',
+    price: 2000,
+    routeEffect: { kind: 'curse' },
+    iconFallback: 'fullrestore',
+    shortDesc: 'The next enemy battle starts with its lead a stage down.',
+  }),
+  item({
+    id: 'weatherbottle',
+    name: 'Sun Bottle',
+    kind: 'heal',
+    price: 2000,
+    routeEffect: { kind: 'sky', field: 'sun' },
+    iconFallback: 'fullrestore',
+    shortDesc: 'Harsh sunlight covers the next floors you walk.',
+  }),
+  item({
+    id: 'medicbottle',
+    name: 'Medic Bottle',
+    kind: 'heal',
+    price: 2000,
+    routeEffect: { kind: 'heal' },
+    iconFallback: 'fullrestore',
+    shortDesc: 'Rests the whole party and the PC, and never revives the fallen.',
+  }),
+];
+
+/** Every route consumable id. */
+export const ROUTE_CONSUMABLE_IDS: readonly string[] = ROUTE_CONSUMABLE_ITEMS.map((row) => row.id);
+
+/**
+ * The eighteen Tera Crystals (`Task-103`), one per battle type in `TYPE_NAMES`
+ * order: a held crystal makes the holder fight as that single type from the
+ * moment it takes the field (`effects/items.ts`'s `onStart`).
+ *
+ * Written as one literal row per type rather than a `map` because
+ * `scripts/effect-coverage.mjs` derives the registry's catalogue from the
+ * `item({ id: '<id>', name: '<name>'` text: a mapped row would be invisible to the
+ * generated coverage table. The order and the coverage of `TYPE_NAMES` are pinned
+ * by `items.test.ts`.
+ */
+export const TERA_CRYSTALS: readonly ItemDef[] = [
+  item({
+    id: 'teracrystalbug',
+    name: 'Bug Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Bug',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Bug in battle.",
+  }),
+  item({
+    id: 'teracrystaldark',
+    name: 'Dark Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Dark',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Dark in battle.",
+  }),
+  item({
+    id: 'teracrystaldragon',
+    name: 'Dragon Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Dragon',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Dragon in battle.",
+  }),
+  item({
+    id: 'teracrystalelectric',
+    name: 'Electric Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Electric',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Electric in battle.",
+  }),
+  item({
+    id: 'teracrystalfairy',
+    name: 'Fairy Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Fairy',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Fairy in battle.",
+  }),
+  item({
+    id: 'teracrystalfighting',
+    name: 'Fighting Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Fighting',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Fighting in battle.",
+  }),
+  item({
+    id: 'teracrystalfire',
+    name: 'Fire Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Fire',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Fire in battle.",
+  }),
+  item({
+    id: 'teracrystalflying',
+    name: 'Flying Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Flying',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Flying in battle.",
+  }),
+  item({
+    id: 'teracrystalghost',
+    name: 'Ghost Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Ghost',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Ghost in battle.",
+  }),
+  item({
+    id: 'teracrystalgrass',
+    name: 'Grass Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Grass',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Grass in battle.",
+  }),
+  item({
+    id: 'teracrystalground',
+    name: 'Ground Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Ground',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Ground in battle.",
+  }),
+  item({
+    id: 'teracrystalice',
+    name: 'Ice Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Ice',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Ice in battle.",
+  }),
+  item({
+    id: 'teracrystalnormal',
+    name: 'Normal Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Normal',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Normal in battle.",
+  }),
+  item({
+    id: 'teracrystalpoison',
+    name: 'Poison Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Poison',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Poison in battle.",
+  }),
+  item({
+    id: 'teracrystalpsychic',
+    name: 'Psychic Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Psychic',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Psychic in battle.",
+  }),
+  item({
+    id: 'teracrystalrock',
+    name: 'Rock Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Rock',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Rock in battle.",
+  }),
+  item({
+    id: 'teracrystalsteel',
+    name: 'Steel Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Steel',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Steel in battle.",
+  }),
+  item({
+    id: 'teracrystalwater',
+    name: 'Water Tera Crystal',
+    kind: 'held',
+    price: 4000,
+    teraType: 'Water',
+    iconFallback: 'hardstone',
+    shortDesc: "While held, the holder's types become Water in battle.",
+  }),
+];
+
+/** Every Tera Crystal id, one per `TYPE_NAMES` entry. */
+export const TERA_CRYSTAL_IDS: readonly string[] = TERA_CRYSTALS.map((row) => row.id);
+
+/** The type a held item imposes on its holder, or null. The one reader. */
+export function teraTypeOf(itemId: string | null): string | null {
+  if (!itemId) return null;
+  return getItem(itemId)?.teraType ?? null;
+}
+
+/**
  * The competitive held-item set this catalogue adds: every `Port` row (its effect
  * is modelled by `engine/battle/effects/items.ts`, so the Mart may sell it) and
  * every `No-op` row (art, price and the `D16` record only, so only the ground
@@ -1443,6 +1767,9 @@ export const ITEMS: readonly ItemDef[] = [
   ...COMPETITIVE_HELD,
   ...MEGA_STONES,
   ...GMAX_STONES,
+  ...TERA_CRYSTALS,
+  ...CANDY_ITEMS,
+  ...ROUTE_CONSUMABLE_ITEMS,
   ...TM_ITEMS,
 ];
 

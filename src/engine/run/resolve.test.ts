@@ -382,3 +382,41 @@ describe('the per-member usage counter', () => {
     expect(again.run.party[0].battlesUsed).toBe(2);
   });
 });
+
+describe('the infinite held item (Task-103)', () => {
+  const berry = createRunPokemon({
+    id: 'starter',
+    speciesId: 'charmander',
+    level: 3,
+    moves: ['scratch'],
+    heldItem: 'sitrusberry',
+  });
+
+  it('keeps the run member’s item when the battle spent it', () => {
+    const run = createRun({ seed: 's', starter: berry });
+    const consumed = { ...berry.fighter, heldItem: null };
+    const result = resolveBattle(
+      run,
+      returned(run, 'win', { player: [consumed], bag: [{ itemId: 'pokeball', count: 1 }] }),
+      wild,
+    );
+    expect(result.run.party[0].fighter.heldItem).toBe('sitrusberry');
+    // The bag the battle reported is still adopted, and every other snapshot field with it.
+    expect(result.run.bag).toEqual([{ itemId: 'pokeball', count: 1 }]);
+    expect(result.run.party[0].fighter.hp).toBe(consumed.hp);
+    expect(result.run.party[0].fighter.moves).toEqual(consumed.moves);
+  });
+
+  it('adopts the item the battle returned when it still names one', () => {
+    const run = createRun({ seed: 's', starter: berry });
+    const swapped = { ...berry.fighter, heldItem: 'leftovers' };
+    const result = resolveBattle(run, returned(run, 'win', { player: [swapped] }), wild);
+    expect(result.run.party[0].fighter.heldItem).toBe('leftovers');
+  });
+
+  it('never invents an item for a member that holds nothing', () => {
+    const run = createRun({ seed: 's', starter });
+    const result = resolveBattle(run, returned(run, 'run'), wild);
+    expect(result.run.party[0].fighter.heldItem).toBeNull();
+  });
+});

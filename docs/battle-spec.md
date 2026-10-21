@@ -58,10 +58,19 @@ held item (the Smoke Ball) — in which case the escape is certain and skips the
 draw, so no existing seed moves and no attempt is recorded; a trainer battle is
 refused before any hook.
 
+A **route-only** item — a coloured candy or a route consumable (`routeEffect`,
+`docs/data-spec.md` §3) — is refused from the Bag with `Only usable on the route.`
+and its row is drawn disabled: those items are spent by the route's own drop path
+(`useItemOn`), never in a battle, and the gate rejects before any roll, so no RNG
+moves either.
+
 ## 3. Damage and stats
 
 - Stats at level with natures, IVs and EVs computed exactly once per Pokémon
   (Showdown's `Nature`/`Stat` data), cached on the battle fighter.
+- The stat formula also adds the member's permanent **treats** — a candy's ±1, read
+  through `statAtLevel`'s sixth parameter and floored at 1 — so the party panel, the
+  battle and a level-up all show the same treated number.
 - Damage follows the Gen 9 formula, including STAB, type effectiveness, critical
   hits, the 85–100% roll on the seeded battle RNG, weather and burn modifiers.
 - **Screens** halve damage while they last: Reflect the physical, Light Screen the
@@ -170,6 +179,12 @@ Special move shapes:
   run ends on a dedicated screen that reports the routes cleared and the run
   seed before offering a new run. The final route's exit ends on the same screen.
 - Capture is allowed in wild battles only.
+- A held item the battle **consumed** comes back with the run member after the
+  battle: the post-battle fold (`adoptBattleParty`) keeps the run member's
+  `heldItem` when the returned snapshot carries none, so held items are **infinite
+  across battles** while still firing once per battle (a berry is spent in the
+  battle's own state, not in the run). Permadeath is untouched — a fainted member
+  is still released, item and all.
 
 ## 6. Capture
 
@@ -359,6 +374,14 @@ is the mechanic the mega-stone room's stones feed (`D34`, `docs/maps-spec.md`
   nor the pointer cursor reaches it. The Gigantamax sibling row has the same shape
   and reads `Gigantamax Charizard · Charizardite G`, because a
   Gigantamax needs its own stone, one per forme (`D44`, §10).
+- A held **Tera Crystal** (`teraType`, `docs/data-spec.md` §3) replaces the holder's
+  types at battle start and on every switch-in (`onStart`), so the holder fights as
+  that single type. Because a Mega re-runs the start hooks after the forme change,
+  the crystal's type stands over the forme's own — the crystal wins,
+  deterministically, and a switch-out/switch-in repeats it. The party detail reads
+  the same item rule (`teraTypeOf`), so the STATS tab and the battle agree, and a
+  type-gated room still opens on the **species** the run carries
+  (`src/engine/run/party.ts` is untouched).
 
 ## 10. Gigantamax
 
