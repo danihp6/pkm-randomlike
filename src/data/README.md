@@ -53,6 +53,9 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   chance, its trainer's archetype and the move ids the room bars for the player.
 - `bannedRoom.ts` - the banned-species room's table: the first floor that may hang
   it, the chance and its trainer's archetype.
+- `puzzles.ts` — the puzzle room's table: the leaf's first floor and chance, and one
+  row per puzzle with its switch count, its reward id, the first floor that may carry
+  it and its wrong-press rule (`docs/maps-spec.md` §7).
 - `staticSpecies.ts` — the static-species room's table: the leaf's and its legendary
   variant's first floor and chance, the property row that opens each seal kind and the
   two species lists (`docs/maps-spec.md` §7).

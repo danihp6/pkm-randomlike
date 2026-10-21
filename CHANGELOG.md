@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The puzzle room: a switch sequence that pays an item.** A new `puzzle` special leaf
+      (20 % from map 2 on, on its own `${seed}:map:<n>:puzzle-room` stream, last statement of the
+      special pass) carves a switch sequence into a dead-end wild room, and the **room itself**
+      places and reads it: `puzzleLayout(seed, mapIndex, roomId)` returns the switch tiles and the
+      reward tile, `puzzlePress` advances the sequence or resets it by data, `puzzleIsSolved` closes
+      it with `puzzleId`/`puzzleRewardId`, and the descriptor draws the discs **under** the player,
+      floats the reset and solved notices and pays the row's `valuable` item through the shipped
+      ground-item path. The solve is a per-floor `pickedItems` mark, so a revisit shows no switches
+      and no item and a new floor may hang its own room. No run field, no new tile value, no
+      `RouteScene` edit and no `SAVE_VERSION` step (still 22). Docs: `docs/maps-spec.md` §7,
+      `docs/routes-spec.md` §2. One more room on the floors that hang it re-pinned the walk
+      (`MEASURED_FILL`, maps 5/7/8's factors and `docs/balance/route-curve.md`; `BOSS_PINS` on
+      `dev-seed` map 6).
+      **QA:** unit pass green — 2616 tests / 49 skipped in 2665, `npm run build` clean, the diff
+      inside the spec's exclusive paths, `SAVE_VERSION` still 22. The two `[live]` criteria were
+      **not run** (degraded): the three browser QA sessions hung for hours and were killed, so the
+      drawn switches and the single paid reward are unverified on screen.
+
 - [x] **The banned-species room: the run's most-used species sits the fight out.** The run now
       keeps **which member has fought most**, and a new **`banned`** special leaf (20 % from map 3
       on, on its own minted `${seed}:map:<n>:banned-room` stream, as the **last** statement of the

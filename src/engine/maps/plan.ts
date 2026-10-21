@@ -3,6 +3,7 @@ import { BANNED_ROOM } from '../../data/bannedRoom';
 import { MAP_MIN_ROOM_SIZE, mapTuning, roomSizeForShape } from '../../data/maps';
 import { NO_HEAL_ROOM } from '../../data/noHeal';
 import { trainerRoomsForMap } from '../../data/population';
+import { PUZZLE_ROOM } from '../../data/puzzles';
 import { SECRET_SHOP } from '../../data/shop';
 import { STATIC_ROOM } from '../../data/staticSpecies';
 import type { Tile } from '../grid';
@@ -69,7 +70,8 @@ export type MapOpening = Readonly<{ edge: MapEdge; kind: MapOpeningKind }>;
  * player's Bag and healing moves) from map 3 on, a **static** leaf behind a
  * party gate from map 3 on and a **secret-shop** leaf (a counter with the late-band
  * gear behind the same type-gated vault) from map 3 on, plus a **banned** leaf
- * (battles there bar the party's most-used species) from map 3 on; they may
+ * (battles there bar the party's most-used species) from map 3 on and a **puzzle**
+ * leaf (a switch sequence that pays a ground item) from map 2 on; they may
  * coincide on one floor.
  * Every one is hung off a regular room that is neither the entry nor the boss, and
  * never farther from the entry than the boss. The trade leaf rolls after every
@@ -88,7 +90,8 @@ export type MapRoomSpecial =
   | 'no-heal'
   | 'static'
   | 'secret-shop'
-  | 'banned';
+  | 'banned'
+  | 'puzzle';
 
 /** A regular room's population role (`docs/maps-spec.md` §2). */
 export type MapRoomRole = 'trainers' | 'wild';
@@ -540,6 +543,17 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     const parents = freeParents();
     if (parents.length > 0) {
       addSpecial('banned', parents[bannedRng.int(0, parents.length - 1)], bannedRng);
+    }
+  }
+  // The puzzle leaf is the special pass's **last** draw, on its own minted stream,
+  // so no floor's topology, specials, room ids, sizes, roles or any leaf above moves
+  // (`docs/maps-spec.md` §7). Map 2 is where the casino leaf already starts; 20 %
+  // keeps the floor's trainer budget green.
+  const puzzleRng = new Rng(hashSeed(`${seed}:map:${index}:puzzle-room`));
+  if (index >= PUZZLE_ROOM.fromMap && puzzleRng.next() < PUZZLE_ROOM.chance) {
+    const parents = freeParents();
+    if (parents.length > 0) {
+      addSpecial('puzzle', parents[puzzleRng.int(0, parents.length - 1)], puzzleRng);
     }
   }
 

@@ -6435,7 +6435,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the roster, the wild table and the party/PC panel.
       *Dependencies:* none — the fold, the launch and the special-room layer are shipped.
       *(Batch 46)*
-- [ ] **[Task-102] The puzzle rooms: the boss room's puzzle and the rooms that pay an item.** The
+- [x] **[Task-102] The puzzle rooms: the boss room's puzzle and the rooms that pay an item.** The
       human allows either («habitación de jefe con puzle, o habitaciones con puzles que dan
       objetos»), and no room holds a puzzle today: the tile vocabulary is `FLOOR/WALL/EXIT/...`
       (`src/engine/map.ts` 5-14) and the interact key walks entities.

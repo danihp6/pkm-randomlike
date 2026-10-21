@@ -70,6 +70,23 @@ trainer counts, read with the **pre-Task-101** factors, so both record the solve
 baseline (map 5 at 1.25) and not this walk — `src/data/run.ts` is where the moved
 factor lives.
 
+**Re-walked again (Task-102).** The puzzle leaf hangs off a floor's regular graph from
+map 2 on, on a **20 %** chance of its own minted stream, and is one more room on the
+floor that draws it, so the `routeIndexForRoom` shift starts one floor earlier and
+moves the trainers once more. `src/engine/run/curve.test.ts`'s `MEASURED_FILL` now
+reads **1.25, 1.25, 1.16, 1.08, 1.25, 1.13, 1.26 and 1.25** on maps 1-8. Three floors
+left the `1.05 – 1.5` window — map 5 measured **1.53** against its shipped 1.15 factor,
+map 7 **1.05** (1.0482) against 0.91 and map 8 **1.04** (1.0415) against 1.09 — so
+each of those three rows was re-solved with the recipe below,
+`factor' = round2(factor × 1.25 / fill)` → **1.15 → 0.94**, **0.91 → 1.09** and
+**1.09 → 1.31**, and the re-walk puts them back at 1.25, 1.26 and 1.25. The other five
+factors are **untouched**: a floor that still sits inside the window keeps its row,
+map 4 included, which reads 1.08 on its shipped 1.00. The per-map table and the rate
+sentence below it are unchanged: the `fill` column is
+`0.75 × T̄(m) × A(m) / needed(m)` over the pinned trainer counts, read with the
+**pre-Task-102** factors, so both record the solved baseline and not this walk —
+`src/data/run.ts` is where the moved factors live.
+
 ## Level bands
 
 Every floor reads one band (`bandForLevel(minLevel)` in `src/data/run.ts`): a level
