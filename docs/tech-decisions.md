@@ -1072,6 +1072,74 @@ bans the OHKO pair. The **battle** keeps fighting with `fighter.ability` alone: 
 abilities at once needs a rule for which one wins a contested hook and no spec decides it, so that
 stays a later task rather than a silent choice here.
 
+## D49 — The HUD is a DOM layer over an untouched canvas, and "identical to the board" is a measured gate *(decided)*
+
+**The canvas is not touched.** World, camera, route tiles, sprites, the battle background, the
+combatants, the effects, the shake, the flashes and the fades stay exactly where they are and are
+drawn exactly as they are drawn today: not one tile, sprite, palette or atlas moves, and no route or
+battle scene changes its rendering. What leaves Phaser is the **chrome** — every panel, box, menu,
+bar, chip, label, list, dialog and sheet, in the menus, in the routes and **in battle** (the HP
+boxes, the move menu, the bag, the switch screen and the message box). The board is CSS geometry and
+Silkscreen, so the panels are reproduced where they were authored.
+
+**The layer.** `#hud` is mounted once in `src/main.ts` above the canvas, `pointer-events: none`, and
+each panel re-enables it. It renders from one serialisable `HudState` snapshot projected **from the
+engine** (`src/engine/run/state.ts`, `src/engine/battle/state.ts`) and never reads a Phaser object;
+it sends `HudCommand` back through the same action handler a key or a pad press takes, so rebinding
+keeps working. One emit point (`syncHud()`), never an ad-hoc `setState` from a scene: the engine is
+the truth and the HUD is a projection, so the two cannot drift.
+
+**The runtime.** Preact + `@preact/signals` (≈5 KB gzip). React is rejected: nothing here needs it,
+and the repo rule is "no new deps unless a few lines cannot do it". No component library, no CSS
+framework, no CSS-in-JS — the diff has to be debuggable in devtools and Playwright has to see plain
+CSS.
+
+**The board is the layout source.** `design/` holds only the frames a migrated screen needs:
+`<slug>.svg` (1:1), `<slug>.png` (@2x, for the diff) and `<slug>.json` (the `node_info` tree),
+exported through the Figma MCP by `scripts/design/export.mjs`. `design/tokens.json` is **generated**
+from the file, never hand-typed, and is the only place a colour, radius, spacing or type size is
+written; `scripts/ui/build-chrome.mjs` derives the Phaser-side chrome from the same values, so the
+two worlds cannot drift. Everything else in a panel is a CSS custom property. The measurements the
+generator is checked against are in `docs/hud-fidelity.md`.
+
+**The font.** Silkscreen, self-hosted (`src/assets/fonts/silkscreen-{400,700}.woff2`, OFL, no CDN),
+because the board is Silkscreen. The FRLG bitmap atlas stays where it is: the world keeps it and so
+does any canvas label that survives. The consequence is accepted openly: the HUD is Silkscreen while
+canvas text is FRLG, and the board's sizes are used unchanged (9/10/11/12/18/20) rather than snapped
+to multiples of 8 — matching the board beats glyph crispness.
+
+**Identity is a test, not a look.** Each frame ships with `design/fixtures/<slug>.json` — the frame's
+own strings and numbers — and `?hudFixture=<slug>` feeds the store that fixture, so the diff compares
+the same content instead of a different party against the board. `npm run hud:diff -- <slug>` boots
+the preview, screenshots at 390×844 and 1280×800 with `deviceScaleFactor: 2`, and runs `pixelmatch`
+against `<slug>.png`. Two gates per screen: **geometry** (panel edges, row pitch, radii and chips
+within 2 px) and **colour** (mean ΔE ≤ 2 on the flat fills). Text is measured on its bounding box and
+colour, not per pixel: no two rasterisers agree glyph for glyph, and pretending otherwise would turn
+the gate into a tuning treadmill. A screen that cannot pass keeps its Phaser version, the flag stays
+on Phaser for that screen, and **no phase closes with a screen migrated half-way**.
+
+**Escape hatch, per element.** When a shape will not match in CSS — a glow, an exotic corner, a
+pattern — it ships as the board's own SVG or as a nine-slice asset, the `addFrlgWindow` precedent.
+Identity by construction beats identity by tuning.
+
+**Animation.** The battle's pacing already lives in `battleFrames()` and `entryBeat()` frames, not in
+the boxes: each frame carries the events applied as its message appears. The bridge keeps that shape
+— the scene awaits `hud.play(action)` and the DOM answers when its transition ends, so a "Critical
+hit!" beat still lands with the HP drop it describes. Floating damage numbers stay in the canvas for
+now: they are anchored to a moving sprite and live one beat. Moving them later needs a per-frame
+sprite→screen projection, and that projection is the only genuinely new contract this decision adds.
+
+**Deps.** Runtime `preact` and `@preact/signals`; dev `pixelmatch` and `pngjs`. Nothing else: no jsdom
+(the HUD's logic stays in pure modules under `src/ui/hud/` with Vitest, and the components are
+covered by the diff), no testing-library, no CSS toolchain.
+
+**Process.** A new architectural layer plus a dependency is a `D##` (this entry), and it runs as a
+**serial chain of small batches**, never a four-wide wave: `package.json`, `src/main.ts`,
+`vite.config.ts` and every `src/scenes/*.ts` are hot files and each batch claims them once. Order:
+(1) `design/` export, token generation, the diff harness and the `#hud` shell behind `?hud=dom`;
+(2) Options `02` as the spike; (3) the route panels, one per task; (4) the battle boxes, one per
+task; (5) the route HUD chips and the pad decision last.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

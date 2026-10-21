@@ -1377,6 +1377,56 @@ is captured here, so a later cycle cannot cut a shipped task or the same task tw
 Batches 48, 49 and 50 are now empty labels and the plan resumes at **Batch 51**
 (`[Task-109]`). `[Task-108]`'s own entry keeps its prose and takes this batch's label.
 
+A **thirty-second round** is the human's decision on the prototype board: **the panels become a DOM
+layer over an untouched canvas**, recorded as `D49` (`docs/tech-decisions.md`) and carried by
+`docs/hud-dom-proposal.md`. The boundary is the whole point of it: the world, the camera, the route
+tiles, the sprites, the battle background, the combatants, the effects, the shake, the flash and the
+fades keep drawing exactly as they draw today — no atlas, palette or tileset moves — and what leaves
+Phaser is the **chrome**: panels, boxes, menus, bars, chips, lists, dialogs and sheets, in the menus,
+in the routes and in the battle. It adds **twenty-seven tasks, `[Task-122]` to `[Task-148]`**, a new
+**Phase 12**, **no `SAVE_VERSION` step** (it adds no run field, moves no draw and only reads the state
+the engine already keeps) and **no dependency edge to the tail above it**: `src/scenes/RouteScene.ts`
+is claimed once, by `[Task-128]`, `src/scenes/BattleScene.ts` at most once per batch,
+`package.json` and `vite.config.ts` once, by `[Task-122]`, and `src/main.ts` once, by `[Task-124]`.
+
+**Why eight batches and not one per screen.** Phase 12 is cut **for parallelism**: the plan's
+constraint on this work was never dependency depth — every panel task needs the same six files and
+nothing else — it was the two hot scenes. `[Task-128]` takes the panel layer out of
+`src/scenes/RouteScene.ts` (the `D47` shape the room layer took in Batch 23b) and `[Task-124]` gives
+every panel its own subfolder under `src/ui/hud/panels/`, so from Batch 61 the eleven route panels
+are **four per batch** in four different paths instead of one per batch against one scene, and the
+battle lane interleaves its five into the same batches.
+
+- **Batch 58 — `[Task-122]`, `[Task-123]`, `[Task-128]`.** The pipeline and the harness, the state
+  projection, and the extraction. None needs the DOM to exist, so all three start together.
+- **Batch 59 — `[Task-124]`, `[Task-125]`, `[Task-126]`.** The shell and the font, the kit, the
+  fixture flag. `[Task-124]` owns both HUD folder maps (`src/ui/hud/README.md` and
+  `src/ui/hud/panels/README.md`) and writes one line per planned subfolder, so the eleven migrations
+  in Batches 61 to 64 add files only inside their own folder and never collide on a README.
+- **Batch 60 — `[Task-127]` alone.** The spike **is** the gate (`D49`): if Options `02` cannot hold
+  390×844 and 1280×800 inside 2 px and ΔE 2, the rest of the phase does not start and every screen
+  keeps its Phaser version. One slot is empty on purpose and the constraint is this line.
+- **Batches 61 to 64 — the route lane and the battle lane interleaved**, four tasks each:
+  `61` 129/130/131 + 140, `62` 132/133/134 + 141, `63` 135/136/137 + 142, `64` 138/139 + 143 + 145.
+  A route task owns only its own `src/scenes/panels/<name>.ts` and its own
+  `src/ui/hud/panels/<name>/`; a battle task owns `src/scenes/BattleScene.ts`, so **one per batch**.
+- **Batch 65 — `[Task-144]`, `[Task-146]`, `[Task-147]`, `[Task-148]`.** The message box (the last
+  `BattleScene.ts` slot, and the one that changes pacing), the stats screens, the starter and run
+  over.
+
+**What keeps this phase honest.** Every screen ships with a fixture and a diff, and a screen that
+cannot pass keeps its Phaser version with the flag still pointing at it (`D49`); no batch closes
+half-migrated. The engine is untouched: no `src/engine/**` path, no RNG stream and no save field is
+claimed by any of the twenty-seven, which is why the phase adds no version step and re-pins no seed.
+`[Task-139]` is the only decision left inside the phase — the touch pad — and it is decided last,
+after the panels, when the bridge has proven it can take the presses.
+
+**The one risk in the cut is `[Task-128]`.** Moving the panel layer out of a 7,400-line scene is the
+largest pure move in the phase and it is the only reason Batches 61 to 64 can be four wide. If its
+Task QA finds a behaviour change it cannot explain, it is reverted whole and the route lane falls back
+to **one panel per batch** (`129`, `130`, ... against `src/scenes/RouteScene.ts`), which is the same
+tasks with the batches merged: the cut is a label, so the backlog survives the fallback.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
@@ -7196,6 +7246,189 @@ still English, and `[Task-114]` below closes it.
       this task's label does not move, and it stays the only writer of `src/ui/feed.ts`,
       `src/i18n/{en,es}.ts` and `commands.ts`, none of which the audit touches. No run field and no
       RNG draw, so **no `SAVE_VERSION`** step. *(Batch 53)*
+
+---
+
+## Phase 12 - The HUD is a DOM layer (`D49`)
+
+The panels leave Phaser and become CSS over an untouched canvas. The world, the sprites, the battle
+background and every effect stay exactly where they are; what moves is the chrome. Identity with the
+prototype board is a `pixelmatch` gate, not a visual pass, and a screen that cannot pass keeps its
+Phaser version. Design and rationale: `docs/hud-dom-proposal.md`. **The measurements every task
+measures itself against — ten type sizes with their line boxes, the palette, the radii, the panel
+geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
+
+- [ ] **[Task-122] The board lands in the repo and the diff harness exists.** `design/` holds only
+      the frames a migrated screen needs — `<slug>.svg` (1:1), `<slug>.png` (@2x, the diff's
+      reference) and `<slug>.json` (the `node_info` tree) — exported through the figma-edit MCP by
+      `scripts/design/export.mjs`, one frame at a time, never the whole board. `scripts/design/tokens.mjs`
+      generates `design/tokens.json` from the file and `scripts/ui/build-chrome.mjs` reads it, so the
+      direction is board → tokens → chrome + CSS vars and there is no second hand-typed copy of
+      `#10161f`. `scripts/hud/diff.mjs` boots the preview, screenshots at 390×844 and 1280×800 with
+      `deviceScaleFactor: 2` and runs `pixelmatch` against the frame's PNG, reporting **geometry**
+      (edges, row pitch, radii, chips: ≤ 2 px) and **colour** (mean ΔE ≤ 2 on flat fills) apart, text
+      measured on its box and colour. Claims `scripts/design/**`, `scripts/hud/**`, `design/**`,
+      `package.json` (dev: `pixelmatch`, `pngjs`), `vite.config.ts` and `.gitignore`. Two things the
+      live file already showed, and they belong in its spec: the SVG export **has no text** (Figma
+      outlines it, so the strings, family, size and box come from `node_info`), and a panel's
+      `stroke-width="2"` in the SVG is a centred stroke clipped by its mask, so the CSS border is
+      1 px inside. The figma-edit channel is a **single-session lock**: this task's export runs in the
+      Orchestrator's session, which holds `s52r`, not in a worktree beside it.
+      *Dependencies:* none. *(Batch 58)*
+- [ ] **[Task-123] The HUD's state is one projection of the engine.** `src/ui/hud/state.ts`: the
+      serialisable `HudState` snapshot (party, bag, money, route, battle, notice) built from
+      `RunState` and the battle state, with no Phaser object and no value the HUD could compute a
+      second way. `src/ui/hud/commands.ts`: the `HudCommand` union and the reducer that turns it into
+      the action id a key or a pad press already produces, so rebinding keeps working and the HUD can
+      never mutate the run. One emit point (`syncHud()`), never an ad-hoc `setState` from a scene.
+      Tests cover the projection round trip and one command per action family. Claims both modules
+      beside their tests and `src/ui/README.md`. *Dependencies:* none. *(Batch 58)*
+- [ ] **[Task-128] The route's panel layer leaves the route scene.** The ten route panels and the
+      route HUD strip move out of `src/scenes/RouteScene.ts` into `src/scenes/panels/<name>.ts` behind
+      **one auto-discovered registry**, the shape `D47` gave the room layer in Batch 23b: `bag`, `pc`,
+      `party`, `detail`, `map`, `shop`, `trade`, `rewards`, `notices`, `pause` and `hud`. A pure move:
+      no behaviour change, no RNG draw, no test re-pinned, the scene keeps the input dispatch and
+      every module keeps drawing its frame exactly as today. It is the task that lets the eleven
+      migrations run four at a time instead of one per batch, because each will own a module instead
+      of the scene. Claims `src/scenes/RouteScene.ts`, `src/scenes/panels/**` and
+      `src/scenes/README.md`. *Dependencies:* none. *(Batch 58)*
+- [ ] **[Task-124] The HUD shell mounts once and owns no Phaser object.** `#hud` sits above the canvas
+      from `src/main.ts`, `pointer-events: none`, each panel re-enabling it; `src/ui/hud/shell.tsx`,
+      `mount.ts` and `styles/root.css` are the only DOM entry points. Silkscreen is vendored at
+      `src/assets/fonts/silkscreen-{400,700}.woff2` (OFL, no CDN) with its `@font-face` and the
+      board's type scale as CSS vars — the board is Silkscreen, so "identical to the board" and "same
+      typeface" are one requirement. This task owns both HUD folder maps (`src/ui/hud/README.md` and
+      `src/ui/hud/panels/README.md`) and writes one line per planned subfolder, so the migrations only
+      ever add files inside their own folder. Claims `src/main.ts`, `src/ui/hud/**` (shell, mount,
+      styles, both READMEs), `src/assets/fonts/**` and `src/assets/README.md`.
+      *Dependencies:* `[Task-122]`, `[Task-123]`. *(Batch 59)*
+- [ ] **[Task-125] The panel kit the board is made of.** `src/ui/hud/kit/`: `Panel`, `Row`, `Chip`,
+      `Sheet`, `PrimaryButton`, `Meta` and `TypeBadge` as Preact components with plain CSS driven by
+      the tokens — integer pixels, `box-sizing: border-box`, the board's radius and borders, no shadow
+      the board does not draw, ≥ 44 px touch targets and a focus ring. No component library and no
+      CSS-in-JS: the diff has to be debuggable in devtools. Claims `src/ui/hud/kit/**` and its README.
+      *Dependencies:* `[Task-122]`. *(Batch 59)*
+- [ ] **[Task-126] A fixture reproduces a frame exactly.** `?hud=dom` and `?hudFixture=<slug>` parsed
+      in `src/dev/hudFlags.ts` with a test, and `src/ui/hud/fixtures/**` loading
+      `design/fixtures/<slug>.json` into the store and holding the live run feed while the flag is
+      on, so the diff compares like with like instead of a different party against the board. Claims
+      `src/dev/hudFlags.ts` + test, `src/dev/README.md` and `src/ui/hud/fixtures/**`.
+      *Dependencies:* `[Task-122]`, `[Task-123]`. *(Batch 59)*
+- [ ] **[Task-127] Options (`02`) is the spike, and the spike is the gate.** The first screen in DOM,
+      behind the flag: `src/scenes/SettingsScene.ts` stops drawing its panel under `?hud=dom`,
+      `src/ui/hud/panels/options/` renders it and `design/fixtures/02-options.json` carries the
+      frame's own rows and values. It passes or Phase 12 does not start: no horizontal overflow at
+      either size, geometry ≤ 2 px, mean ΔE ≤ 2, the world still walks outside the panel, keyboard
+      focus in the panel does not leak into movement keys, and deleting the panel leaves the Phaser
+      one untouched. Claims `src/scenes/SettingsScene.ts`, `src/ui/hud/panels/options/**` and
+      `design/fixtures/02-options.json`. *Dependencies:* `[Task-124]`, `[Task-125]`, `[Task-126]`.
+      *(Batch 60)*
+- [ ] **[Task-129] The bag panel is the HUD's.** `src/scenes/panels/bag.ts` loses its Phaser drawing
+      and its input row handling under the flag; `src/ui/hud/panels/bag/` renders the pocket tabs, the
+      rows and the description from `src/ui/bag.ts`'s view model, and `design/fixtures/<bag slug>.json`
+      pins the frame. Deleting the DOM panel leaves the Phaser one working, and no engine, save or RNG
+      path is touched. Claims `src/scenes/panels/bag.ts`, `src/ui/hud/panels/bag/**` and its fixture.
+      *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 61)*
+- [ ] **[Task-130] The PC panel is the HUD's.** Same shape for the box: `src/scenes/panels/pc.ts`,
+      `src/ui/hud/panels/pc/`, the release and withdraw commands through `HudCommand`, and the
+      fixture. The box's scroll and its search field become native. Claims `src/scenes/panels/pc.ts`,
+      `src/ui/hud/panels/pc/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`,
+      `[Task-124]`, `[Task-125]`. *(Batch 61)*
+- [ ] **[Task-131] The party panel is the HUD's.** `src/scenes/panels/party.ts` and
+      `src/ui/hud/panels/party/` render the six rows and their HP from `src/ui/partyScreen.ts`; the
+      party order and the lead become commands. Claims `src/scenes/panels/party.ts`,
+      `src/ui/hud/panels/party/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`,
+      `[Task-124]`, `[Task-125]`. *(Batch 61)*
+- [ ] **[Task-132] The party detail panel is the HUD's.** The biggest route panel goes to
+      `src/ui/hud/panels/detail/` from `src/ui/partyDetail.ts` (stats, moves, ability, the evolution
+      graph), with `src/scenes/panels/detail.ts` keeping only its open/close; the graph is SVG, not
+      canvas, so it is diffable. Claims `src/scenes/panels/detail.ts`, `src/ui/hud/panels/detail/**`
+      and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`.
+      *(Batch 62)*
+- [ ] **[Task-133] The route map panel is the HUD's.** `src/ui/hud/panels/map/` renders the grid from
+      `src/ui/mapView.ts`, the visited marks and the current room; panning and the room tooltip are
+      CSS, not camera. Claims `src/scenes/panels/map.ts`, `src/ui/hud/panels/map/**` and its fixture.
+      *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 62)*
+- [ ] **[Task-134] The shop panel is the HUD's.** Buy and sell grids from `src/ui/shop.ts` in
+      `src/ui/hud/panels/shop/`, with the quantity stepper and the money row; the purchase stays one
+      command and one run transaction. Claims `src/scenes/panels/shop.ts`,
+      `src/ui/hud/panels/shop/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`,
+      `[Task-124]`, `[Task-125]`. *(Batch 62)*
+- [ ] **[Task-135] The trade panel is the HUD's.** The two-column trade in
+      `src/ui/hud/panels/trade/`, reading the room's proposal and answering accept or decline through
+      the command channel; `src/scenes/rooms/trade.ts` keeps its rule and loses only the drawing.
+      Claims `src/scenes/panels/trade.ts`, `src/ui/hud/panels/trade/**` and its fixture.
+      *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 63)*
+- [ ] **[Task-136] The mini-boss reward panel is the HUD's.** The item-and-Pokémon choice from
+      `src/ui/rewards.ts` in `src/ui/hud/panels/rewards/`, one row per offer, the pick inert until it
+      is committed. Claims `src/scenes/panels/rewards.ts`, `src/ui/hud/panels/rewards/**` and its
+      fixture. *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 63)*
+- [ ] **[Task-137] The notices strip and the mission line are the HUD's.** The transient notice
+      (`src/ui/notice.ts`) and the floor's mission card become DOM text at the top of the screen,
+      with the safe-area inset the canvas never respected (47 px top, 810 bottom), and the typewriter
+      stays the same beat. Claims `src/scenes/panels/notices.ts`,
+      `src/ui/hud/panels/notices/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`,
+      `[Task-124]`, `[Task-125]`. *(Batch 63)*
+- [ ] **[Task-138] The pause panel is the HUD's.** `src/ui/hud/panels/pause/` renders the pause card
+      and its two rows; the scene keeps the pause itself and loses only the drawing. Claims
+      `src/scenes/panels/pause.ts`, `src/ui/hud/panels/pause/**` and its fixture.
+      *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 64)*
+- [ ] **[Task-139] The route HUD strip is the HUD's, and the pad's fate is decided here.** The chips
+      (26×26 letter badges, `M` map, `I` bag, `P` party, `C` pc, `S` stats), the party HP strip and
+      the money row move to `src/ui/hud/panels/hud/`; the touch pad is either left in Phaser or moved,
+      and the call is written into `docs/tech-decisions.md` as an addendum to `D49` with the reason.
+      This is the screen where the mobile pain lives, so it is also the second diff that has to pass
+      at 390×844. Claims `src/scenes/panels/hud.ts`, `src/ui/hud/panels/hud/**`, its fixture and the
+      `D49` addendum. *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`.
+      *(Batch 64)*
+- [ ] **[Task-140] The battle's HP boxes are the HUD's.** The four name-and-HP boxes (the two actives
+      per side in a 2vs2) leave `src/scenes/BattleScene.ts` for
+      `src/ui/hud/panels/battle-hp/`, reading the battle state and animating its own fill; the scene
+      awaits `hud.play()` before the next frame, so the drop still lands with its line. The arena, the
+      combatants, the shake and the effects are untouched. Claims `src/scenes/BattleScene.ts`,
+      `src/ui/hud/panels/battle-hp/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-124]`,
+      `[Task-125]`. *(Batch 61)*
+- [ ] **[Task-141] The battle's move menu is the HUD's.** The four-slot menu, its ⓘ and its type
+      badges in `src/ui/hud/panels/battle-moves/`, from the same view model the canvas used; the
+      selection still reaches `commands.ts`. Claims `src/scenes/BattleScene.ts`,
+      `src/ui/hud/panels/battle-moves/**` and its fixture. *Dependencies:* `[Task-127]`,
+      `[Task-124]`, `[Task-125]`. *(Batch 62)*
+- [ ] **[Task-142] The battle's bag is the HUD's.** The battle bag list and its use flow in
+      `src/ui/hud/panels/battle-bag/`, one command per use, the same item rules. Claims
+      `src/scenes/BattleScene.ts`, `src/ui/hud/panels/battle-bag/**` and its fixture.
+      *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`. *(Batch 63)*
+- [ ] **[Task-143] The battle's switch screen is the HUD's.** The party grid, its HP and its status
+      marks in `src/ui/hud/panels/battle-switch/`, with the send-out beat still owned by the scene.
+      Claims `src/scenes/BattleScene.ts`, `src/ui/hud/panels/battle-switch/**` and its fixture.
+      *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`. *(Batch 64)*
+- [ ] **[Task-144] The battle's message box is the HUD's, and its pacing is one clock.** The box and
+      the typewriter move to `src/ui/hud/panels/battle-log/`, and the feed's frames
+      (`src/ui/feed.ts`) drive it: each frame awaits the HUD's line before the next, so a "Critical
+      hit!" still lands with the HP drop it describes. This is the pacing change `D49` names, and the
+      one battle task that can move a visible rhythm: it re-pins no seed, but its spec must state the
+      measured frame dwell. Claims `src/scenes/BattleScene.ts`,
+      `src/ui/hud/panels/battle-log/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-124]`,
+      `[Task-125]`, `[Task-140]`. *(Batch 65)*
+- [ ] **[Task-145] The main menu is the HUD's.** `01` and `01b`: the route window, the title, the
+      CONTINUE/NEW rows, the party portraits and the stats footer move to
+      `src/ui/hud/panels/main-menu/`, and `src/scenes/MainMenuScene.ts` keeps the scene and the
+      navigation. Claims `src/scenes/MainMenuScene.ts`, `src/ui/hud/panels/main-menu/**` and its
+      fixture. *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`. *(Batch 64)*
+- [ ] **[Task-146] Stats and ranking are the HUD's.** `08`, `08b`, `08c`, `09` and `09b` in
+      `src/ui/hud/panels/stats/`, including the monthly global record row; the numbers stay the ones
+      `src/ui/runSummary.ts` already derives. Claims `src/ui/hud/panels/stats/**` and its fixtures;
+      `src/scenes/MainMenuScene.ts` only if the screens still live there, in which case
+      `[Task-145]` runs first. *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`,
+      `[Task-145]`. *(Batch 65)*
+- [ ] **[Task-147] The starter picker is the HUD's.** `04`: the three cards, their types and the
+      confirmation in `src/ui/hud/panels/starter/`, with `src/scenes/StarterScene.ts` keeping the
+      pick. Claims `src/scenes/StarterScene.ts`, `src/ui/hud/panels/starter/**` and its fixture.
+      *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`. *(Batch 65)*
+- [ ] **[Task-148] Run over is the HUD's.** `06`, `07` and `07b`: the summary card, the fallen list
+      and the victory variant in `src/ui/hud/panels/run-over/`, from `src/ui/runSummary.ts`, with the
+      permadeath wording unchanged. Claims `src/scenes/RunOverScene.ts`,
+      `src/ui/hud/panels/run-over/**` and its fixtures. *Dependencies:* `[Task-127]`, `[Task-124]`,
+      `[Task-125]`. *(Batch 65)*
 
 ---
 
