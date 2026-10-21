@@ -438,8 +438,13 @@ place.
 - [ ] `[live]` The ban ends with the battle and never touches the run.
   Measurement: finish or flee that battle and open the party panel; the barred
   member is still in the party at exactly the HP/PP it had when the battle started
-  (it is never sent out), it can be sent out normally in the next battle, and the
-  room's own notice is not repeated on a revisit.
+  (it is never sent out), and in the next battle it may be sent out normally — the
+  party window's cursor reaches it again. Nothing about the ban is written to the
+  run: reload the page on the same run (DevTools → Application → localStorage) and
+  the saved run entry carries no barred-member field, while the next battle stays
+  legal. The notice is a **room-entry cue**, not ban state: exactly like the no-heal
+  room's notice it floats every time the room is built, so a revisit floats it
+  again — that repetition is expected and is never evidence of a persisted ban.
 
 ## 📣 Coordination
 
