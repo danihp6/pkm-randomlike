@@ -1037,10 +1037,7 @@ stays the per-task record.
 | 44 | 97 | `src/scenes/RouteScene.ts`, `src/engine/maps/plan.ts`, `src/ui/mapView.ts`, `src/data/shop.ts` → 97 |
 | 45 | 100 | `src/scenes/RouteScene.ts`, `src/data/bosses.ts`, `src/engine/routes/battlefield.ts` → 100 |
 | 46 | 101 | `src/scenes/RouteScene.ts`, `src/engine/save.ts`, `src/engine/battle/commands.ts` → 101 |
-| 47 | 102, 103 | `src/scenes/RouteScene.ts` → 102; `src/data/items.ts`, `src/engine/save.ts` → 103 |
-| 48 | 105 | `src/scenes/RouteScene.ts`, `src/engine/run/passives.ts` → 105 |
-| 49 | 107 | `src/engine/battle/**` (state, order, turn, commands, ai, damage, fighter) → 107 |
-| 50 | 108 | `src/scenes/RouteScene.ts`, `src/scenes/BattleScene.ts`, `src/ui/partyGrid.ts`, `src/ui/beats.ts` → 108 |
+| 47 | 102, 103, 108 | `src/engine/maps/plan.ts` (+ 102's new modules, its notices and the i18n tables) → 102; `src/data/items.ts`, `src/data/dex/natures.ts`, `src/engine/save.ts`, the run/battle rules it edits and the generated coverage pair → 103; `src/scenes/RouteScene.ts`, `src/scenes/BattleScene.ts`, `src/engine/run/battleLink.ts`, `src/ui/partyGrid.ts`, `src/ui/beats.ts` → 108 |
 | 51 | 109 | `src/scenes/RouteScene.ts`, `src/ui/notice.ts` + `notice.test.ts`, `src/i18n/{en,es}.ts` → 109 |
 | 52 | 110 | `src/scenes/RouteScene.ts`, `src/scenes/BattleScene.ts`, `src/ui/bag.ts` + test, `src/i18n/{en,es}.ts` → 110 |
 | 53 | 114 | `src/engine/battle/**`, `src/ui/feed.ts` + test, `src/i18n/{en,es}.ts` → 114 |
@@ -1192,6 +1189,68 @@ special-room table's casino row, the rates paragraph, the NPC table and the casi
 subsection stay `[Task-117]`'s. The three empty slots name those constraints, so the
 batch runs as one dev wave and one QA wave — and, being one task, as a single QA pass
 that covers the integration scope too.
+
+**Batch 47 is `[Task-102]`, `[Task-103]` and `[Task-108]`: the cut, plus one filled
+slot.** The cut is the puzzle rooms and the item catalogue's fourth wave. Their paths
+are disjoint and neither needs a file the other produces: **`[Task-102]`** claims
+`src/engine/maps/plan.ts` + `plan.test.ts` (the tenth `MapRoomSpecial` kind and its own
+minted `…:puzzle-room` draw, last of the special pass), the new
+`src/engine/routes/puzzle.ts` + test and its barrel line, the new `src/data/puzzles.ts`
++ test, the new `src/scenes/rooms/puzzle.ts` + test, `registry.test.ts`'s
+`SHIPPED_KINDS`, the three puzzle notices in `src/ui/notice.ts` + test, the
+`src/i18n/{en,es}.ts` keys, the three folder READMEs and two docs blocks
+(`docs/maps-spec.md` §7's own row, its own rates clause and its own `###` subsection,
+`docs/routes-spec.md` §2's one paragraph); **`[Task-103]`** claims `src/data/items.ts` +
+test, `src/data/dex/natures.ts` + test (`statAtLevel`'s sixth parameter),
+`src/engine/battle/{fighter,mega,commands}.ts` + their tests and
+`effects/items.ts` + test, `src/engine/run/{items,state,progression,memberEdits,resolve}.ts`
++ their tests, `src/engine/save.ts` + test, `src/ui/partyDetail.ts` + test, the
+**generated** `docs/balance/effect-coverage.md` + `src/data/moveCoverage.json` and two
+docs blocks (`docs/data-spec.md` §3 and `docs/battle-spec.md` §2/§3/§5/§9). **The hot
+files:** `src/engine/maps/plan.ts` → 102; `src/data/items.ts`, `src/engine/save.ts`,
+`src/data/dex/natures.ts` and the generated coverage pair → 103; `src/scenes/RouteScene.ts`
+and `src/scenes/BattleScene.ts` → 108. **The docs are single-writer by section:**
+`docs/battle-spec.md` is held by 103 in **§2/§3/§5/§9** and by 108 in **§12** only;
+`docs/maps-spec.md` §7 is 102's own row/clause/subsection and nobody else's in this
+batch. **The `SAVE_VERSION` step is 22 → 23 and `[Task-103]`'s alone** (`main` reads
+**22** after `[Task-101]`); the migration writes the run's empty `discoveredCandy` and
+leaves the members' optional `statTreats` to the decoder, so an old run starts with no
+treats and an empty discovered set. Task-102's record in the table above needed one
+correction: **it claims no `src/scenes/RouteScene.ts`** — the room layer carries the
+whole room through the shipped `RoomHost` (`fixture`, `interact`, `drawFixture`,
+`commitRun`, `rebuildRoom`, `showNotice`) and the reward is an ordinary ground item the
+fixture places once the run's `pickedItems` mark says solved, so no build pass and no
+scene edit is involved; the spec carries the full list, the way Batches 41, 42, 45 and
+46's records predated theirs.
+
+**The fill search pulled `[Task-108]` (Batch 50) and left one slot empty.**
+`[Task-108]` is legal: its only dependency, `[Task-107]`, **shipped** (its entry is
+`[x]` and its engine rules are in `src/engine/battle/state.ts`/`commands.ts`/`turn.ts`
+with `BOSS_PARTY.boss.double`), and its paths — `src/scenes/RouteScene.ts`,
+`src/scenes/BattleScene.ts`, the new `BattleLaunch.double` in
+`src/engine/run/battleLink.ts`, `src/ui/partyGrid.ts`, `src/ui/beats.ts`,
+`docs/battle-spec.md` §12 and `docs/design-spec.md` §4 — are disjoint from 102's and
+103's union, with one shared **docs** file split by section (§12 against
+§2/§3/§5/§9). It needs no file a batch-mate produces. The three used slots run as one
+dev wave and one QA wave. The fourth slot names its blockers, task by task:
+`[Task-105]` is **not open** — it shipped in Batch 26 (the plan's Batch 48 row is
+stale and should be retired, not re-cut); `[Task-109]` (Batch 51) claims
+`src/scenes/RouteScene.ts` (108's), `src/ui/notice.ts` (102's) **and**
+`src/i18n/{en,es}.ts` (102's); `[Task-110]` (Batch 52) claims `src/scenes/RouteScene.ts`
+and `src/scenes/BattleScene.ts` (108's) **and** `src/i18n/{en,es}.ts` (102's);
+`[Task-114]` (Batch 53) claims `src/engine/battle/**`, which 103 edits
+(`fighter.ts`, `mega.ts`, `commands.ts`, `effects/items.ts`), **and**
+`src/i18n/{en,es}.ts`; `[Task-117]` (Batch 56) claims `src/engine/maps/plan.ts` and
+`docs/maps-spec.md` §7, both 102's, and `src/scenes/rooms/casino.ts` beside a
+`plan.test.ts` this batch re-pins; `[Task-118]` (Batch 57) is written against the
+unmerged `[Task-114]`; `[Task-104]` and `[Task-113]` are `[!]` and `[Task-28]` is
+unscheduled by its own decision line. No `package.json`, `src/main.ts`,
+`vite.config.ts` or `src/data/dex/**` generated JSON is claimed by any of the three,
+and no two tasks in the batch share a code, data or asset path. **The table's rows 48,
+49 and 50 retire**: `[Task-105]` and `[Task-107]` are `[x]` (shipped) and `[Task-108]`
+is captured here, so a later cycle cannot cut a shipped task or the same task twice;
+Batches 48, 49 and 50 are now empty labels and the plan resumes at **Batch 51**
+(`[Task-109]`). `[Task-108]`'s own entry keeps its prose and takes this batch's label.
 
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
@@ -6175,7 +6234,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       section.
       Out of scope: the engine rules (`[Task-107]`), the boss's own condition (`[Task-100]`) and the
       battle's info window (`[Task-60]`, shipped).
-      *Dependencies:* `[Task-107]`. It adds no run field. *(Batch 50)*
+      *Dependencies:* `[Task-107]`. It adds no run field. *(Batch 47, filled)*
 - [ ] **[Task-109] An area-entry panel: a temporary floating panel on entering a route.** Reported as
       «añadir panel flotante temporal al entrar en una ruta como en los juegos originales» — the
       originals greet an area with a **boxed banner** naming it, and this game already holds the
@@ -6237,7 +6296,10 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       **The selected cell describes itself in a floating panel** (the human's pick): a small card beside
       the grid — the shared info-popup shape `src/ui/abilityInfo.ts` and the move ⓘ draw, never a line
       inside the bag — so the grid itself stays icon-only, showing the item's name and its catalogue
-      description.
+      description. For a **coloured candy** (`[Task-103]`, Batch 47) the card reads the run instead:
+      when the colour is in `run.discoveredCandy` it prints the run's own stat through `candyTreat`
+      (its i18n key is this task's), which is where «al probarlo en la descripción del objeto sale ya
+      que lo sabes» lands.
       **The grid takes a filter field** (the human's rule: «añadir input texto para filtrar»): one text
       input above the grid, the same look and height as the MOVES tab's shipped search field
       (`RouteScene.hudSearchBg` / `hudSearchText` over `HUD_DETAIL_SEARCH_H`, `typeInDetailSearch`,
