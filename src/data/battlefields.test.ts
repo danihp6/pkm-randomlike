@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   ALL_TYPES_OVERRIDE,
-  BOSS_BATTLEFIELD_CHANCE,
   ROOM_BATTLEFIELDS,
   ROOM_BATTLEFIELD_CHANCE,
   ROOM_CRIT_STAGE,
@@ -68,9 +67,8 @@ describe('ROOM_BATTLEFIELDS', () => {
     }
   });
 
-  it('keeps the two roll chances at their tuned values', () => {
+  it('keeps the regular rooms’ roll chance at its tuned value', () => {
     expect(ROOM_BATTLEFIELD_CHANCE).toBe(0.15);
-    expect(BOSS_BATTLEFIELD_CHANCE).toBe(0.3);
   });
 
   it('freezes the all-types row and the crit-stage bonus as data', () => {

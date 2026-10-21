@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   ALL_TYPES_OVERRIDE,
-  BOSS_BATTLEFIELD_CHANCE,
   ROOM_BATTLEFIELDS,
   ROOM_BATTLEFIELD_CHANCE,
   ROOM_CRIT_STAGE,
+  type RoomConditionId,
 } from '../../data/battlefields';
+import { BOSS_OPENINGS } from '../../data/bosses';
 import { FIELD_CONDITION_TURNS } from '../battle/effects/conditions';
 import { TERRAIN_TURNS } from '../battle/effects/terrain';
 import { WEATHER_TURNS } from '../battle/effects/weather';
@@ -14,11 +15,14 @@ import { createBattle, emptyFieldConditions, emptyRoomField, type BattleSetup } 
 import { planMap } from '../maps/plan';
 import { roomView } from '../maps/progress';
 import { Rng, hashSeed } from '../rng';
+import { routeIndexForRoom } from '../run/floors';
 import {
   battlefieldSeeds,
+  bossOpeningRoll,
   roomBattlefield,
   roomKindOf,
   type BattlefieldSeeds,
+  type BossOpeningRoll,
   type RoomKind,
 } from './battlefield';
 
@@ -27,6 +31,11 @@ const PLAN_SEED = 'battlefield-test';
 const KINDS: readonly RoomKind[] = ['trainer', 'boss', 'quiet'];
 
 const INDICES = Array.from({ length: 200 }, (_, i) => i + 1);
+
+/** The table rows the two boss openings name; a boss room must always return one of them. */
+const BOSS_ROWS = BOSS_OPENINGS.map((row) =>
+  ROOM_BATTLEFIELDS.find((entry) => entry.id === row.battlefield)!,
+);
 
 function roll(seed: string, kind: RoomKind, indices: readonly number[] = INDICES) {
   return indices.map((index) => roomBattlefield(seed, index, kind));
@@ -64,20 +73,36 @@ describe('roomBattlefield', () => {
     }
   });
 
-  it('draws exactly one chance roll and one row roll from its own stream', () => {
-    const replay = (seed: string, index: number, kind: RoomKind) => {
+  it('draws exactly one chance roll and one row roll for a trainer room', () => {
+    const replay = (seed: string, index: number) => {
       const rng = new Rng(hashSeed(`${seed}:battlefield:${index}`));
-      const chance = kind === 'boss' ? BOSS_BATTLEFIELD_CHANCE : ROOM_BATTLEFIELD_CHANCE;
-      if (rng.next() >= chance) return null;
+      if (rng.next() >= ROOM_BATTLEFIELD_CHANCE) return null;
       return ROOM_BATTLEFIELDS[rng.int(0, ROOM_BATTLEFIELDS.length - 1)];
     };
     for (const seed of SEEDS) {
-      for (const kind of ['trainer', 'boss'] as const) {
-        for (let index = 1; index <= 200; index++) {
-          expect(roomBattlefield(seed, index, kind), `${seed} ${kind} ${index}`).toEqual(
-            replay(seed, index, kind),
-          );
-        }
+      for (let index = 1; index <= 200; index++) {
+        expect(roomBattlefield(seed, index, 'trainer'), `${seed} ${index}`).toEqual(replay(seed, index));
+      }
+    }
+  });
+
+  it('draws exactly one int and no chance roll for the boss room', () => {
+    for (const seed of SEEDS) {
+      for (let index = 1; index <= 200; index++) {
+        const rng = new Rng(hashSeed(`${seed}:battlefield:${index}`));
+        const drawn = BOSS_OPENINGS[rng.int(0, BOSS_OPENINGS.length - 1)];
+        const expected = ROOM_BATTLEFIELDS.find((row) => row.id === drawn.battlefield);
+        expect(roomBattlefield(seed, index, 'boss'), `${seed} ${index}`).toEqual(expected);
+      }
+    }
+  });
+
+  it('never leaves the boss room quiet, over 200 indices and three seeds', () => {
+    for (const seed of SEEDS) {
+      for (const index of INDICES) {
+        const result = roomBattlefield(seed, index, 'boss');
+        expect(result, `${seed} ${index}`).not.toBeNull();
+        expect(BOSS_ROWS, `${seed} ${index}`).toContain(result);
       }
     }
   });
@@ -91,19 +116,161 @@ describe('roomBattlefield', () => {
     }
   });
 
-  it('reads the two chances off the data over a thousand rooms', () => {
+  it('reads the regular chance off the data over a thousand rooms', () => {
     const indices = Array.from({ length: 1000 }, (_, i) => i);
-    const hits = (kind: RoomKind) => roll(SEEDS[0], kind, indices).filter((r) => r !== null).length;
+    const hits = (kind: RoomKind) =>
+      roll(SEEDS[0], kind, indices).filter((result) => result !== null).length;
     expect(hits('trainer')).toBeGreaterThanOrEqual(120);
     expect(hits('trainer')).toBeLessThanOrEqual(180);
-    expect(hits('boss')).toBeGreaterThanOrEqual(260);
-    expect(hits('boss')).toBeLessThanOrEqual(340);
+    expect(hits('boss')).toBe(1000);
     expect(ROOM_BATTLEFIELD_CHANCE).toBe(0.15);
-    expect(BOSS_BATTLEFIELD_CHANCE).toBe(0.3);
   });
 
   it('keys the stream by the seed', () => {
     expect(roll(SEEDS[0], 'trainer')).not.toEqual(roll(SEEDS[1], 'trainer'));
+    expect(roll(SEEDS[0], 'boss')).not.toEqual(roll(SEEDS[1], 'boss'));
+  });
+});
+
+/**
+ * The regular rooms' conditions as `main` produced them, captured before the boss
+ * room stopped rolling a chance: a stray edit to `ROOM_BATTLEFIELD_CHANCE` or to the
+ * table's order moves one of these and fails the pin. The rows themselves are pinned
+ * byte-for-byte by `src/data/battlefields.test.ts`.
+ */
+const TRAINER_PINS: Readonly<Record<string, readonly (string | null)[]>> = {
+  'dev-seed': [
+    null,
+    null,
+    null,
+    'alltypes',
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    'psychic',
+    'sun',
+    null,
+    null,
+    null,
+    'snow',
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    'crit',
+    null,
+    null,
+    null,
+    null,
+  ],
+  'battlefield-test': [
+    null,
+    null,
+    null,
+    null,
+    null,
+    'electric',
+    null,
+    null,
+    null,
+    null,
+    null,
+    'fairyaura',
+    null,
+    null,
+    null,
+    null,
+    'trickroom',
+    'electric',
+    null,
+    'fairyaura',
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+  ],
+};
+
+describe('the regular rooms’ conditions', () => {
+  it('replays exactly the rows main produced, indices 1 to 32', () => {
+    for (const [seed, expected] of Object.entries(TRAINER_PINS)) {
+      expect(expected).toHaveLength(32);
+      const actual = expected.map((_, i) => roomBattlefield(seed, i + 1, 'trainer')?.id ?? null);
+      expect(actual, seed).toEqual(expected);
+    }
+  });
+});
+
+/** Which opening each seed's boss room draws, floor by floor (`bossOpeningRoll`). */
+type BossPin = Readonly<{
+  side: BossOpeningRoll['side'];
+  battlefield: RoomConditionId;
+  boosts: BossOpeningRoll['boosts'];
+}>;
+
+const BOSS_PINS: Readonly<Record<string, readonly BossPin[]>> = {
+  'dev-seed': [
+    { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+    { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+    { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+    { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
+    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
+    { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
+  ],
+  'pkm-64': [
+    { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
+    { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+    { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
+    { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
+    { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+  ],
+};
+
+describe('bossOpeningRoll', () => {
+  it('resolves the opening to its arena row and copies its side and stages', () => {
+    for (const seed of SEEDS) {
+      for (const index of INDICES) {
+        const opening = bossOpeningRoll(seed, index);
+        const row = BOSS_OPENINGS.find((entry) => entry.side === opening.side)!;
+        expect(opening.battlefield.id).toBe(row.battlefield);
+        expect(opening.boosts).toEqual(row.boosts);
+        expect(BOSS_ROWS).toContainEqual(opening.battlefield);
+      }
+    }
+  });
+
+  it('pins the boss opening of maps 1 to 8 for two fixed seeds', () => {
+    for (const [seed, expected] of Object.entries(BOSS_PINS)) {
+      const actual = expected.map((_, floor) => {
+        const plan = planMap(seed, floor + 1);
+        const opening = bossOpeningRoll(seed, routeIndexForRoom(plan, plan.bossRoom));
+        return { side: opening.side, battlefield: opening.battlefield.id, boosts: opening.boosts };
+      });
+      expect(actual, seed).toEqual(expected);
+    }
   });
 });
 

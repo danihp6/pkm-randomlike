@@ -85,6 +85,10 @@ field conditions (and fog, below) from its own setup, at each rule's canonical
 duration — `WEATHER_TURNS`, `TERRAIN_TURNS`, `FIELD_CONDITION_TURNS` — so the
 battle's own counters are the only writers afterwards. A setup that names **none**
 of them produces exactly the pre-seeding state, so every other launch is untouched.
+The **boss room** always begins under one of the two openings of `BOSS_OPENINGS`
+(`docs/maps-spec.md` §6): its arena row seeds the condition like any other, and the
+row's `boosts` land on the enemy's **lead** alone, through
+`BattleSetup.enemyBoosts`.
 
 **Dense fog** is one such condition, and a **field condition, never a weather**: it
 never enters `weatherModifier` (`src/engine/battle/damage.ts`) or `weatherChip`

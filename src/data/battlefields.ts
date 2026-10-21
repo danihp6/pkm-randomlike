@@ -69,9 +69,3 @@ export const ROOM_BATTLEFIELDS: readonly RoomBattlefield[] = [
  * `src/engine/maps/plan.ts`).
  */
 export const ROOM_BATTLEFIELD_CHANCE: number = 0.15;
-
-/**
- * The boss room's own chance (`docs/maps-spec.md` §6): the floor's headline fight
- * is likelier to carry a condition than a regular room.
- */
-export const BOSS_BATTLEFIELD_CHANCE: number = 0.3;

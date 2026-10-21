@@ -32,7 +32,9 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   `routes/gate.ts` (the gated reward room's vault carve and its two per-floor ids),
   `routes/staticSpecies.ts` (the static-species room's content: its housing records, its two
   gate kinds and the legendary variant's conditional roll) and `routes/secretShop.ts`
-  (the secret shop's seal mark, its party-type predicate and its fixed six-row shelf).
+  (the secret shop's seal mark, its party-type predicate and its fixed six-row shelf),
+  plus `routes/bossRoom.ts` (the boss room's own rules: the door sealed until the boss
+  falls and the floor's one free heal).
 - `run/` — the run state and its books: `run/state.ts` (party, box, bag and money),
   `run/progression.ts` (XP and levels), `run/battleLink.ts` + `run/resolve.ts` (the post-battle
   resolve), `run/roster.ts` + `run/pool.ts` (rosters, the species pool and the variant roll

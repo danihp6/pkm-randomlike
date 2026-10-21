@@ -231,6 +231,17 @@ rooms at 30x30, map 6's corridor at 37x30 and map 8's corridor at 52x30
   **no tall grass, no ledges, no ground items and no regular trainers**, just the
   boss. The map's **entry room** is quiet the same way, so the run starts and ends
   each floor in a clean room.
+- That door is **sealed** while the boss stands: `bossRoomSealed(boss, bossDefeated)`
+  (`src/engine/routes/bossRoom.ts`) refuses the step back out until the boss falls,
+  and it is the **portal**, never this door, that carries the run to the next floor.
+  The seal cannot soft-lock a run: the boss starts at the room's farthest tile with
+  `DEFAULT_TRAINER_SIGHT`, so it walks over and opens the fight on its own, and a loss
+  in the room is a normal loss (`D5`).
+- The party and the box take **one free heal** when the room is first built on a
+  floor — HP and PP only, never a resurrection (`D5`) — through
+  `bossRoomHeal(run, mapIndex)`, recorded as the `pickedItems` mark
+  `boss-heal-<mapIndex>`. `advanceMap` clears `pickedItems`, so the next floor's boss
+  room heals again, while a reload in the same room never heals twice.
 - The boss is a fixed, themed trainer at the map's `maxLevel`, fielding a
   **fixed party of six** (`bossPartySize('boss', mapIndex)`, `src/data/bosses.ts`);
   **map 1** is the exception at **three**, because the first floor is the run's
@@ -241,10 +252,17 @@ rooms at 30x30, map 6's corridor at 37x30 and map 8's corridor at 52x30
   next map (heal stop intact: HP/PP only, never a resurrection).
 - The last map of a finite run holds the **final boss**: there is no portal, and
   beating it wins the run. Infinite mode reopens the portal forever.
-- The boss room rolls its **own** battle-start condition (`BOSS_BATTLEFIELD_CHANCE`,
-  `src/data/battlefields.ts`): **30%**, twice a regular room's 15% (§7). It is the
-  floor's headline fight, so it is likelier to begin under a weather, a terrain or a
-  field condition.
+- The boss room **always** begins its battles under one of the two **openings** of
+  `BOSS_OPENINGS` (`src/data/bosses.ts`), drawn by `bossOpeningRoll(seed, roomIndex)`
+  on the room's own `${seed}:battlefield:<roomIndex>` stream: `endure` for the
+  **run**'s opening, or `crit` for the **boss**'s. There is no chance roll and no
+  quiet boss room.
+- The **arena row is symmetric** by the engine's own rules: Endure leaves a lethal
+  hit at 1 HP and the crit stage raises every move's ratio, on **both sides** alike,
+  so the condition itself favours nobody. The **side** of an opening is its stat
+  stage — the boss's lead one Speed stage down (`run`) or one Defence stage up
+  (`boss`) — applied through `BattleSetup.enemyBoosts`, the only one-sided channel
+  `createBattle` has.
 
 ## 7. Special rooms & the economy (D33)
 
@@ -632,10 +650,10 @@ the overlay's `tint` and `alpha`). The condition belongs to the **room**, so
 **every** battle that starts there, a wild encounter included, begins under it.
 
 - Which room rolls, and how often: a room that fields **regular trainers** rolls one
-  with `ROOM_BATTLEFIELD_CHANCE` (**15%**), the **boss room** with its own
-  `BOSS_BATTLEFIELD_CHANCE` (**30%**, §6), and the map's **entry room** and every
-  **special leaf** (mini-boss, mega-stone, casino) are **quiet** — they roll
-  none.
+  with `ROOM_BATTLEFIELD_CHANCE` (**15%**), the **boss room** instead **always** takes
+  one of the two openings of `BOSS_OPENINGS` (`src/data/bosses.ts`, §6) — never a
+  chance roll — and the map's **entry room** and every **special leaf** (mini-boss,
+  mega-stone, casino) are **quiet** — they roll none.
 - One roll per room, off the run seed and the room's **stable** index
   (`routeIndexForRoom`, §9): `Rng(hashSeed(\`${seed}:battlefield:${roomIndex}\`))`,
   one draw for the chance and one for the row. It is the roll's **own** stream, so

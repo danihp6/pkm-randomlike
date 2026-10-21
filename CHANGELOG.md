@@ -8,6 +8,42 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The boss room's own rules: a forced opening, a sealed door and a free heal.** The boss
+      room stops being a quiet leaf that *may* roll a condition. Every map's boss battle now
+      **always** begins under one row of the new two-sided `BOSS_OPENINGS` table in
+      `src/data/bosses.ts` — `run` = the `endure` arena with the boss's lead at Speed −1, `boss`
+      = the `crit` arena with its lead at Defence +1 — drawn by `bossOpeningRoll(seed,
+      roomIndex)` on the room's own `${seed}:battlefield:<roomIndex>` stream (one
+      `rng.int(0, 1)`, no `next()`), so `BOSS_BATTLEFIELD_CHANCE` (30 %) is retired and
+      `ROOM_BATTLEFIELD_CHANCE` (15 %) keeps governing regular rooms. The arena row is
+      symmetric by the engine's own rules (Endure and the crit stage apply to both sides) and
+      the **side** is the stat stage, the only one-sided channel `createBattle` already had:
+      `BattleSetup.enemyBoosts` carries it, merged in `startBattle` with the exorcist's curse
+      (`atk`) and the berry tree's row without arithmetic, so no key collides. The same module
+      (`src/engine/routes/bossRoom.ts`) holds the other two rules: `bossRoomSealed(boss,
+      bossDefeated)` is read by `tryLeaveRoom` before the portal branch, so the room's own door
+      refuses the step until the boss falls (`D31`'s key reopens it, no new run field), and
+      `bossRoomHeal(run, mapIndex)` runs **once per floor** when the room is built — `healParty`
+      across party and box, HP/PP only, never a resurrection (`D5`) — recorded as
+      `boss-heal-<mapIndex>` in `pickedItems`, which `advanceMap` clears. Docs:
+      `docs/maps-spec.md` §6 whole and §7's first battle-condition bullet (the boss clause only;
+      the bullet's `casino` parenthetical is the room-retirement task's), and
+      `docs/battle-spec.md` §4. No run field and no `SAVE_VERSION` step (**21**).
+      **QA:** one pass for a one-task batch — `qa-100` (`main@a98ce90` + `task-100@d0e58f2`,
+      integration `d31b641`) — gates green (`npm test` **2584** passed in 180 files,
+      `npm run build` clean), the diff exactly the spec's 14 paths plus the spec commit the merge
+      drops, `src/engine/maps/`, `src/engine/run/` and `src/i18n/` untouched, and the trainer pins
+      of `battlefield.test.ts` independently replayed from `main`'s formula. The four `[live]`
+      criteria were measured over CDP on seed `1b10di0`, map 1 room 5 (the plan's boss room):
+      arriving there writes **one** `boss-heal-1` mark and restores a 1-HP/0-PP party to full HP
+      and PP (and a reload restores nothing twice, and a 0-HP member stays at 0); the room's own
+      condition reads `crit` and paints (`visible: true`, canvas patch measurably redder than the
+      same floor's other rooms) and survives a reload; walking into the door back keeps
+      `roomInMap` at 5 while the boss stands and moves it to 4 once `bossDefeated` is set; and the
+      boss battle's INFO window reads **`DEFENSA +1`** on the enemy lead at turn 1, exactly the
+      `boss` row's `def: 1`, with the three Poké Balls of map 1's boss behind it. One residue the
+      spec's live plan named is a knob, not a defect: the debug overlay has no `Route` battlefield
+      readout, so the live pass read `debugBattlefieldOverlay()` instead.
 - [x] **The secret shop: four held items and two TMs behind a type-gated vault.**
       A new **`secret-shop`** special leaf (20 % from map 3 on, on its own minted
       `${seed}:map:<n>:secret-shop-room` stream, as the **last** statement of the

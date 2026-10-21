@@ -5986,7 +5986,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       *Dependencies:* `[Task-82]` (the rooms the spawn rule reads) and `[Task-98]` — the secret
       battle's third row reads the mission record that task ships (Batch 36), so the edge is real
       rather than a batch-order note. It adds no run field. *(Batch 42)*
-- [ ] **[Task-100] The boss room's own rules: a forced opening condition, a sealed door and a free
+- [x] **[Task-100] The boss room's own rules: a forced opening condition, a sealed door and a free
       heal.** Three rows of the human's list are the boss room's: «el jefe siempre produce desventaja
       o ventaja inicial», «al entrar al jefe ya no se puede salir» and «te cura gratis». Today the
       boss room is a quiet leaf sealed at the portal (D31), the heal stop is the **map advance**
