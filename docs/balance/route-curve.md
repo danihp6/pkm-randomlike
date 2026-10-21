@@ -55,6 +55,21 @@ column is `0.75 × T̄(m) × A(m) / needed(m)` over the pinned trainer counts, r
 the **pre-Task-97** factors, so both record the solved baseline (map 5 at 1.25) and
 not this walk — `src/data/run.ts` is where the moved factor lives.
 
+**Re-walked again (Task-101).** The banned-species leaf also hangs off a floor's
+regular graph from map 3 on, on a **20 %** chance of its own minted stream, and is one
+more room on the floor that draws it, so the `routeIndexForRoom` shift moves the
+trainers once more. `src/engine/run/curve.test.ts`'s `MEASURED_FILL` now reads **1.25,
+1.25, 1.16, 1.25, 1.25, 1.19, 1.18 and 1.18** on maps 1-8. One floor left the
+`1.05 – 1.5` window: map 5 measured **1.02** against its shipped 0.94 factor, so that
+single row of `TRAINER_XP_PER_MAP` was re-solved with the recipe below,
+`factor' = round2(factor × 1.25 / fill)` → **0.94 → 1.15**, and the re-walk puts map 5
+back at 1.25. The other seven factors are **untouched** — a floor that still sits
+inside the window keeps its row. The per-map table and the rate sentence below it are
+unchanged: the `fill` column is `0.75 × T̄(m) × A(m) / needed(m)` over the pinned
+trainer counts, read with the **pre-Task-101** factors, so both record the solved
+baseline (map 5 at 1.25) and not this walk — `src/data/run.ts` is where the moved
+factor lives.
+
 ## Level bands
 
 Every floor reads one band (`bandForLevel(minLevel)` in `src/data/run.ts`): a level

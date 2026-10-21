@@ -1,3 +1,4 @@
+import { getSpecies } from '../../data/dex';
 import type { ItemDef } from '../../data/items';
 import type { Rng } from '../rng';
 import { makeContext, runStart, runSwitchIn } from './effects/registry';
@@ -179,6 +180,14 @@ export type BattleState = {
   noHeal: boolean;
   /** The wild cannot be fled: `canRun` refuses unless an `onTryEscape` effect grants it. */
   noFlee: boolean;
+  /** The species the room bars the player from sending out, or null (Task-101). */
+  bannedSpecies: string | null;
+  /**
+   * The player's fighter ids that took the field this battle, in the order they
+   * appeared and deduped: the live slots at battle start, then every switch-in.
+   * The post-battle fold reads it (Task-101); it draws no RNG.
+   */
+  usedFighterIds: string[];
 };
 
 export type BattleSetup = Readonly<{
@@ -205,11 +214,41 @@ export type BattleSetup = Readonly<{
   noHeal?: boolean;
   /** The wild cannot be fled (default `false`). */
   noFlee?: boolean;
+  /** The room bars this species from being sent out. Default `null`. */
+  bannedSpecies?: string | null;
   /** A double battle: two active slots per side. Default `false`. */
   double?: boolean;
   /** Stat stages the enemy's lead starts with (the exorcist's curse). */
   enemyBoosts?: Partial<Record<BoostId, number>>;
 }>;
+
+/**
+ * The player's two active indices when the battle opens: the shipped `0` (and `1`
+ * in a double battle) unless the room bars a species. With a ban the order is
+ * every living unbarred member ascending, then every remaining index ascending, so
+ * the lead is the first member the room allows to be sent out (Task-101).
+ */
+function playerLeadIndices(
+  party: readonly BattleFighter[],
+  bannedSpecies: string | null,
+  double: boolean,
+): Readonly<{ activeIndex: number; secondActiveIndex: number }> {
+  if (bannedSpecies === null) {
+    return { activeIndex: 0, secondActiveIndex: double && party.length > 1 ? 1 : -1 };
+  }
+  const legal: number[] = [];
+  const rest: number[] = [];
+  for (let index = 0; index < party.length; index++) {
+    const fighter = party[index];
+    if (fighter.hp > 0 && fighter.speciesId !== bannedSpecies) legal.push(index);
+    else rest.push(index);
+  }
+  const order = [...legal, ...rest];
+  return {
+    activeIndex: order[0] ?? 0,
+    secondActiveIndex: double && order.length > 1 ? order[1] : double && party.length > 1 ? 1 : -1,
+  };
+}
 
 export function createBattle(setup: BattleSetup): BattleState {
   if (setup.player.length === 0 || setup.enemy.length === 0) {
@@ -217,14 +256,16 @@ export function createBattle(setup: BattleSetup): BattleState {
   }
 
   const double = setup.double ?? false;
+  const bannedSpecies = setup.bannedSpecies ?? null;
+  const lead = playerLeadIndices(setup.player, bannedSpecies, double);
   const state: BattleState = {
     sides: {
       player: {
         id: 'player',
         name: setup.playerName ?? 'Player',
         party: [...setup.player],
-        activeIndex: 0,
-        secondActiveIndex: double && setup.player.length > 1 ? 1 : -1,
+        activeIndex: lead.activeIndex,
+        secondActiveIndex: lead.secondActiveIndex,
         awaitingReplacement: false,
         wishTurns: 0,
         batonPassBoosts: null,
@@ -264,6 +305,8 @@ export function createBattle(setup: BattleSetup): BattleState {
     lastMove: null,
     noHeal: setup.noHeal ?? false,
     noFlee: setup.noFlee ?? false,
+    bannedSpecies,
+    usedFighterIds: [],
   };
 
   // The exorcist's curse: the enemy's lead starts a stage down, applied once its
@@ -273,6 +316,21 @@ export function createBattle(setup: BattleSetup): BattleState {
 
   // The room's rule is the battle feed's first line, ahead of any start hook.
   if (state.noHeal) pushText(state, 'No items or healing moves can be used in this room!');
+
+  // The banned room's line follows the no-heal one, before any start hook.
+  if (state.bannedSpecies !== null) {
+    pushText(
+      state,
+      `${getSpecies(state.bannedSpecies)?.name ?? state.bannedSpecies} is barred in this room!`,
+    );
+  }
+
+  // The sends are booked before the start hooks run, so the fold always sees a
+  // battle that fielded somebody — even one that ends on the opening turn.
+  for (const slot of liveSlots(state, 'player')) {
+    const id = activeFighter(state, 'player', slot).id;
+    if (!state.usedFighterIds.includes(id)) state.usedFighterIds.push(id);
+  }
 
   for (const side of SIDE_IDS) {
     for (const slot of liveSlots(state, side)) {

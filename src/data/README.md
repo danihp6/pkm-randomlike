@@ -49,8 +49,10 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `casino.ts` — the casino room's balance table: one spin's price per band, the
   chance a spin turns into the grunt fight and each band's weighted prize rows, one
   of them the grouped equipable whose id the band's Mart shelf supplies.
-- `noHeal.ts` — the no-heal room's table: the first floor that may hang it, the
+- `noHeal.ts` - the no-heal room's table: the first floor that may hang it, the
   chance, its trainer's archetype and the move ids the room bars for the player.
+- `bannedRoom.ts` - the banned-species room's table: the first floor that may hang
+  it, the chance and its trainer's archetype.
 - `staticSpecies.ts` — the static-species room's table: the leaf's and its legendary
   variant's first floor and chance, the property row that opens each seal kind and the
   two species lists (`docs/maps-spec.md` §7).

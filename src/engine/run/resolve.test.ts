@@ -301,7 +301,8 @@ describe('resolveBattle', () => {
   it('awards nothing when the player flees', () => {
     const run = createRun({ seed: 's', starter });
     const result = resolveBattle(run, returned(run, 'run'), wild);
-    expect(result.run.party[0]).toEqual(starter);
+    // The member still took the field, so its usage counter moves and nothing else does.
+    expect(result.run.party[0]).toEqual({ ...starter, battlesUsed: 1 });
     expect(result.events).toEqual([]);
   });
 });
@@ -338,5 +339,46 @@ describe('the first-win item row', () => {
     expect(resolveBattle(run, returned(run, 'lose'), reward).run.bag).toEqual([]);
     expect(resolveBattle(run, returned(run, 'run'), reward).run.bag).toEqual([]);
     expect(resolveBattle(run, returned(run, 'win'), wild).run.bag).toEqual([]);
+  });
+});
+
+describe('the per-member usage counter', () => {
+  const bench = createRunPokemon({ id: 'bench', speciesId: 'pidgey', level: 3, moves: ['tackle'] });
+  const boxed = createRunPokemon({ id: 'boxed', speciesId: 'geodude', level: 3, moves: ['tackle'] });
+
+  const twoMemberRun = (): RunState => {
+    const run = createRun({ seed: 's', starter });
+    return { ...run, party: [...run.party, bench], box: [boxed] };
+  };
+
+  it('counts only the members the battle fielded', () => {
+    const run = twoMemberRun();
+    const result = resolveBattle(run, returned(run, 'win', { used: ['starter'] }), wild);
+    expect(result.run.party[0].battlesUsed).toBe(1);
+    expect('battlesUsed' in result.run.party[1]).toBe(false);
+    // The fold itself leaves a member it does not count untouched; the party's
+    // objects are the battle's own snapshots, rebuilt before the counter steps in.
+    expect(result.run.party[1].fighter.id).toBe('bench');
+  });
+
+  it('counts every returned party member when the battle reports no sends', () => {
+    const run = twoMemberRun();
+    const result = resolveBattle(run, returned(run, 'win'), wild);
+    expect(result.run.party.map((member) => member.battlesUsed)).toEqual([1, 1]);
+  });
+
+  it('never counts the box', () => {
+    const run = twoMemberRun();
+    const result = resolveBattle(run, returned(run, 'win', { used: ['starter', 'boxed'] }), wild);
+    expect(result.run.box[0].battlesUsed).toBeUndefined();
+    expect(result.run.box[0]).toBe(boxed);
+  });
+
+  it('counts a lost or fled battle too: the member was on the field', () => {
+    const run = twoMemberRun();
+    const lost = resolveBattle(run, returned(run, 'lose', { used: ['starter'] }), wild);
+    expect(lost.run.party[0].battlesUsed).toBe(1);
+    const again = resolveBattle(lost.run, returned(lost.run, 'run', { used: ['starter'] }), wild);
+    expect(again.run.party[0].battlesUsed).toBe(2);
   });
 });

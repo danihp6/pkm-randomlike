@@ -11,6 +11,7 @@ import {
   levelUpNotice,
   missionCompleteNotice,
   noHealRoomNotice,
+  bannedRoomNotice,
   staticLegendaryNotice,
   staticSealLockedNotice,
 } from './notice';
@@ -229,6 +230,42 @@ describe('noHealRoomNotice', () => {
       gateOpenedNotice(),
     ].map((notice) => notice.text);
     expect(others).not.toContain(noHealRoomNotice().text);
+  });
+});
+
+describe('bannedRoomNotice', () => {
+  it('announces the barred species with the shared hold', () => {
+    expect(bannedRoomNotice('Pidgeot')).toEqual({
+      text: 'This room bars Pidgeot!',
+      holdMs: NOTICE_HOLD_MS,
+    });
+  });
+
+  it('holds a notice for 2.6 seconds', () => {
+    expect(bannedRoomNotice('Pidgeot').holdMs).toBe(2600);
+  });
+
+  it('passes the name through untouched, in both locales', () => {
+    expect(bannedRoomNotice("Farfetch'd").text).toBe("This room bars Farfetch'd!");
+    setLocale('es');
+    try {
+      expect(bannedRoomNotice('Mr. Mime').text).toBe('¡Esta sala bloquea a Mr. Mime!');
+    } finally {
+      setLocale('en');
+    }
+  });
+
+  it('says something no other notice says', () => {
+    const others = [
+      catchToPcNotice('Pidgeot'),
+      itemPickupNotice('Potion'),
+      levelUpNotice('Growlithe', 21),
+      eggHatchNotice('Sentret'),
+      gateLockedNotice('bush'),
+      gateOpenedNotice(),
+      noHealRoomNotice(),
+    ].map((notice) => notice.text);
+    expect(others).not.toContain(bannedRoomNotice('Pidgeot').text);
   });
 });
 

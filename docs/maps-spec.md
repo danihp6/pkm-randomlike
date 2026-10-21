@@ -282,6 +282,7 @@ regular trainer to one. Their content:
 | **no-heal** | 20 % chance, **from map 3 onward** | a leaf anywhere | one `psychic` trainer; **every battle that starts in the room** refuses the **player's** Bag and healing moves (`docs/battle-spec.md` §2) |
 | **static** | 25 % chance, **from map 3 onward** | a leaf anywhere | one **vault** behind a bush, a rock or a pond, opened when a party member holds the seal's property (Bug or Grass, Rock or Fighting, or the pond's ability) and holding **one static species** at the squad's level, fought and caught like a wild |
 | **secret-shop** | 20 % chance, **from map 3 onward** | a leaf anywhere | one **vault** behind a bush, a rock or a pond, opened when a party member has the obstacle's **type** (Bug or Grass / Rock or Fighting / Water); behind it a **counter** whose interact key opens the Mart card on the room's **own fixed stock** — four held items and two TMs at catalogue price |
+| **banned** | 20 % chance, **from map 3 onward** | a leaf anywhere | one `blackbelt` trainer; **every battle that starts in the room** bars the party's most-used species from being sent out (`docs/battle-spec.md` §2) |
 
 Specials count **outside** K (`K` regular rooms + the specials), are rolled on
 the same `map` stream, and are discovered like any room: they appear on the
@@ -588,6 +589,50 @@ The rule itself:
   abilities, the held items, the residual heals (Leftovers, berries, terrain, Leech
   Seed, Aqua Ring, Ingrain), the Pokevial, the PC and the map heal stop are
   untouched, and a loss in the room is a **normal loss** (`D5`).
+
+### The banned-species room
+
+The **banned** leaf (`src/data/bannedRoom.ts`, `D47`'s room descriptor
+`src/scenes/rooms/banned.ts`) is the room whose **battles** bar the party's
+**most-used species**. It hangs off a regular room from **map 3 onward** with a
+**20%** chance, drawn **last of all** on its own minted
+`${seed}:map:<floor>:banned-room` stream, so no floor's topology, specials, room
+ids, sizes, roles or any earlier leaf moves because of it. By map 3 a party has
+fought enough battles for the counter to name somebody. Its content:
+
+- one trainer of the ordinary `blackbelt` archetype at the room's **farthest
+  walkable tile**, under the floor's own stable id `banned-<mapIndex>` in
+  `defeatedTrainers`, so a beaten room stays beaten on a revisit and a reload finds
+  nothing to fight. The archetype carries **no Mega**: the room already takes the
+  player's best member away;
+- entering the room floats the room's **notice** through the route HUD's strip
+  (`bannedRoomNotice`, `src/ui/notice.ts`, the `notice.bannedRoom` line, which names
+  the barred species). The room has **no window**;
+- **every battle that starts in the room** — its trainer's, and a dev-opened wild —
+  carries `BattleLaunch.bannedSpecies`, resolved once by `bannedSpeciesOf`
+  (`src/engine/routes/bannedRoom.ts`) as the species of the **party** member with the
+  highest `battlesUsed` (ties to the lowest party index, an absent counter as 0, the
+  **box never read**), which `createBattle` copies onto `BattleState.bannedSpecies`
+  and announces after the no-heal line.
+
+The rule itself (`docs/battle-spec.md` §2):
+
+- the battle opens on the first **living** member the ban does not name, so a barred
+  lead is replaced before the start hooks run (in a double battle the second active
+  is picked the same way);
+- a switch or forced replacement into the barred species is refused with
+  `That Pokémon is barred in this room.`, and its party row is drawn disabled;
+- when the barred species is the **only** living off-field member the ban bends and
+  it is switchable again, because a battle must always have a legal send-out. The
+  enemy side is never filtered;
+- the rule ends **with the battle**: the barred member is never sent out, so its HP
+  and PP are untouched, it can be sent out normally in the next battle, and nothing
+  about the ban is written to the run. The rule draws **no RNG at all**.
+
+The usage counter is the run's per-member fact (`RunPokemon.battlesUsed`, save step
+**21 → 22**): the post-battle fold bumps it for every player fighter the battle
+fielded (`BattleState.usedFighterIds`, which the battle books on send-out), and only
+those, so a bench member's counter does not move.
 
 ### The casino (the slot machine)
 

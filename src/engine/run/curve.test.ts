@@ -51,16 +51,24 @@ const START_LEVEL = 5;
  * 1.67 against the shipped 1.25 factor, so that single row was re-solved with
  * `factor' = round2(factor × 1.25 / fill)` — 1.25 → 0.94 — and map 5 is back to
  * 1.25. The other seven factors are untouched.
+ *
+ * **Re-walked by Task-101 with the banned room.** The leaf is one more room on a
+ * floor that hangs it, so the route index shifts again from the first floor that
+ * does: the column now reads 1.25 on maps 1, 2, 4 and 5, 1.16 on map 3, 1.19 on map
+ * 6, and 1.18 on maps 7 and 8. One floor left the window: map 5 measured 1.02
+ * against its shipped 0.94 factor, so that single row was re-solved with
+ * `factor' = round2(factor x 1.25 / fill)` (0.94 to 1.15) and map 5 is back to
+ * 1.25. The other seven factors are untouched.
  */
 const MEASURED_FILL: Readonly<Record<number, number>> = {
   1: 1.25,
   2: 1.25,
-  3: 1.25,
+  3: 1.16,
   4: 1.25,
   5: 1.25,
-  6: 1.13,
-  7: 1.24,
-  8: 1.32,
+  6: 1.19,
+  7: 1.18,
+  8: 1.18,
 };
 
 /** The lowest share a floor may pay: the window's floor. */

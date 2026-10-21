@@ -13,7 +13,12 @@ import {
 } from '../data/pokemonSprites';
 import { getTrainerArchetype } from '../data/trainers';
 import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
-import { barredMovesFor, legalMoveIndices, type Command } from '../engine/battle/commands';
+import {
+  barredMovesFor,
+  legalMoveIndices,
+  switchablePartyIndices,
+  type Command,
+} from '../engine/battle/commands';
 import {
   createFighter,
   restoreFighter,
@@ -565,6 +570,7 @@ export class BattleScene extends Phaser.Scene {
       ...(battlefield ? battlefieldSeeds(battlefield) : {}),
       noHeal: launch.noHeal === true,
       noFlee: launch.noFlee === true,
+      bannedSpecies: launch.bannedSpecies ?? null,
       ...(launch.enemyBoosts ? { enemyBoosts: launch.enemyBoosts } : {}),
     });
 
@@ -1644,6 +1650,7 @@ export class BattleScene extends Phaser.Scene {
       player: this.state.sides.player.party.map(snapshotFighter),
       bag: this.state.bag.map((slot) => ({ itemId: slot.item.id, count: slot.count })),
       captured,
+      used: [...this.state.usedFighterIds],
     };
     const route = this.scene.get('Route') as RouteScene;
     this.scene.setVisible(true, 'Route');
@@ -1817,7 +1824,7 @@ export class BattleScene extends Phaser.Scene {
       const statusText = status ? `  ${status}` : '';
       return {
         label: t('party.rowLabel', { name: fighter.name, level: fighter.level, status: statusText }),
-        enabled: index !== side.activeIndex && fighter.hp > 0,
+        enabled: switchablePartyIndices(this.state, 'player').includes(index),
         onSelect: () => this.confirmParty(index),
       };
     });
@@ -1872,8 +1879,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private hasBench(): boolean {
-    const side = this.state.sides.player;
-    return side.party.some((fighter, index) => index !== side.activeIndex && fighter.hp > 0);
+    return switchablePartyIndices(this.state, 'player').length > 0;
   }
 
   private moveMenu(delta: number): void {

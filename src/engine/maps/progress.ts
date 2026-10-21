@@ -41,6 +41,11 @@ export function noHealTrainerId(mapIndex: number): string {
   return `noheal-${mapIndex}`;
 }
 
+/** The banned room's stable trainer id, distinct from a regular one. */
+export function bannedTrainerId(mapIndex: number): string {
+  return `banned-${mapIndex}`;
+}
+
 /**
  * The edge the boss room's portal opens onto, or null when `roomId` is not the
  * boss room (or has no free wall, which the floor graph never produces). The pick

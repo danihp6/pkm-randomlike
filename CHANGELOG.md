@@ -8,6 +8,39 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The banned-species room: the run's most-used species sits the fight out.** The run now
+      keeps **which member has fought most**, and a new **`banned`** special leaf (20 % from map 3
+      on, on its own minted `${seed}:map:<n>:banned-room` stream, as the **last** statement of the
+      special pass, so no floor's topology, specials, room ids, sizes, roles or earlier leaf
+      moves) makes that fact hurt. A member carries `battlesUsed`, bumped by the post-battle fold
+      for the fighters the battle **actually fielded** — `BattleState.usedFighterIds`, booked at
+      battle start and on every switch-in — and never for the bench or the box. The room resolves
+      its ban once (`bannedSpeciesOf`, `src/engine/routes/bannedRoom.ts`) as the species of the
+      **party** member with the highest counter (ties to the lowest party index, absent as 0, the
+      box never read: a boxed veteran must not name the ban) and rides it on `BattleLaunch` →
+      `BattleSetup` → `BattleState`. `createBattle` opens the battle on the first living member
+      the ban does not name, a switch or forced replacement into it is refused with
+      `That Pokémon is barred in this room.`, `switchablePartyIndices` omits it and the party
+      window's row is drawn disabled; the ban bends when the barred species is the only living
+      off-field member (a battle must always have a legal send-out) and the enemy side is never
+      filtered. The rule ends with the battle, draws no RNG, and writes nothing to the run; the
+      room itself is one ordinary `blackbelt` trainer (no Mega) on the room's farthest tile under
+      the floor's stable `banned-<mapIndex>` id, its notice naming the barred species and its
+      minimap marker a red crossed disc. `RunPokemon.battlesUsed` is the plan's **21 → 22** step,
+      and the shared `switchablePartyIndices` also aligns the party window's rows with the shipped
+      double-battle refusal. Docs: `docs/battle-spec.md` §2 and `docs/maps-spec.md` §7's own row
+      and subsection. A new leaf is one more room on the floor that hangs it, so the walk was
+      re-pinned: `MEASURED_FILL` now reads 1.25/1.25/1.16/1.25/1.25/1.19/1.18/1.18 and map 5's
+      factor moved **0.94 → 1.15** with the recipe (`docs/balance/route-curve.md`), and
+      `BOSS_PINS` moved only on maps 4+.
+      **QA:** one pass for a one-task batch — `task-101@4436b0b` — gates green (`npm test` 2555
+      passed in 175 files, `npm run build` clean), the diff inside the spec's exclusive list, and
+      the three `[live]` criteria measured in a browser: the notice and the crossed marker, the
+      trainer battle opening with **terapagos** barred (`usedFighterIds` never lists it, its row
+      disabled), and the ban vanishing with the battle (HP/PP untouched, sendable again next
+      battle, no barred-member field in `localStorage` after a reload). One spec correction came
+      out of QA: the notice is a **room-entry cue** that floats again on a revisit, exactly like
+      the no-heal room's, and only the ban is stateless.
 - [x] **The boss room's own rules: a forced opening, a sealed door and a free heal.** The boss
       room stops being a quiet leaf that *may* roll a condition. Every map's boss battle now
       **always** begins under one row of the new two-sided `BOSS_OPENINGS` table in

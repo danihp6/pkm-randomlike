@@ -87,7 +87,7 @@ export const LEVEL_BANDS: readonly LevelBand[] = [
  * (`docs/balance/route-curve.md`). The last row repeats past the last finite map
  * (infinite mode walks the `end` band upwards).
  */
-export const TRAINER_XP_PER_MAP: readonly number[] = [1, 1.09, 1.07, 1, 0.94, 0.8, 0.91, 1.09];
+export const TRAINER_XP_PER_MAP: readonly number[] = [1, 1.09, 1.07, 1, 1.15, 0.8, 0.91, 1.09];
 
 /**
  * The factor floor `mapIndex` pays: row `mapIndex - 1`, clamped at both ends, so

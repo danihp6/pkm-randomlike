@@ -70,6 +70,7 @@ export function resolveBattle(
 ): BattleResolution {
   let next: RunState = adoptBattleParty(run, result.player);
   next = { ...next, bag: [...result.bag] };
+  next = withBattleUsage(next, result.used);
 
   const death = releaseFainted(next);
   next = death.run;
@@ -134,6 +135,24 @@ export function adoptBattleParty(run: RunState, player: readonly FighterSnapshot
     party: run.party.map((member) => {
       const fighter = returned.get(member.fighter.id);
       return fighter ? { ...member, fighter } : member;
+    }),
+  };
+}
+
+/**
+ * Bumps the per-member usage counter of every party member the battle fielded
+ * (Task-101): `used` lists the ids the battle actually sent out, and an absent
+ * list counts the whole returned party (a battle that did not report its sends).
+ * The box is never counted — only a party member can take the field — and every
+ * member that did not fight comes back as the same object.
+ */
+function withBattleUsage(run: RunState, used: readonly string[] | undefined): RunState {
+  const counted = used ? new Set(used) : null;
+  return {
+    ...run,
+    party: run.party.map((member) => {
+      if (counted && !counted.has(member.fighter.id)) return member;
+      return { ...member, battlesUsed: (member.battlesUsed ?? 0) + 1 };
     }),
   };
 }

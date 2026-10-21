@@ -12,6 +12,7 @@ import {
   type MapEdge,
 } from './plan';
 import {
+  bannedTrainerId,
   bossTrainerId,
   isFinalMap,
   miniBossTrainerId,
@@ -342,6 +343,17 @@ describe('bossTrainerId', () => {
     expect(miniBossTrainerId(3)).toBe('miniboss-3');
     expect(miniBossTrainerId(3)).toBe(miniBossTrainerId(3));
     expect(miniBossTrainerId(3)).not.toBe(bossTrainerId(3));
+  });
+});
+
+describe('bannedTrainerId', () => {
+  it('is stable per map, and never the boss’s, the mini-boss’s or the no-heal room’s', () => {
+    expect(bannedTrainerId(3)).toBe('banned-3');
+    expect(bannedTrainerId(3)).toBe(bannedTrainerId(3));
+    expect(bannedTrainerId(3)).not.toBe(bossTrainerId(3));
+    expect(bannedTrainerId(3)).not.toBe(miniBossTrainerId(3));
+    expect(bannedTrainerId(3)).not.toBe(noHealTrainerId(3));
+    expect(bannedTrainerId(4)).not.toBe(bannedTrainerId(3));
   });
 });
 

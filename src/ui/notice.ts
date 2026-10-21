@@ -115,6 +115,15 @@ export function noHealRoomNotice(): Notice {
   return { text: t('notice.noHealRoom'), holdMs: NOTICE_HOLD_MS };
 }
 
+/**
+ * The banned-species room's own notice (`docs/maps-spec.md` §7): entering the leaf
+ * says which species this room's battles bar from being sent out. `name` is the
+ * barred species' display name, resolved by the caller, so this never reads the dex.
+ */
+export function bannedRoomNotice(name: string): Notice {
+  return { text: t('notice.bannedRoom', { name }), holdMs: NOTICE_HOLD_MS };
+}
+
 /** The floor's mission was met on the advance: `<mission>` is its display name. */
 export function missionCompleteNotice(mission: string): Notice {
   return { text: t('notice.missionComplete', { mission }), holdMs: NOTICE_HOLD_MS };

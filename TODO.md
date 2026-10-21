@@ -6041,7 +6041,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       and the conditions themselves (`[Task-62]`, `[Task-106]`).
       *Dependencies:* `[Task-62]` (the launch seam) and `[Task-106]` (the table rows it draws from).
       *(Batch 45)*
-- [ ] **[Task-101] The room that bans the squad's most-used species.** «Bloquea la especie más usada
+- [x] **[Task-101] The room that bans the squad's most-used species.** «Bloquea la especie más usada
       en una habitación o combate» needs a fact the run does not keep: which member has fought most.
       A member carries no counter (`RunPokemon` is `{ fighter, caughtAt? }`, `progression.ts` 30-37)
       and `RunStats` is run-wide.

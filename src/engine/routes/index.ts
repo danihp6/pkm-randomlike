@@ -11,3 +11,4 @@ export * from './staticSpecies';
 export * from './secretShop';
 export * from './npcs';
 export * from './bossRoom';
+export * from './bannedRoom';

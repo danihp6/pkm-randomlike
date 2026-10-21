@@ -350,6 +350,7 @@ export const en = {
   'notice.levelUp': '{name} grew to Lv {level}!',
   'notice.eggHatch': 'The Egg hatched into {name}!',
   'notice.noHealRoom': 'No items or healing moves in this room!',
+  'notice.bannedRoom': 'This room bars {name}!',
   'notice.missionComplete': 'Mission complete: {mission}',
   'notice.staticLegendary': 'A legendary presence waits behind the seal.',
   'gate.locked.bush': 'Thick bushes. A Bug or Grass Pokémon could clear them.',
