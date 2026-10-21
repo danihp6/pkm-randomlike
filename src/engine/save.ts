@@ -69,7 +69,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 21;
+export const SAVE_VERSION = 22;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -162,7 +162,10 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * absent optional field out (the `14` nickname precedent); `20` moves a v20 run onto
  * the v21 schema, which added the run's `modifiers` record (the exorcist's curse, the
  * weather man's forced sky and the magician's narrowed wild type), an old run
- * starting with the empty record because it never carried one.
+ * starting with the empty record because it never carried one; `21` moves a v21 run
+ * onto the v22 schema, which added the optional per-member `battlesUsed` counter, an
+ * old run and an old member starting with none because the decoder leaves the absent
+ * field out (the `14` nickname precedent).
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -296,6 +299,12 @@ export const SAVE_MIGRATIONS: Migrations = {
     ...document,
     version: 21,
     run: isRecord(document.run) ? { ...document.run, modifiers: emptyModifiers() } : document.run,
+  }),
+  // The per-member usage counter: optional, and the decoder defaults an absent one to
+  // none, so a v21 run needs no field written here (the `14` nickname precedent).
+  21: (document) => ({
+    ...document,
+    version: 22,
   }),
 };
 
@@ -668,13 +677,18 @@ function parsePokemon(value: unknown): RunPokemon | null {
   const taughtMoves = parseTaughtMoves(value.taughtMoves);
   const secondAbility =
     isString(value.secondAbility) && value.secondAbility !== '' ? value.secondAbility : null;
-  // Each optional word is written only when it carries something, so a v20 round trip
-  // stays byte-stable and a v19 document decodes to none.
+  // The usage counter is written only when it carries something, so a save round trip
+  // stays byte-stable and a v21 document decodes to none.
+  const battlesUsed =
+    isInteger(value.battlesUsed) && value.battlesUsed > 0 ? value.battlesUsed : null;
+  // Each optional word is written only when it carries something, so a v21 round trip
+  // stays byte-stable and a v20 document decodes to none.
   return {
     fighter,
     ...(caughtAt ? { caughtAt } : {}),
     ...(taughtMoves.length > 0 ? { taughtMoves } : {}),
     ...(secondAbility !== null ? { secondAbility } : {}),
+    ...(battlesUsed !== null ? { battlesUsed } : {}),
   };
 }
 

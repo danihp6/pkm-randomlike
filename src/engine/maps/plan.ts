@@ -1,4 +1,5 @@
 import { BIOME_ORDER, type BiomeId } from '../../data/biomes';
+import { BANNED_ROOM } from '../../data/bannedRoom';
 import { MAP_MIN_ROOM_SIZE, mapTuning, roomSizeForShape } from '../../data/maps';
 import { NO_HEAL_ROOM } from '../../data/noHeal';
 import { trainerRoomsForMap } from '../../data/population';
@@ -67,18 +68,27 @@ export type MapOpening = Readonly<{ edge: MapEdge; kind: MapOpeningKind }>;
  * **trade** leaf from map 3 on, a **no-heal** leaf (battles in it refuse the
  * player's Bag and healing moves) from map 3 on, a **static** leaf behind a
  * party gate from map 3 on and a **secret-shop** leaf (a counter with the late-band
- * gear behind the same type-gated vault) from map 3 on; they may coincide on one
- * floor.
+ * gear behind the same type-gated vault) from map 3 on, plus a **banned** leaf
+ * (battles there bar the party's most-used species) from map 3 on; they may
+ * coincide on one floor.
  * Every one is hung off a regular room that is neither the entry nor the boss, and
  * never farther from the entry than the boss. The trade leaf rolls after every
  * shipped draw, the no-heal leaf after it, the static leaf after that and the
- * secret-shop leaf last of all, on its own minted stream, so none can move a
+ * secret-shop leaf after that, on its own minted stream, so none can move a
  * floor's mini-boss, mega-stone, casino, gated, trade or static leaf. The Mart is
  * **not** a room any more: the floor's merchant NPC opens it in a regular trainer
  * room (`docs/maps-spec.md` §7).
  */
 export type MapRoomSpecial =
-  'mini-boss' | 'mega-stone' | 'casino' | 'gated' | 'trade' | 'no-heal' | 'static' | 'secret-shop';
+  | 'mini-boss'
+  | 'mega-stone'
+  | 'casino'
+  | 'gated'
+  | 'trade'
+  | 'no-heal'
+  | 'static'
+  | 'secret-shop'
+  | 'banned';
 
 /** A regular room's population role (`docs/maps-spec.md` §2). */
 export type MapRoomRole = 'trainers' | 'wild';
@@ -520,6 +530,16 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     const parents = freeParents();
     if (parents.length > 0) {
       addSpecial('secret-shop', parents[secretShopRng.int(0, parents.length - 1)], secretShopRng);
+    }
+  }
+  // The banned-species leaf rolls last of all, on its own minted stream, so no
+  // floor's topology, specials, room ids, sizes, roles or any leaf above moves
+  // (`docs/maps-spec.md` §7).
+  const bannedRng = new Rng(hashSeed(`${seed}:map:${index}:banned-room`));
+  if (index >= BANNED_ROOM.fromMap && bannedRng.next() < BANNED_ROOM.chance) {
+    const parents = freeParents();
+    if (parents.length > 0) {
+      addSpecial('banned', parents[bannedRng.int(0, parents.length - 1)], bannedRng);
     }
   }
 

@@ -38,6 +38,13 @@ export type RunPokemon = Readonly<{
   taughtMoves?: readonly string[];
   /** The second ability a sacrifice granted; absent means none. */
   secondAbility?: string | null;
+  /**
+   * How many resolved battles this member took the field in (Task-101): the
+   * run's per-member usage counter. Absent means 0, which is what every save
+   * written before Task-101 and every member that has never been sent out
+   * carries.
+   */
+  battlesUsed?: number;
 }>;
 
 /**

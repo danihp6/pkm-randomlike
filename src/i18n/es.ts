@@ -353,6 +353,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'notice.levelUp': '¡{name} ha subido al nivel {level}!',
   'notice.eggHatch': '¡El Huevo eclosionó en {name}!',
   'notice.noHealRoom': '¡En esta sala no se pueden usar objetos ni movimientos de curación!',
+  'notice.bannedRoom': '¡Esta sala bloquea a {name}!',
   'notice.missionComplete': 'Misión completada: {mission}',
   'notice.staticLegendary': 'Una presencia legendaria aguarda tras el sello.',
   'gate.locked.bush': 'Unos arbustos espesos. Un Pokémon de tipo Bicho o Planta podría abrirlos.',

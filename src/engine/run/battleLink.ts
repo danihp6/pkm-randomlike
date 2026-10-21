@@ -76,6 +76,8 @@ export type BattleLaunch = Readonly<{
   noFlee?: boolean;
   /** The exorcist's curse: the enemy lead starts one Attack stage down. */
   enemyBoosts?: Partial<Record<BoostId, number>>;
+  /** The run's most-used species the room bars, or null/absent (Task-101). */
+  bannedSpecies?: string | null;
 }>;
 
 export type BattleOutcome = 'win' | 'lose' | 'run' | 'capture';
@@ -87,6 +89,12 @@ export type BattleReturn = Readonly<{
   player: readonly FighterSnapshot[];
   bag: readonly BagCounts[];
   captured: FighterSnapshot | null;
+  /**
+   * The ids the battle fielded for the player (`BattleState.usedFighterIds`).
+   * Absent means the battle did not report them and the fold counts every
+   * member the returned party carries.
+   */
+  used?: readonly string[];
 }>;
 
 /** One battle's Rng seed, derived from the run seed, route and entity key. */

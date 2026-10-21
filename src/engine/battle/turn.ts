@@ -132,6 +132,9 @@ export function performSwitch(
   resetBattleState(outgoing);
 
   const incoming = activeFighter(state, side, slot);
+  if (side === 'player' && !state.usedFighterIds.includes(incoming.id)) {
+    state.usedFighterIds.push(incoming.id);
+  }
   if (!state.switchedSides.includes(side)) state.switchedSides.push(side);
   pushEvent(state, { kind: 'switch', side, fighterId: incoming.id });
   pushText(state, `${state.sides[side].name} sent out ${incoming.name}!`);

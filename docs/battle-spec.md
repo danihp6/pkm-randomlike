@@ -37,6 +37,20 @@ enemy's side, its AI, its own healing moves, the abilities, the held items, the
 residual heals and every other command are untouched, and the gate rejects before
 any roll, so the battle RNG does not move.
 
+The **banned-species room** (`docs/maps-spec.md` §7) narrows the **Pokémon** row
+**for the player only**: the launch carries `bannedSpecies` — the species of the
+run's most-used party member, read by `bannedSpeciesOf` (`src/engine/routes/bannedRoom.ts`)
+off each member's `battlesUsed` counter — into `BattleSetup` and `BattleState`. The
+battle opens on the first **living** member the ban does not name (a barred lead is
+replaced before the start hooks run, in a double battle the second active too), a
+switch to the barred species is refused with `That Pokémon is barred in this room.`
+and its party row is drawn disabled, and `switchablePartyIndices` omits it. Two clauses bend the rule: when the barred species is the **only** living off-field
+member it is switchable again, because a battle must always have a legal send-out,
+and the enemy side is never filtered. The rule ends with the battle — the run's
+party, box and RIP are never touched — it draws **no RNG at all**, and the battle
+books every fighter it fielded in `BattleState.usedFighterIds`, which the post-battle
+fold reads to bump `battlesUsed`.
+
 The berry tree's guardian rides the launch as `noFlee` (`BattleLaunch` →
 `BattleSetup` → `BattleState`), `canRun`/`rollRun` refuse it, and the **only** two
 exceptions are the `onTryEscape` hooks — the **Run Away** ability and a **`flee`**

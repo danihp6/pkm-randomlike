@@ -170,6 +170,30 @@ export function withLeadSlot<T>(state: BattleState, side: SideId, slot: Slot, re
   }
 }
 
+/**
+ * The party indices the side may send out right now: not an active slot, a live
+ * fighter, and — for the player in a room that bars a species — not that
+ * species. When the barred species is the **only** living off-field member the
+ * ban bends and it is listed, because a battle must always have a legal
+ * send-out. The enemy side is never filtered.
+ */
+export function switchablePartyIndices(state: BattleState, side: SideId): readonly number[] {
+  const battleSide = state.sides[side];
+  const legal: number[] = [];
+  const barred: number[] = [];
+  for (let index = 0; index < battleSide.party.length; index++) {
+    if (index === battleSide.activeIndex || index === battleSide.secondActiveIndex) continue;
+    const fighter = battleSide.party[index];
+    if (fighter.hp <= 0) continue;
+    if (side === 'player' && state.bannedSpecies !== null && fighter.speciesId === state.bannedSpecies) {
+      barred.push(index);
+    } else {
+      legal.push(index);
+    }
+  }
+  return legal.length > 0 ? legal : barred;
+}
+
 function validateSwitch(state: BattleState, side: SideId, command: SwitchCommand): string | null {
   const battleSide = state.sides[side];
   const target = battleSide.party[command.partyIndex];
@@ -183,6 +207,14 @@ function validateSwitch(state: BattleState, side: SideId, command: SwitchCommand
   if (target.hp <= 0) return 'That Pokémon has no energy left.';
   if (!battleSide.awaitingReplacement && isTrapped(state, side)) {
     return 'The Pokémon cannot be switched out.';
+  }
+  if (
+    side === 'player' &&
+    state.bannedSpecies !== null &&
+    target.speciesId === state.bannedSpecies &&
+    !switchablePartyIndices(state, side).includes(command.partyIndex)
+  ) {
+    return 'That Pokémon is barred in this room.';
   }
   return null;
 }

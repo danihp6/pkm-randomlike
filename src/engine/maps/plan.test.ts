@@ -792,7 +792,8 @@ describe('special rooms', () => {
               special.kind !== 'trade' &&
               special.kind !== 'no-heal' &&
               special.kind !== 'static' &&
-              special.kind !== 'secret-shop',
+              special.kind !== 'secret-shop' &&
+              special.kind !== 'banned',
           )
           .map((special) => `${special.roomId}:${special.kind}`)
           .join(',');
@@ -1174,6 +1175,59 @@ describe('special rooms', () => {
     }
     // Reproducible twice over: its own stream replays with the plan.
     expect(planMap('alpha', 6)).toEqual(planMap('alpha', 6));
+  });
+
+  /**
+   * The banned-species leaf's own per-floor slot (`'-'` or the room id), one line
+   * per seed and map 1-8. It rolls **last of all**, on its own
+   * `${seed}:map:<floor>:banned-room` stream, so it moves neither the `map` stream
+   * nor any leaf already pinned above; the secret-shop leaf it follows is pinned
+   * unchanged by `SECRET_SHOP_LEAVES`.
+   */
+  const BAN_LEAVES = [
+    '-,-,-,-,-,-,-,-',
+    '-,-,8,-,-,-,9,-',
+    '-,-,8,-,-,-,-,12',
+    '-,-,-,-,-,-,8,-',
+    '-,-,-,-,9,-,-,-',
+    '-,-,-,-,-,-,-,-',
+    '-,-,-,-,-,10,-,-',
+    '-,-,-,9,-,9,-,-',
+  ];
+
+  it('pins where the banned leaf hangs, seed by seed', () => {
+    for (const [index, seed] of SEEDS.entries()) {
+      const leaves: string[] = [];
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const room = specialRoom(planMap(seed, mapIndex), 'banned');
+        leaves.push(room === undefined ? '-' : String(room));
+      }
+      expect(leaves.join(','), seed).toBe(BAN_LEAVES[index]);
+    }
+    // Reproducible twice over: its own stream replays with the plan.
+    expect(planMap('hotel', 7)).toEqual(planMap('hotel', 7));
+  });
+
+  it('hangs a banned leaf once at most, only from map 3 on, always below the boss', () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const banned = plan.rooms.filter((room) => room.special === 'banned');
+        expect(banned.length, `${seed} map ${mapIndex}`).toBeLessThanOrEqual(1);
+        if (mapIndex < 3) expect(banned, `${seed} map ${mapIndex}`).toHaveLength(0);
+        if (banned.length === 0) continue;
+        const room = banned[0];
+        expect(room.role, `${seed} map ${mapIndex}`).toBe('wild');
+        expect(room.id).not.toBe(plan.entryRoom);
+        expect(room.id).not.toBe(plan.bossRoom);
+        const links = plan.links.filter(([a, b]) => a === room.id || b === room.id);
+        expect(links, `${seed} map ${mapIndex}`).toHaveLength(1);
+        expect(
+          plan.specials.some((special) => special.roomId === room.id && special.kind === 'banned'),
+          `${seed} map ${mapIndex}`,
+        ).toBe(true);
+      }
+    }
   });
 
   it('pins where the trade leaf hangs, seed by seed', () => {

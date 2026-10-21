@@ -34,8 +34,14 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
   the commit and the marker.
 - `noHeal.ts` — the no-heal room: its notice, its `psychic` trainer on the room's
   farthest tile and the marker of the room whose battles refuse the Bag and heals.
-- `noHeal.test.ts` — the room's own surface: the trainer's id, tile and archetype,
+- `noHeal.test.ts` - the room's own surface: the trainer's id, tile and archetype,
   the defeated and no-free-tile cases, the notice and the marker.
+- `banned.ts` - the banned-species room: its notice, its `blackbelt` trainer on the
+  room's farthest tile and the crossed-disc marker of the room whose battles bar the
+  party's most-used species.
+- `banned.test.ts` - the room's own surface: the barred species in the notice, the
+  trainer's id, tile and archetype, the defeated and no-free-tile cases and the
+  crossed marker.
 - `staticSpecies.ts` — the static-species room: the seal that opens its vault (a
   party type, or an ability for the pond), the blocking species behind it and the
   wild battle it starts, plus its legendary variant's entry line and its gold-ring

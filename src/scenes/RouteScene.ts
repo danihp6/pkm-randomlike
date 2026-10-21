@@ -147,6 +147,7 @@ import {
   DEFAULT_SHAPE,
   DEFAULT_TRAINER_SIGHT,
   RouteEncounters,
+  bannedSpeciesOf,
   borderEdge,
   chefTrade,
   encounterTableFor,
@@ -6648,6 +6649,9 @@ export class RouteScene extends Phaser.Scene {
       // The no-heal leaf's rule rides the launch too, so its trainer's battle and
       // any dev wild opened in the room both carry it.
       noHeal: this.room?.special === 'no-heal',
+      // The banned-species leaf's rule rides the launch the same way: every battle
+      // the room opens bars the party's most-used species from being sent out.
+      bannedSpecies: this.room?.special === 'banned' ? bannedSpeciesOf(this.run) : null,
       // The berry tree's guardian forbids the flight (`runAway.ts`), unless an
       // escape effect (Run Away, the Smoke Ball) grants it.
       ...(extras.noFlee ? { noFlee: true } : {}),
