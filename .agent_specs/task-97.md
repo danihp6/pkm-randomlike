@@ -281,6 +281,11 @@ the rest of the spec is not a criterion.
   - The `[live]` criteria need the dev server + the machine's headless Chromium over
     CDP; the protocol is written out at the end of this section, and the seed it needs
     is pinned by the dev (see **Coordination**).
+  - A clean worktree cannot boot until the gitignored packed audio exists
+    (`npm run assets:pack` from `$ASSETS_ROOT`, or the store's own build); if it is
+    absent, placeholder WAVs under the gitignored `src/assets/audio/` are enough for
+    this pass and are removed afterwards. Portrait and tile art may fall back to
+    placeholders: no `[live]` criterion below reads it.
 
 - **Acceptance criteria:**
   - [ ] `[unit]` `npm run build` is clean (`tsc --noEmit && vite build`).
@@ -340,20 +345,27 @@ the rest of the spec is not a criterion.
         of the obstacle's type, stepping into the seal leaves the player's tile
         **equal** to the pinned `mouth`, twice; after adding one member of the pinned
         `obstacle`'s type and pressing `E` while facing it, one step moves the player
-        onto the seal tile — the text equals `(mouth + direction)` — and a second step
-        onto the tile beyond it. The pocket itself is **not** walked onto: the counter
-        fixture blocks its tile exactly as the trade room's does.
+        onto the seal tile — the text equals `(mouth + direction)`. The pocket itself is
+        **not** walked onto: the counter fixture blocks its tile exactly as the trade
+        room's does, so a further step stays on the seal tile.
   - [ ] `[live]` **The counter opens the Mart card with the secret stock.** Protocol
-        step 7: from the tile in front of the counter (the opacity-free case is the
-        seal tile, `mouth + direction`), facing the pocket. Measurement: with the panel
-        closed, read the canvas patch `(620..660, 132..142)` (the card's header field:
-        the card is the shipped 640×540 `addFloatingPanel`, centred in the 1280×800
-        viewport, so its top edge is y=130). Press `E`. Re-read the same patch: its mean
-        R, G and B each rise by **at least +40** over the closed-panel reading (the
-        window field is light, alpha 0.72, over the route). State the two triples in the
-        report. Prefer `renderer.snapshotArea` + `getImageData`; if the CDP build
-        cannot reach the renderer, `Page.captureScreenshot` + a crop of the same patch
-        is acceptable — say which one was used.
+        step 7: from the tile in front of the counter (the seal tile, `mouth +
+        direction`), facing the pocket. Method: with the panel closed, read the canvas
+        patch `(620..660, 132..142)` (the card is the shipped 640×540
+        `addFloatingPanel`, centred in the 1280×800 viewport, so its top edge is
+        y=130); press `E`; read the same patch again.
+        **Measurement — a blend equality against the shipped chrome, not a rise.** The
+        card's field is `src/assets/ui/window.png`'s own pixel, **`(16, 22, 31)`**, drawn
+        at `FRLG_WINDOW_ALPHA` **0.72** over what is behind it
+        (`src/data/ui/chrome.json`), so the open patch must equal
+        `0.72 × (16, 22, 31) + 0.28 × closed` on every channel, within **±6**; and the
+        closed patch must sit **more than 20** away from that value on at least one
+        channel, so the change is real. This bound is derived from the asset and the
+        alpha constant alone — it was corrected from an earlier "+40 rise" wording after
+        that wording's premise (a light field) was measured false. State the closed
+        triple, the predicted triple and the measured open triple. Prefer
+        `renderer.snapshotArea` + `getImageData`; `Page.captureScreenshot` + a crop of
+        the same patch is acceptable — say which was used.
   - [ ] `[live]` **The BUY tab lists six rows.** Protocol step 7, same open card.
         Measurement: the card's list window starts at `content.y + 68` and each row is
         44 px tall inside `640 - 2*20` px of width; the six shipped rows must all paint
