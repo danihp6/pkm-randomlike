@@ -1122,6 +1122,38 @@ line. The three empty slots name those constraints, so the batch runs as one dev
 and one QA wave — and, being one task, as a single QA pass that covers the integration
 scope too.
 
+**Batch 45 is `[Task-100]` alone: the fill search found no legal mate.** Its cut holds
+`src/scenes/RouteScene.ts`, `src/data/bosses.ts` + test, `src/data/battlefields.ts` + test
+(the retired `BOSS_BATTLEFIELD_CHANCE`), `src/engine/routes/battlefield.ts` + test, the new
+`src/engine/routes/bossRoom.ts` + test, `src/engine/routes/index.ts`, the two folder
+READMEs (`src/data/README.md`'s `bosses.ts` line and `src/engine/README.md`'s `routes/`
+line) and the two docs' blocks — so the one-line record above for 45, which names only its
+three headline files, is narrower than the spec's list (the way Batch 41's and 42's
+records predate theirs), and the spec carries the rest. **The docs are single-writer
+here:** `[Task-100]` owns `docs/maps-spec.md` §6 whole and **§7's first
+`### A room's battle condition` bullet** — the one naming the boss's condition and the
+quiet special leaves — and it rewrites only the **boss** clause, so that bullet's
+`casino` parenthetical **stays** until the room retires; the rest of §7 (the
+special-room table with its casino row, the rates paragraph, the NPC table and the
+`### The casino (the slot machine)` subsection) is `[Task-117]`'s block and is nobody's
+in this batch. `[Task-117]` (Batch 56) was the only legal candidate and it is **refused by
+`src/scenes/RouteScene.ts`**: its rocket's machine cannot open without a branch in that
+scene's `chooseNpc` id switch (5895-6010, whose `default` only writes the use mark and
+closes), because `src/scenes/rooms/registry.ts` collects **room** descriptors only —
+there is no NPC registry a data row could reach — so `src/scenes/rooms/casino.ts`'s
+`openCasino(host)` cannot be re-homed as an NPC panel without editing the scene 100
+holds, and a code path cannot be split by section the way a `docs/*.md` file can. The rest
+are named one by one: `[Task-101]`, 102, 108, 109 and 110 each claim
+`src/scenes/RouteScene.ts`, which 100 holds; `[Task-103]` (Batch 47) claims no scene and
+its own dependencies are merged, but its `SAVE_VERSION` step is frozen at **22 → 23** by
+the plan's batch order after `[Task-101]`'s 21 → 22 — the file reads **21** on `main` — so
+pulling it into 45 would invert the chain and stale 101's own entry; `[Task-114]`
+(Batch 53) needs `[Task-101]`'s `src/engine/battle/commands.ts` and `[Task-118]`
+(Batch 57) is written against 114, so both wait on an unmerged dependency; `[Task-28]`
+stays unscheduled by its own decision line and `[Task-104]`/`[Task-113]` are `[!]`. The
+three empty slots name those constraints, so the batch runs as one dev wave and one QA
+wave — and, being one task, as a single QA pass that covers the integration scope too.
+
 ### Batch 1 — foundations *(shipped, archived)*
 Task-01, Task-02, Task-03, Task-06, Task-10 and Task-11 merged in ID order behind the
 green gate; the detail is in `CHANGELOG.md`'s `## Unreleased`. Two follow-ups it
