@@ -59,16 +59,26 @@ const START_LEVEL = 5;
  * against its shipped 0.94 factor, so that single row was re-solved with
  * `factor' = round2(factor x 1.25 / fill)` (0.94 to 1.15) and map 5 is back to
  * 1.25. The other seven factors are untouched.
+ *
+ * **Re-walked by Task-102 with the puzzle room.** The leaf is one more room on a
+ * floor that hangs it, so the route index shifts again from map 2 on: the column
+ * now reads 1.25 on maps 1, 2, 5 and 8, 1.16 on map 3, 1.08 on map 4, 1.13 on map 6
+ * and 1.26 on map 7. Three floors left the window: map 5 measured 1.53 against its
+ * shipped 1.15 factor, map 7 measured 1.05 (1.0482) against 0.91 and map 8 measured
+ * 1.04 (1.0415) against 1.09, so each of those three rows was re-solved with
+ * `factor' = round2(factor x 1.25 / fill)` — 1.15 to 0.94, 0.91 to 1.09 and 1.09 to
+ * 1.31 — and they are back to 1.25, 1.26 and 1.25. The other five factors are
+ * untouched; map 4 still sits inside the window at 1.08.
  */
 const MEASURED_FILL: Readonly<Record<number, number>> = {
   1: 1.25,
   2: 1.25,
   3: 1.16,
-  4: 1.25,
+  4: 1.08,
   5: 1.25,
-  6: 1.19,
-  7: 1.18,
-  8: 1.18,
+  6: 1.13,
+  7: 1.26,
+  8: 1.25,
 };
 
 /** The lowest share a floor may pay: the window's floor. */

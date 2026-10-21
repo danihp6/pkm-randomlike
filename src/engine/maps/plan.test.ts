@@ -793,7 +793,8 @@ describe('special rooms', () => {
               special.kind !== 'no-heal' &&
               special.kind !== 'static' &&
               special.kind !== 'secret-shop' &&
-              special.kind !== 'banned',
+              special.kind !== 'banned' &&
+              special.kind !== 'puzzle',
           )
           .map((special) => `${special.roomId}:${special.kind}`)
           .join(',');
@@ -1206,6 +1207,37 @@ describe('special rooms', () => {
     }
     // Reproducible twice over: its own stream replays with the plan.
     expect(planMap('hotel', 7)).toEqual(planMap('hotel', 7));
+  });
+
+  /**
+   * The puzzle leaf's own per-floor slot (`'-'` or the room id), one line per seed
+   * and map 1-8. It rolls **last of all**, on its own
+   * `${seed}:map:<floor>:puzzle-room` stream, so it moves neither the `map` stream
+   * nor any leaf already pinned above; the banned leaf it follows is pinned
+   * unchanged by `BAN_LEAVES`.
+   */
+  const PUZZLE_LEAVES = [
+    '-,-,-,-,-,-,-,-',
+    '-,-,-,-,-,-,10,-',
+    '-,-,-,-,-,-,-,-',
+    '-,7,8,-,8,-,-,-',
+    '-,6,-,-,10,-,-,-',
+    '-,-,-,-,7,-,7,11',
+    '-,-,-,-,-,-,-,-',
+    '-,7,7,-,-,-,-,13',
+  ];
+
+  it('pins where the puzzle leaf hangs, seed by seed', () => {
+    for (const [index, seed] of SEEDS.entries()) {
+      const leaves: string[] = [];
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const room = specialRoom(planMap(seed, mapIndex), 'puzzle');
+        leaves.push(room === undefined ? '-' : String(room));
+      }
+      expect(leaves.join(','), seed).toBe(PUZZLE_LEAVES[index]);
+    }
+    // Reproducible twice over: its own stream replays with the plan.
+    expect(planMap('foxtrot', 8)).toEqual(planMap('foxtrot', 8));
   });
 
   it('hangs a banned leaf once at most, only from map 3 on, always below the boss', () => {

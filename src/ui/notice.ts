@@ -124,6 +124,25 @@ export function bannedRoomNotice(name: string): Notice {
   return { text: t('notice.bannedRoom', { name }), holdMs: NOTICE_HOLD_MS };
 }
 
+/**
+ * The puzzle room's entry line (`docs/maps-spec.md` §7): the leaves' row of
+ * switches clicks in a set order, and the key presses them. The row itself is the
+ * room's data; this is only the line the HUD floats.
+ */
+export function puzzleRoomNotice(): Notice {
+  return { text: t('notice.puzzleRoom'), holdMs: NOTICE_HOLD_MS };
+}
+
+/** The puzzle room's reset: a wrong press sent the sequence back to the start. */
+export function puzzleResetNotice(): Notice {
+  return { text: t('notice.puzzleReset'), holdMs: NOTICE_HOLD_MS };
+}
+
+/** The puzzle room's solve: the sequence is complete and the reward is on the floor. */
+export function puzzleSolvedNotice(): Notice {
+  return { text: t('notice.puzzleSolved'), holdMs: NOTICE_HOLD_MS };
+}
+
 /** The floor's mission was met on the advance: `<mission>` is its display name. */
 export function missionCompleteNotice(mission: string): Notice {
   return { text: t('notice.missionComplete', { mission }), holdMs: NOTICE_HOLD_MS };

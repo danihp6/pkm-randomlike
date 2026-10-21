@@ -231,6 +231,10 @@ type BossPin = Readonly<{
  * `routeIndexForRoom` shifts from map 4 on and the boss opening moves with it:
  * `dev-seed`'s maps 6 and 7 and `pkm-64`'s maps 7 and 8 were re-pinned by
  * Task-101 (maps 1-3 and every opening of map 4 or earlier are unchanged).
+ *
+ * The puzzle leaf shifts the same route index again, so `dev-seed`'s map 6 moved
+ * once more; `pkm-64`'s eight openings are unchanged, and no opening of map 3 or
+ * earlier moved for either seed.
  */
 const BOSS_PINS: Readonly<Record<string, readonly BossPin[]>> = {
   'dev-seed': [
@@ -239,7 +243,8 @@ const BOSS_PINS: Readonly<Record<string, readonly BossPin[]>> = {
     { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
     { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
     { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
-    { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+    // Was `{ side: 'boss', battlefield: 'crit', boosts: { def: 1 } }` before Task-102.
+    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
     { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
     { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
   ],

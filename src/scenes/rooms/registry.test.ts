@@ -35,6 +35,7 @@ const SHIPPED_KINDS = [
   'static',
   'secret-shop',
   'banned',
+  'puzzle',
 ] as const;
 
 /** A synthetic module holding one descriptor, for a kind the folder never had. */

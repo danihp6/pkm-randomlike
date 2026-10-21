@@ -255,6 +255,17 @@ marks the trainer beaten. The roll reads its own stream, so no layout, terrain,
 populate, item, validation or encounter stream moves and a fixed seed keeps every
 route it already generated.
 
+**A special leaf's own content is placed by its room descriptor, not by a pass.** A
+leaf that needs no new tile value and no second carve — the **puzzle** room's row of
+switches and the ground item its solve pays — is laid out **when the room is built**,
+by the descriptor (`src/scenes/rooms/puzzle.ts`) through `src/engine/routes/puzzle.ts`,
+from the route's own tiles and the room's own minted streams
+(`${seed}:puzzle:<map>:<roomId>:row|sites|order`). No build pass in
+`src/engine/routes/sketch.ts` and no `RouteRequest` field is involved, so every route
+the floor already generated, every trainer and item it already placed and every
+encounter stream stay exactly where they were, and a fixed seed keeps the room's
+switches, its reward tile and its press order identical on every visit.
+
 ## 3. Wild encounters
 
 - Walking onto a `TALL_GRASS` tile rolls an encounter with the route's table.

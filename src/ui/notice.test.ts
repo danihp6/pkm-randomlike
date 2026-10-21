@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { setLocale } from '../i18n';
+import { en, es, setLocale, translationParams, type TranslationKey } from '../i18n';
 import {
   NOTICE_HOLD_MS,
   catchToPcNotice,
@@ -12,6 +12,9 @@ import {
   missionCompleteNotice,
   noHealRoomNotice,
   bannedRoomNotice,
+  puzzleResetNotice,
+  puzzleRoomNotice,
+  puzzleSolvedNotice,
   staticLegendaryNotice,
   staticSealLockedNotice,
 } from './notice';
@@ -266,6 +269,68 @@ describe('bannedRoomNotice', () => {
       noHealRoomNotice(),
     ].map((notice) => notice.text);
     expect(others).not.toContain(bannedRoomNotice('Pidgeot').text);
+  });
+});
+
+describe('the puzzle room’s notices', () => {
+  it('explains the rule on entry, with the shared hold', () => {
+    expect(puzzleRoomNotice()).toEqual({
+      text: 'The switches click in a set order.',
+      holdMs: NOTICE_HOLD_MS,
+    });
+  });
+
+  it('reports a reset sequence and a solved one', () => {
+    expect(puzzleResetNotice()).toEqual({ text: 'The switches reset.', holdMs: NOTICE_HOLD_MS });
+    expect(puzzleSolvedNotice()).toEqual({
+      text: 'The last switch clicks — something appears!',
+      holdMs: NOTICE_HOLD_MS,
+    });
+    expect(puzzleResetNotice().text).not.toBe(puzzleSolvedNotice().text);
+  });
+
+  it('declares no {token} in either table, so no call site supplies one', () => {
+    const keys: readonly TranslationKey[] = [
+      'notice.puzzleRoom',
+      'notice.puzzleReset',
+      'notice.puzzleSolved',
+    ];
+    for (const key of keys) {
+      expect(translationParams(en[key]), `en ${key}`).toEqual([]);
+      expect(translationParams(es[key]), `es ${key}`).toEqual([]);
+      expect(en[key]).not.toContain('{');
+      expect(es[key]).not.toContain('{');
+    }
+  });
+
+  it('reads in the Spanish overlay once the locale switches back', () => {
+    setLocale('es');
+    try {
+      expect(puzzleRoomNotice().text).toBe('Los interruptores suenan en un orden fijo.');
+      expect(puzzleResetNotice().text).toBe('Los interruptores se reinician.');
+      expect(puzzleSolvedNotice().text).toBe('¡El último interruptor encaja y algo aparece!');
+      for (const notice of [puzzleRoomNotice(), puzzleResetNotice(), puzzleSolvedNotice()]) {
+        expect(notice.text).not.toContain('\u2014');
+      }
+    } finally {
+      setLocale('en');
+    }
+  });
+
+  it('says something no other notice says', () => {
+    const others = [
+      catchToPcNotice('Sentret'),
+      itemPickupNotice('Potion'),
+      levelUpNotice('Growlithe', 21),
+      eggHatchNotice('Sentret'),
+      gateLockedNotice('bush'),
+      gateOpenedNotice(),
+      noHealRoomNotice(),
+      bannedRoomNotice('Pidgeot'),
+    ].map((notice) => notice.text);
+    for (const notice of [puzzleRoomNotice(), puzzleResetNotice(), puzzleSolvedNotice()]) {
+      expect(others).not.toContain(notice.text);
+    }
   });
 });
 

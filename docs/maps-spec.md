@@ -283,6 +283,7 @@ regular trainer to one. Their content:
 | **static** | 25 % chance, **from map 3 onward** | a leaf anywhere | one **vault** behind a bush, a rock or a pond, opened when a party member holds the seal's property (Bug or Grass, Rock or Fighting, or the pond's ability) and holding **one static species** at the squad's level, fought and caught like a wild |
 | **secret-shop** | 20 % chance, **from map 3 onward** | a leaf anywhere | one **vault** behind a bush, a rock or a pond, opened when a party member has the obstacle's **type** (Bug or Grass / Rock or Fighting / Water); behind it a **counter** whose interact key opens the Mart card on the room's **own fixed stock** — four held items and two TMs at catalogue price |
 | **banned** | 20 % chance, **from map 3 onward** | a leaf anywhere | one `blackbelt` trainer; **every battle that starts in the room** bars the party's most-used species from being sent out (`docs/battle-spec.md` §2) |
+| **puzzle** | 20 % chance, **from map 2 onward** | a leaf anywhere | a row of **switches** the interact key presses in the row's own order; a wrong press resets the sequence; the solved room pays one **ground item** |
 
 Specials count **outside** K (`K` regular rooms + the specials), are rolled on
 the same `map` stream, and are discovered like any room: they appear on the
@@ -302,7 +303,9 @@ mega-stone, casino, gated leaf, trade leaf, room id or room size moves when any 
 them shipped; the static leaf's `…:static-room` stream and then the secret-shop
 leaf's `…:secret-shop-room` stream are the **last** draws of the pass, each
 **minted** rather than taken from the `map` stream, so neither can move a floor's
-trainer roles either.
+trainer roles either. The puzzle leaf's `…:puzzle-room` draw is the special pass's
+**last** one, after the banned leaf's own minted `…:banned-room` draw, so it moves
+nothing either.
 
 Every floor is also given one **mission** (`src/data/missions.ts`,
 `src/engine/run/missions.ts`), drawn from the run seed on its own
@@ -633,6 +636,40 @@ The usage counter is the run's per-member fact (`RunPokemon.battlesUsed`, save s
 **21 → 22**): the post-battle fold bumps it for every player fighter the battle
 fielded (`BattleState.usedFighterIds`, which the battle books on send-out), and only
 those, so a bench member's counter does not move.
+
+### The puzzle room
+
+The **puzzle** leaf (`src/data/puzzles.ts`, `src/engine/routes/puzzle.ts`, `D47`'s
+room descriptor `src/scenes/rooms/puzzle.ts`) is the one special room whose content
+is a **rule the player plays** rather than a counter or a seal. It hangs off a
+regular room from **map 2 onward** with a **20%** chance, drawn **last of all** on
+its own minted `${seed}:map:<floor>:puzzle-room` stream, so no floor's topology,
+specials, room ids, sizes, roles or any earlier leaf moves because of it. Its
+content:
+
+- the room holds a row of **switches**: `PUZZLES` rows name how many (three, then
+  four from map 5 on) and the catalogue item a solve pays. The room's own layout is
+  minted by `puzzleLayout` on three streams keyed by `(seed, map, room)`: `…:row`
+  picks the row (one `int`), `…:sites` picks one **walkable, reachable** tile per
+  switch plus the reward tile — never within one step of the room's entry, so a
+  spawn can never press one — and `…:order` shuffles the slot indices into the order
+  the room must be pressed in. A fixed seed's room therefore carries the same row,
+  the same switch tiles, the same reward tile and the same order on every visit and
+  every reload.
+- the interact key on a switch **presses** it: the correct next slot advances the
+  sequence, any other press sends it back to the start (the row's own
+  `wrongResets`, `true` in both shipped rows) and floats the room's reset line; the
+  discs show the progress — resting grey until their turn, gold once pressed.
+- the completed sequence writes `puzzle-<mapIndex>-<roomId>` to the run's
+  `pickedItems`, which `advanceMap` clears, and the room then places **one ordinary
+  visible ground item** (`puzzle-loot-<mapIndex>-<roomId>`, its `itemId` the row's
+  reward) on the room's reward tile. A revisit and a reload re-read that mark: the
+  room shows no switches, and the item stands there until it is collected. Nothing
+  in the grid, the trainers or the loot tables moves, and **no run field and no save
+  step** is added.
+- the progress of one visit lives in the descriptor's own module state, never in the
+  run: leaving the room forgets a half-pressed sequence, and the **solve** is the
+  only fact that survives it.
 
 ### The casino (the slot machine)
 

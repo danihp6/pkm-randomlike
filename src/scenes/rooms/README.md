@@ -42,6 +42,13 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
 - `banned.test.ts` - the room's own surface: the barred species in the notice, the
   trainer's id, tile and archetype, the defeated and no-free-tile cases and the
   crossed marker.
+- `puzzle.ts` - the puzzle room: its row of switch discs, the per-room progress the
+  descriptor keeps (the interact key presses them in the room's own order, a wrong
+  press resetting it), the ground item it places on the reward tile once the run's
+  mark says solved, and its own striped marker.
+- `puzzle.test.ts` - the room's own surface: the entry notice, the reward item and
+  its tile, the presses that advance, reset and solve, the discs a solved room does
+  not draw and the marker.
 - `staticSpecies.ts` — the static-species room: the seal that opens its vault (a
   party type, or an ability for the pond), the blocking species behind it and the
   wild battle it starts, plus its legendary variant's entry line and its gold-ring
