@@ -541,3 +541,21 @@ at once (`DOUBLE_ACTIVES = 2`, `src/data/bosses.ts`). The engine half is the
 - **Out of scope.** Full Showdown doubles: friend guard, Helping Hand, redirection,
   spread damage reduction, per-slot side conditions and two Megas or two
   Gigantamaxes.
+
+The **screen** reads one flag and adds no rule: `BattleLaunch.double` (`true` only
+for a launch whose room is the boss's) rides into `createBattle({ ..., double })`,
+and everything the battle draws follows the engine's own answers. Both actives of a
+side are on screen — two enemy sprites on the foe platform, two enemy HP windows
+side by side and two player windows stacked, the second of each pair mirroring the
+shipped panel's construction — and slot 1's window and sprite are simply hidden when
+`secondActiveIndex` is `-1`, so a one-member party on the same boss degrades to the
+shipped single layout. The turn is collected in **slot order** (slot 1 first, its
+menu offering FIGHT and SWITCH only, since the Bag and RUN are side-level), and a
+single-target damaging move opens a **target step** that marks one live opposing
+slot with the shipped cursor before `confirm` submits
+`target: { side: 'enemy', slot }`; a spread, status or self move submits with no
+target, as it always has. `takeDoubleTurn` resolves the two player commands and one
+`chooseAiCommand(…, { slot })` per standing enemy slot in a double battle, and
+`takeTurn` stays the single battle's own call, so no seed, stream or key moves and a
+single battle's screen, log and return are unchanged.
+

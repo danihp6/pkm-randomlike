@@ -169,4 +169,25 @@ describe('entryBeat', () => {
       ENTRY_SENDOUT_MS,
     ]);
   });
+
+  it('appends exactly one send-out at the end for a double battle', () => {
+    for (const kind of ['wild', 'trainer'] as const) {
+      for (const reducedFlash of [false, true]) {
+        const single = entryBeat(kind, reducedFlash);
+        const doubles = entryBeat(kind, reducedFlash, true);
+        expect(doubles).toEqual([...single, { kind: 'sendout', ms: ENTRY_SENDOUT_MS }]);
+        expect(doubles).toHaveLength(single.length + 1);
+      }
+    }
+  });
+
+  it('reads the single list when the double flag is false or absent', () => {
+    expect(entryBeat('trainer', false, false)).toEqual(entryBeat('trainer', false));
+    expect(entryBeat('trainer', false, undefined)).toEqual(entryBeat('trainer', false));
+    expect(entryBeat('wild', true, false)).toEqual(entryBeat('wild', true));
+  });
+
+  it('defaults the double flag to false', () => {
+    expect(entryBeat.length).toBe(2);
+  });
 });

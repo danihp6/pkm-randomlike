@@ -78,6 +78,12 @@ export type BattleLaunch = Readonly<{
   enemyBoosts?: Partial<Record<BoostId, number>>;
   /** The run's most-used species the room bars, or null/absent (Task-101). */
   bannedSpecies?: string | null;
+  /**
+   * The boss's fight fields **two actives per side** (`[Task-107]`'s engine rule,
+   * `[Task-108]`'s screen). Absent or `false` is every other battle: one active,
+   * the shipped layout and the shipped command flow. Default `false`.
+   */
+  double?: boolean;
 }>;
 
 export type BattleOutcome = 'win' | 'lose' | 'run' | 'capture';

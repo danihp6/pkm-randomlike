@@ -294,6 +294,22 @@ Full rules in `docs/battle-spec.md`. In short:
   so the field stays readable
   through it, and they ink their text with the light `FRLG_INK`.
 
+- The map boss's battle — and only it — is the engine's **double battle** on
+  screen (`docs/battle-spec.md` §12): two actives per side, so the foe's platform
+  carries **two** enemy sprites with **two** HP windows above them and the player's
+  side shows **two** panels stacked, the second beside the shipped one (or above it
+  when the field has no room below), drawn with the shipped panel and sprite
+  construction. Both leads are commanded: slot 1 first with **FIGHT** and
+  **SWITCH** only (the Bag and RUN stay the lead's side-level actions), then slot 0
+  with the full four rows, and both commands resolve in one turn in Speed order. A
+  single-target damaging move adds a **target step** after the move grid — the
+  shipped ▶ cursor marks one live foe and `left`/`right` (or a click on either foe)
+  move it before `confirm` sends the legal `target` command; a spread or status move
+  submits as it always has, with no cursor. The entry beat sends the second lead out
+  after the first (one extra `sendout`), and a wild battle, a regular trainer, the
+  mini-boss and every special room's set piece keep the shipped one-active screen,
+  command flow and beat.
+
 ## 5. The route
 
 - Classic overworld movement on a tile grid, 24x24 tiles, camera follows.

@@ -11,12 +11,13 @@ import {
   type PokemonSpriteKind,
   type PokemonSpriteSheet,
 } from '../data/pokemonSprites';
-import { getTrainerArchetype } from '../data/trainers';
+import { getTrainerArchetype, type AiFlag } from '../data/trainers';
 import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
 import {
   barredMovesFor,
   legalMoveIndices,
   switchablePartyIndices,
+  withLeadSlot,
   type Command,
 } from '../engine/battle/commands';
 import {
@@ -37,11 +38,15 @@ import {
   autoReplace,
   canMegaEvolve,
   createBattle,
+  liveSlots,
   needsReplacement,
   performSwitch,
+  takeDoubleTurn,
   takeTurn,
   type BattleState,
   type SideId,
+  type Slot,
+  type SlotCommands,
 } from '../engine/battle';
 import { Rng } from '../engine/rng';
 import { battlefieldSeeds } from '../engine/routes/battlefield';
@@ -125,7 +130,7 @@ import {
 } from '../ui/partyDetail';
 import { MoveGrid, moveInfoContent, padMoveGridCells, type MoveGridCell } from '../ui/moveGrid';
 import { battleInfoLines, battleInfoRows } from '../ui/battleInfo';
-import { fitPartyLabel, partyGridLayout } from '../ui/partyGrid';
+import { fitPartyLabel, partyGridFieldRows, partyGridLayout } from '../ui/partyGrid';
 import {
   AbilityInfoButton,
   ABILITY_INFO_SIZE,
@@ -150,6 +155,19 @@ const PLAYER_PANEL_W = 320;
 /** Tall enough for the padded name row, the types band and the bar; the foe's height. */
 const PLAYER_PANEL_H = 150;
 const FOE_PANEL = { w: PANEL_W, h: 150 } as const;
+/**
+ * A double battle draws a second window per side: the gap between the pair, how
+ * far each enemy sprite stands from the foe platform's centre, and the clearance
+ * the stacked player window keeps from the battle square's edge.
+ */
+const SLOT_PANEL_GAP = 12;
+const FOE_PLATFORM_SPREAD = 96;
+const SLOT_PANEL_EDGE = 8;
+/**
+ * The dex targets that skip the target step: they already hit every adjacent slot,
+ * so asking which one would be a lie.
+ */
+const SPREAD_TARGETS: ReadonlySet<string> = new Set(['allAdjacentFoes', 'allAdjacent', 'all']);
 /** The name row's height inside an HP panel, above the types band. */
 const PANEL_NAME_H = 32;
 /** How much bigger than the atlas frame a panel's type badge draws. */
@@ -271,10 +289,27 @@ function capitalize(text: string): string {
   return text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
 }
 
-type Mode = 'entry' | 'feed' | 'menu' | 'moves' | 'bag' | 'party' | 'over' | 'info';
+type Mode =
+  'entry' | 'feed' | 'menu' | 'partner' | 'moves' | 'target' | 'bag' | 'party' | 'over' | 'info';
 
 /** A sprite beat that owns the mon's position/scale until it completes. */
 type BeatKind = 'faint' | 'switch';
+
+/**
+ * The objects one HP window draws into: a side's slot 0 uses the shipped set and
+ * slot 1 its own, built the same way, so `drawPanel` paints both identically.
+ */
+type PanelKit = Readonly<{
+  panel: Phaser.GameObjects.NineSlice;
+  nameText: Phaser.GameObjects.BitmapText;
+  statText: Phaser.GameObjects.BitmapText;
+  statusText: Phaser.GameObjects.BitmapText;
+  statusBadge: Phaser.GameObjects.Image;
+  typeBadges: readonly Phaser.GameObjects.Image[];
+  typeChipBgs: readonly Phaser.GameObjects.Rectangle[];
+  typeChips: readonly Phaser.GameObjects.BitmapText[];
+  hpBar: { fill: Phaser.GameObjects.Rectangle; bar: Phaser.GameObjects.Image };
+}>;
 
 /** Extra data a move grid cell draws: type, category, PP, power, accuracy, description. */
 type MenuMove = Readonly<{
@@ -340,6 +375,24 @@ export class BattleScene extends Phaser.Scene {
   private displayActive!: Record<SideId, BattleFighter>;
   private displayHp!: Record<SideId, number>;
   private displayStatus!: Record<SideId, StatusId | null>;
+  /**
+   * Slot 1's display snapshots, read per side: `null` in a single battle or on a
+   * side with an empty second slot. `displayActive`/`displayHp`/`displayStatus`
+   * keep meaning slot 0, so every shipped single-battle path reads what it did.
+   */
+  private displayActive2: Record<SideId, BattleFighter | null> = { player: null, enemy: null };
+  private displayHp2: Record<SideId, number | null> = { player: null, enemy: null };
+  private displayStatus2: Record<SideId, StatusId | null> = { player: null, enemy: null };
+  /** True once this battle's launch asked for a double battle (`BattleLaunch.double`). */
+  private double = false;
+  /** The slot whose command the open menu is collecting (0 outside a double battle). */
+  private commandSlot: Slot = 0;
+  /** Slot 1's command while slot 0 is being chosen (`null` outside a double battle). */
+  private partnerCommand: Command | null = null;
+  /** The foe slot the target step is pointing at, or null while it is closed. */
+  private targetSlot: 0 | 1 | null = null;
+  /** The move index the target step is submitting, while it is open. */
+  private targetMoveIndex: number | null = null;
   /** Battle-sheet frame for the enemy trainer, or null for a wild battle. */
   private trainerFrame: number | null = null;
   /** The last ball thrown, so the capture beat can reuse its icon. */
@@ -350,6 +403,12 @@ export class BattleScene extends Phaser.Scene {
   private beat: Partial<Record<SideId, BeatKind | null>> = {};
   private foeMonPos = { x: 0, y: 0 };
   private playerMonPos = { x: 0, y: 0 };
+  /** The same double-battle state for the second slot, which draws its own sprites. */
+  private beat2: Partial<Record<SideId, BeatKind | null>> = {};
+  private foeMonPos2 = { x: 0, y: 0 };
+  private playerMonPos2 = { x: 0, y: 0 };
+  /** The index of the entry step that sends the second lead out, or -1. */
+  private entryPartnerStep = -1;
   /** The fighters the battle launched with, so `preload` knows which sheets to load. */
   private playerFighters: BattleFighter[] = [];
   private enemyFighters: BattleFighter[] = [];
@@ -359,6 +418,13 @@ export class BattleScene extends Phaser.Scene {
   private monSizeCap: Record<SideId, number> = { player: SPRITE_SIZE_MAX, enemy: SPRITE_SIZE_MAX };
   /** The drawn height each side's sprite ended up at, so its platform can match. */
   private monDrawHeight: Record<SideId, number> = { player: SPRITE_SIZE_MAX, enemy: SPRITE_SIZE_MAX };
+  /** Slot 1's own scale, cap and drawn height, kept apart from slot 0's. */
+  private monScale2: Record<SideId, number> = { player: MON_SCALE, enemy: MON_SCALE };
+  private monSizeCap2: Record<SideId, number> = { player: SPRITE_SIZE_MAX, enemy: SPRITE_SIZE_MAX };
+  private monDrawHeight2: Record<SideId, number> = {
+    player: SPRITE_SIZE_MAX,
+    enemy: SPRITE_SIZE_MAX,
+  };
   /** 1 on the desktop layout, `COMPACT_MON_SCALE` on the phone layout. */
   private monScaleFactor = 1;
   /** The sheets this battle loaded, dropped on shutdown so the texture cache cannot grow forever. */
@@ -418,6 +484,18 @@ export class BattleScene extends Phaser.Scene {
   private typeChips!: Record<SideId, Phaser.GameObjects.BitmapText[]>;
   private playerSprite!: Phaser.GameObjects.Sprite;
   private foeSprite!: Phaser.GameObjects.Sprite;
+  /** The second slot's sprites: hidden in a single battle, drawn on the same field. */
+  private playerSprite2!: Phaser.GameObjects.Sprite;
+  private foeSprite2!: Phaser.GameObjects.Sprite;
+  /** The second foe window, beside the shipped one above the foe platform. */
+  private foePanel2!: Phaser.GameObjects.NineSlice;
+  /** The second player window, stacked with the shipped one. */
+  private playerPanel2!: Phaser.GameObjects.NineSlice;
+  /** The objects each HP window paints into: slot 0's shipped set and slot 1's own. */
+  private panelKits!: Record<SideId, readonly [PanelKit, PanelKit]>;
+  /** The cursor the target step marks a foe with, and the two foe hit zones. */
+  private targetCursor!: Phaser.GameObjects.Image;
+  private foeZones: Phaser.GameObjects.Zone[] = [];
   private foeTrainer!: Phaser.GameObjects.Image;
   private moveFxSprite!: Phaser.GameObjects.Sprite;
   private captureBall!: Phaser.GameObjects.Image;
@@ -518,6 +596,16 @@ export class BattleScene extends Phaser.Scene {
     this.partyMoveInfo = null;
     this.partyMoveInfoPinned = false;
     this.partyMoveInfoMember = null;
+    this.double = data?.double === true;
+    this.displayActive2 = { player: null, enemy: null };
+    this.displayHp2 = { player: null, enemy: null };
+    this.displayStatus2 = { player: null, enemy: null };
+    this.commandSlot = 0;
+    this.partnerCommand = null;
+    this.targetSlot = null;
+    this.targetMoveIndex = null;
+    this.beat2 = {};
+    this.entryPartnerStep = -1;
     const launch = this.launch;
     if (!launch) return;
     // The fighters are built here rather than in `create` so `preload` can load
@@ -572,6 +660,7 @@ export class BattleScene extends Phaser.Scene {
       noFlee: launch.noFlee === true,
       bannedSpecies: launch.bannedSpecies ?? null,
       ...(launch.enemyBoosts ? { enemyBoosts: launch.enemyBoosts } : {}),
+      double: this.double,
     });
 
     this.displayActive = {
@@ -582,6 +671,20 @@ export class BattleScene extends Phaser.Scene {
     this.displayStatus = {
       player: this.displayActive.player.status,
       enemy: this.displayActive.enemy.status,
+    };
+    // Slot 1 exists only while the engine fields it: a one-member party on a
+    // double launch answers `secondActiveIndex === -1` and the scene draws one panel.
+    this.displayActive2 = {
+      player: this.slotFighter('player', 1),
+      enemy: this.slotFighter('enemy', 1),
+    };
+    this.displayHp2 = {
+      player: this.displayActive2.player?.hp ?? null,
+      enemy: this.displayActive2.enemy?.hp ?? null,
+    };
+    this.displayStatus2 = {
+      player: this.displayActive2.player?.status ?? null,
+      enemy: this.displayActive2.enemy?.status ?? null,
     };
     this.typing = beginTypewriter('');
     const settings = loadSettings();
@@ -625,6 +728,14 @@ export class BattleScene extends Phaser.Scene {
     this.playerPlatform = this.add.image(0, 0, BATTLE_PLATFORM_TEXTURE_KEY).setTint(0x6f8f5f);
     this.foeSprite = this.add.sprite(0, 0, BATTLE_MON_TEXTURE_KEY).setScale(MON_SCALE);
     this.playerSprite = this.add.sprite(0, 0, BATTLE_MON_TEXTURE_KEY).setScale(MON_SCALE);
+    this.foeSprite2 = this.add
+      .sprite(0, 0, BATTLE_MON_TEXTURE_KEY)
+      .setScale(MON_SCALE)
+      .setVisible(false);
+    this.playerSprite2 = this.add
+      .sprite(0, 0, BATTLE_MON_TEXTURE_KEY)
+      .setScale(MON_SCALE)
+      .setVisible(false);
 
     this.foeTrainer = this.add
       .image(0, 0, TRAINER_SPRITE_TEXTURE_KEY, this.trainerFrame ?? 0)
@@ -644,6 +755,10 @@ export class BattleScene extends Phaser.Scene {
     // FRLG window chrome, behind the gauges and text the shared Graphics draws.
     this.foePanel = addFrlgWindow(this, 0, 0, FOE_PANEL.w, FOE_PANEL.h);
     this.playerPanel = addFrlgWindow(this, 0, 0, PLAYER_PANEL_W, PLAYER_PANEL_H);
+    // A double battle's second window per side. They are built here, before the
+    // shared Graphics, so their HUD marks land above the card exactly as slot 0's.
+    this.foePanel2 = addFrlgWindow(this, 0, 0, FOE_PANEL.w, FOE_PANEL.h).setVisible(false);
+    this.playerPanel2 = addFrlgWindow(this, 0, 0, PLAYER_PANEL_W, PLAYER_PANEL_H).setVisible(false);
     this.messagePanel = addFrlgWindow(this, 0, 0, 100, 100, 'textbox');
     this.menuPanel = addFrlgWindow(this, 0, 0, MENU_W, 100);
     this.commandCells = Array.from({ length: MENU_ROWS }, () =>
@@ -670,6 +785,20 @@ export class BattleScene extends Phaser.Scene {
     this.backZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     this.backZone.setData('back', true);
     this.backZone.on('pointerdown', () => this.onBack());
+
+    // The target step's cursor and the two foe hit zones: the cursor is placed on
+    // whichever live slot the step points at, and a press on either foe picks it.
+    // Both stay invisible and inert outside the step, so a click on a foe during
+    // the feed still advances it.
+    this.targetCursor = this.add.image(0, 0, FRLG_CURSOR_KEY).setOrigin(0, 0.5).setVisible(false);
+    this.foeZones = [0, 1].map((slot) => {
+      const zone = this.add.zone(0, 0, 10, 10).setOrigin(0.5);
+      zone.setData('slot', slot);
+      zone.setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => this.onFoeClick(slot === 1 ? 1 : 0));
+      if (zone.input) zone.input.enabled = false;
+      return zone;
+    });
 
     // The MEGA control in the moves menu: a cell, the Mega Evolution glyph and a
     // hit zone. The glyph is the shipped Hard Stone frame — the icon every Mega
@@ -785,6 +914,66 @@ export class BattleScene extends Phaser.Scene {
     this.typeBadges = { enemy: typeBadgeRow(), player: typeBadgeRow() };
     this.typeChipBgs = { enemy: typeChipBoxRow(), player: typeChipBoxRow() };
     this.typeChips = { enemy: typeChipLabelRow(), player: typeChipLabelRow() };
+
+    // Slot 1's window content, built exactly like slot 0's and hidden until a
+    // double battle draws it. `drawPanel` paints either kit, so the two windows
+    // can never drift apart.
+    const secondKit = (side: SideId): PanelKit => {
+      const hpBar = addFrlgHpBar(this, 0, 0);
+      hpBar.bar.setVisible(false);
+      hpBar.fill.setVisible(false);
+      return {
+        panel: side === 'enemy' ? this.foePanel2 : this.playerPanel2,
+        nameText: addFrlgText(this, 0, 0, '', { tint: FRLG_INK }).setVisible(false),
+        statText: addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [1, 0] }).setVisible(
+          false,
+        ),
+        statusText: addFrlgText(this, 0, 0, '', {
+          size: 16,
+          tint: FRLG_INK,
+          origin: 0.5,
+        }).setVisible(false),
+        statusBadge: this.add
+          .image(0, 0, STATUS_ICON_TEXTURE_KEY, 0)
+          .setOrigin(0, 0)
+          .setScale(1.5)
+          .setVisible(false),
+        typeBadges: typeBadgeRow(),
+        typeChipBgs: typeChipBoxRow(),
+        typeChips: typeChipLabelRow(),
+        hpBar,
+      };
+    };
+    this.panelKits = {
+      enemy: [
+        {
+          panel: this.foePanel,
+          nameText: this.nameText.enemy,
+          statText: this.statText.enemy,
+          statusText: this.statusText.enemy,
+          statusBadge: this.statusBadges.enemy,
+          typeBadges: this.typeBadges.enemy,
+          typeChipBgs: this.typeChipBgs.enemy,
+          typeChips: this.typeChips.enemy,
+          hpBar: this.hpBars.enemy,
+        },
+        secondKit('enemy'),
+      ],
+      player: [
+        {
+          panel: this.playerPanel,
+          nameText: this.nameText.player,
+          statText: this.statText.player,
+          statusText: this.statusText.player,
+          statusBadge: this.statusBadges.player,
+          typeBadges: this.typeBadges.player,
+          typeChipBgs: this.typeChipBgs.player,
+          typeChips: this.typeChips.player,
+          hpBar: this.hpBars.player,
+        },
+        secondKit('player'),
+      ],
+    };
 
     this.messageText = addFrlgText(this, 0, 0, '', { tint: FRLG_INK, lineSpacing: 4 });
 
@@ -1094,6 +1283,10 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
     if (objects.length > 0) return;
+    if (this.mode === 'target') {
+      this.confirmTarget();
+      return;
+    }
     if (this.mode === 'feed') {
       this.onConfirm();
       return;
@@ -1108,6 +1301,10 @@ export class BattleScene extends Phaser.Scene {
   private onConfirm(): void {
     if (this.mode === 'entry') {
       this.finishEntry();
+      return;
+    }
+    if (this.mode === 'target') {
+      this.confirmTarget();
       return;
     }
     if (this.mode === 'feed') {
@@ -1135,6 +1332,11 @@ export class BattleScene extends Phaser.Scene {
       this.finishEntry();
       return;
     }
+    if (this.mode === 'target') {
+      // Back to the move grid with nothing submitted.
+      this.openMoves(this.commandSlot);
+      return;
+    }
     if (this.mode === 'over') {
       this.returnToRoute();
       return;
@@ -1155,14 +1357,19 @@ export class BattleScene extends Phaser.Scene {
    * plays step 0, whose fade is what covers the route-to-battle cut.
    */
   private startEntry(kind: EntryKind): void {
-    this.entrySteps = entryBeat(kind, this.reducedFlash);
+    this.entrySteps = entryBeat(kind, this.reducedFlash, this.double);
     this.entryIndex = 0;
     this.entryTimer = null;
     this.mode = 'entry';
+    // A double battle sends the second lead out on the beat's last step, so that
+    // step animates the player's partner instead of the foe.
+    this.entryPartnerStep = this.double ? this.entrySteps.length - 1 : -1;
     this.refreshHud();
     if (this.entrySteps.some((step) => step.kind === 'foe-appear' || step.kind === 'sendout')) {
       this.foeSprite.setAlpha(0);
+      if (this.displayActive2.enemy) this.foeSprite2.setAlpha(0);
     }
+    if (this.entryPartnerStep >= 0) this.playerSprite2.setAlpha(0);
     if (this.entrySteps.some((step) => step.kind === 'trainer-appear')) {
       this.foeTrainer.setAlpha(0);
     }
@@ -1184,7 +1391,16 @@ export class BattleScene extends Phaser.Scene {
         break;
       case 'foe-appear':
       case 'sendout':
+        if (this.entryIndex === this.entryPartnerStep) {
+          if (this.displayActive2.player) {
+            this.appearSprite(this.playerSprite2, step.ms, 0, -ENTRY_FOE_DROP);
+          }
+          break;
+        }
         this.appearSprite(this.foeSprite, step.ms, 0, -ENTRY_FOE_DROP);
+        if (this.displayActive2.enemy) {
+          this.appearSprite(this.foeSprite2, step.ms, 0, -ENTRY_FOE_DROP);
+        }
         this.playEntryCry();
         break;
       case 'trainer-appear':
@@ -1222,8 +1438,15 @@ export class BattleScene extends Phaser.Scene {
     this.cameras.main.resetFX();
     this.foeSprite.setAlpha(1);
     this.foeTrainer.setAlpha(1);
+    if (this.double) {
+      this.tweens.killTweensOf(this.foeSprite2);
+      this.tweens.killTweensOf(this.playerSprite2);
+      this.foeSprite2.setAlpha(1);
+      this.playerSprite2.setAlpha(1);
+    }
     this.entryIndex = 0;
     this.entrySteps = [];
+    this.entryPartnerStep = -1;
     this.refreshHud();
     this.startFeed();
   }
@@ -1307,48 +1530,64 @@ export class BattleScene extends Phaser.Scene {
     for (const event of events) {
       switch (event.kind) {
         case 'damage':
-        case 'heal':
-          this.displayHp[event.side] = event.hp;
-          break;
-        case 'status':
-          this.displayStatus[event.side] = event.status;
-          break;
-        case 'cure':
-          this.displayStatus[event.side] = null;
-          break;
-        case 'switch': {
-          const down = this.displayHp[event.side] <= 0;
-          const fighter = this.state.sides[event.side].party.find((p) => p.id === event.fighterId);
-          if (fighter) {
-            this.displayActive[event.side] = fighter;
-            this.displayHp[event.side] = fighter.hp;
-            this.displayStatus[event.side] = fighter.status;
-          }
-          this.playSwitch(event.side, down);
+        case 'heal': {
+          // The event names no slot: the HP arithmetic against what each slot
+          // already shows is what tells the two apart, since the engine's `amount`
+          // is exactly the HP the slot lost or regained.
+          const slot = this.hpEventSlot(
+            event.side,
+            event.amount,
+            event.hp,
+            event.maxHp,
+            event.kind === 'heal',
+          );
+          this.setDisplayHp(event.side, slot, event.hp);
           break;
         }
-        case 'faint':
+        case 'status':
+          this.setDisplayStatus(
+            event.side,
+            this.statusEventSlot(event.side, event.status, false),
+            event.status,
+          );
+          break;
+        case 'cure':
+          this.setDisplayStatus(event.side, this.statusEventSlot(event.side, event.status, true), null);
+          break;
+        case 'switch': {
+          const slot = this.fighterSlot(event.side, event.fighterId);
+          const previous = this.displayHpAt(event.side, slot);
+          const fighter = this.state.sides[event.side].party.find((p) => p.id === event.fighterId);
+          if (fighter) {
+            this.setDisplayActive(event.side, slot, fighter);
+          }
+          this.playSwitch(event.side, previous !== null && previous <= 0, slot);
+          break;
+        }
+        case 'faint': {
           if (!faintPlayed) {
             faintPlayed = true;
             playCue(this, 'faint');
           }
-          this.displayHp[event.side] = 0;
-          this.playFaint(event.side);
+          const slot = this.fighterSlot(event.side, event.fighterId);
+          this.setDisplayHp(event.side, slot, 0);
+          this.playFaint(event.side, slot);
           break;
+        }
         case 'move':
           this.playMoveFx(event.side, event.moveId);
           playMoveSound(this, event.moveId);
           break;
         case 'mega':
-          this.playMega(event.side);
+          this.playMega(event.side, this.fighterSlot(event.side, event.fighterId));
           break;
         case 'gmax':
-          this.playGmax(event.side);
+          this.playGmax(event.side, this.fighterSlot(event.side, event.fighterId));
           break;
         case 'forme': {
           const fighter = this.state.sides[event.side].party.find((p) => p.id === event.fighterId);
           if (fighter) {
-            this.displayActive[event.side] = fighter;
+            this.setDisplayFighter(event.side, this.fighterSlot(event.side, event.fighterId), fighter);
             this.syncMonSprites();
           }
           break;
@@ -1362,25 +1601,94 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  /** The slot a fighter fills on its side; a fighter off the field reads as slot 0. */
+  private fighterSlot(side: SideId, fighterId: string): Slot {
+    const battleSide = this.state.sides[side];
+    const index = battleSide.party.findIndex((fighter) => fighter.id === fighterId);
+    return index >= 0 && index === battleSide.secondActiveIndex ? 1 : 0;
+  }
+
+  /** The HP a slot is showing, or null when the side does not field it. */
+  private displayHpAt(side: SideId, slot: Slot): number | null {
+    return slot === 0 ? this.displayHp[side] : this.displayHp2[side];
+  }
+
+  private setDisplayHp(side: SideId, slot: Slot, hp: number): void {
+    if (slot === 0) this.displayHp[side] = hp;
+    else this.displayHp2[side] = hp;
+  }
+
+  private setDisplayStatus(side: SideId, slot: Slot, status: StatusId | null): void {
+    if (slot === 0) this.displayStatus[side] = status;
+    else this.displayStatus2[side] = status;
+  }
+
+  /** Points a slot at a fighter and refreshes what it shows (a switch-in). */
+  private setDisplayActive(side: SideId, slot: Slot, fighter: BattleFighter): void {
+    if (slot === 0) this.displayActive[side] = fighter;
+    else this.displayActive2[side] = fighter;
+    this.setDisplayHp(side, slot, fighter.hp);
+    this.setDisplayStatus(side, slot, fighter.status);
+  }
+
+  /** Points a slot at a fighter without touching its HP or status (a forme change). */
+  private setDisplayFighter(side: SideId, slot: Slot, fighter: BattleFighter): void {
+    if (slot === 0) this.displayActive[side] = fighter;
+    else this.displayActive2[side] = fighter;
+  }
+
+  /**
+   * Which slot a damage/heal event belongs to. It carries no slot, so the slot
+   * whose displayed HP moves by exactly `amount` onto `hp` is the one; when both
+   * read alike, the event's `maxHp` separates them, and slot 0 wins the leftover
+   * ambiguity, as it does in every single battle.
+   */
+  private hpEventSlot(side: SideId, amount: number, hp: number, maxHp: number, healed: boolean): Slot {
+    const shown = this.displayHp2[side];
+    if (shown === null) return 0;
+    const delta = healed ? amount : -amount;
+    const firstMatch = this.displayHp[side] + delta === hp;
+    const secondMatch = shown + delta === hp;
+    if (firstMatch !== secondMatch) return secondMatch ? 1 : 0;
+    const active2 = this.displayActive2[side];
+    if (active2 && active2.maxHp === maxHp && this.displayActive[side].maxHp !== maxHp) return 1;
+    return 0;
+  }
+
+  /**
+   * Which slot a status/cure event belongs to: it names no slot either, so the
+   * live fighter that carries (or no longer carries) the status decides, and slot 0
+   * keeps every ambiguous case.
+   */
+  private statusEventSlot(side: SideId, status: StatusId, cured: boolean): Slot {
+    const fighter2 = this.slotFighter(side, 1);
+    if (!fighter2) return 0;
+    const shown2 = this.displayStatus2[side];
+    const atSlot2 = cured
+      ? shown2 === status && fighter2.status !== status
+      : this.displayStatus[side] !== status && fighter2.status === status;
+    return atSlot2 ? 1 : 0;
+  }
+
   // --- battle presentation --------------------------------------------------
 
   /** A white flash and a fade-in for the side that just Mega Evolved (D34). */
-  private playMega(side: SideId): void {
+  private playMega(side: SideId, slot: Slot = 0): void {
     if (!this.reducedFlash) this.cameras.main.flash(220, 255, 255, 255);
-    const sprite = side === 'player' ? this.playerSprite : this.foeSprite;
+    const sprite = this.monSprite(side, slot);
     sprite.setAlpha(0.2);
     this.tweens.add({ targets: sprite, alpha: 1, duration: 280 });
-    this.displayActive[side] = activeFighter(this.state, side);
+    this.setDisplayFighter(side, slot, activeFighter(this.state, side, slot));
     this.syncMonSprites();
   }
 
   /** The same beat in G-Max red for the side that just Gigantamaxed (D44). */
-  private playGmax(side: SideId): void {
+  private playGmax(side: SideId, slot: Slot = 0): void {
     if (!this.reducedFlash) this.cameras.main.flash(220, 255, 96, 96);
-    const sprite = side === 'player' ? this.playerSprite : this.foeSprite;
+    const sprite = this.monSprite(side, slot);
     sprite.setAlpha(0.2);
     this.tweens.add({ targets: sprite, alpha: 1, duration: 280 });
-    this.displayActive[side] = activeFighter(this.state, side);
+    this.setDisplayFighter(side, slot, activeFighter(this.state, side, slot));
     this.syncMonSprites();
   }
 
@@ -1439,9 +1747,14 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  /** The sprite a side is drawn with; both share the placeholder mon until O1. */
-  private monSprite(side: SideId): Phaser.GameObjects.Sprite {
-    return side === 'player' ? this.playerSprite : this.foeSprite;
+  /**
+   * The sprite a side draws with: slot 0's shipped sprite or seat 1's own. Both
+   * share the placeholder mon until O1, and a double battle's second active draws
+   * with the shipped back/front sheet of its own species (no new art).
+   */
+  private monSprite(side: SideId, slot: Slot = 0): Phaser.GameObjects.Sprite {
+    if (side === 'player') return slot === 0 ? this.playerSprite : this.playerSprite2;
+    return slot === 0 ? this.foeSprite : this.foeSprite2;
   }
 
   /** Every sheet this battle draws: the foe's front, the party's back. */
@@ -1494,36 +1807,47 @@ export class BattleScene extends Phaser.Scene {
   private syncMonSprites(): void {
     this.showMon('enemy', this.displayActive.enemy, 'front');
     this.showMon('player', this.displayActive.player, 'back');
+    const enemy2 = this.displayActive2.enemy;
+    if (enemy2) this.showMon('enemy', enemy2, 'front', 1);
+    const player2 = this.displayActive2.player;
+    if (player2) this.showMon('player', player2, 'back', 1);
   }
 
   /**
    * Points a side's sprite at its sheet and plays the idle loop. Only a real
    * change touches the sprite, so a switch beat's tween is never fought over and
-   * a mid-loop refresh does not restart the animation.
+   * a mid-loop refresh does not restart the animation. Slot 1 keeps its own scale,
+   * cap and drawn height, so neither slot's sizing moves the other's.
    */
-  private showMon(side: SideId, fighter: BattleFighter, kind: PokemonSpriteKind): void {
+  private showMon(side: SideId, fighter: BattleFighter, kind: PokemonSpriteKind, slot: Slot = 0): void {
     const sheet = pokemonSprite(fighter.speciesId, kind, {
       shiny: fighter.shiny,
       female: fighter.gender === 'female',
     });
     if (!sheet) return;
-    const sprite = this.monSprite(side);
+    const sprite = this.monSprite(side, slot);
     const anim = pokemonIdleAnimKey(sheet);
     const content = this.sheetContent(sheet);
-    const target =
-      Math.min(battleSpriteHeight(heightOf(fighter.speciesId)), this.monSizeCap[side]) *
-      this.monScaleFactor;
-    this.monScale[side] = target / (content?.height ?? sheet.size);
-    this.monDrawHeight[side] = target;
+    const cap = slot === 0 ? this.monSizeCap[side] : this.monSizeCap2[side];
+    const target = Math.min(battleSpriteHeight(heightOf(fighter.speciesId)), cap) * this.monScaleFactor;
+    const scale = target / (content?.height ?? sheet.size);
+    if (slot === 0) {
+      this.monScale[side] = scale;
+      this.monDrawHeight[side] = target;
+    } else {
+      this.monScale2[side] = scale;
+      this.monDrawHeight2[side] = target;
+    }
+    const beat = slot === 0 ? this.beat[side] : this.beat2[side];
     const sameSheet = sprite.texture.key === sheet.textureKey && sprite.anims.currentAnim?.key === anim;
     if (sameSheet) {
       // A live faint/switch beat owns the sprite; otherwise a resize just retargets it.
-      if (!this.beat[side]) sprite.setScale(this.monScale[side]);
+      if (!beat) sprite.setScale(scale);
       return;
     }
     if (content) sprite.setOrigin(content.anchorX / sheet.size, content.anchorY / sheet.size);
     else sprite.setOrigin(0.5, 0.5);
-    sprite.setTexture(sheet.textureKey, 0).setScale(this.monScale[side]);
+    sprite.setTexture(sheet.textureKey, 0).setScale(scale);
     sprite.play(anim);
   }
 
@@ -1533,16 +1857,17 @@ export class BattleScene extends Phaser.Scene {
     return spriteContentBounds(sheet.textureKey, source as CanvasImageSource, sheet.size, sheet.frames);
   }
 
-  private monPos(side: SideId): { x: number; y: number } {
-    return side === 'player' ? this.playerMonPos : this.foeMonPos;
+  private monPos(side: SideId, slot: Slot = 0): { x: number; y: number } {
+    if (side === 'player') return slot === 0 ? this.playerMonPos : this.playerMonPos2;
+    return slot === 0 ? this.foeMonPos : this.foeMonPos2;
   }
 
   /** The defeated sprite sinks under its platform and fades, then the HUD hides it. */
-  private playFaint(side: SideId): void {
-    const sprite = this.monSprite(side);
+  private playFaint(side: SideId, slot: Slot = 0): void {
+    const sprite = this.monSprite(side, slot);
     if (!sprite.visible) return;
-    const base = this.monPos(side);
-    this.beat[side] = 'faint';
+    const base = this.monPos(side, slot);
+    this.setBeat(side, slot, 'faint');
     this.tweens.killTweensOf(sprite);
     this.tweens.add({
       targets: sprite,
@@ -1551,7 +1876,7 @@ export class BattleScene extends Phaser.Scene {
       duration: FAINT_MS,
       ease: 'Quad.easeIn',
       onComplete: () => {
-        this.beat[side] = null;
+        this.setBeat(side, slot, null);
         sprite.setAlpha(1).setPosition(base.x, base.y);
         this.refreshHud();
       },
@@ -1562,11 +1887,11 @@ export class BattleScene extends Phaser.Scene {
    * The withdraw/send-out beat. A replacement for a fainted partner has nothing
    * to withdraw, so it only pops the incoming sprite in.
    */
-  private playSwitch(side: SideId, down: boolean): void {
-    const sprite = this.monSprite(side);
-    const base = this.monPos(side);
-    const scale = this.monScale[side];
-    this.beat[side] = 'switch';
+  private playSwitch(side: SideId, down: boolean, slot: Slot = 0): void {
+    const sprite = this.monSprite(side, slot);
+    const base = this.monPos(side, slot);
+    const scale = slot === 0 ? this.monScale[side] : this.monScale2[side];
+    this.setBeat(side, slot, 'switch');
     const sendOut: Phaser.Types.Tweens.TweenBuilderConfig = {
       targets: sprite,
       scaleX: scale,
@@ -1591,11 +1916,17 @@ export class BattleScene extends Phaser.Scene {
       targets: sprite,
       tweens: down ? [sendOut] : [recall, sendOut],
       onComplete: () => {
-        this.beat[side] = null;
+        this.setBeat(side, slot, null);
         sprite.setScale(scale).setAlpha(1);
         this.refreshHud();
       },
     });
+  }
+
+  /** The sprite beat a slot is running, or null when it is at rest. */
+  private setBeat(side: SideId, slot: Slot, beat: BeatKind | null): void {
+    if (slot === 0) this.beat[side] = beat;
+    else this.beat2[side] = beat;
   }
 
   private showOver(): void {
@@ -1662,6 +1993,13 @@ export class BattleScene extends Phaser.Scene {
   // --- menus --------------------------------------------------------------
 
   private openMenu(): void {
+    this.commandSlot = 0;
+    // A double battle commands slot 1 first: the partner's command waits in
+    // `partnerCommand` while slot 0 picks, and a fainted or absent slot is skipped.
+    if (this.double && this.partnerCommand === null && this.slotNeedsCommand(1)) {
+      this.openPartnerMenu();
+      return;
+    }
     const player = activeFighter(this.state, 'player');
     if (!canMegaEvolve(this.state, 'player')) this.megaIntent = false;
     if (!canGigantamax(this.state, 'player')) this.gmaxIntent = false;
@@ -1686,6 +2024,54 @@ export class BattleScene extends Phaser.Scene {
     this.mode = 'menu';
     this.setMessage(t('battle.promptAction', { name: player.name }));
     this.refreshHud();
+  }
+
+  /**
+   * The partner's command menu: FIGHT and SWITCH only, in the shipped command
+   * grid — the Bag and RUN are the side's own actions and stay slot 0's.
+   */
+  private openPartnerMenu(): void {
+    const partner = activeFighter(this.state, 'player', 1);
+    if (!canMegaEvolve(this.state, 'player')) this.megaIntent = false;
+    if (!canGigantamax(this.state, 'player')) this.gmaxIntent = false;
+    this.megaSelected = false;
+    this.gmaxSelected = false;
+    this.infoSelected = false;
+    this.menuItems = [
+      { label: t('battle.command.fight'), enabled: true, onSelect: () => this.openMoves(1) },
+      {
+        label: t('battle.command.switch'),
+        enabled: this.hasBench(),
+        onSelect: () => this.openParty(1),
+      },
+    ];
+    this.menuIndex = 0;
+    this.mode = 'partner';
+    this.setMessage(t('battle.promptAction', { name: partner.name }));
+    this.refreshHud();
+  }
+
+  /** True while the player's `slot` exists and its occupant can still act. */
+  private slotNeedsCommand(slot: Slot): boolean {
+    const battleSide = this.state.sides.player;
+    const index = slot === 0 ? battleSide.activeIndex : battleSide.secondActiveIndex;
+    return index >= 0 && battleSide.party[index].hp > 0;
+  }
+
+  /** The live slot's fighter, or null when the side does not field that slot. */
+  private slotFighter(side: SideId, slot: Slot): BattleFighter | null {
+    const battleSide = this.state.sides[side];
+    const index = slot === 0 ? battleSide.activeIndex : battleSide.secondActiveIndex;
+    return index < 0 ? null : (battleSide.party[index] ?? null);
+  }
+
+  /** The opposing slots that are on the field and still standing. */
+  private liveFoeSlots(): readonly Slot[] {
+    const slots: Slot[] = [];
+    for (const slot of liveSlots(this.state, 'enemy')) {
+      if (activeFighter(this.state, 'enemy', slot).hp > 0) slots.push(slot);
+    }
+    return slots;
   }
 
   /** Opens the battle-state window: the model's lines as the list's items, in `mode = 'info'`. */
@@ -1727,31 +2113,30 @@ export class BattleScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  private openMoves(): void {
-    const player = activeFighter(this.state, 'player');
+  private openMoves(slot: Slot = 0): void {
+    this.commandSlot = slot;
+    const player = activeFighter(this.state, 'player', slot);
     const barred = barredMovesFor(this.state, 'player');
     const legal = legalMoveIndices(player, barred);
-    this.menuItems = player.moves.map((slot, index) => {
-      const move = getMove(slot.moveId);
-      const name = moveName(slot.moveId);
+    this.menuItems = player.moves.map((moveSlot, index) => {
+      const move = getMove(moveSlot.moveId);
+      const name = moveName(moveSlot.moveId);
       const enabled = legal.length === 0 ? index === 0 : legal.includes(index);
-      const preview = movePreview(this.state, 'player', index);
+      // The preview folds the attacker's own stats in, so slot 1 is read with its
+      // lead slot while the grid is built for it.
+      const preview = withLeadSlot(this.state, 'player', slot, () =>
+        movePreview(this.state, 'player', index),
+      );
       return {
         label: name,
         enabled,
-        onSelect: () =>
-          this.submit({
-            type: 'fight',
-            moveIndex: index,
-            ...(this.megaIntent ? { mega: true } : {}),
-            ...(this.gmaxIntent ? { gmax: true } : {}),
-          }),
+        onSelect: () => this.chooseMove(slot, index),
         move: {
           type: preview?.type ?? move?.type ?? '',
           category: move?.category ?? 'Status',
-          pp: slot.pp,
-          maxPp: slot.maxPp,
-          desc: moveShortDescription(slot.moveId),
+          pp: moveSlot.pp,
+          maxPp: moveSlot.maxPp,
+          desc: moveShortDescription(moveSlot.moveId),
           power: preview?.power ?? 0,
           basePower: preview?.basePower ?? 0,
           stab: preview?.stab ?? false,
@@ -1768,6 +2153,87 @@ export class BattleScene extends Phaser.Scene {
     this.infoMove = null;
     this.infoPinned = false;
     this.mode = 'moves';
+    this.refreshHud();
+  }
+
+  /**
+   * The move grid's pick for `slot`: a single-target damaging move in a double
+   * battle opens the target step, and every other move submits as it always has.
+   */
+  private chooseMove(slot: Slot, moveIndex: number): void {
+    if (this.needsTargetStep(slot, moveIndex)) {
+      this.openTargetStep(slot, moveIndex);
+      return;
+    }
+    this.submit({
+      type: 'fight',
+      moveIndex,
+      ...(slot === 1 ? { slot } : {}),
+      ...(this.megaIntent ? { mega: true } : {}),
+      ...(this.gmaxIntent ? { gmax: true } : {}),
+    });
+  }
+
+  /**
+   * True when the picked move must ask which live foe it hits: a double battle
+   * with two standing foes, and a damaging move whose dex target is one slot.
+   */
+  private needsTargetStep(slot: Slot, moveIndex: number): boolean {
+    if (!this.double || this.liveFoeSlots().length < 2) return false;
+    const fighter = activeFighter(this.state, 'player', slot);
+    const move = getMove(fighter.moves[moveIndex]?.moveId ?? '');
+    if (!move || move.category === 'Status') return false;
+    if (move.target === 'self' || move.target === 'ally') return false;
+    return !SPREAD_TARGETS.has(move.target);
+  }
+
+  /** Opens the target step: the cursor marks the first live foe, ready to move. */
+  private openTargetStep(slot: Slot, moveIndex: number): void {
+    this.commandSlot = slot;
+    this.targetMoveIndex = moveIndex;
+    this.targetSlot = this.liveFoeSlots()[0] ?? 0;
+    this.menuIndex = 0;
+    this.menuItems = [];
+    this.mode = 'target';
+    this.refreshHud();
+  }
+
+  /** Steps the target cursor across the live opposing slots. */
+  private moveTarget(delta: number): void {
+    const live = this.liveFoeSlots();
+    if (this.targetSlot === null || live.length < 2) return;
+    const index = live.indexOf(this.targetSlot);
+    this.targetSlot = live[(index + delta + live.length) % live.length];
+    this.refreshHud();
+  }
+
+  /** The target step's confirm: the picked move, aimed at the marked foe slot. */
+  private confirmTarget(): void {
+    const moveIndex = this.targetMoveIndex;
+    const target = this.targetSlot;
+    if (moveIndex === null || target === null) {
+      this.openMoves(this.commandSlot);
+      return;
+    }
+    this.submit({
+      type: 'fight',
+      moveIndex,
+      slot: this.commandSlot,
+      target: { side: 'enemy', slot: target },
+      ...(this.megaIntent ? { mega: true } : {}),
+      ...(this.gmaxIntent ? { gmax: true } : {}),
+    });
+  }
+
+  /** A press on a foe in the target step: it moves the cursor, or confirms it again. */
+  private onFoeClick(slot: Slot): void {
+    if (this.mode !== 'target') return;
+    if (this.targetSlot === slot) {
+      this.confirmTarget();
+      return;
+    }
+    if (!this.liveFoeSlots().includes(slot)) return;
+    this.targetSlot = slot;
     this.refreshHud();
   }
 
@@ -1817,7 +2283,8 @@ export class BattleScene extends Phaser.Scene {
     this.setBagItems(category);
   }
 
-  private openParty(): void {
+  private openParty(slot: Slot = 0): void {
+    this.commandSlot = slot;
     const side = this.state.sides.player;
     this.menuItems = side.party.map((fighter, index) => {
       const status = statusAbbreviation(fighter.status);
@@ -1835,13 +2302,27 @@ export class BattleScene extends Phaser.Scene {
 
   private confirmParty(index: number): void {
     if (this.forcedSwitch) {
-      performSwitch(this.state, 'player', index);
+      // A double battle sends the replacement to the slot whose occupant fainted,
+      // not to the lead; a single battle's one slot is slot 0 either way.
+      performSwitch(this.state, 'player', index, this.emptiedPlayerSlot());
       if (needsReplacement(this.state).includes('enemy')) autoReplace(this.state);
       this.forcedSwitch = false;
       this.startFeed(() => this.finishFeed());
       return;
     }
-    this.submit({ type: 'switch', partyIndex: index });
+    this.submit(
+      this.commandSlot === 1
+        ? { type: 'switch', partyIndex: index, slot: 1 }
+        : { type: 'switch', partyIndex: index },
+    );
+  }
+
+  /** The live player slot holding a fainted fighter, slot 0 first; 0 when none does. */
+  private emptiedPlayerSlot(): Slot {
+    for (const slot of liveSlots(this.state, 'player')) {
+      if (activeFighter(this.state, 'player', slot).hp <= 0) return slot;
+    }
+    return 0;
   }
 
   private submit(command: Command): void {
@@ -1849,21 +2330,87 @@ export class BattleScene extends Phaser.Scene {
       const item = getItem(command.itemId);
       if (item?.kind === 'ball') this.lastBallId = item.id;
     }
+    if (this.double) {
+      this.submitDouble(command);
+      return;
+    }
     this.displayHp = {
       player: activeFighter(this.state, 'player').hp,
       enemy: activeFighter(this.state, 'enemy').hp,
     };
-    // The enemy thinks with its archetype's own script flags (D46): a boss and a
-    // mini-boss are the `ace` archetype, and a wild battle carries none.
-    const trigger = this.launch?.trigger;
-    const flags =
-      trigger?.kind === 'trainer' && trigger.archetypeId
-        ? (getTrainerArchetype(trigger.archetypeId)?.aiFlags ?? [])
-        : [];
-    takeTurn(this.state, command, chooseAiCommand(this.state, 'enemy', { level: this.aiLevel, flags }));
+    takeTurn(
+      this.state,
+      command,
+      chooseAiCommand(this.state, 'enemy', { level: this.aiLevel, flags: this.aiFlags() }),
+    );
     this.megaIntent = false;
     this.gmaxIntent = false;
     this.startFeed();
+  }
+
+  /**
+   * A double battle's commands, collected in slot order: slot 1's waits in
+   * `partnerCommand` while slot 0 picks, and the second command resolves both.
+   */
+  private submitDouble(command: Command): void {
+    const slot: Slot = command.type === 'fight' || command.type === 'switch' ? (command.slot ?? 0) : 0;
+    if (slot === 1) {
+      this.partnerCommand = command;
+      if (this.slotNeedsCommand(0)) {
+        this.openMenu();
+        return;
+      }
+      this.resolveDoubleTurn({ 1: command });
+      return;
+    }
+    const commands: { 0?: Command; 1?: Command } = { 0: command };
+    if (this.partnerCommand) commands[1] = this.partnerCommand;
+    this.resolveDoubleTurn(commands);
+  }
+
+  /** Runs one double turn: both player commands and one AI command per live foe slot. */
+  private resolveDoubleTurn(commands: SlotCommands): void {
+    this.displayHp = {
+      player: activeFighter(this.state, 'player').hp,
+      enemy: activeFighter(this.state, 'enemy').hp,
+    };
+    const player2 = this.slotFighter('player', 1);
+    const enemy2 = this.slotFighter('enemy', 1);
+    this.displayActive2 = { player: player2, enemy: enemy2 };
+    this.displayHp2 = { player: player2?.hp ?? null, enemy: enemy2?.hp ?? null };
+    this.displayStatus2 = { player: player2?.status ?? null, enemy: enemy2?.status ?? null };
+    const flags = this.aiFlags();
+    const enemyLead = activeFighter(this.state, 'enemy');
+    const enemyCommands: { 0?: Command; 1?: Command } = {};
+    // A slot whose occupant has fainted with no reserve left keeps its fighter and
+    // asks for nothing: the engine skips it, and asking would spend an AI draw on a
+    // command the battle cannot accept.
+    if (enemyLead.hp > 0) {
+      enemyCommands[0] = chooseAiCommand(this.state, 'enemy', { level: this.aiLevel, flags });
+    }
+    if (enemy2 && enemy2.hp > 0) {
+      enemyCommands[1] = chooseAiCommand(this.state, 'enemy', {
+        level: this.aiLevel,
+        flags,
+        slot: 1,
+      });
+    }
+    takeDoubleTurn(this.state, commands, enemyCommands);
+    this.partnerCommand = null;
+    this.commandSlot = 0;
+    this.targetSlot = null;
+    this.targetMoveIndex = null;
+    this.megaIntent = false;
+    this.gmaxIntent = false;
+    this.startFeed();
+  }
+
+  /** The script flags the enemy thinks with (D46): its archetype's own. */
+  private aiFlags(): readonly AiFlag[] {
+    const trigger = this.launch?.trigger;
+    return trigger?.kind === 'trainer' && trigger.archetypeId
+      ? (getTrainerArchetype(trigger.archetypeId)?.aiFlags ?? [])
+      : [];
   }
 
   private usableBag(): BagSlot[] {
@@ -1895,8 +2442,13 @@ export class BattleScene extends Phaser.Scene {
 
   /** Steps the cursor: the command and move grids move in 2D, other lists stay linear. */
   private navigateMenu(action: 'up' | 'down' | 'left' | 'right'): void {
-    if (this.mode === 'moves' || this.mode === 'menu') this.moveMenuGrid(action);
-    else this.moveMenu(action === 'up' || action === 'left' ? -1 : 1);
+    if (this.mode === 'target') {
+      this.moveTarget(action === 'left' || action === 'up' ? -1 : 1);
+      return;
+    }
+    if (this.mode === 'moves' || this.mode === 'menu' || this.mode === 'partner') {
+      this.moveMenuGrid(action);
+    } else this.moveMenu(action === 'up' || action === 'left' ? -1 : 1);
   }
 
   /**
@@ -1911,7 +2463,7 @@ export class BattleScene extends Phaser.Scene {
     const rows = Math.max(1, Math.ceil(count / cols));
     const mega = this.mode === 'moves' && this.megaAvailable();
     const gmax = this.mode === 'moves' && this.gmaxAvailable();
-    const info = this.mode === 'menu';
+    const info = this.mode === 'menu' || this.mode === 'partner';
 
     // The INFO control sits to the right of the command grid, in the column the
     // moves menu reserves for MEGA: `right` from the last column reaches it and
@@ -2110,6 +2662,25 @@ export class BattleScene extends Phaser.Scene {
     menu = { x: box.x, y: box.y, w: box.w, h: box.h };
     message = { x: box.x, y: box.y + box.h - MESSAGE_H, w: box.w, h: MESSAGE_H };
 
+    // A double battle's second window per side: the foe's partner sits beside the
+    // shipped window (clamped on the right edge of the square) and the player's
+    // partner stacks with the shipped one — below it when the field above the menu
+    // box has room, above it when it does not, so the pair never overlaps.
+    const foeInfo2: Rect | null = this.displayActive2.enemy
+      ? {
+          x: Math.max(
+            box.x,
+            Math.min(foeInfo.x + foeInfo.w + SLOT_PANEL_GAP, width - box.x - FOE_PANEL.w),
+          ),
+          y: foeInfo.y,
+          w: FOE_PANEL.w,
+          h: FOE_PANEL.h,
+        }
+      : null;
+    const playerInfo2: Rect | null = this.displayActive2.player
+      ? this.secondPlayerPanel(playerInfo, box)
+      : null;
+
     const foePlatformY = foeY + FOE_PLATFORM_OFFSET;
     const playerPlatformY = playerY + PLAYER_PLATFORM_OFFSET;
     // Cap each sprite so its head clears the panel above it, and on a phone also
@@ -2124,15 +2695,29 @@ export class BattleScene extends Phaser.Scene {
       SPRITE_SIZE_MAX,
       compact ? Math.min(playerPlatformY - panelBottom, widthCap) : playerPlatformY - MON_TOP_MARGIN,
     );
+    // Slot 1 draws under the same budget as slot 0 (its window sits on the same
+    // row), so the pair is sized alike.
+    this.monSizeCap2.enemy = this.monSizeCap.enemy;
+    this.monSizeCap2.player = this.monSizeCap.player;
     this.syncMonSprites();
-    this.foeMonPos = { x: foeX, y: foePlatformY };
+    // A double battle stands the two enemy sprites left and right of the foe
+    // platform's centre, and the player's second active beside its lead.
+    const foeSpread = this.displayActive2.enemy ? FOE_PLATFORM_SPREAD : 0;
+    const playerSpread = this.displayActive2.player ? FOE_PLATFORM_SPREAD : 0;
+    this.foeMonPos = { x: foeX - foeSpread, y: foePlatformY };
+    this.foeMonPos2 = { x: foeX + foeSpread, y: foePlatformY };
     this.playerMonPos = { x: playerX, y: playerPlatformY };
-    if (this.beat.enemy !== 'faint') this.foeSprite.setPosition(foeX, foePlatformY);
+    this.playerMonPos2 = { x: playerX + playerSpread, y: playerPlatformY };
+    if (this.beat.enemy !== 'faint') this.foeSprite.setPosition(this.foeMonPos.x, foePlatformY);
+    if (this.beat2.enemy !== 'faint') this.foeSprite2.setPosition(this.foeMonPos2.x, foePlatformY);
     this.foePlatform
       .setScale(platformScale(this.monDrawHeight.enemy))
       .setPosition(compact ? foeX : width * 0.72, foePlatformY);
     if (trainer) this.foeTrainer.setPosition((compact ? foeX : width * 0.72) - 70, foeY + 62);
     if (this.beat.player !== 'faint') this.playerSprite.setPosition(playerX, playerPlatformY);
+    if (this.beat2.player !== 'faint') {
+      this.playerSprite2.setPosition(this.playerMonPos2.x, playerPlatformY);
+    }
     this.playerPlatform
       .setScale(platformScale(this.monDrawHeight.player))
       .setPosition(playerX, playerPlatformY);
@@ -2140,11 +2725,23 @@ export class BattleScene extends Phaser.Scene {
       (this.displayHp.enemy > 0 && !this.captured) || this.beat.enemy === 'faint',
     );
     this.playerSprite.setVisible(this.displayHp.player > 0 || this.beat.player === 'faint');
+    this.foeSprite2.setVisible(
+      this.displayActive2.enemy !== null &&
+        this.displayHp2.enemy !== null &&
+        (this.displayHp2.enemy > 0 || this.beat2.enemy === 'faint'),
+    );
+    this.playerSprite2.setVisible(
+      this.displayActive2.player !== null &&
+        this.displayHp2.player !== null &&
+        (this.displayHp2.player > 0 || this.beat2.player === 'faint'),
+    );
 
     this.hud.clear();
     this.marks.clear();
     this.drawSidePanel(foeInfo, 'enemy');
     this.drawSidePanel(playerInfo, 'player');
+    this.drawSecondPanel(foeInfo2, 'enemy');
+    this.drawSecondPanel(playerInfo2, 'player');
     this.messagePanel.setSlices(message.w, message.h).setPosition(message.x, message.y);
     this.menuPanel.setSlices(menu.w, menu.h).setPosition(menu.x, menu.y);
     this.messagePanel.setVisible(!menuOpen);
@@ -2159,19 +2756,118 @@ export class BattleScene extends Phaser.Scene {
     if (menuOpen) {
       if (this.mode === 'bag') this.renderBagMenu(menu);
       else if (this.mode === 'moves') this.renderMoveMenu(menu);
-      else if (this.mode === 'menu') this.renderCommandMenu(menu);
+      else if (this.mode === 'menu' || this.mode === 'partner') this.renderCommandMenu(menu);
       else if (this.mode === 'info') this.renderInfoWindow(menu);
       else this.renderPartyGrid(menu);
     } else {
       this.hideMenu();
     }
+    this.layoutTargetCursor();
+  }
+
+  /**
+   * The second player window: directly below the shipped one when both fit above
+   * the menu box, and above it when they do not. Either way the two never overlap
+   * and the pair stays inside the battle square.
+   */
+  private secondPlayerPanel(playerInfo: Rect, box: Rect): Rect {
+    const below = playerInfo.y + PLAYER_PANEL_H + SLOT_PANEL_GAP;
+    const y =
+      below + PLAYER_PANEL_H <= box.y - SLOT_PANEL_GAP
+        ? below
+        : Math.max(SLOT_PANEL_EDGE, playerInfo.y - PLAYER_PANEL_H - SLOT_PANEL_GAP);
+    return { x: playerInfo.x, y, w: PLAYER_PANEL_W, h: PLAYER_PANEL_H };
+  }
+
+  /**
+   * The target step's marker: the shipped cursor sits beside the marked foe, and
+   * the two foe hit zones are armed only while the step is open, so a click on a
+   * foe during the feed still advances the text.
+   */
+  private layoutTargetCursor(): void {
+    const open = this.mode === 'target' && this.displayHp2.enemy !== null;
+    this.foeZones.forEach((zone, slot) => {
+      if (zone.input) zone.input.enabled = open;
+      if (!open) return;
+      const pos = this.monPos('enemy', slot === 1 ? 1 : 0);
+      const height = slot === 1 ? this.monDrawHeight2.enemy : this.monDrawHeight.enemy;
+      zone
+        .setPosition(pos.x, pos.y - height / 2)
+        .setSize(FOE_PLATFORM_SPREAD * 1.4, Math.max(60, height));
+    });
+    const target = open ? this.targetSlot : null;
+    if (target === null) {
+      this.targetCursor.setVisible(false);
+      return;
+    }
+    const pos = this.monPos('enemy', target);
+    const height = target === 0 ? this.monDrawHeight.enemy : this.monDrawHeight2.enemy;
+    this.targetCursor
+      .setFlipX(false)
+      .setScale(1)
+      .setPosition(pos.x - 30, pos.y - height * 0.5)
+      .setVisible(true);
   }
 
   private drawSidePanel(rect: Rect, side: SideId): void {
-    const panel = side === 'player' ? this.playerPanel : this.foePanel;
-    panel.setSlices(rect.w, rect.h).setPosition(rect.x, rect.y);
-    const fighter = this.displayActive[side];
-    const hp = this.displayHp[side];
+    this.drawPanel(
+      rect,
+      side,
+      this.panelKits[side][0],
+      this.displayActive[side],
+      this.displayHp[side],
+      this.displayStatus[side],
+    );
+
+    if (side === 'enemy') {
+      if (this.state.isWild) this.hideFoeBallRow();
+      else this.drawFoeBallRow(rect);
+    }
+  }
+
+  /**
+   * The second slot's window on a side, or nothing when the battle does not field
+   * it (the shipped single layout, reached through the same code).
+   */
+  private drawSecondPanel(rect: Rect | null, side: SideId): void {
+    const fighter = this.displayActive2[side];
+    const hp = this.displayHp2[side];
+    if (rect === null || !fighter || hp === null) {
+      this.hideSecondPanel(side);
+      return;
+    }
+    this.drawPanel(rect, side, this.panelKits[side][1], fighter, hp, this.displayStatus2[side]);
+  }
+
+  /** Hides slot 1's window and everything it paints. */
+  private hideSecondPanel(side: SideId): void {
+    const kit = this.panelKits[side][1];
+    kit.panel.setVisible(false);
+    kit.nameText.setVisible(false);
+    kit.statText.setVisible(false);
+    kit.statusText.setVisible(false);
+    kit.statusBadge.setVisible(false);
+    for (const badge of kit.typeBadges) badge.setVisible(false);
+    for (const chip of kit.typeChipBgs) chip.setVisible(false);
+    for (const chip of kit.typeChips) chip.setVisible(false);
+    kit.hpBar.bar.setVisible(false);
+    kit.hpBar.fill.setVisible(false);
+  }
+
+  /**
+   * One HP window: the card, the name row, the types band, the status mark and the
+   * bar. It paints a side's slot 0 and slot 1 alike, from the kit the caller hands
+   * it, so the two windows can never read differently.
+   */
+  private drawPanel(
+    rect: Rect,
+    side: SideId,
+    kit: PanelKit,
+    fighter: BattleFighter,
+    hp: number,
+    status: StatusId | null,
+  ): void {
+    kit.panel.setSlices(rect.w, rect.h).setPosition(rect.x, rect.y).setVisible(true);
     const fraction = hpFraction(hp, fighter.maxHp);
 
     // Content stays inside the FRLG window's baked border: the name drops below
@@ -2183,7 +2879,7 @@ export class BattleScene extends Phaser.Scene {
     const typesY = nameY + PANEL_NAME_H;
     const barY = typesY + PANEL_TYPES_H + PANEL_NAME_GAP;
 
-    this.nameText[side]
+    kit.nameText
       .setText(t('battle.panelName', { name: fighter.name, level: fighter.level }))
       .setPosition(barX, nameY);
 
@@ -2194,9 +2890,9 @@ export class BattleScene extends Phaser.Scene {
     for (let i = 0; i < PANEL_TYPE_SLOTS; i++) {
       const type = types[i];
       const frame = type === undefined ? null : typeIconFrame(type);
-      const badge = this.typeBadges[side][i];
-      const chipBg = this.typeChipBgs[side][i];
-      const chip = this.typeChips[side][i];
+      const badge = kit.typeBadges[i];
+      const chipBg = kit.typeChipBgs[i];
+      const chip = kit.typeChips[i];
       if (frame !== null && type !== undefined) {
         badge
           .setTexture(TYPE_ICON_TEXTURE_KEY, frame)
@@ -2226,25 +2922,24 @@ export class BattleScene extends Phaser.Scene {
       }
     }
 
-    this.statText[side]
+    kit.statText
       .setText(side === 'player' ? `${hp}/${fighter.maxHp}` : '')
       .setPosition(rect.x + rect.w - pad.x, barY - 23);
 
-    const status = this.displayStatus[side];
     // A badly poisoned Pokémon gets the `TOX` chip: the badge atlas maps `tox` and
     // `psn` onto one frame, so the badge alone cannot tell the two apart (§10.1).
     const statusFrame = status && status !== 'tox' ? statusIconFrame(status) : null;
     if (statusFrame !== null) {
       // The FRLG badge carries its own colours, so no chip is painted behind it.
-      this.statusBadges[side]
+      kit.statusBadge
         .setFrame(statusFrame)
         .setPosition(barX, barY - 22)
         .setVisible(true);
-      this.statusText[side].setVisible(false);
+      kit.statusText.setVisible(false);
     } else {
-      this.statusBadges[side].setVisible(false);
+      kit.statusBadge.setVisible(false);
       const abbreviation = statusAbbreviation(status);
-      this.statusText[side]
+      kit.statusText
         .setText(abbreviation ?? '')
         .setPosition(barX + 27, barY - 23)
         .setVisible(abbreviation !== null);
@@ -2254,7 +2949,7 @@ export class BattleScene extends Phaser.Scene {
       }
     }
 
-    const bar = this.hpBars[side];
+    const bar = kit.hpBar;
     bar.fill
       .setPosition(barX + FRLG_HPBAR.fill.x, barY + FRLG_HPBAR.fill.y)
       .setSize(Math.max(0, FRLG_HPBAR.fill.width * fraction), FRLG_HPBAR.fill.height)
@@ -2273,11 +2968,6 @@ export class BattleScene extends Phaser.Scene {
           FRLG_HPBAR.fill.height,
         );
       }
-    }
-
-    if (side === 'enemy') {
-      if (this.state.isWild) this.hideFoeBallRow();
-      else this.drawFoeBallRow(rect);
     }
   }
 
@@ -2472,6 +3162,14 @@ export class BattleScene extends Phaser.Scene {
     this.hideInfoControl();
     const party = this.state.sides.player.party;
     const count = this.menuItems.length;
+    // The rows a double battle already has on the field carry the accent: those are
+    // the ones the grid refuses, so the player can see which two are out.
+    const fieldRows = this.double
+      ? partyGridFieldRows(
+          this.state.sides.player.activeIndex,
+          this.state.sides.player.secondActiveIndex,
+        )
+      : [];
     const { rects, avatarScale, hpBarScale, labelMaxWidth } = partyGridLayout(menu, {
       padding: FRLG_WINDOW_PADDING,
       avatarScaleCap: PARTY_AVATAR_SCALE,
@@ -2537,6 +3235,7 @@ export class BattleScene extends Phaser.Scene {
       const labelX = rect.x + 8 + avatarW + 6;
       this.partyLabels[i]
         .setText(fitPartyLabel(item.label, labelMaxWidth, PARTY_LABEL_SIZE))
+        .setTint(fieldRows.includes(i) ? FRLG_ACCENT : FRLG_INK)
         .setAlpha(item.enabled ? 1 : 0.45)
         .setOrigin(0, 0)
         .setPosition(labelX, rect.y + (rect.h - labelH) / 2)
