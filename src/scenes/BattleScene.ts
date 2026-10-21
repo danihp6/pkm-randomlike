@@ -2881,7 +2881,8 @@ export class BattleScene extends Phaser.Scene {
 
     kit.nameText
       .setText(t('battle.panelName', { name: fighter.name, level: fighter.level }))
-      .setPosition(barX, nameY);
+      .setPosition(barX, nameY)
+      .setVisible(true);
 
     // The row is the live fighter's own types, so a Mega Evolution or a form
     // change shows the forme's (`displayActive` follows both).
@@ -2924,7 +2925,8 @@ export class BattleScene extends Phaser.Scene {
 
     kit.statText
       .setText(side === 'player' ? `${hp}/${fighter.maxHp}` : '')
-      .setPosition(rect.x + rect.w - pad.x, barY - 23);
+      .setPosition(rect.x + rect.w - pad.x, barY - 23)
+      .setVisible(true);
 
     // A badly poisoned Pokémon gets the `TOX` chip: the badge atlas maps `tox` and
     // `psn` onto one frame, so the badge alone cannot tell the two apart (§10.1).
@@ -2953,8 +2955,9 @@ export class BattleScene extends Phaser.Scene {
     bar.fill
       .setPosition(barX + FRLG_HPBAR.fill.x, barY + FRLG_HPBAR.fill.y)
       .setSize(Math.max(0, FRLG_HPBAR.fill.width * fraction), FRLG_HPBAR.fill.height)
-      .setFillStyle(hpColorInt(fraction));
-    bar.bar.setPosition(barX, barY);
+      .setFillStyle(hpColorInt(fraction))
+      .setVisible(true);
+    bar.bar.setPosition(barX, barY).setVisible(true);
 
     // The danger band carries a shape as well as its hue: the fill is cut into
     // blocks by dark notches, so a low HP reads without colour (D45, §10.2).
