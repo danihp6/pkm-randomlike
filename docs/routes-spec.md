@@ -433,6 +433,12 @@ dismissed by itself, taking no key and blocking no movement.
   same module (one message at a time, no key, no block). The static leaf floats its
   refusal line when its seal does not yield to the party (`docs/maps-spec.md` §7),
   and a legendary leaf floats one more line on entry.
+- Entering a **room** raises the **area banner**: a boxed card under the mission
+  line that names the biome the run has walked into (`Deep Forest`), holds 3 s and
+  dismisses itself — it takes no key and blocks nothing. It comes up on **every**
+  room entry, not only when the floor changes, while the boss room's rebuild as its
+  portal opens is the same room and raises none. The name is the biome's own, so it
+  stays English in every locale (`D43`).
 
 A **consumable** rides the same drag: a heal or a status cure dropped from the bag
 onto a party or box member is spent on it only when it would change something — HP

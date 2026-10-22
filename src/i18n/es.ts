@@ -358,6 +358,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'notice.puzzleReset': 'Los interruptores se reinician.',
   'notice.puzzleSolved': '¡El último interruptor encaja y algo aparece!',
   'notice.missionComplete': 'Misión completada: {mission}',
+  'notice.areaEntry': '{area}',
   'notice.staticLegendary': 'Una presencia legendaria aguarda tras el sello.',
   'gate.locked.bush': 'Unos arbustos espesos. Un Pokémon de tipo Bicho o Planta podría abrirlos.',
   'gate.locked.rock': 'Una roca. Un Pokémon de tipo Roca o Lucha podría romperla.',

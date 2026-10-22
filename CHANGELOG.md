@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **An area-entry panel: every room greets the player with a boxed banner.** `[Task-109]` adds
+      `areaEntryNotice(area)` and `AREA_PANEL_HOLD_MS = 3000` to the run's notice module and one
+      private card to `RouteScene`: the `'window'` skin with the **accent** hairline (`#7dd3fc`),
+      360×64 at y=116, below the notice strip and the mission line. It is raised on **every** room
+      entry — `applyRoute` outside a room build (so the dev frame-map import still greets),
+      `transitionTo` only when the room actually changed (the boss-fall rebuild raises none) and the
+      portal, which enters through the same path — and dismisses itself with no key. The copy is one
+      i18n key (`notice.areaEntry`) and a biome name stays English (`D43`). No run field, no
+      `SAVE_VERSION`, no RNG.
+      **QA:** Task QA green on all `[unit]` and all `[live]` criteria (four room entries = four
+      banners, 1 on the floor advance and 0 on the boss rebuild; accent pixel at y=116; a forced
+      notice does not cancel the banner; the Spanish locale keeps `Deep Forest`), and Integration QA
+      green on the combined tree.
+
 - [x] **The move audit, and a coverage ledger that counts evidence instead of a flag.** The
       `[Task-119]` instrument lands: `src/engine/battle/moveAudit.ts` runs **one** move against a
       clean level-50 board and snapshots what actually changed, with `MOVE_AUDIT_ROWS` at **478**

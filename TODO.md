@@ -6633,7 +6633,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       Out of scope: the engine rules (`[Task-107]`), the boss's own condition (`[Task-100]`) and the
       battle's info window (`[Task-60]`, shipped).
       *Dependencies:* `[Task-107]`. It adds no run field. *(Batch 47, filled)*
-- [ ] **[Task-109] An area-entry panel: a temporary floating panel on entering a route.** Reported as
+- [x] **[Task-109] An area-entry panel: a temporary floating panel on entering a route.** Reported as
       «añadir panel flotante temporal al entrar en una ruta como en los juegos originales» — the
       originals greet an area with a **boxed banner** naming it, and this game already holds the
       string with no banner to wear it: the run's transient notices are one-line entries in

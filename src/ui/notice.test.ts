@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { en, es, setLocale, translationParams, type TranslationKey } from '../i18n';
 import {
+  AREA_PANEL_HOLD_MS,
   NOTICE_HOLD_MS,
+  areaEntryNotice,
   catchToPcNotice,
   eggHatchNotice,
   gateLockedNotice,
@@ -372,5 +374,82 @@ describe('missionCompleteNotice', () => {
     } finally {
       setLocale('en');
     }
+  });
+});
+
+describe('areaEntryNotice', () => {
+  it('names the area in the boxed banner with its own hold', () => {
+    expect(areaEntryNotice('Deep Forest')).toEqual({ text: 'Deep Forest', holdMs: 3000 });
+  });
+
+  it('holds the banner for 3 seconds, one beat longer than a notice', () => {
+    expect(AREA_PANEL_HOLD_MS).toBe(3000);
+    expect(AREA_PANEL_HOLD_MS).not.toBe(NOTICE_HOLD_MS);
+    expect(areaEntryNotice('Deep Forest').holdMs).toBe(AREA_PANEL_HOLD_MS);
+  });
+
+  it('leaves every transient notice on its own 2.6 second hold', () => {
+    expect(NOTICE_HOLD_MS).toBe(2600);
+    const shipped = [
+      catchToPcNotice('Sentret'),
+      itemPickupNotice('Potion'),
+      itemUsedNotice('Potion'),
+      levelUpNotice('Growlithe', 21),
+      eggHatchNotice('Sentret'),
+      gateLockedNotice('bush'),
+      gateOpenedNotice(),
+      noHealRoomNotice(),
+      bannedRoomNotice('Pidgeot'),
+      puzzleRoomNotice(),
+      puzzleResetNotice(),
+      puzzleSolvedNotice(),
+      missionCompleteNotice('Flawless floor'),
+      staticLegendaryNotice(),
+      staticSealLockedNotice('water'),
+    ];
+    for (const notice of shipped) expect(notice.holdMs).toBe(NOTICE_HOLD_MS);
+  });
+
+  it('declares exactly one param, `area`, in both tables', () => {
+    expect(translationParams(en['notice.areaEntry'])).toEqual(['area']);
+    expect(translationParams(es['notice.areaEntry'])).toEqual(['area']);
+    expect(en['notice.areaEntry']).toBe('{area}');
+    expect(es['notice.areaEntry']).toBe('{area}');
+  });
+
+  it('keeps a biome name English in Spanish, because D43 does', () => {
+    setLocale('es');
+    try {
+      expect(areaEntryNotice('Deep Forest')).toEqual({ text: 'Deep Forest', holdMs: 3000 });
+    } finally {
+      setLocale('en');
+    }
+    expect(areaEntryNotice('Deep Forest').text).toBe('Deep Forest');
+  });
+
+  it('passes the area through untouched', () => {
+    expect(areaEntryNotice('Mt. Moon').text).toBe('Mt. Moon');
+    expect(areaEntryNotice("Farfetch'd Cave").text).toBe("Farfetch'd Cave");
+  });
+
+  it('says something no other builder says', () => {
+    const others = [
+      catchToPcNotice('Deep Forest'),
+      itemPickupNotice('Deep Forest'),
+      itemUsedNotice('Deep Forest'),
+      levelUpNotice('Deep Forest', 5),
+      eggHatchNotice('Deep Forest'),
+      gateLockedNotice('bush'),
+      gateOpenedNotice(),
+      noHealRoomNotice(),
+      bannedRoomNotice('Deep Forest'),
+      puzzleRoomNotice(),
+      puzzleResetNotice(),
+      puzzleSolvedNotice(),
+      missionCompleteNotice('Deep Forest'),
+      staticLegendaryNotice(),
+      staticSealLockedNotice('water'),
+    ].map((notice) => notice.text);
+    expect(others).not.toContain(areaEntryNotice('Deep Forest').text);
   });
 });
