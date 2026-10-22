@@ -16,6 +16,17 @@ const read = (path) => JSON.parse(readFileSync(join(root, path), 'utf8'));
 const text = (path) => readFileSync(join(root, path), 'utf8');
 const norm = (id) => id.toLowerCase().replace(/[^a-z0-9]/g, '');
 
+// A line-end search that works on both a LF and a CRLF checkout: `core.autocrlf`
+// gives Windows the CRLF form, and an indexOf('\n};') that misses slices the rest
+// of the file instead of the table.
+const lineEnd = (source, marker, from = 0) => {
+  const crlf = source.indexOf(`\r\n${marker}`, from);
+  const lf = source.indexOf(`\n${marker}`, from);
+  if (crlf < 0) return lf;
+  if (lf < 0) return crlf;
+  return Math.min(crlf, lf);
+};
+
 const abilities = read('src/data/dex/abilities.json');
 const items = read('src/data/dex/items.json');
 const moves = read('src/data/dex/moves.json');
@@ -32,7 +43,7 @@ const itemsSrc = text('src/data/items.ts');
 // on the next line, so both shapes count as ported.
 const registeredIds = (source) => [
   ...[...source.matchAll(/^  \['([a-z0-9]+)',/gm)].map((match) => match[1]),
-  ...[...source.matchAll(/^  \[\n    '([a-z0-9]+)',$/gm)].map((match) => match[1]),
+  ...[...source.matchAll(/^  \[\r?\n    '([a-z0-9]+)',\r?$/gm)].map((match) => match[1]),
 ];
 
 const portedAbilities = new Set(abilitySources.flatMap((path) => registeredIds(text(path))));
@@ -127,7 +138,8 @@ const itemsEffectSrc = text('src/engine/battle/effects/items.ts');
 const tableKeys = (source, name) => {
   const start = source.indexOf(`const ${name}`);
   if (start < 0) return [];
-  const end = source.indexOf('\n};', start);
+  const end = lineEnd(source, '};', start);
+  if (end < 0) return [];
   return [...source.slice(start, end).matchAll(/^ {2}([a-z0-9]+):/gm)].map((match) => match[1]);
 };
 
@@ -159,12 +171,20 @@ const TURN_LOOP_MOVES = new Set([
 // falls to `default: return false`), the weather/terrain ids are `MOVE_WEATHER`
 // (`effects/weather.ts`) and `MOVE_TERRAIN` (`effects/terrain.ts`).
 const MOVE_STATUSES = new Set(['brn', 'psn', 'tox', 'par', 'slp', 'frz']);
-const MOVE_VOLATILES = new Set([
-  'confusion', 'leechseed', 'taunt', 'encore', 'trapped', 'partiallytrapped',
-  'perishsong', 'perish', 'flinch', 'yawn', 'substitute',
-  'aquaring', 'ingrain', 'destinybond', 'dragoncheer', 'focusenergy', 'laserfocus',
-  'endure', 'grudge', 'imprison', 'magiccoat', 'snatch', 'magnetrise', 'powertrick',
-]);
+
+// The volatile a move sets only counts when `applyVolatileEffect` has a case for
+// it (anything else falls to `default: return false`), and the cases are read
+// from that switch rather than copied, so the pair can never drift.
+const volatileCases = (source) => {
+  const start = source.indexOf('function applyVolatileEffect');
+  const end = source.indexOf('function applySecondary', start);
+  if (start < 0) throw new Error('effect-coverage: applyVolatileEffect not found');
+  const body = source.slice(start, end < 0 ? undefined : end);
+  const ids = [...body.matchAll(/case '([a-z0-9]+)':/g)].map((match) => match[1]);
+  if (ids.length === 0) throw new Error('effect-coverage: no volatile cases parsed');
+  return new Set(ids);
+};
+const MOVE_VOLATILES = volatileCases(text('src/engine/battle/turn.ts'));
 const MOVE_WEATHERS = new Set(['sunnyday', 'raindance', 'sandstorm', 'snowscape', 'hail']);
 const MOVE_TERRAINS = new Set(['electricterrain', 'grassyterrain', 'mistyterrain', 'psychicterrain']);
 
@@ -180,10 +200,9 @@ const hasReadSecondary = (move) =>
   );
 
 /**
- * The seam the move is ported through, or null when nothing models it. The
- * generic damage branch is the fallback and `flags.protect` the last resort, so
- * a move with a specific seam (Absorb's drain, Solar Beam's charge) names that
- * seam while plain damage (Tackle) names the branch it rides.
+ * The seam the move is ported through, or null when nothing models it. A data
+ * field the engine reads is evidence; a flag is not — `flags.protect` is on most
+ * status moves, so it used to hide the ones that go off and do nothing.
  */
 const portedMoveNote = (move) => {
   if (registeredMoves.has(move.id)) return `registry: ${registeredMoves.get(move.id)}`;
@@ -205,7 +224,6 @@ const portedMoveNote = (move) => {
   if (MOVE_TERRAINS.has(norm(move.terrain ?? ''))) return 'data: terrain';
   if (move.flags.charge) return 'data: flags.charge';
   if (move.category !== 'Status' && move.basePower > 0) return 'data: basePower';
-  if (move.flags.protect) return 'data: flags.protect';
   return null;
 };
 
@@ -276,7 +294,8 @@ for (const [id, name] of catalogue) if (!itemNames.has(id)) itemNames.set(id, na
 const unmodelledItems = (() => {
   const start = itemsEffectSrc.indexOf('const UNMODELLED_ITEMS');
   if (start < 0) return new Set();
-  const end = itemsEffectSrc.indexOf('\n];', start);
+  const end = lineEnd(itemsEffectSrc, '];', start);
+  if (end < 0) return new Set();
   return new Set([...itemsEffectSrc.slice(start, end).matchAll(/'([a-z0-9]+)'/g)].map((m) => m[1]));
 })();
 

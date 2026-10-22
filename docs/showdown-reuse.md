@@ -87,7 +87,18 @@ effect registry with the same hooks as Showdown's handlers:
    item as `port | no-op | excluded`, so nothing is silently missing; regenerate
    it with `npm run docs:coverage`. In a develop build, a battle against an
    unported effect logs a warning through the `src/dev` gate.
-5. **Descriptions come free**: because `abilities.json`/`items.json` carry
+5. **Evidence, not a flag**: a move is `port` only through a registered handler,
+   an id the turn loop special-cases or a data field the engine reads — the
+   `flags.protect` most status moves carry used to hide the ones that go off and
+   do nothing. Move rows are measured by `src/engine/battle/moveAudit.ts`: one
+   probe runs a single move against a clean level-50 board and snapshots what
+   changed, one table row per ported non-plain-damage move records what
+   Showdown's handler produces, and every row is a test. A row the engine does
+   not satisfy yet carries `knownGap` and runs as `it.fails`, so closing the gap
+   in the engine turns the suite red until the flag goes. The generator reads
+   both the LF and the CRLF form of the sources it parses, so the table is the
+   same on every checkout.
+6. **Descriptions come free**: because `abilities.json`/`items.json` carry
    `shortDesc`, the UI can always explain an effect even on the day it is a
    no-op.
 

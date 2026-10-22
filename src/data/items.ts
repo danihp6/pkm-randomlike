@@ -1144,10 +1144,10 @@ export const ROUTE_CONSUMABLE_IDS: readonly string[] = ROUTE_CONSUMABLE_ITEMS.ma
  * moment it takes the field (`effects/items.ts`'s `onStart`).
  *
  * Written as one literal row per type rather than a `map` because
- * `scripts/effect-coverage.mjs` derives the registry's catalogue from the
- * `item({ id: '<id>', name: '<name>'` text: a mapped row would be invisible to the
- * generated coverage table. The order and the coverage of `TYPE_NAMES` are pinned
- * by `items.test.ts`.
+ * `scripts/effect-coverage.mjs` reads this file's `item(...)` rows as text (their
+ * `id` and `name` fields), so a mapped row would be invisible to the generated
+ * coverage table. The order and the coverage of `TYPE_NAMES` are pinned by
+ * `items.test.ts`.
  */
 export const TERA_CRYSTALS: readonly ItemDef[] = [
   item({

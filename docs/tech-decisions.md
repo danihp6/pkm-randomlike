@@ -146,6 +146,17 @@ evolution branches, variants at generation or hand-authored Megas — so a row n
 claims a port for code that is gone. "Complete" means the table says so, not that
 the list was copied.
 
+A `port` is **evidence, never a flag**: the generator reads the registered
+handlers, the ids `turn.ts` special-cases and the data fields the engine consumes,
+so `flags.protect` — set on nearly every status move — does not count as a port
+any more. The move half of the table is measured by
+`src/engine/battle/moveAudit.ts`: `probeMove` runs one move against a clean
+level-50 board and snapshots what changed, `MOVE_AUDIT_ROWS` holds one
+Showdown-derived expectation per ported non-plain-damage move, and every row is a
+test — so a move that goes off and does nothing is a visible `no-op` row and a
+develop-build warning instead of a quiet assumption. A row the engine does not
+satisfy yet carries `knownGap` and runs as `it.fails`, so a stale flag fails.
+
 ## D17 — What randomness may touch *(decided)*
 
 Stats, types and evolutions are fixed per species (dex data) and are never

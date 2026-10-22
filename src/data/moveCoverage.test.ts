@@ -1,9 +1,16 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { allMoves } from './dex';
 import meta from './dex/meta.json';
 import { MOVE_COVERAGE, isUnportedMove, moveCoverage, unportedMoveIds } from './moveCoverage';
 
 const STATUSES = ['port', 'no-op', 'excluded'];
+
+const doc = readFileSync(
+  fileURLToPath(new URL('../../docs/balance/effect-coverage.md', import.meta.url)),
+  'utf8',
+);
 
 describe('move coverage manifest', () => {
   it('classifies every shipped move exactly once, in name order', () => {
@@ -38,10 +45,25 @@ describe('move coverage manifest', () => {
     expect(isUnportedMove('notamove')).toBe(false);
   });
 
-  it('has no unported move left, so the port list is empty', () => {
+  it('lists the moves the engine does nothing for, and only those', () => {
     const noOps = MOVE_COVERAGE.filter((entry) => entry.status === 'no-op').map((entry) => entry.id);
-    expect(noOps).toEqual([]);
+    expect(noOps.length).toBeGreaterThan(0);
     expect(unportedMoveIds()).toEqual(noOps);
-    for (const entry of MOVE_COVERAGE) expect(isUnportedMove(entry.id)).toBe(false);
+    for (const entry of MOVE_COVERAGE) {
+      expect(isUnportedMove(entry.id), entry.id).toBe(entry.status === 'no-op');
+    }
+  });
+
+  it('says so in the generated table: a real no-op count and no phantom row', () => {
+    const header = /## Moves — \d+ total \(\d+ port, (\d+) no-op/.exec(doc);
+    expect(header?.[1]).toBe(String(unportedMoveIds().length));
+    expect(Number(header?.[1] ?? '0')).toBeGreaterThan(0);
+    expect(doc).not.toContain('| <name> |');
+  });
+
+  it('reads a multi-line registry row as ported, whatever the checkout line end', () => {
+    for (const name of ['Huge Power', 'Pure Power', 'Sand Veil', 'Snow Cloak', 'Thick Fat']) {
+      expect(doc, name).toContain(`| ${name} | \`port\` |`);
+    }
   });
 });

@@ -202,8 +202,8 @@
     {
       "id": "attract",
       "name": "Attract",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "aurasphere",
@@ -298,8 +298,8 @@
     {
       "id": "beatup",
       "name": "Beat Up",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "behemothbash",
@@ -334,8 +334,8 @@
     {
       "id": "bide",
       "name": "Bide",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "bind",
@@ -832,8 +832,8 @@
     {
       "id": "crushgrip",
       "name": "Crush Grip",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "curse",
@@ -886,8 +886,8 @@
     {
       "id": "defog",
       "name": "Defog",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "destinybond",
@@ -922,8 +922,8 @@
     {
       "id": "disable",
       "name": "Disable",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "disarmingvoice",
@@ -1066,8 +1066,8 @@
     {
       "id": "dragonrage",
       "name": "Dragon Rage",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "dragonrush",
@@ -1186,14 +1186,14 @@
     {
       "id": "electrify",
       "name": "Electrify",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "electroball",
       "name": "Electro Ball",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "electrodrift",
@@ -1216,8 +1216,8 @@
     {
       "id": "embargo",
       "name": "Embargo",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "ember",
@@ -1234,8 +1234,8 @@
     {
       "id": "endeavor",
       "name": "Endeavor",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "endure",
@@ -1252,8 +1252,8 @@
     {
       "id": "entrainment",
       "name": "Entrainment",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "eruption",
@@ -1444,14 +1444,14 @@
     {
       "id": "fissure",
       "name": "Fissure",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "flail",
       "name": "Flail",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "flameburst",
@@ -1510,8 +1510,8 @@
     {
       "id": "fling",
       "name": "Fling",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "flipturn",
@@ -1528,8 +1528,8 @@
     {
       "id": "floralhealing",
       "name": "Floral Healing",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "flowershield",
@@ -1588,14 +1588,14 @@
     {
       "id": "foresight",
       "name": "Foresight",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "forestscurse",
       "name": "Forest's Curse",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "foulplay",
@@ -1642,8 +1642,8 @@
     {
       "id": "frustration",
       "name": "Frustration",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "furyattack",
@@ -1684,8 +1684,8 @@
     {
       "id": "gastroacid",
       "name": "Gastro Acid",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "geargrind",
@@ -1756,8 +1756,8 @@
     {
       "id": "grassknot",
       "name": "Grass Knot",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "grasspledge",
@@ -1816,20 +1816,20 @@
     {
       "id": "guardsplit",
       "name": "Guard Split",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "guardswap",
       "name": "Guard Swap",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "guillotine",
       "name": "Guillotine",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "gunkshot",
@@ -1846,8 +1846,8 @@
     {
       "id": "gyroball",
       "name": "Gyro Ball",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "hail",
@@ -1870,8 +1870,8 @@
     {
       "id": "hardpress",
       "name": "Hard Press",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "harden",
@@ -1930,8 +1930,8 @@
     {
       "id": "healpulse",
       "name": "Heal Pulse",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "healingwish",
@@ -1948,14 +1948,14 @@
     {
       "id": "heartswap",
       "name": "Heart Swap",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "heatcrash",
       "name": "Heat Crash",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "heatwave",
@@ -1966,8 +1966,8 @@
     {
       "id": "heavyslam",
       "name": "Heavy Slam",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "helpinghand",
@@ -2014,8 +2014,8 @@
     {
       "id": "horndrill",
       "name": "Horn Drill",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "hornleech",
@@ -2200,8 +2200,8 @@
     {
       "id": "instruct",
       "name": "Instruct",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "iondeluge",
@@ -2404,8 +2404,8 @@
     {
       "id": "lockon",
       "name": "Lock-On",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "lovelykiss",
@@ -2416,8 +2416,8 @@
     {
       "id": "lowkick",
       "name": "Low Kick",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "lowsweep",
@@ -2476,8 +2476,8 @@
     {
       "id": "magicpowder",
       "name": "Magic Powder",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "magicroom",
@@ -2650,8 +2650,8 @@
     {
       "id": "mimic",
       "name": "Mimic",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "mindblown",
@@ -2662,8 +2662,8 @@
     {
       "id": "mindreader",
       "name": "Mind Reader",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "minimize",
@@ -2824,8 +2824,8 @@
     {
       "id": "naturesmadness",
       "name": "Nature's Madness",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "needlearm",
@@ -2842,8 +2842,8 @@
     {
       "id": "nightshade",
       "name": "Night Shade",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "nightslash",
@@ -2854,8 +2854,8 @@
     {
       "id": "nightmare",
       "name": "Nightmare",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "noretreat",
@@ -2896,14 +2896,14 @@
     {
       "id": "octolock",
       "name": "Octolock",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "odorsleuth",
       "name": "Odor Sleuth",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "ominouswind",
@@ -2944,8 +2944,8 @@
     {
       "id": "painsplit",
       "name": "Pain Split",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "paraboliccharge",
@@ -3130,14 +3130,14 @@
     {
       "id": "powersplit",
       "name": "Power Split",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "powerswap",
       "name": "Power Swap",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "powertrick",
@@ -3172,8 +3172,8 @@
     {
       "id": "present",
       "name": "Present",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "prismaticlaser",
@@ -3244,8 +3244,8 @@
     {
       "id": "psychoshift",
       "name": "Psycho Shift",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "psyshieldbash",
@@ -3268,8 +3268,8 @@
     {
       "id": "psywave",
       "name": "Psywave",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "punishment",
@@ -3280,8 +3280,8 @@
     {
       "id": "purify",
       "name": "Purify",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "pursuit",
@@ -3298,8 +3298,8 @@
     {
       "id": "quash",
       "name": "Quash",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "quickattack",
@@ -3400,8 +3400,8 @@
     {
       "id": "reflecttype",
       "name": "Reflect Type",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "refresh",
@@ -3430,8 +3430,8 @@
     {
       "id": "return",
       "name": "Return",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "revelationdance",
@@ -3448,8 +3448,8 @@
     {
       "id": "reversal",
       "name": "Reversal",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "revivalblessing",
@@ -3562,8 +3562,8 @@
     {
       "id": "ruination",
       "name": "Ruination",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "sacredfire",
@@ -3688,8 +3688,8 @@
     {
       "id": "seismictoss",
       "name": "Seismic Toss",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "selfdestruct",
@@ -3748,8 +3748,8 @@
     {
       "id": "sheercold",
       "name": "Sheer Cold",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "shellsidearm",
@@ -3814,8 +3814,8 @@
     {
       "id": "simplebeam",
       "name": "Simple Beam",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "sing",
@@ -3838,8 +3838,8 @@
     {
       "id": "skillswap",
       "name": "Skill Swap",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "skittersmack",
@@ -3988,8 +3988,8 @@
     {
       "id": "soak",
       "name": "Soak",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "softboiled",
@@ -4012,8 +4012,8 @@
     {
       "id": "sonicboom",
       "name": "Sonic Boom",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "spacialrend",
@@ -4048,8 +4048,8 @@
     {
       "id": "speedswap",
       "name": "Speed Swap",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "spicyextract",
@@ -4060,8 +4060,8 @@
     {
       "id": "spiderweb",
       "name": "Spider Web",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "spikecannon",
@@ -4102,14 +4102,14 @@
     {
       "id": "spitup",
       "name": "Spit Up",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "spite",
       "name": "Spite",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "splash",
@@ -4132,8 +4132,8 @@
     {
       "id": "spotlight",
       "name": "Spotlight",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "springtidestorm",
@@ -4240,8 +4240,8 @@
     {
       "id": "strengthsap",
       "name": "Strength Sap",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "stringshot",
@@ -4306,8 +4306,8 @@
     {
       "id": "superfang",
       "name": "Super Fang",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "supercellslam",
@@ -4372,8 +4372,8 @@
     {
       "id": "switcheroo",
       "name": "Switcheroo",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "swordsdance",
@@ -4486,8 +4486,8 @@
     {
       "id": "telekinesis",
       "name": "Telekinesis",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "teleport",
@@ -4618,8 +4618,8 @@
     {
       "id": "topsyturvy",
       "name": "Topsy-Turvy",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "torchsong",
@@ -4630,8 +4630,8 @@
     {
       "id": "torment",
       "name": "Torment",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "toxic",
@@ -4672,8 +4672,8 @@
     {
       "id": "trick",
       "name": "Trick",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "trickroom",
@@ -4684,8 +4684,8 @@
     {
       "id": "trickortreat",
       "name": "Trick-or-Treat",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "triplearrows",
@@ -4774,8 +4774,8 @@
     {
       "id": "venomdrench",
       "name": "Venom Drench",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "venoshock",
@@ -4960,8 +4960,8 @@
     {
       "id": "worryseed",
       "name": "Worry Seed",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "wrap",
@@ -4972,8 +4972,8 @@
     {
       "id": "wringout",
       "name": "Wring Out",
-      "status": "port",
-      "note": "data: flags.protect"
+      "status": "no-op",
+      "note": "reachable, not ported yet"
     },
     {
       "id": "xscissor",
