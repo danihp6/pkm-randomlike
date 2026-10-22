@@ -10,12 +10,13 @@ state — only who executes the ritual changes.
 
 The code is merged and the box is not born yet. Oracle's Madrid region answers
 `OUT_OF_HOST_CAPACITY` for every shape, so the launch is waiting on a slot: the laptop
-runs an attempt every ~6 minutes, and `oci / retry` waits from CI in runs of ten attempts
-whenever its schedule deigns to fire. Meanwhile:
+runs an attempt every ~6 minutes, and `oci / retry` waits from CI around the clock, one
+launch every ~5 minutes, chaining its own runs. Meanwhile:
 
 - the repository is **public**, so Actions minutes are free again and the billing block
   that parked the loop overnight is gone;
-- `AUTOPILOT` is **`off`**: no cycle runs until a human arms the brake;
+- `AUTOPILOT` is **`on`** for a timed window, so cycles run and `main` moves while the wait
+  is going on;
 - when the instance appears, the `oci-ready` issue carries its IP and the bootstrap in
   this file turns it into the host.
 
@@ -119,20 +120,29 @@ Always Free allowance, and no other shape on the free list has the RAM for a bat
 local loop is the fast one, but it dies with the laptop, and A1 capacity in a busy
 region shows up at random.
 
-The workflow **cannot supply the cadence itself**. A `cron: '*/10 * * * *'` is a request,
-not a promise: this repository's `*/30` fired every 1.5 to 5 hours over two days, and the
-new workflow's first two hours had zero scheduled runs. So the job holds the cadence
-instead — `scripts/agent/vm/oci-launch.sh` takes `ATTEMPTS` (8 in CI, 1 for the laptop),
-`ATTEMPT_SLEEP` (180 s), `THROTTLE_SLEEP` (300 s) and `BUDGET` (2 400 s), and one run walks
-through its attempts, rotating 4/24 → 2/12 → 1/6, before handing the wait back to the
-schedule. `timeout-minutes: 50` sits above the script's own budget, so the job ends itself
-instead of being killed mid-launch.
+The workflow **cannot supply the cadence from its schedule**. A `cron: '*/10 * * * *'` is a
+request, not a promise: this repository's `*/30` fired every 1.5 to 5 hours over two days,
+and the new workflow's first scheduled tick came five hours after it went live. So a run
+holds the cadence itself — `scripts/agent/vm/oci-launch.sh` takes `ATTEMPTS` (8 in CI, 1 for
+the laptop), `ATTEMPT_SLEEP` (210 s), `THROTTLE_SLEEP` (300 s) and `BUDGET` (2 400 s), and
+walks through its attempts, rotating 4/24 → 2/12 → 1/6. `timeout-minutes: 50` sits above the
+script's own budget, so the job ends itself instead of being killed mid-launch.
+
+**And a run that ends without a slot hands the baton to the next one**, the same way
+`agent-cycle.yml` keeps its loop alive. That is what makes the wait continuous rather than
+bursty: one launch every ~5 minutes, around the clock, ~300 a day, two API calls each (the
+`RUNNING` check and the `launch`). Actions minutes are free while the repository is public.
+The chain stops by itself the moment an instance exists; `concurrency` keeps exactly one run
+alive, so a chained run and a cron tick can never overlap. The brake is the repository
+variable **`OCI_RETRY=off`**: the run then attempts nothing and chains nothing, and the cron
+ticks into an empty job until it is turned back on. A run whose attempts step *failed* (bad
+credential, missing variable) also does not chain, so a misconfiguration cannot spin.
 
 **The spacing is rate limiting, not patience.** A launch call takes ~1 min 40 s to answer
 either way. At one attempt every ~2 min 30 s, half of them came back `TooManyRequests`
 ("too many requests for the user") instead of "out of host capacity": Oracle throttles the
 launch API long before the region is out of shapes, and the interval people doing this wait
-settle on is ~5 minutes. So a capacity answer costs 3 minutes and a **throttle** costs 5,
+settle on is ~5 minutes. So a capacity answer costs ~3.5 minutes and a **throttle** costs 5,
 and a throttled attempt is logged as such instead of being counted as a full region.
 
 **The launch carries a public key.** `OCI_SSH_PUBLIC_KEY` is a repository variable with the
@@ -141,11 +151,11 @@ Without it the script exits `2` and launches nothing: a slot spent on a box nobo
 into is worse than a red run, and A1 slots do not come back often.
 
 Each attempt parks the run by finding the instance already `RUNNING` — it keeps no state
-of its own — so once a slot opens the schedule keeps firing, finds the instance and exits
-with its id, its shape and its IP. That is what lets the `oci-ready` issue still be opened
-by a later run if the one that launched died before announcing: the address is read again,
-never stored. When a slot opens the run waits for the IP and opens an `oci-ready` issue
-with the instance, the shape and the address.
+of its own — so once a slot opens the chained runs keep coming, find the instance, announce
+it and stop chaining. That is what lets the `oci-ready` issue still be opened by a later run
+if the one that launched died before announcing: the address is read again, never stored.
+When a slot opens the run waits for the IP and opens an `oci-ready` issue with the instance,
+the shape and the address.
 
 It authenticates as a dedicated OCI user, not the operator's:
 

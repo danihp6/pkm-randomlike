@@ -185,4 +185,5 @@ done
 # Running out of attempts is the expected answer for now: the region is full, not broken.
 # Exiting non-zero here would paint the runs list red for a wait that is going fine.
 echo "no capacity in $attempts attempt(s), $throttled of them throttled; the next run picks the wait up"
+{ echo "### No slot yet"; echo; echo "- attempts: $attempts"; echo "- throttled: $throttled"; echo "- the run hands the wait to the next one"; } >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
 exit 0

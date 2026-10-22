@@ -37,11 +37,11 @@ part it cannot know.
   it closes. It needs the `AUTOPILOT_TOKEN` secret, because `GITHUB_TOKEN` cannot write
   repository variables. `hours: 0` closes the range now; with no range set the brake is
   manual and the pass skips itself.
-- `oci-retry.yml` — the wait for the Always Free VM (`docs/agent-vm.md`): on a
-  10-minute schedule it calls `scripts/agent/vm/oci-launch.sh` with `ATTEMPTS=8`, so one
-  run works through its attempts for ~35 minutes instead of trusting a cron that fires
-  every 1–3 hours, then parks on the `RUNNING` instance. Attempts are ~4–5 minutes apart
-  because the launch API throttles anything faster; a throttle backs off longer than a
-  capacity answer does. It needs `OCI_SSH_PUBLIC_KEY` (the public half, injected at launch)
-  and opens an `oci-ready` issue when a slot opens. Read-only on the repo, no model tokens;
-  the waiting answers exit `0` so the runs list is not red while the region is simply full.
+- `oci-retry.yml` — the wait for the Always Free VM (`docs/agent-vm.md`): **continuous**
+  while it is armed, because each run hands the baton to the next one when it ends without
+  an instance — the schedule alone fires every 1–3 hours and cannot hold a wait. One run is
+  8 attempts ~5 minutes apart (Oracle throttles `launch` faster than that), alternating the
+  shape and parking on the `RUNNING` instance, which is also what stops the chain. It needs
+  `OCI_SSH_PUBLIC_KEY` (the public half, injected at launch) and opens an `oci-ready` issue
+  when a slot opens; `OCI_RETRY=off` is the brake. Read-only on the repo, no model tokens,
+  and the waiting answers exit `0` so the runs list is not red while the region is full.
