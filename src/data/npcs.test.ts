@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getMove } from './dex/moves';
 import { TYPE_NAMES } from './dex/types';
-import { en, es, setLocale, t } from '../i18n';
+import { en, es, setLocale, t, translationParams } from '../i18n';
 import { normalizeId } from './dex/species';
 import { getItem } from './items';
 import { OVERWORLD_SPRITE_KEYS } from './overworldSprites';
@@ -147,6 +147,10 @@ describe('the special-NPC table', () => {
     const row = rowOf('rocket');
     expect(row.nameKey).toBe('casino.title');
     expect(row.spriteKey).toBe('rocket');
+    // The row raises no card at all: the scene opens the 460×300 machine straight
+    // from the interact key, so the machine is not a choice and the row ships none.
+    expect(row.choices).toBeUndefined();
+    expect(row.greetingKey).toBe('casino.title');
     // A rolled row from map 2 on: 0 on map 1 and 3 points a floor after it.
     expect(row.chance).toBe(0);
     expect(row.floorStep).toBe(0.03);
@@ -160,6 +164,19 @@ describe('the special-NPC table', () => {
     expect(effectiveNpcChance(row, 1)).toBe(0);
     expect(effectiveNpcChance(row, 2)).toBe(0.03);
     expect(effectiveNpcChance(row, 8)).toBe(0.21);
+  });
+
+  it('renders the grunt greeting with no params, so it is never a key that needs them', () => {
+    const row = rowOf('rocket');
+    // `casino.controls` needs `{confirm}`/`{cancel}`, so it would throw here.
+    for (const locale of [en, es]) {
+      expect(translationParams(locale[row.greetingKey]), row.id).toEqual([]);
+    }
+    for (const locale of ['en', 'es'] as const) {
+      setLocale(locale);
+      expect(t(row.greetingKey)).not.toContain('{');
+    }
+    setLocale('en');
   });
 
   it('never rolls the grunt on map 1, where its weight is zero', () => {

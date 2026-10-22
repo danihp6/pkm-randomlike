@@ -79,11 +79,13 @@ export type NpcRow = Readonly<{
  * on it stands in the floor's first trainer room and opens the Mart, so the shop
  * room could retire and the run still has its counter (`docs/maps-spec.md` §7).
  * The **Team Rocket** grunt follows it in the table: it is the row that carries the
- * slot machine, so the casino room retired the way the shop room did and the
- * machine's panel opens from this card. The five member-edit rows and the sacrifice
- * share the roll after it, then the four run-modifier rows: the exorcist, the
- * weather man, the magician and the type gate. The last four rows pay in items or in
- * a battle: the **medic**, the **chef**, the **berry tree** and the **Mega Stone
+ * slot machine, so the casino room retired the way the shop room did. It is the only
+ * choice-less row — the interact key opens the machine straight away, so no card is
+ * ever raised for it — and its `greetingKey` is the machine's own paramless title,
+ * never a key that needs `{confirm}`/`{cancel}`. The five member-edit rows and the
+ * sacrifice share the roll after it, then the four run-modifier rows: the exorcist,
+ * the weather man, the magician and the type gate. The last four rows pay in items or
+ * in a battle: the **medic**, the **chef**, the **berry tree** and the **Mega Stone
  * keeper**.
  */
 export const NPC_ROWS: readonly NpcRow[] = [
@@ -106,7 +108,6 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0,
     floorStep: 0.03,
     repeatable: true,
-    choices: [{ id: 'spin', label: 'casino.title' }],
   },
   {
     id: 'tutor',

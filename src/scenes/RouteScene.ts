@@ -5916,11 +5916,16 @@ export class RouteScene extends Phaser.Scene {
    * Opens one NPC's card: its name, its greeting and its own rows plus `LEAVE`.
    * A one-shot row already used on this floor prints `npc.used` instead and offers
    * no choices, so only `LEAVE` remains; a `repeatable` row (the merchant) always
-   * answers again.
+   * answers again. The **Team Rocket** grunt is the exception: it raises no card at
+   * all and opens its slot machine straight away, so the interact key is one press.
    */
   private openNpcCard(npc: RoomNpc): void {
     const room = this.room;
     if (!room) return;
+    if (npc.row.id === 'rocket') {
+      openRocket(this.roomHost(), npc.tile);
+      return;
+    }
     const used =
       npc.row.repeatable !== true &&
       isItemPicked(this.run, npcUseId(room.mapIndex, room.roomId, npc.row.id));
@@ -5963,11 +5968,11 @@ export class RouteScene extends Phaser.Scene {
   /**
    * Resolves the row the card accepted (`docs/maps-spec.md` §7). The **merchant**
    * opens the Mart and marks no use, so the merchant is there for the rest of the
-   * floor, and the **Team Rocket** grunt opens the slot machine the same way on its
-   * own tile; the tutor opens its move card, the four re-rolls open the member card
-   * and the sacrifice draws its own member. The four run-modifier rows each commit
-   * one fact — the curse, the forced sky, the narrowed wild type or the gate's item —
-   * beside their use mark. Every other row records
+   * floor; the **Team Rocket** grunt never reaches this switch, because its machine
+   * opens straight from `openNpcCard`; the tutor opens its move card, the four
+   * re-rolls open the member card and the sacrifice draws its own member. The four
+   * run-modifier rows each commit one fact — the curse, the forced sky, the narrowed
+   * wild type or the gate's item — beside their use mark. Every other row records
    * `npc-<mapIndex>-<roomId>-<id>` in `pickedItems`, which `advanceMap` clears, so a
    * revisit and a reload know the card was taken.
    */
@@ -5976,10 +5981,6 @@ export class RouteScene extends Phaser.Scene {
       case 'merchant':
         this.closePanel();
         openMart(this.roomHost());
-        return;
-      case 'rocket':
-        this.closePanel();
-        openRocket(this.roomHost(), this.npc!.tile);
         return;
       case 'tutor':
         this.closePanel();
