@@ -576,7 +576,10 @@ Two things the table now has beyond the party gate:
   completing one, so a fresh run never meets it.
 - **`repeatable`.** A row marked `repeatable: true` writes **no** `npcUseId` mark, so
   its card answers again on the same floor; a row without it is one-shot and carries
-  its mark after the first successful use. Only the merchant is repeatable.
+  its mark after the first successful use. The **merchant** and the **Team Rocket
+  NPC** are the repeatable rows: the merchant's Mart and the machine's own
+  `casino-spin-*`/`casino-lock-*` marks are the record, so neither needs an
+  `npcUseId` mark.
 
 ### The no-heal room
 
@@ -692,7 +695,9 @@ content:
 
 The machine is the **Team Rocket** special NPC's panel, not a room (`Task-117`): a
 `rocket` row of `NPC_ROWS` stands in a regular trainer room like any other NPC, and
-its card's one row opens the machine. Its window is a cabinet with **three reels**,
+the interact key **opens the machine directly**, with **no** NPC card in between
+(the merchant's card shape does not apply to this row). Its window is a cabinet
+with **three reels**,
 every face a drawn item of the band's table or, on the fight, the grunt's Rocket
 icon. The two rows (`SPIN ¥<price>` and `LEAVE`) answer the pointer as well as the
 keys, the run's money sits in the corner and one message line reports the reveal. A
