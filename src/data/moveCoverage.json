@@ -202,8 +202,8 @@
     {
       "id": "attract",
       "name": "Attract",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "data: volatileStatus"
     },
     {
       "id": "aurasphere",
@@ -581,7 +581,7 @@
       "id": "captivate",
       "name": "Captivate",
       "status": "port",
-      "note": "data: boosts"
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "ceaselessedge",
@@ -599,7 +599,7 @@
       "id": "charge",
       "name": "Charge",
       "status": "port",
-      "note": "data: boosts"
+      "note": "data: volatileStatus"
     },
     {
       "id": "chargebeam",
@@ -665,7 +665,7 @@
       "id": "clangoroussoul",
       "name": "Clangorous Soul",
       "status": "port",
-      "note": "data: boosts"
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "clearsmog",
@@ -851,7 +851,7 @@
       "id": "darkvoid",
       "name": "Dark Void",
       "status": "port",
-      "note": "data: status"
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "darkestlariat",
@@ -886,8 +886,8 @@
     {
       "id": "defog",
       "name": "Defog",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "destinybond",
@@ -922,8 +922,8 @@
     {
       "id": "disable",
       "name": "Disable",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "data: volatileStatus"
     },
     {
       "id": "disarmingvoice",
@@ -1097,7 +1097,7 @@
       "id": "dreameater",
       "name": "Dream Eater",
       "status": "port",
-      "note": "data: drain"
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "drillpeck",
@@ -1186,8 +1186,8 @@
     {
       "id": "electrify",
       "name": "Electrify",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "data: volatileStatus"
     },
     {
       "id": "electroball",
@@ -1216,8 +1216,8 @@
     {
       "id": "embargo",
       "name": "Embargo",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "data: volatileStatus"
     },
     {
       "id": "ember",
@@ -1252,8 +1252,8 @@
     {
       "id": "entrainment",
       "name": "Entrainment",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "eruption",
@@ -1385,7 +1385,7 @@
       "id": "filletaway",
       "name": "Fillet Away",
       "status": "port",
-      "note": "data: boosts"
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "finalgambit",
@@ -1528,8 +1528,8 @@
     {
       "id": "floralhealing",
       "name": "Floral Healing",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "flowershield",
@@ -1588,14 +1588,14 @@
     {
       "id": "foresight",
       "name": "Foresight",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "data: volatileStatus"
     },
     {
       "id": "forestscurse",
       "name": "Forest's Curse",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "foulplay",
@@ -1684,8 +1684,8 @@
     {
       "id": "gastroacid",
       "name": "Gastro Acid",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "data: volatileStatus"
     },
     {
       "id": "geargrind",
@@ -1816,14 +1816,14 @@
     {
       "id": "guardsplit",
       "name": "Guard Split",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "guardswap",
       "name": "Guard Swap",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "guillotine",
@@ -1930,8 +1930,8 @@
     {
       "id": "healpulse",
       "name": "Heal Pulse",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "healingwish",
@@ -1948,8 +1948,8 @@
     {
       "id": "heartswap",
       "name": "Heart Swap",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "heatcrash",
@@ -2081,7 +2081,7 @@
       "id": "hyperspacefury",
       "name": "Hyperspace Fury",
       "status": "port",
-      "note": "data: self.boosts"
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "hyperspacehole",
@@ -2200,8 +2200,8 @@
     {
       "id": "instruct",
       "name": "Instruct",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "turn loop: turn.ts"
     },
     {
       "id": "iondeluge",
@@ -2404,8 +2404,8 @@
     {
       "id": "lockon",
       "name": "Lock-On",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "lovelykiss",
@@ -2476,8 +2476,8 @@
     {
       "id": "magicpowder",
       "name": "Magic Powder",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "magicroom",
@@ -2650,8 +2650,8 @@
     {
       "id": "mimic",
       "name": "Mimic",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "mindblown",
@@ -2662,8 +2662,8 @@
     {
       "id": "mindreader",
       "name": "Mind Reader",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "minimize",
@@ -2854,14 +2854,14 @@
     {
       "id": "nightmare",
       "name": "Nightmare",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "data: volatileStatus"
     },
     {
       "id": "noretreat",
       "name": "No Retreat",
       "status": "port",
-      "note": "data: boosts"
+      "note": "data: volatileStatus"
     },
     {
       "id": "nobleroar",
@@ -2896,14 +2896,14 @@
     {
       "id": "octolock",
       "name": "Octolock",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "data: volatileStatus"
     },
     {
       "id": "odorsleuth",
       "name": "Odor Sleuth",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "data: volatileStatus"
     },
     {
       "id": "ominouswind",
@@ -2957,7 +2957,7 @@
       "id": "partingshot",
       "name": "Parting Shot",
       "status": "port",
-      "note": "data: selfSwitch"
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "payday",
@@ -3130,14 +3130,14 @@
     {
       "id": "powersplit",
       "name": "Power Split",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "powerswap",
       "name": "Power Swap",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "powertrick",
@@ -3244,8 +3244,8 @@
     {
       "id": "psychoshift",
       "name": "Psycho Shift",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "psyshieldbash",
@@ -3280,8 +3280,8 @@
     {
       "id": "purify",
       "name": "Purify",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "pursuit",
@@ -3298,8 +3298,8 @@
     {
       "id": "quash",
       "name": "Quash",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "quickattack",
@@ -3400,8 +3400,8 @@
     {
       "id": "reflecttype",
       "name": "Reflect Type",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "refresh",
@@ -3743,7 +3743,7 @@
       "id": "shedtail",
       "name": "Shed Tail",
       "status": "port",
-      "note": "data: volatileStatus"
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "sheercold",
@@ -3814,8 +3814,8 @@
     {
       "id": "simplebeam",
       "name": "Simple Beam",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "sing",
@@ -3838,8 +3838,8 @@
     {
       "id": "skillswap",
       "name": "Skill Swap",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "skittersmack",
@@ -3923,7 +3923,7 @@
       "id": "smackdown",
       "name": "Smack Down",
       "status": "port",
-      "note": "data: basePower"
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "smartstrike",
@@ -3977,7 +3977,7 @@
       "id": "snore",
       "name": "Snore",
       "status": "port",
-      "note": "data: secondaries"
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "snowscape",
@@ -3988,8 +3988,8 @@
     {
       "id": "soak",
       "name": "Soak",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "softboiled",
@@ -4048,8 +4048,8 @@
     {
       "id": "speedswap",
       "name": "Speed Swap",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "spicyextract",
@@ -4060,8 +4060,8 @@
     {
       "id": "spiderweb",
       "name": "Spider Web",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "spikecannon",
@@ -4108,8 +4108,8 @@
     {
       "id": "spite",
       "name": "Spite",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "splash",
@@ -4240,8 +4240,8 @@
     {
       "id": "strengthsap",
       "name": "Strength Sap",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "stringshot",
@@ -4372,8 +4372,8 @@
     {
       "id": "switcheroo",
       "name": "Switcheroo",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "swordsdance",
@@ -4486,8 +4486,8 @@
     {
       "id": "telekinesis",
       "name": "Telekinesis",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "data: volatileStatus"
     },
     {
       "id": "teleport",
@@ -4618,8 +4618,8 @@
     {
       "id": "topsyturvy",
       "name": "Topsy-Turvy",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "torchsong",
@@ -4630,8 +4630,8 @@
     {
       "id": "torment",
       "name": "Torment",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "data: volatileStatus"
     },
     {
       "id": "toxic",
@@ -4672,8 +4672,8 @@
     {
       "id": "trick",
       "name": "Trick",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "trickroom",
@@ -4684,8 +4684,8 @@
     {
       "id": "trickortreat",
       "name": "Trick-or-Treat",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "triplearrows",
@@ -4774,8 +4774,8 @@
     {
       "id": "venomdrench",
       "name": "Venom Drench",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "venoshock",
@@ -4960,8 +4960,8 @@
     {
       "id": "worryseed",
       "name": "Worry Seed",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "wrap",

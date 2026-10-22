@@ -4,14 +4,22 @@ import { createFighter } from './fighter';
 import {
   absorbWithSubstitute,
   applyConfusion,
+  applyDisable,
+  applyEmbargo,
   applyFlinch,
   applyLeechSeed,
+  applyNightmare,
+  applyNoRetreat,
+  applyOctolock,
+  applyQuash,
   applyTaunt,
+  applyTelekinesis,
   beforeMoveVolatile,
   endOfTurnVolatile,
   hasSubstitute,
   leechSeedDamage,
   makeSubstitute,
+  nightmareDamage,
   tickPerish,
 } from './volatile';
 
@@ -75,5 +83,49 @@ describe('timed volatiles', () => {
     applyTaunt(fighter);
     endOfTurnVolatile(fighter);
     expect(fighter.volatiles.taunt).toBe(2);
+  });
+});
+
+describe('the status-half volatiles', () => {
+  it('Disable locks a move for four turns and clears the lock at zero', () => {
+    const fighter = make();
+    expect(applyDisable(fighter, 'tackle')).toBe(true);
+    expect(applyDisable(fighter, 'growl')).toBe(false);
+    expect(fighter.volatiles.disabledMove).toBe('tackle');
+    expect(fighter.volatiles.disableTurns).toBe(4);
+    for (let pass = 0; pass < 4; pass++) endOfTurnVolatile(fighter);
+    expect(fighter.volatiles.disabledMove).toBeNull();
+  });
+
+  it('Telekinesis and Embargo tick down each pass while Quash lasts one turn', () => {
+    const fighter = make();
+    applyTelekinesis(fighter);
+    applyEmbargo(fighter);
+    applyQuash(fighter);
+    expect(fighter.volatiles.telekinesis).toBe(3);
+    expect(fighter.volatiles.embargo).toBe(5);
+    endOfTurnVolatile(fighter);
+    expect(fighter.volatiles.telekinesis).toBe(2);
+    expect(fighter.volatiles.embargo).toBe(4);
+    expect(fighter.volatiles.quash).toBe(false);
+  });
+
+  it('Nightmare only chips a sleeping holder', () => {
+    const fighter = make();
+    applyNightmare(fighter);
+    expect(nightmareDamage(fighter)).toBe(0);
+    fighter.status = 'slp';
+    expect(nightmareDamage(fighter)).toBe(Math.max(1, Math.floor(fighter.maxHp / 4)));
+  });
+
+  it('Octolock and No Retreat trap their holder', () => {
+    const octolocked = make();
+    expect(applyOctolock(octolocked)).toBe(true);
+    expect(octolocked.volatiles.trapped).toBe(true);
+    expect(applyOctolock(octolocked)).toBe(false);
+
+    const vowed = make();
+    expect(applyNoRetreat(vowed)).toBe(true);
+    expect(vowed.volatiles.trapped).toBe(true);
   });
 });

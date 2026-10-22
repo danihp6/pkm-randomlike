@@ -94,6 +94,36 @@ The later ports add volatiles a single battle can honour: Aqua Ring and Ingrain
 Focus Energy, Laser Focus, Dragon Cheer, Endure, Imprison, Magic Coat, Snatch,
 Magnet Rise, Power Trick and the Stockpile counter (spent by Swallow).
 
+The **status half of the move audit** filled in every move whose effect is a
+write to a field the battle already reads, so `X used Attract!` now changes
+something. Infatuation (Attract, refused between two same-gender or genderless
+fighters), the move lock (Disable's `disabledMove` for four turns, Torment's
+repeat bar, Encore, Imprison), the residual volatiles (Nightmare's quarter while
+the holder sleeps, Octolock's Defense and Sp. Def drop, Aqua Ring, Curse),
+trapping and grounding (Spider Web, Octolock, No Retreat, Telekinesis floating
+its target out of the ground, Smack Down's `grounded`), the accuracy locks
+(Lock-On and Mind Reader, spent by the next damaging move), the type and
+identity writes (Soak, Reflect Type, Magic Powder, Forest's Curse and
+Trick-or-Treat — all undone when the holder leaves the field), the ability
+writes (Simple Beam, Worry Seed, Gastro Acid, Entrainment, Skill Swap), the stat
+and Speed exchanges (Heart Swap, Power Swap, Guard Swap, Speed Swap, Power
+Split, Guard Split, Psych Up), the heals aimed at the foe (Heal Pulse, Floral
+Healing, Purify, Strength Sap), Psycho Shift's status transfer, the turn and
+priority control (Instruct repeats the target's last move, Quash pins it to the
+back of the order, Electrify retypes its next move), the item writes (Trick,
+Switcheroo, Embargo) and the move and PP writes (Mimic, Spite). Each rule is a
+handler in `src/engine/battle/effects/moves.ts` or a case of
+`applyVolatileEffect` in `src/engine/battle/turn.ts`, and every row is pinned in
+`src/engine/battle/moveAudit.ts`.
+
+An ally-aimed move never lands on the foe: a single battle fields no partner, so
+Aromatic Mist, Coaching and Dragon Cheer fail, while Howl (whose target is "all
+allies") raises the user's own Attack. Three of the writes above are still
+write-only — Gastro Acid's and Embargo's suppression and Foresight's
+identification need the readers in `effects/registry.ts` and `accuracy.ts`, which
+a later port owns; the volatile itself is written, and ticked where the reference
+times it, today.
+
 Side and field conditions live on the battle state, not on a Pokémon:
 **Reflect**, **Light Screen**, **Aurora Veil**, **Tailwind**, **Lucky Chant**,
 **Mist** and **Safeguard** on a side; **Trick Room**, **Gravity**, **Magic

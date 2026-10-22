@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { getMove } from '../../data/dex';
 import { Rng } from '../rng';
+import { scriptedBattle } from './harness';
 import { createFighter, type FighterInput } from './fighter';
 import {
   activeFighter,
@@ -9,7 +11,7 @@ import {
   type BattleState,
   type RoomFieldEffects,
 } from './state';
-import { autoReplace, needsReplacement, takeTurn } from './turn';
+import { autoReplace, needsReplacement, takeTurn, useMove } from './turn';
 
 const build = (
   player: readonly FighterInput[],
@@ -372,5 +374,108 @@ describe('the room’s whole-field rules in the turn loop', () => {
         critStage: 1,
       }),
     ).toBe(control);
+  });
+});
+
+describe('the status half in the turn loop', () => {
+  it('Quash pins the quashed side to the back of the turn', () => {
+    const order = (quash: boolean): readonly string[] => {
+      const state = build(
+        [{ id: 'p', speciesId: 'charmander', level: 20, moves: ['ember'] }],
+        [{ id: 'e', speciesId: 'pidgey', level: 40, moves: ['tackle'] }],
+      );
+      if (quash) activeFighter(state, 'enemy').volatiles.quash = true;
+      takeTurn(state, fight(), fight());
+      return state.log.flatMap((event) => (event.kind === 'move' ? [event.side] : []));
+    };
+
+    expect(order(false)).toEqual(['enemy', 'player']);
+    expect(order(true)).toEqual(['player', 'enemy']);
+  });
+
+  it('Instruct makes the target repeat the move it last used', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'machamp', level: 30, moves: ['instruct', 'splash'] }],
+      [{ id: 'e', speciesId: 'snorlax', level: 30, moves: ['tackle'] }],
+    );
+    const enemy = activeFighter(state, 'enemy');
+    enemy.lastMoveId = 'tackle';
+    const before = activeFighter(state, 'player').hp;
+
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+
+    const moves = state.log.flatMap((event) =>
+      event.kind === 'move' && event.side === 'enemy' ? [event.moveId] : [],
+    );
+    expect(moves).toEqual(['tackle']);
+    expect(activeFighter(state, 'player').hp).toBeLessThan(before);
+    expect(enemy.moves[0].pp).toBe(35);
+  });
+
+  it('Instruct fails when the target has not moved yet', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'gengar', level: 30, moves: ['instruct'] }],
+      [{ id: 'e', speciesId: 'snorlax', level: 30, moves: ['tackle'] }],
+    );
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(
+      true,
+    );
+  });
+
+  it('Electrify makes the target next move Electric and is spent by it', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'gengar', level: 30, moves: ['electrify', 'splash'] }],
+      [{ id: 'e', speciesId: 'snorlax', level: 30, moves: ['tackle'] }],
+    );
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'enemy').volatiles.electrify).toBe(true);
+
+    const player = activeFighter(state, 'player');
+    const before = player.hp;
+    takeTurn(state, fight(1), fight());
+    expect(player.hp).toBeLessThan(before);
+    expect(activeFighter(state, 'enemy').volatiles.electrify).toBe(false);
+  });
+
+  it('a Normal move is still immune on a Ghost without Electrify', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'gengar', level: 30, moves: ['splash'] }],
+      [{ id: 'e', speciesId: 'snorlax', level: 30, moves: ['tackle'] }],
+    );
+    const before = activeFighter(state, 'player').hp;
+    takeTurn(state, fight(), fight());
+    expect(activeFighter(state, 'player').hp).toBe(before);
+  });
+});
+
+describe('the status half in a scripted battle on seed 2026', () => {
+  it('locks, torments, drains PP and chips a sleeper through the harness', () => {
+    const state = scriptedBattle({
+      player: [
+        {
+          id: 'player',
+          speciesId: 'gengar',
+          level: 30,
+          moves: ['sludgebomb', 'nightmare', 'spite', 'torment'],
+        },
+      ],
+      enemy: [{ id: 'enemy', speciesId: 'snorlax', level: 30, moves: ['tackle', 'rest'] }],
+      turnCap: 4,
+      playerCommand: (_state, turn) => fight([0, 1, 2, 3][turn - 1] ?? 3),
+      enemyCommand: (_state, turn) => fight(turn === 1 ? 1 : 0),
+    });
+
+    const enemy = activeFighter(state, 'enemy');
+    // Nightmare chipped the sleeper once before it woke on turn 3.
+    expect(enemy.hp).toBe(enemy.maxHp - Math.max(1, Math.floor(enemy.maxHp / 4)));
+    expect(enemy.status).toBeNull();
+    expect(enemy.volatiles.nightmare).toBe(false);
+    // Spite drained four PP from the Rest the foe last used.
+    expect(enemy.moves[1].pp).toBe((getMove('rest')?.pp ?? 0) - 1 - 4);
+    expect(enemy.volatiles.torment).toBe(true);
+    expect(
+      state.log.some((event) => event.kind === 'text' && event.text.includes('locked in a nightmare')),
+    ).toBe(true);
   });
 });

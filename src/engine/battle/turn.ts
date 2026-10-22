@@ -36,6 +36,7 @@ import {
 import { rollHitWith } from './modifiers';
 import { applyBoostEffect, applyStatusEffect } from './effects/apply';
 import {
+  CHARGE_SELF_BOOSTS,
   FIELD_CONDITION_MOVES,
   SIDE_CONDITION_MOVES,
   isProtectMove,
@@ -78,12 +79,23 @@ import {
 import { beforeMoveStatus, residualDamage, statusName } from './status';
 import {
   absorbWithSubstitute,
+  applyAttract,
   applyConfusion,
+  applyDisable,
+  applyElectrify,
+  applyEmbargo,
   applyEncore,
   applyFlinch,
+  applyForesight,
+  applyGastroAcid,
   applyLeechSeed,
+  applyNightmare,
+  applyNoRetreat,
+  applyOctolock,
   applyPerish,
   applyTaunt,
+  applyTelekinesis,
+  applyTorment,
   applyTrap,
   beforeMoveVolatile,
   endOfTurnVolatile,
@@ -91,6 +103,7 @@ import {
   isTaunted,
   leechSeedDamage,
   makeSubstitute,
+  nightmareDamage,
   tickPerish,
 } from './volatile';
 import { rollRun } from './runAway';
@@ -245,19 +258,35 @@ const VOLATILE_MESSAGES: Readonly<Record<string, (name: string) => string>> = {
   snatch: (name) => `${name} waits for its foe to make a move!`,
   magnetrise: (name) => `${name} levitated with electromagnetism!`,
   powertrick: (name) => `${name} switched its Attack and Defense!`,
+  attract: (name) => `${name} fell in love!`,
+  charge: (name) => `${name} began charging power!`,
+  disable: (name) => `${name}'s move was disabled!`,
+  electrify: (name) => `${name} was electrified!`,
+  embargo: (name) => `${name} can't use its held item!`,
+  foresight: (name) => `${name} was identified!`,
+  gastroacid: (name) => `${name}'s Ability was suppressed!`,
+  nightmare: (name) => `${name} began having a nightmare!`,
+  noretreat: (name) => `${name} can no longer escape!`,
+  octolock: (name) => `${name} is trapped by Octolock!`,
+  telekinesis: (name) => `${name} was hurled into the air!`,
+  torment: (name) => `${name} was subjected to torment!`,
 };
 
+/**
+ * Writes one volatile from the move's own data. Returns true when the volatile
+ * was written and false when the engine has no case for it (the coverage ledger
+ * reads this switch, so a missing case is a visible gap, never a silent no-op).
+ */
 function applyVolatileEffect(
   state: BattleState,
-  targetSide: SideId,
+  side: SideId,
   target: BattleFighter,
-  volatileStatus: string | undefined,
-): void {
-  if (!volatileStatus) return;
-  const ctx = makeContext(state, targetSide, { source: target, target: opponent(state, targetSide) });
-  if (!runTryVolatile(ctx, volatileStatus)) return;
+  volatile: string,
+): boolean {
+  const ctx = makeContext(state, side, { source: target, target: opponent(state, side) });
+  if (!runTryVolatile(ctx, volatile)) return false;
   const applied = ((): boolean => {
-    switch (volatileStatus) {
+    switch (volatile) {
       case 'confusion':
         return applyConfusion(target, state.rng);
       case 'leechseed':
@@ -321,6 +350,44 @@ function applyVolatileEffect(
         target.volatiles.powerTrick = true;
         target.stats = { ...target.stats, atk: target.stats.def, def: target.stats.atk };
         return true;
+      case 'attract': {
+        const foe = opponent(state, side);
+        if (foe.gender === target.gender) return false;
+        if (foe.gender === 'genderless' || target.gender === 'genderless') return false;
+        return applyAttract(target);
+      }
+      case 'charge':
+        target.volatiles.charge = true;
+        return true;
+      case 'disable': {
+        // The reference disables the move the target last used; a target that has
+        // not moved yet has none, so one usable slot is drawn — the family's one
+        // new Rng draw, in slot order so a seed reproduces the pick.
+        const usable = target.moves.filter((slot) => slot.pp > 0);
+        if (usable.length === 0) return false;
+        const remembered = usable.find((slot) => slot.moveId === target.lastMoveId);
+        const chosen = remembered ?? usable[state.rng.int(0, usable.length - 1)];
+        return applyDisable(target, chosen.moveId);
+      }
+      case 'electrify':
+        return applyElectrify(target);
+      case 'embargo':
+        return applyEmbargo(target);
+      case 'foresight':
+        return applyForesight(target);
+      case 'gastroacid':
+        return applyGastroAcid(target);
+      case 'nightmare':
+        if (target.status !== 'slp') return false;
+        return applyNightmare(target);
+      case 'noretreat':
+        return applyNoRetreat(target);
+      case 'octolock':
+        return applyOctolock(target);
+      case 'telekinesis':
+        return applyTelekinesis(target);
+      case 'torment':
+        return applyTorment(target);
       case 'substitute': {
         const cost = makeSubstitute(target);
         if (cost > 0) pushText(state, `${target.name} put in a substitute!`);
@@ -331,16 +398,17 @@ function applyVolatileEffect(
     }
   })();
   if (applied) {
-    const custom = VOLATILE_MESSAGES[volatileStatus];
+    const custom = VOLATILE_MESSAGES[volatile];
     pushText(
       state,
       custom
         ? custom(target.name)
-        : volatileStatus === 'yawn'
+        : volatile === 'yawn'
           ? `${target.name} grew drowsy!`
-          : `${target.name} was affected by ${volatileStatus}!`,
+          : `${target.name} was affected by ${volatile}!`,
     );
   }
+  return applied;
 }
 
 function applySecondary(
@@ -413,8 +481,18 @@ function applyMoveEffects(
   const targetSide = reflects ? side : opponentOf(actingSide);
   // A reflected or snatched move turns on its user, whatever slot it was aimed at.
   const effectTargetOfMove = reflects || snatches ? attacker : defender;
-  const effectSide = selfTarget ? actingSide : targetSide;
-  const effectTarget = selfTarget ? acting : effectTargetOfMove;
+  // An ally-aimed move never lands on the foe: `allies` includes the user (Howl),
+  // `adjacentAlly` needs a partner the single battle does not field (Aromatic Mist).
+  const allyMove = move.target === 'allies' || move.target === 'adjacentAlly' || move.target === 'ally';
+  const partner = liveSlots(state, side)
+    .map((slot) => activeFighter(state, side, slot))
+    .find((fighter) => fighter !== acting && fighter.hp > 0);
+  if (allyMove && move.target !== 'allies' && !partner) {
+    pushText(state, 'But it failed!');
+    return;
+  }
+  const effectSide = selfTarget || allyMove ? actingSide : targetSide;
+  const effectTarget = selfTarget ? acting : allyMove ? (partner ?? acting) : effectTargetOfMove;
 
   if (move.status) applyStatusEffect(state, effectSide, effectTarget, move.status);
 
@@ -809,6 +887,12 @@ function resolveMove(
     return;
   }
 
+  // Torment bars the same move on two consecutive turns.
+  if (attacker.volatiles.torment && attacker.lastMoveId === move.id) {
+    pushText(state, `${attacker.name} can't use the same move twice in a row!`);
+    return;
+  }
+
   const statusCheck = beforeMoveStatus(attacker, state.rng);
   if (statusCheck && 'blocked' in statusCheck) {
     // Sleep Talk and Snore are the two moves usable while asleep.
@@ -859,6 +943,10 @@ function resolveMove(
     if (attacker.volatiles.charging !== move.id && !chargesInstantly(state, move)) {
       attacker.volatiles.charging = move.id;
       pushText(state, `${attacker.name} ${chargeVerb(move.id)}`);
+      const chargeBoosts = CHARGE_SELF_BOOSTS[move.id];
+      if (chargeBoosts) {
+        applyBoostEffect(state, side, attacker, chargeBoosts, { self: true });
+      }
       return;
     }
     attacker.volatiles.charging = null;
@@ -892,6 +980,11 @@ function resolveMove(
   const aims = moveAims(state, side, attacker, move, target ?? opponent(state, side));
   if (aims.length === 0) return;
 
+  // Lock-On and Mind Reader guarantee the user's next damaging move; it is spent
+  // by that move, so a status move in between never wastes it.
+  const lockedOn = move.category !== 'Status' && attacker.volatiles.lockOn;
+  if (lockedOn) attacker.volatiles.lockOn = false;
+
   const attackerSlot = slotOf(state, side, attacker);
   let totalDamage = 0;
   let damaged = false;
@@ -904,17 +997,21 @@ function resolveMove(
     const defender = activeFighter(state, aim.side, aim.slot);
     if (protectStops(state, side, move, defender)) continue;
 
-    if (move.category !== 'Status' && !rollHitWith(state, side, move, attacker, defender)) {
+    const sure = lockedOn || (defender.volatiles.telekinesis > 0 && move.ohko !== true);
+    if (move.category !== 'Status' && !sure && !rollHitWith(state, side, move, attacker, defender)) {
       pushText(state, `${attacker.name}'s attack missed!`);
       continue;
     }
 
     // Type-changing abilities (Galvanize, Pixilate, Liquid Voice) and item-driven
     // rewrites (a berry's Natural Gift) apply before any immunity check, so the
-    // move is treated as its new type throughout.
+    // move is treated as its new type throughout. Electrify overrides them for one
+    // move and is spent by it.
     const moveContext = makeContext(state, side, { source: attacker, target: defender, move });
     const modified = runModifyMove(moveContext, move);
-    const moveType = runModifyMoveType(moveContext, modified);
+    const electrified = attacker.volatiles.electrify;
+    if (electrified) attacker.volatiles.electrify = false;
+    const moveType = electrified ? 'Electric' : runModifyMoveType(moveContext, modified);
     const activeMove: Move = moveType === modified.type ? modified : { ...modified, type: moveType };
 
     const hitContext = makeContext(state, side, {
@@ -1051,10 +1148,7 @@ function resolveMove(
           }
           if (grudged && moveSlot) {
             moveSlot.pp = 0;
-            pushText(
-              state,
-              `${attacker.name}'s ${activeMove.name} lost all its PP due to the grudge!`,
-            );
+            pushText(state, `${attacker.name}'s ${activeMove.name} lost all its PP due to the grudge!`);
           }
           break;
         }
@@ -1069,10 +1163,34 @@ function resolveMove(
   if (effectMove.category !== 'Status') attacker.volatiles.laserFocus = false;
 
   applyMoveEffects(state, side, effectMove, totalDamage, damaged, effectTarget ?? undefined);
+  if (effectMove.id === 'instruct') {
+    instructTarget(state, side, effectTarget);
+  }
   // Contact reactions are not "the move's effect", so Mold Breaker stops piercing here.
   state.abilityPierce = null;
   if (lastHitContext) runAfterMove(lastHitContext, effectMove, damaged);
   maybeSelfSwitch(state, side, attacker, effectMove);
+}
+
+/**
+ * Instruct makes the target repeat the move it last used, right away. A move the
+ * reference refuses to call (Instruct itself, a call-a-move, a charge move) or one
+ * the target no longer has PP for makes the move fail instead.
+ */
+function instructTarget(state: BattleState, side: SideId, target: BattleFighter | null): void {
+  if (!target || target.hp <= 0 || state.winner !== null) return;
+  const last = target.lastMoveId ? getMove(target.lastMoveId) : undefined;
+  const slot = last ? target.moves.find((entry) => entry.moveId === last.id) : undefined;
+  if (!last || !slot || slot.pp <= 0) {
+    pushText(state, 'But it failed!');
+    return;
+  }
+  if (last.id === 'instruct' || CALLER_MOVES.has(last.id) || last.flags.failinstruct) {
+    pushText(state, 'But it failed!');
+    return;
+  }
+  pushText(state, `${target.name} followed the instruction!`);
+  resolveMove(state, opponentOf(side), target, last, null);
 }
 
 function faint(state: BattleState, side: SideId, slot: Slot = 0): void {
@@ -1420,6 +1538,38 @@ function resolveResiduals(state: BattleState): void {
         pushText(state, `${fighter.name} is afflicted by the curse!`);
         if (fighter.hp <= 0) faint(state, side, slot);
       }
+      if (fighter.hp > 0 && fighter.volatiles.octolock) {
+        applyBoostEffect(
+          state,
+          side,
+          fighter,
+          { def: -1, spd: -1 },
+          {
+            self: true,
+            message: `${fighter.name} is trapped by Octolock and its Defense and Sp. Def fell!`,
+          },
+        );
+      }
+      if (fighter.hp > 0) {
+        if (fighter.volatiles.nightmare && fighter.status !== 'slp') {
+          fighter.volatiles.nightmare = false;
+        }
+        const nightmare = nightmareDamage(fighter);
+        if (nightmare > 0) {
+          const dealt = applyDamage(fighter, nightmare);
+          pushEvent(state, {
+            kind: 'damage',
+            side,
+            amount: dealt,
+            hp: fighter.hp,
+            maxHp: fighter.maxHp,
+            effectiveness: 1,
+            crit: false,
+          });
+          pushText(state, `${fighter.name} is locked in a nightmare!`);
+          if (fighter.hp <= 0) faint(state, side, slot);
+        }
+      }
     }
   }
 
@@ -1465,9 +1615,7 @@ function gmaxUsed(state: BattleState, side: SideId): boolean {
 /** The first foe slot a command can still hit, or the command's own target when it lives. */
 function aimedCommand(state: BattleState, side: SideId, command: FightCommand): FightCommand | null {
   const foeSide = opponentOf(side);
-  const live = liveSlots(state, foeSide).filter(
-    (slot) => activeFighter(state, foeSide, slot).hp > 0,
-  );
+  const live = liveSlots(state, foeSide).filter((slot) => activeFighter(state, foeSide, slot).hp > 0);
   if (live.length === 0) return null;
   const target = command.target;
   if (target && target.side === foeSide && live.includes(target.slot)) return command;
@@ -1570,7 +1718,20 @@ export function takeDoubleTurn(
     }
   }
 
-  for (const entry of orderActions(state, moveEntries, state.rng)) {
+  // Quash can land mid-turn, so the order is drained rather than walked: a quashed
+  // entry is moved to the back while another entry is still waiting to act.
+  const queue = orderActions(state, moveEntries, state.rng);
+  while (queue.length > 0) {
+    const entry = queue[0];
+    const quashed = activeFighter(state, entry.side, entry.slot ?? 0).volatiles.quash;
+    const waiting = queue
+      .slice(1)
+      .some((other) => !activeFighter(state, other.side, other.slot ?? 0).volatiles.quash);
+    if (quashed && waiting) {
+      queue.push(queue.shift() as (typeof queue)[number]);
+      continue;
+    }
+    queue.shift();
     if (state.winner !== null) break;
     const slot = entry.slot ?? 0;
     if (activeFighter(state, entry.side, slot).hp <= 0) continue;

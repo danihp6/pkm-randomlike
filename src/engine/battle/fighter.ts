@@ -124,6 +124,34 @@ export type Volatiles = {
   wimpOut: boolean;
   /** Gorilla Tactics locked the holder into this move, or null. */
   gorillaTactics: string | null;
+  /** Torment: the holder cannot use the same move on two turns in a row. */
+  torment: boolean;
+  /** Nightmare: loses a quarter of max HP each residual pass while asleep. */
+  nightmare: boolean;
+  /** Octolock: trapped, and losing Defense and Sp. Def each residual pass. */
+  octolock: boolean;
+  /** No Retreat: the holder has vowed not to switch out. */
+  noretreat: boolean;
+  /** Lock-On / Mind Reader: the holder's next move cannot miss. */
+  lockOn: boolean;
+  /** Turns of Telekinesis left (0 = none); the holder floats and cannot be missed. */
+  telekinesis: number;
+  /** Electrify: the holder's next move is Electric. */
+  electrify: boolean;
+  /** Turns of Embargo left (0 = none). */
+  embargo: number;
+  /** Foresight / Odor Sleuth: the holder has been identified. */
+  foresight: boolean;
+  /** Gastro Acid: the holder's ability is suppressed. */
+  gastroAcid: boolean;
+  /** Quash: the holder acts last this turn. */
+  quash: boolean;
+  /** Smack Down: the holder is knocked to the ground. */
+  grounded: boolean;
+  /** The type Forest's Curse or Trick-or-Treat added to the holder, or null. */
+  addedType: string | null;
+  /** The holder's own types before a move rewrote them, restored on switch-out. */
+  baseTypes: readonly string[] | null;
 };
 
 /** The pre-Transform shape, restored when the holder leaves the field. */
@@ -274,6 +302,20 @@ export function emptyVolatiles(): Volatiles {
     lastDamageTaken: 0,
     wimpOut: false,
     gorillaTactics: null,
+    torment: false,
+    nightmare: false,
+    octolock: false,
+    noretreat: false,
+    lockOn: false,
+    telekinesis: 0,
+    electrify: false,
+    embargo: 0,
+    foresight: false,
+    gastroAcid: false,
+    quash: false,
+    grounded: false,
+    addedType: null,
+    baseTypes: null,
   };
 }
 
@@ -546,9 +588,27 @@ export function isFainted(fighter: BattleFighter): boolean {
 
 /** A Pokémon on the ground is affected by terrain; Flying types and Levitate are not. */
 export function isGrounded(fighter: BattleFighter): boolean {
-  if (fighter.volatiles.magnetRise > 0) return false;
+  if (fighter.volatiles.grounded) return true;
+  if (fighter.volatiles.magnetRise > 0 || fighter.volatiles.telekinesis > 0) return false;
   if (fighter.types.includes('Flying')) return false;
   return fighter.ability !== 'Levitate';
+}
+
+/**
+ * Rewrites a fighter's own types (Soak, Reflect Type, Magic Powder), keeping the
+ * shape a switch-out restores so the rewrite never outlives the battle.
+ */
+export function rewriteTypes(fighter: BattleFighter, types: readonly string[]): void {
+  if (!fighter.volatiles.baseTypes) fighter.volatiles.baseTypes = fighter.types;
+  fighter.types = [...types];
+}
+
+/** Adds one type (Forest's Curse, Trick-or-Treat), replacing the type a prior add left. */
+export function addType(fighter: BattleFighter, type: string): void {
+  const added = fighter.volatiles.addedType;
+  const kept = added ? fighter.types.filter((entry) => entry !== added) : fighter.types;
+  rewriteTypes(fighter, [...kept, type]);
+  fighter.volatiles.addedType = type;
 }
 
 /** Long Reach strips the contact flag from its holder's moves. */
@@ -668,6 +728,7 @@ export function resetBattleState(fighter: BattleFighter): void {
   if (fighter.volatiles.powerTrick) {
     fighter.stats = { ...fighter.stats, atk: fighter.stats.def, def: fighter.stats.atk };
   }
+  if (fighter.volatiles.baseTypes) fighter.types = fighter.volatiles.baseTypes;
   fighter.boosts = emptyBoosts();
   fighter.lastMoveId = null;
   fighter.lastItemId = null;
