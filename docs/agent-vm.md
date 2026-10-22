@@ -124,13 +124,14 @@ The workflow **cannot supply the cadence from its schedule**. A `cron: '*/10 * *
 request, not a promise: this repository's `*/30` fired every 1.5 to 5 hours over two days,
 and the new workflow's first scheduled tick came five hours after it went live. So a run
 holds the cadence itself — `scripts/agent/vm/oci-launch.sh` takes `ATTEMPTS` (8 in CI, 1 for
-the laptop), `ATTEMPT_SLEEP` (210 s), `THROTTLE_SLEEP` (300 s) and `BUDGET` (2 400 s), and
-walks through its attempts, rotating 4/24 → 2/12 → 1/6. `timeout-minutes: 50` sits above the
-script's own budget, so the job ends itself instead of being killed mid-launch.
+the laptop), `ATTEMPT_SLEEP` (300 s), `THROTTLE_SLEEP` (600 s), `START_DELAY` (300 s) and
+`BUDGET` (3 600 s), and walks through its attempts, rotating 4/24 → 2/12 → 1/6.
+`timeout-minutes: 75` sits above the script's own budget, so the job ends itself instead of
+being killed mid-launch.
 
 **And a run that ends without a slot hands the baton to the next one**, the same way
 `agent-cycle.yml` keeps its loop alive. That is what makes the wait continuous rather than
-bursty: one launch every ~5 minutes, around the clock, ~300 a day, two API calls each (the
+bursty: one launch every ~7 minutes, around the clock, ~200 a day, two API calls each (the
 `RUNNING` check and the `launch`). Actions minutes are free while the repository is public.
 The chain stops by itself the moment an instance exists; `concurrency` keeps exactly one run
 alive, so a chained run and a cron tick can never overlap. The brake is the repository
@@ -140,10 +141,14 @@ credential, missing variable) also does not chain, so a misconfiguration cannot 
 
 **The spacing is rate limiting, not patience.** A launch call takes ~1 min 40 s to answer
 either way. At one attempt every ~2 min 30 s, half of them came back `TooManyRequests`
-("too many requests for the user") instead of "out of host capacity": Oracle throttles the
-launch API long before the region is out of shapes, and the interval people doing this wait
-settle on is ~5 minutes. So a capacity answer costs ~3.5 minutes and a **throttle** costs 5,
-and a throttled attempt is logged as such instead of being counted as a full region.
+("too many requests for the user") instead of "out of host capacity", and at ~5 min it still
+did: Oracle throttles the launch API long before the region is out of shapes, and the
+interval people doing this wait settle on is 5 to 10 minutes. Two more things matter as much
+as the gap between attempts. A **throttle costs 10 minutes**, not 5. And a chained run opens
+with a **5 min warm-up** (`START_DELAY`), because without it the last attempt of one run and
+the first of the next land a minute apart — two launches back to back, which is exactly the
+pattern that earns the 429. A throttled attempt is logged and counted as such instead of
+being counted as a full region.
 
 **The launch carries a public key.** `OCI_SSH_PUBLIC_KEY` is a repository variable with the
 public half of the key you log in with, passed as `--metadata '{"ssh_authorized_keys": …}'`.

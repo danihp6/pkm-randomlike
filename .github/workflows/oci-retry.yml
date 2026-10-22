@@ -8,8 +8,14 @@ name: oci / retry
 # six hours, and a `*/10` fired once in five. So this workflow cannot depend on it and does
 # what `agent-cycle.yml` does — **each run hands the baton to the next one** when it ends
 # without an instance, which makes the wait continuous: 8 attempts per run, one launch
-# every ~5 minutes, 24/7, until a slot opens. The cron stays as the thing that restarts the
-# chain if a run dies before handing it over.
+# every ~7 minutes, around the clock, until a slot opens. The cron stays as the thing that
+# restarts the chain if a run dies before handing it over.
+#
+# The gap is deliberate and it is the tuning knob. At ~2.5 min between launches half the
+# attempts came back `TooManyRequests`; at ~5 min it still did, and a chained run starts
+# within seconds of the previous one's last attempt, which is two launches back to back.
+# So: 5 min between attempts, 10 after a throttle, and a 5 min warm-up at the top of every
+# run. ~9 launches an hour instead of ~25, and the limiter stops eating attempts.
 #
 # The chain stops by itself: a run that finds the instance `RUNNING` (or launches it) parks
 # with an outcome, announces it in an `oci-ready` issue, and does not re-dispatch. The
@@ -53,10 +59,10 @@ permissions:
 jobs:
   attempt:
     runs-on: ubuntu-24.04
-    # Eight attempts at ~1 min 40 s each, ~3.5 min apart, plus up to 5 minutes waiting for
-    # the IP once a slot opens: 8 · 102 s + 7 · 210 s ≈ 38 min, under the script's own
-    # 40 min budget, which keeps the job from being killed mid-launch.
-    timeout-minutes: 50
+    # Eight attempts at ~1 min 40 s each, ~5 min between them, a 5 min warm-up and up to
+    # 5 minutes waiting for the IP once a slot opens: 300 + 8 · 102 + 7 · 300 ≈ 54 min,
+    # under the script's own 60 min budget, which keeps the job from being killed mid-launch.
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v6
 
@@ -70,9 +76,10 @@ jobs:
         if: vars.OCI_RETRY != 'off'
         env:
           ATTEMPTS: ${{ inputs.attempts || 8 }}
-          ATTEMPT_SLEEP: 210
-          THROTTLE_SLEEP: 300
-          BUDGET: 2400
+          ATTEMPT_SLEEP: 300
+          THROTTLE_SLEEP: 600
+          START_DELAY: 300
+          BUDGET: 3600
           SSH_PUBLIC_KEY: ${{ vars.OCI_SSH_PUBLIC_KEY }}
           OCI_CLI_USER: ${{ vars.OCI_CLI_USER }}
           OCI_CLI_FINGERPRINT: ${{ vars.OCI_CLI_FINGERPRINT }}

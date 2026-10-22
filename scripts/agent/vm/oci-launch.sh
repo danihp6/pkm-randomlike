@@ -31,6 +31,10 @@
 #                   once per wake-up and brings its own cadence)
 #   ATTEMPT_SLEEP   seconds to wait after a capacity answer (default 60)
 #   THROTTLE_SLEEP  seconds to wait after a `TooManyRequests` (default 300)
+#   START_DELAY     seconds before the first attempt (default 0). A chained run starts the
+#                   moment the previous one ends, so without it the last attempt of one run
+#                   and the first of the next land ~1 minute apart and the limiter sees two
+#                   launches back to back — the exact pattern that earns a 429.
 #   BUDGET          seconds the attempt loop may spend before handing the wait back to the
 #                   schedule, so a job is never killed mid-launch (default 2400)
 
@@ -58,6 +62,7 @@ out=${GITHUB_OUTPUT:-/dev/null}
 attempts=${ATTEMPTS:-1}
 pause=${ATTEMPT_SLEEP:-60}
 throttle=${THROTTLE_SLEEP:-300}
+delay=${START_DELAY:-0}
 budget=${BUDGET:-2400}
 started=$SECONDS
 throttled=0
@@ -97,10 +102,26 @@ park() {
   exit 0
 }
 
-for attempt in $(seq 1 "$attempts"); do
-  existing=$(oci compute instance list --compartment-id "$COMPARTMENT_ID" \
+running_id() {
+  oci compute instance list --compartment-id "$COMPARTMENT_ID" \
     --display-name "$name" --lifecycle-state RUNNING \
-    --query 'data[0].id' --raw-output 2>/dev/null || true)
+    --query 'data[0].id' --raw-output 2>/dev/null || true
+}
+
+# A chained run starts seconds after the previous one ended, at the tail of its last
+# `launch` call. Waiting here is what keeps the limiter from seeing two launches a minute
+# apart; the delay is charged to the budget like any other wait.
+first=$(running_id)
+if [ -n "$first" ] && [ "$first" != null ]; then
+  park "$first"
+fi
+if [ "$delay" -gt 0 ]; then
+  echo "waiting ${delay}s before the first attempt: the previous run may have just launched"
+  sleep "$delay"
+fi
+
+for attempt in $(seq 1 "$attempts"); do
+  existing=$(running_id)
   if [ -n "$existing" ] && [ "$existing" != null ]; then
     park "$existing"
   fi
