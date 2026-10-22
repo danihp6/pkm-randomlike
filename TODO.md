@@ -1160,15 +1160,13 @@ The batches below carry at most one `src/scenes/RouteScene.ts` task each (the ta
 | 45 | 100 | `src/scenes/RouteScene.ts`, `src/data/bosses.ts`, `src/engine/routes/battlefield.ts` → 100 |
 | 46 | 101 | `src/scenes/RouteScene.ts`, `src/engine/save.ts`, `src/engine/battle/commands.ts` → 101 |
 | 47 | 102, 103, 108 | `src/engine/maps/plan.ts` (+ 102's new modules, its notices and the i18n tables) → 102; `src/data/items.ts`, `src/data/dex/natures.ts`, `src/engine/save.ts`, the run/battle rules it edits and the generated coverage pair → 103; `src/scenes/RouteScene.ts`, `src/scenes/BattleScene.ts`, `src/engine/run/battleLink.ts`, `src/ui/partyGrid.ts`, `src/ui/beats.ts` → 108 |
-| 47b | 119 | the new `src/engine/battle/moveAudit.ts` + `moveAudit.test.ts`, `scripts/effect-coverage.mjs`, the generated `docs/balance/effect-coverage.md` + `src/data/moveCoverage.json`, `src/engine/README.md` → 119 |
-| 47c | 120 | `src/engine/battle/{turn,volatile,fighter}.ts`, `src/engine/battle/effects/moves.ts` + their tests, the generated coverage pair (regenerated here) → 120 |
+| 47b | 119, 109 | the new `src/engine/battle/moveAudit.ts` + `moveAudit.test.ts`, `scripts/effect-coverage.mjs`, the generated `docs/balance/effect-coverage.md` + `src/data/moveCoverage.json`, `src/data/items.ts` (the doc comment only), `src/engine/README.md`, `docs/showdown-reuse.md` §3 and `docs/tech-decisions.md`'s `D16` → 119; `src/scenes/RouteScene.ts`, `src/ui/notice.ts` + `notice.test.ts`, `src/i18n/{en,es}.ts`, `docs/routes-spec.md` §6 and `docs/design-spec.md` §3 → 109 |
+| 47c | 120, 117 | `src/engine/battle/{turn,volatile,fighter}.ts`, `src/engine/battle/effects/moves.ts` + their tests, the generated coverage pair (regenerated here) → 120; `src/scenes/RouteScene.ts` (the rocket's `chooseNpc` case), `src/scenes/BootScene.ts`, `src/engine/maps/plan.ts` + test, `src/data/npcs.ts` + test, `src/scenes/rooms/casino.ts` + test (deleted), the new `src/ui/rocketPanel.ts` + test, `src/ui/casino.ts` (comment only), `src/ui/README.md`, `src/scenes/rooms/README.md`, `docs/maps-spec.md` §7, `docs/design-spec.md` §7 and `docs/routes-spec.md` §2 → 117 |
 | 47d | 121 | `src/engine/battle/{damage,turn,preview}.ts`, `src/engine/battle/effects/moves.ts` + their tests, the generated coverage pair (regenerated here) → 121 |
-| 51 | 109 | `src/scenes/RouteScene.ts`, `src/ui/notice.ts` + `notice.test.ts`, `src/i18n/{en,es}.ts` → 109 |
 | 52 | 110 | `src/scenes/RouteScene.ts`, `src/scenes/BattleScene.ts`, `src/ui/bag.ts` + test, `src/i18n/{en,es}.ts` → 110 |
 | 53 | 114 | `src/engine/battle/**`, `src/ui/feed.ts` + test, `src/i18n/{en,es}.ts` → 114 |
 | 54 | 115 | `src/data/casino.ts` + test, `src/ui/casino.ts` + test → 115 |
 | 55 | 116 | `src/scenes/rooms/casino.ts` + test, `src/ui/casinoReels.ts` + test → 116 |
-| 56 | 117 | `src/scenes/rooms/casino.ts` + test (deleted), `src/engine/maps/plan.ts` + test, `src/data/npcs.ts` + test, `src/scenes/BootScene.ts`, `src/ui/rocketPanel.ts` + test → 117 |
 | 57 | 118 | `src/ui/capture.ts` + test, `src/scenes/BattleScene.ts`, `src/i18n/{en,es}.ts` → 118 |
 
 **Batch 39 was filled with `[Task-116]` (Batch 55) in this cycle.** The cut was
@@ -1375,7 +1373,36 @@ and no two tasks in the batch share a code, data or asset path. **The table's ro
 49 and 50 retire**: `[Task-105]` and `[Task-107]` are `[x]` (shipped) and `[Task-108]`
 is captured here, so a later cycle cannot cut a shipped task or the same task twice;
 Batches 48, 49 and 50 are now empty labels and the plan resumes at **Batch 51**
-(`[Task-109]`). `[Task-108]`'s own entry keeps its prose and takes this batch's label.
+(`[Task-109]`, filled into 47b below). `[Task-108]`'s own entry keeps its prose and takes this batch's label.
+
+**Batch 47b is `[Task-119]` and `[Task-109]`: the cut, plus one filled slot.** The cut is the
+move audit and the honest coverage ledger — the instrument `[Task-120]` and `[Task-121]` are
+judged by. `[Task-109]`, the area-entry panel, is the fill: its dependencies are all merged (the
+notice module and its later rows, the chrome re-tune and the i18n table) and its paths are
+disjoint from 119's, so the two run as one dev wave and one QA wave. **119** holds the new
+`src/engine/battle/moveAudit.ts` + `moveAudit.test.ts`, `scripts/effect-coverage.mjs`, the
+generated `docs/balance/effect-coverage.md` + `src/data/moveCoverage.json`, the one doc comment
+this task repairs in `src/data/items.ts`, `src/engine/README.md`, `docs/showdown-reuse.md` §3 and
+`docs/tech-decisions.md`'s `D16`; **109** holds `src/scenes/RouteScene.ts`, `src/ui/notice.ts` +
+`notice.test.ts`, `src/i18n/{en,es}.ts`, `docs/routes-spec.md` §6 and `docs/design-spec.md` §3.
+**The hot files:** the generated coverage pair and `src/data/items.ts` → 119;
+`src/scenes/RouteScene.ts` and the two i18n tables → 109. **No `docs/*.md` file is shared**: 119
+writes `docs/showdown-reuse.md` and `docs/tech-decisions.md`, 109 writes `docs/routes-spec.md` and
+`docs/design-spec.md`, so this batch needs no section split. The two empty slots name their
+blockers, task by task: `[Task-117]` **needs `src/scenes/RouteScene.ts`** — its entry no longer
+denies it, because the rocket's panel has no data-driven dispatch and `chooseNpc` is a hard-coded
+id switch — and that scene is 109's, so 117 fills **47c** beside `[Task-120]` instead;
+`[Task-123]` (Batch 58) shares `src/ui/README.md` with 117, so the two can never share a batch and
+123 stays with its own DOM-HUD round; `[Task-120]`, `[Task-121]` and `[Task-114]` all hold
+`src/engine/battle/**`, which 119 holds; `[Task-110]` shares `src/scenes/RouteScene.ts` with 109;
+`[Task-118]` is written against the unmerged `[Task-114]`; `[Task-122]` requires the Figma
+single-session export in the Orchestrator's own session (`s52r`) and cannot be a parallel dev
+worktree; `[Task-104]` and `[Task-113]` are `[!]` and `[Task-28]` stays unscheduled by its own
+decision line. **47c and 47d keep one engine task each as their cut** — `[Task-120]` then
+`[Task-121]` — and 117 rides 47c as its own fill. The table's rows **51 and 56 retire**
+(`[Task-109]` is captured by 47b and `[Task-117]` by 47c), 47b's and 47c's rows carry the new
+members, both of those entries keep their prose and take their new labels, and `[Task-119]`'s
+entry keeps the *(Batch 47b)* it already reads.
 
 A **thirty-second round** is the human's decision on the prototype board: **the panels become a DOM
 layer over an untouched canvas**, recorded as `D49` (`docs/tech-decisions.md`) and carried by
@@ -6647,7 +6674,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       table (Batch 10) are all shipped, and it is written **against** `[Task-84]`'s pointer-first rule
       (Batch 29) and the `notice.ts` row `[Task-98]` adds (Batch 36). It claims
       `src/scenes/RouteScene.ts`, so it opens the plan's new **Batch 51**, one batch behind the 2vs2
-      pair — and it adds no run field. *(Batch 51)*
+      pair — and it adds no run field. *(Batch 47b, filled)*
 - [ ] **[Task-110] The item bag is an icon grid, in the route HUD and in battle.** The human's rule:
       «la mochila de items y en combate pasen a ser grid». Both bag surfaces are **lists of rows** today:
       the route HUD draws up to `HUD_BAG_ROWS` (6) name rows with a pocket tab strip and the money line
@@ -6891,8 +6918,15 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       merchant (`[Task-92]`).
       *Dependencies:* `[Task-91]` (the row, the roll, the panel shell and the battle host),
       `[Task-115]` (the table the machine reads) and `[Task-116]` (the view it re-homes). It
-      adds no run field, so **no `SAVE_VERSION` step**, and it claims no
-      `src/scenes/RouteScene.ts`. *(Batch 56)*
+      adds no run field, so **no `SAVE_VERSION` step**. It **does** claim
+      `src/scenes/RouteScene.ts`, which the entry above used to deny: the NPC panel has no
+      data-driven dispatch — `chooseNpc` (5925-6040) is a hard-coded `switch (row.id)` whose
+      `default` only writes the use mark and closes, and `src/scenes/rooms/registry.ts` collects
+      **room** descriptors only, so the machine cannot open without a `case 'rocket'` beside the
+      merchant's (5927-5930) that closes the card and calls `openRocket(this.roomHost())` from the
+      moved `src/ui/rocketPanel.ts` (the `[Task-95]` Mega Stone row's own shape). That is why it
+      fills **Batch 47c** beside `[Task-120]`, never 47b beside `[Task-109]` (which holds the
+      scene), and why its own label moves with it. *(Batch 47c, filled)*
 - [ ] **[Task-118] The capture beat and its message tick together.** The human's report: «que
       mensaje de captura y animación se sincronicen, la pokeball se agite según más cerca de
       capturar y el mensaje vaya añadiendo puntos suspensivos según se agita y al final mostrar
