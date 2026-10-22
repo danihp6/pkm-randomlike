@@ -8,6 +8,35 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **`oci / retry` holds the wait itself: eight attempts per run, keyed, and throttled on
+      purpose.** The workflow went live at 15:54Z with a `*/10` and had **zero** scheduled
+      runs two hours later, while this repository's `*/30` fired every 1.5–5 h (17:26, 12:11,
+      06:17, 01:07, 22:35…), so one attempt per run was a run that mostly did nothing.
+      `oci-launch.sh` now takes `ATTEMPTS` (8 in CI, 1 for the laptop), `ATTEMPT_SLEEP`,
+      `THROTTLE_SLEEP` and `BUDGET`, and the shape rotation is fixed per run, so every run
+      covers 4/24 → 2/12 → 1/6 instead of drifting on the minute hand. The job's
+      `timeout-minutes` went 12 → 50, above the script's own 40 min budget, so a run ends
+      itself rather than being killed mid-launch. Two things the first live run taught:
+      **the launch carried no SSH key** — a caught slot would have been an unreachable box —
+      so `SSH_PUBLIC_KEY` (repository variable `OCI_SSH_PUBLIC_KEY`, public half) is now
+      required and injected as `ssh_authorized_keys`, and a missing one exits `2` instead of
+      launching blind; and **half the attempts came back `TooManyRequests`** at ~2 min 30 s
+      spacing, because Oracle throttles `launch` well before the region is out of shapes, so
+      a 429 now waits 5 minutes (`THROTTLE_SLEEP`) while a capacity answer waits 3, and the
+      final line reports how many of them were throttles. A parked run also re-reads the
+      running instance's size and IP, so a run arriving after the slot opened still announces
+      it. Docs: `docs/agent-vm.md` §Waiting for capacity from CI, `.github/workflows/README.md`,
+      `scripts/agent/vm/README.md`.
+      **QA:** `bash -n` clean, the new `scripts/agent/vm/oci-launch.test.sh` harness green
+      against a fake `oci` (rotation covers 4/24 → 2/12 → 1/6, a throttle is logged and
+      counted, the budget stops the loop, a parked run re-reads the size and the address, a
+      missing key exits `2` without a single `launch`), and it now runs in `ci.yml`; `npm
+      test` 188 files / 3 445 passed (20 expected fail) and `npm run build` green on the
+      rebased branch, which is the tree the merge produces. Live `workflow_dispatch` on
+      the branch (run `39826600763`) logged `attempt 1/10: 4 OCPU / 24 GB` → `attempt 10/10:
+      2 OCPU / 12 GB`, all `Out of host capacity` or `TooManyRequests` (5 of 10), ending
+      `no capacity in 10 attempt(s)` with the job green in 24 m 40 s.
+
 - [x] **Team Rocket is a special NPC who carries the slot machine, and the casino room retires.**
       `[Task-117]`'s move, the merchant's shape: `'casino'` leaves `MapRoomSpecial`, `planMap` loses
       `CASINO_CHANCE`/`CASINO_FROM_MAP` and the special pass runs shop → mini-boss → mega-stone →

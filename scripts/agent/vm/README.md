@@ -12,7 +12,8 @@ One always-on Linux box runs the loop the GitHub workflows used to run. Start wi
 | `brake.sh` | The brake by hand or by window, plus `status` and `reset`. |
 | `prompt.md` | The Orchestrator's prompt, shared verbatim with `agent-cycle.yml`. |
 | `install.sh` | Bootstrap of the host and the systemd unit. |
-| `oci-launch.sh` | One attempt at the Always Free instance, for the CI retry (env-var auth, no state). |
+| `oci-launch.sh` | Attempts at the Always Free instance for the CI retry: `ATTEMPTS` attempts spaced by `ATTEMPT_SLEEP` (or `THROTTLE_SLEEP` after a 429), key injected from `SSH_PUBLIC_KEY`, no state. |
+| `oci-launch.test.sh` | Offline checks for it against a fake `oci`: rotation, throttle backoff, budget, parking, missing key. Run by `ci.yml`. |
 | `pkm-agent-driver.service.in` | The unit template `install.sh` fills in. |
 | `agent.env.example` | The credentials and paths template, copied to `$PKM_AGENT_STATE/env`. |
 | `gate.test.mjs`, `verdict.test.mjs` | The unit tests behind both decisions. |

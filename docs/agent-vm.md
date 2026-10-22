@@ -9,8 +9,9 @@ state — only who executes the ritual changes.
 ## Where this stands (2026-10-22)
 
 The code is merged and the box is not born yet. Oracle's Madrid region answers
-`OUT_OF_HOST_CAPACITY` for every shape, so the launch is waiting on a slot; `oci / retry`
-waits from CI and the laptop runs the same attempt every ~6 minutes. Meanwhile:
+`OUT_OF_HOST_CAPACITY` for every shape, so the launch is waiting on a slot: the laptop
+runs an attempt every ~6 minutes, and `oci / retry` waits from CI in runs of ten attempts
+whenever its schedule deigns to fire. Meanwhile:
 
 - the repository is **public**, so Actions minutes are free again and the billing block
   that parked the loop overnight is gone;
@@ -111,10 +112,35 @@ Always Free allowance, and no other shape on the free list has the RAM for a bat
 
 `oci / retry` (`.github/workflows/oci-retry.yml`) is the safety net for the wait: the
 local loop is the fast one, but it dies with the laptop, and A1 capacity in a busy
-region shows up at random. The workflow calls `scripts/agent/vm/oci-launch.sh` once per
-run, rotating 4/24 → 2/12 → 1/6 with the minute, and **parks itself** by finding the
-instance already `RUNNING` — it keeps no state of its own. When a slot opens it waits
-for the IP and opens an `oci-ready` issue with the instance, the shape and the address.
+region shows up at random.
+
+The workflow **cannot supply the cadence itself**. A `cron: '*/10 * * * *'` is a request,
+not a promise: this repository's `*/30` fired every 1.5 to 5 hours over two days, and the
+new workflow's first two hours had zero scheduled runs. So the job holds the cadence
+instead — `scripts/agent/vm/oci-launch.sh` takes `ATTEMPTS` (8 in CI, 1 for the laptop),
+`ATTEMPT_SLEEP` (180 s), `THROTTLE_SLEEP` (300 s) and `BUDGET` (2 400 s), and one run walks
+through its attempts, rotating 4/24 → 2/12 → 1/6, before handing the wait back to the
+schedule. `timeout-minutes: 50` sits above the script's own budget, so the job ends itself
+instead of being killed mid-launch.
+
+**The spacing is rate limiting, not patience.** A launch call takes ~1 min 40 s to answer
+either way. At one attempt every ~2 min 30 s, half of them came back `TooManyRequests`
+("too many requests for the user") instead of "out of host capacity": Oracle throttles the
+launch API long before the region is out of shapes, and the interval people doing this wait
+settle on is ~5 minutes. So a capacity answer costs 3 minutes and a **throttle** costs 5,
+and a throttled attempt is logged as such instead of being counted as a full region.
+
+**The launch carries a public key.** `OCI_SSH_PUBLIC_KEY` is a repository variable with the
+public half of the key you log in with, passed as `--metadata '{"ssh_authorized_keys": …}'`.
+Without it the script exits `2` and launches nothing: a slot spent on a box nobody can SSH
+into is worse than a red run, and A1 slots do not come back often.
+
+Each attempt parks the run by finding the instance already `RUNNING` — it keeps no state
+of its own — so once a slot opens the schedule keeps firing, finds the instance and exits
+with its id, its shape and its IP. That is what lets the `oci-ready` issue still be opened
+by a later run if the one that launched died before announcing: the address is read again,
+never stored. When a slot opens the run waits for the IP and opens an `oci-ready` issue
+with the instance, the shape and the address.
 
 It authenticates as a dedicated OCI user, not the operator's:
 
@@ -123,12 +149,13 @@ It authenticates as a dedicated OCI user, not the operator's:
   and `read instance-images`, and nothing else;
 - the private key is the only secret (`OCI_CLI_KEY_CONTENT`); the identifiers are
   repository variables (`OCI_CLI_USER`, `OCI_CLI_FINGERPRINT`, `OCI_CLI_TENANCY`,
-  `OCI_CLI_REGION`, `OCI_COMPARTMENT_ID`, `OCI_SUBNET_ID`, `OCI_IMAGE_ID`, `OCI_AD`).
+  `OCI_CLI_REGION`, `OCI_COMPARTMENT_ID`, `OCI_SUBNET_ID`, `OCI_IMAGE_ID`, `OCI_AD`), and
+  `OCI_SSH_PUBLIC_KEY` is one too because a public key is not a secret.
 
 Rotating the key is a human's job: `oci iam user api-key delete`, upload a new one, and
 `gh secret set OCI_CLI_KEY_CONTENT < new-key.pem`. The workflow spends no model tokens;
-each run is one API call, and a `TooManyRequests` or a full region exits `0` on purpose
-so the runs list does not turn red while the answer is simply "not yet".
+each attempt is one `launch` call, and a `TooManyRequests` or a full region exits `0` on
+purpose so the runs list does not turn red while the answer is simply "not yet".
 
 ## Bootstrap
 

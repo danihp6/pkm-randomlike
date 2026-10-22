@@ -2,9 +2,17 @@ name: oci / retry
 
 # Waits for an Always Free Ampere slot in the home region. The laptop loop is the fast
 # one (every ~6 minutes); this exists so the wait survives a closed laptop, which is the
-# one thing the local loop cannot do. It spends no model tokens: one `launch` call per
-# run (two once a slot opens), and it parks itself by finding the instance already
-# running — no state of its own.
+# one thing the local loop cannot do. It spends no model tokens.
+#
+# The schedule alone is not a cadence: measured on this repository a `*/30` fired three
+# times in six hours. So one run works through a handful of attempts itself (~3 min apart
+# after a capacity answer, 5 min after a throttle), rotating the shape, and parks itself by
+# finding the instance already `RUNNING` — no state of its own. The cron only restarts
+# that; the attempts are what the wait actually lives on.
+#
+# `OCI_SSH_PUBLIC_KEY` is a repository variable holding the *public* half of the key you
+# will log in with. Without it the slot would be spent on a box nobody can reach, so the
+# script refuses to launch.
 #
 # Auth is a dedicated OCI user (`pkm-ci`) with a policy that can launch instances and
 # read images, nothing else. The private key is the only secret; the rest are
@@ -13,8 +21,8 @@ name: oci / retry
 on:
   schedule:
     # GitHub's shortest interval. It is a request, not a promise: measured on this
-    # repository, a */30 fired three times in six hours. The laptop loop is what makes
-    # the cadence real; this is the safety net.
+    # repository, a */30 fired three times in six hours. The per-run attempt loop is what
+    # makes the wait dense; this is the thing that restarts it.
     - cron: '*/10 * * * *'
   workflow_dispatch:
 
@@ -29,16 +37,24 @@ permissions:
 jobs:
   attempt:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    # Eight attempts at ~1 min 40 s each, ~3 min apart, plus up to 5 minutes waiting for
+    # the IP once a slot opens: 8 · 102 s + 7 · 180 s ≈ 35 min, under the script's own
+    # 40 min budget, which keeps the job from being killed mid-launch.
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v6
 
       - name: Install the OCI CLI
         run: pip install --quiet oci-cli
 
-      - name: One attempt at a slot
+      - name: Attempts at a slot
         id: launch
         env:
+          ATTEMPTS: 8
+          ATTEMPT_SLEEP: 180
+          THROTTLE_SLEEP: 300
+          BUDGET: 2400
+          SSH_PUBLIC_KEY: ${{ vars.OCI_SSH_PUBLIC_KEY }}
           OCI_CLI_USER: ${{ vars.OCI_CLI_USER }}
           OCI_CLI_FINGERPRINT: ${{ vars.OCI_CLI_FINGERPRINT }}
           OCI_CLI_TENANCY: ${{ vars.OCI_CLI_TENANCY }}
