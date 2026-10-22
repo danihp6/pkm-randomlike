@@ -9,8 +9,9 @@ state — only who executes the ritual changes.
 ## Where this stands (2026-10-22)
 
 The code is merged and the box is not born yet. Oracle's Madrid region answers
-`OUT_OF_HOST_CAPACITY` for every shape, so the launch is waiting on a slot; `oci / retry`
-waits from CI and the laptop runs the same attempt every ~6 minutes. Meanwhile:
+`OUT_OF_HOST_CAPACITY` for every shape, so the launch is waiting on a slot: the laptop
+runs an attempt every ~6 minutes, and `oci / retry` waits from CI in runs of ten attempts
+whenever its schedule deigns to fire. Meanwhile:
 
 - the repository is **public**, so Actions minutes are free again and the billing block
   that parked the loop overnight is gone;
@@ -111,10 +112,22 @@ Always Free allowance, and no other shape on the free list has the RAM for a bat
 
 `oci / retry` (`.github/workflows/oci-retry.yml`) is the safety net for the wait: the
 local loop is the fast one, but it dies with the laptop, and A1 capacity in a busy
-region shows up at random. The workflow calls `scripts/agent/vm/oci-launch.sh` once per
-run, rotating 4/24 → 2/12 → 1/6 with the minute, and **parks itself** by finding the
-instance already `RUNNING` — it keeps no state of its own. When a slot opens it waits
-for the IP and opens an `oci-ready` issue with the instance, the shape and the address.
+region shows up at random.
+
+The workflow **cannot supply the cadence itself**. A `cron: '*/10 * * * *'` is a request,
+not a promise: this repository's `*/30` fired every 1.5 to 5 hours over two days, and the
+first hours of the new workflow had zero scheduled runs. So the job holds the cadence
+instead — `scripts/agent/vm/oci-launch.sh` takes `ATTEMPTS` (10 in CI, 1 for the laptop)
+and `ATTEMPT_SLEEP` (45 s), and one run spends ~25 minutes attempting, rotating 4/24 →
+2/12 → 1/6 per attempt, before handing back to the schedule. The `timeout-minutes: 35`
+covers ten attempts plus the wait for the address.
+
+Each attempt parks the run by finding the instance already `RUNNING` — it keeps no state
+of its own — so once a slot opens the schedule keeps firing, finds the instance and exits
+with its id and IP. That is what lets the `oci-ready` issue still be opened by a later
+run if the one that launched died before announcing: the IP is read again, never stored.
+When a slot opens the run waits for the IP and opens an `oci-ready` issue with the
+instance, the shape and the address.
 
 It authenticates as a dedicated OCI user, not the operator's:
 
