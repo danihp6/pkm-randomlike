@@ -212,7 +212,15 @@ export function probeMove(moveId: string, setup: Partial<MoveAuditSetup> = {}): 
   };
 }
 
-/** The reference table, sorted by `moveId`, one entry per id, no duplicates. */
+/**
+ * The reference table, sorted by `moveId`, one entry per id, no duplicates.
+ *
+ * `expected` is the delta Showdown's handler produces on the probe's board, never
+ * the value `probeMove` returned. A chance-based secondary is not derivable from
+ * the dex, so those rows pin the outcome seed `PROBE_SEED` produces; a row the
+ * engine does not satisfy today carries `knownGap` and its test runs as
+ * `it.fails`, so closing the gap turns the suite red until the flag goes.
+ */
 export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'absorb', setup: { playerHp: 40 }, expected: { events: ['move', 'damage', 'heal'] } },
   { moveId: 'acid', expected: { events: ['move', 'damage'] } },
