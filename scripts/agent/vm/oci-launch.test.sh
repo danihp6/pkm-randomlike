@@ -52,9 +52,9 @@ fail() { echo "FAIL [$label] $*"; failures=$((failures + 1)); }
 want() { printf '%s' "$output" | grep -qF -- "$1" || fail "missing: $1"; }
 nope() { printf '%s' "$output" | grep -qF -- "$1" && fail "unexpected: $1"; }
 
-# run <label> <plan> [attempts] [attempt_sleep] [budget] [running] [start_delay]
+# run <label> <plan> [attempts] [attempt_sleep] [budget] [running] [start_delay] [shapes]
 run() {
-  label=$1 plan=$2 attempts=${3:-2} sleep_s=${4:-0} budget=${5:-2400} running=${6:-0} delay=${7:-0}
+  label=$1 plan=$2 attempts=${3:-2} sleep_s=${4:-0} budget=${5:-2400} running=${6:-0} delay=${7:-0} shape_list=${8:-4/24 2/12 1/6}
   : > "$work/out"; : > "$work/summary"; rm -f "$work/count" "$work/calls"
   output=$(env PATH="$work/bin:$PATH" \
     FAKE_LOG=$work/calls FAKE_COUNT=$work/count FAKE_PLAN="$plan" FAKE_RUNNING="$running" \
@@ -63,7 +63,7 @@ run() {
     OCI_CLI_KEY_CONTENT=k COMPARTMENT_ID=c SUBNET_ID=s IMAGE_ID=i AD=ad \
     SSH_PUBLIC_KEY="ssh-ed25519 AAAAtest pkm-autopilot" \
     ATTEMPTS="$attempts" ATTEMPT_SLEEP="$sleep_s" THROTTLE_SLEEP=0 BUDGET="$budget" \
-    START_DELAY="$delay" \
+    START_DELAY="$delay" SHAPES="$shape_list" \
     bash "$launch" 2>&1)
   status=$?
 }
@@ -110,6 +110,15 @@ want "budget spent after 1 attempt(s)"
 run "a chained run waits before its first attempt" "capacity" 1 0 2400 0 1
 [ "$status" -eq 0 ] || fail "exit $status, expected 0"
 want "waiting 1s before the first attempt"
+
+run "one shape only" "capacity capacity" 2 0 2400 0 0 "2/12"
+[ "$status" -eq 0 ] || fail "exit $status, expected 0"
+want "2 OCPU / 12 GB"
+nope "4 OCPU"
+
+run "a malformed shape stops the run" "capacity" 1 0 2400 0 0 "2-12"
+[ "$status" -eq 2 ] || fail "exit $status, expected 2"
+want "is not <ocpus>/<gb>"
 
 run "an error that is not a wait" "boom" 2
 [ "$status" -eq 1 ] || fail "exit $status, expected 1"

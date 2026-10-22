@@ -32,8 +32,9 @@ Three measured facts pushed the loop off Actions:
   again, so this one is currently moot — it is the reason the box is worth having the day
   the repository goes private for good.
 
-The Oracle Always Free Ampere shape — 4 OCPU, 24 GB, 200 GB of block storage, no
-monthly bill — removes all three. It also keeps `node_modules`, the Playwright browser
+The Oracle Always Free Ampere shape — 2 OCPU / 12 GB on a free account, 4 OCPU / 24 GB on
+pay-as-you-go, 200 GB of block storage, no monthly bill — removes all three. It also keeps
+`node_modules`, the Playwright browser
 and the asset store warm between cycles, which is most of the setup time a runner pays
 every time.
 
@@ -68,8 +69,9 @@ not bill. Everything below is in the console; the CLI equivalents are the same c
 
 1. **Create the instance.** Compute → Instances → Create instance.
    - Image: **Canonical Ubuntu 24.04** (aarch64).
-   - Shape: **Ampere → VM.Standard.A1.Flex**, **4 OCPU / 24 GB**. That is the whole
-     Always Free A1 allowance, so do not split it with another instance.
+   - Shape: **Ampere → VM.Standard.A1.Flex**, **2 OCPU / 12 GB** on an Always Free account
+     (that is the whole A1 allowance since August 2026, so do not split it with another
+     instance). A pay-as-you-go account can ask for 4 OCPU / 24 GB inside the free allowance.
    - Boot volume: 100 GB (200 GB is the free ceiling).
    - Networking: let it create a VCN with a public subnet, and **assign a public IPv4**.
      That is what you SSH to.
@@ -110,8 +112,10 @@ oci compute instance launch --compartment-id "$T" \
   --ssh-authorized-keys-file ~/.ssh/pkm_vm.pub --boot-volume-size-in-gbs 100
 ```
 
-`VM.Standard.A1.Flex` is the only shape that matters: 4 OCPU / 24 GB is the whole
-Always Free allowance, and no other shape on the free list has the RAM for a batch.
+`VM.Standard.A1.Flex` is the only shape that matters, and its free size depends on the
+account: **2 OCPU / 12 GB** since Oracle cut the Always Free Ampere entitlement in August
+2026, or still 4 OCPU / 24 GB on a pay-as-you-go account, inside the free allowance. The
+retry asks for 2/12 (`SHAPES`) because that is the ceiling this tenancy can be granted.
 
 ## Waiting for capacity from CI
 
@@ -127,7 +131,9 @@ and the new workflow's first scheduled tick came five hours after it went live. 
 holds the cadence itself — `scripts/agent/vm/oci-launch.sh` takes `ATTEMPTS` (8 in CI; the
 default of 1 is a one-shot probe), `ATTEMPT_SLEEP` (300 s), `THROTTLE_SLEEP` (600 s),
 `START_DELAY` (300 s) and
-`BUDGET` (3 600 s), and walks through its attempts, rotating 4/24 → 2/12 → 1/6.
+`BUDGET` (3 600 s), and walks through its attempts asking for 2/12 every time. `SHAPES` is
+the knob: it takes a list of `<ocpus>/<gb>` and rotates one per attempt, so the day the
+account goes pay-as-you-go it is `SHAPES: 4/24 2/12 1/6` again and nothing else changes.
 `timeout-minutes: 75` sits above the script's own budget, so the job ends itself instead of
 being killed mid-launch.
 

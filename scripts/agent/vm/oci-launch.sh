@@ -37,6 +37,9 @@
 #                   launches back to back — the exact pattern that earns a 429.
 #   BUDGET          seconds the attempt loop may spend before handing the wait back to the
 #                   schedule, so a job is never killed mid-launch (default 2400)
+#   SHAPES          space-separated `<ocpus>/<gb>` requests, rotated one per attempt
+#                   (default `4/24 2/12 1/6`). CI passes `2/12` only: that is the Always Free
+#                   Ampere ceiling since August 2026, and 4/24 belongs to a PAYG account.
 
 set -uo pipefail
 export SUPPRESS_LABEL_WARNING=True
@@ -66,6 +69,8 @@ delay=${START_DELAY:-0}
 budget=${BUDGET:-2400}
 started=$SECONDS
 throttled=0
+read -r -a shapes <<< "${SHAPES:-4/24 2/12 1/6}"
+[ "${#shapes[@]}" -gt 0 ] || { echo "error: SHAPES is empty" >&2; exit 2; }
 # Fixed once, so a run of attempts is a strict 4/24 → 2/12 → 1/6 rotation; the wall clock
 # still moves the starting point between one-attempt invocations (the laptop's cadence).
 start_minute=$((10#$(date -u +%M)))
@@ -126,13 +131,17 @@ for attempt in $(seq 1 "$attempts"); do
     park "$existing"
   fi
 
-  # The request rotates per attempt, so every run covers all three sizes: a smaller shape
-  # fits on a host that a 4-OCPU request cannot.
-  case $(( (start_minute + attempt - 1) % 3 )) in
-    0) ocpus=4; gb=24 ;;
-    1) ocpus=2; gb=12 ;;
-    *) ocpus=1; gb=6 ;;
-  esac
+# The request rotates through `SHAPES` per attempt: a smaller shape fits on a host that a
+# bigger request cannot. Since August 2026 Oracle caps the Always Free Ampere entitlement at
+# 2 OCPU / 12 GB, so CI asks for that one only — 4/24 is the ceiling of a paid (PAYG) account
+# and asking for it on a free one spends attempts on an answer that cannot change.
+  entry=${shapes[$(( (start_minute + attempt - 1) % ${#shapes[@]} ))]}
+  ocpus=${entry%%/*}
+  gb=${entry##*/}
+  if ! [[ $ocpus =~ ^[0-9]+$ && $gb =~ ^[0-9]+$ ]]; then
+    echo "error: SHAPES entry '$entry' is not <ocpus>/<gb>" >&2
+    exit 2
+  fi
   echo "attempt $attempt/$attempts: ${ocpus} OCPU / ${gb} GB in $AD"
 
   err=$(mktemp)
