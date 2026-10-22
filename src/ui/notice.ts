@@ -16,6 +16,25 @@ export type Notice = Readonly<{ text: string; holdMs: number }>;
 export const NOTICE_HOLD_MS = 2600;
 
 /**
+ * The area panel's own hold: the boxed banner that greets the player on entering
+ * a room, one beat longer than a transient notice because it is that room's
+ * greeting, and its own constant so the two windows can be tuned apart.
+ */
+export const AREA_PANEL_HOLD_MS = 3000;
+
+/**
+ * The area-entry panel's line (`docs/routes-spec.md` §6): entering a room names
+ * the area in a boxed banner. `area` is the biome's display name, resolved by the
+ * caller, so this never reads the dex or the run.
+ */
+export function areaEntryNotice(area: string): Notice {
+  return {
+    text: t('notice.areaEntry', { area }),
+    holdMs: AREA_PANEL_HOLD_MS,
+  };
+}
+
+/**
  * The catch notice: a full party sent `<name>` to the PC, and the boxed catch is
  * swappable only while the run stays on this route. `name` is resolved by the
  * caller, so this never reads the dex.

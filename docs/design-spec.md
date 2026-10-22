@@ -191,6 +191,13 @@ carries over.
   its ends are known. The current room, the boss, the open portal and any special
   room carry their own mark; a room stays hidden until it is entered
   (`docs/maps-spec.md` §8).
+- Entering a **room** raises an **area banner**: a boxed card under the mission
+  line that names the biome the run has walked into (`Deep Forest`), holding 3 s
+  before it dismisses itself. It takes no key, blocks no movement and leaves the
+  notice strip and the mission line where they are; it is raised on **every** room
+  entry (not only when the floor changes), and the boss room's rebuild as its
+  portal opens is not a room entry and raises none. The name is the biome's own,
+  so it reads the same in every locale (`D43`).
 - A **special room's** own content — the fixture it places, the window it opens and the
   marker the minimap draws for it — comes from that room's **descriptor module**
   (`src/scenes/rooms/`); the route keeps **one auto-discovered registry** of them, so a

@@ -266,6 +266,7 @@ import { MoveGrid, padMoveGridCells, type MoveGridCell } from '../ui/moveGrid';
 import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../ui/abilityInfo';
 import { InfoPopup } from '../ui/infoPopup';
 import {
+  areaEntryNotice,
   catchToPcNotice,
   eggHatchNotice,
   itemPickupNotice,
@@ -593,6 +594,20 @@ const NOTICE_TOP = 24;
 const MISSION_W = 360;
 const MISSION_H = 32;
 const MISSION_TOP = NOTICE_TOP + NOTICE_H + 8;
+
+/**
+ * The area-entry panel (`docs/routes-spec.md` §6, `src/ui/notice.ts`): the boxed
+ * banner that greets the player on entering a room. It is the same `'window'`
+ * card as the strip and the mission line, told apart by being boxed, taller,
+ * lower and fringed in the accent — the one card whose 1px ring is the accent
+ * instead of the muted hairline (`FRLG_ACCENT`'s "never a border of its own" is
+ * the rule; this card is its frozen exception).
+ */
+const AREA_PANEL_W = 360;
+const AREA_PANEL_H = 64;
+const AREA_PANEL_TOP = MISSION_TOP + MISSION_H + 8;
+/** Above the HUD's cards, below the mission line (439) and the notice strip (440). */
+const AREA_PANEL_DEPTH = 438;
 
 /** The mini-boss reward choice (Phase 9): one window of item and Pokémon rows. */
 const REWARD_W = 560;
@@ -1125,6 +1140,23 @@ export class RouteScene extends Phaser.Scene {
   private noticeRoot: Phaser.GameObjects.Container | null = null;
   private noticeText: Phaser.GameObjects.BitmapText | null = null;
   private noticeTimer: Phaser.Time.TimerEvent | null = null;
+  /**
+   * The area-entry panel: a boxed banner under the strip and the mission line,
+   * raised on every room entry and dismissed by its own timer. It takes no key and
+   * blocks nothing, so it is a card, not a window the run waits on.
+   */
+  private areaPanelRoot: Phaser.GameObjects.Container | null = null;
+  private areaPanelText: Phaser.GameObjects.BitmapText | null = null;
+  private areaPanelTimer: Phaser.Time.TimerEvent | null = null;
+  /**
+   * True while `buildRoom` rebuilds the scene. A `buildRoute` runs `applyRoute`,
+   * which raises the area panel for the dev frame-map import; inside a room build
+   * the greeting belongs to the room entry itself (`create` / `transitionTo`), or
+   * the boss-fall rebuild and the gate's rebuild would greet a room the run never
+   * left.
+   */
+  private buildingRoom = false;
+
   private missionRoot: Phaser.GameObjects.Container | null = null;
   private hudMissionText: Phaser.GameObjects.BitmapText | null = null;
   /** The counter tile the room's own fixture placed, or null in a room without one. */
@@ -1194,6 +1226,7 @@ export class RouteScene extends Phaser.Scene {
       this.battlefield = roomBattlefield(this.run.seed, roomIndex, kind);
       this.bossOpening = null;
     }
+    this.buildingRoom = true;
     this.buildRoute({
       seed: this.run.seed,
       routeIndex: roomIndex,
@@ -1204,6 +1237,7 @@ export class RouteScene extends Phaser.Scene {
       ledges: biome.terrain.ledges,
       room: view,
     });
+    this.buildingRoom = false;
     if (view.boss && !this.run.bossDefeated) {
       const boss = this.bossTrainer(view);
       if (boss) this.route = { ...this.route, trainers: [...this.route.trainers, boss] };
@@ -1563,6 +1597,9 @@ export class RouteScene extends Phaser.Scene {
       // The magician's type, so a room rebuilt from a save still obeys it.
       this.run.modifiers.nextWildType,
     );
+    // The dev frame-map import reaches this seam on its own (it builds no room);
+    // a route built for a room is greeted once by the room entry that asked for it.
+    if (!this.buildingRoom) this.showAreaPanel();
   }
 
   create(): void {
@@ -1729,8 +1766,12 @@ export class RouteScene extends Phaser.Scene {
     this.buildPauseMenu();
     this.buildLearnPopup();
     this.buildNotice();
+    this.buildAreaPanel();
     this.buildMissionLine();
     this.refreshHud();
+    // The first room's greeting: the `applyRoute` of `buildRoom` ran before the
+    // panel existed, so the banner is raised here instead.
+    this.showAreaPanel();
     this.refreshDetail();
     playMusic(this, 'route-music');
   }
@@ -5565,6 +5606,8 @@ export class RouteScene extends Phaser.Scene {
    * The run's state already carries the new map position.
    */
   private transitionTo(run: RunState, options?: TransitionOptions): void {
+    const fromRoom = this.room;
+    const fromMap = this.run.mapIndex;
     const tile = { x: this.player.x, y: this.player.y };
     this.run = run;
     this.persistRun();
@@ -5588,6 +5631,10 @@ export class RouteScene extends Phaser.Scene {
     const picks = this.applyMapPassives('room');
     this.showPassivePickups(picks);
     this.refreshHud();
+    // One room entry, one banner: the boss-fall rebuild is the same room with its
+    // portal now open, so it greets nobody, while every door and the portal do.
+    const entered = !fromRoom || fromMap !== this.run.mapIndex || fromRoom.roomId !== this.room?.roomId;
+    if (entered) this.showAreaPanel();
   }
 
   /**
@@ -6440,6 +6487,56 @@ export class RouteScene extends Phaser.Scene {
     this.noticeTimer?.remove(false);
     this.noticeTimer = null;
     this.noticeRoot?.setVisible(false);
+  }
+
+  /**
+   * The area-entry panel (`src/ui/notice.ts`, `docs/routes-spec.md` §6): the boxed
+   * banner that greets the player on entering a room, pinned under the mission
+   * line, screen-space on the HUD camera like the strip and hidden until a room is
+   * entered. It is the same `'window'` card as every other panel and the one card
+   * whose 1px ring is the accent rather than the muted hairline.
+   */
+  private buildAreaPanel(): void {
+    const width = Math.min(AREA_PANEL_W, this.scale.width - 32);
+    const x = (this.scale.width - width) / 2;
+    const card = addFrlgWindow(this, x, AREA_PANEL_TOP, width, AREA_PANEL_H, 'window');
+    const hairline = this.add.graphics();
+    hairline.lineStyle(1, FRLG_ACCENT, 1);
+    hairline.strokeRect(x + 0.5, AREA_PANEL_TOP + 0.5, width - 1, AREA_PANEL_H - 1);
+    this.areaPanelText = addFrlgText(this, this.scale.width / 2, AREA_PANEL_TOP + AREA_PANEL_H / 2, '', {
+      align: 'center',
+      origin: 0.5,
+      size: 18,
+      tint: FRLG_INK,
+    });
+    this.areaPanelText.setMaxWidth(width - 32);
+    this.areaPanelRoot = this.add
+      .container(0, 0, [card, hairline, this.areaPanelText])
+      .setDepth(AREA_PANEL_DEPTH)
+      .setVisible(false);
+    this.cameras.main.ignore(this.areaPanelRoot);
+  }
+
+  /**
+   * Names the area the run just walked into. No key, no scroll, no pause: the
+   * banner is the room's greeting and the walk goes on under it. A no-op until the
+   * panel is built and the scene has a route, so `applyRoute` may raise it during
+   * `create`.
+   */
+  private showAreaPanel(): void {
+    if (!this.areaPanelRoot || !this.areaPanelText || !this.route) return;
+    const notice = areaEntryNotice(getBiome(this.route.biomeId).name);
+    this.areaPanelText.setText(notice.text);
+    this.areaPanelRoot.setVisible(true);
+    this.areaPanelTimer?.remove(false);
+    this.areaPanelTimer = this.time.delayedCall(notice.holdMs, () => this.hideAreaPanel());
+  }
+
+  /** Takes the area banner down; safe when it is not up. */
+  private hideAreaPanel(): void {
+    this.areaPanelTimer?.remove(false);
+    this.areaPanelTimer = null;
+    this.areaPanelRoot?.setVisible(false);
   }
 
   /**
