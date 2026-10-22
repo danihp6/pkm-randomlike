@@ -112,7 +112,7 @@ import {
   type MemberEditLine,
   type MemberEditRefusal,
 } from '../engine/run/memberEdits';
-import { useItemOn } from '../engine/run/items';
+import { useItemOn, candyTreat } from '../engine/run/items';
 import { battleHpLoss, missionCompletedBy, missionForMap, recordHpLost } from '../engine/run/missions';
 import {
   FORCED_FIELD_FLOORS,
@@ -215,7 +215,22 @@ import {
   type TileFrame,
 } from '../engine/tileFrames';
 import { parseFrameMapExport, routeFromFrameMapExport, serializeFrameMap } from '../engine/frameMap';
-import { BAG_CATEGORIES, bagCategoryLabel, bagForCategory, type BagCategory } from '../ui/bag';
+import {
+  BAG_CATEGORIES,
+  BAG_GRID_COLS,
+  BAG_GRID_GAP,
+  bagCategoryLabel,
+  bagDiscoveredCandy,
+  bagForCategory,
+  bagGridIndexAt,
+  bagGridLayout,
+  filterBagStacks,
+  stepBagCursor,
+  type BagCategory,
+  type BagGridDebugState,
+  type BagGridMetrics,
+  type BagGridRect,
+} from '../ui/bag';
 import { pokemonRewardChoices, rewardChoices, rewardRows, type RewardRow } from '../ui/rewards';
 import { buildMapView, type MapRoomMarker, type MapViewRoom } from '../ui/mapView';
 import {
@@ -340,10 +355,6 @@ const ROUTE_CAMERA_ZOOM = 2;
 const ROUTE_TOUCH_ZOOM_OUT = 0.75;
 const routeCameraZoom = (): number =>
   ROUTE_CAMERA_ZOOM * (prefersTouchControls() ? ROUTE_TOUCH_ZOOM_OUT : 1);
-
-/** Item stacks the route HUD's bag window shows before it drops the rest. */
-const HUD_BAG_ROWS = 6;
-
 /**
  * The route HUD is one FRLG window per concern, stacked down the right edge: a
  * slim route header, then the party (portrait, name, level and HP bar) and the
@@ -404,8 +415,17 @@ const HUD_TAB_W = 55;
 const HUD_TAB_H = 26;
 const HUD_TAB_GAP = 4;
 const HUD_BAG_HEADER = HUD_PAD_TOP + HUD_TAB_H + 8;
-const HUD_BAG_ROW = 40;
-/** The bag panel's footer band: the Poké Dollar readout under the item rows. */
+/** The bag grid: three rows of the fixed five columns, square cells. */
+const HUD_BAG_GRID_ROWS = 3;
+const HUD_BAG_GRID_CELL = 56;
+/** Filter field to grid, and grid to the footer rule. */
+const HUD_BAG_SEARCH_GAP = 8;
+const HUD_BAG_GRID_GAP = 8;
+const HUD_BAG_INFO_W = 280;
+const HUD_BAG_INFO_GAP = 8;
+const HUD_BAG_GRID_H = HUD_BAG_GRID_ROWS * HUD_BAG_GRID_CELL + (HUD_BAG_GRID_ROWS - 1) * BAG_GRID_GAP;
+const HUD_BAG_CAP = HUD_BAG_GRID_ROWS * BAG_GRID_COLS;
+/** The bag panel's footer band: the Poké Dollar readout under the item grid. */
 const HUD_BAG_FOOTER = 26;
 /** The PC BOX window: a page tab strip over a grid of avatar cells. */
 const HUD_BOX_PAD = 12;
@@ -949,11 +969,27 @@ export class RouteScene extends Phaser.Scene {
   private hudMapEmpty!: Phaser.GameObjects.BitmapText;
   /** The pinned HUD camera; a rebuild must teach it to ignore the new sprites. */
   private hudCamera: Phaser.Cameras.Scene2D.Camera | null = null;
-  private hudBagRows: {
+  /** The bag grid's cells, its filter field and the selection they paint. */
+  private hudBagCells: {
+    bg: Phaser.GameObjects.Rectangle;
     icon: Phaser.GameObjects.Image;
-    name: Phaser.GameObjects.BitmapText;
-    count: Phaser.GameObjects.BitmapText;
+    badgeBg: Phaser.GameObjects.Rectangle;
+    badge: Phaser.GameObjects.BitmapText;
   }[] = [];
+  /** The bag grid's geometry, laid out once in `buildHud`. */
+  private bagGrid!: BagGridMetrics;
+  /** The grid band itself, in the bag panel's own coordinates. */
+  private hudBagGridRect = { x: 0, y: 0, w: 0, h: 0 };
+  private hudBagCursor = 0;
+  private hudBagQuery = '';
+  private hudBagSearchFocus = false;
+  private hudBagSearchRect = { x: 0, y: 0, w: 0, h: 0 };
+  private hudBagSearchBg!: Phaser.GameObjects.Rectangle;
+  private hudBagSearchText!: Phaser.GameObjects.BitmapText;
+  /** The floating description card the selected cell shows, and its last text. */
+  private bagInfoPopup!: InfoPopup;
+  private bagInfoLayer!: Phaser.GameObjects.Container;
+  private bagInfoText = '';
   /** The bag pocket tabs (FRLG strip) and which pocket is showing. */
   private hudBagTabs: {
     category: BagCategory;
@@ -1611,7 +1647,11 @@ export class RouteScene extends Phaser.Scene {
     this.persistRun();
     this.tileSprites = [];
     this.hudRows = [];
-    this.hudBagRows = [];
+    this.hudBagCells = [];
+    this.hudBagCursor = 0;
+    this.hudBagQuery = '';
+    this.hudBagSearchFocus = false;
+    this.bagInfoText = '';
     this.hudPanels = [];
     this.hudPanelDrag = null;
     this.hudIconPress = null;
@@ -1711,6 +1751,7 @@ export class RouteScene extends Phaser.Scene {
       // key, so nothing typed there reaches the game underneath.
       if (this.typeInNickname(event)) return;
       this.typeInDetailSearch(event);
+      this.typeInBagSearch(event);
     });
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.handleHudPointerDown(pointer));
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.handleHudPointerMove(pointer));
@@ -1861,9 +1902,10 @@ export class RouteScene extends Phaser.Scene {
   /** The stacks the bag window draws, in draw order. */
   private hudBagStacks(): readonly BagCounts[] {
     const inHand = this.hudDragItemFrom === null ? this.hudDragItem : null;
-    return bagForCategory(this.run.bag, this.hudBagCategory)
-      .filter((stack) => stack.itemId !== inHand)
-      .slice(0, HUD_BAG_ROWS);
+    const pocket = bagForCategory(this.run.bag, this.hudBagCategory).filter(
+      (stack) => stack.itemId !== inHand,
+    );
+    return filterBagStacks(pocket, this.hudBagQuery).slice(0, HUD_BAG_CAP);
   }
 
   /** The move grid's marked cell: the move grabbed with the pointer, or none. */
@@ -1896,7 +1938,6 @@ export class RouteScene extends Phaser.Scene {
     const { panelW, partyW, mapW, partyHpBarScale, xpBarW } = this.hud;
     const x = this.scale.width - panelW - 8;
     const left = x + HUD_PAD_X;
-    const right = x + panelW - HUD_PAD_X;
     const headerChildren: Phaser.GameObjects.GameObject[] = [];
     const partyChildren: Phaser.GameObjects.GameObject[] = [];
     const bagChildren: Phaser.GameObjects.GameObject[] = [];
@@ -2013,14 +2054,21 @@ export class RouteScene extends Phaser.Scene {
     }
 
     const bagY = partyY + partyH + HUD_GAP;
-    const bagH = HUD_BAG_HEADER + HUD_BAG_ROWS * HUD_BAG_ROW + HUD_BAG_FOOTER + HUD_PAD_BOTTOM;
+    const bagH =
+      HUD_BAG_HEADER +
+      HUD_DETAIL_SEARCH_H +
+      HUD_BAG_SEARCH_GAP +
+      HUD_BAG_GRID_H +
+      HUD_BAG_GRID_GAP +
+      HUD_BAG_FOOTER +
+      HUD_PAD_BOTTOM;
     this.hudBagY = bagY;
     this.hudBagH = bagH;
     const bagWindow = addFrlgWindow(this, x, bagY, panelW, bagH);
     bagChildren.push(bagWindow);
 
     // Pocket tabs across the window's head, FRLG style: the active one reads
-    // dark-on-light, the rest stay a pale folder. Click or `[` / `]` to switch.
+    // dark-on-light, the rest stay a pale folder. Click to switch.
     this.hudBagTabs = [];
     BAG_CATEGORIES.forEach((category, i) => {
       const tabX = x + HUD_CONTENT_LEFT + i * (HUD_TAB_W + HUD_TAB_GAP);
@@ -2037,33 +2085,75 @@ export class RouteScene extends Phaser.Scene {
       bagChildren.push(bg, label);
     });
 
-    this.hudBagRows = [];
-    for (let i = 0; i < HUD_BAG_ROWS; i++) {
-      const rowY = bagY + HUD_BAG_HEADER + i * HUD_BAG_ROW;
+    // The filter field between the tabs and the grid: the MOVES tab's own box and
+    // height, so the two search fields read as one control.
+    const searchX = left;
+    const searchY = bagY + HUD_BAG_HEADER;
+    const searchW = panelW - HUD_PAD_X * 2;
+    this.hudBagSearchRect = { x: searchX, y: searchY, w: searchW, h: HUD_DETAIL_SEARCH_H };
+    this.hudBagSearchBg = this.add
+      .rectangle(
+        searchX,
+        searchY,
+        searchW,
+        HUD_DETAIL_SEARCH_H,
+        FRLG_ROW_FILL.colour,
+        FRLG_ROW_FILL.alpha,
+      )
+      .setOrigin(0, 0)
+      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha);
+    this.hudBagSearchText = addFrlgText(this, searchX + 6, searchY + 4, '', {
+      size: 16,
+      tint: FRLG_INK,
+    }).setMaxWidth(searchW - 78);
+    bagChildren.push(this.hudBagSearchBg, this.hudBagSearchText);
+
+    // The grid: five fixed columns of square icon cells, laid out once here and
+    // only repainted afterwards, so a pocket or filter change allocates nothing.
+    const gridX = left;
+    const gridY = searchY + HUD_DETAIL_SEARCH_H + HUD_BAG_SEARCH_GAP;
+    const bagGridW = panelW - HUD_PAD_X * 2;
+    this.hudBagGridRect = { x: gridX, y: gridY, w: bagGridW, h: HUD_BAG_GRID_H };
+    this.bagGrid = bagGridLayout(this.hudBagGridRect, HUD_BAG_CAP);
+    this.hudBagCells = [];
+    for (const cell of this.bagGrid.cells) {
+      const bg = this.add.rectangle(cell.x, cell.y, cell.w, cell.h).setOrigin(0, 0);
       const icon = this.add
-        .image(left + 10, rowY + 20, ITEM_ICON_TEXTURE_KEY, 0)
-        .setScale(0.75)
+        .image(cell.x + cell.w / 2, cell.y + cell.h / 2, ITEM_ICON_TEXTURE_KEY, 0)
+        .setScale(1)
+        .setOrigin(0.5)
         .setVisible(false);
-      const name = addFrlgText(this, left + 28, rowY + 12, '', { size: 16, tint: FRLG_INK });
-      const count = addFrlgText(this, right, rowY + 12, '', {
+      const badgeBg = this.add
+        .rectangle(cell.x, cell.y, 10, 16, FRLG_SURFACE, 0.85)
+        .setOrigin(0, 0)
+        .setVisible(false);
+      const badge = addFrlgText(this, cell.x, cell.y, '', {
         size: 16,
         tint: FRLG_INK,
         origin: [1, 0],
-      });
-      this.hudBagRows.push({ icon, name, count });
-      bagChildren.push(icon, name, count);
+      }).setVisible(false);
+      this.hudBagCells.push({ bg, icon, badgeBg, badge });
+      bagChildren.push(bg, icon, badgeBg, badge);
     }
 
-    this.hudBagEmpty = addFrlgText(this, x + panelW / 2, bagY + HUD_BAG_HEADER + 36, t('hud.noItems'), {
-      size: 16,
-      tint: FRLG_MUTED,
-      origin: [0.5, 0],
-    });
+    this.hudBagEmpty = addFrlgText(
+      this,
+      gridX + bagGridW / 2,
+      gridY + HUD_BAG_GRID_H / 2 - 8,
+      t('hud.noItems'),
+      { size: 16, tint: FRLG_MUTED, origin: [0.5, 0] },
+    );
     bagChildren.push(this.hudBagEmpty);
 
     // The footer holds the run's Poké Dollars: a hairline rule then the readout,
     // so the money sits with the bag it is spent from (`docs/maps-spec.md` §7).
-    const footerY = bagY + HUD_BAG_HEADER + HUD_BAG_ROWS * HUD_BAG_ROW;
+    const footerY =
+      bagY +
+      HUD_BAG_HEADER +
+      HUD_DETAIL_SEARCH_H +
+      HUD_BAG_SEARCH_GAP +
+      HUD_BAG_GRID_H +
+      HUD_BAG_GRID_GAP;
     const footerRule = this.add
       .rectangle(
         x + HUD_PAD_X,
@@ -2270,6 +2360,12 @@ export class RouteScene extends Phaser.Scene {
         this.hudLearnGhost,
       ])
       .setDepth(150);
+
+    // The bag's description card rides on the root, not in the bag panel's body,
+    // so `raisePanel` can keep it above every window it floats over.
+    this.bagInfoLayer = this.add.container(0, 0);
+    this.hudRoot.add(this.bagInfoLayer);
+    this.bagInfoPopup = new InfoPopup(this, this.bagInfoLayer);
 
     this.applyStoredHudLayout();
   }
@@ -2692,24 +2788,8 @@ export class RouteScene extends Phaser.Scene {
       this.paintTab(tab.bg, active);
       tab.label.setTint(active ? FRLG_ACCENT : FRLG_INK);
     });
-    this.hudBagEmpty.setVisible(bag.length === 0);
     this.hudMoneyText.setText(String(this.run.money));
-    this.hudBagRows.forEach((row, i) => {
-      const stack = bag[i];
-      const frame = stack ? itemIconFrame(stack.itemId) : null;
-      const visible = stack !== undefined && frame !== null;
-      row.icon.setVisible(visible);
-      row.name.setVisible(visible);
-      row.count.setVisible(visible);
-      if (!stack || frame === null) {
-        row.name.setText('');
-        row.count.setText('');
-        return;
-      }
-      row.icon.setFrame(frame);
-      row.name.setText(getItem(stack.itemId)?.name ?? stack.itemId);
-      row.count.setText(`x${stack.count}`);
-    });
+    this.refreshBagGrid(bag);
 
     const pane: 'box' | 'rip' = this.hudUi.pane === 'rip' ? 'rip' : 'box';
     const rows = pane === 'rip' ? ripRows(this.run) : boxRows(this.run);
@@ -2756,6 +2836,92 @@ export class RouteScene extends Phaser.Scene {
     const mission = this.run.mission ? getMission(this.run.mission.id) : undefined;
     this.missionRoot?.setVisible(mission !== undefined);
     if (mission) this.hudMissionText?.setText(t('hud.mission', { mission: t(mission.nameKey) }));
+  }
+
+  /**
+   * Paints the bag grid's cells from the drawn stacks: the shipped row accent on
+   * the cursor's cell, a dim outline on an empty slot, the count badge over every
+   * occupied icon, and the floating card that describes the selection.
+   */
+  private refreshBagGrid(bag: readonly BagCounts[]): void {
+    // A stack taken in hand leaves the drawn list until it is dropped, so the
+    // cursor is only clamped when the list is whole: clamping against the held
+    // list would slide the selection off the cell the press picked.
+    const inHand = this.hudDragItemFrom === null && this.hudDragItem !== null;
+    if (!inHand) this.hudBagCursor = stepBagCursor(this.hudBagCursor, 0, bag.length);
+    const placeholder =
+      this.hudBagSearchFocus || this.hudBagQuery.length > 0 ? this.hudBagQuery : t('hud.searchItems');
+    this.hudBagSearchText
+      .setText(`${this.hudBagSearchFocus ? '>' : ' '} ${placeholder}`)
+      .setTint(this.hudBagQuery.length === 0 && !this.hudBagSearchFocus ? FRLG_MUTED : FRLG_INK);
+    this.hudBagEmpty.setVisible(bag.length === 0);
+
+    this.hudBagCells.forEach((cell, i) => {
+      const rect = this.bagGrid.cells[i];
+      if (rect === undefined) return;
+      const stack = bag[i];
+      cell.bg.setPosition(rect.x, rect.y).setSize(rect.w, rect.h);
+      if (stack === undefined) {
+        cell.bg
+          .setFillStyle(FRLG_ROW_FILL.colour, 0)
+          .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha * 0.4);
+        cell.icon.setVisible(false);
+        cell.badgeBg.setVisible(false);
+        cell.badge.setText('').setVisible(false);
+        return;
+      }
+      const selected = i === this.hudBagCursor;
+      const fill = selected ? FRLG_SELECTED_FILL : FRLG_ROW_FILL;
+      const stroke = selected ? FRLG_SELECTED_STROKE : FRLG_ROW_STROKE;
+      cell.bg.setFillStyle(fill.colour, fill.alpha).setStrokeStyle(1, stroke.colour, stroke.alpha);
+      const frame = itemIconFrame(stack.itemId);
+      cell.icon.setVisible(frame !== null).setPosition(rect.x + rect.w / 2, rect.y + rect.h / 2);
+      if (frame !== null) cell.icon.setFrame(frame);
+      const badgeW = cell.badge
+        .setText(`x${stack.count}`)
+        .setPosition(rect.x + rect.w - 4, rect.y + rect.h - 18)
+        .setVisible(true)
+        .getTextBounds().global.width;
+      cell.badgeBg
+        .setSize(badgeW + 6, 16)
+        .setPosition(rect.x + rect.w - 4 - badgeW - 3, rect.y + rect.h - 18)
+        .setFillStyle(FRLG_SURFACE, 0.85)
+        .setVisible(true);
+    });
+
+    const stack = bag[this.hudBagCursor];
+    const card = this.bagGrid.cells[this.hudBagCursor];
+    if (stack === undefined || card === undefined || !this.panelExpanded('bag')) {
+      this.bagInfoText = '';
+      this.bagInfoPopup.hide();
+      return;
+    }
+    // The card lives on the HUD root, so the bag panel's own drag offset is added
+    // by hand to keep it beside the panel it describes.
+    const panel = this.panelById('bag');
+    const dx = panel?.dx ?? 0;
+    const dy = panel?.dy ?? 0;
+    this.bagInfoText = this.bagInfoFor(stack.itemId);
+    this.bagInfoPopup.show(
+      {
+        x: Math.max(HUD_PANEL_MARGIN, this.hudX - HUD_BAG_INFO_W - HUD_BAG_INFO_GAP) + dx,
+        width: HUD_BAG_INFO_W,
+        above: card.y + card.h + dy,
+        below: card.y + dy,
+      },
+      { text: this.bagInfoText },
+    );
+  }
+
+  /** The card's line for a bag item: the catalogue's, or the run's own candy treat. */
+  private bagInfoFor(itemId: string): string {
+    const item = getItem(itemId);
+    const name = item?.name ?? itemId;
+    const colour = bagDiscoveredCandy(itemId, this.run.discoveredCandy);
+    if (colour === null) return `${name}\n${item?.shortDesc ?? ''}`;
+    const treat = candyTreat(this.run.seed, colour);
+    const delta = treat.delta > 0 ? '+1' : '-1';
+    return `${name}\n${t('hud.candyKnown', { stat: statLabel(treat.stat), delta })}`;
   }
 
   /** Paints a tab's own fill and 1px outline: the accent pair when it is active. */
@@ -3132,9 +3298,31 @@ export class RouteScene extends Phaser.Scene {
     return true;
   }
 
-  /** True while *either* in-panel text field owns the keyboard. */
+  /** True while any in-panel text field owns the keyboard. */
   private textFieldFocused(): boolean {
-    return this.hudNicknameFocus || this.hudSearchFocus;
+    return this.hudNicknameFocus || this.hudSearchFocus || this.hudBagSearchFocus;
+  }
+
+  /**
+   * Routes a key into the bag's filter field while it holds focus: letters,
+   * digits and spaces narrow the grid, Backspace and Escape/Enter edit or leave
+   * it. Every key is consumed, so nothing typed reaches the game underneath.
+   */
+  private typeInBagSearch(event: KeyboardEvent): boolean {
+    if (!this.hudBagSearchFocus) return false;
+    if (event.key === 'Escape' || event.key === 'Enter') {
+      this.hudBagSearchFocus = false;
+    } else if (event.key === 'Backspace') {
+      if (this.hudBagQuery.length === 0) return true;
+      this.hudBagQuery = this.hudBagQuery.slice(0, -1);
+    } else if (event.key.length === 1 && /[a-z0-9 '-]/i.test(event.key)) {
+      this.hudBagQuery += event.key;
+    } else {
+      return true;
+    }
+    event.preventDefault();
+    this.refreshHud();
+    return true;
   }
 
   /**
@@ -3428,6 +3616,18 @@ export class RouteScene extends Phaser.Scene {
     if (this.selectBagTab(pointer)) return;
     if (this.selectRipTab(pointer)) return;
     if (this.selectBoxTab(pointer)) return;
+    // A press on the bag's filter field focuses it and is consumed; a press on a
+    // cell selects it and still falls through to the shipped item drag below; any
+    // other press leaves the field, as the detail panel's own rule does.
+    if (this.focusBagSearch(pointer)) return;
+    const bagCell = this.hudBagCellAt(pointer);
+    if (bagCell !== null) {
+      this.hudBagCursor = bagCell;
+      this.refreshHud();
+    } else if (this.hudBagSearchFocus) {
+      this.hudBagSearchFocus = false;
+      this.refreshHud();
+    }
     if (!this.hudUi.grabbed) {
       const badge = this.hudHeldBadgeAt(pointer);
       if (badge) {
@@ -4466,20 +4666,28 @@ export class RouteScene extends Phaser.Scene {
     );
   }
 
-  /** The bag stack under the pointer in the active pocket, or null. */
-  private hudBagStackAt(pointer: Phaser.Input.Pointer): string | null {
+  /** The bag cell under the pointer, as an index into the drawn stacks, or null. */
+  private hudBagCellAt(pointer: Phaser.Input.Pointer): number | null {
     if (!this.pointerInBagPanel(pointer)) return null;
     const point = this.panelPoint(pointer, 'bag');
-    const bag = bagForCategory(this.run.bag, this.hudBagCategory);
-    const rowTop = this.hudBagY + HUD_BAG_HEADER;
-    const slot = Math.floor((point.y - rowTop) / HUD_BAG_ROW);
-    if (point.y < rowTop || slot < 0 || slot >= HUD_BAG_ROWS) return null;
-    return bag[slot]?.itemId ?? null;
+    return bagGridIndexAt(this.bagGrid, point.x, point.y, this.hudBagStacks().length);
+  }
+
+  /** A press on the bag's filter field: focus it and consume the press. */
+  private focusBagSearch(pointer: Phaser.Input.Pointer): boolean {
+    if (!this.pointerInBagPanel(pointer)) return false;
+    const point = this.panelPoint(pointer, 'bag');
+    if (!pointInRect(point, this.hudBagSearchRect)) return false;
+    this.hudBagSearchFocus = true;
+    this.refreshHud();
+    return true;
   }
 
   /** The bag stack under the pointer that can be dragged: a held item or a heal/status consumable. */
   private hudDraggableStackAt(pointer: Phaser.Input.Pointer): string | null {
-    const itemId = this.hudBagStackAt(pointer);
+    const index = this.hudBagCellAt(pointer);
+    if (index === null) return null;
+    const itemId = this.hudBagStacks()[index]?.itemId ?? null;
     const kind = itemId === null ? null : (getItem(itemId)?.kind ?? null);
     return kind === 'held' || kind === 'heal' || kind === 'status' ? itemId : null;
   }
@@ -4530,6 +4738,9 @@ export class RouteScene extends Phaser.Scene {
     );
     if (!tab) return false;
     this.hudBagCategory = tab.category;
+    this.hudBagCursor = 0;
+    this.hudBagQuery = '';
+    this.hudBagSearchFocus = false;
     this.refreshHud();
     return true;
   }
@@ -4730,10 +4941,12 @@ export class RouteScene extends Phaser.Scene {
     if (panel.expanded) {
       // Collapsing the detail panel takes the nickname field off screen too.
       if (panel.id === 'detail') this.cancelNicknameEdit();
+      if (panel.id === 'bag') this.hudBagSearchFocus = false;
       panel.expanded = false;
       panel.body.setVisible(false);
       this.applyPanelPositions();
       this.persistHudLayout();
+      if (panel.id === 'bag') this.refreshHud();
       return;
     }
     panel.expanded = true;
@@ -4742,6 +4955,7 @@ export class RouteScene extends Phaser.Scene {
     this.raisePanel(panel);
     this.applyPanelPositions();
     this.persistHudLayout();
+    if (panel.id === 'bag') this.refreshHud();
   }
 
   /** The pointer in a panel's own (layout) coordinates, undoing its drag offset. */
@@ -4762,6 +4976,8 @@ export class RouteScene extends Phaser.Scene {
     // The held member/item ghosts must still ride above every panel.
     this.hudRoot.bringToTop(this.hudDragGhost);
     this.hudRoot.bringToTop(this.hudLearnGhost);
+    // The bag's description card rides over every panel it floats beside.
+    this.hudRoot.bringToTop(this.bagInfoLayer);
   }
 
   /** Starts dragging `panel` from the pointer, raising it over the rest. */
@@ -6824,6 +7040,77 @@ export class RouteScene extends Phaser.Scene {
       tint: this.battlefieldOverlay.fillColor,
       alpha: this.battlefieldOverlay.fillAlpha,
       visible: this.battlefieldOverlay.visible,
+    };
+  }
+
+  /**
+   * Dev only: the bag grid as drawn, in canvas (pointer) coordinates. Null when
+   * there is no live run.
+   */
+  bagDebugState(): BagGridDebugState | null {
+    if (!IS_DEVELOP || !this.run || !this.hudRoot) return null;
+    const bag = this.hudBagStacks();
+    const panel = this.panelById('bag');
+    const dx = panel?.dx ?? 0;
+    const dy = panel?.dy ?? 0;
+    const rectOf = (rect: Phaser.Geom.Rectangle): BagGridRect => ({
+      x: rect.x,
+      y: rect.y,
+      w: rect.width,
+      h: rect.height,
+    });
+    const cells = this.hudBagCells.map((cell, index) => {
+      const stack = bag[index];
+      const selected =
+        stack !== undefined &&
+        cell.bg.fillColor === FRLG_SELECTED_FILL.colour &&
+        cell.bg.fillAlpha === FRLG_SELECTED_FILL.alpha;
+      return {
+        index,
+        itemId: stack?.itemId ?? null,
+        count: stack?.count ?? 0,
+        badge: cell.badge.text,
+        iconFrame: cell.icon.visible ? Number(cell.icon.frame.name) : null,
+        selected,
+        fill: cell.bg.fillColor,
+        fillAlpha: cell.bg.fillAlpha,
+        stroke: cell.bg.strokeColor,
+        strokeAlpha: cell.bg.strokeAlpha,
+        rect: rectOf(cell.bg.getBounds()),
+      };
+    });
+    // `InfoPopup` builds its window first, so the layer's first child is the card
+    // the scene handed `show`; reading its bounds measures what is on screen.
+    const card = this.bagInfoLayer.list[0] as Phaser.GameObjects.NineSlice;
+    const cardBounds = card.getBounds();
+    return {
+      category: this.hudBagCategory,
+      query: this.hudBagQuery,
+      focused: this.hudBagSearchFocus,
+      columns: this.bagGrid.columns,
+      rows: this.bagGrid.rows,
+      cellW: this.bagGrid.cellW,
+      cellH: this.bagGrid.cellH,
+      gap: this.bagGrid.gap,
+      search: rectOf(this.hudBagSearchBg.getBounds()),
+      grid: {
+        x: this.hudBagGridRect.x + dx,
+        y: this.hudBagGridRect.y + dy,
+        w: this.hudBagGridRect.w,
+        h: this.hudBagGridRect.h,
+      },
+      tabs: this.hudBagTabs.map((tab) => ({
+        category: tab.category,
+        rect: rectOf(tab.bg.getBounds()),
+      })),
+      cells,
+      info: {
+        visible: this.bagInfoPopup.visible,
+        text: this.bagInfoText,
+        x: cardBounds.x,
+        width: cardBounds.width,
+      },
+      footer: this.hudMoneyText.text,
     };
   }
 

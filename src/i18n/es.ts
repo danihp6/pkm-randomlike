@@ -97,6 +97,8 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'hud.evolveTitle': 'EVOLUCIÓN',
   'hud.pressAnyKey': 'pulsa una tecla',
   'hud.mission': 'Misión: {mission}',
+  'hud.searchItems': 'buscar objetos...',
+  'hud.candyKnown': 'En esta partida: {stat} {delta}',
 
   // mission — the floor's own objective (`src/data/missions.ts`)
   'mission.flawless': 'Planta sin daño',
