@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The wait for the instance is continuous now: each run hands the baton to the next.**
+      The schedule could not hold it — the `*/10` fired once in five hours — so `oci / retry`
+      does what `agent-cycle.yml` does: a run that ends without an instance dispatches the
+      next one, and `concurrency` starts it the moment this one ends. One run is 8 attempts
+      ~5 minutes apart (`ATTEMPT_SLEEP` 180 → 210 s, because 147 s produced 429s and the
+      practical floor is ~5 min), so the wait is one `launch` every ~5 minutes, ~300 a day,
+      two API calls each; Actions minutes are free while the repository is public. The chain
+      stops itself the moment an instance exists, never chains on a *failed* attempts step
+      (a bad credential cannot spin), and `OCI_RETRY=off` is the brake — attempts nothing,
+      chains nothing. `workflow_dispatch` gains an `attempts` input so the chain can be
+      proved in two minutes instead of forty, and a no-slot run now writes a step summary
+      with its attempt and throttle counts.
+      **QA:** the harness green (`bash scripts/agent/vm/oci-launch.test.sh`), `bash -n` clean,
+      and a live `workflow_dispatch -f attempts=1` run ended without a slot, dispatched its
+      successor and that successor started on its own with the default 8 attempts.
+
 - [x] **`oci / retry` holds the wait itself: eight attempts per run, keyed, and throttled on
       purpose.** The workflow went live at 15:54Z with a `*/10` and had **zero** scheduled
       runs two hours later, while this repository's `*/30` fired every 1.5–5 h (17:26, 12:11,

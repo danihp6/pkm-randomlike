@@ -1,14 +1,20 @@
 name: oci / retry
 
-# Waits for an Always Free Ampere slot in the home region. The laptop loop is the fast
-# one (every ~6 minutes); this exists so the wait survives a closed laptop, which is the
-# one thing the local loop cannot do. It spends no model tokens.
+# Waits for an Always Free Ampere slot in the home region, **unattended and without gaps**.
+# The laptop loop is the fast one (every ~6 minutes); this exists so the wait survives a
+# closed laptop, which is the one thing the local loop cannot do. It spends no model tokens.
 #
-# The schedule alone is not a cadence: measured on this repository a `*/30` fired three
-# times in six hours. So one run works through a handful of attempts itself (~3 min apart
-# after a capacity answer, 5 min after a throttle), rotating the shape, and parks itself by
-# finding the instance already `RUNNING` — no state of its own. The cron only restarts
-# that; the attempts are what the wait actually lives on.
+# The schedule is not a cadence: measured on this repository a `*/30` fired three times in
+# six hours, and a `*/10` fired once in five. So this workflow cannot depend on it and does
+# what `agent-cycle.yml` does — **each run hands the baton to the next one** when it ends
+# without an instance, which makes the wait continuous: 8 attempts per run, one launch
+# every ~5 minutes, 24/7, until a slot opens. The cron stays as the thing that restarts the
+# chain if a run dies before handing it over.
+#
+# The chain stops by itself: a run that finds the instance `RUNNING` (or launches it) parks
+# with an outcome, announces it in an `oci-ready` issue, and does not re-dispatch. The
+# repository variable `OCI_RETRY=off` is the brake — a run reads it, attempts nothing and
+# chains nothing; the cron then ticks into an empty run until someone turns it back on.
 #
 # `OCI_SSH_PUBLIC_KEY` is a repository variable holding the *public* half of the key you
 # will log in with. Without it the slot would be spent on a box nobody can reach, so the
@@ -21,10 +27,17 @@ name: oci / retry
 on:
   schedule:
     # GitHub's shortest interval. It is a request, not a promise: measured on this
-    # repository, a */30 fired three times in six hours. The per-run attempt loop is what
-    # makes the wait dense; this is the thing that restarts it.
+    # repository, a */30 fired three times in six hours. The chain is what makes the wait
+    # continuous; this is the thing that restarts it if a run dies without handing over.
     - cron: '*/10 * * * *'
   workflow_dispatch:
+    inputs:
+      # The default is the real wait. A short `attempts` is how the chain is proved in a
+      # couple of minutes instead of forty, and how a human runs one probe by hand.
+      attempts:
+        description: Attempts this run makes (default 8)
+        type: number
+        default: 8
 
 concurrency:
   group: oci-retry
@@ -33,25 +46,31 @@ concurrency:
 permissions:
   contents: read
   issues: write
+  # To hand the baton to the next run. A misconfigured run exits non-zero and does not
+  # chain, so a broken credential cannot spin forever.
+  actions: write
 
 jobs:
   attempt:
     runs-on: ubuntu-24.04
-    # Eight attempts at ~1 min 40 s each, ~3 min apart, plus up to 5 minutes waiting for
-    # the IP once a slot opens: 8 · 102 s + 7 · 180 s ≈ 35 min, under the script's own
+    # Eight attempts at ~1 min 40 s each, ~3.5 min apart, plus up to 5 minutes waiting for
+    # the IP once a slot opens: 8 · 102 s + 7 · 210 s ≈ 38 min, under the script's own
     # 40 min budget, which keeps the job from being killed mid-launch.
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@v6
 
+      # `OCI_RETRY=off` is the brake: the run still exists, does nothing and chains nothing.
       - name: Install the OCI CLI
+        if: vars.OCI_RETRY != 'off'
         run: pip install --quiet oci-cli
 
       - name: Attempts at a slot
         id: launch
+        if: vars.OCI_RETRY != 'off'
         env:
-          ATTEMPTS: 8
-          ATTEMPT_SLEEP: 180
+          ATTEMPTS: ${{ inputs.attempts || 8 }}
+          ATTEMPT_SLEEP: 210
           THROTTLE_SLEEP: 300
           BUDGET: 2400
           SSH_PUBLIC_KEY: ${{ vars.OCI_SSH_PUBLIC_KEY }}
@@ -89,7 +108,32 @@ jobs:
           | Shape | $SHAPE |
           | Public IP | \`$IP\` |
 
-          Next: \`docs/agent-vm.md\` → bootstrap. The schedule keeps firing, finds the
-          instance running and exits; nothing has to be switched off.
+          Next: \`docs/agent-vm.md\` → bootstrap. The chain stops here: the next run finds
+          the instance running, parks and re-dispatches nothing.
           BODY
           )"
+
+      - name: Hand the wait to the next run
+        if: always() && vars.OCI_RETRY != 'off' && steps.launch.outcome == 'success' && steps.launch.outputs.ip == ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The schedule fires every one to five hours, so a run that stops after its own
+          # attempts leaves the wait asleep most of the day. This is the same baton
+          # `agent-cycle.yml` passes: the run keeps every decision (the switch, the
+          # attempts, the brake of an instance found RUNNING) and only asks for the next
+          # one. It is dispatched from inside a run of the same workflow, so `concurrency`
+          # queues it and it starts the moment this one ends.
+          #
+          # `steps.launch.outcome` guards the loop: a run whose attempts step failed is a
+          # broken credential or a bad variable, and chaining it would spin forever on the
+          # same error.
+          for try in 1 2 3; do
+            if gh workflow run oci-retry.yml --ref main; then
+              echo "next run dispatched (attempt $try)"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::could not dispatch the next run: the wait falls back to the schedule"
+          exit 1
