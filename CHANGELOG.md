@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The move audit, and a coverage ledger that counts evidence instead of a flag.** The
+      `[Task-119]` instrument lands: `src/engine/battle/moveAudit.ts` runs **one** move against a
+      clean level-50 board and snapshots what actually changed, with `MOVE_AUDIT_ROWS` at **478**
+      rows (one per `port` move whose note is not `data: basePower`) and one test per row, so the
+      20 moves the engine still cannot honour are green `it.fails` gaps instead of invisible ones.
+      `portedMoveNote` loses the `flags.protect` fallback and stops calling `move.damage`,
+      `ohko`, `sideCondition`, `pseudoWeather` and `forceSwitch` ported without a handler;
+      `MOVE_VOLATILES` is parsed from `applyVolatileEffect`'s own cases. The generator is made
+      CRLF-safe (`\r?\n` and a `lineEnd` helper) and the doc comment that leaked a bogus
+      `| <name> | port |` item row is reworded; the regenerated ledger reports **835 moves
+      (710 port, 76 no-op, 49 excluded)** — the 76 real gaps the report named — and
+      `npm run docs:coverage` is byte-idempotent. No battle rule changed, no run field and no
+      `SAVE_VERSION` step.
+      **QA:** Task QA green on every `[unit]` and both `[live]` criteria (the develop build logs
+      `[coverage]` once per move; `Attract` leaves the live battle state unchanged), and Integration
+      QA green on the combined tree (179 files / 3378 passed, build clean, regenerated pair
+      byte-identical, no shared path, no hot file, merge rehearsal yielding the same tree).
+
 - [x] **The wait for the Always Free instance moved to a scheduled workflow, and the
       repository is public again.** Oracle's Madrid region answers `OUT_OF_HOST_CAPACITY`
       for every shape — including the AMD micro — so the launch is a lottery, and the

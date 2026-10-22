@@ -4308,7 +4308,7 @@ The whole menu battle minus per-effect behaviour. Contract in
 Ports of Showdown handlers, in batches, on the hook names in
 `docs/showdown-reuse.md` §3.
 
-- [ ] **[Task-119] The move audit, and a coverage ledger that counts evidence instead of a flag.** The
+- [x] **[Task-119] The move audit, and a coverage ledger that counts evidence instead of a flag.** The
       human's report: «añade en todo lo antes posible tarea para revisar logica de todos los ataques, ahora
       los de estado o daño relativo parecen no hacer nada la mayoria o no funcionan exactamente igual».
       This is the **first** of the three tasks that answer it and it **changes no rule**: it builds the

@@ -21,7 +21,8 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
 - `battle/` — the menu battle and its effects: `battle/fighter.ts`, `battle/state.ts`,
   `battle/order.ts`, `battle/damage.ts`, `battle/moveType.ts`, `battle/accuracy.ts`,
   `battle/status.ts`, `battle/volatile.ts`, `battle/turn.ts`, `battle/commands.ts`,
-  `battle/mega.ts`, `battle/gmax.ts`, `battle/runAway.ts`, `battle/capture.ts`, `battle/ai.ts` and the ported
+  `battle/mega.ts`, `battle/gmax.ts`, `battle/runAway.ts`, `battle/capture.ts`, `battle/ai.ts`,
+  `battle/moveAudit.ts` (the headless move instrument and the ledger's reference table) and the ported
   effect handlers in `battle/effects/` (`D16`).
 - `maps/` — the floor plan and its geometry: `maps/plan.ts` (the room grid and its links),
   `maps/progress.ts` (boss and portal edges), `maps/route.ts` and `maps/streams.ts`.
