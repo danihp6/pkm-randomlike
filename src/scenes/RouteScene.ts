@@ -288,6 +288,7 @@ import {
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { addFloatingPanel, type FloatingPanel } from '../ui/floatingPanel';
 import { openNpcPanel, NPC_MAX_CHOICES, type NpcPanelView } from '../ui/npcPanel';
+import { openRocket } from '../ui/rocketPanel';
 import {
   FRLG_ACCENT,
   FRLG_BADGE_INK,
@@ -5962,9 +5963,10 @@ export class RouteScene extends Phaser.Scene {
   /**
    * Resolves the row the card accepted (`docs/maps-spec.md` §7). The **merchant**
    * opens the Mart and marks no use, so the merchant is there for the rest of the
-   * floor; the tutor opens its move card, the four re-rolls open the member card and
-   * the sacrifice draws its own member. The four run-modifier rows each commit one
-   * fact — the curse, the forced sky, the narrowed wild type or the gate's item —
+   * floor, and the **Team Rocket** grunt opens the slot machine the same way on its
+   * own tile; the tutor opens its move card, the four re-rolls open the member card
+   * and the sacrifice draws its own member. The four run-modifier rows each commit
+   * one fact — the curse, the forced sky, the narrowed wild type or the gate's item —
    * beside their use mark. Every other row records
    * `npc-<mapIndex>-<roomId>-<id>` in `pickedItems`, which `advanceMap` clears, so a
    * revisit and a reload know the card was taken.
@@ -5974,6 +5976,10 @@ export class RouteScene extends Phaser.Scene {
       case 'merchant':
         this.closePanel();
         openMart(this.roomHost());
+        return;
+      case 'rocket':
+        this.closePanel();
+        openRocket(this.roomHost(), this.npc!.tile);
         return;
       case 'tutor':
         this.closePanel();

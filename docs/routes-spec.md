@@ -124,8 +124,8 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    Ball. Ids are stable
    (`trainer-<routeIndex>-<n>`, `item-<routeIndex>-<n>`) and the draw order is the
    deterministic `pockets` order. A **quiet** room — the map's entry room, its boss
-   room and its special rooms (shop/mini-boss/mega-stone; `docs/maps-spec.md`
-   §2/§6/§7) — skips the terrain and population passes
+   room and its special rooms (mini-boss/mega-stone and the rest;
+   `docs/maps-spec.md` §2/§6/§7) — skips the terrain and population passes
    entirely, so it holds no tall grass, ledges, items or trainers; only its lanes
    are carved.
 5. **Validation pass**: `validateRoute` (`src/engine/routes/validate.ts`) reports a
@@ -223,10 +223,10 @@ and the standing tile on `${seed}:npc:<roomId>:<npcId>:spot`, so no layout, terr
 population, validation or encounter stream moves and a fixed seed keeps every route
 it already generated. The scene rolls it once per room build (never in `update`),
 draws it as an ordinary overworld actor and blocks its tile; the interact key opens
-the one NPC card. `NPC_ROWS` ships fifteen rows (`src/data/npcs.ts`): the merchant,
-the five edit rows and the sacrifice, the four run-modifier rows and the four
-item-and-battle rows (the medic, the chef, the berry tree and the Mega Stone
-keeper).
+the one NPC card. `NPC_ROWS` ships sixteen rows (`src/data/npcs.ts`): the merchant,
+the **Team Rocket** grunt that opens the slot machine's panel, the five edit rows and
+the sacrifice, the four run-modifier rows and the four item-and-battle rows (the
+medic, the chef, the berry tree and the Mega Stone keeper).
 
 **The special trainer is an archetype override, not a pass.** A regular `trainers`
 room may hold **at most one** special trainer, never in the map's entry room, its

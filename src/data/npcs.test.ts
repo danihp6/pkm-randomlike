@@ -5,6 +5,7 @@ import { en, es, setLocale, t } from '../i18n';
 import { normalizeId } from './dex/species';
 import { getItem } from './items';
 import { OVERWORLD_SPRITE_KEYS } from './overworldSprites';
+import { effectiveNpcChance, roomNpc } from '../engine/routes/npcs';
 import {
   BERRY_IDS,
   BERRY_TREE_CAP,
@@ -25,6 +26,7 @@ import { MEGA_STONE_IDS } from './items';
 /** The rows this table ships, in the order the roll breaks its ties (`docs/maps-spec.md` §7). */
 const ROW_IDS = [
   'merchant',
+  'rocket',
   'tutor',
   'nature',
   'ability',
@@ -135,10 +137,39 @@ describe('the special-NPC table', () => {
     expect(row.repeatable).toBeUndefined();
   });
 
-  it('marks the merchant as the only repeatable row', () => {
+  it('marks the merchant and the Team Rocket grunt as the repeatable rows', () => {
     expect(MERCHANT.repeatable).toBe(true);
     const repeatable = NPC_ROWS.filter((row) => row.repeatable === true).map((row) => row.id);
-    expect(repeatable).toEqual(['merchant']);
+    expect(repeatable).toEqual(['merchant', 'rocket']);
+  });
+
+  it('ships the Team Rocket grunt as the row that carries the slot machine', () => {
+    const row = rowOf('rocket');
+    expect(row.nameKey).toBe('casino.title');
+    expect(row.spriteKey).toBe('rocket');
+    // A rolled row from map 2 on: 0 on map 1 and 3 points a floor after it.
+    expect(row.chance).toBe(0);
+    expect(row.floorStep).toBe(0.03);
+    // No gate, no grant and no battle: the machine's own model decides the fight,
+    // and the row writes no use mark, so a revisit can spin again.
+    expect(row.requires).toBeUndefined();
+    expect(row.grant).toBeUndefined();
+    expect(row.battle).toBeUndefined();
+    expect(row.guaranteedFromMap).toBeUndefined();
+    expect(row.repeatable).toBe(true);
+    expect(effectiveNpcChance(row, 1)).toBe(0);
+    expect(effectiveNpcChance(row, 2)).toBe(0.03);
+    expect(effectiveNpcChance(row, 8)).toBe(0.21);
+  });
+
+  it('never rolls the grunt on map 1, where its weight is zero', () => {
+    let others = 0;
+    for (let i = 0; i < 60; i++) {
+      const placement = roomNpc(`rocket-roll-${i}`, i, 1);
+      if (placement) others += 1;
+      expect(placement?.row.id, `room ${i}`).not.toBe('rocket');
+    }
+    expect(others).toBeGreaterThan(0);
   });
 
   it('ships the four run-modifier rows after the sacrifice, in table order', () => {
@@ -170,7 +201,7 @@ describe('the special-NPC table', () => {
       },
     };
     const ids = Object.keys(rows);
-    expect(NPC_ROWS.slice(7, 11).map((row) => row.id)).toEqual(ids);
+    expect(NPC_ROWS.slice(8, 12).map((row) => row.id)).toEqual(ids);
     const groups: Readonly<Record<string, string>> = {
       exorcist: 'npc.exorcist',
       'weather-man': 'npc.weather',

@@ -220,14 +220,22 @@ describe('guaranteedNpc', () => {
 });
 
 describe('roomNpc and the guaranteed rows', () => {
-  it('never returns a zero-chance row, the merchant included', () => {
-    const ids = new Set(NPC_ROWS.filter((row) => row.chance > 0).map((row) => row.id));
+  it('never returns a zero-weight row, the merchant and the grunt included', () => {
+    // A row's weight is its **effective** chance, so a zero base chance is not the
+    // test: the merchant never rolls on any floor and the Team Rocket grunt never
+    // rolls on map 1, where its step has not lifted it off zero yet.
     for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+      const ids = new Set(
+        NPC_ROWS.filter((row) => effectiveNpcChance(row, mapIndex) > 0).map((row) => row.id),
+      );
       for (let roomIndex = 0; roomIndex < 40; roomIndex++) {
         const placement = roomNpc(SEED, roomIndex, mapIndex);
         if (!placement) continue;
         expect(placement.row.id, `map ${mapIndex} room ${roomIndex}`).not.toBe('merchant');
         expect(ids.has(placement.row.id), `map ${mapIndex} room ${roomIndex}`).toBe(true);
+        if (mapIndex === 1) {
+          expect(placement.row.id, `map ${mapIndex} room ${roomIndex}`).not.toBe('rocket');
+        }
       }
     }
   });

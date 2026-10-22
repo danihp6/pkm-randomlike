@@ -22,18 +22,22 @@ import { secretShopGateOpen, secretShopSealId, secretShopStock } from './secretS
  *
  * The room's counter is a **fixture** on `pocket` (the trade and static leaves do the
  * same), so it blocks that tile: the protocol's two steps land on the **seal**
- * (`mouth.x, mouth.y + 1`) and the interact key then opens the card across it. The
- * `pocket` literal is the counter the card belongs to, not a tile the player stands
- * on.
+ * (one tile in from `mouth`, along `direction`) and the interact key then opens the
+ * card across it. The `pocket` literal is the counter the card belongs to, not a
+ * tile the player stands on.
+ *
+ * **Re-pinned by Task-117**: the slot machine's room retired, so this seed's floor 3
+ * hangs the leaf one room earlier and its vault carves on a different site (a pond
+ * instead of a rock).
  */
 export const SECRET_SHOP_QA = {
   seed: 'secret-shop-qa-3',
   mapIndex: 3,
-  roomId: 10,
-  obstacle: 'rock',
-  mouth: { x: 10, y: 13 },
-  pocket: { x: 10, y: 15 },
-  direction: 'S',
+  roomId: 9,
+  obstacle: 'water',
+  mouth: { x: 15, y: 21 },
+  pocket: { x: 13, y: 21 },
+  direction: 'W',
 } as const;
 
 /** A run whose party is exactly the species the case needs, standing on map 3. */

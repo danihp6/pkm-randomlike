@@ -78,10 +78,13 @@ export type NpcRow = Readonly<{
  * Every special NPC. The **merchant** is the floor's one guaranteed row: from map 2
  * on it stands in the floor's first trainer room and opens the Mart, so the shop
  * room could retire and the run still has its counter (`docs/maps-spec.md` §7).
- * The five member-edit rows and the sacrifice share the roll after it, then the four
- * run-modifier rows: the exorcist, the weather man, the magician and the type gate.
- * The last four rows pay in items or in a battle: the **medic**, the **chef**, the
- * **berry tree** and the **Mega Stone keeper**.
+ * The **Team Rocket** grunt follows it in the table: it is the row that carries the
+ * slot machine, so the casino room retired the way the shop room did and the
+ * machine's panel opens from this card. The five member-edit rows and the sacrifice
+ * share the roll after it, then the four run-modifier rows: the exorcist, the
+ * weather man, the magician and the type gate. The last four rows pay in items or in
+ * a battle: the **medic**, the **chef**, the **berry tree** and the **Mega Stone
+ * keeper**.
  */
 export const NPC_ROWS: readonly NpcRow[] = [
   {
@@ -94,6 +97,16 @@ export const NPC_ROWS: readonly NpcRow[] = [
     guaranteedFromMap: 2,
     repeatable: true,
     choices: [{ id: 'mart', label: 'npc.merchant.trade' }],
+  },
+  {
+    id: 'rocket',
+    nameKey: 'casino.title',
+    greetingKey: 'casino.title',
+    spriteKey: 'rocket',
+    chance: 0,
+    floorStep: 0.03,
+    repeatable: true,
+    choices: [{ id: 'spin', label: 'casino.title' }],
   },
   {
     id: 'tutor',

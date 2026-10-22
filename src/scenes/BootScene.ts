@@ -86,8 +86,6 @@ export const TRAINER_TEXTURE_KEY = 'route:trainer';
 export const ARROW_TEXTURE_KEY = 'route:arrow';
 /** The shop counter the player interacts with in a shop room (Phase 9). */
 export const SHOP_COUNTER_TEXTURE_KEY = 'route:shop-counter';
-/** The slot machine the casino room's grunt runs (`docs/maps-spec.md` §7). */
-export const CASINO_MACHINE_TEXTURE_KEY = 'route:casino-machine';
 export const BATTLE_MON_TEXTURE_KEY = 'battle:mon';
 export const BATTLE_PLATFORM_TEXTURE_KEY = 'battle:platform';
 
@@ -283,20 +281,6 @@ export class BootScene extends Phaser.Scene {
     counter.fillRect(1, 4, 20, 2);
     counter.generateTexture(SHOP_COUNTER_TEXTURE_KEY, 22, 18);
     counter.destroy();
-
-    // The casino's slot machine: a purple cabinet with a dark reel window, three
-    // gold reels and a red lever, drawn at its own 22x22 so the scene scales it.
-    const machine = this.make.graphics({ x: 0, y: 0 });
-    machine.fillStyle(0x4c2a6b, 1);
-    machine.fillRect(0, 3, 22, 19);
-    machine.fillStyle(0x111827, 1);
-    machine.fillRect(3, 6, 16, 7);
-    machine.fillStyle(0xf2c14e, 1);
-    for (let i = 0; i < 3; i++) machine.fillRect(4 + i * 5, 8, 3, 3);
-    machine.fillStyle(0xe11d48, 1);
-    machine.fillRect(19, 3, 3, 6);
-    machine.generateTexture(CASINO_MACHINE_TEXTURE_KEY, 22, 22);
-    machine.destroy();
 
     // Placeholder battle stand-ins (O1): a tintable body and a shadow platform.
     const mon = this.make.graphics({ x: 0, y: 0 });

@@ -100,9 +100,10 @@ packed by `scripts/frlg/build-overworld-sprites.mjs` into
 `src/assets/frlg/overworld.png` (one row of nine poses per sprite key) plus
 `src/data/frlg/overworld.json`, read through `src/data/overworldSprites.ts` (D24),
 so a trainer stands on the resting pose of its facing and walks toward a player it
-spots. The same atlas carries the casino's `rocket` grunt and the ten special NPCs
-the rooms place — `merchant`, `chef`, `magician`, `exorcist`, `weather-man`,
-`sacrifice`, `medic`, `iv-judge`, `berry-tree`, `ninja` — for 21 rows in all. Six
+spots. The same atlas carries the slot machine's `rocket` grunt — an NPC of its own
+since `Task-117` — and the ten special NPCs the rooms place — `merchant`, `chef`,
+`magician`, `exorcist`, `weather-man`, `sacrifice`, `medic`, `iv-judge`,
+`berry-tree`, `ninja` — for 21 rows in all. Six
 of those borrow a shipped class because the decomp has no class by that name
 (`magician` → gentleman, `exorcist` → channeler, `weather-man` → scientist,
 `sacrifice` → old man, `iv-judge` → gym guide, `berry-tree` → hiker), and the

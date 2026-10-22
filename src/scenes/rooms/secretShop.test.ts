@@ -21,7 +21,8 @@ const openMartMock = vi.mocked(openMart);
 
 const SEED = 'secret-shop-qa-3';
 const MAP_INDEX = 3;
-const ROOM_ID = 10;
+// Re-pinned by Task-117: the slot machine's room retired, so the leaf is room 9.
+const ROOM_ID = 9;
 const LEVEL = 5;
 
 /** The seal and the vault tile the pinned room carves. */

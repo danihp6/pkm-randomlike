@@ -11,9 +11,10 @@ it in `docs/tech-decisions.md` (D28–D33).
 > (`planMap`), the plan-driven route shapes and size, the per-map levels, the run's
 > floor tracking, the boss/portal, the route HUD **minimap** (`src/ui/mapView.ts`),
 > the **Poké Dollar economy** (trainer drops, the valuables and the bag's money
-> readout), the **special rooms in the plan** (the mini-boss, mega-stone, casino,
-> gated, trade and no-heal leaves) and their **own content** (the Mart panel the
-> merchant opens, the mini-boss's reward choice and the mega-stone treasure) have all
+> readout), the **special rooms in the plan** (the mini-boss, mega-stone, gated,
+> trade and no-heal leaves) and their **own content** (the Mart panel the merchant
+> opens, the slot machine the Team Rocket NPC carries, the mini-boss's reward choice
+> and the mega-stone treasure) have all
 > shipped, and the Phase 9 docs/migration pass closed the phase: the algorithm
 > below is what the tree runs, and every number in it is the tree's. The `D##`
 > decisions behind it are D28–D33.
@@ -276,7 +277,6 @@ regular trainer to one. Their content:
 | --- | --- | --- | --- |
 | **mini-boss** | medium chance | a leaf anywhere | one strong trainer fielding a **fixed party of three** (**two** on map 1, `bossPartySize('miniboss', mapIndex)`); beating it offers **one floating window of six rows** — three **items** from the map's reward pool and three **Pokémon it presents only by their highest stat and their nature** (`ATTACK · Adamant`), never by name, sprite, types or moves — each row taken by dragging it onto the bag or the party, with no keyboard path |
 | **mega-stone** | low chance, **from map 3 onward** | a leaf anywhere | one random **Mega Stone** item |
-| **casino** | 30 % chance, **from map 2 onward** | a leaf anywhere | a **slot machine** counter with a Team Rocket grunt beside it; the interact key (`E`) opens the machine's own window, where one **spin** costs the floor band's price (`CASINO.price`, `src/data/casino.ts`) and pays an item, one of the band's **grouped equipables** (`casinoHeldPool`), an **Egg** or the fight against the grunt |
 | **gated** | 20 % chance, **from map 3 onward** | a leaf anywhere | one **vault** sealed by a **bush**, a **rock** or a **pond**; the interact key opens it when a party member has the obstacle's **type** — Bug or Grass / Rock or Fighting / Water — and the reward inside is one ground item |
 | **trade** | 20 % chance, **from map 3 onward** | a leaf anywhere | a counter; the interact key (`E`) opens the room's own window, which lists the **party** and one `LEAVE` row. Giving a member away rolls **one random Pokémon on acceptance** (never previewed) and places it in the party at the **squad's level**; one trade per room, and refused on a single-member party |
 | **no-heal** | 20 % chance, **from map 3 onward** | a leaf anywhere | one `psychic` trainer; **every battle that starts in the room** refuses the **player's** Bag and healing moves (`docs/battle-spec.md` §2) |
@@ -291,21 +291,22 @@ minimap only once **entered**, with their own icon. There is no shop room: the
 Mart is the floor's guaranteed **merchant** special NPC's window (§ *The special
 NPC*), one per floor from map 2 on. The **mini-boss** leaf rolls with a **50%**
 chance, the **mega-stone** leaf with **15%** (only **from map 3 onward**), the
-**casino** leaf with **30%** (only **from map 2 onward**), the **gated** leaf with
-**20%** (only **from map 3 onward**), the **trade** leaf with **20%** (only **from
-map 3 onward**), the **no-heal** leaf with **20%** (only **from map 3 onward**), the
-**static** leaf with **25%** (only **from map 3 onward**) and the **secret-shop**
-leaf with **20%** (only **from map 3 onward**), and any of them may coincide on the
-same floor. The casino's draw, then the **gated** leaf's, then the **trade** leaf's
-and then the **no-heal** leaf's run on the `map` stream and are the **last**
-statements of its special pass, in that order, so no floor's mini-boss,
-mega-stone, casino, gated leaf, trade leaf, room id or room size moves when any of
-them shipped; the static leaf's `…:static-room` stream and then the secret-shop
-leaf's `…:secret-shop-room` stream are the **last** draws of the pass, each
-**minted** rather than taken from the `map` stream, so neither can move a floor's
-trainer roles either. The puzzle leaf's `…:puzzle-room` draw is the special pass's
-**last** one, after the banned leaf's own minted `…:banned-room` draw, so it moves
-nothing either.
+**gated** leaf with **20%** (only **from map 3 onward**), the **trade** leaf with
+**20%** (only **from map 3 onward**), the **no-heal** leaf with **20%** (only
+**from map 3 onward**), the **static** leaf with **25%** (only **from map 3
+onward**) and the **secret-shop** leaf with **20%** (only **from map 3 onward**),
+and any of them may coincide on the same floor. The **gated** leaf's draw, then the
+**trade** leaf's and then the **no-heal** leaf's run on the `map` stream and are the
+**last** statements of its special pass, in that order, so no floor's mini-boss,
+mega-stone, gated leaf, trade leaf, room id or room size moves when any of them
+shipped; the static leaf's `…:static-room` stream and then the secret-shop leaf's
+`…:secret-shop-room` stream are the **last** draws of the pass, each **minted**
+rather than taken from the `map` stream, so neither can move a floor's trainer roles
+either. The puzzle leaf's `…:puzzle-room` draw is the special pass's **last** one,
+after the banned leaf's own minted `…:banned-room` draw, so it moves nothing either.
+The slot machine's own leaf retired with its room (`Task-117`): the Team Rocket NPC
+carries the machine now (§ *The slot machine*), so no floor hangs a casino leaf and
+the gated, trade and no-heal draws read the values that leaf used to take.
 
 Every floor is also given one **mission** (`src/data/missions.ts`,
 `src/engine/run/missions.ts`), drawn from the run seed on its own
@@ -508,20 +509,36 @@ every special leaf are `wild` and never carry one.
   and no save field or `SAVE_VERSION` step was added. A revisit and a reload read
   the same record.
 
-`NPC_ROWS` ships **fifteen** rows: the **merchant**, and the **six** rolled rows the
+`NPC_ROWS` ships **sixteen** rows: the **merchant**, the **Team Rocket** grunt that
+carries the slot machine (§ *The slot machine*), and the **six** rolled rows the
 party edits need — the **tutor** (one move of `TUTOR_MOVES`), the **nature**,
 **ability** and **IV** re-rolls, the **species** swap and the **sacrifice**, which
 takes one whole bag stack for one of `SACRIFICE_REWARDS` — then the **four
 run-modifier** rows below, then the **four item-and-battle** rows: the **medic**,
 the **chef**, the **berry tree** and the **Mega Stone keeper**. A row is a rolled
 row (its `chance`/`floorStep` and its optional gate) or a **guaranteed** one
-(`guaranteedFromMap`, `chance: 0`); `roomNpc` never picks a zero-chance row, so a
-guaranteed row is only ever placed. The five edit rows and the four run-modifier
-rows carry 2 % on map 1 and the sacrifice 4 %, each growing 0.5 points per floor,
-and the four new rows carry 1 % growing 0.25 points, so an eligible floor puts an
-NPC in a trainer room **≈26 % early and ≈68 % by map 8** (without the sacrifice:
-≈22 %, then ≈61 %). Each later NPC task adds its own row, copy and effect beside
-them.
+(`guaranteedFromMap`, `chance: 0`); `roomNpc` never picks a zero-weight row, so a
+guaranteed row is only ever placed and a row whose step has not lifted it off zero
+is not rolled yet. The five edit rows and the four run-modifier rows carry 2 % on
+map 1 and the sacrifice 4 %, each growing 0.5 points per floor, and the four new
+rows carry 1 % growing 0.25 points, so an eligible floor puts an NPC in a trainer
+room **≈26 % early and ≈68 % by map 8** (without the sacrifice: ≈22 %, then ≈61 %).
+Each later NPC task adds its own row, copy and effect beside them.
+
+The **Team Rocket grunt** is the second row that carries a room's content, after the
+merchant: `chance: 0` with `floorStep: 0.03`, so it is worth **0 on map 1** (a zero
+weight is never rolled) and **3 % per trainer room on map 2, rising to 21 % on map
+8**; it is `repeatable`, because the machine's own `casino-spin-*`/`casino-lock-*`
+marks are its record, so a revisit can spin again until the floor's lock. Because
+the floor's **guaranteed merchant** already stands in the first trainer room from
+map 2 on, the roll reads the floor's *other* trainer rooms: measured over 2 000
+seeds per floor on a run that has completed no mission (so the sacrifice is gated
+out), a floor holds the grunt **2.9 %** of the time on map 2, **10.9 %**
+on map 3, **16.1 %** on map 4, **22.6 %** on map 5, **38.0 %** on map 6, **45.6 %**
+on map 7 and **51.1 %** on map 8 — **≈1.9 floors a run** (maps 2-8) carry the
+machine, against the retired 30 % leaf's ≈2.1. Its card is the machine's own:
+`casino.title` is its title and its paragraph, and its one row opens the panel, so no
+new copy was added and the panel keeps every `casino.*` line it already printed.
 
 The **run-modifier** rows each write one fact that outlives the room, into the run's
 own `RunState.modifiers` record (three of the four; the gate pays an item), and each
@@ -671,17 +688,19 @@ content:
   run: leaving the room forgets a half-pressed sequence, and the **solve** is the
   only fact that survives it.
 
-### The casino (the slot machine)
+### The slot machine (the Team Rocket NPC's panel)
 
-The casino's counter is a **slot machine** with a **Team Rocket grunt** standing
-beside it. Facing the machine with the interact key (`E`) opens the machine's own
-window: a cabinet with **three reels**, every face a drawn item of the band's table
-or, on the fight, the grunt's Rocket icon. The two rows (`SPIN ¥<price>` and
-`LEAVE`) answer the pointer as well as the keys, the run's money sits in the
-corner and one message line reports the reveal. A spin **books** its outcome
-before the first frame and then reveals it — an 800 ms spin, the reels stopping
-160 ms apart — and a second press, or any pointer press on the card, skips to the
-booked faces, so a reload mid-spin neither re-rolls nor refunds. One **spin**:
+The machine is the **Team Rocket** special NPC's panel, not a room (`Task-117`): a
+`rocket` row of `NPC_ROWS` stands in a regular trainer room like any other NPC, and
+its card's one row opens the machine. Its window is a cabinet with **three reels**,
+every face a drawn item of the band's table or, on the fight, the grunt's Rocket
+icon. The two rows (`SPIN ¥<price>` and `LEAVE`) answer the pointer as well as the
+keys, the run's money sits in the corner and one message line reports the reveal. A
+spin **books** its outcome before the first frame and then reveals it — an 800 ms
+spin, the reels stopping 160 ms apart — and a second press, or any pointer press on
+the card, skips to the booked faces, so a reload mid-spin neither re-rolls nor
+refunds. It is **modal**: it takes the keyboard while it is up, and closing it
+returns the keys to the route. One **spin**:
 
 - costs the floor band's **price**: `CASINO.price` in `src/data/casino.ts` is
   300 / 700 / 1000 / 1500 / 2000 / 2500 from the `early` to the `end` band;
@@ -702,6 +721,11 @@ booked faces, so a reload mid-spin neither re-rolls nor refunds. One **spin**:
   — ≈ 7.1 % / 6.5 % / 9.4 % / 12.1 % / 10.6 % / 10.6 % from `early` to `end` — and
   the `low` and `mid` rows ship **diluted** (`docs/balance/economy.md`, `## The
   casino's spin`).
+
+The grunt the machine may serve is a **set-piece** built on the NPC's own tile under
+the floor's stable id `casino-grunt-<map>` (`src/ui/rocketPanel.ts`), started through
+the scene's own trainer path, so a beaten grunt cannot be fought twice on a floor and
+no route trainer is appended for it.
 
 A spin is a **pure function of the run** (`casinoSpin`, `src/ui/casino.ts`): its
 stream is `Rng(hashSeed(`${seed}:casino:${mapIndex}:${n}`))`, where `n` is the
@@ -735,7 +759,7 @@ the overlay's `tint` and `alpha`). The condition belongs to the **room**, so
   with `ROOM_BATTLEFIELD_CHANCE` (**15%**), the **boss room** instead **always** takes
   one of the two openings of `BOSS_OPENINGS` (`src/data/bosses.ts`, §6) — never a
   chance roll — and the map's **entry room** and every **special leaf** (mini-boss,
-  mega-stone, casino) are **quiet** — they roll none.
+  mega-stone and the rest) are **quiet** — they roll none.
 - One roll per room, off the run seed and the room's **stable** index
   (`routeIndexForRoom`, §9): `Rng(hashSeed(\`${seed}:battlefield:${roomIndex}\`))`,
   one draw for the chance and one for the row. It is the roll's **own** stream, so

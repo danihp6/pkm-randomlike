@@ -69,16 +69,23 @@ const START_LEVEL = 5;
  * `factor' = round2(factor x 1.25 / fill)` — 1.15 to 0.94, 0.91 to 1.09 and 1.09 to
  * 1.31 — and they are back to 1.25, 1.26 and 1.25. The other five factors are
  * untouched; map 4 still sits inside the window at 1.08.
+ *
+ * **Re-walked by Task-117 with the slot machine's room.** Its leaf retired with the
+ * NPC that carries the machine, so a floor from map 2 on holds one room fewer and
+ * `routeIndexForRoom` shifts once more: the column now reads 1.25, 1.14, 1.34, 1.17,
+ * 1.17, 1.13, 1.26 and 1.17 on maps 1-8. Every floor stays inside the rule's
+ * `1.05 – 1.5` window, so no factor is re-solved (a re-solve is a balance task, not
+ * a room task) and this column is the walk as it now stands.
  */
 const MEASURED_FILL: Readonly<Record<number, number>> = {
   1: 1.25,
-  2: 1.25,
-  3: 1.16,
-  4: 1.08,
-  5: 1.25,
+  2: 1.14,
+  3: 1.34,
+  4: 1.17,
+  5: 1.17,
   6: 1.13,
   7: 1.26,
-  8: 1.25,
+  8: 1.17,
 };
 
 /** The lowest share a floor may pay: the window's floor. */

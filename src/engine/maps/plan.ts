@@ -64,27 +64,26 @@ export type MapOpening = Readonly<{ edge: MapEdge; kind: MapOpeningKind }>;
 /**
  * A **special** room (`docs/maps-spec.md` §7, D33): an extra dead-end leaf that
  * carries only its own content, never the regular room's. A **mini-boss** leaf on a
- * roll, a **mega-stone** leaf from map 3 on, a **casino** leaf from map 2 on, a
- * **gated** leaf (a vault sealed behind a type-gated obstacle) from map 3 on, a
- * **trade** leaf from map 3 on, a **no-heal** leaf (battles in it refuse the
- * player's Bag and healing moves) from map 3 on, a **static** leaf behind a
- * party gate from map 3 on and a **secret-shop** leaf (a counter with the late-band
- * gear behind the same type-gated vault) from map 3 on, plus a **banned** leaf
- * (battles there bar the party's most-used species) from map 3 on and a **puzzle**
- * leaf (a switch sequence that pays a ground item) from map 2 on; they may
- * coincide on one floor.
+ * roll, a **mega-stone** leaf from map 3 on, a **gated** leaf (a vault sealed
+ * behind a type-gated obstacle) from map 3 on, a **trade** leaf from map 3 on, a
+ * **no-heal** leaf (battles in it refuse the player's Bag and healing moves) from
+ * map 3 on, a **static** leaf behind a party gate from map 3 on and a
+ * **secret-shop** leaf (a counter with the late-band gear behind the same
+ * type-gated vault) from map 3 on, plus a **banned** leaf (battles there bar the
+ * party's most-used species) from map 3 on and a **puzzle** leaf (a switch sequence
+ * that pays a ground item) from map 2 on; they may coincide on one floor.
  * Every one is hung off a regular room that is neither the entry nor the boss, and
  * never farther from the entry than the boss. The trade leaf rolls after every
  * shipped draw, the no-heal leaf after it, the static leaf after that and the
  * secret-shop leaf after that, on its own minted stream, so none can move a
- * floor's mini-boss, mega-stone, casino, gated, trade or static leaf. The Mart is
- * **not** a room any more: the floor's merchant NPC opens it in a regular trainer
- * room (`docs/maps-spec.md` §7).
+ * floor's mini-boss, mega-stone, gated, trade or static leaf. The Mart and the slot
+ * machine are **not** rooms any more: the floor's merchant NPC opens the first and
+ * the Team Rocket NPC the second, both in a regular trainer room
+ * (`docs/maps-spec.md` §7).
  */
 export type MapRoomSpecial =
   | 'mini-boss'
   | 'mega-stone'
-  | 'casino'
   | 'gated'
   | 'trade'
   | 'no-heal'
@@ -147,12 +146,6 @@ const MEGA_STONE_CHANCE = 0.15;
 
 /** The first map whose floor may hold a mega-stone leaf (`docs/maps-spec.md` §7). */
 const MEGA_STONE_FROM_MAP = 3;
-
-/** Chance a floor hangs a **casino** leaf (`docs/maps-spec.md` §7). Module-private. */
-const CASINO_CHANCE = 0.3;
-
-/** The first map whose floor may hang a casino leaf (`docs/maps-spec.md` §7). */
-const CASINO_FROM_MAP = 2;
 
 /** Chance a floor hangs a **gated** leaf (`docs/maps-spec.md` §7). Module-private. */
 const GATED_CHANCE = 0.2;
@@ -483,34 +476,30 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     const parents = freeParents();
     if (parents.length > 0) addSpecial('mega-stone', parents[rng.int(0, parents.length - 1)]);
   }
-  // The casino rolls last on the same stream, so no floor's mini-boss,
-  // mega-stone or room size moves because of it (`docs/maps-spec.md` §7).
-  if (index >= CASINO_FROM_MAP && rng.next() < CASINO_CHANCE) {
-    const parents = freeParents();
-    if (parents.length > 0) addSpecial('casino', parents[rng.int(0, parents.length - 1)]);
-  }
-  // The gated leaf rolls last, after every shipped draw, so no floor's
-  // mini-boss, mega-stone, casino, room id or size moves because of it. Map 3 is the
-  // first floor whose party can plausibly hold the asked type, and it is where the
-  // mega-stone leaf already starts; 20 % keeps every floor's trainer budget green.
+  // The slot machine's leaf retired with its room (the Team Rocket NPC carries the
+  // machine now), so this is the special pass's first remaining roll on the `map`
+  // stream and it reads the values that draw used to take; the leaves below it are
+  // re-pinned in `plan.test.ts`. Map 3 is the first floor whose party can plausibly
+  // hold the asked type, and it is where the mega-stone leaf already starts; 20 %
+  // keeps every floor's trainer budget green.
   if (index >= GATED_FROM_MAP && rng.next() < GATED_CHANCE) {
     const parents = freeParents();
     if (parents.length > 0) addSpecial('gated', parents[rng.int(0, parents.length - 1)]);
   }
   // The trade leaf rolls after every shipped draw, so no floor's mini-boss,
-  // mega-stone, casino, gated leaf, room id or room size moves because of it. Map 3
-  // is the first floor whose party plausibly holds a member to spare; the room is
-  // refused on a single-member party, so earlier floors would hand the player a
-  // counter that can never answer.
+  // mega-stone, gated leaf, room id or room size moves because of it. Map 3 is the
+  // first floor whose party plausibly holds a member to spare; the room is refused on
+  // a single-member party, so earlier floors would hand the player a counter that can
+  // never answer.
   if (index >= TRADE_FROM_MAP && rng.next() < TRADE_CHANCE) {
     const parents = freeParents();
     if (parents.length > 0) addSpecial('trade', parents[rng.int(0, parents.length - 1)]);
   }
   // The no-heal leaf rolls last of all, after the trade draw, so no floor's
-  // mini-boss, mega-stone, casino, gated or trade leaf, room id or room size moves
-  // because of it (`docs/maps-spec.md` §7). Map 3 is the first floor whose party is
-  // expected to hold healing moves the room can refuse; 20 % keeps the floor's
-  // trainer budget green.
+  // mini-boss, mega-stone, gated or trade leaf, room id or room size moves because of
+  // it (`docs/maps-spec.md` §7). Map 3 is the first floor whose party is expected to
+  // hold healing moves the room can refuse; 20 % keeps the floor's trainer budget
+  // green.
   if (index >= NO_HEAL_ROOM.fromMap && rng.next() < NO_HEAL_ROOM.chance) {
     const parents = freeParents();
     if (parents.length > 0) addSpecial('no-heal', parents[rng.int(0, parents.length - 1)]);
@@ -547,8 +536,8 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
   }
   // The puzzle leaf is the special pass's **last** draw, on its own minted stream,
   // so no floor's topology, specials, room ids, sizes, roles or any leaf above moves
-  // (`docs/maps-spec.md` §7). Map 2 is where the casino leaf already starts; 20 %
-  // keeps the floor's trainer budget green.
+  // (`docs/maps-spec.md` §7). Map 2 is the first floor it may hang on; 20 % keeps the
+  // floor's trainer budget green.
   const puzzleRng = new Rng(hashSeed(`${seed}:map:${index}:puzzle-room`));
   if (index >= PUZZLE_ROOM.fromMap && puzzleRng.next() < PUZZLE_ROOM.chance) {
     const parents = freeParents();
