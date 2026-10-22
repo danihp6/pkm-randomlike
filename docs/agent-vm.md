@@ -78,11 +78,16 @@ not bill. Everything below is in the console; the CLI equivalents are the same c
 2. **Close the firewall.** The default security list opens nothing but SSH on 22. Keep
    it that way: the box needs **no inbound port at all**. Do not add 80/443.
 3. **Note the shape's two realities.** A1 capacity is regional and often exhausted — the
-   create call answers `Out of host capacity` and the fix is to retry, or to try another
-   availability domain in the same region. And Always Free compute can be reclaimed when
-   it has been idle for a week (low CPU, low network); a loop that parks with an empty
-   backlog is exactly that pattern, so treat a vanished instance as possible and keep the
-   repo the source of truth (it already is).
+   create call answers `Out of host capacity` and the only lever is to retry. Madrid has
+   **one** availability domain (`gcgh:EU-MADRID-1-AD-1`, the sole entry from
+   `oci iam availability-domain list`), so there is no other AD to rotate to; the shape is
+   offered there (`VM.Standard.A1.Flex` answers from `oci compute shape list`), the region is
+   just full. And Always Free compute exists **only in the tenancy's home region**, which
+   Oracle does not change: a different region is a different tenancy or a paid instance, so
+   the wait is in Madrid or nowhere. Always Free compute can also be reclaimed when it has
+   been idle for a week (low CPU, low network); a loop that parks with an empty backlog is
+   exactly that pattern, so treat a vanished instance as possible and keep the repo the
+   source of truth (it already is).
 
 The same thing through the CLI, once `~/.oci/config` holds an API key:
 
