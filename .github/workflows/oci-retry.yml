@@ -5,10 +5,14 @@ name: oci / retry
 # one thing the local loop cannot do. It spends no model tokens.
 #
 # The schedule alone is not a cadence: measured on this repository a `*/30` fired three
-# times in six hours. So one run makes ten attempts 45 s apart (~25 min with the launch
-# call's own latency), rotating the shape, and parks itself by finding the instance
-# already `RUNNING` — no state of its own. The cron only restarts that; the attempts are
-# what the wait actually lives on.
+# times in six hours. So one run works through a handful of attempts itself (~3 min apart
+# after a capacity answer, 5 min after a throttle), rotating the shape, and parks itself by
+# finding the instance already `RUNNING` — no state of its own. The cron only restarts
+# that; the attempts are what the wait actually lives on.
+#
+# `OCI_SSH_PUBLIC_KEY` is a repository variable holding the *public* half of the key you
+# will log in with. Without it the slot would be spent on a box nobody can reach, so the
+# script refuses to launch.
 #
 # Auth is a dedicated OCI user (`pkm-ci`) with a policy that can launch instances and
 # read images, nothing else. The private key is the only secret; the rest are
@@ -33,9 +37,10 @@ permissions:
 jobs:
   attempt:
     runs-on: ubuntu-24.04
-    # Ten attempts of ~1 min 40 s each, 45 s of sleep between them, and up to 5 minutes
-    # waiting for the IP once a slot opens.
-    timeout-minutes: 35
+    # Eight attempts at ~1 min 40 s each, ~3 min apart, plus up to 5 minutes waiting for
+    # the IP once a slot opens: 8 · 102 s + 7 · 180 s ≈ 35 min, under the script's own
+    # 40 min budget, which keeps the job from being killed mid-launch.
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v6
 
@@ -45,8 +50,11 @@ jobs:
       - name: Attempts at a slot
         id: launch
         env:
-          ATTEMPTS: 10
-          ATTEMPT_SLEEP: 45
+          ATTEMPTS: 8
+          ATTEMPT_SLEEP: 180
+          THROTTLE_SLEEP: 300
+          BUDGET: 2400
+          SSH_PUBLIC_KEY: ${{ vars.OCI_SSH_PUBLIC_KEY }}
           OCI_CLI_USER: ${{ vars.OCI_CLI_USER }}
           OCI_CLI_FINGERPRINT: ${{ vars.OCI_CLI_FINGERPRINT }}
           OCI_CLI_TENANCY: ${{ vars.OCI_CLI_TENANCY }}
