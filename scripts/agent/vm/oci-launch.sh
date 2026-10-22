@@ -27,8 +27,8 @@
 #                   required and the run fails loudly instead of launching blind.
 #
 # Knobs, all optional:
-#   ATTEMPTS        attempts this invocation makes (default 1 — the laptop loop calls it
-#                   once per wake-up and brings its own cadence)
+#   ATTEMPTS        attempts this invocation makes (default 1 — a one-shot probe by hand;
+#                   CI passes 8)
 #   ATTEMPT_SLEEP   seconds to wait after a capacity answer (default 60)
 #   THROTTLE_SLEEP  seconds to wait after a `TooManyRequests` (default 300)
 #   START_DELAY     seconds before the first attempt (default 0). A chained run starts the

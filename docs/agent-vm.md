@@ -9,9 +9,8 @@ state — only who executes the ritual changes.
 ## Where this stands (2026-10-22)
 
 The code is merged and the box is not born yet. Oracle's Madrid region answers
-`OUT_OF_HOST_CAPACITY` for every shape, so the launch is waiting on a slot: the laptop
-runs an attempt every ~6 minutes, and `oci / retry` waits from CI around the clock, one
-launch every ~5 minutes, chaining its own runs. Meanwhile:
+`OUT_OF_HOST_CAPACITY` for every shape, so the launch is waiting on a slot: `oci / retry`
+waits from CI around the clock, one launch every ~7 minutes, chaining its own runs. Meanwhile:
 
 - the repository is **public**, so Actions minutes are free again and the billing block
   that parked the loop overnight is gone;
@@ -116,15 +115,18 @@ Always Free allowance, and no other shape on the free list has the RAM for a bat
 
 ## Waiting for capacity from CI
 
-`oci / retry` (`.github/workflows/oci-retry.yml`) is the safety net for the wait: the
-local loop is the fast one, but it dies with the laptop, and A1 capacity in a busy
-region shows up at random.
+`oci / retry` (`.github/workflows/oci-retry.yml`) is **the** wait: one continuous chain of
+runs in CI. A local loop used to run alongside it every ~6 minutes; it was retired on
+2026-10-22 because two loops against one tenancy share a single launch rate limiter, and the
+one that asks second gets `TooManyRequests`. One loop asking every ~7 minutes beats two
+asking every ~5.
 
 The workflow **cannot supply the cadence from its schedule**. A `cron: '*/10 * * * *'` is a
 request, not a promise: this repository's `*/30` fired every 1.5 to 5 hours over two days,
 and the new workflow's first scheduled tick came five hours after it went live. So a run
-holds the cadence itself — `scripts/agent/vm/oci-launch.sh` takes `ATTEMPTS` (8 in CI, 1 for
-the laptop), `ATTEMPT_SLEEP` (300 s), `THROTTLE_SLEEP` (600 s), `START_DELAY` (300 s) and
+holds the cadence itself — `scripts/agent/vm/oci-launch.sh` takes `ATTEMPTS` (8 in CI; the
+default of 1 is a one-shot probe), `ATTEMPT_SLEEP` (300 s), `THROTTLE_SLEEP` (600 s),
+`START_DELAY` (300 s) and
 `BUDGET` (3 600 s), and walks through its attempts, rotating 4/24 → 2/12 → 1/6.
 `timeout-minutes: 75` sits above the script's own budget, so the job ends itself instead of
 being killed mid-launch.
