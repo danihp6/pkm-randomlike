@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The wait for the Always Free instance moved to a scheduled workflow, and the
+      repository is public again.** Oracle's Madrid region answers `OUT_OF_HOST_CAPACITY`
+      for every shape — including the AMD micro — so the launch is a lottery, and the
+      laptop loop only runs while the laptop is on (it made 17 attempts in a day and then
+      slept 19 hours). `oci / retry` runs one attempt per scheduled run, rotating
+      4/24 → 2/12 → 1/6 with the minute, parks itself by finding the instance already
+      `RUNNING`, and opens an `oci-ready` issue with the shape and the public IP. It
+      authenticates as a dedicated `pkm-ci` user with a launch-only policy, so the key in
+      `OCI_CLI_KEY_CONTENT` cannot touch the rest of the tenancy; `Out of host capacity`,
+      `429` and `5xx` exit `0` on purpose, so a waiting loop does not paint the runs list
+      red. Going public also lifted the Actions billing block that parked the autopilot
+      overnight — the 23:02 cycle shipped task-97 first, so nothing was left in flight
+      and `resume.md` reads `branches alive: 0`.
+      **QA:** CI green on the PR (rerun after the visibility flip), and a live
+      `workflow_dispatch` attempt logged `attempting 1 OCPU / 6 GB … Out of host
+      capacity … exit 0`; the three sizes were measured against the capacity report
+      before writing the rotation.
+
 - [x] **The 2vs2 boss battle, the screen: two actives on each side.** The engine half
       (`[Task-107]`) now has a face. `BattleLaunch.double` rides the launch (set only for the boss
       room through `bossIsDouble('boss')`), `BattleScene` draws a second foe sprite, a second foe

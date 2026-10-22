@@ -6,6 +6,18 @@ cycle itself, with no runner minutes, no dispatched workflows and no cron. The c
 semantics do not change — `main` plus the live `task-<ID>` branches are still the only
 state — only who executes the ritual changes.
 
+## Where this stands (2026-10-22)
+
+The code is merged and the box is not born yet. Oracle's Madrid region answers
+`OUT_OF_HOST_CAPACITY` for every shape, so the launch is waiting on a slot; `oci / retry`
+waits from CI and the laptop runs the same attempt every ~6 minutes. Meanwhile:
+
+- the repository is **public**, so Actions minutes are free again and the billing block
+  that parked the loop overnight is gone;
+- `AUTOPILOT` is **`off`**: no cycle runs until a human arms the brake;
+- when the instance appears, the `oci-ready` issue carries its IP and the bootstrap in
+  this file turns it into the host.
+
 ## Why a box
 
 Three measured facts pushed the loop off Actions:
@@ -14,9 +26,10 @@ Three measured facts pushed the loop off Actions:
   so the loop had to chain cycles from inside a cycle, and a dead cycle could end it.
 - **A job is capped at six hours**, and the runner image is 2 cores and 7 GB for a batch
   that wants four devs plus a headless Chromium.
-- **The repo is private again**, so Actions is back to 2,000 shared minutes a month: a
-  whole-batch cycle measured **1h32m**, which is ~30 tasks of headroom and then a hard
-  stop, not a slowdown.
+- **A billable private repository adds a hard stop**: a whole-batch cycle measured
+  **1h32m**, and 2,000 shared minutes are ~30 tasks of headroom. The repository is public
+  again, so this one is currently moot — it is the reason the box is worth having the day
+  the repository goes private for good.
 
 The Oracle Always Free Ampere shape — 4 OCPU, 24 GB, 200 GB of block storage, no
 monthly bill — removes all three. It also keeps `node_modules`, the Playwright browser
