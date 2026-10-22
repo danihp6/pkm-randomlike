@@ -40,8 +40,9 @@ part it cannot know.
 - `oci-retry.yml` — the wait for the Always Free VM (`docs/agent-vm.md`): **continuous**
   while it is armed, because each run hands the baton to the next one when it ends without
   an instance — the schedule alone fires every 1–3 hours and cannot hold a wait. One run is
-  8 attempts ~5 minutes apart (Oracle throttles `launch` faster than that), alternating the
-  shape and parking on the `RUNNING` instance, which is also what stops the chain. It needs
+  8 attempts ~7 minutes apart (a 5 min warm-up, 5 min between attempts, 10 after a 429,
+  because Oracle throttles `launch` anything faster), alternating the shape and parking on
+  the `RUNNING` instance, which is also what stops the chain. It needs
   `OCI_SSH_PUBLIC_KEY` (the public half, injected at launch) and opens an `oci-ready` issue
   when a slot opens; `OCI_RETRY=off` is the brake. Read-only on the repo, no model tokens,
   and the waiting answers exit `0` so the runs list is not red while the region is full.

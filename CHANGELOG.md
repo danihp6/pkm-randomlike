@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The wait stops feeding the rate limiter: 5 minutes between launches, 10 after a
+      throttle, and a warm-up at the top of every chained run.** `TooManyRequests` ("too many
+      requests for the user") kept eating attempts even at ~5 minutes apart, and the chain
+      made it worse by design: a chained run starts seconds after the previous one ends, so
+      its first `launch` landed a minute after the last one. `oci-launch.sh` grows
+      `START_DELAY` (300 s in CI, 0 for the laptop, charged to the budget), `ATTEMPT_SLEEP`
+      goes 210 → 300 s, `THROTTLE_SLEEP` 300 → 600 s, `BUDGET` 2 400 → 3 600 s and
+      `timeout-minutes` 50 → 75. One run is now ~54 minutes for 8 attempts, so the wait is
+      **~9 launches an hour instead of ~25**, all of them real ones. The chain, the brake
+      (`OCI_RETRY=off`) and the parking behaviour do not change.
+      **QA:** `scripts/agent/vm/oci-launch.test.sh` green with a new check for the warm-up
+      line, `bash -n` clean; the spacing is a constant, and the next chained run picks it up
+      from `main` without touching a variable.
+
 - [x] **The wait for the instance is continuous now: each run hands the baton to the next.**
       The schedule could not hold it — the `*/10` fired once in five hours — so `oci / retry`
       does what `agent-cycle.yml` does: a run that ends without an instance dispatches the
