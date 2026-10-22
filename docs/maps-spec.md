@@ -499,11 +499,13 @@ every special leaf are `wild` and never carry one.
   tile** like a trainer or a visible item; it has no line of sight and never spins.
   A row whose sprite key the packed overworld atlas lacks is dropped whole — no art,
   no block and no interact.
-- **The card** the interact key opens is **one modal shell** for every NPC
-  (`src/ui/npcPanel.ts`): the row's name as its title, its greeting as one wrapped
-  paragraph, its own choices in order and the shell's `LEAVE` row last (six choices
-  at most; `LEAVE` and cancel both close it). The caller resolves the strings and
-  wires the chosen row's effect, so the shell owns no rule and no run state.
+- **The card** the interact key opens is **one modal shell** (`src/ui/npcPanel.ts`)
+  for every NPC that raises one — every row but the Team Rocket grunt, whose key
+  opens the machine, never a card: the row's name as its title, its greeting as one
+  wrapped paragraph, its own choices in order and the shell's `LEAVE` row last (six
+  choices at most; `LEAVE` and cancel both close it). The caller resolves the
+  strings and wires the chosen row's effect, so the shell owns no rule and no run
+  state.
 - **The use record** is `npc-<mapIndex>-<roomId>-<id>` in `pickedItems`, which
   `advanceMap` clears: a greeting records nothing, only a chosen choice marks it,
   and no save field or `SAVE_VERSION` step was added. A revisit and a reload read
@@ -576,11 +578,12 @@ Two things the table now has beyond the party gate:
   member: the sacrifice's `min: 1` only holds on a floor the run reached after
   completing one, so a fresh run never meets it.
 - **`repeatable`.** A row marked `repeatable: true` writes **no** `npcUseId` mark, so
-  its card answers again on the same floor; a row without it is one-shot and carries
-  its mark after the first successful use. The **merchant** and the **Team Rocket
-  NPC** are the repeatable rows: the merchant's Mart and the machine's own
-  `casino-spin-*`/`casino-lock-*` marks are the record, so neither needs an
-  `npcUseId` mark.
+  its answer — the merchant's card, the rocket's machine with its own
+  `casino-spin-*`/`casino-lock-*` record — comes again on the same floor; a row
+  without it is one-shot and carries its mark after the first successful use. The
+  **merchant** and the **Team Rocket NPC** are the repeatable rows: the merchant's
+  Mart and the machine's own `casino-spin-*`/`casino-lock-*` marks are the record,
+  so neither needs an `npcUseId` mark.
 
 ### The no-heal room
 
