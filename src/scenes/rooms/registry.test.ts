@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { MapRoomSpecial } from '../../engine/maps';
 import { collectDescriptors, type RoomModules } from './registry';
 
 /**
@@ -28,7 +27,6 @@ const SHARED_PATHS = ['./registry.ts', './types.ts'];
 const SHIPPED_KINDS = [
   'mini-boss',
   'mega-stone',
-  'casino',
   'gated',
   'trade',
   'no-heal',
@@ -79,9 +77,10 @@ describe('collectDescriptors', () => {
   it('collects a module with a kind the registry has never seen', () => {
     const registry = collectDescriptors({
       './rooms/mystery.ts': moduleWith('mystery'),
-      './rooms/casino.ts': moduleWith('casino'),
+      './rooms/legend.ts': moduleWith('legend'),
     });
-    expect(registry.byKind.get('casino' as MapRoomSpecial)).toMatchObject({ kind: 'casino' });
+    expect([...registry.byKind.keys()]).toEqual(['mystery', 'legend']);
+    expect([...registry.byMarker.keys()]).toEqual([]);
   });
 
   it('keys a marker by the room kind that draws it', () => {

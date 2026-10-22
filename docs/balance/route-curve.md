@@ -278,11 +278,11 @@ floor the battle was fought on — `next.mapIndex`, before `advanceMap` runs).
   an edit to balance data. The surplus the finale pays is clamped by the floor's cap
   (`levelCapForMap`) like any other gain.
 - The floor's **entry, boss and every special leaf** (the mini-boss, the mega-stone,
-  the casino, the gated room, the trade room and the no-heal room) are quiet: they
-  place no route trainers at all. There is no shop room any more: the **merchant**
-  special NPC stands in the floor's first trainer room and only adds its own sprite,
-  so the Mart a floor carries no longer moves a trainer count
-  (`docs/maps-spec.md` §7).
+  the gated room, the trade room and the no-heal room) are quiet: they place no route
+  trainers at all. There is no shop room any more: the **merchant** special NPC
+  stands in the floor's first trainer room and only adds its own sprite, so the Mart
+  a floor carries no longer moves a trainer count (`docs/maps-spec.md` §7). The slot
+  machine is an NPC's panel too, so it is no room at all.
 - **Wild encounters** are outside the budget entirely; they are how a floor is
   walked, not how it is paid for.
 - **Infinite mode** reuses the `End` band past map 8 while the cap keeps climbing

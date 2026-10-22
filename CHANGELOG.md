@@ -8,6 +8,31 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Team Rocket is a special NPC who carries the slot machine, and the casino room retires.**
+      `[Task-117]`'s move, the merchant's shape: `'casino'` leaves `MapRoomSpecial`, `planMap` loses
+      `CASINO_CHANCE`/`CASINO_FROM_MAP` and the special pass runs shop → mini-boss → mega-stone →
+      gated → trade → no-heal (the leaves drawn after its slot consume the draws it used to take, so
+      they are re-read and re-pinned; the shop, the mini-boss, the mega-stone and **every regular
+      room, id and size** stay byte-identical). The window is **moved**, not rewritten:
+      `src/scenes/rooms/casino.ts` becomes `src/ui/rocketPanel.ts` through a `git mv`, dropping only
+      the descriptor and reading the NPC's own tile instead of the room's counter; the cabinet
+      texture retires with the room. The grunt is a `rocket` row of `NPC_ROWS` —
+      `chance: 0, floorStep: 0.03, repeatable: true`, so it is 0 % on map 1, 3 % a trainer room on
+      map 2 and 21 % on map 8 (measured **2.9 %** of floors at map 2 rising to **51.1 %** at map 8,
+      ≈1.9 floors a run against the retired leaf's ≈2.1) — found by the shipped per-NPC roll in a
+      trainer room, drawn from the packed overworld atlas's `rocket` frame, and the interact key
+      opens the machine **directly**, with no NPC card in between. `casinoSpin`, its three mark
+      families, the floor lock, the Egg's hatch and the price table are untouched; no i18n key, no
+      run field and no `SAVE_VERSION` step.
+      **QA:** Task QA green on every `[unit]` criterion (3467 tests, build clean, the six forced
+      fixture re-pins independently re-derived against `main`, `src/ui/casino.test.ts` untouched) and
+      on the `[live]` one, measured over CDP on the live canvas (`renderer.snapshotArea` +
+      `getImageData`, 1280×800, seed `rocket`, map 8, room 3): the sprite cell differs from an
+      NPC-less trainer room in **89.7 %** of its pixels, **one** press opens the **460×300** machine
+      with no 520×360 card anywhere, and no casino marker can be drawn. Integration QA green on the
+      combined tree (3564 tests, build clean, empty path intersection, one holder per hot file, merge
+      rehearsal yielding the same tree).
+
 - [x] **The status half of the move audit: the moves that write a status, a stage, a volatile, a
       screen, a field, a heal or a protection now write it.** The `[Task-120]` half of the report's
       «parecen no hacer nada» is closed on the machinery that already shipped: `MOVE_EFFECTS` gains a

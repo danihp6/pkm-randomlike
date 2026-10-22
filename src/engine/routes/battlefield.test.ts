@@ -237,16 +237,17 @@ type BossPin = Readonly<{
  * earlier moved for either seed.
  */
 const BOSS_PINS: Readonly<Record<string, readonly BossPin[]>> = {
+  // Re-pinned by Task-117: the slot machine's room retired, so a floor from map 2 on
+  // holds one room fewer and `routeIndexForRoom` shifts the boss's own roll again.
   'dev-seed': [
     { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
     { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
     { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
+    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
+    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
+    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
+    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
     { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
-    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
-    // Was `{ side: 'boss', battlefield: 'crit', boosts: { def: 1 } }` before Task-102.
-    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
-    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
-    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
   ],
   'pkm-64': [
     { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
@@ -256,7 +257,7 @@ const BOSS_PINS: Readonly<Record<string, readonly BossPin[]>> = {
     { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
     { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
     { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
-    { side: 'run', battlefield: 'endure', boosts: { spe: -1 } },
+    { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
   ],
 };
 

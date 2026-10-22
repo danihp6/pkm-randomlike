@@ -21,12 +21,12 @@ import {
 } from '../engine/run/state';
 
 /**
- * The **casino** room's slot machine model (`docs/maps-spec.md` §7, D33/D47): one
- * spin and the Egg's hatch, both **pure functions of the run** (`D11`). The run
- * seed, the floor, the money and the floor's own spin marks are the whole input
- * and the stream is minted here, so a reloaded run continues the same sequence
- * and no other stream in the game moves. Phaser-free, so the window only renders
- * and every rule is unit-tested headless.
+ * The **slot machine**'s model (`docs/maps-spec.md` §7, D33/D47): one spin and the
+ * Egg's hatch, both **pure functions of the run** (`D11`). The run seed, the floor,
+ * the money and the floor's own spin marks are the whole input and the stream is
+ * minted here, so a reloaded run continues the same sequence and no other stream in
+ * the game moves. Phaser-free, so the Team Rocket NPC's panel
+ * (`src/ui/rocketPanel.ts`) only renders and every rule is unit-tested headless.
  */
 
 /** The floor's spin counter id (`pickedItems`), one per spin: `casino-spin-<map>-<n>`. */

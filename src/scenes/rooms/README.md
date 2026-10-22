@@ -19,11 +19,6 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
   `descriptor`, so the registry skips it and the folder still holds the file.
 - `miniBoss.ts` — the mini-boss room: its `ace` trainer on the room's farthest tile.
 - `megaStone.ts` — the mega-stone room: its one Mega Stone on the room's farthest tile.
-- `casino.ts` — the casino room: its slot machine cabinet, the grunt beside it, the
-  three-reel window (`SPIN` / `LEAVE` answer the keys and the pointer) and the `rocket` fight a
-  spin may roll.
-- `casino.test.ts` — the casino's own surface: the counter, the window's resting and revealing
-  reels (including the grunt call after the panel closes) and the marker.
 - `gate.ts` — the gated reward room: the vault's seal, the party type that opens it (a
   permanent opening for the floor) and the reward the scene draws inside.
 - `gate.test.ts` — the gate's own surface: its reward id and stream, the seal's

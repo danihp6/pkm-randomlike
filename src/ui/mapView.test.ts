@@ -222,16 +222,16 @@ describe('buildMapView boss, portal and specials', () => {
 
   it('surfaces a special room marker only on the room it belongs to', () => {
     const plan = planMap('markers-seed', 3);
-    const [casinoRoom, miniBoss] = plan.rooms.map((room) => room.id);
+    const [gatedRoom, miniBoss] = plan.rooms.map((room) => room.id);
     const view = buildMapView(plan, {
       discovered: allRooms(plan),
       currentRoom: plan.entryRoom,
-      markers: { [casinoRoom]: 'casino', [miniBoss]: 'mini-boss' },
+      markers: { [gatedRoom]: 'gated', [miniBoss]: 'mini-boss' },
     });
-    expect(view.rooms.find((room) => room.id === casinoRoom)!.marker).toBe('casino');
+    expect(view.rooms.find((room) => room.id === gatedRoom)!.marker).toBe('gated');
     expect(view.rooms.find((room) => room.id === miniBoss)!.marker).toBe('mini-boss');
     for (const room of view.rooms) {
-      if (room.id !== casinoRoom && room.id !== miniBoss) expect(room.marker).toBeNull();
+      if (room.id !== gatedRoom && room.id !== miniBoss) expect(room.marker).toBeNull();
     }
   });
 

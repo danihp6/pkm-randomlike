@@ -377,7 +377,8 @@ own overworld sprite (`red_normal.png`) ships from the same
 decomp via `scripts/frlg/build-player-sprite.mjs` — see `D25`.
 
 **Task-90 addendum.** The atlas is no longer trainer-only: after the ten archetype
-rows it carries `rocket` (the casino's grunt) and the ten special-NPC keys
+rows it carries `rocket` (the slot machine's grunt, an NPC key since `Task-117`) and
+the ten special-NPC keys
 (`merchant`, `chef`, `magician`, `exorcist`, `weather-man`, `sacrifice`, `medic`,
 `iv-judge`, `berry-tree`, `ninja`), so 21 rows of nine poses. A key the decomp has
 no class for borrows the closest shipped sheet and the generated manifest's

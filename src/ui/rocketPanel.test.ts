@@ -1,22 +1,27 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type Phaser from 'phaser';
-import { CASINO, EGG_ITEM_ID } from '../../data/casino';
-import { ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../../data/itemIcons';
-import { getItem } from '../../data/items';
-import { levelCapForMap } from '../../data/maps';
+import { CASINO, EGG_ITEM_ID } from '../data/casino';
+import { ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
+import { getItem } from '../data/items';
+import { keyLabel } from '../data/keybinds';
+import { levelCapForMap } from '../data/maps';
 import {
   OVERWORLD_SPRITE_HEIGHT,
   OVERWORLD_SPRITE_TEXTURE_KEY,
   overworldSpriteFrame,
-} from '../../data/overworldSprites';
-import { planMap, roomView } from '../../engine/maps';
-import type { Tile } from '../../engine/grid';
-import type { RouteTrainer } from '../../engine/routes';
-import { DEFAULT_TRAINER_SIGHT, sketchRoute } from '../../engine/routes';
-import { addMoney, bandForMap, createRun, createRunPokemon, type RunState } from '../../engine/run';
-import { t } from '../../i18n';
-import { casinoGruntTrainerId, casinoLockId, casinoSpinId } from '../../ui/casino';
+} from '../data/overworldSprites';
+import { planMap, roomView } from '../engine/maps';
+import type { Tile } from '../engine/grid';
+import type { RouteTrainer } from '../engine/routes';
+import { DEFAULT_TRAINER_SIGHT, sketchRoute } from '../engine/routes';
+import { addMoney, bandForMap, createRun, createRunPokemon, type RunState } from '../engine/run';
+import { t } from '../i18n';
+import type { RoomHost, RoomPanel } from '../scenes/rooms/types';
+import { loadSettings } from '../settings';
+import { casinoGruntTrainerId, casinoLockId, casinoSpinId } from './casino';
 import {
+  CASINO_CARD_H,
+  CASINO_CARD_W,
   REEL_COUNT,
   REEL_TICK_MS,
   REEL_W,
@@ -26,18 +31,14 @@ import {
   reelStrips,
   reelStopAt,
   type ReelFace,
-} from '../../ui/casinoReels';
-import { descriptor as casino } from './casino';
-import type { RoomHost, RoomPanel } from './types';
+} from './casinoReels';
+import { openRocket, rocketGrunt } from './rocketPanel';
 
 /**
  * The scene's texture-key module builds textures with Phaser, which a headless test
- * cannot load; the descriptor is driven without it.
+ * cannot load; the window's own fallback face is driven without it.
  */
-vi.mock('../BootScene', () => ({
-  CASINO_MACHINE_TEXTURE_KEY: 'route:casino-machine',
-  TRAINER_TEXTURE_KEY: 'route:trainer',
-}));
+vi.mock('../scenes/BootScene', () => ({ TRAINER_TEXTURE_KEY: 'route:trainer' }));
 
 const MAP_INDEX = 5;
 const SEED = 'pkm-64';
@@ -45,7 +46,8 @@ const SEED = 'pkm-64';
 const BATTLE_SEED = 'casino-a';
 /** The seed whose third spin is the Egg, read off this build. */
 const EGG_SEED = 'pkm-111';
-const FARTHEST: Tile = { x: 7, y: 7 };
+/** The NPC's own tile: the machine opens on it and the grunt is fought on it. */
+const NPC: Tile = { x: 7, y: 7 };
 const ENTRY: Tile = { x: 7, y: 3 };
 
 /** The SPIN and LEAVE row zones' tops on a 1280 × 800 canvas. */
@@ -257,12 +259,7 @@ function baseRun(seed = SEED, money = 100_000): RunState {
   return { ...created, mapIndex: MAP_INDEX, levelCap: levelCapForMap(MAP_INDEX) };
 }
 
-type HostOptions = Readonly<{
-  farthest?: Tile | null;
-  counter?: Tile | null;
-  run?: RunState;
-  generator?: boolean;
-}>;
+type HostOptions = Readonly<{ run?: RunState }>;
 
 /** A recording `RoomHost`: it answers fixed tiles and books every call it is given. */
 function harness(options: HostOptions = {}) {
@@ -281,12 +278,13 @@ function harness(options: HostOptions = {}) {
       return run;
     },
     view: roomView(planMap(SEED, MAP_INDEX), 0, false),
-    // The widened port (`D47`): the casino reads neither, so it needs a stand-in.
+    // The widened port (`D47`): the machine reads neither, so it needs a stand-in.
     route: () => sketchRoute({ seed: SEED, routeIndex: MAP_INDEX, biomeId: 'forest' }),
     rebuildRoom: () => undefined,
     entryTile: () => ENTRY,
-    counterTile: () => ('counter' in options ? (options.counter ?? null) : FARTHEST),
-    farthestRoomTile: () => ('farthest' in options ? (options.farthest ?? null) : FARTHEST),
+    counterTile: () => null,
+    farthestRoomTile: () => NPC,
+    generatorStepActive: () => false,
     facingFromTo: (from, to) => {
       const dx = to.x - from.x;
       const dy = to.y - from.y;
@@ -294,7 +292,6 @@ function harness(options: HostOptions = {}) {
       if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'E' : 'W';
       return dy > 0 ? 'S' : 'N';
     },
-    generatorStepActive: () => options.generator === true,
     commitRun: (next) => {
       record('commitRun', next);
       committed = next;
@@ -366,66 +363,12 @@ function expectFace(image: FakeImage, face: ReelFace): void {
 
 const BAND = bandForMap(MAP_INDEX).id;
 
-describe('the casino room', () => {
-  it('puts its machine on the room’s farthest tile', () => {
-    expect(casino.fixture?.(harness().host)).toEqual({ counter: FARTHEST });
-  });
-
-  it('places no machine when the room offers no free tile', () => {
-    expect(casino.fixture?.(harness({ farthest: null }).host)).toEqual({ counter: null });
-  });
-
-  it('answers the interact key at the machine and nowhere else', () => {
-    const test = harness();
-    expect(casino.interact?.(test.host, { x: 1, y: 2 })).toBe(false);
-    expect(casino.interact?.(test.host, ENTRY)).toBe(false);
-    expect(test.host.panelOpen()).toBe(false);
-    expect(casino.interact?.(test.host, FARTHEST)).toBe(true);
-    expect(test.host.panelOpen()).toBe(true);
-    test.host.closePanel();
-    expect(test.host.panelOpen()).toBe(false);
-  });
-
-  it('opens nothing when the room placed no machine', () => {
-    const test = harness({ counter: null });
-    expect(casino.interact?.(test.host, FARTHEST)).toBe(false);
-    expect(test.host.panelOpen()).toBe(false);
-  });
-
-  it('hands a second press to the open window, without rebuilding it', () => {
-    const test = harness();
-    casino.interact?.(test.host, FARTHEST);
-    const built = DRAWN.length;
-    expect(casino.interact?.(test.host, FARTHEST)).toBe(true);
-    expect(test.host.panelOpen()).toBe(true);
-    expect(DRAWN.length).toBe(built);
-  });
-
-  it('draws the cabinet and the grunt beside it', () => {
-    DRAWN.length = 0;
-    casino.drawFixture?.(harness().host);
-    expect(DRAWN).toEqual([
-      { name: 'image', args: [180, 180, 'route:casino-machine'] },
-      // The grunt stands `-14` px off the cabinet's own x, its feet on the tile's
-      // bottom edge, drawn from the FRLG overworld atlas' `rocket` row (base 90).
-      { name: 'sprite', args: [166, 192, 'frlg:overworld', 90] },
-    ]);
-  });
-
-  it('draws nothing while the dev generator owns the screen or there is no machine', () => {
-    DRAWN.length = 0;
-    casino.drawFixture?.(harness({ generator: true }).host);
-    casino.drawFixture?.(harness({ counter: null }).host);
-    expect(DRAWN).toEqual([]);
-  });
-});
-
-describe('the casino window', () => {
+describe('the slot machine panel', () => {
   it('opens on its own strings and its resting reels', () => {
     TEXTS.length = 0;
     DRAWN.length = 0;
     const test = harness();
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     const price = CASINO.price[BAND];
     expect(price).toBe(2000);
     expect(TEXTS).toEqual([`MONEY  ¥100000`, `SPIN  ¥${price}`, 'LEAVE', '']);
@@ -448,7 +391,7 @@ describe('the casino window', () => {
 
   it('books the outcome before the first frame and commits it once per press', () => {
     const test = harness();
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     test.panel()?.handle?.('confirm');
     expect(test.calls.map((call) => call.name)).toEqual([
       'releaseHudKeyboard',
@@ -478,7 +421,7 @@ describe('the casino window', () => {
   it('reveals a booked item on the three reels, left to right', () => {
     TEXTS.length = 0;
     const test = harness();
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     test.panel()?.handle?.('confirm');
     const outcome = { kind: 'item', itemId: 'nugget' } as const;
     const strips = reelStrips(BAND, outcome);
@@ -513,7 +456,7 @@ describe('the casino window', () => {
   it('names the Egg an egg outcome pays', () => {
     TEXTS.length = 0;
     const test = harness({ run: baseRun(EGG_SEED) });
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     // `pkm-111` on map 5 pays ultraball, fullrestore, then the Egg.
     for (let i = 0; i < 3; i++) {
       test.panel()?.handle?.('confirm');
@@ -531,7 +474,7 @@ describe('the casino window', () => {
 
   it('closes the window for the grunt fight only after the last reel stops', () => {
     const test = harness({ run: baseRun(BATTLE_SEED) });
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     test.panel()?.handle?.('interact');
     const committed = test.committed();
     expect(committed).not.toBeNull();
@@ -563,7 +506,7 @@ describe('the casino window', () => {
     ]);
     expect(test.trainer()).toEqual({
       id: casinoGruntTrainerId(MAP_INDEX),
-      position: FARTHEST,
+      position: NPC,
       facing: 'N',
       sight: DEFAULT_TRAINER_SIGHT,
       archetypeId: 'rocket',
@@ -573,7 +516,7 @@ describe('the casino window', () => {
 
   it('skips the reveal to the same end state on a press', () => {
     const test = harness({ run: baseRun(BATTLE_SEED) });
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     test.panel()?.handle?.('interact');
     test.at(400);
     test.fireTick();
@@ -589,7 +532,7 @@ describe('the casino window', () => {
     ]);
     expect(test.trainer()).toEqual({
       id: casinoGruntTrainerId(MAP_INDEX),
-      position: FARTHEST,
+      position: NPC,
       facing: 'N',
       sight: DEFAULT_TRAINER_SIGHT,
       archetypeId: 'rocket',
@@ -599,7 +542,7 @@ describe('the casino window', () => {
 
   it('locks the cursor and the leave row while the reels run', () => {
     const test = harness();
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     test.panel()?.handle?.('confirm');
     const commits = (): number => test.calls.filter((call) => call.name === 'commitRun').length;
     expect(commits()).toBe(1);
@@ -620,7 +563,7 @@ describe('the casino window', () => {
 
   it('spins on a pointer press of SPIN and closes on a pointer press of LEAVE', () => {
     const test = harness();
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     expect(test.zoneAt(SPIN_ROW_Y)).toBeDefined();
     expect(test.zoneAt(LEAVE_ROW_Y)).toBeDefined();
     test.zoneAt(SPIN_ROW_Y)?.handlers.get('pointerdown')?.();
@@ -636,7 +579,7 @@ describe('the casino window', () => {
 
   it('selects a row on hover, so a confirm takes what the pointer marks', () => {
     const test = harness();
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     test.zoneAt(LEAVE_ROW_Y)?.handlers.get('pointerover')?.();
     test.panel()?.handle?.('confirm');
     expect(test.host.panelOpen()).toBe(false);
@@ -645,7 +588,7 @@ describe('the casino window', () => {
 
   it('closes on cancel and on the leave row, and moves the cursor between the two', () => {
     const test = harness();
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     test.panel()?.handle?.('down');
     test.panel()?.handle?.('up');
     test.panel()?.handle?.('cancel');
@@ -653,7 +596,7 @@ describe('the casino window', () => {
     expect(test.committed()).toBeNull();
 
     const second = harness();
-    casino.interact?.(second.host, FARTHEST);
+    openRocket(second.host, NPC);
     second.panel()?.handle?.('down');
     second.panel()?.handle?.('confirm');
     expect(second.host.panelOpen()).toBe(false);
@@ -663,7 +606,7 @@ describe('the casino window', () => {
   it('refuses a spin the run cannot afford, without a timer or a commit', () => {
     TEXTS.length = 0;
     const test = harness({ run: baseRun(SEED, 100) });
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     test.panel()?.handle?.('confirm');
     expect(test.committed()).toBeNull();
     expect(test.fake.timers).toHaveLength(0);
@@ -675,7 +618,7 @@ describe('the casino window', () => {
   it('refuses a locked machine without a timer or a commit', () => {
     TEXTS.length = 0;
     const test = harness({ run: { ...baseRun(), pickedItems: [casinoLockId(MAP_INDEX)] } });
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     test.panel()?.handle?.('confirm');
     expect(test.committed()).toBeNull();
     expect(test.fake.timers).toHaveLength(0);
@@ -683,9 +626,54 @@ describe('the casino window', () => {
     expect(TEXTS).toContain('The machine is out of order.');
   });
 
+  it('draws the machine’s own card at the reel geometry’s size, with its controls line', () => {
+    DRAWN.length = 0;
+    const test = harness();
+    openRocket(test.host, NPC);
+    const card = test.fake.zones.find(
+      (zone) => zone.w === CASINO_CARD_W && zone.h === CASINO_CARD_H,
+    );
+    expect(card).toBeDefined();
+    expect({ x: card!.x, y: card!.y }).toEqual({
+      x: (1280 - CASINO_CARD_W) / 2,
+      y: (800 - CASINO_CARD_H) / 2,
+    });
+    const controls = DRAWN.filter((call) => call.name === 'bitmapText').map((call) => call.args[3]);
+    expect(controls).toContain(
+      t('casino.controls', {
+        confirm: keyLabel(loadSettings().keybinds.confirm),
+        cancel: keyLabel(loadSettings().keybinds.cancel),
+      }),
+    );
+  });
+
+  it('prices the spin from the floor’s own band', () => {
+    TEXTS.length = 0;
+    const early: RunState = { ...baseRun(), mapIndex: 1, levelCap: levelCapForMap(1) };
+    const test = harness({ run: early });
+    openRocket(test.host, NPC);
+    expect(CASINO.price.early).toBe(300);
+    expect(TEXTS).toContain(`SPIN  ¥${CASINO.price.early}`);
+  });
+
+  it('is a panel, not a room: the module exports no descriptor', async () => {
+    const module = (await import('./rocketPanel')) as Readonly<Record<string, unknown>>;
+    expect(Object.keys(module).sort()).toEqual(['openRocket', 'rocketGrunt']);
+  });
+
+  it('opens nothing while a panel is already up, and nothing is rebuilt', () => {
+    const test = harness();
+    openRocket(test.host, NPC);
+    const built = DRAWN.length;
+    openRocket(test.host, NPC);
+    expect(test.host.panelOpen()).toBe(true);
+    expect(DRAWN.length).toBe(built);
+    expect(test.calls.map((call) => call.name)).toEqual(['releaseHudKeyboard', 'openPanel']);
+  });
+
   it('removes every timer when the window closes, so a late callback paints nothing', () => {
     const test = harness();
-    casino.interact?.(test.host, FARTHEST);
+    openRocket(test.host, NPC);
     test.panel()?.handle?.('confirm');
     expect(test.fake.timers).toHaveLength(4);
     test.host.closePanel();
@@ -695,5 +683,28 @@ describe('the casino window', () => {
     for (const timer of test.fake.timers) timer.callback();
     expect(TEXTS).toEqual(texts);
     expect(test.committed()!.money).toBe(98_000);
+  });
+});
+
+describe('the grunt the machine serves', () => {
+  it('is the floor’s own stable set-piece, built on the tile it is handed', () => {
+    const host = harness().host;
+    const tile: Tile = { x: 12, y: 4 };
+    expect(rocketGrunt(host, tile)).toEqual({
+      id: casinoGruntTrainerId(MAP_INDEX),
+      position: tile,
+      facing: 'W',
+      sight: DEFAULT_TRAINER_SIGHT,
+      archetypeId: 'rocket',
+    });
+  });
+
+  it('is the same record whatever tile the NPC rolled, only its position moves', () => {
+    const host = harness().host;
+    const first = rocketGrunt(host, { x: 2, y: 9 });
+    const second = rocketGrunt(host, { x: 2, y: 9 });
+    expect(second).toEqual(first);
+    expect(rocketGrunt(host, { x: 3, y: 9 }).id).toBe(first.id);
+    expect(rocketGrunt(host, { x: 3, y: 9 }).position).toEqual({ x: 3, y: 9 });
   });
 });

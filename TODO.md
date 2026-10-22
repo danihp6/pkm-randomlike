@@ -6846,7 +6846,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       and the window is written against the table's final rows. It adds no run field, draws no
       new RNG (the reveal reads the booked outcome) and claims no
       `src/scenes/RouteScene.ts`. *(Batch 55)*
-- [ ] **[Task-117] Team Rocket is a special NPC who carries the slot machine, and the casino room retires.**
+- [x] **[Task-117] Team Rocket is a special NPC who carries the slot machine, and the casino room retires.**
       The human's words: «rocket no es sala especial es npc especial» and «es npc que pagas para
       tirar de ruleta». Today the casino is a **special room**: `'casino'` in `MapRoomSpecial`
       (`src/engine/maps/plan.ts`), a 30 % leaf from map 2 drawn between the mega-stone and the

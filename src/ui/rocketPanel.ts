@@ -1,23 +1,22 @@
 import type Phaser from 'phaser';
-import { CASINO, EGG_ITEM_ID } from '../../data/casino';
-import { ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../../data/itemIcons';
-import { getItem } from '../../data/items';
-import { keyLabel, type KeybindAction } from '../../data/keybinds';
+import { CASINO, EGG_ITEM_ID } from '../data/casino';
+import { ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
+import { getItem } from '../data/items';
+import { keyLabel, type KeybindAction } from '../data/keybinds';
 import {
   OVERWORLD_SPRITE_HEIGHT,
   OVERWORLD_SPRITE_TEXTURE_KEY,
-  OVERWORLD_SPRITE_WIDTH,
   overworldSpriteFrame,
-} from '../../data/overworldSprites';
-import type { Tile } from '../../engine/grid';
-import type { RouteTrainer } from '../../engine/routes';
-import { DEFAULT_TRAINER_SIGHT } from '../../engine/routes';
-import { bandForMap } from '../../engine/run';
-import { TILE_SIZE } from '../../engine/tileset';
-import { t } from '../../i18n';
-import { trainerFacingPose } from '../../render/trainerAnim';
-import { loadSettings } from '../../settings';
-import { casinoGruntTrainerId, casinoSpin, type CasinoOutcome } from '../../ui/casino';
+} from '../data/overworldSprites';
+import type { Tile } from '../engine/grid';
+import type { RouteTrainer } from '../engine/routes';
+import { DEFAULT_TRAINER_SIGHT } from '../engine/routes';
+import { bandForMap } from '../engine/run';
+import { t } from '../i18n';
+import { TRAINER_TEXTURE_KEY } from '../scenes/BootScene';
+import type { RoomHost, RoomPanel } from '../scenes/rooms/types';
+import { loadSettings } from '../settings';
+import { casinoGruntTrainerId, casinoSpin, type CasinoOutcome } from './casino';
 import {
   CASINO_CARD_H,
   CASINO_CARD_W,
@@ -35,7 +34,7 @@ import {
   reelStopAt,
   reelStrips,
   type ReelFace,
-} from '../../ui/casinoReels';
+} from './casinoReels';
 import {
   FRLG_ACCENT,
   FRLG_MUTED,
@@ -45,19 +44,19 @@ import {
   FRLG_SELECTED_STROKE,
   FRLG_TRACK,
   addFrlgWindow,
-} from '../../ui/frlg';
-import { FRLG_INK, addFrlgText } from '../../ui/frlgFont';
-import { CASINO_MACHINE_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from '../BootScene';
-import type { RoomDescriptor, RoomHost, RoomPanel } from './types';
+} from './frlg';
+import { FRLG_INK, addFrlgText } from './frlgFont';
 
 /**
- * The **casino** room (`docs/maps-spec.md` §7, D33, D47): the Team Rocket grunt's
- * slot machine. The window is the machine itself — a cabinet with three reels
- * whose faces are the band's drawn prizes, or the grunt's Rocket icon when the
- * booked outcome is the fight. `SPIN` and `LEAVE` answer the keys and the pointer.
- * The whole model is `src/ui/casino.ts` (the spin) and `src/ui/casinoReels.ts` (the
- * geometry, the faces and the schedule), so this module only draws the reveal of an
- * outcome that is already committed: no reload can re-roll or refund it.
+ * The **slot machine**'s panel (`docs/maps-spec.md` §7, D33, D47): the Team Rocket
+ * NPC's own window, opened from the NPC card's one row. The window is the machine
+ * itself — a cabinet with three reels whose faces are the band's drawn prizes, or
+ * the grunt's Rocket icon when the booked outcome is the fight. `SPIN` and `LEAVE`
+ * answer the keys and the pointer. The whole model is `src/ui/casino.ts` (the spin)
+ * and `src/ui/casinoReels.ts` (the geometry, the faces and the schedule), so this
+ * module only draws the reveal of an outcome that is already committed: no reload
+ * can re-roll or refund it. It exports no `descriptor`: the machine is a panel, and
+ * the room that used to hold it retired with it.
  */
 
 /** The window's chrome: 24 px padding, two 44 px rows under the reel band. */
@@ -66,19 +65,8 @@ const CASINO_ROW_H = 44;
 const CASINO_ROWS = 2;
 const CASINO_ROW_TOP = REEL_BAND_TOP + REEL_H + 16;
 
-/** The machine texture's own pixel size, and the depth the two sprites draw at. */
-const CASINO_MACHINE_SIZE = 22;
-const CASINO_CABINET_DEPTH = 5;
-const CASINO_GRUNT_DEPTH = 6;
-
-/** The grunt stands on the machine's tile, `-14` px left so it overlaps the cabinet. */
-const CASINO_GRUNT_OFFSET_X = -14;
-/** The Rocket grunt's own red, the placeholder's tint until the atlas carries it. */
+/** The Rocket grunt's own red, the placeholder reel face's tint. */
 const CASINO_GRUNT_COLOUR = 0xc0392b;
-
-/** The machine's own glyph: a cabinet outline with three reels. */
-const CASINO_MARKER_INK = 0x0f766e;
-const CASINO_MARKER_REEL = 0x2ec4b6;
 
 type CasinoRowObjects = {
   highlight: Phaser.GameObjects.Rectangle;
@@ -87,6 +75,8 @@ type CasinoRowObjects = {
 
 /** The host the open machine belongs to, or null while no window is up. */
 let panelHost: RoomHost | null = null;
+/** The NPC's own tile, where the grunt the machine serves is fought. */
+let machineTile: Tile | null = null;
 /** The window: its root, the row objects it repaints and the line under them. */
 let casinoRoot: Phaser.GameObjects.Container | null = null;
 let casinoIndex = 0;
@@ -110,22 +100,13 @@ let spinning = false;
 /** Every timer the reveal owns, removed on its end, a skip or the window's close. */
 let spinTimers: Phaser.Time.TimerEvent[] = [];
 
-/** A route tile's centre in world pixels, the placement the scene draws entities at. */
-const centerX = (tileX: number): number => tileX * TILE_SIZE + TILE_SIZE / 2;
-const centerY = (tileY: number): number => tileY * TILE_SIZE + TILE_SIZE / 2;
-
-/** The machine's tile: the room's fixture counter, or null when there is none. */
-function machineOf(host: RoomHost): Tile | null {
-  return host.counterTile();
-}
-
 /**
- * Opens the machine's window: only in a casino room, at the counter, and only
- * while no window is already up. It is modal, so it takes the keyboard off
- * whatever HUD pane held it. A **locked** machine opens too — that is where the
- * `out of order` line lives; it is the spin the model refuses, not the window.
+ * Opens the machine's window on the NPC's own tile, while no window is already up.
+ * It is modal, so it takes the keyboard off whatever HUD pane held it. A **locked**
+ * machine opens too — that is where the `out of order` line lives; it is the spin
+ * the model refuses, not the window.
  */
-function openCasino(host: RoomHost): void {
+export function openRocket(host: RoomHost, tile: Tile): void {
   if (host.panelOpen()) return;
   clearSpinTimers();
   spinning = false;
@@ -134,6 +115,7 @@ function openCasino(host: RoomHost): void {
   casinoIndex = 0;
   casinoMessage = '';
   panelHost = host;
+  machineTile = tile;
   buildCasinoPanel(host);
   refreshCasino();
   host.openPanel(PANEL);
@@ -155,6 +137,7 @@ function closeCasino(): void {
   casinoReels = [];
   casinoRows = [];
   panelHost = null;
+  machineTile = null;
   if (!casinoRoot) return;
   casinoRoot.destroy(true);
   casinoRoot = null;
@@ -477,9 +460,9 @@ function finishReveal(host: RoomHost): void {
     // The machine is out of order from here on, which is the line the reopened
     // window would print; the window goes first so the battle takes the screen.
     casinoMessage = t('casino.locked');
-    const machine = machineOf(host);
+    const tile = machineTile;
     host.closePanel();
-    if (machine) host.startTrainerBattle(gruntFor(host, machine));
+    if (tile) host.startTrainerBattle(rocketGrunt(host, tile));
     return;
   }
   const itemId = outcome.kind === 'item' ? outcome.itemId : EGG_ITEM_ID;
@@ -488,17 +471,17 @@ function finishReveal(host: RoomHost): void {
 }
 
 /**
- * The grunt the machine may serve: the floor's own stable id, standing on the
- * machine's tile. It is a **set-piece**, so it is never appended to the route's
- * trainers — it has no sight, it never chases and it never blocks a tile — and
+ * The grunt the machine may serve: the floor's own stable id, standing on the NPC's
+ * own tile. It is a **set-piece**, so it is never appended to the route's trainers —
+ * it has no sight, it never chases and it never blocks a tile — and
  * `startTrainerBattle` re-checks `isTrainerDefeated`, so a beaten grunt cannot be
  * fought twice on a floor.
  */
-function gruntFor(host: RoomHost, machine: Tile): RouteTrainer {
+export function rocketGrunt(host: RoomHost, tile: Tile): RouteTrainer {
   return {
     id: casinoGruntTrainerId(host.view.mapIndex),
-    position: machine,
-    facing: host.facingFromTo(machine, host.entryTile()),
+    position: tile,
+    facing: host.facingFromTo(tile, host.entryTile()),
     sight: DEFAULT_TRAINER_SIGHT,
     archetypeId: 'rocket',
   };
@@ -513,62 +496,5 @@ const PANEL: RoomPanel = {
   },
   close() {
     closeCasino();
-  },
-};
-
-/** Draws the machine's cabinet and the grunt beside it, each at its own depth. */
-function drawMachine(host: RoomHost, machine: Tile): void {
-  const scene = host.scene;
-  scene.add
-    .image(centerX(machine.x), centerY(machine.y), CASINO_MACHINE_TEXTURE_KEY)
-    .setScale(TILE_SIZE / CASINO_MACHINE_SIZE)
-    .setDepth(CASINO_CABINET_DEPTH);
-  const x = centerX(machine.x) + CASINO_GRUNT_OFFSET_X;
-  const footY = centerY(machine.y) + TILE_SIZE / 2;
-  const frame = overworldSpriteFrame('rocket');
-  const sprite =
-    frame !== null
-      ? scene.add
-          .sprite(x, footY, OVERWORLD_SPRITE_TEXTURE_KEY, frame)
-          .setOrigin(0.5, 1)
-          .setScale(TILE_SIZE / OVERWORLD_SPRITE_WIDTH)
-      : scene.add.sprite(x, footY, TRAINER_TEXTURE_KEY).setOrigin(0.5, 1).setTint(CASINO_GRUNT_COLOUR);
-  const pose = trainerFacingPose(host.facingFromTo(machine, host.entryTile()));
-  sprite.setFlipX(pose.flipX);
-  if (frame !== null) {
-    const posed = overworldSpriteFrame('rocket', pose.facing);
-    if (posed !== null) sprite.setFrame(posed);
-  }
-  sprite.setDepth(CASINO_GRUNT_DEPTH);
-}
-
-export const descriptor: RoomDescriptor = {
-  kind: 'casino',
-  marker: 'casino',
-  // The machine is a fixture, so it sits on the room's farthest walkable tile and
-  // the scene blocks movement on it (`D47`).
-  fixture: (host) => ({ counter: host.farthestRoomTile() }),
-  interact: (host, tile) => {
-    const machine = machineOf(host);
-    if (!machine || tile.x !== machine.x || tile.y !== machine.y) return false;
-    // The window already owns the keyboard: a second press is the window's, so the
-    // key is consumed without rebuilding it.
-    if (host.panelOpen()) return true;
-    openCasino(host);
-    return true;
-  },
-  drawFixture: (host) => {
-    if (host.generatorStepActive()) return;
-    const machine = machineOf(host);
-    if (!machine) return;
-    drawMachine(host, machine);
-  },
-  drawMarker: (graphics, cx, cy, radius) => {
-    graphics.lineStyle(2, CASINO_MARKER_INK, 1);
-    graphics.strokeRect(cx - radius, cy - radius, radius * 2, radius * 2);
-    graphics.fillStyle(CASINO_MARKER_REEL, 1);
-    graphics.fillCircle(cx - radius * 0.62, cy, radius * 0.34);
-    graphics.fillCircle(cx, cy, radius * 0.34);
-    graphics.fillCircle(cx + radius * 0.62, cy, radius * 0.34);
   },
 };

@@ -173,23 +173,22 @@ function assertPlan(plan: MapPlan): void {
   expect(entry.openings.filter((opening) => opening.kind === 'entry')).toHaveLength(1);
 
   // Special rooms (`docs/maps-spec.md` §7): extra dead-end leaves, never the entry
-  // or the boss, no shop room at all (the Mart is the merchant NPC) and at most one
-  // mini-boss / mega-stone / casino / gated / trade / no-heal / static / secret-shop
-  // each.
+  // or the boss, no shop room at all (the Mart is the merchant NPC), no slot-machine
+  // room either (the Team Rocket NPC carries the machine) and at most one mini-boss /
+  // mega-stone / gated / trade / no-heal / static / secret-shop each.
   const specials = plan.rooms.filter((room) => room.special !== null);
   expect(specials.length).toBe(plan.specials.length);
   expect(specials.map((room) => String(room.special))).not.toContain('shop');
   expect(plan.specials.map((special) => String(special.kind))).not.toContain('shop');
   expect(specials.filter((room) => room.special === 'mini-boss').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'mega-stone').length).toBeLessThanOrEqual(1);
-  expect(specials.filter((room) => room.special === 'casino').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'gated').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'trade').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'no-heal').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'static').length).toBeLessThanOrEqual(1);
   expect(specials.filter((room) => room.special === 'secret-shop').length).toBeLessThanOrEqual(1);
-  // The casino hangs from map 2 on and the gated, trade, no-heal, static and
-  // secret-shop leaves from map 3 on (`docs/maps-spec.md` §7).
+  // The mega-stone, gated, trade, no-heal, static and secret-shop leaves all hang
+  // from map 3 on (`docs/maps-spec.md` §7).
   if (plan.mapIndex < 3) {
     expect(specials.filter((room) => room.special === 'mega-stone')).toHaveLength(0);
     expect(specials.filter((room) => room.special === 'gated')).toHaveLength(0);
@@ -198,7 +197,6 @@ function assertPlan(plan: MapPlan): void {
     expect(specials.filter((room) => room.special === 'static')).toHaveLength(0);
     expect(specials.filter((room) => room.special === 'secret-shop')).toHaveLength(0);
   }
-  if (plan.mapIndex < 2) expect(specials.filter((room) => room.special === 'casino')).toHaveLength(0);
   for (const room of specials) {
     expect(room.shape).toBe('dead-end');
     expect(room.openings.filter((opening) => opening.kind === 'link')).toHaveLength(1);
@@ -288,18 +286,20 @@ describe('planMap', () => {
   /**
    * The structure of one floor, pinned verbatim: the room ids, cells, shapes,
    * specials and links `planMap('alpha', 8)` produces with the shop room retired
-   * (Task-92) and the static leaf hung last (Task-96). The shop leaf's two size
-   * draws are gone and the static leaf's own draws are minted, so the specials and
-   * the cells and shapes their links give their parents are re-pinned here; a `map`
-   * stream that shifts again fails this test.
+   * (Task-92), the static leaf hung last (Task-96) and the slot machine's room
+   * retired with its NPC (Task-117). The slot-machine leaf's own draws are gone, so
+   * the gated, trade and no-heal leaves read the values it used to take and the
+   * cells and shapes their links give their parents are re-pinned here; the regular
+   * rooms, the entry and the boss are untouched, which the pin below asserts; a
+   * `map` stream that shifts again fails this test.
    */
   const ALPHA_MAP_8 = {
     entryEdge: 'S',
     bossRoom: 8,
     rooms:
-      '0:0,0:corridor:-|1:0,-1:cross:-|2:1,-1:bend:-|3:0,-2:cross:-|4:1,-2:cross:-|5:1,-3:bend:-|6:2,-3:tee:-|7:2,-2:bend:-|8:2,-4:dead-end:-|9:0,-3:dead-end:mega-stone|10:-1,-1:dead-end:trade|11:-1,-2:dead-end:static',
+      '0:0,0:corridor:-|1:0,-1:cross:-|2:1,-1:bend:-|3:0,-2:cross:-|4:1,-2:cross:-|5:1,-3:bend:-|6:2,-3:tee:-|7:2,-2:bend:-|8:2,-4:dead-end:-|9:0,-3:dead-end:mega-stone|10:-1,-1:dead-end:no-heal|11:-1,-2:dead-end:static',
     links: '0-1|1-2|1-3|1-10|2-4|3-4|3-9|3-11|4-5|4-7|5-6|6-7|6-8',
-    specials: '9:mega-stone|10:trade|11:static',
+    specials: '9:mega-stone|10:no-heal|11:static',
   } as const;
 
   it('keeps the pre-task floor shape and topology for a pinned seed', () => {
@@ -441,16 +441,56 @@ describe('room roles', () => {
    * Task-92**: retiring the guaranteed shop leaf removed its two `rng.int` size
    * draws, so every floor from map 2 on draws its specials two positions earlier and
    * the leaves' cells (and the shapes their links give their parents) move. Map 1
-   * never hung a shop leaf, so `alpha:1` is unchanged.
+   * never hung a shop leaf, so `alpha:1` is unchanged. **Re-pinned again by
+   * Task-117**: the slot machine's room retired, so the gated, trade and no-heal
+   * leaves read the values its draw used to take — `alpha:8`'s trade leaf becomes the
+   * no-heal leaf — while every regular room, its id and its size stay byte-identical
+   * to `main` (the pin below asserts exactly that). Map 1 never rolled the retired
+   * draw, so `alpha:1` is unchanged.
    */
   const SHIPPED_FLOORS: Readonly<Record<string, string>> = {
     'alpha:1':
       '0:0,0:30x30:corridor:-|1:-1,0:30x30:cross:-|2:-1,-1:30x30:bend:-|3:-2,0:30x30:bend:-|4:-2,-1:30x30:tee:-|5:-2,-2:30x30:dead-end:-|6:-1,1:30x30:dead-end:mini-boss',
     'alpha:8':
-      '0:0,0:30x30:corridor:-|1:0,-1:40x40:cross:-|2:1,-1:44x44:bend:-|3:0,-2:40x40:cross:-|4:1,-2:40x40:cross:-|5:1,-3:44x44:bend:-|6:2,-3:40x48:tee:-|7:2,-2:44x44:bend:-|8:2,-4:30x30:dead-end:-|9:0,-3:30x30:dead-end:mega-stone|10:-1,-1:30x30:dead-end:trade|11:-1,-2:30x30:dead-end:static',
+      '0:0,0:30x30:corridor:-|1:0,-1:40x40:cross:-|2:1,-1:44x44:bend:-|3:0,-2:40x40:cross:-|4:1,-2:40x40:cross:-|5:1,-3:44x44:bend:-|6:2,-3:40x48:tee:-|7:2,-2:44x44:bend:-|8:2,-4:30x30:dead-end:-|9:0,-3:30x30:dead-end:mega-stone|10:-1,-1:30x30:dead-end:no-heal|11:-1,-2:30x30:dead-end:static',
     'role-seed:5':
       '0:0,0:30x30:corridor:-|1:0,1:30x31:tee:-|2:-1,1:30x30:bend:-|3:0,2:30x30:bend:-|4:-1,2:30x31:tee:-|5:-1,3:30x30:dead-end:-',
   };
+
+  /**
+   * The rooms the slot machine's retirement **cannot** move, read off `main` before
+   * it: every regular room with its id, cell and size, plus the mini-boss and
+   * mega-stone leaves (their rolls and parents are drawn before the retired one).
+   * The slot-machine leaf and every leaf after it are excluded, because they are the
+   * ones whose draws moved.
+   */
+  const PRE_TASK_ROOMS: Readonly<Record<string, string>> = {
+    'alpha:1':
+      '0:0,0:30x30:corridor:-|1:-1,0:30x30:cross:-|2:-1,-1:30x30:bend:-|3:-2,0:30x30:bend:-|4:-2,-1:30x30:tee:-|5:-2,-2:30x30:dead-end:-|6:-1,1:30x30:dead-end:mini-boss',
+    'alpha:8':
+      '0:0,0:30x30:corridor:-|1:0,-1:40x40:cross:-|2:1,-1:44x44:bend:-|3:0,-2:40x40:cross:-|4:1,-2:40x40:cross:-|5:1,-3:44x44:bend:-|6:2,-3:40x48:tee:-|7:2,-2:44x44:bend:-|8:2,-4:30x30:dead-end:-|9:0,-3:30x30:dead-end:mega-stone',
+    'role-seed:5':
+      '0:0,0:30x30:corridor:-|1:0,1:30x31:tee:-|2:-1,1:30x30:bend:-|3:0,2:30x30:bend:-|4:-1,2:30x31:tee:-|5:-1,3:30x30:dead-end:-',
+  };
+
+  it('leaves every regular room, its id and its size where `main` had them', () => {
+    const untouched = (seed: string, mapIndex: number): string =>
+      planMap(seed, mapIndex)
+        .rooms.filter(
+          (room) => room.special === null || room.special === 'mini-boss' || room.special === 'mega-stone',
+        )
+        .map(
+          (room) =>
+            `${room.id}:${room.col},${room.row}:${room.width}x${room.height}:${room.shape}:${
+              room.special ?? '-'
+            }`,
+        )
+        .join('|');
+    for (const key of ['alpha:1', 'alpha:8', 'role-seed:5']) {
+      const [seed, mapIndex] = key.split(':');
+      expect(untouched(seed, Number(mapIndex)), key).toBe(PRE_TASK_ROOMS[key]);
+    }
+  });
 
   it('the role pass does not move a shipped floor', () => {
     const digest = (seed: string, mapIndex: number): string =>
@@ -624,31 +664,6 @@ describe('special rooms', () => {
     expect(planMap('special-seed', 5).specials).toEqual(planMap('special-seed', 5).specials);
   });
 
-  it('hangs at most one casino, only from map 2 on, always a leaf below the boss', () => {
-    for (const seed of SEEDS) {
-      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
-        const plan = planMap(seed, mapIndex);
-        const casino = plan.rooms.filter((room) => room.special === 'casino');
-        expect(casino.length, `${seed} map ${mapIndex}`).toBeLessThanOrEqual(1);
-        if (mapIndex < 2) expect(casino, `${seed} map ${mapIndex}`).toHaveLength(0);
-        for (const room of casino) {
-          expect(room.shape, `${seed} map ${mapIndex}`).toBe('dead-end');
-          expect(room.id).not.toBe(plan.entryRoom);
-          expect(room.id).not.toBe(plan.bossRoom);
-          const dist = distances(plan);
-          expect(dist[room.id], `${seed} map ${mapIndex}`).toBeLessThanOrEqual(dist[plan.bossRoom]);
-          // Its parent is a regular room that is neither the entry nor the boss.
-          const neighbours = plan.links
-            .filter(([a, b]) => a === room.id || b === room.id)
-            .map(([a, b]) => (a === room.id ? b : a));
-          expect(neighbours).toHaveLength(1);
-          expect(neighbours[0]).not.toBe(plan.entryRoom);
-          expect(neighbours[0]).not.toBe(plan.bossRoom);
-        }
-      }
-    }
-  });
-
   it('hangs at most one gated leaf, only from map 3 on, always below the boss', () => {
     for (const seed of SEEDS) {
       for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
@@ -689,29 +704,98 @@ describe('special rooms', () => {
     }
   });
 
-  it('hangs a casino about a third of the time from map 2 on', () => {
-    let casino = 0;
-    const total = 400;
-    for (let i = 0; i < total; i++) {
-      const plan = planMap(`casino-odds-${i}`, 5);
-      if (specialRoom(plan, 'casino') !== undefined) casino++;
-    }
-    expect(casino).toBeGreaterThan(total * 0.15);
-    expect(casino).toBeLessThan(total * 0.45);
-    // Map 1 never hangs one, whatever the seed.
-    for (let i = 0; i < 100; i++) {
-      expect(specialRoom(planMap(`casino-odds-${i}`, 1), 'casino')).toBeUndefined();
+  /**
+   * The gated leaf's own per-floor slot (`'-'` or the room id), one line per seed and
+   * map 1-8, **re-pinned by Task-117**: the slot machine's draw retired and this leaf
+   * now reads the values it used to take, so its rooms move for a fixed seed while
+   * every draw before the retired one stays put.
+   */
+  const GATED_LEAVES: Readonly<Record<string, string>> = {
+    'alpha:1': '-',
+    'alpha:2': '-',
+    'alpha:3': '-',
+    'alpha:4': '-',
+    'alpha:5': '-',
+    'alpha:6': '-',
+    'alpha:7': '-',
+    'alpha:8': '-',
+    'bravo:1': '-',
+    'bravo:2': '-',
+    'bravo:3': '-',
+    'bravo:4': '7',
+    'bravo:5': '-',
+    'bravo:6': '-',
+    'bravo:7': '-',
+    'bravo:8': '-',
+    'charlie:1': '-',
+    'charlie:2': '-',
+    'charlie:3': '-',
+    'charlie:4': '-',
+    'charlie:5': '8',
+    'charlie:6': '-',
+    'charlie:7': '-',
+    'charlie:8': '-',
+    'delta:1': '-',
+    'delta:2': '-',
+    'delta:3': '-',
+    'delta:4': '-',
+    'delta:5': '7',
+    'delta:6': '-',
+    'delta:7': '-',
+    'delta:8': '-',
+    'echo:1': '-',
+    'echo:2': '-',
+    'echo:3': '6',
+    'echo:4': '-',
+    'echo:5': '-',
+    'echo:6': '8',
+    'echo:7': '-',
+    'echo:8': '-',
+    'foxtrot:1': '-',
+    'foxtrot:2': '-',
+    'foxtrot:3': '-',
+    'foxtrot:4': '-',
+    'foxtrot:5': '-',
+    'foxtrot:6': '9',
+    'foxtrot:7': '-',
+    'foxtrot:8': '9',
+    'golf:1': '-',
+    'golf:2': '-',
+    'golf:3': '-',
+    'golf:4': '-',
+    'golf:5': '-',
+    'golf:6': '-',
+    'golf:7': '9',
+    'golf:8': '-',
+    'hotel:1': '-',
+    'hotel:2': '-',
+    'hotel:3': '-',
+    'hotel:4': '7',
+    'hotel:5': '-',
+    'hotel:6': '-',
+    'hotel:7': '-',
+    'hotel:8': '10',
+  };
+
+  it('pins where the gated leaf hangs, seed by seed', () => {
+    for (const [seed, mapIndex] of Object.entries(GATED_LEAVES).map(([key]) => key.split(':'))) {
+      const room = specialRoom(planMap(seed, Number(mapIndex)), 'gated');
+      expect(room === undefined ? '-' : String(room), `${seed} map ${mapIndex}`).toBe(
+        GATED_LEAVES[`${seed}:${mapIndex}`],
+      );
     }
   });
 
   /**
    * The shipped specials, **re-pinned by Task-92** with the shop room's retirement:
    * the guaranteed shop leaf's two size draws are gone, so the mini-boss and
-   * mega-stone rolls read the `map` stream two positions earlier from map 2 on. The
-   * casino draw is the special pass's **last** statement on the `map` stream, the
-   * gated one rolls after it, the trade one after that, the no-heal one after that,
-   * the static leaf after that on its own stream and the secret-shop leaf last of all
-   * on its own stream, so this array must not move again.
+   * mega-stone rolls read the `map` stream two positions earlier from map 2 on.
+   *
+   * **Task-117** retired the slot machine's leaf, whose draw sat between the
+   * mega-stone's and the gated leaf's. The mini-boss and mega-stone rolls are drawn
+   * **before** it, so this table is byte-identical to `main`'s — that is the point of
+   * the pin — while the gated, trade and no-heal leaves read the values the retired
+   * draw used to take (`GATED_LEAVES`, `TRADE_LEAVES`, `NO_HEAL_LEAVES`).
    */
   const SHIPPED_SPECIALS: Readonly<Record<string, string>> = {
     'alpha:1': '6:mini-boss',
@@ -780,22 +864,12 @@ describe('special rooms', () => {
     'hotel:8': '9:mini-boss',
   };
 
-  it('never moves a shipped special leaf (the casino draw rolls last)', () => {
+  it('never moves the mini-boss or mega-stone leaf (they roll before the retired draw)', () => {
     for (const seed of SEEDS) {
       for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
         const plan = planMap(seed, mapIndex);
         const shipped = plan.specials
-          .filter(
-            (special) =>
-              special.kind !== 'casino' &&
-              special.kind !== 'gated' &&
-              special.kind !== 'trade' &&
-              special.kind !== 'no-heal' &&
-              special.kind !== 'static' &&
-              special.kind !== 'secret-shop' &&
-              special.kind !== 'banned' &&
-              special.kind !== 'puzzle',
-          )
+          .filter((special) => special.kind === 'mini-boss' || special.kind === 'mega-stone')
           .map((special) => `${special.roomId}:${special.kind}`)
           .join(',');
         expect(shipped, `${seed} map ${mapIndex}`).toBe(SHIPPED_SPECIALS[`${seed}:${mapIndex}`]);
@@ -891,54 +965,55 @@ describe('special rooms', () => {
 
   /**
    * The trade leaf's own per-map slot (`'-'` or the room id), **re-pinned by
-   * Task-92** with the shop room's retirement, so a moved `map` stream fails this
-   * test while every shipped draw stays where the other pins put it.
+   * Task-92** with the shop room's retirement and **again by Task-117** with the slot
+   * machine's, so a moved `map` stream fails this test while every draw before the
+   * retired one stays where the other pins put it.
    */
   const TRADE_LEAVES: Readonly<Record<string, string>> = {
     'alpha:1': '-',
     'alpha:2': '-',
     'alpha:3': '-',
-    'alpha:4': '-',
+    'alpha:4': '7',
     'alpha:5': '-',
     'alpha:6': '-',
     'alpha:7': '-',
-    'alpha:8': '10',
+    'alpha:8': '-',
     'bravo:1': '-',
     'bravo:2': '-',
     'bravo:3': '-',
-    'bravo:4': '-',
+    'bravo:4': '8',
     'bravo:5': '-',
     'bravo:6': '-',
     'bravo:7': '-',
     'bravo:8': '-',
     'charlie:1': '-',
     'charlie:2': '-',
-    'charlie:3': '-',
-    'charlie:4': '-',
-    'charlie:5': '9',
-    'charlie:6': '9',
+    'charlie:3': '6',
+    'charlie:4': '7',
+    'charlie:5': '-',
+    'charlie:6': '-',
     'charlie:7': '-',
-    'charlie:8': '11',
+    'charlie:8': '10',
     'delta:1': '-',
     'delta:2': '-',
     'delta:3': '-',
     'delta:4': '-',
     'delta:5': '-',
     'delta:6': '-',
-    'delta:7': '-',
+    'delta:7': '7',
     'delta:8': '-',
     'echo:1': '-',
     'echo:2': '-',
     'echo:3': '-',
     'echo:4': '-',
     'echo:5': '-',
-    'echo:6': '-',
+    'echo:6': '9',
     'echo:7': '-',
     'echo:8': '-',
     'foxtrot:1': '-',
     'foxtrot:2': '-',
     'foxtrot:3': '-',
-    'foxtrot:4': '7',
+    'foxtrot:4': '-',
     'foxtrot:5': '-',
     'foxtrot:6': '-',
     'foxtrot:7': '-',
@@ -948,17 +1023,17 @@ describe('special rooms', () => {
     'golf:3': '-',
     'golf:4': '-',
     'golf:5': '-',
-    'golf:6': '7',
+    'golf:6': '-',
     'golf:7': '-',
     'golf:8': '-',
     'hotel:1': '-',
     'hotel:2': '-',
     'hotel:3': '-',
-    'hotel:4': '-',
+    'hotel:4': '8',
     'hotel:5': '-',
     'hotel:6': '-',
-    'hotel:7': '8',
-    'hotel:8': '11',
+    'hotel:7': '-',
+    'hotel:8': '-',
   };
 
   it('hangs a no-heal leaf at most once, only from map 3 on, always below the boss', () => {
@@ -1010,14 +1085,14 @@ describe('special rooms', () => {
    * every shipped draw stays where the other pins put it.
    */
   const NO_HEAL_LEAVES = [
-    '-,-,6,-,7,-,-,-',
-    '-,-,-,-,8,6,-,-',
-    '-,-,7,-,-,-,-,-',
     '-,-,-,-,-,-,-,10',
-    '-,-,-,-,7,-,-,-',
+    '-,-,-,-,-,-,-,-',
+    '-,-,-,-,9,9,-,11',
     '-,-,-,-,-,-,-,-',
     '-,-,-,-,-,-,-,-',
-    '-,-,-,-,-,-,-,12',
+    '-,-,-,7,-,-,-,-',
+    '-,-,-,-,-,7,-,-',
+    '-,-,-,-,-,-,-,11',
   ];
 
   it('pins where the no-heal leaf hangs, seed by seed', () => {
@@ -1083,8 +1158,8 @@ describe('special rooms', () => {
     '-,-,-,8,-,-,9,11',
     '-,-,-,-,-,-,-,-',
     '-,-,-,8,-,-,-,-',
-    '-,-,7,7,-,-,-,-',
-    '-,-,-,-,8,10,-,-',
+    '-,-,6,7,-,-,-,-',
+    '-,-,-,-,7,10,-,-',
     '-,-,-,8,-,10,-,-',
     '-,-,-,-,-,8,-,9',
     '-,-,6,-,-,-,-,-',
@@ -1188,9 +1263,9 @@ describe('special rooms', () => {
   const BAN_LEAVES = [
     '-,-,-,-,-,-,-,-',
     '-,-,8,-,-,-,9,-',
-    '-,-,8,-,-,-,-,12',
+    '-,-,7,-,-,-,-,12',
     '-,-,-,-,-,-,8,-',
-    '-,-,-,-,9,-,-,-',
+    '-,-,-,-,8,-,-,-',
     '-,-,-,-,-,-,-,-',
     '-,-,-,-,-,10,-,-',
     '-,-,-,9,-,9,-,-',
@@ -1220,11 +1295,11 @@ describe('special rooms', () => {
     '-,-,-,-,-,-,-,-',
     '-,-,-,-,-,-,10,-',
     '-,-,-,-,-,-,-,-',
-    '-,7,8,-,8,-,-,-',
-    '-,6,-,-,10,-,-,-',
+    '-,7,7,-,8,-,-,-',
+    '-,6,-,-,9,-,-,-',
     '-,-,-,-,7,-,7,11',
     '-,-,-,-,-,-,-,-',
-    '-,7,7,-,-,-,-,13',
+    '-,7,7,-,-,-,-,12',
   ];
 
   it('pins where the puzzle leaf hangs, seed by seed', () => {
