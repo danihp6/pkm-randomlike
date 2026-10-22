@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The wait asks for 2/12, not for a shape this account cannot be given.** Oracle caps
+      the Always Free Ampere entitlement at **2 OCPU / 12 GB** since August 2026, so every
+      4/24 attempt was a request the tenancy could only ever answer with "out of capacity" —
+      and it was one of every three attempts. `oci-launch.sh` grows `SHAPES`, a list of
+      `<ocpus>/<gb>` rotated one per attempt (default `4/24 2/12 1/6`, so a laptop probe and
+      the harness keep their old coverage), validates the entries and exits `2` on a typo;
+      the workflow passes `SHAPES: 2/12`. The knob is also the escape hatch: the day the
+      account goes pay-as-you-go it becomes `4/24 2/12 1/6` and nothing else changes. Docs
+      stop promising 4/24 as the free shape: provisioning, "why a box" and the retry section
+      say 2/12 free / 4/24 PAYG.
+      **QA:** `oci-launch.test.sh` green with two new cases (a single-shape run logs
+      `2 OCPU / 12 GB` and never `4 OCPU`, and `SHAPES=2-12` exits `2`), `bash -n` clean.
+
 - [x] **One wait, one loop: the laptop retry is retired.** Two client-side loops against one
       tenancy share one `launch` rate limiter, and the data said so plainly: the local loop
       (`~/.pkm/oci-retry.ps1`, one attempt every ~5.7 min, task `pkm-oci-retry`) logged 41

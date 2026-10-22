@@ -17,6 +17,10 @@ name: oci / retry
 # So: 5 min between attempts, 10 after a throttle, and a 5 min warm-up at the top of every
 # run. ~9 launches an hour instead of ~25, and the limiter stops eating attempts.
 #
+# Every attempt asks for `SHAPES: 2/12` — the Always Free Ampere ceiling since August 2026.
+# A 4/24 request is a PAYG entitlement: on this account it can only ever answer "out of
+# capacity", so it is not asked at all.
+#
 # The chain stops by itself: a run that finds the instance `RUNNING` (or launches it) parks
 # with an outcome, announces it in an `oci-ready` issue, and does not re-dispatch. The
 # repository variable `OCI_RETRY=off` is the brake — a run reads it, attempts nothing and
@@ -76,6 +80,7 @@ jobs:
         if: vars.OCI_RETRY != 'off'
         env:
           ATTEMPTS: ${{ inputs.attempts || 8 }}
+          SHAPES: 2/12
           ATTEMPT_SLEEP: 300
           THROTTLE_SLEEP: 600
           START_DELAY: 300
