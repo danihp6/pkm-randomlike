@@ -1,7 +1,15 @@
 import { getMove } from '../../data/dex';
 import { accuracyChance } from './accuracy';
 import { clampBoost, type BattleFighter } from './fighter';
-import { activeFighter, opponent, type BattleState, type SideId } from './state';
+import {
+  activeFighter,
+  effectiveWeather,
+  opponent,
+  opponentOf,
+  type BattleState,
+  type SideId,
+} from './state';
+import { fixedDamage, resolveBasePower, type DamageContext } from './damage';
 import {
   makeContext,
   runModifyAccuracy,
@@ -49,15 +57,30 @@ export function movePreview(state: BattleState, side: SideId, moveIndex: number)
   const modified = runModifyMove(ctx, move);
   const type = runModifyMoveType(ctx, modified);
   const activeMove = type === modified.type ? modified : { ...modified, type };
-  const damaging = activeMove.category !== 'Status' && activeMove.basePower > 0;
+  const context: DamageContext = {
+    weather: effectiveWeather(state),
+    terrain: state.terrain,
+    party: state.sides[side].party,
+    targetMovedFirst: state.movedSides.includes(opponentOf(side)),
+    userDamagedThisTurn:
+      fighter.volatiles.physicalDamageTaken + fighter.volatiles.specialDamageTaken > 0,
+  };
+  const fixed = fixedDamage(fighter, target, activeMove, null);
+  const damaging = activeMove.category !== 'Status' && (fixed !== null || activeMove.basePower > 0);
 
   // A probe of 100 turns the attacker's damage hooks into a plain multiplier:
   // each is a straight scale of the pending damage, so the result reads as the
   // move's effective power including abilities and items (but not STAB, which
   // the damage formula applies on its own).
   const powerMultiplier = damaging ? runModifyDamage(ctx, activeMove, 100, 1, false, false) / 100 : 1;
-  const stab = damaging && fighter.types.includes(activeMove.type);
-  const power = damaging ? Math.round(activeMove.basePower * powerMultiplier * (stab ? 1.5 : 1)) : 0;
+  const stab = damaging && fixed === null && fighter.types.includes(activeMove.type);
+  const power = !damaging
+    ? 0
+    : fixed !== null
+      ? Math.max(0, Math.round(fixed * powerMultiplier))
+      : Math.round(
+          resolveBasePower(fighter, target, activeMove, context) * powerMultiplier * (stab ? 1.5 : 1),
+        );
 
   return {
     type: activeMove.type,

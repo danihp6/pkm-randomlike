@@ -17,9 +17,9 @@ hide during playtests.
   meets one, so a gap cannot hide during playtests.
 - `excluded` — deliberately out of scope: no playable species has it, it only
   works with allies, it needs a cut mechanic (Mega/Z/Dynamax/Terastal/forme
-  change), or it needs a mechanic the engine does not model (weight, entry
-  hazards, forced switching, out-of-battle effects). Excluded effects are never
-  a coverage gap.
+  change), or it needs a mechanic the engine does not model (entry hazards,
+  forced switching, out-of-battle effects). Excluded effects are never a
+  coverage gap.
 - `removed` — the engine no longer carries it because its mechanic became
   **data** (`D38`): the forme-changing abilities whose forme is now an evolution
   branch, a variant drawn at generation or a hand-authored Mega. The deletion is
@@ -27,8 +27,13 @@ hide during playtests.
   is gone. Removals are listed in `REMOVED_ABILITIES` in
   `scripts/effect-coverage.mjs`.
 - For a move, `port` means a registered handler, an id the turn loop
-  special-cases, or a data-driven field the engine reads; `no-op` means a run
-  can meet the move and nothing happens.
+  special-cases, a data-driven field the engine reads, or an id in
+  `DAMAGE_RESOLVERS` (`src/engine/battle/damage.ts`), which is what
+  `damage: damage.ts` names. `data: basePower` means the formula multiplies the
+  move's dex number, with the multiplicative exceptions `resolveBasePower`
+  applies to a named few (Eruption, Hex, Facade, the weight- and HP-relative
+  powers) — those are documented in `docs/battle-spec.md` §3. `no-op` means a
+  run can meet the move and nothing happens.
 - For an item, `port` means the held item registers a handler
   (`effects/items.ts`) or the Bag item is one `commands.ts` reads; `no-op`
   means a run can meet the item and nothing happens.
@@ -139,7 +144,7 @@ catalogue row, not engine code.
 | Harvest | `port` | ported in `effects/abilities.ts` |
 | Healer | `excluded` | doubles/ally only |
 | Heatproof | `port` | ported in `effects/abilities.ts` |
-| Heavy Metal | `excluded` | weight is not modelled |
+| Heavy Metal | `excluded` | weight-changing abilities are not modelled |
 | Honey Gather | `port` | ported in `effects/abilities.ts` |
 | Hospitality | `excluded` | doubles/ally only |
 | Huge Power | `port` | ported in `effects/abilities.ts` |
@@ -168,7 +173,7 @@ catalogue row, not engine code.
 | Leaf Guard | `port` | ported in `effects/abilities.ts` |
 | Levitate | `port` | ported in `effects/abilities.ts` |
 | Libero | `port` | ported in `effects/abilities.ts` |
-| Light Metal | `excluded` | weight is not modelled |
+| Light Metal | `excluded` | weight-changing abilities are not modelled |
 | Lightning Rod | `port` | ported in `effects/abilities.ts` |
 | Limber | `port` | ported in `effects/abilities.ts` |
 | Lingering Aroma | `port` | ported in `effects/abilities.ts` |
@@ -353,7 +358,7 @@ catalogue row, not engine code.
 | Zen Mode (Galar) | `removed` | forme-changing ability removed (D38) |
 | Zero to Hero | `removed` | forme-changing ability removed (D38) |
 
-## Moves — 835 total (753 port, 33 no-op, 49 excluded)
+## Moves — 835 total (783 port, 0 no-op, 52 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -406,13 +411,13 @@ catalogue row, not engine code.
 | Barrier | `port` | data: boosts |
 | Baton Pass | `port` | data: selfSwitch |
 | Beak Blast | `port` | data: basePower |
-| Beat Up | `no-op` | reachable, not ported yet |
+| Beat Up | `port` | damage: damage.ts |
 | Behemoth Bash | `port` | data: basePower |
 | Behemoth Blade | `port` | data: basePower |
 | Belch | `port` | data: basePower |
 | Belly Drum | `port` | registry: effects/moves.ts |
 | Bestow | `excluded` | no playable species has it |
-| Bide | `no-op` | reachable, not ported yet |
+| Bide | `excluded` | needs a two-turn damage accumulator |
 | Bind | `port` | data: volatileStatus |
 | Bite | `port` | data: secondaries |
 | Bitter Blade | `port` | data: drain |
@@ -495,7 +500,7 @@ catalogue row, not engine code.
 | Cross Poison | `port` | data: secondaries |
 | Crunch | `port` | data: secondaries |
 | Crush Claw | `port` | data: secondaries |
-| Crush Grip | `no-op` | reachable, not ported yet |
+| Crush Grip | `port` | damage: damage.ts |
 | Curse | `port` | registry: effects/moves.ts |
 | Dark Pulse | `port` | data: secondaries |
 | Dark Void | `port` | registry: effects/moves.ts |
@@ -534,7 +539,7 @@ catalogue row, not engine code.
 | Dragon Energy | `port` | data: basePower |
 | Dragon Hammer | `port` | data: basePower |
 | Dragon Pulse | `port` | data: basePower |
-| Dragon Rage | `no-op` | reachable, not ported yet |
+| Dragon Rage | `port` | damage: damage.ts |
 | Dragon Rush | `port` | data: secondaries |
 | Dragon Tail | `port` | data: basePower |
 | Drain Punch | `port` | data: drain |
@@ -555,14 +560,14 @@ catalogue row, not engine code.
 | Egg Bomb | `port` | data: basePower |
 | Electric Terrain | `port` | data: terrain |
 | Electrify | `port` | data: volatileStatus |
-| Electro Ball | `no-op` | reachable, not ported yet |
+| Electro Ball | `port` | damage: damage.ts |
 | Electro Drift | `port` | data: basePower |
 | Electro Shot | `port` | data: flags.charge |
 | Electroweb | `port` | data: secondaries |
 | Embargo | `port` | data: volatileStatus |
 | Ember | `port` | data: secondaries |
 | Encore | `port` | data: volatileStatus |
-| Endeavor | `no-op` | reachable, not ported yet |
+| Endeavor | `port` | damage: damage.ts |
 | Endure | `port` | data: volatileStatus |
 | Energy Ball | `port` | data: secondaries |
 | Entrainment | `port` | registry: effects/moves.ts |
@@ -588,7 +593,7 @@ catalogue row, not engine code.
 | Fiery Dance | `port` | data: secondaries |
 | Fiery Wrath | `port` | data: secondaries |
 | Fillet Away | `port` | registry: effects/moves.ts |
-| Final Gambit | `port` | data: selfdestruct |
+| Final Gambit | `port` | damage: damage.ts |
 | Fire Blast | `port` | data: secondaries |
 | Fire Fang | `port` | data: secondaries |
 | Fire Lash | `port` | data: secondaries |
@@ -597,8 +602,8 @@ catalogue row, not engine code.
 | Fire Spin | `port` | data: volatileStatus |
 | First Impression | `port` | data: basePower |
 | Fishious Rend | `port` | data: basePower |
-| Fissure | `no-op` | reachable, not ported yet |
-| Flail | `no-op` | reachable, not ported yet |
+| Fissure | `port` | damage: damage.ts |
+| Flail | `port` | damage: damage.ts |
 | Flame Burst | `port` | data: basePower |
 | Flame Charge | `port` | data: secondaries |
 | Flame Wheel | `port` | data: secondaries |
@@ -608,7 +613,7 @@ catalogue row, not engine code.
 | Flash Cannon | `port` | data: secondaries |
 | Flatter | `port` | data: volatileStatus |
 | Fleur Cannon | `port` | data: self.boosts |
-| Fling | `no-op` | reachable, not ported yet |
+| Fling | `excluded` | needs the held item's fling power |
 | Flip Turn | `port` | data: selfSwitch |
 | Floaty Fall | `excluded` | no playable species has it |
 | Floral Healing | `port` | registry: effects/moves.ts |
@@ -630,7 +635,7 @@ catalogue row, not engine code.
 | Freezy Frost | `excluded` | no playable species has it |
 | Frenzy Plant | `port` | data: basePower |
 | Frost Breath | `port` | data: basePower |
-| Frustration | `no-op` | reachable, not ported yet |
+| Frustration | `port` | damage: damage.ts |
 | Fury Attack | `port` | data: multihit |
 | Fury Cutter | `port` | data: basePower |
 | Fury Swipes | `port` | data: multihit |
@@ -649,7 +654,7 @@ catalogue row, not engine code.
 | Glaive Rush | `port` | data: basePower |
 | Glare | `port` | data: status |
 | Glitzy Glow | `excluded` | no playable species has it |
-| Grass Knot | `no-op` | reachable, not ported yet |
+| Grass Knot | `port` | damage: damage.ts |
 | Grass Pledge | `port` | data: basePower |
 | Grass Whistle | `port` | data: status |
 | Grassy Glide | `port` | data: basePower |
@@ -661,14 +666,14 @@ catalogue row, not engine code.
 | Grudge | `port` | data: volatileStatus |
 | Guard Split | `port` | registry: effects/moves.ts |
 | Guard Swap | `port` | registry: effects/moves.ts |
-| Guillotine | `no-op` | reachable, not ported yet |
+| Guillotine | `port` | damage: damage.ts |
 | Gunk Shot | `port` | data: secondaries |
 | Gust | `port` | data: basePower |
-| Gyro Ball | `no-op` | reachable, not ported yet |
+| Gyro Ball | `port` | damage: damage.ts |
 | Hail | `port` | data: weather |
 | Hammer Arm | `port` | data: self.boosts |
 | Happy Hour | `excluded` | no playable species has it |
-| Hard Press | `no-op` | reachable, not ported yet |
+| Hard Press | `port` | damage: damage.ts |
 | Harden | `port` | data: boosts |
 | Haze | `port` | registry: effects/moves.ts |
 | Head Charge | `port` | data: recoil |
@@ -682,9 +687,9 @@ catalogue row, not engine code.
 | Healing Wish | `port` | data: selfdestruct |
 | Heart Stamp | `excluded` | no playable species has it |
 | Heart Swap | `port` | registry: effects/moves.ts |
-| Heat Crash | `no-op` | reachable, not ported yet |
+| Heat Crash | `port` | damage: damage.ts |
 | Heat Wave | `port` | data: secondaries |
-| Heavy Slam | `no-op` | reachable, not ported yet |
+| Heavy Slam | `port` | damage: damage.ts |
 | Helping Hand | `excluded` | doubles/ally only |
 | Hex | `port` | data: basePower |
 | Hidden Power | `port` | data: basePower |
@@ -692,7 +697,7 @@ catalogue row, not engine code.
 | High Jump Kick | `port` | data: basePower |
 | Hone Claws | `port` | data: boosts |
 | Horn Attack | `port` | data: basePower |
-| Horn Drill | `no-op` | reachable, not ported yet |
+| Horn Drill | `port` | damage: damage.ts |
 | Horn Leech | `port` | data: drain |
 | Howl | `port` | data: boosts |
 | Hurricane | `port` | data: secondaries |
@@ -759,7 +764,7 @@ catalogue row, not engine code.
 | Liquidation | `port` | data: secondaries |
 | Lock-On | `port` | registry: effects/moves.ts |
 | Lovely Kiss | `port` | data: status |
-| Low Kick | `no-op` | reachable, not ported yet |
+| Low Kick | `port` | damage: damage.ts |
 | Low Sweep | `port` | data: secondaries |
 | Lucky Chant | `port` | registry: effects/moves.ts |
 | Lumina Crash | `port` | data: secondaries |
@@ -827,10 +832,10 @@ catalogue row, not engine code.
 | Nasty Plot | `port` | data: boosts |
 | Natural Gift | `port` | registry: effects/items.ts |
 | Nature Power | `port` | turn loop: turn.ts |
-| Nature's Madness | `no-op` | reachable, not ported yet |
+| Nature's Madness | `port` | damage: damage.ts |
 | Needle Arm | `excluded` | no playable species has it |
 | Night Daze | `port` | data: secondaries |
-| Night Shade | `no-op` | reachable, not ported yet |
+| Night Shade | `port` | damage: damage.ts |
 | Night Slash | `port` | data: basePower |
 | Nightmare | `port` | data: volatileStatus |
 | No Retreat | `port` | data: volatileStatus |
@@ -847,7 +852,7 @@ catalogue row, not engine code.
 | Outrage | `port` | data: basePower |
 | Overdrive | `port` | data: basePower |
 | Overheat | `port` | data: self.boosts |
-| Pain Split | `no-op` | reachable, not ported yet |
+| Pain Split | `port` | registry: effects/moves.ts |
 | Parabolic Charge | `port` | data: drain |
 | Parting Shot | `port` | registry: effects/moves.ts |
 | Pay Day | `port` | data: basePower |
@@ -885,7 +890,7 @@ catalogue row, not engine code.
 | Power Whip | `port` | data: basePower |
 | Power-Up Punch | `port` | data: secondaries |
 | Precipice Blades | `port` | data: basePower |
-| Present | `no-op` | reachable, not ported yet |
+| Present | `port` | damage: damage.ts |
 | Prismatic Laser | `port` | data: basePower |
 | Protect | `port` | registry: effects/moves.ts |
 | Psybeam | `port` | data: secondaries |
@@ -901,7 +906,7 @@ catalogue row, not engine code.
 | Psyshield Bash | `port` | data: secondaries |
 | Psyshock | `port` | data: basePower |
 | Psystrike | `port` | data: basePower |
-| Psywave | `no-op` | reachable, not ported yet |
+| Psywave | `port` | damage: damage.ts |
 | Punishment | `excluded` | no playable species has it |
 | Purify | `port` | registry: effects/moves.ts |
 | Pursuit | `port` | data: basePower |
@@ -928,10 +933,10 @@ catalogue row, not engine code.
 | Relic Song | `port` | data: secondaries |
 | Rest | `port` | registry: effects/moves.ts |
 | Retaliate | `port` | data: basePower |
-| Return | `no-op` | reachable, not ported yet |
+| Return | `port` | damage: damage.ts |
 | Revelation Dance | `port` | registry: effects/moves.ts |
 | Revenge | `port` | data: basePower |
-| Reversal | `no-op` | reachable, not ported yet |
+| Reversal | `port` | damage: damage.ts |
 | Revival Blessing | `port` | data: selfSwitch |
 | Rising Voltage | `port` | data: basePower |
 | Roar | `excluded` | no forced-switch mechanic |
@@ -950,7 +955,7 @@ catalogue row, not engine code.
 | Roost | `port` | data: heal |
 | Rototiller | `port` | registry: effects/moves.ts |
 | Round | `port` | data: basePower |
-| Ruination | `no-op` | reachable, not ported yet |
+| Ruination | `port` | damage: damage.ts |
 | Sacred Fire | `port` | data: secondaries |
 | Sacred Sword | `port` | data: basePower |
 | Safeguard | `port` | registry: effects/moves.ts |
@@ -971,7 +976,7 @@ catalogue row, not engine code.
 | Secret Sword | `port` | data: basePower |
 | Seed Bomb | `port` | data: basePower |
 | Seed Flare | `port` | data: secondaries |
-| Seismic Toss | `no-op` | reachable, not ported yet |
+| Seismic Toss | `port` | damage: damage.ts |
 | Self-Destruct | `port` | data: selfdestruct |
 | Shadow Ball | `port` | data: secondaries |
 | Shadow Bone | `port` | data: secondaries |
@@ -981,7 +986,7 @@ catalogue row, not engine code.
 | Shadow Sneak | `port` | data: basePower |
 | Sharpen | `port` | data: boosts |
 | Shed Tail | `port` | registry: effects/moves.ts |
-| Sheer Cold | `no-op` | reachable, not ported yet |
+| Sheer Cold | `port` | damage: damage.ts |
 | Shell Side Arm | `port` | data: secondaries |
 | Shell Smash | `port` | data: boosts |
 | Shell Trap | `port` | data: basePower |
@@ -1025,7 +1030,7 @@ catalogue row, not engine code.
 | Soft-Boiled | `port` | data: heal |
 | Solar Beam | `port` | data: flags.charge |
 | Solar Blade | `port` | data: flags.charge |
-| Sonic Boom | `no-op` | reachable, not ported yet |
+| Sonic Boom | `port` | damage: damage.ts |
 | Spacial Rend | `port` | data: basePower |
 | Spark | `port` | data: secondaries |
 | Sparkling Aria | `port` | data: basePower |
@@ -1040,12 +1045,12 @@ catalogue row, not engine code.
 | Spin Out | `port` | data: self.boosts |
 | Spirit Break | `port` | data: secondaries |
 | Spirit Shackle | `port` | data: basePower |
-| Spit Up | `no-op` | reachable, not ported yet |
+| Spit Up | `port` | damage: damage.ts |
 | Spite | `port` | registry: effects/moves.ts |
 | Splash | `port` | registry: effects/moves.ts |
 | Splishy Splash | `excluded` | no playable species has it |
 | Spore | `port` | data: status |
-| Spotlight | `no-op` | reachable, not ported yet |
+| Spotlight | `excluded` | needs a redirection mechanic |
 | Springtide Storm | `port` | data: secondaries |
 | Stealth Rock | `excluded` | entry hazards are not modelled |
 | Steam Eruption | `port` | data: secondaries |
@@ -1074,7 +1079,7 @@ catalogue row, not engine code.
 | Sucker Punch | `port` | data: basePower |
 | Sunny Day | `port` | data: weather |
 | Sunsteel Strike | `port` | data: basePower |
-| Super Fang | `no-op` | reachable, not ported yet |
+| Super Fang | `port` | damage: damage.ts |
 | Supercell Slam | `port` | data: basePower |
 | Superpower | `port` | data: self.boosts |
 | Supersonic | `port` | data: volatileStatus |
@@ -1185,7 +1190,7 @@ catalogue row, not engine code.
 | Work Up | `port` | data: boosts |
 | Worry Seed | `port` | registry: effects/moves.ts |
 | Wrap | `port` | data: volatileStatus |
-| Wring Out | `no-op` | reachable, not ported yet |
+| Wring Out | `port` | damage: damage.ts |
 | X-Scissor | `port` | data: basePower |
 | Yawn | `port` | data: volatileStatus |
 | Zap Cannon | `port` | data: secondaries |

@@ -1043,3 +1043,42 @@ describe('the status half — items, moves and PP', () => {
     expect(enemy.moves[0].pp).toBe(before - 4);
   });
 });
+
+describe('Pain Split', () => {
+  it('shares the average of the two HP pools, the user first', () => {
+    const state = battle(['painsplit'], ['splash']);
+    const player = activeFighter(state, 'player');
+    const enemy = activeFighter(state, 'enemy');
+    enemy.hp = 23;
+    const average = Math.floor((player.hp + enemy.hp) / 2);
+
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+
+    expect(player.hp).toBe(average);
+    expect(enemy.hp).toBe(average);
+    const kinds = state.log.flatMap((event) =>
+      event.kind === 'heal' || event.kind === 'damage' ? [event.kind] : [],
+    );
+    expect(kinds).toEqual(['damage', 'heal']);
+    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(
+      false,
+    );
+  });
+
+  it('heals a hurt user and damages a healthy target toward the average', () => {
+    const state = battle(['painsplit'], ['splash']);
+    const player = activeFighter(state, 'player');
+    const enemy = activeFighter(state, 'enemy');
+    player.hp = 10;
+    const average = Math.floor((10 + enemy.hp) / 2);
+
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+
+    expect(player.hp).toBe(average);
+    expect(enemy.hp).toBe(average);
+    const kinds = state.log.flatMap((event) =>
+      event.kind === 'heal' || event.kind === 'damage' ? [event.kind] : [],
+    );
+    expect(kinds).toEqual(['heal', 'damage']);
+  });
+});

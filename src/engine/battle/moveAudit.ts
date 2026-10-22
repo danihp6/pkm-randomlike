@@ -51,6 +51,8 @@ export interface MoveAuditSetup {
   weather?: WeatherId | null;
   /** The battle starts under it with 5 turns left. Default `null`. */
   terrain?: TerrainId | null;
+  /** Stockpile charges the player starts with, clamped to `0..3`. Default `0`. */
+  playerStockpile?: number;
 }
 
 /** One snapshot of the board after the single move has resolved. */
@@ -170,6 +172,7 @@ export function probeMove(moveId: string, setup: Partial<MoveAuditSetup> = {}): 
   enemy.boosts = withBoosts(setup.enemyBoosts);
   withStatus(player, setup.playerStatus ?? null);
   withStatus(enemy, setup.enemyStatus ?? null);
+  player.volatiles.stockpile = Math.max(0, Math.min(3, Math.floor(setup.playerStockpile ?? 0)));
 
   const weather = setup.weather ?? null;
   const terrain = setup.terrain ?? null;
@@ -285,6 +288,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'barrage', expected: { events: ['move', 'damage', 'damage', 'damage'] } },
   { moveId: 'barrier', expected: { playerBoosts: [0, 2, 0, 0, 0, 0, 0] } },
   { moveId: 'batonpass', expected: { events: ['move'] } },
+  { moveId: 'beatup', expected: { events: ['move', 'damage'] } },
   {
     moveId: 'bellydrum',
     expected: { playerHp: 62, playerBoosts: [6, 0, 0, 0, 0, 0, 0], events: ['move', 'damage', 'boost'] },
@@ -382,6 +386,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'crosspoison', expected: { events: ['move', 'damage'] } },
   { moveId: 'crunch', expected: { events: ['move', 'damage'] } },
   { moveId: 'crushclaw', expected: { events: ['move', 'damage'] } },
+  { moveId: 'crushgrip', expected: { events: ['move', 'damage'] } },
   {
     moveId: 'curse',
     expected: { playerBoosts: [1, 1, 0, 0, -1, 0, 0], events: ['move', 'boost', 'boost', 'boost'] },
@@ -416,6 +421,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'dragoncheer', expected: { enemyVolatiles: [] } },
   { moveId: 'dragondance', expected: { playerBoosts: [1, 0, 0, 0, 1, 0, 0] } },
   { moveId: 'dragondarts', expected: { events: ['move', 'damage', 'damage'] } },
+  { moveId: 'dragonrage', expected: { enemyHp: 83, events: ['move', 'damage'] } },
   { moveId: 'dragonrush', expected: { events: ['move', 'damage'] } },
   { moveId: 'drainingkiss', setup: { playerHp: 40 }, expected: { events: ['move', 'damage', 'heal'] } },
   { moveId: 'drainpunch', setup: { playerHp: 40 }, expected: { events: ['move', 'damage', 'heal'] } },
@@ -437,6 +443,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'eerieimpulse', expected: { enemyBoosts: [0, 0, -2, 0, 0, 0, 0] } },
   { moveId: 'electricterrain', expected: { terrain: 'electric' } },
   { moveId: 'electrify', expected: { enemyVolatiles: ['electrify'], events: ['move'] } },
+  { moveId: 'electroball', expected: { events: ['move', 'damage'] } },
   {
     moveId: 'electroshot',
     expected: {
@@ -452,6 +459,11 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'embargo', expected: { enemyVolatiles: ['embargo'], events: ['move'] } },
   { moveId: 'ember', expected: { events: ['move', 'damage'] } },
   { moveId: 'encore', expected: { enemyVolatiles: [], events: ['move'] } },
+  {
+    moveId: 'endeavor',
+    setup: { playerHp: 40 },
+    expected: { playerHp: 40, enemyHp: 40, events: ['move', 'damage'] },
+  },
   { moveId: 'endure', expected: { playerVolatiles: ['endure'] } },
   { moveId: 'energyball', expected: { events: ['move', 'damage'] } },
   { moveId: 'entrainment', expected: { enemyAbility: 'Run Away', events: ['move'] } },
@@ -484,7 +496,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
       events: ['move', 'damage', 'boost', 'boost', 'boost'],
     },
   },
-  { moveId: 'finalgambit', expected: { playerHp: 0, enemyHp: 0 }, knownGap: true },
+  {
+    moveId: 'finalgambit',
+    expected: { playerHp: 0, enemyHp: 0, events: ['move', 'damage', 'faint', 'faint'] },
+  },
   { moveId: 'fireblast', expected: { events: ['move', 'damage'] } },
   { moveId: 'firefang', expected: { events: ['move', 'damage'] } },
   {
@@ -496,6 +511,12 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     moveId: 'firespin',
     expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken', 'trapped'] },
   },
+  {
+    moveId: 'fissure',
+    setup: { playerBoosts: { accuracy: 6 } },
+    expected: { events: ['move'] },
+  },
+  { moveId: 'flail', expected: { events: ['move', 'damage'] } },
   {
     moveId: 'flamecharge',
     expected: { events: ['move', 'damage', 'boost'], playerBoosts: [0, 0, 0, 0, 1, 0, 0] },
@@ -519,6 +540,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'freezedry', expected: { events: ['move', 'damage'] } },
   { moveId: 'freezeshock', expected: { events: ['move'] } },
   { moveId: 'freezingglare', expected: { events: ['move', 'damage'] } },
+  { moveId: 'frustration', expected: { events: ['move', 'damage'] } },
   { moveId: 'furyattack', expected: { events: ['move', 'damage', 'damage', 'damage'] } },
   { moveId: 'furyswipes', expected: { events: ['move', 'damage', 'damage', 'damage'] } },
   { moveId: 'gastroacid', expected: { enemyVolatiles: ['gastroAcid'], events: ['move'] } },
@@ -530,6 +552,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     expected: { events: ['move', 'damage', 'boost'], enemyBoosts: [0, 0, 0, 0, -1, 0, 0] },
   },
   { moveId: 'glare', expected: { enemyStatus: 'par', events: ['move', 'status'] } },
+  { moveId: 'grassknot', expected: { events: ['move', 'damage'] } },
   { moveId: 'grasswhistle', expected: { enemyStatus: 'slp', events: ['move', 'status'] } },
   { moveId: 'grassyterrain', expected: { terrain: 'grassy' } },
   {
@@ -546,10 +569,17 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     setup: { enemyBoosts: { def: 2 } },
     expected: { playerBoosts: [0, 2, 0, 0, 0, 0, 0], events: ['move'] },
   },
+  {
+    moveId: 'guillotine',
+    setup: { playerBoosts: { accuracy: 6 } },
+    expected: { events: ['move'] },
+  },
   { moveId: 'gunkshot', expected: { events: ['move', 'damage'] } },
+  { moveId: 'gyroball', expected: { events: ['move', 'damage'] } },
   { moveId: 'hail', expected: { weather: 'snow' } },
   { moveId: 'hammerarm', expected: { playerBoosts: [0, 0, 0, 0, -1, 0, 0] } },
   { moveId: 'harden', expected: { playerBoosts: [0, 1, 0, 0, 0, 0, 0] } },
+  { moveId: 'hardpress', expected: { events: ['move', 'damage'] } },
   {
     moveId: 'haze',
     setup: { playerBoosts: { atk: 2 }, enemyBoosts: { def: 2 } },
@@ -575,8 +605,11 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     setup: { enemyBoosts: { atk: 2 } },
     expected: { playerBoosts: [2, 0, 0, 0, 0, 0, 0], events: ['move'] },
   },
+  { moveId: 'heatcrash', expected: { events: ['move', 'damage'] } },
   { moveId: 'heatwave', expected: { events: ['move', 'damage'] } },
+  { moveId: 'heavyslam', expected: { events: ['move', 'damage'] } },
   { moveId: 'honeclaws', expected: { playerBoosts: [1, 0, 0, 0, 0, 1, 0] } },
+  { moveId: 'horndrill', setup: { playerBoosts: { accuracy: 6 } }, expected: { events: ['move'] } },
   { moveId: 'hornleech', setup: { playerHp: 40 }, expected: { events: ['move', 'damage', 'heal'] } },
   { moveId: 'howl', expected: { playerBoosts: [1, 0, 0, 0, 0, 0, 0] } },
   { moveId: 'hurricane', expected: { events: ['move', 'damage'] } },
@@ -631,6 +664,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'liquidation', expected: { events: ['move', 'damage'] } },
   { moveId: 'lockon', expected: { playerVolatiles: ['lockOn'], events: ['move'] } },
   { moveId: 'lovelykiss', expected: { enemyStatus: 'slp', events: ['move', 'status'] } },
+  { moveId: 'lowkick', expected: { events: ['move', 'damage'] } },
   {
     moveId: 'lowsweep',
     expected: { events: ['move', 'damage', 'boost'], enemyBoosts: [0, 0, 0, 0, -1, 0, 0] },
@@ -721,12 +755,14 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'nastyplot', expected: { playerBoosts: [0, 0, 2, 0, 0, 0, 0] } },
   { moveId: 'naturalgift', expected: { events: ['move'] } },
   { moveId: 'naturepower', expected: { events: ['move', 'move', 'damage'] } },
+  { moveId: 'naturesmadness', expected: { enemyHp: 62, events: ['move', 'damage'] } },
   { moveId: 'nightdaze', expected: { events: ['move', 'damage'] } },
   {
     moveId: 'nightmare',
     setup: { enemyStatus: 'slp' },
     expected: { enemyVolatiles: ['nightmare'], events: ['move'] },
   },
+  { moveId: 'nightshade', expected: { enemyHp: 73, events: ['move', 'damage'] } },
   { moveId: 'nobleroar', expected: { enemyBoosts: [-1, 0, -1, 0, 0, 0, 0] } },
   {
     moveId: 'noretreat',
@@ -743,6 +779,11 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'odorsleuth', expected: { enemyVolatiles: ['foresight'], events: ['move'] } },
   { moveId: 'ominouswind', expected: { events: ['move'] } },
   { moveId: 'overheat', expected: { playerBoosts: [0, 0, -2, 0, 0, 0, 0] } },
+  {
+    moveId: 'painsplit',
+    setup: { playerHp: 40 },
+    expected: { playerHp: 81, enemyHp: 81, events: ['move', 'heal', 'damage'] },
+  },
   {
     moveId: 'paraboliccharge',
     setup: { playerHp: 40 },
@@ -798,6 +839,11 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     moveId: 'poweruppunch',
     expected: { events: ['move', 'damage', 'boost'], playerBoosts: [1, 0, 0, 0, 0, 0, 0] },
   },
+  {
+    moveId: 'present',
+    setup: { enemyHp: 40 },
+    expected: { enemyHp: 15, events: ['move', 'damage'] },
+  },
   { moveId: 'protect', expected: { playerVolatiles: ['protect', 'protectStreak'], events: ['move'] } },
   { moveId: 'psybeam', expected: { events: ['move', 'damage'] } },
   { moveId: 'psychic', expected: { events: ['move', 'damage'] } },
@@ -817,6 +863,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     moveId: 'psyshieldbash',
     expected: { events: ['move', 'damage', 'boost'], playerBoosts: [0, 1, 0, 0, 0, 0, 0] },
   },
+  { moveId: 'psywave', expected: { enemyHp: 73, events: ['move', 'damage'] } },
   {
     moveId: 'purify',
     setup: { playerHp: 40, enemyStatus: 'brn' },
@@ -851,7 +898,9 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     setup: { playerHp: 40 },
     expected: { playerStatus: 'slp', playerHp: 123, events: ['move', 'status', 'heal'] },
   },
+  { moveId: 'return', expected: { events: ['move', 'damage'] } },
   { moveId: 'revelationdance', expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken'] } },
+  { moveId: 'reversal', expected: { events: ['move', 'damage'] } },
   { moveId: 'revivalblessing', expected: { events: ['move'] } },
   { moveId: 'rockblast', expected: { events: ['move', 'damage', 'damage', 'damage'] } },
   { moveId: 'rockclimb', expected: { events: ['move', 'damage'] } },
@@ -866,6 +915,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'rollingkick', expected: { events: ['move', 'damage'] } },
   { moveId: 'roost', setup: { playerHp: 1 }, expected: { events: ['move', 'heal'] } },
   { moveId: 'rototiller', expected: { events: ['move'] } },
+  { moveId: 'ruination', expected: { enemyHp: 62, events: ['move', 'damage'] } },
   { moveId: 'sacredfire', expected: { events: ['move', 'damage'] } },
   { moveId: 'safeguard', expected: { playerSideConditions: [0, 0, 0, 0, 0, 0, 5], events: ['move'] } },
   { moveId: 'sandattack', expected: { enemyBoosts: [0, 0, 0, 0, 0, -1, 0] } },
@@ -883,12 +933,18 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'searingshot', expected: { events: ['move', 'damage'] } },
   { moveId: 'secretpower', expected: { events: ['move', 'damage'] } },
   { moveId: 'seedflare', expected: { events: ['move', 'damage'] } },
+  { moveId: 'seismictoss', expected: { enemyHp: 73, events: ['move', 'damage'] } },
   { moveId: 'selfdestruct', expected: { playerHp: 0, events: ['move', 'damage', 'faint'] } },
   { moveId: 'shadowball', expected: { events: ['move'] } },
   { moveId: 'shadowbone', expected: { events: ['move'] } },
   { moveId: 'shadowforce', expected: { playerVolatiles: ['charging'], events: ['move'] } },
   { moveId: 'sharpen', expected: { playerBoosts: [1, 0, 0, 0, 0, 0, 0] } },
   { moveId: 'shedtail', expected: { playerHp: 62, playerVolatiles: ['substitute'] } },
+  {
+    moveId: 'sheercold',
+    setup: { playerBoosts: { accuracy: 6 } },
+    expected: { events: ['move'] },
+  },
   { moveId: 'shellsidearm', expected: { events: ['move', 'damage'] } },
   { moveId: 'shellsmash', expected: { playerBoosts: [2, -1, 2, -1, 2, 0, 0] } },
   { moveId: 'shelter', expected: { playerBoosts: [0, 2, 0, 0, 0, 0, 0] } },
@@ -947,6 +1003,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'softboiled', setup: { playerHp: 1 }, expected: { events: ['move', 'heal'] } },
   { moveId: 'solarbeam', expected: { playerVolatiles: ['charging'], events: ['move'] } },
   { moveId: 'solarblade', expected: { playerVolatiles: ['charging'], events: ['move'] } },
+  { moveId: 'sonicboom', expected: { enemyHp: 103, events: ['move', 'damage'] } },
   { moveId: 'spark', expected: { events: ['move', 'damage'] } },
   { moveId: 'speedswap', expected: { events: ['move'] } },
   { moveId: 'spicyextract', expected: { enemyBoosts: [2, -2, 0, 0, 0, 0, 0] } },
@@ -962,6 +1019,11 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     expected: { events: ['move', 'damage', 'boost'], enemyBoosts: [0, 0, -1, 0, 0, 0, 0] },
   },
   { moveId: 'spite', expected: { events: ['move'] } },
+  {
+    moveId: 'spitup',
+    setup: { playerStockpile: 1 },
+    expected: { enemyHp: 63, events: ['move', 'damage'] },
+  },
   { moveId: 'splash', expected: { events: ['move'] } },
   { moveId: 'spore', expected: { enemyStatus: 'slp', events: ['move', 'status'] } },
   { moveId: 'springtidestorm', expected: { events: ['move', 'damage'] } },
@@ -997,6 +1059,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'submission', expected: { events: ['move', 'damage', 'damage'] } },
   { moveId: 'substitute', expected: { playerVolatiles: ['substitute'] } },
   { moveId: 'sunnyday', expected: { weather: 'sun' } },
+  { moveId: 'superfang', expected: { enemyHp: 62, events: ['move', 'damage'] } },
   { moveId: 'superpower', expected: { playerBoosts: [-1, -1, 0, 0, 0, 0, 0] } },
   { moveId: 'supersonic', expected: { enemyVolatiles: ['confusion'] } },
   { moveId: 'surgingstrikes', expected: { events: ['move', 'damage', 'damage', 'damage'] } },
@@ -1129,6 +1192,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     moveId: 'wrap',
     expected: { enemyVolatiles: ['lastDamageTaken', 'physicalDamageTaken', 'trapped'] },
   },
+  { moveId: 'wringout', expected: { events: ['move', 'damage'] } },
   { moveId: 'yawn', expected: { enemyVolatiles: ['yawn'] } },
   { moveId: 'zapcannon', expected: { events: ['move', 'damage', 'status'], enemyStatus: 'par' } },
   { moveId: 'zenheadbutt', expected: { events: ['move', 'damage'] } },

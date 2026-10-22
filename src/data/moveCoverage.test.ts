@@ -47,7 +47,6 @@ describe('move coverage manifest', () => {
 
   it('lists the moves the engine does nothing for, and only those', () => {
     const noOps = MOVE_COVERAGE.filter((entry) => entry.status === 'no-op').map((entry) => entry.id);
-    expect(noOps.length).toBeGreaterThan(0);
     expect(unportedMoveIds()).toEqual(noOps);
     for (const entry of MOVE_COVERAGE) {
       expect(isUnportedMove(entry.id), entry.id).toBe(entry.status === 'no-op');
@@ -57,7 +56,6 @@ describe('move coverage manifest', () => {
   it('says so in the generated table: a real no-op count and no phantom row', () => {
     const header = /## Moves — \d+ total \(\d+ port, (\d+) no-op/.exec(doc);
     expect(header?.[1]).toBe(String(unportedMoveIds().length));
-    expect(Number(header?.[1] ?? '0')).toBeGreaterThan(0);
     expect(doc).not.toContain('| <name> |');
   });
 
