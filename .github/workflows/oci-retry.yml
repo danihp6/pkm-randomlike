@@ -1,0 +1,79 @@
+name: oci / retry
+
+# Waits for an Always Free Ampere slot in the home region. The laptop loop is the fast
+# one (every ~6 minutes); this exists so the wait survives a closed laptop, which is the
+# one thing the local loop cannot do. It spends no model tokens: one `launch` call per
+# run (two once a slot opens), and it parks itself by finding the instance already
+# running — no state of its own.
+#
+# Auth is a dedicated OCI user (`pkm-ci`) with a policy that can launch instances and
+# read images, nothing else. The private key is the only secret; the rest are
+# identifiers and live as repository variables. `docs/agent-vm.md` describes the wait.
+
+on:
+  schedule:
+    # GitHub's shortest interval. It is a request, not a promise: measured on this
+    # repository, a */30 fired three times in six hours. The laptop loop is what makes
+    # the cadence real; this is the safety net.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: oci-retry
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  attempt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install the OCI CLI
+        run: pip install --quiet oci-cli
+
+      - name: One attempt at a slot
+        id: launch
+        env:
+          OCI_CLI_USER: ${{ vars.OCI_CLI_USER }}
+          OCI_CLI_FINGERPRINT: ${{ vars.OCI_CLI_FINGERPRINT }}
+          OCI_CLI_TENANCY: ${{ vars.OCI_CLI_TENANCY }}
+          OCI_CLI_REGION: ${{ vars.OCI_CLI_REGION }}
+          OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+          COMPARTMENT_ID: ${{ vars.OCI_COMPARTMENT_ID }}
+          SUBNET_ID: ${{ vars.OCI_SUBNET_ID }}
+          IMAGE_ID: ${{ vars.OCI_IMAGE_ID }}
+          AD: ${{ vars.OCI_AD }}
+        run: bash scripts/agent/vm/oci-launch.sh
+
+      - name: Announce the instance
+        if: steps.launch.outputs.ip != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IP: ${{ steps.launch.outputs.ip }}
+          SHAPE: ${{ steps.launch.outputs.shape }}
+          INSTANCE: ${{ steps.launch.outputs.id }}
+        run: |
+          set -euo pipefail
+          title="OCI: the Always Free instance is up (${IP})"
+          if gh issue list --state open --label oci-ready --json title --jq '.[].title' | grep -qxF "$title"; then
+            echo "already announced"
+            exit 0
+          fi
+          gh issue create --label oci-ready --title "$title" --body "$(cat <<BODY
+          The retry caught a slot.
+
+          | | |
+          | --- | --- |
+          | Instance | \`$INSTANCE\` |
+          | Shape | $SHAPE |
+          | Public IP | \`$IP\` |
+
+          Next: \`docs/agent-vm.md\` → bootstrap. The schedule keeps firing, finds the
+          instance running and exits; nothing has to be switched off.
+          BODY
+          )"

@@ -94,6 +94,29 @@ oci compute instance launch --compartment-id "$T" \
 `VM.Standard.A1.Flex` is the only shape that matters: 4 OCPU / 24 GB is the whole
 Always Free allowance, and no other shape on the free list has the RAM for a batch.
 
+## Waiting for capacity from CI
+
+`oci / retry` (`.github/workflows/oci-retry.yml`) is the safety net for the wait: the
+local loop is the fast one, but it dies with the laptop, and A1 capacity in a busy
+region shows up at random. The workflow calls `scripts/agent/vm/oci-launch.sh` once per
+run, rotating 4/24 → 2/12 → 1/6 with the minute, and **parks itself** by finding the
+instance already `RUNNING` — it keeps no state of its own. When a slot opens it waits
+for the IP and opens an `oci-ready` issue with the instance, the shape and the address.
+
+It authenticates as a dedicated OCI user, not the operator's:
+
+- user `pkm-ci` in the `pkm-ci` group, API key only, no console password;
+- a policy that allows `manage instances`, `use` the network plumbing the launch needs,
+  and `read instance-images`, and nothing else;
+- the private key is the only secret (`OCI_CLI_KEY_CONTENT`); the identifiers are
+  repository variables (`OCI_CLI_USER`, `OCI_CLI_FINGERPRINT`, `OCI_CLI_TENANCY`,
+  `OCI_CLI_REGION`, `OCI_COMPARTMENT_ID`, `OCI_SUBNET_ID`, `OCI_IMAGE_ID`, `OCI_AD`).
+
+Rotating the key is a human's job: `oci iam user api-key delete`, upload a new one, and
+`gh secret set OCI_CLI_KEY_CONTENT < new-key.pem`. The workflow spends no model tokens;
+each run is one API call, and a `TooManyRequests` or a full region exits `0` on purpose
+so the runs list does not turn red while the answer is simply "not yet".
+
 ## Bootstrap
 
 On the VM, as the `ubuntu` user:
