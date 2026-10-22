@@ -4383,7 +4383,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       `excluded` families the ledger already refuses (entry hazards, doubles-only, forced switching).
       *Dependencies:* none — `createBattle`/`useMove`/`harness.ts` and the coverage script all ship. It
       adds no run field and draws no RNG. *(Batch 47b)*
-- [ ] **[Task-120] The status half of the audit: the moves that write a status, a stage, a volatile, a
+- [x] **[Task-120] The status half of the audit: the moves that write a status, a stage, a volatile, a
       screen, a field, a heal or a protection.** The **76-row** set `[Task-119]`'s ledger exposes is two
       halves; this is the status one, and its defects have one shape: **the machinery and the readers
       ship, and the move never writes them.**

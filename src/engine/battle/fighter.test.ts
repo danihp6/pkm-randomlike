@@ -2,13 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { getMove, getSpecies, levelUpMoves, statAtLevel } from '../../data/dex';
 import {
   accuracyStageMultiplier,
+  addType,
   applyBoosts,
   clampBoost,
   createFighter,
   defaultMoveset,
   effectiveSpeed,
   effectiveStat,
+  isGrounded,
+  resetBattleState,
   restoreFighter,
+  rewriteTypes,
   snapshotFighter,
   stageMultiplier,
 } from './fighter';
@@ -249,5 +253,37 @@ describe('the permanent treats (Task-103)', () => {
     expect(restored.treats).toEqual({ atk: 1, spe: -1 });
     expect(restored.stats.atk).toBe(statAtLevel(species, level, 'serious').atk + 1);
     expect(restored.stats.spe).toBe(statAtLevel(species, level, 'serious').spe - 1);
+  });
+});
+
+describe('type writes and grounding', () => {
+  it('rewriteTypes keeps the shape a switch-out restores', () => {
+    const fighter = createFighter({ id: 'c', speciesId: 'charizard', level });
+    rewriteTypes(fighter, ['Water']);
+    expect(fighter.types).toEqual(['Water']);
+    resetBattleState(fighter);
+    expect(fighter.types).toEqual(['Fire', 'Flying']);
+  });
+
+  it('addType appends one type and replaces the type a previous add left', () => {
+    const fighter = createFighter({ id: 'c', speciesId: 'ditto', level });
+    addType(fighter, 'Grass');
+    expect(fighter.types).toEqual(['Normal', 'Grass']);
+    addType(fighter, 'Ghost');
+    expect(fighter.types).toEqual(['Normal', 'Ghost']);
+    resetBattleState(fighter);
+    expect(fighter.types).toEqual(['Normal']);
+  });
+
+  it('Smack Down and Telekinesis both decide grounding', () => {
+    const flyer = createFighter({ id: 'f', speciesId: 'pidgey', level });
+    expect(isGrounded(flyer)).toBe(false);
+    flyer.volatiles.grounded = true;
+    expect(isGrounded(flyer)).toBe(true);
+
+    const grounded = createFighter({ id: 'g', speciesId: 'ditto', level });
+    expect(isGrounded(grounded)).toBe(true);
+    grounded.volatiles.telekinesis = 3;
+    expect(isGrounded(grounded)).toBe(false);
   });
 });

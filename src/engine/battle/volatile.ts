@@ -40,12 +40,102 @@ export function applyTrap(fighter: BattleFighter): void {
   fighter.volatiles.trapped = true;
 }
 
+export function applyTorment(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.torment) return false;
+  fighter.volatiles.torment = true;
+  return true;
+}
+
+export function applyNightmare(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.nightmare) return false;
+  fighter.volatiles.nightmare = true;
+  return true;
+}
+
+export function applyOctolock(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.octolock) return false;
+  fighter.volatiles.octolock = true;
+  applyTrap(fighter);
+  return true;
+}
+
+export function applyNoRetreat(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.noretreat) return false;
+  fighter.volatiles.noretreat = true;
+  applyTrap(fighter);
+  return true;
+}
+
+export function applyLockOn(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.lockOn) return false;
+  fighter.volatiles.lockOn = true;
+  return true;
+}
+
+export function applyTelekinesis(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.telekinesis > 0) return false;
+  fighter.volatiles.telekinesis = 3;
+  return true;
+}
+
+export function applyElectrify(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.electrify) return false;
+  fighter.volatiles.electrify = true;
+  return true;
+}
+
+export function applyEmbargo(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.embargo > 0) return false;
+  fighter.volatiles.embargo = 5;
+  return true;
+}
+
+export function applyForesight(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.foresight) return false;
+  fighter.volatiles.foresight = true;
+  return true;
+}
+
+export function applyGastroAcid(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.gastroAcid) return false;
+  fighter.volatiles.gastroAcid = true;
+  return true;
+}
+
+export function applyQuash(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.quash) return false;
+  fighter.volatiles.quash = true;
+  return true;
+}
+
+export function applySmackDown(fighter: BattleFighter): boolean {
+  if (fighter.volatiles.grounded) return false;
+  fighter.volatiles.grounded = true;
+  return true;
+}
+
+/** Disable lasts four turns, like the reference. */
+const DISABLE_TURNS = 4;
+
+export function applyDisable(fighter: BattleFighter, moveId: string): boolean {
+  if (fighter.volatiles.disabledMove !== null) return false;
+  fighter.volatiles.disabledMove = moveId;
+  fighter.volatiles.disableTurns = DISABLE_TURNS;
+  return true;
+}
+
 export function applyPerish(fighter: BattleFighter): void {
   if (fighter.volatiles.perish <= 0) fighter.volatiles.perish = 3;
 }
 
 export function isTaunted(fighter: BattleFighter): boolean {
   return fighter.volatiles.taunt > 0;
+}
+
+/** Nightmare's residual chip: a quarter of max HP, only while the holder sleeps. */
+export function nightmareDamage(fighter: BattleFighter): number {
+  if (!fighter.volatiles.nightmare || fighter.status !== 'slp' || fighter.hp <= 0) return 0;
+  return Math.max(1, Math.floor(fighter.maxHp / 4));
 }
 
 export type VolatileMoveCheck =
@@ -89,7 +179,10 @@ export function endOfTurnVolatile(fighter: BattleFighter): void {
   fighter.volatiles.grudge = false;
   fighter.volatiles.magicCoat = false;
   fighter.volatiles.snatch = false;
+  fighter.volatiles.quash = false;
   if (fighter.volatiles.magnetRise > 0) fighter.volatiles.magnetRise -= 1;
+  if (fighter.volatiles.telekinesis > 0) fighter.volatiles.telekinesis -= 1;
+  if (fighter.volatiles.embargo > 0) fighter.volatiles.embargo -= 1;
   if (fighter.volatiles.taunt > 0) fighter.volatiles.taunt -= 1;
   if (fighter.volatiles.disableTurns > 0) {
     fighter.volatiles.disableTurns -= 1;

@@ -1,12 +1,15 @@
-import { effectiveness, getMove, TYPE_NAMES, type Move } from '../../../data/dex';
+import { effectiveness, getMove, TYPE_NAMES, type Move, type Stats } from '../../../data/dex';
 import { getItem } from '../../../data/items';
 import {
+  addType,
   applyDamage,
   applyHeal,
   BOOST_IDS,
+  effectiveStat,
   emptyBoosts,
   isGrounded,
   moveContacts,
+  rewriteTypes,
   transformInto,
   type BattleFighter,
   type BoostId,
@@ -17,6 +20,7 @@ import {
   activeFighter,
   effectiveWeather,
   opponent,
+  opponentOf,
   pushEvent,
   pushText,
   type BattleState,
@@ -24,8 +28,8 @@ import {
   type SideConditionId,
   type SideId,
 } from '../state';
-import { cureStatus } from '../status';
-import { applyPerish, applyTrap } from '../volatile';
+import { canApplyStatus, cureStatus, statusName } from '../status';
+import { applyLockOn, applyPerish, applyQuash, applySmackDown, applyTrap } from '../volatile';
 import { applyBoostEffect, applyStatusEffect } from './apply';
 import { applyHeldItemEffect } from './items';
 import {
@@ -77,6 +81,17 @@ export const FIELD_CONDITION_MOVES: Readonly<Record<string, FieldConditionId>> =
   fairylock: 'fairylock',
   mudsport: 'mudsport',
   watersport: 'watersport',
+};
+
+/**
+ * The two-turn moves that raise a stat as they charge. The dex keeps the raise in
+ * Showdown's `onTryMove` handler rather than in a data field, so the table lives
+ * here beside the other move tables and the charge turn reads it.
+ */
+export const CHARGE_SELF_BOOSTS: Readonly<Record<string, Partial<Record<BoostId, number>>>> = {
+  meteorbeam: { spa: 1 },
+  electroshot: { spa: 1 },
+  skullbash: { def: 1 },
 };
 
 const FOE_TARGETS = new Set(['normal', 'any', 'adjacentFoe']);
@@ -680,31 +695,520 @@ function tidyUp(): EffectHandlers {
   });
 }
 
-const MOVE_EFFECTS: Readonly<Record<string, EffectHandlers>> = {
+/** Runs on the move's target, once, after the move has resolved. */
+function targetEffect(run: (ctx: EffectContext, target: BattleFighter) => void): EffectHandlers {
+  return {
+    onAfterMove: (ctx) => {
+      if (ctx.owner !== ctx.source || !ctx.target || ctx.target.hp <= 0) return;
+      run(ctx, ctx.target);
+    },
+  };
+}
+
+function fail(ctx: EffectContext): void {
+  pushText(ctx.state, 'But it failed!');
+}
+
+/**
+ * A move that pays a fraction of its own max HP before its data applies, and fails
+ * when the user cannot afford it (Clangorous Soul, Fillet Away).
+ */
+function hpCost(denominator: number, message: (name: string) => string): EffectHandlers {
+  return {
+    onTryHit: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      const user = ctx.source;
+      const cost = Math.max(1, Math.floor(user.maxHp / denominator));
+      if (user.hp <= cost) {
+        fail(ctx);
+        return false;
+      }
+      const dealt = applyDamage(user, cost);
+      pushEvent(ctx.state, {
+        kind: 'damage',
+        side: ctx.side,
+        amount: dealt,
+        hp: user.hp,
+        maxHp: user.maxHp,
+        effectiveness: 1,
+        crit: false,
+      });
+      pushText(ctx.state, message(user.name));
+      return undefined;
+    },
+  };
+}
+
+/**
+ * A move only its own species may use (Dark Void, Hyperspace Fury). Anything else
+ * fails before the move touches the board.
+ */
+function signatureMove(speciesId: string): EffectHandlers {
+  return {
+    onTryHit: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      if (ctx.source.speciesId === speciesId) return;
+      fail(ctx);
+      return false;
+    },
+  };
+}
+
+/** Dream Eater needs a sleeping target; Snore needs a sleeping user. */
+function requiresSleep(who: 'source' | 'target'): EffectHandlers {
+  return {
+    onTryHit: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      const fighter = who === 'source' ? ctx.source : ctx.target;
+      if (fighter && fighter.status === 'slp') return;
+      fail(ctx);
+      return false;
+    },
+  };
+}
+
+/** Captivate only works on a target of the opposite, non-genderless gender. */
+function captivate(): EffectHandlers {
+  return {
+    onTryHit: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      const target = ctx.target;
+      if (!target) return;
+      if (ctx.source.gender === 'genderless' || target.gender === 'genderless') {
+        fail(ctx);
+        return false;
+      }
+      if (ctx.source.gender === target.gender) {
+        fail(ctx);
+        return false;
+      }
+      return undefined;
+    },
+  };
+}
+
+/** Soak, Reflect Type and Magic Powder rewrite the whole type list. */
+function soak(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    if (target.types.length === 1 && target.types[0] === 'Water') {
+      fail(ctx);
+      return;
+    }
+    rewriteTypes(target, ['Water']);
+    pushText(ctx.state, `${target.name} transformed into the Water type!`);
+  });
+}
+
+function reflectType(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const user = ctx.source;
+    const same =
+      user.types.length === target.types.length &&
+      user.types.every((type, index) => type === target.types[index]);
+    if (same) {
+      fail(ctx);
+      return;
+    }
+    rewriteTypes(user, target.types);
+    pushText(ctx.state, `${user.name} copied ${target.name}'s type!`);
+  });
+}
+
+function magicPowder(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    if (target.types.length === 1 && target.types[0] === 'Psychic') {
+      fail(ctx);
+      return;
+    }
+    rewriteTypes(target, ['Psychic']);
+    pushText(ctx.state, `${target.name} transformed into the Psychic type!`);
+  });
+}
+
+/** Forest's Curse and Trick-or-Treat add one type to the target. */
+function addedTypeMove(type: string): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    if (target.types.includes(type)) {
+      fail(ctx);
+      return;
+    }
+    addType(target, type);
+    pushText(ctx.state, `${target.name} became the ${type} type too!`);
+  });
+}
+
+/** Simple Beam and Worry Seed hand the target Insomnia. */
+function grantAbility(ability: string): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    if (target.ability === ability) {
+      fail(ctx);
+      return;
+    }
+    target.ability = ability;
+    pushText(ctx.state, `${target.name}'s Ability became ${ability}!`);
+  });
+}
+
+/** Entrainment copies the user's ability onto the target. */
+function entrainment(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    if (target.ability === ctx.source.ability) {
+      fail(ctx);
+      return;
+    }
+    target.ability = ctx.source.ability;
+    pushText(ctx.state, `${target.name}'s Ability became ${ctx.source.ability}!`);
+  });
+}
+
+/** Skill Swap trades both abilities. */
+function skillSwap(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const user = ctx.source;
+    if (user.ability === target.ability) {
+      fail(ctx);
+      return;
+    }
+    const swapped = user.ability;
+    user.ability = target.ability;
+    target.ability = swapped;
+    pushText(ctx.state, `${user.name} swapped Abilities with ${target.name}!`);
+  });
+}
+
+/** Heart Swap, Power Swap and Guard Swap trade the named stat stages. */
+function stageSwap(stats: readonly BoostId[]): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const user = ctx.source;
+    if (stats.every((stat) => user.boosts[stat] === target.boosts[stat])) {
+      fail(ctx);
+      return;
+    }
+    for (const stat of stats) {
+      const mine = user.boosts[stat];
+      user.boosts[stat] = target.boosts[stat];
+      target.boosts[stat] = mine;
+    }
+    pushText(ctx.state, `${user.name} switched stat changes with ${target.name}!`);
+  });
+}
+
+/** Speed Swap trades the raw Speed stat, not its stage. */
+function speedSwap(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const user = ctx.source;
+    const mine = user.stats.spe;
+    user.stats = { ...user.stats, spe: target.stats.spe };
+    target.stats = { ...target.stats, spe: mine };
+    pushText(ctx.state, `${user.name} swapped Speed with ${target.name}!`);
+  });
+}
+
+/** Power Split and Guard Split hand both fighters the average of two stats. */
+function statSplit(stats: readonly (keyof Stats)[]): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const user = ctx.source;
+    const averaged: Partial<Record<keyof Stats, number>> = {};
+    for (const stat of stats) averaged[stat] = Math.floor((user.stats[stat] + target.stats[stat]) / 2);
+    user.stats = { ...user.stats, ...averaged };
+    target.stats = { ...target.stats, ...averaged };
+    pushText(ctx.state, `${user.name} shared its stats with ${target.name}!`);
+  });
+}
+
+/** Heal Pulse and Floral Healing restore the target's HP. */
+function healTarget(
+  fraction: (ctx: EffectContext, target: BattleFighter) => number,
+  message: (name: string) => string,
+): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const healed = applyHeal(target, Math.max(1, Math.floor(target.maxHp * fraction(ctx, target))));
+    if (healed <= 0) {
+      fail(ctx);
+      return;
+    }
+    pushEvent(ctx.state, {
+      kind: 'heal',
+      side: opponentOf(ctx.side),
+      amount: healed,
+      hp: target.hp,
+      maxHp: target.maxHp,
+    });
+    pushText(ctx.state, message(target.name));
+  });
+}
+
+/** Purify cures the target and heals the user by half its max HP. */
+function purify(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const status = target.status;
+    if (!status) {
+      fail(ctx);
+      return;
+    }
+    cureStatus(target);
+    pushEvent(ctx.state, { kind: 'cure', side: opponentOf(ctx.side), status });
+    healHolder(ctx, Math.max(1, Math.floor(ctx.source.maxHp / 2)));
+    pushText(ctx.state, `${target.name} was purified!`);
+  });
+}
+
+/** Strength Sap heals the user by the target's Attack, then drops it. */
+function strengthSap(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const attack = effectiveStat(target, 'atk');
+    healHolder(ctx, attack);
+    applyBoostEffect(ctx.state, opponentOf(ctx.side), target, { atk: -1 });
+    pushText(ctx.state, `${ctx.source.name} sapped ${target.name}'s strength!`);
+  });
+}
+
+/** Psycho Shift hands the user's status to the target. */
+function psychoShift(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const user = ctx.source;
+    const status = user.status;
+    if (!status || target.status !== null || !canApplyStatus(target, status)) {
+      fail(ctx);
+      return;
+    }
+    cureStatus(user);
+    pushEvent(ctx.state, { kind: 'cure', side: ctx.side, status });
+    applyStatusEffect(ctx.state, opponentOf(ctx.side), target, status);
+    pushText(ctx.state, `${user.name} shifted its ${statusName(status)} to ${target.name}!`);
+  });
+}
+
+/** Trick and Switcheroo trade the two held items. */
+function itemSwap(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const user = ctx.source;
+    if (!user.heldItem && !target.heldItem) {
+      fail(ctx);
+      return;
+    }
+    const mine = user.heldItem;
+    user.heldItem = target.heldItem;
+    target.heldItem = mine;
+    pushText(ctx.state, `${user.name} swapped items with ${target.name}!`);
+  });
+}
+
+/** Mimic copies the target's last move into the slot Mimic itself fills. */
+function mimic(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const user = ctx.source;
+    const last = target.lastMoveId ? getMove(target.lastMoveId) : undefined;
+    const slot = user.moves.find((entry) => entry.moveId === 'mimic');
+    if (!last || !slot || user.moves.some((entry) => entry.moveId === last.id)) {
+      fail(ctx);
+      return;
+    }
+    slot.moveId = last.id;
+    slot.maxPp = last.pp;
+    slot.pp = Math.min(5, last.pp);
+    pushText(ctx.state, `${user.name} learned ${last.name}!`);
+  });
+}
+
+/** Spite drains four PP from the move the target last used. */
+function spite(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const last = target.lastMoveId ? getMove(target.lastMoveId) : undefined;
+    const slot = last ? target.moves.find((entry) => entry.moveId === last.id) : undefined;
+    if (!last || !slot || slot.pp <= 0) {
+      fail(ctx);
+      return;
+    }
+    const lost = Math.min(4, slot.pp);
+    slot.pp -= lost;
+    pushText(ctx.state, `${target.name}'s ${last.name} lost ${lost} PP!`);
+  });
+}
+
+/** Lock-On and Mind Reader make the user's next move a certain hit. */
+function lockOn(): EffectHandlers {
+  return selfEffect((ctx) => {
+    applyLockOn(ctx.owner);
+    pushText(ctx.state, `${ctx.owner.name} took aim at its foe!`);
+  });
+}
+
+/** Quash pins the target to the back of this turn's order. */
+function quash(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    if (!applyQuash(target)) {
+      fail(ctx);
+      return;
+    }
+    pushText(ctx.state, `${target.name} will act last this turn!`);
+  });
+}
+
+/** Parting Shot lowers both of the target's attacking stats before the user leaves. */
+function partingShot(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    applyBoostEffect(ctx.state, opponentOf(ctx.side), target, { atk: -1, spa: -1 });
+  });
+}
+
+/** Defog drops the target's evasiveness, its screens and the field's terrain. */
+function defog(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const foeSide = opponentOf(ctx.side);
+    const conditions = ctx.state.sides[foeSide].sideConditions;
+    for (const id of ['reflect', 'lightscreen', 'auroraveil', 'safeguard', 'mist'] as const) {
+      conditions[id] = 0;
+    }
+    if (ctx.state.terrain) {
+      ctx.state.terrain = null;
+      ctx.state.terrainTurns = 0;
+    }
+    applyBoostEffect(ctx.state, foeSide, target, { evasion: -1 });
+    pushText(ctx.state, `${ctx.source.name} blew away the field's effects!`);
+  });
+}
+
+/** Topsy-Turvy inverts every stat stage the target has. */
+function topsyTurvy(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const inverted: Partial<Record<BoostId, number>> = {};
+    let any = false;
+    for (const stat of BOOST_IDS) {
+      if (target.boosts[stat] === 0) continue;
+      inverted[stat] = -2 * target.boosts[stat];
+      any = true;
+    }
+    if (!any) {
+      fail(ctx);
+      return;
+    }
+    applyBoostEffect(ctx.state, opponentOf(ctx.side), target, inverted, {
+      message: `${target.name}'s stat changes were inverted!`,
+    });
+  });
+}
+
+/** Venom Drench drops a poisoned target's Attack, Sp. Atk and Speed. */
+function venomDrench(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    if (target.status !== 'psn' && target.status !== 'tox') {
+      fail(ctx);
+      return;
+    }
+    applyBoostEffect(
+      ctx.state,
+      opponentOf(ctx.side),
+      target,
+      { atk: -1, spa: -1, spe: -1 },
+      {
+        message: `${target.name} was drenched and its stats fell!`,
+      },
+    );
+  });
+}
+
+/** Smack Down knocks a flying target to the ground. */
+function smackDown(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    if (!applySmackDown(target)) return;
+    pushText(ctx.state, `${target.name} fell straight down!`);
+  });
+}
+
+/**
+ * Shed Tail pays half the user's max HP, leaves a substitute and hands the turn to
+ * the bench. The cost and the substitute are one rule, so the handler owns the
+ * whole move and vetoes the generic path.
+ */
+function shedTail(): EffectHandlers {
+  return {
+    onTryHit: (ctx) => {
+      if (ctx.owner !== ctx.source) return;
+      const user = ctx.source;
+      const cost = Math.max(1, Math.floor(user.maxHp / 2));
+      if (user.hp <= cost) {
+        fail(ctx);
+        return false;
+      }
+      const dealt = applyDamage(user, cost);
+      pushEvent(ctx.state, {
+        kind: 'damage',
+        side: ctx.side,
+        amount: dealt,
+        hp: user.hp,
+        maxHp: user.maxHp,
+        effectiveness: 1,
+        crit: false,
+      });
+      user.volatiles.substitute = Math.max(1, Math.floor(user.maxHp / 4));
+      pushText(ctx.state, `${user.name} shed its tail and put in a substitute!`);
+      const battleSide = ctx.state.sides[ctx.side];
+      const active = battleSide.party.indexOf(user);
+      const hasBench = battleSide.party.some((fighter, index) => index !== active && fighter.hp > 0);
+      if (hasBench) battleSide.awaitingReplacement = true;
+      return false;
+    },
+  };
+}
+
+/** The status half's handlers, keyed by move id; `moveEffects()` registers them. */
+export const MOVE_EFFECTS: Readonly<Record<string, EffectHandlers>> = {
   acupressure: acupressure(),
   aromatherapy: teamCure('A soothing aroma wafted through the area!'),
   bellydrum: bellyDrum(),
   block: trapMove(),
   camouflage: camouflage(),
+  captivate: captivate(),
   celebrate: textMove((name) => `Congratulations, ${name}!`),
+  clangoroussoul: hpCost(3, (name) => `${name} cut its own HP to raise all its stats!`),
   conversion: conversion(),
   conversion2: conversion2(),
   curse: curse(),
+  darkvoid: signatureMove('darkrai'),
+  defog: defog(),
   doodle: doodle(),
+  dreameater: requiresSleep('target'),
+  entrainment: entrainment(),
+  filletaway: hpCost(2, (name) => `${name} cut its own HP to raise its Attack, Sp. Atk and Speed!`),
+  floralhealing: healTarget(
+    (ctx, target) => (ctx.state.terrain === 'grassy' && isGrounded(target) ? 2 / 3 : 1 / 2),
+    (name) => `${name} regained health!`,
+  ),
   flowershield: fieldBoosts(
     { def: 1 },
     (fighter) => fighter.types.includes('Grass'),
     'The Defense of Grass-type Pokémon rose!',
   ),
+  forestscurse: addedTypeMove('Grass'),
+  guardsplit: statSplit(['def', 'spd']),
+  guardswap: stageSwap(['def', 'spd']),
   haze: haze(),
   healbell: teamCure('A bell chimed and healed the team!'),
+  healpulse: healTarget(
+    () => 1 / 2,
+    (name) => `${name} regained health!`,
+  ),
+  heartswap: stageSwap(BOOST_IDS),
+  hyperspacefury: signatureMove('hoopaunbound'),
   junglehealing: healAndCure(1 / 4, 'The team was healed by the jungle!'),
+  lockon: lockOn(),
   lunarblessing: healAndCure(1 / 4, 'The team was bathed in lunar light!'),
+  magicpowder: magicPowder(),
   meanlook: trapMove(),
+  mimic: mimic(),
+  mindreader: lockOn(),
   moonlight: sunHeal(),
   morningsun: sunHeal(),
+  partingshot: partingShot(),
   perishsong: perishSong(),
+  powersplit: statSplit(['atk', 'spa']),
+  powerswap: stageSwap(['atk', 'spa']),
+  psychoshift: psychoShift(),
   psychup: psychUp(),
+  purify: purify(),
+  quash: quash(),
+  reflecttype: reflectType(),
   refresh: refresh(),
   rest: rest(),
   roleplay: rolePlay(),
@@ -713,15 +1217,31 @@ const MOVE_EFFECTS: Readonly<Record<string, EffectHandlers>> = {
     (fighter) => fighter.types.includes('Grass') && isGrounded(fighter),
     'The Attack and Sp. Atk of grounded Grass-type Pokémon rose!',
   ),
+  shedtail: shedTail(),
   shoreup: shoreUp(),
+  simplebeam: grantAbility('Insomnia'),
+  skillswap: skillSwap(),
+  smackdown: smackDown(),
+  snore: requiresSleep('source'),
+  soak: soak(),
+  speedswap: speedSwap(),
+  spite: spite(),
+  spiderweb: trapMove(),
   splash: textMove(() => 'But nothing happened!'),
   stockpile: stockpile(),
+  strengthsap: strengthSap(),
   stuffcheeks: stuffCheeks(),
   swallow: swallow(),
+  switcheroo: itemSwap(),
   synthesis: sunHeal(),
   takeheart: takeHeart(),
   teatime: teatime(),
   tidyup: tidyUp(),
+  topsyturvy: topsyTurvy(),
+  trick: itemSwap(),
+  trickortreat: addedTypeMove('Ghost'),
+  venomdrench: venomDrench(),
+  worryseed: grantAbility('Insomnia'),
 };
 
 export function moveEffects(): readonly EffectDefinition[] {

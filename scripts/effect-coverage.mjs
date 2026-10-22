@@ -159,10 +159,12 @@ for (const match of itemsEffectSrc.matchAll(/move\.id !== '([a-z0-9]+)'/g)) {
 }
 
 // Port: ids `src/engine/battle/turn.ts` special-cases outside the registry —
-// Wish's delayed heal, the four counter moves and the call-a-move seam.
+// Wish's delayed heal, the four counter moves, the call-a-move seam and Instruct's
+// repeat of the target's last move.
 const TURN_LOOP_MOVES = new Set([
   'wish', 'counter', 'mirrorcoat', 'metalburst', 'comeuppance',
   'metronome', 'copycat', 'mirrormove', 'assist', 'sleeptalk', 'naturepower',
+  'instruct',
 ]);
 
 // Port: data fields the battle reads. The status ids are `STATUS_IDS`

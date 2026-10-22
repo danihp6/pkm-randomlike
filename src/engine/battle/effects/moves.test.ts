@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { getMove } from '../../../data/dex';
 import { Rng } from '../../rng';
-import { createFighter, type BattleFighter } from '../fighter';
+import { legalMoveIndices } from '../commands';
+import { createFighter, isGrounded, type BattleFighter } from '../fighter';
 import { activeFighter, createBattle, type BattleState } from '../state';
 import { autoReplace, needsReplacement, performSwitch, takeTurn, useMove } from '../turn';
 import { movePreview } from '../preview';
@@ -554,5 +555,491 @@ describe('ported status moves', () => {
     activeFighter(state, 'player').hp = 1;
     takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
     expect(activeFighter(state, 'enemy').hp).toBe(0);
+  });
+});
+
+/** A battle with the given held items, for the item and ability families. */
+function heldBattle(
+  playerMoves: readonly string[],
+  enemyMoves: readonly string[],
+  held: Readonly<{ player?: string; enemy?: string }> = {},
+): BattleState {
+  return createBattle({
+    player: [
+      createFighter({
+        id: 'player',
+        speciesId: 'charmander',
+        level: 20,
+        moves: playerMoves,
+        ...(held.player ? { heldItem: held.player } : {}),
+      }),
+    ],
+    enemy: [
+      createFighter({
+        id: 'enemy',
+        speciesId: 'bulbasaur',
+        level: 20,
+        moves: enemyMoves,
+        ...(held.enemy ? { heldItem: held.enemy } : {}),
+      }),
+    ],
+    rng: new Rng(11),
+    isWild: true,
+  });
+}
+
+/** The battle's text lines, in order. */
+function texts(state: BattleState): readonly string[] {
+  return state.log.flatMap((event) => (event.kind === 'text' ? [event.text] : []));
+}
+
+/** A battle against a plain Normal-type target, for the type and identity writes. */
+function normalBattle(playerMoves: readonly string[]): BattleState {
+  return createBattle({
+    player: [createFighter({ id: 'player', speciesId: 'charmander', level: 20, moves: playerMoves })],
+    enemy: [createFighter({ id: 'enemy', speciesId: 'ditto', level: 20, moves: ['splash'] })],
+    rng: new Rng(11),
+    isWild: true,
+  });
+}
+
+describe('the status half — infatuation and the move lock', () => {
+  it('Attract infatuates an opposite-gender foe and spends no draw of its own', () => {
+    class CountingRng extends Rng {
+      draws = 0;
+      override next(): number {
+        this.draws += 1;
+        return super.next();
+      }
+    }
+    const rng = new CountingRng(11);
+    const state = createBattle({
+      player: [createFighter({ id: 'player', speciesId: 'miltank', level: 20, moves: ['attract'] })],
+      enemy: [createFighter({ id: 'enemy', speciesId: 'tauros', level: 20, moves: ['tackle'] })],
+      rng,
+      isWild: true,
+    });
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'enemy').volatiles.attract).toBe(true);
+    // The turn's coin flip lives in `beforeMoveVolatile`; Attract adds no draw.
+    expect(rng.draws).toBe(0);
+  });
+
+  it('Attract writes nothing between two genderless fighters', () => {
+    const state = battle(['attract'], ['tackle']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'enemy').volatiles.attract).toBe(false);
+  });
+
+  it('Disable writes disabledMove and disableTurns and legalMoveIndices drops it', () => {
+    const state = battle(['disable'], ['tackle', 'growl']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    const enemy = activeFighter(state, 'enemy');
+    const locked = enemy.volatiles.disabledMove;
+    expect(locked).not.toBeNull();
+    expect(enemy.volatiles.disableTurns).toBe(4);
+    const index = enemy.moves.findIndex((slot) => slot.moveId === locked);
+    expect(legalMoveIndices(enemy)).not.toContain(index);
+  });
+
+  it('Torment records the repeat bar and refuses the same move twice in a row', () => {
+    const state = battle(['torment'], ['tackle']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    const enemy = activeFighter(state, 'enemy');
+    expect(enemy.volatiles.torment).toBe(true);
+
+    enemy.lastMoveId = 'tackle';
+    const before = activeFighter(state, 'player').hp;
+    useMove(state, 'enemy', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').hp).toBe(before);
+    expect(texts(state)).toContain("Bulbasaur can't use the same move twice in a row!");
+  });
+
+  it('Encore records the move it locks', () => {
+    const state = battle(['encore'], ['tackle', 'growl']);
+    const enemy = activeFighter(state, 'enemy');
+    enemy.lastMoveId = 'growl';
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(enemy.volatiles.encoreMove).toBe('growl');
+    expect(enemy.volatiles.encore).toBe(3);
+  });
+
+  it('Imprison writes the volatile that seals the foe moves', () => {
+    const state = battle(['imprison'], ['tackle']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').volatiles.imprison).toBe(true);
+  });
+});
+
+describe('the status half — residual volatiles', () => {
+  it('Nightmare chips a sleeping target for a quarter of its max HP', () => {
+    const state = battle(['nightmare', 'growl'], ['splash']);
+    const enemy = activeFighter(state, 'enemy');
+    enemy.status = 'slp';
+    enemy.statusCounter = 3;
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(enemy.volatiles.nightmare).toBe(true);
+    expect(enemy.hp).toBe(enemy.maxHp - Math.max(1, Math.floor(enemy.maxHp / 4)));
+  });
+
+  it('Nightmare refuses a target that is awake', () => {
+    const state = battle(['nightmare'], ['splash']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'enemy').volatiles.nightmare).toBe(false);
+  });
+
+  it('Octolock traps the target and drops its Defense and Sp. Def each pass', () => {
+    const state = battle(['octolock'], ['splash']);
+    const enemy = activeFighter(state, 'enemy');
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(enemy.volatiles.octolock).toBe(true);
+    expect(enemy.volatiles.trapped).toBe(true);
+    expect(enemy.boosts.def).toBe(-1);
+    expect(enemy.boosts.spd).toBe(-1);
+  });
+
+  it('Curse from a non-Ghost trades Speed for Attack and Defense', () => {
+    const state = battle(['curse'], ['splash']);
+    const player = activeFighter(state, 'player');
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(player.boosts.atk).toBe(1);
+    expect(player.boosts.def).toBe(1);
+    expect(player.boosts.spe).toBe(-1);
+    expect(player.volatiles.curse).toBe(false);
+  });
+
+  it('Aqua Ring heals the holder each residual pass', () => {
+    const state = battle(['aquaring'], ['splash']);
+    const player = activeFighter(state, 'player');
+    player.hp = Math.floor(player.maxHp / 2);
+    takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
+    expect(player.volatiles.aquaRing).toBe(true);
+    expect(player.hp).toBeGreaterThan(Math.floor(player.maxHp / 2));
+  });
+});
+
+describe('the status half — trapping and grounding', () => {
+  it('Spider Web traps the foe', () => {
+    const state = battle(['spiderweb'], ['splash']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'enemy').volatiles.trapped).toBe(true);
+  });
+
+  it('Telekinesis lifts the target off the ground for three turns', () => {
+    const state = battle(['telekinesis'], ['splash']);
+    const enemy = activeFighter(state, 'enemy');
+    expect(isGrounded(enemy)).toBe(true);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(enemy.volatiles.telekinesis).toBe(3);
+    expect(isGrounded(enemy)).toBe(false);
+  });
+
+  it('Smack Down knocks a Flying target to the ground', () => {
+    const state = createBattle({
+      player: [createFighter({ id: 'player', speciesId: 'aerodactyl', level: 5, moves: ['smackdown'] })],
+      enemy: [createFighter({ id: 'enemy', speciesId: 'skarmory', level: 30, moves: ['splash'] })],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    const enemy = activeFighter(state, 'enemy');
+    expect(isGrounded(enemy)).toBe(false);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(enemy.volatiles.grounded).toBe(true);
+    expect(isGrounded(enemy)).toBe(true);
+  });
+});
+
+describe('the status half — accuracy locks', () => {
+  it('Lock-On and Mind Reader mark the user sure to hit', () => {
+    for (const moveId of ['lockon', 'mindreader']) {
+      const state = battle([moveId], ['splash']);
+      useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+      expect(activeFighter(state, 'player').volatiles.lockOn, moveId).toBe(true);
+    }
+  });
+
+  it('Lock-On is spent by the next damaging move', () => {
+    const state = battle(['lockon', 'tackle'], ['splash']);
+    const player = activeFighter(state, 'player');
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(player.volatiles.lockOn).toBe(true);
+    useMove(state, 'player', { type: 'fight', moveIndex: 1 });
+    expect(player.volatiles.lockOn).toBe(false);
+  });
+});
+
+describe('the status half — type and identity writes', () => {
+  it('Soak sets both of a dual-type target types to Water', () => {
+    const state = createBattle({
+      player: [createFighter({ id: 'player', speciesId: 'charmander', level: 20, moves: ['soak'] })],
+      enemy: [createFighter({ id: 'enemy', speciesId: 'charizard', level: 20, moves: ['splash'] })],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    const enemy = activeFighter(state, 'enemy');
+    expect(enemy.types).toEqual(['Fire', 'Flying']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(enemy.types).toEqual(['Water']);
+  });
+
+  it('Soak types come back on switch out', () => {
+    const state = createBattle({
+      player: [createFighter({ id: 'player', speciesId: 'charmander', level: 20, moves: ['soak'] })],
+      enemy: [
+        createFighter({ id: 'e1', speciesId: 'charizard', level: 20, moves: ['splash'] }),
+        createFighter({ id: 'e2', speciesId: 'bulbasaur', level: 20, moves: ['splash'] }),
+      ],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    const enemy = activeFighter(state, 'enemy');
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(enemy.types).toEqual(['Water']);
+    performSwitch(state, 'enemy', 1);
+    expect(enemy.types).toEqual(['Fire', 'Flying']);
+  });
+
+  it('Reflect Type copies the target types onto the user', () => {
+    const state = createBattle({
+      player: [
+        createFighter({ id: 'player', speciesId: 'charmander', level: 20, moves: ['reflecttype'] }),
+      ],
+      enemy: [createFighter({ id: 'enemy', speciesId: 'pikachu', level: 20, moves: ['splash'] })],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'player').types).toEqual(['Electric']);
+  });
+
+  it('Magic Powder turns the target Psychic', () => {
+    const state = battle(['magicpowder'], ['splash']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'enemy').types).toEqual(['Psychic']);
+  });
+
+  it("Forest's Curse and Trick-or-Treat add a type to the target", () => {
+    const grass = normalBattle(['forestscurse']);
+    useMove(grass, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(grass, 'enemy').types).toEqual(['Normal', 'Grass']);
+
+    const ghost = normalBattle(['trickortreat']);
+    useMove(ghost, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(ghost, 'enemy').types).toEqual(['Normal', 'Ghost']);
+  });
+
+  it('the second added type replaces the first', () => {
+    const state = normalBattle(['forestscurse', 'trickortreat']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    useMove(state, 'player', { type: 'fight', moveIndex: 1 });
+    expect(activeFighter(state, 'enemy').types).toEqual(['Normal', 'Ghost']);
+  });
+});
+
+describe('the status half — ability writes', () => {
+  it('Simple Beam and Worry Seed hand the target Insomnia', () => {
+    for (const moveId of ['simplebeam', 'worryseed']) {
+      const state = battle([moveId], ['splash']);
+      useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+      expect(activeFighter(state, 'enemy').ability, moveId).toBe('Insomnia');
+    }
+  });
+
+  it('Gastro Acid writes the volatile that suppresses the ability', () => {
+    const state = battle(['gastroacid'], ['splash']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'enemy').volatiles.gastroAcid).toBe(true);
+  });
+
+  it('Entrainment copies the user ability onto the target', () => {
+    const state = battle(['entrainment'], ['splash']);
+    const player = activeFighter(state, 'player');
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'enemy').ability).toBe(player.ability);
+  });
+
+  it('Skill Swap swaps both abilities', () => {
+    const state = battle(['skillswap'], ['splash']);
+    const player = activeFighter(state, 'player');
+    const enemy = activeFighter(state, 'enemy');
+    const mine = player.ability;
+    const theirs = enemy.ability;
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(player.ability).toBe(theirs);
+    expect(enemy.ability).toBe(mine);
+  });
+});
+
+describe('the status half — stat and speed exchanges', () => {
+  it('Heart Swap trades every stat stage', () => {
+    const state = battle(['heartswap'], ['splash']);
+    const player = activeFighter(state, 'player');
+    const enemy = activeFighter(state, 'enemy');
+    player.boosts.atk = 2;
+    enemy.boosts.spd = -1;
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(player.boosts.spd).toBe(-1);
+    expect(player.boosts.atk).toBe(0);
+    expect(enemy.boosts.atk).toBe(2);
+  });
+
+  it('Power Swap and Guard Swap trade only their own pair of stages', () => {
+    const power = battle(['powerswap'], ['splash']);
+    const powerPlayer = activeFighter(power, 'player');
+    const powerEnemy = activeFighter(power, 'enemy');
+    powerPlayer.boosts.atk = 1;
+    powerEnemy.boosts.spa = 2;
+    powerEnemy.boosts.def = 2;
+    useMove(power, 'player', { type: 'fight', moveIndex: 0 });
+    expect(powerPlayer.boosts.spa).toBe(2);
+    expect(powerEnemy.boosts.atk).toBe(1);
+    expect(powerEnemy.boosts.def).toBe(2);
+
+    const guard = battle(['guardswap'], ['splash']);
+    const guardPlayer = activeFighter(guard, 'player');
+    const guardEnemy = activeFighter(guard, 'enemy');
+    guardPlayer.boosts.def = 1;
+    guardEnemy.boosts.spd = 3;
+    useMove(guard, 'player', { type: 'fight', moveIndex: 0 });
+    expect(guardPlayer.boosts.spd).toBe(3);
+    expect(guardEnemy.boosts.def).toBe(1);
+  });
+
+  it('Speed Swap trades the raw Speed stat', () => {
+    const state = battle(['speedswap'], ['splash']);
+    const player = activeFighter(state, 'player');
+    const enemy = activeFighter(state, 'enemy');
+    const mine = player.stats.spe;
+    const theirs = enemy.stats.spe;
+    expect(mine).not.toBe(theirs);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(player.stats.spe).toBe(theirs);
+    expect(enemy.stats.spe).toBe(mine);
+  });
+
+  it('Power Split and Guard Split hand both fighters the average stat', () => {
+    const power = battle(['powersplit'], ['splash']);
+    const powerPlayer = activeFighter(power, 'player');
+    const powerEnemy = activeFighter(power, 'enemy');
+    const atkAverage = Math.floor((powerPlayer.stats.atk + powerEnemy.stats.atk) / 2);
+    useMove(power, 'player', { type: 'fight', moveIndex: 0 });
+    expect(powerPlayer.stats.atk).toBe(atkAverage);
+    expect(powerEnemy.stats.atk).toBe(atkAverage);
+
+    const guard = battle(['guardsplit'], ['splash']);
+    const guardPlayer = activeFighter(guard, 'player');
+    const guardEnemy = activeFighter(guard, 'enemy');
+    const defAverage = Math.floor((guardPlayer.stats.def + guardEnemy.stats.def) / 2);
+    useMove(guard, 'player', { type: 'fight', moveIndex: 0 });
+    expect(guardPlayer.stats.def).toBe(defAverage);
+    expect(guardEnemy.stats.def).toBe(defAverage);
+  });
+});
+
+describe('the status half — heals aimed at the foe', () => {
+  it('Heal Pulse restores half of the target max HP', () => {
+    const state = battle(['healpulse'], ['splash']);
+    const enemy = activeFighter(state, 'enemy');
+    enemy.hp = 10;
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(enemy.hp).toBe(10 + Math.max(1, Math.floor(enemy.maxHp / 2)));
+  });
+
+  it('Floral Healing heals the target and more under Grassy Terrain', () => {
+    const plain = battle(['floralhealing'], ['splash']);
+    const plainEnemy = activeFighter(plain, 'enemy');
+    plainEnemy.hp = 10;
+    useMove(plain, 'player', { type: 'fight', moveIndex: 0 });
+    const plainHeal = plainEnemy.hp - 10;
+
+    const grassy = battle(['floralhealing'], ['splash']);
+    setTerrain(grassy, 'grassy');
+    const grassyEnemy = activeFighter(grassy, 'enemy');
+    grassyEnemy.hp = 10;
+    useMove(grassy, 'player', { type: 'fight', moveIndex: 0 });
+    expect(plainHeal).toBe(Math.floor(plainEnemy.maxHp / 2));
+    expect(grassyEnemy.hp - 10).toBeGreaterThan(plainHeal);
+  });
+
+  it('Purify cures the target and heals the user by half', () => {
+    const state = battle(['purify'], ['splash']);
+    const player = activeFighter(state, 'player');
+    const enemy = activeFighter(state, 'enemy');
+    player.hp = 10;
+    enemy.status = 'brn';
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(enemy.status).toBeNull();
+    expect(player.hp).toBe(10 + Math.max(1, Math.floor(player.maxHp / 2)));
+  });
+
+  it('Strength Sap heals by the target Attack and lowers it', () => {
+    const state = battle(['strengthsap'], ['splash']);
+    const player = activeFighter(state, 'player');
+    const enemy = activeFighter(state, 'enemy');
+    player.hp = 10;
+    const attack = enemy.stats.atk;
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(player.hp).toBe(10 + attack);
+    expect(enemy.boosts.atk).toBe(-1);
+  });
+});
+
+describe('the status half — status transfer', () => {
+  it('Psycho Shift hands the user status to the target', () => {
+    const state = battle(['psychoshift'], ['splash']);
+    const player = activeFighter(state, 'player');
+    const enemy = activeFighter(state, 'enemy');
+    player.status = 'par';
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(player.status).toBeNull();
+    expect(enemy.status).toBe('par');
+  });
+
+  it('Psycho Shift fails without a status of its own', () => {
+    const state = battle(['psychoshift'], ['splash']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'enemy').status).toBeNull();
+  });
+});
+
+describe('the status half — items, moves and PP', () => {
+  it('Trick and Switcheroo trade the two held items', () => {
+    for (const moveId of ['trick', 'switcheroo']) {
+      const state = heldBattle([moveId], ['splash'], { player: 'oranberry', enemy: 'sitrusberry' });
+      useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+      expect(activeFighter(state, 'player').heldItem, moveId).toBe('sitrusberry');
+      expect(activeFighter(state, 'enemy').heldItem, moveId).toBe('oranberry');
+    }
+  });
+
+  it('Trick fails when neither side holds an item', () => {
+    const state = battle(['trick'], ['splash']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(texts(state)).toContain('But it failed!');
+  });
+
+  it('Embargo writes its five-turn volatile', () => {
+    const state = battle(['embargo'], ['splash']);
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(activeFighter(state, 'enemy').volatiles.embargo).toBe(5);
+  });
+
+  it('Mimic copies the target last move into its own slot', () => {
+    const state = battle(['mimic', 'growl'], ['tackle']);
+    const enemy = activeFighter(state, 'enemy');
+    enemy.lastMoveId = 'tackle';
+    const player = activeFighter(state, 'player');
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(player.moves[0].moveId).toBe('tackle');
+    expect(player.moves[0].pp).toBe(Math.min(5, getMove('tackle')!.pp));
+  });
+
+  it('Spite drains four PP from the move the target last used', () => {
+    const state = battle(['spite'], ['tackle']);
+    const enemy = activeFighter(state, 'enemy');
+    enemy.lastMoveId = 'tackle';
+    const before = enemy.moves[0].pp;
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    expect(enemy.moves[0].pp).toBe(before - 4);
   });
 });

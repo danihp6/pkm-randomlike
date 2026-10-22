@@ -8,6 +8,34 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The status half of the move audit: the moves that write a status, a stage, a volatile, a
+      screen, a field, a heal or a protection now write it.** The `[Task-120]` half of the report's
+      «parecen no hacer nada» is closed on the machinery that already shipped: `MOVE_EFFECTS` gains a
+      handler per move for the infatuation and move-locking family (`Attract`, `Disable`, `Torment`,
+      `Encore`, `Imprison`), the residual volatiles (`Nightmare`, `Curse`, `Octolock`, `Aqua Ring`),
+      trapping and grounding (`Spider Web`, `Telekinesis`, `Smack Down`'s grounded write), the
+      accuracy locks (`Lock-On`, `Mind Reader`), the type and identity writes (`Soak`, `Reflect Type`,
+      `Magic Powder`, `Forest's Curse`, `Trick-or-Treat`, `Camouflage`), the ability writes
+      (`Simple Beam`, `Worry Seed`, `Gastro Acid`, `Entrainment`, `Skill Swap`, `Role Play`), the stat
+      and speed exchanges (`Heart Swap`, `Power Swap`, `Guard Swap`, `Speed Swap`, `Power Split`,
+      `Guard Split`, `Psych Up`), the foe-aimed heals (`Heal Pulse`, `Floral Healing`, `Purify`,
+      `Strength Sap`), `Psycho Shift`, the turn and priority control (`Instruct`, `Quash`,
+      `Electrify`), the item moves (`Trick`, `Switcheroo`, `Embargo`, `Recycle`), `Mimic` and `Spite`
+      — plus the charging moves the `charging` volatile never set (`Charge`, `Skull Bash`,
+      `Meteor Beam`, `Electro Shot`, `Clangorous Soul`, `No Retreat`, `Fillet Away`, `Howl`, …) — and
+      `applyVolatileEffect` widens to the cases each needs. `Spotlight`'s redirect is `excluded` with
+      its reason instead of a dead handler. The instrument closes the half: the audit's `knownGap`
+      count falls to **1** (`finalgambit`, `[Task-121]`'s), and the regenerated ledger reports
+      **835 moves (753 port, 33 no-op, 49 excluded)** — 43 rows left `no-op`, and
+      `npm run docs:coverage` stays byte-idempotent. The golden battle is byte-identical. No run
+      field, no `SAVE_VERSION`, no new draw beyond `Disable`'s own pick.
+      **QA:** Task QA green on all `[unit]` criteria (3562 tests, build clean, `knownGap` 1, 43 rows
+      closed, diff inside the exclusive paths) and on the `[live]` one, measured over CDP on the live
+      canvas (`renderer.snapshotArea` + `getImageData`, 1280×800): after `Soak` the foe's first badge
+      slot reads the Water frame's own mean **exactly** while the party's own band differs by **0**
+      pixels. Integration QA green on the combined tree (3564 tests, build clean, no shared path, no
+      hot file, merge rehearsal yielding the same tree).
+
 - [x] **An area-entry panel: every room greets the player with a boxed banner.** `[Task-109]` adds
       `areaEntryNotice(area)` and `AREA_PANEL_HOLD_MS = 3000` to the run's notice module and one
       private card to `RouteScene`: the `'window'` skin with the **accent** hairline (`#7dd3fc`),
