@@ -536,9 +536,10 @@ seeds per floor on a run that has completed no mission (so the sacrifice is gate
 out), a floor holds the grunt **2.9 %** of the time on map 2, **10.9 %**
 on map 3, **16.1 %** on map 4, **22.6 %** on map 5, **38.0 %** on map 6, **45.6 %**
 on map 7 and **51.1 %** on map 8 — **≈1.9 floors a run** (maps 2-8) carry the
-machine, against the retired 30 % leaf's ≈2.1. Its card is the machine's own:
-`casino.title` is its title and its paragraph, and its one row opens the panel, so no
-new copy was added and the panel keeps every `casino.*` line it already printed.
+machine, against the retired 30 % leaf's ≈2.1. It raises no card: the interact key
+opens the machine directly, so the row carries no `choices`; `casino.title` is the
+panel's title and also the row's `greetingKey`, which is never rendered because no card
+is raised, and the panel prints its own `casino.*` lines, so no new copy was added.
 
 The **run-modifier** rows each write one fact that outlives the room, into the run's
 own `RunState.modifiers` record (three of the four; the gate pays an item), and each
