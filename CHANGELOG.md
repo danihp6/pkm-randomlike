@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **One wait, one loop: the laptop retry is retired.** Two client-side loops against one
+      tenancy share one `launch` rate limiter, and the data said so plainly: the local loop
+      (`~/.pkm/oci-retry.ps1`, one attempt every ~5.7 min, task `pkm-oci-retry`) logged 41
+      `Out of host capacity` answers and a single `TooManyRequests`, while the CI retry ate a
+      429 on its *first* attempt after 40 minutes of silence — always within two minutes of a
+      local attempt. The scheduled task and its process are gone; `oci / retry` in CI is the
+      only wait, now asking every ~7 minutes instead of two loops asking every ~5. Docs and
+      the workflow header say so, and the knobs stay: the script's `ATTEMPTS` default of 1 is
+      a one-shot probe, not a second loop.
+      **QA:** no `oci-retry.ps1` process and no `pkm-oci-retry` task remain
+      (`Get-ScheduledTask`, `Get-CimInstance Win32_Process`), the CI chain still hands the
+      baton (run 39854950665 → its successor), and `oci-launch.test.sh` is green.
+
 - [x] **The wait stops feeding the rate limiter: 5 minutes between launches, 10 after a
       throttle, and a warm-up at the top of every chained run.** `TooManyRequests` ("too many
       requests for the user") kept eating attempts even at ~5 minutes apart, and the chain

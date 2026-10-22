@@ -1,8 +1,8 @@
 name: oci / retry
 
 # Waits for an Always Free Ampere slot in the home region, **unattended and without gaps**.
-# The laptop loop is the fast one (every ~6 minutes); this exists so the wait survives a
-# closed laptop, which is the one thing the local loop cannot do. It spends no model tokens.
+# This is the only loop: the laptop one was retired (`docs/agent-vm.md`), because two loops
+# share one rate limiter and the loser is whoever asks second. It spends no model tokens.
 #
 # The schedule is not a cadence: measured on this repository a `*/30` fired three times in
 # six hours, and a `*/10` fired once in five. So this workflow cannot depend on it and does
