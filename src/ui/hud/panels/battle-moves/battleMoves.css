@@ -1,0 +1,222 @@
+/*
+ * The battle's move menu (`D49`, frame `05 Battle HUD`). Every value the board
+ * carries and `styles/root.css` does not is declared once here next to the frame's
+ * node name: `move cell 0` is the 8 px radius, the 12 % accent fill with its solid
+ * accent border on the picked cell, and the 4 % / 8 % white pair on the other
+ * three. The shipped canvas window is hidden under the flag, so the card itself
+ * paints the battle's 90 % glass.
+ */
+.battle-moves {
+  /* 05 Battle HUD · the battle window behind the four cells */
+  --battle-moves-card-fill: rgb(16 22 31 / 90%);
+  /* move cell 0 */
+  --battle-moves-selected-fill: rgb(125 211 252 / 12%);
+  /* move cell 1, move cell 2, move cell 3 */
+  --battle-moves-row-fill: rgb(255 255 255 / 4%);
+  --battle-moves-row-border: rgb(255 255 255 / 8%);
+  /* the canvas' `FRLG_POSITIVE` / `FRLG_NEGATIVE` stat line */
+  --battle-moves-up: #4ad15c;
+  --battle-moves-down: #fca5a5;
+
+  position: fixed;
+  box-sizing: border-box;
+  overflow: visible;
+  border-radius: var(--hud-panel-radius);
+  background: var(--battle-moves-card-fill);
+  box-shadow: inset 0 0 0 1px var(--hud-panel-border);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: none;
+}
+
+.battle-moves[hidden] {
+  display: none;
+}
+
+.battle-moves,
+.battle-moves * {
+  box-sizing: border-box;
+}
+
+/* move cell 0…3 */
+.battle-moves__slot {
+  position: absolute;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: repeat(3, auto);
+  align-content: center;
+  gap: 0 8px;
+  padding: 8px 14px;
+  overflow: hidden;
+  appearance: none;
+  border: 1px solid var(--battle-moves-row-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--battle-moves-row-fill);
+  color: var(--hud-text-secondary);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  text-align: left;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.battle-moves__slot--selected {
+  border-color: var(--hud-accent);
+  background: var(--battle-moves-selected-fill);
+  color: var(--hud-text-primary);
+}
+
+.battle-moves__slot--marked {
+  color: var(--hud-text-muted);
+}
+
+.battle-moves__slot:disabled {
+  cursor: default;
+}
+
+.battle-moves__slot .kit-type {
+  grid-area: 1 / 1;
+  align-self: center;
+  justify-self: start;
+}
+
+.battle-moves__name {
+  grid-area: 1 / 2;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.battle-moves__category {
+  grid-area: 1 / 3;
+  justify-self: end;
+  color: var(--hud-text-muted);
+  text-transform: uppercase;
+}
+
+.battle-moves__pp {
+  grid-area: 2 / 2;
+  color: var(--hud-text-muted);
+}
+
+.battle-moves__pwr {
+  grid-area: 3 / 2;
+}
+
+.battle-moves__acc {
+  grid-area: 3 / 3;
+  justify-self: end;
+}
+
+.battle-moves__stat--up {
+  color: var(--battle-moves-up);
+}
+
+.battle-moves__stat--down {
+  color: var(--battle-moves-down);
+}
+
+.battle-moves__stat--level {
+  color: var(--hud-text-secondary);
+}
+
+/* the ⓘ inside each filled cell, and the ◀ and the two forme columns */
+.battle-moves__info,
+.battle-moves__back,
+.battle-moves__forme {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  appearance: none;
+  border: 1px solid var(--battle-moves-row-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--battle-moves-row-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.battle-moves__info {
+  border-radius: 6px;
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+}
+
+.battle-moves__info--active,
+.battle-moves__forme[aria-pressed='true'] {
+  border-color: var(--hud-accent);
+  background: var(--battle-moves-selected-fill);
+  color: var(--hud-accent);
+}
+
+/* MEGA / G-MAX: the label wraps inside the 62 px column */
+.battle-moves__forme {
+  flex-direction: column;
+  font-size: var(--hud-type-tag-size);
+  line-height: var(--hud-type-tag-line);
+  text-align: center;
+  text-transform: uppercase;
+  word-break: break-word;
+}
+
+/* the floating description card the ⓘ pins */
+.battle-moves__desc {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  overflow: hidden;
+  border: 1px solid var(--battle-moves-row-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--battle-moves-card-fill);
+  color: var(--hud-text-primary);
+  pointer-events: none;
+}
+
+.battle-moves__desc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+}
+
+.battle-moves__desc-title {
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  text-transform: uppercase;
+}
+
+.battle-moves__desc-category {
+  margin-left: auto;
+  text-transform: uppercase;
+}
+
+.battle-moves__desc-text {
+  margin: 0;
+  color: var(--hud-text-secondary);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  white-space: pre-line;
+}
+
+.battle-moves__slot:focus-visible,
+.battle-moves__info:focus-visible,
+.battle-moves__back:focus-visible,
+.battle-moves__forme:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: 2px;
+}
