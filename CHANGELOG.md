@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle's move menu is the HUD's.** `[Task-141]`, the thirteenth of Phase 12 (`D49`):
+      under `?hud=dom` the four-slot move menu, its ⓘ and its type badges are a Preact panel in
+      `#hud`, drawn from the same view model the canvas used and re-deriving its four cell rects
+      from `moveGridCellRects`, while `src/scenes/BattleScene.ts` draws no slot under the flag and
+      the pick still reaches `commands.ts`: the slot press sends its move intent, it is not
+      decoration. Measured over CDP: clicking slot 2 advanced `__pkmBattle.state.turn` `0 → 1` and
+      appended a `battle.log.used` entry whose move is `Water Gun`; the card is `276,582 728×192`
+      at 1280×800 and `16,592 358×236` at 390×844; `movesDrawnObjectCount()` is `0` under the flag
+      against `6` off, and the new regression test fails without `onClick`. `npm test` 3942 passed /
+      67 skipped, `npm run build` green.
 - [x] **The shop panel is the HUD's.** `[Task-134]`, the twelfth of Phase 12 (`D49`): under
       `?hud=dom` the Mart card is a Preact card in `#hud` — the BUY / SELL tabs, the seven visible
       stock rows with their icon, name, price and owned count, the money row and the message and

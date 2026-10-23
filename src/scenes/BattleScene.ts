@@ -116,6 +116,13 @@ import { loadSettings } from '../settings';
 import { IS_DEVELOP } from '../dev/env';
 import { parseHudFlags } from '../ui/hud/fixtures';
 import { mountBattleHp, type BattleHpController } from '../ui/hud/panels/battle-hp';
+import {
+  battleMovesBox,
+  mountBattleMoves,
+  type BattleMovesController,
+  type BattleMovesInput,
+  type BattleMovesIntent,
+} from '../ui/hud/panels/battle-moves';
 import { syncHud } from '../ui/hud/state';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { playCry, playCue, playMoveSound, playMusic } from '../audio/audio';
@@ -284,6 +291,12 @@ const COMPACT_MON_SCALE = 0.75;
  */
 function platformScale(drawHeight: number): number {
   return Math.min(1.1, Math.max(0.45, drawHeight / SPRITE_SIZE_MAX));
+}
+
+/** A move slot index clamped into `0 … count - 1`, or null when there is no slot. */
+function moveIndexIn(value: number, count: number): number | null {
+  if (!Number.isFinite(value) || count <= 0) return null;
+  return Math.min(Math.max(0, Math.trunc(value)), count - 1);
 }
 /** Frames per second for the idle loop; Anil animates at roughly 30ms a frame. */
 const MON_ANIM_FPS = 30;
@@ -546,6 +559,8 @@ export class BattleScene extends Phaser.Scene {
   private panelKits!: Record<SideId, readonly [PanelKit, PanelKit]>;
   /** The mounted DOM HP boxes (`?hud=dom`) and the controller `refreshHud` pushes to. */
   private hpController: BattleHpController | null = null;
+  /** The mounted DOM move menu (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  private movesController: BattleMovesController | null = null;
   /** The cursor the target step marks a foe with, and the two foe hit zones. */
   private targetCursor!: Phaser.GameObjects.Image;
   private foeZones: Phaser.GameObjects.Zone[] = [];
@@ -798,9 +813,11 @@ export class BattleScene extends Phaser.Scene {
       this.scene.setVisible(true, 'Route');
       this.releaseMonSprites();
       this.disposeHpPanel();
+      this.disposeMovesPanel();
       if (IS_DEVELOP) delete (globalThis as Record<string, unknown>).__pkmBattle;
     });
     this.mountHpPanel();
+    this.mountMovesPanel();
     // The battle owns a centred square; hide the paused route so the letterbox
     // around it stays clean instead of showing the overworld through it.
     this.scene.setVisible(false, 'Route');
@@ -838,6 +855,21 @@ export class BattleScene extends Phaser.Scene {
     if (this.hpController === null) return;
     this.hpController.dispose();
     this.hpController = null;
+  }
+
+  /** Mounts the DOM move menu into the HUD layer, once per battle (`?hud=dom`). */
+  private mountMovesPanel(): void {
+    if (!DOM_HUD || typeof document === 'undefined') return;
+    const host = document.getElementById('hud');
+    if (host === null) return;
+    this.disposeMovesPanel();
+    this.movesController = mountBattleMoves(host, (intent) => this.onBattleMoveIntent(intent));
+  }
+
+  private disposeMovesPanel(): void {
+    if (this.movesController === null) return;
+    this.movesController.dispose();
+    this.movesController = null;
   }
 
   // --- scene construction -------------------------------------------------
@@ -3107,6 +3139,7 @@ export class BattleScene extends Phaser.Scene {
         { screen: 'battle', battle: this.state, canCapture: this.launch?.canCapture === true },
         (next) => this.hpController?.update(next),
       );
+      this.movesController?.update(this.battleMovesInput(menu));
     }
   }
 
@@ -3234,6 +3267,29 @@ export class BattleScene extends Phaser.Scene {
           if (object.visible) count += 1;
         }
       }
+    }
+    return count;
+  }
+
+  /**
+   * Counts the visible objects the move menu owns: the window, the ◀, the two forme
+   * columns and the grid's laid-out cells. The `?hud=dom` flag contract's probe.
+   */
+  movesDrawnObjectCount(): number {
+    const objects: readonly Readonly<{ visible: boolean }>[] = [
+      this.menuPanel,
+      this.backArrow,
+      this.megaCell,
+      this.megaGlyph,
+      this.gmaxCell,
+      this.gmaxGlyph,
+    ];
+    let count = 0;
+    for (const object of objects) {
+      if (object.visible) count += 1;
+    }
+    for (let i = 0; i < MAX_MOVES; i++) {
+      if (this.moveGrid.cellRect(i) !== null) count += 1;
     }
     return count;
   }
@@ -3897,6 +3953,89 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
+   * The moves menu's four slots as the canvas's own cells, built once so the DOM
+   * card and the grid can never read different data.
+   */
+  private moveCells(): readonly MoveGridCell[] {
+    return this.menuItems.map((item) => ({
+      name: item.label,
+      type: item.move?.type ?? '',
+      category: item.move?.category ?? 'Status',
+      pp: item.move?.pp ?? 0,
+      maxPp: item.move?.maxPp ?? 0,
+      desc: item.move?.desc ?? '',
+      power: item.move?.power ?? 0,
+      basePower: item.move?.basePower ?? 0,
+      accuracy: item.move?.accuracy ?? null,
+      baseAccuracy: item.move?.baseAccuracy ?? null,
+      status: item.move?.status ?? null,
+      enabled: item.enabled,
+    }));
+  }
+
+  /**
+   * The DOM card's state: the card `battleMovesBox` derives from the viewport the
+   * camera viewport sits in, and the cells and indices this scene already owns.
+   */
+  private battleMovesInput(menu: Rect): BattleMovesInput {
+    const derived = battleMovesBox({ width: this.scale.width, height: this.scale.height });
+    // Before the first layout the stage has no size; the canvas's own rect is then
+    // the only card there is, and an open menu must still land somewhere.
+    const card = derived.w > 0 && derived.h > 0 ? derived : menu;
+    return {
+      open: this.mode === 'moves',
+      card,
+      cells: padMoveGridCells(this.moveCells(), MAX_MOVES),
+      selected: this.megaSelected || this.gmaxSelected ? -1 : this.menuIndex,
+      info: this.infoMove,
+      mega: this.megaAvailable(),
+      gmax: this.gmaxAvailable(),
+      megaArmed: this.megaIntent,
+      gmaxArmed: this.gmaxIntent,
+    };
+  }
+
+  /**
+   * The DOM card's only receiver: every intent lands on the call the canvas already
+   * made, so a press and a key reach the same engine command.
+   */
+  private onBattleMoveIntent(intent: BattleMovesIntent): void {
+    switch (intent.type) {
+      case 'move': {
+        if (this.mode !== 'moves') return;
+        const index = moveIndexIn(intent.moveIndex, this.menuItems.length);
+        if (index === null || !this.menuItems[index]?.enabled) return;
+        this.menuIndex = index;
+        this.chooseMove(this.commandSlot, index);
+        return;
+      }
+      case 'info': {
+        if (this.mode !== 'moves') return;
+        const index =
+          intent.moveIndex === null ? null : moveIndexIn(intent.moveIndex, this.menuItems.length);
+        this.infoMove = index;
+        this.infoPinned = index !== null;
+        this.refreshHud();
+        return;
+      }
+      case 'mega': {
+        this.toggleMega();
+        this.refreshHud();
+        return;
+      }
+      case 'gmax': {
+        this.toggleGmax();
+        this.refreshHud();
+        return;
+      }
+      case 'back': {
+        this.onBack();
+        return;
+      }
+    }
+  }
+
+  /**
    * The moves menu: the shared grid fills the window (the same component the route
    * HUD draws in its detail panel), the ◀ back control sits centred on the grid's
    * left edge and the MEGA control takes a column on the right while it is usable.
@@ -3904,6 +4043,16 @@ export class BattleScene extends Phaser.Scene {
    * on.
    */
   private renderMoveMenu(menu: Rect): void {
+    if (DOM_HUD) {
+      // The DOM card draws the whole menu, so every canvas piece of it goes dark —
+      // and `hideMenu` also drops the ⓘ pin, which this scene keeps feeding the card.
+      const info = this.infoMove;
+      const pinned = this.infoPinned;
+      this.hideMenu();
+      this.infoMove = info;
+      this.infoPinned = pinned;
+      return;
+    }
     this.menuPanel.setVisible(true);
     this.hideBagChrome();
     this.hidePartyGrid();
@@ -3934,20 +4083,7 @@ export class BattleScene extends Phaser.Scene {
     this.layoutMegaControl(right, top, bottom, mega);
     this.layoutGmaxControl(right, top, bottom, gmax, mega);
 
-    const cells: MoveGridCell[] = this.menuItems.map((item) => ({
-      name: item.label,
-      type: item.move?.type ?? '',
-      category: item.move?.category ?? 'Status',
-      pp: item.move?.pp ?? 0,
-      maxPp: item.move?.maxPp ?? 0,
-      desc: item.move?.desc ?? '',
-      power: item.move?.power ?? 0,
-      basePower: item.move?.basePower ?? 0,
-      accuracy: item.move?.accuracy ?? null,
-      baseAccuracy: item.move?.baseAccuracy ?? null,
-      status: item.move?.status ?? null,
-      enabled: item.enabled,
-    }));
+    const cells = this.moveCells();
     // Four slots always: the member's moves, then an empty container each. The
     // empty ones draw no zone of their own, so they stay unselectable.
     const slots = cells.length > 0 ? padMoveGridCells(cells, MAX_MOVES) : [];
@@ -4596,4 +4732,12 @@ export class BattleScene extends Phaser.Scene {
  */
 export function battleHpDrawnObjectCount(scene: BattleScene): number {
   return scene.hpDrawnObjectCount();
+}
+
+/**
+ * The number of display objects the move menu draws right now: 0 under `?hud=dom`,
+ * where the card is the DOM one and the grid, the ◀ and the forme columns are dark.
+ */
+export function battleMovesDrawnObjectCount(scene: BattleScene): number {
+  return scene.movesDrawnObjectCount();
 }

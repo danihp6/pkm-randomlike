@@ -7450,7 +7450,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       combatants, the shake and the effects are untouched. Claims `src/scenes/BattleScene.ts`,
       `src/ui/hud/panels/battle-hp/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-124]`,
       `[Task-125]`. *(Batch 61)*
-- [ ] **[Task-141] The battle's move menu is the HUD's.** The four-slot menu, its ⓘ and its type
+- [x] **[Task-141] The battle's move menu is the HUD's.** The four-slot menu, its ⓘ and its type
       badges in `src/ui/hud/panels/battle-moves/`, from the same view model the canvas used; the
       selection still reaches `commands.ts`. Claims `src/scenes/BattleScene.ts`,
       `src/ui/hud/panels/battle-moves/**` and its fixture. *Dependencies:* `[Task-127]`,

@@ -1,0 +1,72 @@
+{
+  "slug": "05-battle-hud",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "moves": {
+    "open": true,
+    "card": { "x": 276, "y": 582, "w": 728, "h": 192 },
+    "selected": 0,
+    "info": 0,
+    "mega": true,
+    "gmax": false,
+    "megaArmed": false,
+    "gmaxArmed": false,
+    "cells": [
+      {
+        "name": "FLAMETHROWER",
+        "type": "fire",
+        "category": "Special",
+        "pp": 12,
+        "maxPp": 15,
+        "power": 90,
+        "basePower": 90,
+        "accuracy": 100,
+        "baseAccuracy": 100,
+        "desc": "THE FOE IS SCORCHED WITH AN INTENSE BLAST OF FIRE.\nIT MAY ALSO LEAVE THE TARGET WITH A BURN.",
+        "status": "brn",
+        "enabled": true
+      },
+      {
+        "name": "AIR SLASH",
+        "type": "flying",
+        "category": "Special",
+        "pp": 15,
+        "maxPp": 15,
+        "power": 75,
+        "basePower": 75,
+        "accuracy": 95,
+        "baseAccuracy": 95,
+        "desc": "THE USER ATTACKS WITH A BLADE OF AIR.\nIT MAY ALSO MAKE THE FOE FLINCH.",
+        "status": null,
+        "enabled": true
+      },
+      {
+        "name": "DRAGON CLAW",
+        "type": "dragon",
+        "category": "Physical",
+        "pp": 10,
+        "maxPp": 10,
+        "power": 80,
+        "basePower": 80,
+        "accuracy": 100,
+        "baseAccuracy": 100,
+        "desc": "THE USER SLASHES THE FOE WITH SHARP CLAWS\nTO INFLICT DAMAGE.",
+        "status": null,
+        "enabled": true
+      },
+      {
+        "name": "EARTHQUAKE",
+        "type": "ground",
+        "category": "Physical",
+        "pp": 8,
+        "maxPp": 10,
+        "power": 100,
+        "basePower": 100,
+        "accuracy": 100,
+        "baseAccuracy": 100,
+        "desc": "A POWERFUL QUAKE THAT DAMAGES EVERY\nPOKéMON AROUND THE USER.",
+        "status": null,
+        "enabled": true
+      }
+    ]
+  }
+}
