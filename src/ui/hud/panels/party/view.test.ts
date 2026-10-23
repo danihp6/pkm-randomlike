@@ -112,9 +112,11 @@ describe('partyPanelView', () => {
   it('gives the bars the shipped fills', () => {
     const view = partyPanelView(hudState([member('a')]), initialPartyPanelUi(), DESKTOP);
     const [row] = view.rows;
-    expect(view.xp.fraction * view.xp.box.w).toBe(93);
+    expect(view.xp.box.w).toBe(186);
+    expect(view.xp.fraction * 186).toBe(93);
     expect(view.vial.fill).toBeCloseTo(2 / 3, 6);
     expect(view.vial.fill * view.vial.box.w).toBeCloseTo(66.666, 2);
+    expect(row!.hpFraction * PARTY_HP_FILL_RATIO * 154).toBeCloseTo(55.15, 6);
     expect(row!.hpFraction * PARTY_HP_FILL_RATIO * row!.hpBar.w).toBeCloseTo(55.15, 6);
   });
 
