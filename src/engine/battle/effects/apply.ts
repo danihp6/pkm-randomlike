@@ -109,8 +109,7 @@ export function applyStatusEffect(
   if (!canApplyStatus(target, status)) return;
   if (applyStatus(target, status, state.rng)) {
     pushEvent(state, { kind: 'status', side, status });
-    if (message) pushText(state, message.key, message.params);
-    else pushText(state, STATUS_AFFLICTED[status], { name: target.name });
+    pushText(state, message?.key ?? STATUS_AFFLICTED[status], message?.params ?? { name: target.name });
     runAfterStatus(makeContext(state, side, { source: target, target: opponent(state, side) }), status);
   }
 }
