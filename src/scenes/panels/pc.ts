@@ -123,6 +123,16 @@ let hudBoxBody: Phaser.GameObjects.Container | null = null;
 /** The DOM panel's view (`?hud=dom`), and the mount's disposer. */
 let pcView: Signal<PcPanelView> | null = null;
 let pcDispose: (() => void) | null = null;
+/**
+ * `Phaser.Scenes.Events.PAUSE` / `RESUME`, spelled out because a panel module never
+ * imports Phaser as a value. The route pauses itself for a battle and for the
+ * Settings screen; a DOM root sits above the canvas, so it has to hide itself.
+ */
+const SCENE_PAUSE = 'pause';
+const SCENE_RESUME = 'resume';
+/** True while the route scene is paused: the DOM root is hidden then. */
+let pcPaused = false;
+let pcUnsubscribeScene: (() => void) | null = null;
 
 /** The box window's left edge, so the detail panel can dock beside it. */
 export function boxLeft(): number {
@@ -309,7 +319,35 @@ function refreshDom(host: RoutePanelHost): void {
   hudBoxPage = Math.min(boxPageForIndex(ui.index), pageCount - 1);
   view.value = {
     ...pcPanelView(rows, { pane, page: hudBoxPage, cursor: ui.index }, pageCount, viewport(host)),
-    open: panelExpanded(host, 'box'),
+    open: !pcPaused && panelExpanded(host, 'box'),
+  };
+}
+
+/** The route paused (a battle over it, or the Settings screen): the panel follows. */
+function setDomPaused(host: RoutePanelHost, paused: boolean): void {
+  if (pcPaused === paused) return;
+  pcPaused = paused;
+  refreshDom(host);
+}
+
+/** Drops the scene's pause/resume subscription; the route is going away. */
+function unsubscribeScene(): void {
+  pcUnsubscribeScene?.();
+  pcUnsubscribeScene = null;
+  pcPaused = false;
+}
+
+/** Subscribes the panel to the route's own pause and resume beats. */
+function subscribeScene(host: RoutePanelHost): void {
+  unsubscribeScene();
+  const events = host.scene.events;
+  const onPause = (): void => setDomPaused(host, true);
+  const onResume = (): void => setDomPaused(host, false);
+  events.on(SCENE_PAUSE, onPause);
+  events.on(SCENE_RESUME, onResume);
+  pcUnsubscribeScene = () => {
+    events.off(SCENE_PAUSE, onPause);
+    events.off(SCENE_RESUME, onResume);
   };
 }
 
@@ -355,7 +393,9 @@ function pressDomCell(host: RoutePanelHost, memberId: string): void {
  * left/right page step, and the RIP tab for a confirm (it selects that list).
  */
 function handleDomCommand(host: RoutePanelHost, command: HudCommand): void {
-  if (!DOM_HUD) return;
+  // A paused route takes no command from the DOM: the root is hidden and its own
+  // key neither toggles now nor queues a toggle for the resume.
+  if (!DOM_HUD || pcPaused) return;
   switch (command.type) {
     case 'panel':
       if (command.panel === 'box') toggleHudPanel(host, 'box');
@@ -425,6 +465,7 @@ function buildDom(host: RoutePanelHost): void {
   const layer = typeof document === 'undefined' ? null : document.getElementById('hud');
   if (layer !== null)
     pcDispose = mountPcPanel(layer, view, (command) => handleDomCommand(host, command));
+  subscribeScene(host);
   refreshDom(host);
 }
 
@@ -549,6 +590,7 @@ function buildBox(host: RoutePanelHost): void {
 
 /** Disposes the DOM panel and clears the box's module state. */
 function closeDom(_host: RoutePanelHost): void {
+  unsubscribeScene();
   disposeDomPanel();
   pcView = null;
   hudBoxBody = null;
