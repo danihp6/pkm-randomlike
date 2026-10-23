@@ -1,9 +1,29 @@
 import type Phaser from 'phaser';
-import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../../data/itemIcons';
+import { signal, type Signal } from '@preact/signals';
+import itemIcons from '../../data/anil/item-icons.json';
+import {
+  ITEM_ICON_ATLAS_URL,
+  ITEM_ICON_SIZE,
+  ITEM_ICON_TEXTURE_KEY,
+  itemIconFrame,
+} from '../../data/itemIcons';
 import { getItem } from '../../data/items';
+import { keyLabel } from '../../data/keybinds';
 import type { BagCounts } from '../../engine/run';
 import { candyTreat } from '../../engine/run/items';
 import { t } from '../../i18n';
+import type { HudCommand } from '../../ui/hud/commands';
+import { parseHudFlags } from '../../ui/hud/fixtures';
+import {
+  bagPanelView,
+  initialBagPanelUi,
+  mountBagPanel,
+  type BagPanelUi,
+  type BagPanelView,
+  type BagPocket,
+  type SpriteCell,
+} from '../../ui/hud/panels/bag';
+import { projectHud } from '../../ui/hud/state';
 import {
   BAG_CATEGORIES,
   BAG_GRID_COLS,
@@ -55,6 +75,7 @@ import {
   panelPoint,
   pointerPhase,
   registerHudOverlay,
+  toggleHudPanel,
 } from './hud';
 import { partyBottom } from './party';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
@@ -115,6 +136,36 @@ let hudMoneyText!: Phaser.GameObjects.BitmapText;
 let hudBagY = 0;
 let hudBagH = 0;
 
+/**
+ * `?hud=dom` read once (`D49`): with it on, this module draws no bag content and
+ * the Preact panel in the `#hud` layer paints the same card instead.
+ */
+const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
+/** The item atlas' columns (`src/data/anil/item-icons.json`), for the sprite offsets. */
+const ITEM_ICON_COLS: number = itemIcons.cols;
+
+/** The shipped bag body, whose children are what the panel draws (flag off). */
+let bagBody: Phaser.GameObjects.Container | null = null;
+/** The mounted DOM panel: its host, its state, its view and its disposer (flag on). */
+let domHost: RoutePanelHost | null = null;
+let domHostElement: HTMLElement | null = null;
+let domUi: BagPanelUi = initialBagPanelUi();
+let domView: Signal<BagPanelView> | null = null;
+let domDispose: (() => void) | null = null;
+let domSearchFocused = false;
+/** The scene events the DOM mount follows, so `close()` can drop them again. */
+let domSceneEvents: Phaser.Events.EventEmitter | null = null;
+/** True while the route is paused behind a battle or the settings screen. */
+let domScenePaused = false;
+
+/**
+ * The number of display objects the bag draws right now: 0 under `?hud=dom`.
+ */
+export function bagDrawnObjectCount(): number {
+  if (DOM_HUD) return 0;
+  return bagBody?.list.length ?? 0;
+}
+
 /** The stacks the bag window draws, in draw order. */
 export function hudBagStacks(host: RoutePanelHost): readonly BagCounts[] {
   const inHand = draggedItemFrom() === null ? draggedItemId() : null;
@@ -146,6 +197,7 @@ export function pointerInBagPanel(host: RoutePanelHost, pointer: Phaser.Input.Po
 
 /** The bag cell under the pointer, as an index into the drawn stacks, or null. */
 export function hudBagCellAt(host: RoutePanelHost, pointer: Phaser.Input.Pointer): number | null {
+  if (!bagGrid) return null;
   if (!pointerInBagPanel(host, pointer)) return null;
   const point = panelPoint(host, pointer, 'bag');
   return bagGridIndexAt(bagGrid, point.x, point.y, hudBagStacks(host).length);
@@ -192,7 +244,7 @@ function selectBagTab(host: RoutePanelHost, pointer: Phaser.Input.Pointer): bool
 
 /** True while the bag's filter field owns the keyboard. */
 export function bagTextFieldFocused(): boolean {
-  return hudBagSearchFocus;
+  return DOM_HUD ? domSearchFocused : hudBagSearchFocus;
 }
 
 /**
@@ -201,6 +253,20 @@ export function bagTextFieldFocused(): boolean {
  * it. Every key is consumed, so nothing typed reaches the game underneath.
  */
 export function typeInBagSearch(host: RoutePanelHost, event: KeyboardEvent): boolean {
+  // The native input owns the text under the flag: every key is consumed while it
+  // has focus and the query is mirrored from its `input` event, never edited here.
+  // Escape and Enter leave the field, as the shipped one does.
+  if (DOM_HUD) {
+    const focused = domSearchFocused;
+    if (focused && (event.key === 'Escape' || event.key === 'Enter')) {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && active.closest('[data-hud-bag="search"]') !== null) {
+        active.blur();
+      }
+      domSearchFocused = false;
+    }
+    return focused;
+  }
   if (!hudBagSearchFocus) return false;
   if (event.key === 'Escape' || event.key === 'Enter') {
     hudBagSearchFocus = false;
@@ -308,6 +374,7 @@ function refreshBagGrid(host: RoutePanelHost, bag: readonly BagCounts[]): void {
  * there is no live run.
  */
 export function bagDebugState(host: RoutePanelHost): BagGridDebugState | null {
+  if (DOM_HUD || !bagGrid) return null;
   if (!host.run() || !host.hudRoot()) return null;
   const bag = hudBagStacks(host);
   const panel = panelById(host, 'bag');
@@ -381,7 +448,212 @@ function pointInRect(
   );
 }
 
+/** The atlas cell for an item, as the panel's `background-position` pair. */
+function bagSprite(itemId: string): SpriteCell | null {
+  const frame = itemIconFrame(itemId);
+  if (frame === null) return null;
+  return {
+    url: ITEM_ICON_ATLAS_URL,
+    size: ITEM_ICON_SIZE,
+    x: (frame % ITEM_ICON_COLS) * ITEM_ICON_SIZE,
+    y: Math.floor(frame / ITEM_ICON_COLS) * ITEM_ICON_SIZE,
+  };
+}
+
+function isPocket(value: string | null): value is BagPocket {
+  return (
+    value === 'equipment' ||
+    value === 'consumable' ||
+    value === 'machine' ||
+    value === 'ball' ||
+    value === 'valuable'
+  );
+}
+
+/**
+ * The view the DOM panel paints. `HudState` carries neither the item's description
+ * nor the quick-key letter, so the two strings the panel prints are filled here:
+ * this module is the only holder of the run and the settings.
+ */
+function domViewFor(host: RoutePanelHost): BagPanelView {
+  const state = projectHud({ screen: 'route', run: host.run(), notice: null });
+  const viewport = { width: host.scene.scale.width, height: host.scene.scale.height };
+  const model = bagPanelView(state, domUi, viewport, bagSprite);
+  const open = panelExpanded(host, 'bag') && !domScenePaused;
+  const selected = model.tiles.find((piece) => piece.selected) ?? null;
+  let text = '';
+  if (open && model.info !== null && selected !== null && selected.itemId !== null) {
+    // `bagInfoFor` prints the name on its first line (the shipped card had one
+    // text); the panel's title already carries it, so the body is the rest.
+    const described = bagInfoFor(host, selected.itemId);
+    const cut = described.indexOf('\n');
+    text = cut < 0 ? described : described.slice(cut + 1);
+  }
+  return {
+    ...model,
+    open,
+    chip: { ...model.chip, letter: keyLabel(host.settings().keybinds.bag) },
+    info:
+      open && model.info !== null && selected !== null && text !== '' ? { ...model.info, text } : null,
+  };
+}
+
+function paintDomBag(): void {
+  if (domHost === null || domView === null) return;
+  domView.value = domViewFor(domHost);
+}
+
+/**
+ * The DOM cards live in the `#hud` layer **above** the canvas, so a paused route
+ * would leave them floating over the battle or the settings screen that replaced
+ * it. The shipped Phaser card sits inside the paused scene and vanishes with it;
+ * the mount hides through the same path the collapse uses, so it keeps its state
+ * and its rect for the resume. The event names are `Phaser.Scenes.Events.PAUSE`
+ * and `RESUME` spelled out: this folder's modules never import Phaser's value.
+ */
+function onScenePause(): void {
+  domScenePaused = true;
+  paintDomBag();
+}
+
+function onSceneResume(): void {
+  domScenePaused = false;
+  paintDomBag();
+}
+
+/** A press on a pocket tab or a stack: the panel's own cursor, never the run. */
+function onDomClick(event: MouseEvent): void {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  if (target.closest('[data-hud-panel="bag"]') === null) return;
+  const tab = target.closest('[data-hud-bag-tab]');
+  if (tab !== null) {
+    const pocket = tab.getAttribute('data-hud-bag-tab');
+    if (isPocket(pocket)) {
+      domUi = { pocket, cursor: 0, query: '' };
+      paintDomBag();
+    }
+    return;
+  }
+  const cell = target.closest('[data-hud-bag-tile]');
+  if (cell === null) return;
+  const index = Number(cell.getAttribute('data-hud-bag-tile'));
+  if (Number.isInteger(index) && index >= 0) {
+    domUi = { ...domUi, cursor: index };
+    paintDomBag();
+  }
+}
+
+function onDomInput(event: Event): void {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) return;
+  if (target.closest('[data-hud-panel="bag"]') === null) return;
+  domUi = { ...domUi, query: target.value };
+  paintDomBag();
+}
+
+function onDomFocus(event: FocusEvent): void {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  if (target.closest('[data-hud-bag="search"]') === null) return;
+  domSearchFocused = event.type === 'focusin';
+}
+
+function handleDomCommand(host: RoutePanelHost, command: HudCommand): void {
+  if (command.type === 'panel' && command.panel === 'bag') toggleHudPanel(host, 'bag');
+}
+
+function mountDomBag(host: RoutePanelHost): void {
+  domHost = host;
+  const view = signal(domViewFor(host));
+  domView = view;
+  const events = host.scene.events;
+  domSceneEvents = events;
+  // `create()` runs before the scene reports active, so only a real pause counts.
+  domScenePaused = host.scene.sys.isPaused();
+  events.on('pause', onScenePause);
+  events.on('resume', onSceneResume);
+  const element = typeof document === 'undefined' ? null : document.getElementById('hud');
+  if (element === null) return;
+  domHostElement = element;
+  domDispose = mountBagPanel(element, view, (command) => handleDomCommand(host, command));
+  element.addEventListener('click', onDomClick);
+  element.addEventListener('input', onDomInput);
+  element.addEventListener('focusin', onDomFocus);
+  element.addEventListener('focusout', onDomFocus);
+}
+
+function disposeDomBag(): void {
+  if (domSceneEvents !== null) {
+    domSceneEvents.off('pause', onScenePause);
+    domSceneEvents.off('resume', onSceneResume);
+    domSceneEvents = null;
+  }
+  domScenePaused = false;
+  if (domHostElement !== null) {
+    domHostElement.removeEventListener('click', onDomClick);
+    domHostElement.removeEventListener('input', onDomInput);
+    domHostElement.removeEventListener('focusin', onDomFocus);
+    domHostElement.removeEventListener('focusout', onDomFocus);
+    domHostElement = null;
+  }
+  domDispose?.();
+  domDispose = null;
+  domView = null;
+  domHost = null;
+  domUi = initialBagPanelUi();
+  domSearchFocused = false;
+  bagBody = null;
+}
+
+/**
+ * The flag-on build: the shipped layout arithmetic and the panel record, so the
+ * quick key, the collapse and the saved layout keep working, but nothing drawn —
+ * an invisible window, an empty body and the Preact panel in `#hud`.
+ */
+function buildDomBag(host: RoutePanelHost): void {
+  disposeDomBag();
+  const x = hudColumnLeft(host);
+  const { panelW } = host.hud();
+  const bagY = partyBottom() + HUD_GAP;
+  const bagH =
+    HUD_BAG_HEADER +
+    HUD_SEARCH_H +
+    HUD_BAG_SEARCH_GAP +
+    HUD_BAG_GRID_H +
+    HUD_BAG_GRID_GAP +
+    HUD_BAG_FOOTER +
+    HUD_PAD_BOTTOM;
+  hudBagY = bagY;
+  hudBagH = bagH;
+  hudBagCursor = 0;
+  hudBagQuery = '';
+  hudBagSearchFocus = false;
+  const bagWindow = addFrlgWindow(host.scene, x, bagY, panelW, bagH).setVisible(false);
+  const body = host.scene.add.container(0, 0);
+  bagBody = body;
+  const panel = makeHudPanel(
+    host,
+    'bag',
+    x,
+    bagY,
+    panelW,
+    bagH,
+    body,
+    bagWindow,
+    PANEL_ICON_KEYS.bag,
+    PANEL_KEY_ACTIONS.bag ?? null,
+  );
+  panel.container.setVisible(false);
+  panel.icon.setVisible(false);
+  mountDomBag(host);
+}
+
 function refreshBag(host: RoutePanelHost): void {
+  if (DOM_HUD) {
+    paintDomBag();
+    return;
+  }
   if (hudBagCells.length === 0) return;
   const run = host.run();
   // A collapsed window never holds the keyboard: the collapse repaint lands here.
@@ -419,6 +691,10 @@ export const descriptor: RoutePanelDescriptor = {
   order: 40,
   hudPanel: 'bag',
   build(host: RoutePanelHost): void {
+    if (DOM_HUD) {
+      buildDomBag(host);
+      return;
+    }
     const scene = host.scene;
     const x = hudColumnLeft(host);
     const { panelW } = host.hud();
@@ -538,6 +814,7 @@ export const descriptor: RoutePanelDescriptor = {
     });
     bagChildren.push(footerRule, moneyLabel, hudMoneyText);
 
+    bagBody = scene.add.container(0, 0, bagChildren);
     makeHudPanel(
       host,
       'bag',
@@ -545,7 +822,7 @@ export const descriptor: RoutePanelDescriptor = {
       bagY,
       panelW,
       bagH,
-      scene.add.container(0, 0, bagChildren),
+      bagBody,
       bagWindow,
       PANEL_ICON_KEYS.bag,
       PANEL_KEY_ACTIONS.bag ?? null,
@@ -559,6 +836,11 @@ export const descriptor: RoutePanelDescriptor = {
   },
   refresh: refreshBag,
   pointer(host: RoutePanelHost, pointer: Phaser.Input.Pointer): boolean {
+    if (DOM_HUD) return false;
     return pointerPhase() === 'down' ? pointerDown(host, pointer) : false;
+  },
+  close(): void {
+    if (!DOM_HUD) return;
+    disposeDomBag();
   },
 };

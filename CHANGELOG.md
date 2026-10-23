@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The bag panel is the HUD's.** `[Task-129]`, the sixth of Phase 12 (`D49`): under `?hud=dom`
+      the route's bag is a Preact card in the `#hud` layer — the shipped 344×308 box, the five
+      pocket tabs, a native search field, the five-column grid of 56×56 tiles with their 24 px
+      atlas icons and 9 px counts, the money footer and the floating description card — painted
+      with the board's skin (radius 11, 1 px hairline, the 24×24 accent key chip, tile radius 8
+      over the 4 %/8 % fills), while `src/scenes/panels/bag.ts` draws no object at all under the
+      flag and keeps its layout arithmetic and panel record, so the quick key, the collapse and the
+      saved layout still work. Measured over CDP: the DOM box is the Phaser box to the pixel (Δ 0
+      at 1280×800, `928,422 344×308`, and at 390×844, `38,422`), the tabs sit at `30 + i × 59` and
+      the cells at a 62 px pitch, the key chip's `::after` is 44×44, and the card hides while the
+      route is paused (battle, settings) and returns at the same rect with its collapse state. Flag
+      off: the shipped bag is untouched (78 draw objects against 0, and no DOM root). `npm test`
+      3794 passed, `npm run build` green.
 - [x] **Options `02` is the DOM panel, and the spike passed its gate.** `[Task-127]`, the fifth of
       Phase 12 (`D49`): `src/ui/hud/panels/options/` ships the screen as a stateless Preact
       component (`optionsPanel.tsx`) over one view model (`view.ts`, with the live producer off

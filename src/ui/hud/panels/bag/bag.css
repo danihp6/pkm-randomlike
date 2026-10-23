@@ -1,0 +1,262 @@
+/*
+ * The route bag window (`D49`, frame `03b Panels · row view` bag group). The card,
+ * the hairline, the highlight, the key chip, the search field, the tile and the
+ * count take the board's paint (`2:103`, `2:104`, `2:106`, `2:109`, `2:114`,
+ * `2:116`); the rect of every part comes from `view.ts`, which mirrors the shipped
+ * Phaser layout, so this file carries no geometry of its own.
+ *
+ * The tiles' 8 % stroke is an inset shadow, not a border: the board's icon and
+ * count insets (11 px from the right, 6 px from the bottom) are measured from the
+ * tile's outer edge, and a border would push them a pixel in.
+ */
+.bag {
+  --bag-highlight: rgb(255 255 255 / 14%);
+  --bag-chip-fill: rgb(11 16 23 / 50%);
+  --bag-chip-stroke: rgb(125 211 252 / 55%);
+  --bag-search-fill: rgb(255 255 255 / 3%);
+  --bag-search-stroke: rgb(255 255 255 / 10%);
+  --bag-search-radius: 6px;
+  --bag-tile-fill: rgb(255 255 255 / 4%);
+  --bag-tile-stroke: rgb(255 255 255 / 8%);
+  --bag-tile-radius: 8px;
+  --bag-rule: rgb(255 255 255 / 10%);
+  --bag-count-size: 9px;
+  --bag-count-line: 10px;
+  --bag-chip-radius: 6px;
+  --bag-chip-size: 11px;
+  --bag-chip-line: 15px;
+  --bag-tab-tracking: 0px;
+
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--hud-panel-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+}
+
+.bag[hidden] {
+  display: none;
+}
+
+.bag,
+.bag *,
+.bag *::before,
+.bag *::after,
+.bag-info,
+.bag-info * {
+  box-sizing: border-box;
+}
+
+/* The card's hairline is a border, so the content layer starts one pixel out. */
+.bag__body {
+  position: absolute;
+  inset: -1px;
+}
+
+.bag__highlight {
+  position: absolute;
+  background: var(--bag-highlight);
+}
+
+.bag__chip {
+  position: absolute;
+  display: flex;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--bag-chip-stroke);
+  border-radius: var(--bag-chip-radius);
+  background: var(--bag-chip-fill);
+  color: var(--hud-accent);
+  font-family: var(--hud-font);
+  font-size: var(--bag-chip-size);
+  font-weight: 700;
+  line-height: var(--bag-chip-line);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.bag__chip::after,
+.bag__tab::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.bag__tabs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bag__tab {
+  position: absolute;
+  display: flex;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-row-border);
+  border-radius: 0;
+  background: var(--hud-row-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-name-size);
+  font-weight: 400;
+  letter-spacing: var(--bag-tab-tracking);
+  line-height: var(--hud-type-name-line);
+  text-transform: uppercase;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.bag__tab[data-active='true'] {
+  border-color: var(--hud-accent);
+  background: rgb(125 211 252 / 16%);
+  color: var(--hud-accent);
+}
+
+.bag__search {
+  position: absolute;
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid var(--bag-search-stroke);
+  border-radius: var(--bag-search-radius);
+  outline: none;
+  background: var(--bag-search-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+}
+
+.bag__search::placeholder {
+  color: var(--hud-text-muted);
+}
+
+.bag__search:focus-visible {
+  border-color: var(--hud-accent);
+}
+
+.bag__grid {
+  position: absolute;
+}
+
+.bag__tile {
+  position: absolute;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--bag-tile-radius);
+  box-shadow: inset 0 0 0 1px var(--bag-tile-stroke);
+  background: var(--bag-tile-fill);
+  color: inherit;
+  font-family: var(--hud-font);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.bag__tile[data-selected='true'] {
+  box-shadow: inset 0 0 0 1px var(--hud-accent);
+  background: rgb(125 211 252 / 16%);
+}
+
+.bag__icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-repeat: no-repeat;
+  background-size: auto;
+  image-rendering: pixelated;
+}
+
+.bag__count {
+  position: absolute;
+  right: 11px;
+  bottom: 6px;
+  color: var(--hud-text-secondary);
+  font-size: var(--bag-count-size);
+  line-height: var(--bag-count-line);
+}
+
+.bag__empty {
+  position: absolute;
+  top: 70px;
+  right: 0;
+  left: 0;
+  margin: 0;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  text-align: center;
+}
+
+.bag__footer {
+  position: absolute;
+  pointer-events: none;
+}
+
+.bag__rule {
+  position: absolute;
+  background: var(--bag-rule);
+}
+
+.bag__footer-label {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+}
+
+.bag__footer-value {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+}
+
+/* The description card rides the HUD root in Phaser; here it floats over the page. */
+.bag-info {
+  position: fixed;
+  padding: 16px 20px 8px;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--hud-panel-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  pointer-events: none;
+}
+
+.bag-info__title {
+  margin: 0 0 4px;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-chip-size);
+  font-weight: 700;
+  line-height: var(--hud-type-chip-line);
+}
+
+.bag-info__text {
+  margin: 0;
+  color: var(--hud-text-secondary);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  white-space: pre-line;
+  overflow-wrap: break-word;
+}

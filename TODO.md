@@ -7385,7 +7385,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       one untouched. Claims `src/scenes/SettingsScene.ts`, `src/ui/hud/panels/options/**` and
       `design/fixtures/02-options.json`. *Dependencies:* `[Task-124]`, `[Task-125]`, `[Task-126]`.
       *(Batch 60)*
-- [ ] **[Task-129] The bag panel is the HUD's.** `src/scenes/panels/bag.ts` loses its Phaser drawing
+- [x] **[Task-129] The bag panel is the HUD's.** `src/scenes/panels/bag.ts` loses its Phaser drawing
       and its input row handling under the flag; `src/ui/hud/panels/bag/` renders the pocket tabs, the
       rows and the description from `src/ui/bag.ts`'s view model, and `design/fixtures/<bag slug>.json`
       pins the frame. Deleting the DOM panel leaves the Phaser one working, and no engine, save or RNG
