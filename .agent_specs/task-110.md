@@ -287,7 +287,10 @@ bagH = HUD_BAG_HEADER (50)                 // the pocket tab strip
   `h = HUD_BAG_GRID_H`, passed to `bagGridLayout`. At a 1280 px canvas
   (`panelW = 344`, `w = 304`) the layout yields **`cellW = cellH = 56`** and 15
   cells. Store the metrics once, in `buildHud`, in a `private bagGrid:
-  BagGridMetrics` field.
+  BagGridMetrics` field. **The route grid is always `HUD_BAG_CAP` cells (3 rows ×
+  5), whatever the number of drawn stacks:** the metrics are a function of the band
+  and the cap, never of the count, so the panel, the footer and the cell pitch do
+  not move when the bag changes, and the free slots paint as dim outlines.
 - Build `HUD_BAG_CAP` cells once in `buildHud`, each `{ bg, icon, badgeBg, badge }`:
   - `bg`: `this.add.rectangle(...)`, origin `(0, 0)`, no fill/stroke set yet.
   - `icon`: `this.add.image(..., ITEM_ICON_TEXTURE_KEY, 0)`, scale **1**, centred in
@@ -608,9 +611,9 @@ const run = {
       { itemId: 'potion', count: 3 },        // consumable, index 0
       { itemId: 'superpotion', count: 2 },   // consumable, index 1
       { itemId: 'antidote', count: 1 },      // consumable, index 2
-      { itemId: 'oranberry', count: 5 },     // consumable, index 3
-      { itemId: 'burnheal', count: 1 },      // consumable, index 4
-      { itemId: 'candyred', count: 2 },      // consumable, index 5
+      { itemId: 'oranberry', count: 5 },     // held: an EQUIP row, not CONSUM
+      { itemId: 'burnheal', count: 1 },      // consumable, index 3
+      { itemId: 'candyred', count: 2 },      // consumable, index 4
       { itemId: 'pokeball', count: 4 },      // ball
       { itemId: 'greatball', count: 2 },     // ball
       { itemId: 'nugget', count: 1 },        // valuable
@@ -622,9 +625,13 @@ game.scene.stop('MainMenu');
 game.scene.start('Route', { run });
 ```
 
-The pocket under test is **CONSUM**: six stacks, so the grid is 5 columns × 2 rows
-with 10 drawn cells and 6 occupied. The route opens on **EQUIP**, so the CONSUM tab
-must be clicked first, using `bagDebugState().tabs[1].rect` as the target.
+The pocket under test is **CONSUM**: **five** stacks — `oranberry` is
+`kind: 'held'` in `src/data/items.ts` and therefore an EQUIP row, not a CONSUM one —
+so the route grid is 5 columns × 3 rows (15 drawn cells, 5 occupied) in the fixture
+order `potion x3`, `superpotion x2`, `antidote x1`, `burnheal x1`, `candyred x2`,
+and the battle grid is 5 columns × 2 rows (10 drawn cells, the same 5 occupied). The
+route opens on **EQUIP**, so the CONSUM tab must be clicked first, using
+`bagDebugState().tabs[1].rect` as the target.
 
 Key events: send real ones with `Input.dispatchKeyEvent` (`type: 'keyDown'` then
 `'keyUp'`, `text` filled for printable characters). The keys used:
@@ -694,12 +701,13 @@ counts). A measurement that was not printed does not exist.
       nothing.
 - [ ] `[live]` **The route bag is a 5-column icon grid.** After the fixture run,
       press `i` and click the CONSUM tab. `route.bagDebugState()` reports
-      `columns === 5`, `rows === 2`, `cellW === cellH`, `cellW === 56`,
-      `cells.length === 10`, `grid.w === 304`, and exactly 6 cells with a non-null
-      `itemId` in this order: `potion, superpotion, antidote, oranberry, burnheal,
-      candyred`; the badges read `x3, x2, x1, x5, x1, x2`; every occupied cell's
+      `columns === 5`, `rows === 3`, `cellW === cellH`, `cellW === 56`,
+      `cells.length === 15`, `grid.w === 304` (the grid is `HUD_BAG_CAP` cells
+      whatever the count), and exactly 5 cells with a non-null `itemId` in this
+      order: `potion, superpotion, antidote, burnheal, candyred`; the badges read
+      `x3, x2, x1, x1, x2`; every occupied cell's
       `iconFrame === Number((await import('/src/data/itemIcons.ts')).itemIconFrame(itemId))`;
-      the four empty cells have `itemId === null`, `badge === ''` and
+      the ten empty cells have `itemId === null`, `badge === ''` and
       `iconFrame === null`.
 - [ ] `[live]` **The selection is the shipped accent and an empty slot is a dim
       outline.** Same state: `cells[0]` (the cursor's own cell) has
@@ -724,7 +732,7 @@ counts). A measurement that was not printed does not exist.
       read live from `/src/data/items.ts`), and
       `info.x + info.width <= grid.x` (the card sits beside the grid, never over it).
 - [ ] `[live]` **A discovered candy prints the run's own stat.** Click the candy
-      cell (`cells[5]`, "Red Candy"): `info.visible === true` and `info.text ===
+      cell (`cells[4]`, "Red Candy" — the fifth CONSUM stack): `info.visible === true` and `info.text ===
       getItem('candyred').name + '\n' + t('hud.candyKnown', { stat:
       statLabel(candyTreat('task-110', 'red').stat), delta: candyTreat('task-110',
       'red').delta > 0 ? '+1' : '-1' })`, with `t` from `/src/i18n/index.ts`,
@@ -736,9 +744,10 @@ counts). A measurement that was not printed does not exist.
 - [ ] `[live]` **The filter narrows the grid and an empty filter restores it.**
       Click the centre of `bagDebugState().search` (focus), then send `s`,`u`,`p`,
       `e`,`r`: `query === 'super'`, `focused === true`, exactly one occupied cell
-      (`superpotion`, `count === 2`), `rows === 1`, `cells.length === 5`, and
+      (`superpotion`, `count === 2`), `rows === 3`, `cells.length === 15` (the
+      fixed grid does not shrink under a filter), and
       `footer` is still `'1234'`. Then send `Backspace` five times: `query === ''`,
-      `rows === 2`, `cells.length === 10`, the six stacks return in the same order
+      `rows === 3`, `cells.length === 15`, the five stacks return in the same order
       and `footer` is still `'1234'`. Then send `Escape`: `focused === false` and
       `query === ''` (the field left focus without losing the list).
 - [ ] `[live]` **In battle the bag is the same grid and typing owns the keyboard.**
@@ -746,12 +755,14 @@ counts). A measurement that was not printed does not exist.
       `(await import('/src/main.ts')).game.scene.getScene('Route').startDebugWildBattle('pidgey', 5)`,
       wait for `game.scene.isActive('Battle')`, send `E` until
       `getScene('Battle').mode === 'menu'` (at most 4 presses, 400 ms apart), then
-      `ArrowDown` and `E`. `battle.bagDebugState()` is non-null and reports
-      `columns === 5`, `rows === 2`, `cellW === cellH`, `cellW >= 24`,
+      `ArrowRight` and `E` — the command menu is the shipped 2-column grid and
+      `SWITCH` is disabled for this one-member party, so `ArrowDown` wraps back to
+      `FIGHT` and would never reach `BAG`. `battle.bagDebugState()` is non-null and
+      reports `columns === 5`, `rows === 2`, `cellW === cellH`, `cellW >= 24`,
       `cells.length === 10`, `cellW === Math.floor(Math.min((grid.w - 4 * gap) / 5,
       (grid.h - gap) / 2, 56))` (recomputed from the reported `grid`/`gap`; 56 is
-      `MENU_BAG_CELL_MAX`), `category === 'consumable'`, and 6 occupied cells. Then
-      click the centre of
+      `MENU_BAG_CELL_MAX`), `category === 'consumable'`, and 5 occupied cells in the
+      fixture order. Then click the centre of
       `search` and send `e`: `query === 'e'`, `focused === true`, and
       `bagDebugState()` is **still non-null** (the confirm shortcut did not submit a
       bag command and the battle is still in its bag); then send `[`:
@@ -781,6 +792,15 @@ counts). A measurement that was not printed does not exist.
   arrows (`left`/`right` no longer cycle pockets); anything written against the old
   `up`/`down`-list + `left`/`right`-pockets map must be rebased.
 - **Resolved readings, recorded so they are not re-litigated:**
+  0. **Corrective round 1 (Orchestrator, after the first Task QA).** Three
+     self-contradictions in this spec were corrected; the **Contract above is
+     unchanged and remains the promise**: the route grid is `HUD_BAG_CAP` = 15
+     cells (3 rows × 5) whatever the count — `rows === 2` with `cellW === 56` is
+     impossible in a 304×180 band, since a 2-row grid would need `cellW = 87` —
+     `oranberry` is `kind: 'held'` and is **not** a CONSUM stack (the fixture pocket
+     is 5 stacks, `candyred` at index 4), and the battle's command menu reaches
+     `BAG` with `ArrowRight` (`SWITCH` is disabled for the solo party, so
+     `ArrowDown` wraps). No product code change is implied by any of the three.
   1. `left`/`right` in the battle's bag used to cycle pockets; the five-column grid
      needs them for columns, so the pockets become click-or-`[`/`]` only.
   2. The route HUD is pointer-first (`D45`/§10.3): its selected cell comes from a
