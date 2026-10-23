@@ -666,6 +666,7 @@ export const en = {
   'battle.log.charge.default': '{name} is charging up!',
 
   'battle.log.caught': 'Gotcha! {name} was caught!',
+  'battle.log.captureWait': '{name}…',
   'battle.log.capture.shakes0': 'Oh no! {name} broke free!',
   'battle.log.capture.shakes1': 'Aww! {name} appeared to be caught!',
   'battle.log.capture.shakes2': 'Aargh! {name} almost had it!',

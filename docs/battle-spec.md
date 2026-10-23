@@ -358,6 +358,13 @@ theirs, `RunState.capturedRooms`, not a per-battle counter).
    no re-throw penalty beyond the ball cost.
 4. A successful catch adds the Pokémon to the party, or to the PC box if the
    party is full.
+5. The beat is **one clock**: `captureTimeline` in `src/ui/capture.ts` drives both
+   the ball's tweens and the message box, so the ball wobbles exactly the number of
+   times the roll produced — a zero-shake break plays none, and a failed attempt
+   opens the ball at the break tick while a catch settles it on the field. The wait
+   line (`battle.log.captureWait`, set rather than typed) gains one dot per completed
+   wobble, capped at three, and the frame's dwell is the timeline's `totalMs` plus
+   the shipped message hold, so no text ever outruns the ball.
 
 ## 7. Progression inside the battle
 
