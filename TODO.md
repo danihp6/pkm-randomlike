@@ -7292,7 +7292,7 @@ Phaser version. Design and rationale: `docs/hud-dom-proposal.md`. **The measurem
 measures itself against — ten type sizes with their line boxes, the palette, the radii, the panel
 geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
 
-- [ ] **[Task-122] The board lands in the repo and the diff harness exists.** `design/` holds only
+- [x] **[Task-122] The board lands in the repo and the diff harness exists.** `design/` holds only
       the frames a migrated screen needs — `<slug>.svg` (1:1), `<slug>.png` (@2x, the diff's
       reference) and `<slug>.json` (the `node_info` tree) — exported through the figma-edit MCP by
       `scripts/design/export.mjs`, one frame at a time, never the whole board. `scripts/design/tokens.mjs`

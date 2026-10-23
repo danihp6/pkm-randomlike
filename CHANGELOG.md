@@ -8,6 +8,25 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The prototype board lives in the repo, and "identical to the board" is a command.** `[Task-122]`,
+      the first of Phase 12 (`D49`): `scripts/design/export.mjs` walks a 33-frame table, resolves every
+      node id from `page_info` instead of a hand-typed map, and writes three artifacts per viewport —
+      the JSON tree (geometry **and** the strings, because Figma outlines text in the SVG), the 1:1 SVG
+      and the `@2x` PNG the diff measures against — resumable, so a lost channel costs nothing. The
+      whole board came across: 66 viewports, ≈3.7 MB of JSON, 3.9 MB of SVG and 10.1 MB of PNG.
+      `scripts/design/tokens.mjs` derives `design/tokens.json` from those frames (panel and row fills,
+      radii, border, the measured type scale with its boxes, panel width and gutter with the variants
+      the board actually draws, grid pitch and palette counts), so no downstream file retypes `#10161f`.
+      `scripts/hud/diff.mjs` is the gate: it boots the preview through Vite's own API, screenshots
+      1280×800 and 390×844 at `deviceScaleFactor: 2` over Chrome DevTools (no browser dependency) and
+      reports **geometry** (edge positions within 2 px) and **colour** (mean ΔE ≤ 2 on flat fills) apart,
+      with pixelmatch artifacts under the gitignored `design/diff/`. The board's rasters carry the game's
+      own screen inside them, so `D50` accepts that for that one directory and says why.
+      **QA:** 8 of 10 criteria green on a detached worktree; the two reds (a `tokens.json` the generator
+      could not reproduce byte for byte, and folder maps missing a file) were fixed and re-verified, and
+      the harness was proven in both directions — exit 1 on today's Phaser screens, exit 0 when the
+      reference is substituted by the shot. `npm test` 3563 passed, `npm run build` green, CI green.
+
 - [x] **The wait asks for 2/12, not for a shape this account cannot be given.** Oracle caps
       the Always Free Ampere entitlement at **2 OCPU / 12 GB** since August 2026, so every
       4/24 attempt was a request the tenancy could only ever answer with "out of capacity" —
