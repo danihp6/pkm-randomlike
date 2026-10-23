@@ -1,0 +1,260 @@
+/*
+ * The PC box panel (`D49`, frame `03b Panels · row view`, `pc` group). The shipped
+ * 344 × 378 window keeps its layout; the board supplies only the paint: the card's
+ * radius and hairline, the 1 px highlight 12 px inside its top edge, the 24 × 24
+ * accent-edged key chip and the storage slot's radius 8 with its 4 % / 8 % pair.
+ * Every board value is declared once here, on the panel's own scope.
+ *
+ * `.pc__frame` sits one pixel out of the card's border box, so every child's
+ * `left`/`top` is the panel-relative rect `view.ts` hands over, exactly as the
+ * Phaser module measures it from `hudBoxX` / `hudBoxY`.
+ */
+.pc {
+  /* 03b pc panel */
+  --pc-panel-border: var(--hud-panel-border);
+  --pc-panel-radius: var(--hud-panel-radius);
+  /* 03b pc panel highlight */
+  --pc-highlight-fill: var(--hud-row-border);
+  /* 03b key pc, key letter pc */
+  --pc-chip-fill: rgb(11 16 23 / 50%);
+  --pc-chip-stroke: rgb(125 211 252 / 55%);
+  --pc-chip-radius: 6px;
+  --pc-chip-size: 11px;
+  --pc-chip-line: 15px;
+  /* the shipped tab strip (`paintTab`): the row pair, accent when selected */
+  --pc-tab-fill: rgb(255 255 255 / 6%);
+  --pc-tab-stroke: rgb(255 255 255 / 10%);
+  --pc-tab-active-fill: rgb(125 211 252 / 16%);
+  --pc-tab-radius: 6px;
+  --pc-tab-ink: var(--hud-text-ink);
+  /* 03b pc slot: radius 8, 4 % fill, 8 % stroke */
+  --pc-slot-fill: var(--hud-row-fill);
+  --pc-slot-stroke: var(--hud-row-border);
+  --pc-slot-selected-fill: rgb(125 211 252 / 16%);
+  /* the shipped lock veil a box lock and every RIP cell wear */
+  --pc-lock-fill: #10161f;
+  --pc-lock-alpha: 0.55;
+
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid var(--pc-panel-border);
+  border-radius: var(--pc-panel-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+  pointer-events: auto;
+}
+
+.pc[hidden] {
+  display: none;
+}
+
+.pc,
+.pc *,
+.pc *::before,
+.pc *::after {
+  box-sizing: border-box;
+}
+
+.pc-mount {
+  position: static;
+}
+
+.pc__frame {
+  position: absolute;
+  inset: -1px;
+}
+
+.pc__highlight {
+  position: absolute;
+  background: var(--pc-highlight-fill);
+}
+
+.pc__chip,
+.pc__tab,
+.pc__rip,
+.pc__cell {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--pc-tab-stroke);
+  background: var(--pc-tab-fill);
+  color: var(--pc-tab-ink);
+  font-family: var(--hud-font);
+  cursor: pointer;
+}
+
+.pc__chip {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--pc-chip-stroke);
+  border-radius: var(--pc-chip-radius);
+  background: var(--pc-chip-fill);
+  color: var(--hud-accent);
+  font-size: var(--pc-chip-size);
+  font-weight: 700;
+  line-height: var(--pc-chip-line);
+}
+
+.pc__chip::after,
+.pc__tab::after,
+.pc__rip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.pc__tabs {
+  position: absolute;
+  inset: 0;
+}
+
+.pc__tab,
+.pc__rip {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--pc-tab-radius);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+}
+
+.pc__tab[data-active='true'] {
+  border-color: var(--hud-accent);
+  background: var(--pc-tab-active-fill);
+  color: var(--hud-accent);
+}
+
+.pc__rip {
+  overflow: hidden;
+  color: var(--pc-tab-ink);
+}
+
+.pc__rip[data-locked='true']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--pc-lock-fill);
+  opacity: var(--pc-lock-alpha);
+}
+
+.pc__rip[data-active='true'] {
+  border-color: var(--hud-accent);
+  background: var(--pc-tab-active-fill);
+}
+
+.pc__rip-label {
+  position: relative;
+  color: var(--pc-tab-ink);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+}
+
+.pc__rip[data-active='true'] .pc__rip-label {
+  color: var(--hud-accent);
+}
+
+.pc__grid {
+  position: absolute;
+}
+
+.pc__cell {
+  position: absolute;
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--pc-slot-stroke);
+  border-radius: var(--hud-row-radius);
+  background: var(--pc-slot-fill);
+  text-align: left;
+}
+
+.pc__cell:disabled {
+  cursor: default;
+}
+
+.pc__cell[data-selected='true'] {
+  border-color: var(--hud-accent);
+  background: var(--pc-slot-selected-fill);
+}
+
+.pc__cell-name {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  left: 6px;
+  transform: translateZ(0);
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pc__cell-level {
+  position: absolute;
+  top: 20px;
+  left: 6px;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+}
+
+.pc__cell .kit-bar {
+  position: absolute;
+  top: 38px;
+  right: 6px;
+  left: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--pc-slot-fill);
+}
+
+.pc__cell-hp {
+  position: absolute;
+  top: 48px;
+  left: 6px;
+  color: var(--hud-text-secondary);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+}
+
+.pc__cell-status {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--hud-text-warning);
+  color: var(--hud-panel-fill);
+  font-size: var(--hud-type-tag-size);
+  font-weight: 700;
+  line-height: var(--hud-type-tag-line);
+  text-transform: uppercase;
+}
+
+.pc__cell-veil {
+  position: absolute;
+  inset: 0;
+  background: var(--pc-lock-fill);
+  opacity: var(--pc-lock-alpha);
+}
+
+.pc__chip:focus-visible,
+.pc__tab:focus-visible,
+.pc__rip:focus-visible,
+.pc__cell:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: 2px;
+}

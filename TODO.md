@@ -7391,7 +7391,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       pins the frame. Deleting the DOM panel leaves the Phaser one working, and no engine, save or RNG
       path is touched. Claims `src/scenes/panels/bag.ts`, `src/ui/hud/panels/bag/**` and its fixture.
       *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 61)*
-- [ ] **[Task-130] The PC panel is the HUD's.** Same shape for the box: `src/scenes/panels/pc.ts`,
+- [x] **[Task-130] The PC panel is the HUD's.** Same shape for the box: `src/scenes/panels/pc.ts`,
       `src/ui/hud/panels/pc/`, the release and withdraw commands through `HudCommand`, and the
       fixture. The box's scroll and its search field become native. Claims `src/scenes/panels/pc.ts`,
       `src/ui/hud/panels/pc/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`,

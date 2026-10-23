@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The PC panel is the HUD's.** `[Task-130]`, the seventh of Phase 12 (`D49`): `?hud=dom`
+      turns the box into a Preact card in `#hud` — the shipped 344×378 box, the `BOX`/`RIP` pane
+      tabs, the native search field over the 4×4 grid of 76×76 cells at an 80 px pitch, the page
+      tabs from `boxPageCount` and the release/withdraw commands through `HudCommand` — with
+      `src/scenes/panels/pc.ts` drawing no object under the flag and keeping its panel record (id
+      `box`), so the quick key, the collapse and the saved layout still work. Measured over CDP:
+      the DOM box is the Phaser box to the pixel (Δ 0 at 1280×800, `576,72 344×378`, and at
+      390×844, `8,72`), a real click flips `hudUi.pane`, and the card hides while the route is
+      paused (battle, settings) and returns at the same rect and open state. Flag off: 115 draw
+      objects against 0. `npm test` 3807 passed, `npm run build` green.
 - [x] **The bag panel is the HUD's.** `[Task-129]`, the sixth of Phase 12 (`D49`): under `?hud=dom`
       the route's bag is a Preact card in the `#hud` layer — the shipped 344×308 box, the five
       pocket tabs, a native search field, the five-column grid of 56×56 tiles with their 24 px
