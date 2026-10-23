@@ -98,16 +98,21 @@ export type OptionsGroupView = Readonly<{
 
 export type OptionsView = Readonly<{
   title: string;
+  /** Empty means "not drawn" (the mobile frame carries no subtitle). */
   subtitle: string;
+  /** Empty means "not drawn" (the mobile frame carries no footer). */
   footer: string;
   back: string;
   /** The reset control's label; null renders no reset control at all. */
   reset: string | null;
   /** The id of the row drawn selected, or null when none is. */
   selected: string | null;
-  /** Always [gameplay, keybinds] in this order; a group with no rows is still present. */
+  /** One or two groups in this order (gameplay, then keybinds); an empty `title` draws no header. */
   groups: readonly OptionsGroupView[];
 }>;
+
+/** The breakpoint the board's two frames switch at; `options.css` uses the same 600px. */
+export const OPTIONS_NARROW_QUERY: '(max-width: 600px)';
 
 /** The shipped screen: `settingsRows(touch)` and `settingValue`, localised as they are drawn. */
 export function liveOptionsView(
@@ -120,8 +125,12 @@ export function liveOptionsView(
 /** The slug this task's fixture and preview answer to. */
 export const OPTIONS_SLUG: '02-options';
 
-/** The frame's own content, or null when the payload is not one this panel can draw. */
-export function fixtureOptionsView(payload: unknown): OptionsView | null;
+/**
+ * The frame's own content, or null when the payload is not one this panel can draw.
+ * `narrow` selects the mobile frame's variant (`payload.mobile`) instead of the
+ * desktop one (`payload.panel`).
+ */
+export function fixtureOptionsView(payload: unknown, narrow?: boolean): OptionsView | null;
 ```
 
 Rules for `liveOptionsView`:
@@ -145,15 +154,20 @@ Rules for `liveOptionsView`:
 
 Rules for `fixtureOptionsView`:
 
+- It reads `payload.panel` (desktop frame `02-options`) or, with `narrow === true`,
+  `payload.mobile` (mobile frame `m02-options`). The two frames are **different
+  content**, not two layouts of one snapshot: the mobile frame orders VOLUME first
+  and prints `FAST`. A missing or malformed requested variant → `null`.
 - Structural validation, in the `isHudState` style already in
-  `src/ui/hud/fixtures/index.ts`: an object with a string `title`, `subtitle`,
-  `footer`, `back`; a `reset` that is a string or null; a `selected` that is a
-  string or null; a `groups` array of exactly the two ids `gameplay` and
-  `keybinds`, each with a string `title` and a `rows` array. Every row needs a
-  non-empty string `id`, a string `label`, a string `value`, a `kind` in the four
-  literals, a `fraction` that is a number in `[0, 1]` **iff** kind is `slider`
-  (otherwise null) and an `on` that is a boolean **iff** kind is `toggle`
-  (otherwise null). Anything else → `null` (no throw, no console noise).
+  `src/ui/hud/fixtures/index.ts`: an object with non-empty string `title`, `back`,
+  `subtitle` and `footer` that are strings (**empty allowed**, meaning "not
+  drawn"); a `reset` that is a string or null; a `selected` that is a string or
+  null; a `groups` array of one or two entries, `gameplay` first, each with a
+  string `title` (empty allowed) and a `rows` array. Every row needs a non-empty
+  string `id`, a string `label`, a string `value`, a `kind` in the four literals, a
+  `fraction` that is a number in `[0, 1]` **iff** kind is `slider` (otherwise null)
+  and an `on` that is a boolean **iff** kind is `toggle` (otherwise null). Anything
+  else → `null` (no throw, no console noise).
 - It does **not** validate `state`: that is the store's job (`installFixture`).
 
 ### TypeScript — `src/ui/hud/panels/options/preview.ts`
@@ -173,7 +187,11 @@ export function installOptionsPreview(search: string): (() => void) | null;
   resolves the payload through `installFixture(flags, FIXTURE_MODULES)` from
   `src/ui/hud/fixtures/index.ts`, so a file the store rejects mounts nothing (the
   gate then fails loudly instead of comparing invented content). The view itself
-  comes from the same file's `panel` key through `fixtureOptionsView`.
+  comes from the same file's `panel` key through `fixtureOptionsView(payload,
+  narrow)`, where `narrow` is `window.matchMedia(OPTIONS_NARROW_QUERY).matches`, so
+  each viewport compares the board frame authored for it. Re-read the variant when
+  the media query flips (one `change` listener), so a resize never leaves the
+  desktop content on the mobile layout.
 - The panel must live inside the `#hud` layer `mountHud` creates, so z-order and
   the `pointer-events` contract stay the shell's: `#hud` (and `.hud`) is
   `pointer-events: none`, the panel sets `auto`. `mountHud` runs after the module
@@ -302,15 +320,37 @@ It is exactly this shape (the board's copy is English because the board is):
         ]
       }
     ]
+  },
+  "mobile": {
+    "title": "SETTINGS",
+    "subtitle": "",
+    "footer": "",
+    "back": "BACK",
+    "reset": null,
+    "selected": "volume",
+    "groups": [
+      {
+        "id": "gameplay",
+        "title": "",
+        "rows": [
+          { "id": "volume",      "kind": "slider", "label": "VOLUME",       "value": "70%",     "fraction": 0.7,  "on": null },
+          { "id": "textSpeed",   "kind": "step",   "label": "TEXT SPEED",   "value": "FAST",    "fraction": null, "on": null },
+          { "id": "alwaysRun",   "kind": "toggle", "label": "ALWAYS RUN",   "value": "OFF",     "fraction": null, "on": false },
+          { "id": "menuOpacity", "kind": "slider", "label": "MENU OPACITY", "value": "80%",     "fraction": 0.8,  "on": null },
+          { "id": "language",    "kind": "step",   "label": "LANGUAGE",     "value": "ENGLISH", "fraction": null, "on": null }
+        ]
+      }
+    ]
   }
 }
 ```
 
 `state` is an empty but **valid** `HudState` (the six keys, `money` null), so
-Task-126's guard accepts the file; `panel` is the frame's content and only the
-options panel reads it. The desktop frame's values are the ones above (the mobile
-frame's `FAST`/`80%` differ because the board's mobile column is a different
-snapshot; the gate splits text from geometry, so one payload serves both viewports).
+Task-126's guard accepts the file. `panel` is frame `02-options` and `mobile` is
+frame `m02-options`; they are **different content** — the mobile frame lists VOLUME
+first, selects it, prints `FAST`, and carries no subtitle, footer, keybinds or reset
+— so the preview picks the variant that matches the viewport it is drawn at and
+each viewport compares like with like. Only the options panel reads these keys.
 
 ### i18n keys (`src/i18n/en.ts` + `src/i18n/es.ts`)
 
@@ -387,11 +427,15 @@ node name in the comment (the `kit.css` radii precedent) — never inline in a r
         `t('settings.pressKey')`. It also proves `settingsRows(true)` yields 7 rows
         and an empty keybinds group.
   - [ ] `[unit]` `view.test.ts` imports `design/fixtures/02-options.json` and proves
-        `fixtureOptionsView` returns the frame's content (5 gameplay rows, 7
-        keybinds, `0.7`/`0.8` fractions, `selected: 'textSpeed'`, reset
-        `RESET DEFAULTS`), and returns `null` for: no `panel` key, a row with an
-        unknown `kind`, a slider whose `fraction` is 1.5, a toggle whose `on` is
-        `'yes'`, a missing group, and a non-object payload.
+        `fixtureOptionsView` returns frame `02-options` (5 gameplay rows in the
+        desktop order, 7 keybinds, `0.7`/`0.8` fractions, `selected: 'textSpeed'`,
+        reset `RESET DEFAULTS`), that `fixtureOptionsView(payload, true)` returns
+        frame `m02-options` (VOLUME first, `selected: 'volume'`, `FAST`, one group
+        with an empty title, `reset: null`, empty subtitle/footer), and that it
+        returns `null` for: no requested variant (`mobile` missing while `narrow`),
+        no `panel` key, a row with an unknown `kind`, a slider whose `fraction` is
+        1.5, a toggle whose `on` is `'yes'`, a missing group, and a non-object
+        payload.
   - [ ] `[unit]` `previewRequested`'s truth table: true only for both flags with
         `02-options` (any case, any parameter order, extra parameters allowed);
         false for `''`, `?hud=dom`, `?hudFixture=02-options` without `hud`,
@@ -446,8 +490,12 @@ node name in the comment (the `kit.css` radii precedent) — never inline in a r
   `src/ui/hud/panels/options/**` now exists, so `[Task-129]`+ add files beside it
   and must not edit its README. `holdForFixture` has **no** consumer here: the
   options screen renders no `HudState`, so the fixture is validated through
-  `installFixture` and read for its `panel` key; the freeze stays the route/battle
-  lanes' tool.
+  `installFixture` and read for its `panel`/`mobile` keys; the freeze stays the
+  route/battle lanes' tool. **`design/fixtures/<slug>.json` must be able to carry
+  one content block per board frame:** the two `02` frames disagree (row order,
+  selection and a value), so one payload cannot match both and the fixture's
+  `panel`/`mobile` pair is the rule later screens with a genuinely different mobile
+  snapshot should follow.
 - For the next batch: the panel folder's shape (`view.ts` + `optionsPanel.tsx` +
   `options.css` + `preview.ts` + `mount.tsx` + `index.ts`), the
   `data-hud-panel`/`data-hud-group`/`data-hud-row`/`data-hud-step` attribute names
