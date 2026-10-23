@@ -28,7 +28,9 @@
     "hud:diff": "node scripts/hud/diff.mjs"
   },
   "dependencies": {
-    "phaser": "^3.90.0"
+    "@preact/signals": "^2.11.3",
+    "phaser": "^3.90.0",
+    "preact": "^11.0.1"
   },
   "devDependencies": {
     "@pkmn/dex": "^0.10.11",

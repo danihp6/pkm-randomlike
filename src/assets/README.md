@@ -33,6 +33,9 @@ blanks; the ripped atlases never enter the repository or its history.
 | `frlg/hpbar.png`, `frlg/cursor.png` | FRLG HP bar (chip + empty track) and ▶ command cursor, 4x, from `scripts/frlg/build-battle-ui.mjs` (geometry in `src/data/frlg/battle-ui.json`) | **game rip, gitignored** |
 | `frlg/font.png` | FRLG bitmap font atlas, 2x, from `scripts/frlg/build-font.mjs` (metrics in `src/data/frlg/font.json`); superseded by `ui/font.png` and no longer read by the game | **game rip, gitignored** |
 | `audio/<cue-id>.wav` | one sound per cue id in `src/audio/cues.ts` (three music beds, the one-shot cues, the shared `hit`, one cue per move sound and per cry, 525 in all), 16-bit PCM mono WAV at the source's own rate, rendered from the FRLG soundtrack by `scripts/frlg/render-frlg-audio.mjs` and packed by `scripts/frlg/build-audio.mjs` | **game rip, gitignored** |
+| `fonts/silkscreen-400.woff2` | Silkscreen Regular, the latin WOFF2 subset the DOM HUD self-hosts through `src/ui/hud/styles/root.css` (`D49`) | OFL, safe to commit |
+| `fonts/silkscreen-700.woff2` | Silkscreen Bold, the latin WOFF2 subset of the same two `@font-face` blocks | OFL, safe to commit |
+| `fonts/OFL.txt` | the SIL Open Font License 1.1 both Silkscreen faces ship under | OFL, safe to commit |
 
 Every "game rip, gitignored" entry is Nintendo/GameFreak/Chunsoft art. It is
 packed from the private `pkrl-assets` store (or a local `sprite-sources/`
