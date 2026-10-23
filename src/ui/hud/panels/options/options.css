@@ -1,0 +1,605 @@
+/*
+ * The options panel (`D49`, frame `02 Options` / `m02-options`). Every value the
+ * board carries and `styles/root.css` does not is declared once here, next to the
+ * frame's node name; the rest come from the `--hud-*` tokens. The board's stroke is
+ * drawn inside its box (`docs/hud-fidelity.md` §3), so a card or a row draws its
+ * hairline with an inset outline and keeps its own box for its children.
+ *
+ * The title, label and value layers are composited (`translateZ(0)`): Chrome then
+ * rasterises their glyphs on whole pixels, as the board's export does, and the
+ * diff gate reads text edges as geometry.
+ */
+.options {
+  /* 02 Options · board frame fill */
+  --options-backdrop: #0b1017;
+  /* 02 Options · card gameplay, card keybinds */
+  --options-card-fill: rgb(16 22 31 / 86%);
+  /* 02 Options · gameplay highlight, keybinds highlight */
+  --options-highlight: rgb(255 255 255 / 14%);
+  /* 02 Options · row selected */
+  --options-selected-fill: rgb(125 211 252 / 12%);
+  /* 02 Options · sep 1, sep 2, sep 3, sep 4, bind sep 1…6 */
+  --options-separator: rgb(255 255 255 / 7%);
+  /* 02 Options · slider track, opacity track */
+  --options-track-fill: rgb(255 255 255 / 12%);
+  --options-track-radius: 3px;
+  --options-track-width: 148px;
+  --options-knob: 18px;
+  /* 02 Options · toggle track */
+  --options-toggle-fill: rgb(255 255 255 / 10%);
+  --options-toggle-border: rgb(255 255 255 / 17%);
+  --options-toggle-radius: 12px;
+  /* the armed state of the toggle, a choice: the frame draws it off */
+  --options-toggle-on-fill: rgb(125 211 252 / 24%);
+  /* 02 Options · keycap */
+  --options-keycap-fill: rgb(255 255 255 / 7%);
+  --options-keycap-border: rgb(255 255 255 / 18%);
+  --options-keycap-radius: 6px;
+  --options-keycap-min-width: 52px;
+  --options-keycap-medium-width: 60px;
+  --options-keycap-wide-width: 68px;
+  /* 02 Options · back button, reset button */
+  --options-button-fill: rgb(255 255 255 / 4%);
+  /* 02 Options · reset label */
+  --options-reset-ink: #fca5a5;
+  /* 02 Options · hint note (sentence case) */
+  --options-footer-ink: #64748b;
+  /* 02 Options · title */
+  --options-title-size: 40px;
+  --options-title-line: 51px;
+  /* 02 Options · row selected bar */
+  --options-bar-radius: 2px;
+  /* 02 Options · gameplay header, keybinds header (tracked 3 px between glyph origins) */
+  --options-header-tracking: 3px;
+  /* 02 Options · back label, reset label (tracked 1 px between glyph origins) */
+  --options-action-tracking: 1px;
+  /* 02 Options · stage: the board's desktop frame */
+  --options-stage-width: 1280px;
+  --options-stage-height: 800px;
+  /* m 02 Options · m row 1, m slider track, m button */
+  --options-m-row-radius: 6px;
+  --options-m-selected-border: rgb(125 211 252 / 50%);
+  --options-m-button-radius: 9px;
+
+  position: fixed;
+  inset: 0;
+  background: var(--options-backdrop);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+  pointer-events: auto;
+}
+
+.options,
+.options *,
+.options *::before,
+.options *::after {
+  box-sizing: border-box;
+}
+
+.options__stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--options-stage-width);
+  height: var(--options-stage-height);
+  transform: translate(-50%, -50%);
+}
+
+.options__head {
+  position: static;
+}
+
+.options__title {
+  position: absolute;
+  top: 84px;
+  left: 94px;
+  z-index: 1;
+  transform: translateZ(0);
+  margin: 0;
+  color: var(--hud-text-ink);
+  font-size: var(--options-title-size);
+  font-weight: 700;
+  line-height: var(--options-title-line);
+}
+
+.options__subtitle {
+  position: absolute;
+  top: 140px;
+  left: 96px;
+  z-index: 1;
+  margin: 0;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-section-size);
+  line-height: var(--hud-type-section-line);
+}
+
+.options__group {
+  position: absolute;
+  top: 200px;
+}
+
+.options__group--gameplay {
+  left: 96px;
+  width: 640px;
+}
+
+.options__group--keybinds {
+  left: 760px;
+  width: 424px;
+}
+
+.options__card {
+  width: 100%;
+  min-height: 470px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--hud-panel-radius);
+  background: var(--options-card-fill);
+  outline: 1px solid var(--hud-panel-border);
+  outline-offset: -1px;
+}
+
+.options .options__card::before {
+  top: 12px;
+  right: 12px;
+  left: 12px;
+  height: 1px;
+  background: var(--options-highlight);
+}
+
+.options__group-title {
+  position: absolute;
+  top: 32px;
+  left: 24px;
+  margin: 0;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-name-size);
+  font-weight: 400;
+  letter-spacing: var(--options-header-tracking);
+  line-height: var(--hud-type-name-line);
+  text-transform: uppercase;
+}
+
+.options__rows {
+  position: absolute;
+  top: 62px;
+  left: 16px;
+  right: 16px;
+}
+
+.options__card--keybinds .options__rows {
+  left: 24px;
+  right: 24px;
+}
+
+.options__slot {
+  position: relative;
+  height: 48px;
+  margin-bottom: 8px;
+}
+
+.options__slot:last-child {
+  margin-bottom: 0;
+}
+
+.options__row {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--hud-row-radius);
+  background: transparent;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+}
+
+.options__row--selected {
+  background: var(--options-selected-fill);
+  outline: 1px solid var(--hud-accent);
+  outline-offset: -1px;
+}
+
+.options__slot:not(:last-child) .options__row::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  bottom: 0;
+  left: 8px;
+  height: 1px;
+  background: var(--options-separator);
+}
+
+.options__card--keybinds .options__slot:not(:last-child) .options__row::after {
+  right: 0;
+  left: 0;
+}
+
+.options__bar {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  width: 3px;
+  height: 32px;
+  border-radius: var(--options-bar-radius);
+  background: var(--hud-accent);
+}
+
+.options__label {
+  position: absolute;
+  top: 10px;
+  left: 32px;
+  transform: translateZ(0);
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  text-transform: uppercase;
+}
+
+.options__card--keybinds .options__label {
+  left: 0;
+}
+
+.options__value {
+  position: absolute;
+  top: 11px;
+  left: 388px;
+  transform: translateZ(0);
+  color: var(--hud-text-secondary);
+  font-size: var(--hud-type-section-size);
+  line-height: var(--hud-type-section-line);
+  text-transform: uppercase;
+}
+
+.options__row--selected .options__value {
+  color: var(--hud-accent);
+}
+
+.options__step {
+  position: absolute;
+  top: 10px;
+  width: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--hud-text-muted);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  text-align: center;
+  cursor: pointer;
+}
+
+.options__step[data-hud-step='prev'] {
+  left: 536px;
+}
+
+.options__step[data-hud-step='next'] {
+  left: 572px;
+}
+
+.options__slider {
+  position: absolute;
+  top: 7px;
+  left: 440px;
+  width: var(--options-track-width);
+  height: 24px;
+  cursor: pointer;
+}
+
+.options__slider .kit-bar {
+  position: absolute;
+  top: 9px;
+  left: 0;
+  width: 100%;
+  border: 0;
+  border-radius: var(--options-track-radius);
+  background: var(--options-track-fill);
+}
+
+.options__slider .kit-bar__fill {
+  border-radius: var(--options-track-radius);
+}
+
+.options__knob {
+  position: absolute;
+  top: 3px;
+  width: var(--options-knob);
+  height: var(--options-knob);
+  border-radius: 50%;
+  background: var(--hud-text-ink);
+}
+
+.options__toggle {
+  position: absolute;
+  top: 11px;
+  left: 520px;
+  width: 56px;
+  height: 24px;
+  border: 1px solid var(--options-toggle-border);
+  border-radius: var(--options-toggle-radius);
+  background: var(--options-toggle-fill);
+  cursor: pointer;
+}
+
+.options__toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--hud-text-muted);
+}
+
+.options__toggle[aria-checked='true'] {
+  border-color: var(--hud-accent);
+  background: var(--options-toggle-on-fill);
+}
+
+.options__toggle[aria-checked='true'] .options__toggle-knob {
+  right: 2px;
+  left: auto;
+  background: var(--hud-text-ink);
+}
+
+.options__keycap {
+  position: absolute;
+  top: 6px;
+  right: 24px;
+  display: flex;
+  min-width: var(--options-keycap-min-width);
+  height: 28px;
+  padding: 0 6px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--options-keycap-border);
+  border-radius: var(--options-keycap-radius);
+  background: var(--options-keycap-fill);
+  color: var(--hud-accent);
+  font-size: var(--hud-type-section-size);
+  font-weight: 700;
+  line-height: var(--hud-type-section-line);
+}
+
+.options__keycap--medium {
+  min-width: var(--options-keycap-medium-width);
+}
+
+.options__keycap--wide {
+  min-width: var(--options-keycap-wide-width);
+}
+
+.options__actions {
+  position: absolute;
+  top: -112px;
+  left: 740px;
+  display: flex;
+  gap: 16px;
+}
+
+.options__action {
+  display: inline-flex;
+}
+
+.options__action .kit-button {
+  min-height: 40px;
+  height: 40px;
+  padding: 0;
+  border-color: var(--hud-panel-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--options-button-fill);
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-name-size);
+  font-weight: 400;
+  letter-spacing: var(--options-action-tracking);
+  line-height: var(--hud-type-name-line);
+}
+
+.options__action--back .kit-button {
+  width: 140px;
+}
+
+.options__action--reset .kit-button {
+  width: 192px;
+  color: var(--options-reset-ink);
+}
+
+.options__footer {
+  position: absolute;
+  top: 716px;
+  left: 96px;
+  margin: 0;
+  color: var(--options-footer-ink);
+  font-size: var(--hud-type-name-size);
+  line-height: var(--hud-type-name-line);
+}
+
+@media (max-width: 600px) {
+  .options {
+    /* m 02 Options · mobile frame fill */
+    --options-backdrop: #05070c;
+    /* m options panel */
+    --options-card-fill: rgb(16 22 31 / 92%);
+    /* m slider track, m opacity track */
+    --options-track-width: 140px;
+    --options-knob: 14px;
+    /* m toggle track */
+    --options-toggle-fill: rgb(255 255 255 / 10%);
+    --options-toggle-border: rgb(255 255 255 / 14%);
+    /* m button */
+    --options-button-fill: rgb(255 255 255 / 4%);
+    /* m row 1 */
+    --options-selected-fill: rgb(125 211 252 / 14%);
+    /* board title */
+    --options-title-size: var(--hud-type-title-size);
+    --options-title-line: var(--hud-type-title-line);
+    /* the board's phone stage */
+    --options-stage-width: 390px;
+    --options-stage-height: 844px;
+    /* the first two rows set their text 8 px into the row, the rest on its top
+       edge (m02-options: board title y 357, 389, 413, 445, 477) */
+    --options-text-top: 0px;
+    /* m opacity track, m slider track: 455 on the row at 445 */
+    --options-m-track-top: 10px;
+  }
+
+  .options__title {
+    top: 292px;
+    left: 32px;
+    color: var(--hud-text-primary);
+    font-size: var(--options-title-size);
+    line-height: var(--options-title-line);
+  }
+
+  .options__subtitle,
+  .options__footer,
+  .options__group-title {
+    display: none;
+  }
+
+  .options__group--gameplay {
+    top: 271px;
+    left: var(--hud-gutter);
+    width: var(--hud-panel-width);
+  }
+
+  .options__card {
+    min-height: 302px;
+    padding: 0 24px 16px;
+    border-radius: var(--hud-panel-radius);
+  }
+
+  .options .options__card::before {
+    top: 57px;
+    right: 24px;
+    left: 24px;
+    height: 1px;
+    background: var(--hud-row-border);
+  }
+
+  .options__rows {
+    position: static;
+    padding-top: 78px;
+  }
+
+  .options__slot {
+    height: 26px;
+    margin-bottom: 6px;
+  }
+
+  .options__slot:nth-child(-n + 2) {
+    --options-text-top: 8px;
+  }
+
+  /* m slider track sits 13 px into the first row (362 on the row at 349) */
+  .options__slot:first-child {
+    --options-m-track-top: 13px;
+  }
+
+  /* from the third row on the board sets its text half a pixel lower (m02-options:
+     the LANGUAGE box lands on 483.5 between its bars) */
+  .options__slot:nth-child(n + 3) .options__label {
+    top: 0.5px;
+  }
+
+  .options__row {
+    border-radius: var(--options-m-row-radius);
+  }
+
+  .options__row--selected {
+    border-radius: var(--options-m-row-radius);
+    outline-color: var(--options-m-selected-border);
+  }
+
+  .options__slot:not(:last-child) .options__row::after {
+    display: none;
+  }
+
+  .options__bar {
+    display: none;
+  }
+
+  .options__label {
+    top: var(--options-text-top);
+    left: 20px;
+    color: var(--hud-text-primary);
+    font-size: var(--hud-type-body-size);
+    font-weight: 700;
+    line-height: var(--hud-type-body-line);
+  }
+
+  .options__value {
+    top: calc(var(--options-text-top) + 1px);
+    right: 18px;
+    left: auto;
+    font-size: var(--hud-type-meta-size);
+    letter-spacing: 1px;
+    line-height: var(--hud-type-meta-line);
+  }
+
+  .options__row--slider .options__value,
+  .options__row--toggle .options__value,
+  .options__step {
+    display: none;
+  }
+
+  .options__slider {
+    top: 0;
+    left: 168px;
+    height: 26px;
+  }
+
+  .options__slider .kit-bar {
+    top: var(--options-m-track-top);
+  }
+
+  .options__knob {
+    top: calc(var(--options-m-track-top) - 4px);
+    border: 1px solid var(--hud-accent);
+    background: var(--hud-text-primary);
+  }
+
+  .options__toggle {
+    top: 0;
+    left: 262px;
+    width: 44px;
+    border-radius: var(--options-toggle-radius);
+  }
+
+  .options__toggle-knob {
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .options__toggle[aria-checked='true'] .options__toggle-knob {
+    right: 3px;
+  }
+
+  .options__actions {
+    position: static;
+    display: block;
+    margin-top: 14px;
+  }
+
+  .options__actions .options__action {
+    display: block;
+  }
+
+  .options__action .kit-button {
+    width: 100%;
+    border-radius: var(--options-m-button-radius);
+    font-size: var(--hud-type-body-size);
+    font-weight: 700;
+    line-height: var(--hud-type-body-line);
+  }
+
+  .options__actions .options__action--reset {
+    display: none;
+  }
+}

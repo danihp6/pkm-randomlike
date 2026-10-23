@@ -2,11 +2,11 @@
 
 One folder per screen the board defines, each holding that screen's Preact components and
 its pure layout model with a co-located `*.test.ts`. A migration adds files here and deletes
-its Phaser counterpart in the same task (`D49`); nothing in this folder exists yet.
+its Phaser counterpart in the same task (`D49`).
 
 ## Screens
 
-- `options/` — the options/settings screen: the rows and the sliders of frame `02`.
+- `options/` — the options/settings screen: frame `02`, its rows, sliders and keycaps (`view.ts`, `view.test.ts`, `optionsPanel.tsx`, `options.css`, `mount.tsx`, `preview.ts`, `preview.test.ts`, `index.ts`).
 - `bag/` — the bag: pockets, stacks and the item row.
 - `pc/` — the box: the storage grid, paging and the party hand-off.
 - `party/` — the party screen: the six rows, the cursor and drag/drop.

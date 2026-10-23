@@ -1,0 +1,59 @@
+{
+  "slug": "02-options",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "panel": {
+    "title": "SETTINGS",
+    "subtitle": "Changes apply immediately and save to this browser.",
+    "footer": "Keybinds are shared with the route and battle screens.",
+    "back": "BACK",
+    "reset": "RESET DEFAULTS",
+    "selected": "textSpeed",
+    "groups": [
+      {
+        "id": "gameplay",
+        "title": "GAMEPLAY",
+        "rows": [
+          { "id": "textSpeed",   "kind": "step",   "label": "TEXT SPEED",   "value": "NORMAL",  "fraction": null, "on": null },
+          { "id": "volume",      "kind": "slider", "label": "VOLUME",       "value": "70%",     "fraction": 0.7,  "on": null },
+          { "id": "alwaysRun",   "kind": "toggle", "label": "ALWAYS RUN",   "value": "OFF",     "fraction": null, "on": false },
+          { "id": "menuOpacity", "kind": "slider", "label": "MENU OPACITY", "value": "80%",     "fraction": 0.8,  "on": null },
+          { "id": "language",    "kind": "step",   "label": "LANGUAGE",     "value": "ENGLISH", "fraction": null, "on": null }
+        ]
+      },
+      {
+        "id": "keybinds",
+        "title": "KEYBINDS",
+        "rows": [
+          { "id": "confirm", "kind": "keybind", "label": "CONFIRM", "value": "A",    "fraction": null, "on": null },
+          { "id": "cancel",  "kind": "keybind", "label": "CANCEL",  "value": "B",    "fraction": null, "on": null },
+          { "id": "run",     "kind": "keybind", "label": "RUN",     "value": "SHIFT","fraction": null, "on": null },
+          { "id": "party",   "kind": "keybind", "label": "PARTY",   "value": "P",    "fraction": null, "on": null },
+          { "id": "bag",     "kind": "keybind", "label": "BAG",     "value": "I",    "fraction": null, "on": null },
+          { "id": "map",     "kind": "keybind", "label": "MAP",     "value": "M",    "fraction": null, "on": null },
+          { "id": "options", "kind": "keybind", "label": "OPTIONS", "value": "ESC",  "fraction": null, "on": null }
+        ]
+      }
+    ]
+  },
+  "mobile": {
+    "title": "SETTINGS",
+    "subtitle": "",
+    "footer": "",
+    "back": "BACK",
+    "reset": null,
+    "selected": "volume",
+    "groups": [
+      {
+        "id": "gameplay",
+        "title": "",
+        "rows": [
+          { "id": "volume",      "kind": "slider", "label": "VOLUME",       "value": "70%",     "fraction": 0.7,  "on": null },
+          { "id": "textSpeed",   "kind": "step",   "label": "TEXT SPEED",   "value": "FAST",    "fraction": null, "on": null },
+          { "id": "alwaysRun",   "kind": "toggle", "label": "ALWAYS RUN",   "value": "OFF",     "fraction": null, "on": false },
+          { "id": "menuOpacity", "kind": "slider", "label": "MENU OPACITY", "value": "80%",     "fraction": 0.8,  "on": null },
+          { "id": "language",    "kind": "step",   "label": "LANGUAGE",     "value": "ENGLISH", "fraction": null, "on": null }
+        ]
+      }
+    ]
+  }
+}

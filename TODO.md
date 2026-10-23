@@ -7376,7 +7376,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       on, so the diff compares like with like instead of a different party against the board. Claims
       `src/dev/hudFlags.ts` + test, `src/dev/README.md` and `src/ui/hud/fixtures/**`.
       *Dependencies:* `[Task-122]`, `[Task-123]`. *(Batch 59)*
-- [ ] **[Task-127] Options (`02`) is the spike, and the spike is the gate.** The first screen in DOM,
+- [x] **[Task-127] Options (`02`) is the spike, and the spike is the gate.** The first screen in DOM,
       behind the flag: `src/scenes/SettingsScene.ts` stops drawing its panel under `?hud=dom`,
       `src/ui/hud/panels/options/` renders it and `design/fixtures/02-options.json` carries the
       frame's own rows and values. It passes or Phase 12 does not start: no horizontal overflow at

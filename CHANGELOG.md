@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Options `02` is the DOM panel, and the spike passed its gate.** `[Task-127]`, the fifth of
+      Phase 12 (`D49`): `src/ui/hud/panels/options/` ships the screen as a stateless Preact
+      component (`optionsPanel.tsx`) over one view model (`view.ts`, with the live producer off
+      `src/ui/settingsScreen.ts` and the fixture producer), its own `options.css` carrying the
+      board's two layouts (the 640/424 cards at 1280, the 374×302 card at 390) and a `preview.ts`
+      that mounts it for the diff behind `?hud=dom&hudFixture=02-options`. `SettingsScene` draws
+      **no Phaser object** under the flag and mounts the panel instead, while the keyboard stays
+      the scene's: one CDP `ArrowDown` moves the scene's `index` to 1, and a click reduces through
+      `HudCommand` to the same `handleAction` (a click on the language row's `›` flips `en → es`
+      and writes it). Without the flag the shipped screen is unchanged — 29 display objects and a
+      drawn panel, against 0 and the DOM panel with it. The board's two frames disagree (the
+      mobile one orders VOLUME first, selects it and prints `FAST`), so
+      `design/fixtures/02-options.json` carries one content block per frame (`panel` / `mobile`)
+      and the preview picks the one the viewport is drawn at; five `settings.*` keys joined both
+      locales. **The gate:** `npm run hud:diff -- --slug 02-options` exits 0 with **1280×800**
+      geometry max 1 px / flat ΔE 0.12 and **390×844** max 2 px / 0.12. QA ran one combined pass
+      (Batch 60 is a single task): criteria 1–13 green, path audit and merge rehearsal clean;
+      `npm test` 3778 passed, `npm run build` green.
 - [x] **A fixture reproduces a frame exactly.** `[Task-126]`, the fourth of Phase 12 (`D49`):
       `?hud=dom&hudFixture=<slug>` now has a mechanism behind it. `src/ui/hud/fixtures/flags.ts`
       reads both flags once, with the `?hud=dom` half **delegating** to `mount.ts`'s

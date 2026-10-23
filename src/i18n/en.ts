@@ -35,6 +35,11 @@ export const en = {
 
   // settings — SettingsScene and settingsScreen.ts
   'settings.title': 'SETTINGS',
+  'settings.subtitle': 'Changes apply immediately and save to this browser.',
+  'settings.footer': 'Keybinds are shared with the route and battle screens.',
+  'settings.back': 'BACK',
+  'settings.group.gameplay': 'GAMEPLAY',
+  'settings.group.keybinds': 'KEYBINDS',
   'settings.textSpeed': 'Text speed',
   'settings.textSpeed.hint': 'How fast the battle text types itself out.',
   'settings.volume': 'Volume',
